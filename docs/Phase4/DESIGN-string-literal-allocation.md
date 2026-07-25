@@ -1,13 +1,15 @@
 # DESIGN — retiring per-evaluation `@string` literal allocation (Tiers A / A′ / B / C)
 
-> **Status: DRAFT rev 2 for user review — 2026-07-25.** Rev 1 went through a three-lens adversarial
-> panel (semantics / converter mechanics / scope+fidelity; all three verdicts **sound-with-fixes**);
-> every confirmed finding is integrated below and the four blockers are resolved by design changes
-> (§7 records them). Scope blessed in principle (user: "the always-allocating `@string` is THE
-> performance bottleneck in the system"; hoisting proposed by user with the "close to usage"
-> placement requirement). Implementation is **one session, gated landings in order A → A′ → B → C**,
-> each independently revertible. Evidence: the `u8bench` experiment (scratchpad; `Mockup.cs`
-> compiles the before/after forms against live golib) and the committed `PerfStringMatch` benchmark.
+> **Status: ACCEPTED — 2026-07-25.** Rev 2 reviewed and approved by the user: **all five §6
+> decisions accepted as recommended.** Implementation is **one session, gated landings in order
+> A → A′ → B → C**, each independently revertible, launching after train r11 lands (§4.7).
+> History: rev 1 went through a three-lens adversarial panel (semantics / converter mechanics /
+> scope+fidelity; all three verdicts **sound-with-fixes**); every confirmed finding is integrated
+> and the four blockers are resolved by design changes (§7 records them). Scope blessed by the user
+> ("the always-allocating `@string` is THE performance bottleneck in the system"; hoisting proposed
+> by the user with the "close to usage" placement requirement). Evidence: the `u8bench` experiment
+> (scratchpad; `Mockup.cs` compiles the before/after forms against live golib) and the committed
+> `PerfStringMatch` benchmark.
 
 ## 1. Problem
 
@@ -303,7 +305,7 @@ String/Map non-regressing as the oracle.
 Corpus regenerated per-tier for gating, **committed once** post-C (with the banked test-artifact
 refresh). The session runs after train r11 lands (§4.7).
 
-## 6. Open decisions for review (recommendations inline)
+## 6. Decisions (all five ACCEPTED as recommended — user, 2026-07-25)
 
 1. **Marker `ˢ` suffix** — and, explicitly, the *derivation-from-content naming category* it
    introduces (§4.3 last bullet). *Recommended: accept; the §4.2 exclusions confine it to literals
