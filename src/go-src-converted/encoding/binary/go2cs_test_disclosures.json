@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestAppendAllocs",
+      "class": "alloc-profile",
+      "signature": "Append allocated ",
+      "reason": "want-zero AllocsPerRun assert: binary.Append's reflect walk boxes every field value into `any` (Value readers) in the managed model where Go's encoder writes through pre-sized memory allocation-free; boxing into an interface allocates on the CLR by construction"
+    },
+    {
+      "name": "TestSizeAllocs/complex64",
+      "class": "alloc-profile",
+      "signature": "Expected no allocations, got ",
+      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes its argument into the interface per call — a CLR heap allocation Go's non-escaping eface avoids; the interned descriptor read behind it is allocation-free but the boxing alone fails the want-zero"
+    },
+    {
+      "name": "TestSizeAllocs/complex128",
+      "class": "alloc-profile",
+      "signature": "Expected no allocations, got ",
+      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes its argument into the interface per call — a CLR heap allocation Go's non-escaping eface avoids"
+    },
+    {
+      "name": "TestSizeAllocs/binary.Struct",
+      "class": "alloc-profile",
+      "signature": "Expected no allocations, got ",
+      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the struct argument per call, and the cached-struct-size lookup constructs a boxed reflect.Value — CLR heap allocations Go's non-escaping eface and pointer-word Value avoid"
+    },
+    {
+      "name": "TestSizeAllocs/*binary.Struct",
+      "class": "alloc-profile",
+      "signature": "Expected no allocations, got ",
+      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the pointer argument per call and Indirect materializes an addressable bridge Value — CLR heap allocations Go's non-escaping eface avoids"
+    },
+    {
+      "name": "TestSizeAllocs/[]binary.Struct",
+      "class": "alloc-profile",
+      "signature": "Expected no allocations, got ",
+      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the slice argument per call — a CLR heap allocation Go's non-escaping eface avoids"
+    },
+    {
+      "name": "TestSizeAllocs/[]binary.Struct#01",
+      "class": "alloc-profile",
+      "signature": "Expected no allocations, got ",
+      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the slice argument per call — a CLR heap allocation Go's non-escaping eface avoids"
+    },
+    {
+      "name": "TestSizeAllocs/[1]binary.Struct",
+      "class": "alloc-profile",
+      "signature": "Expected no allocations, got ",
+      "reason": "want-zero AllocsPerRun assert: Size(v any) boxes the array argument per call (a full managed copy of the array struct) — CLR heap allocations Go's non-escaping eface avoids"
+    }
+  ]
+}
