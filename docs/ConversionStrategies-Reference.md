@@ -1265,6 +1265,50 @@ method-body, value-embed-promoted, composite-literal, and return positions plus 
 pointer-hop negative control, all output-compared vs Go; the one churned golden
 `UnsafePointerParamPin` — `&h.v` under `unsafe.Pointer` — re-verified.)
 
+### A pointer-receiver METHOD VALUE heap-boxes its receiver — the implicit `(&x).M`
+Go's spec makes `c.split` shorthand for `(&c).split` when `c` is addressable and `split` has a
+pointer receiver: the method **value** binds a pointer into `c`'s own storage, so every write it
+makes through its receiver is visible in `c` afterwards. That is the same escape condition as an
+explicit `&c` — just written without the `&`, which is precisely why the address-of walk above could
+not see it. The local stayed unpromoted and emission fell back to the copy box `Ꮡ(c).split`: it
+compiled and ran, but the method mutated a **copy** and the caller's writes were silently dropped.
+bufio's `s.Split(c.split)` is the real site — the scan counter never decremented, so the reader
+"stopped with 10000 left to process".
+
+Escape analysis now recognizes a method value that selects a pointer-receiver method on the local's
+own storage — the bare ident, or a non-indirect value-field chain rooted at it, reusing the same
+root walk the explicit-`&` arm uses — and marks it escaping, so the emission becomes the aliasing
+box:
+
+```go
+c := counter{n: 100}
+sum := applyInt(c.dec, 5, 7)       // (&c).dec — Go: c.n is 88 afterwards
+```
+```csharp
+ref var c = ref heap<counter>(out var Ꮡc);
+c = new counter(n: 100);
+nint sum = applyInt(Ꮡc.dec, 5, 7);   // Ꮡc aliases c — was Ꮡ(c), a copy
+```
+
+The rule is position-general (argument, assignment, composite element, return) and covers value
+**parameters** and named **results** as well as locals: a parameter takes the entry-time box
+(`ref var c = ref heap(cʗp, out var Ꮡc);`) rather than a call-site copy, exactly as the capture-mode
+call form already did — the three emitters that materialize a parameter box now share one predicate
+(`paramBoxReasonHolds`), so an analysis reason can no longer be recorded without its box being
+declared (CS0103). An **inherently-heap** named slice/map/chan receiver takes the box too (`Ꮡ(l)`
+would clone the slice header, orphaning `*l = append(*l, v)`).
+
+Three boundaries stay deliberately outside the rule. A direct **call** `c.dec()` is not a method
+value: it binds C#'s `this ref counter c` extension receiver against the variable and is already
+correct, and promoting for it would heap-box every local that calls a pointer-receiver method. A
+**pointer-typed base** (`p.M` where `p` is `*counter`) passes the pointer value and takes no address
+of `p`. A **value-receiver** method value (`c.peek`) copies the receiver at evaluation time in Go —
+which is what the existing lambda-snapshot emission (`var cʗ1 = c; … cʗ1.peek()`) already does.
+(Guarded by `MethodValueReceiverEscape` — local, value parameter, named result, value-field chain,
+named-slice, and closure-formed method values, plus all three negative controls, output-compared vs
+Go. Note the still-open residue: a method value bound to a *variable* — `f := c.dec` — takes the
+lambda-snapshot path, which copies the receiver even when the local is promoted.)
+
 A **blank-identifier element** in a split multi-assign is a C# discard, never a declaration. Go's `_, _, _, _ = a, b, c, d` (a common "mark these used" idiom) is emitted as one bare discard per element with **no** `var` — the per-element discard test keys off each LHS ident, not just the single-LHS case, so every blank stays a discard:
 
 ```go

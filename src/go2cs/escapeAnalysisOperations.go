@@ -347,7 +347,10 @@ func (v *Visitor) markCaptureModeBoxedParams(params *ast.FieldList, body *ast.Bl
 				continue
 			}
 
-			if v.bodyCallsCaptureModeMethodOn(ident, body) {
+			// A METHOD VALUE of a pointer-receiver method (`cfg.Fprint` handed to a func
+			// parameter, never called here) implicitly takes `&cfg` exactly like the call
+			// form does — see pointerMethodValueAddressTaken.
+			if v.bodyCallsCaptureModeMethodOn(ident, body) || v.pointerMethodValueAddressTaken(obj, body) {
 				v.identEscapesHeap[obj] = true
 
 				// An inherently-heap value (named slice/map/chan) is already a reference, so
@@ -398,7 +401,7 @@ func (v *Visitor) analyzeNamedResults(results *ast.FieldList, body *ast.BlockStm
 				continue
 			}
 
-			if v.namedResultAddressTaken(obj, body) {
+			if v.namedResultAddressTaken(obj, body) || v.pointerMethodValueAddressTaken(obj, body) {
 				v.identEscapesHeap[obj] = true
 			}
 		}
@@ -471,7 +474,11 @@ func (v *Visitor) performEscapeAnalysis(ident *ast.Ident, parentBlock *ast.Block
 		// with Push/Pop on `*orderEventList`, a NAMED SLICE) needs the ж overload's receiver box
 		// (CS1929 without it). Record that reason so identHasHeapBox forces the box for exactly
 		// these vars (a non-inherently-heap struct like atomic.Int32 is already boxed below).
-		if packageCaptureModeBoxIdents != nil && v.bodyCallsCaptureModeMethodOn(ident, parentBlock) {
+		// A pointer-receiver METHOD VALUE (`l.push` passed as a func arg) needs the same box:
+		// `Ꮡ(l)` copy-boxes the slice HEADER, so every `*l = append(*l, …)` the method value
+		// performs lands in the copy and the caller's `l` never grows.
+		if packageCaptureModeBoxIdents != nil &&
+			(v.bodyCallsCaptureModeMethodOn(ident, parentBlock) || v.pointerMethodValueAddressTaken(identObj, parentBlock)) {
 			packageCaptureModeBoxIdents[identObj] = true
 		}
 
@@ -752,7 +759,102 @@ func (v *Visitor) performEscapeAnalysis(ident *ast.Ident, parentBlock *ast.Block
 		escapes = true
 	}
 
+	// A pointer-receiver METHOD VALUE taken on the var (`bufio`'s `s.Split(c.split)`) is Go
+	// shorthand for `(&c).split` — the same implicit address-of the UnaryExpr arm catches for
+	// an explicit `&c`, just written without the `&` (see pointerMethodValueAddressTaken).
+	if !escapes && v.pointerMethodValueAddressTaken(identObj, parentBlock) {
+		escapes = true
+	}
+
 	v.identEscapesHeap[identObj] = escapes
+}
+
+// pointerMethodValueAddressTaken reports whether body forms a METHOD VALUE — `x.M` evaluated as a
+// func value rather than called — that selects a POINTER-receiver method on obj's own (non-pointer)
+// storage, either directly (`c.split`) or through a value-field chain rooted at obj (`h.c.dec`).
+//
+// Go's spec makes such a method value shorthand for `(&x).M`: it binds a pointer INTO x's storage
+// at evaluation time, so every write the method performs through its receiver must be visible in x
+// afterwards. That is the identical escape condition as an explicit `&x`, written without the `&`,
+// and it is the one address-of form the UnaryExpr / CallExpr arms above cannot see. Left unmarked,
+// the local stays unpromoted and emission falls back to the copy-box `Ꮡ(c).split` — which compiles
+// and runs, but mutates a COPY, silently dropping the method's writes (bufio's `s.Split(c.split)`
+// scan-counter never decremented: "stopped with 10000 left to process"). Heap-promoting obj makes
+// emission use the aliasing box `Ꮡc.split` instead, matching Go exactly.
+//
+// A method value is only recognized OUTSIDE call position: `c.dec()` is a call, not a value, and
+// binds C#'s `this ref counter c` extension receiver directly against the variable — already
+// correct, and promoting for it would heap-box every local that calls a pointer-receiver method.
+// A pointer-typed base (`p.M` where p is `*counter`) is excluded too: it passes the pointer VALUE,
+// taking no address of p. A VALUE-receiver method value (`c.get`) is likewise excluded — Go copies
+// the receiver at evaluation time there, which is what the current copy emission already does.
+func (v *Visitor) pointerMethodValueAddressTaken(obj types.Object, body ast.Node) bool {
+	if obj == nil || body == nil {
+		return false
+	}
+
+	var candidates []*ast.SelectorExpr
+	callFuns := make(map[ast.Expr]bool)
+
+	ast.Inspect(body, func(n ast.Node) bool {
+		switch node := n.(type) {
+		case *ast.CallExpr:
+			callFuns[ast.Unparen(node.Fun)] = true
+		case *ast.SelectorExpr:
+			if v.selectsPointerMethodOn(node, obj) {
+				candidates = append(candidates, node)
+			}
+		}
+
+		return true
+	})
+
+	for _, candidate := range candidates {
+		if !callFuns[candidate] {
+			return true
+		}
+	}
+
+	return false
+}
+
+// selectsPointerMethodOn reports whether sel selects a pointer-receiver method whose receiver
+// operand is obj's own storage — the bare ident, or a non-indirect value-field chain rooted at it
+// (selectorChainRootsAtIdent, the same root walk the explicit-`&` arm uses). Call position is NOT
+// considered here; pointerMethodValueAddressTaken filters that.
+func (v *Visitor) selectsPointerMethodOn(sel *ast.SelectorExpr, obj types.Object) bool {
+	base := ast.Unparen(sel.X)
+
+	if ident, ok := base.(*ast.Ident); ok {
+		if v.info.ObjectOf(ident) != obj {
+			return false
+		}
+	} else if !selectorChainRootsAtIdent(base, obj, v.info) {
+		return false
+	}
+
+	// A pointer-typed receiver operand hands over the pointer VALUE — no address of obj is taken.
+	if baseType := v.info.TypeOf(base); baseType == nil {
+		return false
+	} else if _, isPointer := baseType.Underlying().(*types.Pointer); isPointer {
+		return false
+	}
+
+	selection, ok := v.info.Selections[sel]
+
+	if !ok || selection.Kind() != types.MethodVal {
+		return false
+	}
+
+	sig, ok := selection.Obj().Type().(*types.Signature)
+
+	if !ok || sig.Recv() == nil {
+		return false
+	}
+
+	_, isPointerRecv := sig.Recv().Type().(*types.Pointer)
+
+	return isPointerRecv
 }
 
 // argRootIsIdent reports whether passing arg to a pointer parameter hands the callee a

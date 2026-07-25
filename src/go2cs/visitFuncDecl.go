@@ -1662,7 +1662,7 @@ func (v *Visitor) paramNeedsHeapBox(param *types.Var) bool {
 	for _, field := range funcDecl.Type.Params.List {
 		for _, ident := range field.Names {
 			if v.info.ObjectOf(ident) == param {
-				return v.bodyCallsCaptureModeMethodOn(ident, funcDecl.Body) || v.isLambdaBoxRefVar(param)
+				return v.paramBoxReasonHolds(ident, param, funcDecl.Body)
 			}
 		}
 	}
@@ -1688,7 +1688,7 @@ func (v *Visitor) paramNeedsHeapBox(param *types.Var) bool {
 
 			for _, ident := range field.Names {
 				if v.info.ObjectOf(ident) == param {
-					needsBox = v.bodyCallsCaptureModeMethodOn(ident, funcLit.Body) || v.isLambdaBoxRefVar(param)
+					needsBox = v.paramBoxReasonHolds(ident, param, funcLit.Body)
 					return false
 				}
 			}

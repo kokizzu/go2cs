@@ -674,6 +674,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckMethodValueReassignCapture() => CheckTarget("MethodValueReassignCapture");
 
     [TestMethod]
+    public void CheckMethodValueReceiverEscape() => CheckTarget("MethodValueReceiverEscape");
+
+    [TestMethod]
     public void CheckMinMaxBuiltin() => CheckTarget("MinMaxBuiltin");
 
     [TestMethod]

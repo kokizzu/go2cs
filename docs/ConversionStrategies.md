@@ -773,6 +773,24 @@ assignment time), rather than capturing by reference. Method *expressions* (`(*T
 pointer-receiver method values, and conversions to named func types each have a tailored emission (a cast to
 the concrete delegate, a box-bound method group, or `new NamedDelegate(...)`).
 
+A **pointer**-receiver method value is the mirror image and needs the opposite treatment: `c.dec` is Go
+shorthand for `(&c).dec`, so it must alias the receiver, not copy it. That implicit address-of heap-promotes
+the local exactly like an explicit `&c` would — the escape analysis treats the two identically, and the
+method group binds to the box:
+
+```go
+c := counter{n: 100}
+applyInt(c.dec, 5, 7)        // (&c).dec — c.n is 88 afterwards
+```
+```csharp
+ref var c = ref heap<counter>(out var Ꮡc);
+c = new counter(n: 100);
+applyInt(Ꮡc.dec, 5, 7);      // Ꮡc aliases c
+```
+
+A direct call `c.dec()` is *not* a method value — it binds C#'s `this ref` extension receiver against the
+variable and needs no box.
+
 **Full detail:** [Reference → Delegates to Value Receiver Instances](ConversionStrategies-Reference.md#delegates-to-value-receiver-instances) —
 method expressions (local & foreign), bound/interface/pointer/value-receiver method values, the go-statement
 sibling, named and generic func-type conversions.

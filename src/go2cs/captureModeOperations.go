@@ -1052,6 +1052,19 @@ func (v *Visitor) exprIsDerefAliasedPointer(expr ast.Expr) bool {
 	return false
 }
 
+// paramBoxReasonHolds reports whether the entry-time heap box a VALUE parameter was marked for is
+// warranted against the given body: a capture-mode pointer-receiver CALL on it, a pointer-receiver
+// METHOD VALUE of it (the implicit `(&p).M`), or a by-box lambda capture. The analysis arm
+// (markCaptureModeBoxedParams) and every emitter that materializes the box must agree on this exact
+// predicate — visitFuncDecl's parameter preamble, its processPotentialCapture box-ref arm, and
+// convFuncLit's literal prologue all read it. A reason recorded by analysis but missing here leaves
+// body uses referencing a box (`Ꮡp`) that was never declared: CS0103.
+func (v *Visitor) paramBoxReasonHolds(ident *ast.Ident, param types.Object, body ast.Node) bool {
+	return v.bodyCallsCaptureModeMethodOn(ident, body) ||
+		v.pointerMethodValueAddressTaken(param, body) ||
+		v.isLambdaBoxRefVar(param)
+}
+
 // bodyCallsCaptureModeMethodOn reports whether the body calls a capture-mode method with
 // the given identifier as the (value) receiver — meaning that identifier must be boxed.
 func (v *Visitor) bodyCallsCaptureModeMethodOn(ident *ast.Ident, body ast.Node) bool {

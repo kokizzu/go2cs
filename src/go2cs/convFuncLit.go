@@ -792,7 +792,7 @@ func (v *Visitor) funcLitHeapBoxParamIdents(funcLit *ast.FuncLit) []*ast.Ident {
 				continue
 			}
 
-			if v.identHasHeapBox(obj, obj.Type()) && (v.bodyCallsCaptureModeMethodOn(ident, funcLit.Body) || v.isLambdaBoxRefVar(obj)) {
+			if v.identHasHeapBox(obj, obj.Type()) && v.paramBoxReasonHolds(ident, obj, funcLit.Body) {
 				boxed = append(boxed, ident)
 			}
 		}
