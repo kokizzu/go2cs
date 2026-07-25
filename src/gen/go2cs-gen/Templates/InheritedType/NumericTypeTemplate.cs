@@ -26,29 +26,46 @@ internal static class NumericTypeTemplate
                     };
                 }
                 
-                public override int GetHashCode() => m_value.GetHashCode();
-                
-                public static bool operator <({{targetTypeName}} left, {{targetTypeName}} right) => left.m_value < right.m_value;
-                
-                public static bool operator <=({{targetTypeName}} left, {{targetTypeName}} right) => left.m_value <= right.m_value;
-                
-                public static bool operator >({{targetTypeName}} left, {{targetTypeName}} right) => left.m_value > right.m_value;
-                
-                public static bool operator >=({{targetTypeName}} left, {{targetTypeName}} right) => left.m_value >= right.m_value;
-                
+                public override int GetHashCode() => m_value.GetHashCode();{{GetComparisonOperators(typeName, targetTypeName)}}
+
                 public static {{targetTypeName}} operator +({{targetTypeName}} left, {{targetTypeName}} right) => ({{targetTypeName}})(left.m_value + right.m_value);
                 
                 public static {{targetTypeName}} operator -({{targetTypeName}} left, {{targetTypeName}} right) => ({{targetTypeName}})(left.m_value - right.m_value);{{GetUnaryNegationOperator(typeName, targetTypeName)}}
                 
                 public static {{targetTypeName}} operator *({{targetTypeName}} left, {{targetTypeName}} right) => ({{targetTypeName}})(left.m_value * right.m_value);
                 
-                public static {{targetTypeName}} operator /({{targetTypeName}} left, {{targetTypeName}} right) => ({{targetTypeName}})(left.m_value / right.m_value);
-                
-                public static {{targetTypeName}} operator %({{targetTypeName}} left, {{targetTypeName}} right) => ({{targetTypeName}})(left.m_value % right.m_value);
+                public static {{targetTypeName}} operator /({{targetTypeName}} left, {{targetTypeName}} right) => ({{targetTypeName}})(left.m_value / right.m_value);{{GetModulusOperator(typeName, targetTypeName)}}
 
                 public static {{targetTypeName}} operator ++({{targetTypeName}} value) => ({{targetTypeName}})(value.m_value + ({{typeName}})1);
 
                 public static {{targetTypeName}} operator --({{targetTypeName}} value) => ({{targetTypeName}})(value.m_value - ({{typeName}})1);{{GetComplementOperator(typeName, targetTypeName)}}
+        """;
+
+    // Go defines the ordered comparisons on every numeric kind EXCEPT complex (the spec limits
+    // complex types to == / !=), and C#'s complex representations have no <//<=/>/>= either —
+    // emitting them for a named complex type is CS0019 ×4 (testing/quick's TestComplex64Alias).
+    // The IComparisonOperators interface declaration is gated the same way (InheritedTypeTemplate).
+    private static string GetComparisonOperators(string typeName, string targetTypeName) => typeName.StartsWith("complex") ? "" :
+       $"""
+
+
+                public static bool operator <({targetTypeName} left, {targetTypeName} right) => left.m_value < right.m_value;
+
+                public static bool operator <=({targetTypeName} left, {targetTypeName} right) => left.m_value <= right.m_value;
+
+                public static bool operator >({targetTypeName} left, {targetTypeName} right) => left.m_value > right.m_value;
+
+                public static bool operator >=({targetTypeName} left, {targetTypeName} right) => left.m_value >= right.m_value;
+        """;
+
+    // Go defines % on integers only, but C# floats carry a native % — keep the float emission
+    // (inert for converted Go, harmless) and gate only complex, where C# has no % and the
+    // emission is CS0019 (same kind-gate shape as GetComplementOperator below).
+    private static string GetModulusOperator(string typeName, string targetTypeName) => typeName.StartsWith("complex") ? "" :
+       $"""
+
+
+                public static {targetTypeName} operator %({targetTypeName} left, {targetTypeName} right) => ({targetTypeName})(left.m_value % right.m_value);
         """;
 
     // Bitwise complement keeps the WRAPPER type (Go `^T(0)` all-ones idiom - os exec_windows'

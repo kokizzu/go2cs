@@ -8,6 +8,12 @@ import "fmt"
 type idx uint
 type sidx int // signed named numeric (→ C# nint)
 
+// cx is a defined type over complex128. Go defines ==/!=, +/-/*//, unary -, and ++/-- on complex
+// kinds but NO ordered comparisons and NO % — the generated C# wrapper must emit exactly that
+// operator set (emitting </<=/>/>=/% for a named complex was CS0019 ×10, testing/quick's
+// TestComplex64Alias/TestComplex128Alias).
+type cx complex128
+
 func main() {
 	// ++ on an unsigned named numeric, observed via a plain iteration counter (avoids int(named)).
 	n := 0
@@ -29,4 +35,14 @@ func main() {
 	d++
 	d--
 	fmt.Println(d == sidx(4)) // true
+
+	// The full Go operator set for a named complex: ++/--, arithmetic, equality. (Asserted by
+	// comparison, not printed — the baseline stub fmt renders a named complex via ToString, a
+	// documented proxy gap; the operator-set emission is what this guards.)
+	c := cx(complex(1, 2))
+	c++
+	c--
+	e := c*cx(complex(2, 0)) + cx(complex(0, 1))
+	fmt.Println(c == cx(complex(1, 2)))                // true
+	fmt.Println(e/cx(complex(2, 0)) == cx(complex(1, 2.5))) // true
 }

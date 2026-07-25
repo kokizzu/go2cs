@@ -65,7 +65,12 @@ internal class InheritedTypeTemplate : TemplateBase
     {
         get
         {
-            string interfaces = $" : global::System.IEquatable<{TargetTypeName}>, global::System.Numerics.IAdditionOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.ISubtractionOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.IMultiplyOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.IDivisionOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.IEqualityOperators<{TargetTypeName}, {TargetTypeName}, bool>, global::System.Numerics.IComparisonOperators<{TargetTypeName}, {TargetTypeName}, bool>, global::System.Numerics.IIncrementOperators<{TargetTypeName}>, global::System.Numerics.IDecrementOperators<{TargetTypeName}>, global::System.Numerics.IUnaryNegationOperators<{TargetTypeName}, {TargetTypeName}>";
+            // Complex kinds have no ordered comparisons (Go spec: == / != only; C# complex has no
+            // <//<=/>/>= either) — the operators are gated in NumericTypeTemplate, so declaring
+            // IComparisonOperators here would be CS0535.
+            string comparisonInterface = TypeName.StartsWith("complex") ? "" : $" global::System.Numerics.IComparisonOperators<{TargetTypeName}, {TargetTypeName}, bool>,";
+
+            string interfaces = $" : global::System.IEquatable<{TargetTypeName}>, global::System.Numerics.IAdditionOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.ISubtractionOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.IMultiplyOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.IDivisionOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.IEqualityOperators<{TargetTypeName}, {TargetTypeName}, bool>,{comparisonInterface} global::System.Numerics.IIncrementOperators<{TargetTypeName}>, global::System.Numerics.IDecrementOperators<{TargetTypeName}>, global::System.Numerics.IUnaryNegationOperators<{TargetTypeName}, {TargetTypeName}>";
 
             if (IsIntegerNumeric)
                 interfaces += $", global::System.Numerics.IModulusOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.IBitwiseOperators<{TargetTypeName}, {TargetTypeName}, {TargetTypeName}>, global::System.Numerics.IShiftOperators<{TargetTypeName}, int, {TargetTypeName}>";
