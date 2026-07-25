@@ -20,6 +20,7 @@ where the two runtimes should be close. Results below give the "common expected"
 | **MatMul** | 256×256 `float64` matrix multiply ×4: floating-point throughput, nested slice-of-slice access. |
 | **String** | 10M iterations of byte-slice append → `string` conversion, indexing, concatenation (`@string` emulation). |
 | **StringView** | 20M iterations of keyword checks `string(buf) == "null"/"true"/"false"` over a fixed buffer — the idiom the converter's stack-string (`sstring`) emission optimizes: a zero-copy view compared against a `u8` literal span, no per-comparison allocation. |
+| **StringMatch** | 20M iterations of literal-string hot paths: switch-on-string dispatch, `strings.HasPrefix` with a literal prefix, literal returns, and literal map-key counters — the shapes where converted C# historically allocated a fresh `@string` per evaluation while Go allocates nothing (literals live in RODATA). The instrument for the tiered literal optimizations (span comparison operators / `u8` casts / hoisted literals). |
 | **Map** | 2M inserts + 2M comma-ok lookups + 1M deletes on `map[int]int` (`map<K,V>` emulation). |
 | **Sort** | `sort.Ints` on 2M deterministic pseudo-random ints (`sort.Interface` dispatch through the runtime's reflection-bound `Interface<T>`). |
 | **Channel** | 1M ints producer→consumer through a buffered channel with one goroutine (`channel<T>` + goroutine scheduling emulation). |

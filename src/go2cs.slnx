@@ -584,6 +584,7 @@
     <Project Path="Tests/Performance/PerfSort/PerfSort.csproj" />
     <Project Path="Tests/Performance/PerfStartup/PerfStartup.csproj" />
     <Project Path="Tests/Performance/PerfString/PerfString.csproj" />
+    <Project Path="Tests/Performance/PerfStringMatch/PerfStringMatch.csproj" />
     <Project Path="Tests/Performance/PerfStringView/PerfStringView.csproj" />
   </Folder>
   <Folder Name="/utilities/">
