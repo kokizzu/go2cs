@@ -1193,6 +1193,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckStructPromotionWithInterface() => CheckTarget("StructPromotionWithInterface");
 
     [TestMethod]
+    public void CheckStructuralAssertFailSoftMiss() => CheckTarget("StructuralAssertFailSoftMiss");
+
+    [TestMethod]
     public void CheckStructWithDelegate() => CheckTarget("StructWithDelegate");
 
     [TestMethod]

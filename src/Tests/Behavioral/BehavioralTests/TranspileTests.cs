@@ -1270,6 +1270,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckStructPromotionWithInterface() => CheckTarget("StructPromotionWithInterface");
 
     [TestMethod]
+    public void CheckStructuralAssertFailSoftMiss() => CheckTarget("StructuralAssertFailSoftMiss");
+
+    [TestMethod]
     public void CheckStructWithDelegate() => CheckTarget("StructWithDelegate");
 
     [TestMethod]

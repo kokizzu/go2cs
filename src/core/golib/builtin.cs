@@ -1633,14 +1633,7 @@ public static class builtin
             MethodInfo? pointerMethod = GetInterfaceConversionMethod(typeOfT, s_asPtrTParams);
 
             if (pointerMethod is not null)
-            {
-            #pragma warning disable IL2060
-                MethodInfo closedPointerMethod = pointerMethod.MakeGenericMethod(structuralType.GetGenericArguments()[0]);
-            #pragma warning restore IL2060
-
-                value = (T)closedPointerMethod.Invoke(null, [structuralTarget])!;
-                return true;
-            }
+                return TryConstructInterfaceWrapper(pointerMethod, structuralType.GetGenericArguments()[0], structuralTarget, out value);
         }
 
         // Handle conversion of anonymous dynamically declared interfaces - unfortunately, you can't
@@ -1658,12 +1651,49 @@ public static class builtin
             return false;
         }
 
-    #pragma warning disable IL2060
-        MethodInfo genericMethod = method.MakeGenericMethod(structuralType);
-    #pragma warning restore IL2060
+        return TryConstructInterfaceWrapper(method, structuralType, structuralTarget, out value);
+    }
 
-        value = (T)genericMethod.Invoke(null, [structuralTarget])!;
-        return true;
+    /// <summary>
+    /// Closes an interface's generated duck-typing conversion method over <paramref name="closeOver"/> and
+    /// invokes it to build the wrapper standing in for <paramref name="dynamicValue"/>.
+    /// </summary>
+    /// <remarks>
+    /// Construction is FAIL-SOFT: a MISS is normal control flow at every emitted assertion and
+    /// type-switch site, so a wrapper that cannot be built must answer "no" rather than escape as a
+    /// crash. That is not hypothetical — the structural probe is deliberately NAME-ONLY for an
+    /// OPEN-GENERIC receiver method, whose signature carries the receiver's type parameters and so
+    /// cannot be compared against the interface's concrete one
+    /// (<see cref="TypeExtensions.StructurallyImplements"/>). A Go generic <c>box[int]</c> whose
+    /// <c>Get() T</c> returns an <c>int</c> therefore matches <c>interface{ Get() string }</c>; the
+    /// wrapper's static initializer then finds no bindable extension overload and throws
+    /// <see cref="NotImplementedException"/>, which reflection re-wraps as
+    /// <see cref="TargetInvocationException"/>. Go answers <c>ok=false</c> for that assertion, and so
+    /// does this. Every remaining case is a genuine binding/closure failure of the SAME kind: a
+    /// constraint violation from <c>MakeGenericMethod</c>, an already-faulted type initializer, a
+    /// conversion whose result is not the asserted interface, or missing dynamic-code support.
+    /// </remarks>
+    private static bool TryConstructInterfaceWrapper<T>(MethodInfo conversion, Type closeOver, object dynamicValue, out T value)
+    {
+        try
+        {
+        #pragma warning disable IL2060
+            MethodInfo closedConversion = conversion.MakeGenericMethod(closeOver);
+        #pragma warning restore IL2060
+
+            if (closedConversion.Invoke(null, [dynamicValue]) is T wrapper)
+            {
+                value = wrapper;
+                return true;
+            }
+        }
+        catch (Exception ex) when (ex is TargetInvocationException or TypeInitializationException or ArgumentException or NotSupportedException or MemberAccessException)
+        {
+            // A wrapper that cannot be constructed is a miss, per the remarks above.
+        }
+
+        value = default!;
+        return false;
     }
 
     // Resolves an interface's static duck-typing conversion method: generated dyn interfaces
