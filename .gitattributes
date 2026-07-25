@@ -10,3 +10,4 @@ src/Tests/Behavioral/SortArrayType/*.cs        -text
 src/Tests/Behavioral/SortArrayType/*.cs.target -text
 src/Tests/Behavioral/StdLibInternalAbi/*.cs        -text
 src/Tests/Behavioral/StdLibInternalAbi/*.cs.target -text
+src/Tests/Behavioral/UntypedConstWideMask/main.cs -text
