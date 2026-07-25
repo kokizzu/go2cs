@@ -21,6 +21,18 @@ namespace go;
 /// The built-in error interface type is the conventional interface for representing an
 /// error condition, with the nil value representing no error.
 /// </summary>
+/// <remarks>
+/// The <see cref="GoInterfaceShellAttribute"/> stamp joins <c>error</c> to the ONE runtime
+/// duck-typing mechanism every converted interface uses (see <see cref="AdapterBinder"/>):
+/// <see cref="error{T}"/> IS the delegate-bound generic shell — it always was, it simply used to be
+/// reached by reflecting for the static <c>As&lt;T&gt;</c> helpers below and closing them with
+/// <c>MakeGenericMethod</c>. The attribute replaces that lookup, which is what allows the reflective
+/// closure to be deleted from <c>builtin.TryTypeAssert</c>. No object shell is declared: the
+/// reflective tier would have to reproduce <see cref="error{T}"/>'s <c>%v</c>/<c>%T</c> formatting
+/// contract, so a VALUE-typed error still binds through the generic shell (AOT-graceful, exactly as
+/// before).
+/// </remarks>
+[GoInterfaceShell(typeof(error<>), null, nameof(Error))]
 public interface error // : IFormattable
 {
     /// <summary>
@@ -28,7 +40,7 @@ public interface error // : IFormattable
     /// </summary>
     @string Error();
 
-    public static error As<T>(in T target)
+    public static error As<T>(T target)
     {
         return new error<T>(target!);
     }
@@ -36,11 +48,6 @@ public interface error // : IFormattable
     public static error As<T>(ж<T> target_ptr)
     {
         return new error<T>(target_ptr);
-    }
-
-    public static error? As(object target)
-    {
-        return typeof(error<>).CreateInterfaceHandler<error>(target);
     }
 }
 
@@ -68,7 +75,10 @@ public class error<T> : error, IErrorTarget
 
     object? IErrorTarget.TargetObject => Target;
 
-    public error(in T target)
+    // Declared BY VALUE, not `in T`: an `in` parameter is `T&` in metadata, and AdapterBinder locates
+    // a shell's constructor by exact parameter type (GetConstructor([valueType])) — a by-ref
+    // constructor is invisible to it, so a value-typed error could not bind.
+    public error(T target)
     {
         m_target = target;
     }

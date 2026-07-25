@@ -23,19 +23,23 @@ public static partial class io_package
     /// <summary>
     /// The Reader interface type wraps the basic Read method.
     /// </summary>
+    /// <remarks>
+    /// <see cref="Reader{T}"/> IS this interface's delegate-bound runtime duck-typing shell; the
+    /// <see cref="GoInterfaceShellAttribute"/> stamp is how <see cref="AdapterBinder"/> now finds it,
+    /// replacing the reflective <c>As&lt;T&gt;</c> lookup <c>builtin.TryTypeAssert</c> used to close
+    /// with <c>MakeGenericMethod</c>. No object shell is possible: <c>Read</c> takes its buffer
+    /// <c>in</c>, and a by-ref parameter cannot be forwarded through a reflective invoker.
+    /// </remarks>
+    [GoInterfaceShell(typeof(Reader<>), null, nameof(Reader.Read))]
     public partial interface Reader : IFormattable
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerNonUserCode]
-        public static Reader As<T>(ref T target) =>
+        public static Reader As<T>(T target) =>
             (Reader<T>)target!;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerNonUserCode]
         public static Reader As<T>(ж<T> target_ptr) =>
             (Reader<T>)target_ptr;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerNonUserCode]
-        public static Reader? As(object target) =>
-            typeof(Reader<>).CreateInterfaceHandler<Reader>(target);
     }
 
     public class Reader<T> : Reader
@@ -55,7 +59,9 @@ public static partial class io_package
             }
         }
 
-        public Reader(in T target) => m_target = target;
+        // By value, not `in T`: AdapterBinder locates a shell's constructor by exact parameter type,
+        // and an `in` parameter is `T&` in metadata — invisible to that lookup.
+        public Reader(T target) => m_target = target;
 
         public Reader(ж<T> target_ptr)
         {

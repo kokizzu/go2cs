@@ -11,6 +11,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using GoTypeExtensions = go.golib.TypeExtensions;
 using static go2cs.Symbols;
 
@@ -91,7 +92,8 @@ public static class AdapterBinder
     // forwarding a call first, whether every interface method bound for the receiver form it is
     // about to use. Reading either one runs the shell's static binder, so a binding failure surfaces
     // here (as a TypeInitializationException the caller catches) instead of as a
-    // NullReferenceException on the first forwarded call.
+    // NullReferenceException on the first forwarded call. OPTIONAL: a hand-written shell that
+    // predates the flags signals the same failure by throwing from its static binder.
     private const string BoundByPtrField = $"{TempVarMarker}BoundByPtr";
     private const string BoundByValField = $"{TempVarMarker}BoundByVal";
 
@@ -207,11 +209,22 @@ public static class AdapterBinder
         try
         {
             Type closed = spec.GenericShell.MakeGenericType(element);
+            FieldInfo? boundFlag = closed.GetField(isPointer ? BoundByPtrField : BoundByValField, ShellStateFlags);
 
-            // Reading the flag runs the shell's static binder; false means at least one interface
-            // method has no receiver method for this form, so the shell would null-dispatch.
-            if (closed.GetField(isPointer ? BoundByPtrField : BoundByValField, ShellStateFlags)?.GetValue(null) is not true)
+            if (boundFlag is null)
+            {
+                // A HAND-WRITTEN shell (golib's error, the baseline stubs' fmt.Stringer and
+                // io.Reader) carries no bound-flags: it signals an unbindable pair the older way, by
+                // throwing from its static binder. Force that binder now so the failure is decided —
+                // and memoized — HERE, rather than being rediscovered on every construction.
+                RuntimeHelpers.RunClassConstructor(closed.TypeHandle);
+            }
+            else if (boundFlag.GetValue(null) is not true)
+            {
+                // Reading the flag runs the generated shell's static binder; false means at least one
+                // interface method has no receiver method for this form, so it would null-dispatch.
                 return null;
+            }
 
             ConstructorInfo? ctor = closed.GetConstructor(CtorFlags, null, [valueType], null);
 

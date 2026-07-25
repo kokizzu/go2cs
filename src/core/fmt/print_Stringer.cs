@@ -24,19 +24,23 @@ public static partial class fmt_package
     /// The Stringer interface type is the conventional interface for representing
     /// formatted string output.
     /// </summary>
+    /// <remarks>
+    /// <see cref="Stringer{T}"/> IS this interface's delegate-bound runtime duck-typing shell; the
+    /// <see cref="GoInterfaceShellAttribute"/> stamp is how <see cref="AdapterBinder"/> now finds it,
+    /// replacing the reflective <c>As&lt;T&gt;</c> lookup <c>builtin.TryTypeAssert</c> used to close
+    /// with <c>MakeGenericMethod</c>. No object shell: the reflective tier would have to reproduce
+    /// this class's <c>%v</c>/<c>%T</c> formatting contract.
+    /// </remarks>
+    [GoInterfaceShell(typeof(Stringer<>), null, nameof(Stringer.String))]
     public partial interface Stringer //: IFormattable
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerNonUserCode]
-        public static Stringer As<T>(in T target) =>
+        public static Stringer As<T>(T target) =>
             (Stringer<T>)target!;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerNonUserCode]
         public static Stringer As<T>(ж<T> target_ptr) =>
             (Stringer<T>)target_ptr;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerNonUserCode]
-        public static Stringer? As(object target) =>
-            typeof(Stringer<>).CreateInterfaceHandler<Stringer>(target);
     }
 
     public class Stringer<T> : Stringer
@@ -56,7 +60,9 @@ public static partial class fmt_package
             }
         }
 
-        public Stringer(in T target) => m_target = target;
+        // By value, not `in T`: AdapterBinder locates a shell's constructor by exact parameter type,
+        // and an `in` parameter is `T&` in metadata — invisible to that lookup.
+        public Stringer(T target) => m_target = target;
 
         public Stringer(ж<T> target_ptr)
         {

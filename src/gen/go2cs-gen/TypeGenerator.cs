@@ -297,7 +297,6 @@ public class TypeGenerator : ISourceGenerator
 
                     case InterfaceDeclarationSyntax interfaceDeclaration:
                         string[]? operatorConstraints = null;
-                        bool dynamic = false;
 
                         if (!string.IsNullOrWhiteSpace(typeDefinition))
                         {
@@ -307,15 +306,8 @@ public class TypeGenerator : ISourceGenerator
                             {
                                 string[] parts = key.Split(["="], StringSplitOptions.RemoveEmptyEntries);
 
-                                if (parts.Length > 1)
-                                {
-                                    if (parts[0].Trim().Equals("operators", StringComparison.OrdinalIgnoreCase))
-                                        operatorConstraints = parts[1].Split([','], StringSplitOptions.RemoveEmptyEntries).Select(part => part.Trim()).ToArray();
-                                }
-                                else if (key.Trim().Equals("dyn", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    dynamic = true;
-                                }
+                                if (parts.Length > 1 && parts[0].Trim().Equals("operators", StringComparison.OrdinalIgnoreCase))
+                                    operatorConstraints = parts[1].Split([','], StringSplitOptions.RemoveEmptyEntries).Select(part => part.Trim()).ToArray();
                             }
                         }
 
@@ -325,10 +317,17 @@ public class TypeGenerator : ISourceGenerator
                         // and a GENERIC one has no single runtime instantiation to bind against, so
                         // neither has a Go method set a runtime shell could satisfy — and an interface
                         // with no methods is satisfied by every value nominally already.
+                        //
+                        // The "dyn" key is NOT read here: an anonymous interface takes exactly the same
+                        // shells a named one does. It once selected a second renderer (the ᴛAs
+                        // conversion methods and their Δ wrapper); that renderer was retired when dyn
+                        // moved onto the shells, so the only remaining reader of "dyn" is the runtime's
+                        // Type.IsDynamicType (struct-to-struct dynamic conversion), which reads the
+                        // [GoType] attribute directly.
                         bool shellEligible = operatorConstraints is null &&
                             interfaceDeclaration.TypeParameterList is null or { Parameters.Count: 0 };
 
-                        MethodInfo[] interfaceMethods = dynamic || shellEligible ?
+                        MethodInfo[] interfaceMethods = shellEligible ?
                             interfaceDeclaration.GetInterfaceMethods(context) :
                             [];
 
@@ -340,13 +339,10 @@ public class TypeGenerator : ISourceGenerator
                             InterfaceName = identifier,
                             OperatorConstraints = operatorConstraints ?? [],
                             Methods = interfaceMethods,
-                            Dynamic = dynamic,
-                            // A dyn interface already carries the ᴛAs duck-typing machinery; migrating
-                            // it onto the shells is a separate, independently gated step. A member
-                            // declared with a ref-kind modifier cannot be re-declared faithfully from
-                            // the recorded parameter types, so an interface carrying one gets no shell
-                            // rather than one that fails to implement it (CS0535).
-                            EmitShells = !dynamic && shellEligible && interfaceMethods.Length > 0 &&
+                            // A member declared with a ref-kind modifier cannot be re-declared
+                            // faithfully from the recorded parameter types, so an interface carrying
+                            // one gets no shell rather than one that fails to implement it (CS0535).
+                            EmitShells = shellEligible && interfaceMethods.Length > 0 &&
                                 interfaceMethods.All(method => method.IsSignatureRenderable),
                             UsingStatements = usingStatements
                         }

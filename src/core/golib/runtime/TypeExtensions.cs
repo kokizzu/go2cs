@@ -717,30 +717,6 @@ public static class TypeExtensions
     }
 
     /// <summary>
-    /// Create an interface handler for <typeparamref name="T"/> interface from
-    /// an object-based target.
-    /// </summary>
-    /// <param name="handlerType">Generic handler type.</param>
-    /// <param name="target">Target value for interface handler.</param>
-    /// <returns>Interface handler for <typeparamref name="T"/> interface</returns>
-    /// <typeparam name="T">Target interface.</typeparam>
-    public static T? CreateInterfaceHandler<T>(this Type handlerType, object? target) where T : class
-    {
-        if (target is null)
-            return null;
-
-        try
-        {
-            Type constructedType = handlerType.MakeGenericType(target.GetType());
-            return Activator.CreateInstance(constructedType, target) as T;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
     /// Determines if the specified <paramref name="valueType"/> is a dynamic type.
     /// </summary>
     /// <param name="valueType">Type to check.</param>

@@ -1,4 +1,4 @@
-// builtin.cs - Gbtc
+﻿// builtin.cs - Gbtc
 // Copyright © 2026 The go2cs Authors. All rights reserved.
 //
 // Use of this source code is governed by an MIT-style license
@@ -31,8 +31,6 @@ public static class builtin
     public const int StackAllocThreshold = 1024; // 1KB
 
     private static readonly ThreadLocal<bool> s_fallthrough = new();
-    private static readonly Type[] s_asTParams = [Type.MakeGenericMethodParameter(0).MakeByRefType()];
-    private static readonly Type[] s_asPtrTParams = [typeof(ж<>).MakeGenericType(Type.MakeGenericMethodParameter(0))];
 
     [ModuleInitializer]
     internal static void InitializeGoLib()
@@ -1615,12 +1613,11 @@ public static class builtin
         // since no dispatchable receiver exists to build a wrapper over.
         object structuralTarget = target is IжAdapter { Box: not null } boxAdapter ? boxAdapter.Box : target;
 
-        // A (dynamic type, interface) pair the runtime-shell tier at the bottom of this method has
-        // already decided — positively or negatively — answers from the memo, ahead of the structural
-        // gate and of shell construction (which costs ~1 µs; fmt probes three interfaces per formatted
-        // value). Only NAMED interfaces reaching that tier are ever recorded here, so a hit can never
-        // pre-empt the anonymous-interface ᴛAs path below.
-        if (typeOfT.IsInterface && AdapterRegistry.TryGetShellFactory(structuralTarget.GetType(), typeOfT, out Func<object, object>? shellFactory))
+        // A (dynamic type, interface) pair the runtime-shell tier below has already decided —
+        // positively or negatively — answers from the memo, ahead of the structural gate and of shell
+        // construction (which costs ~1 µs; fmt probes three interfaces per formatted value). The
+        // per-interface cache is a projection of AdapterRegistry, which remains the durable record.
+        if (typeOfT.IsInterface && ShellCache<T>.TryGetFactory(structuralTarget.GetType(), out Func<object, object>? shellFactory))
         {
             if (shellFactory is not null && shellFactory(structuralTarget) is T memoizedShell)
             {
@@ -1638,101 +1635,47 @@ public static class builtin
             return false;
         }
 
-        // A receiver box closes the Δ-wrapper over its POINTEE via the generated ж<T> ᴛAs
-        // overload: the wrapper then dispatches pointer-receiver methods on the box itself and
-        // value-receiver methods on a dereferenced copy, matching Go's *T method set. Closing
-        // over the box type instead (Δ<ж<X>>) fails the wrapper's static initializer whenever
-        // the interface has a value-receiver method — those have no ж<X> extension overload.
-        Type structuralType = structuralTarget.GetType();
-
-        if (structuralType.IsGenericType && structuralType.GetGenericTypeDefinition() == typeof(ж<>))
+        // The structural probe matched but no compile-time adapter exists for the pair. For a NAMED
+        // interface that is the case the GoImplement recorders CANNOT cover — a dynamic type in an
+        // assembly converted after the interface's own (io/fs before os) — and for an ANONYMOUS one
+        // it is the normal case, since a Go type never nominally implements an interface literal.
+        // Both are answered the same way: build the implementation at run time from the shells
+        // go2cs-gen emitted beside the interface. This tier fires only where the tiers above answered
+        // MISS, so it cannot regress an assertion that already resolved.
+        if (AdapterBinder.TryCreate(structuralTarget, typeOfT, out object? shell) && shell is T shellValue)
         {
-            MethodInfo? pointerMethod = GetInterfaceConversionMethod(typeOfT, s_asPtrTParams);
-
-            if (pointerMethod is not null)
-                return TryConstructInterfaceWrapper(pointerMethod, structuralType.GetGenericArguments()[0], structuralTarget, out value);
+            ShellCache<T>.Publish(structuralTarget.GetType());
+            value = shellValue;
+            return true;
         }
 
-        // Handle conversion of anonymous dynamically declared interfaces - unfortunately, you can't
-        // define an interface that describes an abstract method implemented by another interface,
-        // so we are forced to use reflection to find the static interface conversion method...
-        MethodInfo? method = GetInterfaceConversionMethod(typeOfT, s_asTParams);
-
-        // A NAMED interface has no generated runtime conversion method — its implementations
-        // resolve nominally (case T above) or through the adapter registry. Reaching here means the
-        // structural probe matched but no compile-time adapter was ever generated for the pair, which
-        // is exactly the case the recorders CANNOT cover: a dynamic type in an assembly converted
-        // after the interface's own (io/fs before os). Build the implementation at run time from the
-        // shells go2cs-gen emitted beside the interface. Fires only where this method previously
-        // answered MISS, so the tier cannot regress an assertion that already resolved.
-        if (method == null)
-        {
-            if (AdapterBinder.TryCreate(structuralTarget, typeOfT, out object? shell) && shell is T shellValue)
-            {
-                value = shellValue;
-                return true;
-            }
-
-            value = default!;
-            return false;
-        }
-
-        return TryConstructInterfaceWrapper(method, structuralType, structuralTarget, out value);
-    }
-
-    /// <summary>
-    /// Closes an interface's generated duck-typing conversion method over <paramref name="closeOver"/> and
-    /// invokes it to build the wrapper standing in for <paramref name="dynamicValue"/>.
-    /// </summary>
-    /// <remarks>
-    /// Construction is FAIL-SOFT: a MISS is normal control flow at every emitted assertion and
-    /// type-switch site, so a wrapper that cannot be built must answer "no" rather than escape as a
-    /// crash. That is not hypothetical — the structural probe is deliberately NAME-ONLY for an
-    /// OPEN-GENERIC receiver method, whose signature carries the receiver's type parameters and so
-    /// cannot be compared against the interface's concrete one
-    /// (<see cref="TypeExtensions.StructurallyImplements"/>). A Go generic <c>box[int]</c> whose
-    /// <c>Get() T</c> returns an <c>int</c> therefore matches <c>interface{ Get() string }</c>; the
-    /// wrapper's static initializer then finds no bindable extension overload and throws
-    /// <see cref="NotImplementedException"/>, which reflection re-wraps as
-    /// <see cref="TargetInvocationException"/>. Go answers <c>ok=false</c> for that assertion, and so
-    /// does this. Every remaining case is a genuine binding/closure failure of the SAME kind: a
-    /// constraint violation from <c>MakeGenericMethod</c>, an already-faulted type initializer, a
-    /// conversion whose result is not the asserted interface, or missing dynamic-code support.
-    /// </remarks>
-    private static bool TryConstructInterfaceWrapper<T>(MethodInfo conversion, Type closeOver, object dynamicValue, out T value)
-    {
-        try
-        {
-        #pragma warning disable IL2060
-            MethodInfo closedConversion = conversion.MakeGenericMethod(closeOver);
-        #pragma warning restore IL2060
-
-            if (closedConversion.Invoke(null, [dynamicValue]) is T wrapper)
-            {
-                value = wrapper;
-                return true;
-            }
-        }
-        catch (Exception ex) when (ex is TargetInvocationException or TypeInitializationException or ArgumentException or NotSupportedException or MemberAccessException)
-        {
-            // A wrapper that cannot be constructed is a miss, per the remarks above.
-        }
-
+        ShellCache<T>.Publish(structuralTarget.GetType());
         value = default!;
         return false;
     }
 
-    // Resolves an interface's static duck-typing conversion method: generated dyn interfaces
-    // emit the marker-prefixed ᴛAs, while the hand-written golib core interfaces (error, fmt's
-    // Stringer) predate the marker and expose plain `As` with the same conversion signature. A
-    // Go interface cannot declare static methods, so no CONVERTED interface can collide with
-    // either name — without the second probe, a runtime assert of a raw receiver box to `error`
-    // missed, and the converted fmt's handleMethods fell through to printValue's `&`-prefixed
-    // pointer rendering for error-implementing pointees.
-    private static MethodInfo? GetInterfaceConversionMethod(Type interfaceType, Type[] parameterSignature)
+    // Per-interface projection of AdapterRegistry's (dynamic type, interface) shell decisions. The
+    // registry stays the authoritative durable record — AdapterBinder writes every decision there —
+    // but the ASSERT hot path reads through here, so a memoized assert costs one Type-keyed lookup on
+    // a dictionary the JIT specializes per closed interface, instead of hashing a (Type, Type) tuple
+    // against one shared dictionary. Same shape (and same reasoning) as Cache<TInterface> below.
+    private static class ShellCache<TInterface>
     {
-        return interfaceType.GetMethod($"{TempVarMarker}As", 1, BindingFlags.Public | BindingFlags.Static, parameterSignature)
-            ?? interfaceType.GetMethod("As", 1, BindingFlags.Public | BindingFlags.Static, parameterSignature);
+        private static readonly ConcurrentDictionary<Type, Func<object, object>?> s_factories = [];
+
+        public static bool TryGetFactory(Type valueType, out Func<object, object>? factory)
+        {
+            return s_factories.TryGetValue(valueType, out factory);
+        }
+
+        // Mirrors the registry's decision for the pair after AdapterBinder has made (and recorded)
+        // it. Reading it back rather than taking it as an argument keeps the registry the single
+        // place a decision is FORMED, so the projection can never disagree with the record.
+        public static void Publish(Type valueType)
+        {
+            if (AdapterRegistry.TryGetShellFactory(valueType, typeof(TInterface), out Func<object, object>? factory))
+                s_factories[valueType] = factory;
+        }
     }
 
     // Open generic definition of TryTypeAssert<T>, resolved once for the runtime-Type-driven
