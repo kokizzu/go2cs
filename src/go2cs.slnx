@@ -274,6 +274,7 @@
     <Project Path="Tests/Behavioral/LambdaReturnsPointerParam/LambdaReturnsPointerParam.csproj" />
     <Project Path="Tests/Behavioral/LabeledEmptyStmt/LabeledEmptyStmt.csproj" />
     <Project Path="Tests/Behavioral/LargeUintptrConst/LargeUintptrConst.csproj" />
+    <Project Path="Tests/Behavioral/LiftedLocalTypes/LiftedLocalTypes.csproj" />
     <Project Path="Tests/Behavioral/LinknameVarPull/LinknameVarPull.csproj" />
     <Project Path="Tests/Behavioral/LinknameVarPullLib/LinknameVarPullLib.csproj" />
     <Project Path="Tests/Behavioral/LocalNamedTypeDecls/LocalNamedTypeDecls.csproj" />

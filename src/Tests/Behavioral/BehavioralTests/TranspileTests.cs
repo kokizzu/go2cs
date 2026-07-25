@@ -652,6 +652,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckLargeUintptrConst() => CheckTarget("LargeUintptrConst");
 
     [TestMethod]
+    public void CheckLiftedLocalTypes() => CheckTarget("LiftedLocalTypes");
+
+    [TestMethod]
     public void CheckLinknameVarPull() => CheckTarget("LinknameVarPull");
 
     [TestMethod]
