@@ -80,13 +80,14 @@ internal static void Main() {
                 }
             }
         });
-        var selᴛ3 = other2ʗ1;
-        switch (select(ch4ʗ1.ᐸꟷ(99, ꓸꓸꓸ), ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
+        var selᴛ3 = ch4ʗ1.ᐸꟷ(99, ꓸꓸꓸ);
+        var selᴛ4 = other2ʗ1;
+        switch (select(selᴛ3, ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
         case 0: {
             res4ʗ1.ᐸꟷ("select send completed (wrong)"u8);
             break;
         }
-        case 1 when selᴛ3.ꟷᐳ(out var v): {
+        case 1 when selᴛ4.ꟷᐳ(out var v): {
             res4ʗ1.ᐸꟷ(fmt.Sprintf("other %d (wrong)"u8, v));
             break;
         }}
@@ -110,7 +111,8 @@ internal static void Main() {
     expectPanic("select send on closed with default"u8, () => {
         var sd = new channel<nint>(1);
         close(sd);
-        switch (trySelect(sd.ᐸꟷ(1, ꓸꓸꓸ))) {
+        var selᴛ5 = sd.ᐸꟷ(1, ꓸꓸꓸ);
+        switch (trySelect(selᴛ5)) {
         case 0: {
             fmt.Println("sent (wrong)");
             break;

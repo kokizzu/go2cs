@@ -638,9 +638,11 @@ Go — see the [channel runtime](ConversionStrategies-Reference.md#real-channel-
 section of the reference.
 
 A goroutine over a `select` — the concurrency core — lowers to `goǃ(...)` and a `switch` over `select(...)`,
-with `ᐸꟷ` marking a receive-case and `ꟷᐳ` performing the receive. Every receive case's channel
-operand is hoisted into a select-scoped temp (`selᴛN`) evaluated exactly once at select entry —
-Go's evaluation rule — and used by both the registration and the winning case's guard:
+with `ᐸꟷ` marking a receive-case and `ꟷᐳ` performing the receive. Every case's operands are hoisted
+into select-scoped temps (`selᴛN`) emitted in strict source order and evaluated exactly once at
+select entry — Go's evaluation rule — so the registration list names only temps: a receive case's
+channel operand (used by both the registration and the winning case's guard), and a send case's whole
+registration call, which only builds the case descriptor and so moves no send:
 
 ```go
 go func() {                     // context/context.go
@@ -676,7 +678,8 @@ default:                        // send but do not block for it
 }
 ```
 ```csharp
-switch (trySelect(c.ᐸꟷ(sig, ꓸꓸꓸ))) {   // os/signal/signal.cs
+var selᴛ1 = c.ᐸꟷ(sig, ꓸꓸꓸ);            // os/signal/signal.cs
+switch (trySelect(selᴛ1)) {
 case 0: {
     break;
 }

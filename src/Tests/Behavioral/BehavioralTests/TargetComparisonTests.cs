@@ -1129,6 +1129,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckSelectOperandOnceEval() => CheckTarget("SelectOperandOnceEval");
 
     [TestMethod]
+    public void CheckSelectOperandSourceOrder() => CheckTarget("SelectOperandSourceOrder");
+
+    [TestMethod]
     public void CheckSelectRandomFairness() => CheckTarget("SelectRandomFairness");
 
     [TestMethod]

@@ -1126,6 +1126,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckSelectOperandOnceEval() => CheckTarget("SelectOperandOnceEval");
 
     [TestMethod]
+    public void CheckSelectOperandSourceOrder() => CheckTarget("SelectOperandSourceOrder");
+
+    [TestMethod]
     public void CheckSelectRandomFairness() => CheckTarget("SelectRandomFairness");
 
     [TestMethod]

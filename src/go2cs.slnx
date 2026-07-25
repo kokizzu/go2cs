@@ -436,6 +436,7 @@
     <Project Path="Tests/Behavioral/SameUnderlyingNamedConv/SameUnderlyingNamedConv.csproj" />
     <Project Path="Tests/Behavioral/SelectEscapeBinding/SelectEscapeBinding.csproj" />
     <Project Path="Tests/Behavioral/SelectOperandOnceEval/SelectOperandOnceEval.csproj" />
+    <Project Path="Tests/Behavioral/SelectOperandSourceOrder/SelectOperandSourceOrder.csproj" />
     <Project Path="Tests/Behavioral/SelectRandomFairness/SelectRandomFairness.csproj" />
     <Project Path="Tests/Behavioral/SelectSendDefault/SelectSendDefault.csproj" />
     <Project Path="Tests/Behavioral/SelectSendRecvMix/SelectSendRecvMix.csproj" />

@@ -7,7 +7,8 @@ partial class main_package {
 internal static void Main() {
     var ch = new channel<nint>(0);
     fmt.Println("cap:", cap(ch), "len:", len(ch));
-    switch (trySelect(ch.ᐸꟷ(1, ꓸꓸꓸ))) {
+    var selᴛ1 = ch.ᐸꟷ(1, ꓸꓸꓸ);
+    switch (trySelect(selᴛ1)) {
     case 0: {
         fmt.Println("send: ready (wrong for unbuffered)");
         break;
@@ -16,9 +17,9 @@ internal static void Main() {
         fmt.Println("send: not ready (no receiver)");
         break;
     }}
-    var selᴛ1 = ch;
-    switch (trySelect(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
-    case 0 when selᴛ1.ꟷᐳ(out var v): {
+    var selᴛ2 = ch;
+    switch (trySelect(ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
+    case 0 when selᴛ2.ꟷᐳ(out var v): {
         fmt.Println("recv: ready (wrong):", v);
         break;
     }

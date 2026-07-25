@@ -7,7 +7,9 @@ partial class main_package {
 internal static void Main() {
     var a = new channel<nint>(1);
     var b = new channel<nint>(1);
-    switch (select(a.ᐸꟷ(9, ꓸꓸꓸ), b.ᐸꟷ(9, ꓸꓸꓸ))) {
+    var selᴛ1 = a.ᐸꟷ(9, ꓸꓸꓸ);
+    var selᴛ2 = b.ᐸꟷ(9, ꓸꓸꓸ);
+    switch (select(selᴛ1, selᴛ2)) {
     case 0: {
         break;
     }
@@ -16,20 +18,22 @@ internal static void Main() {
     }}
     fmt.Println("delivered:", len(a) + len(b));
     nint got = default!;
-    var selᴛ1 = a;
-    var selᴛ2 = b;
-    switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
-    case 0 when selᴛ1.ꟷᐳ(out got): {
+    var selᴛ3 = a;
+    var selᴛ4 = b;
+    switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+    case 0 when selᴛ3.ꟷᐳ(out got): {
         break;
     }
-    case 1 when selᴛ2.ꟷᐳ(out got): {
+    case 1 when selᴛ4.ꟷᐳ(out got): {
         break;
     }}
     fmt.Println("got:", got, "remaining:", len(a) + len(b));
     var c = new channel<nint>(100);
     var d = new channel<nint>(100);
     for (nint i = 0; i < 100; i++) {
-        switch (select(c.ᐸꟷ(i, ꓸꓸꓸ), d.ᐸꟷ(i, ꓸꓸꓸ))) {
+        var selᴛ5 = c.ᐸꟷ(i, ꓸꓸꓸ);
+        var selᴛ6 = d.ᐸꟷ(i, ꓸꓸꓸ);
+        switch (select(selᴛ5, selᴛ6)) {
         case 0: {
             break;
         }

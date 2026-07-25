@@ -1055,6 +1055,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckSelectOperandOnceEval() => CheckTarget("SelectOperandOnceEval");
 
     [TestMethod]
+    public void CheckSelectOperandSourceOrder() => CheckTarget("SelectOperandSourceOrder");
+
+    [TestMethod]
     public void CheckSelectRandomFairness() => CheckTarget("SelectRandomFairness");
 
     [TestMethod]

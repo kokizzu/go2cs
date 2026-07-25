@@ -2839,7 +2839,7 @@ ReaderFrom;`. (This is one root among several in the io test suite, which remain
 
 ### Select statement lowering (terminating and empty clauses)
 
-A `select` lowers to a C# `switch` over a golib runtime call that commits exactly ONE case and returns its ordinal: the blocking form `switch (select(ᐸꟷ(a, ꓸꓸꓸ), …))` (selectgo — commits a uniformly-random ready case or parks), and the default form `switch (trySelect(…))` (the same poll pass, returning -1 so the C# `default:` label runs when no case is ready). Receive cases keep a `case N when selᴛN.ꟷᐳ(out v):` guard that consumes the committed value; send cases are performed by the runtime commit and get a bare `case N:` label. Every receive case's channel operand is hoisted into a select-scoped temp (`var selᴛN = <expr>;`) evaluated exactly once at select entry and used by BOTH the registration and the guard (see the single-evaluation section below). The registration calls (`ᐸꟷ(ch, ꓸꓸꓸ)` receive, `ch.ᐸꟷ(v, ꓸꓸꓸ)` send) return `SelectOp` case descriptors and `select(params SelectOp[])` runs a faithful selectgo (see the channel-runtime section below): it commits exactly ONE ready case — chosen uniformly at random — or parks until one becomes ready. A committed receive's value crosses to the winning case's unchanged guard (`case N when ch.ꟷᐳ(out v):`) through a per-thread pending-frame stack the guard pops (a stack, so a select nested in the guard's target expression cannot destroy the outer commit — see the channel-runtime section), so the emitted select text is identical to the pre-redesign form. Two structural completions (io pipe.go's `read`):
+A `select` lowers to a C# `switch` over a golib runtime call that commits exactly ONE case and returns its ordinal: the blocking form `switch (select(ᐸꟷ(a, ꓸꓸꓸ), …))` (selectgo — commits a uniformly-random ready case or parks), and the default form `switch (trySelect(…))` (the same poll pass, returning -1 so the C# `default:` label runs when no case is ready). Receive cases keep a `case N when selᴛN.ꟷᐳ(out v):` guard that consumes the committed value; send cases are performed by the runtime commit and get a bare `case N:` label. Every case's operands are hoisted into select-scoped temps (`var selᴛN = …;`) emitted in strict source order and evaluated exactly once at select entry — a receive case's channel operand (used by BOTH the registration and the guard) and a send case's whole registration call, so the registration list names only temps (see the operand-evaluation section below). The registration calls (`ᐸꟷ(ch, ꓸꓸꓸ)` receive, `ch.ᐸꟷ(v, ꓸꓸꓸ)` send) return `SelectOp` case descriptors and `select(params SelectOp[])` runs a faithful selectgo (see the channel-runtime section below): it commits exactly ONE ready case — chosen uniformly at random — or parks until one becomes ready. A committed receive's value crosses to the winning case's unchanged guard (`case N when ch.ꟷᐳ(out v):`) through a per-thread pending-frame stack the guard pops (a stack, so a select nested in the guard's target expression cannot destroy the outer commit — see the channel-runtime section), so the emitted select text is identical to the pre-redesign form. Two structural completions (io pipe.go's `read`):
 
 * **An EMPTY clause body still needs its jump.** C# requires every switch section to end in a jump statement (CS8070 on a final `default:`, CS0163 otherwise); the emitted `break;` was suppressed when the *previous* clause ended in a terminal `return` (the was-return flag is reset per statement, and an empty body has none). The flag resets per *clause* now — a bare Go `default:` emits `default: { break; }`.
 * **A terminating blocking select gets an unreachable trailing `return default!;`.** Go's spec makes a select with no `default:` whose every comm-clause body ends in a terminating statement itself terminating, so a value-returning function may end with it. The lowered form's guarded `case N when <recv>:` labels cannot prove exhaustiveness to C# (CS0161). Mirroring the switch guarded-terminal-default rule, the emission appends `return default!;` after the closing brace — gated on: no default, every clause terminating (`isTerminatingStmtList`, conservative), no select-targeting `break`, a value-returning signature, and not named-return-defer mode (void wrapper).
@@ -2931,19 +2931,30 @@ once drained, free-capacity buffered delivering the value, unbuffered with a wai
 closed-panics-through-the-default, one-ready-among-several, a send and a receive case with neither
 ready, exactly-one-send when several are ready, and a no-default select still blocking.)
 
-### A receive case's channel operand is hoisted — evaluated exactly once, at select entry
+### Every case's operands are hoisted — evaluated exactly once, in SOURCE ORDER, at select entry
 
-Go evaluates every select case's channel operand exactly ONCE, at select entry. The emitted
-receive-case shape otherwise evaluates its operand TWICE — in the registration call and again as
-the winning guard's receiver — and C# reads a struct method call's receiver AFTER evaluating its
+Go's spec evaluates, for every case in the statement, a receive operation's channel operand and a
+send statement's channel AND right-hand-side expressions exactly once, in source order, upon
+entering the select. Leaving an operand inline in the `select(…)`/`trySelect(…)` registration
+argument list breaks that in two distinct ways.
+
+**Evaluated twice.** A receive case's operand appears in the registration call AND again as the
+winning guard's receiver, and C# reads a struct method call's receiver AFTER evaluating its
 arguments, so even a bare identifier can change under the guard (the out-target expression runs
 first). A non-referentially-stable operand — `case <-time.After(d):` (net/http/pprof),
-`case <-fresh():`, or an identifier the out-target reassigns — would re-evaluate to a DIFFERENT
-channel: the runtime's pending-frame core match then (correctly) refuses delivery, and the
-factory's side effect runs twice — both spec violations. The converter therefore hoists EVERY
-receive-case operand into a select-scoped temp used by both the registration and the guard,
-uniformly (no stability analysis — `channel<T>` struct copies share one core, so the temp
-preserves identity, and the hoist IS Go's up-front-once evaluation model):
+`case <-fresh():`, or an identifier the out-target reassigns — re-evaluates to a DIFFERENT channel:
+the runtime's pending-frame core match then (correctly) refuses delivery, and the factory's side
+effect runs twice.
+
+**Evaluated out of order.** C# evaluates the registration arguments in argument order, i.e. AFTER
+every hoisted temp. A send case left inline therefore had its channel operand and value expression
+observed after a *later* receive case's operand: a select whose FIRST case was a send observed
+`[recv-chan, send-chan, send-val]` where Go's order is `[send-chan, send-val, recv-chan]`.
+
+The converter therefore hoists EVERY case's operands into select-scoped temps, emitted in strict
+source order, leaving the registration list naming only temps. Uniformly, with no stability
+analysis — `channel<T>` struct copies share one core, so the temp preserves identity, and the hoist
+IS Go's up-front-once evaluation model:
 
 ```go
 select {
@@ -2961,15 +2972,60 @@ case 0 when selᴛ1.ꟷᐳ(out var v): {
 }}
 ```
 
-A SEND case needs no hoist: its channel operand and value are captured exactly once at
-registration into the `SelectOp`, and its winning label (`case N:`) carries no guard, so nothing
-re-evaluates. One documented nuance remains: receive operands (the hoisted temps) now evaluate
-before send-case operand/value expressions (which evaluate inside the registration call), so a
-select whose receive AND send operands both carry side effects observes them in
-receive-cases-first order rather than Go's strict source order. (Guarded by
-`SelectOperandOnceEval` — ready and parked call-expression operands with printed call counters,
-the reassigned-identifier out-target, and the default form; counter-proven against the pre-fix
-emission, which FailFasts on the pending-frame core-match assert.)
+A SEND case hoists its **whole registration call** rather than two separate operand temps
+(`SelectSendRecvMix`, a send case textually first on a full channel plus a receive case on the
+same channel):
+
+```go
+select {
+case ch <- 8:
+    fmt.Println("send fired on full channel (wrong)")
+case took = <-ch:
+}
+```
+
+```csharp
+var selᴛ3 = ch.ᐸꟷ(8, ꓸꓸꓸ);
+var selᴛ4 = ch;
+switch (select(selᴛ3, ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+case 0: {
+    fmt.Println("send fired on full channel (wrong)");
+    break;
+}
+case 1 when selᴛ4.ꟷᐳ(out took): {
+    break;
+}}
+```
+
+That is both legal and stronger than two operand temps. `Sending`/`ᐸꟷ(v, ꟷ)` only BUILDS a
+`SelectOp` descriptor — golib's `Sending` is `return new SelectOp(m_core, isSend: true, sendValue:
+value);` — and the communication is performed later by the runtime commit inside
+`select`/`trySelect`, so moving the call ahead of the switch moves no send. The call evaluates its
+receiver then its argument, i.e. channel operand then value expression, contiguously and in source
+order: exactly Go's rule. And the value expression keeps its ORIGINAL argument position, so every
+implicit conversion the `in T` parameter applies — untyped-constant narrowing to the element type,
+interface-adapter wrap, `@string`/`nint` boxing, array clone (see the send-value rules above) — is
+preserved by construction, with no new type inference anywhere. A separate value temp would have to
+re-render the element type to declare itself, and `var` inference is provably wrong there:
+`case bch <- 200:` on a `chan byte` becomes `var t = 200;` — an `int`, which no longer converts to
+`byte` at the call (CS1503) — and any divergence in a hand-rendered element type would SILENTLY
+change the conversion instead. The whole-call hoist also leaves the `ж<T>`-pointer element case
+(net/rpc's `call.Done <- call`) unaffected by construction.
+
+A send case's winning label stays a bare `case N:` — the runtime commit performed the send, so it
+carries no guard and nothing re-evaluates.
+
+(Guarded by `SelectOperandOnceEval` for the once-only property — ready and parked call-expression
+operands with printed call counters, the reassigned-identifier out-target, and the default form;
+counter-proven against the pre-fix emission, which FailFasts on the pending-frame core-match assert.
+And by `SelectOperandSourceOrder` for the ordering property — a send case textually first with all
+three operand expressions logging their fixed source positions: the blocking form with the receive
+winning and with the send winning, a default-form select interleaving send/receive/send with nothing
+ready (including an untyped `200` into a `chan byte` and a value boxed into a `chan any`), and the
+already-correct receive-first direction as a regression anchor. Every select there is deterministic
+by construction — exactly one case can ever be ready — so the uniform-random commit never affects
+the output. Counter-proven against the pre-fix converter, which prints
+`3:recv-chan 1:send-chan 2:send-val` where Go prints `1:send-chan 2:send-val 3:recv-chan`.)
 
 ### Known exposure: marker-shaped USER identifiers can collide with synthetic names
 

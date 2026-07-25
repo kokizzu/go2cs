@@ -52,7 +52,8 @@ internal static void Main() {
     describe("send"u8, ᐸꟷ(ch));
     describe("send"u8, ᐸꟷ(ch));
     var sel = new channel<any>(1);
-    switch (select(sel.ᐸꟷ((@string)"sel", ꓸꓸꓸ))) {
+    var selᴛ1 = sel.ᐸꟷ((@string)"sel", ꓸꓸꓸ);
+    switch (select(selᴛ1)) {
     case 0: {
         describe("select"u8, ᐸꟷ(sel));
         break;

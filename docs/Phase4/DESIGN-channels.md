@@ -17,7 +17,11 @@
 > spec; supersedes the "blocking-select goldens byte-identical" property; guard
 > `SelectOperandOnceEval`) and `c7ab16feb` (strand remarks corrected plus the close-wake recv-bias divergence note in §4;
 > its depth-64 cap-and-drop was FALSIFIED by recursion-through-the-out-target and reverted —
-> guard `DeepSelectRecursion`). Gates run on the
+> guard `DeepSelectRecursion`). **Round-2 completion:** the source-order divergence that round-2 left
+> behind (send-case operands evaluating after receive-case ones) is now REPAIRED — `visitSelectStmt`
+> hoists EVERY case's operands in strict source order, a send case lifting its whole registration
+> call; §4's divergence bullet is marked RESOLVED and guard `SelectOperandSourceOrder` locks it in.
+> Gates run on the
 > branch after every round: CNR drift = exactly the intended re-baselines (every line inspected,
 > byte-identical once committed), full behavioral suite green (466/466 with Output 436/0 after
 > round 2); corpus reconvert-diff 100%-classified + full 302-package build 0 errors; banked
@@ -164,6 +168,23 @@ through the `-tests` pipeline; re-validate all banked packages 0-fail.
   single-fire commits; ours is deterministic where Go's is random, and never takes the
   panic branch. Pre-existing Unit-1 scope, recorded by the round-2 verification — deferred, do not
   fix without re-gating the close family.
+- **~~Send-case operands evaluate after receive-case operands (source-order divergence).~~
+  RESOLVED 2026-07-24.** Recorded by the round-2 verification (in
+  [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), the hoist section) and
+  user-ratified for repair. The round-2 hoist (`bd0b41d79`) lifted only receive-case channel operands
+  into `selᴛN` temps; send-case channel and value expressions stayed inline in the registration
+  argument list, which C# evaluates in argument order — i.e. after every hoisted temp — so a select
+  whose FIRST case was a send observed `[recv-chan, send-chan, send-val]` where Go's order is
+  `[send-chan, send-val, recv-chan]`. `visitSelectStmt` now hoists EVERY case's operands, emitted in
+  strict source order, and the registration list names only temps; a send case hoists its WHOLE
+  registration call (`var selᴛN = <chan>.ᐸꟷ(<value>, ꟷ);`), which is both legal and stronger — the
+  call only BUILDS a `SelectOp` descriptor (the commit inside `select`/`trySelect` performs the
+  communication, so no send moves), its receiver-then-argument evaluation is exactly Go's
+  channel-then-value order, and the value keeps its ORIGINAL argument position so every implicit
+  conversion `convSendValueExpr` relies on the `in T` parameter to apply survives by construction (a
+  separate value temp would infer `var t = 200;` as an `int` for a `chan byte` — CS1503). Guard
+  `SelectOperandSourceOrder`; counter-proven against the pre-fix converter, which prints
+  `3:recv-chan 1:send-chan 2:send-val` where Go prints `1:send-chan 2:send-val 3:recv-chan`.
 - **NuGet lockstep:** golib signatures and the gen template change together — `go.lib` and `go.gen`
   must version-bump in the same release or `-recurse=nuget` apps can restore mismatched pairs.
 

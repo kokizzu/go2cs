@@ -1126,6 +1126,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckSelectOperandOnceEval() => CheckTarget("SelectOperandOnceEval");
 
     [TestMethod]
+    public void CheckSelectOperandSourceOrder() => CheckTarget("SelectOperandSourceOrder");
+
+    [TestMethod]
     public void CheckSelectRandomFairness() => CheckTarget("SelectRandomFairness");
 
     [TestMethod]
