@@ -108,9 +108,9 @@ func TestSkipParityCountsAsMatched(t *testing.T) {
 // deterministic hex literals used as names — are never touched.
 func TestPairAddressVariantNames(t *testing.T) {
 	goResults := map[string]string{
-		"TestAsValidation/*string(0xc0000f46b0)": "pass",   // pairs 1:1
-		"TestHex/0x1234":                         "pass",   // exact-matched hex literal — untouched
-		"TestAmbiguous/p(0xaaa)":                 "pass",   // ambiguous on the C# side — untouched
+		"TestAsValidation/*string(0xc0000f46b0)": "pass", // pairs 1:1
+		"TestHex/0x1234":                         "pass", // exact-matched hex literal — untouched
+		"TestAmbiguous/p(0xaaa)":                 "pass", // ambiguous on the C# side — untouched
 		"TestPlain":                              "pass",
 	}
 	csResults := map[string]string{
@@ -1369,7 +1369,7 @@ func TestWriteExternalVariantMetadataSplitsAnchors(t *testing.T) {
 	packageName = "value_test"
 	packageNamespace = "go"
 	interfaceImplementations["value_package.Interface"] = NewHashSet([]string{
-		"localSorter", // bare ⇒ test anchor
+		"localSorter",            // bare ⇒ test anchor
 		"value_package.IntSlice", // production-qualified ⇒ production anchor
 	})
 	importedTypeAliases["alpha"] = "go.alpha_package.Alpha"
@@ -1701,5 +1701,28 @@ func TestTestVariantRenamesTestFuncCollidingWithProductionMethodReceiver(t *test
 	}
 	if strings.Contains(valueCs, ShadowVarMarker+"keep") {
 		t.Fatalf("a different-first-parameter free function does not collide and must keep its plain name:\n%s", valueCs)
+	}
+}
+
+// TestIsSelfProjectReference pins the base-name comparison: a raw suffix test dropped any
+// dependency whose project file name merely ends with the target's — converting "time" lost
+// its runtime reference because "runtime.csproj" ends with "time.csproj" (B7).
+func TestIsSelfProjectReference(t *testing.T) {
+	cases := []struct {
+		reference   string
+		projectName string
+		want        bool
+	}{
+		{`$(go2csPath)go-src-converted\time\time.csproj`, "time", true},
+		{`$(go2csPath)go-src-converted\runtime\runtime.csproj`, "time", false},
+		{`$(go2csPath)go-src-converted\runtime\internal\math\runtime.internal.math.csproj`, "math", false},
+		{`$(go2csPath)go-src-converted\math\math.csproj`, "math", true},
+		{`$(go2csPath)go-src-converted\time\TIME.CSPROJ`, "time", true},
+	}
+
+	for _, c := range cases {
+		if got := isSelfProjectReference(c.reference, c.projectName); got != c.want {
+			t.Errorf("isSelfProjectReference(%q, %q) = %v, want %v", c.reference, c.projectName, got, c.want)
+		}
 	}
 }

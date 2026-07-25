@@ -1765,7 +1765,7 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 			}
 
 			reference := resolveTestProjectReference(info)
-			if reference != "" && !strings.HasSuffix(strings.ToLower(reference), strings.ToLower(projectName+".csproj")) {
+			if reference != "" && !isSelfProjectReference(reference, projectName) {
 				references.Add(reference)
 			}
 		}
@@ -2034,6 +2034,14 @@ func productionStructuralBaseImports(production *packages.Package) []string {
 // go-src-converted/testing — colliding with the hand-owned shim's [GoPackage("testing")] classes
 // in the same build. Needs a ruling before such a package converts: exclude go-src-converted/
 // testing in favor of the shim, or hand-own a testenv mini-shim (see the first-proof plan).
+// isSelfProjectReference reports whether reference points at the package-under-test's own
+// production csproj. The comparison must be on the path's BASE NAME: a raw suffix test drops
+// any dependency whose project file name merely ENDS with the target's ("runtime.csproj" ends
+// with "time.csproj", so converting time silently lost its runtime reference — 5x CS0234).
+func isSelfProjectReference(reference, projectName string) bool {
+	return strings.EqualFold(filepath.Base(reference), projectName+".csproj")
+}
+
 func resolveTestProjectReference(info PackageInfo) string {
 	if info.Err != nil || info.ProjectReference == "" || !info.IsStdLib {
 		return info.ProjectReference
