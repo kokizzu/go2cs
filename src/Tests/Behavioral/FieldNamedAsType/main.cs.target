@@ -10,7 +10,7 @@ partial class main_package {
     internal nint value;
 }
 
-[GoType("dyn")] partial struct localCollision_u {
+[GoLocalName("u")] [GoType("dyn")] partial struct localCollision_u {
     internal nint u;
 }
 

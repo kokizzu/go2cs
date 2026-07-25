@@ -58,11 +58,6 @@ internal static void cycleMemo() {
     public nint Age;
 }
 
-[GoType("dyn")] partial struct main_data {
-    public @string Name;
-    public nint Age;
-}
-
 [GoType("dyn")] partial struct main_typeᴛ2 {
     internal @string name;
     internal uint32 size;
@@ -78,7 +73,7 @@ internal static void Main() {
     (_, ok) = someInterface._<main_typeᴛ1>(ᐧ);
     fmt.Println("Named struct with identical fields:", ok);
     fmt.Println("\n=== Function Parameter Tests ===");
-    processAnonymousStruct(new main_data(Name: "Charlie"u8, Age: 40));
+    processAnonymousStruct(new main_anonPerson(Name: "Charlie"u8, Age: 40));
     processAnonymousStruct(anonPerson);
     processAnonymousStruct(new processAnonymousStruct_data(namedPerson.Name, namedPerson.Age));
     fmt.Println("\n=== Package-Global Anonymous Struct ===");

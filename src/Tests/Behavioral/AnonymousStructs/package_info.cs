@@ -42,7 +42,6 @@ using static go.main_package;
 
 // <ImplicitConversions>
 [assembly: GoImplicitConv<main_anonPerson, processAnonymousStruct_data>]
-[assembly: GoImplicitConv<main_data, processAnonymousStruct_data>]
 // </ImplicitConversions>
 
 namespace go;

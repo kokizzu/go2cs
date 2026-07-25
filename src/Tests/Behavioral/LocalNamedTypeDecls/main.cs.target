@@ -4,7 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-[GoType("dyn")] partial struct main_Point {
+[GoLocalName("Point")] [GoType("dyn")] partial struct main_Point {
     public nint X, Y;
 }
 

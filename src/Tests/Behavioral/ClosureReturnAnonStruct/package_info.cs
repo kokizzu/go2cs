@@ -41,7 +41,6 @@ using static go.main_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<closureReturningAnonStruct_type, closureReturningAnonStruct_func_R0>]
 // </ImplicitConversions>
 
 namespace go;

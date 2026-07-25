@@ -14,15 +14,8 @@ partial class main_package {
     public M M;
 }
 
-[GoType("dyn")] partial struct test_x {
-    internal @string @string;
-    internal ж<nint> @int;
-    public P P;
-    public M M;
-}
-
 internal static test_R0 test() {
-    test_x x = default!;
+    test_R0 x = default!;
     x.@string = "Go"u8;
     x.@int = @new<nint>();
     x.P = @new<bool>();
