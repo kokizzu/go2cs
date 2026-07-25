@@ -6940,6 +6940,38 @@ settings the per-transpile csproj regeneration would otherwise clobber. Surfaced
 comparison: golib's `print`/`println` now render a `bool` as gc's runtime printer does (`true`/`false`,
 not the BCL `True`/`False`).
 
+**The Windows directory-entry walk (`os/dir_windows_impl.cs`, Phase-4 — os operational).** Go's
+`(*File).readdir` walks the buffer `GetFileInformationByHandleEx` fills by REINTERPRETING it as a Go
+struct — `info := (*windows.FILE_ID_BOTH_DIR_INFO)(entry)`, then
+`unsafe.Slice(&info.FileName[0], info.FileNameLength/2)`. That struct is **managed-referent**: its
+inline Go arrays (`ShortName [12]uint16`, the variable-length trailing `FileName [1]uint16`) convert to
+golib `array<uint16>` OBJECT references — 8 bytes each where the OS wrote 24 and 2 bytes inline — so
+the managed layout does not describe the buffer bytes at all. `&info.FileName[0]` addressed a
+zero-length array (`System.IndexOutOfRangeException` on the FIRST directory read: `path/filepath.Glob`,
+`os.ReadDir`, `os.File.Readdirnames`, and every test that walks a testdata directory), the fields after
+`ShortName` sit at the wrong offsets, and merely *copying* the reinterpreted struct hands the GC a
+fabricated object reference. No converter or golib change can rescue this — a managed array reference
+can never be laid out like an inline OS array — so it is the *raw metal on non-native types* arm of the
+[conversion fork](Baseline-vs-FullConversion.md): the declaration is hand-owned.
+
+Scope is one declaration, via the type-level registry (`manualConversionFuncs["os"]["File.readdir"]`);
+everything else in `dir_windows.go` (`dirInfo.init`/`close`, the pool, `dirEntry`) stays auto and keeps
+receiving converter improvements. The hand-owned form decodes the two entry layouts straight out of the
+byte slice at their documented offsets and never materializes a managed struct over OS memory — every
+read is an ordinary **bounds-checked managed** slice read, so there is no pointer, no pinning and no
+`unsafe` block in the file (a short or truncated buffer surfaces as an index panic rather than reading
+past the OS data). Offsets come from the **Go** declarations in `internal/syscall/windows`, which match
+the buffer bytes for every field Go reads: Go widens Win32's `CCHAR ShortNameLength` to `uint32`, which
+shifts only `ShortName` — a field neither Go nor the impl reads — while `FileID` (96) and `FileName`
+(104) land identically either way. The auto `newFileStatFromFileIDBothDirInfo` /
+`newFileStatFromFileFullDirInfo` remain emitted but are now unreachable (their parameter *is* the
+unusable reinterpret); the impl builds the `fileStat` from the same offsets.
+⚠ The registry key is name-keyed per package, so it also matches `os.(*File).readdir` in `dir_unix.go`
+— a `-platforms linux/amd64` conversion of `os` would drop its (perfectly convertible) unix readdir.
+Same platform caveat as runtime's `lock_sema` entries. No behavioral guard is expressible: the baseline
+`src/core` has no `os` package, so the guard is the operational one — `go/doc/comment`'s `TestTestdata`
+(`filepath.Glob` over `testdata/`) went from *zero subtests ran* to 54 enumerated.
+
 **The testing shim's compile-only benchmark surface and `CoverMode` (`core/testing/testing.cs`).** Capability-excluded test and benchmark declarations still **compile** — exclusion gates the run registry, not emission — so every member their bodies reference must exist even though the code never executes (a broken emission inside an excluded test blocks the whole package build; see the strings/bytes blocker map, B6). The `B` surface (`N`, `Run`, `ReportAllocs`, `SetBytes`, `ResetTimer`, `StartTimer`, `StopTimer`, `Errorf`, `Fatal`, `Fatalf`) is therefore compile-only: safe non-throwing no-ops, with the params-taking members carrying explicit `ж<B>` overloads exactly as `T`'s do (ref-like `params` Spans are outside the RecvGenerator's synthesis). `testing.CoverMode()` returns `""` — not a stub-lie but Go's exact coverage-off value: the sole caller across the strings/bytes suites (strings' TestIndexRune) branches on `CoverMode() == ""` and so takes the same path as an uncovered `go test` run. Guarded by `TestingRuntimeTests.BenchmarkCompileSurfaceIsNoOpAndCoverModeReportsCoverageOff`, which compile-references every member through both receiver shapes and asserts the coverage-off semantic — removing any member fails the suite at build.
 
 **The same rule extends to `testing.F` (2026-07-20).** A `Fuzz*` declaration is classified disclosed-unsupported in the manifest exactly as a benchmark is (`testConversion.go` already emitted the `fuzz`/"deferred to Phase 4D" entry), but its converted body still compiles into the test assembly — and `F` simply did not exist, so math/big's `func FuzzExpMont(f *testing.F)` (nat_test.go) failed the whole package build with CS0426 *the type name 'F' does not exist in the type 'testing_package'*. `F` now mirrors `B`: a compile-only struct whose members are safe non-throwing no-ops, with explicit `ж<F>` overloads on the params-taking members. Its member set is Go 1.23's full public surface for `*testing.F` — the `TB` members it inherits from the embedded `common`, plus its own `Add` and `Fuzz` — declared complete under the same anti-drift rule as `TB` above rather than trimmed to today's callers. `Fuzz` takes a **`System.Delegate`**: a Go fuzz target's signature is arbitrary (`*testing.T` followed by the fuzzed argument types), and the converted body is an explicitly-typed lambda, so C# infers its natural `Action<…>` and converts — no per-arity overload set is needed. Nothing is invoked and no seed corpus is retained, because there is no fuzzing engine to consume either. This is not math/big-specific: roughly seventeen stdlib packages ship fuzz targets (archive/tar, archive/zip, compress/gzip, encoding/csv, encoding/json, html, image/{gif,jpeg,png}, net/netip, time, syscall, …), every one of which would hit the identical build blocker.

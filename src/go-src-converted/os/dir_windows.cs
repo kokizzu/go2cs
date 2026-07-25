@@ -90,139 +90,24 @@ internal static void init(this ж<dirInfo> Ꮡd, syscallꓸHandle h) {
     }
 }
 
-internal static (slice<@string> names, slice<DirEntry> dirents, slice<FileInfo> infos, error err) readdir(this ж<File> Ꮡfile, nint n, readdirMode mode) {
-    slice<@string> names = default!;
-    slice<DirEntry> dirents = default!;
-    slice<FileInfo> infos = default!;
-    error err = default!;
-    func((defer, recover) => {
-    ref var @file = ref Ꮡfile.Value;
+// go2cs generated this placeholder — func readdir is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-        // If this file has no dirInfo, create one.
-        ж<dirInfo> d = default!;
-        while (ᐧ) {
-            d = Ꮡfile.of(File.Ꮡdirinfo).Load();
-            if (d != nil) {
-                break;
-            }
-            d = @new<dirInfo>();
-            d.init(@file.pfd.Sysfd);
-            if (Ꮡfile.of(File.Ꮡdirinfo).CompareAndSwap(nil, d)) {
-                break;
-            }
-            // We lost the race: try again.
-            d.close();
-        }
-        d.of(dirInfo.Ꮡmu).Lock();
-        var dʗ1 = d;
-        defer(dʗ1.of(dirInfo.Ꮡmu).Unlock);
-        if ((~d).buf == nil) {
-            d.Value.buf = ᏑdirBufPool.Get()._<ж<slice<byte>>>();
-        }
-        var wantAll = n <= 0;
-        if (wantAll) {
-            n = -1;
-        }
-        while (n != 0) {
-            // Refill the buffer if necessary
-            if ((~d).bufp == 0) {
-                err = windows.GetFileInformationByHandleEx(@file.pfd.Sysfd, (~d).@class, Ꮡ(((~d).buf.ValueSlot), 0), (uint32)len((~d).buf.ValueSlot));
-                Δruntime.KeepAlive(Ꮡfile);
-                if (err != default!) {
-                    if (AreEqual(err, syscall.ERROR_NO_MORE_FILES)) {
-                        // Optimization: we can return the buffer to the pool, there is nothing else to read.
-                        ᏑdirBufPool.Put((~d).buf);
-                        d.Value.buf = default!;
-                        break;
-                    }
-                    if (AreEqual(err, syscall.ERROR_FILE_NOT_FOUND) && ((~d).@class == windows.FileIdBothDirectoryRestartInfo || (~d).@class == windows.FileFullDirectoryRestartInfo)) {
-                        // GetFileInformationByHandleEx doesn't document the return error codes when the info class is FileIdBothDirectoryRestartInfo,
-                        // but MS-FSA 2.1.5.6.3 [1] specifies that the underlying file system driver should return STATUS_NO_SUCH_FILE when
-                        // reading an empty root directory, which is mapped to ERROR_FILE_NOT_FOUND by Windows.
-                        // Note that some file system drivers may never return this error code, as the spec allows to return the "." and ".."
-                        // entries in such cases, making the directory appear non-empty.
-                        // The chances of false positive are very low, as we know that the directory exists, else GetVolumeInformationByHandle
-                        // would have failed, and that the handle is still valid, as we haven't closed it.
-                        // See go.dev/issue/61159.
-                        // [1] https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-fsa/fa8194e0-53ec-413b-8315-e8fa85396fd8
-                        break;
-                    }
-                    {
-                        var (s, _) = Ꮡfile.Stat(); if (s != default! && !s.IsDir()){
-                            err = new fs.PathErrorжerror(Ꮡ(new PathError(Op: "readdir"u8, Path: @file.name, Err: syscall.ENOTDIR)));
-                        } else {
-                            err = new fs.PathErrorжerror(Ꮡ(new PathError(Op: "GetFileInformationByHandleEx"u8, Path: @file.name, Err: err)));
-                        }
-                    }
-                    return;
-                }
-                if ((~d).@class == windows.FileIdBothDirectoryRestartInfo){
-                    d.Value.@class = windows.FileIdBothDirectoryInfo;
-                } else 
-                if ((~d).@class == windows.FileFullDirectoryRestartInfo) {
-                    d.Value.@class = windows.FileFullDirectoryInfo;
-                }
-            }
-            // Drain the buffer
-            bool islast = default!;
-            while (n != 0 && !islast) {
-                uint32 nextEntryOffset = default!;
-                slice<uint16> nameslice = default!;
-                @unsafe.Pointer entry = new @unsafe.Pointer(Ꮡ(((~d).buf.ValueSlot), (~d).bufp));
-                if ((~d).@class == windows.FileIdBothDirectoryInfo){
-                    var info = (ж<windows.FILE_ID_BOTH_DIR_INFO>)(uintptr)(entry);
-                    nextEntryOffset = info.Value.NextEntryOffset;
-                    nameslice = @unsafe.Slice(info.at(windows.FILE_ID_BOTH_DIR_INFO.ᏑFileName, 0), (~info).FileNameLength / 2);
-                } else {
-                    var info = (ж<windows.FILE_FULL_DIR_INFO>)(uintptr)(entry);
-                    nextEntryOffset = info.Value.NextEntryOffset;
-                    nameslice = @unsafe.Slice(info.at(windows.FILE_FULL_DIR_INFO.ᏑFileName, 0), (~info).FileNameLength / 2);
-                }
-                d.Value.bufp += (nint)nextEntryOffset;
-                islast = nextEntryOffset == 0;
-                if (islast) {
-                    d.Value.bufp = 0;
-                }
-                if ((len(nameslice) == 1 && nameslice[0] == (rune)'.') || (len(nameslice) == 2 && nameslice[0] == (rune)'.' && nameslice[1] == (rune)'.')) {
-                    // Ignore "." and ".." and avoid allocating a string for them.
-                    continue;
-                }
-                @string name = syscall.UTF16ToString(nameslice);
-                if (mode == readdirName){
-                    names = append(names, name);
-                } else {
-                    ж<fileStat> f = default!;
-                    if ((~d).@class == windows.FileIdBothDirectoryInfo){
-                        f = newFileStatFromFileIDBothDirInfo((ж<windows.FILE_ID_BOTH_DIR_INFO>)(uintptr)(entry));
-                    } else {
-                        f = newFileStatFromFileFullDirInfo((ж<windows.FILE_FULL_DIR_INFO>)(uintptr)(entry));
-                        if ((~d).path != ""u8) {
-                            // Defer appending the entry name to the parent directory path until
-                            // it is really needed, to avoid allocating a string that may not be used.
-                            // It is currently only used in os.SameFile.
-                            f.Value.appendNameToPath = true;
-                            f.Value.path = d.Value.path;
-                        }
-                    }
-                    f.Value.name = name;
-                    f.Value.vol = d.Value.vol;
-                    if (mode == readdirDirEntry){
-                        dirents = append(dirents, (DirEntry)(new dirEntry(f)));
-                    } else {
-                        infos = append(infos, (FileInfo)(new fileStatжFileInfo(f)));
-                    }
-                }
-                n--;
-            }
-        }
-        if (!wantAll && len(names) + len(dirents) + len(infos) == 0) {
-            (names, dirents, infos, err) = (default!, default!, default!, Δio.EOF); return;
-        }
-        (names, dirents, infos, err) = (names, dirents, infos, default!);
-    });
-    return (names, dirents, infos, err);
-}
-
+// We lost the race: try again.
+// Refill the buffer if necessary
+// Optimization: we can return the buffer to the pool, there is nothing else to read.
+// GetFileInformationByHandleEx doesn't document the return error codes when the info class is FileIdBothDirectoryRestartInfo,
+// but MS-FSA 2.1.5.6.3 [1] specifies that the underlying file system driver should return STATUS_NO_SUCH_FILE when
+// reading an empty root directory, which is mapped to ERROR_FILE_NOT_FOUND by Windows.
+// Note that some file system drivers may never return this error code, as the spec allows to return the "." and ".."
+// entries in such cases, making the directory appear non-empty.
+// The chances of false positive are very low, as we know that the directory exists, else GetVolumeInformationByHandle
+// would have failed, and that the handle is still valid, as we haven't closed it.
+// See go.dev/issue/61159.
+// [1] https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-fsa/fa8194e0-53ec-413b-8315-e8fa85396fd8
+// Ignore "." and ".." and avoid allocating a string for them.
+// Defer appending the entry name to the parent directory path until
+// it is really needed, to avoid allocating a string that may not be used.
+// It is currently only used in os.SameFile.
 [GoType] partial struct dirEntry {
     internal ж<fileStat> fs;
 }

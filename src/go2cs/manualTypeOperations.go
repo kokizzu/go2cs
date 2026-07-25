@@ -148,6 +148,21 @@ var manualConversionFuncs = map[string]map[string]bool{
 		"rtype.AssignableTo": true,
 		"methodName":         true,
 	},
+	// os.(*File).readdir walks the raw buffer GetFileInformationByHandleEx fills by REINTERPRETING
+	// it as a Go struct — `(*windows.FILE_ID_BOTH_DIR_INFO)(entry)`. That struct is managed-referent
+	// (its trailing `FileName [1]uint16` / `ShortName [12]uint16` are golib `array<uint16>` object
+	// references, 8 bytes where the OS wrote 2/24 inline), so the managed layout does NOT match the
+	// bytes: `&info.FileName[0]` read a zero-length array (IndexOutOfRangeException at the FIRST
+	// directory read — path/filepath.Glob, os.ReadDir, every testdata-reading test), and any copy of
+	// the reinterpreted struct hands the GC a fabricated object reference. This is the raw-metal-on-
+	// non-native-types fork: dir_windows_impl.cs decodes the entry fields from the byte slice at
+	// their documented offsets and never materializes a managed struct over OS memory.
+	// ⚠ Name-keyed, so this entry also matches os.(*File).readdir in dir_unix.go — a
+	// `-platforms linux/amd64` conversion of os would drop its (perfectly convertible) unix readdir
+	// and fail to link. Same platform caveat as runtime's lock_sema entries above.
+	"os": {
+		"File.readdir": true,
+	},
 }
 
 // isManualType reports whether the named type (raw Go name) is hand-converted in this package.
