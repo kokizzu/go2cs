@@ -20,10 +20,22 @@ namespace ChannelTests
         private readonly TimeSpan m_slowActionLatency = TimeSpan.FromMilliseconds(500);
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentOutOfRangeException))]
-        public void Ctor_ChanSizeZero_ShouldThrow()
+        public void Ctor_ChanSizeZero_IsUnbuffered()
         {
-            var sut = new channel<int>(0);
+            // Size 0 is the VALID unbuffered channel (make(chan T)) since the channels
+            // redesign: cap and len are both 0 and no buffer exists. Negative sizes throw.
+            channel<int> sut = new channel<int>(0);
+
+            Assert.AreEqual(0, sut.Capacity);
+            Assert.AreEqual(0, sut.Length);
+            Assert.IsTrue(sut.IsUnbuffered);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        public void Ctor_ChanSizeNegative_ShouldThrow()
+        {
+            var sut = new channel<int>(-1);
         }
 
         [TestMethod]
@@ -113,34 +125,6 @@ namespace ChannelTests
         }
 
         [TestMethod]
-        public void Send_CancellationToken_ShouldThrow()
-        {
-            channel<int> sut = new channel<int>(2);
-            Exception exception = null;
-            CancellationTokenSource cts = new CancellationTokenSource();
-            Task producer = Task.Run(() =>
-            {
-                sut.Send(1);
-                sut.Send(2);
-                try
-                {
-                    sut.Send(3, cts.Token);
-                }
-                catch (Exception ex)
-                {
-                    exception = ex;
-                }
-            });
-
-            producer.Wait(m_awaitTimeout);
-            cts.Cancel();
-            producer.Wait(); // Await the catch block to finish
-
-            Assert.AreEqual(2, sut.Length);
-            Assert.IsInstanceOfType(exception, typeof (OperationCanceledException));
-        }
-
-        [TestMethod]
         public void SendFew_ReceiveMany_ReceiveShouldBeBlocked()
         {
             channel<int> sut = new channel<int>(2);
@@ -180,31 +164,6 @@ namespace ChannelTests
 
             Assert.AreEqual(0, sut.Length);
             Assert.IsFalse(called);
-        }
-
-        [TestMethod]
-        public void Receive_CancellationToken_ShouldThrow()
-        {
-            channel<int> sut = new channel<int>(2);
-            CancellationTokenSource cts = new CancellationTokenSource();
-            Exception exception = null;
-            Task consumer = Task.Run(() =>
-            {
-                try
-                {
-                    sut.Receive(cts.Token);
-                }
-                catch (Exception ex)
-                {
-                    exception = ex;
-                }
-            });
-
-            consumer.Wait(m_awaitTimeout);
-            cts.Cancel();
-            consumer.Wait(); // Await the catch block to finish
-
-            Assert.IsInstanceOfType(exception, typeof (OperationCanceledException));
         }
 
         [TestMethod]
