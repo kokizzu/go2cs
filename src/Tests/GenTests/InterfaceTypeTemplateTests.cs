@@ -15,13 +15,19 @@ using static go2cs.Symbols;
 namespace go2cs.Tests;
 
 /// <summary>
-/// Pins the dyn-interface runtime wrapper's emitted identifiers. These shapes are reachable only
-/// through a keyword-named Go interface or member, which the behavioral corpus can exercise for
-/// METHODS but not for the interface NAME — the converter always suffixes a lifted anonymous
-/// interface with <c>_type</c>, so a Δ wrapper over a verbatim interface name (database/sql's
-/// <c>decimal</c>) can only occur once named interfaces get runtime shells (stage 2 of
-/// docs/Phase4/DESIGN-named-interface-wrappers.md).
+/// Pins the identifiers a runtime duck-typing SHELL emits. Every shape here is reachable only
+/// through a keyword-named Go interface or member, or through a Go parameter that collides with the
+/// shell's own receiver name — cases the behavioral corpus covers for METHODS but cannot cover for
+/// the interface NAME, because the converter always suffixes a lifted anonymous interface with
+/// <c>_type</c>, so a Δ shell over a verbatim interface name (database/sql's <c>decimal</c>) is only
+/// reachable through a named interface.
 /// </summary>
+/// <remarks>
+/// These tests originally pinned the <c>ᴛAs</c> renderer that anonymous interfaces used to carry.
+/// That renderer was retired when dyn interfaces moved onto the shells
+/// (docs/Phase4/DESIGN-named-interface-wrappers.md, stage 3) — every property below is a property of
+/// the surviving one, retargeted rather than dropped, because each was a real emitted-identifier bug.
+/// </remarks>
 [TestClass]
 public class InterfaceTypeTemplateTests
 {
@@ -35,7 +41,7 @@ public class InterfaceTypeTemplateTests
             TypeConstraints = new Dictionary<string, string[]>()
         };
 
-    private static string GenerateDyn(string interfaceName, params MethodInfo[] methods) =>
+    private static string GenerateShells(string interfaceName, params MethodInfo[] methods) =>
         new InterfaceTypeTemplate
         {
             PackageNamespace = "go",
@@ -44,14 +50,14 @@ public class InterfaceTypeTemplateTests
             InterfaceName = interfaceName,
             OperatorConstraints = [],
             Methods = methods,
-            Dynamic = true,
+            EmitShells = true,
             UsingStatements = []
         }
         .Generate();
 
-    // The generated wrapper references types this test assembly does not have (ж<>,
-    // IInterfaceAdapter, NilType), so only SYNTAX is asserted — which is exactly what a mid-token
-    // '@' breaks.
+    // The generated shells reference types this test assembly does not have (ж<>,
+    // IInterfaceAdapter, GoShellBinding), so only SYNTAX is asserted — which is exactly what a
+    // mid-token '@' breaks.
     private static void AssertParses(string source)
     {
         Diagnostic[] errors = CSharpSyntaxTree.ParseText(source)
@@ -63,16 +69,17 @@ public class InterfaceTypeTemplateTests
     }
 
     [TestMethod]
-    public void KeywordNamedInterfaceComposesABareShadowMarkerWrapperName()
+    public void KeywordNamedInterfaceComposesABareShadowMarkerShellName()
     {
         // database/sql's `decimal`: the converter declares the interface escaped.
-        string generated = GenerateDyn("@decimal", Method("Scan", "void"));
+        string generated = GenerateShells("@decimal", Method("Scan", "void"));
 
         AssertParses(generated);
 
-        // The interface DECLARATION keeps the escape; the composed wrapper name drops it.
+        // The interface DECLARATION keeps the escape; both composed shell names drop it.
         StringAssert.Contains(generated, "partial interface @decimal");
         StringAssert.Contains(generated, $"class {ShadowVarMarker}decimal<{ShadowVarMarker}TTarget>");
+        StringAssert.Contains(generated, $"class {ShadowVarMarker}decimal{TempVarMarker}Obj");
         Assert.IsFalse(generated.Contains($"{ShadowVarMarker}@decimal"), $"composed the invalid '{ShadowVarMarker}@decimal'");
     }
 
@@ -81,15 +88,19 @@ public class InterfaceTypeTemplateTests
     {
         // testing.TB's sealing method, declared DIRECTLY on the interface: syntax-sourced names
         // arrive already escaped.
-        string generated = GenerateDyn("probe_type", Method("@private", "void"), Method("Label", "global::go.@string"));
+        string generated = GenerateShells("probe_type", Method("@private", "void"), Method("Label", "global::go.@string"));
 
         AssertParses(generated);
 
-        // Declaration keeps the escape, and nameof() needs it too.
+        // The forwarder DECLARATION keeps the escape.
         StringAssert.Contains(generated, "public void @private()");
-        StringAssert.Contains(generated, "nameof(@private)");
 
-        // Every COMPOSED name drops it — `s_@privateByPtr` is not one token.
+        // The binder matches reflection's Name, which is the BARE form — and it is a string
+        // literal, not nameof(), because Roslyn hands back the unescaped name for an inherited
+        // member and the two must agree.
+        StringAssert.Contains(generated, $"ResolveReceiverMethods(typeof({ShadowVarMarker}TTarget), \"private\"");
+
+        // Every COMPOSED name drops the escape — `s_@privateByPtr` is not one token.
         foreach (string composed in new[] { "privateByPtr", "privateByVal", "s_privateByPtr", "s_privateByVal" })
             StringAssert.Contains(generated, composed);
 
@@ -100,23 +111,25 @@ public class InterfaceTypeTemplateTests
     public void ForwardingLocalNeverShadowsAMethodParameter()
     {
         // net/http.Pusher's real shape: a parameter literally named `target`, the same name the
-        // forwarding body gave its receiver local (CS0136) — and the by-value call then handed the
-        // RECEIVER to the parameter's slot (CS1503). Neither is a syntax error, so this is asserted
-        // on the emitted text.
-        string generated = GenerateDyn("probe_type",
+        // shell gives its own receiver (CS0136) — and a by-value call would then hand the RECEIVER
+        // to the parameter's slot (CS1503). Neither is a syntax error, so this is asserted on the
+        // emitted text.
+        string generated = GenerateShells("probe_type",
             Method("Push", "global::go.error", ("global::go.@string", "target"), ("nint", "weight")));
 
         AssertParses(generated);
 
         string receiver = $"target{CapturedVarMarker}";
 
-        // The receiver local is marker-suffixed, so it cannot collide with any converted Go parameter.
-        StringAssert.Contains(generated, $"{ShadowVarMarker}TTarget {receiver} = m_target;");
-        StringAssert.Contains(generated, $"{receiver} = m_target_ptr.Value;");
+        // The shell's receiver name is marker-suffixed everywhere it is DECLARED, so it cannot
+        // collide with any converted Go parameter.
+        StringAssert.Contains(generated, $"ByPtr(ж<{ShadowVarMarker}TTarget> {receiver}, global::go.@string target, nint weight)");
+        StringAssert.Contains(generated, $"ByVal({ShadowVarMarker}TTarget {receiver}, global::go.@string target, nint weight)");
+        StringAssert.Contains(generated, $"public {ShadowVarMarker}probe_type({ShadowVarMarker}TTarget {receiver})");
 
         // Receiver first, then the method's OWN parameters — never the receiver twice.
-        StringAssert.Contains(generated, $"s_PushByVal!({receiver}, target, weight)");
-        StringAssert.Contains(generated, "s_PushByPtr!(m_target_ptr!, target, weight)");
+        StringAssert.Contains(generated, $"s_PushByPtr(m_target{TempVarMarker}_ptr!, target, weight)");
+        StringAssert.Contains(generated, $": m_target{TempVarMarker}, target, weight)");
         Assert.IsFalse(generated.Contains("s_PushByVal!(target, target"), "forwarded the receiver in the parameter's slot");
     }
 
@@ -124,18 +137,45 @@ public class InterfaceTypeTemplateTests
     public void VoidForwarderDispatchesExactlyOneArm()
     {
         // A void forwarder has no `return` to leave the method on, so the two dispatch arms must be
-        // if/else — otherwise the by-value arm ran and fell through into the by-pointer arm,
+        // if/else — otherwise the by-pointer arm ran and fell through into the by-value arm,
         // dereferencing a null delegate.
-        string generated = GenerateDyn("probe_type", Method("Reset", "void"));
+        string generated = GenerateShells("probe_type", Method("Reset", "void"));
 
         AssertParses(generated);
+        StringAssert.Contains(generated, "s_ResetByPtr(");
         StringAssert.Contains(generated, "s_ResetByVal!(");
-        StringAssert.Contains(generated, "else");
 
-        // One `else` per forwarder, immediately before the by-pointer call.
-        int elseIndex = generated.IndexOf("else", generated.IndexOf("s_ResetByVal!("), System.StringComparison.Ordinal);
+        // One `else` per forwarder, between the two arms.
+        int byPtrIndex = generated.IndexOf("s_ResetByPtr(m_target", System.StringComparison.Ordinal);
+        int elseIndex = generated.IndexOf("else", byPtrIndex, System.StringComparison.Ordinal);
 
-        Assert.IsTrue(elseIndex > 0 && elseIndex < generated.IndexOf("s_ResetByPtr!(", System.StringComparison.Ordinal),
-            "the by-pointer arm is not guarded by an else");
+        Assert.IsTrue(byPtrIndex > 0 && elseIndex > byPtrIndex && elseIndex < generated.IndexOf("s_ResetByVal!(", System.StringComparison.Ordinal),
+            "the by-value arm is not guarded by an else");
+    }
+
+    [TestMethod]
+    public void AnInterfaceWithNoShellsEmitsOnlyTheDeclaration()
+    {
+        // EmitShells is off for a constraint, generic, empty or ref-parameter-carrying interface.
+        // Nothing but the partial declaration may be emitted then — no stamp naming shells that do
+        // not exist, and (since stage 3) no ᴛAs machinery either.
+        string generated = new InterfaceTypeTemplate
+        {
+            PackageNamespace = "go",
+            PackageName = "probe",
+            Scope = "internal",
+            InterfaceName = "probe_type",
+            OperatorConstraints = [],
+            Methods = [Method("Scan", "void")],
+            EmitShells = false,
+            UsingStatements = []
+        }
+        .Generate();
+
+        AssertParses(generated);
+        StringAssert.Contains(generated, "partial interface probe_type");
+        Assert.IsFalse(generated.Contains("GoInterfaceShell"), "stamped a shell attribute with no shells emitted");
+        Assert.IsFalse(generated.Contains($"{TempVarMarker}As"), "emitted the retired ᴛAs machinery");
+        Assert.IsFalse(generated.Contains($"class {ShadowVarMarker}probe_type"), "emitted a shell class");
     }
 }
