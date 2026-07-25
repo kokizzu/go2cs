@@ -322,6 +322,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckDynamicInterfaceKeywordMethod() => CheckTarget("DynamicInterfaceKeywordMethod");
 
     [TestMethod]
+    public void CheckDynIfaceParamNameCollision() => CheckTarget("DynIfaceParamNameCollision");
+
+    [TestMethod]
     public void CheckElementAddressUnsignedIndex() => CheckTarget("ElementAddressUnsignedIndex");
 
     [TestMethod]

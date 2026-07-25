@@ -296,6 +296,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckDynamicInterfaceKeywordMethod() => CheckTarget("DynamicInterfaceKeywordMethod");
 
     [TestMethod]
+    public void CheckDynIfaceParamNameCollision() => CheckTarget("DynIfaceParamNameCollision");
+
+    [TestMethod]
     public void CheckElementAddressUnsignedIndex() => CheckTarget("ElementAddressUnsignedIndex");
 
     [TestMethod]

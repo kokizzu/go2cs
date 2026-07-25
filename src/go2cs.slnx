@@ -161,6 +161,7 @@
     <Project Path="Tests/Behavioral/DivideByZeroPanic/DivideByZeroPanic.csproj" />
     <Project Path="Tests/Behavioral/DotImportRenamedPackage/DotImportRenamedPackage.csproj" />
     <Project Path="Tests/Behavioral/DynamicInterfaceKeywordMethod/DynamicInterfaceKeywordMethod.csproj" />
+    <Project Path="Tests/Behavioral/DynIfaceParamNameCollision/DynIfaceParamNameCollision.csproj" />
     <Project Path="Tests/Behavioral/ElementAddressUnsignedIndex/ElementAddressUnsignedIndex.csproj" />
     <Project Path="Tests/Behavioral/ElidedNestedPtrComposite/ElidedNestedPtrComposite.csproj" />
     <Project Path="Tests/Behavioral/ElidedStructInterfaceField/ElidedStructInterfaceField.csproj" />

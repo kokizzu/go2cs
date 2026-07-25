@@ -281,13 +281,21 @@ internal class InterfaceTypeTemplate : TemplateBase
         // corrupting the class body (CS0102 on a phantom `s_` member). The DECLARATION keeps the
         // escaped form (method.GetSignature escapes it).
         string bareName = GetUnsanitizedIdentifier(method.Name);
+        // The forwarding method's receiver LOCAL takes the same marker-suffixed name the ByPtr/ByVal
+        // delegates already give their receiver parameter. The plain name `target` collided with an
+        // interface-method parameter of the same name — net/http.Pusher's `Push(target string, opts
+        // *PushOptions) error` — which is CS0136, and had it compiled the forwarded call would have
+        // handed the RECEIVER to the parameter's slot (`s_PushByVal!(target, target)`, CS1503). One
+        // name for the receiver throughout the wrapper removes the collision class; a Go parameter
+        // cannot reach the marker glyph through the converter's identifier rendering.
+        string receiverLocal = $"target{CapturedVarMarker}";
 
         return $$"""
 
                      
                          // Implementation for '{{NonGenericInterfaceName}}.{{method.Name}}' receiver method 
-                         private delegate {{method.ReturnType}} {{bareName}}ByPtr{{method.GetGenericSignature()}}({{PointerPrefix}}<{{TypeTTarget}}> target{{CapturedVarMarker}}{{getCommaPrefixedTypedParameters()}}){{method.GetWhereConstraints()}};
-                         private delegate {{method.ReturnType}} {{bareName}}ByVal{{method.GetGenericSignature()}}({{TypeTTarget}} target{{CapturedVarMarker}}{{getCommaPrefixedTypedParameters()}}){{method.GetWhereConstraints()}};
+                         private delegate {{method.ReturnType}} {{bareName}}ByPtr{{method.GetGenericSignature()}}({{PointerPrefix}}<{{TypeTTarget}}> {{receiverLocal}}{{getCommaPrefixedTypedParameters()}}){{method.GetWhereConstraints()}};
+                         private delegate {{method.ReturnType}} {{bareName}}ByVal{{method.GetGenericSignature()}}({{TypeTTarget}} {{receiverLocal}}{{getCommaPrefixedTypedParameters()}}){{method.GetWhereConstraints()}};
                          
                          private static readonly {{bareName}}ByPtr? s_{{bareName}}ByPtr;
                          private static readonly {{bareName}}ByVal? s_{{bareName}}ByVal;
@@ -295,13 +303,13 @@ internal class InterfaceTypeTemplate : TemplateBase
                          [global::System.Diagnostics.DebuggerNonUserCode]
                          public {{method.ReturnType}} {{method.GetSignature(false)}}
                          {
-                             {{TypeTTarget}} target = m_target;
+                             {{TypeTTarget}} {{receiverLocal}} = m_target;
                          
                              if (m_target_is_ptr && m_target_ptr is not null)
-                                 target = m_target_ptr.Value;
+                                 {{receiverLocal}} = m_target_ptr.Value;
                          
                              if (s_{{bareName}}ByPtr is null || !m_target_is_ptr)
-                                 {{getReturnStatement()}}s_{{bareName}}ByVal!(target{{getCommaPrefixedCallParameters()}});
+                                 {{getReturnStatement()}}s_{{bareName}}ByVal!({{receiverLocal}}{{getCommaPrefixedCallParameters()}});
                              else
                                  {{getReturnStatement()}}s_{{bareName}}ByPtr!(m_target_ptr!{{getCommaPrefixedCallParameters()}});
                          }

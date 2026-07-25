@@ -97,6 +97,30 @@ public class InterfaceTypeTemplateTests
     }
 
     [TestMethod]
+    public void ForwardingLocalNeverShadowsAMethodParameter()
+    {
+        // net/http.Pusher's real shape: a parameter literally named `target`, the same name the
+        // forwarding body gave its receiver local (CS0136) — and the by-value call then handed the
+        // RECEIVER to the parameter's slot (CS1503). Neither is a syntax error, so this is asserted
+        // on the emitted text.
+        string generated = GenerateDyn("probe_type",
+            Method("Push", "global::go.error", ("global::go.@string", "target"), ("nint", "weight")));
+
+        AssertParses(generated);
+
+        string receiver = $"target{CapturedVarMarker}";
+
+        // The receiver local is marker-suffixed, so it cannot collide with any converted Go parameter.
+        StringAssert.Contains(generated, $"{ShadowVarMarker}TTarget {receiver} = m_target;");
+        StringAssert.Contains(generated, $"{receiver} = m_target_ptr.Value;");
+
+        // Receiver first, then the method's OWN parameters — never the receiver twice.
+        StringAssert.Contains(generated, $"s_PushByVal!({receiver}, target, weight)");
+        StringAssert.Contains(generated, "s_PushByPtr!(m_target_ptr!, target, weight)");
+        Assert.IsFalse(generated.Contains("s_PushByVal!(target, target"), "forwarded the receiver in the parameter's slot");
+    }
+
+    [TestMethod]
     public void VoidForwarderDispatchesExactlyOneArm()
     {
         // A void forwarder has no `return` to leave the method on, so the two dispatch arms must be
