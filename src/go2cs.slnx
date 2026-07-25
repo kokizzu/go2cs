@@ -551,6 +551,7 @@
   </Folder>
   <Folder Name="/tests/library/">
     <Project Path="Tests/ChannelTests/ChannelTests.csproj" />
+    <Project Path="Tests/GenTests/GenTests.csproj" />
     <Project Path="Tests/GolibTests/GolibTests.csproj" />
   </Folder>
   <Folder Name="/tests/performance/">

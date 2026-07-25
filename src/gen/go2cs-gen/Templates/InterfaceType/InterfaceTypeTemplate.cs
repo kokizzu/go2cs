@@ -85,18 +85,14 @@ internal class InterfaceTypeTemplate : TemplateBase
         };
     }
 
-    private string ConversionTypeName => m_conversionTypeName ??= GetConversionTypeName();
+    private string ConversionTypeName => m_conversionTypeName ??= $"{NonGenericConversionTypeName}<{TypeTTarget}>";
 
-    private string GetConversionTypeName()
-    {
-        string interfaceName = InterfaceName;
-
-        return interfaceName.EndsWith(">") ? 
-            $"{NonGenericConversionTypeName}<{TypeTTarget}>" : 
-            $"{ShadowVarMarker}{interfaceName}<{TypeTTarget}>";
-    }
-
-    private string NonGenericConversionTypeName => m_nonGenericConversionTypeName ??= $"{ShadowVarMarker}{NonGenericInterfaceName}";
+    // The Δ-prefixed wrapper name must compose on the BARE interface name: an interface whose Go name
+    // is a C# reserved keyword is declared escaped (database/sql's `decimal` → `@decimal`), and `@` is
+    // legal only at the START of a token, so `Δ@decimal` is invalid. The prefix also means the composed
+    // name is never itself a keyword, so it needs no escape of its own. NonGenericInterfaceName keeps
+    // the escaped form — it is used as a TYPE REFERENCE (ImplementedInterfaceName).
+    private string NonGenericConversionTypeName => m_nonGenericConversionTypeName ??= $"{ShadowVarMarker}{GetUnsanitizedIdentifier(NonGenericInterfaceName)}";
 
     private string NonGenericInterfaceName => m_nonGenericInterfaceName ??= GetNonGenericInterfaceName();
 

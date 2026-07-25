@@ -39,6 +39,14 @@
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 
+  <!-- src\Tests\GenTests exercises the internal emission templates directly, for rules whose
+       violation is not behaviorally expressible through a converted Go program. -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>GenTests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <!-- Analyzer packaging: no lib/, no runtime dependencies, development-time only -->
   <PropertyGroup>
     <IncludeBuildOutput>false</IncludeBuildOutput>
