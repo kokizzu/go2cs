@@ -45,18 +45,12 @@ using static go.encoding.binary_test_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<bigEndian, AppendByteOrder>]
-[assembly: GoImplement<bigEndian, ByteOrder>]
 [assembly: GoImplement<bigEndian, TestByteOrder_byteOrder>]
 [assembly: GoImplement<byteSliceReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Reader, io_package.ByteReader>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<littleEndian, AppendByteOrder>]
-[assembly: GoImplement<littleEndian, ByteOrder>]
 [assembly: GoImplement<littleEndian, TestByteOrder_byteOrder>]
-[assembly: GoImplement<nativeEndian, AppendByteOrder>]
-[assembly: GoImplement<nativeEndian, ByteOrder>]
 [assembly: GoImplement<strings_package.Reader, io_package.Reader>(Pointer = true)]
 // </InterfaceImplementations>
 
@@ -69,20 +63,11 @@ namespace go.encoding;
 [GoPackage("binary")]
 public static partial class binary_package
 {
-    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
-    // declarations in this package's converted sources are deliberately bare so they read
-    // like the Go original. Their real accessibility — public for a Go-exported name,
-    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
-    // and a source generator cannot see its own output: while the generators run, every one
-    // of those types is still private, so a semantic query that reaches across package
-    // classes resolves them as Inaccessible and silently drops whatever it was about to
-    // build from them.
-
-    // The declarations below close that gap. A C# partial type may carry its access modifier
-    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
-    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
-    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
-    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+    // C# nested types declared with no access modifier are always private, and the
+    // `[GoType]` declarations in this package's converted sources are deliberately
+    // bare so they read more like the original Go code. The real accessibility for
+    // the types - public for a Go-exported name, internal otherwise - are defined
+    // via declarations below.
 
     // <TypeAccessibility>
     internal partial struct byteSliceReader {}

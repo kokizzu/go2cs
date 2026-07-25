@@ -671,7 +671,7 @@ public static void TestBufferedDecodingSameError(ж<testing.T> Ꮡt) {
                 }
                 pwʗ1.Close();
             });
-            var decoder = NewDecoder(StdEncoding, new io.PipeReaderжReader(pr));
+            var decoder = NewDecoder(StdEncoding, new io_PipeReaderжReader(pr));
             var (_, err) = io.ReadAll(decoder);
             if (!AreEqual(err, testcase.expected)) {
                 Ꮡt.Errorf("Expected %v, got %v; case %s %+v"u8, testcase.expected, err, testcase.prefix, chunks);
@@ -720,7 +720,7 @@ public static void TestBufferedDecodingPadding(ж<testing.T> Ꮡt) {
             }
             _ = pwʗ1.Close();
         });
-        var decoder = NewDecoder(StdEncoding, new io.PipeReaderжReader(pr));
+        var decoder = NewDecoder(StdEncoding, new io_PipeReaderжReader(pr));
         var (_, err) = io.ReadAll(decoder);
         if (err == default! && len(testcaseΔ1.expectedError) != 0){
             Ꮡt.Errorf("case %q: got nil error, want %v"u8, testcaseΔ1.chunks, testcaseΔ1.expectedError);

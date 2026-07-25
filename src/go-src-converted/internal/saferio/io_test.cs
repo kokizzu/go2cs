@@ -89,7 +89,7 @@ public static void TestReadDataAt(ж<testing.T> Ꮡt) {
         // of the section will return EOF, but ReadDataAt
         // should succeed and return 0 bytes.
         var sr = io.NewSectionReader(new bytes_ReaderжReaderAt(bytes.NewReader(inputʗ7)), 0, 0);
-        var (got, err) = ReadDataAt(new io.SectionReaderжReaderAt(sr), 0, 0);
+        var (got, err) = ReadDataAt(new io_SectionReaderжReaderAt(sr), 0, 0);
         if (err != default!) {
             tΔ4.Fatal(err);
         }

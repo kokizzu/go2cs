@@ -52,7 +52,6 @@ using static go.os.signal_test_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<signalCtx, context_package.Context>(Pointer = true)]
 [assembly: GoImplement<signalCtx, context_package.Context>(Promoted = true)]
-[assembly: GoImplement<signalCtx, stringer>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<syscall_package.ΔSignal, os_package.ΔSignal>]
 [assembly: GoImplement<testing_package.T, testing_package.TB>(Pointer = true)]
@@ -66,20 +65,11 @@ namespace go.os;
 [GoPackage("signal")]
 public static partial class signal_package
 {
-    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
-    // declarations in this package's converted sources are deliberately bare so they read
-    // like the Go original. Their real accessibility — public for a Go-exported name,
-    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
-    // and a source generator cannot see its own output: while the generators run, every one
-    // of those types is still private, so a semantic query that reaches across package
-    // classes resolves them as Inaccessible and silently drops whatever it was about to
-    // build from them.
-
-    // The declarations below close that gap. A C# partial type may carry its access modifier
-    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
-    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
-    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
-    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+    // C# nested types declared with no access modifier are always private, and the
+    // `[GoType]` declarations in this package's converted sources are deliberately
+    // bare so they read more like the original Go code. The real accessibility for
+    // the types - public for a Go-exported name, internal otherwise - are defined
+    // via declarations below.
 
     // <TypeAccessibility>
     internal partial interface stringer {}
