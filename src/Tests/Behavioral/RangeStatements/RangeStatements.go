@@ -181,6 +181,27 @@ func main() {
         }
         fmt.Println(x)
     }
+
+    // A blank SCALAR range (int / channel — Go 1.22 `for range N`) must not declare a C#
+    // iteration variable literally named `_`: that shadows the discard for the whole body, so
+    // the blank assignment below would be an illegal write to the read-only foreach variable
+    // (CS1656 — encoding/binary's BenchmarkSize shape).
+    total = 0
+    for range 3 {
+        _ = len(kvs)
+        total++
+    }
+    fmt.Println("Total:", total)
+
+    ch := make(chan int, 2)
+    ch <- 7
+    ch <- 8
+    close(ch)
+    for range ch {
+        _ = len(kvs)
+        total++
+    }
+    fmt.Println("Total:", total)
 }
 
 func calculate(x int) {

@@ -391,6 +391,18 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 	keyNeedsCopy := !assignVars && (v.rangeVarNeedsMutableCopy(rangeStmt.Key, rangeStmt.Body) || keyIsArrayValue)
 	valNeedsCopy := !assignVars && (v.rangeVarNeedsMutableCopy(rangeStmt.Value, rangeStmt.Body) || valIsArrayValue)
 
+	// A blank iteration variable in a SCALAR foreach position (chan / int / single-value yield
+	// ranges) must not be emitted as `_`: there C# declares a genuine read-only variable NAMED
+	// `_` — not a discard — which shadows the discard idiom for the whole body, so a Go blank
+	// assignment inside (`for range b.N { _ = Size(x) }`, encoding/binary's BenchmarkSize) becomes
+	// an illegal write to the iteration variable (CS1656). Tuple positions keep `_` (a
+	// deconstruction `_` IS a C# discard); scalar positions get a marked temp instead.
+	scalarKeyExpr := keyExpr
+
+	if keyExpr == "_" && (isChan || isInt || yieldFunc == 0 || yieldFunc == 1) {
+		scalarKeyExpr = v.getTempVarName("_")
+	}
+
 	if isStr {
 		if untypedStr {
 			rangeExpr = fmt.Sprintf("(@string)%s", rangeExpr)
@@ -444,7 +456,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 			keyType = "var "
 		}
 
-		v.writeOutput("foreach (%s%s in %s%s)", keyType, keyExpr, rangeExpr, ptrDeref)
+		v.writeOutput("foreach (%s%s in %s%s)", keyType, scalarKeyExpr, rangeExpr, ptrDeref)
 	} else if isInt {
 		if untypedInt {
 			rangeExpr = fmt.Sprintf("@int(%s%s)", rangeExpr, ptrDeref)
@@ -455,7 +467,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 			keyType = "var "
 		}
 
-		v.writeOutput("foreach (%s%s in range(%s%s))", keyType, keyExpr, rangeExpr, ptrDeref)
+		v.writeOutput("foreach (%s%s in range(%s%s))", keyType, scalarKeyExpr, rangeExpr, ptrDeref)
 	} else if yieldFunc > -1 {
 		// A NAMED func type renders as a C# DELEGATE; golib's range() overloads take
 		// Action<Func<…>>, and a distinct delegate type has no conversion — but its method
@@ -487,13 +499,13 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 				keyType = "var "
 			}
 
-			v.writeOutput("foreach (object %s in range%s(%s%s%s))", keyExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
+			v.writeOutput("foreach (object %s in range%s(%s%s%s))", scalarKeyExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
 		} else if yieldFunc == 1 {
 			if v.options.preferVarDecl {
 				keyType = "var "
 			}
 
-			v.writeOutput("foreach (%s%s in range%s(%s%s%s))", keyType, keyExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
+			v.writeOutput("foreach (%s%s in range%s(%s%s%s))", keyType, scalarKeyExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
 		} else {
 			v.writeOutput("foreach (%s(%s%s, %s%s) in range%s(%s%s%s))", varInit, keyType, keyExpr, valType, valExpr, rangeTypeArgs, rangeExpr, ptrDeref, invokeSuffix)
 		}

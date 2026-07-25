@@ -128,6 +128,21 @@ internal static void Main() {
         }
         fmt.Println(x);
     }
+    total = 0;
+    foreach (var _ᴛ1 in range(3)) {
+        _ = len(kvs);
+        total++;
+    }
+    fmt.Println("Total:", total);
+    var ch = new channel<nint>(2);
+    ch.ᐸꟷ(7);
+    ch.ᐸꟷ(8);
+    close(ch);
+    foreach (var _ᴛ2 in ch) {
+        _ = len(kvs);
+        total++;
+    }
+    fmt.Println("Total:", total);
 }
 
 internal static void calculate(nint x) {
