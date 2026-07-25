@@ -3974,6 +3974,25 @@ converge on the same `err.Error()` text through the `fmt.Errorf("%s", v)` defaul
 by the `MakeSlicePanicRange` behavioral test — in-range, negative, huge-length, and huge-capacity
 `make` under `recover()`, messages compared vs Go.)
 
+### A panicked C# `string` boxes as Go `string` at golib's boxing boundary
+Go's `panic` takes an `any`, so the panicked value's **dynamic type** is observable on the recover
+side — `if p != "x"`, `err.(string)`, and `case string:` all test it. Two converted spellings hand
+golib a bare C# `System.String` rather than a Go `@string`: a **string literal** (`panic("x")` — the
+emission deliberately suppresses the `u8` suffix there, so the argument stays a C# literal) and a
+**computed** value from a stub that returns C# `string` (the baseline `fmt.Sprintf` does). Boxed as
+`System.String`, such a value matched nothing on the recover side, which compares against `@string`:
+sync's `testOncePanicX` reported the self-contradictory `want panic x, got x` (3 tests).
+
+`builtin.panic(object)` — the single boxing boundary for the builtin — now normalizes `string` to
+`@string`. Choosing that layer over an emission-site `(@string)` cast is deliberate: the cast would
+fix only the literal spelling, while the boundary covers literal, computed, and hand-owned callers
+alike. It is a narrow normalization, not a coercion — a NAMED string type keeps its own identity
+(a `[GoType("@string")]` wrapper is not a C# `string`), and non-string values are untouched. golib's
+own `RuntimeErrorPanic` values are unaffected: those construct `PanicException` directly, and Go's
+dynamic type for them is a runtime error, not a string. (Guarded by `PanicRecover`, extended with a
+recover-side type switch over a literal, a computed, a variable, a named-string-type, an int, and a
+no-panic case, output-compared vs Go.)
+
 ### A NIL-POINTER dereference is a RECOVERABLE panic, with Go's message
 The same class as the `makeslice` arm above, for the most common Go runtime panic of all. Go's nil
 dereference is recoverable and real code depends on it — sync's `TestNilPool` calls `Get`/`Put` on a

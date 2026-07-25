@@ -65,5 +65,6 @@ public static partial class main_package
     // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
 
     // <TypeAccessibility>
+    internal partial struct panicValues_label {}
     // </TypeAccessibility>
 }

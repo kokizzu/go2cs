@@ -163,7 +163,16 @@ public static class builtin
     /// <param name="state">State of panic exception.</param>
     public static PanicException panic(object state)
     {
-        return new PanicException(state);
+        // Go's `panic` takes an `any`, so the value's DYNAMIC TYPE is observable: a recovering
+        // comparison (`if p != "x"`), a type assertion (`err.(string)`), and a `case string:` arm
+        // all test it. A C# `System.String` reaching here is a Go `string` that never acquired its
+        // @string boxing — from a bare literal (`panic("x")`, which the emission deliberately does
+        // not u8-suffix) or from a stub returning C# string (baseline fmt.Sprintf). Boxed as
+        // System.String it matches nothing on the recover side, which compares against @string:
+        // sync's testOncePanicX reported the self-contradictory `want panic x, got x`. Normalizing
+        // at this single boxing boundary covers every caller — literal, computed, and hand-owned —
+        // where a cast at the emission site could only cover the literal.
+        return new PanicException(state is string s ? (@string)s : state);
     }
 
     /// <summary>
