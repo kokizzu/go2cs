@@ -1167,13 +1167,22 @@ helpers (hand-written `syscall` P/Invokes) and golib builtins such as `maps.Clon
 Hand-owning is also how an **asm-backed architecture layer gets realized rather than stubbed**: where .NET
 exposes the same instructions the `.s` file issues, the port is real hardware acceleration — `hash/crc32`'s
 SSE4.2 `CRC32` and PCLMULQDQ folding paths, whose capabilities are probed **locally** (`.IsSupported`)
-instead of through `internal/cpu`'s global flags, which still gate other packages' stubs.
+instead of through `internal/cpu`'s global flags, which still gate other packages' stubs. The same
+mechanism realizes `time`'s **runtime timers** — `Sleep`/`newTimer`/`stopTimer`/`resetTimer` are
+`//go:linkname`'d into `runtime/time.go`, so they arrive bodyless: `time_impl.cs` services one
+deadline-ordered heap from one dedicated thread (Go's own pre-per-P `timerproc` shape) and waits on the
+very Windows high-resolution timer object the Go runtime uses, since `System.Threading.Timer`'s ~15 ms
+tick would fire a 1 ms Go timer late and out of order. `tick.cs` is hand-owned for a different reason:
+its `(*Ticker)(unsafe.Pointer(newTimer(…)))` reinterpret compiles but yields a *dangling* pointer in a
+managed runtime, so the Ticker is built directly and its timer addressed by box identity.
 
 **Full detail:** [Reference → Manually-Converted Declarations](ConversionStrategies-Reference.md#manually-converted-declarations) —
 the guintptr family surface, the `unsafe.Pointer`→manual-type ctor cooperation, the runtime lock/note
 model, `sync/atomic.Value`, the reflection bridge (`abi.TypeOf`/`reflect` value+type side,
-`reflectlite`, `DeepEqual`), whitelisted `//go:linkname` forwarders, and
-[realizing an asm-backed arch layer with managed hardware intrinsics](ConversionStrategies-Reference.md#realizing-an-asm-backed-arch-layer-with-managed-hardware-intrinsics).
+`reflectlite`, `DeepEqual`), whitelisted `//go:linkname` forwarders,
+[realizing an asm-backed arch layer with managed hardware intrinsics](ConversionStrategies-Reference.md#realizing-an-asm-backed-arch-layer-with-managed-hardware-intrinsics), and
+[realizing the runtime timer contract](ConversionStrategies-Reference.md#realizing-the-runtime-timer-contract-sleep--newtimer--stoptimer--resettimer)
+(the Stop/Reset race semantics, the ticker phase/drop rule, and the asynchronous-timer-channel divergence).
 
 ---
 
