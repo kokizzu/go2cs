@@ -42,8 +42,38 @@ internal static void commandContext(TB t) {
     }
 }
 
+[GoType] partial struct gate {
+    internal @string name;
+}
+
+internal static void @private(this gate g) {
+    fmt.Println("sealed:", g.name);
+}
+
+internal static @string Kind(this gate g) {
+    return "gate:"u8 + g.name;
+}
+
+[GoType("dyn")] partial interface direct_type {
+    void @private();
+    @string Kind();
+}
+
+internal static void direct(any v) {
+    {
+        var (d, ok) = v._<direct_type>(ᐧ); if (ok){
+            d.@private();
+            fmt.Println("direct:", d.Kind());
+        } else {
+            fmt.Println("no direct");
+        }
+    }
+}
+
 internal static void Main() {
     commandContext(new harness(name: "cmd"u8, deadline: 100));
+    direct(new gate(name: "v"u8));
+    direct(Ꮡ(new gate(name: "p"u8)));
 }
 
 } // end main_package

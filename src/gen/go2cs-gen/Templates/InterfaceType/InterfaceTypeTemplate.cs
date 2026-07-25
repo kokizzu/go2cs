@@ -306,8 +306,8 @@ internal class InterfaceTypeTemplate : TemplateBase
                          
                              if (s_{{bareName}}ByPtr is null || !m_target_is_ptr)
                                  {{getReturnStatement()}}s_{{bareName}}ByVal!(target{{getCommaPrefixedCallParameters()}});
-                         
-                             {{getReturnStatement()}}s_{{bareName}}ByPtr!(m_target_ptr!{{getCommaPrefixedCallParameters()}});
+                             else
+                                 {{getReturnStatement()}}s_{{bareName}}ByPtr!(m_target_ptr!{{getCommaPrefixedCallParameters()}});
                          }
                  """;
 
