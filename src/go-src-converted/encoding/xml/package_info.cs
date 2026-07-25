@@ -69,4 +69,46 @@ namespace go.encoding;
 [GoPackage("xml")]
 public static partial class xml_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct fieldFlags {}
+    internal partial struct fieldInfo {}
+    internal partial struct parentStack {}
+    internal partial struct printer {}
+    internal partial struct stack {}
+    internal partial struct typeInfo {}
+    public partial interface Marshaler {}
+    public partial interface MarshalerAttr {}
+    public partial interface TokenReader {}
+    public partial interface Unmarshaler {}
+    public partial interface UnmarshalerAttr {}
+    public partial struct Attr {}
+    public partial struct CharData {}
+    public partial struct Comment {}
+    public partial struct Decoder {}
+    public partial struct Directive {}
+    public partial struct Encoder {}
+    public partial struct EndElement {}
+    public partial struct Name {}
+    public partial struct ProcInst {}
+    public partial struct StartElement {}
+    public partial struct SyntaxError {}
+    public partial struct TagPathError {}
+    public partial struct UnmarshalError {}
+    public partial struct UnsupportedTypeError {}
+    // </TypeAccessibility>
 }

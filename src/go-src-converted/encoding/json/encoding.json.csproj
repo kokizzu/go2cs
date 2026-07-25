@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -8,7 +8,7 @@
     <Product>go2cs</Product>
     <Description>$(AssemblyName) ($(TargetFramework) - $(Configuration))</Description>
     <AssemblyTitle>$(Description)</AssemblyTitle>
-    <Copyright>Copyright © 2026 The go2cs Authors</Copyright>
+    <Copyright>Copyright Â© 2026 The go2cs Authors</Copyright>
     <Authors>$(Product) Authors</Authors>
     <Company>The go2cs Authors</Company>
     <RepositoryUrl>https://github.com/ritchiecarroll/go2cs</RepositoryUrl>
@@ -105,7 +105,7 @@
     <Compile Include="*.cs" />
     <!-- Remove converted test artifacts from current folder (compiled by the colocated
          <name>.tests.csproj instead; the old `*._test.cs` pattern matched nothing the
-         converter emits — Go test files are `*_test.go` so their outputs are `*_test.cs`) -->
+         converter emits â€” Go test files are `*_test.go` so their outputs are `*_test.cs`) -->
     <Compile Remove="*_test.cs;package_test_info.cs;go2cs_test_host.cs" />
     <!--Remove all sub-folders -->
     <None Remove="*/**/*" />

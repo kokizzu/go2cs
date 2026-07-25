@@ -892,11 +892,13 @@ internal static error acquireThread(context.Context ctx) {
     ᏑthreadOnce.Do(() => {
         threadLimit = new channel<EmptyStruct>(concurrentThreadsLimit());
     });
-    switch (select(threadLimit.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ), ᐸꟷ(ctx.Done(), ꓸꓸꓸ))) {
+    var selᴛ19 = threadLimit.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+    var selᴛ20 = ctx.Done();
+    switch (select(selᴛ19, ᐸꟷ(selᴛ20, ꓸꓸꓸ))) {
     case 0: {
         return default!;
     }
-    case 1 when ctx.Done().ꟷᐳ(out _): {
+    case 1 when selᴛ20.ꟷᐳ(out _): {
         return ctx.Err();
     }}
     return default!;
@@ -916,8 +918,8 @@ internal static void releaseThread() {
 
 [GoType("[]slice<byte>")] partial struct Buffers;
 
-internal static Δio.WriterTo _ᴛ2ʗ = new BuffersжWriterTo(((ж<Buffers>)default!));
-internal static Δio.Reader _ᴛ3ʗ = new BuffersжReader(((ж<Buffers>)default!));
+internal static Δio.WriterTo _ᴛ2ʗ = new BuffersжWriterTo(((ж<Buffers>)nil));
+internal static Δio.Reader _ᴛ3ʗ = new BuffersжReader(((ж<Buffers>)nil));
 
 // WriteTo writes contents of the buffers to w.
 //
@@ -929,7 +931,7 @@ public static (int64 n, error err) WriteTo(this ж<Buffers> Ꮡv, Δio.Writer w)
     int64 n = default!;
     error err = default!;
 
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.ValueSlot;
     {
         var (wv, ok) = w._<buffersWriter>(ᐧ); if (ok) {
             return wv.writeBuffers(Ꮡv);

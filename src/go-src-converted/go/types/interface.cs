@@ -61,7 +61,7 @@ public static ж<Interface> NewInterfaceType(slice<ж<Func>> methods, slice<ΔTy
         return ᏑemptyInterface;
     }
     // set method receivers if necessary
-    var typ = ((ж<Checker>)(default!)).newInterface();
+    var typ = (((ж<Checker>)nil)).newInterface();
     foreach (var (_, m) in methods) {
         {
             var sig = (~m).typ._<ж<ΔSignature>>(); if ((~sig).recv == nil) {

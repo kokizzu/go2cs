@@ -117,7 +117,7 @@ partial class tabwriter_package {
             b.lines = b.lines[..(int)(n)];
             b.lines[n - 1] = b.lines[n - 1][..0];
         } else {
-            b.lines = builtin.append(b.lines, default!);
+            b.lines = builtin.append(b.lines, (slice<cell>)(default!));
         }
     }
     if (!flushed) {
@@ -223,14 +223,14 @@ public static ж<Writer> Init(this ж<Writer> Ꮡb, io.Writer output, nint minwi
 [GoRecv] internal static void dump(this ref Writer b) {
     nint pos = 0;
     foreach (var (i, line) in b.lines) {
-        print("(", i, ") ");
+        print((@string)"(", i, (@string)") ");
         foreach (var (_, c) in line) {
-            print("[", ((@string)(b.buf[(int)(pos)..(int)(pos + c.size)])), "]");
+            print((@string)"[", ((@string)(b.buf[(int)(pos)..(int)(pos + c.size)])), (@string)"]");
             pos += c.size;
         }
-        print("\n");
+        print((@string)"\n");
     }
-    print("\n");
+    print((@string)"\n");
 }
 
 // local error wrapper so we can distinguish errors we want to return
@@ -462,7 +462,7 @@ public static readonly UntypedInt Escape = /* '\xff' */ 255;
 // current line. Returns the number of cells in that line.
 [GoRecv] internal static nint terminateCell(this ref Writer b, bool htab) {
     b.cell.htab = htab;
-    var line = Ꮡ(b.lines[len(b.lines) - 1]);
+    var line = Ꮡ(b.lines, len(b.lines) - 1);
     line.ValueSlot = builtin.append(line.ValueSlot, b.cell);
     b.cell = new cell(nil);
     return len(line.ValueSlot);
@@ -470,7 +470,7 @@ public static readonly UntypedInt Escape = /* '\xff' */ 255;
 
 internal static void handlePanic(this ж<Writer> Ꮡb, ж<error> Ꮡerr, @string op) => func((defer, recover) => {
     ref var b = ref Ꮡb.Value;
-    ref var err = ref Ꮡerr.Value;
+    ref var err = ref Ꮡerr.ValueSlot;
 
     {
         var e = recover(); if (e != default!) {
@@ -500,15 +500,16 @@ public static error Flush(this ж<Writer> Ꮡb) {
 // flush is the internal version of Flush, with a named return value which we
 // don't want to expose.
 internal static error /*err*/ flush(this ж<Writer> Ꮡb) {
-    error err = default!;
+    heap<error>(out var Ꮡerr);
     func((defer, recover) => {
     ref var b = ref Ꮡb.Value;
 
-        deferǃ(Ꮡb.handlePanic, Ꮡ(err), (@string)"Flush", defer);
+    ref var err = ref Ꮡerr.ValueSlot;
+        deferǃ(Ꮡb.handlePanic, Ꮡerr, (@string)"Flush", defer);
         b.flushNoDefers();
         err = default!;
     });
-    return err;
+    return Ꮡerr.ValueSlot;
 }
 
 // flushNoDefers is like flush, but without a deferred handlePanic call. This
@@ -535,11 +536,12 @@ internal static slice<byte> hbar = slice<byte>("---\n"u8);
 // while writing to the underlying output stream.
 public static (nint n, error err) Write(this ж<Writer> Ꮡb, slice<byte> buf) {
     nint n = default!;
-    error err = default!;
+    heap<error>(out var Ꮡerr);
     func((defer, recover) => {
     ref var b = ref Ꮡb.Value;
 
-        deferǃ(Ꮡb.handlePanic, Ꮡ(err), (@string)"Write", defer);
+    ref var err = ref Ꮡerr.ValueSlot;
+        deferǃ(Ꮡb.handlePanic, Ꮡerr, (@string)"Write", defer);
         // split text into cells
         n = 0;
         foreach (var (i, ch) in buf) {
@@ -612,7 +614,7 @@ public static (nint n, error err) Write(this ж<Writer> Ꮡb, slice<byte> buf) {
         b.append(buf[(int)(n)..]);
         n = len(buf);
     });
-    return (n, err);
+    return (n, Ꮡerr.ValueSlot);
 }
 
 // NewWriter allocates and initializes a new [Writer].

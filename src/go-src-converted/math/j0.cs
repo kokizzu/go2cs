@@ -94,21 +94,21 @@ public static float64 J0(float64 x) {
         return x;
     }
     case {} when IsInf(x, 0): {
-        return 0;
+        return 0D;
     }
-    case {} when x is 0: {
-        return 1;
+    case {} when x is 0D: {
+        return 1D;
     }}
 
     x = Abs(x);
-    if (x >= 2) {
+    if (x >= 2D) {
         var (sΔ1, c) = Sincos(x);
         var ss = sΔ1 - c;
         var cc = sΔ1 + c;
         // make sure x+x does not overflow
         if (x < MaxFloat64 / 2D) {
             var zΔ1 = -Cos(x + x);
-            if (sΔ1 * c < 0){
+            if (sΔ1 * c < 0D){
                 cc = zΔ1 / ss;
             } else {
                 ss = zΔ1 / cc;
@@ -131,21 +131,21 @@ public static float64 J0(float64 x) {
     if (x < TwoM13) {
         // |x| < ~1.2207e-4
         if (x < TwoM27) {
-            return 1;
+            return 1D;
         }
         // |x| < ~7.4506e-9
-        return 1 - 0.25D * x * x;
+        return 1D - 0.25D * x * x;
     }
     // ~7.4506e-9 < |x| < ~1.2207e-4
     var z = x * x;
     var r = z * (R02 + z * (R03 + z * (R04 + z * R05)));
-    var s = 1 + z * (S01 + z * (S02 + z * (S03 + z * S04)));
-    if (x < 1) {
-        return 1 + z * (-0.25D + (r / s));
+    var s = 1D + z * (S01 + z * (S02 + z * (S03 + z * S04)));
+    if (x < 1D) {
+        return 1D + z * (-0.25D + (r / s));
     }
     // |x| < 1.00
     var u = 0.5D * x;
-    return (1 + u) * (1 - u) + z * (r / s);
+    return (1D + u) * (1D - u) + z * (r / s);
 }
 
 // 1.0 < |x| < 2.0
@@ -175,17 +175,17 @@ public static float64 Y0(float64 x) {
     const float64 V04 = 4.41110311332675467403e-10; // 0x3DFE50183BD6D9EF
     // special cases
     switch (ᐧ) {
-    case {} when x < 0 || IsNaN(x): {
+    case {} when x < 0D || IsNaN(x): {
         return NaN();
     }
     case {} when IsInf(x, 1): {
-        return 0;
+        return 0D;
     }
-    case {} when x is 0: {
+    case {} when x is 0D: {
         return Inf(-1);
     }}
 
-    if (x >= 2) {
+    if (x >= 2D) {
         // |x| >= 2.0
         // y0(x) = sqrt(2/(pi*x))*(p0(x)*sin(x0)+q0(x)*cos(x0))
         //     where x0 = x-pi/4
@@ -205,7 +205,7 @@ public static float64 Y0(float64 x) {
         // make sure x+x does not overflow
         if (x < MaxFloat64 / 2D) {
             var zΔ1 = -Cos(x + x);
-            if (s * c < 0){
+            if (s * c < 0D){
                 cc = zΔ1 / ss;
             } else {
                 ss = zΔ1 / cc;
@@ -229,7 +229,7 @@ public static float64 Y0(float64 x) {
     // |x| < ~7.4506e-9
     var z = x * x;
     var u = U00 + z * (U01 + z * (U02 + z * (U03 + z * (U04 + z * (U05 + z * U06)))));
-    var v = 1 + z * (V01 + z * (V02 + z * (V03 + z * V04)));
+    var v = 1D + z * (V01 + z * (V02 + z * (V03 + z * V04)));
     return u / v + /* (2 / Pi) */ 0.6366197723675814D * J0(x) * Log(x);
 }
 
@@ -369,7 +369,7 @@ internal static ref array<float64> p0S2 => ref Ꮡp0S2.Value;
 internal static float64 pzero(float64 x) {
     ж<array<float64>> p = default!;
     ж<array<float64>> q = default!;
-    if (x >= 8){
+    if (x >= 8D){
         p = Ꮡp0R8;
         q = Ꮡp0S8;
     } else 
@@ -381,14 +381,14 @@ internal static float64 pzero(float64 x) {
         p = Ꮡp0R3;
         q = Ꮡp0S3;
     } else 
-    if (x >= 2) {
+    if (x >= 2D) {
         p = Ꮡp0R2;
         q = Ꮡp0S2;
     }
-    var z = 1 / (x * x);
+    var z = 1D / (x * x);
     var r = p.Value[0] + z * (p.Value[1] + z * (p.Value[2] + z * (p.Value[3] + z * (p.Value[4] + z * p.Value[5]))));
-    var s = 1 + z * (q.Value[0] + z * (q.Value[1] + z * (q.Value[2] + z * (q.Value[3] + z * q.Value[4]))));
-    return 1 + r / s;
+    var s = 1D + z * (q.Value[0] + z * (q.Value[1] + z * (q.Value[2] + z * (q.Value[3] + z * q.Value[4]))));
+    return 1D + r / s;
 }
 
 // For x >= 8, the asymptotic expansions of qzero is
@@ -534,7 +534,7 @@ internal static ref array<float64> q0S2 => ref Ꮡq0S2.Value;
 internal static float64 qzero(float64 x) {
     ж<array<float64>> p = default!;
     ж<array<float64>> q = default!;
-    if (x >= 8){
+    if (x >= 8D){
         p = Ꮡq0R8;
         q = Ꮡq0S8;
     } else 
@@ -546,13 +546,13 @@ internal static float64 qzero(float64 x) {
         p = Ꮡq0R3;
         q = Ꮡq0S3;
     } else 
-    if (x >= 2) {
+    if (x >= 2D) {
         p = Ꮡq0R2;
         q = Ꮡq0S2;
     }
-    var z = 1 / (x * x);
+    var z = 1D / (x * x);
     var r = p.Value[0] + z * (p.Value[1] + z * (p.Value[2] + z * (p.Value[3] + z * (p.Value[4] + z * p.Value[5]))));
-    var s = 1 + z * (q.Value[0] + z * (q.Value[1] + z * (q.Value[2] + z * (q.Value[3] + z * (q.Value[4] + z * q.Value[5])))));
+    var s = 1D + z * (q.Value[0] + z * (q.Value[1] + z * (q.Value[2] + z * (q.Value[3] + z * (q.Value[4] + z * q.Value[5])))));
     return (-0.125D + r / s) / x;
 }
 

@@ -69,12 +69,12 @@ public static (ΔType, error) Instantiate(ж<Context> Ꮡctxt, ΔType orig, slic
         }
         {
             ref var i = ref heap<nint>(out var Ꮡi);
-            (i, var err) = ((ж<Checker>)(default!)).verify(nopos, tparams, targs, Ꮡctxt); if (err != default!) {
+            (i, var err) = (((ж<Checker>)nil)).verify(nopos, tparams, targs, Ꮡctxt); if (err != default!) {
                 return (default!, new ArgumentErrorжerror(Ꮡ(new ArgumentError(i, err))));
             }
         }
     }
-    var inst = ((ж<Checker>)(default!)).instance(nopos, orig_, targs, nil, Ꮡctxt);
+    var inst = (((ж<Checker>)nil)).instance(nopos, orig_, targs, nil, Ꮡctxt);
     return (inst, default!);
 }
 

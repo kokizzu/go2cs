@@ -359,7 +359,7 @@ public static bool ShouldPrint(this ж<Matcher> Ꮡm, uint64 id) {
 // matchResult returns the result from the first condition that matches id.
 [GoRecv] internal static bool matchResult(this ref Matcher m, uint64 id) {
     for (nint i = len(m.list) - 1; i >= 0; i--) {
-        var c = Ꮡ(m.list[i]);
+        var c = Ꮡ(m.list, i);
         if ((uint64)(id & (~c).mask) == (~c).bits) {
             return (~c).result;
         }
@@ -639,7 +639,7 @@ public static (@string @short, uint64 id, bool ok) CutMarker(@string line) {
 // Hash computes a hash of the data arguments,
 // each of which must be of type string, byte, int, uint, int32, uint32, int64, uint64, uintptr, or a slice of one of those types.
 public static uint64 Hash(params ꓸꓸꓸany dataʗp) {
-    var data = dataʗp.slice();
+    var data = dataʗp.sslice();
 
     var h = offset64;
     foreach (var (_, v) in data) {
@@ -835,7 +835,7 @@ internal static bool seen(this ж<dedup> Ꮡd, uint64 h) {
 [GoRecv] internal static bool seenLossy(this ref dedup d, uint64 h) {
     var cache = Ꮡ(d.recent[(nuint)h % (nuint)len(d.recent)]);
     for (nint i = 0; i < len(cache); i++) {
-        if (atomic.LoadUint64(Ꮡ(cache.Value[i])) == h) {
+        if (atomic.LoadUint64(cache.at<uint64>(i)) == h) {
             return true;
         }
     }
@@ -844,7 +844,7 @@ internal static bool seen(this ж<dedup> Ꮡd, uint64 h) {
     foreach (var (_, x) in cache.Value) {
         ch = fnvUint64(ch, x);
     }
-    atomic.StoreUint64(Ꮡ(cache.Value[(nuint)ch % (nuint)len(cache)]), h);
+    atomic.StoreUint64(cache.at<uint64>((nint)((nuint)ch % (nuint)len(cache))), h);
     return false;
 }
 

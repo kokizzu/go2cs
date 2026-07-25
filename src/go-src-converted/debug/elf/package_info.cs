@@ -72,4 +72,82 @@ namespace go.debug;
 [GoPackage("elf")]
 public static partial class elf_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct errorReader {}
+    internal partial struct intName {}
+    internal partial struct nobitsSectionReader {}
+    internal partial struct readSeekerFromReader {}
+    internal partial struct verneed {}
+    public partial struct Chdr32 {}
+    public partial struct Chdr64 {}
+    public partial struct Class {}
+    public partial struct CompressionType {}
+    public partial struct Dyn32 {}
+    public partial struct Dyn64 {}
+    public partial struct DynFlag {}
+    public partial struct DynFlag1 {}
+    public partial struct DynTag {}
+    public partial struct File {}
+    public partial struct FileHeader {}
+    public partial struct FormatError {}
+    public partial struct Header32 {}
+    public partial struct Header64 {}
+    public partial struct ImportedSymbol {}
+    public partial struct Machine {}
+    public partial struct NType {}
+    public partial struct OSABI {}
+    public partial struct Prog {}
+    public partial struct Prog32 {}
+    public partial struct Prog64 {}
+    public partial struct ProgFlag {}
+    public partial struct ProgHeader {}
+    public partial struct ProgType {}
+    public partial struct R_386 {}
+    public partial struct R_390 {}
+    public partial struct R_AARCH64 {}
+    public partial struct R_ALPHA {}
+    public partial struct R_ARM {}
+    public partial struct R_LARCH {}
+    public partial struct R_MIPS {}
+    public partial struct R_PPC {}
+    public partial struct R_PPC64 {}
+    public partial struct R_RISCV {}
+    public partial struct R_SPARC {}
+    public partial struct R_X86_64 {}
+    public partial struct Rel32 {}
+    public partial struct Rel64 {}
+    public partial struct Rela32 {}
+    public partial struct Rela64 {}
+    public partial struct Section32 {}
+    public partial struct Section64 {}
+    public partial struct SectionFlag {}
+    public partial struct SectionHeader {}
+    public partial struct SectionIndex {}
+    public partial struct SectionType {}
+    public partial struct Sym32 {}
+    public partial struct Sym64 {}
+    public partial struct SymBind {}
+    public partial struct SymType {}
+    public partial struct SymVis {}
+    public partial struct Symbol {}
+    public partial struct Type {}
+    public partial struct Version {}
+    public partial struct ΔData {}
+    public partial struct ΔSection {}
+    // </TypeAccessibility>
 }

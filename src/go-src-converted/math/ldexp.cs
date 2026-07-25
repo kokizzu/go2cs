@@ -23,7 +23,7 @@ public static float64 Ldexp(float64 frac, nint exp) {
 internal static float64 ldexp(float64 frac, nint exp) {
     // special cases
     switch (ᐧ) {
-    case {} when frac is 0: {
+    case {} when frac is 0D: {
         return frac;
     }
     case {} when IsInf(frac, // correctly return -0
@@ -36,17 +36,17 @@ internal static float64 ldexp(float64 frac, nint exp) {
     var x = Float64bits(frac);
     exp += (nint)((nint)((x >> (int)(shift))) & (nint)mask) - (nint)bias;
     if (exp < -1075) {
-        return Copysign(0, frac);
+        return Copysign(0D, frac);
     }
     // underflow
     if (exp > 1023) {
         // overflow
-        if (frac < 0) {
+        if (frac < 0D) {
             return Inf(-1);
         }
         return Inf(1);
     }
-    float64 m = 1;
+    float64 m = 1D;
     if (exp < -1022) {
         // denormal
         exp += 53;

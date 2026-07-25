@@ -61,7 +61,7 @@ break_Search:;
     if (len(m.free) < 1) {
         m.free = new slice<profMapEntry>(128);
     }
-    var e = Ꮡ(m.free[0]);
+    var e = Ꮡ(m.free, 0);
     m.free = m.free[1..];
     e.Value.nextHash = m.hash[h];
     e.Value.tag = tag;

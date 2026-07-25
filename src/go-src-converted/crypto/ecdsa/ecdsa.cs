@@ -612,13 +612,13 @@ internal static bool verifyNISTEC<Point>(ж<nistCurve<Point>> Ꮡc, ж<PublicKey
 }
 
 internal static (slice<byte> r, slice<byte> s, error err) parseSignature(slice<byte> sig) {
-    slice<byte> r = default!;
-    slice<byte> s = default!;
+    ref var r = ref heap<slice<byte>>(out var Ꮡr);
+    ref var s = ref heap<slice<byte>>(out var Ꮡs);
     error err = default!;
 
     ref var inner = ref heap<cryptobyte.String>(out var Ꮡinner);
     var input = ((cryptobyte.String)sig);
-    if (!input.ReadASN1(Ꮡinner, asn1.SEQUENCE) || !input.Empty() || !inner.ReadASN1Integer(Ꮡ(r)) || !inner.ReadASN1Integer(Ꮡ(s)) || !inner.Empty()) {
+    if (!input.ReadASN1(Ꮡinner, asn1.SEQUENCE) || !input.Empty() || !inner.ReadASN1Integer(Ꮡr) || !inner.ReadASN1Integer(Ꮡs) || !inner.Empty()) {
         return (default!, default!, errors.New("invalid ASN.1"u8));
     }
     return (r, s, default!);

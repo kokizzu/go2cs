@@ -56,7 +56,6 @@ using static go.os_package;
 [assembly: GoImplement<LinkError, error>(Pointer = true)]
 [assembly: GoImplement<SyscallError, error>(Pointer = true)]
 [assembly: GoImplement<SyscallError, timeout>(Pointer = true)]
-[assembly: GoImplement<dirEntry, DirEntry>]
 [assembly: GoImplement<dirEntry, go.io.fs_package.DirEntry>]
 [assembly: GoImplement<dirFS, go.io.fs_package.FS>]
 [assembly: GoImplement<fileStat, FileInfo>(Pointer = true)]
@@ -75,4 +74,43 @@ namespace go;
 [GoPackage("os")]
 public static partial class os_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface timeout {}
+    internal partial struct @file {}
+    internal partial struct dirEntry {}
+    internal partial struct dirFS {}
+    internal partial struct dirInfo {}
+    internal partial struct fileStat {}
+    internal partial struct fileWithoutReadFrom {}
+    internal partial struct fileWithoutWriteTo {}
+    internal partial struct getwdCacheᴛ1 {}
+    internal partial struct noReadFrom {}
+    internal partial struct noWriteTo {}
+    internal partial struct processMode {}
+    internal partial struct processStatus {}
+    internal partial struct rawConn {}
+    internal partial struct readdirMode {}
+    public partial interface ΔSignal {}
+    public partial struct File {}
+    public partial struct LinkError {}
+    public partial struct ProcAttr {}
+    public partial struct Process {}
+    public partial struct ProcessState {}
+    public partial struct SyscallError {}
+    // </TypeAccessibility>
 }

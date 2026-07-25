@@ -416,40 +416,40 @@ internal static void readmemstats_m(ж<MemStats> Ꮡstats) {
         @lock(Ꮡsched.of(schedt.Ꮡsysmonlock));
         @lock(ᏑΔtrace.of(Δtraceᴛ1.Ꮡlock));
         if (ᏑgcController.of(gcControllerState.ᏑheapInUse).load() != (uint64)consStats.inHeap) {
-            print("runtime: heapInUse=", ᏑgcController.of(gcControllerState.ᏑheapInUse).load(), "\n");
-            print("runtime: consistent value=", consStats.inHeap, "\n");
+            print((@string)"runtime: heapInUse=", ᏑgcController.of(gcControllerState.ᏑheapInUse).load(), (@string)"\n");
+            print((@string)"runtime: consistent value=", consStats.inHeap, (@string)"\n");
             @throw("heapInUse and consistent stats are not equal"u8);
         }
         if (ᏑgcController.of(gcControllerState.ᏑheapReleased).load() != (uint64)consStats.released) {
-            print("runtime: heapReleased=", ᏑgcController.of(gcControllerState.ᏑheapReleased).load(), "\n");
-            print("runtime: consistent value=", consStats.released, "\n");
+            print((@string)"runtime: heapReleased=", ᏑgcController.of(gcControllerState.ᏑheapReleased).load(), (@string)"\n");
+            print((@string)"runtime: consistent value=", consStats.released, (@string)"\n");
             @throw("heapReleased and consistent stats are not equal"u8);
         }
         var heapRetained = ᏑgcController.of(gcControllerState.ᏑheapInUse).load() + ᏑgcController.of(gcControllerState.ᏑheapFree).load();
         var consRetained = (uint64)(consStats.committed - consStats.inStacks - consStats.inWorkBufs - consStats.inPtrScalarBits);
         if (heapRetained != consRetained) {
-            print("runtime: global value=", heapRetained, "\n");
-            print("runtime: consistent value=", consRetained, "\n");
+            print((@string)"runtime: global value=", heapRetained, (@string)"\n");
+            print((@string)"runtime: consistent value=", consRetained, (@string)"\n");
             @throw("measures of the retained heap are not equal"u8);
         }
         if (ᏑgcController.of(gcControllerState.ᏑtotalAlloc).Load() != totalAlloc) {
-            print("runtime: totalAlloc=", ᏑgcController.of(gcControllerState.ᏑtotalAlloc).Load(), "\n");
-            print("runtime: consistent value=", totalAlloc, "\n");
+            print((@string)"runtime: totalAlloc=", ᏑgcController.of(gcControllerState.ᏑtotalAlloc).Load(), (@string)"\n");
+            print((@string)"runtime: consistent value=", totalAlloc, (@string)"\n");
             @throw("totalAlloc and consistent stats are not equal"u8);
         }
         if (ᏑgcController.of(gcControllerState.ᏑtotalFree).Load() != totalFree) {
-            print("runtime: totalFree=", ᏑgcController.of(gcControllerState.ᏑtotalFree).Load(), "\n");
-            print("runtime: consistent value=", totalFree, "\n");
+            print((@string)"runtime: totalFree=", ᏑgcController.of(gcControllerState.ᏑtotalFree).Load(), (@string)"\n");
+            print((@string)"runtime: consistent value=", totalFree, (@string)"\n");
             @throw("totalFree and consistent stats are not equal"u8);
         }
         // Also check that mappedReady lines up with totalMapped - released.
         // This isn't really the same type of "make sure consistent stats line up" situation,
         // but this is an opportune time to check.
         if (ᏑgcController.of(gcControllerState.ᏑmappedReady).Load() != totalMapped - (uint64)consStats.released) {
-            print("runtime: mappedReady=", ᏑgcController.of(gcControllerState.ᏑmappedReady).Load(), "\n");
-            print("runtime: totalMapped=", totalMapped, "\n");
-            print("runtime: released=", (uint64)consStats.released, "\n");
-            print("runtime: totalMapped-released=", totalMapped - (uint64)consStats.released, "\n");
+            print((@string)"runtime: mappedReady=", ᏑgcController.of(gcControllerState.ᏑmappedReady).Load(), (@string)"\n");
+            print((@string)"runtime: totalMapped=", totalMapped, (@string)"\n");
+            print((@string)"runtime: released=", (uint64)consStats.released, (@string)"\n");
+            print((@string)"runtime: totalMapped-released=", totalMapped - (uint64)consStats.released, (@string)"\n");
             @throw("mappedReady and other memstats are not equal"u8);
         }
         unlock(ᏑΔtrace.of(Δtraceᴛ1.Ꮡlock));
@@ -525,7 +525,7 @@ internal static void readGCStats(ж<slice<uint64>> Ꮡpauses) {
 //
 //go:systemstack
 internal static void readGCStats_m(ж<slice<uint64>> Ꮡpauses) {
-    ref var pauses = ref Ꮡpauses.Value;
+    ref var pauses = ref Ꮡpauses.ValueSlot;
 
     var Δp = pauses;
     // Calling code in runtime/debug should make the slice large enough.
@@ -606,7 +606,7 @@ internal static void add(this ж<sysMemStat> Ꮡs, int64 n) {
 
     var val = atomic.Xadd64(Ꮡ((uint64)(s)), n);
     if ((n > 0 && (int64)val < n) || (n < 0 && (int64)val + n < n)) {
-        print("runtime: val=", val, " n=", n, "\n");
+        print((@string)"runtime: val=", val, (@string)" n=", n, (@string)"\n");
         @throw("sysMemStat overflow"u8);
     }
 }
@@ -728,7 +728,7 @@ internal static ж<heapStatsDelta> acquire(this ж<consistentHeapStats> Ꮡm) {
             var seq = pp.of(runtime_package.Δp.ᏑstatsSeq).Add(1);
             if (seq % 2 == 0) {
                 // Should have been incremented to odd.
-                print("runtime: seq=", seq, "\n");
+                print((@string)"runtime: seq=", seq, (@string)"\n");
                 @throw("bad sequence number"u8);
             }
         } else {
@@ -761,7 +761,7 @@ internal static void release(this ж<consistentHeapStats> Ꮡm) {
             var seq = pp.of(runtime_package.Δp.ᏑstatsSeq).Add(1);
             if (seq % 2 != 0) {
                 // Should have been incremented to even.
-                print("runtime: seq=", seq, "\n");
+                print((@string)"runtime: seq=", seq, (@string)"\n");
                 @throw("bad sequence number"u8);
             }
         } else {

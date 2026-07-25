@@ -237,7 +237,7 @@ internal static (nint, error) indexArg(reflectꓸValue index, nint cap) {
 // arguments. Thus "index x 1 2 3" is, in Go syntax, x[1][2][3]. Each
 // indexed item must be a map, slice, or array.
 internal static (reflectꓸValue, error) index(reflectꓸValue item, params ꓸꓸꓸreflectꓸValue indexesʗp) {
-    var indexes = indexesʗp.slice();
+    var indexes = indexesʗp.sslice();
 
     item = indirectInterface(item);
     if (!item.IsValid()) {
@@ -293,7 +293,7 @@ internal static (reflectꓸValue, error) index(reflectꓸValue item, params ꓸ�
 // is x[:], "slice x 1" is x[1:], and "slice x 1 2 3" is x[1:2:3]. The first
 // argument must be a string, slice, or array.
 internal static (reflectꓸValue, error) Δslice(reflectꓸValue item, params ꓸꓸꓸreflectꓸValue indexesʗp) {
-    var indexes = indexesʗp.slice();
+    var indexes = indexesʗp.sslice();
 
     item = indirectInterface(item);
     if (!item.IsValid()) {
@@ -358,7 +358,7 @@ internal static (nint, error) length(reflectꓸValue item) {
 
 // Function invocation
 internal static reflectꓸValue emptyCall(reflectꓸValue fn, params ꓸꓸꓸreflectꓸValue argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     throw panic("unreachable");
 }
@@ -368,7 +368,7 @@ internal static reflectꓸValue emptyCall(reflectꓸValue fn, params ꓸꓸꓸre
 // call returns the result of evaluating the first argument as a function.
 // The function must return 1 result, or 2 results, the second of which is an error.
 internal static (reflectꓸValue, error) call(@string name, reflectꓸValue fn, params ꓸꓸꓸreflectꓸValue argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     fn = indirectInterface(fn);
     if (!fn.IsValid()) {
@@ -452,7 +452,7 @@ internal static bool truth(reflectꓸValue arg) {
 // and computes the Boolean AND of its arguments, returning
 // the first false argument it encounters, or the last argument.
 internal static reflectꓸValue and(reflectꓸValue arg0, params ꓸꓸꓸreflectꓸValue argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     throw panic("unreachable");
 }
@@ -462,7 +462,7 @@ internal static reflectꓸValue and(reflectꓸValue arg0, params ꓸꓸꓸreflec
 // or computes the Boolean OR of its arguments, returning
 // the first true argument it encounters, or the last argument.
 internal static reflectꓸValue or(reflectꓸValue arg0, params ꓸꓸꓸreflectꓸValue argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     throw panic("unreachable");
 }
@@ -541,7 +541,7 @@ internal static bool canCompare(reflectꓸValue v1, reflectꓸValue v2) {
 
 // eq evaluates the comparison a == b || a == c || ...
 internal static (bool, error) eq(reflectꓸValue arg1, params ꓸꓸꓸreflectꓸValue arg2ʗp) {
-    var arg2 = arg2ʗp.slice();
+    var arg2 = arg2ʗp.sslice();
 
     arg1 = indirectInterface(arg1);
     if (len(arg2) == 0) {

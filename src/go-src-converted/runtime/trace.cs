@@ -287,7 +287,7 @@ public static void StopTrace() {
 }
 
 // Collect all the untraced Gs.
-[GoType("dyn")] partial struct traceAdvance_untracedG {
+[GoLocalName("untracedG")] [GoType("dyn")] partial struct traceAdvance_untracedG {
     internal ж<g> gp;
     internal uint64 goid;
     internal int64 mid;
@@ -503,9 +503,9 @@ internal static void traceAdvance(bool stopTrace) {
                 // this many times.
                 if (i > 100000 && !detectedDeadlock) {
                     detectedDeadlock = true;
-                    println("runtime: failing to flush");
+                    println((@string)"runtime: failing to flush");
                     for (var mpΔ4 = ᏑmToFlush.ValueSlot; mpΔ4 != nil; mpΔ4 = mpΔ4.Value.trace.link) {
-                        print("runtime: m=", (~mpΔ4).id, "\n");
+                        print((@string)"runtime: m=", (~mpΔ4).id, (@string)"\n");
                     }
                 }
                 i++;
@@ -713,7 +713,7 @@ top:
                 } else 
                 if (g2 != nil) {
                     printlock();
-                    println("runtime: got trace reader", g2, (~g2).goid);
+                    println((@string)"runtime: got trace reader", g2, (~g2).goid);
                     @throw("unexpected trace reader"u8);
                 }
             }
@@ -753,7 +753,7 @@ internal static (slice<byte> buf, bool park) readTrace0() {
             // But we rather do not crash the program because of tracing,
             // because tracing can be enabled at runtime on prod servers.
             unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
-            println("runtime: ReadTrace called from multiple goroutines simultaneously");
+            println((@string)"runtime: ReadTrace called from multiple goroutines simultaneously");
             (buf, park) = (default!, false); return;
         }
         // Recycle the old buffer.
@@ -898,7 +898,7 @@ internal static void start(this ж<traceAdvancerState> Ꮡs) {
     ref var s = ref Ꮡs.Value;
 
     // Start a goroutine to periodically advance the trace generation.
-    s.done = new channel<EmptyStruct>(1);
+    s.done = new channel<EmptyStruct>(0);
     s.timer = newWakeableSleep();
     goǃ(() => {
         while (traceEnabled()) {
@@ -988,8 +988,9 @@ internal static void wake(this ж<wakeableSleep> Ꮡs) {
         // Others may also write to this channel and we don't
         // want to block on the receiver waking up. This also
         // effectively batches together wakeup notifications.
-        switch (ᐧ) {
-        case ᐧ when s.wakeup.ᐸꟷ(new EmptyStruct(), ꟷ): {
+        var selᴛ2 = s.wakeup.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+        switch (trySelect(selᴛ2)) {
+        case 0: {
             break;
         }
         default: {

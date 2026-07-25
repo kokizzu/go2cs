@@ -100,10 +100,10 @@ public static float64 Sqrt(float64 x) {
 internal static float64 sqrt(float64 x) {
     // special cases
     switch (ᐧ) {
-    case {} when x == 0 || IsNaN(x) || IsInf(x, 1): {
+    case {} when x == 0D || IsNaN(x) || IsInf(x, 1): {
         return x;
     }
-    case {} when x is < 0: {
+    case {} when x is < 0D: {
         return NaN();
     }}
 

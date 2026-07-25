@@ -471,7 +471,7 @@ internal static @unsafe.Pointer /*x*/ convTslice(slice<byte> val) {
     @unsafe.Pointer x = default!;
 
     // Note: this must work for any element type, not just byte.
-    if (((ж<Δsliceᴛ>)(uintptr)(new @unsafe.Pointer(Ꮡ(val)))).Value.Δarray == nil){
+    if ((Ꮡ(val).Reinterpret<slice<byte>, Δsliceᴛ>()).Value.Δarray == nil){
         x = new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
     } else {
         x = (uintptr)mallocgc(@unsafe.Sizeof(val), sliceType, true);
@@ -531,7 +531,7 @@ internal static ж<itab> typeAssert(ж<abi.TypeAssert> Ꮡs, ж<_type> Ꮡt) {
     // Update cache. Use compare-and-swap so if multiple threads
     // are fighting to update the cache, at least one of their
     // updates will stick.
-    atomic_casPointer((ж<@unsafe.Pointer>)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡs.of(abi.TypeAssert.ᏑCache)).Value)), new @unsafe.Pointer(oldC), new @unsafe.Pointer(newC));
+    atomic_casPointer(Ꮡs.of(abi.TypeAssert.ᏑCache).Reinterpret<ж<abi.TypeAssertCache>, @unsafe.Pointer>(), new @unsafe.Pointer(oldC), new @unsafe.Pointer(newC));
     return tab;
 }
 
@@ -629,7 +629,7 @@ internal static (nint, ж<itab>) interfaceSwitch(ж<abi.InterfaceSwitch> Ꮡs, �
     // Update cache. Use compare-and-swap so if multiple threads
     // are fighting to update the cache, at least one of their
     // updates will stick.
-    atomic_casPointer((ж<@unsafe.Pointer>)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡs.of(abi.InterfaceSwitch.ᏑCache)).Value)), new @unsafe.Pointer(oldC), new @unsafe.Pointer(newC));
+    atomic_casPointer(Ꮡs.of(abi.InterfaceSwitch.ᏑCache).Reinterpret<ж<abi.InterfaceSwitchCache>, @unsafe.Pointer>(), new @unsafe.Pointer(oldC), new @unsafe.Pointer(newC));
     return (case_, tab);
 }
 

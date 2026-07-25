@@ -675,7 +675,7 @@ internal static ΔType maxType(ΔType x, ΔType y) {
 internal static ж<T> clone<T>(ж<T> Ꮡp)
     /* where P : *T (erased: P renders as ж<T>) */
 {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.ValueSlot;
 
     ref var c = ref heap<T>(out var Ꮡc);
     c = p;

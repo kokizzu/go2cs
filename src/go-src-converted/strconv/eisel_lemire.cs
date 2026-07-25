@@ -36,7 +36,7 @@ internal static (float64 f, bool ok) eiselLemire64(uint64 man, nint exp10, bool 
         return (f, true);
     }
     if (exp10 < detailedPowersOfTenMinExp10 || detailedPowersOfTenMaxExp10 < exp10) {
-        return (0, false);
+        return (0D, false);
     }
     // Normalization.
     nint clz = bits.LeadingZeros64(man);
@@ -53,7 +53,7 @@ internal static (float64 f, bool ok) eiselLemire64(uint64 man, nint exp10, bool 
             mergedHi++;
         }
         if ((uint64)(mergedHi & 0x1FF) == 0x1FF && mergedLo + 1 == 0 && yLo + man < man) {
-            return (0, false);
+            return (0D, false);
         }
         (xHi, xLo) = (mergedHi, mergedLo);
     }
@@ -63,7 +63,7 @@ internal static (float64 f, bool ok) eiselLemire64(uint64 man, nint exp10, bool 
     retExp2 -= (uint64)(1 ^ msb);
     // Half-way Ambiguity.
     if (xLo == 0 && (uint64)(xHi & 0x1FF) == 0 && (uint64)(retMantissa & 3) == 1) {
-        return (0, false);
+        return (0D, false);
     }
     // From 54 to 53 Bits.
     retMantissa += (uint64)(retMantissa & 1);
@@ -78,7 +78,7 @@ internal static (float64 f, bool ok) eiselLemire64(uint64 man, nint exp10, bool 
     // The if block is equivalent to (but has fewer branches than):
     //   if retExp2 <= 0 || retExp2 >= 0x7FF { etc }
     if (retExp2 - 1 >= 0x7FF - 1) {
-        return (0, false);
+        return (0D, false);
     }
     var retBits = (uint64)((retExp2 << (int)(52)) | (uint64)(retMantissa & 0x000FFFFFFFFFFFFFUL));
     if (neg) {
@@ -108,7 +108,7 @@ internal static (float32 f, bool ok) eiselLemire32(uint64 man, nint exp10, bool 
         return (f, true);
     }
     if (exp10 < detailedPowersOfTenMinExp10 || detailedPowersOfTenMaxExp10 < exp10) {
-        return (0, false);
+        return (0F, false);
     }
     // Normalization.
     nint clz = bits.LeadingZeros64(man);
@@ -125,7 +125,7 @@ internal static (float32 f, bool ok) eiselLemire32(uint64 man, nint exp10, bool 
             mergedHi++;
         }
         if ((uint64)(mergedHi & 0x3FFFFFFFFFUL) == 0x3FFFFFFFFFUL && mergedLo + 1 == 0 && yLo + man < man) {
-            return (0, false);
+            return (0F, false);
         }
         (xHi, xLo) = (mergedHi, mergedLo);
     }
@@ -135,7 +135,7 @@ internal static (float32 f, bool ok) eiselLemire32(uint64 man, nint exp10, bool 
     retExp2 -= (uint64)(1 ^ msb);
     // Half-way Ambiguity.
     if (xLo == 0 && (uint64)(xHi & 0x3FFFFFFFFFUL) == 0 && (uint64)(retMantissa & 3) == 1) {
-        return (0, false);
+        return (0F, false);
     }
     // From 54 to 53 Bits (and for float32, it's from 25 to 24 bits).
     retMantissa += (uint64)(retMantissa & 1);
@@ -150,7 +150,7 @@ internal static (float32 f, bool ok) eiselLemire32(uint64 man, nint exp10, bool 
     // The if block is equivalent to (but has fewer branches than):
     //   if retExp2 <= 0 || retExp2 >= 0xFF { etc }
     if (retExp2 - 1 >= 0xFF - 1) {
-        return (0, false);
+        return (0F, false);
     }
     var retBits = (uint64)((retExp2 << (int)(23)) | (uint64)(retMantissa & 0x007FFFFF));
     if (neg) {

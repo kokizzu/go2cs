@@ -20,7 +20,7 @@ internal static void push(this ж<lfstack> Ꮡhead, ж<lfnode> Ꮡnode) {
     var @new = lfstackPack(Ꮡnode, node.pushcnt);
     {
         var node1 = lfstackUnpack(@new); if (node1 != Ꮡnode) {
-            print("runtime: lfstack.push invalid packing: node=", Ꮡnode, " cnt=", ((Δhex)(uint64)node.pushcnt), " packed=", ((Δhex)@new), " -> node=", node1, "\n");
+            print((@string)"runtime: lfstack.push invalid packing: node=", Ꮡnode, (@string)" cnt=", ((Δhex)(uint64)node.pushcnt), (@string)" packed=", ((Δhex)@new), (@string)" -> node=", node1, (@string)"\n");
             @throw("lfstack.push"u8);
         }
     }
@@ -67,7 +67,7 @@ internal static void lfnodeValidate(ж<lfnode> Ꮡnode) {
     }
     if (lfstackUnpack(lfstackPack(Ꮡnode, ~(uintptr)0)) != Ꮡnode) {
         printlock();
-        println("runtime: bad lfnode address", ((Δhex)(uint64)(uintptr)new @unsafe.Pointer(Ꮡnode)));
+        println((@string)"runtime: bad lfnode address", ((Δhex)(uint64)(uintptr)new @unsafe.Pointer(Ꮡnode)));
         @throw("bad lfnode address"u8);
     }
 }

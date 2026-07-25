@@ -84,7 +84,7 @@ internal static (slice<COFFSymbol>, error) readCOFFSymbols(ж<FileHeader> Ꮡfh,
             // hold; more cases will be needed below if more aux formats
             // are supported in the future).
             naux--;
-            var aux = (ж<COFFSymbolAuxFormat5>)(uintptr)(new @unsafe.Pointer(Ꮡsym));
+            var aux = Ꮡsym.Reinterpret<COFFSymbol, COFFSymbolAuxFormat5>();
             err = binary.Read(r, new binary_littleEndianᴠByteOrder(binary.LittleEndian), aux);
             if (err != default!) {
                 return (default!, fmt.Errorf("fail to read symbol table: %v"u8, err));
@@ -207,7 +207,7 @@ public static readonly UntypedInt IMAGE_COMDAT_SELECT_LARGEST = 6;
     if (idx < 0 || idx >= len(f.COFFSymbols)) {
         return (rv, fmt.Errorf("invalid symbol index"u8));
     }
-    var pesym = Ꮡ(f.COFFSymbols[idx]);
+    var pesym = Ꮡ(f.COFFSymbols, idx);
     UntypedInt IMAGE_SYM_CLASS_STATIC = 3;
     if ((~pesym).StorageClass != (uint8)IMAGE_SYM_CLASS_STATIC) {
         return (rv, fmt.Errorf("incorrect symbol storage class"u8));
@@ -216,8 +216,8 @@ public static readonly UntypedInt IMAGE_COMDAT_SELECT_LARGEST = 6;
         return (rv, fmt.Errorf("aux symbol unavailable"u8));
     }
     // Locate and return a pointer to the successor aux symbol.
-    var pesymn = Ꮡ(f.COFFSymbols[idx + 1]);
-    rv = (ж<COFFSymbolAuxFormat5>)(uintptr)(new @unsafe.Pointer(pesymn));
+    var pesymn = Ꮡ(f.COFFSymbols, idx + 1);
+    rv = pesymn.Reinterpret<COFFSymbol, COFFSymbolAuxFormat5>();
     return (rv, default!);
 }
 

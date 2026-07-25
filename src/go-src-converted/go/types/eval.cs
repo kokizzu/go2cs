@@ -55,11 +55,12 @@ public static (TypeAndValue, error err) Eval(ж<token.FileSet> Ꮡfset, ж<Packa
 // assignment). Thus, top-level untyped constants will return an
 // untyped type rather than the respective context-specific type.
 public static error /*err*/ CheckExpr(ж<token.FileSet> Ꮡfset, ж<Package> Ꮡpkg, tokenꓸPos pos, ast.Expr expr, ж<ΔInfo> Ꮡinfo) {
-    error err = default!;
+    heap<error>(out var Ꮡerr);
     func((defer, recover) => {
     ref var fset = ref Ꮡfset.Value;
     ref var pkg = ref Ꮡpkg.DerefOrNil();
 
+    ref var err = ref Ꮡerr.ValueSlot;
         // determine scope
         ж<ΔScope> scope = default!;
         if (Ꮡpkg == nil){
@@ -96,7 +97,7 @@ public static error /*err*/ CheckExpr(ж<token.FileSet> Ꮡfset, ж<Package> Ꮡ
         check.Value.scope = scope;
         check.Value.pos = pos;
         var checkʗ1 = check;
-        deferǃ(checkʗ1.handleBailout, Ꮡ(err), defer);
+        deferǃ(checkʗ1.handleBailout, Ꮡerr, defer);
         // evaluate node
         ref var x = ref heap(new operand(), out var Ꮡx);
         check.rawExpr(nil, Ꮡx, expr, default!, true);
@@ -106,7 +107,7 @@ public static error /*err*/ CheckExpr(ж<token.FileSet> Ꮡfset, ж<Package> Ꮡ
         check.recordUntyped();
         err = default!;
     });
-    return err;
+    return Ꮡerr.ValueSlot;
 }
 
 } // end types_package

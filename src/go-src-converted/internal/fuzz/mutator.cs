@@ -232,8 +232,8 @@ internal static void mutate(this ж<mutator> Ꮡm, slice<any> vals, nint maxByte
                 // Add a random number
                 continue;
             }
-            max = 100;
-            if (v > 0 && maxValue - v < max) {
+            max = 100D;
+            if (v > 0D && maxValue - v < max) {
                 // Don't let v exceed maxValue
                 max = maxValue - v;
             }
@@ -245,8 +245,8 @@ internal static void mutate(this ж<mutator> Ꮡm, slice<any> vals, nint maxByte
                 // Subtract a random number
                 continue;
             }
-            max = 100;
-            if (v < 0 && maxValue + v < max) {
+            max = 100D;
+            if (v < 0D && maxValue + v < max) {
                 // Don't let v drop below -maxValue
                 max = maxValue + v;
             }
@@ -255,11 +255,11 @@ internal static void mutate(this ж<mutator> Ꮡm, slice<any> vals, nint maxByte
         }
         case 2: {
             var absV = math.Abs(v);
-            if (v == 0 || absV >= maxValue) {
+            if (v == 0D || absV >= maxValue) {
                 // Multiply by a random number
                 continue;
             }
-            max = 10;
+            max = 10D;
             if (maxValue / absV < max) {
                 // Don't let v go beyond the minimum or maximum value
                 max = maxValue / absV;
@@ -268,7 +268,7 @@ internal static void mutate(this ж<mutator> Ꮡm, slice<any> vals, nint maxByte
             return v;
         }
         case 3: {
-            if (v == 0) {
+            if (v == 0D) {
                 // Divide by a random number
                 continue;
             }
@@ -305,7 +305,7 @@ internal static void initᴛbyteSliceMutators() { byteSliceMutators = new Func<�
 
 internal static void mutateBytes(this ж<mutator> Ꮡm, ж<slice<byte>> ᏑptrB) => func((defer, recover) => {
     ref var m = ref Ꮡm.Value;
-    ref var ptrB = ref ᏑptrB.Value;
+    ref var ptrB = ref ᏑptrB.ValueSlot;
 
     ref var b = ref heap<slice<byte>>(out var Ꮡb);
     b = ptrB;

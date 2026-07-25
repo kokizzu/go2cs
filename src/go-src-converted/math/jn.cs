@@ -61,7 +61,7 @@ public static float64 Jn(nint n, float64 x) {
         return x;
     }
     case {} when IsInf(x, 0): {
-        return 0;
+        return 0D;
     }}
 
     // J(-n, x) = (-1)**n * J(n, x), J(n, -x) = (-1)**n * J(n, x)
@@ -69,8 +69,8 @@ public static float64 Jn(nint n, float64 x) {
     if (n == 0) {
         return J0(x);
     }
-    if (x == 0) {
-        return 0;
+    if (x == 0D) {
+        return 0D;
     }
     if (n < 0) {
         (n, x) = (-n, -x);
@@ -79,7 +79,7 @@ public static float64 Jn(nint n, float64 x) {
         return J1(x);
     }
     var sign = false;
-    if (x < 0) {
+    if (x < 0D) {
         x = -x;
         if ((nint)(n & 1) == 1) {
             sign = true;
@@ -140,7 +140,7 @@ public static float64 Jn(nint n, float64 x) {
             // J(n,x) = 1/n!*(x/2)**n  - ...
             if (n > 33){
                 // underflow
-                b = 0;
+                b = 0D;
             } else {
                 var temp = x * 0.5D;
                 b = temp;
@@ -183,10 +183,10 @@ public static float64 Jn(nint n, float64 x) {
             // When Q(k) > 1e17	good for quadruple
             // determine k
             var w = (float64)(n + n) / x;
-            var h = 2 / x;
+            var h = 2D / x;
             var q0 = w;
             var z = w + h;
-            var q1 = w * z - 1;
+            var q1 = w * z - 1D;
             nint k = 1;
             while (q1 < 1e9D) {
                 k++;
@@ -196,10 +196,10 @@ public static float64 Jn(nint n, float64 x) {
             nint m = n + n;
             var t = 0.0D;
             for (nint i = 2 * (n + k); i >= m; i -= 2) {
-                t = 1 / ((float64)i / x - t);
+                t = 1D / ((float64)i / x - t);
             }
             var a = t;
-            b = 1;
+            b = 1D;
             //  estimate log((2/x)**n*n!) = n*log(2/x)+n*ln(n)
             //  Hence, if n*(log(2n/x)) > ...
             //  single 8.8722839355e+01
@@ -208,7 +208,7 @@ public static float64 Jn(nint n, float64 x) {
             //  then recurrent value may overflow and the result is
             //  likely underflow to zero
             var tmp = (float64)n;
-            var v = 2 / x;
+            var v = 2D / x;
             tmp = tmp * Log(Abs(v * tmp));
             if (tmp < 7.09782712893383973096e+02D){
                 for (nint i = n - 1; i > 0; i--) {
@@ -223,7 +223,7 @@ public static float64 Jn(nint n, float64 x) {
                     if (b > 1e100D) {
                         a /= b;
                         t /= b;
-                        b = 1;
+                        b = 1D;
                     }
                 }
             }
@@ -250,17 +250,17 @@ public static float64 Yn(nint n, float64 x) {
             GoUntyped.Parse("8148143905337944345073782753637512644205873574663745002544561797417525199053346824733589504");
     // special cases
     switch (ᐧ) {
-    case {} when x < 0 || IsNaN(x): {
+    case {} when x < 0D || IsNaN(x): {
         return NaN();
     }
     case {} when IsInf(x, 1): {
-        return 0;
+        return 0D;
     }}
 
     if (n == 0) {
         return Y0(x);
     }
-    if (x == 0) {
+    if (x == 0D) {
         if (n < 0 && (nint)(n & 1) == 1) {
             return Inf(1);
         }

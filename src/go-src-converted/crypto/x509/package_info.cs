@@ -83,4 +83,75 @@ namespace go.crypto;
 [GoPackage("x509")]
 public static partial class x509_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface alreadyInChain_pubKeyEqual {}
+    internal partial struct authKeyId {}
+    internal partial struct authorityInfoAccess {}
+    internal partial struct basicConstraints {}
+    internal partial struct certificate {}
+    internal partial struct certificateList {}
+    internal partial struct certificateRequest {}
+    internal partial struct distributionPoint {}
+    internal partial struct dsaAlgorithmParameters {}
+    internal partial struct ecPrivateKey {}
+    internal partial struct extKeyUsageOIDsᴛ1 {}
+    internal partial struct lazyCert {}
+    internal partial struct parseCSRExtensions_pkcs10Attribute {}
+    internal partial struct pkcs1PrivateKey {}
+    internal partial struct pkcs1PublicKey {}
+    internal partial struct pkcs8 {}
+    internal partial struct pkixPublicKey {}
+    internal partial struct policyInformation {}
+    internal partial struct potentialParent {}
+    internal partial struct pssParameters {}
+    internal partial struct rfc1423Algo {}
+    internal partial struct rfc2821Mailbox {}
+    internal partial struct signatureAlgorithmDetailsᴛ1 {}
+    internal partial struct sum224 {}
+    public partial interface CreateCertificate_privateKey {}
+    public partial struct AppendCertsFromPEM_lazyCert {}
+    public partial struct CertPool {}
+    public partial struct Certificate {}
+    public partial struct CertificateInvalidError {}
+    public partial struct CertificateRequest {}
+    public partial struct ConstraintViolationError {}
+    public partial struct CreateCertificateRequest_attr {}
+    public partial struct ExtKeyUsage {}
+    public partial struct HostnameError {}
+    public partial struct InsecureAlgorithmError {}
+    public partial struct InvalidReason {}
+    public partial struct KeyUsage {}
+    public partial struct OID {}
+    public partial struct PEMCipher {}
+    public partial struct PublicKeyAlgorithm {}
+    public partial struct RevocationList {}
+    public partial struct RevocationListEntry {}
+    public partial struct SignatureAlgorithm {}
+    public partial struct SystemRootsError {}
+    public partial struct UnhandledCriticalExtension {}
+    public partial struct UnknownAuthorityError {}
+    public partial struct VerifyOptions {}
+    public partial struct distributionPointName {}
+    public partial struct pkcs1AdditionalRSAPrime {}
+    public partial struct publicKeyInfo {}
+    public partial struct tbsCertificate {}
+    public partial struct tbsCertificateList {}
+    public partial struct tbsCertificateRequest {}
+    public partial struct validity {}
+    // </TypeAccessibility>
 }

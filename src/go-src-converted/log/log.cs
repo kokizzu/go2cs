@@ -102,7 +102,7 @@ public static ж<Logger> Default() {
 
 // Cheap integer to fixed-width decimal ASCII. Give a negative width to avoid zero-padding.
 internal static void itoa(ж<slice<byte>> Ꮡbuf, nint i, nint wid) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.ValueSlot;
 
     // Assemble decimal in reverse order.
     array<byte> b = new(20);
@@ -125,7 +125,7 @@ internal static void itoa(ж<slice<byte>> Ꮡbuf, nint i, nint wid) {
 //   - file and line number (if corresponding flags are provided),
 //   - l.prefix (if it's not blank and Lmsgprefix is set).
 internal static void formatHeader(ж<slice<byte>> Ꮡbuf, time.Time t, @string prefix, nint flag, @string @file, nint line) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.ValueSlot;
 
     if ((nint)(flag & (nint)Lmsgprefix) == 0) {
         buf = append(buf, prefix.ꓸꓸꓸ);
@@ -188,7 +188,7 @@ internal static ж<slice<byte>> getBuffer() {
 }
 
 internal static void putBuffer(ж<slice<byte>> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.ValueSlot;
 
     // Proper usage of a sync.Pool requires each entry to have approximately
     // the same memory cost. To obtain this property when the stored type

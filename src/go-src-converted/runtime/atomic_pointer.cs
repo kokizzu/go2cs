@@ -33,7 +33,7 @@ partial class runtime_package {
 internal static void atomicwb(ж<@unsafe.Pointer> Ꮡptr, @unsafe.Pointer @new) {
     ref var ptr = ref Ꮡptr.Value;
 
-    var slot = (ж<uintptr>)(uintptr)(new @unsafe.Pointer(Ꮡptr));
+    var slot = Ꮡptr.Reinterpret<@unsafe.Pointer, uintptr>();
     var buf = (~(~getg()).m).p.ptr().of(runtime_package.Δp.ᏑwbBuf).get2();
     buf.Value[0] = slot.Value;
     buf.Value[1] = (uintptr)@new;
@@ -92,7 +92,7 @@ internal static void sync_atomic_StorePointer(ж<@unsafe.Pointer> Ꮡptr, @unsaf
     if (goexperiment.CgoCheck2) {
         cgoCheckPtrWrite(Ꮡptr, @new);
     }
-    sync_atomic_StoreUintptr((ж<uintptr>)(uintptr)(new @unsafe.Pointer(Ꮡptr)), (uintptr)@new);
+    sync_atomic_StoreUintptr(Ꮡptr.Reinterpret<@unsafe.Pointer, uintptr>(), (uintptr)@new);
 }
 
 //go:linkname sync_atomic_SwapUintptr sync/atomic.SwapUintptr
@@ -107,7 +107,7 @@ internal static @unsafe.Pointer sync_atomic_SwapPointer(ж<@unsafe.Pointer> Ꮡp
     if (goexperiment.CgoCheck2) {
         cgoCheckPtrWrite(Ꮡptr, @new);
     }
-    @unsafe.Pointer old = (@unsafe.Pointer)sync_atomic_SwapUintptr((ж<uintptr>)(uintptr)((uintptr)noescape(new @unsafe.Pointer(Ꮡptr))), (uintptr)@new);
+    @unsafe.Pointer old = (@unsafe.Pointer)sync_atomic_SwapUintptr(Ꮡptr.Reinterpret<@unsafe.Pointer, uintptr>(), (uintptr)@new);
     return old;
 }
 
@@ -123,7 +123,7 @@ internal static bool sync_atomic_CompareAndSwapPointer(ж<@unsafe.Pointer> Ꮡpt
     if (goexperiment.CgoCheck2) {
         cgoCheckPtrWrite(Ꮡptr, @new);
     }
-    return sync_atomic_CompareAndSwapUintptr((ж<uintptr>)(uintptr)((uintptr)noescape(new @unsafe.Pointer(Ꮡptr))), (uintptr)old, (uintptr)@new);
+    return sync_atomic_CompareAndSwapUintptr(Ꮡptr.Reinterpret<@unsafe.Pointer, uintptr>(), (uintptr)old, (uintptr)@new);
 }
 
 } // end runtime_package

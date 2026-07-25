@@ -310,7 +310,7 @@ internal static error decodeInt64(ж<buffer> Ꮡb, ж<int64> Ꮡx) {
 
 internal static error decodeInt64s(ж<buffer> Ꮡb, ж<slice<int64>> Ꮡx) {
     ref var b = ref Ꮡb.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.ValueSlot;
 
     if (b.typ == 2) {
         // Packed encoding
@@ -352,7 +352,7 @@ internal static error decodeUint64(ж<buffer> Ꮡb, ж<uint64> Ꮡx) {
 
 internal static error decodeUint64s(ж<buffer> Ꮡb, ж<slice<uint64>> Ꮡx) {
     ref var b = ref Ꮡb.Value;
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.ValueSlot;
 
     if (b.typ == 2) {
         var data = b.data;
@@ -393,7 +393,7 @@ internal static error decodeString(ж<buffer> Ꮡb, ж<@string> Ꮡx) {
 }
 
 internal static error decodeStrings(ж<buffer> Ꮡb, ж<slice<@string>> Ꮡx) {
-    ref var x = ref Ꮡx.Value;
+    ref var x = ref Ꮡx.ValueSlot;
 
     ref var s = ref heap(new @string(), out var Ꮡs);
     {

@@ -436,7 +436,7 @@ internal static void removeChild(Context parent, canceler child) {
 }
 
 // closedchan is a reusable closed channel.
-internal static channel<EmptyStruct> closedchan = new channel<EmptyStruct>(1);
+internal static channel<EmptyStruct> closedchan = new channel<EmptyStruct>(0);
 
 [GoInit] internal static void init() {
     close(closedchan);
@@ -471,7 +471,7 @@ internal static /*<-*/channel<EmptyStruct> Done(this ж<cancelCtx> Ꮡc) => func
     defer(Ꮡc.of(cancelCtx.Ꮡmu).Unlock);
     d = Ꮡc.of(cancelCtx.Ꮡdone).Load();
     if (d == default!) {
-        d = new channel<EmptyStruct>(1);
+        d = new channel<EmptyStruct>(0);
         Ꮡc.of(cancelCtx.Ꮡdone).Store(d);
     }
     return d._<channel<EmptyStruct>>();
@@ -497,8 +497,9 @@ internal static void propagateCancel(this ж<cancelCtx> Ꮡc, Context parent, ca
         return;
     }
     // parent is never canceled
-    switch (ᐧ) {
-    case ᐧ when done.ꟷᐳ(out _): {
+    var selᴛ1 = done;
+    switch (trySelect(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
+    case 0 when selᴛ1.ꟷᐳ(out _): {
         child.cancel(false, // parent is already canceled
  parent.Err(), Cause(parent));
         return;
@@ -540,12 +541,14 @@ internal static void propagateCancel(this ж<cancelCtx> Ꮡc, Context parent, ca
     }
     Ꮡgoroutines.Add(1);
     goǃ(() => {
-        switch (select(ᐸꟷ(parent.Done(), ꓸꓸꓸ), ᐸꟷ(child.Done(), ꓸꓸꓸ))) {
-        case 0 when parent.Done().ꟷᐳ(out _): {
+        var selᴛ2 = parent.Done();
+        var selᴛ3 = child.Done();
+        switch (select(ᐸꟷ(selᴛ2, ꓸꓸꓸ), ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
+        case 0 when selᴛ2.ꟷᐳ(out _): {
             child.cancel(false, parent.Err(), Cause(parent));
             break;
         }
-        case 1 when child.Done().ꟷᐳ(out _): {
+        case 1 when selᴛ3.ꟷᐳ(out _): {
             break;
         }}
     });

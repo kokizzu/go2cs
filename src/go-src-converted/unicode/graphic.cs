@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
+using ꓸꓸꓸжRangeTable = Span<ж<unicode_package.RangeTable>>;
+
 partial class unicode_package {
 
 // Bit masks for each code point under U+0100, for fast lookup.
@@ -77,8 +79,8 @@ public static bool IsOneOf(slice<ж<RangeTable>> ranges, rune r) {
 }
 
 // In reports whether the rune is a member of one of the ranges.
-public static bool In(rune r, params Span<ж<RangeTable>> rangesʗp) {
-    var ranges = rangesʗp.slice();
+public static bool In(rune r, params ꓸꓸꓸжRangeTable rangesʗp) {
+    var ranges = rangesʗp.sslice();
 
     foreach (var (_, inside) in ranges) {
         if (Is(inside, r)) {

@@ -113,7 +113,7 @@ public static (ж<SID>, error) StringToSid(@string s) => func<(ж<SID>, error)>(
 public static (ж<SID> sid, @string domain, uint32 accType, error err) LookupSID(@string system, @string account) {
     ж<SID> sid = default!;
     @string domain = default!;
-    uint32 accType = default!;
+    ref var accType = ref heap(new uint32(), out var ᏑaccType);
     error err = default!;
 
     if (len(account) == 0) {
@@ -137,8 +137,8 @@ public static (ж<SID> sid, @string domain, uint32 accType, error err) LookupSID
     while (ᐧ) {
         var b = new slice<byte>((nint)(n));
         var db = new slice<uint16>((nint)(dn));
-        sid = (ж<SID>)(uintptr)(new @unsafe.Pointer(Ꮡ(b, 0)));
-        e = LookupAccountName(sys, acc, sid, Ꮡn, Ꮡ(db, 0), Ꮡdn, Ꮡ(accType));
+        sid = Ꮡ(b, 0).Reinterpret<byte, SID>();
+        e = LookupAccountName(sys, acc, sid, Ꮡn, Ꮡ(db, 0), Ꮡdn, ᏑaccType);
         if (e == default!) {
             return (sid, UTF16ToString(db), accType, default!);
         }
@@ -171,7 +171,7 @@ public static nint Len(this ж<SID> Ꮡsid) {
 // Copy creates a duplicate of security identifier sid.
 public static (ж<SID>, error) Copy(this ж<SID> Ꮡsid) {
     var b = new slice<byte>(Ꮡsid.Len());
-    var sid2 = (ж<SID>)(uintptr)(new @unsafe.Pointer(Ꮡ(b, 0)));
+    var sid2 = Ꮡ(b, 0).Reinterpret<byte, SID>();
     var e = CopySid((uint32)len(b), sid2, Ꮡsid);
     if (e != default!) {
         return (default!, e);
@@ -185,7 +185,7 @@ public static (ж<SID>, error) Copy(this ж<SID> Ꮡsid) {
 public static (@string account, @string domain, uint32 accType, error err) LookupAccount(this ж<SID> Ꮡsid, @string system) {
     @string account = default!;
     @string domain = default!;
-    uint32 accType = default!;
+    ref var accType = ref heap(new uint32(), out var ᏑaccType);
     error err = default!;
 
     ж<uint16> sys = default!;
@@ -202,7 +202,7 @@ public static (@string account, @string domain, uint32 accType, error err) Looku
     while (ᐧ) {
         var b = new slice<uint16>((nint)(n));
         var db = new slice<uint16>((nint)(dn));
-        var e = LookupAccountSid(sys, Ꮡsid, Ꮡ(b, 0), Ꮡn, Ꮡ(db, 0), Ꮡdn, Ꮡ(accType));
+        var e = LookupAccountSid(sys, Ꮡsid, Ꮡ(b, 0), Ꮡn, Ꮡ(db, 0), Ꮡdn, ᏑaccType);
         if (e == default!) {
             return (UTF16ToString(b), UTF16ToString(db), accType, default!);
         }

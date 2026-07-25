@@ -47,19 +47,19 @@ internal static float64 sinh(float64 x) {
     
     const float64 Q2 = -0.173678953558233699533450911e+3;
     var sign = false;
-    if (x < 0) {
+    if (x < 0D) {
         x = -x;
         sign = true;
     }
     float64 temp = default!;
     switch (ᐧ) {
-    case {} when x is > 21: {
+    case {} when x is > 21D: {
         temp = Exp(x) * 0.5D;
         break;
     }
     case {} when x is > 0.5D: {
         var ex = Exp(x);
-        temp = (ex - 1 / ex) * 0.5D;
+        temp = (ex - 1D / ex) * 0.5D;
         break;
     }
     default: {
@@ -91,11 +91,11 @@ public static float64 Cosh(float64 x) {
 
 internal static float64 cosh(float64 x) {
     x = Abs(x);
-    if (x > 21) {
+    if (x > 21D) {
         return Exp(x) * 0.5D;
     }
     var ex = Exp(x);
-    return (ex + 1 / ex) * 0.5D;
+    return (ex + 1D / ex) * 0.5D;
 }
 
 } // end math_package

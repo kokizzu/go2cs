@@ -166,7 +166,7 @@ CheckAndLoop:
             continue;
         }
 Skip:
-        var inst = Ꮡ((~re.prog).Inst[pcΔ1]);
+        var inst = Ꮡ((~re.prog).Inst, (int)(pcΔ1));
         var exprᴛ1 = (~inst).Op;
         if (exprᴛ1 == syntax.InstFail) {
             throw panic("unexpected InstFail");

@@ -6,6 +6,7 @@ namespace go.crypto.@internal;
 using field = go.crypto.@internal.edwards25519.field_package;
 using errors = errors_package;
 using go.crypto.@internal.edwards25519;
+using ꓸꓸꓸжPoint = Span<ж<edwards25519_package.Point>>;
 
 partial class edwards25519_package {
 
@@ -35,8 +36,8 @@ partial class edwards25519_package {
 
 [GoType("[0]Action")] partial struct incomparable;
 
-internal static void checkInitialized(params Span<ж<Point>> pointsʗp) {
-    var points = pointsʗp.slice();
+internal static void checkInitialized(params ꓸꓸꓸжPoint pointsʗp) {
+    var points = pointsʗp.sslice();
 
     foreach (var (_, p) in points) {
         if ((~p).x == (new field.Element(nil)) && (~p).y == (new field.Element(nil))) {

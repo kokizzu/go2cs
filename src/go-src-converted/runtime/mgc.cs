@@ -128,6 +128,7 @@ using atomic = @internal.runtime.atomic_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
+using ꓸꓸꓸunsafeꓸPointer = Span<unsafe_package.Pointer>;
 
 partial class runtime_package {
 
@@ -591,7 +592,7 @@ internal static void gcStart(gcTrigger trigger) {
     foreach (var (_, Δp) in allp) {
         {
             var fg = (~Δp).mcache.of(mcache.ᏑflushGen).Load(); if (fg != mheap_.sweepgen) {
-                println("runtime: p", (~Δp).id, "flushGen", fg, "!= sweepgen", mheap_.sweepgen);
+                println((@string)"runtime: p", (~Δp).id, (@string)"flushGen", fg, (@string)"!= sweepgen", mheap_.sweepgen);
                 @throw("p mcache not flushed"u8);
             }
         }
@@ -1039,21 +1040,21 @@ internal static void gcMarkTermination(worldStop stw) {
     // worldsema another cycle could start and smash the stats
     // we're trying to print.
     if (debug.gctrace > 0) {
-        nint util = (nint)(memstats.gc_cpu_fraction * 100);
+        nint util = (nint)(memstats.gc_cpu_fraction * 100D);
         array<byte> sbuf = new(24);
         printlock();
-        print("gc ", memstats.numgc,
-            " @", ((@string)itoaDiv(sbuf[..], (uint64)(work.tSweepTerm - runtimeInitTime) / 1000000, 3)), "s ",
-            util, "%: ");
+        print((@string)"gc ", memstats.numgc,
+            (@string)" @", ((@string)itoaDiv(sbuf[..], (uint64)(work.tSweepTerm - runtimeInitTime) / 1000000, 3)), (@string)"s ",
+            util, (@string)"%: ");
         var prev = work.tSweepTerm;
         foreach (var (i, ns) in new int64[]{work.tMark, work.tMarkTerm, work.tEnd}.slice()) {
             if (i != 0) {
-                print("+");
+                print((@string)"+");
             }
             print(((@string)fmtNSAsMS(sbuf[..], (uint64)(ns - prev))));
             prev = ns;
         }
-        print(" ms clock, ");
+        print((@string)" ms clock, ");
         foreach (var (i, ns) in new int64[]{
             (int64)work.stwprocs * (work.tMark - work.tSweepTerm),
             ᏑgcController.of(gcControllerState.ᏑassistTime).Load(),
@@ -1063,23 +1064,23 @@ internal static void gcMarkTermination(worldStop stw) {
         }.slice()) {
             if (i == 2 || i == 3){
                 // Separate mark time components with /.
-                print("/");
+                print((@string)"/");
             } else 
             if (i != 0) {
-                print("+");
+                print((@string)"+");
             }
             print(((@string)fmtNSAsMS(sbuf[..], (uint64)ns)));
         }
-        print(" ms cpu, ",
-            (work.heap0 >> (int)(20)), "->", (work.heap1 >> (int)(20)), "->", (work.heap2 >> (int)(20)), " MB, ",
-            (gcController.lastHeapGoal >> (int)(20)), " MB goal, ",
-            (ᏑgcController.of(gcControllerState.ᏑlastStackScan).Load() >> (int)(20)), " MB stacks, ",
-            (ᏑgcController.of(gcControllerState.ᏑglobalsScan).Load() >> (int)(20)), " MB globals, ",
-            work.maxprocs, " P");
+        print((@string)" ms cpu, ",
+            (work.heap0 >> (int)(20)), (@string)"->", (work.heap1 >> (int)(20)), (@string)"->", (work.heap2 >> (int)(20)), (@string)" MB, ",
+            (gcController.lastHeapGoal >> (int)(20)), (@string)" MB goal, ",
+            (ᏑgcController.of(gcControllerState.ᏑlastStackScan).Load() >> (int)(20)), (@string)" MB stacks, ",
+            (ᏑgcController.of(gcControllerState.ᏑglobalsScan).Load() >> (int)(20)), (@string)" MB globals, ",
+            work.maxprocs, (@string)" P");
         if (work.userForced) {
-            print(" (forced)");
+            print((@string)" (forced)");
         }
-        print("\n");
+        print((@string)"\n");
         printunlock();
     }
     // Set any arena chunks that were deferred to fault.
@@ -1246,7 +1247,7 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
         var pp = (~(~gp).m).p.ptr();
         // P can't change with preemption disabled.
         if (gcBlackenEnabled == 0) {
-            println("worker mode", (~pp).gcMarkWorkerMode);
+            println((@string)"worker mode", (~pp).gcMarkWorkerMode);
             @throw("gcBgMarkWorker: blackening not enabled"u8);
         }
         if ((~pp).gcMarkWorkerMode == gcMarkWorkerNotWorker) {
@@ -1260,7 +1261,7 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
         }
         var decnwait = atomic.Xadd(Ꮡwork.of(workType.Ꮡnwait), -1);
         if (decnwait == work.nproc) {
-            println("runtime: work.nwait=", decnwait, "work.nproc=", work.nproc);
+            println((@string)"runtime: work.nwait=", decnwait, (@string)"work.nproc=", work.nproc);
             @throw("work.nwait was > work.nproc"u8);
         }
         var gpʗ1 = gp;
@@ -1326,8 +1327,8 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
         // of work?
         var incnwait = atomic.Xadd(Ꮡwork.of(workType.Ꮡnwait), +1);
         if (incnwait > work.nproc) {
-            println("runtime: p.gcMarkWorkerMode=", (~pp).gcMarkWorkerMode,
-                "work.nwait=", incnwait, "work.nproc=", work.nproc);
+            println((@string)"runtime: p.gcMarkWorkerMode=", (~pp).gcMarkWorkerMode,
+                (@string)"work.nwait=", incnwait, (@string)"work.nproc=", work.nproc);
             @throw("work.nwait > work.nproc"u8);
         }
         // We'll releasem after this point and thus this P may run
@@ -1378,7 +1379,7 @@ internal static void gcMark(int64 startTime) {
     work.tstart = startTime;
     // Check that there's no marking work remaining.
     if (work.full != 0 || work.markrootNext < work.markrootJobs) {
-        print("runtime: full=", ((Δhex)(uint64)work.full), " next=", work.markrootNext, " jobs=", work.markrootJobs, " nDataRoots=", work.nDataRoots, " nBSSRoots=", work.nBSSRoots, " nSpanRoots=", work.nSpanRoots, " nStackRoots=", work.nStackRoots, "\n");
+        print((@string)"runtime: full=", ((Δhex)(uint64)work.full), (@string)" next=", work.markrootNext, (@string)" jobs=", work.markrootJobs, (@string)" nDataRoots=", work.nDataRoots, (@string)" nBSSRoots=", work.nBSSRoots, (@string)" nSpanRoots=", work.nSpanRoots, (@string)" nStackRoots=", work.nStackRoots, (@string)"\n");
         throw panic("non-empty mark queue after concurrent mark");
     }
     if (debug.gccheckmark > 0) {
@@ -1412,18 +1413,18 @@ internal static void gcMark(int64 startTime) {
         var gcw = Δp.of(runtime_package.Δp.Ꮡgcw);
         if (!gcw.empty()) {
             printlock();
-            print("runtime: P ", (~Δp).id, " flushedWork ", (~gcw).flushedWork);
+            print((@string)"runtime: P ", (~Δp).id, (@string)" flushedWork ", (~gcw).flushedWork);
             if ((~gcw).wbuf1 == nil){
-                print(" wbuf1=<nil>");
+                print((@string)" wbuf1=<nil>");
             } else {
-                print(" wbuf1.n=", (~(~gcw).wbuf1).nobj);
+                print((@string)" wbuf1.n=", (~(~gcw).wbuf1).nobj);
             }
             if ((~gcw).wbuf2 == nil){
-                print(" wbuf2=<nil>");
+                print((@string)" wbuf2=<nil>");
             } else {
-                print(" wbuf2.n=", (~(~gcw).wbuf2).nobj);
+                print((@string)" wbuf2.n=", (~(~gcw).wbuf2).nobj);
             }
-            print("\n");
+            print((@string)"\n");
             @throw("P has cached GC work at end of mark termination"u8);
         }
         // There may still be cached empty buffers, which we
@@ -1475,7 +1476,7 @@ internal static bool gcSweep(gcMode mode) {
         // Special case synchronous sweep.
         // Record that no proportional sweeping has to happen.
         @lock(Ꮡmheap_.of(mheap.Ꮡlock));
-        mheap_.sweepPagesPerByte = 0;
+        mheap_.sweepPagesPerByte = 0D;
         unlock(Ꮡmheap_.of(mheap.Ꮡlock));
         // Flush all mcaches.
         foreach (var (_, pp) in allp) {
@@ -1585,8 +1586,9 @@ internal static void clearpools() {
     }
     // clear unique maps
     if (uniqueMapCleanup != default!) {
-        switch (ᐧ) {
-        case ᐧ when uniqueMapCleanup.ᐸꟷ(new EmptyStruct(), ꟷ): {
+        var selᴛ1 = uniqueMapCleanup.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+        switch (trySelect(selᴛ1)) {
+        case 0: {
             break;
         }
         default: {
@@ -1677,9 +1679,9 @@ internal static void gcTestMoveStackOnNextCall() {
 
 // gcTestIsReachable performs a GC and returns a bit set where bit i
 // is set if ptrs[i] is reachable.
-internal static uint64 /*mask*/ gcTestIsReachable(params Span<@unsafe.Pointer> ptrsʗp) {
+internal static uint64 /*mask*/ gcTestIsReachable(params ꓸꓸꓸunsafeꓸPointer ptrsʗp) {
     uint64 mask = default!;
-    var ptrs = ptrsʗp.slice();
+    var ptrs = ptrsʗp.sslice();
 
     // This takes the pointers as unsafe.Pointers in order to keep
     // them live long enough for us to attach specials. After
@@ -1713,7 +1715,7 @@ internal static uint64 /*mask*/ gcTestIsReachable(params Span<@unsafe.Pointer> p
     foreach (var (i, s) in specials) {
         if (!(~s).done) {
             printlock();
-            println("runtime: object", i, "was not swept");
+            println((@string)"runtime: object", i, (@string)"was not swept");
             @throw("IsReachable failed"u8);
         }
         if ((~s).reachable) {

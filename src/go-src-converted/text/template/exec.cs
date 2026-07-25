@@ -168,7 +168,7 @@ public static error Unwrap(this ExecError e) {
 // errRecover is the handler that turns panics into returns from the top
 // level of Parse.
 internal static void errRecover(ж<error> Ꮡerrp) => func((defer, recover) => {
-    ref var errp = ref Ꮡerrp.Value;
+    ref var errp = ref Ꮡerrp.ValueSlot;
 
     var e = recover();
     if (e != default!) {
@@ -228,11 +228,12 @@ public static error Execute(this ж<Template> Ꮡt, io.Writer wr, any data) {
 }
 
 internal static error /*err*/ execute(this ж<Template> Ꮡt, io.Writer wr, any data) {
-    error err = default!;
+    heap<error>(out var Ꮡerr);
     func((defer, recover) => {
     ref var t = ref Ꮡt.Value;
 
-        deferǃ(errRecover, Ꮡ(err), defer);
+    ref var err = ref Ꮡerr.ValueSlot;
+        deferǃ(errRecover, Ꮡerr, defer);
         var (value, ok) = data._<reflectꓸValue>(ᐧ);
         if (!ok) {
             value = reflect.ValueOf(data);
@@ -247,7 +248,7 @@ internal static error /*err*/ execute(this ж<Template> Ꮡt, io.Writer wr, any 
         }
         state.walk(value, new parse_ListNodeжNode(t.Root));
     });
-    return err;
+    return Ꮡerr.ValueSlot;
 }
 
 // DefinedTemplates returns a string listing the defined templates,
@@ -395,7 +396,7 @@ internal static (bool truth, bool ok) isTrue(reflectꓸValue val) {
         truth = val.Bool();
     }
     else if (exprᴛ1 == reflect.Complex64 || exprᴛ1 == reflect.Complex128) {
-        truth = val.Complex() != 0;
+        truth = val.Complex() != 0D;
     }
     else if (exprᴛ1 == reflect.Chan || exprᴛ1 == reflect.Func || exprᴛ1 == reflect.ΔPointer || exprᴛ1 == reflect.ΔInterface) {
         truth = !val.IsNil();
@@ -404,7 +405,7 @@ internal static (bool truth, bool ok) isTrue(reflectꓸValue val) {
         truth = val.Int() != 0;
     }
     else if (exprᴛ1 == reflect.Float32 || exprᴛ1 == reflect.Float64) {
-        truth = val.Float() != 0;
+        truth = val.Float() != 0D;
     }
     else if (exprᴛ1 == reflect.ΔUint || exprᴛ1 == reflect.Uint8 || exprᴛ1 == reflect.Uint16 || exprᴛ1 == reflect.Uint32 || exprᴛ1 == reflect.Uint64 || exprᴛ1 == reflect.Uintptr) {
         truth = val.Uint() != 0;

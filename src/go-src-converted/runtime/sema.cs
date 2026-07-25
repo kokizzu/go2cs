@@ -666,7 +666,7 @@ internal static void notifyListNotifyOne(ж<notifyList> Ꮡl) {
     // be too long. This applies even when the g is missing:
     // it hasn't yet gotten to sleep and has lost the race to
     // the (few) other g's that we find on the list.
-    for (var (Δp, s) = ((ж<sudog>)(default!), l.head); s != nil; (Δp, s) = (s, s.Value.next)) {
+    for (var (Δp, s) = (((ж<sudog>)nil), l.head); s != nil; (Δp, s) = (s, s.Value.next)) {
         if ((~s).ticket == t) {
             var n = s.Value.next;
             if (Δp != nil){
@@ -689,7 +689,7 @@ internal static void notifyListNotifyOne(ж<notifyList> Ꮡl) {
 //go:linkname notifyListCheck sync.runtime_notifyListCheck
 internal static void notifyListCheck(uintptr sz) {
     if (sz != @unsafe.Sizeof(new notifyList(nil))) {
-        print("runtime: bad notifyList size - sync=", sz, " runtime=", @unsafe.Sizeof(new notifyList(nil)), "\n");
+        print((@string)"runtime: bad notifyList size - sync=", sz, (@string)" runtime=", @unsafe.Sizeof(new notifyList(nil)), (@string)"\n");
         @throw("bad notifyList size"u8);
     }
 }

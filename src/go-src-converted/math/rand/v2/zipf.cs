@@ -40,7 +40,7 @@ public static ж<Zipf> NewZipf(ж<Rand> Ꮡr, float64 s, float64 v, uint64 imax)
     ref var r = ref Ꮡr.Value;
 
     var z = @new<Zipf>();
-    if (s <= 1.0D || v < 1) {
+    if (s <= 1.0D || v < 1D) {
         return default!;
     }
     z.Value.r = Ꮡr;
@@ -51,7 +51,7 @@ public static ж<Zipf> NewZipf(ж<Rand> Ꮡr, float64 s, float64 v, uint64 imax)
     z.Value.oneminusQinv = 1.0D / (~z).oneminusQ;
     z.Value.hxm = z.h((~z).imax + 0.5D);
     z.Value.hx0minusHxm = z.h(0.5D) - math.Exp(math.Log((~z).v) * (-(~z).q)) - (~z).hxm;
-    z.Value.s = 1 - z.hinv(z.h(1.5D) - math.Exp(-(~z).q * math.Log((~z).v + 1.0D)));
+    z.Value.s = 1D - z.hinv(z.h(1.5D) - math.Exp(-(~z).q * math.Log((~z).v + 1.0D)));
     return z;
 }
 

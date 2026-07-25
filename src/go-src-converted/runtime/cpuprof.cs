@@ -65,7 +65,7 @@ public static void SetCPUProfileRate(nint hz) {
     @lock(Ꮡcpuprof.of(cpuProfile.Ꮡlock));
     if (hz > 0){
         if (cpuprof.on || cpuprof.log != nil) {
-            print("runtime: cannot set cpu profile rate until previous profile has finished.\n");
+            print((@string)"runtime: cannot set cpu profile rate until previous profile has finished.\n");
             unlock(Ꮡcpuprof.of(cpuProfile.Ꮡlock));
             return;
         }

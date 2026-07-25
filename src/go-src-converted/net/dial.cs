@@ -498,12 +498,14 @@ public static (Conn, error) DialContext(this ж<Dialer> Ꮡd, context.Context ct
             var oldCancelʗ1 = oldCancel;
             var subCtxʗ1 = subCtx;
             goǃ(() => {
-                switch (select(ᐸꟷ(oldCancelʗ1, ꓸꓸꓸ), ᐸꟷ(subCtxʗ1.Done(), ꓸꓸꓸ))) {
-                case 0 when oldCancelʗ1.ꟷᐳ(out _): {
+                var selᴛ1 = oldCancelʗ1;
+                var selᴛ2 = subCtxʗ1.Done();
+                switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
+                case 0 when selᴛ1.ꟷᐳ(out _): {
                     cancelʗ3();
                     break;
                 }
-                case 1 when subCtxʗ1.Done().ꟷᐳ(out _): {
+                case 1 when selᴛ2.ꟷᐳ(out _): {
                     break;
                 }}
             });
@@ -540,7 +542,7 @@ public static (Conn, error) DialContext(this ж<Dialer> Ꮡd, context.Context ct
     return sd.dialParallel(ctx, primaries, fallbacks);
 });
 
-[GoType("dyn")] partial struct dialParallel_dialResult {
+[GoLocalName("dialResult")] [GoType("dyn")] partial struct dialParallel_dialResult {
     public Conn Conn;
     internal error error;
     internal bool primary;
@@ -555,9 +557,9 @@ internal static (Conn, error) dialParallel(this ж<sysDialer> Ꮡsd, context.Con
     if (len(fallbacks) == 0) {
         return Ꮡsd.dialSerial(ctx, primaries);
     }
-    var returned = new channel<EmptyStruct>(1);
+    var returned = new channel<EmptyStruct>(0);
     deferǃ(ᴛ1 => builtin.close(ᴛ1), returned, defer);
-    var results = new channel<dialParallel_dialResult>(1);
+    var results = new channel<dialParallel_dialResult>(0);
     // unbuffered
     var fallbacksʗ1 = fallbacks;
     var primariesʗ1 = primaries;
@@ -569,11 +571,13 @@ internal static (Conn, error) dialParallel(this ж<sysDialer> Ꮡsd, context.Con
             ras = fallbacksʗ1;
         }
         var (c, err) = Ꮡsd.dialSerial(ctxΔ1, ras);
-        switch (select(resultsʗ1.ᐸꟷ(new dialParallel_dialResult(Conn: c, error: err, primary: primaryΔ1, done: true), ꓸꓸꓸ), ᐸꟷ(returnedʗ1, ꓸꓸꓸ))) {
+        var selᴛ3 = resultsʗ1.ᐸꟷ(new dialParallel_dialResult(Conn: c, error: err, primary: primaryΔ1, done: true), ꓸꓸꓸ);
+        var selᴛ4 = returnedʗ1;
+        switch (select(selᴛ3, ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
         case 0: {
             break;
         }
-        case 1 when returnedʗ1.ꟷᐳ(out _): {
+        case 1 when selᴛ4.ꟷᐳ(out _): {
             if (c != default!) {
                 c.Close();
             }
@@ -593,8 +597,10 @@ internal static (Conn, error) dialParallel(this ж<sysDialer> Ꮡsd, context.Con
     var fallbackTimerʗ1 = fallbackTimer;
     defer(() => fallbackTimerʗ1.Stop());
     while (ᐧ) {
-        switch (select(ᐸꟷ((~fallbackTimer).C, ꓸꓸꓸ), ᐸꟷ(results, ꓸꓸꓸ))) {
-        case 0 when (~fallbackTimer).C.ꟷᐳ(out _): {
+        var selᴛ5 = (~fallbackTimer).C;
+        var selᴛ6 = results;
+        switch (select(ᐸꟷ(selᴛ5, ꓸꓸꓸ), ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
+        case 0 when selᴛ5.ꟷᐳ(out _): {
             var (fallbackCtx, fallbackCancel) = context.WithCancel(ctx);
             var fallbackCancelʗ1 = fallbackCancel;
             defer(() => fallbackCancelʗ1());
@@ -602,7 +608,7 @@ internal static (Conn, error) dialParallel(this ж<sysDialer> Ꮡsd, context.Con
             goǃ(startRacerʗ2, fallbackCtx, (bool)false);
             break;
         }
-        case 1 when results.ꟷᐳ(out var res): {
+        case 1 when selᴛ6.ꟷᐳ(out var res): {
             if (res.error == default!) {
                 return (res.Conn, default!);
             }
@@ -633,8 +639,9 @@ internal static (Conn, error) dialSerial(this ж<sysDialer> Ꮡsd, context.Conte
 
     error firstErr = default!;    // The error from the first address is most relevant.
     foreach (var (i, ra) in ras) {
-        switch (ᐧ) {
-        case ᐧ when ctx.Done().ꟷᐳ(out _): {
+        var selᴛ7 = ctx.Done();
+        switch (trySelect(ᐸꟷ(selᴛ7, ꓸꓸꓸ))) {
+        case 0 when selᴛ7.ꟷᐳ(out _): {
             return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: sd.network, Source: sd.LocalAddr, Addr: ra, Err: mapErr(ctx.Err())))));
         }
         default: {

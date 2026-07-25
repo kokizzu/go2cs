@@ -162,4 +162,110 @@ namespace go;
 [GoPackage("net")]
 public static partial class net_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface buffersWriter {}
+    internal partial interface temporary {}
+    internal partial interface timeout {}
+    internal partial struct addrList {}
+    internal partial struct addrPortUDPAddr {}
+    internal partial struct byName {}
+    internal partial struct byPref {}
+    internal partial struct byPriorityWeight {}
+    internal partial struct byRFC6724 {}
+    internal partial struct canceledError {}
+    internal partial struct conf {}
+    internal partial struct conn {}
+    internal partial struct dialParallel_dialResult {}
+    internal partial struct dnsConfig {}
+    internal partial struct fileAddr {}
+    internal partial struct goLookupIPCNAMEOrder_result {}
+    internal partial struct hostsᴛ1 {}
+    internal partial struct ipAttr {}
+    internal partial struct ipStackCapabilities {}
+    internal partial struct ipv6ZoneCache {}
+    internal partial struct listenerBacklogCacheᴛ1 {}
+    internal partial struct lookupIP_ret {}
+    internal partial struct lookupProtocol_result {}
+    internal partial struct mdnsTest {}
+    internal partial struct mptcpStatus {}
+    internal partial struct netFD {}
+    internal partial struct noReadFrom {}
+    internal partial struct noWriteTo {}
+    internal partial struct notFoundError {}
+    internal partial struct nssConf {}
+    internal partial struct nssCriterion {}
+    internal partial struct nssSource {}
+    internal partial struct nsswitchConfig {}
+    internal partial struct onlyValuesCtx {}
+    internal partial struct pipe {}
+    internal partial struct pipeAddr {}
+    internal partial struct pipeDeadline {}
+    internal partial struct policyTable {}
+    internal partial struct policyTableEntry {}
+    internal partial struct probe_type {}
+    internal partial struct rawConn {}
+    internal partial struct rawListener {}
+    internal partial struct resolverConfig {}
+    internal partial struct sysDialer {}
+    internal partial struct sysListener {}
+    internal partial struct tcpConnWithoutReadFrom {}
+    internal partial struct tcpConnWithoutWriteTo {}
+    internal partial struct temporaryError {}
+    internal partial struct timeoutError {}
+    public partial interface Conn {}
+    public partial interface Listener {}
+    public partial interface PacketConn {}
+    public partial interface ΔAddr {}
+    public partial interface ΔError {}
+    public partial interface Δsockaddr {}
+    public partial struct AddrError {}
+    public partial struct Buffers {}
+    public partial struct DNSConfigError {}
+    public partial struct DNSError {}
+    public partial struct Dialer {}
+    public partial struct Flags {}
+    public partial struct HardwareAddr {}
+    public partial struct IP {}
+    public partial struct IPAddr {}
+    public partial struct IPConn {}
+    public partial struct IPMask {}
+    public partial struct IPNet {}
+    public partial struct Interface {}
+    public partial struct InvalidAddrError {}
+    public partial struct KeepAliveConfig {}
+    public partial struct ListenConfig {}
+    public partial struct MX {}
+    public partial struct NS {}
+    public partial struct OpError {}
+    public partial struct ParseError {}
+    public partial struct Resolver {}
+    public partial struct SRV {}
+    public partial struct TCPAddr {}
+    public partial struct TCPConn {}
+    public partial struct TCPListener {}
+    public partial struct UDPAddr {}
+    public partial struct UDPConn {}
+    public partial struct UnixAddr {}
+    public partial struct UnixConn {}
+    public partial struct UnixListener {}
+    public partial struct UnknownNetworkError {}
+    public partial struct scope {}
+    public partial struct Δfile {}
+    public partial struct ΔhostLookupOrder {}
+    // </TypeAccessibility>
 }

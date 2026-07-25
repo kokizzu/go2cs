@@ -583,7 +583,7 @@ internal static bool decUintptrSlice(ж<decoderState> Ꮡstate, reflectꓸValue 
 // growSlice is called for a slice that we only partially allocated,
 // to grow it up to length.
 internal static void growSlice<E>(reflectꓸValue v, ж<slice<E>> Ꮡps, nint length) {
-    ref var ps = ref Ꮡps.Value;
+    ref var ps = ref Ꮡps.ValueSlot;
 
     E zero = default!;
     var s = ps;

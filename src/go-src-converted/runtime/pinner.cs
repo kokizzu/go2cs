@@ -312,7 +312,7 @@ internal static void refreshPinnerBits(this ж<mspan> Ꮡs) {
     // newPinnerBits guarantees that pinnerBits will be 8-byte aligned, so we
     // don't have to worry about edge cases, irrelevant bits will simply be
     // zero.
-    foreach (var (_, x) in @unsafe.Slice((ж<uint64>)(uintptr)(new @unsafe.Pointer(Δp.of(pinnerBits.Ꮡx))), bytes / 8)) {
+    foreach (var (_, x) in @unsafe.Slice(Δp.of(pinnerBits.Ꮡx).Reinterpret<uint8, uint64>(), bytes / 8)) {
         if (x != 0) {
             hasPins = true;
             break;
@@ -340,10 +340,10 @@ internal static void incPinCounter(this ж<mspan> Ꮡspan, uintptr offset) {
         rec.Value.special.offset = (uint16)offset;
         rec.Value.special.kind = _KindSpecialPinCounter;
         rec.Value.special.next = @ref.ValueSlot;
-        @ref.ValueSlot = (ж<special>)(uintptr)(new @unsafe.Pointer(rec));
+        @ref.ValueSlot = rec.Reinterpret<specialPinCounter, special>();
         spanHasSpecials(Ꮡspan);
     } else {
-        rec = (ж<specialPinCounter>)(uintptr)(new @unsafe.Pointer(@ref.ValueSlot));
+        rec = @ref.ValueSlot.Reinterpret<special, specialPinCounter>();
     }
     rec.Value.counter++;
 }
@@ -357,7 +357,7 @@ internal static bool decPinCounter(this ж<mspan> Ꮡspan, uintptr offset) {
     if (!exists) {
         @throw("runtime.Pinner: decreased non-existing pin counter"u8);
     }
-    var counter = (ж<specialPinCounter>)(uintptr)(new @unsafe.Pointer(@ref.ValueSlot));
+    var counter = @ref.ValueSlot.Reinterpret<special, specialPinCounter>();
     counter.Value.counter--;
     if ((~counter).counter == 0) {
         @ref.ValueSlot = counter.Value.special.next;
@@ -380,7 +380,7 @@ internal static ж<uintptr> pinnerGetPinCounter(@unsafe.Pointer addr) {
     if (!exists) {
         return default!;
     }
-    var counter = (ж<specialPinCounter>)(uintptr)(new @unsafe.Pointer(t.ValueSlot));
+    var counter = t.ValueSlot.Reinterpret<special, specialPinCounter>();
     return counter.of(specialPinCounter.Ꮡcounter);
 }
 

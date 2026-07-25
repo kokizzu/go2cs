@@ -77,11 +77,11 @@ internal static @string pkgpath(this Δrtype t) {
     }
     var exprᴛ1 = (abiꓸKind)(t.Kind_ & abi.KindMask);
     if (exprᴛ1 == abi.Struct) {
-        var st = (ж<structtype>)(uintptr)(new @unsafe.Pointer(t.Type));
+        var st = t.Type.Reinterpret<abi.Type, structtype>();
         return (~st).PkgPath.Name();
     }
     if (exprᴛ1 == abi.Interface) {
-        var it = (ж<interfacetype>)(uintptr)(new @unsafe.Pointer(t.Type));
+        var it = t.Type.Reinterpret<abi.Type, interfacetype>();
         return (~it).PkgPath.Name();
     }
 
@@ -143,7 +143,7 @@ internal static abiꓸName resolveNameOff(@unsafe.Pointer ptrInModule, nameOff o
         if (@base >= (~md).types && @base < (~md).etypes) {
             var resΔ1 = (~md).types + (uintptr)(int32)off;
             if (resΔ1 > (~md).etypes) {
-                println("runtime: nameOff", ((Δhex)(uint64)(int32)off), "out of range", ((Δhex)(uint64)(~md).types), "-", ((Δhex)(uint64)(~md).etypes));
+                println((@string)"runtime: nameOff", ((Δhex)(uint64)(int32)off), (@string)"out of range", ((Δhex)(uint64)(~md).types), (@string)"-", ((Δhex)(uint64)(~md).etypes));
                 @throw("runtime: name offset out of range"u8);
             }
             return new name(Bytes: (ж<byte>)(uintptr)((@unsafe.Pointer)resΔ1));
@@ -154,9 +154,9 @@ internal static abiꓸName resolveNameOff(@unsafe.Pointer ptrInModule, nameOff o
     var (res, found) = reflectOffs.m[(int32)off, ꟷ];
     reflectOffsUnlock();
     if (!found) {
-        println("runtime: nameOff", ((Δhex)(uint64)(int32)off), "base", ((Δhex)(uint64)@base), "not in ranges:");
+        println((@string)"runtime: nameOff", ((Δhex)(uint64)(int32)off), (@string)"base", ((Δhex)(uint64)@base), (@string)"not in ranges:");
         for (var next = Ꮡfirstmoduledata; next != nil; next = next.Value.next) {
-            println("\ttypes", ((Δhex)(uint64)(~next).types), "etypes", ((Δhex)(uint64)(~next).etypes));
+            println((@string)"\ttypes", ((Δhex)(uint64)(~next).types), (@string)"etypes", ((Δhex)(uint64)(~next).etypes));
         }
         @throw("runtime: name offset base pointer out of range"u8);
     }
@@ -195,9 +195,9 @@ internal static ж<_type> resolveTypeOff(@unsafe.Pointer ptrInModule, typeOff of
         @unsafe.Pointer resΔ1 = reflectOffs.m[(int32)off];
         reflectOffsUnlock();
         if (resΔ1 == nil) {
-            println("runtime: typeOff", ((Δhex)(uint64)(int32)off), "base", ((Δhex)(uint64)@base), "not in ranges:");
+            println((@string)"runtime: typeOff", ((Δhex)(uint64)(int32)off), (@string)"base", ((Δhex)(uint64)@base), (@string)"not in ranges:");
             for (var next = Ꮡfirstmoduledata; next != nil; next = next.Value.next) {
-                println("\ttypes", ((Δhex)(uint64)(~next).types), "etypes", ((Δhex)(uint64)(~next).etypes));
+                println((@string)"\ttypes", ((Δhex)(uint64)(~next).types), (@string)"etypes", ((Δhex)(uint64)(~next).etypes));
             }
             @throw("runtime: type offset base pointer out of range"u8);
         }
@@ -210,7 +210,7 @@ internal static ж<_type> resolveTypeOff(@unsafe.Pointer ptrInModule, typeOff of
     }
     var res = (~md).types + (uintptr)(int32)off;
     if (res > (~md).etypes) {
-        println("runtime: typeOff", ((Δhex)(uint64)(int32)off), "out of range", ((Δhex)(uint64)(~md).types), "-", ((Δhex)(uint64)(~md).etypes));
+        println((@string)"runtime: typeOff", ((Δhex)(uint64)(int32)off), (@string)"out of range", ((Δhex)(uint64)(~md).types), (@string)"-", ((Δhex)(uint64)(~md).etypes));
         @throw("runtime: type offset out of range"u8);
     }
     return (ж<_type>)(uintptr)((@unsafe.Pointer)res);
@@ -239,9 +239,9 @@ internal static @unsafe.Pointer textOff(this Δrtype t, textOff off) {
         @unsafe.Pointer resΔ1 = reflectOffs.m[(int32)off];
         reflectOffsUnlock();
         if (resΔ1 == nil) {
-            println("runtime: textOff", ((Δhex)(uint64)(int32)off), "base", ((Δhex)(uint64)@base), "not in ranges:");
+            println((@string)"runtime: textOff", ((Δhex)(uint64)(int32)off), (@string)"base", ((Δhex)(uint64)@base), (@string)"not in ranges:");
             for (var next = Ꮡfirstmoduledata; next != nil; next = next.Value.next) {
-                println("\ttypes", ((Δhex)(uint64)(~next).types), "etypes", ((Δhex)(uint64)(~next).etypes));
+                println((@string)"\ttypes", ((Δhex)(uint64)(~next).types), (@string)"etypes", ((Δhex)(uint64)(~next).etypes));
             }
             @throw("runtime: text offset base pointer out of range"u8);
         }
@@ -386,18 +386,18 @@ internal static bool typesEqual(ж<_type> Ꮡt, ж<_type> Ꮡv, map<_typePair, E
         return true;
     }
     if (exprᴛ1 == abi.Array) {
-        var at = (ж<arraytype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
-        var av = (ж<arraytype>)(uintptr)(new @unsafe.Pointer(Ꮡv));
+        var at = Ꮡt.Reinterpret<_type, arraytype>();
+        var av = Ꮡv.Reinterpret<_type, arraytype>();
         return typesEqual((~at).Elem, (~av).Elem, seen) && (~at).Len == (~av).Len;
     }
     if (exprᴛ1 == abi.Chan) {
-        var ct = (ж<chantype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
-        var cv = (ж<chantype>)(uintptr)(new @unsafe.Pointer(Ꮡv));
+        var ct = Ꮡt.Reinterpret<_type, chantype>();
+        var cv = Ꮡv.Reinterpret<_type, chantype>();
         return (~ct).Dir == (~cv).Dir && typesEqual((~ct).Elem, (~cv).Elem, seen);
     }
     if (exprᴛ1 == abi.Func) {
-        var ft = (ж<functype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
-        var fv = (ж<functype>)(uintptr)(new @unsafe.Pointer(Ꮡv));
+        var ft = Ꮡt.Reinterpret<_type, functype>();
+        var fv = Ꮡv.Reinterpret<_type, functype>();
         if ((~ft).OutCount != (~fv).OutCount || (~ft).InCount != (~fv).InCount) {
             return false;
         }
@@ -416,8 +416,8 @@ internal static bool typesEqual(ж<_type> Ꮡt, ж<_type> Ꮡv, map<_typePair, E
         return true;
     }
     if (exprᴛ1 == abi.Interface) {
-        var it = (ж<interfacetype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
-        var iv = (ж<interfacetype>)(uintptr)(new @unsafe.Pointer(Ꮡv));
+        var it = Ꮡt.Reinterpret<_type, interfacetype>();
+        var iv = Ꮡv.Reinterpret<_type, interfacetype>();
         if ((~it).PkgPath.Name() != (~iv).PkgPath.Name()) {
             return false;
         }
@@ -446,23 +446,23 @@ internal static bool typesEqual(ж<_type> Ꮡt, ж<_type> Ꮡv, map<_typePair, E
         return true;
     }
     if (exprᴛ1 == abi.Map) {
-        var mt = (ж<maptype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
-        var mv = (ж<maptype>)(uintptr)(new @unsafe.Pointer(Ꮡv));
+        var mt = Ꮡt.Reinterpret<_type, maptype>();
+        var mv = Ꮡv.Reinterpret<_type, maptype>();
         return typesEqual((~mt).Key, (~mv).Key, seen) && typesEqual((~mt).Elem, (~mv).Elem, seen);
     }
     if (exprᴛ1 == abi.Pointer) {
-        var pt = (ж<ptrtype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
-        var pv = (ж<ptrtype>)(uintptr)(new @unsafe.Pointer(Ꮡv));
+        var pt = Ꮡt.Reinterpret<_type, ptrtype>();
+        var pv = Ꮡv.Reinterpret<_type, ptrtype>();
         return typesEqual((~pt).Elem, (~pv).Elem, seen);
     }
     if (exprᴛ1 == abi.Slice) {
-        var st = (ж<slicetype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
-        var sv = (ж<slicetype>)(uintptr)(new @unsafe.Pointer(Ꮡv));
+        var st = Ꮡt.Reinterpret<_type, slicetype>();
+        var sv = Ꮡv.Reinterpret<_type, slicetype>();
         return typesEqual((~st).Elem, (~sv).Elem, seen);
     }
     if (exprᴛ1 == abi.Struct) {
-        var st = (ж<structtype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
-        var sv = (ж<structtype>)(uintptr)(new @unsafe.Pointer(Ꮡv));
+        var st = Ꮡt.Reinterpret<_type, structtype>();
+        var sv = Ꮡv.Reinterpret<_type, structtype>();
         if (len((~st).Fields) != len((~sv).Fields)) {
             return false;
         }
@@ -491,7 +491,7 @@ internal static bool typesEqual(ж<_type> Ꮡt, ж<_type> Ꮡv, map<_typePair, E
         return true;
     }
     { /* default: */
-        println("runtime: impossible type kind", kind);
+        println((@string)"runtime: impossible type kind", kind);
         @throw("runtime: impossible type kind"u8);
         return false;
     }

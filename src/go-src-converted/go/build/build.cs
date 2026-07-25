@@ -1478,7 +1478,7 @@ internal static ref Package dummyPkg => ref ᏑdummyPkg.Value;
 internal static (ж<fileInfo>, error) matchFile(this ж<Context> Ꮡctxt, @string dir, @string name, map<@string, bool> allTags, ж<bool> ᏑbinaryOnly, ж<token.FileSet> Ꮡfset) {
     ref var ctxt = ref Ꮡctxt.Value;
     ref var binaryOnly = ref ᏑbinaryOnly.DerefOrNil();
-    ref var fset = ref Ꮡfset.Value;
+    ref var fset = ref Ꮡfset.DerefOrNil();
 
     if (strings.HasPrefix(name, "_"u8) || strings.HasPrefix(name, "."u8)) {
         return (default!, default!);

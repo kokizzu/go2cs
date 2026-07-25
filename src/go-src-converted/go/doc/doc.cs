@@ -190,7 +190,7 @@ public static ж<Package> New(ж<ast.Package> Ꮡpkg, @string importPath, Mode m
 // NewFromFiles takes ownership of the AST files and may edit them,
 // unless the PreserveAST Mode bit is on.
 public static (ж<Package>, error) NewFromFiles(ж<token.FileSet> Ꮡfset, slice<ж<ast.File>> files, @string importPath, params ꓸꓸꓸany optsʗp) {
-    var opts = optsʗp.slice();
+    var opts = optsʗp.sslice();
 
     ref var fset = ref Ꮡfset.DerefOrNil();
     // Check for invalid API usage.

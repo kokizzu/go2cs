@@ -169,7 +169,7 @@ internal static (pkix.AlgorithmIdentifier, error) parseAI(cryptobyte.String der)
 }
 
 internal static (time.Time, error) parseTime(ж<cryptobyte.String> Ꮡder) {
-    ref var der = ref Ꮡder.Value;
+    ref var der = ref Ꮡder.ValueSlot;
 
     ref var t = ref heap(new time.Time(), out var Ꮡt);
     switch (ᐧ) {

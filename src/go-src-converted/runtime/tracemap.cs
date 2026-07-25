@@ -120,8 +120,8 @@ internal static ж<traceMapNode> newTraceMapNode(this ж<traceMap> Ꮡtab, @unsa
     );
     memmove(new @unsafe.Pointer(sl.Δarray), data, size);
     // Create metadata structure.
-    var meta = (ж<traceMapNode>)(uintptr)(new @unsafe.Pointer(Ꮡtab.of(traceMap.Ꮡmem).alloc(@unsafe.Sizeof(new traceMapNode(nil)))));
-    ((ж<notInHeapSlice>)(uintptr)(new @unsafe.Pointer(meta.of(traceMapNode.Ꮡdata)))).Value = sl;
+    var meta = Ꮡtab.of(traceMap.Ꮡmem).alloc(@unsafe.Sizeof(new traceMapNode(nil))).Reinterpret<notInHeap, traceMapNode>();
+    (meta.of(traceMapNode.Ꮡdata).Reinterpret<slice<byte>, notInHeapSlice>()).Value = sl;
     meta.Value.id = id;
     meta.Value.hash = hash;
     return meta;

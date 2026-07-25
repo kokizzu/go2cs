@@ -78,7 +78,7 @@ public static void Sort(this ErrorList p) {
 
 // RemoveMultiples sorts an [ErrorList] and removes all but the first error per line.
 public static void RemoveMultiples(this ж<ErrorList> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.ValueSlot;
 
     sort.Sort(new ErrorListжInterface(Ꮡp));
     tokenꓸPosition last = default!;                          // initial last.Line is != any legal error line

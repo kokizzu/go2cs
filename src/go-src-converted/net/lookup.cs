@@ -313,12 +313,13 @@ public static (slice<netipꓸAddr>, error) LookupNetIP(this ж<Resolver> Ꮡr, c
     internal context.Context lookupValues;
 }
 
-internal static context.Context _ᴛ1ʗ = new onlyValuesCtxжContext((ж<onlyValuesCtx>)(default!));
+internal static context.Context _ᴛ1ʗ = new onlyValuesCtxжContext(((ж<onlyValuesCtx>)nil));
 
 // Value performs a lookup if the original context hasn't expired.
 [GoRecv] internal static any Value(this ref onlyValuesCtx ovc, any key) {
-    switch (ᐧ) {
-    case ᐧ when ovc.lookupValues.Done().ꟷᐳ(out _): {
+    var selᴛ10 = ovc.lookupValues.Done();
+    switch (trySelect(ᐸꟷ(selᴛ10, ꓸꓸꓸ))) {
+    case 0 when selᴛ10.ꟷᐳ(out _): {
         return default!;
     }
     default: {
@@ -378,8 +379,10 @@ internal static (slice<IPAddr>, error) lookupIPAddr(this ж<Resolver> Ꮡr, cont
         ᏑdnsWaitGroup.Done();
         cancelFn();
     };
-    switch (select(ᐸꟷ(ctx.Done(), ꓸꓸꓸ), ᐸꟷ(ch, ꓸꓸꓸ))) {
-    case 0 when ctx.Done().ꟷᐳ(out _): {
+    var selᴛ11 = ctx.Done();
+    var selᴛ12 = ch;
+    switch (select(ᐸꟷ(selᴛ11, ꓸꓸꓸ), ᐸꟷ(selᴛ12, ꓸꓸꓸ))) {
+    case 0 when selᴛ11.ꟷᐳ(out _): {
         if (Ꮡr.getLookupGroup().ForgetUnshared(lookupKey)){
             // Our context was canceled. If we are the only
             // goroutine looking up this key, then drop the key
@@ -402,7 +405,7 @@ internal static (slice<IPAddr>, error) lookupIPAddr(this ж<Resolver> Ꮡr, cont
         }
         return (default!, new DNSErrorжerror(err));
     }
-    case 1 when ch.ꟷᐳ(out var rΔ1): {
+    case 1 when selᴛ12.ꟷᐳ(out var rΔ1): {
         ᏑdnsWaitGroup.Done();
         lookupGroupCancel();
         var err = rΔ1.Err;

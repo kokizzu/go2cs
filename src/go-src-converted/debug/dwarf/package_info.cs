@@ -82,4 +82,73 @@ namespace go.debug;
 [GoPackage("dwarf")]
 public static partial class dwarf_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface dataFormat {}
+    internal partial interface readType_type {}
+    internal partial interface typeReader {}
+    internal partial struct abbrev {}
+    internal partial struct abbrevTable {}
+    internal partial struct afield {}
+    internal partial struct buf {}
+    internal partial struct entry_delayed {}
+    internal partial struct format {}
+    internal partial struct lnctForm {}
+    internal partial struct typeFixer {}
+    internal partial struct typeUnit {}
+    internal partial struct typeUnitReader {}
+    internal partial struct unit {}
+    internal partial struct unknownFormat {}
+    public partial interface ΔType {}
+    public partial struct AddrType {}
+    public partial struct ArrayType {}
+    public partial struct Attr {}
+    public partial struct BasicType {}
+    public partial struct BoolType {}
+    public partial struct CharType {}
+    public partial struct Class {}
+    public partial struct CommonType {}
+    public partial struct ComplexType {}
+    public partial struct Data {}
+    public partial struct DecodeError {}
+    public partial struct DotDotDotType {}
+    public partial struct Entry {}
+    public partial struct EnumType {}
+    public partial struct EnumValue {}
+    public partial struct Field {}
+    public partial struct FloatType {}
+    public partial struct FuncType {}
+    public partial struct IntType {}
+    public partial struct LineEntry {}
+    public partial struct LineFile {}
+    public partial struct LineReaderPos {}
+    public partial struct Offset {}
+    public partial struct PtrType {}
+    public partial struct QualType {}
+    public partial struct StructField {}
+    public partial struct StructType {}
+    public partial struct Tag {}
+    public partial struct TypedefType {}
+    public partial struct UcharType {}
+    public partial struct UintType {}
+    public partial struct UnspecifiedType {}
+    public partial struct UnsupportedType {}
+    public partial struct VoidType {}
+    public partial struct ΔLineReader {}
+    public partial struct ΔReader {}
+    // </TypeAccessibility>
 }

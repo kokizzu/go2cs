@@ -117,7 +117,7 @@ internal static bool valid(this inlineFrame uf) {
     if (uf.index < 0) {
         return u.f.srcFunc();
     }
-    var t = Ꮡ(u.inlTree.Value[uf.index]);
+    var t = u.inlTree.at<inlinedCall>((nint)(uf.index));
     return new ΔsrcFunc(
         u.f.datap,
         (~t).nameOff,

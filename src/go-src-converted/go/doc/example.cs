@@ -17,6 +17,7 @@ using utf8 = global::go.unicode.utf8_package;
 using @internal;
 using global::go.go;
 using global::go.unicode;
+using ꓸꓸꓸжastꓸFile = Span<ж<global::go.go.ast_package.File>>;
 
 partial class doc_package {
 
@@ -49,8 +50,8 @@ partial class doc_package {
 //     example function, zero test, fuzz test, or benchmark function, and at
 //     least one top-level function, type, variable, or constant declaration
 //     other than the example function.
-public static slice<ж<Example>> Examples(params Span<ж<ast.File>> testFilesʗp) {
-    var testFiles = testFilesʗp.slice();
+public static slice<ж<Example>> Examples(params ꓸꓸꓸжastꓸFile testFilesʗp) {
+    var testFiles = testFilesʗp.sslice();
 
     slice<ж<Example>> list = default!;
     foreach (var (_, @file) in testFiles) {

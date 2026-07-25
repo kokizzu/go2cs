@@ -56,21 +56,21 @@ partial class cmplx_package {
 // Sqrt returns the square root of x.
 // The result r is chosen so that real(r) ≥ 0 and imag(r) has the same sign as imag(x).
 public static complex128 Sqrt(complex128 x) {
-    if (imag(x) == 0){
+    if (imag(x) == 0D){
         // Ensure that imag(r) has the same sign as imag(x) for imag(x) == signed zero.
-        if (real(x) == 0) {
-            return complex(0, imag(x));
+        if (real(x) == 0D) {
+            return complex(0D, imag(x));
         }
-        if (real(x) < 0) {
-            return complex(0, math.Copysign(math.Sqrt(-real(x)), imag(x)));
+        if (real(x) < 0D) {
+            return complex(0D, math.Copysign(math.Sqrt(-real(x)), imag(x)));
         }
         return complex(math.Sqrt(real(x)), imag(x));
     } else 
     if (math.IsInf(imag(x), 0)) {
         return complex(math.Inf(1), imag(x));
     }
-    if (real(x) == 0) {
-        if (imag(x) < 0) {
+    if (real(x) == 0D) {
+        if (imag(x) < 0D) {
             var rΔ1 = math.Sqrt(-0.5D * imag(x));
             return complex(rΔ1, -rΔ1);
         }
@@ -81,10 +81,10 @@ public static complex128 Sqrt(complex128 x) {
     var b = imag(x);
     float64 scale = default!;
     // Rescale to avoid internal overflow or underflow.
-    if (math.Abs(a) > 4 || math.Abs(b) > 4){
+    if (math.Abs(a) > 4D || math.Abs(b) > 4D){
         a *= 0.25D;
         b *= 0.25D;
-        scale = 2;
+        scale = 2D;
     } else {
         a *= 1.8014398509481984e16D;
         // 2**54
@@ -94,7 +94,7 @@ public static complex128 Sqrt(complex128 x) {
     // 2**-27
     var r = math.Hypot(a, b);
     float64 t = default!;
-    if (a > 0){
+    if (a > 0D){
         t = math.Sqrt(0.5D * r + 0.5D * a);
         r = scale * math.Abs((0.5D * b) / t);
         t *= scale;
@@ -103,7 +103,7 @@ public static complex128 Sqrt(complex128 x) {
         t = scale * math.Abs((0.5D * b) / r);
         r *= scale;
     }
-    if (b < 0) {
+    if (b < 0D) {
         return complex(t, -r);
     }
     return complex(t, r);

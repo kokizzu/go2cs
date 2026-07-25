@@ -1911,7 +1911,7 @@ internal static slice<pkix.AttributeTypeAndValueSET> parseRawAttributes(slice<as
 }
 
 // pkcs10Attribute reflects the Attribute structure from RFC 2986, Section 4.1.
-[GoType("dyn")] partial struct parseCSRExtensions_pkcs10Attribute {
+[GoLocalName("pkcs10Attribute")] [GoType("dyn")] partial struct parseCSRExtensions_pkcs10Attribute {
     public asn1.ObjectIdentifier Id;
     [GoTag(@"asn1:""set""")]
     public slice<asn1.RawValue> Values;

@@ -109,26 +109,26 @@ internal static float64 exp(float64 x) {
         return x;
     }
     case {} when IsInf(x, -1): {
-        return 0;
+        return 0D;
     }
     case {} when x > Overflow: {
         return Inf(1);
     }
     case {} when x < Underflow: {
-        return 0;
+        return 0D;
     }
     case {} when -NearZero < x && x < NearZero: {
-        return 1 + x;
+        return 1D + x;
     }}
 
     // reduce; computed as r = hi - lo for extra precision.
     nint k = default!;
     switch (ᐧ) {
-    case {} when x is < 0: {
+    case {} when x is < 0D: {
         k = (nint)(Log2e * x - 0.5D);
         break;
     }
-    case {} when x is > 0: {
+    case {} when x is > 0D: {
         k = (nint)(Log2e * x + 0.5D);
         break;
     }}
@@ -160,24 +160,24 @@ internal static float64 exp2(float64 x) {
         return x;
     }
     case {} when IsInf(x, -1): {
-        return 0;
+        return 0D;
     }
     case {} when x > Overflow: {
         return Inf(1);
     }
     case {} when x < Underflow: {
-        return 0;
+        return 0D;
     }}
 
     // argument reduction; x = r×lg(e) + k with |r| ≤ ln(2)/2.
     // computed as r = hi - lo for extra precision.
     nint k = default!;
     switch (ᐧ) {
-    case {} when x is > 0: {
+    case {} when x is > 0D: {
         k = (nint)(x + 0.5D);
         break;
     }
-    case {} when x is < 0: {
+    case {} when x is < 0D: {
         k = (nint)(x - 0.5D);
         break;
     }}
@@ -199,7 +199,7 @@ internal static float64 expmulti(float64 hi, float64 lo, nint k) {
     var r = hi - lo;
     var t = r * r;
     var c = r - t * (P1 + t * (P2 + t * (P3 + t * (P4 + t * P5))));
-    var y = 1 - ((lo - (r * c) / (2 - c)) - hi);
+    var y = 1D - ((lo - (r * c) / (2D - c)) - hi);
     // TODO(rsc): make sure Ldexp can handle boundary k
     return Ldexp(y, k);
 }

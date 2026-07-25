@@ -1983,7 +1983,7 @@ internal static (@string rest, error err) parseClass(this ж<parser> Ꮡp, @stri
 // cleanClass sorts the ranges (pairs of elements of r),
 // merges them, and eliminates duplicates.
 internal static slice<rune> cleanClass(ж<slice<rune>> Ꮡrp) {
-    ref var rp = ref Ꮡrp.Value;
+    ref var rp = ref Ꮡrp.ValueSlot;
 
     // Sort by lo increasing, hi decreasing to break ties.
     sort.Sort(new ranges(Ꮡrp));

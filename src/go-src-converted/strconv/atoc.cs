@@ -65,13 +65,13 @@ public static (complex128, error) ParseComplex(@string s, nint bitSize) {
     if (err != default!) {
         (err, pending) = convErr(err, orig);
         if (err != default!) {
-            return (0, err);
+            return (0D, err);
         }
     }
     s = s[(int)(n)..];
     // If we have nothing left, we're done.
     if (len(s) == 0) {
-        return (complex(re, 0), pending);
+        return (complex(re, 0D), pending);
     }
     // Otherwise, look at the next character.
     var exprᴛ1 = s[0];
@@ -89,12 +89,12 @@ public static (complex128, error) ParseComplex(@string s, nint bitSize) {
         if (len(s) == 1) {
             // ok
             // If 'i' is the last character, we only have an imaginary part.
-            return (complex(0, re), pending);
+            return (complex(0D, re), pending);
         }
         fallthrough = true;
     }
     if (fallthrough || !matchᴛ1) { /* default: */
-        return (0, new NumErrorжerror(syntaxError(fnParseComplex, orig)));
+        return (0D, new NumErrorжerror(syntaxError(fnParseComplex, orig)));
     }
 
     // Read imaginary part.
@@ -102,12 +102,12 @@ public static (complex128, error) ParseComplex(@string s, nint bitSize) {
     if (err != default!) {
         (err, pending) = convErr(err, orig);
         if (err != default!) {
-            return (0, err);
+            return (0D, err);
         }
     }
     s = s[(int)(n)..];
     if (s != "i"u8) {
-        return (0, new NumErrorжerror(syntaxError(fnParseComplex, orig)));
+        return (0D, new NumErrorжerror(syntaxError(fnParseComplex, orig)));
     }
     return (complex(re, im), pending);
 }

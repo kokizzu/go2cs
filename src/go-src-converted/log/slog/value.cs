@@ -12,6 +12,7 @@ using strings = strings_package;
 using time = time_package;
 using @unsafe = unsafe_package;
 using io = io_package;
+using ꓸꓸꓸAttr = Span<slog_package.Attr>;
 
 partial class slog_package {
 
@@ -154,7 +155,7 @@ public static Value TimeValue(time.Time v) {
         // with a nil *time.Location instead. time.Time.Location method never
         // returns nil, so a Value with any == timeLocation(nil) cannot be
         // mistaken for any other Value, time.Time or otherwise.
-        return new Value(any: ((timeLocation)default!));
+        return new Value(any: ((timeLocation)nil));
     }
     var nsec = v.UnixNano();
     var t = time_package.Unix(0, nsec);
@@ -174,7 +175,7 @@ public static Value DurationValue(time.Duration v) {
 
 // GroupValue returns a new [Value] for a list of Attrs.
 // The caller must not subsequently mutate the argument slice.
-public static Value GroupValue(params Span<slog_package.Attr> @asʗp) {
+public static Value GroupValue(params ꓸꓸꓸAttr @asʗp) {
     var @as = @asʗp.slice();
 
     // Remove empty groups.

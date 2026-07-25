@@ -88,7 +88,7 @@ internal static @string sortLines(@string output) {
         fmt.Printf("%s--- PASS: %s (%s)\n"u8, chatty.prefix(), eg.Name, dstr);
     }
     if (chatty.on && chatty.json) {
-        fmt.Printf("%s=== NAME   %s\n"u8, chatty.prefix(), "");
+        fmt.Printf("%s=== NAME   %s\n"u8, chatty.prefix(), (@string)"");
     }
     if (recovered != default!){
         // Propagate the previously recovered result, by panicking.

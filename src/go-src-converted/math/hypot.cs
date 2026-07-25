@@ -39,11 +39,11 @@ internal static float64 hypot(float64 p, float64 q) {
     if (p < q) {
         (p, q) = (q, p);
     }
-    if (p == 0) {
-        return 0;
+    if (p == 0D) {
+        return 0D;
     }
     q = q / p;
-    return p * Sqrt(1 + q * q);
+    return p * Sqrt(1D + q * q);
 }
 
 } // end math_package

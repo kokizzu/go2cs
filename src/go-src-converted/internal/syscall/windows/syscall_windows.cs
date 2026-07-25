@@ -263,9 +263,9 @@ internal static error loadWSASendRecvMsg() {
         ref var n = ref heap(new uint32(), out var Ꮡn);
         sendRecvMsgFunc.err = syscall.WSAIoctl(s,
             syscall.SIO_GET_EXTENSION_FUNCTION_POINTER,
-            (ж<byte>)(uintptr)(new @unsafe.Pointer(ᏑWSAID_WSARECVMSG)),
+            ᏑWSAID_WSARECVMSG.Reinterpret<syscall.GUID, byte>(),
             (uint32)@unsafe.Sizeof(WSAID_WSARECVMSG),
-            (ж<byte>)(uintptr)(@unsafe.Pointer.FromRef(ref (ᏑsendRecvMsgFunc.of(sendRecvMsgFuncᴛ1.ᏑrecvAddr)).Value)),
+            ᏑsendRecvMsgFunc.of(sendRecvMsgFuncᴛ1.ᏑrecvAddr).Reinterpret<uintptr, byte>(),
             (uint32)@unsafe.Sizeof(sendRecvMsgFunc.recvAddr),
             Ꮡn, nil, 0);
         if (sendRecvMsgFunc.err != default!) {
@@ -273,9 +273,9 @@ internal static error loadWSASendRecvMsg() {
         }
         sendRecvMsgFunc.err = syscall.WSAIoctl(s,
             syscall.SIO_GET_EXTENSION_FUNCTION_POINTER,
-            (ж<byte>)(uintptr)(new @unsafe.Pointer(ᏑWSAID_WSASENDMSG)),
+            ᏑWSAID_WSASENDMSG.Reinterpret<syscall.GUID, byte>(),
             (uint32)@unsafe.Sizeof(WSAID_WSASENDMSG),
-            (ж<byte>)(uintptr)(@unsafe.Pointer.FromRef(ref (ᏑsendRecvMsgFunc.of(sendRecvMsgFuncᴛ1.ᏑsendAddr)).Value)),
+            ᏑsendRecvMsgFunc.of(sendRecvMsgFuncᴛ1.ᏑsendAddr).Reinterpret<uintptr, byte>(),
             (uint32)@unsafe.Sizeof(sendRecvMsgFunc.sendAddr),
             Ꮡn, nil, 0);
     }));

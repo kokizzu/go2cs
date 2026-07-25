@@ -357,7 +357,7 @@ internal static float64 float64FromBits(uint64 u) {
 internal static float64 float32FromBits(uint64 u, error ovfl) {
     var v = float64FromBits(u);
     var av = v;
-    if (av < 0) {
+    if (av < 0D) {
         av = -av;
     }
     // +Inf is OK in both 32- and 64-bit floats. Underflow is always OK.
@@ -1311,12 +1311,13 @@ internal static ж<decEngine> compileIgnoreSingle(this ж<Decoder> Ꮡdec, typeI
 // it calls out to compileSingle.
 internal static (ж<decEngine> engine, error err) compileDec(this ж<Decoder> Ꮡdec, typeId remoteId, ж<userTypeInfo> Ꮡut) {
     ж<decEngine> engine = default!;
-    error err = default!;
+    heap<error>(out var Ꮡerr);
     func((defer, recover) => {
     ref var dec = ref Ꮡdec.Value;
     ref var ut = ref Ꮡut.Value;
 
-        deferǃ(catchError, Ꮡ(err), defer);
+    ref var err = ref Ꮡerr.ValueSlot;
+        deferǃ(catchError, Ꮡerr, defer);
         var rt = ut.@base;
         var srt = rt;
         if (srt.Kind() != reflect.Struct || ut.externalDec != 0) {
@@ -1365,7 +1366,7 @@ internal static (ж<decEngine> engine, error err) compileDec(this ж<Decoder> �
             engine.Value.numInstr++;
         }
     });
-    return (engine, err);
+    return (engine, Ꮡerr.ValueSlot);
 }
 
 // getDecEnginePtr returns the engine for the specified type.

@@ -337,7 +337,7 @@ internal static uintptr asyncPreemptStack = ~(uintptr)0;
         // stack, then grab its context object and spill into
         // it. When it enters the runtime, it would allocate a
         // new context for the P.
-        print("runtime: asyncPreemptStack=", asyncPreemptStack, "\n");
+        print((@string)"runtime: asyncPreemptStack=", asyncPreemptStack, (@string)"\n");
         @throw("async stack too large"u8);
     }
 }

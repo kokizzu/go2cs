@@ -573,7 +573,7 @@ internal static void encode(this floatEncoder bits, ж<encodeState> Ꮡe, reflec
     var abs = math.Abs(f);
     var fmt = (byte)(rune)'f';
     // Note: Must use float32 comparisons for underlying float32 value to get precise cutoffs right.
-    if (abs != 0) {
+    if (abs != 0D) {
         if (bits == 64 && (abs < 1e-6D || abs >= 1e21D) || bits == 32 && ((float32)abs < 1e-6F || (float32)abs >= 1e21F)) {
             fmt = (rune)'e';
         }

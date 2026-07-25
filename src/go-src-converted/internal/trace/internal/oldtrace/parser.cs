@@ -282,7 +282,7 @@ internal static readonly UntypedInt eventsBucketSize = 524288; // 32 MiB of even
     if (a >= len(l.buckets)) {
         l.buckets = builtin.append(l.buckets, @new<array<Event>>());
     }
-    var ptr = Ꮡ(l.buckets[a].Value[b]);
+    var ptr = l.buckets[a].at<Event>(b);
     l.n++;
     return ptr;
 }
@@ -296,7 +296,7 @@ internal static readonly UntypedInt eventsBucketSize = 524288; // 32 MiB of even
 
 [GoRecv] public static ж<Event> Ptr(this ref Events l, nint i) {
     var (a, b) = l.index(i + l.off);
-    return Ꮡ(l.buckets[a].Value[b]);
+    return l.buckets[a].at<Event>(b);
 }
 
 [GoRecv] internal static (nint, nint) index(this ref Events l, nint i) {
@@ -324,7 +324,7 @@ internal static readonly UntypedInt eventsBucketSize = 524288; // 32 MiB of even
         return (default!, false);
     }
     var (a, b) = l.index(l.off);
-    var ptr = Ꮡ(l.buckets[a].Value[b]);
+    var ptr = l.buckets[a].at<Event>(b);
     l.off++;
     if (b == eventsBucketSize - 1 || l.off == l.n) {
         // We've consumed the last event from the bucket, so drop the bucket and
@@ -338,7 +338,7 @@ public static Action<Func<ж<Event>, bool>> All(this ж<Events> Ꮡl) {
     return (Func<ж<Event>, bool> yield) => {
         for (nint i = 0; i < Ꮡl.Value.Len(); i++) {
             var (a, b) = Ꮡl.Value.index(i + Ꮡl.Value.off);
-            var ptr = Ꮡ(Ꮡl.Value.buckets[a].Value[b]);
+            var ptr = Ꮡl.Value.buckets[a].at<Event>(b);
             if (!yield(ptr)) {
                 return;
             }
@@ -989,7 +989,7 @@ Type: raw.typ, P: p.lastP, G: p.lastG);
 // time stamps that do not respect actual event ordering.
 public static error ErrTimeOrder = errors.New("time stamps out of order"u8);
 
-[GoType("dyn")] partial struct postProcessTrace_gdesc {
+[GoLocalName("gdesc")] [GoType("dyn")] partial struct postProcessTrace_gdesc {
     internal nint state;
     internal ж<Event> ev;
     internal ж<Event> evStart;
@@ -997,7 +997,7 @@ public static error ErrTimeOrder = errors.New("time stamps out of order"u8);
     internal ж<Event> evMarkAssist;
 }
 
-[GoType("dyn")] partial struct postProcessTrace_pdesc {
+[GoLocalName("pdesc")] [GoType("dyn")] partial struct postProcessTrace_pdesc {
     internal bool running;
     internal uint64 g;
     internal ж<Event> evSweep;

@@ -6,6 +6,7 @@ namespace go.log;
 using runtime = runtime_package;
 using slices = slices_package;
 using time = time_package;
+using ꓸꓸꓸAttr = Span<slog_package.Attr>;
 using ꓸꓸꓸany = Span<any>;
 
 partial class slog_package {
@@ -89,7 +90,7 @@ public static void Attrs(this Record r, Func<Attr, bool> f) {
 
 // AddAttrs appends the given Attrs to the [Record]'s list of Attrs.
 // It omits empty groups.
-[GoRecv] public static void AddAttrs(this ref Record r, params Span<slog_package.Attr> attrsʗp) {
+[GoRecv] public static void AddAttrs(this ref Record r, params ꓸꓸꓸAttr attrsʗp) {
     var attrs = attrsʗp.slice();
 
     nint i = default!;

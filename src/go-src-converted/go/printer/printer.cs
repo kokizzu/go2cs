@@ -812,7 +812,7 @@ internal static (bool wroteNewline, bool droppedFF) intersperseComments(this ж<
     }
     // no comment was written - we should never reach here since
     // intersperseComments should not be called in that case
-    p.internalError("intersperseComments called without pending comments");
+    p.internalError((@string)"intersperseComments called without pending comments");
     return (wroteNewline, droppedFF);
 }
 
@@ -833,7 +833,7 @@ internal static (bool wroteNewline, bool droppedFF) intersperseComments(this ж<
                 p.indent--;
                 if (p.indent < 0) {
                     // ignore!
-                    p.internalError("negative indentation:", p.indent);
+                    p.internalError((@string)"negative indentation:", p.indent);
                     p.indent = 0;
                 }
             }
@@ -927,7 +927,7 @@ internal static bool /*b*/ mayCombine(token.Token prev, byte next) {
 // space for best comment placement. Then, any leftover whitespace is
 // printed, followed by the actual token.
 internal static void print(this ж<printer> Ꮡp, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     ref var p = ref Ꮡp.Value;
     foreach (var (_, arg) in args) {
@@ -1006,7 +1006,7 @@ internal static void print(this ж<printer> Ꮡp, params ꓸꓸꓸany argsʗp) {
                 // should never happen because it is taken care
                 // of via binary expression formatting)
                 if (len(p.wsbuf) != 0) {
-                    p.internalError("whitespace buffer not empty");
+                    p.internalError((@string)"whitespace buffer not empty");
                 }
                 p.wsbuf = p.wsbuf[0..1];
                 p.wsbuf[0] = (rune)' ';

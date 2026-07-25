@@ -244,14 +244,14 @@ internal static void runfinq() {
                     // memory. That means we have to clear
                     // it before writing to it to avoid
                     // confusing the write barrier.
-                    ((ж<array<uintptr>>)(uintptr)(frame)).Value = new uintptr[]{}.array();
+                    ((ж<array<uintptr>>)(uintptr)(frame)).Value = new uintptr[]{}.array(2);
                 }
                 var exprᴛ1 = (abiꓸKind)((~(~f).fint).Kind_ & abi.KindMask);
                 if (exprᴛ1 == abi.Pointer) {
                     ((ж<@unsafe.Pointer>)(uintptr)(r)).Value = f.Value.arg;
                 }
                 else if (exprᴛ1 == abi.Interface) {
-                    var ityp = (ж<interfacetype>)(uintptr)(new @unsafe.Pointer((~f).fint));
+                    var ityp = (~f).fint.Reinterpret<_type, interfacetype>();
                     ((ж<eface>)(uintptr)(r)).Value._type = (~f).ot.of(ptrtype.ᏑType);
                     ((ж<eface>)(uintptr)(r)).Value.data = f.Value.arg;
                     if (len((~ityp).Methods) != 0) {
@@ -432,7 +432,7 @@ public static void SetFinalizer(any obj, any finalizer) {
     if ((abiꓸKind)((~etyp).Kind_ & abi.KindMask) != abi.Pointer) {
         @throw("runtime.SetFinalizer: first argument is "u8 + toRType(etyp).@string() + ", not pointer"u8);
     }
-    var ot = (ж<ptrtype>)(uintptr)(new @unsafe.Pointer(etyp));
+    var ot = etyp.Reinterpret<_type, ptrtype>();
     if ((~ot).Elem == nil) {
         @throw("nil elem type!"u8);
     }
@@ -472,7 +472,7 @@ public static void SetFinalizer(any obj, any finalizer) {
     if ((abiꓸKind)((~ftyp).Kind_ & abi.KindMask) != abi.Func) {
         @throw("runtime.SetFinalizer: second argument is "u8 + toRType(ftyp).@string() + ", not a function"u8);
     }
-    var ft = (ж<functype>)(uintptr)(new @unsafe.Pointer(ftyp));
+    var ft = ftyp.Reinterpret<_type, functype>();
     if (ft.IsVariadic()) {
         @throw("runtime.SetFinalizer: cannot pass "u8 + toRType(etyp).@string() + " to finalizer "u8 + toRType(ftyp).@string() + " because dotdotdot"u8);
     }
@@ -486,7 +486,7 @@ public static void SetFinalizer(any obj, any finalizer) {
         break;
     }
     case {} when (abiꓸKind)((~fint).Kind_ & abi.KindMask) == abi.Pointer: {
-        if ((fint.Uncommon() == nil || etyp.Uncommon() == nil) && ((ж<ptrtype>)(uintptr)(new @unsafe.Pointer(fint))).Value.Elem == (~ot).Elem) {
+        if ((fint.Uncommon() == nil || etyp.Uncommon() == nil) && (fint.Reinterpret<abi.Type, ptrtype>()).Value.Elem == (~ot).Elem) {
             // ok - same type
             // ok - not same type, but both pointers,
             // one or the other is unnamed, and same element type, so assignable.
@@ -495,7 +495,7 @@ public static void SetFinalizer(any obj, any finalizer) {
         break;
     }
     case {} when (abiꓸKind)((~fint).Kind_ & abi.KindMask) == abi.Interface: {
-        var ityp = (ж<interfacetype>)(uintptr)(new @unsafe.Pointer(fint));
+        var ityp = fint.Reinterpret<abi.Type, interfacetype>();
         if (len((~ityp).Methods) == 0) {
             // ok - satisfies empty interface
             goto okarg;

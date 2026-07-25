@@ -48,36 +48,36 @@ partial class cmplx_package {
 //	Pow(0, ±0) returns 1+0i
 //	Pow(0, c) for real(c)<0 returns Inf+0i if imag(c) is zero, otherwise Inf+Inf i.
 public static complex128 Pow(complex128 x, complex128 y) {
-    if (x == 0) {
+    if (x == 0D) {
         // Guaranteed also true for x == -0.
         if (IsNaN(y)) {
             return NaN();
         }
         var (rΔ1, i) = (real(y), imag(y));
         switch (ᐧ) {
-        case {} when rΔ1 is 0: {
-            return 1;
+        case {} when rΔ1 is 0D: {
+            return 1D;
         }
-        case {} when rΔ1 is < 0: {
-            if (i == 0) {
-                return complex(math.Inf(1), 0);
+        case {} when rΔ1 is < 0D: {
+            if (i == 0D) {
+                return complex(math.Inf(1), 0D);
             }
             return Inf();
         }
-        case {} when rΔ1 is > 0: {
-            return 0;
+        case {} when rΔ1 is > 0D: {
+            return 0D;
         }}
 
         throw panic("not reached");
     }
     var modulus = Abs(x);
-    if (modulus == 0) {
+    if (modulus == 0D) {
         return complex(0D, 0D);
     }
     var r = math.Pow(modulus, real(y));
     var arg = Phase(x);
     var theta = real(y) * arg;
-    if (imag(y) != 0) {
+    if (imag(y) != 0D) {
         r *= math.Exp(-imag(y) * arg);
         theta += imag(y) * math.Log(modulus);
     }

@@ -252,7 +252,7 @@ internal static bool aliasAny() {
 [GoRecv] internal static ж<action> later(this ref Checker check, Action f) {
     nint i = len(check.delayed);
     check.delayed = append(check.delayed, new action(f: f));
-    return Ꮡ(check.delayed[i]);
+    return Ꮡ(check.delayed, i);
 }
 
 // push pushes obj onto the object path and returns its index in the path.
@@ -413,7 +413,7 @@ internal static goVersion versionMax(goVersion a, goVersion b) {
 
 internal static void handleBailout(this ж<Checker> Ꮡcheck, ж<error> Ꮡerr) => func((defer, recover) => {
     ref var check = ref Ꮡcheck.Value;
-    ref var err = ref Ꮡerr.Value;
+    ref var err = ref Ꮡerr.ValueSlot;
 
     var switchᴛ6 = recover();
     switch (switchᴛ6.type()) {
@@ -435,10 +435,11 @@ internal static void handleBailout(this ж<Checker> Ꮡcheck, ж<error> Ꮡerr) 
 
 // Files checks the provided files as part of the checker's package.
 public static error /*err*/ Files(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> files) {
-    error err = default!;
+    heap<error>(out var Ꮡerr);
     func((defer, recover) => {
     ref var check = ref Ꮡcheck.Value;
 
+    ref var err = ref Ꮡerr.ValueSlot;
         if (check.pkg == Unsafe) {
             // Defensive handling for Unsafe, which cannot be type checked, and must
             // not be mutated. See https://go.dev/issue/61212 for an example of where
@@ -448,10 +449,10 @@ public static error /*err*/ Files(this ж<Checker> Ꮡcheck, slice<ж<ast.File>>
         // Avoid early returns here! Nearly all errors can be
         // localized to a piece of syntax and needn't prevent
         // type-checking of the rest of the package.
-        deferǃ(Ꮡcheck.handleBailout, Ꮡ(err), defer);
+        deferǃ(Ꮡcheck.handleBailout, Ꮡerr, defer);
         Ꮡcheck.checkFiles(files);
     });
-    return err;
+    return Ꮡerr.ValueSlot;
 }
 
 // checkFiles type-checks the specified files. Errors are reported as
@@ -529,7 +530,7 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
     // add more actions (such as nested functions), so
     // this is a sufficiently bounded process.
     for (nint i = top; i < len(check.delayed); i++) {
-        var a = Ꮡ(check.delayed[i]);
+        var a = Ꮡ(check.delayed, i);
         if ((~check.conf)._Trace) {
             if ((~a).desc != nil){
                 Ꮡcheck.trace((~(~a).desc).pos.Pos(), "-- "u8 + (~(~a).desc).format, (~(~a).desc).args.ꓸꓸꓸ);
@@ -569,7 +570,7 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
         typ = new BasicжΔType(Typ[Invalid]);
     }
     else if (exprᴛ1 == novalue) {
-        typ = new TupleжΔType((ж<Tuple>)(default!));
+        typ = new TupleжΔType(((ж<Tuple>)nil));
     }
     else if (exprᴛ1 == constant_) {
         typ = x.typ;

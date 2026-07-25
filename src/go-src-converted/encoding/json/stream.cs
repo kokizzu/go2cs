@@ -275,9 +275,9 @@ public static error UnmarshalJSON(this ж<RawMessage> Ꮡm, slice<byte> data) {
     return default!;
 }
 
-internal static Marshaler _ᴛ1ʗ = new RawMessageжMarshaler(((ж<RawMessage>)default!));
+internal static Marshaler _ᴛ1ʗ = new RawMessageжMarshaler(((ж<RawMessage>)nil));
 
-internal static Unmarshaler _ᴛ2ʗ = new RawMessageжUnmarshaler(((ж<RawMessage>)default!));
+internal static Unmarshaler _ᴛ2ʗ = new RawMessageжUnmarshaler(((ж<RawMessage>)nil));
 
 internal static readonly UntypedInt tokenTopValue = iota;
 internal static readonly UntypedInt tokenArrayStart = 1;

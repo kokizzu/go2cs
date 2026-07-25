@@ -415,7 +415,7 @@ internal static slice<Func<ж<buffer>, message, error>> mappingDecoder = new Fun
     encodeUint64Opt(Ꮡb, 2, p.mappingIDX);
     encodeUint64Opt(Ꮡb, 3, p.Address);
     foreach (var (i, _) in p.Line) {
-        encodeMessage(Ꮡb, 4, new Lineжmessage(Ꮡ(p.Line[i])));
+        encodeMessage(Ꮡb, 4, new Lineжmessage(Ꮡ(p.Line, i)));
     }
 }
 

@@ -8,7 +8,7 @@ partial class runtime_package {
 internal static readonly UntypedInt fastlogNumBits = 5;
 
 internal static array<float64> fastlog2Table = new float64[]{
-    0,
+    0D,
     0.0443941193584535D,
     0.08746284125033943D,
     0.12928301694496647D,
@@ -40,7 +40,7 @@ internal static array<float64> fastlog2Table = new float64[]{
     0.9307373375628862D,
     0.9541963103868752D,
     0.9772799234999164D,
-    1
+    1D
 }.array();
 
 } // end runtime_package

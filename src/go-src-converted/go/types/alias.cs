@@ -29,7 +29,7 @@ partial class types_package {
 // NewAlias creates a new Alias type with the given type name and rhs.
 // rhs must not be nil.
 public static ж<Alias> NewAlias(ж<TypeName> Ꮡobj, ΔType rhs) {
-    var alias = ((ж<Checker>)(default!)).newAlias(Ꮡobj, rhs);
+    var alias = (((ж<Checker>)nil)).newAlias(Ꮡobj, rhs);
     // Ensure that alias.actual is set (#65455).
     alias.cleanup();
     return alias;

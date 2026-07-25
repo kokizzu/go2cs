@@ -8,6 +8,7 @@ using abi = @internal.abi_package;
 using sys = runtime.@internal.sys_package;
 using @internal;
 using runtime.@internal;
+using ꓸꓸꓸtraceArg = Span<runtime_package.traceArg>;
 
 partial class runtime_package {
 
@@ -105,7 +106,7 @@ internal static traceEventWriter eventWriter(this traceLocker tl, traceGoStatus 
 
 // commit writes out a trace event and calls end. It's a helper to make the
 // common case of writing out a single event less error-prone.
-internal static void commit(this traceEventWriter e, traceEv ev, params Span<runtime_package.traceArg> argsʗp) {
+internal static void commit(this traceEventWriter e, traceEv ev, params ꓸꓸꓸtraceArg argsʗp) {
     var args = argsʗp.slice();
 
     e = e.write(ev, args.ꓸꓸꓸ);
@@ -113,7 +114,7 @@ internal static void commit(this traceEventWriter e, traceEv ev, params Span<run
 }
 
 // write writes an event into the trace.
-internal static traceEventWriter write(this traceEventWriter e, traceEv ev, params Span<runtime_package.traceArg> argsʗp) {
+internal static traceEventWriter write(this traceEventWriter e, traceEv ev, params ꓸꓸꓸtraceArg argsʗp) {
     var args = argsʗp.slice();
 
     e.w = e.w.@event(ev, args.ꓸꓸꓸ);
@@ -126,8 +127,8 @@ internal static void end(this traceEventWriter e) {
 }
 
 // traceEventWrite is the part of traceEvent that actually writes the event.
-internal static traceWriter @event(this traceWriter w, traceEv ev, params Span<runtime_package.traceArg> argsʗp) {
-    var args = argsʗp.slice();
+internal static traceWriter @event(this traceWriter w, traceEv ev, params ꓸꓸꓸtraceArg argsʗp) {
+    var args = argsʗp.sslice();
 
     // Make sure we have room.
     (w, _) = w.ensure(1 + (len(args) + 1) * (nint)traceBytesPerNumber);

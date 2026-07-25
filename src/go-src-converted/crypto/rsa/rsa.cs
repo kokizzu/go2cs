@@ -369,13 +369,13 @@ public static (ж<PrivateKey>, error) GenerateMultiPrimeKey(io.Reader random, ni
     if (bits < 64) {
         var primeLimit = (float64)(((uint64)1).Lsh((nuint)(bits / nprimes)));
         // pi approximates the number of primes less than primeLimit
-        var pi = primeLimit / (math.Log(primeLimit) - 1);
+        var pi = primeLimit / (math.Log(primeLimit) - 1D);
         // Generated primes start with 11 (in binary) so we can only
         // use a quarter of them.
-        pi /= 4;
+        pi /= 4D;
         // Use a factor of two to ensure that key generation terminates
         // in a reasonable amount of time.
-        pi /= 2;
+        pi /= 2D;
         if (pi <= (float64)nprimes) {
             return (default!, errors.New("crypto/rsa: too few primes of given length to generate an RSA key"u8));
         }
@@ -621,7 +621,7 @@ public static error ErrVerification = errors.New("crypto/rsa: verification error
     priv.Precomputed.CRTValues = new slice<CRTValue>(len(priv.Primes) - 2);
     for (nint i = 2; i < len(priv.Primes); i++) {
         var prime = priv.Primes[i];
-        var values = Ꮡ(priv.Precomputed.CRTValues[i - 2]);
+        var values = Ꮡ(priv.Precomputed.CRTValues, i - 2);
         values.Value.Exp = @new<bigꓸInt>().Sub(prime, bigOne);
         (~values).Exp.Mod(priv.D, (~values).Exp);
         values.Value.R = @new<bigꓸInt>().Set(r);

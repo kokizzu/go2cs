@@ -240,8 +240,8 @@ internal static void callbackUpdateSystemStack(ж<m> Ꮡmp, uintptr sp, bool sig
         g0.Value.stack.lo = sp - 32 * 1024;
         g0.Value.stackguard0 = (~g0).stack.lo + (uintptr)stackGuard;
         g0.Value.stackguard1 = g0.Value.stackguard0;
-        print("M ", mp.id, " procid ", mp.procid, " runtime: cgocallback with sp=", ((Δhex)(uint64)sp), " out of bounds [", ((Δhex)(uint64)lo), ", ", ((Δhex)(uint64)hi), "]");
-        print("\n");
+        print((@string)"M ", mp.id, (@string)" procid ", mp.procid, (@string)" runtime: cgocallback with sp=", ((Δhex)(uint64)sp), (@string)" out of bounds [", ((Δhex)(uint64)lo), (@string)", ", ((Δhex)(uint64)hi), (@string)"]");
+        print((@string)"\n");
         exit(2);
     }
     if (!mp.isextra) {
@@ -297,7 +297,7 @@ internal static void callbackUpdateSystemStack(ж<m> Ꮡmp, uintptr sp, bool sig
 internal static void cgocallbackg(@unsafe.Pointer fn, @unsafe.Pointer frame, uintptr ctxt) {
     var gp = getg();
     if (gp != (~(~gp).m).curg) {
-        println("runtime: bad g in cgocallback");
+        println((@string)"runtime: bad g in cgocallback");
         exit(2);
     }
     var sp = gp.Value.m.Value.g0.Value.sched.sp;
@@ -367,12 +367,12 @@ internal static void cgocallbackg1(@unsafe.Pointer fn, @unsafe.Pointer frame, ui
         // tracing up the stack.  We need to ensure that the
         // handler always sees a valid slice, so set the
         // values in an order such that it always does.
-        var Δp = (ж<Δsliceᴛ>)(uintptr)(new @unsafe.Pointer(gp.of(g.ᏑcgoCtxt)));
+        var Δp = gp.of(g.ᏑcgoCtxt).Reinterpret<slice<uintptr>, Δsliceᴛ>();
         atomicstorep(@unsafe.Pointer.FromRef(ref (Δp.of(runtime_package.Δsliceᴛ.ᏑΔarray)).Value), @unsafe.Pointer.FromRef(ref (Ꮡ(s, 0)).Value));
         Δp.Value.cap = cap(s);
         Δp.Value.len = len(s);
         deferǃ((ж<g> gpΔ1) => {
-            var pΔ1 = (ж<Δsliceᴛ>)(uintptr)(new @unsafe.Pointer(gpΔ1.of(g.ᏑcgoCtxt)));
+            var pΔ1 = gpΔ1.of(g.ᏑcgoCtxt).Reinterpret<slice<uintptr>, Δsliceᴛ>();
             pΔ1.Value.len--;
         }, gp, defer);
     }
@@ -401,7 +401,7 @@ internal static void cgocallbackg1(@unsafe.Pointer fn, @unsafe.Pointer frame, ui
     ref var cb = ref heap<Action<@unsafe.Pointer>>(out var Ꮡcb);
     ref var cbFV = ref heap<funcval>(out var ᏑcbFV);
     cbFV = new funcval((uintptr)fn);
-    ((ж<@unsafe.Pointer>)(uintptr)(new @unsafe.Pointer(Ꮡcb))).Value = (uintptr)noescape(new @unsafe.Pointer(ᏑcbFV));
+    (Ꮡcb.Reinterpret<Action<@unsafe.Pointer>, @unsafe.Pointer>()).Value = (uintptr)noescape(new @unsafe.Pointer(ᏑcbFV));
     cb(frame);
     if (raceenabled) {
         racereleasemerge(new @unsafe.Pointer(Ꮡracecgosync));
@@ -505,7 +505,7 @@ internal static void cgoCheckPointer(any ptr, any arg) {
                     // We don't know the type of the element.
                     break;
                 }
-                var pt = (ж<ptrtype>)(uintptr)(new @unsafe.Pointer(t));
+                var pt = t.Reinterpret<_type, ptrtype>();
                 cgoCheckArg((~pt).Elem, Δp, true, false, cgoCheckPointerFail);
                 return;
             } while (false);
@@ -549,7 +549,7 @@ internal static void cgoCheckArg(ж<_type> Ꮡt, @unsafe.Pointer Δp, bool indir
     }
     var exprᴛ1 = (abiꓸKind)(t.Kind_ & abi.KindMask);
     if (exprᴛ1 == abi.Array) {
-        var at = (ж<arraytype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var at = Ꮡt.Reinterpret<_type, arraytype>();
         if (!indir) {
             if ((~at).Len != 1) {
                 @throw("can't happen"u8);
@@ -598,7 +598,7 @@ internal static void cgoCheckArg(ж<_type> Ꮡt, @unsafe.Pointer Δp, bool indir
         cgoCheckArg(it, Δp, (abiꓸKind)((~it).Kind_ & abi.KindDirectIface) == 0, false, msg);
     }
     else if (exprᴛ1 == abi.Slice) {
-        var st = (ж<slicetype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var st = Ꮡt.Reinterpret<_type, slicetype>();
         var s = (ж<Δsliceᴛ>)(uintptr)(Δp);
         Δp.Value = s.Value.Δarray;
         if (Δp == nil || !cgoIsGoPointer(Δp)) {
@@ -625,7 +625,7 @@ internal static void cgoCheckArg(ж<_type> Ꮡt, @unsafe.Pointer Δp, bool indir
         }
     }
     else if (exprᴛ1 == abi.Struct) {
-        var st = (ж<structtype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var st = Ꮡt.Reinterpret<_type, structtype>();
         if (!indir) {
             if (len((~st).Fields) != 1) {
                 @throw("can't happen"u8);

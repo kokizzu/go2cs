@@ -134,7 +134,7 @@ partial class cryptobyte_package {
 }
 
 [GoRecv] internal static bool readLengthPrefixed(this ref String s, nint lenLen, ж<String> ᏑoutChild) {
-    ref var outChild = ref ᏑoutChild.Value;
+    ref var outChild = ref ᏑoutChild.ValueSlot;
 
     var lenBytes = s.read(lenLen);
     if (lenBytes == default!) {
@@ -176,7 +176,7 @@ partial class cryptobyte_package {
 // ReadBytes reads n bytes into out and advances over them. It reports
 // whether the read was successful.
 [GoRecv] public static bool ReadBytes(this ref String s, ж<slice<byte>> Ꮡout, nint n) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.ValueSlot;
 
     var v = s.read(n);
     if (v == default!) {

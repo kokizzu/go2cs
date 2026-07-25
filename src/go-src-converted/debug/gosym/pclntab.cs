@@ -379,7 +379,7 @@ internal static ΔfuncData findFunc(this ж<LineTable> Ꮡt, uint64 pc) {
 
 // readvarint reads, removes, and returns a varint from *pp.
 [GoRecv] internal static uint32 readvarint(this ref LineTable t, ж<slice<byte>> Ꮡpp) {
-    ref var pp = ref Ꮡpp.Value;
+    ref var pp = ref Ꮡpp.ValueSlot;
 
     uint32 v = default!;
     uint32 shift = default!;

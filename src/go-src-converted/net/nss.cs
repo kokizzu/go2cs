@@ -79,8 +79,9 @@ internal static void tryUpdate(this ж<nsswitchConfig> Ꮡconf) => func((defer, 
 }
 
 [GoRecv] internal static bool tryAcquireSema(this ref nsswitchConfig conf) {
-    switch (ᐧ) {
-    case ᐧ when conf.ch.ᐸꟷ(new EmptyStruct(), ꟷ): {
+    var selᴛ21 = conf.ch.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+    switch (trySelect(selᴛ21)) {
+    case 0: {
         return true;
     }
     default: {

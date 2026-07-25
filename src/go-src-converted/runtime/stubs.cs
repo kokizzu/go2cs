@@ -479,7 +479,7 @@ internal static partial bool memequal_varlen(@unsafe.Pointer a, @unsafe.Pointer 
 internal static nint bool2int(bool x) {
     // Avoid branches. In the SSA compiler, this compiles to
     // exactly what you would want it to.
-    return (nint)(~(ж<uint8>)(uintptr)(new @unsafe.Pointer(Ꮡ(x))));
+    return (nint)(~Ꮡ(x).Reinterpret<bool, uint8>());
 }
 
 // abort crashes the runtime in situations where even throw might not

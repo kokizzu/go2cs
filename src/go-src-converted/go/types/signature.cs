@@ -50,7 +50,7 @@ public static ж<ΔSignature> NewSignature(ж<Var> Ꮡrecv, ж<Tuple> Ꮡparams,
 // non-empty, recv must be non-nil.
 public static ж<ΔSignature> NewSignatureType(ж<Var> Ꮡrecv, slice<ж<TypeParam>> recvTypeParams, slice<ж<TypeParam>> typeParams, ж<Tuple> Ꮡparams, ж<Tuple> Ꮡresults, bool variadic) {
     ref var recv = ref Ꮡrecv.DerefOrNil();
-    ref var @params = ref Ꮡparams.Value;
+    ref var @params = ref Ꮡparams.DerefOrNil();
     ref var results = ref Ꮡresults.Value;
 
     if (variadic) {

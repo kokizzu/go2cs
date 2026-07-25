@@ -251,7 +251,7 @@ field:
         }
         i = strings.IndexByte(field, (rune)'=');
         if (i < 0) {
-            print("GODEBUG sys/cpu: no value specified for \"", field, "\"\n");
+            print((@string)"GODEBUG sys/cpu: no value specified for \"", field, (@string)"\"\n");
             continue;
         }
         @string key = field[4..(int)(i)];
@@ -266,7 +266,7 @@ field:
             enable = false;
         }
         else { /* default: */
-            print("GODEBUG sys/cpu: value \"", value, "\" not supported for cpu option \"", key, "\"\n");
+            print((@string)"GODEBUG sys/cpu: value \"", value, (@string)"\" not supported for cpu option \"", key, (@string)"\"\n");
             goto continue_field;
         }
 
@@ -284,7 +284,7 @@ field:
                 goto continue_field;
             }
         }
-        print("GODEBUG sys/cpu: unknown cpu feature \"", key, "\"\n");
+        print((@string)"GODEBUG sys/cpu: unknown cpu feature \"", key, (@string)"\"\n");
 continue_field:;
     }
 break_field:;
@@ -293,11 +293,11 @@ break_field:;
             continue;
         }
         if (o.Enable && !o.Feature.Value) {
-            print("GODEBUG sys/cpu: can not enable \"", o.Name, "\", missing CPU support\n");
+            print((@string)"GODEBUG sys/cpu: can not enable \"", o.Name, (@string)"\", missing CPU support\n");
             continue;
         }
         if (!o.Enable && o.Required) {
-            print("GODEBUG sys/cpu: can not disable \"", o.Name, "\", required CPU feature\n");
+            print((@string)"GODEBUG sys/cpu: can not disable \"", o.Name, (@string)"\", required CPU feature\n");
             continue;
         }
         o.Feature.Value = o.Enable;

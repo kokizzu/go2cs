@@ -80,4 +80,63 @@ namespace go;
 [GoPackage("reflect")]
 public static partial class reflect_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct abiDesc {}
+    internal partial struct abiSeq {}
+    internal partial struct abiStep {}
+    internal partial struct abiStepKind {}
+    internal partial struct bitVector {}
+    internal partial struct cacheKey {}
+    internal partial struct dummyᴛ1 {}
+    internal partial struct fieldScan {}
+    internal partial struct flag {}
+    internal partial struct funcLookupCacheᴛ1 {}
+    internal partial struct hiter {}
+    internal partial struct interfaceType {}
+    internal partial struct layoutKey {}
+    internal partial struct layoutType {}
+    internal partial struct makeFuncCtxt {}
+    internal partial struct makeFuncImpl {}
+    internal partial struct mapType {}
+    internal partial struct methodValue {}
+    internal partial struct nonEmptyInterface {}
+    internal partial struct ptrType {}
+    internal partial struct rtype {}
+    internal partial struct runtimeSelect {}
+    internal partial struct sliceType {}
+    internal partial struct structLookupCacheᴛ1 {}
+    internal partial struct structType {}
+    internal partial struct structTypeUncommon {}
+    internal partial struct visibleFieldsWalker {}
+    internal partial struct visit {}
+    public partial interface ΔType {}
+    public partial struct MapIter {}
+    public partial struct SelectCase {}
+    public partial struct SelectDir {}
+    public partial struct SliceHeader {}
+    public partial struct StringHeader {}
+    public partial struct StructField {}
+    public partial struct StructTag {}
+    public partial struct ValueError {}
+    public partial struct ΔChanDir {}
+    public partial struct ΔKind {}
+    public partial struct ΔMethod {}
+    public partial struct ΔValue {}
+    public partial struct Δcommon {}
+    // </TypeAccessibility>
 }

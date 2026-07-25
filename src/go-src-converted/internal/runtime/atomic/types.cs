@@ -437,14 +437,14 @@ public static uintptr Add(this ж<Uintptr> Ꮡu, uintptr delta) {
 public static float64 Load(this ж<Float64> Ꮡf) {
     ref var r = ref heap<uint64>(out var Ꮡr);
     r = Ꮡf.of(Float64.Ꮡu).Load();
-    return ~(ж<float64>)(uintptr)(new @unsafe.Pointer(Ꮡr));
+    return ~Ꮡr.Reinterpret<uint64, float64>();
 }
 
 // Store updates the value atomically.
 //
 //go:nosplit
 public static void Store(this ж<Float64> Ꮡf, float64 value) {
-    Ꮡf.of(Float64.Ꮡu).Store(~(ж<uint64>)(uintptr)(new @unsafe.Pointer(Ꮡ(value))));
+    Ꮡf.of(Float64.Ꮡu).Store(~Ꮡ(value).Reinterpret<float64, uint64>());
 }
 
 // UnsafePointer is an atomically accessed unsafe.Pointer value.

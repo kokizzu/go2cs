@@ -52,23 +52,23 @@ internal static float64 acosh(float64 x) {
     const float64 Large = /* 1 << 28 */ 268435456; // 2**28
     // first case is special case
     switch (ᐧ) {
-    case {} when x < 1 || IsNaN(x): {
+    case {} when x < 1D || IsNaN(x): {
         return NaN();
     }
-    case {} when x is 1: {
-        return 0;
+    case {} when x is 1D: {
+        return 0D;
     }
     case {} when x >= Large: {
         return Log(x) + (float64)Ln2;
     }
-    case {} when x is > 2: {
-        return Log(2 * x - 1 / (x + Sqrt(x * x - 1)));
+    case {} when x is > 2D: {
+        return Log(2D * x - 1D / (x + Sqrt(x * x - 1D)));
     }}
 
     // x > 2**28
     // 2**28 > x > 2
-    var t = x - 1;
-    return Log1p(t + Sqrt(2 * t + t * t));
+    var t = x - 1D;
+    return Log1p(t + Sqrt(2D * t + t * t));
 }
 
 // 2 >= x > 1

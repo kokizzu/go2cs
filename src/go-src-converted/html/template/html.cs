@@ -295,7 +295,7 @@ internal static @string htmlNameFilter(params ꓸꓸꓸany argsʗp) {
 // This approach is equally valid whether or not static comment content is
 // removed from the template.
 internal static @string commentEscaper(params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     return ""u8;
 }

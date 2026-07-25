@@ -56,7 +56,7 @@ internal static partial void fatal(@string _);
 internal static readonly UntypedInt mutexLocked = /* 1 << iota */ 1; // mutex is locked
 internal static readonly UntypedInt mutexWoken = 2;
 internal static readonly UntypedInt mutexStarving = 4;
-internal static readonly UntypedInt mutexWaiterShift = iota;
+internal static readonly UntypedInt mutexWaiterShift = /* iota */ 3;
 internal static readonly UntypedFloat starvationThresholdNs = 1e6;
 
 // Lock locks m.
@@ -231,7 +231,7 @@ internal static void unlockSlow(this ж<Mutex> Ꮡm, int32 @new) {
                 return;
             }
             // Grab the right to wake someone.
-            @new = (int32)((old - (int32)((int32)(1 << (int)(mutexWaiterShift)))) | (int32)mutexWoken);
+            @new = (int32)((old - (int32)(1 << (int)(mutexWaiterShift))) | (int32)mutexWoken);
             if (atomic.CompareAndSwapInt32(Ꮡm.of(Mutex.Ꮡstate), old, @new)) {
                 runtime_Semrelease(Ꮡm.of(Mutex.Ꮡsema), false, 1);
                 return;

@@ -179,7 +179,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
         var args = append(new @string[]{"-test.fuzzworker"}.slice(), os.Args[1..].ꓸꓸꓸ);
         var env = os.Environ();
         // same as self
-        var errC = new channel<error>(1);
+        var errC = new channel<error>(0);
         var workers = new slice<ж<worker>>(opts.Parallel);
         foreach (var (i, _) in workers) {
             error errΔ3 = default!;
@@ -230,12 +230,18 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
             if (ok && !stopping) {
                 minimizeC = c.Value.minimizeC;
             }
-            switch (select(ᐸꟷ(doneC, ꓸꓸꓸ), ᐸꟷ(errC, ꓸꓸꓸ), ᐸꟷ((~c).resultC, ꓸꓸꓸ), inputC.ᐸꟷ(input, ꓸꓸꓸ), minimizeC.ᐸꟷ(minimizeInput, ꓸꓸꓸ), ᐸꟷ((~statTicker).C, ꓸꓸꓸ))) {
-            case 0 when doneC.ꟷᐳ(out _): {
+            var selᴛ1 = doneC;
+            var selᴛ2 = errC;
+            var selᴛ3 = (~c).resultC;
+            var selᴛ4 = inputC.ᐸꟷ(input, ꓸꓸꓸ);
+            var selᴛ5 = minimizeC.ᐸꟷ(minimizeInput, ꓸꓸꓸ);
+            var selᴛ6 = (~statTicker).C;
+            switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ), ᐸꟷ(selᴛ3, ꓸꓸꓸ), selᴛ4, selᴛ5, ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
+            case 0 when selᴛ1.ꟷᐳ(out _): {
                 stop(ctx.Err());
                 break;
             }
-            case 1 when errC.ꟷᐳ(out var errΔ5): {
+            case 1 when selᴛ2.ꟷᐳ(out var errΔ5): {
                 stop(errΔ5);
                 activeWorkers--;
                 if (activeWorkers == 0) {
@@ -246,7 +252,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
                 }
                 break;
             }
-            case 2 when (~c).resultC.ꟷᐳ(out var resultᴛ1): {
+            case 2 when selᴛ3.ꟷᐳ(out var resultᴛ1): {
                 ref var result = ref heap(resultᴛ1, out var Ꮡresult);
                 if (stopping) {
                     // Received response from worker.
@@ -400,7 +406,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
                 c.sentMinimizeInput(minimizeInput);
                 break;
             }
-            case 5 when (~statTicker).C.ꟷᐳ(out _): {
+            case 5 when selᴛ6.ꟷᐳ(out _): {
                 c.logStats();
                 break;
             }}
@@ -444,7 +450,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
 // all of the entries are unique, addCorpusEntries returns true and a nil error,
 // if at least one of the entries was a duplicate, it returns false and a nil error.
 [GoRecv] internal static (bool, error) addCorpusEntries(this ref coordinator c, bool addToCache, params ꓸꓸꓸCorpusEntry entriesʗp) {
-    var entries = entriesʗp.slice();
+    var entries = entriesʗp.sslice();
 
     var noDupes = true;
     foreach (var (_, vᴛ1) in entries) {
@@ -646,9 +652,9 @@ internal static (ж<coordinator>, error) newCoordinator(CoordinateFuzzingOpts op
     var c = Ꮡ(new coordinator(
         opts: opts,
         startTime: time.Now(),
-        inputC: new channel<fuzzInput>(1),
-        minimizeC: new channel<fuzzMinimizeInput>(1),
-        resultC: new channel<fuzzResult>(1),
+        inputC: new channel<fuzzInput>(0),
+        minimizeC: new channel<fuzzMinimizeInput>(0),
+        resultC: new channel<fuzzResult>(0),
         timeLastLog: time.Now(),
         corpus: new corpus(hashes: new map<array<byte>, bool>())
     ));
@@ -1073,8 +1079,8 @@ internal static slice<any> zeroVals = new any[]{
     false,
     (byte)0,
     (rune)0,
-    (float32)0,
-    (float64)0,
+    (float32)0F,
+    (float64)0D,
     (nint)0,
     (int8)0,
     (int16)0,

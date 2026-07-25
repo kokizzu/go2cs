@@ -29,7 +29,7 @@ partial class math_package {
 // with the sign bit of f and the result in the same bit position.
 // Float32bits(Float32frombits(x)) == x.
 public static uint32 Float32bits(float32 f) {
-    return ~(ж<uint32>)(uintptr)(new @unsafe.Pointer(Ꮡ(f)));
+    return ~Ꮡ(f).Reinterpret<float32, uint32>();
 }
 
 // Float32frombits returns the floating-point number corresponding
@@ -37,14 +37,14 @@ public static uint32 Float32bits(float32 f) {
 // and the result in the same bit position.
 // Float32frombits(Float32bits(x)) == x.
 public static float32 Float32frombits(uint32 b) {
-    return ~(ж<float32>)(uintptr)(new @unsafe.Pointer(Ꮡ(b)));
+    return ~Ꮡ(b).Reinterpret<uint32, float32>();
 }
 
 // Float64bits returns the IEEE 754 binary representation of f,
 // with the sign bit of f and the result in the same bit position,
 // and Float64bits(Float64frombits(x)) == x.
 public static uint64 Float64bits(float64 f) {
-    return ~(ж<uint64>)(uintptr)(new @unsafe.Pointer(Ꮡ(f)));
+    return ~Ꮡ(f).Reinterpret<float64, uint64>();
 }
 
 // Float64frombits returns the floating-point number corresponding
@@ -52,7 +52,7 @@ public static uint64 Float64bits(float64 f) {
 // and the result in the same bit position.
 // Float64frombits(Float64bits(x)) == x.
 public static float64 Float64frombits(uint64 b) {
-    return ~(ж<float64>)(uintptr)(new @unsafe.Pointer(Ꮡ(b)));
+    return ~Ꮡ(b).Reinterpret<uint64, float64>();
 }
 
 } // end math_package

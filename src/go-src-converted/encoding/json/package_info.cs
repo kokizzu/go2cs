@@ -66,4 +66,55 @@ namespace go.encoding;
 [GoPackage("json")]
 public static partial class json_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct arrayEncoder {}
+    internal partial struct condAddrEncoder {}
+    internal partial struct decodeState {}
+    internal partial struct encOpts {}
+    internal partial struct encodeState {}
+    internal partial struct encode_ptr {}
+    internal partial struct errorContext {}
+    internal partial struct field {}
+    internal partial struct floatEncoder {}
+    internal partial struct jsonError {}
+    internal partial struct mapEncoder {}
+    internal partial struct ptrEncoder {}
+    internal partial struct reflectWithString {}
+    internal partial struct scanner {}
+    internal partial struct sliceEncoder {}
+    internal partial struct structEncoder {}
+    internal partial struct structFields {}
+    internal partial struct tagOptions {}
+    internal partial struct unquotedValue {}
+    public partial interface Marshaler {}
+    public partial interface Unmarshaler {}
+    public partial struct Decoder {}
+    public partial struct Delim {}
+    public partial struct Encoder {}
+    public partial struct InvalidUTF8Error {}
+    public partial struct InvalidUnmarshalError {}
+    public partial struct MarshalerError {}
+    public partial struct Number {}
+    public partial struct RawMessage {}
+    public partial struct SyntaxError {}
+    public partial struct UnmarshalFieldError {}
+    public partial struct UnmarshalTypeError {}
+    public partial struct UnsupportedTypeError {}
+    public partial struct UnsupportedValueError {}
+    // </TypeAccessibility>
 }

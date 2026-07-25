@@ -83,4 +83,65 @@ namespace go.database;
 [GoPackage("sql")]
 public static partial class sql_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface @decimal {}
+    internal partial interface decimalCompose {}
+    internal partial interface decimalDecompose {}
+    internal partial interface finalCloser {}
+    internal partial interface stmtConnGrabber {}
+    internal partial struct ccChecker {}
+    internal partial struct connRequest {}
+    internal partial struct connRequestAndIndex {}
+    internal partial struct connRequestDelHandle {}
+    internal partial struct connRequestSet {}
+    internal partial struct connReuseStrategy {}
+    internal partial struct depSet {}
+    internal partial struct driverConn {}
+    internal partial struct driverResult {}
+    internal partial struct driverStmt {}
+    internal partial struct dsnConnector {}
+    public partial interface Result {}
+    public partial interface Scanner {}
+    public partial struct ColumnType {}
+    public partial struct DB {}
+    public partial struct DBStats {}
+    public partial struct IsolationLevel {}
+    public partial struct NamedArg {}
+    public partial struct NamedArg__NamedFieldsRequired {}
+    public partial struct Null<T> {}
+    public partial struct NullBool {}
+    public partial struct NullByte {}
+    public partial struct NullFloat64 {}
+    public partial struct NullInt16 {}
+    public partial struct NullInt32 {}
+    public partial struct NullInt64 {}
+    public partial struct NullString {}
+    public partial struct NullTime {}
+    public partial struct Out {}
+    public partial struct Out__NamedFieldsRequired {}
+    public partial struct RawBytes {}
+    public partial struct Row {}
+    public partial struct Rows {}
+    public partial struct Tx {}
+    public partial struct TxOptions {}
+    public partial struct Tx_stmts {}
+    public partial struct ΔConn {}
+    public partial struct ΔStmt {}
+    public partial struct ΔconnStmt {}
+    // </TypeAccessibility>
 }

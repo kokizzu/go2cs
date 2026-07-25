@@ -220,7 +220,7 @@ public static (@string location, @string context) ErrorContext(this ж<Tree> Ꮡ
 // recover is the handler that turns panics into returns from the top level of Parse.
 internal static void recover(this ж<Tree> Ꮡt, ж<error> Ꮡerrp) => func((defer, recover) => {
     ref var t = ref Ꮡt.DerefOrNil();
-    ref var errp = ref Ꮡerrp.Value;
+    ref var errp = ref Ꮡerrp.ValueSlot;
 
     var e = recover();
     if (e != default!) {
@@ -265,13 +265,14 @@ internal static void recover(this ж<Tree> Ꮡt, ж<error> Ꮡerrp) => func((def
 // default ("{{" or "}}") is used. Embedded template definitions are added to
 // the treeSet map.
 public static (ж<Tree> tree, error err) Parse(this ж<Tree> Ꮡt, @string text, @string leftDelim, @string rightDelim, map<@string, ж<Tree>> treeSet, params Span<map<@string, any>> funcsʗp) {
-    var funcs = funcsʗp.slice();
     ж<Tree> tree = default!;
-    error err = default!;
-    func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+    heap<error>(out var Ꮡerr);
+    func(ref funcsʗp, (ref Span<map<@string, any>> funcsʗp, Defer defer, Recover recover) => {
+    var funcs = funcsʗp.slice();
 
-        deferǃ(Ꮡt.recover, Ꮡ(err), defer);
+    ref var t = ref Ꮡt.Value;
+    ref var err = ref Ꮡerr.ValueSlot;
+        deferǃ(Ꮡt.recover, Ꮡerr, defer);
         t.ParseName = t.Name;
         var lexer = lex(t.Name, text, leftDelim, rightDelim);
         t.startParse(funcs, lexer, treeSet);
@@ -281,7 +282,7 @@ public static (ж<Tree> tree, error err) Parse(this ж<Tree> Ꮡt, @string text,
         t.stopParse();
         (tree, err) = (Ꮡt, default!);
     });
-    return (tree, err);
+    return (tree, Ꮡerr.ValueSlot);
 }
 
 // add adds tree to t.treeSet.

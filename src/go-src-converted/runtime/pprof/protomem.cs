@@ -90,7 +90,7 @@ internal static (int64, int64) scaleHeapSample(int64 count, int64 size, int64 ra
         return (count, size);
     }
     var avgSize = (float64)size / (float64)count;
-    var scale = 1 / (1 - math.Exp(-avgSize / (float64)rate));
+    var scale = 1D / (1D - math.Exp(-avgSize / (float64)rate));
     return ((int64)((float64)count * scale), (int64)((float64)size * scale));
 }
 

@@ -54,12 +54,12 @@ public static complex128 Exp(complex128 x) {
         switch (ᐧ) {
         case {} when math.IsInf(re, 0): {
             switch (ᐧ) {
-            case {} when re > 0 && im == 0: {
+            case {} when re > 0D && im == 0D: {
                 return x;
             }
             case {} when math.IsInf(im, 0) || math.IsNaN(im): {
-                if (re < 0){
-                    return complex(0, math.Copysign(0, im));
+                if (re < 0D){
+                    return complex(0D, math.Copysign(0D, im));
                 } else {
                     return complex(math.Inf(1), math.NaN());
                 }
@@ -69,7 +69,7 @@ public static complex128 Exp(complex128 x) {
             break;
         }
         case {} when math.IsNaN(re): {
-            if (im == 0) {
+            if (im == 0D) {
                 return complex(math.NaN(), im);
             }
             break;

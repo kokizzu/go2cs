@@ -847,10 +847,6 @@ internal static int64 physicalRemaining(this regFileReader fr) {
 
 }
 
-[GoType("dyn")] partial struct WriteTo_srcᴛ1 {
-    public io_package.Reader Reader;
-}
-
 // Less data in dense file than sparse file
 // More data in dense file than sparse file
 internal static (int64 n, error err) WriteTo(this ж<sparseFileReader> Ꮡsr, io.Writer w) {
@@ -868,7 +864,7 @@ internal static (int64 n, error err) WriteTo(this ж<sparseFileReader> Ꮡsr, io
     }
     // Not all io.Seeker can really seek
     if (!ok) {
-        return io.Copy(w, new WriteTo_srcᴛ1(new sparseFileReaderжReader(Ꮡsr)));
+        return io.Copy(w, new WriteTo_src(new sparseFileReaderжReader(Ꮡsr)));
     }
     bool writeLastByte = default!;
     var pos0 = sr.pos;

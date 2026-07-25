@@ -614,7 +614,7 @@ public static error Run(this ж<Cmd> Ꮡc) {
     return Ꮡc.Wait();
 }
 
-[GoType("dyn")] partial struct Start_goroutineStatus {
+[GoLocalName("goroutineStatus")] [GoType("dyn")] partial struct Start_goroutineStatus {
     internal nint running;
     internal error firstErr;
 }
@@ -684,8 +684,9 @@ public static error Start(this ж<Cmd> Ꮡc) => func<error>((defer, recover) => 
         return errors.New("exec: command with a non-nil Cancel was not created with CommandContext"u8);
     }
     if (c.ctx != default!) {
-        switch (ᐧ) {
-        case ᐧ when c.ctx.Done().ꟷᐳ(out _): {
+        var selᴛ1 = c.ctx.Done();
+        switch (trySelect(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
+        case 0 when selᴛ1.ꟷᐳ(out _): {
             return c.ctx.Err();
         }
         default: {
@@ -757,7 +758,7 @@ public static error Start(this ж<Cmd> Ꮡc) => func<error>((defer, recover) => 
     // have explicitly set its Cancel field back to nil, indicating that it should
     // be allowed to continue running after cancellation after all.)
     if ((c.Cancel != default! || c.WaitDelay != 0) && c.ctx != default! && c.ctx.Done() != default!) {
-        var resultc = new channel<ctxResult>(1);
+        var resultc = new channel<ctxResult>(0);
         c.ctxResult = resultc;
         goǃ(Ꮡc.watchCtx, resultc);
     }
@@ -772,11 +773,13 @@ public static error Start(this ж<Cmd> Ꮡc) => func<error>((defer, recover) => 
 // watchCtx manipulates c.goroutineErr, so its result must be received before
 // c.awaitGoroutines is called.
 [GoRecv] internal static void watchCtx(this ref Cmd c, channel/*<-*/<ctxResult> resultc) {
-    switch (select(resultc.ᐸꟷ(new ctxResult(nil), ꓸꓸꓸ), ᐸꟷ(c.ctx.Done(), ꓸꓸꓸ))) {
+    var selᴛ2 = resultc.ᐸꟷ(new ctxResult(nil), ꓸꓸꓸ);
+    var selᴛ3 = c.ctx.Done();
+    switch (select(selᴛ2, ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
     case 0: {
         return;
     }
-    case 1 when c.ctx.Done().ꟷᐳ(out _): {
+    case 1 when selᴛ3.ꟷᐳ(out _): {
         break;
     }}
     error err = default!;
@@ -805,11 +808,13 @@ public static error Start(this ж<Cmd> Ꮡc) => func<error>((defer, recover) => 
         return;
     }
     var timer = time.NewTimer(c.WaitDelay);
-    switch (select(resultc.ᐸꟷ(new ctxResult(err: err, timer: timer), ꓸꓸꓸ), ᐸꟷ((~timer).C, ꓸꓸꓸ))) {
+    var selᴛ4 = resultc.ᐸꟷ(new ctxResult(err: err, timer: timer), ꓸꓸꓸ);
+    var selᴛ5 = (~timer).C;
+    switch (select(selᴛ4, ᐸꟷ(selᴛ5, ꓸꓸꓸ))) {
     case 0: {
         return;
     }
-    case 1 when (~timer).C.ꟷᐳ(out _): {
+    case 1 when selᴛ5.ꟷᐳ(out _): {
         break;
     }}
     // c.Process.Wait returned and we've handed the timer off to c.Wait.
@@ -831,8 +836,9 @@ public static error Start(this ж<Cmd> Ꮡc) => func<error>((defer, recover) => 
         }
     }
     if (c.goroutineErr != default!) {
-        switch (ᐧ) {
-        case ᐧ when c.goroutineErr.ꟷᐳ(out var goroutineErr): {
+        var selᴛ6 = c.goroutineErr;
+        switch (trySelect(ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
+        case 0 when selᴛ6.ꟷᐳ(out var goroutineErr): {
             if (err == default! && !killed) {
                 // Forward goroutineErr only if we don't have reason to believe it was
                 // caused by a call to Cancel or Kill above.
@@ -966,8 +972,9 @@ internal static error awaitGoroutines(this ж<Cmd> Ꮡc, ж<time.Timer> Ꮡtimer
         if (c.WaitDelay == 0) {
             return ᐸꟷ(c.goroutineErr);
         }
-        switch (ᐧ) {
-        case ᐧ when c.goroutineErr.ꟷᐳ(out var err): {
+        var selᴛ7 = c.goroutineErr;
+        switch (trySelect(ᐸꟷ(selᴛ7, ꓸꓸꓸ))) {
+        case 0 when selᴛ7.ꟷᐳ(out var err): {
             return err;
         }
         default: {
@@ -978,13 +985,15 @@ internal static error awaitGoroutines(this ж<Cmd> Ꮡc, ж<time.Timer> Ꮡtimer
         // the command, or c.Process.Wait completed before the Context was done.
         Ꮡtimer = time.NewTimer(c.WaitDelay); timer = ref Ꮡtimer.DerefOrNil();
     }
-    switch (select(ᐸꟷ(timer.C, ꓸꓸꓸ), ᐸꟷ(c.goroutineErr, ꓸꓸꓸ))) {
-    case 0 when timer.C.ꟷᐳ(out _): {
+    var selᴛ8 = timer.C;
+    var selᴛ9 = c.goroutineErr;
+    switch (select(ᐸꟷ(selᴛ8, ꓸꓸꓸ), ᐸꟷ(selᴛ9, ꓸꓸꓸ))) {
+    case 0 when selᴛ8.ꟷᐳ(out _): {
         closeDescriptors(c.parentIOPipes);
         _ = ᐸꟷ(c.goroutineErr);
         return ErrWaitDelay;
     }
-    case 1 when c.goroutineErr.ꟷᐳ(out var err): {
+    case 1 when selᴛ9.ꟷᐳ(out var err): {
         return err;
     }}
     return default!;
@@ -1160,7 +1169,7 @@ internal static (nint n, error err) Write(this ж<prefixSuffixSaver> Ꮡw, slice
 [GoRecv] internal static slice<byte> /*pRemain*/ fill(this ref prefixSuffixSaver w, ж<slice<byte>> Ꮡdst, slice<byte> p) {
     slice<byte> pRemain = default!;
 
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.ValueSlot;
     {
         nint remain = w.N - len(dst); if (remain > 0) {
             nint add = min(len(p), remain);

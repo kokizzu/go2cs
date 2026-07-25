@@ -104,10 +104,10 @@ internal static ipAttr ipAttrOf(netipꓸAddr ip) {
     var DB = s.addrs[j].IP;
     var SourceDA = s.srcs[i];
     var SourceDB = s.srcs[j];
-    var attrDA = Ꮡ(s.addrAttr[i]);
-    var attrDB = Ꮡ(s.addrAttr[j]);
-    var attrSourceDA = Ꮡ(s.srcAttr[i]);
-    var attrSourceDB = Ꮡ(s.srcAttr[j]);
+    var attrDA = Ꮡ(s.addrAttr, i);
+    var attrDB = Ꮡ(s.addrAttr, j);
+    var attrSourceDA = Ꮡ(s.srcAttr, i);
+    var attrSourceDB = Ꮡ(s.srcAttr, j);
     const bool preferDA = true;
     const bool preferDB = false;
     // Rule 1: Avoid unusable destinations.

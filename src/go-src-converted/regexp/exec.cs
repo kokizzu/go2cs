@@ -349,7 +349,7 @@ Again:
     d.Value.t = default!;
     d.Value.pc = pc;
     q.sparse[(nint)(pc)] = (uint32)j;
-    var i = Ꮡ((~m.p).Inst[pc]);
+    var i = Ꮡ((~m.p).Inst, (int)(pc));
     var exprᴛ1 = (~i).Op;
     if (exprᴛ1 == syntax.InstFail) {
     }
@@ -456,7 +456,7 @@ internal static slice<nint> doOnePass(this ж<Regexp> Ꮡre, io.RuneReader ir, s
         flag = i.context(pos);
     }
     nint pc = re.onepass.Value.Start;
-    var inst = Ꮡ((~re.onepass).Inst[pc]);
+    var inst = Ꮡ((~re.onepass).Inst, pc);
     // If there is a simple literal prefix, skip over it.
     if (pos == 0 && flag.match(((syntax.EmptyOp)(uint8)(~inst).Arg)) && len(re.prefix) > 0 && i.canCheckPrefix()) {
         // Match requires literal prefix; fast search for it.
@@ -470,7 +470,7 @@ internal static slice<nint> doOnePass(this ж<Regexp> Ꮡre, io.RuneReader ir, s
         pc = (nint)re.prefixEnd;
     }
     while (ᐧ) {
-        inst = Ꮡ((~re.onepass).Inst[pc]);
+        inst = Ꮡ((~re.onepass).Inst, pc);
         pc = (nint)(~inst).Out;
         var exprᴛ1 = (~inst).Op;
         if (exprᴛ1 == syntax.InstMatch) {

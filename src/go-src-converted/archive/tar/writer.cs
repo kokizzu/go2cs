@@ -133,8 +133,8 @@ internal static error writeUSTARHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr)
         }
     }
     // Pack the main header.
-    formatter f = default!;
-    var blk = Ꮡtw.templateV7Plus(Ꮡhdr, new Action<slice<byte>, @string>(Ꮡ(f).formatString), new Action<slice<byte>, int64>(Ꮡ(f).formatOctal));
+    ref var f = ref heap(new formatter(), out var Ꮡf);
+    var blk = Ꮡtw.templateV7Plus(Ꮡhdr, new Action<slice<byte>, @string>(Ꮡf.formatString), new Action<slice<byte>, int64>(Ꮡf.formatOctal));
     f.formatString(blk.toUSTAR().prefix(), namePrefix);
     blk.setFormat(FormatUSTAR);
     if (f.err != default!) {
@@ -278,10 +278,10 @@ internal static error writeGNUHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr) {
         }
     }
     // Pack the main header.
-    formatter f = default!;                   // Ignore errors since they are expected
+    ref var f = ref heap(new formatter(), out var Ꮡf);                   // Ignore errors since they are expected
     sparseDatas spd = default!;
     slice<byte> spb = default!;
-    var blk = Ꮡtw.templateV7Plus(Ꮡhdr, new Action<slice<byte>, @string>(Ꮡ(f).formatString), new Action<slice<byte>, int64>(Ꮡ(f).formatNumeric));
+    var blk = Ꮡtw.templateV7Plus(Ꮡhdr, new Action<slice<byte>, @string>(Ꮡf.formatString), new Action<slice<byte>, int64>(Ꮡf.formatNumeric));
     if (!hdr.AccessTime.IsZero()) {
         f.formatNumeric(blk.toGNU().accessTime(), hdr.AccessTime.Unix());
     }
@@ -677,10 +677,6 @@ internal static int64 physicalRemaining(this regFileWriter fw) {
 
 }
 
-[GoType("dyn")] partial struct ReadFrom_dstᴛ1 {
-    public io_package.Writer Writer;
-}
-
 // Not possible; implies bug in validation logic
 // Not possible; implies bug in validation logic
 internal static (int64 n, error err) ReadFrom(this ж<sparseFileWriter> Ꮡsw, io.Reader r) {
@@ -698,7 +694,7 @@ internal static (int64 n, error err) ReadFrom(this ж<sparseFileWriter> Ꮡsw, i
     }
     // Not all io.Seeker can really seek
     if (!ok) {
-        return io.Copy(new ReadFrom_dstᴛ1(new sparseFileWriterжWriter(Ꮡsw)), r);
+        return io.Copy(new ReadFrom_dst(new sparseFileWriterжWriter(Ꮡsw)), r);
     }
     bool readLastByte = default!;
     var pos0 = sw.pos;

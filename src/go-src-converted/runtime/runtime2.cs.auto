@@ -136,7 +136,7 @@ internal static readonly UntypedInt _Pdead = 4;
 }
 
 internal static ж<eface> efaceOf(ж<any> Ꮡep) {
-    return (ж<eface>)(uintptr)(new @unsafe.Pointer(Ꮡep));
+    return Ꮡep.Reinterpret<any, eface>();
 }
 
 // go2cs generated this placeholder — type Δguintptr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
@@ -954,16 +954,16 @@ internal static array<bool> ΔisWaitingForGC = new golib.SparseArray<bool>{
     [waitReasonGCAssistMarking] = true,
     [waitReasonGCWorkerActive] = true,
     [waitReasonFlushProcCaches] = true
-}.array();
+}.array(37);
 
 internal static ж<ж<m>> Ꮡallm = new(default(ж<m>));
 internal static ref ж<m> allm => ref Ꮡallm.ValueSlot;
 internal static ж<int32> Ꮡgomaxprocs = new(default(int32));
 internal static ref int32 gomaxprocs => ref Ꮡgomaxprocs.Value;
 internal static int32 ncpu;
-internal static ж<forcegcstate> Ꮡforcegc = new(default(forcegcstate));
+internal static ж<forcegcstate> Ꮡforcegc = new(new forcegcstate());
 internal static ref forcegcstate forcegc => ref Ꮡforcegc.Value;
-internal static ж<schedt> Ꮡsched = new(default(schedt));
+internal static ж<schedt> Ꮡsched = new(new schedt());
 internal static ref schedt sched => ref Ꮡsched.Value;
 internal static int32 newprocs;
 
@@ -995,9 +995,9 @@ internal static bool isIntel;
 // See go.dev/issue/67401.
 //
 //go:linkname goarm
-internal static uint8 goarm;
+public static uint8 goarm;
 
-internal static uint8 goarmsoftfp;
+public static uint8 goarmsoftfp;
 
 // Set by the linker so the runtime can determine the buildmode.
 internal static bool islibrary; // -buildmode=c-shared

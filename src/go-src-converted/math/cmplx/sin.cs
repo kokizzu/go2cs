@@ -54,12 +54,12 @@ public static complex128 Sin(complex128 x) {
     {
         var (re, im) = (real(x), imag(x));
         switch (ᐧ) {
-        case {} when im == 0 && (math.IsInf(re, 0) || math.IsNaN(re)): {
+        case {} when im == 0D && (math.IsInf(re, 0) || math.IsNaN(re)): {
             return complex(math.NaN(), im);
         }
         case {} when math.IsInf(im, 0): {
             switch (ᐧ) {
-            case {} when re is 0: {
+            case {} when re is 0D: {
                 return x;
             }
             case {} when math.IsInf(re, 0) || math.IsNaN(re): {
@@ -68,7 +68,7 @@ public static complex128 Sin(complex128 x) {
 
             break;
         }
-        case {} when re == 0 && math.IsNaN(im): {
+        case {} when re == 0D && math.IsNaN(im): {
             return x;
         }}
     }
@@ -96,12 +96,12 @@ public static complex128 Sinh(complex128 x) {
     {
         var (re, im) = (real(x), imag(x));
         switch (ᐧ) {
-        case {} when re == 0 && (math.IsInf(im, 0) || math.IsNaN(im)): {
+        case {} when re == 0D && (math.IsInf(im, 0) || math.IsNaN(im)): {
             return complex(re, math.NaN());
         }
         case {} when math.IsInf(re, 0): {
             switch (ᐧ) {
-            case {} when im is 0: {
+            case {} when im is 0D: {
                 return complex(re, im);
             }
             case {} when math.IsInf(im, 0) || math.IsNaN(im): {
@@ -110,7 +110,7 @@ public static complex128 Sinh(complex128 x) {
 
             break;
         }
-        case {} when im == 0 && math.IsNaN(re): {
+        case {} when im == 0D && math.IsNaN(re): {
             return complex(math.NaN(), im);
         }}
     }
@@ -143,13 +143,13 @@ public static complex128 Cos(complex128 x) {
     {
         var (re, im) = (real(x), imag(x));
         switch (ᐧ) {
-        case {} when im == 0 && (math.IsInf(re, 0) || math.IsNaN(re)): {
-            return complex(math.NaN(), -im * math.Copysign(0, re));
+        case {} when im == 0D && (math.IsInf(re, 0) || math.IsNaN(re)): {
+            return complex(math.NaN(), -im * math.Copysign(0D, re));
         }
         case {} when math.IsInf(im, 0): {
             switch (ᐧ) {
-            case {} when re is 0: {
-                return complex(math.Inf(1), -re * math.Copysign(0, im));
+            case {} when re is 0D: {
+                return complex(math.Inf(1), -re * math.Copysign(0D, im));
             }
             case {} when math.IsInf(re, 0) || math.IsNaN(re): {
                 return complex(math.Inf(1), math.NaN());
@@ -157,8 +157,8 @@ public static complex128 Cos(complex128 x) {
 
             break;
         }
-        case {} when re == 0 && math.IsNaN(im): {
-            return complex(math.NaN(), 0);
+        case {} when re == 0D && math.IsNaN(im): {
+            return complex(math.NaN(), 0D);
         }}
     }
 
@@ -184,13 +184,13 @@ public static complex128 Cosh(complex128 x) {
     {
         var (re, im) = (real(x), imag(x));
         switch (ᐧ) {
-        case {} when re == 0 && (math.IsInf(im, 0) || math.IsNaN(im)): {
-            return complex(math.NaN(), re * math.Copysign(0, im));
+        case {} when re == 0D && (math.IsInf(im, 0) || math.IsNaN(im)): {
+            return complex(math.NaN(), re * math.Copysign(0D, im));
         }
         case {} when math.IsInf(re, 0): {
             switch (ᐧ) {
-            case {} when im is 0: {
-                return complex(math.Inf(1), im * math.Copysign(0, re));
+            case {} when im is 0D: {
+                return complex(math.Inf(1), im * math.Copysign(0D, re));
             }
             case {} when math.IsInf(im, 0) || math.IsNaN(im): {
                 return complex(math.Inf(1), math.NaN());
@@ -198,7 +198,7 @@ public static complex128 Cosh(complex128 x) {
 
             break;
         }
-        case {} when im == 0 && math.IsNaN(re): {
+        case {} when im == 0D && math.IsNaN(re): {
             return complex(math.NaN(), im);
         }}
     }

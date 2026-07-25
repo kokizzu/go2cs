@@ -60,7 +60,7 @@ internal static ж<dlogger> dlog() {
     // If we couldn't get a cached logger, try to get one from the
     // global pool.
     if (l == nil) {
-        var allp = (ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (ᏑallDloggers).Value));
+        var allp = ᏑallDloggers.Reinterpret<ж<dlogger>, uintptr>();
         var all = (ж<dlogger>)(uintptr)((@unsafe.Pointer)atomic.Loaduintptr(allp));
         for (var l1 = all; l1 != nil; l1 = l1.Value.allLink) {
             if (l1.of(dlogger.Ꮡowned).Load() == 0 && l1.of(dlogger.Ꮡowned).CompareAndSwap(0, 1)) {
@@ -80,7 +80,7 @@ internal static ж<dlogger> dlog() {
         l.Value.w.r.data = l.of(dlogger.Ꮡw).of(debugLogWriter.Ꮡdata);
         l.of(dlogger.Ꮡowned).Store(1);
         // Prepend to allDloggers list.
-        var headp = (ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (ᏑallDloggers).Value));
+        var headp = ᏑallDloggers.Reinterpret<ж<dlogger>, uintptr>();
         while (ᐧ) {
             var head = atomic.Loaduintptr(headp);
             l.Value.allLink = (ж<dlogger>)(uintptr)((@unsafe.Pointer)head);
@@ -307,7 +307,7 @@ internal static ж<dlogger> s(this ж<dlogger> Ꮡl, @string x) {
         // We can't use unsafe.Slice as it may panic, which isn't safe
         // in this (potentially) nowritebarrier context.
         ref var b = ref heap<slice<byte>>(out var Ꮡb);
-        var bb = (ж<Δsliceᴛ>)(uintptr)(new @unsafe.Pointer(Ꮡb));
+        var bb = Ꮡb.Reinterpret<slice<byte>, Δsliceᴛ>();
         bb.Value.Δarray = new @unsafe.Pointer(strData);
         bb.Value.len = len(x);
         bb.Value.cap = len(x);
@@ -615,7 +615,7 @@ internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2
     r.begin++;
     var exprᴛ1 = typ;
     if (exprᴛ1 == debugLogUnknown) {
-        print("<unknown kind>");
+        print((@string)"<unknown kind>");
     }
     else if (exprᴛ1 == debugLogBoolTrue) {
         print(true);
@@ -637,7 +637,7 @@ internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2
             var sl = r.uvarint();
             if (r.begin + sl > r.end) {
                 r.begin = r.end;
-                print("<string length corrupted>");
+                print((@string)"<string length corrupted>");
                 break;
             }
             while (sl > 0) {
@@ -662,11 +662,11 @@ internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2
             str: (@unsafe.Pointer)ptr,
             len: lenΔ2
         );
-        @string s = ~(ж<@string>)(uintptr)(new @unsafe.Pointer(Ꮡstr));
+        @string s = ~Ꮡstr.Reinterpret<stringStruct, @string>();
         print(s);
     }
     else if (exprᴛ1 == debugLogStringOverflow) {
-        print("..(", r.uvarint(), " more bytes)..");
+        print((@string)"..(", r.uvarint(), (@string)" more bytes)..");
     }
     else if (exprᴛ1 == debugLogPC) {
         printDebugLogPC((uintptr)r.uvarint(), false);
@@ -674,7 +674,7 @@ internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2
     else if (exprᴛ1 == debugLogTraceback) {
         nint n = (nint)r.uvarint();
         for (nint i = 0; i < n; i++) {
-            print("\n\t");
+            print((@string)"\n\t");
             // gentraceback PCs are always return PCs.
             // Convert them to call PCs.
             //
@@ -683,7 +683,7 @@ internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2
         }
     }
     else { /* default: */
-        print("<unknown field type ", ((Δhex)(uint64)typ), " pos ", r.begin - 1, " end ", r.end, ">\n");
+        print((@string)"<unknown field type ", ((Δhex)(uint64)typ), (@string)" pos ", r.begin - 1, (@string)" end ", r.end, (@string)">\n");
         return false;
     }
 
@@ -691,7 +691,7 @@ internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2
 }
 
 // Prepare read state for all logs.
-[GoType("dyn")] partial struct printDebugLog_readState {
+[GoLocalName("readState")] [GoType("dyn")] partial struct printDebugLog_readState {
     internal partial ref debugLogReader debugLogReader { get; }
     internal bool first;
     internal uint64 lost;
@@ -712,7 +712,7 @@ internal static unsafe void printDebugLog() {
     // the fatal panic path and this may deadlock.
     printlock();
     // Get the list of all debug logs.
-    var allp = (ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (ᏑallDloggers).Value));
+    var allp = ᏑallDloggers.Reinterpret<ж<dlogger>, uintptr>();
     var all = (ж<dlogger>)(uintptr)((@unsafe.Pointer)atomic.Loaduintptr(allp));
     // Count the logs.
     nint n = 0;
@@ -727,7 +727,7 @@ internal static unsafe void printDebugLog() {
     // with the runtime as little as possible, and sysAlloc updates accounting.
     @unsafe.Pointer state1 = (uintptr)sysAllocOS(@unsafe.Sizeof(new printDebugLog_readState(nil)) * (uintptr)n);
     if (state1 == nil) {
-        println("failed to allocate read state for", n, "logs");
+        println((@string)"failed to allocate read state for", n, (@string)"logs");
         printunlock();
         return;
     }
@@ -760,17 +760,17 @@ internal static unsafe void printDebugLog() {
         // Print record.
         var s = Ꮡ(state, best.i);
         if ((~s).first) {
-            print(">> begin log ", best.i);
+            print((@string)">> begin log ", best.i);
             if ((~s).lost != 0) {
-                print("; lost first ", ((~s).lost >> (int)(10)), "KB");
+                print((@string)"; lost first ", ((~s).lost >> (int)(10)), (@string)"KB");
             }
-            print(" <<\n");
+            print((@string)" <<\n");
             s.Value.first = false;
         }
         var (end, _, nano, Δp) = s.of(printDebugLog_readState.ᏑdebugLogReader).header();
         var oldEnd = s.Value.end;
         s.Value.end = end;
-        print("[");
+        print((@string)"[");
         array<byte> tmpbuf = new(21);
         var pnano = (int64)nano - runtimeInitTime;
         if (pnano < 0) {
@@ -779,14 +779,14 @@ internal static unsafe void printDebugLog() {
         }
         var pnanoBytes = itoaDiv(tmpbuf[..], (uint64)pnano, 9);
         print(slicebytetostringtmp(Ꮡ(pnanoBytes, 0), len(pnanoBytes)));
-        print(" P ", Δp, "] ");
+        print((@string)" P ", Δp, (@string)"] ");
         for (nint i = 0; (~s).begin < (~s).end; i++) {
             if (i > 0) {
-                print(" ");
+                print((@string)" ");
             }
             if (!s.of(printDebugLog_readState.ᏑdebugLogReader).printVal()) {
                 // Abort this P log.
-                print("<aborting P log>");
+                print((@string)"<aborting P log>");
                 end = oldEnd;
                 break;
             }
@@ -811,12 +811,12 @@ internal static void printDebugLogPC(uintptr pc, bool returnPC) {
     }
     print(((Δhex)(uint64)pc));
     if (!fn.valid()){
-        print(" [unknown PC]");
+        print((@string)" [unknown PC]");
     } else {
         @string name = funcname(fn);
         var (@file, line) = funcline(fn, pc);
-        print(" [", name, "+", ((Δhex)(uint64)(pc - fn.entry())),
-            " ", @file, ":", line, "]");
+        print((@string)" [", name, (@string)"+", ((Δhex)(uint64)(pc - fn.entry())),
+            (@string)" ", @file, (@string)":", line, (@string)"]");
     }
 }
 

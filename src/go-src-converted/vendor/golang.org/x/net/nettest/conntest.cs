@@ -77,7 +77,7 @@ internal static void timeoutWrapper(ж<testing.T> Ꮡt, Func<(net.Conn, net.Conn
     var timer = time.AfterFunc(time.ΔMinute, () => {
         var stopʗ4 = stopʗ3;
         Ꮡonce.Do(() => {
-            Ꮡt.Error("test timed out; terminating pipe");
+            Ꮡt.Error((@string)"test timed out; terminating pipe");
             stopʗ4();
         });
     });
@@ -90,7 +90,7 @@ internal static void timeoutWrapper(ж<testing.T> Ꮡt, Func<(net.Conn, net.Conn
 internal static void testBasicIO(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
     var want = new slice<byte>((1 << (int)(20)));
     rand.New(rand.NewSource(0)).Read(want);
-    var dataCh = new channel<slice<byte>>(1);
+    var dataCh = new channel<slice<byte>>(0);
     var wantʗ1 = want;
     goǃ(() => {
         var rd = bytes.NewReader(wantʗ1);
@@ -122,7 +122,7 @@ internal static void testBasicIO(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
     });
     {
         var got = ᐸꟷ(dataCh); if (!bytes.Equal(got, want)) {
-            Ꮡt.Error("transmitted data differs");
+            Ꮡt.Error((@string)"transmitted data differs");
         }
     }
 }
@@ -301,7 +301,7 @@ internal static void testPresentTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Con
         }
         checkForTimeoutError(Ꮡt, err);
         if (len(deadlineSetʗ2) == 0) {
-            Ꮡt.Error("Read timed out before deadline is set");
+            Ꮡt.Error((@string)"Read timed out before deadline is set");
         }
     }));
     var deadlineSetʗ3 = deadlineSet;
@@ -313,7 +313,7 @@ internal static void testPresentTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Con
         }
         checkForTimeoutError(Ꮡt, err);
         if (len(deadlineSetʗ3) == 0) {
-            Ꮡt.Error("Write timed out before deadline is set");
+            Ꮡt.Error((@string)"Write timed out before deadline is set");
         }
     }));
 });
@@ -379,7 +379,7 @@ internal static void testCloseTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Conn 
 // be called concurrently.
 internal static void testConcurrentMethods(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
     if (runtime.GOOS == "plan9"u8) {
-        Ꮡt.Skip("skipping on plan9; see https://golang.org/issue/20489");
+        Ꮡt.Skip((@string)"skipping on plan9; see https://golang.org/issue/20489");
     }
     goǃ((ᴛ1, ᴛ2) => chunkedCopy(ᴛ1, ᴛ2), new net_ConnᴠWriter(c2), new net_ConnᴠReader(c2));
     // The results of the calls may be nonsensical, but this should
@@ -473,7 +473,7 @@ internal static void testRoundtrip(ж<testing.T> Ꮡt, net.Conn c) {
 internal static void resyncConn(ж<testing.T> Ꮡt, net.Conn c) {
     Ꮡt.Helper();
     c.SetDeadline(neverTimeout);
-    var errCh = new channel<error>(1);
+    var errCh = new channel<error>(0);
     var errChʗ1 = errCh;
     goǃ(() => {
         var (_, err) = c.Write(new byte[]{0xff}.slice());

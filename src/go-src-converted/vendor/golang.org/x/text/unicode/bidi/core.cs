@@ -5,6 +5,7 @@ namespace go.vendor.golang.org.x.text.unicode;
 
 using fmt = fmt_package;
 using log = log_package;
+using ꓸꓸꓸClass = Span<bidi_package.ΔClass>;
 
 partial class bidi_package {
 
@@ -53,8 +54,8 @@ partial class bidi_package {
 internal static readonly level implicitLevel = -1;
 
 // in returns if x is equal to any of the values in set.
-internal static bool @in(this ΔClass c, params Span<bidi_package.ΔClass> setʗp) {
-    var set = setʗp.slice();
+internal static bool @in(this ΔClass c, params ꓸꓸꓸClass setʗp) {
+    var set = setʗp.sslice();
 
     foreach (var (_, s) in set) {
         if (c == s) {
@@ -245,7 +246,7 @@ internal static void run(this ж<paragraph> Ꮡp) {
                 i = p.matchingPDI[i];
                 // skip over to the matching PDI
                 if (i > end) {
-                    log.Panic("assert (i <= end)");
+                    log.Panic((@string)"assert (i <= end)");
                 }
             }
         }
@@ -724,8 +725,8 @@ internal static void setTypes(slice<ΔClass> types, ΔClass newType) {
 // Return the limit of the run consisting only of the types in validSet
 // starting at index. This checks the value at index, and will return
 // index if that value is not in validSet.
-[GoRecv] internal static nint findRunLimit(this ref ΔisolatingRunSequence s, nint index, params Span<bidi_package.ΔClass> validSetʗp) {
-    var validSet = validSetʗp.slice();
+[GoRecv] internal static nint findRunLimit(this ref ΔisolatingRunSequence s, nint index, params ꓸꓸꓸClass validSetʗp) {
+    var validSet = validSetʗp.sslice();
 
 loop:
     for (; index < len(s.types); index++) {
@@ -745,8 +746,8 @@ break_loop:;
 
 // Algorithm validation. Assert that all values in types are in the
 // provided set.
-[GoRecv] internal static void assertOnly(this ref ΔisolatingRunSequence s, params Span<bidi_package.ΔClass> codesʗp) {
-    var codes = codesʗp.slice();
+[GoRecv] internal static void assertOnly(this ref ΔisolatingRunSequence s, params ꓸꓸꓸClass codesʗp) {
+    var codes = codesʗp.sslice();
 
 loop:
     foreach (var (i, t) in s.types) {

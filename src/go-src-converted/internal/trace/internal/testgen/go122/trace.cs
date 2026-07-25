@@ -310,7 +310,7 @@ internal static ж<ΔBatch> newStructuralBatch(this ж<ΔGeneration> Ꮡg) {
 // of the names in Specs() result for the version that was passed to
 // this trace. Callers must omit the timestamp delta.
 [GoRecv] public static void Event(this ref ΔBatch b, @string name, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     var (ev, ok) = (~(~b.gen).trace).names[name, ꟷ];
     if (!ok) {

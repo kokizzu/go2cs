@@ -208,7 +208,7 @@ public static ж<Reader> NewReader(io.Reader r) {
     if (field < 0 || field >= len(r.fieldPositions)) {
         throw panic("out of range index passed to FieldPos");
     }
-    var p = Ꮡ(r.fieldPositions[field]);
+    var p = Ꮡ(r.fieldPositions, field);
     return ((~p).line, (~p).col);
 }
 

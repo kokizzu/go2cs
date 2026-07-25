@@ -214,8 +214,8 @@ internal static fs.ReadFileFS _ᴛ2ʗ = new FS(nil);
     internal array<byte> hash = new(16); // truncated SHA256 hash
 }
 
-internal static fs.FileInfo _ᴛ3ʗ = new fileжFileInfo((ж<@file>)(default!));
-internal static fs.DirEntry _ᴛ4ʗ = new fileжDirEntry((ж<@file>)(default!));
+internal static fs.FileInfo _ᴛ3ʗ = new fileжFileInfo(((ж<@file>)nil));
+internal static fs.DirEntry _ᴛ4ʗ = new fileжDirEntry(((ж<@file>)nil));
 
 [GoRecv] internal static @string Name(this ref @file f) {
     var (_, elem, _) = split(f.name);
@@ -362,8 +362,8 @@ public static (slice<byte>, error) ReadFile(this FS f, @string name) {
     internal int64 offset; // current read offset
 }
 
-internal static Δio.Seeker _ᴛ5ʗ = new openFileжSeeker((ж<openFile>)(default!));
-internal static Δio.ReaderAt _ᴛ6ʗ = new openFileжReaderAt((ж<openFile>)(default!));
+internal static Δio.Seeker _ᴛ5ʗ = new openFileжSeeker(((ж<openFile>)nil));
+internal static Δio.ReaderAt _ᴛ6ʗ = new openFileжReaderAt(((ж<openFile>)nil));
 
 [GoRecv] internal static error Close(this ref openFile f) {
     return default!;
@@ -450,7 +450,7 @@ internal static Δio.ReaderAt _ᴛ6ʗ = new openFileжReaderAt((ж<openFile>)(de
     }
     var list = new slice<fs.DirEntry>(n);
     foreach (var (i, _) in list) {
-        list[i] = new fileжDirEntry(Ꮡ(d.files[d.offset + i]));
+        list[i] = new fileжDirEntry(Ꮡ(d.files, d.offset + i));
     }
     d.offset += n;
     return (list, default!);

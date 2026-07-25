@@ -39,7 +39,7 @@ internal static uint64 nextID() {
 // The constraint argument can be nil, and set later via SetConstraint. If the
 // constraint is non-nil, it must be fully defined.
 public static ж<TypeParam> NewTypeParam(ж<TypeName> Ꮡobj, ΔType constraint) {
-    return ((ж<Checker>)(default!)).newTypeParam(Ꮡobj, constraint);
+    return (((ж<Checker>)nil)).newTypeParam(Ꮡobj, constraint);
 }
 
 // check may be nil

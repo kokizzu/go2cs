@@ -65,7 +65,7 @@ internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp
 });
 
 [GoRecv] internal static void appendValue(this ref fastTextHandler h, ж<buffer.Buffer> Ꮡbuf, slog.Value v) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.ValueSlot;
 
     var exprᴛ1 = v.Kind();
     if (exprᴛ1 == slog.KindString) {
@@ -109,7 +109,7 @@ internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp
 }
 
 [GoRecv] internal static void appendTime(this ref fastTextHandler h, ж<buffer.Buffer> Ꮡbuf, time.Time t) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.ValueSlot;
 
     buf = strconv.AppendInt(buf, t.Unix(), 10);
 }

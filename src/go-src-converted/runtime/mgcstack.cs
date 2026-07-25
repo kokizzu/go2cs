@@ -160,7 +160,7 @@ internal const bool stackTraceDebug = false;
 internal static void setRecord(this ж<stackObject> Ꮡobj, ж<stackObjectRecord> Ꮡr) {
     // Types of stack objects are always in read-only memory, not the heap.
     // So not using a write barrier is ok.
-    ((ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡobj.of(stackObject.Ꮡr)).Value))).Value = (uintptr)new @unsafe.Pointer(Ꮡr);
+    (Ꮡobj.of(stackObject.Ꮡr).Reinterpret<ж<stackObjectRecord>, uintptr>()).Value = (uintptr)new @unsafe.Pointer(Ꮡr);
 }
 
 // A stackScanState keeps track of the state used during the GC walk
@@ -207,7 +207,7 @@ internal static void putPtr(this ж<stackScanState> Ꮡs, uintptr Δp, bool cons
     var buf = head.ValueSlot;
     if (buf == nil){
         // Initial setup.
-        buf = (ж<stackWorkBuf>)(uintptr)(new @unsafe.Pointer(getempty()));
+        buf = getempty().Reinterpret<workbuf, stackWorkBuf>();
         buf.Value.nobj = 0;
         buf.Value.next = default!;
         head.ValueSlot = buf;
@@ -217,7 +217,7 @@ internal static void putPtr(this ж<stackScanState> Ꮡs, uintptr Δp, bool cons
             buf = s.freeBuf;
             s.freeBuf = default!;
         } else {
-            buf = (ж<stackWorkBuf>)(uintptr)(new @unsafe.Pointer(getempty()));
+            buf = getempty().Reinterpret<workbuf, stackWorkBuf>();
         }
         buf.Value.nobj = 0;
         buf.Value.next = head.ValueSlot;
@@ -246,7 +246,7 @@ internal static (uintptr Δp, bool conservative) getPtr(this ж<stackScanState> 
         if ((~buf).nobj == 0) {
             if (s.freeBuf != nil) {
                 // Free old freeBuf.
-                putempty((ж<workbuf>)(uintptr)(new @unsafe.Pointer(s.freeBuf)));
+                putempty(s.freeBuf.Reinterpret<stackWorkBuf, workbuf>());
             }
             // Move buf to the freeBuf.
             s.freeBuf = buf;
@@ -262,7 +262,7 @@ internal static (uintptr Δp, bool conservative) getPtr(this ж<stackScanState> 
     }
     // No more data in either list.
     if (s.freeBuf != nil) {
-        putempty((ж<workbuf>)(uintptr)(new @unsafe.Pointer(s.freeBuf)));
+        putempty(s.freeBuf.Reinterpret<stackWorkBuf, workbuf>());
         s.freeBuf = default!;
     }
     return (0, false);
@@ -275,7 +275,7 @@ internal static (uintptr Δp, bool conservative) getPtr(this ж<stackScanState> 
     var x = s.tail;
     if (x == nil) {
         // initial setup
-        x = (ж<stackObjectBuf>)(uintptr)(new @unsafe.Pointer(getempty()));
+        x = getempty().Reinterpret<workbuf, stackObjectBuf>();
         x.Value.next = default!;
         s.head = x;
         s.tail = x;
@@ -285,7 +285,7 @@ internal static (uintptr Δp, bool conservative) getPtr(this ж<stackScanState> 
     }
     if ((~x).nobj == len((~x).obj)) {
         // full buffer - allocate a new buffer, add to end of linked list
-        var y = (ж<stackObjectBuf>)(uintptr)(new @unsafe.Pointer(getempty()));
+        var y = getempty().Reinterpret<workbuf, stackObjectBuf>();
         y.Value.next = default!;
         x.Value.next = y;
         s.tail = y;

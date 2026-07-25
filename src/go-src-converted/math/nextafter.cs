@@ -24,12 +24,12 @@ public static float32 /*r*/ Nextafter32(float32 x, float32 y) {
         r = x;
         break;
     }
-    case {} when x is 0: {
+    case {} when x is 0F: {
         r = (float32)Copysign((float64)Float32frombits(1), // special case
  (float64)y);
         break;
     }
-    case {} when (y > x) == (x > 0): {
+    case {} when (y > x) == (x > 0F): {
         r = Float32frombits(Float32bits(x) + 1);
         break;
     }
@@ -60,12 +60,12 @@ public static float64 /*r*/ Nextafter(float64 x, float64 y) {
         r = x;
         break;
     }
-    case {} when x is 0: {
+    case {} when x is 0D: {
         r = Copysign(Float64frombits(1), // special case
  y);
         break;
     }
-    case {} when (y > x) == (x > 0): {
+    case {} when (y > x) == (x > 0D): {
         r = Float64frombits(Float64bits(x) + 1);
         break;
     }

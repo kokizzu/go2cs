@@ -12,6 +12,7 @@ using token = global::go.go.token_package;
 using static global::go.@internal.types.errors_package;
 using errors = global::go.@internal.types.errors_package;
 using global::go.go;
+using ꓸꓸꓸType = Span<types_package.ΔType>;
 
 partial class types_package {
 
@@ -1050,8 +1051,8 @@ internal static ΔType applyTypeFunc(this ж<Checker> Ꮡcheck, Func<ΔType, ΔT
 
 // makeSig makes a signature for the given argument and result types.
 // Default types are used for untyped arguments, and res may be nil.
-internal static ж<ΔSignature> makeSig(ΔType res, params Span<types_package.ΔType> argsʗp) {
-    var args = argsʗp.slice();
+internal static ж<ΔSignature> makeSig(ΔType res, params ꓸꓸꓸType argsʗp) {
+    var args = argsʗp.sslice();
 
     var list = new slice<ж<Var>>(len(args));
     foreach (var (i, param) in args) {

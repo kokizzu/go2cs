@@ -23,11 +23,11 @@ partial class types_package {
         return "MethodSet {}"u8;
     }
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), "MethodSet {");
+    fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), (@string)"MethodSet {");
     foreach (var (_, f) in s.list) {
         fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "\t%s\n"u8, f);
     }
-    fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), "}");
+    fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), (@string)"}");
     return buf.String();
 }
 

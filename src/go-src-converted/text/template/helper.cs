@@ -66,7 +66,7 @@ public static (ж<Template>, error) ParseFiles(this ж<Template> Ꮡt, params �
 // parseFiles is the helper for the method and function. If the argument
 // template is nil, it is created from the first file.
 internal static (ж<Template>, error) parseFiles(ж<Template> Ꮡt, Func<@string, (@string, slice<byte>, error)> readFile, params ꓸꓸꓸstring filenamesʗp) {
-    var filenames = filenamesʗp.slice();
+    var filenames = filenamesʗp.sslice();
 
     ref var t = ref Ꮡt.DerefOrNil();
     if (len(filenames) == 0) {

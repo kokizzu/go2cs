@@ -26,18 +26,18 @@ internal static (float64 @int, float64 frac) modf(float64 f) {
     float64 @int = default!;
     float64 frac = default!;
 
-    if (f < 1) {
+    if (f < 1D) {
         switch (ᐧ) {
-        case {} when f is < 0: {
+        case {} when f is < 0D: {
             (@int, frac) = Modf(-f);
             return (-@int, -frac);
         }
-        case {} when f is 0: {
+        case {} when f is 0D: {
             return (f, f);
         }}
 
         // Return -0, -0 when f == -0
-        return (0, f);
+        return (0D, f);
     }
     var x = Float64bits(f);
     nuint e = (nuint)((nuint)((x >> (int)(shift))) & (nuint)mask) - (nuint)bias;

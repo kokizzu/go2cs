@@ -452,7 +452,7 @@ internal static void stop(this ж<limiterEvent> Ꮡe, limiterEventType typ, int6
     while (ᐧ) {
         stamp = ((limiterEventStamp)Ꮡe.of(limiterEvent.Ꮡstamp).Load());
         if (stamp.typ() != typ) {
-            print("runtime: want=", typ, " got=", stamp.typ(), "\n");
+            print((@string)"runtime: want=", typ, (@string)" got=", stamp.typ(), (@string)"\n");
             @throw("limiterEvent.stop: found wrong event in p's limiter event slot"u8);
         }
         if (Ꮡe.of(limiterEvent.Ꮡstamp).CompareAndSwap((uint64)stamp, (uint64)limiterEventStampNone)) {

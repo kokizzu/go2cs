@@ -318,7 +318,7 @@ public static float64 Snapshot() {
     var tot = (uint64)0;
     var totExec = (uint64)0;
     foreach (var (_, c) in cl) {
-        var sd = @unsafe.Slice((ж<atomic.Uint32>)(uintptr)(new @unsafe.Pointer(c.Counters)), c.Len);
+        var sd = @unsafe.Slice(c.Counters.Reinterpret<uint32, atomic.Uint32>(), c.Len);
         tot += (uint64)len(sd);
         for (nint i = 0; i < len(sd); i++) {
             // Skip ahead until the next non-zero value.

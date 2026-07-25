@@ -388,7 +388,7 @@ internal static void dumpgoroutine(ж<g> Ꮡgp) {
         dumpint((uint64)(uintptr)new @unsafe.Pointer(Ꮡgp));
         dumpint((uint64)(~d).sp);
         dumpint((uint64)(~d).pc);
-        var fn = ~(ж<ж<funcval>>)(uintptr)(new @unsafe.Pointer(d.of(_defer.Ꮡfn)));
+        var fn = ~d.of(_defer.Ꮡfn).Reinterpret<Action, ж<funcval>>();
         dumpint((uint64)(uintptr)new @unsafe.Pointer(fn));
         if ((~d).fn == default!){
             // d.fn can be nil for open-coded defers
@@ -424,7 +424,7 @@ internal static void dumpgs() {
             dumpgoroutine(gp);
         }
         else { /* default: */
-            print("runtime: unexpected G.status ", ((Δhex)(uint64)status), "\n");
+            print((@string)"runtime: unexpected G.status ", ((Δhex)(uint64)status), (@string)"\n");
             @throw("dumpgs in STW - bad status"u8);
         }
 
@@ -465,7 +465,7 @@ internal static void dumproots() {
                 if ((~sp).kind != _KindSpecialFinalizer) {
                     continue;
                 }
-                var spf = (ж<specialfinalizer>)(uintptr)(new @unsafe.Pointer(sp));
+                var spf = sp.Reinterpret<special, specialfinalizer>();
                 @unsafe.Pointer Δp = (@unsafe.Pointer)(s.@base() + (uintptr)(~spf).special.offset);
                 dumpfinalizer(Δp, (~spf).fn, (~spf).fint, (~spf).ot);
             }
@@ -511,7 +511,7 @@ internal static void dumpparams() {
     dumpint(tagParams);
     ref var x = ref heap<uintptr>(out var Ꮡx);
     x = (uintptr)1;
-    if (~(ж<byte>)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡx).Value)) == 1){
+    if (~Ꮡx.Reinterpret<uintptr, byte>() == 1){
         dumpbool(false);
     } else {
         // little-endian ptrs
@@ -666,7 +666,7 @@ internal static void dumpmemprof() {
             if ((~sp).kind != _KindSpecialProfile) {
                 continue;
             }
-            var spp = (ж<specialprofile>)(uintptr)(new @unsafe.Pointer(sp));
+            var spp = sp.Reinterpret<special, specialprofile>();
             var Δp = s.@base() + (uintptr)(~spp).special.offset;
             dumpint(tagAllocSample);
             dumpint((uint64)Δp);

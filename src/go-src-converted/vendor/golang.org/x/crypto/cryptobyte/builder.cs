@@ -261,7 +261,7 @@ internal static void addLengthPrefixed(this ж<Builder> Ꮡb, nint lenLen, bool 
         b.err = fmt.Errorf("cryptobyte: pending child length %d exceeds %d-byte length prefix"u8, length, (~child).pendingLenLen);
         return;
     }
-    if (b.fixedSize && Ꮡ(b.result[0]) != Ꮡ((~child).result, 0)) {
+    if (b.fixedSize && Ꮡ(b.result, 0) != Ꮡ((~child).result, 0)) {
         throw panic("cryptobyte: BuilderContinuation reallocated a fixed-size buffer");
     }
     b.result = child.Value.result;

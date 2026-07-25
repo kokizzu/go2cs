@@ -12,7 +12,6 @@ using syscall = syscall_package;
 using @unsafe = unsafe_package;
 using @internal.syscall;
 using go.io;
-using go.sync;
 
 partial class os_package {
 

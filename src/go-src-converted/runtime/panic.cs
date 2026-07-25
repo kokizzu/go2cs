@@ -509,9 +509,9 @@ internal static void deferprocStack(ж<_defer> Ꮡd) {
     // The fourth write does not require a write barrier because we
     // explicitly mark all the defer structures, so we don't need to
     // keep track of pointers to them with a write barrier.
-    ((ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡd.of(_defer.Ꮡlink)).Value))).Value = (uintptr)new @unsafe.Pointer((~gp)._defer);
-    ((ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡd.of(_defer.Ꮡhead)).Value))).Value = 0;
-    ((ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (gp.of(g.Ꮡ_defer)).Value))).Value = (uintptr)new @unsafe.Pointer(Ꮡd);
+    (Ꮡd.of(_defer.Ꮡlink).Reinterpret<ж<_defer>, uintptr>()).Value = (uintptr)new @unsafe.Pointer((~gp)._defer);
+    (Ꮡd.of(_defer.Ꮡhead).Reinterpret<ж<atomic.Pointer<_defer>>, uintptr>()).Value = 0;
+    (gp.of(g.Ꮡ_defer).Reinterpret<ж<_defer>, uintptr>()).Value = (uintptr)new @unsafe.Pointer(Ꮡd);
     return0();
 }
 
@@ -684,18 +684,18 @@ internal static void printpanics(ж<_panic> Ꮡp) {
     if (Δp.link != nil) {
         printpanics(Δp.link);
         if (!(~Δp.link).goexit) {
-            print("\t");
+            print((@string)"\t");
         }
     }
     if (Δp.goexit) {
         return;
     }
-    print("panic: ");
+    print((@string)"panic: ");
     printpanicval(Δp.arg);
     if (Δp.recovered) {
-        print(" [recovered]");
+        print((@string)" [recovered]");
     }
-    print("\n");
+    print((@string)"\n");
 }
 
 // readvarintUnsafe reads the uint32 in varint format starting at fd, and returns the
@@ -767,30 +767,30 @@ internal static void gopanic(any e) {
     }
     var gp = getg();
     if ((~(~gp).m).curg != gp) {
-        print("panic: ");
+        print((@string)"panic: ");
         printpanicval(e);
-        print("\n");
+        print((@string)"\n");
         @throw("panic on system stack"u8);
     }
     if ((~(~gp).m).mallocing != 0) {
-        print("panic: ");
+        print((@string)"panic: ");
         printpanicval(e);
-        print("\n");
+        print((@string)"\n");
         @throw("panic during malloc"u8);
     }
     if ((~(~gp).m).preemptoff != ""u8) {
-        print("panic: ");
+        print((@string)"panic: ");
         printpanicval(e);
-        print("\n");
-        print("preempt off reason: ");
+        print((@string)"\n");
+        print((@string)"preempt off reason: ");
         print((~(~gp).m).preemptoff);
-        print("\n");
+        print((@string)"\n");
         @throw("panic during preemptoff"u8);
     }
     if ((~(~gp).m).locks != 0) {
-        print("panic: ");
+        print((@string)"panic: ");
         printpanicval(e);
-        print("\n");
+        print((@string)"\n");
         @throw("panic holding locks"u8);
     }
     ref var Δp = ref heap(new _panic(), out var Ꮡp);
@@ -820,7 +820,7 @@ internal static void gopanic(any e) {
     preprintpanics(Ꮡp);
     fatalpanic(Ꮡp);
     // should not return
-    ((ж<nint>)(uintptr)(default!)).Value = 0;
+    (((ж<nint>)nil)).Value = 0;
 }
 
 // not reached
@@ -1063,10 +1063,10 @@ internal static void @throw(@string s) {
     // Everything throw does should be recursively nosplit so it
     // can be called even when it's unsafe to grow the stack.
     systemstack(() => {
-        print("fatal error: ");
+        print((@string)"fatal error: ");
         printindented(s);
         // logically printpanicval(s), but avoids convTstring write barrier
-        print("\n");
+        print((@string)"\n");
     });
     fatalthrow(throwTypeRuntime);
 }
@@ -1084,10 +1084,10 @@ internal static void fatal(@string s) {
     // Everything fatal does should be recursively nosplit so it
     // can be called even when it's unsafe to grow the stack.
     systemstack(() => {
-        print("fatal error: ");
+        print((@string)"fatal error: ");
         printindented(s);
         // logically printpanicval(s), but avoids convTstring write barrier
-        print("\n");
+        print((@string)"\n");
     });
     fatalthrow(throwTypeUser);
 }
@@ -1194,7 +1194,7 @@ internal static void recovery(ж<g> Ꮡgp) {
     // binaries. (Admittedly, both of these are modest savings.)
     // Ensure we're recovering within the appropriate stack.
     if (sp != 0 && (sp < gp.stack.lo || gp.stack.hi < sp)) {
-        print("recover: ", ((Δhex)(uint64)sp), " not in [", ((Δhex)(uint64)gp.stack.lo), ", ", ((Δhex)(uint64)gp.stack.hi), "]\n");
+        print((@string)"recover: ", ((Δhex)(uint64)sp), (@string)" not in [", ((Δhex)(uint64)gp.stack.lo), (@string)", ", ((Δhex)(uint64)gp.stack.hi), (@string)"]\n");
         @throw("bad recovery"u8);
     }
     // Make the deferproc for this d return again,
@@ -1254,7 +1254,7 @@ internal static void fatalthrow(throwType t) {
         }
         exit(2);
     });
-    ((ж<nint>)(uintptr)(default!)).Value = 0;
+    (((ж<nint>)nil)).Value = 0;
 }
 
 // not reached
@@ -1293,7 +1293,7 @@ internal static void fatalpanic(ж<_panic> Ꮡmsgs) {
     systemstack(() => {
         exit(2);
     });
-    ((ж<nint>)(uintptr)(default!)).Value = 0;
+    (((ж<nint>)nil)).Value = 0;
 }
 
 // not reached
@@ -1314,7 +1314,7 @@ internal static bool startpanic_m() {
     var gp = getg();
     if (mheap_.cachealloc.size == 0) {
         // very early
-        print("runtime: panic before malloc heap initialized\n");
+        print((@string)"runtime: panic before malloc heap initialized\n");
     }
     // Disallow malloc during an unrecoverable panic. A panic
     // could happen in a signal handler, or in a throw, or inside
@@ -1341,12 +1341,12 @@ internal static bool startpanic_m() {
     }
     if (exprᴛ1 is 1) { matchᴛ1 = true;
         gp.Value.m.Value.dying = 2;
-        print("panic during panic\n");
+        print((@string)"panic during panic\n");
         return false;
     }
     if (exprᴛ1 is 2) { matchᴛ1 = true;
         gp.Value.m.Value.dying = 3;
-        print("stack trace unavailable\n");
+        print((@string)"stack trace unavailable\n");
         exit(4);
         fallthrough = true;
     }
@@ -1377,11 +1377,11 @@ internal static bool dopanic_m(ж<g> Ꮡgp, uintptr pc, uintptr sp) {
     if (gp.sig != 0) {
         @string signameΔ1 = signame(gp.sig);
         if (signameΔ1 != ""u8){
-            print("[signal ", signameΔ1);
+            print((@string)"[signal ", signameΔ1);
         } else {
-            print("[signal ", ((Δhex)(uint64)gp.sig));
+            print((@string)"[signal ", ((Δhex)(uint64)gp.sig));
         }
-        print(" code=", ((Δhex)(uint64)gp.sigcode0), " addr=", ((Δhex)(uint64)gp.sigcode1), " pc=", ((Δhex)(uint64)gp.sigpc), "]\n");
+        print((@string)" code=", ((Δhex)(uint64)gp.sigcode0), (@string)" addr=", ((Δhex)(uint64)gp.sigcode1), (@string)" pc=", ((Δhex)(uint64)gp.sigpc), (@string)"]\n");
     }
     var (level, all, docrash) = gotraceback();
     if (level > 0) {
@@ -1389,12 +1389,12 @@ internal static bool dopanic_m(ж<g> Ꮡgp, uintptr pc, uintptr sp) {
             all = true;
         }
         if (Ꮡgp != (~gp.m).g0){
-            print("\n");
+            print((@string)"\n");
             goroutineheader(Ꮡgp);
             traceback(pc, sp, 0, Ꮡgp);
         } else 
         if (level >= 2 || (~gp.m).throwing >= throwTypeRuntime) {
-            print("\nruntime stack:\n");
+            print((@string)"\nruntime stack:\n");
             traceback(pc, sp, 0, Ꮡgp);
         }
         if (!didothers && all) {

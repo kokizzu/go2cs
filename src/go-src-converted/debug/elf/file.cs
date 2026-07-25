@@ -1543,7 +1543,7 @@ public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
     if (j < 2 || j >= len(f.gnuNeed)) {
         return (library, version);
     }
-    var n = Ꮡ(f.gnuNeed[j]);
+    var n = Ꮡ(f.gnuNeed, j);
     return ((~n).File, (~n).Name);
 }
 

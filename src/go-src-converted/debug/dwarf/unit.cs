@@ -130,7 +130,7 @@ internal static nint offsetToUnit(this ж<Data> Ꮡd, Offset off) {
     if (next == 0) {
         return -1;
     }
-    var u = Ꮡ(d.unit[next - 1]);
+    var u = Ꮡ(d.unit, next - 1);
     if ((~u).off <= off && off < (~u).off + ((Offset)(uint32)len((~u).data))) {
         return next - 1;
     }

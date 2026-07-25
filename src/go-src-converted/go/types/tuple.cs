@@ -5,6 +5,8 @@
 // license that can be found in the LICENSE file.
 namespace go.go;
 
+using ꓸꓸꓸжVar = Span<ж<types_package.Var>>;
+
 partial class types_package {
 
 // A Tuple represents an ordered list of variables; a nil *Tuple is a valid (empty) tuple.
@@ -15,7 +17,7 @@ partial class types_package {
 }
 
 // NewTuple returns a new tuple for the given variables.
-public static ж<Tuple> NewTuple(params Span<ж<Var>> xʗp) {
+public static ж<Tuple> NewTuple(params ꓸꓸꓸжVar xʗp) {
     var x = xʗp.slice();
 
     if (len(x) > 0) {

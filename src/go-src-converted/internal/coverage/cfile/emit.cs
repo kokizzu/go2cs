@@ -462,7 +462,7 @@ internal static error writeMetaData(io.Writer w, slice<rtcov.CovMetaBlob> metali
     };
     var dpkg = (uint32)0;
     foreach (var (_, c) in s.counterlist) {
-        var sd = @unsafe.Slice((ж<atomic.Uint32>)(uintptr)(new @unsafe.Pointer(c.Counters)), (nint)c.Len);
+        var sd = @unsafe.Slice(c.Counters.Reinterpret<uint32, atomic.Uint32>(), (nint)c.Len);
         for (nint i = 0; i < len(sd); i++) {
             // Skip ahead until the next non-zero value.
             var sdi = Ꮡ(sd, i).Load();
@@ -584,23 +584,23 @@ public static void MarkProfileEmitted(bool val) {
 internal static void reportErrorInHardcodedList(int32 slot, int32 pkgID, uint32 fnID, uint32 nCtrs) {
     var metaList = rtcov.Meta.List;
     var pkgMap = rtcov.Meta.PkgMap;
-    println("internal error in coverage meta-data tracking:");
-    println("encountered bad pkgID:", pkgID, " at slot:", slot,
-        " fnID:", fnID, " numCtrs:", nCtrs);
-    println("list of hard-coded runtime package IDs needs revising.");
-    println("[see the comment on the 'rtPkgs' var in ");
-    println(" <goroot>/src/internal/coverage/pkid.go]");
-    println("registered list:");
+    println((@string)"internal error in coverage meta-data tracking:");
+    println((@string)"encountered bad pkgID:", pkgID, (@string)" at slot:", slot,
+        (@string)" fnID:", fnID, (@string)" numCtrs:", nCtrs);
+    println((@string)"list of hard-coded runtime package IDs needs revising.");
+    println((@string)"[see the comment on the 'rtPkgs' var in ");
+    println((@string)" <goroot>/src/internal/coverage/pkid.go]");
+    println((@string)"registered list:");
     foreach (var (k, b) in metaList) {
-        print("slot: ", k, " path='", b.PkgPath, "' ");
+        print((@string)"slot: ", k, (@string)" path='", b.PkgPath, (@string)"' ");
         if (b.PkgID != -1) {
-            print(" hard-coded id: ", b.PkgID);
+            print((@string)" hard-coded id: ", b.PkgID);
         }
-        println("");
+        println((@string)"");
     }
-    println("remap table:");
+    println((@string)"remap table:");
     foreach (var (from, to) in pkgMap) {
-        println("from ", from, " to ", to);
+        println((@string)"from ", from, (@string)" to ", to);
     }
 }
 

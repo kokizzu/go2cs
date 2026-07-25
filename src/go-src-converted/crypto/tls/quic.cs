@@ -203,7 +203,7 @@ public static error Start(this ж<QUICConn> Ꮡq, context.Context ctx) {
     }
     // never started
     (~(~q.conn).quic).cancel();
-    foreach (var _ in (~(~q.conn).quic).blockedc) {
+    foreach (var _ᴛ1 in (~(~q.conn).quic).blockedc) {
     }
     // Wait for the handshake goroutine to return.
     return (~q.conn).handshakeErr;
@@ -459,25 +459,27 @@ internal static error quicWaitForSignal(this ж<Conn> Ꮡc) => func<error>((defe
     // Send on blockedc to notify the QUICConn that the handshake is blocked.
     // Exported methods of QUICConn wait for the handshake to become blocked
     // before returning to the user.
-    var selᴛ3 = (~c.quic).cancelc;
-    switch (select((~c.quic).blockedc.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ), ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
+    var selᴛ3 = (~c.quic).blockedc.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+    var selᴛ4 = (~c.quic).cancelc;
+    switch (select(selᴛ3, ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
     case 0: {
         break;
     }
-    case 1 when selᴛ3.ꟷᐳ(out _): {
+    case 1 when selᴛ4.ꟷᐳ(out _): {
         return Ꮡc.sendAlertLocked(alertCloseNotify);
     }}
     // The QUICConn reads from signalc to notify us that the handshake may
     // be able to proceed. (The QUICConn reads, because we close signalc to
     // indicate that the handshake has completed.)
-    var selᴛ4 = (~c.quic).cancelc;
-    switch (select((~c.quic).signalc.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+    var selᴛ5 = (~c.quic).signalc.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+    var selᴛ6 = (~c.quic).cancelc;
+    switch (select(selᴛ5, ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
     case 0: {
         c.hand.Write((~c.quic).readbuf);
         c.quic.Value.readbuf = default!;
         break;
     }
-    case 1 when selᴛ4.ꟷᐳ(out _): {
+    case 1 when selᴛ6.ꟷᐳ(out _): {
         return Ꮡc.sendAlertLocked(alertCloseNotify);
     }}
     return default!;

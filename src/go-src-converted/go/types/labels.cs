@@ -108,8 +108,8 @@ internal static ж<ast.LabeledStmt> enclosingTarget(this ж<block> Ꮡb, @string
 // enclosing block, and lstmt is the labeled statement this block is associated with (or nil).
 internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡcheck, ж<ΔScope> Ꮡall, ж<block> Ꮡparent, ж<ast.LabeledStmt> Ꮡlstmt, slice<ast.Stmt> list) {
     ref var check = ref Ꮡcheck.Value;
-    ref var parent = ref Ꮡparent.Value;
-    ref var lstmt = ref Ꮡlstmt.Value;
+    ref var parent = ref Ꮡparent.DerefOrNil();
+    ref var lstmt = ref Ꮡlstmt.DerefOrNil();
 
     var b = Ꮡ(new block(parent: Ꮡparent, lstmt: Ꮡlstmt));
     tokenꓸPos varDeclPos = default!;

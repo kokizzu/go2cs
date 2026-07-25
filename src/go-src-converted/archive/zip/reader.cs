@@ -1097,7 +1097,7 @@ internal static ж<fileListEntry> dotFile = Ꮡ(new fileListEntry(name: "./"u8, 
     }
     var list = new slice<fs.DirEntry>(n);
     foreach (var (i, _) in list) {
-        var (s, err) = Ꮡ(d.files[d.offset + i]).stat();
+        var (s, err) = Ꮡ(d.files, d.offset + i).stat();
         if (err != default!) {
             return (default!, err);
         }

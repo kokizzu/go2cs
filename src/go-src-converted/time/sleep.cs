@@ -41,7 +41,7 @@ internal static @unsafe.Pointer syncTimer(channel<Time> c) {
     // If we decide to keep the sync channels, we can delete all the
     // handling of asynctimerchan in the runtime and keep just this
     // function to handle asynctimerchan=1.
-    return ~(ж<@unsafe.Pointer>)(uintptr)(new @unsafe.Pointer(Ꮡ(c)));
+    return ~Ꮡ(c).Reinterpret<channel<Time>, @unsafe.Pointer>();
 }
 
 // when is a helper function for setting the 'when' field of a runtimeTimer.
@@ -187,8 +187,9 @@ internal static void sendTime(any c, uintptr seq, int64 delta) {
     // can delay a sendTime call until a goroutines tries to receive from
     // the channel. Subtract delta to go back to the old time that we
     // used to send.
-    switch (ᐧ) {
-    case ᐧ when c._<channel<Time>>().ᐸꟷ(Now().Add(((Duration)(-delta))), ꟷ): {
+    var selᴛ1 = c._<channel<Time>>().ᐸꟷ(Now().Add(((Duration)(-delta))), ꓸꓸꓸ);
+    switch (trySelect(selᴛ1)) {
+    case 0: {
         break;
     }
     default: {

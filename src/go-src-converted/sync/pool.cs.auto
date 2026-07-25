@@ -213,7 +213,7 @@ internal static any getSlow(this ж<Pool> Ꮡp, nint pid) {
 // returns poolLocal pool for the P and the P's id.
 // Caller must call runtime_procUnpin() when done with the pool.
 internal static (ж<poolLocal>, nint) pin(this ж<Pool> Ꮡp) {
-    ref var p = ref Ꮡp.Value;
+    ref var p = ref Ꮡp.DerefOrNil();
 
     // Check whether p is nil to get a panic.
     // Otherwise the nil dereference happens while the m is pinned,
@@ -280,16 +280,12 @@ internal static void poolCleanup() {
     // Because the world is stopped, no pool user can be in a
     // pinned section (in effect, this has all Ps pinned).
     // Drop victim caches from all pools.
-    foreach (var (_, vᴛ1) in oldPools) {
-        var p = vᴛ1;
-
+    foreach (var (_, p) in oldPools) {
         p.Value.victim = default!;
         p.Value.victimSize = 0;
     }
     // Move primary cache to victim cache.
-    foreach (var (_, vᴛ2) in allPools) {
-        var p = vᴛ2;
-
+    foreach (var (_, p) in allPools) {
         p.Value.victim = p.Value.local;
         p.Value.victimSize = p.Value.localSize;
         p.Value.local = default!;

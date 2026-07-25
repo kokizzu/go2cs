@@ -926,7 +926,7 @@ internal static bool hasX(@string s) {
 // to float64's to avoid reproducing this code for each complex type.
 [GoRecv] internal static complex128 scanComplex(this ref ss s, rune verb, nint n) {
     if (!s.okVerb(verb, floatVerbs, "complex"u8)) {
-        return 0;
+        return 0D;
     }
     s.SkipSpace();
     s.notEOF();
@@ -1240,7 +1240,7 @@ internal static void scanOne(this ж<ss> Ꮡs, rune verb, any arg) {
 
 // errorHandler turns local panics into error returns.
 internal static void errorHandler(ж<error> Ꮡerrp) => func((defer, recover) => {
-    ref var errp = ref Ꮡerrp.Value;
+    ref var errp = ref Ꮡerrp.ValueSlot;
 
     {
         var e = recover(); if (e != default!) {
@@ -1265,11 +1265,12 @@ internal static void errorHandler(ж<error> Ꮡerrp) => func((defer, recover) =>
 // doScan does the real work for scanning without a format string.
 internal static (nint numProcessed, error err) doScan(this ж<ss> Ꮡs, slice<any> a) {
     nint numProcessed = default!;
-    error err = default!;
+    heap<error>(out var Ꮡerr);
     func((defer, recover) => {
     ref var s = ref Ꮡs.Value;
 
-        deferǃ(errorHandler, Ꮡ(err), defer);
+    ref var err = ref Ꮡerr.ValueSlot;
+        deferǃ(errorHandler, Ꮡerr, defer);
         foreach (var (_, arg) in a) {
             Ꮡs.scanOne((rune)'v', arg);
             numProcessed++;
@@ -1288,7 +1289,7 @@ internal static (nint numProcessed, error err) doScan(this ж<ss> Ꮡs, slice<an
             }
         }
     });
-    return (numProcessed, err);
+    return (numProcessed, Ꮡerr.ValueSlot);
 }
 
 // advance determines whether the next characters in the input match
@@ -1383,11 +1384,12 @@ internal static (nint numProcessed, error err) doScan(this ж<ss> Ꮡs, slice<an
 // At the moment, it handles only pointers to basic types.
 internal static (nint numProcessed, error err) doScanf(this ж<ss> Ꮡs, @string format, slice<any> a) {
     nint numProcessed = default!;
-    error err = default!;
+    heap<error>(out var Ꮡerr);
     func((defer, recover) => {
     ref var s = ref Ꮡs.Value;
 
-        deferǃ(errorHandler, Ꮡ(err), defer);
+    ref var err = ref Ꮡerr.ValueSlot;
+        deferǃ(errorHandler, Ꮡerr, defer);
         nint end = len(format) - 1;
         // We process one item per non-trivial format
         for (nint i = 0; i <= end; ) {
@@ -1443,7 +1445,7 @@ internal static (nint numProcessed, error err) doScanf(this ж<ss> Ꮡs, @string
             s.errorString("too many operands"u8);
         }
     });
-    return (numProcessed, err);
+    return (numProcessed, Ꮡerr.ValueSlot);
 }
 
 } // end fmt_package

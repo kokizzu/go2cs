@@ -192,19 +192,19 @@ internal static void mallocinit() {
         @throw("failed to get system page size"u8);
     }
     if (physPageSize > maxPhysPageSize) {
-        print("system page size (", physPageSize, ") is larger than maximum page size (", (nint)(maxPhysPageSize), ")\n");
+        print((@string)"system page size (", physPageSize, (@string)") is larger than maximum page size (", (nint)(maxPhysPageSize), (@string)")\n");
         @throw("bad system page size"u8);
     }
     if (physPageSize < minPhysPageSize) {
-        print("system page size (", physPageSize, ") is smaller than minimum page size (", (nint)(minPhysPageSize), ")\n");
+        print((@string)"system page size (", physPageSize, (@string)") is smaller than minimum page size (", (nint)(minPhysPageSize), (@string)")\n");
         @throw("bad system page size"u8);
     }
     if ((uintptr)(physPageSize & (physPageSize - 1)) != 0) {
-        print("system page size (", physPageSize, ") must be a power of 2\n");
+        print((@string)"system page size (", physPageSize, (@string)") must be a power of 2\n");
         @throw("bad system page size"u8);
     }
     if ((uintptr)(physHugePageSize & (physHugePageSize - 1)) != 0) {
-        print("system huge page size (", physHugePageSize, ") must be a power of 2\n");
+        print((@string)"system huge page size (", physHugePageSize, (@string)") must be a power of 2\n");
         @throw("bad system huge page size"u8);
     }
     if (physHugePageSize > maxPhysHugePageSize) {
@@ -222,11 +222,11 @@ internal static void mallocinit() {
         }
     }
     if (pagesPerArena % pagesPerSpanRoot != 0) {
-        print("pagesPerArena (", (nint)(pagesPerArena), ") is not divisible by pagesPerSpanRoot (", (nint)(pagesPerSpanRoot), ")\n");
+        print((@string)"pagesPerArena (", (nint)(pagesPerArena), (@string)") is not divisible by pagesPerSpanRoot (", (nint)(pagesPerSpanRoot), (@string)")\n");
         @throw("bad pagesPerSpanRoot"u8);
     }
     if (pagesPerArena % pagesPerReclaimerChunk != 0) {
-        print("pagesPerArena (", (nint)(pagesPerArena), ") is not divisible by pagesPerReclaimerChunk (", (nint)(pagesPerReclaimerChunk), ")\n");
+        print((@string)"pagesPerArena (", (nint)(pagesPerArena), (@string)") is not divisible by pagesPerReclaimerChunk (", (nint)(pagesPerReclaimerChunk), (@string)")\n");
         @throw("bad pagesPerReclaimerChunk"u8);
     }
     // Check that the minimum size (exclusive) for a malloc header is also
@@ -546,7 +546,7 @@ internal static (@unsafe.Pointer v, uintptr size) sysAlloc(this ж<mheap> Ꮡh, 
         if (bad != ""u8) {
             // This should be impossible on most architectures,
             // but it would be really confusing to debug.
-            print("runtime: memory allocated by OS [", ((Δhex)(uint64)Δp), ", ", ((Δhex)(uint64)(Δp + size)), ") not in usable address space: ", bad, "\n");
+            print((@string)"runtime: memory allocated by OS [", ((Δhex)(uint64)Δp), (@string)", ", ((Δhex)(uint64)(Δp + size)), (@string)") not in usable address space: ", bad, (@string)"\n");
             @throw("memory reservation exceeds address space limit"u8);
         }
     }
@@ -600,7 +600,7 @@ mapped:
                     @throw("out of memory allocating allArenas"u8);
                 }
                 var oldSlice = h.allArenas;
-                ((ж<notInHeapSlice>)(uintptr)(new @unsafe.Pointer(Ꮡh.of(mheap.ᏑallArenas)))).Value = new notInHeapSlice(newArray, len(h.allArenas), (nint)(sizeΔ1 / (uintptr)goarch.PtrSize));
+                (Ꮡh.of(mheap.ᏑallArenas).Reinterpret<slice<arenaIdx>, notInHeapSlice>()).Value = new notInHeapSlice(newArray, len(h.allArenas), (nint)(sizeΔ1 / (uintptr)goarch.PtrSize));
                 copy(h.allArenas, oldSlice);
             }
             // Do not free the old backing array because
@@ -614,7 +614,7 @@ mapped:
         // new heap arena becomes visible before the heap lock
         // is released (which shouldn't happen, but there's
         // little downside to this).
-        atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (Ꮡ(l2.Value[ri.l2()])).Value), new @unsafe.Pointer(r));
+        atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (l2.at<ж<heapArena>>((nint)(ri.l2()))).Value), new @unsafe.Pointer(r));
 continue_mapped:;
     }
 break_mapped:;
@@ -764,7 +764,7 @@ internal static gclinkptr nextFreeFast(ж<mspan> Ꮡs) {
     if (freeIndex == (~s).nelems) {
         // The span is full.
         if ((~s).allocCount != (~s).nelems) {
-            println("runtime: s.allocCount=", (~s).allocCount, "s.nelems=", (~s).nelems);
+            println((@string)"runtime: s.allocCount=", (~s).allocCount, (@string)"s.nelems=", (~s).nelems);
             @throw("s.allocCount != s.nelems && freeIndex == s.nelems"u8);
         }
         c.refill(spc);
@@ -778,7 +778,7 @@ internal static gclinkptr nextFreeFast(ж<mspan> Ꮡs) {
     v = ((gclinkptr)((uintptr)freeIndex * (~s).elemsize + s.@base()));
     s.Value.allocCount++;
     if ((~s).allocCount > (~s).nelems) {
-        println("s.allocCount=", (~s).allocCount, "s.nelems=", (~s).nelems);
+        println((@string)"s.allocCount=", (~s).allocCount, (@string)"s.nelems=", (~s).nelems);
         @throw("s.allocCount > s.nelems"u8);
     }
     return (v, s, shouldhelpgc);
@@ -1328,8 +1328,8 @@ internal static int32 fastexprand(nint mean) {
     UntypedInt randomBitCount = 26;
     var q = cheaprandn(((uint32)1 << (int)(randomBitCount))) + 1;
     var qlog = fastlog2((float64)q) - (float64)randomBitCount;
-    if (qlog > 0) {
-        qlog = 0;
+    if (qlog > 0D) {
+        qlog = 0D;
     }
     const float64 minusLog2 = -0.6931471805599453; // -ln(2)
     return (int32)(qlog * (minusLog2 * (float64)mean)) + 1;
@@ -1432,8 +1432,8 @@ internal static ж<notInHeap> persistentalloc1(uintptr size, uintptr align, ж<s
         // Add the new chunk to the persistentChunks list.
         while (ᐧ) {
             var chunks = (uintptr)new @unsafe.Pointer(persistentChunks);
-            ((ж<uintptr>)(uintptr)(new @unsafe.Pointer((~persistent).@base))).Value = chunks;
-            if (atomic.Casuintptr((ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (ᏑpersistentChunks).Value)), chunks, (uintptr)new @unsafe.Pointer((~persistent).@base))) {
+            ((~persistent).@base.Reinterpret<notInHeap, uintptr>()).Value = chunks;
+            if (atomic.Casuintptr(ᏑpersistentChunks.Reinterpret<ж<notInHeap>, uintptr>(), chunks, (uintptr)new @unsafe.Pointer((~persistent).@base))) {
                 break;
             }
         }
@@ -1458,7 +1458,7 @@ internal static ж<notInHeap> persistentalloc1(uintptr size, uintptr align, ж<s
 //
 //go:nosplit
 internal static bool inPersistentAlloc(uintptr Δp) {
-    var chunk = atomic.Loaduintptr((ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (ᏑpersistentChunks).Value)));
+    var chunk = atomic.Loaduintptr(ᏑpersistentChunks.Reinterpret<ж<notInHeap>, uintptr>());
     while (chunk != 0) {
         if (Δp >= chunk && Δp < chunk + (uintptr)persistentChunkSize) {
             return true;

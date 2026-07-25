@@ -55,7 +55,7 @@ internal static ж<notInHeap> alloc(this ж<traceRegionAlloc> Ꮡa, uintptr n) {
     if (block != nil) {
         var r = block.of(traceRegionAllocBlock.Ꮡoff).Add(n);
         if (r <= (uintptr)len((~block).data)) {
-            return (ж<notInHeap>)(uintptr)(new @unsafe.Pointer(block.at(traceRegionAllocBlock.Ꮡdata, (nint)(r - n))));
+            return block.at(traceRegionAllocBlock.Ꮡdata, (nint)(r - n)).Reinterpret<byte, notInHeap>();
         }
     }
     // Try to install a new block.
@@ -67,7 +67,7 @@ internal static ж<notInHeap> alloc(this ж<traceRegionAlloc> Ꮡa, uintptr n) {
         var r = block.of(traceRegionAllocBlock.Ꮡoff).Add(n);
         if (r <= (uintptr)len((~block).data)) {
             unlock(Ꮡa.of(traceRegionAlloc.Ꮡlock));
-            return (ж<notInHeap>)(uintptr)(new @unsafe.Pointer(block.at(traceRegionAllocBlock.Ꮡdata, (nint)(r - n))));
+            return block.at(traceRegionAllocBlock.Ꮡdata, (nint)(r - n)).Reinterpret<byte, notInHeap>();
         }
         // Add the existing block to the full list.
         block.Value.next = a.full;
@@ -81,7 +81,7 @@ internal static ж<notInHeap> alloc(this ж<traceRegionAlloc> Ꮡa, uintptr n) {
     // Allocate space for our current request, so we always make
     // progress.
     block.of(traceRegionAllocBlock.Ꮡoff).Store(n);
-    var x = (ж<notInHeap>)(uintptr)(new @unsafe.Pointer(block.at(traceRegionAllocBlock.Ꮡdata, 0)));
+    var x = block.at(traceRegionAllocBlock.Ꮡdata, 0).Reinterpret<byte, notInHeap>();
     // Publish the new block.
     Ꮡa.of(traceRegionAlloc.Ꮡcurrent).Store(new @unsafe.Pointer(block));
     unlock(Ꮡa.of(traceRegionAlloc.Ꮡlock));

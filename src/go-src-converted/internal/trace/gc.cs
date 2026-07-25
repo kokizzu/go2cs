@@ -31,7 +31,7 @@ public static readonly UtilFlags UtilSweep = 8;
 public static readonly UtilFlags UtilPerProc = 16;
 
 // Set up a bunch of analysis state.
-[GoType("dyn")] partial struct MutatorUtilizationV2_perP {
+[GoLocalName("perP")] [GoType("dyn")] partial struct MutatorUtilizationV2_perP {
     // gc > 0 indicates that GC is active on this P.
     internal nint gc;
     // series the logical series number for this P. This
@@ -40,7 +40,7 @@ public static readonly UtilFlags UtilPerProc = 16;
     internal nint series;
 }
 
-[GoType("dyn")] partial struct MutatorUtilizationV2_procsCount {
+[GoLocalName("procsCount")] [GoType("dyn")] partial struct MutatorUtilizationV2_procsCount {
     // time at which procs changed.
     internal int64 time;
     // n is the number of procs at that point.
@@ -89,7 +89,7 @@ public static slice<slice<MutatorUtil>> MutatorUtilizationV2(slice<ΔEvent> even
                     if ((UtilFlags)(flags & UtilPerProc) != 0) {
                         // End each P's series.
                         foreach (var (_, p) in ps[(int)(gomaxprocs)..]) {
-                            @out[p.series] = addUtil(@out[p.series], new MutatorUtil((int64)(~ev).Time(), 0));
+                            @out[p.series] = addUtil(@out[p.series], new MutatorUtil((int64)(~ev).Time(), 0D));
                         }
                     }
                     ps = ps[..(int)(gomaxprocs)];
@@ -99,7 +99,7 @@ public static slice<slice<MutatorUtil>> MutatorUtilizationV2(slice<ΔEvent> even
                     nint series = 0;
                     if ((UtilFlags)(flags & UtilPerProc) != 0 || len(@out) == 0) {
                         series = len(@out);
-                        @out = append(@out, new MutatorUtil[]{new((int64)(~ev).Time(), 1)}.slice());
+                        @out = append(@out, new MutatorUtil[]{new((int64)(~ev).Time(), 1D)}.slice());
                     }
                     ps = append(ps, new MutatorUtilizationV2_perP(series: series));
                 }
@@ -165,9 +165,9 @@ public static slice<slice<MutatorUtil>> MutatorUtilizationV2(slice<ΔEvent> even
                                 pi++;
                                 continue;
                             }
-                            @out[0][mi].Util -= (float64)1 / (float64)procs[pi].n;
-                            if (@out[0][mi].Util < 0) {
-                                @out[0][mi].Util = 0;
+                            @out[0][mi].Util -= (float64)1D / (float64)procs[pi].n;
+                            if (@out[0][mi].Util < 0D) {
+                                @out[0][mi].Util = 0D;
                             }
                             mi++;
                         }
@@ -266,7 +266,7 @@ public static slice<slice<MutatorUtil>> MutatorUtilizationV2(slice<ΔEvent> even
                     }
                 }
             }
-            var muΔ1 = new MutatorUtil((int64)(~ev).Time(), 1 - (float64)gcPs / (float64)len(ps));
+            var muΔ1 = new MutatorUtil((int64)(~ev).Time(), 1D - (float64)gcPs / (float64)len(ps));
             // Record the utilization change. (Since
             // len(ps) == len(out), we know len(out) > 0.)
             @out[0] = addUtil(@out[0], muΔ1);
@@ -290,7 +290,7 @@ public static slice<slice<MutatorUtil>> MutatorUtilizationV2(slice<ΔEvent> even
     // is important to mark the end of the trace. The exact value
     // shouldn't matter since no window should extend beyond this,
     // but using 0 is symmetric with the start of the trace.
-    var mu = new MutatorUtil((int64)(~lastEv).Time(), 0);
+    var mu = new MutatorUtil((int64)(~lastEv).Time(), 0D);
     foreach (var (i, _) in ps) {
         @out[ps[i].series] = addUtil(@out[ps[i].series], mu);
     }
@@ -536,7 +536,7 @@ internal static bool addMU(this ж<accumulator> Ꮡacc, int64 timeΔ1, float64 m
     if (acc.nWorst == 0) {
         // If the minimum has reached zero, it can't go any
         // lower, so we can stop early.
-        return mu == 0;
+        return mu == 0D;
     }
     // Consider adding this window to the n worst.
     if (len(acc.wHeap) < acc.nWorst || mu < acc.wHeap[0].MutatorUtil) {
@@ -584,7 +584,7 @@ keep:;
                 // We haven't accumulated enough total precise
                 // mass yet to even reach our goal, so keep
                 // accumulating.
-                acc.bound = 1;
+                acc.bound = 1D;
             }
         }
         // It's not worth checking percentiles every time, so
@@ -592,7 +592,7 @@ keep:;
         return false;
     }
     // If we've found enough 0 utilizations, we can stop immediately.
-    return len(acc.wHeap) == acc.nWorst && acc.wHeap[0].MutatorUtil == 0;
+    return len(acc.wHeap) == acc.nWorst && acc.wHeap[0].MutatorUtil == 0D;
 }
 
 // MMU returns the minimum mutator utilization for the given time
@@ -704,7 +704,7 @@ keep:;
     ref var acc = ref Ꮡacc.Value;
 
     if (window <= 0) {
-        acc.mmu = 0;
+        acc.mmu = 0D;
         return;
     }
     ref var bandU = ref heap<bandUtilHeap>(out var ᏑbandU);

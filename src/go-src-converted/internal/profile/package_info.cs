@@ -71,4 +71,50 @@ namespace go.@internal;
 [GoPackage("profile")]
 public static partial class profile_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface message {}
+    internal partial struct buffer {}
+    internal partial struct edgeList {}
+    internal partial struct functionKey {}
+    internal partial struct locationKey {}
+    internal partial struct mapInfo {}
+    internal partial struct mappingKey {}
+    internal partial struct nodePair {}
+    internal partial struct profileMerger {}
+    internal partial struct sampleKey {}
+    public partial struct Edge {}
+    public partial struct EdgeMap {}
+    public partial struct Function {}
+    public partial struct Graph {}
+    public partial struct Label {}
+    public partial struct Line {}
+    public partial struct Location {}
+    public partial struct Mapping {}
+    public partial struct Node {}
+    public partial struct NodeInfo {}
+    public partial struct NodeMap {}
+    public partial struct NodePtrSet {}
+    public partial struct NodeSet {}
+    public partial struct Nodes {}
+    public partial struct Options {}
+    public partial struct Profile {}
+    public partial struct Sample {}
+    public partial struct ValueType {}
+    public partial struct locationMap {}
+    // </TypeAccessibility>
 }

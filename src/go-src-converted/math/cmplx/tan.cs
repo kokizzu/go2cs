@@ -65,24 +65,24 @@ public static complex128 Tan(complex128 x) {
         case {} when math.IsInf(im, 0): {
             switch (ᐧ) {
             case {} when math.IsInf(re, 0) || math.IsNaN(re): {
-                return complex(math.Copysign(0, re), math.Copysign(1, im));
+                return complex(math.Copysign(0D, re), math.Copysign(1D, im));
             }}
 
-            return complex(math.Copysign(0, math.Sin(2 * re)), math.Copysign(1, im));
+            return complex(math.Copysign(0D, math.Sin(2D * re)), math.Copysign(1D, im));
         }
-        case {} when re == 0 && math.IsNaN(im): {
+        case {} when re == 0D && math.IsNaN(im): {
             return x;
         }}
     }
 
-    var d = math.Cos(2 * real(x)) + math.Cosh(2 * imag(x));
+    var d = math.Cos(2D * real(x)) + math.Cosh(2D * imag(x));
     if (math.Abs(d) < 0.25D) {
         d = tanSeries(x);
     }
-    if (d == 0) {
+    if (d == 0D) {
         return Inf();
     }
-    return complex(math.Sin(2 * real(x)) / d, math.Sinh(2 * imag(x)) / d);
+    return complex(math.Sin(2D * real(x)) / d, math.Sinh(2D * imag(x)) / d);
 }
 
 // Complex hyperbolic tangent
@@ -105,21 +105,21 @@ public static complex128 Tanh(complex128 x) {
         case {} when math.IsInf(re, 0): {
             switch (ᐧ) {
             case {} when math.IsInf(im, 0) || math.IsNaN(im): {
-                return complex(math.Copysign(1, re), math.Copysign(0, im));
+                return complex(math.Copysign(1D, re), math.Copysign(0D, im));
             }}
 
-            return complex(math.Copysign(1, re), math.Copysign(0, math.Sin(2 * im)));
+            return complex(math.Copysign(1D, re), math.Copysign(0D, math.Sin(2D * im)));
         }
-        case {} when im == 0 && math.IsNaN(re): {
+        case {} when im == 0D && math.IsNaN(re): {
             return x;
         }}
     }
 
-    var d = math.Cosh(2 * real(x)) + math.Cos(2 * imag(x));
-    if (d == 0) {
+    var d = math.Cosh(2D * real(x)) + math.Cos(2D * imag(x));
+    if (d == 0D) {
         return Inf();
     }
-    return complex(math.Sinh(2 * real(x)) / d, math.Sin(2 * imag(x)) / d);
+    return complex(math.Sinh(2D * real(x)) / d, math.Sin(2D * imag(x)) / d);
 }
 
 // reducePi reduces the input argument x to the range (-Pi/2, Pi/2].
@@ -226,8 +226,8 @@ internal static float64 reducePi(float64 x) {
 // Taylor series expansion for cosh(2y) - cos(2x)
 internal static float64 tanSeries(complex128 z) {
     const float64 MACHEP = /* 1.0 / (1 << 53) */ 1.1102230246251565e-16;
-    var x = math.Abs(2 * real(z));
-    var y = math.Abs(2 * imag(z));
+    var x = math.Abs(2D * real(z));
+    var y = math.Abs(2D * imag(z));
     x = reducePi(x);
     x = x * x;
     y = y * y;
@@ -291,14 +291,14 @@ internal static float64 tanSeries(complex128 z) {
 
 // Cot returns the cotangent of x.
 public static complex128 Cot(complex128 x) {
-    var d = math.Cosh(2 * imag(x)) - math.Cos(2 * real(x));
+    var d = math.Cosh(2D * imag(x)) - math.Cos(2D * real(x));
     if (math.Abs(d) < 0.25D) {
         d = tanSeries(x);
     }
-    if (d == 0) {
+    if (d == 0D) {
         return Inf();
     }
-    return complex(math.Sin(2 * real(x)) / d, -math.Sinh(2 * imag(x)) / d);
+    return complex(math.Sin(2D * real(x)) / d, -math.Sinh(2D * imag(x)) / d);
 }
 
 } // end cmplx_package

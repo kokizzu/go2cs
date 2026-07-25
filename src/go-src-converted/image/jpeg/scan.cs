@@ -487,7 +487,7 @@ break_loop:;
         for (nint by = 0; by * v < d.height; by++) {
             for (nint bx = 0; bx * h < d.width; bx++) {
                 {
-                    var err = d.reconstructBlock(Ꮡ(d.progCoeffs[i][by * stride + bx]), bx, by, i); if (err != default!) {
+                    var err = d.reconstructBlock(Ꮡ(d.progCoeffs[i], by * stride + bx), bx, by, i); if (err != default!) {
                         return err;
                     }
                 }

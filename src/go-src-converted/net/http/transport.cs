@@ -610,8 +610,9 @@ internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<
         }
     });
     while (ᐧ) {
-        switch (ᐧ) {
-        case ᐧ when ctx.Done().ꟷᐳ(out _): {
+        var selᴛ90 = ctx.Done();
+        switch (trySelect(ᐸꟷ(selᴛ90, ꓸꓸꓸ))) {
+        case 0 when selᴛ90.ꟷᐳ(out _): {
             req.closeBody();
             return (default!, context_package.Cause(ctx));
         }
@@ -694,12 +695,14 @@ internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<
 internal static void awaitLegacyCancel(context.Context ctx, Action<error> cancel, ж<Request> Ꮡreq) {
     ref var req = ref Ꮡreq.Value;
 
-    switch (select(ᐸꟷ(req.Cancel, ꓸꓸꓸ), ᐸꟷ(ctx.Done(), ꓸꓸꓸ))) {
-    case 0 when req.Cancel.ꟷᐳ(out _): {
+    var selᴛ91 = req.Cancel;
+    var selᴛ92 = ctx.Done();
+    switch (select(ᐸꟷ(selᴛ91, ꓸꓸꓸ), ᐸꟷ(selᴛ92, ꓸꓸꓸ))) {
+    case 0 when selᴛ91.ꟷᐳ(out _): {
         cancel(errRequestCanceled);
         break;
     }
-    case 1 when ctx.Done().ꟷᐳ(out _): {
+    case 1 when selᴛ92.ꟷᐳ(out _): {
         break;
     }}
 }
@@ -1538,8 +1541,10 @@ internal static (ж<persistConn>, error err) getConn(this ж<Transport> Ꮡt, ж
         }
     }
     // Wait for completion or cancellation.
-    switch (select(ᐸꟷ((~w).result, ꓸꓸꓸ), ᐸꟷ(treq.ctx.Done(), ꓸꓸꓸ))) {
-    case 0 when (~w).result.ꟷᐳ(out var r): {
+    var selᴛ93 = (~w).result;
+    var selᴛ94 = treq.ctx.Done();
+    switch (select(ᐸꟷ(selᴛ93, ꓸꓸꓸ), ᐸꟷ(selᴛ94, ꓸꓸꓸ))) {
+    case 0 when selᴛ93.ꟷᐳ(out var r): {
         if (r.pc != nil && (~r.pc).alt == default! && trace != nil && (~trace).GotConn != default!) {
             // Trace success but only for HTTP/1.
             // HTTP/2 calls trace.GotConn itself.
@@ -1557,8 +1562,9 @@ internal static (ж<persistConn>, error err) getConn(this ж<Transport> Ꮡt, ж
             // If the request has been canceled, that's probably
             // what caused r.err; if so, prefer to return the
             // cancellation error (see golang.org/issue/16049).
-            switch (ᐧ) {
-            case ᐧ when treq.ctx.Done().ꟷᐳ(out _): {
+            var selᴛ95 = treq.ctx.Done();
+            switch (trySelect(ᐸꟷ(selᴛ95, ꓸꓸꓸ))) {
+            case 0 when selᴛ95.ꟷᐳ(out _): {
                 var errΔ1 = context_package.Cause(treq.ctx);
                 if (AreEqual(errΔ1, errRequestCanceled)) {
                     errΔ1 = errRequestCanceledConn;
@@ -1571,7 +1577,7 @@ internal static (ж<persistConn>, error err) getConn(this ж<Transport> Ꮡt, ж
         }
         return (r.pc, r.err);
     }
-    case 1 when treq.ctx.Done().ꟷᐳ(out _): {
+    case 1 when selᴛ94.ꟷᐳ(out _): {
         var errΔ2 = context_package.Cause(treq.ctx);
         if (AreEqual(errΔ2, errRequestCanceled)) {
             // return below
@@ -1787,9 +1793,9 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
             cacheKey: cm.key(),
             reqch: new channel<requestAndChan>(1),
             writech: new channel<ΔwriteRequest>(1),
-            closech: new channel<EmptyStruct>(1),
+            closech: new channel<EmptyStruct>(0),
             writeErrCh: new channel<error>(1),
-            writeLoopDone: new channel<EmptyStruct>(1)
+            writeLoopDone: new channel<EmptyStruct>(0)
         ));
         var trace = httptrace.ContextClientTrace(ctx);
         var wrapErr = error (error errΔ1) => {
@@ -1926,7 +1932,7 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
  60000000000L);
             var cancelʗ1 = cancel;
             defer(() => cancelʗ1());
-            var didReadResponse = new channel<EmptyStruct>(1);
+            var didReadResponse = new channel<EmptyStruct>(0);
 // closed after CONNECT write+read is done or fails
             ref var resp = ref heap<ж<Response>>(out var Ꮡresp);
             ref var errΔ10 = ref heap<error>(out var ᏑerrΔ10);      // write or read error
@@ -1945,13 +1951,15 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
                 var br = bufio.NewReader(new net_ConnᴠReader(connʗ1));
                 (Ꮡresp.ValueSlot, ᏑerrΔ10.ValueSlot) = ReadResponse(br, connectReqʗ1);
             }));
-            switch (select(ᐸꟷ(connectCtx.Done(), ꓸꓸꓸ), ᐸꟷ(didReadResponse, ꓸꓸꓸ))) {
-            case 0 when connectCtx.Done().ꟷᐳ(out _): {
+            var selᴛ96 = connectCtx.Done();
+            var selᴛ97 = didReadResponse;
+            switch (select(ᐸꟷ(selᴛ96, ꓸꓸꓸ), ᐸꟷ(selᴛ97, ꓸꓸꓸ))) {
+            case 0 when selᴛ96.ꟷᐳ(out _): {
                 conn.Close();
                 ᐸꟷ(didReadResponse);
                 (pconn, err) = (default!, connectCtx.Err()); return;
             }
-            case 1 when didReadResponse.ꟷᐳ(out _): {
+            case 1 when selᴛ97.ꟷᐳ(out _): {
                 break;
             }}
             if (errΔ10 != default!) {
@@ -2040,7 +2048,7 @@ internal static (int64 n, error err) ReadFrom(this persistConnWriter w, io.Reade
     return (n, err);
 }
 
-internal static io.ReaderFrom _ᴛ12ʗ = new persistConnWriterжReaderFrom((ж<persistConnWriter>)(default!));
+internal static io.ReaderFrom _ᴛ12ʗ = new persistConnWriterжReaderFrom(((ж<persistConnWriter>)nil));
 
 // connectMethod is the map key (in its String form) for keeping persistent
 // TCP connections alive for subsequent HTTP requests.
@@ -2351,7 +2359,7 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) => func((defer, recove
     // eofc is used to block caller goroutines reading from Response.Body
     // at EOF until this goroutines has (potentially) added the connection
     // back to the idle pool.
-    var eofc = new channel<EmptyStruct>(1);
+    var eofc = new channel<EmptyStruct>(0);
     deferǃ(ᴛ1 => builtin.close(ᴛ1), eofc, defer);
     // unblock reader on errors
     // Read this once, before loop starts. (to avoid races in tests)
@@ -2382,11 +2390,13 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) => func((defer, recove
             if (pc.readLimit <= 0) {
                 err = fmt.Errorf("net/http: server response headers exceeded %d bytes; aborted"u8, pc.maxHeaderResponseSize());
             }
-            switch (select(rc.ch.ᐸꟷ(new responseAndError(err: err), ꓸꓸꓸ), ᐸꟷ(rc.callerGone, ꓸꓸꓸ))) {
+            var selᴛ98 = rc.ch.ᐸꟷ(new responseAndError(err: err), ꓸꓸꓸ);
+            var selᴛ99 = rc.callerGone;
+            switch (select(selᴛ98, ᐸꟷ(selᴛ99, ꓸꓸꓸ))) {
             case 0: {
                 break;
             }
-            case 1 when rc.callerGone.ꟷᐳ(out _): {
+            case 1 when selᴛ99.ꟷᐳ(out _): {
                 return;
             }}
             return;
@@ -2414,11 +2424,13 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) => func((defer, recove
             if (bodyWritable) {
                 closeErr = errCallerOwnsConn;
             }
-            switch (select(rc.ch.ᐸꟷ(new responseAndError(res: resp), ꓸꓸꓸ), ᐸꟷ(rc.callerGone, ꓸꓸꓸ))) {
+            var selᴛ100 = rc.ch.ᐸꟷ(new responseAndError(res: resp), ꓸꓸꓸ);
+            var selᴛ101 = rc.callerGone;
+            switch (select(selᴛ100, ᐸꟷ(selᴛ101, ꓸꓸꓸ))) {
             case 0: {
                 break;
             }
-            case 1 when rc.callerGone.ꟷᐳ(out _): {
+            case 1 when selᴛ101.ꟷᐳ(out _): {
                 return;
             }}
             (~rc.treq).cancel(errRequestDone);
@@ -2467,30 +2479,35 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) => func((defer, recove
             resp.Value.ContentLength = -1;
             resp.Value.Uncompressed = true;
         }
-        switch (select(rc.ch.ᐸꟷ(new responseAndError(res: resp), ꓸꓸꓸ), ᐸꟷ(rc.callerGone, ꓸꓸꓸ))) {
+        var selᴛ102 = rc.ch.ᐸꟷ(new responseAndError(res: resp), ꓸꓸꓸ);
+        var selᴛ103 = rc.callerGone;
+        switch (select(selᴛ102, ᐸꟷ(selᴛ103, ꓸꓸꓸ))) {
         case 0: {
             break;
         }
-        case 1 when rc.callerGone.ꟷᐳ(out _): {
+        case 1 when selᴛ103.ꟷᐳ(out _): {
             return;
         }}
         // Before looping back to the top of this function and peeking on
         // the bufio.Reader, wait for the caller goroutine to finish
         // reading the response body. (or for cancellation or death)
-        switch (select(ᐸꟷ(waitForBodyRead, ꓸꓸꓸ), ᐸꟷ((~rc.treq).ctx.Done(), ꓸꓸꓸ), ᐸꟷ(pc.closech, ꓸꓸꓸ))) {
-        case 0 when waitForBodyRead.ꟷᐳ(out var bodyEOF): {
+        var selᴛ104 = waitForBodyRead;
+        var selᴛ105 = (~rc.treq).ctx.Done();
+        var selᴛ106 = pc.closech;
+        switch (select(ᐸꟷ(selᴛ104, ꓸꓸꓸ), ᐸꟷ(selᴛ105, ꓸꓸꓸ), ᐸꟷ(selᴛ106, ꓸꓸꓸ))) {
+        case 0 when selᴛ104.ꟷᐳ(out var bodyEOF): {
             alive = alive && bodyEOF && !pc.sawEOF && Ꮡpc.wroteRequest() && tryPutIdleConn(rc.treq);
             if (bodyEOF) {
                 eofc.ᐸꟷ(new EmptyStruct());
             }
             break;
         }
-        case 1 when (~rc.treq).ctx.Done().ꟷᐳ(out _): {
+        case 1 when selᴛ105.ꟷᐳ(out _): {
             alive = false;
             Ꮡpc.cancelRequest(context_package.Cause((~rc.treq).ctx));
             break;
         }
-        case 2 when pc.closech.ꟷᐳ(out _): {
+        case 2 when selᴛ106.ꟷᐳ(out _): {
             alive = false;
             break;
         }}
@@ -2628,14 +2645,17 @@ internal static Func<bool> waitForContinue(this ж<persistConn> Ꮡpc, /*<-*/cha
         var timer = time.NewTimer((~Ꮡpc.Value.t).ExpectContinueTimeout);
         var timerʗ1 = timer;
         defer(() => timerʗ1.Stop());
-        switch (select(ᐸꟷ(continueChʗ1, ꓸꓸꓸ), ᐸꟷ((~timer).C, ꓸꓸꓸ), ᐸꟷ(Ꮡpc.Value.closech, ꓸꓸꓸ))) {
-        case 0 when continueChʗ1.ꟷᐳ(out var _, out var ok): {
+        var selᴛ107 = continueChʗ1;
+        var selᴛ108 = (~timer).C;
+        var selᴛ109 = Ꮡpc.Value.closech;
+        switch (select(ᐸꟷ(selᴛ107, ꓸꓸꓸ), ᐸꟷ(selᴛ108, ꓸꓸꓸ), ᐸꟷ(selᴛ109, ꓸꓸꓸ))) {
+        case 0 when selᴛ107.ꟷᐳ(out var _, out var ok): {
             return ok;
         }
-        case 1 when (~timer).C.ꟷᐳ(out _): {
+        case 1 when selᴛ108.ꟷᐳ(out _): {
             return true;
         }
-        case 2 when Ꮡpc.Value.closech.ꟷᐳ(out _): {
+        case 2 when selᴛ109.ꟷᐳ(out _): {
             return false;
         }}
         return default!;
@@ -2696,8 +2716,10 @@ internal static void writeLoop(this ж<persistConn> Ꮡpc) => func((defer, recov
 
     deferǃ(ᴛ1 => builtin.close(ᴛ1), Ꮡpc.Value.writeLoopDone, defer);
     while (ᐧ) {
-        switch (select(ᐸꟷ(pc.writech, ꓸꓸꓸ), ᐸꟷ(pc.closech, ꓸꓸꓸ))) {
-        case 0 when pc.writech.ꟷᐳ(out var wr): {
+        var selᴛ110 = pc.writech;
+        var selᴛ111 = pc.closech;
+        switch (select(ᐸꟷ(selᴛ110, ꓸꓸꓸ), ᐸꟷ(selᴛ111, ꓸꓸꓸ))) {
+        case 0 when selᴛ110.ꟷᐳ(out var wr): {
             var startBytesWritten = pc.nwrite;
             var err = (~wr.req).Request.write(new bufio_WriterжWriter(pc.bw), pc.isProxy, (~wr.req).extra, Ꮡpc.waitForContinue(wr.continueCh));
             {
@@ -2731,7 +2753,7 @@ internal static void writeLoop(this ж<persistConn> Ꮡpc) => func((defer, recov
             }
             break;
         }
-        case 1 when pc.closech.ꟷᐳ(out _): {
+        case 1 when selᴛ111.ꟷᐳ(out _): {
             return;
         }}
     }
@@ -2750,19 +2772,22 @@ internal static time.Duration maxWriteWaitBeforeConnReuse = 50 * time.Millisecon
 internal static bool wroteRequest(this ж<persistConn> Ꮡpc) => func<bool>((defer, recover) => {
     ref var pc = ref Ꮡpc.Value;
 
-    switch (ᐧ) {
-    case ᐧ when pc.writeErrCh.ꟷᐳ(out var err): {
+    var selᴛ112 = pc.writeErrCh;
+    switch (trySelect(ᐸꟷ(selᴛ112, ꓸꓸꓸ))) {
+    case 0 when selᴛ112.ꟷᐳ(out var err): {
         return err == default!;
     }
     default: {
         var t = time.NewTimer(maxWriteWaitBeforeConnReuse);
         var tʗ1 = t;
         defer(() => tʗ1.Stop());
-        switch (select(ᐸꟷ(pc.writeErrCh, ꓸꓸꓸ), ᐸꟷ((~t).C, ꓸꓸꓸ))) {
-        case 0 when pc.writeErrCh.ꟷᐳ(out var errΔ1): {
+        var selᴛ113 = pc.writeErrCh;
+        var selᴛ114 = (~t).C;
+        switch (select(ᐸꟷ(selᴛ113, ꓸꓸꓸ), ᐸꟷ(selᴛ114, ꓸꓸꓸ))) {
+        case 0 when selᴛ113.ꟷᐳ(out var errΔ1): {
             return errΔ1 == default!;
         }
-        case 1 when (~t).C.ꟷᐳ(out _): {
+        case 1 when selᴛ114.ꟷᐳ(out _): {
             return false;
         }}
         return default!;
@@ -2916,7 +2941,7 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
         if ((~pc.t).DisableKeepAlives && !req.wantsClose() && !isProtocolSwitchHeader(req.Header)) {
             req.extraHeaders().Set("Connection"u8, "close"u8);
         }
-        var gone = new channel<EmptyStruct>(1);
+        var gone = new channel<EmptyStruct>(0);
         deferǃ(ᴛ1 => builtin.close(ᴛ1), gone, defer);
         const bool debugRoundTrip = false;
         // Write the request concurrently with waiting for a response,
@@ -2925,7 +2950,7 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
         var startBytesWritten = pc.nwrite;
         var writeErrCh = new channel<error>(1);
         pc.writech.ᐸꟷ(new ΔwriteRequest(Ꮡreq, writeErrCh, continueCh));
-        var resc = new channel<responseAndError>(1);
+        var resc = new channel<responseAndError>(0);
         pc.reqch.ᐸꟷ(new requestAndChan(
             treq: Ꮡreq,
             ch: resc,
@@ -2950,8 +2975,13 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
         var pcClosed = pc.closech;
         while (ᐧ) {
             testHookWaitResLoop();
-            switch (select(ᐸꟷ(writeErrCh, ꓸꓸꓸ), ᐸꟷ(pcClosed, ꓸꓸꓸ), ᐸꟷ(respHeaderTimer, ꓸꓸꓸ), ᐸꟷ(resc, ꓸꓸꓸ), ᐸꟷ(ctxDoneChan, ꓸꓸꓸ))) {
-            case 0 when writeErrCh.ꟷᐳ(out var errΔ1): {
+            var selᴛ115 = writeErrCh;
+            var selᴛ116 = pcClosed;
+            var selᴛ117 = respHeaderTimer;
+            var selᴛ118 = resc;
+            var selᴛ119 = ctxDoneChan;
+            switch (select(ᐸꟷ(selᴛ115, ꓸꓸꓸ), ᐸꟷ(selᴛ116, ꓸꓸꓸ), ᐸꟷ(selᴛ117, ꓸꓸꓸ), ᐸꟷ(selᴛ118, ꓸꓸꓸ), ᐸꟷ(selᴛ119, ꓸꓸꓸ))) {
+            case 0 when selᴛ115.ꟷᐳ(out var errΔ1): {
                 if (debugRoundTrip) {
                     req.logf("writeErrCh recv: %T/%#v"u8, errΔ1, errΔ1);
                 }
@@ -2973,9 +3003,10 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
                 }
                 break;
             }
-            case 1 when pcClosed.ꟷᐳ(out _): {
-                switch (ᐧ) {
-                case ᐧ when resc.ꟷᐳ(out var re): {
+            case 1 when selᴛ116.ꟷᐳ(out _): {
+                var selᴛ120 = resc;
+                switch (trySelect(ᐸꟷ(selᴛ120, ꓸꓸꓸ))) {
+                case 0 when selᴛ120.ꟷᐳ(out var re): {
                     (resp, err) = handleResponse(re); return;
                 }
                 default: {
@@ -2989,19 +3020,20 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
                 }
                 (resp, err) = (default!, Ꮡpc.mapRoundTripError(Ꮡreq, startBytesWritten, pc.closed)); return;
             }
-            case 2 when respHeaderTimer.ꟷᐳ(out _): {
+            case 2 when selᴛ117.ꟷᐳ(out _): {
                 if (debugRoundTrip) {
                     req.logf("timeout waiting for response headers."u8);
                 }
                 Ꮡpc.close(errTimeout);
                 (resp, err) = (default!, errTimeout); return;
             }
-            case 3 when resc.ꟷᐳ(out var re): {
+            case 3 when selᴛ118.ꟷᐳ(out var re): {
                 (resp, err) = handleResponse(re); return;
             }
-            case 4 when ctxDoneChan.ꟷᐳ(out _): {
-                switch (ᐧ) {
-                case ᐧ when resc.ꟷᐳ(out var reΔ1): {
+            case 4 when selᴛ119.ꟷᐳ(out _): {
+                var selᴛ121 = resc;
+                switch (trySelect(ᐸꟷ(selᴛ121, ꓸꓸꓸ))) {
+                case 0 when selᴛ121.ꟷᐳ(out var reΔ1): {
                     (resp, err) = handleResponse(reΔ1); return;
                 }
                 default: {

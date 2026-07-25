@@ -83,7 +83,7 @@ internal static (ж<sharedMem> mem, error err) sharedMemMapFile(ж<os.File> Ꮡf
     // the temporary file.
     slice<error> errs = default!;
     errs = append(errs,
-        Δsyscall.UnmapViewOfFile((uintptr)new @unsafe.Pointer(Ꮡ(m.region[0]))),
+        Δsyscall.UnmapViewOfFile((uintptr)new @unsafe.Pointer(Ꮡ(m.region, 0))),
         Δsyscall.CloseHandle(m.sys.mapObj),
         m.f.Close());
     if (m.removeOnClose) {

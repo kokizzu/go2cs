@@ -41,13 +41,13 @@ internal static float64 atan2(float64 y, float64 x) {
     case {} when IsNaN(y) || IsNaN(x): {
         return NaN();
     }
-    case {} when y is 0: {
-        if (x >= 0 && !Signbit(x)) {
-            return Copysign(0, y);
+    case {} when y is 0D: {
+        if (x >= 0D && !Signbit(x)) {
+            return Copysign(0D, y);
         }
         return Copysign(Pi, y);
     }
-    case {} when x is 0: {
+    case {} when x is 0D: {
         return Copysign(Pi / 2D, y);
     }
     case {} when IsInf(x, 0): {
@@ -57,7 +57,7 @@ internal static float64 atan2(float64 y, float64 x) {
                 return Copysign(Pi / 4D, y);
             }
             default: {
-                return Copysign(0, y);
+                return Copysign(0D, y);
             }}
 
         }
@@ -77,8 +77,8 @@ internal static float64 atan2(float64 y, float64 x) {
 
     // Call atan and determine the quadrant.
     var q = Atan(y / x);
-    if (x < 0) {
-        if (q <= 0) {
+    if (x < 0D) {
+        if (q <= 0D) {
             return q + (float64)Pi;
         }
         return q - (float64)Pi;

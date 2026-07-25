@@ -100,23 +100,23 @@ internal static float64 log(float64 x) {
     case {} when IsNaN(x) || IsInf(x, 1): {
         return x;
     }
-    case {} when x is < 0: {
+    case {} when x is < 0D: {
         return NaN();
     }
-    case {} when x is 0: {
+    case {} when x is 0D: {
         return Inf(-1);
     }}
 
     // reduce
     var (f1, ki) = Frexp(x);
     if (f1 < Sqrt2 / 2D) {
-        f1 *= 2;
+        f1 *= 2D;
         ki--;
     }
-    var f = f1 - 1;
+    var f = f1 - 1D;
     var k = (float64)ki;
     // compute
-    var s = f / (2 + f);
+    var s = f / (2D + f);
     var s2 = s * s;
     var s4 = s2 * s2;
     var t1 = s2 * (L1 + s4 * (L3 + s4 * (L5 + s4 * L7)));

@@ -49,7 +49,7 @@ internal static slice<uintptr> words(slice<byte> x) {
         // see issue 59334.
         return default!;
     }
-    return @unsafe.Slice((ж<uintptr>)(uintptr)(new @unsafe.Pointer(Ꮡ(x, 0))), n);
+    return @unsafe.Slice(Ꮡ(x, 0).Reinterpret<byte, uintptr>(), n);
 }
 
 internal static void xorLoop<T>(slice<T> dst, slice<T> x, slice<T> y)

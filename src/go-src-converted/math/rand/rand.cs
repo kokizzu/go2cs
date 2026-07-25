@@ -220,7 +220,7 @@ public static void Seed(this ж<Rand> Ꮡr, int64 seed) {
     // will not observe it anyway.
 again:
     var f = (float64)r.Int63() / (9223372036854775808D);
-    if (f == 1) {
+    if (f == 1D) {
         goto again;
     }
     // resample; this branch is taken O(never)
@@ -234,7 +234,7 @@ again:
     // This only happens 1/2²⁴ of the time (plus the 1/2⁵³ of the time in Float64).
 again:
     var f = (float32)r.Float64();
-    if (f == 1) {
+    if (f == 1F) {
         goto again;
     }
     // resample; this branch is taken O(very rarely)
@@ -272,7 +272,7 @@ again:
     // generate even a minuscule percentage of the possible permutations.
     // Nevertheless, the right API signature accepts an int n, so handle it as best we can.
     nint i = n - 1;
-    for (; i > 2147483648L - 1 - 1; i--) {
+    for (; i > (nint)(2147483648L - 1 - 1); i--) {
         nint j = (nint)r.Int63n((int64)(i + 1));
         swap(i, j);
     }

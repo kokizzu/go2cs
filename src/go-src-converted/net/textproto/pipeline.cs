@@ -87,7 +87,7 @@ internal static void Start(this ж<sequencer> Ꮡs, nuint id) {
         Ꮡs.of(sequencer.Ꮡmu).Unlock();
         return;
     }
-    var c = new channel<EmptyStruct>(1);
+    var c = new channel<EmptyStruct>(0);
     if (s.wait == default!) {
         s.wait = new map<nuint, channel<EmptyStruct>>();
     }

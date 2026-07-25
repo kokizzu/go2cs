@@ -84,7 +84,7 @@ internal static bool pushHead(this ж<poolDequeue> Ꮡd, any val) {
         // Queue is full.
         return false;
     }
-    var slot = Ꮡ(d.vals[(uint32)(head & (uint32)(len(d.vals) - 1))]);
+    var slot = Ꮡ(d.vals, (int)((uint32)(head & (uint32)(len(d.vals) - 1))));
     // Check if the head slot has been released by popTail.
     @unsafe.Pointer typ = (uintptr)atomic.LoadPointer(slot.of(eface.Ꮡtyp));
     if (typ != nil) {
@@ -94,9 +94,9 @@ internal static bool pushHead(this ж<poolDequeue> Ꮡd, any val) {
     }
     // The head slot is free, so we own it.
     if (val == default!) {
-        val = ((dequeueNil)default!);
+        val = ((dequeueNil)nil);
     }
-    ((ж<any>)(uintptr)(new @unsafe.Pointer(slot))).ValueSlot = val;
+    (slot.Reinterpret<eface, any>()).ValueSlot = val;
     // Increment head. This passes ownership of slot to popTail
     // and acts as a store barrier for writing the slot.
     Ꮡd.of(poolDequeue.ᏑheadTail).Add(((uint64)1 << (int)(dequeueBits)));
@@ -124,12 +124,12 @@ internal static (any, bool) popHead(this ж<poolDequeue> Ꮡd) {
         var ptrs2 = d.pack(head, tail);
         if (Ꮡd.of(poolDequeue.ᏑheadTail).CompareAndSwap(ptrs, ptrs2)) {
             // We successfully took back slot.
-            slot = Ꮡ(d.vals[(uint32)(head & (uint32)(len(d.vals) - 1))]);
+            slot = Ꮡ(d.vals, (int)((uint32)(head & (uint32)(len(d.vals) - 1))));
             break;
         }
     }
-    var val = ~(ж<any>)(uintptr)(new @unsafe.Pointer(slot));
-    if (val == ((dequeueNil)default!)) {
+    var val = ~slot.Reinterpret<eface, any>();
+    if (val == ((dequeueNil)nil)) {
         val = default!;
     }
     // Zero the slot. Unlike popTail, this isn't racing with
@@ -158,13 +158,13 @@ internal static (any, bool) popTail(this ж<poolDequeue> Ꮡd) {
         var ptrs2 = d.pack(head, tail + 1);
         if (Ꮡd.of(poolDequeue.ᏑheadTail).CompareAndSwap(ptrs, ptrs2)) {
             // Success.
-            slot = Ꮡ(d.vals[(uint32)(tail & (uint32)(len(d.vals) - 1))]);
+            slot = Ꮡ(d.vals, (int)((uint32)(tail & (uint32)(len(d.vals) - 1))));
             break;
         }
     }
     // We now own slot.
-    var val = ~(ж<any>)(uintptr)(new @unsafe.Pointer(slot));
-    if (val == ((dequeueNil)default!)) {
+    var val = ~slot.Reinterpret<eface, any>();
+    if (val == ((dequeueNil)nil)) {
         val = default!;
     }
     // Tell pushHead that we're done with this slot. Zeroing the

@@ -170,7 +170,7 @@ internal static float64 log1p(float64 x) {
             u = x;
             iu = Float64bits(u);
             k = (nint)(((iu >> (int)(52))) - 1023);
-            c = 0;
+            c = 0D;
         }
         iu &= (uint64)(0x000fffffffffffffUL);
         if (iu < 0x0006a09e667f3bcdUL){
@@ -192,9 +192,9 @@ internal static float64 log1p(float64 x) {
     float64 z = default!;
     if (iu == 0) {
         // |f| < 2**-20
-        if (f == 0) {
+        if (f == 0D) {
             if (k == 0) {
-                return 0;
+                return 0D;
             }
             c += (float64)k * Ln2Lo;
             return (float64)k * Ln2Hi + c;

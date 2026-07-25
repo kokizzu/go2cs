@@ -42,12 +42,12 @@ internal static float64 cbrt(float64 x) {
     const float64 SmallestNormal = 2.22507385850720138309e-308; // 2**-1022  = 0x0010000000000000
     // special cases
     switch (ᐧ) {
-    case {} when x == 0 || IsNaN(x) || IsInf(x, 0): {
+    case {} when x == 0D || IsNaN(x) || IsInf(x, 0): {
         return x;
     }}
 
     var sign = false;
-    if (x < 0) {
+    if (x < 0D) {
         x = -x;
         sign = true;
     }

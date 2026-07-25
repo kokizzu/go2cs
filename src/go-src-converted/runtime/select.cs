@@ -128,7 +128,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     ref var cas0 = ref Ꮡcas0.Value;
 
     if (debugSelect) {
-        print("select: cas0=", Ꮡcas0, "\n");
+        print((@string)"select: cas0=", Ꮡcas0, (@string)"\n");
     }
     // NOTE: In order to maintain a lean stack size, the number of scases
     // is capped at 65536.
@@ -223,7 +223,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     if (debugSelect) {
         for (nint i = 0; i + 1 < len(lockorder); i++) {
             if (scases[lockorder[i]].c.sortkey() > scases[lockorder[i + 1]].c.sortkey()) {
-                print("i=", i, " x=", lockorder[i], " y=", lockorder[i + 1], "\n");
+                print((@string)"i=", i, (@string)" x=", lockorder[i], (@string)" y=", lockorder[i + 1], (@string)"\n");
                 @throw("select: broken sort"u8);
             }
         }
@@ -372,7 +372,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     }
     c = cas.Value.c;
     if (debugSelect) {
-        print("wait-return: cas0=", Ꮡcas0, " c=", c, " cas=", cas, " send=", casi < nsends, "\n");
+        print((@string)"wait-return: cas0=", Ꮡcas0, (@string)" c=", c, (@string)" cas=", cas, (@string)" send=", casi < nsends, (@string)"\n");
     }
     if (casi < nsends){
         if (!caseSuccess) {
@@ -462,7 +462,7 @@ recv:
         selunlock(scasesʗ1, lockorderʗ1);
     }, 2);
     if (debugSelect) {
-        print("syncrecv: cas0=", Ꮡcas0, " c=", c, "\n");
+        print((@string)"syncrecv: cas0=", Ꮡcas0, (@string)" c=", c, (@string)"\n");
     }
     recvOK = true;
     goto retc;
@@ -494,7 +494,7 @@ send:
         selunlock(scasesʗ3, lockorderʗ3);
     }, 2);
     if (debugSelect) {
-        print("syncsend: cas0=", Ꮡcas0, " c=", c, "\n");
+        print((@string)"syncsend: cas0=", Ꮡcas0, (@string)" c=", c, (@string)"\n");
     }
     goto retc;
 retc:

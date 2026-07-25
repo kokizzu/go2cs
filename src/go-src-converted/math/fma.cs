@@ -151,7 +151,7 @@ public static float64 FMA(float64 x, float64 y, float64 z) {
     }
     // Special case: if p == -z the result is always +0 since neither operand is zero.
     if (ps != zs && pe == ze && pm1 == zm1 && pm2 == zm2) {
-        return 0;
+        return 0D;
     }
     // Align significands
     (zm1, zm2) = shrcompress(zm1, zm2, (nuint)(pe - ze));

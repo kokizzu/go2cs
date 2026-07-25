@@ -57,10 +57,10 @@ internal static float64 atanh(float64 x) {
     const float64 NearZero = /* 1.0 / (1 << 28) */ 3.725290298461914e-09; // 2**-28
     // special cases
     switch (ᐧ) {
-    case {} when x < -1D || x > 1 || IsNaN(x): {
+    case {} when x < -1D || x > 1D || IsNaN(x): {
         return NaN();
     }
-    case {} when x is 1: {
+    case {} when x is 1D: {
         return Inf(1);
     }
     case {} when x == -1D: {
@@ -68,7 +68,7 @@ internal static float64 atanh(float64 x) {
     }}
 
     var sign = false;
-    if (x < 0) {
+    if (x < 0D) {
         x = -x;
         sign = true;
     }
@@ -80,11 +80,11 @@ internal static float64 atanh(float64 x) {
     }
     case {} when x is < 0.5D: {
         temp = x + x;
-        temp = 0.5D * Log1p(temp + temp * x / (1 - x));
+        temp = 0.5D * Log1p(temp + temp * x / (1D - x));
         break;
     }
     default: {
-        temp = 0.5D * Log1p((x + x) / (1 - x));
+        temp = 0.5D * Log1p((x + x) / (1D - x));
         break;
     }}
 

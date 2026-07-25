@@ -121,7 +121,7 @@ internal static void sqrtInverse(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
     };
     var (xf, _) = Ꮡx.Float64();
     var sqi = newFloat(z.prec);
-    sqi.SetFloat64(1 / math.Sqrt(xf));
+    sqi.SetFloat64(1D / math.Sqrt(xf));
     for (var prec = z.prec + 32; (~sqi).prec < prec; ) {
         sqi.Value.prec *= 2;
         sqi = ng(sqi);

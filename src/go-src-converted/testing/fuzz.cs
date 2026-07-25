@@ -79,7 +79,7 @@ internal static readonly UntypedInt fuzzWorkerExitCode = 70;
     internal bool fuzzCalled;
 }
 
-internal static TB _ᴛ1ʗ = new FжTB((ж<F>)(default!));
+internal static TB _ᴛ1ʗ = new FжTB(((ж<F>)nil));
 
 // corpusEntry is an alias to the same type as internal/fuzz.CorpusEntry.
 // We use a type alias because we don't want to export this type, and we can't
@@ -157,7 +157,7 @@ public static bool Skipped(this ж<F> Ꮡf) {
 // a no-op if called after or within the fuzz target, and args must match the
 // arguments for the fuzz target.
 [GoRecv] public static void Add(this ref F f, params ꓸꓸꓸany argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     slice<any> values = default!;
     foreach (var (i, _) in args) {
@@ -178,8 +178,8 @@ internal static map<reflectꓸType, bool> supportedTypes = new map<reflectꓸTyp
     [reflect.TypeOf((bool)false)] = true,
     [reflect.TypeOf((byte)0)] = true,
     [reflect.TypeOf((rune)0)] = true,
-    [reflect.TypeOf((float32)0)] = true,
-    [reflect.TypeOf((float64)0)] = true,
+    [reflect.TypeOf((float32)0F)] = true,
+    [reflect.TypeOf((float64)0D)] = true,
     [reflect.TypeOf((nint)0)] = true,
     [reflect.TypeOf((int8)0)] = true,
     [reflect.TypeOf((int16)0)] = true,
@@ -236,7 +236,7 @@ public static void Fuzz(this ж<F> Ꮡf, any ff) {
     if (fnType.Kind() != reflect.Func) {
         throw panic("testing: F.Fuzz must receive a function");
     }
-    if (fnType.NumIn() < 2 || !AreEqual(fnType.In(0), reflect.TypeOf((ж<T>)(default!)))) {
+    if (fnType.NumIn() < 2 || !AreEqual(fnType.In(0), reflect.TypeOf(((ж<T>)nil)))) {
         throw panic("testing: fuzz target must receive at least two arguments, where the first argument is a *T");
     }
     if (fnType.NumOut() != 0) {
@@ -312,8 +312,8 @@ public static void Fuzz(this ж<F> Ꮡf, any ff) {
         nint n = Δruntime.Callers(2, pc[..]);
         var t = Ꮡ(new T(
             common: new common(
-                barrier: new channel<bool>(1),
-                signal: new channel<bool>(1),
+                barrier: new channel<bool>(0),
+                signal: new channel<bool>(0),
                 name: testName,
                 parent: Ꮡf.of(F.Ꮡcommon),
                 level: Ꮡf.Value.level + 1,
@@ -439,13 +439,13 @@ internal static void report(this ж<F> Ꮡf) {
     @string dstr = fmtDuration(f.duration);
     @string format = "--- %s: %s (%s)\n"u8;
     if (Ꮡf.of(F.Ꮡcommon).Failed()){
-        Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, "FAIL", f.name, dstr);
+        Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, (@string)"FAIL", f.name, dstr);
     } else 
     if (f.chatty != nil) {
         if (Ꮡf.Skipped()){
-            Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, "SKIP", f.name, dstr);
+            Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, (@string)"SKIP", f.name, dstr);
         } else {
-            Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, "PASS", f.name, dstr);
+            Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, (@string)"PASS", f.name, dstr);
         }
     }
 }
@@ -544,8 +544,8 @@ internal static (bool ran, bool ok) runFuzzTests(testDeps deps, slice<InternalFu
                 }
                 var f = Ꮡ(new F(
                     common: new common(
-                        signal: new channel<bool>(1),
-                        barrier: new channel<bool>(1),
+                        signal: new channel<bool>(0),
+                        barrier: new channel<bool>(0),
                         name: testName,
                         parent: Ꮡroot,
                         level: root.level + 1,
@@ -618,7 +618,7 @@ internal static bool /*ok*/ runFuzzing(testDeps deps, slice<InternalFuzzTarget> 
         testName = name;
     }
     if (len(matched) == 0) {
-        fmt.Fprintln(new os.FileжWriter(os.Stderr), "testing: warning: no fuzz tests to fuzz");
+        fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: warning: no fuzz tests to fuzz");
         return true;
     }
     if (len(matched) > 1) {
@@ -627,7 +627,7 @@ internal static bool /*ok*/ runFuzzing(testDeps deps, slice<InternalFuzzTarget> 
     }
     var f = Ꮡ(new F(
         common: new common(
-            signal: new channel<bool>(1),
+            signal: new channel<bool>(0),
             barrier: default!, // T.Parallel has no effect when fuzzing.
 
             name: testName,
@@ -687,7 +687,7 @@ internal static void fRunner(ж<F> Ꮡf, Action<ж<F>> fn) => func((defer, recov
             }
             Ꮡf.of(F.Ꮡmu).RUnlock();
             if (fuzzNotCalled && err == default!) {
-                Ꮡf.of(F.Ꮡcommon).Error("returned without calling F.Fuzz, F.Fail, or F.Skip");
+                Ꮡf.of(F.Ꮡcommon).Error((@string)"returned without calling F.Fuzz, F.Fail, or F.Skip");
             }
         }
         // Use a deferred call to ensure that we report that the test is

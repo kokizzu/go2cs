@@ -651,7 +651,7 @@ break_countloop:;
 [GoRecv] public static ж<Sym> LookupSym(this ref Table t, @string name) {
     // TODO(austin) Maybe make a map
     foreach (var (i, _) in t.Syms) {
-        var s = Ꮡ(t.Syms[i]);
+        var s = Ꮡ(t.Syms, i);
         switch ((~s).Type) {
         case (rune)'T' or (rune)'t' or (rune)'L' or (rune)'l' or (rune)'D' or (rune)'d' or (rune)'B' or (rune)'b': {
             if ((~s).Name == name) {
@@ -668,7 +668,7 @@ break_countloop:;
 // or nil if no such symbol is found.
 [GoRecv] public static ж<Func> LookupFunc(this ref Table t, @string name) {
     foreach (var (i, _) in t.Funcs) {
-        var f = Ꮡ(t.Funcs[i]);
+        var f = Ꮡ(t.Funcs, i);
         if ((~(~f).Sym).Name == name) {
             return f;
         }
@@ -679,7 +679,7 @@ break_countloop:;
 // SymByAddr returns the text, data, or bss symbol starting at the given address.
 [GoRecv] public static ж<Sym> SymByAddr(this ref Table t, uint64 addr) {
     foreach (var (i, _) in t.Syms) {
-        var s = Ꮡ(t.Syms[i]);
+        var s = Ꮡ(t.Syms, i);
         switch ((~s).Type) {
         case (rune)'T' or (rune)'t' or (rune)'L' or (rune)'l' or (rune)'D' or (rune)'d' or (rune)'B' or (rune)'b': {
             if ((~s).Value == addr) {
@@ -692,7 +692,7 @@ break_countloop:;
     return default!;
 }
 
-[GoType("dyn")] partial struct lineFromAline_stackEnt {
+[GoLocalName("stackEnt")] [GoType("dyn")] partial struct lineFromAline_stackEnt {
     internal @string path;
     internal nint start;
     internal nint offset;

@@ -399,7 +399,7 @@ internal static (Action stopTimer, Func<bool> didTimeout) setRequestCancel(ж<Re
     if (timeBeforeContextDeadline(deadline, oldCtx)) {
         (req.ctx, cancelCtx) = context_package.WithDeadline(oldCtx, deadline);
     }
-    var cancel = new channel<EmptyStruct>(1);
+    var cancel = new channel<EmptyStruct>(0);
     req.Cancel = cancel;
     var cancelʗ1 = cancel;
     var doCancel = () => {
@@ -411,7 +411,7 @@ internal static (Action stopTimer, Func<bool> didTimeout) setRequestCancel(ж<Re
             }
         }
     };
-    var stopTimerCh = new channel<EmptyStruct>(1);
+    var stopTimerCh = new channel<EmptyStruct>(0);
     ref var once = ref heap(new sync.Once(), out var Ꮡonce);
     var cancelCtxʗ1 = cancelCtx;
     var stopTimerChʗ1 = stopTimerCh;
@@ -432,18 +432,21 @@ internal static (Action stopTimer, Func<bool> didTimeout) setRequestCancel(ж<Re
     var stopTimerChʗ4 = stopTimerCh;
     var timerʗ1 = timer;
     goǃ(() => {
-        switch (select(ᐸꟷ(initialReqCancelʗ1, ꓸꓸꓸ), ᐸꟷ((~timerʗ1).C, ꓸꓸꓸ), ᐸꟷ(stopTimerChʗ4, ꓸꓸꓸ))) {
-        case 0 when initialReqCancelʗ1.ꟷᐳ(out _): {
+        var selᴛ1 = initialReqCancelʗ1;
+        var selᴛ2 = (~timerʗ1).C;
+        var selᴛ3 = stopTimerChʗ4;
+        switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ), ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
+        case 0 when selᴛ1.ꟷᐳ(out _): {
             doCancelʗ1();
             timerʗ1.Stop();
             break;
         }
-        case 1 when (~timerʗ1).C.ꟷᐳ(out _): {
+        case 1 when selᴛ2.ꟷᐳ(out _): {
             ᏑtimedOut.Store(true);
             doCancelʗ1();
             break;
         }
-        case 2 when stopTimerChʗ4.ꟷᐳ(out _): {
+        case 2 when selᴛ3.ꟷᐳ(out _): {
             timerʗ1.Stop();
             break;
         }}

@@ -533,7 +533,7 @@ public static ж<Profile> Copy(this ж<Profile> Ꮡp) {
 
 // Scale multiplies all sample values in a profile by a constant.
 [GoRecv] public static void Scale(this ref Profile p, float64 ratio) {
-    if (ratio == 1) {
+    if (ratio == 1D) {
         return;
     }
     var ratios = new slice<float64>(len(p.SampleType));
@@ -550,7 +550,7 @@ public static ж<Profile> Copy(this ж<Profile> Ꮡp) {
     }
     var allOnes = true;
     foreach (var (_, r) in ratios) {
-        if (r != 1) {
+        if (r != 1D) {
             allOnes = false;
             break;
         }
@@ -560,7 +560,7 @@ public static ж<Profile> Copy(this ж<Profile> Ꮡp) {
     }
     foreach (var (_, s) in p.Sample) {
         foreach (var (i, v) in (~s).Value) {
-            if (ratios[i] != 1) {
+            if (ratios[i] != 1D) {
                 s.Value.Value[i] = (int64)((float64)v * ratios[i]);
             }
         }

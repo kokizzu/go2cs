@@ -19,9 +19,9 @@ public static float64 Dim(float64 x, float64 y) {
     //       NaN - y    = NaN
     //         x - NaN  = NaN
     var v = x - y;
-    if (v <= 0) {
+    if (v <= 0D) {
         // v is negative or 0
-        return 0;
+        return 0D;
     }
     // v is positive or NaN
     return v;
@@ -54,7 +54,7 @@ internal static float64 max(float64 x, float64 y) {
     case {} when IsNaN(x) || IsNaN(y): {
         return NaN();
     }
-    case {} when x == 0 && x == y: {
+    case {} when x == 0D && x == y: {
         if (Signbit(x)) {
             return y;
         }
@@ -93,7 +93,7 @@ internal static float64 min(float64 x, float64 y) {
     case {} when IsNaN(x) || IsNaN(y): {
         return NaN();
     }
-    case {} when x == 0 && x == y: {
+    case {} when x == 0D && x == y: {
         if (Signbit(x)) {
             return x;
         }

@@ -370,7 +370,7 @@ public static error Scan(this ж<NullFloat64> Ꮡn, any value) {
     ref var n = ref Ꮡn.Value;
 
     if (value == default!) {
-        n.Float64 = 0;
+        n.Float64 = 0D;
         n.Valid = false;
         return default!;
     }
@@ -1115,8 +1115,9 @@ public static void SetConnMaxLifetime(this ж<DB> Ꮡdb, time.Duration d) {
     Ꮡdb.of(DB.Ꮡmu).Lock();
     // Wake cleaner up when lifetime is shortened.
     if (d > 0 && d < db.maxLifetime && db.cleanerCh != default!) {
-        switch (ᐧ) {
-        case ᐧ when db.cleanerCh.ᐸꟷ(new EmptyStruct(), ꟷ): {
+        var selᴛ7 = db.cleanerCh.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+        switch (trySelect(selᴛ7)) {
+        case 0: {
             break;
         }
         default: {
@@ -1143,8 +1144,9 @@ public static void SetConnMaxIdleTime(this ж<DB> Ꮡdb, time.Duration d) => fun
     defer(Ꮡdb.of(DB.Ꮡmu).Unlock);
     // Wake cleaner up when idle time is shortened.
     if (d > 0 && d < db.maxIdleTime && db.cleanerCh != default!) {
-        switch (ᐧ) {
-        case ᐧ when db.cleanerCh.ᐸꟷ(new EmptyStruct(), ꟷ): {
+        var selᴛ8 = db.cleanerCh.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+        switch (trySelect(selᴛ8)) {
+        case 0: {
             break;
         }
         default: {
@@ -1174,11 +1176,13 @@ internal static void connectionCleaner(this ж<DB> Ꮡdb, time.Duration d) {
     }
     var t = time.NewTimer(d);
     while (ᐧ) {
-        switch (select(ᐸꟷ((~t).C, ꓸꓸꓸ), ᐸꟷ(db.cleanerCh, ꓸꓸꓸ))) {
-        case 0 when (~t).C.ꟷᐳ(out _): {
+        var selᴛ9 = (~t).C;
+        var selᴛ10 = db.cleanerCh;
+        switch (select(ᐸꟷ(selᴛ9, ꓸꓸꓸ), ᐸꟷ(selᴛ10, ꓸꓸꓸ))) {
+        case 0 when selᴛ9.ꟷᐳ(out _): {
             break;
         }
-        case 1 when db.cleanerCh.ꟷᐳ(out _): {
+        case 1 when selᴛ10.ꟷᐳ(out _): {
             break;
         }}
         // maxLifetime was changed or db was closed.
@@ -1198,8 +1202,9 @@ internal static void connectionCleaner(this ж<DB> Ꮡdb, time.Duration d) {
             dΔ1 = minInterval;
         }
         if (!t.Stop()) {
-            switch (ᐧ) {
-            case ᐧ when (~t).C.ꟷᐳ(out _): {
+            var selᴛ11 = (~t).C;
+            switch (trySelect(ᐸꟷ(selᴛ11, ꓸꓸꓸ))) {
+            case 0 when selᴛ11.ꟷᐳ(out _): {
                 break;
             }
             default: {
@@ -1333,11 +1338,13 @@ internal static void connectionOpener(this ж<DB> Ꮡdb, context.Context ctx) {
     ref var db = ref Ꮡdb.Value;
 
     while (ᐧ) {
-        switch (select(ᐸꟷ(ctx.Done(), ꓸꓸꓸ), ᐸꟷ(db.openerCh, ꓸꓸꓸ))) {
-        case 0 when ctx.Done().ꟷᐳ(out _): {
+        var selᴛ12 = ctx.Done();
+        var selᴛ13 = db.openerCh;
+        switch (select(ᐸꟷ(selᴛ12, ꓸꓸꓸ), ᐸꟷ(selᴛ13, ꓸꓸꓸ))) {
+        case 0 when selᴛ12.ꟷᐳ(out _): {
             return;
         }
-        case 1 when db.openerCh.ꟷᐳ(out _): {
+        case 1 when selᴛ13.ꟷᐳ(out _): {
             Ꮡdb.openNewConnection(ctx);
             break;
         }}
@@ -1401,8 +1408,9 @@ internal static (ж<driverConn>, error) conn(this ж<DB> Ꮡdb, context.Context 
         return (default!, errDBClosed);
     }
     // Check if the context is expired.
-    switch (ᐧ) {
-    case ᐧ when ctx.Done().ꟷᐳ(out _): {
+    var selᴛ14 = ctx.Done();
+    switch (trySelect(ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
+    case 0 when selᴛ14.ꟷᐳ(out _): {
         Ꮡdb.of(DB.Ꮡmu).Unlock();
         return (default!, ctx.Err());
     }
@@ -1445,8 +1453,10 @@ internal static (ж<driverConn>, error) conn(this ж<DB> Ꮡdb, context.Context 
         Ꮡdb.of(DB.Ꮡmu).Unlock();
         var waitStart = nowFunc();
         // Timeout the connection request with the context.
-        switch (select(ᐸꟷ(ctx.Done(), ꓸꓸꓸ), ᐸꟷ(req, ꓸꓸꓸ))) {
-        case 0 when ctx.Done().ꟷᐳ(out _): {
+        var selᴛ15 = ctx.Done();
+        var selᴛ16 = req;
+        switch (select(ᐸꟷ(selᴛ15, ꓸꓸꓸ), ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
+        case 0 when selᴛ15.ꟷᐳ(out _): {
             Ꮡdb.of(DB.Ꮡmu).Lock();
             var deleted = db.connRequests.Delete(delHandle);
             Ꮡdb.of(DB.Ꮡmu).Unlock();
@@ -1462,8 +1472,9 @@ internal static (ж<driverConn>, error) conn(this ж<DB> Ꮡdb, context.Context 
                 // But if we know for sure it wasn't deleted and a sender is
                 // outstanding, we should probably block on req (in a new
                 // goroutine) to get the connection back.
-                switch (ᐧ) {
-                case ᐧ when req.ꟷᐳ(out var ret, out var ok): {
+                var selᴛ17 = req;
+                switch (trySelect(ᐸꟷ(selᴛ17, ꓸꓸꓸ))) {
+                case 0 when selᴛ17.ꟷᐳ(out var ret, out var ok): {
                     if (ok && ret.conn != nil) {
                         Ꮡdb.putConn(ret.conn, ret.err, false);
                     }
@@ -1475,7 +1486,7 @@ internal static (ж<driverConn>, error) conn(this ж<DB> Ꮡdb, context.Context 
             }
             return (default!, ctx.Err());
         }
-        case 1 when req.ꟷᐳ(out var ret, out var ok): {
+        case 1 when selᴛ16.ꟷᐳ(out var ret, out var ok): {
             Ꮡdb.of(DB.ᏑwaitDuration).Add((int64)time.Since(waitStart));
             if (!ok) {
                 return (default!, errDBClosed);
@@ -1625,7 +1636,7 @@ internal static void putConn(this ж<DB> Ꮡdb, ж<driverConn> Ꮡdc, error err,
 // freeConn list, then true is returned, otherwise false is returned.
 internal static bool putConnDBLocked(this ж<DB> Ꮡdb, ж<driverConn> Ꮡdc, error err) {
     ref var db = ref Ꮡdb.Value;
-    ref var dc = ref Ꮡdc.Value;
+    ref var dc = ref Ꮡdc.DerefOrNil();
 
     if (db.closed) {
         return false;
@@ -1725,7 +1736,6 @@ internal static (ж<ΔStmt>, error) prepare(this ж<DB> Ꮡdb, context.Context c
 // when cg != nil only a single driver connection is used.
 internal static (ж<ΔStmt>, error) prepareDC(this ж<DB> Ꮡdb, context.Context ctx, ж<driverConn> Ꮡdc, Action<error> release, stmtConnGrabber cg, @string query) => func<(ж<ΔStmt>, error)>((defer, recover) => {
     ref var db = ref Ꮡdb.Value;
-    ref var dc = ref Ꮡdc.Value;
 
     ref var ds = ref heap<ж<driverStmt>>(out var Ꮡds);
     ref var err = ref heap<error>(out var Ꮡerr);
@@ -1748,7 +1758,7 @@ internal static (ж<ΔStmt>, error) prepareDC(this ж<DB> Ꮡdb, context.Context
     // connections they are prepared on and record the stmt dependency on
     // the DB.
     if (cg == default!) {
-        stmt.Value.css = new ΔconnStmt[]{new(dc, ds)}.slice();
+        stmt.Value.css = new ΔconnStmt[]{new(Ꮡdc, ds)}.slice();
         stmt.Value.lastNumClosed = Ꮡdb.of(DB.ᏑnumClosed).Load();
         Ꮡdb.addDep(new ΔStmtжfinalCloser(stmt), stmt);
     }
@@ -2382,8 +2392,9 @@ internal static Action hookTxGrabConn;
 internal static (ж<driverConn>, Action<error>, error) grabConn(this ж<Tx> Ꮡtx, context.Context ctx) {
     ref var tx = ref Ꮡtx.Value;
 
-    switch (ᐧ) {
-    case ᐧ when ctx.Done().ꟷᐳ(out _): {
+    var selᴛ18 = ctx.Done();
+    switch (trySelect(ᐸꟷ(selᴛ18, ꓸꓸꓸ))) {
+    case 0 when selᴛ18.ꟷᐳ(out _): {
         return (default!, default!, ctx.Err());
     }
     default: {
@@ -2433,8 +2444,9 @@ public static error Commit(this ж<Tx> Ꮡtx) {
     // Check context first to avoid transaction leak.
     // If put it behind tx.done CompareAndSwap statement, we can't ensure
     // the consistency between tx.done and the real COMMIT operation.
-    switch (ᐧ) {
-    case ᐧ when tx.ctx.Done().ꟷᐳ(out _): {
+    var selᴛ19 = tx.ctx.Done();
+    switch (trySelect(ᐸꟷ(selᴛ19, ꓸꓸꓸ))) {
+    case 0 when selᴛ19.ꟷᐳ(out _): {
         if (Ꮡtx.of(Tx.Ꮡdone).Load()) {
             return ErrTxDone;
         }
@@ -2792,27 +2804,25 @@ internal static stmtConnGrabber _ᴛ3ʗ = new ΔConnжstmtConnGrabber(Ꮡ(new Δ
 
 // ExecContext executes a prepared statement with the given arguments and
 // returns a [Result] summarizing the effect of the statement.
-public static (Result, error) ExecContext(this ж<ΔStmt> Ꮡs, context.Context ctx, params ꓸꓸꓸany argsʗp) {
+public static (Result, error) ExecContext(this ж<ΔStmt> Ꮡs, context.Context ctx, params ꓸꓸꓸany argsʗp) => func(ref argsʗp, (ref ꓸꓸꓸany argsʗp, Defer defer, Recover recover) => {
     var args = argsʗp.slice();
-    return func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
 
-        Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RLock();
-        defer(Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RUnlock);
-        ref var res = ref heap<Result>(out var Ꮡres);
-        var argsʗ1 = args;
-        var err = s.db.retry((connReuseStrategy strategy) => {
-            var (dc, ΔreleaseConn, ds, errΔ1) = Ꮡs.connStmt(ctx, strategy);
-            if (errΔ1 != default!) {
-                return errΔ1;
-            }
-            (Ꮡres.ValueSlot, errΔ1) = resultFromStatement(ctx, (~dc).ci, ds, argsʗ1.ꓸꓸꓸ);
-            ΔreleaseConn(errΔ1);
+    ref var s = ref Ꮡs.Value;
+    Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RLock();
+    defer(Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RUnlock);
+    ref var res = ref heap<Result>(out var Ꮡres);
+    var argsʗ1 = args;
+    var err = s.db.retry((connReuseStrategy strategy) => {
+        var (dc, ΔreleaseConn, ds, errΔ1) = Ꮡs.connStmt(ctx, strategy);
+        if (errΔ1 != default!) {
             return errΔ1;
-        });
-        return (res, err);
+        }
+        (Ꮡres.ValueSlot, errΔ1) = resultFromStatement(ctx, (~dc).ci, ds, argsʗ1.ꓸꓸꓸ);
+        ΔreleaseConn(errΔ1);
+        return errΔ1;
     });
-}
+    return (res, err);
+});
 
 // Exec executes a prepared statement with the given arguments and
 // returns a [Result] summarizing the effect of the statement.
@@ -2825,24 +2835,22 @@ public static (Result, error) Exec(this ж<ΔStmt> Ꮡs, params ꓸꓸꓸany arg
     return Ꮡs.ExecContext(context.Background(), args.ꓸꓸꓸ);
 }
 
-internal static (Result, error) resultFromStatement(context.Context ctx, driver.Conn ci, ж<driverStmt> Ꮡds, params ꓸꓸꓸany argsʗp) {
+internal static (Result, error) resultFromStatement(context.Context ctx, driver.Conn ci, ж<driverStmt> Ꮡds, params ꓸꓸꓸany argsʗp) => func<ꓸꓸꓸany, (Result, error)>(ref argsʗp, (ref ꓸꓸꓸany argsʗp, Defer defer, Recover recover) => {
     var args = argsʗp.slice();
-    return func<(Result, error)>((defer, recover) => {
-    ref var ds = ref Ꮡds.Value;
 
-        ds.Locker.Lock();
-        defer(Ꮡds.Value.Locker.Unlock);
-        var (dargs, err) = driverArgsConnLocked(ci, Ꮡds, args);
-        if (err != default!) {
-            return (default!, err);
-        }
-        (var resi, err) = ctxDriverStmtExec(ctx, ds.si, dargs);
-        if (err != default!) {
-            return (default!, err);
-        }
-        return (new driverResult(ds.Locker, resi), default!);
-    });
-}
+    ref var ds = ref Ꮡds.Value;
+    ds.Locker.Lock();
+    defer(Ꮡds.Value.Locker.Unlock);
+    var (dargs, err) = driverArgsConnLocked(ci, Ꮡds, args);
+    if (err != default!) {
+        return (default!, err);
+    }
+    (var resi, err) = ctxDriverStmtExec(ctx, ds.si, dargs);
+    if (err != default!) {
+        return (default!, err);
+    }
+    return (new driverResult(ds.Locker, resi), default!);
+});
 
 // removeClosedStmtLocked removes closed conns in s.css.
 //
@@ -2946,53 +2954,51 @@ internal static (ж<driverStmt>, error) prepareOnConnLocked(this ж<ΔStmt> Ꮡs
 
 // QueryContext executes a prepared query statement with the given arguments
 // and returns the query results as a [*Rows].
-public static (ж<Rows>, error) QueryContext(this ж<ΔStmt> Ꮡs, context.Context ctx, params ꓸꓸꓸany argsʗp) {
+public static (ж<Rows>, error) QueryContext(this ж<ΔStmt> Ꮡs, context.Context ctx, params ꓸꓸꓸany argsʗp) => func(ref argsʗp, (ref ꓸꓸꓸany argsʗp, Defer defer, Recover recover) => {
     var args = argsʗp.slice();
-    return func((defer, recover) => {
-    ref var s = ref Ꮡs.Value;
 
-        Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RLock();
-        defer(Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RUnlock);
-        ref var rowsi = ref heap<driver.Rows>(out var Ꮡrowsi);
-        ref var rows = ref heap<ж<Rows>>(out var Ꮡrows);
-        var argsʗ1 = args;
-        var err = s.db.retry(error (connReuseStrategy strategy) => {
-            var (dc, ΔreleaseConn, ds, errΔ1) = Ꮡs.connStmt(ctx, strategy);
-            if (errΔ1 != default!) {
-                return errΔ1;
-            }
-            (Ꮡrowsi.ValueSlot, errΔ1) = rowsiFromStatement(ctx, (~dc).ci, ds, argsʗ1.ꓸꓸꓸ);
-            if (errΔ1 == default!) {
-                // Note: ownership of ci passes to the *Rows, to be freed
-                // with releaseConn.
-                Ꮡrows.ValueSlot = Ꮡ(new Rows(
-                    dc: dc,
-                    rowsi: Ꮡrowsi.ValueSlot
-                ));
-                // releaseConn set below
-                // addDep must be added before initContextClose or it could attempt
-                // to removeDep before it has been added.
-                Ꮡs.Value.db.addDep(new ΔStmtжfinalCloser(Ꮡs), Ꮡrows.ValueSlot);
-                // releaseConn must be set before initContextClose or it could
-                // release the connection before it is set.
-                var releaseConnʗ1 = ΔreleaseConn;
-                Ꮡrows.ValueSlot.Value.releaseConn = (error errΔ2) => {
-                    releaseConnʗ1(errΔ2);
-                    Ꮡs.Value.db.removeDep(new ΔStmtжfinalCloser(Ꮡs), Ꮡrows.ValueSlot);
-                };
-                context.Context txctx = default!;
-                if (Ꮡs.Value.cg != default!) {
-                    txctx = Ꮡs.Value.cg.txCtx();
-                }
-                Ꮡrows.ValueSlot.initContextClose(ctx, txctx);
-                return default!;
-            }
-            ΔreleaseConn(errΔ1);
+    ref var s = ref Ꮡs.Value;
+    Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RLock();
+    defer(Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RUnlock);
+    ref var rowsi = ref heap<driver.Rows>(out var Ꮡrowsi);
+    ref var rows = ref heap<ж<Rows>>(out var Ꮡrows);
+    var argsʗ1 = args;
+    var err = s.db.retry(error (connReuseStrategy strategy) => {
+        var (dc, ΔreleaseConn, ds, errΔ1) = Ꮡs.connStmt(ctx, strategy);
+        if (errΔ1 != default!) {
             return errΔ1;
-        });
-        return (rows, err);
+        }
+        (Ꮡrowsi.ValueSlot, errΔ1) = rowsiFromStatement(ctx, (~dc).ci, ds, argsʗ1.ꓸꓸꓸ);
+        if (errΔ1 == default!) {
+            // Note: ownership of ci passes to the *Rows, to be freed
+            // with releaseConn.
+            Ꮡrows.ValueSlot = Ꮡ(new Rows(
+                dc: dc,
+                rowsi: Ꮡrowsi.ValueSlot
+            ));
+            // releaseConn set below
+            // addDep must be added before initContextClose or it could attempt
+            // to removeDep before it has been added.
+            Ꮡs.Value.db.addDep(new ΔStmtжfinalCloser(Ꮡs), Ꮡrows.ValueSlot);
+            // releaseConn must be set before initContextClose or it could
+            // release the connection before it is set.
+            var releaseConnʗ1 = ΔreleaseConn;
+            Ꮡrows.ValueSlot.Value.releaseConn = (error errΔ2) => {
+                releaseConnʗ1(errΔ2);
+                Ꮡs.Value.db.removeDep(new ΔStmtжfinalCloser(Ꮡs), Ꮡrows.ValueSlot);
+            };
+            context.Context txctx = default!;
+            if (Ꮡs.Value.cg != default!) {
+                txctx = Ꮡs.Value.cg.txCtx();
+            }
+            Ꮡrows.ValueSlot.initContextClose(ctx, txctx);
+            return default!;
+        }
+        ΔreleaseConn(errΔ1);
+        return errΔ1;
     });
-}
+    return (rows, err);
+});
 
 // Query executes a prepared query statement with the given arguments
 // and returns the query results as a *Rows.
@@ -3005,20 +3011,18 @@ public static (ж<Rows>, error) Query(this ж<ΔStmt> Ꮡs, params ꓸꓸꓸany 
     return Ꮡs.QueryContext(context.Background(), args.ꓸꓸꓸ);
 }
 
-internal static (driver.Rows, error) rowsiFromStatement(context.Context ctx, driver.Conn ci, ж<driverStmt> Ꮡds, params ꓸꓸꓸany argsʗp) {
+internal static (driver.Rows, error) rowsiFromStatement(context.Context ctx, driver.Conn ci, ж<driverStmt> Ꮡds, params ꓸꓸꓸany argsʗp) => func<ꓸꓸꓸany, (driver.Rows, error)>(ref argsʗp, (ref ꓸꓸꓸany argsʗp, Defer defer, Recover recover) => {
     var args = argsʗp.slice();
-    return func<(driver.Rows, error)>((defer, recover) => {
-    ref var ds = ref Ꮡds.Value;
 
-        ds.Locker.Lock();
-        defer(Ꮡds.Value.Locker.Unlock);
-        var (dargs, err) = driverArgsConnLocked(ci, Ꮡds, args);
-        if (err != default!) {
-            return (default!, err);
-        }
-        return ctxDriverStmtQuery(ctx, ds.si, dargs);
-    });
-}
+    ref var ds = ref Ꮡds.Value;
+    ds.Locker.Lock();
+    defer(Ꮡds.Value.Locker.Unlock);
+    var (dargs, err) = driverArgsConnLocked(ci, Ꮡds, args);
+    if (err != default!) {
+        return (default!, err);
+    }
+    return ctxDriverStmtQuery(ctx, ds.si, dargs);
+});
 
 // QueryRowContext executes a prepared query statement with the given arguments.
 // If an error occurs during the execution of the statement, that error will
@@ -3180,20 +3184,23 @@ internal static void awaitDone(this ж<Rows> Ꮡrs, context.Context ctx, context
     if (txctx != default!) {
         txctxDone = txctx.Done();
     }
-    switch (select(ᐸꟷ(ctx.Done(), ꓸꓸꓸ), ᐸꟷ(txctxDone, ꓸꓸꓸ), ᐸꟷ(closectx.Done(), ꓸꓸꓸ))) {
-    case 0 when ctx.Done().ꟷᐳ(out _): {
+    var selᴛ20 = ctx.Done();
+    var selᴛ21 = txctxDone;
+    var selᴛ22 = closectx.Done();
+    switch (select(ᐸꟷ(selᴛ20, ꓸꓸꓸ), ᐸꟷ(selᴛ21, ꓸꓸꓸ), ᐸꟷ(selᴛ22, ꓸꓸꓸ))) {
+    case 0 when selᴛ20.ꟷᐳ(out _): {
         ref var err = ref heap<error>(out var Ꮡerr);
         err = ctx.Err();
         Ꮡrs.of(Rows.ᏑcontextDone).Store(Ꮡerr);
         break;
     }
-    case 1 when txctxDone.ꟷᐳ(out _): {
+    case 1 when selᴛ21.ꟷᐳ(out _): {
         ref var err = ref heap<error>(out var Ꮡerr);
         err = txctx.Err();
         Ꮡrs.of(Rows.ᏑcontextDone).Store(Ꮡerr);
         break;
     }
-    case 2 when closectx.Done().ꟷᐳ(out _): {
+    case 2 when selᴛ22.ꟷᐳ(out _): {
         break;
     }}
     // rs.cancel was called via Close(); don't store this into contextDone
@@ -3695,47 +3702,45 @@ internal static error close(this ж<Rows> Ꮡrs, error err) => func<error>((defe
 // If more than one row matches the query,
 // Scan uses the first row and discards the rest. If no row matches
 // the query, Scan returns [ErrNoRows].
-public static error Scan(this ж<Row> Ꮡr, params ꓸꓸꓸany destʗp) {
+public static error Scan(this ж<Row> Ꮡr, params ꓸꓸꓸany destʗp) => func(ref destʗp, (ref ꓸꓸꓸany destʗp, Defer defer, Recover recover) => {
     var dest = destʗp.slice();
-    return func((defer, recover) => {
-    ref var r = ref Ꮡr.Value;
 
-        if (r.err != default!) {
-            return r.err;
-        }
-        // TODO(bradfitz): for now we need to defensively clone all
-        // []byte that the driver returned (not permitting
-        // *RawBytes in Rows.Scan), since we're about to close
-        // the Rows in our defer, when we return from this function.
-        // the contract with the driver.Next(...) interface is that it
-        // can return slices into read-only temporary memory that's
-        // only valid until the next Scan/Close. But the TODO is that
-        // for a lot of drivers, this copy will be unnecessary. We
-        // should provide an optional interface for drivers to
-        // implement to say, "don't worry, the []bytes that I return
-        // from Next will not be modified again." (for instance, if
-        // they were obtained from the network anyway) But for now we
-        // don't care.
-        defer(() => Ꮡr.Value.rows.Close());
-        if (scanArgsContainRawBytes(dest)) {
-            return errors.New("sql: RawBytes isn't allowed on Row.Scan"u8);
-        }
-        if (!r.rows.Next()) {
-            {
-                var errΔ1 = r.rows.Err(); if (errΔ1 != default!) {
-                    return errΔ1;
-                }
+    ref var r = ref Ꮡr.Value;
+    if (r.err != default!) {
+        return r.err;
+    }
+    // TODO(bradfitz): for now we need to defensively clone all
+    // []byte that the driver returned (not permitting
+    // *RawBytes in Rows.Scan), since we're about to close
+    // the Rows in our defer, when we return from this function.
+    // the contract with the driver.Next(...) interface is that it
+    // can return slices into read-only temporary memory that's
+    // only valid until the next Scan/Close. But the TODO is that
+    // for a lot of drivers, this copy will be unnecessary. We
+    // should provide an optional interface for drivers to
+    // implement to say, "don't worry, the []bytes that I return
+    // from Next will not be modified again." (for instance, if
+    // they were obtained from the network anyway) But for now we
+    // don't care.
+    defer(() => Ꮡr.Value.rows.Close());
+    if (scanArgsContainRawBytes(dest)) {
+        return errors.New("sql: RawBytes isn't allowed on Row.Scan"u8);
+    }
+    if (!r.rows.Next()) {
+        {
+            var errΔ1 = r.rows.Err(); if (errΔ1 != default!) {
+                return errΔ1;
             }
-            return ErrNoRows;
         }
-        var err = r.rows.Scan(dest.ꓸꓸꓸ);
-        if (err != default!) {
-            return err;
-        }
-        // Make sure the query can be processed to completion with no errors.
-        return r.rows.Close();
-    });
-}
+        return ErrNoRows;
+    }
+    var err = r.rows.Scan(dest.ꓸꓸꓸ);
+    if (err != default!) {
+        return err;
+    }
+    // Make sure the query can be processed to completion with no errors.
+    return r.rows.Close();
+});
 
 // Err provides a way for wrapping packages to check for
 // query errors without calling [Row.Scan].

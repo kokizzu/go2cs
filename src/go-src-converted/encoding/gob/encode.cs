@@ -232,7 +232,7 @@ internal static void encFloat(ж<encInstr> Ꮡi, ж<encoderState> Ꮡstate, refl
     ref var state = ref Ꮡstate.Value;
 
     var f = v.Float();
-    if (f != 0 || state.sendZero) {
+    if (f != 0D || state.sendZero) {
         var bits = floatBits(f);
         state.update(Ꮡi);
         state.encodeUint(bits);

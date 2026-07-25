@@ -41,7 +41,7 @@ public static error ErrUnexpectedType = errors.New("unexpected key value type"u8
 // Get*Value function instead.
 public static (nint n, uint32 valtype, error err) GetValue(this Key k, @string name, slice<byte> buf) {
     nint n = default!;
-    uint32 valtype = default!;
+    ref var valtype = ref heap(new uint32(), out var Ꮡvaltype);
     error err = default!;
 
     (var pname, err) = syscall.UTF16PtrFromString(name);
@@ -54,7 +54,7 @@ public static (nint n, uint32 valtype, error err) GetValue(this Key k, @string n
     }
     ref var l = ref heap<uint32>(out var Ꮡl);
     l = (uint32)len(buf);
-    err = syscall.RegQueryValueEx(((syscallꓸHandle)k), pname, nil, Ꮡ(valtype), pbuf, Ꮡl);
+    err = syscall.RegQueryValueEx(((syscallꓸHandle)k), pname, nil, Ꮡvaltype, pbuf, Ꮡl);
     if (err != default!) {
         return ((nint)l, valtype, err);
     }
@@ -244,13 +244,13 @@ public static (uint64 val, uint32 valtype, error err) GetIntegerValue(this Key k
         if (len(data) != 4) {
             return (0, typ, errors.New("DWORD value is not 4 bytes long"u8));
         }
-        return ((uint64)(~(ж<uint32>)(uintptr)(new @unsafe.Pointer(Ꮡ(data, 0)))), DWORD, default!);
+        return ((uint64)(~Ꮡ(data, 0).Reinterpret<byte, uint32>()), DWORD, default!);
     }
     if (exprᴛ1 == QWORD) {
         if (len(data) != 8) {
             return (0, typ, errors.New("QWORD value is not 8 bytes long"u8));
         }
-        return (~(ж<uint64>)(uintptr)(new @unsafe.Pointer(Ꮡ(data, 0))), QWORD, default!);
+        return (~Ꮡ(data, 0).Reinterpret<byte, uint64>(), QWORD, default!);
     }
     { /* default: */
         return (0, typ, ErrUnexpectedType);

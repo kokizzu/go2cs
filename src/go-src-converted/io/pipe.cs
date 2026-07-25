@@ -54,20 +54,23 @@ internal static (nint n, error err) read(this ж<pipe> Ꮡp, slice<byte> b) {
     error err = default!;
 
     ref var p = ref Ꮡp.Value;
-    switch (ᐧ) {
-    case ᐧ when p.done.ꟷᐳ(out _): {
+    var selᴛ1 = p.done;
+    switch (trySelect(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
+    case 0 when selᴛ1.ꟷᐳ(out _): {
         return (0, Ꮡp.readCloseError());
     }
     default: {
         break;
     }}
-    switch (select(ᐸꟷ(p.wrCh, ꓸꓸꓸ), ᐸꟷ(p.done, ꓸꓸꓸ))) {
-    case 0 when p.wrCh.ꟷᐳ(out var bw): {
+    var selᴛ2 = p.wrCh;
+    var selᴛ3 = p.done;
+    switch (select(ᐸꟷ(selᴛ2, ꓸꓸꓸ), ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
+    case 0 when selᴛ2.ꟷᐳ(out var bw): {
         nint nr = copy(b, bw);
         p.rdCh.ᐸꟷ(nr);
         return (nr, default!);
     }
-    case 1 when p.done.ꟷᐳ(out _): {
+    case 1 when selᴛ3.ꟷᐳ(out _): {
         return (0, Ꮡp.readCloseError());
     }}
     return default!;
@@ -90,8 +93,9 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
     func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
 
-        switch (ᐧ) {
-        case ᐧ when p.done.ꟷᐳ(out _): {
+        var selᴛ4 = p.done;
+        switch (trySelect(ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+        case 0 when selᴛ4.ꟷᐳ(out _): {
             (n, err) = (0, Ꮡp.writeCloseError()); return;
         }
         default: {
@@ -100,14 +104,16 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
             break;
         }}
         for (var once = true; once || len(b) > 0; once = false) {
-            switch (select(p.wrCh.ᐸꟷ(b, ꓸꓸꓸ), ᐸꟷ(p.done, ꓸꓸꓸ))) {
+            var selᴛ5 = p.wrCh.ᐸꟷ(b, ꓸꓸꓸ);
+            var selᴛ6 = p.done;
+            switch (select(selᴛ5, ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
             case 0: {
                 nint nw = ᐸꟷ(p.rdCh);
                 b = b[(int)(nw)..];
                 n += nw;
                 break;
             }
-            case 1 when p.done.ꟷᐳ(out _): {
+            case 1 when selᴛ6.ꟷᐳ(out _): {
                 (n, err) = (n, Ꮡp.writeCloseError()); return;
             }}
         }
@@ -231,9 +237,9 @@ public static error CloseWithError(this ж<PipeWriter> Ꮡw, error err) {
 // the individual calls will be gated sequentially.
 public static (ж<PipeReader>, ж<PipeWriter>) Pipe() {
     var pw = Ꮡ(new PipeWriter(r: new PipeReader(pipe: new pipe(
-        wrCh: new channel<slice<byte>>(1),
-        rdCh: new channel<nint>(1),
-        done: new channel<EmptyStruct>(1)
+        wrCh: new channel<slice<byte>>(0),
+        rdCh: new channel<nint>(0),
+        done: new channel<EmptyStruct>(0)
     )
     )
     ));

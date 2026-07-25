@@ -84,7 +84,7 @@ public static error ErrNotPollable = errors.New("not pollable"u8);
 
 // consume removes data from a slice of byte slices, for writev.
 internal static void consume(ж<slice<slice<byte>>> Ꮡv, int64 n) {
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.ValueSlot;
 
     while (len(v) > 0) {
         var ln0 = (int64)len((v)[0]);

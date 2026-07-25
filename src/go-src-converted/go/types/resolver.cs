@@ -232,7 +232,7 @@ internal static ж<Package> importPackage(this ж<Checker> Ꮡcheck, positioner 
     return default!;
 }
 
-[GoType("dyn")] partial struct collectObjects_methodInfo {
+[GoLocalName("methodInfo")] [GoType("dyn")] partial struct collectObjects_methodInfo {
     internal ж<Func> obj;   // method
     internal bool ptr;       // true if pointer receiver
     internal ж<ast.Ident> recv; // receiver type name

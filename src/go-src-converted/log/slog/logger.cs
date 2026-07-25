@@ -13,6 +13,7 @@ using time = time_package;
 using go.log.slog;
 using go.sync;
 using io = io_package;
+using ꓸꓸꓸAttr = Span<slog_package.Attr>;
 using ꓸꓸꓸany = Span<any>;
 
 partial class slog_package {
@@ -219,7 +220,7 @@ public static ж<log.Logger> NewLogLogger(ΔHandler h, ΔLevel level) {
 }
 
 // LogAttrs is a more efficient version of [Logger.Log] that accepts only Attrs.
-[GoRecv] public static void LogAttrs(this ref Logger l, context.Context ctx, ΔLevel level, @string msg, params Span<slog_package.Attr> attrsʗp) {
+[GoRecv] public static void LogAttrs(this ref Logger l, context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸAttr attrsʗp) {
     var attrs = attrsʗp.slice();
 
     l.logAttrs(ctx, level, msg, attrs.ꓸꓸꓸ);
@@ -306,7 +307,7 @@ public static ж<log.Logger> NewLogLogger(ΔHandler h, ΔLevel level) {
 }
 
 // logAttrs is like [Logger.log], but for methods that take ...Attr.
-[GoRecv] internal static void logAttrs(this ref Logger l, context.Context ctx, ΔLevel level, @string msg, params Span<slog_package.Attr> attrsʗp) {
+[GoRecv] internal static void logAttrs(this ref Logger l, context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸAttr attrsʗp) {
     var attrs = attrsʗp.slice();
 
     if (!l.Enabled(ctx, level)) {
@@ -391,7 +392,7 @@ public static void Log(context.Context ctx, ΔLevel level, @string msg, params �
 }
 
 // LogAttrs calls [Logger.LogAttrs] on the default logger.
-public static void LogAttrs(context.Context ctx, ΔLevel level, @string msg, params Span<slog_package.Attr> attrsʗp) {
+public static void LogAttrs(context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸAttr attrsʗp) {
     var attrs = attrsʗp.slice();
 
     Default().logAttrs(ctx, level, msg, attrs.ꓸꓸꓸ);

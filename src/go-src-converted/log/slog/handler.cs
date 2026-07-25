@@ -395,7 +395,7 @@ internal static ref sync.Pool groupPool => ref ᏑgroupPool.Value;
 
 internal static handleState newHandleState(this ж<commonHandler> Ꮡh, ж<buffer.Buffer> Ꮡbuf, bool freeBuf, @string sep) {
     ref var h = ref Ꮡh.Value;
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.ValueSlot;
 
     var s = new handleState(
         h: Ꮡh,

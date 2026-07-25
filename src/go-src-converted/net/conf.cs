@@ -85,27 +85,27 @@ internal static void initConfVal() => func((defer, recover) => {
     if ((~confVal).dnsDebugLevel > 0) {
         defer(() => {
             if ((~confVal).dnsDebugLevel > 1) {
-                println("go package net: confVal.netCgo =", (~confVal).netCgo, " netGo =", (~confVal).netGo);
+                println((@string)"go package net: confVal.netCgo =", (~confVal).netCgo, (@string)" netGo =", (~confVal).netGo);
             }
             switch (ᐧ) {
             case {} when (~confVal).netGo: {
                 if (netGoBuildTag){
-                    println("go package net: built with netgo build tag; using Go's DNS resolver");
+                    println((@string)"go package net: built with netgo build tag; using Go's DNS resolver");
                 } else {
-                    println("go package net: GODEBUG setting forcing use of Go's resolver");
+                    println((@string)"go package net: GODEBUG setting forcing use of Go's resolver");
                 }
                 break;
             }
             case {} when !cgoAvailable: {
-                println("go package net: cgo resolver not supported; using Go's DNS resolver");
+                println((@string)"go package net: cgo resolver not supported; using Go's DNS resolver");
                 break;
             }
             case {} when (~confVal).netCgo || (~confVal).preferCgo: {
-                println("go package net: using cgo DNS resolver");
+                println((@string)"go package net: using cgo DNS resolver");
                 break;
             }
             default: {
-                println("go package net: dynamic selection of DNS resolver");
+                println((@string)"go package net: dynamic selection of DNS resolver");
                 break;
             }}
 
@@ -212,7 +212,7 @@ internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) addrLookupOrder(t
 
         if (c.dnsDebugLevel > 1) {
             defer(() => {
-                print("go package net: addrLookupOrder(", addr, ") = ", ret.String(), "\n");
+                print((@string)"go package net: addrLookupOrder(", addr, (@string)") = ", ret.String(), (@string)"\n");
             });
         }
         (ret, dnsConf) = c.lookupOrder(Ꮡr, ""u8);
@@ -231,7 +231,7 @@ internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) hostLookupOrder(t
 
         if (c.dnsDebugLevel > 1) {
             defer(() => {
-                print("go package net: hostLookupOrder(", hostname, ") = ", ret.String(), "\n");
+                print((@string)"go package net: hostLookupOrder(", hostname, (@string)") = ", ret.String(), (@string)"\n");
             });
         }
         (ret, dnsConf) = c.lookupOrder(Ꮡr, hostname);

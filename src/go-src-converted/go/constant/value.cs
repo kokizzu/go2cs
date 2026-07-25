@@ -234,7 +234,7 @@ internal static @string String(this floatVal x) {
     // Use exact fmt formatting if in float64 range (common case):
     // proceed if f doesn't underflow to 0 or overflow to inf.
     {
-        var (xΔ1, _) = f.Float64(); if (f.Sign() == 0 == (xΔ1 == 0) && !math.IsInf(xΔ1, 0)) {
+        var (xΔ1, _) = f.Float64(); if (f.Sign() == 0 == (xΔ1 == 0D) && !math.IsInf(xΔ1, 0)) {
             @string s = fmt.Sprintf("%.6g"u8, xΔ1);
             if (!f.IsInt() && strings.IndexByte(s, (rune)'.') < 0) {
                 // f is not an integer, but its string representation
@@ -259,18 +259,18 @@ internal static @string String(this floatVal x) {
     // log_10(2)
     // adjust m for truncated (integer) decimal exponent e
     var e = (int64)d;
-    m *= math.Pow(10, d - (float64)e);
+    m *= math.Pow(10D, d - (float64)e);
     // ensure 1 <= |m| < 10
     {
         var am = math.Abs(m);
         switch (ᐧ) {
         case {} when am < 1D - 0.5e-6D: {
-            m *= 10;
+            m *= 10D;
             e--;
             break;
         }
-        case {} when am is >= 10: {
-            m /= 10;
+        case {} when am is >= 10D: {
+            m /= 10D;
             e++;
             break;
         }}
@@ -536,10 +536,10 @@ public static Value MakeFloat64(float64 x) {
         return new unknownVal(nil);
     }
     if (smallFloat64(x)) {
-        return new ratVal(newRat().SetFloat64(x + 0));
+        return new ratVal(newRat().SetFloat64(x + 0D));
     }
     // convert -0 to 0
-    return new floatVal(newFloat().SetFloat64(x + 0));
+    return new floatVal(newFloat().SetFloat64(x + 0D));
 }
 
 // MakeFromLiteral returns the corresponding integer, floating-point,
@@ -709,7 +709,7 @@ public static (float32, bool) Float32Val(Value x) {
         return (f, acc == big.Exact);
     }
     case unknownVal xΔ1: {
-        return (0, false);
+        return (0F, false);
     }
     default: {
         var xΔ1 = x;
@@ -741,7 +741,7 @@ public static (float64, bool) Float64Val(Value x) {
         return (f, acc == big.Exact);
     }
     case unknownVal xΔ1: {
-        return (0, false);
+        return (0D, false);
     }
     default: {
         var xΔ1 = x;

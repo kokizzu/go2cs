@@ -143,7 +143,7 @@ public static (ж<ΔLineReader>, error) LineReader(this ж<Data> Ꮡd, ж<Entry>
     // the empty string if it's not present.
     var (compDir, _) = cu.Val(AttrCompDir)._<@string>(ᐧ);
     // Create the LineReader.
-    var u = Ꮡ(d.unit[Ꮡd.offsetToUnit(cu.Offset)]);
+    var u = Ꮡ(d.unit, Ꮡd.offsetToUnit(cu.Offset));
     var buf = makeBuf(Ꮡd, new unitжdataFormat(u), "line"u8, ((Offset)(uint32)off), d.line[(int)(off)..]);
     // The compilation directory is implicitly directories[0].
     ref var r = ref heap<ΔLineReader>(out var Ꮡr);

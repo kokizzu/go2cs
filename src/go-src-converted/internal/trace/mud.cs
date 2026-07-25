@@ -53,7 +53,7 @@ internal static readonly UntypedInt mudDegree = 1024;
 internal static void add(this ж<mud> Ꮡd, float64 l, float64 r, float64 area) {
     ref var d = ref Ꮡd.Value;
 
-    if (area == 0) {
+    if (area == 0D) {
         return;
     }
     if (r < l) {
@@ -61,17 +61,17 @@ internal static void add(this ж<mud> Ꮡd, float64 l, float64 r, float64 area) 
     }
     // Add the edges.
     if (l == r){
-        d.unsorted = append(d.unsorted, new edge(l, 0, area));
+        d.unsorted = append(d.unsorted, new edge(l, 0D, area));
     } else {
         var delta = area / (r - l);
-        d.unsorted = append(d.unsorted, new edge(l, delta, 0), new edge(r, -delta, 0));
+        d.unsorted = append(d.unsorted, new edge(l, delta, 0D), new edge(r, -delta, 0D));
     }
     // Update the histogram.
     var h = Ꮡd.of(mud.Ꮡhist);
     var (lbFloat, lf) = math.Modf(l * (float64)mudDegree);
     nint lb = (nint)lbFloat;
     if (lb >= mudDegree) {
-        (lb, lf) = (mudDegree - 1, 1);
+        (lb, lf) = (mudDegree - 1, 1D);
     }
     if (l == r){
         h.Value[lb] += area;
@@ -79,13 +79,13 @@ internal static void add(this ж<mud> Ꮡd, float64 l, float64 r, float64 area) 
         var (rbFloat, rf) = math.Modf(r * (float64)mudDegree);
         nint rb = (nint)rbFloat;
         if (rb >= mudDegree) {
-            (rb, rf) = (mudDegree - 1, 1);
+            (rb, rf) = (mudDegree - 1, 1D);
         }
         if (lb == rb){
             h.Value[lb] += area;
         } else {
             var perBucket = area / (r - l) / (float64)mudDegree;
-            h.Value[lb] += perBucket * (1 - lf);
+            h.Value[lb] += perBucket * (1D - lf);
             h.Value[rb] += perBucket * rf;
             for (nint i = lb + 1; i < rb; i++) {
                 h.Value[i] += perBucket;
@@ -194,7 +194,7 @@ internal static void add(this ж<mud> Ꮡd, float64 l, float64 r, float64 area) 
         if (newCsum >= y) {
             // y was exceeded between the previous edge
             // and this one.
-            if (rate == 0) {
+            if (rate == 0D) {
                 // Anywhere between prevX and
                 // e.x will do. We return e.x
                 // because that takes care of

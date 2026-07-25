@@ -9,6 +9,7 @@ using token = global::go.go.token_package;
 using strings = strings_package;
 using global::go.go;
 using ꓸꓸꓸany = Span<any>;
+using ꓸꓸꓸжastꓸIdent = Span<ж<global::go.go.ast_package.Ident>>;
 
 partial class parser_package {
 
@@ -117,7 +118,7 @@ internal const nint maxScopeDepth = 1000;
 
 [GoRecv] internal static void openLabelScope(this ref resolver r) {
     r.labelScope = ast.NewScope(r.labelScope);
-    r.targetStack = append(r.targetStack, default!);
+    r.targetStack = append(r.targetStack, (slice<ж<ast.Ident>>)(default!));
 }
 
 [GoRecv] internal static void closeLabelScope(this ref resolver r) {
@@ -135,8 +136,8 @@ internal const nint maxScopeDepth = 1000;
     r.labelScope = r.labelScope.Value.Outer;
 }
 
-[GoRecv] internal static void declare(this ref resolver r, any decl, any data, ж<ast.Scope> Ꮡscope, ast.ObjKind kind, params Span<ж<ast.Ident>> identsʗp) {
-    var idents = identsʗp.slice();
+[GoRecv] internal static void declare(this ref resolver r, any decl, any data, ж<ast.Scope> Ꮡscope, ast.ObjKind kind, params ꓸꓸꓸжastꓸIdent identsʗp) {
+    var idents = identsʗp.sslice();
 
     ref var scope = ref Ꮡscope.Value;
     foreach (var (_, ident) in idents) {

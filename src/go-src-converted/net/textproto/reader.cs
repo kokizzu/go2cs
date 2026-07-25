@@ -722,7 +722,7 @@ internal static bool validHeaderFieldByte(byte c) {
 	1<<'|' |
 	1<<'~' */
             GoUntyped.Parse("116972063611741436228934278030836105216");
-    return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (288068722172624896UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (((uint64)mask).Rsh((uint64)(64)))))) != 0;
+    return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (288068722172624896UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (6341068274398134270UL)))) != 0;
 }
 
 // validHeaderValueByte reports whether c is a valid byte in a header
@@ -750,7 +750,7 @@ internal static bool validHeaderValueByte(byte c) {
 	1<<0x20 |
 	1<<0x09 */ // HTAB: %x09
             GoUntyped.Parse("170141183460469231731687303711589138944");
-    return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & ~(18446744069414584832UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & ~(((uint64)mask).Rsh((uint64)(64)))))) == 0;
+    return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & ~(18446744069414584832UL)) | (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & ~(9223372036854775807UL)))) == 0;
 }
 
 // canonicalMIMEHeaderKey is like CanonicalMIMEHeaderKey but is

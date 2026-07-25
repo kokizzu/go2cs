@@ -50,7 +50,7 @@ internal const bool unsigned = false;
 }
 
 [GoRecv] internal static void init(this ref fmt f, ж<buffer> Ꮡbuf) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.ValueSlot;
 
     f.buf = Ꮡbuf;
     f.clearflags();

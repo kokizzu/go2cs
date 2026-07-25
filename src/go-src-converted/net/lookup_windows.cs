@@ -47,14 +47,14 @@ internal static (nint proto, error err) getprotobyname(@string name) {
 
 // GetProtoByName return value is stored in thread local storage.
 // Start new os thread before the call to prevent races.
-[GoType("dyn")] partial struct lookupProtocol_result {
+[GoLocalName("result")] [GoType("dyn")] partial struct lookupProtocol_result {
     internal nint proto;
     internal error err;
 }
 
 // lookupProtocol looks up IP protocol name and returns correspondent protocol number.
 internal static (nint, error) lookupProtocol(context.Context ctx, @string name) {
-    var ch = new channel<lookupProtocol_result>(1);
+    var ch = new channel<lookupProtocol_result>(0);
     // unbuffered
     var chʗ1 = ch;
     goǃ(() => func((defer, recover) => {
@@ -68,16 +68,20 @@ internal static (nint, error) lookupProtocol(context.Context ctx, @string name) 
         Δruntime.LockOSThread();
         defer(Δruntime.UnlockOSThread);
         var (proto, err) = getprotobyname(name);
-        switch (select(chʗ1.ᐸꟷ(new lookupProtocol_result(proto: proto, err: err), ꓸꓸꓸ), ᐸꟷ(ctx.Done(), ꓸꓸꓸ))) {
+        var selᴛ13 = chʗ1.ᐸꟷ(new lookupProtocol_result(proto: proto, err: err), ꓸꓸꓸ);
+        var selᴛ14 = ctx.Done();
+        switch (select(selᴛ13, ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
         case 0: {
             break;
         }
-        case 1 when ctx.Done().ꟷᐳ(out _): {
+        case 1 when selᴛ14.ꟷᐳ(out _): {
             break;
         }}
     }));
-    switch (select(ᐸꟷ(ch, ꓸꓸꓸ), ᐸꟷ(ctx.Done(), ꓸꓸꓸ))) {
-    case 0 when ch.ꟷᐳ(out var r): {
+    var selᴛ15 = ch;
+    var selᴛ16 = ctx.Done();
+    switch (select(ᐸꟷ(selᴛ15, ꓸꓸꓸ), ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
+    case 0 when selᴛ15.ꟷᐳ(out var r): {
         if (r.err != default!) {
             {
                 var (proto, err) = lookupProtocolMap(name); if (err == default!) {
@@ -88,7 +92,7 @@ internal static (nint, error) lookupProtocol(context.Context ctx, @string name) 
         }
         return (r.proto, r.err);
     }
-    case 1 when ctx.Done().ꟷᐳ(out _): {
+    case 1 when selᴛ16.ꟷᐳ(out _): {
         return (0, mapErr(ctx.Err()));
     }}
     return default!;
@@ -109,7 +113,7 @@ internal static (slice<@string>, error) lookupHost(this ж<Resolver> Ꮡr, conte
     return (addrs, default!);
 }
 
-[GoType("dyn")] partial struct lookupIP_ret {
+[GoLocalName("ret")] [GoType("dyn")] partial struct lookupIP_ret {
     internal slice<IPAddr> addrs;
     internal error err;
 }
@@ -200,11 +204,13 @@ internal static (slice<IPAddr>, error) lookupIP(this ж<Resolver> Ꮡr, context.
             chʗ1.ᐸꟷ(new lookupIP_ret(addrs: addr, err: err));
         });
     }
-    switch (select(ᐸꟷ(ch, ꓸꓸꓸ), ᐸꟷ(ctx.Done(), ꓸꓸꓸ))) {
-    case 0 when ch.ꟷᐳ(out var rΔ1): {
+    var selᴛ17 = ch;
+    var selᴛ18 = ctx.Done();
+    switch (select(ᐸꟷ(selᴛ17, ꓸꓸꓸ), ᐸꟷ(selᴛ18, ꓸꓸꓸ))) {
+    case 0 when selᴛ17.ꟷᐳ(out var rΔ1): {
         return (rΔ1.addrs, rΔ1.err);
     }
-    case 1 when ctx.Done().ꟷᐳ(out _): {
+    case 1 when selᴛ18.ꟷᐳ(out _): {
         return (default!, new DNSErrorжerror(newDNSError(mapErr(ctx.Err()), // TODO(bradfitz,brainman): cancel the ongoing
  // GetAddrInfoW? It would require conditionally using
  // GetAddrInfoEx with lpOverlapped, which requires
@@ -359,7 +365,7 @@ internal static (@string, slice<ж<SRV>>, error) lookupSRV(this ж<Resolver> Ꮡ
     deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
     var srvs = new slice<ж<SRV>>(0, 10);
     foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_SRV, target)) {
-        var v = (ж<syscall.DNSSRVData>)(uintptr)(new @unsafe.Pointer(p.at(syscall.DNSRecord.ᏑData, 0)));
+        var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSSRVData>();
         srvs = append(srvs, Ꮡ(new SRV(absDomainName(syscall.UTF16ToString((~(ж<array<uint16>>)(uintptr)(new @unsafe.Pointer((~v).Target)))[..])), (~v).Port, (~v).Priority, (~v).Weight)));
     }
     ((byPriorityWeight)srvs).sort();
@@ -389,7 +395,7 @@ internal static (slice<ж<MX>>, error) lookupMX(this ж<Resolver> Ꮡr, context.
     deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
     var mxs = new slice<ж<MX>>(0, 10);
     foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_MX, name)) {
-        var v = (ж<syscall.DNSMXData>)(uintptr)(new @unsafe.Pointer(p.at(syscall.DNSRecord.ᏑData, 0)));
+        var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSMXData>();
         mxs = append(mxs, Ꮡ(new MX(absDomainName(windows.UTF16PtrToString((~v).NameExchange)), (~v).Preference)));
     }
     ((byPref)mxs).sort();
@@ -419,7 +425,7 @@ internal static (slice<ж<NS>>, error) lookupNS(this ж<Resolver> Ꮡr, context.
     deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
     var nss = new slice<ж<NS>>(0, 10);
     foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_NS, name)) {
-        var v = (ж<syscall.DNSPTRData>)(uintptr)(new @unsafe.Pointer(p.at(syscall.DNSRecord.ᏑData, 0)));
+        var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>();
         nss = append(nss, Ꮡ(new NS(absDomainName(syscall.UTF16ToString((~(ж<array<uint16>>)(uintptr)(new @unsafe.Pointer((~v).Host)))[..])))));
     }
     return (nss, default!);
@@ -448,7 +454,7 @@ internal static unsafe (slice<@string>, error) lookupTXT(this ж<Resolver> Ꮡr,
     deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
     var txts = new slice<@string>(0, 10);
     foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_TEXT, name)) {
-        var d = (ж<syscall.DNSTXTData>)(uintptr)(new @unsafe.Pointer(p.at(syscall.DNSRecord.ᏑData, 0)));
+        var d = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSTXTData>();
         @string s = ""u8;
         foreach (var (_, v) in new slice<ж<uint16>>(new ReadOnlySpan<ж<uint16>>((uint16**)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡ(((~d).StringArray[0]))).Value)), (int)((~d).StringCount)))) {
             s += windows.UTF16PtrToString(v);
@@ -487,7 +493,7 @@ internal static (slice<@string>, error) lookupAddr(this ж<Resolver> Ꮡr, conte
     deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
     var ptrs = new slice<@string>(0, 10);
     foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_PTR, arpa)) {
-        var v = (ж<syscall.DNSPTRData>)(uintptr)(new @unsafe.Pointer(p.at(syscall.DNSRecord.ᏑData, 0)));
+        var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>();
         ptrs = append(ptrs, absDomainName(windows.UTF16PtrToString((~v).Host)));
     }
     return (ptrs, default!);
@@ -535,7 +541,7 @@ Cname:
             if (!syscall.DnsNameCompare(Ꮡname, (~p).Name)) {
                 continue;
             }
-            Ꮡname = ((ж<syscall.DNSPTRData>)(uintptr)(new @unsafe.Pointer(Ꮡr.at(syscall.DNSRecord.ᏑData, 0)))).Value.Host; name = ref Ꮡname.Value;
+            Ꮡname = (Ꮡr.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>()).Value.Host; name = ref Ꮡname.Value;
             goto continue_Cname;
         }
         break;

@@ -100,7 +100,7 @@ internal static float64 tan(float64 x) {
     const float64 PI4C = 2.69515142907905952645e-15; // 0x3ce8469898cc5170,
     // special cases
     switch (ᐧ) {
-    case {} when x == 0 || IsNaN(x): {
+    case {} when x == 0D || IsNaN(x): {
         return x;
     }
     case {} when IsInf(x, // return ±0 || NaN()
@@ -110,7 +110,7 @@ internal static float64 tan(float64 x) {
 
     // make argument positive but save the sign
     var sign = false;
-    if (x < 0) {
+    if (x < 0D) {
         x = -x;
         sign = true;
     }

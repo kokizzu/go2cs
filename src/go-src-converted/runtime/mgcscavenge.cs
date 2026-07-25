@@ -620,16 +620,16 @@ internal static uintptr scavenge(this ж<pageAlloc> Ꮡp, uintptr nbytes, Func<b
 internal static void printScavTrace(uintptr releasedBg, uintptr releasedEager, bool forced) {
     assertLockHeld(Ꮡscavenger.of(scavengerState.Ꮡlock));
     printlock();
-    print("scav ",
-        (releasedBg >> (int)(10)), " KiB work (bg), ",
-        (releasedEager >> (int)(10)), " KiB work (eager), ",
-        (ᏑgcController.of(gcControllerState.ᏑheapReleased).load() >> (int)(10)), " KiB now, ",
-        (ᏑgcController.of(gcControllerState.ᏑheapInUse).load() * 100) / heapRetained(), "% util");
+    print((@string)"scav ",
+        (releasedBg >> (int)(10)), (@string)" KiB work (bg), ",
+        (releasedEager >> (int)(10)), (@string)" KiB work (eager), ",
+        (ᏑgcController.of(gcControllerState.ᏑheapReleased).load() >> (int)(10)), (@string)" KiB now, ",
+        (ᏑgcController.of(gcControllerState.ᏑheapInUse).load() * 100) / heapRetained(), (@string)"% util");
     if (forced){
-        print(" (forced)");
+        print((@string)" (forced)");
     } else 
     if (scavenger.printControllerReset) {
-        print(" [controller reset]");
+        print((@string)" [controller reset]");
         scavenger.printControllerReset = false;
     }
     println();
@@ -818,11 +818,11 @@ internal static uint64 fillAligned(uint64 x, nuint m) {
 // max == min.
 [GoRecv] internal static (nuint, nuint) findScavengeCandidate(this ref pallocData m, nuint searchIdx, uintptr minimum, uintptr max) {
     if ((uintptr)(minimum & (minimum - 1)) != 0 || minimum == 0){
-        print("runtime: min = ", minimum, "\n");
+        print((@string)"runtime: min = ", minimum, (@string)"\n");
         @throw("min must be a non-zero power of 2"u8);
     } else 
     if (minimum > maxPagesPerPhysPage) {
-        print("runtime: min = ", minimum, "\n");
+        print((@string)"runtime: min = ", minimum, (@string)"\n");
         @throw("min too large"u8);
     }
     // max may not be min-aligned, so we might accidentally truncate to
@@ -1016,7 +1016,7 @@ internal static (chunkIdx, nuint) find(this ж<scavengeIndex> Ꮡs, bool force) 
     // N.B. We'll never map the 0'th chunk, so minHeapIdx ensures this loop overflow.
     for (chunkIdx i = start; i >= min; i--) {
         // Skip over chunks.
-        if (!Ꮡ(s.chunks[i]).load().shouldScavenge(gen, force)) {
+        if (!Ꮡ(s.chunks, (int)(nuint)(i)).load().shouldScavenge(gen, force)) {
             continue;
         }
         // We're still scavenging this chunk.
@@ -1053,14 +1053,14 @@ internal static (chunkIdx, nuint) find(this ж<scavengeIndex> Ꮡs, bool force) 
 //
 // alloc may only run concurrently with find.
 [GoRecv] internal static void alloc(this ref scavengeIndex s, chunkIdx ci, nuint npages) {
-    var sc = Ꮡ(s.chunks[ci]).load();
+    var sc = Ꮡ(s.chunks, (int)(nuint)(ci)).load();
     sc.alloc(npages, s.gen);
     // TODO(mknyszek): Consider eagerly backing memory with huge pages
     // here and track whether we believe this chunk is backed by huge pages.
     // In the past we've attempted to use sysHugePageCollapse (which uses
     // MADV_COLLAPSE on Linux, and is unsupported elswhere) for this purpose,
     // but that caused performance issues in production environments.
-    Ꮡ(s.chunks[ci]).store(sc);
+    Ꮡ(s.chunks, (int)(nuint)(ci)).store(sc);
 }
 
 // free updates metadata for chunk at index ci with the fact that
@@ -1070,9 +1070,9 @@ internal static (chunkIdx, nuint) find(this ж<scavengeIndex> Ꮡs, bool force) 
 internal static void free(this ж<scavengeIndex> Ꮡs, chunkIdx ci, nuint page, nuint npages) {
     ref var s = ref Ꮡs.Value;
 
-    var sc = Ꮡ(s.chunks[ci]).load();
+    var sc = Ꮡ(s.chunks, (int)(nuint)(ci)).load();
     sc.free(npages, s.gen);
-    Ꮡ(s.chunks[ci]).store(sc);
+    Ꮡ(s.chunks, (int)(nuint)(ci)).store(sc);
     // Update scavenge search addresses.
     var addr = chunkBase(ci) + (uintptr)(page + npages - 1) * (uintptr)pageSize;
     if (s.freeHWM.lessThan(new offAddr(addr))) {
@@ -1111,9 +1111,9 @@ internal static void nextGen(this ж<scavengeIndex> Ꮡs) {
 //
 // setEmpty may only run concurrently with find.
 [GoRecv] internal static void setEmpty(this ref scavengeIndex s, chunkIdx ci) {
-    var val = Ꮡ(s.chunks[ci]).load();
+    var val = Ꮡ(s.chunks, (int)(nuint)(ci)).load();
     Ꮡ(val).of(scavChunkData.ᏑscavChunkFlags).setEmpty();
-    Ꮡ(s.chunks[ci]).store(val);
+    Ꮡ(s.chunks, (int)(nuint)(ci)).store(val);
 }
 
 // atomicScavChunkData is an atomic wrapper around a scavChunkData
@@ -1220,7 +1220,7 @@ internal static bool shouldScavenge(this scavChunkData sc, uint32 currGen, bool 
 // alloc updates sc given that npages were allocated in the corresponding chunk.
 [GoRecv] internal static void alloc(this ref scavChunkData sc, nuint npages, uint32 newGen) {
     if ((nuint)sc.inUse + npages > pallocChunkPages) {
-        print("runtime: inUse=", sc.inUse, " npages=", npages, "\n");
+        print((@string)"runtime: inUse=", sc.inUse, (@string)" npages=", npages, (@string)"\n");
         @throw("too many pages allocated in chunk?"u8);
     }
     if (sc.gen != newGen) {
@@ -1237,7 +1237,7 @@ internal static bool shouldScavenge(this scavChunkData sc, uint32 currGen, bool 
 // free updates sc given that npages was freed in the corresponding chunk.
 [GoRecv] internal static void free(this ref scavChunkData sc, nuint npages, uint32 newGen) {
     if ((nuint)sc.inUse < npages) {
-        print("runtime: inUse=", sc.inUse, " npages=", npages, "\n");
+        print((@string)"runtime: inUse=", sc.inUse, (@string)" npages=", npages, (@string)"\n");
         @throw("allocated pages below zero?"u8);
     }
     if (sc.gen != newGen) {
@@ -1294,7 +1294,7 @@ internal static bool shouldScavenge(this scavChunkData sc, uint32 currGen, bool 
         output = c.max;
     }
     // Update the controller's state.
-    if (c.ti != 0 && c.tt != 0) {
+    if (c.ti != 0D && c.tt != 0D) {
         c.errIntegral += (c.kp * period / c.ti) * (setpoint - input) + (period / c.tt) * (output - rawOutput);
         if (isInf(c.errIntegral) || isNaN(c.errIntegral)) {
             // So much error has accumulated that we managed to overflow.
@@ -1310,7 +1310,7 @@ internal static bool shouldScavenge(this scavChunkData sc, uint32 currGen, bool 
 
 // reset resets the controller state, except for controller error flags.
 [GoRecv] internal static void reset(this ref piController c) {
-    c.errIntegral = 0;
+    c.errIntegral = 0D;
 }
 
 } // end runtime_package

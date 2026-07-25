@@ -42,7 +42,7 @@ internal static void addUint64(ж<cryptobyte.Builder> Ꮡb, uint64 v) {
 // readUint64 decodes a big-endian, 64-bit value into out and advances over it.
 // It reports whether the read was successful.
 internal static bool readUint64(ж<cryptobyte.String> Ꮡs, ж<uint64> Ꮡout) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.ValueSlot;
     ref var @out = ref Ꮡout.Value;
 
     ref var hi = ref heap(new uint32(), out var Ꮡhi);
@@ -57,8 +57,8 @@ internal static bool readUint64(ж<cryptobyte.String> Ꮡs, ж<uint64> Ꮡout) {
 // readUint8LengthPrefixed acts like s.ReadUint8LengthPrefixed, but targets a
 // []byte instead of a cryptobyte.String.
 internal static bool readUint8LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<slice<byte>> Ꮡout) {
-    ref var s = ref Ꮡs.Value;
-    ref var @out = ref Ꮡout.Value;
+    ref var s = ref Ꮡs.ValueSlot;
+    ref var @out = ref Ꮡout.ValueSlot;
 
     return s.ReadUint8LengthPrefixed(Ꮡ(new cryptobyte.String(@out)));
 }
@@ -66,8 +66,8 @@ internal static bool readUint8LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<slic
 // readUint16LengthPrefixed acts like s.ReadUint16LengthPrefixed, but targets a
 // []byte instead of a cryptobyte.String.
 internal static bool readUint16LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<slice<byte>> Ꮡout) {
-    ref var s = ref Ꮡs.Value;
-    ref var @out = ref Ꮡout.Value;
+    ref var s = ref Ꮡs.ValueSlot;
+    ref var @out = ref Ꮡout.ValueSlot;
 
     return s.ReadUint16LengthPrefixed(Ꮡ(new cryptobyte.String(@out)));
 }
@@ -75,8 +75,8 @@ internal static bool readUint16LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<sli
 // readUint24LengthPrefixed acts like s.ReadUint24LengthPrefixed, but targets a
 // []byte instead of a cryptobyte.String.
 internal static bool readUint24LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<slice<byte>> Ꮡout) {
-    ref var s = ref Ꮡs.Value;
-    ref var @out = ref Ꮡout.Value;
+    ref var s = ref Ꮡs.ValueSlot;
+    ref var @out = ref Ꮡout.ValueSlot;
 
     return s.ReadUint24LengthPrefixed(Ꮡ(new cryptobyte.String(@out)));
 }
@@ -1594,7 +1594,7 @@ internal static bool unmarshal(this ж<certificateMsgTLS13> Ꮡm, slice<byte> da
 }
 
 internal static bool unmarshalCertificate(ж<cryptobyte.String> Ꮡs, ж<Certificate> Ꮡcertificate) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.ValueSlot;
     ref var certificate = ref Ꮡcertificate.Value;
 
     ref var certList = ref heap<cryptobyte.String>(out var ᏑcertList);

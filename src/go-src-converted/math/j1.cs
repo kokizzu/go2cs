@@ -90,23 +90,23 @@ public static float64 J1(float64 x) {
     case {} when IsNaN(x): {
         return x;
     }
-    case {} when IsInf(x, 0) || x == 0: {
-        return 0;
+    case {} when IsInf(x, 0) || x == 0D: {
+        return 0D;
     }}
 
     var sign = false;
-    if (x < 0) {
+    if (x < 0D) {
         x = -x;
         sign = true;
     }
-    if (x >= 2) {
+    if (x >= 2D) {
         var (sΔ1, c) = Sincos(x);
         var ss = -sΔ1 - c;
         var cc = sΔ1 - c;
         // make sure x+x does not overflow
         if (x < MaxFloat64 / 2D) {
             var zΔ1 = Cos(x + x);
-            if (sΔ1 * c > 0){
+            if (sΔ1 * c > 0D){
                 cc = zΔ1 / ss;
             } else {
                 ss = zΔ1 / cc;
@@ -167,24 +167,24 @@ public static float64 Y1(float64 x) {
     const float64 V04 = 1.66559246207992079114e-11; // 0x3DB25039DACA772A
     // special cases
     switch (ᐧ) {
-    case {} when x < 0 || IsNaN(x): {
+    case {} when x < 0D || IsNaN(x): {
         return NaN();
     }
     case {} when IsInf(x, 1): {
-        return 0;
+        return 0D;
     }
-    case {} when x is 0: {
+    case {} when x is 0D: {
         return Inf(-1);
     }}
 
-    if (x >= 2) {
+    if (x >= 2D) {
         var (s, c) = Sincos(x);
         var ss = -s - c;
         var cc = s - c;
         // make sure x+x does not overflow
         if (x < MaxFloat64 / 2D) {
             var zΔ1 = Cos(x + x);
-            if (s * c > 0){
+            if (s * c > 0D){
                 cc = zΔ1 / ss;
             } else {
                 ss = zΔ1 / cc;
@@ -216,8 +216,8 @@ public static float64 Y1(float64 x) {
     }
     var z = x * x;
     var u = U00 + z * (U01 + z * (U02 + z * (U03 + z * U04)));
-    var v = 1 + z * (V00 + z * (V01 + z * (V02 + z * (V03 + z * V04))));
-    return x * (u / v) + /* (2 / Pi) */ 0.6366197723675814D * (J1(x) * Log(x) - 1 / x);
+    var v = 1D + z * (V00 + z * (V01 + z * (V02 + z * (V03 + z * V04))));
+    return x * (u / v) + /* (2 / Pi) */ 0.6366197723675814D * (J1(x) * Log(x) - 1D / x);
 }
 
 // For x >= 8, the asymptotic expansions of pone is
@@ -355,7 +355,7 @@ internal static ref array<float64> p1S2 => ref Ꮡp1S2.Value;
 internal static float64 pone(float64 x) {
     ж<array<float64>> p = default!;
     ж<array<float64>> q = default!;
-    if (x >= 8){
+    if (x >= 8D){
         p = Ꮡp1R8;
         q = Ꮡp1S8;
     } else 
@@ -367,14 +367,14 @@ internal static float64 pone(float64 x) {
         p = Ꮡp1R3;
         q = Ꮡp1S3;
     } else 
-    if (x >= 2) {
+    if (x >= 2D) {
         p = Ꮡp1R2;
         q = Ꮡp1S2;
     }
-    var z = 1 / (x * x);
+    var z = 1D / (x * x);
     var r = p.Value[0] + z * (p.Value[1] + z * (p.Value[2] + z * (p.Value[3] + z * (p.Value[4] + z * p.Value[5]))));
     var s = 1.0D + z * (q.Value[0] + z * (q.Value[1] + z * (q.Value[2] + z * (q.Value[3] + z * q.Value[4]))));
-    return 1 + r / s;
+    return 1D + r / s;
 }
 
 // For x >= 8, the asymptotic expansions of qone is
@@ -520,7 +520,7 @@ internal static ref array<float64> q1S2 => ref Ꮡq1S2.Value;
 internal static float64 qone(float64 x) {
     ж<array<float64>> p = default!;
     ж<array<float64>> q = default!;
-    if (x >= 8){
+    if (x >= 8D){
         p = Ꮡq1R8;
         q = Ꮡq1S8;
     } else 
@@ -532,13 +532,13 @@ internal static float64 qone(float64 x) {
         p = Ꮡq1R3;
         q = Ꮡq1S3;
     } else 
-    if (x >= 2) {
+    if (x >= 2D) {
         p = Ꮡq1R2;
         q = Ꮡq1S2;
     }
-    var z = 1 / (x * x);
+    var z = 1D / (x * x);
     var r = p.Value[0] + z * (p.Value[1] + z * (p.Value[2] + z * (p.Value[3] + z * (p.Value[4] + z * p.Value[5]))));
-    var s = 1 + z * (q.Value[0] + z * (q.Value[1] + z * (q.Value[2] + z * (q.Value[3] + z * (q.Value[4] + z * q.Value[5])))));
+    var s = 1D + z * (q.Value[0] + z * (q.Value[1] + z * (q.Value[2] + z * (q.Value[3] + z * (q.Value[4] + z * q.Value[5])))));
     return (0.375D + r / s) / x;
 }
 

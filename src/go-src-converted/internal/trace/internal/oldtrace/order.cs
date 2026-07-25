@@ -141,14 +141,14 @@ internal static error transition(map<uint64, gState> gs, uint64 g, gState init, 
 }
 
 internal static void Push(this ж<orderEventList> Ꮡh, orderEvent x) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.ValueSlot;
 
     h = builtin.append(h, x);
     heapUp(Ꮡh, len(h) - 1);
 }
 
 internal static orderEvent Pop(this ж<orderEventList> Ꮡh) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.ValueSlot;
 
     nint n = len(h) - 1;
     ((h)[0], (h)[n]) = ((h)[n], (h)[0]);
@@ -159,7 +159,7 @@ internal static orderEvent Pop(this ж<orderEventList> Ꮡh) {
 }
 
 internal static void heapUp(ж<orderEventList> Ꮡh, nint j) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.ValueSlot;
 
     while (ᐧ) {
         nint i = (j - 1) / 2;
@@ -173,7 +173,7 @@ internal static void heapUp(ж<orderEventList> Ꮡh, nint j) {
 }
 
 internal static bool heapDown(ж<orderEventList> Ꮡh, nint i0, nint n) {
-    ref var h = ref Ꮡh.Value;
+    ref var h = ref Ꮡh.ValueSlot;
 
     nint i = i0;
     while (ᐧ) {

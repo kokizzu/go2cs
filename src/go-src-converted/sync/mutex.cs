@@ -45,7 +45,7 @@ internal static void fatal(@string s) => throw new global::System.InvalidOperati
 }
 
 // A Locker represents an object that can be locked and unlocked.
-[GoType] partial interface Locker {
+[GoType] public partial interface Locker {
     void Lock();
     void Unlock();
 }

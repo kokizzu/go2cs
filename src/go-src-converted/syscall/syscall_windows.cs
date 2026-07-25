@@ -531,7 +531,7 @@ internal static error setFilePointerEx(ΔHandle handle, int64 distToMove, ж<int
 }
 
 public static (int64 newoffset, error err) Seek(ΔHandle fd, int64 offset, nint whence) {
-    int64 newoffset = default!;
+    ref var newoffset = ref heap(new int64(), out var Ꮡnewoffset);
     error err = default!;
 
     uint32 w = default!;
@@ -549,7 +549,7 @@ public static (int64 newoffset, error err) Seek(ΔHandle fd, int64 offset, nint 
         break;
     }}
 
-    err = setFilePointerEx(fd, offset, Ꮡ(newoffset), w);
+    err = setFilePointerEx(fd, offset, Ꮡnewoffset, w);
     return (newoffset, err);
 }
 
@@ -968,7 +968,7 @@ public static (ΔSockaddr, error) Sockaddr(this ж<RawSockaddrAny> Ꮡrsa) {
 
     var exprᴛ1 = rsa.Addr.Family;
     if (exprᴛ1 == AF_UNIX) {
-        var pp = (ж<RawSockaddrUnix>)(uintptr)(@unsafe.Pointer.FromRef(ref rsa));
+        var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrUnix>();
         var sa = @new<SockaddrUnix>();
         if ((~pp).Path[0] == 0) {
             // "Abstract" Unix domain socket.
@@ -987,11 +987,11 @@ public static (ΔSockaddr, error) Sockaddr(this ж<RawSockaddrAny> Ꮡrsa) {
             // everyone uses this convention.
             n++;
         }
-        sa.Value.Name = ((@string)@unsafe.Slice((ж<byte>)(uintptr)(new @unsafe.Pointer(pp.at(RawSockaddrUnix.ᏑPath, 0))), n));
+        sa.Value.Name = ((@string)@unsafe.Slice(pp.at(RawSockaddrUnix.ᏑPath, 0).Reinterpret<int8, byte>(), n));
         return (new SockaddrUnixжΔSockaddr(sa), default!);
     }
     if (exprᴛ1 == AF_INET) {
-        var pp = (ж<RawSockaddrInet4>)(uintptr)(@unsafe.Pointer.FromRef(ref rsa));
+        var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrInet4>();
         var sa = @new<SockaddrInet4>();
         var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(RawSockaddrInet4.ᏑPort)));
         sa.Value.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
@@ -999,7 +999,7 @@ public static (ΔSockaddr, error) Sockaddr(this ж<RawSockaddrAny> Ꮡrsa) {
         return (new SockaddrInet4жΔSockaddr(sa), default!);
     }
     if (exprᴛ1 == AF_INET6) {
-        var pp = (ж<RawSockaddrInet6>)(uintptr)(@unsafe.Pointer.FromRef(ref rsa));
+        var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrInet6>();
         var sa = @new<SockaddrInet6>();
         var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(RawSockaddrInet6.ᏑPort)));
         sa.Value.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
@@ -1026,7 +1026,7 @@ public static error /*err*/ SetsockoptInt(ΔHandle fd, nint level, nint opt, nin
 
     ref var v = ref heap<int32>(out var Ꮡv);
     v = (int32)value;
-    return Setsockopt(fd, (int32)level, (int32)opt, (ж<byte>)(uintptr)(new @unsafe.Pointer(Ꮡv)), (int32)@unsafe.Sizeof(v));
+    return Setsockopt(fd, (int32)level, (int32)opt, Ꮡv.Reinterpret<int32, byte>(), (int32)@unsafe.Sizeof(v));
 }
 
 public static error /*err*/ Bind(ΔHandle fd, ΔSockaddr sa) {
@@ -1173,9 +1173,9 @@ public static error LoadConnectEx() {
         ref var n = ref heap(new uint32(), out var Ꮡn);
         connectExFunc.err = WSAIoctl(s,
             SIO_GET_EXTENSION_FUNCTION_POINTER,
-            (ж<byte>)(uintptr)(new @unsafe.Pointer(ᏑWSAID_CONNECTEX)),
+            ᏑWSAID_CONNECTEX.Reinterpret<GUID, byte>(),
             (uint32)@unsafe.Sizeof(WSAID_CONNECTEX),
-            (ж<byte>)(uintptr)(@unsafe.Pointer.FromRef(ref (ᏑconnectExFunc.of(connectExFuncᴛ1.Ꮡaddr)).Value)),
+            ᏑconnectExFunc.of(connectExFuncᴛ1.Ꮡaddr).Reinterpret<uintptr, byte>(),
             (uint32)@unsafe.Sizeof(connectExFunc.addr),
             Ꮡn, nil, 0);
     }));
@@ -1334,7 +1334,7 @@ public static (nint, error) GetsockoptInt(ΔHandle fd, nint level, nint opt) {
     optval = (int32)0;
     ref var optlen = ref heap<int32>(out var Ꮡoptlen);
     optlen = (int32)@unsafe.Sizeof(optval);
-    var err = Getsockopt(fd, (int32)level, (int32)opt, (ж<byte>)(uintptr)(new @unsafe.Pointer(Ꮡoptval)), Ꮡoptlen);
+    var err = Getsockopt(fd, (int32)level, (int32)opt, Ꮡoptval.Reinterpret<int32, byte>(), Ꮡoptlen);
     return ((nint)optval, err);
 }
 
@@ -1344,7 +1344,7 @@ public static error /*err*/ SetsockoptLinger(ΔHandle fd, nint level, nint opt, 
     ref var l = ref Ꮡl.Value;
     ref var sys = ref heap<sysLinger>(out var Ꮡsys);
     sys = new sysLinger(Onoff: (uint16)l.Onoff, Linger: (uint16)l.ΔLinger);
-    return Setsockopt(fd, (int32)level, (int32)opt, (ж<byte>)(uintptr)(new @unsafe.Pointer(Ꮡsys)), (int32)@unsafe.Sizeof(sys));
+    return Setsockopt(fd, (int32)level, (int32)opt, Ꮡsys.Reinterpret<sysLinger, byte>(), (int32)@unsafe.Sizeof(sys));
 }
 
 public static error /*err*/ SetsockoptInet4Addr(ΔHandle fd, nint level, nint opt, array<byte> value) {
@@ -1358,7 +1358,7 @@ public static error /*err*/ SetsockoptIPMreq(ΔHandle fd, nint level, nint opt, 
     error err = default!;
 
     ref var mreq = ref Ꮡmreq.Value;
-    return Setsockopt(fd, (int32)level, (int32)opt, (ж<byte>)(uintptr)(new @unsafe.Pointer(Ꮡmreq)), (int32)@unsafe.Sizeof(mreq));
+    return Setsockopt(fd, (int32)level, (int32)opt, Ꮡmreq.Reinterpret<IPMreq, byte>(), (int32)@unsafe.Sizeof(mreq));
 }
 
 public static error /*err*/ SetsockoptIPv6Mreq(ΔHandle fd, nint level, nint opt, ж<IPv6Mreq> Ꮡmreq) {
@@ -1582,11 +1582,11 @@ public static (nint n, error err) Readlink(@string path, slice<byte> buf) {
         if (err != default!) {
             (n, err) = (-1, err); return;
         }
-        var rdb = (ж<reparseDataBuffer>)(uintptr)(new @unsafe.Pointer(Ꮡ(rdbbuf, 0)));
+        var rdb = Ꮡ(rdbbuf, 0).Reinterpret<byte, reparseDataBuffer>();
         @string s = default!;
         var exprᴛ1 = (~rdb).ReparseTag;
         if (exprᴛ1 == IO_REPARSE_TAG_SYMLINK) {
-            var data = (ж<symbolicLinkReparseBuffer>)(uintptr)(new @unsafe.Pointer(rdb.of(reparseDataBuffer.ᏑreparseBuffer)));
+            var data = rdb.of(reparseDataBuffer.ᏑreparseBuffer).Reinterpret<byte, symbolicLinkReparseBuffer>();
             var p = (ж<array<uint16>>)(uintptr)(new @unsafe.Pointer(data.at(symbolicLinkReparseBuffer.ᏑPathBuffer, 0)));
             s = UTF16ToString((~p)[(int)((~data).SubstituteNameOffset / 2)..(int)(((~data).SubstituteNameOffset + (~data).SubstituteNameLength) / 2)]);
             if ((uint32)((~data).Flags & (uint32)_SYMLINK_FLAG_RELATIVE) == 0) {
@@ -1609,7 +1609,7 @@ public static (nint n, error err) Readlink(@string path, slice<byte> buf) {
             }
         }
         else if (exprᴛ1 == _IO_REPARSE_TAG_MOUNT_POINT) {
-            var data = (ж<mountPointReparseBuffer>)(uintptr)(new @unsafe.Pointer(rdb.of(reparseDataBuffer.ᏑreparseBuffer)));
+            var data = rdb.of(reparseDataBuffer.ᏑreparseBuffer).Reinterpret<byte, mountPointReparseBuffer>();
             var p = (ж<array<uint16>>)(uintptr)(new @unsafe.Pointer(data.at(mountPointReparseBuffer.ᏑPathBuffer, 0)));
             s = UTF16ToString((~p)[(int)((~data).SubstituteNameOffset / 2)..(int)(((~data).SubstituteNameOffset + (~data).SubstituteNameLength) / 2)]);
             if (len(s) >= 4 && s[..4] == @"\??\"){
@@ -1679,7 +1679,7 @@ internal static (ж<_PROC_THREAD_ATTRIBUTE_LIST>, error) newProcThreadAttributeL
         return (default!, err);
     }
     // size is guaranteed to be ≥1 by initializeProcThreadAttributeList.
-    var al = (ж<_PROC_THREAD_ATTRIBUTE_LIST>)(uintptr)(new @unsafe.Pointer(Ꮡ(new slice<byte>((nint)(size)), 0)));
+    var al = Ꮡ(new slice<byte>((nint)(size)), 0).Reinterpret<byte, _PROC_THREAD_ATTRIBUTE_LIST>();
     err = initializeProcThreadAttributeList(al, maxAttrCount, 0, Ꮡsize);
     if (err != default!) {
         return (default!, err);

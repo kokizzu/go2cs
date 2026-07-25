@@ -445,8 +445,9 @@ internal static void tryUpdate(this ж<resolverConfig> Ꮡconf, @string name) =>
 });
 
 [GoRecv] internal static bool tryAcquireSema(this ref resolverConfig conf) {
-    switch (ᐧ) {
-    case ᐧ when conf.ch.ᐸꟷ(new EmptyStruct(), ꟷ): {
+    var selᴛ8 = conf.ch.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+    switch (trySelect(selᴛ8)) {
+    case 0: {
         return true;
     }
     default: {
@@ -636,7 +637,7 @@ internal static (slice<IPAddr> addrs, error err) goLookupIP(this ж<Resolver> �
     return (addrs, err);
 }
 
-[GoType("dyn")] partial struct goLookupIPCNAMEOrder_result {
+[GoLocalName("result")] [GoType("dyn")] partial struct goLookupIPCNAMEOrder_result {
     internal dnsmessage.Parser p;
     internal @string server;
     internal error error;

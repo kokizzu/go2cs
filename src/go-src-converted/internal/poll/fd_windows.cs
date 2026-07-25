@@ -97,7 +97,7 @@ public static Action InitWSA = sync.OnceFunc(() => {
 }
 
 [GoRecv] internal static void InitBufs(this ref operation o, ж<slice<slice<byte>>> Ꮡbuf) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.ValueSlot;
 
     if (o.bufs == default!){
         o.bufs = new slice<Δsyscall.WSABuf>(0, len(buf));
@@ -345,7 +345,7 @@ public static (@string, error) Init(this ж<FD> Ꮡfd, @string net, bool pollabl
         ref var flag = ref heap<uint32>(out var Ꮡflag);
         flag = (uint32)0;
         var size = (uint32)@unsafe.Sizeof(flag);
-        var errΔ3 = Δsyscall.WSAIoctl(fd.Sysfd, Δsyscall.SIO_UDP_CONNRESET, (ж<byte>)(uintptr)(new @unsafe.Pointer(Ꮡflag)), size, nil, 0, Ꮡret, nil, 0);
+        var errΔ3 = Δsyscall.WSAIoctl(fd.Sysfd, Δsyscall.SIO_UDP_CONNRESET, Ꮡflag.Reinterpret<uint32, byte>(), size, nil, 0, Ꮡret, nil, 0);
         if (errΔ3 != default!) {
             return ("wsaioctl", errΔ3);
         }
@@ -822,7 +822,7 @@ public static (nint, error) Pwrite(this ж<FD> Ꮡfd, slice<byte> buf, int64 off
 // Writev emulates the Unix writev system call.
 public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> Ꮡbuf) => func<(int64, error)>((defer, recover) => {
     ref var fd = ref Ꮡfd.Value;
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.ValueSlot;
 
     if (len(buf) == 0) {
         return (0, default!);
@@ -972,13 +972,13 @@ internal static (@string, error) acceptOne(this ж<FD> Ꮡfd, syscallꓸHandle s
     o.handle = s;
     o.rsan = (int32)@unsafe.Sizeof(rawsa[0]);
     var rawsaʗ1 = rawsa;
-    var (_, err) = execIO(Ꮡo, (ж<operation> oΔ1) => AcceptFunc((~(~oΔ1).fd).Sysfd, (~oΔ1).handle, (ж<byte>)(uintptr)(new @unsafe.Pointer(Ꮡ(rawsaʗ1, 0))), 0, (uint32)(~oΔ1).rsan, (uint32)(~oΔ1).rsan, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo)));
+    var (_, err) = execIO(Ꮡo, (ж<operation> oΔ1) => AcceptFunc((~(~oΔ1).fd).Sysfd, (~oΔ1).handle, Ꮡ(rawsaʗ1, 0).Reinterpret<Δsyscall.RawSockaddrAny, byte>(), 0, (uint32)(~oΔ1).rsan, (uint32)(~oΔ1).rsan, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo)));
     if (err != default!) {
         CloseFunc(s);
         return ("acceptex", err);
     }
     // Inherit properties of the listening socket.
-    err = Δsyscall.Setsockopt(s, Δsyscall.SOL_SOCKET, Δsyscall.SO_UPDATE_ACCEPT_CONTEXT, (ж<byte>)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡfd.of(FD.ᏑSysfd)).Value)), (int32)@unsafe.Sizeof(fd.Sysfd));
+    err = Δsyscall.Setsockopt(s, Δsyscall.SOL_SOCKET, Δsyscall.SO_UPDATE_ACCEPT_CONTEXT, Ꮡfd.of(FD.ᏑSysfd).Reinterpret<syscallꓸHandle, byte>(), (int32)@unsafe.Sizeof(fd.Sysfd));
     if (err != default!) {
         CloseFunc(s);
         return ("setsockopt", err);
@@ -1167,7 +1167,7 @@ internal static int32 sockaddrInet4ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж
     ref var sa = ref Ꮡsa.Value;
 
     rsa = new Δsyscall.RawSockaddrAny(nil);
-    var raw = (ж<Δsyscall.RawSockaddrInet4>)(uintptr)(new @unsafe.Pointer(Ꮡrsa));
+    var raw = Ꮡrsa.Reinterpret<Δsyscall.RawSockaddrAny, Δsyscall.RawSockaddrInet4>();
     raw.Value.Family = Δsyscall.AF_INET;
     var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(raw.of(Δsyscall.RawSockaddrInet4.ᏑPort)));
     p.Value[0] = (byte)((sa.Port >> (int)(8)));
@@ -1181,7 +1181,7 @@ internal static int32 sockaddrInet6ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж
     ref var sa = ref Ꮡsa.Value;
 
     rsa = new Δsyscall.RawSockaddrAny(nil);
-    var raw = (ж<Δsyscall.RawSockaddrInet6>)(uintptr)(new @unsafe.Pointer(Ꮡrsa));
+    var raw = Ꮡrsa.Reinterpret<Δsyscall.RawSockaddrAny, Δsyscall.RawSockaddrInet6>();
     raw.Value.Family = Δsyscall.AF_INET6;
     var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(raw.of(Δsyscall.RawSockaddrInet6.ᏑPort)));
     p.Value[0] = (byte)((sa.Port >> (int)(8)));
@@ -1194,7 +1194,7 @@ internal static int32 sockaddrInet6ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж
 internal static void rawToSockaddrInet4(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж<Δsyscall.SockaddrInet4> Ꮡsa) {
     ref var sa = ref Ꮡsa.Value;
 
-    var pp = (ж<Δsyscall.RawSockaddrInet4>)(uintptr)(new @unsafe.Pointer(Ꮡrsa));
+    var pp = Ꮡrsa.Reinterpret<Δsyscall.RawSockaddrAny, Δsyscall.RawSockaddrInet4>();
     var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(Δsyscall.RawSockaddrInet4.ᏑPort)));
     sa.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
     sa.Addr = pp.Value.Addr.Clone();
@@ -1203,7 +1203,7 @@ internal static void rawToSockaddrInet4(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж<
 internal static void rawToSockaddrInet6(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж<Δsyscall.SockaddrInet6> Ꮡsa) {
     ref var sa = ref Ꮡsa.Value;
 
-    var pp = (ж<Δsyscall.RawSockaddrInet6>)(uintptr)(new @unsafe.Pointer(Ꮡrsa));
+    var pp = Ꮡrsa.Reinterpret<Δsyscall.RawSockaddrAny, Δsyscall.RawSockaddrInet6>();
     var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(Δsyscall.RawSockaddrInet6.ᏑPort)));
     sa.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
     sa.ZoneId = pp.Value.Scope_id;

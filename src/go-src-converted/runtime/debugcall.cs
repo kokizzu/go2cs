@@ -112,7 +112,7 @@ internal static void debugCallWrap(uintptr dispatch) {
         // implicit closure allocation in the runtime.
         ref var fn = ref heap<Action>(out var Ꮡfn);
         fn = debugCallWrap1;
-        var newg = newproc1(~(ж<ж<funcval>>)(uintptr)(new @unsafe.Pointer(Ꮡfn)), gpʗ1, callerpc, false, waitReasonZero);
+        var newg = newproc1(~Ꮡfn.Reinterpret<Action, ж<funcval>>(), gpʗ1, callerpc, false, waitReasonZero);
         var args = Ꮡ(new debugCallWrapArgs(
             dispatch: dispatch,
             callingG: gpʗ1
@@ -237,7 +237,7 @@ internal static void debugCallWrap2(uintptr dispatch) => func((defer, recover) =
     ref var dispatchF = ref heap<Action>(out var ᏑdispatchF);
     ref var dispatchFV = ref heap<funcval>(out var ᏑdispatchFV);
     dispatchFV = new funcval(dispatch);
-    ((ж<@unsafe.Pointer>)(uintptr)(new @unsafe.Pointer(ᏑdispatchF))).Value = (uintptr)noescape(new @unsafe.Pointer(ᏑdispatchFV));
+    (ᏑdispatchF.Reinterpret<Action, @unsafe.Pointer>()).Value = (uintptr)noescape(new @unsafe.Pointer(ᏑdispatchFV));
     bool ok = default!;
     defer(() => {
         if (!ok) {

@@ -23,14 +23,16 @@ internal static channel<EmptyStruct> closedChan;
 // source (e.g. a zeroReader).
 public static void MaybeReadByte(io.Reader r) {
     ᏑclosedChanOnce.Do(() => {
-        closedChan = new channel<EmptyStruct>(1);
+        closedChan = new channel<EmptyStruct>(0);
         close(closedChan);
     });
-    switch (select(ᐸꟷ(closedChan, ꓸꓸꓸ), ᐸꟷ(closedChan, ꓸꓸꓸ))) {
-    case 0 when closedChan.ꟷᐳ(out _): {
+    var selᴛ1 = closedChan;
+    var selᴛ2 = closedChan;
+    switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
+    case 0 when selᴛ1.ꟷᐳ(out _): {
         return;
     }
-    case 1 when closedChan.ꟷᐳ(out _): {
+    case 1 when selᴛ2.ꟷᐳ(out _): {
         array<byte> buf = new(1);
         r.Read(buf[..]);
         break;

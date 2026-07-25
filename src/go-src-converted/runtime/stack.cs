@@ -232,7 +232,7 @@ internal static void stackcacherefill(ж<mcache> Ꮡc, uint8 order) {
     ref var c = ref Ꮡc.Value;
 
     if (stackDebug >= 1) {
-        print("stackcacherefill order=", order, "\n");
+        print((@string)"stackcacherefill order=", order, (@string)"\n");
     }
     // Grab some stacks from the global cache.
     // Grab half of the allowed capacity (to prevent thrashing).
@@ -255,7 +255,7 @@ internal static void stackcacherelease(ж<mcache> Ꮡc, uint8 order) {
     ref var c = ref Ꮡc.Value;
 
     if (stackDebug >= 1) {
-        print("stackcacherelease order=", order, "\n");
+        print((@string)"stackcacherelease order=", order, (@string)"\n");
     }
     var x = c.stackcache[order].list;
     var size = c.stackcache[order].size;
@@ -276,7 +276,7 @@ internal static void stackcache_clear(ж<mcache> Ꮡc) {
     ref var c = ref Ꮡc.Value;
 
     if (stackDebug >= 1) {
-        print("stackcache clear\n");
+        print((@string)"stackcache clear\n");
     }
     for (var order = (uint8)0; order < _NumStackOrders; order++) {
         @lock(Ꮡstackpool.at<stackpoolᴛ1>((nint)(order)).of(stackpoolᴛ1.Ꮡitem).of(stackpoolItem.Ꮡmu));
@@ -310,7 +310,7 @@ internal static Δstack @stackalloc(uint32 n) {
         @throw("stack size not a power of 2"u8);
     }
     if (stackDebug >= 1) {
-        print("stackalloc ", n, "\n");
+        print((@string)"stackalloc ", n, (@string)"\n");
     }
     if (debug.efence != 0 || stackFromSystem != 0) {
         n = (uint32)alignUp((uintptr)n, physPageSize);
@@ -391,7 +391,7 @@ internal static Δstack @stackalloc(uint32 n) {
         asanunpoison(v, (uintptr)n);
     }
     if (stackDebug >= 1) {
-        print("  allocated ", v, "\n");
+        print((@string)"  allocated ", v, (@string)"\n");
     }
     return new Δstack((uintptr)v, (uintptr)v + (uintptr)n);
 }
@@ -413,7 +413,7 @@ internal static void stackfree(Δstack stk) {
         @throw("bad stack size"u8);
     }
     if (stackDebug >= 1) {
-        println("stackfree", v, n);
+        println((@string)"stackfree", v, n);
         memclrNoHeapPointers(v, n);
     }
     // for testing, clobber stack data
@@ -540,12 +540,12 @@ internal static void adjustpointer(ж<adjustinfo> Ꮡadjinfo, @unsafe.Pointer vp
     var pp = (ж<uintptr>)(uintptr)(vpp);
     var Δp = pp.Value;
     if (stackDebug >= 4) {
-        print("        ", pp, ":", ((Δhex)(uint64)Δp), "\n");
+        print((@string)"        ", pp, (@string)":", ((Δhex)(uint64)Δp), (@string)"\n");
     }
     if (adjinfo.old.lo <= Δp && Δp < adjinfo.old.hi) {
         pp.Value = Δp + adjinfo.delta;
         if (stackDebug >= 3) {
-            print("        adjust ptr ", pp, ":", ((Δhex)(uint64)Δp), " -> ", ((Δhex)(uint64)(pp.Value)), "\n");
+            print((@string)"        adjust ptr ", pp, (@string)":", ((Δhex)(uint64)Δp), (@string)" -> ", ((Δhex)(uint64)(pp.Value)), (@string)"\n");
         }
     }
 }
@@ -585,7 +585,7 @@ internal static void adjustpointers(@unsafe.Pointer scanp, ж<bitvector> Ꮡbv, 
     for (var i = (uintptr)0; i < num; i += 8) {
         if (stackDebug >= 4) {
             for (var j = (uintptr)0; j < 8; j++) {
-                print("        ", (uintptr)add(scanp, (i + j) * (uintptr)goarch.PtrSize), ":", ptrnames[bv.ptrbit(i + j)], ":", ((Δhex)(uint64)(~(ж<uintptr>)(uintptr)((uintptr)add(scanp, (i + j) * (uintptr)goarch.PtrSize)))), " # ", i, " ", addb(bv.bytedata, i / 8).Value, "\n");
+                print((@string)"        ", (uintptr)add(scanp, (i + j) * (uintptr)goarch.PtrSize), (@string)":", ptrnames[bv.ptrbit(i + j)], (@string)":", ((Δhex)(uint64)(~(ж<uintptr>)(uintptr)((uintptr)add(scanp, (i + j) * (uintptr)goarch.PtrSize)))), (@string)" # ", i, (@string)" ", addb(bv.bytedata, i / 8).Value, (@string)"\n");
             }
         }
         var b = (addb(bv.bytedata, i / 8)).Value;
@@ -599,15 +599,15 @@ retry:
                 // Looks like a junk value in a pointer slot.
                 // Live analysis wrong?
                 getg().Value.m.Value.traceback = 2;
-                print("runtime: bad pointer in frame ", funcname(f), " at ", pp, ": ", ((Δhex)(uint64)Δp), "\n");
+                print((@string)"runtime: bad pointer in frame ", funcname(f), (@string)" at ", pp, (@string)": ", ((Δhex)(uint64)Δp), (@string)"\n");
                 @throw("invalid pointer found on stack"u8);
             }
             if (minp <= Δp && Δp < maxp) {
                 if (stackDebug >= 3) {
-                    print("adjust ptr ", ((Δhex)(uint64)Δp), " ", funcname(f), "\n");
+                    print((@string)"adjust ptr ", ((Δhex)(uint64)Δp), (@string)" ", funcname(f), (@string)"\n");
                 }
                 if (useCAS){
-                    var ppu = (ж<@unsafe.Pointer>)(uintptr)(@unsafe.Pointer.FromRef(ref (pp).Value));
+                    var ppu = pp.Reinterpret<uintptr, @unsafe.Pointer>();
                     if (!atomic.Casp1(ppu, (@unsafe.Pointer)Δp, (@unsafe.Pointer)(Δp + delta))) {
                         goto retry;
                     }
@@ -630,20 +630,20 @@ internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinf
     }
     var f = frame.fn;
     if (stackDebug >= 2) {
-        print("    adjusting ", funcname(f), " frame=[", ((Δhex)(uint64)frame.sp), ",", ((Δhex)(uint64)frame.fp), "] pc=", ((Δhex)(uint64)frame.pc), " continpc=", ((Δhex)(uint64)frame.continpc), "\n");
+        print((@string)"    adjusting ", funcname(f), (@string)" frame=[", ((Δhex)(uint64)frame.sp), (@string)",", ((Δhex)(uint64)frame.fp), (@string)"] pc=", ((Δhex)(uint64)frame.pc), (@string)" continpc=", ((Δhex)(uint64)frame.continpc), (@string)"\n");
     }
     // Adjust saved frame pointer if there is one.
     if ((goarch.ArchFamily == goarch.AMD64 || goarch.ArchFamily == goarch.ARM64) && frame.argp - frame.varp == 2 * goarch.PtrSize) {
         if (stackDebug >= 3) {
-            print("      saved bp\n");
+            print((@string)"      saved bp\n");
         }
         if (debugCheckBP) {
             // Frame pointers should always point to the next higher frame on
             // the Go stack (or be nil, for the top frame on the stack).
             var bp = ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)frame.varp);
             if (bp != 0 && (bp < adjinfo.old.lo || bp >= adjinfo.old.hi)) {
-                println("runtime: found invalid frame pointer");
-                print("bp=", ((Δhex)(uint64)bp), " min=", ((Δhex)(uint64)adjinfo.old.lo), " max=", ((Δhex)(uint64)adjinfo.old.hi), "\n");
+                println((@string)"runtime: found invalid frame pointer");
+                print((@string)"bp=", ((Δhex)(uint64)bp), (@string)" min=", ((Δhex)(uint64)adjinfo.old.lo), (@string)" max=", ((Δhex)(uint64)adjinfo.old.hi), (@string)"\n");
                 @throw("bad frame pointer"u8);
             }
         }
@@ -664,7 +664,7 @@ internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinf
     // Adjust arguments.
     if (args.n > 0) {
         if (stackDebug >= 3) {
-            print("      args\n");
+            print((@string)"      args\n");
         }
         adjustpointers((@unsafe.Pointer)frame.argp, Ꮡargs, Ꮡadjinfo, new ΔfuncInfo(nil));
     }
@@ -718,8 +718,8 @@ internal static void adjustctxt(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
     if (debugCheckBP) {
         var bp = gp.sched.bp;
         if (bp != 0 && (bp < adjinfo.old.lo || bp >= adjinfo.old.hi)) {
-            println("runtime: found invalid top frame pointer");
-            print("bp=", ((Δhex)(uint64)bp), " min=", ((Δhex)(uint64)adjinfo.old.lo), " max=", ((Δhex)(uint64)adjinfo.old.hi), "\n");
+            println((@string)"runtime: found invalid top frame pointer");
+            print((@string)"bp=", ((Δhex)(uint64)bp), (@string)" min=", ((Δhex)(uint64)adjinfo.old.lo), (@string)" max=", ((Δhex)(uint64)adjinfo.old.hi), (@string)"\n");
             @throw("bad top frame pointer"u8);
         }
     }
@@ -859,7 +859,7 @@ internal static void copystack(ж<g> Ꮡgp, uintptr newsize) {
         fillstack(@new, 0xfd);
     }
     if (stackDebug >= 1) {
-        print("copystack gp=", Ꮡgp, " [", ((Δhex)(uint64)old.lo), " ", ((Δhex)(uint64)(old.hi - used)), " ", ((Δhex)(uint64)old.hi), "]", " -> [", ((Δhex)(uint64)@new.lo), " ", ((Δhex)(uint64)(@new.hi - used)), " ", ((Δhex)(uint64)@new.hi), "]/", newsize, "\n");
+        print((@string)"copystack gp=", Ꮡgp, (@string)" [", ((Δhex)(uint64)old.lo), (@string)" ", ((Δhex)(uint64)(old.hi - used)), (@string)" ", ((Δhex)(uint64)old.hi), (@string)"]", (@string)" -> [", ((Δhex)(uint64)@new.lo), (@string)" ", ((Δhex)(uint64)(@new.hi - used)), (@string)" ", ((Δhex)(uint64)@new.hi), (@string)"]/", newsize, (@string)"\n");
     }
     // Compute adjustment.
     ref var adjinfo = ref heap(new adjustinfo(), out var Ꮡadjinfo);
@@ -946,7 +946,7 @@ internal static void newstack() {
         @throw("stack growth after fork"u8);
     }
     if ((~(~thisg).m).morebuf.g.ptr() != (~(~thisg).m).curg) {
-        print("runtime: newstack called from g=", ((Δhex)(uint64)(uintptr)(~(~thisg).m).morebuf.g), "\n" + "\tm=", (~thisg).m, " m->curg=", (~(~thisg).m).curg, " m->g0=", (~(~thisg).m).g0, " m->gsignal=", (~(~thisg).m).gsignal, "\n");
+        print((@string)"runtime: newstack called from g=", ((Δhex)(uint64)(uintptr)(~(~thisg).m).morebuf.g), (@string)("\n" + "\tm="), (~thisg).m, (@string)" m->curg=", (~(~thisg).m).curg, (@string)" m->g0=", (~(~thisg).m).g0, (@string)" m->gsignal=", (~(~thisg).m).gsignal, (@string)"\n");
         var morebufΔ1 = thisg.Value.m.Value.morebuf;
         traceback(morebufΔ1.pc, morebufΔ1.sp, morebufΔ1.lr, morebufΔ1.g.ptr());
         @throw("runtime: wrong goroutine in newstack"u8);
@@ -964,10 +964,10 @@ internal static void newstack() {
             pcname = funcname(f);
             pcoff = (~gp).sched.pc - f.entry();
         }
-        print("runtime: newstack at ", pcname, "+", ((Δhex)(uint64)pcoff),
-            " sp=", ((Δhex)(uint64)(~gp).sched.sp), " stack=[", ((Δhex)(uint64)(~gp).stack.lo), ", ", ((Δhex)(uint64)(~gp).stack.hi), "]\n",
-            "\tmorebuf={pc:", ((Δhex)(uint64)morebufΔ2.pc), " sp:", ((Δhex)(uint64)morebufΔ2.sp), " lr:", ((Δhex)(uint64)morebufΔ2.lr), "}\n",
-            "\tsched={pc:", ((Δhex)(uint64)(~gp).sched.pc), " sp:", ((Δhex)(uint64)(~gp).sched.sp), " lr:", ((Δhex)(uint64)(~gp).sched.lr), " ctxt:", (~gp).sched.ctxt, "}\n");
+        print((@string)"runtime: newstack at ", pcname, (@string)"+", ((Δhex)(uint64)pcoff),
+            (@string)" sp=", ((Δhex)(uint64)(~gp).sched.sp), (@string)" stack=[", ((Δhex)(uint64)(~gp).stack.lo), (@string)", ", ((Δhex)(uint64)(~gp).stack.hi), (@string)"]\n",
+            (@string)"\tmorebuf={pc:", ((Δhex)(uint64)morebufΔ2.pc), (@string)" sp:", ((Δhex)(uint64)morebufΔ2.sp), (@string)" lr:", ((Δhex)(uint64)morebufΔ2.lr), (@string)"}\n",
+            (@string)"\tsched={pc:", ((Δhex)(uint64)(~gp).sched.pc), (@string)" sp:", ((Δhex)(uint64)(~gp).sched.sp), (@string)" lr:", ((Δhex)(uint64)(~gp).sched.lr), (@string)" ctxt:", (~gp).sched.ctxt, (@string)"}\n");
         thisg.Value.m.Value.traceback = 2;
         // Include runtime frames
         traceback(morebufΔ2.pc, morebufΔ2.sp, morebufΔ2.lr, gp);
@@ -1013,13 +1013,13 @@ internal static void newstack() {
         sp -= goarch.PtrSize;
     }
     if (stackDebug >= 1 || sp < (~gp).stack.lo) {
-        print("runtime: newstack sp=", ((Δhex)(uint64)sp), " stack=[", ((Δhex)(uint64)(~gp).stack.lo), ", ", ((Δhex)(uint64)(~gp).stack.hi), "]\n",
-            "\tmorebuf={pc:", ((Δhex)(uint64)morebuf.pc), " sp:", ((Δhex)(uint64)morebuf.sp), " lr:", ((Δhex)(uint64)morebuf.lr), "}\n",
-            "\tsched={pc:", ((Δhex)(uint64)(~gp).sched.pc), " sp:", ((Δhex)(uint64)(~gp).sched.sp), " lr:", ((Δhex)(uint64)(~gp).sched.lr), " ctxt:", (~gp).sched.ctxt, "}\n");
+        print((@string)"runtime: newstack sp=", ((Δhex)(uint64)sp), (@string)" stack=[", ((Δhex)(uint64)(~gp).stack.lo), (@string)", ", ((Δhex)(uint64)(~gp).stack.hi), (@string)"]\n",
+            (@string)"\tmorebuf={pc:", ((Δhex)(uint64)morebuf.pc), (@string)" sp:", ((Δhex)(uint64)morebuf.sp), (@string)" lr:", ((Δhex)(uint64)morebuf.lr), (@string)"}\n",
+            (@string)"\tsched={pc:", ((Δhex)(uint64)(~gp).sched.pc), (@string)" sp:", ((Δhex)(uint64)(~gp).sched.sp), (@string)" lr:", ((Δhex)(uint64)(~gp).sched.lr), (@string)" ctxt:", (~gp).sched.ctxt, (@string)"}\n");
     }
     if (sp < (~gp).stack.lo) {
-        print("runtime: gp=", gp, ", goid=", (~gp).goid, ", gp->status=", ((Δhex)(uint64)readgstatus(gp)), "\n ");
-        print("runtime: split stack overflow: ", ((Δhex)(uint64)sp), " < ", ((Δhex)(uint64)(~gp).stack.lo), "\n");
+        print((@string)"runtime: gp=", gp, (@string)", goid=", (~gp).goid, (@string)", gp->status=", ((Δhex)(uint64)readgstatus(gp)), (@string)"\n ");
+        print((@string)"runtime: split stack overflow: ", ((Δhex)(uint64)sp), (@string)" < ", ((Δhex)(uint64)(~gp).stack.lo), (@string)"\n");
         @throw("runtime: split stack overflow"u8);
     }
     if (preempt) {
@@ -1067,11 +1067,11 @@ internal static void newstack() {
     }
     if (newsize > maxstacksize || newsize > maxstackceiling) {
         if (maxstacksize < maxstackceiling){
-            print("runtime: goroutine stack exceeds ", maxstacksize, "-byte limit\n");
+            print((@string)"runtime: goroutine stack exceeds ", maxstacksize, (@string)"-byte limit\n");
         } else {
-            print("runtime: goroutine stack exceeds ", maxstackceiling, "-byte limit\n");
+            print((@string)"runtime: goroutine stack exceeds ", maxstackceiling, (@string)"-byte limit\n");
         }
-        print("runtime: sp=", ((Δhex)(uint64)sp), " stack=[", ((Δhex)(uint64)(~gp).stack.lo), ", ", ((Δhex)(uint64)(~gp).stack.hi), "]\n");
+        print((@string)"runtime: sp=", ((Δhex)(uint64)sp), (@string)" stack=[", ((Δhex)(uint64)(~gp).stack.lo), (@string)", ", ((Δhex)(uint64)(~gp).stack.hi), (@string)"]\n");
         @throw("stack overflow"u8);
     }
     // The goroutine must be executing in order to call newstack,
@@ -1081,7 +1081,7 @@ internal static void newstack() {
     // the gp is in a Gcopystack status.
     copystack(gp, newsize);
     if (stackDebug >= 1) {
-        print("stack grow done\n");
+        print((@string)"stack grow done\n");
     }
     casgstatus(gp, _Gcopystack, _Grunning);
     gogo(gp.of(g.Ꮡsched));
@@ -1089,7 +1089,7 @@ internal static void newstack() {
 
 //go:nosplit
 internal static void nilfunc() {
-    ((ж<uint8>)(uintptr)(default!)).Value = 0;
+    (((ж<uint8>)nil)).Value = 0;
 }
 
 // adjust Gobuf as if it executed a call to fn
@@ -1204,7 +1204,7 @@ internal static void shrinkstack(ж<g> Ꮡgp) {
         }
     }
     if (stackDebug > 0) {
-        print("shrinking stack ", oldsize, "->", newsize, "\n");
+        print((@string)"shrinking stack ", oldsize, (@string)"->", newsize, (@string)"\n");
     }
     copystack(Ꮡgp, newsize);
 }

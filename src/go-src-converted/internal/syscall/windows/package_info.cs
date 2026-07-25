@@ -51,4 +51,56 @@ namespace go.@internal.syscall;
 [GoPackage("windows")]
 public static partial class windows_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct _OSVERSIONINFOW {}
+    internal partial struct sendRecvMsgFuncᴛ1 {}
+    public partial struct FILE_ATTRIBUTE_TAG_INFO {}
+    public partial struct FILE_BASIC_INFO {}
+    public partial struct FILE_FULL_DIR_INFO {}
+    public partial struct FILE_ID_BOTH_DIR_INFO {}
+    public partial struct IpAdapterAddresses {}
+    public partial struct IpAdapterAnycastAddress {}
+    public partial struct IpAdapterDnsServerAdapter {}
+    public partial struct IpAdapterGatewayAddress {}
+    public partial struct IpAdapterMulticastAddress {}
+    public partial struct IpAdapterPrefix {}
+    public partial struct IpAdapterUnicastAddress {}
+    public partial struct IpAdapterWinsServerAddress {}
+    public partial struct LUID {}
+    public partial struct LUID_AND_ATTRIBUTES {}
+    public partial struct LocalGroupUserInfo0 {}
+    public partial struct MemoryBasicInformation {}
+    public partial struct ModuleEntry32 {}
+    public partial struct MountPointReparseBuffer {}
+    public partial struct PROCESS_MEMORY_COUNTERS {}
+    public partial struct REPARSE_DATA_BUFFER {}
+    public partial struct REPARSE_DATA_BUFFER_HEADER {}
+    public partial struct SERVICE_STATUS {}
+    public partial struct SHARE_INFO_2 {}
+    public partial struct SID_AND_ATTRIBUTES {}
+    public partial struct SecurityAttributes {}
+    public partial struct SocketAddress {}
+    public partial struct SymbolicLinkReparseBuffer {}
+    public partial struct TCP_INITIAL_RTO_PARAMETERS {}
+    public partial struct TOKEN_MANDATORY_LABEL {}
+    public partial struct TOKEN_PRIVILEGES {}
+    public partial struct TokenType {}
+    public partial struct UserInfo4 {}
+    public partial struct WSAMsg {}
+    // </TypeAccessibility>
 }

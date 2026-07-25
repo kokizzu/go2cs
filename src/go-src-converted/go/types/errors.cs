@@ -99,9 +99,9 @@ internal static ж<error_> newError(this ж<Checker> Ꮡcheck, errors.Code code)
     }
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
     foreach (var (i, _) in err.desc) {
-        var p = Ꮡ(err.desc[i]);
+        var p = Ꮡ(err.desc, i);
         if (i > 0) {
-            fmt.Fprint(new strings_BuilderжWriter(Ꮡbuf), "\n\t");
+            fmt.Fprint(new strings_BuilderжWriter(Ꮡbuf), (@string)"\n\t");
             if ((~p).posn.Pos().IsValid()) {
                 fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "%s: "u8, (~err.check).fset.Position((~p).posn.Pos()));
             }
@@ -146,7 +146,7 @@ internal static ж<error_> newError(this ж<Checker> Ꮡcheck, errors.Code code)
     }
     if (multiError){
         foreach (var (i, _) in err.desc) {
-            var p = Ꮡ(err.desc[i]);
+            var p = Ꮡ(err.desc, i);
             check.handleError(i, (~p).posn, err.code, (~p).msg, err.soft);
         }
     } else {

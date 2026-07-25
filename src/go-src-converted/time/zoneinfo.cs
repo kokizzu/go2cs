@@ -178,7 +178,7 @@ internal static (@string name, nint offset, int64 start, int64 end, bool isDST) 
         }
     }
     if (len(l.tx) == 0 || sec < l.tx[0].when) {
-        var zoneΔ2 = Ꮡ(l.zone[l.lookupFirstZone()]);
+        var zoneΔ2 = Ꮡ(l.zone, l.lookupFirstZone());
         name = zoneΔ2.Value.name;
         offset = zoneΔ2.Value.offset;
         start = alpha;
@@ -206,7 +206,7 @@ internal static (@string name, nint offset, int64 start, int64 end, bool isDST) 
             lo = m;
         }
     }
-    var zone = Ꮡ(l.zone[tx[lo].index]);
+    var zone = Ꮡ(l.zone, tx[lo].index);
     name = zone.Value.name;
     offset = zone.Value.offset;
     start = tx[lo].when;
@@ -630,7 +630,7 @@ internal static (nint offset, bool ok) lookupName(this ж<ΔLocation> Ꮡl, @str
     // It's not perfect: during the backward transition we might pick
     // either one.)
     foreach (var (i, _) in l.zone) {
-        var zone = Ꮡ(l.zone[i]);
+        var zone = Ꮡ(l.zone, i);
         if ((~zone).name == name) {
             var (nam, offsetΔ1, _, _, _) = Ꮡl.lookup(unix - (int64)(~zone).offset);
             if (nam == (~zone).name) {
@@ -640,7 +640,7 @@ internal static (nint offset, bool ok) lookupName(this ж<ΔLocation> Ꮡl, @str
     }
     // Otherwise fall back to an ordinary name match.
     foreach (var (i, _) in l.zone) {
-        var zone = Ꮡ(l.zone[i]);
+        var zone = Ꮡ(l.zone, i);
         if ((~zone).name == name) {
             return ((~zone).offset, true);
         }

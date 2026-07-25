@@ -73,4 +73,54 @@ namespace go.text.template;
 [GoPackage("parse")]
 public static partial class parse_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct elseNode {}
+    internal partial struct endNode {}
+    internal partial struct item {}
+    internal partial struct itemType {}
+    internal partial struct lexOptions {}
+    internal partial struct lexer {}
+    public partial interface Node {}
+    public partial struct ActionNode {}
+    public partial struct BoolNode {}
+    public partial struct BranchNode {}
+    public partial struct BreakNode {}
+    public partial struct ChainNode {}
+    public partial struct CommandNode {}
+    public partial struct CommentNode {}
+    public partial struct ContinueNode {}
+    public partial struct DotNode {}
+    public partial struct FieldNode {}
+    public partial struct IdentifierNode {}
+    public partial struct IfNode {}
+    public partial struct ListNode {}
+    public partial struct Mode {}
+    public partial struct NilNode {}
+    public partial struct NodeType {}
+    public partial struct NumberNode {}
+    public partial struct PipeNode {}
+    public partial struct Pos {}
+    public partial struct RangeNode {}
+    public partial struct StringNode {}
+    public partial struct TemplateNode {}
+    public partial struct TextNode {}
+    public partial struct Tree {}
+    public partial struct VariableNode {}
+    public partial struct WithNode {}
+    // </TypeAccessibility>
 }

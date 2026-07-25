@@ -36,7 +36,7 @@ internal static (FileInfo, error) stat(@string funcname, @string name, bool foll
     // Try GetFileAttributesEx first, because it is faster than CreateFile.
     // See https://golang.org/issues/19922#issuecomment-300031421 for details.
     ref var fa = ref heap(new syscall.Win32FileAttributeData(), out var Ꮡfa);
-    err = syscall.GetFileAttributesEx(namep, syscall.GetFileExInfoStandard, (ж<byte>)(uintptr)(new @unsafe.Pointer(Ꮡfa)));
+    err = syscall.GetFileAttributesEx(namep, syscall.GetFileExInfoStandard, Ꮡfa.Reinterpret<syscall.Win32FileAttributeData, byte>());
     if (err == default! && (uint32)(fa.FileAttributes & (uint32)syscall.FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
         // Not a surrogate for another named entity, because it isn't any kind of reparse point.
         // The information we got from GetFileAttributesEx is good enough for now.

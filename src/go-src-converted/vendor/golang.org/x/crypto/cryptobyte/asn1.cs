@@ -356,7 +356,7 @@ internal static ж<bigꓸInt> bigOne = big.NewInt(1);
 }
 
 [GoRecv] internal static bool readASN1Bytes(this ref String s, ж<slice<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.ValueSlot;
 
     ref var bytes = ref heap<String>(out var Ꮡbytes);
     if (!s.ReadASN1(Ꮡbytes, asn1.INTEGER) || !checkASN1Integer(bytes)) {
@@ -484,7 +484,7 @@ internal static bool asn1Unsigned(ж<uint64> Ꮡout, slice<byte> n) {
 // ReadASN1ObjectIdentifier decodes an ASN.1 OBJECT IDENTIFIER into out and
 // advances. It reports whether the read was successful.
 [GoRecv] public static bool ReadASN1ObjectIdentifier(this ref String s, ж<encoding_asn1.ObjectIdentifier> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.ValueSlot;
 
     ref var bytes = ref heap<String>(out var Ꮡbytes);
     if (!s.ReadASN1(Ꮡbytes, asn1.OBJECT_IDENTIFIER) || len(bytes) == 0) {
@@ -605,7 +605,7 @@ internal static readonly @string defaultUTCTimeFormatStr = "060102150405Z0700"u8
 // an error if the BIT STRING is not a whole number of bytes. It reports
 // whether the read was successful.
 [GoRecv] public static bool ReadASN1BitStringAsBytes(this ref String s, ж<slice<byte>> Ꮡout) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.ValueSlot;
 
     ref var bytes = ref heap<String>(out var Ꮡbytes);
     if (!s.ReadASN1(Ꮡbytes, asn1.BIT_STRING) || len(bytes) == 0) {
@@ -623,7 +623,7 @@ internal static readonly @string defaultUTCTimeFormatStr = "060102150405Z0700"u8
 // tag and length bytes) into out, and advances. The element must match the
 // given tag. It reports whether the read was successful.
 [GoRecv] public static bool ReadASN1Bytes(this ref String s, ж<slice<byte>> Ꮡout, asn1.Tag tag) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.ValueSlot;
 
     return s.ReadASN1(Ꮡ(new String(@out)), tag);
 }
@@ -773,7 +773,7 @@ public static bool PeekASN1Tag(this String s, asn1.Tag tag) {
 // matching tag is present, it sets "out" to nil instead. It reports
 // whether the read was successful.
 [GoRecv] public static bool ReadOptionalASN1OctetString(this ref String s, ж<slice<byte>> Ꮡout, ж<bool> ᏑoutPresent, asn1.Tag tag) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.ValueSlot;
     ref var outPresent = ref ᏑoutPresent.DerefOrNil();
 
     ref var present = ref heap(new bool(), out var Ꮡpresent);
@@ -816,7 +816,7 @@ public static bool PeekASN1Tag(this String s, asn1.Tag tag) {
 }
 
 [GoRecv] internal static bool readASN1(this ref String s, ж<String> Ꮡout, ж<asn1.Tag> ᏑoutTag, bool skipHeader) {
-    ref var @out = ref Ꮡout.Value;
+    ref var @out = ref Ꮡout.ValueSlot;
     ref var outTag = ref ᏑoutTag.DerefOrNil();
 
     if (len(s) < 2) {

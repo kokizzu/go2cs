@@ -84,7 +84,7 @@ public static void Clear<K, V>(this ж<Cache<K, V>> Ꮡc) {
 public static ж<V> Get<K, V>(this ж<Cache<K, V>> Ꮡc, ж<K> Ꮡk) {
     ref var k = ref Ꮡk.DerefOrNil();
 
-    var head = Ꮡ(Ꮡc.table().Value[(uintptr)new @unsafe.Pointer(Ꮡk) % (uintptr)cacheSize]);
+    var head = Ꮡc.table().at<atomic.Pointer<cacheEntry<K, V>>>((nint)((uintptr)new @unsafe.Pointer(Ꮡk) % (uintptr)cacheSize));
     var e = head.Load();
     for (; e != nil; e = e.Value.next) {
         if ((~e).k == Ꮡk) {
@@ -97,9 +97,9 @@ public static ж<V> Get<K, V>(this ж<Cache<K, V>> Ꮡc, ж<K> Ꮡk) {
 // Put sets the cached value associated with k to v.
 public static void Put<K, V>(this ж<Cache<K, V>> Ꮡc, ж<K> Ꮡk, ж<V> Ꮡv) {
     ref var k = ref Ꮡk.DerefOrNil();
-    ref var v = ref Ꮡv.Value;
+    ref var v = ref Ꮡv.ValueSlot;
 
-    var head = Ꮡ(Ꮡc.table().Value[(uintptr)new @unsafe.Pointer(Ꮡk) % (uintptr)cacheSize]);
+    var head = Ꮡc.table().at<atomic.Pointer<cacheEntry<K, V>>>((nint)((uintptr)new @unsafe.Pointer(Ꮡk) % (uintptr)cacheSize));
     // Strategy is to walk the linked list at head,
     // same as in Get, to look for existing entry.
     // If we find one, we update v atomically in place.

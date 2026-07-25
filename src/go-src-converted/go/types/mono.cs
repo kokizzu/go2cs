@@ -90,8 +90,8 @@ internal static void monomorph(this ж<Checker> Ꮡcheck) {
     while (again) {
         again = false;
         foreach (var (i, edge) in check.mono.edges) {
-            var src = Ꮡ(check.mono.vertices[edge.src]);
-            var dst = Ꮡ(check.mono.vertices[edge.dst]);
+            var src = Ꮡ(check.mono.vertices, edge.src);
+            var dst = Ꮡ(check.mono.vertices, edge.dst);
             // N.B., we're looking for the greatest weight paths, unlike
             // typical Bellman-Ford.
             nint w = (~src).weight + edge.weight;

@@ -89,7 +89,7 @@ internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, contex
                     Ꮡfd.of(netFD.Ꮡpfd).SetWriteDeadline(deadline);
                 }
             }
-            var done = new channel<EmptyStruct>(1);
+            var done = new channel<EmptyStruct>(0);
             var doneʗ1 = done;
             var stop = context.AfterFunc(ctx, () => {
                 // Force the runtime's poller to immediately give
@@ -166,13 +166,14 @@ internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, contex
         ref var @out = ref heap(new uint32(), out var Ꮡout);
         // Don't abort the connection if WSAIoctl fails, as it is only an optimization.
         // If it fails reliably, we expect TestDialClosedPortFailFast to detect it.
-        _ = Ꮡfd.of(netFD.Ꮡpfd).WSAIoctl(windows.SIO_TCP_INITIAL_RTO, (ж<byte>)(uintptr)(new @unsafe.Pointer(Ꮡparams)), (uint32)@unsafe.Sizeof(@params), nil, 0, Ꮡout, nil, 0);
+        _ = Ꮡfd.of(netFD.Ꮡpfd).WSAIoctl(windows.SIO_TCP_INITIAL_RTO, Ꮡparams.Reinterpret<windows.TCP_INITIAL_RTO_PARAMETERS, byte>(), (uint32)@unsafe.Sizeof(@params), nil, 0, Ꮡout, nil, 0);
     }
     // Call ConnectEx API.
     {
         var err = Ꮡfd.of(netFD.Ꮡpfd).ConnectEx(ra); if (err != default!) {
-            switch (ᐧ) {
-            case ᐧ when ctx.Done().ꟷᐳ(out _): {
+            var selᴛ9 = ctx.Done();
+            switch (trySelect(ᐸꟷ(selᴛ9, ꓸꓸꓸ))) {
+            case 0 when selᴛ9.ꟷᐳ(out _): {
                 return (default!, mapErr(ctx.Err()));
             }
             default: {
@@ -186,7 +187,7 @@ internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, contex
         }
     }
     // Refresh socket properties.
-    return (default!, os.NewSyscallError("setsockopt"u8, syscall.Setsockopt(fd.pfd.Sysfd, syscall.SOL_SOCKET, syscall.SO_UPDATE_CONNECT_CONTEXT, (ж<byte>)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡfd.of(netFD.Ꮡpfd).of(poll.FD.ᏑSysfd)).Value)), (int32)@unsafe.Sizeof(fd.pfd.Sysfd))));
+    return (default!, os.NewSyscallError("setsockopt"u8, syscall.Setsockopt(fd.pfd.Sysfd, syscall.SOL_SOCKET, syscall.SO_UPDATE_CONNECT_CONTEXT, Ꮡfd.of(netFD.Ꮡpfd).of(poll.FD.ᏑSysfd).Reinterpret<syscallꓸHandle, byte>(), (int32)@unsafe.Sizeof(fd.pfd.Sysfd))));
 });
 
 internal static (int64, error) writeBuffers(this ж<conn> Ꮡc, ж<Buffers> Ꮡv) {
@@ -235,7 +236,7 @@ internal static (ж<netFD>, error) accept(this ж<netFD> Ꮡfd) {
     ref var rrsa = ref heap<ж<syscall.RawSockaddrAny>>(out var Ꮡrrsa);
     ref var llen = ref heap(new int32(), out var Ꮡllen);
     ref var rlen = ref heap(new int32(), out var Ꮡrlen);
-    syscall.GetAcceptExSockaddrs((ж<byte>)(uintptr)(new @unsafe.Pointer(Ꮡ(rawsa, 0))),
+    syscall.GetAcceptExSockaddrs(Ꮡ(rawsa, 0).Reinterpret<syscall.RawSockaddrAny, byte>(),
         0, rsan, rsan, Ꮡlrsa, Ꮡllen, Ꮡrrsa, Ꮡrlen);
     var (lsa, _) = lrsa.Sockaddr();
     var (rsa, _) = rrsa.Sockaddr();

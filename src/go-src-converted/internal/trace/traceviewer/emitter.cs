@@ -89,7 +89,7 @@ public static TraceConsumer ViewerDataTraceConsumer(io.Writer w, int64 startIdx,
     );
 }
 
-[GoType("dyn")] partial struct SplittingTraceConsumer_eventSz {
+[GoLocalName("eventSz")] [GoType("dyn")] partial struct SplittingTraceConsumer_eventSz {
     public float64 Time;
     public nint Sz;
     public slice<nint> Frames;
@@ -191,8 +191,8 @@ public static (ж<splitter>, TraceConsumer) SplittingTraceConsumer(nint max) {
                 }
                 // Reached max size, commit this range and
                 // start a new range.
-                var startTime = ((time.Duration)(int64)(Ꮡsizes.ValueSlot[start].Time * 1000));
-                var endTime = ((time.Duration)(int64)(ev.Time * 1000));
+                var startTime = ((time.Duration)(int64)(Ꮡsizes.ValueSlot[start].Time * 1000D));
+                var endTime = ((time.Duration)(int64)(ev.Time * 1000D));
                 sʗ1.Value.Ranges = append((~sʗ1).Ranges, new Range(
                     Name: fmt.Sprintf("%v-%v"u8, startTime, endTime),
                     Start: start,
@@ -212,11 +212,11 @@ public static (ж<splitter>, TraceConsumer) SplittingTraceConsumer(nint max) {
             {
                 nint end = len(Ꮡsizes.ValueSlot) - 1; if (start < end) {
                     sʗ1.Value.Ranges = append((~sʗ1).Ranges, new Range(
-                        Name: fmt.Sprintf("%v-%v"u8, ((time.Duration)(int64)(Ꮡsizes.ValueSlot[start].Time * 1000)), ((time.Duration)(int64)(Ꮡsizes.ValueSlot[end].Time * 1000))),
+                        Name: fmt.Sprintf("%v-%v"u8, ((time.Duration)(int64)(Ꮡsizes.ValueSlot[start].Time * 1000D)), ((time.Duration)(int64)(Ꮡsizes.ValueSlot[end].Time * 1000D))),
                         Start: start,
                         End: end,
-                        StartTime: (int64)(Ꮡsizes.ValueSlot[start].Time * 1000),
-                        EndTime: (int64)(Ꮡsizes.ValueSlot[end].Time * 1000)
+                        StartTime: (int64)(Ꮡsizes.ValueSlot[start].Time * 1000D),
+                        EndTime: (int64)(Ꮡsizes.ValueSlot[end].Time * 1000D)
                     ));
                 }
             }

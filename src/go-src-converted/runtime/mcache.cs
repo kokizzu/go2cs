@@ -297,7 +297,7 @@ internal static void prepareForSweep(this ж<mcache> Ꮡc) {
         return;
     } else 
     if (flushGen != sg - 2) {
-        println("bad flushGen", flushGen, "in prepareForSweep; sweepgen", sg);
+        println((@string)"bad flushGen", flushGen, (@string)"in prepareForSweep; sweepgen", sg);
         @throw("bad flushGen"u8);
     }
     c.releaseAll();

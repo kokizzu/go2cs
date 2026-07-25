@@ -248,7 +248,7 @@ internal static void init(this ж<addrRanges> Ꮡa, ж<sysMemStat> ᏑsysStat) {
     ref var a = ref Ꮡa.Value;
     ref var sysStat = ref ᏑsysStat.Value;
 
-    var ranges = (ж<notInHeapSlice>)(uintptr)(new @unsafe.Pointer(Ꮡa.of(addrRanges.Ꮡranges)));
+    var ranges = Ꮡa.of(addrRanges.Ꮡranges).Reinterpret<slice<addrRange>, notInHeapSlice>();
     ranges.Value.len = 0;
     ranges.Value.cap = 16;
     ranges.Value.Δarray = (ж<notInHeap>)(uintptr)(persistentalloc(@unsafe.Sizeof(new addrRange(nil)) * (uintptr)(~ranges).cap, goarch.PtrSize, ᏑsysStat));
@@ -343,7 +343,7 @@ internal static void add(this ж<addrRanges> Ꮡa, addrRange r) {
     // An empty range has no effect on the set of addresses represented
     // by a, but passing a zero-sized range is almost always a bug.
     if (r.size() == 0) {
-        print("runtime: range = {", ((Δhex)(uint64)r.@base.addr()), ", ", ((Δhex)(uint64)r.limit.addr()), "}\n");
+        print((@string)"runtime: range = {", ((Δhex)(uint64)r.@base.addr()), (@string)", ", ((Δhex)(uint64)r.limit.addr()), (@string)"}\n");
         @throw("attempted to add zero-sized address range"u8);
     }
     // Because we assume r is not currently represented in a,
@@ -377,7 +377,7 @@ internal static void add(this ж<addrRanges> Ꮡa, addrRange r) {
             // 4 MiB arenas which are all discontiguous (both very conservative
             // assumptions), this would waste at most 4 MiB of memory.
             var oldRanges = a.ranges;
-            var ranges = (ж<notInHeapSlice>)(uintptr)(new @unsafe.Pointer(Ꮡa.of(addrRanges.Ꮡranges)));
+            var ranges = Ꮡa.of(addrRanges.Ꮡranges).Reinterpret<slice<addrRange>, notInHeapSlice>();
             ranges.Value.len = len(oldRanges) + 1;
             ranges.Value.cap = cap(oldRanges) * 2;
             ranges.Value.Δarray = (ж<notInHeap>)(uintptr)(persistentalloc(@unsafe.Sizeof(new addrRange(nil)) * (uintptr)(~ranges).cap, goarch.PtrSize, a.sysStat));
@@ -450,7 +450,7 @@ internal static void add(this ж<addrRanges> Ꮡa, addrRange r) {
 
     if (len(a.ranges) > cap(b.ranges)) {
         // Grow the array.
-        var ranges = (ж<notInHeapSlice>)(uintptr)(new @unsafe.Pointer(Ꮡb.of(addrRanges.Ꮡranges)));
+        var ranges = Ꮡb.of(addrRanges.Ꮡranges).Reinterpret<slice<addrRange>, notInHeapSlice>();
         ranges.Value.len = 0;
         ranges.Value.cap = cap(a.ranges);
         ranges.Value.Δarray = (ж<notInHeap>)(uintptr)(persistentalloc(@unsafe.Sizeof(new addrRange(nil)) * (uintptr)(~ranges).cap, goarch.PtrSize, b.sysStat));

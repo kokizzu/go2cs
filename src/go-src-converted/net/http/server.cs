@@ -1819,7 +1819,7 @@ internal static time.Duration rstAvoidanceDelay = 500 * time.Millisecond;
     error CloseWrite();
 }
 
-internal static closeWriter _ᴛ9ʗ = new net_TCPConnжcloseWriter((ж<net.TCPConn>)(default!));
+internal static closeWriter _ᴛ9ʗ = new net_TCPConnжcloseWriter(((ж<net.TCPConn>)nil));
 
 // closeWriteAndWait flushes any outstanding data and sends a FIN packet (if
 // client is connected via TCP), signaling that we're done. We then
@@ -3130,11 +3130,13 @@ public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) => fun
         if (Ꮡsrv.closeIdleConns()) {
             return lnerr;
         }
-        switch (select(ᐸꟷ(ctx.Done(), ꓸꓸꓸ), ᐸꟷ((~timer).C, ꓸꓸꓸ))) {
-        case 0 when ctx.Done().ꟷᐳ(out _): {
+        var selᴛ81 = ctx.Done();
+        var selᴛ82 = (~timer).C;
+        switch (select(ᐸꟷ(selᴛ81, ꓸꓸꓸ), ᐸꟷ(selᴛ82, ꓸꓸꓸ))) {
+        case 0 when selᴛ81.ꟷᐳ(out _): {
             return ctx.Err();
         }
-        case 1 when (~timer).C.ꟷᐳ(out _): {
+        case 1 when selᴛ82.ꟷᐳ(out _): {
             timer.Reset(nextPollInterval());
             break;
         }}
@@ -3716,7 +3718,7 @@ internal static void ServeHTTP(this ж<timeoutHandler> Ꮡh, ResponseWriter w, �
         defer(() => cancelCtxʗ1());
     }
     Ꮡr = r.WithContext(ctx); r = ref Ꮡr.Value;
-    var done = new channel<EmptyStruct>(1);
+    var done = new channel<EmptyStruct>(0);
     var tw = Ꮡ(new timeoutWriter(
         w: w,
         h: new ΔHeader(0),
@@ -3738,12 +3740,15 @@ internal static void ServeHTTP(this ж<timeoutHandler> Ꮡh, ResponseWriter w, �
         Ꮡh.Value.handler.ServeHTTP(new timeoutWriterжResponseWriter(twʗ1), Ꮡr);
         builtin.close(doneʗ1);
     }));
-    switch (select(ᐸꟷ(panicChan, ꓸꓸꓸ), ᐸꟷ(done, ꓸꓸꓸ), ᐸꟷ(ctx.Done(), ꓸꓸꓸ))) {
-    case 0 when panicChan.ꟷᐳ(out var p): {
+    var selᴛ83 = panicChan;
+    var selᴛ84 = done;
+    var selᴛ85 = ctx.Done();
+    switch (select(ᐸꟷ(selᴛ83, ꓸꓸꓸ), ᐸꟷ(selᴛ84, ꓸꓸꓸ), ᐸꟷ(selᴛ85, ꓸꓸꓸ))) {
+    case 0 when selᴛ83.ꟷᐳ(out var p): {
         throw panic(p);
         break;
     }
-    case 1 when done.ꟷᐳ(out _): {
+    case 1 when selᴛ84.ꟷᐳ(out _): {
         tw.of(timeoutWriter.Ꮡmu).Lock();
         var twʗ2 = tw;
         defer(twʗ2.of(timeoutWriter.Ꮡmu).Unlock);
@@ -3758,7 +3763,7 @@ internal static void ServeHTTP(this ж<timeoutHandler> Ꮡh, ResponseWriter w, �
         w.Write(tw.of(timeoutWriter.Ꮡwbuf).Bytes());
         break;
     }
-    case 2 when ctx.Done().ꟷᐳ(out _): {
+    case 2 when selᴛ85.ꟷᐳ(out _): {
         tw.of(timeoutWriter.Ꮡmu).Lock();
         var twʗ3 = tw;
         defer(twʗ3.of(timeoutWriter.Ꮡmu).Unlock);
@@ -3791,7 +3796,7 @@ internal static void ServeHTTP(this ж<timeoutHandler> Ꮡh, ResponseWriter w, �
     internal nint code;
 }
 
-internal static Pusher _ᴛ10ʗ = new timeoutWriterжPusher((ж<timeoutWriter>)(default!));
+internal static Pusher _ᴛ10ʗ = new timeoutWriterжPusher(((ж<timeoutWriter>)nil));
 
 // Push implements the [Pusher] interface.
 [GoRecv] internal static error Push(this ref timeoutWriter tw, @string target, ж<PushOptions> Ꮡopts) {

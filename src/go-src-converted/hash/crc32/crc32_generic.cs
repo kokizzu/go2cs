@@ -63,7 +63,7 @@ internal static readonly UntypedInt slicing8Cutoff = 16;
 // table is suitable for use with the slicing-by-8 algorithm (slicingUpdate).
 internal static ж<slicing8Table> slicingMakeTable(uint32 poly) {
     var t = @new<slicing8Table>();
-    simplePopulateTable(poly, Ꮡ(t.Value[0]));
+    simplePopulateTable(poly, t.at<Table>(0));
     for (nint i = 0; i < 256; i++) {
         var crc = t.Value[0][i];
         for (nint j = 1; j < 8; j++) {
@@ -91,7 +91,7 @@ internal static uint32 slicingUpdate(uint32 crc, ж<slicing8Table> Ꮡtab, slice
     if (len(p) == 0) {
         return crc;
     }
-    return simpleUpdate(crc, Ꮡ(tab[0]), p);
+    return simpleUpdate(crc, Ꮡtab.at<Table>(0), p);
 }
 
 } // end crc32_package

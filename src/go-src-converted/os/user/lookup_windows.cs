@@ -20,7 +20,7 @@ internal static (bool, error) isDomainJoined() {
     if (err != default!) {
         return (false, err);
     }
-    syscall.NetApiBufferFree((ж<byte>)(uintptr)(new @unsafe.Pointer(domain)));
+    syscall.NetApiBufferFree(domain.Reinterpret<uint16, byte>());
     return (status == syscall.NetSetupDomainName, default!);
 }
 
@@ -44,7 +44,7 @@ internal static (@string, error) lookupFullNameServer(@string servername, @strin
         return ("", e);
     }
     deferǃ(syscall.NetApiBufferFree, p, defer);
-    var i = (ж<syscall.UserInfo10>)(uintptr)(new @unsafe.Pointer(p));
+    var i = p.Reinterpret<byte, syscall.UserInfo10>();
     return (windows.UTF16PtrToString((~i).FullName), default!);
 });
 
@@ -295,7 +295,7 @@ internal static (@string, error) lookupUserPrimaryGroup(@string username, @strin
         return ("", e);
     }
     deferǃ(syscall.NetApiBufferFree, p, defer);
-    var i = (ж<windows.UserInfo4>)(uintptr)(new @unsafe.Pointer(p));
+    var i = p.Reinterpret<byte, windows.UserInfo4>();
     return (fmt.Sprintf("%s-%d"u8, domainRID, (~i).PrimaryGroupID), default!);
 });
 

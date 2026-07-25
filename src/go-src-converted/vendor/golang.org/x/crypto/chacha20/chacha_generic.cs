@@ -46,7 +46,7 @@ public static readonly UntypedInt NonceSizeX = 24;
     internal uint32 p3, p7, p11, p15;
 }
 
-internal static cipher.Stream _ᴛ1ʗ = new CipherжStream((ж<Cipher>)(default!));
+internal static cipher.Stream _ᴛ1ʗ = new CipherжStream(((ж<Cipher>)nil));
 
 // NewUnauthenticatedCipher creates a new ChaCha20 stream cipher with the given
 // 32 bytes key and a 12 or 24 bytes nonce. If a nonce of 24 bytes is provided,

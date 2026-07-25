@@ -54,7 +54,7 @@ internal static float64 asinh(float64 x) {
         return x;
     }
     var sign = false;
-    if (x < 0) {
+    if (x < 0D) {
         x = -x;
         sign = true;
     }
@@ -64,8 +64,8 @@ internal static float64 asinh(float64 x) {
         temp = Log(x) + Ln2;
         break;
     }
-    case {} when x is > 2: {
-        temp = Log(2 * x + 1 / (Sqrt(x * x + 1) + x));
+    case {} when x is > 2D: {
+        temp = Log(2D * x + 1D / (Sqrt(x * x + 1D) + x));
         break;
     }
     case {} when x < NearZero: {
@@ -73,7 +73,7 @@ internal static float64 asinh(float64 x) {
         break;
     }
     default: {
-        temp = Log1p(x + x * x / (1 + Sqrt(1 + x * x)));
+        temp = Log1p(x + x * x / (1D + Sqrt(1D + x * x)));
         break;
     }}
 

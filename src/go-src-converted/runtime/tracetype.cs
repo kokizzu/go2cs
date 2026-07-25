@@ -51,7 +51,7 @@ internal static void dump(this ж<traceTypeTable> Ꮡt, uintptr gen) {
 internal static traceExpWriter dumpTypesRec(ж<traceMapNode> Ꮡnode, traceExpWriter w) {
     ref var node = ref Ꮡnode.Value;
 
-    var typ = (ж<abi.Type>)(uintptr)(~(ж<@unsafe.Pointer>)(uintptr)(new @unsafe.Pointer(Ꮡ(node.data, 0))));
+    var typ = (ж<abi.Type>)(uintptr)(~Ꮡ(node.data, 0).Reinterpret<byte, @unsafe.Pointer>());
     @string typName = toRType(typ).@string();
     // The maximum number of bytes required to hold the encoded type.
     nint maxBytes = (nint)(1 + 5 * traceBytesPerNumber) + len(typName);

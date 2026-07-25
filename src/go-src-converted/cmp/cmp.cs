@@ -76,7 +76,7 @@ internal static bool isNaN<T>(T x)
 public static T Or<T>(params Span<T> valsʗp)
     where T : /* comparable */ new()
 {
-    var vals = valsʗp.slice();
+    var vals = valsʗp.sslice();
 
     T zero = default!;
     foreach (var (_, val) in vals) {

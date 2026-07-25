@@ -126,7 +126,7 @@ internal static void HandlePlot(this ж<mmu> Ꮡm, http.ResponseWriter w, ж<htt
     slice<float64> quantiles = default!;
     foreach (var (_, flagStr) in strings.Split(Ꮡr.FormValue("flags"u8), "|"u8)) {
         if (flagStr == "mut"u8) {
-            quantiles = new float64[]{0, 1D - .999D, 1D - .99D, 1D - .95D}.slice();
+            quantiles = new float64[]{0D, 1D - .999D, 1D - .99D, 1D - .95D}.slice();
             break;
         }
     }

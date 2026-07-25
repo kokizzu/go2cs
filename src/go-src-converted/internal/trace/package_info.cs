@@ -78,4 +78,104 @@ namespace go.@internal;
 [GoPackage("trace")]
 public static partial class trace_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface readBatch_r {}
+    internal partial struct accumulator {}
+    internal partial struct bandUtil {}
+    internal partial struct bandUtilHeap {}
+    internal partial struct baseEvent {}
+    internal partial struct batch {}
+    internal partial struct batchCursor {}
+    internal partial struct cpuSample {}
+    internal partial struct dataTable<EI, E> {}
+    internal partial struct edge {}
+    internal partial struct evTable {}
+    internal partial struct extraStringID {}
+    internal partial struct frame {}
+    internal partial struct frequency {}
+    internal partial struct gState {}
+    internal partial struct gcState {}
+    internal partial struct generation {}
+    internal partial struct goroutineSummary {}
+    internal partial struct integrator {}
+    internal partial struct mState {}
+    internal partial struct mmuBand {}
+    internal partial struct mmuSeries {}
+    internal partial struct mud {}
+    internal partial struct oldTraceConverter {}
+    internal partial struct ordering {}
+    internal partial struct pState {}
+    internal partial struct queue<T> {}
+    internal partial struct rangeP {}
+    internal partial struct rangeState {}
+    internal partial struct rangeType {}
+    internal partial struct schedCtx {}
+    internal partial struct seqCounter {}
+    internal partial struct spilledBatch {}
+    internal partial struct stack {}
+    internal partial struct stackID {}
+    internal partial struct stringID {}
+    internal partial struct taskState {}
+    internal partial struct timedEventArgs {}
+    internal partial struct timestamp {}
+    internal partial struct totalUtil {}
+    internal partial struct userRegion {}
+    internal partial struct utilHeap {}
+    public partial struct EventKind {}
+    public partial struct ExperimentalBatch {}
+    public partial struct ExperimentalData {}
+    public partial struct ExperimentalEvent {}
+    public partial struct Frame {}
+    public partial struct GoID {}
+    public partial struct GoState {}
+    public partial struct GoroutineExecStats {}
+    public partial struct GoroutineSummary {}
+    public partial struct MMUCurve {}
+    public partial struct MutatorUtil {}
+    public partial struct MutatorUtilizationV2_perP {}
+    public partial struct MutatorUtilizationV2_procsCount {}
+    public partial struct ProcID {}
+    public partial struct ProcState {}
+    public partial struct RangeAttribute {}
+    public partial struct Reader {}
+    public partial struct RelatedGoroutinesV2_unblockEdge {}
+    public partial struct ResourceID {}
+    public partial struct ResourceKind {}
+    public partial struct StackFrame {}
+    public partial struct Summarizer {}
+    public partial struct Summary {}
+    public partial struct TaskID {}
+    public partial struct ThreadID {}
+    public partial struct UserRegionSummary {}
+    public partial struct UserTaskSummary {}
+    public partial struct UtilFlags {}
+    public partial struct UtilWindow {}
+    public partial struct Value {}
+    public partial struct ValueKind {}
+    public partial struct ΔEvent {}
+    public partial struct ΔLabel {}
+    public partial struct ΔLog {}
+    public partial struct ΔMetric {}
+    public partial struct ΔRange {}
+    public partial struct ΔRegion {}
+    public partial struct ΔStack {}
+    public partial struct ΔStateTransition {}
+    public partial struct ΔTask {}
+    public partial struct ΔTime {}
+    // </TypeAccessibility>
 }

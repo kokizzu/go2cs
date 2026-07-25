@@ -117,7 +117,7 @@ internal static uintptr strhashFallback(@unsafe.Pointer a, uintptr h) {
 internal static uintptr f32hash(@unsafe.Pointer Δp, uintptr h) {
     var f = ~(ж<float32>)(uintptr)(Δp);
     switch (ᐧ) {
-    case {} when f is 0: {
+    case {} when f is 0F: {
         return c1 * ((uintptr)(c0 ^ h));
     }
     case {} when f != f: {
@@ -134,7 +134,7 @@ internal static uintptr f32hash(@unsafe.Pointer Δp, uintptr h) {
 internal static uintptr f64hash(@unsafe.Pointer Δp, uintptr h) {
     var f = ~(ж<float64>)(uintptr)(Δp);
     switch (ᐧ) {
-    case {} when f is 0: {
+    case {} when f is 0D: {
         return c1 * ((uintptr)(c0 ^ h));
     }
     case {} when f != f: {
@@ -150,12 +150,12 @@ internal static uintptr f64hash(@unsafe.Pointer Δp, uintptr h) {
 
 internal static uintptr c64hash(@unsafe.Pointer Δp, uintptr h) {
     var x = (ж<array<float32>>)(uintptr)(Δp);
-    return f32hash(new @unsafe.Pointer(Ꮡ(x.Value[1])), f32hash(new @unsafe.Pointer(Ꮡ(x.Value[0])), h));
+    return f32hash(new @unsafe.Pointer(x.at<float32>(1)), f32hash(new @unsafe.Pointer(x.at<float32>(0)), h));
 }
 
 internal static uintptr c128hash(@unsafe.Pointer Δp, uintptr h) {
     var x = (ж<array<float64>>)(uintptr)(Δp);
-    return f64hash(new @unsafe.Pointer(Ꮡ(x.Value[1])), f64hash(new @unsafe.Pointer(Ꮡ(x.Value[0])), h));
+    return f64hash(new @unsafe.Pointer(x.at<float64>(1)), f64hash(new @unsafe.Pointer(x.at<float64>(0)), h));
 }
 
 internal static uintptr interhash(@unsafe.Pointer Δp, uintptr h) {
@@ -261,21 +261,21 @@ internal static uintptr typehash(ж<_type> Ꮡt, @unsafe.Pointer Δp, uintptr h)
         return strhash(Δp, h);
     }
     if (exprᴛ2 == abi.Interface) {
-        var i = (ж<interfacetype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var i = Ꮡt.Reinterpret<_type, interfacetype>();
         if (len((~i).Methods) == 0) {
             return nilinterhash(Δp, h);
         }
         return interhash(Δp, h);
     }
     if (exprᴛ2 == abi.Array) {
-        var a = (ж<arraytype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var a = Ꮡt.Reinterpret<_type, arraytype>();
         for (var i = (uintptr)0; i < (~a).Len; i++) {
             h = typehash((~a).Elem, (uintptr)add(Δp, i * (~(~a).Elem).Size_), h);
         }
         return h;
     }
     if (exprᴛ2 == abi.Struct) {
-        var s = (ж<structtype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var s = Ꮡt.Reinterpret<_type, structtype>();
         foreach (var (_, f) in (~s).Fields) {
             if (f.Name.IsBlank()) {
                 continue;
@@ -312,7 +312,7 @@ internal static error mapKeyError2(ж<_type> Ꮡt, @unsafe.Pointer Δp) {
         return default!;
     }
     if (exprᴛ1 == abi.Interface) {
-        var i = (ж<interfacetype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var i = Ꮡt.Reinterpret<_type, interfacetype>();
         ж<_type> tΔ2 = default!;
         ж<@unsafe.Pointer> pdata = default!;
         if (len((~i).Methods) == 0){
@@ -340,7 +340,7 @@ internal static error mapKeyError2(ж<_type> Ꮡt, @unsafe.Pointer Δp) {
         }
     }
     if (exprᴛ1 == abi.Array) {
-        var a = (ж<arraytype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var a = Ꮡt.Reinterpret<_type, arraytype>();
         for (var i = (uintptr)0; i < (~a).Len; i++) {
             {
                 var err = mapKeyError2((~a).Elem, (uintptr)add(Δp, i * (~(~a).Elem).Size_)); if (err != default!) {
@@ -351,7 +351,7 @@ internal static error mapKeyError2(ж<_type> Ꮡt, @unsafe.Pointer Δp) {
         return default!;
     }
     if (exprᴛ1 == abi.Struct) {
-        var s = (ж<structtype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var s = Ꮡt.Reinterpret<_type, structtype>();
         foreach (var (_, f) in (~s).Fields) {
             if (f.Name.IsBlank()) {
                 continue;
@@ -486,7 +486,7 @@ internal static uintptr stringHash(@string s, uintptr seed) {
 }
 
 internal static uintptr bytesHash(slice<byte> b, uintptr seed) {
-    var s = (ж<Δsliceᴛ>)(uintptr)(new @unsafe.Pointer(Ꮡ(b)));
+    var s = Ꮡ(b).Reinterpret<slice<byte>, Δsliceᴛ>();
     return memhash((~s).Δarray, seed, (uintptr)(~s).len);
 }
 

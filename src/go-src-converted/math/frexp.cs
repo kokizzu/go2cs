@@ -31,7 +31,7 @@ internal static (float64 frac, nint exp) frexp(float64 f) {
 
     // special cases
     switch (ᐧ) {
-    case {} when f is 0: {
+    case {} when f is 0D: {
         return (f, 0);
     }
     case {} when IsInf(f, // correctly return -0

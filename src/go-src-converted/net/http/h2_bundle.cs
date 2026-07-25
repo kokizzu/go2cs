@@ -65,6 +65,7 @@ using vendor.golang.org.x.net;
 using vendor.golang.org.x.net.http;
 using vendor.golang.org.x.net.http2;
 using ꓸꓸꓸany = Span<any>;
+using ꓸꓸꓸhttp2Setting = Span<http_package.http2Setting>;
 
 partial class http_package {
 
@@ -484,7 +485,7 @@ internal static bool http2isBadCipher(uint16 cipher) {
     void closeIdleConnections();
 }
 
-internal static http2clientConnPoolIdleCloser _ᴛ1ʗ = new http2clientConnPoolжhttp2clientConnPoolIdleCloser((ж<http2clientConnPool>)(default!));
+internal static http2clientConnPoolIdleCloser _ᴛ1ʗ = new http2clientConnPoolжhttp2clientConnPoolIdleCloser(((ж<http2clientConnPool>)nil));
 internal static http2clientConnPoolIdleCloser _ᴛ2ʗ = new http2noDialClientConnPool(nil);
 
 // TODO: use singleflight for dialing and addConnCalls?
@@ -579,7 +580,7 @@ internal static ж<http2dialCall> getStartDialLocked(this ж<http2clientConnPool
             return callΔ1;
         }
     }
-    var call = Ꮡ(new http2dialCall(p: Ꮡp, done: new channel<EmptyStruct>(1), ctx: ctx));
+    var call = Ꮡ(new http2dialCall(p: Ꮡp, done: new channel<EmptyStruct>(0), ctx: ctx));
     if (p.dialing == default!) {
         p.dialing = new map<@string, ж<http2dialCall>>();
     }
@@ -629,7 +630,7 @@ internal static (bool used, error err) addConnIfNeeded(this ж<http2clientConnPo
         }
         call = Ꮡ(new http2addConnCall(
             p: Ꮡp,
-            done: new channel<EmptyStruct>(1)
+            done: new channel<EmptyStruct>(0)
         ));
         p.addConnCalls[key] = call;
         var callʗ1 = call;
@@ -2001,8 +2002,8 @@ internal static (http2Frame, error) http2parseSettingsFrame(ж<http2frameCache> 
 //
 // It will perform exactly one Write to the underlying Writer.
 // It is the caller's responsibility to not call other Write methods concurrently.
-internal static error WriteSettings(this ж<http2Framer> Ꮡf, params Span<http_package.http2Setting> settingsʗp) {
-    var settings = settingsʗp.slice();
+internal static error WriteSettings(this ж<http2Framer> Ꮡf, params ꓸꓸꓸhttp2Setting settingsʗp) {
+    var settings = settingsʗp.sslice();
 
     ref var f = ref Ꮡf.Value;
     f.startWrite(http2FrameSettings, 0, 0);
@@ -3358,7 +3359,7 @@ internal static @string http2httpCodeString(nint code) {
 // larger struct and have the Mutex and Cond's memory in the same
 // allocation.
 [GoRecv] internal static void Init(this ref http2closeWaiter cw) {
-    cw = new channel<EmptyStruct>(1);
+    cw = new channel<EmptyStruct>(0);
 }
 
 // Close marks the closeWaiter as closed and unblocks any waiters.
@@ -3722,8 +3723,9 @@ internal static void closeWithError(this ж<http2pipe> Ꮡp, ж<error> Ꮡdst, e
     }
     // Close if unclosed. This isn't racy since we always
     // hold p.mu while closing.
-    switch (ᐧ) {
-    case ᐧ when p.donec.ꟷᐳ(out _): {
+    var selᴛ4 = p.donec;
+    switch (trySelect(ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+    case 0 when selᴛ4.ꟷᐳ(out _): {
         break;
     }
     default: {
@@ -3752,7 +3754,7 @@ internal static /*<-*/channel<EmptyStruct> Done(this ж<http2pipe> Ꮡp) => func
     Ꮡp.of(http2pipe.Ꮡmu).Lock();
     defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock);
     if (p.donec == default!) {
-        p.donec = new channel<EmptyStruct>(1);
+        p.donec = new channel<EmptyStruct>(0);
         if (p.err != default! || p.breakErr != default!) {
             // Already hit an error.
             p.closeDoneLocked();
@@ -4171,14 +4173,14 @@ internal static void serveConn(this ж<http2Server> Ꮡs, net.Conn c, ж<http2Se
         bw: http2newBufferedWriter(new net_ConnᴠWriter(c)),
         handler: Ꮡopts.handler(),
         streams: new map<uint32, ж<http2stream>>(),
-        readFrameCh: new channel<http2readFrameResult>(1),
+        readFrameCh: new channel<http2readFrameResult>(0),
         wantWriteFrameCh: new channel<http2FrameWriteRequest>(8),
         serveMsgCh: new channel<any>(8),
         wroteFrameCh: new channel<http2frameWriteResult>(1), // buffered; one send in writeFrameAsync
 
-        bodyReadCh: new channel<http2bodyReadMsg>(1), // buffering doesn't matter either way
+        bodyReadCh: new channel<http2bodyReadMsg>(0), // buffering doesn't matter either way
 
-        doneServing: new channel<EmptyStruct>(1),
+        doneServing: new channel<EmptyStruct>(0),
         clientMaxStreams: math.MaxUint32, // Section 6.5.2: "Initially, there is no limit to this value"
 
         advMaxStreams: s.maxConcurrentStreams(),
@@ -4598,25 +4600,29 @@ internal static readonly UntypedInt http2maxCachedCanonicalHeadersKeysSize = 204
 // It's run on its own goroutine.
 [GoRecv] internal static void readFrames(this ref http2serverConn sc) {
     sc.srv.markNewGoroutine();
-    var gate = new channel<EmptyStruct>(1);
+    var gate = new channel<EmptyStruct>(0);
     var gateʗ1 = gate;
     var gateDone = () => {
         gateʗ1.ᐸꟷ(new EmptyStruct());
     };
     while (ᐧ) {
         var (f, err) = sc.framer.ReadFrame();
-        switch (select(sc.readFrameCh.ᐸꟷ(new http2readFrameResult(f, err, gateDone), ꓸꓸꓸ), ᐸꟷ(sc.doneServing, ꓸꓸꓸ))) {
+        var selᴛ5 = sc.readFrameCh.ᐸꟷ(new http2readFrameResult(f, err, gateDone), ꓸꓸꓸ);
+        var selᴛ6 = sc.doneServing;
+        switch (select(selᴛ5, ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
         case 0: {
             break;
         }
-        case 1 when sc.doneServing.ꟷᐳ(out _): {
+        case 1 when selᴛ6.ꟷᐳ(out _): {
             return;
         }}
-        switch (select(ᐸꟷ(gate, ꓸꓸꓸ), ᐸꟷ(sc.doneServing, ꓸꓸꓸ))) {
-        case 0 when gate.ꟷᐳ(out _): {
+        var selᴛ7 = gate;
+        var selᴛ8 = sc.doneServing;
+        switch (select(ᐸꟷ(selᴛ7, ꓸꓸꓸ), ᐸꟷ(selᴛ8, ꓸꓸꓸ))) {
+        case 0 when selᴛ7.ꟷᐳ(out _): {
             break;
         }
-        case 1 when sc.doneServing.ꟷᐳ(out _): {
+        case 1 when selᴛ8.ꟷᐳ(out _): {
             return;
         }}
         if (http2terminalReadFrameError(err)) {
@@ -4738,8 +4744,13 @@ internal static void serve(this ж<http2serverConn> Ꮡsc) => func((defer, recov
     nint loopNum = 0;
     while (ᐧ) {
         loopNum++;
-        switch (select(ᐸꟷ(sc.wantWriteFrameCh, ꓸꓸꓸ), ᐸꟷ(sc.wroteFrameCh, ꓸꓸꓸ), ᐸꟷ(sc.readFrameCh, ꓸꓸꓸ), ᐸꟷ(sc.bodyReadCh, ꓸꓸꓸ), ᐸꟷ(sc.serveMsgCh, ꓸꓸꓸ))) {
-        case 0 when sc.wantWriteFrameCh.ꟷᐳ(out var wr): {
+        var selᴛ9 = sc.wantWriteFrameCh;
+        var selᴛ10 = sc.wroteFrameCh;
+        var selᴛ11 = sc.readFrameCh;
+        var selᴛ12 = sc.bodyReadCh;
+        var selᴛ13 = sc.serveMsgCh;
+        switch (select(ᐸꟷ(selᴛ9, ꓸꓸꓸ), ᐸꟷ(selᴛ10, ꓸꓸꓸ), ᐸꟷ(selᴛ11, ꓸꓸꓸ), ᐸꟷ(selᴛ12, ꓸꓸꓸ), ᐸꟷ(selᴛ13, ꓸꓸꓸ))) {
+        case 0 when selᴛ9.ꟷᐳ(out var wr): {
             {
                 var (se, ok) = wr.write._<http2StreamError>(ᐧ); if (ok) {
                     Ꮡsc.resetStream(se);
@@ -4749,16 +4760,17 @@ internal static void serve(this ж<http2serverConn> Ꮡsc) => func((defer, recov
             Ꮡsc.writeFrame(wr);
             break;
         }
-        case 1 when sc.wroteFrameCh.ꟷᐳ(out var res): {
+        case 1 when selᴛ10.ꟷᐳ(out var res): {
             Ꮡsc.wroteFrame(res);
             break;
         }
-        case 2 when sc.readFrameCh.ꟷᐳ(out var res): {
+        case 2 when selᴛ11.ꟷᐳ(out var res): {
             if (sc.writingFrameAsync) {
                 // Process any written frames before reading new frames from the client since a
                 // written frame could have triggered a new stream to be started.
-                switch (ᐧ) {
-                case ᐧ when sc.wroteFrameCh.ꟷᐳ(out var wroteRes): {
+                var selᴛ14 = sc.wroteFrameCh;
+                switch (trySelect(ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
+                case 0 when selᴛ14.ꟷᐳ(out var wroteRes): {
                     Ꮡsc.wroteFrame(wroteRes);
                     break;
                 }
@@ -4776,11 +4788,11 @@ internal static void serve(this ж<http2serverConn> Ꮡsc) => func((defer, recov
             }
             break;
         }
-        case 3 when sc.bodyReadCh.ꟷᐳ(out var m): {
+        case 3 when selᴛ12.ꟷᐳ(out var m): {
             Ꮡsc.noteBodyRead(m.st, m.n);
             break;
         }
-        case 4 when sc.serveMsgCh.ꟷᐳ(out var msg): {
+        case 4 when selᴛ13.ꟷᐳ(out var msg): {
             switch (msg.type()) {
             case Action<nint> v: {
                 v(loopNum);
@@ -4874,11 +4886,13 @@ internal static ж<http2serverMessage> http2handlerDoneMsg = @new<http2serverMes
 [GoRecv] internal static void sendServeMsg(this ref http2serverConn sc, any msg) {
     sc.serveG.checkNotOn();
     // NOT
-    switch (select(sc.serveMsgCh.ᐸꟷ(msg, ꓸꓸꓸ), ᐸꟷ(sc.doneServing, ꓸꓸꓸ))) {
+    var selᴛ15 = sc.serveMsgCh.ᐸꟷ(msg, ꓸꓸꓸ);
+    var selᴛ16 = sc.doneServing;
+    switch (select(selᴛ15, ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
     case 0: {
         break;
     }
-    case 1 when sc.doneServing.ꟷᐳ(out _): {
+    case 1 when selᴛ16.ꟷᐳ(out _): {
         break;
     }}
 }
@@ -4914,11 +4928,13 @@ internal static error readPreface(this ж<http2serverConn> Ꮡsc) => func<error>
     // TODO: configurable on *Server?
     var timerʗ1 = timer;
     defer(() => timerʗ1.Stop());
-    switch (select(ᐸꟷ(timer.C(), ꓸꓸꓸ), ᐸꟷ(errc, ꓸꓸꓸ))) {
-    case 0 when timer.C().ꟷᐳ(out _): {
+    var selᴛ17 = timer.C();
+    var selᴛ18 = errc;
+    switch (select(ᐸꟷ(selᴛ17, ꓸꓸꓸ), ᐸꟷ(selᴛ18, ꓸꓸꓸ))) {
+    case 0 when selᴛ17.ꟷᐳ(out _): {
         return http2errPrefaceTimeout;
     }
-    case 1 when errc.ꟷᐳ(out var err): {
+    case 1 when selᴛ18.ꟷᐳ(out var err): {
         if (err == default!) {
             if (http2VerboseLogs) {
                 sc.vlogf("http2: server: client %v said hello"u8, sc.conn.RemoteAddr());
@@ -4956,17 +4972,21 @@ internal static ref sync.Pool http2writeDataPool => ref Ꮡhttp2writeDataPool.Va
         return err;
     }
     bool frameWriteDone = default!; // the frame write is done (successfully or not)
-    switch (select(ᐸꟷ(ch, ꓸꓸꓸ), ᐸꟷ(sc.doneServing, ꓸꓸꓸ), ᐸꟷ<EmptyStruct>(stream.cw, ꓸꓸꓸ))) {
-    case 0 when ch.ꟷᐳ(out err): {
+    var selᴛ19 = ch;
+    var selᴛ20 = sc.doneServing;
+    var selᴛ21 = stream.cw;
+    switch (select(ᐸꟷ(selᴛ19, ꓸꓸꓸ), ᐸꟷ(selᴛ20, ꓸꓸꓸ), ᐸꟷ<EmptyStruct>(selᴛ21, ꓸꓸꓸ))) {
+    case 0 when selᴛ19.ꟷᐳ(out err): {
         frameWriteDone = true;
         break;
     }
-    case 1 when sc.doneServing.ꟷᐳ(out _): {
+    case 1 when selᴛ20.ꟷᐳ(out _): {
         return http2errClientDisconnected;
     }
-    case 2 when stream.cw.ꟷᐳ(out _): {
-        switch (ᐧ) {
-        case ᐧ when ch.ꟷᐳ(out err): {
+    case 2 when selᴛ21.ꟷᐳ(out _): {
+        var selᴛ22 = ch;
+        switch (trySelect(ᐸꟷ(selᴛ22, ꓸꓸꓸ))) {
+        case 0 when selᴛ22.ꟷᐳ(out err): {
             frameWriteDone = true;
             break;
         }
@@ -4999,11 +5019,13 @@ internal static ref sync.Pool http2writeDataPool => ref Ꮡhttp2writeDataPool.Va
 [GoRecv] internal static error writeFrameFromHandler(this ref http2serverConn sc, http2FrameWriteRequest wr) {
     sc.serveG.checkNotOn();
     // NOT
-    switch (select(sc.wantWriteFrameCh.ᐸꟷ(wr, ꓸꓸꓸ), ᐸꟷ(sc.doneServing, ꓸꓸꓸ))) {
+    var selᴛ23 = sc.wantWriteFrameCh.ᐸꟷ(wr, ꓸꓸꓸ);
+    var selᴛ24 = sc.doneServing;
+    switch (select(selᴛ23, ᐸꟷ(selᴛ24, ꓸꓸꓸ))) {
     case 0: {
         return default!;
     }
-    case 1 when sc.doneServing.ꟷᐳ(out _): {
+    case 1 when selᴛ24.ꟷᐳ(out _): {
         return http2errClientDisconnected;
     }}
     return default!;
@@ -6418,15 +6440,18 @@ internal static void http2handleHeaderListTooLong(ResponseWriter w, ж<Request> 
         }
     }
     if (errc != default!) {
-        switch (select(ᐸꟷ(errc, ꓸꓸꓸ), ᐸꟷ(sc.doneServing, ꓸꓸꓸ), ᐸꟷ<EmptyStruct>(st.cw, ꓸꓸꓸ))) {
-        case 0 when errc.ꟷᐳ(out var err): {
+        var selᴛ25 = errc;
+        var selᴛ26 = sc.doneServing;
+        var selᴛ27 = st.cw;
+        switch (select(ᐸꟷ(selᴛ25, ꓸꓸꓸ), ᐸꟷ(selᴛ26, ꓸꓸꓸ), ᐸꟷ<EmptyStruct>(selᴛ27, ꓸꓸꓸ))) {
+        case 0 when selᴛ25.ꟷᐳ(out var err): {
             Ꮡhttp2errChanPool.Put(errc);
             return err;
         }
-        case 1 when sc.doneServing.ꟷᐳ(out _): {
+        case 1 when selᴛ26.ꟷᐳ(out _): {
             return http2errClientDisconnected;
         }
-        case 2 when st.cw.ꟷᐳ(out _): {
+        case 2 when selᴛ27.ꟷᐳ(out _): {
             return http2errStreamClosed;
         }}
         return default!;
@@ -6458,11 +6483,13 @@ internal static void http2handleHeaderListTooLong(ResponseWriter w, ж<Request> 
     sc.serveG.checkNotOn();
     // NOT on
     if (n > 0) {
-        switch (select(sc.bodyReadCh.ᐸꟷ(new http2bodyReadMsg(Ꮡst, n), ꓸꓸꓸ), ᐸꟷ(sc.doneServing, ꓸꓸꓸ))) {
+        var selᴛ28 = sc.bodyReadCh.ᐸꟷ(new http2bodyReadMsg(Ꮡst, n), ꓸꓸꓸ);
+        var selᴛ29 = sc.doneServing;
+        switch (select(selᴛ28, ᐸꟷ(selᴛ29, ꓸꓸꓸ))) {
         case 0: {
             break;
         }
-        case 1 when sc.doneServing.ꟷᐳ(out _): {
+        case 1 when selᴛ29.ꟷᐳ(out _): {
             break;
         }}
     }
@@ -6564,11 +6591,11 @@ internal static error Close(this ж<http2requestBody> Ꮡb) {
 }
 
 // Optional http.ResponseWriter interfaces implemented.
-internal static CloseNotifier _ᴛ3ʗ = new http2responseWriterжCloseNotifier((ж<http2responseWriter>)(default!));
+internal static CloseNotifier _ᴛ3ʗ = new http2responseWriterжCloseNotifier(((ж<http2responseWriter>)nil));
 
-internal static Flusher _ᴛ4ʗ = new http2responseWriterжFlusher((ж<http2responseWriter>)(default!));
+internal static Flusher _ᴛ4ʗ = new http2responseWriterжFlusher(((ж<http2responseWriter>)nil));
 
-internal static http2stringWriter _ᴛ5ʗ = new http2responseWriterжhttp2stringWriter((ж<http2responseWriter>)(default!));
+internal static http2stringWriter _ᴛ5ʗ = new http2responseWriterжhttp2stringWriter(((ж<http2responseWriter>)nil));
 
 [GoType] partial struct http2responseWriterState {
     // immutable within a request:
@@ -6885,8 +6912,9 @@ internal static readonly @string http2TrailerPrefix = "Trailer:"u8;
         // final DATA frame (with END_STREAM) to be sent.
         (_, err) = new http2chunkWriter(rws).Write(default!);
         if (err == default!) {
-            switch (ᐧ) {
-            case ᐧ when (~(~rws).stream).cw.ꟷᐳ(out _): {
+            var selᴛ30 = (~(~rws).stream).cw;
+            switch (trySelect(ᐸꟷ<EmptyStruct>(selᴛ30, ꓸꓸꓸ))) {
+            case 0 when selᴛ30.ꟷᐳ(out _): {
                 err = rws.Value.stream.Value.closeErr;
                 break;
             }
@@ -7061,7 +7089,7 @@ internal static error http2ErrRecursivePush = errors.New("http2: recursive push 
 
 internal static error http2ErrPushLimitReached = errors.New("http2: push would exceed peer's SETTINGS_MAX_CONCURRENT_STREAMS"u8);
 
-internal static Pusher _ᴛ6ʗ = new http2responseWriterжPusher((ж<http2responseWriter>)(default!));
+internal static Pusher _ᴛ6ʗ = new http2responseWriterжPusher(((ж<http2responseWriter>)nil));
 
 [GoRecv] internal static error Push(this ref http2responseWriter w, @string target, ж<PushOptions> Ꮡopts) {
     ref var opts = ref Ꮡopts.DerefOrNil();
@@ -7137,24 +7165,30 @@ internal static Pusher _ᴛ6ʗ = new http2responseWriterжPusher((ж<http2respon
         header: http2cloneHeader(opts.Header),
         done: Ꮡhttp2errChanPool.Get()._<channel<error>>()
     ));
-    switch (select(ᐸꟷ((~sc).doneServing, ꓸꓸꓸ), ᐸꟷ<EmptyStruct>((~st).cw, ꓸꓸꓸ), (~sc).serveMsgCh.ᐸꟷ(msg, ꓸꓸꓸ))) {
-    case 0 when (~sc).doneServing.ꟷᐳ(out _): {
+    var selᴛ31 = (~sc).doneServing;
+    var selᴛ32 = (~st).cw;
+    var selᴛ33 = (~sc).serveMsgCh.ᐸꟷ(msg, ꓸꓸꓸ);
+    switch (select(ᐸꟷ(selᴛ31, ꓸꓸꓸ), ᐸꟷ<EmptyStruct>(selᴛ32, ꓸꓸꓸ), selᴛ33)) {
+    case 0 when selᴛ31.ꟷᐳ(out _): {
         return http2errClientDisconnected;
     }
-    case 1 when (~st).cw.ꟷᐳ(out _): {
+    case 1 when selᴛ32.ꟷᐳ(out _): {
         return http2errStreamClosed;
     }
     case 2: {
         break;
     }}
-    switch (select(ᐸꟷ((~sc).doneServing, ꓸꓸꓸ), ᐸꟷ<EmptyStruct>((~st).cw, ꓸꓸꓸ), ᐸꟷ((~msg).done, ꓸꓸꓸ))) {
-    case 0 when (~sc).doneServing.ꟷᐳ(out _): {
+    var selᴛ34 = (~sc).doneServing;
+    var selᴛ35 = (~st).cw;
+    var selᴛ36 = (~msg).done;
+    switch (select(ᐸꟷ(selᴛ34, ꓸꓸꓸ), ᐸꟷ<EmptyStruct>(selᴛ35, ꓸꓸꓸ), ᐸꟷ(selᴛ36, ꓸꓸꓸ))) {
+    case 0 when selᴛ34.ꟷᐳ(out _): {
         return http2errClientDisconnected;
     }
-    case 1 when (~st).cw.ꟷᐳ(out _): {
+    case 1 when selᴛ35.ꟷᐳ(out _): {
         return http2errStreamClosed;
     }
-    case 2 when (~msg).done.ꟷᐳ(out var errΔ2): {
+    case 2 when selᴛ36.ꟷᐳ(out var errΔ2): {
         Ꮡhttp2errChanPool.Put((~msg).done);
         return errΔ2;
     }}
@@ -7800,7 +7834,7 @@ internal static void closeReqBodyLocked(this ж<http2clientStream> Ꮡcs) {
     if (cs.reqBodyClosed != default!) {
         return;
     }
-    cs.reqBodyClosed = new channel<EmptyStruct>(1);
+    cs.reqBodyClosed = new channel<EmptyStruct>(0);
     var reqBodyClosed = cs.reqBodyClosed;
     var reqBodyClosedʗ1 = reqBodyClosed;
     goǃ(() => {
@@ -7945,13 +7979,15 @@ internal static (ж<Response>, error) RoundTripOpt(this ж<http2Transport> Ꮡt,
                     backoff += backoff * (0.1D * mathrand.Float64());
                     var d = time.ΔSecond * ((time.Duration)(int64)backoff);
                     var tm = t.newTimer(d);
-                    switch (select(ᐸꟷ(tm.C(), ꓸꓸꓸ), ᐸꟷ(req.Context().Done(), ꓸꓸꓸ))) {
-                    case 0 when tm.C().ꟷᐳ(out _): {
+                    var selᴛ37 = tm.C();
+                    var selᴛ38 = req.Context().Done();
+                    switch (select(ᐸꟷ(selᴛ37, ꓸꓸꓸ), ᐸꟷ(selᴛ38, ꓸꓸꓸ))) {
+                    case 0 when selᴛ37.ꟷᐳ(out _): {
                         t.vlogf("RoundTrip retrying after failure: %v"u8, roundTripErr);
                         continue;
                         break;
                     }
-                    case 1 when req.Context().Done().ꟷᐳ(out _): {
+                    case 1 when selᴛ38.ꟷᐳ(out _): {
                         tm.Stop();
                         err = req.Context().Err();
                         break;
@@ -8131,7 +8167,7 @@ internal static (ж<http2ClientConn>, error) newClientConn(this ж<http2Transpor
     var cc = Ꮡ(new http2ClientConn(
         t: Ꮡt,
         tconn: c,
-        readerDone: new channel<EmptyStruct>(1),
+        readerDone: new channel<EmptyStruct>(0),
         nextStreamID: 1,
         maxFrameSize: ((uint32)16 << (int)(10)), // spec default
 
@@ -8491,7 +8527,7 @@ public static error Shutdown(this ж<http2ClientConn> Ꮡcc, context.Context ctx
         }
     }
     // Wait for all in-flight streams to complete or connection to close
-    var done = new channel<EmptyStruct>(1);
+    var done = new channel<EmptyStruct>(0);
     var cancelled = false;
     // guarded by cc.mu
     var doneʗ1 = done;
@@ -8512,12 +8548,14 @@ public static error Shutdown(this ж<http2ClientConn> Ꮡcc, context.Context ctx
         }
     }));
     http2shutdownEnterWaitStateHook();
-    switch (select(ᐸꟷ(done, ꓸꓸꓸ), ᐸꟷ(ctx.Done(), ꓸꓸꓸ))) {
-    case 0 when done.ꟷᐳ(out _): {
+    var selᴛ39 = done;
+    var selᴛ40 = ctx.Done();
+    switch (select(ᐸꟷ(selᴛ39, ꓸꓸꓸ), ᐸꟷ(selᴛ40, ꓸꓸꓸ))) {
+    case 0 when selᴛ39.ꟷᐳ(out _): {
         Ꮡcc.closeConn();
         return default!;
     }
-    case 1 when ctx.Done().ꟷᐳ(out _): {
+    case 1 when selᴛ40.ꟷᐳ(out _): {
         Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
         cancelled = true;
         cc.cond.Broadcast();
@@ -8701,10 +8739,10 @@ internal static (ж<Response>, error) roundTrip(this ж<http2ClientConn> Ꮡcc, 
         reqBody: req.Body,
         reqBodyContentLength: http2actualContentLength(Ꮡreq),
         trace: httptrace.ContextClientTrace(ctx),
-        peerClosed: new channel<EmptyStruct>(1),
-        abort: new channel<EmptyStruct>(1),
-        respHeaderRecv: new channel<EmptyStruct>(1),
-        donec: new channel<EmptyStruct>(1)
+        peerClosed: new channel<EmptyStruct>(0),
+        abort: new channel<EmptyStruct>(0),
+        respHeaderRecv: new channel<EmptyStruct>(0),
+        donec: new channel<EmptyStruct>(0)
     ));
     // TODO(bradfitz): this is a copy of the logic in net/http. Unify somewhere?
     if (!cc.t.disableCompression() && req.Header.Get("Accept-Encoding"u8) == ""u8 && req.Header.Get("Range"u8) == ""u8 && !(~cs).isHead) {
@@ -8727,14 +8765,17 @@ internal static (ж<Response>, error) roundTrip(this ж<http2ClientConn> Ꮡcc, 
     var csʗ2 = cs;
     var ctxʗ1 = ctx;
     var waitDone = error () => {
-        switch (select(ᐸꟷ((~csʗ2).donec, ꓸꓸꓸ), ᐸꟷ(ctxʗ1.Done(), ꓸꓸꓸ), ᐸꟷ((~csʗ2).reqCancel, ꓸꓸꓸ))) {
-        case 0 when (~csʗ2).donec.ꟷᐳ(out _): {
+        var selᴛ41 = (~csʗ2).donec;
+        var selᴛ42 = ctxʗ1.Done();
+        var selᴛ43 = (~csʗ2).reqCancel;
+        switch (select(ᐸꟷ(selᴛ41, ꓸꓸꓸ), ᐸꟷ(selᴛ42, ꓸꓸꓸ), ᐸꟷ(selᴛ43, ꓸꓸꓸ))) {
+        case 0 when selᴛ41.ꟷᐳ(out _): {
             return default!;
         }
-        case 1 when ctxʗ1.Done().ꟷᐳ(out _): {
+        case 1 when selᴛ42.ꟷᐳ(out _): {
             return ctxʗ1.Err();
         }
-        case 2 when (~csʗ2).reqCancel.ꟷᐳ(out _): {
+        case 2 when selᴛ43.ꟷᐳ(out _): {
             return http2errRequestCanceled;
         }}
         return default!;
@@ -8792,13 +8833,18 @@ internal static (ж<Response>, error) roundTrip(this ж<http2ClientConn> Ꮡcc, 
         return err;
     };
     while (ᐧ) {
-        switch (select(ᐸꟷ((~cs).respHeaderRecv, ꓸꓸꓸ), ᐸꟷ((~cs).abort, ꓸꓸꓸ), ᐸꟷ(ctx.Done(), ꓸꓸꓸ), ᐸꟷ((~cs).reqCancel, ꓸꓸꓸ))) {
-        case 0 when (~cs).respHeaderRecv.ꟷᐳ(out _): {
+        var selᴛ44 = (~cs).respHeaderRecv;
+        var selᴛ45 = (~cs).abort;
+        var selᴛ46 = ctx.Done();
+        var selᴛ47 = (~cs).reqCancel;
+        switch (select(ᐸꟷ(selᴛ44, ꓸꓸꓸ), ᐸꟷ(selᴛ45, ꓸꓸꓸ), ᐸꟷ(selᴛ46, ꓸꓸꓸ), ᐸꟷ(selᴛ47, ꓸꓸꓸ))) {
+        case 0 when selᴛ44.ꟷᐳ(out _): {
             return handleResponseHeaders();
         }
-        case 1 when (~cs).abort.ꟷᐳ(out _): {
-            switch (ᐧ) {
-            case ᐧ when (~cs).respHeaderRecv.ꟷᐳ(out _): {
+        case 1 when selᴛ45.ꟷᐳ(out _): {
+            var selᴛ48 = (~cs).respHeaderRecv;
+            switch (trySelect(ᐸꟷ(selᴛ48, ꓸꓸꓸ))) {
+            case 0 when selᴛ48.ꟷᐳ(out _): {
                 return handleResponseHeaders();
             }
             default: {
@@ -8807,7 +8853,7 @@ internal static (ж<Response>, error) roundTrip(this ж<http2ClientConn> Ꮡcc, 
             }}
             break;
         }
-        case 2 when ctx.Done().ꟷᐳ(out _): {
+        case 2 when selᴛ46.ꟷᐳ(out _): {
             var err = ctx.Err();
             cs.abortStream(err);
             return (default!, cancelRequest(cs, // If both cs.respHeaderRecv and cs.abort are signaling,
@@ -8816,7 +8862,7 @@ internal static (ж<Response>, error) roundTrip(this ж<http2ClientConn> Ꮡcc, 
  // golang.org/issue/49645
  err));
         }
-        case 3 when (~cs).reqCancel.ꟷᐳ(out _): {
+        case 3 when selᴛ47.ꟷᐳ(out _): {
             cs.abortStream(http2errRequestCanceled);
             return (default!, cancelRequest(cs, http2errRequestCanceled));
         }}
@@ -8861,14 +8907,17 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
             throw panic("RoundTrip on uninitialized ClientConn");
         }
         // for tests
-        switch (select((~cc).reqHeaderMu.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ), ᐸꟷ(cs.reqCancel, ꓸꓸꓸ), ᐸꟷ(ctx.Done(), ꓸꓸꓸ))) {
+        var selᴛ49 = (~cc).reqHeaderMu.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+        var selᴛ50 = cs.reqCancel;
+        var selᴛ51 = ctx.Done();
+        switch (select(selᴛ49, ᐸꟷ(selᴛ50, ꓸꓸꓸ), ᐸꟷ(selᴛ51, ꓸꓸꓸ))) {
         case 0: {
             break;
         }
-        case 1 when cs.reqCancel.ꟷᐳ(out _): {
+        case 1 when selᴛ50.ꟷᐳ(out _): {
             err = http2errRequestCanceled; return;
         }
-        case 2 when ctx.Done().ꟷᐳ(out _): {
+        case 2 when selᴛ51.ꟷᐳ(out _): {
             err = ctx.Err(); return;
         }}
         cc.of(http2ClientConn.Ꮡmu).Lock();
@@ -8916,24 +8965,29 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
             if (continueTimeout != 0) {
                 http2traceWait100Continue(cs.trace);
                 var timer = time.NewTimer(continueTimeout);
-                switch (select(ᐸꟷ((~timer).C, ꓸꓸꓸ), ᐸꟷ(cs.on100, ꓸꓸꓸ), ᐸꟷ(cs.abort, ꓸꓸꓸ), ᐸꟷ(ctx.Done(), ꓸꓸꓸ), ᐸꟷ(cs.reqCancel, ꓸꓸꓸ))) {
-                case 0 when (~timer).C.ꟷᐳ(out _): {
+                var selᴛ52 = (~timer).C;
+                var selᴛ53 = cs.on100;
+                var selᴛ54 = cs.abort;
+                var selᴛ55 = ctx.Done();
+                var selᴛ56 = cs.reqCancel;
+                switch (select(ᐸꟷ(selᴛ52, ꓸꓸꓸ), ᐸꟷ(selᴛ53, ꓸꓸꓸ), ᐸꟷ(selᴛ54, ꓸꓸꓸ), ᐸꟷ(selᴛ55, ꓸꓸꓸ), ᐸꟷ(selᴛ56, ꓸꓸꓸ))) {
+                case 0 when selᴛ52.ꟷᐳ(out _): {
                     err = default!;
                     break;
                 }
-                case 1 when cs.on100.ꟷᐳ(out _): {
+                case 1 when selᴛ53.ꟷᐳ(out _): {
                     err = default!;
                     break;
                 }
-                case 2 when cs.abort.ꟷᐳ(out _): {
+                case 2 when selᴛ54.ꟷᐳ(out _): {
                     err = cs.abortErr;
                     break;
                 }
-                case 3 when ctx.Done().ꟷᐳ(out _): {
+                case 3 when selᴛ55.ꟷᐳ(out _): {
                     err = ctx.Err();
                     break;
                 }
-                case 4 when cs.reqCancel.ꟷᐳ(out _): {
+                case 4 when selᴛ56.ꟷᐳ(out _): {
                     err = http2errRequestCanceled;
                     break;
                 }}
@@ -8970,25 +9024,31 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
         // or until the request is aborted (via context, error, or otherwise),
         // whichever comes first.
         while (ᐧ) {
-            switch (select(ᐸꟷ(cs.peerClosed, ꓸꓸꓸ), ᐸꟷ(respHeaderTimer, ꓸꓸꓸ), ᐸꟷ(respHeaderRecv, ꓸꓸꓸ), ᐸꟷ(cs.abort, ꓸꓸꓸ), ᐸꟷ(ctx.Done(), ꓸꓸꓸ), ᐸꟷ(cs.reqCancel, ꓸꓸꓸ))) {
-            case 0 when cs.peerClosed.ꟷᐳ(out _): {
+            var selᴛ57 = cs.peerClosed;
+            var selᴛ58 = respHeaderTimer;
+            var selᴛ59 = respHeaderRecv;
+            var selᴛ60 = cs.abort;
+            var selᴛ61 = ctx.Done();
+            var selᴛ62 = cs.reqCancel;
+            switch (select(ᐸꟷ(selᴛ57, ꓸꓸꓸ), ᐸꟷ(selᴛ58, ꓸꓸꓸ), ᐸꟷ(selᴛ59, ꓸꓸꓸ), ᐸꟷ(selᴛ60, ꓸꓸꓸ), ᐸꟷ(selᴛ61, ꓸꓸꓸ), ᐸꟷ(selᴛ62, ꓸꓸꓸ))) {
+            case 0 when selᴛ57.ꟷᐳ(out _): {
                 err = default!; return;
             }
-            case 1 when respHeaderTimer.ꟷᐳ(out _): {
+            case 1 when selᴛ58.ꟷᐳ(out _): {
                 err = http2errTimeout; return;
             }
-            case 2 when respHeaderRecv.ꟷᐳ(out _): {
+            case 2 when selᴛ59.ꟷᐳ(out _): {
                 respHeaderRecv = default!;
                 respHeaderTimer = default!;
                 break;
             }
-            case 3 when cs.abort.ꟷᐳ(out _): {
+            case 3 when selᴛ60.ꟷᐳ(out _): {
                 err = cs.abortErr; return;
             }
-            case 4 when ctx.Done().ꟷᐳ(out _): {
+            case 4 when selᴛ61.ꟷᐳ(out _): {
                 err = ctx.Err(); return;
             }
-            case 5 when cs.reqCancel.ꟷᐳ(out _): {
+            case 5 when selᴛ62.ꟷᐳ(out _): {
                 err = http2errRequestCanceled; return;
             }}
         }
@@ -9006,14 +9066,17 @@ internal static error encodeAndWriteHeaders(this ж<http2clientStream> Ꮡcs, ж
     var ccʗ1 = cc;
     defer(ccʗ1.of(http2ClientConn.Ꮡwmu).Unlock);
     // If the request was canceled while waiting for cc.mu, just quit.
-    switch (ᐧ) {
-    case ᐧ when cs.abort.ꟷᐳ(out _): {
+    var selᴛ63 = cs.abort;
+    var selᴛ64 = ctx.Done();
+    var selᴛ65 = cs.reqCancel;
+    switch (trySelect(ᐸꟷ(selᴛ63, ꓸꓸꓸ), ᐸꟷ(selᴛ64, ꓸꓸꓸ), ᐸꟷ(selᴛ65, ꓸꓸꓸ))) {
+    case 0 when selᴛ63.ꟷᐳ(out _): {
         return cs.abortErr;
     }
-    case ᐧ when ctx.Done().ꟷᐳ(out _): {
+    case 1 when selᴛ64.ꟷᐳ(out _): {
         return ctx.Err();
     }
-    case ᐧ when cs.reqCancel.ꟷᐳ(out _): {
+    case 2 when selᴛ65.ꟷᐳ(out _): {
         return http2errRequestCanceled;
     }
     default: {
@@ -9063,7 +9126,7 @@ internal static void cleanupWriteRequest(this ж<http2clientStream> Ꮡcs, error
     var mustCloseBody = false;
     if (cs.reqBody != default! && cs.reqBodyClosed == default!) {
         mustCloseBody = true;
-        cs.reqBodyClosed = new channel<EmptyStruct>(1);
+        cs.reqBodyClosed = new channel<EmptyStruct>(0);
     }
     var bodyClosed = cs.reqBodyClosed;
     cc.of(http2ClientConn.Ꮡmu).Unlock();
@@ -9078,8 +9141,9 @@ internal static void cleanupWriteRequest(this ж<http2clientStream> Ꮡcs, error
         // If the connection is closed immediately after the response is read,
         // we may be aborted before finishing up here. If the stream was closed
         // cleanly on both sides, there is no error.
-        switch (ᐧ) {
-        case ᐧ when cs.peerClosed.ꟷᐳ(out _): {
+        var selᴛ66 = cs.peerClosed;
+        switch (trySelect(ᐸꟷ(selᴛ66, ꓸꓸꓸ))) {
+        case 0 when selᴛ66.ꟷᐳ(out _): {
             err = default!;
             break;
         }
@@ -9138,8 +9202,9 @@ internal static void cleanupWriteRequest(this ж<http2clientStream> Ꮡcs, error
         cc.pendingRequests++;
         cc.cond.Wait();
         cc.pendingRequests--;
-        switch (ᐧ) {
-        case ᐧ when cs.abort.ꟷᐳ(out _): {
+        var selᴛ67 = cs.abort;
+        switch (trySelect(ᐸꟷ(selᴛ67, ꓸꓸꓸ))) {
+        case 0 when selᴛ67.ꟷᐳ(out _): {
             return cs.abortErr;
         }
         default: {
@@ -9395,14 +9460,17 @@ internal static (int32 taken, error err) awaitFlowControl(this ж<http2clientStr
             if (cs.reqBodyClosed != default!) {
                 (taken, err) = (0, http2errStopReqBodyWrite); return;
             }
-            switch (ᐧ) {
-            case ᐧ when cs.abort.ꟷᐳ(out _): {
+            var selᴛ68 = cs.abort;
+            var selᴛ69 = ctx.Done();
+            var selᴛ70 = cs.reqCancel;
+            switch (trySelect(ᐸꟷ(selᴛ68, ꓸꓸꓸ), ᐸꟷ(selᴛ69, ꓸꓸꓸ), ᐸꟷ(selᴛ70, ꓸꓸꓸ))) {
+            case 0 when selᴛ68.ꟷᐳ(out _): {
                 (taken, err) = (0, cs.abortErr); return;
             }
-            case ᐧ when ctx.Done().ꟷᐳ(out _): {
+            case 1 when selᴛ69.ꟷᐳ(out _): {
                 (taken, err) = (0, ctx.Err()); return;
             }
-            case ᐧ when cs.reqCancel.ꟷᐳ(out _): {
+            case 2 when selᴛ70.ꟷᐳ(out _): {
                 (taken, err) = (0, http2errRequestCanceled); return;
             }
             default: {
@@ -9798,8 +9866,9 @@ internal static void cleanup(this ж<http2clientConnReadLoop> Ꮡrl) => func((de
     }
     cc.Value.closed = true;
     foreach (var (_, cs) in (~cc).streams) {
-        switch (ᐧ) {
-        case ᐧ when (~cs).peerClosed.ꟷᐳ(out _): {
+        var selᴛ71 = (~cs).peerClosed;
+        switch (trySelect(ᐸꟷ(selᴛ71, ꓸꓸꓸ))) {
+        case 0 when selᴛ71.ꟷᐳ(out _): {
             break;
         }
         default: {
@@ -10078,8 +10147,9 @@ internal static error processHeaders(this ж<http2clientConnReadLoop> Ꮡrl, ж<
         }
         if (statusCode == 100) {
             http2traceGot100Continue(cs.trace);
-            switch (ᐧ) {
-            case ᐧ when cs.on100.ᐸꟷ(new EmptyStruct(), ꟷ): {
+            var selᴛ72 = cs.on100.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
+            switch (trySelect(selᴛ72)) {
+            case 0: {
                 break;
             }
             default: {
@@ -10248,14 +10318,17 @@ internal static error Close(this http2transportResponseBody b) {
         (~cc).bw.Flush();
         cc.of(http2ClientConn.Ꮡwmu).Unlock();
     }
-    switch (select(ᐸꟷ((~cs).donec, ꓸꓸꓸ), ᐸꟷ((~cs).ctx.Done(), ꓸꓸꓸ), ᐸꟷ((~cs).reqCancel, ꓸꓸꓸ))) {
-    case 0 when (~cs).donec.ꟷᐳ(out _): {
+    var selᴛ73 = (~cs).donec;
+    var selᴛ74 = (~cs).ctx.Done();
+    var selᴛ75 = (~cs).reqCancel;
+    switch (select(ᐸꟷ(selᴛ73, ꓸꓸꓸ), ᐸꟷ(selᴛ74, ꓸꓸꓸ), ᐸꟷ(selᴛ75, ꓸꓸꓸ))) {
+    case 0 when selᴛ73.ꟷᐳ(out _): {
         break;
     }
-    case 1 when (~cs).ctx.Done().ꟷᐳ(out _): {
+    case 1 when selᴛ74.ꟷᐳ(out _): {
         return default!;
     }
-    case 2 when (~cs).reqCancel.ꟷᐳ(out _): {
+    case 2 when selᴛ75.ꟷᐳ(out _): {
         return http2errRequestCanceled;
     }}
     // See golang/go#49366: The net/http package can cancel the
@@ -10601,7 +10674,7 @@ internal static error processResetStream(this ж<http2clientConnReadLoop> Ꮡrl,
 public static error Ping(this ж<http2ClientConn> Ꮡcc, context.Context ctx) {
     ref var cc = ref Ꮡcc.Value;
 
-    var c = new channel<EmptyStruct>(1);
+    var c = new channel<EmptyStruct>(0);
     // Generate a random payload
     ref var p = ref heap(new array<byte>(8), out var Ꮡp);
     while (ᐧ) {
@@ -10622,7 +10695,7 @@ public static error Ping(this ж<http2ClientConn> Ꮡcc, context.Context ctx) {
         Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
     }
     ref var pingError = ref heap<error>(out var ᏑpingError);
-    var errc = new channel<EmptyStruct>(1);
+    var errc = new channel<EmptyStruct>(0);
     var errcʗ1 = errc;
     var pʗ1 = p;
     goǃ(() => func((defer, recover) => {
@@ -10642,17 +10715,21 @@ public static error Ping(this ж<http2ClientConn> Ꮡcc, context.Context ctx) {
             }
         }
     }));
-    switch (select(ᐸꟷ(c, ꓸꓸꓸ), ᐸꟷ(errc, ꓸꓸꓸ), ᐸꟷ(ctx.Done(), ꓸꓸꓸ), ᐸꟷ(cc.readerDone, ꓸꓸꓸ))) {
-    case 0 when c.ꟷᐳ(out _): {
+    var selᴛ76 = c;
+    var selᴛ77 = errc;
+    var selᴛ78 = ctx.Done();
+    var selᴛ79 = cc.readerDone;
+    switch (select(ᐸꟷ(selᴛ76, ꓸꓸꓸ), ᐸꟷ(selᴛ77, ꓸꓸꓸ), ᐸꟷ(selᴛ78, ꓸꓸꓸ), ᐸꟷ(selᴛ79, ꓸꓸꓸ))) {
+    case 0 when selᴛ76.ꟷᐳ(out _): {
         return default!;
     }
-    case 1 when errc.ꟷᐳ(out _): {
+    case 1 when selᴛ77.ꟷᐳ(out _): {
         return pingError;
     }
-    case 2 when ctx.Done().ꟷᐳ(out _): {
+    case 2 when selᴛ78.ꟷᐳ(out _): {
         return ctx.Err();
     }
-    case 3 when cc.readerDone.ꟷᐳ(out _): {
+    case 3 when selᴛ79.ꟷᐳ(out _): {
         return cc.readerErr;
     }}
     return default!;
@@ -11528,8 +11605,9 @@ public static @string String(this http2FrameWriteRequest wr) {
     if (wr.done == default!) {
         return;
     }
-    switch (ᐧ) {
-    case ᐧ when wr.done.ᐸꟷ(err, ꟷ): {
+    var selᴛ80 = wr.done.ᐸꟷ(err, ꓸꓸꓸ);
+    switch (trySelect(selᴛ80)) {
+    case 0: {
         break;
     }
     default: {
@@ -11770,7 +11848,7 @@ internal static void addBytes(this ж<http2priorityNode> Ꮡn, int64 b) {
 // if any ancestor p of n is still open (ignoring the root node).
 internal static bool walkReadyInOrder(this ж<http2priorityNode> Ꮡn, bool openParent, ж<slice<ж<http2priorityNode>>> Ꮡtmp, Func<ж<http2priorityNode>, bool, bool> f) {
     ref var n = ref Ꮡn.Value;
-    ref var tmp = ref Ꮡtmp.Value;
+    ref var tmp = ref Ꮡtmp.ValueSlot;
 
     if (!n.q.empty() && f(Ꮡn, openParent)) {
         return true;
@@ -11837,10 +11915,10 @@ internal static bool Less(this http2sortPriorityNodeSiblings z, nint i, nint k) 
     // See sections 5.3.2 and 5.3.4.
     var (wi, bi) = ((float64)((~z[i]).weight + 1), (float64)(~z[i]).subtreeBytes);
     var (wk, bk) = ((float64)((~z[k]).weight + 1), (float64)(~z[k]).subtreeBytes);
-    if (bi == 0 && bk == 0) {
+    if (bi == 0D && bk == 0D) {
         return wi >= wk;
     }
-    if (bk == 0) {
+    if (bk == 0D) {
         return false;
     }
     return bi / bk <= wi / wk;
@@ -12050,7 +12128,7 @@ internal static (http2FrameWriteRequest wr, bool ok) Pop(this ж<http2priorityWr
 }
 
 [GoRecv] internal static void addClosedOrIdleNode(this ref http2priorityWriteScheduler ws, ж<slice<ж<http2priorityNode>>> Ꮡlist, nint maxSize, ж<http2priorityNode> Ꮡn) {
-    ref var list = ref Ꮡlist.Value;
+    ref var list = ref Ꮡlist.ValueSlot;
 
     if (maxSize == 0) {
         return;

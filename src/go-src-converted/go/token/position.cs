@@ -285,7 +285,7 @@ public static void AddLineColumnInfo(this ж<ΔFile> Ꮡf, nint offset, @string 
     // only generate this code if needed
     if (debug) {
         throw panic(fmt.Sprintf("offset %d out of bounds [%d, %d] (position %d out of bounds [%d, %d])"u8,
-            0, /* for symmetry */
+            (nint)(0), /* for symmetry */
  offset, f.size,
             f.@base + offset, f.@base, f.@base + f.size));
     }
@@ -354,7 +354,7 @@ internal static (@string filename, nint line, nint column) unpack(this ж<ΔFile
         // few files have extra line infos
         {
             nint i = searchLineInfos(f.infos, offset); if (i >= 0) {
-                var alt = Ꮡ(f.infos[i]);
+                var alt = Ꮡ(f.infos, i);
                 filename = alt.Value.Filename;
                 {
                     nint iΔ1 = searchInts(f.lines, (~alt).Offset); if (iΔ1 >= 0) {
@@ -531,7 +531,7 @@ public static void RemoveFile(this ж<FileSet> Ꮡs, ж<ΔFile> Ꮡfile) => func
     defer(Ꮡs.of(FileSet.Ꮡmutex).Unlock);
     {
         nint i = searchFiles(s.files, @file.@base); if (i >= 0 && s.files[i] == Ꮡfile) {
-            var last = Ꮡ(s.files[len(s.files) - 1]);
+            var last = Ꮡ(s.files, len(s.files) - 1);
             s.files = append(s.files[..(int)(i)], s.files[(int)(i + 1)..].ꓸꓸꓸ);
             last.ValueSlot = default!;
         }

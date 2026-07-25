@@ -25,7 +25,7 @@ internal static @string encVersion1 = "go test fuzz v1"u8;
 // marshalCorpusFile encodes an arbitrary number of arguments into the file format for the
 // corpus.
 internal static slice<byte> marshalCorpusFile(params ꓸꓸꓸany valsʗp) {
-    var vals = valsʗp.slice();
+    var vals = valsʗp.sslice();
 
     if (len(vals) == 0) {
         throw panic("must have at least one value to marshal");

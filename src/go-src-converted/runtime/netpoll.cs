@@ -743,15 +743,15 @@ internal static ж<pollDesc> alloc(this ж<pollCache> Ꮡc) {
 // types which embed runtime/internal/sys.NotInHeap (which pollDesc is)
 // must be stored in interfaces indirectly. See issue 42076.
 internal static any /*i*/ makeArg(this ж<pollDesc> Ꮡpd) {
-    any i = default!;
+    ref var i = ref heap<any>(out var Ꮡi);
 
-    var x = (ж<eface>)(uintptr)(new @unsafe.Pointer(Ꮡ(i)));
+    var x = Ꮡi.Reinterpret<any, eface>();
     x.Value._type = pdType;
     x.Value.data = @unsafe.Pointer.FromRef(ref (Ꮡpd.of(pollDesc.Ꮡself)).Value);
     return i;
 }
 
-internal static ж<any> ᏑpdEface = new((ж<pollDesc>)(default!));
+internal static ж<any> ᏑpdEface = new(((ж<pollDesc>)nil));
 internal static ref any pdEface => ref ᏑpdEface.ValueSlot;
 internal static ж<_type> pdType = (~efaceOf(ᏑpdEface))._type;
 

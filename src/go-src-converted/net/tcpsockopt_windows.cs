@@ -118,7 +118,7 @@ internal static error setKeepAliveIdleAndInterval(ж<netFD> Ꮡfd, time.Duration
     ref var ret = ref heap<uint32>(out var Ꮡret);
     ret = (uint32)0;
     var size = (uint32)@unsafe.Sizeof(ka);
-    var err = Ꮡfd.of(netFD.Ꮡpfd).WSAIoctl(syscall.SIO_KEEPALIVE_VALS, (ж<byte>)(uintptr)(new @unsafe.Pointer(Ꮡka)), size, nil, 0, Ꮡret, nil, 0);
+    var err = Ꮡfd.of(netFD.Ꮡpfd).WSAIoctl(syscall.SIO_KEEPALIVE_VALS, Ꮡka.Reinterpret<syscall.TCPKeepalive, byte>(), size, nil, 0, Ꮡret, nil, 0);
     Δruntime.KeepAlive(Ꮡfd);
     return os.NewSyscallError("wsaioctl"u8, err);
 }

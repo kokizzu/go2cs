@@ -44,7 +44,7 @@ partial class gcimporter_package {
 // unified IR export data decoder.
 internal static ж<types.Package> readUnifiedPackage(ж<token.FileSet> Ꮡfset, ж<types.Context> Ꮡctxt, map<@string, ж<types.Package>> imports, pkgbits.PkgDecoder input) => func((defer, recover) => {
     ref var fset = ref Ꮡfset.Value;
-    ref var ctxt = ref Ꮡctxt.Value;
+    ref var ctxt = ref Ꮡctxt.DerefOrNil();
 
     ref var pr = ref heap<pkgReader>(out var Ꮡpr);
     pr = new pkgReader(
@@ -264,7 +264,7 @@ internal static typesꓸType typIdx(this ж<pkgReader> Ꮡpr, typeInfo info, ж<
         where = Ꮡ(dict.derivedTypes, idx);
         idx = dict.derived[idx].idx;
     } else {
-        where = Ꮡ(pr.typs[idx]);
+        where = Ꮡ(pr.typs, idx);
     }
     {
         var typΔ1 = where.ValueSlot; if (typΔ1 != default!) {

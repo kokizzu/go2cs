@@ -76,7 +76,7 @@ public static context.Context WithLabels(context.Context ctx, LabelSet labels) {
 // information.
 // See https://golang.org/issue/23458 for details.
 public static LabelSet Labels(params ꓸꓸꓸstring argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     if (len(args) % 2 != 0) {
         throw panic("uneven number of arguments to pprof.Labels");

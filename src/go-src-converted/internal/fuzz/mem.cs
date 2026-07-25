@@ -89,7 +89,7 @@ internal static (ж<sharedMem> m, error err) sharedMemTempFile(nint size) {
 
 // header returns a pointer to metadata within the shared memory region.
 [GoRecv] internal static ж<sharedMemHeader> header(this ref sharedMem m) {
-    return (ж<sharedMemHeader>)(uintptr)(new @unsafe.Pointer(Ꮡ(m.region[0])));
+    return Ꮡ(m.region, 0).Reinterpret<byte, sharedMemHeader>();
 }
 
 // valueRef returns the value currently stored in shared memory. The returned

@@ -108,7 +108,7 @@ internal static readonly UntypedInt negShift = 5;     // flagI<<negShift is (?-i
 // addSpan enables the flags f around start..last,
 // by setting flags[start] = f and flags[last] = flagOff.
 internal static void addSpan(ж<Regexp> Ꮡstart, ж<Regexp> Ꮡlast, printFlags f, ж<map<ж<Regexp>, printFlags>> Ꮡflags) {
-    ref var flags = ref Ꮡflags.Value;
+    ref var flags = ref Ꮡflags.ValueSlot;
 
     if (flags == default!) {
         flags = new map<ж<Regexp>, printFlags>();
@@ -129,7 +129,7 @@ internal static (printFlags must, printFlags cant) calcFlags(ж<Regexp> Ꮡre, �
     printFlags cant = default!;
 
     ref var re = ref Ꮡre.Value;
-    ref var flags = ref Ꮡflags.Value;
+    ref var flags = ref Ꮡflags.ValueSlot;
     var exprᴛ1 = re.Op;
     if (exprᴛ1 == OpLiteral) {
         foreach (var (_, r) in re.Rune) {

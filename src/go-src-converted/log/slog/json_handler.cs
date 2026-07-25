@@ -163,7 +163,7 @@ internal static error appendJSONValue(ж<handleState> Ꮡs, Value v) {
 }
 
 internal static error appendJSONMarshal(ж<buffer.Buffer> Ꮡbuf, any v) {
-    ref var buf = ref Ꮡbuf.Value;
+    ref var buf = ref Ꮡbuf.ValueSlot;
 
     // Use a json.Encoder to avoid escaping HTML.
     ref var bb = ref heap(new bytes.Buffer(), out var Ꮡbb);

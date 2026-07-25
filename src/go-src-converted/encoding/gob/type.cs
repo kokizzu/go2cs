@@ -272,14 +272,14 @@ internal static @string name(this typeId t) {
 
 // Create and check predefined types
 // The string for tBytes is "bytes" not "[]byte" to signify its specialness.
-internal static typeId tBool = bootstrapType("bool"u8, (ж<bool>)(default!));
-internal static typeId tInt = bootstrapType("int"u8, (ж<nint>)(default!));
-internal static typeId tUint = bootstrapType("uint"u8, (ж<nuint>)(default!));
-internal static typeId tFloat = bootstrapType("float"u8, (ж<float64>)(default!));
+internal static typeId tBool = bootstrapType("bool"u8, ((ж<bool>)nil));
+internal static typeId tInt = bootstrapType("int"u8, ((ж<nint>)nil));
+internal static typeId tUint = bootstrapType("uint"u8, ((ж<nuint>)nil));
+internal static typeId tFloat = bootstrapType("float"u8, ((ж<float64>)nil));
 internal static typeId tBytes = bootstrapType("bytes"u8, (ж<slice<byte>>)(default!));
-internal static typeId tString = bootstrapType("string"u8, (ж<@string>)(default!));
-internal static typeId tComplex = bootstrapType("complex"u8, (ж<complex128>)(default!));
-internal static typeId tInterface = bootstrapType("interface"u8, ((ж<any>)default!));
+internal static typeId tString = bootstrapType("string"u8, ((ж<@string>)nil));
+internal static typeId tComplex = bootstrapType("complex"u8, ((ж<complex128>)nil));
+internal static typeId tInterface = bootstrapType("interface"u8, ((ж<any>)nil));
 
     [GoType("dyn")] partial struct Δtype {
         internal nint r7;
@@ -336,7 +336,7 @@ internal static ж<userTypeInfo> wireTypeUserInfo; // userTypeInfo of wireType
     // without breaking existing files.
     {
         nint nextId = len(idToTypeSlice); if (nextId > firstUserId) {
-            throw panic(fmt.Sprintln("nextId too large:", nextId));
+            throw panic(fmt.Sprintln((@string)"nextId too large:", nextId));
         }
     }
     idToTypeSlice = idToTypeSlice[..(int)(firstUserId)];
@@ -1014,13 +1014,13 @@ internal static void registerBasics() {
     Register((uint16)0);
     Register((uint32)0);
     Register((uint64)0);
-    Register((float32)0);
-    Register((float64)0);
+    Register((float32)0F);
+    Register((float64)0D);
     Register((complex64)0F.i());
     Register((complex128)0D.i());
     Register((uintptr)0);
     Register(false);
-    Register("");
+    Register((@string)"");
     Register(slice<byte>(default!));
     Register(slice<nint>(default!));
     Register(slice<int8>(default!));

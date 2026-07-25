@@ -100,13 +100,13 @@ internal static array<float64> _gamS = new float64[]{
 // in reciprocal and produce denormalized floats. The lower precision there
 // masks any imprecision in the polynomial.
 internal static (float64, float64) stirling(float64 x) {
-    if (x > 200) {
-        return (Inf(1), 1);
+    if (x > 200D) {
+        return (Inf(1), 1D);
     }
     const float64 SqrtTwoPi = 2.506628274631000502417;
     const float64 MaxStirling = 143.01608;
-    var w = 1 / x;
-    w = 1 + w * ((((_gamS[0] * w + _gamS[1]) * w + _gamS[2]) * w + _gamS[3]) * w + _gamS[4]);
+    var w = 1D / x;
+    w = 1D + w * ((((_gamS[0] * w + _gamS[1]) * w + _gamS[2]) * w + _gamS[3]) * w + _gamS[4]);
     var y1 = Exp(x);
     var y2 = 1.0D;
     if (x > MaxStirling){
@@ -139,7 +139,7 @@ public static float64 Gamma(float64 x) {
     case {} when IsInf(x, 1): {
         return Inf(1);
     }
-    case {} when x is 0: {
+    case {} when x is 0D: {
         if (Signbit(x)) {
             return Inf(-1);
         }
@@ -148,8 +148,8 @@ public static float64 Gamma(float64 x) {
 
     var q = Abs(x);
     var p = Floor(q);
-    if (q > 33) {
-        if (x >= 0) {
+    if (q > 33D) {
+        if (x >= 0D) {
             var (y1, y2) = stirling(x);
             return y1 * y2;
         }
@@ -164,11 +164,11 @@ public static float64 Gamma(float64 x) {
         }
         var zΔ1 = q - p;
         if (zΔ1 > 0.5D) {
-            p = p + 1;
+            p = p + 1D;
             zΔ1 = q - p;
         }
         zΔ1 = q * Sin((float64)Pi * zΔ1);
-        if (zΔ1 == 0) {
+        if (zΔ1 == 0D) {
             return Inf(signgam);
         }
         var (sq1, sq2) = stirling(q);
@@ -183,42 +183,42 @@ public static float64 Gamma(float64 x) {
     }
     // Reduce argument
     var z = 1.0D;
-    while (x >= 3) {
-        x = x - 1;
+    while (x >= 3D) {
+        x = x - 1D;
         z = z * x;
     }
-    while (x < 0) {
+    while (x < 0D) {
         if (x > -1e-09D) {
             goto small;
         }
         z = z / x;
-        x = x + 1;
+        x = x + 1D;
     }
-    while (x < 2) {
+    while (x < 2D) {
         if (x < 1e-09D) {
             goto small;
         }
         z = z / x;
-        x = x + 1;
+        x = x + 1D;
     }
-    if (x == 2) {
+    if (x == 2D) {
         return z;
     }
-    x = x - 2;
+    x = x - 2D;
     p = (((((x * _gamP[0] + _gamP[1]) * x + _gamP[2]) * x + _gamP[3]) * x + _gamP[4]) * x + _gamP[5]) * x + _gamP[6];
     q = ((((((x * _gamQ[0] + _gamQ[1]) * x + _gamQ[2]) * x + _gamQ[3]) * x + _gamQ[4]) * x + _gamQ[5]) * x + _gamQ[6]) * x + _gamQ[7];
     return z * p / q;
 small:
-    if (x == 0) {
+    if (x == 0D) {
         return Inf(1);
     }
-    return z / ((1 + Euler * x) * x);
+    return z / ((1D + Euler * x) * x);
 }
 
 internal static bool isNegInt(float64 x) {
-    if (x < 0) {
+    if (x < 0D) {
         var (_, xf) = Modf(x);
-        return xf == 0;
+        return xf == 0D;
     }
     return false;
 }

@@ -1747,7 +1747,7 @@ internal static (uint64 x, float64 scale, @string rem) leadingFraction(@string s
     @string rem = default!;
 
     nint i = 0;
-    scale = 1;
+    scale = 1D;
     var overflow = false;
     for (; i < len(s); i++) {
         var c = s[i];
@@ -1768,7 +1768,7 @@ internal static (uint64 x, float64 scale, @string rem) leadingFraction(@string s
             continue;
         }
         x = y;
-        scale *= 10;
+        scale *= 10D;
     }
     return (x, scale, s[(int)(i)..]);
 }
@@ -1814,7 +1814,7 @@ public static (Duration, error) ParseDuration(@string s) {
     while (s != ""u8) {
         uint64 v = default!;                      // integers before, after decimal point
         uint64 f = default!;
-        float64 scale = 1;     // value = v + f/scale
+        float64 scale = 1D;   // value = v + f/scale
         error err = default!;
         // The next character must be [0-9.]
         if (!(s[0] == (rune)'.' || (rune)'0' <= s[0] && s[0] <= (rune)'9')) {

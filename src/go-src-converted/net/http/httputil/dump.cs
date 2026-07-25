@@ -145,7 +145,7 @@ public static (slice<byte>, error) DumpRequestOut(ж<http.Request> Ꮡreq, bool 
     defer(() => prʗ1.Close());
     var pwʗ1 = pw;
     defer(() => pwʗ1.Close());
-    var dr = Ꮡ(new delegateReader(c: new channel<io.Reader>(1)));
+    var dr = Ꮡ(new delegateReader(c: new channel<io.Reader>(0)));
         var drʗ1 = dr;
         var pwʗ2 = pw;
     var t = Ꮡ(new http.Transport(
@@ -156,7 +156,7 @@ public static (slice<byte>, error) DumpRequestOut(ж<http.Request> Ꮡreq, bool 
     // We need this channel to ensure that the reader
     // goroutine exits if t.RoundTrip returns an error.
     // See golang.org/issue/32571.
-    var quitReadCh = new channel<EmptyStruct>(1);
+    var quitReadCh = new channel<EmptyStruct>(0);
     // Wait for the request before replying with a dummy response:
     var drʗ2 = dr;
     var prʗ2 = pr;
@@ -169,11 +169,13 @@ public static (slice<byte>, error) DumpRequestOut(ж<http.Request> Ꮡreq, bool 
             io.Copy(io.Discard, (~reqΔ1).Body);
             (~reqΔ1).Body.Close();
         }
-        switch (select((~drʗ2).c.ᐸꟷ(new strings_ReaderжReader(strings.NewReader("HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n"u8)), ꓸꓸꓸ), ᐸꟷ(quitReadChʗ1, ꓸꓸꓸ))) {
+        var selᴛ1 = (~drʗ2).c.ᐸꟷ(new strings_ReaderжReader(strings.NewReader("HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n"u8)), ꓸꓸꓸ);
+        var selᴛ2 = quitReadChʗ1;
+        switch (select(selᴛ1, ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
         case 0: {
             break;
         }
-        case 1 when quitReadChʗ1.ꟷᐳ(out _): {
+        case 1 when selᴛ2.ꟷᐳ(out _): {
             close((~drʗ2).c);
             break;
         }}

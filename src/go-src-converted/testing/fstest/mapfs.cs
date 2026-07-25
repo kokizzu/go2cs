@@ -25,7 +25,7 @@ partial class fstest_package {
 
 internal static fs.FS _ᴛ1ʗ = ((MapFS)default!);
 
-internal static fs.File _ᴛ2ʗ = new openMapFileжFile((ж<openMapFile>)(default!));
+internal static fs.File _ᴛ2ʗ = new openMapFileжFile(((ж<openMapFile>)nil));
 
 // Open opens the named file.
 public static (fs.File, error) Open(this MapFS fsys, @string name) {
@@ -260,7 +260,7 @@ internal static (fs.FileInfo, error) Stat(this ж<mapDir> Ꮡd) {
     }
     var list = new slice<fs.DirEntry>(n);
     foreach (var (i, _) in list) {
-        list[i] = new mapFileInfoжDirEntry(Ꮡ(d.entry[d.offset + i]));
+        list[i] = new mapFileInfoжDirEntry(Ꮡ(d.entry, d.offset + i));
     }
     d.offset += n;
     return (list, default!);

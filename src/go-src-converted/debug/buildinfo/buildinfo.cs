@@ -72,7 +72,7 @@ public static (ж<BuildInfo> info, error err) ReadFile(@string name) {
         defer(() => {
             {
                 ref var pathErr = ref heap<ж<fs.PathError>>(out var ᏑpathErr);
-                pathErr = (ж<fs.PathError>)(default!); if (errors.As(Ꮡerr.ValueSlot, ᏑpathErr)){
+                pathErr = ((ж<fs.PathError>)nil); if (errors.As(Ꮡerr.ValueSlot, ᏑpathErr)){
                     Ꮡerr.ValueSlot = fmt.Errorf("could not read Go build info: %w"u8, Ꮡerr.ValueSlot);
                 } else 
                 if (Ꮡerr.ValueSlot != default!) {

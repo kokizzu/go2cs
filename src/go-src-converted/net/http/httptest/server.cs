@@ -133,7 +133,7 @@ public static void Start(this ж<Server> Ꮡs) {
     Ꮡs.wrap();
     Ꮡs.goServe();
     if (serveFlag != ""u8) {
-        fmt.Fprintln(new os.FileжWriter(os.Stderr), "httptest: serving on", s.URL);
+        fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"httptest: serving on", s.URL);
         switch (select()) {
 }
     }
@@ -291,11 +291,13 @@ public static void CloseClientConnections(this ж<Server> Ꮡs) => func((defer, 
     var timerʗ1 = timer;
     defer(() => timerʗ1.Stop());
     for (nint i = 0; i < nconn; i++) {
-        switch (select(ᐸꟷ(ch, ꓸꓸꓸ), ᐸꟷ((~timer).C, ꓸꓸꓸ))) {
-        case 0 when ch.ꟷᐳ(out _): {
+        var selᴛ1 = ch;
+        var selᴛ2 = (~timer).C;
+        switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
+        case 0 when selᴛ1.ꟷᐳ(out _): {
             break;
         }
-        case 1 when (~timer).C.ꟷᐳ(out _): {
+        case 1 when selᴛ2.ꟷᐳ(out _): {
             return;
         }}
     }

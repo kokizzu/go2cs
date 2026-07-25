@@ -57,4 +57,63 @@ namespace go.@internal;
 [GoPackage("abi")]
 public static partial class abi_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct structTypeUncommon {}
+    public partial struct ChanType {}
+    public partial struct EmptyInterface {}
+    public partial struct FuncFlag {}
+    public partial struct FuncID {}
+    public partial struct ITab {}
+    public partial struct Imethod {}
+    public partial struct IntArgRegBitmap {}
+    public partial struct InterfaceSwitch {}
+    public partial struct InterfaceSwitchCache {}
+    public partial struct InterfaceSwitchCacheEntry {}
+    public partial struct Method {}
+    public partial struct NameOff {}
+    public partial struct PtrType {}
+    public partial struct RF_State {}
+    public partial struct RegArgs {}
+    public partial struct SliceType {}
+    public partial struct StructField {}
+    public partial struct TFlag {}
+    public partial struct TextOff {}
+    public partial struct Type {}
+    public partial struct TypeAssert {}
+    public partial struct TypeAssertCache {}
+    public partial struct TypeAssertCacheEntry {}
+    public partial struct TypeOff {}
+    public partial struct UncommonType {}
+    public partial struct Uncommon_u {}
+    public partial struct Uncommon_uᴛ1 {}
+    public partial struct Uncommon_uᴛ2 {}
+    public partial struct Uncommon_uᴛ3 {}
+    public partial struct Uncommon_uᴛ4 {}
+    public partial struct Uncommon_uᴛ5 {}
+    public partial struct Uncommon_uᴛ6 {}
+    public partial struct Uncommon_uᴛ7 {}
+    public partial struct ΔArrayType {}
+    public partial struct ΔChanDir {}
+    public partial struct ΔFuncType {}
+    public partial struct ΔInterfaceType {}
+    public partial struct ΔKind {}
+    public partial struct ΔMapType {}
+    public partial struct ΔName {}
+    public partial struct ΔStructType {}
+    // </TypeAccessibility>
 }

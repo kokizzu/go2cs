@@ -159,12 +159,12 @@ internal static void trace1(this ж<timer> Ꮡt, @string op) {
     if (!t.isChan) {
         bits[3] = "-"u8;
     }
-    print("T ", Ꮡt, " ", bits[0], bits[1], bits[2], bits[3], " b=", t.blocked, " ", op, "\n");
+    print((@string)"T ", Ꮡt, (@string)" ", bits[0], bits[1], bits[2], bits[3], (@string)" b=", t.blocked, (@string)" ", op, (@string)"\n");
 }
 
 internal static void trace(this ж<timers> Ꮡts, @string op) {
     if (timerDebug) {
-        println("TS", Ꮡts, op);
+        println((@string)"TS", Ꮡts, op);
     }
 }
 
@@ -782,7 +782,7 @@ internal static void adjust(this ж<timers> Ꮡts, int64 now, bool force) {
     Ꮡts.of(timers.ᏑminWhenModified).Store(0);
     var changed = false;
     for (nint i = 0; i < len(ts.heap); i++) {
-        var tw = Ꮡ(ts.heap[i]);
+        var tw = Ꮡ(ts.heap, i);
         var t = tw.Value.timer;
         if ((~t).ts != Ꮡts) {
             @throw("bad ts"u8);
@@ -1074,13 +1074,13 @@ internal static void verify(this ж<timers> Ꮡts) {
         // The heap is timerHeapN-ary. See siftupTimer and siftdownTimer.
         nint Δp = (nint)((nuint)(i - 1) / (nuint)timerHeapN);
         if (tw.when < ts.heap[Δp].when) {
-            print("bad timer heap at ", i, ": ", Δp, ": ", ts.heap[Δp].when, ", ", i, ": ", tw.when, "\n");
+            print((@string)"bad timer heap at ", i, (@string)": ", Δp, (@string)": ", ts.heap[Δp].when, (@string)", ", i, (@string)": ", tw.when, (@string)"\n");
             @throw("bad timer heap"u8);
         }
     }
     {
         nint n = (nint)Ꮡts.of(timers.Ꮡlen).Load(); if (len(ts.heap) != n) {
-            println("timer heap len", len(ts.heap), "!= atomic len", n);
+            println((@string)"timer heap len", len(ts.heap), (@string)"!= atomic len", n);
             @throw("bad timer heap len"u8);
         }
     }

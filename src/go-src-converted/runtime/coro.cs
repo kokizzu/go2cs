@@ -48,7 +48,7 @@ internal static ж<coro> newcoro(Action<ж<coro>> f) {
         var mp = Ꮡgp.ValueSlot.Value.m;
         ref var start = ref heap<Action>(out var Ꮡstart);
         start = corostart;
-        var startfv = ~(ж<ж<funcval>>)(uintptr)(new @unsafe.Pointer(Ꮡstart));
+        var startfv = ~Ꮡstart.Reinterpret<Action, ж<funcval>>();
         Ꮡgp.ValueSlot = newproc1(startfv, Ꮡgp.ValueSlot, pc, true, waitReasonCoroutine);
         // Scribble down locked thread state if needed and/or donate
         // thread-lock state to the new goroutine.
@@ -122,9 +122,9 @@ internal static void coroswitch_m(ж<g> Ꮡgp) {
     var locked = gp.lockedm != 0;
     if ((~c).mp != nil || locked) {
         if (mp != (~c).mp || (~mp).lockedInt != (~c).lockedInt || (~mp).lockedExt != (~c).lockedExt) {
-            print("coro: got thread ", new @unsafe.Pointer(mp), ", want ", new @unsafe.Pointer((~c).mp), "\n");
-            print("coro: got lock internal ", (~mp).lockedInt, ", want ", (~c).lockedInt, "\n");
-            print("coro: got lock external ", (~mp).lockedExt, ", want ", (~c).lockedExt, "\n");
+            print((@string)"coro: got thread ", new @unsafe.Pointer(mp), (@string)", want ", new @unsafe.Pointer((~c).mp), (@string)"\n");
+            print((@string)"coro: got lock internal ", (~mp).lockedInt, (@string)", want ", (~c).lockedInt, (@string)"\n");
+            print((@string)"coro: got lock external ", (~mp).lockedExt, (@string)", want ", (~c).lockedExt, (@string)"\n");
             @throw("coro: OS thread locking must match locking at coroutine creation"u8);
         }
     }

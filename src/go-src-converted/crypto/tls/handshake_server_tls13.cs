@@ -21,7 +21,7 @@ using go.crypto;
 using go.crypto.@internal;
 using go.sync;
 using math;
-using x509 = go.crypto.x509_package;
+using Δx509 = go.crypto.x509_package;
 
 partial class tls_package {
 
@@ -198,7 +198,7 @@ internal static readonly UntypedInt maxClientPSKIdentities = 5;
     foreach (var (_, preferredGroup) in preferredGroups) {
         nint ki = slices.IndexFunc((~hs.clientHello).keyShares, (keyShare ks) => ks.group == preferredGroup);
         if (ki != -1) {
-            clientKeyShare = Ꮡ((~hs.clientHello).keyShares[ki]);
+            clientKeyShare = Ꮡ((~hs.clientHello).keyShares, ki);
             selectedGroup = clientKeyShare.Value.group;
             if (!slices.Contains((~hs.clientHello).supportedCurves, selectedGroup)) {
                 c.sendAlert(alertIllegalParameter);

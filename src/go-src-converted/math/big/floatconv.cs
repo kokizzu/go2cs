@@ -304,7 +304,7 @@ public static (ж<Float> f, nint b, error err) ParseFloat(@string s, nint @base,
     return @new<Float>().SetPrec(prec).SetMode(mode).Parse(s, @base);
 }
 
-internal static fmt.Scanner _ᴛ2ʗ = new FloatжScanner((ж<Float>)(default!)); // *Float must implement fmt.Scanner
+internal static fmt.Scanner _ᴛ2ʗ = new FloatжScanner(((ж<Float>)nil)); // *Float must implement fmt.Scanner
 
 // Scan is a support routine for [fmt.Scanner]; it sets z to the value of
 // the scanned number. It accepts formats whose verbs are supported by

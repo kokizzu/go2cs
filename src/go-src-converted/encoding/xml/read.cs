@@ -682,7 +682,7 @@ internal static error /*err*/ copyValue(reflectꓸValue dst, slice<byte> src) {
     }
     else if (exprᴛ1 == reflect.Float32 || exprᴛ1 == reflect.Float64) {
         if (len(src) == 0) {
-            dst.SetFloat(0);
+            dst.SetFloat(0D);
             return default!;
         }
         var (ftmp, errΔ4) = strconv.ParseFloat(strings.TrimSpace(((@string)src)), dst.Type().Bits());

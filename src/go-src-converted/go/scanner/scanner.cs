@@ -398,7 +398,7 @@ internal static bool isHex(rune ch) {
 [GoRecv] internal static nint /*digsep*/ digits(this ref Scanner s, nint @base, ж<nint> Ꮡinvalid) {
     nint digsep = default!;
 
-    ref var invalid = ref Ꮡinvalid.Value;
+    ref var invalid = ref Ꮡinvalid.DerefOrNil();
     if (@base <= 10){
         var max = (rune)((rune)'0' + @base);
         while (isDecimal(s.ch) || s.ch == (rune)'_') {

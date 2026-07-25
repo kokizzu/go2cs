@@ -22,7 +22,7 @@ using go.@internal;
 using go.crypto;
 using go.crypto.@internal;
 using vendor.golang.org.x.crypto;
-using x509 = go.crypto.x509_package;
+using Δx509 = go.crypto.x509_package;
 
 partial class tls_package {
 

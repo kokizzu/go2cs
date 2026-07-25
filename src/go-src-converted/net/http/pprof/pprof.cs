@@ -119,11 +119,13 @@ public static void Cmdline(http.ResponseWriter w, ж<http.Request> Ꮡr) {
 internal static void sleep(ж<http.Request> Ꮡr, time.Duration d) {
     ref var r = ref Ꮡr.Value;
 
-    switch (select(ᐸꟷ(time.After(d), ꓸꓸꓸ), ᐸꟷ(r.Context().Done(), ꓸꓸꓸ))) {
-    case 0 when time.After(d).ꟷᐳ(out _): {
+    var selᴛ1 = time.After(d);
+    var selᴛ2 = r.Context().Done();
+    switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
+    case 0 when selᴛ1.ꟷᐳ(out _): {
         break;
     }
-    case 1 when r.Context().Done().ꟷᐳ(out _): {
+    case 1 when selᴛ2.ꟷᐳ(out _): {
         break;
     }}
 }
@@ -179,8 +181,8 @@ public static void Profile(http.ResponseWriter w, ж<http.Request> Ꮡr) {
 public static void Trace(http.ResponseWriter w, ж<http.Request> Ꮡr) {
     w.Header().Set("X-Content-Type-Options"u8, "nosniff"u8);
     var (sec, err) = strconv.ParseFloat(Ꮡr.FormValue("seconds"u8), 64);
-    if (sec <= 0 || err != default!) {
-        sec = 1;
+    if (sec <= 0D || err != default!) {
+        sec = 1D;
     }
     configureWriteDeadline(w, Ꮡr, sec);
     // Set Content Type assuming trace.Start will work,
@@ -307,8 +309,10 @@ internal static void serveDeltaProfile(this handler name, http.ResponseWriter w,
     var t = time.NewTimer(((time.Duration)sec) * time.ΔSecond);
     var tʗ1 = t;
     defer(() => tʗ1.Stop());
-    switch (select(ᐸꟷ(r.Context().Done(), ꓸꓸꓸ), ᐸꟷ((~t).C, ꓸꓸꓸ))) {
-    case 0 when r.Context().Done().ꟷᐳ(out _): {
+    var selᴛ3 = r.Context().Done();
+    var selᴛ4 = (~t).C;
+    switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+    case 0 when selᴛ3.ꟷᐳ(out _): {
         var errΔ1 = r.Context().Err();
         if (AreEqual(errΔ1, context.DeadlineExceeded)){
             serveError(w, http.StatusRequestTimeout, errΔ1.Error());
@@ -318,7 +322,7 @@ internal static void serveDeltaProfile(this handler name, http.ResponseWriter w,
         }
         return;
     }
-    case 1 when (~t).C.ꟷᐳ(out _): {
+    case 1 when selᴛ4.ꟷᐳ(out _): {
         break;
     }}
     (var p1, err) = collectProfile(Ꮡp);

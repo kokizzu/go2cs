@@ -32,12 +32,12 @@ internal static void p224SqrtCandidate(ж<fiat.P224Element> Ꮡr, ж<fiat.P224El
         p224GG = @new<array<fiat.P224Element>>();
         foreach (var (i, _) in p224GG.Value) {
             if (i == 0){
-                Ꮡ(p224GG.Value[i]).SetBytes(new byte[]{0x6a, 0x0f, 0xec, 0x67,
+                p224GG.at<fiat.P224Element>(i).SetBytes(new byte[]{0x6a, 0x0f, 0xec, 0x67,
                     0x85, 0x98, 0xa7, 0x92, 0x0c, 0x55, 0xb2, 0xd4,
                     0x0b, 0x2d, 0x6f, 0xfb, 0xbe, 0xa3, 0xd8, 0xce,
                     0xf3, 0xfb, 0x36, 0x32, 0xdc, 0x69, 0x1b, 0x74}.slice());
             } else {
-                Ꮡ(p224GG.Value[i]).Square(Ꮡ(p224GG.Value[i - 1]));
+                p224GG.at<fiat.P224Element>(i).Square(p224GG.at<fiat.P224Element>(i - 1));
             }
         }
     });
@@ -122,8 +122,8 @@ internal static void p224SqrtCandidate(ж<fiat.P224Element> Ꮡr, ж<fiat.P224El
             w.Square(w);
         }
         nint cond = w.Equal(p224MinusOne);
-        v.Select(t0.Mul(v, Ꮡ(p224GG.Value[96 - i])), v, cond);
-        Ꮡr.Select(t0.Mul(Ꮡr, Ꮡ(p224GG.Value[96 - i - 1])), Ꮡr, cond);
+        v.Select(t0.Mul(v, p224GG.at<fiat.P224Element>(96 - i)), v, cond);
+        Ꮡr.Select(t0.Mul(Ꮡr, p224GG.at<fiat.P224Element>(96 - i - 1)), Ꮡr, cond);
     }
 }
 

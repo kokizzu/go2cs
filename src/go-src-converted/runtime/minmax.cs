@@ -76,10 +76,10 @@ internal static F forbits<F>(F x, F y)
 {
     var exprᴛ1 = @unsafe.Sizeof(x);
     if (exprᴛ1 == 4) {
-        ((ж<uint32>)(uintptr)(new @unsafe.Pointer(Ꮡ(x)))).Value |= ((ж<uint32>)(uintptr)(new @unsafe.Pointer(Ꮡ(y)))).Value;
+        (Ꮡ(x).Reinterpret<F, uint32>()).Value |= (Ꮡ(y).Reinterpret<F, uint32>()).Value;
     }
     else if (exprᴛ1 == 8) {
-        ((ж<uint64>)(uintptr)(new @unsafe.Pointer(Ꮡ(x)))).Value |= ((ж<uint64>)(uintptr)(new @unsafe.Pointer(Ꮡ(y)))).Value;
+        (Ꮡ(x).Reinterpret<F, uint64>()).Value |= (Ꮡ(y).Reinterpret<F, uint64>()).Value;
     }
 
     return x;
@@ -90,10 +90,10 @@ internal static F fandbits<F>(F x, F y)
 {
     var exprᴛ1 = @unsafe.Sizeof(x);
     if (exprᴛ1 == 4) {
-        ((ж<uint32>)(uintptr)(new @unsafe.Pointer(Ꮡ(x)))).Value &= ((ж<uint32>)(uintptr)(new @unsafe.Pointer(Ꮡ(y)))).Value;
+        (Ꮡ(x).Reinterpret<F, uint32>()).Value &= (Ꮡ(y).Reinterpret<F, uint32>()).Value;
     }
     else if (exprᴛ1 == 8) {
-        ((ж<uint64>)(uintptr)(new @unsafe.Pointer(Ꮡ(x)))).Value &= ((ж<uint64>)(uintptr)(new @unsafe.Pointer(Ꮡ(y)))).Value;
+        (Ꮡ(x).Reinterpret<F, uint64>()).Value &= (Ꮡ(y).Reinterpret<F, uint64>()).Value;
     }
 
     return x;

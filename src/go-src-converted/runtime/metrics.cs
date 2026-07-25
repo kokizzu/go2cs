@@ -8,6 +8,7 @@ using godebugs = @internal.godebugs_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
+using ꓸꓸꓸstatDep = Span<runtime_package.statDep>;
 
 partial class runtime_package {
 
@@ -56,7 +57,7 @@ internal static void initMetrics() {
     // Skip size class 0 which is a stand-in for large objects, but large
     // objects are tracked separately (and they actually get placed in
     // the last bucket, not the first).
-    sizeClassBuckets[0] = 1;
+    sizeClassBuckets[0] = 1D;
     // The smallest allocation is 1 byte in size.
     for (nint i = 1; i < _NumSizeClasses; i++) {
         // Size classes have an inclusive upper-bound
@@ -507,8 +508,8 @@ internal static readonly statDep numStatsDeps = 4;
 [GoType("[1]uint64")] partial struct statDepSet;
 
 // makeStatDepSet creates a new statDepSet from a list of statDeps.
-internal static statDepSet makeStatDepSet(params Span<runtime_package.statDep> depsʗp) {
-    var deps = depsʗp.slice();
+internal static statDepSet makeStatDepSet(params ꓸꓸꓸstatDep depsʗp) {
+    var deps = depsʗp.sslice();
 
     statDepSet s = default!;
     foreach (var (_, d) in deps) {
@@ -831,7 +832,7 @@ internal static void readMetricsLocked(@unsafe.Pointer samplesp, nint len, nint 
     // Construct a slice from the args.
     ref var sl = ref heap<Δsliceᴛ>(out var Ꮡsl);
     sl = new Δsliceᴛ(samplesp.Value, len, cap);
-    var samples = ~(ж<slice<metricSample>>)(uintptr)(new @unsafe.Pointer(Ꮡsl));
+    var samples = ~Ꮡsl.Reinterpret<Δsliceᴛ, slice<metricSample>>();
     // Clear agg defensively.
     agg = new statAggregate(nil);
     // Sample.

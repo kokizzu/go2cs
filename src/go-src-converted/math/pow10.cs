@@ -41,7 +41,7 @@ public static float64 Pow10(nint n) {
         return Inf(1);
     }
     // n < -323
-    return 0;
+    return 0D;
 }
 
 } // end math_package

@@ -113,7 +113,7 @@ internal static ж<Δhchan> makechan(ж<chantype> Ꮡt, nint size) {
     c.Value.dataqsiz = (nuint)size;
     lockInit(c.of(runtime_package.Δhchan.Ꮡlock), lockRankHchan);
     if (debugChan) {
-        print("makechan: chan=", c, "; elemsize=", (~elem).Size_, "; dataqsiz=", size, "\n");
+        print((@string)"makechan: chan=", c, (@string)"; elemsize=", (~elem).Size_, (@string)"; dataqsiz=", size, (@string)"\n");
     }
     return c;
 }
@@ -182,7 +182,7 @@ internal static bool chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer ep, bool block, 
         @throw("unreachable"u8);
     }
     if (debugChan) {
-        print("chansend: chan=", Ꮡc, "\n");
+        print((@string)"chansend: chan=", Ꮡc, (@string)"\n");
     }
     if (raceenabled) {
         racereadpc((uintptr)Ꮡc.raceaddr(), callerpc, abi.FuncPCABIInternal(chansend));
@@ -516,7 +516,7 @@ internal static (bool selected, bool received) chanrecv(ж<Δhchan> Ꮡc, @unsaf
     // raceenabled: don't need to check ep, as it is always on the stack
     // or is new memory allocated by reflect.
     if (debugChan) {
-        print("chanrecv: chan=", Ꮡc, "\n");
+        print((@string)"chanrecv: chan=", Ꮡc, (@string)"\n");
     }
     if (Ꮡc == nil) {
         if (!block) {

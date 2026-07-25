@@ -417,7 +417,7 @@ internal static slice<ΔValue> call(this ΔValue v, @string op, slice<ΔValue> @
     }
     var frameSize = frametype.Size();
     if (debugReflectCall) {
-        println("reflect.call", stringFor(t.of(funcType.ᏑType)));
+        println((@string)"reflect.call", stringFor(t.of(funcType.ᏑType)));
         abid.dump();
     }
     // Copy inputs into args.
@@ -572,7 +572,7 @@ break_stepsLoop:;
                 // Pointer-valued data gets put directly
                 // into v.ptr.
                 if (steps[0].kind != abiStepPointer) {
-                    print("kind=", steps[0].kind, ", type=", stringFor(tv), "\n");
+                    print((@string)"kind=", steps[0].kind, (@string)", type=", stringFor(tv), (@string)"\n");
                     throw panic("mismatch between ABI description and types");
                 }
                 ret[i] = new ΔValue(tv, regArgs.Ptrs[steps[0].ireg], ((flag)(uintptr)(uint8)tv.Kind()));
@@ -709,7 +709,7 @@ internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame
                     // Pointer-valued data gets put directly
                     // into v.ptr.
                     if (steps[0].kind != abiStepPointer) {
-                        print("kind=", steps[0].kind, ", type=", stringFor(typ), "\n");
+                        print((@string)"kind=", steps[0].kind, (@string)", type=", stringFor(typ), (@string)"\n");
                         throw panic("mismatch between ABI description and types");
                     }
                     v.ptr = regs.Ptrs[steps[0].ireg];
@@ -1536,7 +1536,7 @@ internal static nint lenNonSlice(this ΔValue v) {
     throw panic(Ꮡ(new ValueError("reflect.Value.Len", v.kind())));
 }
 
-internal static ж<abi.Type> stringType = rtypeOf("");
+internal static ж<abi.Type> stringType = rtypeOf((@string)"");
 
 // MapIndex returns the value associated with key in the map v.
 // It panics if v's Kind is not [Map].

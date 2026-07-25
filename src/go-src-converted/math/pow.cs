@@ -15,7 +15,7 @@ internal static bool isOddInt(float64 x) {
         return false;
     }
     var (xi, xf) = Modf(x);
-    return xf == 0 && (int64)((int64)xi & 1) == 1;
+    return xf == 0D && (int64)((int64)xi & 1) == 1;
 }
 
 // Special cases taken from FreeBSD's /usr/src/lib/msun/src/e_pow.c
@@ -54,28 +54,28 @@ public static float64 Pow(float64 x, float64 y) {
 
 internal static float64 pow(float64 x, float64 y) {
     switch (ᐧ) {
-    case {} when y == 0 || x == 1: {
-        return 1;
+    case {} when y == 0D || x == 1D: {
+        return 1D;
     }
-    case {} when y is 1: {
+    case {} when y is 1D: {
         return x;
     }
     case {} when IsNaN(x) || IsNaN(y): {
         return NaN();
     }
-    case {} when x is 0: {
+    case {} when x is 0D: {
         switch (ᐧ) {
-        case {} when y is < 0: {
+        case {} when y is < 0D: {
             if (Signbit(x) && isOddInt(y)) {
                 return Inf(-1);
             }
             return Inf(1);
         }
-        case {} when y is > 0: {
+        case {} when y is > 0D: {
             if (Signbit(x) && isOddInt(y)) {
                 return x;
             }
-            return 0;
+            return 0D;
         }}
 
         break;
@@ -83,10 +83,10 @@ internal static float64 pow(float64 x, float64 y) {
     case {} when IsInf(y, 0): {
         switch (ᐧ) {
         case {} when x == -1D: {
-            return 1;
+            return 1D;
         }
-        case {} when (Abs(x) < 1) == IsInf(y, 1): {
-            return 0;
+        case {} when (Abs(x) < 1D) == IsInf(y, 1): {
+            return 0D;
         }
         default: {
             return Inf(1);
@@ -96,13 +96,13 @@ internal static float64 pow(float64 x, float64 y) {
     }
     case {} when IsInf(x, 0): {
         if (IsInf(x, -1)) {
-            return Pow(1 / x, -y);
+            return Pow(1D / x, -y);
         }
         switch (ᐧ) {
-        case {} when y is < 0: {
-            return 0;
+        case {} when y is < 0D: {
+            return 0D;
         }
-        case {} when y is > 0: {
+        case {} when y is > 0D: {
             return Inf(1);
         }}
 
@@ -112,12 +112,12 @@ internal static float64 pow(float64 x, float64 y) {
         return Sqrt(x);
     }
     case {} when y == -0.5D: {
-        return 1 / Sqrt(x);
+        return 1D / Sqrt(x);
     }}
 
     // Pow(-0, -y)
     var (yi, yf) = Modf(Abs(y));
-    if (yf != 0 && x < 0) {
+    if (yf != 0D && x < 0D) {
         return NaN();
     }
     if (yi >= 9223372036854775808D) {
@@ -125,10 +125,10 @@ internal static float64 pow(float64 x, float64 y) {
         // for all x except -1 (x == 1 was handled earlier)
         switch (ᐧ) {
         case {} when x == -1D: {
-            return 1;
+            return 1D;
         }
-        case {} when (Abs(x) < 1) == (y > 0): {
-            return 0;
+        case {} when (Abs(x) < 1D) == (y > 0D): {
+            return 0D;
         }
         default: {
             return Inf(1);
@@ -139,7 +139,7 @@ internal static float64 pow(float64 x, float64 y) {
     var a1 = 1.0D;
     nint ae = 0;
     // ans *= x**yf
-    if (yf != 0) {
+    if (yf != 0D) {
         if (yf > 0.5D) {
             yf--;
             yi++;
@@ -175,8 +175,8 @@ internal static float64 pow(float64 x, float64 y) {
     // ans = a1*2**ae
     // if y < 0 { ans = 1 / ans }
     // but in the opposite order
-    if (y < 0) {
-        a1 = 1 / a1;
+    if (y < 0D) {
+        a1 = 1D / a1;
         ae = -ae;
     }
     return Ldexp(a1, ae);

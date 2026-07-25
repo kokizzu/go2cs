@@ -71,4 +71,44 @@ namespace go.log;
 [GoPackage("slog")]
 public static partial class slog_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial class groupptr {}
+    internal partial class stringptr {}
+    internal partial class timeLocation {}
+    internal partial struct commonHandler {}
+    internal partial struct defaultHandler {}
+    internal partial struct handleState {}
+    internal partial struct handlerWriter {}
+    internal partial struct kind {}
+    internal partial struct timeTime {}
+    public partial interface Leveler {}
+    public partial interface ΔHandler {}
+    public partial interface ΔLogValuer {}
+    public partial struct Attr {}
+    public partial struct HandlerOptions {}
+    public partial struct JSONHandler {}
+    public partial struct LevelVar {}
+    public partial struct Logger {}
+    public partial struct Record {}
+    public partial struct Source {}
+    public partial struct TextHandler {}
+    public partial struct Value {}
+    public partial struct ΔKind {}
+    public partial struct ΔLevel {}
+    // </TypeAccessibility>
 }

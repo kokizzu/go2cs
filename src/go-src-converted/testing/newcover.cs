@@ -9,7 +9,7 @@ using goexperiment = @internal.goexperiment_package;
 using os = os_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname
 using @internal;
-using io = io_package;
+using Δio = io_package;
 
 partial class testing_package {
 

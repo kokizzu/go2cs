@@ -54,7 +54,7 @@ internal static (ж<fileStat> fs, error err) newFileStatFromGetFileInformationBy
     ref var reparseTag = ref heap(new uint32(), out var ᏑreparseTag);
     if ((uint32)(d.FileAttributes & (uint32)syscall.FILE_ATTRIBUTE_REPARSE_POINT) != 0) {
         ref var ti = ref heap(new windows.FILE_ATTRIBUTE_TAG_INFO(), out var Ꮡti);
-        err = windows.GetFileInformationByHandleEx(h, windows.FileAttributeTagInfo, (ж<byte>)(uintptr)(new @unsafe.Pointer(Ꮡti)), (uint32)@unsafe.Sizeof(ti));
+        err = windows.GetFileInformationByHandleEx(h, windows.FileAttributeTagInfo, Ꮡti.Reinterpret<windows.FILE_ATTRIBUTE_TAG_INFO, byte>(), (uint32)@unsafe.Sizeof(ti));
         if (err != default!) {
             return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "GetFileInformationByHandleEx"u8, Path: path, Err: err))));
         }

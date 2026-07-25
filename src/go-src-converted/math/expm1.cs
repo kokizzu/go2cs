@@ -156,7 +156,7 @@ internal static float64 expm1(float64 x) {
 
     var absx = x;
     var sign = false;
-    if (x < 0) {
+    if (x < 0D) {
         absx = -absx;
         sign = true;
     }
@@ -213,8 +213,8 @@ internal static float64 expm1(float64 x) {
     // x is now in primary range
     var hfx = 0.5D * x;
     var hxs = x * hfx;
-    var r1 = 1 + hxs * (Q1 + hxs * (Q2 + hxs * (Q3 + hxs * (Q4 + hxs * Q5))));
-    var t = 3 - r1 * hfx;
+    var r1 = 1D + hxs * (Q1 + hxs * (Q2 + hxs * (Q3 + hxs * (Q4 + hxs * Q5))));
+    var t = 3D - r1 * hfx;
     var e = hxs * ((r1 - t) / (6.0D - x * t));
     if (k == 0) {
         return x - (x * e - hxs);
@@ -230,12 +230,12 @@ internal static float64 expm1(float64 x) {
         if (x < -0.25D) {
             return -2D * (e - (x + 0.5D));
         }
-        return 1 + 2 * (x - e);
+        return 1D + 2D * (x - e);
     }
     case {} when k <= -2 || k > 56: {
-        var yΔ2 = 1 - (e - x);
+        var yΔ2 = 1D - (e - x);
         yΔ2 = Float64frombits(Float64bits(yΔ2) + ((uint64)k << (int)(52)));
-        return yΔ2 - 1;
+        return yΔ2 - 1D;
     }}
 
     // suffice to return exp(x)-1

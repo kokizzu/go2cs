@@ -360,7 +360,7 @@ internal static @string pkgPath(abiꓸName n) {
     ref var nameOff = ref heap(new int32(), out var ᏑnameOff);
     // Note that this field may not be aligned in memory,
     // so we cannot use a direct int32 assignment here.
-    copy((~ᏑnameOff.Reinterpret<int32, array<byte>>())[..], (~n.DataChecked(off, "name offset field"u8).Reinterpret<byte, array<byte>>())[..]);
+    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(n.DataChecked(off, "name offset field"u8))))[..]);
     var pkgPathName = new abiꓸName(Bytes: (ж<byte>)(uintptr)(resolveTypeOff(new @unsafe.Pointer(n.Bytes), nameOff)));
     return pkgPathName.Name();
 }
@@ -2140,8 +2140,8 @@ internal static ж<abi.Type> bucketOf(ж<abi.Type> Ꮡktyp, ж<abi.Type> Ꮡetyp
     return b;
 }
 
-[GoRecv] internal static slice<byte> gcSlice(this ref rtype t, uintptr begin, uintptr end) {
-    return (~t.t.GCData.Reinterpret<byte, array<byte>>()).slice((int)(begin), (int)(end), (int)(end));
+[GoRecv] internal static unsafe slice<byte> gcSlice(this ref rtype t, uintptr begin, uintptr end) {
+    return new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(new @unsafe.Pointer(t.t.GCData)) + (int)(begin), (int)(end) - (int)(begin)));
 }
 
 // emitGCMask writes the GC mask for [n]typ into out, starting at bit

@@ -72,7 +72,7 @@ internal static (ж<Response> resp, error err) RoundTrip(this fileTransport t, �
 internal static (ж<populateResponse>, /*<-*/channel<ж<Response>>) newPopulateResponseWriter() {
     var (pr, pw) = io.Pipe();
     var rw = Ꮡ(new populateResponse(
-        ch: new channel<ж<Response>>(1),
+        ch: new channel<ж<Response>>(0),
         pw: pw,
         res: Ꮡ(new Response(
             Proto: "HTTP/1.0"u8,

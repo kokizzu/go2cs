@@ -401,7 +401,7 @@ internal static float64 mbPerSec(this BenchmarkResult r) {
         }
     }
     if (r.Bytes <= 0 || r.T <= 0 || r.N <= 0) {
-        return 0;
+        return 0D;
     }
     return ((float64)r.Bytes * (float64)r.N / 1e6D) / r.T.Seconds();
 }
@@ -449,12 +449,12 @@ public static @string String(this BenchmarkResult r) {
     if (!ok) {
         ns = (float64)r.T.Nanoseconds() / (float64)r.N;
     }
-    if (ns != 0) {
+    if (ns != 0D) {
         buf.WriteByte((rune)'\t');
         prettyPrint(new strings_BuilderжWriter(buf), ns, "ns/op"u8);
     }
     {
-        var mbs = r.mbPerSec(); if (mbs != 0) {
+        var mbs = r.mbPerSec(); if (mbs != 0D) {
             fmt.Fprintf(new strings_BuilderжWriter(buf), "\t%7.2f MB/s"u8, mbs);
         }
     }
@@ -487,7 +487,7 @@ internal static void prettyPrint(Δio.Writer w, float64 x, @string unit) {
     {
         var y = Δmath.Abs(x);
         switch (ᐧ) {
-        case {} when y == 0 || y >= 999.95D: {
+        case {} when y == 0D || y >= 999.95D: {
             format = "%10.0f %s"u8;
             break;
         }
@@ -622,7 +622,7 @@ internal static bool runBenchmarks(@string importPath, Func<@string, @string, (b
             if (i > 0 || j > 0) {
                 Ꮡb = Ꮡ(new B(
                     common: new common(
-                        signal: new channel<bool>(1),
+                        signal: new channel<bool>(0),
                         name: b.name,
                         w: b.w,
                         chatty: b.chatty,
@@ -661,7 +661,7 @@ internal static bool runBenchmarks(@string importPath, Func<@string, @string, (b
                 }
             }
             if (b.chatty != nil && (~b.chatty).json) {
-                b.chatty.Updatef(""u8, "=== NAME  %s\n"u8, "");
+                b.chatty.Updatef(""u8, "=== NAME  %s\n"u8, (@string)"");
             }
         }
     }
@@ -698,7 +698,7 @@ public static bool Run(this ж<B> Ꮡb, @string name, Action<ж<B>> f) => func<b
     nint n = Δruntime.Callers(2, pc[..]);
     var sub = Ꮡ(new B(
         common: new common(
-            signal: new channel<bool>(1),
+            signal: new channel<bool>(0),
             name: benchName,
             parent: Ꮡb.of(B.Ꮡcommon),
             level: b.level + 1,
@@ -864,7 +864,7 @@ public static void RunParallel(this ж<B> Ꮡb, Action<ж<PB>> body) {
     }
     Ꮡwg.Wait();
     if (Ꮡn.Load() <= (uint64)b.N && !Ꮡb.of(B.Ꮡcommon).Failed()) {
-        Ꮡb.of(B.Ꮡcommon).Fatal("RunParallel: body exited without pb.Next() == false");
+        Ꮡb.of(B.Ꮡcommon).Fatal((@string)"RunParallel: body exited without pb.Next() == false");
     }
 }
 
@@ -888,7 +888,7 @@ public static void RunParallel(this ж<B> Ꮡb, Action<ж<PB>> body) {
 public static BenchmarkResult Benchmark(Action<ж<B>> f) {
     var b = Ꮡ(new B(
         common: new common(
-            signal: new channel<bool>(1),
+            signal: new channel<bool>(0),
             w: new discard(nil)
         ),
         benchFunc: f,

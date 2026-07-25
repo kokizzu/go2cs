@@ -1649,7 +1649,7 @@ internal static partial void mapinitnoop();
 //go:linkname mapclone maps.clone
 internal static any mapclone(any m) {
     var e = efaceOf(Ꮡ(m));
-    e.Value.data = new @unsafe.Pointer(mapclone2((ж<maptype>)(uintptr)(new @unsafe.Pointer((~e)._type)), (ж<hmap>)(uintptr)((~e).data)));
+    e.Value.data = new @unsafe.Pointer(mapclone2((~e)._type.Reinterpret<_type, maptype>(), (ж<hmap>)(uintptr)((~e).data)));
     return m;
 }
 
@@ -1804,7 +1804,7 @@ internal static ж<hmap> mapclone2(ж<maptype> Ꮡt, ж<hmap> Ꮡsrc) {
 //go:linkname keys maps.keys
 internal static void keys(any m, @unsafe.Pointer Δp) {
     var e = efaceOf(Ꮡ(m));
-    var t = (ж<maptype>)(uintptr)(new @unsafe.Pointer((~e)._type));
+    var t = (~e)._type.Reinterpret<_type, maptype>();
     var h = (ж<hmap>)(uintptr)((~e).data);
     if (h == nil || (~h).count == 0) {
         return;
@@ -1871,7 +1871,7 @@ internal static void copyKeys(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<bmap> Ꮡb, ж
 //go:linkname values maps.values
 internal static void values(any m, @unsafe.Pointer Δp) {
     var e = efaceOf(Ꮡ(m));
-    var t = (ж<maptype>)(uintptr)(new @unsafe.Pointer((~e)._type));
+    var t = (~e)._type.Reinterpret<_type, maptype>();
     var h = (ж<hmap>)(uintptr)((~e).data);
     if (h == nil || (~h).count == 0) {
         return;

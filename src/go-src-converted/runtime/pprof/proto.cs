@@ -568,7 +568,7 @@ internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuil
 // We can't write out functions while in the middle of the
 // Location message, so record new functions we encounter and
 // write them out after the Location.
-[GoType("dyn")] partial struct emitLocation_newFunc {
+[GoLocalName("newFunc")] [GoType("dyn")] partial struct emitLocation_newFunc {
     internal uint64 id;
     internal @string name, @file;
     internal int64 startLine;

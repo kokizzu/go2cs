@@ -147,11 +147,11 @@ internal static void testAtomic64() {
     }
 }
 
-[GoType("dyn")] partial struct check_x1t {
+[GoLocalName("x1t")] [GoType("dyn")] partial struct check_x1t {
     internal uint8 x;
 }
 
-[GoType("dyn")] partial struct check_y1t {
+[GoLocalName("y1t")] [GoType("dyn")] partial struct check_y1t {
     internal check_x1t x1;
     internal uint8 y;
 }
@@ -254,28 +254,28 @@ internal static void check() {
     if (m[0] != 0xff || m[1] != 0x1 || m[2] != 0xff || m[3] != 0xff) {
         @throw("atomicand8"u8);
     }
-    ((ж<uint64>)(uintptr)(new @unsafe.Pointer(Ꮡj))).Value = ~(uint64)0;
+    (Ꮡj.Reinterpret<float64, uint64>()).Value = ~(uint64)0;
     if (j == j) {
         @throw("float64nan"u8);
     }
     if (!(j != j)) {
         @throw("float64nan1"u8);
     }
-    ((ж<uint64>)(uintptr)(new @unsafe.Pointer(Ꮡj1))).Value = ~(uint64)1;
+    (Ꮡj1.Reinterpret<float64, uint64>()).Value = ~(uint64)1;
     if (j == j1) {
         @throw("float64nan2"u8);
     }
     if (!(j != j1)) {
         @throw("float64nan3"u8);
     }
-    ((ж<uint32>)(uintptr)(new @unsafe.Pointer(Ꮡi))).Value = ~(uint32)0;
+    (Ꮡi.Reinterpret<float32, uint32>()).Value = ~(uint32)0;
     if (i == i) {
         @throw("float32nan"u8);
     }
     if (i == i) {
         @throw("float32nan1"u8);
     }
-    ((ж<uint32>)(uintptr)(new @unsafe.Pointer(Ꮡi1))).Value = ~(uint32)1;
+    (Ꮡi1.Reinterpret<float32, uint32>()).Value = ~(uint32)1;
     if (i == i1) {
         @throw("float32nan2"u8);
     }

@@ -140,7 +140,7 @@ public static ж<Named> NewNamed(ж<TypeName> Ꮡobj, ΔType underlying, slice<�
     if (asNamed(underlying) != nil) {
         throw panic("underlying type must not be *Named");
     }
-    return ((ж<Checker>)(default!)).newNamed(Ꮡobj, underlying, methods);
+    return (((ж<Checker>)nil)).newNamed(Ꮡobj, underlying, methods);
 }
 
 // resolve resolves the type parameters, methods, and underlying type of n.

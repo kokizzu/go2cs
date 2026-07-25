@@ -376,12 +376,14 @@ public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw,
             var ctxʗ1 = ctx;
             var notifyChanʗ1 = notifyChan;
             goǃ(() => {
-                switch (select(ᐸꟷ(notifyChanʗ1, ꓸꓸꓸ), ᐸꟷ(ctxʗ1.Done(), ꓸꓸꓸ))) {
-                case 0 when notifyChanʗ1.ꟷᐳ(out _): {
+                var selᴛ3 = notifyChanʗ1;
+                var selᴛ4 = ctxʗ1.Done();
+                switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+                case 0 when selᴛ3.ꟷᐳ(out _): {
                     cancelʗ2();
                     break;
                 }
-                case 1 when ctxʗ1.Done().ꟷᐳ(out _): {
+                case 1 when selᴛ4.ꟷᐳ(out _): {
                     break;
                 }}
             });
@@ -792,17 +794,19 @@ internal static void handleUpgradeResponse(this ж<ReverseProxy> Ꮡp, http.Resp
         Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("can't switch protocols using non-Hijacker ResponseWriter type %T"u8, rw));
         return;
     }
-    var backConnCloseCh = new channel<bool>(1);
+    var backConnCloseCh = new channel<bool>(0);
     var backConnʗ1 = backConn;
     var backConnCloseChʗ1 = backConnCloseCh;
     goǃ(() => {
         // Ensure that the cancellation of a request closes the backend.
         // See issue https://golang.org/issue/35559.
-        switch (select(ᐸꟷ(Ꮡreq.Value.Context().Done(), ꓸꓸꓸ), ᐸꟷ(backConnCloseChʗ1, ꓸꓸꓸ))) {
-        case 0 when Ꮡreq.Value.Context().Done().ꟷᐳ(out _): {
+        var selᴛ5 = Ꮡreq.Value.Context().Done();
+        var selᴛ6 = backConnCloseChʗ1;
+        switch (select(ᐸꟷ(selᴛ5, ꓸꓸꓸ), ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
+        case 0 when selᴛ5.ꟷᐳ(out _): {
             break;
         }
-        case 1 when backConnCloseChʗ1.ꟷᐳ(out _): {
+        case 1 when selᴛ6.ꟷᐳ(out _): {
             break;
         }}
         backConnʗ1.Close();

@@ -387,7 +387,7 @@ public static error EmitFuncs(this ж<Formatter> Ꮡfm, io.Writer w) => func<err
     }
     {
         var (_, err) = fmt.Fprintf(new tabwriter_WriterжWriter(tabber), "%s\t%s\t%.1f%%\n"u8,
-            "total", "(statements)", perc(covStmts, allStmts)); if (err != default!) {
+            (@string)"total", (@string)"(statements)", perc(covStmts, allStmts)); if (err != default!) {
             return err;
         }
     }

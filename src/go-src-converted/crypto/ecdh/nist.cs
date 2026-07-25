@@ -65,7 +65,7 @@ internal static (ж<PrivateKey>, error) GenerateKey<Point>(this ж<nistCurve<Poi
         // whole number of bytes, which is only the case for P-521. We use a
         // pointer to the scalarOrder field because comparing generic and
         // instantiated types is not supported.
-        if (Ꮡ(c.scalarOrder[0]) == Ꮡ(p521Order, 0)) {
+        if (Ꮡ(c.scalarOrder, 0) == Ꮡ(p521Order, 0)) {
             key[0] &= (byte)(0b0000_0001);
         }
         // In tests, rand will return all zeros and NewPrivateKey will reject

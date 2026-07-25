@@ -321,7 +321,7 @@ public static @string GoString(this Class i) {
 [GoRecv] public static ж<Field> AttrField(this ref Entry e, Attr a) {
     foreach (var (i, f) in e.Field) {
         if (f.Attr == a) {
-            return Ꮡ(e.Field[i]);
+            return Ꮡ(e.Field, i);
         }
     }
     return default!;
@@ -332,7 +332,7 @@ public static @string GoString(this Class i) {
 // If we are currently parsing the compilation unit,
 // we can't evaluate Addrx or Strx until we've seen the
 // relevant base entry.
-[GoType("dyn")] partial struct entry_delayed {
+[GoLocalName("delayed")] [GoType("dyn")] partial struct entry_delayed {
     internal nint idx;
     internal uint64 off;
     internal format fmt;
@@ -833,7 +833,7 @@ public static ж<ΔReader> Reader(this ж<Data> Ꮡd) {
 // nextUnit advances to the next unit.
 [GoRecv] internal static void nextUnit(this ref ΔReader r) {
     r.unit++;
-    var u = Ꮡ((~r.d).unit[r.unit]);
+    var u = Ꮡ((~r.d).unit, r.unit);
     r.b = makeBuf(r.d, new unitжdataFormat(u), "info"u8, (~u).off, (~u).data);
     r.cu = default!;
 }
@@ -852,7 +852,7 @@ public static (ж<Entry>, error) Next(this ж<ΔReader> Ꮡr) {
     if (len(r.b.data) == 0) {
         return (default!, default!);
     }
-    var u = Ꮡ((~r.d).unit[r.unit]);
+    var u = Ꮡ((~r.d).unit, r.unit);
     var e = Ꮡr.of(dwarf_package.ΔReader.Ꮡb).entry(r.cu, (~u).atable, (~u).@base, (~u).vers);
     if (r.b.err != default!) {
         r.err = r.b.err;
@@ -942,7 +942,7 @@ public static (ж<Entry>, error) SeekPC(this ж<ΔReader> Ꮡr, uint64 pc) {
         r.lastChildren = false;
         r.unit = unit;
         r.cu = default!;
-        var u = Ꮡ((~r.d).unit[unit]);
+        var u = Ꮡ((~r.d).unit, unit);
         r.b = makeBuf(r.d, new unitжdataFormat(u), "info"u8, (~u).off, (~u).data);
         var (e, err) = Ꮡr.Next();
         if (err != default!) {
@@ -999,7 +999,7 @@ public static (slice<array<uint64>>, error) Ranges(this ж<Data> Ꮡd, ж<Entry>
     ж<unit> u = default!;
     {
         nint uidx = Ꮡd.offsetToUnit(e.Offset); if (uidx >= 0 && uidx < len(d.unit)) {
-            u = Ꮡ(d.unit[uidx]);
+            u = Ꮡ(d.unit, uidx);
         }
     }
     if (u != nil && (~u).vers >= 5 && d.rngLists != default!) {
@@ -1065,7 +1065,7 @@ internal static (ж<Entry>, uint64, error) baseAddressForEntry(this ж<Data> Ꮡ
         if (i == -1) {
             return (default!, 0, errors.New("no unit for entry"u8));
         }
-        var u = Ꮡ(d.unit[i]);
+        var u = Ꮡ(d.unit, i);
         ref var b = ref heap<buf>(out var Ꮡb);
         b = makeBuf(Ꮡd, new unitжdataFormat(u), "info"u8, (~u).off, (~u).data);
         cu = Ꮡb.entry(nil, (~u).atable, (~u).@base, (~u).vers);

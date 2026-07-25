@@ -47,10 +47,10 @@ public static ж<Table> MakeTable(uint64 poly) {
     buildSlicing8TablesOnce();
     var exprᴛ1 = poly;
     if (exprᴛ1 == ISO) {
-        return Ꮡ(slicing8TableISO.Value[0]);
+        return slicing8TableISO.at<Table>(0);
     }
     if (exprᴛ1 == ECMA) {
-        return Ꮡ(slicing8TableECMA.Value[0]);
+        return slicing8TableECMA.at<Table>(0);
     }
     { /* default: */
         return makeTable(poly);

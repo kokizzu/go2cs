@@ -48,7 +48,7 @@ public static ж<Ticker> NewTicker(Duration d) {
     // If the client falls behind while reading, we drop ticks
     // on the floor until the client catches up.
     var c = new channel<Time>(1);
-    var t = (ж<Ticker>)(uintptr)(new @unsafe.Pointer(newTimer(when(d), (int64)d, sendTime, c, (uintptr)syncTimer(c))));
+    var t = newTimer(when(d), (int64)d, sendTime, c, (uintptr)syncTimer(c)).Reinterpret<Timer, Ticker>();
     t.Value.C = c;
     return t;
 }
@@ -65,7 +65,7 @@ public static void Stop(this ж<Ticker> Ꮡt) {
         // to avoid breaking old programs. See issue 21874.
         return;
     }
-    stopTimer((ж<Timer>)(uintptr)(@unsafe.Pointer.FromRef(ref t)));
+    stopTimer(Ꮡt.Reinterpret<Ticker, Timer>());
 }
 
 // Reset stops a ticker and resets its period to the specified duration.
@@ -80,7 +80,7 @@ public static void Reset(this ж<Ticker> Ꮡt, Duration d) {
     if (!t.initTicker) {
         throw panic("time: Reset called on uninitialized Ticker");
     }
-    resetTimer((ж<Timer>)(uintptr)(@unsafe.Pointer.FromRef(ref t)), when(d), (int64)d);
+    resetTimer(Ꮡt.Reinterpret<Ticker, Timer>(), when(d), (int64)d);
 }
 
 // Tick is a convenience wrapper for [NewTicker] providing access to the ticking

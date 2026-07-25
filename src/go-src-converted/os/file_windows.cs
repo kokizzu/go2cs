@@ -116,7 +116,7 @@ internal static (ж<File>, error) openFileNolog(@string name, nint flag, FileMod
             var (pathp, e1) = syscall.UTF16PtrFromString(path);
             if (e1 == default!) {
                 ref var fa = ref heap(new syscall.Win32FileAttributeData(), out var Ꮡfa);
-                e1 = syscall.GetFileAttributesEx(pathp, syscall.GetFileExInfoStandard, (ж<byte>)(uintptr)(new @unsafe.Pointer(Ꮡfa)));
+                e1 = syscall.GetFileAttributesEx(pathp, syscall.GetFileExInfoStandard, Ꮡfa.Reinterpret<syscall.Win32FileAttributeData, byte>());
                 if (e1 == default! && (uint32)(fa.FileAttributes & (uint32)syscall.FILE_ATTRIBUTE_DIRECTORY) != 0) {
                     e = syscall.EISDIR;
                 }
@@ -461,10 +461,10 @@ internal static (@string, error) readReparseLink(@string path) => func<(@string,
     if (err != default!) {
         return ("", err);
     }
-    var rdb = (ж<windows.REPARSE_DATA_BUFFER>)(uintptr)(new @unsafe.Pointer(Ꮡ(rdbbuf, 0)));
+    var rdb = Ꮡ(rdbbuf, 0).Reinterpret<byte, windows.REPARSE_DATA_BUFFER>();
     var exprᴛ1 = (~rdb).ReparseTag;
     if (exprᴛ1 == syscall.IO_REPARSE_TAG_SYMLINK) {
-        var rb = (ж<windows.SymbolicLinkReparseBuffer>)(uintptr)(new @unsafe.Pointer(rdb.of(windows.REPARSE_DATA_BUFFER.ᏑDUMMYUNIONNAME)));
+        var rb = rdb.of(windows.REPARSE_DATA_BUFFER.ᏑDUMMYUNIONNAME).Reinterpret<byte, windows.SymbolicLinkReparseBuffer>();
         @string s = rb.Path();
         if ((uint32)((~rb).Flags & (uint32)windows.SYMLINK_FLAG_RELATIVE) != 0) {
             return (s, default!);
@@ -472,7 +472,7 @@ internal static (@string, error) readReparseLink(@string path) => func<(@string,
         return normaliseLinkPath(s);
     }
     if (exprᴛ1 == windows.IO_REPARSE_TAG_MOUNT_POINT) {
-        return normaliseLinkPath(((ж<windows.MountPointReparseBuffer>)(uintptr)(new @unsafe.Pointer(rdb.of(windows.REPARSE_DATA_BUFFER.ᏑDUMMYUNIONNAME)))).Path());
+        return normaliseLinkPath((rdb.of(windows.REPARSE_DATA_BUFFER.ᏑDUMMYUNIONNAME).Reinterpret<byte, windows.MountPointReparseBuffer>()).Path());
     }
     { /* default: */
         return ("", syscall.ENOENT);

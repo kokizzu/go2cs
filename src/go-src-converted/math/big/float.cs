@@ -586,7 +586,7 @@ public static ж<Float> SetFloat64(this ж<Float> Ꮡz, float64 x) {
     z.acc = Exact;
     z.neg = math.Signbit(x);
     // handle -0, -Inf correctly
-    if (x == 0) {
+    if (x == 0D) {
         z.form = zero;
         return Ꮡz;
     }

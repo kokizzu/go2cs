@@ -261,7 +261,7 @@ internal static @string slicerunetostring(ж<tmpBuf> Ꮡbuf, slice<rune> a) {
 }
 
 internal static ж<stringStruct> stringStructOf(ж<@string> Ꮡsp) {
-    return (ж<stringStruct>)(uintptr)(new @unsafe.Pointer(Ꮡsp));
+    return Ꮡsp.Reinterpret<@string, stringStruct>();
 }
 
 internal static @string /*s*/ intstring(ж<array<byte>> Ꮡbuf, int64 v) {
@@ -296,20 +296,20 @@ internal static (@string s, slice<byte> b) rawstring(nint size) {
 
 // rawbyteslice allocates a new byte slice. The byte slice is not zeroed.
 internal static slice<byte> /*b*/ rawbyteslice(nint size) {
-    slice<byte> b = default!;
+    ref var b = ref heap<slice<byte>>(out var Ꮡb);
 
     var cap = roundupsize((uintptr)size, true);
     @unsafe.Pointer Δp = (uintptr)mallocgc(cap, nil, false);
     if (cap != (uintptr)size) {
         memclrNoHeapPointers((uintptr)add(Δp, (uintptr)size), cap - (uintptr)size);
     }
-    ((ж<Δsliceᴛ>)(uintptr)(new @unsafe.Pointer(Ꮡ(b)))).Value = new Δsliceᴛ(Δp.Value, size, (nint)cap);
+    (Ꮡb.Reinterpret<slice<byte>, Δsliceᴛ>()).Value = new Δsliceᴛ(Δp.Value, size, (nint)cap);
     return b;
 }
 
 // rawruneslice allocates a new rune slice. The rune slice is not zeroed.
 internal static slice<rune> /*b*/ rawruneslice(nint size) {
-    slice<rune> b = default!;
+    ref var b = ref heap<slice<rune>>(out var Ꮡb);
 
     if ((uintptr)size > maxAlloc / 4) {
         @throw("out of memory"u8);
@@ -319,13 +319,13 @@ internal static slice<rune> /*b*/ rawruneslice(nint size) {
     if (mem != (uintptr)size * 4) {
         memclrNoHeapPointers((uintptr)add(Δp, (uintptr)size * 4), mem - (uintptr)size * 4);
     }
-    ((ж<Δsliceᴛ>)(uintptr)(new @unsafe.Pointer(Ꮡ(b)))).Value = new Δsliceᴛ(Δp.Value, size, (nint)(mem / 4));
+    (Ꮡb.Reinterpret<slice<rune>, Δsliceᴛ>()).Value = new Δsliceᴛ(Δp.Value, size, (nint)(mem / 4));
     return b;
 }
 
 // used by cmd/cgo
 internal static slice<byte> /*b*/ gobytes(ж<byte> Ꮡp, nint n) {
-    slice<byte> b = default!;
+    ref var b = ref heap<slice<byte>>(out var Ꮡb);
 
     if (n == 0) {
         return new slice<byte>(0);
@@ -335,7 +335,7 @@ internal static slice<byte> /*b*/ gobytes(ж<byte> Ꮡp, nint n) {
     }
     @unsafe.Pointer bp = (uintptr)mallocgc((uintptr)n, nil, false);
     memmove(bp, new @unsafe.Pointer(Ꮡp), (uintptr)n);
-    ((ж<Δsliceᴛ>)(uintptr)(new @unsafe.Pointer(Ꮡ(b)))).Value = new Δsliceᴛ(bp.Value, n, n);
+    (Ꮡb.Reinterpret<slice<byte>, Δsliceᴛ>()).Value = new Δsliceᴛ(bp.Value, n, n);
     return b;
 }
 
@@ -564,7 +564,7 @@ internal static nint findnull(ж<byte> Ꮡs) {
     ref var safeLen = ref heap<nint>(out var ᏑsafeLen);
     safeLen = (nint)((uintptr)pageSize - (uintptr)ptr % (uintptr)pageSize);
     while (ᐧ) {
-        @string t = ~(ж<@string>)(uintptr)(new @unsafe.Pointer(Ꮡ(new stringStruct(ptr.Value, safeLen))));
+        @string t = ~Ꮡ(new stringStruct(ptr.Value, safeLen)).Reinterpret<stringStruct, @string>();
         // Check one page at a time.
         {
             nint i = bytealg.IndexByteString(t, 0); if (i != -1) {
@@ -596,7 +596,7 @@ internal static @string gostringnocopy(ж<byte> Ꮡstr) {
 
     ref var ss = ref heap<stringStruct>(out var Ꮡss);
     ss = new stringStruct(str: new @unsafe.Pointer(Ꮡstr), len: findnull(Ꮡstr));
-    @string s = ~(ж<@string>)(uintptr)(new @unsafe.Pointer(Ꮡss));
+    @string s = ~Ꮡss.Reinterpret<stringStruct, @string>();
     return s;
 }
 

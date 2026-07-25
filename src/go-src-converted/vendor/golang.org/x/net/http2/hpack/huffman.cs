@@ -162,7 +162,7 @@ internal static void buildRootHuffmanNode() {
         leaves.Value[sym].sym = (byte)sym;
         leaves.Value[sym].codeLen = codeLen;
         for (nint i = start; i < start + end; i++) {
-            cur.Value.children.Value[i] = Ꮡ(leaves.Value[sym]);
+            cur.Value.children.Value[i] = leaves.at<node>(sym);
         }
     }
 }

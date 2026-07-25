@@ -145,7 +145,7 @@ internal static bool encFloat32Slice(ж<encoderState> Ꮡstate, reflectꓸValue 
         return false;
     }
     foreach (var (_, x) in Δslice) {
-        if (x != 0 || state.sendZero) {
+        if (x != 0F || state.sendZero) {
             var bits = floatBits((float64)x);
             state.encodeUint(bits);
         }
@@ -170,7 +170,7 @@ internal static bool encFloat64Slice(ж<encoderState> Ꮡstate, reflectꓸValue 
         return false;
     }
     foreach (var (_, x) in Δslice) {
-        if (x != 0 || state.sendZero) {
+        if (x != 0D || state.sendZero) {
             var bits = floatBits(x);
             state.encodeUint(bits);
         }

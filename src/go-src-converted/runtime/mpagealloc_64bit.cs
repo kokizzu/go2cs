@@ -70,7 +70,7 @@ internal static array<nuint> levelLogPages = new nuint[]{
         // Put this reservation into a slice.
         ref var sl = ref heap<notInHeapSlice>(out var Ꮡsl);
         sl = new notInHeapSlice((ж<notInHeap>)(uintptr)(r), 0, entries);
-        Δp.summary[l] = ~(ж<slice<pallocSum>>)(uintptr)(new @unsafe.Pointer(Ꮡsl));
+        Δp.summary[l] = ~Ꮡsl.Reinterpret<notInHeapSlice, slice<pallocSum>>();
     }
 }
 
@@ -88,7 +88,7 @@ internal static void sysGrow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr lim
     ref var Δp = ref Ꮡp.Value;
 
     if (@base % (uintptr)pallocChunkBytes != 0 || limit % (uintptr)pallocChunkBytes != 0) {
-        print("runtime: base = ", ((Δhex)(uint64)@base), ", limit = ", ((Δhex)(uint64)limit), "\n");
+        print((@string)"runtime: base = ", ((Δhex)(uint64)@base), (@string)", limit = ", ((Δhex)(uint64)limit), (@string)"\n");
         @throw("sysGrow bounds not aligned to pallocChunkBytes"u8);
     }
     // addrRangeToSummaryRange converts a range of addresses into a range
@@ -104,7 +104,7 @@ internal static void sysGrow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr lim
     var summaryRangeToSumAddrRange = (nint level, nint sumIdxBase, nint sumIdxLimit) => {
         var baseOffset = alignDown((uintptr)sumIdxBase * pallocSumBytes, physPageSize);
         var limitOffset = alignUp((uintptr)sumIdxLimit * pallocSumBytes, physPageSize);
-        @unsafe.Pointer baseΔ1 = new @unsafe.Pointer(Ꮡ(Ꮡp.Value.summary[level][0]));
+        @unsafe.Pointer baseΔ1 = new @unsafe.Pointer(Ꮡ(Ꮡp.Value.summary[level], 0));
         return new addrRange(
             new offAddr((uintptr)(uintptr)add(baseΔ1, baseOffset)),
             new offAddr((uintptr)(uintptr)add(baseΔ1, limitOffset))
@@ -173,7 +173,7 @@ internal static uintptr sysGrow(this ж<scavengeIndex> Ꮡs, uintptr @base, uint
     ref var s = ref Ꮡs.Value;
 
     if (@base % (uintptr)pallocChunkBytes != 0 || limit % (uintptr)pallocChunkBytes != 0) {
-        print("runtime: base = ", ((Δhex)(uint64)@base), ", limit = ", ((Δhex)(uint64)limit), "\n");
+        print((@string)"runtime: base = ", ((Δhex)(uint64)@base), (@string)", limit = ", ((Δhex)(uint64)limit), (@string)"\n");
         @throw("sysGrow bounds not aligned to pallocChunkBytes"u8);
     }
     var scSize = @unsafe.Sizeof(new atomicScavChunkData(nil));
@@ -200,7 +200,7 @@ internal static uintptr sysGrow(this ж<scavengeIndex> Ꮡs, uintptr @base, uint
         needMin = haveMax;
     }
     // Avoid a panic from indexing one past the last element.
-    var chunksBase = (uintptr)new @unsafe.Pointer(Ꮡ(s.chunks[0]));
+    var chunksBase = (uintptr)new @unsafe.Pointer(Ꮡ(s.chunks, 0));
     var have = makeAddrRange(chunksBase + haveMin * scSize, chunksBase + haveMax * scSize);
     var need = makeAddrRange(chunksBase + needMin * scSize, chunksBase + needMax * scSize);
     // Subtract any overlap from rounding. We can't re-map memory because
@@ -230,7 +230,7 @@ internal static uintptr sysGrow(this ж<scavengeIndex> Ꮡs, uintptr @base, uint
     @unsafe.Pointer r = (uintptr)sysReserve(nil, nbytes);
     ref var sl = ref heap<notInHeapSlice>(out var Ꮡsl);
     sl = new notInHeapSlice((ж<notInHeap>)(uintptr)(r), (nint)n, (nint)n);
-    s.chunks = ~(ж<slice<atomicScavChunkData>>)(uintptr)(new @unsafe.Pointer(Ꮡsl));
+    s.chunks = ~Ꮡsl.Reinterpret<notInHeapSlice, slice<atomicScavChunkData>>();
     return 0;
 }
 

@@ -852,7 +852,7 @@ public static error StartCPUProfile(io.Writer w) => func<error>((defer, recover)
     Ꮡcpu.of(cpuᴛ1.ᏑMutex).Lock();
     defer(Ꮡcpu.of(cpuᴛ1.ᏑMutex).Unlock);
     if (cpu.done == default!) {
-        cpu.done = new channel<bool>(1);
+        cpu.done = new channel<bool>(0);
     }
     // Double-check.
     if (cpu.profiling) {
@@ -964,7 +964,7 @@ internal static error writeProfileInternal(io.Writer w, nint debug, @string name
         foreach (var (_, pc) in stack) {
             fmt.Fprintf(w, " %#x"u8, pc);
         }
-        fmt.Fprint(w, "\n");
+        fmt.Fprint(w, (@string)"\n");
         if (debug > 0) {
             printStackRecord(w, stack, true);
         }

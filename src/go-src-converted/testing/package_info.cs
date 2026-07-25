@@ -79,4 +79,55 @@ namespace go;
 [GoPackage("testing")]
 public static partial class testing_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface filterMatch {}
+    internal partial interface fuzzCrashError {}
+    internal partial struct alternationMatch {}
+    internal partial struct benchContext {}
+    internal partial struct chattyFlag {}
+    internal partial struct chattyPrinter {}
+    internal partial struct common {}
+    internal partial struct cover2ᴛ1 {}
+    internal partial struct discard {}
+    internal partial struct durationOrCountFlag {}
+    internal partial struct fuzzContext {}
+    internal partial struct fuzzMode {}
+    internal partial struct fuzzResult {}
+    internal partial struct highPrecisionTime {}
+    internal partial struct indenter {}
+    internal partial struct matcher {}
+    internal partial struct panicHandling {}
+    internal partial struct simpleMatch {}
+    internal partial struct testContext {}
+    public partial interface TB {}
+    public partial interface testDeps {}
+    public partial struct B {}
+    public partial struct BenchmarkResult {}
+    public partial struct Cover {}
+    public partial struct CoverBlock {}
+    public partial struct F {}
+    public partial struct InternalBenchmark {}
+    public partial struct InternalExample {}
+    public partial struct InternalFuzzTarget {}
+    public partial struct InternalTest {}
+    public partial struct M {}
+    public partial struct PB {}
+    public partial struct T {}
+    public partial struct corpusEntryᴛ1 {}
+    // </TypeAccessibility>
 }

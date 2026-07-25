@@ -311,7 +311,7 @@ internal static void generate(this ж<huffmanEncoder> Ꮡh, slice<int32> freq, i
 [GoType("[]literalNode")] partial struct byLiteral;
 
 internal static void sort(this ж<byLiteral> Ꮡs, slice<literalNode> a) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.ValueSlot;
 
     s = ((byLiteral)a);
     sort_package.Sort(new byLiteralжInterface(Ꮡs));
@@ -332,7 +332,7 @@ internal static void Swap(this byLiteral s, nint i, nint j) {
 [GoType("[]literalNode")] partial struct byFreq;
 
 internal static void sort(this ж<byFreq> Ꮡs, slice<literalNode> a) {
-    ref var s = ref Ꮡs.Value;
+    ref var s = ref Ꮡs.ValueSlot;
 
     s = ((byFreq)a);
     sort_package.Sort(new byFreqжInterface(Ꮡs));

@@ -274,7 +274,7 @@ internal static void loadOptionalSyscalls() {
     _RtlGetVersion = windowsFindfunc(n32, slice<byte>("RtlGetVersion\u0000"u8));
 }
 
-[GoType("dyn")] partial struct monitorSuspendResume__DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS {
+[GoLocalName("_DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS")] [GoType("dyn")] partial struct monitorSuspendResume__DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS {
     internal uintptr callback;
     internal uintptr context;
 }
@@ -414,13 +414,13 @@ internal static void initHighResTimer() {
         // that run on new Windows versions.
         var m32 = windowsLoadSystemLib(winmmdll[..]);
         if (m32 == 0) {
-            print("runtime: LoadLibraryExW failed; errno=", getlasterror(), "\n");
+            print((@string)"runtime: LoadLibraryExW failed; errno=", getlasterror(), (@string)"\n");
             @throw("winmm.dll not found"u8);
         }
         _timeBeginPeriod = windowsFindfunc(m32, slice<byte>("timeBeginPeriod\u0000"u8));
         _timeEndPeriod = windowsFindfunc(m32, slice<byte>("timeEndPeriod\u0000"u8));
         if (_timeBeginPeriod == default! || _timeEndPeriod == default!) {
-            print("runtime: GetProcAddress failed; errno=", getlasterror(), "\n");
+            print((@string)"runtime: GetProcAddress failed; errno=", getlasterror(), (@string)"\n");
             @throw("timeBegin/EndPeriod not found"u8);
         }
     }
@@ -583,7 +583,7 @@ internal static unsafe nint writeConsole(uintptr handle, @unsafe.Pointer buf, in
     @lock(Ꮡutf16ConsoleBackLock);
     ref var b = ref heap<slice<byte>>(out var Ꮡb);
     b = new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(buf), (int)(bufLen)));
-    @string s = ~(ж<@string>)(uintptr)(new @unsafe.Pointer(Ꮡb));
+    @string s = ~Ꮡb.Reinterpret<slice<byte>, @string>();
     var utf16tmp = utf16ConsoleBack[..];
     nint total = len(s);
     nint w = 0;
@@ -672,13 +672,13 @@ internal static int32 semasleep(int64 ns) {
     }
     else if (exprᴛ1 == _WAIT_FAILED) {
         systemstack(() => {
-            print("runtime: waitforsingleobject wait_failed; errno=", getlasterror(), "\n");
+            print((@string)"runtime: waitforsingleobject wait_failed; errno=", getlasterror(), (@string)"\n");
             @throw("runtime.semasleep wait_failed"u8);
         });
     }
     else { /* default: */
         systemstack(() => {
-            print("runtime: waitforsingleobject unexpected; result=", result, "\n");
+            print((@string)"runtime: waitforsingleobject unexpected; result=", result, (@string)"\n");
             @throw("runtime.semasleep unexpected"u8);
         });
     }
@@ -694,7 +694,7 @@ internal static void semawakeup(ж<m> Ꮡmp) {
 
     if (stdcall1(_SetEvent, mp.waitsema) == 0) {
         systemstack(() => {
-            print("runtime: setevent failed; errno=", getlasterror(), "\n");
+            print((@string)"runtime: setevent failed; errno=", getlasterror(), (@string)"\n");
             @throw("runtime.semawakeup"u8);
         });
     }
@@ -710,14 +710,14 @@ internal static void semacreate(ж<m> Ꮡmp) {
     mp.waitsema = stdcall4(_CreateEventA, 0, 0, 0, 0);
     if (mp.waitsema == 0) {
         systemstack(() => {
-            print("runtime: createevent failed; errno=", getlasterror(), "\n");
+            print((@string)"runtime: createevent failed; errno=", getlasterror(), (@string)"\n");
             @throw("runtime.semacreate"u8);
         });
     }
     mp.resumesema = stdcall4(_CreateEventA, 0, 0, 0, 0);
     if (mp.resumesema == 0) {
         systemstack(() => {
-            print("runtime: createevent failed; errno=", getlasterror(), "\n");
+            print((@string)"runtime: createevent failed; errno=", getlasterror(), (@string)"\n");
             @throw("runtime.semacreate"u8);
         });
         stdcall1(_CloseHandle, mp.waitsema);
@@ -745,7 +745,7 @@ internal static void newosproc(ж<m> Ꮡmp) {
             @lock(Ꮡdeadlock);
             @lock(Ꮡdeadlock);
         }
-        print("runtime: failed to create new OS thread (have ", mcount(), " already; errno=", getlasterror(), ")\n");
+        print((@string)"runtime: failed to create new OS thread (have ", mcount(), (@string)" already; errno=", getlasterror(), (@string)")\n");
         @throw("runtime.newosproc"u8);
     }
     // Close thandle to avoid leaking the thread object if it exits.
@@ -798,7 +798,7 @@ internal static void sigblock(bool exiting) {
 internal static void minit() {
     ref var thandle = ref heap(new uintptr(), out var Ꮡthandle);
     if (stdcall7(_DuplicateHandle, currentProcess, currentThread, currentProcess, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡthandle).Value), 0, 0, _DUPLICATE_SAME_ACCESS) == 0) {
-        print("runtime.minit: duplicatehandle failed; errno=", getlasterror(), "\n");
+        print((@string)"runtime.minit: duplicatehandle failed; errno=", getlasterror(), (@string)"\n");
         @throw("runtime.minit: duplicatehandle failed"u8);
     }
     var mp = getg().Value.m;
@@ -809,20 +809,20 @@ internal static void minit() {
     if ((~mp).highResTimer == 0 && haveHighResTimer) {
         mp.Value.highResTimer = createHighResTimer();
         if ((~mp).highResTimer == 0) {
-            print("runtime: CreateWaitableTimerEx failed; errno=", getlasterror(), "\n");
+            print((@string)"runtime: CreateWaitableTimerEx failed; errno=", getlasterror(), (@string)"\n");
             @throw("CreateWaitableTimerEx when creating timer failed"u8);
         }
     }
     if ((~mp).waitIocpHandle == 0 && haveHighResSleep) {
         mp.Value.waitIocpTimer = createHighResTimer();
         if ((~mp).waitIocpTimer == 0) {
-            print("runtime: CreateWaitableTimerEx failed; errno=", getlasterror(), "\n");
+            print((@string)"runtime: CreateWaitableTimerEx failed; errno=", getlasterror(), (@string)"\n");
             @throw("CreateWaitableTimerEx when creating timer failed"u8);
         }
         uintptr GENERIC_ALL = 0x10000000;
         var errno = stdcall3(_NtCreateWaitCompletionPacket, (uintptr)@unsafe.Pointer.FromRef(ref (mp.of(m.ᏑwaitIocpHandle)).Value), GENERIC_ALL, 0);
         if ((~mp).waitIocpHandle == 0) {
-            print("runtime: NtCreateWaitCompletionPacket failed; errno=", errno, "\n");
+            print((@string)"runtime: NtCreateWaitCompletionPacket failed; errno=", errno, (@string)"\n");
             @throw("NtCreateWaitCompletionPacket failed"u8);
         }
     }
@@ -832,7 +832,7 @@ internal static void minit() {
     ref var mbi = ref heap(new memoryBasicInformation(), out var Ꮡmbi);
     var res = stdcall3(_VirtualQuery, (uintptr)new @unsafe.Pointer(Ꮡmbi), (uintptr)new @unsafe.Pointer(Ꮡmbi), @unsafe.Sizeof(mbi));
     if (res == 0) {
-        print("runtime: VirtualQuery failed; errno=", getlasterror(), "\n");
+        print((@string)"runtime: VirtualQuery failed; errno=", getlasterror(), (@string)"\n");
         @throw("VirtualQuery for stack base failed"u8);
     }
     // The system leaves an 8K PAGE_GUARD region at the bottom of
@@ -845,7 +845,7 @@ internal static void minit() {
     // Sanity check the stack bounds.
     var g0 = getg();
     if (@base > (~g0).stack.hi || (~g0).stack.hi - @base > (uintptr)(64 << (int)(20))) {
-        print("runtime: g0 stack [", ((Δhex)(uint64)@base), ",", ((Δhex)(uint64)(~g0).stack.hi), ")\n");
+        print((@string)"runtime: g0 stack [", ((Δhex)(uint64)@base), (@string)",", ((Δhex)(uint64)(~g0).stack.hi), (@string)")\n");
         @throw("bad g0 stack"u8);
     }
     g0.Value.stack.lo = @base;
@@ -1153,7 +1153,7 @@ internal static void profileLoop() {
             // Acquire our own handle to the thread.
             ref var thread = ref heap(new uintptr(), out var Ꮡthread);
             if (stdcall7(_DuplicateHandle, currentProcess, (~mp).thread, currentProcess, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡthread).Value), 0, 0, _DUPLICATE_SAME_ACCESS) == 0) {
-                print("runtime: duplicatehandle failed; errno=", getlasterror(), "\n");
+                print((@string)"runtime: duplicatehandle failed; errno=", getlasterror(), (@string)"\n");
                 @throw("duplicatehandle failed"u8);
             }
             unlock(mp.of(m.ᏑthreadLock));
@@ -1202,7 +1202,7 @@ internal static void setThreadCPUProfiler(int32 hz) {
         due = (int64)ms * -10000;
     }
     stdcall6(_SetWaitableTimer, profiletimer, (uintptr)new @unsafe.Pointer(Ꮡdue), (uintptr)ms, 0, 0, 0);
-    atomic.Store((ж<uint32>)(uintptr)(new @unsafe.Pointer((~getg()).m.of(m.Ꮡprofilehz))), (uint32)hz);
+    atomic.Store((~getg()).m.of(m.Ꮡprofilehz).Reinterpret<int32, uint32>(), (uint32)hz);
 }
 
 internal const bool preemptMSupported = true;
@@ -1236,7 +1236,7 @@ internal static void preemptM(ж<m> Ꮡmp) {
     }
     ref var thread = ref heap(new uintptr(), out var Ꮡthread);
     if (stdcall7(_DuplicateHandle, currentProcess, mp.thread, currentProcess, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡthread).Value), 0, 0, _DUPLICATE_SAME_ACCESS) == 0) {
-        print("runtime.preemptM: duplicatehandle failed; errno=", getlasterror(), "\n");
+        print((@string)"runtime.preemptM: duplicatehandle failed; errno=", getlasterror(), (@string)"\n");
         @throw("runtime.preemptM: duplicatehandle failed"u8);
     }
     unlock(Ꮡmp.of(m.ᏑthreadLock));

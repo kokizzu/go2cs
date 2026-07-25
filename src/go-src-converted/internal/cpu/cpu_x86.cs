@@ -177,7 +177,7 @@ public static @string Name() {
 }
 
 internal static slice<byte> appendBytes(slice<byte> b, params ꓸꓸꓸuint32 argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     foreach (var (_, arg) in args) {
         b = append(b,

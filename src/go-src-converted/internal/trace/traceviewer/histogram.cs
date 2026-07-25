@@ -21,7 +21,7 @@ partial class traceviewer_package {
 }
 
 // Five buckets for every power of 10.
-internal static float64 logDiv = math.Log(math.Pow(10, 1.0D / 5D));
+internal static float64 logDiv = math.Log(math.Pow(10D, 1.0D / 5D));
 
 // Add adds a single sample to the histogram.
 [GoRecv] public static void Add(this ref TimeHistogram h, time.Duration d) {

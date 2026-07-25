@@ -99,27 +99,27 @@ internal static void prepareContextForSigResume(ж<context> Ꮡc) {
 internal static void dumpregs(ж<context> Ꮡr) {
     ref var r = ref Ꮡr.Value;
 
-    print("rax     ", ((Δhex)r.rax), "\n");
-    print("rbx     ", ((Δhex)r.rbx), "\n");
-    print("rcx     ", ((Δhex)r.rcx), "\n");
-    print("rdx     ", ((Δhex)r.rdx), "\n");
-    print("rdi     ", ((Δhex)r.rdi), "\n");
-    print("rsi     ", ((Δhex)r.rsi), "\n");
-    print("rbp     ", ((Δhex)r.rbp), "\n");
-    print("rsp     ", ((Δhex)r.rsp), "\n");
-    print("r8      ", ((Δhex)r.r8), "\n");
-    print("r9      ", ((Δhex)r.r9), "\n");
-    print("r10     ", ((Δhex)r.r10), "\n");
-    print("r11     ", ((Δhex)r.r11), "\n");
-    print("r12     ", ((Δhex)r.r12), "\n");
-    print("r13     ", ((Δhex)r.r13), "\n");
-    print("r14     ", ((Δhex)r.r14), "\n");
-    print("r15     ", ((Δhex)r.r15), "\n");
-    print("rip     ", ((Δhex)r.rip), "\n");
-    print("rflags  ", ((Δhex)(uint64)r.eflags), "\n");
-    print("cs      ", ((Δhex)(uint64)r.segcs), "\n");
-    print("fs      ", ((Δhex)(uint64)r.segfs), "\n");
-    print("gs      ", ((Δhex)(uint64)r.seggs), "\n");
+    print((@string)"rax     ", ((Δhex)r.rax), (@string)"\n");
+    print((@string)"rbx     ", ((Δhex)r.rbx), (@string)"\n");
+    print((@string)"rcx     ", ((Δhex)r.rcx), (@string)"\n");
+    print((@string)"rdx     ", ((Δhex)r.rdx), (@string)"\n");
+    print((@string)"rdi     ", ((Δhex)r.rdi), (@string)"\n");
+    print((@string)"rsi     ", ((Δhex)r.rsi), (@string)"\n");
+    print((@string)"rbp     ", ((Δhex)r.rbp), (@string)"\n");
+    print((@string)"rsp     ", ((Δhex)r.rsp), (@string)"\n");
+    print((@string)"r8      ", ((Δhex)r.r8), (@string)"\n");
+    print((@string)"r9      ", ((Δhex)r.r9), (@string)"\n");
+    print((@string)"r10     ", ((Δhex)r.r10), (@string)"\n");
+    print((@string)"r11     ", ((Δhex)r.r11), (@string)"\n");
+    print((@string)"r12     ", ((Δhex)r.r12), (@string)"\n");
+    print((@string)"r13     ", ((Δhex)r.r13), (@string)"\n");
+    print((@string)"r14     ", ((Δhex)r.r14), (@string)"\n");
+    print((@string)"r15     ", ((Δhex)r.r15), (@string)"\n");
+    print((@string)"rip     ", ((Δhex)r.rip), (@string)"\n");
+    print((@string)"rflags  ", ((Δhex)(uint64)r.eflags), (@string)"\n");
+    print((@string)"cs      ", ((Δhex)(uint64)r.segcs), (@string)"\n");
+    print((@string)"fs      ", ((Δhex)(uint64)r.segfs), (@string)"\n");
+    print((@string)"gs      ", ((Δhex)(uint64)r.seggs), (@string)"\n");
 }
 
 [GoType] partial struct _DISPATCHER_CONTEXT {

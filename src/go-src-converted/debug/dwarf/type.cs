@@ -916,7 +916,7 @@ Error:
 });
 
 internal static void zeroArray(ж<ΔType> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+    ref var t = ref Ꮡt.ValueSlot;
 
     var at = (t)._<ж<ArrayType>>();
     if ((~at).Type.Size() == 0) {

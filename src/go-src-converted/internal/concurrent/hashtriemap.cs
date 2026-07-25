@@ -466,7 +466,7 @@ internal static ж<Δentry<K, V>> entry<K, V>(this ж<node<K, V>> Ꮡn)
     if (!n.isEntry) {
         throw panic("called entry on non-entry node");
     }
-    return (ж<Δentry<K, V>>)(uintptr)(@unsafe.Pointer.FromRef(ref n));
+    return Ꮡn.Reinterpret<node<K, V>, Δentry<K, V>>();
 }
 
 internal static ж<Δindirect<K, V>> indirect<K, V>(this ж<node<K, V>> Ꮡn)
@@ -478,7 +478,7 @@ internal static ж<Δindirect<K, V>> indirect<K, V>(this ж<node<K, V>> Ꮡn)
     if (n.isEntry) {
         throw panic("called indirect on entry node");
     }
-    return (ж<Δindirect<K, V>>)(uintptr)(@unsafe.Pointer.FromRef(ref n));
+    return Ꮡn.Reinterpret<node<K, V>, Δindirect<K, V>>();
 }
 
 } // end concurrent_package

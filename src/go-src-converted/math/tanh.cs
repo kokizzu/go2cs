@@ -85,21 +85,21 @@ internal static float64 tanh(float64 x) {
     var z = Abs(x);
     switch (ᐧ) {
     case {} when z > 0.5D * MAXLOG: {
-        if (x < 0) {
+        if (x < 0D) {
             return -1D;
         }
-        return 1;
+        return 1D;
     }
     case {} when z is >= 0.625D: {
-        var s = Exp(2 * z);
-        z = 1 - 2 / (s + 1);
-        if (x < 0) {
+        var s = Exp(2D * z);
+        z = 1D - 2D / (s + 1D);
+        if (x < 0D) {
             z = -z;
         }
         break;
     }
     default: {
-        if (x == 0) {
+        if (x == 0D) {
             return x;
         }
         var s = x * x;

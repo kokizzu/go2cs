@@ -75,7 +75,7 @@ public static error TestFS(fs.FS fsys, params ꓸꓸꓸstring expectedʗp) {
 }
 
 internal static error testFS(fs.FS fsys, params ꓸꓸꓸstring expectedʗp) {
-    var expected = expectedʗp.slice();
+    var expected = expectedʗp.sslice();
 
     ref var t = ref heap<fsTester>(out var Ꮡt);
     t = new fsTester(fsys: fsys);

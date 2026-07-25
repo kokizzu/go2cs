@@ -48,13 +48,9 @@ using static go.archive.tar_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<ReadFrom_dst, io_package.Writer>(Promoted = true)]
 [assembly: GoImplement<ReadFrom_dst, io_package.Writer>]
-[assembly: GoImplement<ReadFrom_dstᴛ1, io_package.Writer>(Promoted = true)]
-[assembly: GoImplement<ReadFrom_dstᴛ1, io_package.Writer>]
 [assembly: GoImplement<Reader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<WriteTo_src, io_package.Reader>(Promoted = true)]
 [assembly: GoImplement<WriteTo_src, io_package.Reader>]
-[assembly: GoImplement<WriteTo_srcᴛ1, io_package.Reader>(Promoted = true)]
-[assembly: GoImplement<WriteTo_srcᴛ1, io_package.Reader>]
 [assembly: GoImplement<Writer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<go.io.fs_package.File, io_package.Reader>]
 [assembly: GoImplement<headerError, error>]
@@ -82,4 +78,51 @@ namespace go.archive;
 [GoPackage("tar")]
 public static partial class tar_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface fileReader {}
+    internal partial interface fileState {}
+    internal partial interface fileWriter {}
+    internal partial struct block {}
+    internal partial struct formatter {}
+    internal partial struct headerError {}
+    internal partial struct headerFileInfo {}
+    internal partial struct headerGNU {}
+    internal partial struct headerSTAR {}
+    internal partial struct headerUSTAR {}
+    internal partial struct headerV7 {}
+    internal partial struct parser {}
+    internal partial struct regFileReader {}
+    internal partial struct regFileWriter {}
+    internal partial struct sparseArray {}
+    internal partial struct sparseDatas {}
+    internal partial struct sparseElem {}
+    internal partial struct sparseEntry {}
+    internal partial struct sparseFileReader {}
+    internal partial struct sparseFileWriter {}
+    internal partial struct sparseHoles {}
+    internal partial struct zeroReader {}
+    internal partial struct zeroWriter {}
+    public partial interface FileInfoNames {}
+    public partial struct Format {}
+    public partial struct Header {}
+    public partial struct ReadFrom_dst {}
+    public partial struct Reader {}
+    public partial struct WriteTo_src {}
+    public partial struct Writer {}
+    // </TypeAccessibility>
 }

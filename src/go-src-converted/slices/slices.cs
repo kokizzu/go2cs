@@ -516,7 +516,7 @@ public static void Reverse<S, E>(S s)
 public static S Concat<S, E>(params Span<S> slicesʗp)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
 {
-    var slices = slicesʗp.slice();
+    var slices = slicesʗp.sslice();
 
     nint size = 0;
     foreach (var (_, s) in slices) {

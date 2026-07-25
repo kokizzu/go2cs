@@ -444,7 +444,7 @@ internal static void recordspan(@unsafe.Pointer vh, @unsafe.Pointer Δp) {
             n = cap((~h).allspans) * 3 / 2;
         }
         ref var @new = ref heap<slice<ж<mspan>>>(out var Ꮡnew);
-        var sp = (ж<Δsliceᴛ>)(uintptr)(new @unsafe.Pointer(Ꮡnew));
+        var sp = Ꮡnew.Reinterpret<slice<ж<mspan>>, Δsliceᴛ>();
         sp.Value.Δarray = (uintptr)sysAlloc((uintptr)n * (uintptr)goarch.PtrSize, Ꮡmemstats.of(mstats.Ꮡother_sys));
         if ((~sp).Δarray == nil) {
             @throw("runtime: cannot allocate memory"u8);
@@ -455,7 +455,7 @@ internal static void recordspan(@unsafe.Pointer vh, @unsafe.Pointer Δp) {
             copy(@new, (~h).allspans);
         }
         var oldAllspans = h.Value.allspans;
-        ((ж<notInHeapSlice>)(uintptr)(new @unsafe.Pointer(h.of(mheap.Ꮡallspans)))).Value = ((ж<notInHeapSlice>)(uintptr)(new @unsafe.Pointer(Ꮡnew))).Value;
+        (h.of(mheap.Ꮡallspans).Reinterpret<slice<ж<mspan>>, notInHeapSlice>()).Value = (Ꮡnew.Reinterpret<slice<ж<mspan>>, notInHeapSlice>()).Value;
         if (len(oldAllspans) != 0) {
             sysFree(@unsafe.Pointer.FromRef(ref (Ꮡ(oldAllspans, 0)).Value), (uintptr)cap(oldAllspans) * @unsafe.Sizeof(oldAllspans[0]), Ꮡmemstats.of(mstats.Ꮡother_sys));
         }
@@ -1392,7 +1392,7 @@ internal static (uintptr, bool) grow(this ж<mheap> Ꮡh, uintptr npage) {
         var (av, asize) = Ꮡh.sysAlloc(ask, Ꮡh.of(mheap.ᏑarenaHints), true);
         if (av == nil) {
             var inUse = ᏑgcController.of(gcControllerState.ᏑheapFree).load() + ᏑgcController.of(gcControllerState.ᏑheapReleased).load() + ᏑgcController.of(gcControllerState.ᏑheapInUse).load();
-            print("runtime: out of memory: cannot allocate ", ask, "-byte block (", inUse, " in use)\n");
+            print((@string)"runtime: out of memory: cannot allocate ", ask, (@string)"-byte block (", inUse, (@string)" in use)\n");
             return (0, false);
         }
         if ((uintptr)av == h.curArena.end){
@@ -1524,7 +1524,7 @@ internal static void freeSpanLocked(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAll
             @throw("mheap.freeSpanLocked - invalid free of user arena chunk"u8);
         }
         if (s.allocCount != 0 || s.sweepgen != h.sweepgen) {
-            print("mheap.freeSpanLocked - span ", Ꮡs, " ptr ", ((Δhex)(uint64)s.@base()), " allocCount ", s.allocCount, " sweepgen ", s.sweepgen, "/", h.sweepgen, "\n");
+            print((@string)"mheap.freeSpanLocked - span ", Ꮡs, (@string)" ptr ", ((Δhex)(uint64)s.@base()), (@string)" allocCount ", s.allocCount, (@string)" sweepgen ", s.sweepgen, (@string)"/", h.sweepgen, (@string)"\n");
             @throw("mheap.freeSpanLocked - invalid free"u8);
         }
         Ꮡh.of(mheap.ᏑpagesInUse).Add(((uintptr)0 - s.npages));
@@ -1637,8 +1637,8 @@ internal static void remove(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
     ref var span = ref Ꮡspan.DerefOrNil();
 
     if (span.list != Ꮡlist) {
-        print("runtime: failed mSpanList.remove span.npages=", span.npages,
-            " span=", Ꮡspan, " prev=", span.prev, " span.list=", span.list, " list=", Ꮡlist, "\n");
+        print((@string)"runtime: failed mSpanList.remove span.npages=", span.npages,
+            (@string)" span=", Ꮡspan, (@string)" prev=", span.prev, (@string)" span.list=", span.list, (@string)" list=", Ꮡlist, (@string)"\n");
         @throw("mSpanList.remove"u8);
     }
     if (list.first == Ꮡspan){
@@ -1665,7 +1665,7 @@ internal static void insert(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
     ref var span = ref Ꮡspan.Value;
 
     if (span.next != nil || span.prev != nil || span.list != nil) {
-        println("runtime: failed mSpanList.insert", Ꮡspan, span.next, span.prev, span.list);
+        println((@string)"runtime: failed mSpanList.insert", Ꮡspan, span.next, span.prev, span.list);
         @throw("mSpanList.insert"u8);
     }
     span.next = list.first;
@@ -1686,7 +1686,7 @@ internal static void insertBack(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
     ref var span = ref Ꮡspan.Value;
 
     if (span.next != nil || span.prev != nil || span.list != nil) {
-        println("runtime: failed mSpanList.insertBack", Ꮡspan, span.next, span.prev, span.list);
+        println((@string)"runtime: failed mSpanList.insertBack", Ꮡspan, span.next, span.prev, span.list);
         @throw("mSpanList.insertBack"u8);
     }
     span.prev = list.last;
@@ -1907,7 +1907,7 @@ internal static bool addfinalizer(@unsafe.Pointer Δp, ж<funcval> Ꮡf, uintptr
 
 // Removes the finalizer (if any) from the object p.
 internal static void removefinalizer(@unsafe.Pointer Δp) {
-    var s = (ж<specialfinalizer>)(uintptr)(new @unsafe.Pointer(removespecial(Δp, _KindSpecialFinalizer)));
+    var s = removespecial(Δp, _KindSpecialFinalizer).Reinterpret<special, specialfinalizer>();
     if (s == nil) {
         return;
     }
@@ -2049,7 +2049,7 @@ internal static ж<atomic.Uintptr> getWeakHandle(@unsafe.Pointer Δp) {
     ж<atomic.Uintptr> handle = default!;
     var (iter, exists) = span.specialFindSplicePoint(offset, _KindSpecialWeakHandle);
     if (exists) {
-        handle = (((ж<specialWeakHandle>)(uintptr)(new @unsafe.Pointer(iter.ValueSlot)))).Value.handle;
+        handle = ((iter.ValueSlot.Reinterpret<special, specialWeakHandle>())).Value.handle;
     }
     unlock(span.of(mspan.Ꮡspeciallock));
     releasem(mp);
@@ -2128,28 +2128,28 @@ internal static void freeSpecial(ж<special> Ꮡs, @unsafe.Pointer Δp, uintptr 
 
     var exprᴛ1 = s.kind;
     if (exprᴛ1 == _KindSpecialFinalizer) {
-        var sf = (ж<specialfinalizer>)(uintptr)(new @unsafe.Pointer(Ꮡs));
+        var sf = Ꮡs.Reinterpret<special, specialfinalizer>();
         queuefinalizer(Δp, (~sf).fn, (~sf).nret, (~sf).fint, (~sf).ot);
         @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
         Ꮡmheap_.of(mheap.Ꮡspecialfinalizeralloc).free(new @unsafe.Pointer(sf));
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     }
     else if (exprᴛ1 == _KindSpecialWeakHandle) {
-        var sw = (ж<specialWeakHandle>)(uintptr)(new @unsafe.Pointer(Ꮡs));
+        var sw = Ꮡs.Reinterpret<special, specialWeakHandle>();
         (~sw).handle.Store(0);
         @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
         Ꮡmheap_.of(mheap.ᏑspecialWeakHandleAlloc).free(new @unsafe.Pointer(Ꮡs));
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     }
     else if (exprᴛ1 == _KindSpecialProfile) {
-        var sp = (ж<specialprofile>)(uintptr)(new @unsafe.Pointer(Ꮡs));
+        var sp = Ꮡs.Reinterpret<special, specialprofile>();
         mProf_Free((~sp).b, size);
         @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
         Ꮡmheap_.of(mheap.Ꮡspecialprofilealloc).free(new @unsafe.Pointer(sp));
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     }
     else if (exprᴛ1 == _KindSpecialReachable) {
-        var sp = (ж<specialReachable>)(uintptr)(new @unsafe.Pointer(Ꮡs));
+        var sp = Ꮡs.Reinterpret<special, specialReachable>();
         sp.Value.done = true;
     }
     else if (exprᴛ1 == _KindSpecialPinCounter) {

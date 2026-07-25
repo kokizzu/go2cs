@@ -23,8 +23,8 @@ public static (float64 sin, float64 cos) Sincos(float64 x) {
     const float64 PI4C = 2.69515142907905952645e-15; // 0x3ce8469898cc5170,
     // special cases
     switch (ᐧ) {
-    case {} when x is 0: {
-        return (x, 1);
+    case {} when x is 0D: {
+        return (x, 1D);
     }
     case {} when IsNaN(x) || IsInf(x, // return ±0.0, 1.0
  0): {
@@ -33,7 +33,7 @@ public static (float64 sin, float64 cos) Sincos(float64 x) {
 
     // make argument positive
     var (sinSign, cosSign) = (false, false);
-    if (x < 0) {
+    if (x < 0D) {
         x = -x;
         sinSign = true;
     }

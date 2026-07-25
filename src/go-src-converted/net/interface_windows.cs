@@ -23,7 +23,7 @@ internal static (slice<ж<windows.IpAdapterAddresses>>, error) adapterAddresses(
     while (ᐧ) {
         b = new slice<byte>((nint)(l));
         const uint32 flags = /* windows.GAA_FLAG_INCLUDE_PREFIX | windows.GAA_FLAG_INCLUDE_GATEWAYS */ 144;
-        var err = windows.GetAdaptersAddresses(syscall.AF_UNSPEC, flags, 0, (ж<windows.IpAdapterAddresses>)(uintptr)(new @unsafe.Pointer(Ꮡ(b, 0))), Ꮡl);
+        var err = windows.GetAdaptersAddresses(syscall.AF_UNSPEC, flags, 0, Ꮡ(b, 0).Reinterpret<byte, windows.IpAdapterAddresses>(), Ꮡl);
         if (err == default!) {
             if (l == 0) {
                 return (default!, default!);
@@ -38,7 +38,7 @@ internal static (slice<ж<windows.IpAdapterAddresses>>, error) adapterAddresses(
         }
     }
     slice<ж<windows.IpAdapterAddresses>> aas = default!;
-    for (var aa = (ж<windows.IpAdapterAddresses>)(uintptr)(new @unsafe.Pointer(Ꮡ(b, 0))); aa != nil; aa = aa.Value.Next) {
+    for (var aa = Ꮡ(b, 0).Reinterpret<byte, windows.IpAdapterAddresses>(); aa != nil; aa = aa.Value.Next) {
         aas = append(aas, aa);
     }
     return (aas, default!);

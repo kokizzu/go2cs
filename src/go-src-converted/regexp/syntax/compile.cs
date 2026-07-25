@@ -230,7 +230,7 @@ internal static slice<rune> anyRune = new rune[]{0, unicode.MaxRune}.slice();
         return f1;
     }
     var f = c.inst(InstAlt);
-    var i = Ꮡ((~c.p).Inst[f.i]);
+    var i = Ꮡ((~c.p).Inst, (int)(f.i));
     i.Value.Out = f1.i;
     i.Value.Arg = f2.i;
     f.@out = f1.@out.append(c.p, f2.@out);
@@ -240,7 +240,7 @@ internal static slice<rune> anyRune = new rune[]{0, unicode.MaxRune}.slice();
 
 [GoRecv] internal static frag quest(this ref compiler c, frag f1, bool nongreedy) {
     var f = c.inst(InstAlt);
-    var i = Ꮡ((~c.p).Inst[f.i]);
+    var i = Ꮡ((~c.p).Inst, (int)(f.i));
     if (nongreedy){
         i.Value.Arg = f1.i;
         f.@out = makePatchList((f.i << (int)(1)));
@@ -259,7 +259,7 @@ internal static slice<rune> anyRune = new rune[]{0, unicode.MaxRune}.slice();
 // to get the priority match order correct.)
 [GoRecv] internal static frag loop(this ref compiler c, frag f1, bool nongreedy) {
     var f = c.inst(InstAlt);
-    var i = Ꮡ((~c.p).Inst[f.i]);
+    var i = Ꮡ((~c.p).Inst, (int)(f.i));
     if (nongreedy){
         i.Value.Arg = f1.i;
         f.@out = makePatchList((f.i << (int)(1)));
@@ -294,7 +294,7 @@ internal static slice<rune> anyRune = new rune[]{0, unicode.MaxRune}.slice();
 [GoRecv] internal static frag rune(this ref compiler c, slice<rune> r, Flags flags) {
     var f = c.inst(InstRune);
     f.nullable = false;
-    var i = Ꮡ((~c.p).Inst[f.i]);
+    var i = Ꮡ((~c.p).Inst, (int)(f.i));
     i.Value.Rune = r;
     flags &= (Flags)(FoldCase);
     // only relevant flag is FoldCase

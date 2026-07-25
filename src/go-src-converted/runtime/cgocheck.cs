@@ -60,7 +60,7 @@ internal static void cgoCheckPtrWrite(ж<@unsafe.Pointer> Ꮡdst, @unsafe.Pointe
         return;
     }
     systemstack(() => {
-        println("write of unpinned Go pointer", ((Δhex)(uint64)(uintptr)src), "to non-Go memory", ((Δhex)(uint64)(uintptr)new @unsafe.Pointer(Ꮡdst)));
+        println((@string)"write of unpinned Go pointer", ((Δhex)(uint64)(uintptr)src), (@string)"to non-Go memory", ((Δhex)(uint64)(uintptr)new @unsafe.Pointer(Ꮡdst)));
         @throw(cgoWriteBarrierFail);
     });
 }
@@ -257,7 +257,7 @@ internal static void cgoCheckUsingType(ж<_type> Ꮡtyp, @unsafe.Pointer src, ui
     }
     var exprᴛ1 = (abiꓸKind)(typ.Kind_ & abi.KindMask);
     if (exprᴛ1 == abi.Array) {
-        var at = (ж<arraytype>)(uintptr)(new @unsafe.Pointer(Ꮡtyp));
+        var at = Ꮡtyp.Reinterpret<_type, arraytype>();
         for (var i = (uintptr)0; i < (~at).Len; i++) {
             if (off < (~(~at).Elem).Size_) {
                 cgoCheckUsingType((~at).Elem, src, off, size);
@@ -276,7 +276,7 @@ internal static void cgoCheckUsingType(ж<_type> Ꮡtyp, @unsafe.Pointer src, ui
         }
     }
     else if (exprᴛ1 == abi.Struct) {
-        var st = (ж<structtype>)(uintptr)(new @unsafe.Pointer(Ꮡtyp));
+        var st = Ꮡtyp.Reinterpret<_type, structtype>();
         foreach (var (_, f) in (~st).Fields) {
             if (off < (~f.Typ).Size_) {
                 cgoCheckUsingType(f.Typ, src, off, size);

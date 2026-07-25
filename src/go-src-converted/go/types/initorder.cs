@@ -29,7 +29,7 @@ internal static void initOrder(this ж<Checker> Ꮡcheck) {
     const bool debug = false;
     if (debug) {
         fmt.Printf("Computing initialization order for %s\n\n"u8, check.pkg);
-        fmt.Println("Object dependency graph:");
+        fmt.Println((@string)"Object dependency graph:");
         foreach (var (obj, d) in check.objMap) {
             // only print objects that may appear in the dependency graph
             {
@@ -46,7 +46,7 @@ internal static void initOrder(this ж<Checker> Ꮡcheck) {
             }
         }
         fmt.Println();
-        fmt.Println("Transposed object dependency graph (functions eliminated):");
+        fmt.Println((@string)"Transposed object dependency graph (functions eliminated):");
         foreach (var (_, n) in pq) {
             fmt.Printf("\t%s depends on %d nodes\n"u8, (~n).obj.Name(), (~n).ndeps);
             foreach (var (p, _) in (~n).pred) {
@@ -54,7 +54,7 @@ internal static void initOrder(this ж<Checker> Ꮡcheck) {
             }
         }
         fmt.Println();
-        fmt.Println("Processing nodes:");
+        fmt.Println((@string)"Processing nodes:");
     }
     // Determine initialization order by removing the highest priority node
     // (the one with the fewest dependencies) and its edges from the graph,
@@ -119,7 +119,7 @@ internal static void initOrder(this ж<Checker> Ꮡcheck) {
     }
     if (debug) {
         fmt.Println();
-        fmt.Println("Initialization order:");
+        fmt.Println((@string)"Initialization order:");
         foreach (var (_, init) in (~check.Info).InitOrder) {
             fmt.Printf("\t%s\n"u8, init);
         }

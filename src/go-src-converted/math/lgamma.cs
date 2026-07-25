@@ -259,13 +259,13 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
         lgamma = x;
         return (lgamma, sign);
     }
-    case {} when x is 0: {
+    case {} when x is 0D: {
         lgamma = Inf(1);
         return (lgamma, sign);
     }}
 
     var neg = false;
-    if (x < 0) {
+    if (x < 0D) {
         x = -x;
         neg = true;
     }
@@ -285,22 +285,22 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
             return (lgamma, sign);
         }
         var t = sinPi(x);
-        if (t == 0) {
+        if (t == 0D) {
             lgamma = Inf(1);
             // -integer
             return (lgamma, sign);
         }
         nadj = Log((float64)Pi / Abs(t * x));
-        if (t < 0) {
+        if (t < 0D) {
             sign = -1;
         }
     }
     switch (ᐧ) {
-    case {} when x == 1 || x == 2: {
-        lgamma = 0;
+    case {} when x == 1D || x == 2D: {
+        lgamma = 0D;
         return (lgamma, sign);
     }
-    case {} when x is < 2: {
+    case {} when x is < 2D: {
 // purge off 1 and 2
 // use lgamma(x) = lgamma(x+1) - log(x)
         float64 y = default!;
@@ -309,7 +309,7 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
             lgamma = -Log(x);
             switch (ᐧ) {
             case {} when x >= (Ymin - 1D + 0.27D): {
-                y = 1 - x;
+                y = 1D - x;
                 i = 0;
                 break;
             }
@@ -328,10 +328,10 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
             // 0.7316 <= x <=  0.9
             // 0.2316 <= x < 0.7316
             // 0 < x < 0.2316
-            lgamma = 0;
+            lgamma = 0D;
             switch (ᐧ) {
             case {} when x >= (Ymin + 0.27D): {
-                y = 2 - x;
+                y = 2D - x;
                 i = 0;
                 break;
             }
@@ -341,7 +341,7 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
                 break;
             }
             default: {
-                y = x - 1;
+                y = x - 1D;
                 i = 2;
                 break;
             }}
@@ -368,40 +368,40 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
         }
         case 2: {
             var p1 = y * (_lgamU[0] + y * (_lgamU[1] + y * (_lgamU[2] + y * (_lgamU[3] + y * (_lgamU[4] + y * _lgamU[5])))));
-            var p2 = 1 + y * (_lgamV[1] + y * (_lgamV[2] + y * (_lgamV[3] + y * (_lgamV[4] + y * _lgamV[5]))));
+            var p2 = 1D + y * (_lgamV[1] + y * (_lgamV[2] + y * (_lgamV[3] + y * (_lgamV[4] + y * _lgamV[5]))));
             lgamma += (-0.5D * y + p1 / p2);
             break;
         }}
 
         break;
     }
-    case {} when x is < 8: {
+    case {} when x is < 8D: {
         nint i = (nint)x;
         var y = x - (float64)i;
         var p = y * (_lgamS[0] + y * (_lgamS[1] + y * (_lgamS[2] + y * (_lgamS[3] + y * (_lgamS[4] + y * (_lgamS[5] + y * _lgamS[6]))))));
-        var q = 1 + y * (_lgamR[1] + y * (_lgamR[2] + y * (_lgamR[3] + y * (_lgamR[4] + y * (_lgamR[5] + y * _lgamR[6])))));
+        var q = 1D + y * (_lgamR[1] + y * (_lgamR[2] + y * (_lgamR[3] + y * (_lgamR[4] + y * (_lgamR[5] + y * _lgamR[6])))));
         lgamma = 0.5D * y + p / q;
         var z = 1.0D;
         var exprᴛ1 = i;
         var matchᴛ1 = false;
         if (exprᴛ1 is 7) { matchᴛ1 = true;
-            z *= (y + 6);
+            z *= (y + 6D);
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && exprᴛ1 is 6) { matchᴛ1 = true;
-            z *= (y + 5);
+            z *= (y + 5D);
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && exprᴛ1 is 5) { matchᴛ1 = true;
-            z *= (y + 4);
+            z *= (y + 4D);
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && exprᴛ1 is 4) {
-            z *= (y + 3);
+            z *= (y + 3D);
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && exprᴛ1 is 3) { matchᴛ1 = true;
-            z *= (y + 2);
+            z *= (y + 2D);
             lgamma += Log(z);
         }
 
@@ -409,14 +409,14 @@ public static (float64 lgamma, nint sign) Lgamma(float64 x) {
     }
     case {} when x < Two58: {
         var t = Log(x);
-        var z = 1 / x;
+        var z = 1D / x;
         var y = z * z;
         var w = _lgamW[0] + z * (_lgamW[1] + y * (_lgamW[2] + y * (_lgamW[3] + y * (_lgamW[4] + y * (_lgamW[5] + y * _lgamW[6])))));
-        lgamma = (x - 0.5D) * (t - 1) + w;
+        lgamma = (x - 0.5D) * (t - 1D) + w;
         break;
     }
     default: {
-        lgamma = x * (Log(x) - 1);
+        lgamma = x * (Log(x) - 1D);
         break;
     }}
 
@@ -446,12 +446,12 @@ internal static float64 sinPi(float64 x) {
     nint n = default!;
     if (z != x){
         // inexact
-        x = Mod(x, 2);
-        n = (nint)(x * 4);
+        x = Mod(x, 2D);
+        n = (nint)(x * 4D);
     } else {
         if (x >= Two53){
             // x must be even
-            x = 0;
+            x = 0D;
             n = 0;
         } else {
             if (x < Two52) {
@@ -473,7 +473,7 @@ internal static float64 sinPi(float64 x) {
         break;
     }
     case 3 or 4: {
-        x = Sin((float64)Pi * (1 - x));
+        x = Sin((float64)Pi * (1D - x));
         break;
     }
     case 5 or 6: {
@@ -481,7 +481,7 @@ internal static float64 sinPi(float64 x) {
         break;
     }
     default: {
-        x = Sin((float64)Pi * (x - 2));
+        x = Sin((float64)Pi * (x - 2D));
         break;
     }}
 

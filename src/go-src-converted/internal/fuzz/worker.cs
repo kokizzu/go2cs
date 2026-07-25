@@ -96,8 +96,12 @@ internal static error coordinate(this ж<worker> Ꮡw, context.Context ctx) {
                 }
             }
         }
-        switch (select(ᐸꟷ(ctx.Done(), ꓸꓸꓸ), ᐸꟷ(w.termC, ꓸꓸꓸ), ᐸꟷ((~w.coordinator).inputC, ꓸꓸꓸ), ᐸꟷ((~w.coordinator).minimizeC, ꓸꓸꓸ))) {
-        case 0 when ctx.Done().ꟷᐳ(out _): {
+        var selᴛ7 = ctx.Done();
+        var selᴛ8 = w.termC;
+        var selᴛ9 = (~w.coordinator).inputC;
+        var selᴛ10 = (~w.coordinator).minimizeC;
+        switch (select(ᐸꟷ(selᴛ7, ꓸꓸꓸ), ᐸꟷ(selᴛ8, ꓸꓸꓸ), ᐸꟷ(selᴛ9, ꓸꓸꓸ), ᐸꟷ(selᴛ10, ꓸꓸꓸ))) {
+        case 0 when selᴛ7.ꟷᐳ(out _): {
             var err = Ꮡw.stop();
             if (err != default! && !w.interrupted && !isInterruptError(err)) {
                 // Worker was told to stop.
@@ -105,7 +109,7 @@ internal static error coordinate(this ж<worker> Ꮡw, context.Context ctx) {
             }
             return ctx.Err();
         }
-        case 1 when w.termC.ꟷᐳ(out _): {
+        case 1 when selᴛ8.ꟷᐳ(out _): {
             var err = Ꮡw.stop();
             if (w.interrupted) {
                 // Worker process terminated unexpectedly while waiting for input.
@@ -135,7 +139,7 @@ internal static error coordinate(this ж<worker> Ꮡw, context.Context ctx) {
  // signal (for example, SIGSEGV) while fuzzing.
  err);
         }
-        case 2 when (~w.coordinator).inputC.ꟷᐳ(out var input): {
+        case 2 when selᴛ9.ꟷᐳ(out var input): {
             var args = new fuzzArgs( // TODO(jayconrod,katiehockman): if -keepfuzzing, restart worker.
  // Received input from coordinator.
 
@@ -192,7 +196,7 @@ internal static error coordinate(this ж<worker> Ꮡw, context.Context ctx) {
             (~w.coordinator).resultC.ᐸꟷ(result);
             break;
         }
-        case 3 when (~w.coordinator).minimizeC.ꟷᐳ(out var input): {
+        case 3 when selᴛ10.ꟷᐳ(out var input): {
             var (result, err) = Ꮡw.minimize(ctx, // Received input to minimize from coordinator.
  input);
             if (err != default!) {
@@ -388,7 +392,7 @@ internal static error /*err*/ start(this ж<worker> Ꮡw) {
         // After this, w.client owns fuzzInW and fuzzOutR, so w.client.Close must be
         // called later by stop.
         w.cmd = cmd;
-        w.termC = new channel<EmptyStruct>(1);
+        w.termC = new channel<EmptyStruct>(0);
         var comm = new workerComm(fuzzIn: fuzzInW, fuzzOut: fuzzOutR, memMu: w.memMu);
         var m = newMutator();
         w.client = newWorkerClient(comm, m);
@@ -416,8 +420,9 @@ internal static error stop(this ж<worker> Ꮡw) {
     if (w.termC == default!) {
         throw panic("worker was not started successfully");
     }
-    switch (ᐧ) {
-    case ᐧ when w.termC.ꟷᐳ(out _): {
+    var selᴛ11 = w.termC;
+    switch (trySelect(ᐸꟷ(selᴛ11, ꓸꓸꓸ))) {
+    case 0 when selᴛ11.ꟷᐳ(out _): {
         if (w.client == nil) {
             // Worker already terminated.
             // stop already called.
@@ -435,7 +440,7 @@ internal static error stop(this ж<worker> Ꮡw) {
     // Worker still running.
     // Tell the worker to stop by closing fuzz_in. It won't actually stop until it
     // finishes with earlier calls.
-    var closeC = new channel<EmptyStruct>(1);
+    var closeC = new channel<EmptyStruct>(0);
     var closeCʗ1 = closeC;
     goǃ(() => {
         Ꮡw.Value.client.Close();
@@ -450,15 +455,17 @@ internal static error stop(this ж<worker> Ꮡw) {
     }
     var t = time.NewTimer(workerTimeoutDuration);
     while (ᐧ) {
-        switch (select(ᐸꟷ(w.termC, ꓸꓸꓸ), ᐸꟷ((~t).C, ꓸꓸꓸ))) {
-        case 0 when w.termC.ꟷᐳ(out _): {
+        var selᴛ12 = w.termC;
+        var selᴛ13 = (~t).C;
+        switch (select(ᐸꟷ(selᴛ12, ꓸꓸꓸ), ᐸꟷ(selᴛ13, ꓸꓸꓸ))) {
+        case 0 when selᴛ12.ꟷᐳ(out _): {
             t.Stop();
             ᐸꟷ(closeC);
             w.cmd = default!;
             w.client = default!;
             return w.waitErr;
         }
-        case 1 when (~t).C.ꟷᐳ(out _): {
+        case 1 when selᴛ13.ꟷᐳ(out _): {
             w.interrupted = true;
             var exprᴛ1 = sig;
             if (AreEqual(exprᴛ1, os.Interrupt)) {
@@ -796,8 +803,9 @@ internal static fuzzResponse /*resp*/ fuzz(this ж<workerServer> Ꮡws, context.
             return;
         }
         while (ᐧ) {
-            switch (ᐧ) {
-            case ᐧ when ctx.Done().ꟷᐳ(out _): {
+            var selᴛ14 = ctx.Done();
+            switch (trySelect(ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
+            case 0 when selᴛ14.ꟷᐳ(out _): {
                 return;
             }
             default: {
@@ -1054,11 +1062,12 @@ internal static error errSharedMemClosed = errors.New("internal error: shared me
 // workerServer.minimize.
 internal static (CorpusEntry entryOut, minimizeResponse resp, error retErr) minimize(this ж<workerClient> Ꮡwc, context.Context ctx, CorpusEntry entryIn, minimizeArgs args) {
     CorpusEntry entryOut = default!;
-    minimizeResponse resp = default!;
+    heap<minimizeResponse>(out var Ꮡresp);
     error retErr = default!;
     func((defer, recover) => {
     ref var wc = ref Ꮡwc.Value;
 
+    ref var resp = ref Ꮡresp.Value;
         Ꮡwc.of(workerClient.Ꮡmu).Lock();
         defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock);
         ref var mem = ref heap<ж<sharedMem>>(out var Ꮡmem);
@@ -1087,7 +1096,7 @@ internal static (CorpusEntry entryOut, minimizeResponse resp, error retErr) mini
             wc.memMu.ᐸꟷ(mem);
             args.Index = i;
             var c = new call(Minimize: Ꮡ(args));
-            var callErr = wc.callLocked(ctx, c, Ꮡ(resp));
+            var callErr = wc.callLocked(ctx, c, Ꮡresp);
             (mem, ok) = ᐸꟷ(wc.memMu, ꟷ);
             if (!ok) {
                 (entryOut, resp, retErr) = (new CorpusEntry(), new minimizeResponse(nil), errSharedMemClosed); return;
@@ -1145,18 +1154,19 @@ internal static (CorpusEntry entryOut, minimizeResponse resp, error retErr) mini
         var h = sha256.Sum256(entryOut.Data);
         entryOut.Path = fmt.Sprintf("%x"u8, h[..4]);
     });
-    return (entryOut, resp, retErr);
+    return (entryOut, Ꮡresp.Value, retErr);
 }
 
 // fuzz tells the worker to call the fuzz method. See workerServer.fuzz.
 internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, error err) fuzz(this ж<workerClient> Ꮡwc, context.Context ctx, CorpusEntry entryIn, fuzzArgs args) {
     CorpusEntry entryOut = default!;
-    fuzzResponse resp = default!;
+    heap<fuzzResponse>(out var Ꮡresp);
     bool isInternalError = default!;
     error err = default!;
     func((defer, recover) => {
     ref var wc = ref Ꮡwc.Value;
 
+    ref var resp = ref Ꮡresp.Value;
         Ꮡwc.of(workerClient.Ꮡmu).Lock();
         defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock);
         var (mem, ok) = ᐸꟷ(wc.memMu, ꟷ);
@@ -1172,7 +1182,7 @@ internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, 
         mem.setValue(inp);
         wc.memMu.ᐸꟷ(mem);
         var c = new call(Fuzz: Ꮡ(args));
-        var callErr = wc.callLocked(ctx, c, Ꮡ(resp));
+        var callErr = wc.callLocked(ctx, c, Ꮡresp);
         if (resp.InternalErr != ""u8) {
             (entryOut, resp, isInternalError, err) = (new CorpusEntry(), new fuzzResponse(nil), true, errors.New(resp.InternalErr)); return;
         }
@@ -1219,7 +1229,7 @@ internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, 
         }
         (entryOut, resp, isInternalError, err) = (entryOut, resp, false, callErr);
     });
-    return (entryOut, resp, isInternalError, err);
+    return (entryOut, Ꮡresp.Value, isInternalError, err);
 }
 
 // ping tells the worker to call the ping method. See workerServer.ping.
@@ -1269,7 +1279,7 @@ internal static (nint, error) Read(this ж<contextReader> Ꮡcr, slice<byte> b) 
             return (0, ctxErr);
         }
     }
-    var done = new channel<EmptyStruct>(1);
+    var done = new channel<EmptyStruct>(0);
     // This goroutine may stay blocked after Read returns because the underlying
     // read is blocked.
     nint n = default!;
@@ -1280,11 +1290,13 @@ internal static (nint, error) Read(this ж<contextReader> Ꮡcr, slice<byte> b) 
         (n, Ꮡerr.ValueSlot) = Ꮡcr.Value.r.Read(bʗ1);
         close(doneʗ1);
     });
-    switch (select(ᐸꟷ(cr.ctx.Done(), ꓸꓸꓸ), ᐸꟷ(done, ꓸꓸꓸ))) {
-    case 0 when cr.ctx.Done().ꟷᐳ(out _): {
+    var selᴛ15 = cr.ctx.Done();
+    var selᴛ16 = done;
+    switch (select(ᐸꟷ(selᴛ15, ꓸꓸꓸ), ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
+    case 0 when selᴛ15.ꟷᐳ(out _): {
         return (0, cr.ctx.Err());
     }
-    case 1 when done.ꟷᐳ(out _): {
+    case 1 when selᴛ16.ꟷᐳ(out _): {
         return (n, err);
     }}
     return default!;

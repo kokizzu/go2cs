@@ -353,7 +353,7 @@ internal static void write(this ж<profBuf> Ꮡb, ж<@unsafe.Pointer> ᏑtagPtr,
     // so there is no need for a deletion barrier on b.tags[wt].
     nint wt = (nint)(bw.tagCount() % (uint32)len(b.tags));
     if (ᏑtagPtr != nil) {
-        ((ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡ(b.tags[wt])).Value))).Value = (uintptr)(tagPtr);
+        (Ꮡ(b.tags, wt).Reinterpret<@unsafe.Pointer, uintptr>()).Value = (uintptr)(tagPtr);
     }
     // Main record.
     // It has to fit in a contiguous section of the slice, so if it doesn't fit at the end,

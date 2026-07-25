@@ -223,7 +223,7 @@ internal static @string Error(this boundsError e) {
 internal static void printpanicval(any v) {
     switch (v.type()) {
     case null: {
-        print("nil");
+        print((@string)"nil");
         break;
     }
     case bool vΔ1: {
@@ -307,51 +307,51 @@ internal static void printanycustomtype(any i) {
     @string typestring = toRType((~eface)._type).@string();
     var exprᴛ1 = (~(~eface)._type).Kind_;
     if (exprᴛ1 == abi.ΔString) {
-        print(typestring, @"(""");
+        print(typestring, (@string)@"(""");
         printindented(~(ж<@string>)(uintptr)((~eface).data));
-        print(@""")");
+        print((@string)@""")");
     }
     else if (exprᴛ1 == abi.Bool) {
-        print(typestring, "(", ~(ж<bool>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<bool>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Int) {
-        print(typestring, "(", ~(ж<nint>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<nint>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Int8) {
-        print(typestring, "(", ~(ж<int8>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<int8>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Int16) {
-        print(typestring, "(", ~(ж<int16>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<int16>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Int32) {
-        print(typestring, "(", ~(ж<int32>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<int32>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Int64) {
-        print(typestring, "(", ~(ж<int64>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<int64>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Uint) {
-        print(typestring, "(", ~(ж<nuint>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<nuint>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Uint8) {
-        print(typestring, "(", ~(ж<uint8>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<uint8>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Uint16) {
-        print(typestring, "(", ~(ж<uint16>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<uint16>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Uint32) {
-        print(typestring, "(", ~(ж<uint32>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<uint32>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Uint64) {
-        print(typestring, "(", ~(ж<uint64>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<uint64>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Uintptr) {
-        print(typestring, "(", ~(ж<uintptr>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<uintptr>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Float32) {
-        print(typestring, "(", ~(ж<float32>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<float32>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Float64) {
-        print(typestring, "(", ~(ж<float64>)(uintptr)((~eface).data), ")");
+        print(typestring, (@string)"(", ~(ж<float64>)(uintptr)((~eface).data), (@string)")");
     }
     else if (exprᴛ1 == abi.Complex64) {
         print(typestring, ~(ж<complex64>)(uintptr)((~eface).data));
@@ -360,7 +360,7 @@ internal static void printanycustomtype(any i) {
         print(typestring, ~(ж<complex128>)(uintptr)((~eface).data));
     }
     else { /* default: */
-        print("(", typestring, ") ", (~eface).data);
+        print((@string)"(", typestring, (@string)") ", (~eface).data);
     }
 
 }
@@ -374,7 +374,7 @@ internal static void printindented(@string s) {
         }
         i += len("\n");
         print(s[..(int)(i)]);
-        print("\t");
+        print((@string)"\t");
         s = s[(int)(i)..];
     }
     print(s);

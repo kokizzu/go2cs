@@ -20,13 +20,13 @@ public static float64 Floor(float64 x) {
 }
 
 internal static float64 floor(float64 x) {
-    if (x == 0 || IsNaN(x) || IsInf(x, 0)) {
+    if (x == 0D || IsNaN(x) || IsInf(x, 0)) {
         return x;
     }
-    if (x < 0) {
+    if (x < 0D) {
         var (dΔ1, fract) = Modf(-x);
         if (fract != 0.0D) {
-            dΔ1 = dΔ1 + 1;
+            dΔ1 = dΔ1 + 1D;
         }
         return -dΔ1;
     }
@@ -67,7 +67,7 @@ public static float64 Trunc(float64 x) {
 }
 
 internal static float64 trunc(float64 x) {
-    if (x == 0 || IsNaN(x) || IsInf(x, 0)) {
+    if (x == 0D || IsNaN(x) || IsInf(x, 0)) {
         return x;
     }
     var (d, _) = Modf(x);

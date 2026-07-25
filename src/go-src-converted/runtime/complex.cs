@@ -37,7 +37,7 @@ internal static complex128 complex128div(complex128 n, complex128 m) {
         var (a, b) = (real(n), imag(n));
         var (c, d) = (real(m), imag(m));
         switch (ᐧ) {
-        case {} when m == 0 && (!isNaN(a) || !isNaN(b)): {
+        case {} when m == 0D && (!isNaN(a) || !isNaN(b)): {
             e = copysign(inf, c) * a;
             f = copysign(inf, c) * b;
             break;
@@ -52,8 +52,8 @@ internal static complex128 complex128div(complex128 n, complex128 m) {
         case {} when (isInf(c) || isInf(d)) && isFinite(a) && isFinite(b): {
             c = inf2one(c);
             d = inf2one(d);
-            e = 0 * (a * c + b * d);
-            f = 0 * (b * c - a * d);
+            e = 0D * (a * c + b * d);
+            f = 0D * (b * c - a * d);
             break;
         }}
 

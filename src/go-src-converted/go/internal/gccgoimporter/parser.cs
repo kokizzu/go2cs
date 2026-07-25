@@ -139,7 +139,7 @@ internal static @string Error(this importError e) {
 // unquotedStringChar = <neither a whitespace nor a ';' char> .
 [GoRecv] internal static @string parseUnquotedString(this ref parser p) {
     if (p.tok == scanner.EOF) {
-        p.error("unexpected EOF");
+        p.error((@string)"unexpected EOF");
     }
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     Ꮡb.WriteString(p.scanner.TokenText());
@@ -296,7 +296,7 @@ internal static (ж<types.Var> field, @string tag) parseField(this ж<parser> �
                 }
                 default: {
                     var typΔ1 = switchᴛ1;
-                    p.error("embedded field expected");
+                    p.error((@string)"embedded field expected");
                     break;
                 }}
             }
@@ -424,7 +424,7 @@ internal static (constant.Value val, typesꓸType typ) parseConstValue(this ж<p
     if (exprᴛ3 == scanner.Int) {
         val = constant.MakeFromLiteral(sign + p.lit, token.INT, 0);
         if (val == default!) {
-            p.error("could not parse integer literal");
+            p.error((@string)"could not parse integer literal");
         }
         p.next();
         if (p.tok == (rune)'\''){
@@ -455,7 +455,7 @@ internal static (constant.Value val, typesꓸType typ) parseConstValue(this ж<p
             val = constant.MakeFromLiteral(re, // re is in fact the imaginary component. Expect "i" below.
  token.FLOAT, 0);
             if (val == default!) {
-                p.error("could not parse float literal");
+                p.error((@string)"could not parse float literal");
             }
             typ = new types.BasicжΔType(types.Typ[types.ΔUntypedFloat]);
             return (val, typ);
@@ -464,11 +464,11 @@ internal static (constant.Value val, typesꓸType typ) parseConstValue(this ж<p
         p.expectKeyword("i"u8);
         var reval = constant.MakeFromLiteral(re, token.FLOAT, 0);
         if (reval == default!) {
-            p.error("could not parse real component of complex literal");
+            p.error((@string)"could not parse real component of complex literal");
         }
         var imval = constant.MakeFromLiteral(im + "i"u8, token.IMAG, 0);
         if (imval == default!) {
-            p.error("could not parse imag component of complex literal");
+            p.error((@string)"could not parse imag component of complex literal");
         }
         val = constant.BinaryOp(reval, token.ADD, imval);
         typ = new types.BasicжΔType(types.Typ[types.ΔUntypedComplex]);
@@ -635,7 +635,7 @@ internal static typesꓸType parseNamedType(this ж<parser> Ꮡp, slice<any> nli
         // This can happen for unsafe.Pointer, which is a TypeName holding a Basic type.
         var pt = Ꮡp.parseType(pkg);
         if (!AreEqual(pt, t)) {
-            p.error("unexpected underlying type for non-named TypeName");
+            p.error((@string)"unexpected underlying type for non-named TypeName");
         }
         return t;
     }
@@ -797,7 +797,7 @@ internal static (ж<types.Tuple>, bool) parseParamList(this ж<parser> Ꮡp, ж<
         list = append(list, par);
         if (variadic) {
             if (isVariadic) {
-                p.error("... not on final argument");
+                p.error((@string)"... not on final argument");
             }
             isVariadic = true;
         }
@@ -1074,13 +1074,13 @@ internal static void skipInlineBody(this ж<parser> Ꮡp) => func((defer, recove
     while (got < want) {
         var r = p.scanner.Next();
         if (r == scanner.EOF) {
-            p.error("unexpected EOF");
+            p.error((@string)"unexpected EOF");
         }
         got += utf8.RuneLen(r);
     }
 });
 
-[GoType("dyn")] partial struct parseTypes_typeOffset {
+[GoLocalName("typeOffset")] [GoType("dyn")] partial struct parseTypes_typeOffset {
     internal nint offset;
     internal nint length;
 }
@@ -1109,7 +1109,7 @@ internal static void parseTypes(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) 
     while (sb.Len() < total) {
         var r = p.scanner.Next();
         if (r == scanner.EOF) {
-            p.error("unexpected EOF");
+            p.error((@string)"unexpected EOF");
         }
         Ꮡsb.WriteRune(r);
     }

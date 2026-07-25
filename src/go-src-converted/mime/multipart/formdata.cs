@@ -38,7 +38,7 @@ internal static ж<godebug.Setting> multipartfiles = godebug.New("#multipartfile
 internal static ж<godebug.Setting> multipartmaxparts = godebug.New("multipartmaxparts"u8);
 
 // os.File.ReadFrom will allocate its own copy buffer if we let io.Copy use it.
-[GoType("dyn")] partial struct readForm_writerOnly {
+[GoLocalName("writerOnly")] [GoType("dyn")] partial struct readForm_writerOnly {
     public io_package.Writer Writer;
 }
 

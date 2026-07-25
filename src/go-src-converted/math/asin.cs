@@ -26,20 +26,20 @@ public static float64 Asin(float64 x) {
 }
 
 internal static float64 asin(float64 x) {
-    if (x == 0) {
+    if (x == 0D) {
         return x;
     }
     // special case
     var sign = false;
-    if (x < 0) {
+    if (x < 0D) {
         x = -x;
         sign = true;
     }
-    if (x > 1) {
+    if (x > 1D) {
         return NaN();
     }
     // special case
-    var temp = Sqrt(1 - x * x);
+    var temp = Sqrt(1D - x * x);
     if (x > 0.7D){
         temp = /* Pi / 2 */ 1.5707963267948966D - satan(temp / x);
     } else {

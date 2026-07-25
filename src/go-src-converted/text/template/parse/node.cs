@@ -677,7 +677,7 @@ internal static (ж<NumberNode>, error) newNumber(this ж<Tree> Ꮡt, Pos pos, @
         var (f, errΔ5) = strconv.ParseFloat(text[..(int)(len(text) - 1)], 64);
         if (errΔ5 == default!) {
             n.Value.IsComplex = true;
-            n.Value.Complex128 = complex(0, f);
+            n.Value.Complex128 = complex(0D, f);
             n.simplifyComplex();
             return (n, default!);
         }
@@ -737,7 +737,7 @@ internal static (ж<NumberNode>, error) newNumber(this ж<Tree> Ꮡt, Pos pos, @
 // simplifyComplex pulls out any other types that are represented by the complex number.
 // These all require that the imaginary part be zero.
 [GoRecv] internal static void simplifyComplex(this ref NumberNode n) {
-    n.IsFloat = imag(n.Complex128) == 0;
+    n.IsFloat = imag(n.Complex128) == 0D;
     if (n.IsFloat) {
         n.Float64 = real(n.Complex128);
         n.IsInt = (float64)(int64)n.Float64 == n.Float64;

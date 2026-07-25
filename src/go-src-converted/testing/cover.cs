@@ -10,7 +10,7 @@ using os = os_package;
 using atomic = go.sync.atomic_package;
 using @internal;
 using go.sync;
-using io = io_package;
+using Δio = io_package;
 
 partial class testing_package {
 
@@ -62,7 +62,7 @@ public static float64 Coverage() {
         }
     }
     if (d == 0) {
-        return 0;
+        return 0D;
     }
     return (float64)n / (float64)d;
 }
@@ -123,10 +123,10 @@ internal static void coverReport() => func((defer, recover) => {
         }
     }
     if (total == 0) {
-        fmt.Println("coverage: [no statements]");
+        fmt.Println((@string)"coverage: [no statements]");
         return;
     }
-    fmt.Printf("coverage: %.1f%% of statements%s\n"u8, 100 * (float64)active / (float64)total, cover.CoveredPackages);
+    fmt.Printf("coverage: %.1f%% of statements%s\n"u8, 100D * (float64)active / (float64)total, cover.CoveredPackages);
 });
 
 } // end testing_package

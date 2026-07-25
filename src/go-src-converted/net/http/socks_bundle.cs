@@ -36,7 +36,7 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
     }
     if (!AreEqual(ctx, context_package.Background())) {
         var errCh = new channel<error>(1);
-        var done = new channel<EmptyStruct>(1);
+        var done = new channel<EmptyStruct>(0);
         var doneʗ1 = done;
         var errChʗ1 = errCh;
         defer(() => {
@@ -48,13 +48,15 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
         var doneʗ2 = done;
         var errChʗ2 = errCh;
         goǃ(() => {
-            switch (select(ᐸꟷ(ctx.Done(), ꓸꓸꓸ), ᐸꟷ(doneʗ2, ꓸꓸꓸ))) {
-            case 0 when ctx.Done().ꟷᐳ(out _): {
+            var selᴛ86 = ctx.Done();
+            var selᴛ87 = doneʗ2;
+            switch (select(ᐸꟷ(selᴛ86, ꓸꓸꓸ), ᐸꟷ(selᴛ87, ꓸꓸꓸ))) {
+            case 0 when selᴛ86.ꟷᐳ(out _): {
                 c.SetDeadline(socksaLongTimeAgo);
                 errChʗ2.ᐸꟷ(ctx.Err());
                 break;
             }
-            case 1 when doneʗ2.ꟷᐳ(out _): {
+            case 1 when selᴛ87.ꟷᐳ(out _): {
                 errChʗ2.ᐸꟷ(default!);
                 break;
             }}

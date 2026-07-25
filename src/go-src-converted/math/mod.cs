@@ -28,13 +28,13 @@ public static float64 Mod(float64 x, float64 y) {
 }
 
 internal static float64 mod(float64 x, float64 y) {
-    if (y == 0 || IsInf(x, 0) || IsNaN(x) || IsNaN(y)) {
+    if (y == 0D || IsInf(x, 0) || IsNaN(x) || IsNaN(y)) {
         return NaN();
     }
     y = Abs(y);
     var (yfr, yexp) = Frexp(y);
     var r = x;
-    if (x < 0) {
+    if (x < 0D) {
         r = -x;
     }
     while (r >= y) {
@@ -44,7 +44,7 @@ internal static float64 mod(float64 x, float64 y) {
         }
         r = r - Ldexp(y, rexp - yexp);
     }
-    if (x < 0) {
+    if (x < 0D) {
         r = -r;
     }
     return r;

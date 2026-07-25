@@ -13,9 +13,9 @@ partial class runtime_package {
 [GoType("num:uint64")] partial struct Δhex;
 
 internal static slice<byte> /*ret*/ bytes(@string s) {
-    slice<byte> ret = default!;
+    ref var ret = ref heap<slice<byte>>(out var Ꮡret);
 
-    var rp = (ж<Δsliceᴛ>)(uintptr)(new @unsafe.Pointer(Ꮡ(ret)));
+    var rp = Ꮡret.Reinterpret<slice<byte>, Δsliceᴛ>();
     var sp = stringStructOf(Ꮡ(s));
     rp.Value.Δarray = sp.Value.str;
     rp.Value.len = sp.Value.len;
@@ -120,11 +120,11 @@ internal static void printfloat(float64 v) {
         printstring("NaN"u8);
         return;
     }
-    case {} when v + v == v && v > 0: {
+    case {} when v + v == v && v > 0D: {
         printstring("+Inf"u8);
         return;
     }
-    case {} when v + v == v && v < 0: {
+    case {} when v + v == v && v < 0D: {
         printstring("-Inf"u8);
         return;
     }}
@@ -134,33 +134,33 @@ internal static void printfloat(float64 v) {
     buf[0] = (rune)'+';
     nint e = 0;
     // exp
-    if (v == 0){
-        if (1 / v < 0) {
+    if (v == 0D){
+        if (1D / v < 0D) {
             buf[0] = (rune)'-';
         }
     } else {
-        if (v < 0) {
+        if (v < 0D) {
             v = -v;
             buf[0] = (rune)'-';
         }
         // normalize
-        while (v >= 10) {
+        while (v >= 10D) {
             e++;
-            v /= 10;
+            v /= 10D;
         }
-        while (v < 1) {
+        while (v < 1D) {
             e--;
-            v *= 10;
+            v *= 10D;
         }
         // round
         var h = 5.0D;
         for (nint i = 0; i < n; i++) {
-            h /= 10;
+            h /= 10D;
         }
         v += h;
-        if (v >= 10) {
+        if (v >= 10D) {
             e++;
-            v /= 10;
+            v /= 10D;
         }
     }
     // format +d.dddd+edd
@@ -168,7 +168,7 @@ internal static void printfloat(float64 v) {
         nint s = (nint)v;
         buf[i + 2] = (byte)(s + (rune)'0');
         v -= (float64)s;
-        v *= 10;
+        v *= 10D;
     }
     buf[1] = buf[2];
     buf[2] = (rune)'.';
@@ -185,7 +185,7 @@ internal static void printfloat(float64 v) {
 }
 
 internal static void printcomplex(complex128 c) {
-    print("(", real(c), imag(c), "i)");
+    print((@string)"(", real(c), imag(c), (@string)"i)");
 }
 
 internal static void printuint(uint64 v) {
@@ -242,17 +242,17 @@ internal static void printstring(@string s) {
 }
 
 internal static void printslice(slice<byte> s) {
-    var sp = (ж<Δsliceᴛ>)(uintptr)(new @unsafe.Pointer(Ꮡ(s)));
-    print("[", len(s), "/", cap(s), "]");
+    var sp = Ꮡ(s).Reinterpret<slice<byte>, Δsliceᴛ>();
+    print((@string)"[", len(s), (@string)"/", cap(s), (@string)"]");
     printpointer((~sp).Δarray);
 }
 
 internal static void printeface(eface e) {
-    print("(", e._type, ",", e.data, ")");
+    print((@string)"(", e._type, (@string)",", e.data, (@string)")");
 }
 
 internal static void printiface(iface i) {
-    print("(", i.tab, ",", i.data, ")");
+    print((@string)"(", i.tab, (@string)",", i.data, (@string)")");
 }
 
 // hexdumpWords prints a word-oriented hex dump of [p, end).
@@ -270,7 +270,7 @@ internal static void hexdumpWords(uintptr Δp, uintptr end, Func<uintptr, byte> 
             if (i != 0) {
                 println();
             }
-            print(((Δhex)(uint64)(Δp + i)), ": ");
+            print(((Δhex)(uint64)(Δp + i)), (@string)": ");
         }
         if (mark != default!) {
             markbuf[0] = mark(Δp + i);
@@ -281,11 +281,11 @@ internal static void hexdumpWords(uintptr Δp, uintptr end, Func<uintptr, byte> 
         gwrite(markbuf[..]);
         var val = ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)(Δp + i));
         print(((Δhex)(uint64)val));
-        print(" ");
+        print((@string)" ");
         // Can we symbolize val?
         var fn = findfunc(val);
         if (fn.valid()) {
-            print("<", funcname(fn), "+", ((Δhex)(uint64)(val - fn.entry())), "> ");
+            print((@string)"<", funcname(fn), (@string)"+", ((Δhex)(uint64)(val - fn.entry())), (@string)"> ");
         }
     }
     minhexdigits = 0;

@@ -58,4 +58,44 @@ namespace go.go.doc;
 [GoPackage("comment")]
 public static partial class comment_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct commentPrinter {}
+    internal partial struct htmlPrinter {}
+    internal partial struct mdPrinter {}
+    internal partial struct parseDoc {}
+    internal partial struct span {}
+    internal partial struct spanKind {}
+    internal partial struct textPrinter {}
+    internal partial struct wrap_score {}
+    public partial interface Block {}
+    public partial interface ΔText {}
+    public partial struct Code {}
+    public partial struct Doc {}
+    public partial struct DocLink {}
+    public partial struct Heading {}
+    public partial struct Italic {}
+    public partial struct Link {}
+    public partial struct LinkDef {}
+    public partial struct List {}
+    public partial struct ListItem {}
+    public partial struct Paragraph {}
+    public partial struct Parser {}
+    public partial struct Plain {}
+    public partial struct Printer {}
+    // </TypeAccessibility>
 }

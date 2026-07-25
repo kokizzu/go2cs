@@ -394,7 +394,7 @@ internal static bool implements(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
     // the quadratic time  a naive search would require.
     // See also ../runtime/iface.go.
     if (V.Kind() == Interface) {
-        var vΔ1 = (ж<interfaceType>)(uintptr)(new @unsafe.Pointer(ᏑV));
+        var vΔ1 = ᏑV.Reinterpret<abi.Type, interfaceType>();
         nint iΔ1 = 0;
         for (nint j = 0; j < len((~vΔ1).Methods); j++) {
             var tm = Ꮡ((~t).Methods, iΔ1);
@@ -526,8 +526,8 @@ internal static bool haveIdenticalUnderlyingType(ж<abi.Type> ᏑT, ж<abi.Type>
  ᏑV.Elem(), cmpTags);
     }
     if (exprᴛ1 == abi.Func) {
-        var t = (ж<funcType>)(uintptr)(new @unsafe.Pointer(ᏑT));
-        var v = (ж<funcType>)(uintptr)(new @unsafe.Pointer(ᏑV));
+        var t = ᏑT.Reinterpret<abi.Type, funcType>();
+        var v = ᏑV.Reinterpret<abi.Type, funcType>();
         if ((~t).OutCount != (~v).OutCount || (~t).InCount != (~v).InCount) {
             return false;
         }
@@ -544,8 +544,8 @@ internal static bool haveIdenticalUnderlyingType(ж<abi.Type> ᏑT, ж<abi.Type>
         return true;
     }
     if (exprᴛ1 == Interface) {
-        var t = (ж<interfaceType>)(uintptr)(new @unsafe.Pointer(ᏑT));
-        var v = (ж<interfaceType>)(uintptr)(new @unsafe.Pointer(ᏑV));
+        var t = ᏑT.Reinterpret<abi.Type, interfaceType>();
+        var v = ᏑV.Reinterpret<abi.Type, interfaceType>();
         if (len((~t).Methods) == 0 && len((~v).Methods) == 0) {
             return true;
         }
@@ -560,8 +560,8 @@ internal static bool haveIdenticalUnderlyingType(ж<abi.Type> ᏑT, ж<abi.Type>
         return haveIdenticalType(ᏑT.Elem(), ᏑV.Elem(), cmpTags);
     }
     if (exprᴛ1 == abi.Struct) {
-        var t = (ж<structType>)(uintptr)(new @unsafe.Pointer(ᏑT));
-        var v = (ж<structType>)(uintptr)(new @unsafe.Pointer(ᏑV));
+        var t = ᏑT.Reinterpret<abi.Type, structType>();
+        var v = ᏑV.Reinterpret<abi.Type, structType>();
         if (len((~t).Fields) != len((~v).Fields)) {
             return false;
         }

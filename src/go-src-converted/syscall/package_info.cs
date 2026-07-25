@@ -58,4 +58,107 @@ namespace go;
 [GoPackage("syscall")]
 public static partial class syscall_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct _STARTUPINFOEXW {}
+    internal partial struct connectExFuncᴛ1 {}
+    internal partial struct mountPointReparseBuffer {}
+    internal partial struct reparseDataBuffer {}
+    internal partial struct symbolicLinkReparseBuffer {}
+    internal partial struct sysLinger {}
+    internal partial struct win32finddata1 {}
+    public partial class Pointer {}
+    public partial interface Conn {}
+    public partial interface RawConn {}
+    public partial interface ΔSockaddr {}
+    public partial struct AddrinfoW {}
+    public partial struct ByHandleFileInformation {}
+    public partial struct CertChainContext {}
+    public partial struct CertChainElement {}
+    public partial struct CertChainPara {}
+    public partial struct CertChainPolicyPara {}
+    public partial struct CertChainPolicyStatus {}
+    public partial struct CertContext {}
+    public partial struct CertEnhKeyUsage {}
+    public partial struct CertInfo {}
+    public partial struct CertRevocationCrlInfo {}
+    public partial struct CertRevocationInfo {}
+    public partial struct CertSimpleChain {}
+    public partial struct CertTrustListInfo {}
+    public partial struct CertTrustStatus {}
+    public partial struct CertUsageMatch {}
+    public partial struct DNSMXData {}
+    public partial struct DNSPTRData {}
+    public partial struct DNSRecord {}
+    public partial struct DNSSRVData {}
+    public partial struct DNSTXTData {}
+    public partial struct Errno {}
+    public partial struct FileNotifyInformation {}
+    public partial struct Filetime {}
+    public partial struct GUID {}
+    public partial struct Hostent {}
+    public partial struct IPMreq {}
+    public partial struct IPv6Mreq {}
+    public partial struct InterfaceInfo {}
+    public partial struct IpAdapterInfo {}
+    public partial struct IpAddrString {}
+    public partial struct IpAddressString {}
+    public partial struct IpMaskString {}
+    public partial struct Linger {}
+    public partial struct MibIfRow {}
+    public partial struct Overlapped {}
+    public partial struct ProcessEntry32 {}
+    public partial struct ProcessInformation {}
+    public partial struct Protoent {}
+    public partial struct RawSockaddr {}
+    public partial struct RawSockaddrAny {}
+    public partial struct RawSockaddrInet4 {}
+    public partial struct RawSockaddrInet6 {}
+    public partial struct RawSockaddrUnix {}
+    public partial struct Rusage {}
+    public partial struct SID {}
+    public partial struct SIDAndAttributes {}
+    public partial struct SSLExtraCertChainPolicyPara {}
+    public partial struct SecurityAttributes {}
+    public partial struct Servent {}
+    public partial struct SockaddrGen {}
+    public partial struct SockaddrInet4 {}
+    public partial struct SockaddrInet6 {}
+    public partial struct SockaddrUnix {}
+    public partial struct StartupInfo {}
+    public partial struct Systemtime {}
+    public partial struct TCPKeepalive {}
+    public partial struct Timespec {}
+    public partial struct Timeval {}
+    public partial struct Timezoneinformation {}
+    public partial struct Token {}
+    public partial struct Tokenprimarygroup {}
+    public partial struct Tokenuser {}
+    public partial struct TransmitFileBuffers {}
+    public partial struct UserInfo10 {}
+    public partial struct WSABuf {}
+    public partial struct WSAData {}
+    public partial struct WSAProtocolChain {}
+    public partial struct WSAProtocolInfo {}
+    public partial struct WaitStatus {}
+    public partial struct Win32FileAttributeData {}
+    public partial struct Win32finddata {}
+    public partial struct _PROC_THREAD_ATTRIBUTE_LIST {}
+    public partial struct ΔHandle {}
+    public partial struct ΔSignal {}
+    // </TypeAccessibility>
 }

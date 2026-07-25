@@ -206,4 +206,138 @@ namespace go.go;
 [GoPackage("types")]
 public static partial class types_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface cleaner {}
+    internal partial interface decl {}
+    internal partial interface dependency {}
+    internal partial interface positioner {}
+    internal partial struct @object {}
+    internal partial struct _TypeSet {}
+    internal partial struct action {}
+    internal partial struct actionDesc {}
+    internal partial struct atPos {}
+    internal partial struct bailout {}
+    internal partial struct block {}
+    internal partial struct builtinId {}
+    internal partial struct byUniqueMethodName {}
+    internal partial struct collectObjects_methodInfo {}
+    internal partial struct comparer {}
+    internal partial struct ctxtEntry {}
+    internal partial struct cycleFinder {}
+    internal partial struct declInfo {}
+    internal partial struct dotImportKey {}
+    internal partial struct embeddedType {}
+    internal partial struct environment {}
+    internal partial struct errorDesc {}
+    internal partial struct error_ {}
+    internal partial struct exprInfo {}
+    internal partial struct exprKind {}
+    internal partial struct gcSizes {}
+    internal partial struct goVersion {}
+    internal partial struct graphNode {}
+    internal partial struct ifacePair {}
+    internal partial struct importDecl {}
+    internal partial struct importKey {}
+    internal partial struct inSourceOrder {}
+    internal partial struct instanceLookup {}
+    internal partial struct lazyObject {}
+    internal partial struct methodSet {}
+    internal partial struct monoEdge {}
+    internal partial struct monoGraph {}
+    internal partial struct monoVertex {}
+    internal partial struct namedState {}
+    internal partial struct nodeQueue {}
+    internal partial struct nodeSet {}
+    internal partial struct objset {}
+    internal partial struct opPredicates {}
+    internal partial struct operand {}
+    internal partial struct operandMode {}
+    internal partial struct posSpan {}
+    internal partial struct predeclaredConstsᴛ1 {}
+    internal partial struct predeclaredFuncsᴛ1 {}
+    internal partial struct stmtContext {}
+    internal partial struct substMap {}
+    internal partial struct subster {}
+    internal partial struct target {}
+    internal partial struct tpWalker {}
+    internal partial struct typeParamsById {}
+    internal partial struct typeWriter {}
+    internal partial struct unifier {}
+    internal partial struct unifyMode {}
+    internal partial struct valueMap {}
+    internal partial struct valueType {}
+    public partial interface Importer {}
+    public partial interface ImporterFrom {}
+    public partial interface Object {}
+    public partial interface Sizes {}
+    public partial interface ΔType {}
+    public partial interface ΔgenericType {}
+    public partial struct Alias {}
+    public partial struct ArgumentError {}
+    public partial struct Array {}
+    public partial struct Basic {}
+    public partial struct BasicInfo {}
+    public partial struct BasicKind {}
+    public partial struct Builtin {}
+    public partial struct Chan {}
+    public partial struct ChanDir {}
+    public partial struct Checker {}
+    public partial struct Config {}
+    public partial struct Const {}
+    public partial struct Context {}
+    public partial struct Func {}
+    public partial struct ImportMode {}
+    public partial struct Initializer {}
+    public partial struct Instance {}
+    public partial struct Interface {}
+    public partial struct Label {}
+    public partial struct Map {}
+    public partial struct MethodSet {}
+    public partial struct Named {}
+    public partial struct Nil {}
+    public partial struct Package {}
+    public partial struct PkgName {}
+    public partial struct Pointer {}
+    public partial struct Selection {}
+    public partial struct SelectionKind {}
+    public partial struct Slice {}
+    public partial struct StdSizes {}
+    public partial struct Struct {}
+    public partial struct Tuple {}
+    public partial struct TypeAndValue {}
+    public partial struct TypeList {}
+    public partial struct TypeName {}
+    public partial struct TypeParam {}
+    public partial struct TypeParamList {}
+    public partial struct Union {}
+    public partial struct Var {}
+    public partial struct term {}
+    public partial struct ΔError {}
+    public partial struct ΔInfo {}
+    public partial struct ΔScope {}
+    public partial struct ΔSignature {}
+    public partial struct ΔTerm {}
+    public partial struct Δcolor {}
+    public partial struct ΔconstDecl {}
+    public partial struct ΔfuncDecl {}
+    public partial struct Δinstance {}
+    public partial struct Δtermlist {}
+    public partial struct ΔtypeDecl {}
+    public partial struct ΔvarDecl {}
+    // </TypeAccessibility>
 }

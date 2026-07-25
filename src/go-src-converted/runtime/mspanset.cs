@@ -220,7 +220,7 @@ break_claimLoop:;
 internal static void reset(this ж<spanSet> Ꮡb) {
     var (head, tail) = Ꮡb.of(spanSet.Ꮡindex).load().split();
     if (head < tail) {
-        print("head = ", head, ", tail = ", tail, "\n");
+        print((@string)"head = ", head, (@string)", tail = ", tail, (@string)"\n");
         @throw("attempt to clear non-empty span set"u8);
     }
     var top = head / (uint32)spanSetBlockEntries;
@@ -369,7 +369,7 @@ internal static headTailIndex incTail(this ж<atomicHeadTailIndex> Ꮡh) {
     var ht = ((headTailIndex)Ꮡh.of(atomicHeadTailIndex.Ꮡu).Add(1));
     // Check for overflow.
     if (ht.tail() == 0) {
-        print("runtime: head = ", ht.head(), ", tail = ", ht.tail(), "\n");
+        print((@string)"runtime: head = ", ht.head(), (@string)", tail = ", ht.tail(), (@string)"\n");
         @throw("headTailIndex overflow"u8);
     }
     return ht;

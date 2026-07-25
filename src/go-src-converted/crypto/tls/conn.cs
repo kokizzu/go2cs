@@ -1597,7 +1597,7 @@ internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Conte
             //
             // The interrupter goroutine waits for the input context to be done and
             // closes the connection if this happens before the function returns.
-            var done = new channel<EmptyStruct>(1);
+            var done = new channel<EmptyStruct>(0);
             var interruptRes = new channel<error>(1);
             var doneʗ1 = done;
             var interruptResʗ1 = interruptRes;
@@ -1614,13 +1614,15 @@ internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Conte
             var handshakeCtxʗ1 = handshakeCtx;
             var interruptResʗ2 = interruptRes;
             goǃ(() => {
-                switch (select(ᐸꟷ(handshakeCtxʗ1.Done(), ꓸꓸꓸ), ᐸꟷ(doneʗ2, ꓸꓸꓸ))) {
-                case 0 when handshakeCtxʗ1.Done().ꟷᐳ(out _): {
+                var selᴛ1 = handshakeCtxʗ1.Done();
+                var selᴛ2 = doneʗ2;
+                switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
+                case 0 when selᴛ1.ꟷᐳ(out _): {
                     _ = Ꮡc.Value.conn.Close();
                     interruptResʗ2.ᐸꟷ(handshakeCtxʗ1.Err());
                     break;
                 }
-                case 1 when doneʗ2.ꟷᐳ(out _): {
+                case 1 when selᴛ2.ꟷᐳ(out _): {
                     interruptResʗ2.ᐸꟷ(default!);
                     break;
                 }}

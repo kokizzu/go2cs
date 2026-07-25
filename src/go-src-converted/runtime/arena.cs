@@ -115,7 +115,7 @@ internal static any arena_arena_New(@unsafe.Pointer arena, any typ) {
     if ((abiꓸKind)((~t).Kind_ & abi.KindMask) != abi.Pointer) {
         @throw("arena_New: non-pointer type"u8);
     }
-    var te = ((ж<ptrtype>)(uintptr)(new @unsafe.Pointer(t))).Value.Elem;
+    var te = (t.Reinterpret<_type, ptrtype>()).Value.Elem;
     @unsafe.Pointer x = (uintptr)(((ж<userArena>)(uintptr)(arena))).@new(te);
     ref var result = ref heap<any>(out var Ꮡresult);
     var e = efaceOf(Ꮡresult);
@@ -176,7 +176,7 @@ internal static any arena_heapify(any s) {
     }
     else if (exprᴛ2 == abi.Slice) {
         nint lenΔ2 = ((ж<Δsliceᴛ>)(uintptr)((~e).data)).Value.len;
-        var et = ((ж<slicetype>)(uintptr)(new @unsafe.Pointer(t))).Value.Elem;
+        var et = (t.Reinterpret<_type, slicetype>()).Value.Elem;
         var sl = @new<Δsliceᴛ>();
         sl.Value = new Δsliceᴛ((uintptr)makeslicecopy(et, lenΔ2, lenΔ2, ((ж<Δsliceᴛ>)(uintptr)((~e).data)).Value.Δarray), lenΔ2, lenΔ2);
         var xe = efaceOf(Ꮡx);
@@ -184,7 +184,7 @@ internal static any arena_heapify(any s) {
         xe.Value.data = new @unsafe.Pointer(sl);
     }
     else if (exprᴛ2 == abi.Pointer) {
-        var et = ((ж<ptrtype>)(uintptr)(new @unsafe.Pointer(t))).Value.Elem;
+        var et = (t.Reinterpret<_type, ptrtype>()).Value.Elem;
         @unsafe.Pointer e2 = (uintptr)newobject(et);
         typedmemmove(et, e2, (~e).data);
         var xe = efaceOf(Ꮡx);
@@ -291,11 +291,11 @@ internal static ж<userArena> newUserArena() {
     if ((abiꓸKind)((~typ).Kind_ & abi.KindMask) != abi.Pointer) {
         throw panic("slice result of non-ptr type");
     }
-    typ = ((ж<ptrtype>)(uintptr)(new @unsafe.Pointer(typ))).Value.Elem;
+    typ = (typ.Reinterpret<_type, ptrtype>()).Value.Elem;
     if ((abiꓸKind)((~typ).Kind_ & abi.KindMask) != abi.Slice) {
         throw panic("slice of non-ptr-to-slice type");
     }
-    typ = ((ж<slicetype>)(uintptr)(new @unsafe.Pointer(typ))).Value.Elem;
+    typ = (typ.Reinterpret<_type, slicetype>()).Value.Elem;
     // t is now the element type of the slice we want to allocate.
     ((ж<Δsliceᴛ>)(uintptr)((~i).data)).Value = new Δsliceᴛ((uintptr)a.alloc(typ, cap), cap, cap);
 }
@@ -1074,8 +1074,8 @@ internal static ж<mspan> allocUserArenaChunk(this ж<mheap> Ꮡh) {
     h.central[spc].mcentral.fullSwept(h.sweepgen).push(s);
     // Set up an allocation header. Avoid write barriers here because this type
     // is not a real type, and it exists in an invalid location.
-    ((ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (s.of(mspan.ᏑlargeType)).Value))).Value = (uintptr)(@unsafe.Pointer)(~s).limit;
-    ((ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref ((~s).largeType.of(_type.ᏑGCData)).Value))).Value = (~s).limit + @unsafe.Sizeof(new _type());
+    (s.of(mspan.ᏑlargeType).Reinterpret<ж<_type>, uintptr>()).Value = (uintptr)(@unsafe.Pointer)(~s).limit;
+    ((~s).largeType.of(_type.ᏑGCData).Reinterpret<ж<byte>, uintptr>()).Value = (~s).limit + @unsafe.Sizeof(new _type());
     s.Value.largeType.Value.PtrBytes = 0;
     s.Value.largeType.Value.Size_ = s.Value.elemsize;
     return s;

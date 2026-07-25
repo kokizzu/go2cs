@@ -337,7 +337,7 @@ public static @string String(this CommentMap cmap) {
         return cmp.Compare(a.End(), b.End());
     });
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), "CommentMap {");
+    fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), (@string)"CommentMap {");
     foreach (var (_, node) in nodes) {
         var comment = cmap[node];
         // print name of identifiers; print node type for other nodes
@@ -351,7 +351,7 @@ public static @string String(this CommentMap cmap) {
         }
         fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "\t%p  %20s:  %s\n"u8, node, s, summary(comment));
     }
-    fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), "}");
+    fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), (@string)"}");
     return buf.String();
 }
 

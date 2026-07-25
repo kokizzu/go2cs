@@ -107,7 +107,7 @@ internal static void ServeHTTP(this debugHTTP server, Δhttp.ResponseWriter w, �
     slices.SortFunc(services, (debugService a, debugService b) => strings.Compare(a.Name, b.Name));
     var err = debug.Execute(new http_ResponseWriterᴠWriter(w), services);
     if (err != default!) {
-        fmt.Fprintln(new http_ResponseWriterᴠWriter(w), "rpc: error executing template:", err.Error());
+        fmt.Fprintln(new http_ResponseWriterᴠWriter(w), (@string)"rpc: error executing template:", err.Error());
     }
 }
 

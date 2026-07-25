@@ -15,7 +15,7 @@ partial class math_package {
 public static float64 Logb(float64 x) {
     // special cases
     switch (ᐧ) {
-    case {} when x is 0: {
+    case {} when x is 0D: {
         return Inf(-1);
     }
     case {} when IsInf(x, 0): {
@@ -38,7 +38,7 @@ public static float64 Logb(float64 x) {
 public static nint Ilogb(float64 x) {
     // special cases
     switch (ᐧ) {
-    case {} when x is 0: {
+    case {} when x is 0D: {
         return MinInt32;
     }
     case {} when IsNaN(x): {

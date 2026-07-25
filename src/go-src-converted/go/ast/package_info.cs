@@ -175,4 +175,97 @@ namespace go.go;
 [GoPackage("ast")]
 public static partial class ast_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct byInterval {}
+    internal partial struct cgPos {}
+    internal partial struct commentListReader {}
+    internal partial struct localError {}
+    internal partial struct nodeStack {}
+    internal partial struct pkgBuilder {}
+    internal partial struct posSpan {}
+    internal partial struct printer {}
+    public partial interface Decl {}
+    public partial interface Expr {}
+    public partial interface Node {}
+    public partial interface Spec {}
+    public partial interface Stmt {}
+    public partial interface Visitor {}
+    public partial struct ArrayType {}
+    public partial struct AssignStmt {}
+    public partial struct BadDecl {}
+    public partial struct BadExpr {}
+    public partial struct BadStmt {}
+    public partial struct BasicLit {}
+    public partial struct BinaryExpr {}
+    public partial struct BlockStmt {}
+    public partial struct BranchStmt {}
+    public partial struct CallExpr {}
+    public partial struct CaseClause {}
+    public partial struct ChanDir {}
+    public partial struct ChanType {}
+    public partial struct CommClause {}
+    public partial struct Comment {}
+    public partial struct CommentGroup {}
+    public partial struct CommentMap {}
+    public partial struct CompositeLit {}
+    public partial struct DeclStmt {}
+    public partial struct DeferStmt {}
+    public partial struct Ellipsis {}
+    public partial struct EmptyStmt {}
+    public partial struct ExprStmt {}
+    public partial struct Field {}
+    public partial struct FieldList {}
+    public partial struct File {}
+    public partial struct ForStmt {}
+    public partial struct FuncDecl {}
+    public partial struct FuncLit {}
+    public partial struct FuncType {}
+    public partial struct GenDecl {}
+    public partial struct GoStmt {}
+    public partial struct Ident {}
+    public partial struct IfStmt {}
+    public partial struct ImportSpec {}
+    public partial struct IncDecStmt {}
+    public partial struct IndexExpr {}
+    public partial struct IndexListExpr {}
+    public partial struct InterfaceType {}
+    public partial struct KeyValueExpr {}
+    public partial struct LabeledStmt {}
+    public partial struct MapType {}
+    public partial struct MergeMode {}
+    public partial struct ObjKind {}
+    public partial struct Object {}
+    public partial struct Package {}
+    public partial struct ParenExpr {}
+    public partial struct RangeStmt {}
+    public partial struct ReturnStmt {}
+    public partial struct Scope {}
+    public partial struct SelectStmt {}
+    public partial struct SelectorExpr {}
+    public partial struct SendStmt {}
+    public partial struct SliceExpr {}
+    public partial struct StarExpr {}
+    public partial struct StructType {}
+    public partial struct SwitchStmt {}
+    public partial struct TypeAssertExpr {}
+    public partial struct TypeSpec {}
+    public partial struct TypeSwitchStmt {}
+    public partial struct UnaryExpr {}
+    public partial struct ValueSpec {}
+    // </TypeAccessibility>
 }

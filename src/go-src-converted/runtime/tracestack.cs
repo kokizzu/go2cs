@@ -56,7 +56,7 @@ internal static uint64 traceStack(nint skip, ж<g> Ꮡgp, uintptr gen) {
                 fallthrough = true;
             }
             if (fallthrough || !matchᴛ1) { /* default: */
-                print("runtime: gp=", new @unsafe.Pointer(Ꮡgp), " gp.goid=", gp.goid, " status=", gStatusStrings[(nint)(status)], "\n");
+                print((@string)"runtime: gp=", new @unsafe.Pointer(Ꮡgp), (@string)" gp.goid=", gp.goid, (@string)" status=", gStatusStrings[(nint)(status)], (@string)"\n");
                 @throw("attempted to trace stack of a goroutine this thread does not own"u8);
             }
 
@@ -160,7 +160,7 @@ internal static void dump(this ж<traceStackTable> Ꮡt, uintptr gen) {
 internal static traceWriter dumpStacksRec(ж<traceMapNode> Ꮡnode, traceWriter w, slice<uintptr> stackBuf) {
     ref var node = ref Ꮡnode.Value;
 
-    var Δstack = @unsafe.Slice((ж<uintptr>)(uintptr)(new @unsafe.Pointer(Ꮡ(node.data, 0))), (uintptr)len(node.data) / @unsafe.Sizeof((uintptr)0));
+    var Δstack = @unsafe.Slice(Ꮡ(node.data, 0).Reinterpret<byte, uintptr>(), (uintptr)len(node.data) / @unsafe.Sizeof((uintptr)0));
     // N.B. This might allocate, but that's OK because we're not writing to the M's buffer,
     // but one we're about to create (with ensure).
     nint n = fpunwindExpand(stackBuf, Δstack);

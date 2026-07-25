@@ -235,8 +235,10 @@ internal static void probeRequestBody(this ж<transferWriter> Ꮡt) {
         builtin.close(Ꮡt.Value.ByteReadCh);
     }, Ꮡt.Value.Body);
     var timer = time.NewTimer(200 * time.Millisecond);
-    switch (select(ᐸꟷ(t.ByteReadCh, ꓸꓸꓸ), ᐸꟷ((~timer).C, ꓸꓸꓸ))) {
-    case 0 when t.ByteReadCh.ꟷᐳ(out var rres): {
+    var selᴛ88 = t.ByteReadCh;
+    var selᴛ89 = (~timer).C;
+    switch (select(ᐸꟷ(selᴛ88, ꓸꓸꓸ), ᐸꟷ(selᴛ89, ꓸꓸꓸ))) {
+    case 0 when selᴛ88.ꟷᐳ(out var rres): {
         timer.Stop();
         if (rres.n == 0 && AreEqual(rres.err, io.EOF)){
             // It was empty.
@@ -255,7 +257,7 @@ internal static void probeRequestBody(this ж<transferWriter> Ꮡt) {
         }
         break;
     }
-    case 1 when (~timer).C.ꟷᐳ(out _): {
+    case 1 when selᴛ89.ꟷᐳ(out _): {
         t.Body = io.MultiReader(new finishAsyncByteRead( // Too slow. Don't wait. Read it later, and keep
  // assuming that this is ContentLength == -1
  // (unknown), which means we'll send a
@@ -1031,7 +1033,7 @@ internal static error errTrailerEOF = errors.New("http: unexpected EOF reading t
 }
 
 internal static void mergeSetHeader(ж<ΔHeader> Ꮡdst, ΔHeader src) {
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.ValueSlot;
 
     if (dst == default!) {
         dst = src;

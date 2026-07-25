@@ -62,4 +62,55 @@ namespace go.@internal;
 [GoPackage("xcoff")]
 public static partial class xcoff_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct bigarFileHeader {}
+    internal partial struct bigarMemberHeader {}
+    internal partial struct nobitsSectionReader {}
+    public partial struct Archive {}
+    public partial struct ArchiveHeader {}
+    public partial struct AuxCSect32 {}
+    public partial struct AuxCSect64 {}
+    public partial struct AuxFcn32 {}
+    public partial struct AuxFcn64 {}
+    public partial struct AuxFile64 {}
+    public partial struct AuxSect64 {}
+    public partial struct AuxiliaryCSect {}
+    public partial struct AuxiliaryFcn {}
+    public partial struct File {}
+    public partial struct FileHeader {}
+    public partial struct FileHeader32 {}
+    public partial struct FileHeader64 {}
+    public partial struct ImportedSymbol {}
+    public partial struct LoaderHeader32 {}
+    public partial struct LoaderHeader64 {}
+    public partial struct LoaderSymbol32 {}
+    public partial struct LoaderSymbol64 {}
+    public partial struct Member {}
+    public partial struct MemberHeader {}
+    public partial struct Reloc {}
+    public partial struct Reloc32 {}
+    public partial struct Reloc64 {}
+    public partial struct SectionHeader {}
+    public partial struct SectionHeader32 {}
+    public partial struct SectionHeader64 {}
+    public partial struct SymEnt32 {}
+    public partial struct SymEnt64 {}
+    public partial struct Symbol {}
+    public partial struct ΔSection {}
+    // </TypeAccessibility>
 }

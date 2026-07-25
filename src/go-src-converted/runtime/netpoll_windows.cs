@@ -31,7 +31,7 @@ internal static readonly UntypedInt sourceMasks = /* 1<<sourceBits - 1 */ 15;
 // packNetpollKey creates a key from a source and a tag.
 // Bits that don't fit in the result are discarded.
 internal static uintptr packNetpollKey(uint8 source, ж<pollDesc> Ꮡpd) {
-    ref var pd = ref Ꮡpd.Value;
+    ref var pd = ref Ꮡpd.DerefOrNil();
 
     // TODO: Consider combining the source with pd.fdseq to detect stale pollDescs.
     if (source > ((1 << (int)(sourceBits))) - 1) {
@@ -71,7 +71,7 @@ internal static ж<pollOperation> pollOperationFromOverlappedEntry(ж<overlapped
     if (e.ov == nil) {
         return default!;
     }
-    var op = (ж<pollOperation>)(uintptr)(new @unsafe.Pointer(e.ov));
+    var op = e.ov.Reinterpret<overlapped, pollOperation>();
     // Check that the key matches the pollDesc pointer.
     bool keyMatch = default!;
     if (goarch.PtrSize == 4){
@@ -101,7 +101,7 @@ internal static ref atomic.Uint32 netpollWakeSig => ref ᏑnetpollWakeSig.Value;
 internal static void netpollinit() {
     iocphandle = stdcall4(_CreateIoCompletionPort, _INVALID_HANDLE_VALUE, 0, 0, _DWORD_MAX);
     if (iocphandle == 0) {
-        println("runtime: CreateIoCompletionPort failed (errno=", getlasterror(), ")");
+        println((@string)"runtime: CreateIoCompletionPort failed (errno=", getlasterror(), (@string)")");
         @throw("runtime: netpollinit failed"u8);
     }
 }
@@ -134,7 +134,7 @@ internal static void netpollBreak() {
     }
     var key = packNetpollKey(netpollSourceBreak, nil);
     if (stdcall4(_PostQueuedCompletionStatus, iocphandle, 0, key, 0) == 0) {
-        println("runtime: netpoll: PostQueuedCompletionStatus failed (errno=", getlasterror(), ")");
+        println((@string)"runtime: netpoll: PostQueuedCompletionStatus failed (errno=", getlasterror(), (@string)")");
         @throw("runtime: netpoll: PostQueuedCompletionStatus failed"u8);
     }
 }
@@ -196,7 +196,7 @@ internal static (gList, int32) netpoll(int64 delay) {
         if (errno == _WAIT_TIMEOUT) {
             return (new gList(nil), 0);
         }
-        println("runtime: GetQueuedCompletionStatusEx failed (errno=", errno, ")");
+        println((@string)"runtime: GetQueuedCompletionStatusEx failed (errno=", errno, (@string)")");
         @throw("runtime: netpoll failed"u8);
     }
     mp.Value.blocked = false;
@@ -213,7 +213,7 @@ internal static (gList, int32) netpoll(int64 delay) {
             var mode = op.Value.mode;
             if (mode != (rune)'r' && mode != (rune)'w') {
                 // Entry from internal/poll.
-                println("runtime: GetQueuedCompletionStatusEx returned net_op with invalid mode=", mode);
+                println((@string)"runtime: GetQueuedCompletionStatusEx returned net_op with invalid mode=", mode);
                 @throw("runtime: netpoll failed"u8);
             }
             delta += netpollready(ᏑtoRun, (~op).pd, mode);
@@ -228,7 +228,7 @@ internal static (gList, int32) netpoll(int64 delay) {
         else if (exprᴛ1 == netpollSourceTimer) {
         }
         else { /* default: */
-            println("runtime: GetQueuedCompletionStatusEx returned net_op with invalid key=", // TODO: We could avoid calling NtCancelWaitCompletionPacket for expired wait completion packets.
+            println((@string)"runtime: GetQueuedCompletionStatusEx returned net_op with invalid key=", // TODO: We could avoid calling NtCancelWaitCompletionPacket for expired wait completion packets.
  (~e).key);
             @throw("runtime: netpoll failed"u8);
         }
@@ -240,7 +240,7 @@ internal static (gList, int32) netpoll(int64 delay) {
 // netpollQueueTimer queues a timer to wake up the poller after the given delay.
 // It returns true if the timer expired during this call.
 internal static bool /*signaled*/ netpollQueueTimer(int64 delay) {
-    bool signaled = default!;
+    ref var signaled = ref heap(new bool(), out var Ꮡsignaled);
 
     uintptr STATUS_SUCCESS = 0x00000000;
     uintptr STATUS_PENDING = 0x00000103;
@@ -266,13 +266,13 @@ internal static bool /*signaled*/ netpollQueueTimer(int64 delay) {
  // in which automatically cancels the wait completion packet.
  // relative sleep (negative), 100ns units
  (~mp).waitIocpTimer, (uintptr)new @unsafe.Pointer(Ꮡdt), 0, 0, 0, 0) == 0) {
-            println("runtime: SetWaitableTimer failed; errno=", getlasterror());
+            println((@string)"runtime: SetWaitableTimer failed; errno=", getlasterror());
             @throw("runtime: netpoll failed"u8);
         }
         var key = packNetpollKey(netpollSourceTimer, nil);
         {
-            var errnoΔ2 = stdcall8(_NtAssociateWaitCompletionPacket, (~mp).waitIocpHandle, iocphandle, (~mp).waitIocpTimer, key, 0, 0, 0, (uintptr)new @unsafe.Pointer(Ꮡ(signaled))); if (errnoΔ2 != 0) {
-                println("runtime: NtAssociateWaitCompletionPacket failed; errno=", errnoΔ2);
+            var errnoΔ2 = stdcall8(_NtAssociateWaitCompletionPacket, (~mp).waitIocpHandle, iocphandle, (~mp).waitIocpTimer, key, 0, 0, 0, (uintptr)new @unsafe.Pointer(Ꮡsignaled)); if (errnoΔ2 != 0) {
+                println((@string)"runtime: NtAssociateWaitCompletionPacket failed; errno=", errnoΔ2);
                 @throw("runtime: netpoll failed"u8);
             }
         }
@@ -280,7 +280,7 @@ internal static bool /*signaled*/ netpollQueueTimer(int64 delay) {
     else if (exprᴛ1 == STATUS_PENDING) {
     }
     else if (!matchᴛ1) { /* default: */
-        println("runtime: NtCancelWaitCompletionPacket failed; errno=", // STATUS_PENDING is returned if the wait operation can't be canceled yet.
+        println((@string)"runtime: NtCancelWaitCompletionPacket failed; errno=", // STATUS_PENDING is returned if the wait operation can't be canceled yet.
  // This can happen if this thread was woken up by another event, such as a netpollBreak,
  // and the timer expired just while calling NtCancelWaitCompletionPacket, in which case
  // this call fails to cancel the association to avoid a race condition.

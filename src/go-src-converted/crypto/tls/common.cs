@@ -1099,7 +1099,7 @@ public static error errNoCertificates = errors.New("tls: no certificates configu
     }
     if (len(c.Certificates) == 1) {
         // There's only one choice, so no point doing any work.
-        return (Ꮡ(c.Certificates[0]), default!);
+        return (Ꮡ(c.Certificates, 0), default!);
     }
     if (c.NameToCertificate != default!) {
         @string name = strings.ToLower(clientHello.ServerName);
@@ -1130,7 +1130,7 @@ public static error errNoCertificates = errors.New("tls: no certificates configu
         }
     }
     // If nothing matches, return the first certificate.
-    return (Ꮡ(c.Certificates[0]), default!);
+    return (Ꮡ(c.Certificates, 0), default!);
 }
 
 // SupportsCertificate returns nil if the provided certificate is supported by
@@ -1356,7 +1356,7 @@ public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Cert
 [GoRecv] public static void BuildNameToCertificate(this ref Config c) {
     c.NameToCertificate = new map<@string, ж<Certificate>>();
     foreach (var (i, _) in c.Certificates) {
-        var cert = Ꮡ(c.Certificates[i]);
+        var cert = Ꮡ(c.Certificates, i);
         var (x509Cert, err) = cert.leaf();
         if (err != default!) {
             continue;

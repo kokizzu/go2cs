@@ -362,7 +362,7 @@ public static (ж<Func> method, bool wrongType) MissingMethod(ΔType V, ж<Inter
     ж<Func> method = default!;
     bool wrongType = default!;
 
-    return ((ж<Checker>)(default!)).missingMethod(V, new InterfaceжΔType(ᏑT), @static, Identical, nil);
+    return (((ж<Checker>)nil)).missingMethod(V, new InterfaceжΔType(ᏑT), @static, Identical, nil);
 }
 
 // missingMethod is like MissingMethod but accepts a *Checker as receiver,

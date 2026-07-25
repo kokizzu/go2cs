@@ -70,14 +70,14 @@ internal static readonly UntypedFloat f7 = 2.891024605872965461538222e-15;
 //	Erfinv(NaN) = NaN
 public static float64 Erfinv(float64 x) {
     // special cases
-    if (IsNaN(x) || x <= -1D || x >= 1) {
-        if (x == -1D || x == 1) {
+    if (IsNaN(x) || x <= -1D || x >= 1D) {
+        if (x == -1D || x == 1D) {
             return Inf((nint)x);
         }
         return NaN();
     }
     var sign = false;
-    if (x < 0) {
+    if (x < 0D) {
         x = -x;
         sign = true;
     }
@@ -118,7 +118,7 @@ public static float64 Erfinv(float64 x) {
 //	Erfcinv(x) = NaN if x < 0 or x > 2
 //	Erfcinv(NaN) = NaN
 public static float64 Erfcinv(float64 x) {
-    return Erfinv(1 - x);
+    return Erfinv(1D - x);
 }
 
 } // end math_package

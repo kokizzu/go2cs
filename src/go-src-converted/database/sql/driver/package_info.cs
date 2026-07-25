@@ -67,4 +67,62 @@ namespace go.database.sql;
 [GoPackage("driver")]
 public static partial class driver_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface decimalDecompose {}
+    public partial interface ColumnConverter {}
+    public partial interface Conn {}
+    public partial interface ConnBeginTx {}
+    public partial interface ConnPrepareContext {}
+    public partial interface Connector {}
+    public partial interface Driver {}
+    public partial interface DriverContext {}
+    public partial interface Execer {}
+    public partial interface ExecerContext {}
+    public partial interface NamedValueChecker {}
+    public partial interface Pinger {}
+    public partial interface Queryer {}
+    public partial interface QueryerContext {}
+    public partial interface Result {}
+    public partial interface Rows {}
+    public partial interface RowsColumnTypeDatabaseTypeName {}
+    public partial interface RowsColumnTypeLength {}
+    public partial interface RowsColumnTypeNullable {}
+    public partial interface RowsColumnTypePrecisionScale {}
+    public partial interface RowsColumnTypeScanType {}
+    public partial interface RowsNextResultSet {}
+    public partial interface SessionResetter {}
+    public partial interface Stmt {}
+    public partial interface StmtExecContext {}
+    public partial interface StmtQueryContext {}
+    public partial interface Tx {}
+    public partial interface Validator {}
+    public partial interface ValueConverter {}
+    public partial interface Valuer {}
+    public partial struct IsolationLevel {}
+    public partial struct NamedValue {}
+    public partial struct NotNull {}
+    public partial struct Null {}
+    public partial struct TxOptions {}
+    public partial struct boolType {}
+    public partial struct defaultConverter {}
+    public partial struct int32Type {}
+    public partial struct noRows {}
+    public partial struct stringType {}
+    public partial struct ΔRowsAffected {}
+    // </TypeAccessibility>
 }

@@ -3,6 +3,9 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
+using ꓸꓸꓸReader = Span<io_package.Reader>;
+using ꓸꓸꓸWriter = Span<io_package.Writer>;
+
 partial class io_package {
 
 [GoType] partial struct eofReader {
@@ -83,13 +86,13 @@ internal static (nint, error) Read(this eofReader _Δp0, slice<byte> _Δp1) {
     return (sum, default!);
 }
 
-internal static WriterTo _ᴛ2ʗ = new multiReaderжWriterTo((ж<multiReader>)(default!));
+internal static WriterTo _ᴛ2ʗ = new multiReaderжWriterTo(((ж<multiReader>)nil));
 
 // MultiReader returns a Reader that's the logical concatenation of
 // the provided input readers. They're read sequentially. Once all
 // inputs have returned EOF, Read will return EOF.  If any of the readers
 // return a non-nil, non-EOF error, Read will return that error.
-public static Reader MultiReader(params Span<io_package.Reader> readersʗp) {
+public static Reader MultiReader(params ꓸꓸꓸReader readersʗp) {
     var readers = readersʗp.slice();
 
     var r = new slice<Reader>(len(readers));
@@ -118,7 +121,7 @@ public static Reader MultiReader(params Span<io_package.Reader> readersʗp) {
     return (len(p), default!);
 }
 
-internal static StringWriter _ᴛ3ʗ = new multiWriterжStringWriter((ж<multiWriter>)(default!));
+internal static StringWriter _ᴛ3ʗ = new multiWriterжStringWriter(((ж<multiWriter>)nil));
 
 [GoRecv] internal static (nint n, error err) WriteString(this ref multiWriter t, @string s) {
     nint n = default!;
@@ -153,8 +156,8 @@ internal static StringWriter _ᴛ3ʗ = new multiWriterжStringWriter((ж<multiWr
 // Each write is written to each listed writer, one at a time.
 // If a listed writer returns an error, that overall write operation
 // stops and returns the error; it does not continue down the list.
-public static Writer MultiWriter(params Span<io_package.Writer> writersʗp) {
-    var writers = writersʗp.slice();
+public static Writer MultiWriter(params ꓸꓸꓸWriter writersʗp) {
+    var writers = writersʗp.sslice();
 
     var allWriters = new slice<Writer>(0, len(writers));
     foreach (var (_, w) in writers) {

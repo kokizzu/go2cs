@@ -258,7 +258,7 @@ internal static bool ok(this traceLocker tl) {
 internal static void traceRelease(traceLocker tl) {
     var seq = tl.mp.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Add(1);
     if (debugTraceReentrancy && seq % 2 != 0) {
-        print("runtime: seq=", seq, "\n");
+        print((@string)"runtime: seq=", seq, (@string)"\n");
         @throw("bad use of trace.seqlock"u8);
     }
     releasem(tl.mp);
@@ -729,7 +729,7 @@ internal static void traceThreadDestroy(ж<m> Ꮡmp) {
     });
     var seq1 = Ꮡmp.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Add(1);
     if (seq1 != seq + 1) {
-        print("runtime: seq1=", seq1, "\n");
+        print((@string)"runtime: seq1=", seq1, (@string)"\n");
         @throw("bad use of trace.seqlock"u8);
     }
 }

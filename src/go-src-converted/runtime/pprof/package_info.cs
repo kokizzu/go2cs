@@ -76,4 +76,42 @@ namespace go.runtime;
 [GoPackage("pprof")]
 public static partial class pprof_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface countProfile {}
+    internal partial struct cpuᴛ1 {}
+    internal partial struct emitLocation_newFunc {}
+    internal partial struct keysByCount {}
+    internal partial struct label {}
+    internal partial struct labelContextKey {}
+    internal partial struct labelMap {}
+    internal partial struct locInfo {}
+    internal partial struct memMap {}
+    internal partial struct msgOffset {}
+    internal partial struct pcDeck {}
+    internal partial struct profMap {}
+    internal partial struct profMapEntry {}
+    internal partial struct profileBuilder {}
+    internal partial struct profilesᴛ1 {}
+    internal partial struct protobuf {}
+    internal partial struct runtimeProfile {}
+    internal partial struct stackProfile {}
+    internal partial struct symbolizeFlag {}
+    public partial struct LabelSet {}
+    public partial struct Profile {}
+    // </TypeAccessibility>
 }

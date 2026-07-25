@@ -45,7 +45,7 @@ internal static (float64 f, nint n, bool ok) special(@string s) {
     bool ok = default!;
 
     if (len(s) == 0) {
-        return (0, 0, false);
+        return (0D, 0, false);
     }
     nint sign = 1;
     nint nsign = 0;
@@ -76,7 +76,7 @@ internal static (float64 f, nint n, bool ok) special(@string s) {
         }
     }
 
-    return (0, 0, false);
+    return (0D, 0, false);
 }
 
 [GoRecv] internal static bool /*ok*/ set(this ref @decimal b, @string s) {
@@ -625,7 +625,7 @@ internal static (float32 f, nint n, error err) atof32(@string s) {
     }
     (var mantissa, var exp, var neg, var trunc, var hex, n, var ok) = readFloat(s);
     if (!ok) {
-        return (0, n, new NumErrorжerror(syntaxError(fnParseFloat, s)));
+        return (0F, n, new NumErrorжerror(syntaxError(fnParseFloat, s)));
     }
     if (hex) {
         var (fΔ1, errΔ1) = atofHex(s[..(int)(n)], Ꮡfloat32info, mantissa, exp, neg, trunc);
@@ -658,7 +658,7 @@ internal static (float32 f, nint n, error err) atof32(@string s) {
     // Slow fallback.
     ref var d = ref heap(new @decimal(), out var Ꮡd);
     if (!d.set(s[..(int)(n)])) {
-        return (0, n, new NumErrorжerror(syntaxError(fnParseFloat, s)));
+        return (0F, n, new NumErrorжerror(syntaxError(fnParseFloat, s)));
     }
     var (b, ovf) = Ꮡd.floatBits(Ꮡfloat32info);
     f = Δmath.Float32frombits((uint32)b);
@@ -680,7 +680,7 @@ internal static (float64 f, nint n, error err) atof64(@string s) {
     }
     (var mantissa, var exp, var neg, var trunc, var hex, n, var ok) = readFloat(s);
     if (!ok) {
-        return (0, n, new NumErrorжerror(syntaxError(fnParseFloat, s)));
+        return (0D, n, new NumErrorжerror(syntaxError(fnParseFloat, s)));
     }
     if (hex) {
         var (fΔ1, errΔ1) = atofHex(s[..(int)(n)], Ꮡfloat64info, mantissa, exp, neg, trunc);
@@ -713,7 +713,7 @@ internal static (float64 f, nint n, error err) atof64(@string s) {
     // Slow fallback.
     ref var d = ref heap(new @decimal(), out var Ꮡd);
     if (!d.set(s[..(int)(n)])) {
-        return (0, n, new NumErrorжerror(syntaxError(fnParseFloat, s)));
+        return (0D, n, new NumErrorжerror(syntaxError(fnParseFloat, s)));
     }
     var (b, ovf) = Ꮡd.floatBits(Ꮡfloat64info);
     f = Δmath.Float64frombits(b);
@@ -753,7 +753,7 @@ internal static (float64 f, nint n, error err) atof64(@string s) {
 public static (float64, error) ParseFloat(@string s, nint bitSize) {
     var (f, n, err) = parseFloatPrefix(s, bitSize);
     if (n != len(s) && (err == default! || !AreEqual((~err._<ж<NumError>>()).Err, ErrSyntax))) {
-        return (0, new NumErrorжerror(syntaxError(fnParseFloat, s)));
+        return (0D, new NumErrorжerror(syntaxError(fnParseFloat, s)));
     }
     return (f, err);
 }

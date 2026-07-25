@@ -748,7 +748,7 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
 
 internal static void collectTypeParams(this ж<Checker> Ꮡcheck, ж<ж<TypeParamList>> Ꮡdst, ж<ast.FieldList> Ꮡlist) => func((defer, recover) => {
     ref var check = ref Ꮡcheck.Value;
-    ref var dst = ref Ꮡdst.Value;
+    ref var dst = ref Ꮡdst.ValueSlot;
     ref var list = ref Ꮡlist.Value;
 
     slice<ж<TypeParam>> tparams = default!;

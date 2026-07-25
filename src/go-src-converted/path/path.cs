@@ -168,7 +168,7 @@ public static (@string dir, @string @file) Split(@string path) {
 // empty or all its elements are empty, Join returns
 // an empty string.
 public static @string Join(params ꓸꓸꓸstring elemʗp) {
-    var elem = elemʗp.slice();
+    var elem = elemʗp.sslice();
 
     nint size = 0;
     foreach (var (_, e) in elem) {

@@ -187,13 +187,13 @@ internal static readonly abiPartKind abiPartReg = 2; // Move a value from memory
             }
         }
         else if (exprᴛ1 == abi.Array) {
-            var at = (ж<arraytype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+            var at = Ꮡt.Reinterpret<_type, arraytype>();
             if ((~at).Len == 1) {
                 return Δp.tryRegAssignArg((~at).Elem, offset);
             }
         }
         else if (exprᴛ1 == abi.Struct) {
-            var st = (ж<structtype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+            var st = Ꮡt.Reinterpret<_type, structtype>();
             foreach (var (i, _) in (~st).Fields) {
                 // TODO fix when runtime is fully commoned up w/ abi.Type
                 var f = Ꮡ((~st).Fields, i);
@@ -283,7 +283,7 @@ internal static uintptr /*code*/ compileCallback(eface fn, bool cdecl) {
     if (fn._type == nil || ((abiꓸKind)((~fn._type).Kind_ & abi.KindMask)) != abi.Func) {
         throw panic("compileCallback: expected function with one uintptr-sized result");
     }
-    var ft = (ж<functype>)(uintptr)(new @unsafe.Pointer(fn._type));
+    var ft = fn._type.Reinterpret<_type, functype>();
     // Check arguments and construct ABI translation.
     abiDesc abiMap = default!;
     foreach (var (_, t) in ft.InSlice()) {
@@ -408,7 +408,7 @@ internal static void callbackWrap(ж<callbackArgs> Ꮡa) {
     // If it's on the stack, then we will have reserved space for it
     // at the end of the frame, otherwise it was passed in a register.
     if (c.abiMap.dstStackSize != c.abiMap.retOffset){
-        a.result = ~(ж<uintptr>)(uintptr)(new @unsafe.Pointer(Ꮡframe.at<byte>((nint)(c.abiMap.retOffset))));
+        a.result = ~Ꮡframe.at<byte>((nint)(c.abiMap.retOffset)).Reinterpret<byte, uintptr>();
     } else {
         nint zero = default!;
         // On architectures with no registers, Ints[0] would be a compile error,

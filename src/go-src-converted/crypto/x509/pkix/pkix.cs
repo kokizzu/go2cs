@@ -142,7 +142,7 @@ public static @string String(this RDNSequence r) {
 // Multi-entry RDNs are flattened, all entries are added to the
 // relevant n fields, and the grouping is not preserved.
 [GoRecv] public static void FillFromRDNSequence(this ref Name n, ж<RDNSequence> Ꮡrdns) {
-    ref var rdns = ref Ꮡrdns.Value;
+    ref var rdns = ref Ꮡrdns.ValueSlot;
 
     foreach (var (_, rdn) in rdns) {
         if (len(rdn) == 0) {

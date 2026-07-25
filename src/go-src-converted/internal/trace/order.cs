@@ -1520,7 +1520,7 @@ internal static @string dumpOrdering(ж<ordering> Ꮡorder) {
     if (q.end - q.start == 0) {
         return (@new<T>().ValueSlot, false);
     }
-    var elem = Ꮡ(q.buf[q.start % len(q.buf)]);
+    var elem = Ꮡ(q.buf, q.start % len(q.buf));
     var value = elem.ValueSlot;
     elem.ValueSlot = @new<T>().ValueSlot;
     // Clear the entry before returning, so we don't hold onto old tables.

@@ -14,6 +14,7 @@ using errors = errors_package;
 using io = io_package;
 using utf8 = unicode.utf8_package;
 using unicode;
+using ꓸꓸꓸTransformer = Span<transform_package.Transformer>;
 
 partial class transform_package {
 
@@ -389,8 +390,8 @@ public static SpanningTransformer Nop = new nop(nil);
 }
 
 // Chain returns a Transformer that applies t in sequence.
-public static Transformer Chain(params Span<transform_package.Transformer> tʗp) {
-    var t = tʗp.slice();
+public static Transformer Chain(params ꓸꓸꓸTransformer tʗp) {
+    var t = tʗp.sslice();
 
     if (len(t) == 0) {
         return new nop(nil);
@@ -427,8 +428,8 @@ public static Transformer Chain(params Span<transform_package.Transformer> tʗp)
     error err = default!;
 
     // Set up src and dst in the chain.
-    var srcL = Ꮡ(c.link[0]);
-    var dstL = Ꮡ(c.link[len(c.link) - 1]);
+    var srcL = Ꮡ(c.link, 0);
+    var dstL = Ꮡ(c.link, len(c.link) - 1);
     srcL.Value.b = src;
     srcL.Value.p = 0;
     srcL.Value.n = len(src);
@@ -442,7 +443,7 @@ public static Transformer Chain(params Span<transform_package.Transformer> tʗp)
     // The error returned by Transform determines whether to increase or
     // decrease i. We try to completely fill a buffer before converting it.
     for ((nint low, nint i, nint high) = (c.errStart, c.errStart, len(c.link) - 2); low <= i && i <= high; ) {
-        var (@in, @out) = (Ꮡ(c.link[i]), Ꮡ(c.link[i + 1]));
+        var (@in, @out) = (Ꮡ(c.link, i), Ꮡ(c.link, i + 1));
         var (nDstΔ1, nSrcΔ1, err0) = (~@in).t.Transform(@out.dst(), @in.src(), atEOF && low == i);
         @out.Value.n += nDstΔ1;
         @in.Value.p += nSrcΔ1;

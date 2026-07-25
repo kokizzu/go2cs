@@ -166,8 +166,8 @@ internal static slice<rune> noRune = new rune[]{}.slice();
 internal static slice<uint32> noNext = new uint32[]{mergeFailed}.slice();
 
 internal static (slice<rune>, slice<uint32>) mergeRuneSets(ж<slice<rune>> ᏑleftRunes, ж<slice<rune>> ᏑrightRunes, uint32 leftPC, uint32 rightPC) => func((defer, recover) => {
-    ref var leftRunes = ref ᏑleftRunes.Value;
-    ref var rightRunes = ref ᏑrightRunes.Value;
+    ref var leftRunes = ref ᏑleftRunes.ValueSlot;
+    ref var rightRunes = ref ᏑrightRunes.ValueSlot;
 
     nint leftLen = len(leftRunes);
     nint rightLen = len(rightRunes);

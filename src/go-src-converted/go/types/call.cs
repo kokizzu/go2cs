@@ -13,6 +13,7 @@ using constant = global::go.go.constant_package;
 using errors = global::go.@internal.types.errors_package;
 using global::go.go;
 using global::go.go.@internal;
+using ꓸꓸꓸastꓸExpr = Span<global::go.go.ast_package.Expr>;
 
 partial class types_package {
 
@@ -1049,7 +1050,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
 // (and variables are "used") in the presence of
 // other errors. Arguments may be nil.
 // Reports if all arguments evaluated without error.
-internal static bool use(this ж<Checker> Ꮡcheck, params Span<ast.Expr> argsʗp) {
+internal static bool use(this ж<Checker> Ꮡcheck, params ꓸꓸꓸastꓸExpr argsʗp) {
     var args = argsʗp.slice();
 
     return Ꮡcheck.useN(args, false);
@@ -1058,7 +1059,7 @@ internal static bool use(this ж<Checker> Ꮡcheck, params Span<ast.Expr> argsʗ
 // useLHS is like use, but doesn't "use" top-level identifiers.
 // It should be called instead of use if the arguments are
 // expressions on the lhs of an assignment.
-internal static bool useLHS(this ж<Checker> Ꮡcheck, params Span<ast.Expr> argsʗp) {
+internal static bool useLHS(this ж<Checker> Ꮡcheck, params ꓸꓸꓸastꓸExpr argsʗp) {
     var args = argsʗp.slice();
 
     return Ꮡcheck.useN(args, true);

@@ -38,7 +38,7 @@ internal static readonly missingKeyAction mapError = 2;    // Error out
 //	"missingkey=error"
 //		Execution stops immediately with an error.
 public static ж<Template> Option(this ж<Template> Ꮡt, params ꓸꓸꓸstring optʗp) {
-    var opt = optʗp.slice();
+    var opt = optʗp.sslice();
 
     ref var t = ref Ꮡt.Value;
     t.init();

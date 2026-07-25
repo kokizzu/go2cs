@@ -92,7 +92,7 @@ public static ж<Config> FromEnvironment() {
 }
 
 internal static @string getEnvAny(params ꓸꓸꓸstring namesʗp) {
-    var names = namesʗp.slice();
+    var names = namesʗp.sslice();
 
     foreach (var (_, n) in names) {
         {

@@ -108,7 +108,7 @@ internal static @unsafe.Pointer pointer(this Value v) {
 internal static any packEface(Value v) {
     var t = v.typ();
     ref var i = ref heap<any>(out var Ꮡi);
-    var e = (ж<abi.EmptyInterface>)(uintptr)(new @unsafe.Pointer(Ꮡi));
+    var e = Ꮡi.Reinterpret<any, abi.EmptyInterface>();
     // First, fill in the data portion of the interface.
     switch (ᐧ) {
     case {} when t.IfaceIndir(): {

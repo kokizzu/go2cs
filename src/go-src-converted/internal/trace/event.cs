@@ -752,7 +752,7 @@ public static @string String(this ΔEvent e) {
 
             if (s.Stack != NoStack) {
                 fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb));
-                fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb), "TransitionStack=");
+                fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb), (@string)"TransitionStack=");
                 s.Stack.Frames((StackFrame f) => {
                     fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "\t%s @ 0x%x\n"u8, f.Func, f.PC);
                     fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "\t\t%s:%d\n"u8, f.File, f.Line);
@@ -769,7 +769,7 @@ public static @string String(this ΔEvent e) {
     {
         var stk = e.Stack(); if (stk != NoStack) {
             fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb));
-            fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb), "Stack=");
+            fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb), (@string)"Stack=");
             stk.Frames((StackFrame f) => {
                 fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "\t%s @ 0x%x\n"u8, f.Func, f.PC);
                 fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "\t\t%s:%d\n"u8, f.File, f.Line);

@@ -135,9 +135,9 @@ public static @string String(this ж<Prog> Ꮡp) {
 
 // skipNop follows any no-op or capturing instructions.
 [GoRecv] internal static ж<Inst> skipNop(this ref Prog p, uint32 pc) {
-    var i = Ꮡ(p.Inst[pc]);
+    var i = Ꮡ(p.Inst, (int)(pc));
     while ((~i).Op == InstNop || (~i).Op == InstCapture) {
-        i = Ꮡ(p.Inst[(~i).Out]);
+        i = Ꮡ(p.Inst, (int)((~i).Out));
     }
     return i;
 }
@@ -179,7 +179,7 @@ public static @string String(this ж<Prog> Ꮡp) {
 [GoRecv] public static EmptyOp StartCond(this ref Prog p) {
     EmptyOp flag = default!;
     var pc = (uint32)p.Start;
-    var i = Ꮡ(p.Inst[pc]);
+    var i = Ꮡ(p.Inst, (int)(pc));
 Loop:
     while (ᐧ) {
         var exprᴛ1 = (~i).Op;
@@ -197,7 +197,7 @@ Loop:
 
         // skip
         pc = i.Value.Out;
-        i = Ꮡ(p.Inst[pc]);
+        i = Ꮡ(p.Inst, (int)(pc));
 continue_Loop:;
     }
 break_Loop:;
@@ -311,7 +311,7 @@ public static @string String(this ж<Inst> Ꮡi) {
 }
 
 internal static void bw(ж<strings.Builder> Ꮡb, params ꓸꓸꓸstring argsʗp) {
-    var args = argsʗp.slice();
+    var args = argsʗp.sslice();
 
     foreach (var (_, s) in args) {
         Ꮡb.WriteString(s);

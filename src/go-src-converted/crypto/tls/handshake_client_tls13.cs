@@ -19,7 +19,7 @@ using go.crypto;
 using go.crypto.@internal;
 using go.sync;
 using io = io_package;
-using x509 = go.crypto.x509_package;
+using Δx509 = go.crypto.x509_package;
 
 partial class tls_package {
 

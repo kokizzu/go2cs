@@ -47,13 +47,13 @@ internal static float64 copysign(float64 x, float64 y) {
 
 // float64bits returns the IEEE 754 binary representation of f.
 internal static uint64 float64bits(float64 f) {
-    return ~(ж<uint64>)(uintptr)(new @unsafe.Pointer(Ꮡ(f)));
+    return ~Ꮡ(f).Reinterpret<float64, uint64>();
 }
 
 // float64frombits returns the floating point number corresponding
 // the IEEE 754 binary representation b.
 internal static float64 float64frombits(uint64 b) {
-    return ~(ж<float64>)(uintptr)(new @unsafe.Pointer(Ꮡ(b)));
+    return ~Ꮡ(b).Reinterpret<uint64, float64>();
 }
 
 } // end runtime_package

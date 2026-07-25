@@ -48,7 +48,7 @@ internal static float64 remainder(float64 x, float64 y) {
     const float64 HalfMax = /* MaxFloat64 / 2 */ 8.988465674311579e+307;
     // special cases
     switch (ᐧ) {
-    case {} when IsNaN(x) || IsNaN(y) || IsInf(x, 0) || y == 0: {
+    case {} when IsNaN(x) || IsNaN(y) || IsInf(x, 0) || y == 0D: {
         return NaN();
     }
     case {} when IsInf(y, 0): {
@@ -56,11 +56,11 @@ internal static float64 remainder(float64 x, float64 y) {
     }}
 
     var sign = false;
-    if (x < 0) {
+    if (x < 0D) {
         x = -x;
         sign = true;
     }
-    if (y < 0) {
+    if (y < 0D) {
         y = -y;
     }
     if (x == y) {
@@ -68,7 +68,7 @@ internal static float64 remainder(float64 x, float64 y) {
             var zero = 0.0D;
             return -zero;
         }
-        return 0;
+        return 0D;
     }
     if (y <= HalfMax) {
         x = Mod(x, y + y);

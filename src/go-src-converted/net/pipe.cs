@@ -18,7 +18,7 @@ partial class net_package {
 }
 
 internal static pipeDeadline makePipeDeadline() {
-    return new pipeDeadline(cancel: new channel<EmptyStruct>(1));
+    return new pipeDeadline(cancel: new channel<EmptyStruct>(0));
 }
 
 // set sets the point in time when the deadline will time out.
@@ -41,7 +41,7 @@ internal static void set(this ж<pipeDeadline> Ꮡd, time.Time t) => func((defer
     var closed = isClosedChan(d.cancel);
     if (t.IsZero()) {
         if (closed) {
-            d.cancel = new channel<EmptyStruct>(1);
+            d.cancel = new channel<EmptyStruct>(0);
         }
         return;
     }
@@ -49,7 +49,7 @@ internal static void set(this ж<pipeDeadline> Ꮡd, time.Time t) => func((defer
     {
         var dur = time.Until(t); if (dur > 0) {
             if (closed) {
-                d.cancel = new channel<EmptyStruct>(1);
+                d.cancel = new channel<EmptyStruct>(0);
             }
             d.timer = time.AfterFunc(dur, () => {
                 builtin.close(Ꮡd.Value.cancel);
@@ -73,8 +73,9 @@ internal static channel<EmptyStruct> wait(this ж<pipeDeadline> Ꮡd) => func((d
 });
 
 internal static bool isClosedChan(/*<-*/channel<EmptyStruct> c) {
-    switch (ᐧ) {
-    case ᐧ when c.ꟷᐳ(out _): {
+    var selᴛ22 = c;
+    switch (trySelect(ᐸꟷ(selᴛ22, ꓸꓸꓸ))) {
+    case 0 when selᴛ22.ꟷᐳ(out _): {
         return true;
     }
     default: {
@@ -116,12 +117,12 @@ internal static @string String(this pipeAddr _) {
 // copying data directly between the two; there is no internal
 // buffering.
 public static (Conn, Conn) Pipe() {
-    var cb1 = new channel<slice<byte>>(1);
-    var cb2 = new channel<slice<byte>>(1);
-    var cn1 = new channel<nint>(1);
-    var cn2 = new channel<nint>(1);
-    var done1 = new channel<EmptyStruct>(1);
-    var done2 = new channel<EmptyStruct>(1);
+    var cb1 = new channel<slice<byte>>(0);
+    var cb2 = new channel<slice<byte>>(0);
+    var cn1 = new channel<nint>(0);
+    var cn2 = new channel<nint>(0);
+    var done1 = new channel<EmptyStruct>(0);
+    var done2 = new channel<EmptyStruct>(0);
     var p1 = Ꮡ(new pipe(
         rdRx: cb1, rdTx: cn1,
         wrTx: cb2, wrRx: cn2,
@@ -171,19 +172,23 @@ internal static (nint n, error err) read(this ж<pipe> Ꮡp, slice<byte> b) {
         return (0, os.ErrDeadlineExceeded);
     }}
 
-    switch (select(ᐸꟷ(p.rdRx, ꓸꓸꓸ), ᐸꟷ(p.localDone, ꓸꓸꓸ), ᐸꟷ(p.remoteDone, ꓸꓸꓸ), ᐸꟷ(Ꮡp.of(pipe.ᏑreadDeadline).wait(), ꓸꓸꓸ))) {
-    case 0 when p.rdRx.ꟷᐳ(out var bw): {
+    var selᴛ23 = p.rdRx;
+    var selᴛ24 = p.localDone;
+    var selᴛ25 = p.remoteDone;
+    var selᴛ26 = Ꮡp.of(pipe.ᏑreadDeadline).wait();
+    switch (select(ᐸꟷ(selᴛ23, ꓸꓸꓸ), ᐸꟷ(selᴛ24, ꓸꓸꓸ), ᐸꟷ(selᴛ25, ꓸꓸꓸ), ᐸꟷ(selᴛ26, ꓸꓸꓸ))) {
+    case 0 when selᴛ23.ꟷᐳ(out var bw): {
         nint nr = copy(b, bw);
         p.rdTx.ᐸꟷ(nr);
         return (nr, default!);
     }
-    case 1 when p.localDone.ꟷᐳ(out _): {
+    case 1 when selᴛ24.ꟷᐳ(out _): {
         return (0, Δio.ErrClosedPipe);
     }
-    case 2 when p.remoteDone.ꟷᐳ(out _): {
+    case 2 when selᴛ25.ꟷᐳ(out _): {
         return (0, Δio.EOF);
     }
-    case 3 when Ꮡp.of(pipe.ᏑreadDeadline).wait().ꟷᐳ(out _): {
+    case 3 when selᴛ26.ꟷᐳ(out _): {
         return (0, os.ErrDeadlineExceeded);
     }}
     return default!;
@@ -218,20 +223,24 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
         // Ensure entirety of b is written together
         defer(Ꮡp.of(pipe.ᏑwrMu).Unlock);
         for (var once = true; once || len(b) > 0; once = false) {
-            switch (select(p.wrTx.ᐸꟷ(b, ꓸꓸꓸ), ᐸꟷ(p.localDone, ꓸꓸꓸ), ᐸꟷ(p.remoteDone, ꓸꓸꓸ), ᐸꟷ(Ꮡp.of(pipe.ᏑwriteDeadline).wait(), ꓸꓸꓸ))) {
+            var selᴛ27 = p.wrTx.ᐸꟷ(b, ꓸꓸꓸ);
+            var selᴛ28 = p.localDone;
+            var selᴛ29 = p.remoteDone;
+            var selᴛ30 = Ꮡp.of(pipe.ᏑwriteDeadline).wait();
+            switch (select(selᴛ27, ᐸꟷ(selᴛ28, ꓸꓸꓸ), ᐸꟷ(selᴛ29, ꓸꓸꓸ), ᐸꟷ(selᴛ30, ꓸꓸꓸ))) {
             case 0: {
                 nint nw = ᐸꟷ(p.wrRx);
                 b = b[(int)(nw)..];
                 n += nw;
                 break;
             }
-            case 1 when p.localDone.ꟷᐳ(out _): {
+            case 1 when selᴛ28.ꟷᐳ(out _): {
                 (n, err) = (n, Δio.ErrClosedPipe); return;
             }
-            case 2 when p.remoteDone.ꟷᐳ(out _): {
+            case 2 when selᴛ29.ꟷᐳ(out _): {
                 (n, err) = (n, Δio.ErrClosedPipe); return;
             }
-            case 3 when Ꮡp.of(pipe.ᏑwriteDeadline).wait().ꟷᐳ(out _): {
+            case 3 when selᴛ30.ꟷᐳ(out _): {
                 (n, err) = (n, os.ErrDeadlineExceeded); return;
             }}
         }

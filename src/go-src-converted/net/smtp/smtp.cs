@@ -118,21 +118,19 @@ public static error Hello(this ж<Client> Ꮡc, @string localName) {
 }
 
 // cmd is a convenience function that sends a command and returns the response
-internal static (nint, @string, error) cmd(this ж<Client> Ꮡc, nint expectCode, @string format, params ꓸꓸꓸany argsʗp) {
+internal static (nint, @string, error) cmd(this ж<Client> Ꮡc, nint expectCode, @string format, params ꓸꓸꓸany argsʗp) => func<ꓸꓸꓸany, (nint, @string, error)>(ref argsʗp, (ref ꓸꓸꓸany argsʗp, Defer defer, Recover recover) => {
     var args = argsʗp.slice();
-    return func<(nint, @string, error)>((defer, recover) => {
-    ref var c = ref Ꮡc.Value;
 
-        var (id, err) = c.Text.Cmd(format, args.ꓸꓸꓸ);
-        if (err != default!) {
-            return (0, "", err);
-        }
-        c.Text.of(textproto.Conn.ᏑPipeline).StartResponse(id);
-        deferǃ(Ꮡc.Value.Text.of(textproto.Conn.ᏑPipeline).EndResponse, id, defer);
-        (var code, var msg, err) = c.Text.of(textproto.Conn.ᏑReader).ReadResponse(expectCode);
-        return (code, msg, err);
-    });
-}
+    ref var c = ref Ꮡc.Value;
+    var (id, err) = c.Text.Cmd(format, args.ꓸꓸꓸ);
+    if (err != default!) {
+        return (0, "", err);
+    }
+    c.Text.of(textproto.Conn.ᏑPipeline).StartResponse(id);
+    deferǃ(Ꮡc.Value.Text.of(textproto.Conn.ᏑPipeline).EndResponse, id, defer);
+    (var code, var msg, err) = c.Text.of(textproto.Conn.ᏑReader).ReadResponse(expectCode);
+    return (code, msg, err);
+});
 
 // helo sends the HELO greeting to the server. It should be used only when the
 // server does not support ehlo.

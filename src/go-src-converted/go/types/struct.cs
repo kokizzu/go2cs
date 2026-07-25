@@ -223,7 +223,7 @@ internal static ж<ast.Ident> embeddedFieldIdent(ast.Expr e) {
 
 // invalid embedded field
 internal static bool declareInSet(this ж<Checker> Ꮡcheck, ж<objset> Ꮡoset, tokenꓸPos pos, Object obj) {
-    ref var oset = ref Ꮡoset.Value;
+    ref var oset = ref Ꮡoset.ValueSlot;
 
     {
         var alt = oset.insert(obj); if (alt != default!) {

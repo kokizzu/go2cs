@@ -42,7 +42,7 @@ internal static readonly UntypedInt invalidNodeValue = 0xffff;
     var nodeIndex = (uint16)0;
     // node 0 is the root of the tree.
     while (ᐧ) {
-        var node = Ꮡ(t.nodes[nodeIndex]);
+        var node = Ꮡ(t.nodes, nodeIndex);
         uint16 bit = default!;
         if (br.bits > 0){
             // Get next bit - fast path.

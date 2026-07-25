@@ -343,9 +343,7 @@ internal static slice<Frame> expandCgoFrames(uintptr pc) {
 }
 
 internal static ж<_func> raw(this ж<Func> Ꮡf) {
-    ref var f = ref Ꮡf.Value;
-
-    return (ж<_func>)(uintptr)(@unsafe.Pointer.FromRef(ref f));
+    return Ꮡf.Reinterpret<Func, _func>();
 }
 
 internal static ΔfuncInfo funcInfo(this ж<Func> Ꮡf) {
@@ -595,9 +593,9 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
     // Check that the pclntab's format is valid.
     var hdr = datap.pcHeader;
     if ((~hdr).magic != 0xfffffff1U || (~hdr).pad1 != 0 || (~hdr).pad2 != 0 || (~hdr).minLC != sys.PCQuantum || (~hdr).ptrSize != goarch.PtrSize || (~hdr).textStart != datap.text) {
-        println("runtime: pcHeader: magic=", ((Δhex)(uint64)(~hdr).magic), "pad1=", (~hdr).pad1, "pad2=", (~hdr).pad2,
-            "minLC=", (~hdr).minLC, "ptrSize=", (~hdr).ptrSize, "pcHeader.textStart=", ((Δhex)(uint64)(~hdr).textStart),
-            "text=", ((Δhex)(uint64)datap.text), "pluginpath=", datap.pluginpath);
+        println((@string)"runtime: pcHeader: magic=", ((Δhex)(uint64)(~hdr).magic), (@string)"pad1=", (~hdr).pad1, (@string)"pad2=", (~hdr).pad2,
+            (@string)"minLC=", (~hdr).minLC, (@string)"ptrSize=", (~hdr).ptrSize, (@string)"pcHeader.textStart=", ((Δhex)(uint64)(~hdr).textStart),
+            (@string)"text=", ((Δhex)(uint64)datap.text), (@string)"pluginpath=", datap.pluginpath);
         @throw("invalid function symbol table"u8);
     }
     // ftab is lookup table for function by program counter.
@@ -605,18 +603,18 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
     for (nint i = 0; i < nftab; i++) {
         // NOTE: ftab[nftab].entry is legal; it is the address beyond the final function.
         if (datap.ftab[i].entryoff > datap.ftab[i + 1].entryoff) {
-            var f1 = new ΔfuncInfo((ж<_func>)(uintptr)(new @unsafe.Pointer(Ꮡ(datap.pclntable, (int)(datap.ftab[i].funcoff)))), Ꮡdatap);
-            var f2 = new ΔfuncInfo((ж<_func>)(uintptr)(new @unsafe.Pointer(Ꮡ(datap.pclntable, (int)(datap.ftab[i + 1].funcoff)))), Ꮡdatap);
+            var f1 = new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[i].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap);
+            var f2 = new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[i + 1].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap);
             @string f2name = "end"u8;
             if (i + 1 < nftab) {
                 f2name = funcname(f2);
             }
-            println("function symbol table not sorted by PC offset:", ((Δhex)(uint64)datap.ftab[i].entryoff), funcname(f1), ">", ((Δhex)(uint64)datap.ftab[i + 1].entryoff), f2name, ", plugin:", datap.pluginpath);
+            println((@string)"function symbol table not sorted by PC offset:", ((Δhex)(uint64)datap.ftab[i].entryoff), funcname(f1), (@string)">", ((Δhex)(uint64)datap.ftab[i + 1].entryoff), f2name, (@string)", plugin:", datap.pluginpath);
             for (nint j = 0; j <= i; j++) {
-                println("\t", ((Δhex)(uint64)datap.ftab[j].entryoff), funcname(new ΔfuncInfo((ж<_func>)(uintptr)(new @unsafe.Pointer(Ꮡ(datap.pclntable, (int)(datap.ftab[j].funcoff)))), Ꮡdatap)));
+                println((@string)"\t", ((Δhex)(uint64)datap.ftab[j].entryoff), funcname(new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[j].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap)));
             }
             if (GOOS == "aix"u8 && isarchive) {
-                println("-Wl,-bnoobjreorder is mandatory on aix/ppc64 with c-archive");
+                println((@string)"-Wl,-bnoobjreorder is mandatory on aix/ppc64 with c-archive");
             }
             @throw("invalid runtime symbol table"u8);
         }
@@ -624,12 +622,12 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
     var min = datap.textAddr(datap.ftab[0].entryoff);
     var max = datap.textAddr(datap.ftab[nftab].entryoff);
     if (datap.minpc != min || datap.maxpc != max) {
-        println("minpc=", ((Δhex)(uint64)datap.minpc), "min=", ((Δhex)(uint64)min), "maxpc=", ((Δhex)(uint64)datap.maxpc), "max=", ((Δhex)(uint64)max));
+        println((@string)"minpc=", ((Δhex)(uint64)datap.minpc), (@string)"min=", ((Δhex)(uint64)min), (@string)"maxpc=", ((Δhex)(uint64)datap.maxpc), (@string)"max=", ((Δhex)(uint64)max));
         @throw("minpc or maxpc invalid"u8);
     }
     foreach (var (_, modulehash) in datap.modulehashes) {
         if (modulehash.linktimehash != modulehash.runtimehash.Value) {
-            println("abi mismatch detected between", datap.modulename, "and", modulehash.modulename);
+            println((@string)"abi mismatch detected between", datap.modulename, (@string)"and", modulehash.modulename);
             @throw("abi mismatch"u8);
         }
     }
@@ -666,7 +664,7 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
         }
         if (res > md.etext && GOARCH != "wasm"u8) {
             // on wasm, functions do not live in the same address space as the linear memory
-            println("runtime: textAddr", ((Δhex)(uint64)res), "out of range", ((Δhex)(uint64)md.text), "-", ((Δhex)(uint64)md.etext));
+            println((@string)"runtime: textAddr", ((Δhex)(uint64)res), (@string)"out of range", ((Δhex)(uint64)md.text), (@string)"-", ((Δhex)(uint64)md.etext));
             @throw("runtime: text offset out of range"u8);
         }
     }
@@ -706,7 +704,7 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
     if (nameOff == 0) {
         return ""u8;
     }
-    return gostringnocopy(Ꮡ(md.funcnametab[nameOff]));
+    return gostringnocopy(Ꮡ(md.funcnametab, nameOff));
 }
 
 // FuncForPC returns a *[Func] describing the function that contains the
@@ -750,7 +748,7 @@ public static ж<Func> FuncForPC(uintptr pc) {
         line: (int32)line,
         startLine: sf.startLine
     ));
-    return (ж<Func>)(uintptr)(new @unsafe.Pointer(fi));
+    return fi.Reinterpret<funcinl, Func>();
 }
 
 // Name returns the name of the function.
@@ -761,7 +759,7 @@ public static @string Name(this ж<Func> Ꮡf) {
     var fn = Ꮡf.raw();
     if (fn.isInlined()) {
         // inlined version
-        var fi = (ж<funcinl>)(uintptr)(new @unsafe.Pointer(fn));
+        var fi = fn.Reinterpret<_func, funcinl>();
         return funcNameForPrint((~fi).name);
     }
     return funcNameForPrint(funcname(Ꮡf.funcInfo()));
@@ -772,7 +770,7 @@ public static uintptr Entry(this ж<Func> Ꮡf) {
     var fn = Ꮡf.raw();
     if (fn.isInlined()) {
         // inlined version
-        var fi = (ж<funcinl>)(uintptr)(new @unsafe.Pointer(fn));
+        var fi = fn.Reinterpret<_func, funcinl>();
         return (~fi).entry;
     }
     return fn.funcInfo().entry();
@@ -790,7 +788,7 @@ public static (@string @file, nint line) FileLine(this ж<Func> Ꮡf, uintptr pc
     var fn = Ꮡf.raw();
     if (fn.isInlined()) {
         // inlined version
-        var fi = (ж<funcinl>)(uintptr)(new @unsafe.Pointer(fn));
+        var fi = fn.Reinterpret<_func, funcinl>();
         return ((~fi).@file, (nint)(~fi).line);
     }
     // Pass strict=false here, because anyone can call this function,
@@ -805,7 +803,7 @@ internal static int32 startLine(this ж<Func> Ꮡf) {
     var fn = Ꮡf.raw();
     if (fn.isInlined()) {
         // inlined version
-        var fi = (ж<funcinl>)(uintptr)(new @unsafe.Pointer(fn));
+        var fi = fn.Reinterpret<_func, funcinl>();
         return (~fi).startLine;
     }
     return fn.funcInfo().startLine;
@@ -836,7 +834,7 @@ internal static bool valid(this ΔfuncInfo f) {
 }
 
 internal static ж<Func> _Func(this ΔfuncInfo f) {
-    return (ж<Func>)(uintptr)(new @unsafe.Pointer(f._func));
+    return f._func.Reinterpret<_func, Func>();
 }
 
 // isInlined reports whether f should be re-interpreted as a *funcinl.
@@ -899,7 +897,7 @@ internal static ΔfuncInfo findfunc(uintptr pc) {
         idx++;
     }
     var funcoff = (~datap).ftab[(nint)(idx)].funcoff;
-    return new ΔfuncInfo((ж<_func>)(uintptr)(new @unsafe.Pointer(Ꮡ((~datap).pclntable, (int)(funcoff)))), datap);
+    return new ΔfuncInfo(Ꮡ((~datap).pclntable, (int)(funcoff)).Reinterpret<byte, _func>(), datap);
 }
 
 // A srcFunc represents a logical function in the source code. This may
@@ -1010,7 +1008,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
     }
     if (!f.valid()) {
         if (strict && Ꮡpanicking.Load() == 0) {
-            println("runtime: no module data for", ((Δhex)(uint64)f.entry()));
+            println((@string)"runtime: no module data for", ((Δhex)(uint64)f.entry()));
             @throw("no module data"u8);
         }
         return (-1, 0);
@@ -1037,7 +1035,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
             // since it is the most likely to be newly used.
             if (debugCheckCache && checkPC != 0){
                 if (checkVal != val || checkPC != prevpc) {
-                    print("runtime: table value ", val, "@", prevpc, " != cache value ", checkVal, "@", checkPC, " at PC ", targetpc, " off ", off, "\n");
+                    print((@string)"runtime: table value ", val, (@string)"@", prevpc, (@string)" != cache value ", checkVal, (@string)"@", checkPC, (@string)" at PC ", targetpc, (@string)" off ", off, (@string)"\n");
                     @throw("bad pcvalue cache"u8);
                 }
             } else {
@@ -1067,7 +1065,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
     if (Ꮡpanicking.Load() != 0 || !strict) {
         return (-1, 0);
     }
-    print("runtime: invalid pc-encoded table f=", funcname(f), " pc=", ((Δhex)(uint64)pc), " targetpc=", ((Δhex)(uint64)targetpc), " tab=", Δp, "\n");
+    print((@string)"runtime: invalid pc-encoded table f=", funcname(f), (@string)" pc=", ((Δhex)(uint64)pc), (@string)" targetpc=", ((Δhex)(uint64)targetpc), (@string)" tab=", Δp, (@string)"\n");
     Δp = (~datap).pctab[(int)(off)..];
     pc = f.entry();
     val = -1;
@@ -1077,7 +1075,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
         if (!ok) {
             break;
         }
-        print("\tvalue=", val, " until pc=", ((Δhex)(uint64)pc), "\n");
+        print((@string)"\tvalue=", val, (@string)" until pc=", ((Δhex)(uint64)pc), (@string)"\n");
     }
     @throw("invalid runtime symbol table"u8);
     return (-1, 0);
@@ -1158,7 +1156,7 @@ internal static (@string @file, int32 line) funcline(ΔfuncInfo f, uintptr targe
 internal static int32 funcspdelta(ΔfuncInfo f, uintptr targetpc) {
     var (x, _) = pcvalue(f, f.pcsp, targetpc, true);
     if (debugPcln && (int32)(x & (int32)((goarch.PtrSize - 1))) != 0) {
-        print("invalid spdelta ", funcname(f), " ", ((Δhex)(uint64)f.entry()), " ", ((Δhex)(uint64)targetpc), " ", ((Δhex)(uint64)f.pcsp), " ", x, "\n");
+        print((@string)"invalid spdelta ", funcname(f), (@string)" ", ((Δhex)(uint64)f.entry()), (@string)" ", ((Δhex)(uint64)targetpc), (@string)" ", ((Δhex)(uint64)f.pcsp), (@string)" ", x, (@string)"\n");
         @throw("bad spdelta"u8);
     }
     return x;

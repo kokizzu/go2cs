@@ -29,7 +29,7 @@ internal static bool /*ok*/ runExample(InternalExample eg) {
             os.Exit(1);
         }
         os.Stdout = w;
-        var outC = new channel<@string>(1);
+        var outC = new channel<@string>(0);
         var outCʗ1 = outC;
         var rʗ1 = r;
         goǃ(() => {

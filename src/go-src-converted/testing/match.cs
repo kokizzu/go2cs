@@ -8,7 +8,7 @@ using os = os_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using Δsync = sync_package;
-using io = io_package;
+using Δio = io_package;
 
 partial class testing_package {
 

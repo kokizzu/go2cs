@@ -278,8 +278,8 @@ internal static void init(this ж<pageAlloc> Ꮡp, ж<mutex> ᏑmheapLock, ж<sy
         // We can't represent 1<<levelLogPages[0] pages, the maximum number
         // of pages we need to represent at the root level, in a summary, which
         // is a big problem. Throw.
-        print("runtime: root level max pages = ", ((nint)1).Lsh(levelLogPages[0]), "\n");
-        print("runtime: summary max pages = ", (nint)(maxPackedValue), "\n");
+        print((@string)"runtime: root level max pages = ", ((nint)1).Lsh(levelLogPages[0]), (@string)"\n");
+        print((@string)"runtime: summary max pages = ", (nint)(maxPackedValue), (@string)"\n");
         @throw("root level max pages doesn't fit in summary"u8);
     }
     Δp.sysStat = ᏑsysStat;
@@ -305,14 +305,14 @@ internal static void init(this ж<pageAlloc> Ꮡp, ж<mutex> ᏑmheapLock, ж<sy
     if (l2 == nil) {
         return default!;
     }
-    return Ꮡ(l2.Value[ci.l2()]);
+    return l2.at<pallocData>((nint)(ci.l2()));
 }
 
 // chunkOf returns the chunk at the given chunk index.
 //
 // The chunk index must be valid or this method may throw.
 [GoRecv] internal static ж<pallocData> chunkOf(this ref pageAlloc Δp, chunkIdx ci) {
-    return Ꮡ(Δp.chunks[(nint)(ci.l1())].Value[ci.l2()]);
+    return Δp.chunks[(nint)(ci.l1())].at<pallocData>((nint)(ci.l2()));
 }
 
 // grow sets up the metadata for the address range [base, base+size).
@@ -381,7 +381,7 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
             }
             // Store the new chunk block but avoid a write barrier.
             // grow is used in call chains that disallow write barriers.
-            ((ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡ(Δp.chunks[c.l1()])).Value))).Value = (uintptr)r;
+            (Ꮡ(Δp.chunks[c.l1()]).Reinterpret<ж<array<pallocData>>, uintptr>()).Value = (uintptr)r;
         }
         Δp.chunkOf(c).of(pallocData.Ꮡscavenged).setRange(0, pallocChunkPages);
     }
@@ -667,8 +667,8 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
         if (!(addrΔ1.add(size - 1).lessThan(ᏑfirstFree.Value.@base) || ᏑfirstFree.Value.bound.lessThan(addrΔ1))) {
             // This range only partially overlaps with the firstFree range,
             // so throw.
-            print("runtime: addr = ", ((Δhex)(uint64)addrΔ1.addr()), ", size = ", size, "\n");
-            print("runtime: base = ", ((Δhex)(uint64)ᏑfirstFree.Value.@base.addr()), ", bound = ", ((Δhex)(uint64)ᏑfirstFree.Value.bound.addr()), "\n");
+            print((@string)"runtime: addr = ", ((Δhex)(uint64)addrΔ1.addr()), (@string)", size = ", size, (@string)"\n");
+            print((@string)"runtime: base = ", ((Δhex)(uint64)ᏑfirstFree.Value.@base.addr()), (@string)", bound = ", ((Δhex)(uint64)ᏑfirstFree.Value.bound.addr()), (@string)"\n");
             @throw("range partially overlaps"u8);
         }
     };
@@ -767,13 +767,13 @@ nextLevel:
         // We're not at level zero, and we exhausted the level we were looking in.
         // This means that either our calculations were wrong or the level above
         // lied to us. In either case, dump some useful state and throw.
-        print("runtime: summary[", l - 1, "][", lastSumIdx, "] = ", lastSum.start(), ", ", lastSum.max(), ", ", lastSum.end(), "\n");
-        print("runtime: level = ", l, ", npages = ", npages, ", j0 = ", j0, "\n");
-        print("runtime: p.searchAddr = ", ((Δhex)(uint64)Δp.searchAddr.addr()), ", i = ", i, "\n");
-        print("runtime: levelShift[level] = ", levelShift[l], ", levelBits[level] = ", levelBits[l], "\n");
+        print((@string)"runtime: summary[", l - 1, (@string)"][", lastSumIdx, (@string)"] = ", lastSum.start(), (@string)", ", lastSum.max(), (@string)", ", lastSum.end(), (@string)"\n");
+        print((@string)"runtime: level = ", l, (@string)", npages = ", npages, (@string)", j0 = ", j0, (@string)"\n");
+        print((@string)"runtime: p.searchAddr = ", ((Δhex)(uint64)Δp.searchAddr.addr()), (@string)", i = ", i, (@string)"\n");
+        print((@string)"runtime: levelShift[level] = ", levelShift[l], (@string)", levelBits[level] = ", levelBits[l], (@string)"\n");
         for (nint jΔ2 = 0; jΔ2 < len(entries); jΔ2++) {
             var sum = entries[jΔ2];
-            print("runtime: summary[", l, "][", i + jΔ2, "] = (", sum.start(), ", ", sum.max(), ", ", sum.end(), ")\n");
+            print((@string)"runtime: summary[", l, (@string)"][", i + jΔ2, (@string)"] = (", sum.start(), (@string)", ", sum.max(), (@string)", ", sum.end(), (@string)")\n");
         }
         @throw("bad summary data"u8);
 continue_nextLevel:;
@@ -792,8 +792,8 @@ break_nextLevel:;
         // We couldn't find any space in this chunk despite the summaries telling
         // us it should be there. There's likely a bug, so dump some state and throw.
         var sum = Δp.summary[len(Δp.summary) - 1][i];
-        print("runtime: summary[", (nint)(len(Δp.summary) - 1), "][", i, "] = (", sum.start(), ", ", sum.max(), ", ", sum.end(), ")\n");
-        print("runtime: npages = ", npages, "\n");
+        print((@string)"runtime: summary[", (nint)(len(Δp.summary) - 1), (@string)"][", i, (@string)"] = (", sum.start(), (@string)", ", sum.max(), (@string)", ", sum.end(), (@string)")\n");
+        print((@string)"runtime: npages = ", npages, (@string)"\n");
         @throw("bad summary data"u8);
     }
     // Compute the address at which the free space starts.
@@ -837,8 +837,8 @@ break_nextLevel:;
             nuint max = Δp.summary[len(Δp.summary) - 1][i].max(); if (max >= (nuint)npages) {
                 var (j, searchIdx) = Δp.chunkOf(i).of(pallocData.ᏑpallocBits).find(npages, chunkPageIndex(Δp.searchAddr.addr()));
                 if (j == ~(nuint)0) {
-                    print("runtime: max = ", max, ", npages = ", npages, "\n");
-                    print("runtime: searchIdx = ", chunkPageIndex(Δp.searchAddr.addr()), ", p.searchAddr = ", ((Δhex)(uint64)Δp.searchAddr.addr()), "\n");
+                    print((@string)"runtime: max = ", max, (@string)", npages = ", npages, (@string)"\n");
+                    print((@string)"runtime: searchIdx = ", chunkPageIndex(Δp.searchAddr.addr()), (@string)", p.searchAddr = ", ((Δhex)(uint64)Δp.searchAddr.addr()), (@string)"\n");
                     @throw("bad summary data"u8);
                 }
                 addr = chunkBase(i) + (uintptr)j * (uintptr)pageSize;
