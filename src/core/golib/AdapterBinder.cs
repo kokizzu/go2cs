@@ -218,7 +218,12 @@ public static class AdapterBinder
             if (ctor is null)
                 return null;
 
-            return value => ctor.Invoke([value]);
+            // ConstructorInvoker, not ConstructorInfo.Invoke: the memoized factory runs on EVERY
+            // assert of the pair, and the reflective invoke dominated the measurement (~90 ns of a
+            // ~120 ns memoized assert). Same AOT-safety, no dynamic code.
+            ConstructorInvoker invoker = ConstructorInvoker.Create(ctor);
+
+            return value => invoker.Invoke(value);
         }
         catch (Exception ex) when (IsBindingFailure(ex))
         {
@@ -241,7 +246,9 @@ public static class AdapterBinder
             if (ctor is null)
                 return null;
 
-            return value => ctor.Invoke([value, binding]);
+            ConstructorInvoker invoker = ConstructorInvoker.Create(ctor);
+
+            return value => invoker.Invoke(value, binding);
         }
         catch (Exception ex) when (IsBindingFailure(ex))
         {
