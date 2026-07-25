@@ -314,3 +314,230 @@ Reviewer verdicts on the surviving core: the 18-case TestAs walk closes under §
 by case analysis, not hope); X1-alone and X3-alone could not be refuted against the 457-test
 corpus; R10's `%T`/`IsComparable`/csv-DeepEqual consumers verified stable; Call confirmed
 buildable on the `boxed/addrBox/typ_/flag` representation without `flagMethod`.
+
+---
+
+# INCREMENT 2 — the call & construction half (design v1, 2026-07-24)
+
+> Chip session `chip-reflect-incr2` (branch `claude/chip-reflect-incr2`, base master `5fa7a0f21`).
+> Designed against the two demonstrated consumers' MEASURED differentials (below), per the §6.1
+> spawn rule and the §5 deferral table. Increment-1's contracts (`addrBox` aliasing, ref-routed
+> `WritePointerSlot` stores, the single canonical-nil encoding, `TryMarshalAssignable`) are
+> extended, not reworked — exactly what the v2 review hardened them for.
+
+## I2.1 Ground truth — measured baseline differentials (fresh master converter, 2026-07-24)
+
+**Both consumers were COMPILE-blocked before any reflect call ran** — two non-reflect defects,
+fixed first at their right layers (each its own commit + behavioral guard, landed on the chip
+branch; they were prerequisites for measuring the real reflect differential at all):
+
+| Blocker | Layer | Fix (committed) |
+|---|---|---|
+| `type C complex64/128` emitted `<,<=,>,>=,%` + `IComparisonOperators` (CS0019 ×10; whole quick host failed) | go2cs-gen `InheritedType` templates | complex kind-gate, same shape as the complement/shift gate (`2e467a1e6`; guard: `NamedNumericIncDec` named-complex block) |
+| `for range b.N { _ = Size(x) }` emitted `foreach (var _ in range(…))` — C# declares a real variable named `_`, shadowing the discard; body blank-assign is CS1656 (whole binary host failed) | converter `visitRangeStmt` | scalar-blank positions emit a marked temp `_ᴛ1`; tuple `_` (true discard) untouched (`9588f483a`; guard: `RangeStatements` blank int/chan ranges) |
+
+**testing/quick, post-unblock (8 Test funcs): 3 pass vacuously / 5 fail**, two root causes:
+
+| Tests | Symptom | Verified root cause |
+|---|---|---|
+| TestCheckProperty, TestInt64, TestNonZeroSliceAndMap | `function does not return one value` (quick's SetupError; TestInt64's range check then sees 0,0 because `Check` bailed before ever calling `f`) | `rtype.NumOut()` reads the never-populated `funcType` sub-descriptor — func-type introspection (`NumIn/In/NumOut/Out/IsVariadic`) is unimplemented on the bridge |
+| TestCheckEqual, TestFailure | `panic: reflect.Value.Call: call of nil function` (auto `call()` at value.cs:381 reads `v.ptr`, never populated) | `Value.Call` is unimplemented on the bridge |
+
+(TestEmptyStruct/TestRecursive/TestMutuallyRecursive "pass" only because they ignore `Check`'s
+error — they exercise the full §I2.3 value-generation surface once Check works.)
+
+**encoding/binary, post-unblock: 47 pass / 49 fail**, four clusters:
+
+| Cluster | Tests | Verified root cause |
+|---|---|---|
+| `index out of range [0] with length 0` ×17, `slice bounds [:4] capacity 0` ×5 | all En/Decode/Read/Write walls, TestReadTruncated, TestUnexportedRead | `sizeof(t)` → `t.Size()` — `synthType` never stamps `Size_`, every scalar sizes 0, every buffer allocates empty |
+| `*binary.TestNoFixedSize_Person` vs Go's `*binary.Person` ×3; `*binary.TestSizeStructCache_typeᴛ1` ×1 | TestNoFixedSize/*, TestSizeStructCache | converter LIFTS function-local types with a `<Func>_` prefix (+ temp markers); `GoTypeName` renders the lifted C# name, Go prints the source-local name |
+| `Expected no allocations, got N` ×8 | TestSizeAllocs/*, TestAppendAllocs | `AllocsPerRun` over `Size(v any)` — the `any` boxing alone allocates on the CLR; Go's cached descriptor read is 0-alloc (disclosed-divergence class, bytes/strings precedent) |
+| children infrastructure-error ×24 | TestSliceRoundTrip/* | `ValueOf(&[100]T{}).Elem().Index(i).SetUint/…` — Index-element addressability + Set* (this increment's surface); re-measure after §I2.3 |
+
+## I2.2 Design — func introspection & dynamic call (quick's wall)
+
+**The bridge's func Value boxes a C# delegate** (converted Go funcs pass as method groups →
+natural delegate types; the CS8974 conversions in quick_test.cs confirm it). Everything derives
+from the delegate type's `Invoke` signature — no `funcType` sub-descriptors, ever:
+
+- `GoReflect.FuncShape(Type)` (golib, shared): `(inTypes[], outTypes[], isVariadic)` from
+  `Invoke` — parameters → ins; return type → outs with the **multi-return rule**: `void` → 0,
+  `ValueTuple<…>` → its arity/items (a converted Go multi-return is ALWAYS a ValueTuple, and a
+  converted Go struct is never one — unambiguous), else 1. Variadic = `params` detection on the
+  last parameter (not consumer-demonstrated; conservative).
+- Hand-owned `rtype.{NumIn, In, NumOut, Out, IsVariadic}` over FuncShape;
+  `In/Out(i) = toType(abi.synthType(shape[i]))` — canonical.
+- Hand-owned `Value.Call`: nil delegate → Go's `"reflect.Value.Call: call of nil function"`
+  panic; args = each `in[i].live` marshalled by the EXISTING `TryMarshalAssignable` against the
+  Invoke parameter types (one assignability rule everywhere, §8 charter); invoke via
+  `Delegate.DynamicInvoke`; **unwrap `TargetInvocationException`** and rethrow the inner
+  exception via `ExceptionDispatchInfo` so an in-callee Go panic propagates untouched; results
+  wrapped **with the STATIC out types** (`makeTypedValue(object? boxed, Type staticType)` — a
+  nil interface/pointer/map result still yields a VALID Value of the out type, never the invalid
+  zero Value). `CallSlice`: scoped panic naming its next consumer (nothing demonstrated).
+
+## I2.3 Design — construction & write-back family (quick's generator + binary's decoder)
+
+One shared zero-construction rule, then thin hand-owned entry points:
+
+- `GoReflect.ZeroValueOf(Type)` (golib): the boxed Go zero — pointer → `CanonicalNilPointer`
+  (X2 singleton, one nil encoding); interface/func/**map/chan** → `null` (the emitted C# nil
+  slot value: `map<K,V> m = default!` IS null — `Value.IsNil` already answers true; the
+  typed-nil-map-inside-`any` `%T` fidelity is NOT demonstrated by any consumer and stays
+  recorded); string → `""`; slice → `default(slice<E>)`; everything else →
+  `Activator.CreateInstance`. `reflect.Zero` reuses it (replacing its private switch + its
+  map/chan/func `NotImplementedException` — quick's `sizedValue` probes
+  `Zero(t).Interface().(Generator)` for EVERY generated type, so Zero must be total).
+- Hand-owned `reflect.New(t)`: a fresh `ж<T>` box holding `ZeroValueOf(t)` (cached generic
+  factory), wrapped as a Pointer-kind Value — increment-1 `Elem()` then already yields the
+  addressable Value aliasing the box.
+- Hand-owned `Value.{SetBool, SetInt, SetUint, SetFloat, SetComplex, SetString, SetZero}`:
+  flag checks as in Set, then `GoReflect.CoerceToSlotValue(slotType, wide)` →
+  `WritePointerSlot`. Coercion is Go-exact: SetInt/SetUint **truncate** to the slot's width
+  (quick feeds full-range `randInt64` into every width); SetFloat/SetComplex narrow to
+  float32/complex64; a NAMED wrapper slot coerces to the underlying primitive first, then
+  constructs the wrapper via its generated single-argument constructor (cached per type; exact
+  primitive match, so reflection binding is unambiguous). SetZero writes `ZeroValueOf(slot)`.
+- Hand-owned `MakeSlice(t, len, cap)` / `MakeMap(t)`: golib `slice<E>`/`map<K,V>` construction
+  via cached generic factories; results are non-addressable Values (Go), their ELEMENTS are
+  addressable through the shared backing (below). `Value.SetMapIndex(k, v)`: store through the
+  live golib map (delete-on-invalid is not consumer-demonstrated; scoped panic).
+- **`Value.Field(i)` addressability** — the increment-1 ref-accessor contract extended: when
+  `v.addrBox` is set, the field Value's `addrBox` is a **field-alias `ж<F>`** built from the
+  parent box + a cached **`ValueSlot`-routed accessor** (DynamicMethod: `castclass ж<S>; call
+  get_ValueSlot; ldflda field` — routing through `ValueSlot` is what makes NESTED parents
+  (field-of-field, element parents) correct where `FieldRef<T>.Create`'s `m_val`-hardcoded IL
+  is not; the accessor doubles as the ж equality-identity token so `&s.f == &s.f` holds).
+  Unexported (Go lowercase) and blank fields carry `flagRO` → `CanSet()` false (binary's
+  TestUnexportedRead skip path). Non-addressable structs keep the detached-copy read.
+- **`Value.Index(i)` addressability**: slice kind → element-alias `ж<E>` over the live slice's
+  shared backing (`ж(IArray, int)` — golib slices/arrays are `IArray<T>` with ref-returning
+  indexers; a struct COPY of the slice shares the backing store, so the ref lands in the real
+  storage) — always addressable, matching Go; array kind → same alias iff the array Value is
+  itself addressable, else the detached read; string indexing stays scoped-out (no consumer).
+- Hand-owned `Value.Slice(i, j)` (TestSliceRoundTrip's `src.Slice(0, src.Len())`): array/slice
+  kind → a `slice<E>` view over the SAME backing store (golib slices share backing by
+  construction), wrapped as a slice-kind Value; Go's addressability requirement for slicing an
+  array (panic on unaddressable) is honored via the flag.
+
+## I2.4 Design — descriptor size & carried array length (binary's wall)
+
+`synthType` stamps `Size_` from a new `GoReflect.GoSizeOf(Type)`: exact Go/amd64 sizes for
+scalars (bool/int8…int64/int/uint/uintptr/float/complex), string 16, slice 24, pointer/map/
+chan/func/unsafe.Pointer 8, interface 16, struct → recursive field sum with Go alignment
+rules, array → elem × length. The auto `rtype.Size()` reads `Size_` and just works.
+
+**Array length is REQUIRED type-level knowledge for binary** — `sizeof(t)`'s struct walk does
+`sizeof(t.Elem()) * t.Len()` for every array-typed FIELD (binary's core `Struct` has six) —
+and the managed `array<T>` type does not carry it (the §5 recorded limitation, now landed on
+by a real consumer). Design:
+
+1. The synthetic descriptor gains a **carried length** (`partial struct Type { nint arrayLen }`),
+   stamped from three sources: (a) a VALUE (`abi.TypeOf` reads the live `IArray.Length`);
+   (b) a **converter-emitted dimension attribute on array-typed struct fields**
+   (`[GoDim(4)]`-shape, golib-declared; dims nest for `[4][8]T`), read by `rtype.Field(i)`;
+   (c) an existing descriptor's element chain.
+2. `canonType` interning key widens to **(System.Type, arrayLen)** — `[4]byte` and `[8]byte`
+   become DISTINCT canonical Types (identity-correct: `TypeOf(a [4]byte)` ==
+   `structField([4]byte).Type`), fixing the length-collapse for every future consumer
+   (json/gob) rather than special-casing binary. Non-array keys are unchanged (len 0), so
+   fmtsort/csv identity behavior is untouched.
+3. Hand-owned `rtype.Len()` reads the carried length (auto form walks an unsafe sub-descriptor).
+   A length the system genuinely cannot know (an unnamed `[N]T` reached purely as a TYPE with
+   no value, no field attribute — e.g. via `SliceOf`-style construction we don't have) stays 0
+   and is the recorded residual limitation.
+4. `reflect.New` / `ZeroValueOf` of an ARRAY kind size the fresh backing from the carried
+   length (`new array<E>(len)`) — TestSliceRoundTrip's `dst := reflect.New(src.Type()).Elem()`
+   must produce a length-100 array (its `dst.Len()`/`dst.Slice(0, …)` depend on it), and a
+   zero-length backing would silently DeepEqual-fail rather than error.
+
+## I2.5 Design — name fidelity (binary's error-string cluster)
+
+- `rtype.Field(i).Name` maps the converter's blank-field renames (`_`, `__`, `___`, …) back to
+  Go's `"_"` (binary's decoder skips on exactly `Name == "_"`). A REAL Go field named `__` is
+  a documented exposure, same class as the marker-shaped-identifier ruling on master.
+- **Function-local lifted types** print their Go-source name: the converter stamps the original
+  local name on the lifted type (a `[GoType]` definition token, e.g. `local:Person`), and
+  `GoReflect.GoQualifiedName` prefers it — `*binary.Person`, not `*binary.TestNoFixedSize_Person`.
+  General (every `%T`/`Type.String()` of a local type, gob/json type registries later), small,
+  converter+golib layers. (Includes the temp-marker shape `TestSizeStructCache_typeᴛ1`.)
+
+## I2.6 Deferred / scoped-out of increment 2 (named consumers)
+
+| Item | Why deferred | Next consumer |
+|---|---|---|
+| `CallSlice`, variadic `Call` | no demonstrated caller | text/template |
+| `SetMapIndex` delete-on-invalid, `MapKeys` | no demonstrated caller | encoding/json |
+| named-func-type identity under interning | unchanged from §5 | gob type registry |
+| typed-nil map/chan/func inside `any` (`%T`) | Zero()'s null slot suffices for every measured test | encoding/json nil-map round-trip |
+| unnamed↔named `directlyAssignable` refinement | NOT yet demonstrated — binary's measured failures never reach it; re-measure after I2.3/I2.4 land | binary named-slice cases if they surface, else gob |
+| alloc-count asserts (TestSizeAllocs/TestAppendAllocs) | `any` boxing provably allocates on CLR; Go is 0-alloc by cached descriptor | disclosed-divergence manifest AFTER the real fixes land and they are the sole residue (bytes/strings precedent) |
+
+## I2.R Adversarial-review ledger, round 1 (§7, 2026-07-24) — and the v2 corrections
+
+Three independent reviewers (Go-semantics / blast-radius / generalization lenses), 40+ verified
+findings. **Where this section conflicts with I2.2–I2.5 above, THIS section wins** (v2). The
+full reports live in the session record; this table is the durable disposition.
+
+**Corrections that change the model (v2):**
+
+| # | Finding (reviewer-verified) | v2 disposition |
+|---|---|---|
+| R-1 | Named slice/map/array/chan/pointer types are WRAPPER structs/classes; `KindOf` reports Struct for all of them (and for raw `complex64`, and `num:nint`/`num:nuint` tokens are unmapped) — quick's entire alias table dies; `[GoType]` token strings must not be parsed | Classification becomes STRUCTURAL: `ISlice`/`IMap`/`IArray`/`IChannel`/`IPointer`+`INilPointer` implementation, `typeof(complex64)`, token map completed. New golib pair `TryUnwrapNamedContainer(Type)` / wrap-for-slot used uniformly by KindOf/ElementType/GoTypeName/GoSizeOf/Make*/Zero/Coerce; wrapper arms added to `Len/IsNil/Bytes/String/Elem/Index/SetMapIndex`; `Value.Complex()` read-half coercion (golib `complex64` cannot unbox to `Complex`) |
+| R-2 | `Field/Index/MapIter.Key/Value` build Values from the DYNAMIC type; Go requires the STATIC slot type (interface-typed fields must report Kind Interface; a null `ж<T>` field must be a VALID nil Value, not the invalid zero Value — TestRecursive dies otherwise; `Set` derives dstType from the descriptor, so dynamic typing also corrupts assignability) | `makeTypedValue(live, staticType)` becomes the constructor for ALL slot-derived Values (Field/Index/MapIter/Call results); `boxed == null` + typ_ set = valid nil Value of the static kind. This also fixes a latent increment-1 defect |
+| R-3 | `ZeroValueOf(System.Type)` is the wrong signature: golib `map<K,V>`/`channel<T>` are STRUCTS (`default`, never null — the I2.3 text was factually wrong); `Activator` on `slice`/`map` structs runs parameterless ctors that allocate NON-nil backings; arrays need dims the Type cannot carry; named-pointer wrapper classes have no parameterless ctor | `ZeroValueOf` takes the DESCRIPTOR: pointer → canonical nil box; interface/func → null; string → ""; slice/map/chan → cached `default(T)` factories (never Activator); array → `new array<E>(dims…)` with recursive element factories; named wrappers → wrap-for-slot |
+| R-4 | The `(sysType, arrayLen)` canonType key creates UNDER-equal identity (type-only paths never stamp a length → two canonical Types for one Go type — the reversed-map-sort class from the other side); a single `nint` cannot express nested dims (`[4][8]byte` vs `[4][4]byte` collapse); `0` conflates "unknown" with legal `[0]T` | **canonType key stays `System.Type` alone — interning is NOT widened.** Array dims ride the descriptor as non-identity CARGO (a dims vector; null = unknown, distinct from `[0]T`), consumed by `rtype.Len()`/`Size()`/`New`/`Zero`/`Slice`. Type identity stays length-blind — the §5 recorded limitation stands (with `GoTypeName` rendering `[N]T` when dims are known) |
+| R-5 | The converter dimension attribute is UNNECESSARY: array dims are already recoverable at runtime — field initializers (`= new(4)`, nested `new(128, () => new(4))`) compile into the generated parameterless ctor, so a cached zero instance of the declaring struct yields every field's real dims (named array wrappers likewise via `TargetTypeSize`) | I2.4 source (b) is replaced by the **zero-instance dims walk** (golib-side, cached per type) — zero converter emission, zero golden churn. Dim sources: live value; declaring-struct zero instance; live value behind `Elem()`/addressable Values (the TestSliceRoundTrip path — I2.1's cluster attribution was incomplete: it ALSO needs `Value.Slice` and a dims-correct `New`) |
+| R-6 | Embedded (promoted) Go fields are `private readonly ж<T> ᏑʗName` box fields; named-struct wrappers hold fields behind `m_value` — `goStructFields` reports wrong name/kind/size/order for both, `StructFieldsComparable` is already wrong on embeds, and a single-`ldflda` accessor cannot reach them | The Go-field table becomes a PROJECTION: `(Go name, Go type, exported, access path)` per struct type, unwrapping promoted-embed boxes, `m_value` forwarding, blank (`_`,`__`,…→`_`) and Δ renames; the ref accessor is emitted from the multi-step path; `NumField/Field/rtype.Field/GoSizeOf/StructFieldsComparable` all ride it; companion fields (`boxed`, `addrBox`, `mapEnum`, `sysType`) are excluded by attribute, not name list (all three reviewers hit this) |
+| R-7 | `flagRO` as specified is not sticky (Go propagates through Field/Index/Elem) and "lowercase first rune" misclassifies `Ꮡʗ`-prefixed embeds and `_` blanks; the fmt-panic attack FAILED (converted fmt guards with `CanInterface()`), but %v output shifts must be re-measured, not assumed | RO derivation moves onto the projected Go field; RO ORs the parent's flag in `Field/Index/Elem`. Guard: Write-succeeds/Read-panics on the same unexported-field struct (Go's real asymmetry — reads through RO are legal; I2.3's "skip path" wording was wrong) |
+| R-8 | I2.5's `local:` token in the `[GoType]` def string makes the TypeGenerator THROW (structs match `"dyn"` by exact equality) — corpus-wide compile break | Local names ride a NEW golib attribute (`[GoTypeName("Person")]`-shape) the gen never parses; `GoQualifiedName` prefers it. Sequenced before any converter emission |
+| R-9 | TestSizeStructCache is an IDENTITY defect, not naming: four textual `struct{ A Struct }` occurrences (ONE Go type) lift to four distinct C# types → four cache entries vs Go's one. No reflect-layer fix exists | Converter dedupes structurally-identical lifted anonymous struct types (per package); its own commit + guard |
+| R-10 | `new([N]T)` emits `@new<array<T>>()` — the LENGTH is dropped (a runtime-correctness converter bug independent of reflection: `len(*p)` is 0) | Converter fix, own commit + guard |
+| R-11 | quick's TestFailure asserts `func(int) int` vs `func(int) int32` are DIFFERENT types; the converter emits both lambdas as natural-typed `(nint x) => 0` → `Func<nint,int>` for both → same canonical Type → no SetupError | Converter emits Go-faithful lambda result types where natural-type inference would misinfer (explicit lambda return type / typed delegate in untyped contexts); own commit + guard. The general delegate-shape lossiness is recorded beside the §5 named-func limitation |
+| R-12 | Variadic func VALUES are golib `Funcꓸꓸꓸ`/`Actionꓸꓸꓸ` with `params Span<T>` (C#13 params-collections): `ParamArrayAttribute` detection returns false, `KindOf(Span<T>)` = Struct, and DynamicInvoke cannot bind byref-like params (NotSupportedException, not the designed panic) | `FuncShape` detects the golib variadic families by open generic definition (closed set): `IsVariadic` true, tail param reported as `slice<T>`, `Value.Call` raises the scoped panic BEFORE DynamicInvoke |
+| R-13 | `TryMarshalAssignable` has no `object`/`any` row (assignment into an `any` slot panics "not assignable"), `KindOf(object)` = Struct, and the coercion helper's wide-primitive shape cannot grow into Go's CONVERTIBILITY relation (json/gob `Convert`); wrapper ctor targets are golib STRUCTS (`uintptr`, `@string`, `complex64`), not primitives | `object` dst passes through (incl. null src); `KindOf(object)` = Interface; the coercion lands as `GoReflect.TryConvertTo(src, dstType)` — THE convertibility relation, ctor-parameter-typed for wrappers — with Set* as one caller |
+| R-14 | Stamping `Size_` wakes dormant auto code OUTSIDE the consumers (`makeInt`/`makeFloat`/`makeComplex` via `Convert` now reach the nil `unsafe_New` stub; `isPaddedField` without `Offset` becomes newly wrong); zero callers among the 37; `GoSizeOf` also creates a SECOND size authority beside `unsafe.Sizeof` = `Marshal.SizeOf` (183 corpus sites) | Recorded forward-risks with named consumers (`Value.Convert` → text/template, json). `GoSizeOf` is THE golib Go-size rule (scalars exact; string/slice/iface/ptr headers exact; structs Go-aligned; `Align_`/`FieldAlign_` stamped); rerouting `unsafe.Sizeof` onto it is deferred with the divergence recorded — not silently left as two rules |
+| R-15 | `Value.IsNil` has no slice arm; `ReadPointerSlot/WritePointerSlot` crash on named-pointer wrappers (non-generic — `GetGenericArguments()[0]` throws); `Index(i)` via a detached `v.live` read loses writes on lazily-backed named-array wrappers (the pallocBits class); `Value.Interface()` lacks `mustBeExported` | Slice-nilness arm (representational, `m_array is null`); slot access gains an `IPointer<T>`-resolved arm; addressable `Index(i)` routes through `ж.at<E>()` (which materializes lazy backings on the REAL storage); `Interface()` honors RO. Reader polish: Go-shaped panics replace silent zeros/unchecked casts |
+
+**Verified-safe (attacks that failed, on record):** the ValueSlot-routed accessor composes through
+field-of-element-of-slice chains with no copies; the accessor-as-identity-token preserves
+`&s.f == &s.f`; SetInt/SetUint TRUNCATE in Go (never overflow-panic) — I2.3's rule confirmed
+against Go 1.23 source; the ValueTuple multi-return rule held against the corpus; blank-field
+mapping reproduces Go's skip INCLUDING size advance; `MakeSlice(t,0,0)`/`MakeMap` yield non-nil
+values (TestNonZeroSliceAndMap); registry additions have ZERO re-validation exposure (all corpus
+callers of the newly-owned surface live outside the 37 and are broken today); the two landed
+build-blocker commits withstood direct attack; converted fmt cannot panic on RO (guards with
+`CanInterface`).
+
+**Residual fidelity gaps recorded (not blocking validation):** unnamed array-typed func
+PARAMETERS have no dims source (`fArray`'s generated `[4]byte` is length-0; the CheckEqual row
+still passes honestly under the test's own semantics — both sides see the same value — but the
+generator fidelity gap is recorded; a converter param-dims attribute is the named fix if a
+consumer lands on it); `Type.String()` of anonymous lifted structs prints the lifted name;
+delegate-derived func-type identity remains structurally lossy beyond R-11's literal fix.
+
+## I2.7 Decisions requested (§10)
+
+(v2 — after the I2.R fold; the original v1 questions 2/3 are superseded by R-4/R-5/R-8.)
+
+1. **Bless the v2 model** (I2.2/I2.3 as corrected by I2.R): structural container
+   classification + wrapper arms; static-slot-typed Value construction everywhere
+   (`makeTypedValue`); descriptor-taking `ZeroValueOf` with struct-container defaults;
+   dims-as-descriptor-cargo with the zero-instance recovery and canonType interning UNCHANGED;
+   the Go-field projection (embeds/wrappers/blanks) under Field/NumField/GoSizeOf; sticky
+   flagRO; `TryConvertTo` as the single convertibility relation; FuncShape/DynamicInvoke Call
+   with variadic-family detection; `GoSizeOf` as the golib size rule (unsafe.Sizeof rerouting
+   deferred, divergence recorded).
+2. **Bless the converter fidelity bundle** — four root-caused converter fixes the consumers
+   demonstrated, each its own commit + behavioral guard: (a) `new([N]T)` length emission
+   (R-10); (b) structurally-identical lifted anonymous struct types dedupe (R-9); (c) lifted
+   local-type name stamp via a NEW golib attribute, never the `[GoType]` def slot (R-8);
+   (d) Go-faithful lambda result types where C# natural-type inference misinfers (R-11).
+3. **Alloc asserts**: pre-authorize disclosed-divergence manifest entries for binary's
+   AllocsPerRun tests IF they are the sole residue after the v2 surface lands (signature-pinned,
+   bytes/strings precedent) — final list reported with the re-measured validation numbers.
+4. **fArray dims residual**: accept the recorded unnamed-array-parameter fidelity gap (the
+   CheckEqual row passes honestly, generator sees a length-0 array) — or direct a converter
+   param-dims attribute now. Recommendation: accept + record; the attribute has no other
+   demonstrated consumer.
