@@ -1,6 +1,6 @@
 # DESIGN — runtime duck-typing shells for NAMED interfaces
 
-> **Status: PROPOSED — awaiting user blessing (charter §7/§10).** Produced 2026-07-24/25 by an
+> **Status: BLESSED (user, 2026-07-25) — stages 2–5 approved as specified; Stage 2 in flight.** Produced 2026-07-24/25 by an
 > adversarial design panel (three lenses — full-generalization, runtime-pairing, demand-driven —
 > plus a critic that re-measured every disputed number against the committed tree). Stage 1 (latent
 > bug fixes that exist today) is pre-approved §2 territory and proceeds independently.
