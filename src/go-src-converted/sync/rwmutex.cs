@@ -155,7 +155,18 @@ internal static bool syscall_hasWaitingReaders(ж<RWMutex> Ꮡrw) {
 }
 
 // RLocker returns a Locker interface that implements Lock and Unlock by calling rw.RLock and rw.RUnlock.
+//
+// Go's RLocker is a pointer REINTERPRETATION — `(*rlocker)(rw)` — so the returned Locker shares rw's
+// storage. The C# form copy-boxes the RWMutex value into an rlocker (identical layout), which shares
+// rw's state only because `st` is a REFERENCE to the shared RWState. That reference has to exist
+// first: on a never-used RWMutex it is still null, the copy's own rwStateOf then installs a SECOND
+// RWState on the copy, and every RLock/RUnlock through the Locker operates on state the original
+// never sees — TestRLocker (whose `var wl RWMutex; rl = wl.RLocker()` calls it on a fresh mutex)
+// died with "sync: RUnlock of unlocked RWMutex". Forcing creation before the copy makes both sides
+// hold the one RWState, which is exactly what Go's shared storage gives.
 public static Locker RLocker(this ж<RWMutex> Ꮡrw) {
+    rwStateOf(Ꮡrw);
+
     ref var rw = ref Ꮡrw.Value;
 
     return new rlockerжLocker(Ꮡ((rlocker)(rw)));
