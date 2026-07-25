@@ -278,15 +278,23 @@ internal class InterfaceTypeTemplate : TemplateBase
 
     private string GetReceiverMethodImplementation(MethodInfo method)
     {
+        // Compound member names (the ByPtr/ByVal delegate types and their s_ backing fields) must
+        // compose on the BARE identifier: C#'s `@` verbatim prefix is legal only at the START of a
+        // token, so composing on the escaped name of a keyword-named Go method (testing.TB's
+        // @private) emitted `s_@privateByPtr`, which Roslyn tokenizes as `s_` + `@privateByPtr` —
+        // corrupting the class body (CS0102 on a phantom `s_` member). The DECLARATION keeps the
+        // escaped form (method.GetSignature escapes it).
+        string bareName = GetUnsanitizedIdentifier(method.Name);
+
         return $$"""
 
                      
                          // Implementation for '{{NonGenericInterfaceName}}.{{method.Name}}' receiver method 
-                         private delegate {{method.ReturnType}} {{method.Name}}ByPtr{{method.GetGenericSignature()}}({{PointerPrefix}}<{{TypeTTarget}}> target{{CapturedVarMarker}}{{getCommaPrefixedTypedParameters()}}){{method.GetWhereConstraints()}};
-                         private delegate {{method.ReturnType}} {{method.Name}}ByVal{{method.GetGenericSignature()}}({{TypeTTarget}} target{{CapturedVarMarker}}{{getCommaPrefixedTypedParameters()}}){{method.GetWhereConstraints()}};
+                         private delegate {{method.ReturnType}} {{bareName}}ByPtr{{method.GetGenericSignature()}}({{PointerPrefix}}<{{TypeTTarget}}> target{{CapturedVarMarker}}{{getCommaPrefixedTypedParameters()}}){{method.GetWhereConstraints()}};
+                         private delegate {{method.ReturnType}} {{bareName}}ByVal{{method.GetGenericSignature()}}({{TypeTTarget}} target{{CapturedVarMarker}}{{getCommaPrefixedTypedParameters()}}){{method.GetWhereConstraints()}};
                          
-                         private static readonly {{method.Name}}ByPtr? s_{{method.Name}}ByPtr;
-                         private static readonly {{method.Name}}ByVal? s_{{method.Name}}ByVal;
+                         private static readonly {{bareName}}ByPtr? s_{{bareName}}ByPtr;
+                         private static readonly {{bareName}}ByVal? s_{{bareName}}ByVal;
                          
                          [global::System.Diagnostics.DebuggerNonUserCode]
                          public {{method.ReturnType}} {{method.GetSignature(false)}}
@@ -296,10 +304,10 @@ internal class InterfaceTypeTemplate : TemplateBase
                              if (m_target_is_ptr && m_target_ptr is not null)
                                  target = m_target_ptr.Value;
                          
-                             if (s_{{method.Name}}ByPtr is null || !m_target_is_ptr)
-                                 {{getReturnStatement()}}s_{{method.Name}}ByVal!(target{{getCommaPrefixedCallParameters()}});
+                             if (s_{{bareName}}ByPtr is null || !m_target_is_ptr)
+                                 {{getReturnStatement()}}s_{{bareName}}ByVal!(target{{getCommaPrefixedCallParameters()}});
                          
-                             {{getReturnStatement()}}s_{{method.Name}}ByPtr!(m_target_ptr!{{getCommaPrefixedCallParameters()}});
+                             {{getReturnStatement()}}s_{{bareName}}ByPtr!(m_target_ptr!{{getCommaPrefixedCallParameters()}});
                          }
                  """;
 
@@ -364,9 +372,13 @@ internal class InterfaceTypeTemplate : TemplateBase
         // `nameof(...)` takes the method name as a bare identifier, so a Go sealing method whose
         // name is a C# reserved keyword (testing.TB.private()) must be `@`-escaped here — Roslyn
         // hands back the UNescaped name for an inherited (AllInterfaces) member. The compound
-        // delegate/field names (`{Name}ByPtr`, `s_{Name}ByPtr`) stay on the raw name: keyword +
-        // suffix is never itself a keyword, and `@` cannot appear mid-token.
+        // delegate/field names (`{Name}ByPtr`, `s_{Name}ByPtr`) must instead compose on the BARE
+        // name: keyword + suffix is never itself a keyword, and `@` cannot appear mid-token, so a
+        // SYNTAX-sourced (already-escaped) name — a keyword-named method declared DIRECTLY on the
+        // dyn interface — composed the invalid `s_@privateByPtr`. Must stay in lockstep with
+        // GetReceiverMethodImplementation, which declares the very members named here.
         string escapedName = EscapeCsKeyword(method.Name);
+        string bareName = GetUnsanitizedIdentifier(method.Name);
 
         return $$"""
 
@@ -375,14 +387,14 @@ internal class InterfaceTypeTemplate : TemplateBase
                              extensionMethod = targetTypeByPtr.GetExtensionMethod(nameof({{escapedName}}));
 
                              if (extensionMethod is not null)
-                                 s_{{method.Name}}ByPtr = extensionMethod.CreateStaticDelegate(typeof({{method.Name}}ByPtr)) as {{method.Name}}ByPtr;
+                                 s_{{bareName}}ByPtr = extensionMethod.CreateStaticDelegate(typeof({{bareName}}ByPtr)) as {{bareName}}ByPtr;
 
                              extensionMethod = targetType.GetExtensionMethod(nameof({{escapedName}}));
 
                              if (extensionMethod is not null)
-                                 s_{{method.Name}}ByVal = extensionMethod.CreateStaticDelegate(typeof({{method.Name}}ByVal)) as {{method.Name}}ByVal;
+                                 s_{{bareName}}ByVal = extensionMethod.CreateStaticDelegate(typeof({{bareName}}ByVal)) as {{bareName}}ByVal;
 
-                             if (s_{{method.Name}}ByPtr is null && s_{{method.Name}}ByVal is null)
+                             if (s_{{bareName}}ByPtr is null && s_{{bareName}}ByVal is null)
                                  throw new global::System.NotImplementedException($"{targetType.FullName} does not implement '{{NonGenericInterfaceName}}.{nameof({{escapedName}})}' method");
                  """;
     }
