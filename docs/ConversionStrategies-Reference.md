@@ -885,10 +885,36 @@ the dereference guard):
   holding a pointer only as `object` (equality tails, the reflection bridge's `IsNil`/`Elem`).
 
 `(*T)(nil)` conversion **expressions** are the scope — pointer-typed locals, parameters, and
-fields keep plain `null` (their statically-typed world never needed the type carried). Guarded by
-`TypedNilInterface`, `PointerToNilPointerIdentity`, and `NamedPointerReinterpret` (the canonical
-singleton keeps its `object`-reference nil compare working); part of the reflection-bridge
-Phase-3 chip (see `docs/Phase4/DESIGN-reflection-bridge.md`).
+fields keep plain `null` (their statically-typed world never needed the type carried).
+
+A target written as a pointer to a composite **type literal** — `(*[]byte)(nil)`,
+`(*map[string]int)(nil)`, `(*struct{ r int })(nil)` — reaches the same rendering by a different
+route. `isTypeConversion` resolves a star target through its `types.Object`, which a type literal
+does not have, so these shapes fell through to the regular call path and emitted a bare cast of
+`default!` (`(ж<slice<byte>>)(default!)`) — a **null reference**, type erased. They are now claimed
+as conversions, and the typed-nil interception renders the target through `convStarExpr` rather than
+the resolved name, because an **anonymous** struct/interface element must be LIFTED to a named C#
+type and `convStarExpr` is the site that performs that lift (the plain name path emits an
+unresolvable raw `struct{…}` signature). `encoding/gob`'s `bootstrapType` table is the whole idiom
+in one place, and it is a package-`init` NRE without this — every `reflect.TypeOf(…).Elem()` in it
+saw a null descriptor:
+
+```go
+tBytes     = bootstrapType("bytes", (*[]byte)(nil))
+tReserved7 = bootstrapType("_reserved1", (*struct{ r7 int })(nil))
+```
+```csharp
+internal static typeId tBytes = bootstrapType("bytes"u8, ((ж<slice<byte>>)nil));
+    [GoType("dyn")] partial struct Δtype {
+        internal nint r7;
+    }
+internal static typeId tReserved7 = bootstrapType("_reserved1"u8, ((ж<Δtype>)nil));
+```
+
+Guarded by `TypedNilInterface` (extended with the slice/map/anonymous-struct type-literal targets),
+`PointerToNilPointerIdentity`, and `NamedPointerReinterpret` (the canonical singleton keeps its
+`object`-reference nil compare working); part of the reflection-bridge Phase-3 chip (see
+`docs/Phase4/DESIGN-reflection-bridge.md`).
 
 ### Pointer-to-interface assignment through selector fields
 A selector assignment whose LHS field is an interface (`h.d = s`) uses the type of the **whole selector expression**, not just the selected identifier name, when deciding whether to wrap the RHS in an interface adapter. If the RHS is a pointer-typed identifier, the adapter receives the pointer box so a dereferenced value alias is not copied into a pointer-only implementation. The generated form matches other pointer-to-interface conversion sites:
@@ -3024,7 +3050,7 @@ no public surface is lost. (Guarded by `NamedChannelType` — the closeWaiter tr
 `type intQueue chan int` exercising make/send/len/cap/receive/comma-ok/close/range/select, output
 vs Go.)
 
-### A function-LOCAL named type declaration hoists to member level (slice/map/channel/array)
+### A function-LOCAL named type declaration hoists to member level (slice/map/channel/array/pointer)
 
 C# forbids a type declaration inside a method body, so a `type X []T` / `type X map[K]V` /
 `type X chan T` / `type X [N]T` declared **inside a function** cannot emit its `[GoType(…)] partial
@@ -3048,6 +3074,32 @@ struct ExampleChunk_People;`, not the raw `[]Person`. (Guarded by the `LocalName
 behavioral test — a function-local named slice-of-local-struct, map, channel, and fixed-size array,
 each constructed/ranged/indexed in the body and output-compared vs Go; the unfixed converter leaks
 four `partial struct …;` declarations into the method body.)
+
+Two completions of the same rule, both demonstrated by `encoding/gob`'s test suite:
+
+* **The POINTER kind hoists too.** `type X *T` was the one forward-declaration kind still writing
+  its `[GoType("ж<…>")] partial class X;` straight into the body — gob's `codec_test.go`
+  `type Rec ***Rec` produced `CS1525 Invalid expression term 'partial'` and took the rest of the
+  function with it. It now takes `liftLocalTypeDecl` like the other kinds, and the lift is taken
+  **before** `convStarExpr` renders the pointer text so a self-referential declaration resolves its
+  own name through `liftedTypeMap`.
+* **A SELF-REFERENTIAL local type re-resolves its element after the hoist.** The array/map/channel
+  emitters resolved the element/key/value name *before* the declaration's own hoist registered its
+  lifted name, so `type recursiveSlice []recursiveSlice` / `type recursiveMap
+  map[string]recursiveMap` (gob's `encoder_test.go`) emitted `[GoType("[]recursiveSlice")]` on a
+  member-level `TestRecursiveSliceType_recursiveSlice` — a name that no longer exists, `CS0246`
+  inside the generated slice/map partial. Each emitter now re-resolves its element through
+  `liftedTypeMap` **when the hoist actually renamed the declaration**; a package-level declaration
+  never renames, so its emission is untouched (verified byte-identical across the whole behavioral
+  corpus and the 302-package stdlib).
+
+**Known residual:** a *conversion expression* to a hoisted local named **pointer** type
+(`NodePtr(&Node{V: 9})`, with `type NodePtr *Node` declared in the function) still emits the
+pre-hoist source name (`new NodePtr(…)`, `CS0246`). The composite kinds do not have this — a local
+`Tally(m)` correctly renders `((main_Tally)m)` — so the gap is specific to the named-pointer
+conversion arm's target-name resolution. It was previously masked by the hard syntax error above and
+has no consumer among the measured packages (gob only *declares* `Rec` and takes its address); the
+`LocalNamedTypeDecls` guard therefore uses the assignment form `var np NodePtr = &Node{V: 9}`.
 
 ### An embedded field's NAME is the UNQUALIFIED type name (dot-imported embeds)
 

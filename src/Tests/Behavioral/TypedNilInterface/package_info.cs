@@ -67,6 +67,7 @@ public static partial class main_package
     // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
 
     // <TypeAccessibility>
+    internal partial struct main_type {}
     public partial struct AErr {}
     public partial struct BErr {}
     // </TypeAccessibility>

@@ -41,6 +41,20 @@ func main() {
 	var ea any = (*AErr)(nil)
 	fmt.Println("ea==e1", ea == e1)
 
+	// A pointer-to-TYPE-LITERAL target — `(*[]byte)(nil)`, `(*struct{…})(nil)`,
+	// `(*map[string]int)(nil)` (encoding/gob's bootstrapType table). A composite target has no
+	// types.Object, so these were not claimed as conversions and rendered as a bare cast of
+	// `default!` — a NULL reference, erasing the type: gob's package init died on
+	// `reflect.TypeOf((*[]byte)(nil)).Elem()`.
+	var sp any = (*[]byte)(nil)
+	var sp2 any = (*[]byte)(nil)
+	var mp any = (*map[string]int)(nil)
+	var stp any = (*struct{ r int })(nil)
+	fmt.Println("sp==nil", sp == nil)
+	fmt.Println("sp==sp2", sp == sp2)
+	fmt.Println("sp==mp", sp == mp)
+	fmt.Println("stp==nil", stp == nil)
+
 	// A type switch matches the nil-holding case with a nil pointee.
 	switch v := e1.(type) {
 	case *AErr:

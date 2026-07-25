@@ -20,6 +20,10 @@ partial class main_package {
     return "b"u8;
 }
 
+[GoType("dyn")] partial struct main_type {
+    internal nint r;
+}
+
 internal static void Main() {
     any x = ((ж<nint>)nil);
     fmt.Printf("%T\n"u8, x);
@@ -35,6 +39,14 @@ internal static void Main() {
     fmt.Println((@string)"e1==e2", AreEqual(e1, e2));
     any ea = ((ж<AErr>)nil);
     fmt.Println((@string)"ea==e1", AreEqual(ea, e1));
+    any sp = ((ж<slice<byte>>)nil);
+    any sp2 = ((ж<slice<byte>>)nil);
+    any mp = ((ж<map<@string, nint>>)nil);
+    any stp = ((ж<main_type>)nil);
+    fmt.Println((@string)"sp==nil", sp == default!);
+    fmt.Println((@string)"sp==sp2", AreEqual(sp, sp2));
+    fmt.Println((@string)"sp==mp", AreEqual(sp, mp));
+    fmt.Println((@string)"stp==nil", stp == default!);
     switch (e1.type()) {
     case ж<AErr> v: {
         fmt.Println((@string)"switch-AErr", v == nil);

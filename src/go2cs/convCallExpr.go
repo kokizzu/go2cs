@@ -137,6 +137,15 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// comparisons of boxed typed nils rely on.
 		if tv, ok := v.info.Types[arg]; ok && tv.IsNil() {
 			if _, isPtr := v.info.TypeOf(callExpr).Underlying().(*types.Pointer); isPtr {
+				// A pointer-to-TYPE-LITERAL target — `(*[]byte)(nil)`, `(*struct{ r7 int })(nil)`
+				// (gob's bootstrapType table). Render it through convStarExpr rather than the
+				// resolved target name: an ANONYMOUS struct/interface element must be LIFTED to a
+				// named C# type, and convStarExpr is the site that performs that lift (the plain
+				// name path emits an unresolvable raw `struct{…}` signature instead).
+				if starExpr := typeLiteralPointerTarget(callExpr.Fun); starExpr != nil {
+					return fmt.Sprintf("((%s)nil)", v.convStarExpr(starExpr, DefaultStarExprContext()))
+				}
+
 				targetCS := convertToCSTypeName(targetTypeName)
 
 				if aliased, ok := v.foreignAliasedTypeName(v.info.TypeOf(callExpr)); ok {
@@ -3079,6 +3088,19 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 					return false, ""
 				}
 
+				// An untyped-nil operand converting to a pointer-to-TYPE-LITERAL target —
+				// `(*[]byte)(nil)`, `(*struct{ r7 int })(nil)` (gob's bootstrapType table). A
+				// composite target has no types.Object, so the Ident/SelectorExpr arms above
+				// never fire and the shape fell through to the regular call path, where the
+				// cast rendered `default!` and erased the TYPED nil to a bare null reference.
+				// Go keeps the type — `reflect.TypeOf((*[]byte)(nil)).Elem()` is `[]uint8` —
+				// so gob's package init NRE'd on the null descriptor. Claim it, exactly as the
+				// named-target `(*T)(nil)` arm below already does, so the conversion renderer's
+				// nil interception emits the canonical typed-nil pointer instance.
+				if basic, ok := argType.(*types.Basic); ok && basic.Kind() == types.UntypedNil {
+					return true, "*" + v.getTypeName(elemType, false)
+				}
+
 				if argPtr, ok := argType.(*types.Pointer); ok {
 					if named, ok := argPtr.Elem().(*types.Named); ok && writtenRHSIsUnnamedArray(named) &&
 						types.Identical(elemType, named.Underlying()) {
@@ -3976,4 +3998,34 @@ func (v *Visitor) isPointerToUnsafePointerType(expr ast.Expr) bool {
 	star, isStar := ast.Unparen(expr).(*ast.StarExpr)
 
 	return isStar && v.isUnsafePointerType(star.X)
+}
+
+// typeLiteralPointerTarget returns the StarExpr of a conversion target written as a pointer to a
+// composite TYPE LITERAL — `(*[]byte)(…)`, `(*struct{ r7 int })(…)` — and nil for every other
+// target shape (including the named forms `(*T)(…)` / `(*pkg.T)(…)`, which have a types.Object and
+// resolve through the ordinary target-name path). Used by the typed-nil conversion rendering, whose
+// element name must come from convStarExpr so an anonymous struct/interface element is lifted.
+func typeLiteralPointerTarget(fun ast.Expr) *ast.StarExpr {
+	for {
+		parenExpr, ok := fun.(*ast.ParenExpr)
+
+		if !ok {
+			break
+		}
+
+		fun = parenExpr.X
+	}
+
+	starExpr, ok := fun.(*ast.StarExpr)
+
+	if !ok {
+		return nil
+	}
+
+	switch starExpr.X.(type) {
+	case *ast.Ident, *ast.SelectorExpr:
+		return nil
+	}
+
+	return starExpr
 }
