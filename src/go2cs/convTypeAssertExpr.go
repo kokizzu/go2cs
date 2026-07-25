@@ -151,6 +151,78 @@ func (v *Visitor) recordAssertConcreteImplementers(sourceType, targetType types.
 	}
 }
 
+// recordTestPackageImplementers records a GoImplement for every concrete type DECLARED in the
+// package being converted against every NAMED interface visible to it (its own scope plus its
+// direct imports' exported scopes). A test-variant package's types are potential dynamic values
+// for RUNTIME-only interface asserts in the package under test — testing/quick's sizedValue
+// probes `reflect.Zero(t).Interface().(Generator)` for ARBITRARY generated types, and
+// quick_test's myStruct satisfies Generator with no static conversion ANYWHERE for the
+// assert-site recorder to see — so the adapter must be enumerated from the TYPE side or the
+// runtime assert fails (golib TryTypeAssert resolves named interfaces only through generated
+// adapters). Run ONLY by the -tests driver for the test-variant package: production emission is
+// untouched (check-no-regression stays byte-identical). This is the recorded follow-up in
+// recordAssertConcreteImplementers' known-limitation note, now consumer-demonstrated.
+func (v *Visitor) recordTestPackageImplementers() {
+	if v.pkg == nil {
+		return
+	}
+
+	type ifaceTarget struct {
+		recordType types.Type
+		iface      *types.Interface
+	}
+
+	var targets []ifaceTarget
+
+	collect := func(scope *types.Scope, exportedOnly bool) {
+		for _, name := range scope.Names() {
+			obj := scope.Lookup(name)
+
+			if obj == nil || (exportedOnly && !obj.Exported()) {
+				continue
+			}
+
+			named, ok := obj.Type().(*types.Named)
+
+			if !ok || named.TypeParams() != nil {
+				continue
+			}
+
+			iface, ok := named.Underlying().(*types.Interface)
+
+			if !ok || iface.NumMethods() == 0 {
+				continue
+			}
+
+			targets = append(targets, ifaceTarget{recordType: named, iface: iface})
+		}
+	}
+
+	collect(v.pkg.Scope(), false)
+
+	for _, imported := range v.pkg.Imports() {
+		collect(imported.Scope(), true)
+	}
+
+	scope := v.pkg.Scope()
+
+	for _, name := range scope.Names() {
+		named, ok := scope.Lookup(name).Type().(*types.Named)
+
+		if !ok || named.TypeParams() != nil {
+			continue
+		}
+
+		if _, isInterfaceType := named.Underlying().(*types.Interface); isInterfaceType {
+			continue
+		}
+
+		for _, target := range targets {
+			v.recordIfImplements(named, target.iface, target.recordType)
+		}
+	}
+}
+
 // recordIfImplements records a GoImplement pairing `named` (or its pointer form) with the named
 // interface identified by recordTarget when the type's method set satisfies iface. The VALUE form
 // is probed first; if it does not satisfy iface the POINTER form is tried, so a pointer-receiver

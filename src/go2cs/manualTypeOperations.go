@@ -122,6 +122,37 @@ var manualConversionFuncs = map[string]map[string]bool{
 		"Value.Set":  true,
 		"Zero":       true,
 		"methodName": true,
+		// Phase-3 increment 2 (the chip): the call & construction half. Value.Call invokes the
+		// boxed delegate (DynamicInvoke; results typed by the STATIC out types); the Set* family
+		// coerces through GoReflect.TryConvertTo and writes through the aliased box; New/
+		// MakeSlice/MakeMap construct golib containers/boxes (named wrappers included, via
+		// ISupportMake); Slice windows the shared backing; the rtype func-introspection methods
+		// derive from the delegate Invoke signature; Key/Len read GoReflect/descriptor cargo.
+		// See docs/Phase4/DESIGN-reflection-bridge-phase3-plan.md (INCREMENT 2).
+		"Value.Call":        true,
+		"Value.CallSlice":   true,
+		"Value.Slice":       true,
+		"Value.SetBool":     true,
+		"Value.SetInt":      true,
+		"Value.SetUint":     true,
+		"Value.SetFloat":    true,
+		"Value.SetComplex":  true,
+		"Value.SetString":   true,
+		"Value.SetZero":     true,
+		"Value.SetMapIndex": true,
+		"New":               true,
+		"MakeSlice":         true,
+		"MakeMap":           true,
+		"MakeMapWithSize":   true,
+		// valueMethodName is runtime.Callers-based (getcallersp) — managed stack walk instead.
+		"valueMethodName": true,
+		"rtype.Key":       true,
+		"rtype.Len":       true,
+		"rtype.NumIn":       true,
+		"rtype.In":          true,
+		"rtype.NumOut":      true,
+		"rtype.Out":         true,
+		"rtype.IsVariadic":  true,
 	},
 	// internal/reflectlite mirrors the reflect bridge for the mini-surface sort.Slice
 	// exercises (ValueOf → Len, Swapper — sort's TestSlice was the first operational hit):

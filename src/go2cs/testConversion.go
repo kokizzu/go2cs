@@ -1068,6 +1068,7 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	preloadImportedTypeAliases(allEntries, options)
 
 	var compileNames []string // emitted test .cs basenames — the csproj's compile items
+	testImplementersRecorded := false
 	var resolveNames []string // every emission (incl. .cs.auto review siblings) for marker resolution
 
 	convert := func(entry FileEntry) (err error) {
@@ -1081,6 +1082,16 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 
 		visitor := newFileVisitor(pkg.Fset, pkg.Types, pkg.TypesInfo, options, globalIdentNames, globalScope, entry)
 		visitor.visitFile(entry.file)
+
+		// Enumerate the test package's runtime-assertable interface implementers ONCE per
+		// conversion (idempotent — the record writer dedups): a test-declared type satisfying
+		// an interface the package under test asserts at RUNTIME needs its adapter enumerated
+		// from the type side (quick_test's myStruct × quick.Generator; see
+		// recordTestPackageImplementers).
+		if !testImplementersRecorded {
+			visitor.recordTestPackageImplementers()
+			testImplementersRecorded = true
+		}
 
 		baseName := strings.TrimSuffix(filepath.Base(entry.filePath), ".go")
 
@@ -2671,7 +2682,23 @@ func pairAddressVariantNames(goResults, csResults, csOutputs map[string]string) 
 }
 
 func matchTerminalStatuses(names []string, goResults, csResults map[string]string, disclosures map[string]testDisclosure, csOutputs map[string]string) (mismatches, skipped, disclosed []string) {
-	for _, name := range names {
+	// Deepest names classify FIRST: a subtest failure rolls up to its ancestors in BOTH
+	// runtimes, so an ancestor whose Go=pass/C#=fail divergence is PURELY the aggregation of
+	// disclosed descendants — no failure output of its own, no own disclosure entry, at least
+	// one disclosed descendant, and NO mismatched descendant — is itself disclosed-divergent
+	// (encoding/binary's TestSizeAllocs: every failing child is a pinned alloc-profile
+	// disclosure; the t.Run parent carries no text). Any other ancestor failure stays a strict
+	// mismatch — the aggregation rule can never mask an undisclosed child.
+	ordered := make([]string, len(names))
+	copy(ordered, names)
+	sort.SliceStable(ordered, func(i, j int) bool {
+		return strings.Count(ordered[i], "/") > strings.Count(ordered[j], "/")
+	})
+
+	mismatchNames := HashSet[string]{}
+	disclosedNames := HashSet[string]{}
+
+	for _, name := range ordered {
 		goStatus, goOK := goResults[name]
 		csStatus, csOK := csResults[name]
 
@@ -2679,13 +2706,43 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 			if disclosure, ok := disclosures[name]; ok && goStatus == "pass" && csStatus == "fail" {
 				if strings.Contains(csOutputs[name], disclosure.Signature) {
 					disclosed = append(disclosed, name)
+					disclosedNames.Add(name)
 					continue
 				}
 				mismatches = append(mismatches, fmt.Sprintf("%s: Go=%q C#=%q (failure does not match the disclosed %s signature %q)",
 					name, goStatus, csStatus, disclosure.Class, disclosure.Signature))
+				mismatchNames.Add(name)
 				continue
 			}
+
+			if goStatus == "pass" && csStatus == "fail" && strings.TrimSpace(csOutputs[name]) == "" {
+				prefix := name + "/"
+				hasDisclosedDescendant := false
+				hasMismatchedDescendant := false
+
+				for descendant := range disclosedNames {
+					if strings.HasPrefix(descendant, prefix) {
+						hasDisclosedDescendant = true
+						break
+					}
+				}
+
+				for descendant := range mismatchNames {
+					if strings.HasPrefix(descendant, prefix) {
+						hasMismatchedDescendant = true
+						break
+					}
+				}
+
+				if hasDisclosedDescendant && !hasMismatchedDescendant {
+					disclosed = append(disclosed, name)
+					disclosedNames.Add(name)
+					continue
+				}
+			}
+
 			mismatches = append(mismatches, fmt.Sprintf("%s: Go=%q C#=%q", name, goStatus, csStatus))
+			mismatchNames.Add(name)
 			continue
 		}
 
