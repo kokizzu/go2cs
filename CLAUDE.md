@@ -205,14 +205,14 @@ Full details: [`docs/Baseline-vs-FullConversion.md`](docs/Baseline-vs-FullConver
   re-transpile every behavioral dir and `git status` the `.cs` — byte-identical generated code ⟹ identical
   compile+output ⟹ identical results, with no compile/run at all.
 - **Budget each command against its MEASURED baseline — the old flat "~3 min" cap is no longer right for
-  the full runs (re-measured 2026-07-23, corpus at 457 transpiled / 468 registered `.csproj`).** The corpus
+  the full runs (re-measured 2026-07-25, corpus at 482 transpiled / 493 registered `.csproj`).** The corpus
   has grown ~25% since those figures were written (371 → 457 projects), and both full instruments now
   legitimately exceed three minutes. Timeouts must clear the real number or a healthy run gets killed
   mid-flight (a 600s ceiling killed a *passing* full suite once):
 
   | Command | Measured (warm) | Set timeout | Notes |
   |---|---|---|---|
-  | `run-behavioral.ps1` (full, 4 phases) | **~385–475s (6.5–8 min)** | 600–900s | 457/457 Transpile+Compile+Target; 427 Output-compared, 30 skipped (no `package main`) |
+  | `run-behavioral.ps1` (full, 4 phases) | **~385–620s (6.5–10.5 min)** | 900s | 482/482 Transpile+Compile+Target; 452 Output-compared, 30 skipped (no `package main`) |
   | `check-no-regression.ps1` (full) | **~285–320s (5–5.5 min)** | 480–600s | transpile-only, no compile/run; re-transpiles unconditionally |
   | `run-behavioral.ps1 --filter <Name>` | **~10–20s** (8 projects) | default | the iteration loop — use this, not the full suite |
   | `go2cs -stdlib -comments` (full reconvert) | **~195s (3m 14s)** | 600s | 304 projects; per-file work is sub-second, the cost is `go/packages` |
