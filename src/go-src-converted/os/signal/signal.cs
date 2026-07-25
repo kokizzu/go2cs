@@ -114,53 +114,52 @@ internal static Action watchSignalLoop;
 // It is allowed to call Notify multiple times with different channels
 // and the same signals: each channel receives copies of incoming
 // signals independently.
-public static void Notify(channel/*<-*/<osꓸSignal> c, params ꓸꓸꓸosꓸSignal sigʗp) {
-    var sig = sigʗp.slice();
-    func((defer, recover) => {
-        if (c == default!) {
-            throw panic("os/signal: Notify using nil channel");
+public static void Notify(channel/*<-*/<osꓸSignal> c, params ꓸꓸꓸosꓸSignal sigʗp) => func(ref sigʗp, (ref ꓸꓸꓸosꓸSignal sigʗp, Defer defer, Recover recover) => {
+    var sig = sigʗp.sslice();
+
+    if (c == default!) {
+        throw panic("os/signal: Notify using nil channel");
+    }
+    Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Lock();
+    defer(Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Unlock);
+    var h = handlers.m[c];
+    if (h == nil) {
+        if (handlers.m == default!) {
+            handlers.m = new map<channel/*<-*/<osꓸSignal>, ж<handler>>();
         }
-        Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Lock();
-        defer(Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Unlock);
-        var h = handlers.m[c];
-        if (h == nil) {
-            if (handlers.m == default!) {
-                handlers.m = new map<channel/*<-*/<osꓸSignal>, ж<handler>>();
-            }
-            h = @new<handler>();
-            handlers.m[c] = h;
+        h = @new<handler>();
+        handlers.m[c] = h;
+    }
+    var hʗ1 = h;
+    var add = (nint n) => {
+        if (n < 0) {
+            return;
         }
-        var hʗ1 = h;
-        var add = (nint n) => {
-            if (n < 0) {
-                return;
+        if (!hʗ1.want(n)) {
+            hʗ1.set(n);
+            if (handlers.@ref[n] == 0) {
+                enableSignal(n);
+                // The runtime requires that we enable a
+                // signal before starting the watcher.
+                ᏑwatchSignalLoopOnce.Do(() => {
+                    if (watchSignalLoop != default!) {
+                        goǃ(watchSignalLoop);
+                    }
+                });
             }
-            if (!hʗ1.want(n)) {
-                hʗ1.set(n);
-                if (handlers.@ref[n] == 0) {
-                    enableSignal(n);
-                    // The runtime requires that we enable a
-                    // signal before starting the watcher.
-                    ᏑwatchSignalLoopOnce.Do(() => {
-                        if (watchSignalLoop != default!) {
-                            goǃ(watchSignalLoop);
-                        }
-                    });
-                }
-                handlers.@ref[n]++;
-            }
-        };
-        if (len(sig) == 0){
-            for (nint n = 0; n < numSig; n++) {
-                add(n);
-            }
-        } else {
-            foreach (var (_, s) in sig) {
-                add(signum(s));
-            }
+            handlers.@ref[n]++;
         }
-    });
-}
+    };
+    if (len(sig) == 0){
+        for (nint n = 0; n < numSig; n++) {
+            add(n);
+        }
+    } else {
+        foreach (var (_, s) in sig) {
+            add(signum(s));
+        }
+    }
+});
 
 // Reset undoes the effect of any prior calls to [Notify] for the provided
 // signals.
@@ -227,8 +226,9 @@ internal static void process(osꓸSignal sig) => func((defer, recover) => {
     foreach (var (c, h) in handlers.m) {
         if (h.want(n)) {
             // send but do not block for it
-            switch (ᐧ) {
-            case ᐧ when c.ᐸꟷ(sig, ꟷ): {
+            var selᴛ1 = c.ᐸꟷ(sig, ꓸꓸꓸ);
+            switch (trySelect(selᴛ1)) {
+            case 0: {
                 break;
             }
             default: {
@@ -239,8 +239,9 @@ internal static void process(osꓸSignal sig) => func((defer, recover) => {
     // Avoid the race mentioned in Stop.
     foreach (var (_, d) in handlers.stopping) {
         if (d.h.want(n)) {
-            switch (ᐧ) {
-            case ᐧ when d.c.ᐸꟷ(sig, ꟷ): {
+            var selᴛ2 = d.c.ᐸꟷ(sig, ꓸꓸꓸ);
+            switch (trySelect(selᴛ2)) {
+            case 0: {
                 break;
             }
             default: {
@@ -281,12 +282,14 @@ public static (context.Context ctx, Action stop) NotifyContext(context.Context p
     if (ctx.Err() == default!) {
         var cʗ1 = c;
         goǃ(() => {
-            switch (select(ᐸꟷ((~cʗ1).ch, ꓸꓸꓸ), ᐸꟷ((~cʗ1).Context.Done(), ꓸꓸꓸ))) {
-            case 0 when (~cʗ1).ch.ꟷᐳ(out _): {
+            var selᴛ3 = (~cʗ1).ch;
+            var selᴛ4 = (~cʗ1).Context.Done();
+            switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
+            case 0 when selᴛ3.ꟷᐳ(out _): {
                 (~cʗ1).cancel();
                 break;
             }
-            case 1 when (~cʗ1).Context.Done().ꟷᐳ(out _): {
+            case 1 when selᴛ4.ꟷᐳ(out _): {
                 break;
             }}
         });

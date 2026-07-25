@@ -13,9 +13,9 @@ allocate). Each is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **41 / 215 testable packages validated — 19.1%**
+> ### Phase 4 progress: **42 / 215 testable packages validated — 19.5%**
 >
-> **1,059 matching test verdicts · 21 disclosed** *(updated 2026-07-25 — maintained as part of the
+> **1,060 matching test verdicts · 21 disclosed** *(updated 2026-07-25 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -53,6 +53,7 @@ any other failure is still a hard mismatch.
 | [`math/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/math/rand) | 43 | | PRNG streams, including a child-process race test. |
 | [`math/rand/v2`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/math/rand/v2) | 36 | | The v2 PRNG API (PCG, ChaCha8). |
 | [`net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/net/http/internal/ascii) | 13 | | ASCII case-insensitive helpers. |
+| [`os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/os/signal) | 1 | | Console-signal delivery (Ctrl+Break) through real channels and `select`. |
 | [`path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/path) | 9 | | Pure path manipulation (`Clean`/`Split`/`Join`/`Match`…). |
 | [`sort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/sort) | 63 | | Interface-driven sort, `sort.Slice` reflection swaps, NaN-aware ordering, stability. |
 | [`strings`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/strings) | 68 | 4 | String algorithms; alloc-count/alloc-profile disclosures. |
