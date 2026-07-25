@@ -63,7 +63,7 @@ public static ж<ΔRat> SetFloat64(this ж<ΔRat> Ꮡz, float64 f) {
         shift--;
     }
     Ꮡz.of(big_package.ΔRat.Ꮡa).SetUint64(mantissa);
-    z.a.neg = f < 0;
+    z.a.neg = f < 0D;
     Ꮡz.of(big_package.ΔRat.Ꮡb).Set(intOne);
     if (shift > 0){
         Ꮡz.of(big_package.ΔRat.Ꮡb).Lsh(Ꮡz.of(big_package.ΔRat.Ꮡb), (nuint)shift);
@@ -92,7 +92,7 @@ internal static (float32 f, bool exact) quotToFloat32(nat a, nat b) {
     // TODO(adonovan): specialize common degenerate cases: 1.0, integers.
     nint alen = a.bitLen();
     if (alen == 0) {
-        return (0, true);
+        return (0F, true);
     }
     nint blen = b.bitLen();
     if (blen == 0) {
@@ -136,7 +136,7 @@ internal static (float32 f, bool exact) quotToFloat32(nat a, nat b) {
         exp++;
     }
     if ((mantissa >> (int)(Msize1)) != 1) {
-        throw panic(fmt.Sprintf("expected exactly %d bits of result"u8, Msize2));
+        throw panic(fmt.Sprintf("expected exactly %d bits of result"u8, (nint)(Msize2)));
     }
     // 4. Rounding.
     if (Emin - Msize <= exp && exp <= Emin) {
@@ -191,7 +191,7 @@ internal static (float64 f, bool exact) quotToFloat64(nat a, nat b) {
     // TODO(adonovan): specialize common degenerate cases: 1.0, integers.
     nint alen = a.bitLen();
     if (alen == 0) {
-        return (0, true);
+        return (0D, true);
     }
     nint blen = b.bitLen();
     if (blen == 0) {
@@ -235,7 +235,7 @@ internal static (float64 f, bool exact) quotToFloat64(nat a, nat b) {
         exp++;
     }
     if ((mantissa >> (int)(Msize1)) != 1) {
-        throw panic(fmt.Sprintf("expected exactly %d bits of result"u8, Msize2));
+        throw panic(fmt.Sprintf("expected exactly %d bits of result"u8, (nint)(Msize2)));
     }
     // 4. Rounding.
     if (Emin - Msize <= exp && exp <= Emin) {

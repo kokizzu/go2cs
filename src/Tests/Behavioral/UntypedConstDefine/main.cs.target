@@ -14,6 +14,8 @@ internal static readonly UntypedFloat cbrtD = -7.05306122448979611050e-01;
 
 internal static readonly UntypedFloat folded = /* 19.0 / 35.0 */ 0.5428571428571428;
 
+internal static readonly UntypedInt fsize = 5;
+
 internal static void Main() {
     rune codepoint = replacementChar;
     @string s = ((@string)codepoint);
@@ -24,6 +26,7 @@ internal static void Main() {
     fmt.Println(cbrtD);
     fmt.Println(folded);
     fmt.Println(localPrecision(2.0D));
+    fmt.Println(fmt.Sprintf("size=%d"u8, (nint)(fsize + 1)));
     tightenGuards();
 }
 
@@ -64,7 +67,7 @@ internal static void tightenGuards() => func((defer, recover) => {
         fmt.Println(lineCount + infinity);
     }
     const nint localDefer = 42;
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), localDefer, defer);
+    deferǃ(ᴛ1 => fmt.Println(ᴛ1), (nint)(localDefer), defer);
 });
 
 internal static float64 localPrecision(float64 x) {

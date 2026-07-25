@@ -955,11 +955,39 @@ MyInt int`) is excluded (its box is the `[GoType]` wrapper, asserted as `MyInt`)
 the per-argument `castArgToType["nint"]` plumbing; the other positions wrap through
 `boxUntypedIntAsNint`. **Three deliberate exclusions:**
 
-- A **variadic `...any`** argument (the fmt/print/log family) is NOT cast: a boxed `Int32` formats
-  identically to `nint` and its `%T`/type-switch dynamic type already resolves as `int` (golib maps
-  both `Int32` and `IntPtr` to `"int"` in `GetGoTypeName`), so the cast would be redundant noise on
-  the most common call pattern. A non-variadic `any` parameter (`atomic.Value.Store`,
-  `context.WithValue`) IS cast — its value is stored and later asserted.
+- A **variadic `...any`** argument (the fmt/print/log family) is NOT cast **when the argument is a
+  literal or literal-only arithmetic** (`42`, `1 + 2`): a boxed `Int32` formats identically to `nint`
+  under `%d`/`%v`, so the cast would be redundant noise on the most common call pattern. A
+  non-variadic `any` parameter (`atomic.Value.Store`, `context.WithValue`) IS cast — its value is
+  stored and later asserted.
+
+  **The literal-only carve-out does NOT extend to a named untyped constant** (`const fsize = 5`),
+  which `visitValueSpec` emits as a golib `UntypedInt`-typed C# variable/field, not a plain literal —
+  `fsize + 1` evaluates through `UntypedInt`'s own operator overloads and boxes the STRUCT, not a CLR
+  integer. `fmt`'s `printArg` type-switch (`print.cs`) doesn't recognize `UntypedInt`, falls back to
+  reflection, and formats it as a two-field struct instead of the plain value —
+  `fmt.Sprintf("%d", fsize+1)` printed `{6 %!d(bool=false)}` instead of `6` against the
+  full-conversion `fmt` (go/token's `TestIssue57490`). `exprInvolvesUntypedIntConst`
+  (`convCallExpr.go`) walks the argument's AST for an `*ast.Ident` resolving (via `Info.Uses`) to a
+  `*types.Const` whose OWN declared type — not `info.Types[arg]`'s post-default type, which reports
+  `int` for both cases — is `UntypedInt`/`UntypedRune`; when found, the variadic slot re-enables the
+  `nint` cast for that one argument. A literal, or arithmetic composed only of literals, contains no
+  such identifier and keeps the noise-free fast path. (A function-LOCAL untyped const can still tighten
+  to a concrete C# type at its own declaration — e.g. `deferǃ`'s captured-argument typing — in which
+  case the predicate's extra cast is a harmless no-op, not a correctness fix; it only matters where the
+  declaration genuinely stays `UntypedInt`, which is always true for a package-level one.)
+
+  **Residual, separate gap (not fixed by this predicate):** a bare int LITERAL argument still boxes as
+  `System.Int32`, and the full-conversion `fmt`'s badVerb/`%T` path names it via
+  `reflect.TypeOf(arg).String()` — the `go-src-converted/reflect` + golib `GoReflect` bridge — which
+  reports `"int32"`, not Go's `"int"` (`fmt.Sprintf("%s", 42)` prints `%!s(int32=42)` instead of
+  `%!s(int=42)`). This is DIFFERENT from `GetGoTypeName` above (used by `builtin.TryTypeAssert`'s panic
+  text and the baseline stub `core/fmt`, which both map `Int32`/`IntPtr` to `"int"` correctly) — the
+  full-conversion `fmt`'s reflect-driven path does not share that normalization. Casting every literal
+  variadic argument to `nint` would close it but reintroduces the noise this carve-out exists to avoid,
+  at corpus-wide scale; left as a known, disclosed divergence pending a `GoReflect`-side fix (make the
+  bridge's boxed-`Int32` type name resolve to `"int"`, matching `GetGoTypeName`, instead of widening the
+  converter's cast footprint).
 - A **type-parameter parameter** constrained by `any` (`func f[T any](v T)`) reads as an empty
   interface here too, but its instantiation binds the argument to the concrete `T` (int → the `nint`
   parameter), where a bare int literal already converts implicitly. The call-site gate uses

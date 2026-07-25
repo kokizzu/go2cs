@@ -465,7 +465,7 @@ internal static ж<_TypeSet> computeUnionTypeSet(ж<Checker> Ꮡcheck, map<ж<Un
         allTerms = allTerms.union(terms);
         if (len(allTerms) > maxTermCount) {
             if (Ꮡcheck != nil) {
-                Ꮡcheck.errorf(((atPos)pos), InvalidUnion, "cannot handle more than %d union terms (implementation limitation)"u8, maxTermCount);
+                Ꮡcheck.errorf(((atPos)pos), InvalidUnion, "cannot handle more than %d union terms (implementation limitation)"u8, (nint)(maxTermCount));
             }
             unionSets[Ꮡutyp] = ᏑinvalidTypeSet;
             return unionSets[Ꮡutyp];

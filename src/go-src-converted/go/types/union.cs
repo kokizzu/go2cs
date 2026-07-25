@@ -92,7 +92,7 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
         // typ already recorded through check.typ in parseTilde
         if (len(terms) >= maxTermCount){
             if (isValid(u)) {
-                Ꮡcheck.errorf(new ast_Exprᴠpositioner(x), InvalidUnion, "cannot handle more than %d union terms (implementation limitation)"u8, maxTermCount);
+                Ꮡcheck.errorf(new ast_Exprᴠpositioner(x), InvalidUnion, "cannot handle more than %d union terms (implementation limitation)"u8, (nint)(maxTermCount));
                 u = new BasicжΔType(Typ[Invalid]);
             }
         } else {

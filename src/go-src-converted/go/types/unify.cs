@@ -308,7 +308,7 @@ internal static bool /*result*/ nify(this ж<unifier> Ꮡu, ΔType xʗp, ΔType 
         // Stop gap for cases where unification fails.
         if (u.depth > unificationDepthLimit) {
             if (traceInference) {
-                u.tracef("depth %d >= %d"u8, u.depth, unificationDepthLimit);
+                u.tracef("depth %d >= %d"u8, u.depth, (nint)(unificationDepthLimit));
             }
             if (panicAtUnificationDepthLimit) {
                 throw panic("unification reached recursion depth limit");

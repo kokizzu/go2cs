@@ -114,7 +114,7 @@ internal static (ж<generation>, ж<spilledBatch>, error) readGeneration(ж<bufi
         }
     }
     // Check some invariants.
-    if ((~g).freq == 0) {
+    if ((~g).freq == 0D) {
         return (default!, default!, fmt.Errorf("no frequency event found"u8));
     }
     // N.B. Trust that the batch order is correct. We can't validate the batch order
@@ -175,7 +175,7 @@ internal static error processBatch(ж<generation> Ꮡg, batch b) {
         if (err != default!) {
             return err;
         }
-        if (g.freq != 0) {
+        if (g.freq != 0D) {
             return fmt.Errorf("found multiple frequency events"u8);
         }
         g.freq = freq;
@@ -267,7 +267,7 @@ internal static error addStrings(ж<dataTable<stringID, @string>> ᏑstringTable
             return errΔ1;
         }
         if (len > go122.MaxStringSize) {
-            return fmt.Errorf("invalid string size %d, maximum is %d"u8, len, go122.MaxStringSize);
+            return fmt.Errorf("invalid string size %d, maximum is %d"u8, len, (nint)(go122.MaxStringSize));
         }
         // Copy out the string.
         (var n, errΔ1) = io.CopyN(new strings_BuilderжWriter(Ꮡsb), new bytes_ReaderжReader(r), (int64)len);
@@ -324,7 +324,7 @@ internal static error addStacks(ж<dataTable<stackID, stack>> ᏑstackTable, map
             return errΔ1;
         }
         if (nFrames > go122.MaxFramesPerStack) {
-            return fmt.Errorf("invalid stack size %d, maximum is %d"u8, nFrames, go122.MaxFramesPerStack);
+            return fmt.Errorf("invalid stack size %d, maximum is %d"u8, nFrames, (nint)(go122.MaxFramesPerStack));
         }
         // Each frame consists of 4 fields: pc, funcID (string), fileID (string), line.
         var frames = new slice<uint64>(0, (nint)(nFrames));
@@ -439,7 +439,7 @@ internal static (slice<cpuSample>, error) addCPUSamples(slice<cpuSample> samples
 // parseFreq parses out a lone EvFrequency from a batch.
 internal static (frequency, error) parseFreq(batch b) {
     if (!b.isFreqBatch()) {
-        return (0, fmt.Errorf("internal error: parseFreq called on non-frequency batch"u8));
+        return (0D, fmt.Errorf("internal error: parseFreq called on non-frequency batch"u8));
     }
     var r = bytes.NewReader(b.data);
     r.ReadByte();
@@ -447,7 +447,7 @@ internal static (frequency, error) parseFreq(batch b) {
     // Read the frequency. It'll come out as timestamp units per second.
     var (f, err) = binary.ReadUvarint(new bytes_ReaderжByteReader(r));
     if (err != default!) {
-        return (0, err);
+        return (0D, err);
     }
     // Convert to nanoseconds per timestamp unit.
     return (((frequency)(1.0D / ((float64)f / 1e9D))), default!);

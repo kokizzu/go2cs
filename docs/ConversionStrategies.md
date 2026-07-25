@@ -342,9 +342,13 @@ no conversion to `object`. So a string literal returned/assigned/sent *as `any`*
 
 The numeric twin: a bare C# integer literal is `System.Int32`, but Go boxes an untyped `int` constant as
 its default type `int` (go2cs `nint`). So an untyped `int` constant boxed *as `any`* is cast through `nint`
-(`Ꮡv.Store((nint)(42))`), else a later `x.(int)` — `x._<nint>()` — finds an `Int32` and panics. Variadic
-`...any` arguments (`fmt.Println(42)`) are left uncast — a boxed `Int32` formats identically and its `%T`
-already resolves as `int` — and `any` map keys are left uncast to keep `map[any]int` lookups consistent.
+(`Ꮡv.Store((nint)(42))`), else a later `x.(int)` — `x._<nint>()` — finds an `Int32` and panics. A variadic
+`...any` LITERAL argument (`fmt.Println(42)`) is left uncast — a boxed `Int32` formats identically under
+`%d`/`%v` — but a **named untyped constant** (`const fsize = 5; fmt.Sprintf("%d", fsize+1)`) IS cast even
+in the variadic slot: such a constant is a golib `UntypedInt`-typed C# variable, not a literal, so leaving
+it uncast boxes the *struct* and `fmt`'s dynamic-type dispatch falls back to reflection, printing it as a
+two-field struct instead of the value (`{6 %!d(bool=false)}` instead of `6` — go/token's
+`TestIssue57490`). `any` map keys are left uncast to keep `map[any]int` lookups consistent.
 
 A related identity wrinkle: a deref-aliased pointer (a `*T` parameter or a pointer receiver) passed *as
 `any`* renders the box `Ꮡp`, not the deref'd value alias `p` — Go boxes the *pointer*, and dropping the box

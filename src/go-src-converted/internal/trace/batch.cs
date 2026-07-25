@@ -89,7 +89,7 @@ internal static (batch, uint64, error) readBatch(readBatch_r r) {
         return (new batch(nil), gen, fmt.Errorf("error reading batch size: %w"u8, err));
     }
     if (size > go122.MaxBatchSize) {
-        return (new batch(nil), gen, fmt.Errorf("invalid batch size %d, maximum is %d"u8, size, go122.MaxBatchSize));
+        return (new batch(nil), gen, fmt.Errorf("invalid batch size %d, maximum is %d"u8, size, (nint)(go122.MaxBatchSize)));
     }
     // Copy out the batch for later processing.
     ref var data = ref heap(new bytes.Buffer(), out var Ꮡdata);

@@ -135,8 +135,8 @@ internal static ж<QUICConn> newQUICConn(ж<Conn> Ꮡconn, ж<QUICConfig> Ꮡcon
     ref var config = ref Ꮡconfig.Value;
 
     conn.quic = Ꮡ(new quicState(
-        signalc: new channel<EmptyStruct>(1),
-        blockedc: new channel<EmptyStruct>(1),
+        signalc: new channel<EmptyStruct>(0),
+        blockedc: new channel<EmptyStruct>(0),
         enableSessionEvents: config.EnableSessionEvents
     ));
     conn.quic.Value.events = (~conn.quic).eventArr[..0];
@@ -235,7 +235,7 @@ public static error HandleData(this ж<QUICConn> Ꮡq, QUICEncryptionLevel level
         var b = q.conn.of(Conn.Ꮡhand).Bytes();
         nint n = (nint)((nint)(((nint)b[1] << (int)(16)) | ((nint)b[2] << (int)(8))) | (nint)b[3]);
         if (n > maxHandshake) {
-            q.conn.Value.handshakeErr = fmt.Errorf("tls: handshake message of length %d bytes exceeds maximum of %d bytes"u8, n, maxHandshake);
+            q.conn.Value.handshakeErr = fmt.Errorf("tls: handshake message of length %d bytes exceeds maximum of %d bytes"u8, n, (nint)(maxHandshake));
             break;
         }
         if (len(b) < 4 + n) {
@@ -370,14 +370,14 @@ internal static error quicReadHandshakeBytes(this ж<Conn> Ꮡc, nint n) {
 [GoRecv] internal static void quicWriteCryptoData(this ref Conn c, QUICEncryptionLevel level, slice<byte> data) {
     ж<QUICEvent> last = default!;
     if (len((~c.quic).events) > 0) {
-        last = Ꮡ((~c.quic).events[len((~c.quic).events) - 1]);
+        last = Ꮡ((~c.quic).events, len((~c.quic).events) - 1);
     }
     if (last == nil || (~last).Kind != QUICWriteData || (~last).Level != level) {
         c.quic.Value.events = append((~c.quic).events, new QUICEvent(
             Kind: QUICWriteData,
             Level: level
         ));
-        last = Ꮡ((~c.quic).events[len((~c.quic).events) - 1]);
+        last = Ꮡ((~c.quic).events, len((~c.quic).events) - 1);
     }
     last.Value.Data = append((~last).Data, data.ꓸꓸꓸ);
 }
@@ -459,23 +459,25 @@ internal static error quicWaitForSignal(this ж<Conn> Ꮡc) => func<error>((defe
     // Send on blockedc to notify the QUICConn that the handshake is blocked.
     // Exported methods of QUICConn wait for the handshake to become blocked
     // before returning to the user.
-    switch (select((~c.quic).blockedc.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ), ᐸꟷ((~c.quic).cancelc, ꓸꓸꓸ))) {
+    var selᴛ3 = (~c.quic).cancelc;
+    switch (select((~c.quic).blockedc.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ), ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
     case 0: {
         break;
     }
-    case 1 when (~c.quic).cancelc.ꟷᐳ(out _): {
+    case 1 when selᴛ3.ꟷᐳ(out _): {
         return Ꮡc.sendAlertLocked(alertCloseNotify);
     }}
     // The QUICConn reads from signalc to notify us that the handshake may
     // be able to proceed. (The QUICConn reads, because we close signalc to
     // indicate that the handshake has completed.)
-    switch (select((~c.quic).signalc.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ), ᐸꟷ((~c.quic).cancelc, ꓸꓸꓸ))) {
+    var selᴛ4 = (~c.quic).cancelc;
+    switch (select((~c.quic).signalc.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
     case 0: {
         c.hand.Write((~c.quic).readbuf);
         c.quic.Value.readbuf = default!;
         break;
     }
-    case 1 when (~c.quic).cancelc.ꟷᐳ(out _): {
+    case 1 when selᴛ4.ꟷᐳ(out _): {
         return Ꮡc.sendAlertLocked(alertCloseNotify);
     }}
     return default!;

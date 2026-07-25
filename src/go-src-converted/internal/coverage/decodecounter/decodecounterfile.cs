@@ -56,7 +56,7 @@ public static (ж<CounterDataReader>, error) NewCounterDataReader(@string fn, io
         return (default!, fmt.Errorf("invalid magic string: not a counter data file"u8));
     }
     if ((~cdr).hdr.Version > coverage.CounterFileVersion) {
-        return (default!, fmt.Errorf("version data incompatibility: reader is %d data is %d"u8, coverage.CounterFileVersion, (~cdr).hdr.Version));
+        return (default!, fmt.Errorf("version data incompatibility: reader is %d data is %d"u8, (nint)(coverage.CounterFileVersion), (~cdr).hdr.Version));
     }
     // Read footer.
     {

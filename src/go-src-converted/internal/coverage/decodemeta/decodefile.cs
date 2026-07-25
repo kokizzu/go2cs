@@ -80,7 +80,7 @@ internal static error readFileHeader(this ж<CoverageMetaFileReader> Ꮡr) {
     // Vet the version. If this is a meta-data file from the future,
     // we won't be able to read it.
     if (r.hdr.Version > coverage.MetaFileVersion) {
-        return fmt.Errorf("meta-data file withn unknown version %d (expected %d)"u8, r.hdr.Version, coverage.MetaFileVersion);
+        return fmt.Errorf("meta-data file withn unknown version %d (expected %d)"u8, r.hdr.Version, (nint)(coverage.MetaFileVersion));
     }
     // Read package offsets for good measure
     r.pkgOffsets = new slice<uint64>((nint)(r.hdr.Entries));

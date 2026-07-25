@@ -1294,12 +1294,24 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 
 				// The untyped-int→nint box cast is DELIBERATELY skipped for a variadic `...any`
-				// argument (the fmt/print/log family): a boxed System.Int32 formats identically to
-				// nint and its %T / type-switch dynamic type is already resolved as `int`, so the
-				// cast would be redundant noise on the most common call pattern — matching how the
+				// argument (the fmt/print/log family) in the common case: a bare int LITERAL boxes
+				// as System.Int32, which formats identically to nint under %d/%v, so the cast would
+				// be redundant noise on the most common call pattern — matching how the
 				// string→@string boxing family also leaves the variadic fmt call position untouched.
 				// A non-variadic `any` parameter (`atomic.Value.Store`, `context.WithValue`, …) is a
 				// value the caller stores and later type-asserts, so it DOES take the cast.
+				//
+				// That skip is UNSOUND for a NAMED untyped constant (`const fsize = 5`), which
+				// renders as a golib `UntypedInt`-typed C# variable/field, not a plain literal
+				// (visitValueSpec's csTypeName=="UntypedInt" classification) — `fsize+1` evaluates
+				// via UntypedInt's own operator overloads and boxes the STRUCT, not a CLR integer.
+				// fmt's printArg type-switch (print.cs) doesn't recognize UntypedInt, falls through
+				// to reflection, and formats it as a two-field struct instead of the plain value
+				// (`fmt.Sprintf("%d", fsize+1)` prints `{6 %!d(bool=false)}` instead of `6` — the
+				// go/token TestIssue57490 failure). exprInvolvesUntypedIntConst re-enables the cast
+				// for exactly that shape (checked per trailing argument below, since a variadic
+				// call can mix literal and named-constant arguments) while leaving the
+				// literal-only fast path alone.
 				variadicSlot := funcSignature.Variadic() && i == params.Len()-1
 
 				for j := i; j <= lastArg; j++ {
@@ -1316,7 +1328,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					// here, but its instantiation binds the argument to a concrete type (`T`=int → the
 					// nint parameter), where a bare int literal already converts implicitly — unlike
 					// the u8-span→@string case, no cast is needed and one would be spurious.
-					if !variadicSlot && isEmptyInterfaceTarget(paramType) && j < len(callExpr.Args) && v.argBoxesAsInt32ButNeedsNint(callExpr.Args[j]) {
+					if (!variadicSlot || v.exprInvolvesUntypedIntConst(callExpr.Args[j])) && isEmptyInterfaceTarget(paramType) && j < len(callExpr.Args) && v.argBoxesAsInt32ButNeedsNint(callExpr.Args[j]) {
 						if callExprContext.castArgToType == nil {
 							callExprContext.castArgToType = make(map[int]string)
 						}
@@ -2479,6 +2491,51 @@ func (v *Visitor) argBoxesAsInt32ButNeedsNint(arg ast.Expr) bool {
 	iv, exact := constant.Int64Val(tv.Value)
 
 	return exact && iv >= math.MinInt32 && iv <= math.MaxInt32
+}
+
+// exprInvolvesUntypedIntConst reports whether expr syntactically references — directly or through
+// arithmetic — a named Go constant declared WITHOUT an explicit type (`const fsize = 5`). Such a
+// constant is emitted as a golib `UntypedInt`-typed C# local/field (visitValueSpec's
+// csTypeName=="UntypedInt" classification), not a plain numeric literal, so an expression built from
+// it (`fsize+1`) evaluates through UntypedInt's own operator overloads and produces an UntypedInt
+// STRUCT result, not a CLR integer. That distinguishes it from a bare literal or literal-only
+// arithmetic (`42`, `1+2`), which convBasicLit always renders as a plain C# integer literal
+// regardless of AST shape — see the caller (the variadic-`...any` box-cast skip in the interface-cast
+// loop above): a boxed struct is what makes that skip unsound for this one shape, since fmt's
+// printArg type-switch (print.cs) doesn't recognize UntypedInt and falls back to reflection,
+// formatting it as a two-field struct (`{6 %!d(bool=false)}`) instead of the plain value — the
+// go/token TestIssue57490 failure this predicate fixes.
+func (v *Visitor) exprInvolvesUntypedIntConst(expr ast.Expr) bool {
+	found := false
+
+	ast.Inspect(expr, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		ident, ok := n.(*ast.Ident)
+
+		if !ok {
+			return true
+		}
+
+		constObj, ok := v.info.Uses[ident].(*types.Const)
+
+		if !ok {
+			return true
+		}
+
+		if basic, ok := constObj.Type().(*types.Basic); ok {
+			switch basic.Kind() {
+			case types.UntypedInt, types.UntypedRune:
+				found = true
+			}
+		}
+
+		return true
+	})
+
+	return found
 }
 
 // boxUntypedIntAsNint wraps an already-rendered value expression in a `(nint)` cast when `target` is

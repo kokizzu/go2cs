@@ -42,7 +42,7 @@ internal static goVersion go1_20 = asGoVersion("go1.20"u8);
 internal static goVersion go1_21 = asGoVersion("go1.21"u8);
 internal static goVersion go1_22 = asGoVersion("go1.22"u8);
 internal static goVersion go1_23 = asGoVersion("go1.23"u8);
-internal static goVersion go_current = asGoVersion(fmt.Sprintf("go1.%d"u8, goversion.Version));
+internal static goVersion go_current = asGoVersion(fmt.Sprintf("go1.%d"u8, (nint)(goversion.Version)));
 
 // allowVersion reports whether the current package at the given position
 // is allowed to use version v. If the position is unknown, the specified

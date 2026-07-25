@@ -220,7 +220,7 @@ internal static void Main() {
     fmt.Printf("Slice Kind Value: %s [%d]\n"u8, Slice.String(), (nint)(uint8)Slice);
     fmt.Println(seqFirst, seqSecond, seqAgain);
     fmt.Println(wideFirst, wideNext);
-    fmt.Println(rawZero, rawOne);
+    fmt.Println((nint)(rawZero), (nint)(rawOne));
     fmt.Println(stateMachine(0));
     fmt.Println(stateMachine(1));
     fmt.Println(stateMachine(2));
