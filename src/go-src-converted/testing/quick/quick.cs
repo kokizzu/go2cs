@@ -253,7 +253,7 @@ internal static ref Config defaultConfig => ref ᏑdefaultConfig.Value;
 
     maxCount = c.MaxCount;
     if (maxCount == 0) {
-        if (c.MaxCountScale != 0){
+        if (c.MaxCountScale != 0D){
             maxCount = (nint)(c.MaxCountScale * (float64)(defaultMaxCount.Value));
         } else {
             maxCount = defaultMaxCount.Value;
