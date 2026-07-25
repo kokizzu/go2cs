@@ -9,9 +9,9 @@ internal static void Main() {
 }
 
 internal static void printSquare(nint n) => func((defer, recover) => {
-    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), "Deferred square:", n * n, defer);
+    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"Deferred square:", n * n, defer);
     n++;
-    fmt.Println("Immediate n:", n);
+    fmt.Println((@string)"Immediate n:", n);
 });
 
 } // end main_package

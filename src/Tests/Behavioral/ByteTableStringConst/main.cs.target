@@ -11,7 +11,7 @@ internal static void Main() {
         fmt.Printf("%d "u8, revTab[i]);
     }
     fmt.Println();
-    fmt.Println("len:", len(revTab));
+    fmt.Println((@string)"len:", len(revTab));
 }
 
 } // end main_package

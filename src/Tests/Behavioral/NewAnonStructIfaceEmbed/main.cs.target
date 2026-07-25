@@ -33,7 +33,7 @@ internal static void Main() {
     var local = @new<main_type>();
     local.Value.badge = new gold(nil);
     badge b2 = new main_typeжbadge(local);
-    fmt.Println("local:", b2.label());
+    fmt.Println((@string)"local:", b2.label());
 }
 
 } // end main_package

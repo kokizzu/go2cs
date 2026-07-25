@@ -905,9 +905,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// so the paired `any(7).(int)` assertion (`._<nint>()`) fails and `==` against a real `int`
 		// reports unequal. A NON-empty interface target routes through the adapter machinery above.
 		if isEmptyInterfaceTarget(v.info.TypeOf(callExpr)) {
-			if castType := v.untypedConstBoxCast(arg); castType != "" {
-				expr = fmt.Sprintf("(%s)(%s)", castType, expr)
-			}
+			expr = v.applyUntypedConstBoxCast(arg, expr)
 		}
 
 		// A conversion between two DIFFERENT NAMED types that share a COMPOSITE underlying (net/mail
@@ -1337,8 +1335,16 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					// here, but its instantiation binds the argument to a concrete type (`T`=int → the
 					// nint parameter), where a bare int literal already converts implicitly — unlike
 					// the u8-span→@string case, no cast is needed and one would be spurious.
+					// A string LITERAL argument takes the tighter `(@string)"…"` rendering instead
+					// (the same either/or convCompositeLit and markAnyFieldLits apply to an `any`
+					// element/field): the flag-less path leaves a bare C# string, which boxes
+					// System.String where Go boxes `string`, so `eq(b.v, "seed")` compared false
+					// against a field the composite-literal path had already boxed as @string.
 					if isEmptyInterfaceTarget(paramType) && j < len(callExpr.Args) {
-						if castType := v.untypedConstBoxCast(callExpr.Args[j]); castType != "" {
+						if isStringBasicLit(callExpr.Args[j]) {
+							callExprContext.u8StringArgOK[j] = false
+							callExprContext.useGoStringArg[j] = true
+						} else if castType := v.untypedConstBoxCast(callExpr.Args[j]); castType != "" {
 							if callExprContext.castArgToType == nil {
 								callExprContext.castArgToType = make(map[int]string)
 							}
@@ -2512,6 +2518,14 @@ func typeParamIsSliceElementOfSibling(sig *types.Signature, tp *types.TypeParam)
 //     This holds at EVERY magnitude and for every wrapped kind, which is why the int32-range test
 //     applies to the literal rendering only.
 //
+// An untyped STRING constant is the mirror image of the numeric kinds. Go's default type is `string`
+// (golib `@string`), and it is the LITERAL rendering that boxes wrong: convBasicLit emits a plain C#
+// string (`"seed"`, a System.String) or a `"…"u8` ReadOnlySpan<byte> (a ref struct, which cannot box
+// at all — CS0029). A NAMED string constant needs nothing, typed or untyped, because it is emitted as
+// an `@string` member — there is no `UntypedString` wrapper struct — and its concatenations evaluate
+// through `@string`'s own operators. So the string arm keys off the literal-only SHAPE
+// (constExprIsStringLiteralConcat), exactly inverting the `wrapped` test the numeric arms apply.
+//
 // Keying the kind off info.Types[arg] (rather than the AST shape) reads the type go/types has already
 // DEFAULTED for the interface slot, so a literal (`42`), a unary (`-5`), a binary (`1 + 2`), and a
 // named untyped const are all classified by the same rule. An untyped COMPLEX constant is deliberately
@@ -2556,9 +2570,51 @@ func (v *Visitor) untypedConstBoxCast(arg ast.Expr) string {
 		if wrapped {
 			return "float64"
 		}
+	case types.String: // Go's default type for an untyped STRING constant
+		if constExprIsStringLiteralConcat(arg) {
+			return "@string"
+		}
 	}
 
 	return ""
+}
+
+// constExprIsStringLiteralConcat reports whether expr is built exclusively from STRING literals
+// joined by `+` (through parens) — the exact shape convBasicLit renders as a plain C# string or a
+// `"…"u8` span rather than a golib `@string`. Every other constant-string leaf already carries
+// `@string`: a named constant (typed or untyped alike) is emitted as an `@string` member, and a
+// conversion emits concretely typed. The string twin of constExprIsIntLiteralArithmetic.
+func constExprIsStringLiteralConcat(expr ast.Expr) bool {
+	switch e := expr.(type) {
+	case *ast.ParenExpr:
+		return constExprIsStringLiteralConcat(e.X)
+	case *ast.BinaryExpr:
+		return e.Op == token.ADD &&
+			constExprIsStringLiteralConcat(e.X) && constExprIsStringLiteralConcat(e.Y)
+	case *ast.BasicLit:
+		return e.Kind == token.STRING
+	}
+
+	return false
+}
+
+// applyUntypedConstBoxCast wraps an already-rendered untyped-constant expression in the default-type
+// cast untypedConstBoxCast reports for it, or returns the rendering unchanged when none applies.
+//
+// A rendering that ALREADY leads with that cast is left alone. The string-literal positions whose
+// BasicLitContext carries castToGoString emit the tighter `(@string)"…"` form during rendering
+// (anyBoxedStringLitContext and its siblings), which wholeExprIsCastOfType does not recognize —
+// its operand is not parenthesized — so without this test the box would be double-cast. The test is
+// sound for the wider `(@string)"a" + "b"` shape too: `@string`'s own `operator+` already yields an
+// `@string`.
+func (v *Visitor) applyUntypedConstBoxCast(value ast.Expr, rendered string) string {
+	castType := v.untypedConstBoxCast(value)
+
+	if castType == "" || strings.HasPrefix(rendered, "("+castType+")") {
+		return rendered
+	}
+
+	return fmt.Sprintf("(%s)(%s)", castType, rendered)
 }
 
 // exprRendersUntypedConstWrapper reports whether expr syntactically references — directly or through
@@ -2622,11 +2678,7 @@ func (v *Visitor) boxUntypedConstAsDefaultType(target types.Type, value ast.Expr
 		return rendered
 	}
 
-	if castType := v.untypedConstBoxCast(value); castType != "" {
-		return fmt.Sprintf("(%s)(%s)", castType, rendered)
-	}
-
-	return rendered
+	return v.applyUntypedConstBoxCast(value, rendered)
 }
 
 // recordConversionPackageUsing registers the import alias → C# namespace for any cross-package named

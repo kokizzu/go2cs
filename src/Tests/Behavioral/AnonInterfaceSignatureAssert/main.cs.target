@@ -65,12 +65,12 @@ internal static void Main() {
     fmt.Printf("simpleErr:  single=%v multi=%v\n"u8, es, em);
     {
         var (u, ok) = ((any)m)._<main_type>(ᐧ); if (ok) {
-            fmt.Println("multi unwrap count:", len(u.Unwrap()));
+            fmt.Println((@string)"multi unwrap count:", len(u.Unwrap()));
         }
     }
     {
         var (u, ok) = ((any)s)._<main_typeᴛ1>(ᐧ); if (ok) {
-            fmt.Println("single unwrap:", u.Unwrap());
+            fmt.Println((@string)"single unwrap:", u.Unwrap());
         }
     }
 }

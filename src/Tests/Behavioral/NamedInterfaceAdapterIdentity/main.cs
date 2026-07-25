@@ -25,11 +25,11 @@ internal static @string Greet(this mark m) {
 internal static void Main() {
     var v = new mark(n: 1);
     var (g, ok) = identlib.TryGreet(v);
-    fmt.Println("value", ok);
+    fmt.Println((@string)"value", ok);
     fmt.Println(identlib.Describe(g, v));
     var p = Ꮡ(new loud(n: 2));
     var (g2, ok2) = identlib.TryGreet(p);
-    fmt.Println("pointer", ok2);
+    fmt.Println((@string)"pointer", ok2);
     fmt.Println(identlib.Describe(g2, p));
 }
 

@@ -97,22 +97,22 @@ internal static void Main() {
     any x = c;
     switch (x.type()) {
     case ж<circle>: {
-        fmt.Println("any holds *circle");
+        fmt.Println((@string)"any holds *circle");
         break;
     }
     default: {
-        fmt.Println("any miss");
+        fmt.Println((@string)"any miss");
         break;
     }}
 
     shape v = new squareжshape(q);
     switch (v.type()) {
     case ж<square>: {
-        fmt.Println("shape holds *square");
+        fmt.Println((@string)"shape holds *square");
         break;
     }
     default: {
-        fmt.Println("shape miss");
+        fmt.Println((@string)"shape miss");
         break;
     }}
 

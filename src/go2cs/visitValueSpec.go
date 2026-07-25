@@ -168,6 +168,10 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 
 			context := DefaultBasicLitContext()
 			context.u8StringOK = !isInterfaceType
+			// An EMPTY-interface declared type boxes a string LITERAL through @string
+			// (`var v any = "x"` → `(@string)"x"`), the same rendering the assignment form takes —
+			// a bare C# string boxes System.String where Go boxes `string`.
+			context.castToGoString = isAnyType
 
 			if len(valueSpec.Values) <= i {
 				def := v.info.Defs[ident]

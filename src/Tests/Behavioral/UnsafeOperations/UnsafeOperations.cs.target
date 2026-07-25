@@ -40,11 +40,11 @@ internal static void Main() {
     arr = new nint[]{1, 2, 3, 4}.array();
     var arrptr = Ꮡarr.at<nint>(0);
     @unsafe.Pointer nextPtr = (@unsafe.Pointer)((uintptr)new @unsafe.Pointer(arrptr) + @unsafe.Sizeof(arr[0]));
-    fmt.Println("Value of the next element:", ~(ж<nint>)(uintptr)(nextPtr));
+    fmt.Println((@string)"Value of the next element:", ~(ж<nint>)(uintptr)(nextPtr));
     ref var t1 = ref heap(new T1(), out var Ꮡt1);
     t1.a = 42;
     var t2 = ~Ꮡt1.Reinterpret<T1, T2>();
-    fmt.Println("Value of t2.a:", t2.a);
+    fmt.Println((@string)"Value of t2.a:", t2.a);
     ref var i = ref heap(new int8(), out var Ꮡi);
     i = -1;
     int16 j = (int16)i;

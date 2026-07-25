@@ -19,11 +19,11 @@ internal static void selectEscape() {
         ref var res = ref heap(resᴛ1, out var Ꮡres);
         saved = Ꮡres;
         saved.Value.value = 42;
-        fmt.Println("escape:", res.value, res.tag);
+        fmt.Println((@string)"escape:", res.value, res.tag);
         res.tag = "mutated"u8;
         break;
     }}
-    fmt.Println("after:", (~saved).value, (~saved).tag);
+    fmt.Println((@string)"after:", (~saved).value, (~saved).tag);
 }
 
 internal static void selectEscapeCommaOk() {
@@ -38,10 +38,10 @@ internal static void selectEscapeCommaOk() {
         whole = Ꮡres;
         field = Ꮡres.of(boxedResult.Ꮡvalue);
         field.Value += 10;
-        fmt.Println("comma-ok:", res.value, res.tag, ok);
+        fmt.Println((@string)"comma-ok:", res.value, res.tag, ok);
         break;
     }}
-    fmt.Println("field:", field.Value, (~whole).value);
+    fmt.Println((@string)"field:", field.Value, (~whole).value);
 }
 
 internal static void selectEscapeMixed() {
@@ -56,11 +56,11 @@ internal static void selectEscapeMixed() {
         ref var r = ref heap(rᴛ1, out var Ꮡr);
         keep = Ꮡr;
         keep.Value.tag = "escaped"u8;
-        fmt.Println("mixed:", r.tag);
+        fmt.Println((@string)"mixed:", r.tag);
         break;
     }
     case 1 when selᴛ4.ꟷᐳ(out var n): {
-        fmt.Println("plain:", n);
+        fmt.Println((@string)"plain:", n);
         break;
     }}
 }

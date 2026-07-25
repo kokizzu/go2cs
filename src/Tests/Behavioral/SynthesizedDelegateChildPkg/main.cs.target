@@ -27,7 +27,7 @@ internal static void Main() {
         notify: new map<@string, Action<ж<inner.Record>, @string>>{
             ["hit"u8] = (ж<inner.Record> recΔ2, @string tag) => {
                 recΔ2.Value.Hits++;
-                fmt.Println("notify:", tag, (~recΔ2).Name, (~recΔ2).Hits);
+                fmt.Println((@string)"notify:", tag, (~recΔ2).Name, (~recΔ2).Hits);
             }
         }
     );

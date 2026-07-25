@@ -13,6 +13,13 @@ const namedRune = 'A' // untyped rune constant
 const namedFloat = 2.5
 const namedWide = 1 << 40 // untyped int constant beyond the int32 range
 
+// A STRING constant is the mirror image: Go's default type is `string`, and it is the LITERAL
+// that boxes wrong (a plain C# string / u8 span, never a golib @string), while a NAMED string
+// constant already renders as an @string member -- the inverse of the numeric kinds, whose
+// named untyped constants render as wrapper structs.
+const namedStr = "seed"
+const typedStr string = "seed"
+
 type holder struct {
 	v any
 }
@@ -42,9 +49,13 @@ func kindOf(v any) string {
 		return "int32"
 	case float64:
 		return "float64"
+	case string:
+		return "string"
 	}
 	return "other"
 }
+
+func retStrL() any { return "seed" }
 
 func readN() (int, error) { return 0, nil }
 
@@ -130,4 +141,42 @@ func main() {
 	rv, rok := any('A').(int32)
 	fv, fok := any(2.5).(float64)
 	fmt.Println("assert lit    :", iv, iok, rv, rok, fv, fok)
+
+	// --- STRING constants, at the same slots ---
+	s := "seed"
+	fmt.Println("str var lit   :", variadicEq(s, "seed"))
+	fmt.Println("str var cat   :", variadicEq(s, "se"+"ed"))
+	fmt.Println("str var named :", variadicEq(s, namedStr), variadicEq(s, typedStr))
+	fmt.Println("str par lit   :", paramEq(s, "seed"), paramEq("seed", "seed"))
+
+	var sv any = "seed"
+	var sc any = "se" + "ed"
+	fmt.Println("str asn lit   :", sv == any(s), sc == any(s))
+
+	ssl := []any{"seed", "se" + "ed"}
+	fmt.Println("str slc       :", ssl[0] == any(s), ssl[1] == any(s))
+
+	smk := map[any]string{"seed": "hit"}
+	// The composite STORE and the literal LOOKUP must box alike, and a lookup by a real string
+	// VALUE must hit the same key.
+	fmt.Println("str mapkey    :", smk["seed"], smk[any(s)])
+
+	smv := map[string]any{"k": "seed", "c": "se" + "ed"}
+	fmt.Println("str mapval    :", smv["k"] == any(s), smv["c"] == any(s))
+
+	shk := holder{v: "seed"}
+	shp := holder{"seed"}
+	shc := holder{v: "se" + "ed"}
+	fmt.Println("str struct    :", shk.v == any(s), shp.v == any(s), shc.v == any(s))
+
+	sch := make(chan any, 1)
+	sch <- "seed"
+	fmt.Println("str chan      :", <-sch == any(s))
+
+	fmt.Println("str ret       :", retStrL() == any(s))
+	fmt.Println("str conv      :", any("seed") == any(s))
+
+	stv, stok := any("seed").(string)
+	fmt.Println("str assert    :", stv, stok)
+	fmt.Println("str kinds     :", kindOf("seed"), kindOf("se"+"ed"), kindOf(namedStr), kindOf(typedStr), kindOf(s))
 }

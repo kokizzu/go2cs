@@ -200,7 +200,7 @@ internal static void Main() {
     ref var crew = ref heap<Roster>(out var Ꮡcrew);
     crew = new Roster(new Person[]{new(Name: "Ann"u8, Age: 30), new(Name: "Bob"u8, Age: 40)}.slice());
     consumeOne(Ꮡcrew.of(Roster.Ꮡm_value));
-    fmt.Println("consumed:", len(crew), crew[0].Name);
+    fmt.Println((@string)"consumed:", len(crew), crew[0].Name);
     x = """
 
         SELECT *

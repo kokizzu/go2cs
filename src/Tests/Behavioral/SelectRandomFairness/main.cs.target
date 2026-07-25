@@ -33,8 +33,8 @@ internal static void Main() {
             break;
         }}
     }
-    fmt.Println("total:", aCount + bCount);
-    fmt.Println("both branches taken:", aCount > 0 && bCount > 0);
+    fmt.Println((@string)"total:", aCount + bCount);
+    fmt.Println((@string)"both branches taken:", aCount > 0 && bCount > 0);
 }
 
 } // end main_package

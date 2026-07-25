@@ -36,7 +36,7 @@ internal static void Main() {
     var a = new MyCustomError("New One", new MyAbser(nil), new MyError(time.Now(), "Hello"), default!);
     a.Abs();
     a.Message = "New"u8;
-    fmt.Println("MyCustomError method =", a.Abs());
+    fmt.Println((@string)"MyCustomError method =", a.Abs());
 }
 
 } // end main_package

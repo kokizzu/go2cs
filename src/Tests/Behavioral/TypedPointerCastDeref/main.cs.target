@@ -50,19 +50,19 @@ internal static void Main() {
     pt = new Pt(1, 2);
     ref var c = ref heap(new Count(), out var Ꮡc);
     c = 42;
-    fmt.Println("struct:", derefStruct(Ꮡpt));
-    fmt.Println("named num:", derefNamedNum(Ꮡc));
+    fmt.Println((@string)"struct:", derefStruct(Ꮡpt));
+    fmt.Println((@string)"named num:", derefNamedNum(Ꮡc));
     viaUnsafe(Ꮡpt).Value.Y = 20;
-    fmt.Println("via unsafe writes through:", pt);
+    fmt.Println((@string)"via unsafe writes through:", pt);
     convIdentity(Ꮡpt).Value.X = 10;
-    fmt.Println("conv identity writes through:", pt);
+    fmt.Println((@string)"conv identity writes through:", pt);
     var got = derefStruct(Ꮡpt);
     got.X = 555;
-    fmt.Println("copy:", got, "original:", pt);
+    fmt.Println((@string)"copy:", got, (@string)"original:", pt);
     assignThrough(Ꮡpt);
-    fmt.Println("assigned through:", pt);
-    fmt.Println("local:", derefLocal());
-    fmt.Println("call survives:", advance(Ꮡpt).Value);
+    fmt.Println((@string)"assigned through:", pt);
+    fmt.Println((@string)"local:", derefLocal());
+    fmt.Println((@string)"call survives:", advance(Ꮡpt).Value);
 }
 
 } // end main_package

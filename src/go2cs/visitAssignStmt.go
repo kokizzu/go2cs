@@ -1181,9 +1181,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 			// `case int:` matches Go's boxed dynamic type. emptyIfaceTarget already reports the
 			// LHS is `any`; the downstream narrow/named casts are gated off for an interface LHS.
 			if emptyIfaceTarget {
-				if castType := v.untypedConstBoxCast(rhs); castType != "" {
-					rhsExpr = fmt.Sprintf("(%s)(%s)", castType, rhsExpr)
-				}
+				rhsExpr = v.applyUntypedConstBoxCast(rhs, rhsExpr)
 			}
 
 			// A `:=` DECLARATION whose RHS is a constant-folded NAMED-NUMERIC conversion

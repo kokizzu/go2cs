@@ -11,16 +11,16 @@ internal static void Main() {
     p2 = ((ж<nint>)nil);
     var pp1 = Ꮡp1;
     var pp2 = Ꮡp2;
-    fmt.Println("pp1==pp2", pp1 == pp2);
-    fmt.Println("pp1==nil", pp1 == nil);
-    fmt.Println("*pp1==nil", pp1.ValueSlot == nil);
-    fmt.Println("*pp1==*pp2", pp1.ValueSlot == pp2.ValueSlot);
+    fmt.Println((@string)"pp1==pp2", pp1 == pp2);
+    fmt.Println((@string)"pp1==nil", pp1 == nil);
+    fmt.Println((@string)"*pp1==nil", pp1.ValueSlot == nil);
+    fmt.Println((@string)"*pp1==*pp2", pp1.ValueSlot == pp2.ValueSlot);
     var alias = pp1;
-    fmt.Println("alias==pp1", alias == pp1);
+    fmt.Println((@string)"alias==pp1", alias == pp1);
     ref var n = ref heap<nint>(out var Ꮡn);
     n = 42;
     alias.ValueSlot = Ꮡn;
-    fmt.Println("p1 set", pp1.ValueSlot != nil, (pp1.ValueSlot).Value);
+    fmt.Println((@string)"p1 set", pp1.ValueSlot != nil, (pp1.ValueSlot).Value);
 }
 
 } // end main_package

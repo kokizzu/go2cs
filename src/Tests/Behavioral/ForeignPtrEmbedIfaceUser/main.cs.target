@@ -26,15 +26,15 @@ internal static void Main() {
     accumulator a = box;
     a.Add(5);
     a.Add(7);
-    fmt.Println("value:", a.Total(), box.Meter.Total());
+    fmt.Println((@string)"value:", a.Total(), box.Meter.Total());
     accumulator p = new meterBoxжaccumulator(Ꮡbox);
     p.Add(10);
-    fmt.Println("pointer:", p.Total(), box.Meter.Total());
+    fmt.Println((@string)"pointer:", p.Total(), box.Meter.Total());
     var pair = ForeignPtrEmbedIfaceLib.NewPair();
     combo c = new ForeignPtrEmbedIfaceLib_Pairжcombo(pair);
     c.Add(3);
     c.Set(42);
-    fmt.Println("pair:", c.Get(), c.Add(1), pair.Value.Meter.Total());
+    fmt.Println((@string)"pair:", c.Get(), c.Add(1), pair.Value.Meter.Total());
 }
 
 } // end main_package

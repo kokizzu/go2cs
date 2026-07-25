@@ -29,18 +29,18 @@ internal static void Main() {
     var bs = slice<byte>(str);
     @string hel = "hel"u8;
     var helBytes = slice<byte>(hel);
-    fmt.Println("sum(string):", byteSum(str));
-    fmt.Println("sum([]byte):", byteSum(bs));
-    fmt.Println("prefix string:", prefixMatch(str, hel));
-    fmt.Println("prefix []byte:", prefixMatch(bs, helBytes));
-    fmt.Println("prefix miss:", prefixMatch(str, (@string)"xyz"));
-    fmt.Println("prefix too long:", prefixMatch(str, (@string)"hello world"));
-    fmt.Println("last(string):", lastByte(str));
-    fmt.Println("last([]byte):", lastByte(bs));
-    fmt.Println("sum:", digitSum((@string)"12:34"), digitSum(slice<byte>("56:78"u8)));
-    fmt.Println("head:", headSum((@string)"x98:76"), headSum(slice<byte>("y10:23"u8)));
-    fmt.Println("appendRun(string):", ((@string)appendRun(default!, (@string)"abcde")));
-    fmt.Println("appendRun([]byte):", ((@string)appendRun(slice<byte>("<"u8), slice<byte>("abcde"u8))));
+    fmt.Println((@string)"sum(string):", byteSum(str));
+    fmt.Println((@string)"sum([]byte):", byteSum(bs));
+    fmt.Println((@string)"prefix string:", prefixMatch(str, hel));
+    fmt.Println((@string)"prefix []byte:", prefixMatch(bs, helBytes));
+    fmt.Println((@string)"prefix miss:", prefixMatch(str, (@string)"xyz"));
+    fmt.Println((@string)"prefix too long:", prefixMatch(str, (@string)"hello world"));
+    fmt.Println((@string)"last(string):", lastByte(str));
+    fmt.Println((@string)"last([]byte):", lastByte(bs));
+    fmt.Println((@string)"sum:", digitSum((@string)"12:34"), digitSum(slice<byte>("56:78"u8)));
+    fmt.Println((@string)"head:", headSum((@string)"x98:76"), headSum(slice<byte>("y10:23"u8)));
+    fmt.Println((@string)"appendRun(string):", ((@string)appendRun(default!, (@string)"abcde")));
+    fmt.Println((@string)"appendRun([]byte):", ((@string)appendRun(slice<byte>("<"u8), slice<byte>("abcde"u8))));
 }
 
 internal static nint digitSum<T>(T s)

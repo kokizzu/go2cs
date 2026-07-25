@@ -35,8 +35,8 @@ internal static (nint, @string) bump(Tally tʗp, nint n) {
 internal static void Main() {
     var t = new Tally(total: 5, log: "start"u8);
     var (total, log) = bump(t, 3);
-    fmt.Println("bumped:", total, log);
-    fmt.Println("caller copy untouched:", t.total, t.log);
+    fmt.Println((@string)"bumped:", total, log);
+    fmt.Println((@string)"caller copy untouched:", t.total, t.log);
 }
 
 } // end main_package

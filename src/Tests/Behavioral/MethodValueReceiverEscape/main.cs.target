@@ -112,18 +112,18 @@ internal static nint viaClosure() {
 
 internal static void Main() {
     var (n, sum) = viaLocal();
-    fmt.Println("viaLocal:", n, sum);
+    fmt.Println((@string)"viaLocal:", n, sum);
     (n, sum) = viaParam(new counter(n: 40));
-    fmt.Println("viaParam:", n, sum);
+    fmt.Println((@string)"viaParam:", n, sum);
     var r = viaNamedResult();
-    fmt.Println("viaNamedResult:", r.n, r.calls);
-    fmt.Println("viaFieldChain:", viaFieldChain());
+    fmt.Println((@string)"viaNamedResult:", r.n, r.calls);
+    fmt.Println((@string)"viaFieldChain:", viaFieldChain());
     var (ln, total) = viaNamedSlice();
-    fmt.Println("viaNamedSlice:", ln, total);
-    fmt.Println("valueReceiverCopies:", valueReceiverCopies());
-    fmt.Println("pointerBaseNoPromotion:", pointerBaseNoPromotion());
-    fmt.Println("directCallStaysUnboxed:", directCallStaysUnboxed());
-    fmt.Println("viaClosure:", viaClosure());
+    fmt.Println((@string)"viaNamedSlice:", ln, total);
+    fmt.Println((@string)"valueReceiverCopies:", valueReceiverCopies());
+    fmt.Println((@string)"pointerBaseNoPromotion:", pointerBaseNoPromotion());
+    fmt.Println((@string)"directCallStaysUnboxed:", directCallStaysUnboxed());
+    fmt.Println((@string)"viaClosure:", viaClosure());
 }
 
 } // end main_package

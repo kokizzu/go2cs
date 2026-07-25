@@ -140,29 +140,27 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 	}
 
 	// Box an untyped CONSTANT VALUE in an EMPTY-interface slot at Go's default type for its kind — a
-	// struct `any` field (`box{v: 9}`) or a `map[K]any` / sparse-`[N]any` value — the numeric twin of
-	// the anyBoxedStringLitContext @string boxing above, so a later `x.(int)` matches Go's boxed `int`.
-	// A no-op for any other slot or a non-untyped-constant value.
-	if castType := v.untypedConstBoxCast(keyValueExpr.Value); castType != "" {
-		var valueSlotType types.Type
+	// struct `any` field (`box{v: 9}`) or a `map[K]any` / sparse-`[N]any` value — so a later `x.(int)`
+	// matches Go's boxed `int`. A string LITERAL already took the tighter `(@string)"…"` rendering
+	// from anyBoxedStringLitContext above, which applyUntypedConstBoxCast leaves alone; a string
+	// CONCATENATION (which that literal-only flag cannot reach) is boxed here. A no-op for any other
+	// slot or a non-untyped-constant value.
+	var valueSlotType types.Type
 
-		if context.source == StructSource {
-			valueSlotType = structFieldType
-		} else if context.source == MapSource && context.compositeType != nil {
-			switch u := types.Unalias(context.compositeType).Underlying().(type) {
-			case *types.Map:
-				valueSlotType = u.Elem()
-			case *types.Array:
-				valueSlotType = u.Elem()
-			case *types.Slice:
-				valueSlotType = u.Elem()
-			}
-		}
-
-		if isEmptyInterfaceTarget(valueSlotType) {
-			valueExpr = fmt.Sprintf("(%s)(%s)", castType, valueExpr)
+	if context.source == StructSource {
+		valueSlotType = structFieldType
+	} else if context.source == MapSource && context.compositeType != nil {
+		switch u := types.Unalias(context.compositeType).Underlying().(type) {
+		case *types.Map:
+			valueSlotType = u.Elem()
+		case *types.Array:
+			valueSlotType = u.Elem()
+		case *types.Slice:
+			valueSlotType = u.Elem()
 		}
 	}
+
+	valueExpr = v.boxUntypedConstAsDefaultType(valueSlotType, keyValueExpr.Value, valueExpr)
 
 	// A NARROW-integer arithmetic value in a struct-FIELD initializer needs the same
 	// cast-back as the assignment forms — Go wraps the arithmetic at the operand width,
@@ -259,11 +257,7 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 				// `any`-keyed map, which keeps `map[any]int{6:1}[6]` round-tripping AND makes a lookup by
 				// a real `int` VALUE (`m[n]`, boxed nint — the only form Go can distinguish) HIT, which
 				// the former leave-both-as-Int32 behavior missed.
-				if isEmptyInterfaceTarget(mapType.Key()) {
-					if castType := v.untypedConstBoxCast(keyValueExpr.Key); castType != "" {
-						keyExpr = fmt.Sprintf("(%s)(%s)", castType, keyExpr)
-					}
-				}
+				keyExpr = v.boxUntypedConstAsDefaultType(mapType.Key(), keyValueExpr.Key, keyExpr)
 			}
 		}
 

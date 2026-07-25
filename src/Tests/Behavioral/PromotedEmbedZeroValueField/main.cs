@@ -27,7 +27,7 @@ internal static void Main() {
     Ꮡ(b.slot).of(holder.Ꮡcounter).inc();
     Ꮡ(b.slot).of(holder.Ꮡcounter).inc();
     Ꮡ(b.slot).of(holder.Ꮡcounter).inc();
-    fmt.Println("id:", b.id, "count:", b.slot.n, "name-empty:", b.slot.name == ""u8);
+    fmt.Println((@string)"id:", b.id, (@string)"count:", b.slot.n, (@string)"name-empty:", b.slot.name == ""u8);
 }
 
 } // end main_package

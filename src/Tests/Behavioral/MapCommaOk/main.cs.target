@@ -14,7 +14,7 @@ internal static void Main() {
     fmt.Println(ok3);
     {
         var (_, ok4) = m["z"u8, ꟷ]; if (!ok4) {
-            fmt.Println("z absent");
+            fmt.Println((@string)"z absent");
         }
     }
     nint w = default!;

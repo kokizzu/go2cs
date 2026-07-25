@@ -48,13 +48,13 @@ internal static void Main() {
     bv = 20;
     Ꮡc.Put(Ꮡa, Ꮡav);
     Ꮡc.Put(Ꮡb, Ꮡbv);
-    fmt.Println("get a:", Ꮡc.Get(Ꮡa).Value);
-    fmt.Println("get b:", Ꮡc.Get(Ꮡb).Value);
+    fmt.Println((@string)"get a:", Ꮡc.Get(Ꮡa).Value);
+    fmt.Println((@string)"get b:", Ꮡc.Get(Ꮡb).Value);
     ref var newAv = ref heap<nint>(out var ᏑnewAv);
     newAv = 99;
     Ꮡc.Put(Ꮡa, ᏑnewAv);
-    fmt.Println("get a again:", Ꮡc.Get(Ꮡa).Value);
-    fmt.Println("missing:", Ꮡc.Get(@new<nint>()) == nil);
+    fmt.Println((@string)"get a again:", Ꮡc.Get(Ꮡa).Value);
+    fmt.Println((@string)"missing:", Ꮡc.Get(@new<nint>()) == nil);
 }
 
 } // end main_package

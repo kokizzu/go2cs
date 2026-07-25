@@ -31,7 +31,7 @@ internal static void Main() {
         var (strBox, ok) = value._<Box<@string>>(ᐧ); if (ok){
             fmt.Printf("Found a string box with value: %s\n"u8, strBox.Value);
         } else {
-            fmt.Println("Not a string box");
+            fmt.Println((@string)"Not a string box");
         }
     }
     var switchᴛ1 = GetValue(1);
@@ -50,7 +50,7 @@ internal static void Main() {
     }
     default: {
         var v = switchᴛ1;
-        fmt.Println("Unknown box type");
+        fmt.Println((@string)"Unknown box type");
         break;
     }}
 }

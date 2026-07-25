@@ -41,7 +41,7 @@ internal static void Main() {
             var (t, ok) = it._<Tagger>(ᐧ); if (ok){
                 fmt.Println(t.Describe(), t.Tag());
             } else {
-                fmt.Println("not a Tagger");
+                fmt.Println((@string)"not a Tagger");
             }
         }
     }

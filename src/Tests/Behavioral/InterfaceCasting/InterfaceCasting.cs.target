@@ -126,17 +126,17 @@ internal static void Main() {
     Incrementer inc = new CounterжIncrementer(c);
     inc.Inc();
     inc.Inc();
-    fmt.Println("via pointer:", c.Total());
+    fmt.Println((@string)"via pointer:", c.Total());
     c.Value.n = 10;
-    fmt.Println("via interface:", inc.Total());
+    fmt.Println((@string)"via interface:", inc.Total());
     var (back, ok) = inc._<ж<Counter>>(ᐧ);
     back.Inc();
-    fmt.Println("assert-back:", ok, c.Total(), back == c);
+    fmt.Println((@string)"assert-back:", ok, c.Total(), back == c);
     var r = Reversed(new Dog(nil));
-    fmt.Println("promoted via pointer adapter:", r.Speak());
+    fmt.Println((@string)"promoted via pointer adapter:", r.Speak());
     for (nint k = 0; k < 3; k++) {
         var (a, name) = pick(k);
-        fmt.Println("picked:", name, a.Speak());
+        fmt.Println((@string)"picked:", name, a.Speak());
     }
     rdr rd = new strRdr(nil);
     fmt.Println(rd.read());
@@ -155,27 +155,27 @@ internal static void Main() {
 
     swapped = new Dog(nil);
     replaceAnimal(Ꮡswapped);
-    fmt.Println("replaced:", swapped.Speak());
+    fmt.Println((@string)"replaced:", swapped.Speak());
     Incrementer inc2 = default!;
     var (ᴛ1, ᴛ2) = makeCounter();
     (inc2, err) = (new CounterжIncrementer(ᴛ1), ᴛ2);
     inc2.Inc();
-    fmt.Println("deconstructed into iface:", inc2.Total(), err == default!);
+    fmt.Println((@string)"deconstructed into iface:", inc2.Total(), err == default!);
     var makeAnimal = Animal (bool feline) => {
         if (feline) {
             return new CatжAnimal(Ꮡ(new Cat(nil)));
         }
         return new Dog(nil);
     };
-    fmt.Println("made:", makeAnimal(true).Speak(), makeAnimal(false).Speak());
-    fmt.Println("plumbed:", runPlumbing());
+    fmt.Println((@string)"made:", makeAnimal(true).Speak(), makeAnimal(false).Speak());
+    fmt.Println((@string)"plumbed:", runPlumbing());
     speakShutter ss = new wrapSinkжspeakShutter(Ꮡ(new wrapSink(Animal: new Dog(nil))));
     fmt.Println(ss.Speak(), ss.Shut());
     labeler lb = new badgeжlabeler(Ꮡ(new badge(text: "id"u8, num: 9)));
-    fmt.Println("keyword-method:", lb.@string(), lb.@int());
+    fmt.Println((@string)"keyword-method:", lb.@string(), lb.@int());
     var av = describe(true);
     var (@as, aok) = av._<@string>(ᐧ);
-    fmt.Println("any-string:", av, describe(false), @as, aok);
+    fmt.Println((@string)"any-string:", av, describe(false), @as, aok);
 }
 
 internal static any describe(bool b) {

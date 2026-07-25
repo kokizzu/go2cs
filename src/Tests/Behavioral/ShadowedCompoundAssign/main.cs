@@ -31,7 +31,7 @@ internal static void Main() {
         nint accΔ1 = 0;
         accΔ1 += n;
         accΔ1 -= 1;
-        fmt.Print(accΔ1, " ");
+        fmt.Print(accΔ1, (@string)" ");
     }
     fmt.Println();
     fmt.Println(acc);

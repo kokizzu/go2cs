@@ -22,7 +22,7 @@ internal static void probeA1() {
     };
     bump();
     t.total++;
-    fmt.Println("A1:", t.total, t.log);
+    fmt.Println((@string)"A1:", t.total, t.log);
 }
 
 internal static void probeA2() {
@@ -30,7 +30,7 @@ internal static void probeA2() {
     t = new Tally(5, "s");
     var get = () => Ꮡt.Value.total;
     t.total += 10;
-    fmt.Println("A2:", get());
+    fmt.Println((@string)"A2:", get());
 }
 
 internal static void probeA3() {
@@ -39,7 +39,7 @@ internal static void probeA3() {
     t.total += 2;
     var tʗ1 = t;
     var get = () => tʗ1.total;
-    fmt.Println("A3:", get());
+    fmt.Println((@string)"A3:", get());
 }
 
 internal static void probeB1(Tally t) {
@@ -48,13 +48,13 @@ internal static void probeB1(Tally t) {
     };
     bump();
     t.total++;
-    fmt.Println("B1:", t.total);
+    fmt.Println((@string)"B1:", t.total);
 }
 
 internal static void probeB2(Tally t) {
     var get = () => t.total;
     t.total += 10;
-    fmt.Println("B2:", get());
+    fmt.Println((@string)"B2:", get());
 }
 
 internal static void probeC1() {
@@ -66,7 +66,7 @@ internal static void probeC1() {
     bump();
     t.Add(3);
     bump();
-    fmt.Println("C1:", t.total, t.log);
+    fmt.Println((@string)"C1:", t.total, t.log);
 }
 
 internal static void probeC2() {
@@ -74,7 +74,7 @@ internal static void probeC2() {
     t = new Tally(5, "s");
     var get = () => Ꮡt.Value.total;
     t.Add(3);
-    fmt.Println("C2:", get());
+    fmt.Println((@string)"C2:", get());
 }
 
 internal static void probeD1(Tally t) {
@@ -84,14 +84,14 @@ internal static void probeD1(Tally t) {
     bump();
     t.Add(3);
     bump();
-    fmt.Println("D1:", t.total, t.log);
+    fmt.Println((@string)"D1:", t.total, t.log);
 }
 
 internal static void probeE1() => func((defer, recover) => {
     ref var t = ref heap<Tally>(out var Ꮡt);
     t = new Tally(5, "s");
     defer(() => {
-        fmt.Println("E1:", Ꮡt.Value.total);
+        fmt.Println((@string)"E1:", Ꮡt.Value.total);
     });
     t.total = 42;
 });
@@ -99,7 +99,7 @@ internal static void probeE1() => func((defer, recover) => {
 internal static void probeE2() => func((defer, recover) => {
     ref var t = ref heap<Tally>(out var Ꮡt);
     t = new Tally(5, "s");
-    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), "E2:", t.total, defer);
+    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"E2:", t.total, defer);
     t.total = 42;
 });
 
@@ -113,7 +113,7 @@ internal static void probeF1() {
         doneʗ1.ᐸꟷ(1);
     });
     ᐸꟷ(done);
-    fmt.Println("F1:", t.total);
+    fmt.Println((@string)"F1:", t.total);
 }
 
 internal static void probeG1() {
@@ -127,7 +127,7 @@ internal static void probeG1() {
     }
     fs[0]();
     fs[1]();
-    fmt.Println("G1:", t.total);
+    fmt.Println((@string)"G1:", t.total);
 }
 
 internal static void probeG3() {
@@ -135,7 +135,7 @@ internal static void probeG3() {
     foreach (var (_, x) in new nint[]{10, 20, 30}.slice()) {
         fs = append(fs, () => x);
     }
-    fmt.Println("G3:", fs[0](), fs[1](), fs[2]());
+    fmt.Println((@string)"G3:", fs[0](), fs[1](), fs[2]());
 }
 
 internal static void probeH1() {
@@ -147,7 +147,7 @@ internal static void probeH1() {
     var get = () => Ꮡt.Value.total;
     inc();
     inc();
-    fmt.Println("H1:", get());
+    fmt.Println((@string)"H1:", get());
 }
 
 internal static void probeI1() {
@@ -157,7 +157,7 @@ internal static void probeI1() {
         Ꮡs.ValueSlot = append(Ꮡs.ValueSlot, (nint)(2));
     };
     app();
-    fmt.Println("I1:", len(s), s[0]);
+    fmt.Println((@string)"I1:", len(s), s[0]);
 }
 
 internal static void probeJ1() {
@@ -166,7 +166,7 @@ internal static void probeJ1() {
     ((Action)(() => {
         Ꮡt.Value.total += 100;
     }))();
-    fmt.Println("J1:", t.total);
+    fmt.Println((@string)"J1:", t.total);
 }
 
 internal static void probeK1() {
@@ -175,7 +175,7 @@ internal static void probeK1() {
     var p = Ꮡt;
     var get = () => Ꮡt.Value.total;
     p.Value.total = 50;
-    fmt.Println("K1:", get());
+    fmt.Println((@string)"K1:", get());
 }
 
 internal static void probeL1() {
@@ -185,7 +185,7 @@ internal static void probeL1() {
         Ꮡm.ValueSlot = new map<nint, nint>{[1] = 1};
     };
     set();
-    fmt.Println("L1:", len(m));
+    fmt.Println((@string)"L1:", len(m));
 }
 
 internal static void probeM1() {
@@ -196,7 +196,7 @@ internal static void probeM1() {
     };
     var get = () => Ꮡt.Value.total;
     bump();
-    fmt.Println("M1:", get(), t.total);
+    fmt.Println((@string)"M1:", get(), t.total);
 }
 
 internal static void probeN1() {
@@ -205,7 +205,7 @@ internal static void probeN1() {
         n++;
     };
     inc();
-    fmt.Println("N1:", n);
+    fmt.Println((@string)"N1:", n);
 }
 
 internal static void probeN2() {
@@ -217,7 +217,7 @@ internal static void probeN2() {
     };
     inc();
     p.Value += 2;
-    fmt.Println("N2:", n);
+    fmt.Println((@string)"N2:", n);
 }
 
 internal static (V, nint) probeP1<V>(slice<V> seq) {
@@ -256,7 +256,7 @@ internal static void Main() {
     probeN1();
     probeN2();
     var (v, n) = probeP1(new nint[]{10, 20, 30}.slice());
-    fmt.Println("P1:", v, n);
+    fmt.Println((@string)"P1:", v, n);
 }
 
 } // end main_package

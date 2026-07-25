@@ -91,13 +91,13 @@ internal static void Main() {
     var a = new label(name: "alpha"u8);
     var b = new label(name: "beta"u8);
     var (before, after) = declRedeclare(a);
-    fmt.Println("declRedeclare:", before, after);
-    fmt.Println("declDeferObserver:", declDeferObserver(a, b));
-    fmt.Println("declClosureWrite:", declClosureWrite(b));
+    fmt.Println((@string)"declRedeclare:", before, after);
+    fmt.Println((@string)"declDeferObserver:", declDeferObserver(a, b));
+    fmt.Println((@string)"declClosureWrite:", declClosureWrite(b));
     (before, after) = litRedeclare(a);
-    fmt.Println("litRedeclare:", before, after);
+    fmt.Println((@string)"litRedeclare:", before, after);
     var (x, y) = declSliceRedeclare(new nint[]{1, 2, 3}.slice());
-    fmt.Println("declSliceRedeclare:", x, y);
+    fmt.Println((@string)"declSliceRedeclare:", x, y);
 }
 
 } // end main_package

@@ -29,7 +29,7 @@ internal static void multiBlank() {
     _ = b;
     _ = c;
     _ = d;
-    fmt.Println("multiBlank ok");
+    fmt.Println((@string)"multiBlank ok");
 }
 
 internal static void Main() {

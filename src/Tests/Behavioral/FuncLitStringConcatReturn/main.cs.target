@@ -21,7 +21,7 @@ internal static void Main() {
             return fmt.Sprintf("other:%v"u8, t);
         }}
     };
-    fmt.Println(pick("abc"));
+    fmt.Println(pick((@string)"abc"));
     fmt.Println(pick((nint)(42)));
     fmt.Println(pick(true));
     var wrap = @string (@string s, bool quote) => {

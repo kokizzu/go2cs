@@ -34,31 +34,31 @@ public static nint Foo(nint n) {
 
 internal static void Main() {
     fmt.Println(getStr("test"u8));
-    fmt.Println(getStr2("hello, ", "world"u8));
-    fmt.Println(getStr3("hello, %s"u8, "world"));
+    fmt.Println(getStr2((@string)"hello, ", "world"u8));
+    fmt.Println(getStr3("hello, %s"u8, (@string)"world"));
     nint i = 2;
-    fmt.Print("Write ", i, " as ");
+    fmt.Print((@string)"Write ", i, (@string)" as ");
     switch (i) {
     case 1: {
-        fmt.Println("one");
+        fmt.Println((@string)"one");
         break;
     }
     case 2: {
-        fmt.Println("two");
+        fmt.Println((@string)"two");
         break;
     }
     case 3: {
         {
-            fmt.Println("three");
+            fmt.Println((@string)"three");
         }
         break;
     }
     case 4 or 5 or 6: {
-        fmt.Println("four, five or siz");
+        fmt.Println((@string)"four, five or siz");
         break;
     }
     default: {
-        fmt.Println("unknown");
+        fmt.Println((@string)"unknown");
         break;
     }}
 
@@ -71,23 +71,23 @@ internal static void Main() {
     fmt.Println(x);
     var exprᴛ1 = time.Now().Weekday();
     if (exprᴛ1 == time.Saturday || exprᴛ1 == time.Sunday) {
-        fmt.Println("It's the weekend");
+        fmt.Println((@string)"It's the weekend");
     }
     else if (exprᴛ1 == time.Monday) {
-        fmt.Println("Ugh, it's Monday");
+        fmt.Println((@string)"Ugh, it's Monday");
     }
     else { /* default: */
-        fmt.Println("It's a weekday");
+        fmt.Println((@string)"It's a weekday");
     }
 
     var t = time.Now();
     switch (ᐧ) {
     case {} when t.Hour() is < 12: {
-        fmt.Println("It's before noon");
+        fmt.Println((@string)"It's before noon");
         break;
     }
     default: {
-        fmt.Println("It's after noon");
+        fmt.Println((@string)"It's after noon");
         break;
     }}
 
@@ -97,27 +97,27 @@ internal static void Main() {
         nint hourΔ1 = time.Now().Hour();
         switch (ᐧ) {
         case {} when hourΔ1 is 1 or < 12 or 2: {
-            fmt.Println("Good morning!");
+            fmt.Println((@string)"Good morning!");
             break;
         }
         case {} when (hourΔ1 == 1) || (hourΔ1 < 12) || (hourΔ1 == 2 || hour1 == 4): {
-            fmt.Println("Good morning (opt 2)!");
+            fmt.Println((@string)"Good morning (opt 2)!");
             break;
         }
         case {} when hourΔ1 is < 17: {
-            fmt.Println("Good afternoon!");
+            fmt.Println((@string)"Good afternoon!");
             break;
         }
         case {} when hourΔ1 is 0: {
-            fmt.Println("Midnight!");
+            fmt.Println((@string)"Midnight!");
             break;
         }
         case {} when hourΔ1 == 0 && hour1 == 1: {
-            fmt.Println("Midnight (opt 2)!");
+            fmt.Println((@string)"Midnight (opt 2)!");
             break;
         }
         default: {
-            fmt.Println("Good evening!");
+            fmt.Println((@string)"Good evening!");
             break;
         }}
     }
@@ -126,7 +126,7 @@ internal static void Main() {
     var c = (rune)'\r';
     switch (c) {
     case (rune)' ' or (rune)'\t' or (rune)'\n' or (rune)'\f' or (rune)'\r': {
-        fmt.Println("whitespace");
+        fmt.Println((@string)"whitespace");
         break;
     }}
 
@@ -136,13 +136,13 @@ internal static void Main() {
         var exprᴛ2 = getNext();
         var matchᴛ1 = false;
         if (exprᴛ2 == -1) { matchᴛ1 = true;
-            fmt.Println("negative");
+            fmt.Println((@string)"negative");
         }
         else if (exprᴛ2 is 0) { matchᴛ1 = true;
-            fmt.Println("zero");
+            fmt.Println((@string)"zero");
         }
         else if (exprᴛ2 is 1 or 2) { matchᴛ1 = true;
-            fmt.Println("one or two");
+            fmt.Println((@string)"one or two");
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && exprᴛ2 is 3) { matchᴛ1 = true;
@@ -151,7 +151,7 @@ internal static void Main() {
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1) { /* default: */
-            fmt.Println("plus, always a default here because of fallthrough");
+            fmt.Println((@string)"plus, always a default here because of fallthrough");
         }
     }
 
@@ -160,52 +160,52 @@ internal static void Main() {
         var next = getNext();
         var matchᴛ2 = false;
         if (next <= -1) { matchᴛ2 = true;
-            fmt.Println("negative");
+            fmt.Println((@string)"negative");
             var exprᴛ4 = getNext();
             var matchᴛ3 = false;
             if (exprᴛ4 is 1 or 2) { matchᴛ3 = true;
-                fmt.Println("sub0 one or two");
+                fmt.Println((@string)"sub0 one or two");
             }
             else if (exprᴛ4 is 3) { matchᴛ3 = true;
-                fmt.Println("sub0 three");
+                fmt.Println((@string)"sub0 three");
                 fallthrough = true;
             }
             if (fallthrough || !matchᴛ3) { /* default: */
-                fmt.Println("sub0 default");
+                fmt.Println((@string)"sub0 default");
             }
 
         }
         else if (next is 0) { matchᴛ2 = true;
-            fmt.Println("zero");
+            fmt.Println((@string)"zero");
             {
                 var nextΔ2 = getNext();
                 var matchᴛ4 = false;
                 if (nextΔ2 is 1 or <= 2) { matchᴛ4 = true;
-                    fmt.Println("sub1 one or two");
+                    fmt.Println((@string)"sub1 one or two");
                 }
                 else if (nextΔ2 is 3) { matchᴛ4 = true;
-                    fmt.Println("sub1 three");
+                    fmt.Println((@string)"sub1 three");
                     fallthrough = true;
                 }
                 if (fallthrough || !matchᴛ4) { /* default: */
-                    fmt.Println("sub1 default");
+                    fmt.Println((@string)"sub1 default");
                 }
             }
 
         }
         else if (next is 1 or 2) { matchᴛ2 = true;
-            fmt.Println("one or two");
+            fmt.Println((@string)"one or two");
             switch (next) {
             case 1 or 2: {
-                fmt.Println("sub2 one or two");
+                fmt.Println((@string)"sub2 one or two");
                 break;
             }
             case 3: {
-                fmt.Println("sub2 three");
+                fmt.Println((@string)"sub2 three");
                 break;
             }
             default: {
-                fmt.Println("sub2 default");
+                fmt.Println((@string)"sub2 default");
                 break;
             }}
 
@@ -216,46 +216,46 @@ internal static void Main() {
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ2) { /* default: */
-            fmt.Println("plus, always a default here because of fallthrough");
+            fmt.Println((@string)"plus, always a default here because of fallthrough");
         }
     }
 
     var exprᴛ6 = Foo(2);
     var matchᴛ5 = false;
     if (exprᴛ6 == Foo(1) || exprᴛ6 == Foo(2) || exprᴛ6 == Foo(3)) { matchᴛ5 = true;
-        fmt.Println("First case");
+        fmt.Println((@string)"First case");
         fallthrough = true;
     }
     if (fallthrough || !matchᴛ5 && exprᴛ6 == Foo(4)) {
-        fmt.Println("Second case");
+        fmt.Println((@string)"Second case");
     }
     else if (!matchᴛ5) { /* default: */
-        fmt.Println("Default case");
+        fmt.Println((@string)"Default case");
     }
 
     nint v = 3;
     switch (ᐧ) {
     case {} when ᐧᐧ: {
-        fmt.Println("strict checks disabled");
+        fmt.Println((@string)"strict checks disabled");
         break;
     }
     case {} when v is > 2: {
-        fmt.Println("unreachable but compiled");
+        fmt.Println((@string)"unreachable but compiled");
         break;
     }}
 
     pace dur = 5;
     switch (ᐧ) {
     case {} when dur >= 6: {
-        fmt.Println("fast");
+        fmt.Println((@string)"fast");
         break;
     }
     case {} when dur == 5: {
-        fmt.Println("steady");
+        fmt.Println((@string)"steady");
         break;
     }
     default: {
-        fmt.Println("slow");
+        fmt.Println((@string)"slow");
         break;
     }}
 

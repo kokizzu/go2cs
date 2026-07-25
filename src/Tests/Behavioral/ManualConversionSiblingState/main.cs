@@ -5,7 +5,7 @@ using fmt = fmt_package;
 partial class main_package {
 
 internal static void reportProcs() {
-    fmt.Println("newprocs:", newprocs);
+    fmt.Println((@string)"newprocs:", newprocs);
 }
 
 internal static void Main() {
@@ -15,8 +15,8 @@ internal static void Main() {
     np.Value = 7;
     sched.label = "ok"u8;
     reportProcs();
-    fmt.Println("disable:", sched.disable.user, sched.disable.n);
-    fmt.Println("label:", sched.label);
+    fmt.Println((@string)"disable:", sched.disable.user, sched.disable.n);
+    fmt.Println((@string)"label:", sched.label);
 }
 
 } // end main_package

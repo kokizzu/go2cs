@@ -150,9 +150,9 @@ internal static void Main() {
     var a = new MyCustomError("New One", default!, Ꮡe);
     a.Message = "New"u8;
     a.What = "World"u8;
-    fmt.Println("MyError What =", e.What);
-    fmt.Println("MyCustomError What =", a.What);
-    fmt.Println("MyCustomError method =", a.Time());
+    fmt.Println((@string)"MyError What =", e.What);
+    fmt.Println((@string)"MyCustomError What =", a.What);
+    fmt.Println((@string)"MyCustomError method =", a.Time());
     ref var inner = ref heap<ж<Inner>>(out var Ꮡinner);
     inner = Ꮡ(new Inner(Value: "hello"u8));
     var innerPtr = Ꮡinner;

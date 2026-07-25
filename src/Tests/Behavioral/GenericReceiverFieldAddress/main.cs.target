@@ -32,10 +32,10 @@ internal static void Main() {
     ref var bi = ref heap(new Box<nint>(), out var Ꮡbi);
     Ꮡbi.Set(42);
     Ꮡbi.Set(Ꮡbi.Get() + 1);
-    fmt.Println("int:", Ꮡbi.Get());
+    fmt.Println((@string)"int:", Ꮡbi.Get());
     ref var bs = ref heap(new Box<@string>(), out var Ꮡbs);
     Ꮡbs.Set("hello"u8);
-    fmt.Println("string:", Ꮡbs.Get());
+    fmt.Println((@string)"string:", Ꮡbs.Get());
 }
 
 } // end main_package

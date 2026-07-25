@@ -53,8 +53,8 @@ internal static void shadowedCalls() {
     var println = (nint n) => n * 6;
     var len = (ж<arr> p) => p.Value[0] + 100;
     var cap = (ж<arr> p) => p.Value[1] + 200;
-    fmt.Println("shadowed", make(21), @new(7), panic(5));
-    fmt.Println("shadowed", print(4), println(3), len(Ꮡa), cap(Ꮡa));
+    fmt.Println((@string)"shadowed", make(21), @new(7), panic(5));
+    fmt.Println((@string)"shadowed", print(4), println(3), len(Ꮡa), cap(Ꮡa));
 }
 
 internal static void Main() {
@@ -65,7 +65,7 @@ internal static void Main() {
     fmt.Println(describeSignal(1));
     shadowedCalls();
     var (l, c) = unshadowed();
-    fmt.Println("builtin", l, c);
+    fmt.Println((@string)"builtin", l, c);
 }
 
 } // end main_package

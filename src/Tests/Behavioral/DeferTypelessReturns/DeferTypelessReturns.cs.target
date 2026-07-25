@@ -21,7 +21,7 @@ internal static nint idx(this handle h) {
 }
 
 internal static (ж<item>, error) find(slice<item> xs, nint want) => func<(ж<item>, error)>((defer, recover) => {
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), "find done", defer);
+    deferǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"find done", defer);
     foreach (var (i, _) in xs) {
         if (xs[i].n == want) {
             return (Ꮡ(xs, i), default!);
@@ -31,7 +31,7 @@ internal static (ж<item>, error) find(slice<item> xs, nint want) => func<(ж<it
 });
 
 internal static error closeIt(ж<nint> Ꮡp, nint tag) {
-    fmt.Println("closeIt", Ꮡp == nil, tag);
+    fmt.Println((@string)"closeIt", Ꮡp == nil, tag);
     return default!;
 }
 
@@ -81,7 +81,7 @@ internal static void Main() => func((defer, recover) => {
 }
 
 internal static error close(this res h) {
-    fmt.Println("closed", h.id);
+    fmt.Println((@string)"closed", h.id);
     return default!;
 }
 

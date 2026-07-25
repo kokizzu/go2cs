@@ -39,7 +39,7 @@ internal static void Main() {
     ref var c = ref heap(new counter(), out var Ꮡc);
     Ꮡc.Store(10);
     _ = Ꮡc.Add(5);
-    fmt.Println("defined-type methods compiled");
+    fmt.Println((@string)"defined-type methods compiled");
     uintptr seed = 42;
     var h = ((handleT)seed);
     var k = openKey(h);

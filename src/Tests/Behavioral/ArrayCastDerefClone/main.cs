@@ -40,18 +40,18 @@ internal static void Main() {
     src = new Row(new nint[]{1, 2, 3}.array());
     var got = typedCastDeref(Ꮡsrc);
     got[0] = 99;
-    fmt.Println("copy:", got, "original:", src);
+    fmt.Println((@string)"copy:", got, (@string)"original:", src);
     ref var pair = ref heap(new array<uintptr>(2), out var Ꮡpair);
 
     pair = new uintptr[]{7, 8}.array();
     var gotPair = typedCastDerefDirect(Ꮡpair);
     gotPair[1] = 77;
-    fmt.Println("direct copy:", gotPair, "original:", pair);
+    fmt.Println((@string)"direct copy:", gotPair, (@string)"original:", pair);
     var h = typedCastDerefIntoStruct(Ꮡsrc);
     h.r[2] = 33;
-    fmt.Println("struct field copy:", h.r, "original:", src);
+    fmt.Println((@string)"struct field copy:", h.r, (@string)"original:", src);
     typedCastDerefAssign(Ꮡsrc);
-    fmt.Println("assigned through:", src);
+    fmt.Println((@string)"assigned through:", src);
     ref var r = ref heap(new Row(), out var Ꮡr);
     ref var u = ref heap(new array<uintptr>(2), out var Ꮡu);
     _ = castDerefReturn(new @unsafe.Pointer(Ꮡr));

@@ -17,9 +17,9 @@ internal static (@string, @string) render(CaptureModeValueParamLib.Config cfgʗp
 internal static void Main() {
     var cfg = new CaptureModeValueParamLib.Config(Indent: 3);
     var (@out, trace) = render(cfg, "go"u8);
-    fmt.Println("rendered:", @out);
-    fmt.Println("trace:", trace);
-    fmt.Println("caller Indent unchanged:", cfg.Indent);
+    fmt.Println((@string)"rendered:", @out);
+    fmt.Println((@string)"trace:", trace);
+    fmt.Println((@string)"caller Indent unchanged:", cfg.Indent);
 }
 
 } // end main_package

@@ -19,7 +19,7 @@ internal static void show(ж<ints> Ꮡp) {
 
     foreach (var (i, x) in p) {
         if (i > 0) {
-            fmt.Print(" ");
+            fmt.Print((@string)" ");
         }
         fmt.Print(x);
     }

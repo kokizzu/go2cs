@@ -13,7 +13,7 @@ internal static void Main() {
         i++;
     }
     fmt.Println();
-    fmt.Println("i =", i);
+    fmt.Println((@string)"i =", i);
     for (i = 0; i < 10; i++) {
         f(Ꮡi);
         for (nint j = 0; j < 3; j++) {
@@ -21,7 +21,7 @@ internal static void Main() {
         }
         fmt.Println();
     }
-    fmt.Println("i =", i);
+    fmt.Println((@string)"i =", i);
     fmt.Println();
 @out:
     for (nint iΔ1ᴛ1 = 0; iΔ1ᴛ1 < 5; iΔ1ᴛ1++) {
@@ -44,7 +44,7 @@ continue_out:;
     }
 break_out:;
     fmt.Println();
-    fmt.Println("i =", i);
+    fmt.Println((@string)"i =", i);
     fmt.Println();
     var nums = new nint[]{1, 2, 3, 4}.slice();
 scan:
@@ -56,15 +56,15 @@ scan:
             if (n + m > 5) {
                 goto break_scan;
             }
-            fmt.Println("pair", n, m);
+            fmt.Println((@string)"pair", n, m);
         }
 continue_scan:;
     }
 break_scan:;
     fmt.Println();
     nint x = 99;
-    fmt.Println("i before thread and", i, "x before thread", x);
-    goǃ((ᴛ1, ᴛ2, ᴛ3, ᴛ4) => fmt.Println(ᴛ1, ᴛ2, ᴛ3, ᴛ4), "i from thread and", i, "x from thread", x);
+    fmt.Println((@string)"i before thread and", i, (@string)"x before thread", x);
+    goǃ((ᴛ1, ᴛ2, ᴛ3, ᴛ4) => fmt.Println(ᴛ1, ᴛ2, ᴛ3, ᴛ4), (@string)"i from thread and", i, (@string)"x from thread", x);
     while (ᐧ) {
         i++;
         x++;
@@ -74,10 +74,10 @@ break_scan:;
         }
     }
     fmt.Println();
-    fmt.Println("i =", i);
-    fmt.Println("x = ", x);
+    fmt.Println((@string)"i =", i);
+    fmt.Println((@string)"x = ", x);
     time.Sleep(1);
-    fmt.Println("i after thread and", i, "x after thread", x);
+    fmt.Println((@string)"i after thread and", i, (@string)"x after thread", x);
 }
 
 internal static void f(ж<nint> Ꮡy) {

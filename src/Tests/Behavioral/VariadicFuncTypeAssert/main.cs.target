@@ -15,15 +15,15 @@ internal static void Main() {
         var (fnΔ1, ok) = logf._<Actionꓸꓸꓸ<@string, any>>(ᐧ); if (ok){
             fnΔ1("value=%v flag=%v"u8, (nint)(42), true);
         } else {
-            fmt.Println("no match");
+            fmt.Println((@string)"no match");
         }
     }
-    any notFn = "plain";
+    any notFn = (@string)"plain";
     {
         var (_, ok) = notFn._<Actionꓸꓸꓸ<@string, any>>(ᐧ); if (ok){
-            fmt.Println("unexpected match");
+            fmt.Println((@string)"unexpected match");
         } else {
-            fmt.Println("no match for string");
+            fmt.Println((@string)"no match for string");
         }
     }
     any plain = (@string s) => s + "!"u8;

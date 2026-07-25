@@ -38,13 +38,13 @@ internal static void Main() {
     var selᴛ1 = fresh();
     switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
     case 0 when selᴛ1.ꟷᐳ(out var v): {
-        fmt.Println("S1 got:", v, "made =", made);
+        fmt.Println((@string)"S1 got:", v, (@string)"made =", made);
         break;
     }}
     var selᴛ2 = after();
     switch (select(ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
     case 0 when selᴛ2.ꟷᐳ(out var v): {
-        fmt.Println("S2 got:", v, "afterCalls =", afterCalls);
+        fmt.Println((@string)"S2 got:", v, (@string)"afterCalls =", afterCalls);
         break;
     }}
     ref var ch = ref heap<channel<nint>>(out var Ꮡch);
@@ -55,17 +55,17 @@ internal static void Main() {
     var selᴛ3 = ch;
     switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
     case 0 when selᴛ3.ꟷᐳ(out sink[swap(Ꮡch, repl)]): {
-        fmt.Println("S3 sink[0] =", sink[0], "len(ch) =", len(ch), "len(repl) =", len(repl));
+        fmt.Println((@string)"S3 sink[0] =", sink[0], (@string)"len(ch) =", len(ch), (@string)"len(repl) =", len(repl));
         break;
     }}
     var selᴛ4 = fresh();
     switch (trySelect(ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
     case 0 when selᴛ4.ꟷᐳ(out var v): {
-        fmt.Println("S4 got:", v, "made =", made);
+        fmt.Println((@string)"S4 got:", v, (@string)"made =", made);
         break;
     }
     default: {
-        fmt.Println("S4 default (wrong)");
+        fmt.Println((@string)"S4 default (wrong)");
         break;
     }}
 }

@@ -25,7 +25,7 @@ internal static void Main() {
             break;
         }}
     }
-    fmt.Println("rounds:", rounds, "recvGot:", recvGot, "sentTo:", sentTo, "out:", ᐸꟷ(@out));
+    fmt.Println((@string)"rounds:", rounds, (@string)"recvGot:", recvGot, (@string)"sentTo:", sentTo, (@string)"out:", ᐸꟷ(@out));
     var ch = new channel<nint>(1);
     ch.ᐸꟷ(3);
     nint took = 0;
@@ -33,13 +33,13 @@ internal static void Main() {
     var selᴛ4 = ch;
     switch (select(selᴛ3, ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
     case 0: {
-        fmt.Println("send fired on full channel (wrong)");
+        fmt.Println((@string)"send fired on full channel (wrong)");
         break;
     }
     case 1 when selᴛ4.ꟷᐳ(out took): {
         break;
     }}
-    fmt.Println("took:", took, "len:", len(ch));
+    fmt.Println((@string)"took:", took, (@string)"len:", len(ch));
     var selᴛ5 = ch.ᐸꟷ(8, ꓸꓸꓸ);
     var selᴛ6 = ch;
     switch (select(selᴛ5, ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
@@ -47,10 +47,10 @@ internal static void Main() {
         break;
     }
     case 1 when selᴛ6.ꟷᐳ(out took): {
-        fmt.Println("recv fired on empty channel (wrong)");
+        fmt.Println((@string)"recv fired on empty channel (wrong)");
         break;
     }}
-    fmt.Println("len:", len(ch), "drained:", ᐸꟷ(ch));
+    fmt.Println((@string)"len:", len(ch), (@string)"drained:", ᐸꟷ(ch));
 }
 
 } // end main_package

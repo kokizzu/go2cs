@@ -16,9 +16,9 @@ internal static nint ShadowedImportConstLib(this gauge g) {
 internal static void Main() {
     var g = new gauge(level: 3);
     var span = ((ShadowedImportConstLib.Span)2) * ShadowedImportConstLib_package.ΔPeak;
-    fmt.Println("span:", (int64)span);
+    fmt.Println((@string)"span:", (int64)span);
     var m = new ShadowedImportConstLib_package.Meter(Level: g.ShadowedImportConstLib());
-    fmt.Println("peak method:", m.Peak());
+    fmt.Println((@string)"peak method:", m.Peak());
 }
 
 } // end main_package

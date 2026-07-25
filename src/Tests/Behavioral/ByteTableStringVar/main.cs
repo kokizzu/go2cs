@@ -17,9 +17,9 @@ internal static readonly @string constText = "hello world";
 internal static @string varText = ""u8 + "café "u8 + "白鵬翔"u8;
 
 internal static void dump(@string name, @string s) {
-    fmt.Print(name, " len=", len(s), " bytes=");
+    fmt.Print(name, (@string)" len=", len(s), (@string)" bytes=");
     for (nint i = 0; i < len(s); i++) {
-        fmt.Print(s[i], " ");
+        fmt.Print(s[i], (@string)" ");
     }
     fmt.Println();
 }
@@ -29,13 +29,13 @@ internal static void Main() {
     dump("varTable"u8, varTable);
     dump("varSingle"u8, varSingle);
     dump("varTyped"u8, varTyped);
-    fmt.Println("index", constTable[2], varTable[2], constTable[4], varTable[4]);
+    fmt.Println((@string)"index", constTable[2], varTable[2], constTable[4], varTable[4]);
     @string local = ""u8 + ((@string)(new byte[]{0xff, 0x80})) + "\x02"u8;
     dump("local"u8, local);
     var b = slice<byte>("" + ((@string)(new byte[]{0xff, 0x80})));
-    fmt.Println("bytes", len(b), b[0], b[1]);
+    fmt.Println((@string)"bytes", len(b), b[0], b[1]);
     dump("constText"u8, constText);
-    fmt.Println("varText", varText, len(varText));
+    fmt.Println((@string)"varText", varText, len(varText));
 }
 
 } // end main_package

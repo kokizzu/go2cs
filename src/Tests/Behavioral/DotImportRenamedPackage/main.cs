@@ -12,7 +12,7 @@ internal static bool ready(ж<Δsync.Mutex> Ꮡmu) {
 
 internal static void Main() {
     ref var mu = ref heap(new Δsync.Mutex(), out var Ꮡmu);
-    fmt.Println("mutex ready:", ready(Ꮡmu));
+    fmt.Println((@string)"mutex ready:", ready(Ꮡmu));
 }
 
 } // end main_package

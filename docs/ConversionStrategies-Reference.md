@@ -1070,8 +1070,8 @@ plumbing; the other positions wrap through `boxUntypedConstAsDefaultType`.
   `BigInteger.Parse` of the literal text — `visitValueSpec`'s `writeUntypedConst` path, with its own
   standing TODO), a separate pre-existing gap that a `(complex128)` cast would not close. A complex
   *literal* renders `1D + 2D.i()` and already boxes as `complex128`.
-- Untyped **string** and **bool** constants need nothing: they render as `@string` (normalized by
-  golib's assertion machinery) and C# `bool`, both already the Go type.
+- Untyped **bool** constants need nothing: `true`/`false` render as C# `bool`, already the Go type.
+  Untyped **string** constants DO need the cast, but under the mirror-image rule — see below.
 - A cast onto an expression that already renders at the default type — a **typed** constant
   (`const seqFirst int = iota` → `const nint`), or a local untyped const that `visitValueSpec`
   tightened to a concrete C# type (`const float64 derived = 7`) — is a harmless no-op the predicate
@@ -1105,6 +1105,58 @@ non-variadic slots, named/literal/rune/float/beyond-int32 constants, `[]any`/`ma
 struct-field/chan-send/return/explicit-conversion positions, the `map[any]` store↔lookup round-trip
 plus its `int32` miss, and the dynamic types a type switch reports — output-compared vs `go run`. The
 pre-fix converter diverges on 13 of its lines.)
+
+**An untyped STRING constant takes the same treatment, under the MIRROR-IMAGE shape rule (2026-07-25).**
+Go's default type for an untyped string constant is `string` — golib `@string` — and here it is the
+LITERAL that boxes wrong: `convBasicLit` renders a string literal as a plain C# `"seed"`
+(a `System.String`) or, where the position allows it, a `"seed"u8` `ReadOnlySpan<byte>` (a **ref
+struct**, which cannot box at all — CS0029). A NAMED string constant needs nothing whether it is typed
+or untyped, because it is emitted as an `@string` member — there is no `UntypedString` wrapper struct —
+and its concatenations evaluate through `@string`'s own operators. So the string arm of
+`untypedConstBoxCast` keys off the literal-only SHAPE (`constExprIsStringLiteralConcat`: string
+`BasicLit`s joined by `+` through parens), exactly INVERTING the `exprRendersUntypedConstWrapper` test
+the numeric arms apply.
+
+The defect was that the coverage was **partial and therefore self-inconsistent**: the positions that
+already boxed through `@string` did so via a `BasicLitContext` flag (`castToGoString`, set by
+`anyBoxedStringLitContext` and its siblings, which also suppresses the `u8` form) — struct field, slice
+element, map value, channel send, `return`, reassignment — while a **call argument**, a **var-spec**,
+an `any`-keyed map **index lookup**, and an explicit `any("…")` conversion left the literal bare. So
+`box{v: "seed"}` stored an `@string` while `eq(b.v, "seed")` passed a `System.String`, and Go's
+`true`/`true` came back C# `false`/`false` — silently, with `%T` still printing `string` on both sides.
+A literal CONCATENATION (`"se" + "ed"`) was uncovered at *every* position, because the flag only reaches
+a `BasicLit`, and where the `u8` form survived (`new box(v: "se"u8 + "ed"u8)`) the emission did not even
+compile.
+
+Both mechanisms are kept, each doing what it is good at. The literal context still produces the tighter
+`(@string)"seed"` at the positions that carry it, and the four missing positions were given it
+(`convExprList` via a new `isStringBasicLit` branch beside `markAnyFieldLits`' identical either/or,
+`visitValueSpec`'s `isAnyType` context, and `convIndexExpr`'s `any`-key context). `untypedConstBoxCast`
+is the general net underneath — it catches the concatenations and any position that lacks the flag — and
+all its application sites now route through `applyUntypedConstBoxCast`, which skips a rendering that
+already leads with the cast so the two can never double up:
+
+```go
+box{v: "seed"}; eq(b.v, "seed")   // Go: true      var v any = "x"      m[any] lookup by "seed"
+```
+```csharp
+new box(v: (@string)"seed");  eq(b.v, (@string)"seed");   // now true
+any v = (@string)"x";         m[(@string)"seed"];
+new any[]{(@string)("se" + "ed")};                        // the concat shape, previously bare
+```
+
+The cost is real and accepted, on the same reasoning that removed the variadic int carve-out: **every
+string literal in a `...any` slot now carries the cast**, so `fmt.Println("x")` emits
+`fmt.Println((@string)"x")`. That is 866 lines across 150 behavioral projects — uniform, mechanical, and
+individually inspected. The alternative is a carve-out that leaves `x.(string)`, `case string:`, `==`,
+and `%T` silently wrong on exactly the values a Go program is most likely to compare.
+
+(Guarded by the `AnyBoxedUntypedConst` extension — literal, concatenation, named-untyped and named-typed
+string constants at the variadic, non-variadic, var-spec, `[]any`, `map[any]` key store *and* lookup,
+`map[K]any` value, keyed and positional struct-field, channel-send, `return`, explicit-conversion and
+type-assertion positions, plus the dynamic type a `case string:` switch reports — output-compared vs
+`go run`. The pre-fix converter leaves twelve of those renderings bare and emits four that do not compile
+at all — CS0029/CS0030/CS1503 on the `"…"u8` span reaching an `object` slot.)
 
 **The same cast applies to an interface `==`/`!=` comparison against an untyped `int` constant.** Go
 compares an interface against a concrete value by its dynamic type *and* value, which the converter

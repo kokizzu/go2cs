@@ -16,12 +16,12 @@ partial class main_package {
 internal static void describe(@string prefix, any v) {
     switch (v.type()) {
     case @string s: {
-        fmt.Println(prefix, "string:", s);
+        fmt.Println(prefix, (@string)"string:", s);
         break;
     }
     default: {
         var s = v;
-        fmt.Println(prefix, "other:", s);
+        fmt.Println(prefix, (@string)"other:", s);
         break;
     }}
 }
@@ -39,22 +39,22 @@ internal static void Main() {
     var pq = new ж<pair>[]{Ꮡ(new pair("q1"u8, (@string)"q2"))}.slice();
     var sp = new array<any>(3){[1] = (@string)"sp"};
     describe("keyed"u8, (~n).inner);
-    fmt.Println("label:", p.label);
+    fmt.Println((@string)"label:", p.label);
     describe("positional"u8, p.value);
     describe("mapval"u8, m["k"u8]);
     foreach (var (k, v) in mk) {
         describe("mapkey"u8, k);
-        fmt.Println("mapkeyval:", v);
+        fmt.Println((@string)"mapkeyval:", v);
     }
     describe("slice0"u8, s[0]);
     describe("slice1"u8, s[1]);
     describe("array0"u8, arr[0]);
     describe("array1"u8, arr[1]);
     describe("elided"u8, el[0].inner);
-    fmt.Println("elidedpos label:", ep[0].label);
+    fmt.Println((@string)"elidedpos label:", ep[0].label);
     describe("elidedpos"u8, ep[0].value);
     describe("ptrelided"u8, (~pp[0]).inner);
-    fmt.Println("ptrelidedpos label:", (~pq[0]).label);
+    fmt.Println((@string)"ptrelidedpos label:", (~pq[0]).label);
     describe("ptrelidedpos"u8, (~pq[0]).value);
     describe("sparse0"u8, sp[0]);
     describe("sparse1"u8, sp[1]);

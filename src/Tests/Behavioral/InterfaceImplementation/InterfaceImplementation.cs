@@ -31,15 +31,15 @@ internal static void Main() {
     fmt.Printf("Iface cmp result = %v\n"u8, AreEqual(zoo[0], f));
     fmt.Printf("Iface cmp result = %v\n"u8, AreEqual(zoo[0], zoo[0]));
     fmt.Printf("Iface cmp result = %v\n"u8, !AreEqual(zoo[0], t));
-    any stored = "gob";
-    fmt.Printf("any cmp = %v %v\n"u8, !AreEqual(stored, "gob"), !AreEqual(stored, "xml"));
+    any stored = (@string)"gob";
+    fmt.Printf("any cmp = %v %v\n"u8, !AreEqual(stored, (@string)("gob")), !AreEqual(stored, (@string)("xml")));
     checkErr(1);
     checkErr(0);
     useAndRelease();
     Animal a = default!;
     fmt.Printf("%T\n"u8, a);
     foreach (var (_, aΔ1) in zoo) {
-        fmt.Println(aΔ1.Type(), "can", aΔ1.Swim());
+        fmt.Println(aΔ1.Type(), (@string)"can", aΔ1.Swim());
     }
     fmt.Printf("%T\n"u8, a);
     ShowZoo(Ꮡzoo);
@@ -66,32 +66,32 @@ internal static error mayFail(nint n) {
 internal static void checkErr(nint n) {
     var err = mayFail(n);
     if (AreEqual(err, errAgain)) {
-        fmt.Println("got again");
+        fmt.Println((@string)"got again");
     }
     if (!AreEqual(err, errAgain)) {
-        fmt.Println("not again");
+        fmt.Println((@string)"not again");
     }
     var exprᴛ1 = err;
     if (AreEqual(exprᴛ1, errAgain)) {
-        fmt.Println("switch: again");
+        fmt.Println((@string)"switch: again");
     }
     else if (AreEqual(exprᴛ1, default!)) {
-        fmt.Println("switch: nil");
+        fmt.Println((@string)"switch: nil");
     }
     else { /* default: */
-        fmt.Println("switch: other");
+        fmt.Println((@string)"switch: other");
     }
 
 }
 
 internal static error release(errno e) {
-    fmt.Println("released", (uintptr)e);
+    fmt.Println((@string)"released", (uintptr)e);
     return errAgain;
 }
 
 internal static void useAndRelease() => func((defer, recover) => {
     deferǃ(release, errAgain, defer);
-    fmt.Println("using");
+    fmt.Println((@string)"using");
 });
 
 public static void ShowZoo(ж<array<Animal>> Ꮡzoo) {
@@ -101,7 +101,7 @@ public static void ShowZoo(ж<array<Animal>> Ꮡzoo) {
     foreach (var (_, vᴛ1) in zoo) {
         a = vᴛ1;
 
-        fmt.Println(a.Type(), "can", a.Swim());
+        fmt.Println(a.Type(), (@string)"can", a.Swim());
     }
 }
 

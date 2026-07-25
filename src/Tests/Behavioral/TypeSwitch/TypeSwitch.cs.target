@@ -8,11 +8,11 @@ internal static void Main() {
     var whatAmI = (any i) => {
         switch (i.type()) {
         case null: {
-            fmt.Println("I'm nil");
+            fmt.Println((@string)"I'm nil");
             break;
         }
         case bool t: {
-            fmt.Println("I'm a bool");
+            fmt.Println((@string)"I'm a bool");
             break;
         }
         case nint _:
@@ -33,28 +33,28 @@ internal static void Main() {
     whatAmI((nint)(1));
     whatAmI((int64)2);
     whatAmI((uint64)2);
-    whatAmI("hey");
+    whatAmI((@string)"hey");
     whatAmI(default!);
     var classify = (any i) => {
         switch (i.type()) {
         case nint: {
-            fmt.Println("int");
+            fmt.Println((@string)"int");
             break;
         }
         case int32: {
-            fmt.Println("int32");
+            fmt.Println((@string)"int32");
             break;
         }
         case nuint: {
-            fmt.Println("uint");
+            fmt.Println((@string)"uint");
             break;
         }
         case uint32: {
-            fmt.Println("uint32");
+            fmt.Println((@string)"uint32");
             break;
         }
         default: {
-            fmt.Println("other");
+            fmt.Println((@string)"other");
             break;
         }}
 
@@ -70,23 +70,23 @@ internal static void Main() {
     var kind = (any i) => {
         switch (i.type()) {
         case nuint: {
-            fmt.Println("uint word");
+            fmt.Println((@string)"uint word");
             break;
         }
         case uint32: {
-            fmt.Println("uint word");
+            fmt.Println((@string)"uint word");
             break;
         }
         case uintptr: {
-            fmt.Println("uintptr word");
+            fmt.Println((@string)"uintptr word");
             break;
         }
         case @string: {
-            fmt.Println("text");
+            fmt.Println((@string)"text");
             break;
         }
         default: {
-            fmt.Println("other");
+            fmt.Println((@string)"other");
             break;
         }}
 
@@ -95,7 +95,7 @@ internal static void Main() {
     uintptr p = 6;
     kind(u);
     kind(p);
-    kind("x");
+    kind((@string)"x");
     kind(3.14D);
     fmt.Println(sizeOf((int32)5), sizeOf((int64)7));
     ref var flag = ref heap(new bool(), out var Ꮡflag);
@@ -103,7 +103,7 @@ internal static void Main() {
     scanInto(Ꮡflag);
     scanInto(Ꮡnum);
     fmt.Println(flag, num);
-    fmt.Println(probe(true), probe((nint)(7)), probe("ab"));
+    fmt.Println(probe(true), probe((nint)(7)), probe((@string)"ab"));
     marker mk = default!;
     fmt.Println(mk.tag(new byte[]{7, 8}.slice()));
 }

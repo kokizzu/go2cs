@@ -23,7 +23,7 @@ internal static slice<rune> board = slice<rune>(
 internal static nint center;
 
 [GoInit] internal static void init() {
-    println("init fn 1");
+    println((@string)"init fn 1");
     nint n = 0;
     foreach (var (pos, field) in board) {
         if (field == (rune)'○') {
@@ -37,7 +37,7 @@ internal static nint center;
 }
 
 [GoInit] internal static void initΔ1() {
-    println("init fn 2");
+    println((@string)"init fn 2");
 }
 
 internal static nint moves;
@@ -87,9 +87,9 @@ internal static bool solve() {
 
 internal static void Main() {
     if (!solve()) {
-        println("no solution found");
+        println((@string)"no solution found");
     }
-    println(moves, "moves tried");
+    println(moves, (@string)"moves tried");
 }
 
 } // end main_package

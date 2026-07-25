@@ -27,20 +27,20 @@ internal static (uintptr, Handle) liveAlias(ж<Handle> Ꮡh) {
 }
 
 internal static void Main() {
-    fmt.Println("named nil  :", addrOfNamed(nil));
-    fmt.Println("ptrptr nil :", addrOfPtrPtr(nil));
-    fmt.Println("basic nil  :", addrOfBasic(nil));
+    fmt.Println((@string)"named nil  :", addrOfNamed(nil));
+    fmt.Println((@string)"ptrptr nil :", addrOfPtrPtr(nil));
+    fmt.Println((@string)"basic nil  :", addrOfBasic(nil));
     ref var h = ref heap(new Handle(), out var Ꮡh);
     h = 3;
-    fmt.Println("named nonnil nonzero :", addrOfNamed(Ꮡh) != 0);
+    fmt.Println((@string)"named nonnil nonzero :", addrOfNamed(Ꮡh) != 0);
     ref var u = ref heap(new uint16(), out var Ꮡu);
     u = 9;
     ref var pu = ref heap<ж<uint16>>(out var Ꮡpu);
     pu = Ꮡu;
-    fmt.Println("ptrptr nonnil nonzero:", addrOfPtrPtr(Ꮡpu) != 0);
-    fmt.Println("basic nonnil nonzero :", addrOfBasic(Ꮡu) != 0);
+    fmt.Println((@string)"ptrptr nonnil nonzero:", addrOfPtrPtr(Ꮡpu) != 0);
+    fmt.Println((@string)"basic nonnil nonzero :", addrOfBasic(Ꮡu) != 0);
     var (addr, val) = liveAlias(Ꮡh);
-    fmt.Println("live alias nonzero:", addr != 0, "value:", val, "readback:", h);
+    fmt.Println((@string)"live alias nonzero:", addr != 0, (@string)"value:", val, (@string)"readback:", h);
 }
 
 } // end main_package

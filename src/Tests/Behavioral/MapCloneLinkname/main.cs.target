@@ -15,13 +15,13 @@ internal static void Main() {
     mc["a"u8] = 99;
     mc["d"u8] = 4;
     delete(mc, "b"u8);
-    fmt.Println("orig len:", len(m), "clone len:", len(mc));
-    fmt.Println("orig a:", m["a"u8], "clone a:", mc["a"u8]);
+    fmt.Println((@string)"orig len:", len(m), (@string)"clone len:", len(mc));
+    fmt.Println((@string)"orig a:", m["a"u8], (@string)"clone a:", mc["a"u8]);
     var (_, origHasD) = m["d"u8, ꟷ];
     var (_, origHasB) = m["b"u8, ꟷ];
-    fmt.Println("orig has d:", origHasD, "orig has b:", origHasB);
+    fmt.Println((@string)"orig has d:", origHasD, (@string)"orig has b:", origHasB);
     var (_, cloneHasB) = mc["b"u8, ꟷ];
-    fmt.Println("clone c:", mc["c"u8], "clone d:", mc["d"u8], "clone has b:", cloneHasB);
+    fmt.Println((@string)"clone c:", mc["c"u8], (@string)"clone d:", mc["d"u8], (@string)"clone has b:", cloneHasB);
 }
 
 } // end main_package

@@ -11,25 +11,25 @@ internal static void fullBuffered() {
     var selᴛ1 = ch.ᐸꟷ(2, ꓸꓸꓸ);
     switch (trySelect(selᴛ1)) {
     case 0: {
-        fmt.Println("full buffered: sent");
+        fmt.Println((@string)"full buffered: sent");
         break;
     }
     default: {
-        fmt.Println("full buffered: default");
+        fmt.Println((@string)"full buffered: default");
         break;
     }}
-    fmt.Println("full buffered: held =", ᐸꟷ(ch));
+    fmt.Println((@string)"full buffered: held =", ᐸꟷ(ch));
     var selᴛ2 = ch.ᐸꟷ(2, ꓸꓸꓸ);
     switch (trySelect(selᴛ2)) {
     case 0: {
-        fmt.Println("drained buffered: sent");
+        fmt.Println((@string)"drained buffered: sent");
         break;
     }
     default: {
-        fmt.Println("drained buffered: default");
+        fmt.Println((@string)"drained buffered: default");
         break;
     }}
-    fmt.Println("drained buffered: held =", ᐸꟷ(ch));
+    fmt.Println((@string)"drained buffered: held =", ᐸꟷ(ch));
 }
 
 internal static void freeBuffered() {
@@ -38,15 +38,15 @@ internal static void freeBuffered() {
     var selᴛ3 = ch.ᐸꟷ(2, ꓸꓸꓸ);
     switch (trySelect(selᴛ3)) {
     case 0: {
-        fmt.Println("free buffered: sent");
+        fmt.Println((@string)"free buffered: sent");
         break;
     }
     default: {
-        fmt.Println("free buffered: default");
+        fmt.Println((@string)"free buffered: default");
         break;
     }}
-    fmt.Println("free buffered: len =", len(ch));
-    fmt.Println("free buffered: drained", ᐸꟷ(ch), ᐸꟷ(ch));
+    fmt.Println((@string)"free buffered: len =", len(ch));
+    fmt.Println((@string)"free buffered: drained", ᐸꟷ(ch), ᐸꟷ(ch));
 }
 
 internal static void unbufferedWithReceiver() {
@@ -70,7 +70,7 @@ internal static void unbufferedWithReceiver() {
             break;
         }}
     }
-    fmt.Println("unbuffered with receiver: sent =", sent, "received =", ᐸꟷ(got));
+    fmt.Println((@string)"unbuffered with receiver: sent =", sent, (@string)"received =", ᐸꟷ(got));
 }
 
 internal static void nilChannel() {
@@ -78,11 +78,11 @@ internal static void nilChannel() {
     var selᴛ5 = ch.ᐸꟷ(1, ꓸꓸꓸ);
     switch (trySelect(selᴛ5)) {
     case 0: {
-        fmt.Println("nil channel: sent");
+        fmt.Println((@string)"nil channel: sent");
         break;
     }
     default: {
-        fmt.Println("nil channel: default");
+        fmt.Println((@string)"nil channel: default");
         break;
     }}
 }
@@ -91,7 +91,7 @@ internal static void closedChannel() => func((defer, recover) => {
     defer(() => {
         {
             var r = recover(); if (r != default!) {
-                fmt.Println("closed channel: recovered:", r);
+                fmt.Println((@string)"closed channel: recovered:", r);
             }
         }
     });
@@ -100,14 +100,14 @@ internal static void closedChannel() => func((defer, recover) => {
     var selᴛ6 = ch.ᐸꟷ(1, ꓸꓸꓸ);
     switch (trySelect(selᴛ6)) {
     case 0: {
-        fmt.Println("closed channel: sent");
+        fmt.Println((@string)"closed channel: sent");
         break;
     }
     default: {
-        fmt.Println("closed channel: default");
+        fmt.Println((@string)"closed channel: default");
         break;
     }}
-    fmt.Println("closed channel: NOT REACHED");
+    fmt.Println((@string)"closed channel: NOT REACHED");
 });
 
 internal static void oneOfManyReady() {
@@ -118,18 +118,18 @@ internal static void oneOfManyReady() {
     var selᴛ8 = open.ᐸꟷ(3, ꓸꓸꓸ);
     switch (trySelect(selᴛ7, selᴛ8)) {
     case 0: {
-        fmt.Println("one of many: chose full");
+        fmt.Println((@string)"one of many: chose full");
         break;
     }
     case 1: {
-        fmt.Println("one of many: chose open");
+        fmt.Println((@string)"one of many: chose open");
         break;
     }
     default: {
-        fmt.Println("one of many: default");
+        fmt.Println((@string)"one of many: default");
         break;
     }}
-    fmt.Println("one of many: full held", ᐸꟷ(full), "open got", ᐸꟷ(open));
+    fmt.Println((@string)"one of many: full held", ᐸꟷ(full), (@string)"open got", ᐸꟷ(open));
 }
 
 internal static void neitherReady() {
@@ -140,15 +140,15 @@ internal static void neitherReady() {
     var selᴛ10 = empty;
     switch (trySelect(selᴛ9, ᐸꟷ(selᴛ10, ꓸꓸꓸ))) {
     case 0: {
-        fmt.Println("neither ready: sent");
+        fmt.Println((@string)"neither ready: sent");
         break;
     }
     case 1 when selᴛ10.ꟷᐳ(out var v): {
-        fmt.Println("neither ready: received", v);
+        fmt.Println((@string)"neither ready: received", v);
         break;
     }
     default: {
-        fmt.Println("neither ready: default");
+        fmt.Println((@string)"neither ready: default");
         break;
     }}
 }
@@ -166,10 +166,10 @@ internal static void exactlyOneSend() {
         break;
     }
     default: {
-        fmt.Println("exactly one send: default");
+        fmt.Println((@string)"exactly one send: default");
         break;
     }}
-    fmt.Println("exactly one send: total =", len(a) + len(b));
+    fmt.Println((@string)"exactly one send: total =", len(a) + len(b));
 }
 
 internal static void blockingSendStillBlocks() {
@@ -184,10 +184,10 @@ internal static void blockingSendStillBlocks() {
     var selᴛ13 = ch.ᐸꟷ(42, ꓸꓸꓸ);
     switch (select(selᴛ13)) {
     case 0: {
-        fmt.Println("blocking send: sent");
+        fmt.Println((@string)"blocking send: sent");
         break;
     }}
-    fmt.Println("blocking send: received", ᐸꟷ(got));
+    fmt.Println((@string)"blocking send: received", ᐸꟷ(got));
 }
 
 [GoType("chan nint")] partial struct queue;
@@ -197,24 +197,24 @@ internal static void namedChannelType() {
     var selᴛ14 = q.ᐸꟷ(1, ꓸꓸꓸ);
     switch (trySelect(selᴛ14)) {
     case 0: {
-        fmt.Println("named channel: sent");
+        fmt.Println((@string)"named channel: sent");
         break;
     }
     default: {
-        fmt.Println("named channel: default");
+        fmt.Println((@string)"named channel: default");
         break;
     }}
     var selᴛ15 = q.ᐸꟷ(2, ꓸꓸꓸ);
     switch (trySelect(selᴛ15)) {
     case 0: {
-        fmt.Println("named channel full: sent");
+        fmt.Println((@string)"named channel full: sent");
         break;
     }
     default: {
-        fmt.Println("named channel full: default");
+        fmt.Println((@string)"named channel full: default");
         break;
     }}
-    fmt.Println("named channel: held =", ᐸꟷ<nint>(q));
+    fmt.Println((@string)"named channel: held =", ᐸꟷ<nint>(q));
 }
 
 internal static void Main() {

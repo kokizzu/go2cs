@@ -337,8 +337,11 @@ interface maps directly to **`any`** (a global alias for `object`). `func(i inte
 `map[any]string` → `map<any, @string>`.
 
 One wrinkle worth knowing: a Go string literal normally emits as a `"…"u8` `ReadOnlySpan<byte>`, which has
-no conversion to `object`. So a string literal returned/assigned/sent *as `any`* is boxed through `@string`
-(preserving Go string identity for a later `x.(string)`): `return (@string)"test2json";`.
+no conversion to `object`, and a plain C# `"…"` boxes a `System.String` where Go boxes `string`. So a
+string literal materialized *as `any`* is boxed through `@string` at **every** interface position —
+argument included, so `fmt.Println("x")` emits `fmt.Println((@string)"x")` — preserving Go string
+identity for a later `x.(string)`, `case string:`, or `==`. A NAMED string constant needs nothing (it is
+already emitted as an `@string` member), which is the exact mirror of the numeric rule below.
 
 The numeric twin: Go materializes an untyped constant into an interface at its **default type** — untyped
 int → `int` (go2cs `nint`), untyped rune → `rune` (`int32`), untyped float → `float64` — and every

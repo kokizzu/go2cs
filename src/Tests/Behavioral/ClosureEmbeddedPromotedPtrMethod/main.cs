@@ -29,7 +29,7 @@ internal static (@string, nint) run() {
         Ꮡrep.Value.label = "built"u8;
         return Ꮡrep.Value.n;
     };
-    fmt.Println("inner:", build(), rep.label);
+    fmt.Println((@string)"inner:", build(), rep.label);
     nint got = apply(() => {
         var touch = () => {
             Ꮡrep.of(run_rep.Ꮡcounter).bump();
@@ -38,13 +38,13 @@ internal static (@string, nint) run() {
         touch();
         return Ꮡrep.Value.n;
     });
-    fmt.Println("applied:", got);
+    fmt.Println((@string)"applied:", got);
     return (rep.label, rep.n);
 }
 
 internal static void Main() {
     var (label, n) = run();
-    fmt.Println("outer:", label, n);
+    fmt.Println((@string)"outer:", label, n);
 }
 
 } // end main_package

@@ -36,39 +36,39 @@ internal static void Main() {
     var err = pointerSourced();
     var p = err._<ж<myErr>>();
     p.Value.code = 7;
-    fmt.Println("ptr-assert", (~p).code, err.Error());
+    fmt.Println((@string)"ptr-assert", (~p).code, err.Error());
     var v = valueSourced()._<valErr>();
-    fmt.Println("val-assert", v.tag, v.Error());
+    fmt.Println((@string)"val-assert", v.tag, v.Error());
     {
         var (_, ok) = valueSourced()._<ж<myErr>>(ᐧ); if (ok){
-            fmt.Println("ptr-miss-WRONG");
+            fmt.Println((@string)"ptr-miss-WRONG");
         } else {
-            fmt.Println("ptr-miss-ok");
+            fmt.Println((@string)"ptr-miss-ok");
         }
     }
     {
         var (_, ok) = pointerSourced()._<valErr>(ᐧ); if (ok){
-            fmt.Println("val-miss-WRONG");
+            fmt.Println((@string)"val-miss-WRONG");
         } else {
-            fmt.Println("val-miss-ok");
+            fmt.Println((@string)"val-miss-ok");
         }
     }
     ((Action)(() => func((defer, recover) => {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println("recovered");
+                    fmt.Println((@string)"recovered");
                 }
             }
         });
         _ = pointerSourced()._<valErr>();
-        fmt.Println("unreachable");
+        fmt.Println((@string)"unreachable");
     })))();
     {
         var (s, ok) = pointerSourced()._<main_type>(ᐧ); if (ok){
-            fmt.Println("iface-assert", s.Error());
+            fmt.Println((@string)"iface-assert", s.Error());
         } else {
-            fmt.Println("iface-assert-missed");
+            fmt.Println((@string)"iface-assert-missed");
         }
     }
 }

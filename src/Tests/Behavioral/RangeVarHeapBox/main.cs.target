@@ -32,7 +32,7 @@ internal static void Main() {
     fmt.Println(sumWithinIter(s));
     var ptrs = collectPointers(s);
     foreach (var (_, p) in ptrs) {
-        fmt.Print(p.Value, " ");
+        fmt.Print(p.Value, (@string)" ");
     }
     fmt.Println();
 }

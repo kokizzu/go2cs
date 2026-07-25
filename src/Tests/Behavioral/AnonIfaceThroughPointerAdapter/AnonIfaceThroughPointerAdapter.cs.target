@@ -37,23 +37,23 @@ internal static void Main() {
     speaker s = new thingжspeaker(Ꮡ(new thing(7)));
     {
         var (p, ok) = s._<main_type>(ᐧ); if (ok){
-            fmt.Println("ping-ok", p.Ping());
+            fmt.Println((@string)"ping-ok", p.Ping());
         } else {
-            fmt.Println("ping-missed");
+            fmt.Println((@string)"ping-missed");
         }
     }
     {
         var (b, ok) = s._<main_typeᴛ1>(ᐧ); if (ok){
-            fmt.Println("both-ok", b.Ping(), b.Pong());
+            fmt.Println((@string)"both-ok", b.Ping(), b.Pong());
         } else {
-            fmt.Println("both-missed");
+            fmt.Println((@string)"both-missed");
         }
     }
     {
         var (_, ok) = s._<main_typeᴛ2>(ᐧ); if (ok){
-            fmt.Println("quit-matched-wrong");
+            fmt.Println((@string)"quit-matched-wrong");
         } else {
-            fmt.Println("quit-missed-ok");
+            fmt.Println((@string)"quit-missed-ok");
         }
     }
 }

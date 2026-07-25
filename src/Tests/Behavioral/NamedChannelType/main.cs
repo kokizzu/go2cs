@@ -25,7 +25,7 @@ internal static void Main() {
     cw.Init();
     cw.Close();
     cw.Wait();
-    fmt.Println("waited");
+    fmt.Println((@string)"waited");
     var q = new intQueue(3);
     q.ᐸꟷ(10);
     q.ᐸꟷ(20);

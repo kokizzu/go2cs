@@ -90,9 +90,7 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 				keyContexts := []ExprContext{}
 
 				if types.Identical(mapType.Key(), types.NewInterfaceType(nil, nil)) {
-					basicLitContext := DefaultBasicLitContext()
-					basicLitContext.u8StringOK = false
-					keyContexts = append(keyContexts, basicLitContext)
+					keyContexts = append(keyContexts, anyBoxedStringLitContext())
 				} else if mapKeyIsPointer || mapKeyOperandIsPointer {
 					identContext := DefaultIdentContext()
 					identContext.isPointer = true
@@ -112,9 +110,10 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 
 			// Check if the key type is an empty interface
 			if types.Identical(mapType.Key(), types.NewInterfaceType(nil, nil)) {
-				context := DefaultBasicLitContext()
-				context.u8StringOK = false
-				contexts = []ExprContext{context}
+				// A string-literal KEY boxes through @string (anyBoxedStringLitContext), matching the
+				// composite-literal store: golib's map compares boxed keys with the default comparer,
+				// so a bare C# string lookup would MISS a key the literal path stored as @string.
+				contexts = []ExprContext{anyBoxedStringLitContext()}
 			} else if mapKeyIsPointer || mapKeyOperandIsPointer {
 				identContext := DefaultIdentContext()
 				identContext.isPointer = true

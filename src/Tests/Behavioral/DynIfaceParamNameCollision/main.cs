@@ -9,7 +9,7 @@ partial class main_package {
 }
 
 internal static error Push(this pusher p, @string target, nint weight) {
-    fmt.Println("push", target, weight, "from", p.id);
+    fmt.Println((@string)"push", target, weight, (@string)"from", p.id);
     return default!;
 }
 
@@ -22,7 +22,7 @@ internal static @string Label(this pusher p) {
 }
 
 [GoRecv] internal static void Set(this ref setter s, @string value) {
-    fmt.Println("set", value, "on", s.id);
+    fmt.Println((@string)"set", value, (@string)"on", s.id);
 }
 
 [GoType("dyn")] partial interface serve_type {
@@ -33,9 +33,9 @@ internal static @string Label(this pusher p) {
 internal static void serve(any v) {
     {
         var (p, ok) = v._<serve_type>(ᐧ); if (ok){
-            fmt.Println("err:", p.Push("/style.css"u8, 7), p.Label());
+            fmt.Println((@string)"err:", p.Push("/style.css"u8, 7), p.Label());
         } else {
-            fmt.Println("not a pusher");
+            fmt.Println((@string)"not a pusher");
         }
     }
 }
@@ -49,7 +49,7 @@ internal static void apply(any v) {
         var (s, ok) = v._<apply_type>(ᐧ); if (ok){
             s.Set("blue"u8);
         } else {
-            fmt.Println("not a setter");
+            fmt.Println((@string)"not a setter");
         }
     }
 }

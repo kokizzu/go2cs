@@ -35,9 +35,9 @@ internal static void commandContext(TB t) {
     {
         var (td, ok) = t._<commandContext_type>(ᐧ); if (ok){
             var (d, _) = td.Deadline();
-            fmt.Println("Name:", td.Name(), "deadline:", d);
+            fmt.Println((@string)"Name:", td.Name(), (@string)"deadline:", d);
         } else {
-            fmt.Println("no deadline");
+            fmt.Println((@string)"no deadline");
         }
     }
 }
@@ -47,7 +47,7 @@ internal static void commandContext(TB t) {
 }
 
 internal static void @private(this gate g) {
-    fmt.Println("sealed:", g.name);
+    fmt.Println((@string)"sealed:", g.name);
 }
 
 internal static @string Kind(this gate g) {
@@ -63,9 +63,9 @@ internal static void direct(any v) {
     {
         var (d, ok) = v._<direct_type>(ᐧ); if (ok){
             d.@private();
-            fmt.Println("direct:", d.Kind());
+            fmt.Println((@string)"direct:", d.Kind());
         } else {
-            fmt.Println("no direct");
+            fmt.Println((@string)"no direct");
         }
     }
 }

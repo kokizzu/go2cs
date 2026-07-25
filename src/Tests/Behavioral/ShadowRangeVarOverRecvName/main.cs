@@ -15,7 +15,7 @@ internal static slice<ж<node>> collect(this ж<node> Ꮡc, slice<ж<node>> chai
     foreach (var (_, cΔ1) in chain) {
         toCheck = append(toCheck, cΔ1);
     }
-    fmt.Println("describe:", describe());
+    fmt.Println((@string)"describe:", describe());
     return toCheck;
 }
 
@@ -31,10 +31,10 @@ internal static void Main() {
     var a = Ꮡ(new node(name: "a"u8));
     var b = Ꮡ(new node(name: "b"u8));
     foreach (var (_, n) in root.collect(new ж<node>[]{a, b}.slice())) {
-        fmt.Println("got:", (~n).name);
+        fmt.Println((@string)"got:", (~n).name);
     }
-    fmt.Println("first:", (~root.firstOr(new ж<node>[]{a, b}.slice())).name);
-    fmt.Println("empty:", (~root.firstOr(default!)).name);
+    fmt.Println((@string)"first:", (~root.firstOr(new ж<node>[]{a, b}.slice())).name);
+    fmt.Println((@string)"empty:", (~root.firstOr(default!)).name);
 }
 
 } // end main_package

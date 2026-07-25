@@ -21,8 +21,8 @@ internal static void Main() {
     eb = append(eb, ((@string)"oops"u8).ꓸꓸꓸ);
     fmt.Println(((@string)eb), len(eb));
     nint tag = 7;
-    fmt.Println("g=" + "\tm=", tag);
-    fmt.Println("a" + "b" + "c");
+    fmt.Println((@string)("g=" + "\tm="), tag);
+    fmt.Println((@string)("a" + "b" + "c"));
     sink w = default!;
     w = append(w, (byte)((rune)'h'), (byte)((rune)'i'));
     fmt.Println(((@string)(slice<byte>)w), len(w));

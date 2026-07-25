@@ -1124,13 +1124,8 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 				// call sites (see untypedConstBoxCast) — the helper yields "" for the interface operand
 				// and for any non-untyped-constant operand, so a bare int compared against a concrete
 				// int (which never routes through AreEqual) stays untouched.
-				if castType := v.untypedConstBoxCast(binaryExpr.X); castType != "" {
-					leftOperand = fmt.Sprintf("(%s)(%s)", castType, leftOperand)
-				}
-
-				if castType := v.untypedConstBoxCast(binaryExpr.Y); castType != "" {
-					rightOperand = fmt.Sprintf("(%s)(%s)", castType, rightOperand)
-				}
+				leftOperand = v.applyUntypedConstBoxCast(binaryExpr.X, leftOperand)
+				rightOperand = v.applyUntypedConstBoxCast(binaryExpr.Y, rightOperand)
 
 				// Handle interface comparison with special runtime function
 				if binaryOp == "==" {

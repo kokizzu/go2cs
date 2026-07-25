@@ -6,22 +6,22 @@ partial class main_package {
 
 internal static Action makeGreeter(@string name) {
     return () => func((defer, recover) => {
-        deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), "bye", name, defer);
-        fmt.Println("hi", name);
+        deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"bye", name, defer);
+        fmt.Println((@string)"hi", name);
     });
 }
 
 internal static void Main() {
     var f = () => func((defer, recover) => {
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), "deferred", defer);
-        fmt.Println("body");
+        deferǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"deferred", defer);
+        fmt.Println((@string)"body");
     });
     f();
     var divPrint = (nint a, nint b) => func((defer, recover) => {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println("closure recovered:", r);
+                    fmt.Println((@string)"closure recovered:", r);
                 }
             }
         });
@@ -63,28 +63,28 @@ internal static void Main() {
         fn();
     };
     run(() => func((defer, recover) => {
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), "arg-closure deferred", defer);
-        fmt.Println("arg-closure body");
+        deferǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"arg-closure deferred", defer);
+        fmt.Println((@string)"arg-closure body");
     }));
     ((Action)(() => func((defer, recover) => {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println("outer recovered:", r);
+                    fmt.Println((@string)"outer recovered:", r);
                 }
             }
         });
         throw panic("from-iife");
     })))();
     var fetch = (nint, error) () => func<(nint, error)>((defer, recover) => {
-        deferǃ(ᴛ1 => fmt.Println(ᴛ1), "fetch deferred", defer);
+        deferǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"fetch deferred", defer);
         return (42, default!);
     });
     var (v, err) = fetch();
     var tk = makeTask(5);
-    fmt.Println("task:", (~tk).fn(), (~tk).name);
-    fmt.Println("fetched:", v, err);
-    fmt.Println("done");
+    fmt.Println((@string)"task:", (~tk).fn(), (~tk).name);
+    fmt.Println((@string)"fetched:", v, err);
+    fmt.Println((@string)"done");
 }
 
 [GoType] partial struct task {

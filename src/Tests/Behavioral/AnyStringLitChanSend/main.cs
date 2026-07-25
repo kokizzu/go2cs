@@ -27,20 +27,20 @@ internal static @string speak(this dog d) {
 internal static void describe(@string prefix, any v) {
     switch (v.type()) {
     case @string s: {
-        fmt.Println(prefix, "string:", s);
+        fmt.Println(prefix, (@string)"string:", s);
         break;
     }
     case nint s: {
-        fmt.Println(prefix, "int:", s);
+        fmt.Println(prefix, (@string)"int:", s);
         break;
     }
     case int32 s: {
-        fmt.Println(prefix, "int:", s);
+        fmt.Println(prefix, (@string)"int:", s);
         break;
     }
     default: {
         var s = v;
-        fmt.Println(prefix, "other:", s);
+        fmt.Println(prefix, (@string)"other:", s);
         break;
     }}
 }
@@ -60,7 +60,7 @@ internal static void Main() {
     }}
     var sc = new channel<@string>(1);
     sc.ᐸꟷ("plain"u8);
-    fmt.Println("string chan:", ᐸꟷ(sc));
+    fmt.Println((@string)"string chan:", ᐸꟷ(sc));
     var vs = new channel<speaker>(1);
     vs.ᐸꟷ(new dog(name: "rex"u8));
     fmt.Println((ᐸꟷ(vs)).speak());
@@ -73,9 +73,9 @@ internal static void Main() {
     var got = ᐸꟷ(rt);
     {
         var (s, ok) = got._<@string>(ᐧ); if (ok){
-            fmt.Println("assert string:", s);
+            fmt.Println((@string)"assert string:", s);
         } else {
-            fmt.Println("assert missed");
+            fmt.Println((@string)"assert missed");
         }
     }
 }

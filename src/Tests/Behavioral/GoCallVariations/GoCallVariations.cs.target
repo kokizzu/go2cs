@@ -6,29 +6,29 @@ using time = time_package;
 partial class main_package {
 
 internal static void Main() {
-    goǃ(ᴛ1 => fmt.Println(ᴛ1), "First");
-    goǃ(ᴛ1 => fmt.Println(ᴛ1), "Second");
-    goǃ(ᴛ1 => fmt.Println(ᴛ1), "Third");
+    goǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"First");
+    goǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"Second");
+    goǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"Third");
     var f1 = fmt.Println;
     var f1ʗ1 = f1;
-    goǃ(ᴛ1 => f1ʗ1(ᴛ1), "Fourth");
+    goǃ(ᴛ1 => f1ʗ1(ᴛ1), (@string)"Fourth");
     goǃ(GetPrintLn(), (@string)"Fifth");
-    goǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), "Function result:", add(3, 4));
+    goǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"Function result:", add(3, 4));
     printSquare(5);
     nint count = 1;
     goǃ(() => {
-        fmt.Println("Go count (closure):", count);
+        fmt.Println((@string)"Go count (closure):", count);
     });
     count = 10;
-    fmt.Println("Count before Go:", count);
+    fmt.Println((@string)"Count before Go:", count);
     time.Sleep(200);
     var done = new channel<EmptyStruct>(0);
     runPair(done);
     ᐸꟷ(done);
     var acc = Ꮡ(new accum(nil));
     bindAdd(acc);
-    fmt.Println("accum total:", (~acc).total);
-    fmt.Println("Main function");
+    fmt.Println((@string)"accum total:", (~acc).total);
+    fmt.Println((@string)"Main function");
 }
 
 [GoType] partial struct accum {
@@ -42,7 +42,7 @@ internal static void Main() {
 
 internal static void bindAdd(ж<accum> Ꮡa) {
     var add = (nint p1) => Ꮡa.add(p1);
-    fmt.Println("bound add:", add(5), add(7));
+    fmt.Println((@string)"bound add:", add(5), add(7));
 }
 
 public static Action<@string> GetPrintLn() {
@@ -53,7 +53,7 @@ public static Action<@string> GetPrintLn() {
 
 internal static nint add(nint x, nint y) {
     nint result = x + y;
-    fmt.Println("Calculate:", result);
+    fmt.Println((@string)"Calculate:", result);
     return result;
 }
 
@@ -61,19 +61,19 @@ internal static void runPair(channel<EmptyStruct> done) {
     @string tag = "pair"u8;
     var handler = (channel<EmptyStruct> ch, Action fn) => {
         fn();
-        fmt.Println("handled:", tag);
+        fmt.Println((@string)"handled:", tag);
         ch.ᐸꟷ(new EmptyStruct());
     };
     var handlerʗ1 = handler;
     goǃ(handlerʗ1, done, () => {
-        fmt.Println("inner fn ran");
+        fmt.Println((@string)"inner fn ran");
     });
 }
 
 internal static void printSquare(nint n) {
-    goǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), "Go thread square:", n * n);
+    goǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"Go thread square:", n * n);
     n++;
-    fmt.Println("Immediate n:", n);
+    fmt.Println((@string)"Immediate n:", n);
 }
 
 } // end main_package

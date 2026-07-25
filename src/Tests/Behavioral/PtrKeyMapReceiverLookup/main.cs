@@ -39,7 +39,7 @@ internal static void close(this ж<conn> Ꮡc, ж<tracker> Ꮡt) => func((defer,
     ref var c = ref Ꮡc.Value;
     ref var t = ref Ꮡt.Value;
 
-    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), "closed", c.id, defer);
+    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"closed", c.id, defer);
     {
         var (_, ok) = t.m[Ꮡc, ꟷ]; if (ok) {
             delete(t.m, Ꮡc);
