@@ -565,20 +565,21 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 		// An EMPTY-interface element type takes no adapter wrap (excluded above), but a
 		// string-literal element must still box through @string — `new any[]{(@string)"a"}` —
 		// instead of the bare C# string the flag-less path leaves, which boxes the wrong type
-		// (a later Go x.(string) assertion fails). An untyped-int element boxes through nint for
-		// the same reason (`new any[]{(nint)(4)}`, else a later x.(int) fails) — the numeric twin,
-		// applied via the same per-element castArgToType plumbing convExprList honors. KeyValueExpr
-		// elements (maps, sparse arrays) are not BasicLits and route through convKeyValueExpr instead.
+		// (a later Go x.(string) assertion fails). An untyped-CONSTANT element boxes through Go's
+		// default type for its kind for the same reason (`new any[]{(nint)(4)}`, else a later
+		// x.(int) fails) — the numeric twin, applied via the same per-element castArgToType
+		// plumbing convExprList honors. KeyValueExpr elements (maps, sparse arrays) are not
+		// BasicLits and route through convKeyValueExpr instead.
 		if isEmptyInterfaceTarget(elementType) {
 			for i, elt := range compositeLit.Elts {
 				if isStringBasicLit(elt) {
 					callContext.useGoStringArg[i] = true
-				} else if v.argBoxesAsInt32ButNeedsNint(elt) {
+				} else if castType := v.untypedConstBoxCast(elt); castType != "" {
 					if callContext.castArgToType == nil {
 						callContext.castArgToType = make(map[int]string)
 					}
 
-					callContext.castArgToType[i] = "nint"
+					callContext.castArgToType[i] = castType
 				}
 			}
 		}
@@ -999,8 +1000,9 @@ func sparseArrayCompositeContext(compositeType types.Type, elts []ast.Expr) *Cal
 // struct field slot is the EMPTY interface (`any`). A string literal boxes through @string
 // (`(@string)"…"` — u8 off, cast on) instead of the u8 span (no conversion to the generated ctor's
 // object parameter, CS1503) or a bare C# string (which boxes the wrong type — a later Go
-// x.(string) assertion fails); an untyped-int constant boxes through nint (`(nint)(8)`) for the
-// same reason (else a later x.(int) fails), via the castArgToType plumbing convExprList honors.
+// x.(string) assertion fails); an untyped CONSTANT boxes through Go's default type for its kind
+// (`(nint)(8)`) for the same reason (else a later x.(int) fails), via the castArgToType plumbing
+// convExprList honors.
 // KEYED elements are ast.KeyValueExpr, never a BasicLit, so they skip here and resolve their field
 // in convKeyValueExpr's own `any`-field arm instead. Go requires a positional literal to list every
 // field in order, so element index i is field i.
@@ -1013,12 +1015,12 @@ func (v *Visitor) markAnyFieldLits(structType *types.Struct, elts []ast.Expr, co
 		if isStringBasicLit(elt) {
 			context.u8StringArgOK[i] = false
 			context.useGoStringArg[i] = true
-		} else if v.argBoxesAsInt32ButNeedsNint(elt) {
+		} else if castType := v.untypedConstBoxCast(elt); castType != "" {
 			if context.castArgToType == nil {
 				context.castArgToType = make(map[int]string)
 			}
 
-			context.castArgToType[i] = "nint"
+			context.castArgToType[i] = castType
 		}
 	}
 }

@@ -105,6 +105,8 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 					keyExpr = v.convertToInterfaceType(mapKeyInterfaceType, v.getType(indexExpr.Index, false), keyExpr)
 				}
 
+				keyExpr = v.boxUntypedConstAsDefaultType(mapType.Key(), indexExpr.Index, keyExpr)
+
 				return fmt.Sprintf("%s[%s, %s]", v.convExpr(indexExpr.X, nil), keyExpr, OverloadDiscriminator)
 			}
 
@@ -165,6 +167,12 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 			if keyIsInterface, keyIsEmptyInterface := isInterface(mapType.Key()); keyIsInterface && !keyIsEmptyInterface {
 				index = v.convertToInterfaceType(mapType.Key(), v.getType(indexExpr.Index, false), index)
 			}
+
+			// An untyped-constant KEY looked up in an `any`-keyed map boxes at Go's DEFAULT TYPE, so it
+			// matches a key stored by the composite-literal path (which applies the same cast) or by any
+			// real `int` value — golib's map compares boxed keys with the default Dictionary comparer,
+			// which does not normalize nint(6) against Int32(6).
+			index = v.boxUntypedConstAsDefaultType(mapType.Key(), indexExpr.Index, index)
 		}
 	}
 

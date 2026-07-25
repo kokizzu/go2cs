@@ -218,7 +218,7 @@ internal static @string stateMachine(nint step) {
 
 internal static void Main() {
     fmt.Printf("Slice Kind Value: %s [%d]\n"u8, Slice.String(), (nint)(uint8)Slice);
-    fmt.Println(seqFirst, seqSecond, seqAgain);
+    fmt.Println((nint)(seqFirst), (nint)(seqSecond), (nint)(seqAgain));
     fmt.Println(wideFirst, wideNext);
     fmt.Println((nint)(rawZero), (nint)(rawOne));
     fmt.Println(stateMachine(0));

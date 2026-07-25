@@ -340,15 +340,19 @@ One wrinkle worth knowing: a Go string literal normally emits as a `"…"u8` `Re
 no conversion to `object`. So a string literal returned/assigned/sent *as `any`* is boxed through `@string`
 (preserving Go string identity for a later `x.(string)`): `return (@string)"test2json";`.
 
-The numeric twin: a bare C# integer literal is `System.Int32`, but Go boxes an untyped `int` constant as
-its default type `int` (go2cs `nint`). So an untyped `int` constant boxed *as `any`* is cast through `nint`
-(`Ꮡv.Store((nint)(42))`), else a later `x.(int)` — `x._<nint>()` — finds an `Int32` and panics. A variadic
-`...any` LITERAL argument (`fmt.Println(42)`) is left uncast — a boxed `Int32` formats identically under
-`%d`/`%v` — but a **named untyped constant** (`const fsize = 5; fmt.Sprintf("%d", fsize+1)`) IS cast even
-in the variadic slot: such a constant is a golib `UntypedInt`-typed C# variable, not a literal, so leaving
-it uncast boxes the *struct* and `fmt`'s dynamic-type dispatch falls back to reflection, printing it as a
-two-field struct instead of the value (`{6 %!d(bool=false)}` instead of `6` — go/token's
-`TestIssue57490`). `any` map keys are left uncast to keep `map[any]int` lookups consistent.
+The numeric twin: Go materializes an untyped constant into an interface at its **default type** — untyped
+int → `int` (go2cs `nint`), untyped rune → `rune` (`int32`), untyped float → `float64` — and every
+observation of an interface value dispatches on the boxed CLR type. So an untyped constant boxed *as
+`any`* is cast to that type at **every** interface position (`Ꮡv.Store((nint)(42))`,
+`fmt.Sprintf("%s%c", d, (int32)(os.PathSeparator))`), else a later `x.(int)` — `x._<nint>()` — finds an
+`Int32` and panics, a `case int:` falls through, and interface `==` reports unequal. Two renderings need
+it: a bare int literal, which C# makes `System.Int32`; and anything referencing a **named untyped
+constant** (`const fsize = 5`), which is a golib `UntypedInt`/`UntypedFloat` *wrapper struct* matching no
+Go type at all — leaving it uncast made `fmt`'s dynamic-type dispatch fall back to reflection and print
+`{6 %!d(bool=false)}` instead of `6` (go/token's `TestIssue57490`). The variadic `...any` slot and `any`
+map keys were once carved out as "cosmetic"; both were real divergences the moment the box was compared
+rather than printed (`encoding/base32`'s `testEqual(…, n, 0)` reported `n = 0, expected 0` UNEQUAL; a
+`map[any]V` lookup by a real `int` value missed its literal-stored key), so neither is carved out now.
 
 A related identity wrinkle: a deref-aliased pointer (a `*T` parameter or a pointer receiver) passed *as
 `any`* renders the box `Ꮡp`, not the deref'd value alias `p` — Go boxes the *pointer*, and dropping the box
@@ -357,8 +361,8 @@ fmt's `sync.Pool` round-trip (`ppFree.Put(p)` then `Get().(*pp)`), which crashed
 program before the fix.
 
 **Full detail:** [Reference → Empty Interface (`any`)](ConversionStrategies-Reference.md#empty-interface-any) — the
-`@string` and `nint` boxing across argument, return, assignment, composite-literal, and channel-send
-positions, and the box for a pointer value passed to an `any` argument.
+`@string` and default-type boxing across argument, return, assignment, composite-literal, map-key, and
+channel-send positions, and the box for a pointer value passed to an `any` argument.
 
 ---
 

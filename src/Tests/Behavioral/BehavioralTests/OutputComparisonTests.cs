@@ -53,6 +53,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckAnonymousStructs() => CheckTarget("AnonymousStructs");
 
     [TestMethod]
+    public void CheckAnyBoxedUntypedConst() => CheckTarget("AnyBoxedUntypedConst");
+
+    [TestMethod]
     public void CheckAnyKeyMap() => CheckTarget("AnyKeyMap");
 
     [TestMethod]

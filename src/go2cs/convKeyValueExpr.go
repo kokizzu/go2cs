@@ -139,11 +139,11 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 		valueExpr = appendArrayValueClone(valueExpr)
 	}
 
-	// Box an untyped `int` constant VALUE in an EMPTY-interface slot through nint — a struct `any`
-	// field (`box{v: 9}`) or a `map[K]any` / sparse-`[N]any` value — the numeric twin of the
-	// anyBoxedStringLitContext @string boxing above, so a later `x.(int)` matches Go's boxed `int`.
-	// A no-op for any other slot or a non-int-constant value.
-	if v.argBoxesAsInt32ButNeedsNint(keyValueExpr.Value) {
+	// Box an untyped CONSTANT VALUE in an EMPTY-interface slot at Go's default type for its kind — a
+	// struct `any` field (`box{v: 9}`) or a `map[K]any` / sparse-`[N]any` value — the numeric twin of
+	// the anyBoxedStringLitContext @string boxing above, so a later `x.(int)` matches Go's boxed `int`.
+	// A no-op for any other slot or a non-untyped-constant value.
+	if castType := v.untypedConstBoxCast(keyValueExpr.Value); castType != "" {
 		var valueSlotType types.Type
 
 		if context.source == StructSource {
@@ -160,7 +160,7 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 		}
 
 		if isEmptyInterfaceTarget(valueSlotType) {
-			valueExpr = fmt.Sprintf("(nint)(%s)", valueExpr)
+			valueExpr = fmt.Sprintf("(%s)(%s)", castType, valueExpr)
 		}
 	}
 
@@ -251,13 +251,19 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 				if isEmptyInterfaceTarget(mapType.Key()) && isStringBasicLit(keyValueExpr.Key) {
 					keyExpr = v.convExpr(keyValueExpr.Key, []ExprContext{anyBoxedStringLitContext()})
 				}
-				// NOTE: an untyped `int` constant KEY in an `any` key slot is DELIBERATELY not boxed
-				// to nint here. golib's map uses the default Dictionary comparer (no numeric
-				// normalization — nint(6) != Int32(6)), and index LOOKUPS (`mk[6]`) are not boxed, so
-				// storing the composite key as nint while looking it up as Int32 would MISS. Leaving
-				// both sides as the bare System.Int32 keeps `map[any]int{6:1}[6]` round-tripping (the
-				// pre-existing, consistent behavior); the string case is safe only because @string keys
-				// normalize. A key later type-asserted as `.(int)` is the rare unfixed edge.
+
+				// An untyped CONSTANT KEY in an `any` key slot boxes at Go's default type too —
+				// `[(nint)(6)] = …`. golib's map uses the default Dictionary comparer (no numeric
+				// normalization: nint(6) != Int32(6)), so the store and every LOOKUP must agree on the
+				// boxed type. convIndexExpr applies the same cast to an untyped-constant index of an
+				// `any`-keyed map, which keeps `map[any]int{6:1}[6]` round-tripping AND makes a lookup by
+				// a real `int` VALUE (`m[n]`, boxed nint — the only form Go can distinguish) HIT, which
+				// the former leave-both-as-Int32 behavior missed.
+				if isEmptyInterfaceTarget(mapType.Key()) {
+					if castType := v.untypedConstBoxCast(keyValueExpr.Key); castType != "" {
+						keyExpr = fmt.Sprintf("(%s)(%s)", castType, keyExpr)
+					}
+				}
 			}
 		}
 

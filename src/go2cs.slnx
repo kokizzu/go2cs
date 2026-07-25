@@ -69,6 +69,7 @@
     <Project Path="Tests/Behavioral/AnonStructCrossFile/AnonStructCrossFile.csproj" />
     <Project Path="Tests/Behavioral/AnonymousInterfaces/AnonymousInterfaces.csproj" />
     <Project Path="Tests/Behavioral/AnonymousStructs/AnonymousStructs.csproj" />
+    <Project Path="Tests/Behavioral/AnyBoxedUntypedConst/AnyBoxedUntypedConst.csproj" />
     <Project Path="Tests/Behavioral/AnyKeyMap/AnyKeyMap.csproj" />
     <Project Path="Tests/Behavioral/AnyStringLitAssign/AnyStringLitAssign.csproj" />
     <Project Path="Tests/Behavioral/AnyStringLitChanSend/AnyStringLitChanSend.csproj" />

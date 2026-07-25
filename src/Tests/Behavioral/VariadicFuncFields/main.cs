@@ -52,7 +52,7 @@ internal static void Main() {
         return fmt.Sprint(len(elem));
     };
     fmt.Println(ctxt.JoinPath("p"u8, "q"));
-    ctxt.Log("%s:%d"u8, ctxt.Name, 3);
+    ctxt.Log("%s:%d"u8, ctxt.Name, (nint)(3));
     ctxt.Log("done"u8);
 }
 

@@ -885,6 +885,18 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			}
 		}
 
+		// A conversion to the EMPTY INTERFACE whose operand is an UNTYPED constant — `any(7)`,
+		// `interface{}(0)` — hops through the constant's DEFAULT Go type first, exactly like the
+		// `string(...)` hop above and the implicit interface-slot boxing every other position applies
+		// (see untypedConstBoxCast). Without it `((any)7)` boxes a System.Int32 where Go boxes `int`,
+		// so the paired `any(7).(int)` assertion (`._<nint>()`) fails and `==` against a real `int`
+		// reports unequal. A NON-empty interface target routes through the adapter machinery above.
+		if isEmptyInterfaceTarget(v.info.TypeOf(callExpr)) {
+			if castType := v.untypedConstBoxCast(arg); castType != "" {
+				expr = fmt.Sprintf("(%s)(%s)", castType, expr)
+			}
+		}
+
 		// A conversion between two DIFFERENT NAMED types that share a COMPOSITE underlying (net/mail
 		// textproto.MIMEHeader(h) where Header and MIMEHeader both wrap map[string][]string): each is a
 		// [GoType] wrapper with implicit conversions only to/from its OWN underlying, and C# will not
@@ -1293,47 +1305,33 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					lastArg = len(callExpr.Args) - 1
 				}
 
-				// The untyped-int→nint box cast is DELIBERATELY skipped for a variadic `...any`
-				// argument (the fmt/print/log family) in the common case: a bare int LITERAL boxes
-				// as System.Int32, which formats identically to nint under %d/%v, so the cast would
-				// be redundant noise on the most common call pattern — matching how the
-				// string→@string boxing family also leaves the variadic fmt call position untouched.
-				// A non-variadic `any` parameter (`atomic.Value.Store`, `context.WithValue`, …) is a
-				// value the caller stores and later type-asserts, so it DOES take the cast.
-				//
-				// That skip is UNSOUND for a NAMED untyped constant (`const fsize = 5`), which
-				// renders as a golib `UntypedInt`-typed C# variable/field, not a plain literal
-				// (visitValueSpec's csTypeName=="UntypedInt" classification) — `fsize+1` evaluates
-				// via UntypedInt's own operator overloads and boxes the STRUCT, not a CLR integer.
-				// fmt's printArg type-switch (print.cs) doesn't recognize UntypedInt, falls through
-				// to reflection, and formats it as a two-field struct instead of the plain value
-				// (`fmt.Sprintf("%d", fsize+1)` prints `{6 %!d(bool=false)}` instead of `6` — the
-				// go/token TestIssue57490 failure). exprInvolvesUntypedIntConst re-enables the cast
-				// for exactly that shape (checked per trailing argument below, since a variadic
-				// call can mix literal and named-constant arguments) while leaving the
-				// literal-only fast path alone.
-				variadicSlot := funcSignature.Variadic() && i == params.Len()-1
-
 				for j := i; j <= lastArg; j++ {
 					if !isEmpty {
 						callExprContext.interfaceTypes[j] = paramType
 					}
 
-					// An untyped `int` constant boxed into the interface must be cast to nint so its
-					// C# box matches Go's boxed `int` dynamic type and a later `.(int)` (`._<nint>()`)
-					// assertion succeeds — see argBoxesAsInt32ButNeedsNint. Reuses the per-argument
-					// castArgToType plumbing convExprList already applies as `(nint)(value)`.
+					// An untyped constant boxed into the interface must be cast to Go's DEFAULT TYPE for
+					// its kind so its C# box matches Go's boxed dynamic type and a later `.(int)`
+					// (`._<nint>()`) assertion, `case int:`, or `==` succeeds — see untypedConstBoxCast.
+					// Reuses the per-argument castArgToType plumbing convExprList already applies as
+					// `(nint)(value)`. This includes the VARIADIC `...any` slot (the fmt/print/log
+					// family): a bare int literal there boxes as System.Int32, which formats the same
+					// under %d/%v but is NOT Go's `int` — `testEqual("… n = %d …", n, 0)` compared the
+					// two boxes and reported unequal (encoding/base32), so the cast is required there
+					// too and the former literal-only fast path is gone.
 					// isEmptyInterfaceTarget (not the outer isInterface) gates this to a REAL `any`
 					// parameter: a type parameter constrained by `any` also reads as an empty interface
 					// here, but its instantiation binds the argument to a concrete type (`T`=int → the
 					// nint parameter), where a bare int literal already converts implicitly — unlike
 					// the u8-span→@string case, no cast is needed and one would be spurious.
-					if (!variadicSlot || v.exprInvolvesUntypedIntConst(callExpr.Args[j])) && isEmptyInterfaceTarget(paramType) && j < len(callExpr.Args) && v.argBoxesAsInt32ButNeedsNint(callExpr.Args[j]) {
-						if callExprContext.castArgToType == nil {
-							callExprContext.castArgToType = make(map[int]string)
-						}
+					if isEmptyInterfaceTarget(paramType) && j < len(callExpr.Args) {
+						if castType := v.untypedConstBoxCast(callExpr.Args[j]); castType != "" {
+							if callExprContext.castArgToType == nil {
+								callExprContext.castArgToType = make(map[int]string)
+							}
 
-						callExprContext.castArgToType[j] = "nint"
+							callExprContext.castArgToType[j] = castType
+						}
 					}
 
 					// The EMPTY interface (`any`/`interface{}`) needs no wrapping adapter, but a
@@ -1348,7 +1346,9 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					// guard excludes it), and a variadic `...any` fans the treatment across every
 					// trailing argument (so it is NOT gated by variadicSlot, unlike the nint cast).
 					// Since the empty interface leaves `interfaceTypes` unset, the argument takes the
-					// identical convExpr path a `*T`-parameter argument does.
+					// identical convExpr path a `*T`-parameter argument does. Like the untyped-constant
+					// box cast above, a variadic `...any` fans the treatment across every trailing
+					// argument.
 					if isEmpty && j < len(callExpr.Args) {
 						if argType := v.getType(callExpr.Args[j], false); argType != nil {
 							if _, argIsPtr := argType.(*types.Pointer); argIsPtr {
@@ -2457,55 +2457,92 @@ func typeParamIsSliceElementOfSibling(sig *types.Signature, tp *types.TypeParam)
 	return false
 }
 
-// argBoxesAsInt32ButNeedsNint reports whether arg is a CONSTANT expression whose Go type is the
-// untyped-constant default `int` with a value in the int32 range. convBasicLit renders such a value as
-// a bare C# integer literal, which is `System.Int32`; but when the value is implicitly converted to an
-// interface, Go boxes it as its dynamic type `int` — go2cs `nint` (an IntPtr). Without an explicit
-// `(nint)` cast the C# box is `System.Int32`, so a later `.(int)` type assertion — emitted as
-// `._<nint>()` — finds a boxed Int32 and panics (both print "int", but one is Int32, one is nint).
-// Larger int constants already render as `(nint)…L` (correctly boxed); untyped float/rune/string
-// defaults box to the matching C# type (double / int32 / — @string via golib's assertion
-// normalization); so only the int32-range default-`int` constant needs the cast. Keying off
-// info.Types[arg] (rather than the AST shape) uniformly catches a literal (`42`), a unary
-// (`-5`), a binary (`1 + 2`), and a named untyped-int const, since go/types constant-folds them to a
-// single `int` value.
-func (v *Visitor) argBoxesAsInt32ButNeedsNint(arg ast.Expr) bool {
+// untypedConstBoxCast reports the C# type an UNTYPED-CONSTANT expression must be cast to before it
+// is materialized into an EMPTY-INTERFACE slot — Go's DEFAULT TYPE for the constant's kind — or "" when
+// the rendered form already boxes as that type.
+//
+// Go boxes an untyped constant at its default type: untyped int → `int` (go2cs `nint`, an IntPtr),
+// untyped rune → `rune` (`int32`), untyped float → `float64`. Interface equality (golib `AreEqual`)
+// and type assertions/switches (`._<nint>()`, `case int:`) compare the boxed DYNAMIC TYPE first, and
+// fmt's printArg type-switch dispatches on it, so a value boxed under the wrong CLR type silently
+// diverges from Go — it compares unequal, fails its assertion, or formats through the reflection
+// fallback. Two renderings need the cast:
+//
+//   - A bare int LITERAL (or literal-only arithmetic) in the int32 range: convBasicLit renders it as a
+//     plain C# integer literal, which is `System.Int32`, not nint. (A larger int constant already
+//     renders as `(nint)…L`, correctly boxed; a rune literal renders `(rune)'A'` and a float literal
+//     `2.5D`, both already the default CLR type — so those need nothing.)
+//   - ANY expression referencing a NAMED untyped constant (`const fsize = 5`), which renders as the
+//     golib `UntypedInt`/`UntypedFloat` WRAPPER STRUCT (convertToCSFullTypeName), never a CLR number —
+//     `fsize+1` evaluates through the wrapper's operator overloads and boxes the struct. The cast to
+//     the default type routes through the wrapper's implicit conversion, so the box carries Go's type.
+//     This holds at EVERY magnitude and for every wrapped kind, which is why the int32-range test
+//     applies to the literal rendering only.
+//
+// Keying the kind off info.Types[arg] (rather than the AST shape) reads the type go/types has already
+// DEFAULTED for the interface slot, so a literal (`42`), a unary (`-5`), a binary (`1 + 2`), and a
+// named untyped const are all classified by the same rule. An untyped COMPLEX constant is deliberately
+// excluded: a named one renders as golib `GoUntyped` (a BigInteger parse — visitValueSpec's
+// writeUntypedConst path, with its own standing TODO), which is a separate pre-existing gap that a
+// `(complex128)` cast would not close.
+func (v *Visitor) untypedConstBoxCast(arg ast.Expr) string {
 	// A type-conversion CallExpr (`int(x)`) is itself a constant of type int but already renders with
 	// its own `(nint)…` cast — skip it so the box is not double-wrapped.
 	if _, isCall := arg.(*ast.CallExpr); isCall {
-		return false
+		return ""
 	}
 
 	tv, ok := v.info.Types[arg]
 
 	if !ok || tv.Value == nil {
-		return false
+		return ""
 	}
 
 	basic, ok := tv.Type.(*types.Basic)
 
-	if !ok || basic.Kind() != types.Int {
-		return false
+	if !ok {
+		return ""
 	}
 
-	iv, exact := constant.Int64Val(tv.Value)
+	wrapped := v.exprRendersUntypedConstWrapper(arg)
 
-	return exact && iv >= math.MinInt32 && iv <= math.MaxInt32
+	switch basic.Kind() {
+	case types.Int:
+		if wrapped {
+			return "nint"
+		}
+
+		if iv, exact := constant.Int64Val(tv.Value); exact && iv >= math.MinInt32 && iv <= math.MaxInt32 {
+			return "nint"
+		}
+	case types.Int32: // Go's default type for an untyped RUNE constant
+		if wrapped {
+			return "int32"
+		}
+	case types.Float64:
+		if wrapped {
+			return "float64"
+		}
+	}
+
+	return ""
 }
 
-// exprInvolvesUntypedIntConst reports whether expr syntactically references — directly or through
-// arithmetic — a named Go constant declared WITHOUT an explicit type (`const fsize = 5`). Such a
-// constant is emitted as a golib `UntypedInt`-typed C# local/field (visitValueSpec's
-// csTypeName=="UntypedInt" classification), not a plain numeric literal, so an expression built from
-// it (`fsize+1`) evaluates through UntypedInt's own operator overloads and produces an UntypedInt
-// STRUCT result, not a CLR integer. That distinguishes it from a bare literal or literal-only
-// arithmetic (`42`, `1+2`), which convBasicLit always renders as a plain C# integer literal
-// regardless of AST shape — see the caller (the variadic-`...any` box-cast skip in the interface-cast
-// loop above): a boxed struct is what makes that skip unsound for this one shape, since fmt's
-// printArg type-switch (print.cs) doesn't recognize UntypedInt and falls back to reflection,
-// formatting it as a two-field struct (`{6 %!d(bool=false)}`) instead of the plain value — the
-// go/token TestIssue57490 failure this predicate fixes.
-func (v *Visitor) exprInvolvesUntypedIntConst(expr ast.Expr) bool {
+// exprRendersUntypedConstWrapper reports whether expr syntactically references — directly or through
+// arithmetic — a named Go constant declared WITHOUT an explicit type (`const fsize = 5`), which makes
+// the whole expression render as a golib untyped-constant WRAPPER STRUCT rather than a plain C#
+// numeric literal. Such a constant is emitted as an `UntypedInt`/`UntypedFloat`-typed C# field or local
+// (convertToCSFullTypeName's "untyped …" classification), so `fsize+1` evaluates through the wrapper's
+// own operator overloads and yields a wrapper result. That distinguishes it from a bare literal or
+// literal-only arithmetic (`42`, `1+2`), which convBasicLit always renders as a plain C# literal
+// regardless of AST shape. The constant's OWN declared type is what is tested — not info.Types[expr],
+// which reports the post-DEFAULT type (plain `int`) for a literal and a named const alike.
+//
+// A boxed wrapper struct is not any Go type: fmt's printArg type-switch (print.cs) doesn't recognize
+// it and falls back to reflection, formatting `fmt.Sprintf("%d", fsize+1)` as a two-field struct
+// (`{6 %!d(bool=false)}`) instead of `6` — the go/token TestIssue57490 failure — and interface
+// equality against the same value under its real Go type reports unequal.
+func (v *Visitor) exprRendersUntypedConstWrapper(expr ast.Expr) bool {
 	found := false
 
 	ast.Inspect(expr, func(n ast.Node) bool {
@@ -2527,7 +2564,7 @@ func (v *Visitor) exprInvolvesUntypedIntConst(expr ast.Expr) bool {
 
 		if basic, ok := constObj.Type().(*types.Basic); ok {
 			switch basic.Kind() {
-			case types.UntypedInt, types.UntypedRune:
+			case types.UntypedInt, types.UntypedRune, types.UntypedFloat:
 				found = true
 			}
 		}
@@ -2538,18 +2575,22 @@ func (v *Visitor) exprInvolvesUntypedIntConst(expr ast.Expr) bool {
 	return found
 }
 
-// boxUntypedIntAsNint wraps an already-rendered value expression in a `(nint)` cast when `target` is
-// the empty interface and `value` is an untyped `int` constant that would otherwise box as
-// System.Int32 (see argBoxesAsInt32ButNeedsNint). It is the non-call-argument twin of the
-// castArgToType["nint"] treatment convCallExpr applies at interface call sites — assignment, var-spec,
-// return, channel send, and keyed composite/struct/map positions render a value against a known
-// empty-interface slot and route through here so a later `.(int)` / `case int:` observes Go's boxed
-// `int` dynamic type. A non-empty-interface slot, a type-parameter slot, or a non-int-constant value
-// passes through unchanged. Mirrors the string→@string family's per-position boxing (castToGoString),
-// which the empty interface likewise handles outside convertToInterfaceType.
-func (v *Visitor) boxUntypedIntAsNint(target types.Type, value ast.Expr, rendered string) string {
-	if isEmptyInterfaceTarget(target) && v.argBoxesAsInt32ButNeedsNint(value) {
-		return fmt.Sprintf("(nint)(%s)", rendered)
+// boxUntypedConstAsDefaultType wraps an already-rendered value expression in the cast to Go's default
+// type for its untyped-constant kind when `target` is the empty interface (see untypedConstBoxCast).
+// It is the non-call-argument twin of the castArgToType treatment convCallExpr applies at interface
+// call sites — assignment, var-spec, return, channel send, and keyed composite/struct/map positions
+// render a value against a known empty-interface slot and route through here so a later `.(int)` /
+// `case int:` / `==` observes Go's boxed dynamic type. A non-empty-interface slot, a type-parameter
+// slot, or a non-untyped-constant value passes through unchanged. Mirrors the string→@string family's
+// per-position boxing (castToGoString), which the empty interface likewise handles outside
+// convertToInterfaceType.
+func (v *Visitor) boxUntypedConstAsDefaultType(target types.Type, value ast.Expr, rendered string) string {
+	if !isEmptyInterfaceTarget(target) {
+		return rendered
+	}
+
+	if castType := v.untypedConstBoxCast(value); castType != "" {
+		return fmt.Sprintf("(%s)(%s)", castType, rendered)
 	}
 
 	return rendered

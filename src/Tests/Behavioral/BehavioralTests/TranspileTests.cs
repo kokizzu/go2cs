@@ -49,6 +49,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckAnonymousStructs() => CheckTarget("AnonymousStructs");
 
     [TestMethod]
+    public void CheckAnyBoxedUntypedConst() => CheckTarget("AnyBoxedUntypedConst");
+
+    [TestMethod]
     public void CheckAnyKeyMap() => CheckTarget("AnyKeyMap");
 
     [TestMethod]

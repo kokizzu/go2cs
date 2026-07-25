@@ -13,7 +13,7 @@ internal static void Main() {
     any logf = fn;
     {
         var (fnΔ1, ok) = logf._<Actionꓸꓸꓸ<@string, any>>(ᐧ); if (ok){
-            fnΔ1("value=%v flag=%v"u8, 42, true);
+            fnΔ1("value=%v flag=%v"u8, (nint)(42), true);
         } else {
             fmt.Println("no match");
         }

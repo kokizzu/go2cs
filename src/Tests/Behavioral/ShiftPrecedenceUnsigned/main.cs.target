@@ -19,7 +19,7 @@ internal static void Main() {
     fmt.Println((uint64)(z & ((uint64)0 - z)));
     uint64 x = 0x100;
     fmt.Println((x >> (int)(4)) + x);
-    fmt.Println((1 << (int)(15)) - 1);
+    fmt.Println((nint)((1 << (int)(15)) - 1));
     fmt.Println(x - ((uint64)1 << (int)(4)));
     nuint s = 3;
     uint64 y = 1;

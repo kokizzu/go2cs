@@ -389,14 +389,14 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 					resultExpr = appendArrayValueClone(resultExpr)
 				}
 
-				// Box an untyped `int` constant returned as an EMPTY interface through nint (the
+				// Box an untyped CONSTANT returned as an EMPTY interface at Go's default type (the
 				// numeric twin of the castToGoString @string boxing above), so a later `x.(int)` on the
 				// result matches Go's boxed `int` dynamic type. A non-empty interface result routes
 				// through convertToInterfaceType below (which the empty interface deliberately bypasses),
 				// and no numeric result type reaches the empty interface, so this is the only return-path
 				// site that needs the cast.
 				if resultParams != nil && i < resultParams.Len() {
-					resultExpr = v.boxUntypedIntAsNint(resultParams.At(i).Type(), expr, resultExpr)
+					resultExpr = v.boxUntypedConstAsDefaultType(resultParams.At(i).Type(), expr, resultExpr)
 				}
 
 				// Record any dynamic-struct implicit conversion AFTER converting the result expr.

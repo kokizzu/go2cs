@@ -22,9 +22,9 @@ internal static void Main() {
     fmt.Println(len(s), codepoint);
     float64 factor = scale;
     fmt.Println(factor * 2D);
-    fmt.Println(cbrtC);
-    fmt.Println(cbrtD);
-    fmt.Println(folded);
+    fmt.Println((float64)(cbrtC));
+    fmt.Println((float64)(cbrtD));
+    fmt.Println((float64)(folded));
     fmt.Println(localPrecision(2.0D));
     fmt.Println(fmt.Sprintf("size=%d"u8, (nint)(fsize + 1)));
     tightenGuards();
@@ -37,7 +37,7 @@ internal static void tightenGuards() => func((defer, recover) => {
     fmt.Println(f64, f32);
     UntypedFloat feeder = 3.5;
     const float64 derived = /* feeder * 2 */ 7;
-    fmt.Println(derived);
+    fmt.Println((float64)(derived));
     const int64 big = /* 1 << 62 */ 4611686018427387904;
     int64 n = 1;
     fmt.Println(n + big);

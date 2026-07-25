@@ -24,7 +24,7 @@ internal static void apply(Funcꓸꓸꓸ<@string, nint, @string> f) {
 }
 
 internal static void report(Actionꓸꓸꓸ<@string, any> emit) {
-    emit("%s=%d"u8, "x", 7);
+    emit("%s=%d"u8, "x", (nint)(7));
     emit("bare"u8);
 }
 

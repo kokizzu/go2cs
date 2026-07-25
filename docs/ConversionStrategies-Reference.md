@@ -957,19 +957,34 @@ see [Maps and Channels](#maps-and-channels). (Guarded by the `AnyStringLitChanSe
 statement and select-case sends read back through a `string` type-switch and an `x.(string)`
 assertion to prove runtime identity, output-compared vs Go.)
 
-### An untyped `int` constant boxed as `any` boxes through `nint`
+### An untyped constant boxed as `any` boxes at Go's DEFAULT TYPE
 
-The numeric twin of the `@string` boxing above. A bare C# integer literal is `System.Int32`, but Go
-boxes an untyped `int` constant as its default dynamic type `int` — go2cs `nint` (an `IntPtr`).
-Without a cast a later `x.(int)` — emitted `x._<nint>()` — finds a boxed `Int32` and panics
-(`interface conversion: interface {} is int, not int`; both sides print "int", but one is `Int32`,
-one is `nint`). Only the int32-range default-`int` constant needs it: `float`/`rune`/`string`
-defaults already box to the matching C# type (`double` / `int32` / `@string` via golib's assertion
-normalization), and an `int` constant outside int32 range already renders `(nint)…L`. The cast
-applies at every empty-interface position — call argument, var-spec, assignment, `return`, channel
-send, and slice/array element / keyed struct-field / map value:
+The numeric twin of the `@string` boxing above. Go materializes an untyped constant into an interface
+at its **default type**: untyped int → `int` (go2cs `nint`, an `IntPtr`), untyped rune → `rune`
+(`int32`), untyped float → `float64`. The boxed CLR type must match, because every observation of an
+interface value dispatches on it: `x.(int)` (emitted `x._<nint>()`) panics on a boxed `Int32`
+(`interface conversion: interface {} is int, not int` — both sides print "int", but one is `Int32`,
+one is `nint`); a `case int:` type switch falls through; golib `AreEqual` bails early on
+`leftType != right.GetType()`; and `fmt`'s `printArg` type-switch drops to its reflection fallback.
+Two renderings need a cast, for different reasons:
+
+- A bare int **literal** (or literal-only arithmetic) in the int32 range: `convBasicLit` renders it as
+  a plain C# integer literal, which is `System.Int32`. (An int constant *outside* int32 range already
+  renders `(nint)…L`, and a rune literal renders `(rune)'A'` / a float literal `2.5D` — all already the
+  default CLR type, so those need nothing.)
+- Any expression referencing a **named untyped constant** (`const fsize = 5`), which `visitValueSpec`
+  emits as a golib `UntypedInt`/`UntypedFloat` **wrapper struct**, never a CLR number — `fsize + 1`
+  evaluates through the wrapper's operator overloads and boxes the STRUCT, which matches *no* Go type
+  at all. This holds at every magnitude and for every wrapped kind, which is why the int32-range test
+  applies to the literal rendering only.
+
+The cast applies at every empty-interface position — call argument (variadic `...any` included),
+var-spec, assignment, `return`, channel send, slice/array element, keyed struct-field, map value, map
+KEY (composite and index alike), and an explicit `any(...)` conversion:
 
 ```go
+fmt.Sprintf("%s.v%d.%d", GOARCH, 8, i)   // variadic ...any argument
+fmt.Sprintf("%s%c%03d", d, os.PathSeparator, seq)  // named untyped RUNE const under %c
 v.Store(42)                  // non-variadic any argument (atomic.Value.Store)
 var a any = 7                // var-spec
 b = 8                        // reassignment
@@ -977,10 +992,14 @@ func r() any { return 42 }   // return
 ch <- 3                      // channel send (chan any)
 _ = []any{5}                 // slice/array element
 _ = map[string]any{"k": 9}   // map value
+_ = map[any]string{12: "x"}  // map key (and the matching m[12] lookup)
 _ = holder{v: 3}             // keyed struct field
+_ = any(7).(int)             // explicit conversion to any
 ```
 
 ```csharp
+fmt.Sprintf("%s.v%d.%d"u8, GOARCH, (nint)(8), i);
+fmt.Sprintf("%s%c%03d"u8, d, (int32)(os.PathSeparator), seq);
 Ꮡv.Store((nint)(42));
 any a = (nint)(7);
 b = (nint)(8);
@@ -988,62 +1007,68 @@ internal static any r() { return (nint)(42); }
 ch.ᐸꟷ((nint)(3));
 _ = new any[]{(nint)(5)}.slice();
 _ = new map<@string, any>{["k"u8] = (nint)(9)};
+_ = new map<any, @string>{[(nint)(12)] = "x"u8};   // and m[(nint)(12)]
 _ = new holder(v: (nint)(3));
+_ = ((any)(nint)(7))._<nint>();
 ```
 
-`argBoxesAsInt32ButNeedsNint` drives the decision — keyed off `info.Types[arg]` (not the AST shape),
-so it uniformly catches a literal (`42`), a unary (`-5`), a binary (`1 + 2`), and a named untyped-int
-const, which go/types constant-folds to one `int` value; a defined-type-over-int constant (`type
-MyInt int`) is excluded (its box is the `[GoType]` wrapper, asserted as `MyInt`). Call arguments reuse
-the per-argument `castArgToType["nint"]` plumbing; the other positions wrap through
-`boxUntypedIntAsNint`. **Three deliberate exclusions:**
+`untypedConstBoxCast` (`convCallExpr.go`) drives the decision and returns the C# cast type (or none).
+The constant's **kind** comes from `info.Types[arg]` — the type go/types has already DEFAULTED for the
+interface slot — so a literal (`42`), a unary (`-5`), a binary (`1 + 2`), and a named untyped const are
+all classified by one rule. Whether the rendering is a wrapper struct comes from
+`exprRendersUntypedConstWrapper`, which walks the expression for an `*ast.Ident` resolving (via
+`Info.Uses`) to a `*types.Const` whose **OWN** declared type is `UntypedInt`/`UntypedRune`/
+`UntypedFloat` — `info.Types[arg]` cannot answer this, since it reports plain `int` for a literal and a
+named untyped const alike. A defined-type-over-int constant (`type MyInt int`) is excluded (its box is
+the `[GoType]` wrapper, asserted as `MyInt`). Call arguments reuse the per-argument `castArgToType`
+plumbing; the other positions wrap through `boxUntypedConstAsDefaultType`.
 
-- A **variadic `...any`** argument (the fmt/print/log family) is NOT cast **when the argument is a
-  literal or literal-only arithmetic** (`42`, `1 + 2`): a boxed `Int32` formats identically to `nint`
-  under `%d`/`%v`, so the cast would be redundant noise on the most common call pattern. A
-  non-variadic `any` parameter (`atomic.Value.Store`, `context.WithValue`) IS cast — its value is
-  stored and later asserted.
+**Deliberate exclusions and known residues:**
 
-  **The literal-only carve-out does NOT extend to a named untyped constant** (`const fsize = 5`),
-  which `visitValueSpec` emits as a golib `UntypedInt`-typed C# variable/field, not a plain literal —
-  `fsize + 1` evaluates through `UntypedInt`'s own operator overloads and boxes the STRUCT, not a CLR
-  integer. `fmt`'s `printArg` type-switch (`print.cs`) doesn't recognize `UntypedInt`, falls back to
-  reflection, and formats it as a two-field struct instead of the plain value —
-  `fmt.Sprintf("%d", fsize+1)` printed `{6 %!d(bool=false)}` instead of `6` against the
-  full-conversion `fmt` (go/token's `TestIssue57490`). `exprInvolvesUntypedIntConst`
-  (`convCallExpr.go`) walks the argument's AST for an `*ast.Ident` resolving (via `Info.Uses`) to a
-  `*types.Const` whose OWN declared type — not `info.Types[arg]`'s post-default type, which reports
-  `int` for both cases — is `UntypedInt`/`UntypedRune`; when found, the variadic slot re-enables the
-  `nint` cast for that one argument. A literal, or arithmetic composed only of literals, contains no
-  such identifier and keeps the noise-free fast path. (A function-LOCAL untyped const can still tighten
-  to a concrete C# type at its own declaration — e.g. `deferǃ`'s captured-argument typing — in which
-  case the predicate's extra cast is a harmless no-op, not a correctness fix; it only matters where the
-  declaration genuinely stays `UntypedInt`, which is always true for a package-level one.)
-
-  **Residual, separate gap (not fixed by this predicate):** a bare int LITERAL argument still boxes as
-  `System.Int32`, and the full-conversion `fmt`'s badVerb/`%T` path names it via
-  `reflect.TypeOf(arg).String()` — the `go-src-converted/reflect` + golib `GoReflect` bridge — which
-  reports `"int32"`, not Go's `"int"` (`fmt.Sprintf("%s", 42)` prints `%!s(int32=42)` instead of
-  `%!s(int=42)`). This is DIFFERENT from `GetGoTypeName` above (used by `builtin.TryTypeAssert`'s panic
-  text and the baseline stub `core/fmt`, which both map `Int32`/`IntPtr` to `"int"` correctly) — the
-  full-conversion `fmt`'s reflect-driven path does not share that normalization. Casting every literal
-  variadic argument to `nint` would close it but reintroduces the noise this carve-out exists to avoid,
-  at corpus-wide scale; left as a known, disclosed divergence pending a `GoReflect`-side fix (make the
-  bridge's boxed-`Int32` type name resolve to `"int"`, matching `GetGoTypeName`, instead of widening the
-  converter's cast footprint).
 - A **type-parameter parameter** constrained by `any` (`func f[T any](v T)`) reads as an empty
   interface here too, but its instantiation binds the argument to the concrete `T` (int → the `nint`
-  parameter), where a bare int literal already converts implicitly. The call-site gate uses
+  parameter), where a bare int literal already converts implicitly. Every gate uses
   `isEmptyInterfaceTarget` (which excludes type parameters), unlike the u8-span→`@string` case, where
   a `K=string` parameter genuinely needs the cast to bind.
-- An **`any` map KEY** is NOT cast: golib's `map` uses the default `Dictionary` comparer (no numeric
-  normalization — `nint(6) != Int32(6)`) and index lookups (`mk[6]`) are not boxed, so casting the
-  composite key while looking it up as `Int32` would break `map[any]int{6:1}[6]` round-trips. Both
-  sides stay the consistent `System.Int32`; the string case is safe there only because `@string` keys
-  normalize. Map *values* are cast (they are retrieved, not compared).
+- An untyped **COMPLEX** constant is out of scope: a named one renders as golib `GoUntyped` (a
+  `BigInteger.Parse` of the literal text — `visitValueSpec`'s `writeUntypedConst` path, with its own
+  standing TODO), a separate pre-existing gap that a `(complex128)` cast would not close. A complex
+  *literal* renders `1D + 2D.i()` and already boxes as `complex128`.
+- Untyped **string** and **bool** constants need nothing: they render as `@string` (normalized by
+  golib's assertion machinery) and C# `bool`, both already the Go type.
+- A cast onto an expression that already renders at the default type — a **typed** constant
+  (`const seqFirst int = iota` → `const nint`), or a local untyped const that `visitValueSpec`
+  tightened to a concrete C# type (`const float64 derived = 7`) — is a harmless no-op the predicate
+  does not attempt to suppress. It cannot know the declaration's chosen C# spelling from the argument
+  alone, and an extra cast is cosmetic noise where a missing one is a runtime divergence.
+
+**A variadic `...any` slot used to be carved out for literals**, on the theory that a boxed `Int32`
+formats identically to `nint` under `%d`/`%v` so the cast was redundant noise on the most common call
+pattern. That is wrong wherever the boxed value is **compared** rather than printed:
+`encoding/base32`'s `testEqual("Read after EOF, n = %d, expected %d", n, 0)` boxed `n` as `nint` and `0`
+as `Int32`, `AreEqual` compared the dynamic types first, and the assert fired with a message that reads
+as an equality (`n = 0, expected 0`). It is also wrong for the `%!`-verb path, where the full-conversion
+`fmt` names the argument via `reflect.TypeOf(arg).String()` and a boxed `Int32` reports `"int32"`
+instead of Go's `"int"`. The carve-out is gone; the corpus-wide footprint of removing it is **two
+lines in two files** (`go/token/position.cs`, `internal/buildcfg/cfg.cs` — Go's own stdlib almost never
+passes a bare int literal into a `...any` slot), plus two `(int32)(os.PathSeparator)` lines in
+`testing/testing.cs` from the rune-kind arm, which is a genuine `%c` fix for the Phase-4 test host.
+
+**The `any` map KEY used to be excluded too**, because golib's `map` uses the default `Dictionary`
+comparer (no numeric normalization — `nint(6) != Int32(6)`) and leaving *both* the composite key and a
+literal index uncast kept `map[any]int{6:1}[6]` round-tripping. That self-consistency only held for
+literal-vs-literal: a lookup by a real `int` VALUE (`m[n]`, necessarily boxed `nint` — the only form Go
+can even distinguish) MISSED. `convIndexExpr` now applies the same cast to an untyped-constant index of
+an `any`-keyed map, so store and lookup agree on `nint` and both forms hit — while `m[int32(6)]`
+correctly misses, as Go requires.
 
 (Guarded by the `UntypedIntInterfaceBox` behavioral test — each position read back through an
-`x.(int)` assertion or an `int`/`int32` type switch, output-compared vs Go.)
+`x.(int)` assertion or an `int`/`int32` type switch, output-compared vs Go — and by
+`AnyBoxedUntypedConst`, which pins the whole default-type class in one program: variadic and
+non-variadic slots, named/literal/rune/float/beyond-int32 constants, `[]any`/`map[any]`/`map[K]any`/
+struct-field/chan-send/return/explicit-conversion positions, the `map[any]` store↔lookup round-trip
+plus its `int32` miss, and the dynamic types a type switch reports — output-compared vs `go run`. The
+pre-fix converter diverges on 13 of its lines.)
 
 **The same cast applies to an interface `==`/`!=` comparison against an untyped `int` constant.** Go
 compares an interface against a concrete value by its dynamic type *and* value, which the converter
@@ -1054,13 +1079,13 @@ a stored-then-asserted value's does. A bare C# int literal boxes as `System.Int3
 against an `any` field holding a boxed Go `int` (`nint`/`IntPtr`) — container/list's
 `TestIssue6349`, emitted `!AreEqual((~e).Value, 1)` — saw `IntPtr != Int32`, reported the values
 UNEQUAL, and fired the test's error even though the value round-tripped as `1`. The interface-comparison
-branch now casts the concrete constant operand to `nint` (`!AreEqual((~e).Value, (nint)(1))`), reusing
-the same `argBoxesAsInt32ButNeedsNint` predicate the boxing positions above key off — so the literal
+branch now casts the concrete constant operand to its default type (`!AreEqual((~e).Value, (nint)(1))`),
+reusing the same `untypedConstBoxCast` predicate the boxing positions above key off — so the literal
 boxes as Go's `int` dynamic type and the runtime-type guard passes. The cast is confined to the
 `AreEqual` lowering (interface-vs-concrete / interface / pointer), so a bare int compared against a
 *concrete* `int` — which lowers to C#'s native `==`, never `AreEqual` — stays bare (no noise). The
-predicate returns false for the interface operand itself and for any non-int32-range / non-`int`-default
-/ non-constant operand, so only the genuine boxed-literal-mismatch site is touched. (Guarded by the
+predicate yields nothing for the interface operand itself and for any non-constant operand, so only the
+genuine boxed-constant-mismatch site is touched. (Guarded by the
 `InterfaceUntypedIntCompare` behavioral test — an `any`-field-holding boxed int compared `==`/`!=`
 against an int literal, negative-literal and literal-on-the-left forms, output-compared vs Go; the
 pre-fix converter emits the bare literal and mis-reports every comparison unequal.)

@@ -1176,12 +1176,14 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 
 			rhsExpr := v.convExpr(rhs, contexts)
 
-			// Box an untyped `int` constant assigned to an EMPTY-interface LHS through nint (the
-			// numeric twin of the castToGoString @string boxing above), so a later `x.(int)` /
-			// `case int:` matches Go's boxed `int` dynamic type. emptyIfaceTarget already reports the
+			// Box an untyped CONSTANT assigned to an EMPTY-interface LHS at Go's default type for its
+			// kind (the numeric twin of the castToGoString @string boxing above), so a later `x.(int)` /
+			// `case int:` matches Go's boxed dynamic type. emptyIfaceTarget already reports the
 			// LHS is `any`; the downstream narrow/named casts are gated off for an interface LHS.
-			if emptyIfaceTarget && v.argBoxesAsInt32ButNeedsNint(rhs) {
-				rhsExpr = fmt.Sprintf("(nint)(%s)", rhsExpr)
+			if emptyIfaceTarget {
+				if castType := v.untypedConstBoxCast(rhs); castType != "" {
+					rhsExpr = fmt.Sprintf("(%s)(%s)", castType, rhsExpr)
+				}
 			}
 
 			// A `:=` DECLARATION whose RHS is a constant-folded NAMED-NUMERIC conversion
@@ -1511,10 +1513,10 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 
 				rhsExpr := v.convExpr(rhs, v.appendEmptyIfaceLitContext(v.appendRhsPtrContext(contexts, rhs), lhs))
 
-				// Box an untyped `int` constant assigned to an EMPTY-interface LHS through nint (the
+				// Box an untyped CONSTANT assigned to an EMPTY-interface LHS at Go's default type (the
 				// numeric twin of appendEmptyIfaceLitContext's @string boxing); a no-op for a non-empty
-				// or non-interface LHS and for any non-int-constant RHS.
-				rhsExpr = v.boxUntypedIntAsNint(v.getType(lhs, false), rhs, rhsExpr)
+				// or non-interface LHS and for any non-constant RHS.
+				rhsExpr = v.boxUntypedConstAsDefaultType(v.getType(lhs, false), rhs, rhsExpr)
 
 				// A Go array copied by value into existing storage (`s.arr = a` / `*p = a`) takes
 				// golib's `.Clone()` for independent backing storage (see cloneArrayValueCopy).
@@ -1572,9 +1574,9 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 
 					rhsExpr := v.convExpr(rhs, v.appendEmptyIfaceLitContext(v.appendRhsPtrContext(contexts, rhs), lhs))
 
-					// Box an untyped `int` constant reassigned to an EMPTY-interface LHS through nint
+					// Box an untyped CONSTANT reassigned to an EMPTY-interface LHS at Go's default type
 					// (twin of appendEmptyIfaceLitContext's @string boxing); a no-op otherwise.
-					rhsExpr = v.boxUntypedIntAsNint(v.getType(lhs, false), rhs, rhsExpr)
+					rhsExpr = v.boxUntypedConstAsDefaultType(v.getType(lhs, false), rhs, rhsExpr)
 
 					// A Go array copied by value over an existing variable takes golib's `.Clone()`
 					// for independent backing storage (see cloneArrayValueCopy).
