@@ -41,8 +41,8 @@ internal static void Main() {
         total += matmul(256);
     }
     var elapsed = time.Now().UnixNano() - start;
-    fmt.Println("checksum:", (int64)total);
-    fmt.Println("elapsed_ns:", elapsed);
+    fmt.Println((@string)"checksum:", (int64)total);
+    fmt.Println((@string)"elapsed_ns:", elapsed);
 }
 
 } // end main_package

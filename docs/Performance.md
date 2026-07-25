@@ -77,31 +77,33 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 13.5 | 39.3 (2.90×) | 17.5 (1.29×) |
-| Fib | 79.5 | 98.6 (1.24×) | 86.7 (1.09×) |
-| Sieve | 72.8 | 94.9 (1.30×) | 146.1 (2.01×) |
-| MatMul | 54.8 | 134.2 (2.45×) | 195.5 (3.57×) |
-| String (heap) | 69.4 | 737.2 (10.63×) | 747.1 (10.77×) |
-| Map | 298.7 | 254.1 (0.85×) | 92.0 (0.31×) |
-| Sort | 112.6 | 402.1 (3.57×) | 427.6 (3.80×) |
-| Channel | 46.1 | 86.1 (1.87×) | 90.4 (1.96×) |
-| StringView (stack) | 7.2 | 24.6 (3.44×) | 14.3 (2.00×) |
-| IfaceShell (duck-typed) | 12.9 | 2,481.8 (193.13×) | 928.2 (72.23×) |
+| Startup | 13.9 | 39.1 (2.80×) | 17.0 (1.22×) |
+| Fib | 79.1 | 97.7 (1.24×) | 86.7 (1.10×) |
+| Sieve | 72.9 | 92.8 (1.27×) | 135.7 (1.86×) |
+| MatMul | 53.8 | 126.0 (2.34×) | 190.1 (3.53×) |
+| String | 69.1 | 746.1 (10.79×) | 768.3 (11.11×) |
+| Map | 297.6 | 256.3 (0.86×) | 91.1 (0.31×) |
+| Sort | 112.6 | 416.0 (3.69×) | 429.2 (3.81×) |
+| Channel | 45.9 | 78.3 (1.71×) | 92.4 (2.01×) |
+| StringView | 7.3 | 22.1 (3.04×) | 14.1 (1.93×) |
+| StringMatch | 144.7 | 1,699.5 (11.75×) | 1,762.5 (12.18×) |
+| IfaceShell | 13.2 | 2,630.4 (198.64×) | 957.8 (72.33×) |
 
 **Peak memory** (working set, MB -- lower is better):
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 2.5 | 19.8 | 2.6 |
-| Fib | 5.5 | 20.1 | 10.8 |
-| Sieve | 35.1 | 38.8 | 30.2 |
-| MatMul | 10.5 | 26.7 | 17.0 |
-| String (heap) | 5.4 | 39.7 | 29.2 |
-| Map | 158.4 | 138.9 | 128.7 |
-| Sort | 21.9 | 41.3 | 29.2 |
-| Channel | 5.4 | 26.0 | 16.8 |
-| StringView (stack) | 3.5 | 20.9 | 10.8 |
-| IfaceShell (duck-typed) | 5.5 | 43.8 | 31.3 |
+| Startup | 2.5 | 16.9 | 3.5 |
+| Fib | 5.4 | 18.7 | 10.8 |
+| Sieve | 35.1 | 40.0 | 30.1 |
+| MatMul | 10.3 | 26.2 | 17.0 |
+| String | 5.4 | 39.5 | 29.2 |
+| Map | 158.4 | 139.6 | 128.5 |
+| Sort | 21.8 | 41.3 | 29.2 |
+| Channel | 5.4 | 25.0 | 16.0 |
+| StringView | 5.4 | 19.5 | 10.8 |
+| StringMatch | 5.5 | 42.5 | 31.6 |
+| IfaceShell | 5.4 | 44.0 | 31.3 |
 
 <!-- PERF-RESULTS:END -->
 
@@ -172,6 +174,49 @@ What the numbers above actually show, and why:
 When the toolchain moves (e.g. .NET 9 → .NET 10), copy the current results block into this section
 with its environment line before re-running `--update-readme`, so version-over-version comparisons
 accumulate here.
+
+**Captured 2026-07-25 on .NET SDK 9.0.316 -- the PRE-ARC baseline for the `@string` literal-allocation
+arc** (Tiers A / A′ / B / C, [`docs/Phase4/DESIGN-string-literal-allocation.md`](../../../docs/Phase4/DESIGN-string-literal-allocation.md)).
+Measured on a verified-quiet machine per the design's §4.8 protocol, so the per-tier `--filter StringMatch`
+deltas that follow attribute to the arc and not to machine load. `StringMatch` is the instrument
+(literal `==` chains, literal `HasPrefix` arguments, literal returns, literal map keys); `StringView`
+is the flatness oracle (sstring paths must not move) and `String`/`Map` the non-regression oracles:
+
+**Environment:** 13th Gen Intel(R) Core(TM) i9-13900K · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 9.0.316 · 2026-07-25
+
+C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true` self-contained, partial trim. Median of 5 runs (1 discarded warmup). Workload time is measured in-program and excludes process startup; the Startup row is pure process wall time. Ratios are relative to Go.
+
+**Execution time** (milliseconds -- lower is better):
+
+| Benchmark | Go | C# (JIT) | C# (Native AOT) |
+|---|---:|---:|---:|
+| Startup | 13.9 | 39.1 (2.80×) | 17.0 (1.22×) |
+| Fib | 79.1 | 97.7 (1.24×) | 86.7 (1.10×) |
+| Sieve | 72.9 | 92.8 (1.27×) | 135.7 (1.86×) |
+| MatMul | 53.8 | 126.0 (2.34×) | 190.1 (3.53×) |
+| String | 69.1 | 746.1 (10.79×) | 768.3 (11.11×) |
+| Map | 297.6 | 256.3 (0.86×) | 91.1 (0.31×) |
+| Sort | 112.6 | 416.0 (3.69×) | 429.2 (3.81×) |
+| Channel | 45.9 | 78.3 (1.71×) | 92.4 (2.01×) |
+| StringView | 7.3 | 22.1 (3.04×) | 14.1 (1.93×) |
+| StringMatch | 144.7 | 1,699.5 (11.75×) | 1,762.5 (12.18×) |
+| IfaceShell | 13.2 | 2,630.4 (198.64×) | 957.8 (72.33×) |
+
+**Peak memory** (working set, MB -- lower is better):
+
+| Benchmark | Go | C# (JIT) | C# (Native AOT) |
+|---|---:|---:|---:|
+| Startup | 2.5 | 16.9 | 3.5 |
+| Fib | 5.4 | 18.7 | 10.8 |
+| Sieve | 35.1 | 40.0 | 30.1 |
+| MatMul | 10.3 | 26.2 | 17.0 |
+| String | 5.4 | 39.5 | 29.2 |
+| Map | 158.4 | 139.6 | 128.5 |
+| Sort | 21.8 | 41.3 | 29.2 |
+| Channel | 5.4 | 25.0 | 16.0 |
+| StringView | 5.4 | 19.5 | 10.8 |
+| StringMatch | 5.5 | 42.5 | 31.6 |
+| IfaceShell | 5.4 | 44.0 | 31.3 |
 
 **Captured 2026-07-12 on .NET SDK 9.0.315** -- the last table before the `IfaceShell` row
 (runtime duck-typed interface asserts) was added, kept for row-over-row comparison:
