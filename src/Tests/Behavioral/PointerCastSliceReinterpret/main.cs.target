@@ -16,6 +16,17 @@ internal static unsafe void Main() {
     (arr[0], arr[1]) = (0x04030201, 0x08070605);
     var b = new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(new @unsafe.Pointer(Ꮡarr.at<uint32>(0))), 8));
     fmt.Println(len(b), b[0], b[3], b[4], b[7]);
+    ref var rb = ref heap(new array<uint16>(8), out var Ꮡrb);
+    foreach (var (i, _) in rb) {
+        rb[i] = (uint16)((rune)'a' + i);
+    }
+    nint n1 = 2;
+    nint n2 = 5;
+    var sub = new slice<uint16>(new ReadOnlySpan<uint16>((uint16*)(uintptr)(new @unsafe.Pointer(Ꮡrb.at<uint16>(0))) + (int)(n1), (int)(n2) - (int)(n1)));
+    fmt.Println(len(sub), sub[0], sub[1], sub[2]);
+    var words = new uint32[]{0x04030201, 0x08070605}.slice();
+    var tail = new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(new @unsafe.Pointer(Ꮡ(words, 0))) + 3, 7 - 3));
+    fmt.Println(len(tail), tail[0], tail[1], tail[2], tail[3]);
 }
 
 } // end main_package

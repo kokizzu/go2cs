@@ -514,7 +514,7 @@ public static unsafe slice<ж<Type>> OutSlice(this ж<ΔFuncType> Ꮡt) {
     if ((TFlag)(t.TFlag & TFlagUncommon) != 0) {
         uadd += @unsafe.Sizeof(new UncommonType(nil));
     }
-    return new slice<ж<Type>>(new ReadOnlySpan<ж<Type>>((Type**)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), uadd, "outCount > 0"u8)), (int)(t.InCount + outCount)));
+    return new slice<ж<Type>>(new ReadOnlySpan<ж<Type>>((Type**)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), uadd, "outCount > 0"u8)) + (int)(t.InCount), (int)(t.InCount + outCount) - (int)(t.InCount)));
 }
 
 [GoRecv] public static bool IsVariadic(this ref ΔFuncType t) {

@@ -41,4 +41,21 @@ func main() {
 	arr[0], arr[1] = 0x04030201, 0x08070605
 	b := (*[16]byte)(unsafe.Pointer(&arr[0]))[:8]
 	fmt.Println(len(b), b[0], b[3], b[4], b[7])
+
+	// A NON-ZERO low bound. The span must start at element lo and run hi-lo, not 0..hi: this is
+	// internal/syscall/windows's (*symbolicLinkReparseBuffer).path(), which slices [n1:n2:n2] to skip
+	// the print name and return the substitute name, and reflect's gcSlice [begin:end:end].
+	var rb [8]uint16
+	for i := range rb {
+		rb[i] = uint16('a' + i)
+	}
+	n1, n2 := 2, 5
+	sub := (*[64]uint16)(unsafe.Pointer(&rb[0]))[n1:n2:n2]
+	fmt.Println(len(sub), sub[0], sub[1], sub[2])
+
+	// The same, with the low bound on a byte reinterpret of a wider element (registry's
+	// getValue-style offset reads).
+	words := []uint32{0x04030201, 0x08070605}
+	tail := (*[8]byte)(unsafe.Pointer(&words[0]))[3:7]
+	fmt.Println(len(tail), tail[0], tail[1], tail[2], tail[3])
 }

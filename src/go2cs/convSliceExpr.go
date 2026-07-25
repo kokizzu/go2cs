@@ -103,7 +103,24 @@ func (v *Visitor) convSliceExpr(sliceExpr *ast.SliceExpr) string {
 		// narrows it to `int` (through the underlying for a named numeric), leaving an int literal as-is.
 		// This is the `(*[N]T)(ptr)` unsafe-cast form only (always memory-layout-dependent code); the slice
 		// copies the pointed-to memory, which is self-consistent for code that only uses the resulting slice.
-		return fmt.Sprintf("new slice<%s>(new ReadOnlySpan<%s>((%s*)%s, %s))", ptrType, ptrType, csPtrType, string(identRunes[prefixLength:]), v.getRangeIndexer(sliceExpr.High))
+		//
+		// A non-nil LOW bound offsets the base pointer and shortens the span: Go's `(*[N]T)(ptr)[lo:hi]` is
+		// the elements lo..hi, so the span must START at element lo with length hi-lo. Emitting the whole
+		// `[0:hi]` span instead silently produced the WRONG elements — internal/syscall/windows's
+		// `(*symbolicLinkReparseBuffer).path()` slices `[n1:n2:n2]`, so os.Readlink returned the reparse
+		// buffer from offset 0 rather than the substitute name, and reflect's `gcSlice` read the GC bitmap
+		// from the wrong start. (A pointer cast binds tighter than `+`, so the offset applies to the typed
+		// pointer — no parentheses needed around the cast.)
+		base := string(identRunes[prefixLength:])
+		length := v.getRangeIndexer(sliceExpr.High)
+
+		if sliceExpr.Low != nil {
+			low := v.getRangeIndexer(sliceExpr.Low)
+			base = fmt.Sprintf("%s + %s", base, low)
+			length = fmt.Sprintf("%s - %s", length, low)
+		}
+
+		return fmt.Sprintf("new slice<%s>(new ReadOnlySpan<%s>((%s*)%s, %s))", ptrType, ptrType, csPtrType, base, length)
 	}
 
 	// A slice of a POINTER-TO-ARRAY (`p[lo:hi:max]`, p of type `*[N]T`) auto-derefs in Go. The
