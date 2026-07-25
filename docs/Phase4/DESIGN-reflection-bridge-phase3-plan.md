@@ -350,6 +350,15 @@ buildable on the `boxed/addrBox/typ_/flag` representation without `flagMethod`.
 >   named-func-type identity under interning (gob), variadic Call/CallSlice (text/template),
 >   SetMapIndex delete-on-invalid (json), unnamed array-param dims (fArray vacuity, accepted
 >   by ruling), cross-function anonymous-struct identity, typed-nil map/chan inside `any`.
+> - **Sweep-caught regressions of the witness pass, both fixed in-increment** (the
+>   all-ships-rise gate doing exactly its job): production-declared types must not re-record
+>   (bytes CS0111 — the tests project compiles production package_info beside
+>   package_test_info); imported interfaces must not enumerate (container/heap CS8646 — the
+>   generated adapter class name `{Type}ж{InterfaceSimpleName}` collides for same-named
+>   interfaces from different packages). TWO new recorded residuals from the second: the
+>   adapter-naming collision itself (a latent gen limitation any future cross-package
+>   same-named-interface record would hit), and external-test (X_test) types asserting
+>   against the package under test's interfaces.
 
 > **Blessing record (user rulings, 2026-07-24, in-session):**
 > 1. **v2 core model blessed as folded** (I2.2/I2.3 corrected by I2.R); `unsafe.Sizeof`
