@@ -5433,6 +5433,71 @@ Two rules govern how concrete implementation records are emitted:
 * **Only impl types declared in the *current* package are recorded.** `ImplementGenerator` realizes the attribute by emitting a `partial struct <Impl> : <Interface>` into the **current package's** namespace and class — so it can only add an interface to a type defined in the *same assembly*. A pairing whose impl type is *imported* from another package (e.g. `image/color/palette` building `[]color.Color{ color.RGBA{…} }`) is therefore **not** re-emitted in the consumer: that relationship is already established in the impl type's own package (`image/color` records `[assembly: GoImplement<ΔRGBA, Color>]`). Re-emitting it in a consumer would generate a broken cross-assembly partial (a fresh empty `palette_package.ΔRGBA` rather than the real `color_package.ΔRGBA`), so the converter skips any pairing whose impl type is not local.
 * **Multi-segment interface references are root-qualified.** The `GoImplement` attributes are emitted before the file's `namespace` with only `using go;` in scope; that directive imports the *types* of namespace `go` (so a top-level `io_package.Writer` resolves unqualified) but **not** its nested namespaces. A multi-segment package class such as `container.heap_package.Interface` is therefore root-qualified to `go.container.heap_package.Interface` so it resolves; single-segment refs (`io_package`, `sort_package`) are left unchanged.
 
+### A NAMED interface carries runtime duck-typing shells for the pairs the recorders cannot see
+
+The `GoImplement` recorders are a compile-time *approximation* of Go's structural satisfaction, and they are incomplete **by construction**: a dynamic type may live in a package converted **after** the interface's own, and then no record can exist. `io/fs` is converted before `os`, so `fs/package_info.cs` records only `subFS→ReadDirFS` — `os.dirFS` is unreachable — and every `fsys.(ReadDirFS)` against an `os.DirFS(…)` value silently missed. golib's structural probe answered the *question* correctly (`StructurallyImplements`) but had nothing to *construct*, so the assertion still failed. That is what kept io/fs at 16/18 (`Glob` returning nothing, `WalkDir` seeing only the root).
+
+With no dynamic code generation available (Native AOT), a **per-interface compile-time artifact is the irreducible minimum**, and it must live in the **interface's own package class** — the only placement guaranteed loaded at every asserting site, and the only one that yields a single cross-assembly identity. `TypeGenerator` therefore emits, for every non-generic, non-constraint, non-empty `[GoType]` interface, **two sibling shells**, discovered through a new `[GoInterfaceShell]` stamp on the interface itself. No static member is added to the interface — that shape would be inherited by every embedding interface, which is both a large CS0108 hiding class and a method-set corruption (no Go type can implement a static helper), and it makes the shell NAMES non-contractual so the generator may disambiguate freely:
+
+```csharp
+[global::go.GoInterfaceShell(typeof(ΔSpeaker<>), typeof(ΔSpeakerᴛObj), "Speak")]
+public partial interface Speaker
+{
+}
+```
+
+**Tier 1 — `ΔI<ᴛTTarget>`, delegate-bound, for a REFERENCE-typed dynamic value** (every `ж<X>` receiver box, i.e. every pointer-sourced Go interface value — the dominant case). Each interface method is a *pre-bound delegate*, so a forwarded call costs a delegate invocation, not a reflective one; that matters because a wrapper is obtained once and then called possibly millions of times (a duck-typed `io.Reader` inside `io.Copy`, a wrapped `sort.Interface`'s `Less`/`Swap`). It closes over the **element** type — the pointee — because that is what makes *both* receiver forms bindable, and the dispatch encodes Go's `*T` method-set rule directly:
+
+```csharp
+internal sealed class ΔSpeaker<ΔTTarget> : Speaker, IInterfaceAdapter
+{
+    private delegate global::go.@string SpeakByPtr(ж<ΔTTarget> targetʗ);
+    private delegate global::go.@string SpeakByVal(ΔTTarget targetʗ);
+
+    private static readonly SpeakByPtr? s_SpeakByPtr;
+    private static readonly SpeakByVal? s_SpeakByVal;
+
+    public global::go.@string Speak()
+    {
+        if (m_targetᴛ_is_ptr && s_SpeakByPtr is not null)
+            return s_SpeakByPtr(m_targetᴛ_ptr!);
+        else
+            return s_SpeakByVal!(m_targetᴛ_is_ptr ? m_targetᴛ_ptr!.Value : m_targetᴛ);
+    }
+
+    static ΔSpeaker()
+    {
+        global::go.AdapterBinder.ResolveReceiverMethods(typeof(ΔTTarget), "Speak", out byPtrᴛ, out byValᴛ);
+        s_SpeakByPtr = byPtrᴛ is null ? null : byPtrᴛ.CreateStaticDelegate(typeof(SpeakByPtr)) as SpeakByPtr;
+        s_SpeakByVal = byValᴛ is null ? null : byValᴛ.CreateStaticDelegate(typeof(SpeakByVal)) as SpeakByVal;
+        …
+        ᴛBoundByPtr = boundByPtrᴛ;      // read by the binder BEFORE the shell is handed out
+        ᴛBoundByVal = boundByValᴛ;
+    }
+}
+```
+
+**Tier 2 — `ΔIᴛObj`, reflective, for a VALUE-typed dynamic value** (the forcing case: `os.dirFS` is `[GoType("@string")] partial struct dirFS`, a value type held in an `fs.FS`). It holds the value as `object` and forwards through `MethodInvoker`s resolved once per (dynamic type, interface) pair, so it needs **no generic instantiation at all**. That is not a stylistic choice: under Native AOT `ilc` roots exactly the instantiations visible in source, and a `MakeGenericType` driven by a run-time `GetType()` over a value type is never one of them, so this is the tier that is unconditionally available. It is emitted only when every member survives the `object` round-trip (a Go variadic tail lowers to `params Span<T>`, a ref-struct that cannot be boxed):
+
+```csharp
+internal sealed class ΔSpeakerᴛObj : Speaker, IInterfaceAdapter
+{
+    object? IInterfaceAdapter.Value => m_targetᴛ;
+
+    public global::go.@string Speak() => (global::go.@string)m_bindingᴛ.Invoke(0, m_targetᴛ)!;
+}
+```
+
+The tier choice branches on `Type.IsValueType`, and **either tier belts to the other** when construction fails — AOT rooting is source-shape sensitive, so "we never reach that instantiation" cannot be asserted, only constructed. (Honest limit: because tier 1 closes over the *pointee*, and a pointee is usually a struct, the pointer tier is AOT-**graceful** rather than AOT-guaranteed — an unavailable instantiation degrades to the object shell, not to a miss.)
+
+**One binder owns the method-set discipline.** golib's `AdapterBinder` resolves every binding through `TypeExtensions.GetGoMethodSetCandidates(element, isPointer)` — the *same* receiver rule `StructurallyImplements` applies, factored out for exactly this reason. So a value-sourced shell binds only value-receiver methods and can never widen a Go method set: `PtrOnly{}` (whose `Speak` has a pointer receiver) MISSES, `&PtrOnly{}` matches, and a pointer source calling a value-receiver method dereferences the box **per call**, matching Go's copy-at-the-call. This also fixes a latent over-broad lookup: `GetExtensionMethod` collapses a closed `ж<X>` to the open `ж<>` definition (correct for single-dispatch precedence, wrong for a method-set query), so a name shared across types could bind the wrong receiver; the binder matches on element identity instead.
+
+**`TryCreate` is FAIL-SOFT.** The structural probe is deliberately NAME-ONLY for an open-generic receiver method — a Go `gbox[int]` whose `Get() T` returns an `int` matches `interface{ Get() string }` under that weaker rule (measured). Go answers `ok=false` there, so a shell that cannot be built answers `false` rather than escaping as an exception; a false-positive match must reproduce today's harmless miss, never a crash.
+
+**Tier order in `builtin.TryTypeAssert` is unchanged, and the shells fire only where it previously answered MISS**: nominal `case T` → `IжAdapter` unwrap → `AdapterRegistry` (compile-time adapters) → **shell memo** → `Implements<T>` gate → **shell construction**. That is the regression floor — no assertion that already resolved can take a different path. Construction costs on the order of a microsecond and `fmt` probes three interfaces per formatted value, so the memo ships in the same change: `AdapterRegistry` caches the (dynamic type, interface) decision, **including the negative**. It is deliberately **not** cleared on `AssemblyLoad` — Go fixes a type's method set at compile time, and the extension methods carrying it live in that type's own assembly, which is loaded by definition when we are holding an instance of it. (Extension-method *discovery* caches are still invalidated on load; only this decision cache is not.)
+
+Guarded by three behavioral projects, each pairing a `main` package with a sibling library so the interface's package genuinely cannot see the concrete types (the io/fs shape): **`NamedInterfacePointerMethodSet`** (the X3 negative — a value of a pointer-receiver-only type must MISS — plus the positives, a wrong-signature miss and the fail-soft generic-receiver miss), **`NamedInterfaceLateAssert`** (a value-typed defined string satisfying a THREE-DEEP embedded interface chain cross-assembly, an unexported interface, and a partial implementer that must not satisfy the derived interface), and **`NamedInterfaceAdapterIdentity`** (`%T`, re-assert, type switch and interface equality through a shell). Counter-proven: with shell emission disabled, all nine `NamedInterfaceLateAssert` assertions revert to MISS.
+
 ### Cross-package pointer-to-interface conversions use the foreign adapter
 A pointer-sourced cast to an interface implemented by a FOREIGN type references the foreign assembly's PUBLIC adapter class - os's `err = &PathError{...}` emits `new fs.PathErrorжerror(Ꮡ(new PathError(...)))`, io/fs having generated the adapter from its own `GoImplement<PathError, error>(Pointer = true)` record. The record's existence is read from the imported package's package_info (`parseExportedPointerImplements`, the same imported-records pattern as GoTypeAlias). The existence key's INTERFACE side is the **canonical qualified name** (`canonicalRecordIfaceName` — a dotless record name qualifies with the recording package's class): the simple name alone let image's `Paletted→image.Image` record satisfy a `Paletted→draw.Image` cast, referencing the foreign adapter that implements the WRONG interface (CS1503); the value-implement records key the same way. The reference goes through the file-local package ALIAS (`fs.PathErrorжerror`, user-ruled style) via getTypeName, which also registers the using. Guarded by `CrossPkgUser` (`rep = mtr` -> `new CrossPkgLib.MeterжReporter(mtr)`; `&CrossPkgLib.Alarm{}` -> error; and the same-simple-name LOCAL `Labeled` — `var localLb Labeled = sp2` takes the LOCAL `CrossPkgLib_SensorжLabeled`, never the lib's exported `SensorжLabeled`).
 

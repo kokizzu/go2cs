@@ -1053,9 +1053,24 @@ generator to consume. The well-known built-ins (`error`, `fmt.Stringer`, …) ar
 implemented the same duck-typed way. A cross-package satisfaction is witnessed by the idiomatic
 `var _ I = T{}` assertion in the type's own package.
 
+Those records are a compile-time *approximation*, and they cannot be complete: a dynamic type may live in a
+package converted **after** the interface's own (io/fs is converted before os, so nothing in `fs` can record
+`os.dirFS`). For exactly those pairs, `TypeGenerator` emits **two runtime duck-typing shells** beside every
+non-generic, non-constraint, non-empty named interface, found through a `[GoInterfaceShell]` stamp — a
+delegate-bound generic shell for a pointer-sourced value (`ж<X>`) and a reflective `object`-held shell for a
+value-sourced one (`os.dirFS`, a `[GoType("@string")]` struct). golib's `AdapterBinder` picks the tier, owns
+all binding, and is **fail-soft** — a pair it cannot build MISSES, exactly as Go answers. The shells fire only
+where the assertion previously missed, so nothing that already resolved changes path:
+
+```csharp
+[global::go.GoInterfaceShell(typeof(ΔSpeaker<>), typeof(ΔSpeakerᴛObj), "Speak")]
+public partial interface Speaker { }
+```
+
 **Full detail:** [Reference → Interfaces](ConversionStrategies-Reference.md#interfaces) — a large topic:
-cross-package pointer/value adapters, unexported-sealing markers, keyword-named method escaping, publicized
-unexported types, structural (C# inheritance) satisfaction, and adapter accessibility.
+the runtime shells and their AOT tiering, cross-package pointer/value adapters, unexported-sealing markers,
+keyword-named method escaping, publicized unexported types, structural (C# inheritance) satisfaction, and
+adapter accessibility.
 
 ---
 
