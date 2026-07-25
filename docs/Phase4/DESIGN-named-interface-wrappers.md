@@ -73,7 +73,7 @@ where today answers MISS (the regression-floor argument).
 |---|---|---|
 | **1** (≈0.5d, ships now) | Six latent-bug fixes that exist TODAY: golib `TypeExtensions.cs:570` base-interface static leak (poisons every derived-interface structural probe — live bug); analyzer `IsStatic`/`MethodKind` filter; bare-name+escaped identifier composition; Δ-name escaping; forwarding-local marker; `TryTypeAssert` fail-soft. | CNR byte-identical; guard `DerivedInterfaceStructuralProbe` |
 | **2** (≈2-3d) — **unblocks io/fs** — **LANDED 2026-07-25** | Tiered shells + attribute + binder + memo + builtin consumption; skip zero-method/generic/constraint interfaces. | Converter untouched ⇒ CNR byte-identical; 7 behavioral guards (incl. cross-assembly late-assert = the io/fs shape, X3 negative, false-positive-must-miss, unexported-interface); corpus build = the rendering-risk gate (five ≥10-method interfaces); **acceptance: io/fs 16/18 → 18/18, 37-sweep clean** |
-| **3** (≈1-1.5d) | Migrate the 33 dyn interfaces onto the tiered shape; delete the `MakeGenericMethod` path (`builtin.cs:1638/:1662`) — **closes the AOT hole that exists today**; PerfAot smoke benchmark. | Full suite + corpus + sweep; perf gates (memoized assert ~30 ns; pointer tier ≤3 ns/call) |
+| **3** (≈1-1.5d) — **LANDED 2026-07-25** | Migrate the dyn interfaces onto the tiered shape; delete the `MakeGenericMethod` path (`builtin.cs:1638/:1662`) — **closes the AOT hole that exists today**; PerfAot smoke benchmark. (Census correction: the corpus + behavioral goldens carry **92** `dyn` declarations in non-generated source, not 33 — the panel's figure counted production packages only.) | Full suite + corpus + sweep; perf gates (memoized assert ~30 ns; pointer tier ≤3 ns/call) |
 | **4** (≈1.5d) | Recorders behind a default-off flag; reconvert. **Not inert (measured): 1540→1329 records, −335/+124** — the recorders currently *suppress* 124 demanded records. Preserve the Promoted(52)/ConstraintProxy(11) record paths — compile-time nominal, non-retirable (96% of records ARE retirable). | Inspect every changed package_info.cs; sweep clean twice; independently revertible |
 | **5** (≈0.5d) | Delete the recorder machinery (~241 lines + 12 plumbing refs). `ImplementGenerator` STAYS (declared conversions are not heuristics; nominal adapters remain the 1.1 ns fast path). Docs in the same change. | Final sweep + docs verified against real goldens |
 
@@ -118,6 +118,69 @@ and built — **302/302 compile clean, zero rendering fallout** (the ≥10-metho
 the 37-method one, all rendered); **io/fs 16/18 → 18/18**; banked subset re-validated at its banked
 counts (errors 61, encoding/csv 71, hash/fnv 19, testing/quick 8, encoding/binary 137, bytes 81,
 strings 68).
+
+### Stage 3 as built (2026-07-25) — the AOT hole, measured shut
+
+Everything in the §4 stage-3 row was built. What is worth carrying forward:
+
+1. **The AOT hole was REAL, TOTAL and SILENT — and is now measured shut.** The claim was previously
+   argued from ILC's rooting rules; it is now an A/B on a Native AOT binary
+   (`PerfIfaceShell`'s program, published `PerfAot`, `IsDynamicCodeSupported = False`):
+
+   | mechanism | value-typed assert | pointer-sourced assert | checksum | time (10M asserts) |
+   |---|---|---|---|---|
+   | pre-Stage-3 (`ᴛAs` + `MakeGenericMethod`) | **MISS** | **MISS** | **0 — WRONG** | 9,773 ms |
+   | Stage 3 (tiered shells) | `Δrun_typeᴛObj` | `Δrun_typeᴛ1ᴛObj` | 8,000,000 — correct | 202 ms |
+
+   So under AOT the old path did not merely lose the pointer tier: **every** anonymous-interface
+   assert missed, and the program computed a wrong answer without raising anything (each iteration
+   retried a failing close, which is the 48× time). This is the single strongest argument for the
+   whole arc, and it was only obtainable by executing it.
+
+2. **The `NotSupportedException` belt is OBSERVED FIRING, and it is the pointer tier that needs it.**
+   On the JIT the pointer-sourced value binds the delegate shell (`Δrun_typeᴛ1<box>`); under AOT that
+   instantiation is unavailable — the shell closes over the *pointee*, which is a struct — and the
+   binder degrades it to the object shell (`Δrun_typeᴛ1ᴛObj`), tier name visible in both runs. The
+   §3 "AOT-graceful, not AOT-guaranteed" wording is exactly right, and the graceful path is not
+   theoretical. The value tier needed no belt in either build.
+
+3. **Retiring the old renderer forced golib's three hand-written interfaces into the mechanism.**
+   `error`, `fmt.Stringer` and `io.Reader` expose plain `As<T>` helpers that `TryTypeAssert` found by
+   the *same* reflective probe as `ᴛAs`, so the probe could not be deleted without them. Each is now
+   `[GoInterfaceShell]`-stamped over its existing `<I><T>` carrier (which always *was* the delegate
+   shell), with `(in T)` → `(T)` on the constructor because the binder matches parameter types
+   exactly. Object shell deliberately `null`: a reflective tier would have to reproduce those
+   carriers' `%v`/`%T` formatting contract. **Follow-up recorded:** giving `error`/`fmt.Stringer`
+   object shells (and with them a guaranteed AOT tier) means moving that formatting contract into
+   the shell — worth doing, out of scope here. `sort.Interface` has a carrier but its `As` helpers
+   are commented out, so it has no runtime duck-typing at all today; stamping it is a second,
+   independent follow-up.
+
+4. **The memoized-assert fast path was taken, and the saving is bigger than estimated.** A/B on the
+   same binary, 10M asserts+calls, median of 3: per-interface `ShellCache<TInterface>` **278.6 ms**
+   vs the `AdapterRegistry` `(Type,Type)` lookup **384.8 ms** — **≈53 ns saved per assert**. (Not
+   directly comparable to Stage 2's 71.9 ns figure, which used a different harness; the *saving*
+   alone exceeds what the ~40 ns target implied.) `AdapterRegistry` remains the authoritative record
+   — the projection is filled by reading the registry back, never by forming a second decision.
+
+5. **One `MakeGenericMethod` remains in `builtin`, and it is not this path.** The non-generic
+   `TryTypeAssert(object, Type, out object)` entry — the reflection bridge's route into the assert
+   machinery — still closes the generic definition over a run-time type. It is a *separate* AOT
+   exposure belonging to the reflection-bridge arc, not to the shells.
+
+6. **No new behavioral guard was added, deliberately.** Nothing observable changed: the dyn contract
+   (nine existing projects) is green unchanged, CNR is byte-identical, and the corpus builds. The
+   coverage this stage actually needed was *execution under Native AOT*, which no behavioral project
+   provides — hence the benchmark. A census also confirmed the shell-eligibility gate excludes no dyn
+   interface in the corpus or the behavioral goldens (none generic, none operator-constrained, and
+   the three with empty bodies inherit non-empty method sets).
+
+Gates as run: CNR **byte-identical** (490 behavioral projects, solution integrity OK); full
+behavioral suite **PASS** (490/490 transpile + compile + target, 460 output-compared, 0 failed, 771 s);
+full perf suite **PASS** (10/10, output verified identical across Go / JIT / AOT); fresh 305-package
+reconvert (3 m 35 s) overlaid and built — **304/304 projects, 0 errors** (1,671 `.cs` overlaid, 23
+hand-owned preserved, 301 `.csproj` rewritten); banked canaries re-validated at their banked counts —
+**io/fs 18, errors 61, encoding/csv 71, bytes 81, testing/quick 8**.
 
 ## 5. Decision requested (user)
 

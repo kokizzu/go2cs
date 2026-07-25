@@ -1055,12 +1055,16 @@ implemented the same duck-typed way. A cross-package satisfaction is witnessed b
 
 Those records are a compile-time *approximation*, and they cannot be complete: a dynamic type may live in a
 package converted **after** the interface's own (io/fs is converted before os, so nothing in `fs` can record
-`os.dirFS`). For exactly those pairs, `TypeGenerator` emits **two runtime duck-typing shells** beside every
-non-generic, non-constraint, non-empty named interface, found through a `[GoInterfaceShell]` stamp — a
+`os.dirFS`) — and an interface *literal* (`x.(interface{ Len() int })`) can never be recorded at all. For
+exactly those pairs, `TypeGenerator` emits **two runtime duck-typing shells** beside every non-generic,
+non-constraint, non-empty interface — named or anonymous alike — found through a `[GoInterfaceShell]` stamp: a
 delegate-bound generic shell for a pointer-sourced value (`ж<X>`) and a reflective `object`-held shell for a
 value-sourced one (`os.dirFS`, a `[GoType("@string")]` struct). golib's `AdapterBinder` picks the tier, owns
 all binding, and is **fail-soft** — a pair it cannot build MISSES, exactly as Go answers. The shells fire only
-where the assertion previously missed, so nothing that already resolved changes path:
+where the assertion previously missed, so nothing that already resolved changes path. This is the ONLY
+duck-typing surface a converted interface has: the older per-interface `ᴛAs` conversion methods anonymous
+interfaces used to carry (reached reflectively and closed with `MakeGenericMethod`, with no Native-AOT
+fallback) were retired in favor of it:
 
 ```csharp
 [global::go.GoInterfaceShell(typeof(ΔSpeaker<>), typeof(ΔSpeakerᴛObj), "Speak")]
