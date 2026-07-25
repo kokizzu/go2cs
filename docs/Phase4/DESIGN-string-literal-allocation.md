@@ -66,7 +66,11 @@ Sharing one `@string` across evaluations is sound because nothing may mutate its
   every converter-emitted consumer (`append` copies in).
 - Tracked separately (pre-existing, NOT a regression of this arc): Go octal escapes (`"\377"` = one
   raw byte 0xFF) are rewritten by `replaceOctalChars` to `ÿ` (two UTF-8 bytes) — `stringLiteralNeedsByteArray`
-  scans only `\x`. No corpus instance found; chipped for an independent fix.
+  scans only `\x`. No corpus instance found; chipped for an independent fix. **FIXED** — the scan now
+  also diverts octal escapes ≥ `\200` to the byte-array path (sub-0x80 stays ASCII-safe and readable);
+  CNR byte-identical corpus-wide, confirming the no-corpus-instance finding. See
+  [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md) *A string literal with
+  high raw-byte escapes*, guarded by `HexByteStringLiteral` + `convBasicLit_test.go`.
 
 ---
 

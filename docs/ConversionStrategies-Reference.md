@@ -2494,7 +2494,7 @@ var sig = ((htmlSig)slice<byte>((@string)"<!DOCTYPE HTML"u8));
 
 The rune form decodes code points — `runeSig("héllo")` yields a rune-counted `slice<rune>` — matching Go's conversion semantics. String **variables** are unaffected (no instance in the corpus; a named-slice wrapper conversion from a `@string` variable would surface as a loud CS0030, not silent misbehavior). (Guarded by the behavioral test `NamedByteSliceFromStringLit` — direct, composite-element, and argument positions, byte/rune element reads, all output-compared vs Go.)
 
-### A string literal with high/greedy `\x` escapes emits a byte-array `@string`
+### A string literal with high raw-byte escapes (`\xHH` hex, `\NNN` octal) emits a byte-array `@string`
 Go's `\x` escape is **exactly two** hex digits denoting one raw byte; C#'s `\x` escape is a **greedy** 1-to-4-hex-digit code-*unit* escape, and a C# `"…"u8` literal UTF-8-re-encodes its content. So re-emitting a Go token verbatim as a C# string literal both (a) mis-parses `\xdb` followed by ASCII `"5""0"` (the token `\xdb50`) as the single code unit U+DB50 — a lone high surrogate that cannot UTF-8-encode into a golib `@string` (CS9026, time/tzdata's embedded zip blob) — and (b) silently widens every byte ≥ 0x80 to two UTF-8 bytes, so `@string` byte indexing / `len` would not match Go. Such literals are emitted as the exact bytes in a **parenthesized** byte-array-backed `@string`:
 
 ```go
@@ -2504,7 +2504,20 @@ const zipdata = "\x50\x4b\x03\x04\xdb50\xff\x92\x00LMT"   // raw bytes
 internal static readonly @string zipdata = ((@string)(new byte[]{0x50, 0x4b, 0x03, 0x04, 0xdb, 0x35, 0x30, 0xff, 0x92, 0x00, 0x4c, 0x4d, 0x54}));
 ```
 
-The outer parentheses are load-bearing: an inline-indexed literal (`"…"[i]`) would otherwise bind `[i]` to the inner `byte[]`. Only a `\xHH` **escape** with a byte value ≥ 0x80 or a trailing hex digit trips it — a literal written with actual UTF-8 characters (`"Michał"`, `"白鵬翔"`) round-trips through `"…"u8` and keeps the readable string form, as does an all-ASCII escape run with no greedy extension (image/jpeg's `"\x00\x10\x01\x11"u8[i]`) — so no behavioral-golden churn. (Guarded by the `HexByteStringLiteral` behavioral test.)
+The outer parentheses are load-bearing: an inline-indexed literal (`"…"[i]`) would otherwise bind `[i]` to the inner `byte[]`. Only a raw-byte **escape** trips it — for `\xHH`, a byte value ≥ 0x80 or a trailing hex digit (the octal companion is below) — so a literal written with actual UTF-8 characters (`"Michał"`, `"白鵬翔"`) round-trips through `"…"u8` and keeps the readable string form, as does an all-ASCII escape run with no greedy extension (image/jpeg's `"\x00\x10\x01\x11"u8[i]`), and there is no behavioral-golden churn. (Guarded by the `HexByteStringLiteral` behavioral test.)
+
+Go spells a raw byte **two** ways, and the same rule covers both: `\NNN` is **exactly three** octal digits, likewise denoting one byte. Octal has no *greedy* hazard — Go's escape is exactly three digits and the C# `\uXXXX` it would render as is exactly four hex digits, so neither side can extend into the following text — but the **byte-width** hazard is identical and just as silent: Go's `"\377"` is the single byte `0xFF`, whereas the character `U+00FF` that `replaceOctalChars` would emit UTF-8-encodes to the **two** bytes `0xC3 0xBF`. The UTF-16-string and `u8` renderings produce those same wrong bytes, so an octal escape ≥ `\200` takes the byte-array path as well; below `\200` it is ASCII-safe and keeps the readable form:
+
+```go
+const octalData  = "\377\200\303\277\101\000\177Z"   // 8 raw bytes
+const asciiOctal = "\101\102\011\103"                // ASCII "AB\tC"
+```
+```csharp
+internal static readonly @string octalData = ((@string)(new byte[]{0xff, 0x80, 0xc3, 0xbf, 0x41, 0x00, 0x7f, 0x5a}));
+internal static readonly @string asciiOctal = "\u0041\u0042\u0009\u0043"u8;
+```
+
+Left unfixed, `len(octalData)` is 12 rather than 8 and every byte index past the first is wrong. This one is worth recording as a *latent* defect: it was found by design review, not by a miscompile, and the corpus had **no instance** of it (CNR is byte-identical across the behavioral corpus, and the rule is purely additive — it can only divert literals that were already being emitted with the wrong bytes). Note that the folded-value rule below catches the octal case for *concatenated* constants by a different test (`utf8.ValidString`), since a lone `\377` byte is not valid UTF-8. (Guarded by the extended `HexByteStringLiteral` behavioral test — a high-octal table, the `\200` low boundary, sub-0x80 controls asserting the readable form survives, and a non-const local, all byte-indexed and `len`-measured, output-compared vs `go run`; `stringLiteralNeedsByteArray`'s rule — both escape forms, the sub-0x80 controls, and the escaped-backslash parity cases — is unit-tested in `convBasicLit_test.go`.)
 
 The above routes a single `*ast.BasicLit` through `convBasicLit`'s scan. A string **constant** whose value is a *concatenation* — `const rev8tab = "" + "\x00\x80…" + …` (math/bits' bit-reversal table) — folds to one value with **no** single `BasicLit`, so it bypassed that scan and rendered a UTF-16 string literal: `rev8tab[1]` returned `0xC2` (the UTF-8 lead byte of U+0080), not `0x80`, and `Reverse8` was wrong. The const-string path now tests the FOLDED value directly — a value that is not valid UTF-8 (`utf8.ValidString`) cannot round-trip through a C# string/u8 literal, so it emits the same byte-array `@string` from its exact bytes (`byteArrayStringLiteral`, shared with `emitByteArrayString`); a valid-UTF-8 value keeps the readable `getStringLiteral` form. This catches any non-UTF-8 byte table built by concatenation (crypto S-boxes, embedded blobs), not just single literals. (Guarded by the `ByteTableStringConst` behavioral test — a concatenated `\x00\x80…` table byte-indexed and `len`-measured, output-compared vs `go run`; the pre-fix converter returns `0xC2` for index 1. The full corpus compiles with the byte-array consts, and CNR is byte-identical.)
 

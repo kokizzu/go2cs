@@ -30,21 +30,28 @@ func getOctalCharRegex() *regexp.Regexp {
 
 // stringLiteralNeedsByteArray reports whether a Go interpreted (double-quoted) string literal token
 // must be emitted as a byte-array-backed @string rather than a C# string/u8 literal. It scans the
-// token's `\xHH` escapes — Go's `\x` is EXACTLY two hex digits denoting one raw byte; C#'s `\x` is a
-// GREEDY 1-to-4-hex-digit code-UNIT escape, and a C# `"…"u8` literal UTF-8-re-encodes its content.
-// An escape forces the byte-array form when EITHER:
+// token's RAW-BYTE escapes — BOTH of Go's forms denote one raw byte: `\xHH` is EXACTLY two hex
+// digits, `\NNN` EXACTLY three octal digits. Neither survives the C# code-UNIT escape it would
+// otherwise render as (`\x` is a GREEDY 1-to-4-hex-digit escape; an octal becomes the `\uXXXX` of
+// replaceOctalChars), and a C# `"…"u8` literal UTF-8-re-encodes its content. An escape forces the
+// byte-array form when EITHER:
 //
 //	(1) its byte value is >= 0x80 — a C# string/u8 literal UTF-8-re-encodes such a byte to a
-//	    multi-byte sequence (or, when the escape greedily forms a lone surrogate, fails to encode at
-//	    all — CS9026), so @string byte indexing / len would not match Go; or
-//	(2) it is immediately followed by a third hex digit — C# greedily folds e.g. `\xdb50` into the
-//	    single code unit U+DB50, changing the decoded content even if every resulting byte is ASCII.
+//	    multi-byte sequence (or, when a `\x` escape greedily forms a lone surrogate, fails to encode
+//	    at all — CS9026), so @string byte indexing / len would not match Go. Go's `"\377"` is the
+//	    single byte 0xFF, but the `ÿ` an octal escape renders as is the CHARACTER U+00FF, which
+//	    encodes to the TWO bytes 0xC3 0xBF; or
+//	(2) a `\xHH` escape is immediately followed by a third hex digit — C# greedily folds e.g.
+//	    `\xdb50` into the single code unit U+DB50, changing the decoded content even if every
+//	    resulting byte is ASCII. An octal escape has no such case: Go's is exactly three digits and
+//	    C#'s `\uXXXX` exactly four, so neither side can extend into the following text.
 //
-// Only `\xHH` ESCAPES are inspected: a literal written with actual UTF-8 characters (`"Michał"`,
+// Only raw-byte ESCAPES are inspected: a literal written with actual UTF-8 characters (`"Michał"`,
 // `"白鵬翔"`) round-trips exactly through C#'s `"…"u8` encoding and keeps the readable string form, as
-// does an all-ASCII escape sequence with no greedy extension (image/jpeg's `"\x00\x10\x01\x11"u8[i]`).
-// Only raw-byte data expressed with high/greedy `\x` escapes (zip blobs, embedded tzdata) is routed
-// to the byte array. A raw (backtick) literal has no escapes and never trips this (checked by caller).
+// does a sub-0x80 escape with no greedy extension — image/jpeg's `"\x00\x10\x01\x11"u8[i]`, or an
+// octal `"\101"` whose `A` is the same ASCII 'A'. Only raw-byte data expressed with high or
+// greedy escapes (zip blobs, embedded tzdata) is routed to the byte array. A raw (backtick) literal
+// has no escapes and never trips this (checked by caller).
 func stringLiteralNeedsByteArray(token string) bool {
 	if _, err := strconv.Unquote(token); err != nil {
 		return false
@@ -68,10 +75,23 @@ func stringLiteralNeedsByteArray(token string) bool {
 			}
 		}
 
+		if isOctalDigit(c) && backslashes%2 == 1 && i+2 < len(token) && isOctalDigit(token[i+1]) && isOctalDigit(token[i+2]) {
+			b := int(c-'0')<<6 | int(token[i+1]-'0')<<3 | int(token[i+2]-'0')
+
+			if b >= 0x80 {
+				return true
+			}
+		}
+
 		backslashes = 0
 	}
 
 	return false
+}
+
+// isOctalDigit reports whether b is an ASCII octal digit.
+func isOctalDigit(b byte) bool {
+	return b >= '0' && b <= '7'
 }
 
 // isHexDigit reports whether b is an ASCII hexadecimal digit.
