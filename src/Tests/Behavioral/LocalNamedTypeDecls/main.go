@@ -47,5 +47,28 @@ func main() {
 	for _, n := range triple {
 		sum += n
 	}
+
+	// Local named POINTER type (encoding/gob's codec_test `type Rec ***Rec`). A pointer type
+	// spec was the one forward-declaration kind that was NOT hoisted, so it emitted an invalid
+	// inline `[GoType("ж<…>")] partial class Rec;` in the method body ("Invalid expression term
+	// 'partial'"), taking the rest of the function with it.
+	type Node struct{ V int }
+	type NodePtr *Node
+
+	var np NodePtr = &Node{V: 9}
+	fmt.Println((*Node)(np).V)
+
+	// SELF-REFERENTIAL local named types. The element/value/key names were resolved BEFORE the
+	// declaration's own hoist registered its lifted name, so the emitted `[GoType]` descriptor
+	// named the pre-hoist source type — a name that no longer exists at member level (CS0246 in
+	// the generated slice/map partial). Both shapes appear in gob's encoder_test.go.
+	type recursiveSlice []recursiveSlice
+	type recursiveMap map[string]recursiveMap
+
+	rs := recursiveSlice{recursiveSlice{nil}, nil}
+	fmt.Println(len(rs), len(rs[0]))
+
+	rm := recursiveMap{"a": recursiveMap{"b": nil}}
+	fmt.Println(len(rm), len(rm["a"]))
 	fmt.Println(sum)
 }

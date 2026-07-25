@@ -27,7 +27,21 @@ func (v *Visitor) visitChanType(chanType *ast.ChanType, identType types.Type, na
 	// A channel type declared inside a function body cannot be a method-body statement in C#; hoist
 	// it to member level (see liftLocalTypeDecl). A package-level declaration is unaffected — target
 	// is v.targetFile and finish() is a no-op.
+	preLiftName := name
 	name, target, finish := v.liftLocalTypeDecl(name, identType)
+
+	// The element was resolved ABOVE, i.e. before this declaration's own hoist registered its
+	// lifted name — so a SELF-referential local type (`type C chan C`) rendered the source name,
+	// which no longer exists at member level. Re-resolve through liftedTypeMap whenever a hoist
+	// actually renamed the declaration; a package-level declaration never renames, so its
+	// emission is unchanged.
+	if name != preLiftName {
+		if elemGoType := v.info.TypeOf(chanType.Value); elemGoType != nil {
+			if lifted, ok := v.liftedTypeMap[elemGoType]; ok {
+				elemType = lifted
+			}
+		}
+	}
 
 	if !v.inFunction {
 		target.WriteString(v.newline)

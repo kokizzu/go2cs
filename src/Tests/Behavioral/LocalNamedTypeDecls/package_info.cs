@@ -65,10 +65,14 @@ public static partial class main_package
     // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
 
     // <TypeAccessibility>
+    internal partial class main_NodePtr {}
+    internal partial struct main_Node {}
     internal partial struct main_Point {}
     internal partial struct main_Points {}
     internal partial struct main_Stream {}
     internal partial struct main_Tally {}
     internal partial struct main_Triple {}
+    internal partial struct main_recursiveMap {}
+    internal partial struct main_recursiveSlice {}
     // </TypeAccessibility>
 }

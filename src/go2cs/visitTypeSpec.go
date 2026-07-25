@@ -248,13 +248,27 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			// wave-1 error); emit the `[GoType("ж<T>")] partial class` forward declaration whose
 			// Pointer template go2cs-gen implements (the generator matches a CLASS declaration
 			// for ж<-prefixed definitions — a named pointer is reference-like).
-			pointerTypeName := v.convStarExpr(typeSpecType, DefaultStarExprContext())
 			access := v.pendingTypeAccess
 			v.pendingTypeAccess = ""
-			v.targetFile.WriteString(v.newline)
+
+			// A pointer type declared inside a function body (`type Rec ***Rec`, gob's
+			// codec_test.go) cannot be a method-body statement in C#; hoist it to member level
+			// (see liftLocalTypeDecl). The lift is taken BEFORE the pointer text is rendered so a
+			// SELF-referential declaration resolves its own name through liftedTypeMap to the
+			// lifted name. A package-level declaration is unaffected — target is v.targetFile and
+			// finish() is a no-op.
+			name, target, finish := v.liftLocalTypeDecl(name, identType)
+
+			pointerTypeName := v.convStarExpr(typeSpecType, DefaultStarExprContext())
+
+			if !v.inFunction {
+				target.WriteString(v.newline)
+			}
+
 			v.recordTypeAccessibility("class", getSanitizedIdentifier(name), "", access)
-			v.writeOutputLn("[GoType(\"%s\")] %spartial class %s;", pointerTypeName, access, getSanitizedIdentifier(name))
+			v.writeStringLn(target, "[GoType(\"%s\")] %spartial class %s;", pointerTypeName, access, getSanitizedIdentifier(name))
 			usesUnsafeCode = true
+			finish()
 		}
 	case *ast.StructType:
 		v.visitStructType(typeSpecType, v.info.Defs[typeSpec.Name].Type(), name, doc, v.inFunction, nil)

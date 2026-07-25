@@ -16,6 +16,16 @@ partial class main_package {
 
 [GoType("[3]nint")] partial struct main_Triple;
 
+[GoLocalName("Node")] [GoType("dyn")] partial struct main_Node {
+    public nint V;
+}
+
+[GoType("ж<main_Node>")] partial class main_NodePtr;
+
+[GoType("[]main_recursiveSlice")] partial struct main_recursiveSlice;
+
+[GoType("map[@string, main_recursiveMap]")] partial struct main_recursiveMap;
+
 internal static void Main() {
     var pts = new main_Points(new main_Point[]{new(1, 2), new(3, 4), new(5, 6)}.slice());
     foreach (var (_, p) in pts) {
@@ -31,6 +41,12 @@ internal static void Main() {
     foreach (var (_, n) in triple) {
         sum += n;
     }
+    main_NodePtr np = Ꮡ(new main_Node(V: 9));
+    fmt.Println(((ж<main_Node>)(np)).Value.V);
+    var rs = new main_recursiveSlice(new main_recursiveSlice[]{new main_recursiveSlice(new main_recursiveSlice[]{default!}.slice()), default!}.slice());
+    fmt.Println(len(rs), len(rs[0]));
+    var rm = new main_recursiveMap(new map<@string, main_recursiveMap>{["a"u8] = new main_recursiveMap(new map<@string, main_recursiveMap>{["b"u8] = default!})});
+    fmt.Println(len(rm), len(rm["a"u8]));
     fmt.Println(sum);
 }
 
