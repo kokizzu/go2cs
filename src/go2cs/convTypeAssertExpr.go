@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
+	"path/filepath"
 )
 
 func (v *Visitor) convTypeAssertExpr(typeAssertExpr *ast.TypeAssertExpr) string {
@@ -151,18 +152,22 @@ func (v *Visitor) recordAssertConcreteImplementers(sourceType, targetType types.
 	}
 }
 
-// recordTestPackageImplementers records a GoImplement for every concrete type DECLARED in the
-// package being converted against every NAMED interface visible to it (its own scope plus its
-// direct imports' exported scopes). A test-variant package's types are potential dynamic values
+// recordTestPackageImplementers records a GoImplement for every concrete type DECLARED IN A
+// TEST FILE against every NAMED interface visible to the test-variant package (its own scope
+// plus its direct imports' exported scopes). A test-declared type is a potential dynamic value
 // for RUNTIME-only interface asserts in the package under test — testing/quick's sizedValue
 // probes `reflect.Zero(t).Interface().(Generator)` for ARBITRARY generated types, and
 // quick_test's myStruct satisfies Generator with no static conversion ANYWHERE for the
 // assert-site recorder to see — so the adapter must be enumerated from the TYPE side or the
 // runtime assert fails (golib TryTypeAssert resolves named interfaces only through generated
-// adapters). Run ONLY by the -tests driver for the test-variant package: production emission is
-// untouched (check-no-regression stays byte-identical). This is the recorded follow-up in
-// recordAssertConcreteImplementers' known-limitation note, now consumer-demonstrated.
-func (v *Visitor) recordTestPackageImplementers() {
+// adapters). PRODUCTION-declared types are excluded: their pairs are already recorded by the
+// production conversion's cast/assert sites, and the tests project compiles the production
+// package_info.cs BESIDE package_test_info.cs — a re-record there generates the same adapter
+// twice (CS0111, bytes.Reader×io.Reader — caught by the banked-package re-validation sweep).
+// Run ONLY by the -tests driver: production emission is untouched (check-no-regression stays
+// byte-identical). This is the recorded follow-up in recordAssertConcreteImplementers'
+// known-limitation note, now consumer-demonstrated.
+func (v *Visitor) recordTestPackageImplementers(testFilePaths HashSet[string]) {
 	if v.pkg == nil {
 		return
 	}
@@ -207,13 +212,19 @@ func (v *Visitor) recordTestPackageImplementers() {
 	scope := v.pkg.Scope()
 
 	for _, name := range scope.Names() {
-		named, ok := scope.Lookup(name).Type().(*types.Named)
+		obj := scope.Lookup(name)
+		named, ok := obj.Type().(*types.Named)
 
 		if !ok || named.TypeParams() != nil {
 			continue
 		}
 
 		if _, isInterfaceType := named.Underlying().(*types.Interface); isInterfaceType {
+			continue
+		}
+
+		// Test-file-declared types only (see above — production pairs are already recorded).
+		if !testFilePaths.Contains(filepath.ToSlash(v.fset.Position(obj.Pos()).Filename)) {
 			continue
 		}
 

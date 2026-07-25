@@ -1084,12 +1084,18 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 		visitor.visitFile(entry.file)
 
 		// Enumerate the test package's runtime-assertable interface implementers ONCE per
-		// conversion (idempotent — the record writer dedups): a test-declared type satisfying
+		// conversion (idempotent — the record writer dedups): a TEST-DECLARED type satisfying
 		// an interface the package under test asserts at RUNTIME needs its adapter enumerated
 		// from the type side (quick_test's myStruct × quick.Generator; see
-		// recordTestPackageImplementers).
+		// recordTestPackageImplementers — production-declared types are excluded there).
 		if !testImplementersRecorded {
-			visitor.recordTestPackageImplementers()
+			testFilePaths := HashSet[string]{}
+
+			for _, testEntry := range selected {
+				testFilePaths.Add(filepath.ToSlash(testEntry.filePath))
+			}
+
+			visitor.recordTestPackageImplementers(testFilePaths)
 			testImplementersRecorded = true
 		}
 
