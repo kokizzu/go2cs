@@ -87,6 +87,7 @@ func emitAutoConversionSiblings(markedFiles []FileEntry, fset *token.FileSet, pa
 				targetFile:                &strings.Builder{},
 				liftedTypeNames:           HashSet[string]{},
 				liftedTypeMap:             map[types.Type]string{},
+				liftedAnonStructNames:     map[string]string{},
 				subStructTypes:            map[types.Type][]types.Type{},
 				packageImports:            &strings.Builder{},
 				requiredUsings:            HashSet[string]{},

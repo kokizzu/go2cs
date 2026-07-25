@@ -176,6 +176,12 @@ type Visitor struct {
 	liftedTypeMap      map[types.Type]string
 	subStructTypes     map[types.Type][]types.Type
 
+	// Lifted ANONYMOUS struct types deduplicated by structural signature within a function:
+	// structurally identical anonymous structs are ONE Go type, so repeated occurrences must
+	// lift to a single C# type or reflect.Type identity splits per occurrence (see
+	// visitStructType). Keyed `<funcName>\x00<signature>` → lifted name.
+	liftedAnonStructNames map[string]string
+
 	// hoistedDecls, when non-nil, collects func-literal capture declarations that would otherwise
 	// be emitted inline (a `var mʗ1 = m;` statement) at the func literal's position — invalid C#
 	// when the literal sits in an expression slot (a call argument, an assignment RHS, a composite-

@@ -34,6 +34,26 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 			name = "type"
 		}
 
+		structSignatureType := v.getType(structType, false)
+
+		// Structurally IDENTICAL anonymous struct types are ONE Go type: repeated textual
+		// occurrences of `struct{ A Struct }` inside a function must lift to a SINGLE C# type,
+		// or reflect.Type identity splits per occurrence (encoding/binary's TestSizeStructCache
+		// counts descriptor-cache entries — Go adds ONE for four occurrences). A NAMED local
+		// declaration keeps per-declaration identity and never dedupes. Function-scoped: the
+		// cross-function/package-level anonymous split is a recorded residual.
+		var anonLiftKey string
+
+		if _, isAnonStruct := identType.(*types.Struct); isAnonStruct && v.inFunction && structSignatureType != nil {
+			anonLiftKey = v.currentFuncName + "\x00" + structSignatureType.String()
+
+			if existing, ok := v.liftedAnonStructNames[anonLiftKey]; ok {
+				v.liftedTypeMap[identType] = existing
+				v.liftedTypeMap[structSignatureType] = existing
+				return existing
+			}
+		}
+
 		if v.inFunction {
 			if target == nil {
 				target = &strings.Builder{}
@@ -49,8 +69,11 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 
 		structTypeName = v.getUniqueLiftedTypeName(name)
 		v.liftedTypeMap[identType] = structTypeName
-		structSignatureType := v.getType(structType, false)
 		v.liftedTypeMap[structSignatureType] = structTypeName
+
+		if anonLiftKey != "" {
+			v.liftedAnonStructNames[anonLiftKey] = structTypeName
+		}
 
 		// Package-level lifted structs are shared across the package so other files
 		// can resolve cross-file references to this anonymous type (function-local
@@ -100,6 +123,19 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		dynamic = "(\"dyn\")"
 	}
 
+	// A lifted function-local NAMED type carries its original Go name so the reflection
+	// bridge's %T / Type.String() prints Go's `binary.Person`, never the function-prefixed
+	// lifted identifier (encoding/binary's TestNoFixedSize asserts the exact error text). A
+	// separate attribute, never a [GoType] definition token — the TypeGenerator matches the
+	// definition slot by exact string (I2.R R-8). Anonymous lifts have no Go name to stamp.
+	var localNameAttr string
+
+	if lifted && v.inFunction {
+		if named, ok := identType.(*types.Named); ok {
+			localNameAttr = fmt.Sprintf("[GoLocalName(\"%s\")] ", named.Obj().Name())
+		}
+	}
+
 	// Consume any pending publicized-type access modifier (an unexported type used as an
 	// exported field). Only the top-level type declaration carries it; nested/anonymous lifts do
 	// not, so read and clear before visiting fields (which may recurse into this function).
@@ -112,7 +148,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		access = "public "
 	}
 
-	v.writeStringLn(target, "[GoType%s] %spartial struct %s%s%s{", dynamic, access, structTypeName, typeParams, constraints)
+	v.writeStringLn(target, "%s[GoType%s] %spartial struct %s%s%s{", localNameAttr, dynamic, access, structTypeName, typeParams, constraints)
 	v.indentLevel++
 
 	var prevNameDiscardedCount int
