@@ -64,6 +64,22 @@ public record MethodInfo
     // (public) interface member with a STUB body instead of forwarding to the inaccessible impl.
     public bool IsInaccessibleMarker { get; init; }
 
+    // True when this method can be forwarded through a REFLECTIVE invoker — every parameter and the
+    // return type round-trip through `object`. False for a ref-struct (a Go variadic tail lowers to
+    // `params Span<T>`, which cannot be boxed), a by-ref parameter or return, a pointer type, or a
+    // generic method. The non-generic object shell is emitted only when every interface method
+    // qualifies; the delegate-bound shell, which forwards through a typed delegate, is unaffected.
+    // Defaults true so a MethodInfo built without semantic type info keeps the prior behavior.
+    public bool IsInvokerForwardable { get; init; } = true;
+
+    // True when this method's signature can be re-declared faithfully from the recorded Parameters:
+    // those carry the parameter TYPE only, so a member declared with a ref-kind modifier (`in`/`ref`/
+    // `out`) — which no converted Go interface has, but a hand-written base such as the io stub's
+    // `Reader.Read(in slice<byte>)` does — would re-declare without it and fail to implement the
+    // member (CS0535). An interface with such a member gets no runtime shell rather than a shell that
+    // does not compile. Defaults true so a MethodInfo built without semantic info keeps prior behavior.
+    public bool IsSignatureRenderable { get; init; } = true;
+
     public bool IsGeneric => GenericTypes.Length > 0;
 
     public string CallParameters => GetCallParameters(true);
@@ -230,6 +246,20 @@ public static class MethodSyntaxExtensions
             .ToArray();
     }
 
+    // True when a type survives the object round-trip a reflective invoker performs. A ref-struct
+    // cannot be boxed at all (the Go variadic tail `params ꓸꓸꓸT` resolves to `System.Span<T>`), and
+    // a pointer type has no boxed form the invoker can carry back.
+    internal static bool IsInvokerForwardableType(ITypeSymbol? type)
+    {
+        return type switch
+        {
+            null => false,
+            IPointerTypeSymbol => false,
+            IFunctionPointerTypeSymbol => false,
+            _ => !type.IsRefLikeType
+        };
+    }
+
     public static MethodInfo GetMethodInfo(this MethodDeclarationSyntax methodDeclaration, Compilation compilation)
     {
         SemanticModel semanticModel = compilation.GetSemanticModel(methodDeclaration.SyntaxTree);
@@ -263,11 +293,24 @@ public static class MethodSyntaxExtensions
             }
         }
 
+        bool signatureRenderable = methodDeclaration.ParameterList.Parameters.All(param =>
+            !param.Modifiers.Any(SyntaxKind.RefKeyword) &&
+            !param.Modifiers.Any(SyntaxKind.OutKeyword) &&
+            !param.Modifiers.Any(SyntaxKind.InKeyword));
+
+        bool invokerForwardable = signatureRenderable &&
+            typeParameters.Length == 0 &&
+            IsInvokerForwardableType(semanticModel.GetTypeInfo(methodDeclaration.ReturnType).Type) &&
+            methodDeclaration.ParameterList.Parameters.All(param =>
+                param.Type is null || IsInvokerForwardableType(semanticModel.GetTypeInfo(param.Type).Type));
+
         return new MethodInfo()
         {
             Name = methodDeclaration.Identifier.Text,
             ReturnType = methodDeclaration.GetReturnType(semanticModel),
             ReturnTypeIsPublic = IsEffectivelyPublicType(semanticModel.GetTypeInfo(methodDeclaration.ReturnType).Type),
+            IsInvokerForwardable = invokerForwardable,
+            IsSignatureRenderable = signatureRenderable,
             GenericTypes = string.Join(", ", typeParameters),
             TypeConstraints = typeConstraints,
 
@@ -358,11 +401,22 @@ public static class MethodSyntaxExtensions
             typeConstraints[typeParam.Name] = constraints.ToArray();
         }
 
+        bool signatureRenderable = methodSymbol.Parameters.All(parameter => parameter.RefKind == RefKind.None);
+
+        bool invokerForwardable = signatureRenderable &&
+            methodSymbol.TypeParameters.Length == 0 &&
+            !methodSymbol.ReturnsByRef &&
+            !methodSymbol.ReturnsByRefReadonly &&
+            IsInvokerForwardableType(methodSymbol.ReturnType) &&
+            methodSymbol.Parameters.All(parameter => IsInvokerForwardableType(parameter.Type));
+
         return new MethodInfo
         {
             Name = methodSymbol.Name,
             ReturnType = GlobalQualify(methodSymbol.ReturnType.ToDisplayString()),
             ReturnTypeIsPublic = IsEffectivelyPublicType(methodSymbol.ReturnType),
+            IsInvokerForwardable = invokerForwardable,
+            IsSignatureRenderable = signatureRenderable,
             Parameters = parameters,
             GenericTypes = genericTypes,
             TypeConstraints = typeConstraints,

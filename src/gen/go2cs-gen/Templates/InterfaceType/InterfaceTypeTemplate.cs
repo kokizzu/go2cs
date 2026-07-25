@@ -18,6 +18,14 @@ internal class InterfaceTypeTemplate : TemplateBase
     public required string[] OperatorConstraints;
     public required MethodInfo[] Methods;
     public required bool Dynamic;
+
+    // Set for a NAMED, non-generic, non-constraint, non-empty interface: the two runtime
+    // duck-typing shells are emitted beside it and discovered through a [GoInterfaceShell] stamp
+    // (see InterfaceShellEmitter). A dyn interface keeps today's ᴛAs machinery until it is migrated
+    // onto the same shape.
+    public bool EmitShells;
+
+    private InterfaceShellEmitter? m_shells;
     private string? m_nonGenericInterfaceName;
     private string? m_conversionTypeName;
     private string? m_nonGenericConversionTypeName;
@@ -42,11 +50,17 @@ internal class InterfaceTypeTemplate : TemplateBase
 
     public override string TemplateBody =>
         $$"""
-              [{{GeneratedCodeAttribute}}]
+              {{ShellAttribute}}[{{GeneratedCodeAttribute}}]
               {{Scope}} partial interface {{InterfaceName}}{{AppliedOperatorConstraints}}
               {{{RuntimeInterfaceConversionMethods}}
-              }{{RuntimeInterfaceConversionType}}
+              }{{RuntimeInterfaceConversionType}}{{RuntimeInterfaceShells}}
           """;
+
+    private InterfaceShellEmitter? Shells => EmitShells ? m_shells ??= new InterfaceShellEmitter(NonGenericInterfaceName, Scope, Methods) : null;
+
+    private string ShellAttribute => Shells?.Attribute ?? "";
+
+    private string RuntimeInterfaceShells => Shells?.Shells ?? "";
 
     private string AppliedOperatorConstraints
     {

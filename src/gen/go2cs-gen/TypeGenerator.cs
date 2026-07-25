@@ -321,6 +321,17 @@ public class TypeGenerator : ISourceGenerator
 
                         usingStatements = usingStatements.Append("using System.Numerics;").ToArray();
 
+                        // A CONSTRAINT interface (operators=…) exists to carry C# operator constraints
+                        // and a GENERIC one has no single runtime instantiation to bind against, so
+                        // neither has a Go method set a runtime shell could satisfy — and an interface
+                        // with no methods is satisfied by every value nominally already.
+                        bool shellEligible = operatorConstraints is null &&
+                            interfaceDeclaration.TypeParameterList is null or { Parameters.Count: 0 };
+
+                        MethodInfo[] interfaceMethods = dynamic || shellEligible ?
+                            interfaceDeclaration.GetInterfaceMethods(context) :
+                            [];
+
                         generatedSource = new InterfaceTypeTemplate
                         {
                             PackageNamespace = packageNamespace,
@@ -328,8 +339,15 @@ public class TypeGenerator : ISourceGenerator
                             Scope = scope,
                             InterfaceName = identifier,
                             OperatorConstraints = operatorConstraints ?? [],
-                            Methods = dynamic ? interfaceDeclaration.GetInterfaceMethods(context) : [],
+                            Methods = interfaceMethods,
                             Dynamic = dynamic,
+                            // A dyn interface already carries the ᴛAs duck-typing machinery; migrating
+                            // it onto the shells is a separate, independently gated step. A member
+                            // declared with a ref-kind modifier cannot be re-declared faithfully from
+                            // the recorded parameter types, so an interface carrying one gets no shell
+                            // rather than one that fails to implement it (CS0535).
+                            EmitShells = !dynamic && shellEligible && interfaceMethods.Length > 0 &&
+                                interfaceMethods.All(method => method.IsSignatureRenderable),
                             UsingStatements = usingStatements
                         }
                         .Generate();

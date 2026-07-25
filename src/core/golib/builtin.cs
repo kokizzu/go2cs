@@ -1615,6 +1615,23 @@ public static class builtin
         // since no dispatchable receiver exists to build a wrapper over.
         object structuralTarget = target is IжAdapter { Box: not null } boxAdapter ? boxAdapter.Box : target;
 
+        // A (dynamic type, interface) pair the runtime-shell tier at the bottom of this method has
+        // already decided — positively or negatively — answers from the memo, ahead of the structural
+        // gate and of shell construction (which costs ~1 µs; fmt probes three interfaces per formatted
+        // value). Only NAMED interfaces reaching that tier are ever recorded here, so a hit can never
+        // pre-empt the anonymous-interface ᴛAs path below.
+        if (typeOfT.IsInterface && AdapterRegistry.TryGetShellFactory(structuralTarget.GetType(), typeOfT, out Func<object, object>? shellFactory))
+        {
+            if (shellFactory is not null && shellFactory(structuralTarget) is T memoizedShell)
+            {
+                value = memoizedShell;
+                return true;
+            }
+
+            value = default!;
+            return false;
+        }
+
         if (!typeOfT.IsInterface || !Implements<T>(structuralTarget))
         {
             value = default!;
@@ -1642,11 +1659,20 @@ public static class builtin
         MethodInfo? method = GetInterfaceConversionMethod(typeOfT, s_asTParams);
 
         // A NAMED interface has no generated runtime conversion method — its implementations
-        // resolve nominally (case T above) or through the adapter registry. Reaching here means
-        // only the name-based method-set probe matched (no adapter was ever generated for the
-        // pair) — treat as a miss rather than a conversion error.
+        // resolve nominally (case T above) or through the adapter registry. Reaching here means the
+        // structural probe matched but no compile-time adapter was ever generated for the pair, which
+        // is exactly the case the recorders CANNOT cover: a dynamic type in an assembly converted
+        // after the interface's own (io/fs before os). Build the implementation at run time from the
+        // shells go2cs-gen emitted beside the interface. Fires only where this method previously
+        // answered MISS, so the tier cannot regress an assertion that already resolved.
         if (method == null)
         {
+            if (AdapterBinder.TryCreate(structuralTarget, typeOfT, out object? shell) && shell is T shellValue)
+            {
+                value = shellValue;
+                return true;
+            }
+
             value = default!;
             return false;
         }

@@ -35,6 +35,13 @@ public static class AdapterRegistry
 {
     private static readonly ConcurrentDictionary<(Type, Type), Func<object, object>> s_factories = new();
 
+    // Runtime duck-typing shell decisions, keyed the same way. A null value is a cached NEGATIVE —
+    // the pair was probed and cannot bind. Kept separate from s_factories because that dictionary is
+    // the NOMINAL tier consulted first by the type-assert machinery and cannot represent a miss; and
+    // because a memoized shell must never shadow a generated adapter registered later by a
+    // lazily-loaded assembly's module initializer.
+    private static readonly ConcurrentDictionary<(Type, Type), Func<object, object>?> s_shellFactories = new();
+
     /// <summary>
     /// Registers a factory that wraps a Go dynamic value of runtime type <paramref name="valueType"/>
     /// in its generated adapter implementing <paramref name="interfaceType"/>.
@@ -65,5 +72,34 @@ public static class AdapterRegistry
 
         wrapped = null;
         return false;
+    }
+
+    /// <summary>
+    /// Looks up the memoized runtime duck-typing shell decision for a (dynamic type, interface) pair.
+    /// </summary>
+    /// <param name="valueType">Runtime type of the Go dynamic value.</param>
+    /// <param name="interfaceType">Target interface type.</param>
+    /// <param name="factory">Shell factory when the pair binds; <c>null</c> when it was probed and cannot.</param>
+    /// <returns><c>true</c> when the pair has already been decided either way.</returns>
+    /// <remarks>
+    /// Building a shell costs on the order of a microsecond, and <c>fmt</c> probes three interfaces
+    /// for every formatted value — memoization is not an optimization here, it is what keeps the
+    /// runtime tier off the hot path. See <see cref="AdapterBinder"/> for why the negative is cached
+    /// too and why this cache is deliberately NOT cleared on assembly load.
+    /// </remarks>
+    internal static bool TryGetShellFactory(Type valueType, Type interfaceType, out Func<object, object>? factory)
+    {
+        return s_shellFactories.TryGetValue((valueType, interfaceType), out factory);
+    }
+
+    /// <summary>
+    /// Records the runtime duck-typing shell decision for a (dynamic type, interface) pair.
+    /// </summary>
+    /// <param name="valueType">Runtime type of the Go dynamic value.</param>
+    /// <param name="interfaceType">Target interface type.</param>
+    /// <param name="factory">Shell factory, or <c>null</c> to record that the pair cannot bind.</param>
+    internal static void MemoizeShellFactory(Type valueType, Type interfaceType, Func<object, object>? factory)
+    {
+        s_shellFactories[(valueType, interfaceType)] = factory;
     }
 }

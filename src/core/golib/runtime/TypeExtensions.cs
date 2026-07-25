@@ -40,6 +40,7 @@ public static class TypeExtensions
     private static readonly ConcurrentDictionary<Type, MethodInfo[]> s_typeExtensionMethods = [];
     private static readonly ConcurrentDictionary<Type, ImmutableHashSet<string>> s_typeExtensionMethodNames = [];
     private static readonly ConcurrentDictionary<Type, ImmutableHashSet<string>> s_interfaceMethodNames = [];
+    private static readonly ConcurrentDictionary<(Type element, bool isPointer), List<MethodInfo>> s_goMethodSetCandidates = [];
     private static readonly ConcurrentDictionary<Type, ImmutableHashSet<string>> s_structFieldNames = [];
     private static readonly ConcurrentDictionary<Type, MethodInfo?> s_typeEqualityOperators = [];
     private static readonly ConcurrentDictionary<Type, MethodInfo?> s_onesComplementOperators = [];
@@ -82,6 +83,7 @@ public static class TypeExtensions
         s_typeExtensionMethods.Clear();
         s_typeExtensionMethodNames.Clear();
         s_interfaceMethodNames.Clear();
+        s_goMethodSetCandidates.Clear();
     }
 
     private static void LoadAssemblyExtensionMethods(Assembly assembly, List<(MethodInfo, Type)> extensionMethods)
@@ -381,26 +383,7 @@ public static class TypeExtensions
         ResolveReceiverElement(valueType, out Type valueElement, out bool valueIsPointer);
 
         // Collect the extension methods whose receiver belongs to this value's method set.
-        (MethodInfo method, Type receiver)[] allExtensionMethods = GetExtensionMethods();
-        List<MethodInfo> candidates = [];
-
-        foreach ((MethodInfo method, Type receiver) in allExtensionMethods)
-        {
-            Type receiverType = receiver.IsByRef ? receiver.GetElementType()! : receiver;
-            ResolveReceiverElement(receiverType, out Type receiverElement, out bool receiverIsPointer);
-
-            // Pointer-receiver methods are NOT part of a plain value's method set (Go semantics).
-            // A pointer receiver appears in TWO emitted shapes: the RecvGenerator's ж<X> overload
-            // (receiverIsPointer above) and the original [GoRecv] `this ref X` extension — the
-            // byref strip on the line above erases the latter's pointer-ness, so ask the marker
-            // attribute directly (a `this ref` receiver without [GoRecv] does not exist in
-            // emitted code; value receivers are always by-value `this X`).
-            if (!valueIsPointer && (receiverIsPointer || method.GetCustomAttribute<GoRecvAttribute>() is not null))
-                continue;
-
-            if (ReceiverElementMatches(receiverElement, valueElement))
-                candidates.Add(method);
-        }
+        List<MethodInfo> candidates = GetGoMethodSetCandidates(valueElement, valueIsPointer);
 
         // Every interface method must be satisfied by a candidate with the same name AND signature.
         foreach (MethodInfo interfaceMethod in interfaceMethods)
@@ -435,8 +418,54 @@ public static class TypeExtensions
         return true;
     }
 
+    /// <summary>
+    /// Collects the extension methods whose receiver belongs to the Go METHOD SET of element type
+    /// <paramref name="valueElement"/>, viewed as a pointer (<c>*X</c>) or as a value (<c>X</c>).
+    /// </summary>
+    /// <param name="valueElement">Go element type, i.e. the pointee of a receiver box or the value's own type.</param>
+    /// <param name="valueIsPointer"><c>true</c> for the <c>*X</c> method set (value AND pointer receivers); <c>false</c> for <c>X</c>'s (value receivers only).</param>
+    /// <returns>Candidate receiver methods, in no particular order.</returns>
+    /// <remarks>
+    /// This is the ONE place Go's value-vs-pointer receiver rule is applied at run time. Both the
+    /// structural probe (<see cref="StructurallyImplements"/>) and the duck-typing shell binder
+    /// (<see cref="AdapterBinder"/>) resolve through it, so a shell can never bind a method the probe
+    /// would not have counted — the two would otherwise be free to disagree about a method set, and a
+    /// value-sourced shell that picked up a pointer-receiver method would make an assertion Go REJECTS
+    /// succeed. Deliberately keyed on the element + pointer-ness rather than on the concrete value type
+    /// so no caller has to construct a <c>ж&lt;X&gt;</c> <see cref="Type"/> just to ask the question.
+    /// </remarks>
+    internal static List<MethodInfo> GetGoMethodSetCandidates(Type valueElement, bool valueIsPointer)
+    {
+        return s_goMethodSetCandidates.GetOrAdd((valueElement, valueIsPointer), static key =>
+        {
+            (Type valueElement, bool valueIsPointer) = key;
+            (MethodInfo method, Type receiver)[] allExtensionMethods = GetExtensionMethods();
+            List<MethodInfo> candidates = [];
+
+            foreach ((MethodInfo method, Type receiver) in allExtensionMethods)
+            {
+                Type receiverType = receiver.IsByRef ? receiver.GetElementType()! : receiver;
+                ResolveReceiverElement(receiverType, out Type receiverElement, out bool receiverIsPointer);
+
+                // Pointer-receiver methods are NOT part of a plain value's method set (Go semantics).
+                // A pointer receiver appears in TWO emitted shapes: the RecvGenerator's ж<X> overload
+                // (receiverIsPointer above) and the original [GoRecv] `this ref X` extension — the
+                // byref strip on the line above erases the latter's pointer-ness, so ask the marker
+                // attribute directly (a `this ref` receiver without [GoRecv] does not exist in
+                // emitted code; value receivers are always by-value `this X`).
+                if (!valueIsPointer && (receiverIsPointer || method.GetCustomAttribute<GoRecvAttribute>() is not null))
+                    continue;
+
+                if (ReceiverElementMatches(receiverElement, valueElement))
+                    candidates.Add(method);
+            }
+
+            return candidates;
+        });
+    }
+
     // Splits a receiver type into its concrete element type and whether it is a pointer box ж<X>.
-    private static void ResolveReceiverElement(Type type, out Type element, out bool isPointer)
+    internal static void ResolveReceiverElement(Type type, out Type element, out bool isPointer)
     {
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ж<>))
         {
