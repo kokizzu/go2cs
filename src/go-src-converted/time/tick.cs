@@ -1,9 +1,50 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-namespace go;
 
-using @unsafe = unsafe_package;
+// Hand-finished conversion (tick.go — Ticker construction and control).
+//
+// Go allocates a Ticker inside the RUNTIME and reaches it by reinterpreting the *Timer that
+// runtime.newTimer returned — "Ticker and Timer have the same layout, so that newTimer can handle
+// both":
+//
+//     t := (*Ticker)(unsafe.Pointer(newTimer(when(d), int64(d), sendTime, c, syncTimer(c))))
+//     ...
+//     stopTimer((*Timer)(unsafe.Pointer(t)))
+//
+// The literal conversion of those three reinterprets COMPILES but cannot work in a managed runtime.
+// Each is a `(ж<U>)(uintptr)(unsafe.Pointer(Ꮡbox))` round-trip, and golib's managed-box
+// `ж<T> → uintptr` operator returns `fixed (void* ptr = &value.Value) (uintptr)ptr` — an address
+// whose pin ends with that statement. The derived box holds only the bare address and NO reference
+// to the source box, so the ticker's storage is (a) not kept alive at all — nothing else references
+// the ж<Timer> newTimer produced, so it is collected at the next GC — and (b) not stable even if it
+// were, since a compacting GC may move it. Every read of `t.C` or `t.initTicker` afterwards reads
+// whatever now occupies that address. Worse, `Ticker` holds a `channel<Time>`, i.e. a MANAGED
+// reference, so the storage cannot be pinned either (`GCHandle.Alloc(…, Pinned)` rejects a type
+// containing references) — the raw-address model has no sound form here. See
+// docs/Phase4/FINDING-managed-box-uintptr-lifetime.md, which characterizes this hazard corpus-wide;
+// NewTicker is its worst case, because the derived pointer is RETAINED for the ticker's lifetime
+// rather than consumed immediately.
+//
+// This file therefore constructs the Ticker DIRECTLY and addresses the runtime timer by the box's
+// own identity, which is the project's standing ruling for managed-referent pointers ("hold the
+// ж<T>/object directly, never a nuint round-trip"). Behavior is otherwise unchanged: armNewTimer /
+// stopRuntimeTimer / resetRuntimeTimer (time_impl.cs) are the very entry points sleep.cs's
+// newTimer / stopTimer / resetTimer call, and Go's own runtime.newTimer serves Timer and Ticker
+// through one implementation for the same reason.
+//
+// NOT modeled (deliberately): the `syncTimer(c)` argument. It exists only so the runtime can mark
+// the channel a SYNCHRONOUS timer channel (Go 1.23, #37196); the managed timer model reproduces
+// Go's asynchronous timer-channel behavior — Go's own documented GODEBUG=asynctimerchan=1 mode — and
+// ignores that pointer in newTimer as well, so calling it here would have no effect beyond the
+// non-default GODEBUG counter it bumps. See the divergence note in time_impl.cs.
+//
+// REVERTIBLE: if the general managed-reinterpret capability lands (option 2 of the FINDING — a
+// converter-emitted `Ꮡt.Reinterpret<U>()` aliasing the same managed slot), delete this file and let
+// the converter's tick.cs.auto take over unchanged; nothing here is a semantic choice of its own.
+[module: go.GoManualConversion]
+
+namespace go;
 
 partial class time_package {
 
@@ -42,7 +83,9 @@ public static ж<Ticker> NewTicker(Duration d) {
     // If the client falls behind while reading, we drop ticks
     // on the floor until the client catches up.
     var c = new channel<Time>(1);
-    var t = (ж<Ticker>)(uintptr)(new @unsafe.Pointer(newTimer(when(d), (int64)d, sendTime, c, (uintptr)syncTimer(c))));
+    // Go: t := (*Ticker)(unsafe.Pointer(newTimer(when(d), int64(d), sendTime, c, syncTimer(c))))
+    var t = new ж<Ticker>(new Ticker{ initTicker = true });
+    armNewTimer(t, when(d), (int64)d, sendTime, c);
     t.Value.C = c;
     return t;
 }
@@ -59,7 +102,8 @@ public static void Stop(this ж<Ticker> Ꮡt) {
         // to avoid breaking old programs. See issue 21874.
         return;
     }
-    stopTimer((ж<Timer>)(uintptr)(@unsafe.Pointer.FromRef(ref t)));
+    // Go: stopTimer((*Timer)(unsafe.Pointer(t)))
+    stopRuntimeTimer(Ꮡt);
 }
 
 // Reset stops a ticker and resets its period to the specified duration.
@@ -74,7 +118,8 @@ public static void Reset(this ж<Ticker> Ꮡt, Duration d) {
     if (!t.initTicker) {
         throw panic("time: Reset called on uninitialized Ticker");
     }
-    resetTimer((ж<Timer>)(uintptr)(@unsafe.Pointer.FromRef(ref t)), when(d), (int64)d);
+    // Go: resetTimer((*Timer)(unsafe.Pointer(t)), when(d), int64(d))
+    resetRuntimeTimer(Ꮡt, when(d), (int64)d);
 }
 
 // Tick is a convenience wrapper for [NewTicker] providing access to the ticking
