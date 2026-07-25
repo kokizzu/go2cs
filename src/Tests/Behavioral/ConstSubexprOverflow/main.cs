@@ -55,6 +55,37 @@ internal static void Main() {
     foreach (var (_, v) in u64wide) {
         fmt.Println(v);
     }
+    var negs = new int32[]{(int32)(-(2147483648L - 1)), (int32)(-(2147483648L - 2)), (int32)(~(2147483648L - 1))}.slice();
+    var negInts = new nint[]{(nint)(-(2147483648L - 1))}.slice();
+    var neg16 = new int16[]{(int16)(-((1 << (int)(15)) - 1))}.slice();
+    var deep = new int32[]{(int32)((2147483648L - 1) - 1)}.slice();
+    var deeper = new int32[]{(int32)((1099511627776L >> (int)(20)) - 1)}.slice();
+    int32 negAssign = (int32)(-(2147483648L - 1));
+    var negConv = (int32)(-(2147483648L - 1));
+    var rows = new row[]{new("-2147483647"u8, (int32)(-(2147483648L - 1)))}.slice();
+    foreach (var (_, v) in negs) {
+        fmt.Println(v);
+    }
+    foreach (var (_, v) in negInts) {
+        fmt.Println(v);
+    }
+    foreach (var (_, v) in neg16) {
+        fmt.Println(v);
+    }
+    foreach (var (_, v) in deep) {
+        fmt.Println(v);
+    }
+    foreach (var (_, v) in deeper) {
+        fmt.Println(v);
+    }
+    fmt.Println(negAssign, negConv, rows);
+    showInt32((int32)(-(2147483648L - 1)));
+    showInt32((int32)((2147483648L - 1) - 2));
+}
+
+[GoType] partial struct row {
+    internal @string @in;
+    internal int32 @out;
 }
 
 [GoType("num:uintptr")] partial struct Word;

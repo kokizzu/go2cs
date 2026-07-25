@@ -862,8 +862,29 @@ func (v *Visitor) convBinaryExpr(binaryExpr *ast.BinaryExpr, context PatternMatc
 //
 // PLAIN basic types only (not `.Underlying()`): a named type's [GoType] cast rejects a `long`
 // operand (CS0030), and an UNTYPED node is left to its enclosing context.
-func (v *Visitor) widenedConstExprCastType(binaryExpr *ast.BinaryExpr) string {
-	tv, ok := v.info.Types[binaryExpr]
+//
+// BINARY and UNARY roots both qualify. go/types types only the ROOT of a constant operator
+// expression and leaves its operands untyped (updateExprType stops descending once it finds a
+// constant), so a NEGATED widened constant — `[]int32{-(1<<31 - 1)}`, strconv's `atoi_test`
+// parseInt32 table — records `untyped int` on the inner `1<<31 - 1` and `int32` only on the
+// negation: there is no typed binary anywhere to hang the cast on, and it can only be placed at
+// the unary root (CS1503 without it).
+func (v *Visitor) widenedConstExprCastType(expr ast.Expr) string {
+	// The unary operators that can appear in a constant integer expression (`-`, `+`, `^`) all
+	// render as C# arithmetic over the operand, so they widen exactly as a binary root does. The
+	// non-constant ones (`&x`, `<-ch`, `!b`) are rejected by the value/kind guards below.
+	var operandX, operandY ast.Expr
+
+	switch e := expr.(type) {
+	case *ast.BinaryExpr:
+		operandX, operandY = e.X, e.Y
+	case *ast.UnaryExpr:
+		operandX = e.X
+	default:
+		return ""
+	}
+
+	tv, ok := v.info.Types[expr]
 
 	if !ok || tv.Value == nil || tv.Type == nil {
 		return ""
@@ -879,7 +900,13 @@ func (v *Visitor) widenedConstExprCastType(binaryExpr *ast.BinaryExpr) string {
 		return ""
 	}
 
-	if !v.operandRendersWidenedFold(binaryExpr.X) && !v.operandRendersWidenedFold(binaryExpr.Y) {
+	widened := v.operandRendersWidenedFold(operandX)
+
+	if !widened && operandY != nil {
+		widened = v.operandRendersWidenedFold(operandY)
+	}
+
+	if !widened {
 		return ""
 	}
 
@@ -891,6 +918,13 @@ func (v *Visitor) widenedConstExprCastType(binaryExpr *ast.BinaryExpr) string {
 // a named untyped-const REFERENCE of the same value renders as its golib `Untyped*` wrapper, whose
 // implicit conversions already narrow at the use site (wrapping those would churn green
 // emissions) — so the check strips paren/unary wrapping and requires a BinaryExpr.
+//
+// The fold need not be a DIRECT operand: the operator form is emitted over the operand renderings,
+// so a subtree that does not fold itself still renders `long` when one of ITS operands does —
+// `[]int32{(1<<31 - 1) - 1}` folds only the grandchild shift. The walk therefore descends the whole
+// constant subtree. Descent never over-reports: go/types leaves the operands of a constant operator
+// expression UNTYPED, so no interior node ever carries its own narrowing cast (which would put its
+// rendering back at the narrow width) — the guard test pins the single-cast emission.
 func (v *Visitor) operandRendersWidenedFold(expr ast.Expr) bool {
 	switch e := expr.(type) {
 	case *ast.ParenExpr:
@@ -898,7 +932,8 @@ func (v *Visitor) operandRendersWidenedFold(expr ast.Expr) bool {
 	case *ast.UnaryExpr:
 		return v.operandRendersWidenedFold(e.X)
 	case *ast.BinaryExpr:
-		return v.overflowingConstLiteral(e) != ""
+		return v.overflowingConstLiteral(e) != "" ||
+			v.operandRendersWidenedFold(e.X) || v.operandRendersWidenedFold(e.Y)
 	}
 
 	return false

@@ -934,8 +934,8 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// (widenedConstExprCastType) — `int32(1<<31 - 1)` converts an operand that rendered as
 		// `(int32)(2147483648L - 1)`. Re-casting would only double it, so return it as it stands;
 		// the same wholeExprIsCastOfType check the assignment path uses for the sibling fold.
-		if operand, ok := arg.(*ast.BinaryExpr); ok && targetIsBasic &&
-			v.widenedConstExprCastType(operand) == targetTypeName && wholeExprIsCastOfType(expr, targetTypeName) {
+		if targetIsBasic && v.widenedConstExprCastType(arg) == targetTypeName &&
+			wholeExprIsCastOfType(expr, targetTypeName) {
 			return expr
 		}
 

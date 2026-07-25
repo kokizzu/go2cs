@@ -94,6 +94,63 @@ func main() {
 	for _, v := range u64wide {
 		fmt.Println(v)
 	}
+
+	// UNARY roots. go/types types only the ROOT of a constant operator expression and leaves its
+	// operands untyped, so a NEGATED widened constant has no typed binary anywhere to hang the
+	// narrowing cast on -- it can only be placed at the unary root. strconv's atoi_test parseInt32
+	// table (`{"-2147483647", -(1<<31 - 1), nil}`) emitted a bare `-(2147483648L - 1)` against an
+	// int32 struct field (CS1503). `^` takes the same treatment, and an `int` target narrows to nint.
+	negs := []int32{-(1<<31 - 1), -(1<<31 - 2), ^(1<<31 - 1)}
+	negInts := []int{-(1<<31 - 1)}
+
+	// Control: the int16 shift folds nothing (32767 is inside int32), so this element's cast comes
+	// from the composite path's own narrowing, not from the widened-fold rule -- shape must not move.
+	neg16 := []int16{-(1<<15 - 1)}
+
+	// The fold need not be a DIRECT operand -- the operator form is emitted over the operand
+	// RENDERINGS, so a subtree that does not fold itself still renders `long` when one of ITS
+	// operands does. Here the root's operands are `(1<<31 - 1)` / `1<<40>>20` (both in range, both
+	// unfolded) and `1`; only the nested shift folds. Exactly ONE cast may appear: go/types leaves
+	// an interior node untyped, so it never carries a narrowing cast of its own.
+	deep := []int32{(1<<31 - 1) - 1}
+	deeper := []int32{1<<40>>20 - 1}
+
+	// The same shapes away from a composite literal: a typed assignment, an explicit conversion
+	// (which must not double the cast), a struct field (the atoi_test table shape), and an argument.
+	var negAssign int32 = -(1<<31 - 1)
+	negConv := int32(-(1<<31 - 1))
+	rows := []row{{"-2147483647", -(1<<31 - 1)}}
+
+	for _, v := range negs {
+		fmt.Println(v)
+	}
+
+	for _, v := range negInts {
+		fmt.Println(v)
+	}
+
+	for _, v := range neg16 {
+		fmt.Println(v)
+	}
+
+	for _, v := range deep {
+		fmt.Println(v)
+	}
+
+	for _, v := range deeper {
+		fmt.Println(v)
+	}
+
+	fmt.Println(negAssign, negConv, rows)
+	showInt32(-(1<<31 - 1))
+	showInt32((1<<31 - 1) - 2)
+}
+
+// row mirrors strconv's atoi_test parseInt32 table entry -- a struct whose int32 field is
+// initialized from a negated widened constant.
+type row struct {
+	in  string
+	out int32
 }
 
 // Word mirrors math/big's Word -- a NAMED type whose underlying type is uintptr, so its elements

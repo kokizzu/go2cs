@@ -240,6 +240,20 @@ func (v *Visitor) lambdaBoxRefAddressForm(unaryExpr *ast.UnaryExpr) (string, boo
 }
 
 func (v *Visitor) convUnaryExpr(unaryExpr *ast.UnaryExpr, context UnaryExprContext) string {
+	core := v.convUnaryExprCore(unaryExpr, context)
+
+	// A TYPED-integer constant UNARY expression whose operand fold has widened the emitted
+	// arithmetic to `long` carries its own narrowing cast — the exact counterpart of the binary
+	// root's treatment in convBinaryExpr, and the ONLY place the cast can go: go/types types just
+	// the unary node and leaves its constant operand untyped (see widenedConstExprCastType).
+	if castType := v.widenedConstExprCastType(unaryExpr); castType != "" && !wholeExprIsCastOfType(core, castType) {
+		return "(" + castType + ")(" + core + ")"
+	}
+
+	return core
+}
+
+func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprContext) string {
 	// Check if the unary expression is a pointer dereference
 	if unaryExpr.Op == token.AND {
 		// Inside a lambda, a captured heap-boxed local is referenced through its box (the ref-local
