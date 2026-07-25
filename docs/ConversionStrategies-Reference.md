@@ -4640,6 +4640,55 @@ through a generic embed (`w.show()`) — receiver wrappers resolve the embedded 
 name; qualified calls work. Guarded by `GenericStructFields` (`wrapped[T]`/`tag[T]`) and
 `CrossPkgUser` (`holder[T]` embedding `*CrossPkgLib.Cache[T]`).
 
+### A func literal in an `any` slot states its Go result type explicitly
+A function literal converted into a real **empty-interface** parameter has no delegate target
+type, so C# natural-types it from its return arms — `func(x int) int { return 0 }` inferred
+`Func<nint, int>` (the literal `0` is C# `int`, i.e. Go `int32`), and the natural type becomes
+the value's runtime dynamic type, which reflection then classifies: `func(int) int` and
+`func(int) int32` collapsed to ONE managed type, so `quick.CheckEqual` saw equal func types
+where Go's differ (testing/quick's TestFailure #3). The emission states the declared Go result
+type explicitly:
+```go
+CheckEqual(func(x int) int { return 0 }, func(x int) int32 { return 0 }, nil)
+```
+```csharp
+CheckEqual(nint (nint x) => 0, int (nint x) => 0, default!);
+```
+Scoped to single-result literals in `any` slots (`CallExprContext.emptyInterfaceArgs` →
+`LambdaContext.untypedInterfaceTarget` → convFuncLit's explicit-return-type mechanism);
+target-typed positions are untouched — their delegate supplies the type, and an explicit return
+type there could only add identity-match constraints against hand-written stub delegate types.
+Multi-result `any`-slot literals keep natural tuple typing (no demonstrated consumer). Guarded
+by the `LiftedLocalTypes` behavioral test; operationally by testing/quick's banked suite.
+
+### Lifted function-local types: anonymous structs dedupe, named types carry [GoLocalName]
+C# forbids type declarations in method bodies, so the converter lifts function-local types to
+package scope under a function-prefixed name. Two Go type-identity rules ride the lift:
+
+- **Structurally identical anonymous struct types are ONE Go type.** Repeated textual
+  occurrences (`new(struct{ A Struct })` four times in encoding/binary's TestSizeStructCache)
+  must lift to a SINGLE C# type — per-occurrence lifts split `reflect.Type` identity per
+  occurrence, so binary's `structSize` cache gained four entries where Go adds one. Lifted
+  anonymous structs dedupe by structural signature within a function; NAMED local declarations
+  keep per-declaration identity and never dedupe. (The cross-function/package-level anonymous
+  split is a recorded residual.)
+- **A lifted local NAMED type carries its original Go name** via the golib `[GoLocalName]`
+  attribute — a SEPARATE attribute, never a `[GoType]` definition token (the TypeGenerator
+  matches that slot by exact string and throws on unknown forms). The reflection bridge's
+  naming (`GoReflect.GoQualifiedName` → `Type.String()`, `%T`) prefers it, so a local type
+  prints Go's `*binary.Person`, never the lifted `*binary.TestNoFixedSize_Person`
+  (TestNoFixedSize asserts the exact error text):
+```go
+func TestNoFixedSize(t *testing.T) {
+	type Person struct { … }
+```
+```csharp
+[GoLocalName("Person")] [GoType("dyn")] partial struct TestNoFixedSize_Person {
+```
+Guarded by the `LiftedLocalTypes` behavioral test (single lifted declaration for repeated
+anonymous occurrences + `[GoLocalName]` pinned in the golden); operationally by
+encoding/binary's banked suite.
+
 ### A methodless named func type renders as its base delegate
 
 Go treats a named func type as freely interconvertible with its underlying `func(...)` when the
@@ -6595,6 +6644,90 @@ address 0 on the very first step.
 managed buffer rather than aliasing it the way Go does, so writes through the result do not reach the
 native memory. That is sufficient for reading a block a syscall returned (the `Environ` shape) and is
 where the seam still differs from Go.
+
+### A reinterpret of a MANAGED pointer aliases the box — it never round-trips through the address
+The section above is about a pointer whose source genuinely *is* an address. The mirror case is
+`(*U)(unsafe.Pointer(p))` where `p` is an ordinary Go pointer `*T` — the shape `reflect` uses to view
+one struct as another (`toRType`: `(*rtype)(unsafe.Pointer(t))`). Both pointee types are managed, so
+there is no native memory anywhere in the expression, yet the emission routed through the raw-address
+seam anyway:
+
+```csharp
+return (ж<view>)(uintptr)(new @unsafe.Pointer(Ꮡh));   // was
+return Ꮡh.Reinterpret<view>();                        // is
+```
+
+The old form is **not merely indirect, it is unsound**. golib's `implicit operator uintptr(ж<T>)`
+ends in `fixed (void* ptr = &value.Value) return (uintptr)ptr;` — `fixed` pins only for the duration
+of its own statement. The address escapes it, and `(ж<U>)(uintptr)` then builds a *native-backed* box
+holding no reference to the source. The derived pointer therefore neither keeps its pointee alive nor
+survives the collector moving it. Consumed immediately it happens to work; **retained**, it dangles,
+and the read comes back silently wrong once another allocation reuses the address.
+
+That is exactly what `reflect` does — `canonType` caches the reinterpreted `rtype` for process
+lifetime — so after enough heap churn `TypeOf(x).Kind()` began reporting `Invalid` mid-process, which
+inverted `fmt.Sprint`'s "space only between two non-strings" rule corpus-wide. See
+[`docs/Phase4/FINDING-managed-box-uintptr-lifetime.md`](Phase4/FINDING-managed-box-uintptr-lifetime.md).
+
+The golib extension `Reinterpret<T, TDst>()` decides by **provenance first**:
+
+| Source pointer | Result |
+|---|---|
+| A nil box, or a plain `null` reference (both are Go's nil pointer) | `ж<TDst>.NilBox` — Go's `(*U)(unsafe.Pointer((*T)(nil))) == nil` |
+| Aliases a NATIVE address (`m_nativeAddr` — a Win32 API's returned block) | the same address; the interop contract above is untouched |
+| Owns MANAGED storage, and the reinterpret is representable (below) | a box aliasing that storage, through ж's existing struct-field-ref kind |
+| Anything else | the pre-existing address route |
+
+The managed arm recomputes its `ref` from a live object reference on every access
+(`Unsafe.As<T, TDst>(ref …ValueSlot)`), so it is GC-safe and needs no pin. It composes through the
+field-ref and array-element reference kinds — a reinterpret of `&s.f` or `&a[i]` aliases the real
+storage rather than a copy — and two reinterprets of one box compare equal, as Go requires (ж
+equality compares the source object plus the accessor, and the accessor is a static method).
+
+It is an **extension method on `ж<T>?`**, which is what lets a `null` source be tolerated at all: a
+zero-valued pointer field is a plain `null`, and an instance call on it throws where Go yields nil.
+That is why the emission carries both type arguments.
+
+**Why the managed arm is gated.** Go's rule for `(*TDst)(unsafe.Pointer(p))` is that `TDst` is no
+larger than `T` and the two share an equivalent layout — but that rule cannot be inherited, because a
+go2cs surrogate's C# layout is not its Go layout: a Go `[2]byte` is 2 bytes while `array<byte>` is a
+single reference to a backing store, a Go `string` is 16 bytes while `@string` is 8, a Go `[]byte` is
+24 while `slice<byte>` is 32. A **valid** Go reinterpret can therefore become an oversized
+`Unsafe.As` that reads past the value slot into the box's own private fields and materializes a
+*fabricated managed reference* — a CLR type-safety break, strictly worse than the contained
+wrong-read the address route gives. So the alias is taken only where it is demonstrably safe: both
+pointees value types; the destination fits inside the source; and either neither type contains
+managed references, or the two are layout-compatible in the senses the converter generates (the same
+type, a single-field wrapper over the other — Go's struct-embedding idiom and the generated
+named-type wrappers — or an identical recursive field-type sequence). Everything else falls back to
+the address route, so the change is additive: where it does not apply, behavior is exactly what it
+was.
+
+This mirrors **Go's own rule** on the other axis too: a pointer obtained through `unsafe.Pointer` is a
+real reference the collector tracks, while a `uintptr` is a number that does not keep its referent
+alive — so an arithmetic-derived source (`(*U)(unsafe.Pointer(uintptr(p) + off))`) keeps the address
+route.
+
+What this deliberately does **not** cover: Go's prefix-downcast idiom, where the runtime allocates a
+larger struct, hands out a pointer to its embedded header, and casts back
+(`(*structType)(unsafe.Pointer(t))` with `t` a `*abi.Type`). In Go the larger allocation is really
+there; in the managed model a `ж<abi.Type>` holds only an `abi.Type`, so there is nothing behind it
+to downcast to. Those sites keep the address route and remain the raw-metal class.
+
+Emission detail: the peeling is shared with the identity-reinterpret elision
+(`pointerConversionSource` — it unwraps an optional `abi.NoEscape`/`noescape` wrapper and an
+`unsafe.Pointer(p)` *conversion*, but never a function that merely returns `unsafe.Pointer`, e.g.
+`mallocgc`). Identical element types stay the identity elision described above; differing element
+types are the genuine reinterpret. The interception sits at the **two points that emit the address
+route** — the conversion path and the regular-call path, since `(*U)(unsafe.Pointer(…))`
+mis-classifies as a non-conversion and reaches only the latter — deliberately *not* upstream with the
+identity elision: the re-box routes above render their own conversions correctly, and diverting them
+breaks named ARRAY wrappers, whose lazily-materialized backing store a storage reinterpret bypasses.
+
+(Guarded by the `ReinterpretPointerLifetime` behavioral output test — an aliasing case, plus a
+lifetime case whose reinterpreted pointer is the only surviving reference across heavy allocation
+churn; before the fix it printed `lifetime: true false false` against Go's `true true true`. The
+gate's fallback is guarded by `FixedArrayBufferPointer`, whose fixed-array pin must survive.)
 
 ### `unsafe.Pointer(p)` on a pointer PARAMETER renders the box, never a deref
 A pointer parameter is emitted as the box `ж<T> Ꮡp` plus a deref'd VALUE alias

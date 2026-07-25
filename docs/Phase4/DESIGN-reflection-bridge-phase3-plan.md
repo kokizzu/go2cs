@@ -317,7 +317,50 @@ buildable on the `boxed/addrBox/typ_/flag` representation without `flagMethod`.
 
 ---
 
-# INCREMENT 2 — the call & construction half (design v1, 2026-07-24)
+# INCREMENT 2 — the call & construction half (design v2, 2026-07-24)
+
+> **Status: IMPLEMENTED 2026-07-24 — BOTH consumers validate.** testing/quick **8/8** vs
+> `go test -json` (zero skips, zero disclosures); encoding/binary **137 tests** (9
+> disclosed-divergent: 8 signature-pinned alloc-profile asserts + their aggregating t.Run
+> parent under the new deepest-first oracle rule; 43 disclosed-unsupported declarations
+> excluded per the Example/Benchmark policy). Implementation notes vs the v2 design:
+> - The **ruled managed-box Reinterpret model** (FINDING-managed-box-uintptr-lifetime.md,
+>   user ruling 2026-07-24 option 2, delivered into this arc mid-increment) replaced the
+>   planned hand-owned `toRType`: the converter now emits `p.Reinterpret<T,U>()` for
+>   managed-source pointer reinterprets corpus-wide, and the GC-corruption class it fixes
+>   (canonType's cached descriptor reading recycled memory) was ALSO this increment's
+>   nondeterministic quick-failure wall — independently root-caused here, converged.
+> - canonType interning keys widened to (sysType, dims) — the blessed cargo-only variant was
+>   internally inconsistent (first-interned wrapper would answer Len() for all lengths of one
+>   element type); equal-dims arrays stay identity-equal, the dims-knowledge split is the
+>   recorded under-equal residual (no measured consumer crosses it). Flagged as a deviation.
+> - Two prerequisite build blockers (gen named-complex operator set; blank-scalar foreach
+>   discard shadowing) plus four demonstrated fidelity fixes landed as their own guarded
+>   commits: new-witness enumeration for test-package runtime asserts (myStruct×Generator),
+>   lifted-anon-struct dedupe (TestSizeStructCache), [GoLocalName] stamps (TestNoFixedSize),
+>   any-slot func-literal result typing (TestFailure #3).
+> - Guards: NamedNumericIncDec (complex operator set), RangeStatements (blank scalar range),
+>   ReinterpretPointerLifetime (aliasing + lifetime under GC churn; delivered), and
+>   LiftedLocalTypes (anon dedupe + GoLocalName + any-slot lambda typing in one golden);
+>   quick/binary banked suites are the operational guards.
+> - §5-table items now closed: Value.Call/MakeFunc-adjacent introspection (NumIn/In/NumOut/
+>   Out/IsVariadic), MakeSlice/MakeMap/New/SetMapIndex/Set* family, Field(i)/Index(i)
+>   addressability (+ Value.Slice, discovered required), unnamed↔named directlyAssignable
+>   (TestPtrAlias demonstrated), map/chan/func Zero kinds. Remaining recorded residuals:
+>   named-func-type identity under interning (gob), variadic Call/CallSlice (text/template),
+>   SetMapIndex delete-on-invalid (json), unnamed array-param dims (fArray vacuity, accepted
+>   by ruling), cross-function anonymous-struct identity, typed-nil map/chan inside `any`.
+
+> **Blessing record (user rulings, 2026-07-24, in-session):**
+> 1. **v2 core model blessed as folded** (I2.2/I2.3 corrected by I2.R); `unsafe.Sizeof`
+>    rerouting onto `GoSizeOf` DEFERRED with the divergence recorded.
+> 2. **All four converter fidelity fixes blessed** (new([N]T) length; lifted anon-struct
+>    identity dedupe; local-type name via NEW attribute; lambda result-type inference) — each
+>    its own commit + guard.
+> 3. **Alloc-assert disclosures pre-authorized CONDITIONALLY** — only if sole residue,
+>    signature-pinned, exact list reported with re-measured numbers.
+> 4. **fArray unnamed-param dims residual: accept + record** (no param-dims attribute; no
+>    other demonstrated consumer).
 
 > Chip session `chip-reflect-incr2` (branch `claude/chip-reflect-incr2`, base master `5fa7a0f21`).
 > Designed against the two demonstrated consumers' MEASURED differentials (below), per the §6.1
