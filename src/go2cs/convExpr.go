@@ -30,6 +30,12 @@ type CallExprContext struct {
 	useGoStringArg    map[int]bool
 	argTypeIsPtr      map[int]bool
 	interfaceTypes    map[int]types.Type
+	// emptyInterfaceArgs marks arguments whose PARAMETER is a real empty interface (`any`):
+	// a func-LITERAL argument there is natural-typed by C# (no delegate target), so its Go
+	// result type must be stated explicitly or inference picks the arms' literal type
+	// (`func(x int) int { return 0 }` inferred Func<nint, int> — Go int32! — collapsing
+	// distinct Go func types under reflection; testing/quick's TestFailure #3). See convFuncLit.
+	emptyInterfaceArgs map[int]bool
 	hasSpreadOperator bool
 	keyValueSource    KeyValueSource
 	keyValueIdent     *ast.Ident
@@ -134,6 +140,10 @@ type LambdaContext struct {
 	isCallExpr    bool
 	renderParams  bool
 	isPointerCast bool
+	// untypedInterfaceTarget marks a func literal converted into an `any` parameter slot: it is
+	// natural-typed by C# (no delegate target type), so convFuncLit states its Go result type
+	// explicitly (see CallExprContext.emptyInterfaceArgs).
+	untypedInterfaceTarget bool
 	deferredDecls *strings.Builder
 	callArgs      []string
 	// isIIFE marks an immediately-invoked, no-argument function literal — emitted as a

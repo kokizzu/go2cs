@@ -116,6 +116,7 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 
 		if callContext != nil {
 			lambdaContext.deferredDecls = callContext.deferredDecls
+			lambdaContext.untypedInterfaceTarget = callContext.emptyInterfaceArgs[i]
 		}
 
 		contexts := []ExprContext{basicLitContext, identContext, keyValueContext, lambdaContext, callContext}

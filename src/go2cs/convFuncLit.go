@@ -526,7 +526,17 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		returnTypePrefix := ""
 
 		if results := litSig.Results(); results != nil && results.Len() == 1 {
-			if basic, ok := results.At(0).Type().(*types.Basic); ok && basic.Kind() == types.UnsafePointer {
+			if context.untypedInterfaceTarget {
+				// A literal converted into a real `any` parameter slot is NATURAL-typed by C# —
+				// there is no delegate target, so the inferred return type comes from the arms'
+				// literal types (`return 0` → C# int = Go int32) rather than the DECLARED Go
+				// result. The natural type becomes the value's runtime dynamic type, which
+				// reflection then classifies: `func(x int) int` and `func(x int) int32` collapsed
+				// to one Func<nint, int>, so quick.CheckEqual saw equal types where Go's differ
+				// (TestFailure #3). State the declared Go result type explicitly. (Multi-result
+				// literals in `any` slots keep natural tuple typing — no demonstrated consumer.)
+				returnTypePrefix = convertToCSTypeName(v.getTypeName(results.At(0).Type(), false)) + " "
+			} else if basic, ok := results.At(0).Type().(*types.Basic); ok && basic.Kind() == types.UnsafePointer {
 				returnTypePrefix = convertToCSTypeName(v.getTypeName(results.At(0).Type(), false)) + " "
 			} else if declaredIsIface, isEmpty := isInterface(results.At(0).Type()); declaredIsIface && !isEmpty {
 				// An INTERFACE-returning literal whose arms return DISTINCT concrete types —
