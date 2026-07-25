@@ -13,8 +13,11 @@ allocate). Each is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> **41 packages · 1,059 matching test verdicts · 21 disclosed** *(updated 2026-07-25 — this table is
-> maintained as part of the Phase-4 validation campaign and grows as packages validate)*
+> ### Phase 4 progress: **41 / 215 testable packages validated — 19.1%**
+>
+> **1,059 matching test verdicts · 21 disclosed** *(updated 2026-07-25 — maintained as part of the
+> Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
+> standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
 | Package | Tests | Disclosed | What it exercises |
 |:--|:--:|:--:|:--|

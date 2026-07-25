@@ -152,8 +152,10 @@ capability, record the blocker in the memory ledger and move on — don't spin.
 6. On a clean validation, follow the validated-package commit policy: commit the converted C# test
    sources into `src/go-src-converted/<pkg>` (Go headers intact), **and add the package's row to
    [`docs/ValidatedTestPackages.md`](../ValidatedTestPackages.md) in the same banking commit**
-   (alphabetical order; update the header's package/verdict/disclosed totals — user ruling
-   2026-07-25: this table maintains its own progress, per-package). Commit gpg-signed to master
+   (alphabetical order; update the header's progress line — validated count, the /215 percentage,
+   verdict and disclosed totals — user ruling 2026-07-25: this table maintains its own progress,
+   per-package; the 215 denominator = converted packages with Go 1.23.1 `Test` functions, fixed
+   until a Go version bump). Commit gpg-signed to master
    (solo-project convention). **Batch NEWS/README/Milestone** — do NOT touch those per package; wait
    for a notable cross-section (`[[go2cs-doc-update-cadence]]`).
 7. Move to the next package.
