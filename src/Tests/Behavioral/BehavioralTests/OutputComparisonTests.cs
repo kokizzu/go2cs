@@ -1031,6 +1031,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
+    public void CheckReinterpretPointerLifetime() => CheckTarget("ReinterpretPointerLifetime");
+
+    [TestMethod]
     public void CheckRelationalPatternGuard() => CheckTarget("RelationalPatternGuard");
 
     [TestMethod]

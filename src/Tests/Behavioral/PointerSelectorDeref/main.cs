@@ -16,11 +16,11 @@ partial class main_package {
 }
 
 internal static ж<view> viewOf(ж<header> Ꮡhp) {
-    return (ж<view>)(uintptr)(new @unsafe.Pointer(Ꮡhp));
+    return Ꮡhp.Reinterpret<header, view>();
 }
 
 internal static nint readN(ж<view> Ꮡp) {
-    return (~viewOf((ж<header>)(uintptr)(new @unsafe.Pointer(Ꮡp)))).n;
+    return (~viewOf(Ꮡp.Reinterpret<view, header>())).n;
 }
 
 internal static void Main() {
@@ -29,7 +29,7 @@ internal static void Main() {
     fmt.Println(readN(Ꮡh));
     ref var g = ref heap<header>(out var Ꮡg);
     g = new header(tag: 9, n: 3);
-    nint v = (((ж<view>)(uintptr)(new @unsafe.Pointer(Ꮡg)))).Value.n;
+    nint v = ((Ꮡg.Reinterpret<header, view>())).Value.n;
     fmt.Println(v);
 }
 

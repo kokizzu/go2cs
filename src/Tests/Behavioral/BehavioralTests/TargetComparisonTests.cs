@@ -1105,6 +1105,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
+    public void CheckReinterpretPointerLifetime() => CheckTarget("ReinterpretPointerLifetime");
+
+    [TestMethod]
     public void CheckRelationalPatternGuard() => CheckTarget("RelationalPatternGuard");
 
     [TestMethod]

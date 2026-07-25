@@ -1102,6 +1102,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
+    public void CheckReinterpretPointerLifetime() => CheckTarget("ReinterpretPointerLifetime");
+
+    [TestMethod]
     public void CheckRelationalPatternGuard() => CheckTarget("RelationalPatternGuard");
 
     [TestMethod]

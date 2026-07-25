@@ -104,7 +104,7 @@ internal static slice<@string> kindNames = new golib.SparseArray<@string>{
 }.slice();
 
 public static ж<Type> TypeOf(any a) {
-    var eface = ~(ж<EmptyInterface>)(uintptr)(new @unsafe.Pointer(Ꮡ(a)));
+    var eface = ~Ꮡ(a).Reinterpret<any, EmptyInterface>();
     return eface.Type;
 }
 
@@ -195,7 +195,7 @@ public static nint Len(this ж<Type> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     if (t.Kind() == Array) {
-        return (nint)((ж<ΔArrayType>)(uintptr)(@unsafe.Pointer.FromRef(ref t))).Value.Len;
+        return (nint)(Ꮡt.Reinterpret<Type, ΔArrayType>()).Value.Len;
     }
     return 0;
 }
@@ -226,7 +226,7 @@ public static ΔChanDir ChanDir(this ж<Type> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     if (t.Kind() == Chan) {
-        var ch = (ж<ChanType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+        var ch = Ꮡt.Reinterpret<Type, ChanType>();
         return (~ch).Dir;
     }
     return InvalidDir;
@@ -280,31 +280,31 @@ public static ж<UncommonType> Uncommon(this ж<Type> Ꮡt) {
     }
     var exprᴛ1 = t.Kind();
     if (exprᴛ1 == Struct) {
-        return Ꮡ(((ж<structTypeUncommon>)(uintptr)(@unsafe.Pointer.FromRef(ref t))).Value.u);
+        return Ꮡ((Ꮡt.Reinterpret<Type, structTypeUncommon>()).Value.u);
     }
     if (exprᴛ1 == Pointer) {
-        return Ꮡ(((ж<Uncommon_u>)(uintptr)(@unsafe.Pointer.FromRef(ref t))).Value.u);
+        return Ꮡ((Ꮡt.Reinterpret<Type, Uncommon_u>()).Value.u);
     }
     if (exprᴛ1 == Func) {
-        return Ꮡ(((ж<Uncommon_uᴛ1>)(uintptr)(@unsafe.Pointer.FromRef(ref t))).Value.u);
+        return Ꮡ((Ꮡt.Reinterpret<Type, Uncommon_uᴛ1>()).Value.u);
     }
     if (exprᴛ1 == Slice) {
-        return Ꮡ(((ж<Uncommon_uᴛ2>)(uintptr)(@unsafe.Pointer.FromRef(ref t))).Value.u);
+        return Ꮡ((Ꮡt.Reinterpret<Type, Uncommon_uᴛ2>()).Value.u);
     }
     if (exprᴛ1 == Array) {
-        return Ꮡ(((ж<Uncommon_uᴛ3>)(uintptr)(@unsafe.Pointer.FromRef(ref t))).Value.u);
+        return Ꮡ((Ꮡt.Reinterpret<Type, Uncommon_uᴛ3>()).Value.u);
     }
     if (exprᴛ1 == Chan) {
-        return Ꮡ(((ж<Uncommon_uᴛ4>)(uintptr)(@unsafe.Pointer.FromRef(ref t))).Value.u);
+        return Ꮡ((Ꮡt.Reinterpret<Type, Uncommon_uᴛ4>()).Value.u);
     }
     if (exprᴛ1 == Map) {
-        return Ꮡ(((ж<Uncommon_uᴛ5>)(uintptr)(@unsafe.Pointer.FromRef(ref t))).Value.u);
+        return Ꮡ((Ꮡt.Reinterpret<Type, Uncommon_uᴛ5>()).Value.u);
     }
     if (exprᴛ1 == Interface) {
-        return Ꮡ(((ж<Uncommon_uᴛ6>)(uintptr)(@unsafe.Pointer.FromRef(ref t))).Value.u);
+        return Ꮡ((Ꮡt.Reinterpret<Type, Uncommon_uᴛ6>()).Value.u);
     }
     { /* default: */
-        return Ꮡ(((ж<Uncommon_uᴛ7>)(uintptr)(@unsafe.Pointer.FromRef(ref t))).Value.u);
+        return Ꮡ((Ꮡt.Reinterpret<Type, Uncommon_uᴛ7>()).Value.u);
     }
 
 }
@@ -314,23 +314,23 @@ public static ж<Type> Elem(this ж<Type> Ꮡt) {
 
     var exprᴛ1 = t.Kind();
     if (exprᴛ1 == Array) {
-        var tt = (ж<ΔArrayType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+        var tt = Ꮡt.Reinterpret<Type, ΔArrayType>();
         return (~tt).Elem;
     }
     if (exprᴛ1 == Chan) {
-        var tt = (ж<ChanType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+        var tt = Ꮡt.Reinterpret<Type, ChanType>();
         return (~tt).Elem;
     }
     if (exprᴛ1 == Map) {
-        var tt = (ж<ΔMapType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+        var tt = Ꮡt.Reinterpret<Type, ΔMapType>();
         return (~tt).Elem;
     }
     if (exprᴛ1 == Pointer) {
-        var tt = (ж<PtrType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+        var tt = Ꮡt.Reinterpret<Type, PtrType>();
         return (~tt).Elem;
     }
     if (exprᴛ1 == Slice) {
-        var tt = (ж<SliceType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+        var tt = Ꮡt.Reinterpret<Type, SliceType>();
         return (~tt).Elem;
     }
 
@@ -343,7 +343,7 @@ public static ж<ΔStructType> StructType(this ж<Type> Ꮡt) {
     if (t.Kind() != Struct) {
         return default!;
     }
-    return (ж<ΔStructType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+    return Ꮡt.Reinterpret<Type, ΔStructType>();
 }
 
 public static ж<ΔMapType> MapType(this ж<Type> Ꮡt) {
@@ -352,7 +352,7 @@ public static ж<ΔMapType> MapType(this ж<Type> Ꮡt) {
     if (t.Kind() != Map) {
         return default!;
     }
-    return (ж<ΔMapType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+    return Ꮡt.Reinterpret<Type, ΔMapType>();
 }
 
 public static ж<ΔArrayType> ArrayType(this ж<Type> Ꮡt) {
@@ -361,7 +361,7 @@ public static ж<ΔArrayType> ArrayType(this ж<Type> Ꮡt) {
     if (t.Kind() != Array) {
         return default!;
     }
-    return (ж<ΔArrayType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+    return Ꮡt.Reinterpret<Type, ΔArrayType>();
 }
 
 public static ж<ΔFuncType> FuncType(this ж<Type> Ꮡt) {
@@ -370,7 +370,7 @@ public static ж<ΔFuncType> FuncType(this ж<Type> Ꮡt) {
     if (t.Kind() != Func) {
         return default!;
     }
-    return (ж<ΔFuncType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+    return Ꮡt.Reinterpret<Type, ΔFuncType>();
 }
 
 public static ж<ΔInterfaceType> InterfaceType(this ж<Type> Ꮡt) {
@@ -379,7 +379,7 @@ public static ж<ΔInterfaceType> InterfaceType(this ж<Type> Ꮡt) {
     if (t.Kind() != Interface) {
         return default!;
     }
-    return (ж<ΔInterfaceType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+    return Ꮡt.Reinterpret<Type, ΔInterfaceType>();
 }
 
 [GoRecv] public static uintptr Size(this ref Type t) {
@@ -412,7 +412,7 @@ public static nint NumMethod(this ж<Type> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     if (t.Kind() == Interface) {
-        var tt = (ж<ΔInterfaceType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+        var tt = Ꮡt.Reinterpret<Type, ΔInterfaceType>();
         return tt.NumMethod();
     }
     return len(Ꮡt.ExportedMethods());
@@ -458,7 +458,7 @@ public static ж<Type> Key(this ж<Type> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     if (t.Kind() == Map) {
-        return ((ж<ΔMapType>)(uintptr)(@unsafe.Pointer.FromRef(ref t))).Value.Key;
+        return (Ꮡt.Reinterpret<Type, ΔMapType>()).Value.Key;
     }
     return default!;
 }

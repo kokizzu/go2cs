@@ -115,7 +115,7 @@ public static @unsafe.Pointer NoEscape(@unsafe.Pointer p) {
 }
 
 public static ж<Type> TypeOf(any a) {
-    var eface = ~(ж<EmptyInterface>)(uintptr)(new @unsafe.Pointer(Ꮡ(a)));
+    var eface = ~Ꮡ(a).Reinterpret<any, EmptyInterface>();
     return eface.Type;
 }
 
@@ -142,11 +142,11 @@ public static ж<Type> Elem(this ж<Type> Ꮡt) {
 
     var exprᴛ1 = t.Kind();
     if (exprᴛ1 == Array) {
-        var tt = (ж<ΔArrayType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+        var tt = Ꮡt.Reinterpret<Type, ΔArrayType>();
         return (~tt).Elem;
     }
     if (exprᴛ1 == Map) {
-        var tt = (ж<ΔMapType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+        var tt = Ꮡt.Reinterpret<Type, ΔMapType>();
         return (~tt).Elem;
     }
 
@@ -171,7 +171,7 @@ public static ж<ΔMapType> MapType(this ж<Type> Ꮡt) {
     if (t.Kind() != Map) {
         return default!;
     }
-    return (ж<ΔMapType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+    return Ꮡt.Reinterpret<Type, ΔMapType>();
 }
 
 [GoType] partial struct ΔArrayType {
@@ -187,7 +187,7 @@ public static ж<ΔArrayType> ArrayType(this ж<Type> Ꮡt) {
     if (t.Kind() != Array) {
         return default!;
     }
-    return (ж<ΔArrayType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+    return Ꮡt.Reinterpret<Type, ΔArrayType>();
 }
 
 internal const nint seqFirst = iota;

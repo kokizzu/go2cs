@@ -1,9 +1,11 @@
 # FINDING — a managed box round-tripped through `uintptr` yields a DANGLING pointer
 
-> Filed 2026-07-24 from the `go/doc/comment` arc (sub-agent `claude/r2-doccomment`). **Not fixed** —
-> the correct fix is a decision about the `ж<T>` pointer model with corpus-wide blast radius, and its
-> demonstrated consumer (`reflect.canonType`) is inside the **live reflection chip's ownership lock**.
-> Written up per charter §10 (surface the decision, keep moving).
+> Filed 2026-07-24 from the `go/doc/comment` arc (sub-agent `claude/r2-doccomment`). Folded into the
+> reflection chip's increment-2 arc, which owns the affected files.
+>
+> **RULED 2026-07-24 (user, charter §10): fix the pointer MODEL generally — option 2.** Rationale
+> below in *The ruling*. Reproduced deterministically first (`src/Tests/Behavioral/ReinterpretPointerLifetime`),
+> then fixed at the ruled layer.
 
 ---
 
@@ -112,6 +114,139 @@ take a real persistent pin (`pinnedArrayData`).
 
 Option 2 matches the documented architecture and is the durable one; option 1 is the one that keeps
 the raw address model and pays for it.
+
+---
+
+## The ruling (2026-07-24, user, charter §10) — option 2, at full generality
+
+**Fix the pointer MODEL, not the consumer.** Rejected: the chip-local `canonType` fix (option 3 —
+leaves the general hazard latent, charter §2) and a golib-primitive-plus-hand-owned-reflect variant
+(fixes only the sites we hand-write, and a converted END-USER program doing an ordinary struct
+reinterpret would still corrupt silently — charter §8).
+
+### Why this is Go's own rule, not a go2cs invention
+
+Go draws exactly this line: a pointer obtained through `unsafe.Pointer` is a real reference the
+collector tracks and keeps alive, while a `uintptr` is **a number that does not**. The old emission
+inverted it — every reinterpret went through the number. The fix restores Go's own distinction, and
+the residual (arithmetic-derived `uintptr` sources keep the address route) is not a gap in the model
+but the faithful reproduction of Go's rule.
+
+### What was measured before deciding
+
+Reproduced first, deterministically (3/3 runs), as `src/Tests/Behavioral/ReinterpretPointerLifetime`
+— Go prints `lifetime: true true true`, pre-fix C# printed `lifetime: true false false`. A forced
+collection alone does not reproduce it; the address must actually be re-allocated, which is why it
+looks nondeterministic in the wild.
+
+Corpus census of `(ж<X>)(uintptr)` in `src/go-src-converted` (930 sites; ripgrep — plain `grep -P`
+dies on this locale and silently returns nothing, charter §9):
+
+| Cluster | Sites | Disposition |
+|---|---|---|
+| `runtime` | 592 | Compile-only stub tree; never executes in the managed model |
+| `reflect` + `internal/reflectlite` + `internal/abi` | 231 | **Executing** — where the bug lives |
+| syscall / net / internal/poll / os / windows | ~80 | Interop: the address IS the meaning; must keep the address model |
+
+By source shape: 338 fused `(uintptr)(new @unsafe.Pointer(`, 76 `@unsafe.Pointer.FromRef(ref …)`,
+516 number-sourced. So **414 sites corpus-wide / 130 in the executing reflect cluster** have
+recoverable provenance; the rest are genuinely address-derived.
+
+### The fix, at the two ruled layers
+
+1. **golib** (`src/core/golib/ж.cs`) — `ж<T>.Reinterpret<TDst>()`. Provenance decides the model,
+   **not the pointee type**: a NATIVE-backed box (`m_nativeAddr` — a Win32 API's returned address)
+   reinterprets to the same address, which is what those call sites mean and the only thing correct
+   for them; a nil box yields the derived type's `NilBox`; a box owning MANAGED storage aliases that
+   storage through ж's existing struct-field-ref reference kind, recomputing the ref from a live
+   object reference on each access (`Unsafe.As<T, TDst>(ref …ValueSlot)`). That is GC-safe by
+   construction and needs no pin. It composes through the field-ref and array-element kinds, so a
+   reinterpret of `&s.f` or `&a[i]` aliases the real storage, and it preserves Go pointer identity
+   (ж equality compares source + accessor; the accessor is a static method, so two reinterprets of
+   one box compare equal).
+2. **converter** (`src/go2cs/convCallExpr.go`) — the `(*U)(unsafe.Pointer(p))` shape with `p` a Go
+   pointer now emits `Ꮡp.Reinterpret<U>()` instead of the `(uintptr)` hop. This reuses the peeling
+   the identity-reinterpret path already did (`pointerConversionSource`, extracted from
+   `pointerReinterpretIdentitySource`): identical element types stay the existing identity elision,
+   differing element types are the genuine reinterpret. A raw-address source has no box behind it
+   and keeps the address route.
+
+### What the adversarial review changed (§7, three independent lenses — Go-semantics /
+### blast-radius / generalization)
+
+The first implementation was **wrong in the same way for three different reasons**, and all three
+reviewers found it independently with executed probes. The claim it rested on — *"the managed arm is
+never worse than the address arm, since both reinterpret the same bytes"* — is **false**, because a
+go2cs surrogate's C# layout is not its Go layout:
+
+| Go type | Go size | C# surrogate | C# size |
+|---|---|---|---|
+| `[2]byte` | 2 | `array<byte>` | 8 (a reference to a backing store) |
+| `string` | 16 | `@string` | 8 |
+| `[]byte` | 24 | `slice<byte>` | 32 |
+
+So a **valid** Go reinterpret becomes an oversized `Unsafe.As` that reads past the value slot into the
+box's own private fields and materializes a *fabricated managed reference* — a CLR type-safety break
+(access violation, or heap corruption on write), which is strictly worse than the contained
+wrong-read the address route produces. Three concrete regressions were demonstrated, not predicted:
+
+| # | Regression | Evidence |
+|---|---|---|
+| R1 | A reference-typed `TDst` makes the derived box report `IsNull` (a field-ref box has `m_val == null`), so `~` **panics** where the native box did not. 17 corpus sites, incl. `time`'s `syncTimer` on the `NewTimer`/`NewTicker` path and 7 `reflect` type constructors | probe: `~Reinterpret<object>()` → `PanicException` |
+| R2 | A fixed-array pointee bypasses `pinnedArrayData`, aliasing the `array<T>` **wrapper struct** instead of the array data — `FixedArrayBufferPointer` (an output-compared guard for a *previous* fix in this area) regresses | probe: `2018915346` (correct) vs `1699976376` (the `ushort[]` object pointer) |
+| R3 | A `null` **reference** source — the second nil representation, e.g. a zero-valued pointer field — throws `NullReferenceException` from an instance call, where the old route yielded nil | reproduced by the suite: `TypeConversion` **exit code 2 vs Go 0** |
+
+Two further scope corrections:
+
+* **The prefix-downcast family is structurally unrepresentable and is NOT fixed.** Go's reflect/runtime
+  idiom allocates a larger struct, hands out a pointer to its embedded header, and casts back
+  (`(*structType)(unsafe.Pointer(t))` where `t` is a `*abi.Type`). In Go the larger allocation is
+  really there; in the managed model a `ж<abi.Type>` holds *only* an `abi.Type`. ~60+ sites. These keep
+  the address route and remain the recorded raw-metal class.
+* **Coverage is not "the pointer model generally."** Of 930–940 emitted reinterpret sites, ~55% are
+  arithmetic-derived numbers that keep the address route by design, and the fused/`FromRef` shapes the
+  fix reaches are the rest. The honest claim is: **the reinterpret is made sound wherever a source box
+  is recoverable AND the reinterpret is representable in the managed model** — not everywhere.
+
+### The corrected design
+
+1. **`Reinterpret` is an extension method on `ж<T>?`**, so both nil representations (a nil box and a
+   plain `null` reference) yield the derived type's nil, as Go does. This is why the signature carries
+   both type arguments — `Ꮡt.Reinterpret<abi.Type, rtype>()`.
+2. **The managed arm is GATED** (`ReinterpretAliasesStorage<T, TDst>`, cached per pair): both pointees
+   value types; `SizeOf<TDst>() <= SizeOf<T>()` so the read stays inside the source's storage; and
+   either neither type contains managed references (nothing can be fabricated) or the two are
+   layout-compatible in the senses the converter actually generates (same type, a single-field wrapper
+   over the other, or an identical recursive field-type sequence).
+3. **Everything ungated falls back to the pre-existing address route** — so the change is *additive*:
+   where it does not apply, behavior is exactly what it was, never something newly wrong.
+4. **The converter intercepts at the two points that emit the address route**, not upstream. The first
+   attempt intercepted before the conversion renderer and hijacked conversions that already had
+   *correct* re-box routes — including named ARRAY wrappers, whose lazily-materialized backing store a
+   storage reinterpret silently bypasses (caught as a `NamedArrayWrapper` stdout mismatch: three lines
+   of `0 0` where Go prints real values). Behavioral drift fell from 16 projects to 8 once the
+   interception moved to the address routes themselves.
+
+Layout compatibility beyond what the gate proves remains the Go program's assertion, as in Go.
+
+### Recorded, not fixed (each with a named next consumer)
+
+* The **split shape** — `q := unsafe.Pointer(p)` in one statement, `(*U)(q)` in another (~52% of Go
+  conversion sites). Provenance dies inside `unsafe.Pointer(p)` itself, which keeps only a number. The
+  general answer is to carry the source box on the `Pointer` class so provenance rides the value,
+  exactly as Go's GC-tracked `unsafe.Pointer` does — a follow-on chip, since it changes ~780 emitted
+  sites.
+* **Pointer identity** through a reinterpret holds for a plain heap box but not for `&s.f`/`&a[i]`
+  sources (`of()`/`at()` mint a fresh box per call), nor for a chained reinterpret.
+* `IsNull` **value-peeks on field-ref boxes** — a pre-existing golib defect (an ordinary
+  `of()` pointer to a reference-typed field already reports nil and panics on deref). Not created here;
+  the gate keeps this fix clear of it. Worth its own commit.
+* `&a[i] == &a[i]` is **false** for both `array<T>` and `slice<T>` — a live Go-identity violation in
+  golib, unrelated to this change.
+* **Dereference cost** through the field-ref path is ~7× the raw-address read (≈1 ns → ≈7 ns), and
+  `reflect` caches derived pointers and dereferences them forever. A dedicated reinterpret reference
+  kind that inlines `Unsafe.As`, rather than reusing `m_structFieldRef`, is the answer if it shows up
+  in a profile.
 
 ## Consequence for the campaign
 

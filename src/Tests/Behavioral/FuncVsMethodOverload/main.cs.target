@@ -47,7 +47,7 @@ internal static void Main() {
     n = new nih(a: 7, b: 9);
     var m = Ꮡn.add(0);
     fmt.Println((~m).a, (~m).b);
-    var pb = (ж<uint32>)(uintptr)(new @unsafe.Pointer(Ꮡn.add(4)));
+    var pb = Ꮡn.add(4).Reinterpret<nih, uint32>();
     fmt.Println(pb.Value);
     ref var hh = ref heap<holder>(out var Ꮡhh);
     hh = new holder(x: 3, y: 5);

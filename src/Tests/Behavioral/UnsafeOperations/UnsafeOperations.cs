@@ -14,11 +14,11 @@ partial class main_package {
 }
 
 public static uint64 Float64bits(float64 f) {
-    return ~(ж<uint64>)(uintptr)(new @unsafe.Pointer(Ꮡ(f)));
+    return ~Ꮡ(f).Reinterpret<float64, uint64>();
 }
 
 public static float64 Float64frombits(uint64 b) {
-    return ~(ж<float64>)(uintptr)(new @unsafe.Pointer(Ꮡ(b)));
+    return ~Ꮡ(b).Reinterpret<uint64, float64>();
 }
 
 [GoType("dyn")] partial struct main_x {
@@ -43,13 +43,13 @@ internal static void Main() {
     fmt.Println("Value of the next element:", ~(ж<nint>)(uintptr)(nextPtr));
     ref var t1 = ref heap(new T1(), out var Ꮡt1);
     t1.a = 42;
-    var t2 = ~(ж<T2>)(uintptr)(new @unsafe.Pointer(Ꮡt1));
+    var t2 = ~Ꮡt1.Reinterpret<T1, T2>();
     fmt.Println("Value of t2.a:", t2.a);
     ref var i = ref heap(new int8(), out var Ꮡi);
     i = -1;
     int16 j = (int16)i;
     fmt.Println(i, j);
-    uint8 k = ~(ж<uint8>)(uintptr)(new @unsafe.Pointer(Ꮡi));
+    uint8 k = ~Ꮡi.Reinterpret<int8, uint8>();
     fmt.Println(k);
     main_x x = default!;
     uintptr M = /* unsafe.Sizeof(x.c) */ 16;

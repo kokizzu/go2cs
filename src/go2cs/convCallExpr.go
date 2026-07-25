@@ -427,6 +427,19 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// (a tag-differing struct, a named/unnamed array or struct pair) are NOT all covered by the re-box
 		// routes above and still land here; see ConversionStrategies-Reference.
 		if context.isPointerCast || v.isRawAddressPointerConversion(callExpr, arg) {
+			// A genuine reinterpret whose SOURCE is a managed Go pointer — `(*rtype)(unsafe.
+			// Pointer(t))` with t `*abi.Type` — aliases that box instead of round-tripping through
+			// its numeric address, which would neither keep the pointee alive nor survive the
+			// collector moving it. Placed HERE, at the address route it replaces, rather than with
+			// the identity elision upstream: the re-box routes above (a named/unnamed array or
+			// struct pair, a defined type over another package's type) already render their own
+			// conversions correctly, and intercepting earlier would divert those too — including
+			// named ARRAY wrappers, whose lazily-materialized backing store a storage reinterpret
+			// silently bypasses. See pointerReinterpretManagedSource.
+			if emission, ok := v.reinterpretManagedEmission(callExpr, arg); ok {
+				return emission
+			}
+
 			return fmt.Sprintf("(%s)(uintptr)(%s)", targetTypeName, expr)
 		}
 
@@ -1350,6 +1363,18 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					// box cast above, a variadic `...any` fans the treatment across every trailing
 					// argument.
 					if isEmpty && j < len(callExpr.Args) {
+						// A func LITERAL into a real `any` slot is natural-typed by C# — mark it so
+						// convFuncLit states the Go result type explicitly (emptyInterfaceArgs note).
+						if isEmptyInterfaceTarget(paramType) {
+							if _, isFuncLit := callExpr.Args[j].(*ast.FuncLit); isFuncLit {
+								if callExprContext.emptyInterfaceArgs == nil {
+									callExprContext.emptyInterfaceArgs = make(map[int]bool)
+								}
+
+								callExprContext.emptyInterfaceArgs[j] = true
+							}
+						}
+
 						if argType := v.getType(callExpr.Args[j], false); argType != nil {
 							if _, argIsPtr := argType.(*types.Pointer); argIsPtr {
 								ident := getIdentifier(callExpr.Args[j])
@@ -1861,6 +1886,14 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	}
 
 	if len(callExpr.Args) == 1 {
+		// `(*U)(unsafe.Pointer(p))` mis-classifies as a non-conversion and lands here rather than on
+		// the conversion path, so the managed reinterpret is intercepted at BOTH address routes —
+		// this one and the conversion path's. Must precede the isPointerCast assignment below, which
+		// is what renders the `(ж<U>)(uintptr)` prefix this replaces.
+		if emission, ok := v.reinterpretManagedEmission(callExpr, callExpr.Args[0]); ok {
+			return emission
+		}
+
 		argTypeName := v.getExprTypeName(callExpr.Args[0], true)
 
 		if argTypeName == "unsafe.Pointer" {
@@ -2747,18 +2780,97 @@ func (v *Visitor) isRawAddressPointerConversion(callExpr *ast.CallExpr, arg ast.
 // Returns nil when the pattern does not apply (a DIFFERENT element type is a genuine reinterpret and
 // keeps the round-trip).
 func (v *Visitor) pointerReinterpretIdentitySource(callExpr *ast.CallExpr, arg ast.Expr) ast.Expr {
-	targetPtr, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Pointer)
-	if !ok {
+	p, srcPtr, targetPtr := v.pointerConversionSource(callExpr, arg)
+
+	if p == nil {
 		return nil
 	}
 
-	// callExpr must be the CONVERSION `(*T)(…)` — its Fun DENOTES the pointer type. Without this the
+	// p must already be `*T` with the SAME element type as the target — only then is the whole
+	// conversion a no-op identity. A DIFFERENT element type is a genuine reinterpret and belongs to
+	// pointerReinterpretManagedSource below.
+	if !types.Identical(srcPtr.Elem(), targetPtr.Elem()) {
+		return nil
+	}
+
+	return p
+}
+
+// pointerReinterpretManagedSource reports the source pointer expression and the target's C# element
+// type name when a `(*U)(…)` conversion is a genuine REINTERPRET — different element types — whose
+// source is a Go pointer `*T`, i.e. a MANAGED BOX (`ж<T>`) rather than a raw address.
+//
+// Such a reinterpret must ALIAS the source box, never round-trip through its numeric address. The
+// address route (`(ж<U>)(uintptr)(…)`, below) builds a NATIVE-backed box that holds no reference to
+// the source: it neither keeps the pointee alive nor survives the collector moving it, so a derived
+// pointer that is RETAINED reads whatever later occupies that memory. reflect caches exactly such a
+// pointer for process lifetime (`toRType` → `canonType`), and once the address was recycled
+// `TypeOf(x).Kind()` reported Invalid mid-process — silently, corpus-wide. Emitting golib's
+// `Reinterpret<U>()` instead aliases the same managed storage, which is Go's own semantics: a
+// pointer obtained through `unsafe.Pointer` is a real reference the collector tracks. (A `uintptr`
+// source keeps the address route — matching Go's rule that a uintptr is a NUMBER which does not
+// keep its referent alive. See docs/Phase4/FINDING-managed-box-uintptr-lifetime.md.)
+//
+// Whether the derived pointer may ALIAS the source's storage or must fall back to the address route
+// is decided at RUNTIME by golib, not here: it turns on the C# layout of the two surrogates, which a
+// go2cs surrogate does not inherit from its Go type (a Go `[2]byte` is 2 bytes; `array<byte>` is a
+// reference to a backing store). The emission is therefore uniform and golib gates it.
+//
+// Returns a nil expression when the pattern does not apply.
+func (v *Visitor) pointerReinterpretManagedSource(callExpr *ast.CallExpr, arg ast.Expr) (ast.Expr, string, string) {
+	p, srcPtr, targetPtr := v.pointerConversionSource(callExpr, arg)
+
+	if p == nil {
+		return nil, "", ""
+	}
+
+	if types.Identical(srcPtr.Elem(), targetPtr.Elem()) {
+		return nil, "", ""
+	}
+
+	return p,
+		convertToCSTypeName(v.getTypeName(srcPtr.Elem(), false)),
+		convertToCSTypeName(v.getTypeName(targetPtr.Elem(), false))
+}
+
+// reinterpretManagedEmission renders the golib managed reinterpret for a `(*U)(unsafe.Pointer(p))`
+// whose source is a Go pointer, reporting false when the shape does not apply. Called at BOTH points
+// that would otherwise emit the `(ж<U>)(uintptr)(…)` address route — the conversion path and the
+// regular-call path — since `(*U)(unsafe.Pointer(…))` mis-classifies as a non-conversion and reaches
+// only the latter. The isPointer context renders a deref-aliased pointer param/receiver as its BOX
+// (`Ꮡt`), which is what carries the provenance; see pointerReinterpretManagedSource.
+func (v *Visitor) reinterpretManagedEmission(callExpr *ast.CallExpr, arg ast.Expr) (string, bool) {
+	src, srcElem, targetElem := v.pointerReinterpretManagedSource(callExpr, arg)
+
+	if src == nil {
+		return "", false
+	}
+
+	identContext := DefaultIdentContext()
+	identContext.isPointer = true
+
+	return fmt.Sprintf("%s.Reinterpret<%s, %s>()", v.convExpr(src, []ExprContext{identContext}), srcElem, targetElem), true
+}
+
+// pointerConversionSource peels a `(*U)(…)` pointer CONVERSION down to its source pointer
+// expression, returning that expression with the source and target pointer types. The source is
+// reached either DIRECTLY (`(*U)(p)`) or through an `unsafe.Pointer(p)` round trip, in either case
+// under an optional escape-analysis identity wrapper. Returns a nil expression when the conversion's
+// source is not a Go pointer — a raw address (`unsafe.Pointer`/`uintptr` valued) has no box behind
+// it and keeps the address route.
+func (v *Visitor) pointerConversionSource(callExpr *ast.CallExpr, arg ast.Expr) (ast.Expr, *types.Pointer, *types.Pointer) {
+	targetPtr, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Pointer)
+	if !ok {
+		return nil, nil, nil
+	}
+
+	// callExpr must be the CONVERSION `(*U)(…)` — its Fun DENOTES the pointer type. Without this the
 	// direct-source form below matches any one-argument CALL that happens to take and return the same
 	// pointer type, and elides it: `advance(a)` → `a`, `Ꮡp.Swap(Ꮡa)` → `Ꮡa`. (The unsafe.Pointer form
 	// was implicitly guarded by requiring its ARGUMENT to be a type conversion; the direct form has no
 	// such wrapper and must check the call itself.)
 	if tv, isType := v.info.Types[callExpr.Fun]; !isType || !tv.IsType() {
-		return nil
+		return nil, nil, nil
 	}
 
 	// Peel a single escape-analysis identity wrapper (`abi.NoEscape`/local `noescape`).
@@ -2781,18 +2893,12 @@ func (v *Visitor) pointerReinterpretIdentitySource(callExpr *ast.CallExpr, arg a
 		}
 	}
 
-	// p must already be `*T` with the SAME element type as the target — only then is the whole
-	// conversion a no-op identity.
 	srcPtr, ok := types.Unalias(v.info.TypeOf(p)).(*types.Pointer)
 	if !ok {
-		return nil
+		return nil, nil, nil
 	}
 
-	if !types.Identical(srcPtr.Elem(), targetPtr.Elem()) {
-		return nil
-	}
-
-	return p
+	return p, srcPtr, targetPtr
 }
 
 // isNoEscapeIdentityCall reports whether call is to an escape-analysis identity helper —

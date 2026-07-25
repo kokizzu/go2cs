@@ -13,9 +13,7 @@ internal static uintptr readViaParam(ж<uintptr> Ꮡp) {
 }
 
 internal static uintptr read(this ж<utp> Ꮡr) {
-    ref var r = ref Ꮡr.Value;
-
-    var q = (ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref r));
+    var q = Ꮡr.Reinterpret<utp, uintptr>();
     return q.Value;
 }
 
