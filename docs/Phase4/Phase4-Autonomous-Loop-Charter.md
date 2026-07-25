@@ -150,8 +150,11 @@ capability, record the blocker in the memory ledger and move on — don't spin.
 5. **GATE before landing (§5).** Then RE-VALIDATE the target on the post-change tree, and confirm
    **every already-validated package still validates.**
 6. On a clean validation, follow the validated-package commit policy: commit the converted C# test
-   sources into `src/go-src-converted/<pkg>` (Go headers intact). Commit gpg-signed to master
-   (solo-project convention). **Batch NEWS/README/Milestone** — do NOT touch them per package; wait
+   sources into `src/go-src-converted/<pkg>` (Go headers intact), **and add the package's row to
+   [`docs/ValidatedTestPackages.md`](../ValidatedTestPackages.md) in the same banking commit**
+   (alphabetical order; update the header's package/verdict/disclosed totals — user ruling
+   2026-07-25: this table maintains its own progress, per-package). Commit gpg-signed to master
+   (solo-project convention). **Batch NEWS/README/Milestone** — do NOT touch those per package; wait
    for a notable cross-section (`[[go2cs-doc-update-cadence]]`).
 7. Move to the next package.
 

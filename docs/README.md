@@ -15,7 +15,7 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 verdict for verdict.** [`unicode/utf8`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/unicode/utf8)'s
 real test suite (Go 1.23.1) validates **14/14** through the new converted-test pipeline — transpiled to
 C#, built against the converted standard library, run under a Go-semantics test host, and differentially
-compared against a clean `go test -json` baseline. The answer to *"but does it **run**?"* has its first [machine-checked proof](#try-it-yourself--validate-a-converted-test-suite).
+compared against a clean `go test -json` baseline. The answer to *"but does it **run**?"* has its first [machine-checked proof](#try-it-yourself--validate-a-converted-test-suite) — and the proof keeps growing: see the full [validated-package table](ValidatedTestPackages.md).
 
 **➡ All announcements can be found in the [go2cs News Archive](NEWS.md).**
 
@@ -32,6 +32,7 @@ easily, and a .NET developer can use Go code directly within the .NET ecosystem.
 * Walk through an example: [Converting a real-world module](#converting-a-real-world-module)
 * Compile in Visual Studio: [Go Standard Library Solution](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted.slnx)
 * Run converted Go test validation: [Try it yourself](#try-it-yourself--validate-a-converted-test-suite)
+* Track which stdlib test suites pass in C#: [Validated Test Packages](ValidatedTestPackages.md)
 * View example converted test: [`utf8_test.cs`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/unicode/utf8/utf8_test.cs)
 * See current project [status](#status) and [milestones](#milestones)
 
@@ -388,26 +389,9 @@ converted `.cs` in place (`git status` stays clean when your toolchain matches t
 source copies and run manifests it stages are git-ignored.
 
 The same command validates every other banked package — substitute the package's GOROOT source path and its
-`src/go-src-converted/<pkg>` path in the two arguments above. The full set that currently validates against
-`go test -json`:
-
-| Package | Tests | What it exercises |
-|:--|:--:|:--|
-| [`unicode/utf8`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/unicode/utf8) | 14 | UTF-8 encode/decode — the first suite to pass. |
-| [`sort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/sort) | 63 | Interface-driven sort, `sort.Slice` reflection swaps, NaN-aware ordering, stability. |
-| [`bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/bytes) | 81 | Byte-slice algorithms; 7 disclosed (alloc-profile). |
-| [`strings`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/strings) | 68 | String algorithms; 4 disclosed (alloc-count / alloc-profile). |
-| [`unicode/utf16`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/unicode/utf16) | 8 | Encode/decode round-trips via `reflect.DeepEqual`; 1 disclosed. |
-| [`path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/path) | 9 | Pure path manipulation (`Clean`/`Split`/`Join`/`Match`…). |
-| [`container/ring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/ring) | 8 | Circular linked list — a pointer graph. |
-| [`container/heap`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/heap) | 7 | Heap interface over a slice. |
-| [`hash/adler32`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/hash/adler32) | 2 | Adler-32 checksum. |
-| [`hash/crc64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/hash/crc64) | 5 | CRC-64 checksum tables. |
-| [`hash/fnv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/hash/fnv) | 19 | FNV-1/FNV-1a across widths. |
-| [`math/cmplx`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/math/cmplx) | 24 | `complex128` transcendental math. |
-| [`math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/math) | 76 | The core numeric package — IEEE edge cases, rounding, `Inf`/`NaN`. |
-| [`math/bits`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/math/bits) | 26 | Bit-manipulation intrinsics. |
-| [`math/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/math/rand) | 43 | PRNG streams, including a child-process race test. |
+`src/go-src-converted/<pkg>` path in the two arguments above. The full, growing set that validates against
+`go test -json` — with per-package test counts and what each suite exercises — lives in
+**[Validated Test Packages](ValidatedTestPackages.md)**.
 
 A few packages carry a **disclosed divergence**: a handful of Go tests assert an *exact allocation count*
 (Go's `testing.AllocsPerRun`), and the managed CLR provably allocates where Go's compiler stack-allocates —
