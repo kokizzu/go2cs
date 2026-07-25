@@ -7041,10 +7041,60 @@ mis-classifies as a non-conversion and reaches only the latter — deliberately 
 identity elision: the re-box routes above render their own conversions correctly, and diverting them
 breaks named ARRAY wrappers, whose lazily-materialized backing store a storage reinterpret bypasses.
 
+**A pointer-to-ARRAY target is excluded at the CONVERTER, not at the golib gate.** For
+`(*[N]T)(unsafe.Pointer(p))` the interception can only ever lose. golib never takes the managed arm
+for it — `array<U>` is an 8-byte struct holding a backing-store *reference*, so it fails the size
+gate against any smaller pointee and the reference gate against any numeric one, and `Reinterpret`
+falls straight through to the address route it was meant to replace. But the address route's **text**
+is not inert: the slice-of-pointer-cast fusion in `convSliceExpr` keys on a leading `(ж<…>`
+(`isPointerCast`) to lower `(*[N]T)(ptr)[:n]` into a `slice<T>` over a `ReadOnlySpan<T>` of the
+pointed-to memory — the only correct lowering of that idiom, since an `array<T>` can neither view
+native memory nor be punned out of a scalar's bytes. Emitting `Reinterpret` defeats the match and
+leaves `(~box).slice(…)` over an `array<T>` whose backing reference was read out of the **pointee's
+data**: a fabricated managed reference, i.e. an `AccessViolationException` that kills the process
+rather than the contained wrong read the address route gives. Measured end to end on
+`internal/syscall/windows/registry.GetStringValue` — the read behind `time.initLocalFromTZI` and
+`mime.initMimeWindows`, so essentially every Windows program that formats a local time or looks up a
+MIME type: same probe, `Windows 10 Pro` before and a hard fault after. `pointerReinterpretManagedSource`
+therefore returns nil for an array-underlying target, restoring the previous emission exactly, fused
+or not. (`reparse_windows.path()` → `os.Readlink`, registry `Get`/`SetStringValue` ×4, `os/user`, and
+`reflect.gcSlice` are on that route; 17 further corpus sites were already on the address route and
+are unchanged.)
+
 (Guarded by the `ReinterpretPointerLifetime` behavioral output test — an aliasing case, plus a
 lifetime case whose reinterpreted pointer is the only surviving reference across heavy allocation
 churn; before the fix it printed `lifetime: true false false` against Go's `true true true`. The
-gate's fallback is guarded by `FixedArrayBufferPointer`, whose fixed-array pin must survive.)
+gate's fallback is guarded by `FixedArrayBufferPointer`, whose fixed-array pin must survive, and the
+array-target exclusion by `PointerCastSliceReinterpret`, an output test over the NON-IDENTITY
+pointer-cast slice that `PointerCastSliceRange` explicitly defers to "the stdlib exercises that
+shape" — which is exactly how the fabrication reached the corpus untested.)
+
+### A pointer-cast slice with a LOW bound offsets the span
+`(*[N]T)(ptr)[lo:hi]` lowers to a `slice<T>` over a `ReadOnlySpan<T>` of the pointed-to memory (see
+the fusion above). The span was always built from element 0 with length `hi`, dropping the low bound
+entirely — so the result held the **wrong elements** whenever `lo` was non-nil, and was right only
+when `lo` happened to be 0. Go's expression is the elements `lo..hi`, so the span must start at
+element `lo` and run `hi - lo`:
+
+```go
+return syscall.UTF16ToString((*[0xffff]uint16)(unsafe.Pointer(&rb.PathBuffer[0]))[n1:n2:n2])
+```
+```csharp
+return syscall.UTF16ToString(new slice<uint16>(new ReadOnlySpan<uint16>(
+    (uint16*)(uintptr)(new @unsafe.Pointer(Ꮡ(rb.PathBuffer[0]))) + (int)(n1), (int)(n2) - (int)(n1))));
+```
+
+A pointer cast binds tighter than `+`, so the offset lands on the typed pointer with no extra
+parentheses. Two live consequences before the fix: `internal/syscall/windows`'s
+`(*symbolicLinkReparseBuffer).path()` slices `[n1:n2:n2]` to skip the print name, so `os.Readlink`
+returned the reparse buffer from offset 0 instead of the substitute name; and `internal/abi`'s
+`FuncType.OutSlice()` slices `[InCount : InCount+outCount]`, so it returned the **in**-parameters
+followed by the out-parameters and `reflect.Type.Out(i)` indexed the wrong half (`reflect.gcSlice`
+`[begin:end:end]` likewise read the GC bitmap from the wrong start). (Guarded by the non-zero-low
+arms of `PointerCastSliceReinterpret` — the reparse `[n1:n2:n2]` shape and a byte reinterpret of a
+wider element sliced `[3:7]`, both wrong before and matching Go now. `StdLibInternalAbi`'s golden
+re-baselines to the corrected `OutSlice`; its own stdout does not depend on the offset, which is why
+it stayed green through the defect.)
 
 ### `unsafe.Pointer(p)` on a pointer PARAMETER renders the box, never a deref
 A pointer parameter is emitted as the box `ж<T> Ꮡp` plus a deref'd VALUE alias

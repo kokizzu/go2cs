@@ -248,6 +248,67 @@ Layout compatibility beyond what the gate proves remains the Go program's assert
   kind that inlines `Unsafe.As`, rather than reusing `m_structFieldRef`, is the answer if it shows up
   in a profile.
 
+---
+
+## S1 follow-up (2026-07-25) — the `Reinterpret<X, array<Y>>` class was a REGRESSION, now fixed
+
+The rebank probe flagged ~24 emitted `Reinterpret<X, array<Y>>` sites as a suspected fabrication
+class and made them Stage 0 of [`PLAN-corpus-rebank.md`](PLAN-corpus-rebank.md). Probed
+(`claude/r9-s1probe`), the suspicion was right and **worse than assumed**: it was not a re-spelling
+of an already-broken route, it was a live regression against the committed corpus.
+
+**What was measured.** Seven distinct source shapes were built as standalone Go programs, converted,
+and run against `go run`. All seven are broken on the fabricating emission — five die with a hard
+`AccessViolationException` (process death, not a contained wrong read), one with an
+`NullReferenceException`, one with a spurious `index out of range` on a zero-length fabricated array.
+Then the same shapes were rebuilt with the *previous* emission to separate pre-existing breakage from
+new:
+
+| Corpus sites | Committed emission | Fresh emission | Verdict |
+|---|---|---|---|
+| registry `Get`/`SetStringValue`, `GetMUIStringValue` (×4) | `slice<T>` over a `ReadOnlySpan<T>` — **works** | `Reinterpret` → AV | **REGRESSION** |
+| `reparse_windows.path()` (×2) | native span, memory-safe but wrong offset | `Reinterpret` → AV | **REGRESSION** |
+| `reflect.gcSlice` | `Reinterpret` → AV | native span (wrong offset) | improvement |
+| `os/user` ×1, `net` lookupTXT ×1 | native span over a managed-ref element — throws | NRE | both broken |
+| syscall `sockaddr` Port ×6, `internal/poll` ×4, `net` SRV/NS ×2, registry `SetDWord`/`QWord` ×2, `reflect`/`reflectlite` nameOff ×3 | address route → AV | `Reinterpret` → AV | neutral, both broken |
+| `internal/chacha8rand` ×2 | address route | `Reinterpret` | neutral — **dead code** (`block` is hand-owned in `chacha8_impl.cs`; `block_generic`/`setup` are never invoked, which is the whole reason math/rand/v2 validates 36/36 — *not* because the address route works there) |
+
+The regression's fingerprint is the rebank plan's "5 csproj changes flip `AllowUnsafeBlocks`
+true→false", which the drift inventory had classed as benign converter-consistency. It is not
+benign: it is the marker that the `unsafe` native-span fusion was lost in those packages.
+
+**Live confirmation.** A console app calling the converted
+`registry.OpenKey(LOCAL_MACHINE, …)` + `GetStringValue("ProductName")` — the exact call
+`time.initLocalFromTZI` → `toEnglishName` → `matchZoneKey` makes, and `mime.initMimeWindows` makes at
+package init — returns `Windows 10 Pro` on the committed tree and hard-faults with the fresh
+`value.cs` overlaid. `time` and `mime` both reference the registry package, so the fresh corpus would
+have taken down essentially every Windows program that formats a local time or looks up a MIME type.
+
+**Root cause.** Not golib and not the gate — the gate correctly refuses the managed arm for an
+`array<Y>` destination. The interception changed the emitted **text**, and that text is an input to a
+downstream fusion: `convSliceExpr.isPointerCast` matches on a leading `(ж<…>` to lower
+`(*[N]T)(ptr)[:n]` into a `slice<T>` over a `ReadOnlySpan<T>`. `Reinterpret` does not match, so the
+fusion silently fell through to `(~box).slice(…)` over a fabricated `array<T>`.
+
+**Fixed** (`6c31a59d2`) by excluding array-underlying targets in
+`pointerReinterpretManagedSource` — the emission is restored to exactly what it was, fused or not,
+and the interception loses nothing since golib could never have aliased an `array<Y>` anyway. Guard:
+`Tests/Behavioral/PointerCastSliceReinterpret` (output-compared; neutered-and-rebuilt to confirm it
+fails `[Target,Output]` with the AV). Gates: CNR 491/491 byte-identical, suite 491/491 PASS.
+
+**A second, pre-existing bug surfaced in the same fusion** and is fixed alongside (`ce2d5a743`): the
+span was always built from element 0, dropping the slice's LOW bound. `os.Readlink` returned the
+reparse buffer from offset 0 instead of the substitute name, and `internal/abi.FuncType.OutSlice()`
+returned the in-parameters followed by the out-parameters, so `reflect.Type.Out(i)` indexed the wrong
+half. Both now offset the base pointer and shorten the length.
+
+**Not fixed, still recorded:** the 17 non-sliced array-target sites (syscall/poll `sockaddr` Port
+byte-puns, registry `SetDWordValue`, `reflect`/`reflectlite` `nameOff`, `net` SRV/NS host reads) remain
+on the address route and still fabricate. They are unchanged by the rebank, so they do not gate it,
+but each is a latent AV on a live Windows path. A correct lowering needs an `array<T>`/`slice<T>` view
+that can address native memory or pun a scalar's bytes — neither is representable by today's
+`array<T>` (a wrapper over a managed `T[]`), so this is a golib data-model item, not a converter one.
+
 ## Consequence for the campaign
 
 `go/doc/comment` **cannot bank** until this is resolved: `TestWrap`'s 10000 subtest names are part of

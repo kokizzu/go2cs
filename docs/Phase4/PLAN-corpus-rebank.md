@@ -18,10 +18,22 @@
 
 **Stages:**
 
-0. **Decide S1** — the `Reinterpret<X, array<Y>>` fabrication class (~42 sites, live Windows paths:
-   reparse points, registry values, net lookups, poll). Build the small behavioral probe/guard
-   (fixed-array element address reinterpreted through the box) or record an explicit acceptance.
-   *The one item the rebank must not cross undecided.*
+0. ~~**Decide S1**~~ — **DONE 2026-07-25, and it was a REGRESSION, not a re-spelling.** The
+   `Reinterpret<X, array<Y>>` class fabricates a managed reference out of the pointee's data: seven
+   probed shapes, five of them a hard `AccessViolationException`. Crucially the *committed* tree was
+   **correct** at 7 of those sites (a `slice<T>` over a `ReadOnlySpan<T>`) — the fresh regen lost that
+   fusion, and the plan's "5 csproj `AllowUnsafeBlocks` true→false" line is its fingerprint, not
+   benign converter-consistency. Confirmed live: converted `registry.GetStringValue` (the read behind
+   `time.initLocalFromTZI` and `mime.initMimeWindows`) returns `Windows 10 Pro` committed and hard-faults
+   fresh. **Fixed in the converter** (`6c31a59d2`, array-underlying targets keep their route; guard
+   `PointerCastSliceReinterpret`), plus a pre-existing dropped-low-bound bug in the same fusion
+   (`ce2d5a743`, fixing `os.Readlink` and `internal/abi.OutSlice`). CNR 491/491 byte-identical, suite
+   491/491 PASS. Full record in
+   [`FINDING-managed-box-uintptr-lifetime.md`](FINDING-managed-box-uintptr-lifetime.md) *S1 follow-up*.
+   **Stage 0 clears the rebank — but only from a master that CONTAINS both commits**; regenerating from
+   an earlier converter reintroduces the fault. Re-capture Stage 1 accordingly, and expect the
+   `AllowUnsafeBlocks` flip to be absent from registry / internal/syscall/windows / os/user / net (it
+   legitimately remains gone for `reflect`, whose loss had a different, benign cause).
 1. **Capture the regen — SEEDED.** `cp -r src/go-src-converted <tmp>/core` FIRST, then
    `go2cs -stdlib -comments -go2cspath <tmp>`. **Hard gate:** `.cs.auto` count in the temp root
    must equal the committed tree's `[module: GoManualConversion]` count (14 as of 2026-07-25);
