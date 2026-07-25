@@ -36,6 +36,16 @@ type CallExprContext struct {
 	// (`func(x int) int { return 0 }` inferred Func<nint, int> — Go int32! — collapsing
 	// distinct Go func types under reflection; testing/quick's TestFailure #3). See convFuncLit.
 	emptyInterfaceArgs map[int]bool
+	// genericResultInferredFuncArgs marks func-LITERAL arguments whose DECLARED parameter type
+	// is a signature with a type parameter in its RESULT list (`OnceValue[T any](f func() T)`).
+	// C# must infer that type argument FROM THE LAMBDA'S RETURN TYPE, so the arms' natural C#
+	// type — not the declared Go result — decides it; a body that returns nothing inferable
+	// (`panic`, `return nil`) fails outright (CS0411), and one whose natural type merely differs
+	// (`return 42` → `Func<int>` where Go says `Func<nint>`) infers the WRONG delegate (CS0029).
+	// convFuncLit states the declared result type explicitly for these. A type parameter that
+	// appears only in the PARAMETER list (slices.SortFunc's `cmp func(a, b E) int`) is inferred
+	// from the lambda's own typed parameters and is deliberately not marked (no churn).
+	genericResultInferredFuncArgs map[int]bool
 	hasSpreadOperator bool
 	keyValueSource    KeyValueSource
 	keyValueIdent     *ast.Ident
@@ -144,6 +154,9 @@ type LambdaContext struct {
 	// natural-typed by C# (no delegate target type), so convFuncLit states its Go result type
 	// explicitly (see CallExprContext.emptyInterfaceArgs).
 	untypedInterfaceTarget bool
+	// genericResultInferenceTarget marks a func literal whose result type a generic callee's
+	// type argument is inferred FROM (see CallExprContext.genericResultInferredFuncArgs).
+	genericResultInferenceTarget bool
 	deferredDecls *strings.Builder
 	callArgs      []string
 	// isIIFE marks an immediately-invoked, no-argument function literal — emitted as a

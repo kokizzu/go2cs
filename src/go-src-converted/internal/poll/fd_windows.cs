@@ -59,8 +59,8 @@ internal static void checkSetFileCompletionNotificationModes() {
 // It is called from the net package at init time to avoid
 // loading ws2_32.dll when net is not used.
 public static Action InitWSA = sync.OnceFunc(() => {
-    Δsyscall.WSAData d = new();
-    var e = Δsyscall.WSAStartup((uint32)0x202, Ꮡ(d));
+    ref var d = ref heap(new Δsyscall.WSAData(), out var Ꮡd);
+    var e = Δsyscall.WSAStartup((uint32)0x202, Ꮡd);
     if (e != default!) {
         initErr = e;
     }

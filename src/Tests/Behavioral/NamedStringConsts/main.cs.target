@@ -10,6 +10,12 @@ internal static readonly relationship equivalent = "equivalent"u8;
 internal static readonly relationship moreGeneral = "moreGeneral"u8;
 internal static readonly relationship moreSpecific = "moreSpecific"u8;
 
+internal static readonly relationship opLoad = "opLoad"u8;
+internal static readonly relationship opStore = "opStore"u8;
+internal static readonly relationship opDelete = "opDelete"u8;
+
+internal static readonly @string prefix = "op"u8;
+
 internal static @string tag(this relationship r) {
     return "rel:"u8 + ((@string)r);
 }
@@ -33,6 +39,12 @@ internal static void Main() {
     fmt.Println(equivalent.tag());
     @string plain = "plain"u8;
     fmt.Println(plain);
+    fmt.Println(opLoad == ((relationship)(@string)"opLoad"u8), opStore == opLoad, opStore.tag(), opDelete.tag());
+    fmt.Println(describe(opLoad));
+    relationship localOp = "opLocal"u8;
+    fmt.Println(localOp.tag(), localOp == ((relationship)(@string)"opLocal"u8));
+    @string untypedOp = "opUntyped";
+    fmt.Println(untypedOp, len(untypedOp));
 }
 
 } // end main_package

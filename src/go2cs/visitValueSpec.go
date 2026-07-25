@@ -679,7 +679,26 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					// valid-UTF-8 value keeps the readable getStringLiteral form.
 					constVal = byteArrayStringLiteral(s)
 				} else {
-					constVal, _ = v.getStringLiteral(c.Val().ExactString())
+					var isRawStr bool
+					constVal, isRawStr = v.getStringLiteral(c.Val().ExactString())
+
+					// A const of a NAMED string type whose value expression is NOT a bare literal —
+					// a CONVERSION (`const opLoad = mapOp("Load")`, sync map_test) or a folded
+					// concatenation — never reached convBasicLit above, so it renders as a plain C#
+					// string literal. That does not reach the [GoType("@string")] wrapper: `string`
+					// → wrapper would need string→@string→wrapper, two user-defined conversions,
+					// which C# forbids (CS0029 ×9). The u8 form the BasicLit path emits binds the
+					// wrapper's ReadOnlySpan<byte> operator in ONE conversion, so state it here too;
+					// a plain @string const is unaffected (string→@string is already single-step)
+					// and keeps its current rendering. A RAW (backtick) literal has no u8-suffixable
+					// verbatim form, so it takes the explicit @string cast — also one conversion.
+					if isNamedType {
+						if isRawStr {
+							constVal = fmt.Sprintf("((@string)%s)", constVal)
+						} else {
+							constVal += "u8"
+						}
+					}
 				}
 			} else if c.Val().Kind() == constant.Float {
 				if basic, ok := declType.(*types.Basic); ok && basic.Info()&types.IsInteger != 0 {

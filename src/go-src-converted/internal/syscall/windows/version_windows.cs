@@ -88,7 +88,7 @@ public static bool SupportTCPKeepAliveCount() {
 // Windows version supports the TCP_INITIAL_RTO_NO_SYN_RETRANSMISSIONS.
 // The minimal requirement is Windows 10.0.16299.
 public static Func<bool> SupportTCPInitialRTONoSYNRetransmissions;
-internal static void initᴛSupportTCPInitialRTONoSYNRetransmissions() { SupportTCPInitialRTONoSYNRetransmissions = sync.OnceValue(() => {
+internal static void initᴛSupportTCPInitialRTONoSYNRetransmissions() { SupportTCPInitialRTONoSYNRetransmissions = sync.OnceValue(bool () => {
     var (major, _, build) = version();
     return major >= 10 && build >= 16299;
 }); }
@@ -99,12 +99,12 @@ internal static void initᴛSupportTCPInitialRTONoSYNRetransmissions() { Support
 // SupportUnixSocket indicates whether the current Windows version supports
 // Unix Domain Sockets.
 // The minimal requirement is Windows 10.0.17063.
-public static Func<bool> SupportUnixSocket = sync.OnceValue(() => {
-    uint32 size = default!;
-    (_, _) = syscall.WSAEnumProtocols(nil, nil, Ꮡ(size));
+public static Func<bool> SupportUnixSocket = sync.OnceValue(bool () => {
+    ref var size = ref heap(new uint32(), out var Ꮡsize);
+    (_, _) = syscall.WSAEnumProtocols(nil, nil, Ꮡsize);
     var n = (int32)size / (int32)@unsafe.Sizeof(new syscall.WSAProtocolInfo(nil));
     var buf = new slice<syscall.WSAProtocolInfo>(n);
-    (n, var err) = syscall.WSAEnumProtocols(nil, Ꮡ(buf, 0), Ꮡ(size));
+    (n, var err) = syscall.WSAEnumProtocols(nil, Ꮡ(buf, 0), Ꮡsize);
     if (err != default!) {
         return false;
     }

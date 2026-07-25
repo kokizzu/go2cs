@@ -215,6 +215,7 @@
     <Project Path="Tests/Behavioral/GenericInterfaceConstraint/GenericInterfaceConstraint.csproj" />
     <Project Path="Tests/Behavioral/GenericPointerInterfaceImpl/GenericPointerInterfaceImpl.csproj" />
     <Project Path="Tests/Behavioral/GenericReceiverFieldAddress/GenericReceiverFieldAddress.csproj" />
+    <Project Path="Tests/Behavioral/GenericResultLambdaInfer/GenericResultLambdaInfer.csproj" />
     <Project Path="Tests/Behavioral/GenericStringTypeArg/GenericStringTypeArg.csproj" />
     <Project Path="Tests/Behavioral/GenericStructFields/GenericStructFields.csproj" />
     <Project Path="Tests/Behavioral/GenericTypeAssertions/GenericTypeAssertions.csproj" />
@@ -388,6 +389,7 @@
     <Project Path="Tests/Behavioral/PanicRecover/PanicRecover.csproj" />
     <Project Path="Tests/Behavioral/ParallelAssignmentHazard/ParallelAssignmentHazard.csproj" />
     <Project Path="Tests/Behavioral/PartialRedeclaration/PartialRedeclaration.csproj" />
+    <Project Path="Tests/Behavioral/PkgLevelFuncLitLocals/PkgLevelFuncLitLocals.csproj" />
     <Project Path="Tests/Behavioral/PointerArraySlice/PointerArraySlice.csproj" />
     <Project Path="Tests/Behavioral/PointerParamWalk/PointerParamWalk.csproj" />
     <Project Path="Tests/Behavioral/PointerArrayRange/PointerArrayRange.csproj" />

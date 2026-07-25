@@ -70,91 +70,7 @@ func performEscapeAnalysis(files []FileEntry, fset *token.FileSet, pkg *types.Pa
 					visitor.markCaptureModeBoxedParams(node.Type.Params, node.Body)
 					visitor.markVariadicSSliceEligible(node.Type.Params, node.Body)
 
-					// Mark FUNCTION LITERAL value params BEFORE the define walk below, same as
-					// the declaration's own params above: a mixed `t, y := …` re-use of a literal
-					// param would otherwise record the define-walk's escape verdict first, and
-					// markCaptureModeBoxedParams skips already-analyzed objects.
-					ast.Inspect(node.Body, func(n ast.Node) bool {
-						if funcLit, ok := n.(*ast.FuncLit); ok {
-							visitor.markCaptureModeBoxedParams(funcLit.Type.Params, funcLit.Body)
-						}
-						return true
-					})
-
-					ast.Inspect(node.Body, func(n ast.Node) bool {
-						switch n := n.(type) {
-						case *ast.AssignStmt:
-							if n.Tok == token.DEFINE {
-								for _, lhs := range n.Lhs {
-									if ident := getIdentifier(lhs); ident != nil {
-										visitor.performEscapeAnalysis(ident, node.Body)
-									}
-								}
-
-								// A single-value `s := string(x)` may be emittable as a stack-only
-								// sstring; decide now that identEscapesHeap is populated for the LHS.
-								if len(n.Lhs) == 1 && len(n.Rhs) == 1 {
-									if ident := getIdentifier(n.Lhs[0]); ident != nil {
-										visitor.markSStringEligible(ident, n.Rhs[0], node.Body)
-									}
-								}
-							}
-						case *ast.RangeStmt:
-							if n.Tok == token.DEFINE {
-								if key := getIdentifier(n.Key); key != nil {
-									visitor.performEscapeAnalysis(key, node.Body)
-								}
-								if value := getIdentifier(n.Value); value != nil {
-									visitor.performEscapeAnalysis(value, node.Body)
-								}
-							}
-						case *ast.DeclStmt:
-							if genDecl, ok := n.Decl.(*ast.GenDecl); ok {
-								for _, spec := range genDecl.Specs {
-									if valueSpec, ok := spec.(*ast.ValueSpec); ok {
-										for _, ident := range valueSpec.Names {
-											if !isDiscardedVar(ident.Name) {
-												visitor.performEscapeAnalysis(ident, node.Body)
-											}
-										}
-									}
-								}
-							}
-						case *ast.ForStmt:
-							if init, ok := n.Init.(*ast.AssignStmt); ok && init.Tok == token.DEFINE {
-								for _, lhs := range init.Lhs {
-									if ident := getIdentifier(lhs); ident != nil {
-										visitor.performEscapeAnalysis(ident, node.Body)
-									}
-								}
-							}
-						case *ast.IfStmt:
-							if init, ok := n.Init.(*ast.AssignStmt); ok && init.Tok == token.DEFINE {
-								for _, lhs := range init.Lhs {
-									if ident := getIdentifier(lhs); ident != nil {
-										visitor.performEscapeAnalysis(ident, node.Body)
-									}
-								}
-							}
-						case *ast.SwitchStmt:
-							if init, ok := n.Init.(*ast.AssignStmt); ok && init.Tok == token.DEFINE {
-								for _, lhs := range init.Lhs {
-									if ident := getIdentifier(lhs); ident != nil {
-										visitor.performEscapeAnalysis(ident, node.Body)
-									}
-								}
-							}
-						case *ast.TypeSwitchStmt:
-							if assign, ok := n.Assign.(*ast.AssignStmt); ok && assign.Tok == token.DEFINE {
-								for _, lhs := range assign.Lhs {
-									if ident := getIdentifier(lhs); ident != nil {
-										visitor.performEscapeAnalysis(ident, node.Body)
-									}
-								}
-							}
-						}
-						return true
-					})
+					visitor.analyzeBodyDeclaredVars(node.Body)
 
 					// A named RESULT whose address is taken (`&err` / passed as `*T` /
 					// `&result.field`) — e.g. tabwriter's `defer b.handlePanic(&err, …)` in
@@ -175,6 +91,17 @@ func performEscapeAnalysis(files []FileEntry, fset *token.FileSet, pkg *types.Pa
 					visitor.markCaptureModeBoxedParams(node.Type.Params, node.Body)
 					visitor.markVariadicSSliceEligible(node.Type.Params, node.Body)
 
+					// The literal's own LOCALS need the same define-walk the FuncDecl arm runs.
+					// Only a FuncDecl body reached it before, so a literal that is not inside one
+					// — every `var tests = []struct{…; f func()}{{…, func(){ … }}}` table, sync
+					// mutex_test's misuseTests being the worked case — had NO local analyzed at
+					// all: `var mu sync.Mutex; mu.Unlock()` stayed unboxed and emitted the VALUE
+					// receiver form, which binds no ж<Mutex> extension (CS1929 ×16). Literals
+					// nested inside a FuncDecl were already walked against the enclosing body (a
+					// superset), and performEscapeAnalysis short-circuits on an already-analyzed
+					// object, so this re-visit is a no-op for them.
+					visitor.analyzeBodyDeclaredVars(node.Body)
+
 					// A function literal's named results take the same address-taken escape
 					// treatment as a declaration's (see analyzeNamedResults). Nested literals
 					// hit this case too — the already-analyzed guard makes any overlap a no-op.
@@ -186,6 +113,104 @@ func performEscapeAnalysis(files []FileEntry, fset *token.FileSet, pkg *types.Pa
 	}
 
 	concurrentTasks.Wait()
+}
+
+// analyzeBodyDeclaredVars runs escape analysis over every variable DECLARED inside body — `:=`
+// defines, range/for/if/switch/type-switch init defines, and `var` declarations — plus the value
+// parameters of any function literal nested within it. Shared by the FuncDecl and the standalone
+// FuncLit arms of the file walk so a literal that is not inside a declaration (a package-level var
+// initializer) gets identical treatment; the analysis is idempotent per object, so the overlap
+// between the two arms is a no-op.
+//
+// Nested-literal value params are marked FIRST, matching the order the declaration's own params
+// take: a mixed `t, y := …` re-use of a literal param would otherwise record the define-walk's
+// escape verdict first, and markCaptureModeBoxedParams skips already-analyzed objects.
+func (v *Visitor) analyzeBodyDeclaredVars(body *ast.BlockStmt) {
+	if body == nil {
+		return
+	}
+
+	ast.Inspect(body, func(n ast.Node) bool {
+		if funcLit, ok := n.(*ast.FuncLit); ok {
+			v.markCaptureModeBoxedParams(funcLit.Type.Params, funcLit.Body)
+		}
+		return true
+	})
+
+	ast.Inspect(body, func(n ast.Node) bool {
+		switch n := n.(type) {
+		case *ast.AssignStmt:
+			if n.Tok == token.DEFINE {
+				for _, lhs := range n.Lhs {
+					if ident := getIdentifier(lhs); ident != nil {
+						v.performEscapeAnalysis(ident, body)
+					}
+				}
+
+				// A single-value `s := string(x)` may be emittable as a stack-only
+				// sstring; decide now that identEscapesHeap is populated for the LHS.
+				if len(n.Lhs) == 1 && len(n.Rhs) == 1 {
+					if ident := getIdentifier(n.Lhs[0]); ident != nil {
+						v.markSStringEligible(ident, n.Rhs[0], body)
+					}
+				}
+			}
+		case *ast.RangeStmt:
+			if n.Tok == token.DEFINE {
+				if key := getIdentifier(n.Key); key != nil {
+					v.performEscapeAnalysis(key, body)
+				}
+				if value := getIdentifier(n.Value); value != nil {
+					v.performEscapeAnalysis(value, body)
+				}
+			}
+		case *ast.DeclStmt:
+			if genDecl, ok := n.Decl.(*ast.GenDecl); ok {
+				for _, spec := range genDecl.Specs {
+					if valueSpec, ok := spec.(*ast.ValueSpec); ok {
+						for _, ident := range valueSpec.Names {
+							if !isDiscardedVar(ident.Name) {
+								v.performEscapeAnalysis(ident, body)
+							}
+						}
+					}
+				}
+			}
+		case *ast.ForStmt:
+			if init, ok := n.Init.(*ast.AssignStmt); ok && init.Tok == token.DEFINE {
+				for _, lhs := range init.Lhs {
+					if ident := getIdentifier(lhs); ident != nil {
+						v.performEscapeAnalysis(ident, body)
+					}
+				}
+			}
+		case *ast.IfStmt:
+			if init, ok := n.Init.(*ast.AssignStmt); ok && init.Tok == token.DEFINE {
+				for _, lhs := range init.Lhs {
+					if ident := getIdentifier(lhs); ident != nil {
+						v.performEscapeAnalysis(ident, body)
+					}
+				}
+			}
+		case *ast.SwitchStmt:
+			if init, ok := n.Init.(*ast.AssignStmt); ok && init.Tok == token.DEFINE {
+				for _, lhs := range init.Lhs {
+					if ident := getIdentifier(lhs); ident != nil {
+						v.performEscapeAnalysis(ident, body)
+					}
+				}
+			}
+		case *ast.TypeSwitchStmt:
+			if assign, ok := n.Assign.(*ast.AssignStmt); ok && assign.Tok == token.DEFINE {
+				for _, lhs := range assign.Lhs {
+					if ident := getIdentifier(lhs); ident != nil {
+						v.performEscapeAnalysis(ident, body)
+					}
+				}
+			}
+		}
+		return true
+	})
 }
 
 // markVariadicSSliceEligible records whether the final variadic parameter may bind directly to its

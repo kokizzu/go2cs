@@ -12,7 +12,7 @@ using go.@internal;
 
 partial class sysinfo_package {
 
-public static Func<@string> CPUName = sync.OnceValue(() => {
+public static Func<@string> CPUName = sync.OnceValue(@string () => {
     {
         @string name = cpu.Name(); if (name != ""u8) {
             return name;

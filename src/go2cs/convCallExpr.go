@@ -1226,6 +1226,31 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 			}
 
+			// A func LITERAL bound to a parameter whose DECLARED signature returns a TYPE
+			// PARAMETER — `sync.OnceValue[T any](f func() T)`, `OnceValues[T1, T2 any](f func()
+			// (T1, T2))` — puts the lambda in C# type-argument INFERENCE position: C# derives the
+			// type argument from the lambda's own return expressions, ignoring the Go result type
+			// go/types already resolved. Arms that yield no C# type at all (a `panic`-terminated
+			// body, `return nil` → `default!`) infer nothing (CS0411 ×4, sync oncefunc_test), and
+			// arms whose NATURAL C# type merely differs from the Go result (`func() int { return
+			// 42 }` → `Func<int>`, Go says `Func<nint>`) infer the wrong delegate (CS0029). Mark
+			// the argument so convFuncLit states the declared result type explicitly; the lambda
+			// then fixes the type argument to exactly what Go declared. Only a RESULT-position
+			// type parameter qualifies — one appearing solely in the callee's parameter list
+			// (slices.SortFunc's `cmp func(a, b E) int`) is inferred from the lambda's own typed
+			// parameters, which are already correct.
+			if paramHasArg {
+				if _, isFuncLit := callExpr.Args[i].(*ast.FuncLit); isFuncLit {
+					if paramSig, ok := types.Unalias(paramType).(*types.Signature); ok && signatureResultsContainTypeParams(paramSig) {
+						if callExprContext.genericResultInferredFuncArgs == nil {
+							callExprContext.genericResultInferredFuncArgs = make(map[int]bool)
+						}
+
+						callExprContext.genericResultInferredFuncArgs[i] = true
+					}
+				}
+			}
+
 			// A TYPE PARAMETER reads as an interface (its underlying is the constraint), which
 			// routed a pointer-instantiated generic param into the interface arm and away from
 			// the box treatment (`ptr = abi.Escape(ptr)` instantiating T = *T passed the
@@ -3345,6 +3370,25 @@ func typeContainsTypeParams(t types.Type) bool {
 					return true
 				}
 			}
+		}
+	}
+
+	return false
+}
+
+// signatureResultsContainTypeParams reports whether any RESULT of sig is (or contains) an unbound
+// type parameter. Used to detect a func-literal argument that C# must infer a generic callee's type
+// argument FROM — see CallExprContext.genericResultInferredFuncArgs.
+func signatureResultsContainTypeParams(sig *types.Signature) bool {
+	results := sig.Results()
+
+	if results == nil {
+		return false
+	}
+
+	for i := range results.Len() {
+		if typeContainsTypeParams(results.At(i).Type()) {
+			return true
 		}
 	}
 

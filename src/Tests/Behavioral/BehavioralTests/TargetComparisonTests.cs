@@ -481,6 +481,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckGenericReceiverFieldAddress() => CheckTarget("GenericReceiverFieldAddress");
 
     [TestMethod]
+    public void CheckGenericResultLambdaInfer() => CheckTarget("GenericResultLambdaInfer");
+
+    [TestMethod]
     public void CheckGenericStringTypeArg() => CheckTarget("GenericStringTypeArg");
 
     [TestMethod]
@@ -974,6 +977,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckPartialRedeclaration() => CheckTarget("PartialRedeclaration");
+
+    [TestMethod]
+    public void CheckPkgLevelFuncLitLocals() => CheckTarget("PkgLevelFuncLitLocals");
 
     [TestMethod]
     public void CheckPointerArrayRange() => CheckTarget("PointerArrayRange");

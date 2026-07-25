@@ -1350,6 +1350,46 @@ method-body, value-embed-promoted, composite-literal, and return positions plus 
 pointer-hop negative control, all output-compared vs Go; the one churned golden
 `UnsafePointerParamPin` — `&h.v` under `unsafe.Pointer` — re-verified.)
 
+### A PACKAGE-LEVEL function literal's own locals are analyzed too
+Every heap-box rule above is decided by the escape-analysis pass, and that pass reached a variable
+only through its declaring **function declaration**: the driver walked `*ast.FuncDecl` bodies and ran
+the define-walk (`:=`, `var`, range/for/if/switch/type-switch init defines) against each body. A
+function literal that is not inside any declaration — a **package-level `var` initializer** — hit a
+separate arm that marked its parameters and named results but never ran that walk, so **none of its
+own locals were ever analyzed** and every one of them stayed unboxed, whatever the body did with it.
+
+That is the shape of every Go test table (`var tests = []struct{ name string; f func() }{{"…",
+func(){ … }}}`) and of the `sync.OnceFunc`/`OnceValue` package-level initializers, and it produced
+both failure modes at once:
+
+```go
+var InitWSA = sync.OnceFunc(func() {          // internal/poll fd_windows.go
+    var d syscall.WSAData
+    e := syscall.WSAStartup(uint32(0x202), &d)   // fills d
+    …
+})
+```
+```csharp
+// before — Ꮡ(d) COPY-boxes: WSAStartup filled a copy and the Winsock data was lost (silent)
+Δsyscall.WSAData d = new();
+var e = Δsyscall.WSAStartup((uint32)0x202, Ꮡ(d));
+// after — the identity box, exactly as an in-declaration local has always emitted
+ref var d = ref heap(new Δsyscall.WSAData(), out var Ꮡd);
+var e = Δsyscall.WSAStartup((uint32)0x202, Ꮡd);
+```
+
+The compile-visible half is a capture-mode receiver: sync `mutex_test.go`'s `misuseTests` table does
+`var mu sync.Mutex; mu.Unlock()` inside such a literal, and an unboxed `mu` emits the VALUE receiver
+form, which binds no `ж<Mutex>` extension overload at all (CS1929 ×16). The define-walk is now a
+shared helper both arms call, so a package-level literal gets byte-identical treatment to a
+declaration body. Literals **nested inside** a declaration were already walked against the enclosing
+body (a superset), and the analysis short-circuits per object, so the overlap is a no-op — the
+behavioral corpus is byte-identical and the full-stdlib footprint is exactly the three package-level
+initializers that needed it (`internal/poll`, `internal/syscall/windows`, `internal/sysinfo`).
+(Guarded by `PkgLevelFuncLitLocals` — every declaration form inside a package-level literal (`var`,
+`:=`, for/if/switch init, range value, a nested closure) plus a standalone package-level literal and
+an in-declaration control, output-compared vs Go.)
+
 ### A pointer-receiver METHOD VALUE heap-boxes its receiver — the implicit `(&x).M`
 Go's spec makes `c.split` shorthand for `(&c).split` when `c` is addressable and `split` has a
 pointer receiver: the method **value** binds a pointer into `c`'s own storage, so every write it
@@ -2675,9 +2715,33 @@ internal static readonly relationship equivalent = "equivalent"u8;
 
 Function-body typed string consts take the same form (`relationship localRel = "moreSpecific"u8;`);
 an UNTYPED string const keeps `@string` (its type is not a `*types.Named`). Full-stdlib footprint:
-net/http pattern.cs, traceviewer's `ViewType` consts, and regexp/syntax parse.cs. (Guarded by
-`NamedStringConsts` — package-level and local typed consts compared against values and each other, a
-method called on a const, and an untyped const staying plain, output-compared vs Go.)
+net/http pattern.cs, traceviewer's `ViewType` consts, and regexp/syntax parse.cs.
+
+**The u8 form is required for EVERY value expression, not just a bare literal.** The rule above got
+its `u8` from the literal path, which fires only when the spec's value expression is an
+`*ast.BasicLit` — i.e. the `const x T = "…"` spelling. Go's other spellings put a different node
+there: a **conversion** (`const opLoad = mapOp("Load")`) is a `CallExpr`, and a folded
+**concatenation** (`prefix + "Delete"`) is a `BinaryExpr`. Those fell to the folded-value path and
+emitted a plain C# string literal, from which the `[GoType("@string")]` wrapper is *two*
+user-defined conversions away (`string`→`@string`→wrapper) — which C# forbids, so the whole
+declaration group failed (CS0029 ×9 on sync `map_test.go`'s `mapOp` const block). The folded value
+now takes the same `u8` rendering whenever the declared type is named:
+
+```go
+const opLoad  = mapOp("Load")            // conversion — CallExpr
+const opStore = mapOp("op" + "Store")    // folded concatenation
+```
+```csharp
+internal static readonly mapOp opLoad = "Load"u8;
+internal static readonly mapOp opStore = "opStore"u8;
+```
+
+A RAW (backtick) value has no `u8`-suffixable verbatim form, so it takes an explicit `(@string)` cast
+instead — also a single conversion. A plain `@string` const is untouched (`string`→`@string` is
+already single-step), which is what keeps the folded-untyped-const emission byte-identical corpus-wide.
+(Guarded by `NamedStringConsts` — package-level and local typed consts compared against values and
+each other, a method called on a const, the conversion and folded-concatenation spellings at both
+package and function scope, and an untyped const staying plain, output-compared vs Go.)
 
 ### A grouped var spec with one multi-result call deconstructs
 A grouped `var (name, offset, abs = t.locabs() ...)` spec is not a `:=`, so the assignment tuple machinery never saw it -- the per-name path assigned the WHOLE result tuple to the first name and silently DEFAULTED the rest (time appendFormat read a zero abs; a silent-wrongness class beyond the CS0029 that exposed it). Function-local specs now emit the C# tuple deconstruction, matching the `:=` form; package-level specs use the once-evaluated hidden-field component reads:
@@ -6817,6 +6881,46 @@ var maxFn = rune (rune _) => maxRune;
 Same gates as the string arm: assignment position only (argument/return/composite-element literals are target-typed — no inference to fail), and a BASIC numeric result (a named numeric type would need a second user conversion the wrapper cannot chain — the `lambdaConstReturnCastType` named-type rationale). Literal-only arm sets stay inferred (no churn): an int literal is already C# `int`, a rune literal emits `(rune)'a'`, so `minRune := func(rune) rune { return 'a' }` infers correctly without a prefix.
 
 A constant operator **expression** arm containing a named untyped constant counts the same as the bare reference (2026-07-17; the B7b gap — bytes TestMap's `invalidRune := func(r rune) rune { return utf8.MaxRune + 1 }` was the one remaining bytes build error): the operator result keeps the wrapper type, so the inferred delegate was `Func<int, UntypedInt>` against Map's `Func<int, int>` parameter (CS1503). The arm test (`returnArmKeepsUntypedWrapper`) walks paren/unary/binary trees for an untyped-named-const leaf, **except** when a constant fold (`overflowingConstLiteral` / `floatContextConstLiteral`) rewrites the whole arm to a plain literal — that emission is concretely typed and needs no prefix. All other gates unchanged. (Guarded by the `FuncLitUntypedConstReturn` behavioral test — the single-arm CS1503 shape, the mixed-arm CS8917 shape, an `int64` result with a beyond-int32 const arm, the const-expression arm (`return maxRune + 1`), plus literal-only and argument-position controls that must keep the plain form; output-compared vs Go.)
+
+### A literal in GENERIC-RESULT inference position states its return type
+The arms above all describe **natural-inference** position — a literal assigned to a `var`, where no
+delegate target exists. A literal passed as an ARGUMENT is normally target-typed by its parameter and
+needs no prefix, and the earlier rules say exactly that. There is one argument shape where that is
+false: the callee is **generic** and the parameter's declared signature returns a **type parameter**
+— `sync.OnceValue[T any](f func() T)`, `sync.OnceValues[T1, T2 any](f func() (T1, T2))`. There the
+parameter type is not yet a concrete delegate; C# must infer the type argument **from the lambda's
+own return expressions**, so the Go result type go/types already resolved is ignored. Two shapes then
+break (both live in sync's `oncefunc_test.go`):
+
+- **No arm yields a C# type at all** — a body terminated by `panic` (`func() any { calls++; panic("x") }`
+  emits a statement lambda whose only exit is a `throw`), or one whose sole arm is an untyped `nil`
+  (`return default!`). Inference has nothing to work from: CS0411 ×4.
+- **An arm's NATURAL C# type differs from the declared Go result** — `func() int { return 42 }` is
+  naturally `Func<int>`, where Go's `int` is `nint`: the wrong delegate is inferred and the
+  declaration it initializes rejects it (CS0029).
+
+A func literal in that position now states its declared result type, which fixes the type argument to
+exactly Go's for every arm shape (so, unlike the natural-inference arms, no arm inspection is needed):
+
+```go
+var onceValue = sync.OnceValue(func() int { return 42 })
+f := sync.OnceValue(func() any { calls++; panic("x") })
+g := sync.OnceValues(func() (any, any) { buf[0] = 1; return nil, nil })
+```
+```csharp
+internal static Func<nint> onceValue = Δsync.OnceValue(nint () => 42);
+var f = Δsync.OnceValue(any () => { Ꮡcalls.Value++; throw panic("x"); });
+var g = Δsync.OnceValues((any, any) () => { bufʗ3[0] = 1; return (default!, default!); });
+```
+
+The gate is the **result** position specifically. A type parameter appearing only in the func-typed
+parameter's own PARAMETER list — the `slices.SortFunc(x, func(a, b E) int)` shape — is inferred from
+the lambda's already-typed parameters and stays unprefixed; marking those would churn every such call
+site in the corpus for no defect. Full-stdlib footprint: two files, both package-level
+`sync.OnceValue` initializers (`internal/sysinfo`'s `CPUName`, `internal/syscall/windows`'s
+`SupportUnixSocket`/`SupportTCPInitialRTONoSYNRetransmissions`). (Guarded by
+`GenericResultLambdaInfer` — the `nint`/`any`/panic-terminated/two-result shapes, a concrete
+multi-result instantiation, and the parameter-position negative control, output-compared vs Go.)
 
 ### A GoImplement record is gated on the method set actually satisfying the interface
 Every `[assembly: GoImplement<T, Iface>]` record makes the `ImplementGenerator` emit implementation glue whose members forward to T's like-named methods — so a record whose Go method set does NOT satisfy the interface generates a forwarder to a method that does not exist. The corpus case: net/http's `err = http2GoAwayError{LastStreamID: …, ErrCode: cc.goAway.ErrCode, …}` — the keyed composite's sparse-array `ident` context leaks the `error`-typed LHS onto each FIELD value, and the `ErrCode` field's value recorded `GoImplement<http2ErrCode, error>` even though `http2ErrCode` has only `String()`/`stringToken()` (its generated `Error() => this.Error()` was CS1929). `convertToInterfaceType` now folds a `types.Implements` check over the recorded form's method set (T for a value record, `*T` for a `ж<T>` record) into `recordableBase`, which gates both the record and the matching adapter-wrapping emissions. A conversion the Go checker admitted always passes the check, so the gate can only drop pairs a caller composed from mismatched types; a type-param-carrying target skips the check (`types.Implements` is undefined for uninstantiated generics, and the open-generic conversion emission must stay). The full-stdlib A/B for this change is exactly one removed line — the false `http2ErrCode` record. (Guarded by the NEGATIVE `KeyedLiteralIfaceAssign` behavioral test: a keyed literal assigned to an `error` variable whose field-value type has `String()` but no `Error()` — a reintroduced record fails the compile phase.)

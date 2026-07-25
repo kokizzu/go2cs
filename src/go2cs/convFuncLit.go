@@ -525,7 +525,20 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		// converts implicitly through the golib operators.
 		returnTypePrefix := ""
 
-		if results := litSig.Results(); results != nil && results.Len() == 1 {
+		if results := litSig.Results(); context.genericResultInferenceTarget && results != nil && results.Len() > 0 {
+			// The callee is generic and infers a type argument FROM this literal's return type
+			// (see CallExprContext.genericResultInferredFuncArgs). C# derives that from the arms'
+			// natural types, not from the Go result go/types resolved, so the declared type is
+			// stated explicitly here — `sync.OnceValue(any () => { …; throw panic("x"); })`,
+			// `OnceValues((any, any) () => …)`, `OnceValue(nint () => 42)`. That fixes the type
+			// argument to exactly Go's, which is right for every arm shape, so no arm inspection
+			// is needed (unlike the natural-inference cases below).
+			if results.Len() == 1 {
+				returnTypePrefix = convertToCSTypeName(v.getTypeName(results.At(0).Type(), false)) + " "
+			} else {
+				returnTypePrefix = v.generateResultSignature(litSig) + " "
+			}
+		} else if results := litSig.Results(); results != nil && results.Len() == 1 {
 			if context.untypedInterfaceTarget {
 				// A literal converted into a real `any` parameter slot is NATURAL-typed by C# —
 				// there is no delegate target, so the inferred return type comes from the arms'
