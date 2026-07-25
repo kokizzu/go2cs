@@ -764,6 +764,16 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         return NilBox;
     }
 
+    // The reinterpreting ref accessor for PointerExtensions.Reinterpret, as a static method rather
+    // than a lambda so that two reinterprets of one box compare EQUAL: ж equality compares the source
+    // object and the field identity delegate, and Delegate.Equals compares method + target — equal
+    // across call sites for the same static method. Go requires
+    // `(*U)(unsafe.Pointer(p)) == (*U)(unsafe.Pointer(p))`.
+    internal static ref TDst ReinterpretRef<TDst>(object source)
+    {
+        return ref Unsafe.As<T, TDst>(ref ((ж<T>)source).ValueSlot);
+    }
+
     // EXPLICIT by design: reinterpreting a raw address as a pointer is the runtime-unsafe reinterpret
     // seam — never something to happen silently. Converter-emitted reinterprets always use explicit
     // cast syntax ((ж<T>)(uintptr)(p)). As an implicit conversion it also made every uintptr argument
@@ -854,6 +864,172 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
 /// </summary>
 public static class PointerExtensions
 {
+    /// <summary>
+    /// Reinterprets a pointer as a pointer to <typeparamref name="TDst"/> — Go's
+    /// <c>(*TDst)(unsafe.Pointer(p))</c>.
+    /// </summary>
+    /// <typeparam name="T">Pointee type of the source pointer.</typeparam>
+    /// <typeparam name="TDst">Pointee type of the derived pointer.</typeparam>
+    /// <param name="box">Source pointer, which may be <c>null</c>.</param>
+    /// <remarks>
+    /// <para>
+    /// Where the reinterpret is <em>representable</em> in the managed model (see
+    /// <see cref="ReinterpretAliasesStorage{T,TDst}"/>) the result ALIASES the source's storage and
+    /// therefore keeps its pointee ALIVE and stays valid across garbage collection, exactly as Go's
+    /// does — Go's collector tracks a pointer obtained through <c>unsafe.Pointer</c> as a real
+    /// reference. That is the property the raw-address route cannot provide: the <c>uintptr</c>/
+    /// <c>void*</c> operators pin only for the duration of their own statement, so an address that
+    /// escapes them belongs to a box the collector is free to move or reclaim, and a derived pointer
+    /// holding one reads whatever later occupies that memory — silently, and only after enough
+    /// allocation churn to recycle it. <c>reflect</c> caches exactly such a pointer for process
+    /// lifetime (<c>toRType</c> → <c>canonType</c>), and once the address was recycled
+    /// <c>TypeOf(x).Kind()</c> began reporting <c>Invalid</c> mid-process. See
+    /// <c>docs/Phase4/FINDING-managed-box-uintptr-lifetime.md</c>.
+    /// </para>
+    /// <para>
+    /// A <c>null</c> reference and a nil box are the same Go nil pointer, and both reinterpret to the
+    /// derived type's nil — Go's <c>(*TDst)(unsafe.Pointer((*T)(nil))) == nil</c>. (An extension
+    /// method, rather than an instance method, is what lets the <c>null</c> representation be
+    /// tolerated at all — a zero-valued pointer field is a plain <c>null</c>, and an instance call on
+    /// it throws where Go yields nil.)
+    /// </para>
+    /// <para>
+    /// A box aliasing NATIVE memory keeps the address model: there the address IS the meaning, and
+    /// that is the only thing correct for those call sites. A reinterpret the managed model cannot
+    /// represent falls back to the same address route — i.e. to the behavior that predates this
+    /// method, never to something newly wrong.
+    /// </para>
+    /// </remarks>
+    public static ж<TDst> Reinterpret<T, TDst>(this ж<T>? box)
+    {
+        // Both nil representations — a null reference and a nil box — yield the derived type's nil.
+        if (box is null || box.IsNilPointer)
+            return ж<TDst>.NilBox;
+
+        // A native-backed box IS its address; reinterpreting it keeps aliasing that address.
+        if (box.IsNative)
+            return new ж<TDst>(box.NativeAddress);
+
+        if (ReinterpretAliasesStorage<T, TDst>.Value)
+        {
+            // Alias the SAME managed storage. Routing through ValueSlot (rather than a cached ref)
+            // is what makes this GC-safe: the ref is recomputed on each access from a live object
+            // reference, so a collection that moves the box is invisible here. ValueSlot also
+            // composes through the field-ref and array-element reference kinds, so a reinterpret of
+            // `&s.f` or `&a[i]` aliases the real storage rather than a copy.
+            return new ж<TDst>(box, ж<T>.ReinterpretRef<TDst>);
+        }
+
+        // Not representable as an alias — keep the pre-existing raw-address behavior.
+        return (ж<TDst>)(uintptr)box;
+    }
+
+    /// <summary>
+    /// Whether reinterpreting a <c>ж&lt;<typeparamref name="T"/>&gt;</c> as a
+    /// <c>ж&lt;<typeparamref name="TDst"/>&gt;</c> may ALIAS the source's managed storage, rather
+    /// than falling back to the raw-address route. Cached per type pair.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Go's rule for <c>(*TDst)(unsafe.Pointer(p))</c> is that <c>TDst</c> is no larger than
+    /// <c>T</c> and the two share an equivalent memory layout. That rule cannot simply be inherited,
+    /// because a go2cs surrogate's C# layout is NOT its Go layout: a Go <c>[2]byte</c> is 2 bytes but
+    /// <c>array&lt;byte&gt;</c> is a single reference to a backing store, a Go <c>string</c> is 16
+    /// bytes but <c>@string</c> is 8, a Go <c>[]byte</c> is 24 but <c>slice&lt;byte&gt;</c> is 32. So
+    /// a reinterpret that is perfectly VALID in Go can be an oversized, reference-fabricating
+    /// <c>Unsafe.As</c> here — and a fabricated managed reference is a CLR type-safety break (an
+    /// access violation, or silent heap corruption on a write), which is strictly worse than the
+    /// wrong-but-contained read the address route produces.
+    /// </para>
+    /// <para>
+    /// The alias is therefore taken only where it is demonstrably safe:
+    /// </para>
+    /// <list type="number">
+    /// <item>both pointees are VALUE types — a reference-typed pointee's slot holds an object
+    /// reference, and punning one against data is exactly the fabrication case above;</item>
+    /// <item>the destination FITS in the source, so the read stays inside the source's storage and
+    /// never runs off the value slot into the box's own private fields; and</item>
+    /// <item>either neither type contains managed references — so no reference can be fabricated
+    /// whatever the field correspondence turns out to be — or the two are layout-compatible in the
+    /// senses go2cs actually generates: the same type, a single-field wrapper over the other (Go's
+    /// struct-embedding idiom, <c>type rtype struct { t abi.Type }</c>, and the generated named-type
+    /// wrappers), or an identical recursive field-type sequence.</item>
+    /// </list>
+    /// <para>
+    /// What this deliberately EXCLUDES is Go's prefix-downcast idiom — allocating a larger struct,
+    /// handing out a pointer to its embedded header, and casting back
+    /// (<c>(*structType)(unsafe.Pointer(t))</c> where <c>t</c> is a <c>*abi.Type</c>). In Go the
+    /// larger allocation is really there; in the managed model a <c>ж&lt;abi.Type&gt;</c> holds only
+    /// an <c>abi.Type</c>, so there is nothing behind it to downcast to. Those sites keep the address
+    /// route and remain the raw-metal class recorded in
+    /// <c>docs/Phase4/FINDING-managed-box-uintptr-lifetime.md</c>.
+    /// </para>
+    /// </remarks>
+    internal static class ReinterpretAliasesStorage<T, TDst>
+    {
+        internal static readonly bool Value =
+            typeof(T).IsValueType && typeof(TDst).IsValueType &&
+            Unsafe.SizeOf<TDst>() <= Unsafe.SizeOf<T>() &&
+            ((!RuntimeHelpers.IsReferenceOrContainsReferences<T>() &&
+              !RuntimeHelpers.IsReferenceOrContainsReferences<TDst>()) ||
+             LayoutCompatible(typeof(T), typeof(TDst)));
+
+        // Layout compatibility, limited to the correspondences the converter actually generates —
+        // it is never a general claim about two arbitrary C# structs.
+        private static bool LayoutCompatible(Type src, Type dst)
+        {
+            if (src == dst)
+                return true;
+
+            // Go's struct-embedding idiom and the generated named-type wrappers: one side is a
+            // (possibly nested) single-field wrapper over the other, so the wrapped field starts at
+            // offset 0 and carries the whole layout.
+            if (UnwrapSingleField(src) == dst || UnwrapSingleField(dst) == src)
+                return true;
+
+            // Otherwise require the same fields in the same order, all the way down — two spellings
+            // of one shape (the `(*view)(unsafe.Pointer(h))` struct-pun).
+            Type[] srcFields = FieldTypes(src), dstFields = FieldTypes(dst);
+
+            if (srcFields.Length != dstFields.Length)
+                return false;
+
+            for (int i = 0; i < srcFields.Length; i++)
+            {
+                if (srcFields[i] != dstFields[i] && !LayoutCompatible(srcFields[i], dstFields[i]))
+                    return false;
+            }
+
+            return srcFields.Length > 0;
+        }
+
+        private static Type UnwrapSingleField(Type type)
+        {
+            // Bounded: each hop strictly descends into a field's type, and a struct cannot contain
+            // itself, so the chain terminates.
+            for (Type[] fields = FieldTypes(type); fields.Length == 1; fields = FieldTypes(type))
+                type = fields[0];
+
+            return type;
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2070",
+            Justification = "Reinterpreted Go struct surrogates are referenced by the converted code that reinterprets them.")]
+        private static Type[] FieldTypes([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields | DynamicallyAccessedMemberTypes.PublicFields)] Type type)
+        {
+            if (!type.IsValueType || type.IsPrimitive || type.IsEnum)
+                return [];
+
+            FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            Type[] fieldTypes = new Type[fields.Length];
+
+            for (int i = 0; i < fields.Length; i++)
+                fieldTypes[i] = fields[i].FieldType;
+
+            return fieldTypes;
+        }
+    }
+
     /// <summary>
     /// Nil-safe re-alias accessor: returns a reference to the pointed-to value, or to a shared
     /// default(<typeparamref name="T"/>) slot when <paramref name="box"/> is a nil pointer

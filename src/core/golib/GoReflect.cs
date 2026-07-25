@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using go.golib;
 using static go2cs.Symbols;
@@ -107,7 +108,14 @@ public static class GoReflect
         if (t == typeof(float)) return Float32;
         if (t == typeof(double)) return Float64;
         if (t == typeof(Complex)) return Complex128;
+        // golib complex64 is its own hand-written struct (no [GoType] marker), not a narrowing
+        // of System.Numerics.Complex — without this arm it classified as Struct and the
+        // reflect walkers enumerated its private float fields (binary's Struct.Complex64).
+        if (t == typeof(complex64)) return Complex64;
         if (t == typeof(@string)) return String;
+        // `any` — the empty interface. System.Object reports IsInterface false, so without
+        // this arm it fell through to Struct.
+        if (t == typeof(object)) return Interface;
         // A C# System.String can reach reflection where a Go string literal boxed in a
         // deliberately-uncast position (a variadic `...any` argument) — a bare `"a"` rather than
         // `(@string)"a"`; treat it as a Go string so reflect.TypeOf(it).Kind() == String (fmt's doPrint
@@ -136,6 +144,16 @@ public static class GoReflect
         // misses it, and not a [GoType("num:uintptr")] value wrapper). golib cannot name the unsafe
         // package's type directly, so detect it structurally: a reference type whose base is ж<uintptr>.
         if (t.BaseType == typeof(ж<uintptr>)) return UnsafePointer;
+
+        // A NAMED container type (`type S []byte`, `type M map[K]V`, `type P *T`, ...) is a
+        // generated wrapper struct/class implementing the golib container interface — classify
+        // STRUCTURALLY, never by parsing the [GoType] definition token (a converter-rendered C#
+        // type string). Order matters: ISlice derives from IArray, so slices probe first.
+        if (typeof(ISlice).IsAssignableFrom(t)) return Slice;
+        if (typeof(IMap).IsAssignableFrom(t)) return Map;
+        if (typeof(IChannel).IsAssignableFrom(t)) return Chan;
+        if (typeof(IArray).IsAssignableFrom(t)) return Array;
+        if (typeof(INilPointer).IsAssignableFrom(t) && !t.IsValueType) return Pointer;
 
         if (typeof(Delegate).IsAssignableFrom(t)) return Func;
 
@@ -202,7 +220,23 @@ public static class GoReflect
     /// </summary>
     public static string GoTypeName(Type? t)
     {
+        return GoTypeName(t, null);
+    }
+
+    /// <summary>
+    /// The Go source type string with ARRAY DIMS threaded (a dims-carrying array descriptor
+    /// renders Go's <c>[4]uint8</c>; without dims the managed type cannot distinguish
+    /// <c>[N]T</c> from <c>[]T</c> — the recorded limitation).
+    /// </summary>
+    public static string GoTypeName(Type? t, nint[]? arrayDims)
+    {
         if (t is null) return "<nil>";
+
+        if (arrayDims is { Length: > 0 } && t.IsGenericType && t.GetGenericTypeDefinition() == typeof(array<>))
+        {
+            nint[]? innerDims = arrayDims.Length > 1 ? arrayDims[1..] : null;
+            return "[" + arrayDims[0] + "]" + GoTypeName(t.GetGenericArguments()[0], innerDims);
+        }
 
         if (t == typeof(bool)) return "bool";
         if (t == typeof(nint)) return "int";
@@ -219,7 +253,9 @@ public static class GoReflect
         if (t == typeof(float)) return "float32";
         if (t == typeof(double)) return "float64";
         if (t == typeof(Complex)) return "complex128";
+        if (t == typeof(complex64)) return "complex64";
         if (t == typeof(@string) || t == typeof(string)) return "string";
+        if (t == typeof(object)) return "interface {}";
 
         if (t.IsGenericType)
         {
@@ -302,11 +338,16 @@ public static class GoReflect
     }
 
     // The package-qualified Go name of a converted named type: a converted type is nested in a
-    // `<pkg>_package` class, so `go.main_package.Point` → `main.Point`. A Δ-collision rename (ΔHandle)
-    // strips the marker; a type with no `_package` declaring class falls back to its bare name.
+    // `<pkg>_package` class, so `go.main_package.Point` → `main.Point`. A lifted function-local
+    // type prefers its stamped original Go name ([GoLocalName] — `binary.Person`, never the
+    // lifted `TestNoFixedSize_Person`). A Δ-collision rename (ΔHandle) strips the marker; a type
+    // with no `_package` declaring class falls back to its bare name.
     private static string GoQualifiedName(Type t)
     {
         string name = t.Name;
+
+        if (t.GetCustomAttributes(typeof(GoLocalNameAttribute), false) is [GoLocalNameAttribute localName])
+            name = localName.Name;
 
         if (name.StartsWith(ShadowVarMarker, StringComparison.Ordinal))
             name = name[ShadowVarMarker.Length..];
@@ -333,13 +374,51 @@ public static class GoReflect
         if (TryAdapterWrappedType(t, out Type? adapterWrapped, out bool adapterPointerSourced) && adapterPointerSourced)
             return adapterWrapped;
 
-        if (!t.IsGenericType) return null;
+        if (t.IsGenericType)
+        {
+            Type gd = t.GetGenericTypeDefinition();
+            Type[] a = t.GetGenericArguments();
 
-        Type gd = t.GetGenericTypeDefinition();
-        Type[] a = t.GetGenericArguments();
+            if (gd == typeof(map<,>)) return a[1];
+            if (gd == typeof(slice<>) || gd == typeof(array<>) || gd == typeof(channel<>) || gd == typeof(ж<>)) return a[0];
+        }
 
-        if (gd == typeof(map<,>)) return a[1];
-        if (gd == typeof(slice<>) || gd == typeof(array<>) || gd == typeof(channel<>) || gd == typeof(ж<>)) return a[0];
+        // A NAMED container wrapper answers through the golib container interface it implements
+        // (`type S []byte` → byte); a named pointer wrapper through IPointer<T>.
+        if (ContainerInterfaceArguments(t, typeof(IMap<,>)) is { } mapArgs) return mapArgs[1];
+        if (ContainerInterfaceArguments(t, typeof(ISlice<>)) is { } sliceArgs) return sliceArgs[0];
+        if (ContainerInterfaceArguments(t, typeof(IArray<>)) is { } arrayArgs) return arrayArgs[0];
+        if (ContainerInterfaceArguments(t, typeof(IChannel<>)) is { } chanArgs) return chanArgs[0];
+        if (!t.IsValueType && ContainerInterfaceArguments(t, typeof(IPointer<>)) is { } ptrArgs) return ptrArgs[0];
+
+        return null;
+    }
+
+    /// <summary>
+    /// The Go KEY type of a map — <c>map&lt;K,V&gt;</c> (or a named map wrapper) → <c>K</c>;
+    /// <c>null</c> if <paramref name="t"/> is not a map type. For <c>reflect.Type.Key()</c>.
+    /// </summary>
+    public static Type? KeyType(Type? t)
+    {
+        if (t is null) return null;
+
+        if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(map<,>))
+            return t.GetGenericArguments()[0];
+
+        return ContainerInterfaceArguments(t, typeof(IMap<,>)) is { } mapArgs ? mapArgs[0] : null;
+    }
+
+    // Resolves the closed generic container interface a named wrapper implements
+    // (ISlice<T>/IMap<K,V>/IArray<T>/IChannel<T>/IPointer<T>) and returns its type arguments,
+    // or null. The raw golib containers are matched by open generic definition BEFORE this is
+    // consulted, so this only ever answers for generated wrapper types.
+    private static Type[]? ContainerInterfaceArguments(Type t, Type genericInterfaceDefinition)
+    {
+        foreach (Type ifc in t.GetInterfaces())
+        {
+            if (ifc.IsGenericType && ifc.GetGenericTypeDefinition() == genericInterfaceDefinition)
+                return ifc.GetGenericArguments();
+        }
 
         return null;
     }
@@ -356,26 +435,44 @@ public static class GoReflect
     private static readonly ConcurrentDictionary<Type, Func<object, object?>> s_slotReaders = new();
     private static readonly ConcurrentDictionary<Type, Action<object, object?>> s_slotWriters = new();
 
-    /// <summary>Reads the value held by a <c>ж&lt;T&gt;</c> box (nil-safe — a nil box reads as the zero value).</summary>
+    /// <summary>Reads the value held by a pointer box — a closed <c>ж&lt;T&gt;</c> or a generated named-pointer
+    /// wrapper (<c>IPointer&lt;T&gt;</c>) — nil-safe (a nil box reads as the zero value).</summary>
     public static object? ReadPointerSlot(object box)
     {
         return s_slotReaders.GetOrAdd(box.GetType(), static boxType =>
         {
-            MethodInfo reader = typeof(GoReflect).GetMethod(nameof(readSlot), BindingFlags.NonPublic | BindingFlags.Static)!
-                .MakeGenericMethod(boxType.GetGenericArguments()[0]);
+            (bool viaInterface, Type elem) = slotAccessorShape(boxType);
+            MethodInfo reader = typeof(GoReflect).GetMethod(viaInterface ? nameof(readSlotViaInterface) : nameof(readSlot), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(elem);
             return reader.CreateDelegate<Func<object, object?>>();
         })(box);
     }
 
-    /// <summary>Writes a value through a <c>ж&lt;T&gt;</c> box's slot ref (panics Go-style on a nil box).</summary>
+    /// <summary>Writes a value through a pointer box's slot ref (panics Go-style on a nil box).</summary>
     public static void WritePointerSlot(object box, object? value)
     {
         s_slotWriters.GetOrAdd(box.GetType(), static boxType =>
         {
-            MethodInfo writer = typeof(GoReflect).GetMethod(nameof(writeSlot), BindingFlags.NonPublic | BindingFlags.Static)!
-                .MakeGenericMethod(boxType.GetGenericArguments()[0]);
+            (bool viaInterface, Type elem) = slotAccessorShape(boxType);
+            MethodInfo writer = typeof(GoReflect).GetMethod(viaInterface ? nameof(writeSlotViaInterface) : nameof(writeSlot), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(elem);
             return writer.CreateDelegate<Action<object, object?>>();
         })(box, value);
+    }
+
+    // A raw closed ж<T> uses the ValueSlot pair; a generated named-pointer wrapper (a non-generic
+    // class implementing IPointer<T>) routes through the interface's ref-returning Value.
+    private static (bool viaInterface, Type elemType) slotAccessorShape(Type boxType)
+    {
+        if (boxType.IsGenericType && boxType.GetGenericTypeDefinition() == typeof(ж<>))
+            return (false, boxType.GetGenericArguments()[0]);
+
+        Type[]? args = ContainerInterfaceArguments(boxType, typeof(IPointer<>));
+
+        if (args is null)
+            throw new InvalidOperationException($"Not a pointer box type: {boxType}");
+
+        return (true, args[0]);
     }
 
     private static object? readSlot<T>(object box)
@@ -393,6 +490,20 @@ public static class GoReflect
         typed.ValueSlot = (T)value!;
     }
 
+    private static object? readSlotViaInterface<T>(object box)
+    {
+        IPointer<T> typed = (IPointer<T>)box;
+        return typed.IsNull ? default(T) : typed.Value;
+    }
+
+    private static void writeSlotViaInterface<T>(object box, object? value)
+    {
+        if (box is INilPointer { IsNilPointer: true })
+            throw RuntimeErrorPanic.NilPointerDereference();
+
+        ((IPointer<T>)box).Value = (T)value!;
+    }
+
     /// <summary>
     /// The canonical typed nil instance for a closed <c>ж&lt;T&gt;</c> pointer type (<see cref="ж{T}.NilBox"/>),
     /// resolved from the runtime <see cref="Type"/> — what <c>reflect.Zero</c> of a pointer kind yields.
@@ -400,9 +511,14 @@ public static class GoReflect
     public static object? CanonicalNilPointer(Type pointerType)
     {
         return s_canonicalNils.GetOrAdd(pointerType, static t =>
-            t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ж<>)
-                ? t.GetProperty(nameof(ж<int>.NilBox), BindingFlags.Public | BindingFlags.Static)?.GetValue(null)
-                : null);
+        {
+            if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ж<>))
+                return t.GetProperty(nameof(ж<int>.NilBox), BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+
+            // A generated NAMED pointer wrapper exposes its canonical typed nil as NilInstance
+            // (declared internal by the template — probe both visibilities).
+            return t.GetProperty("NilInstance", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
+        });
     }
 
     private static readonly ConcurrentDictionary<Type, object?> s_canonicalNils = new();
@@ -431,10 +547,19 @@ public static class GoReflect
     {
         marshalled = null;
 
-        // A valid-but-nil SOURCE (nil interface value): assignable to an interface destination
-        // (stays the nil interface); never to a concrete one.
+        // A valid-but-nil SOURCE: assignable to an interface destination (stays the nil
+        // interface) and to any REFERENCE-typed slot (a null slot value IS the nil pointer/
+        // func — X2.3 equality treats null-reference and the canonical nil box as one nil);
+        // never to a value-typed slot (a nil-able container STRUCT's nil is its default value,
+        // which is a non-null source).
         if (src is null)
-            return dstType.IsInterface;
+        {
+            if (dstType.IsInterface)
+                return true;
+
+            marshalled = null;
+            return !dstType.IsValueType;
+        }
 
         // Identity — including a pointer-sourced interface value unwrapping to its receiver box
         // (Go: the interface holds the *T) and the canonical typed-nil box of the same type.
@@ -449,6 +574,26 @@ public static class GoReflect
         if (dynamicSrc.GetType() == dstType)
         {
             marshalled = dynamicSrc;
+            return true;
+        }
+
+        // Go assignability's named↔unnamed rule: identical UNDERLYING types with at least one
+        // side unnamed. A raw value assigning into a NAMED wrapper slot constructs the wrapper
+        // through its generated single-argument constructor (`reflect.New(TestPtrAlias.Elem())`
+        // yields a raw *int; `Set` into a `type TestPtrAlias *int` slot wraps the SAME box, so
+        // pointer identity and write-through survive); a named wrapper assigning into its raw
+        // underlying slot unwraps. Two DIFFERENT named types never match either arm (Go-correct).
+        ConstructorInfo? dstWrapperCtor = wrapperConstructorOf(dstType);
+
+        if (dstWrapperCtor is not null && dstWrapperCtor.GetParameters()[0].ParameterType == dynamicSrc.GetType())
+        {
+            marshalled = dstWrapperCtor.Invoke([dynamicSrc]);
+            return true;
+        }
+
+        if (TryUnwrapWrapperValue(dynamicSrc, out object? unwrappedSrc) && unwrappedSrc.GetType() == dstType)
+        {
+            marshalled = unwrappedSrc;
             return true;
         }
 
@@ -473,6 +618,763 @@ public static class GoReflect
         return false;
     }
 
+    // ==== Phase-3 increment 2: construction, conversion, size/dims, func shape, field projection ====
+    // (Design + adversarial-review ledger: docs/Phase4/DESIGN-reflection-bridge-phase3-plan.md, I2.R.)
+
+    // -------- zero construction (reflect.Zero / reflect.New / SetZero share ONE rule) --------
+
+    /// <summary>
+    /// The boxed Go ZERO value for a managed type: pointer kinds yield the canonical typed-nil
+    /// instance (one nil encoding system-wide); interface/func kinds a null reference (Go's nil
+    /// interface has no type; a nil func is a null delegate); slice/map/chan kinds their nil
+    /// container STRUCT default (never <see cref="Activator"/> — the golib containers' explicit
+    /// parameterless constructors allocate NON-nil backings); array kinds a backing sized from
+    /// <paramref name="arrayDims"/> when known; everything else a default instance (whose field
+    /// initializers ARE the Go zero — a blank `_ [4]byte` field materializes its length).
+    /// </summary>
+    public static object? ZeroValueOf(Type t, nint[]? arrayDims = null)
+    {
+        switch (KindOf(t))
+        {
+            case Pointer:
+            case UnsafePointer:
+                return CanonicalNilPointer(t);
+            case Interface:
+            case Func:
+                return null;
+            case String:
+                // A NAMED string type's zero is the zero WRAPPER, not a raw @string (the slot
+                // is wrapper-typed); raw @string keeps the explicit empty-string form.
+                return t == typeof(@string) || t == typeof(string) ? (@string)"" : Activator.CreateInstance(t);
+            case Slice:
+            case Map:
+            case Chan:
+                return DefaultValueOf(t);
+            case Array:
+                return arrayDims is { Length: > 0 } && t.IsGenericType ? MakeSizedArray(t, arrayDims, 0) : DefaultValueOf(t);
+            default:
+                return Activator.CreateInstance(t);
+        }
+    }
+
+    // Cached boxed default(T) — the nil form of the golib container STRUCTS (a null reference is
+    // NOT the nil map/chan/slice; the zero struct is).
+    private static readonly ConcurrentDictionary<Type, Func<object?>> s_defaultFactories = new();
+
+    /// <summary>The boxed <c>default(T)</c> for a managed type (cached factory).</summary>
+    public static object? DefaultValueOf(Type t)
+    {
+        return s_defaultFactories.GetOrAdd(t, static ct =>
+            typeof(GoReflect).GetMethod(nameof(defaultOf), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(ct).CreateDelegate<Func<object?>>())();
+    }
+
+    private static object? defaultOf<T>()
+    {
+        return default(T);
+    }
+
+    /// <summary>
+    /// Constructs a raw <c>array&lt;E&gt;</c> with real backing storage sized from a dims vector
+    /// (nested dims build nested element factories, mirroring the converter's own
+    /// <c>new(128, () =&gt; new(4))</c> field-initializer form).
+    /// </summary>
+    public static object MakeSizedArray(Type arrayType, nint[] dims, int level)
+    {
+        Type? elem = ElementType(arrayType);
+
+        if (elem is null)
+            throw new InvalidOperationException($"MakeSizedArray: {arrayType} has no element type.");
+
+        if (level >= dims.Length - 1 || KindOf(elem) != Array)
+            return Activator.CreateInstance(arrayType, dims[level])!;
+
+        MethodInfo factoryMaker = typeof(GoReflect).GetMethod(nameof(sizedArrayElementFactory), BindingFlags.NonPublic | BindingFlags.Static)!
+            .MakeGenericMethod(elem);
+
+        object elementFactory = factoryMaker.Invoke(null, [elem, dims, level + 1])!;
+
+        return Activator.CreateInstance(arrayType, dims[level], elementFactory)!;
+    }
+
+    private static Func<E> sizedArrayElementFactory<E>(Type elemType, nint[] dims, int level)
+    {
+        return () => (E)MakeSizedArray(elemType, dims, level)!;
+    }
+
+    // -------- container construction (reflect.MakeSlice / MakeMap; named wrappers included) --------
+
+    private static readonly ConcurrentDictionary<Type, Func<nint, nint, object>> s_containerMakers = new();
+
+    /// <summary>
+    /// Constructs a golib container (or a generated NAMED container wrapper) through its
+    /// <c>ISupportMake</c> surface — the same construction <c>make()</c> emissions use, so
+    /// <c>reflect.MakeSlice(namedSliceType, …)</c> yields the WRAPPER, exactly Go's named result.
+    /// </summary>
+    public static object MakeContainer(Type containerType, nint p1 = 0, nint p2 = -1)
+    {
+        return s_containerMakers.GetOrAdd(containerType, static ct =>
+            typeof(GoReflect).GetMethod(nameof(makeSupported), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(ct).CreateDelegate<Func<nint, nint, object>>())(p1, p2);
+    }
+
+    private static object makeSupported<T>(nint p1, nint p2) where T : ISupportMake<T>
+    {
+        return T.Make(p1, p2)!;
+    }
+
+    // -------- pointer-box construction (reflect.New) --------
+
+    private static readonly ConcurrentDictionary<Type, Func<object?, object>> s_boxMakers = new();
+
+    /// <summary>A fresh heap box <c>ж&lt;T&gt;</c> holding <paramref name="value"/> — <c>reflect.New</c>'s allocation.</summary>
+    public static object NewPointerBox(Type pointeeType, object? value)
+    {
+        return s_boxMakers.GetOrAdd(pointeeType, static pt =>
+            typeof(GoReflect).GetMethod(nameof(newBox), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(pt).CreateDelegate<Func<object?, object>>())(value);
+    }
+
+    private static object newBox<T>(object? value)
+    {
+        return value is null ? new ж<T>(default(T)!) : new ж<T>((T)value);
+    }
+
+    // -------- Go convertibility (Set{Int,Uint,Float,Complex,String,Bool} + future Convert) --------
+
+    /// <summary>
+    /// Go's CONVERTIBILITY relation over boxed managed values — the single conversion rule the
+    /// reflection Set* family routes through (assignability, then named-wrapper construction via
+    /// the wrapper's generated single-argument constructor, then the kinded scalar conversions
+    /// with Go semantics: integer stores TRUNCATE to the destination width, floats/complex narrow).
+    /// </summary>
+    public static bool TryConvertTo(object? src, Type dstType, out object? result)
+    {
+        result = null;
+
+        // `any` destination: everything (including nil) passes through unchanged.
+        if (dstType == typeof(object))
+        {
+            result = src;
+            return true;
+        }
+
+        if (src is null)
+            return dstType.IsInterface;
+
+        if (TryMarshalAssignable(src, dstType, out result))
+            return true;
+
+        // A named-wrapper source converts through its underlying value first.
+        if (TryUnwrapWrapperValue(src, out object? unwrapped) && TryConvertTo(unwrapped, dstType, out result))
+            return true;
+
+        // A named-wrapper destination constructs through its generated single-argument
+        // constructor (parameter type discovered, never assumed primitive — golib struct
+        // underlyings like @string/uintptr/complex64 included).
+        ConstructorInfo? wrapperCtor = wrapperConstructorOf(dstType);
+
+        if (wrapperCtor is not null)
+        {
+            Type underlying = wrapperCtor.GetParameters()[0].ParameterType;
+
+            if (underlying != dstType && TryConvertTo(src, underlying, out object? underlyingValue))
+            {
+                result = wrapperCtor.Invoke([underlyingValue]);
+                return true;
+            }
+
+            return false;
+        }
+
+        result = coerceScalar(KindOf(dstType), dstType, src);
+        return result is not null;
+    }
+
+    // The generated wrapper constructor taking the underlying value (never the NilType form).
+    private static ConstructorInfo? wrapperConstructorOf(Type t)
+    {
+        if (t.GetCustomAttributes(typeof(GoTypeAttribute), false).Length == 0)
+            return null;
+
+        foreach (ConstructorInfo ctor in t.GetConstructors())
+        {
+            ParameterInfo[] parameters = ctor.GetParameters();
+
+            if (parameters.Length == 1 && parameters[0].ParameterType != typeof(NilType))
+                return ctor;
+        }
+
+        return null;
+    }
+
+    /// <summary>Unwraps a generated named-type wrapper value to its single underlying field value.</summary>
+    public static bool TryUnwrapWrapperValue(object src, [NotNullWhen(true)] out object? underlying)
+    {
+        underlying = null;
+        Type t = src.GetType();
+
+        if (t.GetCustomAttributes(typeof(GoTypeAttribute), false) is not [GoTypeAttribute { Definition.Length: > 0 } def] || def.Definition == "dyn")
+            return false;
+
+        FieldInfo? valueField = t.GetField("m_value", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        if (valueField is null)
+            return false;
+
+        underlying = valueField.GetValue(src);
+        return underlying is not null;
+    }
+
+    // Go scalar conversion into a destination kind: integers truncate (unchecked), floats and
+    // complex narrow — exactly the reflect Set{Int,Uint,Float,Complex} contract (verified against
+    // Go 1.23 reflect: no overflow panic on Set*).
+    private static object? coerceScalar(int dstKind, Type dstType, object src)
+    {
+        switch (dstKind)
+        {
+            case Bool:
+                return src is bool b ? b : null;
+            case String:
+                return src switch { @string gs => (object)gs, string s => (@string)s, _ => null };
+            case Complex128:
+                return src switch { Complex c => c, complex64 c64 => (Complex)c64, _ => null };
+            case Complex64:
+                return src switch
+                {
+                    Complex c => new complex64((float)c.Real, (float)c.Imaginary),
+                    complex64 c64 => c64,
+                    _ => null
+                };
+            case Float32:
+                return tryWideFloat(src, out double f32) ? (float)f32 : null;
+            case Float64:
+                return tryWideFloat(src, out double f64) ? f64 : null;
+        }
+
+        if (!tryWideInteger(src, out long wide))
+            return null;
+
+        return dstKind switch
+        {
+            Int => (nint)wide,
+            Int8 => (sbyte)wide,
+            Int16 => (short)wide,
+            Int32 => (int)wide,
+            Int64 => wide,
+            Uint => unchecked((nuint)wide),
+            Uint8 => unchecked((byte)wide),
+            Uint16 => unchecked((ushort)wide),
+            Uint32 => unchecked((uint)wide),
+            Uint64 => unchecked((ulong)wide),
+            Uintptr => new uintptr(unchecked((nuint)wide)),
+            _ => null
+        };
+    }
+
+    private static bool tryWideInteger(object src, out long wide)
+    {
+        switch (src)
+        {
+            case long l: wide = l; return true;
+            case ulong ul: wide = unchecked((long)ul); return true;
+            case nint n: wide = n; return true;
+            case nuint nu: wide = unchecked((long)nu); return true;
+            case int i: wide = i; return true;
+            case uint u: wide = u; return true;
+            case short s: wide = s; return true;
+            case ushort us: wide = us; return true;
+            case sbyte sb: wide = sb; return true;
+            case byte bt: wide = bt; return true;
+            case uintptr up: wide = unchecked((long)up.Value); return true;
+            case double d: wide = unchecked((long)d); return true;
+            case float f: wide = unchecked((long)f); return true;
+            default: wide = 0; return false;
+        }
+    }
+
+    private static bool tryWideFloat(object src, out double wide)
+    {
+        switch (src)
+        {
+            case double d: wide = d; return true;
+            case float f: wide = f; return true;
+            default:
+                bool ok = tryWideInteger(src, out long l);
+                wide = l;
+                return ok;
+        }
+    }
+
+    // -------- Go sizes (descriptor Size_/Align_ stamping; binary's sizeof reads scalars only) --------
+
+    /// <summary>
+    /// The Go (amd64) size of the type <paramref name="t"/> represents, or -1 when it cannot be
+    /// known (an array whose length the managed type does not carry). Struct sizes follow Go's
+    /// alignment rules over the PROJECTED Go fields — best-effort composite fidelity, recorded;
+    /// the demonstrated consumer (encoding/binary's sizeof) reads only the scalar kinds.
+    /// NOTE: unsafe.Sizeof currently answers via Marshal.SizeOf — a separate rule; unification
+    /// onto this one is deferred with a named consumer (I2.R R-14).
+    /// </summary>
+    public static nint GoSizeOf(Type t, nint[]? arrayDims = null)
+    {
+        switch (KindOf(t))
+        {
+            case Bool or Int8 or Uint8: return 1;
+            case Int16 or Uint16: return 2;
+            case Int32 or Uint32 or Float32: return 4;
+            case Int or Uint or Int64 or Uint64 or Uintptr or Float64 or Complex64: return 8;
+            case Complex128 or String or Interface: return 16;
+            case Slice: return 24;
+            case Pointer or UnsafePointer or Map or Chan or Func: return 8;
+            case Array:
+            {
+                if (arrayDims is not { Length: > 0 })
+                    return -1;
+
+                nint elemSize = GoSizeOf(ElementType(t)!, arrayDims.Length > 1 ? arrayDims[1..] : null);
+                return elemSize < 0 ? -1 : elemSize * arrayDims[0];
+            }
+            case Struct:
+            {
+                nint size = 0, maxAlign = 1;
+
+                foreach (GoFieldInfo field in GoFields(t))
+                {
+                    nint[]? dims = KindOf(field.Type) == Array ? field.ArrayDims : null;
+                    nint fieldSize = GoSizeOf(field.Type, dims);
+
+                    if (fieldSize < 0)
+                        return -1;
+
+                    nint align = GoAlignOf(field.Type);
+                    maxAlign = align > maxAlign ? align : maxAlign;
+                    size = (size + align - 1) / align * align + fieldSize;
+                }
+
+                return (size + maxAlign - 1) / maxAlign * maxAlign;
+            }
+            default:
+                return -1;
+        }
+    }
+
+    /// <summary>The Go (amd64) alignment of a type (struct = max field alignment; array = element alignment).</summary>
+    public static nint GoAlignOf(Type t)
+    {
+        switch (KindOf(t))
+        {
+            case Bool or Int8 or Uint8: return 1;
+            case Int16 or Uint16: return 2;
+            case Int32 or Uint32 or Float32 or Complex64: return 4;
+            case Array: return ElementType(t) is { } elem ? GoAlignOf(elem) : 8;
+            case Struct:
+            {
+                nint maxAlign = 1;
+
+                foreach (GoFieldInfo field in GoFields(t))
+                {
+                    nint align = GoAlignOf(field.Type);
+                    maxAlign = align > maxAlign ? align : maxAlign;
+                }
+
+                return maxAlign;
+            }
+            default:
+                return 8;
+        }
+    }
+
+    // -------- array dimension recovery (descriptor cargo; canonType interning is NOT widened) --------
+
+    private static readonly ConcurrentDictionary<Type, object?> s_zeroInstances = new();
+
+    /// <summary>
+    /// The array dims of a LIVE array value (nested dims walk the first element), or null when
+    /// unknown (a null/zero-length backing cannot reveal nested dims).
+    /// </summary>
+    public static nint[]? ArrayDimsOfValue(object? value)
+    {
+        if (value is not IArray arr)
+            return null;
+
+        nint length = arr.Length;
+        Type? elem = ElementType(value.GetType());
+
+        if (elem is null || KindOf(elem) != Array)
+            return [length];
+
+        if (length == 0)
+            return null; // nested dims unknowable from an empty outer
+
+        object? first = firstArrayElement(value, elem);
+        nint[]? inner = ArrayDimsOfValue(first);
+
+        return inner is null ? null : [length, .. inner];
+    }
+
+    private static object? firstArrayElement(object arrayValue, Type elemType)
+    {
+        MethodInfo reader = typeof(GoReflect).GetMethod(nameof(readFirstElement), BindingFlags.NonPublic | BindingFlags.Static)!
+            .MakeGenericMethod(elemType);
+        return reader.Invoke(null, [arrayValue]);
+    }
+
+    private static object? readFirstElement<E>(object arrayValue)
+    {
+        return arrayValue is IArray<E> typed ? typed[0] : null;
+    }
+
+    /// <summary>
+    /// The array dims of an array-typed STRUCT FIELD, recovered from a cached zero instance of
+    /// the declaring struct — the converter emits the Go dimension as a field initializer
+    /// (<c>= new(4)</c>, nested <c>new(128, () =&gt; new(4))</c>) that the generated parameterless
+    /// constructor runs, so the dims are already in the emitted C# with no attribute needed.
+    /// </summary>
+    public static nint[]? FieldArrayDims(Type declaringType, FieldInfo field)
+    {
+        if (!declaringType.IsValueType)
+            return null;
+
+        object? zero = s_zeroInstances.GetOrAdd(declaringType, static t => Activator.CreateInstance(t));
+        return zero is null ? null : ArrayDimsOfValue(field.GetValue(zero));
+    }
+
+    // -------- func shape (rtype.NumIn/In/NumOut/Out/IsVariadic; Value.Call) --------
+
+    /// <summary>
+    /// The Go func shape of a converted delegate type, derived from its <c>Invoke</c> signature:
+    /// a <c>void</c> return is zero results, a <c>ValueTuple</c> return is Go's multi-return
+    /// (a converted Go struct is never a ValueTuple, so the rule is unambiguous), anything else
+    /// one result. A golib variadic family delegate (<c>Funcꓸꓸꓸ</c>/<c>Actionꓸꓸꓸ</c>, whose tail
+    /// is <c>params Span&lt;T&gt;</c>) reports variadic with the tail as Go's <c>[]T</c>.
+    /// </summary>
+    public static bool TryFuncShape(Type delegateType, [NotNullWhen(true)] out Type[]? ins, [NotNullWhen(true)] out Type[]? outs, out bool isVariadic)
+    {
+        ins = null;
+        outs = null;
+        isVariadic = false;
+
+        if (!typeof(Delegate).IsAssignableFrom(delegateType))
+            return false;
+
+        MethodInfo? invoke = delegateType.GetMethod("Invoke");
+
+        if (invoke is null)
+            return false;
+
+        ParameterInfo[] parameters = invoke.GetParameters();
+        string name = delegateType.Name;
+        isVariadic = name.StartsWith("Func" + EllipsisOperator, StringComparison.Ordinal) ||
+                     name.StartsWith("Action" + EllipsisOperator, StringComparison.Ordinal);
+
+        ins = new Type[parameters.Length];
+
+        for (int i = 0; i < parameters.Length; i++)
+            ins[i] = parameters[i].ParameterType;
+
+        if (isVariadic && ins.Length > 0 && ins[^1] is { IsGenericType: true } tail && tail.GetGenericTypeDefinition() == typeof(Span<>))
+            ins[^1] = typeof(slice<>).MakeGenericType(tail.GetGenericArguments()[0]);
+
+        Type ret = invoke.ReturnType;
+
+        if (ret == typeof(void))
+            outs = Type.EmptyTypes;
+        else if (ret.IsGenericType && ret.FullName?.StartsWith("System.ValueTuple`", StringComparison.Ordinal) == true)
+            outs = ret.GetGenericArguments();
+        else
+            outs = [ret];
+
+        return true;
+    }
+
+    // -------- Go struct-field projection (embeds, named-struct wrappers, blanks, companions) --------
+
+    /// <summary>A struct's Go-visible field: its Go name, static Go type, exportedness, and access path.</summary>
+    public readonly struct GoFieldInfo
+    {
+        /// <summary>The Go field name (`_` for a blank field, the embed's type name for an embedded field).</summary>
+        public readonly string Name;
+
+        /// <summary>The field's STATIC Go type (an embedded field reports the embedded type, not its backing box).</summary>
+        public readonly Type Type;
+
+        /// <summary>Go exportedness (uppercase first rune of <see cref="Name"/>).</summary>
+        public readonly bool Exported;
+
+        /// <summary>Array dims when <see cref="Type"/> is an array kind and the declaring zero instance reveals them.</summary>
+        public readonly nint[]? ArrayDims;
+
+        // The C# access path from the declaring struct: each step is an instance field; a step
+        // whose IsBoxHop flag is set holds a ж<T> promoted-embed box the path derefs through.
+        internal readonly FieldInfo[] Path;
+        internal readonly bool[] BoxHop;
+
+        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop)
+        {
+            Name = name;
+            Type = type;
+            Exported = name.Length > 0 && name != "_" && char.IsUpper(name[0]);
+            ArrayDims = arrayDims;
+            Path = path;
+            BoxHop = boxHop;
+        }
+
+        /// <summary>Reads this field's value from a live struct instance (path-following, boxed).</summary>
+        public object? Read(object structValue)
+        {
+            object? current = structValue;
+
+            for (int i = 0; i < Path.Length && current is not null; i++)
+            {
+                current = Path[i].GetValue(current);
+
+                if (BoxHop[i] && current is not null)
+                    current = ReadPointerSlot(current);
+            }
+
+            return current;
+        }
+    }
+
+    private static readonly ConcurrentDictionary<Type, GoFieldInfo[]> s_goFields = new();
+
+    /// <summary>
+    /// The Go-visible fields of a converted struct type, in metadata order: unwraps a defined-
+    /// type-over-struct wrapper's <c>m_value</c>, projects a promoted-embed backing box
+    /// (<c>Ꮡʗ</c>-prefixed <c>ж&lt;T&gt;</c> field) as the embedded Go field of type <c>T</c>,
+    /// maps the converter's blank renames (<c>_</c>, <c>__</c>, …) to Go's <c>"_"</c> (a REAL Go
+    /// field named <c>__</c> is a documented exposure, same class as marker-shaped identifiers),
+    /// and excludes compiler backing fields and <c>[GoReflectCompanion]</c>-marked bridge fields.
+    /// </summary>
+    public static GoFieldInfo[] GoFields(Type structType)
+    {
+        return s_goFields.GetOrAdd(structType, static t =>
+        {
+            List<GoFieldInfo> result = new();
+            collectGoFields(t, [], [], result);
+            return result.ToArray();
+        });
+    }
+
+    private static void collectGoFields(Type t, FieldInfo[] prefixPath, bool[] prefixHops, List<GoFieldInfo> result)
+    {
+        FieldInfo[] fields = t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        // A defined-type-over-struct wrapper ([GoType("<underlying name>")], single private
+        // m_value) exposes the UNDERLYING struct's fields on the named type in Go.
+        if (fields is [{ Name: "m_value" } valueField] &&
+            t.GetCustomAttributes(typeof(GoTypeAttribute), false) is [GoTypeAttribute { Definition.Length: > 0 } def] &&
+            def.Definition != "dyn" && valueField.FieldType.IsValueType && KindOf(valueField.FieldType) == Struct)
+        {
+            collectGoFields(valueField.FieldType, [.. prefixPath, valueField], [.. prefixHops, false], result);
+            return;
+        }
+
+        string embedPrefix = AddressPrefix + CapturedVarMarker;
+
+        foreach (FieldInfo field in fields)
+        {
+            string name = field.Name;
+
+            if (name.Contains("k__BackingField", StringComparison.Ordinal))
+                continue;
+
+            if (field.GetCustomAttributes(typeof(GoReflectCompanionAttribute), false).Length != 0)
+                continue;
+
+            // Promoted-embed backing box: `private readonly ж<T> ᏑʗName` → Go field `Name` of type T.
+            if (name.StartsWith(embedPrefix, StringComparison.Ordinal) &&
+                field.FieldType is { IsGenericType: true } boxType && boxType.GetGenericTypeDefinition() == typeof(ж<>))
+            {
+                string goName = name[embedPrefix.Length..];
+                Type embedded = boxType.GetGenericArguments()[0];
+                result.Add(new GoFieldInfo(goName, embedded, null, [.. prefixPath, field], [.. prefixHops, true]));
+                continue;
+            }
+
+            string projected = name;
+
+            if (projected.StartsWith(ShadowVarMarker, StringComparison.Ordinal))
+                projected = projected[ShadowVarMarker.Length..];
+
+            if (projected.Length > 0 && isAllUnderscores(projected))
+                projected = "_";
+
+            nint[]? dims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : null;
+            result.Add(new GoFieldInfo(projected, field.FieldType, dims, [.. prefixPath, field], [.. prefixHops, false]));
+        }
+    }
+
+    private static bool isAllUnderscores(string name)
+    {
+        foreach (char c in name)
+        {
+            if (c != '_')
+                return false;
+        }
+
+        return true;
+    }
+
+    // -------- addressable alias boxes (Field(i)/Index(i) write-through; the ref-accessor contract) --------
+
+    private static readonly ConcurrentDictionary<(Type boxType, string fieldKey), Delegate> s_fieldAccessors = new();
+    private static readonly ConcurrentDictionary<Type, Func<object, Delegate, object>> s_fieldBoxMakers = new();
+    private static readonly ConcurrentDictionary<(Type boxType, Type elemType), Func<object, nint, object>> s_elementBoxMakers = new();
+    private static readonly ConcurrentDictionary<Type, Func<object, int, object>> s_arrayElementBoxMakers = new();
+
+    /// <summary>
+    /// A field-alias <c>ж&lt;F&gt;</c> over a parent box's Go field: reads/writes route through the
+    /// parent's <see cref="ж{T}.ValueSlot"/> and the projected field path, so nested parents
+    /// (field-of-field, element parents) land in REAL storage — where <c>FieldRef&lt;T&gt;.Create</c>'s
+    /// <c>m_val</c>-hardcoded IL would not. The cached accessor doubles as the ж equality-identity
+    /// token, preserving Go's <c>&amp;s.f == &amp;s.f</c>.
+    /// </summary>
+    public static object FieldAliasBox(object parentBox, GoFieldInfo field)
+    {
+        Type boxType = parentBox.GetType();
+        Delegate accessor = s_fieldAccessors.GetOrAdd((boxType, fieldPathKey(field)), _ => buildFieldAccessor(boxType, field));
+
+        return s_fieldBoxMakers.GetOrAdd(field.Type, static ft =>
+            typeof(GoReflect).GetMethod(nameof(makeFieldBox), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(ft).CreateDelegate<Func<object, Delegate, object>>())(parentBox, accessor);
+    }
+
+    private static object makeFieldBox<F>(object parentBox, Delegate accessor)
+    {
+        FieldRefFunc<F> fieldRef = (FieldRefFunc<F>)accessor;
+        return new ж<F>(parentBox, fieldRef, accessor);
+    }
+
+    private static string fieldPathKey(GoFieldInfo field)
+    {
+        string key = "";
+
+        for (int i = 0; i < field.Path.Length; i++)
+            key += (field.BoxHop[i] ? "*" : ".") + field.Path[i].Name;
+
+        return key;
+    }
+
+    // DynamicMethod: (object box) => ref ((ж<S>)box).ValueSlot.path... — each plain step is an
+    // ldflda; a box-hop step loads the ж<E> reference and re-enters through ITS ValueSlot.
+    private static Delegate buildFieldAccessor(Type boxType, GoFieldInfo field)
+    {
+        DynamicMethod method = new(
+            name: $"goref_{field.Name}",
+            returnType: field.Type.MakeByRefType(),
+            parameterTypes: [typeof(object)],
+            m: typeof(GoReflect).Module,
+            skipVisibility: true);
+
+        ILGenerator il = method.GetILGenerator();
+
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Castclass, boxType);
+        il.Emit(OpCodes.Callvirt, boxType.GetProperty(nameof(ж<int>.ValueSlot))!.GetGetMethod()!);
+
+        for (int i = 0; i < field.Path.Length; i++)
+        {
+            if (!field.BoxHop[i])
+            {
+                il.Emit(OpCodes.Ldflda, field.Path[i]);
+                continue;
+            }
+
+            il.Emit(OpCodes.Ldfld, field.Path[i]);
+            il.Emit(OpCodes.Callvirt, field.Path[i].FieldType.GetProperty(nameof(ж<int>.ValueSlot))!.GetGetMethod()!);
+        }
+
+        il.Emit(OpCodes.Ret);
+
+        return method.CreateDelegate(typeof(FieldRefFunc<>).MakeGenericType(field.Type));
+    }
+
+    /// <summary>
+    /// An element-alias <c>ж&lt;E&gt;</c> over an ADDRESSABLE container box, via
+    /// <see cref="ж{T}.at{TElem}(nint)"/> — which materializes a lazily-backed named-array
+    /// wrapper on the REAL storage (the pallocBits lesson), validates the index, and yields a
+    /// write-through element ref.
+    /// </summary>
+    public static object ElementAliasBoxOfBox(object containerBox, Type elemType, nint index)
+    {
+        Type boxType = containerBox.GetType();
+
+        return s_elementBoxMakers.GetOrAdd((boxType, elemType), static key =>
+        {
+            Type containerType = key.boxType.GetGenericArguments()[0];
+            return typeof(GoReflect).GetMethod(nameof(elementBoxViaAt), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(containerType, key.elemType).CreateDelegate<Func<object, nint, object>>();
+        })(containerBox, index);
+    }
+
+    private static object elementBoxViaAt<C, E>(object box, nint index)
+    {
+        return ((ж<C>)box).at<E>(index);
+    }
+
+    /// <summary>
+    /// An element-alias <c>ж&lt;E&gt;</c> over a DETACHED container VALUE (a slice result of
+    /// <c>MakeSlice</c>, a slice read out of a slot): golib slices/arrays share their backing
+    /// store across struct copies, so the ref still lands in real storage.
+    /// </summary>
+    public static object ElementAliasBoxOfValue(object containerValue, Type elemType, nint index)
+    {
+        return s_arrayElementBoxMakers.GetOrAdd(elemType, static et =>
+            typeof(GoReflect).GetMethod(nameof(elementBoxOfArray), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(et).CreateDelegate<Func<object, int, object>>())(containerValue, (int)index);
+    }
+
+    private static object elementBoxOfArray<E>(object arrayValue, int index)
+    {
+        return new ж<E>((IArray)arrayValue, index);
+    }
+
+    private static readonly ConcurrentDictionary<Type, Func<object, nint, nint, object>> s_sliceWindowMakers = new();
+
+    /// <summary>
+    /// A <c>slice&lt;E&gt;</c> window <c>[low:high]</c> over a container value that SHARES the
+    /// source's backing store (Go slice semantics — <c>reflect.Value.Slice</c>): a raw slice
+    /// re-windows, a raw array wraps its backing, a named slice wrapper windows its underlying
+    /// view.
+    /// </summary>
+    public static object SliceWindow(object container, Type elemType, nint low, nint high)
+    {
+        return s_sliceWindowMakers.GetOrAdd(elemType, static et =>
+            typeof(GoReflect).GetMethod(nameof(sliceWindow), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(et).CreateDelegate<Func<object, nint, nint, object>>())(container, low, high);
+    }
+
+    private static object sliceWindow<E>(object container, nint low, nint high)
+    {
+        return container switch
+        {
+            slice<E> s => s.slice(low, high),
+            array<E> a => new slice<E>(a, low, high),
+            ISlice<E> view => new slice<E>(view).slice(low, high),
+            _ => throw new InvalidOperationException($"SliceWindow: unsupported container {container.GetType()}")
+        };
+    }
+
+    private static readonly ConcurrentDictionary<(Type keyType, Type elemType), Action<object, object?, object?>> s_mapSetters = new();
+
+    /// <summary>
+    /// Stores a key/value pair through a live golib map — raw <c>map&lt;K,V&gt;</c> and named map
+    /// wrappers both implement <c>IDictionary&lt;K,V&gt;</c> (<c>reflect.Value.SetMapIndex</c>).
+    /// </summary>
+    public static void SetMapEntry(object map, Type keyType, Type elemType, object? key, object? value)
+    {
+        s_mapSetters.GetOrAdd((keyType, elemType), static k =>
+            typeof(GoReflect).GetMethod(nameof(setMapEntry), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(k.keyType, k.elemType).CreateDelegate<Action<object, object?, object?>>())(map, key, value);
+    }
+
+    private static void setMapEntry<K, V>(object map, object? key, object? value) where K : notnull
+    {
+        ((IDictionary<K, V>)map)[(K)key!] = (V)value!;
+    }
+
     // Reads a [GoType] definition string ("num:int32", "@string", "num:uintptr", ...) and maps its
     // underlying-kind token to a reflect.Kind. Returns false when the type carries no such definition
     // (a plain [GoType] struct, or a non-converted type).
@@ -492,8 +1394,10 @@ public static class GoReflect
             kind = token switch
             {
                 "bool" => Bool,
-                "int" => Int, "int8" => Int8, "int16" => Int16, "int32" => Int32, "int64" => Int64,
-                "uint" => Uint, "uint8" => Uint8, "uint16" => Uint16, "uint32" => Uint32, "uint64" => Uint64,
+                // The converter renders Go int/uint in their C# spellings (nint/nuint) inside the
+                // def token, so both spellings must map (num:nint is what `type X int` emits).
+                "int" or "nint" => Int, "int8" => Int8, "int16" => Int16, "int32" => Int32, "int64" => Int64,
+                "uint" or "nuint" => Uint, "uint8" => Uint8, "uint16" => Uint16, "uint32" => Uint32, "uint64" => Uint64,
                 "uintptr" => Uintptr,
                 "float32" => Float32, "float64" => Float64,
                 "complex64" => Complex64, "complex128" => Complex128,
