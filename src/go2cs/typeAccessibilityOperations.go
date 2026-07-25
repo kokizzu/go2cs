@@ -41,6 +41,25 @@ const TypeAccessibilitySection = "TypeAccessibility"
 // inside the class body.
 const typeAccessibilityIndent = "    "
 
+// typeAccessibilityProseLines returns the section's explanatory comment — deliberately
+// DESCRIPTIVE prose (what the declarations do), not historical rationale: this text persists in
+// every package_info.cs. The deeper generator-can't-see-its-own-output story lives in the Source
+// Generators section of docs/ConversionStrategies-Reference.md.
+func typeAccessibilityProseLines() []string {
+	return []string{
+		typeAccessibilityIndent + "// C# nested types declared with no access modifier are always private, and the",
+		typeAccessibilityIndent + "// `[GoType]` declarations in this package's converted sources are deliberately",
+		typeAccessibilityIndent + "// bare so they read more like the original Go code. The real accessibility for",
+		typeAccessibilityIndent + "// the types - public for a Go-exported name, internal otherwise - are defined",
+		typeAccessibilityIndent + "// via declarations below.",
+	}
+}
+
+// legacyTypeAccessibilityFirstLine identifies the first line of the section's ORIGINAL prose block
+// (2026-07-25, pre-condensing) so ensureTypeAccessibilitySection can migrate a persisted file to
+// the current wording in place.
+const legacyTypeAccessibilityFirstLine = "// A C# nested type declared with no access modifier is PRIVATE"
+
 // typeAccessibilitySectionLines returns the section's explanatory prose and its marker delimiters,
 // in the style of the ImportedTypeAliases / ExportedTypeAliases / InterfaceImplementations blocks
 // that precede it. This is the ONLY definition of the block: it is inserted into the package info
@@ -48,25 +67,11 @@ const typeAccessibilityIndent = "    "
 // package_info-template.txt, so a template-generated file and a pre-existing one that predates the
 // section end up byte-identical.
 func typeAccessibilitySectionLines() []string {
-	return []string{
-		typeAccessibilityIndent + "// A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`",
-		typeAccessibilityIndent + "// declarations in this package's converted sources are deliberately bare so they read",
-		typeAccessibilityIndent + "// like the Go original. Their real accessibility — public for a Go-exported name,",
-		typeAccessibilityIndent + "// internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,",
-		typeAccessibilityIndent + "// and a source generator cannot see its own output: while the generators run, every one",
-		typeAccessibilityIndent + "// of those types is still private, so a semantic query that reaches across package",
-		typeAccessibilityIndent + "// classes resolves them as Inaccessible and silently drops whatever it was about to",
-		typeAccessibilityIndent + "// build from them.",
+	return append(typeAccessibilityProseLines(),
 		"",
-		typeAccessibilityIndent + "// The declarations below close that gap. A C# partial type may carry its access modifier",
-		typeAccessibilityIndent + "// on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,",
-		typeAccessibilityIndent + "// ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the",
-		typeAccessibilityIndent + "// section declares `public partial interface Closer {}` for a `[GoType] partial interface",
-		typeAccessibilityIndent + "// Closer`, and `internal partial struct dirEntry {}` for an unexported one.",
-		"",
-		typeAccessibilityIndent + "// <" + TypeAccessibilitySection + ">",
-		typeAccessibilityIndent + "// </" + TypeAccessibilitySection + ">",
-	}
+		typeAccessibilityIndent+"// <"+TypeAccessibilitySection+">",
+		typeAccessibilityIndent+"// </"+TypeAccessibilitySection+">",
+	)
 }
 
 // ensureTypeAccessibilitySection returns packageInfoLines with the TypeAccessibility prose and
@@ -78,10 +83,40 @@ func typeAccessibilitySectionLines() []string {
 func ensureTypeAccessibilitySection(packageInfoLines []string) []string {
 	openTag := "<" + TypeAccessibilitySection + ">"
 
-	for _, line := range packageInfoLines {
+	markerIndex := -1
+
+	for i, line := range packageInfoLines {
 		if strings.Contains(line, openTag) {
+			markerIndex = i
+			break
+		}
+	}
+
+	if markerIndex >= 0 {
+		// Section already present. A file written before the prose was condensed carries the
+		// original explanatory block — replace it in place so every persisted package_info.cs
+		// converges on the one current wording (the block is converter-owned and was only ever
+		// emitted verbatim, so an exact first-line match identifies it safely).
+		legacyStart := -1
+
+		for i := 0; i < markerIndex; i++ {
+			if strings.Contains(packageInfoLines[i], legacyTypeAccessibilityFirstLine) {
+				legacyStart = i
+				break
+			}
+		}
+
+		if legacyStart < 0 {
 			return packageInfoLines
 		}
+
+		updated := make([]string, 0, len(packageInfoLines))
+		updated = append(updated, packageInfoLines[:legacyStart]...)
+		updated = append(updated, typeAccessibilityProseLines()...)
+		updated = append(updated, "")
+		updated = append(updated, packageInfoLines[markerIndex:]...)
+
+		return updated
 	}
 
 	insertIndex := -1
