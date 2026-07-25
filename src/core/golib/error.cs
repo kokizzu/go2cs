@@ -7,7 +7,6 @@
 // ReSharper disable InconsistentNaming
 
 using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -180,32 +179,38 @@ public class error<T> : error, IErrorTarget
 
 public static class errorExtensions
 {
-    private static readonly ConcurrentDictionary<Type, MethodInfo> s_conversionOperators = new();
-
-    public static T _<T>(this error target)
+    public static T _<[DynamicallyAccessedMembers(
+        DynamicallyAccessedMemberTypes.PublicMethods |
+        DynamicallyAccessedMemberTypes.PublicConstructors |
+        DynamicallyAccessedMemberTypes.PublicFields
+    )] T>(this error target)
     {
-        // An assertion to another INTERFACE (`err.(interface{ … })`, e.g. a dyn anonymous interface) is a
-        // standard interface-to-interface assertion, not an unwrap of the error<T> concrete carrier. A
-        // pointer-sourced error is an IжAdapter standing in for the *T it wraps, so unwrap it to that
-        // receiver box (Go's interface holds the *T) and route it through the general duck-typed
-        // type-assertion machinery, which resolves the box's method set structurally.
-        if (typeof(T).IsInterface)
-        {
-            object dynamicValue = target is IжAdapter pointerAdapter && pointerAdapter.Box is not null ? pointerAdapter.Box : target;
-            return dynamicValue._<T>();
-        }
+        // The `error<T>` carrier is golib's own reflective error box (built by `error.As`): it does
+        // NOT hold its Go dynamic value the way every other interface value does, so unwrapping it
+        // is the ONLY error-specific part of a typed-error assert.
+        if (target is error<T> carrier)
+            return carrier.Target;
 
-        try
-        {
-            return ((error<T>)target).Target;
-        }
-        catch (NotImplementedException ex)
-        {
-            throw new PanicException($"interface conversion: {GetGoTypeName(target.GetType())} is not {GetGoTypeName(typeof(T))}: missing method {ex.InnerException?.Message}", ex);
-        }
+        // Everything else an `error` can hold IS a normal Go dynamic value — a generated pointer
+        // adapter (IжAdapter over the ж<X> receiver box), a value type that implements error
+        // directly, an interface-to-interface adapter, or a duck-typed wrapper. Route it through
+        // the ONE type-assertion machinery so an assert made on a statically-`error` operand can
+        // never disagree with the same assert made on an `any`-typed one.
+        //
+        // Casting the carrier to `error<T>` directly (what this did before) only ever matched the
+        // legacy carrier: `err.(*fs.PathError)` against a pointer-sourced error threw
+        // InvalidCastException ("PathErrorжerror to error<ж<PathError>>"), which is not even a
+        // recoverable Go panic — os's dirFS.Open path-fixup died on it (io/fs TestGlob,
+        // TestReadDirPath, TestReadFilePath). Commit cb0f58078 closed the INTERFACE half of this
+        // same defect; this closes the CONCRETE-type half.
+        return ((object)target)._<T>();
     }
 
-    public static bool _<T>(this error target, out T result)
+    public static bool _<[DynamicallyAccessedMembers(
+        DynamicallyAccessedMemberTypes.PublicMethods |
+        DynamicallyAccessedMemberTypes.PublicConstructors |
+        DynamicallyAccessedMemberTypes.PublicFields
+    )] T>(this error target, out T result)
     {
         try
         {
@@ -219,22 +224,25 @@ public static class errorExtensions
         }
     }
 
+    // Runtime-Type form of the assert above. It shares the same machinery for the same reason:
+    // resolving a Go dynamic value by reflection must not reach a different answer than resolving
+    // it by type argument. (The previous body invoked `error<>`'s explicit conversion operator on
+    // the interface value, which — exactly like the generic form — only ever matched the legacy
+    // carrier.)
     public static object? _(this error target, Type type)
     {
-        try
+        if (target is IErrorTarget errorTarget &&
+            target.GetType() is { IsGenericType: true } carrierType &&
+            carrierType.GetGenericTypeDefinition() == typeof(error<>) &&
+            carrierType.GetGenericArguments()[0] == type)
         {
-            MethodInfo? conversionOperator = s_conversionOperators.GetOrAdd(type, _ => typeof(error<>).GetExplicitGenericConversionOperator(type));
-
-            if (conversionOperator is null)
-                throw new PanicException($"interface conversion: failed to create converter for {GetGoTypeName(target.GetType())} to {GetGoTypeName(type)}");
-
-            object? result = conversionOperator.Invoke(null, [target]);
-            return result is IErrorTarget errorTarget ? errorTarget.TargetObject : null;
+            return errorTarget.TargetObject;
         }
-        catch (NotImplementedException ex)
-        {
-            throw new PanicException($"interface conversion: {GetGoTypeName(target.GetType())} is not {GetGoTypeName(type)}: missing method {ex.InnerException?.Message}");
-        }
+
+        if (TryTypeAssert(target, type, out object? value))
+            return value;
+
+        throw new PanicException($"interface conversion: interface {{}} is {GetGoTypeName(target)}, not {GetGoTypeName(type)}");
     }
 
     public static bool _(this error target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, out object? result)

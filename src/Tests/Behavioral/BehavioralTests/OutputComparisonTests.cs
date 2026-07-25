@@ -1229,6 +1229,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckTypeConversionInterfaceParam() => CheckTarget("TypeConversionInterfaceParam");
 
     [TestMethod]
+    public void CheckTypedErrorAssertThroughAdapter() => CheckTarget("TypedErrorAssertThroughAdapter");
+
+    [TestMethod]
     public void CheckTypedNilInterface() => CheckTarget("TypedNilInterface");
 
     [TestMethod]

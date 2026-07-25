@@ -1315,6 +1315,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckTypeConversionReturnType() => CheckTarget("TypeConversionReturnType");
 
     [TestMethod]
+    public void CheckTypedErrorAssertThroughAdapter() => CheckTarget("TypedErrorAssertThroughAdapter");
+
+    [TestMethod]
     public void CheckTypedNilInterface() => CheckTarget("TypedNilInterface");
 
     [TestMethod]

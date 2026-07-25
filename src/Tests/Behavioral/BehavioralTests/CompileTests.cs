@@ -1312,6 +1312,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckTypeConversionReturnType() => CheckTarget("TypeConversionReturnType");
 
     [TestMethod]
+    public void CheckTypedErrorAssertThroughAdapter() => CheckTarget("TypedErrorAssertThroughAdapter");
+
+    [TestMethod]
     public void CheckTypedNilInterface() => CheckTarget("TypedNilInterface");
 
     [TestMethod]
