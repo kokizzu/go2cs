@@ -1384,6 +1384,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckUntypedConstFloatContext() => CheckTarget("UntypedConstFloatContext");
 
     [TestMethod]
+    public void CheckUntypedConstWideMask() => CheckTarget("UntypedConstWideMask");
+
+    [TestMethod]
     public void CheckUntypedFloatConstExpr() => CheckTarget("UntypedFloatConstExpr");
 
     [TestMethod]

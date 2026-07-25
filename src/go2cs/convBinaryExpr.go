@@ -456,7 +456,8 @@ func (v *Visitor) concreteNumericCSType(t types.Type) string {
 //     (`(uint64)1 << 40`) from the named-numeric path, so folding it would needlessly lose the readable
 //     `1<<40` form. The signed builtin-int64 path is the one that lacks the width cast and overflows.
 //   - In-range constants return "" so ordinary constant arithmetic keeps its readable operator form;
-//     this only fires on the overflow cases.
+//     this only fires on the overflow cases — EXCEPT when an operand has no 64-bit materialization at
+//     all (see unrepresentable below), where the operator form cannot be emitted at any magnitude.
 func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 	tv, ok := v.info.Types[expr]
 
@@ -475,6 +476,11 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 	if val.Kind() != constant.Int {
 		return ""
 	}
+
+	// An operand with NO 64-bit materialization forces the fold whatever the whole value's
+	// magnitude: unlike the overflow cases, the operator form there does not merely compute in the
+	// wrong width — it THROWS at run time (see constExprHasBeyondUint64UntypedConstRef).
+	unrepresentable := v.constExprHasBeyondUint64UntypedConstRef(expr)
 
 	if basic.Info()&types.IsUnsigned != 0 {
 		// UNSIGNED targets normally keep the readable operator form: a TYPED unsigned constant
@@ -495,7 +501,7 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 			return ""
 		}
 
-		if !v.constExprHasBeyondInt64UntypedOperatorSubexpr(expr) {
+		if !unrepresentable && !v.constExprHasBeyondInt64UntypedOperatorSubexpr(expr) {
 			return ""
 		}
 
@@ -528,8 +534,20 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 
 	i, exact := constant.Int64Val(val)
 
-	if !exact || (i >= math.MinInt32 && i <= math.MaxInt32) {
+	if !exact {
 		return ""
+	}
+
+	if i >= math.MinInt32 && i <= math.MaxInt32 {
+		// In range — keep the readable operator form, unless an operand has no 64-bit
+		// materialization. The forced fold is confined to the 64-bit-wide signed targets, the only
+		// ones this function's `…L` / `(nint)(…L)` contract covers; a NARROWER signed target would
+		// need its own width cast, and no such site exists (a 128-bit-class untyped constant reaches
+		// a signed target only through the whole-width bitmap idiom). It stays on the operator form,
+		// where the wrapper cast fails LOUDLY rather than silently computing the wrong value.
+		if !unrepresentable || (basic.Kind() != types.Int && basic.Kind() != types.Int64) {
+			return ""
+		}
 	}
 
 	lit := strconv.FormatInt(i, 10) + "L"
@@ -595,6 +613,49 @@ func (v *Visitor) constExprHasBeyondInt64UntypedOperatorSubexpr(expr ast.Expr) b
 
 		found = true
 		return false
+	})
+
+	return found
+}
+
+// constExprHasBeyondUint64UntypedConstRef reports whether any PROPER subexpression of the constant
+// expression REFERENCES a named untyped constant whose value fits neither int64 nor uint64 — the
+// shape emitted as golib's `GoUntyped` wrapper over a System.Numerics.BigInteger (see
+// isBigIntegerBackedConstRef). Such a reference has NO 64-bit materialization: every emission that
+// gives it a width casts the wrapper (`(uint64)mask`, from the shift guard's receiver retype), and
+// BigInteger's explicit numeric conversion THROWS System.OverflowException at run time.
+//
+// Go permits the 128-bit intermediate because only a constant expression's FINAL value must be
+// representable in its type — the whole-width byte-classification bitmap idiom (`const mask = … ;
+// (1<<c)&(mask&(1<<64-1)) | (1<<(c-64))&(mask>>64)`, go/doc/comment isHost/isPath/isName and
+// net/textproto validHeaderFieldByte) is built on exactly that. Folding the enclosing expression at
+// its go/types-recorded value is what reproduces it: `mask&(1<<64-1)` already folds through
+// constExprHasBeyondInt64UntypedOperatorSubexpr (its `1<<64-1` operand subtree exceeds int64), while
+// the sibling `mask>>64` has no such subtree — its only unrepresentable operand is the REFERENCE,
+// which is what this predicate adds.
+//
+// The root is excluded (a bare reference is not an operator expression; there is nothing to fold, and
+// Go could not have placed it in a 64-bit context in the first place).
+func (v *Visitor) constExprHasBeyondUint64UntypedConstRef(expr ast.Expr) bool {
+	found := false
+
+	ast.Inspect(expr, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		e, ok := n.(ast.Expr)
+
+		if !ok || e == expr {
+			return true
+		}
+
+		if v.isBigIntegerBackedConstRef(e) {
+			found = true
+			return false
+		}
+
+		return true
 	})
 
 	return found

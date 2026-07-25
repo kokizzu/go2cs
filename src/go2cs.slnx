@@ -524,6 +524,7 @@
     <Project Path="Tests/Behavioral/UntypedConstArithmetic/UntypedConstArithmetic.csproj" />
     <Project Path="Tests/Behavioral/UntypedConstDefine/UntypedConstDefine.csproj" />
     <Project Path="Tests/Behavioral/UntypedConstFloatContext/UntypedConstFloatContext.csproj" />
+    <Project Path="Tests/Behavioral/UntypedConstWideMask/UntypedConstWideMask.csproj" />
     <Project Path="Tests/Behavioral/UntypedFloatConstExpr/UntypedFloatConstExpr.csproj" />
     <Project Path="Tests/Behavioral/UntypedFloatDefault/UntypedFloatDefault.csproj" />
     <Project Path="Tests/Behavioral/UntypedIntFloatContexts/UntypedIntFloatContexts.csproj" />

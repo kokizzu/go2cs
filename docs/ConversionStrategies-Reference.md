@@ -663,6 +663,49 @@ public static readonly GoUntyped Two129 = /* 1 << 129 */ ...;
 _ = x > (float64)Two129;
 ```
 
+#### An INTEGER expression over a `GoUntyped` constant folds — it has no 64-bit form
+The `(float64)Two129` cast above works because BigInteger converts to `double`. An **integer** target has
+no such luck: `(uint64)mask` on a 128-bit BigInteger throws `System.OverflowException` at run time. That is
+not a corner case — it is the shape of the Go standard library's whole-width byte-classification bitmap
+idiom (`go/doc/comment`'s `isHost`/`isPath`/`isIdentASCII`/`importPathOK`, `net/textproto`'s
+`validHeaderFieldByte`/`validHeaderValueByte`), where a 128-bit untyped `mask` is legal precisely because
+Go requires only the FINAL value of a constant expression to be representable:
+
+```go
+const mask = 0 | (1<<26-1)<<'A' | (1<<26-1)<<'a' | (1<<10-1)<<'0' | 1<<'_' | /* … */ 1<<':'
+
+return ((uint64(1)<<c)&(mask&(1<<64-1)) |
+	(uint64(1)<<(c-64))&(mask>>64)) != 0
+```
+
+Both halves are `uint64`-valued constants, so both must emit as the go/types-recorded **folded value**.
+`mask&(1<<64-1)` already did — its `1<<64-1` operand subtree exceeds int64, which
+`constExprHasBeyondInt64UntypedOperatorSubexpr` recognizes. The sibling `mask>>64` has no such subtree: its
+only unrepresentable operand is the *reference*, which the shift path retyped to the shift's resolved width
+(`((uint64)mask).Rsh(64)`) and threw. `overflowingConstLiteral` therefore also folds on
+`constExprHasBeyondUint64UntypedConstRef` — any PROPER subexpression that is a named untyped-const
+reference fitting neither int64 nor uint64 (the `GoUntyped` emission, `isBigIntegerBackedConstRef`):
+
+```csharp
+GoUntyped mask = /* 0 | (1<<26-1)<<'A' | … */ GoUntyped.Parse("10633823862292363665388054147449749504");
+return ((uint64)((uint64)((((uint64)1).Lsh((uint64)(c))) & (576284830442979328UL)) |
+        (uint64)((((uint64)1).Lsh((uint64)((c - 64)))) & (576460746666278911UL)))) != 0;
+```
+
+Unlike the sibling overflow folds this one is **magnitude-independent**: the operator form does not merely
+compute in the wrong width, it *throws*, so a folded value that fits int32 (`mask>>64` of `1<<70 | 1<<3` is
+64) folds too. Scope: the unsigned arm covers `uint64`/`nuint`/`uintptr`; the signed arm is confined to the
+64-bit-wide targets its `…L` / `(nint)(…L)` contract already covers (a narrower signed target keeps the
+operator form, where the wrapper cast fails LOUDLY rather than silently computing the wrong value — no such
+site exists in the stdlib corpus). The `mask` local itself stays emitted, unused, carrying the gofmt'd Go
+constant as its comment: it is what makes the folded magic numbers readable back to the Go source.
+
+Corpus footprint of the fold: exactly two files across the 302-package stdlib conversion
+(`go/doc/comment/parse.cs`, `net/textproto/reader.cs`), both still compiling clean.
+(Guarded by the `UntypedConstWideMask` behavioral test — the `isHost` mask, the `&^`-inverted
+`validHeaderValueByte` mask, a small-valued high half, and a `uintptr`-target native-width mask, all
+output-compared vs Go. Without the fold the `uintptr` arm is a hard CS0030 and the `uint64` arms throw.)
+
 ### The `&^=` (bit-clear) compound assignment on a narrow type
 C# has no `&^` (AND-NOT) operator, so Go's `a &^= b` expands to `a &= ~b`. The `~` complement always promotes its operand to `int`, and `int` is not implicitly convertible to a narrower or unsigned LHS type (`byte`/`ushort`/`uint`/`ulong`/`uintptr`/`nuint`) — so `flags &= ~b` is CS0266. The complemented value is therefore cast back to the LHS type, inside `unchecked` because for a *constant* operand `~b` folds to a negative `int` constant whose checked narrowing would overflow (CS0221):
 
