@@ -15,10 +15,10 @@ partial class utf16_test_package {
 // Validate the constants redefined from unicode.
 public static void TestConstants(ж<testing.T> Ꮡt) {
     if (MaxRune != unicode.MaxRune) {
-        Ꮡt.Errorf("utf16.maxRune is wrong: %x should be %x"u8, MaxRune, unicode.MaxRune);
+        Ꮡt.Errorf("utf16.maxRune is wrong: %x should be %x"u8, (int32)(MaxRune), (int32)(unicode.MaxRune));
     }
     if (ReplacementChar != unicode.ReplacementChar) {
-        Ꮡt.Errorf("utf16.replacementChar is wrong: %x should be %x"u8, ReplacementChar, unicode.ReplacementChar);
+        Ꮡt.Errorf("utf16.replacementChar is wrong: %x should be %x"u8, (int32)(ReplacementChar), (int32)(unicode.ReplacementChar));
     }
 }
 
@@ -143,7 +143,7 @@ public static void TestAllocationsDecode(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("Decode(%x) = nil"u8, ttʗ1.@in);
             }
         });
-        if (allocs > 0) {
+        if (allocs > 0D) {
             Ꮡt.Errorf("Decode allocated %v times"u8, allocs);
         }
     }

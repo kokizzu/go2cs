@@ -166,7 +166,7 @@ public static void TestSearchEfficiency(ж<testing.T> Ꮡt) {
 }
 
 // Smoke tests for convenience wrappers - not comprehensive.
-internal static slice<float64> fdata = new slice<float64>(5){[0] = -3.14D, [1] = 0, [2] = 1, [3] = 2, [4] = 1000.7D};
+internal static slice<float64> fdata = new slice<float64>(5){[0] = -3.14D, [1] = 0D, [2] = 1D, [3] = 2D, [4] = 1000.7D};
 
 internal static slice<@string> sdata = new slice<@string>(4){[0] = "f"u8, [1] = "foo"u8, [2] = "foobar"u8, [3] = "x"u8};
 
@@ -204,13 +204,13 @@ internal static void runSearchWrappers() {
 
 public static void TestSearchWrappersDontAlloc(ж<testing.T> Ꮡt) {
     if (testing.Short()) {
-        Ꮡt.Skip("skipping malloc count in short mode");
+        Ꮡt.Skip((@string)"skipping malloc count in short mode");
     }
     if (Δruntime.GOMAXPROCS(0) > 1) {
-        Ꮡt.Skip("skipping; GOMAXPROCS>1");
+        Ꮡt.Skip((@string)"skipping; GOMAXPROCS>1");
     }
     var allocs = testing.AllocsPerRun(100, runSearchWrappers);
-    if (allocs != 0) {
+    if (allocs != 0D) {
         Ꮡt.Errorf("expected no allocs for runSearchWrappers, got %v"u8, allocs);
     }
 }

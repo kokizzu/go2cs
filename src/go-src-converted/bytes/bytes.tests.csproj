@@ -99,11 +99,13 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\fmt\fmt.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\bytealg\internal.bytealg.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\testenv\internal.testenv.csproj" />
+    <ProjectReference Include="$(go2csPath)go-src-converted\io\fs\io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\math.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\rand\math.rand.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\os\os.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\reflect\reflect.csproj" />
+    <ProjectReference Include="$(go2csPath)go-src-converted\runtime\internal\math\runtime.internal.math.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strconv\strconv.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strings\strings.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\sync\sync.csproj" />

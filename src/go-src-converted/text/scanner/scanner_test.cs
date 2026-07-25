@@ -680,11 +680,11 @@ public static void TestNextEOFHandling(ж<testing.T> Ꮡt) {
     var s = @new<Scanner>().Init(new countReaderжReader(Ꮡr));
     var tok = s.Next();
     if (tok != EOF) {
-        Ꮡt.Error("1) EOF not reported");
+        Ꮡt.Error((@string)"1) EOF not reported");
     }
     tok = s.Peek();
     if (tok != EOF) {
-        Ꮡt.Error("2) EOF not reported");
+        Ꮡt.Error((@string)"2) EOF not reported");
     }
     if (r != 1) {
         Ꮡt.Errorf("scanner called Read %d times, not once"u8, r);
@@ -697,11 +697,11 @@ public static void TestScanEOFHandling(ж<testing.T> Ꮡt) {
     var s = @new<Scanner>().Init(new countReaderжReader(Ꮡr));
     var tok = s.Scan();
     if (tok != EOF) {
-        Ꮡt.Error("1) EOF not reported");
+        Ꮡt.Error((@string)"1) EOF not reported");
     }
     tok = s.Peek();
     if (tok != EOF) {
-        Ꮡt.Error("2) EOF not reported");
+        Ꮡt.Error((@string)"2) EOF not reported");
     }
     if (r != 1) {
         Ꮡt.Errorf("scanner called Read %d times, not once"u8, r);
@@ -931,7 +931,7 @@ public static void TestIssue50909(ж<testing.T> Ꮡt) {
     @string R = "hello world!"u8;
     const nint N = 3;
     if (r != R || n != N) {
-        Ꮡt.Errorf("got %q (n = %d); want %q (n = %d)"u8, r, n, R, N);
+        Ꮡt.Errorf("got %q (n = %d); want %q (n = %d)"u8, r, n, R, (nint)(N));
     }
 }
 

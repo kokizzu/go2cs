@@ -70,7 +70,7 @@ public static void TestEqual(ж<testing.T> Ꮡt) {
             }
         }
     });
-    if (allocs > 0) {
+    if (allocs > 0D) {
         Ꮡt.Errorf("Equal allocated %v times"u8, allocs);
     }
 }
@@ -277,7 +277,7 @@ internal static void runIndexTests(ж<testing.T> Ꮡt, Func<slice<byte>, slice<b
             }
         }
     });
-    if (allocs != 0) {
+    if (allocs != 0D) {
         Ꮡt.Errorf("expected no allocations, got %f"u8, allocs);
     }
 }
@@ -427,7 +427,7 @@ public static void TestIndexByteSmall(ж<testing.T> Ꮡt) {
         for (nint j = 0; j < 15; j++) {
             nint p = IndexByte(b[(int)(i)..(int)(i + 15)], (byte)0);
             if (p != -1) {
-                Ꮡt.Errorf("IndexByte(%q, %d) = %d"u8, b[(int)(i)..(int)(i + 15)], 0, p);
+                Ꮡt.Errorf("IndexByte(%q, %d) = %d"u8, b[(int)(i)..(int)(i + 15)], (nint)(0), p);
             }
         }
         for (nint j = 0; j < 15; j++) {
@@ -488,7 +488,7 @@ public static void TestIndexRune(ж<testing.T> Ꮡt) {
             }
         }
     });
-    if (allocs != 0) {
+    if (allocs != 0D) {
         Ꮡt.Errorf("expected no allocations, got %f"u8, allocs);
     }
 }
@@ -616,7 +616,7 @@ internal static Action<ж<testing.B>, nint> bmIndexByte(Func<slice<byte>, byte, 
         for (nint i = 0; i < (~b).N; i++) {
             nint j = index(buf, (rune)'x');
             if (j != n - 1) {
-                b.Fatal("bad index", j);
+                b.Fatal((@string)"bad index", j);
             }
         }
         buf[n - 1] = (rune)'\x00';
@@ -638,7 +638,7 @@ internal static Action<ж<testing.B>, nint> bmIndexRuneASCII(Func<slice<byte>, r
         for (nint i = 0; i < (~b).N; i++) {
             nint j = index(buf, (rune)'x');
             if (j != n - 1) {
-                b.Fatal("bad index", j);
+                b.Fatal((@string)"bad index", j);
             }
         }
         buf[n - 1] = (rune)'\x00';
@@ -652,7 +652,7 @@ internal static Action<ж<testing.B>, nint> bmIndexRune(Func<slice<byte>, rune, 
         for (nint i = 0; i < (~b).N; i++) {
             nint j = index(buf, (rune)'世');
             if (j != n - 3) {
-                b.Fatal("bad index", j);
+                b.Fatal((@string)"bad index", j);
             }
         }
         buf[n - 3] = (rune)'\x00';
@@ -669,7 +669,7 @@ public static void BenchmarkEqual(ж<testing.B> Ꮡb) {
         for (nint i = 0; i < (~bΔ1).N; i++) {
             var eq = Equal(buf1, buf2);
             if (!eq) {
-                bΔ1.Fatal("bad equal");
+                bΔ1.Fatal((@string)"bad equal");
             }
         }
     });
@@ -693,7 +693,7 @@ internal static Action<ж<testing.B>, nint> bmEqual(Func<slice<byte>, slice<byte
         for (nint i = 0; i < (~b).N; i++) {
             var eq = equal(buf1, buf2);
             if (!eq) {
-                b.Fatal("bad equal");
+                b.Fatal((@string)"bad equal");
             }
         }
         buf1[n - 1] = (rune)'\x00';
@@ -724,7 +724,7 @@ public static void BenchmarkEqualBothUnaligned(ж<testing.B> Ꮡb) {
                 for (nint i = 0; i < (~bΔ1).N; i++) {
                     var eq = Equal(buf1ʗ1, buf2ʗ1);
                     if (!eq) {
-                        bΔ1.Fatal("bad equal");
+                        bΔ1.Fatal((@string)"bad equal");
                     }
                 }
             });
@@ -741,7 +741,7 @@ public static void BenchmarkIndex(ж<testing.B> Ꮡb) {
         for (nint i = 0; i < (~bΔ1).N; i++) {
             nint j = Index(buf, buf[(int)(n - 7)..]);
             if (j != n - 7) {
-                bΔ1.Fatal("bad index", j);
+                bΔ1.Fatal((@string)"bad index", j);
             }
         }
         buf[n - 1] = (rune)'\x00';
@@ -756,7 +756,7 @@ public static void BenchmarkIndexEasy(ж<testing.B> Ꮡb) {
         for (nint i = 0; i < (~bΔ1).N; i++) {
             nint j = Index(buf, buf[(int)(n - 7)..]);
             if (j != n - 7) {
-                bΔ1.Fatal("bad index", j);
+                bΔ1.Fatal((@string)"bad index", j);
             }
         }
         buf[n - 1] = (rune)'\x00';
@@ -771,7 +771,7 @@ public static void BenchmarkCount(ж<testing.B> Ꮡb) {
         for (nint i = 0; i < (~bΔ1).N; i++) {
             nint j = Count(buf, buf[(int)(n - 7)..]);
             if (j != 1) {
-                bΔ1.Fatal("bad count", j);
+                bΔ1.Fatal((@string)"bad count", j);
             }
         }
         buf[n - 1] = (rune)'\x00';
@@ -786,7 +786,7 @@ public static void BenchmarkCountEasy(ж<testing.B> Ꮡb) {
         for (nint i = 0; i < (~bΔ1).N; i++) {
             nint j = Count(buf, buf[(int)(n - 7)..]);
             if (j != 1) {
-                bΔ1.Fatal("bad count", j);
+                bΔ1.Fatal((@string)"bad count", j);
             }
         }
         buf[n - 1] = (rune)'\x00';
@@ -805,7 +805,7 @@ public static void BenchmarkCountSingle(ж<testing.B> Ꮡb) {
         for (nint i = 0; i < (~bΔ1).N; i++) {
             nint j = Count(buf, new byte[]{1}.slice());
             if (j != expect) {
-                bΔ1.Fatal("bad count", j, expect);
+                bΔ1.Fatal((@string)"bad count", j, expect);
             }
         }
         for (nint i = 0; i < len(buf); i++) {
@@ -1302,7 +1302,7 @@ internal static error /*err*/ repeat(slice<byte> b, nint count) {
     return err;
 }
 
-[GoType("dyn")] partial struct TestRepeatCatchesOverflow_testCase {
+[GoLocalName("testCase")] [GoType("dyn")] partial struct TestRepeatCatchesOverflow_testCase {
     internal @string s;
     internal nint count;
     internal @string errStr;
@@ -1341,9 +1341,9 @@ public static void TestRepeatCatchesOverflow(ж<testing.T> Ꮡt) {
     if (!is64Bit) {
         return;
     }
-    runTestCases("64-bit"u8, new golib.SparseArray<TestRepeatCatchesOverflow_testCase>{
+    runTestCases("64-bit"u8, new slice<TestRepeatCatchesOverflow_testCase>(1){
         [0] = new("-"u8, maxInt, "out of range"u8)
-    }.slice());
+    });
 }
 
 internal static bool runesEqual(slice<rune> a, slice<rune> b) {
@@ -1903,7 +1903,7 @@ public static void TestBufferGrowNegative(ж<testing.T> Ꮡt) => func((defer, re
     defer(() => {
         {
             var err = recover(); if (err == default!) {
-                Ꮡt.Fatal("Grow(-1) should have panicked");
+                Ꮡt.Fatal((@string)"Grow(-1) should have panicked");
             }
         }
     });
@@ -1915,7 +1915,7 @@ public static void TestBufferTruncateNegative(ж<testing.T> Ꮡt) => func((defer
     defer(() => {
         {
             var err = recover(); if (err == default!) {
-                Ꮡt.Fatal("Truncate(-1) should have panicked");
+                Ꮡt.Fatal((@string)"Truncate(-1) should have panicked");
             }
         }
     });
@@ -1927,7 +1927,7 @@ public static void TestBufferTruncateOutOfRange(ж<testing.T> Ꮡt) => func((def
     defer(() => {
         {
             var err = recover(); if (err == default!) {
-                Ꮡt.Fatal("Truncate(20) should have panicked");
+                Ꮡt.Fatal((@string)"Truncate(20) should have panicked");
             }
         }
     });
@@ -2323,12 +2323,12 @@ public static void BenchmarkRepeatLarge(ж<testing.B> Ꮡb) {
     for (nint j = 8; j <= 30; j++) {
         foreach (var (_, k) in new nint[]{1, 16, 4097}.slice()) {
             var sΔ1 = s[..(int)(k)];
-            nint n = ((1 << (int)(j))) / k;
+            nint n = (((nint)1).Lsh((uint64)(j))) / k;
             if (n == 0) {
                 continue;
             }
             var sʗ1 = sΔ1;
-            Ꮡb.Run(fmt.Sprintf("%d/%d"u8, (1 << (int)(j)), k), (ж<testing.B> bΔ1) => {
+            Ꮡb.Run(fmt.Sprintf("%d/%d"u8, ((nint)1).Lsh((uint64)(j)), k), (ж<testing.B> bΔ1) => {
                 for (nint i = 0; i < (~bΔ1).N; i++) {
                     Repeat(sʗ1, n);
                 }

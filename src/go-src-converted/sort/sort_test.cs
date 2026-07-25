@@ -21,7 +21,7 @@ partial class sort_test_package {
 
 internal static array<nint> ints = new nint[]{74, 59, 238, -784, 9845, 959, 905, 0, 0, 42, 7586, -5467984, 7586}.array();
 
-internal static array<float64> float64s = new float64[]{74.3D, 59.0D, Δmath.Inf(1), 238.2D, -784.0D, 2.3D, Δmath.NaN(), Δmath.NaN(), Δmath.Inf(-1), 9845.768D, -959.7485D, 905, 7.8D, 7.8D}.array();
+internal static array<float64> float64s = new float64[]{74.3D, 59.0D, Δmath.Inf(1), 238.2D, -784.0D, 2.3D, Δmath.NaN(), Δmath.NaN(), Δmath.Inf(-1), 9845.768D, -959.7485D, 905D, 7.8D, 7.8D}.array();
 
 internal static array<@string> stringsData = new @string[]{"", "Hello", "foo", "bar", "foo", "f00", "%*&^*&^&", "***"}.array();
 
@@ -451,7 +451,7 @@ internal static readonly UntypedInt _NMode = 6;
 
 internal static nint lg(nint n) {
     nint i = 0;
-    while ((1 << (int)((nuint)i)) < n) {
+    while (((nint)1).Lsh((nuint)i) < n) {
         i++;
     }
     return i;
@@ -758,7 +758,7 @@ internal static void countOps(ж<testing.T> Ꮡt, Action<sort.Interface> algo, @
         sizes = sizes[..5];
     }
     if (!testing.Verbose()) {
-        Ꮡt.Skip("Counting skipped as non-verbose mode.");
+        Ꮡt.Skip((@string)"Counting skipped as non-verbose mode.");
     }
     foreach (var (_, n) in sizes) {
         ref var td = ref heap<testingData>(out var Ꮡtd);
@@ -788,7 +788,7 @@ internal static void bench(ж<testing.B> Ꮡb, nint size, Action<sort.Interface>
     ref var b = ref Ꮡb.Value;
 
     if (strings.HasSuffix(testenv.Builder(), "-race"u8) && size > 10000) {
-        Ꮡb.Skip("skipping slow benchmark on race builder");
+        Ꮡb.Skip((@string)"skipping slow benchmark on race builder");
     }
     b.StopTimer();
     var data = new intPairs(size);

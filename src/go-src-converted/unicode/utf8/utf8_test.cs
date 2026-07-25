@@ -24,10 +24,10 @@ partial class utf8_test_package {
 // Validate the constants redefined from unicode.
 public static void TestConstants(ж<testing.T> Ꮡt) {
     if (MaxRune != unicode.MaxRune) {
-        Ꮡt.Errorf("utf8.MaxRune is wrong: %x should be %x"u8, MaxRune, unicode.MaxRune);
+        Ꮡt.Errorf("utf8.MaxRune is wrong: %x should be %x"u8, (int32)(MaxRune), (int32)(unicode.MaxRune));
     }
     if (RuneError != unicode.ReplacementChar) {
-        Ꮡt.Errorf("utf8.RuneError is wrong: %x should be %x"u8, RuneError, unicode.ReplacementChar);
+        Ꮡt.Errorf("utf8.RuneError is wrong: %x should be %x"u8, (int32)(RuneError), (int32)(unicode.ReplacementChar));
     }
 }
 
@@ -175,12 +175,12 @@ public static void TestDecodeRune(ж<testing.T> Ꮡt) {
         }
         (r, size) = DecodeRune(b[0..(int)(len(b) - 1)]);
         if (r != RuneError || size != wantsize) {
-            Ꮡt.Errorf("DecodeRune(%q) = %#04x, %d want %#04x, %d"u8, b[0..(int)(len(b) - 1)], r, size, RuneError, wantsize);
+            Ꮡt.Errorf("DecodeRune(%q) = %#04x, %d want %#04x, %d"u8, b[0..(int)(len(b) - 1)], r, size, (int32)(RuneError), wantsize);
         }
         s = m.str[0..(int)(len(m.str) - 1)];
         (r, size) = DecodeRuneInString(s);
         if (r != RuneError || size != wantsize) {
-            Ꮡt.Errorf("DecodeRuneInString(%q) = %#04x, %d want %#04x, %d"u8, s, r, size, RuneError, wantsize);
+            Ꮡt.Errorf("DecodeRuneInString(%q) = %#04x, %d want %#04x, %d"u8, s, r, size, (int32)(RuneError), wantsize);
         }
         // make sure bad sequences fail
         if (len(b) == 1){
@@ -190,12 +190,12 @@ public static void TestDecodeRune(ж<testing.T> Ꮡt) {
         }
         (r, size) = DecodeRune(b);
         if (r != RuneError || size != 1) {
-            Ꮡt.Errorf("DecodeRune(%q) = %#04x, %d want %#04x, %d"u8, b, r, size, RuneError, 1);
+            Ꮡt.Errorf("DecodeRune(%q) = %#04x, %d want %#04x, %d"u8, b, r, size, (int32)(RuneError), (nint)(1));
         }
         s = ((@string)b);
         (r, size) = DecodeRuneInString(s);
         if (r != RuneError || size != 1) {
-            Ꮡt.Errorf("DecodeRuneInString(%q) = %#04x, %d want %#04x, %d"u8, s, r, size, RuneError, 1);
+            Ꮡt.Errorf("DecodeRuneInString(%q) = %#04x, %d want %#04x, %d"u8, s, r, size, (int32)(RuneError), (nint)(1));
         }
     }
 }
@@ -205,12 +205,12 @@ public static void TestDecodeSurrogateRune(ж<testing.T> Ꮡt) {
         var b = slice<byte>(m.str);
         var (r, size) = DecodeRune(b);
         if (r != RuneError || size != 1) {
-            Ꮡt.Errorf("DecodeRune(%q) = %x, %d want %x, %d"u8, b, r, size, RuneError, 1);
+            Ꮡt.Errorf("DecodeRune(%q) = %x, %d want %x, %d"u8, b, r, size, (int32)(RuneError), (nint)(1));
         }
         @string s = m.str;
         (r, size) = DecodeRuneInString(s);
         if (r != RuneError || size != 1) {
-            Ꮡt.Errorf("DecodeRuneInString(%q) = %x, %d want %x, %d"u8, b, r, size, RuneError, 1);
+            Ꮡt.Errorf("DecodeRuneInString(%q) = %x, %d want %x, %d"u8, b, r, size, (int32)(RuneError), (nint)(1));
         }
     }
 }
@@ -348,7 +348,7 @@ public static void TestDecodeInvalidSequence(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct testSequence_info {
+[GoLocalName("info")] [GoType("dyn")] partial struct testSequence_info {
     internal nint index;
     internal rune r;
 }

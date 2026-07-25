@@ -7,8 +7,8 @@ using bytes = bytes_package;
 using fmt = fmt_package;
 using static go.strings_package;
 using testing = testing_package;
-using io = io_package;
 using strings = strings_package;
+using Δio = io_package;
 
 partial class strings_test_package {
 
@@ -38,7 +38,7 @@ internal static @string oldHTMLEscape(@string s) {
 
 internal static ж<strings.Replacer> capitalLetters = NewReplacer("a"u8, "A", "b", "B");
 
-[GoType("dyn")] partial struct TestReplacer_testCase {
+[GoLocalName("testCase")] [GoType("dyn")] partial struct TestReplacer_testCase {
     internal ж<strings.Replacer> r;
     internal @string @in, @out;
 }

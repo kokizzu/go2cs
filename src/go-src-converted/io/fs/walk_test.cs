@@ -95,11 +95,11 @@ public static void TestWalkDir(ж<testing.T> Ꮡt) => func((defer, recover) => {
     @string tmpDir = Ꮡt.TempDir();
     var (origDir, err) = os.Getwd();
     if (err != default!) {
-        Ꮡt.Fatal("finding working dir:", err);
+        Ꮡt.Fatal((@string)"finding working dir:", err);
     }
     {
         err = os.Chdir(tmpDir); if (err != default!) {
-            Ꮡt.Fatal("entering temp dir:", err);
+            Ꮡt.Fatal((@string)"entering temp dir:", err);
         }
     }
     deferǃ(os.Chdir, origDir, defer);

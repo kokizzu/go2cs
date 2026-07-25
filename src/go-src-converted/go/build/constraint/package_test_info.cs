@@ -58,4 +58,39 @@ namespace go.go.build;
 [GoPackage("constraint")]
 public static partial class constraint_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct constraintTestsᴛ1 {}
+    internal partial struct exprEvalTestsᴛ1 {}
+    internal partial struct exprParser {}
+    internal partial struct exprStringTestsᴛ1 {}
+    internal partial struct lexTestsᴛ1 {}
+    internal partial struct parseExprErrorTestsᴛ1 {}
+    internal partial struct parseExprTestsᴛ1 {}
+    internal partial struct parsePlusBuildExprTestsᴛ1 {}
+    internal partial struct plusBuildLinesTestsᴛ1 {}
+    internal partial struct testsᴛ1 {}
+    public partial interface Expr {}
+    public partial struct AndExpr {}
+    public partial struct NotExpr {}
+    public partial struct OrExpr {}
+    public partial struct SyntaxError {}
+    public partial struct TagExpr {}
+    public partial struct TestPlusSizeLimits_type {}
+    public partial struct TestSizeLimits_type {}
+    // </TypeAccessibility>
 }

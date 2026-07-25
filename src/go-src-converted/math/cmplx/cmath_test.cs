@@ -431,10 +431,10 @@ internal static slice<asinSCᴛ1> asinSC = new asinSCᴛ1[]{
     new(complex(zero, zero),
         complex(zero, zero)),
     new(complex(1.0D, inf),
-        complex(0, inf)),
+        complex(0D, inf)),
     new(complex(1.0D, nan),
         NaN()),
-    new(complex(inf, 1),
+    new(complex(inf, 1D),
         complex(math.Pi / 2D, inf)),
     new(complex(inf, inf),
         complex(math.Pi / 4D, inf)),
@@ -442,7 +442,7 @@ internal static slice<asinSCᴛ1> asinSC = new asinSCᴛ1[]{
         complex(nan, inf)),
     new(complex(nan, zero),
         NaN()),
-    new(complex(nan, 1),
+    new(complex(nan, 1D),
         NaN()),
     new(complex(nan, inf),
         complex(nan, inf)),
@@ -485,9 +485,9 @@ internal static slice<asinhSCᴛ1> asinhSC = new asinhSCᴛ1[]{
     internal complex128 @in, want;
 }
 internal static slice<atanSCᴛ1> atanSC = new atanSCᴛ1[]{
-    new(complex(0, zero),
-        complex(0, zero)),
-    new(complex(0, nan),
+    new(complex(0D, zero),
+        complex(0D, zero)),
+    new(complex(0D, nan),
         NaN()),
     new(complex(1.0D, zero),
         complex(math.Pi / 4D, zero)),
@@ -495,13 +495,13 @@ internal static slice<atanSCᴛ1> atanSC = new atanSCᴛ1[]{
         complex(math.Pi / 2D, zero)),
     new(complex(1.0D, nan),
         NaN()),
-    new(complex(inf, 1),
+    new(complex(inf, 1D),
         complex(math.Pi / 2D, zero)),
     new(complex(inf, inf),
         complex(math.Pi / 2D, zero)),
     new(complex(inf, nan),
         complex(math.Pi / 2D, zero)),
-    new(complex(nan, 1),
+    new(complex(nan, 1D),
         NaN()),
     new(complex(nan, inf),
         complex(nan, zero)),
@@ -531,7 +531,7 @@ internal static slice<atanhSCᴛ1> atanhSC = new atanhSCᴛ1[]{
     new(complex(inf, inf),
         complex(zero, math.Pi / 2D)),
     new(complex(inf, nan),
-        complex(0, nan)),
+        complex(0D, nan)),
     new(complex(nan, 1.0D),
         NaN()),
     new(complex(nan, inf),
@@ -672,8 +672,8 @@ internal static slice<complex128> vcIsNaNSC = new complex128[]{
     complex(math.Inf(-1), math.Inf(-1)),
     complex(math.Inf(-1), math.NaN()),
     complex(math.NaN(), math.Inf(-1)),
-    complex(0, math.NaN()),
-    complex(math.NaN(), 0),
+    complex(0D, math.NaN()),
+    complex(math.NaN(), 0D),
     complex(math.Inf(1), math.Inf(1)),
     complex(math.Inf(1), math.NaN()),
     complex(math.NaN(), math.Inf(1)),
@@ -737,7 +737,7 @@ internal static slice<log10SCᴛ1> log10SC = new log10SCᴛ1[]{
     new(complex(-zero, zero),
         complex(-inf, (float64)math.Log10E * (float64)math.Pi)),
     new(complex(1.0D, inf),
-        complex(inf, (float64)math.Log10E * (float64)(math.Pi / 2D))),
+        complex(inf, (float64)math.Log10E * /* math.Pi / 2 */ 1.5707963267948966D)),
     new(complex(1.0D, nan),
         NaN()),
     new(complex(-inf, 1.0D),
@@ -745,9 +745,9 @@ internal static slice<log10SCᴛ1> log10SC = new log10SCᴛ1[]{
     new(complex(inf, 1.0D),
         complex(inf, 0.0D)),
     new(complex(-inf, inf),
-        complex(inf, (float64)math.Log10E * (float64)(3D * math.Pi / 4D))),
+        complex(inf, (float64)math.Log10E * /* 3 * math.Pi / 4 */ 2.356194490192345D)),
     new(complex(inf, inf),
-        complex(inf, (float64)math.Log10E * (float64)(math.Pi / 4D))),
+        complex(inf, (float64)math.Log10E * /* math.Pi / 4 */ 0.7853981633974483D)),
     new(complex(-inf, nan),
         complex(inf, nan)),
     new(complex(inf, nan),
@@ -770,7 +770,7 @@ internal static slice<ff> polarSC = new ff[]{
 
 internal static slice<array<complex128>> vcPowSC = new array<complex128>[]{
     new complex128[]{NaN(), NaN()}.array(),
-    new complex128[]{0, NaN()}.array()
+    new complex128[]{0D, NaN()}.array()
 }.slice();
 
 internal static slice<complex128> powSC = new complex128[]{
@@ -964,14 +964,14 @@ internal static slice<array<complex128>> branchPoints = new array<complex128>[]{
 // functions borrowed from pkg/math/all_test.go
 internal static bool tolerance(float64 a, float64 b, float64 e) {
     var d = a - b;
-    if (d < 0) {
+    if (d < 0D) {
         d = -d;
     }
     // note: b is correct (expected) value, a is actual value.
     // make error tolerance a fraction of b, not a.
-    if (b != 0) {
+    if (b != 0D) {
         e = e * b;
-        if (e < 0) {
+        if (e < 0D) {
             e = -e;
         }
     }
@@ -997,9 +997,9 @@ internal static bool alike(float64 a, float64 b) {
 
 internal static bool cTolerance(complex128 a, complex128 b, float64 e) {
     var d = Abs(a - b);
-    if (b != 0) {
+    if (b != 0D) {
         e = e * Abs(b);
-        if (e < 0) {
+        if (e < 0D) {
             e = -e;
         }
     }
@@ -1035,7 +1035,7 @@ internal static bool cAlike(complex128 a, complex128 b) {
 internal static bool isExact(float64 x) {
     // Special cases that should match exactly.  Other cases are multiples
     // of Pi that may not be last bit identical on all platforms.
-    return math.IsNaN(x) || math.IsInf(x, 0) || x == 0 || x == 1 || x == -1D;
+    return math.IsNaN(x) || math.IsInf(x, 0) || x == 0D || x == 1D || x == -1D;
 }
 
 public static void TestAbs(ж<testing.T> Ꮡt) {
@@ -1523,9 +1523,9 @@ public static void TestPow(ж<testing.T> Ꮡt) {
     // Special cases for Pow(0, c).
     complex128 zero = complex(0D, 0D);
     var zeroPowers = new array<complex128>[]{
-        new complex128[]{0, 1D + 0D.i()}.array(),
+        new complex128[]{0D, 1D + 0D.i()}.array(),
         new complex128[]{1.5D, 0D + 0D.i()}.array(),
-        new complex128[]{-1.5D, complex(math.Inf(0), 0)}.array(),
+        new complex128[]{-1.5D, complex(math.Inf(0), 0D)}.array(),
         new complex128[]{-1.5D + 1.5D.i(), Inf()}.array()
     }.slice();
     foreach (var (_, vᴛ1) in zeroPowers) {
@@ -1768,7 +1768,7 @@ public static void TestTanh(ж<testing.T> Ꮡt) {
 public static void TestInfiniteLoopIntanSeries(ж<testing.T> Ꮡt) {
     var want = Inf();
     {
-        var got = Cot(0); if (got != want) {
+        var got = Cot(0D); if (got != want) {
             Ꮡt.Errorf("Cot(0): got %g, want %g"u8, got, want);
         }
     }

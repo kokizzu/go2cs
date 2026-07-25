@@ -26,14 +26,14 @@ public static void TestReadData(ж<testing.T> Ꮡt) {
     Ꮡt.Run("large"u8, (ж<testing.T> tΔ2) => {
         var (_, err) = ReadData(new bytes_ReaderжReader(bytes.NewReader(inputʗ3)), ((uint64)10 << (int)(30)));
         if (err == default!) {
-            tΔ2.Error("large read succeeded unexpectedly");
+            tΔ2.Error((@string)"large read succeeded unexpectedly");
         }
     });
     var inputʗ5 = input;
     Ꮡt.Run("maxint"u8, (ж<testing.T> tΔ3) => {
         var (_, err) = ReadData(new bytes_ReaderжReader(bytes.NewReader(inputʗ5)), ((uint64)1 << (int)(62)));
         if (err == default!) {
-            tΔ3.Error("large read succeeded unexpectedly");
+            tΔ3.Error((@string)"large read succeeded unexpectedly");
         }
     });
     Ꮡt.Run("small-EOF"u8, (ж<testing.T> tΔ4) => {
@@ -73,14 +73,14 @@ public static void TestReadDataAt(ж<testing.T> Ꮡt) {
     Ꮡt.Run("large"u8, (ж<testing.T> tΔ2) => {
         var (_, err) = ReadDataAt(new bytes_ReaderжReaderAt(bytes.NewReader(inputʗ3)), ((uint64)10 << (int)(30)), 0);
         if (err == default!) {
-            tΔ2.Error("large read succeeded unexpectedly");
+            tΔ2.Error((@string)"large read succeeded unexpectedly");
         }
     });
     var inputʗ5 = input;
     Ꮡt.Run("maxint"u8, (ж<testing.T> tΔ3) => {
         var (_, err) = ReadDataAt(new bytes_ReaderжReaderAt(bytes.NewReader(inputʗ5)), ((uint64)1 << (int)(62)), 0);
         if (err == default!) {
-            tΔ3.Error("large read succeeded unexpectedly");
+            tΔ3.Error((@string)"large read succeeded unexpectedly");
         }
     });
     var inputʗ7 = input;
@@ -103,13 +103,13 @@ public static void TestSliceCap(ж<testing.T> Ꮡt) {
     Ꮡt.Run("small"u8, (ж<testing.T> tΔ1) => {
         nint c = SliceCap<nint>(10);
         if (c != 10) {
-            tΔ1.Errorf("got capacity %d, want %d"u8, c, 10);
+            tΔ1.Errorf("got capacity %d, want %d"u8, c, (nint)(10));
         }
     });
     Ꮡt.Run("large"u8, (ж<testing.T> tΔ2) => {
         nint c = SliceCap<byte>(((uint64)1 << (int)(30)));
         if (c < 0){
-            tΔ2.Error("SliceCap failed unexpectedly");
+            tΔ2.Error((@string)"SliceCap failed unexpectedly");
         } else 
         if (c == (1 << (int)(30))) {
             tΔ2.Errorf("got capacity %d which is too high"u8, c);

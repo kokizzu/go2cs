@@ -233,7 +233,7 @@ public static void TestBuilderAllocs(ж<testing.T> Ꮡt) {
         Ꮡb.WriteString("abcde"u8);
         _ = b.String();
     });
-    if (n != 1) {
+    if (n != 1D) {
         Ꮡt.Errorf("Builder allocs = %v; want 1"u8, n);
     }
 }
@@ -352,7 +352,7 @@ public static void TestBuilderCopyPanic(ж<testing.T> Ꮡt) {
         ref var tt = ref heap(new TestBuilderCopyPanic_tests(), out var Ꮡtt);
         tt = vᴛ1;
 
-        var didPanic = new channel<bool>(1);
+        var didPanic = new channel<bool>(0);
         var didPanicʗ1 = didPanic;
         var ttʗ1 = tt;
         goǃ(() => func((defer, recover) => {
@@ -453,7 +453,7 @@ public static void TestBuilderGrowSizeclasses(ж<testing.T> Ꮡt) {
         Ꮡb.WriteString(s);
         _ = b.String();
     });
-    if (allocs > 1) {
+    if (allocs > 1D) {
         Ꮡt.Fatalf("unexpected amount of allocations: %v, want: 1"u8, allocs);
     }
 }

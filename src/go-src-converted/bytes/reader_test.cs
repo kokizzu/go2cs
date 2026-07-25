@@ -265,21 +265,21 @@ public static void TestReaderDoubleUnreadRune(ж<testing.T> Ꮡt) {
     }
     {
         var err = buf.UnreadByte(); if (err == default!) {
-            Ꮡt.Fatal("UnreadByte: expected error, got nil");
+            Ꮡt.Fatal((@string)"UnreadByte: expected error, got nil");
         }
     }
 }
 
-[GoType("dyn")] partial struct TestReaderCopyNothing_nErr {
+[GoLocalName("nErr")] [GoType("dyn")] partial struct TestReaderCopyNothing_nErr {
     internal int64 n;
     internal error err;
 }
 
-[GoType("dyn")] partial struct TestReaderCopyNothing_justReader {
+[GoLocalName("justReader")] [GoType("dyn")] partial struct TestReaderCopyNothing_justReader {
     public io_package.Reader Reader;
 }
 
-[GoType("dyn")] partial struct TestReaderCopyNothing_justWriter {
+[GoLocalName("justWriter")] [GoType("dyn")] partial struct TestReaderCopyNothing_justWriter {
     public io_package.Writer Writer;
 }
 

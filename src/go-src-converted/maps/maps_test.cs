@@ -24,7 +24,7 @@ public static void TestEqual(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("Equal(nil, %v) = true, want false"u8, m1);
     }
     if (!Equal<map<nint, nint>, map<nint, nint>, nint, nint>(default!, default!)) {
-        Ꮡt.Error("Equal(nil, nil) = false, want true");
+        Ꮡt.Error((@string)"Equal(nil, nil) = false, want true");
     }
     {
         var ms = new map<nint, nint>{[1] = 2}; if (Equal<map<nint, nint>, map<nint, nint>, nint, nint>(m1, ms)) {
@@ -32,7 +32,7 @@ public static void TestEqual(ж<testing.T> Ꮡt) {
         }
     }
     // Comparing NaN for equality is expected to fail.
-    var mf = new map<nint, float64>{[1] = 0, [2] = Δmath.NaN()};
+    var mf = new map<nint, float64>{[1] = 0D, [2] = Δmath.NaN()};
     if (Equal<map<nint, float64>, map<nint, float64>, nint, float64>(mf, mf)) {
         Ꮡt.Errorf("Equal(%v, %v) = true, want false"u8, mf, mf);
     }
@@ -69,7 +69,7 @@ public static void TestEqualFunc(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("EqualFunc(nil, %v, equal) = true, want false"u8, m1);
     }
     if (!EqualFunc<map<nint, nint>, map<nint, nint>, nint, nint, nint>(default!, default!, equal<nint>)) {
-        Ꮡt.Error("EqualFunc(nil, nil, equal) = false, want true");
+        Ꮡt.Error((@string)"EqualFunc(nil, nil, equal) = false, want true");
     }
     {
         var ms = new map<nint, nint>{[1] = 2}; if (EqualFunc<map<nint, nint>, map<nint, nint>, nint, nint, nint>(m1, ms, equal<nint>)) {
@@ -77,7 +77,7 @@ public static void TestEqualFunc(ж<testing.T> Ꮡt) {
         }
     }
     // Comparing NaN for equality is expected to fail.
-    var mf = new map<nint, float64>{[1] = 0, [2] = Δmath.NaN()};
+    var mf = new map<nint, float64>{[1] = 0D, [2] = Δmath.NaN()};
     if (EqualFunc<map<nint, float64>, map<nint, float64>, nint, float64, float64>(mf, mf, equal<float64>)) {
         Ꮡt.Errorf("EqualFunc(%v, %v, equal) = true, want false"u8, mf, mf);
     }
@@ -165,7 +165,7 @@ public static void TestCloneWithDelete(ж<testing.T> Ꮡt) {
     }
     var m2 = Clone<map<nint, nint>, nint, nint>(m);
     if (len(m2) != 8) {
-        Ꮡt.Errorf("len2(m2) = %d, want %d"u8, len(m2), 8);
+        Ꮡt.Errorf("len2(m2) = %d, want %d"u8, len(m2), (nint)(8));
     }
     for (nint i = 0; i < 8; i++) {
         if (m2[i] != m[i]) {
@@ -182,7 +182,7 @@ public static void TestCloneWithMapAssign(ж<testing.T> Ꮡt) {
     }
     var m2 = Clone<map<nint, nint>, nint, nint>(m);
     if (len(m2) != N) {
-        Ꮡt.Errorf("len2(m2) = %d, want %d"u8, len(m2), N);
+        Ꮡt.Errorf("len2(m2) = %d, want %d"u8, len(m2), (nint)(N));
     }
     for (nint i = 0; i < N; i++) {
         if (m2[i] != m[i]) {
@@ -215,7 +215,7 @@ public static void TestCloneLarge(ж<testing.T> Ꮡt) {
                 // 1 entry already
                 // 7 more fill up 1 bucket
                 // 1 more to grow to 2 buckets
-                m[new TestCloneLarge_K(new float64[]{(float64)i + 1}.array(17))] = new TestCloneLarge_V(new float64[17].array());
+                m[new TestCloneLarge_K(new float64[]{(float64)i + 1D}.array(17))] = new TestCloneLarge_V(new float64[17].array());
             }
             break;
         }
@@ -227,7 +227,7 @@ public static void TestCloneLarge(ж<testing.T> Ꮡt) {
                 // 5 more (13 total) fill up 2 buckets
                 // 13 more (26 total) fill up 4 buckets
                 // 1 more to start the 4->8 bucket grow
-                m[new TestCloneLarge_K(new float64[]{(float64)i + 1}.array(17))] = new TestCloneLarge_V(new float64[17].array());
+                m[new TestCloneLarge_K(new float64[]{(float64)i + 1D}.array(17))] = new TestCloneLarge_V(new float64[17].array());
             }
             break;
         }}

@@ -52,7 +52,7 @@ public static void ExampleNew() {
 public static void ExampleNew_errorf() {
     @string name = "bimmler"u8;
     const nint id = 17;
-    var err = fmt.Errorf("user %q (id %d) not found"u8, name, id);
+    var err = fmt.Errorf("user %q (id %d) not found"u8, name, (nint)(id));
     if (err != default!) {
         fmt.Print(err);
     }
@@ -65,10 +65,10 @@ public static void ExampleJoin() {
     var err = errors.Join(err1, err2);
     fmt.Println(err);
     if (errors.Is(err, err1)) {
-        fmt.Println("err is err1");
+        fmt.Println((@string)"err is err1");
     }
     if (errors.Is(err, err2)) {
-        fmt.Println("err is err2");
+        fmt.Println((@string)"err is err2");
     }
 }
 
@@ -81,7 +81,7 @@ public static void ExampleIs() {
     {
         var (_, err) = os.Open("non-existing"u8); if (err != default!) {
             if (errors.Is(err, fs.ErrNotExist)){
-                fmt.Println("file does not exist");
+                fmt.Println((@string)"file does not exist");
             } else {
                 fmt.Println(err);
             }
@@ -96,7 +96,7 @@ public static void ExampleAs() {
         var (_, err) = os.Open("non-existing"u8); if (err != default!) {
             ref var pathError = ref heap<ж<fs.PathError>>(out var ᏑpathError);
             if (errors.As(err, ᏑpathError)){
-                fmt.Println("Failed at path:", (~pathError).Path);
+                fmt.Println((@string)"Failed at path:", (~pathError).Path);
             } else {
                 fmt.Println(err);
             }

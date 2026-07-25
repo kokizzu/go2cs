@@ -184,7 +184,7 @@ public static void TestDecoder(ж<testing.T> Ꮡt) {
         var dbuf = new slice<byte>(StdEncoding.DecodedLen(len(p.encoded)));
         var (count, err) = decoder.Read(dbuf);
         if (err != default! && !AreEqual(err, io.EOF)) {
-            Ꮡt.Fatal("Read failed", err);
+            Ꮡt.Fatal((@string)"Read failed", err);
         }
         testEqual(Ꮡt, "Read from %q = length %v, want %v"u8, p.encoded, count, len(p.decoded));
         testEqual(Ꮡt, "Decoding of %q = %q, want %q"u8, p.encoded, ((@string)(dbuf[0..(int)(count)])), p.decoded);
@@ -250,7 +250,7 @@ public static void TestDecodeCorrupt(ж<testing.T> Ꮡt) {
         var (_, err) = StdEncoding.Decode(dbuf, slice<byte>(tc.input));
         if (tc.offset == -1) {
             if (err != default!) {
-                Ꮡt.Error("Decoder wrongly detected corruption in", tc.input);
+                Ꮡt.Error((@string)"Decoder wrongly detected corruption in", tc.input);
             }
             continue;
         }
@@ -261,7 +261,7 @@ public static void TestDecodeCorrupt(ж<testing.T> Ꮡt) {
         }
         default: {
             var errΔ1 = err;
-            Ꮡt.Error("Decoder failed to detect corruption in", tc);
+            Ꮡt.Error((@string)"Decoder failed to detect corruption in", tc);
             break;
         }}
     }
@@ -283,7 +283,7 @@ public static void TestDecodeBounds(ж<testing.T> Ꮡt) => func((defer, recover)
     }
 });
 
-[GoType("dyn")] partial struct TestEncodedLen_test {
+[GoLocalName("test")] [GoType("dyn")] partial struct TestEncodedLen_test {
     internal ж<Encoding> enc;
     internal nint n;
     internal int64 want;
@@ -323,7 +323,7 @@ public static void TestEncodedLen(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestDecodedLen_test {
+[GoLocalName("test")] [GoType("dyn")] partial struct TestDecodedLen_test {
     internal ж<Encoding> enc;
     internal nint n;
     internal int64 want;
@@ -510,7 +510,7 @@ bqbPb06551Y4
         Ꮡt.Errorf("ReadAll failed: %v"u8, err);
     }
     if (!bytes.Equal(res1, res2)) {
-        Ꮡt.Error("Decoded results not equal");
+        Ꮡt.Error((@string)"Decoded results not equal");
     }
 }
 

@@ -571,7 +571,7 @@ public static void TestUnexportedRead(ж<testing.T> Ꮡt) {
         Ꮡt.Run(dec.name, (ж<testing.T> tΔ1) => func((defer, recover) => {
             defer(() => {
                 if (recover() == default!) {
-                    tΔ1.Fatal("did not panic");
+                    tΔ1.Fatal((@string)"did not panic");
                 }
             });
             ref var u2 = ref heap(new Unexported(), out var Ꮡu2);
@@ -709,7 +709,7 @@ public static void TestByteOrder(ж<testing.T> Ꮡt) {
                 }
             }
             if (len(buf) != offset + 2) {
-                Ꮡt.Errorf("AppendUint16: len(buf) = %d, want %d"u8, len(buf), offset + 2);
+                Ꮡt.Errorf("AppendUint16: len(buf) = %d, want %d"u8, len(buf), (nint)(offset + 2));
             }
             var want32 = (uint32)value;
             order.PutUint32(buf[..4], want32);
@@ -725,7 +725,7 @@ public static void TestByteOrder(ж<testing.T> Ꮡt) {
                 }
             }
             if (len(buf) != offset + 4) {
-                Ꮡt.Errorf("AppendUint32: len(buf) = %d, want %d"u8, len(buf), offset + 4);
+                Ꮡt.Errorf("AppendUint32: len(buf) = %d, want %d"u8, len(buf), (nint)(offset + 4));
             }
             var want64 = (uint64)value;
             order.PutUint64(buf[..8], want64);
@@ -741,7 +741,7 @@ public static void TestByteOrder(ж<testing.T> Ꮡt) {
                 }
             }
             if (len(buf) != offset + 8) {
-                Ꮡt.Errorf("AppendUint64: len(buf) = %d, want %d"u8, len(buf), offset + 8);
+                Ꮡt.Errorf("AppendUint64: len(buf) = %d, want %d"u8, len(buf), (nint)(offset + 8));
             }
         }
     }
@@ -823,7 +823,7 @@ public static void TestAppendAllocs(ж<testing.T> Ꮡt) {
         (_, Ꮡerr.ValueSlot) = Append(bufʗ1, LittleEndian, Ꮡs);
     });
     if (err != default!) {
-        Ꮡt.Fatal("Append failed:", err);
+        Ꮡt.Fatal((@string)"Append failed:", err);
     }
     if (allocs != 0D) {
         Ꮡt.Fatalf("Append allocated %v times instead of not allocating at all"u8, allocs);
@@ -1318,7 +1318,7 @@ public static void TestNativeEndian(ж<testing.T> Ꮡt) {
     var s = @unsafe.Slice(Ꮡi.Reinterpret<uint32, byte>(), @unsafe.Sizeof(i));
     {
         var v = NativeEndian.Uint32(s); if (v != val) {
-            Ꮡt.Errorf("NativeEndian.Uint32 returned %#x, expected %#x"u8, v, val);
+            Ꮡt.Errorf("NativeEndian.Uint32 returned %#x, expected %#x"u8, v, (nint)(val));
         }
     }
 }

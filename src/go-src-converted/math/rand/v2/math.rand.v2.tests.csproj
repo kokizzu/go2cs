@@ -122,6 +122,7 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\math\math.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\os\os.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\reflect\reflect.csproj" />
+    <ProjectReference Include="$(go2csPath)go-src-converted\runtime\internal\math\runtime.internal.math.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\runtime\runtime.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strings\strings.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\sync\atomic\sync.atomic.csproj" />

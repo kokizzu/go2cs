@@ -37,7 +37,7 @@ internal static void checkListPointers(ж<testing.T> Ꮡt, ж<List> Ꮡl, slice<
     // check internal and external prev/next connections
     foreach (var (i, e) in es) {
         var prev = root;
-        var Prev = (ж<Element>)(default!);
+        var Prev = ((ж<Element>)nil);
         if (i > 0) {
             prev = es[i - 1];
             Prev = prev;
@@ -53,7 +53,7 @@ internal static void checkListPointers(ж<testing.T> Ꮡt, ж<List> Ꮡl, slice<
             }
         }
         var next = root;
-        var Next = (ж<Element>)(default!);
+        var Next = ((ж<Element>)nil);
         if (i < len(es) - 1) {
             next = es[i + 1];
             Next = next;
@@ -75,7 +75,7 @@ public static void TestList(ж<testing.T> Ꮡt) {
     var l = New();
     checkListPointers(Ꮡt, l, new ж<Element>[]{}.slice());
     // Single element list
-    var e = l.PushFront("a");
+    var e = l.PushFront((@string)"a");
     checkListPointers(Ꮡt, l, new ж<Element>[]{e}.slice());
     l.MoveToFront(e);
     checkListPointers(Ꮡt, l, new ж<Element>[]{e}.slice());
@@ -87,7 +87,7 @@ public static void TestList(ж<testing.T> Ꮡt) {
     var e2 = l.PushFront((nint)(2));
     var e1 = l.PushFront((nint)(1));
     var e3 = l.PushBack((nint)(3));
-    var e4 = l.PushBack("banana");
+    var e4 = l.PushBack((@string)"banana");
     checkListPointers(Ꮡt, l, new ж<Element>[]{e1, e2, e3, e4}.slice());
     l.Remove(e2);
     checkListPointers(Ꮡt, l, new ж<Element>[]{e1, e3, e4}.slice());

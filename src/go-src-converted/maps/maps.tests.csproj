@@ -86,6 +86,7 @@
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\iter\iter.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\math.csproj" />
+    <ProjectReference Include="$(go2csPath)go-src-converted\runtime\internal\math\runtime.internal.math.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\slices\slices.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strconv\strconv.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\unsafe\unsafe.csproj" />

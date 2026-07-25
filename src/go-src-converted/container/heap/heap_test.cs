@@ -67,7 +67,7 @@ public static void TestInit0(ж<testing.T> Ꮡt) {
         nint x = Pop(new myHeapжInterface(h))._<nint>();
         (~h).verify(Ꮡt, 0);
         if (x != 0) {
-            Ꮡt.Errorf("%d.th pop got %d; want %d"u8, i, x, 0);
+            Ꮡt.Errorf("%d.th pop got %d; want %d"u8, i, x, (nint)(0));
         }
     }
 }

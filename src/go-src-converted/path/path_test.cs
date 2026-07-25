@@ -75,10 +75,10 @@ public static void TestClean(ж<testing.T> Ꮡt) {
 
 public static void TestCleanMallocs(ж<testing.T> Ꮡt) {
     if (testing.Short()) {
-        Ꮡt.Skip("skipping malloc count in short mode");
+        Ꮡt.Skip((@string)"skipping malloc count in short mode");
     }
     if (Δruntime.GOMAXPROCS(0) > 1) {
-        Ꮡt.Log("skipping AllocsPerRun checks; GOMAXPROCS>1");
+        Ꮡt.Log((@string)"skipping AllocsPerRun checks; GOMAXPROCS>1");
         return;
     }
     foreach (var (_, vᴛ1) in cleantests) {

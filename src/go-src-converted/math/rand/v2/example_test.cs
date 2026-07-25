@@ -40,7 +40,7 @@ public static void Example() {
         "Outlook not so good",
         "Very doubtful"
     }.slice();
-    fmt.Println("Magic 8-Ball says:", answers[rand.IntN(len(answers))]);
+    fmt.Println((@string)"Magic 8-Ball says:", answers[rand.IntN(len(answers))]);
 }
 
 // This example shows the use of each of the methods on a *Rand.

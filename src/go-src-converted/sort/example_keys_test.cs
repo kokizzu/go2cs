@@ -50,7 +50,7 @@ public static void ΔSort(this By by, slice<Planet> planets) {
 
 // Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
 [GoRecv] internal static bool Less(this ref planetSorter s, nint i, nint j) {
-    return s.by(Ꮡ(s.planets[i]), Ꮡ(s.planets[j]));
+    return s.by(Ꮡ(s.planets, i), Ꮡ(s.planets, j));
 }
 
 internal static slice<Planet> planets = new Planet[]{
@@ -70,13 +70,13 @@ public static void Example_sortKeys() {
     var decreasingDistance = (ж<Planet> p1, ж<Planet> p2) => distanceʗ1(p2, p1);
     // Sort the planets by the various criteria.
     new By(name).ΔSort(planets);
-    fmt.Println("By name:", planets);
+    fmt.Println((@string)"By name:", planets);
     new By(mass).ΔSort(planets);
-    fmt.Println("By mass:", planets);
+    fmt.Println((@string)"By mass:", planets);
     new By(distance).ΔSort(planets);
-    fmt.Println("By distance:", planets);
+    fmt.Println((@string)"By distance:", planets);
     new By(decreasingDistance).ΔSort(planets);
-    fmt.Println("By decreasing distance:", planets);
+    fmt.Println((@string)"By decreasing distance:", planets);
 }
 
 // Output: By name: [{Earth 1 1} {Mars 0.107 1.5} {Mercury 0.055 0.4} {Venus 0.815 0.7}]

@@ -164,7 +164,7 @@ public static void TestUpdateExample(ж<testing.T> Ꮡt) => func((defer, recover
     ref var t = ref Ꮡt.Value;
 
     if (!update.Value) {
-        Ꮡt.Skip("-update not given");
+        Ꮡt.Skip((@string)"-update not given");
     }
     var oldStdout = os.Stdout;
     var oldStdoutʗ1 = oldStdout;

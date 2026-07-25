@@ -116,6 +116,7 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\math\bits\math.bits.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\math.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\rand\v2\math.rand.v2.csproj" />
+    <ProjectReference Include="$(go2csPath)go-src-converted\runtime\internal\math\runtime.internal.math.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\runtime\runtime.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\slices\slices.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strconv\strconv.csproj" />

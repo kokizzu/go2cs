@@ -59,7 +59,7 @@ public static ж<multiSorter> OrderedBy(params Span<Func<ж<Change>, ж<Change>,
 // -1, 0, 1 and reduce the number of calls for greater efficiency: an
 // exercise for the reader.
 [GoRecv] public static bool Less(this ref multiSorter ms, nint i, nint j) {
-    var (p, q) = (Ꮡ(ms.changes[i]), Ꮡ(ms.changes[j]));
+    var (p, q) = (Ꮡ(ms.changes, i), Ꮡ(ms.changes, j));
     // Try all but the last comparison.
     nint k = default!;
     for (k = 0; k < len(ms.less) - 1; k++) {
@@ -105,16 +105,16 @@ public static void Example_sortMultiKeys() {
     // Note: > orders downwards.
     // Simple use: Sort by user.
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(user)).ΔSort(changes);
-    fmt.Println("By user:", changes);
+    fmt.Println((@string)"By user:", changes);
     // More examples.
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(user), increasingLines).ΔSort(changes);
-    fmt.Println("By user,<lines:", changes);
+    fmt.Println((@string)"By user,<lines:", changes);
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(user), decreasingLines).ΔSort(changes);
-    fmt.Println("By user,>lines:", changes);
+    fmt.Println((@string)"By user,>lines:", changes);
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(language), increasingLines).ΔSort(changes);
-    fmt.Println("By language,<lines:", changes);
+    fmt.Println((@string)"By language,<lines:", changes);
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(language), increasingLines, user).ΔSort(changes);
-    fmt.Println("By language,<lines,user:", changes);
+    fmt.Println((@string)"By language,<lines,user:", changes);
 }
 
 // Output:

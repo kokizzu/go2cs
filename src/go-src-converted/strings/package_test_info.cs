@@ -18,6 +18,11 @@ global using abiꓸKind = go.@internal.abi_package.ΔKind;
 global using abiꓸMapType = go.@internal.abi_package.ΔMapType;
 global using abiꓸName = go.@internal.abi_package.ΔName;
 global using abiꓸStructType = go.@internal.abi_package.ΔStructType;
+global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
+global using reflectꓸKind = go.reflect_package.ΔKind;
+global using reflectꓸMethod = go.reflect_package.ΔMethod;
+global using reflectꓸType = go.reflect_package.ΔType;
+global using reflectꓸValue = go.reflect_package.ΔValue;
 using strings = go.strings_package;
 using testing = go.testing_package;
 // </ImportedTypeAliases>
@@ -49,13 +54,15 @@ using static go.strings_test_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Builder, io_package.StringWriter>(Pointer = true)]
+[assembly: GoImplement<Replacer, replacer>(Pointer = true)]
+[assembly: GoImplement<appendSliceWriter, io_package.StringWriter>(Pointer = true)]
 [assembly: GoImplement<appendSliceWriter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<byteReplacer, replacer>(Pointer = true)]
 [assembly: GoImplement<byteStringReplacer, replacer>(Pointer = true)]
 [assembly: GoImplement<genericReplacer, replacer>(Pointer = true)]
 [assembly: GoImplement<singleStringReplacer, replacer>(Pointer = true)]
 [assembly: GoImplement<stringWriter, io_package.StringWriter>]
-[assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<strings_package.Reader, io_package.Reader>(Pointer = true)]
 // </InterfaceImplementations>
 
@@ -68,6 +75,37 @@ namespace go;
 [GoPackage("strings")]
 public static partial class strings_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial interface replacer {}
+    internal partial struct appendSliceWriter {}
+    internal partial struct asciiSet {}
+    internal partial struct byteReplacer {}
+    internal partial struct byteStringReplacer {}
+    internal partial struct genericReplacer {}
+    internal partial struct singleStringReplacer {}
+    internal partial struct stringFinder {}
+    internal partial struct stringWriter {}
+    internal partial struct trieNode {}
+    public partial struct Builder {}
+    public partial struct FieldsFunc_span {}
+    public partial struct Reader {}
+    public partial struct Replacer {}
+    // </TypeAccessibility>
 }
 
 [GoPackage("strings_test")]

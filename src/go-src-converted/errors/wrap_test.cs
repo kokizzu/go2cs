@@ -281,7 +281,7 @@ public static void BenchmarkIs(ж<testing.B> Ꮡb) {
     var err2 = new multiErr(new error[]{new multiErr(new error[]{new multiErr(new error[]{err1, new errorT("a")}.slice()), new errorT("b")}.slice())}.slice());
     for (nint i = 0; i < b.N; i++) {
         if (!errors.Is(err2, err1)) {
-            Ꮡb.Fatal("Is failed");
+            Ꮡb.Fatal((@string)"Is failed");
         }
     }
 }
@@ -293,7 +293,7 @@ public static void BenchmarkAs(ж<testing.B> Ꮡb) {
     for (nint i = 0; i < b.N; i++) {
         ref var target = ref heap(new errorT(), out var Ꮡtarget);
         if (!errors.As(err, Ꮡtarget)) {
-            Ꮡb.Fatal("As failed");
+            Ꮡb.Fatal((@string)"As failed");
         }
     }
 }

@@ -61,4 +61,54 @@ namespace go.testing;
 [GoPackage("quick")]
 public static partial class quick_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    internal partial struct myStruct {}
+    public partial class TestPtrAlias {}
+    public partial interface Generator {}
+    public partial struct A {}
+    public partial struct B {}
+    public partial struct CheckEqualError {}
+    public partial struct CheckError {}
+    public partial struct Config {}
+    public partial struct SetupError {}
+    public partial struct TestArrayAlias {}
+    public partial struct TestBoolAlias {}
+    public partial struct TestComplex128Alias {}
+    public partial struct TestComplex64Alias {}
+    public partial struct TestFloat32Alias {}
+    public partial struct TestFloat64Alias {}
+    public partial struct TestInt16Alias {}
+    public partial struct TestInt32Alias {}
+    public partial struct TestInt64Alias {}
+    public partial struct TestInt8Alias {}
+    public partial struct TestIntAlias {}
+    public partial struct TestMapAlias {}
+    public partial struct TestNonZeroSliceAndMap_Q {}
+    public partial struct TestRecursive_R {}
+    public partial struct TestSliceAlias {}
+    public partial struct TestStringAlias {}
+    public partial struct TestStruct {}
+    public partial struct TestStructAlias {}
+    public partial struct TestUint16Alias {}
+    public partial struct TestUint32Alias {}
+    public partial struct TestUint64Alias {}
+    public partial struct TestUint8Alias {}
+    public partial struct TestUintAlias {}
+    public partial struct TestUintptrAlias {}
+    // </TypeAccessibility>
 }

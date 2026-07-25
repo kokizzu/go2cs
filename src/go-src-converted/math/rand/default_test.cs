@@ -24,7 +24,7 @@ public static void TestDefaultRace(ж<testing.T> Ꮡt) {
     // the test if we are using the race detector, because part
     // of this is to see whether the race detector reports any problems.
     if (testing.Short() && !race.Enabled) {
-        Ꮡt.Skip("skipping starting another executable in short mode");
+        Ꮡt.Skip((@string)"skipping starting another executable in short mode");
     }
     @string env = "GO_RAND_TEST_HELPER_CODE"u8;
     {

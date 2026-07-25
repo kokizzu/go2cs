@@ -347,7 +347,7 @@ public static void TestIndexRune(ж<testing.T> Ꮡt) {
             }
         }
     });
-    if (allocs != 0 && testing.CoverMode() == ""u8) {
+    if (allocs != 0D && testing.CoverMode() == ""u8) {
         Ꮡt.Errorf("expected no allocations, got %f"u8, allocs);
     }
 }
@@ -712,7 +712,7 @@ public static void TestMap(ж<testing.T> Ꮡt) {
     @string orig = "Input string that we expect not to be copied."u8;
     m = Map(identity, orig);
     if (@unsafe.StringData(orig) != @unsafe.StringData(m)) {
-        Ꮡt.Error("unexpected copy during identity map");
+        Ꮡt.Error((@string)"unexpected copy during identity map");
     }
     // 7. Handle invalid UTF-8 sequence
     var replaceNotLatin = rune (rune rΔ3) => {
@@ -1174,19 +1174,19 @@ public static void TestCaseConsistency(ж<testing.T> Ꮡt) {
     // Consistency checks
     {
         nint n = utf8.RuneCountInString(upper); if (n != numRunes) {
-            Ꮡt.Error("rune count wrong in upper:", n);
+            Ꮡt.Error((@string)"rune count wrong in upper:", n);
         }
     }
     {
         nint n = utf8.RuneCountInString(lower); if (n != numRunes) {
-            Ꮡt.Error("rune count wrong in lower:", n);
+            Ꮡt.Error((@string)"rune count wrong in lower:", n);
         }
     }
     if (!equal("ToUpper(upper)"u8, ToUpper(upper), upper, Ꮡt)) {
-        Ꮡt.Error("ToUpper(upper) consistency fail");
+        Ꮡt.Error((@string)"ToUpper(upper) consistency fail");
     }
     if (!equal("ToLower(lower)"u8, ToLower(lower), lower, Ꮡt)) {
-        Ꮡt.Error("ToLower(lower) consistency fail");
+        Ꮡt.Error((@string)"ToLower(lower) consistency fail");
     }
 }
 
@@ -1272,7 +1272,7 @@ internal static error /*err*/ repeat(@string s, nint count) {
     return err;
 }
 
-[GoType("dyn")] partial struct TestRepeatCatchesOverflow_testCase {
+[GoLocalName("testCase")] [GoType("dyn")] partial struct TestRepeatCatchesOverflow_testCase {
     internal @string s;
     internal nint count;
     internal @string errStr;
@@ -1311,9 +1311,9 @@ public static void TestRepeatCatchesOverflow(ж<testing.T> Ꮡt) {
     if (!is64Bit) {
         return;
     }
-    runTestCases("64-bit"u8, new golib.SparseArray<TestRepeatCatchesOverflow_testCase>{
+    runTestCases("64-bit"u8, new slice<TestRepeatCatchesOverflow_testCase>(1){
         [0] = new("-"u8, maxInt, "out of range"u8)
-    }.slice());
+    });
 }
 
 internal static bool runesEqual(slice<rune> a, slice<rune> b) {
@@ -1763,7 +1763,7 @@ public static void BenchmarkEqualFold(ж<testing.B> Ꮡb) {
 
                 {
                     var @out = EqualFold(tt.s, tt.t); if (@out != tt.@out) {
-                        bΔ1.Fatal("wrong result");
+                        bΔ1.Fatal((@string)"wrong result");
                     }
                 }
             }
@@ -2184,11 +2184,11 @@ public static void BenchmarkRepeatLarge(ж<testing.B> Ꮡb) {
     for (nint j = 8; j <= 30; j++) {
         foreach (var (_, k) in new nint[]{1, 16, 4097}.slice()) {
             @string sΔ1 = s[..(int)(k)];
-            nint n = ((1 << (int)(j))) / k;
+            nint n = (((nint)1).Lsh((uint64)(j))) / k;
             if (n == 0) {
                 continue;
             }
-            Ꮡb.Run(fmt.Sprintf("%d/%d"u8, (1 << (int)(j)), k), (ж<testing.B> bΔ1) => {
+            Ꮡb.Run(fmt.Sprintf("%d/%d"u8, ((nint)1).Lsh((uint64)(j)), k), (ж<testing.B> bΔ1) => {
                 for (nint i = 0; i < (~bΔ1).N; i++) {
                     Repeat(sΔ1, n);
                 }

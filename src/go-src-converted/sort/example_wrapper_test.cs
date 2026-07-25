@@ -60,10 +60,10 @@ public static void Example_sortWrapper() {
         Ꮡ(new Organ("spleen"u8, 162))
     }.slice();
     sort.Sort(new ByWeight(s));
-    fmt.Println("Organs by weight:");
+    fmt.Println((@string)"Organs by weight:");
     printOrgans(s);
     sort.Sort(new ByName(s));
-    fmt.Println("Organs by name:");
+    fmt.Println((@string)"Organs by name:");
     printOrgans(s);
 }
 

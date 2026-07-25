@@ -110,6 +110,7 @@
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\bits\math.bits.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\math.csproj" />
+    <ProjectReference Include="$(go2csPath)go-src-converted\runtime\internal\math\runtime.internal.math.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

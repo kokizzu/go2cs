@@ -136,7 +136,7 @@ internal static void testNormalDistribution(ж<testing.T> Ꮡt, nint nsamples, f
 // Actual tests
 public static void TestStandardNormalValues(ж<testing.T> Ꮡt) {
     foreach (var (_, seed) in testSeeds) {
-        testNormalDistribution(Ꮡt, numTestSamples, 0, 1, seed);
+        testNormalDistribution(Ꮡt, numTestSamples, 0D, 1D, seed);
     }
 }
 
@@ -144,11 +144,11 @@ public static void TestNonStandardNormalValues(ж<testing.T> Ꮡt) {
     var sdmax = 1000.0D;
     var mmax = 1000.0D;
     if (testing.Short()) {
-        sdmax = 5;
-        mmax = 5;
+        sdmax = 5D;
+        mmax = 5D;
     }
-    for (var sd = 0.5D; sd < sdmax; sd *= 2) {
-        for (var m = 0.5D; m < mmax; m *= 2) {
+    for (var sd = 0.5D; sd < sdmax; sd *= 2D) {
+        for (var m = 0.5D; m < mmax; m *= 2D) {
             foreach (var (_, seed) in testSeeds) {
                 testNormalDistribution(Ꮡt, numTestSamples, m, sd, seed);
                 if (testing.Short()) {
@@ -174,11 +174,11 @@ internal static slice<float64> generateExponentialSamples(nint nsamples, float64
 internal static void testExponentialDistribution(ж<testing.T> Ꮡt, nint nsamples, float64 rate, uint64 seed) {
     //fmt.Printf("testing nsamples=%v rate=%v seed=%v\n", nsamples, rate, seed);
     ref var mean = ref heap<float64>(out var Ꮡmean);
-    mean = 1 / rate;
+    mean = 1D / rate;
     ref var stddev = ref heap<float64>(out var Ꮡstddev);
     stddev = mean;
     var samples = generateExponentialSamples(nsamples, rate, seed);
-    var errorScale = max(1.0D, 1 / rate);
+    var errorScale = max(1.0D, 1D / rate);
     // Error scales with the inverse of the rate
     var expected = Ꮡ(new statsResults(mean, stddev, 0.10D * errorScale, 0.20D * errorScale));
     // Make sure that the entire set matches the expected distribution.
@@ -192,12 +192,12 @@ internal static void testExponentialDistribution(ж<testing.T> Ꮡt, nint nsampl
 // Actual tests
 public static void TestStandardExponentialValues(ж<testing.T> Ꮡt) {
     foreach (var (_, seed) in testSeeds) {
-        testExponentialDistribution(Ꮡt, numTestSamples, 1, seed);
+        testExponentialDistribution(Ꮡt, numTestSamples, 1D, seed);
     }
 }
 
 public static void TestNonStandardExponentialValues(ж<testing.T> Ꮡt) {
-    for (var rate = 0.05D; rate < 10; rate *= 2) {
+    for (var rate = 0.05D; rate < 10D; rate *= 2D) {
         foreach (var (_, seed) in testSeeds) {
             testExponentialDistribution(Ꮡt, numTestSamples, rate, seed);
             if (testing.Short()) {
@@ -297,7 +297,7 @@ internal static nint compareFloat32Slices(slice<float32> s1, slice<float32> s2) 
         return len(s1) + 1;
     }
     foreach (var (i, _) in s1) {
-        if (!nearEqual((float64)s1[i], (float64)s2[i], 0, 1e-7D)) {
+        if (!nearEqual((float64)s1[i], (float64)s2[i], 0D, 1e-7D)) {
             return i;
         }
     }
@@ -370,8 +370,8 @@ public static void TestFloat32(ж<testing.T> Ꮡt) {
     var r = testRand();
     for (nint ct = 0; ct < num; ct++) {
         var f = r.Float32();
-        if (f >= 1) {
-            Ꮡt.Fatal("Float32() should be in range [0,1). ct:", ct, "f:", f);
+        if (f >= 1F) {
+            Ꮡt.Fatal((@string)"Float32() should be in range [0,1). ct:", ct, (@string)"f:", f);
         }
     }
 }
@@ -491,7 +491,7 @@ public static void TestUniformFactorial(ж<testing.T> Ꮡt) {
                     // Check that our samples approximate the appropriate normal distribution.
                     ref var dof = ref heap<float64>(out var Ꮡdof);
                     dof = (float64)(nfact - 1);
-                    var expected = Ꮡ(new statsResults(mean: dof, stddev: math.Sqrt(2 * dof)));
+                    var expected = Ꮡ(new statsResults(mean: dof, stddev: math.Sqrt(2D * dof)));
                     var errorScale = max(1.0D, (~expected).stddev);
                     expected.Value.closeEnough = 0.10D * errorScale;
                     expected.Value.maxError = 0.08D;

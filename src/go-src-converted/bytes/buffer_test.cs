@@ -117,7 +117,7 @@ public static void TestNewBufferShallow(ж<testing.T> Ꮡt) {
     var n = testing.AllocsPerRun(1000, () => {
         buf = NewBuffer(testBytes).Value;
     });
-    if (n > 0) {
+    if (n > 0D) {
         Ꮡt.Errorf("allocations occurred while shallow copying"u8);
     }
     check(Ꮡt, "NewBuffer"u8, Ꮡbuf, testString);
@@ -309,7 +309,7 @@ public static void TestReadFromPanicReader(ж<testing.T> Ꮡt) => func((defer, r
         Ꮡt.Fatal(err);
     }
     if (i != 0) {
-        Ꮡt.Fatalf("unexpected return from bytes.ReadFrom (1): got: %d, want %d"u8, i, 0);
+        Ꮡt.Fatalf("unexpected return from bytes.ReadFrom (1): got: %d, want %d"u8, i, (nint)(0));
     }
     check(Ꮡt, "TestReadFromPanicReader (1)"u8, Ꮡbuf, ""u8);
     // Confirm that when Reader panics, the empty buffer remains empty
@@ -329,7 +329,7 @@ public static void TestReadFromNegativeReader(ж<testing.T> Ꮡt) => func((defer
         var switchᴛ1 = recover();
         switch (switchᴛ1.type()) {
         case null: {
-            Ꮡt.Fatal("bytes.Buffer.ReadFrom didn't panic");
+            Ꮡt.Fatal((@string)"bytes.Buffer.ReadFrom didn't panic");
             break;
         }
         case {} Δerr when Δerr._<error>(out var err): {
@@ -380,7 +380,7 @@ public static void TestWriteAppend(ж<testing.T> Ꮡt) {
             Ꮡgot.Value.Write(b);
         }
     });
-    if (n > 0) {
+    if (n > 0D) {
         Ꮡt.Errorf("allocations occurred while appending"u8);
     }
 }
@@ -421,17 +421,17 @@ public static void TestRuneIO(ж<testing.T> Ꮡt) {
     // check at EOF
     {
         var err = buf.UnreadRune(); if (err == default!) {
-            Ꮡt.Fatal("UnreadRune at EOF: got no error");
+            Ꮡt.Fatal((@string)"UnreadRune at EOF: got no error");
         }
     }
     {
         var (_, _, err) = buf.ReadRune(); if (err == default!) {
-            Ꮡt.Fatal("ReadRune at EOF: got no error");
+            Ꮡt.Fatal((@string)"ReadRune at EOF: got no error");
         }
     }
     {
         var err = buf.UnreadRune(); if (err == default!) {
-            Ꮡt.Fatal("UnreadRune after ReadRune at EOF: got no error");
+            Ꮡt.Fatal((@string)"UnreadRune after ReadRune at EOF: got no error");
         }
     }
     // check not at EOF
@@ -584,7 +584,7 @@ public static void TestGrow(ж<testing.T> Ꮡt) {
                 bufʗ1.Write(yBytesʗ1);
             });
             // Check no allocation occurs in write, as long as we're single-threaded.
-            if (allocs != 0) {
+            if (allocs != 0D) {
                 Ꮡt.Errorf("allocation occurred during write"u8);
             }
             // Check that buffer has correct data.
@@ -629,17 +629,17 @@ public static void TestUnreadByte(ж<testing.T> Ꮡt) {
     // check at EOF
     {
         var errΔ1 = b.UnreadByte(); if (errΔ1 == default!) {
-            Ꮡt.Fatal("UnreadByte at EOF: got no error");
+            Ꮡt.Fatal((@string)"UnreadByte at EOF: got no error");
         }
     }
     {
         var (_, errΔ2) = b.ReadByte(); if (errΔ2 == default!) {
-            Ꮡt.Fatal("ReadByte at EOF: got no error");
+            Ꮡt.Fatal((@string)"ReadByte at EOF: got no error");
         }
     }
     {
         var errΔ3 = b.UnreadByte(); if (errΔ3 == default!) {
-            Ꮡt.Fatal("UnreadByte after ReadByte at EOF: got no error");
+            Ꮡt.Fatal((@string)"UnreadByte after ReadByte at EOF: got no error");
         }
     }
     // check not at EOF
@@ -652,7 +652,7 @@ public static void TestUnreadByte(ж<testing.T> Ꮡt) {
     }
     {
         var errΔ5 = b.UnreadByte(); if (errΔ5 == default!) {
-            Ꮡt.Fatal("UnreadByte after Read(nil): got no error");
+            Ꮡt.Fatal((@string)"UnreadByte after Read(nil): got no error");
         }
     }
     // after successful read

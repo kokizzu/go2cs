@@ -69,7 +69,6 @@
     <Compile Include="crc32_amd64.cs" />
     <Compile Include="crc32_generic.cs" />
     <Compile Include="crc32_test.cs" />
-    <Compile Include="example_test.cs" />
     <Compile Include="gen.cs" />
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="package_test_info.cs" />
