@@ -781,6 +781,15 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckNamedFuncTypeStructuralField() => CheckTarget("NamedFuncTypeStructuralField");
 
     [TestMethod]
+    public void CheckNamedInterfaceAdapterIdentity() => CheckTarget("NamedInterfaceAdapterIdentity");
+
+    [TestMethod]
+    public void CheckNamedInterfaceLateAssert() => CheckTarget("NamedInterfaceLateAssert");
+
+    [TestMethod]
+    public void CheckNamedInterfacePointerMethodSet() => CheckTarget("NamedInterfacePointerMethodSet");
+
+    [TestMethod]
     public void CheckNamedIntSignednessConv() => CheckTarget("NamedIntSignednessConv");
 
     [TestMethod]

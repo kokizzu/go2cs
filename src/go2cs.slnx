@@ -319,6 +319,12 @@
     <Project Path="Tests/Behavioral/NamedFuncTypeMapParam/NamedFuncTypeMapParam.csproj" />
     <Project Path="Tests/Behavioral/NamedFuncTypeStateMachine/NamedFuncTypeStateMachine.csproj" />
     <Project Path="Tests/Behavioral/NamedFuncTypeStructuralField/NamedFuncTypeStructuralField.csproj" />
+    <Project Path="Tests/Behavioral/NamedInterfaceAdapterIdentity/NamedInterfaceAdapterIdentity.csproj" />
+    <Project Path="Tests/Behavioral/NamedInterfaceAdapterIdentity/identlib/NamedInterfaceAdapterIdentity.identlib.csproj" />
+    <Project Path="Tests/Behavioral/NamedInterfaceLateAssert/NamedInterfaceLateAssert.csproj" />
+    <Project Path="Tests/Behavioral/NamedInterfaceLateAssert/latelib/NamedInterfaceLateAssert.latelib.csproj" />
+    <Project Path="Tests/Behavioral/NamedInterfacePointerMethodSet/NamedInterfacePointerMethodSet.csproj" />
+    <Project Path="Tests/Behavioral/NamedInterfacePointerMethodSet/pmslib/NamedInterfacePointerMethodSet.pmslib.csproj" />
     <Project Path="Tests/Behavioral/NamedMapValuesCollision/NamedMapValuesCollision.csproj" />
     <Project Path="Tests/Behavioral/NamedMapCrossPkgKey/NamedMapCrossPkgKey.csproj" />
     <Project Path="Tests/Behavioral/NamedMapMakeNonNil/NamedMapMakeNonNil.csproj" />

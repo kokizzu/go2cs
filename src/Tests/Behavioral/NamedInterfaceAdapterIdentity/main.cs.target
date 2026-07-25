@@ -1,0 +1,36 @@
+namespace go;
+
+using fmt = fmt_package;
+using identlib = NamedInterfaceAdapterIdentity.identlib_package;
+using NamedInterfaceAdapterIdentity;
+
+partial class main_package {
+
+[GoType] partial struct mark {
+    internal nint n;
+}
+
+internal static @string Greet(this mark m) {
+    return fmt.Sprintf("mark%d"u8, m.n);
+}
+
+[GoType] partial struct loud {
+    internal nint n;
+}
+
+[GoRecv] internal static @string Greet(this ref loud l) {
+    return fmt.Sprintf("loud%d"u8, l.n);
+}
+
+internal static void Main() {
+    var v = new mark(n: 1);
+    var (g, ok) = identlib.TryGreet(v);
+    fmt.Println("value", ok);
+    fmt.Println(identlib.Describe(g, v));
+    var p = Ꮡ(new loud(n: 2));
+    var (g2, ok2) = identlib.TryGreet(p);
+    fmt.Println("pointer", ok2);
+    fmt.Println(identlib.Describe(g2, p));
+}
+
+} // end main_package
