@@ -203,11 +203,16 @@ func (v *Visitor) recordTestPackageImplementers(testFilePaths HashSet[string]) {
 		}
 	}
 
+	// LOCAL interfaces only (the test-variant package's scope merges production + test
+	// declarations for internal tests — quick.Generator lives there). IMPORTED interfaces are
+	// deliberately NOT enumerated: (a) no demonstrated consumer needs them, and (b) the
+	// generated adapter class name is {Type}ж{InterfaceSimpleName}, so a type satisfying two
+	// same-named interfaces from different packages (container/heap's myHeap × heap.Interface
+	// AND its embedded sort.Interface) generates two partial classes of ONE name — duplicate
+	// members, CS8646/CS0111 (caught by the banked-package re-validation sweep). External-test
+	// (X_test) types asserting against the package under test's interfaces are a recorded
+	// residual alongside that adapter-naming collision.
 	collect(v.pkg.Scope(), false)
-
-	for _, imported := range v.pkg.Imports() {
-		collect(imported.Scope(), true)
-	}
 
 	scope := v.pkg.Scope()
 
