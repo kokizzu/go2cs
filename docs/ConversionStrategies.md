@@ -1065,9 +1065,17 @@ package-level global whose address is taken is backed by a real box so `&global`
 `ж<T>` rather than C# `ref` sidesteps escape-analysis complications, at the cost of an occasional heap
 allocation.
 
+Pointer **equality is by address**, so `ж<T>.Equals` compares each referent shape by its real storage, not
+by the box: a struct-field ref by (source object, field identity), and an element ref by (backing array,
+absolute index). That last canonicalization is load-bearing — `Ꮡ(slice, i)` boxes the slice HEADER anew on
+every call, so comparing the boxes made `&s[0] == &s[0]` *false*, and hashing them put two aliasing element
+pointers in different `map[*T]` buckets. Reducing to the backing array plus `Low + index` makes every Go
+alias of one element equal: `&s[1:][0] == &s[1]`, an in-capacity `append` result, and `&a[:][i] == &a[i]`.
+
 **Full detail:** [Reference → Pointers](ConversionStrategies-Reference.md#pointers) — per-iteration
-range-variable boxes, wide-index narrowing on element addresses, pointer-typed globals & double-pointer
-walks, closure capture of boxed locals, `unsafe.Pointer` conversions, and reinterpret casts.
+range-variable boxes, wide-index narrowing on element addresses, element/`unsafe.StringData` pointer
+identity, pointer-typed globals & double-pointer walks, closure capture of boxed locals, `unsafe.Pointer`
+conversions, and reinterpret casts.
 
 ---
 

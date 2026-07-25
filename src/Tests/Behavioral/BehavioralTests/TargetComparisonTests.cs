@@ -1198,6 +1198,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckSliceNilVsEmpty() => CheckTarget("SliceNilVsEmpty");
 
     [TestMethod]
+    public void CheckSlicePointerIdentity() => CheckTarget("SlicePointerIdentity");
+
+    [TestMethod]
     public void CheckSolitaire() => CheckTarget("Solitaire");
 
     [TestMethod]

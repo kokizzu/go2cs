@@ -559,10 +559,8 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
             return ReferenceEquals(source1, source2) && fieldId1.Equals(fieldId2);
         }
 
-        // Pointer into an array/slice element: same backing storage and same index. A PinnedBuffer
-        // is a per-access VIEW over its pinned storage (e.g. @string.buffer creates one per
-        // unsafe.StringData call), so it canonicalizes to the pinned object — two pointers to the
-        // same string data compare equal (Go compares addresses, never view instances).
+        // Pointer into an array/slice element: same backing STORAGE and same ABSOLUTE element index
+        // (see CanonicalElement — the referent alone is a per-call VIEW or HEADER, never the storage).
         if (m_arrayIndexRef is not null || other.m_arrayIndexRef is not null)
         {
             if (m_arrayIndexRef is null || other.m_arrayIndexRef is null)
@@ -571,7 +569,10 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
             (IArray array1, int index1) = m_arrayIndexRef.Value;
             (IArray array2, int index2) = other.m_arrayIndexRef.Value;
 
-            return ReferenceEquals(CanonicalStorage(array1), CanonicalStorage(array2)) && index1 == index2;
+            (object storage1, nint element1) = CanonicalElement(array1, index1);
+            (object storage2, nint element2) = CanonicalElement(array2, index2);
+
+            return ReferenceEquals(storage1, storage2) && element1 == element2;
         }
 
         // Two standard heap pointers, each a distinct allocation: equal only if they wrap the same
@@ -586,13 +587,48 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
                ReferenceEquals(m_val, other.m_val);
     }
 
-    // Reduces an array-index referent to the identity of its actual storage: a PinnedBuffer view
-    // yields the object it pins (falling back to the view itself when nothing is pinned); any
-    // other IArray is its own storage. Used by Equals/GetHashCode above so equal pointers into
-    // per-access views still hash and compare as the same address.
-    private static object CanonicalStorage(IArray array)
+    // Reduces an array-index referent to the identity of its ACTUAL storage plus the ABSOLUTE index
+    // of the element within that storage. Used by Equals/GetHashCode above so two pointers to the
+    // SAME element compare (and hash) as the same address no matter which view they were taken
+    // through — Go's `&s[0] == &s[0]`, `&s[1:][0] == &s[1]`, `&a[:][i] == &a[i]`. The referent as
+    // stored is never the storage itself:
+    //
+    //   - A PinnedBuffer is a per-access VIEW over its pinned storage (`@string.buffer` creates one
+    //     per unsafe.StringData call), so it yields the object it pins — two pointers to the same
+    //     string data are equal (Go compares addresses, never view instances). Falls back to the
+    //     view when nothing is pinned.
+    //   - A slice<T> is a HEADER (backing array + low + len + cap) over storage it SHARES. The
+    //     `Ꮡ(target, index)` overload takes `in IArray<T>`, so every call BOXES the header struct
+    //     afresh: comparing the boxes made `&s[0] == &s[0]` false (Go pointer identity violated) and
+    //     put two aliasing element pointers in different map buckets. Yielding the backing array plus
+    //     `Low + index` also makes a re-sliced window, a re-slice of a re-slice, and an in-capacity
+    //     `append` result compare equal to the original — every Go alias of one element.
+    //   - An array<T> (and a generated named-array wrapper) is likewise a struct over a shared T[],
+    //     reached through the non-generic `IArray.Source`, which both expose RAW. (A Go by-value
+    //     array COPY takes golib's `.Clone()`, giving it its own backing, so distinct Go arrays never
+    //     canonicalize to the same storage. Only a slice HEADER's `Source` materializes a detached
+    //     copy, and slices never reach that arm.)
+    //
+    // A foreign IArray implementer keeps the referent as its own storage — the pre-existing behavior.
+    private static (object storage, nint index) CanonicalElement(IArray array, nint index)
     {
-        return array is PinnedBuffer pinned ? pinned.PinnedTarget ?? array : array;
+        switch (array)
+        {
+            case PinnedBuffer pinned:
+                return (pinned.PinnedTarget ?? array, index);
+
+            case slice<T> slice:
+                return slice.m_array is null ? (array, index) : (slice.m_array, slice.Low + index);
+
+            // A NAMED slice type wraps a slice<T> window it does not expose directly; its full-window
+            // interface sub-slice hands back the shared header (the same unwrap slice<T>'s ISlice<T>
+            // constructor performs — `Source` cannot serve, it copies).
+            case ISlice<T> view when view.Slice((nint)0, view.Length) is slice<T> shared && shared.m_array is not null:
+                return (shared.m_array, shared.Low + index);
+
+            default:
+                return (array.Source ?? (object)array, index);
+        }
     }
 
     /// <inheritdoc />
@@ -614,7 +650,10 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
             return RuntimeHelpers.GetHashCode(m_structFieldRef.Value.Item1);
 
         if (m_arrayIndexRef is not null)
-            return System.HashCode.Combine(RuntimeHelpers.GetHashCode(CanonicalStorage(m_arrayIndexRef.Value.Item1)), m_arrayIndexRef.Value.Item2);
+        {
+            (object storage, nint element) = CanonicalElement(m_arrayIndexRef.Value.Item1, m_arrayIndexRef.Value.Item2);
+            return System.HashCode.Combine(RuntimeHelpers.GetHashCode(storage), element);
+        }
 
         // Standard heap pointer: a reference-type value uses the wrapped object's identity (equal
         // pointers share it); a value-type box uses this box's own identity.
