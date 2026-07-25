@@ -13,10 +13,14 @@
 > `package_info.cs` is absent, so the spelling no longer depends on the run's package set. Proof: the
 > four-line program below converts and **compiles and runs**; `go2cs -stdlib archive/tar` alone is now
 > byte-identical to the committed full-run corpus; CNR byte-identical across 482 behavioral projects.
-> See *Mechanism* below for the correction to this document's original diagnosis, and *Still open* for
-> the two neighboring classes the fix does not cover. Full write-up:
+> See *Mechanism* below for the correction to this document's original diagnosis. Full write-up:
 > [`docs/ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md) → *A foreign package's
 > collision rename is derived from that package, not from the conversion run*.
+>
+> **The sibling class closed 2026-07-25** (`claude/r7-sibmeta`): a dependency's **re-exported type
+> aliases** (`os`'s `type FileMode = fs.FileMode`) are derived the same way — `src/go2cs/foreignTypeAliases.go`.
+> The third class, its **`GoImplement` pairs**, is ruled *underivable* rather than pending, and retires
+> with the runtime interface shells. Detail in the last section of this document.
 
 ---
 
@@ -112,20 +116,33 @@ None inside converted code — the consumer must avoid the colliding member (e.g
 for `time.Second`), which is what the timer repro did. Converting the consumer *and* its dependencies in
 one `-stdlib` run also produces correct output, but that is not the end-user path.
 
-## Still open — the same shape, two other metadata classes (2026-07-25)
+## The same shape, two other metadata classes — one CLOSED, one ruled underivable (2026-07-25)
 
-A dependency's `package_info.cs` carries more than its collision renames, and the rest is **not** derivable
-from the collision rule. Both remain run-composition-dependent, with the same end-user symptom:
+A dependency's `package_info.cs` carries more than its collision renames. Both remaining classes were
+observed directly while gating the collision fix: single-package reconverts of `archive/zip` and
+`internal/testenv` matched the committed corpus in every respect **except** these two.
 
-1. **Re-exported Go type aliases.** `os` declares `type FileMode = fs.FileMode`, published as
-   `("FileMode", "go.io.fs_package.FileMode")`. Without it a standalone consumer emits `os.FileMode`,
-   which is not a member of `os_package` (the re-export is an assembly-scoped `global using` inside `os`)
-   — CS0426. `os.FileMode`/`FileInfo`/`DirEntry`/`PathError` are common in real Go code, so this is the
-   next-most-valuable item of this class. Deriving it needs the alias TARGET's rendered C# type name (a
-   `visitTypeSpec` computation), not just a rename.
-2. **`GoImplement` pairs** (`loadPackageImplements`). Absent, the consumer records and emits its own
-   adapter class: `archive/zip` converted alone emits `new io_SectionReaderжReader(rs)` where the full-run
-   corpus emits the foreign `new io.SectionReaderжReader(rs)`.
-
-Both were observed directly while gating the collision fix: single-package reconverts of `archive/zip` and
-`internal/testenv` match the committed corpus in every respect **except** these two classes.
+1. **Re-exported Go type aliases — FIXED 2026-07-25** (`claude/r7-sibmeta`, `src/go2cs/foreignTypeAliases.go`).
+   `os` declares `type FileMode = fs.FileMode`, published as `("FileMode", "go.io.fs_package.FileMode")`.
+   Without it a standalone consumer emits `os.PathError`, which is not a member of `os_package` (the
+   re-export is an assembly-scoped `global using` inside `os`) — CS0426. Now derived from the dependency's
+   own `go/types` scope under the same invariant, including the target package's own collision rename
+   (`internal/reflectlite`'s `type Kind = abi.Kind` → `go.@internal.abi_package.ΔKind`) and the
+   defined-type-over-an-interface shape (`crypto`'s `type PublicKey any` → `object`). Proof: a standalone
+   `os.FileMode`/`FileInfo`/`PathError` + `fs.WalkDir` program compiles and **runs** byte-identically to
+   `go run .` (pre-fix: the CS0426 above); `-stdlib crypto/ecdh` alone now reconverts `ecdh.cs`
+   byte-identically to the committed corpus (pre-fix: the nonexistent `crypto.PublicKey`); whole-stdlib
+   reconvert byte-for-byte unchanged. Five shapes are deliberately **not** derived — see
+   [`docs/ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md) → *A foreign package's
+   re-exported type ALIAS is derived from that package too*.
+2. **`GoImplement` pairs** (`loadPackageImplements`) — **underivable, not merely undone.** Absent, the
+   consumer records and emits its own adapter class: `archive/zip` converted alone emits
+   `new io_SectionReaderжReader(rs)` where the full-run corpus emits the foreign
+   `new io.SectionReaderжReader(rs)`. The pairs are recorded at CONVERSION time from the cast/witness sites
+   the dependency's own bodies contain, so which adapters its assembly carries is a product of its
+   **emission**, not of its declarations — there is nothing sound to compute from `go/types`, and an
+   over-approximation would name adapters that do not exist (CS0246), strictly worse than today's behavior
+   (the local duplicate compiles and behaves identically). The class retires with the **runtime interface
+   shells** rather than with a derivation: once a concrete-to-interface conversion goes through a
+   runtime-constructed shell instead of a compile-time adapter class, there is no per-pair record left to be
+   missing. Do not re-file this as a derivation task.

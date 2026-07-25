@@ -7375,18 +7375,92 @@ single-package conversion omitting the *unused* alias declarations a full run em
 **reference** is identical either way: a single-package `-stdlib archive/tar` reconvert is byte-identical to
 the committed full-run corpus in all code, and the flagship program compiles and runs.
 
-Two neighboring classes of run-composition dependence are **still open**, both in the same loader and with
-the same symptom (they are *not* collision renames, so this derivation does not cover them): a dependency's
-re-exported Go type **aliases** (`os`'s `type FileMode = fs.FileMode` publishes
-`("FileMode", "go.io.fs_package.FileMode")`, so a standalone consumer naming `os.FileMode` emits a
-nonexistent `os.FileMode` — CS0426), and its **GoImplement** pairs (`loadPackageImplements`, whose absence
-makes a consumer record and emit its own adapter class — `io_SectionReaderжReader` instead of the foreign
-`io.SectionReaderжReader`). Both need their own derivation of the *rendered target*, not just the rename.
+Two neighboring classes of run-composition dependence share the loader and the symptom but are *not*
+collision renames, so this derivation does not cover them: a dependency's re-exported Go type **aliases**
+(closed next) and its **GoImplement** pairs (`loadPackageImplements`, still open — see the end of the next
+subsection).
 
 (Guarded by `foreignNameCollisions_test.go`: a two-package fixture whose `dep` carries one of every shape —
 colliding const, colliding type, colliding empty-interface type, methodless func type, and a non-colliding
 control — asserting the derivation, its independence from run-accumulated `nameCollisions` state, and the
 end-to-end render (`dep.ΔSecond`, `depꓸMonth`) with no `package_info.cs` present.)
+
+### A foreign package's re-exported type ALIAS is derived from that package too
+
+The sibling class, and the one that hits real end-user code hardest. `os` declares
+`type FileMode = fs.FileMode` (likewise `FileInfo`, `DirEntry`, `PathError`), and a re-export takes
+`visitTypeSpec`'s **using-alias** arm: the converted `os` emits an assembly-scoped
+`global using FileMode = go.io.fs_package.FileMode;` and publishes
+`[assembly: GoTypeAlias("FileMode", "go.io.fs_package.FileMode")]`. The re-export is therefore a *using
+alias inside os's assembly*, **never a member of `os_package`** — so a consumer converted without that
+artifact emits `os.PathError` and gets `CS0426: the type name 'PathError' does not exist in the type
+'os_package'`. Exactly the run-composition dependence of the collision renames, one metadata class over.
+
+`foreignTypeAliases.go` derives these under the same invariant — what a dependency publishes is a function
+of that package's own declarations — from its `go/types` scope, plus its syntax for the one distinction only
+a declaration's RHS carries. Two declarations take the using-alias route and are reproduced:
+
+| Dependency declares | Published entry | Consumer emits |
+|---|---|---|
+| `type FileMode = fs.FileMode` | `("FileMode", "go.io.fs_package.FileMode")` | `osꓸFileMode` |
+| `type Kind = abi.Kind` (and `abi` Δ-renames `Kind`) | `("Kind", "go.@internal.abi_package.ΔKind")` | `reflectliteꓸKind` |
+| `type PublicKey any` (a DEFINED type over the empty interface) | `("PublicKey", "object")` | `object` |
+| `type Reader io.Reader` (a DEFINED type over a named interface) | `("Reader", "go.io_package.Reader")` | `pkgꓸReader` |
+
+Three details make the reproduction exact rather than approximate:
+
+* **The alias TARGET carries the target package's OWN collision rename.** `internal/reflectlite`'s
+  `type Kind = abi.Kind` publishes `go.@internal.abi_package.ΔKind`, because `internal/abi` Δ-renames `Kind`
+  against `(*Type).Kind()`. In a full run that Δ arrives from `abi`'s parsed `package_info.cs` (the
+  `importedTypeAliases` consult in `convertToCSFullTypeName`'s default arm); the derivation recomputes it
+  with the same foreign-package-aware `packageHasMethodNamed` test the collision lane uses, so the two
+  sources agree.
+* **A Go type ALIAS is exempt from the collision lane.** `performNameCollisionAnalysis` records only
+  *defined* types (`!typeSpec.Assign.IsValid()`), so an alias name that *also* names a method is **not**
+  Δ-renamed — `reflectlite` declares both `type Kind = abi.Kind` and `(*rtype).Kind()` and still publishes
+  the plain source name `Kind`. The two derivations split on exactly that line: a colliding *defined* type
+  belongs to the collision lane (which owns the `Token`/`ΔToken`/`object` two-hop), a colliding *alias* to
+  this one. Getting that boundary wrong either double-publishes one source name with two targets or drops
+  `reflectlite`'s entry entirely.
+* **An empty-interface target is `object`, imported BARE.** `type PublicKey any` is not an alias at all but
+  a defined type over the empty interface, which has exactly that interface's method set and so takes the
+  using-alias arm too. Its target is the C# keyword, not a package member (`isCSharpBuiltinTypeName`) —
+  `crypto`'s `PublicKey`/`PrivateKey`/`DecrypterOpts`, `plugin`'s `Symbol`, `database/sql/driver`'s `Value`.
+
+**Deliberately not derived** (a wrong target is worse than none — a missing entry leaves the reference
+exactly as it converts today, a wrong one names a type that does not exist): a composite or basic RHS
+(`type Table = map[string]int`, whose rendering runs the whole `convertToCSFullTypeName` lowering) and an
+alias-to-an-alias chain; an **anonymous** struct/interface RHS, which is *lifted* under a generated name
+only a conversion assigns (`internal/fuzz`'s `type CorpusEntry = struct{…}` → `CorpusEntryᴛ1`); a generic
+target; a methodless named **func** type, rendered inline as its base delegate with no named type to point at
+(the same omission `typeCollisionAliases` and `writePackageInfoFile` make); and a target that is **itself**
+emitted as a using alias by its own package, which would need a second hop this derivation does not follow.
+Each declines by shape, from the dependency's own declarations, so the decision is stable across runs.
+
+Same use-gating as the collision renames: a derived alias's `global using` reaches the consumer's
+`package_info.cs` only once an emitted reference has resolved through it. Evidence, taken with the fix
+neutered and restored: a standalone `os.FileMode`/`os.FileInfo`/`os.PathError` + `fs.WalkDir` program
+converted with `go2cs <dir>` against an output root holding **no** converted stdlib failed with the CS0426
+above and now compiles and runs with output byte-identical to `go run .`; single-package `-stdlib crypto/ecdh`
+reconverts `ecdh.cs` byte-identically to the committed full-run corpus where before it emitted the
+nonexistent `crypto.PublicKey`; and a whole-stdlib reconvert is byte-for-byte unchanged, the derivation
+running only where the loader previously did nothing at all.
+
+**Still open — the `GoImplement` pairs** (`loadPackageImplements`), and *honestly* so rather than pending:
+they are recorded at CONVERSION time from the cast and witness sites a dependency's own bodies contain, so
+which adapter classes its assembly actually carries is a product of its **emission**, not of its
+declarations. There is nothing sound to compute from `go/types`: an over-approximation (every exported type
+× every exported interface) would name adapters that do not exist — CS0246, strictly worse than the present
+behavior, where the consumer records and emits its own local adapter (`io_SectionReaderжReader` instead of the
+provider's `io.SectionReaderжReader`), which compiles and behaves identically and only duplicates the class.
+The class retires with the runtime interface shells rather than with a derivation: once a concrete-to-interface
+conversion goes through a runtime-constructed shell instead of a compile-time adapter, there is no per-pair
+record left to be missing.
+
+(Guarded by `foreignTypeAliases_test.go`: a three-package fixture — a consumer, the `dep` whose re-exports
+are under test, and the `other` it re-exports from — carrying one declaration of every published shape and
+every declined one, asserting the derivation, its independence from run-accumulated state, and the end-to-end
+render with no `package_info.cs` present.)
 
 ## Source Generators
 Several Go semantics cannot be written directly in C#, so the converter emits compact, attributed partial declarations and lets a set of Roslyn source generators (`src/gen/go2cs-gen/`, referenced as an analyzer by every converted project) synthesize the rest at compile time. This keeps the visible converted code close to the Go original. The principal generators and attributes:

@@ -32,11 +32,11 @@ import (
 // packageHasMethodNamed already applies to the field-rename decision: recompute a FOREIGN
 // package's collisions from its own types.Package rather than from run-accumulated state.
 //
-// Scope: the collision renames only. A dependency's package_info.cs also carries entries that are
-// products of its emission rather than of its declarations — the re-exported Go type ALIASES
-// (`type DirEntry = fs.DirEntry` → `go.io.fs_package.DirEntry`) and the GoImplement pairs — which
-// have no faithful derivation here and remain available only from a real conversion of the
-// dependency.
+// Scope: the collision renames only. The dependency's RE-EXPORTED type aliases (`type DirEntry =
+// fs.DirEntry` → `go.io.fs_package.DirEntry`) are the sibling class, derived under the same
+// invariant in foreignTypeAliases.go; foreignDerivedTypeAliases there composes both and is what the
+// alias loader calls. Its GoImplement pairs remain underivable — they are a product of the
+// dependency's EMISSION rather than of its declarations (see that file's header).
 
 // foreignCollisionAliases caches the derived entries per package. Package objects are interned per
 // run (as with packageMethodNames), so the pointer is a stable key.

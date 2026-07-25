@@ -513,13 +513,15 @@ func loadImportedTypeAliases(info PackageInfo) {
 	packageLock.Unlock()
 
 	// The dependency has not been converted into this output root, so there is no package_info.cs
-	// carrying its exported type aliases. Its name-collision renames are still knowable — they are a
-	// function of the dependency's OWN declarations — so derive and apply those, giving a
-	// single-package conversion the same foreign spelling a whole-stdlib run produces (an
-	// unrenamed `time.Second` binds the `Second(this Time)` method group and does not compile).
-	// See foreignNameCollisions.go for the invariant and for what deliberately stays underivable.
+	// carrying its exported type aliases. Most of them are still knowable — they are a function of
+	// the dependency's OWN declarations — so derive and apply those, giving a single-package
+	// conversion the same foreign spelling a whole-stdlib run produces: its name-collision renames
+	// (an unrenamed `time.Second` binds the `Second(this Time)` method group and does not compile)
+	// and its re-exported type aliases (`os.FileMode` is a using alias to `go.io.fs_package.FileMode`,
+	// not a member of `os_package` — CS0426). See foreignNameCollisions.go and foreignTypeAliases.go
+	// for the invariant and for what deliberately stays underivable.
 	if _, err := os.Stat(packageInfoFile); os.IsNotExist(err) {
-		applyExportedTypeAliases(foreignCollisionTypeAliases(importedPackageSources[filepath.Clean(info.SourceDir)]), info, true)
+		applyExportedTypeAliases(foreignDerivedTypeAliases(importedPackageSources[filepath.Clean(info.SourceDir)]), info, true)
 		return
 	}
 
