@@ -311,6 +311,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckEmbeddedPointerNilAssign() => CheckTarget("EmbeddedPointerNilAssign");
 
     [TestMethod]
+    public void CheckEmbeddedTypeNameCollision() => CheckTarget("EmbeddedTypeNameCollision");
+
+    [TestMethod]
     public void CheckEmbeddedValuePointerMethod() => CheckTarget("EmbeddedValuePointerMethod");
 
     [TestMethod]

@@ -159,7 +159,7 @@ internal class StructTypeTemplate : TemplateBase
             bool promotes(string simpleName, int depth) =>
                 promotedFieldMinDepth[simpleName] == depth && promotedFieldMinDepthCount[simpleName] == 1;
 
-            foreach ((string promotedStructType, _, _, _) in promotedStructs)
+            foreach ((string promotedStructType, string promotedMemberName, _, _) in promotedStructs)
             {
                 // Rewrite the embed's type PARAMETERS to this instantiation's type ARGUMENTS on the
                 // promoted member TYPE (a generic embed's field carries `Point`, out of scope here).
@@ -195,13 +195,13 @@ internal class StructTypeTemplate : TemplateBase
                     // Like the Ꮡ-prefixed accessors below, the Δ-prefixed NAME composes on the
                     // UNESCAPED member name — `Δ@base` is invalid ('@' only leads).
                     string accessorName = GetSimpleName(memberName) == NonGenericStructName ? $"{ShadowVarMarker}{GetUnsanitizedIdentifier(memberName)}" : memberName;
-                    result.Append($"\r\n{TypeElemIndent}{typeScope} ref {SubstituteTypeParameters(typeName, typeArgMap)} {accessorName} => ref {StripTypeArgs(GetSimpleName(promotedStructType, dropCollisionPrefix: true))}.{memberName};");
+                    result.Append($"\r\n{TypeElemIndent}{typeScope} ref {SubstituteTypeParameters(typeName, typeArgMap)} {accessorName} => ref {EmbedHop(promotedStructType, promotedMemberName)}.{memberName};");
                 }
             }
 
             result.Append($"\r\n\r\n{TypeElemIndent}// Promoted Struct Field Accessor References");
 
-            foreach ((string promotedStructType, _, _, _) in promotedStructs)
+            foreach ((string promotedStructType, string promotedMemberName, _, _) in promotedStructs)
             {
                 Dictionary<string, string> typeArgMap = GetEmbedTypeArgumentMap(promotedStructType);
 
@@ -231,7 +231,7 @@ internal class StructTypeTemplate : TemplateBase
                     // struct's instance param must carry them (Δentry<K, V>, CS0305); the
                     // promoted-struct MEMBER access strips its type arguments (the property is
                     // `node`, not `node<K, V>` — internal/concurrent's entry[K,V]).
-                    result.Append($"\r\n{TypeElemIndent}{typeScope} static ref {SubstituteTypeParameters(typeName, typeArgMap)} {AddressPrefix}{GetUnsanitizedIdentifier(memberName)}(ref {StructName} instance) => ref instance.{StripTypeArgs(GetSimpleName(promotedStructType, dropCollisionPrefix: true))}.{memberName};");
+                    result.Append($"\r\n{TypeElemIndent}{typeScope} static ref {SubstituteTypeParameters(typeName, typeArgMap)} {AddressPrefix}{GetUnsanitizedIdentifier(memberName)}(ref {StructName} instance) => ref instance.{EmbedHop(promotedStructType, promotedMemberName)}.{memberName};");
                 }
             }
 
@@ -456,7 +456,7 @@ internal class StructTypeTemplate : TemplateBase
             }
         }
 
-        foreach ((string promotedStructType, _, _, _) in promotedStructs)
+        foreach ((string promotedStructType, string promotedMemberName, _, _) in promotedStructs)
         {
             // Rewrite the embed's type PARAMETERS to this instantiation's type ARGUMENTS on the
             // promoted method's return + parameter types — a generic embed's method signature may
@@ -602,7 +602,7 @@ internal class StructTypeTemplate : TemplateBase
                 {
                     if (structTypeParamStart < 0 && GetScope(GetSimpleName(method.Name)) == "public")
                     {
-                        string embedBox = GetUnsanitizedIdentifier(StripTypeArgs(GetSimpleName(promotedStructType, dropCollisionPrefix: true)));
+                        string embedBox = GetUnsanitizedIdentifier(promotedMemberName);
 
                         result.Append($"\r\n    {methodScope} static {returnType} {method.Name}(this {PointerPrefix}<{StructName}> {AddressPrefix}target");
 
@@ -625,7 +625,7 @@ internal class StructTypeTemplate : TemplateBase
                 // binds on the box hop itself (`target.<embed>`), so drop the `.Value` for it. StripTypeArgs
                 // reduces a GENERIC embed's hop to the bare property name (`nistCurve<…>` → `nistCurve`) —
                 // the emitted accessor is not itself generic (a no-op for a non-generic embed's hop).
-                string embedAccess = StripTypeArgs(GetSimpleName(promotedStructType, dropCollisionPrefix: true));
+                string embedAccess = EmbedHop(promotedStructType, promotedMemberName);
 
                 if (method.IsBoxRecv && embedAccess.EndsWith(".Value", StringComparison.Ordinal))
                     embedAccess = embedAccess[..^".Value".Length];
@@ -663,6 +663,19 @@ internal class StructTypeTemplate : TemplateBase
 
         return result.ToString();
     }
+
+    // EmbedHop renders the `target.<embed>` hop every promoted accessor / forwarder descends
+    // through. It is the embed's DECLARED member name — NOT the embed TYPE's simple name, which the
+    // two only coincidentally share: the converter Δ-renames an embedded field whose derived name
+    // equals the ENCLOSING struct's own name (io_test's `type Buffer struct{ bytes.Buffer }` →
+    // member `ΔBuffer`, CS0542), and a hop still spelled `Buffer` then binds the enclosing TYPE
+    // instead of the member — CS0120 on every promoted field accessor, CS1061 on every `Ꮡ`
+    // reference and forwarder. A POINTER embed keeps the `.Value` deref GetSimpleName appends to
+    // its `ж<T>` box form; a GENERIC embed's declared member never carries type arguments (the
+    // converter strips them), which is what StripTypeArgs used to recover here.
+    private static string EmbedHop(string promotedStructType, string memberName) =>
+        StripTypeArgs(GetSimpleName(promotedStructType, dropCollisionPrefix: true))
+            .EndsWith(".Value", StringComparison.Ordinal) ? $"{memberName}.Value" : memberName;
 
     // StripTypeArgs reduces a generic type reference to its bare name (`node<K, V>` → `node`)
     // for MEMBER access through an embed's promoted property.

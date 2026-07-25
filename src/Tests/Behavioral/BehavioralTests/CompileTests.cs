@@ -337,6 +337,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckEmbeddedPointerNilAssign() => CheckTarget("EmbeddedPointerNilAssign");
 
     [TestMethod]
+    public void CheckEmbeddedTypeNameCollision() => CheckTarget("EmbeddedTypeNameCollision");
+
+    [TestMethod]
     public void CheckEmbeddedValuePointerMethod() => CheckTarget("EmbeddedValuePointerMethod");
 
     [TestMethod]

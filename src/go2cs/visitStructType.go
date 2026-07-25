@@ -419,6 +419,20 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 
 			identType := identObj.Type().Underlying()
 
+			// An EMBEDDED field's member name is the unqualified type name (Go spec), so it can
+			// equal the ENCLOSING struct's own name — io_test.go's `type Buffer struct{
+			// bytes.Buffer }` derives the member `Buffer` inside struct `Buffer`, which C# forbids
+			// (CS0542). Apply the same disambiguation marker the NAMED-field path below uses: the
+			// ACCESS sites already emit the renamed form (structFieldBoxName / convIdent run
+			// typeCollidingFieldName for any field whose name equals its enclosing type, embedded
+			// or not — `rb.of(Buffer.ᏑΔBuffer)`), so only this declaration was out of step.
+			// Both sides compare RAW, mirroring the named-field compare.
+			embedName := getCoreSanitizedIdentifier(goTypeName)
+
+			if strings.TrimPrefix(embedName, "@") == strings.TrimPrefix(strings.TrimPrefix(structTypeName, ShadowVarMarker), "@") {
+				embedName = typeCollidingFieldName(embedName)
+			}
+
 			if _, ok := identType.(*types.Interface); ok {
 				// Add to promoted interface implementations
 				packageLock.Lock()
@@ -431,19 +445,19 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 
 				packageLock.Unlock()
 
-				v.writeString(target, "%s %s %s;", getAccess(goTypeName), csEmitTypeName, getCoreSanitizedIdentifier(goTypeName))
+				v.writeString(target, "%s %s %s;", getAccess(goTypeName), csEmitTypeName, embedName)
 			} else {
 				var handled bool
 
 				if _, ok := identObj.(*types.PkgName); !ok {
 					if ptrType, ok := identType.(*types.Pointer); ok {
 						if _, ok = ptrType.Elem().(*types.Named); !ok {
-							v.writeString(target, "%s %s %s;", getAccess(goTypeName), csEmitTypeName, getCoreSanitizedIdentifier(goTypeName))
+							v.writeString(target, "%s %s %s;", getAccess(goTypeName), csEmitTypeName, embedName)
 							handled = true
 						}
 					} else if _, ok = identType.(*types.Struct); !ok {
 						if _, ok := identObj.Type().(*types.Named); !ok {
-							v.writeString(target, "%s %s %s;", getAccess(goTypeName), csEmitTypeName, getCoreSanitizedIdentifier(goTypeName))
+							v.writeString(target, "%s %s %s;", getAccess(goTypeName), csEmitTypeName, embedName)
 							handled = true
 						}
 					}
@@ -451,7 +465,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 
 				// Handle promoted struct implementations
 				if !handled {
-					v.writeString(target, "%s partial ref %s %s { get; }", getAccess(goTypeName), csEmitTypeName, getCoreSanitizedIdentifier(goTypeName))
+					v.writeString(target, "%s partial ref %s %s { get; }", getAccess(goTypeName), csEmitTypeName, embedName)
 				}
 			}
 

@@ -337,6 +337,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckEmbeddedPointerNilAssign() => CheckTarget("EmbeddedPointerNilAssign");
 
     [TestMethod]
+    public void CheckEmbeddedTypeNameCollision() => CheckTarget("EmbeddedTypeNameCollision");
+
+    [TestMethod]
     public void CheckEmbeddedValuePointerMethod() => CheckTarget("EmbeddedValuePointerMethod");
 
     [TestMethod]

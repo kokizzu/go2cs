@@ -5247,6 +5247,52 @@ read `outerFunc.Func` would surface CS1061 in the gate (none does). Cleared debu
 CS0542. Guarded by `PromotedFieldNameIsType` (a `Node` embedding a `*sym` whose `Node` field
 collides — accessed through the explicit embedded path, values vs Go).
 
+### An EMBEDDED field whose derived name equals the enclosing type is Δ-renamed
+
+The sibling of the case above, one layer earlier: an **embedded** field's member name is the
+*unqualified type name* (Go spec), so it can equal the enclosing struct's own name outright.
+io's `io_test.go` declares exactly that — a `bytes.Buffer` embedded in a struct called `Buffer`:
+
+```go
+// A version of bytes.Buffer without ReadFrom and WriteTo
+type Buffer struct {
+	bytes.Buffer
+	ReaderFrom // conflicts with and hides bytes.Buffer's ReaderFrom.
+	WriterTo   // conflicts with and hides bytes.Buffer's WriterTo.
+}
+```
+
+The NAMED-field path in `visitStructType` had renamed such a field since net's `type file struct{
+file *os.File }` (`typeCollidingFieldName`, the `Δ`/`ΔΔ` rules described under
+[Type-vs-Method Name Collisions](#type-vs-method-name-collisions)), and every ACCESS
+site already emitted the renamed form — `fieldCollidesWithType` compares the selector against its
+enclosing named type without caring whether the field is embedded, and `structFieldBoxName` runs the
+same rename for the box accessor. Only the EMBEDDED-field DECLARATION path was out of step: it
+emitted `getCoreSanitizedIdentifier(goTypeName)` raw, so the declaration and its accesses disagreed
+and the struct itself was CS0542:
+
+```csharp
+[GoType] partial struct Buffer {
+    public partial ref bytes_package.Buffer ΔBuffer { get; }   // was: `Buffer { get; }`, CS0542
+    public io_package.ReaderFrom ReaderFrom;
+    public io_package.WriterTo WriterTo;
+}
+```
+
+The rename is applied once, before the four embed emission forms (interface embed, the two plain-field
+arms, and the `partial ref` promotion), using the same raw compare the named-field path uses (escape
+and `Δ` markers stripped on both sides), so the marker doubling for a keyword-family or already-Δ-
+renamed enclosing type carries over unchanged. Promotion is unaffected — the `TypeGenerator` derives
+the backing box and every promoted forwarder from the DECLARED member name, so `Ꮡ` + the renamed
+member is what both the generator and the converter's call sites spell (`rb.of(Buffer.ᏑΔBuffer)`).
+The collision is only expressible across packages (one package cannot declare two types with the same
+name), so it is absent from the single-package behavioral corpus and [CNR](Glossary.md#cnr) is
+byte-identical apart from the new guard. Cleared io's test-host CS0542. Guarded by
+`EmbeddedTypeNameCollision` (a `main.Buffer` embedding `inner.Buffer`, exercising BOTH halves the
+rename must keep consistent — the explicit field selector `b.Buffer.Data` incl. a write-through, and
+the promoted fields plus value- and pointer-receiver methods reached through it — with a composite
+literal keyed by the embedded field and a `new(T)` zero value, values vs Go).
+
 ### Promoted pointer methods descend multi-hop value-embed chains
 A pointer-receiver method promoted through two or more embedded VALUE structs descends hop by hop: the first hop through the `&`-machinery (box-vs-parameter distinction), then one `.of(<Owner>.<field-box>)` view per additional hop -- the `ж<T>` field views compose onto the method's receiver box (reflect's `sliceType` embeds `abi.SliceType` embeds `abi.Type`, whose `Common()` extension binds `ж<abi.Type>` -- CS1929):
 ```csharp
