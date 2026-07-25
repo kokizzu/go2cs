@@ -557,6 +557,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckInterfaceIntraFunction() => CheckTarget("InterfaceIntraFunction");
 
     [TestMethod]
+    public void CheckInterfaceKeywordParamNames() => CheckTarget("InterfaceKeywordParamNames");
+
+    [TestMethod]
     public void CheckInterfaceMapKeyPointer() => CheckTarget("InterfaceMapKeyPointer");
 
     [TestMethod]

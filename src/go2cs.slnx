@@ -259,6 +259,7 @@
     <Project Path="Tests/Behavioral/InterfaceImplementation/InterfaceImplementation.csproj" />
     <Project Path="Tests/Behavioral/InterfaceInheritance/InterfaceInheritance.csproj" />
     <Project Path="Tests/Behavioral/InterfaceIntraFunction/InterfaceIntraFunction.csproj" />
+    <Project Path="Tests/Behavioral/InterfaceKeywordParamNames/InterfaceKeywordParamNames.csproj" />
     <Project Path="Tests/Behavioral/InterfaceMapKeyPointer/InterfaceMapKeyPointer.csproj" />
     <Project Path="Tests/Behavioral/InterfaceToInterfaceAdapter/InterfaceToInterfaceAdapter.csproj" />
     <Project Path="Tests/Behavioral/InterfaceToInterfaceAssertion/InterfaceToInterfaceAssertion.csproj" />

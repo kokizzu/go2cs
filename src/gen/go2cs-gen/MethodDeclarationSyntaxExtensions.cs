@@ -5,6 +5,7 @@
 // that can be found in the LICENSE file.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -208,6 +209,27 @@ public static class MethodSyntaxExtensions
         return true;
     }
 
+    // Renders a SYMBOL's parameter list into MethodInfo's (type, name) tuples.
+    //
+    // Parameter NAMES read from a symbol arrive UNescaped — unlike the syntax path below, whose
+    // ParameterSyntax.Identifier.Text preserves the converter's own `@`. A Go parameter named with
+    // a C# reserved keyword (sync.Map's `CompareAndSwap(key, old, new any)`, which the converter
+    // emits as `any @new`) must therefore be escaped HERE: every consumer of these tuples renders
+    // the name straight into a declaration or a call argument, where a bare `new` is a parse error
+    // that surfaces as CS0501 on the enclosing member. EscapeCsKeyword is a no-op for every
+    // non-keyword and for an already-escaped name, so this is safe for all callers.
+    //
+    // `withRefKind` prefixes the rendered type with the parameter's `in`/`ref`/`out` modifier: an
+    // explicit interface implementation must reproduce it or it matches no member (CS0539).
+    public static (string type, string name)[] ToParameterInfos(this ImmutableArray<IParameterSymbol> parameters, bool withRefKind = false)
+    {
+        return parameters
+            .Select(parameter => (
+                type: $"{(withRefKind ? RefKindPrefix(parameter.RefKind) : "")}{GlobalQualify(parameter.Type.ToDisplayString())}",
+                name: EscapeCsKeyword(parameter.Name)))
+            .ToArray();
+    }
+
     public static MethodInfo GetMethodInfo(this MethodDeclarationSyntax methodDeclaration, Compilation compilation)
     {
         SemanticModel semanticModel = compilation.GetSemanticModel(methodDeclaration.SyntaxTree);
@@ -300,9 +322,7 @@ public static class MethodSyntaxExtensions
     public static MethodInfo GetMethodInfo(this IMethodSymbol methodSymbol)
     {
         // Convert parameters to the required tuple format
-        (string type, string name)[] parameters = methodSymbol.Parameters
-            .Select(parameter => (type: GlobalQualify(parameter.Type.ToDisplayString()), name: parameter.Name))
-            .ToArray();
+        (string type, string name)[] parameters = methodSymbol.Parameters.ToParameterInfos();
 
         // Extract generic type parameters
         string genericTypes = string.Join(", ", methodSymbol.TypeParameters.Select(typeParameter => typeParameter.Name));

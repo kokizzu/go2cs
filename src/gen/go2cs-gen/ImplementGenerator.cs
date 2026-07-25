@@ -142,7 +142,7 @@ public class ImplementGenerator : ISourceGenerator
                     {
                         Name = $"{GlobalQualify(info.name)}.{EscapeCsKeyword(info.method.Name)}",
                         ReturnType = GlobalQualify(info.method.ReturnType.ToDisplayString()),
-                        Parameters = info.method.Parameters.Select(param => (type: $"{RefKindPrefix(param.RefKind)}{GlobalQualify(param.Type.ToDisplayString())}", name: param.Name)).ToArray(),
+                        Parameters = info.method.Parameters.ToParameterInfos(withRefKind: true),
                         GenericTypes = string.Join(", ", info.method.TypeParameters.Select(type => type.ToDisplayString())),
                         TypeConstraints = info.method.TypeParameters.ToDictionary(type => type.Name, type => type.ConstraintTypes.Select(constraint => constraint.ToDisplayString()).ToArray()),
                         IsInaccessibleMarker = GetScope(info.method.Name) == "internal" &&
@@ -224,8 +224,10 @@ public class ImplementGenerator : ISourceGenerator
                     ReturnType = GlobalQualify(info.method.ReturnType.ToDisplayString()),
                     // Carry the parameter REF KIND: an interface member declared with an `in`
                     // param (the hand-finished io stub's Reader.Read(in slice<byte>)) is a
-                    // distinct signature - an explicit impl without it is CS0539.
-                    Parameters = info.method.Parameters.Select(param => (type: $"{RefKindPrefix(param.RefKind)}{GlobalQualify(param.Type.ToDisplayString())}", name: param.Name)).ToArray(),
+                    // distinct signature - an explicit impl without it is CS0539. Parameter NAMES
+                    // are `@`-escaped for the same reason the method name above is — see
+                    // ToParameterInfos (sync.Map's `CompareAndSwap(key, old, new any)`).
+                    Parameters = info.method.Parameters.ToParameterInfos(withRefKind: true),
                     GenericTypes = string.Join(", ", info.method.TypeParameters.Select(type => type.ToDisplayString())),
                     TypeConstraints = info.method.TypeParameters.ToDictionary(type => type.Name, type => type.ConstraintTypes.Select(constraint => constraint.ToDisplayString()).ToArray()),
                     // A Go-UNEXPORTED interface method (lowercase name → its C# extension impl is

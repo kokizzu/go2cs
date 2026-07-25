@@ -5576,6 +5576,42 @@ keeps the `@fixed` spelling. Guarded by the `KeywordNamedTypes` behavioral test:
 and pointer-implementing `sizer` plus a keyword-named interface `lock`, with a pointer-receiver `grow`
 exercising the RecvGenerator ж-twin on the keyword-named receiver.
 
+### An interface member's keyword-named PARAMETERS escape in every generated implementation
+
+The same symbol-vs-syntax asymmetry reaches parameter NAMES. `sync.Map`'s
+
+```go
+func (m *Map) CompareAndSwap(key, old, new any) (swapped bool)
+```
+
+is emitted by the converter with the keyword escaped (`any @new`), but `ImplementGenerator` re-reads
+the members off the interface SYMBOL when it realizes a `[GoImplement]` record, and
+`IParameterSymbol.Name` — like `IMethodSymbol.Name` above — arrives with the escape stripped. Every
+template renders that name straight into a declaration and a forwarding call, so the generated
+explicit implementation emitted `object new`, which does not lex as a parameter; Roslyn's recovery
+reported **CS0501** ("must declare a body because it is not marked abstract, extern, or partial") on
+the enclosing member — three of them in sync's converted test build, one per type implementing the
+test's `mapInterface`.
+
+The three symbol→`MethodInfo` projections (the interface-adapter path, the struct-adapter/explicit-impl
+path, and `MethodInfo`'s own `IMethodSymbol` overload) duplicated the same tuple construction, so the
+escape lands once in a shared `ToParameterInfos` extension that all three now call; it also carries the
+`in`/`ref`/`out` prefix the two adapter paths need (an explicit implementation must reproduce the
+ref-kind or it matches no member, CS0539). `EscapeCsKeyword` is a no-op for every non-keyword and for
+an already-escaped name, so all other generated output is byte-identical:
+
+```csharp
+bool global::go.sync_test_package.mapInterface.CompareAndSwap(object key, object old, object @new)
+    => m_box.CompareAndSwap(key, old, @new);
+```
+
+Guarded by the `SymbolParameterInfoTests` GenTests cases (name escaping, ref-kind composition, and a
+parse assertion on the rendered declaration + forwarding call — the failure is a *parse* failure, so
+the string compare alone would not pin it) and by the `InterfaceKeywordParamNames` behavioral test,
+which drives BOTH realization shapes — a pointer-receiver implementation (the `ж<T>` adapter) and a
+value-receiver one — through an interface whose members declare `new`, `lock`, `base` and `event`
+parameters, values vs Go.
+
 ### A keyword-named addressed global's heap-box field strips the escape after the Ꮡ prefix
 An address-taken package-level var is backed by a heap-box FIELD plus a ref-returning property
 (`writeAddressedGlobalDecl`). A keyword-named such global (`var null = json.RawMessage([]byte("null"))`,
