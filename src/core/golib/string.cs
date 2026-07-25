@@ -326,9 +326,17 @@ public readonly struct @string :
         return new @string(value);
     }
 
+    // COPIES, exactly like the `byte[]` operator below and for the same reason: Go's `[]byte(s)`
+    // yields storage the receiver may freely mutate, and handing out the string's own backing array
+    // let a converted `b := []byte(m.str); b[0] = 0x80` write THROUGH into the string (unicode/utf8's
+    // TestDecodeRune corrupted the package's utf8map table for every later test). Emitted code binds
+    // the copying `builtin.slice<byte>(s)` route, so this implicit form is reached from hand-written
+    // golib/consumer code only — where the sharing was a latent instance of the same defect. It also
+    // has to hold now that one @string value can be SHARED by every evaluation of a hoisted literal
+    // (see the string-literal-allocation arc): a shared backing array must never become writable.
     public static implicit operator slice<byte>(@string value)
     {
-        return new slice<byte>(value.Bytes);
+        return new slice<byte>(value.Bytes.ToArray());
     }
 
     public static implicit operator @string(slice<rune> value)
@@ -465,6 +473,77 @@ public readonly struct @string :
     public static bool operator >=(@string a, @string b)
     {
         return a.CompareTo(b) >= 0;
+    }
+
+    // Comparisons directly against a `ReadOnlySpan<byte>` — most importantly a `u8` string literal
+    // (`s == "…"u8`), which is zero-allocation static ROM. Go keeps its string literals in RODATA and
+    // `s == "true"` allocates NOTHING; without these operators the span had to convert to @string
+    // first (`implicit operator @string(ReadOnlySpan<byte>)`), materializing a fresh backing byte[]
+    // on EVERY evaluation — 408 bytes per strconv.ParseBool call, once per operand of its lowered
+    // switch chain. These compare the backing bytes in place instead, so a literal comparison costs
+    // nothing at all. Both operand orders are declared: the operators bind by EXACT match, which
+    // beats the user-defined span→@string conversion the same-type operators would need, and the
+    // literal is as likely to be written on the left (`"…"u8 == s`, a lowered case test) as on the
+    // right. These mirror sstring's set (see sstring.cs) — the stack-string and heap-string forms
+    // now have the same literal-comparison cost model.
+    public static bool operator ==(@string a, ReadOnlySpan<byte> b)
+    {
+        return a.Bytes.AsSpan().SequenceEqual(b);
+    }
+
+    public static bool operator !=(@string a, ReadOnlySpan<byte> b)
+    {
+        return !a.Bytes.AsSpan().SequenceEqual(b);
+    }
+
+    public static bool operator ==(ReadOnlySpan<byte> a, @string b)
+    {
+        return a.SequenceEqual(b.Bytes);
+    }
+
+    public static bool operator !=(ReadOnlySpan<byte> a, @string b)
+    {
+        return !a.SequenceEqual(b.Bytes);
+    }
+
+    public static bool operator <(@string a, ReadOnlySpan<byte> b)
+    {
+        return a.Bytes.AsSpan().SequenceCompareTo(b) < 0;
+    }
+
+    public static bool operator <=(@string a, ReadOnlySpan<byte> b)
+    {
+        return a.Bytes.AsSpan().SequenceCompareTo(b) <= 0;
+    }
+
+    public static bool operator >(@string a, ReadOnlySpan<byte> b)
+    {
+        return a.Bytes.AsSpan().SequenceCompareTo(b) > 0;
+    }
+
+    public static bool operator >=(@string a, ReadOnlySpan<byte> b)
+    {
+        return a.Bytes.AsSpan().SequenceCompareTo(b) >= 0;
+    }
+
+    public static bool operator <(ReadOnlySpan<byte> a, @string b)
+    {
+        return a.SequenceCompareTo(b.Bytes) < 0;
+    }
+
+    public static bool operator <=(ReadOnlySpan<byte> a, @string b)
+    {
+        return a.SequenceCompareTo(b.Bytes) <= 0;
+    }
+
+    public static bool operator >(ReadOnlySpan<byte> a, @string b)
+    {
+        return a.SequenceCompareTo(b.Bytes) > 0;
+    }
+
+    public static bool operator >=(ReadOnlySpan<byte> a, @string b)
+    {
+        return a.SequenceCompareTo(b.Bytes) >= 0;
     }
 
     public static @string operator +(@string a, @string b)

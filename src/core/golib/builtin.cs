@@ -1917,7 +1917,13 @@ public static class builtin
 
     public static slice<byte> slice(@string source)
     {
-        return source.Slice(0, len(source));
+        // COPIES: Go's `[]byte(s)` yields storage the receiver may freely mutate, so the string's own
+        // backing array must never escape here (the `implicit operator byte[](@string)` comment
+        // records the utf8map corruption that route caused). `@string.Slice` returns a VIEW over the
+        // backing array, which is why this goes through the copying byte[] conversion instead.
+        // Converted code binds the generic `slice<byte>(s)` overload (its explicit type argument
+        // already routes through that copy); this non-generic form is reached from hand-written code.
+        return new slice<byte>((byte[])source);
     }
 
     /// <summary>
