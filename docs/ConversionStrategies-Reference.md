@@ -656,12 +656,38 @@ uint64 a = 100;
 _ = a * (uint64)two32 + 3;
 ```
 
-A constant too large for `int64`/`uint64` (or `float64`) is emitted as `GoUntyped` (= `System.Numerics.BigInteger`), which has no implicit operator with the built-in numeric types — so it is cast in *comparisons* too, not just arithmetic (`x > Two129` where `Two129 = 1<<129`):
+A constant too large for `int64`/`uint64` (or `float64`) is emitted as `GoUntyped` (=
+`System.Numerics.BigInteger`), which has **no** implicit operator with the built-in numeric types.
+Unlike an `UntypedInt`/`UntypedFloat` wrapper, that makes a bare reference a hard error in *every*
+concrete numeric context, not merely a resolution hazard in arithmetic — so the cast belongs to the
+**reference itself** (`bigIntegerConstMaterialization`), applied wherever go/types records a
+concrete numeric type on it:
 
+```go
+const below1e23 = 99999999999999974834176
+var ftoatests = []ftoaTest{{below1e23, 'e', 17, "9.99999999999999748e+22"}}
+_ = x > Two129                     // Two129 = 1<<129
+```
 ```csharp
-public static readonly GoUntyped Two129 = /* 1 << 129 */ ...;
+internal static readonly GoUntyped below1e23 = /* 99999999999999974834176 */
+    GoUntyped.Parse("99999999999999974834176");
+internal static slice<ftoaTest> ftoatests = new ftoaTest[]{
+    new((float64)below1e23, (rune)'e', 17, "9.99999999999999748e+22"u8)}.slice();
 _ = x > (float64)Two129;
 ```
+
+Comparison was originally the only casting consumer (in `convBinaryExpr`), which left composite-literal
+elements, call arguments, typed `var` initializers, assignments, returns, and channel sends emitting
+bare — twelve `BigInteger`→`double` CS1503s in `strconv`'s `ftoa_test.cs` alone. Moving the cast to the
+reference serves all of them at once, and the comparison arm was dropped so it no longer double-casts
+(`(float64)(float64)Two129`). Two properties make the context type reliable: go/types records the
+**converted** type on the reference (inside `[]float64{…}` the recorded type is `float64`, not
+untyped), and Go only admits a constant where its value is representable — so a BigInteger-backed
+value's concrete context is necessarily float/complex, never a 64-bit integer that would overflow.
+The reference is kept readable rather than folded to a literal, the same call
+`foldedNamedFloatConstLiteral` makes for a bare reference. (Guarded by `BigUntypedConstComparison`,
+extended from comparison-only to every position, with an in-range `UntypedInt` const as the
+must-stay-uncast counter-control.)
 
 #### An INTEGER expression over a `GoUntyped` constant folds — it has no 64-bit form
 The `(float64)Two129` cast above works because BigInteger converts to `double`. An **integer** target has

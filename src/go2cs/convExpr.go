@@ -382,7 +382,16 @@ func (v *Visitor) convExpr(expr ast.Expr, contexts []ExprContext) string {
 		return convertToCSTypeName(v.getExprTypeName(exprType, false))
 	case *ast.Ident:
 		context := getExprContext[IdentContext](contexts)
-		return v.convIdent(exprType, context)
+		rendered := v.convIdent(exprType, context)
+
+		// A BigInteger-backed untyped const reference carries no implicit conversion to a
+		// built-in numeric type, so a concrete numeric context must cast it — everywhere, not
+		// just in the comparison arm that used to be its only casting consumer.
+		if cast := v.bigIntegerConstMaterialization(exprType, rendered); cast != "" {
+			return cast
+		}
+
+		return rendered
 	case *ast.IndexExpr:
 		context := getExprContext[IndexExprContext](contexts)
 		return v.convIndexExpr(exprType, context)
@@ -398,7 +407,15 @@ func (v *Visitor) convExpr(expr ast.Expr, contexts []ExprContext) string {
 		return v.convParenExpr(exprType, context)
 	case *ast.SelectorExpr:
 		context := getExprContext[LambdaContext](contexts)
-		return v.convSelectorExpr(exprType, context)
+		rendered := v.convSelectorExpr(exprType, context)
+
+		// A package-qualified BigInteger-backed const (`math.MaxUint64 * 2`-class) takes the
+		// same concrete-context cast as the bare-ident form above.
+		if cast := v.bigIntegerConstMaterialization(exprType, rendered); cast != "" {
+			return cast
+		}
+
+		return rendered
 	case *ast.SliceExpr:
 		return v.convSliceExpr(exprType)
 	case *ast.StarExpr:

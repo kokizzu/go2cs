@@ -661,6 +661,46 @@ func (v *Visitor) constExprHasBeyondUint64UntypedConstRef(expr ast.Expr) bool {
 	return found
 }
 
+// bigIntegerConstMaterialization returns the emission a BigInteger-backed untyped named constant
+// REFERENCE needs to stand in a CONCRETE numeric context — the rendered reference wrapped in that
+// context's explicit cast — or "" when expr is not such a reference, or the context has no concrete
+// numeric type, or the rendering already carries the cast.
+//
+// A constant too large for int64/uint64 emits as golib `GoUntyped` (= System.Numerics.BigInteger),
+// which has NO implicit conversion to any built-in numeric type — a bare reference is a hard CS1503
+// wherever a concrete numeric value is required. Only the COMPARISON arm of convBinaryExpr cast it
+// (`x > (float64)Two129`), so every other position emitted bare: strconv's `[]ftoaTest{{below1e23,
+// 'e', 17, …}}` produced twelve `BigInteger → double` errors in ftoa_test.cs alone. The cast belongs
+// with the reference itself, not with each consuming construct, so all of them are served at once —
+// composite-literal elements (positional, keyed, map values, array/slice), call arguments, `var`
+// initializers with an explicit type, assignments, returns, send values, and index/range operands.
+//
+// Go's own rule is what makes the context type reliable: go/types records the CONVERTED type on the
+// reference (the recorded type of `below1e23` inside `[]float64{…}` is float64, not untyped), and a
+// constant is only legal in a context whose type can represent it — so a BigInteger-backed value's
+// concrete context is necessarily a float/complex one, never a 64-bit integer that would overflow.
+// The rendered reference is KEPT (readable, like the comparison arm) rather than folded to a
+// literal; foldedNamedFloatConstLiteral makes the same call for a bare reference.
+func (v *Visitor) bigIntegerConstMaterialization(expr ast.Expr, rendered string) string {
+	if rendered == "" || !v.isBigIntegerBackedConstRef(expr) {
+		return ""
+	}
+
+	tv, ok := v.info.Types[expr]
+
+	if !ok {
+		return ""
+	}
+
+	csType := v.concreteNumericCSType(tv.Type)
+
+	if csType == "" || wholeExprIsCastOfType(rendered, csType) {
+		return ""
+	}
+
+	return fmt.Sprintf("(%s)%s", csType, rendered)
+}
+
 // floatContextConstLiteral reports the folded literal form of a FLOAT- or complex128-typed
 // compile-time constant expression built purely from integer literals whose value falls OUTSIDE the
 // C# int32 range, or "" otherwise. Go evaluates such a constant in exact arithmetic and converts the RESULT to the float
@@ -1285,20 +1325,23 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 			return fmt.Sprintf("(%s)(%s%s%s)", binaryTypeName, leftOperand, binaryOp, rightOperand)
 		}
 
-		// When one operand is a reference to a *named* untyped numeric constant and the other is a
-		// concrete numeric type, the constant's emitted form may not interoperate with that type:
-		//   - Arithmetic: a wrapper (`UntypedInt`/`UntypedFloat`) has bidirectional implicit
-		//     conversions, so e.g. `q1 * two32` (ulong * UntypedInt) resolves to `int` (CS0029).
-		//   - Comparison: a value too large for int64/uint64 (or float64) is emitted as `GoUntyped`
-		//     (= BigInteger), which has no implicit operator with `double` etc. — `x > Two129`
-		//     yields CS0019. (Wrapper comparisons resolve via the implicit conversion, so those are
-		//     left alone to avoid redundant casts.)
-		// Cast the untyped-const operand to the concrete operand's type. Bare literals are not
-		// wrapped and follow normal C# rules, so this targets named consts — bare (`q1 * two32`)
-		// or inside a COMPUTED constant operand (`arg0 + 4*goarch.PtrSize`, runtime stkframe.go:
-		// the product renders as an UntypedInt-typed expression, so the whole sum types as
-		// UntypedInt and breaks a following conversion or inference; pure-literal arithmetic
-		// like `x + 2*3` has no wrapper and is left alone).
+		// ARITHMETIC only. When one operand references a *named* untyped numeric constant and the
+		// other is a concrete numeric type, the constant's wrapper (`UntypedInt`/`UntypedFloat`) has
+		// bidirectional implicit conversions, so e.g. `q1 * two32` (ulong * UntypedInt) resolves to
+		// `int` (CS0029). Cast the untyped-const operand to the concrete operand's type. Bare
+		// literals are not wrapped and follow normal C# rules, so this targets named consts — bare
+		// (`q1 * two32`) or inside a COMPUTED constant operand (`arg0 + 4*goarch.PtrSize`, runtime
+		// stkframe.go: the product renders as an UntypedInt-typed expression, so the whole sum types
+		// as UntypedInt and breaks a following conversion or inference; pure-literal arithmetic like
+		// `x + 2*3` has no wrapper and is left alone).
+		//
+		// COMPARISON needs nothing here: the only operand shape that could not resolve is a
+		// BigInteger-backed reference (`x > Two129` — GoUntyped has no implicit operator with
+		// `double`, CS0019), and bigIntegerConstMaterialization now casts such a reference at the
+		// reference itself, in EVERY concrete numeric context. Re-casting here would only double it
+		// (`(float64)(float64)Two129` — the bare-ident form carries no parens, so the
+		// wholeExprIsCastOfType redundancy guard below does not recognize it). A wrapper-backed
+		// comparison operand resolves via its implicit conversion and was never cast.
 		var castLeft, castRight bool
 
 		untypedConstOperand := func(operand ast.Expr) bool {
@@ -1319,9 +1362,6 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 		case token.ADD, token.SUB, token.MUL, token.QUO, token.REM:
 			castLeft = untypedConstOperand(binaryExpr.X)
 			castRight = !castLeft && untypedConstOperand(binaryExpr.Y)
-		case token.LSS, token.LEQ, token.GTR, token.GEQ, token.EQL, token.NEQ:
-			castLeft = v.isBigIntegerBackedConstRef(binaryExpr.X)
-			castRight = !castLeft && v.isBigIntegerBackedConstRef(binaryExpr.Y)
 		}
 
 		// An operand whose own emission is ALREADY exactly this cast — the widened-const narrowing
