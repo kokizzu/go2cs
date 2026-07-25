@@ -13,9 +13,9 @@ allocate). Each is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **42 / 215 testable packages validated — 19.5%**
+> ### Phase 4 progress: **43 / 215 testable packages validated — 20.0%**
 >
-> **1,060 matching test verdicts · 21 disclosed** *(updated 2026-07-25 — maintained as part of the
+> **1,078 matching test verdicts · 21 disclosed** *(updated 2026-07-25 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -46,6 +46,7 @@ any other failure is still a hard mismatch.
 | [`internal/gover`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/gover) | 5 | | Toolchain version ordering. |
 | [`internal/itoa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/itoa) | 3 | | Minimal integer formatting. |
 | [`internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/saferio) | 17 | | Allocation-capped I/O helpers. |
+| [`io/fs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/io/fs) | 18 | | The `fs.FS` interface family — named-interface runtime shells, `fs.Glob` deep recursion, `dirFS` walks. |
 | [`maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/maps) | 14 | | Generic map helpers and iterators. |
 | [`math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/math) | 76 | | The core numeric package — IEEE edge cases, rounding, `Inf`/`NaN`. |
 | [`math/bits`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/math/bits) | 26 | | Bit-manipulation intrinsics. |
