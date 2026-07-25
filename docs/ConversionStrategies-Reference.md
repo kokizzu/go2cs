@@ -7136,6 +7136,70 @@ internal static ж<CrossPkgLibꓸStatus> statusPtr(ж<CrossPkgLibꓸStatus> Ꮡs
 ```
 Guarded by `CrossPkgUser` (`CheckFunc`/`gauge`/`meterBox` -- delegate, signature, and field positions; `statusPtr`/`ledger` -- a `*CrossPkgLib.Status` pointer as a func parameter, result, and struct field, each boxed as `ж<CrossPkgLibꓸStatus>`).
 
+### A foreign package's collision rename is derived from that package, not from the conversion run
+
+Everything above depends on `importedTypeAliases` being **populated**, and the only source it had was the
+dependency's emitted `package_info.cs` — an artifact that exists only once that dependency has been
+converted **into the output root this run resolves against**. So the spelling of a foreign renamed member
+depended on the *composition of the run*: a full `-stdlib` run converts `time` before `archive/tar`, so
+`writer.cs` correctly emitted `tw.hdr.ModTime.Round(time.ΔSecond)`; converting `archive/tar` **alone**
+(`go2cs -stdlib archive/tar`) emitted the unrenamed `time.Second`, which binds the `Second(this Time)`
+extension method group — CS0019/CS1503/CS0023, it does not compile. That hit **every end-user path**, where
+the stdlib is by definition *not* part of the run: a standalone `go2cs <dir>` and `-recurse` alike. `time`
+is the worst case (`Second`/`Minute`/`Hour`/`Nanosecond`/`UTC`/`Local` all collide with `Time`'s accessors,
+and `Location`/`Month`/`Weekday` are collision-renamed types), so the flagship four-line program
+`d := 2 * time.Second` failed to compile.
+
+**Invariant:** a foreign package's collision renames are a function of **that package's own declarations**,
+never of which packages the current run converts. `foreignCollisionTypeAliases` derives them from the
+dependency's loaded `go/types` scope — an exported package-level const/var/defined-type whose name is also a
+method or function name of the same package, exactly `performNameCollisionAnalysis`'s rule — reproducing the
+`GoTypeAlias` entries the dependency's own conversion publishes, and feeding them through the *same*
+normalization as parsed ones (`applyExportedTypeAliases`) so a derived target is qualified identically. The
+derivation runs only where the loader previously did nothing at all (no `package_info.cs` on disk), so a
+conversion that *can* read the real artifact is untouched — the whole-stdlib emission is byte-for-byte
+unchanged. This is the same discipline `packageHasMethodNamed` applies to the cross-package *field* rename
+above: recompute a foreign package's collisions from its own `types.Package` rather than from run-accumulated
+state.
+
+Three shapes are reproduced, matching what the dependency's conversion publishes:
+
+| Dependency declares | Published entry | Consumer emits |
+|---|---|---|
+| `const Second Duration` + `func (Time) Second() int` | `("Second", "const:ΔSecond")` | `time.ΔSecond` |
+| `type Month int` + `func (Time) Month() Month` | `("Month", "ΔMonth")` | `timeꓸMonth` |
+| `type Token any` + `func (*Decoder) Token() Token` | `("Token", "ΔToken")`, `("ΔToken", "object")` | `object` |
+
+Two shapes are deliberately **not** derived, because publishing a wrong target is worse than publishing
+none: a methodless named func type (rendered inline as its base delegate, so no `<pkg>_package.Δname` type
+exists to alias — `go/doc`'s `ast.Filter`, the same skip `writePackageInfoFile` applies), and a defined type
+over a **non-empty named interface**, whose alias target is a `visitTypeSpec`-only rendering of the RHS (no
+instance exists in the 302-package corpus). Both keep the pre-existing emission.
+
+A derived alias's `global using` is emitted into the consumer's `package_info.cs` **only when an emitted
+reference resolved through it**. A parsed alias set describes an assembly that provably declares every
+target; a derived set describes what go2cs *would* emit for that dependency's Go source — true of any real
+conversion, but not of a hand-written proxy such as the baseline `core/time` stub, which declares no
+`ΔLocation`/`ΔMonth`/`ΔWeekday` at all (an unused `global using` to one is CS0426 in every behavioral test
+that imports `time`). Gating on use keeps the derived metadata's reach to the code that actually names the
+renamed member — where the rename is required for the reference to bind at all — at the cost of a
+single-package conversion omitting the *unused* alias declarations a full run emits. Every emitted
+**reference** is identical either way: a single-package `-stdlib archive/tar` reconvert is byte-identical to
+the committed full-run corpus in all code, and the flagship program compiles and runs.
+
+Two neighboring classes of run-composition dependence are **still open**, both in the same loader and with
+the same symptom (they are *not* collision renames, so this derivation does not cover them): a dependency's
+re-exported Go type **aliases** (`os`'s `type FileMode = fs.FileMode` publishes
+`("FileMode", "go.io.fs_package.FileMode")`, so a standalone consumer naming `os.FileMode` emits a
+nonexistent `os.FileMode` — CS0426), and its **GoImplement** pairs (`loadPackageImplements`, whose absence
+makes a consumer record and emit its own adapter class — `io_SectionReaderжReader` instead of the foreign
+`io.SectionReaderжReader`). Both need their own derivation of the *rendered target*, not just the rename.
+
+(Guarded by `foreignNameCollisions_test.go`: a two-package fixture whose `dep` carries one of every shape —
+colliding const, colliding type, colliding empty-interface type, methodless func type, and a non-colliding
+control — asserting the derivation, its independence from run-accumulated `nameCollisions` state, and the
+end-to-end render (`dep.ΔSecond`, `depꓸMonth`) with no `package_info.cs` present.)
+
 ## Source Generators
 Several Go semantics cannot be written directly in C#, so the converter emits compact, attributed partial declarations and lets a set of Roslyn source generators (`src/gen/go2cs-gen/`, referenced as an analyzer by every converted project) synthesize the rest at compile time. This keeps the visible converted code close to the Go original. The principal generators and attributes:
 

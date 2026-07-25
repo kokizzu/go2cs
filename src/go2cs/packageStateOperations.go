@@ -10,6 +10,7 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -47,6 +48,8 @@ func resetPackageState(pkg *packages.Package) {
 	importedPointerImplements = HashSet[string]{}
 	importedValueImplements = HashSet[string]{}
 	constImportedTypeAliases = NewHashSet([]string{})
+	derivedTypeAliases = NewHashSet([]string{})
+	usedDerivedTypeAliases = NewHashSet([]string{})
 	parsedPackageInfoFiles = NewHashSet([]string{})
 	interfaceImplementations = make(map[string]HashSet[string])
 	promotedInterfaceImplementations = make(map[string]HashSet[string])
@@ -85,6 +88,7 @@ func resetPackageState(pkg *packages.Package) {
 	packageDoc = extractPackageDoc(pkg.Syntax)
 
 	importPackageDirs = make(map[string]importedPackageMeta)
+	importedPackageSources = make(map[string]*packages.Package)
 
 	var captureImportDirs func(imports map[string]*packages.Package)
 
@@ -95,6 +99,13 @@ func resetPackageState(pkg *packages.Package) {
 			}
 
 			importPackageDirs[importPath] = importedPackageMeta{Dir: importedPkg.Dir, Name: importedPkg.Name}
+
+			// The loaded package itself, keyed by source dir — the handle the alias loader needs to
+			// derive a dependency's collision renames when its package_info.cs is absent.
+			if importedPkg.Dir != "" {
+				importedPackageSources[filepath.Clean(importedPkg.Dir)] = importedPkg
+			}
+
 			captureImportDirs(importedPkg.Imports)
 		}
 	}

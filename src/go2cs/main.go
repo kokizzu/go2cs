@@ -502,7 +502,31 @@ type importedPackageMeta struct {
 	Name string // Go package name (the identifier used to qualify references in code)
 }
 
+// importedPackageSources maps a REACHABLE imported package's cleaned source DIRECTORY to its
+// loaded go/packages entry (types + syntax), so a dependency's converted-name metadata can be
+// derived from the dependency's OWN declarations when it has no package_info.cs in the output root
+// — never converted, or converted into a different root (see foreignNameCollisions.go). Keyed by
+// directory because that is the one identifier the go/packages graph and go/build's PackageInfo
+// resolution always agree on: a GOROOT-vendored import is reached under a rewritten path. Reset and
+// repopulated per package alongside importPackageDirs.
+var importedPackageSources map[string]*packages.Package
+
 var constImportedTypeAliases HashSet[string]
+
+// derivedTypeAliases marks the importedTypeAliases keys that were DERIVED from a dependency's own
+// declarations (foreignNameCollisions.go) rather than parsed from its emitted package_info.cs, and
+// usedDerivedTypeAliases the subset an emitted reference actually resolved through. A derived
+// entry's `global using` is emitted into this package's package_info.cs only when it was USED: the
+// parsed set describes an assembly that provably declares every alias target, while a derived set
+// describes what go2cs WOULD emit for that dependency's Go source — true of any real conversion,
+// but not of a hand-written proxy such as the baseline `core/time` stub (which declares no
+// `ΔLocation`/`ΔMonth`/`ΔWeekday` at all, so an unused alias to one is CS0426 in every behavioral
+// test that imports time). Gating on use keeps the derived metadata's blast radius to the code that
+// actually references the renamed member — where the rename is required for the reference to bind
+// at all. Reset per package.
+var derivedTypeAliases HashSet[string]
+var usedDerivedTypeAliases HashSet[string]
+
 var parsedPackageInfoFiles HashSet[string]
 var interfaceImplementations map[string]HashSet[string]
 var promotedInterfaceImplementations map[string]HashSet[string]
@@ -1433,11 +1457,20 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 			}
 		}
 
-		// Add new type aliases to package info file (hashset ensures uniqueness)
+		// Add new type aliases to package info file (hashset ensures uniqueness). A DERIVED alias
+		// (synthesized because the dependency has no package_info.cs to read) is emitted only when
+		// an emitted reference actually resolved through it — see derivedTypeAliases for why an
+		// unused one must not be declared.
 		for alias, typeName := range importedTypeAliases {
-			if !constImportedTypeAliases.Contains(alias) {
-				lines.Add(fmt.Sprintf("global using %s = %s;", strings.ReplaceAll(alias, ".", TypeAliasDot), typeName))
+			if constImportedTypeAliases.Contains(alias) {
+				continue
 			}
+
+			if derivedTypeAliases.Contains(alias) && !usedDerivedTypeAliases.Contains(alias) {
+				continue
+			}
+
+			lines.Add(fmt.Sprintf("global using %s = %s;", strings.ReplaceAll(alias, ".", TypeAliasDot), typeName))
 		}
 
 		// Add package-qualifier aliases used by recorded GoImplicitConv attributes (e.g.
@@ -5098,6 +5131,18 @@ func (v *Visitor) getDisplayTypeName(t types.Type, isUnderlying bool) string {
 	return v.getTypeName(t, isUnderlying)
 }
 
+// markDerivedTypeAliasUsed records that an emitted reference resolved through a DERIVED imported
+// type alias, which is what qualifies its `global using` for emission (see derivedTypeAliases). A
+// parsed alias is unaffected — those are always emitted, used or not.
+func markDerivedTypeAliasUsed(alias string) {
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	if derivedTypeAliases.Contains(alias) {
+		usedDerivedTypeAliases.Add(alias)
+	}
+}
+
 func getAliasedTypeName(typeName string) string {
 	packageLock.Lock()
 	alias, exists := importedTypeAliases[typeName]
@@ -5114,6 +5159,10 @@ func getAliasedTypeName(typeName string) string {
 
 			return fmt.Sprintf("%s.%s", strings.Join(parts[:len(parts)-1], "."), alias)
 		}
+
+		// This reference resolves through the alias, so a DERIVED entry has earned its
+		// `global using` declaration in this package's package_info.cs (see derivedTypeAliases).
+		markDerivedTypeAliasUsed(typeName)
 
 		return strings.ReplaceAll(typeName, ".", TypeAliasDot)
 	}

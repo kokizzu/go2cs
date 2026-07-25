@@ -414,6 +414,20 @@ The mirror case — a local shadowing a package **global** — qualifies the *gl
 (`runtime_package.Δtrace`), which a local can never shadow. Related renames cover type-vs-method name
 collisions (`Δfoo` type vs `foo` method), closure parameters, and consts.
 
+A collision rename is visible **across packages** — `time` declares both `const Second` and
+`func (Time) Second() int`, so the const is `ΔSecond` and every consumer must spell it that way:
+
+```go
+d := 2 * time.Second                     // any Go program
+```
+```csharp
+var d = 2 * time.ΔSecond;                // the const, not the Second() method group
+```
+
+The consumer derives that spelling from the **dependency's own declarations**, so it is the same whether or
+not `time` happens to be converted in the same run — which is what makes a standalone `go2cs <dir>` (and
+`-recurse`) conversion of such a program compile.
+
 **Full detail:** [Reference → Short Variable Redeclaration](ConversionStrategies-Reference.md#short-variable-redeclaration-shadowing) —
 a large family: forward-collision detection at every block level, package-function shadowing, builtin-method
 shadowing, box-name rules for renamed receivers/pointers, and nested-closure capture state.
