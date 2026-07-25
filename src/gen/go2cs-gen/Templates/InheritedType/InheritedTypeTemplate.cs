@@ -215,6 +215,37 @@ internal class InheritedTypeTemplate : TemplateBase
 
                 public static implicit operator {{ObjectName}}(global::System.ReadOnlySpan<byte> value) => new {{ObjectName}}(new @string(value));
 
+                // Comparisons directly against a `ReadOnlySpan<byte>` — a `u8` string literal, which is
+                // zero-allocation static ROM. Without them `v != ""u8` (go/types' goVersion checks) bound
+                // the same-type operators through the implicit span conversion above, materializing a
+                // fresh @string on EVERY comparison; @string itself carries the identical set, so the
+                // named wrapper now has the same literal-comparison cost model as its underlying. Exact
+                // match beats the user-defined conversion, so these bind ahead of `==({{ObjectName}}, {{ObjectName}})`;
+                // both operand orders are declared because the literal can be written on either side.
+                public static bool operator ==({{ObjectName}} left, global::System.ReadOnlySpan<byte> right) => left.{{Value}} == right;
+
+                public static bool operator !=({{ObjectName}} left, global::System.ReadOnlySpan<byte> right) => left.{{Value}} != right;
+
+                public static bool operator ==(global::System.ReadOnlySpan<byte> left, {{ObjectName}} right) => left == right.{{Value}};
+
+                public static bool operator !=(global::System.ReadOnlySpan<byte> left, {{ObjectName}} right) => left != right.{{Value}};
+
+                public static bool operator <({{ObjectName}} left, global::System.ReadOnlySpan<byte> right) => left.{{Value}} < right;
+
+                public static bool operator <=({{ObjectName}} left, global::System.ReadOnlySpan<byte> right) => left.{{Value}} <= right;
+
+                public static bool operator >({{ObjectName}} left, global::System.ReadOnlySpan<byte> right) => left.{{Value}} > right;
+
+                public static bool operator >=({{ObjectName}} left, global::System.ReadOnlySpan<byte> right) => left.{{Value}} >= right;
+
+                public static bool operator <(global::System.ReadOnlySpan<byte> left, {{ObjectName}} right) => left < right.{{Value}};
+
+                public static bool operator <=(global::System.ReadOnlySpan<byte> left, {{ObjectName}} right) => left <= right.{{Value}};
+
+                public static bool operator >(global::System.ReadOnlySpan<byte> left, {{ObjectName}} right) => left > right.{{Value}};
+
+                public static bool operator >=(global::System.ReadOnlySpan<byte> left, {{ObjectName}} right) => left >= right.{{Value}};
+
         """;
 
     private string ToStringImplementation => TypeClass switch
