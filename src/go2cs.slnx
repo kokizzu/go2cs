@@ -576,12 +576,14 @@
   <Folder Name="/tests/performance/target-projects/">
     <Project Path="Tests/Performance/PerfChannel/PerfChannel.csproj" />
     <Project Path="Tests/Performance/PerfFib/PerfFib.csproj" />
+    <Project Path="Tests/Performance/PerfIfaceShell/PerfIfaceShell.csproj" />
     <Project Path="Tests/Performance/PerfMap/PerfMap.csproj" />
     <Project Path="Tests/Performance/PerfMatMul/PerfMatMul.csproj" />
     <Project Path="Tests/Performance/PerfSieve/PerfSieve.csproj" />
     <Project Path="Tests/Performance/PerfSort/PerfSort.csproj" />
     <Project Path="Tests/Performance/PerfStartup/PerfStartup.csproj" />
     <Project Path="Tests/Performance/PerfString/PerfString.csproj" />
+    <Project Path="Tests/Performance/PerfStringView/PerfStringView.csproj" />
   </Folder>
   <Folder Name="/utilities/">
     <File Path="set-version.ps1" />

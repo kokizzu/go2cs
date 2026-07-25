@@ -7,7 +7,7 @@ partial class main_package {
 
 internal static nint run(nint n) {
     var ch = new channel<nint>(128);
-    var done = new channel<nint>(1);
+    var done = new channel<nint>(0);
     var chʗ1 = ch;
     var doneʗ1 = done;
     goǃ(() => {

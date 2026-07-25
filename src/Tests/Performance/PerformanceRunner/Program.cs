@@ -65,7 +65,8 @@ namespace PerformanceRunner
         private static readonly string[] s_reportOrder =
         {
             "PerfStartup", "PerfFib", "PerfSieve", "PerfMatMul",
-            "PerfString", "PerfMap", "PerfSort", "PerfChannel"
+            "PerfString", "PerfMap", "PerfSort", "PerfChannel",
+            "PerfStringView", "PerfIfaceShell"
         };
 
         private static string s_srcRoot = null!;

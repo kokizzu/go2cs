@@ -25,6 +25,7 @@ where the two runtimes should be close. Results below give the "common expected"
 | **Map** | 2M inserts + 2M comma-ok lookups + 1M deletes on `map[int]int` (`map<K,V>` emulation). |
 | **Sort** | `sort.Ints` on 2M deterministic pseudo-random ints (`sort.Interface` dispatch through the runtime's reflection-bound `Interface<T>`). |
 | **Channel** | 1M ints producer→consumer through a buffered channel with one goroutine (`channel<T>` + goroutine scheduling emulation). |
+| **IfaceShell** | 5M iterations × 2 duck-typed interface asserts + forwarded calls — one on a value-typed dynamic value (the reflective **object shell**), one on a pointer-sourced one (the delegate-bound **generic shell**). The one path with no compile-time answer, and the only shared mechanism whose Native AOT behavior is otherwise unexercised. |
 
 Every benchmark prints a deterministic **checksum** (verified byte-identical across Go, C# JIT, and
 C# AOT before anything is measured) plus its own workload time measured in-program via
@@ -50,7 +51,7 @@ separately by the Startup row.
 ```powershell
 cd src/Tests/Performance
 ./run-performance.ps1                    # full run: transpile, build (incl. AOT), verify, measure
-./run-performance.ps1 --no-aot           # much faster while iterating (skips 8 AOT publishes)
+./run-performance.ps1 --no-aot           # much faster while iterating (skips the AOT publishes)
 ./run-performance.ps1 --filter Map       # one benchmark
 ./run-performance.ps1 --runs 10 --update-readme   # refresh the results block below
 ```
@@ -67,7 +68,7 @@ can never silently report a benchmark that computes something different in C#.
 
 <!-- PERF-RESULTS:BEGIN -->
 
-**Environment:** 13th Gen Intel(R) Core(TM) i9-13900K · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 9.0.315 · 2026-07-12
+**Environment:** 13th Gen Intel(R) Core(TM) i9-13900K · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 9.0.316 · 2026-07-25
 
 C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true` self-contained, partial trim. Median of 5 runs (1 discarded warmup). Workload time is measured in-program and excludes process startup; the Startup row is pure process wall time. Ratios are relative to Go.
 
@@ -75,29 +76,31 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 12.2 | 34.4 (2.82×) | 16.0 (1.31×) |
-| Fib | 79.9 | 99.4 (1.24×) | 87.5 (1.10×) |
-| Sieve | 71.2 | 95.4 (1.34×) | 147.4 (2.07×) |
-| MatMul | 54.5 | 132.4 (2.43×) | 192.7 (3.53×) |
-| Map | 258.9 | 220.6 (0.85×) | 79.0 (0.31×) |
-| Sort | 113.6 | 411.8 (3.63×) | 418.5 (3.68×) |
-| Channel | 43.6 | 147.7 (3.39×) | 116.3 (2.67×) |
-| String (heap) | 69.9 | 754.5 (10.79×) | 775.3 (11.09×) |
-| StringView (stack) | 7.6 | 23.4 (3.09×) | 14.1 (1.86×) |
+| Startup | 13.5 | 39.3 (2.90×) | 17.5 (1.29×) |
+| Fib | 79.5 | 98.6 (1.24×) | 86.7 (1.09×) |
+| Sieve | 72.8 | 94.9 (1.30×) | 146.1 (2.01×) |
+| MatMul | 54.8 | 134.2 (2.45×) | 195.5 (3.57×) |
+| String (heap) | 69.4 | 737.2 (10.63×) | 747.1 (10.77×) |
+| Map | 298.7 | 254.1 (0.85×) | 92.0 (0.31×) |
+| Sort | 112.6 | 402.1 (3.57×) | 427.6 (3.80×) |
+| Channel | 46.1 | 86.1 (1.87×) | 90.4 (1.96×) |
+| StringView (stack) | 7.2 | 24.6 (3.44×) | 14.3 (2.00×) |
+| IfaceShell (duck-typed) | 12.9 | 2,481.8 (193.13×) | 928.2 (72.23×) |
 
 **Peak memory** (working set, MB -- lower is better):
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 2.6 | 17.1 | 2.6 |
-| Fib | 5.5 | 18.7 | 10.7 |
-| Sieve | 35.4 | 40.8 | 30.0 |
-| MatMul | 10.2 | 26.5 | 16.9 |
-| Map | 158.3 | 137.3 | 128.4 |
-| Sort | 21.8 | 41.5 | 28.8 |
-| Channel | 5.5 | 39.2 | 10.8 |
-| String (heap) | 5.5 | 38.6 | 28.9 |
-| StringView (stack) | 2.9 | 19.3 | 10.7 |
+| Startup | 2.5 | 19.8 | 2.6 |
+| Fib | 5.5 | 20.1 | 10.8 |
+| Sieve | 35.1 | 38.8 | 30.2 |
+| MatMul | 10.5 | 26.7 | 17.0 |
+| String (heap) | 5.4 | 39.7 | 29.2 |
+| Map | 158.4 | 138.9 | 128.7 |
+| Sort | 21.9 | 41.3 | 29.2 |
+| Channel | 5.4 | 26.0 | 16.8 |
+| StringView (stack) | 3.5 | 20.9 | 10.8 |
+| IfaceShell (duck-typed) | 5.5 | 43.8 | 31.3 |
 
 <!-- PERF-RESULTS:END -->
 
@@ -139,8 +142,29 @@ What the numbers above actually show, and why:
   `Dictionary`, and the AOT build is ~3× faster than Go on this insert/lookup/delete churn.
 - **Sort (~3.5×):** the runtime's `sort.Interface` shim (`Interface<T>`) binds `Len`/`Less`/`Swap` via
   reflection-created delegates — cached, but a delegate hop per comparison.
-- **Channel (~2.5–3.5×):** `channel<T>` + goroutine emulation over managed threading vs Go's runtime
-  scheduler.
+- **Channel (~1.9×):** `channel<T>` + goroutine emulation over managed threading vs Go's runtime
+  scheduler. Down from ~2.7–3.4× in the 2026-07-12 table (see *History*) — the channels redesign
+  (real unbuffered rendezvous, single-fire select, operand-once hoisting) landed in between.
+- **IfaceShell (JIT ~193×, AOT ~72×) — read this row differently from every other row.** It measures
+  the one operation C# has *no* answer for: satisfying an interface **structurally at run time**. Go
+  answers it with a cached itab lookup that is essentially free (12.9 ms for 10M asserts ≈ 1.3 ns
+  each); go2cs has to *construct* an implementation, so a memoized assert costs a dictionary hit, an
+  object allocation and a forwarded call — hundreds of times more than nothing. The ratio is therefore
+  the price of the *capability*, not a regression, and it is **not** what ordinary interface use costs:
+  an assertion the converter could record resolves through a generated nominal adapter (≈1.1 ns) and
+  never reaches this path, while a shell obtained once and called repeatedly pays 4.4 ns/call on the
+  delegate tier and 22 ns/call on the reflective tier. What this row is really for is that the numbers
+  **exist at all** under Native AOT: before the shells, the equivalent assert was resolved by
+  reflecting for a generated conversion method and closing it with `MakeGenericMethod`, which under AOT
+  can only succeed for an instantiation `ilc` already rooted — and a measured A/B against that
+  mechanism has the AOT binary answer **MISS for both tiers and print a checksum of 0**, silently
+  computing the wrong result (and taking 9.8 s doing it, since a failing close is retried per
+  iteration). With the shells the AOT binary produces the correct checksum, which is why this
+  benchmark exists. Two honest details visible here: the **belt fires** under AOT — the pointer tier's
+  `Δ<Iface><pointee>` instantiation is unavailable, so it degrades to the reflective object shell
+  rather than to a miss (verified by tier name: `Δrun_typeᴛ1<box>` on the JIT, `Δrun_typeᴛ1ᴛObj` under
+  AOT) — and AOT is nonetheless ~2.7× *faster* than the JIT on this row, because the JIT column
+  includes in-process tiered warmup and both columns are dominated by allocation, not dispatch.
 
 ### History
 
@@ -148,4 +172,38 @@ When the toolchain moves (e.g. .NET 9 → .NET 10), copy the current results blo
 with its environment line before re-running `--update-readme`, so version-over-version comparisons
 accumulate here.
 
-*(no history yet — first captured on .NET 9)*
+**Captured 2026-07-12 on .NET SDK 9.0.315** -- the last table before the `IfaceShell` row
+(runtime duck-typed interface asserts) was added, kept for row-over-row comparison:
+
+**Environment:** 13th Gen Intel(R) Core(TM) i9-13900K · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 9.0.315 · 2026-07-12
+
+C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true` self-contained, partial trim. Median of 5 runs (1 discarded warmup). Workload time is measured in-program and excludes process startup; the Startup row is pure process wall time. Ratios are relative to Go.
+
+**Execution time** (milliseconds -- lower is better):
+
+| Benchmark | Go | C# (JIT) | C# (Native AOT) |
+|---|---:|---:|---:|
+| Startup | 12.2 | 34.4 (2.82×) | 16.0 (1.31×) |
+| Fib | 79.9 | 99.4 (1.24×) | 87.5 (1.10×) |
+| Sieve | 71.2 | 95.4 (1.34×) | 147.4 (2.07×) |
+| MatMul | 54.5 | 132.4 (2.43×) | 192.7 (3.53×) |
+| Map | 258.9 | 220.6 (0.85×) | 79.0 (0.31×) |
+| Sort | 113.6 | 411.8 (3.63×) | 418.5 (3.68×) |
+| Channel | 43.6 | 147.7 (3.39×) | 116.3 (2.67×) |
+| String (heap) | 69.9 | 754.5 (10.79×) | 775.3 (11.09×) |
+| StringView (stack) | 7.6 | 23.4 (3.09×) | 14.1 (1.86×) |
+
+**Peak memory** (working set, MB -- lower is better):
+
+| Benchmark | Go | C# (JIT) | C# (Native AOT) |
+|---|---:|---:|---:|
+| Startup | 2.6 | 17.1 | 2.6 |
+| Fib | 5.5 | 18.7 | 10.7 |
+| Sieve | 35.4 | 40.8 | 30.0 |
+| MatMul | 10.2 | 26.5 | 16.9 |
+| Map | 158.3 | 137.3 | 128.4 |
+| Sort | 21.8 | 41.5 | 28.8 |
+| Channel | 5.5 | 39.2 | 10.8 |
+| String (heap) | 5.5 | 38.6 | 28.9 |
+| StringView (stack) | 2.9 | 19.3 | 10.7 |
+
