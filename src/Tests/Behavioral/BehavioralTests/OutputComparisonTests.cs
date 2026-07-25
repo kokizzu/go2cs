@@ -923,6 +923,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckPointerArraySlice() => CheckTarget("PointerArraySlice");
 
     [TestMethod]
+    public void CheckPointerCastSliceReinterpret() => CheckTarget("PointerCastSliceReinterpret");
+
+    [TestMethod]
     public void CheckPointerCopyWalk() => CheckTarget("PointerCopyWalk");
 
     [TestMethod]

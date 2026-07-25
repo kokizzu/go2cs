@@ -1,0 +1,21 @@
+namespace go;
+
+using fmt = fmt_package;
+using @unsafe = unsafe_package;
+
+partial class main_package {
+
+internal static unsafe void Main() {
+    var data = new byte[]{0x68, 0, 0x69, 0, 0x21, 0, 0, 0}.slice();
+    var u = new slice<uint16>(new ReadOnlySpan<uint16>((uint16*)(uintptr)(new @unsafe.Pointer(Ꮡ(data, 0))), (int)(len(data) / 2)));
+    fmt.Println(len(u), u[0], u[1], u[2], u[3]);
+    var v = new uint16[]{0x4241, 0x4443}.slice();
+    var buf = new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(new @unsafe.Pointer(Ꮡ(v, 0))), (int)(len(v) * 2)));
+    fmt.Println(len(buf), buf[0], buf[1], buf[2], buf[3]);
+    ref var arr = ref heap(new array<uint32>(4), out var Ꮡarr);
+    (arr[0], arr[1]) = (0x04030201, 0x08070605);
+    var b = new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(new @unsafe.Pointer(Ꮡarr.at<uint32>(0))), 8));
+    fmt.Println(len(b), b[0], b[3], b[4], b[7]);
+}
+
+} // end main_package

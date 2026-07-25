@@ -392,6 +392,7 @@
     <Project Path="Tests/Behavioral/PointerParamWalk/PointerParamWalk.csproj" />
     <Project Path="Tests/Behavioral/PointerArrayRange/PointerArrayRange.csproj" />
     <Project Path="Tests/Behavioral/PointerCastSliceRange/PointerCastSliceRange.csproj" />
+    <Project Path="Tests/Behavioral/PointerCastSliceReinterpret/PointerCastSliceReinterpret.csproj" />
     <Project Path="Tests/Behavioral/PointerReinterpretIdentity/PointerReinterpretIdentity.csproj" />
     <Project Path="Tests/Behavioral/PointerReceiverSliceSwap/PointerReceiverSliceSwap.csproj" />
     <Project Path="Tests/Behavioral/PointerCoreConstraints/PointerCoreConstraints.csproj" />

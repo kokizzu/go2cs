@@ -2868,6 +2868,21 @@ func (v *Visitor) pointerReinterpretIdentitySource(callExpr *ast.CallExpr, arg a
 // go2cs surrogate does not inherit from its Go type (a Go `[2]byte` is 2 bytes; `array<byte>` is a
 // reference to a backing store). The emission is therefore uniform and golib gates it.
 //
+// A pointer-to-ARRAY target (`(*[N]T)(unsafe.Pointer(p))`) is the one shape excluded here rather than
+// at the golib gate, because for it the interception is a pure LOSS. golib can never take the managed
+// arm: `array<X>` is an 8-byte struct holding a backing-store REFERENCE, so it fails the size gate
+// against any smaller pointee and the reference gate against any numeric one — the emission would fall
+// through to exactly the address route it replaced. But the address route's TEXT is not inert: the
+// slice-of-pointer-cast fusion in convSliceExpr keys on a leading `(ж<…>` (isPointerCast) to render
+// `(*[N]T)(ptr)[:n]` as a `slice<T>` over a `ReadOnlySpan<T>` of the pointed-to memory — the only
+// CORRECT lowering of that idiom, since an `array<T>` can neither view native memory nor be
+// fabricated from a scalar's bytes. Emitting `Reinterpret` instead silently defeats that match and
+// leaves `(~box).slice(…)` over an `array<T>` whose backing reference was punned out of the pointee's
+// data: a fabricated managed reference, i.e. an AccessViolation rather than the previous correct
+// slice. Measured on internal/syscall/windows/registry.GetStringValue — the read behind
+// time.initLocalFromTZI and mime.initMimeWindows — which returned its value before and hard-faults
+// after. So array targets keep the pre-existing route in every case, fused or not.
+//
 // Returns a nil expression when the pattern does not apply.
 func (v *Visitor) pointerReinterpretManagedSource(callExpr *ast.CallExpr, arg ast.Expr) (ast.Expr, string, string) {
 	p, srcPtr, targetPtr := v.pointerConversionSource(callExpr, arg)
@@ -2877,6 +2892,11 @@ func (v *Visitor) pointerReinterpretManagedSource(callExpr *ast.CallExpr, arg as
 	}
 
 	if types.Identical(srcPtr.Elem(), targetPtr.Elem()) {
+		return nil, "", ""
+	}
+
+	// Pointer-to-array target — keep the pre-existing route (see the header comment).
+	if _, isArray := targetPtr.Elem().Underlying().(*types.Array); isArray {
 		return nil, "", ""
 	}
 

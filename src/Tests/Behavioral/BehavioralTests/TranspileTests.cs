@@ -982,6 +982,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckPointerCastSliceRange() => CheckTarget("PointerCastSliceRange");
 
     [TestMethod]
+    public void CheckPointerCastSliceReinterpret() => CheckTarget("PointerCastSliceReinterpret");
+
+    [TestMethod]
     public void CheckPointerCopyWalk() => CheckTarget("PointerCopyWalk");
 
     [TestMethod]
