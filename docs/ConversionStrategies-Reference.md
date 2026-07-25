@@ -3974,6 +3974,23 @@ converge on the same `err.Error()` text through the `fmt.Errorf("%s", v)` defaul
 by the `MakeSlicePanicRange` behavioral test — in-range, negative, huge-length, and huge-capacity
 `make` under `recover()`, messages compared vs Go.)
 
+### A NIL-POINTER dereference is a RECOVERABLE panic, with Go's message
+The same class as the `makeslice` arm above, for the most common Go runtime panic of all. Go's nil
+dereference is recoverable and real code depends on it — sync's `TestNilPool` calls `Get`/`Put` on a
+`var p *Pool` and asserts that `recover()` catches the panic. The converted equivalent (reading
+`Ꮡp.Value` through a nil `ж<T>`, or any nil reference deref in emitted code) raises .NET's
+`NullReferenceException`, which `recover()` could not see: the panic escaped past every deferred
+recover and surfaced as an unrecoverable host error. `RuntimeErrorPanic.TryAsPanic` — the single
+predicate every `func((defer, recover) => …)` execution context and the process-level unhandled
+handler share — now maps it to `RuntimeErrorPanic.NilPointerDereference()`, whose text is Go's
+verbatim `runtime error: invalid memory address or nil pointer dereference`.
+
+This is faithful rather than lenient: Go recovers a genuine nil-deref bug exactly the same way, and
+an *unrecovered* one still prints Go's message on stderr and exits 2 (the unrecovered-panic arm
+above). (Guarded by the `NilPointerPanic` behavioral test — a nil pointer-receiver method call, a
+nil struct-pointer field read, and a nil map/slice-of-pointer element deref, each under `recover()`
+with the recovered text compared vs Go, plus an unrecovered control.)
+
 ### Named-delegate and builtin callees keep the lambda form
 A zero-argument deferred/goroutine'd call whose callee is a **named func type** (`defer cancel()`
 with `cancel context.CancelFunc`, net dial) cannot take the bare trimmed method-group form —

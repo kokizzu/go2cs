@@ -379,6 +379,7 @@
     <Project Path="Tests/Behavioral/NilChannelInSelect/NilChannelInSelect.csproj" />
     <Project Path="Tests/Behavioral/NilChannelSelectDefault/NilChannelSelectDefault.csproj" />
     <Project Path="Tests/Behavioral/NilMapOperations/NilMapOperations.csproj" />
+    <Project Path="Tests/Behavioral/NilPointerPanic/NilPointerPanic.csproj" />
     <Project Path="Tests/Behavioral/NilPointerParamUnsafePointer/NilPointerParamUnsafePointer.csproj" />
     <Project Path="Tests/Behavioral/NilPointerUintptr/NilPointerUintptr.csproj" />
     <Project Path="Tests/Behavioral/NilSliceConversion/NilSliceConversion.csproj" />

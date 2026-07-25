@@ -295,6 +295,10 @@ public static partial class testing_package
 
     [GoRecv] public static void SetBytes(this ref B b, long n) { }
 
+    [GoRecv] public static void SetParallelism(this ref B b, nint p) { }
+
+    [GoRecv] public static void ReportMetric(this ref B b, double n, @string unit) { }
+
     [GoRecv] public static void StartTimer(this ref B b) { }
 
     [GoRecv] public static void StopTimer(this ref B b) { }

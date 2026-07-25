@@ -120,17 +120,38 @@ partial class sync_package
 
     // ---- Cond notify-list -------------------------------------------------------------------------
     //
-    // A ticket is handed out per waiter (the old `wait`); (wait, notify) count outstanding vs. released
-    // tickets so NotifyOne/NotifyAll release exactly as many permits as there are waiters. Permit
-    // banking in SemaphoreSlim covers the signal-before-wait race, and Cond need not wake any particular
-    // waiter, so a plain counting semaphore is faithful here (no handoff subtlety, unlike the mutex sema).
+    // A faithful port of the runtime's TICKETED notify list (runtime/sema.go notifyListAdd/Wait/
+    // NotifyOne/NotifyAll). Each waiter draws a monotonically increasing ticket from `Wait`; `Notify`
+    // is the ticket of the next waiter to release. NotifyOne releases ticket `Notify` SPECIFICALLY —
+    // never "whichever waiter the OS picks".
+    //
+    // A plain counting semaphore is NOT faithful here, and the divergence is exactly what
+    // TestCondSignalStealing exercises: with banked permits, a waiter that arrives AFTER a
+    // Signal/Broadcast can consume the permit that the ALREADY-parked waiter was owed, leaving the
+    // first waiter parked forever (the test's first waiter never reaches its `ch <- struct{}{}` and
+    // the whole suite wedges). Go forbids that by ticket: the stealer's own ticket is higher, so the
+    // release for ticket t reaches only the waiter holding t.
+    //
+    // The unparked-yet race is covered the same way Go covers it: NotifyOne/NotifyAll advance
+    // `Notify` even when the target has not enqueued, and a waiter entering Wait with an already-
+    // notified ticket (`less(t, Notify)`) returns immediately rather than parking. Ticket comparison
+    // is wraparound-safe (Go's `less`: signed difference), so the uint32 counters may wrap freely.
+
+    private sealed class NotifyWaiter
+    {
+        internal readonly ManualResetEventSlim Signal = new(false);
+        internal uint32 Ticket;
+    }
 
     private sealed class NotifyState
     {
-        internal readonly SemaphoreSlim Sem = new(0);
+        internal readonly LinkedList<NotifyWaiter> Waiters = new();
         internal uint32 Wait;
         internal uint32 Notify;
     }
+
+    // less reports whether ticket a precedes ticket b, tolerating uint32 wraparound (runtime's `less`).
+    private static bool less(uint32 a, uint32 b) => unchecked((int32)(a - b)) < 0;
 
     private static readonly ConcurrentDictionary<ж<notifyList>, NotifyState> notifyTable = new();
 
@@ -144,36 +165,67 @@ partial class sync_package
             return unchecked(n.Wait++);
     }
 
-    internal static partial void runtime_notifyListWait(ж<notifyList> l, uint32 t) => notifyFor(l).Sem.Wait();
+    internal static partial void runtime_notifyListWait(ж<notifyList> l, uint32 t)
+    {
+        NotifyState n = notifyFor(l);
+        NotifyWaiter w;
+
+        lock (n)
+        {
+            // Already notified before this waiter got a chance to park — nothing to wait for.
+            if (less(t, n.Notify))
+                return;
+
+            w = new NotifyWaiter { Ticket = t };
+            n.Waiters.AddLast(w);
+        }
+
+        w.Signal.Wait();
+    }
 
     internal static partial void runtime_notifyListNotifyOne(ж<notifyList> l)
     {
         NotifyState n = notifyFor(l);
+        NotifyWaiter? target = null;
 
         lock (n)
         {
             if (n.Wait == n.Notify)
-                return; // no outstanding waiters
+                return; // no outstanding tickets
 
-            n.Notify = unchecked(n.Notify + 1);
+            uint32 t = n.Notify;
+            n.Notify = unchecked(t + 1);
+
+            // Release the waiter holding EXACTLY ticket t. If it has not parked yet, advancing
+            // Notify above is enough: its Wait call will see less(t, Notify) and return at once.
+            for (LinkedListNode<NotifyWaiter>? node = n.Waiters.First; node is not null; node = node.Next)
+            {
+                if (node.Value.Ticket != t)
+                    continue;
+
+                target = node.Value;
+                n.Waiters.Remove(node);
+                break;
+            }
         }
 
-        n.Sem.Release();
+        target?.Signal.Set();
     }
 
     internal static partial void runtime_notifyListNotifyAll(ж<notifyList> l)
     {
         NotifyState n = notifyFor(l);
-        int count;
+        NotifyWaiter[] targets;
 
         lock (n)
         {
-            count = unchecked((int)(n.Wait - n.Notify));
+            targets = [.. n.Waiters];
+            n.Waiters.Clear();
             n.Notify = n.Wait;
         }
 
-        if (count > 0)
-            n.Sem.Release(count);
+        foreach (NotifyWaiter w in targets)
+            w.Signal.Set();
     }
 
     // Size-agreement sanity check between sync.notifyList and runtime's — irrelevant here.

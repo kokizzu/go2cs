@@ -101,6 +101,16 @@ public static class RuntimeErrorPanic
                 // DivideByZeroException for the same operation; map it so recover() behaves like Go.
                 panic = IntegerDivideByZero();
                 return true;
+            case NullReferenceException:
+                // Go: dereferencing a nil pointer panics with "runtime error: invalid memory address
+                // or nil pointer dereference" — a RECOVERABLE panic that real Go code relies on
+                // (sync's TestNilPool calls Get/Put on a nil *Pool and requires recover() to catch
+                // it). The converted equivalent — reading `Ꮡp.Value` through a nil ж<T>, or any nil
+                // reference deref in emitted code — raises NullReferenceException, which recover()
+                // could not see, so the panic escaped as an unrecoverable infrastructure error.
+                // Mapping it here gives recover() Go's behavior and prints Go's message verbatim.
+                panic = NilPointerDereference();
+                return true;
             default:
                 panic = null;
                 return false;

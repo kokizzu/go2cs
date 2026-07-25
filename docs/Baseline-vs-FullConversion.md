@@ -128,6 +128,21 @@ mutex state` / `unlock of unlocked mutex` under sustained contention. The fix is
 natively on proven .NET primitives (`Mutex`→binary `SemaphoreSlim`, `WaitGroup`→counter+latch,
 `RWMutex`→writer-preferring monitor lock). Expect more of this in Phase 4 (`time`, parts of `os`/`syscall`, …).
 
+**"Proven .NET primitive" is not the same as "faithful" — `Cond`'s notify list (2026-07-25).** The first
+`runtime_impl.cs` backed the `notifyList` linknames (`notifyListAdd`/`Wait`/`NotifyOne`/`NotifyAll`, which
+`sync.Cond` is built on) with a plain counting `SemaphoreSlim`, reasoning that "Cond need not wake any
+particular waiter". That reasoning is wrong, and Go has a test named after the failure: the runtime's list is
+**ticketed** — `notifyListAdd` hands out a monotonic ticket and `NotifyOne` releases *that specific ticket's*
+waiter. With banked permits instead, a waiter that arrives AFTER a Signal/Broadcast can consume the permit an
+already-parked waiter was owed. `TestCondSignalStealing` (1000 iterations of exactly that race) then wedged
+the whole suite, and `TestCondBroadcast` reported "goroutine woke up twice" because a goroutine looping back
+into `Wait` could take a leftover Broadcast permit in the same round. The port is now faithful: a per-ticket
+parked-waiter list, `NotifyOne` signalling the holder of ticket `notify`, `NotifyAll` draining the list and
+setting `notify = wait`, and — covering the not-yet-parked race the same way Go does — a `Wait` whose ticket
+is already behind `notify` (wraparound-safe signed comparison, Go's `less`) returning immediately instead of
+parking. All four `sync.Cond` tests pass on it. The lesson generalizes: when the Go primitive's contract names
+a *specific* waiter, a counting primitive is a divergence, not an implementation detail.
+
 There are **two** ways a package carries hand-owned C#, and they are NOT interchangeable:
 
 1. **`*_impl.cs` supplement — for SOME declarations in a file.** The converter emits the file normally but,
