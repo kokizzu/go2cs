@@ -239,6 +239,39 @@ public static class Common
     /// its error symbol. A recovered base's own transitive bases are folded in too, since
     /// <see cref="ITypeSymbol.AllInterfaces"/> cannot traverse through an error symbol.
     /// </remarks>
+    /// <summary>
+    /// Determines if <paramref name="typeDeclaration"/> is the DEFINING part of its type, i.e. the
+    /// one carrying the converter's <c>[GoType]</c> attribute.
+    /// </summary>
+    /// <remarks>
+    /// A converted Go type has two converter-written parts: the <c>[GoType]</c> declaration in the
+    /// package source, which carries the members and the definition token, and the condensed
+    /// accessibility-pinning declaration in package_info.cs's <c>TypeAccessibility</c> section,
+    /// which carries only the access modifier. Any lookup that resolves a type by NAME through the
+    /// syntax trees can land on either one, so a lookup that goes on to read members or the
+    /// definition token must prefer this one — the accessibility part is empty by construction.
+    /// </remarks>
+    public static bool IsGoTypeDefinition(this BaseTypeDeclarationSyntax typeDeclaration)
+    {
+        foreach (AttributeListSyntax attributeList in typeDeclaration.AttributeLists)
+        {
+            foreach (AttributeSyntax attribute in attributeList.Attributes)
+            {
+                string name = attribute.Name.ToString();
+
+                if (name == GoTypeAttributeName || name == $"{GoTypeAttributeName}Attribute")
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Simple name of the converter-emitted type-definition attribute.
+    /// </summary>
+    public const string GoTypeAttributeName = "GoType";
+
     public static IEnumerable<INamedTypeSymbol> GetAllBaseInterfaces(this INamedTypeSymbol type, Compilation compilation)
     {
         HashSet<INamedTypeSymbol> seen = new(SymbolEqualityComparer.Default);

@@ -7,11 +7,175 @@
 package main
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
+
+// packageEmittedTypeAccess holds one condensed, single-line C# partial declaration per `[GoType]`
+// type this conversion pass emits — `public partial interface Closer {}`, `internal partial struct
+// dirEntry {}` — carrying the access modifier the type will actually have. writePackageInfoFile
+// renders it into package_info.cs's `<TypeAccessibility>` section (inside the package class, where
+// the types are nested), which PINS each type's accessibility IN SOURCE ahead of source
+// generation: the `[GoType]` declaration itself stays bare so it reads like the Go original, and a
+// C# nested type with no modifier is PRIVATE until go2cs-gen's own partial supplies one — which a
+// generator cannot see while it is running (see the TypeAccessibility prose in any package_info.cs
+// and the Source Generators section of docs/ConversionStrategies-Reference.md).
+//
+// The RENDERED LINE is the identity, exactly like the other package_info.cs sections, so the
+// writer's merge path (the -tests seeded files) unions the two sides without re-deriving anything.
+// Reset per package/variant by resetPackageState; written under packageLock.
+var packageEmittedTypeAccess HashSet[string]
+
+// TypeAccessibilitySection names the package_info.cs marker section that carries the condensed
+// accessibility-pinning partial declarations (see packageEmittedTypeAccess).
+const TypeAccessibilitySection = "TypeAccessibility"
+
+// typeAccessibilityIndent is the indentation of the section and its entries: unlike the other
+// package_info.cs sections — assembly attributes and `global using` directives, which live at file
+// scope — these are TYPE declarations and must be nested in the package class, so the section sits
+// inside the class body.
+const typeAccessibilityIndent = "    "
+
+// typeAccessibilitySectionLines returns the section's explanatory prose and its marker delimiters,
+// in the style of the ImportedTypeAliases / ExportedTypeAliases / InterfaceImplementations blocks
+// that precede it. This is the ONLY definition of the block: it is inserted into the package info
+// file on demand (see ensureTypeAccessibilitySection) rather than carried in
+// package_info-template.txt, so a template-generated file and a pre-existing one that predates the
+// section end up byte-identical.
+func typeAccessibilitySectionLines() []string {
+	return []string{
+		typeAccessibilityIndent + "// A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`",
+		typeAccessibilityIndent + "// declarations in this package's converted sources are deliberately bare so they read",
+		typeAccessibilityIndent + "// like the Go original. Their real accessibility — public for a Go-exported name,",
+		typeAccessibilityIndent + "// internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,",
+		typeAccessibilityIndent + "// and a source generator cannot see its own output: while the generators run, every one",
+		typeAccessibilityIndent + "// of those types is still private, so a semantic query that reaches across package",
+		typeAccessibilityIndent + "// classes resolves them as Inaccessible and silently drops whatever it was about to",
+		typeAccessibilityIndent + "// build from them.",
+		"",
+		typeAccessibilityIndent + "// The declarations below close that gap. A C# partial type may carry its access modifier",
+		typeAccessibilityIndent + "// on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,",
+		typeAccessibilityIndent + "// ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the",
+		typeAccessibilityIndent + "// section declares `public partial interface Closer {}` for a `[GoType] partial interface",
+		typeAccessibilityIndent + "// Closer`, and `internal partial struct dirEntry {}` for an unexported one.",
+		"",
+		typeAccessibilityIndent + "// <" + TypeAccessibilitySection + ">",
+		typeAccessibilityIndent + "// </" + TypeAccessibilitySection + ">",
+	}
+}
+
+// ensureTypeAccessibilitySection returns packageInfoLines with the TypeAccessibility prose and
+// marker section present, inserting it at the top of the FIRST package class's body when absent.
+// The class body is where the section must live — its entries are type declarations, and the types
+// they name are nested in that class. Two callers rely on the insertion: a package info file
+// generated before the section existed (every file in a tree converted by an older go2cs), and the
+// -tests seed files, which compose their own contents rather than using the shared template.
+func ensureTypeAccessibilitySection(packageInfoLines []string) []string {
+	openTag := "<" + TypeAccessibilitySection + ">"
+
+	for _, line := range packageInfoLines {
+		if strings.Contains(line, openTag) {
+			return packageInfoLines
+		}
+	}
+
+	insertIndex := -1
+	sawClassDeclaration := false
+
+	for i, line := range packageInfoLines {
+		trimmed := strings.TrimSpace(line)
+
+		if strings.Contains(trimmed, "partial class ") {
+			sawClassDeclaration = true
+
+			// An Allman-braced declaration puts the opening brace on the next line; a K&R one
+			// (never emitted today, but cheap to honor) ends the declaration line with it.
+			if strings.HasSuffix(trimmed, "{") {
+				insertIndex = i + 1
+				break
+			}
+
+			continue
+		}
+
+		if sawClassDeclaration && trimmed == "{" {
+			insertIndex = i + 1
+			break
+		}
+	}
+
+	if insertIndex < 0 {
+		return packageInfoLines
+	}
+
+	block := typeAccessibilitySectionLines()
+
+	return append(packageInfoLines[:insertIndex], append(block, packageInfoLines[insertIndex:]...)...)
+}
+
+// generatedTypeScope mirrors go2cs-gen's Common.GetScope — the rule TypeGenerator uses to pick the
+// access modifier of the partial it emits for a `[GoType]` declaration that carries none. The two
+// MUST agree: both parts name the same type, and C# rejects partial declarations with conflicting
+// accessibility (CS0262). Note this is deliberately NOT getAccess: GetScope reads the C# identifier
+// verbatim, so a Δ collision-rename (a Greek capital) reads as exported where getAccess strips the
+// prefix first. Mirroring the generator keeps the corpus's effective accessibility unchanged — the
+// section only moves WHERE the modifier is written, never WHAT it is.
+func generatedTypeScope(identifier string) string {
+	if identifier == "" {
+		return "internal"
+	}
+
+	first, size := utf8.DecodeRuneInString(identifier)
+
+	// A '_'-prefixed identifier (other than the bare blank '_') is unexported → internal.
+	if first == '_' {
+		if size == len(identifier) {
+			return "public"
+		}
+
+		return "internal"
+	}
+
+	if unicode.IsUpper(first) {
+		return "public"
+	}
+
+	return "internal"
+}
+
+// recordTypeAccessibility records the accessibility of one emitted `[GoType]` declaration for the
+// package_info.cs `<TypeAccessibility>` section. kind is the C# type kind as emitted ("struct",
+// "class" or "interface"), identifier the emitted (already sanitized) C# name, typeParams the
+// declaration's type-parameter list ("<K, V>", or "" for a non-generic type — constraints are
+// deliberately omitted, a partial declaration may leave them to another part), and access the
+// explicit modifier the converter emitted inline ("public ", from the publicization pre-pass) or ""
+// to let the generator's own name-based rule decide.
+//
+// A file whose destination `.cs` is a HAND-OWNED manual conversion ([module: GoManualConversion])
+// is skipped: the converter's emission for it goes to the non-compiled `.cs.auto` sibling, so the
+// declarations that actually compile are the hand-written ones — their kind, name and modifier are
+// the author's to choose, and a generated section entry could contradict them (CS0261/CS0262) or
+// conjure a phantom empty type the hand-written file never declares.
+func (v *Visitor) recordTypeAccessibility(kind string, identifier string, typeParams string, access string) {
+	if v.manualConversion || identifier == "" {
+		return
+	}
+
+	if access == "" {
+		access = generatedTypeScope(identifier) + " "
+	}
+
+	line := fmt.Sprintf("%spartial %s %s%s {}", access, kind, identifier, typeParams)
+
+	packageLock.Lock()
+	packageEmittedTypeAccess.Add(line)
+	packageLock.Unlock()
+}
 
 // packagePublicizedTypes holds unexported named types in the package that must be emitted as
 // `public` because they are used as the type of an exported (public) struct field. C# requires a

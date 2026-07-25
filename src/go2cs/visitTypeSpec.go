@@ -235,6 +235,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 				v.targetFile.WriteString(v.newline)
 			}
 
+			v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access)
 			v.writeOutput("[GoType(\"%s\")] %spartial struct %s;", csName, access, getSanitizedIdentifier(name))
 			v.targetFile.WriteString(v.newline)
 		} else {
@@ -251,6 +252,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			access := v.pendingTypeAccess
 			v.pendingTypeAccess = ""
 			v.targetFile.WriteString(v.newline)
+			v.recordTypeAccessibility("class", getSanitizedIdentifier(name), "", access)
 			v.writeOutputLn("[GoType(\"%s\")] %spartial class %s;", pointerTypeName, access, getSanitizedIdentifier(name))
 			usesUnsafeCode = true
 		}

@@ -1435,7 +1435,13 @@ func writeExternalVariantMetadata(testInfoPath, outputPath, productionPackageNam
 
 	unitName := ""
 
-	if !testAnchored.isEmpty() {
+	// The external variant's `[GoType]` types are declared in the TEST package class, so their
+	// accessibility section belongs to the test-anchored unit — never to package_test_info.cs,
+	// whose section sits inside the PRODUCTION package class (a stray entry there would declare a
+	// second, phantom type of the same simple name in the wrong class). A variant that declares
+	// types therefore needs the unit even when it recorded no test-anchored GoImplement /
+	// GoImplicitConv attributes.
+	if !testAnchored.isEmpty() || len(packageEmittedTypeAccess) > 0 {
 		unitPath := filepath.Join(outputPath, externalTestPackageInfoFileName)
 
 		if _, err := os.Stat(unitPath); os.IsNotExist(err) {
@@ -1459,7 +1465,12 @@ func writeExternalVariantMetadata(testInfoPath, outputPath, productionPackageNam
 
 	// The production-anchored partition (plus the full alias globals) merges into
 	// package_test_info.cs; the split partitions stay installed afterward — the external
-	// variant is the last one converted, and nothing downstream reads these globals.
+	// variant is the last one converted, and nothing downstream reads these globals. The
+	// accessibility entries were written to the test-anchored unit above and must NOT reach this
+	// file's production-class section; clearing the set leaves the merge to preserve exactly the
+	// production + internal-variant entries already there.
+	packageEmittedTypeAccess = HashSet[string]{}
+
 	productionAnchored.install()
 	writePackageInfoFile(testInfoPath, true)
 

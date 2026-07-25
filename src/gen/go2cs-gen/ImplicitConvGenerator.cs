@@ -349,8 +349,15 @@ public class ImplicitConvGenerator : ISourceGenerator
         // keyword-named struct declared `partial struct @short` is found whether the caller passes the
         // symbol name `short` or the escaped `@short` — otherwise its [GoType("num:…")] tag is missed and
         // the numeric-conversion body falls back to a broken `(@short)src.Value` cast (CS0030).
-        return context.SemanticModel.Compilation.SyntaxTrees
+        //
+        // The DEFINING part wins over the condensed accessibility-pinning declaration package_info.cs's
+        // TypeAccessibility section contributes for the same type — this lookup exists to read the
+        // [GoType] tag and the members, neither of which that part carries (see IsGoTypeDefinition).
+        StructDeclarationSyntax[] matches = context.SemanticModel.Compilation.SyntaxTrees
             .SelectMany(tree => tree.GetRoot().DescendantNodes().OfType<StructDeclarationSyntax>())
-            .FirstOrDefault(structDeclaration => structDeclaration.Identifier.ValueText == structName.TrimStart('@'));
+            .Where(structDeclaration => structDeclaration.Identifier.ValueText == structName.TrimStart('@'))
+            .ToArray();
+
+        return matches.FirstOrDefault(structDeclaration => structDeclaration.IsGoTypeDefinition()) ?? matches.FirstOrDefault();
     }
 }

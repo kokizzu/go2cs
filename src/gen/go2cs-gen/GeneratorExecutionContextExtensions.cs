@@ -71,11 +71,11 @@ public static class GeneratorExecutionContextExtensions
             genericArity = CountTopLevelTypeArguments(structTypeName);
         }
 
-        return compilation.SyntaxTrees
+        StructDeclarationSyntax[] matches = compilation.SyntaxTrees
             .SelectMany(tree => tree.GetRoot()
                 .DescendantNodes()
                 .OfType<StructDeclarationSyntax>())
-            .FirstOrDefault(structDecl =>
+            .Where(structDecl =>
             {
                 ISymbol? symbol = compilation
                     .GetSemanticModel(structDecl.SyntaxTree)
@@ -104,7 +104,17 @@ public static class GeneratorExecutionContextExtensions
                        symbol is INamedTypeSymbol { Arity: > 0 } namedSymbol &&
                        namedSymbol.Arity == genericArity &&
                        namedSymbol.Name == genericBaseName;
-            });
+            })
+            .ToArray();
+
+        // A converted Go struct has TWO converter-written parts — the `[GoType]` declaration that
+        // carries the members and the definition token, and the condensed accessibility-pinning
+        // declaration in package_info.cs's TypeAccessibility section. Callers here read members and
+        // the definition token, so the defining part must win; syntax-tree order (i.e. compile-item
+        // order) would otherwise decide, and package_info.cs sorts ahead of the package sources in
+        // roughly half the corpus. The fallback keeps the previous first-match behavior for a
+        // declaration with no [GoType] attribute at all.
+        return matches.FirstOrDefault(structDecl => structDecl.IsGoTypeDefinition()) ?? matches.FirstOrDefault();
     }
 
     /// <summary>

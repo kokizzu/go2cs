@@ -76,9 +76,11 @@ func (v *Visitor) visitIdent(ident *ast.Ident, identType types.Type, name string
 
 	if strings.HasPrefix(name, PointerPrefix) {
 		// Handle pointer types
+		v.recordTypeAccessibility("class", getSanitizedIdentifier(name), "", access)
 		v.writeString(target, " %spartial class %s;", access, getSanitizedIdentifier(name))
 		usesUnsafeCode = true
 	} else {
+		v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access)
 		v.writeString(target, " %spartial struct %s;", access, getSanitizedIdentifier(name))
 	}
 

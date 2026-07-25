@@ -78,6 +78,7 @@ func resetPackageState(pkg *packages.Package) {
 	testLocalTypePrefixes = nil
 	packagePublicizedTypes = make(map[types.Object]bool)
 	packagePublicizedLiftedTypes = make(map[types.Type]bool)
+	packageEmittedTypeAccess = HashSet[string]{}
 	packageCaptureModeMethods = make(map[*types.Func]bool)
 	packageCaptureModeBoxIdents = make(map[types.Object]bool)
 	packageDirectBoxReceiverMethods = make(map[*types.Func]bool)
@@ -158,6 +159,7 @@ func newFileVisitor(fset *token.FileSet, packageTypes *types.Package, info *type
 		globalIdentNames:          globalIdentNames,
 		globalScope:               globalScope,
 		blocks:                    Stack[*strings.Builder]{},
+		manualConversion:          fileEntry.manualConversion,
 		identEscapesHeap:          fileEntry.identEscapesHeap,
 		sstringEligible:           fileEntry.sstringEligible,
 		ssliceEligible:            fileEntry.ssliceEligible,

@@ -1195,6 +1195,25 @@ principal generators:
 Common attributes: `[GoType]`, `[GoRecv]`, `[GoTag]`, `[GoPackage]`, and the test-only
 `[GoTestMatchingConsoleOutput]`.
 
+An inline `[GoType]` declaration is deliberately **bare** so it reads like the Go original — but a C# nested
+type with no modifier is *private*, and a generator can't see the partial it is about to emit. So
+`package_info.cs` carries a **`TypeAccessibility`** section inside the package class that pins each type's
+real accessibility in source, one condensed line per type, ahead of generation:
+
+```csharp
+[GoType] partial interface Closer {          // io/io.cs — Go-shaped, no modifier
+    error Close();
+}
+```
+```csharp
+public static partial class io_package {     // io/package_info.cs
+    // <TypeAccessibility>
+    internal partial struct discard {}
+    public partial interface Closer {}
+    // </TypeAccessibility>
+}
+```
+
 **Full detail:** [Reference → Source Generators](ConversionStrategies-Reference.md#source-generators).
 
 ---

@@ -148,6 +148,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		access = "public "
 	}
 
+	v.recordTypeAccessibility("struct", structTypeName, typeParams, access)
 	v.writeStringLn(target, "%s[GoType%s] %spartial struct %s%s%s{", localNameAttr, dynamic, access, structTypeName, typeParams, constraints)
 	v.indentLevel++
 

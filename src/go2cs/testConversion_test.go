@@ -1726,3 +1726,142 @@ func TestIsSelfProjectReference(t *testing.T) {
 		}
 	}
 }
+
+// TypeAccessibility guard: writePackageInfoFile INSERTS the section (prose + markers) into the
+// FIRST package class's body when the file predates it, renders the live packageEmittedTypeAccess
+// entries there sorted and indented, and — under mergeExisting — preserves the entries already
+// present. The insertion path is what lets a tree converted by an older go2cs (and the -tests seed
+// files, which compose their own contents rather than using package_info-template.txt) pick the
+// section up without a migration step; the merge path is what carries a seeded production
+// package_info.cs's entries through each test variant's additions.
+func TestWritePackageInfoFileInsertsTypeAccessibilitySection(t *testing.T) {
+	dir := t.TempDir()
+	fileName := filepath.Join(dir, PackageInfoFileName)
+
+	// A package info file with NO TypeAccessibility section — the pre-2026-07-25 shape.
+	seed := strings.Join([]string{
+		"namespace go;",
+		"",
+		"// <ImportedTypeAliases>",
+		"// </ImportedTypeAliases>",
+		"",
+		"// <ExportedTypeAliases>",
+		"// </ExportedTypeAliases>",
+		"",
+		"// <InterfaceImplementations>",
+		"// </InterfaceImplementations>",
+		"",
+		"// <ImplicitConversions>",
+		"// </ImplicitConversions>",
+		"",
+		"[GoPackage(\"value\")]",
+		"public static partial class value_package",
+		"{",
+		"}",
+	}, "\r\n")
+
+	if err := os.WriteFile(fileName, []byte(seed), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	resetPackageState(&packages.Package{})
+	packageName = "value"
+	packageNamespace = "go"
+	packageEmittedTypeAccess.Add("public partial interface Closer {}")
+	packageEmittedTypeAccess.Add("internal partial struct dirEntry {}")
+
+	writePackageInfoFile(fileName, false)
+
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	contents := string(data)
+
+	for _, want := range []string{
+		"// <" + TypeAccessibilitySection + ">",
+		"// </" + TypeAccessibilitySection + ">",
+		typeAccessibilityIndent + "internal partial struct dirEntry {}",
+		typeAccessibilityIndent + "public partial interface Closer {}",
+	} {
+		if !strings.Contains(contents, want) {
+			t.Fatalf("emitted package info must contain %q:\n%s", want, contents)
+		}
+	}
+
+	// The section — and its entries — must land INSIDE the package class body, since the types
+	// they declare are nested in that class. Anything after the class's closing brace would
+	// declare a namespace-scoped type of the same simple name instead.
+	classIndex := strings.Index(contents, "public static partial class value_package")
+	sectionIndex := strings.Index(contents, "// <"+TypeAccessibilitySection+">")
+	closeIndex := strings.LastIndex(contents, "\r\n}")
+
+	if classIndex < 0 || sectionIndex < classIndex || sectionIndex > closeIndex {
+		t.Fatalf("TypeAccessibility section must sit inside the package class body:\n%s", contents)
+	}
+
+	// Entries are sorted on the rendered line, so `internal …` precedes `public …`. Compare the
+	// INDENTED forms: the section's own prose quotes both spellings, so a bare substring search
+	// would find the explanatory text rather than the entries.
+	if strings.Index(contents, typeAccessibilityIndent+"internal partial struct dirEntry {}") > strings.Index(contents, typeAccessibilityIndent+"public partial interface Closer {}") {
+		t.Fatal("TypeAccessibility entries must be sorted")
+	}
+
+	// Re-writing with mergeExisting must preserve what is already there and add the new entry
+	// exactly once — the -tests seeded-file path.
+	resetPackageState(&packages.Package{})
+	packageName = "value"
+	packageNamespace = "go"
+	packageEmittedTypeAccess.Add("internal partial class dequeueNil {}")
+	packageEmittedTypeAccess.Add("public partial interface Closer {}")
+
+	writePackageInfoFile(fileName, true)
+
+	if data, err = os.ReadFile(fileName); err != nil {
+		t.Fatal(err)
+	}
+
+	contents = string(data)
+
+	if !strings.Contains(contents, typeAccessibilityIndent+"internal partial struct dirEntry {}") {
+		t.Fatalf("merge must preserve an existing entry:\n%s", contents)
+	}
+	if !strings.Contains(contents, typeAccessibilityIndent+"internal partial class dequeueNil {}") {
+		t.Fatalf("merge must add the new entry:\n%s", contents)
+	}
+	if got := strings.Count(contents, typeAccessibilityIndent+"public partial interface Closer {}"); got != 1 {
+		t.Fatalf("merge must not duplicate an entry, got %d occurrences:\n%s", got, contents)
+	}
+	if got := strings.Count(contents, "// <"+TypeAccessibilitySection+">"); got != 1 {
+		t.Fatalf("the section must not be inserted twice, got %d:\n%s", got, contents)
+	}
+}
+
+// generatedTypeScope MUST agree with go2cs-gen's Common.GetScope — the two decide the access
+// modifier of two partial declarations of ONE type, and C# rejects conflicting accessibility
+// (CS0262). GetScope reads the C# identifier VERBATIM, so the Δ collision-rename prefix (a Greek
+// capital) reads as exported and a C#-keyword escape (`@decimal`) reads as unexported; getAccess
+// strips both first and would disagree on each.
+func TestGeneratedTypeScopeMirrorsGeneratorRule(t *testing.T) {
+	cases := []struct {
+		identifier string
+		want       string
+	}{
+		{"Closer", "public"},
+		{"dirEntry", "internal"},
+		{"_", "public"},
+		{"_func", "internal"},
+		{"@decimal", "internal"},
+		{ShadowVarMarker + "Month", "public"},
+		{ShadowVarMarker + "guintptr", "public"},
+		{PointerPrefix + "Elem", "internal"},
+		{"", "internal"},
+	}
+
+	for _, c := range cases {
+		if got := generatedTypeScope(c.identifier); got != c.want {
+			t.Errorf("generatedTypeScope(%q) = %q, want %q", c.identifier, got, c.want)
+		}
+	}
+}

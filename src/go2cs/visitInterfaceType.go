@@ -351,6 +351,19 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 	// form `[GoType(…)]\npublic partial interface`). Empty when not publicized — no churn.
 	postAttrs += access
 
+	// The declaration's type-parameter list for the package_info.cs accessibility section: a
+	// GENERIC interface carries its own `<T…>`, while an arity-0 CONSTRAINT interface carries the
+	// CRTP `<ΔT>` marker the inheritance slot supplies above (the two are mutually exclusive by the
+	// same condition used there). The section's part must repeat the list verbatim — partial
+	// declarations of a generic type agree on parameter names.
+	declaredTypeParams := genericTypeParams
+
+	if len(typeConstraints) > 0 && genericTypeParams == "" {
+		declaredTypeParams = fmt.Sprintf("<%s>", TypeT)
+	}
+
+	v.recordTypeAccessibility("interface", getSanitizedIdentifier(interfaceTypeName), declaredTypeParams, access)
+
 	if len(inheritedInterfaces) > 0 {
 		inheritedResult += " :" + v.newline
 

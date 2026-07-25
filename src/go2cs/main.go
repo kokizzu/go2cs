@@ -297,6 +297,11 @@ type Visitor struct {
 	// must be publicized (used as an exported struct field; see packagePublicizedTypes), and
 	// consumed (read and cleared) by the type-kind emitter (visitArrayType/visitStructType/…).
 	pendingTypeAccess string
+	// manualConversion mirrors the file entry's flag: this file's destination `.cs` is a hand-owned
+	// manual conversion, so the visit still feeds package-wide state but the emitted text lands in
+	// the non-compiled `.cs.auto` review sibling. Consulted by recordTypeAccessibility, which must
+	// not declare the accessibility of types the hand-written file owns.
+	manualConversion bool
 	// recordingStructuralImplementers is set while recordLocalConcreteImplementers (the
 	// DECLARATION-SITE structural recorder) is probing a pair. Every other producer records a pair
 	// some emitted site DEMANDS — a cast or an assertion — whereas this one is speculative by
@@ -1937,6 +1942,64 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 
 	} else {
 		log.Fatalf("Failed to find '<ImplicitConversions>...</ImplicitConversions>' section for inserting implicit conversions into package info file \"%s\"\n", packageInfoFileName)
+	}
+
+	// Handle type accessibility declarations. Unlike the sections above — assembly attributes and
+	// `global using` directives at file scope — these are TYPE declarations nested in the package
+	// class, so the section lives inside the class body and its entries are indented to match. A
+	// file that predates the section (or a -tests seed that composes its own contents) has the
+	// prose and markers inserted rather than being rejected.
+	packageInfoLines = ensureTypeAccessibilitySection(packageInfoLines)
+
+	startLineIndex = -1
+	endLineIndex = -1
+
+	for i, line := range packageInfoLines {
+		if strings.Contains(line, "<"+TypeAccessibilitySection+">") {
+			startLineIndex = i
+			continue
+		}
+
+		if strings.Contains(line, "</"+TypeAccessibilitySection+">") {
+			endLineIndex = i
+			break
+		}
+	}
+
+	if startLineIndex >= 0 && endLineIndex >= 0 && startLineIndex < endLineIndex {
+		lines := HashSet[string]{}
+
+		// Merge the existing declarations for a single-file conversion, and for the -tests files
+		// seeded from the production package_info.cs (whose production entries must survive each
+		// variant's additions). The stored form is the TRIMMED line — indentation is re-applied at
+		// insertion, so a merged entry can never differ from a freshly rendered one by whitespace.
+		if mergeExisting {
+			for i := startLineIndex + 1; i < endLineIndex; i++ {
+				line := strings.TrimSpace(packageInfoLines[i])
+
+				if line != "" {
+					lines.Add(line)
+				}
+			}
+		}
+
+		lines.UnionWith(packageEmittedTypeAccess.Keys())
+
+		// Sort lines
+		sortedLines := lines.Keys()
+		sort.Strings(sortedLines)
+
+		indentedLines := make([]string, 0, len(sortedLines))
+
+		for _, line := range sortedLines {
+			indentedLines = append(indentedLines, typeAccessibilityIndent+line)
+		}
+
+		// Insert type accessibility declarations into package info file
+		packageInfoLines = append(packageInfoLines[:startLineIndex+1],
+			append(indentedLines, packageInfoLines[endLineIndex:]...)...)
+	} else {
+		log.Fatalf("Failed to find '<%s>...</%s>' section for inserting type accessibility declarations into package info file \"%s\"\n", TypeAccessibilitySection, TypeAccessibilitySection, packageInfoFileName)
 	}
 
 	// Remove trailing empty lines

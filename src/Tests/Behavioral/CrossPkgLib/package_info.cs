@@ -63,4 +63,45 @@ namespace go;
 [GoPackage("CrossPkgLib")]
 public static partial class CrossPkgLib_package
 {
+    // A C# nested type declared with no access modifier is PRIVATE, and the `[GoType]`
+    // declarations in this package's converted sources are deliberately bare so they read
+    // like the Go original. Their real accessibility — public for a Go-exported name,
+    // internal otherwise — is supplied by the partial that go2cs-gen's TypeGenerator emits,
+    // and a source generator cannot see its own output: while the generators run, every one
+    // of those types is still private, so a semantic query that reaches across package
+    // classes resolves them as Inaccessible and silently drops whatever it was about to
+    // build from them.
+
+    // The declarations below close that gap. A C# partial type may carry its access modifier
+    // on any ONE of its parts, so pinning it here fixes each type's accessibility IN SOURCE,
+    // ahead of generation, while the `[GoType]` declaration itself stays Go-shaped — the
+    // section declares `public partial interface Closer {}` for a `[GoType] partial interface
+    // Closer`, and `internal partial struct dirEntry {}` for an unexported one.
+
+    // <TypeAccessibility>
+    public partial interface Emitter {}
+    public partial interface Labeled {}
+    public partial interface Rated {}
+    public partial interface Reporter {}
+    public partial interface Sampler {}
+    public partial interface Scored {}
+    public partial interface Sealed {}
+    public partial struct Alarm {}
+    public partial struct Branch {}
+    public partial struct Cache<T> {}
+    public partial struct Celsius {}
+    public partial struct Device {}
+    public partial struct EmitBase {}
+    public partial struct Leaf {}
+    public partial struct Meter {}
+    public partial struct Node {}
+    public partial struct Probe {}
+    public partial struct Sensor {}
+    public partial struct Ticks {}
+    public partial struct Verdict {}
+    public partial struct snapshot {}
+    public partial struct ΔGrade {}
+    public partial struct ΔMarker {}
+    public partial struct ΔStatus {}
+    // </TypeAccessibility>
 }
