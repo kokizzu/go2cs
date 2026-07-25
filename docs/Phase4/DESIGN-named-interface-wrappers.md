@@ -1,6 +1,6 @@
 # DESIGN — runtime duck-typing shells for NAMED interfaces
 
-> **Status: BLESSED (user, 2026-07-25) — stages 2–5 approved as specified; Stage 2 in flight.** Produced 2026-07-24/25 by an
+> **Status: BLESSED (user, 2026-07-25) — stages 2–5 approved as specified; Stage 1 and Stage 2 LANDED.** Produced 2026-07-24/25 by an
 > adversarial design panel (three lenses — full-generalization, runtime-pairing, demand-driven —
 > plus a critic that re-measured every disputed number against the committed tree). Stage 1 (latent
 > bug fixes that exist today) is pre-approved §2 territory and proceeds independently.
@@ -72,13 +72,52 @@ where today answers MISS (the regression-floor argument).
 | Stage | Content | Gate highlights |
 |---|---|---|
 | **1** (≈0.5d, ships now) | Six latent-bug fixes that exist TODAY: golib `TypeExtensions.cs:570` base-interface static leak (poisons every derived-interface structural probe — live bug); analyzer `IsStatic`/`MethodKind` filter; bare-name+escaped identifier composition; Δ-name escaping; forwarding-local marker; `TryTypeAssert` fail-soft. | CNR byte-identical; guard `DerivedInterfaceStructuralProbe` |
-| **2** (≈2-3d) — **unblocks io/fs** | Tiered shells + attribute + binder + memo + builtin consumption; skip zero-method/generic/constraint interfaces. | Converter untouched ⇒ CNR byte-identical; 7 behavioral guards (incl. cross-assembly late-assert = the io/fs shape, X3 negative, false-positive-must-miss, unexported-interface); corpus build = the rendering-risk gate (five ≥10-method interfaces); **acceptance: io/fs 16/18 → 18/18, 37-sweep clean** |
+| **2** (≈2-3d) — **unblocks io/fs** — **LANDED 2026-07-25** | Tiered shells + attribute + binder + memo + builtin consumption; skip zero-method/generic/constraint interfaces. | Converter untouched ⇒ CNR byte-identical; 7 behavioral guards (incl. cross-assembly late-assert = the io/fs shape, X3 negative, false-positive-must-miss, unexported-interface); corpus build = the rendering-risk gate (five ≥10-method interfaces); **acceptance: io/fs 16/18 → 18/18, 37-sweep clean** |
 | **3** (≈1-1.5d) | Migrate the 33 dyn interfaces onto the tiered shape; delete the `MakeGenericMethod` path (`builtin.cs:1638/:1662`) — **closes the AOT hole that exists today**; PerfAot smoke benchmark. | Full suite + corpus + sweep; perf gates (memoized assert ~30 ns; pointer tier ≤3 ns/call) |
 | **4** (≈1.5d) | Recorders behind a default-off flag; reconvert. **Not inert (measured): 1540→1329 records, −335/+124** — the recorders currently *suppress* 124 demanded records. Preserve the Promoted(52)/ConstraintProxy(11) record paths — compile-time nominal, non-retirable (96% of records ARE retirable). | Inspect every changed package_info.cs; sweep clean twice; independently revertible |
 | **5** (≈0.5d) | Delete the recorder machinery (~241 lines + 12 plumbing refs). `ImplementGenerator` STAYS (declared conversions are not heuristics; nominal adapters remain the 1.1 ns fast path). Docs in the same change. | Final sweep + docs verified against real goldens |
 
 Total ≈1.5–2 weeks. Deferred successor recorded: `IDynamicInterfaceCastable` (71 ns/call, larger
 architectural change) if profiling ever demands it.
+
+### Stage 2 as built (2026-07-25) — deltas from §3 worth carrying forward
+
+Everything in §3 was built as specified. Five things are worth recording because a later stage
+depends on them:
+
+1. **Dyn interfaces were NOT migrated.** §3 describes the END state (`[GoType]`/`[GoType("dyn")]`);
+   the staged plan puts the 33 dyn interfaces in **Stage 3**, so Stage 2 emits shells for NAMED
+   interfaces only and the dyn `ᴛAs` machinery is untouched. The consequence is deliberate but real:
+   the new `InterfaceShellEmitter` and the old dyn block in `InterfaceTypeTemplate` are two renderers
+   of the same idea — Stage 3 deletes the old one rather than merging them.
+2. **The generic shell closes over the ELEMENT type (the pointee), not the box.** That is what makes
+   *both* receiver forms bindable from one class, but it means a struct pointee is still a
+   value-type instantiation, so the pointer tier is **AOT-graceful, not AOT-guaranteed** — the belt
+   degrades it to the object shell rather than to a miss. The value-typed *dynamic value* case (the
+   one that can never be rooted) is genuinely instantiation-free.
+3. **Two defensive emission gates** beyond §3's list: an interface with a **ref-kind parameter** gets
+   no shell at all (`MethodInfo.Parameters` carries the type only, so the member would be re-declared
+   without the modifier — CS0535), and the object shell is skipped when any member cannot round-trip
+   through `object` (a Go variadic tail is `params Span<T>`). Shells are always emitted `internal`.
+4. **The binder must NOT construct through `ConstructorInfo.Invoke`** — measured 119.7 ns/assert vs
+   71.9 ns with `ConstructorInvoker`. Tier costs on an identical trivial callee (Release, 50M
+   iterations, 1.47 ns harness floor): **delegate 4.44 ns/call, reflective object 22.15 ns/call** —
+   the panel's 2.78/21.9 reproduced. The memoized assert is **71.9 ns**, above the ~30 ns estimate;
+   the remaining cost is two `(Type,Type)`-keyed dictionary lookups plus the allocation. An available
+   follow-up is the `Cache<TInterface>` shape `Implements<T>` already uses (per-closed-generic static
+   dictionary keyed on the value type alone, no tuple hashing) — **not** taken here because §3
+   specifies the AdapterRegistry `(Type,Type)` key.
+5. **The test host's isolated working directory had to change** for the last io/fs sub-case: it now
+   carries the package's own directory name under a private parent, reproducing the shape `go test`
+   provides (`os.DirFS("..")` + `*/glob.go` expects `fs/glob.go`). Unrelated to interfaces, but the
+   shells are what exposed it.
+
+Gates as run: CNR **byte-identical** (487 projects); full behavioral suite **PASS** (487/487
+transpile + compile + target, 457 output-compared, 0 failed); fresh 305-package reconvert overlaid
+and built — **302/302 compile clean, zero rendering fallout** (the ≥10-method interfaces, including
+the 37-method one, all rendered); **io/fs 16/18 → 18/18**; banked subset re-validated at its banked
+counts (errors 61, encoding/csv 71, hash/fnv 19, testing/quick 8, encoding/binary 137, bytes 81,
+strings 68).
 
 ## 5. Decision requested (user)
 
