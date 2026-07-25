@@ -1,6 +1,6 @@
 # DESIGN — runtime duck-typing shells for NAMED interfaces
 
-> **Status: BLESSED (user, 2026-07-25) — stages 2–5 approved as specified; Stage 1 and Stage 2 LANDED.** Produced 2026-07-24/25 by an
+> **Status: COMPLETE — all five stages LANDED (2026-07-25). Blessed by the user; built as specified.** Produced 2026-07-24/25 by an
 > adversarial design panel (three lenses — full-generalization, runtime-pairing, demand-driven —
 > plus a critic that re-measured every disputed number against the committed tree). Stage 1 (latent
 > bug fixes that exist today) is pre-approved §2 territory and proceeds independently.
@@ -74,8 +74,8 @@ where today answers MISS (the regression-floor argument).
 | **1** (≈0.5d, ships now) | Six latent-bug fixes that exist TODAY: golib `TypeExtensions.cs:570` base-interface static leak (poisons every derived-interface structural probe — live bug); analyzer `IsStatic`/`MethodKind` filter; bare-name+escaped identifier composition; Δ-name escaping; forwarding-local marker; `TryTypeAssert` fail-soft. | CNR byte-identical; guard `DerivedInterfaceStructuralProbe` |
 | **2** (≈2-3d) — **unblocks io/fs** — **LANDED 2026-07-25** | Tiered shells + attribute + binder + memo + builtin consumption; skip zero-method/generic/constraint interfaces. | Converter untouched ⇒ CNR byte-identical; 7 behavioral guards (incl. cross-assembly late-assert = the io/fs shape, X3 negative, false-positive-must-miss, unexported-interface); corpus build = the rendering-risk gate (five ≥10-method interfaces); **acceptance: io/fs 16/18 → 18/18, 37-sweep clean** |
 | **3** (≈1-1.5d) — **LANDED 2026-07-25** | Migrate the dyn interfaces onto the tiered shape; delete the `MakeGenericMethod` path (`builtin.cs:1638/:1662`) — **closes the AOT hole that exists today**; PerfAot smoke benchmark. (Census correction: the corpus + behavioral goldens carry **92** `dyn` declarations in non-generated source, not 33 — the panel's figure counted production packages only.) | Full suite + corpus + sweep; perf gates (memoized assert ~30 ns; pointer tier ≤3 ns/call) |
-| **4** (≈1.5d) | Recorders behind a default-off flag; reconvert. **Not inert (measured): 1540→1329 records, −335/+124** — the recorders currently *suppress* 124 demanded records. Preserve the Promoted(52)/ConstraintProxy(11) record paths — compile-time nominal, non-retirable (96% of records ARE retirable). | Inspect every changed package_info.cs; sweep clean twice; independently revertible |
-| **5** (≈0.5d) | Delete the recorder machinery (~241 lines + 12 plumbing refs). `ImplementGenerator` STAYS (declared conversions are not heuristics; nominal adapters remain the 1.1 ns fast path). Docs in the same change. | Final sweep + docs verified against real goldens |
+| **4** — **LANDED 2026-07-25** | Recorders behind a default-off flag; reconvert. **Not inert (measured): 1540→1329 records, −335/+124** — the recorders currently *suppress* 124 demanded records. Preserve the Promoted(52)/ConstraintProxy(11) record paths — compile-time nominal, non-retirable (96% of records ARE retirable). | Inspect every changed package_info.cs; sweep clean twice; independently revertible |
+| **5** — **LANDED 2026-07-25** | Delete the recorder machinery (~241 lines + 12 plumbing refs). `ImplementGenerator` STAYS (declared conversions are not heuristics; nominal adapters remain the 1.1 ns fast path). Docs in the same change. | Final sweep + docs verified against real goldens |
 
 Total ≈1.5–2 weeks. Deferred successor recorded: `IDynamicInterfaceCastable` (71 ns/call, larger
 architectural change) if profiling ever demands it.
@@ -181,6 +181,67 @@ full perf suite **PASS** (10/10, output verified identical across Go / JIT / AOT
 reconvert (3 m 35 s) overlaid and built — **304/304 projects, 0 errors** (1,671 `.cs` overlaid, 23
 hand-owned preserved, 301 `.csproj` rewritten); banked canaries re-validated at their banked counts —
 **io/fs 18, errors 61, encoding/csv 71, bytes 81, testing/quick 8**.
+
+### Stages 4 and 5 as built (2026-07-25) — the recorders are gone
+
+Both stages landed as two independently-gated, independently-revertible commits on one branch: stage 4
+put the recorders behind a default-off `-structural-implement-records` flag and rebaselined the record
+set; stage 5 deleted the machinery and the flag. What is worth carrying forward:
+
+1. **The panel's −335/+124 reproduced EXACTLY on the rebanked era.** Measured on a seeded 305-package
+   reconvert: **1535 → 1324 records across 53 packages**, `Promoted` (50) and `ConstraintProxy` (11)
+   preserved to the record. The rebank moved the base by five records and the delta by none.
+
+2. **A THIRD structural producer was in scope, and the panel's row did not name it.**
+   `recordTestPackageImplementers` (`-tests` only) enumerates every test-declared concrete against every
+   local interface — no demanding site anywhere — and its motivating consumer, testing/quick's
+   `reflect.Zero(t).Interface().(Generator)`, is precisely a run-time structural assert. It also shares
+   `recordIfImplements`, so stage 5 could not have deleted that helper while it lived. Retired with the
+   other two; **testing/quick re-validates 8/8 with its one record gone** — the arc's most direct
+   operational proof.
+
+3. **The dropped records split two ways, and the split is what makes the sweep safe.** Of 335 dropped,
+   **73 RELOCATE** — the demanding cast site was always there; it referenced the *provider's* adapter
+   only because the provider's structural record existed, so with that gone the consumer records the
+   foreign pair itself and the emission changes shape (`io.SectionReaderжReader` →
+   `io_SectionReaderжReader`; `(Scored)(Verdict)4` → `new CrossPkgLib_VerdictᴠScored(…)`). That accounts for
+   the 117 of 124 ADDED records and for **all** the non-`package_info` churn. The other **262 are simply
+   gone**, and a scan of all 1919 corpus `.cs` for composed adapter identifiers (711 distinct; positive
+   control `io_SectionReaderжReader` fires) finds **261 of them named by no emitted C# at all**. The
+   remaining 7 added records are base-interface pairs the interface-inheritance prune had been
+   suppressing under a now-deleted derived record.
+
+4. **The one referenced dropped adapter was a real signal, and it self-resolved.** `math/rand/v2`'s
+   `PCGжSource` is named by banked `*_test.cs` — a demanded site inside the TEST closure, which a
+   `-tests` run records for itself. Added as an eighth canary: 36 + 1 skip, its banked count, with
+   `PCG→Source` kept and its three speculative siblings (ChaCha8/Rand/Zipf) dropped. Scanning the banked
+   test sources, not just production, is what surfaced it.
+
+5. **No new guard test was added, deliberately — the retirement made five EXISTING guards stronger.**
+   `DerivedInterfaceStructuralProbe`, `OptionalInterfaceStructuralAssertion`,
+   `InterfaceToInterfaceAssertion`, `AnonIfaceThroughPointerAdapter` and `IfaceToIfaceNarrow` now carry
+   **zero** nominal records for the pairs they assert, so their output comparison IS the shell-resolution
+   proof and fails if the shells stop resolving. A flag-shaped guard would have been throwaway.
+
+6. **Stage 5 is provably emission-neutral.** The deletion (~495 lines: three recorders,
+   `recordIfImplements`, `adapterCannotForward`, `stripPointerType`, the `structuralOnlyImplementations`
+   plumbing, the adapter-name collision prune that existed only to arbitrate speculative pairs, and the
+   flag) leaves CNR **byte-identical** and a full seeded reconvert **byte-identical to stage 4's tree**
+   — no overlay was needed. `ImplementGenerator` is untouched.
+
+7. **PRE-EXISTING bank drift found by the control, and excluded.** A flag-ON reconvert (converter
+   behavior identical to master) still differs from the committed tree in six production files —
+   `bytes/{buffer,reader}.cs`, `strings/{reader,replace}.cs`, `math/rand/v2/{pcg,rand}.cs` — all
+   committed in their `-tests`-CLOSURE form (`Δio` alias, `global::go.math` qualification) rather than the
+   `-stdlib` form, so the whole-corpus rebank did not level them. Restored, not swallowed. Orthogonal to
+   this arc; owed to whoever owns the rebank.
+
+Gates as run, **twice** (once per stage): converter `go test ./...` ok; CNR **byte-identical** at stage 5
+(stage 4: 12 changed + 1 golden, each classified); FULL behavioral suite **PASS — 491/491 transpile +
+compile + target, 461 output-compared, 0 failed**; seeded 305-package reconvert with the path-precise
+hand-owned gate clean (37 marked files: 14 `.cs.auto`, 23 not re-emitted, 0 clobbered); corpus
+`go-src-converted.slnx` **304 projects, 0 errors**; pipeline canaries at banked counts — **io/fs 18,
+errors 61, encoding/csv 71, hash/fnv 19, testing/quick 8, bytes 81, math/rand/v2 36+1 skip**.
 
 ## 5. Decision requested (user)
 

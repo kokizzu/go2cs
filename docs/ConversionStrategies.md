@@ -1056,18 +1056,22 @@ generator to consume. The well-known built-ins (`error`, `fmt.Stringer`, …) ar
 implemented the same duck-typed way. A cross-package satisfaction is witnessed by the idiomatic
 `var _ I = T{}` assertion in the type's own package.
 
-Those records are a compile-time *approximation*, and they cannot be complete: a dynamic type may live in a
-package converted **after** the interface's own (io/fs is converted before os, so nothing in `fs` can record
-`os.dirFS`) — and an interface *literal* (`x.(interface{ Len() int })`) can never be recorded at all. For
-exactly those pairs, `TypeGenerator` emits **two runtime duck-typing shells** beside every non-generic,
-non-constraint, non-empty interface — named or anonymous alike — found through a `[GoInterfaceShell]` stamp: a
-delegate-bound generic shell for a pointer-sourced value (`ж<X>`) and a reflective `object`-held shell for a
-value-sourced one (`os.dirFS`, a `[GoType("@string")]` struct). golib's `AdapterBinder` picks the tier, owns
-all binding, and is **fail-soft** — a pair it cannot build MISSES, exactly as Go answers. The shells fire only
-where the assertion previously missed, so nothing that already resolved changes path. This is the ONLY
-duck-typing surface a converted interface has: the older per-interface `ᴛAs` conversion methods anonymous
-interfaces used to carry (reached reflectively and closed with `MakeGenericMethod`, with no Native-AOT
-fallback) were retired in favor of it:
+A record is only ever written for a conversion the source **declares** — an assignment, a call argument, a
+`var _ I = T{}` witness. It is never inferred, because a compile-time inference cannot be complete: a dynamic
+type may live in a package converted **after** the interface's own (io/fs is converted before os, so nothing in
+`fs` could record `os.dirFS`) — and an interface *literal* (`x.(interface{ Len() int })`) can never be recorded
+at all. Structural satisfaction is resolved at RUN TIME instead: `TypeGenerator` emits **two runtime duck-typing
+shells** beside every non-generic, non-constraint, non-empty interface — named or anonymous alike — found
+through a `[GoInterfaceShell]` stamp: a delegate-bound generic shell for a pointer-sourced value (`ж<X>`) and
+a reflective `object`-held shell for a value-sourced one (`os.dirFS`, a `[GoType("@string")]` struct). golib's
+`AdapterBinder` picks the tier, owns all binding, and is **fail-soft** — a pair it cannot build MISSES, exactly
+as Go answers. A declared record still wins first, as the ~1.1 ns nominal fast path; the shells answer
+everything else. This is the ONLY duck-typing surface a converted interface has, and the only one it needs —
+both the older per-interface `ᴛAs` conversion methods anonymous interfaces used to carry (reached
+reflectively and closed with `MakeGenericMethod`, with no Native-AOT fallback) and the converter-side
+*structural* recorders that used to guess named-interface pairs by enumerating a package's concrete types were
+retired in favor of it (the latter dropped 335 speculative records corpus-wide, 261 of which no emitted C# ever
+named):
 
 ```csharp
 [global::go.GoInterfaceShell(typeof(ΔSpeaker<>), typeof(ΔSpeakerᴛObj), "Speak")]

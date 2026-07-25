@@ -1068,7 +1068,6 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	preloadImportedTypeAliases(allEntries, options)
 
 	var compileNames []string // emitted test .cs basenames — the csproj's compile items
-	testImplementersRecorded := false
 	var resolveNames []string // every emission (incl. .cs.auto review siblings) for marker resolution
 
 	convert := func(entry FileEntry) (err error) {
@@ -1082,29 +1081,6 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 
 		visitor := newFileVisitor(pkg.Fset, pkg.Types, pkg.TypesInfo, options, globalIdentNames, globalScope, entry)
 		visitor.visitFile(entry.file)
-
-		// Enumerate the test package's runtime-assertable interface implementers ONCE per
-		// conversion (idempotent — the record writer dedups): a TEST-DECLARED type satisfying
-		// an interface the package under test asserts at RUNTIME needs its adapter enumerated
-		// from the type side (quick_test's myStruct × quick.Generator; see
-		// recordTestPackageImplementers — production-declared types are excluded there).
-		//
-		// RETIRED (stage 4): this is the third structural HEURISTIC recorder — it enumerates every
-		// test-declared concrete against every local interface by `types.Implements`, with no
-		// demanding site anywhere. Its motivating consumer (testing/quick's
-		// `reflect.Zero(t).Interface().(Generator)`) is exactly the run-time structural assert the
-		// tiered interface shells now resolve. Kept behind the default-off
-		// -structural-implement-records revert lever only.
-		if options.structuralImplementRecords && !testImplementersRecorded {
-			testFilePaths := HashSet[string]{}
-
-			for _, testEntry := range selected {
-				testFilePaths.Add(filepath.ToSlash(testEntry.filePath))
-			}
-
-			visitor.recordTestPackageImplementers(testFilePaths)
-			testImplementersRecorded = true
-		}
 
 		baseName := strings.TrimSuffix(filepath.Base(entry.filePath), ".go")
 
