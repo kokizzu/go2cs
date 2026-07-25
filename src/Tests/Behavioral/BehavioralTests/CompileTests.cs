@@ -307,6 +307,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckDerefPointerToField() => CheckTarget("DerefPointerToField");
 
     [TestMethod]
+    public void CheckDerivedInterfaceStructuralProbe() => CheckTarget("DerivedInterfaceStructuralProbe");
+
+    [TestMethod]
     public void CheckDirectBoxReceiverPassedWhole() => CheckTarget("DirectBoxReceiverPassedWhole");
 
     [TestMethod]

@@ -156,6 +156,7 @@
     <Project Path="Tests/Behavioral/DefinedTypeOverInterface/DefinedTypeOverInterface.csproj" />
     <Project Path="Tests/Behavioral/DefinedTypeOverPkgType/DefinedTypeOverPkgType.csproj" />
     <Project Path="Tests/Behavioral/DerefPointerToField/DerefPointerToField.csproj" />
+    <Project Path="Tests/Behavioral/DerivedInterfaceStructuralProbe/DerivedInterfaceStructuralProbe.csproj" />
     <Project Path="Tests/Behavioral/DirectBoxReceiverPassedWhole/DirectBoxReceiverPassedWhole.csproj" />
     <Project Path="Tests/Behavioral/DivideByZeroPanic/DivideByZeroPanic.csproj" />
     <Project Path="Tests/Behavioral/DotImportRenamedPackage/DotImportRenamedPackage.csproj" />
