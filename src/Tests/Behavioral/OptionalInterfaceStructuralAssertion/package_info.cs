@@ -39,7 +39,6 @@ using static go.main_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<widget, Describer>]
-[assembly: GoImplement<widget, Tagger>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

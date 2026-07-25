@@ -48,7 +48,6 @@ using static go.os.signal_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<signalCtx, context_package.Context>(Pointer = true)]
 [assembly: GoImplement<signalCtx, context_package.Context>(Promoted = true)]
-[assembly: GoImplement<signalCtx, stringer>(Pointer = true)]
 [assembly: GoImplement<syscall_package.ΔSignal, os_package.ΔSignal>]
 // </InterfaceImplementations>
 

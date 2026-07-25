@@ -46,7 +46,16 @@ func (v *Visitor) convTypeAssertExpr(typeAssertExpr *ast.TypeAssertExpr) string 
 					// interface resolves through its generated ᴛAs conversion method at run time and
 					// needs no recorded adapter (builtin.cs TryTypeAssert), so recording one would be
 					// dead machinery.
-					v.recordAssertConcreteImplementers(exprType, targetType)
+					//
+					// RETIRED (stage 4): this whole scan is a structural HEURISTIC — it guesses the
+					// assertion's dynamic type by enumerating the CURRENT package's concrete types,
+					// which is blind by construction to a dynamic type living in a later-converted
+					// assembly. The tiered interface shells resolve the assert at run time from the
+					// concrete's own assembly instead, so the record is no longer load-bearing. Kept
+					// behind the default-off -structural-implement-records revert lever only.
+					if v.options.structuralImplementRecords {
+						v.recordAssertConcreteImplementers(exprType, targetType)
+					}
 				}
 			}
 		}

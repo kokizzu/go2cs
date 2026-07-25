@@ -42,9 +42,6 @@ using static go.main_package;
 [assembly: GoImplement<Conn, Reader>]
 [assembly: GoImplement<Conn, Writer>]
 [assembly: GoImplement<conn, Conn>(Pointer = true)]
-[assembly: GoImplement<conn, ReadWriteCloser>(Pointer = true)]
-[assembly: GoImplement<conn, Reader>(Pointer = true)]
-[assembly: GoImplement<conn, Writer>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

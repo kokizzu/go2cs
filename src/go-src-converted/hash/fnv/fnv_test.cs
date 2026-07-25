@@ -234,19 +234,19 @@ internal static void testIntegrity(ж<testing.T> Ꮡt, hash.Hash h) {
 
 // There's no Sum128 function, so we don't need to test anything here.
 public static void BenchmarkFnv32KB(ж<testing.B> Ꮡb) {
-    benchmarkKB(Ꮡb, New32());
+    benchmarkKB(Ꮡb, new hash_Hash32ᴠHash(New32()));
 }
 
 public static void BenchmarkFnv32aKB(ж<testing.B> Ꮡb) {
-    benchmarkKB(Ꮡb, New32a());
+    benchmarkKB(Ꮡb, new hash_Hash32ᴠHash(New32a()));
 }
 
 public static void BenchmarkFnv64KB(ж<testing.B> Ꮡb) {
-    benchmarkKB(Ꮡb, New64());
+    benchmarkKB(Ꮡb, new hash_Hash64ᴠHash(New64()));
 }
 
 public static void BenchmarkFnv64aKB(ж<testing.B> Ꮡb) {
-    benchmarkKB(Ꮡb, New64a());
+    benchmarkKB(Ꮡb, new hash_Hash64ᴠHash(New64a()));
 }
 
 public static void BenchmarkFnv128KB(ж<testing.B> Ꮡb) {

@@ -39,7 +39,6 @@ using static go.main_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<other, Stringish>(Pointer = true)]
-[assembly: GoImplement<widget, Marshaler>(Pointer = true)]
 [assembly: GoImplement<widget, Stringish>(Pointer = true)]
 // </InterfaceImplementations>
 

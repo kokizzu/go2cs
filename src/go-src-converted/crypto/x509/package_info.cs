@@ -69,6 +69,7 @@ using static go.crypto.x509_package;
 [assembly: GoImplement<SystemRootsError, error>]
 [assembly: GoImplement<UnhandledCriticalExtension, error>]
 [assembly: GoImplement<UnknownAuthorityError, error>]
+[assembly: GoImplement<crypto_package.Hash, crypto_package.SignerOpts>]
 [assembly: GoImplement<go.crypto.rsa_package.PSSOptions, crypto_package.SignerOpts>(Pointer = true)]
 // </InterfaceImplementations>
 

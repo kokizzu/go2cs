@@ -435,23 +435,23 @@ internal static nint firstInSrc(slice<Object> path) {
 }
 
 internal static ast.Node node(this importDecl d) {
-    return new ast.ImportSpecжNode(d.spec);
+    return new ast_ImportSpecжNode(d.spec);
 }
 
 internal static ast.Node node(this ΔconstDecl d) {
-    return new ast.ValueSpecжNode(d.spec);
+    return new ast_ValueSpecжNode(d.spec);
 }
 
 internal static ast.Node node(this ΔvarDecl d) {
-    return new ast.ValueSpecжNode(d.spec);
+    return new ast_ValueSpecжNode(d.spec);
 }
 
 internal static ast.Node node(this ΔtypeDecl d) {
-    return new ast.TypeSpecжNode(d.spec);
+    return new ast_TypeSpecжNode(d.spec);
 }
 
 internal static ast.Node node(this ΔfuncDecl d) {
-    return new ast.FuncDeclжNode(d.decl);
+    return new ast_FuncDeclжNode(d.decl);
 }
 
 internal static void walkDecls(this ж<Checker> Ꮡcheck, slice<ast.Decl> decls, Action<decl> f) {
@@ -689,7 +689,7 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
                     Ꮡcheck.error(new ast_TypeSpecжpositioner(Ꮡtdecl), UnsupportedFeature, "generic type alias requires GOEXPERIMENT=aliastypeparams"u8);
                     versionErr = true;
                 }
-                check.openScope(new ast.TypeSpecжNode(Ꮡtdecl), "type parameters"u8);
+                check.openScope(new ast_TypeSpecжNode(Ꮡtdecl), "type parameters"u8);
                 defer(Ꮡcheck.closeScope);
                 Ꮡcheck.collectTypeParams(alias.of(Alias.Ꮡtparams), tdecl.TypeParams);
             }
@@ -722,7 +722,7 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
     var named = Ꮡcheck.newNamed(Ꮡobj, default!, default!);
     setDefType(Ꮡdef, new NamedжΔType(named));
     if (tdecl.TypeParams != nil) {
-        check.openScope(new ast.TypeSpecжNode(Ꮡtdecl), "type parameters"u8);
+        check.openScope(new ast_TypeSpecжNode(Ꮡtdecl), "type parameters"u8);
         defer(Ꮡcheck.closeScope);
         Ꮡcheck.collectTypeParams(named.of(Named.Ꮡtparams), tdecl.TypeParams);
     }
@@ -815,7 +815,7 @@ internal static ΔType bound(this ж<Checker> Ꮡcheck, ast.Expr x) {
         break;
     }}
     if (wrap) {
-        x = new ast.InterfaceTypeжExpr(Ꮡ(new ast.InterfaceType(Methods: Ꮡ(new ast.FieldList(List: new ж<ast.Field>[]{Ꮡ(new ast.Field(Type: x))}.slice())))));
+        x = new ast_InterfaceTypeжExpr(Ꮡ(new ast.InterfaceType(Methods: Ꮡ(new ast.FieldList(List: new ж<ast.Field>[]{Ꮡ(new ast.Field(Type: x))}.slice())))));
         var t = Ꮡcheck.typ(x);
         // mark t as implicit interface if all went well
         {

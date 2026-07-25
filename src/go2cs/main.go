@@ -55,6 +55,20 @@ type Options struct {
 	showParseTree       bool
 	debugMode           bool
 
+	// structuralImplementRecords re-enables the RETIRED heuristic GoImplement recorders — the
+	// assertion-site (recordAssertConcreteImplementers), declaration-site
+	// (recordLocalConcreteImplementers) and test-package (recordTestPackageImplementers) scans that
+	// enumerated a package's concrete types by `types.Implements` and recorded a nominal adapter for
+	// every structural match. Those existed only because a NAMED interface had no run-time
+	// duck-typing surface; the tiered interface shells (DESIGN-named-interface-wrappers stages 2-3)
+	// now resolve a structural assert at run time, in the concrete's OWN assembly, with none of the
+	// recorders' by-construction blind spots (a dynamic type in a later-converted assembly was
+	// unreachable). Default OFF: the flag exists ONLY as a revert lever for the stage-4 landing and
+	// is deleted with the machinery in stage 5. It does NOT gate the DEMANDED record producers (an
+	// explicit conversion, witness or resolved-concrete assert site), nor the Promoted /
+	// ConstraintProxy records — those are declared conversions and compile-time nominal machinery.
+	structuralImplementRecords bool
+
 	// -tests conversion options (dispatch is wired in a later stage; until then these are set only
 	// by the test-conversion entry points and unit tests — the flag surface stays default-off)
 	convertTests    bool          // convert the package's _test.go variants into a runnable test project
@@ -774,6 +788,7 @@ func main() {
 	showParseTreeCmd := commandLine.Bool("tree", false, "Show parse tree")
 	csprojFileCmd := commandLine.String("csproj", "", "Path to custom .csproj template file")
 	debugModeCmd := commandLine.Bool("debug", false, "Enable debug mode")
+	structuralImplementRecordsCmd := commandLine.Bool("structural-implement-records", false, "Re-enable the retired heuristic GoImplement recorders (structural implements scans); the run-time interface shells resolve these asserts, so this exists only as a revert lever")
 
 	var positionals []string
 	positionals, err = parseArgsInterspersed(commandLine, os.Args[1:])
@@ -873,6 +888,8 @@ Examples:
 		parseCgoTargets:     *parseCgoTargetsCmd,
 		showParseTree:       *showParseTreeCmd,
 		debugMode:           *debugModeCmd,
+
+		structuralImplementRecords: *structuralImplementRecordsCmd,
 	}
 
 	if options.convertTests {

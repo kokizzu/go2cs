@@ -179,7 +179,14 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 			// interface as a GoImplement pair, so a run-time assertion `x.(Iface)` resolves even
 			// when the ASSERTING package cannot name the concrete dynamic type (runtime's
 			// unexported errorString, asserted to runtime.Error by math/bits). See the helper.
-			v.recordLocalConcreteImplementers(identType)
+			//
+			// RETIRED (stage 4): the run-time interface shells resolve a structural assert against
+			// this interface directly, so the SPECULATIVE nominal adapter this scan records — the
+			// only producer no emitted C# ever names — is dead weight. Kept behind the default-off
+			// -structural-implement-records revert lever only.
+			if v.options.structuralImplementRecords {
+				v.recordLocalConcreteImplementers(identType)
+			}
 		}
 	}
 

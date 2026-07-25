@@ -43,7 +43,7 @@ public static void TestSub(ж<testing.T> Ꮡt) {
     var (sub, err) = Sub(new subOnly(new fstest_MapFSᴠSubFS(testFsys)), "sub"u8);
     check("subOnly"u8, sub, err);
     // Test that Sub uses Open when the method is not present.
-    (sub, err) = Sub(new openOnly(new fstest_MapFSᴠFS(testFsys)), "sub"u8);
+    (sub, err) = Sub(new openOnly(testFsys), "sub"u8);
     check("openOnly"u8, sub, err);
     (_, err) = sub.Open("nonexist"u8);
     if (err == default!) {

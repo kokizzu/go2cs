@@ -283,7 +283,7 @@ internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡchec
             break;
         }
         case ж<ast.IfStmt> sΔ1: {
-            stmtBranchesʗ1(new ast.BlockStmtжStmt((~sΔ1).Body));
+            stmtBranchesʗ1(new ast_BlockStmtжStmt((~sΔ1).Body));
             if ((~sΔ1).Else != default!) {
                 stmtBranchesʗ1((~sΔ1).Else);
             }
@@ -294,11 +294,11 @@ internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡchec
             break;
         }
         case ж<ast.SwitchStmt> sΔ1: {
-            stmtBranchesʗ1(new ast.BlockStmtжStmt((~sΔ1).Body));
+            stmtBranchesʗ1(new ast_BlockStmtжStmt((~sΔ1).Body));
             break;
         }
         case ж<ast.TypeSwitchStmt> sΔ1: {
-            stmtBranchesʗ1(new ast.BlockStmtжStmt((~sΔ1).Body));
+            stmtBranchesʗ1(new ast_BlockStmtжStmt((~sΔ1).Body));
             break;
         }
         case ж<ast.CommClause> sΔ1: {
@@ -306,15 +306,15 @@ internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡchec
             break;
         }
         case ж<ast.SelectStmt> sΔ1: {
-            stmtBranchesʗ1(new ast.BlockStmtжStmt((~sΔ1).Body));
+            stmtBranchesʗ1(new ast_BlockStmtжStmt((~sΔ1).Body));
             break;
         }
         case ж<ast.ForStmt> sΔ1: {
-            stmtBranchesʗ1(new ast.BlockStmtжStmt((~sΔ1).Body));
+            stmtBranchesʗ1(new ast_BlockStmtжStmt((~sΔ1).Body));
             break;
         }
         case ж<ast.RangeStmt> sΔ1: {
-            stmtBranchesʗ1(new ast.BlockStmtжStmt((~sΔ1).Body));
+            stmtBranchesʗ1(new ast_BlockStmtжStmt((~sΔ1).Body));
             break;
         }}
     };

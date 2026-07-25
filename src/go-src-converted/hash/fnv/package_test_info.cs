@@ -40,23 +40,11 @@ using static go.hash.fnv_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<hash_package.Hash32, hash_package.Hash>]
 [assembly: GoImplement<hash_package.Hash64, hash_package.Hash>]
-[assembly: GoImplement<sum128, encoding_package.BinaryMarshaler>(Pointer = true)]
-[assembly: GoImplement<sum128, encoding_package.BinaryUnmarshaler>(Pointer = true)]
 [assembly: GoImplement<sum128, hash_package.Hash>(Pointer = true)]
-[assembly: GoImplement<sum128a, encoding_package.BinaryMarshaler>(Pointer = true)]
-[assembly: GoImplement<sum128a, encoding_package.BinaryUnmarshaler>(Pointer = true)]
 [assembly: GoImplement<sum128a, hash_package.Hash>(Pointer = true)]
-[assembly: GoImplement<sum32, encoding_package.BinaryMarshaler>(Pointer = true)]
-[assembly: GoImplement<sum32, encoding_package.BinaryUnmarshaler>(Pointer = true)]
 [assembly: GoImplement<sum32, hash_package.Hash32>(Pointer = true)]
-[assembly: GoImplement<sum32a, encoding_package.BinaryMarshaler>(Pointer = true)]
-[assembly: GoImplement<sum32a, encoding_package.BinaryUnmarshaler>(Pointer = true)]
 [assembly: GoImplement<sum32a, hash_package.Hash32>(Pointer = true)]
-[assembly: GoImplement<sum64, encoding_package.BinaryMarshaler>(Pointer = true)]
-[assembly: GoImplement<sum64, encoding_package.BinaryUnmarshaler>(Pointer = true)]
 [assembly: GoImplement<sum64, hash_package.Hash64>(Pointer = true)]
-[assembly: GoImplement<sum64a, encoding_package.BinaryMarshaler>(Pointer = true)]
-[assembly: GoImplement<sum64a, encoding_package.BinaryUnmarshaler>(Pointer = true)]
 [assembly: GoImplement<sum64a, hash_package.Hash64>(Pointer = true)]
 // </InterfaceImplementations>
 

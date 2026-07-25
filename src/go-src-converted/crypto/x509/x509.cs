@@ -1538,7 +1538,7 @@ internal static (slice<byte>, error) signTBS(slice<byte> tbs, crypto.Signer key,
         h.Write(signed);
         signed = h.Sum(default!);
     }
-    crypto.SignerOpts signerOpts = hashFunc;
+    crypto.SignerOpts signerOpts = new crypto_HashᴠSignerOpts(hashFunc);
     if (sigAlg.isRSAPSS()) {
         signerOpts = new rsa_PSSOptionsжSignerOpts(Ꮡ(new rsa.PSSOptions(
             SaltLength: rsa.PSSSaltLengthEqualsHash,

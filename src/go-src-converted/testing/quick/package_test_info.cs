@@ -50,7 +50,6 @@ using static go.testing.quick_package;
 [assembly: GoImplement<CheckEqualError, error>(Pointer = true)]
 [assembly: GoImplement<CheckError, error>(Pointer = true)]
 [assembly: GoImplement<SetupError, error>]
-[assembly: GoImplement<myStruct, Generator>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

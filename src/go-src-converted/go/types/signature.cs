@@ -174,7 +174,7 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
                 //       again when we type-check the signature.
                 // TODO(gri) maybe the receiver should be marked as invalid instead?
                 {
-                    var recv = asNamed(Ꮡcheck.genericType(new ast.IdentжExpr(rname), nil)); if (recv != nil) {
+                    var recv = asNamed(Ꮡcheck.genericType(new ast_IdentжExpr(rname), nil)); if (recv != nil) {
                         recvTParams = recv.TypeParams().list();
                     }
                 }

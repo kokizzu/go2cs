@@ -125,7 +125,7 @@ public static (ж<Archive>, error) NewArchive(io.ReaderAt r) {
         }
     }
     {
-        var errΔ3 = binary.Read(new io.SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡfhdr); if (errΔ3 != default!) {
+        var errΔ3 = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡfhdr); if (errΔ3 != default!) {
             return (default!, errΔ3);
         }
     }
@@ -154,7 +154,7 @@ public static (ж<Archive>, error) NewArchive(io.ReaderAt r) {
         }
         ref var mhdr = ref heap(new bigarMemberHeader(), out var Ꮡmhdr);
         {
-            var errΔ5 = binary.Read(new io.SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡmhdr); if (errΔ5 != default!) {
+            var errΔ5 = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡmhdr); if (errΔ5 != default!) {
                 return (default!, errΔ5);
             }
         }
@@ -172,7 +172,7 @@ public static (ж<Archive>, error) NewArchive(io.ReaderAt r) {
         }
         var name = new slice<byte>((nint)(namlen));
         {
-            var errΔ7 = binary.Read(new io.SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), name); if (errΔ7 != default!) {
+            var errΔ7 = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), name); if (errΔ7 != default!) {
                 return (default!, errΔ7);
             }
         }
@@ -189,7 +189,7 @@ public static (ж<Archive>, error) NewArchive(io.ReaderAt r) {
         // Read AIAFMAG string
         ref var fmag = ref heap(new array<byte>(2), out var Ꮡfmag);
         {
-            var errΔ9 = binary.Read(new io.SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡfmag); if (errΔ9 != default!) {
+            var errΔ9 = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡfmag); if (errΔ9 != default!) {
                 return (default!, errΔ9);
             }
         }
@@ -198,7 +198,7 @@ public static (ж<Archive>, error) NewArchive(io.ReaderAt r) {
         }
         fileoff += 2;
         // Add the two bytes of AIAFMAG
-        member.Value.sr = io.NewSectionReader(new io.SectionReaderжReaderAt(sr), fileoff, size);
+        member.Value.sr = io.NewSectionReader(new io_SectionReaderжReaderAt(sr), fileoff, size);
         if (off == lastoff) {
             break;
         }
@@ -216,7 +216,7 @@ public static (ж<Archive>, error) NewArchive(io.ReaderAt r) {
 [GoRecv] public static (ж<File>, error) GetFile(this ref Archive arch, @string name) {
     foreach (var (_, mem) in arch.Members) {
         if ((~mem).Name == name) {
-            return NewFile(new io.SectionReaderжReaderAt((~mem).sr));
+            return NewFile(new io_SectionReaderжReaderAt((~mem).sr));
         }
     }
     return (default!, fmt.Errorf("unknown member %s in archive"u8, name));

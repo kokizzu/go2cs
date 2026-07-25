@@ -38,11 +38,7 @@ using static go.main_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<node, named>(Pointer = true)]
-[assembly: GoImplement<node, stringish>(Pointer = true)]
 [assembly: GoImplement<plainErr, error>(Pointer = true)]
-[assembly: GoImplement<shallow, named>(Pointer = true)]
-[assembly: GoImplement<shallow, stringish>(Pointer = true)]
 [assembly: GoImplement<tempErr, error>(Pointer = true)]
 // </InterfaceImplementations>
 

@@ -41,7 +41,6 @@ using static go.main_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<point, Named>]
-[assembly: GoImplement<point, Stringer>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

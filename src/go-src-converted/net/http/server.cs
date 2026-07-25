@@ -613,7 +613,7 @@ internal static void @lock(this ж<connReader> Ꮡcr) {
 
     Ꮡcr.of(connReader.Ꮡmu).Lock();
     if (cr.cond == nil) {
-        cr.cond = sync.NewCond(new sync.MutexжLocker(Ꮡcr.of(connReader.Ꮡmu)));
+        cr.cond = sync.NewCond(new sync_MutexжLocker(Ꮡcr.of(connReader.Ꮡmu)));
     }
 }
 

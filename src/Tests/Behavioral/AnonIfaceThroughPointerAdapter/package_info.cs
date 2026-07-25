@@ -39,7 +39,6 @@ using static go.main_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<thing, speaker>(Pointer = true)]
-[assembly: GoImplement<thing, speaker>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

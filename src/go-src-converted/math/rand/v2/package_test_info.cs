@@ -55,11 +55,8 @@ using static go.math.rand.rand_test_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<ChaCha8, Source>(Pointer = true)]
 [assembly: GoImplement<ChaCha8, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<PCG, Source>(Pointer = true)]
-[assembly: GoImplement<Rand, Source>(Pointer = true)]
-[assembly: GoImplement<Zipf, Source>(Pointer = true)]
 [assembly: GoImplement<runtimeSource, Source>]
 // </InterfaceImplementations>
 

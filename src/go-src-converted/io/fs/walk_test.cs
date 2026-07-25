@@ -66,7 +66,7 @@ internal static fs.FS makeTree() {
             fsysʗ1[path] = Ꮡ(new fstest.MapFile(Mode: ModeDir));
         }
     });
-    return new fstest_MapFSᴠFS(fsys);
+    return fsys;
 }
 
 // Assumes that each node name is unique. Good enough for a test.

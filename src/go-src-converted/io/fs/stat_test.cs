@@ -31,10 +31,10 @@ public static void TestStat(ж<testing.T> Ꮡt) {
         }
     };
     // Test that Stat uses the method when present.
-    var (info, err) = Stat(new statOnly(testFsys), "hello.txt"u8);
+    var (info, err) = Stat(new statOnly(new fstest_MapFSᴠStatFS(testFsys)), "hello.txt"u8);
     check("statOnly"u8, info, err);
     // Test that Stat uses Open when the method is not present.
-    (info, err) = Stat(new openOnly(new fstest_MapFSᴠFS(testFsys)), "hello.txt"u8);
+    (info, err) = Stat(new openOnly(testFsys), "hello.txt"u8);
     check("openOnly"u8, info, err);
 }
 

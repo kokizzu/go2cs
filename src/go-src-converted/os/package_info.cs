@@ -55,7 +55,6 @@ using static go.os_package;
 [assembly: GoImplement<File, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<LinkError, error>(Pointer = true)]
 [assembly: GoImplement<SyscallError, error>(Pointer = true)]
-[assembly: GoImplement<SyscallError, timeout>(Pointer = true)]
 [assembly: GoImplement<dirEntry, go.io.fs_package.DirEntry>]
 [assembly: GoImplement<dirFS, go.io.fs_package.FS>]
 [assembly: GoImplement<fileStat, FileInfo>(Pointer = true)]

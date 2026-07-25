@@ -84,10 +84,10 @@ public static void TestGlobMethod(ж<testing.T> Ꮡt) {
         }
     };
     // Test that ReadDir uses the method when present.
-    var (names, err) = Glob(new globOnly(testFsys), "*.txt"u8);
+    var (names, err) = Glob(new globOnly(new fstest_MapFSᴠGlobFS(testFsys)), "*.txt"u8);
     check("readDirOnly"u8, names, err);
     // Test that ReadDir uses Open when the method is not present.
-    (names, err) = Glob(new openOnly(new fstest_MapFSᴠFS(testFsys)), "*.txt"u8);
+    (names, err) = Glob(new openOnly(testFsys), "*.txt"u8);
     check("openOnly"u8, names, err);
 }
 

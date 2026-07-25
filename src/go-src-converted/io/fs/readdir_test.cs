@@ -35,13 +35,13 @@ public static void TestReadDir(ж<testing.T> Ꮡt) {
         }
     };
     // Test that ReadDir uses the method when present.
-    var (dirs, err) = ReadDir(new readDirOnly(testFsys), "."u8);
+    var (dirs, err) = ReadDir(new readDirOnly(new fstest_MapFSᴠReadDirFS(testFsys)), "."u8);
     check("readDirOnly"u8, dirs, err);
     // Test that ReadDir uses Open when the method is not present.
-    (dirs, err) = ReadDir(new openOnly(new fstest_MapFSᴠFS(testFsys)), "."u8);
+    (dirs, err) = ReadDir(new openOnly(testFsys), "."u8);
     check("openOnly"u8, dirs, err);
     // Test that ReadDir on Sub of . works (sub_test checks non-trivial subs).
-    (var sub, err) = Sub(new fstest_MapFSᴠFS(testFsys), "."u8);
+    (var sub, err) = Sub(testFsys, "."u8);
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
@@ -78,7 +78,7 @@ public static void TestFileInfoToDirEntry(ж<testing.T> Ꮡt) {
         var testʗ1 = testΔ1;
         var testFsʗ1 = testFs;
         Ꮡt.Run(testΔ1.path, (ж<testing.T> tΔ1) => {
-            var (fi, err) = Stat(new fstest_MapFSᴠFS(testFsʗ1), testʗ1.path);
+            var (fi, err) = Stat(testFsʗ1, testʗ1.path);
             if (err != default!) {
                 tΔ1.Fatal(err);
             }

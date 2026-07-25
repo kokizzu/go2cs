@@ -594,7 +594,7 @@ internal static ast.Expr parseType(this ж<parser> Ꮡp) => func((defer, recover
         pos = p.pos;
         Ꮡp.errorExpected(pos, "type"u8);
         p.advance(exprEnd);
-        return new ast.BadExprжExpr(Ꮡ(new ast.BadExpr(From: pos, To: p.pos)));
+        return new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: pos, To: p.pos)));
     }
     return typ;
 });
@@ -627,9 +627,9 @@ internal static ast.Expr parseTypeName(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡid
         // ident is a package name
         p.next();
         var sel = Ꮡp.parseIdent();
-        return new ast.SelectorExprжExpr(Ꮡ(new ast.SelectorExpr(X: new ast.IdentжExpr(Ꮡident), Sel: sel)));
+        return new ast_SelectorExprжExpr(Ꮡ(new ast.SelectorExpr(X: new ast_IdentжExpr(Ꮡident), Sel: sel)));
     }
-    return new ast.IdentжExpr(Ꮡident);
+    return new ast_IdentжExpr(Ꮡident);
 });
 
 // "[" has already been consumed, and lbrack is its position.
@@ -644,7 +644,7 @@ internal static ж<ast.ArrayType> parseArrayType(this ж<parser> Ꮡp, tokenꓸP
         p.exprLev++;
         // always permit ellipsis for more fault-tolerant parsing
         if (p.tok == token.ELLIPSIS){
-            len = new ast.EllipsisжExpr(Ꮡ(new ast.Ellipsis(ΔEllipsis: p.pos)));
+            len = new ast_EllipsisжExpr(Ꮡ(new ast.Ellipsis(ΔEllipsis: p.pos)));
             p.next();
         } else 
         if (p.tok != token.RBRACK) {
@@ -694,7 +694,7 @@ internal static (ж<ast.Ident>, ast.Expr) parseArrayFieldOrTypeInstance(this ж<
     if (len(args) == 0) {
         // x []E
         var elt = Ꮡp.parseType();
-        return (Ꮡx, new ast.ArrayTypeжExpr(Ꮡ(new ast.ArrayType(Lbrack: lbrack, Elt: elt))));
+        return (Ꮡx, new ast_ArrayTypeжExpr(Ꮡ(new ast.ArrayType(Lbrack: lbrack, Elt: elt))));
     }
     // x [P]E or x[P]
     if (len(args) == 1) {
@@ -705,11 +705,11 @@ internal static (ж<ast.Ident>, ast.Expr) parseArrayFieldOrTypeInstance(this ж<
                 // Trailing commas are invalid in array type fields.
                 Ꮡp.error(trailingComma, "unexpected comma; expecting ]"u8);
             }
-            return (Ꮡx, new ast.ArrayTypeжExpr(Ꮡ(new ast.ArrayType(Lbrack: lbrack, Len: args[0], Elt: elt))));
+            return (Ꮡx, new ast_ArrayTypeжExpr(Ꮡ(new ast.ArrayType(Lbrack: lbrack, Len: args[0], Elt: elt))));
         }
     }
     // x[P], x[P1, P2], ...
-    return (default!, typeparams.PackIndexExpr(new ast.IdentжExpr(Ꮡx), lbrack, args, rbrack));
+    return (default!, typeparams.PackIndexExpr(new ast_IdentжExpr(Ꮡx), lbrack, args, rbrack));
 });
 
 internal static ж<ast.Field> parseFieldDecl(this ж<parser> Ꮡp) => func((defer, recover) => {
@@ -726,7 +726,7 @@ internal static ж<ast.Field> parseFieldDecl(this ж<parser> Ꮡp) => func((defe
         var name = Ꮡp.parseIdent();
         if (p.tok == token.PERIOD || p.tok == token.STRING || p.tok == token.SEMICOLON || p.tok == token.RBRACE){
             // embedded type
-            typ = new ast.IdentжExpr(name);
+            typ = new ast_IdentжExpr(name);
             if (p.tok == token.PERIOD) {
                 typ = Ꮡp.parseQualifiedIdent(name);
             }
@@ -767,7 +767,7 @@ internal static ж<ast.Field> parseFieldDecl(this ж<parser> Ꮡp) => func((defe
             // *T
             typ = Ꮡp.parseQualifiedIdent(nil);
         }
-        typ = new ast.StarExprжExpr(Ꮡ(new ast.StarExpr(Star: star, X: typ)));
+        typ = new ast_StarExprжExpr(Ꮡ(new ast.StarExpr(Star: star, X: typ)));
     }
     else if (exprᴛ1 == token.LPAREN) {
         Ꮡp.error(p.pos, "cannot parenthesize embedded type"u8);
@@ -777,7 +777,7 @@ internal static ж<ast.Field> parseFieldDecl(this ж<parser> Ꮡp) => func((defe
             ref var star = ref heap<tokenꓸPos>(out var Ꮡstar);
             star = p.pos;
             p.next();
-            typ = new ast.StarExprжExpr(Ꮡ(new ast.StarExpr(Star: star, X: Ꮡp.parseQualifiedIdent(nil))));
+            typ = new ast_StarExprжExpr(Ꮡ(new ast.StarExpr(Star: star, X: Ꮡp.parseQualifiedIdent(nil))));
         } else {
             // (T)
             typ = Ꮡp.parseQualifiedIdent(nil);
@@ -792,7 +792,7 @@ internal static ж<ast.Field> parseFieldDecl(this ж<parser> Ꮡp) => func((defe
         pos = p.pos;
         Ꮡp.errorExpected(pos, "field name or embedded type"u8);
         p.advance(exprEnd);
-        typ = new ast.BadExprжExpr(Ꮡ(new ast.BadExpr(From: pos, To: p.pos)));
+        typ = new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: pos, To: p.pos)));
     }
 
     ж<ast.BasicLit> tag = default!;
@@ -900,7 +900,7 @@ internal static field /*f*/ parseParamDecl(this ж<parser> Ꮡp, ж<ast.Ident> �
                 (f.name, f.typ) = Ꮡp.parseArrayFieldOrTypeInstance(f.name);
             }
             else if (exprᴛ2 == token.ELLIPSIS) {
-                f.typ = new ast.EllipsisжExpr(Ꮡp.parseDotsType());
+                f.typ = new ast_EllipsisжExpr(Ꮡp.parseDotsType());
                 return;
             }
             else if (exprᴛ2 == token.PERIOD) {
@@ -921,7 +921,7 @@ internal static field /*f*/ parseParamDecl(this ж<parser> Ꮡp, ж<ast.Ident> �
             else if (exprᴛ2 == token.OR) {
                 if (typeSetsOK) {
                     // name "|" typeset
-                    f.typ = Ꮡp.embeddedElem(new ast.IdentжExpr(f.name));
+                    f.typ = Ꮡp.embeddedElem(new ast_IdentжExpr(f.name));
                     f.name = default!;
                     return;
                 }
@@ -932,7 +932,7 @@ internal static field /*f*/ parseParamDecl(this ж<parser> Ꮡp, ж<ast.Ident> �
             f.typ = Ꮡp.parseType();
         }
         else if (exprᴛ1 == token.ELLIPSIS) {
-            f.typ = new ast.EllipsisжExpr(Ꮡp.parseDotsType());
+            f.typ = new ast_EllipsisжExpr(Ꮡp.parseDotsType());
             return;
         }
         else { /* default: */
@@ -1019,7 +1019,7 @@ internal static slice<ж<ast.Field>> /*params*/ parseParameterList(this ж<parse
                 var par = Ꮡ(list, i);
                 {
                     var typΔ1 = par.Value.name; if (typΔ1 != nil) {
-                        par.Value.typ = new ast.IdentжExpr(typΔ1);
+                        par.Value.typ = new ast_IdentжExpr(typΔ1);
                         par.Value.name = default!;
                     }
                 }
@@ -1066,7 +1066,7 @@ internal static slice<ж<ast.Field>> /*params*/ parseParameterList(this ж<parse
                     } else {
                         // par.typ == nil && typ == nil => we only have a par.name
                         errPos = (~par).name.Pos();
-                        par.Value.typ = new ast.BadExprжExpr(Ꮡ(new ast.BadExpr(From: errPos, To: p.pos)));
+                        par.Value.typ = new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: errPos, To: p.pos)));
                     }
                 }
             }
@@ -1238,7 +1238,7 @@ internal static ж<ast.Field> parseMethodSpec(this ж<parser> Ꮡp) => func((def
                         var (_, @params) = Ꮡp.parseParameters(false);
                         var results = Ꮡp.parseResult();
                         idents = new ж<ast.Ident>[]{ident}.slice();
-                        typ = new ast.FuncTypeжExpr(Ꮡ(new ast.FuncType(
+                        typ = new ast_FuncTypeжExpr(Ꮡ(new ast.FuncType(
                             Func: token.NoPos,
                             Params: @params,
                             Results: results
@@ -1260,7 +1260,7 @@ internal static ж<ast.Field> parseMethodSpec(this ж<parser> Ꮡp) => func((def
                             p.exprLev--;
                         }
                         tokenꓸPos rbrack = Ꮡp.expectClosing(token.RBRACK, "type argument list"u8);
-                        typ = typeparams.PackIndexExpr(new ast.IdentжExpr(ident), lbrack, list, rbrack);
+                        typ = typeparams.PackIndexExpr(new ast_IdentжExpr(ident), lbrack, list, rbrack);
                     }
                 }
                 break;
@@ -1271,7 +1271,7 @@ internal static ж<ast.Field> parseMethodSpec(this ж<parser> Ꮡp) => func((def
                 idents = new ж<ast.Ident>[]{ // ordinary method
  // TODO(rfindley) refactor to share code with parseFuncType.
 ident}.slice();
-                typ = new ast.FuncTypeжExpr(Ꮡ(new ast.FuncType(Func: token.NoPos, Params: @params, Results: results)));
+                typ = new ast_FuncTypeжExpr(Ꮡ(new ast.FuncType(Func: token.NoPos, Params: @params, Results: results)));
                 break;
             }
             default: {
@@ -1312,7 +1312,7 @@ internal static ast.Expr embeddedElem(this ж<parser> Ꮡp, ast.Expr x) => func(
         p.next();
         t.Value.X = x;
         t.Value.Y = Ꮡp.embeddedTerm();
-        x = new ast.BinaryExprжExpr(t);
+        x = new ast_BinaryExprжExpr(t);
     }
     return x;
 });
@@ -1329,7 +1329,7 @@ internal static ast.Expr embeddedTerm(this ж<parser> Ꮡp) => func((defer, reco
         tΔ1.Value.Op = token.TILDE;
         p.next();
         tΔ1.Value.X = Ꮡp.parseType();
-        return new ast.UnaryExprжExpr(tΔ1);
+        return new ast_UnaryExprжExpr(tΔ1);
     }
     var t = Ꮡp.tryIdentOrType();
     if (t == default!) {
@@ -1337,7 +1337,7 @@ internal static ast.Expr embeddedTerm(this ж<parser> Ꮡp) => func((defer, reco
         pos = p.pos;
         Ꮡp.errorExpected(pos, "~ term or type"u8);
         p.advance(exprEnd);
-        return new ast.BadExprжExpr(Ꮡ(new ast.BadExpr(From: pos, To: p.pos)));
+        return new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: pos, To: p.pos)));
     }
     return t;
 });
@@ -1465,10 +1465,10 @@ internal static ast.Expr parseTypeInstance(this ж<parser> Ꮡp, ast.Expr typ) =
     closing = Ꮡp.expectClosing(token.RBRACK, "type argument list"u8);
     if (len(list) == 0) {
         Ꮡp.errorExpected(closing, "type argument list"u8);
-        return new ast.IndexExprжExpr(Ꮡ(new ast.IndexExpr(
+        return new ast_IndexExprжExpr(Ꮡ(new ast.IndexExpr(
             X: typ,
             Lbrack: opening,
-            Index: new ast.BadExprжExpr(Ꮡ(new ast.BadExpr(From: opening + 1, To: closing))),
+            Index: new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: opening + 1, To: closing))),
             Rbrack: closing
         )));
     }
@@ -1489,25 +1489,25 @@ internal static ast.Expr tryIdentOrType(this ж<parser> Ꮡp) => func<ast.Expr>(
     }
     if (exprᴛ1 == token.LBRACK) {
         tokenꓸPos lbrack = Ꮡp.expect(token.LBRACK);
-        return new ast.ArrayTypeжExpr(Ꮡp.parseArrayType(lbrack, default!));
+        return new ast_ArrayTypeжExpr(Ꮡp.parseArrayType(lbrack, default!));
     }
     if (exprᴛ1 == token.STRUCT) {
-        return new ast.StructTypeжExpr(Ꮡp.parseStructType());
+        return new ast_StructTypeжExpr(Ꮡp.parseStructType());
     }
     if (exprᴛ1 == token.MUL) {
-        return new ast.StarExprжExpr(Ꮡp.parsePointerType());
+        return new ast_StarExprжExpr(Ꮡp.parsePointerType());
     }
     if (exprᴛ1 == token.FUNC) {
-        return new ast.FuncTypeжExpr(Ꮡp.parseFuncType());
+        return new ast_FuncTypeжExpr(Ꮡp.parseFuncType());
     }
     if (exprᴛ1 == token.INTERFACE) {
-        return new ast.InterfaceTypeжExpr(Ꮡp.parseInterfaceType());
+        return new ast_InterfaceTypeжExpr(Ꮡp.parseInterfaceType());
     }
     if (exprᴛ1 == token.MAP) {
-        return new ast.MapTypeжExpr(Ꮡp.parseMapType());
+        return new ast_MapTypeжExpr(Ꮡp.parseMapType());
     }
     if (exprᴛ1 == token.CHAN || exprᴛ1 == token.ARROW) {
-        return new ast.ChanTypeжExpr(Ꮡp.parseChanType());
+        return new ast_ChanTypeжExpr(Ꮡp.parseChanType());
     }
     if (exprᴛ1 == token.LPAREN) {
         ref var lparen = ref heap<tokenꓸPos>(out var Ꮡlparen);
@@ -1516,7 +1516,7 @@ internal static ast.Expr tryIdentOrType(this ж<parser> Ꮡp) => func<ast.Expr>(
         var typ = Ꮡp.parseType();
         ref var rparen = ref heap<tokenꓸPos>(out var Ꮡrparen);
         rparen = Ꮡp.expect(token.RPAREN);
-        return new ast.ParenExprжExpr(Ꮡ(new ast.ParenExpr(Lparen: lparen, X: typ, Rparen: rparen)));
+        return new ast_ParenExprжExpr(Ꮡ(new ast.ParenExpr(Lparen: lparen, X: typ, Rparen: rparen)));
     }
 
     // no type found
@@ -1579,12 +1579,12 @@ internal static ast.Expr parseFuncTypeOrLit(this ж<parser> Ꮡp) => func<ast.Ex
     var typ = Ꮡp.parseFuncType();
     if (p.tok != token.LBRACE) {
         // function type only
-        return new ast.FuncTypeжExpr(typ);
+        return new ast_FuncTypeжExpr(typ);
     }
     p.exprLev++;
     var body = Ꮡp.parseBody();
     p.exprLev--;
-    return new ast.FuncLitжExpr(Ꮡ(new ast.FuncLit(Type: typ, Body: body)));
+    return new ast_FuncLitжExpr(Ꮡ(new ast.FuncLit(Type: typ, Body: body)));
 });
 
 // parseOperand may return an expression or a raw type (incl. array
@@ -1598,12 +1598,12 @@ internal static ast.Expr parseOperand(this ж<parser> Ꮡp) => func((defer, reco
     var exprᴛ1 = p.tok;
     if (exprᴛ1 == token.IDENT) {
         var x = Ꮡp.parseIdent();
-        return new ast.IdentжExpr(x);
+        return new ast_IdentжExpr(x);
     }
     if (exprᴛ1 == token.INT || exprᴛ1 == token.FLOAT || exprᴛ1 == token.IMAG || exprᴛ1 == token.CHAR || exprᴛ1 == token.STRING) {
         var x = Ꮡ(new ast.BasicLit(ValuePos: p.pos, Kind: p.tok, Value: p.lit));
         p.next();
-        return new ast.BasicLitжExpr(x);
+        return new ast_BasicLitжExpr(x);
     }
     if (exprᴛ1 == token.LPAREN) {
         ref var lparen = ref heap<tokenꓸPos>(out var Ꮡlparen);
@@ -1614,7 +1614,7 @@ internal static ast.Expr parseOperand(this ж<parser> Ꮡp) => func((defer, reco
         p.exprLev--;
         ref var rparen = ref heap<tokenꓸPos>(out var Ꮡrparen);
         rparen = Ꮡp.expect(token.RPAREN);
-        return new ast.ParenExprжExpr(Ꮡ(new ast.ParenExpr( // types may be parenthesized: (some type)
+        return new ast_ParenExprжExpr(Ꮡ(new ast.ParenExpr( // types may be parenthesized: (some type)
 Lparen: lparen, X: x, Rparen: rparen)));
     }
     if (exprᴛ1 == token.FUNC) {
@@ -1635,7 +1635,7 @@ Lparen: lparen, X: x, Rparen: rparen)));
     pos = p.pos;
     Ꮡp.errorExpected(pos, "operand"u8);
     p.advance(stmtStart);
-    return new ast.BadExprжExpr(Ꮡ(new ast.BadExpr(From: pos, To: p.pos)));
+    return new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: pos, To: p.pos)));
 });
 
 internal static ast.Expr parseSelector(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
@@ -1645,7 +1645,7 @@ internal static ast.Expr parseSelector(this ж<parser> Ꮡp, ast.Expr x) => func
         deferǃ(un, trace(Ꮡp, "Selector"u8), defer);
     }
     var sel = Ꮡp.parseIdent();
-    return new ast.SelectorExprжExpr(Ꮡ(new ast.SelectorExpr(X: x, Sel: sel)));
+    return new ast_SelectorExprжExpr(Ꮡ(new ast.SelectorExpr(X: x, Sel: sel)));
 });
 
 internal static ast.Expr parseTypeAssertion(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
@@ -1665,7 +1665,7 @@ internal static ast.Expr parseTypeAssertion(this ж<parser> Ꮡp, ast.Expr x) =>
     }
     ref var rparen = ref heap<tokenꓸPos>(out var Ꮡrparen);
     rparen = Ꮡp.expect(token.RPAREN);
-    return new ast.TypeAssertExprжExpr(Ꮡ(new ast.TypeAssertExpr(X: x, Type: typ, Lparen: lparen, Rparen: rparen)));
+    return new ast_TypeAssertExprжExpr(Ꮡ(new ast.TypeAssertExpr(X: x, Type: typ, Lparen: lparen, Rparen: rparen)));
 });
 
 internal static ast.Expr parseIndexOrSliceOrInstance(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
@@ -1683,10 +1683,10 @@ internal static ast.Expr parseIndexOrSliceOrInstance(this ж<parser> Ꮡp, ast.E
         ref var rbrackΔ1 = ref heap<tokenꓸPos>(out var ᏑrbrackΔ1);
         rbrackΔ1 = p.pos;
         p.next();
-        return new ast.IndexExprжExpr(Ꮡ(new ast.IndexExpr(
+        return new ast_IndexExprжExpr(Ꮡ(new ast.IndexExpr(
             X: x,
             Lbrack: lbrack,
-            Index: new ast.BadExprжExpr(Ꮡ(new ast.BadExpr(From: rbrackΔ1, To: rbrackΔ1))),
+            Index: new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: rbrackΔ1, To: rbrackΔ1))),
             Rbrack: rbrackΔ1
         )));
     }
@@ -1737,18 +1737,18 @@ internal static ast.Expr parseIndexOrSliceOrInstance(this ж<parser> Ꮡp, ast.E
             // to prevent erroneous programs from passing through gofmt (was go.dev/issue/7305).
             if (index[1] == default!) {
                 Ꮡp.error(colons[0], "middle index required in 3-index slice"u8);
-                index[1] = new ast.BadExprжExpr(Ꮡ(new ast.BadExpr(From: colons[0] + 1, To: colons[1])));
+                index[1] = new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: colons[0] + 1, To: colons[1])));
             }
             if (index[2] == default!) {
                 Ꮡp.error(colons[1], "final index required in 3-index slice"u8);
-                index[2] = new ast.BadExprжExpr(Ꮡ(new ast.BadExpr(From: colons[1] + 1, To: rbrack)));
+                index[2] = new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: colons[1] + 1, To: rbrack)));
             }
         }
-        return new ast.SliceExprжExpr(Ꮡ(new ast.SliceExpr(X: x, Lbrack: lbrack, Low: index[0], High: index[1], Max: index[2], Slice3: slice3, Rbrack: rbrack)));
+        return new ast_SliceExprжExpr(Ꮡ(new ast.SliceExpr(X: x, Lbrack: lbrack, Low: index[0], High: index[1], Max: index[2], Slice3: slice3, Rbrack: rbrack)));
     }
     if (len(args) == 0) {
         // index expression
-        return new ast.IndexExprжExpr(Ꮡ(new ast.IndexExpr(X: x, Lbrack: lbrack, Index: index[0], Rbrack: rbrack)));
+        return new ast_IndexExprжExpr(Ꮡ(new ast.IndexExpr(X: x, Lbrack: lbrack, Index: index[0], Rbrack: rbrack)));
     }
     // instance expression
     return typeparams.PackIndexExpr(x, lbrack, args, rbrack);
@@ -1807,7 +1807,7 @@ internal static ast.Expr parseElement(this ж<parser> Ꮡp) => func((defer, reco
         ref var colon = ref heap<tokenꓸPos>(out var Ꮡcolon);
         colon = p.pos;
         p.next();
-        x = new ast.KeyValueExprжExpr(Ꮡ(new ast.KeyValueExpr(Key: x, Colon: colon, Value: Ꮡp.parseValue())));
+        x = new ast_KeyValueExprжExpr(Ꮡ(new ast.KeyValueExpr(Key: x, Colon: colon, Value: Ꮡp.parseValue())));
     }
     return x;
 });
@@ -1848,7 +1848,7 @@ internal static ast.Expr parseLiteralValue(this ж<parser> Ꮡp, ast.Expr typ) =
     p.exprLev--;
     ref var rbrace = ref heap<tokenꓸPos>(out var Ꮡrbrace);
     rbrace = Ꮡp.expectClosing(token.RBRACE, "composite literal"u8);
-    return new ast.CompositeLitжExpr(Ꮡ(new ast.CompositeLit(Type: typ, Lbrace: lbrace, Elts: elts, Rbrace: rbrace)));
+    return new ast_CompositeLitжExpr(Ꮡ(new ast.CompositeLit(Type: typ, Lbrace: lbrace, Elts: elts, Rbrace: rbrace)));
 });
 
 internal static ast.Expr parsePrimaryExpr(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
@@ -1893,7 +1893,7 @@ internal static ast.Expr parsePrimaryExpr(this ж<parser> Ꮡp, ast.Expr x) => f
                 }
                 var sel = Ꮡ(new ast.Ident( // make progress
 NamePos: pos, Name: "_"u8));
-                x = new ast.SelectorExprжExpr(Ꮡ(new ast.SelectorExpr(X: x, Sel: sel)));
+                x = new ast_SelectorExprжExpr(Ꮡ(new ast.SelectorExpr(X: x, Sel: sel)));
             }
 
         }
@@ -1901,7 +1901,7 @@ NamePos: pos, Name: "_"u8));
             x = Ꮡp.parseIndexOrSliceOrInstance(x);
         }
         else if (exprᴛ1 == token.LPAREN) {
-            x = new ast.CallExprжExpr(Ꮡp.parseCallOrConversion(x));
+            x = new ast_CallExprжExpr(Ꮡp.parseCallOrConversion(x));
         }
         else if (exprᴛ1 == token.LBRACE) {
             var t = ast.Unparen(x);
@@ -1964,7 +1964,7 @@ internal static ast.Expr parseUnaryExpr(this ж<parser> Ꮡp) => func((defer, re
         op = p.tok;
         p.next();
         var x = Ꮡp.parseUnaryExpr();
-        return new ast.UnaryExprжExpr(Ꮡ(new ast.UnaryExpr(OpPos: pos, Op: op, X: x)));
+        return new ast_UnaryExprжExpr(Ꮡ(new ast.UnaryExpr(OpPos: pos, Op: op, X: x)));
     }
     if (exprᴛ1 == token.ARROW) {
         ref var arrow = ref heap<tokenꓸPos>(out var Ꮡarrow);
@@ -2009,7 +2009,7 @@ internal static ast.Expr parseUnaryExpr(this ж<parser> Ꮡp) => func((defer, re
                 return x;
             }
         }
-        return new ast.UnaryExprжExpr(Ꮡ(new ast.UnaryExpr( // <-(expr)
+        return new ast_UnaryExprжExpr(Ꮡ(new ast.UnaryExpr( // <-(expr)
 OpPos: arrow, Op: token.ARROW, X: x)));
     }
     if (exprᴛ1 == token.MUL) {
@@ -2017,7 +2017,7 @@ OpPos: arrow, Op: token.ARROW, X: x)));
         pos = p.pos;
         p.next();
         var x = Ꮡp.parseUnaryExpr();
-        return new ast.StarExprжExpr(Ꮡ(new ast.StarExpr( // pointer type or unary "*" expression
+        return new ast_StarExprжExpr(Ꮡ(new ast.StarExpr( // pointer type or unary "*" expression
 Star: pos, X: x)));
     }
 
@@ -2062,7 +2062,7 @@ internal static ast.Expr parseBinaryExpr(this ж<parser> Ꮡp, ast.Expr x, nint 
         ref var pos = ref heap<tokenꓸPos>(out var Ꮡpos);
         pos = Ꮡp.expect(op);
         var y = Ꮡp.parseBinaryExpr(default!, oprec + 1);
-        x = new ast.BinaryExprжExpr(Ꮡ(new ast.BinaryExpr(X: x, OpPos: pos, Op: op, Y: y)));
+        x = new ast_BinaryExprжExpr(Ꮡ(new ast.BinaryExpr(X: x, OpPos: pos, Op: op, Y: y)));
     }
 });
 
@@ -2121,12 +2121,12 @@ internal static (ast.Stmt, bool) parseSimpleStmt(this ж<parser> Ꮡp, nint mode
             ref var posΔ1 = ref heap<tokenꓸPos>(out var ᏑposΔ1);
             posΔ1 = p.pos;
             p.next();
-            y = new ast.Expr[]{new ast.UnaryExprжExpr(Ꮡ(new ast.UnaryExpr(OpPos: posΔ1, Op: token.RANGE, X: Ꮡp.parseRhs())))}.slice();
+            y = new ast.Expr[]{new ast_UnaryExprжExpr(Ꮡ(new ast.UnaryExpr(OpPos: posΔ1, Op: token.RANGE, X: Ꮡp.parseRhs())))}.slice();
             isRange = true;
         } else {
             y = Ꮡp.parseList(true);
         }
-        return (new ast.AssignStmtжStmt(Ꮡ(new ast.AssignStmt(Lhs: x, TokPos: pos, Tok: tok, Rhs: y))), isRange);
+        return (new ast_AssignStmtжStmt(Ꮡ(new ast.AssignStmt(Lhs: x, TokPos: pos, Tok: tok, Rhs: y))), isRange);
     }
 
     if (len(x) > 1) {
@@ -2145,7 +2145,7 @@ internal static (ast.Stmt, bool) parseSimpleStmt(this ж<parser> Ꮡp, nint mode
                 // in which it is declared and excludes the body of any nested
                 // function.
                 var stmt = Ꮡ(new ast.LabeledStmt(Label: label, Colon: colon, Stmt: Ꮡp.parseStmt()));
-                return (new ast.LabeledStmtжStmt(stmt), false);
+                return (new ast_LabeledStmtжStmt(stmt), false);
             }
         }
         Ꮡp.error(colon, // The label declaration typically starts at x[0].Pos(), but the label
@@ -2155,25 +2155,25 @@ internal static (ast.Stmt, bool) parseSimpleStmt(this ж<parser> Ꮡp, nint mode
  // before the ':' that caused the problem. Thus, use the (latest) colon
  // position for error reporting.
  "illegal label declaration"u8);
-        return (new ast.BadStmtжStmt(Ꮡ(new ast.BadStmt(From: x[0].Pos(), To: colon + 1))), false);
+        return (new ast_BadStmtжStmt(Ꮡ(new ast.BadStmt(From: x[0].Pos(), To: colon + 1))), false);
     }
     if (exprᴛ2 == token.ARROW) {
         ref var arrow = ref heap<tokenꓸPos>(out var Ꮡarrow);
         arrow = p.pos;
         p.next();
         var y = Ꮡp.parseRhs();
-        return (new ast.SendStmtжStmt(Ꮡ(new ast.SendStmt( // send statement
+        return (new ast_SendStmtжStmt(Ꮡ(new ast.SendStmt( // send statement
 Chan: x[0], Arrow: arrow, Value: y))), false);
     }
     if (exprᴛ2 == token.INC || exprᴛ2 == token.DEC) {
         var s = Ꮡ(new ast.IncDecStmt( // increment or decrement
 X: x[0], TokPos: p.pos, Tok: p.tok));
         p.next();
-        return (new ast.IncDecStmtжStmt(s), false);
+        return (new ast_IncDecStmtжStmt(s), false);
     }
 
     // expression
-    return (new ast.ExprStmtжStmt(Ꮡ(new ast.ExprStmt(X: x[0]))), false);
+    return (new ast_ExprStmtжStmt(Ꮡ(new ast.ExprStmt(X: x[0]))), false);
 });
 
 internal static ж<ast.CallExpr> parseCallExpr(this ж<parser> Ꮡp, @string callType) {
@@ -2210,10 +2210,10 @@ internal static ast.Stmt parseGoStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((de
     var call = Ꮡp.parseCallExpr("go"u8);
     Ꮡp.expectSemi();
     if (call == nil) {
-        return new ast.BadStmtжStmt(Ꮡ(new ast.BadStmt(From: pos, To: pos + 2)));
+        return new ast_BadStmtжStmt(Ꮡ(new ast.BadStmt(From: pos, To: pos + 2)));
     }
     // len("go")
-    return new ast.GoStmtжStmt(Ꮡ(new ast.GoStmt(Go: pos, Call: call)));
+    return new ast_GoStmtжStmt(Ꮡ(new ast.GoStmt(Go: pos, Call: call)));
 });
 
 internal static ast.Stmt parseDeferStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((defer, recover) => {
@@ -2227,10 +2227,10 @@ internal static ast.Stmt parseDeferStmt(this ж<parser> Ꮡp) => func<ast.Stmt>(
     var call = Ꮡp.parseCallExpr("defer"u8);
     Ꮡp.expectSemi();
     if (call == nil) {
-        return new ast.BadStmtжStmt(Ꮡ(new ast.BadStmt(From: pos, To: pos + 5)));
+        return new ast_BadStmtжStmt(Ꮡ(new ast.BadStmt(From: pos, To: pos + 5)));
     }
     // len("defer")
-    return new ast.DeferStmtжStmt(Ꮡ(new ast.DeferStmt(Defer: pos, Call: call)));
+    return new ast_DeferStmtжStmt(Ꮡ(new ast.DeferStmt(Defer: pos, Call: call)));
 });
 
 internal static ж<ast.ReturnStmt> parseReturnStmt(this ж<parser> Ꮡp) => func((defer, recover) => {
@@ -2282,7 +2282,7 @@ internal static ast.Expr makeExpr(this ж<parser> Ꮡp, ast.Stmt s, @string want
         }
     }
     Ꮡp.error(s.Pos(), fmt.Sprintf("expected %s, found %s (missing parentheses around composite literal?)"u8, want, found));
-    return new ast.BadExprжExpr(Ꮡ(new ast.BadExpr(From: s.Pos(), To: Ꮡp.safePos(s.End()))));
+    return new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: s.Pos(), To: Ꮡp.safePos(s.End()))));
 }
 
 [GoType("dyn")] partial struct parseIfHeader_semi {
@@ -2300,7 +2300,7 @@ internal static (ast.Stmt init, ast.Expr cond) parseIfHeader(this ж<parser> Ꮡ
     ref var p = ref Ꮡp.Value;
     if (p.tok == token.LBRACE) {
         Ꮡp.error(p.pos, "missing condition in if statement"u8);
-        cond = new ast.BadExprжExpr(Ꮡ(new ast.BadExpr(From: p.pos, To: p.pos)));
+        cond = new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: p.pos, To: p.pos)));
         return (init, cond);
     }
     // p.tok != token.LBRACE
@@ -2343,7 +2343,7 @@ internal static (ast.Stmt init, ast.Expr cond) parseIfHeader(this ж<parser> Ꮡ
     }
     // make sure we have a valid AST
     if (cond == default!) {
-        cond = new ast.BadExprжExpr(Ꮡ(new ast.BadExpr(From: p.pos, To: p.pos)));
+        cond = new ast_BadExprжExpr(Ꮡ(new ast.BadExpr(From: p.pos, To: p.pos)));
     }
     p.exprLev = prevLev;
     return (init, cond);
@@ -2365,15 +2365,15 @@ internal static ж<ast.IfStmt> parseIfStmt(this ж<parser> Ꮡp) => func((defer,
         p.next();
         var exprᴛ1 = p.tok;
         if (exprᴛ1 == token.IF) {
-            else_ = new ast.IfStmtжStmt(Ꮡp.parseIfStmt());
+            else_ = new ast_IfStmtжStmt(Ꮡp.parseIfStmt());
         }
         else if (exprᴛ1 == token.LBRACE) {
-            else_ = new ast.BlockStmtжStmt(Ꮡp.parseBlockStmt());
+            else_ = new ast_BlockStmtжStmt(Ꮡp.parseBlockStmt());
             Ꮡp.expectSemi();
         }
         else { /* default: */
             Ꮡp.errorExpected(p.pos, "if statement or block"u8);
-            else_ = new ast.BadStmtжStmt(Ꮡ(new ast.BadStmt(From: p.pos, To: p.pos)));
+            else_ = new ast_BadStmtжStmt(Ꮡ(new ast.BadStmt(From: p.pos, To: p.pos)));
         }
 
     } else {
@@ -2477,16 +2477,16 @@ internal static ast.Stmt parseSwitchStmt(this ж<parser> Ꮡp) => func<ast.Stmt>
     lbrace = Ꮡp.expect(token.LBRACE);
     slice<ast.Stmt> list = default!;
     while (p.tok == token.CASE || p.tok == token.DEFAULT) {
-        list = append(list, (ast.Stmt)(new ast.CaseClauseжStmt(Ꮡp.parseCaseClause())));
+        list = append(list, (ast.Stmt)(new ast_CaseClauseжStmt(Ꮡp.parseCaseClause())));
     }
     ref var rbrace = ref heap<tokenꓸPos>(out var Ꮡrbrace);
     rbrace = Ꮡp.expect(token.RBRACE);
     Ꮡp.expectSemi();
     var body = Ꮡ(new ast.BlockStmt(Lbrace: lbrace, List: list, Rbrace: rbrace));
     if (typeSwitch) {
-        return new ast.TypeSwitchStmtжStmt(Ꮡ(new ast.TypeSwitchStmt(Switch: pos, Init: s1, Assign: s2, Body: body)));
+        return new ast_TypeSwitchStmtжStmt(Ꮡ(new ast.TypeSwitchStmt(Switch: pos, Init: s1, Assign: s2, Body: body)));
     }
-    return new ast.SwitchStmtжStmt(Ꮡ(new ast.SwitchStmt(Switch: pos, Init: s1, Tag: Ꮡp.makeExpr(s2, "switch expression"u8), Body: body)));
+    return new ast_SwitchStmtжStmt(Ꮡ(new ast.SwitchStmt(Switch: pos, Init: s1, Tag: Ꮡp.makeExpr(s2, "switch expression"u8), Body: body)));
 });
 
 internal static ж<ast.CommClause> parseCommClause(this ж<parser> Ꮡp) => func((defer, recover) => {
@@ -2511,7 +2511,7 @@ internal static ж<ast.CommClause> parseCommClause(this ж<parser> Ꮡp) => func
             arrow = p.pos;
             p.next();
             var rhs = Ꮡp.parseRhs();
-            comm = new ast.SendStmtжStmt(Ꮡ(new ast.SendStmt(Chan: lhs[0], Arrow: arrow, Value: rhs)));
+            comm = new ast_SendStmtжStmt(Ꮡ(new ast.SendStmt(Chan: lhs[0], Arrow: arrow, Value: rhs)));
         } else {
             // RecvStmt
             {
@@ -2527,14 +2527,14 @@ internal static ж<ast.CommClause> parseCommClause(this ж<parser> Ꮡp) => func
                     posΔ1 = p.pos;
                     p.next();
                     var rhs = Ꮡp.parseRhs();
-                    comm = new ast.AssignStmtжStmt(Ꮡ(new ast.AssignStmt(Lhs: lhs, TokPos: posΔ1, Tok: tok, Rhs: new ast.Expr[]{rhs}.slice())));
+                    comm = new ast_AssignStmtжStmt(Ꮡ(new ast.AssignStmt(Lhs: lhs, TokPos: posΔ1, Tok: tok, Rhs: new ast.Expr[]{rhs}.slice())));
                 } else {
                     // lhs must be single receive operation
                     if (len(lhs) > 1) {
                         Ꮡp.errorExpected(lhs[0].Pos(), "1 expression"u8);
                     }
                     // continue with first expression
-                    comm = new ast.ExprStmtжStmt(Ꮡ(new ast.ExprStmt(X: lhs[0])));
+                    comm = new ast_ExprStmtжStmt(Ꮡ(new ast.ExprStmt(X: lhs[0])));
                 }
             }
         }
@@ -2559,7 +2559,7 @@ internal static ж<ast.SelectStmt> parseSelectStmt(this ж<parser> Ꮡp) => func
     lbrace = Ꮡp.expect(token.LBRACE);
     slice<ast.Stmt> list = default!;
     while (p.tok == token.CASE || p.tok == token.DEFAULT) {
-        list = append(list, (ast.Stmt)(new ast.CommClauseжStmt(Ꮡp.parseCommClause())));
+        list = append(list, (ast.Stmt)(new ast_CommClauseжStmt(Ꮡp.parseCommClause())));
     }
     ref var rbrace = ref heap<tokenꓸPos>(out var Ꮡrbrace);
     rbrace = Ꮡp.expect(token.RBRACE);
@@ -2589,8 +2589,8 @@ internal static ast.Stmt parseForStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((d
                 ref var posΔ1 = ref heap<tokenꓸPos>(out var ᏑposΔ1);
                 posΔ1 = p.pos;
                 p.next();
-                var y = new ast.Expr[]{new ast.UnaryExprжExpr(Ꮡ(new ast.UnaryExpr(OpPos: posΔ1, Op: token.RANGE, X: Ꮡp.parseRhs())))}.slice();
-                s2 = new ast.AssignStmtжStmt(Ꮡ(new ast.AssignStmt(Rhs: y)));
+                var y = new ast.Expr[]{new ast_UnaryExprжExpr(Ꮡ(new ast.UnaryExpr(OpPos: posΔ1, Op: token.RANGE, X: Ꮡp.parseRhs())))}.slice();
+                s2 = new ast_AssignStmtжStmt(Ꮡ(new ast.AssignStmt(Rhs: y)));
                 isRange = true;
             } else {
                 (s2, isRange) = Ꮡp.parseSimpleStmt(rangeOk);
@@ -2632,13 +2632,13 @@ internal static ast.Stmt parseForStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((d
         default: {
             Ꮡp.errorExpected((~@as).Lhs[len((~@as).Lhs) - 1].Pos(), // nothing to do
  "at most 2 expressions"u8);
-            return new ast.BadStmtжStmt(Ꮡ(new ast.BadStmt(From: pos, To: Ꮡp.safePos(body.End()))));
+            return new ast_BadStmtжStmt(Ꮡ(new ast.BadStmt(From: pos, To: Ꮡp.safePos(body.End()))));
         }}
 
         // parseSimpleStmt returned a right-hand side that
         // is a single unary expression of the form "range x"
         var x = (~@as).Rhs[0]._<ж<ast.UnaryExpr>>().Value.X;
-        return new ast.RangeStmtжStmt(Ꮡ(new ast.RangeStmt(
+        return new ast_RangeStmtжStmt(Ꮡ(new ast.RangeStmt(
             For: pos,
             Key: key,
             Value: value,
@@ -2650,7 +2650,7 @@ internal static ast.Stmt parseForStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((d
         )));
     }
     // regular for statement
-    return new ast.ForStmtжStmt(Ꮡ(new ast.ForStmt(
+    return new ast_ForStmtжStmt(Ꮡ(new ast.ForStmt(
         For: pos,
         Init: s1,
         Cond: Ꮡp.makeExpr(s2, "boolean or range expression"u8),
@@ -2670,7 +2670,7 @@ internal static ast.Stmt /*s*/ parseStmt(this ж<parser> Ꮡp) {
         }
         var exprᴛ1 = p.tok;
         if (exprᴛ1 == token.CONST || exprᴛ1 == token.TYPE || exprᴛ1 == token.VAR) {
-            s = new ast.DeclStmtжStmt(Ꮡ(new ast.DeclStmt(Decl: Ꮡp.parseDecl(stmtStart))));
+            s = new ast_DeclStmtжStmt(Ꮡ(new ast.DeclStmt(Decl: Ꮡp.parseDecl(stmtStart))));
         }
         else if (exprᴛ1 == token.IDENT || exprᴛ1 == token.INT || exprᴛ1 == token.FLOAT || exprᴛ1 == token.IMAG || exprᴛ1 == token.CHAR || exprᴛ1 == token.STRING || exprᴛ1 == token.FUNC || exprᴛ1 == token.LPAREN || exprᴛ1 == token.LBRACK || exprᴛ1 == token.STRUCT || exprᴛ1 == token.MAP || exprᴛ1 == token.CHAN || exprᴛ1 == token.INTERFACE || exprᴛ1 == token.ADD || exprᴛ1 == token.SUB || exprᴛ1 == token.MUL || exprᴛ1 == token.AND || exprᴛ1 == token.XOR || exprᴛ1 == token.ARROW || exprᴛ1 == token.NOT) {
             (s, _) = Ꮡp.parseSimpleStmt(labelOk);
@@ -2694,36 +2694,36 @@ internal static ast.Stmt /*s*/ parseStmt(this ж<parser> Ꮡp) {
             s = Ꮡp.parseDeferStmt();
         }
         else if (exprᴛ1 == token.RETURN) {
-            s = new ast.ReturnStmtжStmt(Ꮡp.parseReturnStmt());
+            s = new ast_ReturnStmtжStmt(Ꮡp.parseReturnStmt());
         }
         else if (exprᴛ1 == token.BREAK || exprᴛ1 == token.CONTINUE || exprᴛ1 == token.GOTO || exprᴛ1 == token.FALLTHROUGH) {
-            s = new ast.BranchStmtжStmt(Ꮡp.parseBranchStmt(p.tok));
+            s = new ast_BranchStmtжStmt(Ꮡp.parseBranchStmt(p.tok));
         }
         else if (exprᴛ1 == token.LBRACE) {
-            s = new ast.BlockStmtжStmt(Ꮡp.parseBlockStmt());
+            s = new ast_BlockStmtжStmt(Ꮡp.parseBlockStmt());
             Ꮡp.expectSemi();
         }
         else if (exprᴛ1 == token.IF) {
-            s = new ast.IfStmtжStmt(Ꮡp.parseIfStmt());
+            s = new ast_IfStmtжStmt(Ꮡp.parseIfStmt());
         }
         else if (exprᴛ1 == token.SWITCH) {
             s = Ꮡp.parseSwitchStmt();
         }
         else if (exprᴛ1 == token.SELECT) {
-            s = new ast.SelectStmtжStmt(Ꮡp.parseSelectStmt());
+            s = new ast_SelectStmtжStmt(Ꮡp.parseSelectStmt());
         }
         else if (exprᴛ1 == token.FOR) {
             s = Ꮡp.parseForStmt();
         }
         else if (exprᴛ1 == token.SEMICOLON) {
-            s = new ast.EmptyStmtжStmt(Ꮡ(new ast.EmptyStmt( // Is it ever possible to have an implicit semicolon
+            s = new ast_EmptyStmtжStmt(Ꮡ(new ast.EmptyStmt( // Is it ever possible to have an implicit semicolon
  // producing an empty statement in a valid program?
  // (handle correctly anyway)
 Semicolon: p.pos, Implicit: p.lit == "\n"u8)));
             p.next();
         }
         else if (exprᴛ1 == token.RBRACE) {
-            s = new ast.EmptyStmtжStmt(Ꮡ(new ast.EmptyStmt( // a semicolon may be omitted before a closing "}"
+            s = new ast_EmptyStmtжStmt(Ꮡ(new ast.EmptyStmt( // a semicolon may be omitted before a closing "}"
 Semicolon: p.pos, Implicit: true)));
         }
         else { /* default: */
@@ -2732,7 +2732,7 @@ Semicolon: p.pos, Implicit: true)));
             Ꮡp.errorExpected(pos, // no statement found
  "statement"u8);
             p.advance(stmtStart);
-            s = new ast.BadStmtжStmt(Ꮡ(new ast.BadStmt(From: pos, To: p.pos)));
+            s = new ast_BadStmtжStmt(Ꮡ(new ast.BadStmt(From: pos, To: p.pos)));
         }
 
     });
@@ -2782,7 +2782,7 @@ internal static ast.Spec parseImportSpec(this ж<parser> Ꮡp, ж<ast.CommentGro
         Comment: comment
     ));
     p.imports = append(p.imports, spec);
-    return new ast.ImportSpecжSpec(spec);
+    return new ast_ImportSpecжSpec(spec);
 });
 
 internal static ast.Spec parseValueSpec(this ж<parser> Ꮡp, ж<ast.CommentGroup> Ꮡdoc, token.Token keyword, nint iota) => func((defer, recover) => {
@@ -2826,7 +2826,7 @@ internal static ast.Spec parseValueSpec(this ж<parser> Ꮡp, ж<ast.CommentGrou
         Values: values,
         Comment: comment
     ));
-    return new ast.ValueSpecжSpec(spec);
+    return new ast_ValueSpecжSpec(spec);
 });
 
 internal static void parseGenericType(this ж<parser> Ꮡp, ж<ast.TypeSpec> Ꮡspec, tokenꓸPos openPos, ж<ast.Ident> Ꮡname0, ast.Expr typ0) => func((defer, recover) => {
@@ -2879,7 +2879,7 @@ internal static ast.Spec parseTypeSpec(this ж<parser> Ꮡp, ж<ast.CommentGroup
             // need to parse a full expression. Notably, name <- x
             // is not a concern because name <- x is a statement and
             // not an expression.
-            ast.Expr x = new ast.IdentжExpr(Ꮡp.parseIdent());
+            ast.Expr x = new ast_IdentжExpr(Ꮡp.parseIdent());
             if (p.tok != token.LBRACK) {
                 // To parse the expression starting with name, expand
                 // the call sequence we would get by passing in name
@@ -2906,12 +2906,12 @@ internal static ast.Spec parseTypeSpec(this ж<parser> Ꮡp, ж<ast.CommentGroup
                     // ptype may be nil
                     // spec.Name "[" pname "]" ...
                     // spec.Name "[" x ...
-                    spec.Value.Type = new ast.ArrayTypeжExpr(Ꮡp.parseArrayType(lbrack, x));
+                    spec.Value.Type = new ast_ArrayTypeжExpr(Ꮡp.parseArrayType(lbrack, x));
                 }
             }
         } else {
             // array type
-            spec.Value.Type = new ast.ArrayTypeжExpr(Ꮡp.parseArrayType(lbrack, default!));
+            spec.Value.Type = new ast_ArrayTypeжExpr(Ꮡp.parseArrayType(lbrack, default!));
         }
     } else {
         // no type parameters
@@ -2923,7 +2923,7 @@ internal static ast.Spec parseTypeSpec(this ж<parser> Ꮡp, ж<ast.CommentGroup
         spec.Value.Type = Ꮡp.parseType();
     }
     spec.Value.Comment = Ꮡp.expectSemi();
-    return new ast.TypeSpecжSpec(spec);
+    return new ast_TypeSpecжSpec(spec);
 });
 
 // extractName splits the expression x into (name, expr) if syntactically
@@ -2955,7 +2955,7 @@ internal static (ж<ast.Ident>, ast.Expr) extractName(ast.Expr x, bool force) {
             {
                 var (name, _) = (~xΔ1).X._<ж<ast.Ident>>(ᐧ); if (name != nil && (force || isTypeElem((~xΔ1).Y))) {
                     // x = name *x.Y
-                    return (name, new ast.StarExprжExpr(Ꮡ(new ast.StarExpr(Star: (~xΔ1).OpPos, X: (~xΔ1).Y))));
+                    return (name, new ast_StarExprжExpr(Ꮡ(new ast.StarExpr(Star: (~xΔ1).OpPos, X: (~xΔ1).Y))));
                 }
             }
         }
@@ -2966,7 +2966,7 @@ internal static (ж<ast.Ident>, ast.Expr) extractName(ast.Expr x, bool force) {
                     ref var op = ref heap<ast.BinaryExpr>(out var Ꮡop);
                     op = xΔ1.Value;
                     op.X = lhs;
-                    return (name, new ast.BinaryExprжExpr(Ꮡop));
+                    return (name, new ast_BinaryExprжExpr(Ꮡop));
                 }
             }
         }
@@ -3119,17 +3119,17 @@ internal static ast.Decl parseDecl(this ж<parser> Ꮡp, map<token.Token, bool> 
         f = (ж<ast.CommentGroup> p1, token.Token p2, nint p3) => Ꮡp.parseTypeSpec(p1, p2, p3);
     }
     else if (exprᴛ1 == token.FUNC) {
-        return new ast.FuncDeclжDecl(Ꮡp.parseFuncDecl());
+        return new ast_FuncDeclжDecl(Ꮡp.parseFuncDecl());
     }
     else { /* default: */
         ref var pos = ref heap<tokenꓸPos>(out var Ꮡpos);
         pos = p.pos;
         Ꮡp.errorExpected(pos, "declaration"u8);
         p.advance(sync);
-        return new ast.BadDeclжDecl(Ꮡ(new ast.BadDecl(From: pos, To: p.pos)));
+        return new ast_BadDeclжDecl(Ꮡ(new ast.BadDecl(From: pos, To: p.pos)));
     }
 
-    return new ast.GenDeclжDecl(Ꮡp.parseGenDecl(p.tok, f));
+    return new ast_GenDeclжDecl(Ꮡp.parseGenDecl(p.tok, f));
 });
 
 // ----------------------------------------------------------------------------
@@ -3165,7 +3165,7 @@ internal static ж<ast.File> parseFile(this ж<parser> Ꮡp) => func<ж<ast.File
     if ((Mode)(p.mode & PackageClauseOnly) == 0) {
         // import decls
         while (p.tok == token.IMPORT) {
-            decls = append(decls, (ast.Decl)(new ast.GenDeclжDecl(Ꮡp.parseGenDecl(token.IMPORT, new Func<ж<ast.CommentGroup>, token.Token, nint, ast.Spec>(Ꮡp.parseImportSpec)))));
+            decls = append(decls, (ast.Decl)(new ast_GenDeclжDecl(Ꮡp.parseGenDecl(token.IMPORT, new Func<ж<ast.CommentGroup>, token.Token, nint, ast.Spec>(Ꮡp.parseImportSpec)))));
         }
         if ((Mode)(p.mode & ImportsOnly) == 0) {
             // rest of package body
