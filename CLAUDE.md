@@ -321,8 +321,12 @@ construct; otherwise add a new one (example: `Tests/Behavioral/GlobalStructField
      ("copy `*.cs`, exclude `*.cs.auto`") protects NOTHING — 14 hand-owned files get clobbered
      with auto conversions that COMPILE but are operationally broken (godebug's auto `init()`
      throws in a module initializer and takes down every dependent). **Hard gate before
-     overlaying:** the temp root must contain exactly as many `.cs.auto` files as the committed
-     tree has module-marked files (14 as of 2026-07-25); a count of 0 means unseeded — abort.
+     overlaying — PATH-PRECISE, not a count:** for every `[module: GoManualConversion]`-marked
+     committed file, the temp root must NOT contain a freshly-EMITTED plain `.cs` at that path
+     (either a `.cs.auto` sits beside it, or nothing was emitted there). Counts intentionally
+     differ — 28 marked files but only 14 produce `.cs.auto` (the other 14 have build-tag-excluded
+     sources the converter never re-emits, so they need no protection). A same-count assertion is
+     wrong in both directions.
   1b. `go2cs.exe -stdlib -comments -go2cspath <tmp>` → output lands in **`<tmp>/core/<pkg>`**
      (the `core` subdir is hardcoded; `-go2cspath` is the *output* root, unrelated to the MSBuild
      `$(go2csPath)`). Full stdlib ≈ 3–4 min (per-file work is sub-second; the cost is `go/packages`
