@@ -273,7 +273,13 @@ public static class TestHost
         CultureInfo previousUICulture = CultureInfo.CurrentUICulture;
         string previousDirectory = Environment.CurrentDirectory;
         string? previousTimezone = Environment.GetEnvironmentVariable("TZ");
-        string workingDirectory = Path.Combine(Path.GetTempPath(), "go2cs-tests", SanitizePath(registry.Package), Guid.NewGuid().ToString("N"));
+        // The isolated run directory reproduces the SHAPE `go test` gives a package, not just a
+        // scratch space: its own last segment is the package's directory name, and its parent holds
+        // nothing else. A test may walk out of the working directory and back in by name — io/fs's
+        // TestGlob globs `*/glob.go` against os.DirFS("..") and expects `fs/glob.go` — which a bare
+        // GUID directory answers with the GUID (and, worse, with every SIBLING run still on disk).
+        string runRoot = Path.Combine(Path.GetTempPath(), "go2cs-tests", SanitizePath(registry.Package), Guid.NewGuid().ToString("N"));
+        string workingDirectory = Path.Combine(runRoot, PackageDirectoryName(registry.Package));
         options.ResolveOutputPaths(previousDirectory);
 
         try
@@ -320,7 +326,8 @@ public static class TestHost
 
             try
             {
-                Directory.Delete(workingDirectory, true);
+                // The whole run root, so the package-named directory's private parent goes with it.
+                Directory.Delete(runRoot, true);
             }
             catch
             {
@@ -452,6 +459,17 @@ public static class TestHost
         }
 
         return sanitized?.ToString() ?? value;
+    }
+
+    // The package's own directory name — the last element of its Go import path ("io/fs" -> "fs"),
+    // which is what `go test` makes the working directory's base name.
+    private static string PackageDirectoryName(string importPath)
+    {
+        string trimmed = importPath.TrimEnd('/');
+        int separator = trimmed.LastIndexOf('/');
+        string name = separator < 0 ? trimmed : trimmed[(separator + 1)..];
+
+        return string.IsNullOrEmpty(name) ? "pkg" : SanitizePath(name);
     }
 
     private static string SanitizePath(string value) =>
