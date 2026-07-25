@@ -313,7 +313,17 @@ construct; otherwise add a new one (example: `Tests/Behavioral/GlobalStructField
   converter fixes. To measure the *current* converter you must reconvert — building the committed tree
   measures old output.
 - **Reconvert → overlay → build → bucket (the measurement loop):**
-  1. `go2cs.exe -stdlib -comments -go2cspath <tmp>` → output lands in **`<tmp>/core/<pkg>`**
+  1. **⚠ SEED FIRST — non-negotiable (learned 2026-07-25, cost a false operational-break alarm):**
+     `cp -r src/go-src-converted <tmp>/core` BEFORE reconverting. The converter emits a hand-owned
+     file as `<file>.cs.auto` ONLY when the `[module: GoManualConversion]`-marked file already
+     exists at the output path; an EMPTY temp root gives the marker nothing to detect, so every
+     hand-owned whole-file rewrite is emitted as plain `.cs` and the standard overlay rule
+     ("copy `*.cs`, exclude `*.cs.auto`") protects NOTHING — 14 hand-owned files get clobbered
+     with auto conversions that COMPILE but are operationally broken (godebug's auto `init()`
+     throws in a module initializer and takes down every dependent). **Hard gate before
+     overlaying:** the temp root must contain exactly as many `.cs.auto` files as the committed
+     tree has module-marked files (14 as of 2026-07-25); a count of 0 means unseeded — abort.
+  1b. `go2cs.exe -stdlib -comments -go2cspath <tmp>` → output lands in **`<tmp>/core/<pkg>`**
      (the `core` subdir is hardcoded; `-go2cspath` is the *output* root, unrelated to the MSBuild
      `$(go2csPath)`). Full stdlib ≈ 3–4 min (per-file work is sub-second; the cost is `go/packages`
      loading the whole type graph, so **batch** — don't invoke per package).
