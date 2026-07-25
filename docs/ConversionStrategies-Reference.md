@@ -4675,6 +4675,35 @@ go/doc/comment (CS0246 on the `os` namespace). Guarded by
 `TestAliasReferenceImportsMatchesUnrootedMultiSegmentAlias` and
 `TestAliasReferenceImportsUnrootedTailAnchoredOnSegmentBoundary`.
 
+**An emitted CONVERSION RECORD names packages no import list and no alias mentions.** A `using` alias
+is not the only line in the test metadata that must BIND: go2cs-gen realizes every
+`[assembly: GoImplement<…>]` / `[assembly: GoImplicitConv<…>]` record into a generated adapter,
+partial or operator, so both generic arguments have to resolve at the attribute itself. The converter
+records an interface pair from a type's *use*, and that use can be entirely implicit —
+os/signal's test does `cmd.Stdout = &buf`, whose os/exec field type is `io.Writer`, so
+`package_test_info.cs` carries
+
+```csharp
+[assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
+```
+
+while `io` appears in no import list of the production package or its tests, and in no alias. Under
+`DisableTransitiveProjectReferences` that is CS0246 on `io_package` at the attribute line, plus a
+cascading go2cs-gen **CS8785** (`ImplementGenerator failed … second generic type argument must be an
+interface`) once the unbound interface degrades to an error type — the generator then contributes
+nothing and the whole package's adapters vanish. The scan therefore also reads the record lines,
+extracting each type reference's **package-class qualifier** — everything up to and including the
+first segment ending in `_package` (`io_package`, `go.io.fs_package`, `go.@internal.abi_package`).
+That is deliberately the qualifier, not the whole type reference: it has exactly the shape a `using`
+alias TARGET has, so the *same* three token-match arms above decide both, with no second matcher to
+keep in sync. Only the record's generic argument list is scanned (first `<` to last `>`, so a nested
+`ж<…>` argument is covered whole) — an attribute's `(Pointer = true)` / `(ValueType = "…")` payload is
+metadata, and the `ValueType` is a string, not a reference. Additive as before, and the manifest's
+dependency list stays import-derived. This is what lets **os/signal** validate (its `TestCtrlBreak`,
+1/1 vs `go test`). Guarded by `TestAliasReferenceImportsMatchesConversionRecordPackages`,
+`TestAliasReferenceImportsMatchesConversionRecordQualifierShapes` and
+`TestAliasReferenceImportsIgnoresConversionRecordAttributePayload`.
+
 **Referencing a `go/*`-package TYPE loses a root segment because the path's own `go` collides with the root namespace.** A `go/ast` type reference renders correctly as `go.go.ast_package.X` (root `go` + the path's `go.ast` → namespace `go.go`, class `ast_package`), but `convertToCSTypeName` then strips the *leading* `go.` as a redundant root (bodies live inside `namespace go`), leaving `go.ast_package.X` — namespace `go`, which has no `ast_package` (CS0234/CS0426 in the go/* consumers go/doc, go/printer, go/internal/typeparams, whose GoImplement attributes and `using` aliases both carry the stripped form). The two rooting helpers now recognise this: `isStrippedGoPathPackageRef` splits the ref at its first `_package` class segment and tests the *namespace* portion against `packageChildNamespaces` (the current package's rooted import-closure namespaces): the ref is stripped iff that namespace is NOT already a real rooted namespace but *becomes* one when the root `go.` is prepended. This is a **membership** test, not a string-shape test, so it recognises a stripped go/*-package ref at any depth — `go.ast_package` (ns `go`✗ → `go.go`✓), `go.build.constraint_package` (ns `go.build`✗ → `go.go.build`✓, three-segment `go/build/constraint`), `go.doc.comment_package` (ns `go.doc`✗ → `go.go.doc`✓) — while leaving a genuinely-rooted ref alone (`go.io.fs_package` — ns `go.io` is already real). (The earlier two-segment string heuristic — "the class segment sits immediately after `go.`" — recognised only the depth-one `go.ast_package` shape and silently missed the three-segment `go/build/constraint` and `go/doc/comment` sub-package refs, which are string-indistinguishable from a correctly-rooted `go.io.fs_package`; the membership test is what disambiguates them.) `rootQualifySubNamespaceTypeRefs` (the assembly-scope GoImplement/GoImplicitConv attributes) re-roots the stripped form to a bare `go.go.ast_package`; `rootQualifyIfAmbiguous` (the in-namespace `using` aliases) re-roots to `global::go.go.ast_package` — always `global::`, because a bare `go.go.<pkg>_package` re-binds its leading `go` to the nearest enclosing `go` from *any* importer (a go/*-package's own `go.go.*` namespace, and equally `internal/pkgbits` at `go.internal.pkgbits` resolving the second `go` inside `go.go`, CS0234). This un-blocks the whole go/* chain at the rooting level (go/doc's own-errors 17 → 1); each go/* package still needs its remaining per-package residuals (e.g. a methodless-func-type's `[GoTypeAlias]` still names an inline-rendered `ΔFilter`) to fully compile. The depth-one shape is now guarded by `GoNamespaceShadow` (its `go/nsshadow` nested module's import renders through `isStrippedGoPathPackageRef` → `using nsshadow = global::go.go.nsshadow_package;`); the multi-segment sub-package depth (`go/build/constraint`) remains census-verified only — the A/B reconvert-diff showed only the four `go/build/constraint`- and `go/doc/comment`-importing packages, go/build, go/doc, go/parser, go/printer, gaining the corrected double-`go` rooting, with the depth-one `go.go.ast_package` refs unchanged and zero collateral.
 
 **BCL names in generator templates are global::-qualified too — a Go type can shadow any bare BCL

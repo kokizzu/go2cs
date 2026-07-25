@@ -1894,42 +1894,33 @@ func aliasReferenceImports(infoFiles []string, productionPkgPath string, directD
 		for _, line := range strings.Split(string(data), "\n") {
 			trimmed := strings.TrimSpace(strings.TrimSuffix(line, "\r"))
 
-			if !strings.HasPrefix(trimmed, "global using ") && !strings.HasPrefix(trimmed, "using ") {
-				continue
-			}
-
-			if strings.HasPrefix(trimmed, "using static ") || !strings.Contains(trimmed, "=") {
-				continue
-			}
-
-			_, target, _ := strings.Cut(trimmed, "=")
-			target = strings.TrimSuffix(strings.TrimSpace(target), ";")
-
-			for token, paths := range tokens {
-				// Three match shapes for a multi-segment package's alias target:
-				//   Contains(target, token+".")  — token is a leading/middle namespace segment.
-				//   HasSuffix(target, token)      — target ends with the fully-ROOTED token,
-				//                                    e.g. `go.os.exec_package` or `global::go.os.exec_package`
-				//                                    (math/rand's default_test.cs, emitted from namespace go.math).
-				//   HasSuffix(token, "."+target)  — target is the UNROOTED tail of the rooted token,
-				//                                    e.g. `os.exec_package` matching token `go.os.exec_package`.
-				//                                    A test emitted inside a namespace that SHADOWS the root
-				//                                    `go` (go/doc/comment's std_test.cs in namespace go.go.doc,
-				//                                    internal/abi's abi_test.cs in go.@internal) emits the alias
-				//                                    unrooted and relies on C# outward lookup; the single-segment
-				//                                    bareTokens path below never covers a multi-segment tail.
-				//                                    Anchored on the leading "." so `os.exec_package` cannot
-				//                                    match an unrelated `go.xos.exec_package`.
-				if strings.Contains(target, token+".") || strings.HasSuffix(target, token) || strings.HasSuffix(token, "."+target) {
-					sort.Strings(paths)
-					found.Add(paths[0])
+			for _, target := range referenceScanTargets(trimmed) {
+				for token, paths := range tokens {
+					// Three match shapes for a multi-segment package's alias target:
+					//   Contains(target, token+".")  — token is a leading/middle namespace segment.
+					//   HasSuffix(target, token)      — target ends with the fully-ROOTED token,
+					//                                    e.g. `go.os.exec_package` or `global::go.os.exec_package`
+					//                                    (math/rand's default_test.cs, emitted from namespace go.math).
+					//   HasSuffix(token, "."+target)  — target is the UNROOTED tail of the rooted token,
+					//                                    e.g. `os.exec_package` matching token `go.os.exec_package`.
+					//                                    A test emitted inside a namespace that SHADOWS the root
+					//                                    `go` (go/doc/comment's std_test.cs in namespace go.go.doc,
+					//                                    internal/abi's abi_test.cs in go.@internal) emits the alias
+					//                                    unrooted and relies on C# outward lookup; the single-segment
+					//                                    bareTokens path below never covers a multi-segment tail.
+					//                                    Anchored on the leading "." so `os.exec_package` cannot
+					//                                    match an unrelated `go.xos.exec_package`.
+					if strings.Contains(target, token+".") || strings.HasSuffix(target, token) || strings.HasSuffix(token, "."+target) {
+						sort.Strings(paths)
+						found.Add(paths[0])
+					}
 				}
-			}
 
-			for token, paths := range bareTokens {
-				if target == token || strings.HasPrefix(target, token+".") {
-					sort.Strings(paths)
-					found.Add(paths[0])
+				for token, paths := range bareTokens {
+					if target == token || strings.HasPrefix(target, token+".") {
+						sort.Strings(paths)
+						found.Add(paths[0])
+					}
 				}
 			}
 		}
@@ -1939,6 +1930,78 @@ func aliasReferenceImports(infoFiles []string, productionPkgPath string, directD
 	sort.Strings(result)
 
 	return result
+}
+
+// conversionRecordPrefixes are the emitted assembly-attribute line prefixes whose GENERIC ARGUMENT
+// LIST names converted types that the test compilation must be able to BIND — go2cs-gen realizes
+// each record into a generated adapter/partial/operator, so an unreferenced assembly on either side
+// is CS0246 at the attribute itself.
+var conversionRecordPrefixes = []string{"[assembly: GoImplement<", "[assembly: GoImplicitConv<"}
+
+// packageQualifierPattern captures the PACKAGE-CLASS qualifier of a rendered type reference —
+// everything up to and including the first segment that ends in PackageSuffix (`io_package`,
+// `go.io.fs_package`, `go.@internal.abi_package`). Deliberately stops at the package class rather
+// than taking the whole type reference, so the captured text has exactly the shape a `using` alias
+// TARGET has and the same token matcher decides both.
+var packageQualifierPattern = regexp.MustCompile(`(?:global::)?((?:@?[\p{L}_][\p{L}\p{N}_]*\.)*@?[\p{L}_][\p{L}\p{N}_]*` + PackageSuffix + `)`)
+
+// referenceScanTargets returns the reference TARGETS a scanned metadata/source line contributes to
+// the B2c project-reference augmentation.
+//
+// Two line shapes carry a cross-assembly type reference that no import list mentions:
+//
+//   - a `using` ALIAS (`global using reflectliteꓸKind = go.@internal.abi_package.ΔKind;`) — the
+//     alias target itself, handled since B2c.
+//
+//   - an emitted CONVERSION RECORD (`[assembly: GoImplement<strings_package.Builder,
+//     io_package.Writer>(Pointer = true)]`). The converter records an interface pair from a
+//     type's USE — os/signal's test reaches `cmd.Stdout = &buf`, whose os/exec field type names
+//     io.Writer — so the interface side can belong to a package that appears in NO import list of
+//     either the production package or its tests, and DisableTransitiveProjectReferences (B2b)
+//     then hides it (CS0246 on package_test_info.cs itself, plus a cascading go2cs-gen
+//     CS8785 "second generic type argument must be an interface" once the interface fails to bind).
+//     Only the generic argument list is scanned — an attribute's `(Pointer = true)` /
+//     `(ValueType = "…")` payload is metadata, not a bindable reference.
+func referenceScanTargets(line string) []string {
+	if strings.HasPrefix(line, "global using ") || strings.HasPrefix(line, "using ") {
+		if strings.HasPrefix(line, "using static ") || !strings.Contains(line, "=") {
+			return nil
+		}
+
+		_, target, _ := strings.Cut(line, "=")
+
+		return []string{strings.TrimSuffix(strings.TrimSpace(target), ";")}
+	}
+
+	isRecord := false
+
+	for _, prefix := range conversionRecordPrefixes {
+		if strings.HasPrefix(line, prefix) {
+			isRecord = true
+			break
+		}
+	}
+
+	if !isRecord {
+		return nil
+	}
+
+	// Span the record's generic argument list — first '<' to LAST '>' — so a nested generic
+	// (`GoImplicitConv<Δindirect<K, V>, ж<Δindirect<K, V>>>`) is covered whole.
+	open := strings.Index(line, "<")
+	end := strings.LastIndex(line, ">")
+
+	if open < 0 || end < open {
+		return nil
+	}
+
+	var targets []string
+
+	for _, match := range packageQualifierPattern.FindAllStringSubmatch(line[open+1:end], -1) {
+		targets = append(targets, match[1])
+	}
+
+	return targets
 }
 
 // productionStructuralBaseImports returns the import paths of foreign packages whose exported

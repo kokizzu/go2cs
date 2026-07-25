@@ -105,6 +105,99 @@ func TestAliasReferenceImportsUnrootedTailAnchoredOnSegmentBoundary(t *testing.T
 	}
 }
 
+// B5: an emitted CONVERSION RECORD can name a package that appears in NO import list and in no
+// `using` alias. os/signal's package_test_info.cs carries
+// `[assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]` — recorded
+// because the test reaches `cmd.Stdout = &buf`, whose os/exec field type names io.Writer — so with
+// only the alias scan, io went unreferenced and DisableTransitiveProjectReferences turned the
+// attribute itself into CS0246 (plus a cascading go2cs-gen CS8785 once the interface failed to bind).
+func TestAliasReferenceImportsMatchesConversionRecordPackages(t *testing.T) {
+	previous := importPackageDirs
+	t.Cleanup(func() { importPackageDirs = previous })
+
+	importPackageDirs = map[string]importedPackageMeta{
+		"io":      {Name: "io"},
+		"strings": {Name: "strings"},
+		"context": {Name: "context"},
+	}
+
+	infoFile := filepath.Join(t.TempDir(), "package_test_info.cs")
+
+	contents := "namespace go.os;\r\n" +
+		"[assembly: GoImplement<signalCtx, stringer>(Pointer = true)]\r\n" +
+		"[assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]\r\n"
+
+	if err := os.WriteFile(infoFile, []byte(contents), 0644); err != nil {
+		t.Fatalf("write record scan fixture: %v", err)
+	}
+
+	found := aliasReferenceImports([]string{infoFile}, "os/signal", []string{"context"})
+
+	if len(found) != 2 || found[0] != "io" || found[1] != "strings" {
+		t.Fatalf("aliasReferenceImports = %v, want [io strings]", found)
+	}
+}
+
+// A record's qualifiers match through the SAME token shapes an alias target does — rooted
+// multi-segment (`go.io.fs_package`) and unrooted multi-segment (emitted where the namespace
+// shadows the root `go`) — and a NESTED generic argument is scanned whole.
+func TestAliasReferenceImportsMatchesConversionRecordQualifierShapes(t *testing.T) {
+	previous := importPackageDirs
+	t.Cleanup(func() { importPackageDirs = previous })
+
+	importPackageDirs = map[string]importedPackageMeta{
+		"io/fs":          {Name: "fs"},
+		"os/exec":        {Name: "exec"},
+		"internal/abi":   {Name: "abi"},
+		"unused/nomatch": {Name: "nomatch"},
+	}
+
+	infoFile := filepath.Join(t.TempDir(), "package_test_info.cs")
+
+	contents := "namespace go.@internal;\r\n" +
+		"[assembly: GoImplement<go.io.fs_package.PathError, error>(Pointer = true)]\r\n" +
+		"[assembly: GoImplement<os.exec_package.ΔError, error>]\r\n" +
+		"[assembly: GoImplicitConv<Δindirect<K, V>, ж<@internal.abi_package.ΔType>>]\r\n"
+
+	if err := os.WriteFile(infoFile, []byte(contents), 0644); err != nil {
+		t.Fatalf("write record scan fixture: %v", err)
+	}
+
+	found := aliasReferenceImports([]string{infoFile}, "os/signal", nil)
+
+	if len(found) != 3 || found[0] != "internal/abi" || found[1] != "io/fs" || found[2] != "os/exec" {
+		t.Fatalf("aliasReferenceImports = %v, want [internal/abi io/fs os/exec]", found)
+	}
+}
+
+// Only a record's GENERIC ARGUMENT LIST is a bindable reference; its `(Pointer = true)` /
+// `(ValueType = "…")` payload is metadata (the ValueType is a STRING) and must not pull in a
+// project reference. The io/fs qualifier in the generic list is the positive control proving the
+// scan ran at all.
+func TestAliasReferenceImportsIgnoresConversionRecordAttributePayload(t *testing.T) {
+	previous := importPackageDirs
+	t.Cleanup(func() { importPackageDirs = previous })
+
+	importPackageDirs = map[string]importedPackageMeta{
+		"io/fs":   {Name: "fs"},
+		"os/exec": {Name: "exec"},
+	}
+
+	infoFile := filepath.Join(t.TempDir(), "package_test_info.cs")
+
+	contents := "[assembly: GoImplicitConv<go.io.fs_package.FileMode, nuint>(Inverted = true, ValueType = \"go.os.exec_package.ΔError\")]\r\n"
+
+	if err := os.WriteFile(infoFile, []byte(contents), 0644); err != nil {
+		t.Fatalf("write record scan fixture: %v", err)
+	}
+
+	found := aliasReferenceImports([]string{infoFile}, "os/signal", nil)
+
+	if len(found) != 1 || found[0] != "io/fs" {
+		t.Fatalf("aliasReferenceImports = %v, want [io/fs] (the ValueType payload is not a reference)", found)
+	}
+}
+
 // The bare token is matched on a SEGMENT boundary: a substring test would let `hash_package` match
 // `go.hash.maphash_package` and pull a reference to a package nothing actually uses.
 func TestAliasReferenceImportsDoesNotMatchAcrossSegmentBoundaries(t *testing.T) {
