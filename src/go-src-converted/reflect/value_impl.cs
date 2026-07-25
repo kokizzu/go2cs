@@ -33,16 +33,17 @@ partial class reflect_package {
 // through the box lazily (a write through another alias of the same box — poser.As's direct
 // `x.Value = …` — must be visible to a later Interface() read), and Set writes through it.
 partial struct ΔValue {
-    internal object? boxed;
-    internal object? addrBox;
+    [GoReflectCompanion] internal object? boxed;
+    [GoReflectCompanion] internal object? addrBox;
 
     // The LIVE value this Value represents (read-through for an addressable Value).
     internal object? live => addrBox is null ? boxed : GoReflect.ReadPointerSlot(addrBox);
 }
 
-// makeReflectValue builds a Value carrying a boxed managed value. typ_ is the Phase-1 synthetic
-// abi.Type (Kind_ classified from the value's System.Type); the flag holds the Kind so Kind()/IsValid()
-// resolve from value.cs unchanged.
+// makeReflectValue builds a Value carrying a boxed managed value, typed by its GO DYNAMIC type.
+// typ_ is the Phase-1 synthetic abi.Type (Kind_ classified from the managed System.Type); the flag
+// holds the Kind so Kind()/IsValid() resolve from value.cs unchanged. Used where Go derives the
+// type from the VALUE (ValueOf, interface Elem); slot-derived Values use makeTypedValue.
 internal static ΔValue makeReflectValue(object? boxed) {
     if (boxed is null) {
         return new ΔValue(nil);
@@ -51,6 +52,40 @@ internal static ΔValue makeReflectValue(object? boxed) {
     var v = new ΔValue(t, default!, ((flag)(uintptr)(uint8)GoReflect.KindOf(GoReflect.GoDynamicTypeOf(boxed))));
     v.boxed = boxed;
     return v;
+}
+
+// makeTypedValue builds a Value typed by a STATIC slot type (a struct field's declared type, a
+// slice's element type, a func's out type) — Go's rule for every slot-derived Value: an
+// interface-typed slot reports Kind Interface regardless of the dynamic value, and a nil-valued
+// slot is a VALID nil Value of the slot's kind (never the invalid zero Value). inheritRO carries
+// the parent's read-only bits (Go's flagRO stickiness).
+internal static ΔValue makeTypedValue(object? boxed, System.Type staticType, nint[]? arrayDims, flag inheritRO) {
+    var t = abi.synthType(staticType, arrayDims);
+    var v = new ΔValue(t, default!, ((flag)(uintptr)(uint8)GoReflect.KindOf(staticType)) | ((flag)(inheritRO & flagRO)));
+    v.boxed = boxed;
+    return v;
+}
+
+// isNilGoValue answers Go nilness for a boxed container/pointer/func value through the SAME
+// machinery the emitted `x == nil` comparisons use: the structural pointer predicate, the map's
+// representational nilness, or the type's generated/golib `== nil` operator (slices raw and
+// named, channels, wrappers) — one rule, never a second nilness implementation.
+private static readonly System.Collections.Concurrent.ConcurrentDictionary<System.Type, System.Func<object, bool>?> s_nilOperators = new();
+
+internal static bool isNilGoValue(object? cur) {
+    switch (cur) {
+    case null:
+        return true;
+    case INilPointer nilable:
+        return nilable.IsNilPointer;
+    case IMap m:
+        return m.IsNil;
+    }
+    var probe = s_nilOperators.GetOrAdd(cur.GetType(), static t => {
+        MethodInfo? op = t.GetMethod("op_Equality", BindingFlags.Public | BindingFlags.Static, [t, typeof(NilType)]);
+        return op is null ? null : v => (bool)op.Invoke(null, [v, default(NilType)])!;
+    });
+    return probe is not null && probe(cur);
 }
 
 // ValueOf returns a new Value initialized to the concrete value stored in the interface i.
@@ -74,7 +109,15 @@ internal static any /*i*/ valueInterface(ΔValue v, bool safe) {
 }
 
 public static bool Bool(this ΔValue v) {
-    return (bool)v.live!;
+    object? cur = v.live;
+    if (cur is bool b) {
+        return b;
+    }
+    // A named bool type unwraps to its underlying (the read mirror of SetBool).
+    if (cur is not null && GoReflect.TryUnwrapWrapperValue(cur, out object? unwrapped) && unwrapped is bool ub) {
+        return ub;
+    }
+    return (bool)cur!;
 }
 
 public static int64 Int(this ΔValue v) {
@@ -121,14 +164,27 @@ private static object? numericValue(object? boxed) {
 }
 
 public static complex128 Complex(this ΔValue v) {
-    return (complex128)v.live!;
+    // golib complex64 is its own struct — an unbox-cast to Complex would throw; and a named
+    // complex wrapper unwraps to its underlying first (the read mirror of SetComplex).
+    object? cur = v.live;
+    if (cur is not null && GoReflect.TryUnwrapWrapperValue(cur, out object? unwrapped)) {
+        cur = unwrapped;
+    }
+    return cur switch {
+        complex128 c => c,
+        complex64 c64 => (complex128)c64,
+        _ => (complex128)cur!
+    };
 }
 
 public static @string String(this ΔValue v) {
-    // fmt only calls String() for Kind String; a boxed @string returns itself, anything else the Go
-    // "<T Value>" placeholder.
+    // fmt only calls String() for Kind String; a boxed @string returns itself (a named string
+    // wrapper unwraps), anything else the Go "<T Value>" placeholder.
     if (v.live is @string s) {
         return s;
+    }
+    if (v.live is not null && GoReflect.TryUnwrapWrapperValue(v.live, out object? unwrapped) && unwrapped is @string us) {
+        return us;
     }
     if (v.live is null) {
         return "<invalid Value>";
@@ -139,6 +195,8 @@ public static @string String(this ΔValue v) {
 // IsNil reports whether its argument v is nil (v must be a chan, func, interface, map, pointer, or slice).
 // STRUCTURAL nil for pointers (INilPointer — the canonical typed-nil form): a heap box holding a
 // nil value is a NON-nil pointer holding nil, and an adapter-held *T asks its receiver box.
+// Slices/channels/named wrappers answer through their own generated `== nil` operator — the same
+// nilness the emitted comparisons observe (isNilGoValue).
 public static bool IsNil(this ΔValue v) {
     object? cur = v.live;
     while (cur is IInterfaceAdapter { Value: not null } interfaceAdapter) {
@@ -147,16 +205,7 @@ public static bool IsNil(this ΔValue v) {
     if (cur is IжAdapter { Box: not null } pointerAdapter) {
         cur = pointerAdapter.Box;
     }
-    switch (cur) {
-    case null:
-        return true;
-    case INilPointer nilable:
-        return nilable.IsNilPointer;
-    case IMap m:
-        return m.IsNil;
-    default:
-        return false;
-    }
+    return isNilGoValue(cur);
 }
 
 // Len returns v's length (v must be an Array, Chan, Map, Slice, String, or pointer-to-Array).
@@ -169,12 +218,64 @@ public static nint Len(this ΔValue v) {
     };
 }
 
-// Index returns v's i'th element (v must be an Array, Slice, or String).
+// Index returns v's i'th element (v must be an Array, Slice, or String). Slice elements are
+// ALWAYS addressable (the shared backing store is the address — golib slices alias their T[]
+// across struct copies); array elements are addressable iff the array Value is, routed through
+// ж.at<E>() so a lazily-backed named-array wrapper materializes on the REAL storage (the
+// pallocBits lesson). The element Value is typed by the STATIC element type and inherits the
+// parent's read-only bits (Go flag stickiness).
 public static ΔValue Index(this ΔValue v, nint i) {
-    if (v.live is IArray a) {
-        return makeReflectValue(a[i]);
+    ΔKind k = v.kind();
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    System.Type? elemType = GoReflect.ElementType(st);
+    flag ro = (flag)(v.flag & flagRO);
+    if (k == ΔSlice && elemType is not null) {
+        object? liveSlice = v.live;
+        if (liveSlice is not IArray sliceArr || (nuint)i >= (nuint)sliceArr.Length) {
+            throw panic("reflect: array index out of range");
+        }
+        var elem = makeTypedValue(null, elemType, null, ro);
+        elem.flag |= flagAddr | flagIndir;
+        elem.addrBox = GoReflect.ElementAliasBoxOfValue(liveSlice, elemType, i);
+        return elem;
+    }
+    if (k == Array && elemType is not null) {
+        object? liveArr = v.live;
+        if (liveArr is not IArray arr || (nuint)i >= (nuint)arr.Length) {
+            throw panic("reflect: array index out of range");
+        }
+        nint[]? elemDims = v.typ_.Value.arrayDims is { Length: > 1 } dims ? dims[1..] : null;
+        if (v.addrBox is not null && v.addrBox.GetType() is { IsGenericType: true } boxType && boxType.GetGenericTypeDefinition() == typeof(ж<>)) {
+            var elem = makeTypedValue(null, elemType, elemDims, ro);
+            elem.flag |= flagAddr | flagIndir;
+            elem.addrBox = GoReflect.ElementAliasBoxOfBox(v.addrBox, elemType, i);
+            return elem;
+        }
+        return makeTypedValue(arr[i], elemType, elemDims, ro);
     }
     throw panic(Ꮡ(new ValueError("reflect.Value.Index", v.kind())));
+}
+
+// Slice returns v[i:j] (v must be an Array, Slice, or String; an array must be addressable).
+// The result SHARES the source's backing store — golib slices window their T[] — which the
+// round-trip consumers depend on (encoding/binary's TestSliceRoundTrip decodes through the
+// window into the original array).
+public static ΔValue Slice(this ΔValue v, nint i, nint j) {
+    ΔKind k = v.kind();
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    System.Type? elemType = GoReflect.ElementType(st);
+    if (elemType is null || (k != Array && k != ΔSlice)) {
+        throw panic(Ꮡ(new ValueError("reflect.Value.Slice", v.kind())));
+    }
+    if (k == Array && (flag)(v.flag & flagAddr) == 0) {
+        throw panic("reflect.Value.Slice: slice of unaddressable array");
+    }
+    object? liveContainer = v.live;
+    if (liveContainer is null) {
+        throw panic("reflect.Value.Slice: slice of nil container");
+    }
+    object window = GoReflect.SliceWindow(liveContainer, elemType, i, j);
+    return makeTypedValue(window, typeof(slice<>).MakeGenericType(elemType), null, (flag)(v.flag & flagRO));
 }
 
 // Elem returns the value that the interface v contains or that the pointer v points to.
@@ -200,12 +301,14 @@ public static ΔValue Elem(this ΔValue v) {
         }
         Type? pointee = GoReflect.ElementType(cur.GetType());
         if (pointee is null) {
-            // Not a ж<T>-shaped box (a named-pointer wrapper — increment 2): fall back to a
-            // detached read so existing readers keep working.
+            // Not a box shape golib can alias — detached read so existing readers keep working.
             return makeReflectValue(GoReflect.ReadPointerSlot(cur));
         }
-        var t = abi.synthType(pointee);
-        var elem = new ΔValue(t, default!, ((flag)(uintptr)(uint8)GoReflect.KindOf(pointee)) | flagAddr | flagIndir);
+        // An array pointee reveals its real dims through the live value behind the box (the
+        // TestSliceRoundTrip path: ValueOf(&[100]T{}).Elem().Type() must carry 100).
+        nint[]? dims = GoReflect.KindOf(pointee) == GoReflect.Array ? GoReflect.ArrayDimsOfValue(GoReflect.ReadPointerSlot(cur)) : null;
+        var t = abi.synthType(pointee, dims);
+        var elem = new ΔValue(t, default!, ((flag)(uintptr)(uint8)GoReflect.KindOf(pointee)) | flagAddr | flagIndir | ((flag)(v.flag & flagRO)));
         elem.addrBox = cur;
         return elem;
     }
@@ -213,52 +316,51 @@ public static ΔValue Elem(this ΔValue v) {
 }
 
 // Bytes returns v's underlying value (v's underlying value must be a slice of bytes or an addressable array of bytes).
+// A named []byte wrapper answers through its ISlice<byte> view (sharing the backing store).
 public static slice<byte> Bytes(this ΔValue v) {
-    return (slice<byte>)v.live!;
+    return v.live switch {
+        slice<byte> s => s,
+        ISlice<byte> view => new slice<byte>(view),
+        var other => (slice<byte>)other!
+    };
 }
 
-// NumField returns the number of fields in the struct v.
+// NumField returns the number of fields in the struct v — the PROJECTED Go fields of the
+// STATIC struct type (promoted embeds project as the embedded Go field; a defined-type-over-
+// struct wrapper exposes its underlying's fields; bridge companions are excluded by attribute).
 public static nint NumField(this ΔValue v) {
-    return v.live is null ? 0 : goStructFields(v.live.GetType()).Length;
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    return st is null ? 0 : GoReflect.GoFields(st).Length;
 }
 
-// Field returns the i'th field of the struct v.
+// Field returns the i'th field of the struct v: typed by the field's STATIC Go type (an
+// interface-typed field reports Kind Interface; a nil-valued field is a VALID nil Value),
+// ADDRESSABLE when v is (aliasing the parent box through a ValueSlot-routed field accessor —
+// the increment-1 ref-accessor contract), and read-only for unexported/blank fields with the
+// parent's read-only bits inherited (Go flag stickiness). The same projection indexes
+// rtype.Field(i), so value- and type-side field walks can never disagree.
 public static ΔValue Field(this ΔValue v, nint i) {
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    if (st is null || GoReflect.KindOf(st) != GoReflect.Struct) {
+        throw panic(Ꮡ(new ValueError("reflect.Value.Field", v.kind())));
+    }
+    GoReflect.GoFieldInfo[] fields = GoReflect.GoFields(st);
+    if ((nuint)i >= (nuint)fields.Length) {
+        throw panic("reflect: Field index out of range");
+    }
+    GoReflect.GoFieldInfo f = fields[(int)i];
+    flag ro = (flag)((flag)(v.flag & flagRO) | (f.Exported ? default : flagStickyRO));
+    if (v.addrBox is not null) {
+        var elem = makeTypedValue(null, f.Type, f.ArrayDims, ro);
+        elem.flag |= flagAddr | flagIndir;
+        elem.addrBox = GoReflect.FieldAliasBox(v.addrBox, f);
+        return elem;
+    }
     object? cur = v.live;
     if (cur is null) {
         throw panic(Ꮡ(new ValueError("reflect.Value.Field", v.kind())));
     }
-    FieldInfo[] fields = goStructFields(cur.GetType());
-    if ((nuint)i >= (nuint)fields.Length) {
-        throw panic("reflect: Field index out of range");
-    }
-    return makeReflectValue(fields[(int)i].GetValue(cur));
-}
-
-// goStructFields returns the DECLARED Go fields of a [GoType] struct in source order. A converted
-// struct emits each Go field as a C# instance field; the box/promotion machinery the TypeGenerator
-// adds is static or property-shaped (never a plain instance field), except the reflection bridge's own
-// `boxed` companion on Value — excluded by name.
-private static FieldInfo[] goStructFields(Type t) {
-    FieldInfo[] all = t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-    int n = 0;
-    foreach (FieldInfo f in all) {
-        if (isGoField(f)) {
-            n++;
-        }
-    }
-    var result = new FieldInfo[n];
-    int j = 0;
-    foreach (FieldInfo f in all) {
-        if (isGoField(f)) {
-            result[j++] = f;
-        }
-    }
-    return result;
-}
-
-private static bool isGoField(FieldInfo f) {
-    return !f.Name.Contains("k__BackingField") && f.Name != "boxed";
+    return makeTypedValue(f.Read(cur), f.Type, f.ArrayDims, ro);
 }
 
 // UnsafePointer returns v's value as an unsafe.Pointer (v must be a Chan, Func, Map, Pointer, or
@@ -291,7 +393,7 @@ private static uintptr reflectPointerToken(ΔValue v) {
 // The managed backing for a MapIter: the map's enumerator (a golib map<K,V> enumerates as
 // IEnumerable of KeyValuePair<K,V>). The Go hiter-based iteration has no managed form.
 partial struct MapIter {
-    internal IEnumerator? mapEnum;
+    [GoReflectCompanion] internal IEnumerator? mapEnum;
 }
 
 // MapRange returns a range iterator for a map.
@@ -326,10 +428,12 @@ public static void Set(this ΔValue v, ΔValue x) {
     GoReflect.WritePointerSlot(v.addrBox, marshalled);
 }
 
-// Zero returns a Value representing the zero value for the specified type. A pointer kind
-// yields a VALID typed-nil Value whose boxed value is the type's canonical nil box (one nil
-// encoding system-wide — Interface() of it is a non-nil any holding (*T)(nil)); interface and
-// func kinds a valid nil Value (boxed null); value kinds a zero instance.
+// Zero returns a Value representing the zero value for the specified type, total over every
+// kind through the shared golib rule (GoReflect.ZeroValueOf): pointer kinds the canonical
+// typed-nil box (one nil encoding system-wide); interface/func kinds a valid nil Value;
+// slice/map/chan kinds their nil container struct default; array kinds a dims-sized backing
+// when the descriptor carries dims. quick's sizedValue probes Zero(t).Interface().(Generator)
+// for EVERY generated type, so Zero must never throw for a representable kind.
 public static ΔValue Zero(ΔType typ) {
     if (typ == default!) {
         throw panic("reflect: Zero(nil)");
@@ -338,27 +442,203 @@ public static ΔValue Zero(ΔType typ) {
     if (st is null) {
         throw panic("reflect: Zero of non-synthesized type");
     }
-    int kind = GoReflect.KindOf(st);
-    var t = abi.synthType(st);
-    var zero = new ΔValue(t, default!, ((flag)(uintptr)(uint8)kind));
-    switch (kind) {
-    case GoReflect.Pointer:
-        zero.boxed = GoReflect.CanonicalNilPointer(st);
-        break;
-    case GoReflect.Interface:
-    case GoReflect.Func:
-        zero.boxed = null;
-        break;
-    case GoReflect.String:
-        zero.boxed = (@string)"";
-        break;
-    default:
-        // Value kinds (numerics, structs, arrays) and the nil-able container structs
-        // (slice/map/chan wrappers) — a default instance IS the Go zero value.
-        zero.boxed = System.Activator.CreateInstance(st);
-        break;
+    nint[]? dims = arrayDimsOfReflectType(typ);
+    return makeTypedValue(GoReflect.ZeroValueOf(st, dims), st, dims, default);
+}
+
+// New returns a Value representing a pointer to a new zero value for the specified type —
+// a fresh ж<T> heap box (never nil; the canonical-nil singleton is a DIFFERENT instance), its
+// pointee sized from the descriptor's array dims when present (reflect.New([100]T) must
+// allocate a real 100-element backing — TestSliceRoundTrip's dst side).
+public static ΔValue New(ΔType typ) {
+    if (typ == default!) {
+        throw panic("reflect: New(nil)");
     }
-    return zero;
+    System.Type? st = sysTypeOfReflectType(typ);
+    if (st is null) {
+        throw panic("reflect: New of non-synthesized type");
+    }
+    nint[]? dims = arrayDimsOfReflectType(typ);
+    object box = GoReflect.NewPointerBox(st, GoReflect.ZeroValueOf(st, dims));
+    return makeTypedValue(box, typeof(ж<>).MakeGenericType(st), null, default);
+}
+
+// MakeSlice creates a new zero-initialized slice value for the specified slice type, length,
+// and capacity — through the same ISupportMake construction `make()` emissions use, so a NAMED
+// slice type yields the wrapper (Go's named result). The result is not addressable; its
+// ELEMENTS are (through the shared backing).
+public static ΔValue MakeSlice(ΔType typ, nint len, nint cap) {
+    System.Type? st = sysTypeOfReflectType(typ);
+    if (st is null || GoReflect.KindOf(st) != GoReflect.Slice) {
+        throw panic("reflect.MakeSlice of non-slice type");
+    }
+    if (len < 0) {
+        throw panic("reflect.MakeSlice: negative len");
+    }
+    if (cap < 0) {
+        throw panic("reflect.MakeSlice: negative cap");
+    }
+    if (len > cap) {
+        throw panic("reflect.MakeSlice: len > cap");
+    }
+    return makeTypedValue(GoReflect.MakeContainer(st, len, cap), st, null, default);
+}
+
+// MakeMap creates a new empty map value of the specified map type.
+public static ΔValue MakeMap(ΔType typ) {
+    return MakeMapWithSize(typ, 0);
+}
+
+// MakeMapWithSize creates a new empty map value of the specified map type with a size hint.
+public static ΔValue MakeMapWithSize(ΔType typ, nint n) {
+    System.Type? st = sysTypeOfReflectType(typ);
+    if (st is null || GoReflect.KindOf(st) != GoReflect.Map) {
+        throw panic("reflect.MakeMapWithSize of non-map type");
+    }
+    return makeTypedValue(GoReflect.MakeContainer(st, n), st, null, default);
+}
+
+// SetMapIndex sets the element associated with key in the map v (v must be a Map; the key and
+// elem marshal under Go assignability into the map's STATIC key/element types, through the
+// golib IDictionary surface both raw maps and named wrappers implement).
+public static void SetMapIndex(this ΔValue v, ΔValue key, ΔValue elem) {
+    v.flag.mustBe(Map);
+    v.flag.mustBeExported();
+    System.Type st = v.typ_.Value.sysType!;
+    object? liveMap = v.live;
+    if (liveMap is null || (liveMap is IMap m && m.IsNil)) {
+        throw panic("assignment to entry in nil map");
+    }
+    System.Type keyType = GoReflect.KeyType(st)!;
+    System.Type elemType = GoReflect.ElementType(st)!;
+    if (elem.flag == 0) {
+        // Go: an invalid elem DELETES the key — no demonstrated consumer yet.
+        throw new NotImplementedException("reflect.Value.SetMapIndex: delete-on-invalid-elem is not implemented (next consumer: encoding/json)");
+    }
+    if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k)) {
+        throw panic("reflect.Value.SetMapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +
+                    " is not assignable to type " + GoReflect.GoTypeName(keyType));
+    }
+    if (!GoReflect.TryMarshalAssignable(elem.live, elemType, out object? e)) {
+        throw panic("reflect.Value.SetMapIndex: value of type " + GoReflect.GoTypeName(elem.live?.GetType()) +
+                    " is not assignable to type " + GoReflect.GoTypeName(elemType));
+    }
+    GoReflect.SetMapEntry(liveMap, keyType, elemType, k, e);
+}
+
+// ==== the Set{Bool,Int,Uint,Float,Complex,String,Zero} family — one kinded-store rule ====
+// Go semantics verified against Go 1.23 reflect: integer stores TRUNCATE to the slot's width
+// (no overflow panic), floats/complex narrow; a NAMED slot constructs its wrapper from the
+// coerced underlying (GoReflect.TryConvertTo — the single convertibility relation). The store
+// writes through the aliased box's slot ref; a structurally nil box panics Go-style (Q1a).
+
+private static void setKinded(ΔValue v, object wide, @string op) {
+    v.flag.mustBeAssignable();
+    System.Type? slotType = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    if (slotType is null || v.addrBox is null) {
+        throw panic("reflect: " + op + " using unaddressable value");
+    }
+    if (!GoReflect.TryConvertTo(wide, slotType, out object? converted)) {
+        throw panic("reflect: call of reflect.Value." + op + " on " + v.kind().String() + " Value");
+    }
+    GoReflect.WritePointerSlot(v.addrBox, converted);
+}
+
+public static void SetBool(this ΔValue v, bool x) {
+    setKinded(v, x, "SetBool"u8);
+}
+
+public static void SetInt(this ΔValue v, int64 x) {
+    setKinded(v, x, "SetInt"u8);
+}
+
+public static void SetUint(this ΔValue v, uint64 x) {
+    setKinded(v, x, "SetUint"u8);
+}
+
+public static void SetFloat(this ΔValue v, float64 x) {
+    setKinded(v, x, "SetFloat"u8);
+}
+
+public static void SetComplex(this ΔValue v, complex128 x) {
+    setKinded(v, x, "SetComplex"u8);
+}
+
+public static void SetString(this ΔValue v, @string x) {
+    setKinded(v, x, "SetString"u8);
+}
+
+// SetZero sets v to be the zero value of v's type — the same zero rule Zero/New use.
+public static void SetZero(this ΔValue v) {
+    v.flag.mustBeAssignable();
+    System.Type? slotType = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    if (slotType is null || v.addrBox is null) {
+        throw panic("reflect: SetZero using unaddressable value");
+    }
+    GoReflect.WritePointerSlot(v.addrBox, GoReflect.ZeroValueOf(slotType, arrayDimsOfDescriptor(v.typ_)));
+}
+
+// ==== Value.Call — delegate DynamicInvoke over the converted func value ====
+
+// Call calls the function v with the input arguments in, marshalled under the SAME
+// assignability rule emitted asserts use, and returns the outputs as Values typed by the
+// func's STATIC out types (a nil result is a VALID nil Value of the out type). A converted Go
+// multi-return is a ValueTuple, destructured positionally. A panic inside the callee is
+// unwrapped from TargetInvocationException and rethrown untouched.
+public static slice<ΔValue> Call(this ΔValue v, slice<ΔValue> @in) {
+    v.flag.mustBe(Func);
+    v.flag.mustBeExported();
+    object? fn = v.live;
+    if (fn is null) {
+        throw panic("reflect.Value.Call: call of nil function");
+    }
+    var del = (Delegate)fn;
+    if (!GoReflect.TryFuncShape(del.GetType(), out System.Type[]? ins, out System.Type[]? outs, out bool isVariadic)) {
+        throw panic("reflect.Value.Call: not a func value");
+    }
+    if (isVariadic) {
+        throw new NotImplementedException("reflect.Value.Call: variadic func values are not implemented (next consumer: text/template)");
+    }
+    if (len(@in) < ins.Length) {
+        throw panic("reflect: Call with too few input arguments");
+    }
+    if (len(@in) > ins.Length) {
+        throw panic("reflect: Call with too many input arguments");
+    }
+    object?[] args = new object?[ins.Length];
+    for (nint i = 0; i < ins.Length; i++) {
+        ΔValue arg = @in[i];
+        if (arg.flag == 0) {
+            throw panic("reflect: " + "Call" + " using zero Value argument");
+        }
+        if (!GoReflect.TryMarshalAssignable(arg.live, ins[i], out object? marshalled)) {
+            throw panic("reflect: Call using " + GoReflect.GoTypeName(arg.live?.GetType()) +
+                        " as type " + GoReflect.GoTypeName(ins[i]));
+        }
+        args[i] = marshalled;
+    }
+    object? result;
+    try {
+        result = del.DynamicInvoke(args);
+    } catch (TargetInvocationException tie) when (tie.InnerException is not null) {
+        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(tie.InnerException).Throw();
+        throw;
+    }
+    var ret = new slice<ΔValue>(outs.Length);
+    if (outs.Length == 1) {
+        ret[0] = makeTypedValue(result, outs[0], null, default);
+    } else if (outs.Length > 1) {
+        var tuple = (System.Runtime.CompilerServices.ITuple)result!;
+        for (nint i = 0; i < outs.Length; i++) {
+            ret[i] = makeTypedValue(tuple[(int)i], outs[i], null, default);
+        }
+    }
+    return ret;
+}
+
+// CallSlice is unimplemented on the bridge (no demonstrated consumer).
+public static slice<ΔValue> CallSlice(this ΔValue v, slice<ΔValue> @in) {
+    throw new NotImplementedException("reflect.Value.CallSlice is not implemented (next consumer: text/template)");
 }
 
 // sysTypeOfReflectType recovers the managed System.Type a canonical reflect.Type wrapper
@@ -366,6 +646,16 @@ public static ΔValue Zero(ΔType typ) {
 private static System.Type? sysTypeOfReflectType(ΔType typ) {
     var (rt, ok) = typ._<ж<rtype>>(ᐧ);
     return ok && rt != nil ? rt.Value.t.sysType : null;
+}
+
+// arrayDimsOfReflectType recovers the descriptor's carried array dims (non-identity cargo).
+private static nint[]? arrayDimsOfReflectType(ΔType typ) {
+    var (rt, ok) = typ._<ж<rtype>>(ᐧ);
+    return ok && rt != nil ? rt.Value.t.arrayDims : null;
+}
+
+private static nint[]? arrayDimsOfDescriptor(ж<abi.Type> Ꮡt) {
+    return Ꮡt == nil ? null : Ꮡt.Value.arrayDims;
 }
 
 // methodName returns a best-effort Go-shaped name of the calling reflect method for panic
@@ -413,11 +703,28 @@ internal static @string methodName() {
 // sort REVERSED the map keys (map[b:2 a:1] instead of map[a:1 b:2]). Intern the ΔType wrapper by the
 // underlying System.Type so identity-equality matches Go. The cache is process-lifetime (type
 // descriptors are permanent, exactly like Go's). See docs/Phase4/DESIGN-reflection-bridge.md.
-private static readonly System.Collections.Concurrent.ConcurrentDictionary<System.Type, ΔType> s_canonTypeCache = new();
+private static readonly System.Collections.Concurrent.ConcurrentDictionary<(System.Type, string), ΔType> s_canonTypeCache = new();
 
-// canonType returns the canonical reflect.Type wrapper for the underlying type of Ꮡt (keyed by the
-// managed System.Type synthType stamped on the abi.Type). A nil descriptor maps to the nil Type; a
-// descriptor with no System.Type (never synthesized) falls back to a fresh, uninterned wrapper.
+// (toRType stays AUTO: the ruled managed-box reinterpret model — FINDING-managed-box-uintptr-
+// lifetime.md — makes the converter emit `Ꮡt.Reinterpret<abi.Type, rtype>()`, a GC-safe
+// storage-aliasing box, so the descriptor's sysType/arrayDims cargo reads live through the
+// managed reference; no hand-owned form is needed.)
+
+// valueMethodName is Go's runtime.Callers-based caller-name resolution for Value panic
+// messages (flag.mustBe's ValueError) — unimplementable over getcallersp; walk the managed
+// stack like methodName. The name is only ever observed in panic text.
+internal static @string valueMethodName() {
+    return methodName();
+}
+
+// canonType returns the canonical reflect.Type wrapper for the underlying type of Ꮡt, keyed by
+// the managed System.Type synthType stamped on the abi.Type PLUS the descriptor's carried array
+// dims (increment 2): [4]byte and [8]byte are DISTINCT Go types and must intern separately, or
+// the first to intern would answer Len()/Size() for both. A dims-less array descriptor (a
+// type-only path — no value, no field source) interns as its own knowledge class; comparing it
+// to a dims-carrying Type of the same Go type is the recorded under-equal residual (no measured
+// consumer does). A nil descriptor maps to the nil Type; a descriptor with no System.Type
+// (never synthesized) falls back to a fresh, uninterned wrapper.
 internal static ΔType canonType(ж<abi.Type> Ꮡt) {
     if (Ꮡt == nil) {
         return default!;
@@ -436,7 +743,9 @@ internal static ΔType canonType(ж<abi.Type> Ꮡt) {
             "resulting reflect.Type is non-canonical. Route the feeding path through abi.synthType.");
         return new rtypeжΔType(toRType(Ꮡt));
     }
-    return s_canonTypeCache.GetOrAdd(st, _ => new rtypeжΔType(toRType(Ꮡt)));
+    nint[]? dims = Ꮡt.Value.arrayDims;
+    string dimsKey = dims is null ? "" : string.Join(',', dims);
+    return s_canonTypeCache.GetOrAdd((st, dimsKey), _ => new rtypeжΔType(toRType(Ꮡt)));
 }
 
 // Type returns v's type. Hand-owned so the common (non-method) fast path returns the CANONICAL Type
@@ -466,7 +775,7 @@ internal static ΔType toType(ж<abi.Type> Ꮡt) {
 
 // String returns the Go source type string (`main.Point`, `[]int`, `*T`) — the value of %T.
 internal static @string String(this ж<rtype> Ꮡt) {
-    return (@string)GoReflect.GoTypeName(Ꮡt.Value.t.sysType);
+    return (@string)GoReflect.GoTypeName(Ꮡt.Value.t.sysType, Ꮡt.Value.t.arrayDims);
 }
 
 // Name returns the type's name within its package (empty for an unnamed composite).
@@ -480,25 +789,75 @@ internal static @string Name(this ж<rtype> Ꮡt) {
     return (@string)(dot >= 0 ? full[(dot + 1)..] : full);
 }
 
-// Elem returns the element type of a slice/array/pointer/map/chan.
+// Elem returns the element type of a slice/array/pointer/map/chan. An array descriptor's inner
+// dims thread through (the element of a dims-carrying [4][8]byte is [8]byte with dims [8]).
 internal static ΔType Elem(this ж<rtype> Ꮡt) {
-    return toType(abi.synthType(GoReflect.ElementType(Ꮡt.Value.t.sysType)));
+    nint[]? dims = Ꮡt.Value.t.arrayDims;
+    nint[]? elemDims = dims is { Length: > 1 } ? dims[1..] : null;
+    return toType(abi.synthType(GoReflect.ElementType(Ꮡt.Value.t.sysType), elemDims));
 }
 
-// NumField returns the number of fields in a struct type.
+// Key returns a map type's key type.
+internal static ΔType Key(this ж<rtype> Ꮡt) {
+    return toType(abi.synthType(GoReflect.KeyType(Ꮡt.Value.t.sysType)));
+}
+
+// Len returns an array type's length — the descriptor's carried dims (non-identity cargo; 0
+// when no source knew the length, the recorded managed-type limitation).
+internal static nint Len(this ж<rtype> Ꮡt) {
+    return Ꮡt.Value.t.arrayDims is { Length: > 0 } dims ? dims[0] : 0;
+}
+
+// NumField returns the number of fields in a struct type (the projected Go fields — shared
+// with the value side, so the two walks index identically).
 internal static nint NumField(this ж<rtype> Ꮡt) {
     System.Type? st = Ꮡt.Value.t.sysType;
-    return st is null ? 0 : goStructFields(st).Length;
+    return st is null ? 0 : GoReflect.GoFields(st).Length;
 }
 
-// Field returns the i'th struct field's descriptor (fmt reads .Name for %+v).
+// Field returns the i'th struct field's descriptor: the projected Go name (blank fields are
+// "_"; a promoted embed carries the embedded type's name) and the field's STATIC Go type,
+// dims-stamped when the declaring zero instance reveals an array field's length.
 internal static StructField Field(this ж<rtype> Ꮡt, nint i) {
     System.Type st = Ꮡt.Value.t.sysType!;
-    FieldInfo f = goStructFields(st)[(int)i];
+    GoReflect.GoFieldInfo f = GoReflect.GoFields(st)[(int)i];
     return new StructField(
         Name: (@string)f.Name,
-        Type: toType(abi.synthType(f.FieldType))
+        Type: toType(abi.synthType(f.Type, f.ArrayDims))
     );
+}
+
+// ==== func-type introspection over the delegate Invoke signature (GoReflect.TryFuncShape) ====
+// A converted Go func value is a C# delegate; NumIn/In/NumOut/Out derive from its Invoke
+// signature (multi-return = ValueTuple, unambiguous), never from funcType sub-descriptors the
+// bridge never populates. In/Out are canonical (toType-interned).
+
+private static (System.Type[] ins, System.Type[] outs, bool isVariadic) funcShapeOf(ж<rtype> Ꮡt, @string op) {
+    System.Type? st = Ꮡt.Value.t.sysType;
+    if (st is null || !GoReflect.TryFuncShape(st, out System.Type[]? ins, out System.Type[]? outs, out bool isVariadic)) {
+        throw panic("reflect: " + op + " of non-func type");
+    }
+    return (ins, outs, isVariadic);
+}
+
+internal static nint NumIn(this ж<rtype> Ꮡt) {
+    return funcShapeOf(Ꮡt, "NumIn"u8).ins.Length;
+}
+
+internal static ΔType In(this ж<rtype> Ꮡt, nint i) {
+    return toType(abi.synthType(funcShapeOf(Ꮡt, "In"u8).ins[(int)i]));
+}
+
+internal static nint NumOut(this ж<rtype> Ꮡt) {
+    return funcShapeOf(Ꮡt, "NumOut"u8).outs.Length;
+}
+
+internal static ΔType Out(this ж<rtype> Ꮡt, nint i) {
+    return toType(abi.synthType(funcShapeOf(Ꮡt, "Out"u8).outs[(int)i]));
+}
+
+internal static bool IsVariadic(this ж<rtype> Ꮡt) {
+    return funcShapeOf(Ꮡt, "IsVariadic"u8).isVariadic;
 }
 
 } // end reflect_package

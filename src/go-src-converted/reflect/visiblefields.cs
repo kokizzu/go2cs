@@ -70,7 +70,7 @@ public static slice<StructField> VisibleFields(ΔType t) {
         var add = true;
         {
             var (oldIndex, ok) = w.byName[f.Name, ꟷ]; if (ok) {
-                var old = Ꮡ(w.fields[oldIndex]);
+                var old = Ꮡ(w.fields, oldIndex);
                 if (len(w.index) == len((~old).Index)){
                     // Fields with the same name at the same depth
                     // cancel one another out. Set the field name

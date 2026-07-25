@@ -7,7 +7,7 @@ namespace go;
 using abi = @internal.abi_package;
 using @unsafe = unsafe_package;
 using @internal;
-using sync = sync_package;
+using Δsync = sync_package;
 
 partial class reflect_package {
 
@@ -48,7 +48,7 @@ public static ΔValue MakeFunc(ΔType typ, Func<slice<ΔValue>, slice<ΔValue>> 
         throw panic("reflect: call of MakeFunc with non-Func type");
     }
     var t = typ.common();
-    var ftyp = (ж<funcType>)(uintptr)(new @unsafe.Pointer(t));
+    var ftyp = t.Reinterpret<abi.Type, funcType>();
     var code = abi.FuncPCABI0(makeFuncStub);
     // makeFuncImpl contains a stack map for use by the runtime
     var (_, _, abid) = funcLayout(ftyp, nil);
@@ -98,7 +98,7 @@ internal static ΔValue makeMethodValue(@string op, ΔValue v) {
     ref var rcvr = ref heap<ΔValue>(out var Ꮡrcvr);
     rcvr = new ΔValue(v.typ(), v.ptr, fl);
     // v.Type returns the actual type of the method value.
-    var ftyp = (ж<funcType>)(uintptr)(new @unsafe.Pointer(v.Type()._<ж<rtype>>()));
+    var ftyp = v.Type()._<ж<rtype>>().Reinterpret<rtype, funcType>();
     var code = methodValueCallCodePtr();
     // methodValue contains a stack map for use by the runtime
     var (_, _, abid) = funcLayout(ftyp, nil);
@@ -158,12 +158,12 @@ internal static void moveMakeFuncArgPtrs(ж<makeFuncCtxt> Ꮡctxt, ж<abi.RegArg
         // Avoid write barriers! Because our write barrier enqueues what
         // was there before, we might enqueue garbage.
         if (ctxt.regPtrs.Get(i)){
-            ((ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡargs.at(abi.RegArgs.ᏑPtrs, i)).Value))).Value = arg;
+            (Ꮡargs.at(abi.RegArgs.ᏑPtrs, i).Reinterpret<@unsafe.Pointer, uintptr>()).Value = arg;
         } else {
             // We *must* zero this space ourselves because it's defined in
             // assembly code and the GC will scan these pointers. Otherwise,
             // there will be garbage here.
-            ((ж<uintptr>)(uintptr)(@unsafe.Pointer.FromRef(ref (Ꮡargs.at(abi.RegArgs.ᏑPtrs, i)).Value))).Value = 0;
+            (Ꮡargs.at(abi.RegArgs.ᏑPtrs, i).Reinterpret<@unsafe.Pointer, uintptr>()).Value = 0;
         }
     }
 }

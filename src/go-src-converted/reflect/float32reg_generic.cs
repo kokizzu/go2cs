@@ -15,11 +15,11 @@ partial class reflect_package {
 internal static float32 archFloat32FromReg(uint64 reg) {
     ref var i = ref heap<uint32>(out var Ꮡi);
     i = (uint32)reg;
-    return ~(ж<float32>)(uintptr)(new @unsafe.Pointer(Ꮡi));
+    return ~Ꮡi.Reinterpret<uint32, float32>();
 }
 
 internal static uint64 archFloat32ToReg(float32 val) {
-    return (uint64)(~(ж<uint32>)(uintptr)(new @unsafe.Pointer(Ꮡ(val))));
+    return (uint64)(~Ꮡ(val).Reinterpret<float32, uint32>());
 }
 
 } // end reflect_package

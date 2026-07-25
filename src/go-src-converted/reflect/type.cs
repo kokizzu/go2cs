@@ -360,7 +360,7 @@ internal static @string pkgPath(abiꓸName n) {
     ref var nameOff = ref heap(new int32(), out var ᏑnameOff);
     // Note that this field may not be aligned in memory,
     // so we cannot use a direct int32 assignment here.
-    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(n.DataChecked(off, "name offset field"u8))))[..]);
+    copy((~ᏑnameOff.Reinterpret<int32, array<byte>>())[..], (~n.DataChecked(off, "name offset field"u8).Reinterpret<byte, array<byte>>())[..]);
     var pkgPathName = new abiꓸName(Bytes: (ж<byte>)(uintptr)(resolveTypeOff(new @unsafe.Pointer(n.Bytes), nameOff)));
     return pkgPathName.Name();
 }
@@ -553,7 +553,7 @@ internal static nint NumMethod(this ж<rtype> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     if (t.Kind() == ΔInterface) {
-        var tt = (ж<interfaceType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+        var tt = Ꮡt.Reinterpret<rtype, interfaceType>();
         return tt.NumMethod();
     }
     return len(Ꮡt.exportedMethods());
@@ -564,7 +564,7 @@ internal static ΔMethod /*m*/ Method(this ж<rtype> Ꮡt, nint i) {
 
     ref var t = ref Ꮡt.Value;
     if (t.Kind() == ΔInterface) {
-        var tt = (ж<interfaceType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+        var tt = Ꮡt.Reinterpret<rtype, interfaceType>();
         return tt.Method(i);
     }
     var methods = Ꮡt.exportedMethods();
@@ -576,7 +576,7 @@ internal static ΔMethod /*m*/ Method(this ж<rtype> Ꮡt, nint i) {
     m.Name = pname.Name();
     var fl = ((flag)(uintptr)(nuint)Func);
     var mtyp = Ꮡt.typeOff(p.Mtyp);
-    var ft = (ж<funcType>)(uintptr)(new @unsafe.Pointer(mtyp));
+    var ft = mtyp.Reinterpret<abi.Type, funcType>();
     var @in = new slice<ΔType>(0, 1 + ft.NumIn());
     @in = builtin.append(@in, (ΔType)(new rtypeжΔType(Ꮡt)));
     foreach (var (_, arg) in ft.InSlice()) {
@@ -602,7 +602,7 @@ internal static (ΔMethod m, bool ok) MethodByName(this ж<rtype> Ꮡt, @string 
 
     ref var t = ref Ꮡt.Value;
     if (t.Kind() == ΔInterface) {
-        var tt = (ж<interfaceType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+        var tt = Ꮡt.Reinterpret<rtype, interfaceType>();
         return tt.MethodByName(name);
     }
     var ut = Ꮡt.uncommon();
@@ -662,12 +662,12 @@ internal static ΔChanDir ChanDir(this ж<rtype> Ꮡt) {
     if (t.Kind() != Chan) {
         throw panic("reflect: ChanDir of non-chan type " + Ꮡt.String());
     }
-    var tt = (ж<abi.ChanType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+    var tt = Ꮡt.Reinterpret<rtype, abi.ChanType>();
     return ((ΔChanDir)(nint)(~tt).Dir);
 }
 
 internal static ж<rtype> toRType(ж<abi.Type> Ꮡt) {
-    return (ж<rtype>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+    return Ꮡt.Reinterpret<abi.Type, rtype>();
 }
 
 internal static ж<abi.Type> elem(ж<abi.Type> Ꮡt) {
@@ -688,7 +688,7 @@ internal static StructField FieldByIndex(this ж<rtype> Ꮡt, slice<nint> index)
     if (t.Kind() != Struct) {
         throw panic("reflect: FieldByIndex of non-struct type " + Ꮡt.String());
     }
-    var tt = (ж<structType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+    var tt = Ꮡt.Reinterpret<rtype, structType>();
     return tt.FieldByIndex(index);
 }
 
@@ -698,7 +698,7 @@ internal static (StructField, bool) FieldByName(this ж<rtype> Ꮡt, @string nam
     if (t.Kind() != Struct) {
         throw panic("reflect: FieldByName of non-struct type " + Ꮡt.String());
     }
-    var tt = (ж<structType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+    var tt = Ꮡt.Reinterpret<rtype, structType>();
     return tt.FieldByName(name);
 }
 
@@ -708,81 +708,25 @@ internal static (StructField, bool) FieldByNameFunc(this ж<rtype> Ꮡt, Func<@s
     if (t.Kind() != Struct) {
         throw panic("reflect: FieldByNameFunc of non-struct type " + Ꮡt.String());
     }
-    var tt = (ж<structType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
+    var tt = Ꮡt.Reinterpret<rtype, structType>();
     return tt.FieldByNameFunc(match);
 }
 
-internal static ΔType Key(this ж<rtype> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+// go2cs generated this placeholder — func Key is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    if (t.Kind() != Map) {
-        throw panic("reflect: Key of non-map type " + Ꮡt.String());
-    }
-    var tt = (ж<mapType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
-    return toType((~tt).Key);
-}
-
-internal static nint Len(this ж<rtype> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
-
-    if (t.Kind() != Array) {
-        throw panic("reflect: Len of non-array type " + Ꮡt.String());
-    }
-    var tt = (ж<arrayType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
-    return (nint)(~tt).Len;
-}
+// go2cs generated this placeholder — func Len is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func NumField is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static ΔType In(this ж<rtype> Ꮡt, nint i) {
-    ref var t = ref Ꮡt.Value;
+// go2cs generated this placeholder — func In is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    if (t.Kind() != Func) {
-        throw panic("reflect: In of non-func type " + Ꮡt.String());
-    }
-    var tt = (ж<abiꓸFuncType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
-    return toType(tt.InSlice()[i]);
-}
+// go2cs generated this placeholder — func NumIn is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static nint NumIn(this ж<rtype> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
+// go2cs generated this placeholder — func NumOut is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    if (t.Kind() != Func) {
-        throw panic("reflect: NumIn of non-func type " + Ꮡt.String());
-    }
-    var tt = (ж<abiꓸFuncType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
-    return tt.NumIn();
-}
+// go2cs generated this placeholder — func Out is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static nint NumOut(this ж<rtype> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
-
-    if (t.Kind() != Func) {
-        throw panic("reflect: NumOut of non-func type " + Ꮡt.String());
-    }
-    var tt = (ж<abiꓸFuncType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
-    return tt.NumOut();
-}
-
-internal static ΔType Out(this ж<rtype> Ꮡt, nint i) {
-    ref var t = ref Ꮡt.Value;
-
-    if (t.Kind() != Func) {
-        throw panic("reflect: Out of non-func type " + Ꮡt.String());
-    }
-    var tt = (ж<abiꓸFuncType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
-    return toType(tt.OutSlice()[i]);
-}
-
-internal static bool IsVariadic(this ж<rtype> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
-
-    if (t.Kind() != Func) {
-        throw panic("reflect: IsVariadic of non-func type " + Ꮡt.String());
-    }
-    var tt = (ж<abiꓸFuncType>)(uintptr)(@unsafe.Pointer.FromRef(ref t));
-    return tt.IsVariadic();
-}
+// go2cs generated this placeholder — func IsVariadic is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static bool OverflowComplex(this ж<rtype> Ꮡt, complex128 x) {
     ref var t = ref Ꮡt.Value;
@@ -957,7 +901,7 @@ internal static ΔMethod /*m*/ Method(this ж<interfaceType> Ꮡt, nint i) {
     if (i < 0 || i >= len(t.Methods)) {
         return m;
     }
-    var p = Ꮡ(t.Methods[i]);
+    var p = Ꮡ(t.Methods, i);
     var pname = Ꮡt.nameOff((~p).Name);
     m.Name = pname.Name();
     if (!pname.IsExported()) {
@@ -987,7 +931,7 @@ internal static (ΔMethod m, bool ok) MethodByName(this ж<interfaceType> Ꮡt, 
     }
     ж<abi.Imethod> p = default!;
     foreach (var (i, _) in t.Methods) {
-        p = Ꮡ(t.Methods[i]);
+        p = Ꮡ(t.Methods, i);
         if (Ꮡt.nameOff((~p).Name).Name() == name) {
             return (Ꮡt.Method(i), true);
         }
@@ -1093,7 +1037,7 @@ public static (@string value, bool ok) Lookup(this StructTag tag, @string key) {
     if (i < 0 || i >= len(t.Fields)) {
         throw panic("reflect: Field index out of bounds");
     }
-    var p = Ꮡ(t.Fields[i]);
+    var p = Ꮡ(t.Fields, i);
     f.Type = toType((~p).Typ);
     f.Name = (~p).Name.Name();
     f.Anonymous = p.Embedded();
@@ -1222,7 +1166,7 @@ internal static (StructField result, bool ok) FieldByNameFunc(this ж<structType
                 if (ok || ntyp == nil || ntyp.Kind() != abi.Struct) {
                     continue;
                 }
-                var styp = (ж<structType>)(uintptr)(new @unsafe.Pointer(ntyp));
+                var styp = ntyp.Reinterpret<abi.Type, structType>();
                 if (nextCount[styp] > 0) {
                     nextCount[styp] = 2;
                     // exact multiple doesn't matter
@@ -1260,7 +1204,7 @@ internal static (StructField f, bool present) FieldByName(this ж<structType> �
     var hasEmbeds = false;
     if (name != ""u8) {
         foreach (var (i, _) in t.Fields) {
-            var tf = Ꮡ(t.Fields[i]);
+            var tf = Ꮡ(t.Fields, i);
             if ((~tf).Name.Name() == name) {
                 return (t.Field(i), true);
             }
@@ -1323,7 +1267,7 @@ internal static ж<abi.Type> ptrTo(this ж<rtype> Ꮡt) {
     // Look in known types.
     @string s = "*"u8 + Ꮡt.String();
     foreach (var (_, tt) in typesByString(s)) {
-        var p = (ж<ptrType>)(uintptr)(new @unsafe.Pointer(tt));
+        var p = tt.Reinterpret<abi.Type, ptrType>();
         if ((~p).Elem != Ꮡt.of(rtype.Ꮡt)) {
             continue;
         }
@@ -1335,7 +1279,7 @@ internal static ж<abi.Type> ptrTo(this ж<rtype> Ꮡt) {
     ref var iptr = ref heap<any>(out var Ꮡiptr);
 
     iptr = ((ж<@unsafe.Pointer>)nil);
-    var prototype = ~(ж<ж<ptrType>>)(uintptr)(new @unsafe.Pointer(Ꮡiptr));
+    var prototype = ~Ꮡiptr.Reinterpret<any, ж<ptrType>>();
     ref var pp = ref heap<ptrType>(out var Ꮡpp);
     pp = prototype.Value;
     pp.Str = resolveReflectName(newName(s, ""u8, false, false));
@@ -1402,7 +1346,7 @@ internal static bool implements(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
     if (T.Kind() != abi.Interface) {
         return false;
     }
-    var t = (ж<interfaceType>)(uintptr)(new @unsafe.Pointer(ᏑT));
+    var t = ᏑT.Reinterpret<abi.Type, interfaceType>();
     if (len((~t).Methods) == 0) {
         return true;
     }
@@ -1419,7 +1363,7 @@ internal static bool implements(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV) {
     // the quadratic time  a naive search would require.
     // See also ../runtime/iface.go.
     if (V.Kind() == abi.Interface) {
-        var vΔ1 = (ж<interfaceType>)(uintptr)(new @unsafe.Pointer(ᏑV));
+        var vΔ1 = ᏑV.Reinterpret<abi.Type, interfaceType>();
         nint iΔ1 = 0;
         for (nint j = 0; j < len((~vΔ1).Methods); j++) {
             var tm = Ꮡ((~t).Methods, iΔ1);
@@ -1562,8 +1506,8 @@ internal static bool haveIdenticalUnderlyingType(ж<abi.Type> ᏑT, ж<abi.Type>
         return ᏑV.ChanDir() == ᏑT.ChanDir() && haveIdenticalType(ᏑT.Elem(), ᏑV.Elem(), cmpTags);
     }
     if (exprᴛ1 == Func) {
-        var t = (ж<funcType>)(uintptr)(new @unsafe.Pointer(ᏑT));
-        var v = (ж<funcType>)(uintptr)(new @unsafe.Pointer(ᏑV));
+        var t = ᏑT.Reinterpret<abi.Type, funcType>();
+        var v = ᏑV.Reinterpret<abi.Type, funcType>();
         if ((~t).OutCount != (~v).OutCount || (~t).InCount != (~v).InCount) {
             return false;
         }
@@ -1580,8 +1524,8 @@ internal static bool haveIdenticalUnderlyingType(ж<abi.Type> ᏑT, ж<abi.Type>
         return true;
     }
     if (exprᴛ1 == ΔInterface) {
-        var t = (ж<interfaceType>)(uintptr)(new @unsafe.Pointer(ᏑT));
-        var v = (ж<interfaceType>)(uintptr)(new @unsafe.Pointer(ᏑV));
+        var t = ᏑT.Reinterpret<abi.Type, interfaceType>();
+        var v = ᏑV.Reinterpret<abi.Type, interfaceType>();
         if (len((~t).Methods) == 0 && len((~v).Methods) == 0) {
             return true;
         }
@@ -1596,8 +1540,8 @@ internal static bool haveIdenticalUnderlyingType(ж<abi.Type> ᏑT, ж<abi.Type>
         return haveIdenticalType(ᏑT.Elem(), ᏑV.Elem(), cmpTags);
     }
     if (exprᴛ1 == Struct) {
-        var t = (ж<structType>)(uintptr)(new @unsafe.Pointer(ᏑT));
-        var v = (ж<structType>)(uintptr)(new @unsafe.Pointer(ᏑV));
+        var t = ᏑT.Reinterpret<abi.Type, structType>();
+        var v = ᏑV.Reinterpret<abi.Type, structType>();
         if (len((~t).Fields) != len((~v).Fields)) {
             return false;
         }
@@ -1785,7 +1729,7 @@ public static ΔType ChanOf(ΔChanDir dir, ΔType t) {
     }
 
     foreach (var (_, tt) in typesByString(s)) {
-        var chΔ2 = (ж<chanType>)(uintptr)(new @unsafe.Pointer(tt));
+        var chΔ2 = tt.Reinterpret<abi.Type, chanType>();
         if ((~chΔ2).Elem == typ && (~chΔ2).Dir == ((abiꓸChanDir)(nint)dir)) {
             var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt));
             return tiΔ1._<ΔType>();
@@ -1795,7 +1739,7 @@ public static ΔType ChanOf(ΔChanDir dir, ΔType t) {
     ref var ichan = ref heap<any>(out var Ꮡichan);
 
     ichan = (channel<@unsafe.Pointer>)(default!);
-    var prototype = ~(ж<ж<chanType>>)(uintptr)(new @unsafe.Pointer(Ꮡichan));
+    var prototype = ~Ꮡichan.Reinterpret<any, ж<chanType>>();
     ref var ch = ref heap<chanType>(out var Ꮡch);
     ch = prototype.Value;
     ch.TFlag = abi.TFlagRegularMemory;
@@ -1829,7 +1773,7 @@ public static ΔType MapOf(ΔType key, ΔType elem) {
     // Look in known types.
     @string s = "map["u8 + stringFor(ktyp) + "]"u8 + stringFor(etyp);
     foreach (var (_, tt) in typesByString(s)) {
-        var mtΔ2 = (ж<mapType>)(uintptr)(new @unsafe.Pointer(tt));
+        var mtΔ2 = tt.Reinterpret<abi.Type, mapType>();
         if ((~mtΔ2).Key == ktyp && (~mtΔ2).Elem == etyp) {
             var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt));
             return tiΔ1._<ΔType>();
@@ -1842,7 +1786,7 @@ public static ΔType MapOf(ΔType key, ΔType elem) {
 
     imap = (map<@unsafe.Pointer, @unsafe.Pointer>)(default!);
     ref var mt = ref heap<mapType>(out var Ꮡmt);
-    mt = (~(ж<ж<mapType>>)(uintptr)(new @unsafe.Pointer(Ꮡimap))).Value;
+    mt = (~Ꮡimap.Reinterpret<any, ж<mapType>>()).Value;
     mt.Str = resolveReflectName(newName(s, ""u8, false, false));
     mt.TFlag = 0;
     mt.Hash = fnv1((~etyp).Hash, (rune)'m', (byte)(((~ktyp).Hash >> (int)(24))), (byte)(((~ktyp).Hash >> (int)(16))), (byte)(((~ktyp).Hash >> (int)(8))), (byte)(~ktyp).Hash);
@@ -1925,7 +1869,7 @@ public static ΔType FuncOf(slice<ΔType> @in, slice<ΔType> @out, bool variadic
     ref var ifunc = ref heap<any>(out var Ꮡifunc);
 
     ifunc = (Action)(default!);
-    var prototype = ~(ж<ж<funcType>>)(uintptr)(new @unsafe.Pointer(Ꮡifunc));
+    var prototype = ~Ꮡifunc.Reinterpret<any, ж<funcType>>();
     nint n = len(@in) + len(@out);
     if (n > 128) {
         throw panic("reflect.FuncOf: too many arguments");
@@ -2018,7 +1962,7 @@ internal static @string funcStr(ж<funcType> Ꮡft) {
         }
         if (ft.IsVariadic() && i == (nint)ft.InCount - 1){
             repr = builtin.append(repr, ((@string)"..."u8).ꓸꓸꓸ);
-            repr = builtin.append(repr, stringFor(((ж<sliceType>)(uintptr)(new @unsafe.Pointer(t))).Value.Elem).ꓸꓸꓸ);
+            repr = builtin.append(repr, stringFor((t.Reinterpret<abi.Type, sliceType>()).Value.Elem).ꓸꓸꓸ);
         } else {
             repr = builtin.append(repr, stringFor(t).ꓸꓸꓸ);
         }
@@ -2056,11 +2000,11 @@ internal static bool isReflexive(ж<abi.Type> Ꮡt) {
         return false;
     }
     if (exprᴛ1 == Array) {
-        var tt = (ж<arrayType>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var tt = Ꮡt.Reinterpret<abi.Type, arrayType>();
         return isReflexive((~tt).Elem);
     }
     if (exprᴛ1 == Struct) {
-        var tt = (ж<structType>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var tt = Ꮡt.Reinterpret<abi.Type, structType>();
         foreach (var (_, f) in (~tt).Fields) {
             if (!isReflexive(f.Typ)) {
                 return false;
@@ -2088,11 +2032,11 @@ internal static bool needKeyUpdate(ж<abi.Type> Ꮡt) {
         return true;
     }
     if (exprᴛ1 == Array) {
-        var tt = (ж<arrayType>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var tt = Ꮡt.Reinterpret<abi.Type, arrayType>();
         return needKeyUpdate((~tt).Elem);
     }
     if (exprᴛ1 == Struct) {
-        var tt = (ж<structType>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var tt = Ꮡt.Reinterpret<abi.Type, structType>();
         foreach (var (_, f) in (~tt).Fields) {
             // Float keys can be updated from +0 to -0.
             // String keys can be updated to use a smaller backing store.
@@ -2120,11 +2064,11 @@ internal static bool hashMightPanic(ж<abi.Type> Ꮡt) {
         return true;
     }
     if (exprᴛ1 == Array) {
-        var tt = (ж<arrayType>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var tt = Ꮡt.Reinterpret<abi.Type, arrayType>();
         return hashMightPanic((~tt).Elem);
     }
     if (exprᴛ1 == Struct) {
-        var tt = (ж<structType>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var tt = Ꮡt.Reinterpret<abi.Type, structType>();
         foreach (var (_, f) in (~tt).Fields) {
             if (hashMightPanic(f.Typ)) {
                 return true;
@@ -2196,8 +2140,8 @@ internal static ж<abi.Type> bucketOf(ж<abi.Type> Ꮡktyp, ж<abi.Type> Ꮡetyp
     return b;
 }
 
-[GoRecv] internal static unsafe slice<byte> gcSlice(this ref rtype t, uintptr begin, uintptr end) {
-    return new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(new @unsafe.Pointer(t.t.GCData)), (int)(end)));
+[GoRecv] internal static slice<byte> gcSlice(this ref rtype t, uintptr begin, uintptr end) {
+    return (~t.t.GCData.Reinterpret<byte, array<byte>>()).slice((int)(begin), (int)(end), (int)(end));
 }
 
 // emitGCMask writes the GC mask for [n]typ into out, starting at bit
@@ -2228,7 +2172,7 @@ internal static slice<byte> appendGCProg(slice<byte> dst, ж<abi.Type> Ꮡtyp) {
 
     if ((abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0) {
         // Element has GC program; emit one element.
-        var n = (uintptr)(~(ж<uint32>)(uintptr)(new @unsafe.Pointer(typ.GCData)));
+        var n = (uintptr)(~typ.GCData.Reinterpret<byte, uint32>());
         var prog = typ.GcSlice(4, 4 + n - 1);
         return builtin.append(dst, prog.ꓸꓸꓸ);
     }
@@ -2260,7 +2204,7 @@ public static ΔType SliceOf(ΔType t) {
     // Look in known types.
     @string s = "[]"u8 + stringFor(typ);
     foreach (var (_, tt) in typesByString(s)) {
-        var sliceΔ2 = (ж<sliceType>)(uintptr)(new @unsafe.Pointer(tt));
+        var sliceΔ2 = tt.Reinterpret<abi.Type, sliceType>();
         if ((~sliceΔ2).Elem == typ) {
             var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt));
             return tiΔ1._<ΔType>();
@@ -2270,7 +2214,7 @@ public static ΔType SliceOf(ΔType t) {
     ref var islice = ref heap<any>(out var Ꮡislice);
 
     islice = (slice<@unsafe.Pointer>)(default!);
-    var prototype = ~(ж<ж<sliceType>>)(uintptr)(new @unsafe.Pointer(Ꮡislice));
+    var prototype = ~Ꮡislice.Reinterpret<any, ж<sliceType>>();
     ref var Δslice = ref heap<sliceType>(out var Ꮡslice);
     Δslice = prototype.Value;
     Δslice.TFlag = 0;
@@ -2434,7 +2378,7 @@ public static ΔType StructOf(slice<StructField> fields) => func((defer, recover
             }
             var exprᴛ1 = ((ΔKind)(nuint)(uint8)f.Typ.Kind());
             if (exprᴛ1 == ΔInterface) {
-                var ift = (ж<interfaceType>)(uintptr)(new @unsafe.Pointer(ft));
+                var ift = ft.Reinterpret<abi.Type, interfaceType>();
                 foreach (var (_, m) in (~ift).Methods) {
                     if (pkgPath(ift.nameOff(m.Name)) != ""u8) {
                         // TODO(sbinet).  Issue 15924.
@@ -2450,7 +2394,7 @@ public static ΔType StructOf(slice<StructField> fields) => func((defer, recover
                 }
             }
             else if (exprᴛ1 == ΔPointer) {
-                var ptr = (ж<ptrType>)(uintptr)(new @unsafe.Pointer(ft));
+                var ptr = ft.Reinterpret<abi.Type, ptrType>();
                 {
                     var unt = ptr.of(ptrType.ᏑPtrType).of(abi.PtrType.ᏑType).Uncommon(); if (unt != nil) {
                         if (i > 0 && (~unt).Mcount > 0) {
@@ -2612,7 +2556,7 @@ public static ΔType StructOf(slice<StructField> fields) => func((defer, recover
     ref var istruct = ref heap<any>(out var Ꮡistruct);
 
     istruct = new EmptyStruct();
-    var prototype = ~(ж<ж<structType>>)(uintptr)(new @unsafe.Pointer(Ꮡistruct));
+    var prototype = ~Ꮡistruct.Reinterpret<any, ж<structType>>();
     typ.Value = prototype.Value;
     typ.Value.Fields = fs;
     if (pkgpath != ""u8) {
@@ -2713,7 +2657,7 @@ public static ΔType StructOf(slice<StructField> fields) => func((defer, recover
             off += ft.Typ.Value.PtrBytes;
         }
         prog = builtin.append(prog, (byte)(0));
-        ((ж<uint32>)(uintptr)(new @unsafe.Pointer(Ꮡ(prog, 0)))).Value = (uint32)(len(prog) - 4);
+        (Ꮡ(prog, 0).Reinterpret<byte, uint32>()).Value = (uint32)(len(prog) - 4);
         typ.Value.Kind_ |= abi.KindGCProg;
         typ.Value.GCData = Ꮡ(prog, 0);
     } else {
@@ -2792,7 +2736,7 @@ internal static uintptr typeptrdata(ж<abi.Type> Ꮡt) {
 
     var exprᴛ1 = t.Kind();
     if (exprᴛ1 == abi.Struct) {
-        var st = (ж<structType>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var st = Ꮡt.Reinterpret<abi.Type, structType>();
         nint field = -1;
         foreach (var (i, _) in (~st).Fields) {
             // find the last field that has pointers.
@@ -2833,7 +2777,7 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
     // Look in known types.
     @string s = "["u8 + strconv.Itoa(length) + "]"u8 + stringFor(typ);
     foreach (var (_, tt) in typesByString(s)) {
-        var arrayΔ2 = (ж<arrayType>)(uintptr)(new @unsafe.Pointer(tt));
+        var arrayΔ2 = tt.Reinterpret<abi.Type, arrayType>();
         if ((~arrayΔ2).Elem == typ) {
             var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt));
             return tiΔ1._<ΔType>();
@@ -2843,7 +2787,7 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
     ref var iarray = ref heap<any>(out var Ꮡiarray);
 
     iarray = new @unsafe.Pointer[]{}.array(1);
-    var prototype = ~(ж<ж<arrayType>>)(uintptr)(new @unsafe.Pointer(Ꮡiarray));
+    var prototype = ~Ꮡiarray.Reinterpret<any, ж<arrayType>>();
     ref var Δarray = ref heap<abiꓸArrayType>(out var Ꮡarray);
     Δarray = prototype.Value;
     Δarray.TFlag = (abi.TFlag)((~typ).TFlag & abi.TFlagRegularMemory);
@@ -2921,7 +2865,7 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
         }
         prog = appendVarint(prog, (uintptr)length - 1);
         prog = builtin.append(prog, (byte)(0));
-        ((ж<uint32>)(uintptr)(new @unsafe.Pointer(Ꮡ(prog, 0)))).Value = (uint32)(len(prog) - 4);
+        (Ꮡ(prog, 0).Reinterpret<byte, uint32>()).Value = (uint32)(len(prog) - 4);
         Δarray.Kind_ |= abi.KindGCProg;
         Δarray.GCData = Ꮡ(prog, 0);
         Δarray.PtrBytes = Δarray.Size_;
@@ -3092,14 +3036,14 @@ internal static void addTypeBits(ж<bitVector> Ꮡbv, uintptr offset, ж<abi.Typ
         bv.append(1);
     }
     else if (exprᴛ1 == Array) {
-        var tt = (ж<arrayType>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var tt = Ꮡt.Reinterpret<abi.Type, arrayType>();
         for (nint i = 0; i < (nint)(~tt).Len; i++) {
             // repeat inner type
             addTypeBits(Ꮡbv, offset + (uintptr)i * (~(~tt).Elem).Size_, (~tt).Elem);
         }
     }
     else if (exprᴛ1 == Struct) {
-        var tt = (ж<structType>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var tt = Ꮡt.Reinterpret<abi.Type, structType>();
         foreach (var (i, _) in (~tt).Fields) {
             // apply fields
             var f = Ꮡ((~tt).Fields, i);

@@ -147,7 +147,7 @@ internal static readonly abiStepKind abiStepFloatReg = 4; // copy to/from FP reg
         // and stack-assign.
         a = aOld;
         a.stackAssign(t.Size(), (uintptr)t.Align());
-        return Ꮡ(a.steps[len(a.steps) - 1]);
+        return Ꮡ(a.steps, len(a.steps) - 1);
     }
     return default!;
 }
@@ -180,7 +180,7 @@ internal static readonly abiStepKind abiStepFloatReg = 4; // copy to/from FP reg
     }
     if (!ok) {
         a.stackAssign(goarch.PtrSize, goarch.PtrSize);
-        return (Ꮡ(a.steps[len(a.steps) - 1]), ptr);
+        return (Ꮡ(a.steps, len(a.steps) - 1), ptr);
     }
     return (default!, ptr);
 }
@@ -233,7 +233,7 @@ internal static readonly abiStepKind abiStepFloatReg = 4; // copy to/from FP reg
         return a.assignIntN(offset, goarch.PtrSize, 3, 0b001);
     }
     else if (exprᴛ1 == Array) {
-        var tt = (ж<arrayType>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var tt = Ꮡt.Reinterpret<abi.Type, arrayType>();
         var exprᴛ3 = (~tt).Len;
         if (exprᴛ3 == 0) {
             return true;
@@ -250,7 +250,7 @@ internal static readonly abiStepKind abiStepFloatReg = 4; // copy to/from FP reg
 
     }
     else if (exprᴛ1 == Struct) {
-        var st = (ж<structType>)(uintptr)(new @unsafe.Pointer(Ꮡt));
+        var st = Ꮡt.Reinterpret<abi.Type, structType>();
         foreach (var (i, _) in (~st).Fields) {
             var f = Ꮡ((~st).Fields, i);
             if (!a.regAssign((~f).Typ, offset + (~f).Offset)) {
@@ -508,7 +508,7 @@ internal static void floatFromReg(ж<abi.RegArgs> Ꮡr, nint reg, uintptr argSiz
         ((ж<float32>)(uintptr)(to)).Value = archFloat32FromReg(r.Floats[reg]);
     }
     else if (exprᴛ1 == 8) {
-        ((ж<float64>)(uintptr)(to)).Value = ((ж<float64>)(uintptr)(new @unsafe.Pointer(Ꮡr.at(abi.RegArgs.ᏑFloats, reg)))).Value;
+        ((ж<float64>)(uintptr)(to)).Value = (Ꮡr.at(abi.RegArgs.ᏑFloats, reg).Reinterpret<uint64, float64>()).Value;
     }
     else { /* default: */
         throw panic("bad argSize");

@@ -116,7 +116,7 @@ internal static @unsafe.Pointer pointer(this ΔValue v) {
 internal static any packEface(ΔValue v) {
     var t = v.typ();
     ref var i = ref heap<any>(out var Ꮡi);
-    var e = (ж<abi.EmptyInterface>)(uintptr)(new @unsafe.Pointer(Ꮡi));
+    var e = Ꮡi.Reinterpret<any, abi.EmptyInterface>();
     // First, fill in the data portion of the interface.
     switch (ᐧ) {
     case {} when t.IfaceIndir(): {
@@ -172,25 +172,7 @@ internal static any packEface(ΔValue v) {
     return "reflect: call of "u8 + e.Method + " on "u8 + e.Kind.String() + " Value"u8;
 }
 
-// valueMethodName returns the name of the exported calling method on Value.
-internal static @string valueMethodName() {
-    array<uintptr> pc = new(5);
-    nint n = Δruntime.Callers(1, pc[..]);
-    var frames = Δruntime.CallersFrames(pc[..(int)(n)]);
-    Δruntime.Frame frame = new();
-    for (var more = true; more; ) {
-        @string prefix = "reflect.Value."u8;
-        (frame, more) = frames.Next();
-        @string name = frame.Function;
-        if (len(name) > len(prefix) && name[..(int)(len(prefix))] == prefix) {
-            @string methodName = name[(int)(len(prefix))..];
-            if (len(methodName) > 0 && (rune)'A' <= methodName[0] && methodName[0] <= (rune)'Z') {
-                return name;
-            }
-        }
-    }
-    return "unknown method"u8;
-}
+// go2cs generated this placeholder — func valueMethodName is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // nonEmptyInterface is the header for an interface value with methods.
 [GoType] partial struct nonEmptyInterface {
@@ -295,7 +277,7 @@ internal static slice<byte> bytesSlow(this ΔValue v) {
             throw panic("reflect.Value.Bytes of unaddressable byte array");
         }
         var p = (ж<byte>)(uintptr)(v.ptr);
-        nint n = (nint)((ж<arrayType>)(uintptr)(new @unsafe.Pointer(v.typ()))).Value.Len;
+        nint n = (nint)(v.typ().Reinterpret<abi.Type, arrayType>()).Value.Len;
         return @unsafe.Slice(p, n);
     }
 
@@ -331,32 +313,9 @@ public static bool CanSet(this ΔValue v) {
     return (flag)(v.flag & ((flag)(flagAddr | flagRO))) == flagAddr;
 }
 
-// Call calls the function v with the input arguments in.
-// For example, if len(in) == 3, v.Call(in) represents the Go call v(in[0], in[1], in[2]).
-// Call panics if v's Kind is not [Func].
-// It returns the output results as Values.
-// As in Go, each input argument must be assignable to the
-// type of the function's corresponding input parameter.
-// If v is a variadic function, Call creates the variadic slice parameter
-// itself, copying in the corresponding values.
-public static slice<ΔValue> Call(this ΔValue v, slice<ΔValue> @in) {
-    v.mustBe(Func);
-    v.mustBeExported();
-    return v.call("Call"u8, @in);
-}
+// go2cs generated this placeholder — func Call is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// CallSlice calls the variadic function v with the input arguments in,
-// assigning the slice in[len(in)-1] to v's final variadic argument.
-// For example, if len(in) == 3, v.CallSlice(in) represents the Go call v(in[0], in[1], in[2]...).
-// CallSlice panics if v's Kind is not [Func] or if v is not variadic.
-// It returns the output results as Values.
-// As in Go, each input argument must be assignable to the
-// type of the function's corresponding input parameter.
-public static slice<ΔValue> CallSlice(this ΔValue v, slice<ΔValue> @in) {
-    v.mustBe(Func);
-    v.mustBeExported();
-    return v.call("CallSlice"u8, @in);
-}
+// go2cs generated this placeholder — func CallSlice is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static bool callGC; // for testing; see TestCallMethodJump and TestCallArgLive
 
@@ -364,7 +323,7 @@ internal const bool debugReflectCall = false;
 
 internal static slice<ΔValue> call(this ΔValue v, @string op, slice<ΔValue> @in) {
     // Get function pointer, type.
-    var t = (ж<funcType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+    var t = v.typ().Reinterpret<abi.Type, funcType>();
     @unsafe.Pointer fn = default!;
     ΔValue rcvr = new(nil);
     ж<abi.Type> rcvrtype = default!;
@@ -871,7 +830,7 @@ internal static (ж<abi.Type> rcvrtype, ж<funcType> t, @unsafe.Pointer fn) meth
 
     nint i = methodIndex;
     if (v.typ().Kind() == abi.Interface){
-        var tt = (ж<interfaceType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+        var tt = v.typ().Reinterpret<abi.Type, interfaceType>();
         if ((nuint)i >= (nuint)len((~tt).Methods)) {
             throw panic("reflect: internal error: invalid method index");
         }
@@ -885,7 +844,7 @@ internal static (ж<abi.Type> rcvrtype, ж<funcType> t, @unsafe.Pointer fn) meth
         }
         rcvrtype = iface.Value.itab.Value.Type;
         fn = @unsafe.Pointer.FromRef(ref (Ꮡ(@unsafe.Slice((~iface).itab.at(abi.ITab.ᏑFun, 0), i + 1), i)).Value);
-        t = (ж<funcType>)(uintptr)(new @unsafe.Pointer(tt.typeOff((~m).Typ)));
+        t = tt.typeOff((~m).Typ).Reinterpret<abi.Type, funcType>();
     } else {
         rcvrtype = v.typ();
         var ms = v.typ().ExportedMethods();
@@ -899,7 +858,7 @@ internal static (ж<abi.Type> rcvrtype, ж<funcType> t, @unsafe.Pointer fn) meth
         ref var ifn = ref heap<@unsafe.Pointer>(out var Ꮡifn);
         ifn = (uintptr)textOffFor(v.typ(), m.Ifn);
         fn = @unsafe.Pointer.FromRef(ref (Ꮡifn).Value);
-        t = (ж<funcType>)(uintptr)(new @unsafe.Pointer(typeOffFor(v.typ(), m.Mtyp)));
+        t = typeOffFor(v.typ(), m.Mtyp).Reinterpret<abi.Type, funcType>();
     }
     return (rcvrtype, t, fn);
 }
@@ -1158,7 +1117,7 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
 
 // funcName returns the name of f, for use in error messages.
 internal static @string funcName(Func<slice<ΔValue>, slice<ΔValue>> f) {
-    var pc = ~(ж<uintptr>)(uintptr)(new @unsafe.Pointer(Ꮡ(f)));
+    var pc = ~Ꮡ(f).Reinterpret<Func<slice<ΔValue>, slice<ΔValue>>, uintptr>();
     var rf = Δruntime.FuncForPC(pc);
     if (rf != nil) {
         return rf.Name();
@@ -1201,7 +1160,7 @@ internal static nint capNonSlice(this ΔValue v) {
 public static void Close(this ΔValue v) {
     v.mustBe(Chan);
     v.mustBeExported();
-    var tt = (ж<chanType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+    var tt = v.typ().Reinterpret<abi.Type, chanType>();
     if ((ΔChanDir)(((ΔChanDir)(nint)(~tt).Dir) & SendDir) == 0) {
         throw panic("reflect: close of receive-only channel");
     }
@@ -1434,7 +1393,7 @@ public static bool IsZero(this ΔValue v) {
         if ((flag)(v.flag & flagIndir) == 0) {
             return v.ptr == nil;
         }
-        var typ = (ж<abiꓸArrayType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+        var typ = v.typ().Reinterpret<abi.Type, abiꓸArrayType>();
         if ((~typ).Equal != default! && typ.of(abiꓸArrayType.ᏑType).Size() <= abi.ZeroValSize) {
             // If the type is comparable, then compare directly with zero.
             // v.ptr doesn't escape, as Equal functions are compiler generated
@@ -1465,7 +1424,7 @@ public static bool IsZero(this ΔValue v) {
         if ((flag)(v.flag & flagIndir) == 0) {
             return v.ptr == nil;
         }
-        var typ = (ж<abiꓸStructType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+        var typ = v.typ().Reinterpret<abi.Type, abiꓸStructType>();
         if ((~typ).Equal != default! && typ.of(abiꓸStructType.ᏑType).Size() <= abi.ZeroValSize) {
             // If the type is comparable, then compare directly with zero.
             // See noescape justification above.
@@ -1518,7 +1477,7 @@ internal static bool isZero(slice<byte> b) {
     if (len(b) == 0) {
         return true;
     }
-    var w = @unsafe.Slice((ж<uint64>)(uintptr)(new @unsafe.Pointer(Ꮡ(b, 0))), len(b) / 8);
+    var w = @unsafe.Slice(Ꮡ(b, 0).Reinterpret<byte, uint64>(), len(b) / 8);
     while (len(w) % n != 0) {
         if (w[0] != 0) {
             return false;
@@ -1534,81 +1493,10 @@ internal static bool isZero(slice<byte> b) {
     return true;
 }
 
-// SetZero sets v to be the zero value of v's type.
-// It panics if [Value.CanSet] returns false.
-public static void SetZero(this ΔValue v) {
-    v.mustBeAssignable();
-    var exprᴛ1 = v.kind();
-    if (exprᴛ1 == ΔBool) {
-        ((ж<bool>)(uintptr)(v.ptr)).Value = false;
-    }
-    else if (exprᴛ1 == ΔInt) {
-        ((ж<nint>)(uintptr)(v.ptr)).Value = 0;
-    }
-    else if (exprᴛ1 == Int8) {
-        ((ж<int8>)(uintptr)(v.ptr)).Value = 0;
-    }
-    else if (exprᴛ1 == Int16) {
-        ((ж<int16>)(uintptr)(v.ptr)).Value = 0;
-    }
-    else if (exprᴛ1 == Int32) {
-        ((ж<int32>)(uintptr)(v.ptr)).Value = 0;
-    }
-    else if (exprᴛ1 == Int64) {
-        ((ж<int64>)(uintptr)(v.ptr)).Value = 0;
-    }
-    else if (exprᴛ1 == ΔUint) {
-        ((ж<nuint>)(uintptr)(v.ptr)).Value = 0;
-    }
-    else if (exprᴛ1 == Uint8) {
-        ((ж<uint8>)(uintptr)(v.ptr)).Value = 0;
-    }
-    else if (exprᴛ1 == Uint16) {
-        ((ж<uint16>)(uintptr)(v.ptr)).Value = 0;
-    }
-    else if (exprᴛ1 == Uint32) {
-        ((ж<uint32>)(uintptr)(v.ptr)).Value = 0;
-    }
-    else if (exprᴛ1 == Uint64) {
-        ((ж<uint64>)(uintptr)(v.ptr)).Value = 0;
-    }
-    else if (exprᴛ1 == Uintptr) {
-        ((ж<uintptr>)(uintptr)(v.ptr)).Value = 0;
-    }
-    else if (exprᴛ1 == Float32) {
-        ((ж<float32>)(uintptr)(v.ptr)).Value = 0F;
-    }
-    else if (exprᴛ1 == Float64) {
-        ((ж<float64>)(uintptr)(v.ptr)).Value = 0D;
-    }
-    else if (exprᴛ1 == Complex64) {
-        ((ж<complex64>)(uintptr)(v.ptr)).Value = 0F;
-    }
-    else if (exprᴛ1 == Complex128) {
-        ((ж<complex128>)(uintptr)(v.ptr)).Value = 0D;
-    }
-    else if (exprᴛ1 == ΔString) {
-        ((ж<@string>)(uintptr)(v.ptr)).Value = ""u8;
-    }
-    else if (exprᴛ1 == ΔSlice) {
-        ((ж<unsafeheader.Slice>)(uintptr)(v.ptr)).Value = new unsafeheader.Slice(nil);
-    }
-    else if (exprᴛ1 == ΔInterface) {
-        ((ж<abi.EmptyInterface>)(uintptr)(v.ptr)).Value = new abi.EmptyInterface(nil);
-    }
-    else if (exprᴛ1 == Chan || exprᴛ1 == Func || exprᴛ1 == Map || exprᴛ1 == ΔPointer || exprᴛ1 == ΔUnsafePointer) {
-        ((ж<@unsafe.Pointer>)(uintptr)(v.ptr)).Value = default!;
-    }
-    else if (exprᴛ1 == Array || exprᴛ1 == Struct) {
-        typedmemclr(v.typ(), v.ptr);
-    }
-    else { /* default: */
-        throw panic(Ꮡ(new ValueError( // This should never happen, but will act as a safeguard for later,
- // as a default value doesn't makes sense here.
-"reflect.Value.SetZero", v.Kind())));
-    }
+// go2cs generated this placeholder — func SetZero is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-}
+// This should never happen, but will act as a safeguard for later,
+// as a default value doesn't makes sense here.
 
 // Kind returns v's Kind.
 // If v is the zero Value ([Value.IsValid] returns false), Kind returns Invalid.
@@ -1624,7 +1512,7 @@ internal static nint lenNonSlice(this ΔValue v) {
         ΔKind k = v.kind();
         var exprᴛ1 = k;
         if (exprᴛ1 == Array) {
-            var tt = (ж<arrayType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+            var tt = v.typ().Reinterpret<abi.Type, arrayType>();
             return (nint)(~tt).Len;
         }
         if (exprᴛ1 == Chan) {
@@ -1656,7 +1544,7 @@ internal static ж<abi.Type> stringType = rtypeOf("");
 // As in Go, the key's value must be assignable to the map's key type.
 public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
     v.mustBe(Map);
-    var tt = (ж<mapType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+    var tt = v.typ().Reinterpret<abi.Type, mapType>();
     // Do not require key to be exported, so that DeepEqual
     // and other programs can use all the keys returned by
     // MapKeys as arguments to MapIndex. If either the map
@@ -1693,7 +1581,7 @@ public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
 // It returns an empty slice if v represents a nil map.
 public static slice<ΔValue> MapKeys(this ΔValue v) {
     v.mustBe(Map);
-    var tt = (ж<mapType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+    var tt = v.typ().Reinterpret<abi.Type, mapType>();
     var keyType = tt.Value.Key;
     var fl = (flag)(v.flag.ro() | ((flag)(uintptr)(uint8)keyType.Kind()));
     @unsafe.Pointer m = (uintptr)v.pointer();
@@ -1773,7 +1661,7 @@ public static void SetIterKey(this ΔValue v, ж<MapIter> Ꮡiter) {
     if (v.kind() == ΔInterface) {
         target = v.ptr;
     }
-    var t = (ж<mapType>)(uintptr)(new @unsafe.Pointer(iter.m.typ()));
+    var t = iter.m.typ().Reinterpret<abi.Type, mapType>();
     var ktype = t.Value.Key;
     iter.m.mustBeExported();
     // do not let unexported m leak
@@ -1803,7 +1691,7 @@ public static void SetIterValue(this ΔValue v, ж<MapIter> Ꮡiter) {
     if (v.kind() == ΔInterface) {
         target = v.ptr;
     }
-    var t = (ж<mapType>)(uintptr)(new @unsafe.Pointer(iter.m.typ()));
+    var t = iter.m.typ().Reinterpret<abi.Type, mapType>();
     var vtype = t.Value.Elem;
     iter.m.mustBeExported();
     // do not let unexported m leak
@@ -2017,7 +1905,7 @@ internal static (ΔValue val, bool ok) recv(this ΔValue v, bool nb) {
     ref var val = ref heap(new ΔValue(), out var Ꮡval);
     bool ok = default!;
 
-    var tt = (ж<chanType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+    var tt = v.typ().Reinterpret<abi.Type, chanType>();
     if ((ΔChanDir)(((ΔChanDir)(nint)(~tt).Dir) & RecvDir) == 0) {
         throw panic("reflect: recv on send-only channel");
     }
@@ -2052,7 +1940,7 @@ public static void Send(this ΔValue v, ΔValue x) {
 internal static bool /*selected*/ send(this ΔValue v, ΔValue x, bool nb) {
     bool selected = default!;
 
-    var tt = (ж<chanType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+    var tt = v.typ().Reinterpret<abi.Type, chanType>();
     if ((ΔChanDir)(((ΔChanDir)(nint)(~tt).Dir) & SendDir) == 0) {
         throw panic("reflect: send on recv-only channel");
     }
@@ -2069,15 +1957,9 @@ internal static bool /*selected*/ send(this ΔValue v, ΔValue x, bool nb) {
 
 // go2cs generated this placeholder — func Set is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// do not let unexported x leak
+// go2cs generated this placeholder — func SetBool is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// SetBool sets v's underlying value.
-// It panics if v's Kind is not [Bool] or if [Value.CanSet] returns false.
-public static void SetBool(this ΔValue v, bool x) {
-    v.mustBeAssignable();
-    v.mustBe(ΔBool);
-    ((ж<bool>)(uintptr)(v.ptr)).Value = x;
-}
+// do not let unexported x leak
 
 // SetBytes sets v's underlying value.
 // It panics if v's underlying value is not a slice of bytes.
@@ -2102,74 +1984,11 @@ internal static void setRunes(this ΔValue v, slice<rune> x) {
     ((ж<slice<rune>>)(uintptr)(v.ptr)).ValueSlot = x;
 }
 
-// SetComplex sets v's underlying value to x.
-// It panics if v's Kind is not [Complex64] or [Complex128], or if [Value.CanSet] returns false.
-public static void SetComplex(this ΔValue v, complex128 x) {
-    v.mustBeAssignable();
-    {
-        ΔKind k = v.kind();
-        var exprᴛ1 = k;
-        if (exprᴛ1 == Complex64) {
-            ((ж<complex64>)(uintptr)(v.ptr)).Value = (complex64)x;
-        }
-        else if (exprᴛ1 == Complex128) {
-            ((ж<complex128>)(uintptr)(v.ptr)).Value = x;
-        }
-        else { /* default: */
-            throw panic(Ꮡ(new ValueError("reflect.Value.SetComplex", v.kind())));
-        }
-    }
+// go2cs generated this placeholder — func SetComplex is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-}
+// go2cs generated this placeholder — func SetFloat is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// SetFloat sets v's underlying value to x.
-// It panics if v's Kind is not [Float32] or [Float64], or if [Value.CanSet] returns false.
-public static void SetFloat(this ΔValue v, float64 x) {
-    v.mustBeAssignable();
-    {
-        ΔKind k = v.kind();
-        var exprᴛ1 = k;
-        if (exprᴛ1 == Float32) {
-            ((ж<float32>)(uintptr)(v.ptr)).Value = (float32)x;
-        }
-        else if (exprᴛ1 == Float64) {
-            ((ж<float64>)(uintptr)(v.ptr)).Value = x;
-        }
-        else { /* default: */
-            throw panic(Ꮡ(new ValueError("reflect.Value.SetFloat", v.kind())));
-        }
-    }
-
-}
-
-// SetInt sets v's underlying value to x.
-// It panics if v's Kind is not [Int], [Int8], [Int16], [Int32], or [Int64], or if [Value.CanSet] returns false.
-public static void SetInt(this ΔValue v, int64 x) {
-    v.mustBeAssignable();
-    {
-        ΔKind k = v.kind();
-        var exprᴛ1 = k;
-        if (exprᴛ1 == ΔInt) {
-            ((ж<nint>)(uintptr)(v.ptr)).Value = (nint)x;
-        }
-        else if (exprᴛ1 == Int8) {
-            ((ж<int8>)(uintptr)(v.ptr)).Value = (int8)x;
-        }
-        else if (exprᴛ1 == Int16) {
-            ((ж<int16>)(uintptr)(v.ptr)).Value = (int16)x;
-        }
-        else if (exprᴛ1 == Int32) {
-            ((ж<int32>)(uintptr)(v.ptr)).Value = (int32)x;
-        }
-        else if (exprᴛ1 == Int64) {
-            ((ж<int64>)(uintptr)(v.ptr)).Value = x;
-        }
-        else { /* default: */
-            throw panic(Ꮡ(new ValueError("reflect.Value.SetInt", v.kind())));
-        }
-    }
-
-}
+// go2cs generated this placeholder — func SetInt is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // SetLen sets v's length to n.
 // It panics if v's Kind is not [Slice] or if n is negative or
@@ -2197,87 +2016,9 @@ public static void SetCap(this ΔValue v, nint n) {
     s.Value.Cap = n;
 }
 
-// SetMapIndex sets the element associated with key in the map v to elem.
-// It panics if v's Kind is not [Map].
-// If elem is the zero Value, SetMapIndex deletes the key from the map.
-// Otherwise if v holds a nil map, SetMapIndex will panic.
-// As in Go, key's elem must be assignable to the map's key type,
-// and elem's value must be assignable to the map's elem type.
-public static void SetMapIndex(this ΔValue v, ΔValue key, ΔValue elem) {
-    v.mustBe(Map);
-    v.mustBeExported();
-    key.mustBeExported();
-    var tt = (ж<mapType>)(uintptr)(new @unsafe.Pointer(v.typ()));
-    if (((~tt).Key == stringType || key.kind() == ΔString) && (~tt).Key == key.typ() && (~tt).Elem.Size() <= abi.MapMaxElemBytes) {
-        @string kΔ1 = ~(ж<@string>)(uintptr)(key.ptr);
-        if (elem.typ() == nil) {
-            mapdelete_faststr(v.typ(), (uintptr)v.pointer(), kΔ1);
-            return;
-        }
-        elem.mustBeExported();
-        elem = elem.assignTo("reflect.Value.SetMapIndex"u8, (~tt).Elem, nil);
-        @unsafe.Pointer eΔ1 = default!;
-        if ((flag)(elem.flag & flagIndir) != 0){
-            eΔ1 = elem.ptr;
-        } else {
-            eΔ1 = @unsafe.Pointer.FromRef(ref (Ꮡ(elem).of(reflect_package.ΔValue.Ꮡptr)).Value);
-        }
-        mapassign_faststr(v.typ(), (uintptr)v.pointer(), kΔ1, eΔ1);
-        return;
-    }
-    key = key.assignTo("reflect.Value.SetMapIndex"u8, (~tt).Key, nil);
-    @unsafe.Pointer k = default!;
-    if ((flag)(key.flag & flagIndir) != 0){
-        k = key.ptr;
-    } else {
-        k = @unsafe.Pointer.FromRef(ref (Ꮡ(key).of(reflect_package.ΔValue.Ꮡptr)).Value);
-    }
-    if (elem.typ() == nil) {
-        mapdelete(v.typ(), (uintptr)v.pointer(), k);
-        return;
-    }
-    elem.mustBeExported();
-    elem = elem.assignTo("reflect.Value.SetMapIndex"u8, (~tt).Elem, nil);
-    @unsafe.Pointer e = default!;
-    if ((flag)(elem.flag & flagIndir) != 0){
-        e = elem.ptr;
-    } else {
-        e = @unsafe.Pointer.FromRef(ref (Ꮡ(elem).of(reflect_package.ΔValue.Ꮡptr)).Value);
-    }
-    mapassign(v.typ(), (uintptr)v.pointer(), k, e);
-}
+// go2cs generated this placeholder — func SetMapIndex is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// SetUint sets v's underlying value to x.
-// It panics if v's Kind is not [Uint], [Uintptr], [Uint8], [Uint16], [Uint32], or [Uint64], or if [Value.CanSet] returns false.
-public static void SetUint(this ΔValue v, uint64 x) {
-    v.mustBeAssignable();
-    {
-        ΔKind k = v.kind();
-        var exprᴛ1 = k;
-        if (exprᴛ1 == ΔUint) {
-            ((ж<nuint>)(uintptr)(v.ptr)).Value = (nuint)x;
-        }
-        else if (exprᴛ1 == Uint8) {
-            ((ж<uint8>)(uintptr)(v.ptr)).Value = (uint8)x;
-        }
-        else if (exprᴛ1 == Uint16) {
-            ((ж<uint16>)(uintptr)(v.ptr)).Value = (uint16)x;
-        }
-        else if (exprᴛ1 == Uint32) {
-            ((ж<uint32>)(uintptr)(v.ptr)).Value = (uint32)x;
-        }
-        else if (exprᴛ1 == Uint64) {
-            ((ж<uint64>)(uintptr)(v.ptr)).Value = x;
-        }
-        else if (exprᴛ1 == Uintptr) {
-            ((ж<uintptr>)(uintptr)(v.ptr)).Value = (uintptr)x;
-        }
-        else { /* default: */
-            throw panic(Ꮡ(new ValueError("reflect.Value.SetUint", v.kind())));
-        }
-    }
-
-}
+// go2cs generated this placeholder — func SetUint is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // SetPointer sets the [unsafe.Pointer] value v to x.
 // It panics if v's Kind is not [UnsafePointer].
@@ -2287,73 +2028,12 @@ public static void SetPointer(this ΔValue v, @unsafe.Pointer x) {
     ((ж<@unsafe.Pointer>)(uintptr)(v.ptr)).Value = x;
 }
 
-// SetString sets v's underlying value to x.
-// It panics if v's Kind is not [String] or if [Value.CanSet] returns false.
-public static void SetString(this ΔValue v, @string x) {
-    v.mustBeAssignable();
-    v.mustBe(ΔString);
-    ((ж<@string>)(uintptr)(v.ptr)).Value = x;
-}
+// go2cs generated this placeholder — func SetString is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Slice returns v[i:j].
-// It panics if v's Kind is not [Array], [Slice] or [String], or if v is an unaddressable array,
-// or if the indexes are out of bounds.
-public static ΔValue Slice(this ΔValue v, nint i, nint j) {
-    nint cap = default!;
-    ж<sliceType> typ = default!;
-    @unsafe.Pointer @base = default!;
-    {
-        ΔKind kind = v.kind();
-        var exprᴛ1 = kind;
-        if (exprᴛ1 == Array) {
-            if ((flag)(v.flag & flagAddr) == 0) {
-                throw panic("reflect.Value.Slice: slice of unaddressable array");
-            }
-            var tt = (ж<arrayType>)(uintptr)(new @unsafe.Pointer(v.typ()));
-            cap = (nint)(~tt).Len;
-            typ = (ж<sliceType>)(uintptr)(new @unsafe.Pointer((~tt).Slice));
-            @base = v.ptr;
-        }
-        else if (exprᴛ1 == ΔSlice) {
-            typ = (ж<sliceType>)(uintptr)(new @unsafe.Pointer(v.typ()));
-            var sΔ2 = (ж<unsafeheader.Slice>)(uintptr)(v.ptr);
-            @base = sΔ2.Value.Data;
-            cap = sΔ2.Value.Cap;
-        }
-        else if (exprᴛ1 == ΔString) {
-            var sΔ3 = (ж<unsafeheader.String>)(uintptr)(v.ptr);
-            if (i < 0 || j < i || j > (~sΔ3).Len) {
-                throw panic("reflect.Value.Slice: string slice index out of bounds");
-            }
-            ref var t = ref heap(new unsafeheader.String(), out var Ꮡt);
-            if (i < (~sΔ3).Len) {
-                t = new unsafeheader.String(Data: (uintptr)arrayAt((~sΔ3).Data, i, 1, "i < s.Len"u8), Len: j - i);
-            }
-            return new ΔValue(v.typ(), new @unsafe.Pointer(Ꮡt), v.flag);
-        }
-        else { /* default: */
-            throw panic(Ꮡ(new ValueError("reflect.Value.Slice", v.kind())));
-        }
-    }
+// go2cs generated this placeholder — func Slice is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    if (i < 0 || j < i || j > cap) {
-        throw panic("reflect.Value.Slice: slice index out of bounds");
-    }
-    // Declare slice so that gc can see the base pointer in it.
-    ref var x = ref heap<slice<@unsafe.Pointer>>(out var Ꮡx);
-    // Reinterpret as *unsafeheader.Slice to edit.
-    var s = (ж<unsafeheader.Slice>)(uintptr)(new @unsafe.Pointer(Ꮡx));
-    s.Value.Len = j - i;
-    s.Value.Cap = cap - i;
-    if (cap - i > 0){
-        s.Value.Data = (uintptr)arrayAt(@base, i, (~typ).Elem.Size(), "i < cap"u8);
-    } else {
-        // do not advance pointer, to avoid pointing beyond end of slice
-        s.Value.Data = @base;
-    }
-    var fl = (flag)((flag)(v.flag.ro() | flagIndir) | ((flag)(uintptr)(nuint)ΔSlice));
-    return new ΔValue(typ.of(sliceType.ᏑSliceType).of(abi.SliceType.ᏑType).Common(), new @unsafe.Pointer(Ꮡx), fl);
-}
+// Reinterpret as *unsafeheader.Slice to edit.
+// do not advance pointer, to avoid pointing beyond end of slice
 
 // Slice3 is the 3-index form of the slice operation: it returns v[i:j:k].
 // It panics if v's Kind is not [Array] or [Slice], or if v is an unaddressable array,
@@ -2369,13 +2049,13 @@ public static ΔValue Slice3(this ΔValue v, nint i, nint j, nint k) {
             if ((flag)(v.flag & flagAddr) == 0) {
                 throw panic("reflect.Value.Slice3: slice of unaddressable array");
             }
-            var tt = (ж<arrayType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+            var tt = v.typ().Reinterpret<abi.Type, arrayType>();
             cap = (nint)(~tt).Len;
-            typ = (ж<sliceType>)(uintptr)(new @unsafe.Pointer((~tt).Slice));
+            typ = (~tt).Slice.Reinterpret<abi.Type, sliceType>();
             @base = v.ptr;
         }
         else if (exprᴛ1 == ΔSlice) {
-            typ = (ж<sliceType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+            typ = v.typ().Reinterpret<abi.Type, sliceType>();
             var sΔ2 = (ж<unsafeheader.Slice>)(uintptr)(v.ptr);
             @base = sΔ2.Value.Data;
             cap = sΔ2.Value.Cap;
@@ -2392,7 +2072,7 @@ public static ΔValue Slice3(this ΔValue v, nint i, nint j, nint k) {
     // can see the base pointer in it.
     ref var x = ref heap<slice<@unsafe.Pointer>>(out var Ꮡx);
     // Reinterpret as *unsafeheader.Slice to edit.
-    var s = (ж<unsafeheader.Slice>)(uintptr)(new @unsafe.Pointer(Ꮡx));
+    var s = Ꮡx.Reinterpret<slice<@unsafe.Pointer>, unsafeheader.Slice>();
     s.Value.Len = j - i;
     s.Value.Cap = k - i;
     if (k - i > 0){
@@ -2457,7 +2137,7 @@ internal static ΔType typeSlow(this ΔValue v) {
     nint i = ((nint)(uintptr)v.flag >> (int)(flagMethodShift));
     if (v.typ().Kind() == abi.Interface) {
         // Method on interface.
-        var tt = (ж<interfaceType>)(uintptr)(new @unsafe.Pointer(typ));
+        var tt = typ.Reinterpret<abi.Type, interfaceType>();
         if ((nuint)i >= (nuint)len((~tt).Methods)) {
             throw panic("reflect: internal error: invalid method index");
         }
@@ -2626,7 +2306,7 @@ public static void Clear(this ΔValue v) {
     var exprᴛ1 = v.Kind();
     if (exprᴛ1 == ΔSlice) {
         var sh = ~(ж<unsafeheader.Slice>)(uintptr)(v.ptr);
-        var st = (ж<sliceType>)(uintptr)(new @unsafe.Pointer(v.typ()));
+        var st = v.typ().Reinterpret<abi.Type, sliceType>();
         typedarrayclear((~st).Elem, sh.Data, sh.Len);
     }
     else if (exprᴛ1 == Map) {
@@ -2827,7 +2507,7 @@ public static (nint chosen, ΔValue recv, bool recvOK) Select(slice<SelectCase> 
                 }
                 ch.mustBe(Chan);
                 ch.mustBeExported();
-                var tt = (ж<chanType>)(uintptr)(new @unsafe.Pointer(ch.typ()));
+                var tt = ch.typ().Reinterpret<abi.Type, chanType>();
                 if ((ΔChanDir)(((ΔChanDir)(nint)(~tt).Dir) & SendDir) == 0) {
                     throw panic("reflect.Select: SendDir case using recv-only channel");
                 }
@@ -2861,7 +2541,7 @@ public static (nint chosen, ΔValue recv, bool recvOK) Select(slice<SelectCase> 
                 }
                 ch.mustBe(Chan);
                 ch.mustBeExported();
-                var tt = (ж<chanType>)(uintptr)(new @unsafe.Pointer(ch.typ()));
+                var tt = ch.typ().Reinterpret<abi.Type, chanType>();
                 if ((ΔChanDir)(((ΔChanDir)(nint)(~tt).Dir) & RecvDir) == 0) {
                     throw panic("reflect.Select: RecvDir case using send-only channel");
                 }
@@ -2877,7 +2557,7 @@ public static (nint chosen, ΔValue recv, bool recvOK) Select(slice<SelectCase> 
     }
     (chosen, recvOK) = rselect(runcases);
     if (runcases[chosen].dir == SelectRecv) {
-        var tt = (ж<chanType>)(uintptr)(new @unsafe.Pointer(runcases[chosen].typ));
+        var tt = runcases[chosen].typ.Reinterpret<rtype, chanType>();
         var t = tt.Value.Elem;
         @unsafe.Pointer p = runcases[chosen].val;
         var fl = ((flag)(uintptr)(uint8)t.Kind());
@@ -2901,25 +2581,7 @@ internal static partial @unsafe.Pointer unsafe_New(ж<abi.Type> _);
 //go:noescape
 internal static partial @unsafe.Pointer unsafe_NewArray(ж<abi.Type> _Δp0, nint _Δp1);
 
-// MakeSlice creates a new zero-initialized slice value
-// for the specified slice type, length, and capacity.
-public static ΔValue MakeSlice(ΔType typ, nint len, nint cap) {
-    if (typ.Kind() != ΔSlice) {
-        throw panic("reflect.MakeSlice of non-slice type");
-    }
-    if (len < 0) {
-        throw panic("reflect.MakeSlice: negative len");
-    }
-    if (cap < 0) {
-        throw panic("reflect.MakeSlice: negative cap");
-    }
-    if (len > cap) {
-        throw panic("reflect.MakeSlice: len > cap");
-    }
-    ref var s = ref heap<unsafeheader.Slice>(out var Ꮡs);
-    s = new unsafeheader.Slice(Data: (uintptr)unsafe_NewArray(Ꮡ(((~typ.Elem()._<ж<rtype>>()).t)), cap), Len: len, Cap: cap);
-    return new ΔValue(Ꮡ((~typ._<ж<rtype>>()).t), new @unsafe.Pointer(Ꮡs), (flag)(flagIndir | ((flag)(uintptr)(nuint)ΔSlice)));
-}
+// go2cs generated this placeholder — func MakeSlice is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // SliceAt returns a [Value] representing a slice whose underlying
 // data starts at p, with length and capacity equal to n.
@@ -2948,21 +2610,9 @@ public static ΔValue MakeChan(ΔType typ, nint buffer) {
     return new ΔValue(t, ch.Value, ((flag)(uintptr)(nuint)Chan));
 }
 
-// MakeMap creates a new map with the specified type.
-public static ΔValue MakeMap(ΔType typ) {
-    return MakeMapWithSize(typ, 0);
-}
+// go2cs generated this placeholder — func MakeMap is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// MakeMapWithSize creates a new map with the specified type
-// and initial space for approximately n elements.
-public static ΔValue MakeMapWithSize(ΔType typ, nint n) {
-    if (typ.Kind() != Map) {
-        throw panic("reflect.MakeMapWithSize of non-map type");
-    }
-    var t = typ.common();
-    @unsafe.Pointer m = (uintptr)makemap(t, n);
-    return new ΔValue(t, m.Value, ((flag)(uintptr)(nuint)Map));
-}
+// go2cs generated this placeholder — func MakeMapWithSize is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Indirect returns the value that v points to.
 // If v is a nil pointer, Indirect returns a zero Value.
@@ -2982,22 +2632,9 @@ public static ΔValue Indirect(ΔValue v) {
 internal static ж<array<byte>> ᏑzeroVal = new(new array<byte>(1024));
 internal static ref array<byte> zeroVal => ref ᏑzeroVal.Value;
 
-// New returns a Value representing a pointer to a new zero value
-// for the specified type. That is, the returned Value's Type is [PointerTo](typ).
-public static ΔValue New(ΔType typ) {
-    if (typ == default!) {
-        throw panic("reflect: New(nil)");
-    }
-    var t = Ꮡ((~typ._<ж<rtype>>()).t);
-    var pt = ptrTo(t);
-    if (pt.IfaceIndir()) {
-        // This is a pointer to a not-in-heap type.
-        throw panic("reflect: New of type that may not be allocated in heap (possibly undefined cgo C type)");
-    }
-    @unsafe.Pointer ptr = (uintptr)unsafe_New(t);
-    var fl = ((flag)(uintptr)(nuint)ΔPointer);
-    return new ΔValue(pt, ptr.Value, fl);
-}
+// go2cs generated this placeholder — func New is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// This is a pointer to a not-in-heap type.
 
 // NewAt returns a Value representing a pointer to a value of the
 // specified type, using p as that pointer.
@@ -3628,7 +3265,7 @@ internal static void mapassign(ж<abi.Type> Ꮡt, @unsafe.Pointer m, @unsafe.Poi
 internal static partial void mapassign_faststr0(ж<abi.Type> t, @unsafe.Pointer m, @string key, @unsafe.Pointer val);
 
 internal static void mapassign_faststr(ж<abi.Type> Ꮡt, @unsafe.Pointer m, @string key, @unsafe.Pointer val) {
-    contentEscapes(((ж<unsafeheader.String>)(uintptr)(new @unsafe.Pointer(Ꮡ(key)))).Value.Data);
+    contentEscapes((Ꮡ(key).Reinterpret<@string, unsafeheader.String>()).Value.Data);
     contentEscapes(val);
     mapassign_faststr0(Ꮡt, m, key, val);
 }
