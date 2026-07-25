@@ -131,8 +131,8 @@ public class ImplementGenerator : ISourceGenerator
 
             if (structType.TypeKind == TypeKind.Interface)
             {
-                List<MethodInfo> interfaceAdapterMethods = interfaceType.AllInterfaces
-                    .Concat([interfaceType])
+                List<MethodInfo> interfaceAdapterMethods = ((INamedTypeSymbol)interfaceType).GetAllBaseInterfaces(context.Compilation)
+                    .Concat([(INamedTypeSymbol)interfaceType])
                     .SelectMany(iface => iface.GetMembers()
                         .OfType<IMethodSymbol>()
                         .Where(method => method.MethodKind == MethodKind.Ordinary)
@@ -208,8 +208,11 @@ public class ImplementGenerator : ISourceGenerator
             IEnumerable<MethodInfo>? structMethods = structDecl is null ? [] : structDecl.GetExtensionMethods(compilation!);
             HashSet<string> overrides = new(structMethods?.Select(method => method.Name) ?? [], StringComparer.Ordinal);
 
-            List<MethodInfo> methods = interfaceType.AllInterfaces
-                .Concat([interfaceType]) // Include the original interface
+            // GetAllBaseInterfaces (not AllInterfaces) recovers a base declared in ANOTHER package
+            // class, which is still PRIVATE until this generator emits its access modifier and would
+            // otherwise bind to an empty error symbol — see Common.GetAllBaseInterfaces.
+            List<MethodInfo> methods = ((INamedTypeSymbol)interfaceType).GetAllBaseInterfaces(context.Compilation)
+                .Concat([(INamedTypeSymbol)interfaceType]) // Include the original interface
                 .SelectMany(iface => iface.GetMembers()
                     .OfType<IMethodSymbol>()
                     .Where(method => method.MethodKind == MethodKind.Ordinary)

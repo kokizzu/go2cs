@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static go2cs.Common;
 
 namespace go2cs;
 
@@ -35,8 +36,10 @@ public static class InterfaceDeclarationSyntaxExtensions
 
         allMethods.AddRange(directMethods);
 
-        // Next, collect methods from base interfaces
-        foreach (INamedTypeSymbol? baseInterface in interfaceSymbol.AllInterfaces)
+        // Next, collect methods from base interfaces. GetAllBaseInterfaces (not AllInterfaces) so a
+        // base in ANOTHER package class — which is still PRIVATE until this generator emits its
+        // access modifier — contributes its members instead of binding to an empty error symbol.
+        foreach (INamedTypeSymbol? baseInterface in interfaceSymbol.GetAllBaseInterfaces(context.Compilation))
         {
             foreach (IMethodSymbol? member in baseInterface.GetMembers().OfType<IMethodSymbol>())
             {

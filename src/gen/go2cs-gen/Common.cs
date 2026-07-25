@@ -214,6 +214,75 @@ public static class Common
         return new string(fileName.Replace("@", "").Select(c => InvalidChars.Contains(c) ? '_' : c).ToArray());
     }
 
+    /// <summary>
+    /// Returns every base interface of <paramref name="type"/>, recovering the ones the semantic
+    /// model reports as INACCESSIBLE because this generator has not emitted their access modifier yet.
+    /// </summary>
+    /// <remarks>
+    /// The converter emits a Go type as a bare <c>[GoType] partial interface X</c> nested in the
+    /// package class and leaves the access modifier to this generator, which derives it from the Go
+    /// export convention (<see cref="GetScope"/> — public for an exported name, internal otherwise).
+    /// A generator cannot see its own output, so until that partial exists the declaration is a
+    /// PRIVATE nested type: accessible from inside its own package class, and inaccessible from any
+    /// other class in the assembly. A type in another package class that names it as a base therefore
+    /// binds to an <see cref="IErrorTypeSymbol"/> with zero members, and every method the base
+    /// contributes silently vanishes from the adapter/shell — while the FINAL compilation, which does
+    /// have the generated partial, still demands them (CS0535). io's external test package hit this:
+    /// <c>io_test.closer : io.Closer</c> and <c>io_test.testMultiWriter_sink : io.Writer</c> lost
+    /// <c>Close()</c>/<c>Write()</c>, while the same <c>io.Closer</c> resolved normally as a base of
+    /// <c>io.ReadCloser</c> inside its own class.
+    ///
+    /// The accessibility seen here is PROVISIONAL, so recovering the candidate is sound rather than a
+    /// bypass: this generator is about to declare that same type <c>public</c> or <c>internal</c>, and
+    /// both are reachable from anywhere in the assembly. Recovery is therefore limited to a candidate
+    /// interface declared in THIS compilation's assembly — a genuinely inaccessible foreign type keeps
+    /// its error symbol. A recovered base's own transitive bases are folded in too, since
+    /// <see cref="ITypeSymbol.AllInterfaces"/> cannot traverse through an error symbol.
+    /// </remarks>
+    public static IEnumerable<INamedTypeSymbol> GetAllBaseInterfaces(this INamedTypeSymbol type, Compilation compilation)
+    {
+        HashSet<INamedTypeSymbol> seen = new(SymbolEqualityComparer.Default);
+        List<INamedTypeSymbol> resolved = [];
+
+        void Add(INamedTypeSymbol candidate)
+        {
+            INamedTypeSymbol recovered = RecoverProvisionallyInaccessible(candidate, compilation);
+
+            if (!seen.Add(recovered))
+                return;
+
+            resolved.Add(recovered);
+
+            // Only a RECOVERED base needs its own bases folded in: an accessible one already
+            // contributed them through the AllInterfaces walk that reached it.
+            if (!ReferenceEquals(recovered, candidate))
+            {
+                foreach (INamedTypeSymbol nested in recovered.AllInterfaces)
+                    Add(nested);
+            }
+        }
+
+        foreach (INamedTypeSymbol baseInterface in type.AllInterfaces)
+            Add(baseInterface);
+
+        return resolved;
+    }
+
+    private static INamedTypeSymbol RecoverProvisionallyInaccessible(INamedTypeSymbol candidate, Compilation compilation)
+    {
+        if (candidate is not IErrorTypeSymbol { CandidateReason: CandidateReason.Inaccessible } error)
+            return candidate;
+
+        foreach (ISymbol symbol in error.CandidateSymbols)
+        {
+            if (symbol is INamedTypeSymbol { TypeKind: TypeKind.Interface } named &&
+                SymbolEqualityComparer.Default.Equals(named.ContainingAssembly, compilation.Assembly))
+                return named;
+        }
+
+        return candidate;
+    }
+
     // Roslyn requires every AddSource hintName within a generator to be unique, and it compares them
     // CASE-INSENSITIVELY. Two Go types that differ only in case (e.g. exported `Pinner` and unexported
     // `pinner`, both real, distinct C# types) therefore collide on `…pinner.g.cs` and the generator
