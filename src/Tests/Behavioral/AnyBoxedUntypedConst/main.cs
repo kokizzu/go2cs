@@ -140,7 +140,7 @@ internal static void Main() {
     any sv = (@string)"seed"u8;
     any sc = (@string)("se" + "ed");
     fmt.Println((@string)"str asn lit   :"u8, AreEqual(sv, ((any)s)), AreEqual(sc, ((any)s)));
-    var ssl = new any[]{(@string)"seed", (@string)("se" + "ed")}.slice();
+    var ssl = new any[]{(@string)"seed"u8, (@string)("se" + "ed")}.slice();
     fmt.Println((@string)"str slc       :"u8, AreEqual(ssl[0], ((any)s)), AreEqual(ssl[1], ((any)s)));
     var smk = new map<any, @string>{[(@string)"seed"u8] = "hit"u8};
     fmt.Println((@string)"str mapkey    :"u8, smk[(@string)"seed"u8], smk[((any)s)]);

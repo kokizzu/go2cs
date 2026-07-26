@@ -572,10 +572,29 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 			}
 		}
 
+		// A STRING element type takes the `u8` span rendering for its string-literal elements —
+		// `new @string[]{"…"u8}` — instead of the bare UTF-16 C# string the flag-less TYPED path
+		// leaves, which re-transcodes through Encoding.UTF8.GetBytes at every evaluation. The span
+		// binds the element slot through @string's implicit ReadOnlySpan<byte> conversion (a NAMED
+		// type over string converts the same way, through its generated span conversion), so this
+		// is the element twin of markStringFieldLits. An ELIDED literal already renders u8 (its
+		// nil element context defaults u8StringOK on); this closes the typed half.
+		// KeyValueExpr elements (maps, sparse arrays) are not BasicLits and route through
+		// convKeyValueExpr instead.
+		if basic, ok := elementType.Underlying().(*types.Basic); ok && basic.Kind() == types.String {
+			for i, elt := range compositeLit.Elts {
+				if isStringBasicLit(elt) {
+					callContext.u8StringArgOK[i] = true
+				}
+			}
+		}
+
 		// An EMPTY-interface element type takes no adapter wrap (excluded above), but a
-		// string-literal element must still box through @string — `new any[]{(@string)"a"}` —
+		// string-literal element must still box through @string — `new any[]{(@string)"a"u8}` —
 		// instead of the bare C# string the flag-less path leaves, which boxes the wrong type
-		// (a later Go x.(string) assertion fails). An untyped-CONSTANT element boxes through Go's
+		// (a later Go x.(string) assertion fails). The `u8` half keeps the bytes a compile-time
+		// constant (the cast is what makes the span boxable, exactly as markAnyFieldLits does for
+		// the struct-field twin). An untyped-CONSTANT element boxes through Go's
 		// default type for its kind for the same reason (`new any[]{(nint)(4)}`, else a later
 		// x.(int) fails) — the numeric twin, applied via the same per-element castArgToType
 		// plumbing convExprList honors. KeyValueExpr elements (maps, sparse arrays) are not
@@ -583,6 +602,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 		if isEmptyInterfaceTarget(elementType) {
 			for i, elt := range compositeLit.Elts {
 				if isStringBasicLit(elt) {
+					callContext.u8StringArgOK[i] = true
 					callContext.useGoStringArg[i] = true
 				} else if castType := v.untypedConstBoxCast(elt); castType != "" {
 					if callContext.castArgToType == nil {

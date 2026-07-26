@@ -34,7 +34,7 @@ internal static void Main() {
     fmt.Println((@string)"pkg"u8, len(pkgEmpty), len(pkgPartial), pkgPartial[1], pkgPartial[7]);
     var ints = new nint[]{7}.array(4);
     fmt.Println((@string)"ints"u8, len(ints), ints[0], ints[3]);
-    var strs = new @string[]{"a"}.array(3);
+    var strs = new @string[]{"a"u8}.array(3);
     fmt.Println((@string)"strs"u8, len(strs), strs[0], strs[2] == "");
     fmt.Println((@string)"slice ctl"u8, len(new byte[]{}.slice()), len(new byte[]{1, 2}.slice()));
     var w = new byte[]{1}.array(8);

@@ -77,9 +77,9 @@ internal static void Main() {
     var (n, s) = both();
     fmt.Println(n, s);
     fmt.Println(reduce(new nint[]{1, 2, 3, 4}.slice(), nint (nint a, nint b) => a + b));
-    fmt.Println(reduce(new @string[]{"a", "b", "c"}.slice(), @string (@string a, @string b) => a + b));
+    fmt.Println(reduce(new @string[]{"a"u8, "b"u8, "c"u8}.slice(), @string (@string a, @string b) => a + b));
     fmt.Println(pick(new nint[]{3, 9, 4}.slice(), (nint a, nint b) => a > b));
-    fmt.Println(pick(new @string[]{"pear", "fig", "plum"}.slice(), (@string a, @string b) => len(a) < len(b)));
+    fmt.Println(pick(new @string[]{"pear"u8, "fig"u8, "plum"u8}.slice(), (@string a, @string b) => len(a) < len(b)));
 }
 
 } // end main_package

@@ -83,7 +83,7 @@ internal static nint viewLen(slice<byte> b) {
 
 internal static void Main() {
     var a = new Δany(x: 1);
-    var vals = new any[]{(nint)(1), (@string)"two", 3.5D}.slice();
+    var vals = new any[]{(nint)(1), (@string)"two"u8, 3.5D}.slice();
     var c = (rune)'x';
     c++;
     var r = new Δrune(r: 2);

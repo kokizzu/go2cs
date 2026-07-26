@@ -13,9 +13,9 @@ partial class main_package {
 }
 
 internal static void Main() {
-    var req = Ꮡ(new Request(Header: new Header(new map<@string, slice<@string>>{}), Count: new map<@string, nint>{}, Body: new @string[]{"a", "b"}.slice()));
-    req.Value.Header["Accept"u8] = new @string[]{"text/html", "text/plain"}.slice();
-    req.Value.Header["X-Tag"u8] = new @string[]{"a"}.slice();
+    var req = Ꮡ(new Request(Header: new Header(new map<@string, slice<@string>>{}), Count: new map<@string, nint>{}, Body: new @string[]{"a"u8, "b"u8}.slice()));
+    req.Value.Header["Accept"u8] = new @string[]{"text/html"u8, "text/plain"u8}.slice();
+    req.Value.Header["X-Tag"u8] = new @string[]{"a"u8}.slice();
     req.Value.Count["hits"u8] = (~req).Count["hits"u8] + 1;
     req.Value.Count["hits"u8] += 2;
     req.Value.Count["hits"u8]++;

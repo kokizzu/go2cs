@@ -32,7 +32,7 @@ internal static void Main() {
     intQueue.Enqueue(20);
     fmt.Printf("Int queue size: %d\n"u8, intQueue.Size());
     var stringQueue = new Queue<@string>(
-        items: new @string[]{"hello", "world"}.slice()
+        items: new @string[]{"hello"u8, "world"u8}.slice()
     );
     fmt.Printf("String queue size: %d\n"u8, stringQueue.Size());
     Queue<float64> floatQueue = new Queue<float64>(

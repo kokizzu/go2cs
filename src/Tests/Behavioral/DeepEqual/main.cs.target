@@ -15,8 +15,8 @@ partial class main_package {
 }
 
 internal static void Main() {
-    println(reflect.DeepEqual(new @string[]{"a", "bc"}.slice(), new @string[]{"a", "bc"}.slice()));
-    println(reflect.DeepEqual(new @string[]{"a"}.slice(), new @string[]{"b"}.slice()));
+    println(reflect.DeepEqual(new @string[]{"a"u8, "bc"u8}.slice(), new @string[]{"a"u8, "bc"u8}.slice()));
+    println(reflect.DeepEqual(new @string[]{"a"u8}.slice(), new @string[]{"b"u8}.slice()));
     println(reflect.DeepEqual(new nint[]{1, 2, 3}.slice(), new nint[]{1, 2, 3}.slice()));
     println(reflect.DeepEqual(new nint[]{1, 2, 3}.slice(), new nint[]{1, 2, 4}.slice()));
     println(reflect.DeepEqual(new slice<byte>[]{slice<byte>("ab"u8), default!}.slice(), new slice<byte>[]{slice<byte>("ab"u8), default!}.slice()));
@@ -30,9 +30,9 @@ internal static void Main() {
     var nan = new float64[]{zero / zero}.slice();
     println(reflect.DeepEqual(nan, nan));
     println(reflect.DeepEqual(nan, new float64[]{nan[0]}.slice()));
-    var p1 = new point(1, 2, new @string[]{"n"}.slice());
-    var p2 = new point(1, 2, new @string[]{"n"}.slice());
-    var p3 = new point(1, 3, new @string[]{"n"}.slice());
+    var p1 = new point(1, 2, new @string[]{"n"u8}.slice());
+    var p2 = new point(1, 2, new @string[]{"n"u8}.slice());
+    var p3 = new point(1, 3, new @string[]{"n"u8}.slice());
     println(reflect.DeepEqual(p1, p2));
     println(reflect.DeepEqual(p1, p3));
     var m1 = new map<@string, nint>{["a"u8] = 1, ["b"u8] = 2};
@@ -64,7 +64,7 @@ internal static void Main() {
     var c = Ꮡ(new node(val: 2));
     c.Value.next = c;
     println(reflect.DeepEqual(a, c));
-    println(reflect.DeepEqual(new nint[]{1}.slice(), new @string[]{"1"}.slice()));
+    println(reflect.DeepEqual(new nint[]{1}.slice(), new @string[]{"1"u8}.slice()));
     println(reflect.DeepEqual(default!, default!));
 }
 

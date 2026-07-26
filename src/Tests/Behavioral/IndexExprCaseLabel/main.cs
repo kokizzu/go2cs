@@ -4,7 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static array<@string> words = new @string[]{"alpha", "beta", "gamma"}.array();
+internal static array<@string> words = new @string[]{"alpha"u8, "beta"u8, "gamma"u8}.array();
 
 internal static readonly UntypedInt one = 1;
 

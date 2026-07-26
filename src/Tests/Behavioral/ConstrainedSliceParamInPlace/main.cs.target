@@ -47,7 +47,7 @@ internal static void Main() {
     var b = new numbers(new nint[]{10, 20, 30}.slice());
     reverseSeq<numbers, nint>(b);
     fmt.Println(b);
-    var s = new @string[]{"go", "2", "cs"}.slice();
+    var s = new @string[]{"go"u8, "2"u8, "cs"u8}.slice();
     reverseSeq<slice<@string>, @string>(s);
     fmt.Println(s);
     var c = new nint[]{6, 7, 8, 9}.slice();

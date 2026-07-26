@@ -31,8 +31,8 @@ internal static void Main() {
     var p = new pair("tag"u8, (@string)"val"u8);
     var m = new map<@string, any>{["k"u8] = (@string)"mv"u8};
     var mk = new map<any, nint>{[(@string)"ky"u8] = 7};
-    var s = new any[]{(@string)"a", (@string)"b"}.slice();
-    var arr = new any[]{(@string)"x", (@string)"y"}.array();
+    var s = new any[]{(@string)"a"u8, (@string)"b"u8}.slice();
+    var arr = new any[]{(@string)"x"u8, (@string)"y"u8}.array();
     var el = new node[]{new(inner: (@string)"e1"u8)}.slice();
     var ep = new pair[]{new("e2"u8, (@string)"e3"u8)}.slice();
     var pp = new ж<node>[]{Ꮡ(new node(inner: (@string)"p1"u8))}.slice();

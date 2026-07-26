@@ -51,7 +51,7 @@ partial class main_package {
 
 internal static void Main() {
     var @out = Ꮡ(new dst(nil));
-    var d = Ꮡ(new duplex(source: new srcжsource(Ꮡ(new src(items: new @string[]{"alpha", "beta"}.slice()))), sink: new dstжsink(@out)));
+    var d = Ꮡ(new duplex(source: new srcжsource(Ꮡ(new src(items: new @string[]{"alpha"u8, "beta"u8}.slice()))), sink: new dstжsink(@out)));
     conn c = new duplexжconn(d);
     c.Push(c.Pull());
     c.Push(c.Pull());

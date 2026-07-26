@@ -2525,6 +2525,32 @@ converter-emitted bare-UTF-16 literal class in a constructor position: 83 sites 
 `ErrNaN`, encoding/xml's `UnmarshalError`, net/url's `Error`, …). An `any` field keeps the boxed
 `(@string)"…"u8` form (`markAnyFieldLits` runs after and overrides).
 
+### A string-literal ELEMENT of a typed slice/array composite renders `u8`
+The element twin of the struct-field rule above. An **elided** slice/array literal already rendered
+`u8` (its element context is nil, and `convExprList`'s nil-context default leaves `u8StringOK` on),
+but the **typed** form built its own `CallExprContext` and never set `u8StringArgOK`, so every
+element fell back to a bare UTF-16 C# string that `Encoding.UTF8.GetBytes` re-transcoded on each
+evaluation:
+
+```go
+return StructuralError{[]string{"Format specifies USTAR", whyNoUSTAR}}   // archive/tar
+```
+```csharp
+return new headerError(new @string[]{"Format specifies USTAR"u8, whyNoUSTAR}.slice());
+```
+
+The span binds the `@string` element slot through `@string`'s implicit `ReadOnlySpan<byte>`
+conversion; a NAMED type over `string` binds the same way through its generated span conversion, so
+the rule keys on the element type's **underlying** basic kind (matching `markStringFieldLits`).
+An **empty-interface** element type — `[]any{"a"}` — keeps its mandatory `(@string)` box but now
+takes the `u8` half too (`new any[]{(@string)"a"u8}`): the cast is what makes the span boxable, the
+`u8` is what keeps the bytes a compile-time constant. These two were the corpus's last
+converter-emitted bare-UTF-16 literal classes — 385 `new @string[]{"…"}` element sites plus the
+`any`-element form. KeyValueExpr elements (maps, sparse arrays) are not `BasicLit`s and route
+through `convKeyValueExpr`, which already emitted `u8`. (Guarded by the behavioral tests
+`AnyStringLitComposite`, `DeepEqual`, `GenericCompositeLiterals`, and 15 others whose goldens carry
+the form.)
+
 ### Converting a string literal to a named `[]byte` / `[]rune` type
 The byte/rune-slice sibling of the named-string rule above: a string **literal** converting to a named type whose underlying is `[]byte` or `[]rune` — `htmlSig("<!DOCTYPE HTML")` where `type htmlSig []byte` (net/http `sniff.go`'s signature table) — cannot cast directly either. The `u8` span converts to neither the `[GoType]` wrapper (whose implicit operator takes exactly its underlying `slice<byte>`/`slice<rune>`) nor through `@string` in one hop (C# chains at most one user-defined conversion — CS0030). The converter materializes the underlying slice exactly the way the plain `[]byte("…")` conversion does (the `slice<T>(T[])` builtin over the literal's `@string`), and the wrapper's own operator then applies:
 

@@ -43,7 +43,7 @@ internal static void Main() {
     };
     lit["c"u8] = new EmptyStruct();
     fmt.Println((@string)"lit len:"u8, len(lit));
-    foreach (var (_, s) in new @string[]{"a", "b", "c", "d"}.slice()) {
+    foreach (var (_, s) in new @string[]{"a"u8, "b"u8, "c"u8, "d"u8}.slice()) {
         var (_, ok) = lit[s, ꟷ];
         fmt.Printf("lit[%s] = %t\n"u8, s, ok);
     }

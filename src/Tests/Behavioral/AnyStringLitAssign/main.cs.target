@@ -26,7 +26,7 @@ internal static void Main() {
     any arg = default!;
     arg = (@string)"<nil>"u8;
     fmt.Println(sprint(arg));
-    var args = new any[]{(nint)(1), default!, (@string)"keep"}.slice();
+    var args = new any[]{(nint)(1), default!, (@string)"keep"u8}.slice();
     foreach (var (i, vᴛ1) in args) {
         var a = vᴛ1;
 

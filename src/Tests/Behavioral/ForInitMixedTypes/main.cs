@@ -18,7 +18,7 @@ internal static void Main() {
         sum += n.Value.val;
     }
     fmt.Println(sum);
-    var words = new @string[]{"a", "b", "c"}.slice();
+    var words = new @string[]{"a"u8, "b"u8, "c"u8}.slice();
     @string @out = ""u8;
     for ((nint i, @string s) = (0, ""); i < len(words); (i, s) = (i + 1, words[i])) {
         @out += s;
