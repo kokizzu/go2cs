@@ -255,7 +255,7 @@ public static void TestMutexFairness(ж<Δtesting.T> Ꮡt) => func((defer, recov
     }}
 });
 
-[GoLocalName("PaddedMutex")] [GoType("dyn")] partial struct BenchmarkMutexUncontended_PaddedMutex {
+[GoLocalName("PaddedMutex")] [GoType("dyn")] [GoValueClone("pad")] partial struct BenchmarkMutexUncontended_PaddedMutex {
     public partial ref sync_package.Mutex Mutex { get; }
     internal array<uint8> pad = new(128);
 }

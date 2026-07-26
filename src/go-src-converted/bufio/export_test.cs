@@ -11,7 +11,7 @@ partial class bufio_package {
 
 public static Func<rune, bool> IsSpace = isSpace;
 
-public static readonly UntypedInt DefaultBufSize = /* defaultBufSize */ 4096;
+public static UntypedInt DefaultBufSize => /* defaultBufSize */ 4096;
 
 [GoRecv] public static void MaxTokenSize(this ref Scanner s, nint n) {
     if (n < utf8.UTFMax || n > 1000000000) {

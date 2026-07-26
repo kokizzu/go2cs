@@ -5,6 +5,6 @@ namespace go.math;
 
 partial class bits_package {
 
-public static readonly UntypedInt DeBruijn64 = /* deBruijn64 */ 285870213051353865;
+public static UntypedInt DeBruijn64 => /* deBruijn64 */ 285870213051353865;
 
 } // end bits_package

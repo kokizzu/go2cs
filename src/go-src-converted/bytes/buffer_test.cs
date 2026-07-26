@@ -18,7 +18,7 @@ using go.unicode;
 
 partial class bytes_test_package {
 
-public static readonly UntypedInt N = 10000; // make this bigger for a larger (and slower) test
+public static UntypedInt N => 10000; // make this bigger for a larger (and slower) test
 
 internal static @string testString; // test data for write tests
 

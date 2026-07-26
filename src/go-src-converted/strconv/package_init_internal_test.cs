@@ -2,11 +2,11 @@
 // Test-variant package-level variable initialization ordered to match Go's
 // dependency order (types.Info.InitOrder) — see package_init.cs. Each initᴛ
 // method lives beside its variable's declaration in the converted test file.
-namespace go.encoding;
+namespace go;
 
-partial class base64_package {
-    static base64_package() {
-        initᴛfunnyEncoding();
-        initᴛencodingTests();
+partial class strconv_package {
+    static strconv_package() {
+        initᴛBitSizeError();
+        initᴛBaseError();
     }
-} // end base64_package
+} // end strconv_package

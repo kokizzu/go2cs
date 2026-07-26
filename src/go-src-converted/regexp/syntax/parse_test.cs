@@ -202,7 +202,7 @@ internal static void initᴛparseTests() { parseTests = new parseTest[]{
     new("("u8 + strings.Repeat("|"u8, 12345) + ")"u8, @""u8)
 }.slice(); }
 
-internal static readonly Flags testFlags = /* MatchNL | PerlX | UnicodeGroups */ 204;
+internal static Flags testFlags => /* MatchNL | PerlX | UnicodeGroups */ 204;
 
 public static void TestParseSimple(ж<testing.T> Ꮡt) {
     testParseDump(Ꮡt, parseTests, testFlags);
@@ -281,8 +281,7 @@ internal static @string dump(ж<Regexp> Ꮡre) {
     return b.String();
 }
 
-internal static slice<@string> opNames;
-internal static void initᴛopNames() { opNames = new golib.SparseArray<@string>{
+internal static slice<@string> opNames = new golib.SparseArray<@string>{
     [OpNoMatch] = "no"u8,
     [OpEmptyMatch] = "emp"u8,
     [OpLiteral] = "lit"u8,
@@ -302,7 +301,7 @@ internal static void initᴛopNames() { opNames = new golib.SparseArray<@string>
     [OpRepeat] = "rep"u8,
     [OpConcat] = "cat"u8,
     [OpAlternate] = "alt"u8
-}.slice(); }
+}.slice();
 
 // dumpRegexp writes an encoding of the syntax tree for the regexp re to b.
 // It is used during testing to distinguish between parses that might print

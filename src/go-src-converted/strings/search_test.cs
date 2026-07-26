@@ -41,7 +41,7 @@ public static void TestFinderNext(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct TestFinderCreation_testCases {
+[GoType("dyn")] [GoValueClone("bad")] partial struct TestFinderCreation_testCases {
     internal @string pattern;
     internal array<nint> bad = new(256);
     internal slice<nint> suf;
@@ -71,7 +71,9 @@ public static void TestFinderCreation(ж<testing.T> Ꮡt) {
             new nint[]{17, 16, 15, 14, 13, 12, 7, 10, 1}.slice()
         )
     }.slice();
-    foreach (var (_, tc) in testCases) {
+    foreach (var (_, vᴛ1) in testCases) {
+        var tc = vᴛ1.ΔClone();
+
         var (bad, good) = DumpTables(tc.pattern);
         foreach (var (i, got) in bad) {
             nint want = tc.bad[i];

@@ -16,7 +16,7 @@ using go.unicode;
 
 partial class bufio_test_package {
 
-internal static readonly UntypedInt smallMaxTokenSize = 256; // Much smaller for more efficient testing.
+internal static UntypedInt smallMaxTokenSize => 256; // Much smaller for more efficient testing.
 
 // Test white space table matches the Unicode definition.
 public static void TestSpace(ж<Δtesting.T> Ꮡt) {

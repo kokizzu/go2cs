@@ -409,20 +409,20 @@ public static void BenchmarkStableInt64K(ж<testing.B> Ꮡb) {
     }
 }
 
-internal static readonly UntypedInt _Sawtooth = iota;
-internal static readonly UntypedInt _Rand = 1;
-internal static readonly UntypedInt _Stagger = 2;
-internal static readonly UntypedInt _Plateau = 3;
-internal static readonly UntypedInt _Shuffle = 4;
-internal static readonly UntypedInt _NDist = 5;
+internal static UntypedInt _Sawtooth => iota;
+internal static UntypedInt _Rand => 1;
+internal static UntypedInt _Stagger => 2;
+internal static UntypedInt _Plateau => 3;
+internal static UntypedInt _Shuffle => 4;
+internal static UntypedInt _NDist => 5;
 
-internal static readonly UntypedInt _Copy = iota;
-internal static readonly UntypedInt _Reverse = 1;
-internal static readonly UntypedInt _ReverseFirstHalf = 2;
-internal static readonly UntypedInt _ReverseSecondHalf = 3;
-internal static readonly UntypedInt _Sorted = 4;
-internal static readonly UntypedInt _Dither = 5;
-internal static readonly UntypedInt _NMode = 6;
+internal static UntypedInt _Copy => iota;
+internal static UntypedInt _Reverse => 1;
+internal static UntypedInt _ReverseFirstHalf => 2;
+internal static UntypedInt _ReverseSecondHalf => 3;
+internal static UntypedInt _Sorted => 4;
+internal static UntypedInt _Dither => 5;
+internal static UntypedInt _NMode => 6;
 
 [GoType] partial struct testingData {
     internal @string desc;

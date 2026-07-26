@@ -20,7 +20,7 @@ using rand = global::go.math.rand.rand_package;
 
 partial class rand_test_package {
 
-internal static readonly UntypedInt numTestSamples = 10000;
+internal static UntypedInt numTestSamples => 10000;
 
 internal static (float64, array<uint32>, array<float32>, array<float32>) tupleᴛ1ʗ = GetNormalDistributionParameters();
 internal static float64 rn = tupleᴛ1ʗ.Item1;

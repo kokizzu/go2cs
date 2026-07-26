@@ -72,7 +72,8 @@ internal static @string rawURLRef(@string @ref) {
 internal static readonly @string encodeStd = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
 
 // A nonstandard encoding with a funny padding character, for testing
-internal static ж<Encoding> funnyEncoding = (~NewEncoding(encodeStd)).WithPadding((rune)(rune)'@');
+internal static ж<Encoding> funnyEncoding;
+internal static void initᴛfunnyEncoding() { funnyEncoding = (~NewEncoding(encodeStd)).WithPadding((rune)(rune)'@'); }
 
 internal static @string funnyRef(@string @ref) {
     return strings.ReplaceAll(@ref, "="u8, "@"u8);

@@ -9,7 +9,7 @@ using Δtesting = testing_package;
 
 partial class sync_test_package {
 
-[GoLocalName("PaddedSem")] [GoType("dyn")] partial struct BenchmarkSemaUncontended_PaddedSem {
+[GoLocalName("PaddedSem")] [GoType("dyn")] [GoValueClone("pad")] partial struct BenchmarkSemaUncontended_PaddedSem {
     internal uint32 sem;
     internal array<uint32> pad = new(32);
 }

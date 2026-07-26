@@ -747,9 +747,9 @@ public static void TestLen(ж<testing.T> Ꮡt) {
     }
 }
 
-internal static readonly UntypedInt _M = /* 1<<UintSize - 1 */ 18446744073709551615;
-internal static readonly UntypedInt _M32 = /* 1<<32 - 1 */ 4294967295;
-internal static readonly UntypedInt _M64 = /* 1<<64 - 1 */ 18446744073709551615;
+internal static UntypedInt _M => /* 1<<UintSize - 1 */ 18446744073709551615;
+internal static UntypedInt _M32 => /* 1<<32 - 1 */ 4294967295;
+internal static UntypedInt _M64 => /* 1<<64 - 1 */ 18446744073709551615;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string addˢ = "Add"u8;

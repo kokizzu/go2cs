@@ -118,7 +118,7 @@ public static void TestWaitGroupAlign(ж<Δtesting.T> Ꮡt) {
     Ꮡx.of(TestWaitGroupAlign_X.Ꮡwg).Wait();
 }
 
-[GoLocalName("PaddedWaitGroup")] [GoType("dyn")] partial struct BenchmarkWaitGroupUncontended_PaddedWaitGroup {
+[GoLocalName("PaddedWaitGroup")] [GoType("dyn")] [GoValueClone("pad")] partial struct BenchmarkWaitGroupUncontended_PaddedWaitGroup {
     public partial ref sync_package.WaitGroup WaitGroup { get; }
     internal array<uint8> pad = new(128);
 }

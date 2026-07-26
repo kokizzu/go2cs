@@ -15,7 +15,7 @@ using @unsafe = unsafe_package;
 
 partial class binary_package {
 
-[GoType] partial struct Struct {
+[GoType] [GoValueClone("Array", "BoolArray")] partial struct Struct {
     public int8 Int8;
     public int16 Int16;
     public int32 Int32;
@@ -33,7 +33,7 @@ partial class binary_package {
     public array<bool> BoolArray = new(4);
 }
 
-[GoType] partial struct T {
+[GoType] [GoValueClone("Array")] partial struct T {
     public nint Int;
     public nuint Uint;
     public uintptr Uintptr;
@@ -390,7 +390,7 @@ public static void TestWriteT(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("dyn")] partial struct BlankFields__ {
+[GoType("dyn")] [GoValueClone("f")] partial struct BlankFields__ {
     internal array<float32> f = new(8);
 }
 
@@ -404,11 +404,11 @@ public static void TestWriteT(ж<testing.T> Ꮡt) {
     internal BlankFields__ ____;
 }
 
-[GoType("dyn")] partial struct BlankFieldsProbe_P3 {
+[GoType("dyn")] [GoValueClone("F")] partial struct BlankFieldsProbe_P3 {
     public array<float32> F = new(8);
 }
 
-[GoType] partial struct BlankFieldsProbe {
+[GoType] [GoValueClone("P1", "P2", "P3")] partial struct BlankFieldsProbe {
     public uint32 A;
     public int32 P0;
     public float64 B;
@@ -465,7 +465,7 @@ public static void TestBlankFields(ж<testing.T> Ꮡt) {
     public uint32 A;
 }
 
-[GoLocalName("bar")] [GoType("dyn")] partial struct TestSizeStructCache_bar {
+[GoLocalName("bar")] [GoType("dyn")] [GoValueClone("A", "C")] partial struct TestSizeStructCache_bar {
     public Struct A;
     public TestSizeStructCache_foo B;
     public Struct C;
@@ -476,7 +476,7 @@ public static void TestBlankFields(ж<testing.T> Ꮡt) {
     internal nint want;
 }
 
-[GoType("dyn")] partial struct TestSizeStructCache_type {
+[GoType("dyn")] [GoValueClone("A")] partial struct TestSizeStructCache_type {
     public Struct A;
 }
 
@@ -502,13 +502,13 @@ public static void TestSizeStructCache(ж<testing.T> Ꮡt) {
     };
     var testcases = new TestSizeStructCache_testcases[]{
         new(@new<TestSizeStructCache_foo>(), 1),
-        new(@new<array<TestSizeStructCache_foo>>(), 0),
+        new(Ꮡ(new array<TestSizeStructCache_foo>(1)), 0),
         new(new slice<TestSizeStructCache_foo>(1), 0),
         new(@new<TestSizeStructCache_bar>(), 1),
         new(@new<TestSizeStructCache_bar>(), 0),
         new(@new<TestSizeStructCache_type>(), 1),
         new(@new<TestSizeStructCache_type>(), 0),
-        new(@new<array<TestSizeStructCache_type>>(), 0),
+        new(Ꮡ(new array<TestSizeStructCache_type>(1, () => new())), 0),
         new(new slice<TestSizeStructCache_type>(1), 0)
     }.slice();
     foreach (var (_, tc) in testcases) {
@@ -529,7 +529,7 @@ public static void TestSizeInvalid(ж<testing.T> Ꮡt) {
         @new<nint>(),
         ((ж<nint>)nil),
         new nuint[]{}.array(1),
-        @new<array<nuint>>(),
+        Ꮡ(new array<nuint>(1)),
         ((ж<array<nuint>>)nil),
         new nint[]{}.slice(),
         slice<nint>(default!),
@@ -917,7 +917,7 @@ public static void BenchmarkReadStruct(ж<testing.B> Ꮡb) {
     Write(new bytes_BufferжWriter(Ꮡbuf), BigEndian, Ꮡs);
     b.SetBytes((int64)dataSize(reflect.ValueOf(s)));
     ref var t = ref heap<Struct>(out var Ꮡt);
-    t = s;
+    t = s.ΔClone();
     b.ResetTimer();
     for (nint i = 0; i < b.N; i++) {
         bsr.Value.remain = buf.Bytes();
@@ -1012,7 +1012,7 @@ public static void BenchmarkReadInts(ж<testing.B> Ꮡb) {
         Read(r, BigEndian, Ꮡls.of(Struct.ᏑUint64));
     }
     b.StopTimer();
-    var want = s;
+    var want = s.ΔClone();
     want.Float32 = 0F;
     want.Float64 = 0D;
     want.Complex64 = 0F;
@@ -1222,7 +1222,7 @@ public static void BenchmarkReadFloats(ж<testing.B> Ꮡb) {
         Read(r, BigEndian, Ꮡls.of(Struct.ᏑFloat64));
     }
     b.StopTimer();
-    var want = s;
+    var want = s.ΔClone();
     want.Int8 = 0;
     want.Int16 = 0;
     want.Int32 = 0;

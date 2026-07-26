@@ -153,7 +153,7 @@ internal static slice<bufReader> bufreaders = new bufReader[]{
     new("lines"u8, readLines)
 }.slice();
 
-internal static readonly UntypedInt minReadBufferSize = 16;
+internal static UntypedInt minReadBufferSize => 16;
 
 internal static slice<nint> bufsizes = new nint[]{
     0, minReadBufferSize, 23, 32, 46, 64, 93, 128, 1024, 4096

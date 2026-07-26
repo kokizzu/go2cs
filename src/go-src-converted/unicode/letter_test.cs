@@ -558,7 +558,7 @@ public static void TestSpecialCaseNoMapping(ж<testing.T> Ꮡt) {
     // Issue 25636
     // no change for rune 'A', zero delta, under upper/lower/title case change.
     Δunicode.CaseRange noChangeForCapitalA = new CaseRange((rune)'A', (rune)'A', new rune[]{0, 0, 0}.array());
-    @string got = strings.ToLowerSpecial(((Δunicode.SpecialCase)new Δunicode.CaseRange[]{noChangeForCapitalA}.slice()), abcˢ);
+    @string got = strings.ToLowerSpecial(((Δunicode.SpecialCase)new Δunicode.CaseRange[]{noChangeForCapitalA.ΔClone()}.slice()), abcˢ);
     @string want = abcˢ2;
     if (got != want) {
         Ꮡt.Errorf("got %q; want %q"u8, got, want);

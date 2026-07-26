@@ -2234,9 +2234,9 @@ internal static slice<float64> yM3SC = new float64[]{
 }.slice();
 
 // arguments and expected results for boundary cases
-public static readonly UntypedFloat SmallestNormalFloat64 = 2.2250738585072014e-308; // 2**-1022
+public static UntypedFloat SmallestNormalFloat64 => 2.2250738585072014e-308; // 2**-1022
 
-public static readonly UntypedFloat LargestSubnormalFloat64 = /* SmallestNormalFloat64 - SmallestNonzeroFloat64 */ 2.225073858507201e-308;
+public static UntypedFloat LargestSubnormalFloat64 => /* SmallestNormalFloat64 - SmallestNonzeroFloat64 */ 2.225073858507201e-308;
 
 internal static slice<float64> vffrexpBC = new float64[]{
     SmallestNormalFloat64,

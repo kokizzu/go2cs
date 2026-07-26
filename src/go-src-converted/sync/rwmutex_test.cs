@@ -198,7 +198,7 @@ public static void TestRLocker(ж<Δtesting.T> Ꮡt) {
     }
 }
 
-[GoLocalName("PaddedRWMutex")] [GoType("dyn")] partial struct BenchmarkRWMutexUncontended_PaddedRWMutex {
+[GoLocalName("PaddedRWMutex")] [GoType("dyn")] [GoValueClone("pad")] partial struct BenchmarkRWMutexUncontended_PaddedRWMutex {
     public partial ref sync_package.RWMutex RWMutex { get; }
     internal array<uint32> pad = new(32);
 }

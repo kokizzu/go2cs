@@ -6,7 +6,6 @@ namespace go.regexp;
 
 partial class syntax_package {
     static syntax_package() {
-        initᴛopNames();
         initᴛparseTests();
     }
 } // end syntax_package

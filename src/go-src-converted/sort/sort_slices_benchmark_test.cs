@@ -52,7 +52,7 @@ internal static slice<@string> makeSortedStrings(nint n) {
     return x;
 }
 
-public static readonly UntypedInt N = 100_000;
+public static UntypedInt N => 100_000;
 
 public static void BenchmarkSortInts(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;

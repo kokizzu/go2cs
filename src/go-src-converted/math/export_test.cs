@@ -17,6 +17,6 @@ public static Func<float64, float64> SqrtGo = sqrt;
 public static Func<float64, (uint64, float64)> TrigReduce;
 internal static void initᴛTrigReduce() { TrigReduce = trigReduce; }
 
-public static readonly UntypedInt ReduceThreshold = /* reduceThreshold */ 536870912;
+public static UntypedInt ReduceThreshold => /* reduceThreshold */ 536870912;
 
 } // end math_package

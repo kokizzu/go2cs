@@ -5,7 +5,9 @@ namespace go;
 
 partial class strconv_package {
 
-public static Func<@string, @string, nint, ж<NumError>> BitSizeError = bitSizeError;
-public static Func<@string, @string, nint, ж<NumError>> BaseError = baseError;
+public static Func<@string, @string, nint, ж<NumError>> BitSizeError;
+internal static void initᴛBitSizeError() { BitSizeError = bitSizeError; }
+public static Func<@string, @string, nint, ж<NumError>> BaseError;
+internal static void initᴛBaseError() { BaseError = baseError; }
 
 } // end strconv_package
