@@ -227,7 +227,7 @@ partial class syscall_package {
 }
 ```
 
-This is correct by C#'s own initialization guarantees: **all** static field initializers (every partial-class file) run **before** the static-constructor body, so every non-relocated dependency is already initialized when the ctor runs; the ctor then applies the relocated initializers in Go's order. Vars with no order hazard (the overwhelming majority — only ~11 stdlib packages relocate anything) keep their readable inline form. Cross-**package** order needs no handling: accessing another package's static field triggers that type's initialization first (.NET guarantees), matching Go's imported-packages-first rule. Adding an explicit static ctor also removes `beforefieldinit` from the package class, giving it *precise* initialization semantics.
+This is correct by C#'s own initialization guarantees: **all** static field initializers (every partial-class file) run **before** the static-constructor body, so every non-relocated dependency is already initialized when the ctor runs; the ctor then applies the relocated initializers in Go's order. Vars with no order hazard (the overwhelming majority — only 25 of the 302 stdlib packages relocate anything) keep their readable inline form. Cross-**package** order needs no handling: accessing another package's static field triggers that type's initialization first (.NET guarantees), matching Go's imported-packages-first rule. Adding an explicit static ctor also removes `beforefieldinit` from the package class, giving it *precise* initialization semantics.
 
 Notes: a **blank** (`_`) initializer never relocates (its value is unreadable, so its order is immaterial — it still runs as a field initializer for its side effect); the `initᴛ` method name composes the TempVarMarker so it cannot collide with any Go identifier; an **addressed** global relocates as a default-valued heap box whose ctor assignment writes through the ref property into the same box; the rare multi-value forms (tuple-deconstructing package vars, hoisted multi-value initializers) are not yet relocatable and warn loudly if flagged (no stdlib occurrence). Guarded by the `PackageVarInitOrder` behavioral test (all three hazard shapes plus IIFE and moved-dependency closure, output-compared vs Go).
 
@@ -240,29 +240,22 @@ The same pass runs in the `-tests` conversion driver (the three-drivers rule): a
 
 Two hard-won rules ride along: the hook name doubles the TempVarMarker (`init` + `ᴛᴛ` + `tests`, `Symbols.PackageTestInitHookMethod`) so no relocated var's `initᴛ<name>` method can collide; and go2cs-gen's **PartialStubGenerator must never stub the hook** — its whole design is C# erasure when unimplemented, and the generator's `NotImplementedException` stub for "asm/cgo" bodyless partials detonated encoding/gob's static ctor for every consumer of the production assembly (go/token's serialize path) until the generator learned to skip it (guarded by `PartialStubGeneratorTests.StubsAsmPartialsButNeverTheTestInitHook`). The hook emission is `-tests`-gated, so a plain `-stdlib`/behavioral conversion is byte-identical — like the IP-4 csproj test-artifact exclusions, the production-file difference is intended `-tests` output, not drift. The relocated test files themselves ride the banked suites (fmtsort's cctor is the operational guard). The hoisted-literal interplay keeps its conservative setting (`initOrderRelocated=false` for the real test emission run): suppressing test-file hoists in initializer-reachable functions is a pure allocation pessimization, never a correctness risk, and flipping it would drift every banked `*_test.cs`.
 
-### A CONSTANT emitted as `static readonly` is an initialization dependency too
+### A CONSTANT emitted as an initialized FIELD is an initialization dependency too
 
-Go constants are compile-time values with no initialization order at all, so `types.Info.InitOrder` never mentions them — but a Go constant only becomes a C# **`const`** when its type has a constant form. A constant of a **named** type is a `[GoType]` wrapper struct (C# forbids `const` of a struct, CS0283); a **string** constant is an `@string` struct; so are **complex** and **uintptr**; and an **untyped** constant renders as an `UntypedInt`/`UntypedFloat`/`UntypedComplex`/`GoUntyped` wrapper. Every one of those is emitted as an ordinary **`static readonly` FIELD** — and therefore carries exactly the cross-part field-initializer ordering hazard a package *var* has. The relocation analysis has to supply that dependency edge itself, because Go's own analysis has no reason to model it:
+Go constants are compile-time values with no initialization order at all, so `types.Info.InitOrder` never mentions them — and for almost every constant that stays true in C#, because a constant C# cannot declare `const` is emitted as a **get-only property** rather than a field (see [Constant Values](#a-constant-c-cannot-declare-const-is-a-get-only-property-not-a-static-readonly-field)). A property re-evaluates at each read, so it can never be observed at its zero value, whatever the declaration order.
+
+**Two forms cannot be properties**, because re-evaluating them would rebuild an allocation on every read: a **string** constant (`@string`, or a `[GoType("@string")]` wrapper such as `const labelPipe label = "pipe"`, whose `u8` literal the string-literal arc deliberately hoists to a single allocation) and a **GoUntyped** constant (a `BigInteger.Parse`). Those two stay `static readonly` **fields with initializers**, and therefore carry exactly the cross-part field-initializer ordering hazard a package *var* has. The relocation analysis has to supply that dependency edge itself, because Go's own analysis has no reason to model it:
 
 ```go
-// regexp.go — Op is a named uint8, so these are `static readonly Op` fields, not C# consts
-const (
-	OpNoMatch Op = 1 + iota
-	OpEmptyMatch
-	OpLiteral
-	// … through OpAlternate = 19
-)
-
-// parse_test.go — sorts BEFORE regexp.go in the compile set
-var opNames = []string{
-	OpNoMatch:    "no",
-	OpEmptyMatch: "emp",
-	OpLiteral:    "lit",
-	// … 19 index-keyed entries
-}
+// server.go — a plain string const, so a `static readonly @string` FIELD
+const TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
+```
+```go
+// header.go — sorts BEFORE server.go in the compile set
+var timeFormats = []string{TimeFormat, time.RFC850, time.ANSIC}
 ```
 
-Read as their zero value, all nineteen keys collapse into slot 0, so the emitted `SparseArray` projection has **length 1** — and `regexp/syntax`'s `dumpRegexp`, whose first line is `if int(re.Op) >= len(opNames) …`, took the numeric fallback for *every* operator: `Parse("a").Dump()` printed `op3{a}` where Go prints `lit{a}`, failing six of the package's twelve tests. `collectRefs` now records package-scope `*types.Const` references whose emission is a field (`constEmittedAsStaticReadonly`, deliberately erring toward *field* — a false positive costs one ordered relocation, a false negative reinstates the zero-value read), resolved transitively through function bodies on the same memoized graph the var closure uses, and a const dependency forces the move under the same two rules a var dependency does: declared in a different file, or later in the same file. A const is of course never itself *relocatable*, so only its declaration site matters.
+Read before its initializer runs, `TimeFormat` is the empty `@string`, and `net/http`'s date parsing silently loses its primary format. `collectRefs` records package-scope `*types.Const` references whose emission is an initialized field (`constEmittedAsInitializedField`, keyed off the constant's **value kind** — string always; int, float and complex only where the magnitude escapes to `GoUntyped`), resolved transitively through function bodies on the same memoized graph the var closure uses. A const dependency forces the move under the same two rules a var dependency does: declared in a different file, or later in the same file. A const is of course never itself *relocatable*, so only its declaration site matters.
 
 The emission side needed the matching half. Relocation lived only in the **non-constant** initializer arm (`tv.Value == nil`), yet a Go-**constant**-valued initializer is just as order-sensitive in C#: Go folds the value at compile time, but the conversion deliberately keeps the *source expression* for readability, and that expression still reads the field:
 
@@ -281,7 +274,9 @@ internal static @string pipeLabel;
 internal static void initᴛpipeLabel() { pipeLabel = ((@string)labelPipe) + "!"u8; }
 ```
 
-Corpus footprint: nine packages gained a `package_init.cs` from this edge (`compress/flate`, `crypto/tls`, `debug/dwarf`, `encoding/asn1`, `image/jpeg`, `index/suffixarray`, `internal/cpu`, `runtime/metrics`, `vendor/golang.org/x/text/unicode/bidi`) — each a latent zero-value const read that compiled cleanly. (Guarded by the `PackageVarInitOrder` behavioral test: an index-keyed table whose keys are a named-type const declared cross-file, plus a named-string const reached through a constant-folded initializer. The pre-fix converter compiles both and then panics with an index-out-of-range on the collapsed table.)
+**Where the edge came from, and what it kept.** The defect that exposed it was `regexp/syntax`'s `opNames` — a 19-entry table index-keyed by the `Op` constants declared in a later file, every key read as zero, the whole table collapsing to one slot so `Parse("a").Dump()` printed the numeric fallback `op3{a}` where Go prints `lit{a}`. `Op` is a named `uint8`, so the property rule now removes *that* hazard at the source, and an over-broad predicate naming every non-`const` form would draw an edge for a shape that no longer has one. Scoped to the residue, the edge's corpus footprint is **two packages**: `internal/buildcfg` relocates five initializers (`GOARCH`, `GOOS`, `GO386`, `GO_LDSO`, `Version` — each `envOr("…", default…)` over a string const in `zbootstrap.go`) and `net/http` relocates `timeFormats`. Both were latent zero-value const reads that compiled cleanly.
+
+Guarded by the `PackageVarInitOrder` behavioral test, which carries both halves: neutering the predicate collapses `pipeLabel` onto an empty `@string` (stdout mismatch), and neutering the property rule allocates a fixed-array field at length 0 and panics on the first indexed write (exit code 2). Neither is redundant.
 
 ## Compiled Library versus Source Code
 
@@ -337,17 +332,20 @@ public static ΔKind Uintptr => 12;                        // named-type const
 internal static uintptr MaxUintptr => unchecked((uintptr)18446744073709551615);
 ```
 
-**RESIDUE — the two ALLOCATING const forms stay `static readonly` fields** and remain order-sensitive:
-`@string` (whose `u8` literal the string-literal arc deliberately hoists to a single allocation) and
-`GoUntyped` (a `BigInteger.Parse`). A property would rebuild their value on every read. Neither can
-serve as an array length, so neither reproduces the failure class above; a package-level variable
-initializer that reads such a constant *before* its declaration point is still exposed.
+**RESIDUE — the two ALLOCATING const forms stay `static readonly` fields**: `@string` (whose `u8`
+literal the string-literal arc deliberately hoists to a single allocation) and `GoUntyped` (a
+`BigInteger.Parse`). A property would rebuild their value on every read. Neither can serve as an
+array length, so neither reproduces the failure class above — but a package-level variable
+initializer that reads one *before* its declaration point still would, so the residue is handed to
+the [initialization-order pass](#a-constant-emitted-as-an-initialized-field-is-an-initialization-dependency-too),
+which draws a relocation edge for exactly these two forms and nothing else.
 
-This is complementary to — not a replacement for — the
-[package-level variable initialization order](#package-level-variable-initialization-order)
-machinery: that pass orders var→var dependencies; constants are now simply outside the ordering
-problem. Guarded by the `PackageVarInitOrder` behavioral test (cross-file constants consumed by
-earlier-declared vars, both directly and through a struct's fixed-array field initializer).
+The two rules divide the problem cleanly and neither is redundant: the property form takes every
+numeric, named-numeric, `uintptr`, complex and untyped constant *out* of the ordering problem, and
+the relocation edge orders the string/`GoUntyped` residue that has to stay in it. Guarded together
+by the `PackageVarInitOrder` behavioral test (cross-file constants consumed by earlier-declared
+vars — directly, through a struct's fixed-array field initializer, and through a constant-folded
+initializer over a named-string const).
 
 **Wrapper conversions are VALUE conversions in every direction.** `UntypedInt` stores its payload as
 `int64` bits (so a `ulong`-range literal like `9223372036854775808` round-trips through the same 8 bytes),
@@ -941,12 +939,29 @@ of a sign-extended operand equals the sign-extended Go result: `int32(^int16(5))
 languages), and every type at least 32 bits wide (`uint`, `uint32`, `uint64`, `uintptr`, all signed
 widths) keeps its own type under C#'s `~`. A NAMED type routes through its golib wrapper's operator.
 
+A **CONSTANT** operand needs one more word. The truncation is then a C# *constant conversion*, and
+those are checked at compile time no matter what the enclosing context says: `~(ushort)0` promotes to
+the `int` `-1`, and `(ushort)(-1)` is a hard **CS0221** — however correct the runtime truncation would
+be. The all-ones idiom is exactly that shape, and it is the bound `x/net/dnsmessage` compares each
+section count against, seven times in one file:
+
+```go
+if len(m.Questions) > int(^uint16(0)) {     // vendor/golang.org/x/net/dns/dnsmessage
+```
+```csharp
+if (len(m.Questions) > (nint)(unchecked((uint16)(~(uint16)0)))) {
+```
+
+So a Go-constant operand states `unchecked`; a variable operand does not, since C#'s default context
+is already unchecked and the keyword would only add noise at flate's `^uint16(length)` sites.
+
 Where the result is *immediately* narrowed back by the surrounding narrow-arithmetic cast the inner
 truncation is redundant — `takeU8(^a)` renders `takeU8((uint8)((uint8)(~a)))`. That is accepted
 cosmetic noise: the two forms are value-identical, and the alternative (deciding at the unary site
 whether the enclosing context widens) trades a silent-corruption hole for readability. (Guarded by
 the `AndNotAssignNarrow` behavioral test's widening cases — `int32(^uint16(x))`, `uint64(^uint8(x))`,
-the `uint32`/`int16` no-op controls, and the narrow round-trip.)
+the `uint32`/`int16` no-op controls, the narrow round-trip, and the constant cases `int(^uint16(0))`,
+`int(^uint8(0))` and `uint64(^seed)` over a typed `uint16` const.)
 
 ### Logical operators on a named boolean type cast through `bool`
 A Go defined type whose underlying type is `bool` (`type boolVal bool`) is modeled as a `[GoType("bool")]` struct with an implicit `bool` conversion but no logical operators. Go's `!`, `&&`, and `||` on such a value yield that **same named type**, so `return !y` / `return x && y` in a function returning an interface the type implements (go/constant's `UnaryOp`/`BinaryOp`, returning the `Value` interface) still satisfies the interface. A bare `!y` / `x && y` in C# collapses to a plain `bool` — which cannot implicitly convert to the interface (CS0029), and `!` has no operator on the struct (CS0023). The converter casts each operand through `bool`, applies the operator, then casts the result back to the named type so it keeps satisfying the interface:

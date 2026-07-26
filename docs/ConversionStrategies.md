@@ -135,8 +135,13 @@ internal static void initᴛprocSetFilePointerEx() { procSetFilePointerEx = modk
 // package_init.cs: static syscall_package() { …; initᴛprocSetFilePointerEx(); … }
 ```
 
+A **constant** can be a dependency too, but only the two forms that stay initialized fields rather
+than [get-only properties](#constant-values) — a string const and a `GoUntyped` const. Go lists no
+initialization order for constants at all, so that edge is one the conversion has to add itself.
+
 **Full detail:** [Reference → Package-Level Variable Initialization Order](ConversionStrategies-Reference.md#package-level-variable-initialization-order) —
 the three hazard shapes, transitive dependency analysis, moved-dependency closure, addressed globals,
+the [constant-dependency edge](ConversionStrategies-Reference.md#a-constant-emitted-as-an-initialized-field-is-an-initialization-dependency-too),
 and the `PackageVarInitOrder` behavioral guard.
 
 ---
