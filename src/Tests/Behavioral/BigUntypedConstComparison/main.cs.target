@@ -71,6 +71,23 @@ internal static void Main() {
     ch.ᐸꟷ((float64)below1e23);
     fmt.Println(ᐸꟷ(ch));
     fmt.Println(take(small), (nint)(small * 2), (float64)((float64)small / 4D));
+    foreach (var (_, u) in new uint64[]{0, 999, 1000, 1001, ((uint64)1 << (int)(62)), ((uint64)1 << (int)(63)), 18446744073709551615UL}.slice()) {
+        fmt.Println(u, u < small, u <= small, u > small, u >= small, u == small, u != small);
+    }
+    foreach (var (_, i) in new int64[]{-9223372036854775808L, -1, 0, 1000, 9223372036854775807L}.slice()) {
+        fmt.Println(i, i < small, i > small, i == small);
+    }
+    fmt.Println(fastPath(0), fastPath(999), fastPath(1000), fastPath(((uint64)1 << (int)(63))), fastPath(18446744073709551615UL));
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bigˢ = "big"u8;
+
+internal static @string fastPath(uint64 u) {
+    if (u < small) {
+        return smallˢ;
+    }
+    return bigˢ;
 }
 
 } // end main_package

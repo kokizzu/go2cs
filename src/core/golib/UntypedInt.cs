@@ -60,7 +60,34 @@ public readonly struct UntypedInt : IEquatable<UntypedInt>
 
     private float64 ToFloat64() => m_unsigned ? (float64)CastTo<uint64>(m_value) : (float64)m_value;
 
-    public bool Equals(UntypedInt other) => m_value == other.m_value;
+    // The (m_value, m_unsigned) pair denotes a MATHEMATICAL integer: an unsigned-origin payload is
+    // the uint64 reinterpretation of the bits (0 … 2^64-1), a signed one is m_value itself. Ordering
+    // and equality must be over that VALUE, never over the raw signed bits — a uint64 at or above
+    // 2^63 reads as a NEGATIVE int64, so `(uint64)1<<63 < 100` answered TRUE. That is how strconv's
+    // `if fastSmalls && i < nSmalls` fast path fired for FormatUint(9223372036854775808): small()
+    // then truncated the negative index and returned "0" (TestUitoa), or threw on the slice bound
+    // (TestFormatUintVarlen). Only a payload at/above 2^63 changes answer; every signed-only or
+    // in-int64-range comparison is bit-for-bit what it was.
+    private static int Compare(UntypedInt left, UntypedInt right)
+    {
+        if (left.m_unsigned == right.m_unsigned)
+        {
+            return left.m_unsigned
+                ? CastTo<uint64>(left.m_value).CompareTo(CastTo<uint64>(right.m_value))
+                : left.m_value.CompareTo(right.m_value);
+        }
+
+        // Mixed representations: a NEGATIVE signed payload is below every unsigned payload.
+        // Otherwise both denote a non-negative value and the unsigned reading of each is exact.
+        int64 signedValue = left.m_unsigned ? right.m_value : left.m_value;
+
+        if (signedValue < 0)
+            return left.m_unsigned ? 1 : -1;
+
+        return CastTo<uint64>(left.m_value).CompareTo(CastTo<uint64>(right.m_value));
+    }
+
+    public bool Equals(UntypedInt other) => Compare(this, other) == 0;
 
     public override bool Equals(object? obj)
     {
@@ -87,13 +114,13 @@ public readonly struct UntypedInt : IEquatable<UntypedInt>
 
     public override int GetHashCode() => m_value.GetHashCode();
 
-    public static bool operator <(UntypedInt left, UntypedInt right) => left.m_value < right.m_value;
+    public static bool operator <(UntypedInt left, UntypedInt right) => Compare(left, right) < 0;
 
-    public static bool operator <=(UntypedInt left, UntypedInt right) => left.m_value <= right.m_value;
+    public static bool operator <=(UntypedInt left, UntypedInt right) => Compare(left, right) <= 0;
 
-    public static bool operator >(UntypedInt left, UntypedInt right) => left.m_value > right.m_value;
+    public static bool operator >(UntypedInt left, UntypedInt right) => Compare(left, right) > 0;
 
-    public static bool operator >=(UntypedInt left, UntypedInt right) => left.m_value >= right.m_value;
+    public static bool operator >=(UntypedInt left, UntypedInt right) => Compare(left, right) >= 0;
 
     public static UntypedInt operator +(UntypedInt left, UntypedInt right) => left.m_value + right.m_value;
 

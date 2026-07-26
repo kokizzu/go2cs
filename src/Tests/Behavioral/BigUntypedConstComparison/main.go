@@ -12,6 +12,14 @@
 //
 // Counter-proof: an in-range untyped const (`small`) is emitted as an UntypedInt WRAPPER, which
 // does have implicit conversions, so it must stay UNCAST in all the same positions.
+//
+// The wrapper arm carries a second requirement: comparing a uint64 against it must be a VALUE
+// comparison. golib's UntypedInt keeps its payload in an int64 plus an "originated unsigned" bit, so
+// a uint64 at or above 2**63 reads as a NEGATIVE int64 — and the relational operators compared those
+// raw bits, answering `u < small` TRUE for u = 1<<63. That is a silent wrong answer for the whole
+// `if fastSmalls && i < nSmalls` idiom: strconv's FormatUint(9223372036854775808) took the
+// small-integer fast path and returned "0" (TestUitoa), and FormatUint's varlen sibling threw on the
+// truncated negative slice bound (TestFormatUintVarlen).
 package main
 
 import "fmt"
@@ -80,4 +88,27 @@ func main() {
 
 	// The in-range wrapper const still interoperates directly everywhere.
 	fmt.Println(take(small), small*2, float64(small)/4)
+
+	// A uint64 AT OR ABOVE 2**63 compared against the in-range wrapper const: the strconv
+	// `i < nSmalls` shape. Every one of these is a VALUE comparison in Go.
+	for _, u := range []uint64{0, 999, 1000, 1001, 1 << 62, 1 << 63, 1<<64 - 1} {
+		fmt.Println(u, u < small, u <= small, u > small, u >= small, u == small, u != small)
+	}
+
+	// Signed operands are unaffected (the raw-bit reading was already correct for them).
+	for _, i := range []int64{-1 << 63, -1, 0, 1000, 1<<63 - 1} {
+		fmt.Println(i, i < small, i > small, i == small)
+	}
+
+	// FormatUint's own idiom, inlined: the fast path must NOT fire for a huge value.
+	fmt.Println(fastPath(0), fastPath(999), fastPath(1000), fastPath(1<<63), fastPath(1<<64-1))
+}
+
+// fastPath mirrors strconv.FormatUint's small-integer fast-path PREDICATE over the wrapper const:
+// FormatUint may take the small() branch only when the value really is below nSmalls.
+func fastPath(u uint64) string {
+	if u < small {
+		return "small"
+	}
+	return "big"
 }

@@ -272,6 +272,21 @@ prints it unsigned. (Guarded by the `UntypedIntFloatContexts` behavioral test �
 both int and float contexts, the `1<<63` unsigned payload, complex contexts via `real`/`imag`, and a
 negative payload, values verified vs Go.)
 
+**COMPARISON is a value comparison too, across payload kinds.** The `(payload, unsigned-flavour)` pair
+denotes a mathematical integer, and `<`/`<=`/`>`/`>=`/equality must order over that VALUE — but they
+compared the raw `int64` bits, so a `uint64` at or above 2^63 (which reads as a NEGATIVE `int64`)
+answered `u < someSmallConst` **TRUE**. That is a silent wrong answer for the whole
+`if fastSmalls && i < nSmalls` idiom the standard library uses: `strconv.FormatUint(9223372036854775808, 10)`
+took the small-integer fast path, `small()` truncated the negative index, and the result was `"0"`
+(`TestUitoa`); the varlen sibling threw on the truncated slice bound (`TestFormatUintVarlen`). The
+operators now route through one `Compare` helper: same flavour compares at that flavour, and mixed
+flavours put a NEGATIVE signed payload below every unsigned payload (otherwise both are non-negative
+and the unsigned reading of each is exact). Only a payload at or above 2^63 changes answer — every
+signed-only or in-`int64`-range comparison is bit-for-bit what it was. (Guarded by the
+`BigUntypedConstComparison` behavioral test's wrapper arm — `0`/`999`/`1000`/`1001`/`1<<62`/`1<<63`/
+`1<<64-1` against a wrapper const across all six relations, the signed counter-cases, and the inlined
+`FormatUint` fast-path predicate, output-compared vs Go; the test FAILS `[Output]` without the fix.)
+
 **The wrapper carries 64-bit shift operators so a still-wrapped untyped shift keeps Go's width.** `UntypedInt` defines `<<` and `>>` (an `int` count) returning `UntypedInt`, shifting the `int64` payload. Without them, a wrapper-typed untyped constant shifted by a **non-constant** count bound through the implicit `UntypedInt → int` conversion — a 32-bit `int` shift, which both masks the count to its low 5 bits and truncates the payload to 32 bits — whereas Go shifts at the type the untyped operand assumes from context (typically the enclosing `uint64`). `math.Frexp` corrupted on exactly this: `x |= uint64((-1 + bias) << shift)` (`bias` a package-level `UntypedInt` const, so the compound `-1 + bias` stays `UntypedInt`; `shift` a runtime `int`, up to 52) emitted `((-1 + bias) << (int)(shift))` and computed `1022 << (52 & 31)` = `1022 << 20` instead of `1022 << 52`, scrambling the exponent field of the assembled `float64`. The operators keep the shift a 64-bit `long << int` returning `UntypedInt`, so it composes with the surrounding `(uint64)` conversion and reproduces Go's value. Note this fires only for a **compound** untyped operand (`bias - 1`): a bare-identifier operand (`bias << n`) is cast to the shift's context result type at the use site first, so it never reaches the wrapper operator. (Guarded by the `UntypedIntWideShift` behavioral test — package-level `UntypedInt` consts `bias`/`bits`, the compound `bias - 1` left-shifted and `bits - 1` right-shifted by runtime counts 52/40/33 (all > 31, so a 32-bit narrowing would mask them), values verified vs Go.)
 
 **Float constant values are emitted exactly.** The emitted value of a float-kind constant declaration is never `go/constant`'s `Value.String()` — that is a *shortened* human-readable form (~6 significant digits), and using it silently truncated the **compiled** value while the exact literal survived only in the `/* … */` comment (math `cbrt`'s `C = /* 5.42857142857142815906e-01 */ 0.542857`). The emission prefers the Go **source literal verbatim** when it is also valid C# syntax — decimal floats including exponents and `_` digit separators overlap C# exactly, and a unary-minus form (`-7.05306122448979611050e-01`) carries its sign — which also elides the now-redundant original-expression comment (the emitted value *is* the original). When no single valid literal exists — a folded constant expression (`19.0 / 35.0`), or a Go-only literal form (hex float `0x1p-2`, trailing-dot `5.`) — the value emits as the **shortest round-trip** form (`strconv.FormatFloat 'g'/-1`) of the constant converted at the declaration's width (bitSize 32 for a `float32`-typed const, so the `f`-suffixed single parses with the same one rounding Go applies; 64 otherwise):
