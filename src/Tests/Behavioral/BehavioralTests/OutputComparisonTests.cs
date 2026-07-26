@@ -98,6 +98,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckAtomicFieldThroughPointer() => CheckTarget("AtomicFieldThroughPointer");
 
     [TestMethod]
+    public void CheckAtomicPointerToNil() => CheckTarget("AtomicPointerToNil");
+
+    [TestMethod]
     public void CheckAtomicValue() => CheckTarget("AtomicValue");
 
     [TestMethod]

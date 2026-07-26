@@ -906,6 +906,21 @@ the dereference guard):
 - The non-generic `INilPointer` surface exposes the structural predicate to runtime machinery
   holding a pointer only as `object` (equality tails, the reflection bridge's `IsNil`/`Elem`).
 
+**Every consumer that asks "is this THE nil pointer" must ask the structural predicate.** The
+managed-slot `atomic.Pointer<T>` (`core/sync/atomic/type.cs`) canonicalizes the nil pointer to a null
+slot so a reference `CompareAndSwap` treats all nil `*T` values as equal — and its `nilCanon` helper
+asked the value-peeking `IsNull`, so it collapsed a *pointer to a nil value* to nil as well. `sync.Map`
+is built out of exactly that shape and lost both halves of it: `e.p.Store(&i)` with a nil `any` value
+dropped the entry outright (`load()`'s `p == nil` then reported not-ok, so `Range` skipped it and
+`CompareAndSwap` failed against it), and the `expunged = new(any)` sentinel — a real address holding a
+nil interface — became indistinguishable from nil, so a *deleted* entry could not be told from an
+*expunged* one and the whole dirty/expunge protocol degenerated. The predicate is now
+`ж<T>.IsNilPointer`. The same conflation applied to `atomic.Pointer[error]`, `atomic.Pointer[func()]`
+and any `**T` slot (`atomic.Pointer[*T]`), all present in the corpus. (Guarded by
+`AtomicPointerToNil`: `Load`/`Store`/`Swap`/`CompareAndSwap` over a pointer to a nil `any`, two
+distinct `new(any)` sentinels, a pointer to a nil `*int`, and the genuinely-nil slot, output-compared
+vs `go run`. Before the fix the guard panics with a nil-pointer dereference on its second line.)
+
 `(*T)(nil)` conversion **expressions** are the scope — pointer-typed locals, parameters, and
 fields keep plain `null` (their statically-typed world never needed the type carried).
 

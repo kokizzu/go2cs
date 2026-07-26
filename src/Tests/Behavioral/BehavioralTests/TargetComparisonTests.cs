@@ -97,6 +97,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckAtomicFieldThroughPointer() => CheckTarget("AtomicFieldThroughPointer");
 
     [TestMethod]
+    public void CheckAtomicPointerToNil() => CheckTarget("AtomicPointerToNil");
+
+    [TestMethod]
     public void CheckAtomicValue() => CheckTarget("AtomicValue");
 
     [TestMethod]

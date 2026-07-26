@@ -77,14 +77,24 @@ internal static ж<Pointer<nint>> _ᴛ1ʗ = Ꮡ(new Pointer<nint>(nil));
     // pointer (ж<T>) cannot be held as a number and survive a GC move, so this slot holds the ж<T>
     // directly and the operations below use Volatile/Interlocked for atomicity. A null slot is a
     // nil *T; nilCanon collapses an explicit nil-ж to null so reference-based CompareAndSwap treats
-    // every nil pointer as equal (matching Go, where a nil unsafe.Pointer compares equal to nil).
+    // every nil pointer as equal (matching Go, where a nil unsafe.Pointer compares equal to nil) —
+    // a pointer TO a nil value is NOT such a pointer and stays exactly as stored (see nilCanon).
     internal ж<T> v;
 }
 
-// nilCanon canonicalizes a nil pointer to null so the reference comparison in CompareAndSwap
+// nilCanon canonicalizes THE NIL POINTER to null so the reference comparison in CompareAndSwap
 // treats all nil *T values as equal.
+//
+// The predicate must be the STRUCTURAL one, ж<T>.IsNilPointer ("this box IS the nil pointer"), not
+// ж<T>.IsNull. IsNull also reports true for a real box whose HELD reference-typed value happens to be
+// null — a pointer TO nil, which in Go is an ordinary non-nil address (`&i` is a real address even
+// when `i == nil`, and `new(any)` is a real address holding a nil interface). Asking IsNull collapsed
+// every such pointer to nil, and sync.Map is built out of exactly that shape: `e.p.Store(&i)` with a
+// nil `any` lost the value outright (Range skipped the entry, CompareAndSwap failed against it), and
+// its `expunged = new(any)` sentinel was indistinguishable from nil, so a deleted entry could not be
+// told from an expunged one. Same conflation for atomic.Pointer[error], [func()], and a **T slot.
 private static ж<T> nilCanon<T>(ж<T> p){
-    return p is null || p.IsNull ? default! : p;
+    return p is null || p.IsNilPointer ? default! : p;
 }
 
 // Load atomically loads and returns the value stored in x.
