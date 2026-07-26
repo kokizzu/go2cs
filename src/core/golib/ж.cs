@@ -466,6 +466,46 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
 
     internal (IArray, int)? ArrayRef => m_arrayIndexRef;
 
+    /// <summary>
+    /// Gets the <paramref name="length"/>-element slice window this pointer's referent STARTS, when
+    /// the referent is an element of managed array/slice storage and the window fits inside it.
+    /// </summary>
+    /// <param name="length">Element count the window must cover.</param>
+    /// <param name="window">Aliasing slice over the referent's own storage, on success.</param>
+    /// <returns><c>true</c> when an aliasing window exists; <c>false</c> to leave the caller its
+    /// own fallback.</returns>
+    /// <remarks>
+    /// This is what makes <c>unsafe.Slice(&amp;s[i], n)</c> behave as Go's does — the result must
+    /// ALIAS the original backing store, not snapshot it, or writes through the rebuilt slice are
+    /// silently lost. crypto/subtle's <c>xorBytes</c> is the canonical case: <c>XORBytes</c> hands
+    /// it <c>&amp;dst[0]</c>, it rebuilds <c>dst</c> with <c>unsafe.Slice</c>, and every XOR result
+    /// is written through that slice — against a snapshot, <c>XORBytes</c> wrote nothing at all.
+    /// The window is resolved through <see cref="CanonicalElement"/>, so a pointer taken through a
+    /// re-sliced view addresses the same absolute element Go's would. Capacity is bounded at
+    /// <paramref name="length"/>, matching Go's <c>len == cap == n</c> result.
+    /// </remarks>
+    internal bool TryGetElementWindow(int length, out slice<T> window)
+    {
+        window = default;
+
+        if (length < 0 || m_arrayIndexRef is null)
+            return false;
+
+        (IArray array, int index) = m_arrayIndexRef.Value;
+        (object storage, nint absoluteIndex) = CanonicalElement(array, index);
+
+        // Only REAL managed element storage can be aliased. A reinterpreting pointer (a Go
+        // `(*U)(unsafe.Pointer(&b[0]))` over a differently-typed array) is a struct-field ref, not
+        // an array ref, and never reaches here — a T[] view over a differently-typed backing array
+        // does not exist in the managed model, so those callers keep the snapshot.
+        if (storage is not T[] backing || absoluteIndex < 0 || absoluteIndex + length > backing.Length)
+            return false;
+
+        window = new slice<T>(backing, absoluteIndex, absoluteIndex + length, absoluteIndex + length);
+
+        return true;
+    }
+
     /// <inheritdoc/>
     public ж<TElem> of<TElem>(FieldRefFunc<TElem> fieldRefFunc)
     {

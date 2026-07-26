@@ -594,6 +594,18 @@ public static slice<T> Slice<T, TLen>(ж<T> ptr, TLen len) where TLen : System.N
     if (ptr.IsNative)
         return new slice<T>(new ReadOnlySpan<T>((void*)ptr.NativeAddress, n));
 
+    // A pointer INTO managed array/slice storage (`unsafe.Slice(&s[i], n)`) yields a window that
+    // ALIASES that storage, exactly as Go's unsafe.Slice does: writes through the rebuilt slice must
+    // reach the original backing. The snapshot below silently swallowed them — crypto/subtle's
+    // xorBytes rebuilds dst/x/y from `&dst[0]` and writes every XOR result through dst, so XORBytes
+    // wrote NOTHING (its whole test matrix compared dst against its untouched 0xdd fill).
+    if (ptr.TryGetElementWindow(n, out slice<T> window))
+        return window;
+
+    // No aliasable managed storage — a heap box, a struct field, or a REINTERPRETING pointer over a
+    // differently-typed array (a T[] view over another element type does not exist in the managed
+    // model). Reading the n elements through the pinned referent is still exact; writes through the
+    // result do not reach the source.
     fixed (T* pointer = &ptr.Value)
         return new slice<T>(new ReadOnlySpan<T>(pointer, n));
 }

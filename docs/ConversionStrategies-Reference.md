@@ -7811,6 +7811,44 @@ managed buffer rather than aliasing it the way Go does, so writes through the re
 native memory. That is sufficient for reading a block a syscall returned (the `Environ` shape) and is
 where the seam still differs from Go.
 
+### `unsafe.Slice` over MANAGED element storage ALIASES it
+
+The snapshot above is the right answer for a native address and the wrong one for the far commoner
+shape: `unsafe.Slice(&s[i], n)`, where the pointer addresses an element of a managed slice or array.
+Go's result shares that storage, so writes through the rebuilt slice must land in the original
+backing — and the snapshot silently swallowed every one of them. crypto/subtle is the case that
+exposed it: `XORBytes` hands `xorBytes` bare pointers, which rebuilds its three slices and writes the
+whole result through `dst`, so **`XORBytes` wrote nothing at all** (its test matrix compared `dst`
+against its untouched `0xdd` fill).
+
+`ж<T>` answers with the window when it has real managed element storage
+(`TryGetElementWindow`): the referent is reduced through the same `CanonicalElement` mapping pointer
+equality uses — so a pointer taken through a re-sliced view addresses the same absolute element Go's
+would — and the result is a `slice<T>` over that backing with `len == cap == n`, exactly Go's shape.
+A heap box, a struct-field ref, or a REINTERPRETING pointer (a `(*U)(unsafe.Pointer(&b[0]))` over a
+differently-typed array) has no such storage and keeps the snapshot; a `T[]` view over another
+element type does not exist in the managed model.
+
+That last exclusion is why `crypto/subtle/xor_generic.cs` is **hand-owned**
+(`[module: GoManualConversion]`). Its word-at-a-time loop reinterprets the byte slices as
+`[]uintptr` —
+
+```go
+func words(x []byte) []uintptr {
+	return unsafe.Slice((*uintptr)(unsafe.Pointer(&x[0])), uintptr(len(x))/wordSize)
+}
+```
+
+— which the converted form can only snapshot, so for every length that is a multiple of 8 the XOR
+went to a detached buffer and `dst` stayed untouched, while other lengths landed only their trailing
+`n % 8` bytes. The hand-owned file does the same reinterpret the managed way,
+`MemoryMarshal.Cast<byte, ulong>` over the slices' own spans — a genuine aliasing view, so the word
+writes land in place. It keeps Go's word-at-a-time behavior (and with it the performance contract
+crypto/cipher's CTR and GCM modes depend on) and drops only Go's `supportsUnaligned`/`aligned` gate,
+which exists for architectures whose unaligned word loads fault. (Validated by crypto/subtle's own
+suite: 7/7, no disclosures, over the full 1..1024 × 8 × 8 × 8 alignment matrix.)
+
+
 ### A reinterpret of a MANAGED pointer aliases the box — it never round-trips through the address
 The section above is about a pointer whose source genuinely *is* an address. The mirror case is
 `(*U)(unsafe.Pointer(p))` where `p` is an ordinary Go pointer `*T` — the shape `reflect` uses to view
@@ -8502,6 +8540,8 @@ One call-site emission cooperates (`convCallExpr.go`): a conversion **to** a man
 
 **The runtime lock/note model (`core/runtime/lock_sema_impl.cs`).** Go's `mutex.key` is a tagged atomic slot — 0 unlocked, `locked` (1) held, or an `*m` address|locked heading a waiter chain through `m.nextwaitm`, parked on OS semaphores. The managed model hand-owns `mutexContended`/`lock2`/`unlock2`/`notewakeup`/`notesleep`/`notetsleep_internal` (via the same registry; thin wrappers and consts stay auto) and keeps the **same key protocol restricted to `{0, locked}`**: the mutex is an `Interlocked` spinlock on the real `key` storage with `SpinWait` escalation standing in for the spin→yield→park ladder; the note is a signaled/clear latch (double-wakeup throw preserved; timeout at millisecond granularity). Deliberately not modeled, documented in place: the waiter queue (fairness), lock profiling, and the `m.locks`/preempt bookkeeping — `getg()` is a Go compiler intrinsic with no managed realization yet (a `[ThreadStatic]` g/m model is the future root that unlocks runtime-operational semantics; the bookkeeping returns to these bodies when it lands).
 
+
+**`crypto/subtle`'s word-at-a-time XOR (`go-src-converted/crypto/subtle/xor_generic.cs`, whole-file).** `xorBytes` XORs a machine WORD at a time by reinterpreting its three byte slices as `[]uintptr` (`unsafe.Slice((*uintptr)(unsafe.Pointer(&x[0])), len(x)/wordSize)`). A `uintptr[]` view over a `byte[]` does not exist in the managed model — golib's `slice<T>` is a window on a real `T[]` — so the converted `words()` could only SNAPSHOT the bytes into a detached `slice<uintptr>`, and the word loop XORed the snapshot and dropped it: for every length that is a multiple of 8, `XORBytes` wrote **nothing**. The whole file is hand-owned (marked `[module: GoManualConversion]`) and does the same reinterpret the managed way, `MemoryMarshal.Cast<byte, ulong>` over the slices' own spans — a genuine aliasing view, so the word writes land in place — keeping Go's word-at-a-time behavior and the performance contract crypto/cipher's CTR and GCM modes depend on. Only Go's `supportsUnaligned`/`aligned` gate is dropped (it exists for architectures whose unaligned word loads fault). Full detail: *`unsafe.Slice` over MANAGED element storage ALIASES it*. Guarded by crypto/subtle's own suite (7/7, no disclosures, over the full 1..1024 x 8 x 8 x 8 alignment matrix).
 
 **`sync/atomic.Value` (`core/sync/atomic/value.cs`, whole-file).** Go's `atomic.Value` stores and loads an `any` atomically by reinterpreting the interface's internal two-word `(type, data)` layout: `(*efaceWords)(unsafe.Pointer(&v))`, then `atomic.LoadPointer`/`StorePointer`/`CompareAndSwapPointer` on the `typ` and `data` slots, with a `firstStoreInProgress` sentinel guarding the first store. That layout is a Go runtime detail with **no managed equivalent** — an `any` here is a single `System.Object` reference (one word), and reinterpreting a managed reference as a raw address to poke type/data words simply NREs (the same managed-referent-through-`unsafe.Pointer` wall as the guintptr family). The first *operational* hit was `internal/testlog`'s package-level `var logger atomic.Value`, loaded during `os.Getenv` — so `atomic.Value.Load()` NRE'd on the zero value before any store. The whole file is hand-rewritten (marked `[module: GoManualConversion]`) to store the `any` **directly** in the `Value.v` field and use `Volatile.Read`/`Interlocked.CompareExchange` for the acquire/release ordering and CAS the literal conversion cannot provide; the nil-store and inconsistent-type panics, and `CompareAndSwap`'s by-value comparison (`AreEqual`, matching Go's `i != old`), preserve the spec. Guarded by the `AtomicValue` behavioral test (Load-nil / Store / Swap / CompareAndSwap over typed string values, output-compared vs Go).
 
