@@ -8436,9 +8436,33 @@ equality, so the same slice/pointer is deeply equal to itself even holding NaN);
 (C# `==` on `double` — NaN ≠ NaN, like Go); funcs never deeply equal unless both nil. Cycle detection
 mirrors Go's `hard()` step on managed identity: (pointer box | map `Dictionary` | slice backing array
 + `Low`) pairs in a reference-identity set, added before recursing so in-progress checks are assumed
-true — self-referential structures terminate. Guarded by the `DeepEqual` behavioral test (30 cases —
-slices incl. nil-vs-empty and same-slice-NaN identity, structs, maps incl. nil/empty/same-map,
-pointers incl. nil and cycles — output-compared vs `go run`). The guard project references the
+true — self-referential structures terminate.
+
+**Two defects the guard could not see (2026-07-26), one of them the guard itself.** The recursion read
+the Value's raw `boxed` field, but an **ADDRESSABLE** Value — a slice element, an array element, a
+struct field — carries its value behind `addrBox` (the `ж<T>` it aliases) and leaves `boxed` **null**,
+so every such read saw null on *both* sides and the identity short-circuits fired:
+`DeepEqual([][]byte{[]byte("ab")}, [][]byte{[]byte("ac")})` was **true** — each element's backing read
+as null, matched "same initial entry of the same underlying array", and the elementwise walk never
+ran. The recursion now reads `live` (identical to `boxed` for a non-addressable Value) once per side
+and threads it through every arm. Second, `mapBacking` probed for a field assignable to the
+**non-generic** `IDictionary`, which a generated named-map wrapper does not have — it holds a
+`map<K,V>` **struct**, whose own backing store is one level deeper — so both sides of a *named*-map
+comparison resolved to null, `ReferenceEquals(m1, m2)` matched them as "the same map object", and two
+named maps of equal length were deeply equal **regardless of contents** (`identityRoot` was blind the
+same way, so a named-map cycle was never detected either). The probe now takes that second step.
+
+Neither showed up because the guard's own comparison was **vacuous**: it printed with the builtin
+`println`, which writes to **stderr**, and the runners compare stderr by FIRST LINE only (Go's panic
+reports carry a machine-specific stack trace, so a full stderr comparison can never match). 46 of its
+47 assertions were unchecked. The guard now prints with `fmt.Println` — stdout, compared in full — and
+is extended to 47 cases: the original slice/struct/map/pointer/cycle set plus named maps (equal,
+differing value, differing key, differing length, self, nil-vs-empty), a named map as a struct field, a
+named map OF slices, and nil-map-key parity on both plain and named `map[any]int`. Counter-proven: pre-
+fix the `[][]byte` case and six named-map cases printed the wrong answer. (`Solitaire` is the only other
+output-compared project that prints solely through `println`; its comparison is vacuous for the same
+reason — recorded as a follow-up, together with tightening the runners' stderr rule to a full compare
+whenever the exit code is not a panic.) The guard project references the
 full-conversion `reflect` (the baseline stub has none): its `Directory.Build.targets` redirects the
 emitted `core\reflect` reference to `go-src-converted\reflect` — the Performance-suite pattern for
 settings the per-transpile csproj regeneration would otherwise clobber. Surfaced by the guard's output

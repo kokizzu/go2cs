@@ -44,14 +44,22 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
     if (!AreEqual(v1.Type(), v2.Type())) {
         return false;
     }
+    // The LIVE value, never the raw `boxed` field: an ADDRESSABLE Value — a slice element, an array
+    // element, a struct field — carries its value behind `addrBox` (the ж<T> it aliases) and leaves
+    // `boxed` null, so every raw read below saw null on BOTH sides and the identity short-circuits
+    // fired. `DeepEqual([][]byte{[]byte("ab")}, [][]byte{[]byte("ac")})` was TRUE: each element's
+    // backing read as null, matched "same initial entry of the same underlying array", and the
+    // elementwise walk never ran (`live` IS `boxed` whenever the Value is not addressable, so this
+    // changes nothing else).
+    object? live1 = v1.live, live2 = v2.live;
     // Go's hard()/visited step: only pointer, map, and slice values can head a reference cycle in the
     // managed model (a bridge Value never has Kind Interface — the boxed value is always concrete).
     // Go also keys the visit on the Type; managed identity roots are per-variable objects with a fixed
     // type, so the (root1, root2) pair alone cannot collide across types.
     ΔKind kind = v1.Kind();
     if (kind == ΔPointer || kind == Map || kind == ΔSlice) {
-        (object? root1, nint off1) = identityRoot(v1.boxed);
-        (object? root2, nint off2) = identityRoot(v2.boxed);
+        (object? root1, nint off1) = identityRoot(live1);
+        (object? root2, nint off2) = identityRoot(live2);
         if (root1 is not null && root2 is not null && !visited.Add(new visitPair(root1, off1, root2, off2))) {
             // Already seen further up the recursion — the comparison algorithm assumes checks in
             // progress are true when it reencounters them (this is what makes DeepEqual terminate).
@@ -67,8 +75,8 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
         return true;
     }
     if (kind == ΔSlice) {
-        (object? data1, nint low1) = sliceData(v1.boxed);
-        (object? data2, nint low2) = sliceData(v2.boxed);
+        (object? data1, nint low1) = sliceData(live1);
+        (object? data2, nint low2) = sliceData(live2);
         if (data1 is null != data2 is null) {
             // A nil slice (null backing — the golib `default`) and a non-nil empty slice are not
             // deeply equal, per the DeepEqual doc.
@@ -84,7 +92,7 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
             // Same initial entry of the same underlying array (&x[0] == &y[0]).
             return true;
         }
-        if (v1.boxed is slice<byte> b1 && v2.boxed is slice<byte> b2) {
+        if (live1 is slice<byte> b1 && live2 is slice<byte> b2) {
             // Special case for []byte, which is common (Go routes this through bytealg.Equal).
             return b1.ToSpan().SequenceEqual(b2.ToSpan());
         }
@@ -102,7 +110,7 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
         return deepValueEqualBoxed(v1.Elem(), v2.Elem(), visited);
     }
     if (kind == ΔPointer) {
-        if (ReferenceEquals(v1.boxed, v2.boxed)) {
+        if (live1 is not null && ReferenceEquals(live1, live2)) {
             // Same ж<T> box — Go's same-address short-circuit (one box per variable).
             return true;
         }
@@ -125,8 +133,8 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
         if (v1.Len() != v2.Len()) {
             return false;
         }
-        IDictionary? m1 = mapBacking(v1.boxed);
-        IDictionary? m2 = mapBacking(v2.boxed);
+        IDictionary? m1 = mapBacking(live1);
+        IDictionary? m2 = mapBacking(live2);
         if (ReferenceEquals(m1, m2)) {
             // The same map object (or both nil) — deeply equal regardless of content.
             return true;
@@ -137,8 +145,8 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
         // Go's range visits a NIL key like any other, but the backing Dictionary cannot HOLD one —
         // golib keeps that entry in a dedicated slot, invisible to the walk below (and its presence
         // alone does not show up in the Len comparison above, which one extra ordinary key hides).
-        (bool nilPresent1, object? nilValue1) = v1.boxed is IMap nilMap1 ? nilMap1.NilKeyEntry : (false, null);
-        (bool nilPresent2, object? nilValue2) = v2.boxed is IMap nilMap2 ? nilMap2.NilKeyEntry : (false, null);
+        (bool nilPresent1, object? nilValue1) = live1 is IMap nilMap1 ? nilMap1.NilKeyEntry : (false, null);
+        (bool nilPresent2, object? nilValue2) = live2 is IMap nilMap2 ? nilMap2.NilKeyEntry : (false, null);
         if (nilPresent1 != nilPresent2) {
             return false;
         }
@@ -256,19 +264,33 @@ private static (object? data, nint low) sliceData(object? boxed) {
 }
 
 // mapBacking returns a boxed map's backing Dictionary — null for the nil map (no backing store).
+//
+// A generated NAMED-map wrapper (`type M map[K]V`) holds a map<K,V> STRUCT, and map<K,V> implements
+// only the GENERIC dictionary surface (IMap<K,V> : IDictionary<K,V>) — nothing assignable to the
+// non-generic IDictionary this walk needs. The probe therefore takes a second step through such a
+// field: without it BOTH sides of a named-map comparison resolved to null, the ReferenceEquals(m1, m2)
+// short-circuit above matched them as "the same map object", and two named maps of equal length were
+// reported deeply equal REGARDLESS of their contents (identityRoot was blind the same way, so a
+// named-map cycle was never detected either). The recursion terminates because the nested value is a
+// strictly smaller struct — map<K,V>'s own backing store IS an IDictionary.
 private static IDictionary? mapBacking(object? boxed) {
     if (boxed is null) {
         return null;
     }
     FieldInfo? field = s_mapField.GetOrAdd(boxed.GetType(), static t => {
+        FieldInfo? nested = null;
         foreach (FieldInfo f in t.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)) {
             if (typeof(IDictionary).IsAssignableFrom(f.FieldType)) {
                 return f;
             }
+            if (nested is null && typeof(IMap).IsAssignableFrom(f.FieldType)) {
+                nested = f;
+            }
         }
-        return null;
+        return nested;
     });
-    return field?.GetValue(boxed) as IDictionary;
+    object? value = field?.GetValue(boxed);
+    return value as IDictionary ?? (value is IMap ? mapBacking(value) : null);
 }
 
 } // end reflect_package

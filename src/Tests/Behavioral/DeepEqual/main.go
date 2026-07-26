@@ -1,6 +1,9 @@
 package main
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 type point struct {
 	x, y int
@@ -12,72 +15,122 @@ type node struct {
 	next *node
 }
 
+type named map[string]int
+
+type namedAny map[any]int
+
+type namedSlices map[string][]int
+
+type wrap struct{ m named }
+
 func main() {
 	// Slices: elementwise equality, content mismatch, and the []byte fast path.
-	println(reflect.DeepEqual([]string{"a", "bc"}, []string{"a", "bc"}))
-	println(reflect.DeepEqual([]string{"a"}, []string{"b"}))
-	println(reflect.DeepEqual([]int{1, 2, 3}, []int{1, 2, 3}))
-	println(reflect.DeepEqual([]int{1, 2, 3}, []int{1, 2, 4}))
-	println(reflect.DeepEqual([][]byte{[]byte("ab"), nil}, [][]byte{[]byte("ab"), nil}))
-	println(reflect.DeepEqual([][]byte{[]byte("ab")}, [][]byte{[]byte("ac")}))
+	fmt.Println(reflect.DeepEqual([]string{"a", "bc"}, []string{"a", "bc"}))
+	fmt.Println(reflect.DeepEqual([]string{"a"}, []string{"b"}))
+	fmt.Println(reflect.DeepEqual([]int{1, 2, 3}, []int{1, 2, 3}))
+	fmt.Println(reflect.DeepEqual([]int{1, 2, 3}, []int{1, 2, 4}))
+	fmt.Println(reflect.DeepEqual([][]byte{[]byte("ab"), nil}, [][]byte{[]byte("ab"), nil}))
+	fmt.Println(reflect.DeepEqual([][]byte{[]byte("ab")}, [][]byte{[]byte("ac")}))
 
 	// Nil vs empty slices are not deeply equal; nil equals nil.
-	println(reflect.DeepEqual([]byte(nil), []byte{}))
-	println(reflect.DeepEqual([]byte{}, []byte{}))
+	fmt.Println(reflect.DeepEqual([]byte(nil), []byte{}))
+	fmt.Println(reflect.DeepEqual([]byte{}, []byte{}))
 	var nilInts []int
-	println(reflect.DeepEqual(nilInts, nilInts))
-	println(reflect.DeepEqual(nilInts, []int{}))
+	fmt.Println(reflect.DeepEqual(nilInts, nilInts))
+	fmt.Println(reflect.DeepEqual(nilInts, []int{}))
 
 	// The same slice is deeply equal to itself regardless of content (identity
 	// short-circuit on &s[0]), while a copy of a NaN is not equal elementwise.
 	zero := 0.0
 	nan := []float64{zero / zero}
-	println(reflect.DeepEqual(nan, nan))
-	println(reflect.DeepEqual(nan, []float64{nan[0]}))
+	fmt.Println(reflect.DeepEqual(nan, nan))
+	fmt.Println(reflect.DeepEqual(nan, []float64{nan[0]}))
 
 	// Structs: field-by-field, including slice-typed fields.
 	p1 := point{1, 2, []string{"n"}}
 	p2 := point{1, 2, []string{"n"}}
 	p3 := point{1, 3, []string{"n"}}
-	println(reflect.DeepEqual(p1, p2))
-	println(reflect.DeepEqual(p1, p3))
+	fmt.Println(reflect.DeepEqual(p1, p2))
+	fmt.Println(reflect.DeepEqual(p1, p3))
 
 	// Maps: order-independent equality, length, missing key, differing value,
 	// nil vs empty, and same-map identity.
 	m1 := map[string]int{"a": 1, "b": 2}
 	m2 := map[string]int{"b": 2, "a": 1}
-	println(reflect.DeepEqual(m1, m2))
-	println(reflect.DeepEqual(m1, map[string]int{"a": 1}))
-	println(reflect.DeepEqual(m1, map[string]int{"a": 1, "c": 2}))
-	println(reflect.DeepEqual(m1, map[string]int{"a": 1, "b": 3}))
+	fmt.Println(reflect.DeepEqual(m1, m2))
+	fmt.Println(reflect.DeepEqual(m1, map[string]int{"a": 1}))
+	fmt.Println(reflect.DeepEqual(m1, map[string]int{"a": 1, "c": 2}))
+	fmt.Println(reflect.DeepEqual(m1, map[string]int{"a": 1, "b": 3}))
 	var nilMap map[string]int
-	println(reflect.DeepEqual(nilMap, nilMap))
-	println(reflect.DeepEqual(nilMap, map[string]int{}))
-	println(reflect.DeepEqual(m1, m1))
+	fmt.Println(reflect.DeepEqual(nilMap, nilMap))
+	fmt.Println(reflect.DeepEqual(nilMap, map[string]int{}))
+	fmt.Println(reflect.DeepEqual(m1, m1))
 
 	// Pointers: deeply equal referents, same pointer, mutated referent, nils.
 	q1 := &point{1, 2, nil}
 	q2 := &point{1, 2, nil}
 	q3 := q1
-	println(reflect.DeepEqual(q1, q2))
-	println(reflect.DeepEqual(q1, q3))
+	fmt.Println(reflect.DeepEqual(q1, q2))
+	fmt.Println(reflect.DeepEqual(q1, q3))
 	q2.y = 9
-	println(reflect.DeepEqual(q1, q2))
+	fmt.Println(reflect.DeepEqual(q1, q2))
 	var np1, np2 *point
-	println(reflect.DeepEqual(np1, np2))
-	println(reflect.DeepEqual(np1, q1))
+	fmt.Println(reflect.DeepEqual(np1, np2))
+	fmt.Println(reflect.DeepEqual(np1, q1))
 
 	// Self-referential pointer cycles terminate (in-progress checks assumed true).
 	a := &node{val: 1}
 	a.next = a
 	b := &node{val: 1}
 	b.next = b
-	println(reflect.DeepEqual(a, b))
+	fmt.Println(reflect.DeepEqual(a, b))
 	c := &node{val: 2}
 	c.next = c
-	println(reflect.DeepEqual(a, c))
+	fmt.Println(reflect.DeepEqual(a, c))
 
 	// Distinct types are never deeply equal; untyped nils are.
-	println(reflect.DeepEqual([]int{1}, []string{"1"}))
-	println(reflect.DeepEqual(nil, nil))
+	fmt.Println(reflect.DeepEqual([]int{1}, []string{"1"}))
+	fmt.Println(reflect.DeepEqual(nil, nil))
+
+	// NAMED map types: the wrapper holds a map<K,V> struct whose own backing Dictionary is one
+	// level deeper, so the backing-store probe used to resolve BOTH sides to null and report every
+	// same-length pair "deeply equal" no matter what they contained.
+	n1 := named{"a": 1, "b": 2}
+	n2 := named{"b": 2, "a": 1}
+	n3 := named{"a": 1, "b": 3}
+	n4 := named{"a": 1, "c": 2}
+	fmt.Println(reflect.DeepEqual(n1, n2))
+	fmt.Println(reflect.DeepEqual(n1, n3))
+	fmt.Println(reflect.DeepEqual(n1, n4))
+	fmt.Println(reflect.DeepEqual(n1, named{"a": 1}))
+	fmt.Println(reflect.DeepEqual(n1, n1))
+	var nilNamed named
+	fmt.Println(reflect.DeepEqual(nilNamed, nilNamed))
+	fmt.Println(reflect.DeepEqual(nilNamed, named{}))
+
+	// A named map as a struct field, and a named map of slices (elementwise recursion).
+	fmt.Println(reflect.DeepEqual(wrap{n1}, wrap{n2}))
+	fmt.Println(reflect.DeepEqual(wrap{n1}, wrap{n3}))
+	s1 := namedSlices{"k": {1, 2}}
+	s2 := namedSlices{"k": {1, 2}}
+	s3 := namedSlices{"k": {1, 3}}
+	fmt.Println(reflect.DeepEqual(s1, s2))
+	fmt.Println(reflect.DeepEqual(s1, s3))
+
+	// NIL map keys through DeepEqual: the nil entry lives in a slot the backing walk cannot see,
+	// on plain and named map types alike.
+	k1 := map[any]int{nil: 1, "b": 2}
+	k2 := map[any]int{"b": 2, nil: 1}
+	k3 := map[any]int{nil: 9, "b": 2}
+	k4 := map[any]int{"b": 2, "c": 1}
+	fmt.Println(reflect.DeepEqual(k1, k2))
+	fmt.Println(reflect.DeepEqual(k1, k3))
+	fmt.Println(reflect.DeepEqual(k1, k4))
+	j1 := namedAny{nil: 1, "b": 2}
+	j2 := namedAny{"b": 2, nil: 1}
+	j3 := namedAny{nil: 9, "b": 2}
+	j4 := namedAny{"b": 2, "c": 1}
+	fmt.Println(reflect.DeepEqual(j1, j2))
+	fmt.Println(reflect.DeepEqual(j1, j3))
+	fmt.Println(reflect.DeepEqual(j1, j4))
 }
