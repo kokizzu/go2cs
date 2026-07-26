@@ -539,6 +539,15 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 			// emitted Go-style (`"a"u8: 1` inside C# braces — CS1513/CS1002).
 			elementType = mapType.Elem()
 			callContext.keyValueSource = MapSource
+			// Carry the map type, exactly as the UNNAMED map arm above does: every MapSource
+			// key/value slot rule in convKeyValueExpr is gated on it (a pointer KEY or VALUE boxes
+			// to `Ꮡx`, an `any` key or value slot re-renders a string literal as `(@string)"…"u8`,
+			// an untyped-constant `any` key boxes at Go's default type, an array key clones). Left
+			// nil, a named map type silently opted out of all of them: `namedAny{nil: 1, "b": 2}`
+			// over `map[any]int` emitted a bare `["b"u8]` span key, which has no conversion to the
+			// object key slot (CS1503), while the identical unnamed literal one line above got
+			// `[(@string)"b"u8]`.
+			callContext.keyValueCompositeType = mapType
 			namedMapComposite = true
 			namedMapRender = fmt.Sprintf("map<%s, %s>", convertToCSTypeName(v.getTypeName(mapType.Key(), false)), convertToCSTypeName(v.getTypeName(mapType.Elem(), false)))
 		}
