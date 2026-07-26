@@ -493,6 +493,17 @@ public static class GoReflect
     private static object? readSlotViaInterface<T>(object box)
     {
         IPointer<T> typed = (IPointer<T>)box;
+
+        // STRUCTURAL nil first: there is no storage to read, so the pointee reads as the zero value.
+        // Every other box resolves its REAL storage through Value — including a struct-field or
+        // array-element reference, which the value-peeking IsNull used to report as nil whenever the
+        // referenced field's type was a reference type (its m_val is an unused default), handing back
+        // default(T) in place of the field's actual value. IsNull is now structural for those kinds
+        // (see ж<T>.IsNull), and what remains of it — a standard box whose reference-typed pointee is
+        // legitimately null — has default(T) as the correct answer anyway.
+        if (box is INilPointer { IsNilPointer: true })
+            return default(T);
+
         return typed.IsNull ? default(T) : typed.Value;
     }
 

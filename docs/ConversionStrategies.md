@@ -1171,6 +1171,14 @@ every call, so comparing the boxes made `&s[0] == &s[0]` *false*, and hashing th
 pointers in different `map[*T]` buckets. Reducing to the backing array plus `Low + index` makes every Go
 alias of one element equal: `&s[1:][0] == &s[1]`, an in-capacity `append` result, and `&a[:][i] == &a[i]`.
 
+Identity and nilness are **structural** — properties of the storage, never of the value stored there. A
+standard heap box *is* its storage, so it compares and hashes by its own identity (two boxes over one
+referent are two addresses, as `&c == &d` is false in Go), while two boxes aliasing the same native address
+are one pointer. `IsNilPointer` answers "is this THE nil pointer" and drives every identity question; the
+value-peeking `IsNull` survives only where reading the slot is the actual question, because a real address
+whose pointee is nil (`&i` with `i == nil`) and a field/element reference box are both perfectly good
+addresses.
+
 **Full detail:** [Reference → Pointers](ConversionStrategies-Reference.md#pointers) — per-iteration
 range-variable boxes, wide-index narrowing on element addresses, element/`unsafe.StringData` pointer
 identity, pointer-typed globals & double-pointer walks, closure capture of boxed locals, `unsafe.Pointer`

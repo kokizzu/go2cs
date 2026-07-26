@@ -362,17 +362,24 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     }
 
     /// <inheritdoc/>
-    // A native-backed box is non-nil exactly when its address is non-zero — its m_val slot is unused
-    // and would read as null for a reference-typed T, which must not be mistaken for a nil pointer.
-    public bool IsNull => m_isNull || (m_nativeAddr == 0 && m_val is null);
+    // Peeking at the held value is legitimate for ONE kind of box and ONE question: a STANDARD heap
+    // box, asked whether dereferencing it would read managed storage that is not there. Every other
+    // kind keeps its storage ELSEWHERE and leaves m_val the unused default, which for a
+    // reference-typed T reads as null and must NOT be mistaken for a nil pointer — a native-backed
+    // box (its address is m_nativeAddr), a struct-field reference and an array-element reference are
+    // all real addresses (`&s.next` is an address even while the field holds nil). Pointer IDENTITY
+    // never asks this question at all; it asks IsNilPointer.
+    public bool IsNull => m_isNull || (m_nativeAddr == 0 && m_structFieldRef is null && m_arrayIndexRef is null && m_val is null);
 
     /// <summary>
     /// Gets a flag indicating whether this box IS the nil pointer — the STRUCTURAL predicate
     /// (the nil-constructed / canonical typed-nil form), as opposed to <see cref="IsNull"/>,
-    /// which additionally reports a real heap box whose held reference-typed value is null
+    /// which additionally reports a standard heap box whose held reference-typed value is null
     /// (a non-nil pointer HOLDING a nil value, e.g. a captured <c>ж&lt;ж&lt;T&gt;&gt;</c> local).
-    /// Pointer identity (equality, the reflection bridge's <c>IsNil</c>/<c>Elem</c>) keys off
-    /// this; dereference guards key off <see cref="IsNull"/>.
+    /// Everything about pointer IDENTITY keys off this one — equality, the hash, the order token,
+    /// the reflection bridge's <c>IsNil</c>/<c>Elem</c>, and the dereference guards on
+    /// <c>operator ~</c>; a Go pointer's nilness is a property of the pointer, never of the value
+    /// it points at.
     /// </summary>
     public bool IsNilPointer => m_isNull;
 
@@ -389,13 +396,16 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
 
     /// <summary>
     /// Gets a flag indicating whether this is a nil <em>standard</em> pointer — a plain heap pointer
-    /// whose value is unset — as opposed to a struct-field or array-element reference (which resolve
-    /// through <see cref="Value"/> without a null check). This is exactly the case for which the
-    /// <see cref="Value"/> getter throws <see cref="RuntimeErrorPanic.NilPointerDereference"/>; the
-    /// nil-safe <see cref="PointerExtensions.DerefOrNil{T}"/> re-alias accessor uses it to avoid that
-    /// throw when re-aliasing a pointer parameter walked to a nil terminator.
+    /// that IS nil — as opposed to a struct-field or array-element reference (which resolve through
+    /// <see cref="Value"/> without a null check). The nil-safe
+    /// <see cref="PointerExtensions.DerefOrNil{T}"/> re-alias accessor uses it to hand back a
+    /// throwaway slot rather than the (absent) storage of a pointer walked to a nil terminator.
+    /// STRUCTURAL, like every other identity question: a real heap box whose reference-typed value
+    /// is null still has a real slot, and DerefOrNil must return THAT slot so a write through the
+    /// re-alias persists (a captured <c>ж&lt;ж&lt;T&gt;&gt;</c> local — the very shape the walk
+    /// produces on its last step).
     /// </summary>
-    internal bool IsNilStandardPointer => m_structFieldRef is null && m_arrayIndexRef is null && IsNull;
+    internal bool IsNilStandardPointer => m_structFieldRef is null && m_arrayIndexRef is null && m_isNull;
 
     /// <summary>
     /// Gets a pinned pointer to the value of type <typeparamref name="T"/>.
@@ -404,12 +414,15 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     {
         get
         {
-            // Get reference to standard pointer value
+            // Get reference to standard pointer value. The value-peeking IsNull is deliberate here:
+            // pinning requires an unmanaged layout, so a null-HOLDING reference-typed box has nothing
+            // to pin either way (Marshal.SizeOf<T> would throw); for the value-typed T that actually
+            // reaches a pin, IsNull and IsNilPointer coincide.
             if (m_structFieldRef is null && m_arrayIndexRef is null)
             {
                 if (IsNull)
                     throw RuntimeErrorPanic.NilPointerDereference();
-                
+
                 return new PinnedBuffer(Value, Marshal.SizeOf<T>());
             }
 
@@ -565,6 +578,12 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         // self-referential struct, one whose fields include a ж<T> back to its own type (e.g.
         // container/ring's `Ring.next *Ring`), since the struct's own Equals compares those fields.
 
+        // Two boxes ALIASING the same native address are the same Go pointer — that address is the
+        // whole of their identity (`(*T)(unsafe.Pointer(p)) == (*T)(unsafe.Pointer(p))` after a
+        // uintptr round-trip, which produces a fresh box each time).
+        if (m_nativeAddr != 0 || other.m_nativeAddr != 0)
+            return m_nativeAddr == other.m_nativeAddr;
+
         // Pointer into a struct field (`Ꮡx.of(T.ᏑField)`): same source object and field accessor.
         // The comparison uses the field IDENTITY token (Item3) — the original accessor delegate —
         // not the stored ref function, which the typed `of(...)` overload wraps in a PER-CALL
@@ -598,16 +617,16 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
             return ReferenceEquals(storage1, storage2) && element1 == element2;
         }
 
-        // Two standard heap pointers, each a distinct allocation: equal only if they wrap the same
-        // reference-type object (the ReferenceEquals(this, other) check above already handled the
-        // same-box case, so distinct value-type allocations are distinct addresses → not equal).
-        // Guards, both required by structural nil identity: a null-HOLDING slot is a distinct
-        // address (never equal to another by holding null), and a slot holding the CANONICAL
-        // typed-nil box shares that instance with every other nil-holding slot of its type — the
-        // shared pointee is nil sameness, not slot sameness (&p1 != &p2 though p1 == p2 == nil).
-        return IsReferenceType && m_val is not null &&
-               m_val is not INilPointer { IsNilPointer: true } &&
-               ReferenceEquals(m_val, other.m_val);
+        // Two standard heap pointers, each a distinct allocation: distinct addresses, never equal
+        // (the ReferenceEquals(this, other) check above already handled the same-box case, and a Go
+        // variable whose address is taken is heap-boxed ONCE, so `&x == &x` is that same-box case).
+        // A pointer's identity is its STORAGE and nothing else: it was formerly derived from the
+        // held value for a reference-typed T — two distinct boxes wrapping one referent compared
+        // equal — which reported `&c == &d` true for distinct `*int` variables holding the same
+        // pointer, collapsed `map[**int]V{&c: …, &d: …}` to a single entry, and made the hash of a
+        // box MUTATE when its pointee was assigned (a key inserted while the pointee was nil could
+        // never be found again).
+        return false;
     }
 
     // Reduces an array-index referent to the identity of its ACTUAL storage plus the ABSOLUTE index
@@ -666,7 +685,7 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     /// backing storage's identity in the high bits with the ABSOLUTE element index below, so
     /// same-storage element pointers order by index exactly like Go addresses; a struct-field
     /// reference → the source identity combined with the field identity token; a heap box → the
-    /// referent's identity (equal pointers share it), else this box's own. Consistent with
+    /// box's own identity (the box IS the storage). Consistent with
     /// <see cref="Equals(ж{T})"/>: equal pointers always produce equal tokens (the converse only
     /// holds within one backing storage — tokens are order keys, never an identity substitute).
     /// virtual so <c>unsafe.Pointer</c> (whose VALUE is the address) can answer with the address itself.
@@ -693,9 +712,10 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
                 return unchecked((nuint)(((ulong)(uint)RuntimeHelpers.GetHashCode(source) << 32) | (uint)fieldId.GetHashCode()));
             }
 
-            return IsReferenceType && m_val is not null
-                ? (nuint)(uint)RuntimeHelpers.GetHashCode(m_val)
-                : (nuint)(uint)RuntimeHelpers.GetHashCode(this);
+            // A standard heap box IS the storage it addresses — its own identity, never the held
+            // value's (see Equals: a token derived from the pointee changes when the pointee is
+            // assigned, which is not something an address does).
+            return (nuint)(uint)RuntimeHelpers.GetHashCode(this);
         }
     }
 
@@ -704,8 +724,10 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     {
         // Identity-based hash, consistent with the identity Equals above. Hashing m_val directly
         // would recurse for a self-referential struct (its hash includes its ж<T> fields), so hash
-        // by the referenced storage instead.
-        if (IsNull)
+        // by the referenced storage instead. STRUCTURAL nil, like Equals: the value-peeking IsNull
+        // made the hash of a real box vary with its pointee (null → 0, assigned → the pointee's
+        // hash), so a pointer key stored while its pointee was nil was unfindable afterward.
+        if (IsNilPointer)
             return 0;
 
         if (m_structFieldRef is not null)
@@ -717,11 +739,13 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
             return System.HashCode.Combine(RuntimeHelpers.GetHashCode(storage), element);
         }
 
-        // Standard heap pointer: a reference-type value uses the wrapped object's identity (equal
-        // pointers share it); a value-type box uses this box's own identity.
-        return IsReferenceType && m_val is not null
-            ? RuntimeHelpers.GetHashCode(m_val)
-            : RuntimeHelpers.GetHashCode(this);
+        // A native alias hashes by the address it aliases, so two boxes over one address (which
+        // Equals reports as the same pointer) land in the same bucket.
+        if (m_nativeAddr != 0)
+            return m_nativeAddr.GetHashCode();
+
+        // Standard heap pointer: the box IS the storage, so its own identity is the address.
+        return RuntimeHelpers.GetHashCode(this);
     }
 
     // WISH: Would be super cool if this operator supported "ref" return, like:
@@ -747,23 +771,32 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     /// <returns>Dereferenced pointer value.</returns>
     public static T operator ~(ж<T> value)
     {
-        if (value.IsNull)
+        // STRUCTURAL nil: `*p` panics when the POINTER is nil. Where p is a real address whose
+        // pointee happens to be a nil interface / pointer / slice / map, Go yields that nil value —
+        // `*(&i)` with `i == nil` is nil, not a panic — so the value-peeking IsNull cannot be the
+        // guard (it reported every such address as nil, and every field-reference box over a
+        // reference-typed T as well).
+        if (value.IsNilPointer)
             throw RuntimeErrorPanic.NilPointerDereference();
 
-        // Resolve through `Value`, not the raw `m_val` field: for a struct-field reference (`Ꮡx.of(T.Ꮡf)`)
-        // or an array-element reference, the real storage lives behind `Value` and `m_val` is an empty
+        // Resolve through the slot, not the raw `m_val` field: for a struct-field reference (`Ꮡx.of(T.Ꮡf)`)
+        // or an array-element reference, the real storage lives behind the slot and `m_val` is an empty
         // default — returning `m_val` would yield a zero-valued copy (so `(~(&x.field)).sub` read 0, e.g.
-        // a `c := &b.w; c.a` field-chain read). For a standard pointer `Value` returns `m_val`, so this is
-        // identical there. Matches the IPointer<T>.operator ~ above, which already resolves via `Value`.
-        return value.Value;
+        // a `c := &b.w; c.a` field-chain read). ValueSlot rather than Value because the nil-pointer
+        // question is already answered above, and Value would re-ask it the value-peeking way.
+        return value.ValueSlot;
     }
 
     static T IPointer<T>.operator ~(IPointer<T> value)
     {
-        if (value.IsNull)
+        // STRUCTURAL nil where the implementer can answer it — ж<T> and every generated named-pointer
+        // wrapper implement INilPointer; a foreign implementer keeps the IsNull question it has.
+        if (value is INilPointer nilable ? nilable.IsNilPointer : value.IsNull)
             throw RuntimeErrorPanic.NilPointerDereference();
 
-        return value.Value;
+        // Read the slot for a raw box (see the operator above); a wrapper resolves through its own
+        // Value, which forwards to the inner box.
+        return value is ж<T> box ? box.ValueSlot : value.Value;
     }
 
     // I posted a suggestion for at least the "ref" operator:
@@ -863,6 +896,11 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         // syscall wrappers legitimately pass nil pointers whose numeric address is simply 0
         // (syscall.Write hands writeFile a nil `*Overlapped` for a synchronous write, then passes
         // `uintptr(unsafe.Pointer(overlapped))` to the trampoline). Return 0 instead of throwing.
+        //
+        // The value-peeking IsNull is KEPT here deliberately: this is the address model, and a
+        // reference-typed pointee has no address to report — pinning the managed reference slot
+        // would hand out a token valid only inside this statement. Whatever crosses into native
+        // code has a value-typed pointee, and there IsNull and IsNilPointer coincide.
         if (value is null || value.IsNull)
             return default;
 
@@ -890,7 +928,8 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
             return (void*)value.m_nativeAddr;
 
         // A nil pointer converts to the null address (see the uintptr operator above); pinning a
-        // nil box's absent storage would throw.
+        // nil box's absent storage would throw. The value-peeking IsNull is deliberate, for the same
+        // reason as the uintptr operator: a reference-typed pointee has no reportable address.
         if (value is null || value.IsNull)
             return null;
 
@@ -917,8 +956,6 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         m_pinnedArrayData ??= new PinnedBuffer(arr.Source, arr.Length);
         return m_pinnedArrayData.Pointer;
     }
-
-    private static readonly bool IsReferenceType = default(T) is null;
 }
 
 /// <summary>
@@ -1124,7 +1161,11 @@ public static class PointerExtensions
         if (box is null || box.IsNilStandardPointer)
             return ref NilSlot<T>.Slot;
 
-        return ref box.Value;
+        // ValueSlot, not Value: the nil pointer is already handled above, and a real box whose
+        // reference-typed value is null has a REAL slot — the re-alias must alias that slot so a
+        // subsequent write through it persists (Value's value-peeking nil check would instead panic
+        // on exactly the captured-pointer-local shape this accessor exists for).
+        return ref box.ValueSlot;
     }
 
     // Per-T shared default slot returned by ref for a nil pointer. Never read while the pointer is

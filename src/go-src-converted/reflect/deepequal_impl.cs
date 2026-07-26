@@ -213,7 +213,7 @@ private readonly struct visitPair(object a1, nint off1, object a2, nint off2) : 
 
 // identityRoot returns the managed object that stands for a value's Go data address, for cycle
 // detection: a pointer's ж<T> box, a map's backing Dictionary, a slice's backing array + Low. A nil
-// value (null box, IsNull pointer, null backing) has no root — Go never puts nil in the visited map.
+// value (null box, nil pointer, null backing) has no root — Go never puts nil in the visited map.
 private static (object? root, nint offset) identityRoot(object? boxed) {
     switch (boxed) {
         case null:
@@ -222,11 +222,13 @@ private static (object? root, nint offset) identityRoot(object? boxed) {
             return sliceData(boxed);
         case IMap:
             return (mapBacking(boxed), 0);
+        // The STRUCTURAL nil-pointer question, asked through the interface every pointer box
+        // implements — not the reflected `IsNull` property this used to read, which reports a real
+        // address whose pointee is nil (`&i` with a nil `i`) as nil and would drop it from cycle
+        // detection. See ж<T>.IsNilPointer.
+        case INilPointer { IsNilPointer: true }:
+            return (null, 0);
         default:
-            var isNull = boxed.GetType().GetProperty("IsNull");
-            if (isNull != null && isNull.PropertyType == typeof(bool) && (bool)isNull.GetValue(boxed)!) {
-                return (null, 0);
-            }
             return (boxed, 0);
     }
 }

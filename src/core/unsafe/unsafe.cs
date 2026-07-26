@@ -223,6 +223,11 @@ public class Pointer : ж<uintptr> {
     // pointer-order token is that address — Go's Value.Pointer() ordering (internal/fmtsort's
     // unsafe.Pointer map-key ordering) reads through unchanged: same-array element addresses
     // ascend by element exactly as in Go.
+    //
+    // Every IsNull in this class is the STRUCTURAL nil question despite its name: the pointee type
+    // is `uintptr`, a value type, so ж<uintptr>'s value-peeking arm can never fire and IsNull is
+    // exactly IsNilPointer here (see ж<T>.IsNull). Marking the box nil while it still HOLDS the zero
+    // address is what makes the uintptr round-trip of a nil pointer exact — the ctor above.
     public override nuint PointerOrderToken => IsNull ? 0 : Value.Value;
 
     public Pointer this[int index] => Value + (uintptr)index;
