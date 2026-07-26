@@ -42,6 +42,7 @@ public static class TypeExtensions
     private static readonly ConcurrentDictionary<Type, ImmutableHashSet<string>> s_interfaceMethodNames = [];
     private static readonly ConcurrentDictionary<(Type element, bool isPointer), List<MethodInfo>> s_goMethodSetCandidates = [];
     private static readonly ConcurrentDictionary<Type, ImmutableHashSet<string>> s_structFieldNames = [];
+    private static readonly ConcurrentDictionary<Type, bool> s_dynamicTypes = [];
     private static readonly ConcurrentDictionary<Type, MethodInfo?> s_typeEqualityOperators = [];
     private static readonly ConcurrentDictionary<Type, MethodInfo?> s_onesComplementOperators = [];
     private static int s_registeredAssemblyLoadEvent;
@@ -721,10 +722,20 @@ public static class TypeExtensions
     /// </summary>
     /// <param name="valueType">Type to check.</param>
     /// <returns><c>true</c> if <paramref name="valueType"/> is a dynamic type; otherwise, <c>false</c>.</returns>
+    /// <remarks>
+    /// Memoized per type, like <see cref="GetStructFieldNames"/> beside it: the answer is an
+    /// immutable fact about the type, but reading it is a custom-attribute lookup that materializes
+    /// a fresh attribute instance on every call — measured at ~780 ns and 368 bytes under the JIT.
+    /// This sits on the type-assert miss path (<c>builtin.TryTypeAssert</c>), so an uncached lookup
+    /// is paid by every <c>x.(SomeStruct)</c> that does not match.
+    /// </remarks>
     public static bool IsDynamicType(this Type valueType)
     {
-        GoTypeAttribute? goType = valueType.GetCustomAttribute<GoTypeAttribute>();
-        return goType is not null && goType.Definition == "dyn";
+        return s_dynamicTypes.GetOrAdd(valueType, static type =>
+        {
+            GoTypeAttribute? goType = type.GetCustomAttribute<GoTypeAttribute>();
+            return goType is not null && goType.Definition == "dyn";
+        });
     }
 
     /// <summary>

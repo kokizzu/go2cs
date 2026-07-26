@@ -1672,12 +1672,16 @@ public static class builtin
             return false;
         }
 
-        if (AssertFacts<T>.IsValueType)
+        // Only dynamic, unnamed types can be converted to each other in Go, so an assert to a NAMED
+        // struct — the ordinary `v, ok := x.(T)` — is already decided a MISS here. Testing that from
+        // the hoisted per-T fact keeps the miss off IsDynamicType, whose custom-attribute lookup is
+        // ~780 ns and 368 bytes a call: PerfIface's assert misses 4 of every 6 iterations and that
+        // one call was ~99% of the benchmark's runtime.
+        if (AssertFacts<T>.IsValueType && AssertFacts<T>.IsDynamic)
         {
             Type targetType = target.GetType();
 
-            // Only dynamic, unnamed types can be converted to each other in Go
-            if (targetType.IsValueType && typeOfT.IsDynamicType() && targetType.IsDynamicType())
+            if (targetType.IsValueType && targetType.IsDynamicType())
             {
                 ImmutableHashSet<string> typeOfTFieldNames = typeOfT.GetStructFieldNames();
 
@@ -1711,6 +1715,7 @@ public static class builtin
     {
         internal static readonly bool IsInterface = typeof(T).IsInterface;
         internal static readonly bool IsValueType = typeof(T).IsValueType;
+        internal static readonly bool IsDynamic = typeof(T).IsDynamicType();
     }
 
     // Go's itab cache, projected per closed interface: ONE entry per (dynamic type, interface),
