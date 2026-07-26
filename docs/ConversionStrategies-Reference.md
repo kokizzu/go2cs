@@ -8247,9 +8247,11 @@ internal static (ΔHandle handle, Errno err) syscall_loadlibrary(ж<uint16> file
 }
 ```
 
-Pointer/slice/string parameters (`filename`) pass through unchanged (the same golib type on both sides); an integer/uintptr parameter is passed `(uintptr)p` and an integer/uintptr result returned `(LocalType)(uintptr)r`. The target alias is the last path segment of the linkname's package (`syscall.loadlibrary`), resolved through the importing file's own `using syscall = syscall_package;`.
+Pointer/slice/string parameters (`filename`) pass through unchanged (the same golib type on both sides); a **uintptr-kind** parameter is passed `(uintptr)p` and a uintptr-kind result returned `(LocalType)(uintptr)r`. The bridge is scoped to uintptr-kind types (`uintptr` and named types whose underlying type is `uintptr`, e.g. `Handle`/`Errno`) — precisely the case where the two linked signatures name the same value under two different *nominal* C# types. A **sized** integer (`int32`/`int64`/…) is the same C# type on both sides and passes through bare; routing it through `uintptr` instead narrows it on 32-bit and does not even bind (`(uintptr)timeout` handed to an `int64` parameter — sync's `runtime.blockUntilEmptyFinalizerQueue` pull, CS1503).
 
-**Forwarding is gated on an explicit whitelist of hand-implemented targets** (`linknameForwardTargets` — currently `syscall.loadlibrary`/`loadsystemlibrary`/`getprocaddress`, the native P/Invokes in `core/syscall/dll_windows.cs`). This is not optional prudence: a linkname target is **indistinguishable at conversion time** from any other bodyless assembly/intrinsic Go function — `syscall.loadlibrary` and `runtime.reflectcall` are *both* bodyless `//go:` asm in Go — so only the whitelisted targets are known to have a real C# implementation to call. Every other linkname pull stays a bodyless stub, the pre-forwarder behavior: a method-receiver PUSH (`//go:linkname X reflect.(*rtype).Align`, reflect's `badlinkname.go` "pushes linknames of the methods"), a same-package pull (`//go:linkname unusedIfaceIndir reflect.ifaceIndir` inside reflect), and an unimplemented intrinsic (`//go:linkname call runtime.reflectcall`) would each otherwise emit an uncompilable forwarder (a nonexistent `reflect.(*rtype)`/`runtime.reflectcall` member, or a package alias that doesn't exist for the package's own name). Extend the whitelist when a new native linkname target gains a hand-written C# implementation. Guarded by `TestRecurseLinknameForwarder` (asserts the whitelisted `syscall.loadlibrary` forwarder body + the uintptr result bridge, and that a non-whitelisted `runtime.reflectcall` target stays a stub).
+The target alias is **whatever the importing file actually emitted** for the target package, not the bare last path segment: an explicit `import r "runtime"` is looked up in the file's recorded import aliases, and otherwise the canonical alias is taken through the same collision-rename the import machinery applies. That rename is not hypothetical — a file that pulls from `runtime` while any `go.runtime.*` namespace is in scope emits `using Δruntime = runtime_package;`, because a bare `runtime` alias would bind the **namespace**, and a forwarder spelled `runtime.<fn>` is then CS0234 (sync's `oncefunc_test.go`).
+
+**Forwarding is gated on an explicit whitelist of hand-implemented targets** (`linknameForwardTargets` — `syscall.loadlibrary`/`loadsystemlibrary`/`getprocaddress`, the native P/Invokes in `core/syscall/dll_windows.cs`, plus `runtime.blockUntilEmptyFinalizerQueue`, the finalizer-queue drain that sync's and runtime's own tests pull and that `mfinal.cs` answers with `GC.WaitForPendingFinalizers`). This is not optional prudence: a linkname target is **indistinguishable at conversion time** from any other bodyless assembly/intrinsic Go function — `syscall.loadlibrary` and `runtime.reflectcall` are *both* bodyless `//go:` asm in Go — so only the whitelisted targets are known to have a real C# implementation to call. Every other linkname pull stays a bodyless stub, the pre-forwarder behavior: a method-receiver PUSH (`//go:linkname X reflect.(*rtype).Align`, reflect's `badlinkname.go` "pushes linknames of the methods"), a same-package pull (`//go:linkname unusedIfaceIndir reflect.ifaceIndir` inside reflect), and an unimplemented intrinsic (`//go:linkname call runtime.reflectcall`) would each otherwise emit an uncompilable forwarder (a nonexistent `reflect.(*rtype)`/`runtime.reflectcall` member, or a package alias that doesn't exist for the package's own name). Extend the whitelist when a new native linkname target gains a hand-written C# implementation — and remember the **accessibility** half: Go's linkname crosses the package boundary the way C# `public` does, so an unexported target (which the exported-ness rule emits `internal`) is invisible to the forwarder in the pulling *assembly* and must be widened where it is declared (`runtime.blockUntilEmptyFinalizerQueue` is `public` in the hand-owned `mfinal.cs` for exactly this reason). Guarded by `TestRecurseLinknameForwarder` (asserts the whitelisted `syscall.loadlibrary` forwarder body + the uintptr result bridge, and that a non-whitelisted `runtime.reflectcall` target stays a stub).
 
 **A linkname target implemented as a golib BUILTIN forwards to a bare, unqualified call** (`linknameForwardBuiltins`, a sibling map of Go linkname target → golib builtin name). Some Go compiler intrinsics live in `runtime` and are linked into another package by symbol, but their go2cs implementation is a golib builtin — in scope UNQUALIFIED via each converted project's `using static go.builtin`, so the forwarder emits `<builtin>(args)` with no package qualifier (an empty alias is the sentinel `writeLinknameForwarder` reads to drop the `<alias>.` prefix). The canonical case is **`maps.Clone`**: Go implements its worker as `runtime.mapclone` (`//go:linkname mapclone maps.clone`) and the `maps` package pulls it as a bodyless `func clone(m any) any` carrying `//go:linkname clone maps.clone` — a *same-package-named* target (`maps.clone`) whose real definition is elsewhere, so it is neither a native whitelist target nor a normal pull, and was left a **throwing** `PartialStubGenerator` stub (every `maps.Clone`/`maps.Copy`/`maps.DeleteFunc` test threw `NotImplementedException: clone: external (assembly or cgo) function is not implemented`). It now forwards:
 
@@ -8278,6 +8280,97 @@ internal static any clone(any m) {
 **Disclosed divergence — timer channels are ASYNCHRONOUS.** Go 1.23 made a chan-based `Timer`/`Ticker` channel synchronous (#37196): package `time` still creates it as `make(chan Time, 1)` but passes it to the runtime via `syncTimer`, and the runtime then couples the channel's *receive* path to the timer so no stale value can be observed after `Stop`/`Reset`. That coupling lives inside the channel implementation, so it is not modeled: the `cp` argument is ignored and the emitted cap-1 buffered channel keeps its buffered behavior. This is exactly Go's own documented `GODEBUG=asynctimerchan=1` mode, and it is observable in precisely one place — `Stop` of an already-fired chan timer reports **false**, where Go 1.23 drains the stale value and reports true. Verified by a 19-observation converted repro (Sleep precision, `After` ordering, `AfterFunc`, both Stop/Reset return directions, Stop idempotence, ticker ticks/drop/phase/`Reset`/`Stop`, `Tick`, zero durations): byte-identical to `GODEBUG=asynctimerchan=1 go run` across repeated runs, and differing from default-mode Go on the single line Go itself changes between its two modes.
 
 **Reach.** Timers gate roughly 35 stdlib suites. `encoding/base64`'s `TestDecoderIssue3577` and four of `internal/singleflight`'s five tests flip to passing on this alone; `singleflight`'s fifth needs 1000 *simultaneously parked* goroutines, which is the separately-documented cooperative-scheduler limitation in golib's `goǃ` (a goroutine is a ThreadPool work item and holds its thread while parked, so the 256-thread floor bounds how many can be parked at once), not a timer issue.
+
+### The runtime's PROCESS-CONTROL surface: implement the CONTRACT, never the mechanism
+
+`runtime`'s public control API — `GC`, `GOMAXPROCS`, `Gosched`, `Stack`, `ReadMemStats`,
+`LockOSThread`/`UnlockOSThread` — converts faithfully and **compiles**, then dies on its first call.
+Each body drives machinery that has no managed counterpart: `GC()` → `gcStart` → `acquirem` →
+`getg()`; `GOMAXPROCS(n)` → `stopTheWorldGC` → `semacquire` → `getg()`; `Gosched()` →
+`mcall(gosched_m)`. `getg` and `mcall` are Go **compiler intrinsics** — a register read and a stack
+switch — so the [`PartialStubGenerator`](#source-generators) fills them with a throw, and the throw
+lands wherever the caller ran. On a goroutine (a managed thread) that is an unhandled exception and
+**terminates the process**: sync's suite lost 28 of its 51 tests to one such throw.
+
+The ruling is the one sync's `Mutex`/`notifyList` established: **where a Go mechanism has no managed
+counterpart but its public contract does, reimplement the CONTRACT at the API boundary and never
+emulate the mechanism.** Synthesizing a plausible `g`/`m` so the converted scheduler can walk it buys
+nothing — the code underneath still wants a real run queue, a real heap and real stacks. The seven
+declarations above are dropped from emission by the type-level registry
+(`manualConversionFuncs["runtime"]`) and answered in a hand-owned `runtime/managed_impl.cs`;
+everything below them stays auto-converted and simply becomes unreachable.
+
+| Go API | Managed realization | Divergence |
+|---|---|---|
+| `Gosched()` | `Thread.Yield()` | none — same "offer the rest of the slice, then continue" contract |
+| `GOMAXPROCS(n)` | remembered value, defaults to `Environment.ProcessorCount`; `n < 1` queries | does **not** cap parallelism — the CLR schedules goroutine threads. The universal save/restore idiom `defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(n))` is exactly right |
+| `GC()` | blocking compacting collect → `WaitForPendingFinalizers` → collect | none observable; the second pass reclaims what finalizers released, which is the state a completed Go cycle leaves |
+| `Stack(buf, all)` | managed `StackTrace` text into `buf` | cannot show frames that already unwound, and `all` reports only the calling thread (see below) |
+| `ReadMemStats(m)` | `GC.GetGCMemoryInfo`/`GetTotalMemory`/`GetTotalAllocatedBytes`/`GetTotalPauseDuration` | allocator-internal fields (`Mallocs`/`Frees`/`HeapObjects`/`BySize`, the pause histories) stay **zero** rather than invented |
+| `LockOSThread`/`UnlockOSThread` | no-ops | no-ops **by construction**: a goroutine already *is* a managed thread, so the guarantee they exist to provide holds unconditionally |
+
+`Stack`'s divergence is worth stating precisely because it looks like a bug: Go keeps the panicking
+frames alive until the panic completes, so `debug.Stack()` called from a deferred function *during* a
+panic shows the panicking stack; a CLR exception pops those frames before the `finally` that runs the
+defers, so the managed trace shows the deferred frame's stack instead (sync's
+`TestOnceFuncPanicTraceback`).
+
+**`runtime/debug`'s knobs are the same ruling one package over.** `runtime/debug/stubs.go` declares
+`setGCPercent`/`setMemoryLimit`/`setMaxStack`/`setMaxThreads`/`setPanicOnFault`/`readGCStats`/
+`freeOSMemory` with no body ("Implemented in package runtime"), bound by the Go linker to a runtime
+function carrying the matching `//go:linkname … runtime/debug.<name>` **PUSH**. go2cs has no
+cross-assembly linker, so each became a throwing stub — `debug.SetGCPercent`, the first line of
+sync's `TestPool`. Forwarding to the converted runtime bodies would not help (they take the mheap
+lock on the system stack and wait on a mark cycle), so `runtime/debug/stubs_impl.cs` answers the
+contracts: the tuning knobs keep Go's documented GET/SET semantics (remember, return the previous
+value, negative = query where Go says so) and have no effect on collection; `freeOSMemory` is a real
+compacting collect; `setPanicOnFault` is `[ThreadStatic]` because it is per-goroutine in Go;
+`readGCStats` reports the counters the CLR really has (collection count, total pause) and an **empty**
+per-pause history in the exact packed layout `ReadGCStats` unpacks. `modinfo`/`WriteHeapDump`/
+`SetTraceback`/`runtime_setCrashFD` are inert, matching a binary built without module or heap-dump
+support.
+
+**Two assembly primitives DO have exact managed forms** (`runtime/stubs_impl.cs`).
+`systemstack(fn)` is `fn()` — Go's own contract already says that a caller already on a system stack
+"calls fn directly and returns", and in the managed model there is one stack per goroutine and no g0
+to switch to, so that is the only branch. `procyield(n)` is `Thread.SpinWait((int)n)`. Everything
+else in `runtime/stubs.go` deliberately keeps throwing, `getg`/`mcall` included: a loud, locatable
+failure beats quietly operating on a fabricated goroutine descriptor.
+
+**`internal/runtime/atomic` is the NATIVE half of the S1 fork and gets a real conversion, not a
+stub** (`atomic_impl.cs`). Its ~40 declarations are all `.s` files, but they are plain memory atomics
+over native scalars, and the CLR has an exact equivalent: `Xadd*`→`Interlocked.Add` (both return the
+NEW value), `Xchg*`→`Interlocked.Exchange` and `And32`/`Or32`/`And64`/`Or64`→`Interlocked.And`/`Or`
+(all return the OLD value), `Cas*`→`CompareExchange`, `Store*`/`StoreRel*`→`Volatile.Write` (a
+release store in both models). Two widths have no intrinsic and take a shared latch instead: 8-bit
+(`And8`/`Or8` — the CLR has no byte-width `Interlocked`) and the `unsafe.Pointer` family
+(`Casp1`/`StorepNoWB`/`storePointer`/`casPointer` — golib models `unsafe.Pointer` as a class wrapping
+a `uintptr`, so a CAS must compare the wrapped NUMBER and swap the REFERENCE, which no single
+intrinsic expresses); `Xadduintptr`/`Anduintptr`/`Oruintptr` ride a CAS loop because `Interlocked`
+offers `Exchange`/`CompareExchange` for `nuint` but not `Add`/`And`/`Or`. Leaving this package
+stubbed poisons everything built on it — `runtime.SetMutexProfileFraction`, an otherwise perfectly
+faithful conversion, died on `Store64` (sync's `TestMutex`).
+
+**`unsafe.Pointer(uintptr(0))` must compare equal to `nil`.** The converter bridges every
+`unsafe.Pointer`-valued call through `uintptr`, because `unsafe` lives in its own assembly and can
+carry no implicit conversion on the core pointer class. golib's round-trip therefore has to preserve
+nil in *both* directions, and it did not: `Pointer(uintptr)` produced a non-nil box wrapping 0, and
+`(uintptr)ptr` dereferenced a nil-constructed box instead of yielding 0. The symptom was silent and
+far away — sync's `poolDequeue` reads each ring slot's `typ` word to decide whether it is free, every
+empty slot came back "occupied", `pushHead` returned false forever and `TestPoolDequeue`/
+`TestPoolChain` spun. `unsafe.cs` now marks the zero address nil (a protected `ж<T>(value, isNull)`
+constructor holds the address *and* the nil flag) and tolerates a nil box on the way out.
+
+**A runtime capability the managed model cannot provide gates the TEST, it does not crash the host.**
+`runtime.Goexit` terminates the calling goroutine after running its defers; the managed shape (an
+unwinding sentinel that defers observe, `recover()` does not see, and the goroutine root swallows) is
+an open design question. Until it is decided, the name sits in `unsupportedRuntimeCapabilities`
+(`testConversion.go`) and participates in the **same** capability gate as an unsupported `testing.*`
+member: a test whose transitive closure reaches it converts as `unsupported`, disclosed by name.
+This is both more honest and far more useful than the alternative — sync's `TestOnceFuncGoexit` used
+to take the whole host down and leave 28 tests with no result at all. Add an entry only for something
+*provably* unavailable, never merely unimplemented, and scan every validated package for the symbol
+first: gating one **removes** tests from a banked package's run set, the mirror of the widening trap.
 
 ## Deterministic Output
 

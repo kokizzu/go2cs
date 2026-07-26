@@ -1287,13 +1287,44 @@ tick would fire a 1 ms Go timer late and out of order. `tick.cs` is hand-owned f
 its `(*Ticker)(unsafe.Pointer(newTimer(…)))` reinterpret compiles but yields a *dangling* pointer in a
 managed runtime, so the Ticker is built directly and its timer addressed by box identity.
 
+The same ruling scales up to the runtime's whole **process-control surface**. `runtime.GC`,
+`GOMAXPROCS`, `Gosched`, `Stack`, `ReadMemStats` and `LockOSThread`/`UnlockOSThread` convert
+faithfully and compile, then die on the first call, because each body drives Go's scheduler or GC
+pacer down to a `getg()`/`mcall()` compiler intrinsic — and a throw on a goroutine thread takes the
+whole process with it. They are hand-owned in `runtime/managed_impl.cs` as their **contracts**:
+`Gosched` is `Thread.Yield()`, `GC` is a blocking collect plus finalizers, `GOMAXPROCS` is a real
+get/set that does not cap parallelism, `LockOSThread` is a no-op *by construction* (a goroutine
+already is a managed thread). `runtime/debug`'s tuning knobs (`SetGCPercent`, `SetMemoryLimit`, …)
+get the same treatment one package over. Two intrinsics do have exact managed forms and are
+implemented rather than stubbed — `systemstack(fn)` is simply `fn()` (there is one stack per
+goroutine and no g0 to switch to) and `procyield` is `Thread.SpinWait` — and the whole
+`internal/runtime/atomic` assembly package, being plain atomics over native scalars, converts
+straight onto `Interlocked`/`Volatile`.
+
+```go
+// Go — runtime/proc.go: the body is a scheduler continuation run on the system stack
+func Gosched() { checkTimeouts(); mcall(gosched_m) }
+```
+
+```csharp
+// C# — runtime/managed_impl.cs: the CONTRACT, on the managed scheduler
+public static void Gosched()
+{
+    Thread.Yield();
+}
+```
+
 **Full detail:** [Reference → Manually-Converted Declarations](ConversionStrategies-Reference.md#manually-converted-declarations) —
 the guintptr family surface, the `unsafe.Pointer`→manual-type ctor cooperation, the runtime lock/note
 model, `sync/atomic.Value`, the reflection bridge (`abi.TypeOf`/`reflect` value+type side,
 `reflectlite`, `DeepEqual`), whitelisted `//go:linkname` forwarders,
 [realizing an asm-backed arch layer with managed hardware intrinsics](ConversionStrategies-Reference.md#realizing-an-asm-backed-arch-layer-with-managed-hardware-intrinsics), and
 [realizing the runtime timer contract](ConversionStrategies-Reference.md#realizing-the-runtime-timer-contract-sleep--newtimer--stoptimer--resettimer)
-(the Stop/Reset race semantics, the ticker phase/drop rule, and the asynchronous-timer-channel divergence).
+(the Stop/Reset race semantics, the ticker phase/drop rule, and the asynchronous-timer-channel divergence), and
+[the runtime's process-control surface](ConversionStrategies-Reference.md#the-runtimes-process-control-surface-implement-the-contract-never-the-mechanism)
+(the per-API divergence table, `runtime/debug`'s knobs, the `internal/runtime/atomic` native fork, the
+`unsafe.Pointer(uintptr(0)) == nil` round-trip, and how an unavailable runtime capability gates a test
+instead of crashing the host).
 
 ---
 
