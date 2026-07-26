@@ -536,6 +536,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckHexByteStringLiteral() => CheckTarget("HexByteStringLiteral");
 
     [TestMethod]
+    public void CheckIfaceChainPointerAssert() => CheckTarget("IfaceChainPointerAssert");
+
+    [TestMethod]
     public void CheckIfaceFieldEmbedAdapter() => CheckTarget("IfaceFieldEmbedAdapter");
 
     [TestMethod]

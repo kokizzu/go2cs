@@ -1622,7 +1622,9 @@ public static class builtin
             // to the receiver box so every tier below sees the box's (= *T's) method set.
             // Null-guarded: an adapter holding a nil *T keeps the adapter view, since no
             // dispatchable receiver exists to build an implementation over.
-            object subject = target is IжAdapter { Box: not null } boxAdapter ? boxAdapter.Box : target;
+            // Gated on the same probe as the tiers above — only an IGoAdapter can be an IжAdapter,
+            // so this is equivalent and costs an ordinary interface assert one less failing test.
+            object subject = isAdapter && target is IжAdapter { Box: not null } boxAdapter ? boxAdapter.Box : target;
             Type subjectType = subject.GetType();
             int epoch = AdapterRegistry.Epoch;
 

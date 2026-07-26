@@ -577,6 +577,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckHexByteStringLiteral() => CheckTarget("HexByteStringLiteral");
 
     [TestMethod]
+    public void CheckIfaceChainPointerAssert() => CheckTarget("IfaceChainPointerAssert");
+
+    [TestMethod]
     public void CheckIfaceFieldEmbedAdapter() => CheckTarget("IfaceFieldEmbedAdapter");
 
     [TestMethod]
