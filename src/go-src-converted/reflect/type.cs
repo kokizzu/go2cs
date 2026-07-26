@@ -696,15 +696,7 @@ internal static StructField FieldByIndex(this ж<rtype> Ꮡt, slice<nint> index)
     return tt.FieldByIndex(index);
 }
 
-internal static (StructField, bool) FieldByName(this ж<rtype> Ꮡt, @string name) {
-    ref var t = ref Ꮡt.Value;
-
-    if (t.Kind() != Struct) {
-        throw panic("reflect: FieldByName of non-struct type " + Ꮡt.String());
-    }
-    var tt = Ꮡt.Reinterpret<rtype, structType>();
-    return tt.FieldByName(name);
-}
+// go2cs generated this placeholder — func FieldByName is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static (StructField, bool) FieldByNameFunc(this ж<rtype> Ꮡt, Func<@string, bool> match) {
     ref var t = ref Ꮡt.Value;
@@ -1254,11 +1246,7 @@ public static ΔType PtrTo(ΔType t) {
     return PointerTo(t);
 }
 
-// PointerTo returns the pointer type with element t.
-// For example, if t represents type Foo, PointerTo(t) represents *Foo.
-public static ΔType PointerTo(ΔType t) {
-    return new rtypeжΔType(toRType(t._<ж<rtype>>().ptrTo()));
-}
+// go2cs generated this placeholder — func PointerTo is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static ж<abi.Type> ptrTo(this ж<rtype> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -1318,23 +1306,9 @@ internal static uint32 fnv1(uint32 x, params ꓸꓸꓸbyte listʗp) {
     return x;
 }
 
-internal static bool Implements(this ж<rtype> Ꮡt, ΔType u) {
-    if (u == default!) {
-        throw panic("reflect: nil type passed to Type.Implements");
-    }
-    if (u.Kind() != ΔInterface) {
-        throw panic("reflect: non-interface type passed to Type.Implements");
-    }
-    return implements(u.common(), Ꮡt.common());
-}
+// go2cs generated this placeholder — func Implements is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static bool AssignableTo(this ж<rtype> Ꮡt, ΔType u) {
-    if (u == default!) {
-        throw panic("reflect: nil type passed to Type.AssignableTo");
-    }
-    var uu = u.common();
-    return directlyAssignable(uu, Ꮡt.common()) || implements(uu, Ꮡt.common());
-}
+// go2cs generated this placeholder — func AssignableTo is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static bool ConvertibleTo(this ж<rtype> Ꮡt, ΔType u) {
     if (u == default!) {

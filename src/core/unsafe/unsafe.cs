@@ -219,6 +219,12 @@ public class Pointer : ж<uintptr> {
     {
     }
 
+    // An unsafe.Pointer's VALUE is the address itself (a real pinned/native address), so its
+    // pointer-order token is that address — Go's Value.Pointer() ordering (internal/fmtsort's
+    // unsafe.Pointer map-key ordering) reads through unchanged: same-array element addresses
+    // ascend by element exactly as in Go.
+    public override nuint PointerOrderToken => IsNull ? 0 : Value.Value;
+
     public Pointer this[int index] => Value + (uintptr)index;
 
     public Pointer this[nint index] => Value + (uintptr)index;

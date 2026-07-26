@@ -278,6 +278,46 @@ public static ΔValue Slice(this ΔValue v, nint i, nint j) {
     return makeTypedValue(window, typeof(slice<>).MakeGenericType(elemType), null, (flag)(v.flag & flagRO));
 }
 
+// Cap returns v's capacity (v must be an Array, Chan, or Slice) through the golib container
+// interfaces — the auto form reads the never-populated v.ptr slice header (gob's decodeSlice
+// probes `value.Cap() < n` before allocating). A valid nil container Value answers 0 (Go).
+public static nint Cap(this ΔValue v) {
+    object? cur = v.live;
+    ΔKind k = v.kind();
+    if (cur is null && (k == ΔSlice || k == Array || k == Chan)) {
+        return 0;
+    }
+    return cur switch {
+        ISlice s => s.Capacity,
+        IArray a => a.Length,
+        IChannel c => c.Capacity,
+        _ => throw panic(Ꮡ(new ValueError("reflect.Value.Cap", v.kind())))
+    };
+}
+
+// SetLen sets v's length to n (v must be an addressable Slice; 0 <= n <= cap, Go's panic).
+// The managed slice value is a HEADER struct, so the re-lengthened window (same backing, same
+// capacity — Go's s[:n]) is written back through the aliased box, coerced for a NAMED slice
+// wrapper slot via the single convertibility relation.
+public static void SetLen(this ΔValue v, nint n) {
+    v.flag.mustBeAssignable();
+    v.flag.mustBe(ΔSlice);
+    System.Type? slotType = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    System.Type? elemType = GoReflect.ElementType(slotType);
+    object? live = v.live;
+    if (slotType is null || elemType is null || v.addrBox is null || live is null) {
+        throw panic("reflect: SetLen using unaddressable value");
+    }
+    if (live is not ISlice s || n < 0 || n > s.Capacity) {
+        throw panic("reflect: slice length out of range in SetLen");
+    }
+    object window = GoReflect.SliceWindow(live, elemType, 0, n);
+    if (!GoReflect.TryConvertTo(window, slotType, out object? converted)) {
+        throw panic("reflect: SetLen window is not assignable to the slice slot");
+    }
+    GoReflect.WritePointerSlot(v.addrBox, converted);
+}
+
 // Elem returns the value that the interface v contains or that the pointer v points to.
 // The pointer form returns an ADDRESSABLE Value ALIASING the receiver box (Go: "the returned
 // value's address is v's value") — reads go through the box lazily and Set writes through it.
@@ -387,7 +427,15 @@ private static uintptr reflectPointerToken(ΔValue v) {
     if (cur is null || (cur is INilPointer nilable && nilable.IsNilPointer)) {
         return 0;
     }
-    return ((uintptr)(nuint)(uint)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(cur));
+    // Pointer-bearing golib values answer their own stable, order-consistent address token
+    // (equal pointers token equally; same-storage element pointers order by index; channel
+    // copies share their core's token — internal/fmtsort orders map keys by this). Anything
+    // else (a func delegate, a map) falls back to reference identity.
+    return cur switch {
+        INilPointer p => ((uintptr)p.PointerOrderToken),
+        IChannel c => ((uintptr)c.PointerOrderToken),
+        _ => ((uintptr)(nuint)(uint)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(cur))
+    };
 }
 
 // The managed backing for a MapIter: the map's enumerator (a golib map<K,V> enumerates as
@@ -816,15 +864,113 @@ internal static nint NumField(this ж<rtype> Ꮡt) {
 }
 
 // Field returns the i'th struct field's descriptor: the projected Go name (blank fields are
-// "_"; a promoted embed carries the embedded type's name) and the field's STATIC Go type,
-// dims-stamped when the declaring zero instance reveals an array field's length.
+// "_"; a promoted embed carries the embedded type's name), the field's STATIC Go type
+// (dims-stamped when the declaring zero instance reveals an array field's length), and the
+// single-hop Index sequence — Value.FieldByIndex(f.Index) must reach the field (an EMPTY
+// index makes the auto FieldByIndex return the struct itself, which is how gob's encodeStruct
+// walked every wireType field as the whole struct and encIndirect died in Elem-on-struct).
 internal static StructField Field(this ж<rtype> Ꮡt, nint i) {
     System.Type st = Ꮡt.Value.t.sysType!;
     GoReflect.GoFieldInfo f = GoReflect.GoFields(st)[(int)i];
     return new StructField(
         Name: (@string)f.Name,
-        Type: toType(abi.synthType(f.Type, f.ArrayDims))
+        Type: toType(abi.synthType(f.Type, f.ArrayDims)),
+        Index: new slice<nint>(new nint[] { i })
     );
+}
+
+// ==== the type-relation mirrors: Implements / AssignableTo / PointerTo / Convert ====
+// The auto forms walk descriptor sub-records that only exist in Go's runtime layout —
+// implements() reinterprets the abi.Type as an interfaceType specialization
+// (Reinterpret<abi.Type, interfaceType>) and reads .Methods off a promoted-embed box that is
+// DEFAULT behind a synthesized descriptor (the first read throws from ж.ValueSlot); ptrTo
+// builds a ptrType prototype through an eface Reinterpret; convertOp's cvt* family allocates
+// through the nil unsafe_New stub. Bridged over the SAME golib machinery emitted asserts and
+// the Set/Set* family use (GoReflect.GoImplements / TryConvertTo), so reflection and direct
+// asserts can never disagree about a method set or a conversion. Demonstrated consumers:
+// encoding/gob's init (validUserType → implementsInterface → Implements/PointerTo) and
+// internal/fmtsort's package-level ct() table (Convert). Mirrors the reflectlite increment-1
+// surface (internal/reflectlite/type_impl.cs).
+
+// Implements reports whether the type implements the interface type u (Go method-set rules:
+// nominal or structural via golib StructurallyImplements).
+internal static bool Implements(this ж<rtype> Ꮡt, ΔType u) {
+    if (u == default!) {
+        throw panic("reflect: nil type passed to Type.Implements");
+    }
+    if (u.Kind() != ΔInterface) {
+        throw panic("reflect: non-interface type passed to Type.Implements");
+    }
+    return GoReflect.GoImplements(sysTypeOfReflectType(u), Ꮡt.Value.t.sysType);
+}
+
+// AssignableTo reports whether a value of the type is assignable to type u — identity on the
+// carried System.Type (named-type distinctness is free: distinct Go types are distinct managed
+// types), or interface-implements. The Go unnamed↔named underlying rule is deferred with a
+// named consumer (mirrors reflectlite's AssignableTo).
+internal static bool AssignableTo(this ж<rtype> Ꮡt, ΔType u) {
+    if (u == default!) {
+        throw panic("reflect: nil type passed to Type.AssignableTo");
+    }
+    System.Type? uu = sysTypeOfReflectType(u);
+    System.Type? tt = Ꮡt.Value.t.sysType;
+    if (uu is not null && uu == tt) {
+        return true;
+    }
+    return GoReflect.GoImplements(uu, tt);
+}
+
+// PointerTo returns the pointer type with element t — the managed ж<T> pointer form,
+// canonical via toType (gob's implementsInterface probes reflect.PointerTo(typ) for every
+// non-pointer user type).
+public static ΔType PointerTo(ΔType t) {
+    System.Type? st = sysTypeOfReflectType(t);
+    if (st is null) {
+        throw panic("reflect: PointerTo of non-synthesized type");
+    }
+    return toType(abi.synthType(typeof(ж<>).MakeGenericType(st)));
+}
+
+// PtrTo is the deprecated spelling of PointerTo. (The auto form already delegates; kept auto.)
+
+// Convert returns the value v converted to type t under Go's conversion rules, routed through
+// GoReflect.TryConvertTo — THE convertibility relation (assignability with adapter/box unwrap,
+// named-wrapper construction/unwrap, kinded scalar conversions with Go truncation semantics).
+// A conversion the relation cannot express panics with Go's message (fail loud, never a
+// silent wrong value). The result carries the DESTINATION type and inherits v's read-only
+// bits (Go flag stickiness).
+public static ΔValue Convert(this ΔValue v, ΔType t) {
+    System.Type? dstType = sysTypeOfReflectType(t);
+    if (dstType is null) {
+        throw panic("reflect.Value.Convert: convert to non-synthesized type");
+    }
+    object? src = v.live;
+    if (!GoReflect.TryConvertTo(src, dstType, out object? converted)) {
+        throw panic("reflect.Value.Convert: value of type " + GoReflect.GoTypeName(src is null ? null : GoReflect.GoDynamicTypeOf(src)) +
+                    " cannot be converted to type " + t.String());
+    }
+    return makeTypedValue(converted, dstType, arrayDimsOfReflectType(t), (flag)(v.flag & flagRO));
+}
+
+// FieldByName returns the struct field with the given name over the SAME projected Go field
+// table NumField/Field/the value side use (the auto form reinterprets the descriptor as a
+// structType — the promoted-embed box is default behind a synthesized descriptor). Top-level
+// names only: Go's embedded-field depth search (FieldByNameFunc BFS) is deferred with a named
+// consumer — a promoted name answers (zero, false), exactly like an absent field, so a caller
+// degrades to Go's not-found path rather than crashing. gob's compileDec (matching wire-type
+// field names to the local struct) is the demonstrated consumer.
+internal static (StructField, bool) FieldByName(this ж<rtype> Ꮡt, @string name) {
+    System.Type? st = Ꮡt.Value.t.sysType;
+    if (st is null || GoReflect.KindOf(st) != GoReflect.Struct) {
+        throw panic("reflect: FieldByName of non-struct type");
+    }
+    GoReflect.GoFieldInfo[] fields = GoReflect.GoFields(st);
+    for (nint i = 0; i < fields.Length; i++) {
+        if ((@string)fields[i].Name == name) {
+            return (Field(Ꮡt, i), true);
+        }
+    }
+    return (default!, false);
 }
 
 // ==== func-type introspection over the delegate Invoke signature (GoReflect.TryFuncShape) ====

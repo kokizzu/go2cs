@@ -38,16 +38,29 @@
 > `NotImplementedException` chain is severed at `methodName` — the semantic boundary where a
 > managed answer exists.
 >
-> **NOT implemented — Phase-3 increment 2 (the same chip, next arc):** `Value.Call` (delegate
-> `DynamicInvoke`, multi-return tuple destructure into `NumOut`/`Out(i)`) → **testing/quick**;
-> `MakeSlice`/`MakeMap`/`New`/`SetMapIndex`/`Set{Int,Uint,…}` + `Field(i)`/`Index(i)`
-> addressability (the ж field-ref/element-ref alias boxes + a runtime ref-accessor builder) →
-> **quick + encoding/binary**, then gob; map/chan/func `Zero` kinds; the Go unnamed↔named
-> `directlyAssignable` refinement; reflect-side `Implements`/`AssignableTo` mirrors; named-pointer
-> wrapper `KindOf` classification; open question 3 (field-name/tag fidelity). Known limitation
-> (recorded): named func types collapse to their structural `Func<>`/`Action<>` under `canonType`
-> System.Type interning — carried named-func identity is needed if a consumer (gob's type
-> registry) lands on it.
+> **Phase-3 increment 3 (SHIPPED 2026-07-26) — the type-relation mirrors + conversion.** The
+> deferred "reflect-side `Implements`/`AssignableTo` mirrors" row landed with its demonstrated
+> consumers (encoding/gob's init via `validUserType → implementsInterface`, go/token's
+> `TestSerialization`, internal/fmtsort's `ct()` table): hand-owned `rtype.{Implements,
+> AssignableTo, FieldByName}`, `PointerTo`, `Value.{Convert, Cap, SetLen}` — each severing a
+> descriptor-SPECIALIZATION read (`Reinterpret<abi.Type, interfaceType/structType>`, the ptrType
+> prototype, the cvt*/unsafe_New chain) that cannot exist behind a synthesized descriptor — plus
+> the `StructField.Index` stamp (gob's `FieldByIndex` walk), golib **pointer order tokens**
+> (`INilPointer.PointerOrderToken`: equal pointers token equally, same-storage elements order by
+> index — fmtsort's map-key ordering), `runtime.Pinner.Pin/Unpin` as no-ops by construction, and
+> `-tests` init-order relocation (the erasable `initᴛᴛtests` static-ctor hook; see
+> ConversionStrategies-Reference *Package-Level Variable Initialization Order*). Validated:
+> internal/fmtsort 3/3, go/token 31/31; gob runs its Encoder/Decoder engines end-to-end (full gob
+> validation remains open).
+>
+> **NOT implemented — remaining Phase-3 surface:** `MakeFunc`; variadic `Call`/`CallSlice`
+> (text/template); `SetMapIndex` delete-on-invalid + `MapKeys` (encoding/json); the Go
+> unnamed↔named `directlyAssignable` refinement beyond identity+wrapper (binary named-slice cases
+> if they surface); `FieldByName`'s embedded-field depth search (a promoted name currently answers
+> the not-found path); open question 3 (field-name/tag fidelity — `[GoTag]` is carried but not yet
+> projected). Known limitation (recorded): named func types collapse to their structural
+> `Func<>`/`Action<>` under `canonType` System.Type interning — carried named-func identity is
+> needed if a consumer (gob's type registry) lands on it.
 
 ## The problem
 

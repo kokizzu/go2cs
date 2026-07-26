@@ -24,6 +24,15 @@ public interface IChannel : IEnumerable
 
     nint Length { get; }
 
+    /// <summary>
+    /// Gets a stable address-order token for the channel — what the reflection bridge reports
+    /// from <c>reflect.Value.Pointer()</c>. Equal channel values (struct copies sharing one
+    /// core) must yield equal tokens across boxings; <see cref="channel{T}"/> answers with the
+    /// shared core's identity (the default is per-boxing identity — a generated named-channel
+    /// wrapper keeps it, a recorded fidelity residual with no consumer).
+    /// </summary>
+    nuint PointerOrderToken => (nuint)(uint)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
+
     void Send(object value);
 
     object Receive();
@@ -887,6 +896,14 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     /// Gets a flag that determines if the channel is unbuffered.
     /// </summary>
     public bool IsUnbuffered => m_core is null || m_core.Dataqsiz == 0;
+
+    /// <summary>
+    /// Gets the channel's stable address-order token (see <see cref="IChannel.PointerOrderToken"/>):
+    /// the shared core's identity, so every struct copy and every boxing of one channel reports
+    /// the same token (a nil channel reports 0) — the property that makes ordering channels by
+    /// <c>reflect.Value.Pointer()</c> self-consistent, exactly like Go addresses.
+    /// </summary>
+    public nuint PointerOrderToken => m_core is null ? 0 : (nuint)(uint)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(m_core);
 
     /// <summary>
     /// Gets a flag that determines if the channel is closed.

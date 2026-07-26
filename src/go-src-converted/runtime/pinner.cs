@@ -18,69 +18,23 @@ partial class runtime_package {
     internal partial ref ж<pinner> pinner { get; }
 }
 
-// Pin pins a Go object, preventing it from being moved or freed by the garbage
-// collector until the [Pinner.Unpin] method has been called.
-//
-// A pointer to a pinned object can be directly stored in C memory or can be
-// contained in Go memory passed to C functions. If the pinned object itself
-// contains pointers to Go objects, these objects must be pinned separately if they
-// are going to be accessed from C code.
-//
-// The argument must be a pointer of any type or an [unsafe.Pointer].
-// It's safe to call Pin on non-Go pointers, in which case Pin will do nothing.
-[GoRecv] public static void Pin(this ref Pinner Δp, any pointer) {
-    if (Δp.pinner == nil) {
-        // Check the pinner cache first.
-        var mp = acquirem();
-        {
-            var pp = (~mp).p.ptr(); if (pp != nil) {
-                Δp.pinner = pp.Value.pinnerCache;
-                pp.Value.pinnerCache = default!;
-            }
-        }
-        releasem(mp);
-        if (Δp.pinner == nil) {
-            // Didn't get anything from the pinner cache.
-            Δp.pinner = @new<pinner>();
-            Δp.refs = Δp.refStore[..0];
-            // We set this finalizer once and never clear it. Thus, if the
-            // pinner gets cached, we'll reuse it, along with its finalizer.
-            // This lets us avoid the relatively expensive SetFinalizer call
-            // when reusing from the cache. The finalizer however has to be
-            // resilient to an empty pinner being finalized, which is done
-            // by checking p.refs' length.
-            SetFinalizer(Δp.pinner, (ж<pinner> i) => {
-                if (len((~i).refs) != 0) {
-                    i.unpin();
-                    // only required to make the test idempotent
-                    pinnerLeakPanic();
-                }
-            });
-        }
-    }
-    @unsafe.Pointer ptr = (uintptr)pinnerGetPtr(Ꮡ(pointer));
-    if (setPinned(ptr, true)) {
-        Δp.refs = append(Δp.refs, ptr);
-    }
-}
+// go2cs generated this placeholder — func Pin is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Unpin unpins all pinned objects of the [Pinner].
-[GoRecv] public static void Unpin(this ref Pinner Δp) {
-    Δp.pinner.unpin();
-    var mp = acquirem();
-    {
-        var pp = (~mp).p.ptr(); if (pp != nil && (~pp).pinnerCache == nil) {
-            // Put the pinner back in the cache, but only if the
-            // cache is empty. If application code is reusing Pinners
-            // on its own, we want to leave the backing store in place
-            // so reuse is more efficient.
-            pp.Value.pinnerCache = Δp.pinner;
-            Δp.pinner = default!;
-        }
-    }
-    releasem(mp);
-}
+// go2cs generated this placeholder — func Unpin is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// Check the pinner cache first.
+// Didn't get anything from the pinner cache.
+// We set this finalizer once and never clear it. Thus, if the
+// pinner gets cached, we'll reuse it, along with its finalizer.
+// This lets us avoid the relatively expensive SetFinalizer call
+// when reusing from the cache. The finalizer however has to be
+// resilient to an empty pinner being finalized, which is done
+// by checking p.refs' length.
+// only required to make the test idempotent
+// Put the pinner back in the cache, but only if the
+// cache is empty. If application code is reusing Pinners
+// on its own, we want to leave the backing store in place
+// so reuse is more efficient.
 internal static readonly UntypedInt pinnerSize = 64;
 internal static readonly uintptr pinnerRefStoreSize = /* (pinnerSize - unsafe.Sizeof([]unsafe.Pointer{})) / unsafe.Sizeof(unsafe.Pointer(nil)) */ 5;
 

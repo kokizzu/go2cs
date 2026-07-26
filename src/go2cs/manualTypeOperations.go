@@ -81,6 +81,12 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// mime's registry reader reach it through startTemplateThread); it takes the same body.
 		"lockOSThread":   true,
 		"unlockOSThread": true,
+		// Pinner: the "address is stable while pinned" contract already holds for managed ж<T>
+		// boxes (the GC tracks them through moves), so the pin set is a no-op by construction —
+		// the auto bodies walk the scheduler (acquirem) and span table (setPinned → findObject).
+		// internal/fmtsort's test init is the demonstrated consumer.
+		"Pinner.Pin":   true,
+		"Pinner.Unpin": true,
 	},
 	// internal/abi.TypeOf reads an interface's type-word via unsafe.Pointer to reach a Go runtime
 	// type descriptor that has no managed form (the reflection bridge — Phase 4). type_impl.cs
@@ -178,6 +184,30 @@ var manualConversionFuncs = map[string]map[string]bool{
 		"rtype.NumOut":      true,
 		"rtype.Out":         true,
 		"rtype.IsVariadic":  true,
+		// Phase-3 continuation: the type-relation mirrors + conversion. The auto forms walk
+		// descriptor sub-records that only exist in Go's runtime layout: implements() does
+		// Reinterpret<abi.Type, interfaceType> and reads .Methods off a promoted-embed box that
+		// is default behind a synthesized descriptor (gob's init died there); PointerTo builds
+		// a ptrType prototype through an eface Reinterpret; Convert dispatches into the cvt*
+		// family, which allocates through the nil unsafe_New stub (internal/fmtsort's ct()
+		// table, R-13/R-14). All four are bridged in value_impl.cs over the shared golib
+		// machinery (GoReflect.GoImplements / TryConvertTo) — one method-set/convertibility
+		// rule everywhere.
+		"rtype.Implements":   true,
+		"rtype.AssignableTo": true,
+		"PointerTo":          true,
+		"Value.Convert":      true,
+		// rtype.FieldByName Reinterprets the descriptor as a structType and reads .Fields off
+		// the default promoted-embed box (gob's compileDec matching wire fields to the local
+		// struct). Bridged over the shared GoFields projection — the SAME field table
+		// NumField/Field/the value side use, single-hop Index included.
+		"rtype.FieldByName": true,
+		// Value.Cap reads the never-populated v.ptr slice header (gob's decodeSlice probes
+		// `value.Cap() < n`); Value.SetLen writes a new header length through it. Bridged over
+		// the golib container interfaces; SetLen re-windows the live slice (same backing/cap,
+		// Go's s[:n]) and writes it back through the aliased box.
+		"Value.Cap":    true,
+		"Value.SetLen": true,
 	},
 	// internal/reflectlite mirrors the reflect bridge for the mini-surface sort.Slice
 	// exercises (ValueOf → Len, Swapper — sort's TestSlice was the first operational hit):

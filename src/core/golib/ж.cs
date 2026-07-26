@@ -102,6 +102,18 @@ public interface INilPointer
     /// nil-constructed / canonical typed-nil form).
     /// </summary>
     bool IsNilPointer { get; }
+
+    /// <summary>
+    /// Gets a stable, order-consistent address token for the pointer — the value the reflection
+    /// bridge reports from <c>reflect.Value.Pointer()</c>/<c>UnsafePointer()</c>. Equal Go
+    /// pointers yield equal tokens, and pointers into the SAME backing storage order by element
+    /// position (Go programs order same-object addresses arithmetically — internal/fmtsort's
+    /// map-key ordering of <c>*T</c>/<c>unsafe.Pointer</c> keys). The default is per-instance
+    /// identity; <see cref="ж{T}"/> supplies the canonical referent-based form (a generated
+    /// named-pointer wrapper keeps the default — a recorded fidelity residual, no consumer
+    /// orders wrapped pointers).
+    /// </summary>
+    nuint PointerOrderToken => (nuint)(uint)RuntimeHelpers.GetHashCode(this);
 }
 
 /// <summary>
@@ -646,6 +658,45 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     public override bool Equals(object? obj)
     {
         return obj is ж<T> other && Equals(other);
+    }
+
+    /// <summary>
+    /// Gets the stable address token for this pointer (see <see cref="INilPointer.PointerOrderToken"/>):
+    /// nil → 0; a native alias → its real address; an array/slice-element reference → the canonical
+    /// backing storage's identity in the high bits with the ABSOLUTE element index below, so
+    /// same-storage element pointers order by index exactly like Go addresses; a struct-field
+    /// reference → the source identity combined with the field identity token; a heap box → the
+    /// referent's identity (equal pointers share it), else this box's own. Consistent with
+    /// <see cref="Equals(ж{T})"/>: equal pointers always produce equal tokens (the converse only
+    /// holds within one backing storage — tokens are order keys, never an identity substitute).
+    /// virtual so <c>unsafe.Pointer</c> (whose VALUE is the address) can answer with the address itself.
+    /// </summary>
+    public virtual nuint PointerOrderToken
+    {
+        get
+        {
+            if (IsNilPointer)
+                return 0;
+
+            if (m_nativeAddr != 0)
+                return m_nativeAddr;
+
+            if (m_arrayIndexRef is not null)
+            {
+                (object storage, nint element) = CanonicalElement(m_arrayIndexRef.Value.Item1, m_arrayIndexRef.Value.Item2);
+                return unchecked((nuint)(((ulong)(uint)RuntimeHelpers.GetHashCode(storage) << 32) | (uint)element));
+            }
+
+            if (m_structFieldRef is not null)
+            {
+                (object source, FieldRefFunc<T> _, Delegate fieldId) = m_structFieldRef.Value;
+                return unchecked((nuint)(((ulong)(uint)RuntimeHelpers.GetHashCode(source) << 32) | (uint)fieldId.GetHashCode()));
+            }
+
+            return IsReferenceType && m_val is not null
+                ? (nuint)(uint)RuntimeHelpers.GetHashCode(m_val)
+                : (nuint)(uint)RuntimeHelpers.GetHashCode(this);
+        }
     }
 
     /// <inheritdoc />

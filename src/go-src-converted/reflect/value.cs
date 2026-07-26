@@ -1145,16 +1145,9 @@ internal static @string funcName(Func<slice<ΔValue>, slice<ΔValue>> f) {
     return closureˢ;
 }
 
-// Cap returns v's capacity.
-// It panics if v's Kind is not [Array], [Chan], [Slice] or pointer to [Array].
-public static nint Cap(this ΔValue v) {
-    // capNonSlice is split out to keep Cap inlineable for slice kinds.
-    if (v.kind() == ΔSlice) {
-        return ((ж<unsafeheader.Slice>)(uintptr)(v.ptr)).Value.Cap;
-    }
-    return v.capNonSlice();
-}
+// go2cs generated this placeholder — func Cap is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// capNonSlice is split out to keep Cap inlineable for slice kinds.
 internal static nint capNonSlice(this ΔValue v) {
     ΔKind k = v.kind();
     var exprᴛ1 = k;
@@ -2022,18 +2015,7 @@ internal static void setRunes(this ΔValue v, slice<rune> x) {
 
 // go2cs generated this placeholder — func SetInt is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// SetLen sets v's length to n.
-// It panics if v's Kind is not [Slice] or if n is negative or
-// greater than the capacity of the slice.
-public static void SetLen(this ΔValue v, nint n) {
-    v.mustBeAssignable();
-    v.mustBe(ΔSlice);
-    var s = (ж<unsafeheader.Slice>)(uintptr)(v.ptr);
-    if ((nuint)n > (nuint)(~s).Cap) {
-        throw panic("reflect: slice length out of range in SetLen");
-    }
-    s.Value.Len = n;
-}
+// go2cs generated this placeholder — func SetLen is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // SetCap sets v's capacity to n.
 // It panics if v's Kind is not [Slice] or if n is smaller than the length or
@@ -2736,22 +2718,7 @@ internal static ΔValue assignTo(this ΔValue v, @string context, ж<abi.Type> �
     throw panic(context + ": value of type " + stringFor(v.typ()) + " is not assignable to type " + stringFor(Ꮡdst));
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string convertˢ = "Convert"u8;
-
-// Convert returns the value v converted to type t.
-// If the usual Go conversion rules do not allow conversion
-// of the value v to type t, or if converting v to type t panics, Convert panics.
-public static ΔValue Convert(this ΔValue v, ΔType t) {
-    if ((flag)(v.flag & flagMethod) != 0) {
-        v = makeMethodValue(convertˢ, v);
-    }
-    var op = convertOp(t.common(), v.typ());
-    if (op == default!) {
-        throw panic("reflect.Value.Convert: value of type " + stringFor(v.typ()) + " cannot be converted to type " + t.String());
-    }
-    return op(v, t);
-}
+// go2cs generated this placeholder — func Convert is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // CanConvert reports whether the value v can be converted to type t.
 // If v.CanConvert(t) returns true then v.Convert(t) will not panic.
