@@ -6,8 +6,10 @@ partial class main_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object deliveredˢ = (@string)"delivered:"u8;
+private static readonly object gotˢ = (@string)"got:"u8;
 private static readonly object remainingˢ = (@string)"remaining:"u8;
 private static readonly object after100Selectsˢ = (@string)"after 100 selects:"u8;
+private static readonly object sumˢ = (@string)"sum:"u8;
 
 internal static void Main() {
     var a = new channel<nint>(1);
@@ -32,7 +34,7 @@ internal static void Main() {
     case 1 when selᴛ4.ꟷᐳ(out got): {
         break;
     }}
-    fmt.Println((@string)"got:"u8, got, remainingˢ, len(a) + len(b));
+    fmt.Println(gotˢ, got, remainingˢ, len(a) + len(b));
     var c = new channel<nint>(100);
     var d = new channel<nint>(100);
     for (nint i = 0; i < 100; i++) {
@@ -54,7 +56,7 @@ internal static void Main() {
     while (len(d) > 0) {
         sum += ᐸꟷ(d);
     }
-    fmt.Println((@string)"sum:"u8, sum);
+    fmt.Println(sumˢ, sum);
 }
 
 } // end main_package

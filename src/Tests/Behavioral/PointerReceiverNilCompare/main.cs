@@ -29,20 +29,26 @@ internal static bool isNil(this ж<embedder> Ꮡe) {
     return Ꮡe == nil;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "nil"u8;
+
 internal static @string checkGuard(this ж<embedder> Ꮡe) {
     ref var e = ref Ꮡe.DerefOrNil();
 
     if (Ꮡe == nil) {
-        return "nil"u8;
+        return nilˢ;
     }
     return fmt.Sprintf("val=%d tag=%d"u8, e.val, e.tag);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ2 = "<nil>"u8;
 
 internal static @string describe(this ж<box> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNil();
 
     if (Ꮡb == nil) {
-        return "<nil>"u8;
+        return nilˢ2;
     }
     return fmt.Sprintf("box(%d)"u8, b.val);
 }

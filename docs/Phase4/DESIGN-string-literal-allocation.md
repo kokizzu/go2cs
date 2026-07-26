@@ -201,7 +201,7 @@ becomes cross-type.
 | standalone map-index keys (`counts["build"]++`) | ✅ | rebuilt per evaluation |
 | **named-string-type conversions** (`MyStr("…")` in function bodies) | ✅ | same value shape through the wrapper ctor |
 | **fmt/log/testing `*f` format-position literals** | ❌ **(changed in rev 2)** | 2,985 corpus sites; 372 are verb-only (`"%v"`, `"%d:%d"`) sluggging to `vˢ`/`dDˢ` — the least allocation saved per unit of readability lost; format calls' cost is dominated by formatting itself. Tier B covers them (2–4×) |
-| **degenerate-slug literals** — degenerate = **empty slug OR slug ≤ 3 chars** (rev 3 wording fix: rev 2's "< 2 words or < 6 alphabetic chars" contradicted the design's own headline example `trueˢ`; the corpus figures — 9.7% fallback + 8.7% slug ≤ 3 chars — were always computed against this rule, and the Tier C draft implements it) | ❌ | names like `strˢ7` or `dˢ` carry no information; they stay inline in Tier-B form |
+| **degenerate-slug literals** — degenerate = **empty slug OR slug ≤ 2 chars** (§4.10 amendment, user-accepted 2026-07-26; was ≤ 3 in rev 3 — the tighter floor kept `"MD4"u8` inline beside fifteen hoisted siblings in crypto's `Hash.String()` table) | ❌ | names like `strˢ7`, `dˢ`, or `okˢ` carry no information; they stay inline in Tier-B form. Three-char slugs (`md4ˢ`) hoist |
 | **the empty literal `""`** | ❌ **(rev 2)** | measured 0 B already (`ToArray()` of an empty span returns `Array.Empty`) — hoisting buys nothing |
 | **composite-literal elements and keys** (in-function) | ❌ **(rev 2 — decided with data)** | uniform hoisting would emit **2,229 fields** above html's `populateMaps()` and move those allocations out from under its `sync.Once` guard into the type initializer. A composite materializes its whole table per evaluation anyway; revisit only if a profiled hot composite appears |
 | **literals inside `func init()` bodies** | ❌ **(rev 2)** | run once by construction; deterministic AST-level filter, not a hotness heuristic |
@@ -389,7 +389,7 @@ Per-function blocks: 1,634 blocks, median **1**, p90 **4**, p99 **11**, max **61
 beyond it. Per file: median **3**, p90 16, p99 76, max **127** (the 20k-line bundled
 `net/http/h2_bundle.cs`, i.e. the same density spread over many functions, not a single block).
 
-### 4.10 Accepted naming amendments (2026-07-26 — user-approved, pending implementation, queued r15)
+### 4.10 Accepted naming amendments (2026-07-26 — user-approved; **IMPLEMENTED in the r15 train**)
 
 Two §4.3 refinements accepted during the user's corpus review of the landed Tier C output (the
 crypto `Hash.String()` table made both visible):

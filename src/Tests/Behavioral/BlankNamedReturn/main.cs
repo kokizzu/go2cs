@@ -11,12 +11,15 @@ internal static bool /*_*/ valid(bool flag) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string setˢ = "set"u8;
+
 internal static (nint, @string label) pair(@string tag) {
     @string label = default!;
 
     label = "empty:"u8 + tag;
     if (tag == "set"u8) {
-        return (7, "set");
+        return (7, setˢ);
     }
     return (default!, label);
 }
@@ -28,7 +31,7 @@ internal static void Main() {
     fmt.Println(valid(true), valid(false));
     var (n, label) = pair(baseˢ);
     fmt.Println(n, label);
-    (n, label) = pair("set"u8);
+    (n, label) = pair(setˢ);
     fmt.Println(n, label);
 }
 

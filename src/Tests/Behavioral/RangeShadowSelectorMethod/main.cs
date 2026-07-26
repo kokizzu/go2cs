@@ -17,9 +17,12 @@ partial class main_package {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string topˢ = "top"u8;
+
 internal static void Main() {
     var w = Ꮡ(new writer(nil));
-    w.typ("top"u8);
+    w.typ(topˢ);
     foreach (var (_, line) in (~w).@out) {
         fmt.Println(line);
     }

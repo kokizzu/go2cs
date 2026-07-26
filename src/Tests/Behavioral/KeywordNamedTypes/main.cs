@@ -40,6 +40,7 @@ internal static sizer std = new @fixed(n: 3);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string helloˢ = "hello"u8;
+private static readonly @string ptrˢ = "ptr"u8;
 
 internal static void Main() {
     fmt.Println(std.size(helloˢ));
@@ -49,7 +50,7 @@ internal static void Main() {
     f.grow(4);
     fmt.Println(f.size(""u8));
     sizer p = new fixedжsizer(Ꮡf);
-    fmt.Println(p.size("ptr"u8));
+    fmt.Println(p.size(ptrˢ));
     @lock l = f;
     fmt.Println(l.held());
     @lock lp = new fixedжlock(Ꮡf);

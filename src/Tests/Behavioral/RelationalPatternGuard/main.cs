@@ -5,6 +5,7 @@ using fmt = fmt_package;
 partial class main_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string negˢ = "neg"u8;
 private static readonly @string equalˢ = "equal"u8;
 private static readonly @string greaterˢ = "greater"u8;
 private static readonly @string lessˢ = "less"u8;
@@ -12,7 +13,7 @@ private static readonly @string lessˢ = "less"u8;
 internal static @string classify(nint x, nint y) {
     switch (ᐧ) {
     case {} when x is < 0: {
-        return "neg"u8;
+        return negˢ;
     }
     case {} when x == y: {
         return equalˢ;

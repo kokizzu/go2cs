@@ -86,6 +86,8 @@ internal static error /*err*/ cls(nint n) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object sendˢ = (@string)"send:"u8;
 private static readonly object addrvˢ = (@string)"addrv:"u8;
+private static readonly object litˢ = (@string)"lit:"u8;
+private static readonly object clsˢ = (@string)"cls:"u8;
 
 internal static void Main() {
     var (w, e) = send(3);
@@ -94,10 +96,10 @@ internal static void Main() {
     fmt.Println(sendˢ, w, e);
     fmt.Println(addrvˢ, addrv());
     (w, e) = lit(4);
-    fmt.Println((@string)"lit:"u8, w, e);
+    fmt.Println(litˢ, w, e);
     (w, e) = lit(-2);
-    fmt.Println((@string)"lit:"u8, w, e);
-    fmt.Println((@string)"cls:"u8, cls(5));
+    fmt.Println(litˢ, w, e);
+    fmt.Println(clsˢ, cls(5));
 }
 
 } // end main_package

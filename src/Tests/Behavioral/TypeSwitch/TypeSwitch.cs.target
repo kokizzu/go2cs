@@ -7,6 +7,8 @@ partial class main_package {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object iMNilˢ = (@string)"I'm nil"u8;
 private static readonly object iMABoolˢ = (@string)"I'm a bool"u8;
+private static readonly object heyˢ = (@string)"hey"u8;
+private static readonly object intˢ = (@string)"int"u8;
 private static readonly object int32ˢ = (@string)"int32"u8;
 private static readonly object uintˢ = (@string)"uint"u8;
 private static readonly object uint32ˢ = (@string)"uint32"u8;
@@ -44,12 +46,12 @@ internal static void Main() {
     whatAmI((nint)(1));
     whatAmI((int64)2);
     whatAmI((uint64)2);
-    whatAmI((@string)"hey"u8);
+    whatAmI(heyˢ);
     whatAmI(default!);
     var classify = (any i) => {
         switch (i.type()) {
         case nint: {
-            fmt.Println((@string)"int"u8);
+            fmt.Println(intˢ);
             break;
         }
         case int32: {
@@ -121,6 +123,7 @@ internal static void Main() {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string boolˢ = "bool"u8;
+private static readonly @string oneˢ = "one"u8;
 private static readonly @string manyˢ = "many"u8;
 
 internal static @string probe(any x) {
@@ -135,7 +138,7 @@ internal static @string probe(any x) {
             nint vΔ1 = len(fmt.Sprint(v));
             switch (vΔ1) {
             case 1: {
-                return "one"u8;
+                return oneˢ;
             }
             default: {
                 return manyˢ;

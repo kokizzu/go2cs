@@ -49,9 +49,12 @@ internal static E pick<E>(slice<E> xs, Func<E, E, bool> better) {
 
 internal static Func<nint> fortyTwo = Once(nint () => 42);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "<nil>"u8;
+
 internal static @string describe(any v) {
     if (v == default!) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     return fmt.Sprintf("%v"u8, v);
 }

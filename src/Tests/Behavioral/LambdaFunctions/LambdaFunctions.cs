@@ -17,10 +17,13 @@ internal static void takesAFunction(Func<@string> foo) {
     fmt.Printf("takesAFunction \u0049: %v\n"u8, foo());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string barˢ = "bar"u8;
+
 internal static Func<@string> returnsAFunction() {
     return () => {
         fmt.Printf("Inner stringy function\n"u8);
-        return "bar"u8;
+        return barˢ;
     };
 }
 

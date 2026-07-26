@@ -6,6 +6,7 @@ partial class main_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object helloˢ = (@string)"hello"u8;
+private static readonly object abcˢ = (@string)"abc"u8;
 private static readonly object abcdˢ = (@string)"abcd"u8;
 private static readonly object abcdefˢ = (@string)"abcdef"u8;
 
@@ -49,12 +50,12 @@ internal static void Main() {
     fmt.Printf("[%.0x] [%.0x] [%5.2x] [%05.2x]\n"u8, (nint)(0), (nint)(255), (nint)(255), (nint)(255));
     fmt.Printf("[%x] [%#x] [%x] [%x]\n"u8, (int8)(-128), (int8)(-128), (uint8)255, (nuint)255);
     fmt.Printf("[%x] [%#x]\n"u8, (uint64)18446744073709551615UL, (int64)(-1));
-    fmt.Printf("[%x] [%X] [%#x] [%#X]\n"u8, (@string)"abc"u8, (@string)"abc"u8, (@string)"abc"u8, (@string)"abc"u8);
-    fmt.Printf("[% x] [% X] [% #x]\n"u8, (@string)"abc"u8, (@string)"abc"u8, (@string)"abc"u8);
+    fmt.Printf("[%x] [%X] [%#x] [%#X]\n"u8, abcˢ, abcˢ, abcˢ, abcˢ);
+    fmt.Printf("[% x] [% X] [% #x]\n"u8, abcˢ, abcˢ, abcˢ);
     fmt.Printf("[%x] [%#x] [% x]\n"u8, slice<byte>("abc"u8), slice<byte>("abc"u8), new byte[]{1, 2}.slice());
     fmt.Printf("[%x] [%.2x] [%.2x] [%#.2x]\n"u8, (@string)"äb"u8, (@string)"äb"u8, abcdˢ, abcdˢ);
     fmt.Printf("[%6x] [%-6x] [%06x] [%#08x] [%-08x]\n"u8, (@string)"ab"u8, (@string)"ab"u8, (@string)"ab"u8, (@string)"ab"u8, (@string)"ab"u8);
-    fmt.Printf("[% 08x] [%12x] [%10.3x]\n"u8, (@string)"ab"u8, (@string)"abc"u8, abcdefˢ);
+    fmt.Printf("[% 08x] [%12x] [%10.3x]\n"u8, (@string)"ab"u8, abcˢ, abcdefˢ);
     fmt.Printf("[%x] [%#x] [%8x] [%08x] [%#x]\n"u8, (@string)""u8, (@string)""u8, (@string)""u8, (@string)""u8, new byte[]{}.slice());
     fmt.Printf("[%b] [%b] [%b] [%b] [%#b] [%#b] [%#b]\n"u8, (nint)(5), (nint)(255), (nint)(-255), (nint)(0), (nint)(5), (nint)(-5), (nint)(0));
     fmt.Printf("[%+b] [% b] [% #b] [%12b] [%-12b] [%012b] [%012b]\n"u8, (nint)(5), (nint)(5), (nint)(5), (nint)(255), (nint)(255), (nint)(255), (nint)(-255));

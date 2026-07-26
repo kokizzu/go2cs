@@ -4,6 +4,9 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abcˢ = "abc"u8;
+
 internal static void Main() {
     @string s = "a¢b☺\U0001d11e!"u8;
     foreach (var (i, r) in s) {
@@ -18,7 +21,7 @@ internal static void Main() {
     foreach (var (i, _) in runes) {
         fmt.Println(i, (int32)runes[i]);
     }
-    @string t = "abc"u8;
+    @string t = abcˢ;
     var b = slice<byte>(t);
     b[0] = (rune)'X';
     fmt.Println(t, ((@string)b));

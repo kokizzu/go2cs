@@ -17,10 +17,11 @@ internal static readonly @string constText = "hello world";
 internal static @string varText = ""u8 + "café "u8 + "白鵬翔"u8;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object lenˢ = (@string)" len="u8;
 private static readonly object bytesˢ = (@string)" bytes="u8;
 
 internal static void dump(@string name, @string s) {
-    fmt.Print(name, (@string)" len="u8, len(s), bytesˢ);
+    fmt.Print(name, lenˢ, len(s), bytesˢ);
     for (nint i = 0; i < len(s); i++) {
         fmt.Print(s[i], (@string)" "u8);
     }

@@ -89,14 +89,16 @@ const (
 // literal does not become an unreadable identifier.
 const maxHoistSlugLength = 24
 
-// minHoistSlugLength is the degenerate-slug floor (§4.2): degenerate = empty slug OR a slug of
-// three characters or fewer. A literal whose slug carries no information — a bare verb (`"%v"` ->
-// `v`), punctuation only (`"; "` -> nothing), a one- or two-letter word — is NOT hoisted at all: it
-// stays inline in its Tier-B rendering, where it is still readable. `"true"` slugs to a healthy
-// four-character `true` and DOES hoist (the design's headline example). The `strˢN` fallback the
+// minHoistSlugLength is the degenerate-slug floor (§4.2, as amended by §4.10): degenerate = empty
+// slug OR a slug of two characters or fewer. A literal whose slug carries no information — a bare
+// verb (`"%v"` -> `v`), punctuation only (`"; "` -> nothing), a one- or two-letter word (`"OK"` ->
+// `ok`) — is NOT hoisted at all: it stays inline in its Tier-B rendering, where it is still
+// readable. Three-character slugs (`"MD4"` -> `md4ˢ`) DO hoist per the user-accepted §4.10
+// amendment, which unifies tables where the old ≤3 floor landed mid-function (crypto's
+// `Hash.String()` kept `"MD4"u8` inline beside fifteen hoisted siblings). The `strˢN` fallback the
 // design mentions therefore exists only as a collision ordinal among HEALTHY slugs, never as a
 // naming dump.
-const minHoistSlugLength = 4
+const minHoistSlugLength = 3
 
 // collectHoistedLiterals runs the whole-package hoist analysis (see the file comment). It must run
 // BEFORE collectMovedInitVars, whose graph consults packageHoistLitReaders.
@@ -801,6 +803,24 @@ func camelCaseSlugWord(word string, first bool) string {
 
 	// ASCII-only alphabet (see literalSlug), so byte indexing is rune-safe here.
 	if first {
+		// §4.10 mixed-case leading-word fold: a word OPENING with an uppercase run reads as an
+		// acronym or product prefix ("BLAKE2s", "HTTPServer") — lowering only its first character
+		// produced `bLAKE2s256ˢ`. Lower the whole leading run; when the run is immediately
+		// followed by a lowercase letter, the run's last upper is that interior word's real
+		// initial ("HTTPServer" -> httpServer) and keeps its case.
+		run := 0
+		for run < len(word) && word[run] >= 'A' && word[run] <= 'Z' {
+			run++
+		}
+
+		if run > 1 {
+			if run < len(word) && word[run] >= 'a' && word[run] <= 'z' {
+				run--
+			}
+
+			return strings.ToLower(word[:run]) + word[run:]
+		}
+
 		return strings.ToLower(word[:1]) + word[1:]
 	}
 

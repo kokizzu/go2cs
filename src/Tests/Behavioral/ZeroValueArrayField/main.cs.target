@@ -22,8 +22,11 @@ internal static ж<holder> makeHolder(@string name) {
     return h;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abcˢ = "abc"u8;
+
 internal static void Main() {
-    var h = makeHolder("abc"u8);
+    var h = makeHolder(abcˢ);
     nint sum = 0;
     foreach (var (i, v) in (~h).tbl) {
         sum += i * v;

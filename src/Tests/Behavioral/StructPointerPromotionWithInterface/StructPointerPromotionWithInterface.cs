@@ -148,6 +148,7 @@ internal static @string Ping(this rightSide r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string newˢ = "New"u8;
 private static readonly @string worldˢ = "World"u8;
 private static readonly object myErrorWhatˢ = (@string)"MyError What ="u8;
 private static readonly object myCustomErrorWhatˢ = (@string)"MyCustomError What ="u8;
@@ -157,7 +158,7 @@ internal static void Main() {
     ref var e = ref heap<MyError>(out var Ꮡe);
     e = new MyError(time.Now(), "Hello"u8);
     var a = new MyCustomError("New One"u8, default!, Ꮡe);
-    a.Message = "New"u8;
+    a.Message = newˢ;
     a.What = worldˢ;
     fmt.Println(myErrorWhatˢ, e.What);
     fmt.Println(myCustomErrorWhatˢ, a.What);

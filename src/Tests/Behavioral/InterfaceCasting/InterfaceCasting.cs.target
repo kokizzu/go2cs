@@ -67,9 +67,12 @@ internal static void addTo(ж<nint> Ꮡp, nint delta) {
     p += delta;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string incˢ = "inc"u8;
+
 public static @string Inc(this ж<Counter> Ꮡc) {
     addTo(Ꮡc.of(Counter.Ꮡn), 1);
-    return "inc"u8;
+    return incˢ;
 }
 
 [GoRecv] public static nint Total(this ref Counter c) {
@@ -94,6 +97,8 @@ public static Animal Reversed(Animal a) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dogˢ = "dog"u8;
+private static readonly @string catˢ = "cat"u8;
 private static readonly @string llamaˢ = "llama"u8;
 
 internal static (Animal, @string) pick(nint kind) {
@@ -103,13 +108,13 @@ internal static (Animal, @string) pick(nint kind) {
     case 0: {
         ref var d = ref heap(new Dog(), out var Ꮡd);
         a = new DogжAnimal(Ꮡd);
-        name = "dog"u8;
+        name = dogˢ;
         break;
     }
     case 1: {
         ref var c = ref heap(new Cat(), out var Ꮡc);
         a = new CatжAnimal(Ꮡc);
-        name = "cat"u8;
+        name = catˢ;
         break;
     }
     default: {

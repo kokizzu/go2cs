@@ -38,6 +38,8 @@ private static readonly object helloˢ = (@string)"hello, "u8;
 private static readonly @string worldˢ = "world"u8;
 private static readonly @string helloSˢ = "hello, %s"u8;
 private static readonly object writeˢ = (@string)"Write "u8;
+private static readonly object oneˢ = (@string)"one"u8;
+private static readonly object twoˢ = (@string)"two"u8;
 private static readonly object threeˢ = (@string)"three"u8;
 private static readonly object fourFiveOrSizˢ = (@string)"four, five or siz"u8;
 private static readonly object unknownˢ = (@string)"unknown"u8;
@@ -83,11 +85,11 @@ internal static void Main() {
     fmt.Print(writeˢ, i, (@string)" as "u8);
     switch (i) {
     case 1: {
-        fmt.Println((@string)"one"u8);
+        fmt.Println(oneˢ);
         break;
     }
     case 2: {
-        fmt.Println((@string)"two"u8);
+        fmt.Println(twoˢ);
         break;
     }
     case 3: {

@@ -86,6 +86,9 @@ internal static (nint, @string) pkgParamShadow(ж<strings.Reader> Ꮡstrings) {
     return f.n;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string xyzˢ = "xyz"u8;
+
 internal static void Main() {
     fmt.Println(f(10));
     fmt.Println(f(3));
@@ -95,7 +98,7 @@ internal static void Main() {
     var rd = strings.NewReader("hi"u8);
     var (rn, rs) = pkgParamShadow(rd);
     fmt.Println(rn, rs);
-    var fl = Ꮡ(new @file(ΔΔfile: strings.NewReader("xyz"u8)));
+    var fl = Ꮡ(new @file(ΔΔfile: strings.NewReader(xyzˢ)));
     fmt.Println(fl.readOne(), fl.readOne());
     fmt.Println(forwardOk());
 }

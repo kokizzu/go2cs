@@ -6,12 +6,15 @@ partial class main_package {
 
 internal static readonly @string revTab = ((@string)(new byte[]{0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0}));
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object lenˢ = (@string)"len:"u8;
+
 internal static void Main() {
     for (nint i = 0; i < len(revTab); i++) {
         fmt.Printf("%d "u8, revTab[i]);
     }
     fmt.Println();
-    fmt.Println((@string)"len:"u8, len(revTab));
+    fmt.Println(lenˢ, len(revTab));
 }
 
 } // end main_package

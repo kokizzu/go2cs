@@ -25,11 +25,15 @@ internal static @string Label(this pusher p) {
     internal @string id;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object setˢ = (@string)"set"u8;
+
 [GoRecv] internal static void Set(this ref setter s, @string value) {
-    fmt.Println((@string)"set"u8, value, (@string)"on"u8, s.id);
+    fmt.Println(setˢ, value, (@string)"on"u8, s.id);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object errˢ = (@string)"err:"u8;
 private static readonly @string styleCssˢ = "/style.css"u8;
 private static readonly object notAPusherˢ = (@string)"not a pusher"u8;
 
@@ -41,7 +45,7 @@ private static readonly object notAPusherˢ = (@string)"not a pusher"u8;
 internal static void serve(any v) {
     {
         var (p, ok) = v._<serve_type>(ᐧ); if (ok){
-            fmt.Println((@string)"err:"u8, p.Push(styleCssˢ, 7), p.Label());
+            fmt.Println(errˢ, p.Push(styleCssˢ, 7), p.Label());
         } else {
             fmt.Println(notAPusherˢ);
         }

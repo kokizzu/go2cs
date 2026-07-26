@@ -25,6 +25,9 @@ internal static void g1() {
     fmt.Println((@string)"g1:"u8, fs[0](), fs[1](), fs[2]());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object g2vˢ = (@string)"g2v:"u8;
+
 internal static void g2() {
     slice<Func<nint>> fs = default!;
     for (nint iᴛ1 = 0; iᴛ1 < 6; iᴛ1++) {
@@ -39,7 +42,7 @@ internal static void g2() {
     }
     fmt.Println((@string)"g2:"u8, len(fs));
     foreach (var (_, f) in fs) {
-        fmt.Println((@string)"g2v:"u8, f());
+        fmt.Println(g2vˢ, f());
     }
 }
 

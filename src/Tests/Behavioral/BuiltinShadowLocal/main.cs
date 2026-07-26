@@ -23,12 +23,13 @@ internal static nint capPlusOne(slice<nint> s) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string sigkillˢ = "SIGKILL"u8;
+private static readonly @string sigˢ = "SIG?"u8;
 
 internal static @string signame(nint sig) {
     if (sig == 9) {
         return sigkillˢ;
     }
-    return "SIG?"u8;
+    return sigˢ;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

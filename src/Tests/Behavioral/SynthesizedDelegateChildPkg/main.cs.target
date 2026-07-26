@@ -15,6 +15,7 @@ partial class main_package {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object notifyˢ = (@string)"notify:"u8;
 private static readonly @string alphaˢ = "alpha"u8;
+private static readonly @string hitˢ = "hit"u8;
 
 internal static void Main() {
     var r = new registry(
@@ -37,7 +38,7 @@ internal static void Main() {
     );
     var (rec, err) = r.load(r.cache, alphaˢ, (@string s) => ("-" + s, default!));
     fmt.Println((~rec).Name, (~rec).Hits, err);
-    r.notify["hit"u8](rec, "t1"u8);
+    r.notify[hitˢ](rec, "t1"u8);
     fmt.Println(len(r.cache), (~r.cache[alphaˢ]).Hits);
 }
 

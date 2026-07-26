@@ -93,6 +93,7 @@ internal static @string ratioString(params ꓸꓸꓸnint valsʗp) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object convertedFuncTypeCallˢ = (@string)"converted func type call:"u8;
 private static readonly @string pkgFmtˢ = "pkg/fmt"u8;
+private static readonly @string fmtˢ = "fmt"u8;
 private static readonly @string printfˢ = "Printf"u8;
 private static readonly object collapseHoistˢ = (@string)"collapse hoist:"u8;
 
@@ -140,7 +141,7 @@ internal static void Main() {
             return recv == ""u8 && name == "Printf"u8;
         }
     );
-    var (ip, found) = res.lookupPackage("fmt"u8);
+    var (ip, found) = res.lookupPackage(fmtˢ);
     fmt.Println(ip, found, res.lookupSym(""u8, printfˢ), res.lookupSym("T"u8, "M"u8));
     var fetch = () => {
         var (ᴛ1, ᴛ2) = fetchPair();
@@ -163,9 +164,12 @@ internal static (@string, error) fetchPair() {
     return (pairˢ, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string errˢ = "err"u8;
+
 internal static @string joinPair(@string s, error err) {
     if (err != default!) {
-        return "err"u8;
+        return errˢ;
     }
     return "got:"u8 + s;
 }

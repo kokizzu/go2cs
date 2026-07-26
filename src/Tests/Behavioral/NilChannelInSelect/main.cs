@@ -6,15 +6,17 @@ partial class main_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object nilLenˢ = (@string)"nil len:"u8;
+private static readonly object capˢ = (@string)"cap:"u8;
 private static readonly object nilRecvWrongˢ = (@string)"nil recv (wrong):"u8;
 private static readonly object nilSendWrongˢ = (@string)"nil send (wrong)"u8;
 private static readonly object liveRecvˢ = (@string)"live recv:"u8;
 private static readonly object rendezvousRecvˢ = (@string)"rendezvous recv:"u8;
 private static readonly object liveSendFiredˢ = (@string)"live send fired"u8;
+private static readonly object outˢ = (@string)"out:"u8;
 
 internal static void Main() {
     channel<nint> nilCh = default!;
-    fmt.Println(nilLenˢ, len(nilCh), (@string)"cap:"u8, cap(nilCh));
+    fmt.Println(nilLenˢ, len(nilCh), capˢ, cap(nilCh));
     var live = new channel<nint>(1);
     live.ᐸꟷ(42);
     var selᴛ1 = nilCh;
@@ -61,7 +63,7 @@ internal static void Main() {
         fmt.Println(liveSendFiredˢ);
         break;
     }}
-    fmt.Println((@string)"out:"u8, ᐸꟷ(@out));
+    fmt.Println(outˢ, ᐸꟷ(@out));
 }
 
 } // end main_package

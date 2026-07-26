@@ -12,8 +12,11 @@ internal static @string Name(this dirLike d) {
     return ((@string)d);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dirˢ = "dir"u8;
+
 internal static @string Kind(this dirLike d) {
-    return "dir"u8;
+    return dirˢ;
 }
 
 internal static @string Detail(this dirLike d, @string prefix) {

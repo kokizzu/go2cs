@@ -26,6 +26,7 @@ internal static @string speak(this dog d) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object stringˢ = (@string)"string:"u8;
+private static readonly object intˢ = (@string)"int:"u8;
 private static readonly object otherˢ = (@string)"other:"u8;
 
 internal static void describe(@string prefix, any v) {
@@ -35,11 +36,11 @@ internal static void describe(@string prefix, any v) {
         break;
     }
     case nint s: {
-        fmt.Println(prefix, (@string)"int:"u8, s);
+        fmt.Println(prefix, intˢ, s);
         break;
     }
     case int32 s: {
-        fmt.Println(prefix, (@string)"int:"u8, s);
+        fmt.Println(prefix, intˢ, s);
         break;
     }
     default: {
@@ -52,6 +53,7 @@ internal static void describe(@string prefix, any v) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object textˢ = (@string)"text"u8;
 private static readonly @string sendˢ = "send"u8;
+private static readonly object selˢ = (@string)"sel"u8;
 private static readonly @string selectˢ = "select"u8;
 private static readonly @string plainˢ = "plain"u8;
 private static readonly object stringChanˢ = (@string)"string chan:"u8;
@@ -66,7 +68,7 @@ internal static void Main() {
     describe(sendˢ, ᐸꟷ(ch));
     describe(sendˢ, ᐸꟷ(ch));
     var sel = new channel<any>(1);
-    var selᴛ1 = sel.ᐸꟷ((@string)"sel"u8, ꓸꓸꓸ);
+    var selᴛ1 = sel.ᐸꟷ(selˢ, ꓸꓸꓸ);
     switch (select(selᴛ1)) {
     case 0: {
         describe(selectˢ, ᐸꟷ(sel));

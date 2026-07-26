@@ -55,6 +55,7 @@ internal static void close(this ж<conn> Ꮡc, ж<tracker> Ꮡt) => func((defer,
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string busyˢ = "busy"u8;
+private static readonly @string newˢ = "new"u8;
 
 internal static void Main() {
     var a = Ꮡ(new conn(id: 1));
@@ -63,7 +64,7 @@ internal static void Main() {
     fmt.Println(a.status(t), b.status(t));
     a.rename(t, busyˢ);
     fmt.Println(a.label(t), len((~t).m));
-    b.rename(t, "new"u8);
+    b.rename(t, newˢ);
     fmt.Println(b.label(t), a.label(t), len((~t).m));
     a.close(t);
     fmt.Println(len((~t).m), a.status(t), b.status(t));

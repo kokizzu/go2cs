@@ -5,11 +5,15 @@ using fmt = fmt_package;
 partial class main_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object sumˢ = (@string)"sum:"u8;
 private static readonly object totalˢ = (@string)"total:"u8;
 private static readonly object indexˢ = (@string)"index:"u8;
+private static readonly object numˢ = (@string)"num:"u8;
 private static readonly object totalˢ2 = (@string)"Total:"u8;
+private static readonly object keyˢ = (@string)"key:"u8;
 private static readonly object valueˢ = (@string)"value:"u8;
 private static readonly @string subTestˢ = "sub-test"u8;
+private static readonly object valˢ = (@string)"val:"u8;
 private static readonly @string testˢ = "test"u8;
 
 internal static void Main() {
@@ -25,14 +29,14 @@ internal static void Main() {
         sum += num;
         total += i;
     }
-    fmt.Println((@string)"sum:"u8, sum, totalˢ, total);
+    fmt.Println(sumˢ, sum, totalˢ, total);
     foreach (var (iΔ1, numΔ1) in nums) {
         if (numΔ1 == 3) {
             fmt.Println(indexˢ, iΔ1);
         }
     }
     foreach (var (_, numΔ2) in nums) {
-        fmt.Println((@string)"num:"u8, numΔ2);
+        fmt.Println(numˢ, numΔ2);
     }
     foreach (var (iΔ2, _) in nums) {
         fmt.Println(indexˢ, iΔ2);
@@ -47,7 +51,7 @@ internal static void Main() {
         fmt.Printf("%s -> %s\n"u8, kΔ1, vΔ1);
     }
     foreach (var (kΔ2, _) in kvs) {
-        fmt.Println((@string)"key:"u8, kΔ2);
+        fmt.Println(keyˢ, kΔ2);
     }
     foreach (var (vΔ2, _) in kvs) {
         fmt.Println(valueˢ, vΔ2);
@@ -75,12 +79,12 @@ internal static void Main() {
     foreach (var (kᴛ2, _) in kvs) {
         k = kᴛ2;
 
-        fmt.Println((@string)"key:"u8, k);
+        fmt.Println(keyˢ, k);
     }
     foreach (var (_, vᴛ3) in kvs) {
         v = vᴛ3;
 
-        fmt.Println((@string)"val:"u8, v);
+        fmt.Println(valˢ, v);
     }
     total = 0;
     foreach ((_, _) in kvs) {

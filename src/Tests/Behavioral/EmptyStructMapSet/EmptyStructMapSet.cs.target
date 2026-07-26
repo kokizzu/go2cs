@@ -32,7 +32,11 @@ internal static (@string, bool) lookup(registry reg, uint32 id) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object lenˢ = (@string)"len:"u8;
 private static readonly object litLenˢ = (@string)"lit len:"u8;
+private static readonly @string tcpˢ = "tcp"u8;
+private static readonly @string sshˢ = "ssh"u8;
+private static readonly @string udpˢ = "udp"u8;
 private static readonly @string domainˢ = "domain"u8;
 private static readonly object chanAssertˢ = (@string)"chan assert:"u8;
 
@@ -41,7 +45,7 @@ internal static void Main() {
     add(seen, 3);
     add(seen, 7);
     add(seen, 3);
-    fmt.Println((@string)"len:"u8, len(seen));
+    fmt.Println(lenˢ, len(seen));
     foreach (var (_, k) in new nint[]{1, 3, 5, 7}.slice()) {
         fmt.Printf("contains(%d) = %t\n"u8, k, contains(seen, k));
     }
@@ -70,7 +74,7 @@ internal static void Main() {
             ["smtp"u8] = 25,
             ["ssh"u8] = 22}
     };
-    fmt.Println(ports["tcp"u8]["ssh"u8], ports["udp"u8][domainˢ], len(ports["tcp"u8]));
+    fmt.Println(ports[tcpˢ][sshˢ], ports[udpˢ][domainˢ], len(ports[tcpˢ]));
     var done = new channel<EmptyStruct>(1);
     any anyDone = done;
     var (ch, chOK) = anyDone._<channel<EmptyStruct>>(ᐧ);

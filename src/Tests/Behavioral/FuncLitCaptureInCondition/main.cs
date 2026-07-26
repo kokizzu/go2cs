@@ -15,6 +15,7 @@ internal static bool anyMatch(slice<nint> vals, Func<nint, bool> f) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object ifInitˢ = (@string)"if-init:"u8;
+private static readonly object forˢ = (@string)"for:"u8;
 private static readonly object whileˢ = (@string)"while:"u8;
 
 internal static void Main() {
@@ -33,7 +34,7 @@ internal static void Main() {
     }
     var lookupʗ5 = lookup;
     for (nint i = 0; i < 2 && anyMatch(vals, (nint u) => lookupʗ5[u + i]); i++) {
-        fmt.Println((@string)"for:"u8, i);
+        fmt.Println(forˢ, i);
     }
     nint n = 0;
     var lookupʗ7 = lookup;

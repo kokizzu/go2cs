@@ -95,6 +95,8 @@ internal static nint f() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object gotˢ = (@string)"Got: "u8;
+private static readonly object gotˢ2 = (@string)" -- got: "u8;
 private static readonly object unexpectedSendToNilˢ = (@string)"unexpected send to nil channel"u8;
 private static readonly object unexpectedReceivedFromˢ = (@string)"unexpected received from nil channel: "u8;
 private static readonly object closedChannel2Selectedˢ = (@string)"closed channel 2 selected immediately: "u8;
@@ -125,19 +127,19 @@ internal static void Main() {
         var selᴛ6 = ch4;
         switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ), ᐸꟷ(selᴛ5, ꓸꓸꓸ), ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
         case 0 when selᴛ3.ꟷᐳ(out var v1): {
-            fmt.Println((@string)"Got: "u8, v1);
+            fmt.Println(gotˢ, v1);
             break;
         }
         case 1 when selᴛ4.ꟷᐳ(out var v1): {
-            fmt.Println((@string)"Got: "u8, v1);
+            fmt.Println(gotˢ, v1);
             break;
         }
         case 2 when selᴛ5.ꟷᐳ(out var v1, out var okΔ1): {
-            fmt.Println((@string)"OK: "u8, okΔ1, (@string)" -- got: "u8, v1);
+            fmt.Println((@string)"OK: "u8, okΔ1, gotˢ2, v1);
             break;
         }
         case 3 when selᴛ6.ꟷᐳ(out a[f()]): {
-            fmt.Println((@string)"Got: "u8, a[f()]);
+            fmt.Println(gotˢ, a[f()]);
             break;
         }}
     }
@@ -162,7 +164,7 @@ internal static void Main() {
         break;
     }
     case 3 when selᴛ10.ꟷᐳ(out var v1, out var okΔ2): {
-        fmt.Println(unexpectedOkˢ, okΔ2, (@string)" -- got: "u8, v1);
+        fmt.Println(unexpectedOkˢ, okΔ2, gotˢ2, v1);
         break;
     }
     case 4 when selᴛ11.ꟷᐳ(out a[f()]): {

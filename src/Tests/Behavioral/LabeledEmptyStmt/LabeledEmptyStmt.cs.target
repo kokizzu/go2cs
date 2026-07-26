@@ -20,6 +20,7 @@ keep:;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string smallˢ = "small"u8;
+private static readonly @string bigˢ = "big"u8;
 
 internal static @string gotoEndOfFunc(nint v) {
     @string msg = smallˢ;
@@ -28,7 +29,7 @@ internal static @string gotoEndOfFunc(nint v) {
     }
     return msg;
 big:
-    msg = "big"u8;
+    msg = bigˢ;
     return msg;
 }
 

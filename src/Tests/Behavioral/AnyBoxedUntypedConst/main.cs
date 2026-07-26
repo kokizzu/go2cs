@@ -48,6 +48,7 @@ internal static any retFloatL() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string intˢ = "int"u8;
 private static readonly @string int32ˢ = "int32"u8;
 private static readonly @string float64ˢ = "float64"u8;
 private static readonly @string stringˢ = "string"u8;
@@ -56,7 +57,7 @@ private static readonly @string otherˢ = "other"u8;
 internal static @string kindOf(any v) {
     switch (v.type()) {
     case nint: {
-        return "int"u8;
+        return intˢ;
     }
     case int32: {
         return int32ˢ;

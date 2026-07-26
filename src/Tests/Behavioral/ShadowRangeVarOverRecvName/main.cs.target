@@ -30,6 +30,7 @@ internal static ж<node> firstOr(this ж<node> Ꮡc, slice<ж<node>> chain) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object gotˢ = (@string)"got:"u8;
 private static readonly object firstˢ = (@string)"first:"u8;
 private static readonly object emptyˢ = (@string)"empty:"u8;
 
@@ -38,7 +39,7 @@ internal static void Main() {
     var a = Ꮡ(new node(name: "a"u8));
     var b = Ꮡ(new node(name: "b"u8));
     foreach (var (_, n) in root.collect(new ж<node>[]{a, b}.slice())) {
-        fmt.Println((@string)"got:"u8, (~n).name);
+        fmt.Println(gotˢ, (~n).name);
     }
     fmt.Println(firstˢ, (~root.firstOr(new ж<node>[]{a, b}.slice())).name);
     fmt.Println(emptyˢ, (~root.firstOr(default!)).name);

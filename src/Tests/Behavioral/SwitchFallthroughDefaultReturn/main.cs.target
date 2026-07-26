@@ -6,6 +6,7 @@ partial class main_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string zeroˢ = "zero"u8;
+private static readonly @string oneˢ = "one"u8;
 private static readonly @string manyˢ = "many"u8;
 
 internal static @string classify(nint n) {
@@ -15,7 +16,7 @@ internal static @string classify(nint n) {
         return zeroˢ;
     }
     if (exprᴛ1 is 1) { matchᴛ1 = true;
-        return "one"u8;
+        return oneˢ;
     }
     if (exprᴛ1 is 2) { matchᴛ1 = true;
         fallthrough = true;

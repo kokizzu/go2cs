@@ -5,6 +5,8 @@ using fmt = fmt_package;
 partial class main_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object capˢ = (@string)"cap:"u8;
+private static readonly object lenˢ = (@string)"len:"u8;
 private static readonly object sendReadyWrongForˢ = (@string)"send: ready (wrong for unbuffered)"u8;
 private static readonly object sendNotReadyNoReceiverˢ = (@string)"send: not ready (no receiver)"u8;
 private static readonly object recvReadyWrongˢ = (@string)"recv: ready (wrong):"u8;
@@ -16,7 +18,7 @@ private static readonly object pongˢ = (@string)"pong:"u8;
 
 internal static void Main() {
     var ch = new channel<nint>(0);
-    fmt.Println((@string)"cap:"u8, cap(ch), (@string)"len:"u8, len(ch));
+    fmt.Println(capˢ, cap(ch), lenˢ, len(ch));
     var selᴛ1 = ch.ᐸꟷ(1, ꓸꓸꓸ);
     switch (trySelect(selᴛ1)) {
     case 0: {
@@ -37,7 +39,7 @@ internal static void Main() {
         fmt.Println(recvNotReadyNoSenderˢ);
         break;
     }}
-    fmt.Println(afterProbesLenˢ, len(ch), (@string)"cap:"u8, cap(ch));
+    fmt.Println(afterProbesLenˢ, len(ch), capˢ, cap(ch));
     var reply = new channel<nint>(0);
     var chʗ1 = ch;
     var replyʗ1 = reply;
@@ -47,7 +49,7 @@ internal static void Main() {
     });
     ch.ᐸꟷ(21);
     fmt.Println(replyˢ, ᐸꟷ(reply));
-    fmt.Println(afterRendezvousLenˢ, len(ch), (@string)"cap:"u8, cap(ch));
+    fmt.Println(afterRendezvousLenˢ, len(ch), capˢ, cap(ch));
     var ping = new channel<nint>(0);
     var pong = new channel<nint>(0);
     var pingʗ1 = ping;

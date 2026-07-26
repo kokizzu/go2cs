@@ -23,6 +23,7 @@ private static readonly object namedEmptyˢ = (@string)"named empty"u8;
 private static readonly object namedPartialˢ = (@string)"named partial"u8;
 private static readonly object aliasEmptyˢ = (@string)"alias empty"u8;
 private static readonly object aliasPartialˢ = (@string)"alias partial"u8;
+private static readonly object pkgˢ = (@string)"pkg"u8;
 private static readonly object intsˢ = (@string)"ints"u8;
 private static readonly object strsˢ = (@string)"strs"u8;
 private static readonly object sliceCtlˢ = (@string)"slice ctl"u8;
@@ -47,7 +48,7 @@ internal static void Main() {
     fmt.Println(aliasEmptyˢ, len(new byte[]{}.array(5)));
     var ap = new byte[]{9}.array(5);
     fmt.Println(aliasPartialˢ, len(ap), ap[0], ap[4]);
-    fmt.Println((@string)"pkg"u8, len(pkgEmpty), len(pkgPartial), pkgPartial[1], pkgPartial[7]);
+    fmt.Println(pkgˢ, len(pkgEmpty), len(pkgPartial), pkgPartial[1], pkgPartial[7]);
     var ints = new nint[]{7}.array(4);
     fmt.Println(intsˢ, len(ints), ints[0], ints[3]);
     var strs = new @string[]{"a"u8}.array(3);

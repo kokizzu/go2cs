@@ -33,8 +33,11 @@ internal static @string name(this square s) {
     return squareˢ;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dotˢ = "dot"u8;
+
 internal static @string name(this dot d) {
-    return "dot"u8;
+    return dotˢ;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

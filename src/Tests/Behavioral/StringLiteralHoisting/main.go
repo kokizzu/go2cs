@@ -94,10 +94,16 @@ func main() {
 	// IS an ordinary any-slot literal and hoists.
 	fmt.Printf("format position literal %s\n", "format trailing argument")
 
-	// NOT HOISTED: a degenerate slug — three characters or fewer carries no information. `yes`
-	// slugs to `yes` (3) and stays inline; `true` slugs to `true` (4) and hoists. Both are value
-	// returns, so only the slug length separates them.
-	fmt.Println(echo("yes"), echo("true"))
+	// NOT HOISTED: a degenerate slug — two characters or fewer carries no information (§4.10
+	// amended the floor from ≤3). `OK` folds to `ok` (2) and stays inline; `yes` slugs to `yes`
+	// (3) and now hoists, as does `true` (4). All are value returns, so only the slug length
+	// separates them.
+	fmt.Println(echo("OK"), echo("yes"), echo("true"))
+
+	// HOISTED with the §4.10 mixed-case leading-word fold: a leading uppercase run folds whole
+	// (`BLAKE2s-256` -> blake2s256ˢ, not bLAKE2s256ˢ), and a run followed by a lowercase letter
+	// keeps its last upper as the interior word's initial (`HTTPServer` -> httpServer).
+	fmt.Println(echo("BLAKE2s-256"), echo("HTTPServer ready"))
 
 	// NOT HOISTED: the empty literal already costs 0 B (an empty span's ToArray is Array.Empty).
 	fmt.Println(echo("") == "")

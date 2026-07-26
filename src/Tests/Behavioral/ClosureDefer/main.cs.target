@@ -4,9 +4,12 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object byeˢ = (@string)"bye"u8;
+
 internal static Action makeGreeter(@string name) {
     return () => func((defer, recover) => {
-        deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"bye", name, defer);
+        deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), byeˢ, name, defer);
         fmt.Println((@string)"hi"u8, name);
     });
 }

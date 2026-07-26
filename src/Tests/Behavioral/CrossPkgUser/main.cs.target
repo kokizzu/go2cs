@@ -124,8 +124,11 @@ internal static @string Label(this cert c) {
     return certˢ;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string waxˢ = "wax"u8;
+
 internal static @string Seal(this cert c) {
-    return "wax"u8;
+    return waxˢ;
 }
 
 internal static nint Rating(this cert c) {
@@ -182,6 +185,7 @@ private static readonly object promotedLabelˢ = (@string)"promoted label:"u8;
 private static readonly object coarseˢ = (@string)"coarse"u8;
 private static readonly object fineˢ = (@string)"fine"u8;
 private static readonly object unknownˢ = (@string)"unknown"u8;
+private static readonly @string tagˢ = "tag"u8;
 private static readonly object tokenˢ = (@string)"token:"u8;
 private static readonly @string abcdeˢ = "abcde"u8;
 private static readonly object leafˢ = (@string)"leaf:"u8;
@@ -300,7 +304,7 @@ internal static void Main() => func((defer, recover) => {
     fmt.Println(sam.Sample(), sam.Sample(), (~pr).Hits);
     var h = Ꮡ(new holder<nint>(Cache: Ꮡ(new CrossPkgLib.Cache<nint>(nil)), name: "h"u8));
     fmt.Println(h.Value.Cache.Value.Bump(), h.Value.Cache.Value.Bump(), (~h).name);
-    var mk = CrossPkgLib.MakeMarker("tag"u8);
+    var mk = CrossPkgLib.MakeMarker(tagˢ);
     fmt.Println(mk.ΔΔMarker);
     CrossPkgLibꓸToken tok = CrossPkgLib.AsToken(42);
     fmt.Println(tokenˢ, tok);

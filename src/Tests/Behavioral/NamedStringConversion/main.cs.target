@@ -14,12 +14,13 @@ internal static @string Error(this errorString e) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string kaboomˢ = "kaboom"u8;
+private static readonly @string tagˢ = "tag"u8;
 private static readonly @string jsonOmitemptyˢ = "json,omitempty"u8;
 
 internal static void Main() {
     error e = ((errorString)(@string)kaboomˢ);
     fmt.Println(e.Error());
-    label l = ((label)(@string)"tag"u8);
+    label l = ((label)(@string)tagˢ);
     fmt.Println(l, len(l));
     label st = ((label)(@string)jsonOmitemptyˢ);
     fmt.Println(st[0], st[4]);

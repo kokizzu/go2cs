@@ -36,8 +36,11 @@ private static readonly @string circleˢ = "circle"u8;
     internal nint tag;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dotˢ = "dot"u8;
+
 internal static @string name(this dot d) {
-    return "dot"u8;
+    return dotˢ;
 }
 
 internal static void grow(this dot d, nint n) {
@@ -99,6 +102,7 @@ internal static @string firstInterface(any x) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string multiShapeOrErrorˢ = "multi shape-or-error"u8;
+private static readonly @string nilˢ = "nil"u8;
 
 internal static @string multi(any x) {
     switch (x.type()) {
@@ -108,7 +112,7 @@ internal static @string multi(any x) {
         return multiShapeOrErrorˢ;
     }
     case null: {
-        return "nil"u8;
+        return nilˢ;
     }
     default: {
         var t = x;

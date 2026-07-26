@@ -5,6 +5,7 @@ using fmt = fmt_package;
 partial class main_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object abcˢ = (@string)"abc"u8;
 private static readonly @string foundˢ = "found"u8;
 
 internal static void Main() {
@@ -24,7 +25,7 @@ internal static void Main() {
             return fmt.Sprintf("other:%v"u8, t);
         }}
     };
-    fmt.Println(pick((@string)"abc"u8));
+    fmt.Println(pick(abcˢ));
     fmt.Println(pick((nint)(42)));
     fmt.Println(pick(true));
     var wrap = @string (@string s, bool quote) => {

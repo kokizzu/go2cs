@@ -64,6 +64,7 @@ private static readonly @string valOnlyPointerˢ = "ValOnly-pointer"u8;
 private static readonly @string mixedValueˢ = "Mixed-value    "u8;
 private static readonly @string mixedPointerˢ = "Mixed-pointer  "u8;
 private static readonly @string wrongSigˢ = "WrongSig       "u8;
+private static readonly @string intˢ = "int            "u8;
 private static readonly @string gboxIntˢ = "gbox-int       "u8;
 private static readonly @string gboxStringˢ = "gbox-string    "u8;
 
@@ -85,7 +86,7 @@ internal static void Main() {
     (s, ok) = pmslib.TrySpeak(new WrongSig(nil));
     report(wrongSigˢ, s, ok);
     (s, ok) = pmslib.TrySpeak((nint)(42));
-    report("int            "u8, s, ok);
+    report(intˢ, s, ok);
     (s, ok) = pmslib.TryGet(new gbox<nint>(v: 7));
     report(gboxIntˢ, s, ok);
     (s, ok) = pmslib.TryGet(new gbox<@string>(v: "g"u8));

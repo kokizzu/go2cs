@@ -58,6 +58,9 @@ internal static nint /*total*/ closures(nint n) {
     return total;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string negˢ = "neg"u8;
+
 internal static (nint @out, @string label) compute(nint x) {
     nint @out = default!;
     @string label = default!;
@@ -66,7 +69,7 @@ internal static (nint @out, @string label) compute(nint x) {
             @out += 1000;
         });
         if (x < 0) {
-            (@out, label) = (-1, "neg");
+            (@out, label) = (-1, negˢ);
             return;
         }
         (@out, label) = (@double(x), fmt.Sprintf("v=%d"u8, x));

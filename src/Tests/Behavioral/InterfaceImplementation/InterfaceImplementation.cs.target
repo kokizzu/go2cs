@@ -22,6 +22,10 @@ partial class main_package {
     public @string Color;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object gobˢ = (@string)"gob"u8;
+private static readonly object canˢ = (@string)"can"u8;
+
 internal static void Main() {
     var f = @new<Frog>();
     var d = @new<Dog>();
@@ -31,7 +35,7 @@ internal static void Main() {
     fmt.Printf("Iface cmp result = %v\n"u8, AreEqual(zoo[0], f));
     fmt.Printf("Iface cmp result = %v\n"u8, AreEqual(zoo[0], zoo[0]));
     fmt.Printf("Iface cmp result = %v\n"u8, !AreEqual(zoo[0], t));
-    any stored = (@string)"gob"u8;
+    any stored = gobˢ;
     fmt.Printf("any cmp = %v %v\n"u8, !AreEqual(stored, (@string)("gob")), !AreEqual(stored, (@string)("xml")));
     checkErr(1);
     checkErr(0);
@@ -39,7 +43,7 @@ internal static void Main() {
     Animal a = default!;
     fmt.Printf("%T\n"u8, a);
     foreach (var (_, aΔ1) in zoo) {
-        fmt.Println(aΔ1.Type(), (@string)"can"u8, aΔ1.Swim());
+        fmt.Println(aΔ1.Type(), canˢ, aΔ1.Swim());
     }
     fmt.Printf("%T\n"u8, a);
     ShowZoo(Ꮡzoo);
@@ -117,7 +121,7 @@ public static void ShowZoo(ж<array<Animal>> Ꮡzoo) {
     foreach (var (_, vᴛ1) in zoo) {
         a = vᴛ1;
 
-        fmt.Println(a.Type(), (@string)"can"u8, a.Swim());
+        fmt.Println(a.Type(), canˢ, a.Swim());
     }
 }
 

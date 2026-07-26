@@ -14,6 +14,7 @@ internal static ж<holder> ᏑgHolder = new(default(holder));
 internal static ref holder gHolder => ref ᏑgHolder.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object addˢ = (@string)"add:"u8;
 private static readonly object loadˢ = (@string)"load:"u8;
 private static readonly object swapˢ = (@string)"swap:"u8;
 private static readonly object casOkˢ = (@string)"cas ok:"u8;
@@ -30,7 +31,7 @@ private static readonly object globalFieldˢ = (@string)"global field:"u8;
 internal static void Main() {
     ref var n = ref heap(new atomic.Int32(), out var Ꮡn);
     Ꮡn.Store(10);
-    fmt.Println((@string)"add:"u8, Ꮡn.Add(5));
+    fmt.Println(addˢ, Ꮡn.Add(5));
     fmt.Println(loadˢ, Ꮡn.Load());
     fmt.Println(swapˢ, Ꮡn.Swap(100));
     fmt.Println(casOkˢ, Ꮡn.CompareAndSwap(100, 7));

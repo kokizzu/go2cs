@@ -58,7 +58,10 @@ private static readonly @string comparisonOperandLiteralˢ = "comparison operand
 private static readonly @string nopeˢ = "nope"u8;
 private static readonly @string tailˢ = "tail"u8;
 private static readonly object formatTrailingArgumentˢ = (@string)"format trailing argument"u8;
+private static readonly @string yesˢ = "yes"u8;
 private static readonly @string trueˢ = "true"u8;
+private static readonly @string blake2s256ˢ = "BLAKE2s-256"u8;
+private static readonly @string httpServerReadyˢ = "HTTPServer ready"u8;
 private static readonly @string compositeKeyˢ = "composite key"u8;
 private static readonly @string theQuickBrownFoxJumpsˢ = "the quick brown fox jumps over"u8;
 private static readonly @string theQuickBrownFoxJumpsˢ2 = "the quick brown fox jumps under"u8;
@@ -82,7 +85,8 @@ internal static void Main() {
     fmt.Println(withSuffix(tailˢ));
     fmt.Println(mutableBytes());
     fmt.Printf("format position literal %s\n"u8, formatTrailingArgumentˢ);
-    fmt.Println(echo("yes"u8), echo(trueˢ));
+    fmt.Println(echo("OK"u8), echo(yesˢ), echo(trueˢ));
+    fmt.Println(echo(blake2s256ˢ), echo(httpServerReadyˢ));
     fmt.Println(echo(""u8) == ""u8);
     var parts = new @string[]{"composite element one"u8, "composite element two"u8}.slice();
     var boxed = new box("struct composite element"u8, "struct composite tag"u8);
