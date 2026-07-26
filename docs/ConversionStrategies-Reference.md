@@ -3287,6 +3287,26 @@ both a nil and an empty map, all output-compared vs `go run`. Before the fix the
 `m[nil] = …` threw `ArgumentNullException`, which is how sync's `TestIssue40999` died as an
 infrastructure error.)
 
+**PRINTING a nil-key map is a second such consumer, one layer down.** `fmt` orders map keys through
+`internal/fmtsort`, which walks the map with `reflect.Value.MapRange` and compares the key Values —
+and the reflection bridge typed each entry from its BOXED OBJECT, which for the nil key is `null`, so
+`Key()` handed back the **invalid zero Value**. `fmtsort.compare` cannot compare that at all: it reads
+`aVal.Type()` first thing and falls through to `panic("bad type in compare: " + aType.String())` on a
+nil type, so printing *any* map carrying a nil key died inside `fmt`. Go's rule is the slot rule the
+bridge already applies to struct fields and slice elements — **a map entry Value is typed by the map's
+DECLARED key/value type**, so `map[any]V` hands out Kind Interface keys whatever the dynamic value is,
+and a nil key or value is a VALID nil Value of that type. `MapIter` now carries the map's key and value
+types (plus the map Value's read-only bits) and `Key()`/`Value()` build through `makeTypedValue`, which
+also makes `fmtsort`'s nil-compares-low rule reachable for the first time — a nil key sorts first,
+exactly as Go prints it. (Guarded two ways: `NilMapKey` gains the printing shapes — `map[any]int` with
+a nil key through both `Println` and `%v`, a nil-only map, `map[error]int`, `map[*int]int` — and the
+new `ReflectMapRangeNilKey` drives the bridge directly over `map[any]int`, a named `map[any]int`,
+`map[*int]string`, `map[error]int`, a concrete `map[string]int`, a slice-valued map and a nil
+interface VALUE, printing only order-independent facts because Go's map iteration order is
+unspecified. Pre-fix it reports `any: 0 0 1 5 3` — zero interface-kind keys, zero nil keys, ONE
+invalid key, and a value sum of 5 instead of 6 because the nil entry was skipped — against Go's
+`any: 3 1 0 6 3`.)
+
 ### Named map types and constrained map access
 
 A defined map type — `type Grades map[string]int` — emits the `[GoType("map[K, V]")] partial struct` forward declaration (completing the long-standing `visitMapType` stub), implemented by go2cs-gen's Map template: full forwarding of `IMap<K, V>` (including the two-value comma-ok indexer), `IDictionary<K, V>`, enumeration, and the `ISupportMake` factory through the wrapped `map<K, V>`. Its composite literal wraps the concrete map literal in the named constructor — `new Grades(new map<@string, nint>{["a"u8] = 1})` — mirroring named arrays/slices (a direct indexer-initializer would target a default wrapper with no backing dictionary; the old emission produced Go-style `key: value` inside C# braces — CS1513). Comma-ok indexing works through a **constrained map type parameter** too: `v, ok := m[k]` where `M ~map[K]V` detects the map CORE of the constraint (both at the assignment's tuple gate and in the index emission) and routes the same `m[k, ꟷ]` two-value indexer, which lives on `IMap<K, V>` itself. The **nil comparison** `m == nil` — Go's only legal map comparison, maps.Clone's nil-preserve guard — emits the `IMap.IsNil` property (`if (m.IsNil)`; backing-store null, distinct from an allocated empty map — no operator exists on a type parameter, CS8761), and `delete(m, k)` on a constrained map binds a golib `delete(IMap<K, V>, K)` overload (key/value types infer from the interface conversion). (Guarded by the `GenericTypeInference` extension `EqualMaps` — a maps.Equal clone over a named map type through the constraint, comma-ok + comparable-erased equality, values vs Go.)

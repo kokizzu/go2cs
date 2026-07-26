@@ -442,6 +442,14 @@ private static uintptr reflectPointerToken(ΔValue v) {
 // IEnumerable of KeyValuePair<K,V>). The Go hiter-based iteration has no managed form.
 partial struct MapIter {
     [GoReflectCompanion] internal IEnumerator? mapEnum;
+
+    // The map's DECLARED key and value types, plus the map Value's read-only bits. Go types every
+    // entry Value by the map's declared types — the same slot rule Index/Field follow — so an
+    // interface-keyed map yields Kind Interface keys whatever the dynamic value is, and a NIL key or
+    // value is a VALID nil Value of that type rather than the invalid zero Value.
+    [GoReflectCompanion] internal System.Type? mapKeyType;
+    [GoReflectCompanion] internal System.Type? mapValueType;
+    [GoReflectCompanion] internal flag mapRO;
 }
 
 // MapRange returns a range iterator for a map.
@@ -450,6 +458,10 @@ public static ж<MapIter> MapRange(this ΔValue v) {
     if (v.live is IEnumerable e) {
         it.mapEnum = e.GetEnumerator();
     }
+    System.Type? mapType = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    it.mapKeyType = GoReflect.KeyType(mapType);
+    it.mapValueType = GoReflect.ElementType(mapType);
+    it.mapRO = (flag)(v.flag & flagRO);
     return Ꮡit;
 }
 
@@ -730,16 +742,25 @@ internal static @string methodName() {
     return iter.mapEnum is not null && iter.mapEnum.MoveNext();
 }
 
-// Key returns the key of the iterator's current map entry.
+// Key returns the key of the iterator's current map entry — typed by the map's DECLARED key type
+// (see MapIter): Go's `map[any]V` hands out Kind Interface keys, and a NIL key (golib keeps it in a
+// dedicated slot, since Dictionary rejects a null key) is a valid nil Value of that type. Inferring
+// the type from the boxed key instead left a nil key as the INVALID zero Value, which
+// internal/fmtsort's key ordering cannot compare at all — `compare` fell through to
+// `panic("bad type in compare: " + aType.String())` on a nil type, so PRINTING any map with a nil
+// key died inside fmt.
 [GoRecv] public static ΔValue Key(this ref MapIter iter) {
     object? cur = iter.mapEnum?.Current;
-    return makeReflectValue(cur?.GetType().GetProperty("Key")?.GetValue(cur));
+    object? key = cur?.GetType().GetProperty("Key")?.GetValue(cur);
+    return iter.mapKeyType is null ? makeReflectValue(key) : makeTypedValue(key, iter.mapKeyType, null, iter.mapRO);
 }
 
-// Value returns the value of the iterator's current map entry.
+// Value returns the value of the iterator's current map entry, typed by the map's declared value
+// type (see Key).
 [GoRecv] public static ΔValue Value(this ref MapIter iter) {
     object? cur = iter.mapEnum?.Current;
-    return makeReflectValue(cur?.GetType().GetProperty("Value")?.GetValue(cur));
+    object? value = cur?.GetType().GetProperty("Value")?.GetValue(cur);
+    return iter.mapValueType is null ? makeReflectValue(value) : makeTypedValue(value, iter.mapValueType, null, iter.mapRO);
 }
 
 // ==== reflect.Type canonicalization (hand-owned Value.Type + toType) ====

@@ -1147,6 +1147,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
+    public void CheckReflectMapRangeNilKey() => CheckTarget("ReflectMapRangeNilKey");
+
+    [TestMethod]
     public void CheckReinterpretPointerLifetime() => CheckTarget("ReinterpretPointerLifetime");
 
     [TestMethod]

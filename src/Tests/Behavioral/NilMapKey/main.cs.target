@@ -35,6 +35,10 @@ private static readonly object errorCommaOkˢ = (@string)"error comma-ok:"u8;
 private static readonly object errorAfterDeleteˢ = (@string)"error after delete:"u8;
 private static readonly object nilMapˢ = (@string)"nil map:"u8;
 private static readonly object emptyMapˢ = (@string)"empty map:"u8;
+private static readonly object printˢ = (@string)"print:"u8;
+private static readonly object printOnlyNilˢ = (@string)"print only nil:"u8;
+private static readonly object printErrorMapˢ = (@string)"print error map:"u8;
+private static readonly object printPtrMapˢ = (@string)"print ptr map:"u8;
 
 internal static void Main() {
     var m = new map<any, @string>();
@@ -85,6 +89,16 @@ internal static void Main() {
     var empty = new map<any, @string>();
     var (_, eok2) = empty[default!, ꟷ];
     fmt.Println(emptyMapˢ, len(empty), eok2);
+    var pm = new map<any, nint>{[default!] = 1, [(@string)"b"u8] = 2};
+    fmt.Println(printˢ, pm);
+    fmt.Printf("printf: %v\n"u8, pm);
+    var only = new map<any, nint>{[default!] = 5};
+    fmt.Println(printOnlyNilˢ, only);
+    var pe = new map<error, nint>{[default!] = 7};
+    fmt.Println(printErrorMapˢ, pe);
+    ж<nint> pp = default!;
+    var pptr = new map<ж<nint>, nint>{[pp] = 8};
+    fmt.Println(printPtrMapˢ, pptr);
 }
 
 } // end main_package

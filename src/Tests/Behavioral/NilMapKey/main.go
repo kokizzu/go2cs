@@ -89,4 +89,23 @@ func main() {
 	empty := make(map[any]string)
 	_, eok2 := empty[nil]
 	fmt.Println("empty map:", len(empty), eok2)
+
+	// ---- PRINTING a map that carries a nil key ----
+	// fmt renders the nil entry as any other, with `<nil>` for the key; Go orders map keys through
+	// internal/fmtsort, where nil compares LOW, so the nil entry leads. (Only ONE non-nil key type
+	// per map here: fmtsort orders interface keys of DIFFERENT concrete types by type-descriptor
+	// address, which is no more predictable in Go than it is in C#.)
+	pm := map[any]int{nil: 1, "b": 2}
+	fmt.Println("print:", pm)
+	fmt.Printf("printf: %v\n", pm)
+
+	only := map[any]int{nil: 5}
+	fmt.Println("print only nil:", only)
+
+	pe := map[error]int{nil: 7}
+	fmt.Println("print error map:", pe)
+
+	var pp *int
+	pptr := map[*int]int{pp: 8}
+	fmt.Println("print ptr map:", pptr)
 }
