@@ -521,6 +521,17 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 			if selectorExpr, ok := lhs.(*ast.SelectorExpr); ok {
 				ident = getIdentifier(selectorExpr.Sel)
 
+				// A FIELD/package-var write is a write to EXISTING storage, exactly like the
+				// star-deref and index forms below — so it counts as REASSIGNED. Leaving it
+				// uncounted made a parallel assignment whose targets are all selectors satisfy
+				// NEITHER tuple-path gate (`lhsLen == reassignedCount` nor `lhsLen ==
+				// declaredCount`), so it shattered into sequential stores and lost the swap's
+				// implicit temporary: regexp's onepass `inst.Out, inst.Arg = inst.Arg, inst.Out`
+				// emitted `Out = Arg; Arg = Out;`, leaving BOTH fields equal to the original Arg —
+				// every alt whose empty-match leg needed swapping was then rejected, so `^[a-c]*$`
+				// and friends silently lost their one-pass engine (and `^[a-c]+$` stopped matching).
+				reassignedCount++
+
 				isInterface, isEmpty := v.isInterface(ident)
 				lhsTypeIsInterface[i] = isInterface && !isEmpty
 				typeName := v.getExprTypeName(ident, true)
@@ -921,6 +932,17 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 				}
 
 				if i < rhsLen {
+					// The untyped `nil` literal has no pointer type of its own, yet `p = nil` on a
+					// pointer variable IS a pointer repoint. Without this the box-reassignment
+					// triggers below missed it, the LHS rendered as the deref'd VALUE alias, and
+					// `p = default!` ZEROED THE POINTEE while leaving the box `Ꮡp` non-nil — so
+					// the caller's `p != nil` still passed and it walked a wiped-out struct
+					// (regexp's `makeOnePass`, whose `p = nil` gave compileOnePass an
+					// onePassProg with an empty Inst slice → index-out-of-range in cleanupOnePass).
+					if argIsUntypedNil(rhsExprs[i], v.info) {
+						return i < lhsLen && isPointer(v.getExprType(lhsExprs[i]))
+					}
+
 					return isPointer(v.getExprType(rhsExprs[i]))
 				}
 

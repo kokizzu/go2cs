@@ -220,6 +220,44 @@ func probeP1[V any](seq []V) (V, int) {
 	return *p, n
 }
 
+// Q1: SELF-RECURSIVE closure. `walk` is declared, then assigned a literal whose body calls
+// `walk` — Go's standard recursive-closure idiom (regexp's onepass `check`). The write to `walk`
+// happens AFTER the literal exists (the RHS is evaluated first), even though the assignment
+// STARTS before it, so the capture must be shared, never value-snapshotted: a snapshot captures
+// the still-nil delegate and the first recursive call nil-derefs. The write scan therefore counts
+// a write whose statement ENCLOSES the referencing literal. Go: Q1: 55 11
+func probeQ1() {
+	var walk func(n int) int
+	calls := 0
+	walk = func(n int) int {
+		calls++
+		if n <= 0 {
+			return 0
+		}
+		return n + walk(n-1)
+	}
+	fmt.Println("Q1:", walk(10), calls)
+}
+
+// Q2: MUTUALLY recursive closures — the same edge one level out (each literal is enclosed by the
+// write to its OWN name, and reads the other name that a later write fills in). Go: Q2: true false
+func probeQ2() {
+	var even, odd func(n int) bool
+	even = func(n int) bool {
+		if n == 0 {
+			return true
+		}
+		return odd(n - 1)
+	}
+	odd = func(n int) bool {
+		if n == 0 {
+			return false
+		}
+		return even(n - 1)
+	}
+	fmt.Println("Q2:", even(8), odd(8))
+}
+
 func main() {
 	probeA1()
 	probeA2()
@@ -242,6 +280,8 @@ func main() {
 	probeM1()
 	probeN1()
 	probeN2()
+	probeQ1()
+	probeQ2()
 	v, n := probeP1([]int{10, 20, 30})
 	fmt.Println("P1:", v, n)
 }

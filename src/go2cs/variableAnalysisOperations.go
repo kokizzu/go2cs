@@ -2314,8 +2314,9 @@ func (v *Visitor) varShareFacts(varObj types.Object) captureShareFacts {
 //   - any of the above INSIDE any func literal — the literal may run at any time after creation.
 //
 // A plain body write counts only if it can execute after some referencing literal is created: it is
-// positioned after the literal, or both sit inside the same for/range loop (a later iteration's
-// write follows an earlier iteration's creation).
+// positioned after the literal, it ENCLOSES the literal (the literal is evaluated as part of the
+// write — `check = func(…){ … check(…) … }`, Go's self-recursive closure), or both sit inside the
+// same for/range loop (a later iteration's write follows an earlier iteration's creation).
 func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFacts {
 	facts := captureShareFacts{}
 	decl := v.captureAnalysisDecl
@@ -2325,7 +2326,12 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 	}
 
 	type site struct {
-		pos   token.Pos
+		pos token.Pos
+		// end bounds a WRITE site's syntactic extent. A write whose statement/expression textually
+		// CONTAINS a referencing literal executes AFTER that literal is created (the RHS, or the
+		// call's argument list, is evaluated first) even though it starts before it — the
+		// self-recursive closure idiom `check = func(…){ … check(…) … }`. Zero for literal sites.
+		end   token.Pos
 		loops []ast.Node
 	}
 
@@ -2355,13 +2361,13 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 		return root != nil && v.info.ObjectOf(root) == varObj && v.info.Defs[root] == nil
 	}
 
-	recordWrite := func(pos token.Pos) {
+	recordWrite := func(node ast.Node) {
 		if len(litStack) > 0 {
 			anytimeWrite = true
 			return
 		}
 
-		bodyWrites = append(bodyWrites, site{pos, snapshotLoops()})
+		bodyWrites = append(bodyWrites, site{node.Pos(), node.End(), snapshotLoops()})
 	}
 
 	ast.Inspect(decl.Body, func(n ast.Node) bool {
@@ -2407,7 +2413,7 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 			if node.Tok == token.ASSIGN {
 				for _, expr := range []ast.Expr{node.Key, node.Value} {
 					if expr != nil && rootsAtVar(expr) {
-						recordWrite(node.Pos())
+						recordWrite(node)
 					}
 				}
 			}
@@ -2420,7 +2426,7 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 				for i := range litStack {
 					if !litStack[i].recorded {
 						litStack[i].recorded = true
-						litRefs = append(litRefs, site{litStack[i].lit.Pos(), litStack[i].loops})
+						litRefs = append(litRefs, site{litStack[i].lit.Pos(), token.NoPos, litStack[i].loops})
 					}
 				}
 			}
@@ -2428,13 +2434,13 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 		case *ast.AssignStmt:
 			for _, lhs := range node.Lhs {
 				if rootsAtVar(lhs) {
-					recordWrite(node.Pos())
+					recordWrite(node)
 				}
 			}
 
 		case *ast.IncDecStmt:
 			if rootsAtVar(node.X) {
-				recordWrite(node.Pos())
+				recordWrite(node)
 			}
 
 		case *ast.UnaryExpr:
@@ -2448,7 +2454,7 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 			}
 
 			if v.callImpliesReceiverAddr(node, varObj) {
-				recordWrite(node.Pos())
+				recordWrite(node)
 			}
 
 		case *ast.SelectorExpr:
@@ -2483,7 +2489,11 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 
 	for _, w := range bodyWrites {
 		for _, lit := range litRefs {
-			if w.pos > lit.pos || sharesLoop(w.loops, lit.loops) {
+			// `w.pos < lit.pos < w.end` — the literal sits INSIDE the write, so the write lands
+			// after it exists: `check = func(…){ … check(…) … }`. Snapshotting there captured the
+			// still-nil delegate and every recursive call NREd (regexp's makeOnePass, which made
+			// `^.$` and most of the package's patterns uncompilable).
+			if w.pos > lit.pos || (lit.pos > w.pos && lit.pos < w.end) || sharesLoop(w.loops, lit.loops) {
 				facts.writtenAfterCapture = true
 				return facts
 			}

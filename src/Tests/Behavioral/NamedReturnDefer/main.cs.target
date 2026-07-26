@@ -101,6 +101,33 @@ internal static (nint code, @string msg) guarded(bool boom) {
     return (code, msg);
 }
 
+internal static (ж<box>, error err) parseLimited(nint n) {
+    ж<box> _ᴛ1 = default!;
+    error err = default!;
+    func((defer, recover) => {
+        defer(() => {
+            {
+                var r = recover(); if (r != default!) {
+                    err = fmt.Errorf("too big: %v"u8, r);
+                }
+            }
+        });
+        if (n > 10) {
+            throw panic(n);
+        }
+        (_ᴛ1, err) = (Ꮡ(new box(n * 2)), default!);
+    });
+    return (_ᴛ1, err);
+}
+
+[GoType] partial struct box {
+    internal nint v;
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object parseLimited4ˢ = (@string)"parseLimited(4):"u8;
+private static readonly object parseLimited99ˢ = (@string)"parseLimited(99):"u8;
+
 internal static void Main() {
     fmt.Println(incr());
     fmt.Println(incrBare());
@@ -115,6 +142,13 @@ internal static void Main() {
     fmt.Println(c1, m1);
     var (c2, m2) = guarded(true);
     fmt.Println(c2, m2);
+    {
+        var (bΔ1, err) = parseLimited(4); if (err == default!) {
+            fmt.Println(parseLimited4ˢ, (~bΔ1).v, err);
+        }
+    }
+    var (b2, err2) = parseLimited(99);
+    fmt.Println(parseLimited99ˢ, b2 == nil, err2);
 }
 
 } // end main_package

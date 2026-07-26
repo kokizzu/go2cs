@@ -233,6 +233,38 @@ internal static (V, nint) probeP1<V>(slice<V> seq) {
     return (p.ValueSlot, n);
 }
 
+internal static void probeQ1() {
+    ref var walk = ref heap<Func<nint, nint>>(out var Ꮡwalk);
+    nint calls = 0;
+    walk = (nint n) => {
+        calls++;
+        if (n <= 0) {
+            return 0;
+        }
+        return n + Ꮡwalk.ValueSlot(n - 1);
+    };
+    fmt.Println((@string)"Q1:"u8, walk(10), calls);
+}
+
+internal static void probeQ2() {
+    Func<nint, bool> even = default!;
+    ref var odd = ref heap<Func<nint, bool>>(out var Ꮡodd);
+    even = (nint n) => {
+        if (n == 0) {
+            return true;
+        }
+        return Ꮡodd.ValueSlot(n - 1);
+    };
+    var evenʗ1 = even;
+    odd = (nint n) => {
+        if (n == 0) {
+            return false;
+        }
+        return evenʗ1(n - 1);
+    };
+    fmt.Println((@string)"Q2:"u8, even(8), odd(8));
+}
+
 internal static void Main() {
     probeA1();
     probeA2();
@@ -255,6 +287,8 @@ internal static void Main() {
     probeM1();
     probeN1();
     probeN2();
+    probeQ1();
+    probeQ2();
     var (v, n) = probeP1(new nint[]{10, 20, 30}.slice());
     fmt.Println((@string)"P1:"u8, v, n);
 }

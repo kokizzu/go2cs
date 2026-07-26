@@ -342,6 +342,25 @@ func (v *Visitor) aliasedElementTypeName(t types.Type) string {
 }
 
 func (v *Visitor) namedResultName(param *types.Var) string {
+	// A BLANK result gets a generated slot name: `_` is C#'s DISCARD, so declaring it would make
+	// every later `_ = expr` in the same scope bind to the declaration, and two blank results
+	// would collide outright. The name is interned per result object so the declaration, the
+	// return-statement assignment and the post-defer read all agree (see blankResultNames).
+	if isDiscardedVar(param.Name()) {
+		if name, ok := v.blankResultNames[param]; ok {
+			return name
+		}
+
+		if v.blankResultNames == nil {
+			v.blankResultNames = map[*types.Var]string{}
+		}
+
+		name := v.getTempVarName("_")
+		v.blankResultNames[param] = name
+
+		return name
+	}
+
 	if ident := v.getVarIdent(param); ident != nil {
 		return getSanitizedIdentifier(v.getIdentName(ident))
 	}
@@ -350,9 +369,21 @@ func (v *Visitor) namedResultName(param *types.Var) string {
 }
 
 // detectNamedReturnDefer reports whether a function with the given signature needs the
-// named-return-defer handling: it uses defer/recover AND all of its results are named. When so,
-// it returns the result identifiers in order (used to declare them outside the func() wrapper
-// and to return them after it runs, so deferred code — including recover — can mutate them).
+// named-return-defer handling: it uses defer/recover AND at least one of its results is named.
+// When so, it returns the result identifiers in order (used to declare them outside the func()
+// wrapper and to return them after it runs, so deferred code — including recover — can mutate
+// them).
+//
+// Go permits MIXING blank and named results (`func parse(s string, flags Flags) (_ *Regexp, err
+// error)`); such a signature still needs the handling, because deferred code can mutate `err`.
+// A blank slot cannot be named by the body — only a return statement writes it — but it must
+// still be declared, so namedResultName mints it a generated name. Rejecting the whole signature
+// on the first blank silently dropped the mechanism: regexp/syntax's `parse` recovered ErrLarge
+// into `err` and then returned the ZERO tuple from the wrapper, so every over-large expression
+// came back as (nil, nil) — reported as a successful parse of a regexp that must not compile.
+//
+// A result list that is entirely UNNAMED (or entirely blank) keeps the plain wrapper: there is
+// nothing deferred code could mutate, and Go likewise returns the zero results after a recover.
 func (v *Visitor) detectNamedReturnDefer(sig *types.Signature, hasDefer, hasRecover bool) (bool, []string) {
 	if !(hasDefer || hasRecover) || sig == nil || sig.Results() == nil {
 		return false, nil
@@ -365,15 +396,26 @@ func (v *Visitor) detectNamedReturnDefer(sig *types.Signature, hasDefer, hasReco
 	}
 
 	names := make([]string, 0, results.Len())
+	hasNamedResult := false
 
 	for i := range results.Len() {
 		param := results.At(i)
 
-		if param.Name() == "" || isDiscardedVar(param.Name()) {
+		// A truly UNNAMED result (`func f() (int, error)`) cannot be mixed with named ones in
+		// Go, so seeing one settles the whole signature.
+		if param.Name() == "" {
 			return false, nil
 		}
 
+		if !isDiscardedVar(param.Name()) {
+			hasNamedResult = true
+		}
+
 		names = append(names, v.namedResultName(param))
+	}
+
+	if !hasNamedResult {
+		return false, nil
 	}
 
 	return true, names

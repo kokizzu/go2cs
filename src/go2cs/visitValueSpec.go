@@ -605,7 +605,28 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 			} else {
 				access := packageVarAccess(goIDName, v.getIdentType(ident))
 				typeLenDeviation += token.Pos(len(access) + 4)
-				if v.isAddressedGlobal(ident) {
+
+				// A Go-CONSTANT-valued initializer is still order-sensitive in C#. Go folds the
+				// value at compile time, but the emission KEEPS the source expression for
+				// readability — and that expression can reference a named/string/untyped const
+				// emitted as a `static readonly` FIELD (`var pipeLabel = string(labelPipe) + "!"`),
+				// whose own field initializer C# may run later. So this arm needs the same
+				// relocation the non-constant arm above performs; collectMovedInitVars already
+				// flags it.
+				ordinal, moved := v.movedInitOrdinal(v.info.Defs[ident])
+
+				if moved {
+					if v.isAddressedGlobal(ident) {
+						v.writeAddressedGlobalDecl(access, csTypeName, csIDName, "", isInherentlyHeapAllocatedType(v.getIdentType(ident)))
+					} else {
+						v.writeOutput("%s static %s %s;", access, csTypeName, csIDName)
+					}
+
+					methodName := packageInitMethodName(csIDName)
+					v.targetFile.WriteString(v.newline)
+					v.writeOutput("internal static void %s() { %s = %s; }", methodName, csIDName, csValue)
+					recordMovedInitMethod(ordinal, methodName)
+				} else if v.isAddressedGlobal(ident) {
 					// An addressed package var must be heap-boxed even when its initializer folds to
 					// a constant (runtime's `var uint16Eface any = uint16InterfacePtr(0)`, addressed
 					// via `efaceOf(&uint16Eface)`): convUnaryExpr emits the box form `Ꮡuint16Eface`,

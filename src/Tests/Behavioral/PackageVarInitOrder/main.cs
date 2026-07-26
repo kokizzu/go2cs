@@ -20,6 +20,8 @@ internal static void Main() {
     fmt.Println(stdinName);
     fmt.Println(computed);
     fmt.Println((~registry).count);
+    fmt.Println(len(kindNames), kindNames[kindFile], kindNames[kindPipe]);
+    fmt.Println(pipeLabel);
 }
 
 } // end main_package

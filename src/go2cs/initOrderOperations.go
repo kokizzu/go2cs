@@ -9,8 +9,10 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"go/constant"
 	"go/token"
 	"go/types"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -39,6 +41,11 @@ const PackageInitFileName = "package_init.cs"
 // initialized. Dependencies are resolved TRANSITIVELY through same-package function/method bodies
 // and function literals, mirroring Go's own initialization-order analysis (spec: "references …
 // directly or through function calls"). Keyed by the var's types.Object (interned per variable).
+//
+// A dependency is not only a package VAR. A Go CONSTANT whose C# form is a `static readonly` FIELD
+// — every named-type, string, complex, uintptr and untyped const (constEmittedAsStaticReadonly) —
+// is an ordinary static field initializer too, so it carries the identical hazard even though Go
+// treats it as compile-time and lists no initialization order for it at all.
 var packageMovedInitVars map[types.Object]int
 
 // packageMovedInitMethods maps each relocated initializer's InitOrder ordinal to the name of the
@@ -72,8 +79,9 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 	// manual conversion — dependency analysis is about Go semantics, not emission).
 	funcVarRefs := map[*types.Func]map[*types.Var]bool{}
 	funcFuncRefs := map[*types.Func]map[*types.Func]bool{}
+	funcConstRefs := map[*types.Func]map[*types.Const]bool{}
 
-	collectRefs := func(node ast.Node, vars map[*types.Var]bool, funcs map[*types.Func]bool) {
+	collectRefs := func(node ast.Node, vars map[*types.Var]bool, funcs map[*types.Func]bool, consts map[*types.Const]bool) {
 		ast.Inspect(node, func(n ast.Node) bool {
 			ident, ok := n.(*ast.Ident)
 
@@ -88,6 +96,13 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 				}
 			case *types.Func:
 				funcs[obj] = true
+			case *types.Const:
+				// Only a package-scope const that is emitted as a `static readonly` FIELD carries
+				// an initialization-order hazard; a real C# `const` is folded by the compiler and
+				// is order-free (see constEmittedAsStaticReadonly).
+				if obj.Parent() == scope && constEmittedAsStaticReadonly(obj) {
+					consts[obj] = true
+				}
 			}
 
 			return true
@@ -110,9 +125,11 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 
 			vars := map[*types.Var]bool{}
 			funcs := map[*types.Func]bool{}
-			collectRefs(funcDecl.Body, vars, funcs)
+			consts := map[*types.Const]bool{}
+			collectRefs(funcDecl.Body, vars, funcs, consts)
 			funcVarRefs[funcObj] = vars
 			funcFuncRefs[funcObj] = funcs
+			funcConstRefs[funcObj] = consts
 		}
 	}
 
@@ -152,6 +169,49 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 
 		delete(inProgress, fn)
 		closureCache[fn] = result
+
+		return result
+	}
+
+	// Same transitive closure over the STATIC-READONLY CONSTS a function reaches. A Go constant
+	// of a named type (`Op`), a string, or an untyped value has no C# `const` form — it is emitted
+	// as a `static readonly` FIELD (see constEmittedAsStaticReadonly), so it is subject to exactly
+	// the cross-part field-initializer ordering C# leaves undefined, just like a package var.
+	constClosureCache := map[*types.Func]map[*types.Const]bool{}
+	constInProgress := map[*types.Func]bool{}
+
+	var constClosure func(fn *types.Func) map[*types.Const]bool
+
+	constClosure = func(fn *types.Func) map[*types.Const]bool {
+		if cached, ok := constClosureCache[fn]; ok {
+			return cached
+		}
+
+		if constInProgress[fn] {
+			return nil // recursion cycle — the outer walk already accumulates these refs
+		}
+
+		directConsts, hasBody := funcConstRefs[fn]
+
+		if !hasBody {
+			return nil // imported/bodyless (asm) function — no same-package const deps
+		}
+
+		constInProgress[fn] = true
+		result := map[*types.Const]bool{}
+
+		for constObj := range directConsts {
+			result[constObj] = true
+		}
+
+		for callee := range funcFuncRefs[fn] {
+			for constObj := range constClosure(callee) {
+				result[constObj] = true
+			}
+		}
+
+		delete(constInProgress, fn)
+		constClosureCache[fn] = result
 
 		return result
 	}
@@ -211,13 +271,19 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 		// references inside literals (and an IIFE literal actually executes at init time).
 		directVars := map[*types.Var]bool{}
 		directFuncs := map[*types.Func]bool{}
-		collectRefs(initializer.Rhs, directVars, directFuncs)
+		directConsts := map[*types.Const]bool{}
+		collectRefs(initializer.Rhs, directVars, directFuncs, directConsts)
 
 		deps := map[*types.Var]bool{}
+		constDeps := map[*types.Const]bool{}
 		readsHoisted := false
 
 		for varObj := range directVars {
 			deps[varObj] = true
+		}
+
+		for constObj := range directConsts {
+			constDeps[constObj] = true
 		}
 
 		for fn := range directFuncs {
@@ -225,12 +291,16 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 				deps[varObj] = true
 			}
 
+			for constObj := range constClosure(fn) {
+				constDeps[constObj] = true
+			}
+
 			if !readsHoisted && readsHoistedClosure(fn) {
 				readsHoisted = true
 			}
 		}
 
-		if len(deps) == 0 && !readsHoisted {
+		if len(deps) == 0 && len(constDeps) == 0 && !readsHoisted {
 			continue
 		}
 
@@ -245,6 +315,20 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 				if movedVars[dep] {
 					mustMove = true // depends on a relocated var — only the ctor assigns it
 				} else if fileOf(dep.Pos()) != lhsFile {
+					mustMove = true // cross-file: C# cross-part initializer order is undefined
+				} else if dep.Pos() > lhs.Pos() {
+					mustMove = true // same-file forward reference: C# reads the zero value
+				}
+			}
+
+			// A `static readonly` const dependency is never itself relocatable (Go constants have
+			// no initialization order), so only its DECLARATION SITE matters — the same two
+			// hazards a var dependency has. regexp/syntax's parse_test.go `opNames` (index-keyed
+			// by the `Op` constants declared in regexp.go) read every key as the zero value and
+			// collapsed the whole 20-entry name table to one slot, so every Dump() printed the
+			// numeric `op3{a}` fallback instead of `lit{a}`.
+			for dep := range constDeps {
+				if fileOf(dep.Pos()) != lhsFile {
 					mustMove = true // cross-file: C# cross-part initializer order is undefined
 				} else if dep.Pos() > lhs.Pos() {
 					mustMove = true // same-file forward reference: C# reads the zero value
@@ -267,6 +351,61 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 			}
 		}
 	}
+}
+
+// constEmittedAsStaticReadonly reports whether a Go CONSTANT is emitted as a C# `static readonly`
+// FIELD rather than a compile-time `const` — the only shape that carries an initialization-order
+// hazard, since a real C# `const` is folded into every use site and can never be observed at its
+// zero value. Mirrors the emission decision in visitValueSpec.go's CONST arm; it deliberately
+// ERRS TOWARD `true`, because a false positive only costs one ordered relocation while a false
+// negative reinstates the zero-value read this rule exists to prevent.
+func constEmittedAsStaticReadonly(c *types.Const) bool {
+	if c == nil {
+		return false
+	}
+
+	declType := types.Unalias(c.Type())
+
+	// A const of a NAMED type — or of an ALIAS to one, which Go 1.23 keeps as *types.Alias — is a
+	// [GoType] wrapper STRUCT, and C# forbids `const` of a struct outright (CS0283).
+	if _, ok := declType.(*types.Named); ok {
+		return true
+	}
+
+	basic, ok := declType.Underlying().(*types.Basic)
+
+	if !ok {
+		return true // no C# constant form for anything else
+	}
+
+	info := basic.Info()
+
+	switch {
+	case info&types.IsUntyped != 0:
+		// Untyped consts render as the UntypedInt/UntypedFloat/UntypedComplex (or GoUntyped)
+		// wrapper structs.
+		return true
+	case info&types.IsString != 0:
+		// @string is a struct — even a concretely-typed `const s string = "x"`.
+		return true
+	case info&types.IsComplex != 0:
+		// System.Numerics.Complex / golib's complex64 — struct, so CS0283 again.
+		return true
+	}
+
+	switch basic.Kind() {
+	case types.Uintptr:
+		// golib's uintptr is a struct (golib/uintptr.cs), distinct from uint.
+		return true
+	case types.Int, types.Uint:
+		// nint/nuint accept only an int-range constant literal; a wider folded value demotes to
+		// `static readonly` with an unchecked cast (CS0133/CS0266).
+		if value, exact := constant.Int64Val(constant.ToInt(c.Val())); !exact || value < math.MinInt32 || value > math.MaxInt32 {
+			return true
+		}
+	}
+
+	return false
 }
 
 // movedInitOrdinal reports whether obj is a relocated package-var initializer and, if so, its

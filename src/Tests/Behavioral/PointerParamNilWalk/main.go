@@ -3,11 +3,12 @@
 // A named pointer parameter is deref-aliased in C# to a value var (`ref var p = ref Ꮡp.Value`)
 // over its box `Ꮡp`. Two things must hold together for a nil-terminated walk
 // (`for p != nil { …; p = p.next }`):
-//   1. the loop guard must compare the BOX `Ꮡp != nil`, not the value alias `p` (a `node`
-//      struct value) — emitting the value form compares the wrong thing; and
-//   2. the in-loop re-alias after repointing the box (`Ꮡp = p.next; p = ref Ꮡp.…`) must be
-//      nil-safe — on the final step `p.next` is nil, and the plain `.Value` getter would throw a
-//      nil-pointer dereference before the guard is re-checked.
+//  1. the loop guard must compare the BOX `Ꮡp != nil`, not the value alias `p` (a `node`
+//     struct value) — emitting the value form compares the wrong thing; and
+//  2. the in-loop re-alias after repointing the box (`Ꮡp = p.next; p = ref Ꮡp.…`) must be
+//     nil-safe — on the final step `p.next` is nil, and the plain `.Value` getter would throw a
+//     nil-pointer dereference before the guard is re-checked.
+//
 // The converter detects a pointer parameter compared with nil and (a) emits its box in the
 // comparison and (b) routes its deref/re-alias through the nil-safe `Ꮡp.DerefOrNil()` accessor,
 // so the entry alias also tolerates a nil argument (the empty-list `sumList(nil)` case).
@@ -93,6 +94,24 @@ func bumpFirstViaTuple(p *node) {
 	}
 }
 
+// dropIfShort assigns the untyped `nil` to the pointer PARAMETER itself and then returns it.
+// The parameter's identity in C# is its box `Ꮡp`; `p` is only the deref'd VALUE alias. A nil RHS
+// carries no pointer type, so the box-reassignment triggers missed it and the store landed on the
+// VALUE alias — ZEROING THE POINTED-TO struct while leaving the box non-nil. The caller's
+// `!= nil` then still passed and it walked a wiped-out node. This is regexp's `makeOnePass`,
+// whose `p = nil` handed compileOnePass an onePassProg with an emptied Inst slice.
+//
+//go:noinline
+func dropIfShort(p *node, min int) *node {
+	if sumList(p) < min {
+		p = nil
+	}
+	if p != nil {
+		p.val += 1000 // must reach the ORIGINAL node, not a zeroed copy
+	}
+	return p
+}
+
 func main() {
 	list := build(1, 2, 3, 4)
 	fmt.Println(sumList(list)) // 10
@@ -107,4 +126,11 @@ func main() {
 	// tuple-reassign then mutate-through: node 1 (value 4) gets +100, visible via the original
 	bumpFirstViaTuple(list)
 	fmt.Println(sumList(list)) // 120
+
+	// nil-assignment to the pointer parameter: the box must go nil and the pointee stay intact.
+	short := build(1, 2)
+	fmt.Println(dropIfShort(short, 100) == nil) // true  (sum 3 < 100 -> p = nil)
+	fmt.Println(sumList(short))                 // 3     (pointee NOT zeroed by the nil store)
+	kept := dropIfShort(short, 2)               // sum 3 >= 2 -> keeps p, bumps head by 1000
+	fmt.Println(kept != nil, sumList(short))    // true 1003
 }

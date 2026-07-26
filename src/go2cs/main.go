@@ -319,9 +319,15 @@ type Visitor struct {
 	// result params. namedReturnNames holds those result identifiers in order.
 	namedReturnDeferMode bool
 	namedReturnNames     []string
-	useUnsafeFunc        bool
-	capturedVarCount     map[string]int
-	tempVarCount         map[string]int
+	// blankResultNames interns the generated slot name for each BLANK (`_`) result of a
+	// namedReturnDefer signature — Go allows mixing blank and named results
+	// (`func parse(…) (_ *Regexp, err error)`), and the blank slot still needs a C# local so
+	// returns can write it and the post-defer return can read it back. Keyed by the result's
+	// *types.Var so every render site of the same slot agrees on one name.
+	blankResultNames map[*types.Var]string
+	useUnsafeFunc    bool
+	capturedVarCount map[string]int
+	tempVarCount     map[string]int
 
 	// BlockStmt variables
 	blocks                 Stack[*strings.Builder]

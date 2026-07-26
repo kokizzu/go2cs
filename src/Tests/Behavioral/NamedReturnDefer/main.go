@@ -79,6 +79,27 @@ func guarded(boom bool) (code int, msg string) {
 	return code, msg
 }
 
+// A BLANK first result mixed with a named one — `(_ *T, err error)`, the shape of
+// regexp/syntax's `parse`. Go allows the mix, and deferred code can still mutate `err`, so the
+// named-return-defer handling must apply: the blank slot needs a generated local (C#'s `_` is a
+// DISCARD, so it cannot be declared under that name) and the post-defer return must read both.
+// Bailing out on the first blank result dropped the whole mechanism, and a recovered panic then
+// returned the ZERO tuple — so `parseLimited` reported (nil, nil): a SUCCESSFUL parse of input
+// that must fail.
+func parseLimited(n int) (_ *box, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("too big: %v", r)
+		}
+	}()
+	if n > 10 {
+		panic(n)
+	}
+	return &box{n * 2}, nil
+}
+
+type box struct{ v int }
+
 func main() {
 	fmt.Println(incr())     // 6  (5, then defer x++)
 	fmt.Println(incrBare()) // 11 (1, then defer x+=10)
@@ -98,4 +119,10 @@ func main() {
 
 	c2, m2 := guarded(true)
 	fmt.Println(c2, m2) // -1 recovered
+
+	if b, err := parseLimited(4); err == nil {
+		fmt.Println("parseLimited(4):", b.v, err) // 8 <nil>
+	}
+	b2, err2 := parseLimited(99)
+	fmt.Println("parseLimited(99):", b2 == nil, err2) // true too big: 99
 }
