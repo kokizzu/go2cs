@@ -4,15 +4,15 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly UntypedFloat gHalfPi = 1.5707963267948966;
+internal static UntypedFloat gHalfPi => 1.5707963267948966;
 
-internal static readonly UntypedComplex cRational = /* 5.5 + 1.5i */ 5.5D + 1.5D.i();
-internal static readonly UntypedComplex cNegImag = /* 2.25 - 0.75i */ 2.25D + -0.75D.i();
-internal static readonly UntypedComplex cPureImag = /* 3i */ 3D.i();
-internal static readonly UntypedComplex cWideEnough = /* 1.5e308 + 1.0e307i */ 1.5e+308D + 1e+307D.i();
-internal static readonly UntypedComplex cFolded = /* (1 + 2i) * (3 + 4i) */ -5D + 10D.i();
+internal static UntypedComplex cRational => /* 5.5 + 1.5i */ 5.5D + 1.5D.i();
+internal static UntypedComplex cNegImag => /* 2.25 - 0.75i */ 2.25D + -0.75D.i();
+internal static UntypedComplex cPureImag => /* 3i */ 3D.i();
+internal static UntypedComplex cWideEnough => /* 1.5e308 + 1.0e307i */ 1.5e+308D + 1e+307D.i();
+internal static UntypedComplex cFolded => /* (1 + 2i) * (3 + 4i) */ -5D + 10D.i();
 
-internal static readonly complex64 c64 = /* 1.5 + 2.5i */ 1.5F + 2.5F.i();
+internal static complex64 c64 => /* 1.5 + 2.5i */ 1.5F + 2.5F.i();
 
 internal static void showComplex(@string name, complex128 c) {
     fmt.Println(name, real(c), imag(c));

@@ -6,14 +6,14 @@ partial class main_package {
 
 [GoType("num:nint")] partial struct rank;
 
-internal static readonly rank rankLow = /* iota */ 0;
-internal static readonly rank rankMid = 1;
-internal static readonly rank rankHigh = 2;
+internal static rank rankLow => /* iota */ 0;
+internal static rank rankMid => 1;
+internal static rank rankHigh => 2;
 
 [GoType("num:uint8")] partial struct code;
 
-internal static readonly code codeA = /* iota */ 0;
-internal static readonly code codeB = 1;
+internal static code codeA => /* iota */ 0;
+internal static code codeB => 1;
 
 internal static slice<@string> rankNames = new golib.SparseArray<@string>{
     [(int)rankLow] = "low"u8,
@@ -35,9 +35,9 @@ internal static slice<@string> kindNames = new golib.SparseArray<@string>{
     [3] = "three"u8
 }.slice();
 
-internal static readonly errno errBase = /* 1 << 10 */ 1024;
-internal static readonly errno eBig = /* errBase + 1 */ 1025;
-internal static readonly errno eAcces = /* errBase + 2 */ 1026;
+internal static errno errBase => /* 1 << 10 */ 1024;
+internal static errno eBig => /* errBase + 1 */ 1025;
+internal static errno eAcces => /* errBase + 2 */ 1026;
 
 internal static slice<@string> errNames = new golib.SparseArray<@string>{
     [1] = "big"u8,

@@ -4,7 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly UntypedInt maxInt = /* 1<<63 - 1 */ 9223372036854775807;
+internal static UntypedInt maxInt => /* 1<<63 - 1 */ 9223372036854775807;
 
 [GoType] partial struct splitTest {
     internal @string name;

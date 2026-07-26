@@ -7,13 +7,13 @@ using io = io_package;
 
 partial class flate_package {
 
-internal static readonly UntypedInt offsetCodeCount = 30;
-internal static readonly UntypedInt endBlockMarker = 256;
-internal static readonly UntypedInt lengthCodesStart = 257;
-internal static readonly UntypedInt codegenCodeCount = 19;
-internal static readonly UntypedInt badCode = 255;
-internal static readonly UntypedInt bufferFlushSize = 240;
-internal static readonly UntypedInt bufferSize = /* bufferFlushSize + 8 */ 248;
+internal static UntypedInt offsetCodeCount => 30;
+internal static UntypedInt endBlockMarker => 256;
+internal static UntypedInt lengthCodesStart => 257;
+internal static UntypedInt codegenCodeCount => 19;
+internal static UntypedInt badCode => 255;
+internal static UntypedInt bufferFlushSize => 240;
+internal static UntypedInt bufferSize => /* bufferFlushSize + 8 */ 248;
 
 /* 257 */
 /* 260 */
@@ -398,7 +398,7 @@ private static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with un
     w.writeBits(flag, 3);
     w.flush();
     w.writeBits((int32)length, 16);
-    w.writeBits((int32)(~(uint16)length), 16);
+    w.writeBits((int32)(((uint16)(~(uint16)length))), 16);
 }
 
 [GoRecv] internal static void writeFixedHeader(this ref huffmanBitWriter w, bool isEof) {

@@ -12,3 +12,8 @@ src/Tests/Behavioral/StdLibInternalAbi/*.cs        -text
 src/Tests/Behavioral/StdLibInternalAbi/*.cs.target -text
 src/Tests/Behavioral/UntypedConstWideMask/main.cs -text
 src/Tests/Behavioral/UntypedConstWideMask/main.cs.target -text
+
+# Phase-4 test DATA staged from GOROOT and read byte-for-byte by a converted test
+# suite. Go ships these with LF; autocrlf would smudge them on checkout and change
+# what the test reads (compress/gzip's TestIssue6550 base64-decodes this file).
+src/go-src-converted/**/testdata/*.base64 -text

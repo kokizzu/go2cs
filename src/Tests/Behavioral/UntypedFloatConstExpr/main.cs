@@ -5,17 +5,17 @@ using Δmath = math_package;
 
 partial class main_package {
 
-public static readonly UntypedFloat MaxFloat32 = /* 0x1p127 * (1 + (1 - 0x1p-23)) */ 3.4028234663852886e+38;
-public static readonly UntypedFloat SmallestNonzeroFloat32 = /* 0x1p-126 * 0x1p-23 */ 1.401298464324817e-45;
-public static readonly UntypedFloat MaxFloat64 = /* 0x1p1023 * (1 + (1 - 0x1p-52)) */ 1.7976931348623157e+308;
-public static readonly UntypedFloat SmallestNonzeroFloat64 = /* 0x1p-1022 * 0x1p-52 */ 5e-324;
+public static UntypedFloat MaxFloat32 => /* 0x1p127 * (1 + (1 - 0x1p-23)) */ 3.4028234663852886e+38;
+public static UntypedFloat SmallestNonzeroFloat32 => /* 0x1p-126 * 0x1p-23 */ 1.401298464324817e-45;
+public static UntypedFloat MaxFloat64 => /* 0x1p1023 * (1 + (1 - 0x1p-52)) */ 1.7976931348623157e+308;
+public static UntypedFloat SmallestNonzeroFloat64 => /* 0x1p-1022 * 0x1p-52 */ 5e-324;
 
-public static readonly UntypedFloat Ln10 = 2.30258509299404568401799145468436420760110148862877297603332790;
-public static readonly UntypedFloat Log10E = /* 1 / Ln10 */ 0.4342944819032518;
-public static readonly UntypedFloat Pi = 3.14159265358979323846264338327950288419716939937510582097494459;
-internal static readonly UntypedFloat twoPi = /* 2 * Pi */ 6.283185307179586;
-internal static readonly UntypedFloat halfPi = /* Pi / 2 */ 1.5707963267948966;
-internal static readonly UntypedFloat third = /* 1.0 / 3.0 */ 0.3333333333333333;
+public static UntypedFloat Ln10 => 2.30258509299404568401799145468436420760110148862877297603332790;
+public static UntypedFloat Log10E => /* 1 / Ln10 */ 0.4342944819032518;
+public static UntypedFloat Pi => 3.14159265358979323846264338327950288419716939937510582097494459;
+internal static UntypedFloat twoPi => /* 2 * Pi */ 6.283185307179586;
+internal static UntypedFloat halfPi => /* Pi / 2 */ 1.5707963267948966;
+internal static UntypedFloat third => /* 1.0 / 3.0 */ 0.3333333333333333;
 
 [GoType("num:float64")] partial struct MyFloat;
 

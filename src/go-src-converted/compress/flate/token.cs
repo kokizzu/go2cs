@@ -5,11 +5,11 @@ namespace go.compress;
 
 partial class flate_package {
 
-internal static readonly UntypedInt lengthShift = 22;
-internal static readonly UntypedInt offsetMask = /* 1<<lengthShift - 1 */ 4194303;
-internal static readonly UntypedInt typeMask = /* 3 << 30 */ 3221225472;
-internal static readonly UntypedInt literalType = /* 0 << 30 */ 0;
-internal static readonly UntypedInt matchType = /* 1 << 30 */ 1073741824;
+internal static UntypedInt lengthShift => 22;
+internal static UntypedInt offsetMask => /* 1<<lengthShift - 1 */ 4194303;
+internal static UntypedInt typeMask => /* 3 << 30 */ 3221225472;
+internal static UntypedInt literalType => /* 0 << 30 */ 0;
+internal static UntypedInt matchType => /* 1 << 30 */ 1073741824;
 
 // The length code for length X (MIN_MATCH_LENGTH <= X <= MAX_MATCH_LENGTH)
 // is lengthCodes[length - MIN_MATCH_LENGTH]

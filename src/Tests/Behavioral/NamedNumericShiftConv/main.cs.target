@@ -10,7 +10,7 @@ partial class main_package {
 
 [GoType("num:uint64")] partial struct big;
 
-internal static readonly UntypedInt bits = 6;
+internal static UntypedInt bits => 6;
 
 internal static void Main() {
     arenaIdx a = (arenaIdx)((nuint)1 << (int)(bits));

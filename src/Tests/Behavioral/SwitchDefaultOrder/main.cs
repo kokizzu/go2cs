@@ -6,9 +6,9 @@ partial class main_package {
 
 [GoType("num:nint")] partial struct bucketType;
 
-internal static readonly bucketType memProfile = /* iota */ 0;
-internal static readonly bucketType blockProfile = 1;
-internal static readonly bucketType mutexProfile = 2;
+internal static bucketType memProfile => /* iota */ 0;
+internal static bucketType blockProfile => 1;
+internal static bucketType mutexProfile => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string invalidˢ = "invalid"u8;

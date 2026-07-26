@@ -253,12 +253,58 @@ Go constants hold arbitrary-precision literals with expression support, and assi
 public const nint MaxRetries = 3;
 ```
 
-An *untyped* Go constant is emitted using a golib "untyped" wrapper type — `UntypedInt`, `UntypedFloat`, or `UntypedComplex` — declared `static readonly` so it can hold a value that does not fit a single primitive and can implicitly adapt to whatever numeric type its use site requires (mirroring how an untyped Go constant takes its type from context):
+An *untyped* Go constant is emitted using a golib "untyped" wrapper type — `UntypedInt`, `UntypedFloat`, or `UntypedComplex` — so it can hold a value that does not fit a single primitive and can implicitly adapt to whatever numeric type its use site requires (mirroring how an untyped Go constant takes its type from context). A `[GoType]` struct is not a legal C# constant type, so the declaration is a get-only **property** rather than a field (see the next subsection for why):
 
 ```csharp
-internal static readonly UntypedInt win = 100;
-public static readonly UntypedInt N = /* 11 + 1 */ 12;
+internal static UntypedInt win => 100;
+public static UntypedInt N => /* 11 + 1 */ 12;
 ```
+
+### A constant C# cannot declare `const` is a get-only PROPERTY, not a `static readonly` field
+
+A Go constant has **no initialization**: it is a compile-time value usable from anywhere in the
+package regardless of declaration order. Whenever C# *can* say `const` (a primitive-typed const) that
+property is preserved for free. It cannot for the wrapper types above, nor for a named type, a
+`uintptr`, or a complex — and a `static readonly` **field** reintroduces exactly the initialization
+Go does not have. C# runs static field initializers in class-**textual** order (across a partial
+class, in `<Compile>`-item order), so a package-level variable declared *ahead* of the constant read
+it as the type's DEFAULT — silently, with no diagnostic:
+
+```go
+var fixedHuffmanDecoder huffmanDecoder    // compress/flate/inflate.go — declared FIRST
+...
+const huffmanNumChunks = 1 << huffmanChunkBits   // …the const it transitively needs comes LATER
+type huffmanDecoder struct { chunks [huffmanNumChunks]uint32 }
+```
+
+As a field, `huffmanNumChunks` was still `0` when that variable's `new huffmanDecoder()` ran its
+`chunks = new(huffmanNumChunks)` field initializer, so the decode table was allocated at length **0**
+where Go says 512: `init` filled nothing (its `for off < len(h.chunks)` loop never ran) and every
+later `chunks[i]` read panicked with `index out of range [281] with length 0`. The same trap zeroed
+`maxNumLit` for `fixedLiteralEncoding`'s initializer *across files*, emptying the fixed Huffman code
+table. Both are silent-correctness defects that compiled clean, and both took down every dependent
+package (`compress/gzip`, `compress/zlib`).
+
+A get-only property carries no initialization at all, so declaration order cannot be observed and the
+JIT folds the literal at each use — Go's semantics exactly:
+
+```csharp
+internal static UntypedInt huffmanNumChunks => /* 1 << huffmanChunkBits */ 512;
+public static ΔKind Uintptr => 12;                        // named-type const
+internal static uintptr MaxUintptr => unchecked((uintptr)18446744073709551615);
+```
+
+**RESIDUE — the two ALLOCATING const forms stay `static readonly` fields** and remain order-sensitive:
+`@string` (whose `u8` literal the string-literal arc deliberately hoists to a single allocation) and
+`GoUntyped` (a `BigInteger.Parse`). A property would rebuild their value on every read. Neither can
+serve as an array length, so neither reproduces the failure class above; a package-level variable
+initializer that reads such a constant *before* its declaration point is still exposed.
+
+This is complementary to — not a replacement for — the
+[package-level variable initialization order](#package-level-variable-initialization-order)
+machinery: that pass orders var→var dependencies; constants are now simply outside the ordering
+problem. Guarded by the `PackageVarInitOrder` behavioral test (cross-file constants consumed by
+earlier-declared vars, both directly and through a struct's fixed-array field initializer).
 
 **Wrapper conversions are VALUE conversions in every direction.** `UntypedInt` stores its payload as
 `int64` bits (so a `ulong`-range literal like `9223372036854775808` round-trips through the same 8 bytes),
@@ -826,6 +872,38 @@ h.Value.flags &= unchecked((uint8)~hashWriting);
 ```
 
 An LHS type that `int` widens to implicitly (`int`/`int32`/`int64`) needs no cast and stays `a &= ~b`. (Guarded by the `AndNotAssignNarrow` behavioral test, which exercises both an ident LHS and a struct-field LHS — they route through different assignment-emission paths.)
+
+### A standalone `^x` on `uint8`/`uint16` truncates back to the operand's type
+
+The same `int` promotion has a **silent-value** face, not just a CS0266 face. Go's `^x` has x's own
+type, so on a sub-int UNSIGNED type the complement wraps to that width — `^uint16(5)` is `65530`. C#
+promotes `byte`/`ushort` to `int` first, so bare `~x` is `-6`: identical in the low 16 bits, but every
+**widening** use then carries the sign bits, and no cast is required to make it compile:
+
+```go
+w.writeBits(int32(^uint16(length)), 16)     // compress/flate, stored-block header
+```
+```csharp
+w.writeBits((int32)((uint16)(~(uint16)length)), 16);
+```
+
+Without the inner truncation this wrote `-6`, and `writeBits`' `bits |= uint64(b) << nbits`
+sign-extended it across the whole 64-bit accumulator — so every level-0 (`NoCompression`) DEFLATE
+stream was garbage and the decoder rejected its own encoder's output with `flate: corrupt input
+before offset 59`. It compiled clean and only `compress/zlib`'s `TestWriter`, which round-trips at
+every level, caught it.
+
+Only unsigned `uint8`/`uint16` need this. A **signed** narrow type is already value-correct (C#'s `~`
+of a sign-extended operand equals the sign-extended Go result: `int32(^int16(5))` is `-6` in both
+languages), and every type at least 32 bits wide (`uint`, `uint32`, `uint64`, `uintptr`, all signed
+widths) keeps its own type under C#'s `~`. A NAMED type routes through its golib wrapper's operator.
+
+Where the result is *immediately* narrowed back by the surrounding narrow-arithmetic cast the inner
+truncation is redundant — `takeU8(^a)` renders `takeU8((uint8)((uint8)(~a)))`. That is accepted
+cosmetic noise: the two forms are value-identical, and the alternative (deciding at the unary site
+whether the enclosing context widens) trades a silent-corruption hole for readability. (Guarded by
+the `AndNotAssignNarrow` behavioral test's widening cases — `int32(^uint16(x))`, `uint64(^uint8(x))`,
+the `uint32`/`int16` no-op controls, and the narrow round-trip.)
 
 ### Logical operators on a named boolean type cast through `bool`
 A Go defined type whose underlying type is `bool` (`type boolVal bool`) is modeled as a `[GoType("bool")]` struct with an implicit `bool` conversion but no logical operators. Go's `!`, `&&`, and `||` on such a value yield that **same named type**, so `return !y` / `return x && y` in a function returning an interface the type implements (go/constant's `UnaryOp`/`BinaryOp`, returning the `Value` interface) still satisfies the interface. A bare `!y` / `x && y` in C# collapses to a plain `bool` — which cannot implicitly convert to the interface (CS0029), and `!` has no operator on the struct (CS0023). The converter casts each operand through `bool`, applies the operator, then casts the result back to the named type so it keeps satisfying the interface:
@@ -2613,8 +2691,28 @@ array<inner> se = new(2, () => new());
 
 The factory nests to any depth, and each element gets its OWN storage rather than one shared inner
 array. It is emitted from every fixed-array zero-value site — local `var`, package-level `var`
-(including the addressed-global `ж<>` box form), the type-ALIAS-to-array spelling, and a struct's
-field initializer (`internal array<array<nint>> entries = new(2, () => new(3));`).
+(including the addressed-global `ж<>` box form), the type-ALIAS-to-array spelling, a struct's
+field initializer (`internal array<array<nint>> entries = new(2, () => new(3));`), the
+**heap-boxed** (address-taken) local, and the **`new([N]T)`** builtin:
+
+```go
+var leafCounts [maxBitsLimit][maxBitsLimit]int32   // addressed: copy(leafCounts[i][:i], …)
+f.bits = new([maxNumLit + maxNumDist]int)
+```
+```csharp
+ref var leafCounts = ref heap(new array<array<int32>>(16, () => new(16)), out var ᏑleafCounts);
+f.bits = Ꮡ(new array<nint>(316));
+```
+
+Those last two were the same silent-correctness defect one layer down. The heap-boxed declaration is
+a THIRD emission path (`convertToHeapTypeDecl`, a string path that never consulted
+`arrayZeroValueArgs`), and it is exactly the shape `compress/flate`'s Huffman coder uses —
+`bitCounts`' `leafCounts [16][16]int32` is boxed because `copy(leafCounts[i][:i], …)` slices an
+element, and its first `leafCounts[level][level] = 2` panicked with `index out of range [1] with
+length 0`, taking `compress/gzip` and `compress/zlib` down with it. `new([N]T)` is a FOURTH: golib's
+`@new<T>()` builds the zero value through the parameterless constructor, where `array<T>()` has no
+length at all, so `f.bits` came back length 0 (Go: 316). A NAMED array type keeps the zero-value
+`@new<row>()` form for the same reason a named element needs no factory.
 
 A NAMED array element needs no factory and is deliberately left alone: `type row [4]byte` generates
 a wrapper that allocates its backing lazily from its own known size (go2cs-gen's

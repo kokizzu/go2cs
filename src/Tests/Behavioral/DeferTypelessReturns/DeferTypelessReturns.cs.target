@@ -10,11 +10,11 @@ partial class main_package {
 
 [GoType("num:uintptr")] partial struct handle;
 
-internal static readonly handle invalid = /* ^handle(0) */ unchecked((handle)18446744073709551615);
+internal static handle invalid => /* ^handle(0) */ unchecked((handle)18446744073709551615);
 
-internal static readonly UntypedInt appErr = /* 1 << 29 */ 536870912;
+internal static UntypedInt appErr => /* 1 << 29 */ 536870912;
 
-internal static readonly handle big = /* appErr + 5 */ 536870917;
+internal static handle big => /* appErr + 5 */ 536870917;
 
 internal static nint idx(this handle h) {
     return (nint)(uintptr)(h - (handle)appErr);

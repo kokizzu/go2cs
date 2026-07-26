@@ -6,7 +6,7 @@ partial class main_package {
 
 [GoType("num:nuint")] partial struct Size;
 
-internal static readonly Size total = 3;
+internal static Size total => 3;
 
 internal static void Main() {
     var s = new slice<nint>((nint)(nuint)(total));

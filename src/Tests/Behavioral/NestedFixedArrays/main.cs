@@ -52,6 +52,34 @@ internal static void Main() {
     share[1][0] = 2;
     share[2][0] = 3;
     fmt.Println(share[0][0], share[1][0], share[2][0]);
+    ref var boxed = ref heap(new array<array<int32>>(3, () => new(4)), out var Ꮡboxed);
+    var pb = Ꮡboxed;
+    fmt.Println(len(pb), len(pb.Value[1]));
+    pb.Value[1][2] = 11;
+    pb.Value[2][3] = 12;
+    fmt.Println(pb.Value[1][2], pb.Value[2][3], pb.Value[0][2]);
+    pb.Value[0][0] = 1;
+    pb.Value[0][1] = 2;
+    copy(pb.Value[2][..2], pb.Value[0][..2]);
+    fmt.Println(pb.Value[2][0], pb.Value[2][1]);
+    ref var boxedStruct = ref heap(new array<inner>(2, () => new()), out var ᏑboxedStruct);
+    var ps = ᏑboxedStruct;
+    fmt.Println(len(ps), len(ps.Value[1].b));
+    ps.Value[1].b[2] = 13;
+    fmt.Println(ps.Value[1].b[2], ps.Value[0].b[2]);
+    var np = Ꮡ(new array<nint>(12));
+    fmt.Println(len(np), len(np.Value));
+    np.Value[3] = 14;
+    fmt.Println(np.Value[3], np.Value[0]);
+    var nq = Ꮡ(new array<array<nint>>(2, () => new(3)));
+    nq.Value[1][2] = 15;
+    fmt.Println(len(nq), len(nq.Value[0]), nq.Value[1][2], nq.Value[0][2]);
+    var ns = Ꮡ(new array<inner>(2, () => new()));
+    ns.Value[1].b[2] = 16;
+    fmt.Println(len(ns), len(ns.Value[1].b), ns.Value[1].b[2], ns.Value[0].b[2]);
+    var nr2 = @new<row>();
+    nr2.Value[3] = 17;
+    fmt.Println(len(nr2.Value), nr2.Value[3], nr2.Value[0]);
 }
 
 } // end main_package

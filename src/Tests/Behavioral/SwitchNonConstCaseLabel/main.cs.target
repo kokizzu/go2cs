@@ -4,7 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-public static readonly UntypedInt Width = 8;
+public static UntypedInt Width => 8;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string widthˢ = "width"u8;

@@ -21,33 +21,33 @@ partial class main_package {
 
 [GoType("num:uint8")] partial struct ΔKind;
 
-public static readonly ΔKind Invalid = /* iota */ 0;
-public static readonly ΔKind Bool = 1;
-public static readonly ΔKind Int = 2;
-public static readonly ΔKind Int8 = 3;
-public static readonly ΔKind Int16 = 4;
-public static readonly ΔKind Int32 = 5;
-public static readonly ΔKind Int64 = 6;
-public static readonly ΔKind Uint = 7;
-public static readonly ΔKind Uint8 = 8;
-public static readonly ΔKind Uint16 = 9;
-public static readonly ΔKind Uint32 = 10;
-public static readonly ΔKind Uint64 = 11;
-public static readonly ΔKind Uintptr = 12;
-public static readonly ΔKind Float32 = 13;
-public static readonly ΔKind Float64 = 14;
-public static readonly ΔKind Complex64 = 15;
-public static readonly ΔKind Complex128 = 16;
-public static readonly ΔKind Array = 17;
-public static readonly ΔKind Chan = 18;
-public static readonly ΔKind Func = 19;
-public static readonly ΔKind Interface = 20;
-public static readonly ΔKind Map = 21;
-public static readonly ΔKind Pointer = 22;
-public static readonly ΔKind Slice = 23;
-public static readonly ΔKind ΔString = 24;
-public static readonly ΔKind Struct = 25;
-public static readonly ΔKind UnsafePointer = 26;
+public static ΔKind Invalid => /* iota */ 0;
+public static ΔKind Bool => 1;
+public static ΔKind Int => 2;
+public static ΔKind Int8 => 3;
+public static ΔKind Int16 => 4;
+public static ΔKind Int32 => 5;
+public static ΔKind Int64 => 6;
+public static ΔKind Uint => 7;
+public static ΔKind Uint8 => 8;
+public static ΔKind Uint16 => 9;
+public static ΔKind Uint32 => 10;
+public static ΔKind Uint64 => 11;
+public static ΔKind Uintptr => 12;
+public static ΔKind Float32 => 13;
+public static ΔKind Float64 => 14;
+public static ΔKind Complex64 => 15;
+public static ΔKind Complex128 => 16;
+public static ΔKind Array => 17;
+public static ΔKind Chan => 18;
+public static ΔKind Func => 19;
+public static ΔKind Interface => 20;
+public static ΔKind Map => 21;
+public static ΔKind Pointer => 22;
+public static ΔKind Slice => 23;
+public static ΔKind ΔString => 24;
+public static ΔKind Struct => 25;
+public static ΔKind UnsafePointer => 26;
 
 public static @string String(this ΔKind k) {
     if ((nint)(uint8)k < len(kindNames)) {
@@ -92,17 +92,17 @@ internal static slice<@string> kindNames = new golib.SparseArray<@string>{
 
 [GoType("num:int32")] partial struct TextOff;
 
-public static readonly ΔKind KindDirectIface = /* 1 << 5 */ 32;
-public static readonly ΔKind KindGCProg = /* 1 << 6 */ 64;
-public static readonly ΔKind KindMask = /* (1 << 5) - 1 */ 31;
+public static ΔKind KindDirectIface => /* 1 << 5 */ 32;
+public static ΔKind KindGCProg => /* 1 << 6 */ 64;
+public static ΔKind KindMask => /* (1 << 5) - 1 */ 31;
 
 [GoType("num:uint8")] partial struct TFlag;
 
-public static readonly TFlag TFlagUncommon = /* 1 << 0 */ 1;
-public static readonly TFlag TFlagExtraStar = /* 1 << 1 */ 2;
-public static readonly TFlag TFlagNamed = /* 1 << 2 */ 4;
-public static readonly TFlag TFlagRegularMemory = /* 1 << 3 */ 8;
-public static readonly TFlag TFlagUnrolledBitmap = /* 1 << 4 */ 16;
+public static TFlag TFlagUncommon => /* 1 << 0 */ 1;
+public static TFlag TFlagExtraStar => /* 1 << 1 */ 2;
+public static TFlag TFlagNamed => /* 1 << 2 */ 4;
+public static TFlag TFlagRegularMemory => /* 1 << 3 */ 8;
+public static TFlag TFlagUnrolledBitmap => /* 1 << 4 */ 16;
 
 public static @unsafe.Pointer NoEscape(@unsafe.Pointer p) {
     var x = (uintptr)p;
@@ -197,8 +197,8 @@ internal const nint seqAgain = /* iota */ 2;
 internal const int64 wideFirst = /* iota */ 0;
 internal const int64 wideNext = 1;
 
-internal static readonly UntypedInt rawZero = iota;
-internal static readonly UntypedInt rawOne = /* iota */ 1;
+internal static UntypedInt rawZero => iota;
+internal static UntypedInt rawOne => /* iota */ 1;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string unknownˢ = "unknown"u8;

@@ -10,7 +10,7 @@ internal static readonly GoUntyped below1e23 = /* 99999999999999974834176 */
     GoUntyped.Parse("99999999999999974834176");
 internal static readonly GoUntyped above1e23 = /* 100000000000000008388608 */
     GoUntyped.Parse("100000000000000008388608");
-internal static readonly UntypedInt small = 1000;
+internal static UntypedInt small => 1000;
 
 [GoType] partial struct ftoaTest {
     internal float64 f;

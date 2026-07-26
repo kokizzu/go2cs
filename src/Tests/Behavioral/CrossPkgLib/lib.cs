@@ -5,9 +5,9 @@ namespace go;
 
 partial class CrossPkgLib_package {
 
-public static readonly UntypedInt Precision = 2;
+public static UntypedInt Precision => 2;
 
-public static readonly UntypedInt Sep = /* ':' */ 58;
+public static UntypedInt Sep => /* ':' */ 58;
 
 [GoType("num:float64")] partial struct Celsius;
 

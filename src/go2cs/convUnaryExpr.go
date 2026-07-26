@@ -800,6 +800,26 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 			}
 		}
 
+		// Go's `^x` has x's OWN type, so for a sub-int UNSIGNED type the complement wraps to that
+		// width: `^uint16(5)` is 65530. C# promotes `byte`/`ushort` to `int` before applying `~`,
+		// making the same expression -6 — identical in the low 16 bits, but every WIDENING use
+		// then carries the sign bits. compress/flate's stored-block header is exactly that shape:
+		// `writeBits(int32(^uint16(length)), 16)` became `writeBits((int32)(~(uint16)length), 16)`,
+		// and writeBits' `bits |= uint64(b) << nbits` sign-extended the negative int across the
+		// whole 64-bit accumulator, so every level-0 (NoCompression) stream was garbage and the
+		// decoder rejected it ("flate: corrupt input before offset 59"). Truncate back to the
+		// operand's own type.
+		//
+		// Only unsigned uint8/uint16 need this. A SIGNED narrow type is already value-correct
+		// (C#'s `~` of a sign-extended operand equals the sign-extended Go result), and every type
+		// at least 32 bits wide (`uint`, `uint32`, `uint64`, `uintptr`, the signed widths) keeps
+		// its own type under C#'s `~`. A NAMED type routes through its golib wrapper's operator.
+		if basic, isBasic := types.Unalias(v.getType(unaryExpr.X, false)).(*types.Basic); isBasic {
+			if basic.Kind() == types.Uint8 || basic.Kind() == types.Uint16 {
+				return fmt.Sprintf("((%s)(~%s))", convertToCSTypeName(v.getTypeName(basic, false)), operand)
+			}
+		}
+
 		return "~" + operand
 	}
 

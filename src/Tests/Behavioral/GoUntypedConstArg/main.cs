@@ -4,7 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly UntypedInt poly = 0x82f63b78;
+internal static UntypedInt poly => 0x82f63b78;
 
 internal static channel<uint32> done = new channel<uint32>(1);
 

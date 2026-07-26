@@ -14,6 +14,7 @@ import (
 	"go/types"
 	"math"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -1605,6 +1606,27 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		if ident.Name == "new" {
 			typeExpr := callExpr.Args[0]
 			typeName := convertToCSTypeName(v.getExprTypeName(typeExpr, false))
+
+			// `new([N]T)` — golib's `@new<T>()` builds the zero value through the parameterless
+			// constructor, and `array<T>()` has NO length (the N lives only in the Go type), so
+			// the box came back with a length-0 backing: `len(*p)` reported 0 (Go says N) and the
+			// first indexed write panicked (flate's `f.bits = new([maxNumLit+maxNumDist]int)`).
+			// Construct the SIZED value and box it, threading the element factory for nested /
+			// construction-needing elements exactly as the var-declaration paths do
+			// (arrayZeroValueArgs). Every other type keeps the zero-value `@new<T>()` form.
+			// A NAMED array type (`type row [4]byte`) is excluded: its generated wrapper allocates
+			// its own backing lazily from the size it knows, so the zero-value form is already
+			// right (same carve-out arrayElemFactory makes).
+			newType := v.getExprType(typeExpr)
+			_, newTypeIsNamed := types.Unalias(newType).(*types.Named)
+
+			if newType != nil && !newTypeIsNamed {
+				if arrayType, isArray := newType.Underlying().(*types.Array); isArray {
+					return fmt.Sprintf("%s(new %s(%s))", AddressPrefix, typeName,
+						v.arrayZeroValueArgs(strconv.FormatInt(arrayType.Len(), 10), arrayType))
+				}
+			}
+
 			return fmt.Sprintf("@new<%s>()", typeName)
 		}
 

@@ -350,7 +350,7 @@ internal static void Main() => func((defer, recover) => {
 
 [GoType("CrossPkgLib_package.Ticks")] partial struct stamp;
 
-internal static readonly stamp bigStamp = unchecked((stamp)(CrossPkgLib.Ticks)0x80000001);
+internal static stamp bigStamp => unchecked((stamp)(CrossPkgLib.Ticks)0x80000001);
 
 internal static (stamp, error) stampOrErr(bool ok) {
     if (!ok) {

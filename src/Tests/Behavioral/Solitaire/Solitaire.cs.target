@@ -2,7 +2,7 @@ namespace go;
 
 partial class main_package {
 
-public static readonly UntypedInt N = /* 11 + 1 */ 12;
+public static UntypedInt N => /* 11 + 1 */ 12;
 
 internal static slice<rune> board = slice<rune>(
     (@string)"""

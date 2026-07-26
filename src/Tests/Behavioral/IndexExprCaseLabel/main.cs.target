@@ -6,7 +6,7 @@ partial class main_package {
 
 internal static array<@string> words = new @string[]{"alpha"u8, "beta"u8, "gamma"u8}.array();
 
-internal static readonly UntypedInt one = 1;
+internal static UntypedInt one => 1;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string endsˢ = "ends"u8;

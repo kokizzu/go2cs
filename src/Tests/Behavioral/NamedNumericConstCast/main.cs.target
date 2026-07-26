@@ -8,9 +8,9 @@ partial class main_package {
 
 [GoType("num:uint64")] partial struct Big;
 
-internal static readonly Class allClass = /* ^Class(0) */ unchecked((Class)18446744073709551615);
-internal static readonly Big allBig = /* ^Big(0) */ unchecked((Big)18446744073709551615);
-internal static readonly Class small = /* Class(5) */ 5;
+internal static Class allClass => /* ^Class(0) */ unchecked((Class)18446744073709551615);
+internal static Big allBig => /* ^Big(0) */ unchecked((Big)18446744073709551615);
+internal static Class small => /* Class(5) */ 5;
 
 internal static void Main() {
     fmt.Println((uint64)(nuint)allClass);

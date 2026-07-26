@@ -19,3 +19,15 @@ var stdinName = describe(0)
 // Func-literal (IIFE) initializer: the literal's body reads base (main.go) —
 // cross-file through the literal, and the literal EXECUTES at init time.
 var computed = func() int { return base * 2 }()
+
+// A Go CONSTANT has no initialization at all, so a var declared ahead of it —
+// here CROSS-FILE (tableSize/chunkBits live in registry.go, which the compiler
+// sees later) — still sees its real value. A `static readonly` field for the
+// constant reintroduces order and hands back the type's DEFAULT instead:
+// compress/flate's `chunks [huffmanNumChunks]uint32` allocated length 0 that
+// way, and every later index panicked.
+var sizedTable = newTable(tableSize)
+
+// Same shape THROUGH a struct's fixed-array field initializer, which is where
+// flate's decoder table was silently zero-length.
+var chunkHolder holder

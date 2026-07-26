@@ -120,7 +120,7 @@ internal static ж<huffmanEncoder> fixedOffsetEncoding = generateFixedOffsetEnco
     return total;
 }
 
-internal static readonly UntypedInt maxBitsLimit = 16;
+internal static UntypedInt maxBitsLimit => 16;
 
 // bitCounts computes the number of literals assigned to each bit size in the Huffman encoding.
 // It is only called when list.length >= 3.
@@ -157,7 +157,7 @@ internal static readonly UntypedInt maxBitsLimit = 16;
     // of ancestors of the rightmost node at level i.
     // leafCounts[i][j] is the number of literals at the left
     // of the level j ancestor.
-    ref var leafCounts = ref heap(new array<array<int32>>(16), out var ᏑleafCounts);
+    ref var leafCounts = ref heap(new array<array<int32>>(16, () => new(16)), out var ᏑleafCounts);
     for (var levelΔ1 = (int32)1; levelΔ1 <= maxBits; levelΔ1++) {
         // For every level, the first two items are the first two characters.
         // We initialize the levels as if we had already figured this out.

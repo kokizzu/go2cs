@@ -6,9 +6,9 @@ partial class main_package {
 
 [GoType("num:uint8")] partial struct Tag;
 
-internal static readonly UntypedInt classConstructed = 0x20;
+internal static UntypedInt classConstructed => 0x20;
 
-internal static readonly UntypedInt classContext = 0x80;
+internal static UntypedInt classContext => 0x80;
 
 public static Tag Constructed(this Tag t) {
     return (Tag)(t | (uint8)classConstructed);
@@ -20,7 +20,7 @@ public static Tag Context(this Tag t) {
 
 [GoType("num:uint64")] partial struct word;
 
-internal static readonly UntypedInt tagBits = 19;
+internal static UntypedInt tagBits => 19;
 
 internal static word low(this word w) {
     return (word)(w & (uint64)(((1 << (int)(tagBits)) - 1)));

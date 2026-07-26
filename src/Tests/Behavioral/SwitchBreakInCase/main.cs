@@ -4,9 +4,9 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly UntypedInt stateA = iota;
-internal static readonly UntypedInt stateB = 1;
-internal static readonly UntypedInt stateC = 2;
+internal static UntypedInt stateA => iota;
+internal static UntypedInt stateB => 1;
+internal static UntypedInt stateC => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string noneˢ = "none"u8;
