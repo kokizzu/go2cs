@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestMapClearNoAllocations",
+      "class": "alloc-profile",
+      "signature": "AllocsPerRun of m.Clear = ",
+      "reason": "want-zero AllocsPerRun assert: Map.Clear walks the read/dirty maps through the golib map enumerator, and every enumeration step materializes a managed entry object where Go's bucket walk is allocation-free; a malloc-counting shim would fail the same assert"
+    },
+    {
+      "name": "TestMapRangeNoAllocations",
+      "class": "alloc-profile",
+      "signature": "AllocsPerRun of m.Range = ",
+      "reason": "want-zero AllocsPerRun assert: Range boxes each key and value into `any` for the visitor callback — a CLR heap allocation per entry that Go's non-escaping eface avoids"
+    },
+    {
+      "name": "TestOnceFunc",
+      "class": "alloc-profile",
+      "signature": "want 0 allocations per call, got ",
+      "reason": "want-zero AllocsPerRun assert: the wrapper OnceFunc returns is a delegate over a closure display class, and calling it through the golib defer/recover machinery allocates a GoFunc context per call where Go's inlined fast path (a single atomic load) allocates nothing"
+    },
+    {
+      "name": "TestOnceValue",
+      "class": "alloc-profile",
+      "signature": "want 0 allocations per call, got ",
+      "reason": "want-zero AllocsPerRun assert: same as TestOnceFunc, plus the generic result slot is read through a heap box (ж<T>) where Go reads a stack-allocated closure field"
+    },
+    {
+      "name": "TestOnceValues",
+      "class": "alloc-profile",
+      "signature": "want 0 allocations per call, got ",
+      "reason": "want-zero AllocsPerRun assert: same as TestOnceValue for the two-result form; the tuple return and the two heap-boxed result slots allocate per call in the managed model"
+    },
+    {
+      "name": "TestOnceXGC/OnceFunc",
+      "class": "codegen-liveness",
+      "signature": "wrapped function should be garbage collected, but still live",
+      "reason": "The test asserts its own frame's `buf` is collectible while the frame is still running. sync.OnceFunc DOES drop the wrapped function (measured: the backing array is released after the first call), but the test's own `f := fn(buf)` passes the 32-byte slice header BY VALUE, so the x64 ABI makes the caller materialize an address-exposed stack temp; an address-exposed slot is not lifetime-tracked and the CLR reports it live for the whole method, pinning the array until the subtest RETURNS. Go's per-safepoint liveness maps release the caller's copy at its last use. Not satisfiable at any layer go2cs owns — it is the CLR's GC-info conservatism, and it holds in fully optimized code, not just under the non-optimizing JIT."
+    },
+    {
+      "name": "TestOnceXGC/OnceValue",
+      "class": "codegen-liveness",
+      "signature": "wrapped function should be garbage collected, but still live",
+      "reason": "Same as TestOnceXGC/OnceFunc: the by-value slice argument in the test's own body is reported live for the whole frame by the CLR's GC info, so the finalizer cannot become due while the test is looking"
+    },
+    {
+      "name": "TestOnceXGC/OnceValues",
+      "class": "codegen-liveness",
+      "signature": "wrapped function should be garbage collected, but still live",
+      "reason": "Same as TestOnceXGC/OnceFunc: the by-value slice argument in the test's own body is reported live for the whole frame by the CLR's GC info, so the finalizer cannot become due while the test is looking"
+    },
+    {
+      "name": "TestPoolGC",
+      "class": "codegen-liveness",
+      "signature": "only 98 out of 100 resources are finalized",
+      "reason": "Go's own assert tolerates exactly one straggler (`fin1 >= N-1`, commented \"1 pointer can remain on stack or elsewhere\"); the managed run leaves TWO. The extra one is the discarded `p.Get()` result: Go drops the value immediately, while the CLR keeps the call's result temp in the test frame's GC-reported live set for the frame's whole lifetime — the same frame-liveness conservatism as TestOnceXGC, here one object wide. The Pool itself releases everything it cached (98 of 100 finalize on the FIRST try, deterministically across 9 measured runs); the count is pinned exactly so any real Pool retention regression fails loud instead of hiding behind this disclosure."
+    }
+  ]
+}
