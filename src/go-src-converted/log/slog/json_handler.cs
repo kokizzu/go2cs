@@ -184,6 +184,7 @@ internal static error appendJSONMarshal(ж<buffer.Buffer> Ꮡbuf, any v) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string u00ˢ = @"u00"u8;
 private static readonly @string ufffdˢ = @"\ufffd"u8;
 private static readonly @string u202ˢ = @"\u202"u8;
 
@@ -229,7 +230,7 @@ internal static slice<byte> appendEscapedJSONString(slice<byte> buf, @string s) 
                     break;
                 }
                 default: {
-                    str(@"u00"u8);
+                    str(u00ˢ);
                     @char(hex[(b >> (int)(4))]);
                     @char(hex[(byte)(b & 0xF)]);
                     break;

@@ -53,10 +53,13 @@ partial class smtp_package {
     internal error helloError;  // the error from the hello
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tcpˢ = "tcp"u8;
+
 // Dial returns a new [Client] connected to an SMTP server at addr.
 // The addr must include a port, as in "mail.example.com:smtp".
 public static (ж<Client>, error) Dial(@string addr) {
-    var (conn, err) = net.Dial("tcp"u8, addr);
+    var (conn, err) = net.Dial(tcpˢ, addr);
     if (err != default!) {
         return (default!, err);
     }

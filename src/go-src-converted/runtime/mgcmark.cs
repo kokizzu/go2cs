@@ -1573,7 +1573,7 @@ internal static void greyobject(uintptr obj, uintptr @base, uintptr off, ж<mspa
         if (debug.gccheckmark > 0 && span.isFree(objIndex)) {
             print((@string)"runtime: marking free object "u8, ((Δhex)(uint64)obj), (@string)" found at *("u8, ((Δhex)(uint64)@base), (@string)"+"u8, ((Δhex)(uint64)off), (@string)")\n"u8);
             gcDumpObject(baseˢ, @base, off);
-            gcDumpObject("obj"u8, obj, ~(uintptr)0);
+            gcDumpObject(objˢ, obj, ~(uintptr)0);
             getg().Value.m.Value.traceback = 2;
             @throw(markingFreeObjectˢ);
         }

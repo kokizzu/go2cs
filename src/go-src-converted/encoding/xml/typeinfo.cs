@@ -57,7 +57,7 @@ internal static (ж<typeInfo>, error) getTypeInfo(reflectꓸType typ) {
         for (nint i = 0; i < n; i++) {
             ref var f = ref heap<reflect.StructField>(out var Ꮡf);
             f = typ.Field(i);
-            if ((!f.IsExported() && !f.Anonymous) || f.Tag.Get("xml"u8) == "-"u8) {
+            if ((!f.IsExported() && !f.Anonymous) || f.Tag.Get(xmlˢ) == "-"u8) {
                 continue;
             }
             // Private field
@@ -115,7 +115,7 @@ internal static (ж<fieldInfo>, error) structFieldInfo(reflectꓸType typ, ж<re
 
     var finfo = Ꮡ(new fieldInfo(idx: f.Index));
     // Split the tag from the xml namespace if necessary.
-    @string tag = f.Tag.Get("xml"u8);
+    @string tag = f.Tag.Get(xmlˢ);
     {
         var (ns, t, ok) = strings.Cut(tag, " "u8); if (ok) {
             finfo.Value.xmlns = ns;
@@ -180,13 +180,13 @@ internal static (ж<fieldInfo>, error) structFieldInfo(reflectꓸType typ, ж<re
         }
         if (!valid) {
             return (default!, fmt.Errorf("xml: invalid tag in field %s of type %s: %q"u8,
-                f.Name, typ, f.Tag.Get("xml"u8)));
+                f.Name, typ, f.Tag.Get(xmlˢ)));
         }
     }
     // Use of xmlns without a name is not allowed.
     if ((~finfo).xmlns != ""u8 && tag == ""u8) {
         return (default!, fmt.Errorf("xml: namespace without name in field %s of type %s: %q"u8,
-            f.Name, typ, f.Tag.Get("xml"u8)));
+            f.Name, typ, f.Tag.Get(xmlˢ)));
     }
     if (f.Name == xmlName) {
         // The XMLName field records the XML element name. Don't
@@ -330,7 +330,7 @@ break_Loop:;
         if (len((~oldf).idx) == len(newf.idx)) {
             var f1 = typ.FieldByIndex((~oldf).idx);
             var f2 = typ.FieldByIndex(newf.idx);
-            return new TagPathErrorжerror(Ꮡ(new TagPathError(typ, f1.Name, f1.Tag.Get("xml"u8), f2.Name, f2.Tag.Get("xml"u8))));
+            return new TagPathErrorжerror(Ꮡ(new TagPathError(typ, f1.Name, f1.Tag.Get(xmlˢ), f2.Name, f2.Tag.Get(xmlˢ))));
         }
     }
     // Otherwise, the new field is shallower, and thus takes precedence,

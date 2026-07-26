@@ -44,14 +44,14 @@ public static netip.AddrPort AddrPort(this ж<UDPAddr> Ꮡa) {
 
 // Network returns the address's network name, "udp".
 [GoRecv] public static @string Network(this ref UDPAddr a) {
-    return "udp"u8;
+    return udpˢ;
 }
 
 public static @string String(this ж<UDPAddr> Ꮡa) {
     ref var a = ref Ꮡa.DerefOrNil();
 
     if (Ꮡa == nil) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     @string ip = ipEmptyString(a.IP);
     if (a.Zone != ""u8) {
@@ -96,7 +96,7 @@ public static (ж<UDPAddr>, error) ResolveUDPAddr(@string network, @string addre
     if (exprᴛ1 == "udp"u8 || exprᴛ1 == "udp4"u8 || exprᴛ1 == "udp6"u8) {
     }
     else if (exprᴛ1 == ""u8) {
-        network = "udp"u8;
+        network = udpˢ;
     }
     else { /* default: */
         return (default!, ((UnknownNetworkError)network));
@@ -127,7 +127,7 @@ public static ж<UDPAddr> UDPAddrFromAddrPort(netip.AddrPort addr) {
 }
 
 internal static @string Network(this addrPortUDPAddr _) {
-    return "udp"u8;
+    return udpˢ;
 }
 
 // UDPConn is the implementation of the Conn and PacketConn interfaces

@@ -16,12 +16,15 @@ using path;
 
 partial class goroot_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string srcˢ = "src"u8;
+
 // IsStandardPackage reports whether path is a standard package,
 // given goroot and compiler.
 public static bool IsStandardPackage(@string goroot, @string compiler, @string path) {
     var exprᴛ1 = compiler;
     if (exprᴛ1 == "gc"u8) {
-        @string dir = filepath.Join(goroot, "src", path);
+        @string dir = filepath.Join(goroot, srcˢ, path);
         var (dirents, err) = os.ReadDir(dir);
         if (err != default!) {
             return false;

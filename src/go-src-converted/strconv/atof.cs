@@ -36,6 +36,7 @@ internal static nint commonPrefixLenIgnoreCase(@string s, @string prefix) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string infinityˢ = "infinity"u8;
+private static readonly @string nanˢ = "nan"u8;
 
 // special returns the floating-point value for the special,
 // possibly signed floating-point representations inf, infinity,
@@ -74,7 +75,7 @@ internal static (float64 f, nint n, bool ok) special(@string s) {
         }
     }
     else if (exprᴛ1 is (rune)'n' or (rune)'N') { matchᴛ1 = true;
-        if (commonPrefixLenIgnoreCase(s, "nan"u8) == 3) {
+        if (commonPrefixLenIgnoreCase(s, nanˢ) == 3) {
             return (Δmath.NaN(), 3, true);
         }
     }

@@ -70,7 +70,7 @@ public static @string String(this GoState s) {
         return syscallˢ;
     }
 
-    return "Bad"u8;
+    return badˢ;
 }
 
 [GoType("num:uint8")] partial struct ProcState;
@@ -107,7 +107,7 @@ public static @string String(this ProcState s) {
         return idleˢ;
     }
 
-    return "Bad"u8;
+    return badˢ;
 }
 
 [GoType("num:uint8")] partial struct ResourceKind;
@@ -141,7 +141,7 @@ public static @string String(this ResourceKind r) {
         return threadˢ;
     }
 
-    return "Bad"u8;
+    return badˢ;
 }
 
 // ResourceID represents a generic resource ID.

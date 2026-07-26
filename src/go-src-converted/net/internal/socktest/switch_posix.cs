@@ -34,6 +34,7 @@ internal static @string familyString(nint family) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string streamˢ = "stream"u8;
 private static readonly @string datagramˢ = "datagram"u8;
+private static readonly @string rawˢ = "raw"u8;
 private static readonly @string seqpacketˢ = "seqpacket"u8;
 
 internal static @string typeString(nint sotype) {
@@ -46,7 +47,7 @@ internal static @string typeString(nint sotype) {
         s = datagramˢ;
     }
     else if (exprᴛ1 == syscall.SOCK_RAW) {
-        s = "raw"u8;
+        s = rawˢ;
     }
     else if (exprᴛ1 == syscall.SOCK_SEQPACKET) {
         s = seqpacketˢ;
@@ -65,6 +66,8 @@ internal static @string typeString(nint sotype) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string defaultˢ = "default"u8;
+private static readonly @string tcpˢ = "tcp"u8;
+private static readonly @string udpˢ = "udp"u8;
 
 internal static @string protocolString(nint proto) {
     var exprᴛ1 = proto;
@@ -72,10 +75,10 @@ internal static @string protocolString(nint proto) {
         return defaultˢ;
     }
     if (exprᴛ1 == syscall.IPPROTO_TCP) {
-        return "tcp"u8;
+        return tcpˢ;
     }
     if (exprᴛ1 == syscall.IPPROTO_UDP) {
-        return "udp"u8;
+        return udpˢ;
     }
     { /* default: */
         return fmt.Sprintf("%d"u8, proto);

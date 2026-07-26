@@ -89,6 +89,7 @@ public static void Attrs(this Record r, Func<Attr, bool> f) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bugˢ = "!BUG"u8;
 private static readonly @string addAttrsUnsafelyCalledOnˢ = "AddAttrs unsafely called on copy of Record made without using Record.Clone"u8;
 
 // AddAttrs appends the given Attrs to the [Record]'s list of Attrs.
@@ -112,7 +113,7 @@ private static readonly @string addAttrsUnsafelyCalledOnˢ = "AddAttrs unsafely 
         if (!end.isEmpty()) {
             // Don't panic; copy and muddle through.
             r.back = slices.Clip<slice<Attr>, Attr>(r.back);
-            r.back = builtin.append(r.back, String("!BUG"u8, addAttrsUnsafelyCalledOnˢ));
+            r.back = builtin.append(r.back, String(bugˢ, addAttrsUnsafelyCalledOnˢ));
         }
     }
     nint ne = countEmptyGroups(attrs[(int)(i)..]);

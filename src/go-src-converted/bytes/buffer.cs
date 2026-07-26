@@ -5,7 +5,7 @@ namespace go;
 
 // Simple byte buffer for marshaling data.
 using errors = errors_package;
-using io = io_package;
+using Δio = io_package;
 using utf8 = go.unicode.utf8_package;
 using go.unicode;
 
@@ -62,6 +62,9 @@ internal static readonly nint maxInt = /* int(^uint(0) >> 1) */ unchecked((nint)
     return b.buf[(int)(len(b.buf))..];
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "<nil>"u8;
+
 // String returns the contents of the unread portion of the buffer
 // as a string. If the [Buffer] is a nil pointer, it returns "<nil>".
 //
@@ -71,7 +74,7 @@ public static @string String(this ж<Buffer> Ꮡb) {
 
     if (Ꮡb == nil) {
         // Special case, useful in debugging.
-        return "<nil>"u8;
+        return nilˢ;
     }
     return ((@string)(b.buf[(int)(b.off)..]));
 }
@@ -227,7 +230,7 @@ public static readonly UntypedInt MinRead = 512;
 // the buffer as needed. The return value n is the number of bytes read. Any
 // error except io.EOF encountered during the read is also returned. If the
 // buffer becomes too large, ReadFrom will panic with [ErrTooLarge].
-[GoRecv] public static (int64 n, error err) ReadFrom(this ref Buffer b, io.Reader r) {
+[GoRecv] public static (int64 n, error err) ReadFrom(this ref Buffer b, Δio.Reader r) {
     int64 n = default!;
     error err = default!;
 
@@ -241,7 +244,7 @@ public static readonly UntypedInt MinRead = 512;
         }
         b.buf = b.buf[..(int)(i + m)];
         n += (int64)m;
-        if (AreEqual(e, io.EOF)) {
+        if (AreEqual(e, Δio.EOF)) {
             return (n, default!);
         }
         // e is EOF, so return nil explicitly
@@ -283,7 +286,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
 // The return value n is the number of bytes written; it always fits into an
 // int, but it is int64 to match the [io.WriterTo] interface. Any error
 // encountered during the write is also returned.
-[GoRecv] public static (int64 n, error err) WriteTo(this ref Buffer b, io.Writer w) {
+[GoRecv] public static (int64 n, error err) WriteTo(this ref Buffer b, Δio.Writer w) {
     int64 n = default!;
     error err = default!;
 
@@ -302,7 +305,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
             // all bytes should have been written, by definition of
             // Write method in io.Writer
             if (m != nBytes) {
-                return (n, io.ErrShortWrite);
+                return (n, Δio.ErrShortWrite);
             }
         }
     }
@@ -362,7 +365,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
         if (len(p) == 0) {
             return (0, default!);
         }
-        return (0, io.EOF);
+        return (0, Δio.EOF);
     }
     n = copy(p, b.buf[(int)(b.off)..]);
     b.off += n;
@@ -396,7 +399,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
     if (b.empty()) {
         // Buffer is empty, reset to recover space.
         b.Reset();
-        return (0, io.EOF);
+        return (0, Δio.EOF);
     }
     var c = b.buf[b.off];
     b.off++;
@@ -417,7 +420,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
     if (b.empty()) {
         // Buffer is empty, reset to recover space.
         b.Reset();
-        return (0, 0, io.EOF);
+        return (0, 0, Δio.EOF);
     }
     var c = b.buf[b.off];
     if (c < utf8.RuneSelf) {
@@ -493,7 +496,7 @@ internal static error errUnreadByte = errors.New("bytes.Buffer: UnreadByte: prev
     nint end = b.off + i + 1;
     if (i < 0) {
         end = len(b.buf);
-        err = io.EOF;
+        err = Δio.EOF;
     }
     line = b.buf[(int)(b.off)..(int)(end)];
     b.off = end;

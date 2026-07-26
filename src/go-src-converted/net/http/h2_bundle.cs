@@ -7267,7 +7267,7 @@ private static readonly @string hostˢ2 = "host"u8;
     }
     // Default options.
     if (opts.Method == ""u8) {
-        opts.Method = "GET"u8;
+        opts.Method = getˢ;
     }
     if (opts.Header == default!) {
         opts.Header = new ΔHeader(new map<@string, slice<@string>>{});
@@ -8243,6 +8243,9 @@ internal static bool http2canRetryError(error err) {
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tcpˢ = "tcp"u8;
+
 internal static (ж<http2ClientConn>, error) dialClientConn(this ж<http2Transport> Ꮡt, context.Context ctx, @string addr, bool singleUse) {
     ref var t = ref Ꮡt.Value;
 
@@ -8253,7 +8256,7 @@ internal static (ж<http2ClientConn>, error) dialClientConn(this ж<http2Transpo
     if (err != default!) {
         return (default!, err);
     }
-    (var tconn, err) = t.dialTLS(ctx, "tcp"u8, addr, t.newTLSConfig(host));
+    (var tconn, err) = t.dialTLS(ctx, tcpˢ, addr, t.newTLSConfig(host));
     if (err != default!) {
         return (default!, err);
     }

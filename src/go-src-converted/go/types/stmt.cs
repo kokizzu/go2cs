@@ -349,7 +349,7 @@ L:
         foreach (var (t, other) in seen) {
             if (T == default! && t == default! || T != default! && t != default! && Identical(T, t)) {
                 // talk about "case" rather than "type" because of nil case
-                @string Ts = "nil"u8;
+                @string Ts = nilˢ2;
                 if (T != default!) {
                     Ts = TypeString(T, new Func<ж<Package>, @string>(Ꮡcheck.qualifier));
                 }
@@ -393,6 +393,7 @@ private static readonly @string typeSwitchˢ = "type switch"u8;
 private static readonly @string incorrectFormOfTypeˢ = "incorrect form of type switch guard"u8;
 private static readonly @string incorrectTypeSwitchCaseˢ = "incorrect type switch case"u8;
 private static readonly @string selectCaseMustBeSendOrˢ = "select case must be send or receive (possibly with assignment)"u8;
+private static readonly @string forˢ = "for"u8;
 private static readonly @string nonBooleanConditionInForˢ = "non-boolean condition in for statement"u8;
 private static readonly @string invalidStatementˢ = "invalid statement"u8;
 
@@ -932,7 +933,7 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
     }
     case ж<ast.ForStmt> sΔ1: {
         inner |= (stmtContext)((stmtContext)(breakOk | continueOk));
-        check.openScope(new ast_ForStmtжNode(sΔ1), "for"u8);
+        check.openScope(new ast_ForStmtжNode(sΔ1), forˢ);
         defer(Ꮡcheck.closeScope);
         Ꮡcheck.simpleStmt((~sΔ1).Init);
         if ((~sΔ1).Cond != default!) {

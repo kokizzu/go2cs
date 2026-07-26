@@ -32,7 +32,7 @@ public static @string String(this ж<UnixAddr> Ꮡa) {
     ref var a = ref Ꮡa.DerefOrNil();
 
     if (Ꮡa == nil) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     return a.Name;
 }

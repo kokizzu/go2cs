@@ -136,6 +136,9 @@ internal static map<@string, contentType> attrTypeMap = new map<@string, content
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string dataˢ = "data-"u8;
+private static readonly @string srcˢ = "src"u8;
+private static readonly @string uriˢ = "uri"u8;
+private static readonly @string urlˢ = "url"u8;
 
 // attrType returns a conservative (upper-bound on authority) guess at the
 // type of the lowercase named attribute.
@@ -172,7 +175,7 @@ internal static contentType attrType(@string name) {
     //  more appropriate attributes or elements."
     // Developers seem to store URL content in data URLs that start
     // or end with "URI" or "URL".
-    if (strings.Contains(name, "src"u8) || strings.Contains(name, "uri"u8) || strings.Contains(name, "url"u8)) {
+    if (strings.Contains(name, srcˢ) || strings.Contains(name, uriˢ) || strings.Contains(name, urlˢ)) {
         return contentTypeURL;
     }
     return contentTypePlain;

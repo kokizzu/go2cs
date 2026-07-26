@@ -450,6 +450,7 @@ private static readonly @string runAtMostNTestsInˢ = "run at most `n` tests in 
 private static readonly @string testTestlogfileˢ = "test.testlogfile"u8;
 private static readonly @string writeTestActionLogToFileˢ = "write test action log to `file` (for use only by cmd/go)"u8;
 private static readonly @string testShuffleˢ = "test.shuffle"u8;
+private static readonly @string offˢ = "off"u8;
 private static readonly @string randomizeTheExecutionˢ = "randomize the execution order of tests and benchmarks"u8;
 private static readonly @string testFullpathˢ = "test.fullpath"u8;
 private static readonly @string showFullFileNamesInErrorˢ = "show full file names in error messages"u8;
@@ -498,7 +499,7 @@ public static void Init() {
     cpuListStr = flag.String(testCpuˢ, ""u8, commaSeparatedListOfCpuˢ);
     parallel = flag.Int(testParallelˢ, Δruntime.GOMAXPROCS(0), runAtMostNTestsInˢ);
     testlog = flag.String(testTestlogfileˢ, ""u8, writeTestActionLogToFileˢ);
-    shuffle = flag.String(testShuffleˢ, "off"u8, randomizeTheExecutionˢ);
+    shuffle = flag.String(testShuffleˢ, offˢ, randomizeTheExecutionˢ);
     fullPath = flag.Bool(testFullpathˢ, false, showFullFileNamesInErrorˢ);
     initBenchmarkFlags();
     initFuzzFlags();
@@ -1134,6 +1135,9 @@ internal static void logDepth(this ж<common> Ꮡc, @string s, nint depth) => fu
     }
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string logˢ = "Log"u8;
+
 // Log formats its arguments using default formatting, analogous to Println,
 // and records the text in the error log. For tests, the text will be printed only if
 // the test fails or the -test.v flag is set. For benchmarks, the text is always
@@ -1142,7 +1146,7 @@ internal static void Log(this ж<common> Ꮡc, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     ref var c = ref Ꮡc.Value;
-    c.checkFuzzFn("Log"u8);
+    c.checkFuzzFn(logˢ);
     Ꮡc.log(fmt.Sprintln(args.ꓸꓸꓸ));
 }
 
@@ -2288,7 +2292,7 @@ internal static void report(this ж<T> Ꮡt) {
         return;
     }
     @string dstr = fmtDuration(t.duration);
-    @string format = "--- %s: %s (%s)\n"u8;
+    @string format = sSSˢ;
     if (Ꮡt.of(T.Ꮡcommon).Failed()){
         Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, failˢ, t.name, dstr);
     } else 
@@ -2602,6 +2606,7 @@ internal static @string toOutputDir(@string path) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string allˢ = "all"u8;
 private static readonly @string runningTestsˢ = "\nrunning tests:"u8;
 
 // startAlarm starts an alarm if requested.
@@ -2614,7 +2619,7 @@ internal static time.Time startAlarm(this ж<M> Ꮡm) {
     var deadline = time.Now().Add(timeout.Value);
     m.timer = time.AfterFunc(timeout.Value, () => {
         Ꮡm.after();
-        debug.SetTraceback("all"u8);
+        debug.SetTraceback(allˢ);
         @string extra = ""u8;
         {
             var list = runningList(); if (len(list) > 0) {

@@ -250,6 +250,7 @@ private static readonly @string hostsˢ = "hosts"u8;
 private static readonly @string mdnsˢ = "mdns"u8;
 private static readonly @string localˢ = ".local"u8;
 private static readonly @string etcMdnsAllowˢ = "/etc/mdns.allow"u8;
+private static readonly @string dnsˢ = "dns"u8;
 
 [GoRecv] internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) lookupOrder(this ref conf c, ж<Resolver> Ꮡr, @string hostname) {
     ΔhostLookupOrder ret = default!;
@@ -468,7 +469,7 @@ private static readonly @string etcMdnsAllowˢ = "/etc/mdns.allow"u8;
         if (!hasDNSSource) {
             dnsSource = true;
             if (first == ""u8) {
-                first = "dns"u8;
+                first = dnsˢ;
             }
         }
     }

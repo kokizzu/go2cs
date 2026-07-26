@@ -575,8 +575,10 @@ internal static ж<Builtin> newBuiltin(builtinId id) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string constˢ = "const"u8;
 private static readonly @string parameterˢ = " parameter"u8;
+private static readonly @string varˢ = "var"u8;
 private static readonly @string funcˢ2 = "func "u8;
 private static readonly @string builtinˢ = "builtin"u8;
+private static readonly @string nilˢ2 = "nil"u8;
 
 internal static void writeObject(ж<bytes.Buffer> Ꮡbuf, Object obj, Func<ж<Package>, @string> qf) {
     ref var buf = ref Ꮡbuf.Value;
@@ -609,7 +611,7 @@ internal static void writeObject(ж<bytes.Buffer> Ꮡbuf, Object obj, Func<ж<Pa
         if ((~objΔ1).isField){
             buf.WriteString(fieldˢ);
         } else {
-            buf.WriteString("var"u8);
+            buf.WriteString(varˢ);
         }
         break;
     }
@@ -632,7 +634,7 @@ internal static void writeObject(ж<bytes.Buffer> Ꮡbuf, Object obj, Func<ж<Pa
         break;
     }
     case ж<Nil> objΔ1: {
-        buf.WriteString("nil"u8);
+        buf.WriteString(nilˢ2);
         return;
     }
     default: {

@@ -481,8 +481,11 @@ internal static ж<NilNode> newNil(this ж<Tree> Ꮡt, Pos pos) {
     return NodeNil;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "nil"u8;
+
 [GoRecv] public static @string String(this ref NilNode n) {
-    return "nil"u8;
+    return nilˢ;
 }
 
 [GoRecv] internal static void writeTo(this ref NilNode n, ж<strings.Builder> Ꮡsb) {
@@ -818,8 +821,11 @@ internal static ж<endNode> newEnd(this ж<Tree> Ꮡt, Pos pos) {
     return Ꮡ(new endNode(tr: Ꮡt, NodeType: nodeEnd, Pos: pos));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string endˢ = "{{end}}"u8;
+
 [GoRecv] internal static @string String(this ref endNode e) {
-    return "{{end}}"u8;
+    return endˢ;
 }
 
 [GoRecv] internal static void writeTo(this ref endNode e, ж<strings.Builder> Ꮡsb) {
@@ -916,7 +922,7 @@ private static readonly @string withˢ = "with"u8;
         Ꮡsb.WriteString(elseˢ);
         b.ElseList.writeTo(Ꮡsb);
     }
-    Ꮡsb.WriteString("{{end}}"u8);
+    Ꮡsb.WriteString(endˢ);
 }
 
 [GoRecv] internal static ж<Tree> tree(this ref BranchNode b) {

@@ -127,7 +127,7 @@ internal static @string operandString(ж<operand> Ꮡx, Func<ж<Package>, @strin
                 return nilWithInvalidTypeˢ;
             }
             if (AreEqual(exprᴛ1, Typ[UntypedNil])) {
-                return "nil"u8;
+                return nilˢ2;
             }
             { /* default: */
                 return fmt.Sprintf("nil (of type %s)"u8, TypeString(x.typ, qf));
@@ -137,7 +137,7 @@ internal static @string operandString(ж<operand> Ꮡx, Func<ж<Package>, @strin
     } else {
         // go/types
         if (x.mode == value && AreEqual(x.typ, Typ[UntypedNil])) {
-            return "nil"u8;
+            return nilˢ2;
         }
     }
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);

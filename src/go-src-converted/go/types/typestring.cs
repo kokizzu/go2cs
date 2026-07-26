@@ -105,6 +105,7 @@ internal static ж<typeWriter> newTypeHasher(ж<bytes.Buffer> Ꮡbuf, ж<Context
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string packageˢ = " /* package "u8;
 private static readonly @string emptyUnionˢ = "empty union"u8;
+private static readonly @string anyˢ = "any"u8;
 private static readonly @string interfaceComparableˢ = "interface{comparable}"u8;
 private static readonly @string implicitˢ = "/* implicit */ "u8;
 private static readonly @string unknownChannelDirectionˢ = "unknown channel direction"u8;
@@ -122,7 +123,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
     deferǃ((ᴛ1, ᴛ2) => delete(ᴛ1, ᴛ2), Ꮡw.Value.seen, typ, defer);
     switch (typ.type()) {
     case null: {
-        w.error("nil"u8);
+        w.error(nilˢ2);
         break;
     }
     case ж<Basic> t: {
@@ -231,7 +232,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
                 // for a type that is pointer-identical to universeAny.
                 // TODO(rfindley): this logic should not be necessary with
                 // gotypesalias=1. Remove once that is always the case.
-                w.@string("any"u8);
+                w.@string(anyˢ);
                 break;
             }
             if (AreEqual(t, (~asNamed(universeComparable.Type())).underlying)) {
@@ -273,7 +274,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
         break;
     }
     case ж<Map> t: {
-        w.@string("map["u8);
+        w.@string(mapˢ2);
         Ꮡw.typ((~t).key);
         w.@byte((rune)']');
         Ꮡw.typ((~t).elem);

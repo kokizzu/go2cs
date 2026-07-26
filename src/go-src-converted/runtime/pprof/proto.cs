@@ -316,6 +316,7 @@ internal static ж<profileBuilder> newProfileBuilder(io.Writer w) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string samplesˢ = "samples"u8;
+private static readonly @string cpuˢ = "cpu"u8;
 
 // build completes and returns the constructed profile.
 internal static void build(this ж<profileBuilder> Ꮡb) {
@@ -326,9 +327,9 @@ internal static void build(this ж<profileBuilder> Ꮡb) {
     if (b.havePeriod) {
         // must be CPU profile
         b.pbValueType(tagProfile_SampleType, samplesˢ, countˢ);
-        b.pbValueType(tagProfile_SampleType, "cpu"u8, nanosecondsˢ);
+        b.pbValueType(tagProfile_SampleType, cpuˢ, nanosecondsˢ);
         b.pb.int64Opt(tagProfile_DurationNanos, b.end.Sub(b.start).Nanoseconds());
-        b.pbValueType(tagProfile_PeriodType, "cpu"u8, nanosecondsˢ);
+        b.pbValueType(tagProfile_PeriodType, cpuˢ, nanosecondsˢ);
         b.pb.int64Opt(tagProfile_Period, b.period);
     }
     var values = new int64[]{0, 0}.slice();

@@ -33,13 +33,15 @@ internal static error errNoAvailableInterface = errors.New("no available interfa
 internal static error errNoAvailableAddress = errors.New("no available address"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ip4ˢ = "ip4"u8;
 private static readonly @string tcp4ˢ = "tcp4"u8;
+private static readonly @string ip6ˢ = "ip6"u8;
 private static readonly @string tcp6ˢ = "tcp6"u8;
 private static readonly @string oslevelˢ = "oslevel"u8;
 
 internal static void probeStack() {
     {
-        var (_, err) = RoutedInterface("ip4"u8, net.FlagUp); if (err == default!) {
+        var (_, err) = RoutedInterface(ip4ˢ, net.FlagUp); if (err == default!) {
             ipv4Enabled = true;
         }
     }
@@ -50,7 +52,7 @@ internal static void probeStack() {
         }
     }
     {
-        var (_, err) = RoutedInterface("ip6"u8, net.FlagUp); if (err == default!) {
+        var (_, err) = RoutedInterface(ip6ˢ, net.FlagUp); if (err == default!) {
             ipv6Enabled = true;
         }
     }
@@ -265,6 +267,7 @@ public static (net.PacketConn, error) NewLocalPacketListener(@string network) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tmpˢ = "/tmp"u8;
 private static readonly @string goNettestˢ = "go-nettest"u8;
 
 // LocalPath returns a local path that can be used for Unix-domain
@@ -272,7 +275,7 @@ private static readonly @string goNettestˢ = "go-nettest"u8;
 public static (@string, error) LocalPath() {
     @string dir = ""u8;
     if (runtime.GOOS == "darwin"u8) {
-        dir = "/tmp"u8;
+        dir = tmpˢ;
     }
     var (f, err) = os.CreateTemp(dir, goNettestˢ);
     if (err != default!) {

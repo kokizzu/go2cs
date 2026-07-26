@@ -97,7 +97,7 @@ internal static void defPredeclaredTypes() {
     // error messages without using a distinguished pointer for the any
     // interface.
     {
-        universeAnyNoAlias = NewTypeName(nopos, nil, "any"u8, new InterfaceжΔType(Ꮡ(new Interface(complete: true, tset: ᏑtopTypeSet))));
+        universeAnyNoAlias = NewTypeName(nopos, nil, anyˢ, new InterfaceжΔType(Ꮡ(new Interface(complete: true, tset: ᏑtopTypeSet))));
         universeAnyNoAlias.of(TypeName.Ꮡobject).setColor(black);
         // ensure that the any TypeName reports a consistent Parent, after
         // hijacking Universe.Lookup with gotypesalias=0.
@@ -105,7 +105,7 @@ internal static void defPredeclaredTypes() {
         // It shouldn't matter which representation of any is actually inserted
         // into the Universe, but we lean toward the future and insert the Alias
         // representation.
-        universeAnyAlias = NewTypeName(nopos, nil, "any"u8, default!);
+        universeAnyAlias = NewTypeName(nopos, nil, anyˢ, default!);
         universeAnyAlias.of(TypeName.Ꮡobject).setColor(black);
         _ = NewAlias(universeAnyAlias, universeAnyNoAlias.of(TypeName.Ꮡobject).Type().Underlying());
         // Link TypeName and Alias

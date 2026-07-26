@@ -41,6 +41,9 @@ internal static error errWriteHole = errors.New("archive/tar: write non-NUL byte
 
 [GoType("[]@string")] partial struct headerError;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string andˢ = "; and "u8;
+
 internal static @string Error(this headerError he) {
     @string prefix = "archive/tar: cannot encode header"u8;
     slice<@string> ss = default!;
@@ -52,7 +55,7 @@ internal static @string Error(this headerError he) {
     if (len(ss) == 0) {
         return prefix;
     }
-    return fmt.Sprintf("%s: %v"u8, prefix, strings.Join(ss, "; and "u8));
+    return fmt.Sprintf("%s: %v"u8, prefix, strings.Join(ss, andˢ));
 }
 
 // Type flags for Header.Typeflag.
@@ -320,6 +323,8 @@ private static readonly @string linknameˢ = "Linkname"u8;
 private static readonly @string unameˢ = "Uname"u8;
 private static readonly @string gnameˢ = "Gname"u8;
 private static readonly @string modeˢ = "Mode"u8;
+private static readonly @string uidˢ = "Uid"u8;
+private static readonly @string gidˢ = "Gid"u8;
 private static readonly @string sizeˢ = "Size"u8;
 private static readonly @string devmajorˢ = "Devmajor"u8;
 private static readonly @string devminorˢ = "Devminor"u8;
@@ -449,8 +454,8 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
     verifyString(h.Uname, len(ustar.userName()), unameˢ, paxUname);
     verifyString(h.Gname, len(ustar.groupName()), gnameˢ, paxGname);
     verifyNumeric(h.Mode, len(v7.mode()), modeˢ, paxNone);
-    verifyNumeric((int64)h.Uid, len(v7.uid()), "Uid"u8, paxUid);
-    verifyNumeric((int64)h.Gid, len(v7.gid()), "Gid"u8, paxGid);
+    verifyNumeric((int64)h.Uid, len(v7.uid()), uidˢ, paxUid);
+    verifyNumeric((int64)h.Gid, len(v7.gid()), gidˢ, paxGid);
     verifyNumeric(h.Size, len(v7.size()), sizeˢ, paxSize);
     verifyNumeric(h.Devmajor, len(ustar.devMajor()), devmajorˢ, paxNone);
     verifyNumeric(h.Devminor, len(ustar.devMinor()), devminorˢ, paxNone);

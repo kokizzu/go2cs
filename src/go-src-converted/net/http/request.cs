@@ -665,7 +665,7 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
                 w = new bufio_WriterжWriter(bw);
             }
         }
-        (_, err) = fmt.Fprintf(w, "%s %s HTTP/1.1\r\n"u8, valueOrDefault(r.Method, "GET"u8), ruri);
+        (_, err) = fmt.Fprintf(w, "%s %s HTTP/1.1\r\n"u8, valueOrDefault(r.Method, getˢ), ruri);
         if (err != default!) {
             return;
         }
@@ -897,7 +897,7 @@ public static (ж<Request>, error) NewRequestWithContext(context.Context ctx, @s
         // We document that "" means "GET" for Request.Method, and people have
         // relied on that from NewRequest, so keep that working.
         // We still enforce validMethod for non-empty methods.
-        method = "GET"u8;
+        method = getˢ;
     }
     if (!validMethod(method)) {
         return (default!, fmt.Errorf("net/http: invalid method %q"u8, method));
@@ -1619,7 +1619,7 @@ private static readonly @string xIdempotencyKeyˢ = "X-Idempotency-Key"u8;
 
 [GoRecv] internal static bool isReplayable(this ref Request r) {
     if (r.Body == default! || AreEqual(r.Body, NoBody) || r.GetBody != default!) {
-        var exprᴛ1 = valueOrDefault(r.Method, "GET"u8);
+        var exprᴛ1 = valueOrDefault(r.Method, getˢ);
         if (exprᴛ1 == "GET"u8 || exprᴛ1 == "HEAD"u8 || exprᴛ1 == "OPTIONS"u8 || exprᴛ1 == "TRACE"u8) {
             return true;
         }

@@ -142,6 +142,9 @@ private static readonly @string readˢ = "read"u8;
     return (list, f.fixErr(err));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string subˢ = "sub"u8;
+
 internal static (FS, error) Sub(this ж<subFS> Ꮡf, @string dir) {
     ref var f = ref Ꮡf.Value;
 
@@ -149,7 +152,7 @@ internal static (FS, error) Sub(this ж<subFS> Ꮡf, @string dir) {
         return (new subFSжFS(Ꮡf), default!);
     }
     ref var full = ref heap<@string>(out var Ꮡfull);
-    (full, var err) = f.fullName("sub"u8, dir);
+    (full, var err) = f.fullName(subˢ, dir);
     if (err != default!) {
         return (default!, err);
     }

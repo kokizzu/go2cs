@@ -31,6 +31,7 @@ internal static void cgiMain() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string locˢ = "loc"u8;
 private static readonly @string writestderrˢ = "writestderr"u8;
 private static readonly @string bigresponseˢ = "bigresponse"u8;
 
@@ -46,8 +47,8 @@ internal static void testCGI() {
         throw panic(err);
     }
     var @params = req.Value.Form;
-    if (@params.Get("loc"u8) != ""u8) {
-        fmt.Printf("Location: %s\r\n\r\n"u8, @params.Get("loc"u8));
+    if (@params.Get(locˢ) != ""u8) {
+        fmt.Printf("Location: %s\r\n\r\n"u8, @params.Get(locˢ));
         return;
     }
     fmt.Printf("Content-Type: text/html\r\n"u8);

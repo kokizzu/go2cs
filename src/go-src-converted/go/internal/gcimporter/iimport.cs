@@ -79,6 +79,9 @@ internal static readonly itag typeParamType = 9;
 internal static readonly itag instanceType = 10;
 internal static readonly itag ΔunionType = 11;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string anyˢ = "any"u8;
+
 // iImportData imports a package from the serialized package data
 // and returns the number of bytes consumed and a reference to the package.
 // If the export data version is not recognized or the format is otherwise
@@ -149,7 +152,7 @@ internal static (ж<types.Package> pkg, error err) iImportData(ж<token.FileSet>
         }
         // Special handling for "any", whose representation may be changed by the
         // gotypesalias GODEBUG variable.
-        p.typCache[(uint64)len(predeclared)] = types.Universe.Lookup("any"u8).Type();
+        p.typCache[(uint64)len(predeclared)] = types.Universe.Lookup(anyˢ).Type();
         var pkgList = new slice<ж<types.Package>>((nint)(r.uint64()));
         foreach (var (i, _) in pkgList) {
             var pkgPathOff = r.uint64();

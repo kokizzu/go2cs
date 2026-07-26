@@ -57,6 +57,11 @@ public static slice<byte> AppendFloat(slice<byte> dst, float64 f, byte fmt, nint
     return genericFtoa(dst, f, fmt, prec, bitSize);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string naNˢ = "NaN"u8;
+private static readonly @string infˢ = "-Inf"u8;
+private static readonly @string infˢ2 = "+Inf"u8;
+
 internal static slice<byte> genericFtoa(slice<byte> dst, float64 val, byte fmt, nint prec, nint bitSize) {
     uint64 bits = default!;
     ж<floatInfo> flt = default!;
@@ -85,15 +90,15 @@ internal static slice<byte> genericFtoa(slice<byte> dst, float64 val, byte fmt, 
         @string s = default!;
         switch (ᐧ) {
         case {} when mant is not 0: {
-            s = "NaN"u8;
+            s = naNˢ;
             break;
         }
         case {} when neg: {
-            s = "-Inf"u8;
+            s = infˢ;
             break;
         }
         default: {
-            s = "+Inf"u8;
+            s = infˢ2;
             break;
         }}
 

@@ -94,7 +94,7 @@ internal static (ж<transferWriter> t, error err) newTransferWriter(any r) {
         if ((~rr).ContentLength != 0 && (~rr).Body == default!) {
             return (default!, fmt.Errorf("http: Request.ContentLength=%d with nil Body"u8, (~rr).ContentLength));
         }
-        t.Value.Method = valueOrDefault((~rr).Method, "GET"u8);
+        t.Value.Method = valueOrDefault((~rr).Method, getˢ);
         t.Value.Close = rr.Value.Close;
         t.Value.TransferEncoding = rr.Value.TransferEncoding;
         t.Value.Header = rr.Value.Header;

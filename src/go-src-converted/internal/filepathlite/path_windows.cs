@@ -207,6 +207,9 @@ public static bool /*b*/ IsAbs(@string path) {
     return IsPathSeparator(path[0]);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string uncˢ = @"\\.\UNC"u8;
+
 // volumeNameLen returns length of the leading volume name on Windows.
 // It returns 0 elsewhere.
 //
@@ -229,7 +232,7 @@ internal static nint volumeNameLen(@string path) {
  // We don't handle the case of a path starting with a non-ASCII character,
  // in which case the "drive letter" might be multiple bytes long.
  // Path does not have a volume component.
- @"\\.\UNC"u8): {
+ uncˢ): {
         return uncLen(path, // We're going to treat the UNC host and share as part of the volume
  // prefix for historical reasons, but this isn't really principled;
  // Windows's own GetFullPathName will happily remove the first

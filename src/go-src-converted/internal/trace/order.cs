@@ -1280,6 +1280,7 @@ internal static readonly gcState gcRunning = 2;
 private static readonly @string undeterminedˢ = "Undetermined"u8;
 private static readonly @string notRunningˢ = "NotRunning"u8;
 private static readonly @string runningˢ = "Running"u8;
+private static readonly @string badˢ = "Bad"u8;
 
 // String returns a human-readable string for the GC state.
 internal static @string String(this gcState s) {
@@ -1294,7 +1295,7 @@ internal static @string String(this gcState s) {
         return runningˢ;
     }
 
-    return "Bad"u8;
+    return badˢ;
 }
 
 // userRegion represents a unique user region when attached to some gState.

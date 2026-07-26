@@ -658,6 +658,7 @@ private static readonly @string abbrevˢ = "abbrev"u8;
 private static readonly @string infoˢ = "info"u8;
 private static readonly @string lineˢ = "line"u8;
 private static readonly @string rangesˢ = "ranges"u8;
+private static readonly @string strˢ = "str"u8;
 
 // DWARF returns the DWARF debug information for the Mach-O file.
 [GoRecv] public static (ж<dwarf.Data>, error) DWARF(this ref File f) {
@@ -720,7 +721,7 @@ private static readonly @string rangesˢ = "ranges"u8;
         }
         dat[suffix] = b;
     }
-    var (d, err) = dwarf.New(dat[abbrevˢ], default!, default!, dat[infoˢ], dat[lineˢ], default!, dat[rangesˢ], dat["str"u8]);
+    var (d, err) = dwarf.New(dat[abbrevˢ], default!, default!, dat[infoˢ], dat[lineˢ], default!, dat[rangesˢ], dat[strˢ]);
     if (err != default!) {
         return (default!, err);
     }

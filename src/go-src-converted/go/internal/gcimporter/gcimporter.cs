@@ -37,6 +37,7 @@ internal static ж<sync.Map> ᏑexportMap = new(default(sync.Map));
 internal static ref sync.Map exportMap => ref ᏑexportMap.Value; // package dir → func() (string, error)
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string binˢ = "bin"u8;
 private static readonly @string listˢ = "list"u8;
 private static readonly @string exportˢ = "-export"u8;
 private static readonly @string exportˢ2 = "{{.Export}}"u8;
@@ -56,7 +57,7 @@ internal static (@string, error) lookupGorootExport(@string pkgDir) {
         ref var err = ref heap<error>(out var Ꮡerr);
         (f, _) = ᏑexportMap.LoadOrStore(pkgDir, () => {
             ᏑlistOnce.Do(() => {
-                var cmd = exec.Command(filepath.Join(build.Default.GOROOT, "bin", "go"), listˢ, exportˢ, "-f", exportˢ2, pkgDir);
+                var cmd = exec.Command(filepath.Join(build.Default.GOROOT, binˢ, "go"), listˢ, exportˢ, "-f", exportˢ2, pkgDir);
                 cmd.Value.Dir = build.Default.GOROOT;
                 cmd.Value.Env = append(os.Environ(), "PWD="u8 + (~cmd).Dir, "GOROOT=" + build.Default.GOROOT);
                 slice<byte> output = default!;

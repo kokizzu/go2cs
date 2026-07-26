@@ -283,19 +283,22 @@ internal static (@string rel, bool ok) hasSubdir(@string root, @string dir) {
     return all;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string srcˢ = "src"u8;
+
 // SrcDirs returns a list of package source root directories.
 // It draws from the current Go root and Go path but omits directories
 // that do not exist.
 [GoRecv] public static slice<@string> SrcDirs(this ref Context ctxt) {
     slice<@string> all = default!;
     if (ctxt.GOROOT != ""u8 && ctxt.Compiler != "gccgo"u8) {
-        @string dir = ctxt.joinPath(ctxt.GOROOT, "src");
+        @string dir = ctxt.joinPath(ctxt.GOROOT, srcˢ);
         if (ctxt.isDir(dir)) {
             all = append(all, dir);
         }
     }
     foreach (var (_, p) in ctxt.gopath()) {
-        @string dir = ctxt.joinPath(p, "src");
+        @string dir = ctxt.joinPath(p, srcˢ);
         if (ctxt.isDir(dir)) {
             all = append(all, dir);
         }
@@ -553,12 +556,16 @@ internal static ж<godebug.Setting> installgoroot = godebug.New("installgoroot"u
 private static readonly @string testdataˢ = "/testdata/"u8;
 private static readonly @string testdataˢ2 = "/testdata"u8;
 private static readonly @string testdataˢ3 = "testdata/"u8;
+private static readonly @string srcˢ2 = "src/"u8;
 private static readonly @string vendorˢ = "vendor"u8;
 private static readonly @string vendorˢ2 = "vendor/"u8;
 private static readonly @string sVendorTreeˢ = "\t%s (vendor tree)"u8;
 private static readonly @string sFromGopathˢ = "\t%s (from $GOPATH)"u8;
+private static readonly @string pkgˢ = "pkg"u8;
+private static readonly @string binˢ = "bin"u8;
 private static readonly @string testGoˢ = "_test.go"u8;
 private static readonly @string testˢ = "_test"u8;
+private static readonly @string cgoˢ = "cgo"u8;
 
 [GoType("dyn")] partial struct Import_tried {
     internal slice<@string> vendor;
@@ -637,7 +644,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
         // Exclude results where the import path would include /testdata/.
         var inTestdata = (@string sub) => strings.Contains(sub, testdataˢ) || strings.HasSuffix(sub, testdataˢ2) || strings.HasPrefix(sub, testdataˢ3) || sub == "testdata"u8;
         if (ctxt.GOROOT != ""u8) {
-            @string root = ctxt.joinPath(ctxt.GOROOT, "src");
+            @string root = ctxt.joinPath(ctxt.GOROOT, srcˢ);
             {
                 var (sub, ok) = ctxt.hasSubdir(root, (~p).Dir); if (ok && !inTestdata(sub)) {
                     p.Value.Goroot = true;
@@ -651,7 +658,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
         }
         var all = ctxt.gopath();
         foreach (var (i, root) in all) {
-            @string rootsrc = ctxt.joinPath(root, "src");
+            @string rootsrc = ctxt.joinPath(root, srcˢ);
             {
                 var (sub, ok) = ctxt.hasSubdir(rootsrc, (~p).Dir); if (ok && !inTestdata(sub)) {
                     // We found a potential import path for dir,
@@ -659,7 +666,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
                     // else first.
                     if (ctxt.GOROOT != ""u8 && ctxt.Compiler != "gccgo"u8) {
                         {
-                            @string dir = ctxt.joinPath(ctxt.GOROOT, "src", sub); if (ctxt.isDir(dir)) {
+                            @string dir = ctxt.joinPath(ctxt.GOROOT, srcˢ, sub); if (ctxt.isDir(dir)) {
                                 p.Value.ConflictDir = dir;
                                 goto Found;
                             }
@@ -667,7 +674,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
                     }
                     foreach (var (_, earlyRoot) in all[..(int)(i)]) {
                         {
-                            @string dir = ctxt.joinPath(earlyRoot, "src", sub); if (ctxt.isDir(dir)) {
+                            @string dir = ctxt.joinPath(earlyRoot, srcˢ, sub); if (ctxt.isDir(dir)) {
                                 p.Value.ConflictDir = dir;
                                 goto Found;
                             }
@@ -707,7 +714,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
             var setPkgaʗ1 = setPkga;
             var searchVendor = (@string root, bool isGoroot) => {
                 var (sub, ok) = Ꮡctxt.Value.hasSubdir(root, srcDir);
-                if (!ok || !strings.HasPrefix(sub, "src/"u8) || strings.Contains(sub, testdataˢ)) {
+                if (!ok || !strings.HasPrefix(sub, srcˢ2) || strings.Contains(sub, testdataˢ)) {
                     return false;
                 }
                 while (ᐧ) {
@@ -716,7 +723,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
                         @string dir = Ꮡctxt.Value.joinPath(vendor, path);
                         if (Ꮡctxt.Value.isDir(dir) && hasGoFiles(Ꮡctxt, dir)) {
                             pʗ2.Value.Dir = dir;
-                            pʗ2.Value.ImportPath = strings.TrimPrefix(pathpkg.Join(sub, vendorˢ, path), "src/"u8);
+                            pʗ2.Value.ImportPath = strings.TrimPrefix(pathpkg.Join(sub, vendorˢ, path), srcˢ2);
                             pʗ2.Value.Goroot = isGoroot;
                             pʗ2.Value.Root = root;
                             setPkgaʗ1();
@@ -753,7 +760,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
                 (_, gorootFirst) = ctxt.hasSubdir(ctxt.GOROOT, srcDir);
             }
             if (gorootFirst) {
-                @string dir = ctxt.joinPath(ctxt.GOROOT, "src", path);
+                @string dir = ctxt.joinPath(ctxt.GOROOT, srcˢ, path);
                 if (ctxt.Compiler != "gccgo"u8) {
                     var isDir = ctxt.isDir(dir);
                     binaryOnly = !isDir && (ImportMode)(mode & AllowBinary) != 0 && pkga != ""u8 && ctxt.isFile(ctxt.joinPath(ctxt.GOROOT, pkga));
@@ -770,14 +777,14 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
                 // TODO(bcmills): Setting p.Dir here is misleading, because gccgo
                 // doesn't actually load its standard-library packages from this
                 // directory. See if we can leave it unset.
-                p.Value.Dir = ctxt.joinPath(ctxt.GOROOT, "src", path);
+                p.Value.Dir = ctxt.joinPath(ctxt.GOROOT, srcˢ, path);
                 p.Value.Goroot = true;
                 p.Value.Root = ctxt.GOROOT;
                 goto Found;
             }
         }
         foreach (var (_, root) in gopath) {
-            @string dir = ctxt.joinPath(root, "src", path);
+            @string dir = ctxt.joinPath(root, srcˢ, path);
             var isDir = ctxt.isDir(dir);
             binaryOnly = !isDir && (ImportMode)(mode & AllowBinary) != 0 && pkga != ""u8 && ctxt.isFile(ctxt.joinPath(root, pkga));
             if (isDir || binaryOnly) {
@@ -791,7 +798,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
         // That way, the user can still get useful results from 'go list' for
         // standard-vendored paths passed on the command line.
         if (ctxt.GOROOT != ""u8 && tried.goroot == ""u8) {
-            @string dir = ctxt.joinPath(ctxt.GOROOT, "src", path);
+            @string dir = ctxt.joinPath(ctxt.GOROOT, srcˢ, path);
             if (ctxt.Compiler != "gccgo"u8) {
                 var isDir = ctxt.isDir(dir);
                 binaryOnly = !isDir && (ImportMode)(mode & AllowBinary) != 0 && pkga != ""u8 && ctxt.isFile(ctxt.joinPath(ctxt.GOROOT, pkga));
@@ -828,9 +835,9 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
     }
 Found:
     if ((~p).Root != ""u8) {
-        p.Value.SrcRoot = ctxt.joinPath((~p).Root, "src");
-        p.Value.PkgRoot = ctxt.joinPath((~p).Root, "pkg");
-        p.Value.BinDir = ctxt.joinPath((~p).Root, "bin");
+        p.Value.SrcRoot = ctxt.joinPath((~p).Root, srcˢ);
+        p.Value.PkgRoot = ctxt.joinPath((~p).Root, pkgˢ);
+        p.Value.BinDir = ctxt.joinPath((~p).Root, binˢ);
         if (pkga != ""u8) {
             // Always set PkgTargetRoot. It might be used when building in shared
             // mode.
@@ -1022,7 +1029,7 @@ Found:
         ж<slice<Directive>> directives = default!;
         switch (ᐧ) {
         case {} when isCgo: {
-            allTags["cgo"u8] = true;
+            allTags[cgoˢ] = true;
             if (ctxt.CgoEnabled){
                 fileList = p.of(Package.ᏑCgoFiles);
                 importMap = importPos;
@@ -1216,14 +1223,14 @@ private static readonly @string fDirImportPathRootGorootˢ = "-f={{.Dir}}\n{{.Im
         // and we should keep using it. Moreover, the 'go list' approach below doesn't
         // take standard-library vendoring into account and will fail.
         {
-            var (_, ok) = ctxt.hasSubdir(filepath.Join(ctxt.GOROOT, "src"), absSrcDir); if (ok) {
+            var (_, ok) = ctxt.hasSubdir(filepath.Join(ctxt.GOROOT, srcˢ), absSrcDir); if (ok) {
                 return errNoModules;
             }
         }
     }
     // For efficiency, if path is a standard library package, let the usual lookup code handle it.
     {
-        @string dirΔ1 = ctxt.joinPath(ctxt.GOROOT, "src", path); if (ctxt.isDir(dirΔ1)) {
+        @string dirΔ1 = ctxt.joinPath(ctxt.GOROOT, srcˢ, path); if (ctxt.isDir(dirΔ1)) {
             return errNoModules;
         }
     }
@@ -1266,7 +1273,7 @@ private static readonly @string fDirImportPathRootGorootˢ = "-f={{.Dir}}\n{{.Im
             parent = d;
         }
     }
-    @string goCmd = filepath.Join(ctxt.GOROOT, "bin", "go");
+    @string goCmd = filepath.Join(ctxt.GOROOT, binˢ, "go");
     var cmd = exec.Command(goCmd, listˢ, "-e", "-compiler=" + ctxt.Compiler, "-tags=" + strings.Join(ctxt.BuildTags, ","u8), "-installsuffix=" + ctxt.InstallSuffix, fDirImportPathRootGorootˢ, "--", path);
     if (ctxt.Dir != ""u8) {
         cmd.Value.Dir = ctxt.Dir;

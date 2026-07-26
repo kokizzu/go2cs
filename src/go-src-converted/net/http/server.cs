@@ -3330,7 +3330,7 @@ public static error ListenAndServe(this ж<Server> Ꮡsrv) {
     if (addr == ""u8) {
         addr = httpˢ3;
     }
-    var (ln, err) = net.Listen("tcp"u8, addr);
+    var (ln, err) = net.Listen(tcpˢ, addr);
     if (err != default!) {
         return err;
     }
@@ -3647,7 +3647,7 @@ public static error ListenAndServeTLS(this ж<Server> Ꮡsrv, @string certFile, 
     if (addr == ""u8) {
         addr = httpsˢ2;
     }
-    var (ln, err) = net.Listen("tcp"u8, addr);
+    var (ln, err) = net.Listen(tcpˢ, addr);
     if (err != default!) {
         return err;
     }

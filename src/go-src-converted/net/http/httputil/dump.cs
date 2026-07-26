@@ -245,6 +245,7 @@ internal static map<@string, bool> reqWriteExcludeHeaderDump = new map<@string, 
 };
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getˢ = "GET"u8;
 private static readonly @string httpˢ2 = "http://"u8;
 private static readonly @string httpsˢ = "https://"u8;
 
@@ -288,7 +289,7 @@ public static (slice<byte>, error) DumpRequest(ж<http.Request> Ꮡreq, bool bod
     if (reqURI == ""u8) {
         reqURI = req.URL.RequestURI();
     }
-    fmt.Fprintf(new bytes_BufferжWriter(Ꮡb), "%s %s HTTP/%d.%d\r\n"u8, valueOrDefault(req.Method, "GET"u8),
+    fmt.Fprintf(new bytes_BufferжWriter(Ꮡb), "%s %s HTTP/%d.%d\r\n"u8, valueOrDefault(req.Method, getˢ),
         reqURI, req.ProtoMajor, req.ProtoMinor);
     var absRequestURI = strings.HasPrefix(req.RequestURI, httpˢ2) || strings.HasPrefix(req.RequestURI, httpsˢ);
     if (!absRequestURI) {

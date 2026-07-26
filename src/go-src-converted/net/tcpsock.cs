@@ -43,14 +43,14 @@ public static netip.AddrPort AddrPort(this ж<TCPAddr> Ꮡa) {
 
 // Network returns the address's network name, "tcp".
 [GoRecv] public static @string Network(this ref TCPAddr a) {
-    return "tcp"u8;
+    return tcpˢ;
 }
 
 public static @string String(this ж<TCPAddr> Ꮡa) {
     ref var a = ref Ꮡa.DerefOrNil();
 
     if (Ꮡa == nil) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     @string ip = ipEmptyString(a.IP);
     if (a.Zone != ""u8) {
@@ -95,7 +95,7 @@ public static (ж<TCPAddr>, error) ResolveTCPAddr(@string network, @string addre
     if (exprᴛ1 == "tcp"u8 || exprᴛ1 == "tcp4"u8 || exprᴛ1 == "tcp6"u8) {
     }
     else if (exprᴛ1 == ""u8) {
-        network = "tcp"u8;
+        network = tcpˢ;
     }
     else { /* default: */
         return (default!, ((UnknownNetworkError)network));

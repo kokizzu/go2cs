@@ -282,6 +282,9 @@ public static IP Mask(this IP ip, IPMask mask) {
     return @out;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "<nil>"u8;
+
 // String returns the string form of the IP address ip.
 // It returns one of 4 forms:
 //   - "<nil>", if ip has length 0
@@ -290,7 +293,7 @@ public static IP Mask(this IP ip, IPMask mask) {
 //   - the hexadecimal form of ip, without punctuation, if no other cases apply
 public static @string String(this IP ip) {
     if (len(ip) == 0) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     if (len(ip) != IPv4len && len(ip) != IPv6len) {
         return "?"u8 + hexString(ip);
@@ -420,7 +423,7 @@ public static (nint ones, nint bits) Size(this IPMask m) {
 // String returns the hexadecimal form of m, with no punctuation.
 public static @string String(this IPMask m) {
     if (len(m) == 0) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     return hexString(m);
 }
@@ -493,11 +496,11 @@ private static readonly @string ipNetˢ = "ip+net"u8;
 // punctuation like "198.51.100.0/c000ff00".
 public static @string String(this ж<IPNet> Ꮡn) {
     if (Ꮡn == nil) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     var (nn, m) = networkNumberAndMask(Ꮡn);
     if (nn == default! || m == default!) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     nint l = simpleMaskLength(m);
     if (l == -1) {

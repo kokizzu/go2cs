@@ -445,6 +445,7 @@ private static readonly @string runnableˢ = "Runnable"u8;
 private static readonly @string runningˢ = "Running"u8;
 private static readonly @string syscallˢ = "Syscall"u8;
 private static readonly @string waitingˢ = "Waiting"u8;
+private static readonly @string badˢ = "Bad"u8;
 
 public static @string String(this GoStatus s) {
     var exprᴛ1 = s;
@@ -461,7 +462,7 @@ public static @string String(this GoStatus s) {
         return waitingˢ;
     }
 
-    return "Bad"u8;
+    return badˢ;
 }
 
 [GoType("num:uint8")] partial struct ProcStatus;
@@ -487,7 +488,7 @@ public static @string String(this ProcStatus s) {
         return syscallˢ;
     }
 
-    return "Bad"u8;
+    return badˢ;
 }
 
 public static readonly UntypedInt MaxBatchSize = /* 64 << 10 */ 65536;

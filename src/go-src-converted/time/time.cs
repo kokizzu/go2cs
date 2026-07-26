@@ -471,6 +471,9 @@ internal static uint64 abs(this Time t) {
     return (uint64)(sec + (9223372028715321600L));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string utcˢ = "UTC"u8;
+
 // locabs is a combination of the Zone and abs methods,
 // extracting both return values from a single zone lookup.
 internal static (@string name, nint offset, uint64 abs) locabs(this Time t) {
@@ -493,7 +496,7 @@ internal static (@string name, nint offset, uint64 abs) locabs(this Time t) {
         }
         sec += (int64)offset;
     } else {
-        name = "UTC"u8;
+        name = utcˢ;
     }
     abs = (uint64)(sec + (9223372028715321600L));
     return (name, offset, abs);

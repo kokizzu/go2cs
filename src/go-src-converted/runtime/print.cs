@@ -118,18 +118,23 @@ internal static void printbool(bool v) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string naNˢ = "NaN"u8;
+private static readonly @string infˢ = "+Inf"u8;
+private static readonly @string infˢ2 = "-Inf"u8;
+
 internal static void printfloat(float64 v) {
     switch (ᐧ) {
     case {} when v != v: {
-        printstring("NaN"u8);
+        printstring(naNˢ);
         return;
     }
     case {} when v + v == v && v > 0D: {
-        printstring("+Inf"u8);
+        printstring(infˢ);
         return;
     }
     case {} when v + v == v && v < 0D: {
-        printstring("-Inf"u8);
+        printstring(infˢ2);
         return;
     }}
 

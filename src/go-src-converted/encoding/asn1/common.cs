@@ -101,6 +101,7 @@ public static readonly UntypedInt ClassPrivate = 3;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string defaultˢ = "default:"u8;
+private static readonly @string tagˢ = "tag:"u8;
 
 // Invariants:
 //   if explicit is set, tag is non-nil.
@@ -158,7 +159,7 @@ internal static fieldParameters /*ret*/ parseFieldParameters(@string str) {
             }
             break;
         }
-        case {} when strings.HasPrefix(part, "tag:"u8): {
+        case {} when strings.HasPrefix(part, tagˢ): {
             var (i, err) = strconv.Atoi(part[4..]);
             if (err == default!) {
                 ret.tag = @new<nint>();
@@ -192,6 +193,9 @@ internal static fieldParameters /*ret*/ parseFieldParameters(@string str) {
     }
     return ret;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string setˢ = "SET"u8;
 
 // Given a reflected Go type, getUniversalType returns the default tag number
 // and expected compound flag.
@@ -235,7 +239,7 @@ internal static (bool matchAny, nint tagNumber, bool isCompound, bool ok) getUni
         if (t.Elem().Kind() == reflect.Uint8) {
             return (false, TagOctetString, false, true);
         }
-        if (strings.HasSuffix(t.Name(), "SET"u8)) {
+        if (strings.HasSuffix(t.Name(), setˢ)) {
             return (false, TagSet, true, true);
         }
         return (false, TagSequence, true, true);

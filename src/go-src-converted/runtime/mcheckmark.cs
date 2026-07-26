@@ -74,6 +74,7 @@ internal static void endCheckmarks() {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string baseˢ = "base"u8;
+private static readonly @string objˢ = "obj"u8;
 private static readonly @string checkmarkFoundUnmarkedˢ = "checkmark found unmarked object"u8;
 
 // setCheckmark throws if marking object is a checkmarks violation,
@@ -87,7 +88,7 @@ internal static bool setCheckmark(uintptr obj, uintptr @base, uintptr off, markB
         // Dump the source (base) object
         gcDumpObject(baseˢ, @base, off);
         // Dump the object
-        gcDumpObject("obj"u8, obj, ~(uintptr)0);
+        gcDumpObject(objˢ, obj, ~(uintptr)0);
         getg().Value.m.Value.traceback = 2;
         @throw(checkmarkFoundUnmarkedˢ);
     }

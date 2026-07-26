@@ -658,6 +658,7 @@ private static readonly @string structˢ = "struct"u8;
 private static readonly @string pointerˢ = "pointer"u8;
 private static readonly @string funcˢ = "func"u8;
 private static readonly @string interfaceˢ = "interface"u8;
+private static readonly @string mapˢ = "map"u8;
 private static readonly @string chanˢ = "chan"u8;
 
 // kindString returns the type kind as a string.
@@ -685,7 +686,7 @@ internal static @string kindString(this ж<Checker> Ꮡcheck, ΔType typ) {
         return interfaceˢ;
     }
     case ж<Map>: {
-        return "map"u8;
+        return mapˢ;
     }
     case ж<Chan>: {
         return chanˢ;

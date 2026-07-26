@@ -1746,6 +1746,7 @@ internal static uint64 /*mask*/ gcTestIsReachable(params ꓸꓸꓸunsafeꓸPoint
 private static readonly @string stackˢ = "stack"u8;
 private static readonly @string heapˢ = "heap"u8;
 private static readonly @string dataˢ = "data"u8;
+private static readonly @string bssˢ = "bss"u8;
 private static readonly @string otherˢ = "other"u8;
 
 // gcTestPointerClass returns the category of what p points to, one of:
@@ -1772,7 +1773,7 @@ internal static @string gcTestPointerClass(@unsafe.Pointer Δp) {
             return dataˢ;
         }
         if ((~datap).bss <= p2 && p2 < (~datap).ebss || (~datap).noptrbss <= p2 && p2 <= (~datap).enoptrbss) {
-            return "bss"u8;
+            return bssˢ;
         }
     }
     KeepAlive(Δp);

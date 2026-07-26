@@ -27,6 +27,7 @@ public static @string ExprString(ast.Expr x) {
 private static readonly @string literalˢ = " literal)"u8;
 private static readonly @string structˢ2 = "struct{"u8;
 private static readonly @string interfaceˢ2 = "interface{"u8;
+private static readonly @string mapˢ2 = "map["u8;
 private static readonly @string chanˢ2 = "chan<- "u8;
 private static readonly @string chanˢ3 = "<-chan "u8;
 private static readonly @string chanˢ4 = "chan "u8;
@@ -182,7 +183,7 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
         break;
     }
     case ж<ast.MapType> xΔ1: {
-        buf.WriteString("map["u8);
+        buf.WriteString(mapˢ2);
         WriteExpr(Ꮡbuf, (~xΔ1).Key);
         buf.WriteByte((rune)']');
         WriteExpr(Ꮡbuf, (~xΔ1).Value);

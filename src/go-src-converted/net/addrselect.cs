@@ -36,6 +36,9 @@ internal static void sortByRFC6724withSrcs(slice<IPAddr> addrs, slice<netipꓸAd
     ))));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string udpˢ = "udp"u8;
+
 // srcAddrs tries to UDP-connect to each address to see if it has a
 // route. (This doesn't send any packets). The destination port
 // number is irrelevant.
@@ -46,7 +49,7 @@ internal static slice<netipꓸAddr> srcAddrs(slice<IPAddr> addrs) {
     foreach (var (i, _) in addrs) {
         dst.IP = addrs[i].IP;
         dst.Zone = addrs[i].Zone;
-        var (c, err) = DialUDP("udp"u8, nil, Ꮡdst);
+        var (c, err) = DialUDP(udpˢ, nil, Ꮡdst);
         if (err == default!) {
             {
                 var (src, ok) = c.of(UDPConn.Ꮡconn).LocalAddr()._<ж<UDPAddr>>(ᐧ); if (ok) {

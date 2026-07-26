@@ -118,6 +118,9 @@ partial class comment_package {
     return "#"u8 + l.Name;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string hdrˢ = "hdr-"u8;
+
 // DefaultID returns the default anchor ID for the heading h.
 //
 // The default anchor ID is constructed by converting every
@@ -136,7 +139,7 @@ partial class comment_package {
         return ""u8;
     }
     @out.Reset();
-    Ꮡout.WriteString("hdr-"u8);
+    Ꮡout.WriteString(hdrˢ);
     foreach (var (_, r) in s) {
         if (r < 0x80 && isIdentASCII((byte)r)){
             Ꮡout.WriteByte((byte)r);

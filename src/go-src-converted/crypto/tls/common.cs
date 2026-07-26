@@ -37,7 +37,7 @@ public static readonly UntypedInt VersionTLS13 = 0x0304;
 public static readonly UntypedInt VersionSSL30 = 0x0300;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sSLv3ˢ = "SSLv3"u8;
+private static readonly @string ssLv3ˢ = "SSLv3"u8;
 private static readonly @string tls10ˢ = "TLS 1.0"u8;
 private static readonly @string tls11ˢ = "TLS 1.1"u8;
 private static readonly @string tls12ˢ = "TLS 1.2"u8;
@@ -49,7 +49,7 @@ private static readonly @string tls13ˢ = "TLS 1.3"u8;
 public static @string VersionName(uint16 version) {
     var exprᴛ1 = version;
     if (exprᴛ1 == VersionSSL30) {
-        return sSLv3ˢ;
+        return ssLv3ˢ;
     }
     if (exprᴛ1 == VersionTLS10) {
         return tls10ˢ;

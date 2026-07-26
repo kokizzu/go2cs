@@ -580,6 +580,7 @@ internal const bool debugPcln = false;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string invalidFunctionSymbolˢ = "invalid function symbol table"u8;
+private static readonly @string endˢ = "end"u8;
 private static readonly @string invalidRuntimeSymbolˢ = "invalid runtime symbol table"u8;
 private static readonly @string minpcOrMaxpcInvalidˢ = "minpc or maxpc invalid"u8;
 private static readonly @string abiMismatchˢ = "abi mismatch"u8;
@@ -611,7 +612,7 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
         if (datap.ftab[i].entryoff > datap.ftab[i + 1].entryoff) {
             var f1 = new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[i].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap);
             var f2 = new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[i + 1].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap);
-            @string f2name = "end"u8;
+            @string f2name = endˢ;
             if (i + 1 < nftab) {
                 f2name = funcname(f2);
             }

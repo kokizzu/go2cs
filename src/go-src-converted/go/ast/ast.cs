@@ -767,13 +767,16 @@ public static bool IsExported(@string name) {
     return token.IsExported(id.Name);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "<nil>"u8;
+
 public static @string String(this ж<Ident> Ꮡid) {
     ref var id = ref Ꮡid.DerefOrNil();
 
     if (Ꮡid != nil) {
         return id.Name;
     }
-    return "<nil>"u8;
+    return nilˢ;
 }
 
 // ----------------------------------------------------------------------------

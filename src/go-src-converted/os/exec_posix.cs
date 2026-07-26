@@ -108,13 +108,14 @@ internal static error kill(this ж<Process> Ꮡp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "<nil>"u8;
 private static readonly @string continuedˢ = "continued"u8;
 
 public static @string String(this ж<ProcessState> Ꮡp) {
     ref var p = ref Ꮡp.DerefOrNil();
 
     if (Ꮡp == nil) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     var status = p.Sys()._<syscall.WaitStatus>();
     @string res = ""u8;

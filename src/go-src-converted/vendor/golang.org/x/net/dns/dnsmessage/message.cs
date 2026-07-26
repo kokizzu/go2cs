@@ -2302,7 +2302,12 @@ break_Loop:;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string cnameˢ = "CNAME"u8;
+private static readonly @string soaˢ = "SOA"u8;
+private static readonly @string ptrˢ = "PTR"u8;
+private static readonly @string txtˢ = "TXT"u8;
 private static readonly @string aaaaˢ = "AAAA"u8;
+private static readonly @string srvˢ = "SRV"u8;
+private static readonly @string optˢ = "OPT"u8;
 private static readonly @string unknownˢ = "Unknown"u8;
 
 internal static (ResourceBody, nint, error) unpackResourceBody(slice<byte> msg, nint off, ResourceHeader hdr) {
@@ -2332,13 +2337,13 @@ internal static (ResourceBody, nint, error) unpackResourceBody(slice<byte> msg, 
         ref var rb = ref heap(new ΔSOAResource(), out var Ꮡrb);
         (rb, err) = unpackSOAResource(msg, off);
         r = new ΔSOAResourceжResourceBody(Ꮡrb);
-        name = "SOA"u8;
+        name = soaˢ;
     }
     else if (exprᴛ1 == TypePTR) {
         ref var rb = ref heap(new ΔPTRResource(), out var Ꮡrb);
         (rb, err) = unpackPTRResource(msg, off);
         r = new ΔPTRResourceжResourceBody(Ꮡrb);
-        name = "PTR"u8;
+        name = ptrˢ;
     }
     else if (exprᴛ1 == TypeMX) {
         ref var rb = ref heap(new ΔMXResource(), out var Ꮡrb);
@@ -2350,7 +2355,7 @@ internal static (ResourceBody, nint, error) unpackResourceBody(slice<byte> msg, 
         ref var rb = ref heap(new ΔTXTResource(), out var Ꮡrb);
         (rb, err) = unpackTXTResource(msg, off, hdr.Length);
         r = new ΔTXTResourceжResourceBody(Ꮡrb);
-        name = "TXT"u8;
+        name = txtˢ;
     }
     else if (exprᴛ1 == TypeAAAA) {
         ref var rb = ref heap(new ΔAAAAResource(), out var Ꮡrb);
@@ -2362,13 +2367,13 @@ internal static (ResourceBody, nint, error) unpackResourceBody(slice<byte> msg, 
         ref var rb = ref heap(new ΔSRVResource(), out var Ꮡrb);
         (rb, err) = unpackSRVResource(msg, off);
         r = new ΔSRVResourceжResourceBody(Ꮡrb);
-        name = "SRV"u8;
+        name = srvˢ;
     }
     else if (exprᴛ1 == TypeOPT) {
         ref var rb = ref heap(new ΔOPTResource(), out var Ꮡrb);
         (rb, err) = unpackOPTResource(msg, off, hdr.Length);
         r = new ΔOPTResourceжResourceBody(Ꮡrb);
-        name = "OPT"u8;
+        name = optˢ;
     }
     else { /* default: */
         ref var rb = ref heap(new ΔUnknownResource(), out var Ꮡrb);

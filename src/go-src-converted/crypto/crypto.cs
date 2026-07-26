@@ -23,6 +23,8 @@ public static Hash HashFunc(this Hash h) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string md4ˢ = "MD4"u8;
+private static readonly @string md5ˢ = "MD5"u8;
 private static readonly @string sha1ˢ = "SHA-1"u8;
 private static readonly @string sha224ˢ = "SHA-224"u8;
 private static readonly @string sha256ˢ = "SHA-256"u8;
@@ -36,18 +38,18 @@ private static readonly @string sha3384ˢ = "SHA3-384"u8;
 private static readonly @string sha3512ˢ = "SHA3-512"u8;
 private static readonly @string sha512224ˢ = "SHA-512/224"u8;
 private static readonly @string sha512256ˢ = "SHA-512/256"u8;
-private static readonly @string bLAKE2s256ˢ = "BLAKE2s-256"u8;
-private static readonly @string bLAKE2b256ˢ = "BLAKE2b-256"u8;
-private static readonly @string bLAKE2b384ˢ = "BLAKE2b-384"u8;
-private static readonly @string bLAKE2b512ˢ = "BLAKE2b-512"u8;
+private static readonly @string blake2s256ˢ = "BLAKE2s-256"u8;
+private static readonly @string blake2b256ˢ = "BLAKE2b-256"u8;
+private static readonly @string blake2b384ˢ = "BLAKE2b-384"u8;
+private static readonly @string blake2b512ˢ = "BLAKE2b-512"u8;
 
 public static @string String(this Hash h) {
     var exprᴛ1 = h;
     if (exprᴛ1 == MD4) {
-        return "MD4"u8;
+        return md4ˢ;
     }
     if (exprᴛ1 == MD5) {
-        return "MD5"u8;
+        return md5ˢ;
     }
     if (exprᴛ1 == SHA1) {
         return sha1ˢ;
@@ -89,16 +91,16 @@ public static @string String(this Hash h) {
         return sha512256ˢ;
     }
     if (exprᴛ1 == BLAKE2s_256) {
-        return bLAKE2s256ˢ;
+        return blake2s256ˢ;
     }
     if (exprᴛ1 == BLAKE2b_256) {
-        return bLAKE2b256ˢ;
+        return blake2b256ˢ;
     }
     if (exprᴛ1 == BLAKE2b_384) {
-        return bLAKE2b384ˢ;
+        return blake2b384ˢ;
     }
     if (exprᴛ1 == BLAKE2b_512) {
-        return bLAKE2b512ˢ;
+        return blake2b512ˢ;
     }
     { /* default: */
         return "unknown hash value "u8 + strconv.Itoa((nint)(nuint)h);

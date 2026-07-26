@@ -202,6 +202,7 @@ public static readonly CounterMode CtrModeRegOnly = 4; // registration-only pseu
 public static readonly CounterMode CtrModeTestMain = 5; // testmain pseudo-mode
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string setˢ = "set"u8;
 private static readonly @string countˢ = "count"u8;
 private static readonly @string atomicˢ = "atomic"u8;
 private static readonly @string regonlyˢ = "regonly"u8;
@@ -211,7 +212,7 @@ private static readonly @string invalidˢ = "<invalid>"u8;
 public static @string String(this CounterMode cm) {
     var exprᴛ1 = cm;
     if (exprᴛ1 == CtrModeSet) {
-        return "set"u8;
+        return setˢ;
     }
     if (exprᴛ1 == CtrModeCount) {
         return countˢ;

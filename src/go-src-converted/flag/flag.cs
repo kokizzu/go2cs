@@ -632,6 +632,7 @@ internal static (bool ok, error err) isZeroValue(ж<Flag> Ꮡflag, @string value
 private static readonly @string valueˢ = "value"u8;
 private static readonly @string durationˢ = "duration"u8;
 private static readonly @string floatˢ = "float"u8;
+private static readonly @string intˢ = "int"u8;
 private static readonly @string stringˢ = "string"u8;
 private static readonly @string uintˢ = "uint"u8;
 
@@ -680,7 +681,7 @@ public static (@string name, @string usage) UnquoteUsage(ж<Flag> Ꮡflag) {
     case ж<intValue> _:
     case ж<int64Value> _: {
         var fv = flag.Value;
-        name = "int"u8;
+        name = intˢ;
         break;
     }
     case ж<stringValue> fv: {

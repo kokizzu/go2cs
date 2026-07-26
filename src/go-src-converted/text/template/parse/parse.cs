@@ -747,6 +747,9 @@ internal static Node withControl(this ж<Tree> Ꮡt) {
     return new WithNodeжNode(Ꮡt.newWith(ᴛ11, ᴛ12, ᴛ13, ᴛ14, ᴛ15));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string endˢ2 = "end"u8;
+
 // End:
 //
 //	{{end}}
@@ -755,7 +758,7 @@ internal static Node withControl(this ж<Tree> Ꮡt) {
 internal static Node endControl(this ж<Tree> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
-    return new endNodeжNode(Ꮡt.newEnd(t.expect(itemRightDelim, "end"u8).pos));
+    return new endNodeжNode(Ꮡt.newEnd(t.expect(itemRightDelim, endˢ2).pos));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

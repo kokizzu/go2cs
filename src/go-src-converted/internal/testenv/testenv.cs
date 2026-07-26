@@ -55,6 +55,7 @@ public static @string Builder() {
 private static readonly @string goGcflagsˢ = "GO_GCFLAGS"u8;
 private static readonly @string toolˢ = "tool"u8;
 private static readonly @string compileˢ = "compile"u8;
+private static readonly @string envˢ = "env"u8;
 
 // HasGoBuild reports whether the current system can build programs with “go build”
 // and then run them with os.StartProcess or exec.Command.
@@ -100,7 +101,7 @@ public static bool HasGoBuild() {
             // If CC is set explicitly, assume that we do. Otherwise, use 'go env CC'
             // to determine which toolchain it would use by default.
             if (os.Getenv("CC"u8) == ""u8) {
-                var cmdΔ1 = exec.Command("go"u8, "env"u8, "CC");
+                var cmdΔ1 = exec.Command("go"u8, envˢ, "CC");
                 cmdΔ1.Value.Env = origEnv;
                 var (outΔ1, errΔ2) = cmdΔ1.Output();
                 if (errΔ2 != default!) {
@@ -343,7 +344,7 @@ public static bool HasCGO() {
         if (err != default!) {
             return;
         }
-        var cmd = exec.Command(goTool, "env"u8, cgoEnabledˢ);
+        var cmd = exec.Command(goTool, envˢ, cgoEnabledˢ);
         cmd.Value.Env = origEnv;
         (var @out, err) = cmd.Output();
         if (err != default!) {

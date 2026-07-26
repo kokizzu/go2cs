@@ -38,6 +38,7 @@ internal static slogꓸHandler newFastTextHandler(io.Writer w) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string timeˢ = "time="u8;
 private static readonly @string levelˢ = "level="u8;
+private static readonly @string msgˢ = "msg="u8;
 
 internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp1, slog.Record r) => func((defer, recover) => {
     ref var h = ref Ꮡh.Value;
@@ -53,7 +54,7 @@ internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp
     buf.WriteString(levelˢ);
     buf.ValueSlot = strconv.AppendInt(buf.ValueSlot, (int64)(nint)r.Level, 10);
     buf.WriteByte((rune)' ');
-    buf.WriteString("msg="u8);
+    buf.WriteString(msgˢ);
     buf.WriteString(r.Message);
     var bufʗ2 = buf;
     r.Attrs((slog.Attr a) => {

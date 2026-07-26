@@ -53,17 +53,18 @@ partial class httptest_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tcpˢ = "tcp"u8;
 private static readonly @string tcp6ˢ = "tcp6"u8;
 
 internal static net.Listener newLocalListener() {
     if (serveFlag != ""u8) {
-        var (lΔ1, errΔ1) = net.Listen("tcp"u8, serveFlag);
+        var (lΔ1, errΔ1) = net.Listen(tcpˢ, serveFlag);
         if (errΔ1 != default!) {
             throw panic(fmt.Sprintf("httptest: failed to listen on %v: %v"u8, serveFlag, errΔ1));
         }
         return lΔ1;
     }
-    var (l, err) = net.Listen("tcp"u8, "127.0.0.1:0"u8);
+    var (l, err) = net.Listen(tcpˢ, "127.0.0.1:0"u8);
     if (err != default!) {
         {
             (l, err) = net.Listen(tcp6ˢ, "[::1]:0"u8); if (err != default!) {

@@ -340,6 +340,7 @@ private static readonly @string unknownAbbreviationTableˢ = "unknown abbreviati
 private static readonly @string dwFormStrxOffsetOutOfˢ = "DW_FORM_strx offset out of range"u8;
 private static readonly @string strOffsetsˢ = "str_offsets"u8;
 private static readonly @string dwFormStrxIndirectOffsetˢ = "DW_FORM_strx indirect offset out of range"u8;
+private static readonly @string strˢ = "str"u8;
 private static readonly @string dwFormRnglistxOffsetOutˢ = "DW_FORM_rnglistx offset out of range"u8;
 private static readonly @string rnglistsˢ = "rnglists"u8;
 private static readonly @string dwFormRnglistxIndirectˢ = "DW_FORM_rnglistx indirect offset out of range"u8;
@@ -408,7 +409,7 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
         if ((uint64)(nint)offΔ1 != offΔ1) {
             Ꮡb.Value.error(dwFormStrxIndirectOffsetˢ);
         }
-        b1 = makeBuf(Ꮡb.Value.dwarf, Ꮡb.Value.format, "str"u8, 0, (~Ꮡb.Value.dwarf).str);
+        b1 = makeBuf(Ꮡb.Value.dwarf, Ꮡb.Value.format, strˢ, 0, (~Ꮡb.Value.dwarf).str);
         b1.skip((nint)offΔ1);
         @string val = b1.@string();
         if (b1.err != default!) {
@@ -612,7 +613,7 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
             }
             buf b1 = default!;
             if (fmt == formStrp){
-                b1 = makeBuf(b.dwarf, b.format, "str"u8, 0, (~b.dwarf).str);
+                b1 = makeBuf(b.dwarf, b.format, strˢ, 0, (~b.dwarf).str);
             } else {
                 if (len((~b.dwarf).lineStr) == 0) {
                     b.error(dwFormLineStrpWithNoˢ);

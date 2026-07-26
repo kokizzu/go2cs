@@ -163,6 +163,9 @@ internal static (slice<any>, error) unmarshalCorpusFile(slice<byte> b) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string testˢ = "(test)"u8;
+private static readonly @string infˢ = "-Inf"u8;
+private static readonly @string infˢ2 = "+Inf"u8;
+private static readonly @string naNˢ = "NaN"u8;
 private static readonly @string uint32ˢ = "uint32"u8;
 private static readonly @string uint64ˢ = "uint64"u8;
 
@@ -259,9 +262,9 @@ internal static (any, error) parseCorpusValue(slice<byte> line) {
                     return (default!, fmt.Errorf("expected operation on int or float type"u8));
                 }
                 if ((~op).Op == token.SUB){
-                    val = "-Inf"u8;
+                    val = infˢ;
                 } else {
-                    val = "+Inf"u8;
+                    val = infˢ2;
                 }
                 kind = token.FLOAT;
                 break;
@@ -280,7 +283,7 @@ internal static (any, error) parseCorpusValue(slice<byte> line) {
                 if ((~lit).Name != "NaN"u8) {
                     return (default!, fmt.Errorf("literal value required for primitive type"u8));
                 }
-                (val, kind) = ("NaN", token.FLOAT);
+                (val, kind) = (naNˢ, token.FLOAT);
                 break;
             }
             default: {

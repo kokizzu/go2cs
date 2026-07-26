@@ -24,6 +24,9 @@ partial class raw_package {
     internal ж<bufio.Scanner> s;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string go1ˢ = "Go1."u8;
+
 // NewTextReader creates a new reader for the trace text format.
 public static (ж<TextReader>, error) NewTextReader(io.Reader r) {
     var tr = Ꮡ(new TextReader(s: bufio.NewScanner(r)));
@@ -36,7 +39,7 @@ public static (ж<TextReader>, error) NewTextReader(io.Reader r) {
         return (default!, fmt.Errorf("failed to parse header"u8));
     }
     (var gover, line) = readToken(line);
-    if (!strings.HasPrefix(gover, "Go1."u8)) {
+    if (!strings.HasPrefix(gover, go1ˢ)) {
         return (default!, fmt.Errorf("failed to parse header Go version"u8));
     }
     (var rawv, err) = strconv.ParseUint(gover[(int)(len("Go1."))..], 10, 64);

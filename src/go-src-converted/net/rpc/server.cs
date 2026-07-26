@@ -475,6 +475,9 @@ public static void ServeConn(this ж<Server> Ꮡserver, io.ReadWriteCloser conn)
     Ꮡserver.ServeCodec(new gobServerCodecжServerCodec(srv));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object rpcˢ = (@string)"rpc:"u8;
+
 // ServeCodec is like [ServeConn] but uses the specified codec to
 // decode requests and encode responses.
 public static void ServeCodec(this ж<Server> Ꮡserver, ServerCodec codec) {
@@ -486,7 +489,7 @@ public static void ServeCodec(this ж<Server> Ꮡserver, ServerCodec codec) {
         (var service, var mtype, var req, argv, replyv, var keepReading, var err) = Ꮡserver.readRequest(codec);
         if (err != default!) {
             if (debugLog && !AreEqual(err, io.EOF)) {
-                log.Println((@string)"rpc:"u8, err);
+                log.Println(rpcˢ, err);
             }
             if (!keepReading) {
                 break;

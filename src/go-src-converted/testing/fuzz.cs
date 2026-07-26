@@ -443,6 +443,7 @@ public static void Fuzz(this ж<F> Ꮡf, any ff) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sSSˢ = "--- %s: %s (%s)\n"u8;
 private static readonly object failˢ = (@string)"FAIL"u8;
 private static readonly object passˢ = (@string)"PASS"u8;
 
@@ -453,7 +454,7 @@ internal static void report(this ж<F> Ꮡf) {
         return;
     }
     @string dstr = fmtDuration(f.duration);
-    @string format = "--- %s: %s (%s)\n"u8;
+    @string format = sSSˢ;
     if (Ꮡf.of(F.Ꮡcommon).Failed()){
         Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, failˢ, f.name, dstr);
     } else 

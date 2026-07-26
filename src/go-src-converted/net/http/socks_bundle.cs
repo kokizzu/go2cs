@@ -320,11 +320,14 @@ private static readonly @string socksˢ = "socks"u8;
     return socksˢ;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "<nil>"u8;
+
 internal static @string String(this ж<socksAddr> Ꮡa) {
     ref var a = ref Ꮡa.DerefOrNil();
 
     if (Ꮡa == nil) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     @string port = strconv.Itoa(a.Port);
     if (a.IP == default!) {

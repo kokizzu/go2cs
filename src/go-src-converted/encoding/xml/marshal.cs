@@ -361,6 +361,7 @@ internal static bool isValidDirective(Directive dir) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string xmlˢ = "xml"u8;
 private static readonly @string xmlnsˢ = @"xmlns:"u8;
 
 // createAttrPrefix finds the name space prefix attribute to use for the given name space,
@@ -400,7 +401,7 @@ internal static @string createAttrPrefix(this ж<printer> Ꮡp, @string url) {
     // case should be matched, so:
     //    (('X'|'x') ('M'|'m') ('L'|'l'))
     // See Section 2.3 of https://www.w3.org/TR/REC-xml/
-    if (len(prefix) >= 3 && strings.EqualFold(prefix[..3], "xml"u8)) {
+    if (len(prefix) >= 3 && strings.EqualFold(prefix[..3], xmlˢ)) {
         prefix = "_"u8 + prefix;
     }
     if (p.attrNS[prefix] != "") {

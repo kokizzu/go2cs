@@ -48,7 +48,7 @@ internal static @string valueAsString(Value v) {
         return fmt.Sprintf("Uint64(%d)"u8, v.scalar);
     }
 
-    return "Bad"u8;
+    return badˢ;
 }
 
 } // end trace_package

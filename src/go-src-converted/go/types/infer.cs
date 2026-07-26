@@ -506,6 +506,9 @@ internal static (slice<ж<TypeParam>>, ΔType) renameTParams(this ж<Checker> �
     return (tparams2, Ꮡcheck.subst(pos, typ, renameMap, nil, check.context()));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string andˢ = ", and "u8;
+
 // typeParamsString produces a string containing all the type parameter names
 // in list suitable for human consumption.
 internal static @string typeParamsString(slice<ж<TypeParam>> list) {
@@ -530,7 +533,7 @@ internal static @string typeParamsString(slice<ж<TypeParam>> list) {
         }
         Ꮡbuf.WriteString((~(~tname).obj).name);
     }
-    Ꮡbuf.WriteString(", and "u8);
+    Ꮡbuf.WriteString(andˢ);
     Ꮡbuf.WriteString((~(~list[n - 1]).obj).name);
     return buf.String();
 }

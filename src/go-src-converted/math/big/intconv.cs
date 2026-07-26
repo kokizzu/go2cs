@@ -10,6 +10,9 @@ using io = io_package;
 
 partial class big_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "<nil>"u8;
+
 // Text returns the string representation of x in the given base.
 // Base must be between 2 and 62, inclusive. The result uses the
 // lower-case letters 'a' to 'z' for digit values 10 to 35, and
@@ -20,7 +23,7 @@ public static @string Text(this ж<ΔInt> Ꮡx, nint @base) {
     ref var x = ref Ꮡx.DerefOrNil();
 
     if (Ꮡx == nil) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     return ((@string)x.abs.itoa(x.neg, @base));
 }
@@ -94,7 +97,7 @@ public static void Format(this ж<ΔInt> Ꮡx, fmt.State s, rune ch) {
     }}
 
     if (Ꮡx == nil) {
-        fmt.Fprint(new fmt_StateᴠWriter(s), (@string)"<nil>"u8);
+        fmt.Fprint(new fmt_StateᴠWriter(s), nilˢ);
         return;
     }
     // determine sign character

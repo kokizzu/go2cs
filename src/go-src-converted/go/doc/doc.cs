@@ -96,6 +96,9 @@ public static readonly Mode AllDecls = /* 1 << iota */ 1;
 public static readonly Mode AllMethods = 2;
 public static readonly Mode PreserveAST = 4;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bugˢ = "BUG"u8;
+
 // New computes the package documentation for the given package AST.
 // New takes ownership of the AST pkg and may edit or overwrite it.
 // To have the [Examples] fields populated, use [NewFromFiles] and include
@@ -114,7 +117,7 @@ public static ж<Package> New(ж<ast.Package> Ꮡpkg, @string importPath, Mode m
         Imports: sortedKeys(r.imports),
         Filenames: r.filenames,
         Notes: r.notes,
-        Bugs: noteBodies(r.notes["BUG"u8]),
+        Bugs: noteBodies(r.notes[bugˢ]),
         Consts: sortedValues(r.values, token.CONST),
         Types: sortedTypes(r.types, (Mode)(mode & AllMethods) != 0),
         Vars: sortedValues(r.values, token.VAR),

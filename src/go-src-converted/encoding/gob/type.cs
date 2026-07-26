@@ -225,10 +225,13 @@ internal static ΔgobType gobType(this typeId t) {
     return idToType(t);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "<nil>"u8;
+
 // string returns the string representation of the type associated with the typeId.
 internal static @string @string(this typeId t) {
     if (t.gobType() == default!) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     return t.gobType().@string();
 }
@@ -236,7 +239,7 @@ internal static @string @string(this typeId t) {
 // Name returns the name of the type associated with the typeId.
 internal static @string name(this typeId t) {
     if (t.gobType() == default!) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     return t.gobType().name();
 }
@@ -482,7 +485,7 @@ internal static @string safeString(this ж<structType> Ꮡs, map<typeId, bool> s
     ref var s = ref Ꮡs.DerefOrNil();
 
     if (Ꮡs == nil) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     {
         var (_, ok) = seen[s.Id, ꟷ]; if (ok) {

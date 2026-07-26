@@ -30,6 +30,8 @@ public static slice<byte> HTML(this ж<Printer> Ꮡp, ж<Doc> Ꮡd) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string preˢ = "<pre>"u8;
+private static readonly @string preˢ2 = "</pre>\n"u8;
 private static readonly @string valueˢ = @" value="""u8;
 
 // block prints the block x to out.
@@ -69,9 +71,9 @@ private static readonly @string valueˢ = @" value="""u8;
         break;
     }
     case ж<Code> xΔ1: {
-        @out.WriteString("<pre>"u8);
+        @out.WriteString(preˢ);
         p.escape(Ꮡout, (~xΔ1).Text);
-        @out.WriteString("</pre>\n"u8);
+        @out.WriteString(preˢ2);
         break;
     }
     case ж<List> xΔ1: {
@@ -166,6 +168,7 @@ private static readonly @string aHrefˢ = @"<a href="""u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ampˢ = "&amp;"u8;
 private static readonly @string quotˢ = "&quot;"u8;
 private static readonly @string aposˢ = "&apos;"u8;
 
@@ -186,7 +189,7 @@ private static readonly @string aposˢ = "&apos;"u8;
         }
         case (rune)'&': {
             @out.WriteString(s[(int)(start)..(int)(i)]);
-            @out.WriteString("&amp;"u8);
+            @out.WriteString(ampˢ);
             start = i + 1;
             break;
         }

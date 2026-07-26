@@ -606,7 +606,7 @@ internal static (context, nint) tCSS(context c, slice<byte> s) {
         case (rune)'(': {
             var p = bytes.TrimRight(s[..(int)(i)], // Look for url to the left.
  "\t\n\f\r "u8);
-            if (endsWithCSSKeyword(p, "url"u8)) {
+            if (endsWithCSSKeyword(p, urlˢ)) {
                 nint j = len(s) - len(bytes.TrimLeft(s[(int)(i + 1)..], "\t\n\f\r "u8));
                 switch (ᐧ) {
                 case {} when j != len(s) && s[j] == (rune)'"': {

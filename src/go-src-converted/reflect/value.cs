@@ -624,6 +624,7 @@ break_stepsLoop:;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string typSize0ˢ = "typ.size > 0"u8;
+private static readonly @string ptrˢ = "1-ptr"u8;
 private static readonly @string reflectMakeFuncˢ = "reflect.MakeFunc"u8;
 
 // callReflect is the call implementation used by a function
@@ -685,7 +686,7 @@ internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame
                     }
                     v.flag |= flagIndir;
                 } else {
-                    v.ptr = ~(ж<@unsafe.Pointer>)(uintptr)((uintptr)add(ptr, st.stkOff, "1-ptr"u8));
+                    v.ptr = ~(ж<@unsafe.Pointer>)(uintptr)((uintptr)add(ptr, st.stkOff, ptrˢ));
                 }
             } else {
                 if (typ.IfaceIndir()){

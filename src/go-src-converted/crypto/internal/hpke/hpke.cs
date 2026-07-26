@@ -170,7 +170,9 @@ private static readonly @string unsupportedAeadIdˢ = "unsupported AEAD id"u8;
 private static readonly @string pskIdHashˢ = "psk_id_hash"u8;
 private static readonly @string infoHashˢ = "info_hash"u8;
 private static readonly @string secretˢ = "secret"u8;
+private static readonly @string keyˢ = "key"u8;
 private static readonly @string baseNonceˢ = "base_nonce"u8;
+private static readonly @string expˢ = "exp"u8;
 
 public static (slice<byte>, ж<Sender>, error) SetupSender(uint16 kemID, uint16 kdfID, uint16 aeadID, cryptoꓸPublicKey pub, slice<byte> info) {
     var suiteID = SuiteID(kemID, kdfID, aeadID);
@@ -200,11 +202,11 @@ public static (slice<byte>, ж<Sender>, error) SetupSender(uint16 kemID, uint16 
     var ksContext = append(new byte[]{0}.slice(), pskIDHash.ꓸꓸꓸ);
     ksContext = append(ksContext, infoHash.ꓸꓸꓸ);
     var secret = kdf.LabeledExtract(suiteID, sharedSecret, secretˢ, default!);
-    var key = kdf.LabeledExpand(suiteID, secret, "key"u8, ksContext, (uint16)aeadInfo.keySize);
+    var key = kdf.LabeledExpand(suiteID, secret, keyˢ, ksContext, (uint16)aeadInfo.keySize);
     /* Nk - key size for AEAD */
     var baseNonce = kdf.LabeledExpand(suiteID, secret, baseNonceˢ, ksContext, (uint16)aeadInfo.nonceSize);
     /* Nn - nonce size for AEAD */
-    var exporterSecret = kdf.LabeledExpand(suiteID, secret, "exp"u8, ksContext, (uint16)(~kdf).hash.Size());
+    var exporterSecret = kdf.LabeledExpand(suiteID, secret, expˢ, ksContext, (uint16)(~kdf).hash.Size());
     /* Nh - hash output size of the kdf*/
     (var aead, err) = aeadInfo.aead(key);
     if (err != default!) {

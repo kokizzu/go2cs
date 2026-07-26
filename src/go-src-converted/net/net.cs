@@ -514,7 +514,7 @@ public static @string Error(this ж<OpError> Ꮡe) {
     ref var e = ref Ꮡe.DerefOrNil();
 
     if (Ꮡe == nil) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     @string s = e.Op;
     if (e.Net != ""u8) {
@@ -604,7 +604,7 @@ public static @string Error(this ж<AddrError> Ꮡe) {
     ref var e = ref Ꮡe.DerefOrNil();
 
     if (Ꮡe == nil) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     @string s = e.Err;
     if (e.Addr != ""u8) {
@@ -792,7 +792,7 @@ public static @string Error(this ж<DNSError> Ꮡe) {
     ref var e = ref Ꮡe.DerefOrNil();
 
     if (Ꮡe == nil) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     @string s = "lookup "u8 + e.Name;
     if (e.Server != ""u8) {

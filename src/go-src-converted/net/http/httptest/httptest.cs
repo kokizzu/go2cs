@@ -23,6 +23,7 @@ public static ж<http.Request> NewRequest(@string method, @string target, io.Rea
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getˢ = "GET"u8;
 private static readonly @string http11ˢ = "HTTP/1.1"u8;
 private static readonly @string exampleComˢ = "example.com"u8;
 private static readonly @string httpsˢ = "https://"u8;
@@ -52,7 +53,7 @@ private static readonly @string httpsˢ = "https://"u8;
 // the NewRequest function in the net/http package.
 public static ж<http.Request> NewRequestWithContext(context.Context ctx, @string method, @string target, io.Reader body) {
     if (method == ""u8) {
-        method = "GET"u8;
+        method = getˢ;
     }
     var (req, err) = http.ReadRequest(bufio.NewReader(new strings_ReaderжReader(strings.NewReader(method + " "u8 + target + " HTTP/1.0\r\n\r\n"u8))));
     if (err != default!) {

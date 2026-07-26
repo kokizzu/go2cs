@@ -299,6 +299,7 @@ internal static bool resetForSleep(ж<g> Ꮡgp, @unsafe.Pointer _) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string newˢ = "new"u8;
 private static readonly @string invalidTimerChannelNoˢ = "invalid timer channel: no capacity"u8;
 
 // newTimer allocates and returns a new time.Timer or time.Ticker (same layout)
@@ -310,7 +311,7 @@ internal static ж<timeTimer> newTimer(int64 when, int64 period, Action<any, uin
 
     var t = @new<timeTimer>();
     t.of(timeTimer.Ꮡtimer).init(default!, default!);
-    t.of(timeTimer.Ꮡtimer).trace("new"u8);
+    t.of(timeTimer.Ꮡtimer).trace(newˢ);
     if (raceenabled) {
         racerelease(new @unsafe.Pointer(t.of(timeTimer.Ꮡtimer)));
     }
@@ -961,6 +962,9 @@ internal static (int64 rnow, int64 pollUntil, bool ran) check(this ж<timers> �
     return (now, pollUntil, ran);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runˢ = "run"u8;
+
 // run examines the first timer in ts. If it is ready based on now,
 // it runs the timer and removes or updates it.
 // Returns 0 if it ran a timer, -1 if there are no more timers, or the time
@@ -972,7 +976,7 @@ internal static (int64 rnow, int64 pollUntil, bool ran) check(this ж<timers> �
 internal static int64 run(this ж<timers> Ꮡts, int64 now) {
     ref var ts = ref Ꮡts.DerefOrNil();
 
-    Ꮡts.trace("run"u8);
+    Ꮡts.trace(runˢ);
     assertLockHeld(Ꮡts.of(timers.Ꮡmu));
 Redo:
     if (len(ts.heap) == 0) {

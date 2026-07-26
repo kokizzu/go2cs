@@ -160,7 +160,7 @@ internal static (@string name, nint offset, int64 start, int64 end, bool isDST) 
     ref var l = ref Ꮡl.Value;
     Ꮡl = Ꮡl.get(); l = ref Ꮡl.Value;
     if (len(l.zone) == 0) {
-        name = "UTC"u8;
+        name = utcˢ;
         offset = 0;
         start = alpha;
         end = omega;

@@ -324,12 +324,12 @@ construct; otherwise add a new one (example: `Tests/Behavioral/GlobalStructField
      overlaying — PATH-PRECISE, not a count:** for every `[module: GoManualConversion]`-marked
      committed file, the temp root must NOT contain a freshly-EMITTED plain `.cs` at that path
      (either a `.cs.auto` sits beside it, or nothing was emitted there). Counts intentionally
-     differ — 28 marked files but only 14 produce `.cs.auto` (the other 14 have build-tag-excluded
+     differ — 32 marked files but only 14 produce `.cs.auto` (the other 14 have build-tag-excluded
      sources the converter never re-emits, so they need no protection). A same-count assertion is
      wrong in both directions. **The marker scan must be LINE-ANCHORED (`^\s*\[module:`)** —
      `reflect/value.cs` and `internal/reflectlite/value.cs` *mention* the marker inside
      bodyless-partial placeholder comments; an unanchored `grep GoManualConversion` over-reports
-     (37 vs the real 28) and turns the gate into a false clobber alarm.
+     (vs the real 32; four hand-owned runtime/atomic/debug files joined in r14) and turns the gate into a false clobber alarm.
   1b. `go2cs.exe -stdlib -comments -go2cspath <tmp>` → output lands in **`<tmp>/core/<pkg>`**
      (the `core` subdir is hardcoded; `-go2cspath` is the *output* root, unrelated to the MSBuild
      `$(go2csPath)`). Full stdlib ≈ 3–4 min (per-file work is sub-second; the cost is `go/packages`

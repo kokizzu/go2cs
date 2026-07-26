@@ -84,6 +84,9 @@ internal static (nint, error) lookupProtocolMap(@string name) {
 // something longer is added in the future.
 internal const nint maxPortBufSize = /* len("mobility-header") + 10 */ 25;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tcpˢ = "tcp"u8;
+
 internal static (nint port, error error) lookupPortMap(@string network, @string service) {
     nint port = default!;
     error error = default!;
@@ -91,18 +94,18 @@ internal static (nint port, error error) lookupPortMap(@string network, @string 
     var exprᴛ1 = network;
     if (exprᴛ1 == "ip"u8) {
         {
-            var (p, err) = lookupPortMapWithNetwork("tcp"u8, // no hints
+            var (p, err) = lookupPortMapWithNetwork(tcpˢ, // no hints
  "ip"u8, service); if (err == default!) {
                 return (p, default!);
             }
         }
-        return lookupPortMapWithNetwork("udp"u8, "ip"u8, service);
+        return lookupPortMapWithNetwork(udpˢ, "ip"u8, service);
     }
     if (exprᴛ1 == "tcp"u8 || exprᴛ1 == "tcp4"u8 || exprᴛ1 == "tcp6"u8) {
-        return lookupPortMapWithNetwork("tcp"u8, "tcp"u8, service);
+        return lookupPortMapWithNetwork(tcpˢ, tcpˢ, service);
     }
     if (exprᴛ1 == "udp"u8 || exprᴛ1 == "udp4"u8 || exprᴛ1 == "udp6"u8) {
-        return lookupPortMapWithNetwork("udp"u8, "udp"u8, service);
+        return lookupPortMapWithNetwork(udpˢ, udpˢ, service);
     }
 
     return (0, new DNSErrorжerror(Ꮡ(new DNSError(Err: "unknown network"u8, Name: network + "/"u8 + service))));

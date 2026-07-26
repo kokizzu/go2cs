@@ -8,6 +8,9 @@ using strings = strings_package;
 
 partial class constraint_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string go1ˢ = "go1"u8;
+
 // GoVersion returns the minimum Go version implied by a given build expression.
 // If the expression can be satisfied without any Go version tags, GoVersion returns an empty string.
 //
@@ -32,10 +35,13 @@ public static @string GoVersion(Expr x) {
         return ""u8;
     }
     if (v == 0) {
-        return "go1"u8;
+        return go1ˢ;
     }
     return "go1."u8 + strconv.Itoa(v);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string go1ˢ2 = "go1."u8;
 
 // minVersion returns the minimum Go major version (9 for go1.9)
 // implied by expression z, or if sign < 0, by expression !z.
@@ -70,7 +76,7 @@ internal static nint minVersion(Expr z, nint sign) {
         if ((~zΔ1).Tag == "go1"u8) {
             return 0;
         }
-        var (_, v, _) = strings.Cut((~zΔ1).Tag, "go1."u8);
+        var (_, v, _) = strings.Cut((~zΔ1).Tag, go1ˢ2);
         var (n, err) = strconv.Atoi(v);
         if (err != default!) {
             // not a go1.N tag

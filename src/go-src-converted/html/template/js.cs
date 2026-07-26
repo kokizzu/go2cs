@@ -160,6 +160,7 @@ internal static any indirectToJSONMarshaler(any a) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string scriptˢ = "</script"u8;
 private static readonly @string x3CScriptˢ = @"\x3C/script"u8;
+private static readonly @string x3Cˢ = @"\x3C!--"u8;
 private static readonly @string nullˢ = " null "u8;
 private static readonly @string u2028ˢ = @"\u2028"u8;
 private static readonly @string u2029ˢ = @"\u2029"u8;
@@ -221,7 +222,7 @@ internal static @string jsValEscaper(params ꓸꓸꓸany argsʗp) {
         @string errStr = err.Error();
         errStr = strings.ReplaceAll(errStr, "*/"u8, "* /"u8);
         errStr = strings.ReplaceAll(errStr, scriptˢ, x3CScriptˢ);
-        errStr = strings.ReplaceAll(errStr, "<!--"u8, @"\x3C!--"u8);
+        errStr = strings.ReplaceAll(errStr, "<!--"u8, x3Cˢ);
         return fmt.Sprintf(" /* %s */null "u8, errStr);
     }
     // TODO: maybe post-process output to prevent it from containing

@@ -126,7 +126,7 @@ internal static typesꓸType Underlying(this anyType t) {
 }
 
 internal static @string String(this anyType t) {
-    return "any"u8;
+    return anyˢ;
 }
 
 // See cmd/compile/internal/noder.derivedInfo.

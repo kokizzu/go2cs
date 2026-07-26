@@ -140,14 +140,14 @@ internal static void close(this blockWriter b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gIF89aˢ = "GIF89a"u8;
+private static readonly @string gif89aˢ = "GIF89a"u8;
 private static readonly @string netscape20ˢ = "NETSCAPE2.0"u8;
 
 [GoRecv] internal static void writeHeader(this ref encoder e) {
     if (e.err != default!) {
         return;
     }
-    (_, e.err) = io.WriteString(e.w, gIF89aˢ);
+    (_, e.err) = io.WriteString(e.w, gif89aˢ);
     if (e.err != default!) {
         return;
     }

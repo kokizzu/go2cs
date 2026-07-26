@@ -1823,7 +1823,7 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
         };
         if (cm.scheme() == "https"u8 && t.hasCustomTLSDialer()){
             error errΔ2 = default!;
-            (pconn.Value.conn, errΔ2) = t.customDialTLS(ctx, "tcp"u8, cm.addr());
+            (pconn.Value.conn, errΔ2) = t.customDialTLS(ctx, tcpˢ, cm.addr());
             if (errΔ2 != default!) {
                 (pconn, err) = (default!, wrapErr(errΔ2)); return;
             }
@@ -1852,7 +1852,7 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
                 }
             }
         } else {
-            var (conn, errΔ4) = t.dial(ctx, "tcp"u8, cm.addr());
+            var (conn, errΔ4) = t.dial(ctx, tcpˢ, cm.addr());
             if (errΔ4 != default!) {
                 (pconn, err) = (default!, wrapErr(errΔ4)); return;
             }
@@ -1878,7 +1878,7 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
         }
         case {} when (~cm.proxyURL).Scheme == "socks5"u8 || (~cm.proxyURL).Scheme == "socks5h"u8: {
             var conn = pconn.Value.conn;
-            var d = socksNewDialer("tcp"u8, // Do nothing. Not using a proxy.
+            var d = socksNewDialer(tcpˢ, // Do nothing. Not using a proxy.
  conn.RemoteAddr().String());
             {
                 var u = cm.proxyURL.Value.User; if (u != nil) {
@@ -1896,7 +1896,7 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
                 }
             }
             {
-                var (_, errΔ8) = d.DialWithConn(ctx, conn, "tcp"u8, cm.targetAddr); if (errΔ8 != default!) {
+                var (_, errΔ8) = d.DialWithConn(ctx, conn, tcpˢ, cm.targetAddr); if (errΔ8 != default!) {
                     conn.Close();
                     (pconn, err) = (default!, errΔ8); return;
                 }

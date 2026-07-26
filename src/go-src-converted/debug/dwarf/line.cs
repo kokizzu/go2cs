@@ -350,7 +350,7 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
             }
             buf b1 = default!;
             if (lf.form == formStrp){
-                b1 = makeBuf(r.buf.dwarf, r.buf.format, "str"u8, 0, r.str);
+                b1 = makeBuf(r.buf.dwarf, r.buf.format, strˢ, 0, r.str);
             } else {
                 b1 = makeBuf(r.buf.dwarf, r.buf.format, lineStrˢ, 0, r.lineStr);
             }

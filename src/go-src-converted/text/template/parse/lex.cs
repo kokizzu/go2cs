@@ -20,10 +20,13 @@ partial class parse_package {
     internal nint line;     // The line number at the start of this item.
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string eofˢ = "EOF"u8;
+
 internal static @string String(this item i) {
     switch (ᐧ) {
     case {} when i.typ == itemEOF: {
-        return "EOF"u8;
+        return eofˢ;
     }
     case {} when i.typ == itemError: {
         return i.val;

@@ -156,7 +156,7 @@ internal static (ж<routingNode>, slice<@string>) matchMethodAndPath(this ж<rou
     if (method == "HEAD"u8) {
         // GET matches HEAD too.
         {
-            var (l, m) = Ꮡn.findChild("GET"u8).matchPath(path, default!); if (l != nil) {
+            var (l, m) = Ꮡn.findChild(getˢ).matchPath(path, default!); if (l != nil) {
                 return (l, m);
             }
         }
@@ -254,7 +254,7 @@ internal static void matchingMethods(this ж<routingNode> Ꮡroot, @string host,
         Ꮡroot.findChild(host).matchingMethodsPath(path, methodSet);
     }
     root.emptyChild.matchingMethodsPath(path, methodSet);
-    if (methodSet["GET"u8]) {
+    if (methodSet[getˢ]) {
         methodSet[headˢ] = true;
     }
 }

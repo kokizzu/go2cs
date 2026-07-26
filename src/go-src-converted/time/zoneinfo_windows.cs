@@ -15,6 +15,8 @@ internal static slice<@string> platformZoneSources; // none: Windows uses system
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string muiStdˢ = "MUI_Std"u8;
 private static readonly @string muiDltˢ = "MUI_Dlt"u8;
+private static readonly @string stdˢ = "Std"u8;
+private static readonly @string dltˢ = "Dlt"u8;
 
 // TODO(rsc): Fall back to copy of zoneinfo files.
 // BUG(brainman,rsc): On Windows, the operating system does not provide complete
@@ -44,12 +46,12 @@ internal static (bool matched, error err2) matchZoneKey(registry.Key zones, @str
         if (err != default!) {
             // Fallback to Std and Dlt
             {
-                (std, _, err) = k.GetStringValue("Std"u8); if (err != default!) {
+                (std, _, err) = k.GetStringValue(stdˢ); if (err != default!) {
                     (matched, err2) = (false, err); return;
                 }
             }
             {
-                (dlt, _, err) = k.GetStringValue("Dlt"u8); if (err != default!) {
+                (dlt, _, err) = k.GetStringValue(dltˢ); if (err != default!) {
                     (matched, err2) = (false, err); return;
                 }
             }
@@ -248,7 +250,7 @@ internal static void initLocal() {
     ref var i = ref heap(new syscall.Timezoneinformation(), out var Ꮡi);
     {
         var (_, err) = syscall.GetTimeZoneInformation(Ꮡi); if (err != default!) {
-            localLoc.name = "UTC"u8;
+            localLoc.name = utcˢ;
             return;
         }
     }

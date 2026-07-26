@@ -15,6 +15,9 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class types_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object nilˢ = (@string)"<nil>"u8;
+
 internal static @string sprintf(ж<token.FileSet> Ꮡfset, Func<ж<Package>, @string> qf, bool tpSubscripts, @string format, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
@@ -23,7 +26,7 @@ internal static @string sprintf(ж<token.FileSet> Ꮡfset, Func<ж<Package>, @st
 
         switch (arg.type()) {
         case null: {
-            arg = (@string)"<nil>"u8;
+            arg = nilˢ;
             break;
         }
         case operand a: {

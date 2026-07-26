@@ -39,7 +39,7 @@ public static @string String(this ж<IPAddr> Ꮡa) {
     ref var a = ref Ꮡa.DerefOrNil();
 
     if (Ꮡa == nil) {
-        return "<nil>"u8;
+        return nilˢ;
     }
     @string ip = ipEmptyString(a.IP);
     if (a.Zone != ""u8) {

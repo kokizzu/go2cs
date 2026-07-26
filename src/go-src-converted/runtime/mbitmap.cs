@@ -666,7 +666,7 @@ private static readonly @string badPointerBitsWrittenForˢ = "bad pointer bits w
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string triedToWriteHeapBitsButˢ = "tried to write heap bits, but no heap bits in span"u8;
-private static readonly @string gCProgForTypeThatIsnTˢ = "GCProg for type that isn't large"u8;
+private static readonly @string gcProgForTypeThatIsnTˢ = "GCProg for type that isn't large"u8;
 
 // heapSetType records that the new allocation [x, x+size)
 // holds in [x, x+dataSize) one or more values of type typ.
@@ -704,7 +704,7 @@ internal static uintptr /*scanSize*/ heapSetType(uintptr x, uintptr dataSize, ж
             // a dummy _type value and the unrolled gcprog. The dummy _type will
             // refer to the bitmap, and the mspan will refer to the dummy _type.
             if (span.spanclass.sizeclass() != 0) {
-                @throw(gCProgForTypeThatIsnTˢ);
+                @throw(gcProgForTypeThatIsnTˢ);
             }
             var spaceNeeded = alignUp(@unsafe.Sizeof(new _type()), goarch.PtrSize);
             var heapBitsOff = spaceNeeded;

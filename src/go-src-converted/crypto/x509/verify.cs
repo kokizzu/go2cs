@@ -527,6 +527,7 @@ internal static error checkNameConstraints(this ж<Certificate> Ꮡc, ж<nint> �
 private static readonly @string x509InternalErrorEmptyˢ = "x509: internal error: empty chain when appending CA cert"u8;
 private static readonly @string emailAddressˢ = "email address"u8;
 private static readonly @string dnsNameˢ = "DNS name"u8;
+private static readonly @string uriˢ = "URI"u8;
 private static readonly @string ipAddressˢ = "IP address"u8;
 
 // isValid performs validity checks on c given that it is a candidate to append
@@ -618,7 +619,7 @@ internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж
                         return fmt.Errorf("x509: internal error: URI SAN %q failed to parse"u8, name);
                     }
                     {
-                        var errΔ9 = Ꮡc.checkNameConstraints(ᏑcomparisonCount, maxConstraintComparisons, "URI"u8, name, uri,
+                        var errΔ9 = Ꮡc.checkNameConstraints(ᏑcomparisonCount, maxConstraintComparisons, uriˢ, name, uri,
                             (any parsedName, any constraint) => matchURIConstraint(parsedName._<ж<url.URL>>(), constraint._<@string>()), Ꮡc.Value.PermittedURIDomains, Ꮡc.Value.ExcludedURIDomains); if (errΔ9 != default!) {
                             return errΔ9;
                         }

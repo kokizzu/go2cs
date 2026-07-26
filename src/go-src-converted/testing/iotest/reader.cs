@@ -138,6 +138,7 @@ public static io.Reader ErrReader(error err) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "nil"u8;
 private static readonly @string nilOrEofˢ = "nil or EOF"u8;
 
 // TestReader tests that reading from r returns the expected file content.
@@ -274,7 +275,7 @@ public static error TestReader(io.Reader r, slice<byte> content) {
             foreach (var (i, _) in dataΔ2) {
                 (nΔ2, errΔ11) = rΔ2.ReadAt(dataΔ2[(int)(i)..(int)(i + 1)], (int64)i);
                 if (nΔ2 != 1 || errΔ11 != default! && (i != len(dataΔ2) - 1 || !AreEqual(errΔ11, io.EOF))) {
-                    @string want = "nil"u8;
+                    @string want = nilˢ;
                     if (i == len(dataΔ2) - 1) {
                         want = nilOrEofˢ;
                     }

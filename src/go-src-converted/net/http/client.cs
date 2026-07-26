@@ -502,6 +502,9 @@ public static (ж<Response> resp, error err) Get(@string url) {
     return DefaultClient.Get(url);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getˢ = "GET"u8;
+
 // Get issues a GET to the specified URL. If the response is one of the
 // following redirect codes, Get follows the redirect after calling the
 // [Client.CheckRedirect] function:
@@ -529,7 +532,7 @@ public static (ж<Response> resp, error err) Get(this ж<Client> Ꮡc, @string u
     ж<Response> resp = default!;
     error err = default!;
 
-    (var req, err) = NewRequest("GET"u8, url, default!);
+    (var req, err) = NewRequest(getˢ, url, default!);
     if (err != default!) {
         return (default!, err);
     }
@@ -575,7 +578,7 @@ internal static (@string redirectMethod, bool shouldRedirect, bool includeBody) 
             // HEAD requests. RFC 7231 lifts this restriction, but we still
             // restrict other methods to GET to maintain compatibility.
             // See Issue 18570.
-            redirectMethod = "GET"u8;
+            redirectMethod = getˢ;
         }
         break;
     }
@@ -596,11 +599,14 @@ internal static (@string redirectMethod, bool shouldRedirect, bool includeBody) 
     return (redirectMethod, shouldRedirect, includeBody);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getˢ2 = "Get"u8;
+
 // urlErrorOp returns the (*url.Error).Op value to use for the
 // provided (*Request).Method value.
 internal static @string urlErrorOp(@string method) {
     if (method == ""u8) {
-        return "Get"u8;
+        return getˢ2;
     }
     {
         var (lowerMethod, ok) = ascii.ToLower(method); if (ok) {

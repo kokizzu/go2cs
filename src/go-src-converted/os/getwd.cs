@@ -18,6 +18,7 @@ internal static ж<getwdCacheᴛ1> ᏑgetwdCache = new(new getwdCacheᴛ1(nil));
 internal static ref getwdCacheᴛ1 getwdCache => ref ᏑgetwdCache.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pwdˢ = "PWD"u8;
 private static readonly @string getwdˢ = "getwd"u8;
 
 // Getwd returns a rooted path name corresponding to the
@@ -37,7 +38,7 @@ public static (@string dir, error err) Getwd() {
     if (err != default!) {
         return ("", err);
     }
-    dir = Getenv("PWD"u8);
+    dir = Getenv(pwdˢ);
     if (len(dir) > 0 && dir[0] == (rune)'/') {
         var (d, errΔ1) = statNolog(dir);
         if (errΔ1 == default! && SameFile(dot, d)) {

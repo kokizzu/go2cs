@@ -341,13 +341,17 @@ internal static @string u32(uint32 i) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string altˢ = "alt -> "u8;
 private static readonly @string altmatchˢ = "altmatch -> "u8;
+private static readonly @string capˢ = "cap "u8;
 private static readonly @string emptyˢ = "empty "u8;
 private static readonly @string matchˢ = "match"u8;
 private static readonly @string failˢ = "fail"u8;
+private static readonly @string nopˢ = "nop -> "u8;
 private static readonly @string runeNilˢ = "rune <nil>"u8;
 private static readonly @string runeˢ = "rune "u8;
 private static readonly @string rune1ˢ = "rune1 "u8;
+private static readonly @string anyˢ = "any -> "u8;
 private static readonly @string anynotnlˢ = "anynotnl -> "u8;
 
 internal static void dumpInst(ж<strings.Builder> Ꮡb, ж<Inst> Ꮡi) {
@@ -355,13 +359,13 @@ internal static void dumpInst(ж<strings.Builder> Ꮡb, ж<Inst> Ꮡi) {
 
     var exprᴛ1 = i.Op;
     if (exprᴛ1 == InstAlt) {
-        bw(Ꮡb, "alt -> "u8, u32(i.Out), ", ", u32(i.Arg));
+        bw(Ꮡb, altˢ, u32(i.Out), ", ", u32(i.Arg));
     }
     else if (exprᴛ1 == InstAltMatch) {
         bw(Ꮡb, altmatchˢ, u32(i.Out), ", ", u32(i.Arg));
     }
     else if (exprᴛ1 == InstCapture) {
-        bw(Ꮡb, "cap "u8, u32(i.Arg), " -> ", u32(i.Out));
+        bw(Ꮡb, capˢ, u32(i.Arg), " -> ", u32(i.Out));
     }
     else if (exprᴛ1 == InstEmptyWidth) {
         bw(Ꮡb, emptyˢ, u32(i.Arg), " -> ", u32(i.Out));
@@ -373,7 +377,7 @@ internal static void dumpInst(ж<strings.Builder> Ꮡb, ж<Inst> Ꮡi) {
         bw(Ꮡb, failˢ);
     }
     else if (exprᴛ1 == InstNop) {
-        bw(Ꮡb, "nop -> "u8, u32(i.Out));
+        bw(Ꮡb, nopˢ, u32(i.Out));
     }
     else if (exprᴛ1 == InstRune) {
         if (i.Rune == default!) {
@@ -390,7 +394,7 @@ internal static void dumpInst(ж<strings.Builder> Ꮡb, ж<Inst> Ꮡi) {
         bw(Ꮡb, rune1ˢ, strconv.QuoteToASCII(((@string)i.Rune)), " -> ", u32(i.Out));
     }
     else if (exprᴛ1 == InstRuneAny) {
-        bw(Ꮡb, "any -> "u8, u32(i.Out));
+        bw(Ꮡb, anyˢ, u32(i.Out));
     }
     else if (exprᴛ1 == InstRuneAnyNotNL) {
         bw(Ꮡb, anynotnlˢ, u32(i.Out));

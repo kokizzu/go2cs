@@ -315,6 +315,10 @@ internal static (ж<types.Var> field, @string tag) parseField(this ж<parser> �
     return (field, tag);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string retˢ = "$ret"u8;
+private static readonly @string escˢ = "esc"u8;
+
 // Param = Name ["..."] Type .
 internal static (ж<types.Var> param, bool isVariadic) parseParam(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
     ж<types.Var> param = default!;
@@ -323,13 +327,13 @@ internal static (ж<types.Var> param, bool isVariadic) parseParam(this ж<parser
     ref var p = ref Ꮡp.Value;
     @string name = p.parseName();
     // Ignore names invented for inlinable functions.
-    if (strings.HasPrefix(name, "p."u8) || strings.HasPrefix(name, "r."u8) || strings.HasPrefix(name, "$ret"u8)) {
+    if (strings.HasPrefix(name, "p."u8) || strings.HasPrefix(name, "r."u8) || strings.HasPrefix(name, retˢ)) {
         name = ""u8;
     }
     if (p.tok == (rune)'<' && p.scanner.Peek() == (rune)'e') {
         // EscInfo = "<esc:" int ">" . (optional and ignored)
         p.next();
-        p.expectKeyword("esc"u8);
+        p.expectKeyword(escˢ);
         p.expect((rune)':');
         p.expect(scanner.Int);
         p.expect((rune)'>');
@@ -736,11 +740,14 @@ internal static typesꓸType parseArrayOrSliceType(this ж<parser> Ꮡp, ж<type
     return new types.ArrayжΔType(t);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mapˢ = "map"u8;
+
 // MapType = "map" "[" Type "]" Type .
 internal static typesꓸType parseMapType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
     ref var p = ref Ꮡp.Value;
 
-    p.expectKeyword("map"u8);
+    p.expectKeyword(mapˢ);
     var t = @new<types.Map>();
     p.update(new types.MapжΔType(t), nlist);
     p.expect((rune)'[');
@@ -926,13 +933,16 @@ internal static typesꓸType parseInterfaceType(this ж<parser> Ꮡp, ж<types.P
     return new types.InterfaceжΔType(t);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string anyˢ = "any"u8;
+
 // PointerType = "*" ("any" | Type) .
 internal static typesꓸType parsePointerType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
     ref var p = ref Ꮡp.Value;
 
     p.expect((rune)'*');
     if (p.tok == scanner.Ident) {
-        p.expectKeyword("any"u8);
+        p.expectKeyword(anyˢ);
         var tΔ1 = types.Typ[types.UnsafePointer];
         p.update(new types.BasicжΔType(tΔ1), nlist);
         return new types.BasicжΔType(tΔ1);
@@ -1009,7 +1019,7 @@ private static readonly @string byteˢ = "byte"u8;
 private static readonly @string runeˢ = "rune"u8;
 
 internal static typesꓸType lookupBuiltinType(nint typ) {
-    return new golib.SparseArray<typesꓸType>{[gccgoBuiltinINT8] = new types.BasicжΔType(types.Typ[types.Int8]), [gccgoBuiltinINT16] = new types.BasicжΔType(types.Typ[types.Int16]), [gccgoBuiltinINT32] = new types.BasicжΔType(types.Typ[types.Int32]), [gccgoBuiltinINT64] = new types.BasicжΔType(types.Typ[types.Int64]), [gccgoBuiltinUINT8] = new types.BasicжΔType(types.Typ[types.Uint8]), [gccgoBuiltinUINT16] = new types.BasicжΔType(types.Typ[types.Uint16]), [gccgoBuiltinUINT32] = new types.BasicжΔType(types.Typ[types.Uint32]), [gccgoBuiltinUINT64] = new types.BasicжΔType(types.Typ[types.Uint64]), [gccgoBuiltinFLOAT32] = new types.BasicжΔType(types.Typ[types.Float32]), [gccgoBuiltinFLOAT64] = new types.BasicжΔType(types.Typ[types.Float64]), [gccgoBuiltinINT] = new types.BasicжΔType(types.Typ[types.Int]), [gccgoBuiltinUINT] = new types.BasicжΔType(types.Typ[types.Uint]), [gccgoBuiltinUINTPTR] = new types.BasicжΔType(types.Typ[types.Uintptr]), [gccgoBuiltinBOOL] = new types.BasicжΔType(types.Typ[types.Bool]), [gccgoBuiltinSTRING] = new types.BasicжΔType(types.Typ[types.ΔString]), [gccgoBuiltinCOMPLEX64] = new types.BasicжΔType(types.Typ[types.Complex64]), [gccgoBuiltinCOMPLEX128] = new types.BasicжΔType(types.Typ[types.Complex128]), [gccgoBuiltinERROR] = types.Universe.Lookup(errorˢ).Type(), [gccgoBuiltinBYTE] = types.Universe.Lookup(byteˢ).Type(), [gccgoBuiltinRUNE] = types.Universe.Lookup(runeˢ).Type(), [gccgoBuiltinANY] = types.Universe.Lookup("any"u8).Type()
+    return new golib.SparseArray<typesꓸType>{[gccgoBuiltinINT8] = new types.BasicжΔType(types.Typ[types.Int8]), [gccgoBuiltinINT16] = new types.BasicжΔType(types.Typ[types.Int16]), [gccgoBuiltinINT32] = new types.BasicжΔType(types.Typ[types.Int32]), [gccgoBuiltinINT64] = new types.BasicжΔType(types.Typ[types.Int64]), [gccgoBuiltinUINT8] = new types.BasicжΔType(types.Typ[types.Uint8]), [gccgoBuiltinUINT16] = new types.BasicжΔType(types.Typ[types.Uint16]), [gccgoBuiltinUINT32] = new types.BasicжΔType(types.Typ[types.Uint32]), [gccgoBuiltinUINT64] = new types.BasicжΔType(types.Typ[types.Uint64]), [gccgoBuiltinFLOAT32] = new types.BasicжΔType(types.Typ[types.Float32]), [gccgoBuiltinFLOAT64] = new types.BasicжΔType(types.Typ[types.Float64]), [gccgoBuiltinINT] = new types.BasicжΔType(types.Typ[types.Int]), [gccgoBuiltinUINT] = new types.BasicжΔType(types.Typ[types.Uint]), [gccgoBuiltinUINTPTR] = new types.BasicжΔType(types.Typ[types.Uintptr]), [gccgoBuiltinBOOL] = new types.BasicжΔType(types.Typ[types.Bool]), [gccgoBuiltinSTRING] = new types.BasicжΔType(types.Typ[types.ΔString]), [gccgoBuiltinCOMPLEX64] = new types.BasicжΔType(types.Typ[types.Complex64]), [gccgoBuiltinCOMPLEX128] = new types.BasicжΔType(types.Typ[types.Complex128]), [gccgoBuiltinERROR] = types.Universe.Lookup(errorˢ).Type(), [gccgoBuiltinBYTE] = types.Universe.Lookup(byteˢ).Type(), [gccgoBuiltinRUNE] = types.Universe.Lookup(runeˢ).Type(), [gccgoBuiltinANY] = types.Universe.Lookup(anyˢ).Type()
     }.array(23)[typ];
 }
 
@@ -1086,6 +1096,9 @@ internal static (typesꓸType t, nint n1) parseTypeExtended(this ж<parser> Ꮡp
     return (t, n1);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inlˢ = "inl"u8;
+
 // InlineBody = "<inl:NN>" .{NN}
 // Reports whether a body was skipped.
 internal static void skipInlineBody(this ж<parser> Ꮡp) => func((defer, recover) => {
@@ -1095,7 +1108,7 @@ internal static void skipInlineBody(this ж<parser> Ꮡp) => func((defer, recove
     // whether the function had a result type or not.
     if (p.tok == (rune)'<'){
         p.next();
-        p.expectKeyword("inl"u8);
+        p.expectKeyword(inlˢ);
     } else 
     if (p.tok != scanner.Ident || p.lit != "inl"u8){
         return;

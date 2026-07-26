@@ -184,6 +184,7 @@ private static readonly @string failedToGetSystemPageˢ = "failed to get system 
 private static readonly @string badSystemPageSizeˢ = "bad system page size"u8;
 private static readonly @string badSystemHugePageSizeˢ = "bad system huge page size"u8;
 private static readonly @string badPagesPerSpanRootˢ = "bad pagesPerSpanRoot"u8;
+private static readonly @string badˢ = "bad pagesPerReclaimerChunk"u8;
 private static readonly @string minSizeOfMallocHeaderIsˢ = "min size of malloc header is not a size class boundary"u8;
 private static readonly @string maxPointerScanBitmapSizeˢ = "max pointer/scan bitmap size for headerless objects is too large"u8;
 private static readonly @string taggedPointerbitsTooˢ = "taggedPointerbits too small"u8;
@@ -238,7 +239,7 @@ internal static void mallocinit() {
     }
     if (pagesPerArena % pagesPerReclaimerChunk != 0) {
         print((@string)"pagesPerArena ("u8, (nint)(pagesPerArena), (@string)") is not divisible by pagesPerReclaimerChunk ("u8, (nint)(pagesPerReclaimerChunk), (@string)")\n"u8);
-        @throw("bad pagesPerReclaimerChunk"u8);
+        @throw(badˢ);
     }
     // Check that the minimum size (exclusive) for a malloc header is also
     // a size class boundary. This is important to making sure checks align

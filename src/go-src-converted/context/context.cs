@@ -798,6 +798,9 @@ public static Context WithValue(Context parent, any key, any val) {
     internal any key, val;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "<nil>"u8;
+
 // stringify tries a bit to stringify v, without using fmt, since we don't
 // want context depending on the unicode tables. This is only used by
 // *valueCtx.String().
@@ -810,7 +813,7 @@ internal static @string stringify(any v) {
         return s;
     }
     case null: {
-        return "<nil>"u8;
+        return nilˢ;
     }}
     return reflectlite.TypeOf(v).String();
 }

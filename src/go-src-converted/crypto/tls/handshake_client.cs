@@ -54,6 +54,7 @@ private static readonly @string tlsNoSupportedVersionsˢ = "tls: no supported ve
 private static readonly @string tlsCurvePreferencesˢ = "tls: CurvePreferences includes unsupported curve"u8;
 private static readonly @string tlsMinVersionMustBeˢ = "tls: MinVersion must be >= VersionTLS13 if EncryptedClientHelloConfigList is populated"u8;
 private static readonly @string tlsMaxVersionMustBeˢ = "tls: MaxVersion must be >= VersionTLS13 if EncryptedClientHelloConfigList is populated"u8;
+private static readonly @string tlsˢ = "tls: EncryptedClientHelloConfigList contains no valid configs"u8;
 
 internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, error) makeClientHello(this ж<Conn> Ꮡc) {
     ref var c = ref Ꮡc.Value;
@@ -220,7 +221,7 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
         }
         var echConfig = pickECHConfig(echConfigs);
         if (echConfig == nil) {
-            return (default!, default!, default!, errors.New("tls: EncryptedClientHelloConfigList contains no valid configs"u8));
+            return (default!, default!, default!, errors.New(tlsˢ));
         }
         ech = Ꮡ(new echContext(config: echConfig));
         hello.Value.encryptedClientHello = new byte[]{1}.slice();

@@ -408,10 +408,13 @@ public static int64 NsPerOp(this BenchmarkResult r) {
     return r.T.Nanoseconds() / (int64)r.N;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mbSˢ = "MB/s"u8;
+
 // mbPerSec returns the "MB/s" metric.
 internal static float64 mbPerSec(this BenchmarkResult r) {
     {
-        var (v, ok) = r.Extra["MB/s"u8, ꟷ]; if (ok) {
+        var (v, ok) = r.Extra[mbSˢ, ꟷ]; if (ok) {
             return v;
         }
     }
@@ -438,11 +441,14 @@ public static int64 AllocsPerOp(this BenchmarkResult r) {
     return (int64)r.MemAllocs / (int64)r.N;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bOpˢ = "B/op"u8;
+
 // AllocedBytesPerOp returns the "B/op" metric,
 // which is calculated as r.MemBytes / r.N.
 public static int64 AllocedBytesPerOp(this BenchmarkResult r) {
     {
-        var (v, ok) = r.Extra["B/op"u8, ꟷ]; if (ok) {
+        var (v, ok) = r.Extra[bOpˢ, ꟷ]; if (ok) {
             return (int64)v;
         }
     }

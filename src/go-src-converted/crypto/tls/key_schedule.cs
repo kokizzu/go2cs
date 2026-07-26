@@ -95,13 +95,16 @@ internal static slice<byte> nextTrafficSecret(this ж<cipherSuiteTLS13> Ꮡc, sl
     return Ꮡc.expandLabel(trafficSecret, trafficUpdateLabel, default!, c.hash.Size());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string keyˢ = "key"u8;
+
 // trafficKey generates traffic keys according to RFC 8446, Section 7.3.
 internal static (slice<byte> key, slice<byte> iv) trafficKey(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> trafficSecret) {
     slice<byte> key = default!;
     slice<byte> iv = default!;
 
     ref var c = ref Ꮡc.Value;
-    key = Ꮡc.expandLabel(trafficSecret, "key"u8, default!, c.keyLen);
+    key = Ꮡc.expandLabel(trafficSecret, keyˢ, default!, c.keyLen);
     iv = Ꮡc.expandLabel(trafficSecret, "iv"u8, default!, aeadNonceLength);
     return (key, iv);
 }

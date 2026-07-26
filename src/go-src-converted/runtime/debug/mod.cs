@@ -98,6 +98,10 @@ internal static bool quoteValue(@string value) {
     return strings.ContainsAny(value, " \t\r\n\"`"u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string modˢ = "mod"u8;
+private static readonly @string depˢ = "dep"u8;
+
 [GoRecv] public static @string String(this ref BuildInfo bi) {
     var buf = @new<strings.Builder>();
     if (bi.GoVersion != ""u8) {
@@ -125,10 +129,10 @@ internal static bool quoteValue(@string value) {
         bufʗ1.WriteByte((rune)'\n');
     };
     if (bi.Main != (new Module(nil))) {
-        formatMod("mod"u8, bi.Main);
+        formatMod(modˢ, bi.Main);
     }
     foreach (var (_, dep) in bi.Deps) {
-        formatMod("dep"u8, dep.Value);
+        formatMod(depˢ, dep.Value);
     }
     foreach (var (_, s) in bi.Settings) {
         @string key = s.Key;
@@ -146,6 +150,8 @@ internal static bool quoteValue(@string value) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string pathˢ = "path\t"u8;
+private static readonly @string modˢ2 = "mod\t"u8;
+private static readonly @string depˢ2 = "dep\t"u8;
 private static readonly @string buildˢ = "build\t"u8;
 
 public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
@@ -159,8 +165,8 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
             }
         });
         @string pathLine = pathˢ;
-        @string modLine = "mod\t"u8;
-        @string depLine = "dep\t"u8;
+        @string modLine = modˢ2;
+        @string depLine = depˢ2;
         @string repLine = "=>\t"u8;
         @string buildLine = buildˢ;
         @string newline = "\n"u8;
