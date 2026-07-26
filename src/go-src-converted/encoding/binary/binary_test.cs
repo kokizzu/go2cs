@@ -120,7 +120,8 @@ internal static void checkResult(ж<testing.T> Ꮡt, @string dir, ByteOrder orde
     internal @string name;
     internal Func<ByteOrder, any, (slice<byte>, error)> fn;
 }
-internal static slice<encodersᴛ1> encoders = new encodersᴛ1[]{
+internal static slice<encodersᴛ1> encoders;
+internal static void initᴛencoders() { encoders = new encodersᴛ1[]{
     new(
         "Write"u8,
         (ByteOrder order, any data) => {
@@ -147,14 +148,15 @@ internal static slice<encodersᴛ1> encoders = new encodersᴛ1[]{
     "Append"u8,
     (ByteOrder order, any data) => Append(default!, order, data)
 )
-}.slice();
+}.slice(); }
 
 
 [GoType("dyn")] partial struct decodersᴛ1 {
     internal @string name;
     internal Func<ByteOrder, any, slice<byte>, error> fn;
 }
-internal static slice<decodersᴛ1> decoders = new decodersᴛ1[]{
+internal static slice<decodersᴛ1> decoders;
+internal static void initᴛdecoders() { decoders = new decodersᴛ1[]{
     new(
         "Read"u8,
         (ByteOrder order, any data, slice<byte> buf) => Read(new bytes_ReaderжReader(bytes.NewReader(buf)), order, data)
@@ -169,7 +171,7 @@ internal static slice<decodersᴛ1> decoders = new decodersᴛ1[]{
             return err;
         }
     )
-}.slice();
+}.slice(); }
 
 internal static void testRead(ж<testing.T> Ꮡt, ByteOrder order, slice<byte> b, any s1) {
     foreach (var (_, vᴛ1) in decoders) {

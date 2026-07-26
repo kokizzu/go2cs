@@ -332,7 +332,8 @@ public static void TestParse(ж<testing.T> Ꮡt) {
     internal slice<@string> @out;
     internal error err;
 }
-internal static slice<plusBuildLinesTestsᴛ1> plusBuildLinesTests = new plusBuildLinesTestsᴛ1[]{
+internal static slice<plusBuildLinesTestsᴛ1> plusBuildLinesTests;
+internal static void initᴛplusBuildLinesTests() { plusBuildLinesTests = new plusBuildLinesTestsᴛ1[]{
     new("x"u8, new @string[]{"x"u8}.slice(), default!),
     new("x && !y"u8, new @string[]{"x,!y"u8}.slice(), default!),
     new("x || y"u8, new @string[]{"x y"u8}.slice(), default!),
@@ -341,7 +342,7 @@ internal static slice<plusBuildLinesTestsᴛ1> plusBuildLinesTests = new plusBui
     new("x || (y && z)"u8, new @string[]{"x y,z"u8}.slice(), default!),
     new("w && (x || (y && z))"u8, new @string[]{"w"u8, "x y,z"u8}.slice(), default!),
     new("v || (w && (x || (y && z)))"u8, default!, errComplex)
-}.slice();
+}.slice(); }
 
 public static void TestPlusBuildLines(ж<testing.T> Ꮡt) {
     foreach (var (i, vᴛ1) in plusBuildLinesTests) {

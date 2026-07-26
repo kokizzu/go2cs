@@ -71,6 +71,7 @@
     <Compile Include="binary_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="native_endian_little.cs" />
+    <Compile Include="package_init_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
     <Compile Include="varint.cs" />
     <Compile Include="varint_test.cs" />

@@ -70,6 +70,7 @@
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="hex.cs" />
     <Compile Include="hex_test.cs" />
+    <Compile Include="package_init_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
   </ItemGroup>
 

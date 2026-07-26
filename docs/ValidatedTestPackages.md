@@ -13,9 +13,9 @@ allocate). Each is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **44 / 215 testable packages validated — 20.5%**
+> ### Phase 4 progress: **46 / 215 testable packages validated — 21.4%**
 >
-> **1,095 matching test verdicts · 22 disclosed** *(updated 2026-07-26 — maintained as part of the
+> **1,129 matching test verdicts · 22 disclosed** *(updated 2026-07-26 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -35,6 +35,7 @@ any other failure is still a hard mismatch.
 | [`encoding/pem`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/encoding/pem) | 8 | | PEM block parsing and round-trips. |
 | [`errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/errors) | 61 | | `errors.Is`/`As`/`Join` — reflection-bridge write-back (`Value.Set`, addressability). |
 | [`go/build/constraint`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/go/build/constraint) | 89 | | Build-constraint expression parsing. |
+| [`go/token`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/go/token) | 31 | | FileSet/Position machinery; a full `encoding/gob` serialization round-trip — the reflect type-relation mirrors driving real Encoder/Decoder engines. |
 | [`go/version`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/go/version) | 3 | | Go version-string comparison. |
 | [`hash/adler32`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/hash/adler32) | 2 | | Adler-32 checksum. |
 | [`hash/crc32`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/hash/crc32) | 10 | | CRC-32 including **real SSE4.2/PCLMULQDQ hardware paths** via managed intrinsics. |
@@ -43,6 +44,7 @@ any other failure is still a hard mismatch.
 | [`internal/abi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/abi) | 2 | | Runtime ABI helpers (`FuncPC`). |
 | [`internal/coverage/slicereader`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/coverage/slicereader) | 1 | | Coverage slice reader. |
 | [`internal/coverage/slicewriter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/coverage/slicewriter) | 1 | | Coverage slice writer. |
+| [`internal/fmtsort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/fmtsort) | 3 | | `fmt`'s map-key ordering — `Value.Convert`, arithmetically-ordered pointer/channel tokens, `-tests` init-order relocation. |
 | [`internal/gover`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/gover) | 5 | | Toolchain version ordering. |
 | [`internal/itoa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/itoa) | 3 | | Minimal integer formatting. |
 | [`internal/saferio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/saferio) | 17 | | Allocation-capped I/O helpers. |

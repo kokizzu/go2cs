@@ -96,7 +96,8 @@ public static void TestDecodeString(ж<testing.T> Ꮡt) {
     internal @string @out;
     internal error err;
 }
-internal static slice<errTestsᴛ1> errTests = new errTestsᴛ1[]{
+internal static slice<errTestsᴛ1> errTests;
+internal static void initᴛerrTests() { errTests = new errTestsᴛ1[]{
     new(""u8, ""u8, default!),
     new("0"u8, ""u8, ErrLength),
     new("zd4aa"u8, ""u8, ((InvalidByteError)(rune)'z')),
@@ -106,7 +107,7 @@ internal static slice<errTestsᴛ1> errTests = new errTestsᴛ1[]{
     new("00gg"u8, "\x00"u8, ((InvalidByteError)(rune)'g')),
     new("0\x01"u8, ""u8, ((InvalidByteError)(rune)'\x01')),
     new("ffeed"u8, ((@string)(new byte[]{0xff, 0xee})), ErrLength)
-}.slice();
+}.slice(); }
 
 public static void TestDecodeErr(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in errTests) {

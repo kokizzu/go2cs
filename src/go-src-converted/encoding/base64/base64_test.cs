@@ -83,7 +83,8 @@ internal static @string funnyRef(@string @ref) {
     internal Func<@string, @string> conv; // Reference string converter
 }
 
-internal static slice<encodingTest> encodingTests = new encodingTest[]{
+internal static slice<encodingTest> encodingTests;
+internal static void initᴛencodingTests() { encodingTests = new encodingTest[]{
     new(StdEncoding, stdRef),
     new(URLEncoding, urlRef),
     new(RawStdEncoding, rawRef),
@@ -94,7 +95,7 @@ internal static slice<encodingTest> encodingTests = new encodingTest[]{
     new((~RawStdEncoding).Strict(), rawRef),
     new((~RawURLEncoding).Strict(), rawURLRef),
     new((~funnyEncoding).Strict(), funnyRef)
-}.slice();
+}.slice(); }
 
 internal static testpair bigtest = new testpair(
     "Twas brillig, and the slithy toves"u8,

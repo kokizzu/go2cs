@@ -19,7 +19,8 @@ partial class csv_package {
     public bool UseCRLF;
     public rune Comma;
 }
-internal static slice<writeTestsᴛ1> writeTests = new writeTestsᴛ1[]{
+internal static slice<writeTestsᴛ1> writeTests;
+internal static void initᴛwriteTests() { writeTests = new writeTestsᴛ1[]{
     new(Input: new slice<@string>[]{new @string[]{"abc"u8}.slice()}.slice(), Output: "abc\n"u8),
     new(Input: new slice<@string>[]{new @string[]{"abc"u8}.slice()}.slice(), Output: "abc\r\n"u8, UseCRLF: true),
     new(Input: new slice<@string>[]{new @string[]{@"""abc"""u8}.slice()}.slice(), Output: @"""""""abc"""""""u8 + "\n"u8),
@@ -49,7 +50,7 @@ internal static slice<writeTestsᴛ1> writeTests = new writeTestsᴛ1[]{
     new(Input: new slice<@string>[]{new @string[]{"a"u8, "a"u8, ""u8}.slice()}.slice(), Output: "a|a|\n"u8, Comma: (rune)'|'),
     new(Input: new slice<@string>[]{new @string[]{","u8, ","u8, ""u8}.slice()}.slice(), Output: ",|,|\n"u8, Comma: (rune)'|'),
     new(Input: new slice<@string>[]{new @string[]{"foo"u8}.slice()}.slice(), Comma: (rune)'"', Error: errInvalidDelim)
-}.slice();
+}.slice(); }
 
 public static void TestWrite(ж<testing.T> Ꮡt) {
     foreach (var (n, tt) in writeTests) {

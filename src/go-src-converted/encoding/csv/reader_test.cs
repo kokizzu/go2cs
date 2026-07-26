@@ -41,7 +41,8 @@ partial class csv_package {
 // This tests that the parser doesn't confuse such characters.
 // The implementation may read each line in several chunks if it doesn't fit entirely
 // in the read buffer, so we should test the code to handle that condition.
-internal static slice<readTest> readTests = new readTest[]{new(
+internal static slice<readTest> readTests;
+internal static void initᴛreadTests() { readTests = new readTest[]{new(
     Name: "Simple"u8,
     Input: "§a,§b,§c\n"u8,
     Output: new slice<@string>[]{new @string[]{"a"u8, "b"u8, "c"u8}.slice()}.slice()
@@ -409,7 +410,7 @@ field"
     Comment: (rune)'X',
     Errors: new error[]{errInvalidDelim}.slice()
 )
-}.slice();
+}.slice(); }
 
 public static void TestRead(ж<testing.T> Ꮡt) {
     var newReader = (readTest tt) => {

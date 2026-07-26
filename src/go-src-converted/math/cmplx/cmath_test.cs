@@ -354,7 +354,8 @@ internal static slice<float64> absSC = new float64[]{
 [GoType("dyn")] partial struct acosSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<acosSCᴛ1> acosSC = new acosSCᴛ1[]{
+internal static slice<acosSCᴛ1> acosSC;
+internal static void initᴛacosSC() { acosSC = new acosSCᴛ1[]{
     new(complex(zero, zero),
         complex(math.Pi / 2D, -zero)),
     new(complex(-zero, zero),
@@ -385,14 +386,15 @@ internal static slice<acosSCᴛ1> acosSC = new acosSCᴛ1[]{
         complex(nan, -inf)),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // G.6.2.1
 
 [GoType("dyn")] partial struct acoshSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<acoshSCᴛ1> acoshSC = new acoshSCᴛ1[]{
+internal static slice<acoshSCᴛ1> acoshSC;
+internal static void initᴛacoshSC() { acoshSC = new acoshSCᴛ1[]{
     new(complex(zero, zero),
         complex(zero, math.Pi / 2D)),
     new(complex(-zero, zero),
@@ -419,7 +421,7 @@ internal static slice<acoshSCᴛ1> acoshSC = new acoshSCᴛ1[]{
         complex(inf, nan)),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // Derived from Asin(z) = -i * Asinh(i * z), G.6 #7
 // imaginary sign unspecified
@@ -427,7 +429,8 @@ internal static slice<acoshSCᴛ1> acoshSC = new acoshSCᴛ1[]{
 [GoType("dyn")] partial struct asinSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<asinSCᴛ1> asinSC = new asinSCᴛ1[]{
+internal static slice<asinSCᴛ1> asinSC;
+internal static void initᴛasinSC() { asinSC = new asinSCᴛ1[]{
     new(complex(zero, zero),
         complex(zero, zero)),
     new(complex(1.0D, inf),
@@ -448,7 +451,7 @@ internal static slice<asinSCᴛ1> asinSC = new asinSCᴛ1[]{
         complex(nan, inf)),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // G.6.2.2
 // sign of real part unspecified
@@ -456,7 +459,8 @@ internal static slice<asinSCᴛ1> asinSC = new asinSCᴛ1[]{
 [GoType("dyn")] partial struct asinhSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<asinhSCᴛ1> asinhSC = new asinhSCᴛ1[]{
+internal static slice<asinhSCᴛ1> asinhSC;
+internal static void initᴛasinhSC() { asinhSC = new asinhSCᴛ1[]{
     new(complex(zero, zero),
         complex(zero, zero)),
     new(complex(1.0D, inf),
@@ -477,14 +481,15 @@ internal static slice<asinhSCᴛ1> asinhSC = new asinhSCᴛ1[]{
         complex(inf, nan)),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // Derived from Atan(z) = -i * Atanh(i * z), G.6 #7
 
 [GoType("dyn")] partial struct atanSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<atanSCᴛ1> atanSC = new atanSCᴛ1[]{
+internal static slice<atanSCᴛ1> atanSC;
+internal static void initᴛatanSC() { atanSC = new atanSCᴛ1[]{
     new(complex(0D, zero),
         complex(0D, zero)),
     new(complex(0D, nan),
@@ -507,7 +512,7 @@ internal static slice<atanSCᴛ1> atanSC = new atanSCᴛ1[]{
         complex(nan, zero)),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // G.6.2.3
 // sign of real part not specified.
@@ -515,7 +520,8 @@ internal static slice<atanSCᴛ1> atanSC = new atanSCᴛ1[]{
 [GoType("dyn")] partial struct atanhSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<atanhSCᴛ1> atanhSC = new atanhSCᴛ1[]{
+internal static slice<atanhSCᴛ1> atanhSC;
+internal static void initᴛatanhSC() { atanhSC = new atanhSCᴛ1[]{
     new(complex(zero, zero),
         complex(zero, zero)),
     new(complex(zero, nan),
@@ -538,7 +544,7 @@ internal static slice<atanhSCᴛ1> atanhSC = new atanhSCᴛ1[]{
         complex(zero, math.Pi / 2D)),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 internal static slice<complex128> vcConjSC = new complex128[]{
     NaN()
@@ -556,7 +562,8 @@ internal static slice<complex128> conjSC = new complex128[]{
 [GoType("dyn")] partial struct cosSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<cosSCᴛ1> cosSC = new cosSCᴛ1[]{
+internal static slice<cosSCᴛ1> cosSC;
+internal static void initᴛcosSC() { cosSC = new cosSCᴛ1[]{
     new(complex(zero, zero),
         complex(1.0D, -zero)),
     new(complex(zero, inf),
@@ -583,7 +590,7 @@ internal static slice<cosSCᴛ1> cosSC = new cosSCᴛ1[]{
         complex(inf, nan)),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // G.6.2.4
 // imaginary sign unspecified
@@ -595,7 +602,8 @@ internal static slice<cosSCᴛ1> cosSC = new cosSCᴛ1[]{
 [GoType("dyn")] partial struct coshSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<coshSCᴛ1> coshSC = new coshSCᴛ1[]{
+internal static slice<coshSCᴛ1> coshSC;
+internal static void initᴛcoshSC() { coshSC = new coshSCᴛ1[]{
     new(complex(zero, zero),
         complex(1.0D, zero)),
     new(complex(zero, inf),
@@ -622,7 +630,7 @@ internal static slice<coshSCᴛ1> coshSC = new coshSCᴛ1[]{
         NaN()),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // G.6.3.1
 // +0 cis(y)
@@ -635,7 +643,8 @@ internal static slice<coshSCᴛ1> coshSC = new coshSCᴛ1[]{
 [GoType("dyn")] partial struct expSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<expSCᴛ1> expSC = new expSCᴛ1[]{
+internal static slice<expSCᴛ1> expSC;
+internal static void initᴛexpSC() { expSC = new expSCᴛ1[]{
     new(complex(zero, zero),
         complex(1.0D, zero)),
     new(complex(-zero, zero),
@@ -666,7 +675,7 @@ internal static slice<expSCᴛ1> expSC = new expSCᴛ1[]{
         NaN()),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 internal static slice<complex128> vcIsNaNSC = new complex128[]{
     complex(math.Inf(-1), math.Inf(-1)),
@@ -697,7 +706,8 @@ internal static slice<bool> isNaNSC = new bool[]{
 [GoType("dyn")] partial struct logSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<logSCᴛ1> logSC = new logSCᴛ1[]{
+internal static slice<logSCᴛ1> logSC;
+internal static void initᴛlogSC() { logSC = new logSCᴛ1[]{
     new(complex(zero, zero),
         complex(-inf, zero)),
     new(complex(-zero, zero),
@@ -724,14 +734,15 @@ internal static slice<logSCᴛ1> logSC = new logSCᴛ1[]{
         complex(inf, nan)),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // derived from Log special cases via Log10(x) = math.Log10E*Log(x)
 
 [GoType("dyn")] partial struct log10SCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<log10SCᴛ1> log10SC = new log10SCᴛ1[]{
+internal static slice<log10SCᴛ1> log10SC;
+internal static void initᴛlog10SC() { log10SC = new log10SCᴛ1[]{
     new(complex(zero, zero),
         complex(-inf, zero)),
     new(complex(-zero, zero),
@@ -758,7 +769,7 @@ internal static slice<log10SCᴛ1> log10SC = new log10SCᴛ1[]{
         complex(inf, nan)),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 internal static slice<complex128> vcPolarSC = new complex128[]{
     NaN()
@@ -783,7 +794,8 @@ internal static slice<complex128> powSC = new complex128[]{
 [GoType("dyn")] partial struct sinSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<sinSCᴛ1> sinSC = new sinSCᴛ1[]{
+internal static slice<sinSCᴛ1> sinSC;
+internal static void initᴛsinSC() { sinSC = new sinSCᴛ1[]{
     new(complex(zero, zero),
         complex(zero, zero)),
     new(complex(zero, inf),
@@ -810,7 +822,7 @@ internal static slice<sinSCᴛ1> sinSC = new sinSCᴛ1[]{
         complex(nan, inf)),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // G.6.2.5
 // real sign unspecified
@@ -822,7 +834,8 @@ internal static slice<sinSCᴛ1> sinSC = new sinSCᴛ1[]{
 [GoType("dyn")] partial struct sinhSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<sinhSCᴛ1> sinhSC = new sinhSCᴛ1[]{
+internal static slice<sinhSCᴛ1> sinhSC;
+internal static void initᴛsinhSC() { sinhSC = new sinhSCᴛ1[]{
     new(complex(zero, zero),
         complex(zero, zero)),
     new(complex(zero, inf),
@@ -849,7 +862,7 @@ internal static slice<sinhSCᴛ1> sinhSC = new sinhSCᴛ1[]{
         NaN()),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // G.6.4.2
 // imaginary sign unspecified
@@ -857,7 +870,8 @@ internal static slice<sinhSCᴛ1> sinhSC = new sinhSCᴛ1[]{
 [GoType("dyn")] partial struct sqrtSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<sqrtSCᴛ1> sqrtSC = new sqrtSCᴛ1[]{
+internal static slice<sqrtSCᴛ1> sqrtSC;
+internal static void initᴛsqrtSC() { sqrtSC = new sqrtSCᴛ1[]{
     new(complex(zero, zero),
         complex(zero, zero)),
     new(complex(-zero, zero),
@@ -880,14 +894,15 @@ internal static slice<sqrtSCᴛ1> sqrtSC = new sqrtSCᴛ1[]{
         NaN()),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // Derived from Tan(z) = -i * Tanh(i * z), G.6 #7
 
 [GoType("dyn")] partial struct tanSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<tanSCᴛ1> tanSC = new tanSCᴛ1[]{
+internal static slice<tanSCᴛ1> tanSC;
+internal static void initᴛtanSC() { tanSC = new tanSCᴛ1[]{
     new(complex(zero, zero),
         complex(zero, zero)),
     new(complex(zero, nan),
@@ -910,7 +925,7 @@ internal static slice<tanSCᴛ1> tanSC = new tanSCᴛ1[]{
         complex(zero, 1.0D)),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // G.6.2.6
 // 1 + i 0 sin(2y)
@@ -920,7 +935,8 @@ internal static slice<tanSCᴛ1> tanSC = new tanSCᴛ1[]{
 [GoType("dyn")] partial struct tanhSCᴛ1 {
     internal complex128 @in, want;
 }
-internal static slice<tanhSCᴛ1> tanhSC = new tanhSCᴛ1[]{
+internal static slice<tanhSCᴛ1> tanhSC;
+internal static void initᴛtanhSC() { tanhSC = new tanhSCᴛ1[]{
     new(complex(zero, zero),
         complex(zero, zero)),
     new(complex(1.0D, inf),
@@ -941,7 +957,7 @@ internal static slice<tanhSCᴛ1> tanhSC = new tanhSCᴛ1[]{
         NaN()),
     new(NaN(),
         NaN())
-}.slice();
+}.slice(); }
 
 // branch cut continuity checks
 // points on each axis at |z| > 1 are checked for one-sided continuity from both the positive and negative side

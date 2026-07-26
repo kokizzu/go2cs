@@ -77,6 +77,7 @@
     <Compile Include="isinf.cs" />
     <Compile Include="isnan.cs" />
     <Compile Include="log.cs" />
+    <Compile Include="package_init_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
     <Compile Include="phase.cs" />
     <Compile Include="polar.cs" />

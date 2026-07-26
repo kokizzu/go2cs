@@ -115,6 +115,7 @@
     <Compile Include="modf_noasm.cs" />
     <Compile Include="nextafter.cs" />
     <Compile Include="package_info_external_test.cs" />
+    <Compile Include="package_init_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
     <Compile Include="pow.cs" />
     <Compile Include="pow10.cs" />

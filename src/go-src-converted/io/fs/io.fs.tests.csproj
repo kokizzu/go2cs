@@ -71,6 +71,7 @@
     <Compile Include="fs_test.cs" />
     <Compile Include="glob_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
+    <Compile Include="package_init_external_test.cs" />
     <Compile Include="package_test_info.cs" />
     <Compile Include="readdir_test.cs" />
     <Compile Include="readfile_test.cs" />

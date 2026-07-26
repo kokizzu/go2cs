@@ -13,7 +13,8 @@ using go.testing;
 
 partial class fs_test_package {
 
-internal static fstest.MapFS testFsys = new fstest.MapFS(new map<@string, ж<fstest.MapFile>>{
+internal static fstest.MapFS testFsys;
+internal static void initᴛtestFsys() { testFsys = new fstest.MapFS(new map<@string, ж<fstest.MapFile>>{
     ["hello.txt"u8] = Ꮡ(new fstest.MapFile(
         Data: slice<byte>("hello, world"u8),
         Mode: 302,
@@ -24,7 +25,7 @@ internal static fstest.MapFS testFsys = new fstest.MapFS(new map<@string, ж<fst
         Mode: 302,
         ModTime: time.Now(),
         Sys: ᏑsysValue))
-});
+}); }
 
 internal static ж<nint> ᏑsysValue = new(default(nint));
 internal static ref nint sysValue => ref ᏑsysValue.Value;
