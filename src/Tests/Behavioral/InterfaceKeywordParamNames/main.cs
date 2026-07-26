@@ -40,9 +40,9 @@ internal static @string Guard(this frozen f, @string @lock, @string @base, nint 
 }
 
 internal static void exercise(swapper s) {
-    fmt.Println(s.CompareAndSwap((@string)"k", (nint)(2), (nint)(3)));
-    fmt.Println(s.CompareAndSwap((@string)"k", (nint)(1), (nint)(3)));
-    fmt.Println(s.CompareAndSwap((@string)"k", (nint)(3), (nint)(3)));
+    fmt.Println(s.CompareAndSwap((@string)"k"u8, (nint)(2), (nint)(3)));
+    fmt.Println(s.CompareAndSwap((@string)"k"u8, (nint)(1), (nint)(3)));
+    fmt.Println(s.CompareAndSwap((@string)"k"u8, (nint)(3), (nint)(3)));
     fmt.Println(s.Guard("L"u8, "B"u8, 7));
 }
 
@@ -50,7 +50,7 @@ internal static void Main() {
     exercise(new cellжswapper(Ꮡ(new cell(value: (nint)(1)))));
     exercise(new frozen(label: "static"u8));
     var c = Ꮡ(new cell(value: (nint)(42)));
-    fmt.Println(c.CompareAndSwap((@string)"direct", (nint)(42), (nint)(43)), c.Guard("l"u8, "b"u8, 1));
+    fmt.Println(c.CompareAndSwap((@string)"direct"u8, (nint)(42), (nint)(43)), c.Guard("l"u8, "b"u8, 1));
 }
 
 } // end main_package

@@ -11,7 +11,7 @@ internal static (nint result, bool recovered) safeDiv(nint a, nint b) {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println((@string)"  recovered:", r);
+                    fmt.Println((@string)"  recovered:"u8, r);
                     (result, recovered) = (-1, true);
                 }
             }

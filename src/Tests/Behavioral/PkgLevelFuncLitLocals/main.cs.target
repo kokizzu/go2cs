@@ -114,8 +114,8 @@ internal static void Main() {
     foreach (var (_, e) in table) {
         fmt.Println(e.name, e.f());
     }
-    fmt.Println((@string)"single", single());
-    fmt.Println((@string)"control", inDecl());
+    fmt.Println((@string)"single"u8, single());
+    fmt.Println((@string)"control"u8, inDecl());
 }
 
 } // end main_package

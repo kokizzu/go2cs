@@ -95,6 +95,14 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 			basicLitContext.u8StringOK = callContext.u8StringArgOK[i] && callArgs == nil
 			basicLitContext.sourceIsRuneArray = callContext.sourceIsRuneArray
 
+			// The argument slot tolerates a bare span only when the literal itself renders as one:
+			// an `any`/interface parameter (useGoStringArg — the combined `(@string)"…"u8` form),
+			// a non-empty-interface parameter (u8 off entirely) and a deferred call's generic
+			// type-parameter slot (callArgs != nil) all reject a raw ReadOnlySpan<byte>, so a
+			// literal CONCAT in those positions keeps its plain-string operands. See
+			// BasicLitContext.spanTargetUnsupported.
+			basicLitContext.spanTargetUnsupported = !callContext.u8StringArgOK[i] || callContext.useGoStringArg[i] || callArgs != nil
+
 			// A DEFERRED call's args feed generic deferǃ type parameters: a u8 span cannot be
 			// a generic type argument (u8StringOK forced off above), so a Go-string literal arg
 			// takes the explicit (@string) cast instead — otherwise the parameter infers as C#

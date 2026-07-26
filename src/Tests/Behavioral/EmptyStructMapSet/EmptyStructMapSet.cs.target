@@ -33,7 +33,7 @@ internal static void Main() {
     add(seen, 3);
     add(seen, 7);
     add(seen, 3);
-    fmt.Println((@string)"len:", len(seen));
+    fmt.Println((@string)"len:"u8, len(seen));
     foreach (var (_, k) in new nint[]{1, 3, 5, 7}.slice()) {
         fmt.Printf("contains(%d) = %t\n"u8, k, contains(seen, k));
     }
@@ -42,7 +42,7 @@ internal static void Main() {
         ["b"u8] = new()
     };
     lit["c"u8] = new EmptyStruct();
-    fmt.Println((@string)"lit len:", len(lit));
+    fmt.Println((@string)"lit len:"u8, len(lit));
     foreach (var (_, s) in new @string[]{"a", "b", "c", "d"}.slice()) {
         var (_, ok) = lit[s, ꟷ];
         fmt.Printf("lit[%s] = %t\n"u8, s, ok);
@@ -68,7 +68,7 @@ internal static void Main() {
     var (ch, chOK) = anyDone._<channel<EmptyStruct>>(ᐧ);
     ch.ᐸꟷ(new EmptyStruct());
     ᐸꟷ(done);
-    fmt.Println((@string)"chan assert:", chOK, len(done));
+    fmt.Println((@string)"chan assert:"u8, chOK, len(done));
 }
 
 } // end main_package

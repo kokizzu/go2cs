@@ -21,7 +21,7 @@ partial class main_package {
 }
 
 [GoRecv] internal static void note(this ref dep d, any x) {
-    fmt.Println((@string)"note:", d.label, x != default!);
+    fmt.Println((@string)"note:"u8, d.label, x != default!);
 }
 
 [GoType] partial struct stmt {
@@ -43,7 +43,7 @@ internal static void exec(this ж<stmt> Ꮡs) {
             Ꮡs.Value.d.note(Ꮡs);
         });
         if (Ꮡs.Value.cg != default!) {
-            fmt.Println((@string)"cg:", Ꮡs.Value.cg.tag(), Ꮡs.Value.id);
+            fmt.Println((@string)"cg:"u8, Ꮡs.Value.cg.tag(), Ꮡs.Value.id);
         }
     });
 }
@@ -51,7 +51,7 @@ internal static void exec(this ж<stmt> Ꮡs) {
 internal static void Main() {
     var s = Ꮡ(new stmt(d: Ꮡ(new dep(label: "d1"u8)), cg: new connGrabжgrabber(Ꮡ(new connGrab(name: "g1"u8))), id: 7));
     s.exec();
-    fmt.Println((@string)"done");
+    fmt.Println((@string)"done"u8);
 }
 
 } // end main_package

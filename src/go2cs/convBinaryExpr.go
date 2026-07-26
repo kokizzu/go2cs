@@ -954,9 +954,27 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 	// context (case-when clauses, equality inside varargs — `major == "0"u8`) keep their own
 	// operand rendering, which already binds golib's span-aware operators (a first-cut
 	// suppression of ALL kinds churned 212 stdlib files and risked @string↔string operator
-	// re-binding). The default context has u8StringOK=true, so every other path is unchanged.
-	concatSuppressed := !litContext.u8StringOK && binaryExpr.Op == token.ADD
+	// re-binding). The default context has spanTargetUnsupported=false, so every other path is
+	// unchanged. The signal is DEDICATED (see BasicLitContext.spanTargetUnsupported) rather than
+	// derived from `!u8StringOK`: a span-hostile slot may still render a STANDALONE literal in the
+	// combined `(@string)"…"u8` form it accepts, and the old coupling turned that rendering choice
+	// into a concat compile break.
+	concatSuppressed := litContext.spanTargetUnsupported && binaryExpr.Op == token.ADD
 	basicLitContext.u8StringOK = !concatSuppressed && v.isStringType(binaryExpr.X) && v.isStringType(binaryExpr.Y)
+
+	// Propagate to the OPERAND context so a nested concat is suppressed exactly where the old
+	// coupling suppressed it. That coupling read `!litContext.u8StringOK`, so the signal a child
+	// saw was ALWAYS its parent's freshly-computed operand u8 decision — never the grandparent's.
+	// Two shapes depend on both halves of that:
+	//   - u8 goes off merely because this node is not a string-string operator, and the child IS a
+	//     concat: `FullPath(d + "\\" + p[2:])` (outer `+` has a sub-slice operand) rendered its
+	//     inner `d + "\\"` literal plain — so the signal must be SET here.
+	//   - a non-ADD node RE-ESTABLISHES u8 under a suppressed parent: `lastErr == nil || fqdn ==
+	//     name + "."` (the `||`'s operands are bool, the `==`'s are strings) kept `"."u8` — so the
+	//     signal must NOT be inherited past a node that turned u8 back on.
+	// Assigning the negated operand decision reproduces both, which is what makes the split a pure
+	// refactor; the flips below are the only intended emission change.
+	basicLitContext.spanTargetUnsupported = !basicLitContext.u8StringOK
 
 	// A comparison against a stack string (sstring) KEEPS the `"…"u8` span form for the literal operand:
 	// sstring has zero-allocation comparison operators against ReadOnlySpan<byte>, so `s == "x"u8`

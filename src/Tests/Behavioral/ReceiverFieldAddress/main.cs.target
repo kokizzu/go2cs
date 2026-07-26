@@ -30,10 +30,10 @@ public static void Set(this ж<Counter> Ꮡc, int32 v) {
 internal static void Main() {
     ref var c = ref heap(new Counter(), out var Ꮡc);
     Ꮡc.Set(100);
-    fmt.Println((@string)"after Set:", c.Get());
-    fmt.Println((@string)"Add 10:", Ꮡc.Add(10));
-    fmt.Println((@string)"Add 5:", Ꮡc.Add(5));
-    fmt.Println((@string)"final:", c.Get());
+    fmt.Println((@string)"after Set:"u8, c.Get());
+    fmt.Println((@string)"Add 10:"u8, Ꮡc.Add(10));
+    fmt.Println((@string)"Add 5:"u8, Ꮡc.Add(5));
+    fmt.Println((@string)"final:"u8, c.Get());
 }
 
 } // end main_package

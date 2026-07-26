@@ -30,9 +30,9 @@ internal static void Main() {
     Counter c = default!;
     c.Add(5);
     c.Add(3);
-    fmt.Println((@string)"counter:", c.Value());
+    fmt.Println((@string)"counter:"u8, c.Value());
     Counter d = default!;
-    fmt.Println((@string)"zero:", d.Value());
+    fmt.Println((@string)"zero:"u8, d.Value());
 }
 
 } // end main_package

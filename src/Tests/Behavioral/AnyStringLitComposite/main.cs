@@ -16,45 +16,45 @@ partial class main_package {
 internal static void describe(@string prefix, any v) {
     switch (v.type()) {
     case @string s: {
-        fmt.Println(prefix, (@string)"string:", s);
+        fmt.Println(prefix, (@string)"string:"u8, s);
         break;
     }
     default: {
         var s = v;
-        fmt.Println(prefix, (@string)"other:", s);
+        fmt.Println(prefix, (@string)"other:"u8, s);
         break;
     }}
 }
 
 internal static void Main() {
-    var n = Ꮡ(new node(inner: (@string)"hi"));
-    var p = new pair("tag", (@string)"val");
-    var m = new map<@string, any>{["k"u8] = (@string)"mv"};
-    var mk = new map<any, nint>{[(@string)"ky"] = 7};
+    var n = Ꮡ(new node(inner: (@string)"hi"u8));
+    var p = new pair("tag"u8, (@string)"val"u8);
+    var m = new map<@string, any>{["k"u8] = (@string)"mv"u8};
+    var mk = new map<any, nint>{[(@string)"ky"u8] = 7};
     var s = new any[]{(@string)"a", (@string)"b"}.slice();
     var arr = new any[]{(@string)"x", (@string)"y"}.array();
-    var el = new node[]{new(inner: (@string)"e1")}.slice();
-    var ep = new pair[]{new("e2"u8, (@string)"e3")}.slice();
-    var pp = new ж<node>[]{Ꮡ(new node(inner: (@string)"p1"))}.slice();
-    var pq = new ж<pair>[]{Ꮡ(new pair("q1"u8, (@string)"q2"))}.slice();
-    var sp = new array<any>(3){[1] = (@string)"sp"};
+    var el = new node[]{new(inner: (@string)"e1"u8)}.slice();
+    var ep = new pair[]{new("e2"u8, (@string)"e3"u8)}.slice();
+    var pp = new ж<node>[]{Ꮡ(new node(inner: (@string)"p1"u8))}.slice();
+    var pq = new ж<pair>[]{Ꮡ(new pair("q1"u8, (@string)"q2"u8))}.slice();
+    var sp = new array<any>(3){[1] = (@string)"sp"u8};
     describe("keyed"u8, (~n).inner);
-    fmt.Println((@string)"label:", p.label);
+    fmt.Println((@string)"label:"u8, p.label);
     describe("positional"u8, p.value);
     describe("mapval"u8, m["k"u8]);
     foreach (var (k, v) in mk) {
         describe("mapkey"u8, k);
-        fmt.Println((@string)"mapkeyval:", v);
+        fmt.Println((@string)"mapkeyval:"u8, v);
     }
     describe("slice0"u8, s[0]);
     describe("slice1"u8, s[1]);
     describe("array0"u8, arr[0]);
     describe("array1"u8, arr[1]);
     describe("elided"u8, el[0].inner);
-    fmt.Println((@string)"elidedpos label:", ep[0].label);
+    fmt.Println((@string)"elidedpos label:"u8, ep[0].label);
     describe("elidedpos"u8, ep[0].value);
     describe("ptrelided"u8, (~pp[0]).inner);
-    fmt.Println((@string)"ptrelidedpos label:", (~pq[0]).label);
+    fmt.Println((@string)"ptrelidedpos label:"u8, (~pq[0]).label);
     describe("ptrelidedpos"u8, (~pq[0]).value);
     describe("sparse0"u8, sp[0]);
     describe("sparse1"u8, sp[1]);

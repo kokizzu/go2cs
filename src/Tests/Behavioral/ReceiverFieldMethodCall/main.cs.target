@@ -81,16 +81,16 @@ internal static void Main() {
     ref var fl = ref heap(new Flag(), out var Ꮡfl);
     fl.label = "hits"u8;
     Ꮡfl.Reset(10);
-    fmt.Println(fl.Label(), (@string)"start:", fl.Value());
-    fmt.Println((@string)"Incr:", Ꮡfl.Incr());
-    fmt.Println((@string)"Incr:", Ꮡfl.Incr());
-    fmt.Println((@string)"AddN 5:", Ꮡfl.AddN(5));
-    fmt.Println((@string)"final:", fl.Value());
-    fmt.Println((@string)"AddTwice 3:", Ꮡfl.of(Flag.Ꮡc).AddTwice(3));
-    fmt.Println((@string)"AddViaValue 2:", Ꮡfl.AddViaValue(2));
-    fmt.Println((@string)"ReadViaValue:", Ꮡfl.ReadViaValue());
-    fmt.Println((@string)"local value:", applyTwice(Ꮡfl.of(Flag.Ꮡc).Add, 1));
-    fmt.Println((@string)"case twin:", Ꮡfl.of(Flag.Ꮡc).add(1));
+    fmt.Println(fl.Label(), (@string)"start:"u8, fl.Value());
+    fmt.Println((@string)"Incr:"u8, Ꮡfl.Incr());
+    fmt.Println((@string)"Incr:"u8, Ꮡfl.Incr());
+    fmt.Println((@string)"AddN 5:"u8, Ꮡfl.AddN(5));
+    fmt.Println((@string)"final:"u8, fl.Value());
+    fmt.Println((@string)"AddTwice 3:"u8, Ꮡfl.of(Flag.Ꮡc).AddTwice(3));
+    fmt.Println((@string)"AddViaValue 2:"u8, Ꮡfl.AddViaValue(2));
+    fmt.Println((@string)"ReadViaValue:"u8, Ꮡfl.ReadViaValue());
+    fmt.Println((@string)"local value:"u8, applyTwice(Ꮡfl.of(Flag.Ꮡc).Add, 1));
+    fmt.Println((@string)"case twin:"u8, Ꮡfl.of(Flag.Ꮡc).add(1));
 }
 
 } // end main_package

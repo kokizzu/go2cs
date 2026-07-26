@@ -108,18 +108,18 @@ internal static @string mixedIntArms(slice<byte> data, bool atEOF) {
 }
 
 internal static void Main() {
-    fmt.Println((@string)"sizeFuncShape(true):", sizeFuncShape(true));
-    fmt.Println((@string)"sizeFuncShape(false):", sizeFuncShape(false));
-    fmt.Println((@string)"negatedArm(true):", negatedArm(true));
-    fmt.Println((@string)"negatedArm(false):", negatedArm(false));
-    fmt.Println((@string)"floatShape(true):", floatShape(true));
-    fmt.Println((@string)"floatShape(false):", floatShape(false));
-    fmt.Println((@string)"floatControl:", floatControl());
-    fmt.Println((@string)"intControl(true):", intControl(true));
-    fmt.Println((@string)"intControl(false):", intControl(false));
-    fmt.Println((@string)"mixedIntArms(hi,bye/true):", mixedIntArms(slice<byte>("hi,bye"u8), true));
-    fmt.Println((@string)"mixedIntArms(tail/true):", mixedIntArms(slice<byte>("tail"u8), true));
-    fmt.Println((@string)"mixedIntArms(tail/false):", mixedIntArms(slice<byte>("tail"u8), false));
+    fmt.Println((@string)"sizeFuncShape(true):"u8, sizeFuncShape(true));
+    fmt.Println((@string)"sizeFuncShape(false):"u8, sizeFuncShape(false));
+    fmt.Println((@string)"negatedArm(true):"u8, negatedArm(true));
+    fmt.Println((@string)"negatedArm(false):"u8, negatedArm(false));
+    fmt.Println((@string)"floatShape(true):"u8, floatShape(true));
+    fmt.Println((@string)"floatShape(false):"u8, floatShape(false));
+    fmt.Println((@string)"floatControl:"u8, floatControl());
+    fmt.Println((@string)"intControl(true):"u8, intControl(true));
+    fmt.Println((@string)"intControl(false):"u8, intControl(false));
+    fmt.Println((@string)"mixedIntArms(hi,bye/true):"u8, mixedIntArms(slice<byte>("hi,bye"u8), true));
+    fmt.Println((@string)"mixedIntArms(tail/true):"u8, mixedIntArms(slice<byte>("tail"u8), true));
+    fmt.Println((@string)"mixedIntArms(tail/false):"u8, mixedIntArms(slice<byte>("tail"u8), false));
 }
 
 } // end main_package

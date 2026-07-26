@@ -31,7 +31,7 @@ internal static (ж<item>, error) find(slice<item> xs, nint want) => func<(ж<it
 });
 
 internal static error closeIt(ж<nint> Ꮡp, nint tag) {
-    fmt.Println((@string)"closeIt", Ꮡp == nil, tag);
+    fmt.Println((@string)"closeIt"u8, Ꮡp == nil, tag);
     return default!;
 }
 
@@ -81,7 +81,7 @@ internal static void Main() => func((defer, recover) => {
 }
 
 internal static error close(this res h) {
-    fmt.Println((@string)"closed", h.id);
+    fmt.Println((@string)"closed"u8, h.id);
     return default!;
 }
 

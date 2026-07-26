@@ -17,18 +17,18 @@ internal static void Main() {
     printSquare(5);
     nint count = 1;
     goǃ(() => {
-        fmt.Println((@string)"Go count (closure):", count);
+        fmt.Println((@string)"Go count (closure):"u8, count);
     });
     count = 10;
-    fmt.Println((@string)"Count before Go:", count);
+    fmt.Println((@string)"Count before Go:"u8, count);
     time.Sleep(200);
     var done = new channel<EmptyStruct>(0);
     runPair(done);
     ᐸꟷ(done);
     var acc = Ꮡ(new accum(nil));
     bindAdd(acc);
-    fmt.Println((@string)"accum total:", (~acc).total);
-    fmt.Println((@string)"Main function");
+    fmt.Println((@string)"accum total:"u8, (~acc).total);
+    fmt.Println((@string)"Main function"u8);
 }
 
 [GoType] partial struct accum {
@@ -42,7 +42,7 @@ internal static void Main() {
 
 internal static void bindAdd(ж<accum> Ꮡa) {
     var add = (nint p1) => Ꮡa.add(p1);
-    fmt.Println((@string)"bound add:", add(5), add(7));
+    fmt.Println((@string)"bound add:"u8, add(5), add(7));
 }
 
 public static Action<@string> GetPrintLn() {
@@ -53,7 +53,7 @@ public static Action<@string> GetPrintLn() {
 
 internal static nint add(nint x, nint y) {
     nint result = x + y;
-    fmt.Println((@string)"Calculate:", result);
+    fmt.Println((@string)"Calculate:"u8, result);
     return result;
 }
 
@@ -61,19 +61,19 @@ internal static void runPair(channel<EmptyStruct> done) {
     @string tag = "pair"u8;
     var handler = (channel<EmptyStruct> ch, Action fn) => {
         fn();
-        fmt.Println((@string)"handled:", tag);
+        fmt.Println((@string)"handled:"u8, tag);
         ch.ᐸꟷ(new EmptyStruct());
     };
     var handlerʗ1 = handler;
     goǃ(handlerʗ1, done, () => {
-        fmt.Println((@string)"inner fn ran");
+        fmt.Println((@string)"inner fn ran"u8);
     });
 }
 
 internal static void printSquare(nint n) {
     goǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"Go thread square:", n * n);
     n++;
-    fmt.Println((@string)"Immediate n:", n);
+    fmt.Println((@string)"Immediate n:"u8, n);
 }
 
 } // end main_package

@@ -30,7 +30,7 @@ internal static void Main() {
     }
     fmt.Println(count);
     delete(m, "a"u8);
-    fmt.Println((@string)"delete ok");
+    fmt.Println((@string)"delete ok"u8);
     fmt.Println(m == default!);
     var e = new map<@string, nint>{};
     fmt.Println(e == default!);

@@ -49,7 +49,7 @@ internal static void Main() {
     fullBytes.ᐸꟷ(7);
     var noPeer = new channel<nint>(0);
     var fullAny = new channel<any>(1);
-    fullAny.ᐸꟷ((@string)"x");
+    fullAny.ᐸꟷ((@string)"x"u8);
     nint hit = 0;
     var selᴛ3 = chanByte(fullBytes, "1:byte-chan"u8).ᐸꟷ(200, ꓸꓸꓸ);
     var selᴛ4 = chanInt(noPeer, "2:recv-chan"u8);

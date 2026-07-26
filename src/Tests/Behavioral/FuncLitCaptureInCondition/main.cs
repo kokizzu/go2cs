@@ -18,23 +18,23 @@ internal static void Main() {
     var lookup = new map<nint, bool>{[2] = true, [5] = true};
     var lookupʗ1 = lookup;
     if (anyMatch(vals, (nint u) => lookupʗ1[u])) {
-        fmt.Println((@string)"if:", true);
+        fmt.Println((@string)"if:"u8, true);
     }
     {
         nint extra = 7;
         var lookupʗ3 = lookup;
         if (anyMatch(vals, (nint u) => lookupʗ3[u] || u == extra)) {
-            fmt.Println((@string)"if-init:", true);
+            fmt.Println((@string)"if-init:"u8, true);
         }
     }
     var lookupʗ5 = lookup;
     for (nint i = 0; i < 2 && anyMatch(vals, (nint u) => lookupʗ5[u + i]); i++) {
-        fmt.Println((@string)"for:", i);
+        fmt.Println((@string)"for:"u8, i);
     }
     nint n = 0;
     var lookupʗ7 = lookup;
     while (anyMatch(vals, (nint u) => lookupʗ7[u] && n < 2)) {
-        fmt.Println((@string)"while:", n);
+        fmt.Println((@string)"while:"u8, n);
         n++;
     }
 }

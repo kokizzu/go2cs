@@ -938,24 +938,43 @@ This is intentionally keyed on selector/index expression type instead of the roo
 ## Empty Interface (`any`)
 In Go, every type satisfies the method-less interface `interface{}`, now spelled `any`. This operates fundamentally like .NET's `System.Object`, so the converter maps the Go empty interface to `any` (a global alias for `object`). For example, a Go `func(i interface{})` becomes `void f(any i)`, and a `map[any]string` becomes `map<any, @string>`.
 
-### A string literal returned as `any` boxes through `@string`
-A Go string literal normally emits as a `"…"u8` `ReadOnlySpan<byte>` (which converts implicitly to `@string`). But a `ReadOnlySpan<byte>` has **no conversion to `object`**, so a string literal RETURNED (or returned as a tuple element) where the result type is the empty interface fails with CS0029 — testing's `func (f *chattyFlag) Get() any { return "test2json" }`. Such a result must box a golib `@string` (preserving Go string identity for a later `x.(string)` assertion), so `visitReturnStmt` renders the literal as `(@string)"…"` for an empty-interface result element:
+### A string literal in an `any` slot boxes through `@string` — as `(@string)"…"u8`
+A Go string literal normally emits as a `"…"u8` `ReadOnlySpan<byte>` (which converts implicitly to `@string`). But a `ReadOnlySpan<byte>` has **no conversion to `object`**, so a string literal RETURNED (or returned as a tuple element) where the result type is the empty interface fails with CS0029 — testing's `func (f *chattyFlag) Get() any { return "test2json" }`. Such a result must box a golib `@string` (preserving Go string identity for a later `x.(string)` assertion), so `visitReturnStmt` renders the literal as `(@string)"…"u8` for an empty-interface result element:
 
 ```csharp
 [GoRecv] internal static any Get(this ref chattyFlag f) {
     if (f.json) {
-        return (@string)"test2json";   // NOT "test2json"u8 (CS0029)
+        return (@string)"test2json"u8;   // NOT a BARE "test2json"u8 (CS0029)
     }
     return f.on;
 }
 ```
 
-`resultParamIsInterface` excludes the empty interface (`andNotEmptyInterface`), so the interface-conversion arm never fires for `any`; the per-element context sets `u8StringOK` off and `castToGoString` on instead. Only string basic-literals consult those flags, so a non-string `any` result is unaffected. Also corrects a latent semantic bug in the multi-result form (`return "<no value>", true` from a `(any, bool)` result rendered a raw C# string, which would fail a Go `x.(string)` assertion). Guarded by `InterfaceCasting`.
+**The cast and the `u8` suffix are independent decisions.** The cast is what the slot requires — it turns
+the span into an `@string`, which boxes with Go's `string` dynamic type. The suffix then just decides where
+the literal's *bytes* come from: `u8` makes them a compile-time constant in the assembly's data section,
+while a bare C# `"…"` is a UTF-16 constant that `Encoding.UTF8.GetBytes` has to transcode **on every
+evaluation** of the site (measured 2.1–2.4× for ASCII, 4.2× for non-ASCII). The two were coupled for a
+while — the emitter derived "no `u8`" from "needs the cast" — and every `any` position paid the transcode.
+They are now separate flags (`castToGoString`, `u8StringOK`), and every `any` slot takes the combined form.
+
+The coupling had a second, load-bearing consumer: `convBinaryExpr` suppressed `u8` inside a string
+**concatenation** whenever the enclosing slot had `u8` off, because two u8 operands fold (C# folds UTF-8
+literal constants) into a single `ReadOnlySpan<byte>` that then has no boxing conversion — `print("\n" +
+"\t")` in runtime's `newstack` diagnostics is CS1503. Splitting the flags would have silently re-enabled
+`u8` there, a **compile break that CNR cannot surface** (the emitted text is legal-looking; only the corpus
+build fails). Concat suppression therefore has its own signal, `BasicLitContext.spanTargetUnsupported`,
+which says "this slot cannot hold a bare span" and is set by every span-hostile site — `any` positions,
+ValueTuple elements, attribute (struct-tag) arguments, `panic`'s object parameter, a deferred call's
+generic type-parameter slot — independently of how a STANDALONE literal renders there. It propagates into
+nested operands, so `"a" + "b" + c` stays suppressed all the way down.
+
+`resultParamIsInterface` excludes the empty interface (`andNotEmptyInterface`), so the interface-conversion arm never fires for `any`; the per-element context sets `castToGoString` on (and leaves `u8StringOK` on) instead. Only string basic-literals consult those flags, so a non-string `any` result is unaffected. Also corrects a latent semantic bug in the multi-result form (`return "<no value>", true` from a `(any, bool)` result rendered a raw C# string, which would fail a Go `x.(string)` assertion). Guarded by `InterfaceCasting`.
 
 The same boxing applies to an **assignment** whose target's static type is the empty interface — a plain
 local (`arg = "<nil>"`, go/types format.go's sprintf over an `any` range variable, CS0029), a
 selector/index target (`h.value = "field"`), and a mixed-statement reassignment all render the literal
-`(@string)"…"`. `visitAssignStmt` threads the same `u8StringOK`-off / `castToGoString`-on literal context
+`(@string)"…"u8`. `visitAssignStmt` threads the same `castToGoString`-on literal context
 into each RHS conversion site when `lhsIsEmptyInterface` reports the target is `any` (the NON-empty
 interface wrap stays with `convertExprToInterfaceType`, which the empty interface deliberately bypasses).
 (Guarded by the `AnyStringLitAssign` behavioral test — an `any` local, an `any`-typed range variable, and
@@ -977,19 +996,22 @@ sp := [3]any{1: "sp"}             // sparse-array element
 ```
 
 ```csharp
-var p  = new pair("tag", (@string)"val");            // NOT bare "val" (wrong boxed identity)
-var n  = Ꮡ(new node(inner: (@string)"hi"));          // NOT "hi"u8 (CS1503)
-var m  = new map<@string, any>{["k"u8] = (@string)"mv"};
-var mk = new map<any, nint>{[(@string)"ky"] = 7};
+var p  = new pair("tag"u8, (@string)"val"u8);        // NOT bare "val" (wrong boxed identity)
+var n  = Ꮡ(new node(inner: (@string)"hi"u8));        // NOT a BARE "hi"u8 (CS1503)
+var m  = new map<@string, any>{["k"u8] = (@string)"mv"u8};
+var mk = new map<any, nint>{[(@string)"ky"u8] = 7};
 var s  = new any[]{(@string)"a", (@string)"b"}.slice();
-var sp = new array<any>(3){[1] = (@string)"sp"};
+var sp = new array<any>(3){[1] = (@string)"sp"u8};
 ```
 
+(`p`'s FIRST element is the plain `string` field — a positional struct element in a `string` slot now
+renders `u8` too, matching what the keyed and elided forms already emitted; the slice/array `any`
+ELEMENT form is the one position still on the bare-cast rendering.)
+
 Keyed elements resolve their target slot in `convKeyValueExpr` (struct field via `info.Uses`; map/sparse
-element and map key via the threaded composite type) and take the same `u8StringOK`-off /
-`castToGoString`-on literal context; positional struct fields and slice/array elements flip the
-per-element flags (`u8StringArgOK` off, `useGoStringArg` on) that `convExprList` feeds each element's
-literal context. A TYPE-PARAMETER slot is excluded even though its underlying constraint is an
+element and map key via the threaded composite type) and take the same `castToGoString`-on literal
+context; positional struct fields and slice/array elements flip the per-element flags
+(`useGoStringArg` on, `u8StringArgOK` left on) that `convExprList` feeds each element's literal context. A TYPE-PARAMETER slot is excluded even though its underlying constraint is an
 interface (`isEmptyInterfaceTarget`) — a `~string`-constrained field takes the literal directly. Only
 string basic-literals are affected; every non-`any` slot keeps its exact prior form. (Guarded by the
 `AnyStringLitComposite` behavioral test — all the shapes above, each read back through a `string`
@@ -2480,6 +2502,28 @@ return ((errorString)(@string)"kaboom"u8);
 ```
 
 This is the form the runtime uses for every `panic(errorString("…"))` / `plainError("…")`. (Guarded by the behavioral test `NamedStringConversion`.)
+
+### A POSITIONAL struct-composite element in a `string` field renders `u8`
+Go requires a positional composite literal to list every field in order, so element *i* is field *i*.
+A string-literal element whose field is a plain `string` renders as the `u8` span, which binds the
+generated constructor's `@string` parameter through one implicit conversion:
+
+```go
+type StructuralError struct{ Msg string }   // encoding/asn1
+return StructuralError{"empty integer"}
+```
+```csharp
+return new StructuralError("empty integer"u8);
+```
+
+KEYED elements (`fileListEntry{name: "./"}`) and ELIDED positional elements (`[]pair{{"e2", …}}`)
+already emitted `u8` — they route through `convKeyValueExpr` and the elided element context
+respectively — so this only closes the TYPED positional gap, where the element stayed a bare C#
+string that `Encoding.UTF8.GetBytes` transcoded on every evaluation. It was the corpus's last
+converter-emitted bare-UTF-16 literal class in a constructor position: 83 sites across 9 types
+(asn1's `StructuralError`/`SyntaxError`, net/http's `ProtocolError`/`contextKey`, math/big's
+`ErrNaN`, encoding/xml's `UnmarshalError`, net/url's `Error`, …). An `any` field keeps the boxed
+`(@string)"…"u8` form (`markAnyFieldLits` runs after and overrides).
 
 ### Converting a string literal to a named `[]byte` / `[]rune` type
 The byte/rune-slice sibling of the named-string rule above: a string **literal** converting to a named type whose underlying is `[]byte` or `[]rune` — `htmlSig("<!DOCTYPE HTML")` where `type htmlSig []byte` (net/http `sniff.go`'s signature table) — cannot cast directly either. The `u8` span converts to neither the `[GoType]` wrapper (whose implicit operator takes exactly its underlying `slice<byte>`/`slice<rune>`) nor through `@string` in one hop (C# chains at most one user-defined conversion — CS0030). The converter materializes the underlying slice exactly the way the plain `[]byte("…")` conversion does (the `slice<T>(T[])` builtin over the literal's `@string`), and the wrapper's own operator then applies:

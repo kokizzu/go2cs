@@ -19,8 +19,8 @@ internal static void Main() {
         sum += fib(34);
     }
     var elapsed = time.Now().UnixNano() - start;
-    fmt.Println((@string)"checksum:", sum);
-    fmt.Println((@string)"elapsed_ns:", elapsed);
+    fmt.Println((@string)"checksum:"u8, sum);
+    fmt.Println((@string)"elapsed_ns:"u8, elapsed);
 }
 
 } // end main_package

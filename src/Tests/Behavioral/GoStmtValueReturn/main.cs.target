@@ -29,18 +29,18 @@ internal static void emit(channel<nint> @out) {
 internal static void Main() {
     var @out = new channel<nint>(0);
     goǃ((ᴛ1, ᴛ2, ᴛ3) => sum(ᴛ1, ᴛ2, ᴛ3), @out, 3, 4);
-    fmt.Println((@string)"sum:", ᐸꟷ(@out));
+    fmt.Println((@string)"sum:"u8, ᐸꟷ(@out));
     goǃ((ᴛ1, ᴛ2) => pair(ᴛ1, ᴛ2), @out, 6);
-    fmt.Println((@string)"pair:", ᐸꟷ(@out));
+    fmt.Println((@string)"pair:"u8, ᐸꟷ(@out));
     goǃ(() => nib());
-    fmt.Println((@string)"nib:", ᐸꟷ(gch));
+    fmt.Println((@string)"nib:"u8, ᐸꟷ(gch));
     var outʗ1 = @out;
     goǃ(() => {
         outʗ1.ᐸꟷ(1);
     });
-    fmt.Println((@string)"lit:", ᐸꟷ(@out));
+    fmt.Println((@string)"lit:"u8, ᐸꟷ(@out));
     goǃ(emit, @out);
-    fmt.Println((@string)"emit:", ᐸꟷ(@out));
+    fmt.Println((@string)"emit:"u8, ᐸꟷ(@out));
 }
 
 } // end main_package

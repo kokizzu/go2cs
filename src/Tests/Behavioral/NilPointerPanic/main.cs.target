@@ -86,7 +86,7 @@ internal static void Main() {
     @catch("nil-compare"u8, () => {
         fmt.Println(pʗ11 == nil, bʗ3.p == nil, nodesʗ3[0] == nil);
     });
-    fmt.Println((@string)"still running:", real.label());
+    fmt.Println((@string)"still running:"u8, real.label());
 }
 
 } // end main_package

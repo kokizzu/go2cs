@@ -19,7 +19,7 @@ internal static slice<pair> build(slice<nint> lengths) {
     foreach (var (_, p) in pairs) {
         length += p.length;
     }
-    fmt.Println((@string)"total length:", length);
+    fmt.Println((@string)"total length:"u8, length);
     return pairs;
 }
 

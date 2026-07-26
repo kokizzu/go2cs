@@ -113,13 +113,27 @@ type BasicLitContext struct {
 	u8StringOK        bool
 	sourceIsRuneArray bool
 	castToGoString    bool
+
+	// spanTargetUnsupported marks a slot that cannot accept a bare `ReadOnlySpan<byte>` value —
+	// an `any`/interface (object) position, a ValueTuple element, an attribute argument, panic's
+	// object parameter. It is the signal convBinaryExpr uses to suppress the `u8` form inside a
+	// string CONCATENATION, whose RESULT lands in that slot: two u8 literal operands fold to a
+	// single span (C# folds utf8 literal constants), which then has no boxing conversion to
+	// object — `print("\n" + "\t")` in runtime's newstack diagnostics is CS1503. It was formerly
+	// derived from `!u8StringOK`, which coupled the two: flipping a site's literal rendering to
+	// the combined `(@string)"…"u8` form (which those slots DO accept, since the cast makes it an
+	// @string) would silently re-enable u8 inside its concats and break the build. The two are now
+	// independent — the literal flags say how a STANDALONE literal renders, this says whether the
+	// slot tolerates a span — and every site that renders a literal for a span-hostile slot sets it.
+	spanTargetUnsupported bool
 }
 
 func DefaultBasicLitContext() BasicLitContext {
 	return BasicLitContext{
-		u8StringOK:        true,
-		sourceIsRuneArray: false,
-		castToGoString:    false,
+		u8StringOK:            true,
+		sourceIsRuneArray:     false,
+		castToGoString:        false,
+		spanTargetUnsupported: false,
 	}
 }
 

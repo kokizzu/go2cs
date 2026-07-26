@@ -32,7 +32,7 @@ internal static void Main() => func((defer, recover) => {
     var drainedʗ1 = drained;
     defer(() => {
         var (v, open) = ᐸꟷ(drainedʗ1, ꟷ);
-        fmt.Println((@string)"after close:", v, open);
+        fmt.Println((@string)"after close:"u8, v, open);
     });
     deferǃ(ᴛ1 => close(ᴛ1), drained, defer);
     deferǃ(GetPrintLn(), (@string)"Fifth", defer);
@@ -43,11 +43,11 @@ internal static void Main() => func((defer, recover) => {
     fmt.Println(s2, e2, (~c).total);
     var sm = Ꮡ(new sema(nil));
     acquireAndWork(sm);
-    fmt.Println((@string)"after:", (~sm).held);
+    fmt.Println((@string)"after:"u8, (~sm).held);
     watchAndSend(sm);
-    fmt.Println((@string)"sent:", ᐸꟷ((~sm).@out), (@string)"| held:", (~sm).held);
-    fmt.Println((@string)"notify:", notifyAll(1, 2, 3));
-    fmt.Println((@string)"Main function");
+    fmt.Println((@string)"sent:"u8, ᐸꟷ((~sm).@out), (@string)"| held:"u8, (~sm).held);
+    fmt.Println((@string)"notify:"u8, notifyAll(1, 2, 3));
+    fmt.Println((@string)"Main function"u8);
 });
 
 [GoType] partial struct sema {
@@ -57,7 +57,7 @@ internal static void Main() => func((defer, recover) => {
 
 [GoRecv] internal static void release(this ref sema s) {
     s.held = false;
-    fmt.Println((@string)"sema released");
+    fmt.Println((@string)"sema released"u8);
 }
 
 [GoRecv] internal static void send(this ref sema s, nint n) {
@@ -70,10 +70,10 @@ internal static void watchAndSend(ж<sema> Ꮡs) => func((defer, recover) => {
     s.@out = new channel<nint>(2);
     s.held = true;
     goǃ(Ꮡs.send, (nint)(7));
-    fmt.Println((@string)"sent-first:", ᐸꟷ(s.@out));
+    fmt.Println((@string)"sent-first:"u8, ᐸꟷ(s.@out));
     deferǃ(Ꮡs.send, (nint)(9), defer);
     defer(Ꮡs.release);
-    fmt.Println((@string)"watching, held:", s.held);
+    fmt.Println((@string)"watching, held:"u8, s.held);
 });
 
 internal static void acquireAndWork(ж<sema> Ꮡs) => func((defer, recover) => {
@@ -81,7 +81,7 @@ internal static void acquireAndWork(ж<sema> Ꮡs) => func((defer, recover) => {
 
     s.held = true;
     defer(Ꮡs.release);
-    fmt.Println((@string)"working, held:", s.held);
+    fmt.Println((@string)"working, held:"u8, s.held);
 });
 
 internal static nint notifyAll(params ꓸꓸꓸnint valsʗp) => func(ref valsʗp, (ref ꓸꓸꓸnint valsʗp, Defer defer, Recover recover) => {

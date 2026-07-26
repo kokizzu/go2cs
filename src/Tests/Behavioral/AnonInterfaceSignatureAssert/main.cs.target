@@ -54,7 +54,7 @@ internal static (bool single, bool multi) classify(any v) {
 }
 
 internal static void Main() {
-    var e1 = new simpleErr("boom");
+    var e1 = new simpleErr("boom"u8);
     var m = new multiWrap(errs: new error[]{e1}.slice());
     var s = new singleWrap(err: e1);
     var (ms, mm) = classify(m);
@@ -65,12 +65,12 @@ internal static void Main() {
     fmt.Printf("simpleErr:  single=%v multi=%v\n"u8, es, em);
     {
         var (u, ok) = ((any)m)._<main_type>(ᐧ); if (ok) {
-            fmt.Println((@string)"multi unwrap count:", len(u.Unwrap()));
+            fmt.Println((@string)"multi unwrap count:"u8, len(u.Unwrap()));
         }
     }
     {
         var (u, ok) = ((any)s)._<main_typeᴛ1>(ᐧ); if (ok) {
-            fmt.Println((@string)"single unwrap:", u.Unwrap());
+            fmt.Println((@string)"single unwrap:"u8, u.Unwrap());
         }
     }
 }

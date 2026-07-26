@@ -42,15 +42,15 @@ internal static void Main() {
     fmt.Println(m.Marshal());
     {
         var (m2, ok) = s._<Marshaler>(ᐧ); if (ok) {
-            fmt.Println((@string)"ok", m2.Marshal());
+            fmt.Println((@string)"ok"u8, m2.Marshal());
         }
     }
     Stringish s2 = new otherжStringish(Ꮡ(new other(nil)));
     {
         var (_, ok) = s2._<Marshaler>(ᐧ); if (ok){
-            fmt.Println((@string)"unexpected: other is Marshaler");
+            fmt.Println((@string)"unexpected: other is Marshaler"u8);
         } else {
-            fmt.Println((@string)"other is not Marshaler");
+            fmt.Println((@string)"other is not Marshaler"u8);
         }
     }
 }

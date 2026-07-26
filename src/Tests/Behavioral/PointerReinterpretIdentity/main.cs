@@ -47,7 +47,7 @@ internal static void Main() {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println((@string)"caught:", r);
+                    fmt.Println((@string)"caught:"u8, r);
                 }
             }
         });
@@ -56,7 +56,7 @@ internal static void Main() {
         ref var cp = ref heap<builder>(out var Ꮡcp);
         cp = src;
         Ꮡcp.write("more"u8);
-        fmt.Println((@string)"unreachable");
+        fmt.Println((@string)"unreachable"u8);
     })))();
 }
 

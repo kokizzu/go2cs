@@ -167,11 +167,14 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 			}
 
 			context := DefaultBasicLitContext()
-			context.u8StringOK = !isInterfaceType
 			// An EMPTY-interface declared type boxes a string LITERAL through @string
-			// (`var v any = "x"` → `(@string)"x"`), the same rendering the assignment form takes —
-			// a bare C# string boxes System.String where Go boxes `string`.
+			// (`var v any = "x"` → `(@string)"x"u8`), the same rendering the assignment form takes —
+			// a bare C# string boxes System.String where Go boxes `string`, and the cast is what
+			// lets the u8 span reach the object slot at all. A NON-EMPTY interface target keeps
+			// today's bare form (its value needs an adapter, not an @string).
+			context.u8StringOK = !isInterfaceType || isAnyType
 			context.castToGoString = isAnyType
+			context.spanTargetUnsupported = isInterfaceType
 
 			if len(valueSpec.Values) <= i {
 				def := v.info.Defs[ident]

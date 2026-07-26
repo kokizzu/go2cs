@@ -34,8 +34,8 @@ internal static void Main() {
     var start = time.Now().UnixNano();
     nint total = run(10000000);
     var elapsed = time.Now().UnixNano() - start;
-    fmt.Println((@string)"checksum:", total);
-    fmt.Println((@string)"elapsed_ns:", elapsed);
+    fmt.Println((@string)"checksum:"u8, total);
+    fmt.Println((@string)"elapsed_ns:"u8, elapsed);
 }
 
 } // end main_package

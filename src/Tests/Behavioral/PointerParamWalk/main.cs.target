@@ -87,14 +87,14 @@ internal static void Main() {
     var x = Ꮡ(new node(val: 100));
     var y = Ꮡ(new node(val: 20));
     x.Value.next = y;
-    fmt.Println((@string)"chain:", walkChain(x));
+    fmt.Println((@string)"chain:"u8, walkChain(x));
     var dup = Ꮡ(new node(val: 5));
-    fmt.Println((@string)"visitLocal:", visitLocal(new ж<node>[]{dup, dup, x}.slice()));
+    fmt.Println((@string)"visitLocal:"u8, visitLocal(new ж<node>[]{dup, dup, x}.slice()));
     slice<ж<node>> list = default!;
     list = collect(list, a);
     list = collect(list, b);
     a.Value.val = 11;
-    fmt.Println((@string)"collect:", (~list[0]).val, (~list[1]).val);
+    fmt.Println((@string)"collect:"u8, (~list[0]).val, (~list[1]).val);
 }
 
 } // end main_package

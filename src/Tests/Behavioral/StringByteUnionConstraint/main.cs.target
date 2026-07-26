@@ -29,18 +29,18 @@ internal static void Main() {
     var bs = slice<byte>(str);
     @string hel = "hel"u8;
     var helBytes = slice<byte>(hel);
-    fmt.Println((@string)"sum(string):", byteSum(str));
-    fmt.Println((@string)"sum([]byte):", byteSum(bs));
-    fmt.Println((@string)"prefix string:", prefixMatch(str, hel));
-    fmt.Println((@string)"prefix []byte:", prefixMatch(bs, helBytes));
-    fmt.Println((@string)"prefix miss:", prefixMatch(str, (@string)"xyz"));
-    fmt.Println((@string)"prefix too long:", prefixMatch(str, (@string)"hello world"));
-    fmt.Println((@string)"last(string):", lastByte(str));
-    fmt.Println((@string)"last([]byte):", lastByte(bs));
-    fmt.Println((@string)"sum:", digitSum((@string)"12:34"), digitSum(slice<byte>("56:78"u8)));
-    fmt.Println((@string)"head:", headSum((@string)"x98:76"), headSum(slice<byte>("y10:23"u8)));
-    fmt.Println((@string)"appendRun(string):", ((@string)appendRun(default!, (@string)"abcde")));
-    fmt.Println((@string)"appendRun([]byte):", ((@string)appendRun(slice<byte>("<"u8), slice<byte>("abcde"u8))));
+    fmt.Println((@string)"sum(string):"u8, byteSum(str));
+    fmt.Println((@string)"sum([]byte):"u8, byteSum(bs));
+    fmt.Println((@string)"prefix string:"u8, prefixMatch(str, hel));
+    fmt.Println((@string)"prefix []byte:"u8, prefixMatch(bs, helBytes));
+    fmt.Println((@string)"prefix miss:"u8, prefixMatch(str, (@string)"xyz"));
+    fmt.Println((@string)"prefix too long:"u8, prefixMatch(str, (@string)"hello world"));
+    fmt.Println((@string)"last(string):"u8, lastByte(str));
+    fmt.Println((@string)"last([]byte):"u8, lastByte(bs));
+    fmt.Println((@string)"sum:"u8, digitSum((@string)"12:34"), digitSum(slice<byte>("56:78"u8)));
+    fmt.Println((@string)"head:"u8, headSum((@string)"x98:76"), headSum(slice<byte>("y10:23"u8)));
+    fmt.Println((@string)"appendRun(string):"u8, ((@string)appendRun(default!, (@string)"abcde")));
+    fmt.Println((@string)"appendRun([]byte):"u8, ((@string)appendRun(slice<byte>("<"u8), slice<byte>("abcde"u8))));
 }
 
 internal static nint digitSum<T>(T s)

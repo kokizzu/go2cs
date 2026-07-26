@@ -7,21 +7,21 @@ partial class main_package {
 internal static Action makeGreeter(@string name) {
     return () => func((defer, recover) => {
         deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"bye", name, defer);
-        fmt.Println((@string)"hi", name);
+        fmt.Println((@string)"hi"u8, name);
     });
 }
 
 internal static void Main() {
     var f = () => func((defer, recover) => {
         deferǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"deferred", defer);
-        fmt.Println((@string)"body");
+        fmt.Println((@string)"body"u8);
     });
     f();
     var divPrint = (nint a, nint b) => func((defer, recover) => {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println((@string)"closure recovered:", r);
+                    fmt.Println((@string)"closure recovered:"u8, r);
                 }
             }
         });
@@ -64,13 +64,13 @@ internal static void Main() {
     };
     run(() => func((defer, recover) => {
         deferǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"arg-closure deferred", defer);
-        fmt.Println((@string)"arg-closure body");
+        fmt.Println((@string)"arg-closure body"u8);
     }));
     ((Action)(() => func((defer, recover) => {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println((@string)"outer recovered:", r);
+                    fmt.Println((@string)"outer recovered:"u8, r);
                 }
             }
         });
@@ -82,9 +82,9 @@ internal static void Main() {
     });
     var (v, err) = fetch();
     var tk = makeTask(5);
-    fmt.Println((@string)"task:", (~tk).fn(), (~tk).name);
-    fmt.Println((@string)"fetched:", v, err);
-    fmt.Println((@string)"done");
+    fmt.Println((@string)"task:"u8, (~tk).fn(), (~tk).name);
+    fmt.Println((@string)"fetched:"u8, v, err);
+    fmt.Println((@string)"done"u8);
 }
 
 [GoType] partial struct task {

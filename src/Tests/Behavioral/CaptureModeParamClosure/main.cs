@@ -75,14 +75,14 @@ internal static (nint total, @string log) deferMethodValue(Tally tʗp, nint n) {
 internal static void Main() {
     var t = new Tally(total: 5, log: "start"u8);
     var (before, after, log) = closureRead(t, 3);
-    fmt.Println((@string)"closureRead:", before, after, log);
+    fmt.Println((@string)"closureRead:"u8, before, after, log);
     (var total, log) = closureWrite(t, 3);
-    fmt.Println((@string)"closureWrite:", total, log);
+    fmt.Println((@string)"closureWrite:"u8, total, log);
     (total, log) = deferClosure(t, 3);
-    fmt.Println((@string)"deferClosure:", total, log);
+    fmt.Println((@string)"deferClosure:"u8, total, log);
     (total, log) = deferMethodValue(t, 3);
-    fmt.Println((@string)"deferMethodValue:", total, log);
-    fmt.Println((@string)"caller copy untouched:", t.total, t.log);
+    fmt.Println((@string)"deferMethodValue:"u8, total, log);
+    fmt.Println((@string)"caller copy untouched:"u8, t.total, t.log);
 }
 
 } // end main_package

@@ -34,17 +34,17 @@ internal static void Main() {
     fooer v = new gadget(1);
     {
         var (_, ok) = v._<main_type>(ᐧ); if (ok){
-            fmt.Println((@string)"value-widened-wrong");
+            fmt.Println((@string)"value-widened-wrong"u8);
         } else {
-            fmt.Println((@string)"value-not-widened-ok");
+            fmt.Println((@string)"value-not-widened-ok"u8);
         }
     }
     fooer p = new gadgetжfooer(Ꮡ(new gadget(2)));
     {
         var (b, ok) = p._<main_typeᴛ1>(ᐧ); if (ok){
-            fmt.Println((@string)"pointer-widened-ok", b.Foo(), b.Bar());
+            fmt.Println((@string)"pointer-widened-ok"u8, b.Foo(), b.Bar());
         } else {
-            fmt.Println((@string)"pointer-not-widened-wrong");
+            fmt.Println((@string)"pointer-not-widened-wrong"u8);
         }
     }
 }

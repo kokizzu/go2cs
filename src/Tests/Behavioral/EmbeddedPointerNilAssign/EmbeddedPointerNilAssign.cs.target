@@ -33,7 +33,7 @@ internal static void Main() {
     var sʗ1 = s;
     ((Action)(() => func((defer, recover) => {
         defer(() => {
-            fmt.Println((@string)"recovered:", recover());
+            fmt.Println((@string)"recovered:"u8, recover());
         });
         fmt.Println((~sʗ1).name);
     })))();

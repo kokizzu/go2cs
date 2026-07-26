@@ -33,10 +33,10 @@ public static float64 Abs(this MyAbser myAbs) {
 }
 
 internal static void Main() {
-    var a = new MyCustomError("New One", new MyAbser(nil), new MyError(time.Now(), "Hello"), default!);
+    var a = new MyCustomError("New One"u8, new MyAbser(nil), new MyError(time.Now(), "Hello"u8), default!);
     a.Abs();
     a.Message = "New"u8;
-    fmt.Println((@string)"MyCustomError method =", a.Abs());
+    fmt.Println((@string)"MyCustomError method ="u8, a.Abs());
 }
 
 } // end main_package

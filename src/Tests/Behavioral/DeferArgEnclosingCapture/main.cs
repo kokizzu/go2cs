@@ -52,7 +52,7 @@ internal static void Main() {
         }, baseʗ3);
     }))();
     ᐸꟷ(done);
-    fmt.Println((@string)"source untouched:", @base.total, @base.log);
+    fmt.Println((@string)"source untouched:"u8, @base.total, @base.log);
 }
 
 } // end main_package

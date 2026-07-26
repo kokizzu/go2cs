@@ -63,21 +63,21 @@ internal static void rangeValues() {
 
         row[0] = 99;
     }
-    fmt.Println((@string)"rangeValues:", m);
+    fmt.Println((@string)"rangeValues:"u8, m);
     var s = new array<nint>[]{new nint[]{7, 8, 9}.array()}.slice();
     foreach (var (_, vᴛ2) in s) {
         var row = vᴛ2.Clone();
 
         row[1] = 99;
     }
-    fmt.Println((@string)"rangeSlice:", s);
+    fmt.Println((@string)"rangeSlice:"u8, s);
     var deep = new array<array<nint>>[]{new array<nint>[]{new nint[]{1, 2, 3}.array(), new nint[]{4, 5, 6}.array()}.array(), new array<nint>[]{new nint[]{7, 8, 9}.array(), new nint[]{10, 11, 12}.array()}.array()}.array();
     foreach (var (_, vᴛ3) in deep) {
         var plane = vᴛ3.Clone();
 
         plane[0][0] = 99;
     }
-    fmt.Println((@string)"rangeDeep:", deep);
+    fmt.Println((@string)"rangeDeep:"u8, deep);
 }
 
 internal static void rangeNamed() {
@@ -87,7 +87,7 @@ internal static void rangeNamed() {
 
         r[0] = 99;
     }
-    fmt.Println((@string)"rangeNamed:", rows[0][0], rows[1][0]);
+    fmt.Println((@string)"rangeNamed:"u8, rows[0][0], rows[1][0]);
 }
 
 internal static void rangeHeapBoxed() {
@@ -99,7 +99,7 @@ internal static void rangeHeapBoxed() {
         var p = Ꮡrow;
         p.Value[0] = 88;
     }
-    fmt.Println((@string)"rangeHeapBoxed:", m);
+    fmt.Println((@string)"rangeHeapBoxed:"u8, m);
 }
 
 internal static void rangeAssignExisting() {
@@ -112,7 +112,7 @@ internal static void rangeAssignExisting() {
 
         row[2] = 99;
     }
-    fmt.Println((@string)"rangeAssignExisting:", m, row, i);
+    fmt.Println((@string)"rangeAssignExisting:"u8, m, row, i);
 }
 
 internal static void mapKeyRange() {
@@ -122,7 +122,7 @@ internal static void mapKeyRange() {
 
         k[0] = 99;
     }
-    fmt.Println((@string)"mapKeyRange:", mk[new nint[]{1, 2}.array()]);
+    fmt.Println((@string)"mapKeyRange:"u8, mk[new nint[]{1, 2}.array()]);
 }
 
 internal static void compositeElements() {
@@ -130,70 +130,70 @@ internal static void compositeElements() {
     var b = new nint[]{4, 5, 6}.array();
     var m = new array<nint>[]{a.Clone(), b.Clone()}.array();
     m[0][0] = 99;
-    fmt.Println((@string)"compositeArray:", a, m[0]);
+    fmt.Println((@string)"compositeArray:"u8, a, m[0]);
     var s = new array<nint>[]{a.Clone(), b.Clone()}.slice();
     s[1][0] = 99;
-    fmt.Println((@string)"compositeSlice:", b, s[1]);
+    fmt.Println((@string)"compositeSlice:"u8, b, s[1]);
 }
 
 internal static void compositeStructFields() {
     var a = new nint[]{1, 2, 3}.array();
     var s1 = new holder(arr: a.Clone());
     s1.arr[0] = 99;
-    fmt.Println((@string)"structKeyed:", a, s1.arr);
+    fmt.Println((@string)"structKeyed:"u8, a, s1.arr);
     var s2 = new holder(a.Clone());
     a[1] = 88;
-    fmt.Println((@string)"structPositional:", a, s2.arr);
+    fmt.Println((@string)"structPositional:"u8, a, s2.arr);
 }
 
 internal static void compositeMapValueAndKey() {
     var a = new nint[]{1, 2, 3}.array();
     var mv = new map<@string, array<nint>>{["x"u8] = a.Clone()};
     a[0] = 99;
-    fmt.Println((@string)"mapValue:", mv["x"u8]);
+    fmt.Println((@string)"mapValue:"u8, mv["x"u8]);
     var k = new nint[]{1, 2}.array();
     var mk = new map<array<nint>, @string>{[k.Clone()] = "kv"u8};
     k[0] = 99;
-    fmt.Println((@string)"mapKeyLiteral:", mk[new nint[]{1, 2}.array()]);
+    fmt.Println((@string)"mapKeyLiteral:"u8, mk[new nint[]{1, 2}.array()]);
 }
 
 internal static void compositeSparseAndAny() {
     var a = new nint[]{1, 2, 3}.array();
     var sp = new array<array<nint>>(4){[2] = a.Clone()};
     a[1] = 88;
-    fmt.Println((@string)"sparse:", sp[2]);
+    fmt.Println((@string)"sparse:"u8, sp[2]);
     var b = new nint[]{7, 8, 9}.array();
     var lst = new any[]{b.Clone()}.slice();
     b[0] = 99;
     var got = lst[0]._<array<nint>>();
-    fmt.Println((@string)"anyBoxed:", got);
+    fmt.Println((@string)"anyBoxed:"u8, got);
 }
 
 internal static void returnCopies() {
     var r = leakLocal();
     (leaked.Value)[0] = 99;
-    fmt.Println((@string)"returnLeak:", r, leaked.Value);
+    fmt.Println((@string)"returnLeak:"u8, r, leaked.Value);
     var h = new holder(arr: new nint[]{5, 6, 7}.array());
     var g = h.get();
     g[0] = 99;
-    fmt.Println((@string)"returnField:", h.arr, g);
+    fmt.Println((@string)"returnField:"u8, h.arr, g);
     var nr = leakRow();
     (leakedRow.Value)[1] = 99;
-    fmt.Println((@string)"returnNamed:", nr[0], nr[1], nr[2], (leakedRow.Value)[1]);
+    fmt.Println((@string)"returnNamed:"u8, nr[0], nr[1], nr[2], (leakedRow.Value)[1]);
 }
 
 internal static void paramCopies() {
     var a = new nint[]{1, 2, 3}.array();
     modDirect(a);
-    fmt.Println((@string)"paramDirect:", a);
+    fmt.Println((@string)"paramDirect:"u8, a);
     var nr = new Row(new nint[]{4, 5, 6}.array());
     modNamed(nr);
-    fmt.Println((@string)"paramNamed:", nr[0]);
+    fmt.Println((@string)"paramNamed:"u8, nr[0]);
     var m = new array<nint>[]{new nint[]{1, 2, 3}.array(), new nint[]{4, 5, 6}.array()}.array();
     modDeep(m);
-    fmt.Println((@string)"paramDeep:", m);
+    fmt.Println((@string)"paramDeep:"u8, m);
     nr.mut();
-    fmt.Println((@string)"recvValue:", nr[0]);
+    fmt.Println((@string)"recvValue:"u8, nr[0]);
 }
 
 internal static void funcLitParam() {
@@ -203,26 +203,26 @@ internal static void funcLitParam() {
         x[0] = 99;
     };
     fl(a);
-    fmt.Println((@string)"funcLitParam:", a);
+    fmt.Println((@string)"funcLitParam:"u8, a);
 }
 
 internal static void namedAssignCopies() {
     var nr = new Row(new nint[]{1, 2, 3}.array());
     var d = nr.Clone();
     d[0] = 99;
-    fmt.Println((@string)"namedAssign:", nr[0], d[0]);
+    fmt.Println((@string)"namedAssign:"u8, nr[0], d[0]);
     Row e = nr.Clone();
     e[1] = 88;
-    fmt.Println((@string)"namedVarDecl:", nr[1], e[1]);
+    fmt.Println((@string)"namedVarDecl:"u8, nr[1], e[1]);
     any x = nr.Clone();
     nr[2] = 77;
     var got = x._<Row>();
-    fmt.Println((@string)"namedAnyBoxed:", got[2], nr[2]);
+    fmt.Println((@string)"namedAnyBoxed:"u8, got[2], nr[2]);
     var a = new nint[]{5, 6, 7}.array();
     any y = a.Clone();
     a[0] = 99;
     var gotA = y._<array<nint>>();
-    fmt.Println((@string)"directAnyBoxed:", gotA[0], a[0]);
+    fmt.Println((@string)"directAnyBoxed:"u8, gotA[0], a[0]);
 }
 
 internal static void channelSend() {
@@ -231,7 +231,7 @@ internal static void channelSend() {
     ch.ᐸꟷ(a.Clone());
     a[0] = 99;
     var got = ᐸꟷ(ch);
-    fmt.Println((@string)"channelSend:", got, a);
+    fmt.Println((@string)"channelSend:"u8, got, a);
 }
 
 internal static void appendElement() {
@@ -239,7 +239,7 @@ internal static void appendElement() {
     slice<array<nint>> s = default!;
     s = append(s, a.Clone());
     a[0] = 99;
-    fmt.Println((@string)"appendElement:", s[0], a);
+    fmt.Println((@string)"appendElement:"u8, s[0], a);
 }
 
 internal static void Main() {

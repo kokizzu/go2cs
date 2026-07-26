@@ -16,14 +16,20 @@ import (
 )
 
 // anyBoxedStringLitContext returns the literal context that boxes a string literal through
-// @string — `(@string)"…"` (u8 off, cast on) — for an EMPTY-interface (`any`) target slot. The
-// default `"…"u8` ReadOnlySpan<byte> has no conversion to object (CS1503/CS0029), and a bare C#
-// string boxes the wrong type (a later Go x.(string) assertion fails). Mirrors visitReturnStmt's
-// any-result literal context; only string basic-literals consult these flags.
+// @string — `(@string)"…"u8` — for an EMPTY-interface (`any`) target slot. A bare `"…"u8`
+// ReadOnlySpan<byte> has no conversion to object (CS1503/CS0029) and a bare C# string boxes the
+// wrong type (a later Go x.(string) assertion fails), so the CAST is mandatory here; the `u8`
+// suffix is then free, and eliminates the per-evaluation `Encoding.UTF8.GetBytes` transcode the
+// UTF-16 literal paid (2.1–2.4× ASCII, 4.2× non-ASCII). The cast is what makes the combination
+// legal: it converts the ROM span to @string, which boxes. Mirrors visitReturnStmt's any-result
+// literal context; only string basic-literals consult these flags.
+// spanTargetUnsupported stays set: the SLOT still cannot hold a bare span, so a literal CONCAT in
+// this position keeps its plain-string operands (see BasicLitContext.spanTargetUnsupported).
 func anyBoxedStringLitContext() BasicLitContext {
 	litContext := DefaultBasicLitContext()
-	litContext.u8StringOK = false
+	litContext.u8StringOK = true
 	litContext.castToGoString = true
+	litContext.spanTargetUnsupported = true
 
 	return litContext
 }

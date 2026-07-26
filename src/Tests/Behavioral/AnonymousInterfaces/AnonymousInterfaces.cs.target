@@ -12,12 +12,12 @@ partial class main_package {
 internal static void testTypeSwitch(error err) {
     switch (err.type()) {
     case {} Δx when Δx._<testTypeSwitch_type>(out var x): {
-        fmt.Println((@string)"TypeSwitch: Unwrap =", x.Unwrap());
+        fmt.Println((@string)"TypeSwitch: Unwrap ="u8, x.Unwrap());
         break;
     }
     default: {
         var x = err;
-        fmt.Println((@string)"TypeSwitch: No match");
+        fmt.Println((@string)"TypeSwitch: No match"u8);
         break;
     }}
 }
@@ -29,9 +29,9 @@ internal static void testTypeSwitch(error err) {
 internal static void testTypeAssertion(error err) {
     {
         var (x, ok) = err._<testTypeAssertion_type>(ᐧ); if (ok){
-            fmt.Println((@string)"TypeAssertion: Is(nil) =", x.Is(default!));
+            fmt.Println((@string)"TypeAssertion: Is(nil) ="u8, x.Is(default!));
         } else {
-            fmt.Println((@string)"TypeAssertion: No match");
+            fmt.Println((@string)"TypeAssertion: No match"u8);
         }
     }
 }
@@ -43,7 +43,7 @@ internal static void testTypeAssertion(error err) {
 internal static void takesReader(takesReader_r r) {
     var buf = new slice<byte>(4);
     var (n, _) = r.Read(buf);
-    fmt.Println((@string)"FuncParam: Read =", ((@string)(buf[..(int)(n)])));
+    fmt.Println((@string)"FuncParam: Read ="u8, ((@string)(buf[..(int)(n)])));
 }
 
 [GoType("dyn")] partial interface testCompositeLiteral_readers {
@@ -54,7 +54,7 @@ internal static void testCompositeLiteral() {
     var readers = new testCompositeLiteral_readers[]{new fakeReader(nil)}.slice();
     var buf = new slice<byte>(4);
     var (n, _) = readers[0].Read(buf);
-    fmt.Println((@string)"CompositeLiteral: Read =", ((@string)(buf[..(int)(n)])));
+    fmt.Println((@string)"CompositeLiteral: Read ="u8, ((@string)(buf[..(int)(n)])));
 }
 
 [GoType("dyn")] partial interface WithInlineField_R {
@@ -69,7 +69,7 @@ internal static void testInlineField() {
     var s = new WithInlineField(R: new fakeReader(nil));
     var buf = new slice<byte>(4);
     var (n, _) = s.R.Read(buf);
-    fmt.Println((@string)"InlineField: Read =", ((@string)(buf[..(int)(n)])));
+    fmt.Println((@string)"InlineField: Read ="u8, ((@string)(buf[..(int)(n)])));
 }
 
 [GoType("dyn")] partial interface Δtype {
@@ -95,7 +95,7 @@ internal static error Flush(this embeddedImpl _) {
 internal static void testInterfaceEmbedding(InlineEmbed x) {
     _ = x.Close();
     _ = x.Flush();
-    fmt.Println((@string)"InterfaceEmbed: Close and Flush OK");
+    fmt.Println((@string)"InterfaceEmbed: Close and Flush OK"u8);
 }
 
 [GoType] partial struct fakeReader {

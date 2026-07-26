@@ -76,11 +76,11 @@ internal static @string fromChan(channel<any> ch) {
 
 internal static void Main() {
     fmt.Println(classify((nint)(7)));
-    fmt.Println(classify((@string)"hi"));
+    fmt.Println(classify((@string)"hi"u8));
     fmt.Println(classify(true));
     fmt.Println(classify(2.5D));
-    fmt.Println((@string)"calls:", calls);
-    fmt.Println(recovered((@string)"boom"));
+    fmt.Println((@string)"calls:"u8, calls);
+    fmt.Println(recovered((@string)"boom"u8));
     fmt.Println(recovered((nint)(9)));
     fmt.Println(recovered(1.25D));
     var ch = new channel<any>(1);

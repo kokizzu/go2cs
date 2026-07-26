@@ -46,8 +46,8 @@ internal static void Main() {
     fmt.Println(lookup(kCircle).name());
     fmt.Println(lookup(kSquare).name());
     fmt.Println(lookup(0) == default!);
-    fmt.Println((@string)"registry:", registry[kCircle].name(), registry[kSquare].name(), len(registry));
-    fmt.Println((@string)"byKind:", byKind[hCircle].name(), byKind[hSquare].name(), len(byKind));
+    fmt.Println((@string)"registry:"u8, registry[kCircle].name(), registry[kSquare].name(), len(registry));
+    fmt.Println((@string)"byKind:"u8, byKind[hCircle].name(), byKind[hSquare].name(), len(byKind));
 }
 
 } // end main_package

@@ -17,32 +17,32 @@ internal static void Main() {
         sum += num;
         total += i;
     }
-    fmt.Println((@string)"sum:", sum, (@string)"total:", total);
+    fmt.Println((@string)"sum:"u8, sum, (@string)"total:"u8, total);
     foreach (var (iΔ1, numΔ1) in nums) {
         if (numΔ1 == 3) {
-            fmt.Println((@string)"index:", iΔ1);
+            fmt.Println((@string)"index:"u8, iΔ1);
         }
     }
     foreach (var (_, numΔ2) in nums) {
-        fmt.Println((@string)"num:", numΔ2);
+        fmt.Println((@string)"num:"u8, numΔ2);
     }
     foreach (var (iΔ2, _) in nums) {
-        fmt.Println((@string)"index:", iΔ2);
+        fmt.Println((@string)"index:"u8, iΔ2);
     }
     total = 0;
     foreach ((_, _) in nums) {
         total++;
     }
-    fmt.Println((@string)"Total:", total);
+    fmt.Println((@string)"Total:"u8, total);
     var kvs = new map<@string, @string>{["a"u8] = "apple"u8, ["b"u8] = "banana"u8};
     foreach (var (kΔ1, vΔ1) in kvs) {
         fmt.Printf("%s -> %s\n"u8, kΔ1, vΔ1);
     }
     foreach (var (kΔ2, _) in kvs) {
-        fmt.Println((@string)"key:", kΔ2);
+        fmt.Println((@string)"key:"u8, kΔ2);
     }
     foreach (var (vΔ2, _) in kvs) {
-        fmt.Println((@string)"value:", vΔ2);
+        fmt.Println((@string)"value:"u8, vΔ2);
     }
     @string k = default!;
     @string v = default!;
@@ -67,18 +67,18 @@ internal static void Main() {
     foreach (var (kᴛ2, _) in kvs) {
         k = kᴛ2;
 
-        fmt.Println((@string)"key:", k);
+        fmt.Println((@string)"key:"u8, k);
     }
     foreach (var (_, vᴛ3) in kvs) {
         v = vᴛ3;
 
-        fmt.Println((@string)"val:", v);
+        fmt.Println((@string)"val:"u8, v);
     }
     total = 0;
     foreach ((_, _) in kvs) {
         total++;
     }
-    fmt.Println((@string)"Total:", total);
+    fmt.Println((@string)"Total:"u8, total);
     foreach (var (iΔ3, c) in (@string)"go"u8) {
         fmt.Println(iΔ3, c);
     }
@@ -133,7 +133,7 @@ internal static void Main() {
         _ = len(kvs);
         total++;
     }
-    fmt.Println((@string)"Total:", total);
+    fmt.Println((@string)"Total:"u8, total);
     var ch = new channel<nint>(2);
     ch.ᐸꟷ(7);
     ch.ᐸꟷ(8);
@@ -142,7 +142,7 @@ internal static void Main() {
         _ = len(kvs);
         total++;
     }
-    fmt.Println((@string)"Total:", total);
+    fmt.Println((@string)"Total:"u8, total);
 }
 
 internal static void calculate(nint x) {

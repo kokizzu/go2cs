@@ -24,19 +24,19 @@ internal static @string sprint(any x) {
 
 internal static void Main() {
     any arg = default!;
-    arg = (@string)"<nil>";
+    arg = (@string)"<nil>"u8;
     fmt.Println(sprint(arg));
     var args = new any[]{(nint)(1), default!, (@string)"keep"}.slice();
     foreach (var (i, vᴛ1) in args) {
         var a = vᴛ1;
 
         if (a == default!) {
-            a = (@string)"<missing>";
+            a = (@string)"<missing>"u8;
         }
         fmt.Println(i, sprint(a));
     }
     holder h = default!;
-    h.value = (@string)"field";
+    h.value = (@string)"field"u8;
     fmt.Println(sprint(h.value));
 }
 

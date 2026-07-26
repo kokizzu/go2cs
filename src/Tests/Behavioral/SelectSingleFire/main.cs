@@ -16,7 +16,7 @@ internal static void Main() {
     case 1: {
         break;
     }}
-    fmt.Println((@string)"delivered:", len(a) + len(b));
+    fmt.Println((@string)"delivered:"u8, len(a) + len(b));
     nint got = default!;
     var selᴛ3 = a;
     var selᴛ4 = b;
@@ -27,7 +27,7 @@ internal static void Main() {
     case 1 when selᴛ4.ꟷᐳ(out got): {
         break;
     }}
-    fmt.Println((@string)"got:", got, (@string)"remaining:", len(a) + len(b));
+    fmt.Println((@string)"got:"u8, got, (@string)"remaining:"u8, len(a) + len(b));
     var c = new channel<nint>(100);
     var d = new channel<nint>(100);
     for (nint i = 0; i < 100; i++) {
@@ -41,7 +41,7 @@ internal static void Main() {
             break;
         }}
     }
-    fmt.Println((@string)"after 100 selects:", len(c) + len(d));
+    fmt.Println((@string)"after 100 selects:"u8, len(c) + len(d));
     nint sum = 0;
     while (len(c) > 0) {
         sum += ᐸꟷ(c);
@@ -49,7 +49,7 @@ internal static void Main() {
     while (len(d) > 0) {
         sum += ᐸꟷ(d);
     }
-    fmt.Println((@string)"sum:", sum);
+    fmt.Println((@string)"sum:"u8, sum);
 }
 
 } // end main_package

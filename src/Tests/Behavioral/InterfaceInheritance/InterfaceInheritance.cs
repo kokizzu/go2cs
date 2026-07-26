@@ -54,14 +54,14 @@ public static @string Error(this T2 t) {
 
 internal static void Main() {
     var m = new map<I, nint>();
-    I i1 = new T1("foo");
-    I i2 = new T2("bar");
+    I i1 = new T1("foo"u8);
+    I i2 = new T2("bar"u8);
     m[i1] = 1;
     m[i2] = 2;
     fmt.Println(m);
     var n = new map<V, nint>();
-    V v1 = new T1("foo");
-    V v2 = new T2("bar");
+    V v1 = new T1("foo"u8);
+    V v2 = new T2("bar"u8);
     v1.N();
     v2.M();
     fmt.Print(v1.String());

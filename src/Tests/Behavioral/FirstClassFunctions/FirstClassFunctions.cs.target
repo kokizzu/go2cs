@@ -105,7 +105,7 @@ internal static void Main() {
     }
     var converted = (Func<score, (score, bool)>)(stay);
     var (result, turnIsOver) = converted(new score(player: 3, opponent: 5, thisTurn: 7));
-    fmt.Println((@string)"converted func type call:", result.player, result.opponent, result.thisTurn, turnIsOver);
+    fmt.Println((@string)"converted func type call:"u8, result.player, result.opponent, result.thisTurn, turnIsOver);
     var m = new machine(split: (@string s) => (len(s), s + "!", default!));
     var (n, @out, serr) = m.split("hi"u8);
     fmt.Println(n, @out, serr == default!);
@@ -141,7 +141,7 @@ internal static void Main() {
         return (ᴛ1, ᴛ2);
     };
     var (got, gerr) = fetch();
-    fmt.Println((@string)"collapse hoist:", got, gerr == default!);
+    fmt.Println((@string)"collapse hoist:"u8, got, gerr == default!);
     fmt.Println(passThrough());
 }
 

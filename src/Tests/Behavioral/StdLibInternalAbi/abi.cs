@@ -12,19 +12,19 @@ partial class main_package {
 }
 
 [GoRecv] public static void Dump(this ref RegArgs r) {
-    print((@string)"Ints:");
+    print((@string)"Ints:"u8);
     foreach (var (_, x) in r.Ints) {
-        print((@string)" ", x);
+        print((@string)" "u8, x);
     }
     println();
-    print((@string)"Floats:");
+    print((@string)"Floats:"u8);
     foreach (var (_, x) in r.Floats) {
-        print((@string)" ", x);
+        print((@string)" "u8, x);
     }
     println();
-    print((@string)"Ptrs:");
+    print((@string)"Ptrs:"u8);
     foreach (var (_, x) in r.Ptrs) {
-        print((@string)" ", x);
+        print((@string)" "u8, x);
     }
     println();
 }

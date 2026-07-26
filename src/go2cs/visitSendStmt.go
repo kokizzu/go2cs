@@ -69,8 +69,9 @@ func (v *Visitor) convSendValueExpr(sendStmt *ast.SendStmt) string {
 
 	if isEmptyInterfaceTarget(elemType) && isStringBasicLit(sendStmt.Value) {
 		basicLitContext := DefaultBasicLitContext()
-		basicLitContext.u8StringOK = false
+		basicLitContext.u8StringOK = true
 		basicLitContext.castToGoString = true
+		basicLitContext.spanTargetUnsupported = true
 		contexts = append(contexts, basicLitContext)
 	}
 

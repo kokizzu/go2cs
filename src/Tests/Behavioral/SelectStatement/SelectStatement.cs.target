@@ -34,7 +34,7 @@ internal static void fibonacci(channel<nint> f, channel<nint> quit) {
             break;
         }
         case 1 when selᴛ2.ꟷᐳ(out _): {
-            fmt.Println((@string)"quit");
+            fmt.Println((@string)"quit"u8);
             return;
         }}
     }
@@ -74,7 +74,7 @@ internal static void sieve() {
     goǃ(generate, ch);
     while (ᐧ) {
         nint prime = ᐸꟷ(ch);
-        fmt.Print(prime, (@string)"\n");
+        fmt.Print(prime, (@string)"\n"u8);
         var ch1 = new channel<nint>(0);
         goǃ(filter, ch, ch1, prime);
         ch = ch1;
@@ -110,19 +110,19 @@ internal static void Main() {
         var selᴛ6 = ch4;
         switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ), ᐸꟷ(selᴛ4, ꓸꓸꓸ), ᐸꟷ(selᴛ5, ꓸꓸꓸ), ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
         case 0 when selᴛ3.ꟷᐳ(out var v1): {
-            fmt.Println((@string)"Got: ", v1);
+            fmt.Println((@string)"Got: "u8, v1);
             break;
         }
         case 1 when selᴛ4.ꟷᐳ(out var v1): {
-            fmt.Println((@string)"Got: ", v1);
+            fmt.Println((@string)"Got: "u8, v1);
             break;
         }
         case 2 when selᴛ5.ꟷᐳ(out var v1, out var okΔ1): {
-            fmt.Println((@string)"OK: ", okΔ1, (@string)" -- got: ", v1);
+            fmt.Println((@string)"OK: "u8, okΔ1, (@string)" -- got: "u8, v1);
             break;
         }
         case 3 when selᴛ6.ꟷᐳ(out a[f()]): {
-            fmt.Println((@string)"Got: ", a[f()]);
+            fmt.Println((@string)"Got: "u8, a[f()]);
             break;
         }}
     }
@@ -135,23 +135,23 @@ internal static void Main() {
     var selᴛ11 = ch4;
     switch (select(selᴛ7, ᐸꟷ(selᴛ8, ꓸꓸꓸ), ᐸꟷ(selᴛ9, ꓸꓸꓸ), ᐸꟷ(selᴛ10, ꓸꓸꓸ), ᐸꟷ(selᴛ11, ꓸꓸꓸ))) {
     case 0: {
-        fmt.Println((@string)"unexpected send to nil channel");
+        fmt.Println((@string)"unexpected send to nil channel"u8);
         break;
     }
     case 1 when selᴛ8.ꟷᐳ(out var v1): {
-        fmt.Println((@string)"unexpected received from nil channel: ", v1);
+        fmt.Println((@string)"unexpected received from nil channel: "u8, v1);
         break;
     }
     case 2 when selᴛ9.ꟷᐳ(out var v1): {
-        fmt.Println((@string)"closed channel 2 selected immediately: ", v1);
+        fmt.Println((@string)"closed channel 2 selected immediately: "u8, v1);
         break;
     }
     case 3 when selᴛ10.ꟷᐳ(out var v1, out var okΔ2): {
-        fmt.Println((@string)"unexpected: OK: ", okΔ2, (@string)" -- got: ", v1);
+        fmt.Println((@string)"unexpected: OK: "u8, okΔ2, (@string)" -- got: "u8, v1);
         break;
     }
     case 4 when selᴛ11.ꟷᐳ(out a[f()]): {
-        fmt.Println((@string)"unexpected: ", a[f()]);
+        fmt.Println((@string)"unexpected: "u8, a[f()]);
         break;
     }}
     var s = new nint[]{7, 2, 8, -9, 4, 0}.slice();
@@ -191,7 +191,7 @@ internal static void Main() {
     close(done);
     fmt.Println(poll(done));
     var (r, outerPrimary) = raceSend();
-    fmt.Println((@string)"raced:", r.value, r.primary, outerPrimary);
+    fmt.Println((@string)"raced:"u8, r.value, r.primary, outerPrimary);
 }
 
 internal static @string firstMsg(channel<@string> a, channel<@string> b) {

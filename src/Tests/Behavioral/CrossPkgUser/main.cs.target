@@ -42,7 +42,7 @@ internal static ж<Holder<ж<CrossPkgLib.Sensor>>> sensorHolder = Ꮡ(new Holder
 }
 
 internal static void note(nint n) {
-    fmt.Println((@string)"noted", n);
+    fmt.Println((@string)"noted"u8, n);
 }
 
 [GoType] partial struct badge {
@@ -198,7 +198,7 @@ internal static void Main() => func((defer, recover) => {
     g.Temp = 60D;
     fmt.Println((float64)g.Temp, g.Sensor.Hot());
     Labeled lb2 = g;
-    fmt.Println((@string)"promoted label:", lb2.Label());
+    fmt.Println((@string)"promoted label:"u8, lb2.Label());
     var c = new counter(Meter: CrossPkgLib.NewMeter());
     fmt.Println(c.Meter.Value.Bump());
     ΔMeter m = c;
@@ -220,13 +220,13 @@ internal static void Main() => func((defer, recover) => {
     fmt.Println((float64)rg.Device.Sensor.Temp);
     var exprᴛ1 = CrossPkgLib.Precision;
     if (exprᴛ1 == 1) {
-        fmt.Println((@string)"coarse");
+        fmt.Println((@string)"coarse"u8);
     }
     else if (exprᴛ1 == 2) {
-        fmt.Println((@string)"fine");
+        fmt.Println((@string)"fine"u8);
     }
     else { /* default: */
-        fmt.Println((@string)"unknown");
+        fmt.Println((@string)"unknown"u8);
     }
 
     fmt.Println("a" + ((@string)(rune)CrossPkgLib.Sep) + "b");
@@ -284,7 +284,7 @@ internal static void Main() => func((defer, recover) => {
     var mk = CrossPkgLib.MakeMarker("tag"u8);
     fmt.Println(mk.ΔΔMarker);
     CrossPkgLibꓸToken tok = CrossPkgLib.AsToken(42);
-    fmt.Println((@string)"token:", tok);
+    fmt.Println((@string)"token:"u8, tok);
     var wrapped = CrossPkgLib.Wrap<nint>(5);
     fmt.Println(len(wrapped), wrapped[0]);
     fmt.Println(CrossPkgLib.Pair<@string, nint>("k"u8, 8));
@@ -297,8 +297,8 @@ internal static void Main() => func((defer, recover) => {
     var sbx = new sensorBox(tag: "b"u8);
     sbx.Holder.item = Ꮡ(new CrossPkgLib.Sensor(Name: "shed"u8, Temp: 40D));
     fmt.Println((~sbx.Holder.item).Name, sbx.tag);
-    fmt.Println((@string)"leaf:", leafEmitter.Emit());
-    fmt.Println((@string)"branch:", branchEmitter.Emit());
+    fmt.Println((@string)"leaf:"u8, leafEmitter.Emit());
+    fmt.Println((@string)"branch:"u8, branchEmitter.Emit());
     var scan = makeScanner("p:"u8);
     var (scanName, scanData, scanErr) = scan("hello"u8);
     fmt.Println(scanName, ((@string)scanData), scanErr == default!);
@@ -308,9 +308,9 @@ internal static void Main() => func((defer, recover) => {
     rbuf = append(rbuf, (rune)(CrossPkgLib.Precision));
     fmt.Println(((@string)bbuf), len(rbuf), rbuf[1]);
     var sc = ((CrossPkgLib.Scored)new CrossPkgLib_VerdictᴠScored(((CrossPkgLib.Verdict)4)));
-    fmt.Println((@string)"verdict score:", sc.Score());
+    fmt.Println((@string)"verdict score:"u8, sc.Score());
     sc = new talliesжScored(Ꮡ(new tallies(pts: 7)));
-    fmt.Println((@string)"tallies score:", sc.Score());
+    fmt.Println((@string)"tallies score:"u8, sc.Score());
     var cal = (Action<ж<CrossPkgLib.Sensor>, CrossPkgLib.Celsius>)(CrossPkgLib.Calibrate);
     var mx = Ꮡ(new CrossPkgLib.Sensor(Name: "mx"u8, Temp: 10D));
     cal(mx, 4D);

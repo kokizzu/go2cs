@@ -27,7 +27,7 @@ internal static ж<Node> build() {
 }
 
 internal static void record(nint a, nint b) {
-    fmt.Println((@string)"recorded:", a, b);
+    fmt.Println((@string)"recorded:"u8, a, b);
 }
 
 internal static (nint, nint) tupleᴛ1ʗ = parts();

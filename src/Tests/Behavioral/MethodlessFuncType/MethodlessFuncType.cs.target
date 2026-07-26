@@ -35,7 +35,7 @@ internal static void Main() {
     ref var log = ref heap<slice<@string>>(out var Ꮡlog);
     var (n, rel, err) = grab("a"u8, Ꮡlog);
     consume(rel, default!);
-    fmt.Println((@string)"n:", n, (@string)"err:", err == default!);
+    fmt.Println((@string)"n:"u8, n, (@string)"err:"u8, err == default!);
     var h = new holder(release: makeReleaser("field"u8, Ꮡlog), name: "h"u8);
     h.release(fmt.Errorf("boom"u8));
     consume(h.release, default!);
@@ -45,7 +45,7 @@ internal static void Main() {
     Func<@string, (@string, bool)> find = default!;
     find = (@string s) => (s + "!", len(s) > 0);
     var (p, okp) = find("q"u8);
-    fmt.Println((@string)"lookup:", p, okp);
+    fmt.Println((@string)"lookup:"u8, p, okp);
     foreach (var (_, line) in log) {
         fmt.Println(line);
     }

@@ -38,7 +38,7 @@ internal static void Main() {
             return errΔ1;
         }
         (var k, errΔ1) = half(m);
-        fmt.Println((@string)"halved", m, k);
+        fmt.Println((@string)"halved"u8, m, k);
         return errΔ1;
     };
     fmt.Println(probe(8, default!), probe(3, default!));

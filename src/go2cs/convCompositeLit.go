@@ -323,6 +323,16 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 
 	// Check composite lit elements against struct fields
 	checkStructFields := func(structType *types.Struct) {
+		// A POSITIONAL string-literal element in a plain `string` field slot renders as the `u8`
+		// span, which binds the generated constructor's `@string` parameter through one implicit
+		// conversion. KEYED elements already emit `u8` (they route through convKeyValueExpr), so
+		// this makes positional match; without it the element stayed a bare C# string that
+		// `Encoding.UTF8.GetBytes` transcoded on EVERY evaluation — `new StructuralError("empty
+		// integer")` and its 82 siblings across 9 types were the corpus's last converter-emitted
+		// bare-UTF-16 literal class in a constructor position. `any` fields keep the boxed
+		// `(@string)"…"u8` form markAnyFieldLits selects (it runs after and overrides).
+		v.markStringFieldLits(structType, compositeLit.Elts, callContext)
+
 		// A POSITIONAL string-literal element in an `any` field slot boxes through @string
 		// (keyed elements take convKeyValueExpr's `any`-field arm instead).
 		v.markAnyFieldLits(structType, compositeLit.Elts, callContext)
@@ -996,10 +1006,27 @@ func sparseArrayCompositeContext(compositeType types.Type, elts []ast.Expr) *Cal
 	return context
 }
 
+// markStringFieldLits enables the `u8` span rendering for POSITIONAL string-literal elements whose
+// struct field slot is a Go `string` (or a named type over one). Go requires a positional literal
+// to list every field in order, so element index i is field i; KEYED elements are
+// ast.KeyValueExpr, never a BasicLit, and already render `u8` through convKeyValueExpr.
+func (v *Visitor) markStringFieldLits(structType *types.Struct, elts []ast.Expr, context *CallExprContext) {
+	for i, elt := range elts {
+		if i >= structType.NumFields() || !isStringBasicLit(elt) {
+			continue
+		}
+
+		if basic, ok := structType.Field(i).Type().Underlying().(*types.Basic); ok && basic.Kind() == types.String {
+			context.u8StringArgOK[i] = true
+		}
+	}
+}
+
 // markAnyFieldLits flips the per-element literal handling for POSITIONAL literal elements whose
 // struct field slot is the EMPTY interface (`any`). A string literal boxes through @string
-// (`(@string)"…"` — u8 off, cast on) instead of the u8 span (no conversion to the generated ctor's
-// object parameter, CS1503) or a bare C# string (which boxes the wrong type — a later Go
+// (`(@string)"…"u8` — the cast is mandatory, the u8 keeps the bytes constant) instead of a BARE u8
+// span (no conversion to the generated ctor's object parameter, CS1503) or a bare C# string (which
+// boxes the wrong type — a later Go
 // x.(string) assertion fails); an untyped CONSTANT boxes through Go's default type for its kind
 // (`(nint)(8)`) for the same reason (else a later x.(int) fails), via the castArgToType plumbing
 // convExprList honors.
@@ -1013,7 +1040,7 @@ func (v *Visitor) markAnyFieldLits(structType *types.Struct, elts []ast.Expr, co
 		}
 
 		if isStringBasicLit(elt) {
-			context.u8StringArgOK[i] = false
+			context.u8StringArgOK[i] = true
 			context.useGoStringArg[i] = true
 		} else if castType := v.untypedConstBoxCast(elt); castType != "" {
 			if context.castArgToType == nil {

@@ -32,7 +32,7 @@ internal static ж<Setting> ᏑglobalSetting = new(new Setting(name: "verbosity"
 internal static ref Setting globalSetting => ref ᏑglobalSetting.Value;
 
 internal static void Main() {
-    var h = Ꮡ(new holder(new SettingжDescriber(ᏑglobalSetting), "positional"));
+    var h = Ꮡ(new holder(new SettingжDescriber(ᏑglobalSetting), "positional"u8));
     fmt.Println((~h).label, (~h).d.Describe());
     ref var local = ref heap<Setting>(out var Ꮡlocal);
     local = new Setting(name: "count"u8, value: 7);

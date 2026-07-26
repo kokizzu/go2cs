@@ -50,19 +50,19 @@ internal static void Main() {
     pt = new Pt(1, 2);
     ref var c = ref heap(new Count(), out var Ꮡc);
     c = 42;
-    fmt.Println((@string)"struct:", derefStruct(Ꮡpt));
-    fmt.Println((@string)"named num:", derefNamedNum(Ꮡc));
+    fmt.Println((@string)"struct:"u8, derefStruct(Ꮡpt));
+    fmt.Println((@string)"named num:"u8, derefNamedNum(Ꮡc));
     viaUnsafe(Ꮡpt).Value.Y = 20;
-    fmt.Println((@string)"via unsafe writes through:", pt);
+    fmt.Println((@string)"via unsafe writes through:"u8, pt);
     convIdentity(Ꮡpt).Value.X = 10;
-    fmt.Println((@string)"conv identity writes through:", pt);
+    fmt.Println((@string)"conv identity writes through:"u8, pt);
     var got = derefStruct(Ꮡpt);
     got.X = 555;
-    fmt.Println((@string)"copy:", got, (@string)"original:", pt);
+    fmt.Println((@string)"copy:"u8, got, (@string)"original:"u8, pt);
     assignThrough(Ꮡpt);
-    fmt.Println((@string)"assigned through:", pt);
-    fmt.Println((@string)"local:", derefLocal());
-    fmt.Println((@string)"call survives:", advance(Ꮡpt).Value);
+    fmt.Println((@string)"assigned through:"u8, pt);
+    fmt.Println((@string)"local:"u8, derefLocal());
+    fmt.Println((@string)"call survives:"u8, advance(Ꮡpt).Value);
 }
 
 } // end main_package

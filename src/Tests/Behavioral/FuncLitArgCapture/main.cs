@@ -79,25 +79,25 @@ internal static void Main() {
     run(() => {
         set(Ꮡm);
     });
-    fmt.Println((@string)"1:", m.x);
+    fmt.Println((@string)"1:"u8, m.x);
     ref var n = ref heap(new box(), out var Ꮡn);
     run(() => {
         set(Ꮡn);
         Ꮡn.Value.y = Ꮡn.Value.x + 1;
     });
-    fmt.Println((@string)"2:", n.x, n.y);
+    fmt.Println((@string)"2:"u8, n.x, n.y);
     ref var c = ref heap(new box(), out var Ꮡc);
     run(() => {
         var p = Ꮡc.of(box.Ꮡx);
         p.Value = 99;
     });
-    fmt.Println((@string)"3:", c.x);
+    fmt.Println((@string)"3:"u8, c.x);
     ref var d = ref heap(new box(), out var Ꮡd);
     var f = () => {
         set(Ꮡd);
     };
     f();
-    fmt.Println((@string)"4:", d.x);
+    fmt.Println((@string)"4:"u8, d.x);
     ref var e = ref heap(new box(), out var Ꮡe);
     var pe = Ꮡe;
     var peʗ1 = pe;
@@ -105,27 +105,27 @@ internal static void Main() {
         peʗ1.Value.x = 11;
         peʗ1.Value.y = (~peʗ1).x + 1;
     });
-    fmt.Println((@string)"5:", e.x, e.y);
+    fmt.Println((@string)"5:"u8, e.x, e.y);
     gPtr = Ꮡe;
     run(() => {
         gPtr.Value.x = gVal.x;
     });
-    fmt.Println((@string)"6:", e.x);
+    fmt.Println((@string)"6:"u8, e.x);
     var vals = new nint[]{5}.slice();
     var valsʗ1 = vals;
     var adder = (nint k) => k + valsʗ1[0];
-    fmt.Println((@string)"7:", adder(10));
+    fmt.Println((@string)"7:"u8, adder(10));
     var @base = new nint[]{3}.slice();
         var baseʗ1 = @base;
     var handlers = new Func<nint, nint>[]{
         (nint k) => k + baseʗ1[0]
     }.slice();
-    fmt.Println((@string)"8:", handlers[0](100));
+    fmt.Println((@string)"8:"u8, handlers[0](100));
     var seed = new nint[]{2}.slice();
 
     var seedʗ1 = seed;
     Func<nint, nint> mul = (nint k) => k * seedʗ1[0];
-    fmt.Println((@string)"9:", mul(21));
+    fmt.Println((@string)"9:"u8, mul(21));
     var pick = (nint sel) => {
         nint x = default!;
         bool ok = default!;
@@ -138,19 +138,19 @@ internal static void Main() {
     };
     var (a, b) = pick(3);
     var (zx, zok) = pick(-1);
-    fmt.Println((@string)"10:", a, b, zx, zok);
+    fmt.Println((@string)"10:"u8, a, b, zx, zok);
     var zero = () => {
         nint nΔ1 = default!;
         @string s = default!;
         return (nΔ1, s);
     };
     var (n0, s0) = zero();
-    fmt.Println((@string)"11:", n0, s0 == ""u8);
-    fmt.Println((@string)"12:", nestedStructCapture());
-    fmt.Println((@string)"13:", selfRefCapture());
+    fmt.Println((@string)"11:"u8, n0, s0 == ""u8);
+    fmt.Println((@string)"12:"u8, nestedStructCapture());
+    fmt.Println((@string)"13:"u8, selfRefCapture());
     ref var g = ref heap(new box(), out var Ꮡg);
     deferArgCapture(Ꮡg);
-    fmt.Println((@string)"14:", g.x);
+    fmt.Println((@string)"14:"u8, g.x);
 }
 
 } // end main_package

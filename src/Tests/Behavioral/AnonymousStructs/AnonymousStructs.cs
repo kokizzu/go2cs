@@ -68,20 +68,20 @@ internal static void Main() {
     var anonPerson = new main_anonPerson(Name: "Bob"u8, Age: 25);
     any someInterface = anonPerson;
     var (_, ok) = someInterface._<main_type>(ᐧ);
-    fmt.Println((@string)"Anonymous struct type assertion:", ok);
+    fmt.Println((@string)"Anonymous struct type assertion:"u8, ok);
     someInterface = namedPerson;
     (_, ok) = someInterface._<main_typeᴛ1>(ᐧ);
-    fmt.Println((@string)"Named struct with identical fields:", ok);
-    fmt.Println((@string)"\n=== Function Parameter Tests ===");
+    fmt.Println((@string)"Named struct with identical fields:"u8, ok);
+    fmt.Println((@string)"\n=== Function Parameter Tests ==="u8);
     processAnonymousStruct(new main_anonPerson(Name: "Charlie"u8, Age: 40));
     processAnonymousStruct(anonPerson);
     processAnonymousStruct(new processAnonymousStruct_data(namedPerson.Name, namedPerson.Age));
-    fmt.Println((@string)"\n=== Package-Global Anonymous Struct ===");
+    fmt.Println((@string)"\n=== Package-Global Anonymous Struct ==="u8);
     fmt.Printf("settings: Verbose=%t Retries=%d\n"u8, settings.Verbose, settings.Retries);
     var pRetries = Ꮡsettings.of(settingsᴛ1.ᏑRetries);
     pRetries.Value = 5;
     fmt.Printf("after &settings.Retries=5: *p=%d global=%d\n"u8, pRetries.Value, settings.Retries);
-    fmt.Println((@string)"\n=== In-Function var Slice of Anonymous Struct ===");
+    fmt.Println((@string)"\n=== In-Function var Slice of Anonymous Struct ==="u8);
     slice<main_typeᴛ2> sects = new main_typeᴛ2[]{
         new("text"u8, 100),
         new("data"u8, 200),
@@ -92,7 +92,7 @@ internal static void Main() {
         total += sect.size;
     }
     fmt.Printf("sections=%d total=%d first=%s\n"u8, len(sects), total, sects[0].name);
-    fmt.Println((@string)"\n=== Anonymous Struct With Empty Interface Field ===");
+    fmt.Println((@string)"\n=== Anonymous Struct With Empty Interface Field ==="u8);
     cycleMemo();
 }
 

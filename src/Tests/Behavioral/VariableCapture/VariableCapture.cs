@@ -9,7 +9,7 @@ partial class main_package {
 }
 
 internal static void printName(this data d) {
-    fmt.Println((@string)"Name =", d.name);
+    fmt.Println((@string)"Name ="u8, d.name);
 }
 
 internal static void Main() {

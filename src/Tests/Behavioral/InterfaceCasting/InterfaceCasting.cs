@@ -13,7 +13,7 @@ public static @string Error(this MyError err) {
 }
 
 internal static error f() {
-    return new MyError("foo");
+    return new MyError("foo"u8);
 }
 
 [GoType] partial interface Animal {
@@ -116,7 +116,7 @@ public static Animal Self(this ж<Cat> Ꮡc) {
 
 internal static void Main() {
     error err = default!;
-    err = new MyError("bar");
+    err = new MyError("bar"u8);
     fmt.Printf("%v %v\n"u8, f(), err);
     var animals = new Animal[]{new DogжAnimal(@new<Dog>()), new CatжAnimal(@new<Cat>()), new Llama(nil), new JavaProgrammer(nil)}.slice();
     foreach (var (_, animal) in animals) {
@@ -126,17 +126,17 @@ internal static void Main() {
     Incrementer inc = new CounterжIncrementer(c);
     inc.Inc();
     inc.Inc();
-    fmt.Println((@string)"via pointer:", c.Total());
+    fmt.Println((@string)"via pointer:"u8, c.Total());
     c.Value.n = 10;
-    fmt.Println((@string)"via interface:", inc.Total());
+    fmt.Println((@string)"via interface:"u8, inc.Total());
     var (back, ok) = inc._<ж<Counter>>(ᐧ);
     back.Inc();
-    fmt.Println((@string)"assert-back:", ok, c.Total(), back == c);
+    fmt.Println((@string)"assert-back:"u8, ok, c.Total(), back == c);
     var r = Reversed(new Dog(nil));
-    fmt.Println((@string)"promoted via pointer adapter:", r.Speak());
+    fmt.Println((@string)"promoted via pointer adapter:"u8, r.Speak());
     for (nint k = 0; k < 3; k++) {
         var (a, name) = pick(k);
-        fmt.Println((@string)"picked:", name, a.Speak());
+        fmt.Println((@string)"picked:"u8, name, a.Speak());
     }
     rdr rd = new strRdr(nil);
     fmt.Println(rd.read());
@@ -155,32 +155,32 @@ internal static void Main() {
 
     swapped = new Dog(nil);
     replaceAnimal(Ꮡswapped);
-    fmt.Println((@string)"replaced:", swapped.Speak());
+    fmt.Println((@string)"replaced:"u8, swapped.Speak());
     Incrementer inc2 = default!;
     var (ᴛ1, ᴛ2) = makeCounter();
     (inc2, err) = (new CounterжIncrementer(ᴛ1), ᴛ2);
     inc2.Inc();
-    fmt.Println((@string)"deconstructed into iface:", inc2.Total(), err == default!);
+    fmt.Println((@string)"deconstructed into iface:"u8, inc2.Total(), err == default!);
     var makeAnimal = Animal (bool feline) => {
         if (feline) {
             return new CatжAnimal(Ꮡ(new Cat(nil)));
         }
         return new Dog(nil);
     };
-    fmt.Println((@string)"made:", makeAnimal(true).Speak(), makeAnimal(false).Speak());
-    fmt.Println((@string)"plumbed:", runPlumbing());
+    fmt.Println((@string)"made:"u8, makeAnimal(true).Speak(), makeAnimal(false).Speak());
+    fmt.Println((@string)"plumbed:"u8, runPlumbing());
     speakShutter ss = new wrapSinkжspeakShutter(Ꮡ(new wrapSink(Animal: new Dog(nil))));
     fmt.Println(ss.Speak(), ss.Shut());
     labeler lb = new badgeжlabeler(Ꮡ(new badge(text: "id"u8, num: 9)));
-    fmt.Println((@string)"keyword-method:", lb.@string(), lb.@int());
+    fmt.Println((@string)"keyword-method:"u8, lb.@string(), lb.@int());
     var av = describe(true);
     var (@as, aok) = av._<@string>(ᐧ);
-    fmt.Println((@string)"any-string:", av, describe(false), @as, aok);
+    fmt.Println((@string)"any-string:"u8, av, describe(false), @as, aok);
 }
 
 internal static any describe(bool b) {
     if (b) {
-        return (@string)"text-value";
+        return (@string)"text-value"u8;
     }
     return (nint)(99);
 }

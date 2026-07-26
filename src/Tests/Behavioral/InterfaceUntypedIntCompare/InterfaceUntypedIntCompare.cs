@@ -15,9 +15,9 @@ internal static ж<Element> push(any v) {
 internal static void Main() {
     var e = push((nint)(1));
     if (!AreEqual((~e).Value, (nint)(1))){
-        fmt.Println((@string)"BUG: e.Value != 1");
+        fmt.Println((@string)"BUG: e.Value != 1"u8);
     } else {
-        fmt.Println((@string)"ok: e.Value == 1");
+        fmt.Println((@string)"ok: e.Value == 1"u8);
     }
     fmt.Println(AreEqual((~e).Value, (nint)(1)));
     fmt.Println(!AreEqual((~e).Value, (nint)(1)));

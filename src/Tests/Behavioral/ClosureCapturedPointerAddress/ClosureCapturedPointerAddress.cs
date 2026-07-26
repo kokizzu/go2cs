@@ -24,12 +24,12 @@ internal static void Main() {
             prev.ValueSlot = ᏑmToFlush.ValueSlot.Value.next;
         }
     });
-    fmt.Println((@string)"mToFlush is nil:", mToFlush == nil);
+    fmt.Println((@string)"mToFlush is nil:"u8, mToFlush == nil);
     nint sum = 0;
     for (var n = head; n != nil; n = n.Value.next) {
         sum += n.Value.v;
     }
-    fmt.Println((@string)"sum:", sum);
+    fmt.Println((@string)"sum:"u8, sum);
 }
 
 } // end main_package

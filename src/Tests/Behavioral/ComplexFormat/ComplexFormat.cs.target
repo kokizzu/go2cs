@@ -26,7 +26,7 @@ internal static void Main() {
     fmt.Println(nan);
     fmt.Println(2D + 3D.i());
     fmt.Printf("%v;%v\n"u8, c128, c64);
-    fmt.Println((@string)"sprint:", fmt.Sprint(neg));
+    fmt.Println((@string)"sprint:"u8, fmt.Sprint(neg));
     fmt.Println(2748D.i());
     fmt.Println(83D.i());
     fmt.Println(5D.i());

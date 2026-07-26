@@ -66,7 +66,7 @@ internal static void Main() {
     var panicOnceʗ1 = panicOnce;
     ((Action)(() => func((defer, recover) => {
         defer(() => {
-            fmt.Println((@string)"recovered:", describe(recover()));
+            fmt.Println((@string)"recovered:"u8, describe(recover()));
         });
         panicOnceʗ1();
     })))();

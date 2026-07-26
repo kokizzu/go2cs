@@ -28,10 +28,10 @@ internal static int32 localAtomicDefer() => func((defer, recover) => {
 });
 
 internal static void Main() {
-    fmt.Println((@string)"while locked:", lockUnlock(7));
-    fmt.Println((@string)"after unlock:", Ꮡlocked.Load());
-    fmt.Println((@string)"runGoid:", ᏑrunGoid.Load());
-    fmt.Println((@string)"local during:", localAtomicDefer());
+    fmt.Println((@string)"while locked:"u8, lockUnlock(7));
+    fmt.Println((@string)"after unlock:"u8, Ꮡlocked.Load());
+    fmt.Println((@string)"runGoid:"u8, ᏑrunGoid.Load());
+    fmt.Println((@string)"local during:"u8, localAtomicDefer());
 }
 
 } // end main_package

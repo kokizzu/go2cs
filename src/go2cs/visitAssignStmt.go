@@ -115,8 +115,9 @@ func (v *Visitor) appendEmptyIfaceLitContext(base []ExprContext, lhs ast.Expr) [
 	}
 
 	basicLitContext := DefaultBasicLitContext()
-	basicLitContext.u8StringOK = false
+	basicLitContext.u8StringOK = true
 	basicLitContext.castToGoString = true
+	basicLitContext.spanTargetUnsupported = true
 
 	out := make([]ExprContext, len(base), len(base)+1)
 	copy(out, base)
@@ -1121,8 +1122,13 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 
 			if rhsLen > 1 || emptyIfaceTarget {
 				basicLitContext := DefaultBasicLitContext()
-				basicLitContext.u8StringOK = false
+				// The EMPTY-interface arm takes the combined `(@string)"…"u8` form — the cast
+				// makes it an @string, which is a perfectly good ValueTuple element too, so the
+				// arms compose. Only the BARE span is a ref struct, so the tuple arm alone
+				// (`field, env = env, ""`) keeps u8 off.
+				basicLitContext.u8StringOK = emptyIfaceTarget
 				basicLitContext.castToGoString = emptyIfaceTarget
+				basicLitContext.spanTargetUnsupported = true
 				contexts = append(contexts, basicLitContext)
 			}
 
@@ -1385,6 +1391,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 			// ValueTuple element, so suppress the u8 form for string literals here.
 			basicLitContext := DefaultBasicLitContext()
 			basicLitContext.u8StringOK = false
+			basicLitContext.spanTargetUnsupported = true
 			contexts = append(contexts, basicLitContext)
 
 			rhsExpr := v.convExpr(rhs, contexts)

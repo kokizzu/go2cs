@@ -77,7 +77,7 @@ internal static void Main() {
     fmt.Println(inspect((nint)(42)));
     var (a, b) = classifyVia(Ꮡ(new node(inner: (nint)(7))));
     fmt.Println(a, b);
-    var (c, d) = classifyVia((@string)"direct");
+    var (c, d) = classifyVia((@string)"direct"u8);
     fmt.Println(c, d);
 }
 

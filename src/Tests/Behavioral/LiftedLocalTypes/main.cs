@@ -6,7 +6,7 @@ partial class main_package {
 
 internal static void describe(any f) {
     _ = f;
-    fmt.Println((@string)"ok");
+    fmt.Println((@string)"ok"u8);
 }
 
 [GoType("dyn")] partial struct main_a {

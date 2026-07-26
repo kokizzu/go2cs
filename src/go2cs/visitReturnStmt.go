@@ -236,6 +236,7 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 
 			// u8 readonly spans are not supported in value tuple
 			basicLitContext.u8StringOK = false
+			basicLitContext.spanTargetUnsupported = true
 		}
 
 		lambdaContext := DefaultLambdaContext()
@@ -332,8 +333,9 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 
 				if resultParams != nil && i < resultParams.Len() {
 					if isIface, isEmpty := isInterface(resultParams.At(i).Type()); isIface && isEmpty {
-						elemBasicLitContext.u8StringOK = false
+						elemBasicLitContext.u8StringOK = true
 						elemBasicLitContext.castToGoString = true
+						elemBasicLitContext.spanTargetUnsupported = true
 					}
 				}
 

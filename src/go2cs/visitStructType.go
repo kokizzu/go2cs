@@ -159,7 +159,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 
 		if field.Tag != nil {
 			v.writeString(target, "[GoTag(")
-			target.WriteString(v.convBasicLit(field.Tag, BasicLitContext{u8StringOK: false}))
+			target.WriteString(v.convBasicLit(field.Tag, BasicLitContext{u8StringOK: false, spanTargetUnsupported: true}))
 			target.WriteString(")]")
 			target.WriteString(v.newline)
 		}

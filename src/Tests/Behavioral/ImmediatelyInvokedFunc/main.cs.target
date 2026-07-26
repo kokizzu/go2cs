@@ -6,7 +6,7 @@ partial class main_package {
 
 internal static void Main() {
     ((Action)(() => {
-        fmt.Println((@string)"a");
+        fmt.Println((@string)"a"u8);
     }))();
     nint x = ((Func<nint>)(() => {
         return 6 * 7;
@@ -16,13 +16,13 @@ internal static void Main() {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println((@string)"recovered:", r);
+                    fmt.Println((@string)"recovered:"u8, r);
                 }
             }
         });
         throw panic("boom");
     })))();
-    fmt.Println((@string)"after recover");
+    fmt.Println((@string)"after recover"u8);
     nint total = 10 + ((Func<nint>)(() => {
         nint sum = 0;
         for (nint i = 1; i <= 4; i++) {
@@ -38,7 +38,7 @@ internal static void Main() {
     }))();
     fmt.Println(y);
     ((Action<nint>)(n => {
-        fmt.Println((@string)"n =", n);
+        fmt.Println((@string)"n ="u8, n);
     }))(7);
     nint tri = ((Func<nint, nint, nint, nint>)((a, b, c) => {
         return a + b + c;
@@ -46,7 +46,7 @@ internal static void Main() {
     fmt.Println(tri);
     for (nint k = 0; k < 3; k++) {
         ((Action<nint>)(xΔ1 => {
-            fmt.Print(xΔ1, (@string)" ");
+            fmt.Print(xΔ1, (@string)" "u8);
         }))(k);
     }
     fmt.Println();
@@ -54,20 +54,20 @@ internal static void Main() {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println(label, (@string)"recovered:", r);
+                    fmt.Println(label, (@string)"recovered:"u8, r);
                 }
             }
         });
         throw panic("argboom");
     })))("scope");
-    fmt.Println((@string)"after arg recover");
+    fmt.Println((@string)"after arg recover"u8);
     nint calls = 0;
     var bump = () => {
         calls++;
         return 99;
     };
     ((Action<nint>)(_ => {
-        fmt.Println((@string)"ignored arg; calls =", calls);
+        fmt.Println((@string)"ignored arg; calls ="u8, calls);
     }))(bump());
 }
 

@@ -11,7 +11,7 @@ partial class main_package {
 [GoRecv] internal static void flush(this ref tracker t) {
     fmt.Printf("flush: %d lines\n"u8, len(t.lines));
     foreach (var (_, l) in t.lines) {
-        fmt.Println((@string)"line:", l);
+        fmt.Println((@string)"line:"u8, l);
     }
 }
 
@@ -33,7 +33,7 @@ internal static void run() => func((defer, recover) => {
     defer(Ꮡp.of(parser.Ꮡtrk).flush);
     p.trk.lines = append(p.trk.lines, "after-defer"u8);
     p.trk.lines = append(p.trk.lines, "final"u8);
-    fmt.Println((@string)"run done:", p.name);
+    fmt.Println((@string)"run done:"u8, p.name);
 });
 
 internal static void Main() {

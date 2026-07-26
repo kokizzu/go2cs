@@ -18,7 +18,7 @@ internal static (int64 written, error err) send(nint n) {
     ref var err = ref Ꮡerr.ValueSlot;
 
         defer(() => {
-            fmt.Println((@string)"hook:", written, Ꮡerr.ValueSlot, written > 0);
+            fmt.Println((@string)"hook:"u8, written, Ꮡerr.ValueSlot, written > 0);
         });
         (var v, err) = pair(n);
         if (err != default!) {
@@ -48,7 +48,7 @@ internal static (int64, error) lit(nint n) {
         func((defer, recover) => {
             ref var e = ref Ꮡe.ValueSlot;
             defer(() => {
-                fmt.Println((@string)"lit hook:", w, Ꮡe.ValueSlot);
+                fmt.Println((@string)"lit hook:"u8, w, Ꮡe.ValueSlot);
             });
             (var v, Ꮡe.ValueSlot) = pair(n);
             if (Ꮡe.ValueSlot != default!) {
@@ -69,22 +69,22 @@ internal static error /*err*/ cls(nint n) {
         Ꮡerr.ValueSlot = fmt.Errorf("cls %d"u8, n);
     };
     (var v, err) = pair(n);
-    fmt.Println((@string)"cls pair:", v, err);
+    fmt.Println((@string)"cls pair:"u8, v, err);
     set();
     return err;
 }
 
 internal static void Main() {
     var (w, e) = send(3);
-    fmt.Println((@string)"send:", w, e);
+    fmt.Println((@string)"send:"u8, w, e);
     (w, e) = send(-1);
-    fmt.Println((@string)"send:", w, e);
-    fmt.Println((@string)"addrv:", addrv());
+    fmt.Println((@string)"send:"u8, w, e);
+    fmt.Println((@string)"addrv:"u8, addrv());
     (w, e) = lit(4);
-    fmt.Println((@string)"lit:", w, e);
+    fmt.Println((@string)"lit:"u8, w, e);
     (w, e) = lit(-2);
-    fmt.Println((@string)"lit:", w, e);
-    fmt.Println((@string)"cls:", cls(5));
+    fmt.Println((@string)"lit:"u8, w, e);
+    fmt.Println((@string)"cls:"u8, cls(5));
 }
 
 } // end main_package

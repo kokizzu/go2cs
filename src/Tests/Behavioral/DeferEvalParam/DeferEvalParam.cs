@@ -11,7 +11,7 @@ internal static void Main() {
 internal static void printSquare(nint n) => func((defer, recover) => {
     deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"Deferred square:", n * n, defer);
     n++;
-    fmt.Println((@string)"Immediate n:", n);
+    fmt.Println((@string)"Immediate n:"u8, n);
 });
 
 } // end main_package

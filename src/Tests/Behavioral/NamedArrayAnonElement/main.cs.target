@@ -20,7 +20,7 @@ partial class main_package {
 }
 
 internal static void Main() {
-    fmt.Println((@string)"named-array anon element compiles");
+    fmt.Println((@string)"named-array anon element compiles"u8);
 }
 
 } // end main_package

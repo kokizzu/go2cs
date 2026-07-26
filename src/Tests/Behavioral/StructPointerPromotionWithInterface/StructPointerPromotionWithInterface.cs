@@ -146,13 +146,13 @@ internal static @string Ping(this rightSide r) {
 
 internal static void Main() {
     ref var e = ref heap<MyError>(out var Ꮡe);
-    e = new MyError(time.Now(), "Hello");
-    var a = new MyCustomError("New One", default!, Ꮡe);
+    e = new MyError(time.Now(), "Hello"u8);
+    var a = new MyCustomError("New One"u8, default!, Ꮡe);
     a.Message = "New"u8;
     a.What = "World"u8;
-    fmt.Println((@string)"MyError What =", e.What);
-    fmt.Println((@string)"MyCustomError What =", a.What);
-    fmt.Println((@string)"MyCustomError method =", a.Time());
+    fmt.Println((@string)"MyError What ="u8, e.What);
+    fmt.Println((@string)"MyCustomError What ="u8, a.What);
+    fmt.Println((@string)"MyCustomError method ="u8, a.Time());
     ref var inner = ref heap<ж<Inner>>(out var Ꮡinner);
     inner = Ꮡ(new Inner(Value: "hello"u8));
     var innerPtr = Ꮡinner;

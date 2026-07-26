@@ -6,7 +6,7 @@ partial class main_package {
 
 internal static void expectPanic(@string name, Action f) => func((defer, recover) => {
     defer(() => {
-        fmt.Println(name, (@string)"->", recover());
+        fmt.Println(name, (@string)"->"u8, recover());
     });
     f();
 });
@@ -114,11 +114,11 @@ internal static void Main() {
         var selᴛ5 = sd.ᐸꟷ(1, ꓸꓸꓸ);
         switch (trySelect(selᴛ5)) {
         case 0: {
-            fmt.Println((@string)"sent (wrong)");
+            fmt.Println((@string)"sent (wrong)"u8);
             break;
         }
         default: {
-            fmt.Println((@string)"default (wrong)");
+            fmt.Println((@string)"default (wrong)"u8);
             break;
         }}
     });

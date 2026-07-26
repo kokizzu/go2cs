@@ -24,7 +24,7 @@ internal static void apply(Funcꓸꓸꓸ<@string, nint, @string> f) {
 }
 
 internal static void report(Actionꓸꓸꓸ<@string, any> emit) {
-    emit("%s=%d"u8, (@string)"x", (nint)(7));
+    emit("%s=%d"u8, (@string)"x"u8, (nint)(7));
     emit("bare"u8);
 }
 
@@ -36,7 +36,7 @@ internal static void Main() {
     });
     Funcꓸꓸꓸ<@string, nint, @string> f = default!;
     if (f == default!) {
-        fmt.Println((@string)"nil func value");
+        fmt.Println((@string)"nil func value"u8);
     }
     f = gather;
     fmt.Println(f("var"u8, 10));

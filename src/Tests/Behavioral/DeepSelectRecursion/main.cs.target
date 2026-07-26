@@ -30,7 +30,7 @@ internal static void Main() {
     foreach (var (_, v) in sink) {
         sum += v;
     }
-    fmt.Println((@string)"sum:", sum);
+    fmt.Println((@string)"sum:"u8, sum);
 }
 
 } // end main_package

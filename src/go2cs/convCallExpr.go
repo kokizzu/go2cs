@@ -1376,7 +1376,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					// against a field the composite-literal path had already boxed as @string.
 					if isEmptyInterfaceTarget(paramType) && j < len(callExpr.Args) {
 						if isStringBasicLit(callExpr.Args[j]) {
-							callExprContext.u8StringArgOK[j] = false
+							callExprContext.u8StringArgOK[j] = true
 							callExprContext.useGoStringArg[j] = true
 						} else if castType := v.untypedConstBoxCast(callExpr.Args[j]); castType != "" {
 							if callExprContext.castArgToType == nil {
@@ -1723,6 +1723,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		if ident.Name == "panic" {
 			context := DefaultBasicLitContext()
 			context.u8StringOK = false
+			context.spanTargetUnsupported = true
 			return fmt.Sprintf("throw panic(%s)", v.convExpr(callExpr.Args[0], []ExprContext{context}))
 		}
 	}

@@ -27,8 +27,8 @@ internal static @string Error(this valueErr v) {
 
 internal static void Main() {
     var cases = new main_cases[]{
-        new(new pointerErrжerror(Ꮡ(new pointerErr("pointer-receiver"))), "pointer-receiver"u8),
-        new(new valueErr("value-receiver"), "value-receiver"u8)
+        new(new pointerErrжerror(Ꮡ(new pointerErr("pointer-receiver"u8))), "pointer-receiver"u8),
+        new(new valueErr("value-receiver"u8), "value-receiver"u8)
     }.slice();
     foreach (var (_, c) in cases) {
         fmt.Printf("%s | %s\n"u8, c.err.Error(), c.want);

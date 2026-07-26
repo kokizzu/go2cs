@@ -7,29 +7,29 @@ partial class main_package {
 internal static void Main() {
     f();
     panicValues();
-    fmt.Println((@string)"Returned normally from f.");
+    fmt.Println((@string)"Returned normally from f."u8);
 }
 
 internal static void f() => func((defer, recover) => {
     defer(() => {
         {
             var r = recover(); if (r != default!) {
-                fmt.Println((@string)"Recovered in f", r);
+                fmt.Println((@string)"Recovered in f"u8, r);
             }
         }
     });
-    fmt.Println((@string)"Calling g.");
+    fmt.Println((@string)"Calling g."u8);
     g(0);
-    fmt.Println((@string)"Returned normally from g.");
+    fmt.Println((@string)"Returned normally from g."u8);
 });
 
 internal static void g(nint i) => func((defer, recover) => {
     if (i > 3) {
-        fmt.Println((@string)"Panicking!");
+        fmt.Println((@string)"Panicking!"u8);
         throw panic(fmt.Sprintf("%v"u8, i));
     }
     deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"Defer in g", i, defer);
-    fmt.Println((@string)"Printing in g", i);
+    fmt.Println((@string)"Printing in g"u8, i);
     g(i + 1);
 });
 
@@ -77,7 +77,7 @@ internal static void panicValues() {
         throw panic("x");
     }));
     fmt.Println(panicValueKind(() => {
-        throw panic(fmt.Sprintf("%s"u8, (@string)"x"));
+        throw panic(fmt.Sprintf("%s"u8, (@string)"x"u8));
     }));
     fmt.Println(panicValueKind(() => {
         @string s = "x"u8;
