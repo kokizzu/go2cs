@@ -1,7 +1,13 @@
 # DESIGN — Interface-shell caching and dispatch architecture
 
-**Status:** proposal, for project-owner review
+**Status:** proposal, for project-owner review — **Stage 0 executed 2026-07-26, see §10**
 **Date:** 2026-07-26
+
+> **⚠ Read §10 before acting on §0/§4/§7.** Stage 0's experiments *disproved* the P0-a hypothesis
+> and *dissolved* the §7.1 AOT discrepancy. The configuration defect is real and larger in effect
+> than §4 assumed for the shipped row, but its cause is not the one §1.4 inferred from reading, and
+> the fix is a different one line in a different place. §10 is authoritative where it disagrees with
+> anything above it.
 **Instrument:** `src/Tests/Performance/PerfIfaceShell`
 **Scope:** `src/core/golib` (`builtin.cs`, `AdapterBinder.cs`, `AdapterRegistry.cs`), the converter
 csproj template, and the perf runner. One deferred proposal touches the converter.
@@ -223,7 +229,8 @@ These are the invariants I verified in source; each is a hard gate on the propos
 
 Three separable pieces, smallest first:
 
-**P0-a — stop disabling dynamic code on non-AOT builds.** Add to the converter template
+**P0-a — WITHDRAWN by Stage 0 (§10.3): measured a no-op in every non-ILC configuration. Not
+implemented.** *Original text retained for the record.* Add to the converter template
 (`src/go2cs/csproj-template.xml`, beside the existing block at `:35-41`):
 
 ```xml
@@ -238,6 +245,11 @@ Three separable pieces, smallest first:
 restore assets (§1.4). Either clean before the JIT build in `PerformanceRunner`, or extend the
 existing `BaseIntermediateOutputPath`/`BaseOutputPath` separation in
 `src/Tests/Performance/Directory.Build.props` so the non-AOT path is equally isolated.
+
+> **Stage 0 result (§10.1–10.2): neither.** The separation already exists and is *overridden* by the
+> converter templates' `OutDir` pin, which also silently defeats the Phase-4 test-host's `bin\tests\`
+> isolation. The fix is one condition in `csproj-template.xml` **and** `test-csproj-template.xml`;
+> `Directory.Build.props` needs no change.
 
 **P0-c — a measurement guard (this is the durable part).** After building the JIT variant,
 `PerformanceRunner` reads `<Exe>.runtimeconfig.json` and **fails the run** (or at minimum records it
@@ -544,7 +556,7 @@ by the `_<T>` walk *and* the owner accepts the emitted-code footprint.
 
 These are recorded because two of them would corrupt any measurement work that trusts them.
 
-### 7.1 The unreconciled AOT figure — **resolve before Stage 1**
+### 7.1 The unreconciled AOT figure — **RESOLVED by Stage 0, see §10.4: no discrepancy, one label is wrong**
 
 `docs/Phase4/DESIGN-named-interface-wrappers.md:133` reports the Stage-3 Native AOT binary at
 **202 ms for 10M asserts**; `:160` reports **278.6 ms** for what reads as the same measurement; the
@@ -554,7 +566,11 @@ whether a memoized assert+call costs ~20–28 ns or ~98 ns under AOT — a facto
 proposal is worth doing. **One of those harnesses is not measuring what its label says, and Stage 0
 must determine which.**
 
-### 7.2 The `ShellCache` A/B arithmetic
+### 7.2 The `ShellCache` A/B arithmetic — **WITHDRAWN by Stage 0, see §10.4**
+
+*The correction below is itself incorrect: it trusts the "10M asserts" label, which is the actual
+defect. The harness ran 2M asserts, so the original ≈53 ns/assert is right. Retained for the record.*
+
 
 `DESIGN:159-163`: "10M asserts+calls … 278.6 ms vs 384.8 ms — ≈53 ns saved per assert."
 384.8 − 278.6 = 106.2 ms; over 10M that is **10.6 ns/assert**, not 53 (53 ns would imply ~2M asserts).
@@ -627,3 +643,150 @@ from ~189× toward the low tens; it does not reach parity, because parity requir
 wrapper, and constructing a wrapper is what makes a structurally-satisfied interface expressible in
 C# at all. `docs/Performance.md:148-150` already frames the row that way, and that framing survives
 this design intact — it just needs the 5.5× configuration artifact taken out of the number first.
+
+---
+
+## 10. Stage 0 — diagnosis, executed 2026-07-26 (measured)
+
+Both Stage-0 questions are answered. Everything in this section was run on a **clean worktree**
+(`claude/r14-iface`, base `eafec005e`, no `bin/`/`obj/` present at the start) on the same
+i9-13900K / .NET SDK 9.0.316 / go1.23.1 box the committed table uses. **One other agent's `dotnet`
+process was resident**, so the absolute millisecond figures are *provisional*; the ratios between
+configurations measured minutes apart on the same tree are not sensitive to that, and the
+authoritative full-table re-measure belongs to coordinator integration on a quiet machine.
+
+### 10.1 (a) The configuration defect — **polluted output tree, and the pollution has a root cause**
+
+§1.4 offered two candidate causes and said reading could not distinguish them. Building distinguishes
+them decisively, and the answer is **neither of the two as stated** — it is a third mechanism that
+*produces* the polluted tree:
+
+| experiment | result |
+|---|---|
+| clean tree, `dotnet build -c Release` on `PerfIfaceShell` | framework-dependent, **4** DLLs, `IsDynamicCodeSupported: `**`true`** |
+| clean tree, `dotnet publish -c Release` (template's `PublishTrimmed=true`, self-contained, 31 DLLs, 26 MB) | `IsDynamicCodeSupported: `**`true`** |
+| same tree, after one `run-performance.ps1 --filter IfaceShell` (which publishes AOT) | `bin/Release/net9.0` now holds **187** DLLs, `includedFrameworks`, `IsDynamicCodeSupported: `**`false`**, mtimes = the AOT publish's |
+
+**The template property is exonerated.** `PublishTrimmed` does not disable dynamic code in *any*
+configuration reachable without ILC — not on build, not even on a trimmed self-contained publish.
+The SDK's `_DynamicCodeSupport=false` default is an ILC-side default, and ILC setting it is correct.
+
+**What actually happens** — confirmed by MSBuild property evaluation, not inference:
+
+```
+> dotnet msbuild PerfIfaceShell.csproj -p:Configuration=Release -p:PerfAot=true \
+      -getProperty:OutDir -getProperty:OutputPath -getProperty:BaseOutputPath
+  OutDir         = bin\Release\net9.0\          <-- pinned by the converter template
+  OutputPath     = bin\aot-build\Release\net9.0\ <-- the isolation Directory.Build.props intends
+  BaseOutputPath = bin\aot-build\
+```
+
+MSBuild copies build outputs to **`$(OutDir)`**, not `$(OutputPath)`. `src/go2cs/csproj-template.xml`
+pins `OutDir` unconditionally-except-if-already-set:
+
+```xml
+<PropertyGroup Condition="'$(OutDir)'==''">
+  <OutDir>bin\$(Configuration)\$(TargetFramework)\</OutDir>
+</PropertyGroup>
+```
+
+so the `BaseOutputPath` half of the AOT isolation in `src/Tests/Performance/Directory.Build.props`
+has **never taken effect**. The AOT publish's *build* step therefore writes its self-contained,
+dynamic-code-disabled binary straight over the JIT binary in `bin/Release/net9.0/`, and the Measure
+phase — which reads `bin\Release\<tfm>\<proj>.exe` (`PerformanceRunner/Program.cs:824`) — times
+**that** binary and labels it "JIT".
+
+**The pollution is sticky.** A subsequent JIT-only build does not repair it: re-running with
+`--no-aot` on the polluted tree reported **2,514.9 ms (193.77×)** and left the runtimeconfig at
+`false`, because MSBuild's incremental check saw the outputs newer than their inputs. That is why
+every committed JIT figure for this row is wrong, and why it stayed wrong across re-measures.
+
+**The real magnitude** (clean tree, `--no-aot`, `--runs 5`, so nothing can clobber the binary):
+
+| variant | Go | C# JIT | ratio | runtimeconfig |
+|---|---:|---:|---:|---|
+| polluted (as shipped) | 13.0 | **2,514.9** | 193.77× | self-contained, dynamic code **off**, 187 DLLs |
+| clean | 12.8 | **754.3** | **59.06×** | framework-dependent, dynamic code **on**, 4 DLLs |
+
+**3.33×**, not the 5.5× §4 projected from the isolation replica — 754.3 ms / 5M = **150.9 ns per
+iteration**, against the replica's 86.2 ns. The replica was not measuring the whole iteration; the
+benchmark's own number is the one to carry forward. **~189× → ~59× is the honest P0 gain.**
+
+### 10.2 The same defect breaks two *other* isolation intents — this is why the fix belongs in the template
+
+`OutDir` outranking `BaseOutputPath` is not a perf-suite quirk. **872** committed csprojs carry the
+pin, and the Phase-4 test-host template sets `BaseOutputPath` for a documented reason of its own:
+
+```
+> dotnet msbuild go-src-converted/cmp/cmp.tests.csproj -p:Configuration=Debug -getProperty:...
+  OutDir         = bin\Debug\net9.0\        <-- production project's tree
+  OutputPath     = bin\tests\Debug\net9.0\  <-- what test-csproj-template.xml asks for
+  BaseOutputPath = bin\tests\
+```
+
+`src/go2cs/test-csproj-template.xml:1-15` spends a full comment paragraph explaining that the test
+project and the production project **must not share output roots** (shared `obj\` caused MSB4006).
+The `obj\` half of that fix works; the **`bin\` half has never worked** — every converted test host
+has been writing into its production package's output directory. And any end-user converted project
+that sets `BaseOutputPath` (an artifacts layout, a CI convention) is silently ignored the same way.
+
+So three separately-authored isolation intents are defeated by one line, which settles the layer
+question: **fix the templates, not the perf `Directory.Build.props`.** The minimal correct form
+preserves the original intent (a stable default path, deferring to an explicit override) and simply
+extends "explicit override" to the other knob that determines the same thing:
+
+```xml
+<PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
+```
+
+With that, no perf-side change is needed at all — `Directory.Build.props` starts doing what its
+comment already claims.
+
+### 10.3 **P0-a is withdrawn**
+
+§4's `DynamicCodeSupport` property is a **no-op in every configuration measured above** and would be
+speculative machinery bought at ~872 csprojs of churn. It is not implemented. P0 as built is
+**P0-b (the template `OutDir` condition) + P0-c (the runner guard)**. The churn is not avoided — the
+`OutDir` condition is also a template change — but it is spent on a defect that demonstrably exists
+in three places rather than on one that exists in none.
+
+### 10.4 (b) The AOT figures — **there is no discrepancy; one label is wrong**
+
+§7.1 reported an unreconciled 3.5–4.8× gap between 202 ms, 278.6 ms and 979.1 ms. The gap is an
+artifact of a **mislabelled iteration count**, and the tell was already sitting in §7.2.
+
+`PerfIfaceShell` runs `run(5000000)` and each iteration adds `3 + 5 = 8`, so its checksum is
+**40,000,000** — confirmed by running both committed binaries. The A/B table at
+`DESIGN-named-interface-wrappers.md:133` reports checksum **8,000,000**, i.e. **1,000,000
+iterations = 2,000,000 asserts** — not the "10M asserts" its own column header claims.
+
+Re-measured today at 1M iterations with the committed harness:
+
+| iterations | Native AOT | ns/iteration |
+|---:|---:|---:|
+| 5,000,000 (committed row) | 971.2 ms | 194.2 |
+| 1,000,000 (the A/B's actual scale) | **206.5 ms** | 206.5 |
+| 1,000,000 — as reported at `DESIGN-named-interface-wrappers.md:133` | 202 ms | 202 |
+
+**206.5 vs 202 ms — a 2.2% agreement.** Nothing is unreconciled; the wrappers design's AOT harness
+and the committed table have always been measuring the same thing at different scales.
+
+**§7.2 is therefore wrong in the opposite direction, and is withdrawn.** It assumed the "10M
+asserts" label and concluded the "≈53 ns saved per assert" claim was 5× too large. With the true
+count: (384.8 − 278.6) ms ÷ 2,000,000 asserts = **53.1 ns/assert** — the original figure is
+**correct to three significant figures**. The defect is the assert-count label, not the arithmetic.
+
+Owed to `docs/Phase4/DESIGN-named-interface-wrappers.md`: relabel the A/B tables' "10M asserts" as
+"2M asserts (1M iterations)". Recorded here rather than edited there, because that document is a
+banked record of a completed arc.
+
+### 10.5 What Stage 0 changes about the plan
+
+- P0-a **withdrawn** (§10.3); Stage 1 is P0-b + P0-c.
+- §0's attribution table is computed from the replica's 86.2 ns post-P0 figure. The benchmark's own
+  post-P0 figure is **150.9 ns/iteration**, so the *shares* in §0 stand as a decomposition of the
+  replica but the absolute targets in §9 should be read against 150.9, not 86.2. The §9 row
+  "**+ P0** | 86.2 | ~33" is superseded by **150.9 | ~59 | *measured on the benchmark***.
+- P1/P2/P6's expected gains were sized against the residual *within* 86.2 ns. Against a 150.9 ns
+  iteration the same absolute savings are a smaller fraction — they are still worth taking, and
+  Stage 2's gate remains the measurement rather than the projection.
