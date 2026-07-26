@@ -67,7 +67,7 @@ namespace PerformanceRunner
         {
             "PerfStartup", "PerfFib", "PerfSieve", "PerfMatMul",
             "PerfString", "PerfMap", "PerfSort", "PerfChannel",
-            "PerfStringView", "PerfStringMatch", "PerfIface", "PerfIfaceShell"
+            "PerfStringView", "PerfStringMatch", "PerfIfaceCall", "PerfIface", "PerfIfaceShell"
         };
 
         private static string s_srcRoot = null!;

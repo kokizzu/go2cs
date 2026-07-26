@@ -592,6 +592,7 @@
     <Project Path="Tests/Performance/PerfChannel/PerfChannel.csproj" />
     <Project Path="Tests/Performance/PerfFib/PerfFib.csproj" />
     <Project Path="Tests/Performance/PerfIface/PerfIface.csproj" />
+    <Project Path="Tests/Performance/PerfIfaceCall/PerfIfaceCall.csproj" />
     <Project Path="Tests/Performance/PerfIfaceShell/PerfIfaceShell.csproj" />
     <Project Path="Tests/Performance/PerfMap/PerfMap.csproj" />
     <Project Path="Tests/Performance/PerfMatMul/PerfMatMul.csproj" />
