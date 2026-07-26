@@ -39,7 +39,7 @@ internal static readonly UntypedInt fatArchHeaderSize = /* 5 * 4 */ 20;
 
 // ErrNotFat is returned from [NewFatFile] or [OpenFat] when the file is not a
 // universal binary but may be a thin binary, based on its magic number.
-public static ж<FormatError> ErrNotFat = Ꮡ(new FormatError(0, "not a fat Mach-O file", default!));
+public static ж<FormatError> ErrNotFat = Ꮡ(new FormatError(0, "not a fat Mach-O file"u8, default!));
 
 // NewFatFile creates a new [FatFile] for accessing all the Mach-O images in a
 // universal binary. The Mach-O binary is expected to start at position 0 in
@@ -51,7 +51,7 @@ public static (ж<FatFile>, error) NewFatFile(io.ReaderAt r) {
     // Start with the magic number.
     var err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡff.of(FatFile.ᏑMagic));
     if (err != default!){
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "error reading magic number", default!))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "error reading magic number"u8, default!))));
     } else 
     if (ff.Magic != MagicFat) {
         // See if this is a Mach-O file via its magic number. The magic
@@ -62,7 +62,7 @@ public static (ж<FatFile>, error) NewFatFile(io.ReaderAt r) {
         if (leMagic == Magic32 || leMagic == Magic64){
             return (default!, new FormatErrorжerror(ErrNotFat));
         } else {
-            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid magic number", default!))));
+            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid magic number"u8, default!))));
         }
     }
     ref var offset = ref heap<int64>(out var Ꮡoffset);
@@ -71,11 +71,11 @@ public static (ж<FatFile>, error) NewFatFile(io.ReaderAt r) {
     ref var narch = ref heap(new uint32(), out var Ꮡnarch);
     err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡnarch);
     if (err != default!) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid fat_header", default!))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid fat_header"u8, default!))));
     }
     offset += 4;
     if (narch < 1) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "file contains no images", default!))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "file contains no images"u8, default!))));
     }
     // Combine the Cpu and SubCpu (both uint32) into a uint64 to make sure
     // there are not duplicate architectures.
@@ -86,14 +86,14 @@ public static (ж<FatFile>, error) NewFatFile(io.ReaderAt r) {
     // Mach-O images further in the file.
     nint c = saferio.SliceCap<FatArch>((uint64)narch);
     if (c < 0) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "too many images", default!))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "too many images"u8, default!))));
     }
     ff.Arches = new slice<FatArch>(0, c);
     for (var i = (uint32)0; i < narch; i++) {
         ref var fa = ref heap(new FatArch(), out var Ꮡfa);
         err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡfa.of(FatArch.ᏑFatArchHeader));
         if (err != default!) {
-            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid fat_arch header", default!))));
+            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid fat_arch header"u8, default!))));
         }
         offset += fatArchHeaderSize;
         var fr = io.NewSectionReader(r, (int64)fa.Offset, (int64)fa.Size);

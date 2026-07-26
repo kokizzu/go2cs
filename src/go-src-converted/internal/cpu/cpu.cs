@@ -192,7 +192,7 @@ field:
         }
         i = indexByte(field, (rune)'=');
         if (i < 0) {
-            print((@string)"GODEBUG: no value specified for \"", field, (@string)"\"\n");
+            print((@string)"GODEBUG: no value specified for \""u8, field, (@string)"\"\n"u8);
             continue;
         }
         @string key = field[4..(int)(i)];
@@ -207,7 +207,7 @@ field:
             enable = false;
         }
         else { /* default: */
-            print((@string)"GODEBUG: value \"", value, (@string)"\" not supported for cpu option \"", key, (@string)"\"\n");
+            print((@string)"GODEBUG: value \""u8, value, (@string)"\" not supported for cpu option \""u8, key, (@string)"\"\n"u8);
             goto continue_field;
         }
 
@@ -225,7 +225,7 @@ field:
                 goto continue_field;
             }
         }
-        print((@string)"GODEBUG: unknown cpu feature \"", key, (@string)"\"\n");
+        print((@string)"GODEBUG: unknown cpu feature \""u8, key, (@string)"\"\n"u8);
 continue_field:;
     }
 break_field:;
@@ -234,7 +234,7 @@ break_field:;
             continue;
         }
         if (o.Enable && !o.Feature.Value) {
-            print((@string)"GODEBUG: can not enable \"", o.Name, (@string)"\", missing CPU support\n");
+            print((@string)"GODEBUG: can not enable \""u8, o.Name, (@string)"\", missing CPU support\n"u8);
             continue;
         }
         o.Feature.Value = o.Enable;

@@ -59,7 +59,7 @@ internal static (bool ret, error err) parseBool(slice<byte> bytes) {
     error err = default!;
 
     if (len(bytes) != 1) {
-        err = new SyntaxError("invalid boolean");
+        err = new SyntaxError("invalid boolean"u8);
         return (ret, err);
     }
     // DER demands that "If the encoding represents the boolean value TRUE,
@@ -75,7 +75,7 @@ internal static (bool ret, error err) parseBool(slice<byte> bytes) {
         break;
     }
     default: {
-        err = new SyntaxError("invalid boolean");
+        err = new SyntaxError("invalid boolean"u8);
         break;
     }}
 
@@ -88,13 +88,13 @@ internal static (bool ret, error err) parseBool(slice<byte> bytes) {
 // INTEGER and an error otherwise.
 internal static error checkInteger(slice<byte> bytes) {
     if (len(bytes) == 0) {
-        return new StructuralError("empty integer");
+        return new StructuralError("empty integer"u8);
     }
     if (len(bytes) == 1) {
         return default!;
     }
     if ((bytes[0] == 0 && (byte)(bytes[1] & 0x80) == 0) || (bytes[0] == 0xff && (byte)(bytes[1] & 0x80) == 0x80)) {
-        return new StructuralError("integer not minimally-encoded");
+        return new StructuralError("integer not minimally-encoded"u8);
     }
     return default!;
 }
@@ -111,7 +111,7 @@ internal static (int64 ret, error err) parseInt64(slice<byte> bytes) {
     }
     if (len(bytes) > 8) {
         // We'll overflow an int64 in this case.
-        err = new StructuralError("integer too large");
+        err = new StructuralError("integer too large"u8);
         return (ret, err);
     }
     for (nint bytesRead = 0; bytesRead < len(bytes); bytesRead++) {
@@ -137,7 +137,7 @@ internal static (int32, error) parseInt32(slice<byte> bytes) {
         return (0, err);
     }
     if (ret64 != (int64)(int32)ret64) {
-        return (0, new StructuralError("integer too large"));
+        return (0, new StructuralError("integer too large"u8));
     }
     return ((int32)ret64, default!);
 }
@@ -211,12 +211,12 @@ internal static (BitString ret, error err) parseBitString(slice<byte> bytes) {
     error err = default!;
 
     if (len(bytes) == 0) {
-        err = new SyntaxError("zero length BIT STRING");
+        err = new SyntaxError("zero length BIT STRING"u8);
         return (ret, err);
     }
     nint paddingBits = (nint)bytes[0];
     if (paddingBits > 7 || len(bytes) == 1 && paddingBits > 0 || (byte)(bytes[len(bytes) - 1] & ((((byte)1).Lsh((uint64)(bytes[0]))) - 1)) != 0) {
-        err = new SyntaxError("invalid padding bits in BIT STRING");
+        err = new SyntaxError("invalid padding bits in BIT STRING"u8);
         return (ret, err);
     }
     ret.BitLength = (len(bytes) - 1) * 8 - paddingBits;
@@ -270,7 +270,7 @@ internal static (ObjectIdentifier s, error err) parseObjectIdentifier(slice<byte
     error err = default!;
 
     if (len(bytes) == 0) {
-        err = new SyntaxError("zero length OBJECT IDENTIFIER");
+        err = new SyntaxError("zero length OBJECT IDENTIFIER"u8);
         return (s, err);
     }
     // In the worst case, we get two elements from the first byte (which is
@@ -323,7 +323,7 @@ internal static (nint ret, nint offset, error err) parseBase128Int(slice<byte> b
         // 5 * 7 bits per byte == 35 bits of data
         // Thus the representation is either non-minimal or too large for an int32
         if (shifted == 5) {
-            err = new StructuralError("base 128 integer too large");
+            err = new StructuralError("base 128 integer too large"u8);
             return (ret, offset, err);
         }
         ret64 <<= (int)(7);
@@ -331,7 +331,7 @@ internal static (nint ret, nint offset, error err) parseBase128Int(slice<byte> b
         // integers should be minimally encoded, so the leading octet should
         // never be 0x80
         if (shifted == 0 && b == 0x80) {
-            err = new SyntaxError("integer is not minimally encoded");
+            err = new SyntaxError("integer is not minimally encoded"u8);
             return (ret, offset, err);
         }
         ret64 |= (int64)((int64)((byte)(b & 0x7f)));
@@ -340,12 +340,12 @@ internal static (nint ret, nint offset, error err) parseBase128Int(slice<byte> b
             ret = (nint)ret64;
             // Ensure that the returned value fits in an int on all platforms
             if (ret64 > math.MaxInt32) {
-                err = new StructuralError("base 128 integer too large");
+                err = new StructuralError("base 128 integer too large"u8);
             }
             return (ret, offset, err);
         }
     }
-    err = new SyntaxError("truncated base 128 integer");
+    err = new SyntaxError("truncated base 128 integer"u8);
     return (ret, offset, err);
 }
 
@@ -408,7 +408,7 @@ internal static (@string ret, error err) parseNumericString(slice<byte> bytes) {
 
     foreach (var (_, b) in bytes) {
         if (!isNumeric(b)) {
-            return ("", new SyntaxError("NumericString contains invalid character"));
+            return ("", new SyntaxError("NumericString contains invalid character"u8));
         }
     }
     return (((@string)bytes), default!);
@@ -429,7 +429,7 @@ internal static (@string ret, error err) parsePrintableString(slice<byte> bytes)
 
     foreach (var (_, b) in bytes) {
         if (!isPrintable(b, allowAsterisk, allowAmpersand)) {
-            err = new SyntaxError("PrintableString contains invalid character");
+            err = new SyntaxError("PrintableString contains invalid character"u8);
             return (ret, err);
         }
     }
@@ -470,7 +470,7 @@ internal static (@string ret, error err) parseIA5String(slice<byte> bytes) {
 
     foreach (var (_, b) in bytes) {
         if (b >= utf8.RuneSelf) {
-            err = new SyntaxError("IA5String contains invalid character");
+            err = new SyntaxError("IA5String contains invalid character"u8);
             return (ret, err);
         }
     }
@@ -567,12 +567,12 @@ internal static (tagAndLength ret, nint offset, error err) parseTagAndLength(sli
         }
         // Tags should be encoded in minimal form.
         if (ret.tag < 0x1f) {
-            err = new SyntaxError("non-minimal tag");
+            err = new SyntaxError("non-minimal tag"u8);
             return (ret, offset, err);
         }
     }
     if (offset >= len(bytes)) {
-        err = new SyntaxError("truncated tag or length");
+        err = new SyntaxError("truncated tag or length"u8);
         return (ret, offset, err);
     }
     b = bytes[offset];
@@ -584,13 +584,13 @@ internal static (tagAndLength ret, nint offset, error err) parseTagAndLength(sli
         // Bottom 7 bits give the number of length bytes to follow.
         nint numBytes = (nint)((byte)(b & 0x7f));
         if (numBytes == 0) {
-            err = new SyntaxError("indefinite length found (not DER)");
+            err = new SyntaxError("indefinite length found (not DER)"u8);
             return (ret, offset, err);
         }
         ret.length = 0;
         for (nint i = 0; i < numBytes; i++) {
             if (offset >= len(bytes)) {
-                err = new SyntaxError("truncated tag or length");
+                err = new SyntaxError("truncated tag or length"u8);
                 return (ret, offset, err);
             }
             b = bytes[offset];
@@ -598,20 +598,20 @@ internal static (tagAndLength ret, nint offset, error err) parseTagAndLength(sli
             if (ret.length >= (1 << (int)(23))) {
                 // We can't shift ret.length up without
                 // overflowing.
-                err = new StructuralError("length too large");
+                err = new StructuralError("length too large"u8);
                 return (ret, offset, err);
             }
             ret.length <<= (int)(8);
             ret.length |= (nint)b;
             if (ret.length == 0) {
                 // DER requires that lengths be minimal.
-                err = new StructuralError("superfluous leading zeros in length");
+                err = new StructuralError("superfluous leading zeros in length"u8);
                 return (ret, offset, err);
             }
         }
         // Short lengths must be encoded in short form.
         if (ret.length < 0x80) {
-            err = new StructuralError("non-minimal length");
+            err = new StructuralError("non-minimal length"u8);
             return (ret, offset, err);
         }
     }
@@ -627,7 +627,7 @@ internal static (reflectꓸValue ret, error err) parseSequenceOf(slice<byte> byt
 
     var (matchAny, expectedTag, compoundType, ok) = getUniversalType(elemType);
     if (!ok) {
-        err = new StructuralError("unknown Go type for slice");
+        err = new StructuralError("unknown Go type for slice"u8);
         return (ret, err);
     }
     // First we iterate over the input and count the number of elements,
@@ -652,11 +652,11 @@ internal static (reflectꓸValue ret, error err) parseSequenceOf(slice<byte> byt
         // parsed into a []string.
         // Likewise, both time types are treated the same.
         if (!matchAny && (t.@class != ClassUniversal || t.isCompound != compoundType || t.tag != expectedTag)) {
-            err = new StructuralError("sequence tag mismatch");
+            err = new StructuralError("sequence tag mismatch"u8);
             return (ret, err);
         }
         if (invalidLength(offsetΔ1, t.length, len(bytes))) {
-            err = new SyntaxError("truncated sequence");
+            err = new SyntaxError("truncated sequence"u8);
             return (ret, err);
         }
         offsetΔ1 += t.length;
@@ -701,7 +701,7 @@ internal static (nint offset, error err) parseField(reflectꓸValue v, slice<byt
     // If we have run out of data, it may be that there are optional elements at the end.
     if (offset == len(bytes)) {
         if (!setDefaultValue(v, @params)) {
-            err = new SyntaxError("sequence truncated");
+            err = new SyntaxError("sequence truncated"u8);
         }
         return (offset, err);
     }
@@ -714,7 +714,7 @@ internal static (nint offset, error err) parseField(reflectꓸValue v, slice<byt
                 return (offset, err);
             }
             if (invalidLength(offset, tΔ1.length, len(bytes))) {
-                err = new SyntaxError("data truncated");
+                err = new SyntaxError("data truncated"u8);
                 return (offset, err);
             }
             any result = default!;
@@ -782,7 +782,7 @@ internal static (nint offset, error err) parseField(reflectꓸValue v, slice<byt
             expectedClassΔ1 = ClassApplication;
         }
         if (offset == len(bytes)) {
-            err = new StructuralError("explicit tag has no child");
+            err = new StructuralError("explicit tag has no child"u8);
             return (offset, err);
         }
         if (t.@class == expectedClassΔ1 && t.tag == @params.tag.Value && (t.length == 0 || t.isCompound)){
@@ -796,7 +796,7 @@ internal static (nint offset, error err) parseField(reflectꓸValue v, slice<byt
                 }
             } else {
                 if (!AreEqual(fieldType, flagType)) {
-                    err = new StructuralError("zero length explicit tag was not an asn1.Flag");
+                    err = new StructuralError("zero length explicit tag was not an asn1.Flag"u8);
                     return (offset, err);
                 }
                 v.SetBool(true);
@@ -808,7 +808,7 @@ internal static (nint offset, error err) parseField(reflectꓸValue v, slice<byt
             if (ok){
                 offset = initOffset;
             } else {
-                err = new StructuralError("explicitly tagged member didn't match");
+                err = new StructuralError("explicitly tagged member didn't match"u8);
             }
             return (offset, err);
         }
@@ -872,7 +872,7 @@ internal static (nint offset, error err) parseField(reflectꓸValue v, slice<byt
         return (offset, err);
     }
     if (invalidLength(offset, t.length, len(bytes))) {
-        err = new SyntaxError("data truncated");
+        err = new SyntaxError("data truncated"u8);
         return (offset, err);
     }
     var innerBytes = bytes[(int)(offset)..(int)(offset + t.length)];
@@ -951,7 +951,7 @@ internal static (nint offset, error err) parseField(reflectꓸValue v, slice<byt
             for (nint i = 0; i < structType.NumField(); i++) {
                 // TODO(dfc) Add support for the remaining integer types
                 if (!structType.Field(i).IsExported()) {
-                    err = new StructuralError("struct contains unexported fields");
+                    err = new StructuralError("struct contains unexported fields"u8);
                     return (offset, err);
                 }
             }

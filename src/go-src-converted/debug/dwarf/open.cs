@@ -77,12 +77,12 @@ public static (ж<Data>, error) New(slice<byte> abbrev, slice<byte> aranges, sli
     // 32-bit DWARF: 4 byte length, 2 byte version.
     // 64-bit DWARf: 4 bytes of 0xff, 8 byte length, 2 byte version.
     if (len((~d).info) < 6) {
-        return (default!, new DecodeError("info", ((Offset)(uint32)len((~d).info)), "too short"));
+        return (default!, new DecodeError("info"u8, ((Offset)(uint32)len((~d).info)), "too short"u8));
     }
     nint offset = 4;
     if ((~d).info[0] == 0xff && (~d).info[1] == 0xff && (~d).info[2] == 0xff && (~d).info[3] == 0xff) {
         if (len((~d).info) < 14) {
-            return (default!, new DecodeError("info", ((Offset)(uint32)len((~d).info)), "too short"));
+            return (default!, new DecodeError("info"u8, ((Offset)(uint32)len((~d).info)), "too short"u8));
         }
         offset = 12;
     }
@@ -90,7 +90,7 @@ public static (ж<Data>, error) New(slice<byte> abbrev, slice<byte> aranges, sli
     var (x, y) = ((~d).info[offset], (~d).info[offset + 1]);
     switch (ᐧ) {
     case {} when x == 0 && y == 0: {
-        return (default!, new DecodeError("info", 4, "unsupported version 0"));
+        return (default!, new DecodeError("info"u8, 4, "unsupported version 0"u8));
     }
     case {} when x is 0: {
         d.Value.bigEndian = true;
@@ -103,7 +103,7 @@ public static (ж<Data>, error) New(slice<byte> abbrev, slice<byte> aranges, sli
         break;
     }
     default: {
-        return (default!, new DecodeError("info", 4, "cannot determine byte order"));
+        return (default!, new DecodeError("info"u8, 4, "cannot determine byte order"u8));
     }}
 
     var (u, err) = d.parseUnits();

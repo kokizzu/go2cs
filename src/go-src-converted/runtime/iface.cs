@@ -292,7 +292,7 @@ internal static void itabsinit() {
 // want = the static type we're trying to convert to.
 // iface = the static type we're converting from.
 internal static void panicdottypeE(ж<_type> Ꮡhave, ж<_type> Ꮡwant, ж<_type> Ꮡiface) {
-    throw panic(Ꮡ(new TypeAssertionError(Ꮡiface, Ꮡhave, Ꮡwant, "")));
+    throw panic(Ꮡ(new TypeAssertionError(Ꮡiface, Ꮡhave, Ꮡwant, ""u8)));
 }
 
 // panicdottypeI is called when doing an i.(T) conversion and the conversion fails.
@@ -310,7 +310,7 @@ internal static void panicdottypeI(ж<itab> Ꮡhave, ж<_type> Ꮡwant, ж<_type
 // panicnildottype is called when doing an i.(T) conversion and the interface i is nil.
 // want = the static type we're trying to convert to.
 internal static void panicnildottype(ж<_type> Ꮡwant) {
-    throw panic(Ꮡ(new TypeAssertionError(nil, nil, Ꮡwant, "")));
+    throw panic(Ꮡ(new TypeAssertionError(nil, nil, Ꮡwant, ""u8)));
 }
 
 [GoType("num:uint16")] partial struct uint16InterfacePtr;
@@ -483,7 +483,7 @@ internal static @unsafe.Pointer /*x*/ convTslice(slice<byte> val) {
 internal static ж<itab> assertE2I(ж<interfacetype> Ꮡinter, ж<_type> Ꮡt) {
     if (Ꮡt == nil) {
         // explicit conversions require non-nil interface value.
-        throw panic(Ꮡ(new TypeAssertionError(nil, nil, Ꮡinter.of(interfacetype.ᏑType), "")));
+        throw panic(Ꮡ(new TypeAssertionError(nil, nil, Ꮡinter.of(interfacetype.ᏑType), ""u8)));
     }
     return getitab(Ꮡinter, Ꮡt, false);
 }
@@ -505,7 +505,7 @@ internal static ж<itab> typeAssert(ж<abi.TypeAssert> Ꮡs, ж<_type> Ꮡt) {
     ж<itab> tab = default!;
     if (Ꮡt == nil){
         if (!s.CanFail) {
-            throw panic(Ꮡ(new TypeAssertionError(nil, nil, s.Inter.of(abiꓸInterfaceType.ᏑType), "")));
+            throw panic(Ꮡ(new TypeAssertionError(nil, nil, s.Inter.of(abiꓸInterfaceType.ᏑType), ""u8)));
         }
     } else {
         tab = getitab(s.Inter, Ꮡt, s.CanFail);

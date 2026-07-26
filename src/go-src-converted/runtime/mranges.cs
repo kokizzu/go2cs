@@ -343,7 +343,7 @@ internal static void add(this ж<addrRanges> Ꮡa, addrRange r) {
     // An empty range has no effect on the set of addresses represented
     // by a, but passing a zero-sized range is almost always a bug.
     if (r.size() == 0) {
-        print((@string)"runtime: range = {", ((Δhex)(uint64)r.@base.addr()), (@string)", ", ((Δhex)(uint64)r.limit.addr()), (@string)"}\n");
+        print((@string)"runtime: range = {"u8, ((Δhex)(uint64)r.@base.addr()), (@string)", "u8, ((Δhex)(uint64)r.limit.addr()), (@string)"}\n"u8);
         @throw("attempted to add zero-sized address range"u8);
     }
     // Because we assume r is not currently represented in a,

@@ -88,7 +88,7 @@ internal static void sysGrow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr lim
     ref var Δp = ref Ꮡp.Value;
 
     if (@base % (uintptr)pallocChunkBytes != 0 || limit % (uintptr)pallocChunkBytes != 0) {
-        print((@string)"runtime: base = ", ((Δhex)(uint64)@base), (@string)", limit = ", ((Δhex)(uint64)limit), (@string)"\n");
+        print((@string)"runtime: base = "u8, ((Δhex)(uint64)@base), (@string)", limit = "u8, ((Δhex)(uint64)limit), (@string)"\n"u8);
         @throw("sysGrow bounds not aligned to pallocChunkBytes"u8);
     }
     // addrRangeToSummaryRange converts a range of addresses into a range
@@ -173,7 +173,7 @@ internal static uintptr sysGrow(this ж<scavengeIndex> Ꮡs, uintptr @base, uint
     ref var s = ref Ꮡs.Value;
 
     if (@base % (uintptr)pallocChunkBytes != 0 || limit % (uintptr)pallocChunkBytes != 0) {
-        print((@string)"runtime: base = ", ((Δhex)(uint64)@base), (@string)", limit = ", ((Δhex)(uint64)limit), (@string)"\n");
+        print((@string)"runtime: base = "u8, ((Δhex)(uint64)@base), (@string)", limit = "u8, ((Δhex)(uint64)limit), (@string)"\n"u8);
         @throw("sysGrow bounds not aligned to pallocChunkBytes"u8);
     }
     var scSize = @unsafe.Sizeof(new atomicScavChunkData(nil));

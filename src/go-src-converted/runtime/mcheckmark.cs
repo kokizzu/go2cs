@@ -72,8 +72,8 @@ internal static void endCheckmarks() {
 internal static bool setCheckmark(uintptr obj, uintptr @base, uintptr off, markBits mbits) {
     if (!mbits.isMarked()) {
         printlock();
-        print((@string)"runtime: checkmarks found unexpected unmarked object obj=", ((Δhex)(uint64)obj), (@string)"\n");
-        print((@string)"runtime: found obj at *(", ((Δhex)(uint64)@base), (@string)"+", ((Δhex)(uint64)off), (@string)")\n");
+        print((@string)"runtime: checkmarks found unexpected unmarked object obj="u8, ((Δhex)(uint64)obj), (@string)"\n"u8);
+        print((@string)"runtime: found obj at *("u8, ((Δhex)(uint64)@base), (@string)"+"u8, ((Δhex)(uint64)off), (@string)")\n"u8);
         // Dump the source (base) object
         gcDumpObject("base"u8, @base, off);
         // Dump the object

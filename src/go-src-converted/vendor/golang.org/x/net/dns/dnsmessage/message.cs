@@ -408,32 +408,32 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     error err = default!;
     {
         (h.id, newOff, err) = unpackUint16(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("id", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("id"u8, err))));
         }
     }
     {
         (h.bits, newOff, err) = unpackUint16(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("bits", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("bits"u8, err))));
         }
     }
     {
         (h.questions, newOff, err) = unpackUint16(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("questions", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("questions"u8, err))));
         }
     }
     {
         (h.answers, newOff, err) = unpackUint16(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("answers", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("answers"u8, err))));
         }
     }
     {
         (h.authorities, newOff, err) = unpackUint16(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("authorities", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("authorities"u8, err))));
         }
     }
     {
         (h.additionals, newOff, err) = unpackUint16(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("additionals", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("additionals"u8, err))));
         }
     }
     return (newOff, default!);
@@ -484,12 +484,12 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     r.Header.Type = r.Body.realType();
     (msg, var lenOff, var err) = r.Header.pack(msg, compression, compressionOff);
     if (err != default!) {
-        return (msg, new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader", err))));
+        return (msg, new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader"u8, err))));
     }
     nint preLen = len(msg);
     (msg, err) = r.Body.pack(msg, compression, compressionOff);
     if (err != default!) {
-        return (msg, new nestedErrorжerror(Ꮡ(new nestedError("content", err))));
+        return (msg, new nestedErrorжerror(Ꮡ(new nestedError("content"u8, err))));
     }
     {
         var errΔ1 = r.Header.fixLen(msg, lenOff, preLen); if (errΔ1 != default!) {
@@ -534,7 +534,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     error err = default!;
     {
         (p.off, err) = p.header.unpack(msg, 0); if (err != default!) {
-            return (new Header(nil), new nestedErrorжerror(Ꮡ(new nestedError("unpacking header", err))));
+            return (new Header(nil), new nestedErrorжerror(Ꮡ(new nestedError("unpacking header"u8, err))));
         }
     }
     p.section = sectionQuestions;
@@ -630,15 +630,15 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     Name name = new();
     var (off, err) = name.unpack(p.msg, p.off);
     if (err != default!) {
-        return (new ΔQuestion(nil), new nestedErrorжerror(Ꮡ(new nestedError("unpacking Question.Name", err))));
+        return (new ΔQuestion(nil), new nestedErrorжerror(Ꮡ(new nestedError("unpacking Question.Name"u8, err))));
     }
     (var typ, off, err) = unpackType(p.msg, off);
     if (err != default!) {
-        return (new ΔQuestion(nil), new nestedErrorжerror(Ꮡ(new nestedError("unpacking Question.Type", err))));
+        return (new ΔQuestion(nil), new nestedErrorжerror(Ꮡ(new nestedError("unpacking Question.Type"u8, err))));
     }
     (var @class, off, err) = unpackClass(p.msg, off);
     if (err != default!) {
-        return (new ΔQuestion(nil), new nestedErrorжerror(Ꮡ(new nestedError("unpacking Question.Class", err))));
+        return (new ΔQuestion(nil), new nestedErrorжerror(Ꮡ(new nestedError("unpacking Question.Class"u8, err))));
     }
     p.off = off;
     p.index++;
@@ -675,16 +675,16 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     }
     var (off, err) = skipName(p.msg, p.off);
     if (err != default!) {
-        return new nestedErrorжerror(Ꮡ(new nestedError("skipping Question Name", err)));
+        return new nestedErrorжerror(Ꮡ(new nestedError("skipping Question Name"u8, err)));
     }
     {
         (off, err) = skipType(p.msg, off); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("skipping Question Type", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("skipping Question Type"u8, err)));
         }
     }
     {
         (off, err) = skipClass(p.msg, off); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("skipping Question Class", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("skipping Question Class"u8, err)));
         }
     }
     p.off = off;
@@ -1148,7 +1148,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
         error err = default!;
         {
             (msg, err) = m.Questions[i].pack(msg, compression, compressionOff); if (err != default!) {
-                return (default!, new nestedErrorжerror(Ꮡ(new nestedError("packing Question", err))));
+                return (default!, new nestedErrorжerror(Ꮡ(new nestedError("packing Question"u8, err))));
             }
         }
     }
@@ -1156,7 +1156,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
         error err = default!;
         {
             (msg, err) = m.Answers[i].pack(msg, compression, compressionOff); if (err != default!) {
-                return (default!, new nestedErrorжerror(Ꮡ(new nestedError("packing Answer", err))));
+                return (default!, new nestedErrorжerror(Ꮡ(new nestedError("packing Answer"u8, err))));
             }
         }
     }
@@ -1164,7 +1164,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
         error err = default!;
         {
             (msg, err) = m.Authorities[i].pack(msg, compression, compressionOff); if (err != default!) {
-                return (default!, new nestedErrorжerror(Ꮡ(new nestedError("packing Authority", err))));
+                return (default!, new nestedErrorжerror(Ꮡ(new nestedError("packing Authority"u8, err))));
             }
         }
     }
@@ -1172,7 +1172,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
         error err = default!;
         {
             (msg, err) = m.Additionals[i].pack(msg, compression, compressionOff); if (err != default!) {
-                return (default!, new nestedErrorжerror(Ꮡ(new nestedError("packing Additional", err))));
+                return (default!, new nestedErrorжerror(Ꮡ(new nestedError("packing Additional"u8, err))));
             }
         }
     }
@@ -1406,12 +1406,12 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     h.Type = r.realType();
     var (msg, lenOff, err) = h.pack(b.msg, b.compression, b.start);
     if (err != default!) {
-        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader", err)));
+        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader"u8, err)));
     }
     nint preLen = len(msg);
     {
         (msg, err) = r.pack(msg, b.compression, b.start); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("CNAMEResource body", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("CNAMEResource body"u8, err)));
         }
     }
     {
@@ -1438,12 +1438,12 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     h.Type = r.realType();
     var (msg, lenOff, err) = h.pack(b.msg, b.compression, b.start);
     if (err != default!) {
-        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader", err)));
+        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader"u8, err)));
     }
     nint preLen = len(msg);
     {
         (msg, err) = r.pack(msg, b.compression, b.start); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("MXResource body", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("MXResource body"u8, err)));
         }
     }
     {
@@ -1470,12 +1470,12 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     h.Type = r.realType();
     var (msg, lenOff, err) = h.pack(b.msg, b.compression, b.start);
     if (err != default!) {
-        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader", err)));
+        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader"u8, err)));
     }
     nint preLen = len(msg);
     {
         (msg, err) = r.pack(msg, b.compression, b.start); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("NSResource body", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("NSResource body"u8, err)));
         }
     }
     {
@@ -1502,12 +1502,12 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     h.Type = r.realType();
     var (msg, lenOff, err) = h.pack(b.msg, b.compression, b.start);
     if (err != default!) {
-        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader", err)));
+        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader"u8, err)));
     }
     nint preLen = len(msg);
     {
         (msg, err) = r.pack(msg, b.compression, b.start); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("PTRResource body", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("PTRResource body"u8, err)));
         }
     }
     {
@@ -1534,12 +1534,12 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     h.Type = r.realType();
     var (msg, lenOff, err) = h.pack(b.msg, b.compression, b.start);
     if (err != default!) {
-        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader", err)));
+        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader"u8, err)));
     }
     nint preLen = len(msg);
     {
         (msg, err) = r.pack(msg, b.compression, b.start); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("SOAResource body", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("SOAResource body"u8, err)));
         }
     }
     {
@@ -1566,12 +1566,12 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     h.Type = r.realType();
     var (msg, lenOff, err) = h.pack(b.msg, b.compression, b.start);
     if (err != default!) {
-        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader", err)));
+        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader"u8, err)));
     }
     nint preLen = len(msg);
     {
         (msg, err) = r.pack(msg, b.compression, b.start); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("TXTResource body", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("TXTResource body"u8, err)));
         }
     }
     {
@@ -1598,12 +1598,12 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     h.Type = r.realType();
     var (msg, lenOff, err) = h.pack(b.msg, b.compression, b.start);
     if (err != default!) {
-        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader", err)));
+        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader"u8, err)));
     }
     nint preLen = len(msg);
     {
         (msg, err) = r.pack(msg, b.compression, b.start); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("SRVResource body", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("SRVResource body"u8, err)));
         }
     }
     {
@@ -1630,12 +1630,12 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     h.Type = r.realType();
     var (msg, lenOff, err) = h.pack(b.msg, b.compression, b.start);
     if (err != default!) {
-        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader", err)));
+        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader"u8, err)));
     }
     nint preLen = len(msg);
     {
         (msg, err) = r.pack(msg, b.compression, b.start); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("AResource body", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("AResource body"u8, err)));
         }
     }
     {
@@ -1662,12 +1662,12 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     h.Type = r.realType();
     var (msg, lenOff, err) = h.pack(b.msg, b.compression, b.start);
     if (err != default!) {
-        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader", err)));
+        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader"u8, err)));
     }
     nint preLen = len(msg);
     {
         (msg, err) = r.pack(msg, b.compression, b.start); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("AAAAResource body", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("AAAAResource body"u8, err)));
         }
     }
     {
@@ -1694,12 +1694,12 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     h.Type = r.realType();
     var (msg, lenOff, err) = h.pack(b.msg, b.compression, b.start);
     if (err != default!) {
-        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader", err)));
+        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader"u8, err)));
     }
     nint preLen = len(msg);
     {
         (msg, err) = r.pack(msg, b.compression, b.start); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("OPTResource body", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("OPTResource body"u8, err)));
         }
     }
     {
@@ -1726,12 +1726,12 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     h.Type = r.realType();
     var (msg, lenOff, err) = h.pack(b.msg, b.compression, b.start);
     if (err != default!) {
-        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader", err)));
+        return new nestedErrorжerror(Ꮡ(new nestedError("ResourceHeader"u8, err)));
     }
     nint preLen = len(msg);
     {
         (msg, err) = r.pack(msg, b.compression, b.start); if (err != default!) {
-            return new nestedErrorжerror(Ꮡ(new nestedError("UnknownResource body", err)));
+            return new nestedErrorжerror(Ꮡ(new nestedError("UnknownResource body"u8, err)));
         }
     }
     {
@@ -1797,7 +1797,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     msg = oldMsg;
     {
         (msg, err) = h.Name.pack(msg, compression, compressionOff); if (err != default!) {
-            return (oldMsg, 0, new nestedErrorжerror(Ꮡ(new nestedError("Name", err))));
+            return (oldMsg, 0, new nestedErrorжerror(Ꮡ(new nestedError("Name"u8, err))));
         }
     }
     msg = packType(msg, h.Type);
@@ -1813,27 +1813,27 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
     error err = default!;
     {
         (newOff, err) = h.Name.unpack(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("Name", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("Name"u8, err))));
         }
     }
     {
         (h.Type, newOff, err) = unpackType(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("Type", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("Type"u8, err))));
         }
     }
     {
         (h.Class, newOff, err) = unpackClass(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("Class", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("Class"u8, err))));
         }
     }
     {
         (h.TTL, newOff, err) = unpackUint32(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("TTL", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("TTL"u8, err))));
         }
     }
     {
         (h.Length, newOff, err) = unpackUint16(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("Length", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("Length"u8, err))));
         }
     }
     return (newOff, default!);
@@ -1901,26 +1901,26 @@ internal static readonly UntypedInt edns0DNSSECOKMask = 0x00ff8000;
 internal static (nint, error) skipResource(slice<byte> msg, nint off) {
     var (newOff, err) = skipName(msg, off);
     if (err != default!) {
-        return (off, new nestedErrorжerror(Ꮡ(new nestedError("Name", err))));
+        return (off, new nestedErrorжerror(Ꮡ(new nestedError("Name"u8, err))));
     }
     {
         (newOff, err) = skipType(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("Type", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("Type"u8, err))));
         }
     }
     {
         (newOff, err) = skipClass(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("Class", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("Class"u8, err))));
         }
     }
     {
         (newOff, err) = skipUint32(msg, newOff); if (err != default!) {
-            return (off, new nestedErrorжerror(Ꮡ(new nestedError("TTL", err))));
+            return (off, new nestedErrorжerror(Ꮡ(new nestedError("TTL"u8, err))));
         }
     }
     (var length, newOff, err) = unpackUint16(msg, newOff);
     if (err != default!) {
-        return (off, new nestedErrorжerror(Ꮡ(new nestedError("Length", err))));
+        return (off, new nestedErrorжerror(Ꮡ(new nestedError("Length"u8, err))));
     }
     {
         newOff += (nint)length; if (newOff > len(msg)) {
@@ -2285,7 +2285,7 @@ break_Loop:;
 [GoRecv] internal static (slice<byte>, error) pack(this ref ΔQuestion q, slice<byte> msg, map<@string, uint16> compression, nint compressionOff) {
     (msg, var err) = q.Name.pack(msg, compression, compressionOff);
     if (err != default!) {
-        return (msg, new nestedErrorжerror(Ꮡ(new nestedError("Name", err))));
+        return (msg, new nestedErrorжerror(Ꮡ(new nestedError("Name"u8, err))));
     }
     msg = packType(msg, q.Type);
     return (packClass(msg, q.Class), default!);
@@ -2419,7 +2419,7 @@ internal static (ΔCNAMEResource, error) unpackCNAMEResource(slice<byte> msg, ni
     msg = packUint16(msg, r.Pref);
     (msg, var err) = r.MX.pack(msg, compression, compressionOff);
     if (err != default!) {
-        return (oldMsg, new nestedErrorжerror(Ꮡ(new nestedError("MXResource.MX", err))));
+        return (oldMsg, new nestedErrorжerror(Ꮡ(new nestedError("MXResource.MX"u8, err))));
     }
     return (msg, default!);
 }
@@ -2432,12 +2432,12 @@ internal static (ΔCNAMEResource, error) unpackCNAMEResource(slice<byte> msg, ni
 internal static (ΔMXResource, error) unpackMXResource(slice<byte> msg, nint off) {
     (var pref, off, var err) = unpackUint16(msg, off);
     if (err != default!) {
-        return (new ΔMXResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Pref", err))));
+        return (new ΔMXResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Pref"u8, err))));
     }
     Name mx = new();
     {
         var (_, errΔ1) = mx.unpack(msg, off); if (errΔ1 != default!) {
-            return (new ΔMXResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("MX", errΔ1))));
+            return (new ΔMXResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("MX"u8, errΔ1))));
         }
     }
     return (new ΔMXResource(pref, mx), default!);
@@ -2524,11 +2524,11 @@ internal static (ΔPTRResource, error) unpackPTRResource(slice<byte> msg, nint o
     var oldMsg = msg;
     (msg, var err) = r.NS.pack(msg, compression, compressionOff);
     if (err != default!) {
-        return (oldMsg, new nestedErrorжerror(Ꮡ(new nestedError("SOAResource.NS", err))));
+        return (oldMsg, new nestedErrorжerror(Ꮡ(new nestedError("SOAResource.NS"u8, err))));
     }
     (msg, err) = r.MBox.pack(msg, compression, compressionOff);
     if (err != default!) {
-        return (oldMsg, new nestedErrorжerror(Ꮡ(new nestedError("SOAResource.MBox", err))));
+        return (oldMsg, new nestedErrorжerror(Ꮡ(new nestedError("SOAResource.MBox"u8, err))));
     }
     msg = packUint32(msg, r.Serial);
     msg = packUint32(msg, r.Refresh);
@@ -2546,33 +2546,33 @@ internal static (ΔSOAResource, error) unpackSOAResource(slice<byte> msg, nint o
     Name ns = new();
     (off, var err) = ns.unpack(msg, off);
     if (err != default!) {
-        return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("NS", err))));
+        return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("NS"u8, err))));
     }
     Name mbox = new();
     {
         (off, err) = mbox.unpack(msg, off); if (err != default!) {
-            return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("MBox", err))));
+            return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("MBox"u8, err))));
         }
     }
     (var serial, off, err) = unpackUint32(msg, off);
     if (err != default!) {
-        return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Serial", err))));
+        return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Serial"u8, err))));
     }
     (var refresh, off, err) = unpackUint32(msg, off);
     if (err != default!) {
-        return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Refresh", err))));
+        return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Refresh"u8, err))));
     }
     (var retry, off, err) = unpackUint32(msg, off);
     if (err != default!) {
-        return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Retry", err))));
+        return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Retry"u8, err))));
     }
     (var expire, off, err) = unpackUint32(msg, off);
     if (err != default!) {
-        return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Expire", err))));
+        return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Expire"u8, err))));
     }
     (var minTTL, _, err) = unpackUint32(msg, off);
     if (err != default!) {
-        return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("MinTTL", err))));
+        return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("MinTTL"u8, err))));
     }
     return (new ΔSOAResource(ns, mbox, serial, refresh, retry, expire, minTTL), default!);
 }
@@ -2619,7 +2619,7 @@ internal static (ΔTXTResource, error) unpackTXTResource(slice<byte> msg, nint o
         error err = default!;
         {
             (t, off, err) = unpackText(msg, off); if (err != default!) {
-                return (new ΔTXTResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("text", err))));
+                return (new ΔTXTResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("text"u8, err))));
             }
         }
         // Check if we got too many bytes.
@@ -2652,7 +2652,7 @@ internal static (ΔTXTResource, error) unpackTXTResource(slice<byte> msg, nint o
     msg = packUint16(msg, r.Port);
     (msg, var err) = r.Target.pack(msg, default!, compressionOff);
     if (err != default!) {
-        return (oldMsg, new nestedErrorжerror(Ꮡ(new nestedError("SRVResource.Target", err))));
+        return (oldMsg, new nestedErrorжerror(Ꮡ(new nestedError("SRVResource.Target"u8, err))));
     }
     return (msg, default!);
 }
@@ -2665,20 +2665,20 @@ internal static (ΔTXTResource, error) unpackTXTResource(slice<byte> msg, nint o
 internal static (ΔSRVResource, error) unpackSRVResource(slice<byte> msg, nint off) {
     (var priority, off, var err) = unpackUint16(msg, off);
     if (err != default!) {
-        return (new ΔSRVResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Priority", err))));
+        return (new ΔSRVResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Priority"u8, err))));
     }
     (var weight, off, err) = unpackUint16(msg, off);
     if (err != default!) {
-        return (new ΔSRVResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Weight", err))));
+        return (new ΔSRVResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Weight"u8, err))));
     }
     (var port, off, err) = unpackUint16(msg, off);
     if (err != default!) {
-        return (new ΔSRVResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Port", err))));
+        return (new ΔSRVResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Port"u8, err))));
     }
     Name target = new();
     {
         var (_, errΔ1) = target.unpack(msg, off); if (errΔ1 != default!) {
-            return (new ΔSRVResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Target", errΔ1))));
+            return (new ΔSRVResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Target"u8, errΔ1))));
         }
     }
     return (new ΔSRVResource(priority, weight, port, target), default!);
@@ -2800,16 +2800,16 @@ internal static (ΔOPTResource, error) unpackOPTResource(slice<byte> msg, nint o
         Option o = default!;
         (o.Code, off, err) = unpackUint16(msg, off);
         if (err != default!) {
-            return (new ΔOPTResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Code", err))));
+            return (new ΔOPTResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Code"u8, err))));
         }
         uint16 l = default!;
         (l, off, err) = unpackUint16(msg, off);
         if (err != default!) {
-            return (new ΔOPTResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Data", err))));
+            return (new ΔOPTResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Data"u8, err))));
         }
         o.Data = new slice<byte>(l);
         if (copy(o.Data, msg[(int)(off)..]) != (nint)l) {
-            return (new ΔOPTResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Data", errCalcLen))));
+            return (new ΔOPTResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Data"u8, errCalcLen))));
         }
         off += (nint)l;
         opts = append(opts, o);

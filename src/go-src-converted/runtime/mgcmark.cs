@@ -80,7 +80,7 @@ internal static void gcMarkRootPrepare() {
 // purely for debugging.
 internal static void gcMarkRootCheck() {
     if (work.markrootNext < work.markrootJobs) {
-        print(work.markrootNext, (@string)" of ", work.markrootJobs, (@string)" markroot jobs done\n");
+        print(work.markrootNext, (@string)" of "u8, work.markrootJobs, (@string)" markroot jobs done\n"u8);
         @throw("left over markroot jobs"u8);
     }
     // Check that stacks have been scanned.
@@ -94,9 +94,9 @@ internal static void gcMarkRootCheck() {
             return;
         }
         if (!(~gp).gcscandone) {
-            println((@string)"gp", gp, (@string)"goid", (~gp).goid,
-                (@string)"status", readgstatus(gp),
-                (@string)"gcscandone", (~gp).gcscandone);
+            println((@string)"gp"u8, gp, (@string)"goid"u8, (~gp).goid,
+                (@string)"status"u8, readgstatus(gp),
+                (@string)"gcscandone"u8, (~gp).gcscandone);
             @throw("scan missed a g"u8);
         }
         i++;
@@ -160,7 +160,7 @@ internal static int64 markroot(ж<gcWork> Ꮡgcw, uint32 i, bool flushBgCredit) 
         if (i < work.baseStacks || work.baseEnd <= i) {
             // the rest is scanning goroutine stacks
             printlock();
-            print((@string)"runtime: markroot index ", i, (@string)" not in stack roots range [", work.baseStacks, (@string)", ", work.baseEnd, (@string)")\n");
+            print((@string)"runtime: markroot index "u8, i, (@string)" not in stack roots range ["u8, work.baseStacks, (@string)", "u8, work.baseEnd, (@string)")\n"u8);
             @throw("markroot: bad index"u8);
         }
         var gp = work.stackRoots[(nint)(i - work.baseStacks)];
@@ -328,14 +328,14 @@ internal static void markrootSpans(ж<gcWork> Ꮡgcw, nint shard) {
             // sanity check that.
             {
                 var state = s.of(mspan.Ꮡstate).get(); if (state != mSpanInUse) {
-                    print((@string)"s.state = ", state, (@string)"\n");
+                    print((@string)"s.state = "u8, state, (@string)"\n"u8);
                     @throw("non in-use span found with specials bit set"u8);
                 }
             }
             // Check that this span was swept (it may be cached or uncached).
             if (!useCheckmark && !((~s).sweepgen == sg || (~s).sweepgen == sg + 3)) {
                 // sweepgen was updated (+2) during non-checkmark GC pass
-                print((@string)"sweep ", (~s).sweepgen, (@string)" ", sg, (@string)"\n");
+                print((@string)"sweep "u8, (~s).sweepgen, (@string)" "u8, sg, (@string)"\n"u8);
                 @throw("gc: unswept span"u8);
             }
             // Lock the specials to prevent a special from being
@@ -596,7 +596,7 @@ internal static void gcAssistAlloc1(ж<g> Ꮡgp, int64 scanWork) {
     var trackLimiterEvent = (~gp.m).p.ptr().of(runtime_package.Δp.ᏑlimiterEvent).start(limiterEventMarkAssist, startTime);
     var decnwait = atomic.Xadd(Ꮡwork.of(workType.Ꮡnwait), -1);
     if (decnwait == work.nproc) {
-        println((@string)"runtime: work.nwait =", decnwait, (@string)"work.nproc=", work.nproc);
+        println((@string)"runtime: work.nwait ="u8, decnwait, (@string)"work.nproc="u8, work.nproc);
         @throw("nwait > work.nprocs"u8);
     }
     // gcDrainN requires the caller to be preemptible.
@@ -618,8 +618,8 @@ internal static void gcAssistAlloc1(ж<g> Ꮡgp, int64 scanWork) {
     // signal a completion point.
     var incnwait = atomic.Xadd(Ꮡwork.of(workType.Ꮡnwait), +1);
     if (incnwait > work.nproc) {
-        println((@string)"runtime: work.nwait=", incnwait,
-            (@string)"work.nproc=", work.nproc);
+        println((@string)"runtime: work.nwait="u8, incnwait,
+            (@string)"work.nproc="u8, work.nproc);
         @throw("work.nwait > work.nproc"u8);
     }
     if (incnwait == work.nproc && !gcMarkWorkAvailable(nil)) {
@@ -766,7 +766,7 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
     ref var gp = ref Ꮡgp.DerefOrNil();
 
     if ((uint32)(readgstatus(Ꮡgp) & (uint32)_Gscan) == 0) {
-        print((@string)"runtime:scanstack: gp=", Ꮡgp, (@string)", goid=", gp.goid, (@string)", gp->atomicstatus=", ((Δhex)(uint64)readgstatus(Ꮡgp)), (@string)"\n");
+        print((@string)"runtime:scanstack: gp="u8, Ꮡgp, (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, ((Δhex)(uint64)readgstatus(Ꮡgp)), (@string)"\n"u8);
         @throw("scanstack - bad status"u8);
     }
     var exprᴛ1 = (uint32)(readgstatus(Ꮡgp) & ~(uint32)_Gscan);
@@ -774,13 +774,13 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
         return 0;
     }
     if (exprᴛ1 == _Grunning) {
-        print((@string)"runtime: gp=", Ꮡgp, (@string)", goid=", gp.goid, (@string)", gp->atomicstatus=", readgstatus(Ꮡgp), (@string)"\n");
+        print((@string)"runtime: gp="u8, Ꮡgp, (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, readgstatus(Ꮡgp), (@string)"\n"u8);
         @throw("scanstack: goroutine not stopped"u8);
     }
     else if (exprᴛ1 == _Grunnable || exprᴛ1 == _Gsyscall || exprᴛ1 == _Gwaiting) {
     }
     else { /* default: */
-        print((@string)"runtime: gp=", Ꮡgp, (@string)", goid=", gp.goid, (@string)", gp->atomicstatus=", readgstatus(Ꮡgp), (@string)"\n");
+        print((@string)"runtime: gp="u8, Ꮡgp, (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, readgstatus(Ꮡgp), (@string)"\n"u8);
         @throw("mark - bad status"u8);
     }
 
@@ -814,10 +814,10 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
     ref var state = ref heap(new stackScanState(), out var Ꮡstate);
     state.stack = gp.stack;
     if (stackTraceDebug) {
-        println((@string)"stack trace goroutine", gp.goid);
+        println((@string)"stack trace goroutine"u8, gp.goid);
     }
     if (debugScanConservative && gp.asyncSafePoint) {
-        print((@string)"scanning async preempted goroutine ", gp.goid, (@string)" stack [", ((Δhex)(uint64)gp.stack.lo), (@string)",", ((Δhex)(uint64)gp.stack.hi), (@string)")\n");
+        print((@string)"scanning async preempted goroutine "u8, gp.goid, (@string)" stack ["u8, ((Δhex)(uint64)gp.stack.lo), (@string)","u8, ((Δhex)(uint64)gp.stack.hi), (@string)")\n"u8);
     }
     // Scan the saved context register. This is effectively a live
     // register that gets moved back and forth between the
@@ -882,9 +882,9 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
         // Don't scan it again.
         if (stackTraceDebug) {
             printlock();
-            print((@string)"  live stkobj at", ((Δhex)(uint64)(state.stack.lo + (uintptr)(~obj).off)), (@string)"of size", (~obj).size);
+            print((@string)"  live stkobj at"u8, ((Δhex)(uint64)(state.stack.lo + (uintptr)(~obj).off)), (@string)"of size"u8, (~obj).size);
             if (conservative) {
-                print((@string)" (conservative)");
+                print((@string)" (conservative)"u8);
             }
             println();
             printunlock();
@@ -926,7 +926,7 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
                     // reachable
                     continue;
                 }
-                println((@string)"  dead stkobj at", ((Δhex)(uint64)(gp.stack.lo + (uintptr)(~obj).off)), (@string)"of size", (~(~obj).r).size);
+                println((@string)"  dead stkobj at"u8, ((Δhex)(uint64)(gp.stack.lo + (uintptr)(~obj).off)), (@string)"of size"u8, (~(~obj).r).size);
             }
         }
         // Note: not necessarily really dead - only reachable-from-ptr dead.
@@ -947,13 +947,13 @@ internal static void scanframeworker(ж<stkframe> Ꮡframe, ж<stackScanState> �
     ref var state = ref Ꮡstate.Value;
 
     if (_DebugGC > 1 && frame.continpc != 0) {
-        print((@string)"scanframe ", funcname(frame.fn), (@string)"\n");
+        print((@string)"scanframe "u8, funcname(frame.fn), (@string)"\n"u8);
     }
     var isAsyncPreempt = frame.fn.valid() && frame.fn.funcID == abi.FuncID_asyncPreempt;
     var isDebugCall = frame.fn.valid() && frame.fn.funcID == abi.FuncID_debugCallV2;
     if (state.conservative || isAsyncPreempt || isDebugCall) {
         if (debugScanConservative) {
-            println((@string)"conservatively scanning function", funcname(frame.fn), (@string)"at PC", ((Δhex)(uint64)frame.continpc));
+            println((@string)"conservatively scanning function"u8, funcname(frame.fn), (@string)"at PC"u8, ((Δhex)(uint64)frame.continpc));
         }
         // Conservatively scan the frame. Unlike the precise
         // case, this includes the outgoing argument space
@@ -1021,7 +1021,7 @@ internal static void scanframeworker(ж<stkframe> Ꮡframe, ж<stackScanState> �
                 continue;
             }
             if (stackTraceDebug) {
-                println((@string)"stkobj at", ((Δhex)(uint64)ptr), (@string)"of size", (~obj).size);
+                println((@string)"stkobj at"u8, ((Δhex)(uint64)ptr), (@string)"of size"u8, (~obj).size);
             }
             state.addObject(ptr, obj);
         }
@@ -1416,7 +1416,7 @@ internal static void scanConservative(uintptr b, uintptr n, ж<uint8> Ꮡptrmask
 
     if (debugScanConservative) {
         printlock();
-        print((@string)"conservatively scanning [", ((Δhex)(uint64)b), (@string)",", ((Δhex)(uint64)(b + n)), (@string)")\n");
+        print((@string)"conservatively scanning ["u8, ((Δhex)(uint64)b), (@string)","u8, ((Δhex)(uint64)(b + n)), (@string)")\n"u8);
         hexdumpWords(b, b + n, (uintptr Δp) => {
             if (Ꮡptrmask != nil) {
                 var word = (Δp - b) / (uintptr)goarch.PtrSize;
@@ -1529,7 +1529,7 @@ internal static void greyobject(uintptr obj, uintptr @base, uintptr off, ж<mspa
         }
     } else {
         if (debug.gccheckmark > 0 && span.isFree(objIndex)) {
-            print((@string)"runtime: marking free object ", ((Δhex)(uint64)obj), (@string)" found at *(", ((Δhex)(uint64)@base), (@string)"+", ((Δhex)(uint64)off), (@string)")\n");
+            print((@string)"runtime: marking free object "u8, ((Δhex)(uint64)obj), (@string)" found at *("u8, ((Δhex)(uint64)@base), (@string)"+"u8, ((Δhex)(uint64)off), (@string)")\n"u8);
             gcDumpObject("base"u8, @base, off);
             gcDumpObject("obj"u8, obj, ~(uintptr)0);
             getg().Value.m.Value.traceback = 2;
@@ -1567,17 +1567,17 @@ internal static void greyobject(uintptr obj, uintptr @base, uintptr off, ж<mspa
 // field at byte offset off in obj.
 internal static void gcDumpObject(@string label, uintptr obj, uintptr off) {
     var s = spanOf(obj);
-    print(label, (@string)"=", ((Δhex)(uint64)obj));
+    print(label, (@string)"="u8, ((Δhex)(uint64)obj));
     if (s == nil) {
-        print((@string)" s=nil\n");
+        print((@string)" s=nil\n"u8);
         return;
     }
-    print((@string)" s.base()=", ((Δhex)(uint64)s.@base()), (@string)" s.limit=", ((Δhex)(uint64)(~s).limit), (@string)" s.spanclass=", (~s).spanclass, (@string)" s.elemsize=", (~s).elemsize, (@string)" s.state=");
+    print((@string)" s.base()="u8, ((Δhex)(uint64)s.@base()), (@string)" s.limit="u8, ((Δhex)(uint64)(~s).limit), (@string)" s.spanclass="u8, (~s).spanclass, (@string)" s.elemsize="u8, (~s).elemsize, (@string)" s.state="u8);
     {
         var state = s.of(mspan.Ꮡstate).get(); if (0 <= state && (nint)(uint8)state < len(mSpanStateNames)){
-            print(mSpanStateNames[state], (@string)"\n");
+            print(mSpanStateNames[state], (@string)"\n"u8);
         } else {
-            print((@string)"unknown(", state, (@string)")\n");
+            print((@string)"unknown("u8, state, (@string)")\n"u8);
         }
     }
     var skipped = false;
@@ -1597,17 +1597,17 @@ internal static void gcDumpObject(@string label, uintptr obj, uintptr off) {
             continue;
         }
         if (skipped) {
-            print((@string)" ...\n");
+            print((@string)" ...\n"u8);
             skipped = false;
         }
-        print((@string)" *(", label, (@string)"+", i, (@string)") = ", ((Δhex)(uint64)(~(ж<uintptr>)(uintptr)((@unsafe.Pointer)(obj + i)))));
+        print((@string)" *("u8, label, (@string)"+"u8, i, (@string)") = "u8, ((Δhex)(uint64)(~(ж<uintptr>)(uintptr)((@unsafe.Pointer)(obj + i)))));
         if (i == off) {
-            print((@string)" <==");
+            print((@string)" <=="u8);
         }
-        print((@string)"\n");
+        print((@string)"\n"u8);
     }
     if (skipped) {
-        print((@string)" ...\n");
+        print((@string)" ...\n"u8);
     }
 }
 

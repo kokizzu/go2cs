@@ -192,19 +192,19 @@ internal static void mallocinit() {
         @throw("failed to get system page size"u8);
     }
     if (physPageSize > maxPhysPageSize) {
-        print((@string)"system page size (", physPageSize, (@string)") is larger than maximum page size (", (nint)(maxPhysPageSize), (@string)")\n");
+        print((@string)"system page size ("u8, physPageSize, (@string)") is larger than maximum page size ("u8, (nint)(maxPhysPageSize), (@string)")\n"u8);
         @throw("bad system page size"u8);
     }
     if (physPageSize < minPhysPageSize) {
-        print((@string)"system page size (", physPageSize, (@string)") is smaller than minimum page size (", (nint)(minPhysPageSize), (@string)")\n");
+        print((@string)"system page size ("u8, physPageSize, (@string)") is smaller than minimum page size ("u8, (nint)(minPhysPageSize), (@string)")\n"u8);
         @throw("bad system page size"u8);
     }
     if ((uintptr)(physPageSize & (physPageSize - 1)) != 0) {
-        print((@string)"system page size (", physPageSize, (@string)") must be a power of 2\n");
+        print((@string)"system page size ("u8, physPageSize, (@string)") must be a power of 2\n"u8);
         @throw("bad system page size"u8);
     }
     if ((uintptr)(physHugePageSize & (physHugePageSize - 1)) != 0) {
-        print((@string)"system huge page size (", physHugePageSize, (@string)") must be a power of 2\n");
+        print((@string)"system huge page size ("u8, physHugePageSize, (@string)") must be a power of 2\n"u8);
         @throw("bad system huge page size"u8);
     }
     if (physHugePageSize > maxPhysHugePageSize) {
@@ -222,11 +222,11 @@ internal static void mallocinit() {
         }
     }
     if (pagesPerArena % pagesPerSpanRoot != 0) {
-        print((@string)"pagesPerArena (", (nint)(pagesPerArena), (@string)") is not divisible by pagesPerSpanRoot (", (nint)(pagesPerSpanRoot), (@string)")\n");
+        print((@string)"pagesPerArena ("u8, (nint)(pagesPerArena), (@string)") is not divisible by pagesPerSpanRoot ("u8, (nint)(pagesPerSpanRoot), (@string)")\n"u8);
         @throw("bad pagesPerSpanRoot"u8);
     }
     if (pagesPerArena % pagesPerReclaimerChunk != 0) {
-        print((@string)"pagesPerArena (", (nint)(pagesPerArena), (@string)") is not divisible by pagesPerReclaimerChunk (", (nint)(pagesPerReclaimerChunk), (@string)")\n");
+        print((@string)"pagesPerArena ("u8, (nint)(pagesPerArena), (@string)") is not divisible by pagesPerReclaimerChunk ("u8, (nint)(pagesPerReclaimerChunk), (@string)")\n"u8);
         @throw("bad pagesPerReclaimerChunk"u8);
     }
     // Check that the minimum size (exclusive) for a malloc header is also
@@ -546,7 +546,7 @@ internal static (@unsafe.Pointer v, uintptr size) sysAlloc(this ж<mheap> Ꮡh, 
         if (bad != ""u8) {
             // This should be impossible on most architectures,
             // but it would be really confusing to debug.
-            print((@string)"runtime: memory allocated by OS [", ((Δhex)(uint64)Δp), (@string)", ", ((Δhex)(uint64)(Δp + size)), (@string)") not in usable address space: ", bad, (@string)"\n");
+            print((@string)"runtime: memory allocated by OS ["u8, ((Δhex)(uint64)Δp), (@string)", "u8, ((Δhex)(uint64)(Δp + size)), (@string)") not in usable address space: "u8, bad, (@string)"\n"u8);
             @throw("memory reservation exceeds address space limit"u8);
         }
     }
@@ -764,7 +764,7 @@ internal static gclinkptr nextFreeFast(ж<mspan> Ꮡs) {
     if (freeIndex == (~s).nelems) {
         // The span is full.
         if ((~s).allocCount != (~s).nelems) {
-            println((@string)"runtime: s.allocCount=", (~s).allocCount, (@string)"s.nelems=", (~s).nelems);
+            println((@string)"runtime: s.allocCount="u8, (~s).allocCount, (@string)"s.nelems="u8, (~s).nelems);
             @throw("s.allocCount != s.nelems && freeIndex == s.nelems"u8);
         }
         c.refill(spc);
@@ -778,7 +778,7 @@ internal static gclinkptr nextFreeFast(ж<mspan> Ꮡs) {
     v = ((gclinkptr)((uintptr)freeIndex * (~s).elemsize + s.@base()));
     s.Value.allocCount++;
     if ((~s).allocCount > (~s).nelems) {
-        println((@string)"s.allocCount=", (~s).allocCount, (@string)"s.nelems=", (~s).nelems);
+        println((@string)"s.allocCount="u8, (~s).allocCount, (@string)"s.nelems="u8, (~s).nelems);
         @throw("s.allocCount > s.nelems"u8);
     }
     return (v, s, shouldhelpgc);

@@ -203,8 +203,8 @@ public static error ErrWriteAfterFlush = errors.New("unused"u8);
     /*<-*/channel<bool> CloseNotify();
 }
 
-public static ж<contextKey> ServerContextKey = Ꮡ(new contextKey("http-server"));
-public static ж<contextKey> LocalAddrContextKey = Ꮡ(new contextKey("local-addr"));
+public static ж<contextKey> ServerContextKey = Ꮡ(new contextKey("http-server"u8));
+public static ж<contextKey> LocalAddrContextKey = Ꮡ(new contextKey("local-addr"u8));
 
 // A conn represents the server side of an HTTP connection.
 [GoType] partial struct conn {
@@ -1048,7 +1048,7 @@ internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, cont
             (w, err) = (default!, err); return;
         }
         if (!http1ServerSupportsRequest(req)) {
-            (w, err) = (default!, new statusError(StatusHTTPVersionNotSupported, "unsupported protocol version")); return;
+            (w, err) = (default!, new statusError(StatusHTTPVersionNotSupported, "unsupported protocol version"u8)); return;
         }
         c.lastMethod = req.Value.Method;
         c.r.setInfiniteReadLimit();

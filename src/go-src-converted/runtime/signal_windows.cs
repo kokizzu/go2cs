@@ -390,15 +390,15 @@ internal static void winthrow(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr, ж<
     g0.Value.stack.lo = 0;
     g0.Value.stackguard0 = (~g0).stack.lo + (uintptr)stackGuard;
     g0.Value.stackguard1 = g0.Value.stackguard0;
-    print((@string)"Exception ", ((Δhex)(uint64)info.exceptioncode), (@string)" ", ((Δhex)(uint64)info.exceptioninformation[0]), (@string)" ", ((Δhex)(uint64)info.exceptioninformation[1]), (@string)" ", ((Δhex)(uint64)r.ip()), (@string)"\n");
-    print((@string)"PC=", ((Δhex)(uint64)r.ip()), (@string)"\n");
+    print((@string)"Exception "u8, ((Δhex)(uint64)info.exceptioncode), (@string)" "u8, ((Δhex)(uint64)info.exceptioninformation[0]), (@string)" "u8, ((Δhex)(uint64)info.exceptioninformation[1]), (@string)" "u8, ((Δhex)(uint64)r.ip()), (@string)"\n"u8);
+    print((@string)"PC="u8, ((Δhex)(uint64)r.ip()), (@string)"\n"u8);
     if ((~(~g0).m).incgo && Ꮡgp == (~(~g0).m).g0 && (~(~g0).m).curg != nil) {
         if (iscgo) {
-            print((@string)"signal arrived during external code execution\n");
+            print((@string)"signal arrived during external code execution\n"u8);
         }
         Ꮡgp = g0.Value.m.Value.curg; gp = ref Ꮡgp.DerefOrNil();
     }
-    print((@string)"\n");
+    print((@string)"\n"u8);
     g0.Value.m.Value.throwing = throwTypeRuntime;
     (~g0).m.of(m.Ꮡcaughtsig).set(Ꮡgp);
     var (level, _, docrash) = gotraceback();
@@ -430,9 +430,9 @@ internal static void sigpanic() {
             // We could check that the arena chunk is explicitly set to fault,
             // but the fact that we faulted on accessing it is enough to prove
             // that it is.
-            print((@string)"accessed data from freed user arena ", ((Δhex)(uint64)(~gp).sigcode1), (@string)"\n");
+            print((@string)"accessed data from freed user arena "u8, ((Δhex)(uint64)(~gp).sigcode1), (@string)"\n"u8);
         } else {
-            print((@string)"unexpected fault address ", ((Δhex)(uint64)(~gp).sigcode1), (@string)"\n");
+            print((@string)"unexpected fault address "u8, ((Δhex)(uint64)(~gp).sigcode1), (@string)"\n"u8);
         }
         @throw("fault"u8);
     }

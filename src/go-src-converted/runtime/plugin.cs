@@ -40,15 +40,15 @@ internal static (@string path, map<@string, any> syms, slice<ж<initTask>> initT
             return ("", default!, default!, "plugin already loaded");
         }
         if (inRange((~pmd).text, (~pmd).etext, (~md).text, (~md).etext) || inRange((~pmd).bss, (~pmd).ebss, (~md).bss, (~md).ebss) || inRange((~pmd).data, (~pmd).edata, (~md).data, (~md).edata) || inRange((~pmd).types, (~pmd).etypes, (~md).types, (~md).etypes)) {
-            println((@string)"plugin: new module data overlaps with previous moduledata");
-            println((@string)"\tpmd.text-etext=", ((Δhex)(uint64)(~pmd).text), (@string)"-", ((Δhex)(uint64)(~pmd).etext));
-            println((@string)"\tpmd.bss-ebss=", ((Δhex)(uint64)(~pmd).bss), (@string)"-", ((Δhex)(uint64)(~pmd).ebss));
-            println((@string)"\tpmd.data-edata=", ((Δhex)(uint64)(~pmd).data), (@string)"-", ((Δhex)(uint64)(~pmd).edata));
-            println((@string)"\tpmd.types-etypes=", ((Δhex)(uint64)(~pmd).types), (@string)"-", ((Δhex)(uint64)(~pmd).etypes));
-            println((@string)"\tmd.text-etext=", ((Δhex)(uint64)(~md).text), (@string)"-", ((Δhex)(uint64)(~md).etext));
-            println((@string)"\tmd.bss-ebss=", ((Δhex)(uint64)(~md).bss), (@string)"-", ((Δhex)(uint64)(~md).ebss));
-            println((@string)"\tmd.data-edata=", ((Δhex)(uint64)(~md).data), (@string)"-", ((Δhex)(uint64)(~md).edata));
-            println((@string)"\tmd.types-etypes=", ((Δhex)(uint64)(~md).types), (@string)"-", ((Δhex)(uint64)(~md).etypes));
+            println((@string)"plugin: new module data overlaps with previous moduledata"u8);
+            println((@string)"\tpmd.text-etext="u8, ((Δhex)(uint64)(~pmd).text), (@string)"-"u8, ((Δhex)(uint64)(~pmd).etext));
+            println((@string)"\tpmd.bss-ebss="u8, ((Δhex)(uint64)(~pmd).bss), (@string)"-"u8, ((Δhex)(uint64)(~pmd).ebss));
+            println((@string)"\tpmd.data-edata="u8, ((Δhex)(uint64)(~pmd).data), (@string)"-"u8, ((Δhex)(uint64)(~pmd).edata));
+            println((@string)"\tpmd.types-etypes="u8, ((Δhex)(uint64)(~pmd).types), (@string)"-"u8, ((Δhex)(uint64)(~pmd).etypes));
+            println((@string)"\tmd.text-etext="u8, ((Δhex)(uint64)(~md).text), (@string)"-"u8, ((Δhex)(uint64)(~md).etext));
+            println((@string)"\tmd.bss-ebss="u8, ((Δhex)(uint64)(~md).bss), (@string)"-"u8, ((Δhex)(uint64)(~md).ebss));
+            println((@string)"\tmd.data-edata="u8, ((Δhex)(uint64)(~md).data), (@string)"-"u8, ((Δhex)(uint64)(~md).edata));
+            println((@string)"\tmd.types-etypes="u8, ((Δhex)(uint64)(~md).types), (@string)"-"u8, ((Δhex)(uint64)(~md).etypes));
             @throw("plugin: new module data overlaps with previous moduledata"u8);
         }
     }
@@ -115,8 +115,8 @@ internal static void pluginftabverify(ж<moduledata> Ꮡmd) {
             entry2 = f2.entry();
         }
         badtable = true;
-        println((@string)"ftab entry", ((Δhex)(uint64)entry), (@string)"/", ((Δhex)(uint64)entry2), (@string)": ",
-            name, (@string)"/", name2, (@string)"outside pc range:[", ((Δhex)(uint64)md.minpc), (@string)",", ((Δhex)(uint64)md.maxpc), (@string)"], modulename=", md.modulename, (@string)", pluginpath=", md.pluginpath);
+        println((@string)"ftab entry"u8, ((Δhex)(uint64)entry), (@string)"/"u8, ((Δhex)(uint64)entry2), (@string)": "u8,
+            name, (@string)"/"u8, name2, (@string)"outside pc range:["u8, ((Δhex)(uint64)md.minpc), (@string)","u8, ((Δhex)(uint64)md.maxpc), (@string)"], modulename="u8, md.modulename, (@string)", pluginpath="u8, md.pluginpath);
     }
     if (badtable) {
         @throw("runtime: plugin has bad symbol table"u8);

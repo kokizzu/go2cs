@@ -211,7 +211,7 @@ public static bool CanSet(this Value v) {
 // The returned value's address is v's value.
 internal static any valueInterface(Value v) {
     if (v.flag == 0) {
-        throw panic(Ꮡ(new ValueError("reflectlite.Value.Interface", 0)));
+        throw panic(Ꮡ(new ValueError("reflectlite.Value.Interface"u8, 0)));
     }
     if (v.kind() == abi.Interface) {
         // Special case: return the element inside the interface.
@@ -264,7 +264,7 @@ internal static partial nint maplen(@unsafe.Pointer _);
 // NumMethod returns the number of exported methods in the value's method set.
 internal static nint numMethod(this Value v) {
     if (v.typ() == nil) {
-        throw panic(Ꮡ(new ValueError("reflectlite.Value.NumMethod", abi.Invalid)));
+        throw panic(Ꮡ(new ValueError("reflectlite.Value.NumMethod"u8, abi.Invalid)));
     }
     return v.typ().NumMethod();
 }
@@ -277,7 +277,7 @@ internal static nint numMethod(this Value v) {
 public static ΔType Type(this Value v) {
     var f = v.flag;
     if (f == 0) {
-        throw panic(Ꮡ(new ValueError("reflectlite.Value.Type", abi.Invalid)));
+        throw panic(Ꮡ(new ValueError("reflectlite.Value.Type"u8, abi.Invalid)));
     }
     // Method values not supported.
     return toRType(v.typ());

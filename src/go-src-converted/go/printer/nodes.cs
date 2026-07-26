@@ -85,7 +85,7 @@ internal static void setComment(this ж<printer> Ꮡp, ж<ast.CommentGroup> Ꮡg
         Ꮡp.flush(p.posFor(g.List[0].Pos()), token.ILLEGAL);
         p.comments = p.comments[0..1];
         // in debug mode, report error
-        p.internalError((@string)"setComment found pending comments");
+        p.internalError((@string)"setComment found pending comments"u8);
     }
     p.comments[0] = Ꮡg;
     p.cindex = 0;
@@ -856,7 +856,7 @@ internal static void expr1(this ж<printer> Ꮡp, ast.Expr expr, nint prec1, nin
     p.setPos(expr.Pos());
     switch (expr.type()) {
     case ж<ast.BadExpr> x: {
-        Ꮡp.print((@string)"BadExpr");
+        Ꮡp.print((@string)"BadExpr"u8);
         break;
     }
     case ж<ast.Ident> x: {
@@ -865,7 +865,7 @@ internal static void expr1(this ж<printer> Ꮡp, ast.Expr expr, nint prec1, nin
     }
     case ж<ast.BinaryExpr> x: {
         if (depth < 1) {
-            p.internalError((@string)"depth < 1:", depth);
+            p.internalError((@string)"depth < 1:"u8, depth);
             depth = 1;
         }
         Ꮡp.binaryExpr(x, prec1, cutoff(x, depth), depth);
@@ -1466,7 +1466,7 @@ internal static void stmt(this ж<printer> Ꮡp, ast.Stmt stmt, bool nextIsRBrac
     p.setPos(stmt.Pos());
     switch (stmt.type()) {
     case ж<ast.BadStmt> s: {
-        Ꮡp.print((@string)"BadStmt");
+        Ꮡp.print((@string)"BadStmt"u8);
         break;
     }
     case ж<ast.DeclStmt> s: {
@@ -1849,7 +1849,7 @@ internal static void spec(this ж<printer> Ꮡp, ast.Spec spec, nint n, bool doI
     }
     case ж<ast.ValueSpec> s: {
         if (n != 1) {
-            p.internalError((@string)"expected n = 1; got", n);
+            p.internalError((@string)"expected n = 1; got"u8, n);
         }
         Ꮡp.setComment((~s).Doc);
         Ꮡp.identList((~s).Names, doIndent);
@@ -2122,7 +2122,7 @@ internal static void decl(this ж<printer> Ꮡp, ast.Decl decl) {
     switch (decl.type()) {
     case ж<ast.BadDecl> d: {
         p.setPos(d.Pos());
-        Ꮡp.print((@string)"BadDecl");
+        Ꮡp.print((@string)"BadDecl"u8);
         break;
     }
     case ж<ast.GenDecl> d: {

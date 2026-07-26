@@ -301,7 +301,7 @@ internal static readonly UntypedInt tokenObjectComma = 8;
             return err;
         }
         if (c != (rune)',') {
-            return new SyntaxErrorжerror(Ꮡ(new SyntaxError("expected comma after array element", dec.InputOffset())));
+            return new SyntaxErrorжerror(Ꮡ(new SyntaxError("expected comma after array element"u8, dec.InputOffset())));
         }
         dec.scanp++;
         dec.tokenState = tokenArrayValue;
@@ -312,7 +312,7 @@ internal static readonly UntypedInt tokenObjectComma = 8;
             return err;
         }
         if (c != (rune)':') {
-            return new SyntaxErrorжerror(Ꮡ(new SyntaxError("expected colon after object key", dec.InputOffset())));
+            return new SyntaxErrorжerror(Ꮡ(new SyntaxError("expected colon after object key"u8, dec.InputOffset())));
         }
         dec.scanp++;
         dec.tokenState = tokenObjectValue;

@@ -94,7 +94,7 @@ public static void Format(this ж<ΔInt> Ꮡx, fmt.State s, rune ch) {
     }}
 
     if (Ꮡx == nil) {
-        fmt.Fprint(new fmt_StateᴠWriter(s), (@string)"<nil>");
+        fmt.Fprint(new fmt_StateᴠWriter(s), (@string)"<nil>"u8);
         return;
     }
     // determine sign character

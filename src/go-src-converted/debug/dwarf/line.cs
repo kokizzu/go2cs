@@ -175,7 +175,7 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
     var (unitLength, dwarf64) = buf.unitLength();
     r.endOffset = (~buf).off + unitLength;
     if (r.endOffset > (~buf).off + ((Offset)(uint32)len((~buf).data))) {
-        return new DecodeError("line", hdrOffset, fmt.Sprintf("line table end %d exceeds section size %d"u8, r.endOffset, (~buf).off + ((Offset)(uint32)len((~buf).data))));
+        return new DecodeError("line"u8, hdrOffset, fmt.Sprintf("line table end %d exceeds section size %d"u8, r.endOffset, (~buf).off + ((Offset)(uint32)len((~buf).data))));
     }
     r.version = buf.uint16();
     if ((~buf).err == default! && (r.version < 2 || r.version > 5)) {
@@ -184,7 +184,7 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
         // the middle of the header in new versions, so we're
         // picky about only supporting known line table
         // versions.
-        return new DecodeError("line", hdrOffset, fmt.Sprintf("unknown line table version %d"u8, r.version));
+        return new DecodeError("line"u8, hdrOffset, fmt.Sprintf("unknown line table version %d"u8, r.version));
     }
     if (r.version >= 5){
         r.addrsize = (nint)buf.uint8();
@@ -201,7 +201,7 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
     }
     var programOffset = (~buf).off + headerLength;
     if (programOffset > r.endOffset) {
-        return new DecodeError("line", hdrOffset, fmt.Sprintf("malformed line table: program offset %d exceeds end offset %d"u8, programOffset, r.endOffset));
+        return new DecodeError("line"u8, hdrOffset, fmt.Sprintf("malformed line table: program offset %d exceeds end offset %d"u8, programOffset, r.endOffset));
     }
     r.programOffset = programOffset;
     r.minInstructionLength = (nint)buf.uint8();
@@ -219,10 +219,10 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
         return (~buf).err;
     }
     if (r.maxOpsPerInstruction == 0) {
-        return new DecodeError("line", hdrOffset, "invalid maximum operations per instruction: 0");
+        return new DecodeError("line"u8, hdrOffset, "invalid maximum operations per instruction: 0"u8);
     }
     if (r.lineRange == 0) {
-        return new DecodeError("line", hdrOffset, "invalid line range: 0");
+        return new DecodeError("line"u8, hdrOffset, "invalid line range: 0"u8);
     }
     // Read standard opcode length table. This table starts with opcode 1.
     r.opcodeBase = (nint)buf.uint8();
@@ -237,7 +237,7 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
     foreach (var (i, length) in r.opcodeLengths) {
         {
             var (known, ok) = knownOpcodeLengths[i, ꟷ]; if (ok && known != length) {
-                return new DecodeError("line", hdrOffset, fmt.Sprintf("opcode %d expected to have length %d, but has length %d"u8, i, known, length));
+                return new DecodeError("line"u8, hdrOffset, fmt.Sprintf("opcode %d expected to have length %d, but has length %d"u8, i, known, length));
             }
         }
     }
@@ -342,7 +342,7 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
                 off = (uint64)r.buf.uint32();
             }
             if ((uint64)(nint)off != off) {
-                return ("", 0, 0, new DecodeError("line", r.buf.off, "strp/line_strp offset out of range"));
+                return ("", 0, 0, new DecodeError("line"u8, r.buf.off, "strp/line_strp offset out of range"u8));
             }
             buf b1 = default!;
             if (lf.form == formStrp){
@@ -353,7 +353,7 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
             b1.skip((nint)off);
             str = b1.@string();
             if (b1.err != default!) {
-                return ("", 0, 0, new DecodeError("line", r.buf.off, b1.err.Error()));
+                return ("", 0, 0, new DecodeError("line"u8, r.buf.off, b1.err.Error()));
             }
         }
         else if (exprᴛ1 == formStrpSup) {
@@ -408,7 +408,7 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
         }
         else if (exprᴛ2 == lnctDirectoryIndex) {
             if (val >= (uint64)len(r.directories)) {
-                return ("", 0, 0, new DecodeError("line", r.buf.off, "directory index out of range"));
+                return ("", 0, 0, new DecodeError("line"u8, r.buf.off, "directory index out of range"u8));
             }
             dir = r.directories[(nint)(val)];
         }
@@ -445,7 +445,7 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
     nint dirIndex = (nint)r.buf.@uint();
     if (!pathIsAbs(name)) {
         if (dirIndex >= len(r.directories)) {
-            return (false, new DecodeError("line", off, "directory index too large"));
+            return (false, new DecodeError("line"u8, off, "directory index too large"u8));
         }
         name = pathJoin(r.directories[dirIndex], name);
     }
@@ -584,7 +584,7 @@ internal static map<nint, nint> knownOpcodeLengths = new map<nint, nint>{
                     return false;
                 } else 
                 if (done) {
-                    r.buf.err = new DecodeError("line", startOff, "malformed DW_LNE_define_file operation");
+                    r.buf.err = new DecodeError("line"u8, startOff, "malformed DW_LNE_define_file operation"u8);
                     return false;
                 }
             }

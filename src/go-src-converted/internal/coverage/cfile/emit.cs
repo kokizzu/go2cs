@@ -584,23 +584,23 @@ public static void MarkProfileEmitted(bool val) {
 internal static void reportErrorInHardcodedList(int32 slot, int32 pkgID, uint32 fnID, uint32 nCtrs) {
     var metaList = rtcov.Meta.List;
     var pkgMap = rtcov.Meta.PkgMap;
-    println((@string)"internal error in coverage meta-data tracking:");
-    println((@string)"encountered bad pkgID:", pkgID, (@string)" at slot:", slot,
-        (@string)" fnID:", fnID, (@string)" numCtrs:", nCtrs);
-    println((@string)"list of hard-coded runtime package IDs needs revising.");
-    println((@string)"[see the comment on the 'rtPkgs' var in ");
-    println((@string)" <goroot>/src/internal/coverage/pkid.go]");
-    println((@string)"registered list:");
+    println((@string)"internal error in coverage meta-data tracking:"u8);
+    println((@string)"encountered bad pkgID:"u8, pkgID, (@string)" at slot:"u8, slot,
+        (@string)" fnID:"u8, fnID, (@string)" numCtrs:"u8, nCtrs);
+    println((@string)"list of hard-coded runtime package IDs needs revising."u8);
+    println((@string)"[see the comment on the 'rtPkgs' var in "u8);
+    println((@string)" <goroot>/src/internal/coverage/pkid.go]"u8);
+    println((@string)"registered list:"u8);
     foreach (var (k, b) in metaList) {
-        print((@string)"slot: ", k, (@string)" path='", b.PkgPath, (@string)"' ");
+        print((@string)"slot: "u8, k, (@string)" path='"u8, b.PkgPath, (@string)"' "u8);
         if (b.PkgID != -1) {
-            print((@string)" hard-coded id: ", b.PkgID);
+            print((@string)" hard-coded id: "u8, b.PkgID);
         }
-        println((@string)"");
+        println((@string)""u8);
     }
-    println((@string)"remap table:");
+    println((@string)"remap table:"u8);
     foreach (var (from, to) in pkgMap) {
-        println((@string)"from ", from, (@string)" to ", to);
+        println((@string)"from "u8, from, (@string)" to "u8, to);
     }
 }
 

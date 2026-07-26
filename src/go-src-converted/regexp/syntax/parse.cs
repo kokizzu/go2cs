@@ -1552,7 +1552,7 @@ internal static void mergeCharClass(ж<Regexp> Ꮡdst, ж<Regexp> Ꮡsrc) {
 
     @string t = s[1..];
     if (t == ""u8) {
-        return (0, "", new ΔErrorжerror(Ꮡ(new ΔError(ErrTrailingBackslash, ""))));
+        return (0, "", new ΔErrorжerror(Ꮡ(new ΔError(ErrTrailingBackslash, ""u8))));
     }
     (var c, t, err) = nextRune(t);
     if (err != default!) {

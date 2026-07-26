@@ -278,8 +278,8 @@ internal static void init(this ж<pageAlloc> Ꮡp, ж<mutex> ᏑmheapLock, ж<sy
         // We can't represent 1<<levelLogPages[0] pages, the maximum number
         // of pages we need to represent at the root level, in a summary, which
         // is a big problem. Throw.
-        print((@string)"runtime: root level max pages = ", ((nint)1).Lsh(levelLogPages[0]), (@string)"\n");
-        print((@string)"runtime: summary max pages = ", (nint)(maxPackedValue), (@string)"\n");
+        print((@string)"runtime: root level max pages = "u8, ((nint)1).Lsh(levelLogPages[0]), (@string)"\n"u8);
+        print((@string)"runtime: summary max pages = "u8, (nint)(maxPackedValue), (@string)"\n"u8);
         @throw("root level max pages doesn't fit in summary"u8);
     }
     Δp.sysStat = ᏑsysStat;
@@ -667,8 +667,8 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
         if (!(addrΔ1.add(size - 1).lessThan(ᏑfirstFree.Value.@base) || ᏑfirstFree.Value.bound.lessThan(addrΔ1))) {
             // This range only partially overlaps with the firstFree range,
             // so throw.
-            print((@string)"runtime: addr = ", ((Δhex)(uint64)addrΔ1.addr()), (@string)", size = ", size, (@string)"\n");
-            print((@string)"runtime: base = ", ((Δhex)(uint64)ᏑfirstFree.Value.@base.addr()), (@string)", bound = ", ((Δhex)(uint64)ᏑfirstFree.Value.bound.addr()), (@string)"\n");
+            print((@string)"runtime: addr = "u8, ((Δhex)(uint64)addrΔ1.addr()), (@string)", size = "u8, size, (@string)"\n"u8);
+            print((@string)"runtime: base = "u8, ((Δhex)(uint64)ᏑfirstFree.Value.@base.addr()), (@string)", bound = "u8, ((Δhex)(uint64)ᏑfirstFree.Value.bound.addr()), (@string)"\n"u8);
             @throw("range partially overlaps"u8);
         }
     };
@@ -767,13 +767,13 @@ nextLevel:
         // We're not at level zero, and we exhausted the level we were looking in.
         // This means that either our calculations were wrong or the level above
         // lied to us. In either case, dump some useful state and throw.
-        print((@string)"runtime: summary[", l - 1, (@string)"][", lastSumIdx, (@string)"] = ", lastSum.start(), (@string)", ", lastSum.max(), (@string)", ", lastSum.end(), (@string)"\n");
-        print((@string)"runtime: level = ", l, (@string)", npages = ", npages, (@string)", j0 = ", j0, (@string)"\n");
-        print((@string)"runtime: p.searchAddr = ", ((Δhex)(uint64)Δp.searchAddr.addr()), (@string)", i = ", i, (@string)"\n");
-        print((@string)"runtime: levelShift[level] = ", levelShift[l], (@string)", levelBits[level] = ", levelBits[l], (@string)"\n");
+        print((@string)"runtime: summary["u8, l - 1, (@string)"]["u8, lastSumIdx, (@string)"] = "u8, lastSum.start(), (@string)", "u8, lastSum.max(), (@string)", "u8, lastSum.end(), (@string)"\n"u8);
+        print((@string)"runtime: level = "u8, l, (@string)", npages = "u8, npages, (@string)", j0 = "u8, j0, (@string)"\n"u8);
+        print((@string)"runtime: p.searchAddr = "u8, ((Δhex)(uint64)Δp.searchAddr.addr()), (@string)", i = "u8, i, (@string)"\n"u8);
+        print((@string)"runtime: levelShift[level] = "u8, levelShift[l], (@string)", levelBits[level] = "u8, levelBits[l], (@string)"\n"u8);
         for (nint jΔ2 = 0; jΔ2 < len(entries); jΔ2++) {
             var sum = entries[jΔ2];
-            print((@string)"runtime: summary[", l, (@string)"][", i + jΔ2, (@string)"] = (", sum.start(), (@string)", ", sum.max(), (@string)", ", sum.end(), (@string)")\n");
+            print((@string)"runtime: summary["u8, l, (@string)"]["u8, i + jΔ2, (@string)"] = ("u8, sum.start(), (@string)", "u8, sum.max(), (@string)", "u8, sum.end(), (@string)")\n"u8);
         }
         @throw("bad summary data"u8);
 continue_nextLevel:;
@@ -792,8 +792,8 @@ break_nextLevel:;
         // We couldn't find any space in this chunk despite the summaries telling
         // us it should be there. There's likely a bug, so dump some state and throw.
         var sum = Δp.summary[len(Δp.summary) - 1][i];
-        print((@string)"runtime: summary[", (nint)(len(Δp.summary) - 1), (@string)"][", i, (@string)"] = (", sum.start(), (@string)", ", sum.max(), (@string)", ", sum.end(), (@string)")\n");
-        print((@string)"runtime: npages = ", npages, (@string)"\n");
+        print((@string)"runtime: summary["u8, (nint)(len(Δp.summary) - 1), (@string)"]["u8, i, (@string)"] = ("u8, sum.start(), (@string)", "u8, sum.max(), (@string)", "u8, sum.end(), (@string)")\n"u8);
+        print((@string)"runtime: npages = "u8, npages, (@string)"\n"u8);
         @throw("bad summary data"u8);
     }
     // Compute the address at which the free space starts.
@@ -837,8 +837,8 @@ break_nextLevel:;
             nuint max = Δp.summary[len(Δp.summary) - 1][i].max(); if (max >= (nuint)npages) {
                 var (j, searchIdx) = Δp.chunkOf(i).of(pallocData.ᏑpallocBits).find(npages, chunkPageIndex(Δp.searchAddr.addr()));
                 if (j == ~(nuint)0) {
-                    print((@string)"runtime: max = ", max, (@string)", npages = ", npages, (@string)"\n");
-                    print((@string)"runtime: searchIdx = ", chunkPageIndex(Δp.searchAddr.addr()), (@string)", p.searchAddr = ", ((Δhex)(uint64)Δp.searchAddr.addr()), (@string)"\n");
+                    print((@string)"runtime: max = "u8, max, (@string)", npages = "u8, npages, (@string)"\n"u8);
+                    print((@string)"runtime: searchIdx = "u8, chunkPageIndex(Δp.searchAddr.addr()), (@string)", p.searchAddr = "u8, ((Δhex)(uint64)Δp.searchAddr.addr()), (@string)"\n"u8);
                     @throw("bad summary data"u8);
                 }
                 addr = chunkBase(i) + (uintptr)j * (uintptr)pageSize;

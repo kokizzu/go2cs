@@ -331,7 +331,7 @@ internal static ref Map vars => ref Ꮡvars.Value;
 public static void Publish(@string name, Var v) => func((defer, recover) => {
     {
         var (_, dup) = Ꮡvars.of(Map.Ꮡm).LoadOrStore(name, v); if (dup) {
-            Δlog.Panicln((@string)"Reuse of exported var name:", name);
+            Δlog.Panicln((@string)"Reuse of exported var name:"u8, name);
         }
     }
     Ꮡvars.of(Map.ᏑkeysMu).Lock();

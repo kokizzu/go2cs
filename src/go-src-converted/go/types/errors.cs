@@ -101,7 +101,7 @@ internal static ж<error_> newError(this ж<Checker> Ꮡcheck, errors.Code code)
     foreach (var (i, _) in err.desc) {
         var p = Ꮡ(err.desc, i);
         if (i > 0) {
-            fmt.Fprint(new strings_BuilderжWriter(Ꮡbuf), (@string)"\n\t");
+            fmt.Fprint(new strings_BuilderжWriter(Ꮡbuf), (@string)"\n\t"u8);
             if ((~p).posn.Pos().IsValid()) {
                 fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "%s: "u8, (~err.check).fset.Position((~p).posn.Pos()));
             }

@@ -122,9 +122,9 @@ internal static void coroswitch_m(ж<g> Ꮡgp) {
     var locked = gp.lockedm != 0;
     if ((~c).mp != nil || locked) {
         if (mp != (~c).mp || (~mp).lockedInt != (~c).lockedInt || (~mp).lockedExt != (~c).lockedExt) {
-            print((@string)"coro: got thread ", new @unsafe.Pointer(mp), (@string)", want ", new @unsafe.Pointer((~c).mp), (@string)"\n");
-            print((@string)"coro: got lock internal ", (~mp).lockedInt, (@string)", want ", (~c).lockedInt, (@string)"\n");
-            print((@string)"coro: got lock external ", (~mp).lockedExt, (@string)", want ", (~c).lockedExt, (@string)"\n");
+            print((@string)"coro: got thread "u8, new @unsafe.Pointer(mp), (@string)", want "u8, new @unsafe.Pointer((~c).mp), (@string)"\n"u8);
+            print((@string)"coro: got lock internal "u8, (~mp).lockedInt, (@string)", want "u8, (~c).lockedInt, (@string)"\n"u8);
+            print((@string)"coro: got lock external "u8, (~mp).lockedExt, (@string)", want "u8, (~c).lockedExt, (@string)"\n"u8);
             @throw("coro: OS thread locking must match locking at coroutine creation"u8);
         }
     }

@@ -620,16 +620,16 @@ internal static uintptr scavenge(this ж<pageAlloc> Ꮡp, uintptr nbytes, Func<b
 internal static void printScavTrace(uintptr releasedBg, uintptr releasedEager, bool forced) {
     assertLockHeld(Ꮡscavenger.of(scavengerState.Ꮡlock));
     printlock();
-    print((@string)"scav ",
-        (releasedBg >> (int)(10)), (@string)" KiB work (bg), ",
-        (releasedEager >> (int)(10)), (@string)" KiB work (eager), ",
-        (ᏑgcController.of(gcControllerState.ᏑheapReleased).load() >> (int)(10)), (@string)" KiB now, ",
-        (ᏑgcController.of(gcControllerState.ᏑheapInUse).load() * 100) / heapRetained(), (@string)"% util");
+    print((@string)"scav "u8,
+        (releasedBg >> (int)(10)), (@string)" KiB work (bg), "u8,
+        (releasedEager >> (int)(10)), (@string)" KiB work (eager), "u8,
+        (ᏑgcController.of(gcControllerState.ᏑheapReleased).load() >> (int)(10)), (@string)" KiB now, "u8,
+        (ᏑgcController.of(gcControllerState.ᏑheapInUse).load() * 100) / heapRetained(), (@string)"% util"u8);
     if (forced){
-        print((@string)" (forced)");
+        print((@string)" (forced)"u8);
     } else 
     if (scavenger.printControllerReset) {
-        print((@string)" [controller reset]");
+        print((@string)" [controller reset]"u8);
         scavenger.printControllerReset = false;
     }
     println();
@@ -818,11 +818,11 @@ internal static uint64 fillAligned(uint64 x, nuint m) {
 // max == min.
 [GoRecv] internal static (nuint, nuint) findScavengeCandidate(this ref pallocData m, nuint searchIdx, uintptr minimum, uintptr max) {
     if ((uintptr)(minimum & (minimum - 1)) != 0 || minimum == 0){
-        print((@string)"runtime: min = ", minimum, (@string)"\n");
+        print((@string)"runtime: min = "u8, minimum, (@string)"\n"u8);
         @throw("min must be a non-zero power of 2"u8);
     } else 
     if (minimum > maxPagesPerPhysPage) {
-        print((@string)"runtime: min = ", minimum, (@string)"\n");
+        print((@string)"runtime: min = "u8, minimum, (@string)"\n"u8);
         @throw("min too large"u8);
     }
     // max may not be min-aligned, so we might accidentally truncate to
@@ -1220,7 +1220,7 @@ internal static bool shouldScavenge(this scavChunkData sc, uint32 currGen, bool 
 // alloc updates sc given that npages were allocated in the corresponding chunk.
 [GoRecv] internal static void alloc(this ref scavChunkData sc, nuint npages, uint32 newGen) {
     if ((nuint)sc.inUse + npages > pallocChunkPages) {
-        print((@string)"runtime: inUse=", sc.inUse, (@string)" npages=", npages, (@string)"\n");
+        print((@string)"runtime: inUse="u8, sc.inUse, (@string)" npages="u8, npages, (@string)"\n"u8);
         @throw("too many pages allocated in chunk?"u8);
     }
     if (sc.gen != newGen) {
@@ -1237,7 +1237,7 @@ internal static bool shouldScavenge(this scavChunkData sc, uint32 currGen, bool 
 // free updates sc given that npages was freed in the corresponding chunk.
 [GoRecv] internal static void free(this ref scavChunkData sc, nuint npages, uint32 newGen) {
     if ((nuint)sc.inUse < npages) {
-        print((@string)"runtime: inUse=", sc.inUse, (@string)" npages=", npages, (@string)"\n");
+        print((@string)"runtime: inUse="u8, sc.inUse, (@string)" npages="u8, npages, (@string)"\n"u8);
         @throw("allocated pages below zero?"u8);
     }
     if (sc.gen != newGen) {

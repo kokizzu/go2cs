@@ -964,7 +964,7 @@ internal static error writeProfileInternal(io.Writer w, nint debug, @string name
         foreach (var (_, pc) in stack) {
             fmt.Fprintf(w, " %#x"u8, pc);
         }
-        fmt.Fprint(w, (@string)"\n");
+        fmt.Fprint(w, (@string)"\n"u8);
         if (debug > 0) {
             printStackRecord(w, stack, true);
         }

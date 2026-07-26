@@ -124,7 +124,7 @@ partial class runtime_package {
             // also know its argument map is
             // empty.
             if (frame.pc != f.entry()) {
-                print((@string)"runtime: confused by ", funcname(f), (@string)": no frame (sp=", ((Δhex)(uint64)frame.sp), (@string)" fp=", ((Δhex)(uint64)frame.fp), (@string)") at entry+", ((Δhex)(uint64)(frame.pc - f.entry())), (@string)"\n");
+                print((@string)"runtime: confused by "u8, funcname(f), (@string)": no frame (sp="u8, ((Δhex)(uint64)frame.sp), (@string)" fp="u8, ((Δhex)(uint64)frame.fp), (@string)") at entry+"u8, ((Δhex)(uint64)(frame.pc - f.entry())), (@string)"\n"u8);
                 @throw("reflect mismatch"u8);
             }
             return (new bitvector(nil), false);
@@ -137,7 +137,7 @@ partial class runtime_package {
             // Figure out whether the return values are valid.
             // Reflect will update this value after it copies
             // in the return values.
-            print((@string)"runtime: confused by ", funcname(f), (@string)"\n");
+            print((@string)"runtime: confused by "u8, funcname(f), (@string)"\n"u8);
             @throw("reflect mismatch"u8);
         }
         argMap = (~mv).stack.Value;
@@ -197,23 +197,23 @@ partial class runtime_package {
         var stackid = pcdata;
         var stkmap = (ж<stackmap>)(uintptr)(funcdata(f, abi.FUNCDATA_LocalsPointerMaps));
         if (stkmap == nil || (~stkmap).n <= 0) {
-            print((@string)"runtime: frame ", funcname(f), (@string)" untyped locals ", ((Δhex)(uint64)(frame.varp - size)), (@string)"+", ((Δhex)(uint64)size), (@string)"\n");
+            print((@string)"runtime: frame "u8, funcname(f), (@string)" untyped locals "u8, ((Δhex)(uint64)(frame.varp - size)), (@string)"+"u8, ((Δhex)(uint64)size), (@string)"\n"u8);
             @throw("missing stackmap"u8);
         }
         // If nbit == 0, there's no work to do.
         if ((~stkmap).nbit > 0){
             if (stackid < 0 || stackid >= (~stkmap).n) {
                 // don't know where we are
-                print((@string)"runtime: pcdata is ", stackid, (@string)" and ", (~stkmap).n, (@string)" locals stack map entries for ", funcname(f), (@string)" (targetpc=", ((Δhex)(uint64)targetpc), (@string)")\n");
+                print((@string)"runtime: pcdata is "u8, stackid, (@string)" and "u8, (~stkmap).n, (@string)" locals stack map entries for "u8, funcname(f), (@string)" (targetpc="u8, ((Δhex)(uint64)targetpc), (@string)")\n"u8);
                 @throw("bad symbol table"u8);
             }
             locals = stackmapdata(stkmap, stackid);
             if (stackDebug >= 3 && debug) {
-                print((@string)"      locals ", stackid, (@string)"/", (~stkmap).n, (@string)" ", locals.n, (@string)" words ", locals.bytedata, (@string)"\n");
+                print((@string)"      locals "u8, stackid, (@string)"/"u8, (~stkmap).n, (@string)" "u8, locals.n, (@string)" words "u8, locals.bytedata, (@string)"\n"u8);
             }
         } else 
         if (stackDebug >= 3 && debug) {
-            print((@string)"      no locals to adjust\n");
+            print((@string)"      no locals to adjust\n"u8);
         }
     }
     // Arguments. First fetch frame size and special-case argument maps.
@@ -224,12 +224,12 @@ partial class runtime_package {
         // Fetch the argument map at pcdata.
         var stackmap = (ж<stackmap>)(uintptr)(funcdata(f, abi.FUNCDATA_ArgsPointerMaps));
         if (stackmap == nil || (~stackmap).n <= 0) {
-            print((@string)"runtime: frame ", funcname(f), (@string)" untyped args ", ((Δhex)(uint64)frame.argp), (@string)"+", ((Δhex)(uint64)(args.n * (int32)goarch.PtrSize)), (@string)"\n");
+            print((@string)"runtime: frame "u8, funcname(f), (@string)" untyped args "u8, ((Δhex)(uint64)frame.argp), (@string)"+"u8, ((Δhex)(uint64)(args.n * (int32)goarch.PtrSize)), (@string)"\n"u8);
             @throw("missing stackmap"u8);
         }
         if (pcdata < 0 || pcdata >= (~stackmap).n) {
             // don't know where we are
-            print((@string)"runtime: pcdata is ", pcdata, (@string)" and ", (~stackmap).n, (@string)" args stack map entries for ", funcname(f), (@string)" (targetpc=", ((Δhex)(uint64)targetpc), (@string)")\n");
+            print((@string)"runtime: pcdata is "u8, pcdata, (@string)" and "u8, (~stackmap).n, (@string)" args stack map entries for "u8, funcname(f), (@string)" (targetpc="u8, ((Δhex)(uint64)targetpc), (@string)")\n"u8);
             @throw("bad symbol table"u8);
         }
         if ((~stackmap).nbit == 0){

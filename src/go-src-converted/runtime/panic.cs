@@ -684,18 +684,18 @@ internal static void printpanics(ж<_panic> Ꮡp) {
     if (Δp.link != nil) {
         printpanics(Δp.link);
         if (!(~Δp.link).goexit) {
-            print((@string)"\t");
+            print((@string)"\t"u8);
         }
     }
     if (Δp.goexit) {
         return;
     }
-    print((@string)"panic: ");
+    print((@string)"panic: "u8);
     printpanicval(Δp.arg);
     if (Δp.recovered) {
-        print((@string)" [recovered]");
+        print((@string)" [recovered]"u8);
     }
-    print((@string)"\n");
+    print((@string)"\n"u8);
 }
 
 // readvarintUnsafe reads the uint32 in varint format starting at fd, and returns the
@@ -767,30 +767,30 @@ internal static void gopanic(any e) {
     }
     var gp = getg();
     if ((~(~gp).m).curg != gp) {
-        print((@string)"panic: ");
+        print((@string)"panic: "u8);
         printpanicval(e);
-        print((@string)"\n");
+        print((@string)"\n"u8);
         @throw("panic on system stack"u8);
     }
     if ((~(~gp).m).mallocing != 0) {
-        print((@string)"panic: ");
+        print((@string)"panic: "u8);
         printpanicval(e);
-        print((@string)"\n");
+        print((@string)"\n"u8);
         @throw("panic during malloc"u8);
     }
     if ((~(~gp).m).preemptoff != ""u8) {
-        print((@string)"panic: ");
+        print((@string)"panic: "u8);
         printpanicval(e);
-        print((@string)"\n");
-        print((@string)"preempt off reason: ");
+        print((@string)"\n"u8);
+        print((@string)"preempt off reason: "u8);
         print((~(~gp).m).preemptoff);
-        print((@string)"\n");
+        print((@string)"\n"u8);
         @throw("panic during preemptoff"u8);
     }
     if ((~(~gp).m).locks != 0) {
-        print((@string)"panic: ");
+        print((@string)"panic: "u8);
         printpanicval(e);
-        print((@string)"\n");
+        print((@string)"\n"u8);
         @throw("panic holding locks"u8);
     }
     ref var Δp = ref heap(new _panic(), out var Ꮡp);
@@ -1063,10 +1063,10 @@ internal static void @throw(@string s) {
     // Everything throw does should be recursively nosplit so it
     // can be called even when it's unsafe to grow the stack.
     systemstack(() => {
-        print((@string)"fatal error: ");
+        print((@string)"fatal error: "u8);
         printindented(s);
         // logically printpanicval(s), but avoids convTstring write barrier
-        print((@string)"\n");
+        print((@string)"\n"u8);
     });
     fatalthrow(throwTypeRuntime);
 }
@@ -1084,10 +1084,10 @@ internal static void fatal(@string s) {
     // Everything fatal does should be recursively nosplit so it
     // can be called even when it's unsafe to grow the stack.
     systemstack(() => {
-        print((@string)"fatal error: ");
+        print((@string)"fatal error: "u8);
         printindented(s);
         // logically printpanicval(s), but avoids convTstring write barrier
-        print((@string)"\n");
+        print((@string)"\n"u8);
     });
     fatalthrow(throwTypeUser);
 }
@@ -1194,7 +1194,7 @@ internal static void recovery(ж<g> Ꮡgp) {
     // binaries. (Admittedly, both of these are modest savings.)
     // Ensure we're recovering within the appropriate stack.
     if (sp != 0 && (sp < gp.stack.lo || gp.stack.hi < sp)) {
-        print((@string)"recover: ", ((Δhex)(uint64)sp), (@string)" not in [", ((Δhex)(uint64)gp.stack.lo), (@string)", ", ((Δhex)(uint64)gp.stack.hi), (@string)"]\n");
+        print((@string)"recover: "u8, ((Δhex)(uint64)sp), (@string)" not in ["u8, ((Δhex)(uint64)gp.stack.lo), (@string)", "u8, ((Δhex)(uint64)gp.stack.hi), (@string)"]\n"u8);
         @throw("bad recovery"u8);
     }
     // Make the deferproc for this d return again,
@@ -1314,7 +1314,7 @@ internal static bool startpanic_m() {
     var gp = getg();
     if (mheap_.cachealloc.size == 0) {
         // very early
-        print((@string)"runtime: panic before malloc heap initialized\n");
+        print((@string)"runtime: panic before malloc heap initialized\n"u8);
     }
     // Disallow malloc during an unrecoverable panic. A panic
     // could happen in a signal handler, or in a throw, or inside
@@ -1341,12 +1341,12 @@ internal static bool startpanic_m() {
     }
     if (exprᴛ1 is 1) { matchᴛ1 = true;
         gp.Value.m.Value.dying = 2;
-        print((@string)"panic during panic\n");
+        print((@string)"panic during panic\n"u8);
         return false;
     }
     if (exprᴛ1 is 2) { matchᴛ1 = true;
         gp.Value.m.Value.dying = 3;
-        print((@string)"stack trace unavailable\n");
+        print((@string)"stack trace unavailable\n"u8);
         exit(4);
         fallthrough = true;
     }
@@ -1377,11 +1377,11 @@ internal static bool dopanic_m(ж<g> Ꮡgp, uintptr pc, uintptr sp) {
     if (gp.sig != 0) {
         @string signameΔ1 = signame(gp.sig);
         if (signameΔ1 != ""u8){
-            print((@string)"[signal ", signameΔ1);
+            print((@string)"[signal "u8, signameΔ1);
         } else {
-            print((@string)"[signal ", ((Δhex)(uint64)gp.sig));
+            print((@string)"[signal "u8, ((Δhex)(uint64)gp.sig));
         }
-        print((@string)" code=", ((Δhex)(uint64)gp.sigcode0), (@string)" addr=", ((Δhex)(uint64)gp.sigcode1), (@string)" pc=", ((Δhex)(uint64)gp.sigpc), (@string)"]\n");
+        print((@string)" code="u8, ((Δhex)(uint64)gp.sigcode0), (@string)" addr="u8, ((Δhex)(uint64)gp.sigcode1), (@string)" pc="u8, ((Δhex)(uint64)gp.sigpc), (@string)"]\n"u8);
     }
     var (level, all, docrash) = gotraceback();
     if (level > 0) {
@@ -1389,12 +1389,12 @@ internal static bool dopanic_m(ж<g> Ꮡgp, uintptr pc, uintptr sp) {
             all = true;
         }
         if (Ꮡgp != (~gp.m).g0){
-            print((@string)"\n");
+            print((@string)"\n"u8);
             goroutineheader(Ꮡgp);
             traceback(pc, sp, 0, Ꮡgp);
         } else 
         if (level >= 2 || (~gp.m).throwing >= throwTypeRuntime) {
-            print((@string)"\nruntime stack:\n");
+            print((@string)"\nruntime stack:\n"u8);
             traceback(pc, sp, 0, Ꮡgp);
         }
         if (!didothers && all) {

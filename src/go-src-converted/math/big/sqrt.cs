@@ -44,7 +44,7 @@ public static ж<Float> Sqrt(this ж<Float> Ꮡz, ж<Float> Ꮡx) {
     }
     if (Ꮡx.Sign() == -1) {
         // following IEEE754-2008 (section 7.2)
-        throw panic(new ErrNaN("square root of negative operand"));
+        throw panic(new ErrNaN("square root of negative operand"u8));
     }
     // handle ±0 and +∞
     if (x.form != finite) {

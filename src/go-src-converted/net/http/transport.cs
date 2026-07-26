@@ -2867,7 +2867,7 @@ internal static bool wroteRequest(this ж<persistConn> Ꮡpc) => func<bool>((def
     return AreEqual(err, context_package.DeadlineExceeded);
 }
 
-internal static error errTimeout = new timeoutErrorжerror(Ꮡ(new timeoutError("net/http: timeout awaiting response headers")));
+internal static error errTimeout = new timeoutErrorжerror(Ꮡ(new timeoutError("net/http: timeout awaiting response headers"u8)));
 
 // errRequestCanceled is set to be identical to the one from h2 to facilitate
 // testing.

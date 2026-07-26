@@ -178,7 +178,7 @@ internal static void end(this ж<activeSweep> Ꮡa, sweepLocker sl) {
             }
             if (debug.gcpacertrace > 0) {
                 var live = ᏑgcController.of(gcControllerState.ᏑheapLive).Load();
-                print((@string)"pacer: sweep done at heap size ", (live >> (int)(20)), (@string)"MB; allocated ", ((live - mheap_.sweepHeapLiveBasis) >> (int)(20)), (@string)"MB during sweep; swept ", Ꮡmheap_.of(mheap.ᏑpagesSwept).Load(), (@string)" pages at ", mheap_.sweepPagesPerByte, (@string)" pages/byte\n");
+                print((@string)"pacer: sweep done at heap size "u8, (live >> (int)(20)), (@string)"MB; allocated "u8, ((live - mheap_.sweepHeapLiveBasis) >> (int)(20)), (@string)"MB during sweep; swept "u8, Ꮡmheap_.of(mheap.ᏑpagesSwept).Load(), (@string)" pages at "u8, mheap_.sweepPagesPerByte, (@string)" pages/byte\n"u8);
             }
             return;
         }
@@ -374,7 +374,7 @@ internal static uintptr sweepone() {
                 // swept this span, but in that case the sweep
                 // generation should always be up-to-date.
                 if (!((~s).sweepgen == sl.sweepGen || (~s).sweepgen == sl.sweepGen + 3)) {
-                    print((@string)"runtime: bad span s.state=", state, (@string)" s.sweepgen=", (~s).sweepgen, (@string)" sweepgen=", sl.sweepGen, (@string)"\n");
+                    print((@string)"runtime: bad span s.state="u8, state, (@string)" s.sweepgen="u8, (~s).sweepgen, (@string)" sweepgen="u8, sl.sweepGen, (@string)"\n"u8);
                     @throw("non in-use span in unswept list"u8);
                 }
                 continue;
@@ -506,7 +506,7 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
     var sweepgen = mheap_.sweepgen;
     {
         var state = s.of(mspan.Ꮡstate).get(); if (state != mSpanInUse || (~s).sweepgen != sweepgen - 1) {
-            print((@string)"mspan.sweep: state=", state, (@string)" sweepgen=", (~s).sweepgen, (@string)" mheap.sweepgen=", sweepgen, (@string)"\n");
+            print((@string)"mspan.sweep: state="u8, state, (@string)" sweepgen="u8, (~s).sweepgen, (@string)" mheap.sweepgen="u8, sweepgen, (@string)"\n"u8);
             @throw("mspan.sweep: bad span state"u8);
         }
     }
@@ -653,7 +653,7 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
     if (nalloc > (~s).allocCount) {
         // The zombie check above should have caught this in
         // more detail.
-        print((@string)"runtime: nelems=", (~s).nelems, (@string)" nalloc=", nalloc, (@string)" previous allocCount=", (~s).allocCount, (@string)" nfreed=", nfreed, (@string)"\n");
+        print((@string)"runtime: nelems="u8, (~s).nelems, (@string)" nalloc="u8, nalloc, (@string)" previous allocCount="u8, (~s).allocCount, (@string)" nfreed="u8, nfreed, (@string)"\n"u8);
         @throw("sweep increased allocation count"u8);
     }
     s.Value.allocCount = nalloc;
@@ -677,7 +677,7 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
     // check for potential races.
     {
         var state = s.of(mspan.Ꮡstate).get(); if (state != mSpanInUse || (~s).sweepgen != sweepgen - 1) {
-            print((@string)"mspan.sweep: state=", state, (@string)" sweepgen=", (~s).sweepgen, (@string)" mheap.sweepgen=", sweepgen, (@string)"\n");
+            print((@string)"mspan.sweep: state="u8, state, (@string)" sweepgen="u8, (~s).sweepgen, (@string)" mheap.sweepgen="u8, sweepgen, (@string)"\n"u8);
             @throw("mspan.sweep: bad span state after sweep"u8);
         }
     }
@@ -836,7 +836,7 @@ internal static void reportZombies(this ж<mspan> Ꮡs) {
     ref var s = ref Ꮡs.Value;
 
     printlock();
-    print((@string)"runtime: marked free object in span ", Ꮡs, (@string)", elemsize=", s.elemsize, (@string)" freeindex=", s.freeindex, (@string)" (bad use of unsafe.Pointer? try -d=checkptr)\n");
+    print((@string)"runtime: marked free object in span "u8, Ꮡs, (@string)", elemsize="u8, s.elemsize, (@string)" freeindex="u8, s.freeindex, (@string)" (bad use of unsafe.Pointer? try -d=checkptr)\n"u8);
     var mbits = s.markBitsForBase();
     var abits = s.allocBitsForIndex(0);
     for (var i = (uintptr)0; i < (uintptr)s.nelems; i++) {
@@ -844,20 +844,20 @@ internal static void reportZombies(this ж<mspan> Ꮡs) {
         print(((Δhex)(uint64)addr));
         var alloc = i < (uintptr)s.freeindex || abits.isMarked();
         if (alloc){
-            print((@string)" alloc");
+            print((@string)" alloc"u8);
         } else {
-            print((@string)" free ");
+            print((@string)" free "u8);
         }
         if (mbits.isMarked()){
-            print((@string)" marked  ");
+            print((@string)" marked  "u8);
         } else {
-            print((@string)" unmarked");
+            print((@string)" unmarked"u8);
         }
         var zombie = mbits.isMarked() && !alloc;
         if (zombie) {
-            print((@string)" zombie");
+            print((@string)" zombie"u8);
         }
-        print((@string)"\n");
+        print((@string)"\n"u8);
         if (zombie) {
             var length = s.elemsize;
             if (length > 1024) {

@@ -29,7 +29,7 @@ internal static readonly traceProcStatus traceProcSyscallAbandoned = 4;
 internal static traceWriter writeGoStatus(this traceWriter w, uint64 goid, int64 mid, traceGoStatus status, bool markAssist, uint64 stackID) {
     // The status should never be bad. Some invariant must have been violated.
     if (status == traceGoBad) {
-        print((@string)"runtime: goid=", goid, (@string)"\n");
+        print((@string)"runtime: goid="u8, goid, (@string)"\n"u8);
         @throw("attempted to trace a bad status for a goroutine"u8);
     }
     // Trace the status.
@@ -93,7 +93,7 @@ internal static traceWriter writeProcStatusForP(this traceWriter w, ж<Δp> Ꮡp
 internal static traceWriter writeProcStatus(this traceWriter w, uint64 pid, traceProcStatus status, bool inSweep) {
     // The status should never be bad. Some invariant must have been violated.
     if (status == traceProcBad) {
-        print((@string)"runtime: pid=", pid, (@string)"\n");
+        print((@string)"runtime: pid="u8, pid, (@string)"\n"u8);
         @throw("attempted to trace a bad status for a proc"u8);
     }
     // Trace the status.

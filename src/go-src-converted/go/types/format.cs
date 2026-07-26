@@ -23,7 +23,7 @@ internal static @string sprintf(ж<token.FileSet> Ꮡfset, Func<ж<Package>, @st
 
         switch (arg.type()) {
         case null: {
-            arg = (@string)"<nil>";
+            arg = (@string)"<nil>"u8;
             break;
         }
         case operand a: {

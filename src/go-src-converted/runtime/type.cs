@@ -143,7 +143,7 @@ internal static abiꓸName resolveNameOff(@unsafe.Pointer ptrInModule, nameOff o
         if (@base >= (~md).types && @base < (~md).etypes) {
             var resΔ1 = (~md).types + (uintptr)(int32)off;
             if (resΔ1 > (~md).etypes) {
-                println((@string)"runtime: nameOff", ((Δhex)(uint64)(int32)off), (@string)"out of range", ((Δhex)(uint64)(~md).types), (@string)"-", ((Δhex)(uint64)(~md).etypes));
+                println((@string)"runtime: nameOff"u8, ((Δhex)(uint64)(int32)off), (@string)"out of range"u8, ((Δhex)(uint64)(~md).types), (@string)"-"u8, ((Δhex)(uint64)(~md).etypes));
                 @throw("runtime: name offset out of range"u8);
             }
             return new name(Bytes: (ж<byte>)(uintptr)((@unsafe.Pointer)resΔ1));
@@ -154,9 +154,9 @@ internal static abiꓸName resolveNameOff(@unsafe.Pointer ptrInModule, nameOff o
     var (res, found) = reflectOffs.m[(int32)off, ꟷ];
     reflectOffsUnlock();
     if (!found) {
-        println((@string)"runtime: nameOff", ((Δhex)(uint64)(int32)off), (@string)"base", ((Δhex)(uint64)@base), (@string)"not in ranges:");
+        println((@string)"runtime: nameOff"u8, ((Δhex)(uint64)(int32)off), (@string)"base"u8, ((Δhex)(uint64)@base), (@string)"not in ranges:"u8);
         for (var next = Ꮡfirstmoduledata; next != nil; next = next.Value.next) {
-            println((@string)"\ttypes", ((Δhex)(uint64)(~next).types), (@string)"etypes", ((Δhex)(uint64)(~next).etypes));
+            println((@string)"\ttypes"u8, ((Δhex)(uint64)(~next).types), (@string)"etypes"u8, ((Δhex)(uint64)(~next).etypes));
         }
         @throw("runtime: name offset base pointer out of range"u8);
     }
@@ -195,9 +195,9 @@ internal static ж<_type> resolveTypeOff(@unsafe.Pointer ptrInModule, typeOff of
         @unsafe.Pointer resΔ1 = reflectOffs.m[(int32)off];
         reflectOffsUnlock();
         if (resΔ1 == nil) {
-            println((@string)"runtime: typeOff", ((Δhex)(uint64)(int32)off), (@string)"base", ((Δhex)(uint64)@base), (@string)"not in ranges:");
+            println((@string)"runtime: typeOff"u8, ((Δhex)(uint64)(int32)off), (@string)"base"u8, ((Δhex)(uint64)@base), (@string)"not in ranges:"u8);
             for (var next = Ꮡfirstmoduledata; next != nil; next = next.Value.next) {
-                println((@string)"\ttypes", ((Δhex)(uint64)(~next).types), (@string)"etypes", ((Δhex)(uint64)(~next).etypes));
+                println((@string)"\ttypes"u8, ((Δhex)(uint64)(~next).types), (@string)"etypes"u8, ((Δhex)(uint64)(~next).etypes));
             }
             @throw("runtime: type offset base pointer out of range"u8);
         }
@@ -210,7 +210,7 @@ internal static ж<_type> resolveTypeOff(@unsafe.Pointer ptrInModule, typeOff of
     }
     var res = (~md).types + (uintptr)(int32)off;
     if (res > (~md).etypes) {
-        println((@string)"runtime: typeOff", ((Δhex)(uint64)(int32)off), (@string)"out of range", ((Δhex)(uint64)(~md).types), (@string)"-", ((Δhex)(uint64)(~md).etypes));
+        println((@string)"runtime: typeOff"u8, ((Δhex)(uint64)(int32)off), (@string)"out of range"u8, ((Δhex)(uint64)(~md).types), (@string)"-"u8, ((Δhex)(uint64)(~md).etypes));
         @throw("runtime: type offset out of range"u8);
     }
     return (ж<_type>)(uintptr)((@unsafe.Pointer)res);
@@ -239,9 +239,9 @@ internal static @unsafe.Pointer textOff(this Δrtype t, textOff off) {
         @unsafe.Pointer resΔ1 = reflectOffs.m[(int32)off];
         reflectOffsUnlock();
         if (resΔ1 == nil) {
-            println((@string)"runtime: textOff", ((Δhex)(uint64)(int32)off), (@string)"base", ((Δhex)(uint64)@base), (@string)"not in ranges:");
+            println((@string)"runtime: textOff"u8, ((Δhex)(uint64)(int32)off), (@string)"base"u8, ((Δhex)(uint64)@base), (@string)"not in ranges:"u8);
             for (var next = Ꮡfirstmoduledata; next != nil; next = next.Value.next) {
-                println((@string)"\ttypes", ((Δhex)(uint64)(~next).types), (@string)"etypes", ((Δhex)(uint64)(~next).etypes));
+                println((@string)"\ttypes"u8, ((Δhex)(uint64)(~next).types), (@string)"etypes"u8, ((Δhex)(uint64)(~next).etypes));
             }
             @throw("runtime: text offset base pointer out of range"u8);
         }
@@ -491,7 +491,7 @@ internal static bool typesEqual(ж<_type> Ꮡt, ж<_type> Ꮡv, map<_typePair, E
         return true;
     }
     { /* default: */
-        println((@string)"runtime: impossible type kind", kind);
+        println((@string)"runtime: impossible type kind"u8, kind);
         @throw("runtime: impossible type kind"u8);
         return false;
     }

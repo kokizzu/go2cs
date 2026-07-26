@@ -128,7 +128,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     ref var cas0 = ref Ꮡcas0.Value;
 
     if (debugSelect) {
-        print((@string)"select: cas0=", Ꮡcas0, (@string)"\n");
+        print((@string)"select: cas0="u8, Ꮡcas0, (@string)"\n"u8);
     }
     // NOTE: In order to maintain a lean stack size, the number of scases
     // is capped at 65536.
@@ -223,7 +223,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     if (debugSelect) {
         for (nint i = 0; i + 1 < len(lockorder); i++) {
             if (scases[lockorder[i]].c.sortkey() > scases[lockorder[i + 1]].c.sortkey()) {
-                print((@string)"i=", i, (@string)" x=", lockorder[i], (@string)" y=", lockorder[i + 1], (@string)"\n");
+                print((@string)"i="u8, i, (@string)" x="u8, lockorder[i], (@string)" y="u8, lockorder[i + 1], (@string)"\n"u8);
                 @throw("select: broken sort"u8);
             }
         }
@@ -372,7 +372,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     }
     c = cas.Value.c;
     if (debugSelect) {
-        print((@string)"wait-return: cas0=", Ꮡcas0, (@string)" c=", c, (@string)" cas=", cas, (@string)" send=", casi < nsends, (@string)"\n");
+        print((@string)"wait-return: cas0="u8, Ꮡcas0, (@string)" c="u8, c, (@string)" cas="u8, cas, (@string)" send="u8, casi < nsends, (@string)"\n"u8);
     }
     if (casi < nsends){
         if (!caseSuccess) {
@@ -462,7 +462,7 @@ recv:
         selunlock(scasesʗ1, lockorderʗ1);
     }, 2);
     if (debugSelect) {
-        print((@string)"syncrecv: cas0=", Ꮡcas0, (@string)" c=", c, (@string)"\n");
+        print((@string)"syncrecv: cas0="u8, Ꮡcas0, (@string)" c="u8, c, (@string)"\n"u8);
     }
     recvOK = true;
     goto retc;
@@ -494,7 +494,7 @@ send:
         selunlock(scasesʗ3, lockorderʗ3);
     }, 2);
     if (debugSelect) {
-        print((@string)"syncsend: cas0=", Ꮡcas0, (@string)" c=", c, (@string)"\n");
+        print((@string)"syncsend: cas0="u8, Ꮡcas0, (@string)" c="u8, c, (@string)"\n"u8);
     }
     goto retc;
 retc:

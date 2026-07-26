@@ -420,7 +420,7 @@ internal static @string escape(@string s, encoding mode) {
 // User returns a [Userinfo] containing the provided username
 // and no password set.
 public static ж<Userinfo> User(@string username) {
-    return Ꮡ(new Userinfo(username, "", false));
+    return Ꮡ(new Userinfo(username, ""u8, false));
 }
 
 // UserPassword returns a [Userinfo] containing the provided username
@@ -529,14 +529,14 @@ public static (ж<URL>, error) Parse(@string rawURL) {
     (u, var frag, _) = strings.Cut(rawURL, "#"u8);
     var (url, err) = parse(u, false);
     if (err != default!) {
-        return (default!, new ΔErrorжerror(Ꮡ(new ΔError("parse", u, err))));
+        return (default!, new ΔErrorжerror(Ꮡ(new ΔError("parse"u8, u, err))));
     }
     if (frag == ""u8) {
         return (url, default!);
     }
     {
         err = url.setFragment(frag); if (err != default!) {
-            return (default!, new ΔErrorжerror(Ꮡ(new ΔError("parse", rawURL, err))));
+            return (default!, new ΔErrorжerror(Ꮡ(new ΔError("parse"u8, rawURL, err))));
         }
     }
     return (url, default!);
@@ -550,7 +550,7 @@ public static (ж<URL>, error) Parse(@string rawURL) {
 public static (ж<URL>, error) ParseRequestURI(@string rawURL) {
     var (url, err) = parse(rawURL, true);
     if (err != default!) {
-        return (default!, new ΔErrorжerror(Ꮡ(new ΔError("parse", rawURL, err))));
+        return (default!, new ΔErrorжerror(Ꮡ(new ΔError("parse"u8, rawURL, err))));
     }
     return (url, default!);
 }

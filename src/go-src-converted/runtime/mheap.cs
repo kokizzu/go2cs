@@ -1392,7 +1392,7 @@ internal static (uintptr, bool) grow(this ж<mheap> Ꮡh, uintptr npage) {
         var (av, asize) = Ꮡh.sysAlloc(ask, Ꮡh.of(mheap.ᏑarenaHints), true);
         if (av == nil) {
             var inUse = ᏑgcController.of(gcControllerState.ᏑheapFree).load() + ᏑgcController.of(gcControllerState.ᏑheapReleased).load() + ᏑgcController.of(gcControllerState.ᏑheapInUse).load();
-            print((@string)"runtime: out of memory: cannot allocate ", ask, (@string)"-byte block (", inUse, (@string)" in use)\n");
+            print((@string)"runtime: out of memory: cannot allocate "u8, ask, (@string)"-byte block ("u8, inUse, (@string)" in use)\n"u8);
             return (0, false);
         }
         if ((uintptr)av == h.curArena.end){
@@ -1524,7 +1524,7 @@ internal static void freeSpanLocked(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAll
             @throw("mheap.freeSpanLocked - invalid free of user arena chunk"u8);
         }
         if (s.allocCount != 0 || s.sweepgen != h.sweepgen) {
-            print((@string)"mheap.freeSpanLocked - span ", Ꮡs, (@string)" ptr ", ((Δhex)(uint64)s.@base()), (@string)" allocCount ", s.allocCount, (@string)" sweepgen ", s.sweepgen, (@string)"/", h.sweepgen, (@string)"\n");
+            print((@string)"mheap.freeSpanLocked - span "u8, Ꮡs, (@string)" ptr "u8, ((Δhex)(uint64)s.@base()), (@string)" allocCount "u8, s.allocCount, (@string)" sweepgen "u8, s.sweepgen, (@string)"/"u8, h.sweepgen, (@string)"\n"u8);
             @throw("mheap.freeSpanLocked - invalid free"u8);
         }
         Ꮡh.of(mheap.ᏑpagesInUse).Add(((uintptr)0 - s.npages));
@@ -1637,8 +1637,8 @@ internal static void remove(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
     ref var span = ref Ꮡspan.DerefOrNil();
 
     if (span.list != Ꮡlist) {
-        print((@string)"runtime: failed mSpanList.remove span.npages=", span.npages,
-            (@string)" span=", Ꮡspan, (@string)" prev=", span.prev, (@string)" span.list=", span.list, (@string)" list=", Ꮡlist, (@string)"\n");
+        print((@string)"runtime: failed mSpanList.remove span.npages="u8, span.npages,
+            (@string)" span="u8, Ꮡspan, (@string)" prev="u8, span.prev, (@string)" span.list="u8, span.list, (@string)" list="u8, Ꮡlist, (@string)"\n"u8);
         @throw("mSpanList.remove"u8);
     }
     if (list.first == Ꮡspan){
@@ -1665,7 +1665,7 @@ internal static void insert(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
     ref var span = ref Ꮡspan.Value;
 
     if (span.next != nil || span.prev != nil || span.list != nil) {
-        println((@string)"runtime: failed mSpanList.insert", Ꮡspan, span.next, span.prev, span.list);
+        println((@string)"runtime: failed mSpanList.insert"u8, Ꮡspan, span.next, span.prev, span.list);
         @throw("mSpanList.insert"u8);
     }
     span.next = list.first;
@@ -1686,7 +1686,7 @@ internal static void insertBack(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
     ref var span = ref Ꮡspan.Value;
 
     if (span.next != nil || span.prev != nil || span.list != nil) {
-        println((@string)"runtime: failed mSpanList.insertBack", Ꮡspan, span.next, span.prev, span.list);
+        println((@string)"runtime: failed mSpanList.insertBack"u8, Ꮡspan, span.next, span.prev, span.list);
         @throw("mSpanList.insertBack"u8);
     }
     span.prev = list.last;

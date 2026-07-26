@@ -158,7 +158,7 @@ internal static void initAt(this ж<unwinder> Ꮡu, uintptr pc0, uintptr sp0, ui
     var f = findfunc(frame.pc);
     if (!f.valid()) {
         if ((unwindFlags)(flags & unwindSilentErrors) == 0) {
-            print((@string)"runtime: g ", gp.goid, (@string)" gp=", Ꮡgp, (@string)": unknown pc ", ((Δhex)(uint64)frame.pc), (@string)"\n");
+            print((@string)"runtime: g "u8, gp.goid, (@string)" gp="u8, Ꮡgp, (@string)": unknown pc "u8, ((Δhex)(uint64)frame.pc), (@string)"\n"u8);
             tracebackHexdump(gp.stack, Ꮡframe, 0);
         }
         if ((unwindFlags)(flags & ((unwindFlags)(unwindPrintErrors | unwindSilentErrors))) == 0) {
@@ -320,7 +320,7 @@ internal static void resolveInternal(this ж<unwinder> Ꮡu, bool innermost, boo
         //  F   F   F  | print; panic
         //  F   F   T  | ignore SPWrite
         if ((unwindFlags)(u.flags & ((unwindFlags)(unwindPrintErrors | unwindSilentErrors))) == 0 && !innermost) {
-            println((@string)"traceback: unexpected SPWRITE function", funcname(f));
+            println((@string)"traceback: unexpected SPWRITE function"u8, funcname(f));
             @throw("traceback"u8);
         }
         frame.Value.lr = 0;
@@ -419,7 +419,7 @@ internal static void next(this ж<unwinder> Ꮡu) {
             doPrint = false;
         }
         if (fail || doPrint) {
-            print((@string)"runtime: g ", (~gp).goid, (@string)": unexpected return pc for ", funcname(f), (@string)" called from ", ((Δhex)(uint64)(~frame).lr), (@string)"\n");
+            print((@string)"runtime: g "u8, (~gp).goid, (@string)": unexpected return pc for "u8, funcname(f), (@string)" called from "u8, ((Δhex)(uint64)(~frame).lr), (@string)"\n"u8);
             tracebackHexdump((~gp).stack, frame, 0);
         }
         if (fail) {
@@ -431,7 +431,7 @@ internal static void next(this ж<unwinder> Ꮡu) {
     }
     if ((~frame).pc == (~frame).lr && (~frame).sp == (~frame).fp) {
         // If the next frame is identical to the current frame, we cannot make progress.
-        print((@string)"runtime: traceback stuck. pc=", ((Δhex)(uint64)(~frame).pc), (@string)" sp=", ((Δhex)(uint64)(~frame).sp), (@string)"\n");
+        print((@string)"runtime: traceback stuck. pc="u8, ((Δhex)(uint64)(~frame).pc), (@string)" sp="u8, ((Δhex)(uint64)(~frame).sp), (@string)"\n"u8);
         tracebackHexdump((~gp).stack, frame, (~frame).sp);
         @throw("traceback stuck"u8);
     }
@@ -512,8 +512,8 @@ internal static void next(this ж<unwinder> Ꮡu) {
     // stopped nicely, and the stack walk may not be able to complete.
     var gp = u.g.ptr();
     if ((unwindFlags)(u.flags & ((unwindFlags)(unwindPrintErrors | unwindSilentErrors))) == 0 && u.frame.sp != (~gp).stktopsp) {
-        print((@string)"runtime: g", (~gp).goid, (@string)": frame.sp=", ((Δhex)(uint64)u.frame.sp), (@string)" top=", ((Δhex)(uint64)(~gp).stktopsp), (@string)"\n");
-        print((@string)"\tstack=[", ((Δhex)(uint64)(~gp).stack.lo), (@string)"-", ((Δhex)(uint64)(~gp).stack.hi), (@string)"\n");
+        print((@string)"runtime: g"u8, (~gp).goid, (@string)": frame.sp="u8, ((Δhex)(uint64)u.frame.sp), (@string)" top="u8, ((Δhex)(uint64)(~gp).stktopsp), (@string)"\n"u8);
+        print((@string)"\tstack=["u8, ((Δhex)(uint64)(~gp).stack.lo), (@string)"-"u8, ((Δhex)(uint64)(~gp).stack.hi), (@string)"\n"u8);
         @throw("traceback did not unwind completely"u8);
     }
 }
@@ -642,13 +642,13 @@ internal static void printArgs(ΔfuncInfo f, @unsafe.Pointer argp, uintptr pc) {
         }
         print(((Δhex)x));
         if (!isLiveʗ1(off, slotIdxΔ2)) {
-            print((@string)"?");
+            print((@string)"?"u8);
         }
     };
     var start = true;
     var printcomma = () => {
         if (!start) {
-            print((@string)", ");
+            print((@string)", "u8);
         }
     };
     nint pi = 0;
@@ -664,20 +664,20 @@ printloop:
         }
         else if (exprᴛ1 == abi.TraceArgsStartAgg) {
             printcomma();
-            print((@string)"{");
+            print((@string)"{"u8);
             start = true;
             continue;
         }
         else if (exprᴛ1 == abi.TraceArgsEndAgg) {
-            print((@string)"}");
+            print((@string)"}"u8);
         }
         else if (exprᴛ1 == abi.TraceArgsDotdotdot) {
             printcomma();
-            print((@string)"...");
+            print((@string)"..."u8);
         }
         else if (exprᴛ1 == abi.TraceArgsOffsetTooLarge) {
             printcomma();
-            print((@string)"_");
+            print((@string)"_"u8);
         }
         else { /* default: */
             printcomma();
@@ -724,7 +724,7 @@ internal static @string funcNameForPrint(@string name) {
 // the binary's func data table.
 internal static void printFuncName(@string name) {
     if (name == "runtime.gopanic"u8) {
-        print((@string)"panic");
+        print((@string)"panic"u8);
         return;
     }
     var (a, b, c) = funcNamePiecesForPrint(name);
@@ -743,23 +743,23 @@ internal static void printcreatedby(ж<g> Ꮡgp) {
 }
 
 internal static void printcreatedby1(ΔfuncInfo f, uintptr pc, uint64 goid) {
-    print((@string)"created by ");
+    print((@string)"created by "u8);
     printFuncName(funcname(f));
     if (goid != 0) {
-        print((@string)" in goroutine ", goid);
+        print((@string)" in goroutine "u8, goid);
     }
-    print((@string)"\n");
+    print((@string)"\n"u8);
     var tracepc = pc;
     // back up to CALL instruction for funcline.
     if (pc > f.entry()) {
         tracepc -= sys.PCQuantum;
     }
     var (@file, line) = funcline(f, tracepc);
-    print((@string)"\t", @file, (@string)":", line);
+    print((@string)"\t"u8, @file, (@string)":"u8, line);
     if (pc > f.entry()) {
-        print((@string)" +", ((Δhex)(uint64)(pc - f.entry())));
+        print((@string)" +"u8, ((Δhex)(uint64)(pc - f.entry())));
     }
-    print((@string)"\n");
+    print((@string)"\n"u8);
 }
 
 internal static void traceback(uintptr pc, uintptr sp, uintptr lr, ж<g> Ꮡgp) {
@@ -878,7 +878,7 @@ internal static void traceback1(uintptr pc, uintptr sp, uintptr lr, ж<g> Ꮡgp,
         var (remaining, _) = traceback2(Ꮡu, showRuntime, maxInt, 0);
         nint elide = remaining - lastN - (nint)tracebackOuterFrames;
         if (elide > 0){
-            print((@string)"...", elide, (@string)" frames elided...\n");
+            print((@string)"..."u8, elide, (@string)" frames elided...\n"u8);
             traceback2(Ꮡu2, showRuntime, lastN + elide, tracebackOuterFrames);
         } else 
         if (elide <= 0) {
@@ -960,24 +960,24 @@ internal static (nint n, nint lastN) traceback2(ж<unwinder> Ꮡu, bool showRunt
             //		/home/rsc/go/src/runtime/x.go:23 +0xf
             //
             printFuncName(name);
-            print((@string)"(");
+            print((@string)"("u8);
             if (iu.isInlined(uf)){
-                print((@string)"...");
+                print((@string)"..."u8);
             } else {
                 @unsafe.Pointer argp = (@unsafe.Pointer)u.frame.argp;
                 printArgs(f, argp, u.symPC());
             }
-            print((@string)")\n");
-            print((@string)"\t", @file, (@string)":", line);
+            print((@string)")\n"u8);
+            print((@string)"\t"u8, @file, (@string)":"u8, line);
             if (!iu.isInlined(uf)) {
                 if (u.frame.pc > f.entry()) {
-                    print((@string)" +", ((Δhex)(uint64)(u.frame.pc - f.entry())));
+                    print((@string)" +"u8, ((Δhex)(uint64)(u.frame.pc - f.entry())));
                 }
                 if ((~gp).m != nil && (~(~gp).m).throwing >= throwTypeRuntime && gp == (~(~gp).m).curg || level >= 2) {
-                    print((@string)" fp=", ((Δhex)(uint64)u.frame.fp), (@string)" sp=", ((Δhex)(uint64)u.frame.sp), (@string)" pc=", ((Δhex)(uint64)u.frame.pc));
+                    print((@string)" fp="u8, ((Δhex)(uint64)u.frame.fp), (@string)" sp="u8, ((Δhex)(uint64)u.frame.sp), (@string)" pc="u8, ((Δhex)(uint64)u.frame.pc));
                 }
             }
-            print((@string)"\n");
+            print((@string)"\n"u8);
         }
         // Print cgo frames.
         {
@@ -992,7 +992,7 @@ internal static (nint n, nint lastN) traceback2(ж<unwinder> Ꮡu, bool showRunt
                                 break;
                             } else 
                             if (pr) {
-                                print((@string)"non-Go function at pc=", ((Δhex)(uint64)pc), (@string)"\n");
+                                print((@string)"non-Go function at pc="u8, ((Δhex)(uint64)pc), (@string)"\n"u8);
                             }
                         }
                     } else {
@@ -1020,7 +1020,7 @@ internal static (nint n, nint lastN) traceback2(ж<unwinder> Ꮡu, bool showRunt
 // printAncestorTraceback prints the traceback of the given ancestor.
 // TODO: Unify this with gentraceback and CallersFrames.
 internal static void printAncestorTraceback(ancestorInfo ancestor) {
-    print((@string)"[originating from goroutine ", ancestor.goid, (@string)"]:\n");
+    print((@string)"[originating from goroutine "u8, ancestor.goid, (@string)"]:\n"u8);
     foreach (var (fidx, pc) in ancestor.pcs) {
         var fΔ1 = findfunc(pc);
         // f previously validated
@@ -1029,7 +1029,7 @@ internal static void printAncestorTraceback(ancestorInfo ancestor) {
         }
     }
     if (len(ancestor.pcs) == tracebackInnerFrames) {
-        print((@string)"...additional frames elided...\n");
+        print((@string)"...additional frames elided...\n"u8);
     }
     // Show what created goroutine, except main goroutine (goid 1).
     var f = findfunc(ancestor.gopc);
@@ -1048,12 +1048,12 @@ internal static void printAncestorTracebackFuncInfo(ΔfuncInfo f, uintptr pc) {
     var (u, uf) = newInlineUnwinder(f, pc);
     var (@file, line) = u.fileLine(uf);
     printFuncName(u.srcFunc(uf).name());
-    print((@string)"(...)\n");
-    print((@string)"\t", @file, (@string)":", line);
+    print((@string)"(...)\n"u8);
+    print((@string)"\t"u8, @file, (@string)":"u8, line);
     if (pc > f.entry()) {
-        print((@string)" +", ((Δhex)(uint64)(pc - f.entry())));
+        print((@string)" +"u8, ((Δhex)(uint64)(pc - f.entry())));
     }
-    print((@string)"\n");
+    print((@string)"\n"u8);
 }
 
 // callers should be an internal detail,
@@ -1191,26 +1191,26 @@ internal static void goroutineheader(ж<g> Ꮡgp) {
     if ((gpstatus == _Gwaiting || gpstatus == _Gsyscall) && gp.waitsince != 0) {
         waitfor = (nanotime() - gp.waitsince) / 60000000000;
     }
-    print((@string)"goroutine ", gp.goid);
+    print((@string)"goroutine "u8, gp.goid);
     if (gp.m != nil && (~gp.m).throwing >= throwTypeRuntime && Ꮡgp == (~gp.m).curg || level >= 2) {
-        print((@string)" gp=", Ꮡgp);
+        print((@string)" gp="u8, Ꮡgp);
         if (gp.m != nil){
-            print((@string)" m=", (~gp.m).id, (@string)" mp=", gp.m);
+            print((@string)" m="u8, (~gp.m).id, (@string)" mp="u8, gp.m);
         } else {
-            print((@string)" m=nil");
+            print((@string)" m=nil"u8);
         }
     }
-    print((@string)" [", status);
+    print((@string)" ["u8, status);
     if (isScan) {
-        print((@string)" (scan)");
+        print((@string)" (scan)"u8);
     }
     if (waitfor >= 1) {
-        print((@string)", ", waitfor, (@string)" minutes");
+        print((@string)", "u8, waitfor, (@string)" minutes"u8);
     }
     if (gp.lockedm != 0) {
-        print((@string)", locked to thread");
+        print((@string)", locked to thread"u8);
     }
-    print((@string)"]:\n");
+    print((@string)"]:\n"u8);
 }
 
 internal static void tracebackothers(ж<g> Ꮡme) {
@@ -1218,7 +1218,7 @@ internal static void tracebackothers(ж<g> Ꮡme) {
     // Show the current goroutine first, if we haven't already.
     var curgp = getg().Value.m.Value.curg;
     if (curgp != nil && curgp != Ꮡme) {
-        print((@string)"\n");
+        print((@string)"\n"u8);
         goroutineheader(curgp);
         traceback(~(uintptr)0, ~(uintptr)0, 0, curgp);
     }
@@ -1234,14 +1234,14 @@ internal static void tracebackothers(ж<g> Ꮡme) {
         if (gp == Ꮡme || gp == curgpʗ1 || readgstatus(gp) == _Gdead || isSystemGoroutine(gp, false) && level < 2) {
             return;
         }
-        print((@string)"\n");
+        print((@string)"\n"u8);
         goroutineheader(gp);
         // Note: gp.m == getg().m occurs when tracebackothers is called
         // from a signal handler initiated during a systemstack call.
         // The original G is still in the running state, and we want to
         // print its stack.
         if ((~gp).m != (~getg()).m && (uint32)(readgstatus(gp) & ~(uint32)_Gscan) == _Grunning){
-            print((@string)"\tgoroutine running on other thread; stack unavailable\n");
+            print((@string)"\tgoroutine running on other thread; stack unavailable\n"u8);
             printcreatedby(gp);
         } else {
             traceback(~(uintptr)0, ~(uintptr)0, 0, gp);
@@ -1283,7 +1283,7 @@ internal static void tracebackHexdump(Δstack stk, ж<stkframe> Ꮡframe, uintpt
         hi = stk.hi;
     }
     // Print the hex dump.
-    print((@string)"stack: frame={sp:", ((Δhex)(uint64)frame.sp), (@string)", fp:", ((Δhex)(uint64)frame.fp), (@string)"} stack=[", ((Δhex)(uint64)stk.lo), (@string)",", ((Δhex)(uint64)stk.hi), (@string)")\n");
+    print((@string)"stack: frame={sp:"u8, ((Δhex)(uint64)frame.sp), (@string)", fp:"u8, ((Δhex)(uint64)frame.fp), (@string)"} stack=["u8, ((Δhex)(uint64)stk.lo), (@string)","u8, ((Δhex)(uint64)stk.hi), (@string)")\n"u8);
     hexdumpWords(lo, hi, (uintptr Δp) => {
         var exprᴛ1 = Δp;
         if (exprᴛ1 == Ꮡframe.Value.fp) {
@@ -1549,7 +1549,7 @@ internal static void printCgoTraceback(ж<ΔcgoCallers> Ꮡcallers) {
             if (c == 0) {
                 break;
             }
-            print((@string)"non-Go function at pc=", ((Δhex)(uint64)c), (@string)"\n");
+            print((@string)"non-Go function at pc="u8, ((Δhex)(uint64)c), (@string)"\n"u8);
         }
         return;
     }
@@ -1592,13 +1592,13 @@ internal static bool printOneCgoTraceback(uintptr pc, Func<(bool, bool)> commitF
             // The symbolizer must add that if appropriate.
             println(gostringnocopy(arg.funcName));
         } else {
-            println((@string)"non-Go function");
+            println((@string)"non-Go function"u8);
         }
-        print((@string)"\t");
+        print((@string)"\t"u8);
         if (arg.@file != nil) {
-            print(gostringnocopy(arg.@file), (@string)":", arg.lineno, (@string)" ");
+            print(gostringnocopy(arg.@file), (@string)":"u8, arg.lineno, (@string)" "u8);
         }
-        print((@string)"pc=", ((Δhex)(uint64)pc), (@string)"\n");
+        print((@string)"pc="u8, ((Δhex)(uint64)pc), (@string)"\n"u8);
         if (arg.more == 0) {
             return false;
         }

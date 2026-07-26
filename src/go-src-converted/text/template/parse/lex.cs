@@ -228,7 +228,7 @@ internal delegate stateFn stateFn(ж<lexer> _);
 internal static item nextItem(this ж<lexer> Ꮡl) {
     ref var l = ref Ꮡl.Value;
 
-    l.item = new item(itemEOF, l.pos, "EOF", l.startLine);
+    l.item = new item(itemEOF, l.pos, "EOF"u8, l.startLine);
     stateFn state = lexText;
     if (l.insideAction) {
         state = lexInsideAction;

@@ -85,16 +85,16 @@ internal static readonly abiStepKind abiStepFloatReg = 4; // copy to/from FP reg
 
 [GoRecv] internal static void dump(this ref abiSeq a) {
     foreach (var (i, p) in a.steps) {
-        println((@string)"part", i, p.kind, p.offset, p.size, p.stkOff, p.ireg, p.freg);
+        println((@string)"part"u8, i, p.kind, p.offset, p.size, p.stkOff, p.ireg, p.freg);
     }
-    print((@string)"values ");
+    print((@string)"values "u8);
     foreach (var (_, i) in a.valueStart) {
-        print(i, (@string)" ");
+        print(i, (@string)" "u8);
     }
     println();
-    println((@string)"stack", a.stackBytes);
-    println((@string)"iregs", a.iregs);
-    println((@string)"fregs", a.fregs);
+    println((@string)"stack"u8, a.stackBytes);
+    println((@string)"iregs"u8, a.iregs);
+    println((@string)"fregs"u8, a.fregs);
 }
 
 // stepsForValue returns the ABI instructions for translating
@@ -260,7 +260,7 @@ internal static readonly abiStepKind abiStepFloatReg = 4; // copy to/from FP reg
         return true;
     }
     else { /* default: */
-        print((@string)"t.Kind == ", t.Kind(), (@string)"\n");
+        print((@string)"t.Kind == "u8, t.Kind(), (@string)"\n"u8);
         throw panic("unknown type kind");
     }
 
@@ -374,18 +374,18 @@ internal static readonly abiStepKind abiStepFloatReg = 4; // copy to/from FP reg
 }
 
 [GoRecv] internal static void dump(this ref abiDesc a) {
-    println((@string)"ABI");
-    println((@string)"call");
+    println((@string)"ABI"u8);
+    println((@string)"call"u8);
     a.call.dump();
-    println((@string)"ret");
+    println((@string)"ret"u8);
     a.ret.dump();
-    println((@string)"stackCallArgsSize", a.stackCallArgsSize);
-    println((@string)"retOffset", a.retOffset);
-    println((@string)"spill", a.spill);
-    print((@string)"inRegPtrs:");
+    println((@string)"stackCallArgsSize"u8, a.stackCallArgsSize);
+    println((@string)"retOffset"u8, a.retOffset);
+    println((@string)"spill"u8, a.spill);
+    print((@string)"inRegPtrs:"u8);
     dumpPtrBitMap(a.inRegPtrs);
     println();
-    print((@string)"outRegPtrs:");
+    print((@string)"outRegPtrs:"u8);
     dumpPtrBitMap(a.outRegPtrs);
     println();
 }
@@ -398,7 +398,7 @@ internal static void dumpPtrBitMap(abi.IntArgRegBitmap b) {
         if (b.Get(i)) {
             x = 1;
         }
-        print((@string)" ", x);
+        print((@string)" "u8, x);
     }
 }
 

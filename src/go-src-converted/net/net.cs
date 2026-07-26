@@ -701,9 +701,9 @@ internal static error errTimeout = new timeoutErrorжerror(Ꮡ(new timeoutError(
 }
 
 // Various errors contained in DNSError.
-internal static ж<notFoundError> errNoSuchHost = Ꮡ(new notFoundError("no such host"));
+internal static ж<notFoundError> errNoSuchHost = Ꮡ(new notFoundError("no such host"u8));
 
-internal static ж<notFoundError> errUnknownPort = Ꮡ(new notFoundError("unknown port"));
+internal static ж<notFoundError> errUnknownPort = Ꮡ(new notFoundError("unknown port"u8));
 
 // notFoundError is a special error understood by the newDNSError function,
 // which causes a creation of a DNSError with IsNotFound field set to true.

@@ -451,7 +451,7 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
     }
     nint addressSize = r.AddressSize();
     if (e == nil || (~e).Offset != off) {
-        return (default!, new DecodeError(name, off, "no type at offset"));
+        return (default!, new DecodeError(name, off, "no type at offset"u8));
     }
     // If this is the root of the recursion, prepare to resolve
     // typedef sizes and perform other fixups once the recursion is
@@ -488,7 +488,7 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
                 return default!;
             }
             if (kid == nil) {
-                Ꮡerr.ValueSlot = new DecodeError(name, r.offset(), "unexpected end of DWARF entries");
+                Ꮡerr.ValueSlot = new DecodeError(name, r.offset(), "unexpected end of DWARF entries"u8);
                 return default!;
             }
             if ((~kid).Tag == 0) {
@@ -579,7 +579,7 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
  count);
             }
             else if (exprᴛ2 == TagEnumerationType) {
-                err = new DecodeError(name, (~kid).Offset, "cannot handle enumeration type as array bound");
+                err = new DecodeError(name, (~kid).Offset, "cannot handle enumeration type as array bound"u8);
                 goto Error;
             }
 
@@ -655,7 +655,7 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
             typ = new UcharTypeжΔType(@new<UcharType>());
         }
         else { /* default: */
-            err = new DecodeError(nameΔ2, (~e).Offset, "unrecognized encoding attribute value");
+            err = new DecodeError(nameΔ2, (~e).Offset, "unrecognized encoding attribute value"u8);
             goto Error;
         }
 
@@ -668,7 +668,7 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
         (t.Value.BitOffset, haveBitOffset) = e.Val(AttrBitOffset)._<int64>(ᐧ);
         (t.Value.DataBitOffset, haveDataBitOffset) = e.Val(AttrDataBitOffset)._<int64>(ᐧ);
         if (haveBitOffset && haveDataBitOffset) {
-            err = new DecodeError(nameΔ2, (~e).Offset, "duplicate bit offset attributes");
+            err = new DecodeError(nameΔ2, (~e).Offset, "duplicate bit offset attributes"u8);
             goto Error;
         }
     }
@@ -709,7 +709,7 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
  // unit here, not unknownFormat.
  new unknownFormat(nil), "location"u8, 0, loc);
                 if (b.uint8() != opPlusUconst) {
-                    err = new DecodeError(name, (~kid).Offset, "unexpected opcode");
+                    err = new DecodeError(name, (~kid).Offset, "unexpected opcode"u8);
                     goto Error;
                 }
                 f.Value.ByteOffset = (int64)b.@uint();
@@ -730,7 +730,7 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
             (f.Value.BitOffset, haveBitOffset) = kid.Val(AttrBitOffset)._<int64>(ᐧ);
             (f.Value.DataBitOffset, haveDataBitOffset) = kid.Val(AttrDataBitOffset)._<int64>(ᐧ);
             if (haveBitOffset && haveDataBitOffset) {
-                err = new DecodeError(name, (~e).Offset, "duplicate bit offset attributes");
+                err = new DecodeError(name, (~e).Offset, "duplicate bit offset attributes"u8);
                 goto Error;
             }
             (f.Value.BitSize, _) = kid.Val(AttrBitSize)._<int64>(ᐧ);

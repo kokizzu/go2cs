@@ -217,11 +217,11 @@ internal static error walksymtab(slice<byte> data, Func<sym, error> fn) {
     ref var ptrsz = ref heap(new nint(), out var Ꮡptrsz);
     if (newTable) {
         if (len(data) < 8) {
-            return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF", default!)));
+            return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF"u8, default!)));
         }
         ptrsz = (nint)data[7];
         if (ptrsz != 4 && ptrsz != 8) {
-            return new DecodingErrorжerror(Ꮡ(new DecodingError(7, "invalid pointer size", ptrsz)));
+            return new DecodingErrorжerror(Ꮡ(new DecodingError(7, "invalid pointer size"u8, ptrsz)));
         }
         data = data[8..];
     }
@@ -243,7 +243,7 @@ internal static error walksymtab(slice<byte> data, Func<sym, error> fn) {
             p = p[1..];
             if (wideValue){
                 if (len(p) < ptrsz) {
-                    return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF", default!)));
+                    return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF"u8, default!)));
                 }
                 // fixed-width value
                 if (ptrsz == 8){
@@ -263,14 +263,14 @@ internal static error walksymtab(slice<byte> data, Func<sym, error> fn) {
                     p = p[1..];
                 }
                 if (len(p) == 0) {
-                    return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF", default!)));
+                    return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF"u8, default!)));
                 }
                 s.value |= ((uint64)p[0]).Lsh(shift);
                 p = p[1..];
             }
             if (goType) {
                 if (len(p) < ptrsz) {
-                    return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF", default!)));
+                    return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF"u8, default!)));
                 }
                 // fixed-width go type
                 if (ptrsz == 8){
@@ -285,11 +285,11 @@ internal static error walksymtab(slice<byte> data, Func<sym, error> fn) {
             // Value, symbol type.
             s.value = (uint64)order.Uint32(p[0..4]);
             if (len(p) < 5) {
-                return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF", default!)));
+                return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF"u8, default!)));
             }
             typ = p[4];
             if ((byte)(typ & 0x80) == 0) {
-                return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data) - len(p) + 4, "bad symbol type", typ)));
+                return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data) - len(p) + 4, "bad symbol type"u8, typ)));
             }
             typ &= unchecked((byte)~(byte)(0x80));
             s.typ = typ;
@@ -317,14 +317,14 @@ internal static error walksymtab(slice<byte> data, Func<sym, error> fn) {
         }}
 
         if (len(p) < i + nnul) {
-            return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF", default!)));
+            return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF"u8, default!)));
         }
         s.name = p[0..(int)(i)];
         i += nnul;
         p = p[(int)(i)..];
         if (!newTable) {
             if (len(p) < 4) {
-                return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF", default!)));
+                return new DecodingErrorжerror(Ꮡ(new DecodingError(len(data), "unexpected EOF"u8, default!)));
             }
             // Go type.
             s.gotype = (uint64)order.Uint32(p[..4]);
@@ -392,7 +392,7 @@ public static (ж<Table>, error) NewTable(slice<byte> symtab, ж<LineTable> Ꮡp
                 eltIdx = binary.BigEndian.Uint16(s.name[(int)(i)..(int)(i + 2)]);
                 var (elt, ok) = fnameʗ1[eltIdx, ꟷ];
                 if (!ok) {
-                    return new DecodingErrorжerror(Ꮡ(new DecodingError(-1, "bad filename code", eltIdx)));
+                    return new DecodingErrorжerror(Ꮡ(new DecodingError(-1, "bad filename code"u8, eltIdx)));
                 }
                 {
                     nint nΔ3 = len((~ts).Name); if (nΔ3 > 0 && (~ts).Name[nΔ3 - 1] != (rune)'/') {
@@ -709,7 +709,7 @@ break_countloop:;
 //
 // Go 1.2 and later use a simpler format, documented at golang.org/s/go12symtab.
 [GoRecv] internal static (@string, nint) lineFromAline(this ref Obj o, nint aline) {
-    var noPath = Ꮡ(new lineFromAline_stackEnt("", 0, 0, nil));
+    var noPath = Ꮡ(new lineFromAline_stackEnt(""u8, 0, 0, nil));
     var tos = noPath;
 pathloop:
     foreach (var (_, s) in o.Paths) {

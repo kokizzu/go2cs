@@ -45,7 +45,7 @@ internal static void sysUnusedOS(@unsafe.Pointer v, uintptr n) {
             small &= unchecked((uintptr)~(uintptr)(4096 - 1));
         }
         if (small < 4096) {
-            print((@string)"runtime: VirtualFree of ", small, (@string)" bytes failed with errno=", getlasterror(), (@string)"\n");
+            print((@string)"runtime: VirtualFree of "u8, small, (@string)" bytes failed with errno="u8, getlasterror(), (@string)"\n"u8);
             @throw("runtime: failed to decommit pages"u8);
         }
         v.Value = (uintptr)add(v, small);
@@ -72,11 +72,11 @@ internal static void sysUsedOS(@unsafe.Pointer v, uintptr n) {
             var errno = getlasterror();
             var exprᴛ1 = errno;
             if (exprᴛ1 == _ERROR_NOT_ENOUGH_MEMORY || exprᴛ1 == _ERROR_COMMITMENT_LIMIT) {
-                print((@string)"runtime: VirtualAlloc of ", n, (@string)" bytes failed with errno=", errno, (@string)"\n");
+                print((@string)"runtime: VirtualAlloc of "u8, n, (@string)" bytes failed with errno="u8, errno, (@string)"\n"u8);
                 @throw("out of memory"u8);
             }
             else { /* default: */
-                print((@string)"runtime: VirtualAlloc of ", small, (@string)" bytes failed with errno=", errno, (@string)"\n");
+                print((@string)"runtime: VirtualAlloc of "u8, small, (@string)" bytes failed with errno="u8, errno, (@string)"\n"u8);
                 @throw("runtime: failed to commit pages"u8);
             }
 
@@ -102,7 +102,7 @@ internal static void sysHugePageCollapseOS(@unsafe.Pointer v, uintptr n) {
 internal static void sysFreeOS(@unsafe.Pointer v, uintptr n) {
     var r = stdcall3(_VirtualFree, (uintptr)v, 0, _MEM_RELEASE);
     if (r == 0) {
-        print((@string)"runtime: VirtualFree of ", n, (@string)" bytes failed with errno=", getlasterror(), (@string)"\n");
+        print((@string)"runtime: VirtualFree of "u8, n, (@string)" bytes failed with errno="u8, getlasterror(), (@string)"\n"u8);
         @throw("runtime: failed to release pages"u8);
     }
 }

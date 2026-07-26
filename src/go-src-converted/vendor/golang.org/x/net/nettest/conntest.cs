@@ -77,7 +77,7 @@ internal static void timeoutWrapper(ж<testing.T> Ꮡt, Func<(net.Conn, net.Conn
     var timer = time.AfterFunc(time.ΔMinute, () => {
         var stopʗ4 = stopʗ3;
         Ꮡonce.Do(() => {
-            Ꮡt.Error((@string)"test timed out; terminating pipe");
+            Ꮡt.Error((@string)"test timed out; terminating pipe"u8);
             stopʗ4();
         });
     });
@@ -122,7 +122,7 @@ internal static void testBasicIO(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
     });
     {
         var got = ᐸꟷ(dataCh); if (!bytes.Equal(got, want)) {
-            Ꮡt.Error((@string)"transmitted data differs");
+            Ꮡt.Error((@string)"transmitted data differs"u8);
         }
     }
 }
@@ -301,7 +301,7 @@ internal static void testPresentTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Con
         }
         checkForTimeoutError(Ꮡt, err);
         if (len(deadlineSetʗ2) == 0) {
-            Ꮡt.Error((@string)"Read timed out before deadline is set");
+            Ꮡt.Error((@string)"Read timed out before deadline is set"u8);
         }
     }));
     var deadlineSetʗ3 = deadlineSet;
@@ -313,7 +313,7 @@ internal static void testPresentTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Con
         }
         checkForTimeoutError(Ꮡt, err);
         if (len(deadlineSetʗ3) == 0) {
-            Ꮡt.Error((@string)"Write timed out before deadline is set");
+            Ꮡt.Error((@string)"Write timed out before deadline is set"u8);
         }
     }));
 });
@@ -379,7 +379,7 @@ internal static void testCloseTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Conn 
 // be called concurrently.
 internal static void testConcurrentMethods(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
     if (runtime.GOOS == "plan9"u8) {
-        Ꮡt.Skip((@string)"skipping on plan9; see https://golang.org/issue/20489");
+        Ꮡt.Skip((@string)"skipping on plan9; see https://golang.org/issue/20489"u8);
     }
     goǃ((ᴛ1, ᴛ2) => chunkedCopy(ᴛ1, ᴛ2), new net_ConnᴠWriter(c2), new net_ConnᴠReader(c2));
     // The results of the calls may be nonsensical, but this should

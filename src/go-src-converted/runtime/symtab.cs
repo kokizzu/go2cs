@@ -593,9 +593,9 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
     // Check that the pclntab's format is valid.
     var hdr = datap.pcHeader;
     if ((~hdr).magic != 0xfffffff1U || (~hdr).pad1 != 0 || (~hdr).pad2 != 0 || (~hdr).minLC != sys.PCQuantum || (~hdr).ptrSize != goarch.PtrSize || (~hdr).textStart != datap.text) {
-        println((@string)"runtime: pcHeader: magic=", ((Δhex)(uint64)(~hdr).magic), (@string)"pad1=", (~hdr).pad1, (@string)"pad2=", (~hdr).pad2,
-            (@string)"minLC=", (~hdr).minLC, (@string)"ptrSize=", (~hdr).ptrSize, (@string)"pcHeader.textStart=", ((Δhex)(uint64)(~hdr).textStart),
-            (@string)"text=", ((Δhex)(uint64)datap.text), (@string)"pluginpath=", datap.pluginpath);
+        println((@string)"runtime: pcHeader: magic="u8, ((Δhex)(uint64)(~hdr).magic), (@string)"pad1="u8, (~hdr).pad1, (@string)"pad2="u8, (~hdr).pad2,
+            (@string)"minLC="u8, (~hdr).minLC, (@string)"ptrSize="u8, (~hdr).ptrSize, (@string)"pcHeader.textStart="u8, ((Δhex)(uint64)(~hdr).textStart),
+            (@string)"text="u8, ((Δhex)(uint64)datap.text), (@string)"pluginpath="u8, datap.pluginpath);
         @throw("invalid function symbol table"u8);
     }
     // ftab is lookup table for function by program counter.
@@ -609,12 +609,12 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
             if (i + 1 < nftab) {
                 f2name = funcname(f2);
             }
-            println((@string)"function symbol table not sorted by PC offset:", ((Δhex)(uint64)datap.ftab[i].entryoff), funcname(f1), (@string)">", ((Δhex)(uint64)datap.ftab[i + 1].entryoff), f2name, (@string)", plugin:", datap.pluginpath);
+            println((@string)"function symbol table not sorted by PC offset:"u8, ((Δhex)(uint64)datap.ftab[i].entryoff), funcname(f1), (@string)">"u8, ((Δhex)(uint64)datap.ftab[i + 1].entryoff), f2name, (@string)", plugin:"u8, datap.pluginpath);
             for (nint j = 0; j <= i; j++) {
-                println((@string)"\t", ((Δhex)(uint64)datap.ftab[j].entryoff), funcname(new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[j].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap)));
+                println((@string)"\t"u8, ((Δhex)(uint64)datap.ftab[j].entryoff), funcname(new ΔfuncInfo(Ꮡ(datap.pclntable, (int)(datap.ftab[j].funcoff)).Reinterpret<byte, _func>(), Ꮡdatap)));
             }
             if (GOOS == "aix"u8 && isarchive) {
-                println((@string)"-Wl,-bnoobjreorder is mandatory on aix/ppc64 with c-archive");
+                println((@string)"-Wl,-bnoobjreorder is mandatory on aix/ppc64 with c-archive"u8);
             }
             @throw("invalid runtime symbol table"u8);
         }
@@ -622,12 +622,12 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
     var min = datap.textAddr(datap.ftab[0].entryoff);
     var max = datap.textAddr(datap.ftab[nftab].entryoff);
     if (datap.minpc != min || datap.maxpc != max) {
-        println((@string)"minpc=", ((Δhex)(uint64)datap.minpc), (@string)"min=", ((Δhex)(uint64)min), (@string)"maxpc=", ((Δhex)(uint64)datap.maxpc), (@string)"max=", ((Δhex)(uint64)max));
+        println((@string)"minpc="u8, ((Δhex)(uint64)datap.minpc), (@string)"min="u8, ((Δhex)(uint64)min), (@string)"maxpc="u8, ((Δhex)(uint64)datap.maxpc), (@string)"max="u8, ((Δhex)(uint64)max));
         @throw("minpc or maxpc invalid"u8);
     }
     foreach (var (_, modulehash) in datap.modulehashes) {
         if (modulehash.linktimehash != modulehash.runtimehash.Value) {
-            println((@string)"abi mismatch detected between", datap.modulename, (@string)"and", modulehash.modulename);
+            println((@string)"abi mismatch detected between"u8, datap.modulename, (@string)"and"u8, modulehash.modulename);
             @throw("abi mismatch"u8);
         }
     }
@@ -664,7 +664,7 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
         }
         if (res > md.etext && GOARCH != "wasm"u8) {
             // on wasm, functions do not live in the same address space as the linear memory
-            println((@string)"runtime: textAddr", ((Δhex)(uint64)res), (@string)"out of range", ((Δhex)(uint64)md.text), (@string)"-", ((Δhex)(uint64)md.etext));
+            println((@string)"runtime: textAddr"u8, ((Δhex)(uint64)res), (@string)"out of range"u8, ((Δhex)(uint64)md.text), (@string)"-"u8, ((Δhex)(uint64)md.etext));
             @throw("runtime: text offset out of range"u8);
         }
     }
@@ -1008,7 +1008,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
     }
     if (!f.valid()) {
         if (strict && Ꮡpanicking.Load() == 0) {
-            println((@string)"runtime: no module data for", ((Δhex)(uint64)f.entry()));
+            println((@string)"runtime: no module data for"u8, ((Δhex)(uint64)f.entry()));
             @throw("no module data"u8);
         }
         return (-1, 0);
@@ -1035,7 +1035,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
             // since it is the most likely to be newly used.
             if (debugCheckCache && checkPC != 0){
                 if (checkVal != val || checkPC != prevpc) {
-                    print((@string)"runtime: table value ", val, (@string)"@", prevpc, (@string)" != cache value ", checkVal, (@string)"@", checkPC, (@string)" at PC ", targetpc, (@string)" off ", off, (@string)"\n");
+                    print((@string)"runtime: table value "u8, val, (@string)"@"u8, prevpc, (@string)" != cache value "u8, checkVal, (@string)"@"u8, checkPC, (@string)" at PC "u8, targetpc, (@string)" off "u8, off, (@string)"\n"u8);
                     @throw("bad pcvalue cache"u8);
                 }
             } else {
@@ -1065,7 +1065,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
     if (Ꮡpanicking.Load() != 0 || !strict) {
         return (-1, 0);
     }
-    print((@string)"runtime: invalid pc-encoded table f=", funcname(f), (@string)" pc=", ((Δhex)(uint64)pc), (@string)" targetpc=", ((Δhex)(uint64)targetpc), (@string)" tab=", Δp, (@string)"\n");
+    print((@string)"runtime: invalid pc-encoded table f="u8, funcname(f), (@string)" pc="u8, ((Δhex)(uint64)pc), (@string)" targetpc="u8, ((Δhex)(uint64)targetpc), (@string)" tab="u8, Δp, (@string)"\n"u8);
     Δp = (~datap).pctab[(int)(off)..];
     pc = f.entry();
     val = -1;
@@ -1075,7 +1075,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
         if (!ok) {
             break;
         }
-        print((@string)"\tvalue=", val, (@string)" until pc=", ((Δhex)(uint64)pc), (@string)"\n");
+        print((@string)"\tvalue="u8, val, (@string)" until pc="u8, ((Δhex)(uint64)pc), (@string)"\n"u8);
     }
     @throw("invalid runtime symbol table"u8);
     return (-1, 0);
@@ -1156,7 +1156,7 @@ internal static (@string @file, int32 line) funcline(ΔfuncInfo f, uintptr targe
 internal static int32 funcspdelta(ΔfuncInfo f, uintptr targetpc) {
     var (x, _) = pcvalue(f, f.pcsp, targetpc, true);
     if (debugPcln && (int32)(x & (int32)((goarch.PtrSize - 1))) != 0) {
-        print((@string)"invalid spdelta ", funcname(f), (@string)" ", ((Δhex)(uint64)f.entry()), (@string)" ", ((Δhex)(uint64)targetpc), (@string)" ", ((Δhex)(uint64)f.pcsp), (@string)" ", x, (@string)"\n");
+        print((@string)"invalid spdelta "u8, funcname(f), (@string)" "u8, ((Δhex)(uint64)f.entry()), (@string)" "u8, ((Δhex)(uint64)targetpc), (@string)" "u8, ((Δhex)(uint64)f.pcsp), (@string)" "u8, x, (@string)"\n"u8);
         @throw("bad spdelta"u8);
     }
     return x;

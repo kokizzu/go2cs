@@ -281,7 +281,7 @@ internal static slice<byte> bytesSlow(this ΔValue v) {
         return @unsafe.Slice(p, n);
     }
 
-    throw panic(Ꮡ(new ValueError("reflect.Value.Bytes", v.kind())));
+    throw panic(Ꮡ(new ValueError("reflect.Value.Bytes"u8, v.kind())));
 }
 
 // runes returns v's underlying value.
@@ -417,7 +417,7 @@ internal static slice<ΔValue> call(this ΔValue v, @string op, slice<ΔValue> @
     }
     var frameSize = frametype.Size();
     if (debugReflectCall) {
-        println((@string)"reflect.call", stringFor(t.of(funcType.ᏑType)));
+        println((@string)"reflect.call"u8, stringFor(t.of(funcType.ᏑType)));
         abid.dump();
     }
     // Copy inputs into args.
@@ -572,7 +572,7 @@ break_stepsLoop:;
                 // Pointer-valued data gets put directly
                 // into v.ptr.
                 if (steps[0].kind != abiStepPointer) {
-                    print((@string)"kind=", steps[0].kind, (@string)", type=", stringFor(tv), (@string)"\n");
+                    print((@string)"kind="u8, steps[0].kind, (@string)", type="u8, stringFor(tv), (@string)"\n"u8);
                     throw panic("mismatch between ABI description and types");
                 }
                 ret[i] = new ΔValue(tv, regArgs.Ptrs[steps[0].ireg], ((flag)(uintptr)(uint8)tv.Kind()));
@@ -709,7 +709,7 @@ internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame
                     // Pointer-valued data gets put directly
                     // into v.ptr.
                     if (steps[0].kind != abiStepPointer) {
-                        print((@string)"kind=", steps[0].kind, (@string)", type=", stringFor(typ), (@string)"\n");
+                        print((@string)"kind="u8, steps[0].kind, (@string)", type="u8, stringFor(typ), (@string)"\n"u8);
                         throw panic("mismatch between ABI description and types");
                     }
                     v.ptr = regs.Ptrs[steps[0].ireg];
@@ -1151,7 +1151,7 @@ internal static nint capNonSlice(this ΔValue v) {
         throw panic("reflect: call of reflect.Value.Cap on ptr to non-array Value");
     }
 
-    throw panic(Ꮡ(new ValueError("reflect.Value.Cap", v.kind())));
+    throw panic(Ꮡ(new ValueError("reflect.Value.Cap"u8, v.kind())));
 }
 
 // Close closes the channel v.
@@ -1319,7 +1319,7 @@ public static bool CanInt(this ΔValue v) {
 // CanInterface reports whether [Value.Interface] can be used without panicking.
 public static bool CanInterface(this ΔValue v) {
     if (v.flag == 0) {
-        throw panic(Ꮡ(new ValueError("reflect.Value.CanInterface", Invalid)));
+        throw panic(Ꮡ(new ValueError("reflect.Value.CanInterface"u8, Invalid)));
     }
     return (flag)(v.flag & flagRO) == 0;
 }
@@ -1446,7 +1446,7 @@ public static bool IsZero(this ΔValue v) {
     { /* default: */
         throw panic(Ꮡ(new ValueError( // This should never happen, but will act as a safeguard for later,
  // as a default value doesn't makes sense here.
-"reflect.Value.IsZero", v.Kind())));
+"reflect.Value.IsZero"u8, v.Kind())));
     }
 
 }
@@ -1533,10 +1533,10 @@ internal static nint lenNonSlice(this ΔValue v) {
         }
     }
 
-    throw panic(Ꮡ(new ValueError("reflect.Value.Len", v.kind())));
+    throw panic(Ꮡ(new ValueError("reflect.Value.Len"u8, v.kind())));
 }
 
-internal static ж<abi.Type> stringType = rtypeOf((@string)"");
+internal static ж<abi.Type> stringType = rtypeOf((@string)""u8);
 
 // MapIndex returns the value associated with key in the map v.
 // It panics if v's Kind is not [Map].
@@ -1751,7 +1751,7 @@ internal static ΔValue copyVal(ж<abi.Type> Ꮡtyp, flag fl, @unsafe.Pointer pt
 // Method panics if i is out of range or if v is a nil interface value.
 public static ΔValue Method(this ΔValue v, nint i) {
     if (v.typ() == nil) {
-        throw panic(Ꮡ(new ValueError("reflect.Value.Method", Invalid)));
+        throw panic(Ꮡ(new ValueError("reflect.Value.Method"u8, Invalid)));
     }
     if ((flag)(v.flag & flagMethod) != 0 || (nuint)i >= (nuint)toRType(v.typ()).NumMethod()) {
         throw panic("reflect: Method index out of range");
@@ -1772,7 +1772,7 @@ public static ΔValue Method(this ΔValue v, nint i) {
 // For an interface type, it returns the number of exported and unexported methods.
 public static nint NumMethod(this ΔValue v) {
     if (v.typ() == nil) {
-        throw panic(Ꮡ(new ValueError("reflect.Value.NumMethod", Invalid)));
+        throw panic(Ꮡ(new ValueError("reflect.Value.NumMethod"u8, Invalid)));
     }
     if ((flag)(v.flag & flagMethod) != 0) {
         return 0;
@@ -1787,7 +1787,7 @@ public static nint NumMethod(this ΔValue v) {
 // It returns the zero Value if no method was found.
 public static ΔValue MethodByName(this ΔValue v, @string name) {
     if (v.typ() == nil) {
-        throw panic(Ꮡ(new ValueError("reflect.Value.MethodByName", Invalid)));
+        throw panic(Ꮡ(new ValueError("reflect.Value.MethodByName"u8, Invalid)));
     }
     if ((flag)(v.flag & flagMethod) != 0) {
         return new ΔValue(nil);
@@ -1813,7 +1813,7 @@ public static bool OverflowComplex(this ΔValue v, complex128 x) {
         return false;
     }
 
-    throw panic(Ꮡ(new ValueError("reflect.Value.OverflowComplex", v.kind())));
+    throw panic(Ꮡ(new ValueError("reflect.Value.OverflowComplex"u8, v.kind())));
 }
 
 // OverflowFloat reports whether the float64 x cannot be represented by v's type.
@@ -1828,7 +1828,7 @@ public static bool OverflowFloat(this ΔValue v, float64 x) {
         return false;
     }
 
-    throw panic(Ꮡ(new ValueError("reflect.Value.OverflowFloat", v.kind())));
+    throw panic(Ꮡ(new ValueError("reflect.Value.OverflowFloat"u8, v.kind())));
 }
 
 internal static bool overflowFloat32(float64 x) {
@@ -1849,7 +1849,7 @@ public static bool OverflowInt(this ΔValue v, int64 x) {
         return x != trunc;
     }
 
-    throw panic(Ꮡ(new ValueError("reflect.Value.OverflowInt", v.kind())));
+    throw panic(Ꮡ(new ValueError("reflect.Value.OverflowInt"u8, v.kind())));
 }
 
 // OverflowUint reports whether the uint64 x cannot be represented by v's type.
@@ -1864,7 +1864,7 @@ public static bool OverflowUint(this ΔValue v, uint64 x) {
     }
 
     // ok to use v.typ_ directly as Size doesn't escape
-    throw panic(Ꮡ(new ValueError("reflect.Value.OverflowUint", v.kind())));
+    throw panic(Ꮡ(new ValueError("reflect.Value.OverflowUint"u8, v.kind())));
 }
 
 // go2cs generated this placeholder — func Pointer is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
@@ -2061,7 +2061,7 @@ public static ΔValue Slice3(this ΔValue v, nint i, nint j, nint k) {
             cap = sΔ2.Value.Cap;
         }
         else { /* default: */
-            throw panic(Ꮡ(new ValueError("reflect.Value.Slice3", v.kind())));
+            throw panic(Ꮡ(new ValueError("reflect.Value.Slice3"u8, v.kind())));
         }
     }
 
@@ -2126,7 +2126,7 @@ public static bool TrySend(this ΔValue v, ΔValue x) {
 // inline of toRType(v.typ()), for own inlining in inline test
 internal static ΔType typeSlow(this ΔValue v) {
     if (v.flag == 0) {
-        throw panic(Ꮡ(new ValueError("reflect.Value.Type", Invalid)));
+        throw panic(Ꮡ(new ValueError("reflect.Value.Type"u8, Invalid)));
     }
     var typ = v.typ();
     if ((flag)(v.flag & flagMethod) == 0) {
@@ -2178,7 +2178,7 @@ public static bool CanUint(this ΔValue v) {
 // It's preferred to use uintptr(Value.Addr().UnsafePointer()) to get the equivalent result.
 public static uintptr UnsafeAddr(this ΔValue v) {
     if (v.typ() == nil) {
-        throw panic(Ꮡ(new ValueError("reflect.Value.UnsafeAddr", Invalid)));
+        throw panic(Ꮡ(new ValueError("reflect.Value.UnsafeAddr"u8, Invalid)));
     }
     if ((flag)(v.flag & flagAddr) == 0) {
         throw panic("reflect.Value.UnsafeAddr of unaddressable value");
@@ -2313,7 +2313,7 @@ public static void Clear(this ΔValue v) {
         mapclear(v.typ(), (uintptr)v.pointer());
     }
     else { /* default: */
-        throw panic(Ꮡ(new ValueError("reflect.Value.Clear", v.Kind())));
+        throw panic(Ꮡ(new ValueError("reflect.Value.Clear"u8, v.Kind())));
     }
 
 }
@@ -2356,7 +2356,7 @@ public static nint Copy(ΔValue dst, ΔValue src) {
     ref var dk = ref heap<ΔKind>(out var Ꮡdk);
     dk = dst.kind();
     if (dk != Array && dk != ΔSlice) {
-        throw panic(Ꮡ(new ValueError("reflect.Copy", dk)));
+        throw panic(Ꮡ(new ValueError("reflect.Copy"u8, dk)));
     }
     if (dk == Array) {
         dst.mustBeAssignable();
@@ -2368,7 +2368,7 @@ public static nint Copy(ΔValue dst, ΔValue src) {
     if (sk != Array && sk != ΔSlice) {
         stringCopy = sk == ΔString && dst.typ().Elem().Kind() == abi.Uint8;
         if (!stringCopy) {
-            throw panic(Ꮡ(new ValueError("reflect.Copy", sk)));
+            throw panic(Ꮡ(new ValueError("reflect.Copy"u8, sk)));
         }
     }
     src.mustBeExported();

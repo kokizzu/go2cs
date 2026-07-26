@@ -733,7 +733,7 @@ public static void PrintDefaults(this ж<FlagSet> Ꮡf) {
                 }
             }
         }
-        fmt.Fprint(Ꮡf.Value.Output(), b.String(), (@string)"\n");
+        fmt.Fprint(Ꮡf.Value.Output(), b.String(), (@string)"\n"u8);
     });
     // If calling String on any zero flag.Values triggered a panic, print
     // the messages after the full set of defaults so that the programmer

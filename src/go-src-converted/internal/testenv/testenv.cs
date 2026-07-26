@@ -431,7 +431,7 @@ public static void SkipFlakyNet(testing.TB t) {
     t.Helper();
     {
         var (v, _) = strconv.ParseBool(os.Getenv("GO_BUILDER_FLAKY_NET"u8)); if (v) {
-            t.Skip((@string)"skipping test on builder known to have frequent network failures");
+            t.Skip((@string)"skipping test on builder known to have frequent network failures"u8);
         }
     }
 }
@@ -461,7 +461,7 @@ public static void SkipIfShortAndSlow(testing.TB t) {
 public static void SkipIfOptimizationOff(testing.TB t) {
     if (OptimizationOff()) {
         t.Helper();
-        t.Skip((@string)"skipping test with optimization disabled");
+        t.Skip((@string)"skipping test with optimization disabled"u8);
     }
 }
 

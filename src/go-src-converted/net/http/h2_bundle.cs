@@ -1767,7 +1767,7 @@ internal static (http2Frame, error) http2parseDataFrame(ж<http2frameCache> Ꮡf
         // connection error (Section 5.4.1) of type
         // PROTOCOL_ERROR.
         countError("frame_data_stream_0"u8);
-        return (default!, new http2connError(http2ErrCodeProtocol, "DATA frame with stream ID 0"));
+        return (default!, new http2connError(http2ErrCodeProtocol, "DATA frame with stream ID 0"u8));
     }
     var f = Ꮡfc.getDataFrame();
     f.Value.http2FrameHeader = fh;
@@ -1786,7 +1786,7 @@ internal static (http2Frame, error) http2parseDataFrame(ж<http2frameCache> Ꮡf
         // treat this as a connection error.
         // Filed: https://github.com/http2/http2-spec/issues/610
         countError("frame_data_pad_too_big"u8);
-        return (default!, new http2connError(http2ErrCodeProtocol, "pad size larger than data payload"));
+        return (default!, new http2connError(http2ErrCodeProtocol, "pad size larger than data payload"u8));
     }
     f.Value.data = payload[..(int)(builtin.len(payload) - (nint)padSize)];
     return (new http2DataFrameжhttp2Frame(f), default!);
@@ -2220,7 +2220,7 @@ internal static (http2Frame, error err) http2parseHeadersFrame(ж<http2frameCach
         // respond with a connection error (Section 5.4.1) of type
         // PROTOCOL_ERROR.
         countError("frame_headers_zero_stream"u8);
-        return (default!, new http2connError(http2ErrCodeProtocol, "HEADERS frame with stream ID 0"));
+        return (default!, new http2connError(http2ErrCodeProtocol, "HEADERS frame with stream ID 0"u8));
     }
     uint8 padLength = default!;
     if (fh.Flags.Has(http2FlagHeadersPadded)) {
@@ -2354,7 +2354,7 @@ public static bool IsZero(this http2PriorityParam p) {
 internal static (http2Frame, error) http2parsePriorityFrame(ж<http2frameCache> _, http2FrameHeader fh, Action<@string> countError, slice<byte> payload) {
     if (fh.StreamID == 0) {
         countError("frame_priority_zero_stream"u8);
-        return (default!, new http2connError(http2ErrCodeProtocol, "PRIORITY frame with stream ID 0"));
+        return (default!, new http2connError(http2ErrCodeProtocol, "PRIORITY frame with stream ID 0"u8));
     }
     if (builtin.len(payload) != 5) {
         countError("frame_priority_bad_length"u8);
@@ -2442,7 +2442,7 @@ internal static error WriteRSTStream(this ж<http2Framer> Ꮡf, uint32 streamID,
 internal static (http2Frame, error) http2parseContinuationFrame(ж<http2frameCache> _, http2FrameHeader fh, Action<@string> countError, slice<byte> p) {
     if (fh.StreamID == 0) {
         countError("frame_continuation_zero_stream"u8);
-        return (default!, new http2connError(http2ErrCodeProtocol, "CONTINUATION frame with stream ID 0"));
+        return (default!, new http2connError(http2ErrCodeProtocol, "CONTINUATION frame with stream ID 0"u8));
     }
     return (new http2ContinuationFrameжhttp2Frame(Ꮡ(new http2ContinuationFrame(fh, p))), default!);
 }

@@ -253,7 +253,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         f.Value.Magic = le;
     }
     else { /* default: */
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid magic number", default!))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid magic number"u8, default!))));
     }
 
     // Read entire file header.
@@ -274,18 +274,18 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     }
     nint c = saferio.SliceCap<Load>((uint64)(~f).Ncmd);
     if (c < 0) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "too many load commands", default!))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "too many load commands"u8, default!))));
     }
     f.Value.Loads = new slice<Load>(0, c);
     var bo = f.Value.ByteOrder;
     for (var i = (uint32)0; i < (~f).Ncmd; i++) {
         // Each load command begins with uint32 command and length.
         if (len(dat) < 8) {
-            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "command block too small", default!))));
+            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "command block too small"u8, default!))));
         }
         var (cmd, siz) = (((LoadCmd)bo.Uint32(dat[0..4])), bo.Uint32(dat[4..8]));
         if (siz < 8 || siz > (uint32)len(dat)) {
-            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid command block size", default!))));
+            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid command block size"u8, default!))));
         }
         slice<byte> cmddat = default!;
         (cmddat, dat) = (dat[0..(int)(siz)], dat[(int)(siz)..]);
@@ -302,7 +302,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
             }
             var l = @new<Rpath>();
             if (hdr.Path >= (uint32)len(cmddat)) {
-                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid path in rpath command", hdr.Path))));
+                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid path in rpath command"u8, hdr.Path))));
             }
             l.Value.Path = cstring(cmddat[(int)(hdr.Path)..]);
             l.Value.LoadBytes = ((LoadBytes)cmddat);
@@ -318,7 +318,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
             }
             var l = @new<Dylib>();
             if (hdr.Name >= (uint32)len(cmddat)) {
-                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid name in dynamic library command", hdr.Name))));
+                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid name in dynamic library command"u8, hdr.Name))));
             }
             l.Value.Name = cstring(cmddat[(int)(hdr.Name)..]);
             l.Value.Time = hdr.Time;
@@ -365,7 +365,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
                 }
             }
             if ((~f).Symtab == nil){
-                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "dynamic symbol table seen before any ordinary symbol table", default!))));
+                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "dynamic symbol table seen before any ordinary symbol table"u8, default!))));
             } else 
             if (hdr.Iundefsym > (uint32)len((~(~f).Symtab).Syms)){
                 return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, fmt.Sprintf(
@@ -492,10 +492,10 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
 
         if (s != nil) {
             if ((int64)(~s).Offset < 0) {
-                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid section offset", (~s).Offset))));
+                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid section offset"u8, (~s).Offset))));
             }
             if ((int64)(~s).Filesz < 0) {
-                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid section file size", (~s).Filesz))));
+                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid section file size"u8, (~s).Filesz))));
             }
             s.Value.sr = io.NewSectionReader(r, (int64)(~s).Offset, (int64)(~s).Filesz);
             s.Value.ReaderAt = new io_SectionReaderжReaderAt(s.Value.sr);
@@ -510,7 +510,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     var bo = f.ByteOrder;
     nint c = saferio.SliceCap<Symbol>((uint64)hdr.Nsyms);
     if (c < 0) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "too many symbols", default!))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "too many symbols"u8, default!))));
     }
     var symtab = new slice<Symbol>(0, c);
     var b = bytes.NewReader(symdat);
@@ -536,7 +536,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
             n.Value = (uint64)n32.Value;
         }
         if (n.Name >= (uint32)len(strtab)) {
-            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid name in symbol table", n.Name))));
+            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "invalid name in symbol table"u8, n.Name))));
         }
         // We add "_" to Go symbols. Strip it here. See issue 33808.
         @string name = cstring(strtab[(int)(n.Name)..]);
@@ -749,7 +749,7 @@ internal static @string cstring(slice<byte> b) {
 // satisfied by other libraries at dynamic load time.
 [GoRecv] public static (slice<@string>, error) ImportedSymbols(this ref File f) {
     if (f.Dysymtab == nil || f.Symtab == nil) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "missing symbol table", default!))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "missing symbol table"u8, default!))));
     }
     var st = f.Symtab;
     var dt = f.Dysymtab;

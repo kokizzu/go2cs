@@ -185,7 +185,7 @@ internal static void printfloat(float64 v) {
 }
 
 internal static void printcomplex(complex128 c) {
-    print((@string)"(", real(c), imag(c), (@string)"i)");
+    print((@string)"("u8, real(c), imag(c), (@string)"i)"u8);
 }
 
 internal static void printuint(uint64 v) {
@@ -243,16 +243,16 @@ internal static void printstring(@string s) {
 
 internal static void printslice(slice<byte> s) {
     var sp = Ꮡ(s).Reinterpret<slice<byte>, Δsliceᴛ>();
-    print((@string)"[", len(s), (@string)"/", cap(s), (@string)"]");
+    print((@string)"["u8, len(s), (@string)"/"u8, cap(s), (@string)"]"u8);
     printpointer((~sp).Δarray);
 }
 
 internal static void printeface(eface e) {
-    print((@string)"(", e._type, (@string)",", e.data, (@string)")");
+    print((@string)"("u8, e._type, (@string)","u8, e.data, (@string)")"u8);
 }
 
 internal static void printiface(iface i) {
-    print((@string)"(", i.tab, (@string)",", i.data, (@string)")");
+    print((@string)"("u8, i.tab, (@string)","u8, i.data, (@string)")"u8);
 }
 
 // hexdumpWords prints a word-oriented hex dump of [p, end).
@@ -270,7 +270,7 @@ internal static void hexdumpWords(uintptr Δp, uintptr end, Func<uintptr, byte> 
             if (i != 0) {
                 println();
             }
-            print(((Δhex)(uint64)(Δp + i)), (@string)": ");
+            print(((Δhex)(uint64)(Δp + i)), (@string)": "u8);
         }
         if (mark != default!) {
             markbuf[0] = mark(Δp + i);
@@ -281,11 +281,11 @@ internal static void hexdumpWords(uintptr Δp, uintptr end, Func<uintptr, byte> 
         gwrite(markbuf[..]);
         var val = ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)(Δp + i));
         print(((Δhex)(uint64)val));
-        print((@string)" ");
+        print((@string)" "u8);
         // Can we symbolize val?
         var fn = findfunc(val);
         if (fn.valid()) {
-            print((@string)"<", funcname(fn), (@string)"+", ((Δhex)(uint64)(val - fn.entry())), (@string)"> ");
+            print((@string)"<"u8, funcname(fn), (@string)"+"u8, ((Δhex)(uint64)(val - fn.entry())), (@string)"> "u8);
         }
     }
     minhexdigits = 0;

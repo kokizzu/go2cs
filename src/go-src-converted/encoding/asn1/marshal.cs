@@ -184,7 +184,7 @@ internal static (encoder, error) makeBigInt(ж<bigꓸInt> Ꮡn) {
     ref var n = ref Ꮡn.DerefOrNil();
 
     if (Ꮡn == nil) {
-        return (default!, new StructuralError("empty integer"));
+        return (default!, new StructuralError("empty integer"u8));
     }
     if (n.Sign() < 0){
         // A negative number has to be converted to two's-complement
@@ -293,7 +293,7 @@ internal static (encoder e, error err) makeObjectIdentifier(slice<nint> oid) {
     error err = default!;
 
     if (len(oid) < 2 || oid[0] > 2 || (oid[0] < 2 && oid[1] >= 40)) {
-        return (default!, new StructuralError("invalid object identifier"));
+        return (default!, new StructuralError("invalid object identifier"u8));
     }
     return (((oidEncoder)oid), default!);
 }
@@ -310,7 +310,7 @@ internal static (encoder e, error err) makePrintableString(@string s) {
         // certificates, however when making new certificates
         // it is rejected.
         if (!isPrintable(s[i], allowAsterisk, rejectAmpersand)) {
-            return (default!, new StructuralError("PrintableString contains invalid character"));
+            return (default!, new StructuralError("PrintableString contains invalid character"u8));
         }
     }
     return (((stringEncoder)s), default!);
@@ -322,7 +322,7 @@ internal static (encoder e, error err) makeIA5String(@string s) {
 
     for (nint i = 0; i < len(s); i++) {
         if (s[i] > 127) {
-            return (default!, new StructuralError("IA5String contains invalid character"));
+            return (default!, new StructuralError("IA5String contains invalid character"u8));
         }
     }
     return (((stringEncoder)s), default!);
@@ -334,7 +334,7 @@ internal static (encoder e, error err) makeNumericString(@string s) {
 
     for (nint i = 0; i < len(s); i++) {
         if (!isNumeric(s[i])) {
-            return (default!, new StructuralError("NumericString contains invalid character"));
+            return (default!, new StructuralError("NumericString contains invalid character"u8));
         }
     }
     return (((stringEncoder)s), default!);
@@ -400,7 +400,7 @@ internal static (slice<byte> ret, error err) appendUTCTime(slice<byte> dst, time
         break;
     }
     default: {
-        return (default!, new StructuralError("cannot represent time as UTCTime"));
+        return (default!, new StructuralError("cannot represent time as UTCTime"u8));
     }}
 
     return (appendTimeCommon(dst, t), default!);
@@ -412,7 +412,7 @@ internal static (slice<byte> ret, error err) appendGeneralizedTime(slice<byte> d
 
     nint year = t.Year();
     if (year < 0 || year > 9999) {
-        return (default!, new StructuralError("cannot represent time as GeneralizedTime"));
+        return (default!, new StructuralError("cannot represent time as GeneralizedTime"u8));
     }
     dst = appendFourDigits(dst, year);
     return (appendTimeCommon(dst, t), default!);
@@ -498,7 +498,7 @@ internal static (encoder e, error err) makeBody(reflectꓸValue value, fieldPara
             var t = v.Type();
             for (nint i = 0; i < t.NumField(); i++) {
                 if (!t.Field(i).IsExported()) {
-                    return (default!, new StructuralError("struct contains unexported fields"));
+                    return (default!, new StructuralError("struct contains unexported fields"u8));
                 }
             }
             nint startingField = 0;
@@ -591,7 +591,7 @@ internal static (encoder e, error err) makeBody(reflectꓸValue value, fieldPara
         }
     }
 
-    return (default!, new StructuralError("unknown Go type"));
+    return (default!, new StructuralError("unknown Go type"u8));
 }
 
 internal static (encoder e, error err) makeField(reflectꓸValue v, fieldParameters @params) {
@@ -638,10 +638,10 @@ internal static (encoder e, error err) makeField(reflectꓸValue v, fieldParamet
         return (default!, new StructuralError(fmt.Sprintf("unknown Go type: %v"u8, v.Type())));
     }
     if (@params.timeType != 0 && tag != TagUTCTime) {
-        return (default!, new StructuralError("explicit time type given to non-time member"));
+        return (default!, new StructuralError("explicit time type given to non-time member"u8));
     }
     if (@params.stringType != 0 && tag != TagPrintableString) {
-        return (default!, new StructuralError("explicit string type given to non-string member"));
+        return (default!, new StructuralError("explicit string type given to non-string member"u8));
     }
     var exprᴛ1 = tag;
     if (exprᴛ1 == TagPrintableString) {
@@ -670,7 +670,7 @@ internal static (encoder e, error err) makeField(reflectꓸValue v, fieldParamet
 
     if (@params.set) {
         if (tag != TagSequence) {
-            return (default!, new StructuralError("non sequence tagged as set"));
+            return (default!, new StructuralError("non sequence tagged as set"u8));
         }
         tag = TagSet;
     }

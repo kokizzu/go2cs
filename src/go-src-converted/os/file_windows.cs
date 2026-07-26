@@ -237,7 +237,7 @@ public static error Remove(@string name) {
 internal static error rename(@string oldname, @string newname) {
     var e = windows.Rename(fixLongPath(oldname), fixLongPath(newname));
     if (e != default!) {
-        return new LinkErrorжerror(Ꮡ(new LinkError("rename", oldname, newname, e)));
+        return new LinkErrorжerror(Ꮡ(new LinkError("rename"u8, oldname, newname, e)));
     }
     return default!;
 }
@@ -293,15 +293,15 @@ internal static @string tempDir() {
 public static error Link(@string oldname, @string newname) {
     var (n, err) = syscall.UTF16PtrFromString(fixLongPath(newname));
     if (err != default!) {
-        return new LinkErrorжerror(Ꮡ(new LinkError("link", oldname, newname, err)));
+        return new LinkErrorжerror(Ꮡ(new LinkError("link"u8, oldname, newname, err)));
     }
     (var o, err) = syscall.UTF16PtrFromString(fixLongPath(oldname));
     if (err != default!) {
-        return new LinkErrorжerror(Ꮡ(new LinkError("link", oldname, newname, err)));
+        return new LinkErrorжerror(Ꮡ(new LinkError("link"u8, oldname, newname, err)));
     }
     err = syscall.CreateHardLink(n, o, 0);
     if (err != default!) {
-        return new LinkErrorжerror(Ꮡ(new LinkError("link", oldname, newname, err)));
+        return new LinkErrorжerror(Ꮡ(new LinkError("link"u8, oldname, newname, err)));
     }
     return default!;
 }
@@ -336,7 +336,7 @@ public static error Symlink(@string oldname, @string newname) {
     var isdir = err == default! && fi.IsDir();
     (var n, err) = syscall.UTF16PtrFromString(fixLongPath(newname));
     if (err != default!) {
-        return new LinkErrorжerror(Ꮡ(new LinkError("symlink", oldname, newname, err)));
+        return new LinkErrorжerror(Ꮡ(new LinkError("symlink"u8, oldname, newname, err)));
     }
     ж<uint16> o = default!;
     if (filepathlite.IsAbs(oldname)){
@@ -351,7 +351,7 @@ public static error Symlink(@string oldname, @string newname) {
         (o, err) = syscall.UTF16PtrFromString(oldname);
     }
     if (err != default!) {
-        return new LinkErrorжerror(Ꮡ(new LinkError("symlink", oldname, newname, err)));
+        return new LinkErrorжerror(Ꮡ(new LinkError("symlink"u8, oldname, newname, err)));
     }
     uint32 flags = windows.SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
     if (isdir) {
@@ -364,7 +364,7 @@ public static error Symlink(@string oldname, @string newname) {
         flags &= unchecked((uint32)~(uint32)(windows.SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE));
         err = syscall.CreateSymbolicLink(n, o, flags);
         if (err != default!) {
-            return new LinkErrorжerror(Ꮡ(new LinkError("symlink", oldname, newname, err)));
+            return new LinkErrorжerror(Ꮡ(new LinkError("symlink"u8, oldname, newname, err)));
         }
     }
     return default!;

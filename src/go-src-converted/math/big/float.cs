@@ -86,7 +86,7 @@ public static @string Error(this ErrNaN err) {
 // NewFloat panics with [ErrNaN] if x is a NaN.
 public static ж<Float> NewFloat(float64 x) {
     if (math.IsNaN(x)) {
-        throw panic(new ErrNaN("NewFloat(NaN)"));
+        throw panic(new ErrNaN("NewFloat(NaN)"u8));
     }
     return @new<Float>().SetFloat64(x);
 }
@@ -581,7 +581,7 @@ public static ж<Float> SetFloat64(this ж<Float> Ꮡz, float64 x) {
         z.prec = 53;
     }
     if (math.IsNaN(x)) {
-        throw panic(new ErrNaN("Float.SetFloat64(NaN)"));
+        throw panic(new ErrNaN("Float.SetFloat64(NaN)"u8));
     }
     z.acc = Exact;
     z.neg = math.Signbit(x);
@@ -1583,7 +1583,7 @@ public static ж<Float> Add(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy)
         z.acc = Exact;
         z.form = zero;
         z.neg = false;
-        throw panic(new ErrNaN("addition of infinities with opposite signs"));
+        throw panic(new ErrNaN("addition of infinities with opposite signs"u8));
     }
     if (x.form == zero && y.form == zero) {
         // ±0 + ±0
@@ -1649,7 +1649,7 @@ public static ж<Float> Sub(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy)
         z.acc = Exact;
         z.form = zero;
         z.neg = false;
-        throw panic(new ErrNaN("subtraction of infinities with equal signs"));
+        throw panic(new ErrNaN("subtraction of infinities with equal signs"u8));
     }
     if (x.form == zero && y.form == zero) {
         // ±0 - ±0
@@ -1698,7 +1698,7 @@ public static ж<Float> Mul(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy)
         // value of z is undefined but make sure it's valid
         z.form = zero;
         z.neg = false;
-        throw panic(new ErrNaN("multiplication of zero with infinity"));
+        throw panic(new ErrNaN("multiplication of zero with infinity"u8));
     }
     if (x.form == inf || y.form == inf) {
         // ±Inf * y
@@ -1741,7 +1741,7 @@ public static ж<Float> Quo(this ж<Float> Ꮡz, ж<Float> Ꮡx, ж<Float> Ꮡy)
         // value of z is undefined but make sure it's valid
         z.form = zero;
         z.neg = false;
-        throw panic(new ErrNaN("division of zero by zero or infinity by infinity"));
+        throw panic(new ErrNaN("division of zero by zero or infinity by infinity"u8));
     }
     if (x.form == zero || y.form == inf) {
         // ±0 / y

@@ -470,7 +470,7 @@ internal static void marshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, e
         e.Buffer.Write(@out);
     }
     if (err != default!) {
-        e.error(new MarshalerErrorжerror(Ꮡ(new MarshalerError(v.Type(), err, "MarshalJSON"))));
+        e.error(new MarshalerErrorжerror(Ꮡ(new MarshalerError(v.Type(), err, "MarshalJSON"u8))));
     }
 }
 
@@ -491,7 +491,7 @@ internal static void addrMarshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue 
         e.Buffer.Write(@out);
     }
     if (err != default!) {
-        e.error(new MarshalerErrorжerror(Ꮡ(new MarshalerError(v.Type(), err, "MarshalJSON"))));
+        e.error(new MarshalerErrorжerror(Ꮡ(new MarshalerError(v.Type(), err, "MarshalJSON"u8))));
     }
 }
 
@@ -509,7 +509,7 @@ internal static void textMarshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue 
     }
     var (b, err) = m.MarshalText();
     if (err != default!) {
-        e.error(new MarshalerErrorжerror(Ꮡ(new MarshalerError(v.Type(), err, "MarshalText"))));
+        e.error(new MarshalerErrorжerror(Ꮡ(new MarshalerError(v.Type(), err, "MarshalText"u8))));
     }
     Ꮡe.of(encodeState.ᏑBuffer).Write(appendString(Ꮡe.of(encodeState.ᏑBuffer).AvailableBuffer(), b, opts.escapeHTML));
 }
@@ -525,7 +525,7 @@ internal static void addrTextMarshalerEncoder(ж<encodeState> Ꮡe, reflectꓸVa
     var m = va.Interface()._<encoding.TextMarshaler>();
     var (b, err) = m.MarshalText();
     if (err != default!) {
-        e.error(new MarshalerErrorжerror(Ꮡ(new MarshalerError(v.Type(), err, "MarshalText"))));
+        e.error(new MarshalerErrorжerror(Ꮡ(new MarshalerError(v.Type(), err, "MarshalText"u8))));
     }
     Ꮡe.of(encodeState.ᏑBuffer).Write(appendString(Ꮡe.of(encodeState.ᏑBuffer).AvailableBuffer(), b, opts.escapeHTML));
 }

@@ -240,8 +240,8 @@ internal static void callbackUpdateSystemStack(ж<m> Ꮡmp, uintptr sp, bool sig
         g0.Value.stack.lo = sp - 32 * 1024;
         g0.Value.stackguard0 = (~g0).stack.lo + (uintptr)stackGuard;
         g0.Value.stackguard1 = g0.Value.stackguard0;
-        print((@string)"M ", mp.id, (@string)" procid ", mp.procid, (@string)" runtime: cgocallback with sp=", ((Δhex)(uint64)sp), (@string)" out of bounds [", ((Δhex)(uint64)lo), (@string)", ", ((Δhex)(uint64)hi), (@string)"]");
-        print((@string)"\n");
+        print((@string)"M "u8, mp.id, (@string)" procid "u8, mp.procid, (@string)" runtime: cgocallback with sp="u8, ((Δhex)(uint64)sp), (@string)" out of bounds ["u8, ((Δhex)(uint64)lo), (@string)", "u8, ((Δhex)(uint64)hi), (@string)"]"u8);
+        print((@string)"\n"u8);
         exit(2);
     }
     if (!mp.isextra) {
@@ -297,7 +297,7 @@ internal static void callbackUpdateSystemStack(ж<m> Ꮡmp, uintptr sp, bool sig
 internal static void cgocallbackg(@unsafe.Pointer fn, @unsafe.Pointer frame, uintptr ctxt) {
     var gp = getg();
     if (gp != (~(~gp).m).curg) {
-        println((@string)"runtime: bad g in cgocallback");
+        println((@string)"runtime: bad g in cgocallback"u8);
         exit(2);
     }
     var sp = gp.Value.m.Value.g0.Value.sched.sp;

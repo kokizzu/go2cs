@@ -439,13 +439,13 @@ internal static void report(this ж<F> Ꮡf) {
     @string dstr = fmtDuration(f.duration);
     @string format = "--- %s: %s (%s)\n"u8;
     if (Ꮡf.of(F.Ꮡcommon).Failed()){
-        Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, (@string)"FAIL", f.name, dstr);
+        Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, (@string)"FAIL"u8, f.name, dstr);
     } else 
     if (f.chatty != nil) {
         if (Ꮡf.Skipped()){
-            Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, (@string)"SKIP", f.name, dstr);
+            Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, (@string)"SKIP"u8, f.name, dstr);
         } else {
-            Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, (@string)"PASS", f.name, dstr);
+            Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, (@string)"PASS"u8, f.name, dstr);
         }
     }
 }
@@ -618,7 +618,7 @@ internal static bool /*ok*/ runFuzzing(testDeps deps, slice<InternalFuzzTarget> 
         testName = name;
     }
     if (len(matched) == 0) {
-        fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: warning: no fuzz tests to fuzz");
+        fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: warning: no fuzz tests to fuzz"u8);
         return true;
     }
     if (len(matched) > 1) {
@@ -687,7 +687,7 @@ internal static void fRunner(ж<F> Ꮡf, Action<ж<F>> fn) => func((defer, recov
             }
             Ꮡf.of(F.Ꮡmu).RUnlock();
             if (fuzzNotCalled && err == default!) {
-                Ꮡf.of(F.Ꮡcommon).Error((@string)"returned without calling F.Fuzz, F.Fail, or F.Skip");
+                Ꮡf.of(F.Ꮡcommon).Error((@string)"returned without calling F.Fuzz, F.Fail, or F.Skip"u8);
             }
         }
         // Use a deferred call to ensure that we report that the test is

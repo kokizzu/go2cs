@@ -100,7 +100,7 @@ internal static void init(this ж<parser> Ꮡp, ж<token.FileSet> Ꮡfset, @stri
 internal static ж<parser> trace(ж<parser> Ꮡp, @string msg) {
     ref var p = ref Ꮡp.Value;
 
-    p.printTrace(msg, (@string)"(");
+    p.printTrace(msg, (@string)"("u8);
     p.indent++;
     return Ꮡp;
 }
@@ -110,7 +110,7 @@ internal static void un(ж<parser> Ꮡp) {
     ref var p = ref Ꮡp.Value;
 
     p.indent--;
-    p.printTrace((@string)")");
+    p.printTrace((@string)")"u8);
 }
 
 // maxNestLev is the deepest we're willing to recurse during parsing

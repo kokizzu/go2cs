@@ -573,7 +573,7 @@ internal static error marshalValue(this ж<printer> Ꮡp, reflectꓸValue val, �
     }
     // If an empty name was found, namespace is overridden with an empty space
     if ((~tinfo).xmlname != nil && start.Name.Space == ""u8 && (~(~tinfo).xmlname).xmlns == ""u8 && (~(~tinfo).xmlname).name == ""u8 && len(p.tags) != 0 && p.tags[len(p.tags) - 1].Space != ""u8) {
-        start.Attr = append(start.Attr, new Attr(new Name("", xmlnsPrefix), ""));
+        start.Attr = append(start.Attr, new Attr(new Name(""u8, xmlnsPrefix), ""u8));
     }
     {
         var errΔ3 = Ꮡp.writeStart(Ꮡstart); if (errΔ3 != default!) {

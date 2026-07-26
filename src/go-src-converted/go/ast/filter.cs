@@ -361,7 +361,7 @@ internal static @string nameOf(ж<FuncDecl> Ꮡf) {
 
 // separator is an empty //-style comment that is interspersed between
 // different comment groups when they are concatenated into a single group
-internal static ж<Comment> separator = Ꮡ(new Comment(token.NoPos, "//"));
+internal static ж<Comment> separator = Ꮡ(new Comment(token.NoPos, "//"u8));
 
 // MergePackageFiles creates a file AST by merging the ASTs of the
 // files belonging to a package. The mode flags control merging behavior.
@@ -535,7 +535,7 @@ public static ж<File> MergePackageFiles(ж<Package> Ꮡpkg, MergeMode mode) {
         }
     }
     // TODO(gri) need to compute unresolved identifiers!
-    return Ꮡ(new File(doc, pos, NewIdent(pkg.Name), decls, minPos, maxPos, pkg.Scope, imports, default!, comments, ""));
+    return Ꮡ(new File(doc, pos, NewIdent(pkg.Name), decls, minPos, maxPos, pkg.Scope, imports, default!, comments, ""u8));
 }
 
 } // end ast_package

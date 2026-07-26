@@ -74,7 +74,7 @@ partial class runtime_package {
 
 [GoRecv] internal static @unsafe.Pointer alloc(this ref fixalloc f) {
     if (f.size == 0) {
-        print((@string)"runtime: use of FixAlloc_Alloc before FixAlloc_Init\n");
+        print((@string)"runtime: use of FixAlloc_Alloc before FixAlloc_Init\n"u8);
         @throw("runtime: internal error"u8);
     }
     if (f.list != nil) {

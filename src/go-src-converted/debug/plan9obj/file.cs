@@ -137,7 +137,7 @@ internal static (uint32, error) parseMagic(slice<byte> magic) {
         return (m, default!);
     }
 
-    return (0, new formatErrorжerror(Ꮡ(new formatError(0, "bad magic number", magic))));
+    return (0, new formatErrorжerror(Ꮡ(new formatError(0, "bad magic number"u8, magic))));
 }
 
 [GoType("dyn")] partial struct NewFile_type {
@@ -216,7 +216,7 @@ internal static error walksymtab(slice<byte> data, nint ptrsz, Func<sym, error> 
     while (len(p) >= 4) {
         // Symbol type, value.
         if (len(p) < ptrsz) {
-            return new formatErrorжerror(Ꮡ(new formatError(len(data), "unexpected EOF", default!)));
+            return new formatErrorжerror(Ꮡ(new formatError(len(data), "unexpected EOF"u8, default!)));
         }
         // fixed-width value
         if (ptrsz == 8){
@@ -227,7 +227,7 @@ internal static error walksymtab(slice<byte> data, nint ptrsz, Func<sym, error> 
             p = p[4..];
         }
         if (len(p) < 1) {
-            return new formatErrorжerror(Ꮡ(new formatError(len(data), "unexpected EOF", default!)));
+            return new formatErrorжerror(Ꮡ(new formatError(len(data), "unexpected EOF"u8, default!)));
         }
         var typ = (byte)(p[0] & 0x7F);
         s.typ = typ;
@@ -254,7 +254,7 @@ internal static error walksymtab(slice<byte> data, nint ptrsz, Func<sym, error> 
         }}
 
         if (len(p) < i + nnul) {
-            return new formatErrorжerror(Ꮡ(new formatError(len(data), "unexpected EOF", default!)));
+            return new formatErrorжerror(Ꮡ(new formatError(len(data), "unexpected EOF"u8, default!)));
         }
         s.name = p[0..(int)(i)];
         i += nnul;
@@ -296,7 +296,7 @@ internal static (slice<Sym>, error) newTable(slice<byte> symtab, nint ptrsz) {
                 eltIdx = binary.BigEndian.Uint16(s.name[(int)(i)..(int)(i + 2)]);
                 var (elt, ok) = fnameʗ1[eltIdx, ꟷ];
                 if (!ok) {
-                    return new formatErrorжerror(Ꮡ(new formatError(-1, "bad filename code", eltIdx)));
+                    return new formatErrorжerror(Ꮡ(new formatError(-1, "bad filename code"u8, eltIdx)));
                 }
                 {
                     nint nΔ3 = len((~ts).Name); if (nΔ3 > 0 && (~ts).Name[nΔ3 - 1] != (rune)'/') {

@@ -39,7 +39,7 @@ internal static error errCannotMarshalDNSMessage = errors.New("cannot marshal DN
 internal static error errServerMisbehaving = errors.New("server misbehaving"u8);
 internal static error errInvalidDNSResponse = errors.New("invalid DNS response"u8);
 internal static error errNoAnswerFromDNSServer = errors.New("no answer from DNS server"u8);
-internal static ж<temporaryError> errServerTemporarilyMisbehaving = Ꮡ(new temporaryError("server misbehaving"));
+internal static ж<temporaryError> errServerTemporarilyMisbehaving = Ꮡ(new temporaryError("server misbehaving"u8));
 
 // netedns0 controls whether we send an EDNS0 additional header.
 internal static ж<godebug.Setting> netedns0 = godebug.New("netedns0"u8);

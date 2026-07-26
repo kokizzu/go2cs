@@ -524,7 +524,7 @@ internal static ref Δsync.Map running => ref Ꮡrunning.Value; // map[string]ti
 
 [GoRecv] internal static any Get(this ref chattyFlag f) {
     if (f.json) {
-        return (@string)"test2json";
+        return (@string)"test2json"u8;
     }
     return f.on;
 }
@@ -2082,13 +2082,13 @@ public static nint /*code*/ Run(this ж<M> Ꮡm) {
             os.Stderr = os.Stdout;
         }
         if (parallel.Value < 1) {
-            fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: -parallel can only be given a positive integer");
+            fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: -parallel can only be given a positive integer"u8);
             flag.Usage();
             m.exitCode = 2;
             return;
         }
         if (matchFuzz.Value != ""u8 && fuzzCacheDir.Value == ""u8) {
-            fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: -test.fuzzcachedir must be set if -test.fuzz is set");
+            fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: -test.fuzzcachedir must be set if -test.fuzz is set"u8);
             flag.Usage();
             m.exitCode = 2;
             return;
@@ -2106,12 +2106,12 @@ public static nint /*code*/ Run(this ж<M> Ꮡm) {
             } else {
                 (n, err) = strconv.ParseInt(shuffle.Value, 10, 64);
                 if (err != default!) {
-                    fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)@"testing: -shuffle should be ""off"", ""on"", or a valid integer:", err);
+                    fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)@"testing: -shuffle should be ""off"", ""on"", or a valid integer:"u8, err);
                     m.exitCode = 2;
                     return;
                 }
             }
-            fmt.Println((@string)"-test.shuffle", n);
+            fmt.Println((@string)"-test.shuffle"u8, n);
             var rng = rand.New(rand.NewSource(n));
             rng.Shuffle(len(m.tests), (nint i, nint j) => {
                 (Ꮡm.Value.tests[i], Ꮡm.Value.tests[j]) = (Ꮡm.Value.tests[j], Ꮡm.Value.tests[i]);
@@ -2134,31 +2134,31 @@ public static nint /*code*/ Run(this ж<M> Ꮡm) {
             var (exampleRan, exampleOk) = runExamples(m.deps.MatchString, m.examples);
             m.stopAlarm();
             if (!testRan && !exampleRan && !fuzzTargetsRan && matchBenchmarks.Value == ""u8 && matchFuzz.Value == ""u8) {
-                fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: warning: no tests to run");
+                fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: warning: no tests to run"u8);
                 if (testingTesting && match.Value != "^$"u8) {
                     // If this happens during testing of package testing it could be that
                     // package testing's own logic for when to run a test is broken,
                     // in which case every test will run nothing and succeed,
                     // with no obvious way to detect this problem (since no tests are running).
                     // So make 'no tests to run' a hard failure when testing package testing itself.
-                    fmt.Print(chatty.prefix(), (@string)"FAIL: package testing must run tests\n");
+                    fmt.Print(chatty.prefix(), (@string)"FAIL: package testing must run tests\n"u8);
                     testOk = false;
                 }
             }
             var anyFailed = !testOk || !exampleOk || !fuzzTargetsOk || !runBenchmarks(m.deps.ImportPath(), m.deps.MatchString, m.benchmarks);
             if (!anyFailed && race.Errors() > 0) {
-                fmt.Print(chatty.prefix(), (@string)"testing: race detected outside of test execution\n");
+                fmt.Print(chatty.prefix(), (@string)"testing: race detected outside of test execution\n"u8);
                 anyFailed = true;
             }
             if (anyFailed) {
-                fmt.Print(chatty.prefix(), (@string)"FAIL\n");
+                fmt.Print(chatty.prefix(), (@string)"FAIL\n"u8);
                 m.exitCode = 1;
                 return;
             }
         }
         var fuzzingOk = runFuzzing(m.deps, m.fuzzTargets);
         if (!fuzzingOk) {
-            fmt.Print(chatty.prefix(), (@string)"FAIL\n");
+            fmt.Print(chatty.prefix(), (@string)"FAIL\n"u8);
             if (isFuzzWorker.Value){
                 m.exitCode = fuzzWorkerExitCode;
             } else {
@@ -2168,7 +2168,7 @@ public static nint /*code*/ Run(this ж<M> Ꮡm) {
         }
         m.exitCode = 0;
         if (!isFuzzWorker.Value) {
-            fmt.Print(chatty.prefix(), (@string)"PASS\n");
+            fmt.Print(chatty.prefix(), (@string)"PASS\n"u8);
         }
     });
     return code;
@@ -2183,13 +2183,13 @@ internal static void report(this ж<T> Ꮡt) {
     @string dstr = fmtDuration(t.duration);
     @string format = "--- %s: %s (%s)\n"u8;
     if (Ꮡt.of(T.Ꮡcommon).Failed()){
-        Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, (@string)"FAIL", t.name, dstr);
+        Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, (@string)"FAIL"u8, t.name, dstr);
     } else 
     if (t.chatty != nil) {
         if (Ꮡt.of(T.Ꮡcommon).Skipped()){
-            Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, (@string)"SKIP", t.name, dstr);
+            Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, (@string)"SKIP"u8, t.name, dstr);
         } else {
-            Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, (@string)"PASS", t.name, dstr);
+            Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, (@string)"PASS"u8, t.name, dstr);
         }
     }
 }
@@ -2242,7 +2242,7 @@ public static bool /*ok*/ RunTests(Func<@string, @string, (bool, error)> matchSt
     }
     (var ran, ok) = runTests(matchString, tests, deadline);
     if (!ran && !haveExamples) {
-        fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: warning: no tests to run");
+        fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: warning: no tests to run"u8);
     }
     return ok;
 }

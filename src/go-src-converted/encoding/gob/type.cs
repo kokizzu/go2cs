@@ -336,7 +336,7 @@ internal static ж<userTypeInfo> wireTypeUserInfo; // userTypeInfo of wireType
     // without breaking existing files.
     {
         nint nextId = len(idToTypeSlice); if (nextId > firstUserId) {
-            throw panic(fmt.Sprintln((@string)"nextId too large:", nextId));
+            throw panic(fmt.Sprintln((@string)"nextId too large:"u8, nextId));
         }
     }
     idToTypeSlice = idToTypeSlice[..(int)(firstUserId)];
@@ -1020,7 +1020,7 @@ internal static void registerBasics() {
     Register((complex128)0D.i());
     Register((uintptr)0);
     Register(false);
-    Register((@string)"");
+    Register((@string)""u8);
     Register(slice<byte>(default!));
     Register(slice<nint>(default!));
     Register(slice<int8>(default!));

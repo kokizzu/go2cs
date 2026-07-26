@@ -223,14 +223,14 @@ public static ж<Writer> Init(this ж<Writer> Ꮡb, io.Writer output, nint minwi
 [GoRecv] internal static void dump(this ref Writer b) {
     nint pos = 0;
     foreach (var (i, line) in b.lines) {
-        print((@string)"(", i, (@string)") ");
+        print((@string)"("u8, i, (@string)") "u8);
         foreach (var (_, c) in line) {
-            print((@string)"[", ((@string)(b.buf[(int)(pos)..(int)(pos + c.size)])), (@string)"]");
+            print((@string)"["u8, ((@string)(b.buf[(int)(pos)..(int)(pos + c.size)])), (@string)"]"u8);
             pos += c.size;
         }
-        print((@string)"\n");
+        print((@string)"\n"u8);
     }
-    print((@string)"\n");
+    print((@string)"\n"u8);
 }
 
 // local error wrapper so we can distinguish errors we want to return

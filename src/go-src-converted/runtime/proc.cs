@@ -316,7 +316,7 @@ internal static void forcegchelper() {
         goparkunlock(Ꮡforcegc.of(forcegcstate.Ꮡlock), waitReasonForceGCIdle, traceBlockSystemGoroutine, 1);
         // this goroutine is explicitly resumed by sysmon
         if (debug.gctrace > 0) {
-            println((@string)"GC forced");
+            println((@string)"GC forced"u8);
         }
         // Time-triggered, fully concurrent.
         gcStart(new gcTrigger(kind: gcTriggerTime, now: nanotime()));
@@ -541,11 +541,11 @@ internal static void badmorestackg0() {
     var g = getg();
     var gʗ1 = g;
     switchToCrashStack(() => {
-        print((@string)"runtime: morestack on g0, stack [", ((Δhex)(uint64)(~gʗ1).stack.lo), (@string)" ", ((Δhex)(uint64)(~gʗ1).stack.hi), (@string)"], sp=", ((Δhex)(uint64)(~gʗ1).sched.sp), (@string)", called from\n");
+        print((@string)"runtime: morestack on g0, stack ["u8, ((Δhex)(uint64)(~gʗ1).stack.lo), (@string)" "u8, ((Δhex)(uint64)(~gʗ1).stack.hi), (@string)"], sp="u8, ((Δhex)(uint64)(~gʗ1).sched.sp), (@string)", called from\n"u8);
         gʗ1.Value.m.Value.traceback = 2;
         // include pc and sp in stack trace
         traceback1((~gʗ1).sched.pc, (~gʗ1).sched.sp, (~gʗ1).sched.lr, gʗ1, 0);
-        print((@string)"\n");
+        print((@string)"\n"u8);
         @throw("morestack on g0"u8);
     });
 }
@@ -845,8 +845,8 @@ internal static void dumpgstatus(ж<g> Ꮡgp) {
     ref var gp = ref Ꮡgp.Value;
 
     var thisg = getg();
-    print((@string)"runtime:   gp: gp=", Ꮡgp, (@string)", goid=", gp.goid, (@string)", gp->atomicstatus=", readgstatus(Ꮡgp), (@string)"\n");
-    print((@string)"runtime: getg:  g=", thisg, (@string)", goid=", (~thisg).goid, (@string)",  g->atomicstatus=", readgstatus(thisg), (@string)"\n");
+    print((@string)"runtime:   gp: gp="u8, Ꮡgp, (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, readgstatus(Ꮡgp), (@string)"\n"u8);
+    print((@string)"runtime: getg:  g="u8, thisg, (@string)", goid="u8, (~thisg).goid, (@string)",  g->atomicstatus="u8, readgstatus(thisg), (@string)"\n"u8);
 }
 
 // sched.lock must be held.
@@ -862,7 +862,7 @@ internal static void checkmcount() {
     // exclude them from the limit. See https://go.dev/issue/60004.
     var count = mcount() - (int32)ᏑextraMInUse.Load() - (int32)ᏑextraMLength.Load();
     if (count > sched.maxmcount) {
-        print((@string)"runtime: program exceeds ", sched.maxmcount, (@string)"-thread limit\n");
+        print((@string)"runtime: program exceeds "u8, sched.maxmcount, (@string)"-thread limit\n"u8);
         @throw("thread exhaustion"u8);
     }
 }
@@ -1078,13 +1078,13 @@ internal static void casfrom_Gscanstatus(ж<g> Ꮡgp, uint32 oldval, uint32 newv
         }
     }
     else { /* default: */
-        print((@string)"runtime: casfrom_Gscanstatus bad oldval gp=", Ꮡgp, (@string)", oldval=", ((Δhex)(uint64)oldval), (@string)", newval=", ((Δhex)(uint64)newval), (@string)"\n");
+        print((@string)"runtime: casfrom_Gscanstatus bad oldval gp="u8, Ꮡgp, (@string)", oldval="u8, ((Δhex)(uint64)oldval), (@string)", newval="u8, ((Δhex)(uint64)newval), (@string)"\n"u8);
         dumpgstatus(Ꮡgp);
         @throw("casfrom_Gscanstatus:top gp->status is not in scan state"u8);
     }
 
     if (!success) {
-        print((@string)"runtime: casfrom_Gscanstatus failed gp=", Ꮡgp, (@string)", oldval=", ((Δhex)(uint64)oldval), (@string)", newval=", ((Δhex)(uint64)newval), (@string)"\n");
+        print((@string)"runtime: casfrom_Gscanstatus failed gp="u8, Ꮡgp, (@string)", oldval="u8, ((Δhex)(uint64)oldval), (@string)", newval="u8, ((Δhex)(uint64)newval), (@string)"\n"u8);
         dumpgstatus(Ꮡgp);
         @throw("casfrom_Gscanstatus: gp->status is not in scan state"u8);
     }
@@ -1105,7 +1105,7 @@ internal static bool castogscanstatus(ж<g> Ꮡgp, uint32 oldval, uint32 newval)
         }
     }
 
-    print((@string)"runtime: castogscanstatus oldval=", ((Δhex)(uint64)oldval), (@string)" newval=", ((Δhex)(uint64)newval), (@string)"\n");
+    print((@string)"runtime: castogscanstatus oldval="u8, ((Δhex)(uint64)oldval), (@string)" newval="u8, ((Δhex)(uint64)newval), (@string)"\n"u8);
     @throw("castogscanstatus"u8);
     throw panic("not reached");
 }
@@ -1127,7 +1127,7 @@ internal static void casgstatus(ж<g> Ꮡgp, uint32 oldval, uint32 newval) {
         systemstack(() => {
             // Call on the systemstack to prevent print and throw from counting
             // against the nosplit stack reservation.
-            print((@string)"runtime: casgstatus: oldval=", ((Δhex)(uint64)oldval), (@string)" newval=", ((Δhex)(uint64)newval), (@string)"\n");
+            print((@string)"runtime: casgstatus: oldval="u8, ((Δhex)(uint64)oldval), (@string)" newval="u8, ((Δhex)(uint64)newval), (@string)"\n"u8);
             @throw("casgstatus: bad incoming values"u8);
         });
     }
@@ -3046,7 +3046,7 @@ internal static void stoplockedm() {
     mPark();
     var status = readgstatus((~(~gp).m).lockedg.ptr());
     if ((uint32)(status & ~(uint32)_Gscan) != _Grunnable) {
-        print((@string)"runtime:stoplockedm: lockedg (atomicstatus=", status, (@string)") is not Grunnable or Gscanrunnable\n");
+        print((@string)"runtime:stoplockedm: lockedg (atomicstatus="u8, status, (@string)") is not Grunnable or Gscanrunnable\n"u8);
         dumpgstatus((~(~gp).m).lockedg.ptr());
         @throw("stoplockedm: not runnable"u8);
     }
@@ -4047,7 +4047,7 @@ internal static void preemptPark(ж<g> Ꮡgp) {
             @throw("preempt at unknown pc"u8);
         }
         if ((abi.FuncFlag)(f.flag & abi.FuncFlagSPWrite) != 0) {
-            println((@string)"runtime: unexpected SPWRITE function", funcname(f), (@string)"in async preempt");
+            println((@string)"runtime: unexpected SPWRITE function"u8, funcname(f), (@string)"in async preempt"u8);
             @throw("preempt SPWRITE"u8);
         }
     }
@@ -4184,7 +4184,7 @@ internal static void gdestroy(ж<g> Ꮡgp) {
         return;
     }
     if (locked && (~mp).lockedInt != 0) {
-        print((@string)"runtime: mp.lockedInt = ", (~mp).lockedInt, (@string)"\n");
+        print((@string)"runtime: mp.lockedInt = "u8, (~mp).lockedInt, (@string)"\n"u8);
         @throw("exited a goroutine internally locked to the OS thread"u8);
     }
     gfput(pp, Ꮡgp);
@@ -4287,14 +4287,14 @@ internal static void reentersyscall(uintptr pc, uintptr sp, uintptr bp) {
     if ((~gp).syscallsp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallsp) {
         var gpʗ1 = gp;
         systemstack(() => {
-            print((@string)"entersyscall inconsistent sp ", ((Δhex)(uint64)(~gpʗ1).syscallsp), (@string)" [", ((Δhex)(uint64)(~gpʗ1).stack.lo), (@string)",", ((Δhex)(uint64)(~gpʗ1).stack.hi), (@string)"]\n");
+            print((@string)"entersyscall inconsistent sp "u8, ((Δhex)(uint64)(~gpʗ1).syscallsp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ1).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ1).stack.hi), (@string)"]\n"u8);
             @throw("entersyscall"u8);
         });
     }
     if ((~gp).syscallbp != 0 && (~gp).syscallbp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallbp) {
         var gpʗ3 = gp;
         systemstack(() => {
-            print((@string)"entersyscall inconsistent bp ", ((Δhex)(uint64)(~gpʗ3).syscallbp), (@string)" [", ((Δhex)(uint64)(~gpʗ3).stack.lo), (@string)",", ((Δhex)(uint64)(~gpʗ3).stack.hi), (@string)"]\n");
+            print((@string)"entersyscall inconsistent bp "u8, ((Δhex)(uint64)(~gpʗ3).syscallbp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ3).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ3).stack.hi), (@string)"]\n"u8);
             @throw("entersyscall"u8);
         });
     }
@@ -4431,7 +4431,7 @@ internal static void entersyscallblock() {
         var sp3 = gp.Value.syscallsp;
         var gpʗ1 = gp;
         systemstack(() => {
-            print((@string)"entersyscallblock inconsistent sp ", ((Δhex)(uint64)sp1), (@string)" ", ((Δhex)(uint64)sp2), (@string)" ", ((Δhex)(uint64)sp3), (@string)" [", ((Δhex)(uint64)(~gpʗ1).stack.lo), (@string)",", ((Δhex)(uint64)(~gpʗ1).stack.hi), (@string)"]\n");
+            print((@string)"entersyscallblock inconsistent sp "u8, ((Δhex)(uint64)sp1), (@string)" "u8, ((Δhex)(uint64)sp2), (@string)" "u8, ((Δhex)(uint64)sp3), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ1).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ1).stack.hi), (@string)"]\n"u8);
             @throw("entersyscallblock"u8);
         });
     }
@@ -4439,14 +4439,14 @@ internal static void entersyscallblock() {
     if ((~gp).syscallsp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallsp) {
         var gpʗ3 = gp;
         systemstack(() => {
-            print((@string)"entersyscallblock inconsistent sp ", ((Δhex)(uint64)sp), (@string)" ", ((Δhex)(uint64)(~gpʗ3).sched.sp), (@string)" ", ((Δhex)(uint64)(~gpʗ3).syscallsp), (@string)" [", ((Δhex)(uint64)(~gpʗ3).stack.lo), (@string)",", ((Δhex)(uint64)(~gpʗ3).stack.hi), (@string)"]\n");
+            print((@string)"entersyscallblock inconsistent sp "u8, ((Δhex)(uint64)sp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ3).sched.sp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ3).syscallsp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ3).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ3).stack.hi), (@string)"]\n"u8);
             @throw("entersyscallblock"u8);
         });
     }
     if ((~gp).syscallbp != 0 && (~gp).syscallbp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallbp) {
         var gpʗ5 = gp;
         systemstack(() => {
-            print((@string)"entersyscallblock inconsistent bp ", ((Δhex)(uint64)bp), (@string)" ", ((Δhex)(uint64)(~gpʗ5).sched.bp), (@string)" ", ((Δhex)(uint64)(~gpʗ5).syscallbp), (@string)" [", ((Δhex)(uint64)(~gpʗ5).stack.lo), (@string)",", ((Δhex)(uint64)(~gpʗ5).stack.hi), (@string)"]\n");
+            print((@string)"entersyscallblock inconsistent bp "u8, ((Δhex)(uint64)bp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ5).sched.bp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ5).syscallbp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ5).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ5).stack.hi), (@string)"]\n"u8);
             @throw("entersyscallblock"u8);
         });
     }
@@ -5741,7 +5741,7 @@ internal static void wirep(ж<Δp> Ꮡpp) {
             if (Ꮡpp.Value.m != 0) {
                 id = Ꮡpp.Value.m.ptr().Value.id;
             }
-            print((@string)"wirep: p->m=", Ꮡpp.Value.m, (@string)"(", id, (@string)") p->status=", Ꮡpp.Value.status, (@string)"\n");
+            print((@string)"wirep: p->m="u8, Ꮡpp.Value.m, (@string)"("u8, id, (@string)") p->status="u8, Ꮡpp.Value.status, (@string)"\n"u8);
             @throw("wirep: invalid p state"u8);
         });
     }
@@ -5768,7 +5768,7 @@ internal static ж<Δp> releasepNoTrace() {
     }
     var pp = (~(~gp).m).p.ptr();
     if ((~pp).m.ptr() != (~gp).m || (~pp).status != _Prunning) {
-        print((@string)"releasep: m=", (~gp).m, (@string)" m->p=", (~(~gp).m).p.ptr(), (@string)" p->m=", ((Δhex)(uint64)(uintptr)(~pp).m), (@string)" p->status=", (~pp).status, (@string)"\n");
+        print((@string)"releasep: m="u8, (~gp).m, (@string)" m->p="u8, (~(~gp).m).p.ptr(), (@string)" p->m="u8, ((Δhex)(uint64)(uintptr)(~pp).m), (@string)" p->status="u8, (~pp).status, (@string)"\n"u8);
         @throw("releasep: invalid p state"u8);
     }
     gp.Value.m.Value.p = 0;
@@ -5817,7 +5817,7 @@ internal static void checkdead() {
         return;
     }
     if (run < 0) {
-        print((@string)"runtime: checkdead: nmidle=", sched.nmidle, (@string)" nmidlelocked=", sched.nmidlelocked, (@string)" mcount=", mcount(), (@string)" nmsys=", sched.nmsys, (@string)"\n");
+        print((@string)"runtime: checkdead: nmidle="u8, sched.nmidle, (@string)" nmidlelocked="u8, sched.nmidlelocked, (@string)" mcount="u8, mcount(), (@string)" nmsys="u8, sched.nmsys, (@string)"\n"u8);
         unlock(Ꮡsched.of(schedt.Ꮡlock));
         @throw("checkdead: inconsistent counts"u8);
     }
@@ -5832,7 +5832,7 @@ internal static void checkdead() {
             grunning++;
         }
         else if (exprᴛ1 == _Grunnable || exprᴛ1 == _Grunning || exprᴛ1 == _Gsyscall) {
-            print((@string)"runtime: checkdead: find g ", (~gp).goid, (@string)" in status ", s, (@string)"\n");
+            print((@string)"runtime: checkdead: find g "u8, (~gp).goid, (@string)" in status "u8, s, (@string)"\n"u8);
             unlock(Ꮡsched.of(schedt.Ꮡlock));
             @throw("checkdead: runnable g"u8);
         }
@@ -6207,9 +6207,9 @@ internal static void schedtrace(bool detailed) {
         starttime = now;
     }
     @lock(Ꮡsched.of(schedt.Ꮡlock));
-    print((@string)"SCHED ", (now - starttime) / 1000000, (@string)"ms: gomaxprocs=", gomaxprocs, (@string)" idleprocs=", Ꮡsched.of(schedt.Ꮡnpidle).Load(), (@string)" threads=", mcount(), (@string)" spinningthreads=", Ꮡsched.of(schedt.Ꮡnmspinning).Load(), (@string)" needspinning=", Ꮡsched.of(schedt.Ꮡneedspinning).Load(), (@string)" idlethreads=", sched.nmidle, (@string)" runqueue=", sched.runqsize);
+    print((@string)"SCHED "u8, (now - starttime) / 1000000, (@string)"ms: gomaxprocs="u8, gomaxprocs, (@string)" idleprocs="u8, Ꮡsched.of(schedt.Ꮡnpidle).Load(), (@string)" threads="u8, mcount(), (@string)" spinningthreads="u8, Ꮡsched.of(schedt.Ꮡnmspinning).Load(), (@string)" needspinning="u8, Ꮡsched.of(schedt.Ꮡneedspinning).Load(), (@string)" idlethreads="u8, sched.nmidle, (@string)" runqueue="u8, sched.runqsize);
     if (detailed) {
-        print((@string)" gcwaiting=", Ꮡsched.of(schedt.Ꮡgcwaiting).Load(), (@string)" nmidlelocked=", sched.nmidlelocked, (@string)" stopwait=", sched.stopwait, (@string)" sysmonwait=", Ꮡsched.of(schedt.Ꮡsysmonwait).Load(), (@string)"\n");
+        print((@string)" gcwaiting="u8, Ꮡsched.of(schedt.Ꮡgcwaiting).Load(), (@string)" nmidlelocked="u8, sched.nmidlelocked, (@string)" stopwait="u8, sched.stopwait, (@string)" sysmonwait="u8, Ꮡsched.of(schedt.Ꮡsysmonwait).Load(), (@string)"\n"u8);
     }
     // We must be careful while reading data from P's, M's and G's.
     // Even if we hold schedlock, most data can be changed concurrently.
@@ -6219,23 +6219,23 @@ internal static void schedtrace(bool detailed) {
         var h = atomic.Load(pp.of(runtime_package.Δp.Ꮡrunqhead));
         var t = atomic.Load(pp.of(runtime_package.Δp.Ꮡrunqtail));
         if (detailed){
-            print((@string)"  P", i, (@string)": status=", (~pp).status, (@string)" schedtick=", (~pp).schedtick, (@string)" syscalltick=", (~pp).syscalltick, (@string)" m=");
+            print((@string)"  P"u8, i, (@string)": status="u8, (~pp).status, (@string)" schedtick="u8, (~pp).schedtick, (@string)" syscalltick="u8, (~pp).syscalltick, (@string)" m="u8);
             if (mp != nil){
                 print((~mp).id);
             } else {
-                print((@string)"nil");
+                print((@string)"nil"u8);
             }
-            print((@string)" runqsize=", t - h, (@string)" gfreecnt=", (~pp).gFree.n, (@string)" timerslen=", len((~pp).timers.heap), (@string)"\n");
+            print((@string)" runqsize="u8, t - h, (@string)" gfreecnt="u8, (~pp).gFree.n, (@string)" timerslen="u8, len((~pp).timers.heap), (@string)"\n"u8);
         } else {
             // In non-detailed mode format lengths of per-P run queues as:
             // [len1 len2 len3 len4]
-            print((@string)" ");
+            print((@string)" "u8);
             if (i == 0) {
-                print((@string)"[");
+                print((@string)"["u8);
             }
             print(t - h);
             if (i == len(allp) - 1) {
-                print((@string)"]\n");
+                print((@string)"]\n"u8);
             }
         }
     }
@@ -6245,44 +6245,44 @@ internal static void schedtrace(bool detailed) {
     }
     for (var mp = allm; mp != nil; mp = mp.Value.alllink) {
         var pp = (~mp).p.ptr();
-        print((@string)"  M", (~mp).id, (@string)": p=");
+        print((@string)"  M"u8, (~mp).id, (@string)": p="u8);
         if (pp != nil){
             print((~pp).id);
         } else {
-            print((@string)"nil");
+            print((@string)"nil"u8);
         }
-        print((@string)" curg=");
+        print((@string)" curg="u8);
         if ((~mp).curg != nil){
             print((~(~mp).curg).goid);
         } else {
-            print((@string)"nil");
+            print((@string)"nil"u8);
         }
-        print((@string)" mallocing=", (~mp).mallocing, (@string)" throwing=", (~mp).throwing, (@string)" preemptoff=", (~mp).preemptoff, (@string)" locks=", (~mp).locks, (@string)" dying=", (~mp).dying, (@string)" spinning=", (~mp).spinning, (@string)" blocked=", (~mp).blocked, (@string)" lockedg=");
+        print((@string)" mallocing="u8, (~mp).mallocing, (@string)" throwing="u8, (~mp).throwing, (@string)" preemptoff="u8, (~mp).preemptoff, (@string)" locks="u8, (~mp).locks, (@string)" dying="u8, (~mp).dying, (@string)" spinning="u8, (~mp).spinning, (@string)" blocked="u8, (~mp).blocked, (@string)" lockedg="u8);
         {
             var lockedg = (~mp).lockedg.ptr(); if (lockedg != nil){
                 print((~lockedg).goid);
             } else {
-                print((@string)"nil");
+                print((@string)"nil"u8);
             }
         }
-        print((@string)"\n");
+        print((@string)"\n"u8);
     }
     forEachG((ж<g> gp) => {
-        print((@string)"  G", (~gp).goid, (@string)": status=", readgstatus(gp), (@string)"(", (~gp).waitreason.String(), (@string)") m=");
+        print((@string)"  G"u8, (~gp).goid, (@string)": status="u8, readgstatus(gp), (@string)"("u8, (~gp).waitreason.String(), (@string)") m="u8);
         if ((~gp).m != nil){
             print((~(~gp).m).id);
         } else {
-            print((@string)"nil");
+            print((@string)"nil"u8);
         }
-        print((@string)" lockedm=");
+        print((@string)" lockedm="u8);
         {
             var lockedm = (~gp).lockedm.ptr(); if (lockedm != nil){
                 print((~lockedm).id);
             } else {
-                print((@string)"nil");
+                print((@string)"nil"u8);
             }
         }
-        print((@string)"\n");
+        print((@string)"\n"u8);
     });
     unlock(Ꮡsched.of(schedt.Ꮡlock));
 }
@@ -7202,12 +7202,12 @@ internal static void doInit1(ж<initTask> Ꮡt) {
             var f = (ᏑfirstFunc.Reinterpret<@unsafe.Pointer, Action>()).ValueSlot;
             @string pkg = funcpkgpath(findfunc(abi.FuncPCABIInternal(f)));
             array<byte> sbuf = new(24);
-            print((@string)"init ", pkg, (@string)" @");
-            print(((@string)fmtNSAsMS(sbuf[..], (uint64)(start - runtimeInitTime))), (@string)" ms, ");
-            print(((@string)fmtNSAsMS(sbuf[..], (uint64)(end - start))), (@string)" ms clock, ");
-            print(((@string)itoa(sbuf[..], after.bytes - before.bytes)), (@string)" bytes, ");
-            print(((@string)itoa(sbuf[..], after.allocs - before.allocs)), (@string)" allocs");
-            print((@string)"\n");
+            print((@string)"init "u8, pkg, (@string)" @"u8);
+            print(((@string)fmtNSAsMS(sbuf[..], (uint64)(start - runtimeInitTime))), (@string)" ms, "u8);
+            print(((@string)fmtNSAsMS(sbuf[..], (uint64)(end - start))), (@string)" ms clock, "u8);
+            print(((@string)itoa(sbuf[..], after.bytes - before.bytes)), (@string)" bytes, "u8);
+            print(((@string)itoa(sbuf[..], after.allocs - before.allocs)), (@string)" allocs"u8);
+            print((@string)"\n"u8);
         }
         t.state = 2;
         break;

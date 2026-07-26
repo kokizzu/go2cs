@@ -1239,7 +1239,7 @@ internal static (any, bool) printableValue(reflectꓸValue v) {
     }
     // fmt.Fprint handles nil.
     if (!v.IsValid()) {
-        return ((@string)"<no value>", true);
+        return ((@string)"<no value>"u8, true);
     }
     if (!v.Type().Implements(errorType) && !v.Type().Implements(fmtStringerType)) {
         if (v.CanAddr() && (reflect.PointerTo(v.Type()).Implements(errorType) || reflect.PointerTo(v.Type()).Implements(fmtStringerType))){

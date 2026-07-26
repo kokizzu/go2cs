@@ -90,7 +90,7 @@ public static readonly ErrorCode ErrJSTemplate = 12;
 internal static ж<ΔError> errorf(ErrorCode k, parse.Node node, nint line, @string f, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
-    return Ꮡ(new ΔError(k, node, "", line, fmt.Sprintf(f, args.ꓸꓸꓸ)));
+    return Ꮡ(new ΔError(k, node, ""u8, line, fmt.Sprintf(f, args.ꓸꓸꓸ)));
 }
 
 } // end template_package

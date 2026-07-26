@@ -180,28 +180,28 @@ internal static (Time, error) parseStrictRFC3339(slice<byte> b) {
             return (new Time(nil), new ParseErrorжerror(Ꮡ(new ParseError( // TODO(https://go.dev/issue/54580): Strict parsing is disabled for now.
  // Enable this again with a GODEBUG opt-out.
  // hour must be two digits
-RFC3339, ((@string)b), "15", ((@string)(b[(int)(len("2006-01-02T"))..][..1])), ""))));
+RFC3339, ((@string)b), "15"u8, ((@string)(b[(int)(len("2006-01-02T"))..][..1])), ""u8))));
         }
         case {} when b[len("2006-01-02T15:04:05")] == (rune)',': {
             return (new Time(nil), new ParseErrorжerror(Ꮡ(new ParseError( // sub-second separator must be a period
-RFC3339, ((@string)b), ".", ",", ""))));
+RFC3339, ((@string)b), "."u8, ","u8, ""u8))));
         }
         case {} when b[len(b) - 1] is not (rune)'Z': {
             switch (ᐧ) {
             case {} when num2(b[(int)(len(b) - len("07:00"))..]) >= 24: {
                 return (new Time(nil), new ParseErrorжerror(Ꮡ(new ParseError( // timezone hour must be in range
-RFC3339, ((@string)b), "Z07:00", ((@string)(b[(int)(len(b) - len("Z07:00"))..])), ": timezone hour out of range"))));
+RFC3339, ((@string)b), "Z07:00"u8, ((@string)(b[(int)(len(b) - len("Z07:00"))..])), ": timezone hour out of range"u8))));
             }
             case {} when num2(b[(int)(len(b) - len("00"))..]) >= 60: {
                 return (new Time(nil), new ParseErrorжerror(Ꮡ(new ParseError( // timezone minute must be in range
-RFC3339, ((@string)b), "Z07:00", ((@string)(b[(int)(len(b) - len("Z07:00"))..])), ": timezone minute out of range"))));
+RFC3339, ((@string)b), "Z07:00"u8, ((@string)(b[(int)(len(b) - len("Z07:00"))..])), ": timezone minute out of range"u8))));
             }}
 
             break;
         }
         default: {
             return (new Time(nil), new ParseErrorжerror(Ꮡ(new ParseError( // unknown error; should not occur
-RFC3339, ((@string)b), RFC3339, ((@string)b), ""))));
+RFC3339, ((@string)b), RFC3339, ((@string)b), ""u8))));
         }}
 
     }

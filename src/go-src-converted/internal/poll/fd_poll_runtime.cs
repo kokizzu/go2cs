@@ -138,7 +138,7 @@ internal static error convertErr(nint res, bool isFile) {
         return ErrNotPollable;
     }
 
-    println((@string)"unreachable: ", res);
+    println((@string)"unreachable: "u8, res);
     throw panic("unreachable");
 }
 

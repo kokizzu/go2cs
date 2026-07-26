@@ -335,7 +335,7 @@ internal static error execSeqs(this ж<Reader> Ꮡr, block data, nint off, slice
         }
         // The next sequence is now in literal, offset, match.
         if (debug) {
-            println((@string)"literal", literal, (@string)"offset", offset, (@string)"match", match);
+            println((@string)"literal"u8, literal, (@string)"offset"u8, offset, (@string)"match"u8, match);
         }
         // Copy literal bytes from litbuf.
         if (literal > (uint32)builtin.len(litbuf)) {

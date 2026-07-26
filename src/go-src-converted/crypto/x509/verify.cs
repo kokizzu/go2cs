@@ -470,7 +470,7 @@ internal static error checkNameConstraints(this ж<Certificate> Ꮡc, ж<nint> �
     var excludedValue = reflect.ValueOf(excluded);
     count += excludedValue.Len();
     if (count > maxConstraintComparisons) {
-        return new CertificateInvalidError(Ꮡc, TooManyConstraints, "");
+        return new CertificateInvalidError(Ꮡc, TooManyConstraints, ""u8);
     }
     for (nint i = 0; i < excludedValue.Len(); i++) {
         var constraint = excludedValue.Index(i).Interface();
@@ -485,7 +485,7 @@ internal static error checkNameConstraints(this ж<Certificate> Ꮡc, ж<nint> �
     var permittedValue = reflect.ValueOf(permitted);
     count += permittedValue.Len();
     if (count > maxConstraintComparisons) {
-        return new CertificateInvalidError(Ꮡc, TooManyConstraints, "");
+        return new CertificateInvalidError(Ꮡc, TooManyConstraints, ""u8);
     }
     var ok = true;
     for (nint i = 0; i < permittedValue.Len(); i++) {
@@ -518,7 +518,7 @@ internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж
     if (builtin.len(currentChain) > 0) {
         var child = currentChain[builtin.len(currentChain) - 1];
         if (!bytes.Equal((~child).RawIssuer, c.RawSubject)) {
-            return new CertificateInvalidError(Ꮡc, NameMismatch, "");
+            return new CertificateInvalidError(Ꮡc, NameMismatch, ""u8);
         }
     }
     var now = opts.CurrentTime;
@@ -643,19 +643,19 @@ internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж
     // keyUsage, and a keyUsage containing a flag indicating that the RSA
     // encryption key could only be used for Diffie-Hellman key agreement.
     if (certType == intermediateCertificate && (!c.BasicConstraintsValid || !c.IsCA)) {
-        return new CertificateInvalidError(Ꮡc, NotAuthorizedToSign, "");
+        return new CertificateInvalidError(Ꮡc, NotAuthorizedToSign, ""u8);
     }
     if (c.BasicConstraintsValid && c.MaxPathLen >= 0) {
         nint numIntermediates = builtin.len(currentChain) - 1;
         if (numIntermediates > c.MaxPathLen) {
-            return new CertificateInvalidError(Ꮡc, TooManyIntermediates, "");
+            return new CertificateInvalidError(Ꮡc, TooManyIntermediates, ""u8);
         }
     }
     if (!boringAllowCert(Ꮡc)) {
         // IncompatibleUsage is not quite right here,
         // but it's also the "no chains found" error
         // and is close enough.
-        return new CertificateInvalidError(Ꮡc, IncompatibleUsage, "");
+        return new CertificateInvalidError(Ꮡc, IncompatibleUsage, ""u8);
     }
     return default!;
 }
@@ -771,7 +771,7 @@ public static (slice<slice<ж<Certificate>>> chains, error err) Verify(this ж<C
         }
     }
     if (builtin.len(chains) == 0) {
-        return (default!, new CertificateInvalidError(Ꮡc, IncompatibleUsage, ""));
+        return (default!, new CertificateInvalidError(Ꮡc, IncompatibleUsage, ""u8));
     }
     return (chains, default!);
 }

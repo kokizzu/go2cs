@@ -689,7 +689,7 @@ internal static void notifyListNotifyOne(ж<notifyList> Ꮡl) {
 //go:linkname notifyListCheck sync.runtime_notifyListCheck
 internal static void notifyListCheck(uintptr sz) {
     if (sz != @unsafe.Sizeof(new notifyList(nil))) {
-        print((@string)"runtime: bad notifyList size - sync=", sz, (@string)" runtime=", @unsafe.Sizeof(new notifyList(nil)), (@string)"\n");
+        print((@string)"runtime: bad notifyList size - sync="u8, sz, (@string)" runtime="u8, @unsafe.Sizeof(new notifyList(nil)), (@string)"\n"u8);
         @throw("bad notifyList size"u8);
     }
 }

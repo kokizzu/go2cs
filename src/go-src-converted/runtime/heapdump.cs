@@ -424,7 +424,7 @@ internal static void dumpgs() {
             dumpgoroutine(gp);
         }
         else { /* default: */
-            print((@string)"runtime: unexpected G.status ", ((Δhex)(uint64)status), (@string)"\n");
+            print((@string)"runtime: unexpected G.status "u8, ((Δhex)(uint64)status), (@string)"\n"u8);
             @throw("dumpgs in STW - bad status"u8);
         }
 

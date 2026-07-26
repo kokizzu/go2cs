@@ -661,7 +661,7 @@ internal static bool runBenchmarks(@string importPath, Func<@string, @string, (b
                 }
             }
             if (b.chatty != nil && (~b.chatty).json) {
-                b.chatty.Updatef(""u8, "=== NAME  %s\n"u8, (@string)"");
+                b.chatty.Updatef(""u8, "=== NAME  %s\n"u8, (@string)""u8);
             }
         }
     }
@@ -864,7 +864,7 @@ public static void RunParallel(this ж<B> Ꮡb, Action<ж<PB>> body) {
     }
     Ꮡwg.Wait();
     if (Ꮡn.Load() <= (uint64)b.N && !Ꮡb.of(B.Ꮡcommon).Failed()) {
-        Ꮡb.of(B.Ꮡcommon).Fatal((@string)"RunParallel: body exited without pb.Next() == false");
+        Ꮡb.of(B.Ꮡcommon).Fatal((@string)"RunParallel: body exited without pb.Next() == false"u8);
     }
 }
 

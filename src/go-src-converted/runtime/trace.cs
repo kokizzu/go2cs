@@ -503,9 +503,9 @@ internal static void traceAdvance(bool stopTrace) {
                 // this many times.
                 if (i > 100000 && !detectedDeadlock) {
                     detectedDeadlock = true;
-                    println((@string)"runtime: failing to flush");
+                    println((@string)"runtime: failing to flush"u8);
                     for (var mpΔ4 = ᏑmToFlush.ValueSlot; mpΔ4 != nil; mpΔ4 = mpΔ4.Value.trace.link) {
-                        print((@string)"runtime: m=", (~mpΔ4).id, (@string)"\n");
+                        print((@string)"runtime: m="u8, (~mpΔ4).id, (@string)"\n"u8);
                     }
                 }
                 i++;
@@ -713,7 +713,7 @@ top:
                 } else 
                 if (g2 != nil) {
                     printlock();
-                    println((@string)"runtime: got trace reader", g2, (~g2).goid);
+                    println((@string)"runtime: got trace reader"u8, g2, (~g2).goid);
                     @throw("unexpected trace reader"u8);
                 }
             }
@@ -753,7 +753,7 @@ internal static (slice<byte> buf, bool park) readTrace0() {
             // But we rather do not crash the program because of tracing,
             // because tracing can be enabled at runtime on prod servers.
             unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
-            println((@string)"runtime: ReadTrace called from multiple goroutines simultaneously");
+            println((@string)"runtime: ReadTrace called from multiple goroutines simultaneously"u8);
             (buf, park) = (default!, false); return;
         }
         // Recycle the old buffer.

@@ -615,7 +615,7 @@ internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2
     r.begin++;
     var exprᴛ1 = typ;
     if (exprᴛ1 == debugLogUnknown) {
-        print((@string)"<unknown kind>");
+        print((@string)"<unknown kind>"u8);
     }
     else if (exprᴛ1 == debugLogBoolTrue) {
         print(true);
@@ -637,7 +637,7 @@ internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2
             var sl = r.uvarint();
             if (r.begin + sl > r.end) {
                 r.begin = r.end;
-                print((@string)"<string length corrupted>");
+                print((@string)"<string length corrupted>"u8);
                 break;
             }
             while (sl > 0) {
@@ -666,7 +666,7 @@ internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2
         print(s);
     }
     else if (exprᴛ1 == debugLogStringOverflow) {
-        print((@string)"..(", r.uvarint(), (@string)" more bytes)..");
+        print((@string)"..("u8, r.uvarint(), (@string)" more bytes).."u8);
     }
     else if (exprᴛ1 == debugLogPC) {
         printDebugLogPC((uintptr)r.uvarint(), false);
@@ -674,7 +674,7 @@ internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2
     else if (exprᴛ1 == debugLogTraceback) {
         nint n = (nint)r.uvarint();
         for (nint i = 0; i < n; i++) {
-            print((@string)"\n\t");
+            print((@string)"\n\t"u8);
             // gentraceback PCs are always return PCs.
             // Convert them to call PCs.
             //
@@ -683,7 +683,7 @@ internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2
         }
     }
     else { /* default: */
-        print((@string)"<unknown field type ", ((Δhex)(uint64)typ), (@string)" pos ", r.begin - 1, (@string)" end ", r.end, (@string)">\n");
+        print((@string)"<unknown field type "u8, ((Δhex)(uint64)typ), (@string)" pos "u8, r.begin - 1, (@string)" end "u8, r.end, (@string)">\n"u8);
         return false;
     }
 
@@ -727,7 +727,7 @@ internal static unsafe void printDebugLog() {
     // with the runtime as little as possible, and sysAlloc updates accounting.
     @unsafe.Pointer state1 = (uintptr)sysAllocOS(@unsafe.Sizeof(new printDebugLog_readState(nil)) * (uintptr)n);
     if (state1 == nil) {
-        println((@string)"failed to allocate read state for", n, (@string)"logs");
+        println((@string)"failed to allocate read state for"u8, n, (@string)"logs"u8);
         printunlock();
         return;
     }
@@ -760,17 +760,17 @@ internal static unsafe void printDebugLog() {
         // Print record.
         var s = Ꮡ(state, best.i);
         if ((~s).first) {
-            print((@string)">> begin log ", best.i);
+            print((@string)">> begin log "u8, best.i);
             if ((~s).lost != 0) {
-                print((@string)"; lost first ", ((~s).lost >> (int)(10)), (@string)"KB");
+                print((@string)"; lost first "u8, ((~s).lost >> (int)(10)), (@string)"KB"u8);
             }
-            print((@string)" <<\n");
+            print((@string)" <<\n"u8);
             s.Value.first = false;
         }
         var (end, _, nano, Δp) = s.of(printDebugLog_readState.ᏑdebugLogReader).header();
         var oldEnd = s.Value.end;
         s.Value.end = end;
-        print((@string)"[");
+        print((@string)"["u8);
         array<byte> tmpbuf = new(21);
         var pnano = (int64)nano - runtimeInitTime;
         if (pnano < 0) {
@@ -779,14 +779,14 @@ internal static unsafe void printDebugLog() {
         }
         var pnanoBytes = itoaDiv(tmpbuf[..], (uint64)pnano, 9);
         print(slicebytetostringtmp(Ꮡ(pnanoBytes, 0), len(pnanoBytes)));
-        print((@string)" P ", Δp, (@string)"] ");
+        print((@string)" P "u8, Δp, (@string)"] "u8);
         for (nint i = 0; (~s).begin < (~s).end; i++) {
             if (i > 0) {
-                print((@string)" ");
+                print((@string)" "u8);
             }
             if (!s.of(printDebugLog_readState.ᏑdebugLogReader).printVal()) {
                 // Abort this P log.
-                print((@string)"<aborting P log>");
+                print((@string)"<aborting P log>"u8);
                 end = oldEnd;
                 break;
             }
@@ -811,12 +811,12 @@ internal static void printDebugLogPC(uintptr pc, bool returnPC) {
     }
     print(((Δhex)(uint64)pc));
     if (!fn.valid()){
-        print((@string)" [unknown PC]");
+        print((@string)" [unknown PC]"u8);
     } else {
         @string name = funcname(fn);
         var (@file, line) = funcline(fn, pc);
-        print((@string)" [", name, (@string)"+", ((Δhex)(uint64)(pc - fn.entry())),
-            (@string)" ", @file, (@string)":", line, (@string)"]");
+        print((@string)" ["u8, name, (@string)"+"u8, ((Δhex)(uint64)(pc - fn.entry())),
+            (@string)" "u8, @file, (@string)":"u8, line, (@string)"]"u8);
     }
 }
 

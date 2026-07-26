@@ -133,7 +133,7 @@ public static void Start(this ж<Server> Ꮡs) {
     Ꮡs.wrap();
     Ꮡs.goServe();
     if (serveFlag != ""u8) {
-        fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"httptest: serving on", s.URL);
+        fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"httptest: serving on"u8, s.URL);
         switch (select()) {
 }
     }

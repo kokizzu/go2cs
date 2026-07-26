@@ -59,13 +59,13 @@ public static bool Is(this ж<ProtocolError> Ꮡpe, error err) {
     return Ꮡpe == ErrNotSupported && AreEqual(err, errors.ErrUnsupported);
 }
 
-public static ж<ProtocolError> ErrNotSupported = Ꮡ(new ProtocolError("feature not supported"));
-public static ж<ProtocolError> ErrUnexpectedTrailer = Ꮡ(new ProtocolError("trailer header without chunked transfer encoding"));
-public static ж<ProtocolError> ErrMissingBoundary = Ꮡ(new ProtocolError("no multipart boundary param in Content-Type"));
-public static ж<ProtocolError> ErrNotMultipart = Ꮡ(new ProtocolError("request Content-Type isn't multipart/form-data"));
-public static ж<ProtocolError> ErrHeaderTooLong = Ꮡ(new ProtocolError("header too long"));
-public static ж<ProtocolError> ErrShortBody = Ꮡ(new ProtocolError("entity body too short"));
-public static ж<ProtocolError> ErrMissingContentLength = Ꮡ(new ProtocolError("missing ContentLength in HEAD response"));
+public static ж<ProtocolError> ErrNotSupported = Ꮡ(new ProtocolError("feature not supported"u8));
+public static ж<ProtocolError> ErrUnexpectedTrailer = Ꮡ(new ProtocolError("trailer header without chunked transfer encoding"u8));
+public static ж<ProtocolError> ErrMissingBoundary = Ꮡ(new ProtocolError("no multipart boundary param in Content-Type"u8));
+public static ж<ProtocolError> ErrNotMultipart = Ꮡ(new ProtocolError("request Content-Type isn't multipart/form-data"u8));
+public static ж<ProtocolError> ErrHeaderTooLong = Ꮡ(new ProtocolError("header too long"u8));
+public static ж<ProtocolError> ErrShortBody = Ꮡ(new ProtocolError("entity body too short"u8));
+public static ж<ProtocolError> ErrMissingContentLength = Ꮡ(new ProtocolError("missing ContentLength in HEAD response"u8));
 
 internal static error badStringError(@string what, @string val) {
     return fmt.Errorf("%s %q"u8, what, val);

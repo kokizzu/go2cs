@@ -123,7 +123,7 @@ internal static void coverReport() => func((defer, recover) => {
         }
     }
     if (total == 0) {
-        fmt.Println((@string)"coverage: [no statements]");
+        fmt.Println((@string)"coverage: [no statements]"u8);
         return;
     }
     fmt.Printf("coverage: %.1f%% of statements%s\n"u8, 100D * (float64)active / (float64)total, cover.CoveredPackages);

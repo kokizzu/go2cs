@@ -525,7 +525,7 @@ internal static void saveblockevent(int64 cycles, int64 rate, nint skip, bucketT
         return;
     }
     if (skip > maxSkip) {
-        print((@string)"requested skip=", skip);
+        print((@string)"requested skip="u8, skip);
         @throw("invalid skip value"u8);
     }
     var gp = getg();
@@ -1572,7 +1572,7 @@ internal static void doRecordGoroutineProfile(ж<g> Ꮡgp1, slice<uintptr> pcbuf
     ref var gp1 = ref Ꮡgp1.Value;
 
     if (readgstatus(Ꮡgp1) == _Grunning) {
-        print((@string)"doRecordGoroutineProfile gp1=", gp1.goid, (@string)"\n");
+        print((@string)"doRecordGoroutineProfile gp1="u8, gp1.goid, (@string)"\n"u8);
         @throw("cannot read stack of running goroutine"u8);
     }
     nint offset = (nint)ᏑgoroutineProfile.of(goroutineProfileᴛ1.Ꮡoffset).Add(1) - 1;

@@ -246,7 +246,7 @@ internal static void run(this ж<paragraph> Ꮡp) {
                 i = p.matchingPDI[i];
                 // skip over to the matching PDI
                 if (i > end) {
-                    log.Panic((@string)"assert (i <= end)");
+                    log.Panic((@string)"assert (i <= end)"u8);
                 }
             }
         }

@@ -363,7 +363,7 @@ internal static (@string, error) process(this ж<Profile> Ꮡp, @string s, bool 
     // It seems like we should only create this error on ToASCII, but the
     // UTS 46 conformance tests suggests we should always check this.
     if (err == default! && p.verifyDNSLength && s == ""u8) {
-        err = new labelErrorжerror(Ꮡ(new labelError(s, "A4")));
+        err = new labelErrorжerror(Ꮡ(new labelError(s, "A4"u8)));
     }
     var labels = new labelIter(orig: s);
     for (; !labels.done(); labels.next()) {
@@ -372,7 +372,7 @@ internal static (@string, error) process(this ж<Profile> Ꮡp, @string s, bool 
             // Empty labels are not okay. The label iterator skips the last
             // label if it is empty.
             if (err == default! && p.verifyDNSLength) {
-                err = new labelErrorжerror(Ꮡ(new labelError(s, "A4")));
+                err = new labelErrorжerror(Ꮡ(new labelError(s, "A4"u8)));
             }
             continue;
         }
@@ -404,7 +404,7 @@ internal static (@string, error) process(this ж<Profile> Ꮡp, @string s, bool 
     if (isBidi && p.bidirule != default! && err == default!) {
         for (labels.reset(); !labels.done(); labels.next()) {
             if (!p.bidirule(labels.label())) {
-                err = new labelErrorжerror(Ꮡ(new labelError(s, "B")));
+                err = new labelErrorжerror(Ꮡ(new labelError(s, "B"u8)));
                 break;
             }
         }
@@ -423,7 +423,7 @@ internal static (@string, error) process(this ж<Profile> Ꮡp, @string s, bool 
             }
             nint n = len(label);
             if (p.verifyDNSLength && err == default! && (n == 0 || n > 63)) {
-                err = new labelErrorжerror(Ꮡ(new labelError(label, "A4")));
+                err = new labelErrorжerror(Ꮡ(new labelError(label, "A4"u8)));
             }
         }
     }
@@ -435,7 +435,7 @@ internal static (@string, error) process(this ж<Profile> Ꮡp, @string s, bool 
             n--;
         }
         if (len(s) < 1 || n > 253) {
-            err = new labelErrorжerror(Ꮡ(new labelError(s, "A4")));
+            err = new labelErrorжerror(Ꮡ(new labelError(s, "A4"u8)));
         }
     }
     return (s, err);
@@ -462,7 +462,7 @@ internal static (@string idem, bool bidi, error err) validateRegistration(ж<Pro
     ref var p = ref Ꮡp.Value;
     // TODO: filter need for normalization in loop below.
     if (!norm.NFC.IsNormalString(s)) {
-        return (s, false, new labelErrorжerror(Ꮡ(new labelError(s, "V1"))));
+        return (s, false, new labelErrorжerror(Ꮡ(new labelError(s, "V1"u8))));
     }
     for (nint i = 0; i < len(s); ) {
         var (v, sz) = trie.lookupString(s[(int)(i)..]);
@@ -668,7 +668,7 @@ internal static error validateFromPunycode(ж<Profile> Ꮡp, @string s) {
     ref var p = ref Ꮡp.Value;
 
     if (!norm.NFC.IsNormalString(s)) {
-        return new labelErrorжerror(Ꮡ(new labelError(s, "V1")));
+        return new labelErrorжerror(Ꮡ(new labelError(s, "V1"u8)));
     }
     // TODO: detect whether string may have to be normalized in the following
     // loop.
@@ -679,7 +679,7 @@ internal static error validateFromPunycode(ж<Profile> Ꮡp, @string s) {
         }
         {
             var c = p.simplify(((info)v).category()); if (c != valid && c != deviation) {
-                return new labelErrorжerror(Ꮡ(new labelError(s, "V6")));
+                return new labelErrorжerror(Ꮡ(new labelError(s, "V6"u8)));
             }
         }
         i += sz;
@@ -747,16 +747,16 @@ internal static slice<array<joinState>> joinStates = new golib.SparseArray<array
 
     if (s == ""u8) {
         if (p.verifyDNSLength) {
-            return new labelErrorжerror(Ꮡ(new labelError(s, "A4")));
+            return new labelErrorжerror(Ꮡ(new labelError(s, "A4"u8)));
         }
         return default!;
     }
     if (p.checkHyphens) {
         if (len(s) > 4 && s[2] == (rune)'-' && s[3] == (rune)'-') {
-            return new labelErrorжerror(Ꮡ(new labelError(s, "V2")));
+            return new labelErrorжerror(Ꮡ(new labelError(s, "V2"u8)));
         }
         if (s[0] == (rune)'-' || s[len(s) - 1] == (rune)'-') {
-            return new labelErrorжerror(Ꮡ(new labelError(s, "V3")));
+            return new labelErrorжerror(Ꮡ(new labelError(s, "V3"u8)));
         }
     }
     if (!p.checkJoiners) {
@@ -768,7 +768,7 @@ internal static slice<array<joinState>> joinStates = new golib.SparseArray<array
     var (v, sz) = trie.lookupString(s);
     var x = ((info)v);
     if (x.isModifier()) {
-        return new labelErrorжerror(Ꮡ(new labelError(s, "V5")));
+        return new labelErrorжerror(Ꮡ(new labelError(s, "V5"u8)));
     }
     // Quickly return in the absence of zero-width (non) joiners.
     if (strings.Index(s, zwj) == -1 && strings.Index(s, zwnj) == -1) {
@@ -796,7 +796,7 @@ internal static slice<array<joinState>> joinStates = new golib.SparseArray<array
         x = ((info)v);
     }
     if (st == stateFAIL || st == stateAfter) {
-        return new labelErrorжerror(Ꮡ(new labelError(s, "C")));
+        return new labelErrorжerror(Ꮡ(new labelError(s, "C"u8)));
     }
     return default!;
 }

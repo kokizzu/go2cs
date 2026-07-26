@@ -377,12 +377,12 @@ internal static void startCycle(this ж<gcControllerState> Ꮡc, int64 markStart
     if (debug.gcpacertrace > 0) {
         var heapGoal = Ꮡc.heapGoal();
         var assistRatio = Ꮡc.of(gcControllerState.ᏑassistWorkPerByte).Load();
-        print((@string)"pacer: assist ratio=", assistRatio,
-            (@string)" (scan ", (ᏑgcController.of(gcControllerState.ᏑheapScan).Load() >> (int)(20)), (@string)" MB in ",
-            (work.initialHeapLive >> (int)(20)), (@string)"->",
-            (heapGoal >> (int)(20)), (@string)" MB)",
-            (@string)" workers=", dedicatedMarkWorkersNeeded,
-            (@string)"+", c.fractionalUtilizationGoal, (@string)"\n");
+        print((@string)"pacer: assist ratio="u8, assistRatio,
+            (@string)" (scan "u8, (ᏑgcController.of(gcControllerState.ᏑheapScan).Load() >> (int)(20)), (@string)" MB in "u8,
+            (work.initialHeapLive >> (int)(20)), (@string)"->"u8,
+            (heapGoal >> (int)(20)), (@string)" MB)"u8,
+            (@string)" workers="u8, dedicatedMarkWorkersNeeded,
+            (@string)"+"u8, c.fractionalUtilizationGoal, (@string)"\n"u8);
     }
 }
 
@@ -585,10 +585,10 @@ internal static void endCycle(this ж<gcControllerState> Ꮡc, int64 now, nint p
     if (debug.gcpacertrace > 0) {
         printlock();
         var goal = gcGoalUtilization * 100D;
-        print((@string)"pacer: ", (nint)(utilization * 100D), (@string)"% CPU (", (nint)goal, (@string)" exp.) for ");
-        print(Ꮡc.of(gcControllerState.ᏑheapScanWork).Load(), (@string)"+", Ꮡc.of(gcControllerState.ᏑstackScanWork).Load(), (@string)"+", Ꮡc.of(gcControllerState.ᏑglobalsScanWork).Load(), (@string)" B work (", c.lastHeapScan + Ꮡc.of(gcControllerState.ᏑlastStackScan).Load() + Ꮡc.of(gcControllerState.ᏑglobalsScan).Load(), (@string)" B exp.) ");
+        print((@string)"pacer: "u8, (nint)(utilization * 100D), (@string)"% CPU ("u8, (nint)goal, (@string)" exp.) for "u8);
+        print(Ꮡc.of(gcControllerState.ᏑheapScanWork).Load(), (@string)"+"u8, Ꮡc.of(gcControllerState.ᏑstackScanWork).Load(), (@string)"+"u8, Ꮡc.of(gcControllerState.ᏑglobalsScanWork).Load(), (@string)" B work ("u8, c.lastHeapScan + Ꮡc.of(gcControllerState.ᏑlastStackScan).Load() + Ꮡc.of(gcControllerState.ᏑglobalsScan).Load(), (@string)" B exp.) "u8);
         var live = Ꮡc.of(gcControllerState.ᏑheapLive).Load();
-        print((@string)"in ", c.triggered, (@string)" B -> ", live, (@string)" B (∆goal ", (int64)live - (int64)c.lastHeapGoal, (@string)", cons/mark ", oldConsMark, (@string)")");
+        print((@string)"in "u8, c.triggered, (@string)" B -> "u8, live, (@string)" B (∆goal "u8, (int64)live - (int64)c.lastHeapGoal, (@string)", cons/mark "u8, oldConsMark, (@string)")"u8);
         println();
         printunlock();
     }
@@ -1052,8 +1052,8 @@ internal static (uint64, uint64) trigger(this ж<gcControllerState> Ꮡc) {
     trigger = builtin.max(trigger, minTrigger);
     trigger = min(trigger, maxTrigger);
     if (trigger > goal) {
-        print((@string)"trigger=", trigger, (@string)" heapGoal=", goal, (@string)"\n");
-        print((@string)"minTrigger=", minTrigger, (@string)" maxTrigger=", maxTrigger, (@string)"\n");
+        print((@string)"trigger="u8, trigger, (@string)" heapGoal="u8, goal, (@string)"\n"u8);
+        print((@string)"minTrigger="u8, minTrigger, (@string)" maxTrigger="u8, maxTrigger, (@string)"\n"u8);
         @throw("produced a trigger greater than the heap goal"u8);
     }
     return (trigger, goal);
@@ -1228,7 +1228,7 @@ internal static int64 readGOMEMLIMIT() {
     }
     var (n, ok) = parseByteCount(Δp);
     if (!ok) {
-        print((@string)"GOMEMLIMIT=", Δp, (@string)"\n");
+        print((@string)"GOMEMLIMIT="u8, Δp, (@string)"\n"u8);
         @throw("malformed GOMEMLIMIT; see `go doc runtime/debug.SetMemoryLimit`"u8);
     }
     return n;
@@ -1254,7 +1254,7 @@ internal static bool addIdleMarkWorker(this ж<gcControllerState> Ꮡc) {
             return false;
         }
         if (n < 0) {
-            print((@string)"n=", n, (@string)" max=", max, (@string)"\n");
+            print((@string)"n="u8, n, (@string)" max="u8, max, (@string)"\n"u8);
             @throw("negative idle mark workers"u8);
         }
         var @new = (uint64)((uint64)(uint32)(n + 1) | (((uint64)max << (int)(32))));
@@ -1284,7 +1284,7 @@ internal static void removeIdleMarkWorker(this ж<gcControllerState> Ꮡc) {
         var old = Ꮡc.of(gcControllerState.ᏑidleMarkWorkers).Load();
         var (n, max) = ((int32)((uint64)(old & (uint64)(~(uint32)0))), (int32)((old >> (int)(32))));
         if (n - 1 < 0) {
-            print((@string)"n=", n, (@string)" max=", max, (@string)"\n");
+            print((@string)"n="u8, n, (@string)" max="u8, max, (@string)"\n"u8);
             @throw("negative idle mark workers"u8);
         }
         var @new = (uint64)((uint64)(uint32)(n - 1) | (((uint64)max << (int)(32))));
@@ -1304,7 +1304,7 @@ internal static void setMaxIdleMarkWorkers(this ж<gcControllerState> Ꮡc, int3
         var old = Ꮡc.of(gcControllerState.ᏑidleMarkWorkers).Load();
         var n = (int32)((uint64)(old & (uint64)(~(uint32)0)));
         if (n < 0) {
-            print((@string)"n=", n, (@string)" max=", max, (@string)"\n");
+            print((@string)"n="u8, n, (@string)" max="u8, max, (@string)"\n"u8);
             @throw("negative idle mark workers"u8);
         }
         var @new = (uint64)((uint64)(uint32)n | (((uint64)max << (int)(32))));

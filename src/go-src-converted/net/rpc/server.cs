@@ -359,7 +359,7 @@ internal static void sendResponse(this ж<Server> Ꮡserver, ж<sync.Mutex> Ꮡs
     Ꮡsending.Lock();
     var err = codec.WriteResponse(resp, reply);
     if (debugLog && err != default!) {
-        log.Println((@string)"rpc: writing response:", err);
+        log.Println((@string)"rpc: writing response:"u8, err);
     }
     Ꮡsending.Unlock();
     Ꮡserver.freeResponse(resp);
@@ -422,7 +422,7 @@ internal static void call(this ж<service> Ꮡs, ж<Server> Ꮡserver, ж<sync.M
             if (c.encBuf.Flush() == default!) {
                 // Gob couldn't encode the header. Should not happen, so if it does,
                 // shut down the connection to signal that the connection is broken.
-                log.Println((@string)"rpc: gob error encoding response:", err);
+                log.Println((@string)"rpc: gob error encoding response:"u8, err);
                 c.Close();
             }
             return err;
@@ -433,7 +433,7 @@ internal static void call(this ж<service> Ꮡs, ж<Server> Ꮡserver, ж<sync.M
             if (c.encBuf.Flush() == default!) {
                 // Was a gob problem encoding the body but the header has been written.
                 // Shut down the connection to signal that the connection is broken.
-                log.Println((@string)"rpc: gob error encoding body:", err);
+                log.Println((@string)"rpc: gob error encoding body:"u8, err);
                 c.Close();
             }
             return err;
@@ -479,7 +479,7 @@ public static void ServeCodec(this ж<Server> Ꮡserver, ServerCodec codec) {
         (var service, var mtype, var req, argv, replyv, var keepReading, var err) = Ꮡserver.readRequest(codec);
         if (err != default!) {
             if (debugLog && !AreEqual(err, io.EOF)) {
-                log.Println((@string)"rpc:", err);
+                log.Println((@string)"rpc:"u8, err);
             }
             if (!keepReading) {
                 break;
@@ -670,7 +670,7 @@ public static void Accept(this ж<Server> Ꮡserver, net.Listener lis) {
     while (ᐧ) {
         var (conn, err) = lis.Accept();
         if (err != default!) {
-            log.Print((@string)"rpc.Serve: accept:", err.Error());
+            log.Print((@string)"rpc.Serve: accept:"u8, err.Error());
             return;
         }
         goǃ(Ꮡserver.ServeConn, new net_ConnᴠReadWriteCloser(conn));
@@ -748,7 +748,7 @@ public static void ServeHTTP(this ж<Server> Ꮡserver, Δhttp.ResponseWriter w,
     }
     var (conn, _, err) = w._<Δhttp.Hijacker>().Hijack();
     if (err != default!) {
-        log.Print((@string)"rpc hijacking ", req.RemoteAddr, (@string)": ", err.Error());
+        log.Print((@string)"rpc hijacking "u8, req.RemoteAddr, (@string)": "u8, err.Error());
         return;
     }
     io.WriteString(new net_ConnᴠWriter(conn), "HTTP/1.0 "u8 + connected + "\n\n"u8);

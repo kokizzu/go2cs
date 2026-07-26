@@ -149,7 +149,7 @@ public static io.ReadSeeker Open(this ж<ΔSection> Ꮡs) {
     } else 
     if ((SectionFlag)(s.Flags & SHF_ALLOC) != 0) {
         return new errorReader(new FormatErrorжerror(Ꮡ(new FormatError((int64)s.Offset,
-            "SHF_COMPRESSED applies only to non-allocable sections", s.compressionType)))
+            "SHF_COMPRESSED applies only to non-allocable sections"u8, s.compressionType)))
         );
     }
     var exprᴛ1 = s.compressionType;
@@ -161,7 +161,7 @@ public static io.ReadSeeker Open(this ж<ΔSection> Ꮡs) {
     }
 
     if (zrd == default!) {
-        return new errorReader(new FormatErrorжerror(Ꮡ(new FormatError((int64)s.Offset, "unknown compression type", s.compressionType))));
+        return new errorReader(new FormatErrorжerror(Ꮡ(new FormatError((int64)s.Offset, "unknown compression type"u8, s.compressionType))));
     }
         var zrdʗ1 = zrd;
     return new readSeekerFromReaderжReadSeeker(Ꮡ(new readSeekerFromReader(
@@ -283,7 +283,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         }
     }
     if (ident[0] != (rune)'\x7f' || ident[1] != (rune)'E' || ident[2] != (rune)'L' || ident[3] != (rune)'F') {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "bad magic number", ident[0..4]))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "bad magic number"u8, ident[0..4]))));
     }
     var f = @new<File>();
     f.Value.Class = ((Class)ident[EI_CLASS]);
@@ -294,7 +294,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     }
     else { /* default: */
         return (default!, new FormatErrorжerror(Ꮡ(new FormatError( // ok
-0, "unknown ELF class", (~f).Class))));
+0, "unknown ELF class"u8, (~f).Class))));
     }
 
     f.Value.Data = ((ΔData)ident[EI_DATA]);
@@ -307,13 +307,13 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         bo = new binary_bigEndianᴠByteOrder(binary.BigEndian);
     }
     else { /* default: */
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "unknown ELF data encoding", (~f).Data))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "unknown ELF data encoding"u8, (~f).Data))));
     }
 
     f.Value.ByteOrder = bo;
     f.Value.Version = ((Version)ident[EI_VERSION]);
     if ((~f).Version != EV_CURRENT) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "unknown ELF version", (~f).Version))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "unknown ELF version"u8, (~f).Version))));
     }
     f.Value.OSABI = ((OSABI)ident[EI_OSABI]);
     f.Value.ABIVersion = ident[EI_ABIVERSION];
@@ -340,7 +340,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         {
             ref var v = ref heap<Version>(out var Ꮡv);
             v = ((Version)(byte)bo.Uint32(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Version"))..])); if (v != (~f).Version) {
-                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "mismatched ELF version", v))));
+                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "mismatched ELF version"u8, v))));
             }
         }
         phoff = (int64)bo.Uint32(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Phoff"))..]);
@@ -365,7 +365,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         {
             ref var v = ref heap<Version>(out var Ꮡv);
             v = ((Version)(byte)bo.Uint32(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Version"))..])); if (v != (~f).Version) {
-                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "mismatched ELF version", v))));
+                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "mismatched ELF version"u8, v))));
             }
         }
         phoff = (int64)bo.Uint64(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Phoff"))..]);
@@ -378,16 +378,16 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     }
 
     if (shoff < 0) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid shoff", shoff))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid shoff"u8, shoff))));
     }
     if (phoff < 0) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid phoff", phoff))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid phoff"u8, phoff))));
     }
     if (shoff == 0 && shnum != 0) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid ELF shnum for shoff=0", shnum))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid ELF shnum for shoff=0"u8, shnum))));
     }
     if (shnum > 0 && shstrndx >= shnum) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid ELF shstrndx", shstrndx))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid ELF shstrndx"u8, shstrndx))));
     }
     nint wantPhentsize = default!;
     nint wantShentsize = default!;
@@ -402,7 +402,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     }
 
     if (phnum > 0 && phentsize < wantPhentsize) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid ELF phentsize", phentsize))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid ELF phentsize"u8, phentsize))));
     }
     // Read program headers
     f.Value.Progs = new slice<ж<Prog>>(phnum);
@@ -442,10 +442,10 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         }
 
         if ((int64)(~p).Off < 0) {
-            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(phoff + (int64)off, "invalid program header offset", (~p).Off))));
+            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(phoff + (int64)off, "invalid program header offset"u8, (~p).Off))));
         }
         if ((int64)(~p).Filesz < 0) {
-            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(phoff + (int64)off, "invalid program header file size", (~p).Filesz))));
+            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(phoff + (int64)off, "invalid program header file size"u8, (~p).Filesz))));
         }
         p.Value.sr = io.NewSectionReader(r, (int64)(~p).Off, (int64)(~p).Filesz);
         p.Value.ReaderAt = new io_SectionReaderжReaderAt(p.Value.sr);
@@ -484,10 +484,10 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         }
 
         if (((SectionType)typ) != SHT_NULL) {
-            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff, "invalid type of the initial section", ((SectionType)typ)))));
+            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff, "invalid type of the initial section"u8, ((SectionType)typ)))));
         }
         if (shnum < (nint)SHN_LORESERVE) {
-            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff, "invalid ELF shnum contained in sh_size", shnum))));
+            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff, "invalid ELF shnum contained in sh_size"u8, shnum))));
         }
         // If the section name string table section index is greater than or
         // equal to SHN_LORESERVE (0xff00), this member has the value
@@ -497,17 +497,17 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         if (shstrndx == (nint)SHN_XINDEX) {
             shstrndx = (nint)link;
             if (shstrndx < (nint)SHN_LORESERVE) {
-                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff, "invalid ELF shstrndx contained in sh_link", shstrndx))));
+                return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff, "invalid ELF shstrndx contained in sh_link"u8, shstrndx))));
             }
         }
     }
     if (shnum > 0 && shentsize < wantShentsize) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid ELF shentsize", shentsize))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "invalid ELF shentsize"u8, shentsize))));
     }
     // Read section headers
     nint c = saferio.SliceCap<ΔSection>((uint64)shnum);
     if (c < 0) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "too many sections", shnum))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "too many sections"u8, shnum))));
     }
     f.Value.Sections = new slice<ж<ΔSection>>(0, c);
     var names = new slice<uint32>(0, c);
@@ -551,10 +551,10 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         }
 
         if ((int64)(~s).Offset < 0) {
-            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff + (int64)off, "invalid section offset", (int64)(~s).Offset))));
+            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff + (int64)off, "invalid section offset"u8, (int64)(~s).Offset))));
         }
         if ((int64)(~s).FileSize < 0) {
-            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff + (int64)off, "invalid section size", (int64)(~s).FileSize))));
+            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff + (int64)off, "invalid section size"u8, (int64)(~s).FileSize))));
         }
         s.Value.sr = io.NewSectionReader(r, (int64)(~s).Offset, (int64)(~s).FileSize);
         if ((SectionFlag)((~s).Flags & SHF_COMPRESSED) == 0){
@@ -604,7 +604,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     }
     var shstr = (~f).Sections[shstrndx];
     if ((~shstr).Type != SHT_STRTAB) {
-        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff + (int64)(shstrndx * shentsize), "invalid ELF section name string table type", (~shstr).Type))));
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff + (int64)(shstrndx * shentsize), "invalid ELF section name string table type"u8, (~shstr).Type))));
     }
     (var shstrtab, err) = shstr.Data();
     if (err != default!) {
@@ -614,7 +614,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         bool ok = default!;
         (s.Value.Name, ok) = getString(shstrtab, (nint)names[i]);
         if (!ok) {
-            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff + (int64)(i * shentsize), "bad section name index", names[i]))));
+            return (default!, new FormatErrorжerror(Ꮡ(new FormatError(shoff + (int64)(i * shentsize), "bad section name index"u8, names[i]))));
         }
     }
     return (f, default!);

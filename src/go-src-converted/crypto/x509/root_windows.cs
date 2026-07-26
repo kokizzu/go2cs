@@ -96,10 +96,10 @@ internal static error checkChainTrustStatus(ж<Certificate> Ꮡc, ж<syscall.Cer
         var status = chainCtx.TrustStatus.ErrorStatus;
         var exprᴛ1 = status;
         if (exprᴛ1 == syscall.CERT_TRUST_IS_NOT_TIME_VALID) {
-            return new CertificateInvalidError(Ꮡc, Expired, "");
+            return new CertificateInvalidError(Ꮡc, Expired, ""u8);
         }
         if (exprᴛ1 == syscall.CERT_TRUST_IS_NOT_VALID_FOR_USAGE) {
-            return new CertificateInvalidError(Ꮡc, IncompatibleUsage, "");
+            return new CertificateInvalidError(Ꮡc, IncompatibleUsage, ""u8);
         }
         { /* default: */
             return new UnknownAuthorityError( // TODO(filippo): surface more error statuses.
@@ -141,7 +141,7 @@ internal static error checkChainSSLServerPolicy(ж<Certificate> Ꮡc, ж<syscall
     if (status.Error != 0) {
         var exprᴛ1 = status.Error;
         if (exprᴛ1 == syscall.CERT_E_EXPIRED) {
-            return new CertificateInvalidError(Ꮡc, Expired, "");
+            return new CertificateInvalidError(Ꮡc, Expired, ""u8);
         }
         if (exprᴛ1 == syscall.CERT_E_CN_NO_MATCH) {
             return new HostnameError(Ꮡc, opts.DNSName);

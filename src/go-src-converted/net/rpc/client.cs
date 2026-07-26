@@ -169,7 +169,7 @@ internal static void input(this ж<Client> Ꮡclient) {
     Ꮡclient.of(Client.Ꮡmutex).Unlock();
     Ꮡclient.of(Client.ᏑreqMutex).Unlock();
     if (debugLog && !AreEqual(err, io.EOF) && !closing) {
-        log.Println((@string)"rpc: client protocol error:", err);
+        log.Println((@string)"rpc: client protocol error:"u8, err);
     }
 }
 
@@ -186,7 +186,7 @@ internal static void done(this ж<ΔCall> Ꮡcall) {
             // ok
             // We don't want to block here. It is the caller's responsibility to make
             // sure the channel has enough buffer space. See comment in Go().
-            log.Println((@string)"rpc: discarding Call reply due to insufficient Done chan capacity");
+            log.Println((@string)"rpc: discarding Call reply due to insufficient Done chan capacity"u8);
         }
         break;
     }}
@@ -328,7 +328,7 @@ public static ж<ΔCall> Go(this ж<Client> Ꮡclient, @string serviceMethod, an
         // RPCs that will be using that channel. If the channel
         // is totally unbuffered, it's best not to run at all.
         if (cap(done) == 0) {
-            log.Panic((@string)"rpc: done channel is unbuffered");
+            log.Panic((@string)"rpc: done channel is unbuffered"u8);
         }
     }
     call.Value.Done = done;

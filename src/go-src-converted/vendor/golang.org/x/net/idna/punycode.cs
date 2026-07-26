@@ -31,7 +31,7 @@ internal const int32 tmax = 26;
 internal const int32 tmin = 1;
 
 internal static error punyError(@string s) {
-    return new labelErrorжerror(Ꮡ(new labelError(s, "A3")));
+    return new labelErrorжerror(Ꮡ(new labelError(s, "A3"u8)));
 }
 
 // decode decodes a string as specified in section 6.2.

@@ -175,7 +175,7 @@ internal static nint eof(this ж<scanner> Ꮡs) {
         return scanEnd;
     }
     if (s.err == default!) {
-        s.err = new SyntaxErrorжerror(Ꮡ(new SyntaxError("unexpected end of JSON input", s.bytes)));
+        s.err = new SyntaxErrorжerror(Ꮡ(new SyntaxError("unexpected end of JSON input"u8, s.bytes)));
     }
     return scanError;
 }
