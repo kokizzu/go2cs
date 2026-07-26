@@ -9,13 +9,18 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ---
 
-## 📰 NEWS — July 17, 2026: Go's own tests now pass in C#
+## 📰 NEWS — July 26, 2026: More than a quarter of the standard library's test suites pass in C#
 
-**A standard-library package's own Go test suite — converted to C# — now runs and agrees with `go test`,
-verdict for verdict.** [`unicode/utf8`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/unicode/utf8)'s
-real test suite (Go 1.23.1) validates **14/14** through the new converted-test pipeline — transpiled to
-C#, built against the converted standard library, run under a Go-semantics test host, and differentially
-compared against a clean `go test -json` baseline. The answer to *"but does it **run**?"* has its first [machine-checked proof](#try-it-yourself--validate-a-converted-test-suite) — and the proof keeps growing: see the full [validated-package table](ValidatedTestPackages.md).
+**57 of the 215 converted standard-library packages that define `Test` functions now run their own Go
+1.23.1 test suites in C# and agree with `go test -json` verdict for verdict — 26.5%.** That is
+**1,459 matching test results**, with 47 divergences disclosed by exact failure signature rather than
+skipped. The set reaches well past leaf packages: `sync`'s own concurrency suite, the full RE2 engine in
+`regexp`, `strconv`'s float formatting at full precision, the reflection-driven ones (`errors`,
+`encoding/binary`, `internal/fmtsort`, and `go/token` — which round-trips a `FileSet` through the real
+converted `encoding/gob` engines), and `hash/crc32` running genuine SSE4.2/PCLMULQDQ hardware paths
+through managed intrinsics. Full per-package counts, and a
+[one-command reproduction](#try-it-yourself--validate-a-converted-test-suite) from a clone, are in the
+[validated-package table](ValidatedTestPackages.md).
 
 **➡ All announcements can be found in the [go2cs News Archive](NEWS.md).**
 
@@ -342,19 +347,22 @@ Contributors: see [`CLAUDE.md`](../CLAUDE.md) for an architecture overview and
 ## Status
 
 The converter builds idiomatic C# for the full range of Go language features, validated by an extensive
-behavioral test suite (390+ Go-vs-C# regression projects). As of **2026-07-10 the entire Go standard library
+behavioral test suite (500+ Go-vs-C# regression projects). As of **2026-07-10 the entire Go standard library
 (302 packages, Go 1.23.1) compiles cleanly** as .NET assemblies. The converted standard library reproduces
 **Go built with `-tags purego`** — a managed runtime cannot execute Go's hand-written `.s` assembly, so the
 portable pure-Go variants of the asm-backed crypto/hash functions are the faithful target (`-stdlib` applies
 the tag by default; see [Conversion Strategies → the standard library reproduces Go `-tags purego`](ConversionStrategies.md#the-standard-library-reproduces-go--tags-purego)).
 Compiling is the milestone, not yet full
 runtime parity: **converting and running the standard library's own tests is the ongoing Phase 4 work** —
-see the [roadmap](Roadmap.md#phase-4--convert-and-run-go-package-tests). **Fifteen standard-library packages'
-own Go test suites now pass in C#** — more than 450 of Go's own tests, spanning `unicode/utf8` and `sort`
-through the `hash/*`, `container/*` and `math/*` families. Each is converted to C#, built against the
+see the [roadmap](Roadmap.md#phase-4--convert-and-run-go-package-tests). **57 standard-library packages'
+own Go test suites now pass in C#** — **1,459 of Go's own tests**, 26.5% of the 215 converted packages
+that define `Test` functions, spanning `sync`, `regexp`, `strconv` and `bufio` through the `crypto/sha*`,
+`encoding/*`, `hash/*`, `container/*` and `math/*` families. Each is converted to C#, built against the
 converted standard library, run under a Go-semantics test host, and compared verdict-for-verdict against a
-clean `go test -json` baseline. The full validated set — with per-package counts and a one-command
-reproduction from a clone — is under [Try it yourself](#try-it-yourself--validate-a-converted-test-suite).
+clean `go test -json` baseline; 47 results are honestly disclosed as divergent rather than skipped. The
+full validated set — with per-package counts and a one-command reproduction from a clone — is in
+[Validated Test Packages](ValidatedTestPackages.md), reproduced via
+[Try it yourself](#try-it-yourself--validate-a-converted-test-suite).
 
 ### Try it yourself — validate a converted test suite
 
@@ -427,7 +435,8 @@ High level timeline of the project's major turning points.
 | 2026-07-10 | [**First clean full-standard-library compile**](NEWS.md#july-10-2026--the-entire-go-standard-library-compiles-in-net) | `51ba5d9cf` · [`stdlib-green-2026-07-10`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-green-2026-07-10) | The Phase 3 endpoint, reached: all **302** `src/go-src-converted` packages (Go 1.23.1) compile with zero errors — `runtime`, `reflect`, `net/http`, `go/types`, `crypto/tls` and every other package included. Gated by 371 Go-vs-C# behavioral regression tests; the compiled snapshot is committed alongside this row (see [About Standard Library Compile Milestone](#about-standard-library-compile-milestone)). |
 | 2026-07-14 | [Standard library on NuGet + NuGet-referencing conversion](NEWS.md#july-14-2026--the-converted-go-standard-library-is-on-nuget) | `2363af0e6` · `dd821a556` · [`nuget-stdlib-2026-07-14`](https://github.com/ritchiecarroll/go2cs/releases/tag/nuget-stdlib-2026-07-14) | The converted standard library, the `golib` runtime and the `go2cs-gen` analyzer are published to [nuget.org](https://www.nuget.org/packages?q=go2cs%20ritchiecarroll) as `go.<pkg>` / `go.lib` / `go.gen` (versioned `1.23.1.<build>` from `src/version.props`). The converter's new `-recurse=nuget` mode emits matching `<PackageReference>` entries — defaulting `$(GoStdLibVersion)` to a floating release — so a converted end-user app or library restores the whole go2cs stack from NuGet with **no local go2cs source checkout**; the app's own and third-party converted packages stay project references. |
 | 2026-07-17 | [**First Go standard-library test suite passing in C#**](NEWS.md#july-17-2026--gos-own-tests-now-pass-in-c) | `337a928df` · [`utf8-tests-green-2026-07-17`](https://github.com/ritchiecarroll/go2cs/releases/tag/utf8-tests-green-2026-07-17) | Phase 4's operational era opens: `unicode/utf8`'s real Go test suite (14 tests, external dot-import test package) is converted and executed under the new hand-owned `go.testing` host, validating **14/14 against `go test -json`** with all 37 benchmark/example declarations honestly disclosed as excluded. The differential pipeline (convert → template csproj → isolated host run → oracle compare, gated by input-digest manifests) is live end-to-end. Getting here surfaced and fixed five real defects — including two golib Go-correctness bugs affecting *all* converted code: `[]byte(s)` shared the string's backing array, and range-over-string yielded rune ordinals instead of byte indices. Real tests, not compilation, are now the currency of correctness. |
-| 2026-07-18 | [**Phase-4 test suites expand — disclosed-divergence mechanism**](NEWS.md#july-18-2026--bytes-and-strings-tests-pass-with-disclosed-divergence) | `40f39d2be` · [`bytes-strings-tests-green-2026-07-18`](https://github.com/ritchiecarroll/go2cs/releases/tag/bytes-strings-tests-green-2026-07-18) · [`sort`](https://github.com/ritchiecarroll/go2cs/releases/tag/sort-tests-green-2026-07-18) · [`utf16`](https://github.com/ritchiecarroll/go2cs/releases/tag/utf16-tests-green-2026-07-18) | `bytes` (81), `strings` (68), `sort` (63) and `unicode/utf16` (8) validate against `go test -json`, introducing a hand-owned, committed `go2cs_test_disclosures.json` the differential oracle uses to reclassify the exact-allocation-count asserts (Go's `testing.AllocsPerRun`) the managed CLR provably cannot satisfy — matched by exact failure signature, so any *other* failure is still a hard mismatch. Packages without a manifest compare strictly. The validated set has since grown to **fifteen** standard-library packages (see [Status](#status) and [Try it yourself](#try-it-yourself--validate-a-converted-test-suite)). |
+| 2026-07-18 | [**Phase-4 test suites expand — disclosed-divergence mechanism**](NEWS.md#july-18-2026--bytes-and-strings-tests-pass-with-disclosed-divergence) | `40f39d2be` · [`bytes-strings-tests-green-2026-07-18`](https://github.com/ritchiecarroll/go2cs/releases/tag/bytes-strings-tests-green-2026-07-18) · [`sort`](https://github.com/ritchiecarroll/go2cs/releases/tag/sort-tests-green-2026-07-18) · [`utf16`](https://github.com/ritchiecarroll/go2cs/releases/tag/utf16-tests-green-2026-07-18) | `bytes` (81), `strings` (68), `sort` (63) and `unicode/utf16` (8) validate against `go test -json`, introducing a hand-owned, committed `go2cs_test_disclosures.json` the differential oracle uses to reclassify the exact-allocation-count asserts (Go's `testing.AllocsPerRun`) the managed CLR provably cannot satisfy — matched by exact failure signature, so any *other* failure is still a hard mismatch. Packages without a manifest compare strictly. The validated set has kept growing since — see the 2026-07-26 row below, [Status](#status) and [Validated Test Packages](ValidatedTestPackages.md). |
+| 2026-07-26 | [**More than a quarter of the standard library's test suites pass in C#**](NEWS.md#july-26-2026--more-than-a-quarter-of-the-standard-librarys-test-suites-pass-in-c) | `44fcc4f04` | **57 of the 215 testable standard-library packages (26.5%) validate their own Go 1.23.1 test suites against `go test -json`** — **1,459 matching verdicts**, 47 disclosed by exact failure signature. The set moves past leaf packages into `sync` (real parked-thread semaphores, a hand-owned lock-free `Pool` ring, `runtime.Goexit` as a non-panic unwind), `regexp`/`regexp/syntax` (the full RE2 engine), `strconv`, `bufio`, `compress/gzip` over the real DEFLATE coder, the `crypto/sha*` family, and the reflection-driven `errors`/`encoding/binary`/`go/token` — the last round-tripping a `FileSet` through the real converted `encoding/gob` engines. Getting there retired the converter's structural-implementation guessing in favor of runtime interface shells, restored Go's RODATA cost model for string literals, and flushed out correctness classes that compiled cleanly and behaved wrongly — struct value-copies sharing an array field's backing, Go constants read as zero by earlier-declared package variables, and five silent miscompiles the `regexp` pair exposed. |
 
 ### _About Standard Library Compile Milestone_
 
