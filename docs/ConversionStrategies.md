@@ -894,9 +894,19 @@ var err = recover(); if (err != default!) {   // fmt/print.cs
     if (p.panicking) { throw panic(err); }
 ```
 
+A **traceback** taken while a panic is being handled (`runtime.Stack`, `debug.Stack`) reports what Go
+reports. Go keeps the panicking frames on the stack until the panic completes; the CLR unwinds them
+before a `finally`-based defer runs, so golib snapshots the panic's origin at the first catch — and a
+re-`panic` inherits it, which is what keeps the origin visible through Go's
+`defer func(){ panic(recover()) }()` idiom. The frames render in Go's shape
+(`sync_test.onceFuncPanic()` over a tab-indented `file:line`), not the CLR's
+`at go.sync_test_package.onceFuncPanic(…)`, because a traceback is observable output that programs
+and tests read by package-qualified name.
+
 **Full detail:** [Reference → Defer / Panic / Recover](ConversionStrategies-Reference.md#defer--panic--recover) —
 unrecovered-panic process exit (stderr + code 2), named-delegate/builtin callees, value-returning goroutine
-wrapping, func-literal argument capture hoisting, and box-bound deferred pointer-receiver methods.
+wrapping, func-literal argument capture hoisting, and box-bound deferred pointer-receiver methods; plus
+[Reference → `runtime.Stack` renders a GO-shaped traceback](ConversionStrategies-Reference.md#runtimestack-renders-a-go-shaped-traceback-and-recovers-the-panic-site).
 
 ---
 
@@ -1179,6 +1189,14 @@ value-peeking `IsNull` survives only where reading the slot is the actual questi
 whose pointee is nil (`&i` with `i == nil`) and a field/element reference box are both perfectly good
 addresses.
 
+The same reasoning answers **lifetime**: because the box is an expression temporary, anything asking
+"when does this object die?" or "is this the same object?" asks the *referent*, exposed as
+`ReferentObject` — the backing storage for an element ref, the **root** allocation for a (possibly
+nested) field ref. `runtime.SetFinalizer(&buf[0], f)` finalizes `buf`'s allocation, as in Go, rather
+than the throwaway `ж<byte>` the argument expression allocated; and `sync.Cond`'s copy detector, whose
+Go implementation stores its own *address* (unsound on a moving collector), compares root-allocation
+identity instead.
+
 **Full detail:** [Reference → Pointers](ConversionStrategies-Reference.md#pointers) — per-iteration
 range-variable boxes, wide-index narrowing on element addresses, element/`unsafe.StringData` pointer
 identity, pointer-typed globals & double-pointer walks, closure capture of boxed locals, `unsafe.Pointer`
@@ -1312,6 +1330,15 @@ Go's two-step release (store the value, then publish by nilling `typ`) into the 
 slot makes atomic. `Pool` around it keeps Go's whole algorithm — private slot, shared chain, stealing,
 victim cache — with the P pin replaced by a thread-affine shard index plus a per-shard producer gate,
 since a managed thread cannot be pinned to a P.
+
+`sync.Cond`'s one-method hand-own shows the wall's *other* edge, where the auto conversion neither
+crashes nor compiles wrong — it silently does **nothing**. `copyChecker.check` detects a copied `Cond`
+by storing the checker's own address in itself; converted, the compare-and-swap destination becomes
+`Ꮡ((uintptr)(c))`, which boxes a **copy**, so the checker is never initialized and no copy is ever
+reported. Storing an address would be unsound anyway (the GC moves the box, and a compaction would
+make an untouched `Cond` look copied — a *spurious* panic). `cond_impl.cs` compares the pointer's
+root-allocation identity instead, which is stable across GC moves and is the managed spelling of the
+same question.
 
 The same ruling scales up to the runtime's whole **process-control surface**. `runtime.GC`,
 `GOMAXPROCS`, `Gosched`, `Stack`, `ReadMemStats` and `LockOSThread`/`UnlockOSThread` convert

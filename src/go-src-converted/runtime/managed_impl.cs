@@ -29,11 +29,15 @@
 //     is a managed thread and the CLR schedules it. The universal test idiom
 //     `defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(n))` is exactly right; a program that measures
 //     actual parallelism against it is capability-divergent.
-//   - Stack() walks the MANAGED stack. It cannot show frames that already unwound, so a
-//     debug.Stack() called from a deferred function while a panic is in flight sees the deferred
-//     frame's stack, not the panicking one (Go keeps the panicking frames alive until the panic
-//     completes; a CLR exception pops them before the finally block runs). all=true reports only
-//     the calling thread — the CLR has no supported way to walk another thread's stack.
+//   - Stack() walks the MANAGED stack and renders it in GO'S SHAPE (`<pkg>.<Func>()` + a
+//     tab-indented `<file>:<line>`), because a traceback is observable output that Go programs and
+//     Go's own tests grep by package-qualified function name. Frames that already unwound are
+//     recovered for the case that matters: while a panic is in flight, golib's snapshot of the
+//     panic's origin is appended below the live frames — where Go's traceback also shows them,
+//     since a deferred call runs on top of gopanic. Frames that are not converted Go code (golib,
+//     the BCL, the test host) keep their .NET names rather than being given invented Go ones, and
+//     Go's `+0x<offset>` PC deltas are omitted. all=true reports only the calling thread — the CLR
+//     has no supported way to walk another thread's stack.
 //   - ReadMemStats fills the fields the CLR genuinely measures and leaves the allocator-internal
 //     ones (Mallocs/Frees/HeapObjects/BySize, the per-pause histories) zero rather than inventing
 //     numbers.
@@ -142,14 +146,98 @@ partial class runtime_package
     {
         // `all` would mean "every goroutine": the CLR has no supported cross-thread stack walk, so
         // the calling thread's trace is what can honestly be produced (see the header).
-        string trace = new StackTrace(fNeedFileInfo: true).ToString();
-        byte[] encoded = Encoding.UTF8.GetBytes(trace);
+        StringBuilder trace = new();
+
+        trace.Append("goroutine 1 [running]:\n");
+        appendGoFrames(trace, new StackTrace(skipFrames: 1, fNeedFileInfo: true));
+
+        // Go keeps a panicking goroutine's frames on the stack until the panic completes, so a
+        // debug.Stack() taken inside a deferred function shows the PANIC SITE. A CLR exception has
+        // already unwound those frames before the finally-based defer runs, so the frames Go would
+        // still be showing are appended from the in-flight panic's snapshot — below the live frames,
+        // which is where Go's traceback puts them too (the deferred call runs on top of gopanic).
+        PanicException? inFlight = GoFuncRoot.InFlightPanic;
+
+        if (inFlight?.PanicTrace is StackTrace panicSite && panicSite.FrameCount > 0)
+        {
+            trace.Append("panic: ").Append(inFlight.State?.ToString() ?? "nil").Append('\n');
+            appendGoFrames(trace, panicSite);
+        }
+
+        byte[] encoded = Encoding.UTF8.GetBytes(trace.ToString());
         nint count = Math.Min((nint)encoded.Length, len(buf));
 
         for (nint i = 0; i < count; i++)
             buf[i] = encoded[i];
 
         return count;
+    }
+
+    // Renders frames the way Go's traceback does — `<pkg>.<Func>()` on one line, a tab-indented
+    // `<file>:<line>` beneath it — rather than the CLR's `at <Namespace>.<Type>.<Method>(...) in
+    // <file>:line <n>`. This is observable output: Go programs (and Go's own tests) grep a traceback
+    // for `<pkg>.<Func>`, which the CLR form never contains because a converted package's frames
+    // live on a `<pkg>_package` class inside namespace `go`.
+    private static void appendGoFrames(StringBuilder trace, StackTrace stack)
+    {
+        foreach (StackFrame frame in stack.GetFrames())
+        {
+            System.Reflection.MethodBase? method = frame.GetMethod();
+
+            if (method is null)
+                continue;
+
+            trace.Append(goFrameName(method)).Append("()\n");
+
+            string? file = frame.GetFileName();
+
+            if (!string.IsNullOrEmpty(file))
+                trace.Append('\t').Append(file).Append(':').Append(frame.GetFileLineNumber()).Append('\n');
+        }
+    }
+
+    // `go.sync_test_package.onceFuncPanic` -> `sync_test.onceFuncPanic`;
+    // `go.runtime.debug_package.Stack`     -> `runtime/debug.Stack` (Go names a package by its
+    //                                         import path, and the namespace mirrors it);
+    // a closure's compiler-generated `<Outer>b__N` on a nested display class -> `<pkg>.Outer.funcN`,
+    // Go's own spelling for a function literal. A frame that is not converted Go code (golib, the
+    // BCL, the test host) keeps its .NET name — inventing a Go name for it would be a lie.
+    private static string goFrameName(System.Reflection.MethodBase method)
+    {
+        Type? declaring = method.DeclaringType;
+
+        if (declaring is null)
+            return method.Name;
+
+        string typeName = declaring.FullName ?? declaring.Name;
+
+        // LastIndexOf, not IndexOf: a Go package whose own name ends in `_package` would produce
+        // `go.x_package_package`, and the FIRST match would truncate the import path.
+        int packageSuffix = typeName.LastIndexOf("_package", StringComparison.Ordinal);
+
+        if (!typeName.StartsWith("go.", StringComparison.Ordinal) || packageSuffix < 0)
+            return $"{typeName}.{method.Name}";
+
+        // "go.runtime.debug_package" -> "runtime/debug"
+        string importPath = typeName[3..packageSuffix].Replace('.', '/');
+        string name = method.Name;
+
+        // A lambda is emitted as `<Outer>b__N` on a `<>c__DisplayClassX_Y` nested in the package
+        // class; Go renders the same function literal as `Outer.funcN`.
+        if (name.Length > 0 && name[0] == '<')
+        {
+            int close = name.IndexOf('>');
+
+            if (close > 1)
+            {
+                string outer = name[1..close];
+                int lastUnderscore = name.LastIndexOf('_');
+                string ordinal = lastUnderscore >= 0 && lastUnderscore + 1 < name.Length ? name[(lastUnderscore + 1)..] : "1";
+                name = $"{outer}.func{ordinal}";
+            }
+        }
+
+        return $"{importPath}.{name}";
     }
 
     // ReadMemStats populates m with memory allocator statistics.

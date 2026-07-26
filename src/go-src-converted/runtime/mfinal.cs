@@ -435,21 +435,40 @@ public static void SetFinalizer(any obj, any finalizer) {
     if (obj is null or NilType) {
         @throw("runtime.SetFinalizer: first argument is nil"u8);
     }
+    // Key the registration on the REFERENT, not on the pointer box. Go finalizes the *object* a
+    // pointer points at, and a go2cs pointer box is frequently a per-expression temporary: the
+    // canonical `runtime.SetFinalizer(&buf[0], f)` form allocates a fresh ж<byte> for the argument
+    // alone, so keying on it registered against a lifetime nothing in the program shares - the
+    // finalizer became due the moment the box died (or, under a non-optimizing JIT that roots the
+    // whole frame, could never become due at all) instead of when buf's storage was released.
+    // ReferentObject resolves an element ref to its backing storage, a field ref to the containing
+    // allocation, and a boxed value to the box itself, so the registration tracks exactly the
+    // allocation Go would finalize - and two boxes for the same address share one registration.
+    object referent = ReferentOf(obj);
     if (finalizer is null or NilType) {
         // SetFinalizer(obj, nil) clears any previously registered finalizer.
-        if (s_finalizerRegistry.TryGetValue(obj, out GoFinalizerSentinel? cleared)) {
+        if (s_finalizerRegistry.TryGetValue(referent, out GoFinalizerSentinel? cleared)) {
             cleared.Cancel();
-            s_finalizerRegistry.Remove(obj);
+            s_finalizerRegistry.Remove(referent);
         }
         return;
     }
     if (finalizer is not Delegate) {
         @throw("runtime.SetFinalizer: second argument is not a function"u8);
     }
-    if (s_finalizerRegistry.TryGetValue(obj, out GoFinalizerSentinel? _)) {
+    if (s_finalizerRegistry.TryGetValue(referent, out GoFinalizerSentinel? _)) {
         @throw("runtime.SetFinalizer: finalizer already set"u8);
     }
-    s_finalizerRegistry.Add(obj, new GoFinalizerSentinel(obj, (Delegate)finalizer));
+    // The sentinel keeps the ORIGINAL box, because that is the argument the Go finalizer must be
+    // invoked with (its parameter is the pointer type, not the storage).
+    s_finalizerRegistry.Add(referent, new GoFinalizerSentinel(obj, (Delegate)finalizer));
+}
+
+// The object whose lifetime is the Go allocation obj references - see INilPointer.ReferentObject.
+// A non-pointer obj (or a named-pointer wrapper, which keeps the interface default) is its own
+// referent.
+private static object ReferentOf(any obj) {
+    return obj is INilPointer pointer ? pointer.ReferentObject : obj!;
 }
 
 // Maps an object to the sentinel keeping its Go finalizer registration alive. The sentinel

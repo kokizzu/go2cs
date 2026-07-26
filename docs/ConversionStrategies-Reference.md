@@ -6965,7 +6965,7 @@ Using `ж<T>` rather than the C# `ref` keyword avoids the escape-analysis compli
 
 Go compares pointers by **address**: `unsafe.StringData(s) == unsafe.StringData(t)` is true whenever both strings share the same backing data (a header copy `t := s`, or `strings.Map`'s identity fast path returning `s` unchanged — strings' `TestMap` asserts exactly that). `ж<T>.Equals` already models address identity per referent shape — struct-field refs compare (source, field-identity), array-index refs compare (backing, index), heap boxes compare wrapped-object identity — but the array-index arm compared the `IArray` *instance*, and `@string.buffer` materializes a **fresh `PinnedBuffer` view per access**, so two `StringData` results over the very same bytes never compared equal ("unexpected copy during identity map"). The array-index arm (and the matching `GetHashCode`) now canonicalizes a `PinnedBuffer` to the object its `GCHandle` pins (`PinnedTarget`, normally the string's backing `byte[]`) before the reference comparison, so equal addresses compare equal while everything previously-equal stays equal — the canonicalization only ever *adds* true results for same-storage-same-index pairs, and distinct-but-equal arrays still compare unequal (Go pointer semantics, never value comparison). `strings.Map`'s fast path needed no change at all: it already returned `s`, sharing the backing array through the `@string` struct copy — only the identity *comparison* was blind. (Guarded by the `StringDataIdentity` behavioral output test — header-copy identity true, repeated-call identity true, a runtime copy false, content equality unaffected; before the fix the two identity cases printed `false`.)
 
-**The same class covers ORDINARY slice and array element pointers, which were the larger miss (2026-07-24).** `Ꮡ(target, index)` takes `in IArray<T>`, an INTERFACE, so passing a `slice<T>` — a HEADER (backing array + low + len + cap) over storage it merely *shares* — **boxes the header struct afresh on every call**. The array-index arm compared those boxes, so `&s[0] == &s[0]` was **false**: Go's most basic pointer identity, violated for every slice element. The blast radius is wider than comparison alone, because `GetHashCode` canonicalized the same way: two aliasing element pointers landed in different `map[*T]` buckets, so `m[&s[2]] = "two"` then `m[&s[2]] = "TWO"` *added a second entry* instead of overwriting, and `m[&s[2]]` read back the zero value. `array<T>` (and the generated named-array wrappers) had the identical problem, reached through `ж<T>.at` (`&a[i]` on a boxed array), which likewise boxes a copy of the wrapper struct.
+**The same class covers ORDINARY slice and array element pointers, which were the larger miss (2026-07-24).** `Ꮡ(target, index)` takes an `IArray<T>`, an INTERFACE, so passing a `slice<T>` — a HEADER (backing array + low + len + cap) over storage it merely *shares* — **boxes the header struct afresh on every call**. The array-index arm compared those boxes, so `&s[0] == &s[0]` was **false**: Go's most basic pointer identity, violated for every slice element. The blast radius is wider than comparison alone, because `GetHashCode` canonicalized the same way: two aliasing element pointers landed in different `map[*T]` buckets, so `m[&s[2]] = "two"` then `m[&s[2]] = "TWO"` *added a second entry* instead of overwriting, and `m[&s[2]]` read back the zero value. `array<T>` (and the generated named-array wrappers) had the identical problem, reached through `ж<T>.at` (`&a[i]` on a boxed array), which likewise boxes a copy of the wrapper struct.
 
 `CanonicalStorage(IArray)` is now `CanonicalElement(IArray, index)`, returning the **actual storage object plus the ABSOLUTE element index within it** — the referent as stored is never the storage itself:
 
@@ -6982,6 +6982,12 @@ Folding the window offset into the index is what makes every Go alias of one ele
 Canonicalizing `array<T>` to its backing is sound precisely because Go's by-value array COPY is emitted as golib's `.Clone()` (see [Slices and Arrays](#slices-and-arrays)), giving the copy its own backing — two distinct Go arrays can never canonicalize to the same storage. Like the `PinnedBuffer` precedent, the change only ever *adds* true results for same-storage-same-index pairs: distinct backings still compare unequal (`&z[0] != &s[0]`), distinct indices still compare unequal (`&s[0] != &s[1]`), and the struct-field and heap-box arms are untouched. This is a golib-only change — no emitted-code difference.
 
 (Guarded by the `SlicePointerIdentity` behavioral output test — self identity, distinctness, re-slice and re-slice-of-re-slice aliasing, the in-capacity `append` result, array-vs-slice-over-that-array, struct elements, a write through an element pointer observed through both views, and `map[*int]` store/overwrite/lookup/miss including a lookup keyed through a *different* window — vs `go run`. Counter-proven: pre-fix **every** identity assertion printed `false`, both map lookups returned empty, and `len(m)` grew from 2 to 3 on the overwrite.)
+
+The same "a box is a temporary, the storage is the object" reasoning answers **lifetime** questions —
+when the referent dies, and whether two boxes name the same allocation — which `runtime.SetFinalizer`
+and `sync.Cond`'s copy detector both depend on, and which is also why `Ꮡ(IArray<T>, index)` must take
+its target **by value**: see
+[A pointer's REFERENT, not its box, answers every lifetime and identity question](#a-pointers-referent-not-its-box-answers-every-lifetime-and-identity-question).
 
 ### A pointer's nilness and identity are STRUCTURAL — the `IsNull` / `IsNilPointer` split
 
@@ -8803,7 +8809,146 @@ frame for the rest of the method. That second straggler reproduces with no Pool 
 whose result is discarded in a loop leaves its last object alive in Debug — and the test passes in
 `Release`, where the JIT's liveness is precise. So it is a codegen-liveness divergence of the
 Debug-configured CLR, not a Pool defect; the honest classification is the disclosed-divergence class,
-not a contortion of the drain order to make one assert land.
+not a contortion of the drain order to make one assert land. That class is now
+[named and pinned](#codegen-liveness--a-frame-holds-what-go-has-already-dropped) as
+`codegen-liveness`, with `TestPoolGC`'s straggler count pinned exactly so a real Pool retention
+regression cannot hide behind the disclosure.
+
+### A pointer's REFERENT, not its box, answers every lifetime and identity question
+
+A `ж<T>` is a *pointer*, and go2cs mints them freely: `Ꮡ(s, i)` allocates a fresh box on every call,
+and `Ꮡx.of(T.Ꮡfield)` allocates one per field access. The box is therefore an **expression
+temporary** whose lifetime says nothing about the storage it names. Anything that asks a question
+about the *object* — when does it die, is this the same object — must ask it of the referent.
+`INilPointer.ReferentObject` (golib `ж.cs`) is that projection, and `ж<T>` resolves it the way
+`Equals` already resolves pointer identity:
+
+| Pointer shape | `ReferentObject` |
+|---|---|
+| array/slice element (`&s[i]`) | the canonical backing storage (`CanonicalElement` — the `T[]`, never a per-call header/view) |
+| struct field (`&x.f`), including a nested `of()` chain | the **root** allocation, resolved recursively through the per-call intermediate boxes |
+| standard heap box (`&x`, `new(T)`), whatever the pointee's type | the box itself — it *is* the allocation |
+| native alias (a `uintptr` round-trip) | the box itself — the address it wraps names no *managed* allocation, so there is nothing GC-keyed to resolve to (the one place this projection and `Equals`, which identifies such boxes by that address, part company) |
+
+Two consumers depend on it, and both were broken without it:
+
+* **`runtime.SetFinalizer`** keyed its `ConditionalWeakTable` registration on the boxed `obj`. Go
+  attaches a finalizer to the *object* a pointer points at — `runtime.SetFinalizer(&buf[0], f)`
+  finalizes `buf`'s allocation — so keying on the throwaway `ж<byte>` the argument expression
+  allocated registered against a lifetime nothing in the program shared: the finalizer became due
+  the moment the box died (or, under a JIT that roots the whole frame, could never become due at
+  all). It now keys on the referent, so the registration tracks exactly the allocation Go would
+  finalize, and two boxes for the same address correctly share one registration (Go's "finalizer
+  already set").
+* **`sync.Cond`'s `copyChecker`**, below.
+
+**`Ꮡ(IArray<T>, index)` takes its target BY VALUE, deliberately.** It used to be `in IArray<T>`.
+`in` on an *interface* parameter elides no copy — it is already one reference — but it forces the
+caller's boxing temp (a `slice<T>`/`array<T>` header is a struct, so every call boxes one) to be
+**address-exposed**, and an address-exposed slot is not lifetime-tracked: the JIT reports it live for
+the whole enclosing method. One `Ꮡ(s, i)` therefore pinned `s`'s backing array to the caller's frame
+until that method *returned*, in fully optimized code. Measured with a `WeakReference` probe against
+a `DOTNET_TieredCompilation=0` build: the `in` form leaks the array, the by-value form releases it.
+
+### `sync.Cond`'s copy detector, on reference identity rather than an address
+
+Go's `copyChecker` is a `uintptr` that stores **its own address** and compares:
+
+```go
+if uintptr(*c) != uintptr(unsafe.Pointer(c)) &&
+   !atomic.CompareAndSwapUintptr((*uintptr)(c), 0, uintptr(unsafe.Pointer(c))) &&
+   uintptr(*c) != uintptr(unsafe.Pointer(c)) {
+	panic("sync.Cond is copied")
+}
+```
+
+Neither half survives conversion, and the two failure modes point in opposite directions:
+
+* Storing an **address** is unsound on a moving collector. The GC relocates the box holding the
+  `Cond`, so a compaction between two `Wait` calls would leave a stale word in a `Cond` nobody
+  copied — a *spuriously panicking* condition variable, which is far worse than no check.
+* The auto body is **inert**. The address-of-self operand converts to
+  `@unsafe.Pointer.FromRef(ref c)` while the CAS destination converts to `Ꮡ((uintptr)(c))`, which
+  boxes a **copy** of the value — so the compare-and-swap writes to a throwaway box, the checker is
+  never initialized, and `check()` never panics however often the `Cond` is copied. `TestCondCopy`
+  failed with `got <nil>, expect sync.Cond is copied`.
+
+`cond_impl.cs` (registered as `manualConversionFuncs["sync"]["copyChecker.check"]`, so only this one
+method is hand-owned — the `copyChecker` type and every `Cond` method stay auto) asks the same
+question against the invariant the CLR does guarantee: the checker stores a token derived from its
+`ReferentObject`'s GC-stable identity hash. Every `Cond` method reaches its checker as
+`Ꮡc.of(Cond.Ꮡchecker)`, whose referent is the *root* allocation holding the `Cond` — the same object
+on every access, including for a `Cond` embedded in a larger struct, which is exactly why the
+referent projection must recurse. A struct copy carries the ORIGINATING allocation's token into a new
+one, which is what `check()` sees.
+
+Two deliberate simplifications, both in the safe direction:
+
+* **No compare-and-swap.** Go needs one because concurrent first-users race to publish the word;
+  here every racer computes the *same* token for the same allocation, so an aligned native-word store
+  cannot publish a value any racer would disagree with.
+* **Identity hashes are not unique**, so a copy between two colliding allocations goes unreported —
+  a missed detection, never a false alarm. Likewise, two elements of one backing array both resolve
+  to that array, so a copy between them is invisible (an element pointer's identity is the storage
+  plus an index the checker has no room for). Recorded, not worked around: Go's own check is
+  documented as best-effort.
+
+### `runtime.Stack` renders a GO-shaped traceback, and recovers the panic site
+
+A traceback is **observable output**: Go programs print it on a crash, and Go's own tests grep it by
+package-qualified function name (`sync`'s `TestOnceFuncPanicTraceback` looks for
+`sync_test.onceFuncPanic`). Two things made the CLR trace unusable for that.
+
+**Frame names.** A converted package's frames live on a `<pkg>_package` class inside namespace `go`,
+so the CLR renders `at go.sync_test_package.onceFuncPanic() in …oncefunc_test.cs:line 191` — which
+contains `sync_test_package.onceFuncPanic`, never `sync_test.onceFuncPanic`. `Stack` now formats
+frames itself, in Go's shape (`<pkg>.<Func>()` then a tab-indented `<file>:<line>`), mapping
+`go.<a>.<b>_package` → `<a>/<b>` (Go names a package by its import path, which the namespace mirrors)
+and a closure's `<Outer>b__N` on its display class → `Outer.funcN`, Go's own spelling for a function
+literal. A frame that is **not** converted Go code — golib, the BCL, the test host — keeps its .NET
+name rather than being given an invented Go one, and Go's `+0x<offset>` PC deltas are omitted.
+
+**Frames that already unwound.** Go keeps a panicking goroutine's frames physically on the stack until
+the panic completes, so a `debug.Stack()` inside a deferred function shows the panic site; a CLR
+exception has unwound them before the `finally`-based defer runs. Worse, *both* ways a panic travels
+destroy the trace: re-raising the same instance (`throw ex`) resets `Exception.StackTrace` to the
+re-raise point, and Go's re-panic idiom — `defer func(){ p := recover(); panic(p) }()`, which is
+precisely how `sync.OnceFunc` replays a panic on every call — creates a brand-new panic in the
+deferred frame. So golib snapshots the origin **once**, at the first (innermost, deepest) catch, into
+`PanicException.PanicTrace`, and a panic raised while handling another *inherits* it. `GoFunc` tracks
+which panic a deferred sequence is handling in a strictly save/restore-scoped thread-local
+(`HandledPanic`, surfaced as `GoFuncRoot.InFlightPanic`) — `recover()` clears `CapturedPanic`, but
+Go's traceback keeps showing the panicking frames for the rest of the sequence, and the strict scoping
+is what stops the value from ever going stale. `Stack` appends those frames *below* the live ones,
+which is where Go's traceback puts them too, since the deferred call runs on top of `gopanic`. Cost on
+the non-panicking path is zero: the CLR fills the trace at throw time anyway, and nothing is
+snapshotted unless a panic is actually caught.
+
+### `codegen-liveness` — a frame holds what Go has already dropped
+
+A second disclosed-divergence class alongside `alloc-profile`, first pinned by `sync` (packages
+`TestOnceXGC` ×3 subtests and `TestPoolGC`). Go's GC consults **per-safepoint liveness maps**: a
+local dies at its last use, even in the middle of a running function. The CLR's GC info is
+conservative in two ways that a GC-lifetime test can see from inside its own frame:
+
+* **Tier-0 / MinOpts codegen reports every frame local live for the whole method.** Every test method
+  runs *once*, so it is jitted at tier 0 — in Release as well as Debug — and the pipeline builds the
+  test host unoptimized on top of that. Measured: a bare `byte[]` local is still alive after a full
+  blocking collect, and becomes collectible under `DOTNET_TieredCompilation=0`.
+* **A by-value struct argument larger than a machine word is passed by hidden reference.** A
+  `slice<T>` is four words, so the x64 ABI makes the caller materialize a stack temp and pass its
+  address — address-exposed, therefore untracked, therefore reported live for the whole frame. This
+  one holds in **fully optimized** code, which is what makes it provable rather than a build-flag
+  artifact: a probe frame that registers a finalizer on `buf`'s storage releases it (finalizer fires)
+  when nothing else touches `buf`, and pins it for the frame's lifetime when the frame merely passes
+  `buf` by value to one function.
+
+`TestOnceXGC` is unsatisfiable on the second point *at every layer go2cs owns*: its own body is
+`f := fn(buf)`, and both `gcwaitfin()` checks happen inside that frame. `sync.OnceFunc` genuinely
+does drop the wrapped function — measured directly, the backing array is released after the first
+call — so the disclosure covers the CLR's frame conservatism, not a retention bug. The two real bugs
+the investigation *did* find (SetFinalizer keying on the pointer box; `Ꮡ`'s `in` parameter pinning the
+array) were fixed at their layers first; only what remained was disclosed.
 
 ## Deterministic Output
 

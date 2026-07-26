@@ -249,6 +249,19 @@ var manualConversionFuncs = map[string]map[string]bool{
 	"os": {
 		"File.readdir": true,
 	},
+	// sync's copyChecker detects a copied Cond by storing its OWN ADDRESS in itself and comparing:
+	// `uintptr(*c) != uintptr(unsafe.Pointer(c))`. Both halves are raw-metal on a managed referent.
+	// The stored word cannot be an address at all (the GC moves boxes, so a compaction between two
+	// Wait calls would make a perfectly valid Cond look copied — a SPURIOUS panic), and the
+	// address-of-self operand converts to `unsafe.Pointer.FromRef(ref c)` while the CAS operand
+	// converts to `Ꮡ((uintptr)(c))`, which boxes a COPY of the value — so the auto body never
+	// initializes the checker and never panics, however often the Cond is copied (sync's
+	// TestCondCopy). cond_impl.cs compares the pointer's ROOT ALLOCATION IDENTITY instead, which is
+	// stable across GC moves and is the managed spelling of the same question. Only this one method
+	// is hand-owned; the copyChecker type and every Cond method stay auto.
+	"sync": {
+		"copyChecker.check": true,
+	},
 }
 
 // isManualType reports whether the named type (raw Go name) is hand-converted in this package.

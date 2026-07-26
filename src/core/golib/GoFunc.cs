@@ -35,6 +35,25 @@ public class GoFuncRoot
 {
     // Static thread local storage for captured panic exception shared between all GoFunc instances
     protected static readonly ThreadLocal<PanicException> CapturedPanic = new();
+
+    // The panic whose deferred calls are RUNNING on this thread. CapturedPanic is cleared by
+    // recover(), but Go's traceback keeps showing the panicking frames for the rest of the deferred
+    // sequence — so the panic being handled is tracked separately, strictly scoped to HandleFinally
+    // (saved and restored), which is what keeps it from ever going stale.
+    protected static readonly ThreadLocal<PanicException?> HandledPanic = new();
+
+    /// <summary>
+    /// Gets the panic whose traceback a <c>runtime.Stack</c>/<c>debug.Stack</c> call on this thread
+    /// should report — the one being handled by an enclosing deferred sequence, else one caught and
+    /// not yet recovered. Null when no panic is in flight.
+    /// </summary>
+    /// <remarks>
+    /// Go keeps a panicking goroutine's frames on the stack until the panic completes, so a
+    /// traceback taken from a deferred function shows the panic site; the CLR has already unwound
+    /// them. Consumers append <see cref="PanicException.PanicTrace"/> to the live managed trace to
+    /// recover Go's observable output — see runtime's Stack.
+    /// </remarks>
+    public static PanicException? InFlightPanic => HandledPanic.Value ?? CapturedPanic.Value;
 }
 
 /// <summary>
@@ -83,6 +102,9 @@ public class GoFunc<T> : GoFuncRoot
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -113,8 +135,38 @@ public class GoFunc<T> : GoFuncRoot
     {
         if (Defers is not null)
         {
-            while (Defers.Count > 0)
-                Defers.Pop()();
+            // The panic this deferred sequence is handling, if any. It stays observable through
+            // InFlightPanic for the whole sequence — recover() clears CapturedPanic, but Go's
+            // traceback keeps showing the panicking frames until the panic completes. Strictly
+            // save/restore scoped, so it cannot outlive the sequence.
+            PanicException? handling = CapturedPanic.Value;
+            PanicException? outer = HandledPanic.Value;
+
+            HandledPanic.Value = handling ?? outer;
+
+            try
+            {
+                while (Defers.Count > 0)
+                {
+                    try
+                    {
+                        Defers.Pop()();
+                    }
+                    catch (PanicException rePanic) when (handling is not null)
+                    {
+                        // Go's re-panic idiom (`defer func(){ panic(recover()) }()`, which is how
+                        // sync.OnceFunc replays a panic on every call) raises a NEW panic from the
+                        // deferred frame. Go's traceback still shows the original panic's frames, so
+                        // the new panic adopts the origin rather than starting a fresh, shallower one.
+                        rePanic.InheritThrowSite(handling);
+                        throw;
+                    }
+                }
+            }
+            finally
+            {
+                HandledPanic.Value = outer;
+            }
         }
 
         if (CapturedPanic.Value is not null)
@@ -161,6 +213,9 @@ public sealed class GoFunc<TRef1, T> : GoFunc<T>
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -214,6 +269,9 @@ public sealed class GoFunc<TRef1, TRef2, T> : GoFunc<T>
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -263,6 +321,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, T> : GoFunc<T>
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -312,6 +373,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, T> : GoFunc<T>
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -361,6 +425,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, TRef5, T> : GoFunc<T>
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -410,6 +477,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, TRef5, TRef6, T> : GoFunc
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -459,6 +529,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, TRef5, TRef6, TRef7, T> :
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -508,6 +581,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, TRef5, TRef6, TRef7, TRef
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -557,6 +633,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, TRef5, TRef6, TRef7, TRef
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -606,6 +685,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, TRef5, TRef6, TRef7, TRef
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -655,6 +737,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, TRef5, TRef6, TRef7, TRef
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -704,6 +789,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, TRef5, TRef6, TRef7, TRef
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -753,6 +841,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, TRef5, TRef6, TRef7, TRef
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -802,6 +893,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, TRef5, TRef6, TRef7, TRef
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -851,6 +945,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, TRef5, TRef6, TRef7, TRef
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally
@@ -900,6 +997,9 @@ public sealed class GoFunc<TRef1, TRef2, TRef3, TRef4, TRef5, TRef6, TRef7, TRef
             // Captures Go panics — explicit panic() calls and .NET exceptions that map to Go
             // runtime panics (e.g. integer divide by zero) — so recover() can observe them.
             // Non-panic exceptions fail the filter and propagate unchanged.
+            // The throw site is snapshotted HERE, at the first (innermost, deepest) catch, before
+            // any re-raise can reset it — see PanicException.PanicTrace.
+            panic.CaptureThrowSite(ex);
             CapturedPanic.Value = panic;
         }
         finally

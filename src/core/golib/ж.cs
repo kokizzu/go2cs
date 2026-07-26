@@ -114,6 +114,27 @@ public interface INilPointer
     /// orders wrapped pointers).
     /// </summary>
     nuint PointerOrderToken => (nuint)(uint)RuntimeHelpers.GetHashCode(this);
+
+    /// <summary>
+    /// Gets the managed object whose LIFETIME is the Go allocation this pointer references — the
+    /// referent, not the pointer box. Go attaches a finalizer to the *object* a pointer points at
+    /// (<c>runtime.SetFinalizer(&amp;buf[0], f)</c> finalizes <c>buf</c>'s allocation), so anything
+    /// keyed on a Go pointer's lifetime must key on this, never on the <see cref="ж{T}"/> instance:
+    /// a pointer box is routinely a per-expression TEMPORARY (<c>Ꮡ(target, index)</c> allocates a
+    /// fresh box per call), whose lifetime has nothing to do with the storage it names. The default
+    /// is the box itself — correct for a standard heap box, which IS its own allocation;
+    /// <see cref="ж{T}"/> supplies the canonical form for element and field referents (a generated
+    /// named-pointer wrapper keeps the default, the same recorded residual noted for
+    /// <see cref="PointerOrderToken"/>).
+    /// </summary>
+    /// <remarks>
+    /// It resolves to the ROOT allocation, not the immediate parent: a nested field reference
+    /// (<c>Ꮡouter.of(Outer.Ꮡinner).of(Inner.Ꮡfield)</c>) hangs off a per-call intermediate box, so
+    /// stopping at the immediate source would hand back a different object on every access. The
+    /// root is what Go allocates and what Go's identity questions — "is this the same object?",
+    /// "when does this object die?" — are asked about.
+    /// </remarks>
+    object ReferentObject => this;
 }
 
 /// <summary>
@@ -716,6 +737,52 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
             // value's (see Equals: a token derived from the pointee changes when the pointee is
             // assigned, which is not something an address does).
             return (nuint)(uint)RuntimeHelpers.GetHashCode(this);
+        }
+    }
+
+    /// <summary>
+    /// Gets the object whose lifetime is the referenced Go allocation (see
+    /// <see cref="INilPointer.ReferentObject"/>): an array/slice-element reference → the canonical
+    /// backing storage (so <c>Ꮡ(buf, 0)</c>'s throwaway box resolves to <c>buf</c>'s own array); a
+    /// struct-field reference → the containing allocation, resolved THROUGH any intermediate field
+    /// boxes to the root; otherwise this box, which IS the allocation — a standard heap box, whatever
+    /// its pointee's type, and a native alias, whose real storage is unmanaged and outside the GC's
+    /// reach.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately consistent with <see cref="Equals(ж{T})"/>: two boxes that are the same Go
+    /// pointer resolve to the SAME referent object, which is what makes a lifetime registration
+    /// keyed on it behave like Go's (a second <c>SetFinalizer</c> through a different box for the
+    /// same address is correctly seen as already-set) and what lets a copy detector compare the
+    /// allocation it was initialized in against the one it is being used from. The one place the two
+    /// part company is the native alias, which <see cref="Equals(ж{T})"/> identifies by the address
+    /// it wraps while the referent is the box: an unmanaged address names no managed allocation, so
+    /// there is nothing for a GC-keyed lifetime question to be asked about in the first place.
+    /// </remarks>
+    public virtual object ReferentObject
+    {
+        get
+        {
+            if (m_arrayIndexRef is not null)
+                return CanonicalElement(m_arrayIndexRef.Value.Item1, m_arrayIndexRef.Value.Item2).storage;
+
+            // Recurse: the source of a nested field ref is a per-call intermediate box, never an
+            // allocation of its own (`Ꮡouter.of(Ꮡinner).of(Ꮡfield)` mints a fresh ж<Inner> each
+            // access). The chain is finite — each `of` wraps a strictly outer pointer.
+            if (m_structFieldRef is not null)
+            {
+                return m_structFieldRef.Value.Item1 is INilPointer parent
+                    ? parent.ReferentObject
+                    : m_structFieldRef.Value.Item1;
+            }
+
+            // A standard heap box IS the allocation it addresses, so it is its own referent — the
+            // same rule Equals and the hash follow, and for the same reason: the box's identity is
+            // the address, never the identity of whatever value happens to be stored at it. That
+            // holds for a reference-typed pointee too — `&m` for a map variable names the VARIABLE's
+            // storage, a different allocation from the map header the variable happens to hold, and
+            // it is the variable Go finalizes.
+            return this;
         }
     }
 

@@ -1386,11 +1386,22 @@ public static class builtin
     /// <param name="target">Target value.</param>
     /// <param name="index">Index of element.</param>
     /// <returns>Pointer to slice or array element at <paramref name="index"/>.</returns>
-    public static ж<T> Ꮡ<T>(in IArray<T> target, int index)
+    /// <remarks>
+    /// <paramref name="target"/> is deliberately passed BY VALUE, not <c>in</c>. It is an interface
+    /// reference — <c>in</c> buys no copy elision — but it forces the caller's boxing temp (a
+    /// <c>slice&lt;T&gt;</c>/<c>array&lt;T&gt;</c> header is a struct, so every call boxes one) to be
+    /// ADDRESS-EXPOSED, and an address-exposed slot is not lifetime-tracked: the JIT then reports it
+    /// live for the whole enclosing method, so a single <c>Ꮡ(s, i)</c> pinned <c>s</c>'s backing
+    /// array to the caller's frame until that method RETURNED, even in fully optimized code. Go's
+    /// <c>&amp;s[i]</c> keeps the array alive only while the pointer itself is live, which is what
+    /// by-value passing restores (measured: the <c>in</c> form leaked the array, the by-value form
+    /// releases it).
+    /// </remarks>
+    public static ж<T> Ꮡ<T>(IArray<T> target, int index)
     {
         return new ж<T>(target, index);
     }
-    
+
     /// <summary>
     /// Gets a pointer to slice or array element at <paramref name="index"/>.
     /// </summary>
@@ -1398,7 +1409,8 @@ public static class builtin
     /// <param name="target">Target value.</param>
     /// <param name="index">Index of element.</param>
     /// <returns>Pointer to slice or array element at <paramref name="index"/>.</returns>
-    public static ж<T> Ꮡ<T>(in IArray<T> target, nint index)
+    /// <remarks>By value, for the lifetime reason the <see cref="int"/> overload documents.</remarks>
+    public static ж<T> Ꮡ<T>(IArray<T> target, nint index)
     {
         return new ж<T>(target, (int)index);
     }
