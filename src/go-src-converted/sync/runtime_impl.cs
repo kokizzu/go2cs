@@ -17,8 +17,9 @@
 // queue; crucially, Semrelease with handoff=true hands ownership DIRECTLY to the dequeued waiter (it
 // returns already-acquired, without re-competing) — the exact contract Go's Mutex/RWMutex starvation
 // mode relies on, and the reason a plain SemaphoreSlim (which cannot hand off to a specific waiter)
-// trips "sync: inconsistent mutex state" / "unlock of unlocked mutex" under contention. The uint32 the
-// pointer addresses is never read outside these calls, so the count lives entirely in the bucket.
+// trips "sync: inconsistent mutex state" / "unlock of unlocked mutex" under contention. The COUNT is
+// the uint32 the pointer addresses, exactly as in Go — the bucket carries only the lock and the queue —
+// because a caller may SEED it (sync's TestSemaphore starts at 1); see SemaBucket.
 //
 // Known Phase-4 limitations: bucket/notify-list entries persist for the process lifetime (a bounded leak
 // for programs that churn many short-lived locks), and sync.Pool sharding (procPin/registerPoolCleanup)
@@ -45,9 +46,14 @@ partial class sync_package
         internal bool HandedOff;
     }
 
+    // The bucket carries the LOCK and the waiter queue only. The COUNT lives where Go keeps it —
+    // in the uint32 the pointer addresses — because callers may seed it: sync's TestSemaphore does
+    // `s := new(uint32); *s = 1` and then expects the first Semacquire to succeed without parking.
+    // A bucket-private counter starting at zero parked that first acquirer forever with no one left
+    // to release it, and the test deadlocked. Mutex/RWMutex/WaitGroup seed nothing, so their `sema`
+    // field is zero and behaves exactly as before.
     private sealed class SemaBucket
     {
-        internal uint Count;
         internal readonly Queue<SemaWaiter> Waiters = new();
     }
 
@@ -65,9 +71,9 @@ partial class sync_package
 
             lock (b)
             {
-                if (b.Count > 0)
+                if (s.Value > 0)
                 {
-                    b.Count--; // acquired without parking
+                    s.Value--; // acquired without parking
                     return;
                 }
 
@@ -91,7 +97,7 @@ partial class sync_package
 
         lock (b)
         {
-            b.Count++;
+            s.Value++;
 
             if (b.Waiters.Count > 0)
             {
@@ -99,7 +105,7 @@ partial class sync_package
 
                 if (handoff)
                 {
-                    b.Count--;        // hand the just-added permit directly to w
+                    s.Value--;        // hand the just-added permit directly to w
                     w.HandedOff = true;
                 }
             }
