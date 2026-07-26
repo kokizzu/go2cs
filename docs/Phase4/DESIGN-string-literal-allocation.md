@@ -352,6 +352,22 @@ anticipate, all found by the gates rather than by reading:
    (field name ⇄ its initializer rendering, with or without the `(@string)` cast and `u8` suffix a
    substituted site may shed) and comparing multisets per directory: **1,140 fields declared, 1,145
    call-site substitutions matched, 0 residual on both sides.**
+9. **§4.4's init-order rule needs a second arm where the relocation is unavailable — and only the
+   OPERATIONAL sweep could find it.** `collectMovedInitVars` deliberately does not run on the
+   `-tests` path (no `package_init.cs` emission there, and an internal variant shares the production
+   class, which may already own a static ctor — a second one is CS0111). So a *test-file* package
+   var reading a test-file hoisted field had no defense: `encoding/pem`'s
+   `var pemData = testingKey(…)` is declared ~300 lines ABOVE the `testingKey` whose two hoisted
+   fields it depends on, ran `strings.ReplaceAll(s, "", "")`, and left every `"TESTING KEY"` in
+   place — TestDecode and TestEncode failed and the package dropped out of the sweep (42/43). The
+   fix is a second arm of the same rule rather than a site patch: `collectHoistedLiterals` takes
+   `initOrderRelocated`, and where the driver cannot relocate, **no literal inside a function a
+   package-level initializer can reach is hoisted at all** (those sites keep the inline Tier-B
+   rendering; the same literal still hoists from any other use). The `-tests` SEED run passes true —
+   it simulates `processConversion` and must reproduce the production `.cs` exactly — so production
+   is untouched, proven by CNR byte-identity across 495 behavioral projects *and* a full corpus
+   reconvert A/B with zero production `.cs`/`.csproj` differences. Note what this says about the
+   gate stack: the corpus **compiled clean** with the bug present. Only running the tests found it.
 
 **Measured (Go 1.23.1, 302 packages):** 3,253 hoisted fields across 467 files, 62 pre-boxed.
 Per-function blocks: 1,634 blocks, median **1**, p90 **4**, p99 **11**, max **61** —

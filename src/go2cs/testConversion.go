@@ -1094,9 +1094,13 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 		prodEntries = append(prodEntries, prodEntry)
 	}
 
-	collectHoistedLiterals(prodEntries, pkg.Types, pkg.TypesInfo, nil)
+	// The seed run SIMULATES processConversion, which does relocate an out-of-order initializer
+	// (initOrderRelocated=true), so it reproduces the production `.cs` on disk exactly. The real
+	// run cannot relocate — collectMovedInitVars does not run here — so it passes false and no
+	// literal inside a function a package-level initializer can reach is hoisted.
+	collectHoistedLiterals(prodEntries, pkg.Types, pkg.TypesInfo, nil, true)
 	productionHoistSeed := packageHoistNames
-	collectHoistedLiterals(allEntries, pkg.Types, pkg.TypesInfo, productionHoistSeed)
+	collectHoistedLiterals(allEntries, pkg.Types, pkg.TypesInfo, productionHoistSeed, false)
 
 	var compileNames []string // emitted test .cs basenames — the csproj's compile items
 	var resolveNames []string // every emission (incl. .cs.auto review siblings) for marker resolution

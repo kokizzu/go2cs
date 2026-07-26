@@ -107,7 +107,19 @@ const minHoistSlugLength = 4
 // and can sort BEFORE its production owner — the seed, not name luck, is what prevents CS0102).
 // Only `_test.go` files may claim a NEW field in that mode, since the production files are not
 // re-emitted.
-func collectHoistedLiterals(files []FileEntry, pkg *types.Package, info *types.Info, seed map[string]hoistSeed) {
+//
+// initOrderRelocated says whether this conversion's DRIVER runs collectMovedInitVars, i.e. whether
+// a package-level var initializer that reads a hoisted field can be relocated into the ordered
+// static constructor (§4.4). processConversion does; the `-tests` variant conversion deliberately
+// does NOT (the test project has no package_init.cs emission path, and the internal variant shares
+// the production class, which may already own a static ctor — a second one is CS0111). Where the
+// relocation is unavailable the ordering hazard is real and was observed: `encoding/pem`'s
+// `var pemData = testingKey(…)` is declared 300 lines ABOVE the `testingKey` whose two hoisted
+// fields it depends on, so as a plain field initializer it ran `strings.ReplaceAll(s, "", "")` and
+// left every "TESTING KEY" in place (TestDecode/TestEncode). So with the relocation unavailable,
+// no literal inside a function a package-level initializer can REACH is hoisted at all — those
+// sites keep their inline Tier-B rendering, and the same literal still hoists from any other use.
+func collectHoistedLiterals(files []FileEntry, pkg *types.Package, info *types.Info, seed map[string]hoistSeed, initOrderRelocated bool) {
 	packageHoistedLits = make(map[*ast.BasicLit]*hoistedLiteral)
 	packageHoistedDecls = make(map[*ast.FuncDecl][]*hoistedLiteral)
 	packageHoistLitReaders = make(map[*types.Func]bool)
@@ -126,6 +138,10 @@ func collectHoistedLiterals(files []FileEntry, pkg *types.Package, info *types.I
 		byToken: make(map[string]*hoistedLiteral),
 		uses:    make(map[*ast.BasicLit]*hoistedLiteral),
 		useFunc: make(map[*ast.BasicLit]*ast.FuncDecl),
+	}
+
+	if !initOrderRelocated {
+		c.initReachable = initializerReachableFuncs(files, info)
 	}
 
 	// Sequential, sorted-filename order — the same order emission uses, so first-use placement and
@@ -163,6 +179,13 @@ func collectHoistedLiterals(files []FileEntry, pkg *types.Package, info *types.I
 			// visitFuncDecl's isManualFuncDecl early return) — it renders no FunctionPrefixMarker,
 			// so it can neither declare a field nor reference one from a body that is discarded.
 			if isManualFuncDeclInPackage(c.pkgPath, funcDecl) {
+				continue
+			}
+
+			// Reachable from a package-level var initializer with no relocation available (see
+			// the initOrderRelocated parameter): a field declared above this function could be
+			// read before its own initializer runs, so nothing here hoists.
+			if c.initReachable[funcDecl] {
 				continue
 			}
 
@@ -221,11 +244,113 @@ type hoistCollector struct {
 	uses    map[*ast.BasicLit]*hoistedLiteral
 	useFunc map[*ast.BasicLit]*ast.FuncDecl
 
+	// initReachable is non-nil only when the driver cannot relocate an out-of-order package-level
+	// initializer; its members are the functions such an initializer can reach, which therefore
+	// hoist nothing (see collectHoistedLiterals' initOrderRelocated parameter).
+	initReachable map[*ast.FuncDecl]bool
+
 	// per-file walk state: whether this file's literals may CLAIM a field declaration.
 	emitted bool
 
 	// per-function walk state
 	funcDecl *ast.FuncDecl
+}
+
+// initializerReachableFuncs returns every package function a package-level `var` initializer can
+// reach — directly in its RHS (function literals included, exactly as Go's own initialization-order
+// analysis counts them) or transitively through another package function. Built over the FULL file
+// set including manual conversions: this is Go semantics, not emission. Mirrors the reference walk
+// collectMovedInitVars performs; kept separate because that pass answers a different question (which
+// VARS must move) and does not run on the `-tests` path at all.
+func initializerReachableFuncs(files []FileEntry, info *types.Info) map[*ast.FuncDecl]bool {
+	declOf := map[*types.Func]*ast.FuncDecl{}
+	callees := map[*types.Func]map[*types.Func]bool{}
+
+	collectFuncRefs := func(node ast.Node, out map[*types.Func]bool) {
+		ast.Inspect(node, func(n ast.Node) bool {
+			if ident, ok := n.(*ast.Ident); ok {
+				if fn, ok := info.Uses[ident].(*types.Func); ok {
+					out[fn] = true
+				}
+			}
+
+			return true
+		})
+	}
+
+	for _, fileEntry := range files {
+		for _, decl := range fileEntry.file.Decls {
+			funcDecl, ok := decl.(*ast.FuncDecl)
+
+			if !ok || funcDecl.Body == nil {
+				continue
+			}
+
+			fn, ok := info.Defs[funcDecl.Name].(*types.Func)
+
+			if !ok || fn == nil {
+				continue
+			}
+
+			declOf[fn] = funcDecl
+			refs := map[*types.Func]bool{}
+			collectFuncRefs(funcDecl.Body, refs)
+			callees[fn] = refs
+		}
+	}
+
+	var queue []*types.Func
+	seen := map[*types.Func]bool{}
+
+	for _, fileEntry := range files {
+		for _, decl := range fileEntry.file.Decls {
+			genDecl, ok := decl.(*ast.GenDecl)
+
+			if !ok || genDecl.Tok != token.VAR {
+				continue
+			}
+
+			for _, spec := range genDecl.Specs {
+				valueSpec, ok := spec.(*ast.ValueSpec)
+
+				if !ok {
+					continue
+				}
+
+				for _, value := range valueSpec.Values {
+					roots := map[*types.Func]bool{}
+					collectFuncRefs(value, roots)
+
+					for fn := range roots {
+						if !seen[fn] {
+							seen[fn] = true
+							queue = append(queue, fn)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	reachable := map[*ast.FuncDecl]bool{}
+
+	for len(queue) > 0 {
+		fn := queue[len(queue)-1]
+		queue = queue[:len(queue)-1]
+
+		if funcDecl := declOf[fn]; funcDecl != nil {
+			reachable[funcDecl] = true
+		}
+
+		for callee := range callees[fn] {
+			if !seen[callee] {
+				seen[callee] = true
+				queue = append(queue, callee)
+			}
+		}
+	}
+
+	return reachable
 }
 
 func (c *hoistCollector) collectFunc(funcDecl *ast.FuncDecl) {

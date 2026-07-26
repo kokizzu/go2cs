@@ -2697,6 +2697,16 @@ corpus instances surfaced immediately: `net/http/internal/testcert`'s `Localhost
 testingKey(…)` reads two hoisted fields declared *later in the same file* and would have run
 `strings.ReplaceAll(s, "", "")`; `internal/profile` and `runtime/pprof` are the other two.
 
+Where the relocation is **unavailable** the rule takes a second arm: the `-tests` variant conversion
+does not run `collectMovedInitVars` at all (the test project has no `package_init.cs` emission path,
+and an internal variant shares the production class, which may already own a static constructor — a
+second one is CS0111), so there nothing inside a function a package-level initializer can REACH is
+hoisted at all; those sites keep the inline rendering, and the same literal still hoists from any
+other use. This is not hypothetical: `encoding/pem`'s `var pemData = testingKey(…)` is declared
+~300 lines above the `testingKey` whose two hoisted fields it depends on, ran
+`strings.ReplaceAll(s, "", "")`, and left every `"TESTING KEY"` in place. The corpus **compiled
+clean** with that bug present — only running the package's own Go tests found it.
+
 *Two-pass `-tests` conversion.* An internal `_test.go` file emits into the PRODUCTION package class
 and can sort BEFORE the production file that owns a field. The test pass's registry is therefore
 pre-seeded with the production literal→field map (recomputed by the same collector over the
