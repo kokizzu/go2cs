@@ -16,7 +16,7 @@ partial class runtime_package {
 
 // Frames may be used to get function/file/line information for a
 // slice of PC values returned by [Callers].
-[GoType] partial struct Frames {
+[GoType] [GoValueClone("frameStore")] partial struct Frames {
     // callers is a slice of PCs that have not yet been expanded to frames.
     internal slice<uintptr> callers;
     // nextPC is a next PC to expand ahead of processing callers.
@@ -565,7 +565,7 @@ internal static void modulesinit() {
 // function index. Then scan the functab array starting at that
 // index to find the target function.
 // This table uses 20 bytes for every 4096 bytes of code, or ~0.5% overhead.
-[GoType] partial struct findfuncbucket {
+[GoType] [GoValueClone("subbuckets")] partial struct findfuncbucket {
     internal uint32 idx;
     internal array<byte> subbuckets = new(16);
 }
@@ -944,7 +944,7 @@ internal static @string name(this ΔsrcFunc s) {
 //go:linkname badSrcFuncName runtime.srcFunc.name
 internal static partial @string badSrcFuncName(ΔsrcFunc _);
 
-[GoType] partial struct pcvalueCache {
+[GoType] [GoValueClone("entries")] partial struct pcvalueCache {
     internal array<array<pcvalueCacheEnt>> entries = new(2, () => new(8));
     internal nint inUse;
 }
@@ -1317,7 +1317,7 @@ internal static (uint32 read, uint32 val) readvarint(slice<byte> Δp) {
     return (n, v);
 }
 
-[GoType] partial struct stackmap {
+[GoType] [GoValueClone("bytedata")] partial struct stackmap {
     internal int32 n;   // number of bitmaps
     internal int32 nbit;   // number of bits in each bitmap
     internal array<byte> bytedata = new(1); // bitmaps, each starting on a byte boundary

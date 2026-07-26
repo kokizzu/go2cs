@@ -18,7 +18,7 @@ partial class tar_package {
 // Writer provides sequential writing of a tar archive.
 // [Writer.WriteHeader] begins a new file with the provided [Header],
 // and then Writer can be treated as an io.Writer to supply that file's data.
-[GoType] partial struct Writer {
+[GoType] [GoValueClone("blk")] partial struct Writer {
     internal io.Writer w;
     internal int64 pad;      // Amount of padding to write after current file entry
     internal fileWriter curr; // Writer for current file entry

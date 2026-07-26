@@ -33,7 +33,7 @@ public static io.Reader NewChunkedReader(io.Reader r) {
     return new chunkedReaderжReader(Ꮡ(new chunkedReader(r: br)));
 }
 
-[GoType] partial struct chunkedReader {
+[GoType] [GoValueClone("buf")] partial struct chunkedReader {
     internal ж<bufio.Reader> r;
     internal uint64 n; // unread bytes in chunk
     internal error err;

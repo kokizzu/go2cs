@@ -15,7 +15,7 @@ partial class fiat_package {
 // P384Element is an integer modulo 2^384 - 2^128 - 2^96 + 2^32 - 1.
 //
 // The zero value is a valid zero element.
-[GoType] partial struct P384Element {
+[GoType] [GoValueClone("x")] partial struct P384Element {
     // Values are represented internally always in the Montgomery domain, and
     // converted in Bytes and SetBytes.
     internal p384MontgomeryDomainFieldElement x;

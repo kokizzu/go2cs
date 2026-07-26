@@ -38,7 +38,7 @@ partial class runtime_package {
 internal static readonly UntypedInt pinnerSize = 64;
 internal static readonly uintptr pinnerRefStoreSize = /* (pinnerSize - unsafe.Sizeof([]unsafe.Pointer{})) / unsafe.Sizeof(unsafe.Pointer(nil)) */ 5;
 
-[GoType] partial struct pinner {
+[GoType] [GoValueClone("refStore")] partial struct pinner {
     internal slice<@unsafe.Pointer> refs;
     internal array<@unsafe.Pointer> refStore = new(pinnerRefStoreSize);
 }

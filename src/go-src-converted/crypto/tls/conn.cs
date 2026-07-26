@@ -26,7 +26,7 @@ partial class tls_package {
 
 // A Conn represents a secured connection.
 // It implements the net.Conn interface.
-[GoType] partial struct Conn {
+[GoType] [GoValueClone("clientFinished", "serverFinished", "@in", "@out", "tmp")] partial struct Conn {
     // constant
     internal net.Conn conn;
     internal bool isClient;
@@ -158,7 +158,7 @@ partial class tls_package {
 
 // A halfConn represents one direction of the record layer
 // connection, either sending or receiving.
-[GoType] partial struct halfConn {
+[GoType] [GoValueClone("seq", "scratchBuf")] partial struct halfConn {
     public partial ref sync_package.Mutex Mutex { get; }
     internal error err;  // first permanent error
     internal uint16 version; // protocol version
@@ -573,7 +573,7 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
 }
 
 // RecordHeaderError is returned when a TLS record header is invalid.
-[GoType] partial struct RecordHeaderError {
+[GoType] [GoValueClone("RecordHeader")] partial struct RecordHeaderError {
     // Msg contains a human readable string that describes the error.
     public @string Msg;
     // RecordHeader contains the five bytes of TLS record header that
@@ -587,6 +587,8 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
 }
 
 public static @string Error(this RecordHeaderError e) {
+    e = e.ΔClone();
+
     return "tls: "u8 + e.Msg;
 }
 
@@ -596,7 +598,7 @@ public static @string Error(this RecordHeaderError e) {
     err.Msg = msg;
     err.Conn = conn;
     copy(err.RecordHeader[..], c.rawInput.Bytes());
-    return err;
+    return err.ΔClone();
 }
 
 internal static error readRecord(this ж<Conn> Ꮡc) {

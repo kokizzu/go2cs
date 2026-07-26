@@ -43,12 +43,13 @@ partial class gcimporter_package {
 // readUnifiedPackage reads a package description from the given
 // unified IR export data decoder.
 internal static ж<types.Package> readUnifiedPackage(ж<token.FileSet> Ꮡfset, ж<types.Context> Ꮡctxt, map<@string, ж<types.Package>> imports, pkgbits.PkgDecoder input) => func((defer, recover) => {
+    input = input.ΔClone();
+
     ref var fset = ref Ꮡfset.Value;
     ref var ctxt = ref Ꮡctxt.DerefOrNil();
-
     ref var pr = ref heap<pkgReader>(out var Ꮡpr);
     pr = new pkgReader(
-        PkgDecoder: input,
+        PkgDecoder: input.ΔClone(),
         fake: new fakeFileSet(
             fset: Ꮡfset,
             files: new map<@string, ж<fileInfo>>()

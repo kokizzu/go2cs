@@ -81,7 +81,7 @@ internal static (byte, error) readByte(io.ByteReader r) {
 }
 
 // decoder is the type used to decode a GIF file.
-[GoType] partial struct decoder {
+[GoType] [GoValueClone("tmp")] partial struct decoder {
     internal reader r;
     // From header.
     internal @string vers;

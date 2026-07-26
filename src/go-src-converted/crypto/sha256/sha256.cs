@@ -49,7 +49,7 @@ internal static readonly UntypedInt init6_224 = 0x64F98FA7;
 internal static readonly UntypedInt init7_224 = 0xBEFA4FA4;
 
 // digest represents the partial evaluation of a checksum.
-[GoType] partial struct digest {
+[GoType] [GoValueClone("h", "x")] partial struct digest {
     internal array<uint32> h = new(8);
     internal array<byte> x = new(chunk);
     internal nint nx;
@@ -208,7 +208,7 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
     boring.Unreachable();
     // Make a copy of d so that caller can keep writing and summing.
     ref var d0 = ref heap<digest>(out var Ꮡd0);
-    d0 = d;
+    d0 = d.ΔClone();
     var hash = Ꮡd0.checkSum();
     if (d0.is224) {
         return append(@in, hash[..(int)(Size224)].ꓸꓸꓸ);

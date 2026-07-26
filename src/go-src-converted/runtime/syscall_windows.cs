@@ -13,7 +13,7 @@ partial class runtime_package {
 
 // cbs stores all registered Go callbacks.
 
-[GoType("dyn")] partial struct cbsᴛ1 {
+[GoType("dyn")] [GoValueClone("ctxt")] partial struct cbsᴛ1 {
     internal mutex @lock; // use cbsLock / cbsUnlock for race instrumentation.
     internal array<winCallback> ctxt = new(cb_max);
     internal map<winCallbackKey, nint> index;

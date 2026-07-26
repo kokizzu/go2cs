@@ -7,7 +7,7 @@ using io = io_package;
 
 partial class norm_package {
 
-[GoType] partial struct normWriter {
+[GoType] [GoValueClone("rb")] partial struct normWriter {
     internal reorderBuffer rb;
     internal io.Writer w;
     internal slice<byte> buf;
@@ -74,7 +74,7 @@ public static io.WriteCloser Writer(this Form f, io.Writer w) {
     return new normWriterжWriteCloser(wr);
 }
 
-[GoType] partial struct normReader {
+[GoType] [GoValueClone("rb")] partial struct normReader {
     internal reorderBuffer rb;
     internal io.Reader r;
     internal slice<byte> inbuf;

@@ -86,7 +86,7 @@ public static readonly @string GraphemeJoiner = "\u034F"u8;
 // be used to recombine characters.  Note that the byte buffer does not hold
 // the UTF-8 characters in order.  Only the rune array is maintained in sorted
 // order. flush writes the resulting segment to a byte array.
-[GoType] partial struct reorderBuffer {
+[GoType] [GoValueClone("rune", "@byte")] partial struct reorderBuffer {
     internal array<ΔProperties> rune = new(maxBufferSize); // Per character info.
     internal array<byte> @byte = new(maxByteBufferSize); // UTF-8 buffer. Referenced by runeInfo.pos.
     internal uint8 nbyte;                     // Number or bytes.

@@ -12,7 +12,7 @@ internal static readonly spongeDirection spongeSqueezing = 1;
 
 internal static readonly UntypedInt maxRate = 168;
 
-[GoType] partial struct state {
+[GoType] [GoValueClone("a", "storage")] partial struct state {
     // Generic sponge components.
     internal array<uint64> a = new(25); // main state of the hash
     internal nint rate;       // the number of bytes of state to use
@@ -60,7 +60,7 @@ internal static readonly UntypedInt maxRate = 168;
 
 [GoRecv] internal static ж<state> clone(this ref state d) {
     ref var ret = ref heap<state>(out var Ꮡret);
-    ret = d;
+    ret = d.ΔClone();
     return Ꮡret;
 }
 

@@ -66,7 +66,7 @@ internal static readonly UntypedInt maxProfStackDepth = 1024;
 
 // A memRecord is the bucket data for a bucket of type memProfile,
 // part of the memory profile.
-[GoType] partial struct memRecord {
+[GoType] [GoValueClone("future")] partial struct memRecord {
 // The following complex 3-stage scheme of stats accumulation
 // is required to obtain a consistent picture of mallocs and frees
 // for some point in time.
@@ -912,7 +912,7 @@ internal static void mutexevent(int64 cycles, nint skip) {
 // Go interface to profile data.
 
 // A StackRecord describes a single execution stack.
-[GoType] partial struct StackRecord {
+[GoType] [GoValueClone("Stack0")] partial struct StackRecord {
     public array<uintptr> Stack0 = new(32); // stack trace for this record; ends at first 0 entry
 }
 
@@ -951,7 +951,7 @@ internal static bool disableMemoryProfiling;
 
 // A MemProfileRecord describes the live objects allocated
 // by a particular call sequence (stack trace).
-[GoType] partial struct MemProfileRecord {
+[GoType] [GoValueClone("Stack0")] partial struct MemProfileRecord {
     public int64 AllocBytes, FreeBytes;       // number of bytes allocated, freed
     public int64 AllocObjects, FreeObjects;       // number of objects allocated, freed
     public array<uintptr> Stack0 = new(32); // stack trace for this record; ends at first 0 entry

@@ -158,7 +158,7 @@ internal static traceGoStatus goStatusToTraceGoStatus(uint32 status, waitReason 
 
 // traceSchedResourceState is shared state for scheduling resources (i.e. fields common to
 // both Gs and Ps).
-[GoType] partial struct traceSchedResourceState {
+[GoType] [GoValueClone("statusTraced", "seq")] partial struct traceSchedResourceState {
     // statusTraced indicates whether a status event was traced for this resource
     // a particular generation.
     //

@@ -117,7 +117,7 @@ internal static void Encode(this setEncoder s, slice<byte> dst) {
     }
 }
 
-[GoType] partial struct taggedEncoder {
+[GoType] [GoValueClone("scratch")] partial struct taggedEncoder {
     // scratch contains temporary space for encoding the tag and length of
     // an element in order to avoid extra allocations.
     internal array<byte> scratch = new(8);

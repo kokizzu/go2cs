@@ -22,7 +22,7 @@ partial class base64_package {
 // encoding defined in RFC 4648 and used in MIME (RFC 2045) and PEM
 // (RFC 1421).  RFC 4648 also defines an alternate encoding, which is
 // the standard encoding with - and _ substituted for + and /.
-[GoType] partial struct Encoding {
+[GoType] [GoValueClone("encode", "decodeMap")] partial struct Encoding {
     internal array<byte> encode = new(64); // mapping of symbol index to symbol byte value
     internal array<uint8> decodeMap = new(256); // mapping of symbol byte value to symbol index
     internal rune padChar;
@@ -77,6 +77,8 @@ public static ж<Encoding> NewEncoding(@string encoder) {
 // Padding characters above '\x7f' are encoded as their exact byte value
 // rather than using the UTF-8 representation of the codepoint.
 public static ж<Encoding> WithPadding(this Encoding enc, rune padding) {
+    enc = enc.ΔClone();
+
     switch (ᐧ) {
     case {} when padding < NoPadding || padding == (rune)'\r' || padding == (rune)'\n' || padding > 0xff: {
         throw panic("invalid padding");
@@ -98,6 +100,8 @@ public static ж<Encoding> WithPadding(this Encoding enc, rune padding) {
 // Note that the input is still malleable, as new line characters
 // (CR and LF) are still ignored.
 public static ж<Encoding> Strict(this Encoding enc) {
+    enc = enc.ΔClone();
+
     enc.strict = true;
     return Ꮡ(enc);
 }
@@ -195,7 +199,7 @@ public static ж<Encoding> RawURLEncoding = (~URLEncoding).WithPadding(NoPadding
     return ((@string)buf);
 }
 
-[GoType] partial struct encoder {
+[GoType] [GoValueClone("buf", "@out")] partial struct encoder {
     internal error err;
     internal ж<Encoding> enc;
     internal io.Writer w;
@@ -424,7 +428,7 @@ public static @string Error(this CorruptInputError e) {
     return (dbuf[..(int)(n)], err);
 }
 
-[GoType] partial struct decoder {
+[GoType] [GoValueClone("buf", "outbuf")] partial struct decoder {
     internal error err;
     internal error readErr; // error from r.Read
     internal ж<Encoding> enc;

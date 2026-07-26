@@ -16,7 +16,7 @@ partial class aes_package {
 public static readonly UntypedInt ΔBlockSize = 16;
 
 // A cipher is an instance of AES encryption using a particular key.
-[GoType] partial struct aesCipher {
+[GoType] [GoValueClone("enc", "dec")] partial struct aesCipher {
     internal uint8 l; // only this length of the enc and dec array is actually used
     internal array<uint32> enc = new(28 + 32);
     internal array<uint32> dec = new(28 + 32);

@@ -16,7 +16,7 @@ using go.crypto.@internal;
 partial class rc4_package {
 
 // A Cipher is an instance of RC4 using a particular key.
-[GoType] partial struct Cipher {
+[GoType] [GoValueClone("s")] partial struct Cipher {
     internal array<uint32> s = new(256);
     internal uint8 i, j;
 }

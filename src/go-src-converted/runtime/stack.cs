@@ -117,7 +117,7 @@ internal static ref array<stackpoolᴛ1> stackpool => ref Ꮡstackpool.Value;
 
 // Global pool of large stack spans.
 
-[GoType("dyn")] partial struct stackLargeᴛ1 {
+[GoType("dyn")] [GoValueClone("free")] partial struct stackLargeᴛ1 {
     internal mutex @lock;
     internal array<mSpanList> free = new(heapAddrBits - pageShift); // free lists by log_2(s.npages)
 }

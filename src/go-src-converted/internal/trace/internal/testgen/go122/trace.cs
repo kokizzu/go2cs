@@ -170,7 +170,7 @@ public static ж<ΔGeneration> Generation(this ж<Trace> Ꮡt, uint64 gen) {
     );
 }
 
-[GoType] partial struct stack {
+[GoType] [GoValueClone("stk")] partial struct stack {
     internal array<trace.StackFrame> stk = new(32);
     internal nint len;
 }
@@ -265,7 +265,9 @@ internal static void writeEventsTo(this ж<ΔGeneration> Ꮡg, ж<raw.TextWriter
     // Write stacks.
     b = Ꮡg.newStructuralBatch();
     b.RawEvent(go122.EvStacks, default!);
-    foreach (var (stk, id) in g.stacks) {
+    foreach (var (kᴛ1, id) in g.stacks) {
+        var stk = kᴛ1.ΔClone();
+
         var stkΔ1 = stk.stk[..(int)(stk.len)];
         var args = new uint64[]{id}.slice();
         foreach (var (_, f) in stkΔ1) {

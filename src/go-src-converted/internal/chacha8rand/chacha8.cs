@@ -25,7 +25,7 @@ internal static partial void block(ж<array<uint64>> seed, ж<array<uint64>> blo
 // If used by multiple goroutines at a time, the goroutines
 // may see the same random values, but the code will not
 // crash or cause out-of-bounds memory accesses.
-[GoType] partial struct State {
+[GoType] [GoValueClone("buf", "seed")] partial struct State {
     internal array<uint64> buf = new(32);
     internal array<uint64> seed = new(4);
     internal uint32 i;

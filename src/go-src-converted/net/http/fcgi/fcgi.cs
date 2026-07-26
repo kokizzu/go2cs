@@ -60,7 +60,7 @@ internal static readonly UntypedInt statusUnknownRole = 3;
     public uint8 Reserved;
 }
 
-[GoType] partial struct beginRequest {
+[GoType] [GoValueClone("reserved")] partial struct beginRequest {
     internal uint16 role;
     internal uint8 flags;
     internal array<uint8> reserved = new(5);
@@ -118,7 +118,7 @@ internal static error Close(this ж<conn> Ꮡc) => func((defer, recover) => {
     return c.closeErr;
 });
 
-[GoType] partial struct record {
+[GoType] [GoValueClone("buf")] partial struct record {
     internal header h;
     internal array<byte> buf = new(maxWrite + maxPad);
 }

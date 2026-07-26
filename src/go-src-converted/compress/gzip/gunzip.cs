@@ -68,7 +68,7 @@ internal static error noEOF(error err) {
 // have the expected length or checksum. Clients should treat data
 // returned by [Reader.Read] as tentative until they receive the [io.EOF]
 // marking the end of the data.
-[GoType] partial struct Reader {
+[GoType] [GoValueClone("buf")] partial struct Reader {
     public partial ref Header Header { get; }       // valid after NewReader or Reader.Reset
     internal flate.Reader r;
     internal io.ReadCloser decompressor;

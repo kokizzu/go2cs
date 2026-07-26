@@ -18,7 +18,7 @@ using ꓸꓸꓸany = Span<any>;
 partial class parse_package {
 
 // Tree is the representation of a single parsed template.
-[GoType] partial struct Tree {
+[GoType] [GoValueClone("token")] partial struct Tree {
     public @string Name;   // name of the template represented by the tree.
     public @string ParseName;   // name of the top-level template during parsing, for error messages.
     public ж<ListNode> Root; // top-level root of the tree.

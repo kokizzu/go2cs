@@ -651,7 +651,9 @@ ID: id, goroutineSummary: Ꮡ(new goroutineSummary(nil))));
 // scheduler (one has unblocked another).
 public static map<GoID, EmptyStruct> RelatedGoroutinesV2(slice<ΔEvent> events, GoID goid) {
     slice<RelatedGoroutinesV2_unblockEdge> unblockEdges = default!;
-    foreach (var (_, ev) in events) {
+    foreach (var (_, vᴛ1) in events) {
+        var ev = vᴛ1.ΔClone();
+
         if (ev.Goroutine() == NoGoroutine) {
             continue;
         }

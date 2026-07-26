@@ -312,7 +312,7 @@ internal static readonly UntypedInt workbufAlloc = /* 32 << 10 */ 32768;
     internal nint nobj;
 }
 
-[GoType] partial struct workbuf {
+[GoType] [GoValueClone("obj")] partial struct workbuf {
     internal sys.NotInHeap _;
     internal partial ref workbufhdr workbufhdr { get; }
     // account for the above fields

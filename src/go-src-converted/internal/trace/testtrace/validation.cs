@@ -56,8 +56,9 @@ public static ж<Validator> NewValidator() {
 //
 // Returns an error if validation fails.
 public static error Event(this ж<Validator> Ꮡv, traceꓸEvent ev) {
-    ref var v = ref Ꮡv.Value;
+    ev = ev.ΔClone();
 
+    ref var v = ref Ꮡv.Value;
     var e = @new<errAccumulator>();
     // Validate timestamp order.
     if (v.lastTs != 0){
@@ -346,9 +347,10 @@ public static error Event(this ж<Validator> Ꮡv, traceꓸEvent ev) {
 }
 
 internal static ж<schedContext> getOrCreateThread(this ж<Validator> Ꮡv, ж<errAccumulator> Ꮡe, traceꓸEvent ev, trace.ThreadID m) {
+    ev = ev.ΔClone();
+
     ref var v = ref Ꮡv.Value;
     ref var e = ref Ꮡe.Value;
-
     var evʗ1 = ev;
     var lenient = () => {
         // Be lenient about GoUndetermined -> GoSyscall transitions if they

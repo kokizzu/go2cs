@@ -103,7 +103,7 @@ internal const bool stackTraceDebug = false;
 
 // Buffer for pointers found during stack tracing.
 // Must be smaller than or equal to workbuf.
-[GoType] partial struct stackWorkBuf {
+[GoType] [GoValueClone("obj")] partial struct stackWorkBuf {
     internal sys.NotInHeap _;
     internal partial ref stackWorkBufHdr stackWorkBufHdr { get; }
     internal array<uintptr> obj = new((uintptr)((uintptr)_WorkbufSize - @unsafe.Sizeof(new stackWorkBufHdr(nil))) / goarch.PtrSize);
@@ -122,7 +122,7 @@ internal const bool stackTraceDebug = false;
 
 // Buffer for stack objects found on a goroutine stack.
 // Must be smaller than or equal to workbuf.
-[GoType] partial struct stackObjectBuf {
+[GoType] [GoValueClone("obj")] partial struct stackObjectBuf {
     internal sys.NotInHeap _;
     internal partial ref stackObjectBufHdr stackObjectBufHdr { get; }
     internal array<stackObject> obj = new((uintptr)((uintptr)_WorkbufSize - @unsafe.Sizeof(new stackObjectBufHdr(nil))) / @unsafe.Sizeof(new stackObject(nil)));

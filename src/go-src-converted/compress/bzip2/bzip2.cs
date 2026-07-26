@@ -20,7 +20,7 @@ public static @string Error(this StructuralError s) {
 }
 
 // A reader decompresses bzip2 compressed data.
-[GoType] partial struct reader {
+[GoType] [GoValueClone("c")] partial struct reader {
     internal bitReader br;
     internal uint32 fileCRC;
     internal uint32 blockCRC;

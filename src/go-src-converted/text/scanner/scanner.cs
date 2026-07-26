@@ -132,7 +132,7 @@ public static readonly UntypedInt GoWhitespace = /* 1<<'\t' | 1<<'\n' | 1<<'\r' 
 internal static readonly UntypedInt bufLen = 1024; // at least utf8.UTFMax
 
 // A Scanner implements reading of Unicode characters and tokens from an [io.Reader].
-[GoType] partial struct Scanner {
+[GoType] [GoValueClone("srcBuf")] partial struct Scanner {
     // Input
     internal io.Reader src;
     // Source buffer

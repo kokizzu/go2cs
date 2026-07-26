@@ -1424,7 +1424,7 @@ internal static (http2FrameHeader, error) http2readFrameHeader(slice<byte> buf, 
 }
 
 // A Framer reads and writes Frames.
-[GoType] partial struct http2Framer {
+[GoType] [GoValueClone("headerBuf")] partial struct http2Framer {
     internal io.Reader r;
     internal http2Frame lastFrame;
     internal error errDetail;
@@ -2050,7 +2050,7 @@ internal static error WriteSettingsAck(this ж<http2Framer> Ꮡf) {
 // from the sender, as well as determining whether an idle connection
 // is still functional.
 // See https://httpwg.org/specs/rfc7540.html#rfc.section.6.7
-[GoType] partial struct http2PingFrame {
+[GoType] [GoValueClone("Data")] partial struct http2PingFrame {
     internal partial ref http2FrameHeader http2FrameHeader { get; }
     public array<byte> Data = new(8);
 }
@@ -8266,7 +8266,7 @@ internal static (ж<http2ClientConn>, error) dialClientConn(this ж<http2Transpo
 [GoRecv] internal static ж<tls.Config> newTLSConfig(this ref http2Transport t, @string host) {
     var cfg = @new<tls.Config>();
     if (t.TLSClientConfig != nil) {
-        cfg.Value = t.TLSClientConfig.Clone().Value;
+        cfg.Value = t.TLSClientConfig.Clone().Value.ΔClone();
     }
     if (!http2strSliceContains((~cfg).NextProtos, http2NextProtoTLS)) {
         cfg.Value.NextProtos = append(new @string[]{http2NextProtoTLS}.slice(), (~cfg).NextProtos.ꓸꓸꓸ);

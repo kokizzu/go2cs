@@ -23,7 +23,7 @@ internal static readonly UntypedInt maxCPUProfStack = 64;
 internal static readonly UntypedInt profBufWordCount = /* 1 << 17 */ 131072;
 internal static readonly UntypedInt profBufTagCount = /* 1 << 14 */ 16384;
 
-[GoType] partial struct cpuProfile {
+[GoType] [GoValueClone("extra")] partial struct cpuProfile {
     internal mutex @lock;
     internal bool on;     // profiling is on
     internal ж<profBuf> log; // profile events written here

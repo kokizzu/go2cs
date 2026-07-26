@@ -53,7 +53,7 @@ partial class runtime_package {
 internal static readonly UntypedInt spanSetBlockEntries = 512; // 4KB on 64-bit
 internal static readonly UntypedInt spanSetInitSpineCap = 256; // Enough for 1GB heap on 64-bit
 
-[GoType] partial struct spanSetBlock {
+[GoType] [GoValueClone("spans")] partial struct spanSetBlock {
     // Free spanSetBlocks are managed via a lock-free stack.
     internal partial ref lfnode lfnode { get; }
     // popped is the number of pop operations that have occurred on

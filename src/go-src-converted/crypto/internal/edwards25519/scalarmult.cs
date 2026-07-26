@@ -23,7 +23,7 @@ internal static ж<array<affineLookupTable>> basepointTable() {
 }
 
 
-[GoType("dyn")] partial struct basepointTablePrecompᴛ1 {
+[GoType("dyn")] [GoValueClone("table")] partial struct basepointTablePrecompᴛ1 {
     internal array<affineLookupTable> table = new(32, () => new());
     internal sync.Once initOnce;
 }
@@ -152,7 +152,7 @@ internal static ж<nafLookupTable8> basepointNafTable() {
 }
 
 
-[GoType("dyn")] partial struct basepointNafTablePrecompᴛ1 {
+[GoType("dyn")] [GoValueClone("table")] partial struct basepointNafTablePrecompᴛ1 {
     internal nafLookupTable8 table;
     internal sync.Once initOnce;
 }

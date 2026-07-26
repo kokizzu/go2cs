@@ -459,7 +459,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
 }
 
 // A Resource is a DNS resource record.
-[GoType] partial struct Resource {
+[GoType] [GoValueClone("Header")] partial struct Resource {
     public ResourceHeader Header;
     public ResourceBody Body;
 }
@@ -566,7 +566,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     error err = default!;
     (r.Header, err) = p.resourceHeader(sec);
     if (err != default!) {
-        return (r, err);
+        return (r.ΔClone(), err);
     }
     p.resHeaderValid = false;
     (r.Body, p.off, err) = unpackResourceBody(p.msg, p.off, r.Header);
@@ -574,7 +574,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
         return (new Resource(nil), new nestedErrorжerror(Ꮡ(new nestedError("unpacking " + sectionNames[sec], err))));
     }
     p.index++;
-    return (r, default!);
+    return (r.ΔClone(), default!);
 }
 
 [GoRecv] internal static (ResourceHeader, error) resourceHeader(this ref Parser p, section sec) {
@@ -596,7 +596,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     p.resHeaderType = hdr.Type;
     p.resHeaderLength = hdr.Length;
     p.off = off;
-    return (hdr, default!);
+    return (hdr.ΔClone(), default!);
 }
 
 [GoRecv] internal static error skipResource(this ref Parser p, section sec) {
@@ -646,7 +646,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     }
     p.off = off;
     p.index++;
-    return (new ΔQuestion(name, typ, @class), default!);
+    return (new ΔQuestion(name.ΔClone(), typ, @class), default!);
 }
 
 // AllQuestions parses all Questions.
@@ -666,7 +666,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
         if (err != default!) {
             return (default!, err);
         }
-        qs = append(qs, q);
+        qs = append(qs, q.ΔClone());
     }
 }
 
@@ -740,7 +740,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
         if (err != default!) {
             return (default!, err);
         }
-        @as = append(@as, a);
+        @as = append(@as, a.ΔClone());
     }
 }
 
@@ -796,7 +796,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
         if (err != default!) {
             return (default!, err);
         }
-        @as = append(@as, a);
+        @as = append(@as, a.ΔClone());
     }
 }
 
@@ -852,7 +852,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
         if (err != default!) {
             return (default!, err);
         }
-        @as = append(@as, a);
+        @as = append(@as, a.ΔClone());
     }
 }
 
@@ -893,7 +893,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     p.off += (nint)p.resHeaderLength;
     p.resHeaderValid = false;
     p.index++;
-    return (r, default!);
+    return (r.ΔClone(), default!);
 }
 
 // MXResource parses a single MXResource.
@@ -911,7 +911,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     p.off += (nint)p.resHeaderLength;
     p.resHeaderValid = false;
     p.index++;
-    return (r, default!);
+    return (r.ΔClone(), default!);
 }
 
 // NSResource parses a single NSResource.
@@ -929,7 +929,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     p.off += (nint)p.resHeaderLength;
     p.resHeaderValid = false;
     p.index++;
-    return (r, default!);
+    return (r.ΔClone(), default!);
 }
 
 // PTRResource parses a single PTRResource.
@@ -947,7 +947,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     p.off += (nint)p.resHeaderLength;
     p.resHeaderValid = false;
     p.index++;
-    return (r, default!);
+    return (r.ΔClone(), default!);
 }
 
 // SOAResource parses a single SOAResource.
@@ -965,7 +965,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     p.off += (nint)p.resHeaderLength;
     p.resHeaderValid = false;
     p.index++;
-    return (r, default!);
+    return (r.ΔClone(), default!);
 }
 
 // TXTResource parses a single TXTResource.
@@ -1001,7 +1001,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     p.off += (nint)p.resHeaderLength;
     p.resHeaderValid = false;
     p.index++;
-    return (r, default!);
+    return (r.ΔClone(), default!);
 }
 
 // AResource parses a single AResource.
@@ -1019,7 +1019,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     p.off += (nint)p.resHeaderLength;
     p.resHeaderValid = false;
     p.index++;
-    return (r, default!);
+    return (r.ΔClone(), default!);
 }
 
 // AAAAResource parses a single AAAAResource.
@@ -1037,7 +1037,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     p.off += (nint)p.resHeaderLength;
     p.resHeaderValid = false;
     p.index++;
-    return (r, default!);
+    return (r.ΔClone(), default!);
 }
 
 // OPTResource parses a single OPTResource.
@@ -1189,7 +1189,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     if (len(m.Questions) > 0) {
         s += m.Questions[0].GoString();
         foreach (var (_, vᴛ1) in m.Questions[1..]) {
-            var q = vᴛ1;
+            var q = vᴛ1.ΔClone();
 
             s += ", "u8 + q.GoString();
         }
@@ -1198,7 +1198,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     if (len(m.Answers) > 0) {
         s += m.Answers[0].GoString();
         foreach (var (_, vᴛ2) in m.Answers[1..]) {
-            var a = vᴛ2;
+            var a = vᴛ2.ΔClone();
 
             s += ", "u8 + a.GoString();
         }
@@ -1207,7 +1207,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     if (len(m.Authorities) > 0) {
         s += m.Authorities[0].GoString();
         foreach (var (_, vᴛ3) in m.Authorities[1..]) {
-            var a = vᴛ3;
+            var a = vᴛ3.ΔClone();
 
             s += ", "u8 + a.GoString();
         }
@@ -1216,7 +1216,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     if (len(m.Additionals) > 0) {
         s += m.Additionals[0].GoString();
         foreach (var (_, vᴛ4) in m.Additionals[1..]) {
-            var a = vᴛ4;
+            var a = vᴛ4.ΔClone();
 
             s += ", "u8 + a.GoString();
         }
@@ -1371,6 +1371,8 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // Question adds a single Question.
 [GoRecv] public static error Question(this ref Builder b, ΔQuestion q) {
+    q = q.ΔClone();
+
     if (b.section < sectionQuestions) {
         return ErrNotStarted;
     }
@@ -1402,6 +1404,9 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // CNAMEResource adds a single CNAMEResource.
 [GoRecv] public static error CNAMEResource(this ref Builder b, ResourceHeader h, ΔCNAMEResource r) {
+    h = h.ΔClone();
+    r = r.ΔClone();
+
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1434,6 +1439,9 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // MXResource adds a single MXResource.
 [GoRecv] public static error MXResource(this ref Builder b, ResourceHeader h, ΔMXResource r) {
+    h = h.ΔClone();
+    r = r.ΔClone();
+
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1466,6 +1474,9 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // NSResource adds a single NSResource.
 [GoRecv] public static error NSResource(this ref Builder b, ResourceHeader h, ΔNSResource r) {
+    h = h.ΔClone();
+    r = r.ΔClone();
+
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1498,6 +1509,9 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // PTRResource adds a single PTRResource.
 [GoRecv] public static error PTRResource(this ref Builder b, ResourceHeader h, ΔPTRResource r) {
+    h = h.ΔClone();
+    r = r.ΔClone();
+
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1530,6 +1544,9 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // SOAResource adds a single SOAResource.
 [GoRecv] public static error SOAResource(this ref Builder b, ResourceHeader h, ΔSOAResource r) {
+    h = h.ΔClone();
+    r = r.ΔClone();
+
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1562,6 +1579,8 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // TXTResource adds a single TXTResource.
 [GoRecv] public static error TXTResource(this ref Builder b, ResourceHeader h, ΔTXTResource r) {
+    h = h.ΔClone();
+
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1594,6 +1613,9 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // SRVResource adds a single SRVResource.
 [GoRecv] public static error SRVResource(this ref Builder b, ResourceHeader h, ΔSRVResource r) {
+    h = h.ΔClone();
+    r = r.ΔClone();
+
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1626,6 +1648,9 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // AResource adds a single AResource.
 [GoRecv] public static error AResource(this ref Builder b, ResourceHeader h, ΔAResource r) {
+    h = h.ΔClone();
+    r = r.ΔClone();
+
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1658,6 +1683,9 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // AAAAResource adds a single AAAAResource.
 [GoRecv] public static error AAAAResource(this ref Builder b, ResourceHeader h, ΔAAAAResource r) {
+    h = h.ΔClone();
+    r = r.ΔClone();
+
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1690,6 +1718,8 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // OPTResource adds a single OPTResource.
 [GoRecv] public static error OPTResource(this ref Builder b, ResourceHeader h, ΔOPTResource r) {
+    h = h.ΔClone();
+
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1722,6 +1752,8 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // UnknownResource adds a single UnknownResource.
 [GoRecv] public static error UnknownResource(this ref Builder b, ResourceHeader h, ΔUnknownResource r) {
+    h = h.ΔClone();
+
     {
         var errΔ1 = b.checkResourceSection(); if (errΔ1 != default!) {
             return errΔ1;
@@ -1765,7 +1797,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 
 // A ResourceHeader is the header of a DNS resource record. There are
 // many types of DNS resource records, but they all share the same header.
-[GoType] partial struct ResourceHeader {
+[GoType] [GoValueClone("Name")] partial struct ResourceHeader {
     // Name is the domain name for which this resource record pertains.
     public Name Name;
     // Type is the type of DNS resource record.
@@ -2047,7 +2079,7 @@ internal static readonly UntypedInt nonEncodedNameMax = 254;
 
 // A Name is a non-encoded and non-escaped domain name. It is used instead of strings to avoid
 // allocations.
-[GoType] partial struct Name {
+[GoType] [GoValueClone("Data")] partial struct Name {
     public array<byte> Data = new(255);
     public uint8 Length;
 }
@@ -2059,7 +2091,7 @@ public static (Name, error) NewName(@string name) {
         return (new Name(nil), errCalcLen);
     }
     copy(n.Data[..], name);
-    return (n, default!);
+    return (n.ΔClone(), default!);
 }
 
 // MustNewName creates a new Name from a string and panics on error.
@@ -2068,13 +2100,15 @@ public static Name MustNewName(@string name) {
     if (err != default!) {
         throw panic("creating name: " + err.Error());
     }
-    return n;
+    return n.ΔClone();
 }
 
 // String implements fmt.Stringer.String.
 //
 // Note: characters inside the labels are not escaped in any way.
 public static @string String(this Name n) {
+    n = n.ΔClone();
+
     return ((@string)(n.Data[..(int)(n.Length)]));
 }
 
@@ -2279,7 +2313,7 @@ break_Loop:;
 }
 
 // A Question is a DNS query.
-[GoType] partial struct ΔQuestion {
+[GoType] [GoValueClone("Name")] partial struct ΔQuestion {
     public Name Name;
     public Type Type;
     public Class Class;
@@ -2311,6 +2345,8 @@ private static readonly @string optˢ = "OPT"u8;
 private static readonly @string unknownˢ = "Unknown"u8;
 
 internal static (ResourceBody, nint, error) unpackResourceBody(slice<byte> msg, nint off, ResourceHeader hdr) {
+    hdr = hdr.ΔClone();
+
     ResourceBody r = default!;
     error err = default!;
     @string name = default!;
@@ -2389,7 +2425,7 @@ internal static (ResourceBody, nint, error) unpackResourceBody(slice<byte> msg, 
 }
 
 // A CNAMEResource is a CNAME Resource record.
-[GoType] partial struct ΔCNAMEResource {
+[GoType] [GoValueClone("CNAME")] partial struct ΔCNAMEResource {
     public Name CNAME;
 }
 
@@ -2414,11 +2450,11 @@ internal static (ΔCNAMEResource, error) unpackCNAMEResource(slice<byte> msg, ni
             return (new ΔCNAMEResource(nil), err);
         }
     }
-    return (new ΔCNAMEResource(cname), default!);
+    return (new ΔCNAMEResource(cname.ΔClone()), default!);
 }
 
 // An MXResource is an MX Resource record.
-[GoType] partial struct ΔMXResource {
+[GoType] [GoValueClone("MX")] partial struct ΔMXResource {
     public uint16 Pref;
     public Name MX;
 }
@@ -2454,11 +2490,11 @@ internal static (ΔMXResource, error) unpackMXResource(slice<byte> msg, nint off
             return (new ΔMXResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("MX"u8, errΔ1))));
         }
     }
-    return (new ΔMXResource(pref, mx), default!);
+    return (new ΔMXResource(pref, mx.ΔClone()), default!);
 }
 
 // An NSResource is an NS Resource record.
-[GoType] partial struct ΔNSResource {
+[GoType] [GoValueClone("NS")] partial struct ΔNSResource {
     public Name NS;
 }
 
@@ -2483,11 +2519,11 @@ internal static (ΔNSResource, error) unpackNSResource(slice<byte> msg, nint off
             return (new ΔNSResource(nil), err);
         }
     }
-    return (new ΔNSResource(ns), default!);
+    return (new ΔNSResource(ns.ΔClone()), default!);
 }
 
 // A PTRResource is a PTR Resource record.
-[GoType] partial struct ΔPTRResource {
+[GoType] [GoValueClone("PTR")] partial struct ΔPTRResource {
     public Name PTR;
 }
 
@@ -2512,11 +2548,11 @@ internal static (ΔPTRResource, error) unpackPTRResource(slice<byte> msg, nint o
             return (new ΔPTRResource(nil), err);
         }
     }
-    return (new ΔPTRResource(ptr), default!);
+    return (new ΔPTRResource(ptr.ΔClone()), default!);
 }
 
 // An SOAResource is an SOA Resource record.
-[GoType] partial struct ΔSOAResource {
+[GoType] [GoValueClone("NS", "MBox")] partial struct ΔSOAResource {
     public Name NS;
     public Name MBox;
     public uint32 Serial;
@@ -2588,7 +2624,7 @@ internal static (ΔSOAResource, error) unpackSOAResource(slice<byte> msg, nint o
     if (err != default!) {
         return (new ΔSOAResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("MinTTL"u8, err))));
     }
-    return (new ΔSOAResource(ns, mbox, serial, refresh, retry, expire, minTTL), default!);
+    return (new ΔSOAResource(ns.ΔClone(), mbox.ΔClone(), serial, refresh, retry, expire, minTTL), default!);
 }
 
 // A TXTResource is a TXT Resource record.
@@ -2650,7 +2686,7 @@ internal static (ΔTXTResource, error) unpackTXTResource(slice<byte> msg, nint o
 }
 
 // An SRVResource is an SRV Resource record.
-[GoType] partial struct ΔSRVResource {
+[GoType] [GoValueClone("Target")] partial struct ΔSRVResource {
     public uint16 Priority;
     public uint16 Weight;
     public uint16 Port;
@@ -2698,11 +2734,11 @@ internal static (ΔSRVResource, error) unpackSRVResource(slice<byte> msg, nint o
             return (new ΔSRVResource(nil), new nestedErrorжerror(Ꮡ(new nestedError("Target"u8, errΔ1))));
         }
     }
-    return (new ΔSRVResource(priority, weight, port, target), default!);
+    return (new ΔSRVResource(priority, weight, port, target.ΔClone()), default!);
 }
 
 // An AResource is an A Resource record.
-[GoType] partial struct ΔAResource {
+[GoType] [GoValueClone("A")] partial struct ΔAResource {
     public array<byte> A = new(4);
 }
 
@@ -2731,7 +2767,7 @@ internal static (ΔAResource, error) unpackAResource(slice<byte> msg, nint off) 
 }
 
 // An AAAAResource is an AAAA Resource record.
-[GoType] partial struct ΔAAAAResource {
+[GoType] [GoValueClone("AAAA")] partial struct ΔAAAAResource {
     public array<byte> AAAA = new(16);
 }
 

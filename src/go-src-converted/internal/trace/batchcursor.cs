@@ -14,7 +14,7 @@ using go.@internal.trace.@event;
 
 partial class trace_package {
 
-[GoType] partial struct batchCursor {
+[GoType] [GoValueClone("ev")] partial struct batchCursor {
     internal ThreadID m;
     internal ΔTime lastTs;
     internal nint idx;      // next index into []batch

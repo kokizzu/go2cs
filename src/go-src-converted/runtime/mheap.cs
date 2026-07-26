@@ -27,7 +27,7 @@ internal const bool physPageAlignedStacks = /* GOOS == "openbsd" */ false;
     internal uintptr @base, end;
 }
 
-[GoType("dyn")] partial struct mheap_central {
+[GoType("dyn")] [GoValueClone("mcentral", "pad")] partial struct mheap_central {
     internal mcentral mcentral;
     internal array<byte> pad = new((uintptr)((uintptr)cpu.CacheLinePadSize - @unsafe.Sizeof(new mcentral(nil)) % (uintptr)cpu.CacheLinePadSize) % cpu.CacheLinePadSize);
 }
@@ -52,7 +52,7 @@ internal const bool physPageAlignedStacks = /* GOOS == "openbsd" */ false;
 //
 // mheap must not be heap-allocated because it contains mSpanLists,
 // which must not be heap-allocated.
-[GoType] partial struct mheap {
+[GoType] [GoValueClone("pages", "arenas", "central")] partial struct mheap {
     internal sys.NotInHeap _;
     // lock must only be acquired on the system stack, otherwise a g
     // could self-deadlock if its stack grows with the lock held.
@@ -192,7 +192,7 @@ internal static ref mheap mheap_ => ref Ꮡmheap_.Value;
 
 // A heapArena stores metadata for a heap arena. heapArenas are stored
 // outside of the Go heap and accessed via the mheap_.arenas index.
-[GoType] partial struct heapArena {
+[GoType] [GoValueClone("spans", "pageInUse", "pageMarks", "pageSpecials")] partial struct heapArena {
     internal sys.NotInHeap _;
     // spans maps from virtual address page ID within this arena to *mspan.
     // For allocated spans, their pages map to the span itself.
@@ -2237,7 +2237,7 @@ internal static readonly uintptr gcBitsHeaderBytes = /* unsafe.Sizeof(gcBitsHead
     internal uintptr next; // *gcBits triggers recursive type bug. (issue 14620)
 }
 
-[GoType] partial struct gcBitsArena {
+[GoType] [GoValueClone("bits")] partial struct gcBitsArena {
     internal sys.NotInHeap _;
     // gcBitsHeader // side step recursive type bug (issue 14620) by including fields by hand.
     internal uintptr free; // free is the index into bits of the next free byte; read/write atomically

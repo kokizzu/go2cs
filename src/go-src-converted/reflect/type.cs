@@ -2902,7 +2902,7 @@ internal static slice<byte> appendVarint(slice<byte> x, uintptr v) {
     internal ж<abi.Type> rcvr; // receiver type, or nil if none
 }
 
-[GoType] partial struct layoutType {
+[GoType] [GoValueClone("abid")] partial struct layoutType {
     internal ж<abi.Type> t;
     internal ж<Δsync.Pool> framePool;
     internal abiDesc abid;
@@ -2935,7 +2935,7 @@ internal static (ж<abi.Type> frametype, ж<Δsync.Pool> framePool, abiDesc abid
     {
         var (ltiΔ1, ok) = ᏑlayoutCache.Load(k); if (ok) {
             var ltΔ1 = ltiΔ1._<layoutType>();
-            return (ltΔ1.t, ltΔ1.framePool, ltΔ1.abid);
+            return (ltΔ1.t, ltΔ1.framePool, ltΔ1.abid.ΔClone());
         }
     }
     // Compute the ABI layout.
@@ -2967,10 +2967,10 @@ internal static (ж<abi.Type> frametype, ж<Δsync.Pool> framePool, abiDesc abid
     var (lti, _) = ᏑlayoutCache.LoadOrStore(k, new layoutType(
         t: x,
         framePool: framePool,
-        abid: abid
+        abid: abid.ΔClone()
     ));
     var lt = lti._<layoutType>();
-    return (lt.t, lt.framePool, lt.abid);
+    return (lt.t, lt.framePool, lt.abid.ΔClone());
 }
 
 // Note: this type must agree with runtime.bitvector.

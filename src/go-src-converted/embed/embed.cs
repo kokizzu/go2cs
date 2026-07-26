@@ -206,7 +206,7 @@ internal static fs.ReadFileFS _ᴛ2ʗ = new FS(nil);
 
 // A file is a single file in the FS.
 // It implements fs.FileInfo and fs.DirEntry.
-[GoType] partial struct @file {
+[GoType] [GoValueClone("hash")] partial struct @file {
     // The compiler knows the layout of this struct.
     // See cmd/compile/internal/staticdata's WriteEmbed.
     internal @string name;

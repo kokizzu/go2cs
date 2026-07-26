@@ -455,7 +455,7 @@ public static readonly RenegotiationSupport RenegotiateFreelyAsClient = 2;
 // After one has been passed to a TLS function it must not be
 // modified. A Config may be reused; the tls package will also not
 // modify it.
-[GoType] partial struct Config {
+[GoType] [GoValueClone("SessionTicketKey")] partial struct Config {
     // Rand provides the source of entropy for nonces and RSA blinding.
     // If Rand is nil, TLS uses the cryptographic random reader in package
     // crypto/rand.
@@ -733,7 +733,7 @@ internal static readonly time.Duration ticketKeyLifetime = /* 7 * 24 * time.Hour
 internal static readonly time.Duration ticketKeyRotation = /* 24 * time.Hour */ 86400000000000;
 
 // ticketKey is the internal representation of a session ticket key.
-[GoType] partial struct ticketKey {
+[GoType] [GoValueClone("aesKey", "hmacKey")] partial struct ticketKey {
     internal array<byte> aesKey = new(16);
     internal array<byte> hmacKey = new(16);
     // created is the time at which this ticket key was created. See Config.ticketKeys.
@@ -755,7 +755,7 @@ internal static readonly time.Duration ticketKeyRotation = /* 24 * time.Hour */ 
     copy(key.aesKey[..], hashed[(int)(legacyTicketKeyNameLen)..]);
     copy(key.hmacKey[..], hashed[(int)((nint)legacyTicketKeyNameLen + len(key.aesKey))..]);
     key.created = c.time();
-    return key;
+    return key.ΔClone();
 }
 
 // maxSessionTicketLifetime is the maximum allowed lifetime of a TLS 1.3 session
@@ -900,10 +900,12 @@ internal static slice<ticketKey> ticketKeys(this ж<Config> Ꮡc, ж<Config> Ꮡ
         }
         var valid = new slice<ticketKey>(0, len(c.autoSessionTicketKeys) + 1);
         valid = append(valid, c.ticketKeyFromBytes(newKey));
-        foreach (var (_, k) in c.autoSessionTicketKeys) {
+        foreach (var (_, vᴛ1) in c.autoSessionTicketKeys) {
+            var k = vᴛ1.ΔClone();
+
             // While rotating the current key, also remove any expired ones.
             if (c.time().Sub(k.created) < ticketKeyLifetime) {
-                valid = append(valid, k);
+                valid = append(valid, k.ΔClone());
             }
         }
         c.autoSessionTicketKeys = valid;

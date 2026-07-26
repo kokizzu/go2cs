@@ -41,8 +41,9 @@ private static readonly @string levelˢ = "level="u8;
 private static readonly @string msgˢ = "msg="u8;
 
 internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp1, slog.Record r) => func((defer, recover) => {
-    ref var h = ref Ꮡh.Value;
+    r = r.ΔClone();
 
+    ref var h = ref Ꮡh.Value;
     var buf = buffer.New();
     var bufʗ1 = buf;
     defer(bufʗ1.Free);
@@ -135,7 +136,7 @@ internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp
 // but that is a worthwhile thing to measure because Records are on the large
 // side. Since nothing actually reads from the ring buffer, it can handle an
 // arbitrary number of Records without either blocking or allocation.
-[GoType] partial struct asyncHandler {
+[GoType] [GoValueClone("ringBuffer")] partial struct asyncHandler {
     internal array<slog.Record> ringBuffer = new(100, () => new());
     internal nint next;
 }
@@ -149,6 +150,8 @@ internal static ж<asyncHandler> newAsyncHandler() {
 }
 
 [GoRecv] internal static error Handle(this ref asyncHandler h, context.Context _, slog.Record r) {
+    r = r.ΔClone();
+
     h.ringBuffer[h.next] = r.Clone();
     h.next = (h.next + 1) % len(h.ringBuffer);
     return default!;

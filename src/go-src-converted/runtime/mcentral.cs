@@ -18,7 +18,7 @@ using runtime.@internal;
 partial class runtime_package {
 
 // Central list of free objects of a given size.
-[GoType] partial struct mcentral {
+[GoType] [GoValueClone("partial", "full")] partial struct mcentral {
     internal sys.NotInHeap _;
     internal spanClass spanclass;
     // partial and full contain two mspan sets: one of swept in-use

@@ -19,7 +19,7 @@ partial class base32_package {
 // 32-character alphabet. The most common is the "base32" encoding
 // introduced for SASL GSSAPI and standardized in RFC 4648.
 // The alternate "base32hex" encoding is used in DNSSEC.
-[GoType] partial struct Encoding {
+[GoType] [GoValueClone("encode", "decodeMap")] partial struct Encoding {
     internal array<byte> encode = new(32); // mapping of symbol index to symbol byte value
     internal array<uint8> decodeMap = new(256); // mapping of symbol byte value to symbol index
     internal rune padChar;
@@ -80,6 +80,8 @@ public static ж<Encoding> HexEncoding = NewEncoding("0123456789ABCDEFGHIJKLMNOP
 // Padding characters above '\x7f' are encoded as their exact byte value
 // rather than using the UTF-8 representation of the codepoint.
 public static ж<Encoding> WithPadding(this Encoding enc, rune padding) {
+    enc = enc.ΔClone();
+
     switch (ᐧ) {
     case {} when padding < NoPadding || padding == (rune)'\r' || padding == (rune)'\n' || padding > 0xff: {
         throw panic("invalid padding");
@@ -188,7 +190,7 @@ public static ж<Encoding> WithPadding(this Encoding enc, rune padding) {
     return ((@string)buf);
 }
 
-[GoType] partial struct encoder {
+[GoType] [GoValueClone("buf", "@out")] partial struct encoder {
     internal error err;
     internal ж<Encoding> enc;
     internal io.Writer w;
@@ -419,7 +421,7 @@ public static @string Error(this CorruptInputError e) {
     return (buf[..(int)(n)], err);
 }
 
-[GoType] partial struct decoder {
+[GoType] [GoValueClone("buf", "outbuf")] partial struct decoder {
     internal error err;
     internal ж<Encoding> enc;
     internal io.Reader r;

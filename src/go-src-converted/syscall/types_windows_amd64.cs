@@ -5,7 +5,7 @@ namespace go;
 
 partial class syscall_package {
 
-[GoType] partial struct WSAData {
+[GoType] [GoValueClone("Description", "SystemStatus")] partial struct WSAData {
     public uint16 Version;
     public uint16 HighVersion;
     public uint16 MaxSockets;

@@ -217,7 +217,7 @@ internal static ref uint32 gcphase => ref Ꮡgcphase.Value;
 //
 //go:linkname writeBarrier
 
-[GoType("dyn")] partial struct writeBarrierᴛ1 {
+[GoType("dyn")] [GoValueClone("pad")] partial struct writeBarrierᴛ1 {
     internal bool enabled;    // compiler emits a check of this before calling write barrier
     internal array<byte> pad = new(3); // compiler uses 32-bit load for "enabled" field
     internal uint64 alignme;  // guarantee alignment so that compiler can use a 32 or 64-bit load

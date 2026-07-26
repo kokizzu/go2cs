@@ -3365,7 +3365,7 @@ public static @string GoString(this R_SPARC i) {
 public static readonly UntypedInt ARM_MAGIC_TRAMP_NUMBER = 0x5c000003;
 
 // ELF32 File header.
-[GoType] partial struct Header32 {
+[GoType] [GoValueClone("Ident")] partial struct Header32 {
     public array<byte> Ident = new(EI_NIDENT); /* File identification. */
     public uint16 Type;          /* File type. */
     public uint16 Machine;          /* Machine architecture. */
@@ -3483,7 +3483,7 @@ public static SymVis ST_VISIBILITY(uint8 other) {
  */
 
 // ELF64 file header.
-[GoType] partial struct Header64 {
+[GoType] [GoValueClone("Ident")] partial struct Header64 {
     public array<byte> Ident = new(EI_NIDENT); /* File identification. */
     public uint16 Type;          /* File type. */
     public uint16 Machine;          /* Machine architecture. */

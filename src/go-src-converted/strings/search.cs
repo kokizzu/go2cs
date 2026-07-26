@@ -10,7 +10,7 @@ partial class strings_package {
 // https://en.wikipedia.org/wiki/Boyer-Moore_string_search_algorithm
 // https://www.cs.utexas.edu/~moore/publications/fstrpos.pdf (note: this aged
 // document uses 1-based indexing)
-[GoType] partial struct stringFinder {
+[GoType] [GoValueClone("badCharSkip")] partial struct stringFinder {
     // pattern is the string that we are searching for in the text.
     internal @string pattern;
     // badCharSkip[b] contains the distance between the last byte of pattern

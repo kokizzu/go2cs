@@ -58,6 +58,9 @@ internal static (@string arpa, error err) reverseaddr(@string addr) {
 }
 
 internal static bool equalASCIIName(dnsmessage.Name x, dnsmessage.Name y) {
+    x = x.ΔClone();
+    y = y.ΔClone();
+
     if (x.Length != y.Length) {
         return false;
     }

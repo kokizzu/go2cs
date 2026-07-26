@@ -853,14 +853,14 @@ internal static readonly uintptr socket_error = /* uintptr(^uint32(0)) */ unchec
 // creation of IPv6 sockets to return [EAFNOSUPPORT].
 public static bool SocketDisableIPv6;
 
-[GoType] partial struct RawSockaddrInet4 {
+[GoType] [GoValueClone("Addr", "Zero")] partial struct RawSockaddrInet4 {
     public uint16 Family;
     public uint16 Port;
     public array<byte> Addr = new(4); /* in_addr */
     public array<uint8> Zero = new(8);
 }
 
-[GoType] partial struct RawSockaddrInet6 {
+[GoType] [GoValueClone("Addr")] partial struct RawSockaddrInet6 {
     public uint16 Family;
     public uint16 Port;
     public uint32 Flowinfo;
@@ -868,12 +868,12 @@ public static bool SocketDisableIPv6;
     public uint32 Scope_id;
 }
 
-[GoType] partial struct RawSockaddr {
+[GoType] [GoValueClone("Data")] partial struct RawSockaddr {
     public uint16 Family;
     public array<int8> Data = new(14);
 }
 
-[GoType] partial struct RawSockaddrAny {
+[GoType] [GoValueClone("Addr", "Pad")] partial struct RawSockaddrAny {
     public RawSockaddr Addr;
     public array<int8> Pad = new(100);
 }
@@ -882,7 +882,7 @@ public static bool SocketDisableIPv6;
     (@unsafe.Pointer ptr, int32 len, error err) sockaddr(); // lowercase; only we can define Sockaddrs
 }
 
-[GoType] partial struct SockaddrInet4 {
+[GoType] [GoValueClone("Addr", "raw")] partial struct SockaddrInet4 {
     public nint Port;
     public array<byte> Addr = new(4);
     internal RawSockaddrInet4 raw;
@@ -902,7 +902,7 @@ internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrInet4> 
     return (new @unsafe.Pointer(Ꮡsa.of(SockaddrInet4.Ꮡraw)), (int32)@unsafe.Sizeof(sa.raw), default!);
 }
 
-[GoType] partial struct SockaddrInet6 {
+[GoType] [GoValueClone("Addr", "raw")] partial struct SockaddrInet6 {
     public nint Port;
     public uint32 ZoneId;
     public array<byte> Addr = new(16);
@@ -924,12 +924,12 @@ internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrInet6> 
     return (new @unsafe.Pointer(Ꮡsa.of(SockaddrInet6.Ꮡraw)), (int32)@unsafe.Sizeof(sa.raw), default!);
 }
 
-[GoType] partial struct RawSockaddrUnix {
+[GoType] [GoValueClone("Path")] partial struct RawSockaddrUnix {
     public uint16 Family;
     public array<int8> Path = new(UNIX_PATH_MAX);
 }
 
-[GoType] partial struct SockaddrUnix {
+[GoType] [GoValueClone("raw")] partial struct SockaddrUnix {
     public @string Name;
     internal RawSockaddrUnix raw;
 }
@@ -1319,12 +1319,12 @@ public static error /*err*/ SetsockoptTimeval(ΔHandle fd, nint level, nint opt,
     public uint16 Linger;
 }
 
-[GoType] partial struct IPMreq {
+[GoType] [GoValueClone("Multiaddr", "Interface")] partial struct IPMreq {
     public array<byte> Multiaddr = new(4); /* in_addr */
     public array<byte> Interface = new(4); /* in_addr */
 }
 
-[GoType] partial struct IPv6Mreq {
+[GoType] [GoValueClone("Multiaddr")] partial struct IPv6Mreq {
     public array<byte> Multiaddr = new(16); /* in6_addr */
     public uint32 Interface;
 }

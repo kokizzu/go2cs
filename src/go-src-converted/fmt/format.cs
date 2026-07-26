@@ -33,7 +33,7 @@ internal const bool unsigned = false;
 
 // A fmt is the raw formatter used by Printf etc.
 // It prints into a buffer that must be set up separately.
-[GoType] partial struct fmt {
+[GoType] [GoValueClone("intbuf")] partial struct fmt {
     internal ж<buffer> buf;
     internal partial ref fmtFlags fmtFlags { get; }
     internal nint wid; // width

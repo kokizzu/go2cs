@@ -25,7 +25,7 @@ internal static readonly UntypedInt uint64Size = 8;
 // Field numbers are delta encoded and always increase. The field
 // number is initialized to -1 so 0 comes out as delta(1). A delta of
 // 0 terminates the structure.
-[GoType] partial struct encoderState {
+[GoType] [GoValueClone("buf")] partial struct encoderState {
     internal ж<Encoder> enc;
     internal ж<encBuffer> b;
     internal bool sendZero;                 // encoding an array element or map key/value pair; send zero values
@@ -36,7 +36,7 @@ internal static readonly UntypedInt uint64Size = 8;
 
 // encBuffer is an extremely simple, fast implementation of a write-only byte buffer.
 // It never returns a non-nil error, but Write returns an error value so it matches io.Writer.
-[GoType] partial struct encBuffer {
+[GoType] [GoValueClone("scratch")] partial struct encBuffer {
     internal slice<byte> data;
     internal array<byte> scratch = new(64);
 }

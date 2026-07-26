@@ -7,7 +7,7 @@ using errors = errors_package;
 
 partial class oldtrace_package {
 
-[GoType] partial struct orderEvent {
+[GoType] [GoValueClone("ev")] partial struct orderEvent {
     internal Event ev;
     internal ж<proc> proc;
 }
@@ -144,9 +144,10 @@ internal static error transition(map<uint64, gState> gs, uint64 g, gState init, 
 }
 
 internal static void Push(this ж<orderEventList> Ꮡh, orderEvent x) {
-    ref var h = ref Ꮡh.ValueSlot;
+    x = x.ΔClone();
 
-    h = builtin.append(h, x);
+    ref var h = ref Ꮡh.ValueSlot;
+    h = builtin.append(h, x.ΔClone());
     heapUp(Ꮡh, len(h) - 1);
 }
 
@@ -154,11 +155,11 @@ internal static orderEvent Pop(this ж<orderEventList> Ꮡh) {
     ref var h = ref Ꮡh.ValueSlot;
 
     nint n = len(h) - 1;
-    ((h)[0], (h)[n]) = ((h)[n], (h)[0]);
+    ((h)[0], (h)[n]) = ((h)[n].ΔClone(), (h)[0].ΔClone());
     heapDown(Ꮡh, 0, n);
-    var x = (h)[len(h) - 1];
+    var x = (h)[len(h) - 1].ΔClone();
     h = (h)[..(int)(len(h) - 1)];
-    return x;
+    return x.ΔClone();
 }
 
 internal static void heapUp(ж<orderEventList> Ꮡh, nint j) {
@@ -170,7 +171,7 @@ internal static void heapUp(ж<orderEventList> Ꮡh, nint j) {
         if (i == j || !h.Less(j, i)) {
             break;
         }
-        ((h)[i], (h)[j]) = ((h)[j], (h)[i]);
+        ((h)[i], (h)[j]) = ((h)[j].ΔClone(), (h)[i].ΔClone());
         j = i;
     }
 }
@@ -196,7 +197,7 @@ internal static bool heapDown(ж<orderEventList> Ꮡh, nint i0, nint n) {
         if (!h.Less(j, i)) {
             break;
         }
-        ((h)[i], (h)[j]) = ((h)[j], (h)[i]);
+        ((h)[i], (h)[j]) = ((h)[j].ΔClone(), (h)[i].ΔClone());
         i = j;
     }
     return i > i0;

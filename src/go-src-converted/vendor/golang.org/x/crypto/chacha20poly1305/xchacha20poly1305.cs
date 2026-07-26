@@ -11,7 +11,7 @@ using go.vendor.golang.org.x.crypto;
 
 partial class chacha20poly1305_package {
 
-[GoType] partial struct xchacha20poly1305 {
+[GoType] [GoValueClone("key")] partial struct xchacha20poly1305 {
     internal array<byte> key = new(KeySize);
 }
 

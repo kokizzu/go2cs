@@ -19,7 +19,7 @@ public static readonly UntypedInt ΔNonceSize = 12;
 public static readonly UntypedInt NonceSizeX = 24;
 public static readonly UntypedInt ΔOverhead = 16;
 
-[GoType] partial struct chacha20poly1305 {
+[GoType] [GoValueClone("key")] partial struct chacha20poly1305 {
     internal array<byte> key = new(KeySize);
 }
 

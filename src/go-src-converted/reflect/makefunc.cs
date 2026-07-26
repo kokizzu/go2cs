@@ -132,7 +132,7 @@ internal static partial void methodValueCall();
 
 // This structure must be kept in sync with runtime.reflectMethodValue.
 // Any changes should be reflected in all both.
-[GoType] partial struct makeFuncCtxt {
+[GoType] [GoValueClone("regPtrs")] partial struct makeFuncCtxt {
     internal uintptr fn;
     internal ж<bitVector> stack; // ptrmap for both stack args and results
     internal uintptr argLen;    // just args

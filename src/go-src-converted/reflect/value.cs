@@ -1095,7 +1095,7 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
     // Avoid constructing out-of-bounds pointers if there are no return values.
     // because the arguments may be laid out differently.
     if (valueRegs != nil) {
-        valueRegs.Value = methodRegs;
+        valueRegs.Value = methodRegs.ΔClone();
     }
     {
         var retSize = methodFrameType.Size() - methodABI.retOffset; if (retSize > 0) {

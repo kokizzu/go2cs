@@ -17,7 +17,7 @@ partial class pe_package {
 public static readonly UntypedInt COFFSymbolSize = 18;
 
 // COFFSymbol represents single COFF symbol table record.
-[GoType] partial struct COFFSymbol {
+[GoType] [GoValueClone("Name")] partial struct COFFSymbol {
     public array<uint8> Name = new(8);
     public uint32 Value;
     public int16 SectionNumber;
@@ -93,7 +93,7 @@ internal static (slice<COFFSymbol>, error) readCOFFSymbols(ж<FileHeader> Ꮡfh,
                 return (default!, fmt.Errorf("fail to read symbol table: %v"u8, err));
             }
         }
-        syms = append(syms, sym);
+        syms = append(syms, sym.ΔClone());
     }
     if (naux != 0) {
         return (default!, fmt.Errorf("fail to read symbol table: %d aux symbols unread"u8, naux));
@@ -130,7 +130,7 @@ internal static (slice<ж<Symbol>>, error) removeAuxSymbols(slice<COFFSymbol> al
     var syms = new slice<ж<Symbol>>(0);
     var aux = (uint8)0;
     foreach (var (_, vᴛ1) in allsyms) {
-        var sym = vᴛ1;
+        var sym = vᴛ1.ΔClone();
 
         if (aux > 0) {
             aux--;

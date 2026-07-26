@@ -50,6 +50,7 @@ internal static (uint16 id, slice<byte> udpReq, slice<byte> tcpReq, error err) n
     slice<byte> tcpReq = default!;
     error err = default!;
 
+    q = q.ΔClone();
     id = (uint16)randInt();
     var b = dnsmessage.NewBuilder(new slice<byte>(2, 514), new dnsmessage.Header(ID: id, RecursionDesired: true, AuthenticData: ad));
     {
@@ -95,6 +96,9 @@ internal static (uint16 id, slice<byte> udpReq, slice<byte> tcpReq, error err) n
 }
 
 internal static bool checkResponse(uint16 reqID, dnsmessageꓸQuestion reqQues, dnsmessage.Header respHdr, dnsmessageꓸQuestion respQues) {
+    reqQues = reqQues.ΔClone();
+    respQues = respQues.ΔClone();
+
     if (!respHdr.Response) {
         return false;
     }
@@ -108,6 +112,8 @@ internal static bool checkResponse(uint16 reqID, dnsmessageꓸQuestion reqQues, 
 }
 
 internal static (dnsmessage.Parser, dnsmessage.Header, error) dnsPacketRoundTrip(Conn c, uint16 id, dnsmessageꓸQuestion query, slice<byte> b) {
+    query = query.ΔClone();
+
     {
         var (_, err) = c.Write(b); if (err != default!) {
             return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), err);
@@ -136,6 +142,8 @@ internal static (dnsmessage.Parser, dnsmessage.Header, error) dnsPacketRoundTrip
 }
 
 internal static (dnsmessage.Parser, dnsmessage.Header, error) dnsStreamRoundTrip(Conn c, uint16 id, dnsmessageꓸQuestion query, slice<byte> b) {
+    query = query.ΔClone();
+
     {
         var (_, errΔ1) = c.Write(b); if (errΔ1 != default!) {
             return (new dnsmessage.Parser(nil), new dnsmessage.Header(nil), errΔ1);
@@ -173,6 +181,8 @@ internal static (dnsmessage.Parser, dnsmessage.Header, error) dnsStreamRoundTrip
 
 // exchange sends a query on the connection and hopes for a response.
 internal static (dnsmessage.Parser, dnsmessage.Header, error) exchange(this ж<Resolver> Ꮡr, context.Context ctx, @string server, dnsmessageꓸQuestion q, time.Duration timeout, bool useTCP, bool ad) => func<(dnsmessage.Parser, dnsmessage.Header, error)>((defer, recover) => {
+    q = q.ΔClone();
+
     q.Class = dnsmessage.ClassINET;
     var (id, udpReq, tcpReq, err) = newRequest(q, ad);
     if (err != default!) {
@@ -320,7 +330,7 @@ internal static (dnsmessage.Parser, @string, error) tryOneName(this ж<Resolver>
         return (new dnsmessage.Parser(nil), "", new DNSErrorжerror(Ꮡ(new DNSError(Err: errCannotMarshalDNSMessage.Error(), Name: name))));
     }
     var q = new dnsmessageꓸQuestion(
-        Name: n,
+        Name: n.ΔClone(),
         Type: qtype,
         Class: dnsmessage.ClassINET
     );
@@ -664,7 +674,7 @@ internal static (slice<IPAddr> addrs, dnsmessage.Name cname, error err) goLookup
             if (errΔ1 != default!) {
                 return (default!, new dnsmessage.Name(nil), errΔ1);
             }
-            return (addrs, cname, default!);
+            return (addrs, cname.ΔClone(), default!);
         }
         if (order == hostLookupFiles) {
             return (default!, new dnsmessage.Name(nil), new DNSErrorжerror(newDNSError(new notFoundErrorжerror(errNoSuchHost), name, ""u8)));
@@ -783,7 +793,7 @@ loop:
                     }
                     addrs = append(addrs, new IPAddr(IP: ((IP)(a.A[..]))));
                     if (cname.Length == 0 && h.Name.Length != 0) {
-                        cname = h.Name;
+                        cname = h.Name.ΔClone();
                     }
                 }
                 else if (exprᴛ1 == dnsmessage.TypeAAAA) {
@@ -798,7 +808,7 @@ loop:
                     }
                     addrs = append(addrs, new IPAddr(IP: ((IP)(aaaa.AAAA[..]))));
                     if (cname.Length == 0 && h.Name.Length != 0) {
-                        cname = h.Name;
+                        cname = h.Name.ΔClone();
                     }
                 }
                 else if (exprᴛ1 == dnsmessage.TypeCNAME) {
@@ -812,7 +822,7 @@ loop:
                         goto break_loop;
                     }
                     if (cname.Length == 0 && c.CNAME.Length > 0) {
-                        cname = c.CNAME;
+                        cname = c.CNAME.ΔClone();
                     }
                 }
                 else { /* default: */
@@ -863,14 +873,14 @@ break_loop:;
                 if (errΔ11 != default!) {
                     return (default!, new dnsmessage.Name(nil), errΔ11);
                 }
-                return (addrs, cname, default!);
+                return (addrs, cname.ΔClone(), default!);
             }
         }
         if (lastErr != default!) {
             return (default!, new dnsmessage.Name(nil), lastErr);
         }
     }
-    return (addrs, cname, default!);
+    return (addrs, cname.ΔClone(), default!);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

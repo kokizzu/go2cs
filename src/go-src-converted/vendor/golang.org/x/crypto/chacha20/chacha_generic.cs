@@ -24,7 +24,7 @@ public static readonly UntypedInt NonceSizeX = 24;
 
 // Cipher is a stateful instance of ChaCha20 or XChaCha20 using a particular key
 // and nonce. A *Cipher implements the cipher.Stream interface.
-[GoType] partial struct Cipher {
+[GoType] [GoValueClone("key", "nonce", "buf")] partial struct Cipher {
     // The ChaCha20 state is 16 words: 4 constant, 8 of key, 1 of counter
     // (incremented after each block), and 3 of nonce.
     internal array<uint32> key = new(8);
