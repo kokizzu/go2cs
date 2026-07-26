@@ -18,14 +18,15 @@ a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **49 / 215 testable packages validated — 22.8%**
+> ### Phase 4 progress: **50 / 215 testable packages validated — 23.3%**
 >
-> **1,229 matching test verdicts · 43 disclosed** *(updated 2026-07-26 — maintained as part of the
+> **1,309 matching test verdicts · 44 disclosed** *(updated 2026-07-26 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
 | Package | Tests | Disclosed | What it exercises |
 |:--|:--:|:--:|:--|
+| [`bufio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/bufio) | 80 | 1 | Buffered reader/writer/scanner — fill, rewind, split functions, `io` error propagation. |
 | [`bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/bytes) | 81 | 7 | Byte-slice algorithms; alloc-profile disclosures. |
 | [`cmp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/cmp) | 4 | | Generics with an ordered-type constraint. |
 | [`compress/bzip2`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/compress/bzip2) | 4 | | Bzip2 decompression — bit readers, Huffman trees, the move-to-front decoder. |
