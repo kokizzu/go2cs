@@ -264,3 +264,20 @@ process-lifetime (type descriptors are permanent, like Go's). Interning by `Syst
 Go's named-type distinctness for free: a `type Celsius float64` is a distinct `[GoType("num:float64")]`
 struct whose `System.Type` differs from `float64`, so `TypeOf(Celsius) != TypeOf(float64)`. `typeSlow`
 (method-value Types) stays auto — not exercised by `fmt`.
+
+## Fix — the bridge's per-type marker reads are memoized (2026-07-26)
+
+The bridge recovers Go type identity from managed metadata, so it reads the converter's per-type
+markers — `[GoType]` for a type's kind and underlying, `[GoLocalName]` for a lifted local type's
+original Go name — from its hottest entry points: `KindOf` (under every `ValueOf`, `Value.Field`,
+`Value.Elem`, `MakeSlice`, `rtype.FieldByName`, and `abi.TypeOf`), `GoTypeName` (under every `%T` and
+`reflect.Type.String()`/`Name()`), and `TryConvertTo`/`TryUnwrapWrapperValue` (under the whole
+`Value.Set`/`SetMapIndex`/`Call`/`Convert` marshalling surface). **Custom-attribute retrieval
+materializes fresh attribute instances on every call** and none of those callers caches its own
+result, so the cost was paid per VALUE rather than per type — measured at 165–558 ns and 72–448 bytes
+per call across those entry points, of which the attribute read was the bulk. All four reads now route
+through two per-type `ConcurrentDictionary` memos (`goTypeMarkerOf` / `goLocalNameOf`), which is
+sound for the same reason `canonType`'s intern above is: type descriptors are permanent, and a loaded
+type's own attributes cannot change. Full measurement and the two remaining non-attribute residuals
+are in [`DESIGN-iface-shell-caching.md`](DESIGN-iface-shell-caching.md) §11.2, which is where the
+audit that found them lives.

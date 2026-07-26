@@ -894,7 +894,7 @@ as the golib-only fixes above, whose gate is narrower and whose measurement is a
 Note also that under Native AOT the interface probes are markedly cheaper than on the JIT (measured:
 two failing tests 3.73 ns AOT vs 9.20 ns JIT), so this candidate is a JIT-weighted win.
 
-### 11.2 The same defect class survives in `GoReflect.cs` — NOT fixed here (ownership lock)
+### 11.2 The same defect class in `GoReflect.cs` — fixed 2026-07-26 (measured)
 
 An audit of every custom-attribute read in golib (`GetCustomAttribute`, `GetCustomAttributes`,
 `IsDefined`; positive control: the `IsDynamicType` site above) found **three more uncached per-value
@@ -908,12 +908,72 @@ type-assert path:
 | `GoReflect.cs:870` / `:890` | `wrapperConstructorOf` / `TryUnwrapWrapperValue` | `Value.Set`, `SetMapIndex`, `Call`, `Convert`, the `SetBool/Int/Uint/Float/Complex` family, and `Value.Bool/Complex/String` |
 
 `KindOf` has no cache at all, and its attribute fallback fires for every converted Go struct or named
-type — so at the measured 785.92 ns (JIT) / 3,826.27 ns (AOT) per attribute read this is the same
-defect on a *more* central surface, and it lands on exactly the packages Phase 4 is working through
-(`encoding/json`, `encoding/gob`, `text/template`, plus any program that formats `%T`). By contrast
-the two reads inside `collectGoFields` (`:1240`, `:1256`) are properly cached behind
+type — so this was the same defect on a *more* central surface, landing on exactly the packages Phase 4
+is working through (`encoding/json`, `encoding/gob`, `text/template`, plus any program that formats
+`%T`). By contrast the two reads inside `collectGoFields` (`:1240`, `:1256`) are properly cached behind
 `s_goFields.GetOrAdd`, and `runtime/TypeExtensions.cs:115` is a one-time appdomain scan — both fine.
 
-**Deliberately not fixed in this change:** `golib/GoReflect.cs` is on the reflection chip's
-ownership-lock list (Phase-4 charter §6.1), so it belongs to that arc, not this one. Recorded here so
-the fix is taken once, by its owner, rather than raced.
+**The fix.** All four reads now route through two per-type memos in `GoReflect` —
+`goTypeMarkerOf` and `goLocalNameOf`, `ConcurrentDictionary<Type, …>` over the type's own
+`[GoType]` / `[GoLocalName]` attribute. Both markers are `AllowMultiple = false` and have no
+subclass, so "the one declared attribute" is the whole answer and the exactly-one list pattern the
+call sites already used is preserved verbatim. Like `s_dynamicTypes` above, neither memo is
+registered with any assembly-load cache clear: unlike an extension-method scan, a loaded type's own
+attributes cannot change. `wrapperConstructorOf` is memoized **whole** rather than just its
+`[GoType]` gate, because its answer is one per-type-immutable `ConstructorInfo` and the constructor
+scan below the gate was being repeated per call too.
+
+**Measured** on live golib, same harness as §11 (JIT, `DOTNET_TieredCompilation=0`, Stopwatch
+best-of-5 over 200 k ops, `GC.GetAllocatedBytesForCurrentThread` on a separate pass), through each
+site's **public** entry point so what is timed is what a real caller pays. Two independent
+post-fix runs agreed within 4%; the control row is the raw framework API the sites are built on, so
+it is unchanged by construction and its ±5% run-to-run spread is the harness's noise floor.
+
+| site (public entry point) | ns before | ns after | B before | B after |
+|---|---:|---:|---:|---:|
+| *control* — `Type.GetCustomAttributes([GoType])` | 360.85 | 363.66 | 200 | 200 |
+| `KindOf` — plain `[GoType]` struct | 430.03 | **55.61** | 200 | **0** |
+| `KindOf` — named scalar wrapper | 470.20 | **21.20** | 312 | 40 |
+| `KindOf` — `slice<nint>` | 213.65 | **19.30** | 120 | **0** |
+| `KindOf` — `ж<T>` box | 165.77 | **35.22** | 72 | **0** |
+| `GoTypeName` — plain struct | 131.40 | **46.07** | 128 | 80 |
+| `GoTypeName` — lifted `[GoLocalName]` | 493.45 | **45.68** | 368 | 96 |
+| `TryUnwrapWrapperValue` — named wrapper | 496.41 | **43.54** | 296 | 24 |
+| `TryConvertTo` — `float64` → named wrapper | 557.81 | **50.42** | 448 | 112 |
+
+Two things the table shows that the audit did not predict. The `[GoType]` probe sits **above**
+`KindOf`'s container checks, so `slice<T>`, `map<K,V>`, `channel<T>` and `ж<T>` were paying it too —
+a *zero-attribute* read still costs ~120 ns and allocates, which is why those rows move as much as
+the marker-bearing ones. And the whole of what remains is no longer attribute work: the 40 B on the
+named-scalar row is the `def[4..]` substring `TryGoTypeDefinitionKind` cuts from `"num:float64"`, and
+the 55.6 ns on the plain-struct row is the five `IsAssignableFrom` container probes *below* the
+attribute arm. Both are named here as the next candidates rather than folded into this change, whose
+scope was the attribute reads.
+
+**What this does NOT move, measured rather than assumed.** Unlike §11, this fix has no benchmark row
+behind it, and the honest reason is that **no row in `src/Tests/Performance` reaches `GoReflect` at
+all**: the baseline `src/core` touches it from exactly one place — `builtin.GetGoTypeName`, under the
+`%T` verb (`core/fmt/format.cs:117`) — and no benchmark formats `%T` (each prints only `%v`-shaped
+ints through `fmt.Println`, `PerfIfaceCall` included). An A/B of the whole suite as it then stood
+(twelve rows; JIT, `--no-aot`, median of 5) confirms it: every row moved, in **both** directions,
+within ±6% — `IfaceShell` 583.7 → 550.3 ms, `String` 733.7 → 773.5 ms — while Go's own columns moved
+just as much on the same pair of runs (`Sort` 118.4 → 128.3 ms, `Channel` 47.1 → 54.7 ms). That is
+machine noise, and no row is attributable to this change. The sites are on the **full-conversion**
+`reflect` bridge, which Phase 4 exercises and the benchmark suite does not.
+
+The nearest real-world instrument available today is a banked test host that does drive the bridge:
+`encoding/binary` (137 tests, "Reflection-driven Read/Write — the bridge's construction/write-back
+surface"). Its wall time, best of 5 `Debug` runs of the built host, went **370.5 → 357.6 ms (−3.5%)**.
+Read that as a **floor**, not as the effect on the bridge: a 137-test host at ~2.6 ms/test is
+dominated by process startup and the test harness, and each test makes comparatively few bridge
+calls. The per-call table above is the measurement of the defect; this is the measurement of how much
+of one package's suite the defect was.
+
+**No behavior changes**, which is why this carries no behavioral test: the answers are identical, so
+no Go-vs-C# output can move and no golden can differ. What *is* observable at the golib level is the
+allocation — an attribute read allocates and a dictionary hit does not — so the memos are pinned by
+**`Tests/GolibTests/GoReflectAttributeCacheTests`**, the same place and for the same reason as
+`ItabEpochTests`: the paths that can reach zero assert exactly zero, and the paths that must allocate
+to do their job (building a name string, boxing a scalar) assert a per-call ceiling set below what
+the uncached read cost. Gated on the full behavioral suite plus an operational re-validation of every
+banked package (charter §5, golib change class).

@@ -337,6 +337,37 @@ public static class GoReflect
         return false;
     }
 
+    private static readonly ConcurrentDictionary<Type, GoTypeAttribute?> s_goTypeMarkers = new();
+    private static readonly ConcurrentDictionary<Type, GoLocalNameAttribute?> s_goLocalNames = new();
+
+    /// <summary>The type's own <c>[GoType]</c> marker, or <c>null</c> when it carries none.</summary>
+    /// <remarks>
+    /// Memoized per type, like <c>s_dynamicTypes</c> in <c>runtime/TypeExtensions</c> and for the
+    /// same reason: which attributes a type declares is an IMMUTABLE fact about the type, but every
+    /// read materializes fresh attribute instances — measured against live golib at 361 ns and
+    /// 200 bytes for this one probe, and the reads sit under callers that cache nothing of their own
+    /// (<see cref="KindOf"/> under every <c>reflect.ValueOf</c>/<c>Value.Field</c>/<c>Value.Elem</c>,
+    /// <see cref="TryConvertTo"/> and <see cref="TryUnwrapWrapperValue"/> under the whole
+    /// <c>Value.Set</c>/<c>SetMapIndex</c>/<c>Call</c>/<c>Convert</c> marshalling surface), so the
+    /// cost was paid per VALUE rather than per type. Deliberately NOT registered with any
+    /// assembly-load cache clear: unlike an extension-method scan, a loaded type's own attributes
+    /// cannot change. Both markers are <c>AllowMultiple=false</c>, so the single declared attribute
+    /// is the whole answer.
+    /// </remarks>
+    private static GoTypeAttribute? goTypeMarkerOf(Type t)
+    {
+        return s_goTypeMarkers.GetOrAdd(t, static type =>
+            type.GetCustomAttributes(typeof(GoTypeAttribute), false) is [GoTypeAttribute marker] ? marker : null);
+    }
+
+    /// <summary>The type's own <c>[GoLocalName]</c> stamp, or <c>null</c> when it carries none.</summary>
+    /// <remarks>Memoized per type for the reason given on <see cref="goTypeMarkerOf"/>.</remarks>
+    private static GoLocalNameAttribute? goLocalNameOf(Type t)
+    {
+        return s_goLocalNames.GetOrAdd(t, static type =>
+            type.GetCustomAttributes(typeof(GoLocalNameAttribute), false) is [GoLocalNameAttribute localName] ? localName : null);
+    }
+
     // The package-qualified Go name of a converted named type: a converted type is nested in a
     // `<pkg>_package` class, so `go.main_package.Point` → `main.Point`. A lifted function-local
     // type prefers its stamped original Go name ([GoLocalName] — `binary.Person`, never the
@@ -346,7 +377,7 @@ public static class GoReflect
     {
         string name = t.Name;
 
-        if (t.GetCustomAttributes(typeof(GoLocalNameAttribute), false) is [GoLocalNameAttribute localName])
+        if (goLocalNameOf(t) is { } localName)
             name = localName.Name;
 
         if (name.StartsWith(ShadowVarMarker, StringComparison.Ordinal))
@@ -864,21 +895,29 @@ public static class GoReflect
         return result is not null;
     }
 
+    private static readonly ConcurrentDictionary<Type, ConstructorInfo?> s_wrapperConstructors = new();
+
     // The generated wrapper constructor taking the underlying value (never the NilType form).
+    // Memoized WHOLE, not just its [GoType] gate: the answer is one per-type-immutable
+    // ConstructorInfo, and TryConvertTo reaches this per VALUE from reflect.Value.Set /
+    // SetMapIndex / Call / Convert — so the constructor scan was repeated per call too.
     private static ConstructorInfo? wrapperConstructorOf(Type t)
     {
-        if (t.GetCustomAttributes(typeof(GoTypeAttribute), false).Length == 0)
-            return null;
-
-        foreach (ConstructorInfo ctor in t.GetConstructors())
+        return s_wrapperConstructors.GetOrAdd(t, static type =>
         {
-            ParameterInfo[] parameters = ctor.GetParameters();
+            if (goTypeMarkerOf(type) is null)
+                return null;
 
-            if (parameters.Length == 1 && parameters[0].ParameterType != typeof(NilType))
-                return ctor;
-        }
+            foreach (ConstructorInfo ctor in type.GetConstructors())
+            {
+                ParameterInfo[] parameters = ctor.GetParameters();
 
-        return null;
+                if (parameters.Length == 1 && parameters[0].ParameterType != typeof(NilType))
+                    return ctor;
+            }
+
+            return null;
+        });
     }
 
     /// <summary>Unwraps a generated named-type wrapper value to its single underlying field value.</summary>
@@ -887,7 +926,7 @@ public static class GoReflect
         underlying = null;
         Type t = src.GetType();
 
-        if (t.GetCustomAttributes(typeof(GoTypeAttribute), false) is not [GoTypeAttribute { Definition.Length: > 0 } def] || def.Definition == "dyn")
+        if (goTypeMarkerOf(t) is not { Definition.Length: > 0 } def || def.Definition == "dyn")
             return false;
 
         FieldInfo? valueField = t.GetField("m_value", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -1455,32 +1494,30 @@ public static class GoReflect
     {
         kind = Invalid;
 
-        foreach (object attr in t.GetCustomAttributes(typeof(GoTypeAttribute), false))
+        if (goTypeMarkerOf(t) is not { } marker)
+            return false;
+
+        string def = marker.Definition;
+
+        if (string.IsNullOrEmpty(def))
+            return false; // a plain struct/interface marker — not a named-underlying wrapper
+
+        string token = def.StartsWith("num:", StringComparison.Ordinal) ? def[4..] : def;
+
+        kind = token switch
         {
-            string def = ((GoTypeAttribute)attr).Definition;
+            "bool" => Bool,
+            // The converter renders Go int/uint in their C# spellings (nint/nuint) inside the
+            // def token, so both spellings must map (num:nint is what `type X int` emits).
+            "int" or "nint" => Int, "int8" => Int8, "int16" => Int16, "int32" => Int32, "int64" => Int64,
+            "uint" or "nuint" => Uint, "uint8" => Uint8, "uint16" => Uint16, "uint32" => Uint32, "uint64" => Uint64,
+            "uintptr" => Uintptr,
+            "float32" => Float32, "float64" => Float64,
+            "complex64" => Complex64, "complex128" => Complex128,
+            "@string" or "string" => String,
+            _ => Invalid
+        };
 
-            if (string.IsNullOrEmpty(def))
-                return false; // a plain struct/interface marker — not a named-underlying wrapper
-
-            string token = def.StartsWith("num:", StringComparison.Ordinal) ? def[4..] : def;
-
-            kind = token switch
-            {
-                "bool" => Bool,
-                // The converter renders Go int/uint in their C# spellings (nint/nuint) inside the
-                // def token, so both spellings must map (num:nint is what `type X int` emits).
-                "int" or "nint" => Int, "int8" => Int8, "int16" => Int16, "int32" => Int32, "int64" => Int64,
-                "uint" or "nuint" => Uint, "uint8" => Uint8, "uint16" => Uint16, "uint32" => Uint32, "uint64" => Uint64,
-                "uintptr" => Uintptr,
-                "float32" => Float32, "float64" => Float64,
-                "complex64" => Complex64, "complex128" => Complex128,
-                "@string" or "string" => String,
-                _ => Invalid
-            };
-
-            return kind != Invalid;
-        }
-
-        return false;
+        return kind != Invalid;
     }
 }
