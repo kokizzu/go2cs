@@ -293,6 +293,11 @@ public static class TestHost
 
             TestReporter reporter = new(registry.Package, options.Json, options.Verbose);
             TestRunner runner = new(registry, options, reporter, workingDirectory);
+
+            // TEST-HOST-ONLY: contain an unhandled exception escaping a goroutine so it fails ONE
+            // test instead of the whole run. See TestRunner.ContainGoroutineException — a converted
+            // program keeps Go's process-death fidelity, which is golib's default.
+            Goroutine.ContainUnhandledExceptions(runner.ContainGoroutineException);
             Task<nint> run = Task.Run(() => RunTests(registry, runner));
 
             if (!run.Wait(options.Timeout))
@@ -575,6 +580,41 @@ public sealed class TestRunner
     }
 
     /// <summary>
+    /// The goroutine-root containment policy for this run: an unhandled NON-panic exception escaping
+    /// a goroutine fails the test that started it, and the run continues.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Without containment, ANY such exception on a goroutine thread reached golib's AppDomain
+    /// backstop and killed the host mid-run: no result files, and every test after the crash reported
+    /// no result at all — a single defect read as a mass infrastructure wall across the package. It is
+    /// the same failure mode the owner-check comment below describes, arriving from converted code
+    /// rather than from testing.T misuse.
+    /// </para>
+    /// <para>
+    /// A panic is deliberately NOT contained (golib never offers one): Go's own behavior for an
+    /// unrecovered panic in a goroutine is process death, and the differential oracle must keep
+    /// observing that. This containment is a property of the HOST — many independent Go programs in
+    /// one process — never of converted-program semantics.
+    /// </para>
+    /// <para>
+    /// If the failed goroutine was the one that would have unblocked its test, that test now waits
+    /// rather than dying instantly, and the package timeout ends it — which still writes every result
+    /// gathered so far, where the crash wrote none.
+    /// </para>
+    /// </remarks>
+    internal void ContainGoroutineException(Exception ex)
+    {
+        // The test whose goroutine this is: an AsyncLocal flows with the ExecutionContext that
+        // ThreadPool.QueueUserWorkItem captures — exactly how golib dispatches a goroutine — so the
+        // attribution survives any depth of goroutine spawning goroutines.
+        if (TestExecution.Current is TestExecution execution)
+            execution.RecordGoroutineFailure(ex);
+        else
+            RecordInfrastructureFailure("", $"unhandled exception on a goroutine outside any test: {ex}");
+    }
+
+    /// <summary>
     /// Records a host-level infrastructure failure that cannot be attached to a live execution —
     /// e.g. testing.T misuse observed after its test already completed, or an unexpected exception
     /// escaping an execution thread. Counted toward the exit code and disclosed as an event so the
@@ -614,6 +654,11 @@ public sealed class TestExecution
     // an overflow is uncatchable, killing the whole host. 256MB reserves address space only
     // (pages commit on demand), giving Go-scale headroom at no real memory cost.
     private const int TestThreadStackSize = 256 * 1024 * 1024;
+
+    // The test a goroutine belongs to. Set on the test's own thread, it flows into every goroutine
+    // that thread starts (and into theirs, transitively) because ThreadPool.QueueUserWorkItem —
+    // golib's goroutine dispatch — captures the ExecutionContext an AsyncLocal lives in.
+    private static readonly AsyncLocal<TestExecution?> s_current = new();
 
     private readonly TestRunner m_runner;
     private readonly TestExecution? m_parent;
@@ -828,10 +873,41 @@ public sealed class TestExecution
         }
     }
 
+    internal static TestExecution? Current => s_current.Value;
+
+    internal void RecordGoroutineFailure(Exception ex)
+    {
+        string message = $"unhandled exception on a goroutine started by {Name}: {ex}";
+        bool completed;
+
+        lock (m_syncRoot)
+        {
+            completed = m_finished;
+
+            if (!completed)
+            {
+                InfrastructureFailed = true;
+                m_logs.Add(message);
+            }
+        }
+
+        if (completed)
+        {
+            // The test already reported its terminal event and was counted; record the late failure
+            // at the runner level so it still fails the run and is disclosed as an event.
+            m_runner.RecordInfrastructureFailure(Name, message);
+        }
+        else
+        {
+            FailFromInfrastructure();
+        }
+    }
+
     private void Execute(Action<ж<testing_package.T>> action)
     {
         Stopwatch timer = Stopwatch.StartNew();
         m_ownerThread = Environment.CurrentManagedThreadId;
+        s_current.Value = this;
         m_runner.Report(new TestEvent(m_runner.Package, Name, "run", Source: Source, Line: Line));
 
         testing_package.T t = new() { Execution = this };
