@@ -398,7 +398,7 @@ private static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with un
     w.writeBits(flag, 3);
     w.flush();
     w.writeBits((int32)length, 16);
-    w.writeBits((int32)(~(uint16)length), 16);
+    w.writeBits((int32)(((uint16)(~(uint16)length))), 16);
 }
 
 [GoRecv] internal static void writeFixedHeader(this ref huffmanBitWriter w, bool isEof) {

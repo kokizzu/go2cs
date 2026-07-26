@@ -24,6 +24,17 @@ internal static void Main() {
     nint i = 0xFF;
     i &= ~(nint)(0x0F);
     fmt.Println(i);
+    nint length = 5;
+    fmt.Println((int32)(((uint16)(~(uint16)length))));
+    fmt.Println((uint64)(((uint16)(~(uint16)length))));
+    uint8 b8 = 5;
+    fmt.Println((int32)(((uint8)(~b8))), (uint64)(((uint8)(~b8))));
+    uint32 u32 = 5;
+    int16 i16 = 5;
+    fmt.Println(~u32, (int32)(~i16), ~i16);
+    uint16 u16 = 5;
+    u16 = (uint16)(((uint16)(~u16)));
+    fmt.Println(u16);
 }
 
 } // end main_package

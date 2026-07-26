@@ -34,4 +34,27 @@ func main() {
 	var i int = 0xFF
 	i &^= 0x0F      // int LHS: no cast needed
 	fmt.Println(i)  // 240
+
+	// A STANDALONE `^x` on a sub-int unsigned type, WIDENED. Go's complement has the
+	// operand's own type and wraps to its width (`^uint16(5)` == 65530); C# promotes
+	// byte/ushort to int first, so the unwidened `~` is -6 — the same low 16 bits, but a
+	// widening use carries the sign bits. compress/flate's stored-block header did exactly
+	// `writeBits(int32(^uint16(length)), 16)`, and the sign-extended value flooded the
+	// 64-bit bit accumulator: every NoCompression stream came out corrupt.
+	length := 5
+	fmt.Println(int32(^uint16(length)))  // 65530
+	fmt.Println(uint64(^uint16(length))) // 65530
+
+	var b8 uint8 = 5
+	fmt.Println(int32(^b8), uint64(^b8)) // 250 250
+
+	// Types at least 32 bits wide, and SIGNED narrow types, keep C#'s own result.
+	var u32 uint32 = 5
+	var i16 int16 = 5
+	fmt.Println(^u32, int32(^i16), ^i16) // 4294967290 -6 -6
+
+	// Round-tripping back into the narrow type is unaffected.
+	var u16 uint16 = 5
+	u16 = ^u16
+	fmt.Println(u16) // 65530
 }

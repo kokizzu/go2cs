@@ -873,6 +873,38 @@ h.Value.flags &= unchecked((uint8)~hashWriting);
 
 An LHS type that `int` widens to implicitly (`int`/`int32`/`int64`) needs no cast and stays `a &= ~b`. (Guarded by the `AndNotAssignNarrow` behavioral test, which exercises both an ident LHS and a struct-field LHS — they route through different assignment-emission paths.)
 
+### A standalone `^x` on `uint8`/`uint16` truncates back to the operand's type
+
+The same `int` promotion has a **silent-value** face, not just a CS0266 face. Go's `^x` has x's own
+type, so on a sub-int UNSIGNED type the complement wraps to that width — `^uint16(5)` is `65530`. C#
+promotes `byte`/`ushort` to `int` first, so bare `~x` is `-6`: identical in the low 16 bits, but every
+**widening** use then carries the sign bits, and no cast is required to make it compile:
+
+```go
+w.writeBits(int32(^uint16(length)), 16)     // compress/flate, stored-block header
+```
+```csharp
+w.writeBits((int32)((uint16)(~(uint16)length)), 16);
+```
+
+Without the inner truncation this wrote `-6`, and `writeBits`' `bits |= uint64(b) << nbits`
+sign-extended it across the whole 64-bit accumulator — so every level-0 (`NoCompression`) DEFLATE
+stream was garbage and the decoder rejected its own encoder's output with `flate: corrupt input
+before offset 59`. It compiled clean and only `compress/zlib`'s `TestWriter`, which round-trips at
+every level, caught it.
+
+Only unsigned `uint8`/`uint16` need this. A **signed** narrow type is already value-correct (C#'s `~`
+of a sign-extended operand equals the sign-extended Go result: `int32(^int16(5))` is `-6` in both
+languages), and every type at least 32 bits wide (`uint`, `uint32`, `uint64`, `uintptr`, all signed
+widths) keeps its own type under C#'s `~`. A NAMED type routes through its golib wrapper's operator.
+
+Where the result is *immediately* narrowed back by the surrounding narrow-arithmetic cast the inner
+truncation is redundant — `takeU8(^a)` renders `takeU8((uint8)((uint8)(~a)))`. That is accepted
+cosmetic noise: the two forms are value-identical, and the alternative (deciding at the unary site
+whether the enclosing context widens) trades a silent-corruption hole for readability. (Guarded by
+the `AndNotAssignNarrow` behavioral test's widening cases — `int32(^uint16(x))`, `uint64(^uint8(x))`,
+the `uint32`/`int16` no-op controls, and the narrow round-trip.)
+
 ### Logical operators on a named boolean type cast through `bool`
 A Go defined type whose underlying type is `bool` (`type boolVal bool`) is modeled as a `[GoType("bool")]` struct with an implicit `bool` conversion but no logical operators. Go's `!`, `&&`, and `||` on such a value yield that **same named type**, so `return !y` / `return x && y` in a function returning an interface the type implements (go/constant's `UnaryOp`/`BinaryOp`, returning the `Value` interface) still satisfies the interface. A bare `!y` / `x && y` in C# collapses to a plain `bool` — which cannot implicitly convert to the interface (CS0029), and `!` has no operator on the struct (CS0023). The converter casts each operand through `bool`, applies the operator, then casts the result back to the named type so it keeps satisfying the interface:
 
