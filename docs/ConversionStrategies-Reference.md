@@ -3202,6 +3202,67 @@ var c = new channel<nint>(3);
 
 Map reads honor Go's nil-map and comma-ok semantics (see [Nil and Zero Values](#nil-and-zero-values) and [Multi-Result Values and Comma-Ok Forms](#multi-result-values-and-comma-ok-forms)).
 
+### The NIL map key
+
+Go's map accepts **nil as a key** whenever the key type can be nil — `map[any]V`, `map[error]V`,
+`map[*T]V`, a named-interface key — and that entry is an ordinary entry: it reads, comma-oks,
+overwrites, deletes, counts toward `len`, is visited by `range`, is dropped by `clear`, appears in a
+composite literal, and copies through `maps.Clone`. The converter renders it as `default!`, so the
+Go and C# sides line up member for member:
+
+```go
+m := make(map[any]string)
+m[nil] = "nil-key"
+v, ok := m[nil]
+delete(m, nil)
+lit := map[any]int{nil: 1, "b": 2}
+```
+```csharp
+var m = new map<any, @string>();
+m[default!] = nilKeyˢ;
+var (v, ok) = m[default!, ꟷ];
+delete(m, default!);
+var lit = new map<any, nint>{[default!] = 1, [(@string)"b"u8] = 2};
+```
+
+golib's `map<TKey, TValue>` wraps a `Dictionary<TKey, TValue>`, which **rejects a null key** with
+`ArgumentNullException` *before* its comparer is ever consulted — there is no comparer to teach. So
+the nil entry gets a slot of its own: the backing store is a private `Dictionary<TKey, TValue>`
+**subclass** carrying `HasNilKey` + `NilKeyValue`, and every member of the map surface routes a null
+key to that slot (indexer get/set, `Set`, comma-ok, `TryGetValue`, `ContainsKey`, `Add`, `Remove`,
+`Clear`, `Count`, both enumerators, `Keys`/`Values`, the copy constructor behind `CloneMap`, and
+`ToString`). `range` yields the nil entry ahead of the buckets — Go's range order is unspecified and
+deliberately randomized, so the position is free, and every map *without* a nil key stays on the
+dictionary's own enumerator unwrapped.
+
+Two design points are load-bearing. First, the slot lives on the **store, not on the struct**: a Go
+map is a reference type, so every copy of a `map<K,V>` value must observe the same nil entry, and a
+field on the `readonly struct` would make a write through one copy invisible through another.
+Deriving from `Dictionary` (rather than wrapping it) also keeps the struct exactly one reference wide
+— no extra allocation, no widened value — and leaves every existing Dictionary interop path (the
+implicit conversions, the `ICollection<T>` casts, the reflection bridge's backing-field probe)
+binding as before. Second, `map<K,V>` is golib's hottest type, so the nil test is
+`!typeof(TKey).IsValueType && (object?)key is null`: `typeof(TKey).IsValueType` is a **JIT-time
+constant**, so for a value-type key — `map[string]V`, `map[int]V`, the overwhelmingly common shape —
+the test and every branch it guards fold away and those instantiations compile to exactly the code
+they had before nil keys existed. Only a reference-typed key pays a null check, and the slot
+operations themselves sit behind `[MethodImpl(MethodImplOptions.NoInlining)]` so the hot members stay
+small. Measured: `PerfMap` (`map[int]int`) is flat — 276.4 ms with the slot vs 271.8 ms without
+(median of three 9-run sessions each), inside the 260–310 ms run-to-run band the *unchanged* build
+spans on the same machine.
+
+One consumer cannot see the slot and had to be threaded explicitly: `reflect.DeepEqual` walks the
+backing `IDictionary` through a reflected field probe, which never yields a nil key, and a lone nil
+entry does not necessarily show up in the `Len` comparison either (one extra ordinary key on the
+other side hides it). `IMap` therefore exposes a non-generic `NilKeyEntry` — `(present, boxed value)`
+— with a default implementation on `IMap<TKey, TValue>` that asks the comma-ok indexer, so the
+generated named-map wrappers satisfy it with no go2cs-gen change; DeepEqual compares that entry
+before the dictionary walk. (Guarded by `NilMapKey`: set/get/comma-ok/overwrite/delete/`len`/`range`/
+`clear` on `map[any]string`, a nil-key composite literal, `map[error]int`, and the nil-key reads on
+both a nil and an empty map, all output-compared vs `go run`. Before the fix the very first
+`m[nil] = …` threw `ArgumentNullException`, which is how sync's `TestIssue40999` died as an
+infrastructure error.)
+
 ### Named map types and constrained map access
 
 A defined map type — `type Grades map[string]int` — emits the `[GoType("map[K, V]")] partial struct` forward declaration (completing the long-standing `visitMapType` stub), implemented by go2cs-gen's Map template: full forwarding of `IMap<K, V>` (including the two-value comma-ok indexer), `IDictionary<K, V>`, enumeration, and the `ISupportMake` factory through the wrapped `map<K, V>`. Its composite literal wraps the concrete map literal in the named constructor — `new Grades(new map<@string, nint>{["a"u8] = 1})` — mirroring named arrays/slices (a direct indexer-initializer would target a default wrapper with no backing dictionary; the old emission produced Go-style `key: value` inside C# braces — CS1513). Comma-ok indexing works through a **constrained map type parameter** too: `v, ok := m[k]` where `M ~map[K]V` detects the map CORE of the constraint (both at the assignment's tuple gate and in the index emission) and routes the same `m[k, ꟷ]` two-value indexer, which lives on `IMap<K, V>` itself. The **nil comparison** `m == nil` — Go's only legal map comparison, maps.Clone's nil-preserve guard — emits the `IMap.IsNil` property (`if (m.IsNil)`; backing-store null, distinct from an allocated empty map — no operator exists on a type parameter, CS8761), and `delete(m, k)` on a constrained map binds a golib `delete(IMap<K, V>, K)` overload (key/value types infer from the interface conversion). (Guarded by the `GenericTypeInference` extension `EqualMaps` — a maps.Equal clone over a named map type through the constraint, comma-ok + comparable-erased equality, values vs Go.)

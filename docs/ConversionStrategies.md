@@ -686,6 +686,13 @@ var u = new channel<nint>(0);        // capacity 0 — real rendezvous semantics
 var (unit, ok) = unitMap[u, ꟷ];      // two-value indexer via the ꟷ sentinel
 ```
 
+A **nil key** is an ordinary key in Go wherever the key type can be nil (`map[any]V`, `map[error]V`,
+`map[*T]V`), and it renders as `default!` — `m[nil] = "x"` → `m[default!] = xˢ`. `Dictionary<K,V>`
+rejects a null key outright, so golib's backing store is a Dictionary subclass carrying a dedicated
+nil-key slot that every map member routes to; the test that finds it is a JIT-time constant, so a
+value-type key (`map[string]V`, `map[int]V`) compiles to exactly the code it did before and `PerfMap`
+stays flat.
+
 golib's `channel<T>` is a faithful port of Go's runtime channel (hchan + selectgo): an unbuffered
 send really waits for a receiver, `cap`/`len` report Go's values, a blocking `select` commits
 exactly ONE case chosen uniformly at random among the ready ones, and close/panic semantics match
@@ -744,7 +751,7 @@ default: {
 ```
 
 **Full detail:** [Reference → Maps and Channels](ConversionStrategies-Reference.md#maps-and-channels) —
-named map/channel types, constrained map access through type parameters, the real channel runtime
+the nil map key's dedicated slot, named map/channel types, constrained map access through type parameters, the real channel runtime
 (hchan + selectgo: rendezvous, cap/len, single-fire, uniform-random), and full `select` lowering
 (terminating/empty clauses, escaping comm-clause bindings).
 

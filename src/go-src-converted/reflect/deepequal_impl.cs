@@ -134,6 +134,17 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
         if (m1 is null || m2 is null) {
             return m1 is null == m2 is null;
         }
+        // Go's range visits a NIL key like any other, but the backing Dictionary cannot HOLD one —
+        // golib keeps that entry in a dedicated slot, invisible to the walk below (and its presence
+        // alone does not show up in the Len comparison above, which one extra ordinary key hides).
+        (bool nilPresent1, object? nilValue1) = v1.boxed is IMap nilMap1 ? nilMap1.NilKeyEntry : (false, null);
+        (bool nilPresent2, object? nilValue2) = v2.boxed is IMap nilMap2 ? nilMap2.NilKeyEntry : (false, null);
+        if (nilPresent1 != nilPresent2) {
+            return false;
+        }
+        if (nilPresent1 && !deepValueEqualBoxed(makeReflectValue(nilValue1), makeReflectValue(nilValue2), visited)) {
+            return false;
+        }
         foreach (DictionaryEntry entry in m1) {
             if (!m2.Contains(entry.Key)) {
                 // Go: MapIndex yields the invalid Value for a missing key → not equal.

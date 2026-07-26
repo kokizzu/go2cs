@@ -949,6 +949,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckNilChannelSelectDefault() => CheckTarget("NilChannelSelectDefault");
 
     [TestMethod]
+    public void CheckNilMapKey() => CheckTarget("NilMapKey");
+
+    [TestMethod]
     public void CheckNilMapOperations() => CheckTarget("NilMapOperations");
 
     [TestMethod]
