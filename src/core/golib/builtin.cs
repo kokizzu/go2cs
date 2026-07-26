@@ -1568,28 +1568,85 @@ public static class builtin
                 return true;
         }
 
-        Type targetType = target.GetType();
-
-        if (typeOfT.IsInterface)
+        if (AssertFacts<T>.IsInterface)
         {
+            // The Go DYNAMIC VALUE, never the wrapper. A pointer-sourced interface value is a
+            // generated IжAdapter standing in for the *T it wraps — the adapter class itself
+            // carries NONE of T's methods, so probing the adapter never matches: a pointer-sourced
+            // error could not assert to any dyn interface, and errors.Is's
+            // `err.(interface{ Is(error) bool })` silently failed for every wrapped error. Unwrap
+            // to the receiver box so every tier below sees the box's (= *T's) method set.
+            // Null-guarded: an adapter holding a nil *T keeps the adapter view, since no
+            // dispatchable receiver exists to build an implementation over.
+            object subject = target is IжAdapter { Box: not null } boxAdapter ? boxAdapter.Box : target;
+            Type subjectType = subject.GetType();
+            int epoch = AdapterRegistry.Epoch;
+
+            // Go's itab cache: ONE entry per (dynamic type, interface), whichever tier produced it.
+            // Everything below this block is the FILL, and runs at most once per pair per epoch.
+            if (Itab<T>.TryGetResolver(subjectType, epoch, out Func<object, object>? resolve))
+            {
+                if (resolve is not null && resolve(subject) is T resolved)
+                {
+                    value = resolved;
+                    return true;
+                }
+
+                value = default!;
+                return false;
+            }
+
             // NAMED-interface resolution by Go METHOD-SET semantics: a raw receiver box (ж<X>)
             // matches an interface that *X implements — re-wrap it in the generated pointer
             // adapter its module initializer registered. An IжAdapter asserting to a DIFFERENT
             // interface re-wraps its box the same way (Go re-derives the target interface from
-            // the dynamic type *X).
-            object? dynamicValue = target is IжAdapter pointerAdapter ? pointerAdapter.Box : target;
-
-            if (dynamicValue is not null && AdapterRegistry.TryWrap(dynamicValue, typeOfT, out object? wrapped) && wrapped is T wrappedTarget)
+            // the dynamic type *X). This nominal tier keeps its precedence over the shell tier.
+            if (AdapterRegistry.TryGetAdapterFactory(subjectType, typeOfT, out Func<object, object>? nominal) &&
+                nominal(subject) is T nominalValue)
             {
-                value = wrappedTarget;
+                Itab<T>.Record(subjectType, epoch, nominal);
+                value = nominalValue;
                 return true;
             }
+
+            // The structural probe matched but no compile-time adapter exists for the pair. For a
+            // NAMED interface that is the case the GoImplement recorders CANNOT cover — a dynamic
+            // type in an assembly converted after the interface's own (io/fs before os) — and for
+            // an ANONYMOUS one it is the normal case, since a Go type never nominally implements an
+            // interface literal. Both are answered the same way: build the implementation at run
+            // time from the shells go2cs-gen emitted beside the interface. This tier fires only
+            // where the tier above answered MISS, so it cannot regress an assertion that already
+            // resolved.
+            if (Implements<T>(subject) && AdapterBinder.TryCreate(subject, typeOfT, out object? shell) && shell is T shellValue)
+            {
+                // Read the decision back from AdapterRegistry — the durable record — rather than
+                // forming a second one, so the projection can never disagree with it. If the
+                // read-back finds nothing the pair simply stays undecided and is re-formed on next
+                // use, which is what the previous per-interface projection did too.
+                if (AdapterRegistry.TryGetShellFactory(subjectType, typeOfT, out Func<object, object>? shellFactory) && shellFactory is not null)
+                    Itab<T>.Record(subjectType, epoch, shellFactory);
+
+                value = shellValue;
+                return true;
+            }
+
+            // A decided MISS is memoized exactly like a hit — building a shell costs ~1 µs and fmt
+            // probes three interfaces per formatted value, so the negative is what keeps the runtime
+            // tier off the hot path. Recording null (rather than reading a factory back) is also
+            // what makes the miss STABLE: a factory that exists but throws its binding failure out
+            // of construction answers false here, and reading that factory back would have made the
+            // NEXT assert re-throw instead of answering false again.
+            Itab<T>.Record(subjectType, epoch, null);
+            value = default!;
+            return false;
         }
 
-        if (typeOfT.IsValueType && targetType.IsValueType)
+        if (AssertFacts<T>.IsValueType)
         {
+            Type targetType = target.GetType();
+
             // Only dynamic, unnamed types can be converted to each other in Go
-            if (typeOfT.IsDynamicType() && targetType.IsDynamicType())
+            if (targetType.IsValueType && typeOfT.IsDynamicType() && targetType.IsDynamicType())
             {
                 ImmutableHashSet<string> typeOfTFieldNames = typeOfT.GetStructFieldNames();
 
@@ -1611,79 +1668,76 @@ public static class builtin
             }
         }
 
-        // The structural fallback resolves the GO DYNAMIC VALUE's method set. A pointer-sourced
-        // interface value is a generated IжAdapter standing in for the *T it wraps — the adapter
-        // class itself carries NONE of T's methods, so probing (or ᴛAs-converting) the adapter
-        // never matches: a pointer-sourced error could not assert to any dyn interface, and
-        // errors.Is's `err.(interface{ Is(error) bool })` silently failed for every wrapped
-        // error. Unwrap to the receiver box — exactly as the registry path above and error.cs's
-        // interface-assert route already do — so the probe and the Δ-wrapper both see the box's
-        // (= *T's) method set. Null-guarded: an adapter holding a nil *T keeps the adapter view,
-        // since no dispatchable receiver exists to build a wrapper over.
-        object structuralTarget = target is IжAdapter { Box: not null } boxAdapter ? boxAdapter.Box : target;
-
-        // A (dynamic type, interface) pair the runtime-shell tier below has already decided —
-        // positively or negatively — answers from the memo, ahead of the structural gate and of shell
-        // construction (which costs ~1 µs; fmt probes three interfaces per formatted value). The
-        // per-interface cache is a projection of AdapterRegistry, which remains the durable record.
-        if (typeOfT.IsInterface && ShellCache<T>.TryGetFactory(structuralTarget.GetType(), out Func<object, object>? shellFactory))
-        {
-            if (shellFactory is not null && shellFactory(structuralTarget) is T memoizedShell)
-            {
-                value = memoizedShell;
-                return true;
-            }
-
-            value = default!;
-            return false;
-        }
-
-        if (!typeOfT.IsInterface || !Implements<T>(structuralTarget))
-        {
-            value = default!;
-            return false;
-        }
-
-        // The structural probe matched but no compile-time adapter exists for the pair. For a NAMED
-        // interface that is the case the GoImplement recorders CANNOT cover — a dynamic type in an
-        // assembly converted after the interface's own (io/fs before os) — and for an ANONYMOUS one
-        // it is the normal case, since a Go type never nominally implements an interface literal.
-        // Both are answered the same way: build the implementation at run time from the shells
-        // go2cs-gen emitted beside the interface. This tier fires only where the tiers above answered
-        // MISS, so it cannot regress an assertion that already resolved.
-        if (AdapterBinder.TryCreate(structuralTarget, typeOfT, out object? shell) && shell is T shellValue)
-        {
-            ShellCache<T>.Publish(structuralTarget.GetType());
-            value = shellValue;
-            return true;
-        }
-
-        ShellCache<T>.Publish(structuralTarget.GetType());
         value = default!;
         return false;
     }
 
-    // Per-interface projection of AdapterRegistry's (dynamic type, interface) shell decisions. The
-    // registry stays the authoritative durable record — AdapterBinder writes every decision there —
-    // but the ASSERT hot path reads through here, so a memoized assert costs one Type-keyed lookup on
-    // a dictionary the JIT specializes per closed interface, instead of hashing a (Type, Type) tuple
-    // against one shared dictionary. Same shape (and same reasoning) as Cache<TInterface> below.
-    private static class ShellCache<TInterface>
+    // Per-closed-generic facts about the asserted type. typeof(T).IsInterface and .IsValueType are
+    // RuntimeType property CALLS on the assert hot path; hoisting them here turns each into a static
+    // field read the JIT folds to a constant for the closed instantiation. Same shape (and same
+    // reasoning) as Cache<TInterface> below.
+    private static class AssertFacts<T>
     {
-        private static readonly ConcurrentDictionary<Type, Func<object, object>?> s_factories = [];
+        internal static readonly bool IsInterface = typeof(T).IsInterface;
+        internal static readonly bool IsValueType = typeof(T).IsValueType;
+    }
 
-        public static bool TryGetFactory(Type valueType, out Func<object, object>? factory)
+    // Go's itab cache, projected per closed interface: ONE entry per (dynamic type, interface),
+    // whichever tier produced it — a registered nominal adapter factory, a runtime duck-typing shell
+    // factory, or null for a decided MISS. It replaces consulting the nominal (Type, Type) registry
+    // and a separate per-interface shell memo in sequence on every assert, which cost two dictionary
+    // lookups (the first of which could never hit for a shell-resolved pair) and three GetType()
+    // calls. AdapterRegistry remains the authoritative durable record — every decision is FORMED
+    // there and only projected here.
+    private static class Itab<TInterface>
+    {
+        // Dynamic type + resolver + the registration epoch they were decided under, published as ONE
+        // immutable object. Two separate static fields could be observed TORN across threads — type
+        // A paired with resolver B would silently construct the WRONG implementation — and carrying
+        // the epoch inside the entry lets a late registration invalidate every entry at once with no
+        // clearing step that could race a concurrent fill (a stale entry is simply never matched,
+        // and is overwritten the next time its pair is formed).
+        private sealed class Entry(int epoch, Type type, Func<object, object>? resolve)
         {
-            return s_factories.TryGetValue(valueType, out factory);
+            internal readonly int Epoch = epoch;
+            internal readonly Type Type = type;
+            internal readonly Func<object, object>? Resolve = resolve;
         }
 
-        // Mirrors the registry's decision for the pair after AdapterBinder has made (and recorded)
-        // it. Reading it back rather than taking it as an argument keeps the registry the single
-        // place a decision is FORMED, so the projection can never disagree with the record.
-        public static void Publish(Type valueType)
+        private static readonly ConcurrentDictionary<Type, Entry> s_entries = [];
+
+        // Monomorphic slot in front of the dictionary: an assert site is overwhelmingly single-typed,
+        // the same locality assumption Go's compiler-emitted per-site type checks rely on. A hit is a
+        // static field read, an int compare and a reference compare; a miss costs one extra reference
+        // compare before the dictionary.
+        private static Entry? s_last;
+
+        public static bool TryGetResolver(Type dynamicType, int epoch, out Func<object, object>? resolve)
         {
-            if (AdapterRegistry.TryGetShellFactory(valueType, typeof(TInterface), out Func<object, object>? factory))
-                s_factories[valueType] = factory;
+            Entry? last = Volatile.Read(ref s_last);
+
+            if (last is not null && last.Epoch == epoch && ReferenceEquals(last.Type, dynamicType))
+            {
+                resolve = last.Resolve;
+                return true;
+            }
+
+            if (s_entries.TryGetValue(dynamicType, out Entry? entry) && entry.Epoch == epoch)
+            {
+                Volatile.Write(ref s_last, entry);
+                resolve = entry.Resolve;
+                return true;
+            }
+
+            resolve = null;
+            return false;
+        }
+
+        public static void Record(Type dynamicType, int epoch, Func<object, object>? resolve)
+        {
+            Entry entry = new(epoch, dynamicType, resolve);
+            s_entries[dynamicType] = entry;
+            Volatile.Write(ref s_last, entry);
         }
     }
 

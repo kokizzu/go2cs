@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace go;
 
@@ -42,6 +43,8 @@ public static class AdapterRegistry
     // lazily-loaded assembly's module initializer.
     private static readonly ConcurrentDictionary<(Type, Type), Func<object, object>?> s_shellFactories = new();
 
+    private static int s_epoch;
+
     /// <summary>
     /// Registers a factory that wraps a Go dynamic value of runtime type <paramref name="valueType"/>
     /// in its generated adapter implementing <paramref name="interfaceType"/>.
@@ -51,8 +54,26 @@ public static class AdapterRegistry
     /// <param name="factory">Factory that wraps a value of <paramref name="valueType"/> in the adapter.</param>
     public static void Register(Type valueType, Type interfaceType, Func<object, object> factory)
     {
-        s_factories.TryAdd((valueType, interfaceType), factory);
+        // Only a registration that actually ADDS a pair can invalidate a memoized decision: the
+        // dictionary is first-wins, so a duplicate changes nothing an itab entry could have observed.
+        if (s_factories.TryAdd((valueType, interfaceType), factory))
+            Interlocked.Increment(ref s_epoch);
     }
+
+    /// <summary>
+    /// Monotonic counter bumped by every nominal adapter registration that adds a new pair.
+    /// </summary>
+    /// <remarks>
+    /// The type-assert machinery projects both tiers into one per-interface itab cache
+    /// (<c>builtin.Itab&lt;TInterface&gt;</c>), which reintroduces the hazard the two separate
+    /// dictionaries here were written to avoid: a shell — or a decided MISS — memoized for a pair
+    /// <em>before</em> a lazily-loaded assembly's module initializer registers the generated adapter
+    /// for that same pair. Every itab entry carries the epoch it was decided under, so one
+    /// registration invalidates all of them at once and each pair is re-formed against this
+    /// registry on next use. Registration happens from module initializers and this dictionary is
+    /// append-only, so the steady state never re-forms anything.
+    /// </remarks>
+    internal static int Epoch => Volatile.Read(ref s_epoch);
 
     /// <summary>
     /// Attempts to wrap Go dynamic <paramref name="value"/> in its registered adapter implementing
@@ -64,7 +85,7 @@ public static class AdapterRegistry
     /// <returns><c>true</c> if an adapter factory was registered for the pair; otherwise, <c>false</c>.</returns>
     public static bool TryWrap(object value, Type interfaceType, [NotNullWhen(true)] out object? wrapped)
     {
-        if (s_factories.TryGetValue((value.GetType(), interfaceType), out Func<object, object>? factory))
+        if (TryGetAdapterFactory(value.GetType(), interfaceType, out Func<object, object>? factory))
         {
             wrapped = factory(value);
             return true;
@@ -72,6 +93,23 @@ public static class AdapterRegistry
 
         wrapped = null;
         return false;
+    }
+
+    /// <summary>
+    /// Looks up the generated adapter factory registered for a (dynamic type, interface) pair,
+    /// without constructing anything.
+    /// </summary>
+    /// <param name="valueType">Runtime type of the Go dynamic value.</param>
+    /// <param name="interfaceType">Target interface type.</param>
+    /// <param name="factory">Registered wrapping factory, if the pair has one.</param>
+    /// <returns><c>true</c> if an adapter factory was registered for the pair; otherwise, <c>false</c>.</returns>
+    /// <remarks>
+    /// The type-assert machinery memoizes the factory itself rather than re-hashing the
+    /// <c>(Type, Type)</c> key on every assert, so it needs the lookup separated from the wrap.
+    /// </remarks>
+    internal static bool TryGetAdapterFactory(Type valueType, Type interfaceType, [NotNullWhen(true)] out Func<object, object>? factory)
+    {
+        return s_factories.TryGetValue((valueType, interfaceType), out factory);
     }
 
     /// <summary>

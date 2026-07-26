@@ -587,6 +587,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckIotaEnum() => CheckTarget("IotaEnum");
 
     [TestMethod]
+    public void CheckItabLateRegistration() => CheckTarget("ItabLateRegistration");
+
+    [TestMethod]
     public void CheckKeyedLiteralIfaceAssign() => CheckTarget("KeyedLiteralIfaceAssign");
 
     [TestMethod]

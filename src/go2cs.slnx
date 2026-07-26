@@ -271,6 +271,9 @@
     <Project Path="Tests/Behavioral/IoLike/IoLike.csproj" />
     <Project Path="Tests/Behavioral/IoLike/FsLike/IoLike.FsLike.csproj" />
     <Project Path="Tests/Behavioral/IotaEnum/IotaEnum.csproj" />
+    <Project Path="Tests/Behavioral/ItabLateRegistration/ItabLateRegistration.csproj" />
+    <Project Path="Tests/Behavioral/ItabLateRegistration/lib/ItabLateRegistration.lib.csproj" />
+    <Project Path="Tests/Behavioral/ItabLateRegistration/latelib/ItabLateRegistration.latelib.csproj" />
     <Project Path="Tests/Behavioral/KeyedLiteralIfaceAssign/KeyedLiteralIfaceAssign.csproj" />
     <Project Path="Tests/Behavioral/KeywordNamedTypes/KeywordNamedTypes.csproj" />
     <Project Path="Tests/Behavioral/KeywordTrueFalseIdent/KeywordTrueFalseIdent.csproj" />

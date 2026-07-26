@@ -640,6 +640,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckIotaEnum() => CheckTarget("IotaEnum");
 
     [TestMethod]
+    public void CheckItabLateRegistration() => CheckTarget("ItabLateRegistration");
+
+    [TestMethod]
     public void CheckKeyedLiteralIfaceAssign() => CheckTarget("KeyedLiteralIfaceAssign");
 
     [TestMethod]
