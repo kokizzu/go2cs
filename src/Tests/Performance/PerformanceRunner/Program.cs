@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using PerformanceRunner;
 
 return Runner.Main(args);
@@ -187,6 +188,10 @@ namespace PerformanceRunner
                     v.BuildOk = true;
             }
 
+            // ----- Measurement configuration guard (before anything is compared or timed) -----
+            if (phases.Contains(Phase.Verify) || phases.Contains(Phase.Measure))
+                CheckJitConfiguration(projects, results);
+
             // ----- Phase: Verify (identical output across variants) -----
             if (phases.Contains(Phase.Verify))
                 RunVerify(projects, results, noAot);
@@ -200,7 +205,11 @@ namespace PerformanceRunner
                 Console.WriteLine();
                 Console.WriteLine(markdown);
 
-                if (updateReadme && !UpdateReadme(markdown))
+                // Never publish a table produced by a failing run -- a rejected measurement
+                // configuration or a mismatched checksum must not reach README.md.
+                if (updateReadme && results.Values.Any(r => r.Failed))
+                    Console.Error.WriteLine("README not updated: the run has failing project(s).");
+                else if (updateReadme && !UpdateReadme(markdown))
                     return 1;
             }
 
@@ -435,6 +444,87 @@ namespace PerformanceRunner
                     Console.WriteLine("FAILED (column reported as n/a)");
                 }
             }
+        }
+
+        // ---- Measurement configuration guard ----
+
+        private const string DynamicCodeSwitch = "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported";
+
+        // The published JIT row must come from a framework-dependent, JIT-hosted binary with dynamic
+        // code enabled -- what README.md says it is. Building one is not enough to have one: the Native
+        // AOT publish's BUILD step copies through $(OutDir), which the converter csproj template pinned
+        // to the JIT tree, so the publish overwrote the JIT binary in place with a self-contained,
+        // dynamic-code-disabled one. Every JIT figure published before 2026-07-26 was timed on THAT
+        // binary -- 3.3x slow on PerfIfaceShell (2,514.9 ms vs 754.3 ms) -- and MSBuild's incremental
+        // check then saw the outputs up to date, so a later JIT build did not repair it and the error
+        // survived every re-measure. The template now defers to $(BaseOutputPath); this guard is what
+        // makes a recurrence impossible to publish. Per the project's false-green discipline a
+        // misconfigured binary FAILS the run rather than quietly shipping a number.
+        //
+        // JIT-only by construction: the Native AOT variant is legitimately self-contained with dynamic
+        // code disabled, and that asymmetry is exactly what the guard is detecting.
+        private static void CheckJitConfiguration(IReadOnlyList<string> projects, Dictionary<string, ProjectResult> results)
+        {
+            Console.Write("[Config]   JIT runtimeconfig... ");
+            int rejected = 0;
+
+            foreach (string p in projects)
+            {
+                ProjectResult result = results[p];
+                VariantResult vr = result.Variants[Variant.Jit];
+
+                if (!vr.BuildOk)
+                    continue;
+
+                string exe = GetExePath(p, Variant.Jit);
+                string configPath = Path.Combine(Path.GetDirectoryName(exe)!, $"{p}.runtimeconfig.json");
+                string? problem = InspectJitRuntimeConfig(configPath);
+
+                if (problem is null)
+                    continue;
+
+                // Clearing BuildOk keeps Verify and Measure away from it, so the column reports n/a
+                // rather than a number nobody can trust.
+                vr.BuildOk = false;
+                vr.Message = "misconfigured";
+                result.Failed = true;
+                result.Messages.Add($"JIT measurement configuration rejected: {problem} [{configPath}]");
+                rejected++;
+            }
+
+            Console.WriteLine(rejected == 0 ? "ok" : $"{rejected} REJECTED");
+        }
+
+        private static string? InspectJitRuntimeConfig(string path)
+        {
+            if (!File.Exists(path))
+                return "runtimeconfig.json not found";
+
+            JsonElement options;
+
+            try
+            {
+                using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(path));
+
+                if (!doc.RootElement.TryGetProperty("runtimeOptions", out JsonElement raw))
+                    return "no runtimeOptions section";
+
+                options = raw.Clone();
+            }
+            catch (JsonException ex)
+            {
+                return $"unreadable runtimeconfig.json ({ex.Message})";
+            }
+
+            if (options.TryGetProperty("includedFrameworks", out _))
+                return "self-contained (includedFrameworks present), but the JIT row is documented as framework-dependent -- the output tree has been overwritten by a publish";
+
+            if (options.TryGetProperty("configProperties", out JsonElement props) &&
+                props.TryGetProperty(DynamicCodeSwitch, out JsonElement dynamicCode) &&
+                dynamicCode.ValueKind == JsonValueKind.False)
+                return $"{DynamicCodeSwitch} is false -- every reflective invoker would run its non-emitting fallback";
+
+            return null;
         }
 
         // ---- Phase: Verify ----

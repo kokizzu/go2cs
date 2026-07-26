@@ -74,6 +74,28 @@ Go projects that contain a `main` function are converted into a standard C# exec
 
 An executable's **`<AssemblyName>` is the last element of its import path**, mirroring `go build`, which names a binary after the module/directory's final segment — so `module example.com/colordemo` produces `colordemo.exe`, not `example.com.colordemo.exe` (the full dotted project name). Only the `Exe` assembly name is shortened; the `.csproj` filename keeps the full dotted path (its identity in the solution and in `ProjectReference`s), and **library** assemblies keep the full dotted `<AssemblyName>` — their DLL and NuGet `PackageId` (`go.$(AssemblyName)`) must stay unique across the package graph (e.g. `github.com.fatih.color`).
 
+### Generated output path: `$(OutDir)` defers to `$(BaseOutputPath)`
+
+Both project templates (`src/go2cs/csproj-template.xml` and the `-tests` host's `test-csproj-template.xml`) give the generated project a stable default output path:
+
+```xml
+<!-- Build outputs are copied to $(OutDir), so this default must also defer to an explicit
+     $(BaseOutputPath); otherwise that redirection silently never takes effect. -->
+<PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
+  <OutDir>bin\$(Configuration)\$(TargetFramework)\</OutDir>
+</PropertyGroup>
+```
+
+The **`AND '$(BaseOutputPath)'==''` half is load-bearing** and was added 2026-07-26. MSBuild copies build outputs to `$(OutDir)`, and `$(OutDir)` is what the SDK *derives* from `$(BaseOutputPath)` late in the import order — so a template that pins `OutDir` in the project body outranks any `BaseOutputPath` an outer `Directory.Build.props` sets, and that redirection is discarded without a warning. The generated project would keep writing to `bin\<Config>\<tfm>\` while `OutputPath` reported the redirected location, which is exactly how the defect hides.
+
+Three separate isolation intents were silently defeated by the unconditional pin, all found at once:
+
+- **`-tests` host output** — `test-csproj-template.xml` sets `BaseOutputPath=bin\tests\` (alongside `obj\tests\`) precisely so the test project and the production project that *shares its directory* do not collide. The `obj\` half worked; the `bin\` half never did, so every converted test host was writing into its production package's output tree.
+- **The Native AOT perf publishes** — `src/Tests/Performance/Directory.Build.props` sets `BaseOutputPath=bin\aot-build\` under its `PerfAot` gate. With the pin, the AOT publish's *build* step wrote through `OutDir` into the JIT tree and overwrote the JIT binary with a self-contained, `IsDynamicCodeSupported=false` one — which the runner then measured and published as the "JIT" column. See `docs/Phase4/DESIGN-iface-shell-caching.md` §10.
+- **End-user layouts** — any converted project consumed under an artifacts/CI convention that sets `BaseOutputPath` was ignored the same way.
+
+Two guards pin this. `TestCsprojTemplateEmitsWellFormedXml` / `TestTestCsprojTemplateEmitsWellFormedXml` (`src/go2cs/csprojTemplate_test.go`) substitute each template exactly as its emitter does and stream the result through `encoding/xml`, which enforces the same comment rules MSBuild's loader does — a malformed template breaks the entire corpus at compile time and is otherwise only visible ~450 s into a full behavioral run. On the measurement side, `PerformanceRunner` reads the JIT binary's `runtimeconfig.json` before timing anything and **fails the run** if it is self-contained or has dynamic code disabled.
+
 ### Cross-package imports (importing another package / assembly)
 
 When a package imports another and uses its exported surface, the converter must agree, on both the **producer** side (converting the imported package) and the **consumer** side (resolving the `import`), on the imported package's C# `(namespace, class)` and emit a `ProjectReference` to its generated `.csproj`. The package class is `<packageName>_package` and the namespace is the root `go` plus the import path's leading segments, so the two sides line up when the Go package name equals the import path's last segment (the usual layout: `import "x/y/barlib"` → package `barlib` → `go.x.y.barlib_package`). The consumer emits `using barlib = …barlib_package;` and references members as `barlib.Thing`.

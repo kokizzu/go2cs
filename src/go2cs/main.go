@@ -2048,7 +2048,7 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 
 	// The golib runtime and the go2cs-gen analyzer are FIXED ProjectReferences hardcoded in
 	// csproj-template.xml (NOT part of the ProjectReferenceMarker block), so swap them here. Match strings
-	// must stay in sync with csproj-template.xml (~line 75 analyzer, ~line 113 golib); TestRecurseNuGetReferences
+	// must stay in sync with csproj-template.xml (~line 78 analyzer, ~line 118 golib); TestRecurseNuGetReferences
 	// guards against drift. The analyzer keeps PrivateAssets="all" (go.gen is a DevelopmentDependency
 	// analyzer package, delivered under analyzers/dotnet/cs — analyzer-only, no compile/runtime asset).
 	if emitNuGet {
