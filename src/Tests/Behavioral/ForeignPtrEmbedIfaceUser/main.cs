@@ -20,21 +20,26 @@ partial class main_package {
     public partial ref ж<ForeignPtrEmbedIfaceLib_package.Meter> Meter { get; }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object valueˢ = (@string)"value:"u8;
+private static readonly object pointerˢ = (@string)"pointer:"u8;
+private static readonly object pairˢ = (@string)"pair:"u8;
+
 internal static void Main() {
     ref var box = ref heap<meterBox>(out var Ꮡbox);
     box = new meterBox(Meter: ForeignPtrEmbedIfaceLib.NewMeter());
     accumulator a = box;
     a.Add(5);
     a.Add(7);
-    fmt.Println((@string)"value:"u8, a.Total(), box.Meter.Total());
+    fmt.Println(valueˢ, a.Total(), box.Meter.Total());
     accumulator p = new meterBoxжaccumulator(Ꮡbox);
     p.Add(10);
-    fmt.Println((@string)"pointer:"u8, p.Total(), box.Meter.Total());
+    fmt.Println(pointerˢ, p.Total(), box.Meter.Total());
     var pair = ForeignPtrEmbedIfaceLib.NewPair();
     combo c = new ForeignPtrEmbedIfaceLib_Pairжcombo(pair);
     c.Add(3);
     c.Set(42);
-    fmt.Println((@string)"pair:"u8, c.Get(), c.Add(1), pair.Value.Meter.Total());
+    fmt.Println(pairˢ, c.Get(), c.Add(1), pair.Value.Meter.Total());
 }
 
 } // end main_package

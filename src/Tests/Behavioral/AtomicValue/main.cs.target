@@ -6,12 +6,17 @@ using sync;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string alphaˢ = "alpha"u8;
+private static readonly @string betaˢ = "beta"u8;
+private static readonly @string gammaˢ = "gamma"u8;
+
 internal static void Main() {
     ref var v = ref heap(new atomic.Value(), out var Ꮡv);
     fmt.Println(Ꮡv.Load() == default!);
-    @string a = "alpha"u8;
-    @string b = "beta"u8;
-    @string c = "gamma"u8;
+    @string a = alphaˢ;
+    @string b = betaˢ;
+    @string c = gammaˢ;
     Ꮡv.Store(a);
     fmt.Println(AreEqual(Ꮡv.Load(), a));
     var old = Ꮡv.Swap(b);

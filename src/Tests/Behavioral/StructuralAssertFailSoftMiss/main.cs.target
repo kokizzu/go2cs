@@ -20,6 +20,9 @@ internal static T Get<T>(this box<T> b) {
     return k.v;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string notAStringGetterˢ = "not a string getter"u8;
+
 [GoType("dyn")] partial interface describe_type {
     @string Get();
 }
@@ -30,7 +33,7 @@ internal static @string describe(any x) {
             return "string getter: "u8 + g.Get();
         }
     }
-    return "not a string getter"u8;
+    return notAStringGetterˢ;
 }
 
 internal static void Main() {

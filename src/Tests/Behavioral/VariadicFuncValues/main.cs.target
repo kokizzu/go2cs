@@ -23,10 +23,16 @@ internal static void apply(Funcꓸꓸꓸ<@string, nint, @string> f) {
     fmt.Println(f("spread"u8, nums.ꓸꓸꓸ));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bareˢ = "bare"u8;
+
 internal static void report(Actionꓸꓸꓸ<@string, any> emit) {
     emit("%s=%d"u8, (@string)"x"u8, (nint)(7));
-    emit("bare"u8);
+    emit(bareˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object nilFuncValueˢ = (@string)"nil func value"u8;
 
 internal static void Main() {
     apply(gather);
@@ -36,7 +42,7 @@ internal static void Main() {
     });
     Funcꓸꓸꓸ<@string, nint, @string> f = default!;
     if (f == default!) {
-        fmt.Println((@string)"nil func value"u8);
+        fmt.Println(nilFuncValueˢ);
     }
     f = gather;
     fmt.Println(f("var"u8, 10));

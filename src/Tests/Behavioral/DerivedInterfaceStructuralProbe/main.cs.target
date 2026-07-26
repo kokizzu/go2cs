@@ -24,6 +24,9 @@ partial class main_package {
     return e.msg;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string notTemporaryˢ = "not temporary"u8;
+
 [GoType("dyn")] partial interface classify_type :
     error
 {
@@ -36,7 +39,7 @@ internal static @string classify(error err) {
             return fmt.Sprintf("temporary=%v msg=%v"u8, te.Temporary(), te.Error());
         }
     }
-    return "not temporary"u8;
+    return notTemporaryˢ;
 }
 
 [GoType] partial interface stringish {
@@ -77,6 +80,9 @@ internal static @string classify(error err) {
     return s.id;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string notDeepˢ = "not deep"u8;
+
 [GoType("dyn")] partial interface describe_type :
     named
 {
@@ -89,7 +95,7 @@ internal static @string describe(any v) {
             return fmt.Sprintf("%v %v %v"u8, d.String(), d.Name(), d.Depth());
         }
     }
-    return "not deep"u8;
+    return notDeepˢ;
 }
 
 internal static void Main() {

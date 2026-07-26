@@ -12,16 +12,22 @@ partial class main_package {
     internal nint r;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string circleˢ = "circle"u8;
+
 [GoRecv] internal static @string name(this ref circle c) {
-    return "circle"u8;
+    return circleˢ;
 }
 
 [GoType] partial struct square {
     internal nint s;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string squareˢ = "square"u8;
+
 [GoRecv] internal static @string name(this ref square q) {
-    return "square"u8;
+    return squareˢ;
 }
 
 [GoType] partial struct dot {
@@ -31,6 +37,10 @@ partial class main_package {
 internal static @string name(this dot d) {
     return "dot"u8;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilShapeˢ = "nil shape"u8;
+private static readonly @string unknownˢ = "unknown"u8;
 
 internal static @string classify(shape v) {
     switch (v.type()) {
@@ -44,13 +54,16 @@ internal static @string classify(shape v) {
         return "val "u8 + t.name();
     }
     case null: {
-        return "nil shape"u8;
+        return nilShapeˢ;
     }
     default: {
         var t = v;
-        return "unknown"u8;
+        return unknownˢ;
     }}
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string multiOtherˢ = "multi other"u8;
 
 internal static @string classifyMulti(shape v) {
     switch (v.type()) {
@@ -64,7 +77,7 @@ internal static @string classifyMulti(shape v) {
     }
     default: {
         var t = v;
-        return "multi other"u8;
+        return multiOtherˢ;
     }}
 }
 
@@ -79,6 +92,12 @@ internal static void grow(shape v) {
         break;
     }}
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object anyHoldsCircleˢ = (@string)"any holds *circle"u8;
+private static readonly object anyMissˢ = (@string)"any miss"u8;
+private static readonly object shapeHoldsSquareˢ = (@string)"shape holds *square"u8;
+private static readonly object shapeMissˢ = (@string)"shape miss"u8;
 
 internal static void Main() {
     var c = Ꮡ(new circle(r: 1));
@@ -97,22 +116,22 @@ internal static void Main() {
     any x = c;
     switch (x.type()) {
     case ж<circle>: {
-        fmt.Println((@string)"any holds *circle"u8);
+        fmt.Println(anyHoldsCircleˢ);
         break;
     }
     default: {
-        fmt.Println((@string)"any miss"u8);
+        fmt.Println(anyMissˢ);
         break;
     }}
 
     shape v = new squareжshape(q);
     switch (v.type()) {
     case ж<square>: {
-        fmt.Println((@string)"shape holds *square"u8);
+        fmt.Println(shapeHoldsSquareˢ);
         break;
     }
     default: {
-        fmt.Println((@string)"shape miss"u8);
+        fmt.Println(shapeMissˢ);
         break;
     }}
 

@@ -4,34 +4,51 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object returnedNormallyFromFˢ = (@string)"Returned normally from f."u8;
+
 internal static void Main() {
     f();
     panicValues();
-    fmt.Println((@string)"Returned normally from f."u8);
+    fmt.Println(returnedNormallyFromFˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object recoveredInFˢ = (@string)"Recovered in f"u8;
+private static readonly object callingGˢ = (@string)"Calling g."u8;
+private static readonly object returnedNormallyFromGˢ = (@string)"Returned normally from g."u8;
 
 internal static void f() => func((defer, recover) => {
     defer(() => {
         {
             var r = recover(); if (r != default!) {
-                fmt.Println((@string)"Recovered in f"u8, r);
+                fmt.Println(recoveredInFˢ, r);
             }
         }
     });
-    fmt.Println((@string)"Calling g."u8);
+    fmt.Println(callingGˢ);
     g(0);
-    fmt.Println((@string)"Returned normally from g."u8);
+    fmt.Println(returnedNormallyFromGˢ);
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object panickingˢ = (@string)"Panicking!"u8;
+private static readonly object deferInGˢ = (@string)"Defer in g"u8;
+private static readonly object printingInGˢ = (@string)"Printing in g"u8;
 
 internal static void g(nint i) => func((defer, recover) => {
     if (i > 3) {
-        fmt.Println((@string)"Panicking!"u8);
+        fmt.Println(panickingˢ);
         throw panic(fmt.Sprintf("%v"u8, i));
     }
-    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"Defer in g", i, defer);
-    fmt.Println((@string)"Printing in g"u8, i);
+    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), deferInGˢ, i, defer);
+    fmt.Println(printingInGˢ, i);
     g(i + 1);
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noPanicˢ = "no panic"u8;
+private static readonly @string otherNotAPlainStringˢ = "other (not a plain string)"u8;
 
 internal static @string panicValueKind(Action f) {
     @string @out = default!;
@@ -40,7 +57,7 @@ internal static @string panicValueKind(Action f) {
             var p = recover();
             switch (p.type()) {
             case null: {
-                @out = "no panic"u8;
+                @out = noPanicˢ;
                 break;
             }
             case @string v: {
@@ -61,7 +78,7 @@ internal static @string panicValueKind(Action f) {
             }
             default: {
                 var v = p;
-                @out = "other (not a plain string)"u8;
+                @out = otherNotAPlainStringˢ;
                 break;
             }}
         });

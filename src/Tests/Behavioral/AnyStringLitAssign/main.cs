@@ -8,19 +8,26 @@ partial class main_package {
     internal any value;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noneˢ = "none"u8;
+
 internal static @string sprint(any x) {
     switch (x.type()) {
     case @string v: {
         return "str:"u8 + v;
     }
     case null: {
-        return "none"u8;
+        return noneˢ;
     }
     default: {
         var v = x;
         return fmt.Sprintf("other:%v"u8, v);
     }}
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object missingˢ = (@string)"<missing>"u8;
+private static readonly object fieldˢ = (@string)"field"u8;
 
 internal static void Main() {
     any arg = default!;
@@ -31,12 +38,12 @@ internal static void Main() {
         var a = vᴛ1;
 
         if (a == default!) {
-            a = (@string)"<missing>"u8;
+            a = missingˢ;
         }
         fmt.Println(i, sprint(a));
     }
     holder h = default!;
-    h.value = (@string)"field"u8;
+    h.value = fieldˢ;
     fmt.Println(sprint(h.value));
 }
 

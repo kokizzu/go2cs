@@ -6,8 +6,11 @@ partial class main_package {
 
 public delegate @string Handler(nint _Δp0, @string _Δp1);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string handlerˢ = "handler"u8;
+
 internal static @string tag(this Handler h) {
-    return "handler"u8;
+    return handlerˢ;
 }
 
 // type Plain is a methodless func type — rendered inline as its base delegate

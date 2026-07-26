@@ -22,6 +22,9 @@ internal static void sum(slice<nint> s, channel<nint> c) {
     c.ᐸꟷ(sum);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object quitˢ = (@string)"quit"u8;
+
 internal static void fibonacci(channel<nint> f, channel<nint> quit) {
     nint x = 0;
     nint y = 1;
@@ -34,14 +37,17 @@ internal static void fibonacci(channel<nint> f, channel<nint> quit) {
             break;
         }
         case 1 when selᴛ2.ꟷᐳ(out _): {
-            fmt.Println((@string)"quit"u8);
+            fmt.Println(quitˢ);
             return;
         }}
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string outputˢ = "output"u8;
+
 internal static void sendOnly(channel/*<-*/<@string> s) {
-    s.ᐸꟷ("output"u8);
+    s.ᐸꟷ(outputˢ);
 }
 
 public static Action<Func<nint, bool>> All(this IntSlice s) {
@@ -87,6 +93,15 @@ internal static void sieve() {
 internal static nint f() {
     return 0;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object unexpectedSendToNilˢ = (@string)"unexpected send to nil channel"u8;
+private static readonly object unexpectedReceivedFromˢ = (@string)"unexpected received from nil channel: "u8;
+private static readonly object closedChannel2Selectedˢ = (@string)"closed channel 2 selected immediately: "u8;
+private static readonly object unexpectedOkˢ = (@string)"unexpected: OK: "u8;
+private static readonly object unexpectedˢ = (@string)"unexpected: "u8;
+private static readonly @string helloˢ = "hello"u8;
+private static readonly object racedˢ = (@string)"raced:"u8;
 
 internal static void Main() {
     var ch = new channel<nint>(2);
@@ -135,23 +150,23 @@ internal static void Main() {
     var selᴛ11 = ch4;
     switch (select(selᴛ7, ᐸꟷ(selᴛ8, ꓸꓸꓸ), ᐸꟷ(selᴛ9, ꓸꓸꓸ), ᐸꟷ(selᴛ10, ꓸꓸꓸ), ᐸꟷ(selᴛ11, ꓸꓸꓸ))) {
     case 0: {
-        fmt.Println((@string)"unexpected send to nil channel"u8);
+        fmt.Println(unexpectedSendToNilˢ);
         break;
     }
     case 1 when selᴛ8.ꟷᐳ(out var v1): {
-        fmt.Println((@string)"unexpected received from nil channel: "u8, v1);
+        fmt.Println(unexpectedReceivedFromˢ, v1);
         break;
     }
     case 2 when selᴛ9.ꟷᐳ(out var v1): {
-        fmt.Println((@string)"closed channel 2 selected immediately: "u8, v1);
+        fmt.Println(closedChannel2Selectedˢ, v1);
         break;
     }
     case 3 when selᴛ10.ꟷᐳ(out var v1, out var okΔ2): {
-        fmt.Println((@string)"unexpected: OK: "u8, okΔ2, (@string)" -- got: "u8, v1);
+        fmt.Println(unexpectedOkˢ, okΔ2, (@string)" -- got: "u8, v1);
         break;
     }
     case 4 when selᴛ11.ꟷᐳ(out a[f()]): {
-        fmt.Println((@string)"unexpected: "u8, a[f()]);
+        fmt.Println(unexpectedˢ, a[f()]);
         break;
     }}
     var s = new nint[]{7, 2, 8, -9, 4, 0}.slice();
@@ -184,14 +199,14 @@ internal static void Main() {
     sieve();
     var ca = new channel<@string>(1);
     var cb = new channel<@string>(1);
-    ca.ᐸꟷ("hello"u8);
+    ca.ᐸꟷ(helloˢ);
     fmt.Println(firstMsg(ca, cb));
     var done = new channel<EmptyStruct>(0);
     fmt.Println(poll(done));
     close(done);
     fmt.Println(poll(done));
     var (r, outerPrimary) = raceSend();
-    fmt.Println((@string)"raced:"u8, r.value, r.primary, outerPrimary);
+    fmt.Println(racedˢ, r.value, r.primary, outerPrimary);
 }
 
 internal static @string firstMsg(channel<@string> a, channel<@string> b) {
@@ -207,16 +222,20 @@ internal static @string firstMsg(channel<@string> a, channel<@string> b) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string doneˢ = "done"u8;
+private static readonly @string pendingˢ = "pending"u8;
+
 internal static @string poll(channel<EmptyStruct> done) {
     var selᴛ14 = done;
     switch (trySelect(ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
     case 0 when selᴛ14.ꟷᐳ(out _): {
-        return "done"u8;
+        return doneˢ;
     }
     default: {
         break;
     }}
-    return "pending"u8;
+    return pendingˢ;
 }
 
 [GoType] partial struct raceResult {

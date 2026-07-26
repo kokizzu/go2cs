@@ -157,14 +157,20 @@ public static ж<Type> TypeFor<T>() {
     internal uint32 _;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tMcount0ˢ = "t.mcount > 0"u8;
+
 public static unsafe slice<Method> Methods(this ж<UncommonType> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     if (t.Mcount == 0) {
         return default!;
     }
-    return new slice<Method>(new ReadOnlySpan<Method>((Method*)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), (uintptr)t.Moff, "t.mcount > 0"u8)), (int)(t.Mcount)));
+    return new slice<Method>(new ReadOnlySpan<Method>((Method*)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), (uintptr)t.Moff, tMcount0ˢ)), (int)(t.Mcount)));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tXcount0ˢ = "t.xcount > 0"u8;
 
 public static unsafe slice<Method> ExportedMethods(this ж<UncommonType> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -172,7 +178,7 @@ public static unsafe slice<Method> ExportedMethods(this ж<UncommonType> Ꮡt) {
     if (t.Xcount == 0) {
         return default!;
     }
-    return new slice<Method>(new ReadOnlySpan<Method>((Method*)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), (uintptr)t.Moff, "t.xcount > 0"u8)), (int)(t.Xcount)));
+    return new slice<Method>(new ReadOnlySpan<Method>((Method*)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), (uintptr)t.Moff, tXcount0ˢ)), (int)(t.Xcount)));
 }
 
 internal static @unsafe.Pointer addChecked(@unsafe.Pointer p, uintptr x, @string whySafe) {
@@ -490,6 +496,9 @@ public static ж<Type> Out(this ж<ΔFuncType> Ꮡt, nint i) {
     return (Ꮡt.OutSlice()[i]);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tInCount0ˢ = "t.inCount > 0"u8;
+
 public static unsafe slice<ж<Type>> InSlice(this ж<ΔFuncType> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
@@ -500,8 +509,11 @@ public static unsafe slice<ж<Type>> InSlice(this ж<ΔFuncType> Ꮡt) {
     if (t.InCount == 0) {
         return default!;
     }
-    return new slice<ж<Type>>(new ReadOnlySpan<ж<Type>>((Type**)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), uadd, "t.inCount > 0"u8)), (int)(t.InCount)));
+    return new slice<ж<Type>>(new ReadOnlySpan<ж<Type>>((Type**)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), uadd, tInCount0ˢ)), (int)(t.InCount)));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string outCount0ˢ = "outCount > 0"u8;
 
 public static unsafe slice<ж<Type>> OutSlice(this ж<ΔFuncType> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -514,7 +526,7 @@ public static unsafe slice<ж<Type>> OutSlice(this ж<ΔFuncType> Ꮡt) {
     if ((TFlag)(t.TFlag & TFlagUncommon) != 0) {
         uadd += @unsafe.Sizeof(new UncommonType(nil));
     }
-    return new slice<ж<Type>>(new ReadOnlySpan<ж<Type>>((Type**)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), uadd, "outCount > 0"u8)) + (int)(t.InCount), (int)(t.InCount + outCount) - (int)(t.InCount)));
+    return new slice<ж<Type>>(new ReadOnlySpan<ж<Type>>((Type**)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), uadd, outCount0ˢ)) + (int)(t.InCount), (int)(t.InCount + outCount) - (int)(t.InCount)));
 }
 
 [GoRecv] public static bool IsVariadic(this ref ΔFuncType t) {
@@ -550,8 +562,11 @@ public static ж<byte> DataChecked(this ΔName n, nint off, @string whySafe) {
     return (ж<byte>)(uintptr)(addChecked(new @unsafe.Pointer(n.Bytes), (uintptr)off, whySafe));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string theRuntimeDoesnTNeedToˢ = "the runtime doesn't need to give you a reason"u8;
+
 public static ж<byte> Data(this ΔName n, nint off) {
-    return (ж<byte>)(uintptr)(addChecked(new @unsafe.Pointer(n.Bytes), (uintptr)off, "the runtime doesn't need to give you a reason"u8));
+    return (ж<byte>)(uintptr)(addChecked(new @unsafe.Pointer(n.Bytes), (uintptr)off, theRuntimeDoesnTNeedToˢ));
 }
 
 public static bool IsExported(this ΔName n) {
@@ -566,10 +581,13 @@ public static bool IsEmbedded(this ΔName n) {
     return (byte)((n.Bytes.Value) & ((byte)(1 << (int)(3)))) != 0;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string readVarintˢ = "read varint"u8;
+
 public static (nint, nint) ReadVarint(this ΔName n, nint off) {
     nint v = 0;
     for (nint i = 0; ᐧ ; i++) {
-        var x = n.DataChecked(off + i, "read varint"u8).Value;
+        var x = n.DataChecked(off + i, readVarintˢ).Value;
         v += ((nint)((byte)(x & 0x7f))).Lsh((uint64)((7 * i)));
         if ((byte)(x & 0x80) == 0) {
             return (i + 1, v);
@@ -597,12 +615,15 @@ internal static nint writeVarint(slice<byte> buf, nint n) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nonEmptyStringˢ = "non-empty string"u8;
+
 public static @string Name(this ΔName n) {
     if (n.Bytes == nil) {
         return ""u8;
     }
     var (i, l) = n.ReadVarint(1);
-    return @unsafe.String(n.DataChecked(1 + i, "non-empty string"u8), l);
+    return @unsafe.String(n.DataChecked(1 + i, nonEmptyStringˢ), l);
 }
 
 public static @string Tag(this ΔName n) {
@@ -611,7 +632,7 @@ public static @string Tag(this ΔName n) {
     }
     var (i, l) = n.ReadVarint(1);
     var (i2, l2) = n.ReadVarint(1 + i + l);
-    return @unsafe.String(n.DataChecked(1 + i + l + i2, "non-empty string"u8), l2);
+    return @unsafe.String(n.DataChecked(1 + i + l + i2, nonEmptyStringˢ), l2);
 }
 
 public static ΔName NewName(@string n, @string tag, bool exported, bool embedded) {

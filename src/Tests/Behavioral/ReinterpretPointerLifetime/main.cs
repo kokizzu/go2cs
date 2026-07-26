@@ -28,14 +28,18 @@ internal static void churn() {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object aliasˢ = (@string)"alias:"u8;
+private static readonly object lifetimeˢ = (@string)"lifetime:"u8;
+
 internal static void Main() {
     var h = Ꮡ(new header(kind: 24, size: 16, name: "string"u8));
     var v = asView(h);
     v.Value.kind = 25;
-    fmt.Println((@string)"alias:"u8, (~h).kind == 25, (~v).size == 16, (~v).name == "string"u8);
+    fmt.Println(aliasˢ, (~h).kind == 25, (~v).size == 16, (~v).name == "string"u8);
     var retained = asView(Ꮡ(new header(kind: 24, size: 16, name: "retained"u8)));
     churn();
-    fmt.Println((@string)"lifetime:"u8, (~retained).kind == 24, (~retained).size == 16, (~retained).name == "retained"u8);
+    fmt.Println(lifetimeˢ, (~retained).kind == 24, (~retained).size == 16, (~retained).name == "retained"u8);
 }
 
 } // end main_package

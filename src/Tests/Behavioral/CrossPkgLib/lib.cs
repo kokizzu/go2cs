@@ -71,8 +71,11 @@ public static ж<Meter> NewMeter() {
     @string Report();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string countˢ = "count"u8;
+
 [GoRecv] public static @string Report(this ref Meter m) {
-    return "count"u8;
+    return countˢ;
 }
 
 [GoType] partial struct Alarm {

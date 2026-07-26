@@ -19,12 +19,16 @@ public static void Add(this Values v, @string key, @string value) {
     v[key] = append(v[key], value);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string colorˢ = "color"u8;
+private static readonly @string blueˢ = "blue"u8;
+
 internal static void Main() {
     var v = new Values(new map<@string, slice<@string>>{});
-    v.Add("color"u8, "red"u8);
-    v.Add("color"u8, "blue"u8);
-    fmt.Println(v.Get("color"u8));
-    fmt.Println(len(v["color"u8]));
+    v.Add(colorˢ, "red"u8);
+    v.Add(colorˢ, blueˢ);
+    fmt.Println(v.Get(colorˢ));
+    fmt.Println(len(v[colorˢ]));
     fmt.Println(len(v));
 }
 

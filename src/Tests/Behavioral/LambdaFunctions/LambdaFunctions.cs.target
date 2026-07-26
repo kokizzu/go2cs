@@ -6,8 +6,11 @@ partial class main_package {
 
 // type Stringy is a methodless func type — rendered inline as its base delegate
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stringyFunctionˢ = "Stringy function"u8;
+
 internal static @string foo() {
-    return "Stringy function"u8;
+    return stringyFunctionˢ;
 }
 
 internal static void takesAFunction(Func<@string> foo) {
@@ -28,6 +31,11 @@ internal static (nint, error) half(nint n) {
     return (n / 2, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object halvedˢ = (@string)"halved"u8;
+private static readonly @string anonymousStringyˢ = "anonymous stringy\n"u8;
+private static readonly @string zoneˢ = "zone"u8;
+
 internal static void Main() {
     var probe = (nint n, error errΔ1) => {
         if (errΔ1 != default!) {
@@ -38,18 +46,18 @@ internal static void Main() {
             return errΔ1;
         }
         (var k, errΔ1) = half(m);
-        fmt.Println((@string)"halved"u8, m, k);
+        fmt.Println(halvedˢ, m, k);
         return errΔ1;
     };
     fmt.Println(probe(8, default!), probe(3, default!));
     takesAFunction(new Func<@string>(foo));
     Func<@string> f = returnsAFunction();
     f();
-    Func<@string> baz = () => "anonymous stringy\n"u8;
+    Func<@string> baz = () => anonymousStringyˢ;
     fmt.Print(baz());
     fmt.Println(cached(), cached());
     loader = (slice<byte>, error) (@string name) => (slice<byte>(name), default!);
-    var (b, err) = loader("zone"u8);
+    var (b, err) = loader(zoneˢ);
     fmt.Println(len(b), err == default!);
 }
 

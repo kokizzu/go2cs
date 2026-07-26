@@ -4,19 +4,23 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloˢ = "Hello"u8;
+private static readonly @string worldˢ = "World"u8;
+
 internal static void Main() {
     ref var a = ref heap(new array<@string>(2), out var Ꮡa);
-    a[0] = "Hello"u8;
-    a[1] = "World"u8;
+    a[0] = helloˢ;
+    a[1] = worldˢ;
     var p = Ꮡa.at<@string>(0);
     test(a);
     fmt.Println(a[0], a[1]);
     fmt.Println();
-    a[0] = "Hello"u8;
+    a[0] = helloˢ;
     test2(Ꮡa);
     fmt.Println(a[0], a[1]);
     fmt.Println();
-    a[0] = "Hello"u8;
+    a[0] = helloˢ;
     test3(a[..]);
     fmt.Println(a[0], a[1]);
     fmt.Println();
@@ -70,17 +74,23 @@ internal static void assignCopies() {
     fmt.Println(x[0], x[1], y[0], y[1]);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloˢ2 = "hello"u8;
+
 internal static void stest(ж<@string> Ꮡp) {
     ref var p = ref Ꮡp.Value;
 
-    p = "hello"u8;
+    p = helloˢ2;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goodbyeˢ = "Goodbye"u8;
 
 internal static void test(array<@string> a) {
     a = a.Clone();
 
     fmt.Println(a[0], a[1]);
-    a[0] = "Goodbye"u8;
+    a[0] = goodbyeˢ;
     fmt.Println(a[0], a[1]);
 }
 
@@ -88,13 +98,13 @@ internal static void test2(ж<array<@string>> Ꮡa) {
     ref var a = ref Ꮡa.Value;
 
     fmt.Println(a[0], a[1]);
-    a[0] = "Goodbye"u8;
+    a[0] = goodbyeˢ;
     fmt.Println(a[0], a[1]);
 }
 
 internal static void test3(slice<@string> a) {
     fmt.Println(a[0], a[1]);
-    a[0] = "Goodbye"u8;
+    a[0] = goodbyeˢ;
     fmt.Println(a[0], a[1]);
 }
 

@@ -41,8 +41,11 @@ internal static ж<Holder<ж<CrossPkgLib.Sensor>>> sensorHolder = Ꮡ(new Holder
     internal ж<CrossPkgLibꓸStatus> cur;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object notedˢ = (@string)"noted"u8;
+
 internal static void note(nint n) {
-    fmt.Println((@string)"noted"u8, n);
+    fmt.Println(notedˢ, n);
 }
 
 [GoType] partial struct badge {
@@ -114,8 +117,11 @@ internal static @string Stamp(this seal s) {
     internal nint id;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string certˢ = "cert"u8;
+
 internal static @string Label(this cert c) {
-    return "cert"u8;
+    return certˢ;
 }
 
 internal static @string Seal(this cert c) {
@@ -171,6 +177,19 @@ internal static (slice<byte>, error) readWith(@string @base, @string @file) {
     return (slice<byte>(@base + @file), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object promotedLabelˢ = (@string)"promoted label:"u8;
+private static readonly object coarseˢ = (@string)"coarse"u8;
+private static readonly object fineˢ = (@string)"fine"u8;
+private static readonly object unknownˢ = (@string)"unknown"u8;
+private static readonly object tokenˢ = (@string)"token:"u8;
+private static readonly @string abcdeˢ = "abcde"u8;
+private static readonly object leafˢ = (@string)"leaf:"u8;
+private static readonly object branchˢ = (@string)"branch:"u8;
+private static readonly @string helloˢ = "hello"u8;
+private static readonly object verdictScoreˢ = (@string)"verdict score:"u8;
+private static readonly object talliesScoreˢ = (@string)"tallies score:"u8;
+
 internal static void Main() => func((defer, recover) => {
     deferǃ(note, (nint)(CrossPkgLib.Precision), defer);
     var b = CrossPkgLib.Boiling();
@@ -198,7 +217,7 @@ internal static void Main() => func((defer, recover) => {
     g.Temp = 60D;
     fmt.Println((float64)g.Temp, g.Sensor.Hot());
     Labeled lb2 = g;
-    fmt.Println((@string)"promoted label:"u8, lb2.Label());
+    fmt.Println(promotedLabelˢ, lb2.Label());
     var c = new counter(Meter: CrossPkgLib.NewMeter());
     fmt.Println(c.Meter.Value.Bump());
     ΔMeter m = c;
@@ -220,13 +239,13 @@ internal static void Main() => func((defer, recover) => {
     fmt.Println((float64)rg.Device.Sensor.Temp);
     var exprᴛ1 = CrossPkgLib.Precision;
     if (exprᴛ1 == 1) {
-        fmt.Println((@string)"coarse"u8);
+        fmt.Println(coarseˢ);
     }
     else if (exprᴛ1 == 2) {
-        fmt.Println((@string)"fine"u8);
+        fmt.Println(fineˢ);
     }
     else { /* default: */
-        fmt.Println((@string)"unknown"u8);
+        fmt.Println(unknownˢ);
     }
 
     fmt.Println("a" + ((@string)(rune)CrossPkgLib.Sep) + "b");
@@ -284,23 +303,23 @@ internal static void Main() => func((defer, recover) => {
     var mk = CrossPkgLib.MakeMarker("tag"u8);
     fmt.Println(mk.ΔΔMarker);
     CrossPkgLibꓸToken tok = CrossPkgLib.AsToken(42);
-    fmt.Println((@string)"token:"u8, tok);
+    fmt.Println(tokenˢ, tok);
     var wrapped = CrossPkgLib.Wrap<nint>(5);
     fmt.Println(len(wrapped), wrapped[0]);
     fmt.Println(CrossPkgLib.Pair<@string, nint>("k"u8, 8));
     Func<nint, bool> isHot = (nint tΔ1) => tΔ1 > 50;
     fmt.Println(isHot(60), isHot(40));
-    var (nd, nerr) = CrossPkgLib.Resolve(new Func<map<@string, ж<CrossPkgLib.Node>>, @string, (ж<CrossPkgLib.Node>, error)>(simpleResolve), "abcde"u8);
+    var (nd, nerr) = CrossPkgLib.Resolve(new Func<map<@string, ж<CrossPkgLib.Node>>, @string, (ж<CrossPkgLib.Node>, error)>(simpleResolve), abcdeˢ);
     fmt.Println((~nd).ID, nerr == default!);
     sensorHolder.Value.item = Ꮡ(new CrossPkgLib.Sensor(Name: "garage"u8, Temp: 30D));
     fmt.Println((~(~sensorHolder).item).Name);
     var sbx = new sensorBox(tag: "b"u8);
     sbx.Holder.item = Ꮡ(new CrossPkgLib.Sensor(Name: "shed"u8, Temp: 40D));
     fmt.Println((~sbx.Holder.item).Name, sbx.tag);
-    fmt.Println((@string)"leaf:"u8, leafEmitter.Emit());
-    fmt.Println((@string)"branch:"u8, branchEmitter.Emit());
+    fmt.Println(leafˢ, leafEmitter.Emit());
+    fmt.Println(branchˢ, branchEmitter.Emit());
     var scan = makeScanner("p:"u8);
-    var (scanName, scanData, scanErr) = scan("hello"u8);
+    var (scanName, scanData, scanErr) = scan(helloˢ);
     fmt.Println(scanName, ((@string)scanData), scanErr == default!);
     var bbuf = slice<byte>("key"u8);
     bbuf = append(bbuf, (byte)(CrossPkgLib.Sep));
@@ -308,9 +327,9 @@ internal static void Main() => func((defer, recover) => {
     rbuf = append(rbuf, (rune)(CrossPkgLib.Precision));
     fmt.Println(((@string)bbuf), len(rbuf), rbuf[1]);
     var sc = ((CrossPkgLib.Scored)new CrossPkgLib_VerdictᴠScored(((CrossPkgLib.Verdict)4)));
-    fmt.Println((@string)"verdict score:"u8, sc.Score());
+    fmt.Println(verdictScoreˢ, sc.Score());
     sc = new talliesжScored(Ꮡ(new tallies(pts: 7)));
-    fmt.Println((@string)"tallies score:"u8, sc.Score());
+    fmt.Println(talliesScoreˢ, sc.Score());
     var cal = (Action<ж<CrossPkgLib.Sensor>, CrossPkgLib.Celsius>)(CrossPkgLib.Calibrate);
     var mx = Ꮡ(new CrossPkgLib.Sensor(Name: "mx"u8, Temp: 10D));
     cal(mx, 4D);
@@ -354,8 +373,11 @@ internal static (ж<CrossPkgLib.Node>, error) simpleResolve(map<@string, ж<Cros
     nint Bump();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string taggedMeterˢ = "tagged-meter"u8;
+
 internal static @string Meter(this tagged t) {
-    return "tagged-meter"u8;
+    return taggedMeterˢ;
 }
 
 [GoType] partial struct counter {

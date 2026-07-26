@@ -37,26 +37,34 @@ internal static void write(this ж<builder> Ꮡb, @string s) {
     return ((@string)b.buf);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloˢ = "hello"u8;
+private static readonly @string worldˢ = "world"u8;
+private static readonly object caughtˢ = (@string)"caught:"u8;
+private static readonly @string seedˢ = "seed"u8;
+private static readonly @string moreˢ = "more"u8;
+private static readonly object unreachableˢ = (@string)"unreachable"u8;
+
 internal static void Main() {
     ref var b = ref heap(new builder(), out var Ꮡb);
-    Ꮡb.write("hello"u8);
+    Ꮡb.write(helloˢ);
     Ꮡb.write(", "u8);
-    Ꮡb.write("world"u8);
+    Ꮡb.write(worldˢ);
     fmt.Println(b.String());
     ((Action)(() => func((defer, recover) => {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println((@string)"caught:"u8, r);
+                    fmt.Println(caughtˢ, r);
                 }
             }
         });
         ref var src = ref heap(new builder(), out var Ꮡsrc);
-        Ꮡsrc.write("seed"u8);
+        Ꮡsrc.write(seedˢ);
         ref var cp = ref heap<builder>(out var Ꮡcp);
         cp = src;
-        Ꮡcp.write("more"u8);
-        fmt.Println((@string)"unreachable"u8);
+        Ꮡcp.write(moreˢ);
+        fmt.Println(unreachableˢ);
     })))();
 }
 

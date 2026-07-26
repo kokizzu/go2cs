@@ -1,12 +1,13 @@
 # DESIGN — retiring per-evaluation `@string` literal allocation (Tiers A / A′ / B / C)
 
-> **Status: TIERS A / A′ / B LANDED — 2026-07-25 (rev 3).** Landed as three independently-gated
-> commits (`b5164da58` golib operators + both slice-route closures; `fecf02e5f` TypeGenerator span
-> operators; `b99cf4419` combined rendering + concat decoupling), preceded by the §4.8 quiet-machine
-> baseline (`2cde35fac`). Measured: `PerfStringMatch` **11.75× → 9.87×** (Tier A −13.4%; Tier B flat
-> on this benchmark as predicted), StringView flat, goldens byte-identical through Tier A. **Tier C
-> is PENDING** — a complete design-faithful draft of the §4 pre-pass exists (see §4.9) and lands in
-> its own fully-gated session. Rev 3 records the implementation round's findings in §7.
+> **Status: COMPLETE — ALL TIERS LANDED, 2026-07-26 (rev 4).** Tiers A / A′ / B landed 2026-07-25 as
+> three independently-gated commits (`b5164da58` golib operators + both slice-route closures;
+> `fecf02e5f` TypeGenerator span operators; `b99cf4419` combined rendering + concat decoupling),
+> preceded by the §4.8 quiet-machine baseline (`2cde35fac`). The Tier C session then landed the
+> queued §3 opener (`e88443b23` — typed composite string-literal elements and any-ELEMENT composites
+> render `u8`) followed by **Tier C itself**: the whole-package hoisting pre-pass, per §4.1–§4.6, with
+> the as-built record in §4.9. Measured: `PerfStringMatch` **11.75× → 9.87×** through Tier B (Tier A
+> −13.4%; Tier B flat on this benchmark as predicted); Tier C's number is recorded in §4.9.
 > Underlying approval unchanged: rev 2 accepted by the user with **all five §6 decisions as
 > recommended**, implementation order A → A′ → B → C, each independently revertible (§4.7).
 > History: rev 1 went through a three-lens adversarial panel (semantics / converter mechanics /
@@ -304,20 +305,59 @@ String/Map non-regressing as the oracle.
 
 ---
 
-### 4.9 Tier C handoff state (rev 3)
+### 4.9 Tier C as built (rev 4, 2026-07-26)
 
-The implementation session deliberately stopped before Tier C rather than land it half-gated: its
-full §4.6 stack (plus a ~20-case guard project with goldens) is a multi-hour block, and corpus-wide
-emission churn with synthetic identifiers and init-order relocation must never land unverified.
-**What exists for the next session:** a complete, design-faithful draft of the hoisting pre-pass
-(`hoistedLiteralOperations.go`, ~684 lines, reviewed but never compiled — session scratchpad), plus
-drafted guard-project sources and doc sections. The load-bearing architecture decision to carry
-forward: **the hoist decision must be a whole-package PRE-pass keyed per `*ast.BasicLit` node, not
-an emission-time decision** — §4.1's pre-boxing rule (a field is `object` only when *every* package
-use is an any-target) and §4.4's init-order rule (`collectMovedInitVars` must know the readers
-before any file emits) both make a forward-only decision structurally impossible. Emission then
-becomes a pure substitution at the single `convExpr` `*ast.BasicLit` arm. The Tier C session also
-opens with the two remaining bare-UTF-16 composite classes (§3 last row).
+The rev-3 handoff's load-bearing architecture decision held exactly as recorded: the hoist decision
+is a **whole-package PRE-pass keyed per `*ast.BasicLit` node** (`hoistedLiteralOperations.go`), run
+immediately before `collectMovedInitVars`, and emission is a **pure substitution at the single
+`convExpr` `*ast.BasicLit` arm**. §4.1–§4.6 landed as designed. Eight things the draft did not
+anticipate, all found by the gates rather than by reading:
+
+1. **Non-BMP letters cannot be slugged.** `unicode.IsLetter('𝓤')` is true (U+1D4E4, Lu), but a C#
+   identifier is lexed over UTF-16 code units, so a surrogate pair is never valid in one:
+   `go/types`' universe type set `"𝓤"` produced `𝓤ˢ` and a CS1056/CS1519 cascade in `typeset.cs` /
+   `typeterm.cs` (the corpus build was the oracle; 9 errors, one root cause). The slug alphabet is
+   now **ASCII letters and digits**, which also closes combining marks, format characters, and RTL
+   content, and is what keeps a content-derived name readable in the first place.
+2. **An ALL-CAPS word must fold whole.** Lower-casing only the first character left `tESTINGKEYˢ`
+   for `"TESTING KEY"` — 9% of the corpus' hoisted names on the first cut (ALL-CAPS constants, HTTP
+   verbs and header names, DNS record types). §4.3's "camelCase-joined" is now implemented as such:
+   `testingKeyˢ`, `contentTypeˢ`, `getˢ`. A word that already mixes case keeps its interior.
+3. **`applyUntypedConstBoxCast` re-boxes a hoisted name.** Its already-cast guard is a
+   `HasPrefix(rendered, "(@string)")` text test, which a bare field name fails — so every any-slot
+   site emitted `(@string)(fooˢ)`, unboxing a PRE-BOXED `object` field and allocating a fresh box per
+   evaluation, i.e. defeating the hoist at exactly the sites §4.1 targets. It now skips a hoisted
+   literal outright.
+4. **A manual-conversion FUNCTION never renders a prefix marker.** §4.4 closed the marked-FILE trap;
+   `visitFuncDecl`'s `isManualFuncDecl` early return is a second one — such a declaration emits only
+   a placeholder comment, so a field claimed there would simply vanish. `isManualFuncDecl`'s core is
+   now a package-path-keyed free function the pre-pass calls.
+5. **Universe builtins must be excluded explicitly.** `go/types` records a call-site-specific
+   *signature* for `panic`/`print`/`copy`/`unsafe.Slice`, so the draft's "a builtin has no signature,
+   so it falls out" reasoning was wrong: `panic("…")` reads as an `any` parameter and would have
+   hoisted, contradicting §3's ruling that the panic literal stays bare (zero-cost until a panic
+   fires). Detected via `info.Uses[ident].(*types.Builtin)`.
+6. **The init-order rule guards live instances, not just a class.** §4.4 recorded a corpus scan
+   finding zero; with hoisting actually on, three surfaced immediately —
+   `net/http/internal/testcert` (`LocalhostKey = testingKey(…)` reads two fields declared later in
+   the same file; without the rule it would run `strings.ReplaceAll(s, "", "")`), `internal/profile`,
+   and `runtime/pprof`. Each gains a `package_init.cs`.
+7. **Two dead deref-alias prologues disappear.** `bodyReferencesIdentAsValue` is a text test whose
+   own comment names "a string" as a source of spurious matches; the words *node* and *call* inside
+   the message literals of `runtime`'s `lfnodeValidate` and `go/types`' `suspendedCall` were the only
+   textual occurrences keeping those aliases alive. Moving the literal out of the body drops the dead
+   local. Zero aliases were ADDED, and a genuinely live alias is still never dropped.
+8. **Diff classification needs a canonicalizer, not eyeballs.** The CNR diff is ~2,300 lines across
+   208 projects; it was proven to be exactly two classes by rewriting both sides to a slot form
+   (field name ⇄ its initializer rendering, with or without the `(@string)` cast and `u8` suffix a
+   substituted site may shed) and comparing multisets per directory: **1,140 fields declared, 1,145
+   call-site substitutions matched, 0 residual on both sides.**
+
+**Measured (Go 1.23.1, 302 packages):** 3,253 hoisted fields across 467 files, 62 pre-boxed.
+Per-function blocks: 1,634 blocks, median **1**, p90 **4**, p99 **11**, max **61** —
+`net/http`'s `StatusText`, exactly the §4.5 worst case accepted under decision 4, with nothing
+beyond it. Per file: median **3**, p90 16, p99 76, max **127** (the 20k-line bundled
+`net/http/h2_bundle.cs`, i.e. the same density spread over many functions, not a single block).
 
 ## 5. Sequencing (one session) and rollback
 

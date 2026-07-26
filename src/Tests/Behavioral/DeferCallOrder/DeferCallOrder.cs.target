@@ -14,28 +14,43 @@ internal static Action makeStop(@string tag, channel/*<-*/<@string> @out) {
     };
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object firstˢ = (@string)"First"u8;
+private static readonly object secondˢ = (@string)"Second"u8;
+private static readonly object thirdˢ = (@string)"Third"u8;
+private static readonly object fourthˢ = (@string)"Fourth"u8;
+private static readonly @string stoppedˢ = "stopped"u8;
+private static readonly @string goStoppedˢ = "go-stopped"u8;
+private static readonly object afterCloseˢ = (@string)"after close:"u8;
+private static readonly @string fifthˢ = "Fifth"u8;
+private static readonly object afterˢ = (@string)"after:"u8;
+private static readonly object sentˢ = (@string)"sent:"u8;
+private static readonly object heldˢ = (@string)"| held:"u8;
+private static readonly object notifyˢ = (@string)"notify:"u8;
+private static readonly object mainFunctionˢ = (@string)"Main function"u8;
+
 internal static void Main() => func((defer, recover) => {
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"First", defer);
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"Second", defer);
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"Third", defer);
+    deferǃ(ᴛ1 => fmt.Println(ᴛ1), firstˢ, defer);
+    deferǃ(ᴛ1 => fmt.Println(ᴛ1), secondˢ, defer);
+    deferǃ(ᴛ1 => fmt.Println(ᴛ1), thirdˢ, defer);
     var f1 = fmt.Println;
     var f1ʗ1 = f1;
-    deferǃ(ᴛ1 => f1ʗ1(ᴛ1), (@string)"Fourth", defer);
+    deferǃ(ᴛ1 => f1ʗ1(ᴛ1), fourthˢ, defer);
     var msgs = new channel<@string>(2);
-    var cancel = makeStop("stopped"u8, msgs);
+    var cancel = makeStop(stoppedˢ, msgs);
     var cancelʗ1 = cancel;
     defer(() => cancelʗ1());
     var msgsʗ1 = msgs;
-    goǃ(() => makeStop("go-stopped"u8, msgsʗ1)());
+    goǃ(() => makeStop(goStoppedˢ, msgsʗ1)());
     fmt.Println(ᐸꟷ(msgs));
     var drained = new channel<nint>(1);
     var drainedʗ1 = drained;
     defer(() => {
         var (v, open) = ᐸꟷ(drainedʗ1, ꟷ);
-        fmt.Println((@string)"after close:"u8, v, open);
+        fmt.Println(afterCloseˢ, v, open);
     });
     deferǃ(ᴛ1 => close(ᴛ1), drained, defer);
-    deferǃ(GetPrintLn(), (@string)"Fifth", defer);
+    deferǃ(GetPrintLn(), fifthˢ, defer);
     var c = Ꮡ(new acc(nil));
     var (s1, e1) = c.add(5);
     fmt.Println(s1, e1);
@@ -43,11 +58,11 @@ internal static void Main() => func((defer, recover) => {
     fmt.Println(s2, e2, (~c).total);
     var sm = Ꮡ(new sema(nil));
     acquireAndWork(sm);
-    fmt.Println((@string)"after:"u8, (~sm).held);
+    fmt.Println(afterˢ, (~sm).held);
     watchAndSend(sm);
-    fmt.Println((@string)"sent:"u8, ᐸꟷ((~sm).@out), (@string)"| held:"u8, (~sm).held);
-    fmt.Println((@string)"notify:"u8, notifyAll(1, 2, 3));
-    fmt.Println((@string)"Main function"u8);
+    fmt.Println(sentˢ, ᐸꟷ((~sm).@out), heldˢ, (~sm).held);
+    fmt.Println(notifyˢ, notifyAll(1, 2, 3));
+    fmt.Println(mainFunctionˢ);
 });
 
 [GoType] partial struct sema {
@@ -55,14 +70,21 @@ internal static void Main() => func((defer, recover) => {
     internal channel<nint> @out;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object semaReleasedˢ = (@string)"sema released"u8;
+
 [GoRecv] internal static void release(this ref sema s) {
     s.held = false;
-    fmt.Println((@string)"sema released"u8);
+    fmt.Println(semaReleasedˢ);
 }
 
 [GoRecv] internal static void send(this ref sema s, nint n) {
     s.@out.ᐸꟷ(n);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object sentFirstˢ = (@string)"sent-first:"u8;
+private static readonly object watchingHeldˢ = (@string)"watching, held:"u8;
 
 internal static void watchAndSend(ж<sema> Ꮡs) => func((defer, recover) => {
     ref var s = ref Ꮡs.Value;
@@ -70,24 +92,30 @@ internal static void watchAndSend(ж<sema> Ꮡs) => func((defer, recover) => {
     s.@out = new channel<nint>(2);
     s.held = true;
     goǃ(Ꮡs.send, (nint)(7));
-    fmt.Println((@string)"sent-first:"u8, ᐸꟷ(s.@out));
+    fmt.Println(sentFirstˢ, ᐸꟷ(s.@out));
     deferǃ(Ꮡs.send, (nint)(9), defer);
     defer(Ꮡs.release);
-    fmt.Println((@string)"watching, held:"u8, s.held);
+    fmt.Println(watchingHeldˢ, s.held);
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object workingHeldˢ = (@string)"working, held:"u8;
 
 internal static void acquireAndWork(ж<sema> Ꮡs) => func((defer, recover) => {
     ref var s = ref Ꮡs.Value;
 
     s.held = true;
     defer(Ꮡs.release);
-    fmt.Println((@string)"working, held:"u8, s.held);
+    fmt.Println(workingHeldˢ, s.held);
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object notifiedˢ = (@string)"notified"u8;
 
 internal static nint notifyAll(params ꓸꓸꓸnint valsʗp) => func(ref valsʗp, (ref ꓸꓸꓸnint valsʗp, Defer defer, Recover recover) => {
     var vals = valsʗp.sslice();
 
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"notified", defer);
+    deferǃ(ᴛ1 => fmt.Println(ᴛ1), notifiedˢ, defer);
     nint total = 0;
     foreach (var (_, v) in vals) {
         total += v;

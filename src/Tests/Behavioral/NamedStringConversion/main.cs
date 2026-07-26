@@ -12,12 +12,16 @@ internal static @string Error(this errorString e) {
 
 [GoType("@string")] partial struct label;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string kaboomˢ = "kaboom"u8;
+private static readonly @string jsonOmitemptyˢ = "json,omitempty"u8;
+
 internal static void Main() {
-    error e = ((errorString)(@string)"kaboom"u8);
+    error e = ((errorString)(@string)kaboomˢ);
     fmt.Println(e.Error());
     label l = ((label)(@string)"tag"u8);
     fmt.Println(l, len(l));
-    label st = ((label)(@string)"json,omitempty"u8);
+    label st = ((label)(@string)jsonOmitemptyˢ);
     fmt.Println(st[0], st[4]);
     label name = st[0..4];
     fmt.Println(name, name != ""u8, name == "json"u8);

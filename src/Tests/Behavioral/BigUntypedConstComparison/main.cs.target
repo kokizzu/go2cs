@@ -45,6 +45,11 @@ internal static float64 give() {
     return (float64)above1e23;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string belowˢ = "below"u8;
+private static readonly @string aboveˢ = "above"u8;
+private static readonly @string smallˢ = "small"u8;
+
 internal static void Main() {
     float64 x = 1e40D;
     fmt.Println(x > (float64)Two129);
@@ -54,7 +59,7 @@ internal static void Main() {
     fmt.Println(ftoatests[0].f, ftoatests[1].f, ftoatests[2].f);
     fmt.Println(floats[0], floats[1], floats[2]);
     fmt.Println(floatArr[0], floatArr[1]);
-    fmt.Println(byName["below"u8], byName["above"u8], byName["small"u8]);
+    fmt.Println(byName[belowˢ], byName[aboveˢ], byName[smallˢ]);
     fmt.Println(keyed.f, nested[0][0], nested[1][0], asFloat32);
     fmt.Println(take((float64)below1e23), give());
     float64 v = (float64)above1e23;

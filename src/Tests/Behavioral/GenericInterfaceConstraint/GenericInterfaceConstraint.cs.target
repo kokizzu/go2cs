@@ -23,8 +23,11 @@ partial class main_package {
     return 3.0D * c.R * c.R;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string circleˢ = "circle"u8;
+
 [GoRecv] public static @string Name(this ref Circle c) {
-    return "circle"u8;
+    return circleˢ;
 }
 
 [GoRecv] public static float64 Diameter(this ref Circle c) {
@@ -39,8 +42,11 @@ partial class main_package {
     return s.S * s.S;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string squareˢ = "square"u8;
+
 [GoRecv] public static @string Name(this ref Square s) {
-    return "square"u8;
+    return squareˢ;
 }
 
 internal static float64 totalArea<S>(slice<S> shapes)

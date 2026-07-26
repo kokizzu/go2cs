@@ -13,6 +13,10 @@ internal static bool anyMatch(slice<nint> vals, Func<nint, bool> f) {
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object ifInitˢ = (@string)"if-init:"u8;
+private static readonly object whileˢ = (@string)"while:"u8;
+
 internal static void Main() {
     var vals = new nint[]{1, 2, 3}.slice();
     var lookup = new map<nint, bool>{[2] = true, [5] = true};
@@ -24,7 +28,7 @@ internal static void Main() {
         nint extra = 7;
         var lookupʗ3 = lookup;
         if (anyMatch(vals, (nint u) => lookupʗ3[u] || u == extra)) {
-            fmt.Println((@string)"if-init:"u8, true);
+            fmt.Println(ifInitˢ, true);
         }
     }
     var lookupʗ5 = lookup;
@@ -34,7 +38,7 @@ internal static void Main() {
     nint n = 0;
     var lookupʗ7 = lookup;
     while (anyMatch(vals, (nint u) => lookupʗ7[u] && n < 2)) {
-        fmt.Println((@string)"while:"u8, n);
+        fmt.Println(whileˢ, n);
         n++;
     }
 }

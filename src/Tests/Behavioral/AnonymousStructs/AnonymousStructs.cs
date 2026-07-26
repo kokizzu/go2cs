@@ -43,6 +43,14 @@ internal static void cycleMemo() {
     fmt.Printf("cycleMemo: val=%d len=%d before=%t after=%t\n"u8, got.Value, memo.len, before, after);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object anonymousStructTypeˢ = (@string)"Anonymous struct type assertion:"u8;
+private static readonly object namedStructWithIdenticalˢ = (@string)"Named struct with identical fields:"u8;
+private static readonly object functionParameterTestsˢ = (@string)"\n=== Function Parameter Tests ==="u8;
+private static readonly object packageGlobalAnonymousˢ = (@string)"\n=== Package-Global Anonymous Struct ==="u8;
+private static readonly object inFunctionVarSliceOfˢ = (@string)"\n=== In-Function var Slice of Anonymous Struct ==="u8;
+private static readonly object anonymousStructWithEmptyˢ = (@string)"\n=== Anonymous Struct With Empty Interface Field ==="u8;
+
 [GoType("dyn")] partial struct main_anonPerson {
     public @string Name;
     public nint Age;
@@ -68,20 +76,20 @@ internal static void Main() {
     var anonPerson = new main_anonPerson(Name: "Bob"u8, Age: 25);
     any someInterface = anonPerson;
     var (_, ok) = someInterface._<main_type>(ᐧ);
-    fmt.Println((@string)"Anonymous struct type assertion:"u8, ok);
+    fmt.Println(anonymousStructTypeˢ, ok);
     someInterface = namedPerson;
     (_, ok) = someInterface._<main_typeᴛ1>(ᐧ);
-    fmt.Println((@string)"Named struct with identical fields:"u8, ok);
-    fmt.Println((@string)"\n=== Function Parameter Tests ==="u8);
+    fmt.Println(namedStructWithIdenticalˢ, ok);
+    fmt.Println(functionParameterTestsˢ);
     processAnonymousStruct(new main_anonPerson(Name: "Charlie"u8, Age: 40));
     processAnonymousStruct(anonPerson);
     processAnonymousStruct(new processAnonymousStruct_data(namedPerson.Name, namedPerson.Age));
-    fmt.Println((@string)"\n=== Package-Global Anonymous Struct ==="u8);
+    fmt.Println(packageGlobalAnonymousˢ);
     fmt.Printf("settings: Verbose=%t Retries=%d\n"u8, settings.Verbose, settings.Retries);
     var pRetries = Ꮡsettings.of(settingsᴛ1.ᏑRetries);
     pRetries.Value = 5;
     fmt.Printf("after &settings.Retries=5: *p=%d global=%d\n"u8, pRetries.Value, settings.Retries);
-    fmt.Println((@string)"\n=== In-Function var Slice of Anonymous Struct ==="u8);
+    fmt.Println(inFunctionVarSliceOfˢ);
     slice<main_typeᴛ2> sects = new main_typeᴛ2[]{
         new("text"u8, 100),
         new("data"u8, 200),
@@ -92,7 +100,7 @@ internal static void Main() {
         total += sect.size;
     }
     fmt.Printf("sections=%d total=%d first=%s\n"u8, len(sects), total, sects[0].name);
-    fmt.Println((@string)"\n=== Anonymous Struct With Empty Interface Field ==="u8);
+    fmt.Println(anonymousStructWithEmptyˢ);
     cycleMemo();
 }
 

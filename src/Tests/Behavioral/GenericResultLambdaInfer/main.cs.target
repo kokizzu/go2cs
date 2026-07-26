@@ -56,6 +56,10 @@ internal static @string describe(any v) {
     return fmt.Sprintf("%v"u8, v);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object recoveredˢ = (@string)"recovered:"u8;
+private static readonly @string sevenˢ = "seven"u8;
+
 internal static void Main() {
     fmt.Println(fortyTwo(), fortyTwo());
     var nilOnce = Once(any () => default!);
@@ -66,14 +70,14 @@ internal static void Main() {
     var panicOnceʗ1 = panicOnce;
     ((Action)(() => func((defer, recover) => {
         defer(() => {
-            fmt.Println((@string)"recovered:"u8, describe(recover()));
+            fmt.Println(recoveredˢ, describe(recover()));
         });
         panicOnceʗ1();
     })))();
     var pairOnce = Once2((any, any) () => (default!, default!));
     var (p, q) = pairOnce();
     fmt.Println(describe(p), describe(q));
-    var both = Once2((nint, @string) () => (7, "seven"));
+    var both = Once2((nint, @string) () => (7, sevenˢ));
     var (n, s) = both();
     fmt.Println(n, s);
     fmt.Println(reduce(new nint[]{1, 2, 3, 4}.slice(), nint (nint a, nint b) => a + b));

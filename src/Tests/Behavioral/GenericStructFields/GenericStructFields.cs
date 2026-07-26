@@ -29,6 +29,9 @@ internal static T show<T>(this tag<T> t) {
     internal nint count;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string completedˢ = "completed"u8;
+
 internal static void Main() {
     var container = new Container(
         IntResult: new Result<nint>(
@@ -51,7 +54,7 @@ internal static void Main() {
     fmt.Printf("Int result: %d\n"u8, container.IntResult.Value);
     fmt.Printf("String result: %s\n"u8, container.StringResult.Value);
     fmt.Printf("First float value: %f\n"u8, container.FloatValues[0].Value);
-    fmt.Printf("Completion status: %t\n"u8, container.Mappings["completed"u8].Value);
+    fmt.Printf("Completion status: %t\n"u8, container.Mappings[completedˢ].Value);
     Δpool<nint> pl = default!;
     pl.items = append(pl.items, (nint)(7), (nint)(8));
     var (v, ok) = pl.take();
@@ -77,8 +80,11 @@ internal static void Main() {
 [GoType] partial struct keeper {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string keptˢ = "kept"u8;
+
 internal static @string pool(this keeper k) {
-    return "kept"u8;
+    return keptˢ;
 }
 
 } // end main_package

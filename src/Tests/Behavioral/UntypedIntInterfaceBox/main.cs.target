@@ -16,16 +16,20 @@ internal static any ret() {
     internal any v;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string int32ˢ = "int32"u8;
+private static readonly @string otherˢ = "other"u8;
+
 internal static @string classify(any v) {
     switch (v.type()) {
     case nint: {
         return "int"u8;
     }
     case int32: {
-        return "int32"u8;
+        return int32ˢ;
     }
     default: {
-        return "other"u8;
+        return otherˢ;
     }}
 
 }

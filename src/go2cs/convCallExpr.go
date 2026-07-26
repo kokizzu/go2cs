@@ -2642,7 +2642,14 @@ func constExprIsStringLiteralConcat(expr ast.Expr) bool {
 // its operand is not parenthesized — so without this test the box would be double-cast. The test is
 // sound for the wider `(@string)"a" + "b"` shape too: `@string`'s own `operator+` already yields an
 // `@string`.
+// A HOISTED string literal (Tier C) is likewise already the right box: an `@string` field needs no
+// cast, and a PRE-BOXED `object` field IS the @string box — re-casting it would unbox and re-box a
+// fresh one on every evaluation, defeating the hoist at exactly the `any`-slot sites it targets.
 func (v *Visitor) applyUntypedConstBoxCast(value ast.Expr, rendered string) string {
+	if basicLit, ok := value.(*ast.BasicLit); ok && hoistedLiteralName(basicLit) != "" {
+		return rendered
+	}
+
 	castType := v.untypedConstBoxCast(value)
 
 	if castType == "" || strings.HasPrefix(rendered, "("+castType+")") {

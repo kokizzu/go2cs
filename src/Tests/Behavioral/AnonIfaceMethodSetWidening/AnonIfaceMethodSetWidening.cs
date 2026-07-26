@@ -20,6 +20,12 @@ internal static @string Foo(this gadget g) {
     @string Foo();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object valueWidenedWrongˢ = (@string)"value-widened-wrong"u8;
+private static readonly object valueNotWidenedOkˢ = (@string)"value-not-widened-ok"u8;
+private static readonly object pointerWidenedOkˢ = (@string)"pointer-widened-ok"u8;
+private static readonly object pointerNotWidenedWrongˢ = (@string)"pointer-not-widened-wrong"u8;
+
 [GoType("dyn")] partial interface main_type {
     @string Foo();
     @string Bar();
@@ -34,17 +40,17 @@ internal static void Main() {
     fooer v = new gadget(1);
     {
         var (_, ok) = v._<main_type>(ᐧ); if (ok){
-            fmt.Println((@string)"value-widened-wrong"u8);
+            fmt.Println(valueWidenedWrongˢ);
         } else {
-            fmt.Println((@string)"value-not-widened-ok"u8);
+            fmt.Println(valueNotWidenedOkˢ);
         }
     }
     fooer p = new gadgetжfooer(Ꮡ(new gadget(2)));
     {
         var (b, ok) = p._<main_typeᴛ1>(ᐧ); if (ok){
-            fmt.Println((@string)"pointer-widened-ok"u8, b.Foo(), b.Bar());
+            fmt.Println(pointerWidenedOkˢ, b.Foo(), b.Bar());
         } else {
-            fmt.Println((@string)"pointer-not-widened-wrong"u8);
+            fmt.Println(pointerNotWidenedWrongˢ);
         }
     }
 }

@@ -4,11 +4,15 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string zeroˢ = "zero"u8;
+private static readonly @string manyˢ = "many"u8;
+
 internal static @string classify(nint n) {
     var exprᴛ1 = n;
     var matchᴛ1 = false;
     if (exprᴛ1 is 0) { matchᴛ1 = true;
-        return "zero"u8;
+        return zeroˢ;
     }
     if (exprᴛ1 is 1) { matchᴛ1 = true;
         return "one"u8;
@@ -17,7 +21,7 @@ internal static @string classify(nint n) {
         fallthrough = true;
     }
     if (fallthrough || !matchᴛ1) { /* default: */
-        return "many"u8;
+        return manyˢ;
     }
     return default!;
 
@@ -83,19 +87,24 @@ internal static (nint r, bool ok) namedDefer(nint n) {
     return (r, ok);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string intervalOnlyˢ = "interval-only"u8;
+private static readonly @string noneˢ = "none"u8;
+private static readonly @string bothOrIdleˢ = "both-or-idle"u8;
+
 internal static @string keepAlive(nint idle, nint interval) {
     switch (ᐧ) {
     case {} when idle < 0 && interval >= 0: {
-        return "interval-only"u8;
+        return intervalOnlyˢ;
     }
     case {} when idle < 0 && interval < 0: {
-        return "none"u8;
+        return noneˢ;
     }
     case {} when idle >= 0 && interval >= 0: {
         break;
     }}
 
-    return "both-or-idle"u8;
+    return bothOrIdleˢ;
 }
 
 internal static nint leadingDefault(nint n) {
@@ -126,6 +135,10 @@ internal static nint waitObject0 = 0;
 
 internal static nint waitFailed = -1;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string failedˢ = "failed"u8;
+private static readonly @string unexpectedˢ = "unexpected"u8;
+
 internal static @string waitShape(nint s) {
     var exprᴛ1 = s;
     if (exprᴛ1 == waitObject0) {
@@ -134,10 +147,10 @@ internal static @string waitShape(nint s) {
         } while (false);
     }
     else if (exprᴛ1 == waitFailed) {
-        return "failed"u8;
+        return failedˢ;
     }
     else { /* default: */
-        return "unexpected"u8;
+        return unexpectedˢ;
     }
 
     return "ok"u8;

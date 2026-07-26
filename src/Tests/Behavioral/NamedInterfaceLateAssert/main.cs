@@ -32,35 +32,50 @@ internal static @string Name(this partial p) {
     return p.n;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string partialˢ = "partial"u8;
+
 internal static @string Kind(this partial p) {
-    return "partial"u8;
+    return partialˢ;
 }
 
 internal static void report(@string label, @string s, bool ok) {
     fmt.Println(label, ok, s);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rootˢ = "root"u8;
+private static readonly @string topDirLikeˢ = "Top-dirLike    "u8;
+private static readonly @string midDirLikeˢ = "Mid-dirLike    "u8;
+private static readonly @string baseDirLikeˢ = "Base-dirLike   "u8;
+private static readonly @string quietDirLikeˢ = "quiet-dirLike  "u8;
+private static readonly @string topPtrDirLikeˢ = "Top-ptrDirLike "u8;
+private static readonly @string quietPtrDirˢ = "quiet-ptrDir   "u8;
+private static readonly @string topPartialˢ = "Top-partial    "u8;
+private static readonly @string midPartialˢ = "Mid-partial    "u8;
+private static readonly @string quietPartialˢ = "quiet-partial  "u8;
+
 internal static void Main() {
     ref var d = ref heap(new dirLike(), out var Ꮡd);
-    d = "root"u8;
+    d = rootˢ;
     var (s, ok) = latelib.TryTop(d);
-    report("Top-dirLike    "u8, s, ok);
+    report(topDirLikeˢ, s, ok);
     (s, ok) = latelib.TryMid(d);
-    report("Mid-dirLike    "u8, s, ok);
+    report(midDirLikeˢ, s, ok);
     (s, ok) = latelib.TryBase(d);
-    report("Base-dirLike   "u8, s, ok);
+    report(baseDirLikeˢ, s, ok);
     (s, ok) = latelib.TryQuiet(d);
-    report("quiet-dirLike  "u8, s, ok);
+    report(quietDirLikeˢ, s, ok);
     (s, ok) = latelib.TryTop(Ꮡd);
-    report("Top-ptrDirLike "u8, s, ok);
+    report(topPtrDirLikeˢ, s, ok);
     (s, ok) = latelib.TryQuiet(Ꮡd);
-    report("quiet-ptrDir   "u8, s, ok);
+    report(quietPtrDirˢ, s, ok);
     (s, ok) = latelib.TryTop(new partial(n: "p"u8));
-    report("Top-partial    "u8, s, ok);
+    report(topPartialˢ, s, ok);
     (s, ok) = latelib.TryMid(new partial(n: "p"u8));
-    report("Mid-partial    "u8, s, ok);
+    report(midPartialˢ, s, ok);
     (s, ok) = latelib.TryQuiet(new partial(n: "p"u8));
-    report("quiet-partial  "u8, s, ok);
+    report(quietPartialˢ, s, ok);
 }
 
 } // end main_package

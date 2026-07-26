@@ -27,23 +27,29 @@ public static ж<Setting> New(@string tag) {
     return Ꮡ(new Setting(tag: tag));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string debugˢ = "debug"u8;
+private static readonly object recoveredˢ = (@string)"recovered:"u8;
+private static readonly @string gcpacertraceˢ = "gcpacertrace"u8;
+private static readonly @string otherˢ = "other"u8;
+
 internal static void Main() {
-    var s = New("debug"u8);
+    var s = New(debugˢ);
     fmt.Println((~s).setting == nil);
     var sʗ1 = s;
     ((Action)(() => func((defer, recover) => {
         defer(() => {
-            fmt.Println((@string)"recovered:"u8, recover());
+            fmt.Println(recoveredˢ, recover());
         });
         fmt.Println((~sʗ1).name);
     })))();
     ж<setting> p = default!;
     s.Value.setting = p;
     fmt.Println((~s).setting == nil);
-    s.Value.setting = lookup("gcpacertrace"u8);
+    s.Value.setting = lookup(gcpacertraceˢ);
     fmt.Println((~s).setting == nil);
     fmt.Println((~s).name, s.bump(), s.bump());
-    var direct = lookup("other"u8);
+    var direct = lookup(otherˢ);
     s.Value.setting = direct;
     s.Value.count = 10;
     nint before = direct.Value.count;

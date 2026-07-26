@@ -33,13 +33,16 @@ internal static uint32 Add(this ж<counter> Ꮡc, uint32 d) {
     return (Ꮡ((atomic.Uint32)(c))).Add(d);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object definedTypeMethodsˢ = (@string)"defined-type methods compiled"u8;
+
 internal static void Main() {
     handler = other;
     fmt.Println(handler == other);
     ref var c = ref heap(new counter(), out var Ꮡc);
     Ꮡc.Store(10);
     _ = Ꮡc.Add(5);
-    fmt.Println((@string)"defined-type methods compiled"u8);
+    fmt.Println(definedTypeMethodsˢ);
     uintptr seed = 42;
     var h = ((handleT)seed);
     var k = openKey(h);

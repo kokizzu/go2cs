@@ -4,30 +4,40 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object sendReadyWrongForˢ = (@string)"send: ready (wrong for unbuffered)"u8;
+private static readonly object sendNotReadyNoReceiverˢ = (@string)"send: not ready (no receiver)"u8;
+private static readonly object recvReadyWrongˢ = (@string)"recv: ready (wrong):"u8;
+private static readonly object recvNotReadyNoSenderˢ = (@string)"recv: not ready (no sender)"u8;
+private static readonly object afterProbesLenˢ = (@string)"after probes: len:"u8;
+private static readonly object replyˢ = (@string)"reply:"u8;
+private static readonly object afterRendezvousLenˢ = (@string)"after rendezvous: len:"u8;
+private static readonly object pongˢ = (@string)"pong:"u8;
+
 internal static void Main() {
     var ch = new channel<nint>(0);
     fmt.Println((@string)"cap:"u8, cap(ch), (@string)"len:"u8, len(ch));
     var selᴛ1 = ch.ᐸꟷ(1, ꓸꓸꓸ);
     switch (trySelect(selᴛ1)) {
     case 0: {
-        fmt.Println((@string)"send: ready (wrong for unbuffered)"u8);
+        fmt.Println(sendReadyWrongForˢ);
         break;
     }
     default: {
-        fmt.Println((@string)"send: not ready (no receiver)"u8);
+        fmt.Println(sendNotReadyNoReceiverˢ);
         break;
     }}
     var selᴛ2 = ch;
     switch (trySelect(ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
     case 0 when selᴛ2.ꟷᐳ(out var v): {
-        fmt.Println((@string)"recv: ready (wrong):"u8, v);
+        fmt.Println(recvReadyWrongˢ, v);
         break;
     }
     default: {
-        fmt.Println((@string)"recv: not ready (no sender)"u8);
+        fmt.Println(recvNotReadyNoSenderˢ);
         break;
     }}
-    fmt.Println((@string)"after probes: len:"u8, len(ch), (@string)"cap:"u8, cap(ch));
+    fmt.Println(afterProbesLenˢ, len(ch), (@string)"cap:"u8, cap(ch));
     var reply = new channel<nint>(0);
     var chʗ1 = ch;
     var replyʗ1 = reply;
@@ -36,8 +46,8 @@ internal static void Main() {
         replyʗ1.ᐸꟷ(v * 2);
     });
     ch.ᐸꟷ(21);
-    fmt.Println((@string)"reply:"u8, ᐸꟷ(reply));
-    fmt.Println((@string)"after rendezvous: len:"u8, len(ch), (@string)"cap:"u8, cap(ch));
+    fmt.Println(replyˢ, ᐸꟷ(reply));
+    fmt.Println(afterRendezvousLenˢ, len(ch), (@string)"cap:"u8, cap(ch));
     var ping = new channel<nint>(0);
     var pong = new channel<nint>(0);
     var pingʗ1 = ping;
@@ -50,7 +60,7 @@ internal static void Main() {
     });
     for (nint i = 0; i < 3; i++) {
         ping.ᐸꟷ(i * 10);
-        fmt.Println((@string)"pong:"u8, ᐸꟷ(pong));
+        fmt.Println(pongˢ, ᐸꟷ(pong));
     }
 }
 

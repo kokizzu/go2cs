@@ -24,8 +24,11 @@ internal static void mutate(ж<@string> Ꮡs) {
     s = s + "-mutated"u8;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string go121ˢ = "go1.21"u8;
+
 internal static void Main() {
-    version fileVersion = asVersion("go1.21"u8);
+    version fileVersion = asVersion(go121ˢ);
     if (fileVersion.isValid()) {
         fmt.Println(fileVersion.tag());
     }

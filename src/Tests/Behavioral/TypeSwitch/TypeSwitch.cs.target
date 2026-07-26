@@ -4,15 +4,26 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object iMNilˢ = (@string)"I'm nil"u8;
+private static readonly object iMABoolˢ = (@string)"I'm a bool"u8;
+private static readonly object int32ˢ = (@string)"int32"u8;
+private static readonly object uintˢ = (@string)"uint"u8;
+private static readonly object uint32ˢ = (@string)"uint32"u8;
+private static readonly object otherˢ = (@string)"other"u8;
+private static readonly object uintWordˢ = (@string)"uint word"u8;
+private static readonly object uintptrWordˢ = (@string)"uintptr word"u8;
+private static readonly object textˢ = (@string)"text"u8;
+
 internal static void Main() {
     var whatAmI = (any i) => {
         switch (i.type()) {
         case null: {
-            fmt.Println((@string)"I'm nil"u8);
+            fmt.Println(iMNilˢ);
             break;
         }
         case bool t: {
-            fmt.Println((@string)"I'm a bool"u8);
+            fmt.Println(iMABoolˢ);
             break;
         }
         case nint _:
@@ -42,19 +53,19 @@ internal static void Main() {
             break;
         }
         case int32: {
-            fmt.Println((@string)"int32"u8);
+            fmt.Println(int32ˢ);
             break;
         }
         case nuint: {
-            fmt.Println((@string)"uint"u8);
+            fmt.Println(uintˢ);
             break;
         }
         case uint32: {
-            fmt.Println((@string)"uint32"u8);
+            fmt.Println(uint32ˢ);
             break;
         }
         default: {
-            fmt.Println((@string)"other"u8);
+            fmt.Println(otherˢ);
             break;
         }}
 
@@ -70,23 +81,23 @@ internal static void Main() {
     var kind = (any i) => {
         switch (i.type()) {
         case nuint: {
-            fmt.Println((@string)"uint word"u8);
+            fmt.Println(uintWordˢ);
             break;
         }
         case uint32: {
-            fmt.Println((@string)"uint word"u8);
+            fmt.Println(uintWordˢ);
             break;
         }
         case uintptr: {
-            fmt.Println((@string)"uintptr word"u8);
+            fmt.Println(uintptrWordˢ);
             break;
         }
         case @string: {
-            fmt.Println((@string)"text"u8);
+            fmt.Println(textˢ);
             break;
         }
         default: {
-            fmt.Println((@string)"other"u8);
+            fmt.Println(otherˢ);
             break;
         }}
 
@@ -108,11 +119,15 @@ internal static void Main() {
     fmt.Println(mk.tag(new byte[]{7, 8}.slice()));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string boolˢ = "bool"u8;
+private static readonly @string manyˢ = "many"u8;
+
 internal static @string probe(any x) {
     switch (x.type()) {
     case bool v: {
         _ = v;
-        return "bool"u8;
+        return boolˢ;
     }
     default: {
         var v = x;
@@ -123,7 +138,7 @@ internal static @string probe(any x) {
                 return "one"u8;
             }
             default: {
-                return "many"u8;
+                return manyˢ;
             }}
         }
 

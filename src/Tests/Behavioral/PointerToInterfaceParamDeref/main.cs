@@ -15,12 +15,15 @@ internal static void handle(@string label, ж<error> Ꮡerr) => func((defer, rec
     }
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string doitˢ = "doit"u8;
+
 internal static error /*err*/ doit() {
     heap<error>(out var Ꮡerr);
     func((defer, recover) => {
     ref var err = ref Ꮡerr.ValueSlot;
 
-        deferǃ(handle, (@string)"doit", Ꮡerr, defer);
+        deferǃ(handle, doitˢ, Ꮡerr, defer);
         throw panic("boom");
     });
     return Ꮡerr.ValueSlot;

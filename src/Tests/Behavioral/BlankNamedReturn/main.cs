@@ -21,9 +21,12 @@ internal static (nint, @string label) pair(@string tag) {
     return (default!, label);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string baseˢ = "base"u8;
+
 internal static void Main() {
     fmt.Println(valid(true), valid(false));
-    var (n, label) = pair("base"u8);
+    var (n, label) = pair(baseˢ);
     fmt.Println(n, label);
     (n, label) = pair("set"u8);
     fmt.Println(n, label);

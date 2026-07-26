@@ -28,14 +28,18 @@ public static T Get<T>(this ж<Box<T>> Ꮡb) {
     return getT(Ꮡb.of(Box<T>.Ꮡv));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloˢ = "hello"u8;
+private static readonly object stringˢ = (@string)"string:"u8;
+
 internal static void Main() {
     ref var bi = ref heap(new Box<nint>(), out var Ꮡbi);
     Ꮡbi.Set(42);
     Ꮡbi.Set(Ꮡbi.Get() + 1);
     fmt.Println((@string)"int:"u8, Ꮡbi.Get());
     ref var bs = ref heap(new Box<@string>(), out var Ꮡbs);
-    Ꮡbs.Set("hello"u8);
-    fmt.Println((@string)"string:"u8, Ꮡbs.Get());
+    Ꮡbs.Set(helloˢ);
+    fmt.Println(stringˢ, Ꮡbs.Get());
 }
 
 } // end main_package

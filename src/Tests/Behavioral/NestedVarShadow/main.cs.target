@@ -34,6 +34,10 @@ internal static (nint, error) check(@string s) {
     return (len(s), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string innerˢ = "inner"u8;
+private static readonly @string outerˢ = "outer"u8;
+
 internal static @string g(@string s) {
     {
         nint n = len(s); if (n >= 0) {
@@ -41,7 +45,7 @@ internal static @string g(@string s) {
             if (errΔ1 != default!) {
                 {
                     var (e, ok) = errΔ1._<ж<tagErr>>(ᐧ); if (ok) {
-                        e.Value.tag = "inner"u8;
+                        e.Value.tag = innerˢ;
                     }
                 }
                 return errΔ1.Error();
@@ -51,7 +55,7 @@ internal static @string g(@string s) {
     }
     var (v, err) = check(s);
     if (err != default!) {
-        return "outer"u8;
+        return outerˢ;
     }
     return fmt.Sprint(v);
 }

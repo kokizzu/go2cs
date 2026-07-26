@@ -26,21 +26,32 @@ internal static (uintptr, Handle) liveAlias(ж<Handle> Ꮡh) {
     return ((uintptr)new @unsafe.Pointer(Ꮡh), h);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object namedNilˢ = (@string)"named nil  :"u8;
+private static readonly object ptrptrNilˢ = (@string)"ptrptr nil :"u8;
+private static readonly object basicNilˢ = (@string)"basic nil  :"u8;
+private static readonly object namedNonnilNonzeroˢ = (@string)"named nonnil nonzero :"u8;
+private static readonly object ptrptrNonnilNonzeroˢ = (@string)"ptrptr nonnil nonzero:"u8;
+private static readonly object basicNonnilNonzeroˢ = (@string)"basic nonnil nonzero :"u8;
+private static readonly object liveAliasNonzeroˢ = (@string)"live alias nonzero:"u8;
+private static readonly object valueˢ = (@string)"value:"u8;
+private static readonly object readbackˢ = (@string)"readback:"u8;
+
 internal static void Main() {
-    fmt.Println((@string)"named nil  :"u8, addrOfNamed(nil));
-    fmt.Println((@string)"ptrptr nil :"u8, addrOfPtrPtr(nil));
-    fmt.Println((@string)"basic nil  :"u8, addrOfBasic(nil));
+    fmt.Println(namedNilˢ, addrOfNamed(nil));
+    fmt.Println(ptrptrNilˢ, addrOfPtrPtr(nil));
+    fmt.Println(basicNilˢ, addrOfBasic(nil));
     ref var h = ref heap(new Handle(), out var Ꮡh);
     h = 3;
-    fmt.Println((@string)"named nonnil nonzero :"u8, addrOfNamed(Ꮡh) != 0);
+    fmt.Println(namedNonnilNonzeroˢ, addrOfNamed(Ꮡh) != 0);
     ref var u = ref heap(new uint16(), out var Ꮡu);
     u = 9;
     ref var pu = ref heap<ж<uint16>>(out var Ꮡpu);
     pu = Ꮡu;
-    fmt.Println((@string)"ptrptr nonnil nonzero:"u8, addrOfPtrPtr(Ꮡpu) != 0);
-    fmt.Println((@string)"basic nonnil nonzero :"u8, addrOfBasic(Ꮡu) != 0);
+    fmt.Println(ptrptrNonnilNonzeroˢ, addrOfPtrPtr(Ꮡpu) != 0);
+    fmt.Println(basicNonnilNonzeroˢ, addrOfBasic(Ꮡu) != 0);
     var (addr, val) = liveAlias(Ꮡh);
-    fmt.Println((@string)"live alias nonzero:"u8, addr != 0, (@string)"value:"u8, val, (@string)"readback:"u8, h);
+    fmt.Println(liveAliasNonzeroˢ, addr != 0, valueˢ, val, readbackˢ, h);
 }
 
 } // end main_package

@@ -24,10 +24,14 @@ internal static @string speak(this dog d) {
     return "meow:"u8 + c.name;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object stringˢ = (@string)"string:"u8;
+private static readonly object otherˢ = (@string)"other:"u8;
+
 internal static void describe(@string prefix, any v) {
     switch (v.type()) {
     case @string s: {
-        fmt.Println(prefix, (@string)"string:"u8, s);
+        fmt.Println(prefix, stringˢ, s);
         break;
     }
     case nint s: {
@@ -40,27 +44,37 @@ internal static void describe(@string prefix, any v) {
     }
     default: {
         var s = v;
-        fmt.Println(prefix, (@string)"other:"u8, s);
+        fmt.Println(prefix, otherˢ, s);
         break;
     }}
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object textˢ = (@string)"text"u8;
+private static readonly @string sendˢ = "send"u8;
+private static readonly @string selectˢ = "select"u8;
+private static readonly @string plainˢ = "plain"u8;
+private static readonly object stringChanˢ = (@string)"string chan:"u8;
+private static readonly object assertˢ = (@string)"assert"u8;
+private static readonly object assertStringˢ = (@string)"assert string:"u8;
+private static readonly object assertMissedˢ = (@string)"assert missed"u8;
+
 internal static void Main() {
     var ch = new channel<any>(2);
-    ch.ᐸꟷ((@string)"text"u8);
+    ch.ᐸꟷ(textˢ);
     ch.ᐸꟷ((nint)(42));
-    describe("send"u8, ᐸꟷ(ch));
-    describe("send"u8, ᐸꟷ(ch));
+    describe(sendˢ, ᐸꟷ(ch));
+    describe(sendˢ, ᐸꟷ(ch));
     var sel = new channel<any>(1);
     var selᴛ1 = sel.ᐸꟷ((@string)"sel"u8, ꓸꓸꓸ);
     switch (select(selᴛ1)) {
     case 0: {
-        describe("select"u8, ᐸꟷ(sel));
+        describe(selectˢ, ᐸꟷ(sel));
         break;
     }}
     var sc = new channel<@string>(1);
-    sc.ᐸꟷ("plain"u8);
-    fmt.Println((@string)"string chan:"u8, ᐸꟷ(sc));
+    sc.ᐸꟷ(plainˢ);
+    fmt.Println(stringChanˢ, ᐸꟷ(sc));
     var vs = new channel<speaker>(1);
     vs.ᐸꟷ(new dog(name: "rex"u8));
     fmt.Println((ᐸꟷ(vs)).speak());
@@ -69,13 +83,13 @@ internal static void Main() {
     ps.ᐸꟷ(new catжspeaker(c));
     fmt.Println((ᐸꟷ(ps)).speak());
     var rt = new channel<any>(1);
-    rt.ᐸꟷ((@string)"assert"u8);
+    rt.ᐸꟷ(assertˢ);
     var got = ᐸꟷ(rt);
     {
         var (s, ok) = got._<@string>(ᐧ); if (ok){
-            fmt.Println((@string)"assert string:"u8, s);
+            fmt.Println(assertStringˢ, s);
         } else {
-            fmt.Println((@string)"assert missed"u8);
+            fmt.Println(assertMissedˢ);
         }
     }
 }

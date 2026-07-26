@@ -375,6 +375,14 @@ func (v *Visitor) convExpr(expr ast.Expr, contexts []ExprContext) string {
 		context := getExprContext[ArrayTypeContext](contexts)
 		return v.convArrayType(exprType, context)
 	case *ast.BasicLit:
+		// Tier C: a string literal the whole-package hoist pre-pass resolved to a package-scoped
+		// `static readonly` field renders as that field's NAME — a pure substitution, since the
+		// pre-pass already proved the slot accepts an @string (or, pre-boxed, an object). Every
+		// other literal renders exactly as it always has. See hoistedLiteralOperations.go.
+		if name := hoistedLiteralName(exprType); name != "" {
+			return name
+		}
+
 		context := getExprContext[BasicLitContext](contexts)
 		return v.convBasicLit(exprType, context)
 	case *ast.BinaryExpr:

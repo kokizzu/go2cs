@@ -200,6 +200,9 @@ internal const int64 wideNext = 1;
 internal static readonly UntypedInt rawZero = iota;
 internal static readonly UntypedInt rawOne = /* iota */ 1;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownˢ = "unknown"u8;
+
 internal static @string stateMachine(nint step) {
     const nint stateInit = iota;
     const nint stateDict = 1;
@@ -213,7 +216,7 @@ internal static @string stateMachine(nint step) {
         return fmt.Sprintf("dict[%d]"u8, offset);
     }
 
-    return "unknown"u8;
+    return unknownˢ;
 }
 
 internal static void Main() {

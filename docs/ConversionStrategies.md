@@ -582,6 +582,37 @@ Go string model rather than the CLR string model. Literals with raw byte escapes
 faithfully as UTF-8 source (for example high `\xHH` bytes or greedy hex escapes) emit as byte-array-backed
 `@string`, preserving Go's exact bytes.
 
+A literal that materializes a **value** is **hoisted** to a package-scoped `private static readonly` field
+declared immediately above the function that first uses it, so it costs at most one allocation per program
+run instead of one per evaluation — Go's own RODATA cost model:
+
+```go
+func FormatBool(b bool) string {
+	if b { return "true" }
+	return "false"
+}
+```
+```csharp
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string trueˢ = "true"u8;
+private static readonly @string falseˢ = "false"u8;
+
+public static @string FormatBool(bool b) {
+    if (b) { return trueˢ; }
+    return falseˢ;
+}
+```
+
+The `ˢ` suffix marks a converter-synthesized name, like `ᴛ` for temporaries and `Δ` for renames. Hoisting
+covers value-materializing contexts only — returns, assignments, `string` and `any` arguments, map keys,
+named-string conversions — and deliberately skips the contexts where the inline literal is already free, or
+where a name derived from the literal's content would read worse than the value itself: comparisons and
+concatenations (golib compares and concatenates a `u8` span in place), `[]byte`/`[]rune` sources (the copy is
+mandatory), format strings, composite-literal elements, `func init()` bodies, package-level initializers, and
+literals whose slug carries no information. A literal used *only* in `any` slots is emitted pre-boxed, so
+those sites allocate nothing at all. See the reference for the full inclusion/exclusion tables, the naming
+rules, and the initialization-order guarantee.
+
 Named string types are real wrapper structs (`type relationship string`), so the generated type keeps the
 string surface: indexing, sub-slicing, `len`, comparisons, constants, and method calls stay on the named
 type instead of collapsing back to plain `@string`.

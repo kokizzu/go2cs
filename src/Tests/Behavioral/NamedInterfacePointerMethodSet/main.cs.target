@@ -37,8 +37,11 @@ public static @string Speak(this Mixed m) {
 [GoType] partial struct WrongSig {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string wrongˢ = "wrong"u8;
+
 public static @string Speak(this WrongSig w, nint times) {
-    return "wrong"u8;
+    return wrongˢ;
 }
 
 [GoType] partial struct gbox<T> {
@@ -53,29 +56,40 @@ internal static void report(@string label, @string s, bool ok) {
     fmt.Println(label, ok, s);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ptrOnlyValueˢ = "PtrOnly-value  "u8;
+private static readonly @string ptrOnlyPointerˢ = "PtrOnly-pointer"u8;
+private static readonly @string valOnlyValueˢ = "ValOnly-value  "u8;
+private static readonly @string valOnlyPointerˢ = "ValOnly-pointer"u8;
+private static readonly @string mixedValueˢ = "Mixed-value    "u8;
+private static readonly @string mixedPointerˢ = "Mixed-pointer  "u8;
+private static readonly @string wrongSigˢ = "WrongSig       "u8;
+private static readonly @string gboxIntˢ = "gbox-int       "u8;
+private static readonly @string gboxStringˢ = "gbox-string    "u8;
+
 internal static void Main() {
     var (s, ok) = pmslib.TrySpeak(new PtrOnly(name: "a"u8));
-    report("PtrOnly-value  "u8, s, ok);
+    report(ptrOnlyValueˢ, s, ok);
     (s, ok) = pmslib.TrySpeak(Ꮡ(new PtrOnly(name: "a"u8)));
-    report("PtrOnly-pointer"u8, s, ok);
+    report(ptrOnlyPointerˢ, s, ok);
     (s, ok) = pmslib.TrySpeak(new ValOnly(name: "b"u8));
-    report("ValOnly-value  "u8, s, ok);
+    report(valOnlyValueˢ, s, ok);
     (s, ok) = pmslib.TrySpeak(Ꮡ(new ValOnly(name: "b"u8)));
-    report("ValOnly-pointer"u8, s, ok);
+    report(valOnlyPointerˢ, s, ok);
     (s, ok) = pmslib.TrySpeak(new Mixed(n: 41));
-    report("Mixed-value    "u8, s, ok);
+    report(mixedValueˢ, s, ok);
     var pm = Ꮡ(new Mixed(n: 41));
     pm.Bump();
     (s, ok) = pmslib.TrySpeak(pm);
-    report("Mixed-pointer  "u8, s, ok);
+    report(mixedPointerˢ, s, ok);
     (s, ok) = pmslib.TrySpeak(new WrongSig(nil));
-    report("WrongSig       "u8, s, ok);
+    report(wrongSigˢ, s, ok);
     (s, ok) = pmslib.TrySpeak((nint)(42));
     report("int            "u8, s, ok);
     (s, ok) = pmslib.TryGet(new gbox<nint>(v: 7));
-    report("gbox-int       "u8, s, ok);
+    report(gboxIntˢ, s, ok);
     (s, ok) = pmslib.TryGet(new gbox<@string>(v: "g"u8));
-    report("gbox-string    "u8, s, ok);
+    report(gboxStringˢ, s, ok);
 }
 
 } // end main_package

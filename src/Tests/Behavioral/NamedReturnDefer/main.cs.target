@@ -74,6 +74,9 @@ internal static (nint @out, @string label) compute(nint x) {
     return (@out, label);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string recoveredˢ = "recovered"u8;
+
 internal static (nint code, @string msg) guarded(bool boom) {
     nint code = default!;
     @string msg = default!;
@@ -82,7 +85,7 @@ internal static (nint code, @string msg) guarded(bool boom) {
             {
                 var r = recover(); if (r != default!) {
                     code = -1;
-                    msg = "recovered"u8;
+                    msg = recoveredˢ;
                 }
             }
         });

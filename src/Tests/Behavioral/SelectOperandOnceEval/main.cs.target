@@ -34,17 +34,28 @@ internal static nint swap(ж<channel<nint>> Ꮡch, channel<nint> repl) {
     return 0;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object s1Gotˢ = (@string)"S1 got:"u8;
+private static readonly object madeˢ = (@string)"made ="u8;
+private static readonly object s2Gotˢ = (@string)"S2 got:"u8;
+private static readonly object afterCallsˢ = (@string)"afterCalls ="u8;
+private static readonly object s3Sink0ˢ = (@string)"S3 sink[0] ="u8;
+private static readonly object lenChˢ = (@string)"len(ch) ="u8;
+private static readonly object lenReplˢ = (@string)"len(repl) ="u8;
+private static readonly object s4Gotˢ = (@string)"S4 got:"u8;
+private static readonly object s4DefaultWrongˢ = (@string)"S4 default (wrong)"u8;
+
 internal static void Main() {
     var selᴛ1 = fresh();
     switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ))) {
     case 0 when selᴛ1.ꟷᐳ(out var v): {
-        fmt.Println((@string)"S1 got:"u8, v, (@string)"made ="u8, made);
+        fmt.Println(s1Gotˢ, v, madeˢ, made);
         break;
     }}
     var selᴛ2 = after();
     switch (select(ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
     case 0 when selᴛ2.ꟷᐳ(out var v): {
-        fmt.Println((@string)"S2 got:"u8, v, (@string)"afterCalls ="u8, afterCalls);
+        fmt.Println(s2Gotˢ, v, afterCallsˢ, afterCalls);
         break;
     }}
     ref var ch = ref heap<channel<nint>>(out var Ꮡch);
@@ -55,17 +66,17 @@ internal static void Main() {
     var selᴛ3 = ch;
     switch (select(ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
     case 0 when selᴛ3.ꟷᐳ(out sink[swap(Ꮡch, repl)]): {
-        fmt.Println((@string)"S3 sink[0] ="u8, sink[0], (@string)"len(ch) ="u8, len(ch), (@string)"len(repl) ="u8, len(repl));
+        fmt.Println(s3Sink0ˢ, sink[0], lenChˢ, len(ch), lenReplˢ, len(repl));
         break;
     }}
     var selᴛ4 = fresh();
     switch (trySelect(ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
     case 0 when selᴛ4.ꟷᐳ(out var v): {
-        fmt.Println((@string)"S4 got:"u8, v, (@string)"made ="u8, made);
+        fmt.Println(s4Gotˢ, v, madeˢ, made);
         break;
     }
     default: {
-        fmt.Println((@string)"S4 default (wrong)"u8);
+        fmt.Println(s4DefaultWrongˢ);
         break;
     }}
 }

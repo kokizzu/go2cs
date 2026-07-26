@@ -87,17 +87,24 @@ internal static (slice<nint>, nint) grow(slice<nint> v) {
     return (append(v.slice(-1, len(v), len(v)), (nint)(99)), 1);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object declRedeclareˢ = (@string)"declRedeclare:"u8;
+private static readonly object declDeferObserverˢ = (@string)"declDeferObserver:"u8;
+private static readonly object declClosureWriteˢ = (@string)"declClosureWrite:"u8;
+private static readonly object litRedeclareˢ = (@string)"litRedeclare:"u8;
+private static readonly object declSliceRedeclareˢ = (@string)"declSliceRedeclare:"u8;
+
 internal static void Main() {
     var a = new label(name: "alpha"u8);
     var b = new label(name: "beta"u8);
     var (before, after) = declRedeclare(a);
-    fmt.Println((@string)"declRedeclare:"u8, before, after);
-    fmt.Println((@string)"declDeferObserver:"u8, declDeferObserver(a, b));
-    fmt.Println((@string)"declClosureWrite:"u8, declClosureWrite(b));
+    fmt.Println(declRedeclareˢ, before, after);
+    fmt.Println(declDeferObserverˢ, declDeferObserver(a, b));
+    fmt.Println(declClosureWriteˢ, declClosureWrite(b));
     (before, after) = litRedeclare(a);
-    fmt.Println((@string)"litRedeclare:"u8, before, after);
+    fmt.Println(litRedeclareˢ, before, after);
     var (x, y) = declSliceRedeclare(new nint[]{1, 2, 3}.slice());
-    fmt.Println((@string)"declSliceRedeclare:"u8, x, y);
+    fmt.Println(declSliceRedeclareˢ, x, y);
 }
 
 } // end main_package

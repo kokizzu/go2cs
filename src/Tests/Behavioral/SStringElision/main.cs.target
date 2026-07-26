@@ -4,11 +4,35 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object matchˢ = (@string)"match"u8;
+private static readonly object copySafeˢ = (@string)"copy-safe"u8;
+private static readonly object taggedˢ = (@string)"tagged"u8;
+private static readonly object wantedˢ = (@string)"wanted"u8;
+private static readonly object classifyˢ = (@string)"classify:"u8;
+private static readonly object pickˢ = (@string)"pick:"u8;
+private static readonly object prefixˢ = (@string)"prefix:"u8;
+private static readonly object matchVarˢ = (@string)"matchVar:"u8;
+private static readonly @string go2csˢ = "go2cs"u8;
+private static readonly object matchFieldˢ = (@string)"matchField:"u8;
+private static readonly object twoConvˢ = (@string)"twoConv:"u8;
+private static readonly object callOperandˢ = (@string)"callOperand:"u8;
+private static readonly object switchTagˢ = (@string)"switchTag:"u8;
+private static readonly object switchLocalˢ = (@string)"switchLocal:"u8;
+private static readonly object switchMagicˢ = (@string)"switchMagic:"u8;
+private static readonly object switchCallˢ = (@string)"switchCall:"u8;
+private static readonly object concatLocalˢ = (@string)"concatLocal:"u8;
+private static readonly object concatLitˢ = (@string)"concatLit:"u8;
+private static readonly object concatVarˢ = (@string)"concatVar:"u8;
+private static readonly object concatTwoˢ = (@string)"concatTwo:"u8;
+private static readonly object concatCallˢ = (@string)"concatCall:"u8;
+private static readonly object concatObjˢ = (@string)"concatObj:"u8;
+
 internal static void Main() {
     var name = slice<byte>("go2cs"u8);
     sstring s = ((sstring)name);
     if (s == "go2cs"u8) {
-        fmt.Println((@string)"match"u8);
+        fmt.Println(matchˢ);
     }
     var digits = slice<byte>("2468"u8);
     sstring d = ((sstring)digits);
@@ -17,7 +41,7 @@ internal static void Main() {
     @string t = ((@string)scratch);
     scratch[0] = (rune)'X';
     if (t == "AB"u8) {
-        fmt.Println((@string)"copy-safe"u8);
+        fmt.Println(copySafeˢ);
     }
     @string u = ((@string)slice<byte>("printed"u8));
     fmt.Println(u);
@@ -25,29 +49,29 @@ internal static void Main() {
     var tag = slice<byte>("v2"u8);
     sstring tagᴛ1 = ((sstring)tag);
     if (tagᴛ1 == "v2"u8) {
-        fmt.Println((@string)"tagged"u8);
+        fmt.Println(taggedˢ);
     }
     @string want = "v2"u8;
     if (tagᴛ1 == want) {
-        fmt.Println((@string)"wanted"u8);
+        fmt.Println(wantedˢ);
     }
-    fmt.Println((@string)"classify:"u8, classify(slice<byte>("rust"u8)));
-    fmt.Println((@string)"pick:"u8, pick(slice<byte>("b"u8)));
-    fmt.Println((@string)"prefix:"u8, prefix(slice<byte>("GET /x"u8)));
-    fmt.Println((@string)"matchVar:"u8, matchVar(slice<byte>("go2cs"u8), "go2cs"u8));
-    fmt.Println((@string)"matchField:"u8, matchField(slice<byte>("prod"u8), new config(name: "prod"u8)));
-    fmt.Println((@string)"twoConv:"u8, matchTwoConversions(slice<byte>("abc"u8), slice<byte>("abc"u8)));
-    fmt.Println((@string)"callOperand:"u8, staysHeapCallOperand(slice<byte>("y"u8), () => "y"u8));
-    fmt.Println((@string)"switchTag:"u8, switchTag(slice<byte>("put"u8)));
-    fmt.Println((@string)"switchLocal:"u8, switchLocal(slice<byte>("off"u8)));
-    fmt.Println((@string)"switchMagic:"u8, switchMagic(slice<byte>("PK"u8)));
-    fmt.Println((@string)"switchCall:"u8, switchCall(slice<byte>("q"u8)));
-    fmt.Println((@string)"concatLocal:"u8, concatLocal(slice<byte>("go"u8), "2cs"u8));
-    fmt.Println((@string)"concatLit:"u8, concatLit(slice<byte>("v"u8)));
-    fmt.Println((@string)"concatVar:"u8, concatVar(slice<byte>("k"u8), "v"u8));
-    fmt.Println((@string)"concatTwo:"u8, concatTwo(slice<byte>("x"u8), slice<byte>("y"u8)));
-    fmt.Println((@string)"concatCall:"u8, concatCall(slice<byte>("q"u8), () => "z"u8));
-    fmt.Println((@string)"concatObj:"u8, concatObj(slice<byte>("x"u8)));
+    fmt.Println(classifyˢ, classify(slice<byte>("rust"u8)));
+    fmt.Println(pickˢ, pick(slice<byte>("b"u8)));
+    fmt.Println(prefixˢ, prefix(slice<byte>("GET /x"u8)));
+    fmt.Println(matchVarˢ, matchVar(slice<byte>("go2cs"u8), go2csˢ));
+    fmt.Println(matchFieldˢ, matchField(slice<byte>("prod"u8), new config(name: "prod"u8)));
+    fmt.Println(twoConvˢ, matchTwoConversions(slice<byte>("abc"u8), slice<byte>("abc"u8)));
+    fmt.Println(callOperandˢ, staysHeapCallOperand(slice<byte>("y"u8), () => "y"u8));
+    fmt.Println(switchTagˢ, switchTag(slice<byte>("put"u8)));
+    fmt.Println(switchLocalˢ, switchLocal(slice<byte>("off"u8)));
+    fmt.Println(switchMagicˢ, switchMagic(slice<byte>("PK"u8)));
+    fmt.Println(switchCallˢ, switchCall(slice<byte>("q"u8)));
+    fmt.Println(concatLocalˢ, concatLocal(slice<byte>("go"u8), "2cs"u8));
+    fmt.Println(concatLitˢ, concatLit(slice<byte>("v"u8)));
+    fmt.Println(concatVarˢ, concatVar(slice<byte>("k"u8), "v"u8));
+    fmt.Println(concatTwoˢ, concatTwo(slice<byte>("x"u8), slice<byte>("y"u8)));
+    fmt.Println(concatCallˢ, concatCall(slice<byte>("q"u8), () => "z"u8));
+    fmt.Println(concatObjˢ, concatObj(slice<byte>("x"u8)));
 }
 
 internal static @string concatObj(slice<byte> b) {
@@ -174,15 +198,20 @@ internal static nint classify(slice<byte> word) {
     return total;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string alphaˢ = "alpha"u8;
+private static readonly @string bravoˢ = "bravo"u8;
+private static readonly @string otherˢ = "other"u8;
+
 internal static @string pick(slice<byte> tag) {
     sstring tagᴛ1 = ((sstring)tag);
     if (tagᴛ1 == "a"u8) {
-        return "alpha"u8;
+        return alphaˢ;
     }
     if (tagᴛ1 == "b"u8) {
-        return "bravo"u8;
+        return bravoˢ;
     }
-    return "other"u8;
+    return otherˢ;
 }
 
 internal static bool prefix(slice<byte> buf) {

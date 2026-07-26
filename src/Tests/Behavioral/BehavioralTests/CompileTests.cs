@@ -1279,6 +1279,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckStringLenUtf8Bytes() => CheckTarget("StringLenUtf8Bytes");
 
     [TestMethod]
+    public void CheckStringLiteralHoisting() => CheckTarget("StringLiteralHoisting");
+
+    [TestMethod]
     public void CheckStringLiteralIndexLoop() => CheckTarget("StringLiteralIndexLoop");
 
     [TestMethod]

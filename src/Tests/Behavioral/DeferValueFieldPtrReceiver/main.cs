@@ -20,28 +20,36 @@ partial class main_package {
     internal counter c;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object insideˢ = (@string)"inside:"u8;
+
 internal static void run(this ж<builder> Ꮡb) => func((defer, recover) => {
     ref var b = ref Ꮡb.Value;
 
     defer(Ꮡb.of(builder.Ꮡc).reset);
     b.c.inc();
     b.c.inc();
-    fmt.Println((@string)"inside:"u8, b.c.n);
+    fmt.Println(insideˢ, b.c.n);
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object afterˢ = (@string)"after:"u8;
+private static readonly object inside2ˢ = (@string)"inside2:"u8;
+private static readonly object after2ˢ = (@string)"after2:"u8;
 
 internal static void Main() {
     var b = Ꮡ(new builder(nil));
     b.run();
-    fmt.Println((@string)"after:"u8, (~b).c.n);
+    fmt.Println(afterˢ, (~b).c.n);
     var x = Ꮡ(new builder(nil));
     var xʗ1 = x;
     ((Action)(() => func((defer, recover) => {
         var xʗ2 = xʗ1;
         defer(xʗ2.of(builder.Ꮡc).reset);
         xʗ1.of(builder.Ꮡc).inc();
-        fmt.Println((@string)"inside2:"u8, (~xʗ1).c.n);
+        fmt.Println(inside2ˢ, (~xʗ1).c.n);
     })))();
-    fmt.Println((@string)"after2:"u8, (~x).c.n);
+    fmt.Println(after2ˢ, (~x).c.n);
 }
 
 } // end main_package

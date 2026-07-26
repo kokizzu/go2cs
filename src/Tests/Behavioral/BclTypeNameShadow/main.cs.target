@@ -12,9 +12,12 @@ partial class main_package {
 
 [GoType("[]byte")] partial struct byteView;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abcdefˢ = "abcdef"u8;
+
 internal static void Main() {
     var r = new Range(Start: 1, End: 4);
-    ViewType v = ((ViewType)(@string)"abcdef"u8);
+    ViewType v = ((ViewType)(@string)abcdefˢ);
     ViewType sub = v[(int)(r.Start)..(int)(r.End)];
     fmt.Println(sub);
     fmt.Println(len(sub));

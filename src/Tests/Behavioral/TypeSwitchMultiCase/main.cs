@@ -19,17 +19,26 @@ partial class main_package {
 [GoType] partial struct dot {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string circleˢ = "circle"u8;
+
 internal static @string name(this circle c) {
-    return "circle"u8;
+    return circleˢ;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string squareˢ = "square"u8;
+
 internal static @string name(this square s) {
-    return "square"u8;
+    return squareˢ;
 }
 
 internal static @string name(this dot d) {
     return "dot"u8;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noneˢ = "none"u8;
 
 internal static @string describe(shape v) {
     switch (v.type()) {
@@ -43,9 +52,12 @@ internal static @string describe(shape v) {
     }
     default: {
         var t = v;
-        return "none"u8;
+        return noneˢ;
     }}
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownˢ = "unknown"u8;
 
 internal static @string classify(any x) {
     switch (x.type()) {
@@ -60,8 +72,13 @@ internal static @string classify(any x) {
         var v = x;
         return fmt.Sprintf("text-or-flag %v"u8, v);
     }}
-    return "unknown"u8;
+    return unknownˢ;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string shapePtrˢ = "shape-ptr"u8;
+private static readonly @string dotPtrˢ = "dot-ptr"u8;
+private static readonly @string otherˢ = "other"u8;
 
 internal static @string ptrKind(any x) {
     switch (x.type()) {
@@ -69,13 +86,18 @@ internal static @string ptrKind(any x) {
     case ж<square> _: {
         var t = x;
         _ = t;
-        return "shape-ptr"u8;
+        return shapePtrˢ;
     }
     case ж<dot> t: {
-        return "dot-ptr"u8;
+        return dotPtrˢ;
     }}
-    return "other"u8;
+    return otherˢ;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilOrDotˢ = "nil-or-dot"u8;
+private static readonly @string circleValˢ = "circle-val"u8;
+private static readonly @string boxedˢ = "boxed"u8;
 
 internal static @string kind(shape v) {
     switch (v.type()) {
@@ -83,29 +105,34 @@ internal static @string kind(shape v) {
     case dot _: {
         var t = v;
         _ = t;
-        return "nil-or-dot"u8;
+        return nilOrDotˢ;
     }
     case circle t: {
-        return "circle-val"u8;
+        return circleValˢ;
     }
     default: {
         var t = v;
-        return "boxed"u8;
+        return boxedˢ;
     }}
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string commonˢ = "common"u8;
+private static readonly @string floatˢ = "float"u8;
+private static readonly @string rareˢ = "rare"u8;
 
 internal static @string tag(any x) {
     switch (x.type()) {
     case nint _:
     case int32 _:
     case @string _: {
-        return "common"u8;
+        return commonˢ;
     }
     case float64: {
-        return "float"u8;
+        return floatˢ;
     }}
 
-    return "rare"u8;
+    return rareˢ;
 }
 
 internal static void Main() {

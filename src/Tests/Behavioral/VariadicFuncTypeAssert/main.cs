@@ -5,6 +5,13 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string valueVFlagVˢ = "value=%v flag=%v"u8;
+private static readonly object noMatchˢ = (@string)"no match"u8;
+private static readonly object plainˢ = (@string)"plain"u8;
+private static readonly object unexpectedMatchˢ = (@string)"unexpected match"u8;
+private static readonly object noMatchForStringˢ = (@string)"no match for string"u8;
+
 internal static void Main() {
     Actionꓸꓸꓸ<@string, any> fn = (@string format, params ꓸꓸꓸany argsʗp) => {
         var args = argsʗp.slice();
@@ -13,17 +20,17 @@ internal static void Main() {
     any logf = fn;
     {
         var (fnΔ1, ok) = logf._<Actionꓸꓸꓸ<@string, any>>(ᐧ); if (ok){
-            fnΔ1("value=%v flag=%v"u8, (nint)(42), true);
+            fnΔ1(valueVFlagVˢ, (nint)(42), true);
         } else {
-            fmt.Println((@string)"no match"u8);
+            fmt.Println(noMatchˢ);
         }
     }
-    any notFn = (@string)"plain"u8;
+    any notFn = plainˢ;
     {
         var (_, ok) = notFn._<Actionꓸꓸꓸ<@string, any>>(ᐧ); if (ok){
-            fmt.Println((@string)"unexpected match"u8);
+            fmt.Println(unexpectedMatchˢ);
         } else {
-            fmt.Println((@string)"no match for string"u8);
+            fmt.Println(noMatchForStringˢ);
         }
     }
     any plain = (@string s) => s + "!"u8;

@@ -10,8 +10,11 @@ partial class main_package {
 
 // type Importer is a methodless func type — rendered inline as its base delegate
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rootˢ = "root"u8;
+
 internal static ж<Node> newPackage(Func<map<@string, ж<Node>>, @string, (ж<Node>, error)> importer, map<@string, ж<Node>> files) {
-    var (n, _) = importer(files, "root"u8);
+    var (n, _) = importer(files, rootˢ);
     return n;
 }
 

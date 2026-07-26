@@ -14,9 +14,12 @@ internal static (ж<box>, error) makeBox(nint v) {
     return (Ꮡ(new box(v: v)), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloˢ = "hello"u8;
+
 internal static (nint, @string) pair() {
     calls++;
-    return (42, "hello");
+    return (42, helloˢ);
 }
 
 internal static ж<box> defaultBox = makeBox(7).Item1;

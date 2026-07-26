@@ -4,9 +4,17 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object nilLenˢ = (@string)"nil len:"u8;
+private static readonly object nilRecvWrongˢ = (@string)"nil recv (wrong):"u8;
+private static readonly object nilSendWrongˢ = (@string)"nil send (wrong)"u8;
+private static readonly object liveRecvˢ = (@string)"live recv:"u8;
+private static readonly object rendezvousRecvˢ = (@string)"rendezvous recv:"u8;
+private static readonly object liveSendFiredˢ = (@string)"live send fired"u8;
+
 internal static void Main() {
     channel<nint> nilCh = default!;
-    fmt.Println((@string)"nil len:"u8, len(nilCh), (@string)"cap:"u8, cap(nilCh));
+    fmt.Println(nilLenˢ, len(nilCh), (@string)"cap:"u8, cap(nilCh));
     var live = new channel<nint>(1);
     live.ᐸꟷ(42);
     var selᴛ1 = nilCh;
@@ -14,15 +22,15 @@ internal static void Main() {
     var selᴛ3 = live;
     switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), selᴛ2, ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
     case 0 when selᴛ1.ꟷᐳ(out var v): {
-        fmt.Println((@string)"nil recv (wrong):"u8, v);
+        fmt.Println(nilRecvWrongˢ, v);
         break;
     }
     case 1: {
-        fmt.Println((@string)"nil send (wrong)"u8);
+        fmt.Println(nilSendWrongˢ);
         break;
     }
     case 2 when selᴛ3.ꟷᐳ(out var v): {
-        fmt.Println((@string)"live recv:"u8, v);
+        fmt.Println(liveRecvˢ, v);
         break;
     }}
     var u = new channel<nint>(0);
@@ -34,11 +42,11 @@ internal static void Main() {
     var selᴛ5 = u;
     switch (select(ᐸꟷ(selᴛ4, ꓸꓸꓸ), ᐸꟷ(selᴛ5, ꓸꓸꓸ))) {
     case 0 when selᴛ4.ꟷᐳ(out var v): {
-        fmt.Println((@string)"nil recv (wrong):"u8, v);
+        fmt.Println(nilRecvWrongˢ, v);
         break;
     }
     case 1 when selᴛ5.ꟷᐳ(out var v): {
-        fmt.Println((@string)"rendezvous recv:"u8, v);
+        fmt.Println(rendezvousRecvˢ, v);
         break;
     }}
     var @out = new channel<nint>(1);
@@ -46,11 +54,11 @@ internal static void Main() {
     var selᴛ7 = @out.ᐸꟷ(5, ꓸꓸꓸ);
     switch (select(selᴛ6, selᴛ7)) {
     case 0: {
-        fmt.Println((@string)"nil send (wrong)"u8);
+        fmt.Println(nilSendWrongˢ);
         break;
     }
     case 1: {
-        fmt.Println((@string)"live send fired"u8);
+        fmt.Println(liveSendFiredˢ);
         break;
     }}
     fmt.Println((@string)"out:"u8, ᐸꟷ(@out));

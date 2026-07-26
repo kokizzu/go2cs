@@ -32,9 +32,12 @@ public static float64 Time(this MyError myErr) {
     internal nint pings;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pongˢ = "pong"u8;
+
 [GoRecv] internal static @string Ping(this ref core c) {
     c.pings++;
-    return "pong"u8;
+    return pongˢ;
 }
 
 [GoType] partial struct Station {
@@ -144,15 +147,21 @@ internal static @string Ping(this rightSide r) {
     internal ж<ж<Inner>> ptr;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string worldˢ = "World"u8;
+private static readonly object myErrorWhatˢ = (@string)"MyError What ="u8;
+private static readonly object myCustomErrorWhatˢ = (@string)"MyCustomError What ="u8;
+private static readonly object myCustomErrorMethodˢ = (@string)"MyCustomError method ="u8;
+
 internal static void Main() {
     ref var e = ref heap<MyError>(out var Ꮡe);
     e = new MyError(time.Now(), "Hello"u8);
     var a = new MyCustomError("New One"u8, default!, Ꮡe);
     a.Message = "New"u8;
-    a.What = "World"u8;
-    fmt.Println((@string)"MyError What ="u8, e.What);
-    fmt.Println((@string)"MyCustomError What ="u8, a.What);
-    fmt.Println((@string)"MyCustomError method ="u8, a.Time());
+    a.What = worldˢ;
+    fmt.Println(myErrorWhatˢ, e.What);
+    fmt.Println(myCustomErrorWhatˢ, a.What);
+    fmt.Println(myCustomErrorMethodˢ, a.Time());
     ref var inner = ref heap<ж<Inner>>(out var Ꮡinner);
     inner = Ꮡ(new Inner(Value: "hello"u8));
     var innerPtr = Ꮡinner;

@@ -20,15 +20,23 @@ internal static @string tag(this relationship r) {
     return "rel:"u8 + ((@string)r);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sameˢ = "same"u8;
+private static readonly @string otherˢ = "other"u8;
+
 internal static @string describe(relationship r) {
     if (r == equivalent) {
-        return "same"u8;
+        return sameˢ;
     }
     if (r == moreGeneral || r == moreSpecific) {
         return "related:"u8 + ((@string)r);
     }
-    return "other"u8;
+    return otherˢ;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string opLoadˢ = "opLoad"u8;
+private static readonly @string opLocalˢ = "opLocal"u8;
 
 internal static void Main() {
     fmt.Println(describe(equivalent));
@@ -39,10 +47,10 @@ internal static void Main() {
     fmt.Println(equivalent.tag());
     @string plain = "plain"u8;
     fmt.Println(plain);
-    fmt.Println(opLoad == ((relationship)(@string)"opLoad"u8), opStore == opLoad, opStore.tag(), opDelete.tag());
+    fmt.Println(opLoad == ((relationship)(@string)opLoadˢ), opStore == opLoad, opStore.tag(), opDelete.tag());
     fmt.Println(describe(opLoad));
     relationship localOp = "opLocal"u8;
-    fmt.Println(localOp.tag(), localOp == ((relationship)(@string)"opLocal"u8));
+    fmt.Println(localOp.tag(), localOp == ((relationship)(@string)opLocalˢ));
     @string untypedOp = "opUntyped";
     fmt.Println(untypedOp, len(untypedOp));
 }

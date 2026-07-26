@@ -123,6 +123,9 @@ public static bool Less(this PeopleByAge p, nint i, nint j) {
     return (p[i].Age < p[j].Age);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloˢ = "Hello"u8;
+
 public static (nint E2, @string p) Testing() {
     nint E2 = default!;
     @string p = default!;
@@ -131,7 +134,7 @@ public static (nint E2, @string p) Testing() {
     E2 = 1;
     nint B2 = 2;
     fmt.Println(E2, B2);
-    p = "Hello"u8;
+    p = helloˢ;
     {
         nint E2Δ1 = 99;
         nint B2Δ1 = 199;
@@ -146,6 +149,10 @@ public static (nint E2, @string p) Testing() {
     return (E2, p);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloSj3ˢ = "Hello, 世界 \u0053\u004a3"u8;
+private static readonly object consumedˢ = (@string)"consumed:"u8;
+
 internal static void Main() {
     var agesDemo = new PeopleByAge(new Person[]{new("Zed"u8, 30, 11.5F), new("Amy"u8, 25, 7.0F)}.slice());
     agesDemo.sort();
@@ -156,7 +163,7 @@ internal static void Main() {
     fmt.Println(MultiLine2);
     fmt.Println(MultiLine3);
     Testing();
-    @string x = "Hello, 世界 \u0053\u004a3"u8;
+    @string x = helloSj3ˢ;
     fmt.Println(x);
     var people = new Person[]{
         new(
@@ -200,7 +207,7 @@ internal static void Main() {
     ref var crew = ref heap<Roster>(out var Ꮡcrew);
     crew = new Roster(new Person[]{new(Name: "Ann"u8, Age: 30), new(Name: "Bob"u8, Age: 40)}.slice());
     consumeOne(Ꮡcrew.of(Roster.Ꮡm_value));
-    fmt.Println((@string)"consumed:"u8, len(crew), crew[0].Name);
+    fmt.Println(consumedˢ, len(crew), crew[0].Name);
     x = """
 
         SELECT *

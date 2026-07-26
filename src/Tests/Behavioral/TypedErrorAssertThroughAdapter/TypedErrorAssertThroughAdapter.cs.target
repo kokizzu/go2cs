@@ -28,6 +28,18 @@ internal static error valueSourced() {
     return new valErr(tag: "v"u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object ptrAssertˢ = (@string)"ptr-assert"u8;
+private static readonly object valAssertˢ = (@string)"val-assert"u8;
+private static readonly object ptrMissWrongˢ = (@string)"ptr-miss-WRONG"u8;
+private static readonly object ptrMissOkˢ = (@string)"ptr-miss-ok"u8;
+private static readonly object valMissWrongˢ = (@string)"val-miss-WRONG"u8;
+private static readonly object valMissOkˢ = (@string)"val-miss-ok"u8;
+private static readonly object recoveredˢ = (@string)"recovered"u8;
+private static readonly object unreachableˢ = (@string)"unreachable"u8;
+private static readonly object ifaceAssertˢ = (@string)"iface-assert"u8;
+private static readonly object ifaceAssertMissedˢ = (@string)"iface-assert-missed"u8;
+
 [GoType("dyn")] partial interface main_type {
     @string Error();
 }
@@ -36,39 +48,39 @@ internal static void Main() {
     var err = pointerSourced();
     var p = err._<ж<myErr>>();
     p.Value.code = 7;
-    fmt.Println((@string)"ptr-assert"u8, (~p).code, err.Error());
+    fmt.Println(ptrAssertˢ, (~p).code, err.Error());
     var v = valueSourced()._<valErr>();
-    fmt.Println((@string)"val-assert"u8, v.tag, v.Error());
+    fmt.Println(valAssertˢ, v.tag, v.Error());
     {
         var (_, ok) = valueSourced()._<ж<myErr>>(ᐧ); if (ok){
-            fmt.Println((@string)"ptr-miss-WRONG"u8);
+            fmt.Println(ptrMissWrongˢ);
         } else {
-            fmt.Println((@string)"ptr-miss-ok"u8);
+            fmt.Println(ptrMissOkˢ);
         }
     }
     {
         var (_, ok) = pointerSourced()._<valErr>(ᐧ); if (ok){
-            fmt.Println((@string)"val-miss-WRONG"u8);
+            fmt.Println(valMissWrongˢ);
         } else {
-            fmt.Println((@string)"val-miss-ok"u8);
+            fmt.Println(valMissOkˢ);
         }
     }
     ((Action)(() => func((defer, recover) => {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println((@string)"recovered"u8);
+                    fmt.Println(recoveredˢ);
                 }
             }
         });
         _ = pointerSourced()._<valErr>();
-        fmt.Println((@string)"unreachable"u8);
+        fmt.Println(unreachableˢ);
     })))();
     {
         var (s, ok) = pointerSourced()._<main_type>(ᐧ); if (ok){
-            fmt.Println((@string)"iface-assert"u8, s.Error());
+            fmt.Println(ifaceAssertˢ, s.Error());
         } else {
-            fmt.Println((@string)"iface-assert-missed"u8);
+            fmt.Println(ifaceAssertMissedˢ);
         }
     }
 }

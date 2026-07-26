@@ -50,8 +50,11 @@ internal static void Main() {
 
 [GoType("num:uintptr")] partial struct errno;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string errnoˢ = "errno"u8;
+
 internal static @string Error(this errno e) {
-    return "errno"u8;
+    return errnoˢ;
 }
 
 internal static readonly errno errAgain = 11;
@@ -63,35 +66,48 @@ internal static error mayFail(nint n) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object gotAgainˢ = (@string)"got again"u8;
+private static readonly object notAgainˢ = (@string)"not again"u8;
+private static readonly object switchAgainˢ = (@string)"switch: again"u8;
+private static readonly object switchNilˢ = (@string)"switch: nil"u8;
+private static readonly object switchOtherˢ = (@string)"switch: other"u8;
+
 internal static void checkErr(nint n) {
     var err = mayFail(n);
     if (AreEqual(err, errAgain)) {
-        fmt.Println((@string)"got again"u8);
+        fmt.Println(gotAgainˢ);
     }
     if (!AreEqual(err, errAgain)) {
-        fmt.Println((@string)"not again"u8);
+        fmt.Println(notAgainˢ);
     }
     var exprᴛ1 = err;
     if (AreEqual(exprᴛ1, errAgain)) {
-        fmt.Println((@string)"switch: again"u8);
+        fmt.Println(switchAgainˢ);
     }
     else if (AreEqual(exprᴛ1, default!)) {
-        fmt.Println((@string)"switch: nil"u8);
+        fmt.Println(switchNilˢ);
     }
     else { /* default: */
-        fmt.Println((@string)"switch: other"u8);
+        fmt.Println(switchOtherˢ);
     }
 
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object releasedˢ = (@string)"released"u8;
+
 internal static error release(errno e) {
-    fmt.Println((@string)"released"u8, (uintptr)e);
+    fmt.Println(releasedˢ, (uintptr)e);
     return errAgain;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object usingˢ = (@string)"using"u8;
+
 internal static void useAndRelease() => func((defer, recover) => {
     deferǃ(release, errAgain, defer);
-    fmt.Println((@string)"using"u8);
+    fmt.Println(usingˢ);
 });
 
 public static void ShowZoo(ж<array<Animal>> Ꮡzoo) {
@@ -105,20 +121,32 @@ public static void ShowZoo(ж<array<Animal>> Ꮡzoo) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string frogˢ = "Frog"u8;
+
 [GoRecv] public static @string Type(this ref Frog f) {
-    return "Frog"u8;
+    return frogˢ;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string kickˢ = "Kick"u8;
 
 [GoRecv] public static @string Swim(this ref Frog f) {
-    return "Kick"u8;
+    return kickˢ;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string paddleˢ = "Paddle"u8;
 
 [GoRecv] public static @string Swim(this ref Dog d) {
-    return "Paddle"u8;
+    return paddleˢ;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string doggieˢ = "Doggie"u8;
+
 [GoRecv] public static @string Type(this ref Dog d) {
-    return "Doggie"u8;
+    return doggieˢ;
 }
 
 } // end main_package

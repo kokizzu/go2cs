@@ -23,15 +23,21 @@ internal static error f() {
 [GoType] partial struct Dog {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string woofˢ = "Woof!"u8;
+
 public static @string Speak(this Dog d) {
-    return "Woof!"u8;
+    return woofˢ;
 }
 
 [GoType] partial struct Cat {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string meowˢ = "Meow!"u8;
+
 [GoRecv] public static @string Speak(this ref Cat c) {
-    return "Meow!"u8;
+    return meowˢ;
 }
 
 [GoType] partial struct Llama {
@@ -44,8 +50,11 @@ public static @string Speak(this Llama l) {
 [GoType] partial struct JavaProgrammer {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string designPatternsˢ = "Design patterns!"u8;
+
 public static @string Speak(this JavaProgrammer j) {
-    return "Design patterns!"u8;
+    return designPatternsˢ;
 }
 
 [GoType] partial struct Counter {
@@ -84,6 +93,9 @@ public static Animal Reversed(Animal a) {
     return new reversedжAnimal(Ꮡ(new reversed(a)));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string llamaˢ = "llama"u8;
+
 internal static (Animal, @string) pick(nint kind) {
     Animal a = default!;
     @string name = default!;
@@ -103,7 +115,7 @@ internal static (Animal, @string) pick(nint kind) {
     default: {
         ref var l = ref heap(new Llama(), out var Ꮡl);
         a = new LlamaжAnimal(Ꮡl);
-        name = "llama"u8;
+        name = llamaˢ;
         break;
     }}
 
@@ -113,6 +125,20 @@ internal static (Animal, @string) pick(nint kind) {
 public static Animal Self(this ж<Cat> Ꮡc) {
     return new CatжAnimal(Ꮡc);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object viaPointerˢ = (@string)"via pointer:"u8;
+private static readonly object viaInterfaceˢ = (@string)"via interface:"u8;
+private static readonly object assertBackˢ = (@string)"assert-back:"u8;
+private static readonly object promotedViaPointerˢ = (@string)"promoted via pointer adapter:"u8;
+private static readonly object pickedˢ = (@string)"picked:"u8;
+private static readonly @string dataˢ = "data"u8;
+private static readonly object replacedˢ = (@string)"replaced:"u8;
+private static readonly object deconstructedIntoIfaceˢ = (@string)"deconstructed into iface:"u8;
+private static readonly object madeˢ = (@string)"made:"u8;
+private static readonly object plumbedˢ = (@string)"plumbed:"u8;
+private static readonly object keywordMethodˢ = (@string)"keyword-method:"u8;
+private static readonly object anyStringˢ = (@string)"any-string:"u8;
 
 internal static void Main() {
     error err = default!;
@@ -126,21 +152,21 @@ internal static void Main() {
     Incrementer inc = new CounterжIncrementer(c);
     inc.Inc();
     inc.Inc();
-    fmt.Println((@string)"via pointer:"u8, c.Total());
+    fmt.Println(viaPointerˢ, c.Total());
     c.Value.n = 10;
-    fmt.Println((@string)"via interface:"u8, inc.Total());
+    fmt.Println(viaInterfaceˢ, inc.Total());
     var (back, ok) = inc._<ж<Counter>>(ᐧ);
     back.Inc();
-    fmt.Println((@string)"assert-back:"u8, ok, c.Total(), back == c);
+    fmt.Println(assertBackˢ, ok, c.Total(), back == c);
     var r = Reversed(new Dog(nil));
-    fmt.Println((@string)"promoted via pointer adapter:"u8, r.Speak());
+    fmt.Println(promotedViaPointerˢ, r.Speak());
     for (nint k = 0; k < 3; k++) {
         var (a, name) = pick(k);
-        fmt.Println((@string)"picked:"u8, name, a.Speak());
+        fmt.Println(pickedˢ, name, a.Speak());
     }
     rdr rd = new strRdr(nil);
     fmt.Println(rd.read());
-    var rc = open("data"u8);
+    var rc = open(dataˢ);
     fmt.Println(rc.read(), rc.close());
     var readers = new rdr[]{new strRdr(nil)}.slice();
     readers[0] = new fileRdr(name: "x"u8);
@@ -155,32 +181,35 @@ internal static void Main() {
 
     swapped = new Dog(nil);
     replaceAnimal(Ꮡswapped);
-    fmt.Println((@string)"replaced:"u8, swapped.Speak());
+    fmt.Println(replacedˢ, swapped.Speak());
     Incrementer inc2 = default!;
     var (ᴛ1, ᴛ2) = makeCounter();
     (inc2, err) = (new CounterжIncrementer(ᴛ1), ᴛ2);
     inc2.Inc();
-    fmt.Println((@string)"deconstructed into iface:"u8, inc2.Total(), err == default!);
+    fmt.Println(deconstructedIntoIfaceˢ, inc2.Total(), err == default!);
     var makeAnimal = Animal (bool feline) => {
         if (feline) {
             return new CatжAnimal(Ꮡ(new Cat(nil)));
         }
         return new Dog(nil);
     };
-    fmt.Println((@string)"made:"u8, makeAnimal(true).Speak(), makeAnimal(false).Speak());
-    fmt.Println((@string)"plumbed:"u8, runPlumbing());
+    fmt.Println(madeˢ, makeAnimal(true).Speak(), makeAnimal(false).Speak());
+    fmt.Println(plumbedˢ, runPlumbing());
     speakShutter ss = new wrapSinkжspeakShutter(Ꮡ(new wrapSink(Animal: new Dog(nil))));
     fmt.Println(ss.Speak(), ss.Shut());
     labeler lb = new badgeжlabeler(Ꮡ(new badge(text: "id"u8, num: 9)));
-    fmt.Println((@string)"keyword-method:"u8, lb.@string(), lb.@int());
+    fmt.Println(keywordMethodˢ, lb.@string(), lb.@int());
     var av = describe(true);
     var (@as, aok) = av._<@string>(ᐧ);
-    fmt.Println((@string)"any-string:"u8, av, describe(false), @as, aok);
+    fmt.Println(anyStringˢ, av, describe(false), @as, aok);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object textValueˢ = (@string)"text-value"u8;
 
 internal static any describe(bool b) {
     if (b) {
-        return (@string)"text-value"u8;
+        return textValueˢ;
     }
     return (nint)(99);
 }
@@ -218,8 +247,11 @@ internal static void replaceAnimal(ж<Animal> Ꮡa) {
     public Animal Animal;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string shutˢ = "shut"u8;
+
 internal static @string Shut(this wrapSink w) {
-    return "shut"u8;
+    return shutˢ;
 }
 
 [GoType] partial interface rdr {
@@ -239,8 +271,11 @@ internal static @string Shut(this wrapSink w) {
 [GoType] partial struct strRdr {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string strRdrˢ = "strRdr"u8;
+
 internal static @string read(this strRdr _) {
-    return "strRdr"u8;
+    return strRdrˢ;
 }
 
 [GoType] partial struct fileRdr {

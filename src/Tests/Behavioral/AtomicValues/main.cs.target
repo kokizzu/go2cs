@@ -13,31 +13,45 @@ partial class main_package {
 internal static ж<holder> ᏑgHolder = new(default(holder));
 internal static ref holder gHolder => ref ᏑgHolder.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object loadˢ = (@string)"load:"u8;
+private static readonly object swapˢ = (@string)"swap:"u8;
+private static readonly object casOkˢ = (@string)"cas ok:"u8;
+private static readonly object casNoˢ = (@string)"cas no:"u8;
+private static readonly object finalˢ = (@string)"final:"u8;
+private static readonly object ptrNilˢ = (@string)"ptr nil:"u8;
+private static readonly object ptrLoadˢ = (@string)"ptr load:"u8;
+private static readonly object ptrCasNoˢ = (@string)"ptr cas no:"u8;
+private static readonly object ptrCasOkˢ = (@string)"ptr cas ok:"u8;
+private static readonly object ptrFinalˢ = (@string)"ptr final:"u8;
+private static readonly object ptrSwapˢ = (@string)"ptr swap:"u8;
+private static readonly object globalFieldˢ = (@string)"global field:"u8;
+
 internal static void Main() {
     ref var n = ref heap(new atomic.Int32(), out var Ꮡn);
     Ꮡn.Store(10);
     fmt.Println((@string)"add:"u8, Ꮡn.Add(5));
-    fmt.Println((@string)"load:"u8, Ꮡn.Load());
-    fmt.Println((@string)"swap:"u8, Ꮡn.Swap(100));
-    fmt.Println((@string)"cas ok:"u8, Ꮡn.CompareAndSwap(100, 7));
-    fmt.Println((@string)"cas no:"u8, Ꮡn.CompareAndSwap(100, 8));
-    fmt.Println((@string)"final:"u8, Ꮡn.Load());
+    fmt.Println(loadˢ, Ꮡn.Load());
+    fmt.Println(swapˢ, Ꮡn.Swap(100));
+    fmt.Println(casOkˢ, Ꮡn.CompareAndSwap(100, 7));
+    fmt.Println(casNoˢ, Ꮡn.CompareAndSwap(100, 8));
+    fmt.Println(finalˢ, Ꮡn.Load());
     ref var p = ref heap(new atomic.Pointer<nint>(), out var Ꮡp);
-    fmt.Println((@string)"ptr nil:"u8, Ꮡp.Load() == nil);
+    fmt.Println(ptrNilˢ, Ꮡp.Load() == nil);
     ref var a = ref heap<nint>(out var Ꮡa);
     a = 1;
     Ꮡp.Store(Ꮡa);
-    fmt.Println((@string)"ptr load:"u8, Ꮡp.Load().Value);
+    fmt.Println(ptrLoadˢ, Ꮡp.Load().Value);
     ref var b = ref heap<nint>(out var Ꮡb);
     b = 2;
-    fmt.Println((@string)"ptr cas no:"u8, Ꮡp.CompareAndSwap(Ꮡb, Ꮡb));
-    fmt.Println((@string)"ptr cas ok:"u8, Ꮡp.CompareAndSwap(Ꮡa, Ꮡb));
-    fmt.Println((@string)"ptr final:"u8, Ꮡp.Load().Value);
+    fmt.Println(ptrCasNoˢ, Ꮡp.CompareAndSwap(Ꮡb, Ꮡb));
+    fmt.Println(ptrCasOkˢ, Ꮡp.CompareAndSwap(Ꮡa, Ꮡb));
+    fmt.Println(ptrFinalˢ, Ꮡp.Load().Value);
     var old = Ꮡp.Swap(Ꮡa);
-    fmt.Println((@string)"ptr swap:"u8, old.Value, Ꮡp.Load().Value);
+    fmt.Println(ptrSwapˢ, old.Value, Ꮡp.Load().Value);
     ᏑgHolder.of(holder.Ꮡcount).Store(42);
     ᏑgHolder.of(holder.Ꮡcount).Add(8);
-    fmt.Println((@string)"global field:"u8, ᏑgHolder.of(holder.Ꮡcount).Load());
+    fmt.Println(globalFieldˢ, ᏑgHolder.of(holder.Ꮡcount).Load());
 }
 
 } // end main_package

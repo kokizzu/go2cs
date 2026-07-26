@@ -59,10 +59,13 @@ internal static ж<nint> renew(ж<nint> Ꮡp) {
     return Ꮡp;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloˢ = "hello"u8;
+
 internal static void Main() {
     nint minValue = Min<nint>(42, 17);
     fmt.Printf("Min value: %d\n"u8, minValue);
-    nint strLength = Convert<@string, nint>("hello"u8, (@string s) => len(s));
+    nint strLength = Convert<@string, nint>(helloˢ, (@string s) => len(s));
     fmt.Printf("String length: %d\n"u8, strLength);
     ref var n = ref heap<nint>(out var Ꮡn);
     n = 5;

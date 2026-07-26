@@ -15,9 +15,15 @@ public static @string Renamed(Buffer b) {
     return fmt.Sprintf("%s/%s/%d"u8, b.Tag, b.ΔBuffer.Data, b.ΔBuffer.N);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string alphaˢ = "alpha"u8;
+private static readonly @string betaˢ = "beta"u8;
+private static readonly @string gammaˢ = "gamma"u8;
+private static readonly @string freshˢ = "fresh"u8;
+
 internal static void Main() {
     ref var b = ref heap<Buffer>(out var Ꮡb);
-    b = new Buffer(ΔBuffer: inner.NewBuffer("alpha"u8, 3), Tag: "tagged"u8);
+    b = new Buffer(ΔBuffer: inner.NewBuffer(alphaˢ, 3), Tag: "tagged"u8);
     fmt.Println(b.ΔBuffer.Data, b.ΔBuffer.N);
     fmt.Println(b.Data, b.N);
     fmt.Println(b.ΔBuffer.Describe());
@@ -26,12 +32,12 @@ internal static void Main() {
     p.of(Buffer.ᏑΔBuffer).Bump();
     p.of(Buffer.ᏑΔBuffer).Bump();
     fmt.Println((~p).ΔBuffer.N, (~p).N, (~p).ΔBuffer.Describe());
-    p.Value.ΔBuffer.Data = "beta"u8;
+    p.Value.ΔBuffer.Data = betaˢ;
     p.of(Buffer.ᏑΔBuffer).Append("!"u8);
     fmt.Println((~p).Data, (~p).ΔBuffer.N, (~p).ΔBuffer.Describe());
     var z = @new<Buffer>();
-    z.of(Buffer.ᏑΔBuffer).Append("gamma"u8);
-    z.Value.Tag = "fresh"u8;
+    z.of(Buffer.ᏑΔBuffer).Append(gammaˢ);
+    z.Value.Tag = freshˢ;
     fmt.Println((~z).ΔBuffer.Describe(), (~z).ΔBuffer.N, Renamed(z.Value));
 }
 

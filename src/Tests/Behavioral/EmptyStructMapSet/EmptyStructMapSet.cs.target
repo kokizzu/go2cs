@@ -20,13 +20,21 @@ internal static bool contains(map<nint, EmptyStruct> seen, nint k) {
 
 [GoType("map[uint32, entry]")] partial struct registry;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingˢ = "missing"u8;
+
 internal static (@string, bool) lookup(registry reg, uint32 id) {
     var (e, ok) = reg[id, ꟷ];
     if (!ok) {
-        return ("missing", false);
+        return (missingˢ, false);
     }
     return (e.tag, true);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object litLenˢ = (@string)"lit len:"u8;
+private static readonly @string domainˢ = "domain"u8;
+private static readonly object chanAssertˢ = (@string)"chan assert:"u8;
 
 internal static void Main() {
     var seen = new map<nint, EmptyStruct>();
@@ -42,7 +50,7 @@ internal static void Main() {
         ["b"u8] = new()
     };
     lit["c"u8] = new EmptyStruct();
-    fmt.Println((@string)"lit len:"u8, len(lit));
+    fmt.Println(litLenˢ, len(lit));
     foreach (var (_, s) in new @string[]{"a"u8, "b"u8, "c"u8, "d"u8}.slice()) {
         var (_, ok) = lit[s, ꟷ];
         fmt.Printf("lit[%s] = %t\n"u8, s, ok);
@@ -62,13 +70,13 @@ internal static void Main() {
             ["smtp"u8] = 25,
             ["ssh"u8] = 22}
     };
-    fmt.Println(ports["tcp"u8]["ssh"u8], ports["udp"u8]["domain"u8], len(ports["tcp"u8]));
+    fmt.Println(ports["tcp"u8]["ssh"u8], ports["udp"u8][domainˢ], len(ports["tcp"u8]));
     var done = new channel<EmptyStruct>(1);
     any anyDone = done;
     var (ch, chOK) = anyDone._<channel<EmptyStruct>>(ᐧ);
     ch.ᐸꟷ(new EmptyStruct());
     ᐸꟷ(done);
-    fmt.Println((@string)"chan assert:"u8, chOK, len(done));
+    fmt.Println(chanAssertˢ, chOK, len(done));
 }
 
 } // end main_package

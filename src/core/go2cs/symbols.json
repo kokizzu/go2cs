@@ -103,6 +103,19 @@
       "note": "U+1D1B - compiler temporary variable prefix."
     },
     {
+      "name": "HoistedLiteralMarker",
+      "value": "\u02e2",
+      "csharp": true,
+      "goEscape": true,
+      "goTrailing": "Suffix of a hoisted string-literal field name (true\u02e2). Variants: \u02e2 \u02e2\u02e2",
+      "csComment": [
+        "Suffixes the name of a hoisted string-literal field (`true\u02e2`) - the one-per-package",
+        "`static readonly` @string a Go RODATA literal is materialized into (see Tier C of",
+        "docs/Phase4/DESIGN-string-literal-allocation.md)."
+      ],
+      "note": "U+02E2 - hoisted string-literal field-name suffix."
+    },
+    {
       "name": "TrueMarker",
       "value": "\u1427",
       "goEscape": true,

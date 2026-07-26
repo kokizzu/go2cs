@@ -2613,6 +2613,124 @@ typed, and single-literal non-UTF-8 tables byte-indexed and `len`-measured, plus
 controls asserting the readable literal form and UTF-8 byte-count `len`, output-compared vs
 `go run`.)
 
+### A value-materializing string literal is HOISTED to a `static readonly` field beside its first use
+Go keeps string literals in RODATA: `return "true"` allocates **nothing** in a Go binary. Emitted
+inline, the converted C# pays a fresh backing `byte[]` at *every evaluation*, because each
+literal→`@string` materialization copies the `u8` span. A whole-package pre-pass therefore hoists
+each package-unique literal that materializes a VALUE to one `private static readonly` field,
+declared immediately above the function whose body holds its first package-wide use, and every use
+site becomes a field reference — so the literal costs at most one allocation per program *run*:
+
+```go
+// strconv/atob.go
+func FormatBool(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
+```
+```csharp
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string trueˢ = "true"u8;
+private static readonly @string falseˢ = "false"u8;
+
+// FormatBool returns "true" or "false" according to the value of b.
+public static @string FormatBool(bool b) {
+    if (b) {
+        return trueˢ;
+    }
+    return falseˢ;
+}
+```
+
+**What hoists.** Only contexts that materialize a value, where a shared immutable `@string` is
+indistinguishable from a fresh one: a value `return`; an assignment to a local, parameter or struct
+field; an argument bound to a `string` parameter (including a variadic `...string` element); an
+`any`/empty-interface target (argument, result, channel send, assignment); a standalone map-index
+key; and a conversion of the literal to a named string type. A literal whose EVERY package use is an
+`any` target is emitted **pre-boxed** — `private static readonly object xˢ = (@string)"…"u8;` — so
+those sites allocate nothing at all. Mixed-use literals get one `@string` field and box per `any`
+call; there are never two fields for one literal.
+
+**What does not hoist**, and why — deterministic filters, not hotness heuristics:
+
+| Context | Why it stays inline |
+|:--|:--|
+| comparison operands (incl. lowered `switch` chains) | already zero-allocation: `@string` and every named string type compare against a `u8` span in place |
+| concat operands (`x + "…"`) | `operator +(@string, ReadOnlySpan<byte>)` already consumes the span without materializing it |
+| `[]byte("…")` / `[]rune("…")` sources | the result must be freshly MUTABLE; that one allocation is mandatory |
+| `fmt`/`log`/`testing` `*f` **format-position** literals (recognised structurally: a variadic callee named `…f` with a `string` parameter immediately before the variadic) | a format string slugs badly (`"%v"` → `vˢ`) and a formatting call's cost is dominated by formatting itself |
+| **degenerate slugs** — no usable ASCII word content, or a slug of ≤ 3 characters | `strˢ7` / `dˢ` carry no information; the literal reads better inline. `"true"` slugs to a healthy four-character `true` and DOES hoist |
+| the empty literal `""` | already 0 B (`ToArray()` of an empty span returns `Array.Empty`) |
+| composite-literal elements and keys | uniform hoisting would emit thousands of fields above the table-building functions and move their allocations out from under a `sync.Once` into the type initializer. (A *standalone* index into the same map — `table["composite key"]` — still hoists) |
+| literals inside `func init()` | run exactly once by construction |
+| package-level `var`/`const` initializers — decided on the **Go AST position**, not the emitted C# shape | one-time by nature (a package-level table is emitted into an `initᴛ*` method body, which a shape-based rule would mistake for an ordinary function) |
+| func literals OUTSIDE a function declaration | no `FunctionPrefixMarker` anchor exists to hoist above |
+| `\xHH` / high-octal raw-byte literals | already diverted to the byte-array-backed `@string` path |
+| every declaration a `[module: GoManualConversion]` file or entry owns | its emission is redirected to a non-compiled `.cs.auto` (or replaced by a placeholder comment), so it renders no prefix marker and must never CLAIM a field; its own literals stay inline, and the reconvert gate asserts no hoisted field is ever declared in a `.cs.auto` |
+| universe builtins (`panic`, `print`, `copy`, `unsafe.Slice`, …) | `go/types` records a call-site-specific signature for these, but the converter emits each through its own path — `panic` deliberately keeps the bare interned literal, which is zero-cost until a panic actually fires |
+
+**Naming.** `HoistedLiteralMarker` (`ˢ`, U+02E2 — a new `symbols.json` entry, never hardcoded)
+suffixes a camelCase slug of the literal's own content, joined at word boundaries and truncated at
+≤ 24 characters. The alphabet is **ASCII** letters and digits, not `unicode.IsLetter`: a C#
+identifier is lexed over UTF-16 code units, so a letter outside the BMP is a surrogate pair and can
+never appear in one — `go/types` spells its universe type set `"𝓤"` (U+1D4E4, category Lu), and a
+rune-wide slug emitted `𝓤ˢ`, a CS1056/CS1519 cascade. An ALL-CAPS word folds whole
+(`"TESTING KEY"` → `testingKeyˢ`, `"CONTENT-TYPE"` → `contentTypeˢ`); touching only its first
+character would leave `tESTINGKEY`, which was 9% of the corpus' hoisted names on the first cut.
+Distinct literals whose slug collides take a package-wide first-occurrence ordinal (`fooˢ`, `fooˢ2`),
+checked against the package's declared names *and* the already-claimed hoist names —
+`performNameCollisionAnalysis` walks Go declarations only and never sees a synthetic name. Because
+every hoisted name ends in `ˢ`, it can collide with neither a C# keyword nor a Go-derived identifier.
+
+**Two orderings the mechanism has to respect.**
+
+*Initialization order.* C# runs static field initializers in textual order within a class PART and in
+**unspecified** order across parts, so a package-level `var` whose initializer transitively reads a
+hoisted field could observe `default(@string)` (`""`). The converter already owns the defense —
+`initOrderOperations` relocates dependency-ordered initializers into the generated static
+constructor, which runs after ALL field initializers — but its graph is keyed on Go variables and
+cannot see a synthetic field. Every function that reads a hoisted field is therefore registered in
+that graph, so any package-level initializer reaching one transitively is relocated. Three live
+corpus instances surfaced immediately: `net/http/internal/testcert`'s `LocalhostKey =
+testingKey(…)` reads two hoisted fields declared *later in the same file* and would have run
+`strings.ReplaceAll(s, "", "")`; `internal/profile` and `runtime/pprof` are the other two.
+
+*Two-pass `-tests` conversion.* An internal `_test.go` file emits into the PRODUCTION package class
+and can sort BEFORE the production file that owns a field. The test pass's registry is therefore
+pre-seeded with the production literal→field map (recomputed by the same collector over the
+production files, with their manual-conversion flags), and a test file may only REFERENCE a seeded
+literal, never claim it — that is what prevents CS0102, not name luck. An EXTERNAL `<pkg>_test`
+variant carries no production files, so its seed is empty and it claims freely into its own class,
+which is required: a production field is `private` to a different class. Production output is
+byte-identical whether or not tests are converted.
+
+**Determinism.** File conversion is sequential in sorted-filename order (concurrency was removed for
+exactly this reason), and names and placement derive only from literal content plus source order, so
+two runs over the same tree emit the same bytes. Emission itself is a pure substitution at
+`convExpr`'s single `*ast.BasicLit` arm; the decision cannot be made there, because pre-boxing needs
+every use of a literal and the init-order rule needs the reader set before any file emits.
+
+One interaction is worth naming: `applyUntypedConstBoxCast` re-applies the `(@string)` default-type
+box cast to anything that does not already lead with it, and a hoisted name does not. It now skips a
+hoisted literal outright — an `@string` field needs no cast, and re-casting a PRE-BOXED `object`
+field would unbox and allocate a fresh box on every evaluation, defeating the hoist at exactly the
+`any`-slot sites it targets.
+
+Corpus effect (Go 1.23.1, 302 packages): **3,253 hoisted fields** across 467 files, 62 of them
+pre-boxed. Per *function* the blocks are small — 1,634 blocks, median 1, p90 4, p99 11, max **61**
+(`net/http`'s `StatusText`, the worst case the design accepted up front). Per file the median is 3
+and the max 127, in the 20k-line bundled `net/http/h2_bundle.cs`. A side effect worth recording: two
+dead deref-alias prologues disappeared (`runtime`'s `lfnodeValidate`, `go/types`' `suspendedCall`)
+because `bodyReferencesIdentAsValue` is a text test whose own comment names "a string" as a source of
+spurious matches — the words *node* and *call* inside those functions' message literals were the only
+textual occurrences keeping the aliases alive. Moving the literal out of the body drops the dead
+local; a genuinely live alias is still never dropped, since a real value use emits the identifier
+regardless. (Guarded by the `StringLiteralHoisting` behavioral test — every row of both tables above,
+plus slug-collision ordinals, cross-file dedupe, and the init-order case, output-compared vs
+`go run`.)
+
 ### Composite types render structurally (`[]*T` keeps the pointer)
 A slice/array type is rendered structurally in every type-name path: the `[N]`/`[]` marker plus the recursively resolved element, never from the `go/types` string form. The string form is path-qualified (`[]*internal/abi.Type`), and the cross-package last-segment strip would eat everything before the slash *including the pointer marker*, silently dropping the `ж<>` (reflect's `[]*abi.Type` fields compiled against the WRONG element type). The recursion also resolves lifted anonymous elements and cross-package generic elements:
 ```go

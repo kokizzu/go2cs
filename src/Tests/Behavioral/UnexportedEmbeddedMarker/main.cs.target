@@ -26,13 +26,17 @@ partial class main_package {
     return c.v;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object counterˢ = (@string)"counter:"u8;
+private static readonly object zeroˢ = (@string)"zero:"u8;
+
 internal static void Main() {
     Counter c = default!;
     c.Add(5);
     c.Add(3);
-    fmt.Println((@string)"counter:"u8, c.Value());
+    fmt.Println(counterˢ, c.Value());
     Counter d = default!;
-    fmt.Println((@string)"zero:"u8, d.Value());
+    fmt.Println(zeroˢ, d.Value());
 }
 
 } // end main_package

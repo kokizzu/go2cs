@@ -14,12 +14,15 @@ internal static handler wrap(handler h) {
     return h;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string labelˢ = "label"u8;
+
 internal static (handler, @string, error) makeHandlers(@string prefix) {
     var allowed = new @string[]{prefix + "-a", prefix + "-b"}.slice();
     var allowedʗ1 = allowed;
     return (new handler((@string msg) => {
         fmt.Println(allowedʗ1[0] + ":" + msg, len(allowedʗ1));
-    }), "label", default!);
+    }), labelˢ, default!);
 }
 
 internal static handler makeSingle(@string tag) {
@@ -38,14 +41,20 @@ internal static handler makePlain(nint n) {
     });
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pingˢ = "ping"u8;
+private static readonly @string fourˢ = "four"u8;
+private static readonly @string pongˢ = "pong"u8;
+private static readonly @string plainˢ = "plain"u8;
+
 internal static void Main() {
     var (h, label, err) = makeHandlers("go"u8);
     fmt.Println(label, err);
-    h.invoke("ping"u8);
-    var s = makeSingle("four"u8);
-    s("pong"u8);
+    h.invoke(pingˢ);
+    var s = makeSingle(fourˢ);
+    s(pongˢ);
     var p = makePlain(3);
-    p("plain"u8);
+    p(plainˢ);
 }
 
 } // end main_package

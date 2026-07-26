@@ -21,19 +21,25 @@ internal static nint capPlusOne(slice<nint> s) {
     return capΔ1 + 1;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sigkillˢ = "SIGKILL"u8;
+
 internal static @string signame(nint sig) {
     if (sig == 9) {
-        return "SIGKILL"u8;
+        return sigkillˢ;
     }
     return "SIG?"u8;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noneˢ = "none"u8;
 
 internal static @string describeSignal(nint sig) {
     @string signameΔ1 = signame(sig);
     if (signameΔ1 != ""u8) {
         return "["u8 + signameΔ1 + "]"u8;
     }
-    return "none"u8;
+    return noneˢ;
 }
 
 [GoType("[3]nint")] partial struct arr;
@@ -42,6 +48,9 @@ internal static (nint, nint) unshadowed() {
     var s = new slice<nint>(2, 5);
     return (len(s), cap(s));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object shadowedˢ = (@string)"shadowed"u8;
 
 internal static void shadowedCalls() {
     ref var a = ref heap<arr>(out var Ꮡa);
@@ -53,9 +62,12 @@ internal static void shadowedCalls() {
     var println = (nint n) => n * 6;
     var len = (ж<arr> p) => p.Value[0] + 100;
     var cap = (ж<arr> p) => p.Value[1] + 200;
-    fmt.Println((@string)"shadowed"u8, make(21), @new(7), panic(5));
-    fmt.Println((@string)"shadowed"u8, print(4), println(3), len(Ꮡa), cap(Ꮡa));
+    fmt.Println(shadowedˢ, make(21), @new(7), panic(5));
+    fmt.Println(shadowedˢ, print(4), println(3), len(Ꮡa), cap(Ꮡa));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object builtinˢ = (@string)"builtin"u8;
 
 internal static void Main() {
     fmt.Println(sumWithLenLocal(new nint[]{10, 20, 30}.slice()));
@@ -65,7 +77,7 @@ internal static void Main() {
     fmt.Println(describeSignal(1));
     shadowedCalls();
     var (l, c) = unshadowed();
-    fmt.Println((@string)"builtin"u8, l, c);
+    fmt.Println(builtinˢ, l, c);
 }
 
 } // end main_package

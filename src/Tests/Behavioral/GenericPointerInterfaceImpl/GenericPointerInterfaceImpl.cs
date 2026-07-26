@@ -14,8 +14,11 @@ partial class main_package {
     internal nint v;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string p224ˢ = "p224"u8;
+
 [GoRecv] internal static @string label(this ref p224 p) {
-    return "p224"u8;
+    return p224ˢ;
 }
 
 [GoRecv] internal static ж<p224> combine(this ref p224 p, ж<p224> Ꮡo) {
@@ -36,8 +39,11 @@ internal static ж<p224> newP224() {
     internal nint v;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string p384ˢ = "p384"u8;
+
 [GoRecv] internal static @string label(this ref p384 p) {
-    return "p384"u8;
+    return p384ˢ;
 }
 
 [GoRecv] internal static ж<p384> combine(this ref p384 p, ж<p384> Ꮡo) {

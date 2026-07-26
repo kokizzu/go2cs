@@ -4,6 +4,9 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string foundˢ = "found"u8;
+
 internal static void Main() {
     var pick = @string (any v) => {
         switch (v.type()) {
@@ -79,7 +82,7 @@ internal static void Main() {
         if (!ok) {
             return ("", fmt.Errorf("no string"u8));
         }
-        return ("found", default!);
+        return (foundˢ, default!);
     };
     var (s1, err1) = sget(false);
     fmt.Println(s1 == ""u8, err1 != default!);

@@ -25,6 +25,12 @@ internal static void report(@string prefix, Tally tʗp, nint n) {
     fmt.Println(prefix, t.total, t.log);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string deferredˢ = "deferred:"u8;
+private static readonly @string namedˢ = "named:"u8;
+private static readonly @string goroutineˢ = "goroutine:"u8;
+private static readonly object sourceUntouchedˢ = (@string)"source untouched:"u8;
+
 internal static void Main() {
     ref var @base = ref heap<Tally>(out var Ꮡbase);
     @base = new Tally(total: 2, log: "d"u8);
@@ -32,12 +38,12 @@ internal static void Main() {
 
     ((Action)(() => func((defer, recover) => {
         deferǃ((Tally t) => {
-            report("deferred:"u8, t, 4);
+            report(deferredˢ, t, 4);
         }, baseʗ1, defer);
     })))();
     var baseʗ2 = @base;
     ((Action)(() => func((defer, recover) => {
-        deferǃ(report, (@string)"named:", baseʗ2, (nint)(5), defer);
+        deferǃ(report, namedˢ, baseʗ2, (nint)(5), defer);
     })))();
     var done = new channel<bool>(0);
     var baseʗ3 = @base;
@@ -47,12 +53,12 @@ internal static void Main() {
     ((Action)(() => {
         var doneʗ3 = doneʗ1;
         goǃ((Tally t) => {
-            report("goroutine:"u8, t, 7);
+            report(goroutineˢ, t, 7);
             doneʗ3.ᐸꟷ(true);
         }, baseʗ3);
     }))();
     ᐸꟷ(done);
-    fmt.Println((@string)"source untouched:"u8, @base.total, @base.log);
+    fmt.Println(sourceUntouchedˢ, @base.total, @base.log);
 }
 
 } // end main_package

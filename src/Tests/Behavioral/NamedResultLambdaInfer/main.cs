@@ -5,6 +5,9 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string negativeValueˢ = "negative value"u8;
+
 internal static (slice<nint> evens, slice<nint> odds, error err) parse(slice<nint> items) {
     slice<nint> evens = default!;
     slice<nint> odds = default!;
@@ -16,7 +19,7 @@ internal static (slice<nint> evens, slice<nint> odds, error err) parse(slice<nin
         error errΔ1 = default!;
         foreach (var (_, v) in vals) {
             if (v < 0) {
-                return (default!, default!, errors.New("negative value"u8));
+                return (default!, default!, errors.New(negativeValueˢ));
             }
             if (v % 2 == 0){
                 e = append(e, v);

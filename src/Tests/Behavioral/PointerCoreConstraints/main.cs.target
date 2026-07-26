@@ -111,6 +111,9 @@ internal static ж<T> cloneEmbedded<T>(ж<T> Ꮡp)
     return Ꮡc;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string changedˢ = "changed"u8;
+
 internal static void Main() {
     ref var t1 = ref heap<thing>(out var Ꮡt1);
     t1 = new thing(n: 1, s: "one"u8);
@@ -143,7 +146,7 @@ internal static void Main() {
     fmt.Println((~pf).s);
     var fv = clone<thing>;
     var pv = fv(Ꮡt1);
-    t1.s = "changed"u8;
+    t1.s = changedˢ;
     fmt.Println((~pv).s, t1.s);
     var pn1 = cloneNamed<thing>(Ꮡt1);
     var pn2 = cloneEmbedded<thing>(Ꮡt1);

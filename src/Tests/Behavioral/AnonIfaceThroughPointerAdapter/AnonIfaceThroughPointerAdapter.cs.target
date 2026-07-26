@@ -12,13 +12,24 @@ partial class main_package {
     return fmt.Sprintf("ping %d"u8, t.n);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pongˢ = "pong"u8;
+
 internal static @string Pong(this thing t) {
-    return "pong"u8;
+    return pongˢ;
 }
 
 [GoType] partial interface speaker {
     @string Pong();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object pingOkˢ = (@string)"ping-ok"u8;
+private static readonly object pingMissedˢ = (@string)"ping-missed"u8;
+private static readonly object bothOkˢ = (@string)"both-ok"u8;
+private static readonly object bothMissedˢ = (@string)"both-missed"u8;
+private static readonly object quitMatchedWrongˢ = (@string)"quit-matched-wrong"u8;
+private static readonly object quitMissedOkˢ = (@string)"quit-missed-ok"u8;
 
 [GoType("dyn")] partial interface main_type {
     @string Ping();
@@ -37,23 +48,23 @@ internal static void Main() {
     speaker s = new thingжspeaker(Ꮡ(new thing(7)));
     {
         var (p, ok) = s._<main_type>(ᐧ); if (ok){
-            fmt.Println((@string)"ping-ok"u8, p.Ping());
+            fmt.Println(pingOkˢ, p.Ping());
         } else {
-            fmt.Println((@string)"ping-missed"u8);
+            fmt.Println(pingMissedˢ);
         }
     }
     {
         var (b, ok) = s._<main_typeᴛ1>(ᐧ); if (ok){
-            fmt.Println((@string)"both-ok"u8, b.Ping(), b.Pong());
+            fmt.Println(bothOkˢ, b.Ping(), b.Pong());
         } else {
-            fmt.Println((@string)"both-missed"u8);
+            fmt.Println(bothMissedˢ);
         }
     }
     {
         var (_, ok) = s._<main_typeᴛ2>(ᐧ); if (ok){
-            fmt.Println((@string)"quit-matched-wrong"u8);
+            fmt.Println(quitMatchedWrongˢ);
         } else {
-            fmt.Println((@string)"quit-missed-ok"u8);
+            fmt.Println(quitMissedOkˢ);
         }
     }
 }

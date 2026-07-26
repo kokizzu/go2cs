@@ -20,8 +20,11 @@ internal static nint idx(this handle h) {
     return (nint)(uintptr)(h - (handle)appErr);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object findDoneˢ = (@string)"find done"u8;
+
 internal static (ж<item>, error) find(slice<item> xs, nint want) => func<(ж<item>, error)>((defer, recover) => {
-    deferǃ(ᴛ1 => fmt.Println(ᴛ1), (@string)"find done", defer);
+    deferǃ(ᴛ1 => fmt.Println(ᴛ1), findDoneˢ, defer);
     foreach (var (i, _) in xs) {
         if (xs[i].n == want) {
             return (Ꮡ(xs, i), default!);
@@ -30,8 +33,11 @@ internal static (ж<item>, error) find(slice<item> xs, nint want) => func<(ж<it
     return (default!, fmt.Errorf("not found"u8));
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object closeItˢ = (@string)"closeIt"u8;
+
 internal static error closeIt(ж<nint> Ꮡp, nint tag) {
-    fmt.Println((@string)"closeIt"u8, Ꮡp == nil, tag);
+    fmt.Println(closeItˢ, Ꮡp == nil, tag);
     return default!;
 }
 
@@ -80,8 +86,11 @@ internal static void Main() => func((defer, recover) => {
     internal nint id;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object closedˢ = (@string)"closed"u8;
+
 internal static error close(this res h) {
-    fmt.Println((@string)"closed"u8, h.id);
+    fmt.Println(closedˢ, h.id);
     return default!;
 }
 

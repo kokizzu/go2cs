@@ -4,6 +4,15 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object roundsˢ = (@string)"rounds:"u8;
+private static readonly object recvGotˢ = (@string)"recvGot:"u8;
+private static readonly object sentToˢ = (@string)"sentTo:"u8;
+private static readonly object sendFiredOnFullChannelˢ = (@string)"send fired on full channel (wrong)"u8;
+private static readonly object tookˢ = (@string)"took:"u8;
+private static readonly object recvFiredOnEmptyChannelˢ = (@string)"recv fired on empty channel (wrong)"u8;
+private static readonly object drainedˢ = (@string)"drained:"u8;
+
 internal static void Main() {
     var data = new channel<nint>(1);
     var @out = new channel<nint>(1);
@@ -25,7 +34,7 @@ internal static void Main() {
             break;
         }}
     }
-    fmt.Println((@string)"rounds:"u8, rounds, (@string)"recvGot:"u8, recvGot, (@string)"sentTo:"u8, sentTo, (@string)"out:"u8, ᐸꟷ(@out));
+    fmt.Println(roundsˢ, rounds, recvGotˢ, recvGot, sentToˢ, sentTo, (@string)"out:"u8, ᐸꟷ(@out));
     var ch = new channel<nint>(1);
     ch.ᐸꟷ(3);
     nint took = 0;
@@ -33,13 +42,13 @@ internal static void Main() {
     var selᴛ4 = ch;
     switch (select(selᴛ3, ᐸꟷ(selᴛ4, ꓸꓸꓸ))) {
     case 0: {
-        fmt.Println((@string)"send fired on full channel (wrong)"u8);
+        fmt.Println(sendFiredOnFullChannelˢ);
         break;
     }
     case 1 when selᴛ4.ꟷᐳ(out took): {
         break;
     }}
-    fmt.Println((@string)"took:"u8, took, (@string)"len:"u8, len(ch));
+    fmt.Println(tookˢ, took, (@string)"len:"u8, len(ch));
     var selᴛ5 = ch.ᐸꟷ(8, ꓸꓸꓸ);
     var selᴛ6 = ch;
     switch (select(selᴛ5, ᐸꟷ(selᴛ6, ꓸꓸꓸ))) {
@@ -47,10 +56,10 @@ internal static void Main() {
         break;
     }
     case 1 when selᴛ6.ꟷᐳ(out took): {
-        fmt.Println((@string)"recv fired on empty channel (wrong)"u8);
+        fmt.Println(recvFiredOnEmptyChannelˢ);
         break;
     }}
-    fmt.Println((@string)"len:"u8, len(ch), (@string)"drained:"u8, ᐸꟷ(ch));
+    fmt.Println((@string)"len:"u8, len(ch), drainedˢ, ᐸꟷ(ch));
 }
 
 } // end main_package

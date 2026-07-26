@@ -8,10 +8,13 @@ partial class main_package {
     internal slice<@string> lines;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object lineˢ = (@string)"line:"u8;
+
 [GoRecv] internal static void flush(this ref tracker t) {
     fmt.Printf("flush: %d lines\n"u8, len(t.lines));
     foreach (var (_, l) in t.lines) {
-        fmt.Println((@string)"line:"u8, l);
+        fmt.Println(lineˢ, l);
     }
 }
 
@@ -26,6 +29,9 @@ internal static void seed(ж<parser> Ꮡp) {
     p.trk.lines = append(p.trk.lines, "seed"u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object runDoneˢ = (@string)"run done:"u8;
+
 internal static void run() => func((defer, recover) => {
     ref var p = ref heap<parser>(out var Ꮡp);
     p = new parser(name: "p1"u8);
@@ -33,7 +39,7 @@ internal static void run() => func((defer, recover) => {
     defer(Ꮡp.of(parser.Ꮡtrk).flush);
     p.trk.lines = append(p.trk.lines, "after-defer"u8);
     p.trk.lines = append(p.trk.lines, "final"u8);
-    fmt.Println((@string)"run done:"u8, p.name);
+    fmt.Println(runDoneˢ, p.name);
 });
 
 internal static void Main() {

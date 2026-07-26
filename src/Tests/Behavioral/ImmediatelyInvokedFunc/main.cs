@@ -4,6 +4,13 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object recoveredˢ = (@string)"recovered:"u8;
+private static readonly object afterRecoverˢ = (@string)"after recover"u8;
+private static readonly @string scopeˢ = "scope"u8;
+private static readonly object afterArgRecoverˢ = (@string)"after arg recover"u8;
+private static readonly object ignoredArgCallsˢ = (@string)"ignored arg; calls ="u8;
+
 internal static void Main() {
     ((Action)(() => {
         fmt.Println((@string)"a"u8);
@@ -16,13 +23,13 @@ internal static void Main() {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println((@string)"recovered:"u8, r);
+                    fmt.Println(recoveredˢ, r);
                 }
             }
         });
         throw panic("boom");
     })))();
-    fmt.Println((@string)"after recover"u8);
+    fmt.Println(afterRecoverˢ);
     nint total = 10 + ((Func<nint>)(() => {
         nint sum = 0;
         for (nint i = 1; i <= 4; i++) {
@@ -54,20 +61,20 @@ internal static void Main() {
         defer(() => {
             {
                 var r = recover(); if (r != default!) {
-                    fmt.Println(label, (@string)"recovered:"u8, r);
+                    fmt.Println(label, recoveredˢ, r);
                 }
             }
         });
         throw panic("argboom");
-    })))("scope");
-    fmt.Println((@string)"after arg recover"u8);
+    })))(scopeˢ);
+    fmt.Println(afterArgRecoverˢ);
     nint calls = 0;
     var bump = () => {
         calls++;
         return 99;
     };
     ((Action<nint>)(_ => {
-        fmt.Println((@string)"ignored arg; calls ="u8, calls);
+        fmt.Println(ignoredArgCallsˢ, calls);
     }))(bump());
 }
 

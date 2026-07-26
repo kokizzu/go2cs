@@ -8,8 +8,13 @@ internal static readonly UntypedInt stateA = iota;
 internal static readonly UntypedInt stateB = 1;
 internal static readonly UntypedInt stateC = 2;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noneˢ = "none"u8;
+private static readonly @string bNoflagˢ = "b-noflag"u8;
+private static readonly @string otherˢ = "other"u8;
+
 internal static @string classify(nint n, bool flag) {
-    @string result = "none"u8;
+    @string result = noneˢ;
     var exprᴛ1 = n;
     if (exprᴛ1 == stateA) {
         do {
@@ -25,33 +30,38 @@ internal static @string classify(nint n, bool flag) {
             if (flag) {
                 break;
             }
-            result = "b-noflag"u8;
+            result = bNoflagˢ;
         } while (false);
     }
     else { /* default: */
-        result = "other"u8;
+        result = otherˢ;
     }
 
     return result;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string oneTwoˢ = "one-two"u8;
+private static readonly @string oneOtherˢ = "one-other"u8;
+private static readonly @string threeˢ = "three"u8;
+
 internal static @string pick(nint x, nint y) {
-    @string @out = "none"u8;
+    @string @out = noneˢ;
 Big:
     switch (x) {
     case 1: {
         switch (y) {
         case 2: {
-            @out = "one-two"u8;
+            @out = oneTwoˢ;
             goto break_Big;
             break;
         }}
 
-        @out = "one-other"u8;
+        @out = oneOtherˢ;
         break;
     }
     case 3: {
-        @out = "three"u8;
+        @out = threeˢ;
         break;
     }}
 

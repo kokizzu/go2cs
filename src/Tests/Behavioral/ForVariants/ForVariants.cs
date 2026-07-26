@@ -5,6 +5,15 @@ using time = time_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object pairˢ = (@string)"pair"u8;
+private static readonly object iBeforeThreadAndˢ = (@string)"i before thread and"u8;
+private static readonly object xBeforeThreadˢ = (@string)"x before thread"u8;
+private static readonly object iFromThreadAndˢ = (@string)"i from thread and"u8;
+private static readonly object xFromThreadˢ = (@string)"x from thread"u8;
+private static readonly object iAfterThreadAndˢ = (@string)"i after thread and"u8;
+private static readonly object xAfterThreadˢ = (@string)"x after thread"u8;
+
 internal static void Main() {
     ref var i = ref heap<nint>(out var Ꮡi);
     i = 0;
@@ -56,15 +65,15 @@ scan:
             if (n + m > 5) {
                 goto break_scan;
             }
-            fmt.Println((@string)"pair"u8, n, m);
+            fmt.Println(pairˢ, n, m);
         }
 continue_scan:;
     }
 break_scan:;
     fmt.Println();
     nint x = 99;
-    fmt.Println((@string)"i before thread and"u8, i, (@string)"x before thread"u8, x);
-    goǃ((ᴛ1, ᴛ2, ᴛ3, ᴛ4) => fmt.Println(ᴛ1, ᴛ2, ᴛ3, ᴛ4), (@string)"i from thread and", i, (@string)"x from thread", x);
+    fmt.Println(iBeforeThreadAndˢ, i, xBeforeThreadˢ, x);
+    goǃ((ᴛ1, ᴛ2, ᴛ3, ᴛ4) => fmt.Println(ᴛ1, ᴛ2, ᴛ3, ᴛ4), iFromThreadAndˢ, i, xFromThreadˢ, x);
     while (ᐧ) {
         i++;
         x++;
@@ -77,7 +86,7 @@ break_scan:;
     fmt.Println((@string)"i ="u8, i);
     fmt.Println((@string)"x = "u8, x);
     time.Sleep(1);
-    fmt.Println((@string)"i after thread and"u8, i, (@string)"x after thread"u8, x);
+    fmt.Println(iAfterThreadAndˢ, i, xAfterThreadˢ, x);
 }
 
 internal static void f(ж<nint> Ꮡy) {

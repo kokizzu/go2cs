@@ -293,6 +293,11 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	v.currentFuncName = csFunctionName
 	v.currentFuncPrefix = &strings.Builder{}
 
+	// Tier C: the hoisted string-literal fields this function OWNS (its body holds their first
+	// package-wide use) lead the prefix, so they land immediately above the doc comment — ahead of
+	// any anonymous type this function's body lifts into the same builder.
+	v.writeHoistedLiteralDecls(funcDecl)
+
 	v.varNames = make(map[*types.Var]string)
 
 	currentFuncType := v.info.ObjectOf(funcDecl.Name).(*types.Func)

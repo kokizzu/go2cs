@@ -27,11 +27,17 @@ internal static int32 localAtomicDefer() => func((defer, recover) => {
     return Ꮡn.Load();
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object whileLockedˢ = (@string)"while locked:"u8;
+private static readonly object afterUnlockˢ = (@string)"after unlock:"u8;
+private static readonly object runGoidˢ = (@string)"runGoid:"u8;
+private static readonly object localDuringˢ = (@string)"local during:"u8;
+
 internal static void Main() {
-    fmt.Println((@string)"while locked:"u8, lockUnlock(7));
-    fmt.Println((@string)"after unlock:"u8, Ꮡlocked.Load());
-    fmt.Println((@string)"runGoid:"u8, ᏑrunGoid.Load());
-    fmt.Println((@string)"local during:"u8, localAtomicDefer());
+    fmt.Println(whileLockedˢ, lockUnlock(7));
+    fmt.Println(afterUnlockˢ, Ꮡlocked.Load());
+    fmt.Println(runGoidˢ, ᏑrunGoid.Load());
+    fmt.Println(localDuringˢ, localAtomicDefer());
 }
 
 } // end main_package

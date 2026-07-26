@@ -46,11 +46,14 @@ internal static void exercise(swapper s) {
     fmt.Println(s.Guard("L"u8, "B"u8, 7));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object directˢ = (@string)"direct"u8;
+
 internal static void Main() {
     exercise(new cellжswapper(Ꮡ(new cell(value: (nint)(1)))));
     exercise(new frozen(label: "static"u8));
     var c = Ꮡ(new cell(value: (nint)(42)));
-    fmt.Println(c.CompareAndSwap((@string)"direct"u8, (nint)(42), (nint)(43)), c.Guard("l"u8, "b"u8, 1));
+    fmt.Println(c.CompareAndSwap(directˢ, (nint)(42), (nint)(43)), c.Guard("l"u8, "b"u8, 1));
 }
 
 } // end main_package

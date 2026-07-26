@@ -145,6 +145,46 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 		return result
 	}
 
+	// Tier C's extra edge: does a function TRANSITIVELY reach a body that reads a hoisted
+	// string-literal field? Those fields are ordinary C# static field initializers declared above
+	// their first-using function, so they are subject to the very cross-part ordering C# leaves
+	// undefined — a package-level var initializer that calls such a function could observe
+	// `default(@string)` ("") instead of the literal. Relocating that initializer into the ordered
+	// static ctor closes the class, because C# runs EVERY static field initializer (all parts)
+	// before any static-ctor body. Same memoized, cycle-safe shape as funcClosure above; keyed on
+	// the same funcFuncRefs graph (see hoistedLiteralOperations.go §4.4).
+	hoistReaderCache := map[*types.Func]bool{}
+	hoistInProgress := map[*types.Func]bool{}
+
+	var readsHoistedClosure func(fn *types.Func) bool
+
+	readsHoistedClosure = func(fn *types.Func) bool {
+		if cached, ok := hoistReaderCache[fn]; ok {
+			return cached
+		}
+
+		if hoistInProgress[fn] {
+			return false // recursion cycle — the outer walk already accumulates this edge
+		}
+
+		hoistInProgress[fn] = true
+		result := funcReadsHoistedLiteral(fn)
+
+		if !result {
+			for callee := range funcFuncRefs[fn] {
+				if readsHoistedClosure(callee) {
+					result = true
+					break
+				}
+			}
+		}
+
+		delete(hoistInProgress, fn)
+		hoistReaderCache[fn] = result
+
+		return result
+	}
+
 	fileOf := func(pos token.Pos) string {
 		if pos == token.NoPos {
 			return ""
@@ -163,6 +203,7 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 		collectRefs(initializer.Rhs, directVars, directFuncs)
 
 		deps := map[*types.Var]bool{}
+		readsHoisted := false
 
 		for varObj := range directVars {
 			deps[varObj] = true
@@ -172,13 +213,19 @@ func collectMovedInitVars(fset *token.FileSet, pkg *types.Package, info *types.I
 			for varObj := range funcClosure(fn) {
 				deps[varObj] = true
 			}
+
+			if !readsHoisted && readsHoistedClosure(fn) {
+				readsHoisted = true
+			}
 		}
 
-		if len(deps) == 0 {
+		if len(deps) == 0 && !readsHoisted {
 			continue
 		}
 
-		mustMove := false
+		// A hoisted-field reader on its own forces the move — the initializer need not depend on
+		// any package var at all (`var greeting = greet()` where greet returns a hoisted literal).
+		mustMove := readsHoisted
 
 		for _, lhs := range initializer.Lhs {
 			lhsFile := fileOf(lhs.Pos())

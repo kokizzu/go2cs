@@ -4,9 +4,16 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object newprocsˢ = (@string)"newprocs:"u8;
+
 internal static void reportProcs() {
-    fmt.Println((@string)"newprocs:"u8, newprocs);
+    fmt.Println(newprocsˢ, newprocs);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object disableˢ = (@string)"disable:"u8;
+private static readonly object labelˢ = (@string)"label:"u8;
 
 internal static void Main() {
     newprocs = 4;
@@ -15,8 +22,8 @@ internal static void Main() {
     np.Value = 7;
     sched.label = "ok"u8;
     reportProcs();
-    fmt.Println((@string)"disable:"u8, sched.disable.user, sched.disable.n);
-    fmt.Println((@string)"label:"u8, sched.label);
+    fmt.Println(disableˢ, sched.disable.user, sched.disable.n);
+    fmt.Println(labelˢ, sched.label);
 }
 
 } // end main_package

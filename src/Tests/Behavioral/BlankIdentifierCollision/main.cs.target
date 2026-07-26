@@ -20,6 +20,9 @@ internal static void _ᴛ3() {
     _ = x;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object multiBlankOkˢ = (@string)"multiBlank ok"u8;
+
 internal static void multiBlank() {
     nint a = 1;
     nint b = 2;
@@ -29,7 +32,7 @@ internal static void multiBlank() {
     _ = b;
     _ = c;
     _ = d;
-    fmt.Println((@string)"multiBlank ok"u8);
+    fmt.Println(multiBlankOkˢ);
 }
 
 internal static void Main() {

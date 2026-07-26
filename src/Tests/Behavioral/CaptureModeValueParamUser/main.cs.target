@@ -14,12 +14,17 @@ internal static (@string, @string) render(CaptureModeValueParamLib.Config cfgʗp
     return (s1 + "," + s2, cfg.Trace());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object renderedˢ = (@string)"rendered:"u8;
+private static readonly object traceˢ = (@string)"trace:"u8;
+private static readonly object callerIndentUnchangedˢ = (@string)"caller Indent unchanged:"u8;
+
 internal static void Main() {
     var cfg = new CaptureModeValueParamLib.Config(Indent: 3);
     var (@out, trace) = render(cfg, "go"u8);
-    fmt.Println((@string)"rendered:"u8, @out);
-    fmt.Println((@string)"trace:"u8, trace);
-    fmt.Println((@string)"caller Indent unchanged:"u8, cfg.Indent);
+    fmt.Println(renderedˢ, @out);
+    fmt.Println(traceˢ, trace);
+    fmt.Println(callerIndentUnchangedˢ, cfg.Indent);
 }
 
 } // end main_package

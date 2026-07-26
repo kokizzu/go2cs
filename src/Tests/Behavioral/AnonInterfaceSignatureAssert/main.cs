@@ -45,6 +45,10 @@ internal static (bool single, bool multi) classify(any v) {
     return (single, multi);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object multiUnwrapCountˢ = (@string)"multi unwrap count:"u8;
+private static readonly object singleUnwrapˢ = (@string)"single unwrap:"u8;
+
 [GoType("dyn")] partial interface main_type {
     slice<error> Unwrap();
 }
@@ -65,12 +69,12 @@ internal static void Main() {
     fmt.Printf("simpleErr:  single=%v multi=%v\n"u8, es, em);
     {
         var (u, ok) = ((any)m)._<main_type>(ᐧ); if (ok) {
-            fmt.Println((@string)"multi unwrap count:"u8, len(u.Unwrap()));
+            fmt.Println(multiUnwrapCountˢ, len(u.Unwrap()));
         }
     }
     {
         var (u, ok) = ((any)s)._<main_typeᴛ1>(ᐧ); if (ok) {
-            fmt.Println((@string)"single unwrap:"u8, u.Unwrap());
+            fmt.Println(singleUnwrapˢ, u.Unwrap());
         }
     }
 }

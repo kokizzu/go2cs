@@ -14,16 +14,22 @@ partial class main_package {
     internal nint n;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string loudˢ = "LOUD"u8;
+
 [GoRecv] internal static @string greet(this ref loud l) {
-    return "LOUD"u8;
+    return loudˢ;
 }
 
 [GoType] partial struct soft {
     internal nint n;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string softˢ = "soft"u8;
+
 internal static @string greet(this soft s) {
-    return "soft"u8;
+    return softˢ;
 }
 
 [GoType] partial interface stamper {

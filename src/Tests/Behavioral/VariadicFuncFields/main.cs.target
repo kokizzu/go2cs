@@ -34,6 +34,9 @@ internal static @string slashJoin(params ꓸꓸꓸstring elemʗp) {
     return slashJoin(elem.ꓸꓸꓸ);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string doneˢ = "done"u8;
+
 internal static void Main() {
     var ctxt = new Context(
         Name: "demo"u8,
@@ -53,7 +56,7 @@ internal static void Main() {
     };
     fmt.Println(ctxt.JoinPath("p"u8, "q"));
     ctxt.Log("%s:%d"u8, ctxt.Name, (nint)(3));
-    ctxt.Log("done"u8);
+    ctxt.Log(doneˢ);
 }
 
 } // end main_package

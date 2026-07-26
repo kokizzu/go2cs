@@ -38,8 +38,11 @@ internal static bool held(this @fixed f) {
 
 internal static sizer std = new @fixed(n: 3);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloˢ = "hello"u8;
+
 internal static void Main() {
-    fmt.Println(std.size("hello"u8));
+    fmt.Println(std.size(helloˢ));
     ref var f = ref heap<@fixed>(out var Ꮡf);
     f = new @fixed(n: 1);
     fmt.Println(f.size("ab"u8));

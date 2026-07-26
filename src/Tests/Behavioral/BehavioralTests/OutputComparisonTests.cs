@@ -1202,6 +1202,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckStringLenUtf8Bytes() => CheckTarget("StringLenUtf8Bytes");
 
     [TestMethod]
+    public void CheckStringLiteralHoisting() => CheckTarget("StringLiteralHoisting");
+
+    [TestMethod]
     public void CheckStringLiteralIndexLoop() => CheckTarget("StringLiteralIndexLoop");
 
     [TestMethod]

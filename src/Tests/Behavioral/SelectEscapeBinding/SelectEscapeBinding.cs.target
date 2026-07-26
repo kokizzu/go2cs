@@ -9,6 +9,11 @@ partial class main_package {
     internal @string tag;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object escapeˢ = (@string)"escape:"u8;
+private static readonly @string mutatedˢ = "mutated"u8;
+private static readonly object afterˢ = (@string)"after:"u8;
+
 internal static void selectEscape() {
     var ch = new channel<boxedResult>(1);
     ch.ᐸꟷ(new boxedResult(value: 7, tag: "orig"u8));
@@ -19,12 +24,16 @@ internal static void selectEscape() {
         ref var res = ref heap(resᴛ1, out var Ꮡres);
         saved = Ꮡres;
         saved.Value.value = 42;
-        fmt.Println((@string)"escape:"u8, res.value, res.tag);
-        res.tag = "mutated"u8;
+        fmt.Println(escapeˢ, res.value, res.tag);
+        res.tag = mutatedˢ;
         break;
     }}
-    fmt.Println((@string)"after:"u8, (~saved).value, (~saved).tag);
+    fmt.Println(afterˢ, (~saved).value, (~saved).tag);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object commaOkˢ = (@string)"comma-ok:"u8;
+private static readonly object fieldˢ = (@string)"field:"u8;
 
 internal static void selectEscapeCommaOk() {
     var ch = new channel<boxedResult>(1);
@@ -38,11 +47,16 @@ internal static void selectEscapeCommaOk() {
         whole = Ꮡres;
         field = Ꮡres.of(boxedResult.Ꮡvalue);
         field.Value += 10;
-        fmt.Println((@string)"comma-ok:"u8, res.value, res.tag, ok);
+        fmt.Println(commaOkˢ, res.value, res.tag, ok);
         break;
     }}
-    fmt.Println((@string)"field:"u8, field.Value, (~whole).value);
+    fmt.Println(fieldˢ, field.Value, (~whole).value);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string escapedˢ = "escaped"u8;
+private static readonly object mixedˢ = (@string)"mixed:"u8;
+private static readonly object plainˢ = (@string)"plain:"u8;
 
 internal static void selectEscapeMixed() {
     var a = new channel<boxedResult>(1);
@@ -55,12 +69,12 @@ internal static void selectEscapeMixed() {
     case 0 when selᴛ3.ꟷᐳ(out var rᴛ1): {
         ref var r = ref heap(rᴛ1, out var Ꮡr);
         keep = Ꮡr;
-        keep.Value.tag = "escaped"u8;
-        fmt.Println((@string)"mixed:"u8, r.tag);
+        keep.Value.tag = escapedˢ;
+        fmt.Println(mixedˢ, r.tag);
         break;
     }
     case 1 when selᴛ4.ꟷᐳ(out var n): {
-        fmt.Println((@string)"plain:"u8, n);
+        fmt.Println(plainˢ, n);
         break;
     }}
 }

@@ -21,6 +21,10 @@ public static float64 Float64frombits(uint64 b) {
     return ~Ꮡ(b).Reinterpret<uint64, float64>();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object valueOfTheNextElementˢ = (@string)"Value of the next element:"u8;
+private static readonly object valueOfT2Aˢ = (@string)"Value of t2.a:"u8;
+
 [GoType("dyn")] partial struct main_x {
     internal int64 a;
     internal bool b;
@@ -40,11 +44,11 @@ internal static void Main() {
     arr = new nint[]{1, 2, 3, 4}.array();
     var arrptr = Ꮡarr.at<nint>(0);
     @unsafe.Pointer nextPtr = (@unsafe.Pointer)((uintptr)new @unsafe.Pointer(arrptr) + @unsafe.Sizeof(arr[0]));
-    fmt.Println((@string)"Value of the next element:"u8, ~(ж<nint>)(uintptr)(nextPtr));
+    fmt.Println(valueOfTheNextElementˢ, ~(ж<nint>)(uintptr)(nextPtr));
     ref var t1 = ref heap(new T1(), out var Ꮡt1);
     t1.a = 42;
     var t2 = ~Ꮡt1.Reinterpret<T1, T2>();
-    fmt.Println((@string)"Value of t2.a:"u8, t2.a);
+    fmt.Println(valueOfT2Aˢ, t2.a);
     ref var i = ref heap(new int8(), out var Ꮡi);
     i = -1;
     int16 j = (int16)i;

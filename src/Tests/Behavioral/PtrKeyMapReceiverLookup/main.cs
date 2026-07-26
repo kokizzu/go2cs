@@ -12,6 +12,9 @@ partial class main_package {
     internal map<ж<conn>, @string> m;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownˢ = "unknown"u8;
+
 internal static @string status(this ж<conn> Ꮡc, ж<tracker> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
@@ -20,7 +23,7 @@ internal static @string status(this ж<conn> Ꮡc, ж<tracker> Ꮡt) {
             return s;
         }
     }
-    return "unknown"u8;
+    return unknownˢ;
 }
 
 internal static void rename(this ж<conn> Ꮡc, ж<tracker> Ꮡt, @string s) {
@@ -35,11 +38,14 @@ internal static @string label(this ж<conn> Ꮡc, ж<tracker> Ꮡt) {
     return t.m[Ꮡc];
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object closedˢ = (@string)"closed"u8;
+
 internal static void close(this ж<conn> Ꮡc, ж<tracker> Ꮡt) => func((defer, recover) => {
     ref var c = ref Ꮡc.Value;
     ref var t = ref Ꮡt.Value;
 
-    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), (@string)"closed", c.id, defer);
+    deferǃ((ᴛ1, ᴛ2) => fmt.Println(ᴛ1, ᴛ2), closedˢ, c.id, defer);
     {
         var (_, ok) = t.m[Ꮡc, ꟷ]; if (ok) {
             delete(t.m, Ꮡc);
@@ -47,12 +53,15 @@ internal static void close(this ж<conn> Ꮡc, ж<tracker> Ꮡt) => func((defer,
     }
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string busyˢ = "busy"u8;
+
 internal static void Main() {
     var a = Ꮡ(new conn(id: 1));
     var b = Ꮡ(new conn(id: 2));
     var t = Ꮡ(new tracker(m: new map<ж<conn>, @string>{[a] = "idle"u8}));
     fmt.Println(a.status(t), b.status(t));
-    a.rename(t, "busy"u8);
+    a.rename(t, busyˢ);
     fmt.Println(a.label(t), len((~t).m));
     b.rename(t, "new"u8);
     fmt.Println(b.label(t), a.label(t), len((~t).m));

@@ -31,6 +31,9 @@ internal static @string classify(any x) {
     }}
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noPanicˢ = "no panic?"u8;
+
 internal static @string /*result*/ recovered(any v) {
     @string result = default!;
     func((defer, recover) => {
@@ -45,7 +48,7 @@ internal static @string /*result*/ recovered(any v) {
                 break;
             }
             case null: {
-                result = "no panic?"u8;
+                result = noPanicˢ;
                 break;
             }
             default: {
@@ -74,19 +77,24 @@ internal static @string fromChan(channel<any> ch) {
     }}
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object callsˢ = (@string)"calls:"u8;
+private static readonly object boomˢ = (@string)"boom"u8;
+private static readonly @string textˢ = "text"u8;
+
 internal static void Main() {
     fmt.Println(classify((nint)(7)));
     fmt.Println(classify((@string)"hi"u8));
     fmt.Println(classify(true));
     fmt.Println(classify(2.5D));
-    fmt.Println((@string)"calls:"u8, calls);
-    fmt.Println(recovered((@string)"boom"u8));
+    fmt.Println(callsˢ, calls);
+    fmt.Println(recovered(boomˢ));
     fmt.Println(recovered((nint)(9)));
     fmt.Println(recovered(1.25D));
     var ch = new channel<any>(1);
     ch.ᐸꟷ((nint)(5));
     fmt.Println(fromChan(ch));
-    @string msg = "text"u8;
+    @string msg = textˢ;
     ch.ᐸꟷ(msg);
     fmt.Println(fromChan(ch));
 }

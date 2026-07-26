@@ -63,9 +63,12 @@ internal static nint keywordLocals() {
     return @__arglist + record + @scoped + @required + nuint;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string boomˢ = "boom"u8;
+
 internal static (nint, @string) predeclLocals() {
     nint iota = 6;
-    @string error = "boom"u8;
+    @string error = boomˢ;
     nint comparable = 8;
     nint uintptr = 11;
     nint complex64 = 12;

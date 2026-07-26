@@ -11,8 +11,11 @@ partial class main_package {
 [GoType] partial struct gold {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goldˢ = "gold"u8;
+
 internal static @string label(this gold _) {
-    return "gold"u8;
+    return goldˢ;
 }
 
 
@@ -20,6 +23,9 @@ internal static @string label(this gold _) {
     internal badge badge;
 }
 internal static ж<reservedᴛ1> reserved = @new<reservedᴛ1>();
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object localˢ = (@string)"local:"u8;
 
 [GoType("dyn")] partial struct main_type {
     internal badge badge;
@@ -33,7 +39,7 @@ internal static void Main() {
     var local = @new<main_type>();
     local.Value.badge = new gold(nil);
     badge b2 = new main_typeжbadge(local);
-    fmt.Println((@string)"local:"u8, b2.label());
+    fmt.Println(localˢ, b2.label());
 }
 
 } // end main_package

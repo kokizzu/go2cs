@@ -490,6 +490,7 @@
     <Project Path="Tests/Behavioral/StringConvPostfix/StringConvPostfix.csproj" />
     <Project Path="Tests/Behavioral/StringDataIdentity/StringDataIdentity.csproj" />
     <Project Path="Tests/Behavioral/StringLenUtf8Bytes/StringLenUtf8Bytes.csproj" />
+    <Project Path="Tests/Behavioral/StringLiteralHoisting/StringLiteralHoisting.csproj" />
     <Project Path="Tests/Behavioral/StringLiteralIndexLoop/StringLiteralIndexLoop.csproj" />
     <Project Path="Tests/Behavioral/StringLiteralSliceConversion/StringLiteralSliceConversion.csproj" />
     <Project Path="Tests/Behavioral/StringPassByValue/StringPassByValue.csproj" />

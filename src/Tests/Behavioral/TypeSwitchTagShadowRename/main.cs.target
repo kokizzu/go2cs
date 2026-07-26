@@ -8,21 +8,27 @@ partial class main_package {
     internal any inner;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nodeIntˢ = "node:int"u8;
+private static readonly @string nodeStringˢ = "node:string"u8;
+private static readonly @string nodeOtherˢ = "node:other"u8;
+private static readonly @string plainˢ = "plain"u8;
+
 internal static @string inspect(any n) {
     switch (n.type()) {
     case ж<node> nΔ1: {
         switch ((~nΔ1).inner.type()) {
         case nint: {
-            return "node:int"u8;
+            return nodeIntˢ;
         }
         case int32: {
-            return "node:int"u8;
+            return nodeIntˢ;
         }
         case @string: {
-            return "node:string"u8;
+            return nodeStringˢ;
         }
         default: {
-            return "node:other"u8;
+            return nodeOtherˢ;
         }}
 
         break;
@@ -30,9 +36,12 @@ internal static @string inspect(any n) {
     default: {
         var nΔ1 = n;
         _ = nΔ1;
-        return "plain"u8;
+        return plainˢ;
     }}
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string shadowˢ = "shadow"u8;
 
 internal static (@string, @string) classifyVia(any v) {
     var unwrap = (any vΔ1) => {
@@ -61,11 +70,14 @@ internal static (@string, @string) classifyVia(any v) {
             return fmt.Sprintf("other:%v"u8, vΔ3);
         }}
     };
-    @string label = "shadow"u8;
+    @string label = shadowˢ;
     var other = Ꮡ(new node(nil));
     other.Value.inner = label;
     return (pick(v), pick(other));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object directˢ = (@string)"direct"u8;
 
 internal static void Main() {
     @string hi = "hi"u8;
@@ -77,7 +89,7 @@ internal static void Main() {
     fmt.Println(inspect((nint)(42)));
     var (a, b) = classifyVia(Ꮡ(new node(inner: (nint)(7))));
     fmt.Println(a, b);
-    var (c, d) = classifyVia((@string)"direct"u8);
+    var (c, d) = classifyVia(directˢ);
     fmt.Println(c, d);
 }
 

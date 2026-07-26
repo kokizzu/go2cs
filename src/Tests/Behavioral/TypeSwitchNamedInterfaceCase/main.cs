@@ -17,8 +17,11 @@ partial class main_package {
     internal nint r;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string circleˢ = "circle"u8;
+
 [GoRecv] internal static @string name(this ref circle c) {
-    return "circle"u8;
+    return circleˢ;
 }
 
 [GoRecv] internal static void grow(this ref circle c, nint n) {
@@ -63,6 +66,9 @@ internal static @string describe(any x) {
     }}
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noneˢ = "none"u8;
+
 internal static @string firstConcrete(any x) {
     switch (x.type()) {
     case ж<circle> t: {
@@ -73,7 +79,7 @@ internal static @string firstConcrete(any x) {
     }
     default: {
         var t = x;
-        return "none"u8;
+        return noneˢ;
     }}
 }
 
@@ -87,16 +93,19 @@ internal static @string firstInterface(any x) {
     }
     default: {
         var t = x;
-        return "none"u8;
+        return noneˢ;
     }}
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string multiShapeOrErrorˢ = "multi shape-or-error"u8;
 
 internal static @string multi(any x) {
     switch (x.type()) {
     case {} ᴛ0 when ᴛ0._<shape>(out var _):
     case {} ᴛ1 when ᴛ1._<error>(out var _): {
         var t = x;
-        return "multi shape-or-error"u8;
+        return multiShapeOrErrorˢ;
     }
     case null: {
         return "nil"u8;
@@ -107,6 +116,9 @@ internal static @string multi(any x) {
     }}
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string notASizerˢ = "not a sizer"u8;
+
 internal static @string viaInterfaceTag(shape v) {
     switch (v.type()) {
     case {} Δt when Δt._<sizer>(out var t): {
@@ -114,7 +126,7 @@ internal static @string viaInterfaceTag(shape v) {
     }
     default: {
         var t = v;
-        return "not a sizer"u8;
+        return notASizerˢ;
     }}
 }
 

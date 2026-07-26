@@ -31,6 +31,9 @@ internal static sizer std = new flat(n: 100);
     return f;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abcdˢ = "abcd"u8;
+
 internal static void Main() {
     var c = Ꮡ(new config(s: new flat(n: 10)));
     var f = c.pickSizer();
@@ -38,7 +41,7 @@ internal static void Main() {
     fmt.Println((~c).s.size("abc"u8));
     var c2 = Ꮡ(new config(nil));
     var g = c2.pickSizer();
-    fmt.Println(g("abcd"u8));
+    fmt.Println(g(abcdˢ));
 }
 
 } // end main_package

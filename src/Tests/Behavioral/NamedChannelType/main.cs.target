@@ -20,12 +20,15 @@ internal static void Wait(this closeWaiter cw) {
 
 [GoType("chan nint")] partial struct intQueue;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object waitedˢ = (@string)"waited"u8;
+
 internal static void Main() {
     closeWaiter cw = default!;
     cw.Init();
     cw.Close();
     cw.Wait();
-    fmt.Println((@string)"waited"u8);
+    fmt.Println(waitedˢ);
     var q = new intQueue(3);
     q.ᐸꟷ(10);
     q.ᐸꟷ(20);

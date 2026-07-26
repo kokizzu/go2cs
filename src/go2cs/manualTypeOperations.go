@@ -248,6 +248,14 @@ func (v *Visitor) isManualBoxReceiverMethod(obj types.Object) bool {
 // either any method whose receiver base type is a manual type, or an explicitly listed
 // free function / foreign-receiver method.
 func (v *Visitor) isManualFuncDecl(funcDecl *ast.FuncDecl) bool {
+	return isManualFuncDeclInPackage(v.pkg.Path(), funcDecl)
+}
+
+// isManualFuncDeclInPackage is isManualFuncDecl's package-path-keyed core, callable from the
+// whole-package ANALYSIS passes that run before any Visitor exists (the hoisted-literal pre-pass
+// must know which declarations emit only a placeholder comment — such a function never renders a
+// FunctionPrefixMarker, so it can never carry a hoisted field declaration).
+func isManualFuncDeclInPackage(pkgPath string, funcDecl *ast.FuncDecl) bool {
 	if funcDecl == nil || funcDecl.Name == nil {
 		return false
 	}
@@ -267,11 +275,13 @@ func (v *Visitor) isManualFuncDecl(funcDecl *ast.FuncDecl) bool {
 		}
 	}
 
-	if recvName != "" && v.isManualType(recvName) {
-		return true
+	if recvName != "" {
+		if typeNames, ok := manualConversionTypes[pkgPath]; ok && typeNames[recvName] {
+			return true
+		}
 	}
 
-	if funcNames, ok := manualConversionFuncs[v.pkg.Path()]; ok {
+	if funcNames, ok := manualConversionFuncs[pkgPath]; ok {
 		if recvName != "" {
 			return funcNames[recvName+"."+funcName]
 		}

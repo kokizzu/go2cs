@@ -4,6 +4,9 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object zAbsentˢ = (@string)"z absent"u8;
+
 internal static void Main() {
     var m = new map<@string, nint>{["a"u8] = 1, ["b"u8] = 2};
     var (v, ok) = m["a"u8, ꟷ];
@@ -14,7 +17,7 @@ internal static void Main() {
     fmt.Println(ok3);
     {
         var (_, ok4) = m["z"u8, ꟷ]; if (!ok4) {
-            fmt.Println((@string)"z absent"u8);
+            fmt.Println(zAbsentˢ);
         }
     }
     nint w = default!;

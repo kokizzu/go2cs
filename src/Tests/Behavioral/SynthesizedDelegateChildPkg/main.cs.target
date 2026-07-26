@@ -12,6 +12,10 @@ partial class main_package {
     internal map<@string, Action<ж<inner.Record>, @string>> notify;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object notifyˢ = (@string)"notify:"u8;
+private static readonly @string alphaˢ = "alpha"u8;
+
 internal static void Main() {
     var r = new registry(
         cache: new map<@string, ж<inner.Record>>{},
@@ -27,14 +31,14 @@ internal static void Main() {
         notify: new map<@string, Action<ж<inner.Record>, @string>>{
             ["hit"u8] = (ж<inner.Record> recΔ2, @string tag) => {
                 recΔ2.Value.Hits++;
-                fmt.Println((@string)"notify:"u8, tag, (~recΔ2).Name, (~recΔ2).Hits);
+                fmt.Println(notifyˢ, tag, (~recΔ2).Name, (~recΔ2).Hits);
             }
         }
     );
-    var (rec, err) = r.load(r.cache, "alpha"u8, (@string s) => ("-" + s, default!));
+    var (rec, err) = r.load(r.cache, alphaˢ, (@string s) => ("-" + s, default!));
     fmt.Println((~rec).Name, (~rec).Hits, err);
     r.notify["hit"u8](rec, "t1"u8);
-    fmt.Println(len(r.cache), (~r.cache["alpha"u8]).Hits);
+    fmt.Println(len(r.cache), (~r.cache[alphaˢ]).Hits);
 }
 
 } // end main_package

@@ -1190,6 +1190,7 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 				performNameCollisionAnalysis(pkg)
 				collectCaptureModeMethods(pkg)
 				collectTypeSpecRHS(pkg)
+				collectHoistedLiterals(files, packageTypes, info, nil)
 				collectMovedInitVars(fset, packageTypes, info, pkg.Syntax)
 				collectPublicizedTypes(packageTypes)
 				emitAutoConversionSiblings(files, fset, packageTypes, info, map[*ast.Ident]string{}, map[string]*types.Var{}, packageOutputPath, options)
@@ -1234,6 +1235,12 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		// Record pointer parameters passed the untyped nil at a call site (cross-file) so their
 		// entry deref alias takes the nil-safe accessor (see packageNilArgPtrParams).
 		collectNilArgPtrParams(files, info)
+
+		// Decide which string literals are hoisted to package-scoped `static readonly` fields
+		// (Tier C — see hoistedLiteralOperations.go). A whole-package PRE-pass: pre-boxing needs
+		// every use of a literal before any file emits, and collectMovedInitVars below consults
+		// the reader set this produces, so it must run first.
+		collectHoistedLiterals(files, packageTypes, info, nil)
 
 		// Find package-level var initializers whose Go dependency order cannot be reproduced by
 		// C#'s static-field-initializer order (cross-file / same-file forward reference /

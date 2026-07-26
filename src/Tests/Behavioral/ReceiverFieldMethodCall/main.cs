@@ -77,20 +77,32 @@ public static int32 ReadViaValue(this ж<Flag> Ꮡf) {
     return readVia(Ꮡf.of(Flag.Ꮡc).Get);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string hitsˢ = "hits"u8;
+private static readonly object startˢ = (@string)"start:"u8;
+private static readonly object incrˢ = (@string)"Incr:"u8;
+private static readonly object addN5ˢ = (@string)"AddN 5:"u8;
+private static readonly object finalˢ = (@string)"final:"u8;
+private static readonly object addTwice3ˢ = (@string)"AddTwice 3:"u8;
+private static readonly object addViaValue2ˢ = (@string)"AddViaValue 2:"u8;
+private static readonly object readViaValueˢ = (@string)"ReadViaValue:"u8;
+private static readonly object localValueˢ = (@string)"local value:"u8;
+private static readonly object caseTwinˢ = (@string)"case twin:"u8;
+
 internal static void Main() {
     ref var fl = ref heap(new Flag(), out var Ꮡfl);
-    fl.label = "hits"u8;
+    fl.label = hitsˢ;
     Ꮡfl.Reset(10);
-    fmt.Println(fl.Label(), (@string)"start:"u8, fl.Value());
-    fmt.Println((@string)"Incr:"u8, Ꮡfl.Incr());
-    fmt.Println((@string)"Incr:"u8, Ꮡfl.Incr());
-    fmt.Println((@string)"AddN 5:"u8, Ꮡfl.AddN(5));
-    fmt.Println((@string)"final:"u8, fl.Value());
-    fmt.Println((@string)"AddTwice 3:"u8, Ꮡfl.of(Flag.Ꮡc).AddTwice(3));
-    fmt.Println((@string)"AddViaValue 2:"u8, Ꮡfl.AddViaValue(2));
-    fmt.Println((@string)"ReadViaValue:"u8, Ꮡfl.ReadViaValue());
-    fmt.Println((@string)"local value:"u8, applyTwice(Ꮡfl.of(Flag.Ꮡc).Add, 1));
-    fmt.Println((@string)"case twin:"u8, Ꮡfl.of(Flag.Ꮡc).add(1));
+    fmt.Println(fl.Label(), startˢ, fl.Value());
+    fmt.Println(incrˢ, Ꮡfl.Incr());
+    fmt.Println(incrˢ, Ꮡfl.Incr());
+    fmt.Println(addN5ˢ, Ꮡfl.AddN(5));
+    fmt.Println(finalˢ, fl.Value());
+    fmt.Println(addTwice3ˢ, Ꮡfl.of(Flag.Ꮡc).AddTwice(3));
+    fmt.Println(addViaValue2ˢ, Ꮡfl.AddViaValue(2));
+    fmt.Println(readViaValueˢ, Ꮡfl.ReadViaValue());
+    fmt.Println(localValueˢ, applyTwice(Ꮡfl.of(Flag.Ꮡc).Add, 1));
+    fmt.Println(caseTwinˢ, Ꮡfl.of(Flag.Ꮡc).add(1));
 }
 
 } // end main_package

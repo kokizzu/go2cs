@@ -1279,6 +1279,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckStringLenUtf8Bytes() => CheckTarget("StringLenUtf8Bytes");
 
     [TestMethod]
+    public void CheckStringLiteralHoisting() => CheckTarget("StringLiteralHoisting");
+
+    [TestMethod]
     public void CheckStringLiteralIndexLoop() => CheckTarget("StringLiteralIndexLoop");
 
     [TestMethod]

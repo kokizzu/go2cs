@@ -1067,6 +1067,37 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	collectPublicizedTypes(pkg.Types)
 	preloadImportedTypeAliases(allEntries, options)
 
+	// Tier C hoisted string literals (§4.4's `-tests` invariants). The INTERNAL test variant
+	// recompiles the package under test into this assembly and emits into the SAME package class,
+	// so its test files must REFERENCE the fields the production `.cs` on disk already declares —
+	// never re-declare them (a `_test.go` can sort BEFORE its production owner, so this, not name
+	// luck, is what prevents CS0102). The production map is recomputed from the production files
+	// exactly as processConversion computed it (same collector, same order, same manual-conversion
+	// flags), then handed to the real pass as a seed; only `_test.go` files may claim a NEW field.
+	// The EXTERNAL variant carries no production files, so its seed is empty and its own class
+	// (`<pkg>_test_package`) claims freely — which is required, since a production field is
+	// `private` to a different class.
+	prodEntries := make([]FileEntry, 0, len(allEntries))
+
+	for _, entry := range allEntries {
+		if strings.HasSuffix(strings.ToLower(entry.filePath), "_test.go") {
+			continue
+		}
+
+		prodEntry := entry
+		prodOutput := filepath.Join(outputPath, strings.TrimSuffix(filepath.Base(entry.filePath), ".go")+".cs")
+
+		if manual, err := containsManualConversionMarker(prodOutput); err == nil {
+			prodEntry.manualConversion = manual
+		}
+
+		prodEntries = append(prodEntries, prodEntry)
+	}
+
+	collectHoistedLiterals(prodEntries, pkg.Types, pkg.TypesInfo, nil)
+	productionHoistSeed := packageHoistNames
+	collectHoistedLiterals(allEntries, pkg.Types, pkg.TypesInfo, productionHoistSeed)
+
 	var compileNames []string // emitted test .cs basenames — the csproj's compile items
 	var resolveNames []string // every emission (incl. .cs.auto review siblings) for marker resolution
 

@@ -56,14 +56,18 @@ internal static @string describe(this ж<ledger> Ꮡl) {
     return "ledger:"u8 + l.tag;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string drMichaˢ = "Dr. Michał"u8;
+private static readonly @string softwareEngineerˢ = "software engineer"u8;
+
 internal static void Main() {
     var person = new Person(name: "Dr. Michał"u8, age: 29);
     fmt.Println(person);
     fmt.Println(person.IsDr());
     var record = new Record(nil);
-    record.name = "Dr. Michał"u8;
+    record.name = drMichaˢ;
     record.age = 18;
-    record.position = "software engineer"u8;
+    record.position = softwareEngineerˢ;
     fmt.Println(record);
     fmt.Println(record.name);
     fmt.Println(record.age);

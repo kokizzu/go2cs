@@ -10,11 +10,15 @@ public static void ShowValue(fmt.Stringer val) {
     fmt.Println(val.String());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string trueIshˢ = "true-ish"u8;
+private static readonly @string falseIshˢ = "false-ish"u8;
+
 internal static @string String(this main_MyBool b) {
     if (b) {
-        return "true-ish"u8;
+        return trueIshˢ;
     }
-    return "false-ish"u8;
+    return falseIshˢ;
 }
 
 [GoType("bool")] partial struct main_MyBoolᴛ1;

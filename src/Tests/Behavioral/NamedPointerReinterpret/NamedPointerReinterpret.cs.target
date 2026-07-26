@@ -40,12 +40,19 @@ internal static nint sliceToArray(slice<byte> s) {
     return (nint)a[3] + (nint)p.Value[1];
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilrefˢ = "nilref"u8;
+private static readonly @string otherˢ = "other"u8;
+
 internal static @string classify(any v) {
     if (v == ((intRef)nil)) {
-        return "nilref"u8;
+        return nilrefˢ;
     }
-    return "other"u8;
+    return otherˢ;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abcdˢ = "abcd"u8;
 
 internal static void Main() {
     var pb = makeBase();
@@ -58,7 +65,7 @@ internal static void Main() {
     n = (int64)5;
     intRef r = Ꮡn;
     fmt.Println(r.Value, classify(r));
-    fmt.Println(consume("abcd"u8));
+    fmt.Println(consume(abcdˢ));
     fmt.Println(sliceToArray(new byte[]{1, 2, 3, 4}.slice()));
     var v2 = new view(new @base(a: 5, b: 6));
     fmt.Println(v2.a + v2.b);

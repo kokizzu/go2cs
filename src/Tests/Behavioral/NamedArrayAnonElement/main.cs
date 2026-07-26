@@ -19,8 +19,11 @@ partial class main_package {
     return Ꮡ(t.Value[i]).of(semTableᴛ1.Ꮡroot);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object namedArrayAnonElementˢ = (@string)"named-array anon element compiles"u8;
+
 internal static void Main() {
-    fmt.Println((@string)"named-array anon element compiles"u8);
+    fmt.Println(namedArrayAnonElementˢ);
 }
 
 } // end main_package

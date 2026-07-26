@@ -5,32 +5,46 @@ using time = time_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object fullBufferedSentˢ = (@string)"full buffered: sent"u8;
+private static readonly object fullBufferedDefaultˢ = (@string)"full buffered: default"u8;
+private static readonly object fullBufferedHeldˢ = (@string)"full buffered: held ="u8;
+private static readonly object drainedBufferedSentˢ = (@string)"drained buffered: sent"u8;
+private static readonly object drainedBufferedDefaultˢ = (@string)"drained buffered: default"u8;
+private static readonly object drainedBufferedHeldˢ = (@string)"drained buffered: held ="u8;
+
 internal static void fullBuffered() {
     var ch = new channel<nint>(1);
     ch.ᐸꟷ(1);
     var selᴛ1 = ch.ᐸꟷ(2, ꓸꓸꓸ);
     switch (trySelect(selᴛ1)) {
     case 0: {
-        fmt.Println((@string)"full buffered: sent"u8);
+        fmt.Println(fullBufferedSentˢ);
         break;
     }
     default: {
-        fmt.Println((@string)"full buffered: default"u8);
+        fmt.Println(fullBufferedDefaultˢ);
         break;
     }}
-    fmt.Println((@string)"full buffered: held ="u8, ᐸꟷ(ch));
+    fmt.Println(fullBufferedHeldˢ, ᐸꟷ(ch));
     var selᴛ2 = ch.ᐸꟷ(2, ꓸꓸꓸ);
     switch (trySelect(selᴛ2)) {
     case 0: {
-        fmt.Println((@string)"drained buffered: sent"u8);
+        fmt.Println(drainedBufferedSentˢ);
         break;
     }
     default: {
-        fmt.Println((@string)"drained buffered: default"u8);
+        fmt.Println(drainedBufferedDefaultˢ);
         break;
     }}
-    fmt.Println((@string)"drained buffered: held ="u8, ᐸꟷ(ch));
+    fmt.Println(drainedBufferedHeldˢ, ᐸꟷ(ch));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object freeBufferedSentˢ = (@string)"free buffered: sent"u8;
+private static readonly object freeBufferedDefaultˢ = (@string)"free buffered: default"u8;
+private static readonly object freeBufferedLenˢ = (@string)"free buffered: len ="u8;
+private static readonly object freeBufferedDrainedˢ = (@string)"free buffered: drained"u8;
 
 internal static void freeBuffered() {
     var ch = new channel<nint>(2);
@@ -38,16 +52,20 @@ internal static void freeBuffered() {
     var selᴛ3 = ch.ᐸꟷ(2, ꓸꓸꓸ);
     switch (trySelect(selᴛ3)) {
     case 0: {
-        fmt.Println((@string)"free buffered: sent"u8);
+        fmt.Println(freeBufferedSentˢ);
         break;
     }
     default: {
-        fmt.Println((@string)"free buffered: default"u8);
+        fmt.Println(freeBufferedDefaultˢ);
         break;
     }}
-    fmt.Println((@string)"free buffered: len ="u8, len(ch));
-    fmt.Println((@string)"free buffered: drained"u8, ᐸꟷ(ch), ᐸꟷ(ch));
+    fmt.Println(freeBufferedLenˢ, len(ch));
+    fmt.Println(freeBufferedDrainedˢ, ᐸꟷ(ch), ᐸꟷ(ch));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object unbufferedWithReceiverˢ = (@string)"unbuffered with receiver: sent ="u8;
+private static readonly object receivedˢ = (@string)"received ="u8;
 
 internal static void unbufferedWithReceiver() {
     var ch = new channel<nint>(0);
@@ -70,28 +88,38 @@ internal static void unbufferedWithReceiver() {
             break;
         }}
     }
-    fmt.Println((@string)"unbuffered with receiver: sent ="u8, sent, (@string)"received ="u8, ᐸꟷ(got));
+    fmt.Println(unbufferedWithReceiverˢ, sent, receivedˢ, ᐸꟷ(got));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object nilChannelSentˢ = (@string)"nil channel: sent"u8;
+private static readonly object nilChannelDefaultˢ = (@string)"nil channel: default"u8;
 
 internal static void nilChannel() {
     channel<nint> ch = default!;
     var selᴛ5 = ch.ᐸꟷ(1, ꓸꓸꓸ);
     switch (trySelect(selᴛ5)) {
     case 0: {
-        fmt.Println((@string)"nil channel: sent"u8);
+        fmt.Println(nilChannelSentˢ);
         break;
     }
     default: {
-        fmt.Println((@string)"nil channel: default"u8);
+        fmt.Println(nilChannelDefaultˢ);
         break;
     }}
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object closedChannelRecoveredˢ = (@string)"closed channel: recovered:"u8;
+private static readonly object closedChannelSentˢ = (@string)"closed channel: sent"u8;
+private static readonly object closedChannelDefaultˢ = (@string)"closed channel: default"u8;
+private static readonly object closedChannelNotReachedˢ = (@string)"closed channel: NOT REACHED"u8;
 
 internal static void closedChannel() => func((defer, recover) => {
     defer(() => {
         {
             var r = recover(); if (r != default!) {
-                fmt.Println((@string)"closed channel: recovered:"u8, r);
+                fmt.Println(closedChannelRecoveredˢ, r);
             }
         }
     });
@@ -100,15 +128,22 @@ internal static void closedChannel() => func((defer, recover) => {
     var selᴛ6 = ch.ᐸꟷ(1, ꓸꓸꓸ);
     switch (trySelect(selᴛ6)) {
     case 0: {
-        fmt.Println((@string)"closed channel: sent"u8);
+        fmt.Println(closedChannelSentˢ);
         break;
     }
     default: {
-        fmt.Println((@string)"closed channel: default"u8);
+        fmt.Println(closedChannelDefaultˢ);
         break;
     }}
-    fmt.Println((@string)"closed channel: NOT REACHED"u8);
+    fmt.Println(closedChannelNotReachedˢ);
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object oneOfManyChoseFullˢ = (@string)"one of many: chose full"u8;
+private static readonly object oneOfManyChoseOpenˢ = (@string)"one of many: chose open"u8;
+private static readonly object oneOfManyDefaultˢ = (@string)"one of many: default"u8;
+private static readonly object oneOfManyFullHeldˢ = (@string)"one of many: full held"u8;
+private static readonly object openGotˢ = (@string)"open got"u8;
 
 internal static void oneOfManyReady() {
     var full = new channel<nint>(1);
@@ -118,19 +153,24 @@ internal static void oneOfManyReady() {
     var selᴛ8 = open.ᐸꟷ(3, ꓸꓸꓸ);
     switch (trySelect(selᴛ7, selᴛ8)) {
     case 0: {
-        fmt.Println((@string)"one of many: chose full"u8);
+        fmt.Println(oneOfManyChoseFullˢ);
         break;
     }
     case 1: {
-        fmt.Println((@string)"one of many: chose open"u8);
+        fmt.Println(oneOfManyChoseOpenˢ);
         break;
     }
     default: {
-        fmt.Println((@string)"one of many: default"u8);
+        fmt.Println(oneOfManyDefaultˢ);
         break;
     }}
-    fmt.Println((@string)"one of many: full held"u8, ᐸꟷ(full), (@string)"open got"u8, ᐸꟷ(open));
+    fmt.Println(oneOfManyFullHeldˢ, ᐸꟷ(full), openGotˢ, ᐸꟷ(open));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object neitherReadySentˢ = (@string)"neither ready: sent"u8;
+private static readonly object neitherReadyReceivedˢ = (@string)"neither ready: received"u8;
+private static readonly object neitherReadyDefaultˢ = (@string)"neither ready: default"u8;
 
 internal static void neitherReady() {
     var full = new channel<nint>(1);
@@ -140,18 +180,22 @@ internal static void neitherReady() {
     var selᴛ10 = empty;
     switch (trySelect(selᴛ9, ᐸꟷ(selᴛ10, ꓸꓸꓸ))) {
     case 0: {
-        fmt.Println((@string)"neither ready: sent"u8);
+        fmt.Println(neitherReadySentˢ);
         break;
     }
     case 1 when selᴛ10.ꟷᐳ(out var v): {
-        fmt.Println((@string)"neither ready: received"u8, v);
+        fmt.Println(neitherReadyReceivedˢ, v);
         break;
     }
     default: {
-        fmt.Println((@string)"neither ready: default"u8);
+        fmt.Println(neitherReadyDefaultˢ);
         break;
     }}
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object exactlyOneSendDefaultˢ = (@string)"exactly one send: default"u8;
+private static readonly object exactlyOneSendTotalˢ = (@string)"exactly one send: total ="u8;
 
 internal static void exactlyOneSend() {
     var a = new channel<nint>(2);
@@ -166,11 +210,15 @@ internal static void exactlyOneSend() {
         break;
     }
     default: {
-        fmt.Println((@string)"exactly one send: default"u8);
+        fmt.Println(exactlyOneSendDefaultˢ);
         break;
     }}
-    fmt.Println((@string)"exactly one send: total ="u8, len(a) + len(b));
+    fmt.Println(exactlyOneSendTotalˢ, len(a) + len(b));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object blockingSendSentˢ = (@string)"blocking send: sent"u8;
+private static readonly object blockingSendReceivedˢ = (@string)"blocking send: received"u8;
 
 internal static void blockingSendStillBlocks() {
     var ch = new channel<nint>(0);
@@ -184,37 +232,44 @@ internal static void blockingSendStillBlocks() {
     var selᴛ13 = ch.ᐸꟷ(42, ꓸꓸꓸ);
     switch (select(selᴛ13)) {
     case 0: {
-        fmt.Println((@string)"blocking send: sent"u8);
+        fmt.Println(blockingSendSentˢ);
         break;
     }}
-    fmt.Println((@string)"blocking send: received"u8, ᐸꟷ(got));
+    fmt.Println(blockingSendReceivedˢ, ᐸꟷ(got));
 }
 
 [GoType("chan nint")] partial struct queue;
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object namedChannelSentˢ = (@string)"named channel: sent"u8;
+private static readonly object namedChannelDefaultˢ = (@string)"named channel: default"u8;
+private static readonly object namedChannelFullSentˢ = (@string)"named channel full: sent"u8;
+private static readonly object namedChannelFullDefaultˢ = (@string)"named channel full: default"u8;
+private static readonly object namedChannelHeldˢ = (@string)"named channel: held ="u8;
 
 internal static void namedChannelType() {
     var q = new queue(1);
     var selᴛ14 = q.ᐸꟷ(1, ꓸꓸꓸ);
     switch (trySelect(selᴛ14)) {
     case 0: {
-        fmt.Println((@string)"named channel: sent"u8);
+        fmt.Println(namedChannelSentˢ);
         break;
     }
     default: {
-        fmt.Println((@string)"named channel: default"u8);
+        fmt.Println(namedChannelDefaultˢ);
         break;
     }}
     var selᴛ15 = q.ᐸꟷ(2, ꓸꓸꓸ);
     switch (trySelect(selᴛ15)) {
     case 0: {
-        fmt.Println((@string)"named channel full: sent"u8);
+        fmt.Println(namedChannelFullSentˢ);
         break;
     }
     default: {
-        fmt.Println((@string)"named channel full: default"u8);
+        fmt.Println(namedChannelFullDefaultˢ);
         break;
     }}
-    fmt.Println((@string)"named channel: held ="u8, ᐸꟷ<nint>(q));
+    fmt.Println(namedChannelHeldˢ, ᐸꟷ<nint>(q));
 }
 
 internal static void Main() {

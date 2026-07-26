@@ -110,20 +110,31 @@ internal static nint viaClosure() {
     return c.n;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object viaLocalˢ = (@string)"viaLocal:"u8;
+private static readonly object viaParamˢ = (@string)"viaParam:"u8;
+private static readonly object viaNamedResultˢ = (@string)"viaNamedResult:"u8;
+private static readonly object viaFieldChainˢ = (@string)"viaFieldChain:"u8;
+private static readonly object viaNamedSliceˢ = (@string)"viaNamedSlice:"u8;
+private static readonly object valueReceiverCopiesˢ = (@string)"valueReceiverCopies:"u8;
+private static readonly object pointerBaseNoPromotionˢ = (@string)"pointerBaseNoPromotion:"u8;
+private static readonly object directCallStaysUnboxedˢ = (@string)"directCallStaysUnboxed:"u8;
+private static readonly object viaClosureˢ = (@string)"viaClosure:"u8;
+
 internal static void Main() {
     var (n, sum) = viaLocal();
-    fmt.Println((@string)"viaLocal:"u8, n, sum);
+    fmt.Println(viaLocalˢ, n, sum);
     (n, sum) = viaParam(new counter(n: 40));
-    fmt.Println((@string)"viaParam:"u8, n, sum);
+    fmt.Println(viaParamˢ, n, sum);
     var r = viaNamedResult();
-    fmt.Println((@string)"viaNamedResult:"u8, r.n, r.calls);
-    fmt.Println((@string)"viaFieldChain:"u8, viaFieldChain());
+    fmt.Println(viaNamedResultˢ, r.n, r.calls);
+    fmt.Println(viaFieldChainˢ, viaFieldChain());
     var (ln, total) = viaNamedSlice();
-    fmt.Println((@string)"viaNamedSlice:"u8, ln, total);
-    fmt.Println((@string)"valueReceiverCopies:"u8, valueReceiverCopies());
-    fmt.Println((@string)"pointerBaseNoPromotion:"u8, pointerBaseNoPromotion());
-    fmt.Println((@string)"directCallStaysUnboxed:"u8, directCallStaysUnboxed());
-    fmt.Println((@string)"viaClosure:"u8, viaClosure());
+    fmt.Println(viaNamedSliceˢ, ln, total);
+    fmt.Println(valueReceiverCopiesˢ, valueReceiverCopies());
+    fmt.Println(pointerBaseNoPromotionˢ, pointerBaseNoPromotion());
+    fmt.Println(directCallStaysUnboxedˢ, directCallStaysUnboxed());
+    fmt.Println(viaClosureˢ, viaClosure());
 }
 
 } // end main_package

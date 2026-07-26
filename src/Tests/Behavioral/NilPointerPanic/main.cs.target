@@ -34,59 +34,74 @@ internal static void @catch(@string what, Action f) => func((defer, recover) => 
     f();
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string methodCallˢ = "method-call"u8;
+private static readonly @string fieldReadˢ = "field-read"u8;
+private static readonly @string fieldWriteˢ = "field-write"u8;
+private static readonly @string explicitDerefˢ = "explicit-deref"u8;
+private static readonly @string nestedFieldˢ = "nested-field"u8;
+private static readonly @string sliceElementˢ = "slice-element"u8;
+private static readonly @string mapValueˢ = "map-value"u8;
+private static readonly @string absentˢ = "absent"u8;
+private static readonly @string chainWalkˢ = "chain-walk"u8;
+private static readonly @string nilSafeMethodˢ = "nil-safe-method"u8;
+private static readonly @string realMethodˢ = "real-method"u8;
+private static readonly @string nilCompareˢ = "nil-compare"u8;
+private static readonly object stillRunningˢ = (@string)"still running:"u8;
+
 internal static void Main() {
     ж<node> p = default!;
     var pʗ1 = p;
-    @catch("method-call"u8, () => {
+    @catch(methodCallˢ, () => {
         fmt.Println(pʗ1.label());
     });
     var pʗ3 = p;
-    @catch("field-read"u8, () => {
+    @catch(fieldReadˢ, () => {
         fmt.Println((~pʗ3).name);
     });
     var pʗ5 = p;
-    @catch("field-write"u8, () => {
+    @catch(fieldWriteˢ, () => {
         pʗ5.Value.name = "x"u8;
     });
     var pʗ7 = p;
-    @catch("explicit-deref"u8, () => {
+    @catch(explicitDerefˢ, () => {
         fmt.Println(pʗ7.Value);
     });
     ref var b = ref heap(new box(), out var Ꮡb);
     var bʗ1 = b;
-    @catch("nested-field"u8, () => {
+    @catch(nestedFieldˢ, () => {
         fmt.Println((~bʗ1.p).name);
     });
     var nodes = new slice<ж<node>>(2);
     var nodesʗ1 = nodes;
-    @catch("slice-element"u8, () => {
+    @catch(sliceElementˢ, () => {
         fmt.Println((~nodesʗ1[0]).name);
     });
     var m = new map<@string, ж<node>>{};
     var mʗ1 = m;
-    @catch("map-value"u8, () => {
-        fmt.Println((~mʗ1["absent"u8]).name);
+    @catch(mapValueˢ, () => {
+        fmt.Println((~mʗ1[absentˢ]).name);
     });
     var real = Ꮡ(new node(name: "head"u8));
     var realʗ1 = real;
-    @catch("chain-walk"u8, () => {
+    @catch(chainWalkˢ, () => {
         fmt.Println((~(~realʗ1).next).name);
     });
     var pʗ9 = p;
-    @catch("nil-safe-method"u8, () => {
+    @catch(nilSafeMethodˢ, () => {
         fmt.Println(pʗ9.isNil());
     });
     var realʗ3 = real;
-    @catch("real-method"u8, () => {
+    @catch(realMethodˢ, () => {
         fmt.Println(realʗ3.label());
     });
     var bʗ3 = b;
     var nodesʗ3 = nodes;
     var pʗ11 = p;
-    @catch("nil-compare"u8, () => {
+    @catch(nilCompareˢ, () => {
         fmt.Println(pʗ11 == nil, bʗ3.p == nil, nodesʗ3[0] == nil);
     });
-    fmt.Println((@string)"still running:"u8, real.label());
+    fmt.Println(stillRunningˢ, real.label());
 }
 
 } // end main_package

@@ -65,6 +65,9 @@ internal static nint tupleInitShadow(@string key) {
     return -1;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object mainFieldˢ = (@string)"main field:"u8;
+
 internal static void Main() {
     fmt.Println(collisionGlobalShadow());
     fmt.Println(plainGlobalShadow());
@@ -72,7 +75,7 @@ internal static void Main() {
     fmt.Println(nestedBlockShadow(2), nestedBlockShadow(1));
     fmt.Println(tupleInitShadow("a"u8), tupleInitShadow("z"u8));
     var bi = new buildRec(Main: "mod/a"u8, Path: "p"u8);
-    fmt.Println((@string)"main field:"u8, bi.Main, mainField(bi));
+    fmt.Println(mainFieldˢ, bi.Main, mainField(bi));
 }
 
 [GoType] partial struct buildRec {

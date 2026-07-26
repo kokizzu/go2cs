@@ -4,6 +4,11 @@ using fmt = fmt_package;
 
 partial class main_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object helloˢ = (@string)"hello"u8;
+private static readonly object abcdˢ = (@string)"abcd"u8;
+private static readonly object abcdefˢ = (@string)"abcdef"u8;
+
 internal static void Main() {
     foreach (var (_, v) in new nint[]{5, 99, 999, 1234, -5, -999}.slice()) {
         fmt.Printf("k =% 4d;\n"u8, v);
@@ -13,7 +18,7 @@ internal static void Main() {
     fmt.Printf("[% 04d] [%+04d]\n"u8, (nint)(5), (nint)(5));
     fmt.Printf("[%6s] [%-6s] [%6v]\n"u8, (@string)"ab"u8, (@string)"ab"u8, (nint)(12));
     fmt.Printf("[%.1f] [%0.1f] [%6.2f] [%-7.2f] [%.0f]\n"u8, 45.678D, 45.678D, 3.14159D, 3.14159D, 2.71D);
-    fmt.Printf("[%2d] [%2s]\n"u8, (nint)(12345), (@string)"hello"u8);
+    fmt.Printf("[%2d] [%2s]\n"u8, (nint)(12345), helloˢ);
     fmt.Printf("[% d] [% 6s]\n"u8, (nint)(-3), (@string)"ab"u8);
     var zero = 0.0D;
     var posInf = 1.0D / zero;
@@ -47,9 +52,9 @@ internal static void Main() {
     fmt.Printf("[%x] [%X] [%#x] [%#X]\n"u8, (@string)"abc"u8, (@string)"abc"u8, (@string)"abc"u8, (@string)"abc"u8);
     fmt.Printf("[% x] [% X] [% #x]\n"u8, (@string)"abc"u8, (@string)"abc"u8, (@string)"abc"u8);
     fmt.Printf("[%x] [%#x] [% x]\n"u8, slice<byte>("abc"u8), slice<byte>("abc"u8), new byte[]{1, 2}.slice());
-    fmt.Printf("[%x] [%.2x] [%.2x] [%#.2x]\n"u8, (@string)"äb"u8, (@string)"äb"u8, (@string)"abcd"u8, (@string)"abcd"u8);
+    fmt.Printf("[%x] [%.2x] [%.2x] [%#.2x]\n"u8, (@string)"äb"u8, (@string)"äb"u8, abcdˢ, abcdˢ);
     fmt.Printf("[%6x] [%-6x] [%06x] [%#08x] [%-08x]\n"u8, (@string)"ab"u8, (@string)"ab"u8, (@string)"ab"u8, (@string)"ab"u8, (@string)"ab"u8);
-    fmt.Printf("[% 08x] [%12x] [%10.3x]\n"u8, (@string)"ab"u8, (@string)"abc"u8, (@string)"abcdef"u8);
+    fmt.Printf("[% 08x] [%12x] [%10.3x]\n"u8, (@string)"ab"u8, (@string)"abc"u8, abcdefˢ);
     fmt.Printf("[%x] [%#x] [%8x] [%08x] [%#x]\n"u8, (@string)""u8, (@string)""u8, (@string)""u8, (@string)""u8, new byte[]{}.slice());
     fmt.Printf("[%b] [%b] [%b] [%b] [%#b] [%#b] [%#b]\n"u8, (nint)(5), (nint)(255), (nint)(-255), (nint)(0), (nint)(5), (nint)(-5), (nint)(0));
     fmt.Printf("[%+b] [% b] [% #b] [%12b] [%-12b] [%012b] [%012b]\n"u8, (nint)(5), (nint)(5), (nint)(5), (nint)(255), (nint)(255), (nint)(255), (nint)(-255));

@@ -22,12 +22,16 @@ partial class main_package {
     internal holder slot;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object countˢ = (@string)"count:"u8;
+private static readonly object nameEmptyˢ = (@string)"name-empty:"u8;
+
 internal static void Main() {
     var b = new slotBox(id: 3);
     Ꮡ(b.slot).of(holder.Ꮡcounter).inc();
     Ꮡ(b.slot).of(holder.Ꮡcounter).inc();
     Ꮡ(b.slot).of(holder.Ꮡcounter).inc();
-    fmt.Println((@string)"id:"u8, b.id, (@string)"count:"u8, b.slot.n, (@string)"name-empty:"u8, b.slot.name == ""u8);
+    fmt.Println((@string)"id:"u8, b.id, countˢ, b.slot.n, nameEmptyˢ, b.slot.name == ""u8);
 }
 
 } // end main_package

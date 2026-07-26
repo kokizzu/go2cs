@@ -26,12 +26,16 @@ internal static void emit(channel<nint> @out) {
     @out.ᐸꟷ(8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object pairˢ = (@string)"pair:"u8;
+private static readonly object emitˢ = (@string)"emit:"u8;
+
 internal static void Main() {
     var @out = new channel<nint>(0);
     goǃ((ᴛ1, ᴛ2, ᴛ3) => sum(ᴛ1, ᴛ2, ᴛ3), @out, 3, 4);
     fmt.Println((@string)"sum:"u8, ᐸꟷ(@out));
     goǃ((ᴛ1, ᴛ2) => pair(ᴛ1, ᴛ2), @out, 6);
-    fmt.Println((@string)"pair:"u8, ᐸꟷ(@out));
+    fmt.Println(pairˢ, ᐸꟷ(@out));
     goǃ(() => nib());
     fmt.Println((@string)"nib:"u8, ᐸꟷ(gch));
     var outʗ1 = @out;
@@ -40,7 +44,7 @@ internal static void Main() {
     });
     fmt.Println((@string)"lit:"u8, ᐸꟷ(@out));
     goǃ(emit, @out);
-    fmt.Println((@string)"emit:"u8, ᐸꟷ(@out));
+    fmt.Println(emitˢ, ᐸꟷ(@out));
 }
 
 } // end main_package

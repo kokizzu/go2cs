@@ -13,6 +13,9 @@ internal static void run(Action f) {
     f();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object mToFlushIsNilˢ = (@string)"mToFlush is nil:"u8;
+
 internal static void Main() {
     var head = Ꮡ(new node(v: 1, next: Ꮡ(new node(v: 2, next: Ꮡ(new node(v: 3, next: nil))))));
     ref var mToFlush = ref heap<ж<node>>(out var ᏑmToFlush);
@@ -24,7 +27,7 @@ internal static void Main() {
             prev.ValueSlot = ᏑmToFlush.ValueSlot.Value.next;
         }
     });
-    fmt.Println((@string)"mToFlush is nil:"u8, mToFlush == nil);
+    fmt.Println(mToFlushIsNilˢ, mToFlush == nil);
     nint sum = 0;
     for (var n = head; n != nil; n = n.Value.next) {
         sum += n.Value.v;
