@@ -52,6 +52,9 @@ partial class httptest_package {
     internal ж<http.Client> client;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tcp6ˢ = "tcp6"u8;
+
 internal static net.Listener newLocalListener() {
     if (serveFlag != ""u8) {
         var (lΔ1, errΔ1) = net.Listen("tcp"u8, serveFlag);
@@ -63,7 +66,7 @@ internal static net.Listener newLocalListener() {
     var (l, err) = net.Listen("tcp"u8, "127.0.0.1:0"u8);
     if (err != default!) {
         {
-            (l, err) = net.Listen("tcp6"u8, "[::1]:0"u8); if (err != default!) {
+            (l, err) = net.Listen(tcp6ˢ, "[::1]:0"u8); if (err != default!) {
                 throw panic(fmt.Sprintf("httptest: failed to listen on a port: %v"u8, err));
             }
         }
@@ -119,6 +122,9 @@ public static ж<Server> NewUnstartedServer(httpꓸHandler handler) {
     ));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object httptestServingOnˢ = (@string)"httptest: serving on"u8;
+
 // Start starts a server from NewUnstartedServer.
 public static void Start(this ж<Server> Ꮡs) {
     ref var s = ref Ꮡs.Value;
@@ -133,7 +139,7 @@ public static void Start(this ж<Server> Ꮡs) {
     Ꮡs.wrap();
     Ꮡs.goServe();
     if (serveFlag != ""u8) {
-        fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"httptest: serving on"u8, s.URL);
+        fmt.Fprintln(new os.FileжWriter(os.Stderr), httptestServingOnˢ, s.URL);
         switch (select()) {
 }
     }
@@ -160,9 +166,9 @@ public static void StartTLS(this ж<Server> Ꮡs) {
         s.TLS = @new<tls.Config>();
     }
     if ((~s.TLS).NextProtos == default!) {
-        var nextProtos = new @string[]{"http/1.1"}.slice();
+        var nextProtos = new @string[]{"http/1.1"u8}.slice();
         if (s.EnableHTTP2) {
-            nextProtos = new @string[]{"h2"}.slice();
+            nextProtos = new @string[]{"h2"u8}.slice();
         }
         s.TLS.Value.NextProtos = nextProtos;
     }
@@ -257,13 +263,16 @@ public static void Close(this ж<Server> Ꮡs) => func((defer, recover) => {
     Ꮡs.of(Server.Ꮡwg).Wait();
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httptestServerBlockedInˢ = "httptest.Server blocked in Close after 5 seconds, waiting for connections:\n"u8;
+
 internal static void logCloseHangDebugInfo(this ж<Server> Ꮡs) => func((defer, recover) => {
     ref var s = ref Ꮡs.Value;
 
     Ꮡs.of(Server.Ꮡmu).Lock();
     defer(Ꮡs.of(Server.Ꮡmu).Unlock);
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    Ꮡbuf.WriteString("httptest.Server blocked in Close after 5 seconds, waiting for connections:\n"u8);
+    Ꮡbuf.WriteString(httptestServerBlockedInˢ);
     foreach (var (c, st) in s.conns) {
         fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "  %T %p %v in state %v\n"u8, c, c, c.RemoteAddr(), st);
     }

@@ -18,6 +18,10 @@ using io = io_package;
 
 partial class format_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string expectedPackageˢ = "expected 'package'"u8;
+private static readonly @string expectedDeclarationˢ = "expected declaration"u8;
+
 // parse parses src, which was read from the named file,
 // as a Go source file, declaration, or statement list.
 internal static (ж<ast.File> @file, Func<slice<byte>, nint, slice<byte>> sourceAdj, nint indentAdj, error err) parse(ж<token.FileSet> Ꮡfset, @string filename, slice<byte> src, bool fragmentOk) {
@@ -31,7 +35,7 @@ internal static (ж<ast.File> @file, Func<slice<byte>, nint, slice<byte>> source
     // If there's no error, return. If the error is that the source file didn't begin with a
     // package line and source fragments are ok, fall through to
     // try as a source fragment. Stop and return on any other error.
-    if (err == default! || !fragmentOk || !strings.Contains(err.Error(), "expected 'package'"u8)) {
+    if (err == default! || !fragmentOk || !strings.Contains(err.Error(), expectedPackageˢ)) {
         return (@file, sourceAdj, indentAdj, err);
     }
     // If this is a declaration list, make it a source file
@@ -52,7 +56,7 @@ internal static (ж<ast.File> @file, Func<slice<byte>, nint, slice<byte>> source
     // If the error is that the source file didn't begin with a
     // declaration, fall through to try as a statement list.
     // Stop and return on any other error.
-    if (!strings.Contains(err.Error(), "expected declaration"u8)) {
+    if (!strings.Contains(err.Error(), expectedDeclarationˢ)) {
         return (@file, sourceAdj, indentAdj, err);
     }
     // If this is a statement list, make it a source file

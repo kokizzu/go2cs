@@ -37,9 +37,12 @@ internal static ж<nssConf> getSystemNSS() {
     return conf;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string etcNsswitchConfˢ = "/etc/nsswitch.conf"u8;
+
 // init initializes conf and is only called via conf.initOnce.
 [GoRecv] internal static void init(this ref nsswitchConfig conf) {
-    conf.nssConf = parseNSSConfFile("/etc/nsswitch.conf"u8);
+    conf.nssConf = parseNSSConfFile(etcNsswitchConfˢ);
     conf.lastChecked = time.Now();
     conf.ch = new channel<EmptyStruct>(1);
 }
@@ -124,6 +127,10 @@ internal static bool standardCriteria(this nssSource s) {
     internal @string action; // e.g. "return", "continue" (lowercase)
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string returnˢ = "return"u8;
+private static readonly @string continueˢ = "continue"u8;
+
 // standardStatusAction reports whether c is equivalent to not
 // specifying the criterion at all. last is whether this criteria is the
 // last in the list.
@@ -134,10 +141,10 @@ internal static bool standardStatusAction(this nssCriterion c, bool last) {
     @string def = default!;
     var exprᴛ1 = c.status;
     if (exprᴛ1 == "success"u8) {
-        def = "return"u8;
+        def = returnˢ;
     }
     else if (exprᴛ1 == "notfound"u8 || exprᴛ1 == "unavail"u8 || exprᴛ1 == "tryagain"u8) {
-        def = "continue"u8;
+        def = continueˢ;
     }
     else { /* default: */
         return false;
@@ -166,6 +173,10 @@ internal static ж<nssConf> parseNSSConfFile(@string Δfile) => func((defer, rec
     return conf;
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noColonOnLineˢ = "no colon on line"u8;
+private static readonly @string unclosedCriterionBracketˢ = "unclosed criterion bracket"u8;
+
 internal static ж<nssConf> parseNSSConf(ж<Δfile> Ꮡf) {
     ref var f = ref Ꮡf.Value;
 
@@ -177,7 +188,7 @@ internal static ж<nssConf> parseNSSConf(ж<Δfile> Ꮡf) {
         }
         nint colon = bytealg.IndexByteString(line, (rune)':');
         if (colon == -1) {
-            conf.Value.err = errors.New("no colon on line"u8);
+            conf.Value.err = errors.New(noColonOnLineˢ);
             return conf;
         }
         @string db = trimSpace(line[..(int)(colon)]);
@@ -202,7 +213,7 @@ internal static ж<nssConf> parseNSSConf(ж<Δfile> Ꮡf) {
             if (len(srcs) > 0 && srcs[0] == (rune)'[') {
                 nint bclose = bytealg.IndexByteString(srcs, (rune)']');
                 if (bclose == -1) {
-                    conf.Value.err = errors.New("unclosed criterion bracket"u8);
+                    conf.Value.err = errors.New(unclosedCriterionBracketˢ);
                     return conf;
                 }
                 error err = default!;
@@ -225,6 +236,10 @@ internal static ж<nssConf> parseNSSConf(ж<Δfile> Ꮡf) {
     return conf;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string criterionTooShortˢ = "criterion too short"u8;
+private static readonly @string criterionLacksEqualSignˢ = "criterion lacks equal sign"u8;
+
 // parses "foo=bar !foo=bar"
 internal static (slice<nssCriterion> c, error err) parseCriteria(@string x) {
     slice<nssCriterion> c = default!;
@@ -237,11 +252,11 @@ internal static (slice<nssCriterion> c, error err) parseCriteria(@string x) {
             f = f[1..];
         }
         if (len(f) < 3) {
-            return errors.New("criterion too short"u8);
+            return errors.New(criterionTooShortˢ);
         }
         nint eq = bytealg.IndexByteString(f, (rune)'=');
         if (eq == -1) {
-            return errors.New("criterion lacks equal sign"u8);
+            return errors.New(criterionLacksEqualSignˢ);
         }
         if (hasUpperCase(f)) {
             var lower = slice<byte>(f);

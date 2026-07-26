@@ -160,9 +160,12 @@ internal static bool heapObjectsCanMove() {
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sizeOfWorkbufIsˢ = "size of Workbuf is suboptimal"u8;
+
 internal static void gcinit() {
     if (@unsafe.Sizeof(new workbuf(nil)) != _WorkbufSize) {
-        @throw("size of Workbuf is suboptimal"u8);
+        @throw(sizeOfWorkbufIsˢ);
     }
     // No sweep on the first cycle.
     ᏑΔsweep.of(sweepdata.Ꮡactive).of(activeSweep.Ꮡstate).Store(sweepDrainedMask);
@@ -247,10 +250,10 @@ internal static readonly gcMarkWorkerMode gcMarkWorkerIdleMode = 3;
 // gcMarkWorkerModeStrings are the strings labels of gcMarkWorkerModes
 // to use in execution traces.
 internal static array<@string> gcMarkWorkerModeStrings = new @string[]{
-    "Not worker",
-    "GC (dedicated)",
-    "GC (fractional)",
-    "GC (idle)"
+    "Not worker"u8,
+    "GC (dedicated)"u8,
+    "GC (fractional)"u8,
+    "GC (idle)"u8
 }.array();
 
 // pollFractionalWorkerExit reports whether a fractional mark worker
@@ -526,6 +529,9 @@ internal static bool test(this gcTrigger t) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pMcacheNotFlushedˢ = "p mcache not flushed"u8;
+
 // gcStart starts the GC. It transitions from _GCoff to _GCmark (if
 // debug.gcstoptheworld == 0) or performs all of GC (if
 // debug.gcstoptheworld != 0).
@@ -593,7 +599,7 @@ internal static void gcStart(gcTrigger trigger) {
         {
             var fg = (~Δp).mcache.of(mcache.ᏑflushGen).Load(); if (fg != mheap_.sweepgen) {
                 println((@string)"runtime: p"u8, (~Δp).id, (@string)"flushGen"u8, fg, (@string)"!= sweepgen"u8, mheap_.sweepgen);
-                @throw("p mcache not flushed"u8);
+                @throw(pMcacheNotFlushedˢ);
             }
         }
     }
@@ -706,6 +712,9 @@ internal static void gcStart(gcTrigger trigger) {
 internal static ж<uint32> ᏑgcMarkDoneFlushed = new(default(uint32));
 internal static ref uint32 gcMarkDoneFlushed => ref ᏑgcMarkDoneFlushed.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gcingˢ = "gcing"u8;
+
 // gcMarkDone transitions the GC from mark to mark termination if all
 // reachable objects have been marked (that is, there are no grey
 // objects and can be no more in the future). Otherwise, it flushes
@@ -778,7 +787,7 @@ top:
     // shaded. Transition to mark termination.
     var now = nanotime();
     work.tMarkTerm = now;
-    getg().Value.m.Value.preemptoff = "gcing"u8;
+    getg().Value.m.Value.preemptoff = gcingˢ;
     ref var stw = ref heap(new worldStop(), out var Ꮡstw);
     systemstack(() => {
         Ꮡstw.Value = stopTheWorldWithSema(stwGCMarkTerm);
@@ -843,6 +852,11 @@ top:
     gcMarkTermination(stw);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gcDoneButGcphaseGCoffˢ = "gc done but gcphase != _GCoff"u8;
+private static readonly @string failedToSetSweepBarrierˢ = "failed to set sweep barrier"u8;
+private static readonly @string nonConcurrentSweepFailedˢ = "non-concurrent sweep failed to drain all sweep queues"u8;
+
 // World must be stopped and mark assists and background workers must be
 // disabled.
 internal static void gcMarkTermination(worldStop stw) {
@@ -851,7 +865,7 @@ internal static void gcMarkTermination(worldStop stw) {
     work.heap1 = ᏑgcController.of(gcControllerState.ᏑheapLive).Load();
     var startTime = nanotime();
     var mp = acquirem();
-    mp.Value.preemptoff = "gcing"u8;
+    mp.Value.preemptoff = gcingˢ;
     mp.Value.traceback = 2;
     var curgp = mp.Value.curg;
     // N.B. The execution tracer is not aware of this status
@@ -903,7 +917,7 @@ internal static void gcMarkTermination(worldStop stw) {
     // all done
     mp.Value.preemptoff = ""u8;
     if (gcphase != _GCoff) {
-        @throw("gc done but gcphase != _GCoff"u8);
+        @throw(gcDoneButGcphaseGCoffˢ);
     }
     // Record heapInUse for scavenger.
     memstats.lastHeapInUse = ᏑgcController.of(gcControllerState.ᏑheapInUse).load();
@@ -977,10 +991,10 @@ internal static void gcMarkTermination(worldStop stw) {
     // we're still holding worldsema so a new cycle can't start.
     var sl = ᏑΔsweep.of(sweepdata.Ꮡactive).begin();
     if (!stwSwept && !sl.valid){
-        @throw("failed to set sweep barrier"u8);
+        @throw(failedToSetSweepBarrierˢ);
     } else 
     if (stwSwept && sl.valid) {
-        @throw("non-concurrent sweep failed to drain all sweep queues"u8);
+        @throw(nonConcurrentSweepFailedˢ);
     }
     var stwʗ1 = stw;
     systemstack(() => {
@@ -1180,12 +1194,20 @@ internal static void gcBgMarkPrepare() {
     internal muintptr m;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gcWorkerInitˢ = "GC worker init"u8;
+private static readonly @string gcBgMarkWorkerBlackeningˢ = "gcBgMarkWorker: blackening not enabled"u8;
+private static readonly @string gcBgMarkWorkerModeNotSetˢ = "gcBgMarkWorker: mode not set"u8;
+private static readonly @string workNwaitWasWorkNprocˢ = "work.nwait was > work.nproc"u8;
+private static readonly @string gcBgMarkWorkerUnexpectedˢ = "gcBgMarkWorker: unexpected gcMarkWorkerMode"u8;
+private static readonly @string workNwaitWorkNprocˢ = "work.nwait > work.nproc"u8;
+
 internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
     var gp = getg();
     // We pass node to a gopark unlock function, so it can't be on
     // the stack (see gopark). Prevent deadlock from recursively
     // starting GC by disabling preemption.
-    gp.Value.m.Value.preemptoff = "GC worker init"u8;
+    gp.Value.m.Value.preemptoff = gcWorkerInitˢ;
     var node = @new<gcBgMarkWorkerNode>();
     gp.Value.m.Value.preemptoff = ""u8;
     node.of(gcBgMarkWorkerNode.Ꮡgp).set(gp);
@@ -1248,10 +1270,10 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
         // P can't change with preemption disabled.
         if (gcBlackenEnabled == 0) {
             println((@string)"worker mode"u8, (~pp).gcMarkWorkerMode);
-            @throw("gcBgMarkWorker: blackening not enabled"u8);
+            @throw(gcBgMarkWorkerBlackeningˢ);
         }
         if ((~pp).gcMarkWorkerMode == gcMarkWorkerNotWorker) {
-            @throw("gcBgMarkWorker: mode not set"u8);
+            @throw(gcBgMarkWorkerModeNotSetˢ);
         }
         var startTime = nanotime();
         pp.Value.gcMarkWorkerStartTime = startTime;
@@ -1262,7 +1284,7 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
         var decnwait = atomic.Xadd(Ꮡwork.of(workType.Ꮡnwait), -1);
         if (decnwait == work.nproc) {
             println((@string)"runtime: work.nwait="u8, decnwait, (@string)"work.nproc="u8, work.nproc);
-            @throw("work.nwait was > work.nproc"u8);
+            @throw(workNwaitWasWorkNprocˢ);
         }
         var gpʗ1 = gp;
         var ppʗ1 = pp;
@@ -1308,7 +1330,7 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
                 gcDrainMarkWorkerIdle(ppʗ1.of(runtime_package.Δp.Ꮡgcw));
             }
             else { /* default: */
-                @throw("gcBgMarkWorker: unexpected gcMarkWorkerMode"u8);
+                @throw(gcBgMarkWorkerUnexpectedˢ);
             }
 
             casgstatus(gpʗ1, _Gwaiting, _Grunning);
@@ -1329,7 +1351,7 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
         if (incnwait > work.nproc) {
             println((@string)"runtime: p.gcMarkWorkerMode="u8, (~pp).gcMarkWorkerMode,
                 (@string)"work.nwait="u8, incnwait, (@string)"work.nproc="u8, work.nproc);
-            @throw("work.nwait > work.nproc"u8);
+            @throw(workNwaitWorkNprocˢ);
         }
         // We'll releasem after this point and thus this P may run
         // something else. We must clear the worker mode to avoid
@@ -1369,12 +1391,16 @@ internal static bool gcMarkWorkAvailable(ж<Δp> Ꮡp) {
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inGcMarkExpectingToSeeˢ = "in gcMark expecting to see gcphase as _GCmarktermination"u8;
+private static readonly @string pHasCachedGcWorkAtEndOfˢ = "P has cached GC work at end of mark termination"u8;
+
 // gcMark runs the mark (or, for concurrent GC, mark termination)
 // All gcWork caches must be empty.
 // STW is in effect at this point.
 internal static void gcMark(int64 startTime) {
     if (gcphase != _GCmarktermination) {
-        @throw("in gcMark expecting to see gcphase as _GCmarktermination"u8);
+        @throw(inGcMarkExpectingToSeeˢ);
     }
     work.tstart = startTime;
     // Check that there's no marking work remaining.
@@ -1425,7 +1451,7 @@ internal static void gcMark(int64 startTime) {
                 print((@string)" wbuf2.n="u8, (~(~gcw).wbuf2).nobj);
             }
             print((@string)"\n"u8);
-            @throw("P has cached GC work at end of mark termination"u8);
+            @throw(pHasCachedGcWorkAtEndOfˢ);
         }
         // There may still be cached empty buffers, which we
         // need to flush since we're going to free them. Also,
@@ -1450,6 +1476,9 @@ internal static void gcMark(int64 startTime) {
     ᏑgcController.resetLive(work.bytesMarked);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gcSweepBeingDoneButPhaseˢ = "gcSweep being done but phase is not GCoff"u8;
+
 // gcSweep must be called on the system stack because it acquires the heap
 // lock. See mheap for details.
 //
@@ -1461,7 +1490,7 @@ internal static void gcMark(int64 startTime) {
 internal static bool gcSweep(gcMode mode) {
     assertWorldStopped();
     if (gcphase != _GCoff) {
-        @throw("gcSweep being done but phase is not GCoff"u8);
+        @throw(gcSweepBeingDoneButPhaseˢ);
     }
     @lock(Ꮡmheap_.of(mheap.Ꮡlock));
     mheap_.sweepgen += 2;
@@ -1677,6 +1706,10 @@ internal static void gcTestMoveStackOnNextCall() {
     gp.Value.stackguard0 = stackForceMove;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string alreadyHaveAReachableˢ = "already have a reachable special (duplicate pointer?)"u8;
+private static readonly @string isReachableFailedˢ = "IsReachable failed"u8;
+
 // gcTestIsReachable performs a GC and returns a bit set where bit i
 // is set if ptrs[i] is reachable.
 internal static uint64 /*mask*/ gcTestIsReachable(params ꓸꓸꓸunsafeꓸPointer ptrsʗp) {
@@ -1702,7 +1735,7 @@ internal static uint64 /*mask*/ gcTestIsReachable(params ꓸꓸꓸunsafeꓸPoint
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
         s.Value.special.kind = _KindSpecialReachable;
         if (!addspecial(Δp, s.of(specialReachable.Ꮡspecial))) {
-            @throw("already have a reachable special (duplicate pointer?)"u8);
+            @throw(alreadyHaveAReachableˢ);
         }
         specials[i] = s;
         // Make sure we don't retain ptrs.
@@ -1716,7 +1749,7 @@ internal static uint64 /*mask*/ gcTestIsReachable(params ꓸꓸꓸunsafeꓸPoint
         if (!(~s).done) {
             printlock();
             println((@string)"runtime: object"u8, i, (@string)"was not swept"u8);
-            @throw("IsReachable failed"u8);
+            @throw(isReachableFailedˢ);
         }
         if ((~s).reachable) {
             mask |= (uint64)(((uint64)1).Lsh((uint64)(i)));
@@ -1727,6 +1760,12 @@ internal static uint64 /*mask*/ gcTestIsReachable(params ꓸꓸꓸunsafeꓸPoint
     }
     return mask;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stackˢ = "stack"u8;
+private static readonly @string heapˢ = "heap"u8;
+private static readonly @string dataˢ = "data"u8;
+private static readonly @string otherˢ = "other"u8;
 
 // gcTestPointerClass returns the category of what p points to, one of:
 // "heap", "stack", "data", "bss", "other". This is useful for checking
@@ -1740,23 +1779,23 @@ internal static @string gcTestPointerClass(@unsafe.Pointer Δp) {
     var p2 = (uintptr)(uintptr)noescape(Δp);
     var gp = getg();
     if ((~gp).stack.lo <= p2 && p2 < (~gp).stack.hi) {
-        return "stack"u8;
+        return stackˢ;
     }
     {
         var (@base, _, _) = findObject(p2, 0, 0); if (@base != 0) {
-            return "heap"u8;
+            return heapˢ;
         }
     }
     foreach (var (_, datap) in activeModules()) {
         if ((~datap).data <= p2 && p2 < (~datap).edata || (~datap).noptrdata <= p2 && p2 < (~datap).enoptrdata) {
-            return "data"u8;
+            return dataˢ;
         }
         if ((~datap).bss <= p2 && p2 < (~datap).ebss || (~datap).noptrbss <= p2 && p2 <= (~datap).enoptrbss) {
             return "bss"u8;
         }
     }
     KeepAlive(Δp);
-    return "other"u8;
+    return otherˢ;
 }
 
 } // end runtime_package

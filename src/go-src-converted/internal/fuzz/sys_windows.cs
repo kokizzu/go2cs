@@ -112,12 +112,18 @@ internal static void setWorkerComm(ж<exec.Cmd> Ꮡcmd, workerComm comm) {
     cmd.SysProcAttr = Ꮡ(new Δsyscall.SysProcAttr(AdditionalInheritedHandles: new syscallꓸHandle[]{((syscallꓸHandle)comm.fuzzIn.Fd()), ((syscallꓸHandle)comm.fuzzOut.Fd()), ((syscallꓸHandle)memFD)}.slice()));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goTestFuzzWorkerHandlesˢ = "GO_TEST_FUZZ_WORKER_HANDLES"u8;
+private static readonly @string fuzzInˢ = "fuzz_in"u8;
+private static readonly @string fuzzOutˢ = "fuzz_out"u8;
+private static readonly @string fuzzMemˢ = "fuzz_mem"u8;
+
 // getWorkerComm returns communication channels in the worker process.
 internal static (workerComm comm, error err) getWorkerComm() {
     workerComm comm = default!;
     error err = default!;
 
-    @string v = os.Getenv("GO_TEST_FUZZ_WORKER_HANDLES"u8);
+    @string v = os.Getenv(goTestFuzzWorkerHandlesˢ);
     if (v == ""u8) {
         return (new workerComm(nil), fmt.Errorf("GO_TEST_FUZZ_WORKER_HANDLES not set"u8));
     }
@@ -129,9 +135,9 @@ internal static (workerComm comm, error err) getWorkerComm() {
             return (new workerComm(nil), fmt.Errorf("parsing GO_TEST_FUZZ_WORKER_HANDLES=%s: %v"u8, v, errΔ1));
         }
     }
-    var fuzzIn = os.NewFile(fuzzInFD, "fuzz_in"u8);
-    var fuzzOut = os.NewFile(fuzzOutFD, "fuzz_out"u8);
-    var memFile = os.NewFile(memFileFD, "fuzz_mem"u8);
+    var fuzzIn = os.NewFile(fuzzInFD, fuzzInˢ);
+    var fuzzOut = os.NewFile(fuzzOutFD, fuzzOutˢ);
+    var memFile = os.NewFile(memFileFD, fuzzMemˢ);
     (var fi, err) = memFile.Stat();
     if (err != default!) {
         return (new workerComm(nil), fmt.Errorf("worker checking temp file size: %w"u8, err));

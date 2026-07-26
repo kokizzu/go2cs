@@ -477,9 +477,12 @@ public static bool Contains(this ж<IPNet> Ꮡn, IP ip) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ipNetˢ = "ip+net"u8;
+
 // Network returns the address's network name, "ip+net".
 [GoRecv] public static @string Network(this ref IPNet n) {
-    return "ip+net"u8;
+    return ipNetˢ;
 }
 
 // String returns the CIDR notation of n like "192.0.2.0/24"

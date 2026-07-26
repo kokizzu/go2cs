@@ -124,6 +124,13 @@ public static @string String(this ж<ΔSignature> Ꮡt) {
     return TypeString(new ΔSignatureжΔType(Ꮡt), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string typeParameterˢ = "type parameter"u8;
+private static readonly @string functionBodyTempScopeˢ = "function body (temp. scope)"u8;
+private static readonly @string methodHasMultipleˢ = "method has multiple receivers"u8;
+private static readonly @string unsafePointerˢ = "unsafe.Pointer"u8;
+private static readonly @string pointerOrInterfaceTypeˢ = "pointer or interface type"u8;
+
 // ----------------------------------------------------------------------------
 // Implementation
 
@@ -134,7 +141,7 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
     ref var recvPar = ref ᏑrecvPar.DerefOrNil();
     ref var ftyp = ref Ꮡftyp.Value;
 
-    check.openScope(new ast.FuncTypeжNode(Ꮡftyp), "function"u8);
+    check.openScope(new ast.FuncTypeжNode(Ꮡftyp), functionˢ);
     check.scope.Value.isFunc = true;
     check.recordScope(new ast.FuncTypeжNode(Ꮡftyp), check.scope);
     sig.scope = check.scope;
@@ -196,7 +203,7 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
                 // compiler when a type parameter/argument cannot be inferred later. It
                 // may lead to follow-on errors (see issues go.dev/issue/51339, go.dev/issue/51343).
                 // TODO(gri) find a better solution
-                @string got = measure(len(tparams), "type parameter"u8);
+                @string got = measure(len(tparams), typeParameterˢ);
                 Ꮡcheck.errorf(new ast_FieldListжpositioner(ᏑrecvPar), BadRecv, "got %s, but receiver base type declares %d"u8, got, len(recvTParams));
             }
         }
@@ -207,7 +214,7 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
         // (A separate check is needed when type-checking interface method signatures because
         // they don't have a receiver specification.)
         if (ᏑrecvPar != nil) {
-            Ꮡcheck.error(new ast_FieldListжpositioner(ftyp.TypeParams), InvalidMethodTypeParams, "methods cannot have type parameters"u8);
+            Ꮡcheck.error(new ast_FieldListжpositioner(ftyp.TypeParams), InvalidMethodTypeParams, methodsCannotHaveTypeˢ);
         }
     }
     // Use a temporary scope for all parameter declarations and then
@@ -217,7 +224,7 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
     // TODO(adonovan): now that each declaration has the correct
     // scopePos, there should be no need for scope squashing.
     // Audit to ensure all lookups honor scopePos and simplify.
-    var scope = NewScope(check.scope, nopos, nopos, "function body (temp. scope)"u8);
+    var scope = NewScope(check.scope, nopos, nopos, functionBodyTempScopeˢ);
     tokenꓸPos scopePos = ftyp.End();
     // all parameters' scopes start after the signature
     var (recvList, _) = Ꮡcheck.collectParams(scope, ᏑrecvPar, false, scopePos);
@@ -244,7 +251,7 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
         else if (!matchᴛ2) { /* default: */
             Ꮡcheck.error(new Varжpositioner(recvList[len(recvList) - 1]), // ignore recv below
  // more than one receiver
- InvalidRecv, "method has multiple receivers"u8);
+ InvalidRecv, methodHasMultipleˢ);
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && exprᴛ1 is 1) { matchᴛ1 = true;
@@ -283,14 +290,14 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
                 switch (switchᴛ20.type()) {
                 case ж<Basic> u: {
                     if ((~u).kind == UnsafePointer) {
-                        cause = "unsafe.Pointer"u8;
+                        cause = unsafePointerˢ;
                     }
                     break;
                 }
                 case ж<Pointer> _:
                 case ж<Interface> _: {
                     var u = switchᴛ20;
-                    cause = "pointer or interface type"u8;
+                    cause = pointerOrInterfaceTypeˢ;
                     break;
                 }
                 case ж<TypeParam> u: {
@@ -317,6 +324,10 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
     sig.results = NewTuple(results.ꓸꓸꓸ);
     sig.variadic = variadic;
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string anonymousParameterˢ = "anonymous parameter"u8;
+private static readonly @string listContainsBothNamedAndˢ = "list contains both named and anonymous parameters"u8;
 
 // collectParams declares the parameters of list in scope and returns the corresponding
 // variable list.
@@ -351,7 +362,7 @@ internal static (slice<ж<Var>> @params, bool variadic) collectParams(this ж<Ch
             // named parameter
             foreach (var (_, name) in (~field).Names) {
                 if ((~name).Name == ""u8) {
-                    Ꮡcheck.error(new ast_Identжpositioner(name), InvalidSyntaxTree, "anonymous parameter"u8);
+                    Ꮡcheck.error(new ast_Identжpositioner(name), InvalidSyntaxTree, anonymousParameterˢ);
                 }
                 // ok to continue
                 var par = NewParam(name.Pos(), check.pkg, (~name).Name, typ);
@@ -368,7 +379,7 @@ internal static (slice<ж<Var>> @params, bool variadic) collectParams(this ж<Ch
         }
     }
     if (named && anonymous) {
-        Ꮡcheck.error(new ast_FieldListжpositioner(Ꮡlist), InvalidSyntaxTree, "list contains both named and anonymous parameters"u8);
+        Ꮡcheck.error(new ast_FieldListжpositioner(Ꮡlist), InvalidSyntaxTree, listContainsBothNamedAndˢ);
     }
     // ok to continue
     // For a variadic function, change the last parameter's type from T to []T.

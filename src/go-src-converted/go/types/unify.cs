@@ -90,19 +90,25 @@ internal static ж<unifier> newUnifier(slice<ж<TypeParam>> tparams, slice<ΔTyp
 internal static readonly unifyMode Δassign = /* 1 << iota */ 1;
 internal static readonly unifyMode exact = 2;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inexactˢ = "inexact"u8;
+private static readonly @string assignˢ = "assign"u8;
+private static readonly @string exactˢ = "exact"u8;
+private static readonly @string assignExactˢ = "assign, exact"u8;
+
 internal static @string String(this unifyMode m) {
     var exprᴛ1 = m;
     if (exprᴛ1 == (unifyMode)(0)) {
-        return "inexact"u8;
+        return inexactˢ;
     }
     if (exprᴛ1 == Δassign) {
-        return "assign"u8;
+        return assignˢ;
     }
     if (exprᴛ1 == exact) {
-        return "exact"u8;
+        return exactˢ;
     }
     if (exprᴛ1 == (unifyMode)((unifyMode)(Δassign | exact))) {
-        return "assign, exact"u8;
+        return assignExactˢ;
     }
 
     return fmt.Sprintf("mode %d"u8, m);

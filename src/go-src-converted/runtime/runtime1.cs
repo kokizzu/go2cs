@@ -110,42 +110,85 @@ internal static ж<uint64> Ꮡtest_z64 = new(default(uint64));
 internal static ref uint64 test_z64 => ref Ꮡtest_z64.Value;
 internal static uint64 test_x64;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cas64Failedˢ = "cas64 failed"u8;
+private static readonly @string load64Failedˢ = "load64 failed"u8;
+private static readonly @string store64Failedˢ = "store64 failed"u8;
+private static readonly @string xadd64Failedˢ = "xadd64 failed"u8;
+private static readonly @string xchg64Failedˢ = "xchg64 failed"u8;
+
 internal static void testAtomic64() {
     test_z64 = 42;
     test_x64 = 0;
     if (atomic.Cas64(Ꮡtest_z64, test_x64, 1)) {
-        @throw("cas64 failed"u8);
+        @throw(cas64Failedˢ);
     }
     if (test_x64 != 0) {
-        @throw("cas64 failed"u8);
+        @throw(cas64Failedˢ);
     }
     test_x64 = 42;
     if (!atomic.Cas64(Ꮡtest_z64, test_x64, 1)) {
-        @throw("cas64 failed"u8);
+        @throw(cas64Failedˢ);
     }
     if (test_x64 != 42 || test_z64 != 1) {
-        @throw("cas64 failed"u8);
+        @throw(cas64Failedˢ);
     }
     if (atomic.Load64(Ꮡtest_z64) != 1) {
-        @throw("load64 failed"u8);
+        @throw(load64Failedˢ);
     }
     atomic.Store64(Ꮡtest_z64, (uint64)((1099511627776L) + 1));
     if (atomic.Load64(Ꮡtest_z64) != (uint64)((1099511627776L) + 1)) {
-        @throw("store64 failed"u8);
+        @throw(store64Failedˢ);
     }
     if (atomic.Xadd64(Ꮡtest_z64, 1099511627777L) != (uint64)((2199023255552L) + 2)) {
-        @throw("xadd64 failed"u8);
+        @throw(xadd64Failedˢ);
     }
     if (atomic.Load64(Ꮡtest_z64) != (uint64)((2199023255552L) + 2)) {
-        @throw("xadd64 failed"u8);
+        @throw(xadd64Failedˢ);
     }
     if (atomic.Xchg64(Ꮡtest_z64, (uint64)((3298534883328L) + 3)) != (uint64)((2199023255552L) + 2)) {
-        @throw("xchg64 failed"u8);
+        @throw(xchg64Failedˢ);
     }
     if (atomic.Load64(Ꮡtest_z64) != (uint64)((3298534883328L) + 3)) {
-        @throw("xchg64 failed"u8);
+        @throw(xchg64Failedˢ);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badAˢ = "bad a"u8;
+private static readonly @string badBˢ = "bad b"u8;
+private static readonly @string badCˢ = "bad c"u8;
+private static readonly @string badDˢ = "bad d"u8;
+private static readonly @string badEˢ = "bad e"u8;
+private static readonly @string badFˢ = "bad f"u8;
+private static readonly @string badGˢ = "bad g"u8;
+private static readonly @string badHˢ = "bad h"u8;
+private static readonly @string badIˢ = "bad i"u8;
+private static readonly @string badJˢ = "bad j"u8;
+private static readonly @string badKˢ = "bad k"u8;
+private static readonly @string badLˢ = "bad l"u8;
+private static readonly @string badUnsafeSizeofX1ˢ = "bad unsafe.Sizeof x1"u8;
+private static readonly @string badOffsetofY1Yˢ = "bad offsetof y1.y"u8;
+private static readonly @string badUnsafeSizeofY1ˢ = "bad unsafe.Sizeof y1"u8;
+private static readonly @string badTimedivˢ = "bad timediv"u8;
+private static readonly @string cas1ˢ = "cas1"u8;
+private static readonly @string cas2ˢ = "cas2"u8;
+private static readonly @string cas3ˢ = "cas3"u8;
+private static readonly @string cas4ˢ = "cas4"u8;
+private static readonly @string cas5ˢ = "cas5"u8;
+private static readonly @string cas6ˢ = "cas6"u8;
+private static readonly @string atomicor8ˢ = "atomicor8"u8;
+private static readonly @string atomicand8ˢ = "atomicand8"u8;
+private static readonly @string float64nanˢ = "float64nan"u8;
+private static readonly @string float64nan1ˢ = "float64nan1"u8;
+private static readonly @string float64nan2ˢ = "float64nan2"u8;
+private static readonly @string float64nan3ˢ = "float64nan3"u8;
+private static readonly @string float32nanˢ = "float32nan"u8;
+private static readonly @string float32nan1ˢ = "float32nan1"u8;
+private static readonly @string float32nan2ˢ = "float32nan2"u8;
+private static readonly @string float32nan3ˢ = "float32nan3"u8;
+private static readonly @string fixedStackIsNotPowerOf2ˢ = "FixedStack is not power-of-2"u8;
+private static readonly @string assemblyChecksFailedˢ = "assembly checks failed"u8;
 
 [GoLocalName("x1t")] [GoType("dyn")] partial struct check_x1t {
     internal uint8 x;
@@ -175,119 +218,119 @@ internal static void check() {
     check_x1t x1 = default!;
     check_y1t y1 = default!;
     if (@unsafe.Sizeof(a) != 1) {
-        @throw("bad a"u8);
+        @throw(badAˢ);
     }
     if (@unsafe.Sizeof(b) != 1) {
-        @throw("bad b"u8);
+        @throw(badBˢ);
     }
     if (@unsafe.Sizeof(c) != 2) {
-        @throw("bad c"u8);
+        @throw(badCˢ);
     }
     if (@unsafe.Sizeof(d) != 2) {
-        @throw("bad d"u8);
+        @throw(badDˢ);
     }
     if (@unsafe.Sizeof(e) != 4) {
-        @throw("bad e"u8);
+        @throw(badEˢ);
     }
     if (@unsafe.Sizeof(f) != 4) {
-        @throw("bad f"u8);
+        @throw(badFˢ);
     }
     if (@unsafe.Sizeof(g) != 8) {
-        @throw("bad g"u8);
+        @throw(badGˢ);
     }
     if (@unsafe.Sizeof(h) != 8) {
-        @throw("bad h"u8);
+        @throw(badHˢ);
     }
     if (@unsafe.Sizeof(i) != 4) {
-        @throw("bad i"u8);
+        @throw(badIˢ);
     }
     if (@unsafe.Sizeof(j) != 8) {
-        @throw("bad j"u8);
+        @throw(badJˢ);
     }
     if (@unsafe.Sizeof(k) != goarch.PtrSize) {
-        @throw("bad k"u8);
+        @throw(badKˢ);
     }
     if (@unsafe.Sizeof(l) != goarch.PtrSize) {
-        @throw("bad l"u8);
+        @throw(badLˢ);
     }
     if (@unsafe.Sizeof(x1) != 1) {
-        @throw("bad unsafe.Sizeof x1"u8);
+        @throw(badUnsafeSizeofX1ˢ);
     }
     if (@unsafe.Offsetof(y1.GetType(), "y") != 1) {
-        @throw("bad offsetof y1.y"u8);
+        @throw(badOffsetofY1Yˢ);
     }
     if (@unsafe.Sizeof(y1) != 2) {
-        @throw("bad unsafe.Sizeof y1"u8);
+        @throw(badUnsafeSizeofY1ˢ);
     }
     if (timediv(12345000054321L, 1000000000, Ꮡe) != 12345 || e != 54321) {
-        @throw("bad timediv"u8);
+        @throw(badTimedivˢ);
     }
     ref var z = ref heap(new uint32(), out var Ꮡz);
     z = 1;
     if (!atomic.Cas(Ꮡz, 1, 2)) {
-        @throw("cas1"u8);
+        @throw(cas1ˢ);
     }
     if (z != 2) {
-        @throw("cas2"u8);
+        @throw(cas2ˢ);
     }
     z = 4;
     if (atomic.Cas(Ꮡz, 5, 6)) {
-        @throw("cas3"u8);
+        @throw(cas3ˢ);
     }
     if (z != 4) {
-        @throw("cas4"u8);
+        @throw(cas4ˢ);
     }
     z = 0xffffffffU;
     if (!atomic.Cas(Ꮡz, 0xffffffffU, 0xfffffffeU)) {
-        @throw("cas5"u8);
+        @throw(cas5ˢ);
     }
     if (z != 0xfffffffeU) {
-        @throw("cas6"u8);
+        @throw(cas6ˢ);
     }
     m = new byte[]{1, 1, 1, 1}.array();
     atomic.Or8(Ꮡm.at<byte>(1), 0xf0);
     if (m[0] != 1 || m[1] != 0xf1 || m[2] != 1 || m[3] != 1) {
-        @throw("atomicor8"u8);
+        @throw(atomicor8ˢ);
     }
     m = new byte[]{0xff, 0xff, 0xff, 0xff}.array();
     atomic.And8(Ꮡm.at<byte>(1), 0x1);
     if (m[0] != 0xff || m[1] != 0x1 || m[2] != 0xff || m[3] != 0xff) {
-        @throw("atomicand8"u8);
+        @throw(atomicand8ˢ);
     }
     (Ꮡj.Reinterpret<float64, uint64>()).Value = ~(uint64)0;
     if (j == j) {
-        @throw("float64nan"u8);
+        @throw(float64nanˢ);
     }
     if (!(j != j)) {
-        @throw("float64nan1"u8);
+        @throw(float64nan1ˢ);
     }
     (Ꮡj1.Reinterpret<float64, uint64>()).Value = ~(uint64)1;
     if (j == j1) {
-        @throw("float64nan2"u8);
+        @throw(float64nan2ˢ);
     }
     if (!(j != j1)) {
-        @throw("float64nan3"u8);
+        @throw(float64nan3ˢ);
     }
     (Ꮡi.Reinterpret<float32, uint32>()).Value = ~(uint32)0;
     if (i == i) {
-        @throw("float32nan"u8);
+        @throw(float32nanˢ);
     }
     if (i == i) {
-        @throw("float32nan1"u8);
+        @throw(float32nan1ˢ);
     }
     (Ꮡi1.Reinterpret<float32, uint32>()).Value = ~(uint32)1;
     if (i == i1) {
-        @throw("float32nan2"u8);
+        @throw(float32nan2ˢ);
     }
     if (i == i1) {
-        @throw("float32nan3"u8);
+        @throw(float32nan3ˢ);
     }
     testAtomic64();
     if (fixedStack != round2(fixedStack)) {
-        @throw("FixedStack is not power-of-2"u8);
+        @throw(fixedStackIsNotPowerOf2ˢ);
     }
     if (!checkASM()) {
-        @throw("assembly checks failed"u8);
+        @throw(assemblyChecksFailedˢ);
     }
 }
 
@@ -389,6 +432,10 @@ internal static slice<ж<dbgVar>> dbgvars = new ж<dbgVar>[]{
     Ꮡ(new dbgVar(name: "tracefpunwindoff"u8, value: Ꮡdebug.of(debugᴛ1.Ꮡtracefpunwindoff)))
 }.slice();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string godebugˢ = "GODEBUG"u8;
+private static readonly @string gotracebackˢ = "GOTRACEBACK"u8;
+
 internal static void parsedebugvars() {
     // defaults
     debug.cgocheck = 1;
@@ -407,7 +454,7 @@ internal static void parsedebugvars() {
         debug.madvdontneed = 1;
     }
     debug.traceadvanceperiod = defaultTraceAdvancePeriod;
-    @string godebug = gogetenv("GODEBUG"u8);
+    @string godebug = gogetenv(godebugˢ);
     var Δp = @new<@string>();
     Δp.Value = godebug;
     ᏑgodebugEnv.Store(Δp);
@@ -429,7 +476,7 @@ internal static void parsedebugvars() {
     parsegodebug(godebug, default!);
     debug.malloc = ((int32)(debug.inittrace | debug.sbrk)) != 0;
     debug.profstackdepth = min(debug.profstackdepth, (int32)(maxProfStackDepth));
-    setTraceback(gogetenv("GOTRACEBACK"u8));
+    setTraceback(gogetenv(gotracebackˢ));
     traceback_env = traceback_cache;
 }
 
@@ -448,6 +495,9 @@ internal static void reparsedebugvars(@string env) {
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cgocheck1ModeIsNoLongerˢ = "cgocheck > 1 mode is no longer supported at runtime. Use GOEXPERIMENT=cgocheck2 at build time instead."u8;
 
 // parsegodebug parses the godebug string, updating variables listed in dbgvars.
 // If seen == nil, this is startup time and we process the string left to right
@@ -521,7 +571,7 @@ internal static void parsegodebug(@string godebug, map<@string, bool> seen) {
         }
     }
     if (debug.cgocheck > 1) {
-        @throw("cgocheck > 1 mode is no longer supported at runtime. Use GOEXPERIMENT=cgocheck2 at build time instead."u8);
+        @throw(cgocheck1ModeIsNoLongerˢ);
     }
 }
 

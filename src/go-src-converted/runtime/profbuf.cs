@@ -206,6 +206,9 @@ internal static void incrementOverflow(this ж<profBuf> Ꮡb, int64 now) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string newProfBufBufferTooLargeˢ = "newProfBuf: buffer too large"u8;
+
 // newProfBuf returns a new profiling buffer with room for
 // a header of hdrsize words and a buffer of at least bufwords words.
 internal static ж<profBuf> newProfBuf(nint hdrsize, nint bufwords, nint tags) {
@@ -219,7 +222,7 @@ internal static ж<profBuf> newProfBuf(nint hdrsize, nint bufwords, nint tags) {
     // within the buffers. We store 30 bits of count; limiting to 28
     // gives us some room for intermediate calculations.
     if (bufwords >= (1 << (int)(28)) || tags >= (1 << (int)(28))) {
-        @throw("newProfBuf: buffer too large"u8);
+        @throw(newProfBufBufferTooLargeˢ);
     }
     nint i = default!;
     for (i = 1; i < bufwords; i <<= (int)(1)) {
@@ -297,6 +300,9 @@ internal static bool canWriteTwoRecords(this ж<profBuf> Ꮡb, nint nstk1, nint 
     return nd >= want;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string misuseOfProfBufWriteˢ = "misuse of profBuf.write"u8;
+
 // write writes an entry to the profiling buffer b.
 // The entry begins with a fixed hdr, which must have
 // length b.hdrsize, followed by a variable-sized stack
@@ -310,7 +316,7 @@ internal static void write(this ж<profBuf> Ꮡb, ж<@unsafe.Pointer> ᏑtagPtr,
         return;
     }
     if (len(hdr) > (nint)b.hdrsize) {
-        @throw("misuse of profBuf.write"u8);
+        @throw(misuseOfProfBufWriteˢ);
     }
     {
         var hasOverflow = Ꮡb.hasOverflow(); if (hasOverflow && Ꮡb.canWriteTwoRecords(1, len(stk))){
@@ -394,11 +400,14 @@ internal static void write(this ж<profBuf> Ꮡb, ж<@unsafe.Pointer> ᏑtagPtr,
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeProfBufAlreadyˢ = "runtime: profBuf already closed"u8;
+
 // close signals that there will be no more writes on the buffer.
 // Once all the data has been read from the buffer, reads will return eof=true.
 internal static void close(this ж<profBuf> Ꮡb) {
     if (Ꮡb.of(profBuf.Ꮡeof).Load() > 0) {
-        @throw("runtime: profBuf already closed"u8);
+        @throw(runtimeProfBufAlreadyˢ);
     }
     Ꮡb.of(profBuf.Ꮡeof).Store(1);
     Ꮡb.wakeupExtra();
@@ -427,6 +436,10 @@ internal static readonly profBufReadMode profBufBlocking = /* iota */ 0;
 internal static readonly profBufReadMode profBufNonBlocking = 1;
 
 internal static array<@unsafe.Pointer> overflowTag = new(1);           // always nil
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeMalformedProfBufˢ = "runtime: malformed profBuf buffer - tag and data out of sync"u8;
+private static readonly @string runtimeMalformedProfBufˢ2 = "runtime: malformed profBuf buffer - invalid size"u8;
 
 internal static (slice<uint64> data, slice<@unsafe.Pointer> tags, bool eof) read(this ж<profBuf> Ꮡb, profBufReadMode mode) {
     slice<uint64> data = default!;
@@ -521,7 +534,7 @@ Read:
     }
     nint ntag = countSub(bw.tagCount(), br.tagCount());
     if (ntag == 0) {
-        @throw("runtime: malformed profBuf buffer - tag and data out of sync"u8);
+        @throw(runtimeMalformedProfBufˢ);
     }
     tags = b.tags[(int)(br.tagCount() % (uint32)len(b.tags))..];
     if (len(tags) > ntag) {
@@ -535,7 +548,7 @@ Read:
     nint ti = 0;
     while (di < len(data) && data[di] != 0 && ti < len(tags)) {
         if ((uintptr)di + (uintptr)data[di] > (uintptr)len(data)) {
-            @throw("runtime: malformed profBuf buffer - invalid size"u8);
+            @throw(runtimeMalformedProfBufˢ2);
         }
         di += (nint)data[di];
         ti++;

@@ -98,6 +98,9 @@ partial class tls_package {
     internal slice<byte> ticket;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsInternalErrorEmptyˢ = "tls: internal error: empty verified chain"u8;
+
 // Bytes encodes the session, including any private fields, so that it can be
 // parsed by [ParseSessionState]. The encoding contains secret values critical
 // to the security of future and possibly past sessions.
@@ -150,7 +153,7 @@ public static (slice<byte>, error) Bytes(this ж<SessionState> Ꮡs) {
             bΔ4.AddUint24LengthPrefixed((ж<cryptobyte.Builder> bΔ5) => {
                 // We elide the first certificate because it's always the leaf.
                 if (len(chainʗ1) == 0) {
-                    bΔ5.SetError(errors.New("tls: internal error: empty verified chain"u8));
+                    bΔ5.SetError(errors.New(tlsInternalErrorEmptyˢ));
                     return;
                 }
                 foreach (var (_, cert) in chainʗ1[1..]) {
@@ -184,6 +187,10 @@ internal static slice<slice<byte>> certificatesToBytesSlice(slice<ж<Δx509.Cert
     return s;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsInvalidSessionˢ = "tls: invalid session encoding"u8;
+private static readonly @string tlsNoServerCertificatesˢ = "tls: no server certificates in client session"u8;
+
 // ParseSessionState parses a [SessionState] encoded by [SessionState.Bytes].
 public static (ж<SessionState>, error) ParseSessionState(slice<byte> data) {
     var ss = Ꮡ(new SessionState(nil));
@@ -195,12 +202,12 @@ public static (ж<SessionState>, error) ParseSessionState(slice<byte> data) {
     ref var cert = ref heap(new Certificate(), out var Ꮡcert);
     ref var extra = ref heap<cryptobyte.String>(out var Ꮡextra);
     if (!s.ReadUint16(ss.of(SessionState.Ꮡversion)) || !s.ReadUint8(Ꮡtyp) || (typ != 1 && typ != 2) || !s.ReadUint16(ss.of(SessionState.ᏑcipherSuite)) || !readUint64(Ꮡs, ss.of(SessionState.ᏑcreatedAt)) || !readUint8LengthPrefixed(Ꮡs, ss.of(SessionState.Ꮡsecret)) || !s.ReadUint24LengthPrefixed(Ꮡextra) || !s.ReadUint8(ᏑextMasterSecret) || !s.ReadUint8(ᏑearlyData) || len((~ss).secret) == 0 || !unmarshalCertificate(Ꮡs, Ꮡcert)) {
-        return (default!, errors.New("tls: invalid session encoding"u8));
+        return (default!, errors.New(tlsInvalidSessionˢ));
     }
     while (!extra.Empty()) {
         ref var e = ref heap<slice<byte>>(out var Ꮡe);
         if (!readUint24LengthPrefixed(Ꮡextra, Ꮡe)) {
-            return (default!, errors.New("tls: invalid session encoding"u8));
+            return (default!, errors.New(tlsInvalidSessionˢ));
         }
         ss.Value.Extra = append((~ss).Extra, e);
     }
@@ -214,7 +221,7 @@ public static (ж<SessionState>, error) ParseSessionState(slice<byte> data) {
         break;
     }
     default: {
-        return (default!, errors.New("tls: invalid session encoding"u8));
+        return (default!, errors.New(tlsInvalidSessionˢ));
     }}
 
     switch (earlyData) {
@@ -227,7 +234,7 @@ public static (ж<SessionState>, error) ParseSessionState(slice<byte> data) {
         break;
     }
     default: {
-        return (default!, errors.New("tls: invalid session encoding"u8));
+        return (default!, errors.New(tlsInvalidSessionˢ));
     }}
 
     foreach (var (_, certΔ1) in cert.ΔCertificate) {
@@ -242,22 +249,22 @@ public static (ж<SessionState>, error) ParseSessionState(slice<byte> data) {
     ss.Value.scts = cert.SignedCertificateTimestamps;
     ref var chainList = ref heap<cryptobyte.String>(out var ᏑchainList);
     if (!s.ReadUint24LengthPrefixed(ᏑchainList)) {
-        return (default!, errors.New("tls: invalid session encoding"u8));
+        return (default!, errors.New(tlsInvalidSessionˢ));
     }
     while (!chainList.Empty()) {
         ref var certList = ref heap<cryptobyte.String>(out var ᏑcertList);
         if (!chainList.ReadUint24LengthPrefixed(ᏑcertList)) {
-            return (default!, errors.New("tls: invalid session encoding"u8));
+            return (default!, errors.New(tlsInvalidSessionˢ));
         }
         slice<ж<Δx509.Certificate>> chain = default!;
         if (len((~ss).peerCertificates) == 0) {
-            return (default!, errors.New("tls: invalid session encoding"u8));
+            return (default!, errors.New(tlsInvalidSessionˢ));
         }
         chain = append(chain, (~ss).peerCertificates[0]);
         while (!certList.Empty()) {
             ref var certΔ2 = ref heap<slice<byte>>(out var ᏑcertΔ2);
             if (!readUint24LengthPrefixed(ᏑcertList, ᏑcertΔ2)) {
-                return (default!, errors.New("tls: invalid session encoding"u8));
+                return (default!, errors.New(tlsInvalidSessionˢ));
             }
             var (c, err) = globalCertCache.newCert(certΔ2);
             if (err != default!) {
@@ -271,30 +278,30 @@ public static (ж<SessionState>, error) ParseSessionState(slice<byte> data) {
     if ((~ss).EarlyData) {
         ref var alpn = ref heap<slice<byte>>(out var Ꮡalpn);
         if (!readUint8LengthPrefixed(Ꮡs, Ꮡalpn)) {
-            return (default!, errors.New("tls: invalid session encoding"u8));
+            return (default!, errors.New(tlsInvalidSessionˢ));
         }
         ss.Value.alpnProtocol = ((@string)alpn);
     }
     {
         var isClient = typ == 2; if (!isClient) {
             if (!s.Empty()) {
-                return (default!, errors.New("tls: invalid session encoding"u8));
+                return (default!, errors.New(tlsInvalidSessionˢ));
             }
             return (ss, default!);
         }
     }
     ss.Value.isClient = true;
     if (len((~ss).peerCertificates) == 0) {
-        return (default!, errors.New("tls: no server certificates in client session"u8));
+        return (default!, errors.New(tlsNoServerCertificatesˢ));
     }
     if ((~ss).version < VersionTLS13) {
         if (!s.Empty()) {
-            return (default!, errors.New("tls: invalid session encoding"u8));
+            return (default!, errors.New(tlsInvalidSessionˢ));
         }
         return (ss, default!);
     }
     if (!s.ReadUint64(ss.of(SessionState.ᏑuseBy)) || !s.ReadUint32(ss.of(SessionState.ᏑageAdd)) || !s.Empty()) {
-        return (default!, errors.New("tls: invalid session encoding"u8));
+        return (default!, errors.New(tlsInvalidSessionˢ));
     }
     return (ss, default!);
 }
@@ -330,9 +337,12 @@ public static (slice<byte>, error) EncryptTicket(this ж<Config> Ꮡc, ΔConnect
     return c.encryptTicket(stateBytes, ticketKeys);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsInternalErrorSessionˢ = "tls: internal error: session ticket keys unavailable"u8;
+
 [GoRecv] internal static (slice<byte>, error) encryptTicket(this ref Config c, slice<byte> state, slice<ticketKey> ticketKeys) {
     if (len(ticketKeys) == 0) {
-        return (default!, errors.New("tls: internal error: session ticket keys unavailable"u8));
+        return (default!, errors.New(tlsInternalErrorSessionˢ));
     }
     var encrypted = new slice<byte>((nint)aes.ΔBlockSize + len(state) + (nint)sha256.ΔSize);
     var iv = encrypted[..(int)(aes.ΔBlockSize)];

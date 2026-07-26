@@ -42,6 +42,9 @@ public static (ж<ecdsa.PrivateKey>, error) ParseECPrivateKey(slice<byte> der) {
     return parseECPrivateKey(nil, der);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509UnknownEllipticCurveˢ = "x509: unknown elliptic curve"u8;
+
 // MarshalECPrivateKey converts an EC private key to SEC 1, ASN.1 DER form.
 //
 // This kind of key is commonly encoded in PEM blocks of type "EC PRIVATE KEY".
@@ -52,10 +55,13 @@ public static (slice<byte>, error) MarshalECPrivateKey(ж<ecdsa.PrivateKey> Ꮡk
 
     var (oid, ok) = oidFromNamedCurve(key.Curve);
     if (!ok) {
-        return (default!, errors.New("x509: unknown elliptic curve"u8));
+        return (default!, errors.New(x509UnknownEllipticCurveˢ));
     }
     return marshalECPrivateKeyWithOID(Ꮡkey, oid);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidEllipticKeyPublicˢ = "invalid elliptic key public key"u8;
 
 // marshalECPrivateKeyWithOID marshals an EC private key into ASN.1, DER format and
 // sets the curve ID to the given OID, or omits it if OID is nil.
@@ -63,7 +69,7 @@ internal static (slice<byte>, error) marshalECPrivateKeyWithOID(ж<ecdsa.Private
     ref var key = ref Ꮡkey.Value;
 
     if (!key.Curve.IsOnCurve(key.X, key.Y)) {
-        return (default!, errors.New("invalid elliptic key public key"u8));
+        return (default!, errors.New(invalidEllipticKeyPublicˢ));
     }
     var privateKey = new slice<byte>(((~key.Curve.Params()).N.BitLen() + 7) / 8);
     return asn1.Marshal(new ecPrivateKey(
@@ -86,6 +92,10 @@ internal static (slice<byte>, error) marshalECDHPrivateKey(ж<ecdh.PrivateKey> �
     ));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509InvalidEllipticCurveˢ = "x509: invalid elliptic curve private key value"u8;
+private static readonly @string x509InvalidPrivateKeyˢ = "x509: invalid private key length"u8;
+
 // parseECPrivateKey parses an ASN.1 Elliptic Curve Private Key Structure.
 // The OID for the named curve may be provided from another source (such as
 // the PKCS8 container) - if it is provided then use this instead of the OID
@@ -100,12 +110,12 @@ internal static (ж<ecdsa.PrivateKey> key, error err) parseECPrivateKey(ж<asn1.
         var (_, errΔ1) = asn1.Unmarshal(der, ᏑprivKey); if (errΔ1 != default!) {
             {
                 var (_, errΔ2) = asn1.Unmarshal(der, Ꮡ(new pkcs8(nil))); if (errΔ2 == default!) {
-                    return (default!, errors.New("x509: failed to parse private key (use ParsePKCS8PrivateKey instead for this key format)"u8));
+                    return (default!, errors.New(x509FailedToParsePrivateˢ2));
                 }
             }
             {
                 var (_, errΔ3) = asn1.Unmarshal(der, Ꮡ(new pkcs1PrivateKey(nil))); if (errΔ3 == default!) {
-                    return (default!, errors.New("x509: failed to parse private key (use ParsePKCS1PrivateKey instead for this key format)"u8));
+                    return (default!, errors.New(x509FailedToParsePrivateˢ3));
                 }
             }
             return (default!, errors.New("x509: failed to parse EC private key: "u8 + errΔ1.Error()));
@@ -121,12 +131,12 @@ internal static (ж<ecdsa.PrivateKey> key, error err) parseECPrivateKey(ж<asn1.
         curve = namedCurveFromOID(privKey.NamedCurveOID);
     }
     if (curve == default!) {
-        return (default!, errors.New("x509: unknown elliptic curve"u8));
+        return (default!, errors.New(x509UnknownEllipticCurveˢ));
     }
     var k = @new<bigꓸInt>().SetBytes(privKey.PrivateKey);
     var curveOrder = curve.Params().Value.N;
     if (k.Cmp(curveOrder) >= 0) {
-        return (default!, errors.New("x509: invalid elliptic curve private key value"u8));
+        return (default!, errors.New(x509InvalidEllipticCurveˢ));
     }
     var priv = @new<ecdsa.PrivateKey>();
     priv.Value.Curve = curve;
@@ -136,7 +146,7 @@ internal static (ж<ecdsa.PrivateKey> key, error err) parseECPrivateKey(ж<asn1.
     // according to [SEC1], but this code will ignore it.
     while (builtin.len(privKey.PrivateKey) > builtin.len(privateKey)) {
         if (privKey.PrivateKey[0] != 0) {
-            return (default!, errors.New("x509: invalid private key length"u8));
+            return (default!, errors.New(x509InvalidPrivateKeyˢ));
         }
         privKey.PrivateKey = privKey.PrivateKey[1..];
     }

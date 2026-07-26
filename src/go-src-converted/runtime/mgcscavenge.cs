@@ -281,6 +281,9 @@ internal static ref scavengerState scavenger => ref Ꮡscavenger.Value;
     internal Func<int32> gomaxprocs;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string scavengerStateIsAlreadyˢ = "scavenger state is already wired"u8;
+
 // init initializes a scavenger state and wires to the current G.
 //
 // Must be called from a regular goroutine that can allocate.
@@ -288,7 +291,7 @@ internal static void init(this ж<scavengerState> Ꮡs) {
     ref var s = ref Ꮡs.Value;
 
     if (s.g != nil) {
-        @throw("scavenger state is already wired"u8);
+        @throw(scavengerStateIsAlreadyˢ);
     }
     lockInit(Ꮡs.of(scavengerState.Ꮡlock), lockRankScavenge);
     s.g = getg();
@@ -344,13 +347,16 @@ internal static void init(this ж<scavengerState> Ꮡs) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string triedToParkScavengerFromˢ = "tried to park scavenger from another goroutine"u8;
+
 // park parks the scavenger goroutine.
 internal static void park(this ж<scavengerState> Ꮡs) {
     ref var s = ref Ꮡs.Value;
 
     @lock(Ꮡs.of(scavengerState.Ꮡlock));
     if (getg() != s.g) {
-        @throw("tried to park scavenger from another goroutine"u8);
+        @throw(triedToParkScavengerFromˢ);
     }
     s.parked = true;
     goparkunlock(Ꮡs.of(scavengerState.Ꮡlock), waitReasonGCScavengeWait, traceBlockSystemGoroutine, 2);
@@ -386,6 +392,9 @@ internal static void wake(this ж<scavengerState> Ꮡs) {
     unlock(Ꮡs.of(scavengerState.Ꮡlock));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string triedToSleepScavengerˢ = "tried to sleep scavenger from another goroutine"u8;
+
 // sleep puts the scavenger to sleep based on the amount of time that it worked
 // in nanoseconds.
 //
@@ -398,7 +407,7 @@ internal static void sleep(this ж<scavengerState> Ꮡs, float64 worked) {
 
     @lock(Ꮡs.of(scavengerState.Ꮡlock));
     if (getg() != s.g) {
-        @throw("tried to sleep scavenger from another goroutine"u8);
+        @throw(triedToSleepScavengerˢ);
     }
     if (worked < minScavWorkTime) {
         // This means there wasn't enough work to actually fill up minScavWorkTime.
@@ -491,6 +500,10 @@ internal static void controllerFailed(this ж<scavengerState> Ꮡs) {
     unlock(Ꮡs.of(scavengerState.Ꮡlock));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string triedToRunScavengerFromˢ = "tried to run scavenger from another goroutine"u8;
+private static readonly @string releasedLessThanOneˢ = "released less than one physical page of memory"u8;
+
 // run is the body of the main scavenging loop.
 //
 // Returns the number of bytes released and the estimated time spent
@@ -504,7 +517,7 @@ internal static (uintptr released, float64 worked) run(this ж<scavengerState> �
     ref var s = ref Ꮡs.Value;
     @lock(Ꮡs.of(scavengerState.Ꮡlock));
     if (getg() != s.g) {
-        @throw("tried to run scavenger from another goroutine"u8);
+        @throw(triedToRunScavengerFromˢ);
     }
     unlock(Ꮡs.of(scavengerState.Ꮡlock));
     while (worked < minScavWorkTime) {
@@ -559,7 +572,7 @@ internal static (uintptr released, float64 worked) run(this ж<scavengerState> �
         // of a physical page, but the likely effect of that is that it released
         // the whole physical page, some of which may have still been in-use.
         // This could lead to memory corruption. Throw.
-        @throw("released less than one physical page of memory"u8);
+        @throw(releasedLessThanOneˢ);
     }
     return (released, worked);
 }
@@ -722,6 +735,9 @@ internal static void printScavTrace(uintptr releasedBg, uintptr releasedEager, b
     return 0;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badMValueˢ = "bad m value"u8;
+
 // fillAligned returns x but with all zeroes in m-aligned
 // groups of m bits set to 1 if any bit in the group is non-zero.
 //
@@ -781,7 +797,7 @@ internal static uint64 fillAligned(uint64 x, nuint m) {
         break;
     }
     default: {
-        @throw("bad m value"u8);
+        @throw(badMValueˢ);
         break;
     }}
 
@@ -795,6 +811,10 @@ internal static uint64 fillAligned(uint64 x, nuint m) {
     // result to set all the bits.
     return ~((uint64)((x - (x.Rsh((m - 1)))) | x));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string minMustBeANonZeroPowerOfˢ = "min must be a non-zero power of 2"u8;
+private static readonly @string minTooLargeˢ = "min too large"u8;
 
 // findScavengeCandidate returns a start index and a size for this pallocData
 // segment which represents a contiguous region of free and unscavenged memory.
@@ -819,11 +839,11 @@ internal static uint64 fillAligned(uint64 x, nuint m) {
 [GoRecv] internal static (nuint, nuint) findScavengeCandidate(this ref pallocData m, nuint searchIdx, uintptr minimum, uintptr max) {
     if ((uintptr)(minimum & (minimum - 1)) != 0 || minimum == 0){
         print((@string)"runtime: min = "u8, minimum, (@string)"\n"u8);
-        @throw("min must be a non-zero power of 2"u8);
+        @throw(minMustBeANonZeroPowerOfˢ);
     } else 
     if (minimum > maxPagesPerPhysPage) {
         print((@string)"runtime: min = "u8, minimum, (@string)"\n"u8);
-        @throw("min too large"u8);
+        @throw(minTooLargeˢ);
     }
     // max may not be min-aligned, so we might accidentally truncate to
     // a max value which causes us to return a non-min-aligned value.
@@ -1217,11 +1237,14 @@ internal static bool shouldScavenge(this scavChunkData sc, uint32 currGen, bool 
     return sc.inUse < scavChunkHiOccPages;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tooManyPagesAllocatedInˢ = "too many pages allocated in chunk?"u8;
+
 // alloc updates sc given that npages were allocated in the corresponding chunk.
 [GoRecv] internal static void alloc(this ref scavChunkData sc, nuint npages, uint32 newGen) {
     if ((nuint)sc.inUse + npages > pallocChunkPages) {
         print((@string)"runtime: inUse="u8, sc.inUse, (@string)" npages="u8, npages, (@string)"\n"u8);
-        @throw("too many pages allocated in chunk?"u8);
+        @throw(tooManyPagesAllocatedInˢ);
     }
     if (sc.gen != newGen) {
         sc.lastInUse = sc.inUse;
@@ -1234,11 +1257,14 @@ internal static bool shouldScavenge(this scavChunkData sc, uint32 currGen, bool 
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string allocatedPagesBelowZeroˢ = "allocated pages below zero?"u8;
+
 // free updates sc given that npages was freed in the corresponding chunk.
 [GoRecv] internal static void free(this ref scavChunkData sc, nuint npages, uint32 newGen) {
     if ((nuint)sc.inUse < npages) {
         print((@string)"runtime: inUse="u8, sc.inUse, (@string)" npages="u8, npages, (@string)"\n"u8);
-        @throw("allocated pages below zero?"u8);
+        @throw(allocatedPagesBelowZeroˢ);
     }
     if (sc.gen != newGen) {
         sc.lastInUse = sc.inUse;

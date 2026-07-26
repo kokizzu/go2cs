@@ -33,6 +33,9 @@ public static slice<byte> Rot13(slice<byte> data) {
     return @out;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string obscuretestdataDecodedˢ = "obscuretestdata-decoded-"u8;
+
 // DecodeToTempFile decodes the named file to a temporary location.
 // If successful, it returns the path of the decoded file.
 // The caller is responsible for ensuring that the temporary file is removed.
@@ -46,7 +49,7 @@ public static (@string path, error err) DecodeToTempFile(@string name) {
         }
         var fʗ1 = f;
         defer(() => fʗ1.Close());
-        (var tmp, err) = os.CreateTemp(""u8, "obscuretestdata-decoded-"u8);
+        (var tmp, err) = os.CreateTemp(""u8, obscuretestdataDecodedˢ);
         if (err != default!) {
             (path, err) = ("", err); return;
         }

@@ -103,7 +103,7 @@ internal static (ж<TCPConn>, error) doDialTCPProto(this ж<sysDialer> Ꮡsd, co
     if (ctrlCtxFn == default! && sd.Dialer.Control != default!) {
         ctrlCtxFn = (context.Context ctxΔ1, @string network, @string address, syscall.RawConn c) => Ꮡsd.Value.Dialer.Control(network, address, c);
     }
-    var (fd, err) = internetSocket(ctx, sd.network, new TCPAddrжΔsockaddr(Ꮡladdr), new TCPAddrжΔsockaddr(Ꮡraddr), syscall.SOCK_STREAM, proto, "dial"u8, ctrlCtxFn);
+    var (fd, err) = internetSocket(ctx, sd.network, new TCPAddrжΔsockaddr(Ꮡladdr), new TCPAddrжΔsockaddr(Ꮡraddr), syscall.SOCK_STREAM, proto, dialˢ, ctrlCtxFn);
     // TCP has a rarely used mechanism called a 'simultaneous connection' in
     // which Dial("tcp", addr1, addr2) run on the machine at addr1 can
     // connect to a simultaneous Dial("tcp", addr2, addr1) run on the machine
@@ -132,7 +132,7 @@ internal static (ж<TCPConn>, error) doDialTCPProto(this ж<sysDialer> Ꮡsd, co
         if (err == default!) {
             fd.Close();
         }
-        (fd, err) = internetSocket(ctx, sd.network, new TCPAddrжΔsockaddr(Ꮡladdr), new TCPAddrжΔsockaddr(Ꮡraddr), syscall.SOCK_STREAM, proto, "dial"u8, ctrlCtxFn);
+        (fd, err) = internetSocket(ctx, sd.network, new TCPAddrжΔsockaddr(Ꮡladdr), new TCPAddrжΔsockaddr(Ꮡraddr), syscall.SOCK_STREAM, proto, dialˢ, ctrlCtxFn);
     }
     if (err != default!) {
         return (default!, err);
@@ -214,7 +214,7 @@ internal static (ж<TCPListener>, error) listenTCPProto(this ж<sysListener> Ꮡ
     if (sl.ListenConfig.Control != default!) {
         ctrlCtxFn = (context.Context ctxΔ1, @string network, @string address, syscall.RawConn c) => Ꮡsl.Value.ListenConfig.Control(network, address, c);
     }
-    var (fd, err) = internetSocket(ctx, sl.network, new TCPAddrжΔsockaddr(Ꮡladdr), default!, syscall.SOCK_STREAM, proto, "listen"u8, ctrlCtxFn);
+    var (fd, err) = internetSocket(ctx, sl.network, new TCPAddrжΔsockaddr(Ꮡladdr), default!, syscall.SOCK_STREAM, proto, listenˢ, ctrlCtxFn);
     if (err != default!) {
         return (default!, err);
     }

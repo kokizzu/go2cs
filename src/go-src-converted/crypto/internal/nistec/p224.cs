@@ -54,6 +54,10 @@ public static ж<P224Point> Set(this ж<P224Point> Ꮡp, ж<P224Point> Ꮡq) {
     return Ꮡp;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidP224Compressedˢ = "invalid P224 compressed point encoding"u8;
+private static readonly @string invalidP224PointEncodingˢ = "invalid P224 point encoding"u8;
+
 // SetBytes sets p to the compressed, uncompressed, or infinity value encoded in
 // b, as specified in SEC 1, Version 2.0, Section 2.3.4. If the point is not on
 // the curve, it returns nil and an error, and the receiver is unchanged.
@@ -95,7 +99,7 @@ public static (ж<P224Point>, error) SetBytes(this ж<P224Point> Ꮡp, slice<byt
         var y = p224Polynomial(@new<fiat.P224Element>(), // y² = x³ - 3x + b
  x);
         if (!p224Sqrt(y, y)) {
-            return (default!, errors.New("invalid P224 compressed point encoding"u8));
+            return (default!, errors.New(invalidP224Compressedˢ));
         }
         var otherRoot = @new<fiat.P224Element>();
         otherRoot.Sub(otherRoot, // Select the positive or negative root, as indicated by the least
@@ -109,7 +113,7 @@ public static (ж<P224Point>, error) SetBytes(this ж<P224Point> Ꮡp, slice<byt
         return (Ꮡp, default!);
     }
     default: {
-        return (default!, errors.New("invalid P224 point encoding"u8));
+        return (default!, errors.New(invalidP224PointEncodingˢ));
     }}
 
 }
@@ -136,6 +140,9 @@ internal static ж<fiat.P224Element> p224Polynomial(ж<fiat.P224Element> Ꮡy2, 
     return Ꮡy2.Add(Ꮡy2, p224B());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string p224PointNotOnCurveˢ = "P224 point not on curve"u8;
+
 internal static error p224CheckOnCurve(ж<fiat.P224Element> Ꮡx, ж<fiat.P224Element> Ꮡy) {
     ref var x = ref Ꮡx.Value;
     ref var y = ref Ꮡy.Value;
@@ -144,7 +151,7 @@ internal static error p224CheckOnCurve(ж<fiat.P224Element> Ꮡx, ж<fiat.P224El
     var rhs = p224Polynomial(@new<fiat.P224Element>(), Ꮡx);
     var lhs = @new<fiat.P224Element>().Square(Ꮡy);
     if (rhs.Equal(lhs) != 1) {
-        return errors.New("P224 point not on curve"u8);
+        return errors.New(p224PointNotOnCurveˢ);
     }
     return default!;
 }
@@ -183,11 +190,14 @@ internal static error p224CheckOnCurve(ж<fiat.P224Element> Ꮡx, ж<fiat.P224El
     return p.bytesX(Ꮡout);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string p224PointIsThePointAtˢ = "P224 point is the point at infinity"u8;
+
 [GoRecv] internal static (slice<byte>, error) bytesX(this ref P224Point p, ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.Value;
 
     if (p.z.IsZero() == 1) {
-        return (default!, errors.New("P224 point is the point at infinity"u8));
+        return (default!, errors.New(p224PointIsThePointAtˢ));
     }
     var zinv = @new<fiat.P224Element>().Invert(p.z);
     var x = @new<fiat.P224Element>().Mul(p.x, zinv);
@@ -498,13 +508,16 @@ internal static ref sync.Once p224GeneratorTableOnce => ref Ꮡp224GeneratorTabl
     return p224GeneratorTable;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidScalarLengthˢ = "invalid scalar length"u8;
+
 // ScalarBaseMult sets p = scalar * B, where B is the canonical generator, and
 // returns p.
 public static (ж<P224Point>, error) ScalarBaseMult(this ж<P224Point> Ꮡp, slice<byte> scalar) {
     ref var p = ref Ꮡp.Value;
 
     if (len(scalar) != p224ElementLength) {
-        return (default!, errors.New("invalid scalar length"u8));
+        return (default!, errors.New(invalidScalarLengthˢ));
     }
     var tables = p.generatorTable();
     // This is also a scalar multiplication with a four-bit window like in

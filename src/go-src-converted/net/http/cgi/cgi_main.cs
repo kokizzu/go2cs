@@ -16,8 +16,12 @@ using url = go.net.url_package;
 
 partial class cgi_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string scriptNameˢ = "SCRIPT_NAME"u8;
+private static readonly @string pathInfoˢ = "PATH_INFO"u8;
+
 internal static void cgiMain() {
-    var exprᴛ1 = path.Join(os.Getenv("SCRIPT_NAME"u8), os.Getenv("PATH_INFO"u8));
+    var exprᴛ1 = path.Join(os.Getenv(scriptNameˢ), os.Getenv(pathInfoˢ));
     if (exprᴛ1 == "/bar"u8 || exprᴛ1 == "/test.cgi"u8 || exprᴛ1 == "/myscript/bar"u8 || exprᴛ1 == "/test.cgi/extrapath"u8) {
         testCGI();
         return;
@@ -25,6 +29,10 @@ internal static void cgiMain() {
 
     childCGIProcess();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string writestderrˢ = "writestderr"u8;
+private static readonly @string bigresponseˢ = "bigresponse"u8;
 
 // testCGI is a CGI program translated from a Perl program to complete host_test.
 // test cases in host_test should be provided by testCGI.
@@ -46,10 +54,10 @@ internal static void testCGI() {
     fmt.Printf("X-CGI-Pid: %d\r\n"u8, os.Getpid());
     fmt.Printf("X-Test-Header: X-Test-Value\r\n"u8);
     fmt.Printf("\r\n"u8);
-    if (@params.Get("writestderr"u8) != ""u8) {
+    if (@params.Get(writestderrˢ) != ""u8) {
         fmt.Fprintf(new os.FileжWriter(os.Stderr), "Hello, stderr!\n"u8);
     }
-    if (@params.Get("bigresponse"u8) != ""u8) {
+    if (@params.Get(bigresponseˢ) != ""u8) {
         // 17 MB, for OS X: golang.org/issue/4958
         @string line = strings.Repeat("A"u8, 1024);
         for (nint i = 0; i < 17 * 1024; i++) {
@@ -91,13 +99,23 @@ internal static (nint n, error err) Read(this neverEnding b, slice<byte> p) {
     return (len(p), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string requestMethodˢ = "REQUEST_METHOD"u8;
+private static readonly @string requestUriˢ = "REQUEST_URI"u8;
+private static readonly @string nilRequestBodyˢ = "nil-request-body"u8;
+private static readonly @string xTestHeaderˢ = "X-Test-Header"u8;
+private static readonly @string xTestValueˢ = "X-Test-Value"u8;
+private static readonly @string noBodyˢ = "no-body"u8;
+private static readonly @string exactBodyˢ = "exact-body"u8;
+private static readonly @string writeForeverˢ = "write-forever"u8;
+
 // childCGIProcess is used by integration_test to complete unit tests.
 internal static void childCGIProcess() {
-    if (os.Getenv("REQUEST_METHOD"u8) == ""u8) {
+    if (os.Getenv(requestMethodˢ) == ""u8) {
         // Not in a CGI environment; skipping test.
         return;
     }
-    var exprᴛ1 = os.Getenv("REQUEST_URI"u8);
+    var exprᴛ1 = os.Getenv(requestUriˢ);
     if (exprᴛ1 == "/immediate-disconnect"u8) {
         os.Exit(0);
     }
@@ -111,22 +129,22 @@ internal static void childCGIProcess() {
     }
 
     Serve(new http_HandlerFuncᴠΔHandler(new http.HandlerFunc((http.ResponseWriter rw, ж<http.Request> req) => {
-        if (req.FormValue("nil-request-body"u8) == "1"u8) {
+        if (req.FormValue(nilRequestBodyˢ) == "1"u8) {
             fmt.Fprintf(new http_ResponseWriterᴠWriter(rw), "nil-request-body=%v\n"u8, (~req).Body == default!);
             return;
         }
-        rw.Header().Set("X-Test-Header"u8, "X-Test-Value"u8);
+        rw.Header().Set(xTestHeaderˢ, xTestValueˢ);
         req.ParseForm();
-        if (req.FormValue("no-body"u8) == "1"u8) {
+        if (req.FormValue(noBodyˢ) == "1"u8) {
             return;
         }
         {
-            var (eb, ok) = (~req).Form["exact-body"u8, ꟷ]; if (ok) {
+            var (eb, ok) = (~req).Form[exactBodyˢ, ꟷ]; if (ok) {
                 io.WriteString(new http_ResponseWriterᴠWriter(rw), eb[0]);
                 return;
             }
         }
-        if (req.FormValue("write-forever"u8) == "1"u8) {
+        if (req.FormValue(writeForeverˢ) == "1"u8) {
             io.Copy(new http_ResponseWriterᴠWriter(rw), ((neverEnding)(rune)'a'));
             while (ᐧ) {
                 time.Sleep(5000000000L);

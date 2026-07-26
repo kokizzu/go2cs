@@ -26,12 +26,18 @@ partial class runtime_package {
     internal nint cap;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string makesliceLenOutOfRangeˢ = "makeslice: len out of range"u8;
+
 internal static void panicmakeslicelen() {
-    throw panic(((errorString)(@string)"makeslice: len out of range"u8));
+    throw panic(((errorString)(@string)makesliceLenOutOfRangeˢ));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string makesliceCapOutOfRangeˢ = "makeslice: cap out of range"u8;
+
 internal static void panicmakeslicecap() {
-    throw panic(((errorString)(@string)"makeslice: cap out of range"u8));
+    throw panic(((errorString)(@string)makesliceCapOutOfRangeˢ));
 }
 
 // makeslicecopy allocates a slice of "tolen" elements of type "et",
@@ -129,6 +135,9 @@ internal static @unsafe.Pointer makeslice64(ж<_type> Ꮡet, int64 len64, int64 
     return (uintptr)makeslice(Ꮡet, len, cap);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string growsliceLenOutOfRangeˢ = "growslice: len out of range"u8;
+
 // growslice allocates new backing store for a slice.
 //
 // arguments:
@@ -188,7 +197,7 @@ internal static Δsliceᴛ growslice(@unsafe.Pointer oldPtr, nint newLen, nint o
         asanread(oldPtr, (uintptr)(oldLen * (nint)et.Size_));
     }
     if (newLen < 0) {
-        throw panic(((errorString)(@string)"growslice: len out of range"u8));
+        throw panic(((errorString)(@string)growsliceLenOutOfRangeˢ));
     }
     if (et.Size_ == 0) {
         // append should not create a slice with nil pointer but non-zero len.
@@ -262,7 +271,7 @@ internal static Δsliceᴛ growslice(@unsafe.Pointer oldPtr, nint newLen, nint o
     //   print(len(s), "\n")
     // }
     if (overflow || capmem > maxAlloc) {
-        throw panic(((errorString)(@string)"growslice: len out of range"u8));
+        throw panic(((errorString)(@string)growsliceLenOutOfRangeˢ));
     }
     @unsafe.Pointer Δp = default!;
     if (!et.Pointers()){

@@ -111,6 +111,10 @@ internal static (driver.Rows, error) ctxDriverStmtQuery(context.Context ctx, dri
     return si.Query(dargs);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sqlDriverDoesNotSupportˢ = "sql: driver does not support non-default isolation level"u8;
+private static readonly @string sqlDriverDoesNotSupportˢ2 = "sql: driver does not support read-only transactions"u8;
+
 internal static (driver.Tx, error) ctxDriverBegin(context.Context ctx, ж<TxOptions> Ꮡopts, driver.Conn ci) {
     ref var opts = ref Ꮡopts.DerefOrNil();
 
@@ -128,12 +132,12 @@ internal static (driver.Tx, error) ctxDriverBegin(context.Context ctx, ж<TxOpti
         // Check the transaction level. If the transaction level is non-default
         // then return an error here as the BeginTx driver value is not supported.
         if (opts.Isolation != LevelDefault) {
-            return (default!, errors.New("sql: driver does not support non-default isolation level"u8));
+            return (default!, errors.New(sqlDriverDoesNotSupportˢ));
         }
         // If a read-only transaction is requested return an error as the
         // BeginTx driver value is not supported.
         if (opts.ReadOnly) {
-            return (default!, errors.New("sql: driver does not support read-only transactions"u8));
+            return (default!, errors.New(sqlDriverDoesNotSupportˢ2));
         }
     }
     if (ctx.Done() == default!) {
@@ -154,11 +158,14 @@ internal static (driver.Tx, error) ctxDriverBegin(context.Context ctx, ж<TxOpti
     return (txi, err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sqlDriverDoesNotSupportˢ3 = "sql: driver does not support the use of Named Parameters"u8;
+
 internal static (slice<driverꓸValue>, error) namedValueToValue(slice<driver.NamedValue> named) {
     var dargs = new slice<driverꓸValue>(len(named));
     foreach (var (n, param) in named) {
         if (len(param.Name) > 0) {
-            return (default!, errors.New("sql: driver does not support the use of Named Parameters"u8));
+            return (default!, errors.New(sqlDriverDoesNotSupportˢ3));
         }
         dargs[n] = param.Value;
     }

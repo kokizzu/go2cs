@@ -27,13 +27,16 @@ partial class runtime_package {
     internal offAddr @base, limit;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string addrRangeBaseAndLimitAreˢ = "addr range base and limit are not in the same memory segment"u8;
+
 // makeAddrRange creates a new address range from two virtual addresses.
 //
 // Throws if the base and limit are not in the same memory segment.
 internal static addrRange makeAddrRange(uintptr @base, uintptr limit) {
     var r = new addrRange(new offAddr(@base), new offAddr(limit));
     if ((@base - (uintptr)arenaBaseOffset >= @base) != (limit - (uintptr)arenaBaseOffset >= limit)) {
-        @throw("addr range base and limit are not in the same memory segment"u8);
+        @throw(addrRangeBaseAndLimitAreˢ);
     }
     return r;
 }
@@ -53,6 +56,9 @@ internal static bool contains(this addrRange a, uintptr addr) {
     return a.@base.lessEqual(new offAddr(addr)) && (new offAddr(addr)).lessThan(a.limit);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badPruneˢ = "bad prune"u8;
+
 // subtract takes the addrRange toPrune and cuts out any overlap with
 // from, then returns the new range. subtract assumes that a and b
 // either don't overlap at all, only overlap on one side, or are equal.
@@ -62,7 +68,7 @@ internal static addrRange subtract(this addrRange a, addrRange b) {
         return new addrRange(nil);
     } else 
     if (a.@base.lessThan(b.@base) && b.limit.lessThan(a.limit)){
-        @throw("bad prune"u8);
+        @throw(badPruneˢ);
     } else 
     if (b.limit.lessThan(a.limit) && a.@base.lessThan(b.limit)){
         a.@base = b.limit;
@@ -326,6 +332,9 @@ internal static void init(this ж<addrRanges> Ꮡa, ж<sysMemStat> ᏑsysStat) {
     return a.ranges[i - 1].contains(addr);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string attemptedToAddZeroSizedˢ = "attempted to add zero-sized address range"u8;
+
 // add inserts a new address range to a.
 //
 // r must not overlap with any address range in a and r.size() must be > 0.
@@ -344,7 +353,7 @@ internal static void add(this ж<addrRanges> Ꮡa, addrRange r) {
     // by a, but passing a zero-sized range is almost always a bug.
     if (r.size() == 0) {
         print((@string)"runtime: range = {"u8, ((Δhex)(uint64)r.@base.addr()), (@string)", "u8, ((Δhex)(uint64)r.limit.addr()), (@string)"}\n"u8);
-        @throw("attempted to add zero-sized address range"u8);
+        @throw(attemptedToAddZeroSizedˢ);
     }
     // Because we assume r is not currently represented in a,
     // findSucc gives us our insertion index.

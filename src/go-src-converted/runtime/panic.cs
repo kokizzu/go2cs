@@ -40,7 +40,7 @@ internal static readonly throwType throwTypeRuntime = 2;
 // pc should be the program counter of the compiler-generated code that
 // triggered this panic.
 internal static void panicCheck1(uintptr pc, @string msg) {
-    if (goarch.IsWasm == 0 && stringslite.HasPrefix(funcname(findfunc(pc)), "runtime."u8)) {
+    if (goarch.IsWasm == 0 && stringslite.HasPrefix(funcname(findfunc(pc)), runtimeˢ)) {
         // Note: wasm can't tail call, so we can't get the original caller's pc.
         @throw(msg);
     }
@@ -65,6 +65,9 @@ internal static void panicCheck2(@string err) {
         @throw(err);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string indexOutOfRangeˢ = "index out of range"u8;
 
 // Many of the following panic entry-points turn into throws when they
 // happen in various runtime contexts. These should never happen in
@@ -97,39 +100,42 @@ internal static void panicCheck2(@string err) {
 //
 //go:yeswritebarrierrec
 internal static void goPanicIndex(nint x, nint y) {
-    panicCheck1(getcallerpc(), "index out of range"u8);
+    panicCheck1(getcallerpc(), indexOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsIndex));
 }
 
 //go:yeswritebarrierrec
 internal static void goPanicIndexU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), "index out of range"u8);
+    panicCheck1(getcallerpc(), indexOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsIndex));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sliceBoundsOutOfRangeˢ = "slice bounds out of range"u8;
 
 // failures in the comparisons for s[:x], 0 <= x <= y (y == len(s) or cap(s))
 //
 //go:yeswritebarrierrec
 internal static void goPanicSliceAlen(nint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSliceAlen));
 }
 
 //go:yeswritebarrierrec
 internal static void goPanicSliceAlenU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSliceAlen));
 }
 
 //go:yeswritebarrierrec
 internal static void goPanicSliceAcap(nint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSliceAcap));
 }
 
 //go:yeswritebarrierrec
 internal static void goPanicSliceAcapU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSliceAcap));
 }
 
@@ -137,62 +143,65 @@ internal static void goPanicSliceAcapU(nuint x, nint y) {
 //
 //go:yeswritebarrierrec
 internal static void goPanicSliceB(nint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSliceB));
 }
 
 //go:yeswritebarrierrec
 internal static void goPanicSliceBU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSliceB));
 }
 
 // failures in the comparisons for s[::x], 0 <= x <= y (y == len(s) or cap(s))
 internal static void goPanicSlice3Alen(nint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSlice3Alen));
 }
 
 internal static void goPanicSlice3AlenU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSlice3Alen));
 }
 
 internal static void goPanicSlice3Acap(nint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSlice3Acap));
 }
 
 internal static void goPanicSlice3AcapU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSlice3Acap));
 }
 
 // failures in the comparisons for s[:x:y], 0 <= x <= y
 internal static void goPanicSlice3B(nint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSlice3B));
 }
 
 internal static void goPanicSlice3BU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSlice3B));
 }
 
 // failures in the comparisons for s[x:y:], 0 <= x <= y
 internal static void goPanicSlice3C(nint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsSlice3C));
 }
 
 internal static void goPanicSlice3CU(nuint x, nint y) {
-    panicCheck1(getcallerpc(), "slice bounds out of range"u8);
+    panicCheck1(getcallerpc(), sliceBoundsOutOfRangeˢ);
     throw panic(new boundsError(x: (int64)x, signed: false, y: y, code: boundsSlice3C));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sliceLengthTooShortToˢ = "slice length too short to convert to array or pointer to array"u8;
+
 // failures in the conversion ([x]T)(s) or (*[x]T)(s), 0 <= x <= y, y == len(s)
 internal static void goPanicSliceConvert(nint x, nint y) {
-    panicCheck1(getcallerpc(), "slice length too short to convert to array or pointer to array"u8);
+    panicCheck1(getcallerpc(), sliceLengthTooShortToˢ);
     throw panic(new boundsError(x: (int64)x, signed: true, y: y, code: boundsConvert));
 }
 
@@ -234,45 +243,63 @@ internal static partial void panicSliceConvert(nint x, nint y);
 
 internal static error shiftError = ((error)((errorString)(@string)"negative shift amount"u8));
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string negativeShiftAmountˢ = "negative shift amount"u8;
+
 //go:yeswritebarrierrec
 internal static void panicshift() {
-    panicCheck1(getcallerpc(), "negative shift amount"u8);
+    panicCheck1(getcallerpc(), negativeShiftAmountˢ);
     throw panic(shiftError);
 }
 
 public static error divideError = ((error)((errorString)(@string)"integer divide by zero"u8));
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string integerDivideByZeroˢ = "integer divide by zero"u8;
+
 //go:yeswritebarrierrec
 internal static void panicdivide() {
-    panicCheck2("integer divide by zero"u8);
+    panicCheck2(integerDivideByZeroˢ);
     throw panic(divideError);
 }
 
 public static error overflowError = ((error)((errorString)(@string)"integer overflow"u8));
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string integerOverflowˢ = "integer overflow"u8;
+
 internal static void panicoverflow() {
-    panicCheck2("integer overflow"u8);
+    panicCheck2(integerOverflowˢ);
     throw panic(overflowError);
 }
 
 internal static error floatError = ((error)((errorString)(@string)"floating point error"u8));
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string floatingPointErrorˢ = "floating point error"u8;
+
 internal static void panicfloat() {
-    panicCheck2("floating point error"u8);
+    panicCheck2(floatingPointErrorˢ);
     throw panic(floatError);
 }
 
 internal static error memoryError = ((error)((errorString)(@string)"invalid memory address or nil pointer dereference"u8));
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidMemoryAddressOrˢ = "invalid memory address or nil pointer dereference"u8;
+
 internal static void panicmem() {
-    panicCheck2("invalid memory address or nil pointer dereference"u8);
+    panicCheck2(invalidMemoryAddressOrˢ);
     throw panic(memoryError);
 }
 
 internal static void panicmemAddr(uintptr addr) {
-    panicCheck2("invalid memory address or nil pointer dereference"u8);
+    panicCheck2(invalidMemoryAddressOrˢ);
     throw panic(new errorAddressString(msg: "invalid memory address or nil pointer dereference"u8, addr: addr));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string deferOnSystemStackˢ = "defer on system stack"u8;
 
 // Create a new deferred function fn, which has no arguments and results.
 // The compiler turns a defer statement into a call to this.
@@ -280,7 +307,7 @@ internal static void deferproc(Action fn) {
     var gp = getg();
     if ((~(~gp).m).curg != gp) {
         // go code on the system stack can't defer
-        @throw("defer on system stack"u8);
+        @throw(deferOnSystemStackˢ);
     }
     var d = newdefer();
     d.Value.link = gp.Value._defer;
@@ -310,6 +337,9 @@ internal static error rangeExhaustedError = ((error)((errorString)(@string)"rang
 
 internal static error rangeMissingPanicError = ((error)((errorString)(@string)"range function recovered a loop body panic and did not resume panicking"u8));
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedStatePassedToˢ = "unexpected state passed to panicrangestate"u8;
+
 //go:noinline
 internal static void panicrangestate(nint state) {
     var exprᴛ1 = ((abi.RF_State)state);
@@ -326,7 +356,7 @@ internal static void panicrangestate(nint state) {
         throw panic(rangeMissingPanicError);
     }
 
-    @throw("unexpected state passed to panicrangestate"u8);
+    @throw(unexpectedStatePassedToˢ);
 }
 
 // deferrangefunc is called by functions that are about to
@@ -400,7 +430,7 @@ internal static any deferrangefunc() {
     var gp = getg();
     if ((~(~gp).m).curg != gp) {
         // go code on the system stack can't defer
-        @throw("defer on system stack"u8);
+        @throw(deferOnSystemStackˢ);
     }
     var d = newdefer();
     d.Value.link = gp.Value._defer;
@@ -420,6 +450,9 @@ internal static ж<_defer> badDefer() {
     return (ж<_defer>)(uintptr)((@unsafe.Pointer)(uintptr)1);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string deferAfterRangeFuncˢ = "defer after range func returned"u8;
+
 // deferprocat is like deferproc but adds to the atomic list represented by frame.
 // See the doc comment for deferrangefunc for details.
 internal static void deferprocat(Action fn, any frame) {
@@ -432,7 +465,7 @@ internal static void deferprocat(Action fn, any frame) {
     while (ᐧ) {
         d1.Value.link = head.Load();
         if ((~d1).link == badDefer()) {
-            @throw("defer after range func returned"u8);
+            @throw(deferAfterRangeFuncˢ);
         }
         if (head.CompareAndSwap((~d1).link, d1)) {
             break;
@@ -488,7 +521,7 @@ internal static void deferprocStack(ж<_defer> Ꮡd) {
     var gp = getg();
     if ((~(~gp).m).curg != gp) {
         // go code on the system stack can't defer
-        @throw("defer on system stack"u8);
+        @throw(deferOnSystemStackˢ);
     }
     // fn is already set.
     // The other fields are junk on entry to deferprocStack and
@@ -639,13 +672,16 @@ public static void Goexit() {
     goexit1();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string panicWhilePrintingPanicˢ = "panic while printing panic value"u8;
+
 // Call all Error and String methods before freezing the world.
 // Used when crashing with panicking.
 internal static void preprintpanics(ж<_panic> Ꮡp) => func((defer, recover) => {
     ref var Δp = ref Ꮡp.DerefOrNil();
 
     defer(() => {
-        @string text = "panic while printing panic value"u8;
+        @string text = panicWhilePrintingPanicˢ;
         var switchᴛ1 = recover();
         switch (switchᴛ1.type()) {
         case null: {
@@ -735,14 +771,23 @@ internal static (uint32, @unsafe.Pointer) readvarintUnsafe(@unsafe.Pointer fd) {
     internal array<ж<PanicNilError>> _ = new(0);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string panicCalledWithNilˢ = "panic called with nil argument"u8;
+
 [GoRecv] public static @string Error(this ref PanicNilError _) {
-    return "panic called with nil argument"u8;
+    return panicCalledWithNilˢ;
 }
 
 [GoRecv] public static void RuntimeError(this ref PanicNilError _) {
 }
 
 internal static ж<godebugInc> panicnil = Ꮡ(new godebugInc(name: "panicnil"u8));
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string panicOnSystemStackˢ = "panic on system stack"u8;
+private static readonly @string panicDuringMallocˢ = "panic during malloc"u8;
+private static readonly @string panicDuringPreemptoffˢ = "panic during preemptoff"u8;
+private static readonly @string panicHoldingLocksˢ = "panic holding locks"u8;
 
 // The implementation of the predeclared function panic.
 // The compiler emits calls to this function.
@@ -770,13 +815,13 @@ internal static void gopanic(any e) {
         print((@string)"panic: "u8);
         printpanicval(e);
         print((@string)"\n"u8);
-        @throw("panic on system stack"u8);
+        @throw(panicOnSystemStackˢ);
     }
     if ((~(~gp).m).mallocing != 0) {
         print((@string)"panic: "u8);
         printpanicval(e);
         print((@string)"\n"u8);
-        @throw("panic during malloc"u8);
+        @throw(panicDuringMallocˢ);
     }
     if ((~(~gp).m).preemptoff != ""u8) {
         print((@string)"panic: "u8);
@@ -785,13 +830,13 @@ internal static void gopanic(any e) {
         print((@string)"preempt off reason: "u8);
         print((~(~gp).m).preemptoff);
         print((@string)"\n"u8);
-        @throw("panic during preemptoff"u8);
+        @throw(panicDuringPreemptoffˢ);
     }
     if ((~(~gp).m).locks != 0) {
         print((@string)"panic: "u8);
         printpanicval(e);
         print((@string)"\n"u8);
-        @throw("panic holding locks"u8);
+        @throw(panicHoldingLocksˢ);
     }
     ref var Δp = ref heap(new _panic(), out var Ꮡp);
     Δp.arg = e;
@@ -866,6 +911,10 @@ internal static void start(this ж<_panic> Ꮡp, uintptr pc, @unsafe.Pointer sp)
     Ꮡp.nextFrame();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badPanicStackˢ = "bad panic stack"u8;
+private static readonly @string recoveryFailedˢ = "recovery failed"u8;
+
 // nextDefer returns the next deferred function to invoke, if any.
 //
 // Note: The "ok bool" result is necessary to correctly handle when
@@ -876,12 +925,12 @@ internal static (Action, bool) nextDefer(this ж<_panic> Ꮡp) {
     var gp = getg();
     if (!Δp.deferreturn) {
         if ((~gp)._panic != Ꮡp) {
-            @throw("bad panic stack"u8);
+            @throw(badPanicStackˢ);
         }
         if (Δp.recovered) {
             mcall(recovery);
             // does not return
-            @throw("recovery failed"u8);
+            @throw(recoveryFailedˢ);
         }
     }
     // The assembler adjusts p.argp in wrapper functions that shouldn't
@@ -980,13 +1029,16 @@ internal static bool /*ok*/ nextFrame(this ж<_panic> Ꮡp) {
     return ok;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingDeferreturnˢ = "missing deferreturn"u8;
+
 [GoRecv] internal static bool initOpenCodedDefers(this ref _panic Δp, ΔfuncInfo fn, @unsafe.Pointer varp) {
     @unsafe.Pointer fd = (uintptr)funcdata(fn, abi.FUNCDATA_OpenCodedDeferInfo);
     if (fd == nil) {
         return false;
     }
     if (fn.deferreturn == 0) {
-        @throw("missing deferreturn"u8);
+        @throw(missingDeferreturnˢ);
     }
     (var deferBitsOffset, fd) = readvarintUnsafe(fd);
     var deferBitsPtr = (ж<uint8>)(uintptr)(add(varp, ((uintptr)0 - (uintptr)deferBitsOffset)));
@@ -1106,6 +1158,10 @@ internal static ref atomic.Uint32 panicking => ref Ꮡpanicking.Value;
 internal static ж<mutex> Ꮡpaniclk = new(new mutex(nil));
 internal static ref mutex paniclk => ref Ꮡpaniclk.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedGpParamˢ = "unexpected gp.param"u8;
+private static readonly @string badRecoveryˢ = "bad recovery"u8;
+
 // Unwind the stack after a deferred function calls recover
 // after a panic. Then arrange to continue running as though
 // the caller of the deferred function returned normally.
@@ -1154,7 +1210,7 @@ internal static void recovery(ж<g> Ꮡgp) {
         gp.sig = 0;
     }
     if (gp.param != nil) {
-        @throw("unexpected gp.param"u8);
+        @throw(unexpectedGpParamˢ);
     }
     if (saveOpenDeferState) {
         // If we're returning to deferreturn and there are more open-coded
@@ -1195,7 +1251,7 @@ internal static void recovery(ж<g> Ꮡgp) {
     // Ensure we're recovering within the appropriate stack.
     if (sp != 0 && (sp < gp.stack.lo || gp.stack.hi < sp)) {
         print((@string)"recover: "u8, ((Δhex)(uint64)sp), (@string)" not in ["u8, ((Δhex)(uint64)gp.stack.lo), (@string)", "u8, ((Δhex)(uint64)gp.stack.hi), (@string)"]\n"u8);
-        @throw("bad recovery"u8);
+        @throw(badRecoveryˢ);
     }
     // Make the deferproc for this d return again,
     // this time returning 1. The calling function will

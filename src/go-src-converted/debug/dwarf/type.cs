@@ -146,8 +146,11 @@ public static ж<BasicType> Basic(this ж<BasicType> Ꮡb) {
     public partial ref CommonType CommonType { get; }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string voidˢ = "void"u8;
+
 [GoRecv] public static @string String(this ref VoidType t) {
-    return "void"u8;
+    return voidˢ;
 }
 
 // A PtrType represents a pointer type.
@@ -306,8 +309,11 @@ public static ж<BasicType> Basic(this ж<BasicType> Ꮡb) {
     public int64 Val;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string enumˢ = "enum"u8;
+
 [GoRecv] public static @string String(this ref EnumType t) {
-    @string s = "enum"u8;
+    @string s = enumˢ;
     if (t.EnumName != ""u8) {
         s += " "u8 + t.EnumName;
     }
@@ -329,8 +335,11 @@ public static ж<BasicType> Basic(this ж<BasicType> Ꮡb) {
     public slice<ΔType> ParamType;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string funcˢ = "func("u8;
+
 [GoRecv] public static @string String(this ref FuncType t) {
-    @string s = "func("u8;
+    @string s = funcˢ;
     foreach (var (i, tΔ1) in t.ParamType) {
         if (i > 0) {
             s += ", "u8;
@@ -397,7 +406,7 @@ public static ж<BasicType> Basic(this ж<BasicType> Ꮡb) {
 public static (ΔType, error) Type(this ж<Data> Ꮡd, Offset off) {
     ref var d = ref Ꮡd.Value;
 
-    return Ꮡd.readType("info"u8, new ΔReaderжtypeReader(Ꮡd.Reader()), off, d.typeCache, nil);
+    return Ꮡd.readType(infoˢ, new ΔReaderжtypeReader(Ꮡd.Reader()), off, d.typeCache, nil);
 }
 
 [GoType] partial struct typeFixer {
@@ -425,6 +434,17 @@ public static (ΔType, error) Type(this ж<Data> Ꮡd, Offset off) {
         zeroArray(t);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string complexFloatˢ = "complex float"u8;
+private static readonly @string complexDoubleˢ = "complex double"u8;
+private static readonly @string classˢ = "class"u8;
+private static readonly @string structˢ = "struct"u8;
+private static readonly @string unionˢ = "union"u8;
+private static readonly @string locationˢ = "location"u8;
+private static readonly @string constˢ = "const"u8;
+private static readonly @string restrictˢ = "restrict"u8;
+private static readonly @string volatileˢ = "volatile"u8;
 
 [GoType("dyn")] partial interface readType_type {
     ж<BasicType> Basic();
@@ -628,11 +648,11 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
                     var (byteSize, _) = e.Val(AttrByteSize)._<int64>(ᐧ);
                     switch (byteSize) {
                     case 8: {
-                        nameΔ2 = "complex float"u8;
+                        nameΔ2 = complexFloatˢ;
                         break;
                     }
                     case 16: {
-                        nameΔ2 = "complex double"u8;
+                        nameΔ2 = complexDoubleˢ;
                         break;
                     }}
                 }
@@ -678,13 +698,13 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
         typeCache[off] = new StructTypeжΔType(t);
         var exprᴛ4 = (~e).Tag;
         if (exprᴛ4 == TagClassType) {
-            t.Value.Kind = "class"u8;
+            t.Value.Kind = classˢ;
         }
         else if (exprᴛ4 == TagStructType) {
-            t.Value.Kind = "struct"u8;
+            t.Value.Kind = structˢ;
         }
         else if (exprᴛ4 == TagUnionType) {
-            t.Value.Kind = "union"u8;
+            t.Value.Kind = unionˢ;
         }
 
         (t.Value.StructName, _) = e.Val(AttrName)._<@string>(ᐧ);
@@ -707,7 +727,7 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
             case slice<byte> loc: {
                 var b = makeBuf(Ꮡd, // TODO: Should have original compilation
  // unit here, not unknownFormat.
- new unknownFormat(nil), "location"u8, 0, loc);
+ new unknownFormat(nil), locationˢ, 0, loc);
                 if (b.uint8() != opPlusUconst) {
                     err = new DecodeError(name, (~kid).Offset, "unexpected opcode"u8);
                     goto Error;
@@ -766,13 +786,13 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
         }
         var exprᴛ5 = (~e).Tag;
         if (exprᴛ5 == TagConstType) {
-            t.Value.Qual = "const"u8;
+            t.Value.Qual = constˢ;
         }
         else if (exprᴛ5 == TagRestrictType) {
-            t.Value.Qual = "restrict"u8;
+            t.Value.Qual = restrictˢ;
         }
         else if (exprᴛ5 == TagVolatileType) {
-            t.Value.Qual = "volatile"u8;
+            t.Value.Qual = volatileˢ;
         }
 
     }

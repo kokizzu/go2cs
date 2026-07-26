@@ -347,8 +347,12 @@ internal static ж<abi.UncommonType> uncommon(this ж<interfaceType> Ꮡt) {
     public partial ref @internal.abi_package.ΔStructType StructType { get; }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nameFlagFieldˢ = "name flag field"u8;
+private static readonly @string nameOffsetFieldˢ = "name offset field"u8;
+
 internal static @string pkgPath(abiꓸName n) {
-    if (n.Bytes == nil || (byte)(n.DataChecked(0, "name flag field"u8).Value & ((byte)(1 << (int)(2)))) == 0) {
+    if (n.Bytes == nil || (byte)(n.DataChecked(0, nameFlagFieldˢ).Value & ((byte)(1 << (int)(2)))) == 0) {
         return ""u8;
     }
     var (i, l) = n.ReadVarint(1);
@@ -360,7 +364,7 @@ internal static @string pkgPath(abiꓸName n) {
     ref var nameOff = ref heap(new int32(), out var ᏑnameOff);
     // Note that this field may not be aligned in memory,
     // so we cannot use a direct int32 assignment here.
-    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(n.DataChecked(off, "name offset field"u8))))[..]);
+    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(n.DataChecked(off, nameOffsetFieldˢ))))[..]);
     var pkgPathName = new abiꓸName(Bytes: (ж<byte>)(uintptr)(resolveTypeOff(new @unsafe.Pointer(n.Bytes), nameOff)));
     return pkgPathName.Name();
 }
@@ -878,16 +882,21 @@ internal static @unsafe.Pointer add(@unsafe.Pointer p, uintptr x, @string whySaf
     return (@unsafe.Pointer)((uintptr)p + x);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string chanˢ = "chan<-"u8;
+private static readonly @string chanˢ2 = "<-chan"u8;
+private static readonly @string chanˢ3 = "chan"u8;
+
 public static @string String(this ΔChanDir d) {
     var exprᴛ1 = d;
     if (exprᴛ1 == SendDir) {
-        return "chan<-"u8;
+        return chanˢ;
     }
     if (exprᴛ1 == RecvDir) {
-        return "<-chan"u8;
+        return chanˢ2;
     }
     if (exprᴛ1 == BothDir) {
-        return "chan"u8;
+        return chanˢ3;
     }
 
     return "ChanDir"u8 + strconv.Itoa((nint)d);
@@ -1594,6 +1603,9 @@ internal static bool haveIdenticalUnderlyingType(ж<abi.Type> ᏑT, ж<abi.Type>
 // pointers, channels, maps, slices, and arrays.
 internal static partial (slice<@unsafe.Pointer> sections, slice<slice<int32>> offset) typelinks();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sizeofRtype0ˢ = "sizeof(rtype) > 0"u8;
+
 // rtypeOff should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
@@ -1604,7 +1616,7 @@ internal static partial (slice<@unsafe.Pointer> sections, slice<slice<int32>> of
 //
 //go:linkname rtypeOff
 internal static ж<abi.Type> rtypeOff(@unsafe.Pointer section, int32 off) {
-    return (ж<abi.Type>)(uintptr)(add(section, (uintptr)off, "sizeof(rtype) > 0"u8));
+    return (ж<abi.Type>)(uintptr)(add(section, (uintptr)off, sizeofRtype0ˢ));
 }
 
 // typesByString returns the subslice of typelinks() whose elements have
@@ -2318,6 +2330,9 @@ internal static bool isPaddedField(ΔType t, nint i) {
     return field.Offset + field.Type.Size() != t.Size();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string xFieldSafeˢ = "&x.field safe"u8;
+
 // StructOf returns the struct type containing fields.
 // The Offset and Index fields are ignored and computed as they would be
 // by the compiler.
@@ -2676,8 +2691,8 @@ public static ΔType StructOf(slice<StructField> fields) => func((defer, recover
                 ref var ft = ref heap(new abi.StructField(), out var Ꮡft);
                 ft = vᴛ1;
 
-                @unsafe.Pointer pi = (uintptr)add(p, ft.Offset, "&x.field safe"u8);
-                @unsafe.Pointer qi = (uintptr)add(q, ft.Offset, "&x.field safe"u8);
+                @unsafe.Pointer pi = (uintptr)add(p, ft.Offset, xFieldSafeˢ);
+                @unsafe.Pointer qi = (uintptr)add(q, ft.Offset, xFieldSafeˢ);
                 if (!(~ft.Typ).Equal(pi, qi)) {
                     return false;
                 }
@@ -2756,6 +2771,9 @@ internal static uintptr typeptrdata(ж<abi.Type> Ꮡt) {
     }
 
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string iLengthˢ = "i < length"u8;
 
 // ArrayOf returns the array type with the given length and element type.
 // For example, if t represents int, ArrayOf(5, t) represents [5]int.
@@ -2881,8 +2899,8 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
             var eequalʗ1 = eequal;
             Δarray.Equal = (@unsafe.Pointer p, @unsafe.Pointer q) => {
                 for (nint i = 0; i < length; i++) {
-                    @unsafe.Pointer pi = (uintptr)arrayAt(p, i, esize, "i < length"u8);
-                    @unsafe.Pointer qi = (uintptr)arrayAt(q, i, esize, "i < length"u8);
+                    @unsafe.Pointer pi = (uintptr)arrayAt(p, i, esize, iLengthˢ);
+                    @unsafe.Pointer qi = (uintptr)arrayAt(q, i, esize, iLengthˢ);
                     if (!eequalʗ1(pi, qi)) {
                         return false;
                     }

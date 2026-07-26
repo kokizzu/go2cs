@@ -315,6 +315,9 @@ public static ж<Checker> NewChecker(ж<Config> Ꮡconf, ж<token.FileSet> Ꮡfs
     ));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidPackageNameˢ = "invalid package name _"u8;
+
 // initFiles initializes the files-specific portion of checker.
 // The provided files must all belong to the same package.
 internal static void initFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> files) {
@@ -341,7 +344,7 @@ internal static void initFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> fi
                 if (name != "_"u8){
                     pkg.Value.name = name;
                 } else {
-                    Ꮡcheck.error(new ast_Identжpositioner((~@file).Name), BlankPkgName, "invalid package name _"u8);
+                    Ꮡcheck.error(new ast_Identжpositioner((~@file).Name), BlankPkgName, invalidPackageNameˢ);
                 }
                 fallthrough = true;
             }
@@ -455,6 +458,16 @@ public static error /*err*/ Files(this ж<Checker> Ꮡcheck, slice<ж<ast.File>>
     return Ꮡerr.ValueSlot;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string initFilesˢ = "== initFiles =="u8;
+private static readonly @string collectObjectsˢ = "== collectObjects =="u8;
+private static readonly @string packageObjectsˢ = "== packageObjects =="u8;
+private static readonly @string processDelayedˢ = "== processDelayed =="u8;
+private static readonly @string cleanupˢ = "== cleanup =="u8;
+private static readonly @string initOrderˢ = "== initOrder =="u8;
+private static readonly @string unusedImportsˢ = "== unusedImports =="u8;
+private static readonly @string recordUntypedˢ = "== recordUntyped =="u8;
+
 // checkFiles type-checks the specified files. Errors are reported as
 // a side effect, not by returning early, to ensure that well-formed
 // syntax is properly type annotated even in a package containing
@@ -481,24 +494,24 @@ internal static void checkFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> f
             fmt.Println(msg);
         }
     };
-    print("== initFiles =="u8);
+    print(initFilesˢ);
     Ꮡcheck.initFiles(files);
-    print("== collectObjects =="u8);
+    print(collectObjectsˢ);
     Ꮡcheck.collectObjects();
-    print("== packageObjects =="u8);
+    print(packageObjectsˢ);
     Ꮡcheck.packageObjects();
-    print("== processDelayed =="u8);
+    print(processDelayedˢ);
     Ꮡcheck.processDelayed(0);
     // incl. all functions
-    print("== cleanup =="u8);
+    print(cleanupˢ);
     check.cleanup();
-    print("== initOrder =="u8);
+    print(initOrderˢ);
     Ꮡcheck.initOrder();
     if (!(~check.conf).DisableUnusedImportCheck) {
-        print("== unusedImports =="u8);
+        print(unusedImportsˢ);
         Ꮡcheck.unusedImports();
     }
-    print("== recordUntyped =="u8);
+    print(recordUntypedˢ);
     Ꮡcheck.recordUntyped();
     if (check.firstErr == default!) {
         // TODO(mdempsky): Ensure monomorph is safe when errors exist.
@@ -516,6 +529,9 @@ internal static void checkFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> f
     check.unionTypeSets = default!;
     check.ctxt = default!;
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string delayedPˢ = "-- delayed %p"u8;
 
 // TODO(rFindley) There's more memory we should release at this point.
 
@@ -535,7 +551,7 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
             if ((~a).desc != nil){
                 Ꮡcheck.trace((~(~a).desc).pos.Pos(), "-- "u8 + (~(~a).desc).format, (~(~a).desc).args.ꓸꓸꓸ);
             } else {
-                Ꮡcheck.trace(nopos, "-- delayed %p"u8, (~a).f);
+                Ꮡcheck.trace(nopos, delayedPˢ, (~a).f);
             }
         }
         (~a).f();
@@ -590,6 +606,9 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string vSTypeSIsTypedˢ = "%v: %s (type %s) is typed"u8;
+
 internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
     ref var check = ref Ꮡcheck.Value;
 
@@ -599,7 +618,7 @@ internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
     // nothing to do
     foreach (var (x, info) in check.untyped) {
         if (debug && isTyped(new BasicжΔType(info.typ))) {
-            Ꮡcheck.dump("%v: %s (type %s) is typed"u8, x.Pos(), x, info.typ);
+            Ꮡcheck.dump(vSTypeSIsTypedˢ, x.Pos(), x, info.typ);
             throw panic("unreachable");
         }
         check.recordTypeAndValue(x, info.mode, new BasicжΔType(info.typ), info.val);
@@ -702,6 +721,9 @@ internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string instantiatedIdentNotˢ = "instantiated ident not found; please report: "u8;
+
 internal static ж<ast.Ident> instantiatedIdent(ast.Expr expr) {
     ast.Expr selOrIdent = default!;
     switch (expr.type()) {
@@ -728,7 +750,7 @@ internal static ж<ast.Ident> instantiatedIdent(ast.Expr expr) {
     }}
     // extra debugging of #63933
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    Ꮡbuf.WriteString("instantiated ident not found; please report: "u8);
+    Ꮡbuf.WriteString(instantiatedIdentNotˢ);
     ast.Fprint(new strings_BuilderжWriter(Ꮡbuf), token.NewFileSet(), expr, new Func<@string, reflectꓸValue, bool>(ast.NotNilFilter));
     throw panic(buf.String());
 }

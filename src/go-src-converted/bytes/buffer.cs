@@ -5,7 +5,7 @@ namespace go;
 
 // Simple byte buffer for marshaling data.
 using errors = errors_package;
-using Δio = io_package;
+using io = io_package;
 using utf8 = go.unicode.utf8_package;
 using go.unicode;
 
@@ -227,7 +227,7 @@ public static readonly UntypedInt MinRead = 512;
 // the buffer as needed. The return value n is the number of bytes read. Any
 // error except io.EOF encountered during the read is also returned. If the
 // buffer becomes too large, ReadFrom will panic with [ErrTooLarge].
-[GoRecv] public static (int64 n, error err) ReadFrom(this ref Buffer b, Δio.Reader r) {
+[GoRecv] public static (int64 n, error err) ReadFrom(this ref Buffer b, io.Reader r) {
     int64 n = default!;
     error err = default!;
 
@@ -241,7 +241,7 @@ public static readonly UntypedInt MinRead = 512;
         }
         b.buf = b.buf[..(int)(i + m)];
         n += (int64)m;
-        if (AreEqual(e, Δio.EOF)) {
+        if (AreEqual(e, io.EOF)) {
             return (n, default!);
         }
         // e is EOF, so return nil explicitly
@@ -283,7 +283,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
 // The return value n is the number of bytes written; it always fits into an
 // int, but it is int64 to match the [io.WriterTo] interface. Any error
 // encountered during the write is also returned.
-[GoRecv] public static (int64 n, error err) WriteTo(this ref Buffer b, Δio.Writer w) {
+[GoRecv] public static (int64 n, error err) WriteTo(this ref Buffer b, io.Writer w) {
     int64 n = default!;
     error err = default!;
 
@@ -302,7 +302,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
             // all bytes should have been written, by definition of
             // Write method in io.Writer
             if (m != nBytes) {
-                return (n, Δio.ErrShortWrite);
+                return (n, io.ErrShortWrite);
             }
         }
     }
@@ -362,7 +362,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
         if (len(p) == 0) {
             return (0, default!);
         }
-        return (0, Δio.EOF);
+        return (0, io.EOF);
     }
     n = copy(p, b.buf[(int)(b.off)..]);
     b.off += n;
@@ -396,7 +396,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
     if (b.empty()) {
         // Buffer is empty, reset to recover space.
         b.Reset();
-        return (0, Δio.EOF);
+        return (0, io.EOF);
     }
     var c = b.buf[b.off];
     b.off++;
@@ -417,7 +417,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
     if (b.empty()) {
         // Buffer is empty, reset to recover space.
         b.Reset();
-        return (0, 0, Δio.EOF);
+        return (0, 0, io.EOF);
     }
     var c = b.buf[b.off];
     if (c < utf8.RuneSelf) {
@@ -431,6 +431,9 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
     return (r, n, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bytesBufferUnreadRuneˢ = "bytes.Buffer: UnreadRune: previous operation was not a successful ReadRune"u8;
+
 // UnreadRune unreads the last rune returned by [Buffer.ReadRune].
 // If the most recent read or write operation on the buffer was
 // not a successful [Buffer.ReadRune], UnreadRune returns an error.  (In this regard
@@ -438,7 +441,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
 // from any read operation.)
 [GoRecv] public static error UnreadRune(this ref Buffer b) {
     if (b.lastRead <= opInvalid) {
-        return errors.New("bytes.Buffer: UnreadRune: previous operation was not a successful ReadRune"u8);
+        return errors.New(bytesBufferUnreadRuneˢ);
     }
     if (b.off >= (nint)(int8)b.lastRead) {
         b.off -= (nint)(int8)b.lastRead;
@@ -490,7 +493,7 @@ internal static error errUnreadByte = errors.New("bytes.Buffer: UnreadByte: prev
     nint end = b.off + i + 1;
     if (i < 0) {
         end = len(b.buf);
-        err = Δio.EOF;
+        err = io.EOF;
     }
     line = b.buf[(int)(b.off)..(int)(end)];
     b.off = end;

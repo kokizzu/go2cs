@@ -1276,17 +1276,22 @@ internal static readonly gcState gcUndetermined = /* iota */ 0;
 internal static readonly gcState gcNotRunning = 1;
 internal static readonly gcState gcRunning = 2;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string undeterminedˢ = "Undetermined"u8;
+private static readonly @string notRunningˢ = "NotRunning"u8;
+private static readonly @string runningˢ = "Running"u8;
+
 // String returns a human-readable string for the GC state.
 internal static @string String(this gcState s) {
     var exprᴛ1 = s;
     if (exprᴛ1 == gcUndetermined) {
-        return "Undetermined"u8;
+        return undeterminedˢ;
     }
     if (exprᴛ1 == gcNotRunning) {
-        return "NotRunning"u8;
+        return notRunningˢ;
     }
     if (exprᴛ1 == gcRunning) {
-        return "Running"u8;
+        return runningˢ;
     }
 
     return "Bad"u8;

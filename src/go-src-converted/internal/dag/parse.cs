@@ -190,6 +190,10 @@ internal static @string Error(this ΔsyntaxError e) {
     return ((@string)e);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedEofˢ = "unexpected EOF"u8;
+private static readonly @string missingˢ = "missing <"u8;
+
 // parseRules parses the rules of a DAG.
 internal static (slice<rule> @out, error err) parseRules(@string rules) {
     slice<rule> @out = default!;
@@ -220,7 +224,7 @@ internal static (slice<rule> @out, error err) parseRules(@string rules) {
                 if (prev == default!) {
                     break;
                 }
-                p.syntaxError("unexpected EOF"u8);
+                p.syntaxError(unexpectedEofˢ);
             }
             if (prev != default!) {
                 @out = append(@out, new rule(prev, op, list));
@@ -232,7 +236,7 @@ internal static (slice<rule> @out, error err) parseRules(@string rules) {
                 continue;
             }
             if (tok != "<"u8 && tok != "!<"u8) {
-                p.syntaxError("missing <"u8);
+                p.syntaxError(missingˢ);
             }
             op = tok;
         }
@@ -252,6 +256,9 @@ internal static (slice<rule> @out, error err) parseRules(@string rules) {
     throw panic(((ΔsyntaxError)fmt.Sprintf("parsing graph: line %d: syntax error: %s near %s"u8, p.lineno, msg, p.lastWord)));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badListSyntaxˢ = "bad list syntax"u8;
+
 // nextList parses and returns a comma-separated list of names.
 [GoRecv] internal static (slice<@string> list, @string token) nextList(this ref rulesParser p) {
     slice<@string> list = default!;
@@ -268,7 +275,7 @@ internal static (slice<rule> @out, error err) parseRules(@string rules) {
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && (exprᴛ1 == ","u8 || exprᴛ1 == "<"u8 || exprᴛ1 == "!<"u8 || exprᴛ1 == ";"u8)) { matchᴛ1 = true;
-            p.syntaxError("bad list syntax"u8);
+            p.syntaxError(badListSyntaxˢ);
         }
 
         list = append(list, tok);
@@ -278,6 +285,9 @@ internal static (slice<rule> @out, error err) parseRules(@string rules) {
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedTokenˢ = "unexpected token !"u8;
 
 // nextToken returns the next token in the deps rules,
 // one of ";" "," "<" "!<" or a name.
@@ -295,7 +305,7 @@ internal static (slice<rule> @out, error err) parseRules(@string rules) {
         }
         if (exprᴛ1 is (rune)'!') { matchᴛ1 = true;
             if (len(p.text) < 2 || p.text[1] != (rune)'<') {
-                p.syntaxError("unexpected token !"u8);
+                p.syntaxError(unexpectedTokenˢ);
             }
             p.text = p.text[2..];
             return "!<"u8;

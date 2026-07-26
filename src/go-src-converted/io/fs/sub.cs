@@ -86,8 +86,11 @@ public static (FS, error) Sub(FS fsys, @string dir) {
     return err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string openˢ = "open"u8;
+
 [GoRecv] internal static (File, error) Open(this ref subFS f, @string name) {
-    var (full, err) = f.fullName("open"u8, name);
+    var (full, err) = f.fullName(openˢ, name);
     if (err != default!) {
         return (default!, err);
     }
@@ -95,8 +98,11 @@ public static (FS, error) Sub(FS fsys, @string dir) {
     return (@file, f.fixErr(err));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string readˢ = "read"u8;
+
 [GoRecv] internal static (slice<DirEntry>, error) ReadDir(this ref subFS f, @string name) {
-    var (full, err) = f.fullName("read"u8, name);
+    var (full, err) = f.fullName(readˢ, name);
     if (err != default!) {
         return (default!, err);
     }
@@ -105,7 +111,7 @@ public static (FS, error) Sub(FS fsys, @string dir) {
 }
 
 [GoRecv] internal static (slice<byte>, error) ReadFile(this ref subFS f, @string name) {
-    var (full, err) = f.fullName("read"u8, name);
+    var (full, err) = f.fullName(readˢ, name);
     if (err != default!) {
         return (default!, err);
     }
@@ -121,7 +127,7 @@ public static (FS, error) Sub(FS fsys, @string dir) {
         }
     }
     if (pattern == "."u8) {
-        return (new @string[]{"."}.slice(), default!);
+        return (new @string[]{"."u8}.slice(), default!);
     }
     @string full = f.dir + "/"u8 + pattern;
     var (list, err) = Glob(f.fsys, full);

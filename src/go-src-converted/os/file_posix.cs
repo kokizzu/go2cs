@@ -99,18 +99,21 @@ internal static error chmod(@string name, FileMode mode) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string chmodˢ = "chmod"u8;
+
 // See docs in file.go:(*File).Chmod.
 internal static error chmod(this ж<File> Ꮡf, FileMode mode) {
     ref var f = ref Ꮡf.Value;
 
     {
-        var err = Ꮡf.checkValid("chmod"u8); if (err != default!) {
+        var err = Ꮡf.checkValid(chmodˢ); if (err != default!) {
             return err;
         }
     }
     {
         var e = Ꮡf.of(File.Ꮡpfd).Fchmod(syscallMode(mode)); if (e != default!) {
-            return f.wrapErr("chmod"u8, e);
+            return f.wrapErr(chmodˢ, e);
         }
     }
     return default!;
@@ -145,6 +148,9 @@ public static error Lchown(@string name, nint uid, nint gid) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string chownˢ = "chown"u8;
+
 // Chown changes the numeric uid and gid of the named file.
 // If there is an error, it will be of type [*PathError].
 //
@@ -154,17 +160,20 @@ public static error Chown(this ж<File> Ꮡf, nint uid, nint gid) {
     ref var f = ref Ꮡf.Value;
 
     {
-        var err = Ꮡf.checkValid("chown"u8); if (err != default!) {
+        var err = Ꮡf.checkValid(chownˢ); if (err != default!) {
             return err;
         }
     }
     {
         var e = Ꮡf.of(File.Ꮡpfd).Fchown(uid, gid); if (e != default!) {
-            return f.wrapErr("chown"u8, e);
+            return f.wrapErr(chownˢ, e);
         }
     }
     return default!;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string truncateˢ = "truncate"u8;
 
 // Truncate changes the size of the file.
 // It does not change the I/O offset.
@@ -173,17 +182,20 @@ public static error Truncate(this ж<File> Ꮡf, int64 size) {
     ref var f = ref Ꮡf.Value;
 
     {
-        var err = Ꮡf.checkValid("truncate"u8); if (err != default!) {
+        var err = Ꮡf.checkValid(truncateˢ); if (err != default!) {
             return err;
         }
     }
     {
         var e = Ꮡf.of(File.Ꮡpfd).Ftruncate(size); if (e != default!) {
-            return f.wrapErr("truncate"u8, e);
+            return f.wrapErr(truncateˢ, e);
         }
     }
     return default!;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string syncˢ = "sync"u8;
 
 // Sync commits the current contents of the file to stable storage.
 // Typically, this means flushing the file system's in-memory copy
@@ -192,13 +204,13 @@ public static error Sync(this ж<File> Ꮡf) {
     ref var f = ref Ꮡf.Value;
 
     {
-        var err = Ꮡf.checkValid("sync"u8); if (err != default!) {
+        var err = Ꮡf.checkValid(syncˢ); if (err != default!) {
             return err;
         }
     }
     {
         var e = Ꮡf.of(File.Ꮡpfd).Fsync(); if (e != default!) {
-            return f.wrapErr("sync"u8, e);
+            return f.wrapErr(syncˢ, e);
         }
     }
     return default!;
@@ -237,42 +249,51 @@ public static error Chdir(this ж<File> Ꮡf) {
     ref var f = ref Ꮡf.Value;
 
     {
-        var err = Ꮡf.checkValid("chdir"u8); if (err != default!) {
+        var err = Ꮡf.checkValid(chdirˢ); if (err != default!) {
             return err;
         }
     }
     {
         var e = Ꮡf.of(File.Ꮡpfd).Fchdir(); if (e != default!) {
-            return f.wrapErr("chdir"u8, e);
+            return f.wrapErr(chdirˢ, e);
         }
     }
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string setDeadlineˢ = "SetDeadline"u8;
+
 // setDeadline sets the read and write deadline.
 internal static error setDeadline(this ж<File> Ꮡf, time.Time t) {
     {
-        var err = Ꮡf.checkValid("SetDeadline"u8); if (err != default!) {
+        var err = Ꮡf.checkValid(setDeadlineˢ); if (err != default!) {
             return err;
         }
     }
     return Ꮡf.of(File.Ꮡpfd).SetDeadline(t);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string setReadDeadlineˢ = "SetReadDeadline"u8;
+
 // setReadDeadline sets the read deadline.
 internal static error setReadDeadline(this ж<File> Ꮡf, time.Time t) {
     {
-        var err = Ꮡf.checkValid("SetReadDeadline"u8); if (err != default!) {
+        var err = Ꮡf.checkValid(setReadDeadlineˢ); if (err != default!) {
             return err;
         }
     }
     return Ꮡf.of(File.Ꮡpfd).SetReadDeadline(t);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string setWriteDeadlineˢ = "SetWriteDeadline"u8;
+
 // setWriteDeadline sets the write deadline.
 internal static error setWriteDeadline(this ж<File> Ꮡf, time.Time t) {
     {
-        var err = Ꮡf.checkValid("SetWriteDeadline"u8); if (err != default!) {
+        var err = Ꮡf.checkValid(setWriteDeadlineˢ); if (err != default!) {
             return err;
         }
     }

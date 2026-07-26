@@ -72,6 +72,9 @@ public static @string String(this ж<ΔTerm> Ꮡt) {
 // Avoid excessive type-checking times due to quadratic termlist operations.
 internal static readonly UntypedInt maxTermCount = 100;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cannotUseComparableInˢ = "cannot use comparable in union"u8;
+
 // parseUnion parses uexpr as a union of expressions.
 // The result is a Union type, or Typ[Invalid] for some errors.
 internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
@@ -145,7 +148,7 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
                     break;
                 }
                 case {} when AreEqual((~t).typ, universeComparable.Type()): {
-                    Ꮡcheck.error(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, "cannot use comparable in union"u8);
+                    Ꮡcheck.error(new ast_Exprᴠpositioner(tlistʗ7[i]), InvalidUnion, cannotUseComparableInˢ);
                     break;
                 }
                 case {} when (~tset).comparable: {
@@ -164,6 +167,9 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
     }).describef(new ast_Exprᴠpositioner(uexpr), "check term validity %s"u8, uexpr);
     return u;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string termCannotBeATypeˢ = "term cannot be a type parameter"u8;
 
 internal static ж<ΔTerm> parseTilde(ж<Checker> Ꮡcheck, ast.Expr tx) {
     ref var check = ref Ꮡcheck.Value;
@@ -186,7 +192,7 @@ internal static ж<ΔTerm> parseTilde(ж<Checker> Ꮡcheck, ast.Expr tx) {
         if (tilde){
             Ꮡcheck.errorf(new ast_Exprᴠpositioner(x), MisplacedTypeParam, "type in term %s cannot be a type parameter"u8, tx);
         } else {
-            Ꮡcheck.error(new ast_Exprᴠpositioner(x), MisplacedTypeParam, "term cannot be a type parameter"u8);
+            Ꮡcheck.error(new ast_Exprᴠpositioner(x), MisplacedTypeParam, termCannotBeATypeˢ);
         }
         typ = new BasicжΔType(Typ[Invalid]);
     }

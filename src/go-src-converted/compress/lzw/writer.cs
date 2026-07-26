@@ -118,6 +118,9 @@ internal static error incHi(this ж<Writer> Ꮡw) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lzwInputByteTooLargeForˢ = "lzw: input byte too large for the litWidth"u8;
+
 // Write writes a compressed representation of p to w's underlying writer.
 public static (nint n, error err) Write(this ж<Writer> Ꮡw, slice<byte> p) {
     nint n = default!;
@@ -134,7 +137,7 @@ public static (nint n, error err) Write(this ж<Writer> Ꮡw, slice<byte> p) {
         var maxLit = (uint8)(((uint8)1).Lsh(w.litWidth) - 1); if (maxLit != 0xff) {
             foreach (var (_, x) in p) {
                 if (x > maxLit) {
-                    w.err = errors.New("lzw: input byte too large for the litWidth"u8);
+                    w.err = errors.New(lzwInputByteTooLargeForˢ);
                     return (0, w.err);
                 }
             }
@@ -299,7 +302,7 @@ internal static ж<Writer> newWriter(io.Writer dst, Order order, nint litWidth) 
         w.write = (Func<ж<Writer>, uint32, error>)(writeMSB);
     }
     else { /* default: */
-        w.err = errors.New("lzw: unknown order"u8);
+        w.err = errors.New(lzwUnknownOrderˢ);
         return;
     }
 

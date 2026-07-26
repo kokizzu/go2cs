@@ -398,6 +398,11 @@ internal static @string defaultPath(@string path) {
     return path[..(int)(i)];
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sameSiteˢ = "SameSite"u8;
+private static readonly @string sameSiteStrictˢ = "SameSite=Strict"u8;
+private static readonly @string sameSiteLaxˢ = "SameSite=Lax"u8;
+
 // Path is either of form "/abc/xyz" or "/abc/xyz/".
 
 // newEntry creates an entry from an http.Cookie c. now is the current time and
@@ -450,13 +455,13 @@ internal static @string defaultPath(@string path) {
     e.HttpOnly = c.HttpOnly;
     var exprᴛ1 = c.SameSite;
     if (exprᴛ1 == http.SameSiteDefaultMode) {
-        e.SameSite = "SameSite"u8;
+        e.SameSite = sameSiteˢ;
     }
     else if (exprᴛ1 == http.SameSiteStrictMode) {
-        e.SameSite = "SameSite=Strict"u8;
+        e.SameSite = sameSiteStrictˢ;
     }
     else if (exprᴛ1 == http.SameSiteLaxMode) {
-        e.SameSite = "SameSite=Lax"u8;
+        e.SameSite = sameSiteLaxˢ;
     }
 
     return (e, false, default!);

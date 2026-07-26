@@ -200,11 +200,11 @@ internal static bool validateTArgLen(this ж<Checker> Ꮡcheck, tokenꓸPos pos,
     @string qual = default!;
     switch (ᐧ) {
     case {} when got < want: {
-        qual = "not enough"u8;
+        qual = notEnoughˢ;
         break;
     }
     case {} when got > want: {
-        qual = "too many"u8;
+        qual = tooManyˢ;
         break;
     }
     default: {
@@ -237,6 +237,10 @@ internal static (nint, error) verify(this ж<Checker> Ꮡcheck, tokenꓸPos pos,
     return (-1, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string implementˢ = "implement"u8;
+private static readonly @string satisfyˢ = "satisfy"u8;
+
 // implements checks if V implements T. The receiver may be nil if implements
 // is called through an exported API call such as AssignableTo. If constraint
 // is set, T is a type constraint.
@@ -259,9 +263,9 @@ internal static bool implements(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔTy
         }
     }
     // avoid follow-on errors (see go.dev/issue/49541 for an example)
-    @string verb = "implement"u8;
+    @string verb = implementˢ;
     if (constraint) {
-        verb = "satisfy"u8;
+        verb = satisfyˢ;
     }
     var (Ti, _) = Tu._<ж<Interface>>(ᐧ);
     if (Ti == nil) {

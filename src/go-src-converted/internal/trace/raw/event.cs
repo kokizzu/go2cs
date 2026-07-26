@@ -23,6 +23,9 @@ partial class raw_package {
     public slice<byte> Data;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dataˢ = "\n\tdata="u8;
+
 // String returns the canonical string representation of the event.
 //
 // This format is the same format that is parsed by the TextReader
@@ -51,7 +54,7 @@ partial class raw_package {
         }
     }
     if (e.Data != default!) {
-        Ꮡs.WriteString("\n\tdata="u8);
+        Ꮡs.WriteString(dataˢ);
         Ꮡs.WriteString(strconv.Quote(((@string)e.Data)));
     }
     return s.String();

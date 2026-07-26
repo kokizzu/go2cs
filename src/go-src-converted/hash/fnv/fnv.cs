@@ -332,12 +332,16 @@ internal const nint marshaledSize128 = /* len(magic128) + 8*2 */ 20;
     return (b, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string hashFnvInvalidHashStateˢ = "hash/fnv: invalid hash state identifier"u8;
+private static readonly @string hashFnvInvalidHashStateˢ2 = "hash/fnv: invalid hash state size"u8;
+
 [GoRecv] internal static error UnmarshalBinary(this ref sum32 s, slice<byte> b) {
     if (len(b) < len(magic32) || ((sstring)(b[..(int)(len(magic32))])) != magic32) {
-        return errors.New("hash/fnv: invalid hash state identifier"u8);
+        return errors.New(hashFnvInvalidHashStateˢ);
     }
     if (len(b) != marshaledSize32) {
-        return errors.New("hash/fnv: invalid hash state size"u8);
+        return errors.New(hashFnvInvalidHashStateˢ2);
     }
     s = ((sum32)byteorder.BeUint32(b[4..]));
     return default!;
@@ -345,10 +349,10 @@ internal const nint marshaledSize128 = /* len(magic128) + 8*2 */ 20;
 
 [GoRecv] internal static error UnmarshalBinary(this ref sum32a s, slice<byte> b) {
     if (len(b) < len(magic32a) || ((sstring)(b[..(int)(len(magic32a))])) != magic32a) {
-        return errors.New("hash/fnv: invalid hash state identifier"u8);
+        return errors.New(hashFnvInvalidHashStateˢ);
     }
     if (len(b) != marshaledSize32) {
-        return errors.New("hash/fnv: invalid hash state size"u8);
+        return errors.New(hashFnvInvalidHashStateˢ2);
     }
     s = ((sum32a)byteorder.BeUint32(b[4..]));
     return default!;
@@ -356,10 +360,10 @@ internal const nint marshaledSize128 = /* len(magic128) + 8*2 */ 20;
 
 [GoRecv] internal static error UnmarshalBinary(this ref sum64 s, slice<byte> b) {
     if (len(b) < len(magic64) || ((sstring)(b[..(int)(len(magic64))])) != magic64) {
-        return errors.New("hash/fnv: invalid hash state identifier"u8);
+        return errors.New(hashFnvInvalidHashStateˢ);
     }
     if (len(b) != marshaledSize64) {
-        return errors.New("hash/fnv: invalid hash state size"u8);
+        return errors.New(hashFnvInvalidHashStateˢ2);
     }
     s = ((sum64)byteorder.BeUint64(b[4..]));
     return default!;
@@ -367,10 +371,10 @@ internal const nint marshaledSize128 = /* len(magic128) + 8*2 */ 20;
 
 [GoRecv] internal static error UnmarshalBinary(this ref sum64a s, slice<byte> b) {
     if (len(b) < len(magic64a) || ((sstring)(b[..(int)(len(magic64a))])) != magic64a) {
-        return errors.New("hash/fnv: invalid hash state identifier"u8);
+        return errors.New(hashFnvInvalidHashStateˢ);
     }
     if (len(b) != marshaledSize64) {
-        return errors.New("hash/fnv: invalid hash state size"u8);
+        return errors.New(hashFnvInvalidHashStateˢ2);
     }
     s = ((sum64a)byteorder.BeUint64(b[4..]));
     return default!;
@@ -378,10 +382,10 @@ internal const nint marshaledSize128 = /* len(magic128) + 8*2 */ 20;
 
 [GoRecv] internal static error UnmarshalBinary(this ref sum128 s, slice<byte> b) {
     if (len(b) < len(magic128) || ((sstring)(b[..(int)(len(magic128))])) != magic128) {
-        return errors.New("hash/fnv: invalid hash state identifier"u8);
+        return errors.New(hashFnvInvalidHashStateˢ);
     }
     if (len(b) != marshaledSize128) {
-        return errors.New("hash/fnv: invalid hash state size"u8);
+        return errors.New(hashFnvInvalidHashStateˢ2);
     }
     s.Value[0] = byteorder.BeUint64(b[4..]);
     s.Value[1] = byteorder.BeUint64(b[12..]);
@@ -390,10 +394,10 @@ internal const nint marshaledSize128 = /* len(magic128) + 8*2 */ 20;
 
 [GoRecv] internal static error UnmarshalBinary(this ref sum128a s, slice<byte> b) {
     if (len(b) < len(magic128a) || ((sstring)(b[..(int)(len(magic128a))])) != magic128a) {
-        return errors.New("hash/fnv: invalid hash state identifier"u8);
+        return errors.New(hashFnvInvalidHashStateˢ);
     }
     if (len(b) != marshaledSize128) {
-        return errors.New("hash/fnv: invalid hash state size"u8);
+        return errors.New(hashFnvInvalidHashStateˢ2);
     }
     s.Value[0] = byteorder.BeUint64(b[4..]);
     s.Value[1] = byteorder.BeUint64(b[12..]);

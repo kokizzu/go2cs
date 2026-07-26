@@ -134,10 +134,13 @@ internal static map<@string, contentType> attrTypeMap = new map<@string, content
     ["xmlns"u8] = contentTypeURL
 };
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dataˢ = "data-"u8;
+
 // attrType returns a conservative (upper-bound on authority) guess at the
 // type of the lowercase named attribute.
 internal static contentType attrType(@string name) {
-    if (strings.HasPrefix(name, "data-"u8)){
+    if (strings.HasPrefix(name, dataˢ)){
         // Strip data- so that custom attribute heuristics below are
         // widely applied.
         // Treat data-action as URL below.

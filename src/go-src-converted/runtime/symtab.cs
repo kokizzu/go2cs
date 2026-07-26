@@ -578,6 +578,12 @@ internal static void moduledataverify() {
 
 internal const bool debugPcln = false;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidFunctionSymbolˢ = "invalid function symbol table"u8;
+private static readonly @string invalidRuntimeSymbolˢ = "invalid runtime symbol table"u8;
+private static readonly @string minpcOrMaxpcInvalidˢ = "minpc or maxpc invalid"u8;
+private static readonly @string abiMismatchˢ = "abi mismatch"u8;
+
 // moduledataverify1 should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
@@ -596,7 +602,7 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
         println((@string)"runtime: pcHeader: magic="u8, ((Δhex)(uint64)(~hdr).magic), (@string)"pad1="u8, (~hdr).pad1, (@string)"pad2="u8, (~hdr).pad2,
             (@string)"minLC="u8, (~hdr).minLC, (@string)"ptrSize="u8, (~hdr).ptrSize, (@string)"pcHeader.textStart="u8, ((Δhex)(uint64)(~hdr).textStart),
             (@string)"text="u8, ((Δhex)(uint64)datap.text), (@string)"pluginpath="u8, datap.pluginpath);
-        @throw("invalid function symbol table"u8);
+        @throw(invalidFunctionSymbolˢ);
     }
     // ftab is lookup table for function by program counter.
     nint nftab = len(datap.ftab) - 1;
@@ -616,22 +622,25 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
             if (GOOS == "aix"u8 && isarchive) {
                 println((@string)"-Wl,-bnoobjreorder is mandatory on aix/ppc64 with c-archive"u8);
             }
-            @throw("invalid runtime symbol table"u8);
+            @throw(invalidRuntimeSymbolˢ);
         }
     }
     var min = datap.textAddr(datap.ftab[0].entryoff);
     var max = datap.textAddr(datap.ftab[nftab].entryoff);
     if (datap.minpc != min || datap.maxpc != max) {
         println((@string)"minpc="u8, ((Δhex)(uint64)datap.minpc), (@string)"min="u8, ((Δhex)(uint64)min), (@string)"maxpc="u8, ((Δhex)(uint64)datap.maxpc), (@string)"max="u8, ((Δhex)(uint64)max));
-        @throw("minpc or maxpc invalid"u8);
+        @throw(minpcOrMaxpcInvalidˢ);
     }
     foreach (var (_, modulehash) in datap.modulehashes) {
         if (modulehash.linktimehash != modulehash.runtimehash.Value) {
             println((@string)"abi mismatch detected between"u8, datap.modulename, (@string)"and"u8, modulehash.modulename);
-            @throw("abi mismatch"u8);
+            @throw(abiMismatchˢ);
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeTextOffsetOutOfˢ = "runtime: text offset out of range"u8;
 
 // textAddr returns md.text + off, with special handling for multiple text sections.
 // off is a (virtual) offset computed at internal linking time,
@@ -665,7 +674,7 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
         if (res > md.etext && GOARCH != "wasm"u8) {
             // on wasm, functions do not live in the same address space as the linear memory
             println((@string)"runtime: textAddr"u8, ((Δhex)(uint64)res), (@string)"out of range"u8, ((Δhex)(uint64)md.text), (@string)"-"u8, ((Δhex)(uint64)md.etext));
-            @throw("runtime: text offset out of range"u8);
+            @throw(runtimeTextOffsetOutOfˢ);
         }
     }
     return res;
@@ -955,6 +964,11 @@ internal static uintptr pcvalueCacheKey(uintptr targetpc) {
     return (targetpc / (uintptr)goarch.PtrSize) % (uintptr)len(new pcvalueCache(nil).entries);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cacheInUseOutOfRangeˢ = "cache.inUse out of range"u8;
+private static readonly @string noModuleDataˢ = "no module data"u8;
+private static readonly @string badPcvalueCacheˢ = "bad pcvalue cache"u8;
+
 // Returns the PCData value, and the PC where this value starts.
 internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targetpc, bool strict) {
     // If true, when we get a cache hit, still look up the data and make sure it
@@ -1001,7 +1015,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
         if (debugCheckCache && ((~cache).inUse < 1 || (~cache).inUse > 2)) {
             // Catch accounting errors or deeply reentrant use. In principle
             // "inUse" should never exceed 2.
-            @throw("cache.inUse out of range"u8);
+            @throw(cacheInUseOutOfRangeˢ);
         }
         cache.Value.inUse--;
         releasem(mp);
@@ -1009,7 +1023,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
     if (!f.valid()) {
         if (strict && Ꮡpanicking.Load() == 0) {
             println((@string)"runtime: no module data for"u8, ((Δhex)(uint64)f.entry()));
-            @throw("no module data"u8);
+            @throw(noModuleDataˢ);
         }
         return (-1, 0);
     }
@@ -1036,7 +1050,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
             if (debugCheckCache && checkPC != 0){
                 if (checkVal != val || checkPC != prevpc) {
                     print((@string)"runtime: table value "u8, val, (@string)"@"u8, prevpc, (@string)" != cache value "u8, checkVal, (@string)"@"u8, checkPC, (@string)" at PC "u8, targetpc, (@string)" off "u8, off, (@string)"\n"u8);
-                    @throw("bad pcvalue cache"u8);
+                    @throw(badPcvalueCacheˢ);
                 }
             } else {
                 var mp = acquirem();
@@ -1077,7 +1091,7 @@ internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targe
         }
         print((@string)"\tvalue="u8, val, (@string)" until pc="u8, ((Δhex)(uint64)pc), (@string)"\n"u8);
     }
-    @throw("invalid runtime symbol table"u8);
+    @throw(invalidRuntimeSymbolˢ);
     return (-1, 0);
 }
 
@@ -1153,11 +1167,14 @@ internal static (@string @file, int32 line) funcline(ΔfuncInfo f, uintptr targe
     return funcline1(f, targetpc, true);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badSpdeltaˢ = "bad spdelta"u8;
+
 internal static int32 funcspdelta(ΔfuncInfo f, uintptr targetpc) {
     var (x, _) = pcvalue(f, f.pcsp, targetpc, true);
     if (debugPcln && (int32)(x & (int32)((goarch.PtrSize - 1))) != 0) {
         print((@string)"invalid spdelta "u8, funcname(f), (@string)" "u8, ((Δhex)(uint64)f.entry()), (@string)" "u8, ((Δhex)(uint64)targetpc), (@string)" "u8, ((Δhex)(uint64)f.pcsp), (@string)" "u8, x, (@string)"\n"u8);
-        @throw("bad spdelta"u8);
+        @throw(badSpdeltaˢ);
     }
     return x;
 }
@@ -1305,6 +1322,9 @@ internal static (uint32 read, uint32 val) readvarint(slice<byte> Δp) {
     internal array<byte> bytedata = new(1); // bitmaps, each starting on a byte boundary
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stackmapdataIndexOutOfˢ = "stackmapdata: index out of range"u8;
+
 // stackmapdata should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
@@ -1322,7 +1342,7 @@ internal static bitvector stackmapdata(ж<stackmap> Ꮡstkmap, int32 n) {
     // The invariant is already checked by many of stackmapdata's callers,
     // and disabling it by default allows stackmapdata to be inlined.
     if (stackDebug > 0 && (n < 0 || n >= stkmap.n)) {
-        @throw("stackmapdata: index out of range"u8);
+        @throw(stackmapdataIndexOutOfˢ);
     }
     return new bitvector(stkmap.nbit, addb(Ꮡstkmap.at(stackmap.Ꮡbytedata, 0), (uintptr)(n * (((stkmap.nbit + 7) >> (int)(3))))));
 }

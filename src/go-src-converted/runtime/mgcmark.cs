@@ -76,12 +76,16 @@ internal static void gcMarkRootPrepare() {
     work.baseEnd = work.baseStacks + (uint32)work.nStackRoots;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string leftOverMarkrootJobsˢ = "left over markroot jobs"u8;
+private static readonly @string scanMissedAGˢ = "scan missed a g"u8;
+
 // gcMarkRootCheck checks that all roots have been scanned. It is
 // purely for debugging.
 internal static void gcMarkRootCheck() {
     if (work.markrootNext < work.markrootJobs) {
         print(work.markrootNext, (@string)" of "u8, work.markrootJobs, (@string)" markroot jobs done\n"u8);
-        @throw("left over markroot jobs"u8);
+        @throw(leftOverMarkrootJobsˢ);
     }
     // Check that stacks have been scanned.
     //
@@ -97,7 +101,7 @@ internal static void gcMarkRootCheck() {
             println((@string)"gp"u8, gp, (@string)"goid"u8, (~gp).goid,
                 (@string)"status"u8, readgstatus(gp),
                 (@string)"gcscandone"u8, (~gp).gcscandone);
-            @throw("scan missed a g"u8);
+            @throw(scanMissedAGˢ);
         }
         i++;
     });
@@ -106,6 +110,10 @@ internal static void gcMarkRootCheck() {
 // ptrmask for an allocation containing a single pointer.
 internal static ж<array<uint8>> Ꮡoneptrmask = new(new uint8[]{1}.array());
 internal static ref array<uint8> oneptrmask => ref Ꮡoneptrmask.Value;
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string markrootBadIndexˢ = "markroot: bad index"u8;
+private static readonly @string gAlreadyScannedˢ = "g already scanned"u8;
 
 // markroot scans the i'th root.
 //
@@ -161,7 +169,7 @@ internal static int64 markroot(ж<gcWork> Ꮡgcw, uint32 i, bool flushBgCredit) 
             // the rest is scanning goroutine stacks
             printlock();
             print((@string)"runtime: markroot index "u8, i, (@string)" not in stack roots range ["u8, work.baseStacks, (@string)", "u8, work.baseEnd, (@string)")\n"u8);
-            @throw("markroot: bad index"u8);
+            @throw(markrootBadIndexˢ);
         }
         var gp = work.stackRoots[(nint)(i - work.baseStacks)];
         var status = readgstatus(gp);
@@ -198,7 +206,7 @@ internal static int64 markroot(ж<gcWork> Ꮡgcw, uint32 i, bool flushBgCredit) 
                 return;
             }
             if ((~gpʗ1).gcscandone) {
-                @throw("g already scanned"u8);
+                @throw(gAlreadyScannedˢ);
             }
             workDone += scanstack(gpʗ1, Ꮡgcw);
             gpʗ1.Value.gcscandone = true;
@@ -219,6 +227,9 @@ internal static int64 markroot(ж<gcWork> Ꮡgcw, uint32 i, bool flushBgCredit) 
     return workDone;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rootBlockBytesMustBeAˢ = "rootBlockBytes must be a multiple of 8*ptrSize"u8;
+
 // markrootBlock scans the shard'th shard of the block of memory [b0,
 // b0+n0), with the given pointer mask.
 //
@@ -230,7 +241,7 @@ internal static int64 markrootBlock(uintptr b0, uintptr n0, ж<uint8> Ꮡptrmask
 
     if (rootBlockBytes % (8 * goarch.PtrSize) != 0) {
         // This is necessary to pick byte offsets in ptrmask0.
-        @throw("rootBlockBytes must be a multiple of 8*ptrSize"u8);
+        @throw(rootBlockBytesMustBeAˢ);
     }
     // Note that if b0 is toward the end of the address space,
     // then b0 + rootBlockBytes might wrap around.
@@ -278,6 +289,10 @@ internal static void markrootFreeGStacks() {
     Ꮡsched.of(schedt.ᏑgFree).of(schedt_gFree.ᏑnoStack).pushAll(q);
     unlock(Ꮡsched.of(schedt.ᏑgFree).of(schedt_gFree.Ꮡlock));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nonInUseSpanFoundWithˢ = "non in-use span found with specials bit set"u8;
+private static readonly @string gcUnsweptSpanˢ = "gc: unswept span"u8;
 
 // markrootSpans marks roots for one shard of markArenas.
 //
@@ -329,14 +344,14 @@ internal static void markrootSpans(ж<gcWork> Ꮡgcw, nint shard) {
             {
                 var state = s.of(mspan.Ꮡstate).get(); if (state != mSpanInUse) {
                     print((@string)"s.state = "u8, state, (@string)"\n"u8);
-                    @throw("non in-use span found with specials bit set"u8);
+                    @throw(nonInUseSpanFoundWithˢ);
                 }
             }
             // Check that this span was swept (it may be cached or uncached).
             if (!useCheckmark && !((~s).sweepgen == sg || (~s).sweepgen == sg + 3)) {
                 // sweepgen was updated (+2) during non-checkmark GC pass
                 print((@string)"sweep "u8, (~s).sweepgen, (@string)" "u8, sg, (@string)"\n"u8);
-                @throw("gc: unswept span"u8);
+                @throw(gcUnsweptSpanˢ);
             }
             // Lock the specials to prevent a special from being
             // removed from the list while we're traversing it.
@@ -560,6 +575,9 @@ retry:
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nwaitWorkNprocsˢ = "nwait > work.nprocs"u8;
+
 // gcAssistAlloc1 is the part of gcAssistAlloc that runs on the system
 // stack. This is a separate function to make it easier to see that
 // we're not capturing anything from the user stack, since the user
@@ -597,7 +615,7 @@ internal static void gcAssistAlloc1(ж<g> Ꮡgp, int64 scanWork) {
     var decnwait = atomic.Xadd(Ꮡwork.of(workType.Ꮡnwait), -1);
     if (decnwait == work.nproc) {
         println((@string)"runtime: work.nwait ="u8, decnwait, (@string)"work.nproc="u8, work.nproc);
-        @throw("nwait > work.nprocs"u8);
+        @throw(nwaitWorkNprocsˢ);
     }
     // gcDrainN requires the caller to be preemptible.
     casGToWaitingForGC(Ꮡgp, _Grunning, waitReasonGCAssistMarking);
@@ -620,7 +638,7 @@ internal static void gcAssistAlloc1(ж<g> Ꮡgp, int64 scanWork) {
     if (incnwait > work.nproc) {
         println((@string)"runtime: work.nwait="u8, incnwait,
             (@string)"work.nproc="u8, work.nproc);
-        @throw("work.nwait > work.nproc"u8);
+        @throw(workNwaitWorkNprocˢ);
     }
     if (incnwait == work.nproc && !gcMarkWorkAvailable(nil)) {
         // This has reached a background completion point. Set
@@ -745,6 +763,13 @@ internal static void gcFlushBgCredit(int64 scanWork) {
     unlock(Ꮡwork.of(workType.ᏑassistQueue).of(workType_assistQueue.Ꮡlock));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string scanstackBadStatusˢ = "scanstack - bad status"u8;
+private static readonly @string markBadStatusˢ = "mark - bad status"u8;
+private static readonly @string scanstackGoroutineNotˢ = "scanstack: goroutine not stopped"u8;
+private static readonly @string canTScanOurOwnStackˢ = "can't scan our own stack"u8;
+private static readonly @string remainingPointerBuffersˢ = "remaining pointer buffers"u8;
+
 // scanstack scans gp's stack, greying all pointers found on the stack.
 //
 // Returns the amount of scan work performed, but doesn't update
@@ -767,7 +792,7 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
 
     if ((uint32)(readgstatus(Ꮡgp) & (uint32)_Gscan) == 0) {
         print((@string)"runtime:scanstack: gp="u8, Ꮡgp, (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, ((Δhex)(uint64)readgstatus(Ꮡgp)), (@string)"\n"u8);
-        @throw("scanstack - bad status"u8);
+        @throw(scanstackBadStatusˢ);
     }
     var exprᴛ1 = (uint32)(readgstatus(Ꮡgp) & ~(uint32)_Gscan);
     if (exprᴛ1 == _Gdead) {
@@ -775,18 +800,18 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
     }
     if (exprᴛ1 == _Grunning) {
         print((@string)"runtime: gp="u8, Ꮡgp, (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, readgstatus(Ꮡgp), (@string)"\n"u8);
-        @throw("scanstack: goroutine not stopped"u8);
+        @throw(scanstackGoroutineNotˢ);
     }
     else if (exprᴛ1 == _Grunnable || exprᴛ1 == _Gsyscall || exprᴛ1 == _Gwaiting) {
     }
     else { /* default: */
         print((@string)"runtime: gp="u8, Ꮡgp, (@string)", goid="u8, gp.goid, (@string)", gp->atomicstatus="u8, readgstatus(Ꮡgp), (@string)"\n"u8);
-        @throw("mark - bad status"u8);
+        @throw(markBadStatusˢ);
     }
 
     // ok
     if (Ꮡgp == getg()) {
-        @throw("can't scan our own stack"u8);
+        @throw(canTScanOurOwnStackˢ);
     }
     // scannedSize is the amount of work we'll be reporting.
     //
@@ -934,7 +959,7 @@ internal static int64 scanstack(ж<g> Ꮡgp, ж<gcWork> Ꮡgcw) {
         putempty(x.Reinterpret<stackObjectBuf, workbuf>());
     }
     if (state.buf != nil || state.cbuf != nil || state.freeBuf != nil) {
-        @throw("remaining pointer buffers"u8);
+        @throw(remainingPointerBuffersˢ);
     }
     return (int64)scannedSize;
 }
@@ -1057,6 +1082,9 @@ internal static void gcDrainMarkWorkerFractional(ж<gcWork> Ꮡgcw) {
     gcDrain(Ꮡgcw, (gcDrainFlags)((gcDrainFlags)(gcDrainFractional | gcDrainUntilPreempt) | gcDrainFlushBgCredit));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gcDrainPhaseIncorrectˢ = "gcDrain phase incorrect"u8;
+
 // gcDrain scans roots and objects in work buffers, blackening grey
 // objects until it is unable to get more work. It may return before
 // GC is done; it's the caller's responsibility to balance work from
@@ -1091,7 +1119,7 @@ internal static void gcDrain(ж<gcWork> Ꮡgcw, gcDrainFlags flags) {
     ref var gcw = ref Ꮡgcw.Value;
 
     if (!writeBarrier.enabled) {
-        @throw("gcDrain phase incorrect"u8);
+        @throw(gcDrainPhaseIncorrectˢ);
     }
     // N.B. We must be running in a non-preemptible context, so it's
     // safe to hold a reference to our P here.
@@ -1194,6 +1222,9 @@ done:
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gcDrainNPhaseIncorrectˢ = "gcDrainN phase incorrect"u8;
+
 // gcDrainN blackens grey objects until it has performed roughly
 // scanWork units of scan work or the G is preempted. This is
 // best-effort, so it may perform less work if it fails to get a work
@@ -1211,7 +1242,7 @@ internal static int64 gcDrainN(ж<gcWork> Ꮡgcw, int64 scanWork) {
     ref var gcw = ref Ꮡgcw.Value;
 
     if (!writeBarrier.enabled) {
-        @throw("gcDrainN phase incorrect"u8);
+        @throw(gcDrainNPhaseIncorrectˢ);
     }
     // There may already be scan work on the gcw, which we don't
     // want to claim was done by this call.
@@ -1305,6 +1336,10 @@ internal static void scanblock(uintptr b0, uintptr n0, ж<uint8> Ꮡptrmask, ж<
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string scanobjectN0ˢ = "scanobject n == 0"u8;
+private static readonly @string scanobjectOfANoscanˢ = "scanobject of a noscan object"u8;
+
 // scanobject scans the object starting at b, adding pointers to gcw.
 // b must point to the beginning of a heap object or an oblet.
 // scanobject consults the GC bitmap for the pointer mask and the
@@ -1327,12 +1362,12 @@ internal static void scanobject(uintptr b, ж<gcWork> Ꮡgcw) {
     var s = spanOfUnchecked(b);
     var n = s.Value.elemsize;
     if (n == 0) {
-        @throw("scanobject n == 0"u8);
+        @throw(scanobjectN0ˢ);
     }
     if ((~s).spanclass.noscan()) {
         // Correctness-wise this is ok, but it's inefficient
         // if noscan objects reach here.
-        @throw("scanobject of a noscan object"u8);
+        @throw(scanobjectOfANoscanˢ);
     }
     typePointers tp = default!;
     if (n > maxObletBytes){
@@ -1402,6 +1437,9 @@ internal static void scanobject(uintptr b, ж<gcWork> Ꮡgcw) {
     gcw.heapScanWork += (int64)scanSize;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string misalignedMaskˢ = "misaligned mask"u8;
+
 // scanConservative scans block [b, b+n) conservatively, treating any
 // pointer-like value in the block as a pointer.
 //
@@ -1453,7 +1491,7 @@ internal static void scanConservative(uintptr b, uintptr n, ж<uint8> Ꮡptrmask
                 // must be 8-word-aligned, but check
                 // our reasoning just in case.
                 if (i % (uintptr)(goarch.PtrSize * 8) != 0) {
-                    @throw("misaligned mask"u8);
+                    @throw(misalignedMaskˢ);
                 }
                 i += goarch.PtrSize * 8 - goarch.PtrSize;
                 continue;
@@ -1506,6 +1544,10 @@ internal static void shade(uintptr b) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string greyobjectObjNotPointerˢ = "greyobject: obj not pointer-aligned"u8;
+private static readonly @string markingFreeObjectˢ = "marking free object"u8;
+
 // obj is the start of an object with mark mbits.
 // If it isn't already marked, mark it and enqueue into gcw.
 // base and off are for debugging only and could be removed.
@@ -1519,7 +1561,7 @@ internal static void greyobject(uintptr obj, uintptr @base, uintptr off, ж<mspa
 
     // obj should be start of allocation, and so must be at least pointer-aligned.
     if ((uintptr)(obj & (uintptr)(goarch.PtrSize - 1)) != 0) {
-        @throw("greyobject: obj not pointer-aligned"u8);
+        @throw(greyobjectObjNotPointerˢ);
     }
     var mbits = span.markBitsForIndex(objIndex);
     if (useCheckmark){
@@ -1530,10 +1572,10 @@ internal static void greyobject(uintptr obj, uintptr @base, uintptr off, ж<mspa
     } else {
         if (debug.gccheckmark > 0 && span.isFree(objIndex)) {
             print((@string)"runtime: marking free object "u8, ((Δhex)(uint64)obj), (@string)" found at *("u8, ((Δhex)(uint64)@base), (@string)"+"u8, ((Δhex)(uint64)off), (@string)")\n"u8);
-            gcDumpObject("base"u8, @base, off);
+            gcDumpObject(baseˢ, @base, off);
             gcDumpObject("obj"u8, obj, ~(uintptr)0);
             getg().Value.m.Value.traceback = 2;
-            @throw("marking free object"u8);
+            @throw(markingFreeObjectˢ);
         }
         // If marked we have nothing to do.
         if (mbits.isMarked()) {
@@ -1611,6 +1653,9 @@ internal static void gcDumpObject(@string label, uintptr obj, uintptr off) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gcmarknewobjectCalledˢ = "gcmarknewobject called while doing checkmark"u8;
+
 // gcmarknewobject marks a newly allocated object black. obj must
 // not contain any non-nil pointers.
 //
@@ -1623,7 +1668,7 @@ internal static void gcmarknewobject(ж<mspan> Ꮡspan, uintptr obj) {
 
     if (useCheckmark) {
         // The world should be stopped so this should not happen.
-        @throw("gcmarknewobject called while doing checkmark"u8);
+        @throw(gcmarknewobjectCalledˢ);
     }
     // Mark object.
     var objIndex = span.objIndex(obj);

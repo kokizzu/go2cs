@@ -251,6 +251,9 @@ internal static error /*err*/ execute(this ж<Template> Ꮡt, io.Writer wr, any 
     return Ꮡerr.ValueSlot;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string definedTemplatesAreˢ = "; defined templates are: "u8;
+
 // DefinedTemplates returns a string listing the defined templates,
 // prefixed by the string "; defined templates are: ". If there are none,
 // it returns the empty string. For generating an error message here
@@ -269,7 +272,7 @@ public static @string DefinedTemplates(this ж<Template> Ꮡt) => func<@string>(
             continue;
         }
         if (b.Len() == 0){
-            Ꮡb.WriteString("; defined templates are: "u8);
+            Ꮡb.WriteString(definedTemplatesAreˢ);
         } else {
             Ꮡb.WriteString(", "u8);
         }
@@ -644,6 +647,9 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
     throw panic("not reached");
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string eEpPˢ = ".eEpP"u8;
+
 // idealConstant is called to return the value of a number in a context where
 // we don't know the type. In that case, the syntax of the number tells us
 // its type, and we use Go rules to resolve. Note there is no such thing as
@@ -660,7 +666,7 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
         return reflect.ValueOf(constant.Complex128);
     }
     case {} when constant.IsFloat && !isHexInt(constant.Text) && !isRuneInt(constant.Text) && strings.ContainsAny(constant.Text, // incontrovertible.
- ".eEpP"u8): {
+ eEpPˢ): {
         return reflect.ValueOf(constant.Float64);
     }
     case {} when constant.IsInt: {
@@ -1231,6 +1237,9 @@ internal static reflectꓸValue indirectInterface(reflectꓸValue v) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object noValueˢ = (@string)"<no value>"u8;
+
 // printableValue returns the, possibly indirected, interface value inside v that
 // is best for a call to formatted printer.
 internal static (any, bool) printableValue(reflectꓸValue v) {
@@ -1239,7 +1248,7 @@ internal static (any, bool) printableValue(reflectꓸValue v) {
     }
     // fmt.Fprint handles nil.
     if (!v.IsValid()) {
-        return ((@string)"<no value>"u8, true);
+        return (noValueˢ, true);
     }
     if (!v.Type().Implements(errorType) && !v.Type().Implements(fmtStringerType)) {
         if (v.CanAddr() && (reflect.PointerTo(v.Type()).Implements(errorType) || reflect.PointerTo(v.Type()).Implements(fmtStringerType))){

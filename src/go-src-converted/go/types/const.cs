@@ -16,6 +16,9 @@ using global::go.go;
 
 partial class types_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string constantResultIsNotˢ = "constant result is not representable"u8;
+
 // overflow checks that the constant x is representable by its type.
 // For untyped constants, it checks that the value doesn't become
 // arbitrarily large.
@@ -27,7 +30,7 @@ internal static void overflow(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, token
         // TODO(gri) We should report exactly what went wrong. At the
         //           moment we don't have the (go/constant) API for that.
         //           See also TODO in go/constant/value.go.
-        Ꮡcheck.error(((atPos)opPos), InvalidConstVal, "constant result is not representable"u8);
+        Ꮡcheck.error(((atPos)opPos), InvalidConstVal, constantResultIsNotˢ);
         return;
     }
     // Typed constants must be representable in
@@ -314,14 +317,19 @@ internal static (constant.Value, errors.Code) representation(this ж<Checker> �
     return (v, 0);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cannotConvertSToTypeSˢ = "cannot convert %s to type %s"u8;
+private static readonly @string sTruncatedToSˢ = "%s truncated to %s"u8;
+private static readonly @string sOverflowsSˢ = "%s overflows %s"u8;
+
 internal static void invalidConversion(this ж<Checker> Ꮡcheck, errors.Code code, ж<operand> Ꮡx, ΔType target) {
-    @string msg = "cannot convert %s to type %s"u8;
+    @string msg = cannotConvertSToTypeSˢ;
     var exprᴛ1 = code;
     if (exprᴛ1 == TruncatedFloat) {
-        msg = "%s truncated to %s"u8;
+        msg = sTruncatedToSˢ;
     }
     else if (exprᴛ1 == NumericOverflow) {
-        msg = "%s overflows %s"u8;
+        msg = sOverflowsSˢ;
     }
 
     Ꮡcheck.errorf(new operandжpositioner(Ꮡx), code, msg, Ꮡx, target);

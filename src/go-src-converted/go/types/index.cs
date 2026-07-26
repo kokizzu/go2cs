@@ -15,6 +15,9 @@ using token = global::go.go.token_package;
 
 partial class types_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mapIndexˢ = "map index"u8;
+
 // If e is a valid function instantiation, indexExpr returns true.
 // In that case x represents the uninstantiated function value and
 // it is the caller's responsibility to instantiate the function.
@@ -109,7 +112,7 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
         }
         ref var key = ref heap(new operand(), out var Ꮡkey);
         Ꮡcheck.expr(nil, Ꮡkey, indexΔ1);
-        Ꮡcheck.assignment(Ꮡkey, (~typ).key, "map index"u8);
+        Ꮡcheck.assignment(Ꮡkey, (~typ).key, mapIndexˢ);
         x.mode = mapindex;
         x.typ = typ.Value.elem;
         x.expr = e.Orig;
@@ -198,7 +201,7 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
                 }
                 ref var k = ref heap(new operand(), out var Ꮡk);
                 Ꮡcheck.expr(nil, Ꮡk, indexΔ2);
-                Ꮡcheck.assignment(Ꮡk, key, "map index"u8);
+                Ꮡcheck.assignment(Ꮡk, key, mapIndexˢ);
                 // ok to continue even if indexing failed - map element type is known
                 x.mode = mapindex;
                 x.typ = elem;
@@ -233,6 +236,9 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
     Ꮡcheck.index(index, length);
     return false;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string and3rdIndexRequiredIn3ˢ = "2nd and 3rd index required in 3-index slice"u8;
 
 internal static void sliceExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.SliceExpr> Ꮡe) {
     ref var check = ref Ꮡcheck.Value;
@@ -311,7 +317,7 @@ internal static void sliceExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<a
     x.mode = value;
     // spec: "Only the first index may be omitted; it defaults to 0."
     if (e.Slice3 && (e.High == default! || e.Max == default!)) {
-        Ꮡcheck.error(inNode(new ast_SliceExprжNode(Ꮡe), e.Rbrack), InvalidSyntaxTree, "2nd and 3rd index required in 3-index slice"u8);
+        Ꮡcheck.error(inNode(new ast_SliceExprжNode(Ꮡe), e.Rbrack), InvalidSyntaxTree, and3rdIndexRequiredIn3ˢ);
         x.mode = invalid;
         return;
     }
@@ -388,6 +394,9 @@ internal static ast.Expr singleIndex(this ж<Checker> Ꮡcheck, ж<typeparams.In
     return expr.Indices[0];
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string indexˢ = "index"u8;
+
 // index checks an index expression for validity.
 // If max >= 0, it is the upper bound for index.
 // If the result typ is != Typ[Invalid], index is valid and typ is its (possibly named) integer type.
@@ -400,7 +409,7 @@ internal static (ΔType typ, int64 val) index(this ж<Checker> Ꮡcheck, ast.Exp
     val = -1;
     ref var x = ref heap(new operand(), out var Ꮡx);
     Ꮡcheck.expr(nil, Ꮡx, index);
-    if (!Ꮡcheck.isValidIndex(Ꮡx, InvalidIndex, "index"u8, false)) {
+    if (!Ꮡcheck.isValidIndex(Ꮡx, InvalidIndex, indexˢ, false)) {
         return (typ, val);
     }
     if (x.mode != constant_) {
@@ -450,6 +459,9 @@ internal static bool isValidIndex(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, e
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string arrayOrSliceLiteralˢ = "array or slice literal"u8;
+
 // indexedElts checks the elements (elts) of an array or slice composite literal
 // against the literal's element type (typ), and the element indices against
 // the literal length if known (length >= 0). It returns the length of the
@@ -498,7 +510,7 @@ internal static int64 indexedElts(this ж<Checker> Ꮡcheck, slice<ast.Expr> elt
         // check element against composite literal element type
         ref var x = ref heap(new operand(), out var Ꮡx);
         Ꮡcheck.exprWithHint(Ꮡx, eval, typ);
-        Ꮡcheck.assignment(Ꮡx, typ, "array or slice literal"u8);
+        Ꮡcheck.assignment(Ꮡx, typ, arrayOrSliceLiteralˢ);
     }
     return max;
 }

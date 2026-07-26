@@ -85,6 +85,36 @@ internal static readonly UntypedInt sSTWPageCachePagesLeaked = 27;
 internal static readonly UntypedInt sSTWResetDebugLog = 28;
 internal static readonly UntypedInt sLast = 29;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string traceContainsTooManyˢ = "trace contains too many strings"u8;
+private static readonly @string foreverˢ = "forever"u8;
+private static readonly @string preemptedˢ = "preempted"u8;
+private static readonly @string runtimeGoschedˢ = "runtime.Gosched"u8;
+private static readonly @string sleepˢ = "sleep"u8;
+private static readonly @string chanSendˢ = "chan send"u8;
+private static readonly @string chanReceiveˢ = "chan receive"u8;
+private static readonly @string networkˢ = "network"u8;
+private static readonly @string syncˢ = "sync"u8;
+private static readonly @string syncCondWaitˢ = "sync.(*Cond).Wait"u8;
+private static readonly @string selectˢ = "select"u8;
+private static readonly @string gcMarkAssistWaitForWorkˢ = "GC mark assist wait for work"u8;
+private static readonly @string gcMarkTerminationˢ = "GC mark termination"u8;
+private static readonly @string gcSweepTerminationˢ = "GC sweep termination"u8;
+private static readonly @string writeHeapDumpˢ = "write heap dump"u8;
+private static readonly @string goroutineProfileˢ = "goroutine profile"u8;
+private static readonly @string goroutineProfileCleanupˢ = "goroutine profile cleanup"u8;
+private static readonly @string allGoroutineStackTraceˢ = "all goroutine stack trace"u8;
+private static readonly @string readMemStatsˢ = "read mem stats"u8;
+private static readonly @string allThreadsSyscallˢ = "AllThreadsSyscall"u8;
+private static readonly @string gomaxprocsˢ = "GOMAXPROCS"u8;
+private static readonly @string startTraceˢ = "start trace"u8;
+private static readonly @string stopTraceˢ = "stop trace"u8;
+private static readonly @string countPagesInUseTestˢ = "CountPagesInUse (test)"u8;
+private static readonly @string readMetricsSlowTestˢ = "ReadMetricsSlow (test)"u8;
+private static readonly @string readMemStatsSlowTestˢ = "ReadMemStatsSlow (test)"u8;
+private static readonly @string pageCachePagesLeakedTestˢ = "PageCachePagesLeaked (test)"u8;
+private static readonly @string resetDebugLogTestˢ = "ResetDebugLog (test)"u8;
+
 internal static error init(this ж<oldTraceConverter> Ꮡit, oldtrace.Trace pr) {
     ref var it = ref Ꮡit.Value;
 
@@ -111,7 +141,7 @@ internal static error init(this ж<oldTraceConverter> Ꮡit, oldtrace.Trace pr) 
     // Add all strings used for UserLog. In the old trace format, these were
     // stored inline and didn't have IDs. We generate IDs for them.
     if (max + (uint64)len(pr.InlineStrings) < max) {
-        return errors.New("trace contains too many strings"u8);
+        return errors.New(traceContainsTooManyˢ);
     }
     ref var addErr = ref heap<error>(out var ᏑaddErr);
     var evtʗ1 = evt;
@@ -131,7 +161,7 @@ internal static error init(this ж<oldTraceConverter> Ꮡit, oldtrace.Trace pr) 
     pr.InlineStrings = default!;
     // Add strings that the converter emits explicitly.
     if (max + (uint64)sLast < max) {
-        return errors.New("trace contains too many strings"u8);
+        return errors.New(traceContainsTooManyˢ);
     }
     it.builtinToStringID = new slice<uint64>(sLast);
     var addʗ1 = add;
@@ -140,35 +170,35 @@ internal static error init(this ж<oldTraceConverter> Ꮡit, oldtrace.Trace pr) 
         Ꮡit.Value.builtinToStringID[c] = nid;
         addʗ1(((stringID)nid), s);
     };
-    addBuiltin(sForever, "forever"u8);
-    addBuiltin(sPreempted, "preempted"u8);
-    addBuiltin(sGosched, "runtime.Gosched"u8);
-    addBuiltin(sSleep, "sleep"u8);
-    addBuiltin(sChanSend, "chan send"u8);
-    addBuiltin(sChanRecv, "chan receive"u8);
-    addBuiltin(sNetwork, "network"u8);
-    addBuiltin(sSync, "sync"u8);
-    addBuiltin(sSyncCond, "sync.(*Cond).Wait"u8);
-    addBuiltin(sSelect, "select"u8);
+    addBuiltin(sForever, foreverˢ);
+    addBuiltin(sPreempted, preemptedˢ);
+    addBuiltin(sGosched, runtimeGoschedˢ);
+    addBuiltin(sSleep, sleepˢ);
+    addBuiltin(sChanSend, chanSendˢ);
+    addBuiltin(sChanRecv, chanReceiveˢ);
+    addBuiltin(sNetwork, networkˢ);
+    addBuiltin(sSync, syncˢ);
+    addBuiltin(sSyncCond, syncCondWaitˢ);
+    addBuiltin(sSelect, selectˢ);
     addBuiltin(sEmpty, ""u8);
-    addBuiltin(sMarkAssistWait, "GC mark assist wait for work"u8);
+    addBuiltin(sMarkAssistWait, gcMarkAssistWaitForWorkˢ);
     addBuiltin(sSTWUnknown, ""u8);
-    addBuiltin(sSTWGCMarkTermination, "GC mark termination"u8);
-    addBuiltin(sSTWGCSweepTermination, "GC sweep termination"u8);
-    addBuiltin(sSTWWriteHeapDump, "write heap dump"u8);
-    addBuiltin(sSTWGoroutineProfile, "goroutine profile"u8);
-    addBuiltin(sSTWGoroutineProfileCleanup, "goroutine profile cleanup"u8);
-    addBuiltin(sSTWAllGoroutinesStackTrace, "all goroutine stack trace"u8);
-    addBuiltin(sSTWReadMemStats, "read mem stats"u8);
-    addBuiltin(sSTWAllThreadsSyscall, "AllThreadsSyscall"u8);
-    addBuiltin(sSTWGOMAXPROCS, "GOMAXPROCS"u8);
-    addBuiltin(sSTWStartTrace, "start trace"u8);
-    addBuiltin(sSTWStopTrace, "stop trace"u8);
-    addBuiltin(sSTWCountPagesInUse, "CountPagesInUse (test)"u8);
-    addBuiltin(sSTWReadMetricsSlow, "ReadMetricsSlow (test)"u8);
-    addBuiltin(sSTWReadMemStatsSlow, "ReadMemStatsSlow (test)"u8);
-    addBuiltin(sSTWPageCachePagesLeaked, "PageCachePagesLeaked (test)"u8);
-    addBuiltin(sSTWResetDebugLog, "ResetDebugLog (test)"u8);
+    addBuiltin(sSTWGCMarkTermination, gcMarkTerminationˢ);
+    addBuiltin(sSTWGCSweepTermination, gcSweepTerminationˢ);
+    addBuiltin(sSTWWriteHeapDump, writeHeapDumpˢ);
+    addBuiltin(sSTWGoroutineProfile, goroutineProfileˢ);
+    addBuiltin(sSTWGoroutineProfileCleanup, goroutineProfileCleanupˢ);
+    addBuiltin(sSTWAllGoroutinesStackTrace, allGoroutineStackTraceˢ);
+    addBuiltin(sSTWReadMemStats, readMemStatsˢ);
+    addBuiltin(sSTWAllThreadsSyscall, allThreadsSyscallˢ);
+    addBuiltin(sSTWGOMAXPROCS, gomaxprocsˢ);
+    addBuiltin(sSTWStartTrace, startTraceˢ);
+    addBuiltin(sSTWStopTrace, stopTraceˢ);
+    addBuiltin(sSTWCountPagesInUse, countPagesInUseTestˢ);
+    addBuiltin(sSTWReadMetricsSlow, readMetricsSlowTestˢ);
+    addBuiltin(sSTWReadMemStatsSlow, readMemStatsSlowTestˢ);
+    addBuiltin(sSTWPageCachePagesLeaked, pageCachePagesLeakedTestˢ);
+    addBuiltin(sSTWResetDebugLog, resetDebugLogTestˢ);
     if (addErr != default!) {
         // This should be impossible but let's be safe.
         return fmt.Errorf("couldn't add strings: %w"u8, addErr);

@@ -37,17 +37,17 @@ public static readonly InstOp InstRuneAny = 9;
 public static readonly InstOp InstRuneAnyNotNL = 10;
 
 internal static slice<@string> instOpNames = new @string[]{
-    "InstAlt",
-    "InstAltMatch",
-    "InstCapture",
-    "InstEmptyWidth",
-    "InstMatch",
-    "InstFail",
-    "InstNop",
-    "InstRune",
-    "InstRune1",
-    "InstRuneAny",
-    "InstRuneAnyNotNL"
+    "InstAlt"u8,
+    "InstAltMatch"u8,
+    "InstCapture"u8,
+    "InstEmptyWidth"u8,
+    "InstMatch"u8,
+    "InstFail"u8,
+    "InstNop"u8,
+    "InstRune"u8,
+    "InstRune1"u8,
+    "InstRuneAny"u8,
+    "InstRuneAnyNotNL"u8
 }.slice();
 
 public static @string String(this InstOp i) {
@@ -340,6 +340,16 @@ internal static @string u32(uint32 i) {
     return strconv.FormatUint((uint64)i, 10);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string altmatchˢ = "altmatch -> "u8;
+private static readonly @string emptyˢ = "empty "u8;
+private static readonly @string matchˢ = "match"u8;
+private static readonly @string failˢ = "fail"u8;
+private static readonly @string runeNilˢ = "rune <nil>"u8;
+private static readonly @string runeˢ = "rune "u8;
+private static readonly @string rune1ˢ = "rune1 "u8;
+private static readonly @string anynotnlˢ = "anynotnl -> "u8;
+
 internal static void dumpInst(ж<strings.Builder> Ꮡb, ж<Inst> Ꮡi) {
     ref var i = ref Ꮡi.Value;
 
@@ -348,19 +358,19 @@ internal static void dumpInst(ж<strings.Builder> Ꮡb, ж<Inst> Ꮡi) {
         bw(Ꮡb, "alt -> "u8, u32(i.Out), ", ", u32(i.Arg));
     }
     else if (exprᴛ1 == InstAltMatch) {
-        bw(Ꮡb, "altmatch -> "u8, u32(i.Out), ", ", u32(i.Arg));
+        bw(Ꮡb, altmatchˢ, u32(i.Out), ", ", u32(i.Arg));
     }
     else if (exprᴛ1 == InstCapture) {
         bw(Ꮡb, "cap "u8, u32(i.Arg), " -> ", u32(i.Out));
     }
     else if (exprᴛ1 == InstEmptyWidth) {
-        bw(Ꮡb, "empty "u8, u32(i.Arg), " -> ", u32(i.Out));
+        bw(Ꮡb, emptyˢ, u32(i.Arg), " -> ", u32(i.Out));
     }
     else if (exprᴛ1 == InstMatch) {
-        bw(Ꮡb, "match"u8);
+        bw(Ꮡb, matchˢ);
     }
     else if (exprᴛ1 == InstFail) {
-        bw(Ꮡb, "fail"u8);
+        bw(Ꮡb, failˢ);
     }
     else if (exprᴛ1 == InstNop) {
         bw(Ꮡb, "nop -> "u8, u32(i.Out));
@@ -368,22 +378,22 @@ internal static void dumpInst(ж<strings.Builder> Ꮡb, ж<Inst> Ꮡi) {
     else if (exprᴛ1 == InstRune) {
         if (i.Rune == default!) {
             // shouldn't happen
-            bw(Ꮡb, "rune <nil>"u8);
+            bw(Ꮡb, runeNilˢ);
         }
-        bw(Ꮡb, "rune "u8, strconv.QuoteToASCII(((@string)i.Rune)));
+        bw(Ꮡb, runeˢ, strconv.QuoteToASCII(((@string)i.Rune)));
         if ((Flags)(((Flags)(uint16)i.Arg) & FoldCase) != 0) {
             bw(Ꮡb, "/i"u8);
         }
         bw(Ꮡb, " -> "u8, u32(i.Out));
     }
     else if (exprᴛ1 == InstRune1) {
-        bw(Ꮡb, "rune1 "u8, strconv.QuoteToASCII(((@string)i.Rune)), " -> ", u32(i.Out));
+        bw(Ꮡb, rune1ˢ, strconv.QuoteToASCII(((@string)i.Rune)), " -> ", u32(i.Out));
     }
     else if (exprᴛ1 == InstRuneAny) {
         bw(Ꮡb, "any -> "u8, u32(i.Out));
     }
     else if (exprᴛ1 == InstRuneAnyNotNL) {
-        bw(Ꮡb, "anynotnl -> "u8, u32(i.Out));
+        bw(Ꮡb, anynotnlˢ, u32(i.Out));
     }
 
 }

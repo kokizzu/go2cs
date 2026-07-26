@@ -70,12 +70,15 @@ internal static slice<byte> bytes(this ж<P384Element> Ꮡe, ж<array<byte>> Ꮡ
     return @out[..];
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidP384Elementˢ = "invalid P384Element encoding"u8;
+
 // SetBytes sets e = v, where v is a big-endian 48-byte encoding, and returns e.
 // If v is not 48 bytes or it encodes a value higher than 2^384 - 2^128 - 2^96 + 2^32 - 1,
 // SetBytes returns nil and an error, and e is unchanged.
 public static (ж<P384Element>, error) SetBytes(this ж<P384Element> Ꮡe, slice<byte> v) {
     if (len(v) != p384ElementLen) {
-        return (default!, errors.New("invalid P384Element encoding"u8));
+        return (default!, errors.New(invalidP384Elementˢ));
     }
     // Check for non-canonical encodings (p + k, 2p + k, etc.) by comparing to
     // the encoding of -1 mod p, so p - 1, the highest canonical encoding.
@@ -86,7 +89,7 @@ public static (ж<P384Element>, error) SetBytes(this ж<P384Element> Ꮡe, slice
             break;
         }
         if (v[i] > minusOneEncoding[i]) {
-            return (default!, errors.New("invalid P384Element encoding"u8));
+            return (default!, errors.New(invalidP384Elementˢ));
         }
     }
     ref var @in = ref heap(new array<byte>(48), out var Ꮡin);

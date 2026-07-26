@@ -149,7 +149,7 @@ internal static (ж<IPConn>, error) dialIP(this ж<sysDialer> Ꮡsd, context.Con
     if (ctrlCtxFn == default! && sd.Dialer.Control != default!) {
         ctrlCtxFn = (context.Context ctxΔ1, @string networkΔ1, @string address, syscall.RawConn c) => Ꮡsd.Value.Dialer.Control(networkΔ1, address, c);
     }
-    (var fd, err) = internetSocket(ctx, network, new IPAddrжΔsockaddr(Ꮡladdr), new IPAddrжΔsockaddr(Ꮡraddr), syscall.SOCK_RAW, proto, "dial"u8, ctrlCtxFn);
+    (var fd, err) = internetSocket(ctx, network, new IPAddrжΔsockaddr(Ꮡladdr), new IPAddrжΔsockaddr(Ꮡraddr), syscall.SOCK_RAW, proto, dialˢ, ctrlCtxFn);
     if (err != default!) {
         return (default!, err);
     }
@@ -174,7 +174,7 @@ internal static (ж<IPConn>, error) listenIP(this ж<sysListener> Ꮡsl, context
     if (sl.ListenConfig.Control != default!) {
         ctrlCtxFn = (context.Context ctxΔ1, @string networkΔ1, @string address, syscall.RawConn c) => Ꮡsl.Value.ListenConfig.Control(networkΔ1, address, c);
     }
-    (var fd, err) = internetSocket(ctx, network, new IPAddrжΔsockaddr(Ꮡladdr), default!, syscall.SOCK_RAW, proto, "listen"u8, ctrlCtxFn);
+    (var fd, err) = internetSocket(ctx, network, new IPAddrжΔsockaddr(Ꮡladdr), default!, syscall.SOCK_RAW, proto, listenˢ, ctrlCtxFn);
     if (err != default!) {
         return (default!, err);
     }

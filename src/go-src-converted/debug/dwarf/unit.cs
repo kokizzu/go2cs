@@ -34,16 +34,19 @@ partial class dwarf_package {
     return u.asize;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unitLengthOverflowˢ = "unit length overflow"u8;
+
 internal static (slice<unit>, error) parseUnits(this ж<Data> Ꮡd) {
     ref var d = ref Ꮡd.Value;
 
     // Count units.
     nint nunit = 0;
-    var b = makeBuf(Ꮡd, new unknownFormat(nil), "info"u8, 0, d.info);
+    var b = makeBuf(Ꮡd, new unknownFormat(nil), infoˢ, 0, d.info);
     while (len(b.data) > 0) {
         var (lenΔ1, _) = b.unitLength();
         if (lenΔ1 != ((Offset)(uint32)lenΔ1)) {
-            b.error("unit length overflow"u8);
+            b.error(unitLengthOverflowˢ);
             break;
         }
         b.skip((nint)(uint32)lenΔ1);
@@ -55,7 +58,7 @@ internal static (slice<unit>, error) parseUnits(this ж<Data> Ꮡd) {
         return (default!, b.err);
     }
     // Again, this time writing them down.
-    b = makeBuf(Ꮡd, new unknownFormat(nil), "info"u8, 0, d.info);
+    b = makeBuf(Ꮡd, new unknownFormat(nil), infoˢ, 0, d.info);
     var units = new slice<unit>(nunit);
     foreach (var (i, _) in units) {
         var u = Ꮡ(units, i);

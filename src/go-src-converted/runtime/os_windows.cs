@@ -176,17 +176,17 @@ internal static partial void wintls();
 
 // Stubs so tests can link correctly. These should never be called.
 internal static int32 open(ж<byte> Ꮡname, int32 mode, int32 perm) {
-    @throw("unimplemented"u8);
+    @throw(unimplementedˢ);
     return -1;
 }
 
 internal static int32 closefd(int32 fd) {
-    @throw("unimplemented"u8);
+    @throw(unimplementedˢ);
     return -1;
 }
 
 internal static int32 read(int32 fd, @unsafe.Pointer Δp, int32 n) {
-    @throw("unimplemented"u8);
+    @throw(unimplementedˢ);
     return -1;
 }
 
@@ -201,9 +201,12 @@ internal static @unsafe.Pointer asmstdcallAddr;
 
 [GoType("libcall")] partial struct winlibcall;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string usageˢ = "usage"u8;
+
 internal static stdFunction windowsFindfunc(uintptr lib, slice<byte> name) {
     if (name[len(name) - 1] != 0) {
-        @throw("usage"u8);
+        @throw(usageˢ);
     }
     var f = stdcall2(_GetProcAddress, lib, (uintptr)new @unsafe.Pointer(Ꮡ(name, 0)));
     return ((stdFunction)(@unsafe.Pointer)f);
@@ -216,10 +219,13 @@ internal static ref array<byte> sysDirectory => ref ᏑsysDirectory.Value;
 
 internal static uintptr sysDirectoryLen;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unableToDetermineSystemˢ = "Unable to determine system directory"u8;
+
 internal static void initSysDirectory() {
     var l = stdcall2(_GetSystemDirectoryA, (uintptr)new @unsafe.Pointer(ᏑsysDirectory.at<byte>(0)), (uintptr)(len(sysDirectory) - 1));
     if (l == 0 || l > (uintptr)(len(sysDirectory) - 1)) {
-        @throw("Unable to determine system directory"u8);
+        @throw(unableToDetermineSystemˢ);
     }
     sysDirectory[(nint)(l)] = (rune)'\\';
     sysDirectoryLen = l + 1;
@@ -248,26 +254,32 @@ internal static int64 windows_QueryPerformanceFrequency() {
     return frequency;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bcryptprimitivesDllNotˢ = "bcryptprimitives.dll not found"u8;
+private static readonly @string ntdllDllNotFoundˢ = "ntdll.dll not found"u8;
+private static readonly @string ntCreateWaitCompletionPacketˢ = "NtCreateWaitCompletionPacket exists but NtAssociateWaitCompletionPacket does not"u8;
+private static readonly @string ntCreateWaitCompletionPacketˢ2 = "NtCreateWaitCompletionPacket exists but NtCancelWaitCompletionPacket does not"u8;
+
 internal static void loadOptionalSyscalls() {
     var bcryptPrimitives = windowsLoadSystemLib(bcryptprimitivesdll[..]);
     if (bcryptPrimitives == 0) {
-        @throw("bcryptprimitives.dll not found"u8);
+        @throw(bcryptprimitivesDllNotˢ);
     }
     _ProcessPrng = windowsFindfunc(bcryptPrimitives, slice<byte>("ProcessPrng\u0000"u8));
     var n32 = windowsLoadSystemLib(ntdlldll[..]);
     if (n32 == 0) {
-        @throw("ntdll.dll not found"u8);
+        @throw(ntdllDllNotFoundˢ);
     }
     _NtCreateWaitCompletionPacket = windowsFindfunc(n32, slice<byte>("NtCreateWaitCompletionPacket\u0000"u8));
     if (_NtCreateWaitCompletionPacket != default!) {
         // These functions should exists if NtCreateWaitCompletionPacket exists.
         _NtAssociateWaitCompletionPacket = windowsFindfunc(n32, slice<byte>("NtAssociateWaitCompletionPacket\u0000"u8));
         if (_NtAssociateWaitCompletionPacket == default!) {
-            @throw("NtCreateWaitCompletionPacket exists but NtAssociateWaitCompletionPacket does not"u8);
+            @throw(ntCreateWaitCompletionPacketˢ);
         }
         _NtCancelWaitCompletionPacket = windowsFindfunc(n32, slice<byte>("NtCancelWaitCompletionPacket\u0000"u8));
         if (_NtCancelWaitCompletionPacket == default!) {
-            @throw("NtCreateWaitCompletionPacket exists but NtCancelWaitCompletionPacket does not"u8);
+            @throw(ntCreateWaitCompletionPacketˢ2);
         }
     }
     _RtlGetCurrentPeb = windowsFindfunc(n32, slice<byte>("RtlGetCurrentPeb\u0000"u8));
@@ -402,6 +414,10 @@ internal static uintptr createHighResTimer() {
         (uintptr)((uintptr)(UntypedInt)(_SYNCHRONIZE | _TIMER_QUERY_STATE) | (uintptr)_TIMER_MODIFY_STATE));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string winmmDllNotFoundˢ = "winmm.dll not found"u8;
+private static readonly @string timeBeginEndPeriodNotˢ = "timeBegin/EndPeriod not found"u8;
+
 internal static void initHighResTimer() {
     var h = createHighResTimer();
     if (h != 0){
@@ -415,13 +431,13 @@ internal static void initHighResTimer() {
         var m32 = windowsLoadSystemLib(winmmdll[..]);
         if (m32 == 0) {
             print((@string)"runtime: LoadLibraryExW failed; errno="u8, getlasterror(), (@string)"\n"u8);
-            @throw("winmm.dll not found"u8);
+            @throw(winmmDllNotFoundˢ);
         }
         _timeBeginPeriod = windowsFindfunc(m32, slice<byte>("timeBeginPeriod\u0000"u8));
         _timeEndPeriod = windowsFindfunc(m32, slice<byte>("timeEndPeriod\u0000"u8));
         if (_timeBeginPeriod == default! || _timeEndPeriod == default!) {
             print((@string)"runtime: GetProcAddress failed; errno="u8, getlasterror(), (@string)"\n"u8);
-            @throw("timeBegin/EndPeriod not found"u8);
+            @throw(timeBeginEndPeriodNotˢ);
         }
     }
 }
@@ -627,6 +643,11 @@ internal static void writeConsoleUTF16(uintptr handle, slice<uint16> b) {
     return;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeSemasleepWaitˢ = "runtime.semasleep wait_abandoned"u8;
+private static readonly @string runtimeSemasleepWaitˢ2 = "runtime.semasleep wait_failed"u8;
+private static readonly @string runtimeSemasleepˢ = "runtime.semasleep unexpected"u8;
+
 //go:nosplit
 internal static int32 semasleep(int64 ns) {
     uintptr _WAIT_ABANDONED = 0x00000080;
@@ -667,24 +688,27 @@ internal static int32 semasleep(int64 ns) {
     if (exprᴛ1 == _WAIT_ABANDONED) {
         systemstack(() => {
             // Signaled
-            @throw("runtime.semasleep wait_abandoned"u8);
+            @throw(runtimeSemasleepWaitˢ);
         });
     }
     else if (exprᴛ1 == _WAIT_FAILED) {
         systemstack(() => {
             print((@string)"runtime: waitforsingleobject wait_failed; errno="u8, getlasterror(), (@string)"\n"u8);
-            @throw("runtime.semasleep wait_failed"u8);
+            @throw(runtimeSemasleepWaitˢ2);
         });
     }
     else { /* default: */
         systemstack(() => {
             print((@string)"runtime: waitforsingleobject unexpected; result="u8, result, (@string)"\n"u8);
-            @throw("runtime.semasleep unexpected"u8);
+            @throw(runtimeSemasleepˢ);
         });
     }
 
     return -1;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeSemawakeupˢ = "runtime.semawakeup"u8;
 
 // unreachable
 
@@ -695,10 +719,13 @@ internal static void semawakeup(ж<m> Ꮡmp) {
     if (stdcall1(_SetEvent, mp.waitsema) == 0) {
         systemstack(() => {
             print((@string)"runtime: setevent failed; errno="u8, getlasterror(), (@string)"\n"u8);
-            @throw("runtime.semawakeup"u8);
+            @throw(runtimeSemawakeupˢ);
         });
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeSemacreateˢ = "runtime.semacreate"u8;
 
 //go:nosplit
 internal static void semacreate(ж<m> Ꮡmp) {
@@ -711,19 +738,22 @@ internal static void semacreate(ж<m> Ꮡmp) {
     if (mp.waitsema == 0) {
         systemstack(() => {
             print((@string)"runtime: createevent failed; errno="u8, getlasterror(), (@string)"\n"u8);
-            @throw("runtime.semacreate"u8);
+            @throw(runtimeSemacreateˢ);
         });
     }
     mp.resumesema = stdcall4(_CreateEventA, 0, 0, 0, 0);
     if (mp.resumesema == 0) {
         systemstack(() => {
             print((@string)"runtime: createevent failed; errno="u8, getlasterror(), (@string)"\n"u8);
-            @throw("runtime.semacreate"u8);
+            @throw(runtimeSemacreateˢ);
         });
         stdcall1(_CloseHandle, mp.waitsema);
         mp.waitsema = 0;
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeNewosprocˢ = "runtime.newosproc"u8;
 
 // May run with m.p==nil, so write barriers are not allowed. This
 // function is called by newosproc0, so it is also required to
@@ -746,11 +776,14 @@ internal static void newosproc(ж<m> Ꮡmp) {
             @lock(Ꮡdeadlock);
         }
         print((@string)"runtime: failed to create new OS thread (have "u8, mcount(), (@string)" already; errno="u8, getlasterror(), (@string)")\n"u8);
-        @throw("runtime.newosproc"u8);
+        @throw(runtimeNewosprocˢ);
     }
     // Close thandle to avoid leaking the thread object if it exits.
     stdcall1(_CloseHandle, thandle);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badNewosproc0ˢ = "bad newosproc0"u8;
 
 // Used by the C library build mode. On Linux this function would allocate a
 // stack, but that's not necessary for Windows. No stack guards are present
@@ -762,13 +795,16 @@ internal static void newosproc0(ж<m> Ꮡmp, @unsafe.Pointer stk) {
     // TODO: this is completely broken. The args passed to newosproc0 (in asm_amd64.s)
     // are stacksize and function, not *m and stack.
     // Check os_linux.go for an implementation that might actually work.
-    @throw("bad newosproc0"u8);
+    @throw(badNewosproc0ˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string exitThreadˢ = "exitThread"u8;
 
 internal static void exitThread(ж<atomic.Uint32> Ꮡwait) {
     // We should never reach exitThread on Windows because we let
     // the OS clean up threads.
-    @throw("exitThread"u8);
+    @throw(exitThreadˢ);
 }
 
 // Called to initialize a new m (including the bootstrap m).
@@ -793,13 +829,20 @@ internal static void clearSignalHandlers() {
 internal static void sigblock(bool exiting) {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeMinitˢ = "runtime.minit: duplicatehandle failed"u8;
+private static readonly @string createWaitableTimerExˢ = "CreateWaitableTimerEx when creating timer failed"u8;
+private static readonly @string ntCreateWaitCompletionPacketˢ3 = "NtCreateWaitCompletionPacket failed"u8;
+private static readonly @string virtualQueryForStackBaseˢ = "VirtualQuery for stack base failed"u8;
+private static readonly @string badG0Stackˢ = "bad g0 stack"u8;
+
 // Called to initialize a new m (including the bootstrap m).
 // Called on the new thread, cannot allocate Go memory.
 internal static void minit() {
     ref var thandle = ref heap(new uintptr(), out var Ꮡthandle);
     if (stdcall7(_DuplicateHandle, currentProcess, currentThread, currentProcess, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡthandle).Value), 0, 0, _DUPLICATE_SAME_ACCESS) == 0) {
         print((@string)"runtime.minit: duplicatehandle failed; errno="u8, getlasterror(), (@string)"\n"u8);
-        @throw("runtime.minit: duplicatehandle failed"u8);
+        @throw(runtimeMinitˢ);
     }
     var mp = getg().Value.m;
     @lock(mp.of(m.ᏑthreadLock));
@@ -810,20 +853,20 @@ internal static void minit() {
         mp.Value.highResTimer = createHighResTimer();
         if ((~mp).highResTimer == 0) {
             print((@string)"runtime: CreateWaitableTimerEx failed; errno="u8, getlasterror(), (@string)"\n"u8);
-            @throw("CreateWaitableTimerEx when creating timer failed"u8);
+            @throw(createWaitableTimerExˢ);
         }
     }
     if ((~mp).waitIocpHandle == 0 && haveHighResSleep) {
         mp.Value.waitIocpTimer = createHighResTimer();
         if ((~mp).waitIocpTimer == 0) {
             print((@string)"runtime: CreateWaitableTimerEx failed; errno="u8, getlasterror(), (@string)"\n"u8);
-            @throw("CreateWaitableTimerEx when creating timer failed"u8);
+            @throw(createWaitableTimerExˢ);
         }
         uintptr GENERIC_ALL = 0x10000000;
         var errno = stdcall3(_NtCreateWaitCompletionPacket, (uintptr)@unsafe.Pointer.FromRef(ref (mp.of(m.ᏑwaitIocpHandle)).Value), GENERIC_ALL, 0);
         if ((~mp).waitIocpHandle == 0) {
             print((@string)"runtime: NtCreateWaitCompletionPacket failed; errno="u8, errno, (@string)"\n"u8);
-            @throw("NtCreateWaitCompletionPacket failed"u8);
+            @throw(ntCreateWaitCompletionPacketˢ3);
         }
     }
     unlock(mp.of(m.ᏑthreadLock));
@@ -833,7 +876,7 @@ internal static void minit() {
     var res = stdcall3(_VirtualQuery, (uintptr)new @unsafe.Pointer(Ꮡmbi), (uintptr)new @unsafe.Pointer(Ꮡmbi), @unsafe.Sizeof(mbi));
     if (res == 0) {
         print((@string)"runtime: VirtualQuery failed; errno="u8, getlasterror(), (@string)"\n"u8);
-        @throw("VirtualQuery for stack base failed"u8);
+        @throw(virtualQueryForStackBaseˢ);
     }
     // The system leaves an 8K PAGE_GUARD region at the bottom of
     // the stack (in theory VirtualQuery isn't supposed to include
@@ -846,7 +889,7 @@ internal static void minit() {
     var g0 = getg();
     if (@base > (~g0).stack.hi || (~g0).stack.hi - @base > (uintptr)(64 << (int)(20))) {
         print((@string)"runtime: g0 stack ["u8, ((Δhex)(uint64)@base), (@string)","u8, ((Δhex)(uint64)(~g0).stack.hi), (@string)")\n"u8);
-        @throw("bad g0 stack"u8);
+        @throw(badG0Stackˢ);
     }
     g0.Value.stack.lo = @base;
     g0.Value.stackguard0 = (~g0).stack.lo + (uintptr)stackGuard;
@@ -1132,6 +1175,9 @@ internal static ж<g> gFromSP(ж<m> Ꮡmp, uintptr sp) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string duplicatehandleFailedˢ = "duplicatehandle failed"u8;
+
 internal static void profileLoop() {
     stdcall2(_SetThreadPriority, currentThread, _THREAD_PRIORITY_HIGHEST);
     while (ᐧ) {
@@ -1154,7 +1200,7 @@ internal static void profileLoop() {
             ref var thread = ref heap(new uintptr(), out var Ꮡthread);
             if (stdcall7(_DuplicateHandle, currentProcess, (~mp).thread, currentProcess, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡthread).Value), 0, 0, _DUPLICATE_SAME_ACCESS) == 0) {
                 print((@string)"runtime: duplicatehandle failed; errno="u8, getlasterror(), (@string)"\n"u8);
-                @throw("duplicatehandle failed"u8);
+                @throw(duplicatehandleFailedˢ);
             }
             unlock(mp.of(m.ᏑthreadLock));
             // mp may exit between the DuplicateHandle
@@ -1212,11 +1258,16 @@ internal const bool preemptMSupported = true;
 internal static ж<mutex> ᏑsuspendLock = new(new mutex(nil));
 internal static ref mutex suspendLock => ref ᏑsuspendLock.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string selfPreemptˢ = "self-preempt"u8;
+private static readonly @string runtimePreemptMˢ = "runtime.preemptM: duplicatehandle failed"u8;
+private static readonly @string unsupportedArchitectureˢ = "unsupported architecture"u8;
+
 internal static void preemptM(ж<m> Ꮡmp) {
     ref var mp = ref Ꮡmp.DerefOrNil();
 
     if (Ꮡmp == (~getg()).m) {
-        @throw("self-preempt"u8);
+        @throw(selfPreemptˢ);
     }
     // Synchronize with external code that may try to ExitProcess.
     if (!atomic.Cas(Ꮡmp.of(m.ᏑpreemptExtLock), 0, 1)) {
@@ -1237,7 +1288,7 @@ internal static void preemptM(ж<m> Ꮡmp) {
     ref var thread = ref heap(new uintptr(), out var Ꮡthread);
     if (stdcall7(_DuplicateHandle, currentProcess, mp.thread, currentProcess, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡthread).Value), 0, 0, _DUPLICATE_SAME_ACCESS) == 0) {
         print((@string)"runtime.preemptM: duplicatehandle failed; errno="u8, getlasterror(), (@string)"\n"u8);
-        @throw("runtime.preemptM: duplicatehandle failed"u8);
+        @throw(runtimePreemptMˢ);
     }
     unlock(Ꮡmp.of(m.ᏑthreadLock));
     // Prepare thread context buffer. This must be aligned to 16 bytes.
@@ -1302,7 +1353,7 @@ internal static void preemptM(ж<m> Ꮡmp) {
                     c.set_ip(targetPC);
                 }
                 else { /* default: */
-                    @throw("unsupported architecture"u8);
+                    @throw(unsupportedArchitectureˢ);
                 }
 
                 // Make it look like the thread called targetPC.

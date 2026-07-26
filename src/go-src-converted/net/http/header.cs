@@ -219,7 +219,7 @@ internal static error writeSubset(this ΔHeader h, io.Writer w, map<@string, boo
 
             v = headerNewlineToSpace.Replace(v);
             v = textproto.TrimString(v);
-            foreach (var (_, s) in new @string[]{kv.key, ": ", v, "\r\n"}.slice()) {
+            foreach (var (_, s) in new @string[]{kv.key, ": "u8, v, "\r\n"u8}.slice()) {
                 {
                     var (_, err) = ws.WriteString(s); if (err != default!) {
                         ᏑheaderSorterPool.Put(sorter);

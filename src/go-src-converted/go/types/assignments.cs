@@ -132,6 +132,9 @@ internal static void assignment(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string constantDeclarationˢ = "constant declaration"u8;
+
 internal static void initConst(this ж<Checker> Ꮡcheck, ж<Const> Ꮡlhs, ж<operand> Ꮡx) {
     ref var lhs = ref Ꮡlhs.Value;
     ref var x = ref Ꮡx.Value;
@@ -155,7 +158,7 @@ internal static void initConst(this ж<Checker> Ꮡcheck, ж<Const> Ꮡlhs, ж<o
     if (lhs.typ == default!) {
         lhs.typ = x.typ;
     }
-    Ꮡcheck.assignment(Ꮡx, lhs.typ, "constant declaration"u8);
+    Ꮡcheck.assignment(Ꮡx, lhs.typ, constantDeclarationˢ);
     if (x.mode == invalid) {
         return;
     }
@@ -265,6 +268,9 @@ internal static ΔType lhsVar(this ж<Checker> Ꮡcheck, ast.Expr lhs) {
     return x.typ;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string assignmentToIdentifierˢ = "assignment to _ identifier"u8;
+
 // assignVar checks the assignment lhs = rhs (if x == nil), or lhs = x (if x != nil).
 // If x != nil, it must be the evaluation of rhs (and rhs will be ignored).
 // If the assignment check fails and x != nil, x.mode is set to invalid.
@@ -295,7 +301,7 @@ internal static void assignVar(this ж<Checker> Ꮡcheck, ast.Expr lhs, ast.Expr
         Ꮡcheck.expr(target, Ꮡx, rhs);
     }
     if (T == default! && context == "assignment"u8) {
-        context = "assignment to _ identifier"u8;
+        context = assignmentToIdentifierˢ;
     }
     Ꮡcheck.assignment(Ꮡx, T, context);
 }
@@ -320,6 +326,11 @@ internal static slice<ΔType> /*res*/ varTypes(slice<ж<Var>> list) {
     return res;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownTypeˢ = "unknown type"u8;
+private static readonly @string numberˢ = "number"u8;
+private static readonly @string untypedˢ = "untyped "u8;
+
 // typesSummary returns a string of the form "(t1, t2, ...)" where the
 // ti's are user-friendly string representations for the given types.
 // If variadic is set and the last type is a slice, its string is of
@@ -333,7 +344,7 @@ internal static @string typesSummary(this ж<Checker> Ꮡcheck, slice<ΔType> li
             fallthrough = true;
         }
         if (fallthrough || !matchᴛ1 && (!isValid(t))) { matchᴛ1 = true;
-            s = "unknown type"u8;
+            s = unknownTypeˢ;
         }
         else if (isUntyped(t)) {
             if (isNumeric(t)){
@@ -342,11 +353,11 @@ internal static @string typesSummary(this ж<Checker> Ꮡcheck, slice<ΔType> li
                 // "have number, want float64" is better than
                 // "have untyped int, want float64" or
                 // "have int, want float64".
-                s = "number"u8;
+                s = numberˢ;
             } else {
                 // If we don't have a number, omit the "untyped" qualifier
                 // for compactness.
-                s = strings.Replace((~t._<ж<Basic>>()).name, "untyped "u8, ""u8, -1);
+                s = strings.Replace((~t._<ж<Basic>>()).name, untypedˢ, ""u8, -1);
             }
         }
         else if (variadic && i == len(list) - 1) { matchᴛ1 = true;
@@ -368,9 +379,13 @@ internal static @string measure(nint x, @string unit) {
     return fmt.Sprintf("%d %s"u8, x, unit);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string variableˢ = "variable"u8;
+private static readonly @string valueˢ = "value"u8;
+
 internal static void assignError(this ж<Checker> Ꮡcheck, slice<ast.Expr> rhs, nint l, nint r) {
-    @string vars = measure(l, "variable"u8);
-    @string vals = measure(r, "value"u8);
+    @string vars = measure(l, variableˢ);
+    @string vals = measure(r, valueˢ);
     var rhs0 = rhs[0];
     if (len(rhs) == 1) {
         {
@@ -383,14 +398,18 @@ internal static void assignError(this ж<Checker> Ꮡcheck, slice<ast.Expr> rhs,
     Ꮡcheck.errorf(new ast_Exprᴠpositioner(rhs0), WrongAssignCount, "assignment mismatch: %s but %s"u8, vars, vals);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string notEnoughˢ = "not enough"u8;
+private static readonly @string tooManyˢ = "too many"u8;
+
 internal static void returnError(this ж<Checker> Ꮡcheck, positioner at, slice<ж<Var>> lhs, slice<ж<operand>> rhs) {
     nint l = len(lhs);
     nint r = len(rhs);
-    @string qualifier = "not enough"u8;
+    @string qualifier = notEnoughˢ;
     if (r > l){
         at = new operandжpositioner(rhs[l]);
         // report at first extra value
-        qualifier = "too many"u8;
+        qualifier = tooManyˢ;
     } else 
     if (r > 0) {
         at = new operandжpositioner(rhs[r - 1]);
@@ -403,6 +422,11 @@ internal static void returnError(this ж<Checker> Ꮡcheck, positioner at, slice
     err.report();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string assignmentˢ = "assignment"u8;
+private static readonly @string returnStatementˢ = "return statement"u8;
+private static readonly @string resultVariableˢ = "result variable"u8;
+
 // initVars type-checks assignments of initialization expressions orig_rhs
 // to variables lhs.
 // If returnStmt is non-nil, initVars type-checks the implicit assignment
@@ -410,9 +434,9 @@ internal static void returnError(this ж<Checker> Ꮡcheck, positioner at, slice
 internal static void initVars(this ж<Checker> Ꮡcheck, slice<ж<Var>> lhs, slice<ast.Expr> orig_rhs, ast.Stmt returnStmt) {
     ref var check = ref Ꮡcheck.Value;
 
-    @string context = "assignment"u8;
+    @string context = assignmentˢ;
     if (returnStmt != default!) {
-        context = "return statement"u8;
+        context = returnStatementˢ;
     }
     nint l = len(lhs);
     nint r = len(orig_rhs);
@@ -429,7 +453,7 @@ internal static void initVars(this ж<Checker> Ꮡcheck, slice<ж<Var>> lhs, sli
         foreach (var (i, lhsΔ1) in lhs) {
             @string desc = lhsΔ1.Value.name;
             if (returnStmt != default! && desc == ""u8) {
-                desc = "result variable"u8;
+                desc = resultVariableˢ;
             }
             Ꮡcheck.expr(newTarget((~lhsΔ1).typ, desc), Ꮡx, orig_rhs[i]);
             Ꮡcheck.initVar(lhsΔ1, Ꮡx, context);
@@ -504,7 +528,7 @@ internal static void assignVars(this ж<Checker> Ꮡcheck, slice<ast.Expr> lhs, 
     // each value can be assigned to its corresponding variable.
     if (l == r && !isCall) {
         foreach (var (i, lhsΔ1) in lhs) {
-            Ꮡcheck.assignVar(lhsΔ1, orig_rhs[i], nil, "assignment"u8);
+            Ꮡcheck.assignVar(lhsΔ1, orig_rhs[i], nil, assignmentˢ);
         }
         return;
     }
@@ -523,7 +547,7 @@ internal static void assignVars(this ж<Checker> Ꮡcheck, slice<ast.Expr> lhs, 
     r = len(rhs);
     if (l == r) {
         foreach (var (i, lhsΔ2) in lhs) {
-            Ꮡcheck.assignVar(lhsΔ2, default!, rhs[i], "assignment"u8);
+            Ꮡcheck.assignVar(lhsΔ2, default!, rhs[i], assignmentˢ);
         }
         // Only record comma-ok expression if both assignments succeeded
         // (go.dev/issue/59371).

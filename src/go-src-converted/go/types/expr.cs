@@ -134,6 +134,10 @@ internal static bool underIs(ΔType typ, Func<ΔType, bool> f) {
     return f(under(typ));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cannotUseOutsideOfˢ = "cannot use ~ outside of interface or type constraint"u8;
+private static readonly @string cannotUseOutsideOfˢ2 = "cannot use ~ outside of interface or type constraint (use ^ for bitwise complement)"u8;
+
 // The unary expression e may be nil. It's passed in for better error messages only.
 internal static void unary(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.UnaryExpr> Ꮡe) {
     ref var check = ref Ꮡcheck.Value;
@@ -186,11 +190,11 @@ internal static void unary(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.U
     if (exprᴛ1 == token.TILDE) {
         if (!allInteger(x.typ)) {
             // Provide a better error position and message than what check.op below would do.
-            Ꮡcheck.error(new ast_UnaryExprжpositioner(Ꮡe), UndefinedOp, "cannot use ~ outside of interface or type constraint"u8);
+            Ꮡcheck.error(new ast_UnaryExprжpositioner(Ꮡe), UndefinedOp, cannotUseOutsideOfˢ);
             x.mode = invalid;
             return;
         }
-        Ꮡcheck.error(new ast_UnaryExprжpositioner(Ꮡe), UndefinedOp, "cannot use ~ outside of interface or type constraint (use ^ for bitwise complement)"u8);
+        Ꮡcheck.error(new ast_UnaryExprжpositioner(Ꮡe), UndefinedOp, cannotUseOutsideOfˢ2);
         op = token.XOR;
     }
 
@@ -243,6 +247,9 @@ internal static void updateExprType(this ж<Checker> Ꮡcheck, ast.Expr x, ΔTyp
     Ꮡcheck.updateExprType0(default!, x, typ, final);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string vFoundOldTypeSSNewSˢ = "%v: found old type(%s): %s (new: %s)"u8;
+
 internal static void updateExprType0(this ж<Checker> Ꮡcheck, ast.Expr parent, ast.Expr x, ΔType typ, bool final) {
     ref var check = ref Ꮡcheck.Value;
 
@@ -272,7 +279,7 @@ internal static void updateExprType0(this ж<Checker> Ꮡcheck, ast.Expr parent,
             // These expression are never untyped - nothing to do.
             // The respective sub-expressions got their final types
             // upon assignment or use.
-            Ꮡcheck.dump("%v: found old type(%s): %s (new: %s)"u8, xΔ1.Pos(), xΔ1, old.typ, typ);
+            Ꮡcheck.dump(vFoundOldTypeSSNewSˢ, xΔ1.Pos(), xΔ1, old.typ, typ);
             throw panic("unreachable");
         }
         return;
@@ -644,35 +651,44 @@ internal static @string incomparableCause(this ж<Checker> Ꮡcheck, ΔType typ)
     return cause;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string arrayˢ = "array"u8;
+private static readonly @string sliceˢ = "slice"u8;
+private static readonly @string structˢ = "struct"u8;
+private static readonly @string pointerˢ = "pointer"u8;
+private static readonly @string funcˢ = "func"u8;
+private static readonly @string interfaceˢ = "interface"u8;
+private static readonly @string chanˢ = "chan"u8;
+
 // kindString returns the type kind as a string.
 internal static @string kindString(this ж<Checker> Ꮡcheck, ΔType typ) {
     switch (under(typ).type()) {
     case ж<Array>: {
-        return "array"u8;
+        return arrayˢ;
     }
     case ж<Slice>: {
-        return "slice"u8;
+        return sliceˢ;
     }
     case ж<Struct>: {
-        return "struct"u8;
+        return structˢ;
     }
     case ж<Pointer>: {
-        return "pointer"u8;
+        return pointerˢ;
     }
     case ж<ΔSignature>: {
-        return "func"u8;
+        return funcˢ;
     }
     case ж<Interface>: {
         if (isTypeParam(typ)) {
             return Ꮡcheck.sprintf("type parameter %s"u8, typ);
         }
-        return "interface"u8;
+        return interfaceˢ;
     }
     case ж<Map>: {
         return "map"u8;
     }
     case ж<Chan>: {
-        return "chan"u8;
+        return chanˢ;
     }
     default: {
         return Ꮡcheck.sprintf("%s"u8, typ);
@@ -1028,6 +1044,9 @@ internal static ж<target> newTarget(ΔType typ, @string desc) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string exprSˢ = "-- expr %s"u8;
+
 // rawExpr typechecks expression e and initializes x with the expression
 // value or type. If an error occurred, x.mode is set to invalid.
 // If a non-nil target T is given and e is a generic function,
@@ -1039,7 +1058,7 @@ internal static exprKind rawExpr(this ж<Checker> Ꮡcheck, ж<target> ᏑT, ж<
     ref var check = ref Ꮡcheck.Value;
 
     if ((~check.conf)._Trace) {
-        Ꮡcheck.trace(e.Pos(), "-- expr %s"u8, e);
+        Ꮡcheck.trace(e.Pos(), exprSˢ, e);
         check.indent++;
         defer(() => {
             Ꮡcheck.Value.indent--;
@@ -1053,6 +1072,10 @@ internal static exprKind rawExpr(this ж<Checker> Ꮡcheck, ж<target> ᏑT, ж<
     check.record(Ꮡx);
     return kind;
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string typeˢ = "type"u8;
+private static readonly @string functionˢ = "function"u8;
 
 // If x is a generic type, or a generic function whose type arguments cannot be inferred
 // from a non-nil target T, nonGeneric reports an error and invalidates x.mode and x.typ.
@@ -1069,7 +1092,7 @@ internal static void nonGeneric(this ж<Checker> Ꮡcheck, ж<target> ᏑT, ж<o
     case ж<Named> _: {
         var t = x.typ;
         if (isGeneric(t)) {
-            what = "type"u8;
+            what = typeˢ;
         }
         break;
     }
@@ -1079,7 +1102,7 @@ internal static void nonGeneric(this ж<Checker> Ꮡcheck, ж<target> ᏑT, ж<o
                 Ꮡcheck.funcInst(ᏑT, x.Pos(), Ꮡx, nil, true);
                 return;
             }
-            what = "function"u8;
+            what = functionˢ;
         }
         break;
     }}
@@ -1121,6 +1144,18 @@ internal static void langCompat(this ж<Checker> Ꮡcheck, ж<ast.BasicLit> Ꮡl
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidUseOfˢ = "invalid use of '...'"u8;
+private static readonly @string functionLiteralˢ = "<function literal>"u8;
+private static readonly @string missingTypeInCompositeˢ = "missing type in composite literal"u8;
+private static readonly @string invalidRecursiveTypeˢ = "invalid recursive type"u8;
+private static readonly @string mixtureOfFieldValueAndˢ = "mixture of field:value and value elements in struct literal"u8;
+private static readonly @string structLiteralˢ = "struct literal"u8;
+private static readonly @string missingKeyInMapLiteralˢ = "missing key in map literal"u8;
+private static readonly @string mapLiteralˢ = "map literal"u8;
+private static readonly @string useOfTypeOutsideTypeˢ = "use of .(type) outside type switch"u8;
+private static readonly @string noKeyValueExpectedˢ = "no key:value expected"u8;
+
 // exprInternal contains the core of type checking of expressions.
 // Must only be called by rawExpr.
 // (See rawExpr for an explanation of the parameters.)
@@ -1146,7 +1181,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
     case ж<ast.Ellipsis> eΔ1: {
         Ꮡcheck.error(new ast_Ellipsisжpositioner(eΔ1), // ellipses are handled explicitly where they are legal
  // (array composite literals and parameter lists)
- BadDotDotDotSyntax, "invalid use of '...'"u8);
+ BadDotDotDotSyntax, invalidUseOfˢ);
         goto ΔError;
         break;
     }
@@ -1218,7 +1253,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
                     var iotaʗ7 = iota;
                     var sigʗ7 = sig;
                     check.later(() => {
-                        Ꮡcheck.funcBody(declʗ7, "<function literal>"u8, sigʗ7, (~eΔ1).Body, iotaʗ7);
+                        Ꮡcheck.funcBody(declʗ7, functionLiteralˢ, sigʗ7, (~eΔ1).Body, iotaʗ7);
                     }).describef(new ast_FuncLitжpositioner(eΔ1), "func literal"u8);
                 }
                 x.mode = value;
@@ -1269,7 +1304,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
         }
         default: {
             Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), // TODO(gri) provide better error messages depending on context
- UntypedLit, "missing type in composite literal"u8);
+ UntypedLit, missingTypeInCompositeˢ);
             goto ΔError;
             break;
         }}
@@ -1280,7 +1315,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
             if ((~utyp).fields == default!) {
                 // Prevent crash if the struct referred to is not yet set up.
                 // See analogous comment for *Array.
-                Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), InvalidTypeCycle, "invalid recursive type"u8);
+                Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), InvalidTypeCycle, invalidRecursiveTypeˢ);
                 goto ΔError;
             }
             if (len((~eΔ1).Elts) == 0) {
@@ -1297,7 +1332,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
                     foreach (var (_, eΔ2) in (~eΔ1).Elts) {
                         var (kv, _) = eΔ2._<ж<ast.KeyValueExpr>>(ᐧ);
                         if (kv == nil) {
-                            Ꮡcheck.error(new ast_Exprᴠpositioner(eΔ2), MixedStructLit, "mixture of field:value and value elements in struct literal"u8);
+                            Ꮡcheck.error(new ast_Exprᴠpositioner(eΔ2), MixedStructLit, mixtureOfFieldValueAndˢ);
                             continue;
                         }
                         var (key, _) = (~kv).Key._<ж<ast.Ident>>(ᐧ);
@@ -1323,7 +1358,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
                         var fld = fields[i];
                         check.recordUse(key, new VarжObject(fld));
                         var etyp = fld.Value.typ;
-                        Ꮡcheck.assignment(Ꮡx, etyp, "struct literal"u8);
+                        Ꮡcheck.assignment(Ꮡx, etyp, structLiteralˢ);
                         // 0 <= i < len(fields)
                         if (visited[i]) {
                             Ꮡcheck.errorf(new ast_KeyValueExprжpositioner(kv), DuplicateLitField, "duplicate field name %s in struct literal"u8, (~key).Name);
@@ -1336,7 +1371,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
                     foreach (var (i, eΔ3) in (~eΔ1).Elts) {
                         {
                             var (kv, _) = eΔ3._<ж<ast.KeyValueExpr>>(ᐧ); if (kv != nil) {
-                                Ꮡcheck.error(new ast_KeyValueExprжpositioner(kv), MixedStructLit, "mixture of field:value and value elements in struct literal"u8);
+                                Ꮡcheck.error(new ast_KeyValueExprжpositioner(kv), MixedStructLit, mixtureOfFieldValueAndˢ);
                                 continue;
                             }
                         }
@@ -1355,7 +1390,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
                             continue;
                         }
                         var etyp = fld.Value.typ;
-                        Ꮡcheck.assignment(Ꮡx, etyp, "struct literal"u8);
+                        Ꮡcheck.assignment(Ꮡx, etyp, structLiteralˢ);
                     }
                     if (len((~eΔ1).Elts) < len(fields)) {
                         Ꮡcheck.errorf(inNode(new ast_CompositeLitжNode(eΔ1), (~eΔ1).Rbrace), InvalidStructLit, "too few values in struct literal of type %s"u8, @base);
@@ -1370,7 +1405,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
                 // Prevent crash if the array referred to is not yet set up. Was go.dev/issue/18643.
                 // This is a stop-gap solution. Should use Checker.objPath to report entire
                 // path starting with earliest declaration in the source. TODO(gri) fix this.
-                Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), InvalidTypeCycle, "invalid recursive type"u8);
+                Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), InvalidTypeCycle, invalidRecursiveTypeˢ);
                 goto ΔError;
             }
             var n = Ꮡcheck.indexedElts((~eΔ1).Elts, (~utyp).elem, (~utyp).len);
@@ -1398,7 +1433,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
             if ((~utyp).elem == default!) {
                 // Prevent crash if the slice referred to is not yet set up.
                 // See analogous comment for *Array.
-                Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), InvalidTypeCycle, "invalid recursive type"u8);
+                Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), InvalidTypeCycle, invalidRecursiveTypeˢ);
                 goto ΔError;
             }
             Ꮡcheck.indexedElts((~eΔ1).Elts, (~utyp).elem, -1);
@@ -1408,7 +1443,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
             if ((~utyp).key == default! || (~utyp).elem == default!) {
                 // Prevent crash if the map referred to is not yet set up.
                 // See analogous comment for *Array.
-                Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), InvalidTypeCycle, "invalid recursive type"u8);
+                Ꮡcheck.error(new ast_CompositeLitжpositioner(eΔ1), InvalidTypeCycle, invalidRecursiveTypeˢ);
                 goto ΔError;
             }
             var keyIsInterface = isNonTypeParamInterface((~utyp).key);
@@ -1419,11 +1454,11 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
                 // duplicates.
                 var (kv, _) = eΔ4._<ж<ast.KeyValueExpr>>(ᐧ);
                 if (kv == nil) {
-                    Ꮡcheck.error(new ast_Exprᴠpositioner(eΔ4), MissingLitKey, "missing key in map literal"u8);
+                    Ꮡcheck.error(new ast_Exprᴠpositioner(eΔ4), MissingLitKey, missingKeyInMapLiteralˢ);
                     continue;
                 }
                 Ꮡcheck.exprWithHint(Ꮡx, (~kv).Key, (~utyp).key);
-                Ꮡcheck.assignment(Ꮡx, (~utyp).key, "map literal"u8);
+                Ꮡcheck.assignment(Ꮡx, (~utyp).key, mapLiteralˢ);
                 if (x.mode == invalid) {
                     continue;
                 }
@@ -1448,7 +1483,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
                     }
                 }
                 Ꮡcheck.exprWithHint(Ꮡx, (~kv).Value, (~utyp).elem);
-                Ꮡcheck.assignment(Ꮡx, (~utyp).elem, "map literal"u8);
+                Ꮡcheck.assignment(Ꮡx, (~utyp).elem, mapLiteralˢ);
             }
             break;
         }
@@ -1521,7 +1556,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
             // x.(type) expressions are handled explicitly in type switches
             // Don't use InvalidSyntaxTree because this can occur in the AST produced by
             // go/parser.
-            Ꮡcheck.error(new ast_TypeAssertExprжpositioner(eΔ1), BadTypeKeyword, "use of .(type) outside type switch"u8);
+            Ꮡcheck.error(new ast_TypeAssertExprжpositioner(eΔ1), BadTypeKeyword, useOfTypeOutsideTypeˢ);
             goto ΔError;
         }
         if (isTypeParam(x.typ)) {
@@ -1600,7 +1635,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
     }
     case ж<ast.KeyValueExpr> eΔ1: {
         Ꮡcheck.error(new ast_KeyValueExprжpositioner(eΔ1), // key:value expressions are handled in composite literals
- InvalidSyntaxTree, "no key:value expected"u8);
+ InvalidSyntaxTree, noKeyValueExpectedˢ);
         goto ΔError;
         break;
     }
@@ -1777,6 +1812,12 @@ internal static void exprOrType(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ast
     Ꮡcheck.singleValue(Ꮡx);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sUsedAsValueˢ = "%s used as value"u8;
+private static readonly @string sUsedAsValueOrTypeˢ = "%s used as value or type"u8;
+private static readonly @string sMustBeCalledˢ = "%s must be called"u8;
+private static readonly @string sIsNotAnExpressionˢ = "%s is not an expression"u8;
+
 // exclude reports an error if x.mode is in modeset and sets x.mode to invalid.
 // The modeset may contain any of 1<<novalue, 1<<builtin, 1<<typexpr.
 internal static void exclude(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, nuint modeset) {
@@ -1788,18 +1829,18 @@ internal static void exclude(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, nuint 
         var exprᴛ1 = x.mode;
         if (exprᴛ1 == novalue) {
             if ((nuint)(modeset & (nuint)(((nuint)1 << (int)(byte)(typexpr)))) != 0){
-                msg = "%s used as value"u8;
+                msg = sUsedAsValueˢ;
             } else {
-                msg = "%s used as value or type"u8;
+                msg = sUsedAsValueOrTypeˢ;
             }
             code = TooManyValues;
         }
         else if (exprᴛ1 == Δbuiltinᴛ) {
-            msg = "%s must be called"u8;
+            msg = sMustBeCalledˢ;
             code = UncalledBuiltin;
         }
         else if (exprᴛ1 == typexpr) {
-            msg = "%s is not an expression"u8;
+            msg = sIsNotAnExpressionˢ;
             code = NotAnExpr;
         }
         else { /* default: */

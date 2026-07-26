@@ -59,13 +59,16 @@ public static ж<Decoder> NewDecoder(io.Reader r) {
     return dec;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gobDuplicateTypeReceivedˢ = "gob: duplicate type received"u8;
+
 // recvType loads the definition of a type.
 internal static void recvType(this ж<Decoder> Ꮡdec, typeId id) {
     ref var dec = ref Ꮡdec.Value;
 
     // Have we already seen this type? That's an error
     if (id < firstUserId || dec.wireType[id] != nil) {
-        dec.err = errors.New("gob: duplicate type received"u8);
+        dec.err = errors.New(gobDuplicateTypeReceivedˢ);
         return;
     }
     // Type:
@@ -141,6 +144,9 @@ internal static uint64 nextUint(this ж<Decoder> Ꮡdec) {
     return n;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string extraDataInBufferˢ = "extra data in buffer"u8;
+
 // decodeTypeSequence parses:
 // TypeSequence
 //
@@ -184,7 +190,7 @@ internal static typeId decodeTypeSequence(this ж<Decoder> Ꮡdec, bool isInterf
         // will be absorbed by recvMessage.)
         if (dec.buf.Len() > 0) {
             if (!isInterface) {
-                dec.err = errors.New("extra data in buffer"u8);
+                dec.err = errors.New(extraDataInBufferˢ);
                 break;
             }
             Ꮡdec.nextUint();
@@ -193,6 +199,9 @@ internal static typeId decodeTypeSequence(this ж<Decoder> Ꮡdec, bool isInterf
     }
     return -1;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gobAttemptToDecodeIntoAˢ = "gob: attempt to decode into a non-pointer"u8;
 
 // Decode reads the next value from the input stream and stores
 // it in the data represented by the empty interface value.
@@ -211,11 +220,14 @@ public static error Decode(this ж<Decoder> Ꮡdec, any e) {
     // If e represents a value as opposed to a pointer, the answer won't
     // get back to the caller. Make sure it's a pointer.
     if (value.Type().Kind() != reflect.ΔPointer) {
-        dec.err = errors.New("gob: attempt to decode into a non-pointer"u8);
+        dec.err = errors.New(gobAttemptToDecodeIntoAˢ);
         return dec.err;
     }
     return Ꮡdec.DecodeValue(value);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gobDecodeValueOfˢ = "gob: DecodeValue of unassignable value"u8;
 
 // DecodeValue reads the next value from the input stream.
 // If v is the zero reflect.Value (v.Kind() == Invalid), DecodeValue discards the value.
@@ -231,7 +243,7 @@ public static error DecodeValue(this ж<Decoder> Ꮡdec, reflectꓸValue v) => f
         } else 
         if (!v.CanSet()) {
             // That's okay, we'll store through the pointer.
-            return errors.New("gob: DecodeValue of unassignable value"u8);
+            return errors.New(gobDecodeValueOfˢ);
         }
     }
     // Make sure we're single-threaded through here.

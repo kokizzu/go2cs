@@ -382,6 +382,10 @@ internal static void validate(this ж<Float> Ꮡx) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nonzeroFiniteNumberWithˢ = "nonzero finite number with empty mantissa"u8;
+private static readonly @string zeroPrecisionFiniteˢ = "zero precision finite number"u8;
+
 internal static @string validate0(this ж<Float> Ꮡx) {
     ref var x = ref Ꮡx.Value;
 
@@ -390,14 +394,14 @@ internal static @string validate0(this ж<Float> Ꮡx) {
     }
     nint m = len(x.mant);
     if (m == 0) {
-        return "nonzero finite number with empty mantissa"u8;
+        return nonzeroFiniteNumberWithˢ;
     }
     UntypedInt msb = /* 1 << (_W - 1) */ 9223372036854775808;
     if ((Word)(x.mant[m - 1] & (nuint)msb) == 0) {
         return fmt.Sprintf("msb not set in last word %#x of %s"u8, x.mant[m - 1], Ꮡx.Text((rune)'p', 0));
     }
     if (x.prec == 0) {
-        return "zero precision finite number"u8;
+        return zeroPrecisionFiniteˢ;
     }
     return ""u8;
 }

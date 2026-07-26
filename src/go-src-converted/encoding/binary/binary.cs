@@ -139,12 +139,18 @@ public static slice<byte> AppendUint64(this littleEndian _, slice<byte> b, uint6
         (byte)((v >> (int)(56))));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string littleEndianˢ = "LittleEndian"u8;
+
 public static @string String(this littleEndian _) {
-    return "LittleEndian"u8;
+    return littleEndianˢ;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string binaryLittleEndianˢ = "binary.LittleEndian"u8;
+
 public static @string GoString(this littleEndian _) {
-    return "binary.LittleEndian"u8;
+    return binaryLittleEndianˢ;
 }
 
 [GoType] public partial struct bigEndian {
@@ -223,20 +229,32 @@ public static slice<byte> AppendUint64(this bigEndian _, slice<byte> b, uint64 v
         (byte)v);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bigEndianˢ = "BigEndian"u8;
+
 public static @string String(this bigEndian _) {
-    return "BigEndian"u8;
+    return bigEndianˢ;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string binaryBigEndianˢ = "binary.BigEndian"u8;
 
 public static @string GoString(this bigEndian _) {
-    return "binary.BigEndian"u8;
+    return binaryBigEndianˢ;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nativeEndianˢ = "NativeEndian"u8;
 
 public static @string String(this nativeEndian _) {
-    return "NativeEndian"u8;
+    return nativeEndianˢ;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string binaryNativeEndianˢ = "binary.NativeEndian"u8;
+
 public static @string GoString(this nativeEndian _) {
-    return "binary.NativeEndian"u8;
+    return binaryNativeEndianˢ;
 }
 
 // Read reads structured binary data from r into data.

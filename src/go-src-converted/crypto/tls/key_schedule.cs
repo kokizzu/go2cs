@@ -106,17 +106,23 @@ internal static (slice<byte> key, slice<byte> iv) trafficKey(this ж<cipherSuite
     return (key, iv);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string finishedˢ = "finished"u8;
+
 // finishedHash generates the Finished verify_data or PskBinderEntry according
 // to RFC 8446, Section 4.4.4. See sections 4.4 and 4.2.11.2 for the baseKey
 // selection.
 internal static slice<byte> finishedHash(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> baseKey, hash.Hash transcript) {
     ref var c = ref Ꮡc.Value;
 
-    var finishedKey = Ꮡc.expandLabel(baseKey, "finished"u8, default!, c.hash.Size());
+    var finishedKey = Ꮡc.expandLabel(baseKey, finishedˢ, default!, c.hash.Size());
     var verifyData = hmac.New(() => Ꮡc.Value.hash.New(), finishedKey);
     verifyData.Write(transcript.Sum(default!));
     return verifyData.Sum(default!);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string exporterˢ = "exporter"u8;
 
 // exportKeyingMaterial implements RFC5705 exporters for TLS 1.3 according to
 // RFC 8446, Section 7.5.
@@ -127,7 +133,7 @@ internal static Func<@string, slice<byte>, nint, (slice<byte>, error)> exportKey
         var secret = Ꮡc.deriveSecret(expMasterSecretʗ1, label, default!);
         var h = Ꮡc.Value.hash.New();
         h.Write(context);
-        return (Ꮡc.expandLabel(secret, "exporter"u8, h.Sum(default!), length), default!);
+        return (Ꮡc.expandLabel(secret, exporterˢ, h.Sum(default!), length), default!);
     };
 }
 
@@ -174,12 +180,15 @@ internal static slice<byte> kyberSharedSecret(slice<byte> K, slice<byte> c) {
 
 internal static readonly UntypedInt x25519PublicKeySize = 32;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsInternalErrorˢ6 = "tls: internal error: unsupported curve"u8;
+
 // generateECDHEKey returns a PrivateKey that implements Diffie-Hellman
 // according to RFC 8446, Section 4.2.8.2.
 internal static (ж<ecdh.PrivateKey>, error) generateECDHEKey(io.Reader rand, CurveID curveID) {
     var (curve, ok) = curveForCurveID(curveID);
     if (!ok) {
-        return (default!, errors.New("tls: internal error: unsupported curve"u8));
+        return (default!, errors.New(tlsInternalErrorˢ6));
     }
     return curve.GenerateKey(rand);
 }

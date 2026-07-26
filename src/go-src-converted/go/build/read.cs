@@ -428,6 +428,10 @@ internal static (slice<byte>, error) readComments(io.Reader f) {
     return ((~r).buf, (~r).err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string packageˢ = "package"u8;
+private static readonly @string importˢ = "import"u8;
+
 // readGoInfo expects a Go file as input and reads the file up to and including the import section.
 // It records what it learned in *info.
 // If info.fset is non-nil, readGoInfo parses the file and sets info.parsed, info.parseErr,
@@ -439,10 +443,10 @@ internal static error readGoInfo(io.Reader f, ж<fileInfo> Ꮡinfo) {
     ref var info = ref Ꮡinfo.Value;
 
     var r = newImportReader(info.name, f);
-    r.readKeyword("package"u8);
+    r.readKeyword(packageˢ);
     r.readIdent();
     while (r.peekByte(true) == (rune)'i') {
-        r.readKeyword("import"u8);
+        r.readKeyword(importˢ);
         if (r.peekByte(true) == (rune)'('){
             r.nextByte(false);
             while (r.peekByte(true) != (rune)')' && (~r).err == default!) {

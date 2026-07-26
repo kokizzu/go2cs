@@ -125,6 +125,9 @@ public const nint SEEK_END = 2; // seek relative to the end
     return e.Err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string readˢ = "read"u8;
+
 // Read reads up to len(b) bytes from the File and stores them in b.
 // It returns the number of bytes read and any error encountered.
 // At end of file, Read returns 0, io.EOF.
@@ -134,13 +137,16 @@ public static (nint n, error err) Read(this ж<File> Ꮡf, slice<byte> b) {
 
     ref var f = ref Ꮡf.Value;
     {
-        var errΔ1 = Ꮡf.checkValid("read"u8); if (errΔ1 != default!) {
+        var errΔ1 = Ꮡf.checkValid(readˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
         }
     }
     (n, var e) = Ꮡf.read(b);
-    return (n, f.wrapErr("read"u8, e));
+    return (n, f.wrapErr(readˢ, e));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string negativeOffsetˢ = "negative offset"u8;
 
 // ReadAt reads len(b) bytes from the File starting at byte offset off.
 // It returns the number of bytes read and the error, if any.
@@ -152,17 +158,17 @@ public static (nint n, error err) ReadAt(this ж<File> Ꮡf, slice<byte> b, int6
 
     ref var f = ref Ꮡf.Value;
     {
-        var errΔ1 = Ꮡf.checkValid("read"u8); if (errΔ1 != default!) {
+        var errΔ1 = Ꮡf.checkValid(readˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
         }
     }
     if (off < 0) {
-        return (0, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "readat"u8, Path: f.name, Err: errors.New("negative offset"u8)))));
+        return (0, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "readat"u8, Path: f.name, Err: errors.New(negativeOffsetˢ)))));
     }
     while (len(b) > 0) {
         var (m, e) = Ꮡf.pread(b, off);
         if (e != default!) {
-            err = f.wrapErr("read"u8, e);
+            err = f.wrapErr(readˢ, e);
             break;
         }
         n += m;
@@ -172,6 +178,9 @@ public static (nint n, error err) ReadAt(this ж<File> Ꮡf, slice<byte> b, int6
     return (n, err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string writeˢ = "write"u8;
+
 // ReadFrom implements io.ReaderFrom.
 public static (int64 n, error err) ReadFrom(this ж<File> Ꮡf, Δio.Reader r) {
     int64 n = default!;
@@ -179,7 +188,7 @@ public static (int64 n, error err) ReadFrom(this ж<File> Ꮡf, Δio.Reader r) {
 
     ref var f = ref Ꮡf.Value;
     {
-        var errΔ1 = Ꮡf.checkValid("write"u8); if (errΔ1 != default!) {
+        var errΔ1 = Ꮡf.checkValid(writeˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
         }
     }
@@ -188,7 +197,7 @@ public static (int64 n, error err) ReadFrom(this ж<File> Ꮡf, Δio.Reader r) {
         return genericReadFrom(Ꮡf, r);
     }
     // without wrapping
-    return (n, f.wrapErr("write"u8, e));
+    return (n, f.wrapErr(writeˢ, e));
 }
 
 // noReadFrom can be embedded alongside another type to
@@ -223,7 +232,7 @@ public static (nint n, error err) Write(this ж<File> Ꮡf, slice<byte> b) {
 
     ref var f = ref Ꮡf.Value;
     {
-        var errΔ1 = Ꮡf.checkValid("write"u8); if (errΔ1 != default!) {
+        var errΔ1 = Ꮡf.checkValid(writeˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
         }
     }
@@ -236,7 +245,7 @@ public static (nint n, error err) Write(this ж<File> Ꮡf, slice<byte> b) {
     }
     epipecheck(Ꮡf, e);
     if (e != default!) {
-        err = f.wrapErr("write"u8, e);
+        err = f.wrapErr(writeˢ, e);
     }
     return (n, err);
 }
@@ -254,7 +263,7 @@ public static (nint n, error err) WriteAt(this ж<File> Ꮡf, slice<byte> b, int
 
     ref var f = ref Ꮡf.Value;
     {
-        var errΔ1 = Ꮡf.checkValid("write"u8); if (errΔ1 != default!) {
+        var errΔ1 = Ꮡf.checkValid(writeˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
         }
     }
@@ -262,12 +271,12 @@ public static (nint n, error err) WriteAt(this ж<File> Ꮡf, slice<byte> b, int
         return (0, errWriteAtInAppendMode);
     }
     if (off < 0) {
-        return (0, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "writeat"u8, Path: f.name, Err: errors.New("negative offset"u8)))));
+        return (0, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "writeat"u8, Path: f.name, Err: errors.New(negativeOffsetˢ)))));
     }
     while (len(b) > 0) {
         var (m, e) = Ꮡf.pwrite(b, off);
         if (e != default!) {
-            err = f.wrapErr("write"u8, e);
+            err = f.wrapErr(writeˢ, e);
             break;
         }
         n += m;
@@ -284,13 +293,13 @@ public static (int64 n, error err) WriteTo(this ж<File> Ꮡf, Δio.Writer w) {
 
     ref var f = ref Ꮡf.Value;
     {
-        var errΔ1 = Ꮡf.checkValid("read"u8); if (errΔ1 != default!) {
+        var errΔ1 = Ꮡf.checkValid(readˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
         }
     }
     (n, var handled, var e) = f.writeTo(w);
     if (handled) {
-        return (n, f.wrapErr("read"u8, e));
+        return (n, f.wrapErr(readˢ, e));
     }
     return genericWriteTo(Ꮡf, w);
 }
@@ -320,6 +329,9 @@ internal static (int64, error) genericWriteTo(ж<File> Ꮡf, Δio.Writer w) {
     return Δio.Copy(w, new fileWithoutWriteTo(File: Ꮡf));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string seekˢ = "seek"u8;
+
 // Seek sets the offset for the next Read or Write on file to offset, interpreted
 // according to whence: 0 means relative to the origin of the file, 1 means
 // relative to the current offset, and 2 means relative to the end.
@@ -331,7 +343,7 @@ public static (int64 ret, error err) Seek(this ж<File> Ꮡf, int64 offset, nint
 
     ref var f = ref Ꮡf.Value;
     {
-        var errΔ1 = Ꮡf.checkValid("seek"u8); if (errΔ1 != default!) {
+        var errΔ1 = Ꮡf.checkValid(seekˢ); if (errΔ1 != default!) {
             return (0, errΔ1);
         }
     }
@@ -340,7 +352,7 @@ public static (int64 ret, error err) Seek(this ж<File> Ꮡf, int64 offset, nint
         e = syscall.EISDIR;
     }
     if (e != default!) {
-        return (0, f.wrapErr("seek"u8, e));
+        return (0, f.wrapErr(seekˢ, e));
     }
     return (r, default!);
 }
@@ -515,6 +527,16 @@ public static @string TempDir() {
     return tempDir();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string localAppDataˢ = "LocalAppData"u8;
+private static readonly @string localAppDataIsNotDefinedˢ = "%LocalAppData% is not defined"u8;
+private static readonly @string homeˢ = "HOME"u8;
+private static readonly @string homeIsNotDefinedˢ = "$HOME is not defined"u8;
+private static readonly @string homeˢ2 = "home"u8;
+private static readonly @string homeIsNotDefinedˢ2 = "$home is not defined"u8;
+private static readonly @string xdgCacheHomeˢ = "XDG_CACHE_HOME"u8;
+private static readonly @string neitherXdgCacheHomeNorˢ = "neither $XDG_CACHE_HOME nor $HOME are defined"u8;
+
 // UserCacheDir returns the default root directory to use for user-specific
 // cached data. Users should create their own application-specific subdirectory
 // within this one and use that.
@@ -532,32 +554,32 @@ public static (@string, error) UserCacheDir() {
     @string dir = default!;
     var exprᴛ1 = Δruntime.GOOS;
     if (exprᴛ1 == "windows"u8) {
-        dir = Getenv("LocalAppData"u8);
+        dir = Getenv(localAppDataˢ);
         if (dir == ""u8) {
-            return ("", errors.New("%LocalAppData% is not defined"u8));
+            return ("", errors.New(localAppDataIsNotDefinedˢ));
         }
     }
     else if (exprᴛ1 == "darwin"u8 || exprᴛ1 == "ios"u8) {
-        dir = Getenv("HOME"u8);
+        dir = Getenv(homeˢ);
         if (dir == ""u8) {
-            return ("", errors.New("$HOME is not defined"u8));
+            return ("", errors.New(homeIsNotDefinedˢ));
         }
         dir += "/Library/Caches"u8;
     }
     else if (exprᴛ1 == "plan9"u8) {
-        dir = Getenv("home"u8);
+        dir = Getenv(homeˢ2);
         if (dir == ""u8) {
-            return ("", errors.New("$home is not defined"u8));
+            return ("", errors.New(homeIsNotDefinedˢ2));
         }
         dir += "/lib/cache"u8;
     }
     else { /* default: */
-        dir = Getenv("XDG_CACHE_HOME"u8);
+        dir = Getenv(xdgCacheHomeˢ);
         if (dir == ""u8) {
             // Unix
-            dir = Getenv("HOME"u8);
+            dir = Getenv(homeˢ);
             if (dir == ""u8) {
-                return ("", errors.New("neither $XDG_CACHE_HOME nor $HOME are defined"u8));
+                return ("", errors.New(neitherXdgCacheHomeNorˢ));
             }
             dir += "/.cache"u8;
         }
@@ -565,6 +587,12 @@ public static (@string, error) UserCacheDir() {
 
     return (dir, default!);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string appDataˢ = "AppData"u8;
+private static readonly @string appDataIsNotDefinedˢ = "%AppData% is not defined"u8;
+private static readonly @string xdgConfigHomeˢ = "XDG_CONFIG_HOME"u8;
+private static readonly @string neitherXdgConfigHomeNorˢ = "neither $XDG_CONFIG_HOME nor $HOME are defined"u8;
 
 // UserConfigDir returns the default root directory to use for user-specific
 // configuration data. Users should create their own application-specific
@@ -583,32 +611,32 @@ public static (@string, error) UserConfigDir() {
     @string dir = default!;
     var exprᴛ1 = Δruntime.GOOS;
     if (exprᴛ1 == "windows"u8) {
-        dir = Getenv("AppData"u8);
+        dir = Getenv(appDataˢ);
         if (dir == ""u8) {
-            return ("", errors.New("%AppData% is not defined"u8));
+            return ("", errors.New(appDataIsNotDefinedˢ));
         }
     }
     else if (exprᴛ1 == "darwin"u8 || exprᴛ1 == "ios"u8) {
-        dir = Getenv("HOME"u8);
+        dir = Getenv(homeˢ);
         if (dir == ""u8) {
-            return ("", errors.New("$HOME is not defined"u8));
+            return ("", errors.New(homeIsNotDefinedˢ));
         }
         dir += "/Library/Application Support"u8;
     }
     else if (exprᴛ1 == "plan9"u8) {
-        dir = Getenv("home"u8);
+        dir = Getenv(homeˢ2);
         if (dir == ""u8) {
-            return ("", errors.New("$home is not defined"u8));
+            return ("", errors.New(homeIsNotDefinedˢ2));
         }
         dir += "/lib"u8;
     }
     else { /* default: */
-        dir = Getenv("XDG_CONFIG_HOME"u8);
+        dir = Getenv(xdgConfigHomeˢ);
         if (dir == ""u8) {
             // Unix
-            dir = Getenv("HOME"u8);
+            dir = Getenv(homeˢ);
             if (dir == ""u8) {
-                return ("", errors.New("neither $XDG_CONFIG_HOME nor $HOME are defined"u8));
+                return ("", errors.New(neitherXdgConfigHomeNorˢ));
             }
             dir += "/.config"u8;
         }
@@ -616,6 +644,13 @@ public static (@string, error) UserConfigDir() {
 
     return (dir, default!);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string homeˢ3 = "$HOME"u8;
+private static readonly @string userprofileˢ = "USERPROFILE"u8;
+private static readonly @string userprofileˢ2 = "%userprofile%"u8;
+private static readonly @string homeˢ4 = "$home"u8;
+private static readonly @string sdcardˢ = "/sdcard"u8;
 
 // UserHomeDir returns the current user's home directory.
 //
@@ -626,14 +661,14 @@ public static (@string, error) UserConfigDir() {
 // If the expected variable is not set in the environment, UserHomeDir
 // returns either a platform-specific default value or a non-nil error.
 public static (@string, error) UserHomeDir() {
-    @string env = "HOME"u8;
-    @string enverr = "$HOME"u8;
+    @string env = homeˢ;
+    @string enverr = homeˢ3;
     var exprᴛ1 = Δruntime.GOOS;
     if (exprᴛ1 == "windows"u8) {
-        (env, enverr) = ("USERPROFILE", "%userprofile%");
+        (env, enverr) = (userprofileˢ, userprofileˢ2);
     }
     else if (exprᴛ1 == "plan9"u8) {
-        (env, enverr) = ("home", "$home");
+        (env, enverr) = (homeˢ2, homeˢ4);
     }
 
     {
@@ -644,7 +679,7 @@ public static (@string, error) UserHomeDir() {
     // On some geese the home directory is not always defined.
     var exprᴛ2 = Δruntime.GOOS;
     if (exprᴛ2 == "android"u8) {
-        return ("/sdcard", default!);
+        return (sdcardˢ, default!);
     }
     if (exprᴛ2 == "ios"u8) {
         return ("/", default!);
@@ -727,11 +762,14 @@ public static error SetWriteDeadline(this ж<File> Ꮡf, time.Time t) {
     return Ꮡf.setWriteDeadline(t);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string syscallConnˢ = "SyscallConn"u8;
+
 // SyscallConn returns a raw file.
 // This implements the syscall.Conn interface.
 public static (syscall.RawConn, error) SyscallConn(this ж<File> Ꮡf) {
     {
-        var err = Ꮡf.checkValid("SyscallConn"u8); if (err != default!) {
+        var err = Ꮡf.checkValid(syscallConnˢ); if (err != default!) {
             return (default!, err);
         }
     }
@@ -833,10 +871,13 @@ internal static (fs.FileInfo, error) Stat(this dirFS dir, @string name) {
     return (f, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string osDirFSWithEmptyRootˢ = "os: DirFS with empty root"u8;
+
 // join returns the path for name in dir.
 internal static (@string, error) join(this dirFS dir, @string name) {
     if (dir == ""u8) {
-        return ("", errors.New("os: DirFS with empty root"u8));
+        return ("", errors.New(osDirFSWithEmptyRootˢ));
     }
     (name, var err) = filepathlite.Localize(name);
     if (err != default!) {

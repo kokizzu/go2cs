@@ -235,7 +235,7 @@ internal static ж<profileBuilder> newProfileBuilder(io.Writer w) {
         w: w,
         zw: zw,
         start: time.Now(),
-        strings: new @string[]{""}.slice(),
+        strings: new @string[]{""u8}.slice(),
         stringMap: new map<@string, nint>{[""u8] = 0},
         locs: new map<uintptr, locInfo>{},
         funcs: new map<@string, nint>{}
@@ -314,6 +314,9 @@ internal static ж<profileBuilder> newProfileBuilder(io.Writer w) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string samplesˢ = "samples"u8;
+
 // build completes and returns the constructed profile.
 internal static void build(this ж<profileBuilder> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -322,10 +325,10 @@ internal static void build(this ж<profileBuilder> Ꮡb) {
     b.pb.int64Opt(tagProfile_TimeNanos, b.start.UnixNano());
     if (b.havePeriod) {
         // must be CPU profile
-        b.pbValueType(tagProfile_SampleType, "samples"u8, "count"u8);
-        b.pbValueType(tagProfile_SampleType, "cpu"u8, "nanoseconds"u8);
+        b.pbValueType(tagProfile_SampleType, samplesˢ, countˢ);
+        b.pbValueType(tagProfile_SampleType, "cpu"u8, nanosecondsˢ);
         b.pb.int64Opt(tagProfile_DurationNanos, b.end.Sub(b.start).Nanoseconds());
-        b.pbValueType(tagProfile_PeriodType, "cpu"u8, "nanoseconds"u8);
+        b.pbValueType(tagProfile_PeriodType, "cpu"u8, nanosecondsˢ);
         b.pb.int64Opt(tagProfile_Period, b.period);
     }
     var values = new int64[]{0, 0}.slice();
@@ -645,6 +648,9 @@ internal static slice<byte> space = slice<byte>(" "u8);
 
 internal static slice<byte> newline = slice<byte>("\n"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string deletedˢ = " (deleted)"u8;
+
 internal static void parseProcSelfMaps(slice<byte> data, Action<uint64, uint64, uint64, @string, @string> addMapping) {
     // $ cat /proc/self/maps
     // 00400000-0040b000 r-xp 00000000 fc:01 787766                             /bin/cat
@@ -708,7 +714,7 @@ internal static void parseProcSelfMaps(slice<byte> data, Action<uint64, uint64, 
         }
         @string @file = ((@string)line);
         // Trim deleted file marker.
-        @string deletedStr = " (deleted)"u8;
+        @string deletedStr = deletedˢ;
         nint deletedLen = len(deletedStr);
         if (len(@file) >= deletedLen && @file[(int)(len(@file) - deletedLen)..] == deletedStr) {
             @file = @file[..(int)(len(@file) - deletedLen)];

@@ -105,11 +105,15 @@ internal static void unpin(this ж<pinner> Ꮡp) {
     Δp.refs = Δp.refStore[..0];
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimePinnerArgumentIsˢ = "runtime.Pinner: argument is nil"u8;
+private static readonly @string runtimePinnerObjectWasˢ = "runtime.Pinner: object was allocated into an arena"u8;
+
 internal static @unsafe.Pointer pinnerGetPtr(ж<any> Ꮡi) {
     var e = efaceOf(Ꮡi);
     var etyp = e.Value._type;
     if (etyp == nil) {
-        throw panic(((errorString)(@string)"runtime.Pinner: argument is nil"u8));
+        throw panic(((errorString)(@string)runtimePinnerArgumentIsˢ));
     }
     {
         var kind = (abiꓸKind)((~etyp).Kind_ & abi.KindMask); if (kind != abi.Pointer && kind != abi.UnsafePointer) {
@@ -118,7 +122,7 @@ internal static @unsafe.Pointer pinnerGetPtr(ж<any> Ꮡi) {
     }
     if (inUserArenaChunk((uintptr)(~e).data)) {
         // Arena-allocated objects are not eligible for pinning.
-        throw panic(((errorString)(@string)"runtime.Pinner: object was allocated into an arena"u8));
+        throw panic(((errorString)(@string)runtimePinnerObjectWasˢ));
     }
     return (~e).data;
 }
@@ -148,6 +152,10 @@ internal static bool isPinned(@unsafe.Pointer ptr) {
     return pinState.isPinned();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string triedToUnpinNonGoPointerˢ = "tried to unpin non-Go pointer"u8;
+private static readonly @string runtimePinnerObjectˢ = "runtime.Pinner: object already unpinned"u8;
+
 // setPinned marks or unmarks a Go pointer as pinned, when the ptr is a Go pointer.
 // It will be ignored while try to pin a non-Go pointer,
 // and it will be panic while try to unpin a non-Go pointer,
@@ -156,7 +164,7 @@ internal static bool setPinned(@unsafe.Pointer ptr, bool pin) {
     var span = spanOfHeap((uintptr)ptr);
     if (span == nil) {
         if (!pin) {
-            throw panic(((errorString)(@string)"tried to unpin non-Go pointer"u8));
+            throw panic(((errorString)(@string)triedToUnpinNonGoPointerˢ));
         }
         // This is a linker-allocated, zero size object or other object,
         // nothing to do, silently ignore it.
@@ -213,7 +221,7 @@ internal static bool setPinned(@unsafe.Pointer ptr, bool pin) {
             }
         } else {
             // unpinning unpinned object, bail out
-            @throw("runtime.Pinner: object already unpinned"u8);
+            @throw(runtimePinnerObjectˢ);
         }
     }
     unlock(span.of(mspan.Ꮡspeciallock));
@@ -348,6 +356,9 @@ internal static void incPinCounter(this ж<mspan> Ꮡspan, uintptr offset) {
     rec.Value.counter++;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimePinnerDecreasedˢ = "runtime.Pinner: decreased non-existing pin counter"u8;
+
 // decPinCounter decreases the counter. If the counter reaches 0, the counter
 // special is deleted and false is returned. Otherwise true is returned.
 internal static bool decPinCounter(this ж<mspan> Ꮡspan, uintptr offset) {
@@ -355,7 +366,7 @@ internal static bool decPinCounter(this ж<mspan> Ꮡspan, uintptr offset) {
 
     var (@ref, exists) = Ꮡspan.specialFindSplicePoint(offset, _KindSpecialPinCounter);
     if (!exists) {
-        @throw("runtime.Pinner: decreased non-existing pin counter"u8);
+        @throw(runtimePinnerDecreasedˢ);
     }
     var counter = @ref.ValueSlot.Reinterpret<special, specialPinCounter>();
     counter.Value.counter--;

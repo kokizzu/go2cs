@@ -122,6 +122,9 @@ internal static nint abs8(uint8 d) {
     (_, e.err) = e.w.Write(e.footer[..4]);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ihdrˢ = "IHDR"u8;
+
 [GoRecv] internal static void writeIHDR(this ref encoder e) {
     var b = e.m.Bounds();
     binary.BigEndian.PutUint32(e.tmp[0..4], (uint32)b.Dx());
@@ -175,8 +178,12 @@ internal static nint abs8(uint8 d) {
     // default filter method
     e.tmp[12] = 0;
     // non-interlaced
-    e.writeChunk(e.tmp[..13], "IHDR"u8);
+    e.writeChunk(e.tmp[..13], ihdrˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string plteˢ = "PLTE"u8;
+private static readonly @string tRNSˢ = "tRNS"u8;
 
 [GoRecv] internal static void writePLTEAndTRNS(this ref encoder e, color.Palette p) {
     if (len(p) < 1 || len(p) > 256) {
@@ -194,11 +201,14 @@ internal static nint abs8(uint8 d) {
         }
         e.tmp[3 * 256 + i] = c1.A;
     }
-    e.writeChunk(e.tmp[..(int)(3 * len(p))], "PLTE"u8);
+    e.writeChunk(e.tmp[..(int)(3 * len(p))], plteˢ);
     if (last != -1) {
-        e.writeChunk(e.tmp[(int)(3 * 256)..(int)(3 * 256 + 1 + last)], "tRNS"u8);
+        e.writeChunk(e.tmp[(int)(3 * 256)..(int)(3 * 256 + 1 + last)], tRNSˢ);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string idatˢ = "IDAT"u8;
 
 // An encoder is an io.Writer that satisfies writes by writing PNG IDAT chunks,
 // including an 8-byte header and 4-byte CRC checksum per Write call. Such calls
@@ -207,7 +217,7 @@ internal static nint abs8(uint8 d) {
 // This method should only be called from writeIDATs (via writeImage).
 // No other code should treat an encoder as an io.Writer.
 [GoRecv] public static (nint, error) Write(this ref encoder e, slice<byte> b) {
-    e.writeChunk(b, "IDAT"u8);
+    e.writeChunk(b, idatˢ);
     if (e.err != default!) {
         return (0, e.err);
     }
@@ -608,8 +618,11 @@ internal static nint levelToZlib(CompressionLevel l) {
 
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string iendˢ = "IEND"u8;
+
 [GoRecv] internal static void writeIEND(this ref encoder e) {
-    e.writeChunk(default!, "IEND"u8);
+    e.writeChunk(default!, iendˢ);
 }
 
 // Encode writes the Image m to w in PNG format. Any Image may be

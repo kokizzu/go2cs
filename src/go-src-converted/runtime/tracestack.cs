@@ -16,6 +16,9 @@ partial class runtime_package {
 internal static readonly UntypedInt traceStackSize = 128;
 internal static readonly uintptr logicalStackSentinel = /* ^uintptr(0) */ unchecked((uintptr)18446744073709551615);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string attemptedToTraceStackOfAˢ = "attempted to trace stack of a goroutine this thread does not own"u8;
+
 // traceStack captures a stack trace from a goroutine and registers it in the trace
 // stack table. It then returns its unique ID. If gp == nil, then traceStack will
 // attempt to use the current execution context.
@@ -57,7 +60,7 @@ internal static uint64 traceStack(nint skip, ж<g> Ꮡgp, uintptr gen) {
             }
             if (fallthrough || !matchᴛ1) { /* default: */
                 print((@string)"runtime: gp="u8, new @unsafe.Pointer(Ꮡgp), (@string)" gp.goid="u8, gp.goid, (@string)" status="u8, gStatusStrings[(nint)(status)], (@string)"\n"u8);
-                @throw("attempted to trace stack of a goroutine this thread does not own"u8);
+                @throw(attemptedToTraceStackOfAˢ);
             }
 
         }

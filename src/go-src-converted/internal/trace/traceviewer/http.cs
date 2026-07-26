@@ -286,6 +286,9 @@ public static @string URL(this Range r, ViewType viewType) {
     return fmt.Sprintf("/trace?view=%s&start=%d&end=%d"u8, viewType, r.Start, r.End);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string paramsˢ = "{{PARAMS}}"u8;
+
 public static httpꓸHandler TraceHandler() {
     return new http_HandlerFuncᴠΔHandler(new http.HandlerFunc((http.ResponseWriter w, ж<http.Request> r) => {
         {
@@ -294,7 +297,7 @@ public static httpꓸHandler TraceHandler() {
                 return;
             }
         }
-        @string html = strings.ReplaceAll(templTrace, "{{PARAMS}}"u8, (~r).Form.Encode());
+        @string html = strings.ReplaceAll(templTrace, paramsˢ, (~r).Form.Encode());
         w.Write(slice<byte>(html));
     }));
 }

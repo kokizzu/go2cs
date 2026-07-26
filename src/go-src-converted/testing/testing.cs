@@ -402,6 +402,58 @@ partial class testing_package {
 
 internal static bool initRan;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testShortˢ = "test.short"u8;
+private static readonly @string runSmallerTestSuiteToˢ = "run smaller test suite to save time"u8;
+private static readonly @string testFailfastˢ = "test.failfast"u8;
+private static readonly @string doNotStartNewTestsAfterˢ = "do not start new tests after the first test failure"u8;
+private static readonly @string testOutputdirˢ = "test.outputdir"u8;
+private static readonly @string writeProfilesToDirˢ = "write profiles to `dir`"u8;
+private static readonly @string testVˢ = "test.v"u8;
+private static readonly @string verbosePrintAdditionalˢ = "verbose: print additional output"u8;
+private static readonly @string testCountˢ = "test.count"u8;
+private static readonly @string runTestsAndBenchmarksNˢ = "run tests and benchmarks `n` times"u8;
+private static readonly @string testCoverprofileˢ = "test.coverprofile"u8;
+private static readonly @string writeACoverageProfileToˢ = "write a coverage profile to `file`"u8;
+private static readonly @string testGocoverdirˢ = "test.gocoverdir"u8;
+private static readonly @string writeCoverageˢ = "write coverage intermediate files to this directory"u8;
+private static readonly @string testListˢ = "test.list"u8;
+private static readonly @string listTestsExamplesAndˢ = "list tests, examples, and benchmarks matching `regexp` then exit"u8;
+private static readonly @string testRunˢ2 = "test.run"u8;
+private static readonly @string runOnlyTestsAndExamplesˢ = "run only tests and examples matching `regexp`"u8;
+private static readonly @string testSkipˢ2 = "test.skip"u8;
+private static readonly @string doNotListOrRunTestsˢ = "do not list or run tests matching `regexp`"u8;
+private static readonly @string testMemprofileˢ = "test.memprofile"u8;
+private static readonly @string writeAnAllocationProfileˢ = "write an allocation profile to `file`"u8;
+private static readonly @string testMemprofilerateˢ = "test.memprofilerate"u8;
+private static readonly @string setMemoryAllocationˢ = "set memory allocation profiling `rate` (see runtime.MemProfileRate)"u8;
+private static readonly @string testCpuprofileˢ = "test.cpuprofile"u8;
+private static readonly @string writeACpuProfileToFileˢ = "write a cpu profile to `file`"u8;
+private static readonly @string testBlockprofileˢ = "test.blockprofile"u8;
+private static readonly @string writeAGoroutineBlockingˢ = "write a goroutine blocking profile to `file`"u8;
+private static readonly @string testBlockprofilerateˢ = "test.blockprofilerate"u8;
+private static readonly @string setBlockingProfileRateˢ = "set blocking profile `rate` (see runtime.SetBlockProfileRate)"u8;
+private static readonly @string testMutexprofileˢ = "test.mutexprofile"u8;
+private static readonly @string writeAMutexContentionˢ = "write a mutex contention profile to the named file after execution"u8;
+private static readonly @string testMutexprofilefractionˢ = "test.mutexprofilefraction"u8;
+private static readonly @string if0CallsRuntimeˢ = "if >= 0, calls runtime.SetMutexProfileFraction()"u8;
+private static readonly @string testPaniconexit0ˢ = "test.paniconexit0"u8;
+private static readonly @string panicOnCallToOsExit0ˢ = "panic on call to os.Exit(0)"u8;
+private static readonly @string testTraceˢ = "test.trace"u8;
+private static readonly @string writeAnExecutionTraceToˢ = "write an execution trace to `file`"u8;
+private static readonly @string testTimeoutˢ = "test.timeout"u8;
+private static readonly @string panicTestBinaryAfterˢ = "panic test binary after duration `d` (default 0, timeout disabled)"u8;
+private static readonly @string testCpuˢ = "test.cpu"u8;
+private static readonly @string commaSeparatedListOfCpuˢ = "comma-separated `list` of cpu counts to run each test with"u8;
+private static readonly @string testParallelˢ = "test.parallel"u8;
+private static readonly @string runAtMostNTestsInˢ = "run at most `n` tests in parallel"u8;
+private static readonly @string testTestlogfileˢ = "test.testlogfile"u8;
+private static readonly @string writeTestActionLogToFileˢ = "write test action log to `file` (for use only by cmd/go)"u8;
+private static readonly @string testShuffleˢ = "test.shuffle"u8;
+private static readonly @string randomizeTheExecutionˢ = "randomize the execution order of tests and benchmarks"u8;
+private static readonly @string testFullpathˢ = "test.fullpath"u8;
+private static readonly @string showFullFileNamesInErrorˢ = "show full file names in error messages"u8;
+
 // Init registers testing flags. These flags are automatically registered by
 // the "go test" command before running test functions, so Init is only needed
 // when calling functions such as Benchmark without using "go test".
@@ -417,37 +469,37 @@ public static void Init() {
     // home. The all.bash installation script sets it to make installation more
     // efficient, but by default the flag is off so a plain "go test" will do a
     // full test of the package.
-    @short = flag.Bool("test.short"u8, false, "run smaller test suite to save time"u8);
+    @short = flag.Bool(testShortˢ, false, runSmallerTestSuiteToˢ);
     // The failfast flag requests that test execution stop after the first test failure.
-    failFast = flag.Bool("test.failfast"u8, false, "do not start new tests after the first test failure"u8);
+    failFast = flag.Bool(testFailfastˢ, false, doNotStartNewTestsAfterˢ);
     // The directory in which to create profile files and the like. When run from
     // "go test", the binary always runs in the source directory for the package;
     // this flag lets "go test" tell the binary to write the files in the directory where
     // the "go test" command is run.
-    outputDir = flag.String("test.outputdir"u8, ""u8, "write profiles to `dir`"u8);
+    outputDir = flag.String(testOutputdirˢ, ""u8, writeProfilesToDirˢ);
     // Report as tests are run; default is silent for success.
-    flag.Var(new chattyFlagжValue(Ꮡchatty), "test.v"u8, "verbose: print additional output"u8);
-    count = flag.Uint("test.count"u8, 1, "run tests and benchmarks `n` times"u8);
-    coverProfile = flag.String("test.coverprofile"u8, ""u8, "write a coverage profile to `file`"u8);
-    gocoverdir = flag.String("test.gocoverdir"u8, ""u8, "write coverage intermediate files to this directory"u8);
-    matchList = flag.String("test.list"u8, ""u8, "list tests, examples, and benchmarks matching `regexp` then exit"u8);
-    match = flag.String("test.run"u8, ""u8, "run only tests and examples matching `regexp`"u8);
-    skip = flag.String("test.skip"u8, ""u8, "do not list or run tests matching `regexp`"u8);
-    memProfile = flag.String("test.memprofile"u8, ""u8, "write an allocation profile to `file`"u8);
-    memProfileRate = flag.Int("test.memprofilerate"u8, 0, "set memory allocation profiling `rate` (see runtime.MemProfileRate)"u8);
-    cpuProfile = flag.String("test.cpuprofile"u8, ""u8, "write a cpu profile to `file`"u8);
-    blockProfile = flag.String("test.blockprofile"u8, ""u8, "write a goroutine blocking profile to `file`"u8);
-    blockProfileRate = flag.Int("test.blockprofilerate"u8, 1, "set blocking profile `rate` (see runtime.SetBlockProfileRate)"u8);
-    mutexProfile = flag.String("test.mutexprofile"u8, ""u8, "write a mutex contention profile to the named file after execution"u8);
-    mutexProfileFraction = flag.Int("test.mutexprofilefraction"u8, 1, "if >= 0, calls runtime.SetMutexProfileFraction()"u8);
-    panicOnExit0 = flag.Bool("test.paniconexit0"u8, false, "panic on call to os.Exit(0)"u8);
-    traceFile = flag.String("test.trace"u8, ""u8, "write an execution trace to `file`"u8);
-    timeout = flag.Duration("test.timeout"u8, 0, "panic test binary after duration `d` (default 0, timeout disabled)"u8);
-    cpuListStr = flag.String("test.cpu"u8, ""u8, "comma-separated `list` of cpu counts to run each test with"u8);
-    parallel = flag.Int("test.parallel"u8, Δruntime.GOMAXPROCS(0), "run at most `n` tests in parallel"u8);
-    testlog = flag.String("test.testlogfile"u8, ""u8, "write test action log to `file` (for use only by cmd/go)"u8);
-    shuffle = flag.String("test.shuffle"u8, "off"u8, "randomize the execution order of tests and benchmarks"u8);
-    fullPath = flag.Bool("test.fullpath"u8, false, "show full file names in error messages"u8);
+    flag.Var(new chattyFlagжValue(Ꮡchatty), testVˢ, verbosePrintAdditionalˢ);
+    count = flag.Uint(testCountˢ, 1, runTestsAndBenchmarksNˢ);
+    coverProfile = flag.String(testCoverprofileˢ, ""u8, writeACoverageProfileToˢ);
+    gocoverdir = flag.String(testGocoverdirˢ, ""u8, writeCoverageˢ);
+    matchList = flag.String(testListˢ, ""u8, listTestsExamplesAndˢ);
+    match = flag.String(testRunˢ2, ""u8, runOnlyTestsAndExamplesˢ);
+    skip = flag.String(testSkipˢ2, ""u8, doNotListOrRunTestsˢ);
+    memProfile = flag.String(testMemprofileˢ, ""u8, writeAnAllocationProfileˢ);
+    memProfileRate = flag.Int(testMemprofilerateˢ, 0, setMemoryAllocationˢ);
+    cpuProfile = flag.String(testCpuprofileˢ, ""u8, writeACpuProfileToFileˢ);
+    blockProfile = flag.String(testBlockprofileˢ, ""u8, writeAGoroutineBlockingˢ);
+    blockProfileRate = flag.Int(testBlockprofilerateˢ, 1, setBlockingProfileRateˢ);
+    mutexProfile = flag.String(testMutexprofileˢ, ""u8, writeAMutexContentionˢ);
+    mutexProfileFraction = flag.Int(testMutexprofilefractionˢ, 1, if0CallsRuntimeˢ);
+    panicOnExit0 = flag.Bool(testPaniconexit0ˢ, false, panicOnCallToOsExit0ˢ);
+    traceFile = flag.String(testTraceˢ, ""u8, writeAnExecutionTraceToˢ);
+    timeout = flag.Duration(testTimeoutˢ, 0, panicTestBinaryAfterˢ);
+    cpuListStr = flag.String(testCpuˢ, ""u8, commaSeparatedListOfCpuˢ);
+    parallel = flag.Int(testParallelˢ, Δruntime.GOMAXPROCS(0), runAtMostNTestsInˢ);
+    testlog = flag.String(testTestlogfileˢ, ""u8, writeTestActionLogToFileˢ);
+    shuffle = flag.String(testShuffleˢ, "off"u8, randomizeTheExecutionˢ);
+    fullPath = flag.Bool(testFullpathˢ, false, showFullFileNamesInErrorˢ);
     initBenchmarkFlags();
     initFuzzFlags();
 }
@@ -512,19 +564,24 @@ internal static ref Δsync.Map running => ref Ꮡrunning.Value; // map[string]ti
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string test2jsonˢ = "test2json"u8;
+private static readonly @string trueˢ = "true"u8;
+private static readonly @string falseˢ = "false"u8;
+
 [GoRecv] internal static @string String(this ref chattyFlag f) {
     if (f.json) {
-        return "test2json"u8;
+        return test2jsonˢ;
     }
     if (f.on) {
-        return "true"u8;
+        return trueˢ;
     }
-    return "false"u8;
+    return falseˢ;
 }
 
 [GoRecv] internal static any Get(this ref chattyFlag f) {
     if (f.json) {
-        return (@string)"test2json"u8;
+        return test2jsonˢ;
     }
     return f.on;
 }
@@ -995,6 +1052,9 @@ internal static bool Failed(this ж<common> Ꮡc) => func((defer, recover) => {
     return c.failed;
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string failNowˢ = "FailNow"u8;
+
 // FailNow marks the function as having failed and stops its execution
 // by calling runtime.Goexit (which then runs all deferred calls in the
 // current goroutine).
@@ -1006,7 +1066,7 @@ internal static bool Failed(this ж<common> Ꮡc) => func((defer, recover) => {
 internal static void FailNow(this ж<common> Ꮡc) {
     ref var c = ref Ꮡc.Value;
 
-    c.checkFuzzFn("FailNow"u8);
+    c.checkFuzzFn(failNowˢ);
     Ꮡc.Fail();
     // Calling runtime.Goexit will exit the goroutine, which
     // will run the deferred functions in this goroutine,
@@ -1086,6 +1146,9 @@ internal static void Log(this ж<common> Ꮡc, params ꓸꓸꓸany argsʗp) {
     Ꮡc.log(fmt.Sprintln(args.ꓸꓸꓸ));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string logfˢ = "Logf"u8;
+
 // Logf formats its arguments according to the format, analogous to Printf, and
 // records the text in the error log. A final newline is added if not provided. For
 // tests, the text will be printed only if the test fails or the -test.v flag is
@@ -1095,69 +1158,90 @@ internal static void Logf(this ж<common> Ꮡc, @string format, params ꓸꓸꓸ
     var args = argsʗp.slice();
 
     ref var c = ref Ꮡc.Value;
-    c.checkFuzzFn("Logf"u8);
+    c.checkFuzzFn(logfˢ);
     Ꮡc.log(fmt.Sprintf(format, args.ꓸꓸꓸ));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string errorˢ = "Error"u8;
 
 // Error is equivalent to Log followed by Fail.
 internal static void Error(this ж<common> Ꮡc, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     ref var c = ref Ꮡc.Value;
-    c.checkFuzzFn("Error"u8);
+    c.checkFuzzFn(errorˢ);
     Ꮡc.log(fmt.Sprintln(args.ꓸꓸꓸ));
     Ꮡc.Fail();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string errorfˢ = "Errorf"u8;
 
 // Errorf is equivalent to Logf followed by Fail.
 internal static void Errorf(this ж<common> Ꮡc, @string format, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     ref var c = ref Ꮡc.Value;
-    c.checkFuzzFn("Errorf"u8);
+    c.checkFuzzFn(errorfˢ);
     Ꮡc.log(fmt.Sprintf(format, args.ꓸꓸꓸ));
     Ꮡc.Fail();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fatalˢ = "Fatal"u8;
 
 // Fatal is equivalent to Log followed by FailNow.
 internal static void Fatal(this ж<common> Ꮡc, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     ref var c = ref Ꮡc.Value;
-    c.checkFuzzFn("Fatal"u8);
+    c.checkFuzzFn(fatalˢ);
     Ꮡc.log(fmt.Sprintln(args.ꓸꓸꓸ));
     Ꮡc.FailNow();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fatalfˢ = "Fatalf"u8;
 
 // Fatalf is equivalent to Logf followed by FailNow.
 internal static void Fatalf(this ж<common> Ꮡc, @string format, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     ref var c = ref Ꮡc.Value;
-    c.checkFuzzFn("Fatalf"u8);
+    c.checkFuzzFn(fatalfˢ);
     Ꮡc.log(fmt.Sprintf(format, args.ꓸꓸꓸ));
     Ꮡc.FailNow();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string skipˢ2 = "Skip"u8;
 
 // Skip is equivalent to Log followed by SkipNow.
 internal static void Skip(this ж<common> Ꮡc, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     ref var c = ref Ꮡc.Value;
-    c.checkFuzzFn("Skip"u8);
+    c.checkFuzzFn(skipˢ2);
     Ꮡc.log(fmt.Sprintln(args.ꓸꓸꓸ));
     Ꮡc.SkipNow();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string skipfˢ = "Skipf"u8;
 
 // Skipf is equivalent to Logf followed by SkipNow.
 internal static void Skipf(this ж<common> Ꮡc, @string format, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     ref var c = ref Ꮡc.Value;
-    c.checkFuzzFn("Skipf"u8);
+    c.checkFuzzFn(skipfˢ);
     Ꮡc.log(fmt.Sprintf(format, args.ꓸꓸꓸ));
     Ꮡc.SkipNow();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string skipNowˢ = "SkipNow"u8;
 
 // SkipNow marks the test as having been skipped and stops its execution
 // by calling [runtime.Goexit].
@@ -1170,7 +1254,7 @@ internal static void Skipf(this ж<common> Ꮡc, @string format, params ꓸꓸ�
 internal static void SkipNow(this ж<common> Ꮡc) {
     ref var c = ref Ꮡc.Value;
 
-    c.checkFuzzFn("SkipNow"u8);
+    c.checkFuzzFn(skipNowˢ);
     Ꮡc.of(common.Ꮡmu).Lock();
     c.skipped = true;
     c.finished = true;
@@ -1213,6 +1297,9 @@ internal static void Helper(this ж<common> Ꮡc) => func((defer, recover) => {
     }
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cleanupˢ = "Cleanup"u8;
+
 // map will be recreated next time it is needed
 
 // Cleanup registers a function to be called when the test (or subtest) and all its
@@ -1221,7 +1308,7 @@ internal static void Helper(this ж<common> Ꮡc) => func((defer, recover) => {
 internal static void Cleanup(this ж<common> Ꮡc, Action f) => func((defer, recover) => {
     ref var c = ref Ꮡc.Value;
 
-    c.checkFuzzFn("Cleanup"u8);
+    c.checkFuzzFn(cleanupˢ);
     array<uintptr> pc = new(50); /* maxStackLen */
     // Skip two extra frames to account for this function and runtime.Callers itself.
     nint n = Δruntime.Callers(2, pc[..]);
@@ -1246,6 +1333,9 @@ internal static void Cleanup(this ж<common> Ꮡc, Action f) => func((defer, rec
     c.cleanups = append(c.cleanups, fn);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tempDirˢ = "TempDir"u8;
+
 // TempDir returns a temporary directory for the test to use.
 // The directory is automatically removed when the test and
 // all its subtests complete.
@@ -1254,7 +1344,7 @@ internal static void Cleanup(this ж<common> Ꮡc, Action f) => func((defer, rec
 internal static @string TempDir(this ж<common> Ꮡc) {
     ref var c = ref Ꮡc.Value;
 
-    c.checkFuzzFn("TempDir"u8);
+    c.checkFuzzFn(tempDirˢ);
     // Use a single parent directory for all the temporary directories
     // created by a test, each numbered sequentially.
     Ꮡc.of(common.ᏑtempDirMu).Lock();
@@ -1349,6 +1439,9 @@ internal static error removeAll(@string path) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string setenvˢ = "Setenv"u8;
+
 // Setenv calls os.Setenv(key, value) and uses Cleanup to
 // restore the environment variable to its original value
 // after the test.
@@ -1358,7 +1451,7 @@ internal static error removeAll(@string path) {
 internal static void Setenv(this ж<common> Ꮡc, @string key, @string value) {
     ref var c = ref Ꮡc.Value;
 
-    c.checkFuzzFn("Setenv"u8);
+    c.checkFuzzFn(setenvˢ);
     var (prevValue, ok) = os.LookupEnv(key);
     {
         var err = os.Setenv(key, value); if (err != default!) {
@@ -1606,6 +1699,9 @@ public static void Setenv(this ж<T> Ꮡt, @string key, @string value) {
 
 internal static error errNilPanicOrGoexit = errors.New("test executed panic(nil) or runtime.Goexit"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string panicˢ = "panic: "u8;
+
 internal static void tRunner(ж<T> Ꮡt, Action<ж<T>> fn) => func((defer, recover) => {
     ref var t = ref Ꮡt.Value;
 
@@ -1651,7 +1747,7 @@ internal static void tRunner(ж<T> Ꮡt, Action<ж<T>> fn) => func((defer, recov
             }
         }
         if (Ꮡerr.ValueSlot != default! && (~Ꮡt.Value.context).isFuzzing) {
-            @string prefix = "panic: "u8;
+            @string prefix = panicˢ;
             if (AreEqual(Ꮡerr.ValueSlot, errNilPanicOrGoexit)) {
                 prefix = ""u8;
             }
@@ -1690,7 +1786,7 @@ internal static void tRunner(ж<T> Ꮡt, Action<ж<T>> fn) => func((defer, recov
                 root.Value.duration += highPrecisionTimeSince((~root).start);
                 var d = root.Value.duration;
                 root.of(common.Ꮡmu).Unlock();
-                root.flushToParent((~root).name, "--- FAIL: %s (%s)\n"u8, (~root).name, fmtDuration(d));
+                root.flushToParent((~root).name, failSSˢ, (~root).name, fmtDuration(d));
                 {
                     var r = (~root).parent.runCleanup(recoverAndReturnPanic); if (r != default!) {
                         fmt.Fprintf((~(~root).parent).w, "cleanup panicked with %v"u8, r);
@@ -2026,6 +2122,17 @@ internal static bool testingTesting;
 
 internal static ж<os.File> realStderr;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object testingParallelCanOnlyBeˢ = (@string)"testing: -parallel can only be given a positive integer"u8;
+private static readonly object testingTestFuzzcachedirˢ = (@string)"testing: -test.fuzzcachedir must be set if -test.fuzz is set"u8;
+private static readonly object testingShuffleShouldBeˢ = (@string)@"testing: -shuffle should be ""off"", ""on"", or a valid integer:"u8;
+private static readonly object testShuffleˢ2 = (@string)"-test.shuffle"u8;
+private static readonly object testingWarningNoTestsToˢ = (@string)"testing: warning: no tests to run"u8;
+private static readonly object failPackageTestingMustˢ = (@string)"FAIL: package testing must run tests\n"u8;
+private static readonly object testingRaceDetectedˢ = (@string)"testing: race detected outside of test execution\n"u8;
+private static readonly object failˢ2 = (@string)"FAIL\n"u8;
+private static readonly object passˢ2 = (@string)"PASS\n"u8;
+
 // Run runs the tests. It returns an exit code to pass to os.Exit.
 public static nint /*code*/ Run(this ж<M> Ꮡm) {
     nint code = default!;
@@ -2082,13 +2189,13 @@ public static nint /*code*/ Run(this ж<M> Ꮡm) {
             os.Stderr = os.Stdout;
         }
         if (parallel.Value < 1) {
-            fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: -parallel can only be given a positive integer"u8);
+            fmt.Fprintln(new os.FileжWriter(os.Stderr), testingParallelCanOnlyBeˢ);
             flag.Usage();
             m.exitCode = 2;
             return;
         }
         if (matchFuzz.Value != ""u8 && fuzzCacheDir.Value == ""u8) {
-            fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: -test.fuzzcachedir must be set if -test.fuzz is set"u8);
+            fmt.Fprintln(new os.FileжWriter(os.Stderr), testingTestFuzzcachedirˢ);
             flag.Usage();
             m.exitCode = 2;
             return;
@@ -2106,12 +2213,12 @@ public static nint /*code*/ Run(this ж<M> Ꮡm) {
             } else {
                 (n, err) = strconv.ParseInt(shuffle.Value, 10, 64);
                 if (err != default!) {
-                    fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)@"testing: -shuffle should be ""off"", ""on"", or a valid integer:"u8, err);
+                    fmt.Fprintln(new os.FileжWriter(os.Stderr), testingShuffleShouldBeˢ, err);
                     m.exitCode = 2;
                     return;
                 }
             }
-            fmt.Println((@string)"-test.shuffle"u8, n);
+            fmt.Println(testShuffleˢ2, n);
             var rng = rand.New(rand.NewSource(n));
             rng.Shuffle(len(m.tests), (nint i, nint j) => {
                 (Ꮡm.Value.tests[i], Ꮡm.Value.tests[j]) = (Ꮡm.Value.tests[j], Ꮡm.Value.tests[i]);
@@ -2134,31 +2241,31 @@ public static nint /*code*/ Run(this ж<M> Ꮡm) {
             var (exampleRan, exampleOk) = runExamples(m.deps.MatchString, m.examples);
             m.stopAlarm();
             if (!testRan && !exampleRan && !fuzzTargetsRan && matchBenchmarks.Value == ""u8 && matchFuzz.Value == ""u8) {
-                fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: warning: no tests to run"u8);
+                fmt.Fprintln(new os.FileжWriter(os.Stderr), testingWarningNoTestsToˢ);
                 if (testingTesting && match.Value != "^$"u8) {
                     // If this happens during testing of package testing it could be that
                     // package testing's own logic for when to run a test is broken,
                     // in which case every test will run nothing and succeed,
                     // with no obvious way to detect this problem (since no tests are running).
                     // So make 'no tests to run' a hard failure when testing package testing itself.
-                    fmt.Print(chatty.prefix(), (@string)"FAIL: package testing must run tests\n"u8);
+                    fmt.Print(chatty.prefix(), failPackageTestingMustˢ);
                     testOk = false;
                 }
             }
             var anyFailed = !testOk || !exampleOk || !fuzzTargetsOk || !runBenchmarks(m.deps.ImportPath(), m.deps.MatchString, m.benchmarks);
             if (!anyFailed && race.Errors() > 0) {
-                fmt.Print(chatty.prefix(), (@string)"testing: race detected outside of test execution\n"u8);
+                fmt.Print(chatty.prefix(), testingRaceDetectedˢ);
                 anyFailed = true;
             }
             if (anyFailed) {
-                fmt.Print(chatty.prefix(), (@string)"FAIL\n"u8);
+                fmt.Print(chatty.prefix(), failˢ2);
                 m.exitCode = 1;
                 return;
             }
         }
         var fuzzingOk = runFuzzing(m.deps, m.fuzzTargets);
         if (!fuzzingOk) {
-            fmt.Print(chatty.prefix(), (@string)"FAIL\n"u8);
+            fmt.Print(chatty.prefix(), failˢ2);
             if (isFuzzWorker.Value){
                 m.exitCode = fuzzWorkerExitCode;
             } else {
@@ -2168,7 +2275,7 @@ public static nint /*code*/ Run(this ж<M> Ꮡm) {
         }
         m.exitCode = 0;
         if (!isFuzzWorker.Value) {
-            fmt.Print(chatty.prefix(), (@string)"PASS\n"u8);
+            fmt.Print(chatty.prefix(), passˢ2);
         }
     });
     return code;
@@ -2183,20 +2290,20 @@ internal static void report(this ж<T> Ꮡt) {
     @string dstr = fmtDuration(t.duration);
     @string format = "--- %s: %s (%s)\n"u8;
     if (Ꮡt.of(T.Ꮡcommon).Failed()){
-        Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, (@string)"FAIL"u8, t.name, dstr);
+        Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, failˢ, t.name, dstr);
     } else 
     if (t.chatty != nil) {
         if (Ꮡt.of(T.Ꮡcommon).Skipped()){
-            Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, (@string)"SKIP"u8, t.name, dstr);
+            Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, skipˢ, t.name, dstr);
         } else {
-            Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, (@string)"PASS"u8, t.name, dstr);
+            Ꮡt.of(T.Ꮡcommon).flushToParent(t.name, format, passˢ, t.name, dstr);
         }
     }
 }
 
 internal static void listTests(Func<@string, @string, (bool, error)> matchString, slice<InternalTest> tests, slice<InternalBenchmark> benchmarks, slice<InternalFuzzTarget> fuzzTargets, slice<InternalExample> examples) {
     {
-        var (_, err) = matchString(matchList.Value, "non-empty"u8); if (err != default!) {
+        var (_, err) = matchString(matchList.Value, nonEmptyˢ); if (err != default!) {
             fmt.Fprintf(new os.FileжWriter(os.Stderr), "testing: invalid regexp in -test.list (%q): %s\n"u8, matchList.Value, err);
             os.Exit(1);
         }
@@ -2242,7 +2349,7 @@ public static bool /*ok*/ RunTests(Func<@string, @string, (bool, error)> matchSt
     }
     (var ran, ok) = runTests(matchString, tests, deadline);
     if (!ran && !haveExamples) {
-        fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: warning: no tests to run"u8);
+        fmt.Fprintln(new os.FileжWriter(os.Stderr), testingWarningNoTestsToˢ);
     }
     return ok;
 }
@@ -2264,7 +2371,7 @@ internal static (bool ran, bool ok) runTests(Func<@string, @string, (bool, error
                 // to keep trying.
                 break;
             }
-            var ctx = newTestContext(parallel.Value, newMatcher(matchString, match.Value, "-test.run"u8, skip.Value));
+            var ctx = newTestContext(parallel.Value, newMatcher(matchString, match.Value, testRunˢ, skip.Value));
             ctx.Value.deadline = deadline;
             var t = Ꮡ(new T(
                 common: new common(
@@ -2391,6 +2498,11 @@ internal static void after(this ж<M> Ꮡm) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string allocsˢ = "allocs"u8;
+private static readonly @string blockˢ = "block"u8;
+private static readonly @string mutexˢ = "mutex"u8;
+
 [GoRecv] internal static void writeProfiles(this ref M m) {
     if (testlog.Value != ""u8) {
         {
@@ -2423,7 +2535,7 @@ internal static void after(this ж<M> Ꮡm) {
         Δruntime.GC();
         // materialize all statistics
         {
-            err = m.deps.WriteProfileTo("allocs"u8, new os.FileжWriter(f), 0); if (err != default!) {
+            err = m.deps.WriteProfileTo(allocsˢ, new os.FileжWriter(f), 0); if (err != default!) {
                 fmt.Fprintf(new os.FileжWriter(os.Stderr), "testing: can't write %s: %s\n"u8, memProfile.Value, err);
                 os.Exit(2);
             }
@@ -2437,7 +2549,7 @@ internal static void after(this ж<M> Ꮡm) {
             os.Exit(2);
         }
         {
-            err = m.deps.WriteProfileTo("block"u8, new os.FileжWriter(f), 0); if (err != default!) {
+            err = m.deps.WriteProfileTo(blockˢ, new os.FileжWriter(f), 0); if (err != default!) {
                 fmt.Fprintf(new os.FileжWriter(os.Stderr), "testing: can't write %s: %s\n"u8, blockProfile.Value, err);
                 os.Exit(2);
             }
@@ -2451,7 +2563,7 @@ internal static void after(this ж<M> Ꮡm) {
             os.Exit(2);
         }
         {
-            err = m.deps.WriteProfileTo("mutex"u8, new os.FileжWriter(f), 0); if (err != default!) {
+            err = m.deps.WriteProfileTo(mutexˢ, new os.FileжWriter(f), 0); if (err != default!) {
                 fmt.Fprintf(new os.FileжWriter(os.Stderr), "testing: can't write %s: %s\n"u8, mutexProfile.Value, err);
                 os.Exit(2);
             }
@@ -2489,6 +2601,9 @@ internal static @string toOutputDir(@string path) {
     return fmt.Sprintf("%s%c%s"u8, outputDir.Value, (int32)(os.PathSeparator), path);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runningTestsˢ = "\nrunning tests:"u8;
+
 // startAlarm starts an alarm if requested.
 internal static time.Time startAlarm(this ж<M> Ꮡm) {
     ref var m = ref Ꮡm.Value;
@@ -2504,7 +2619,7 @@ internal static time.Time startAlarm(this ж<M> Ꮡm) {
         {
             var list = runningList(); if (len(list) > 0) {
                 ref var b = ref heap(new strings.Builder(), out var Ꮡb);
-                Ꮡb.WriteString("\nrunning tests:"u8);
+                Ꮡb.WriteString(runningTestsˢ);
                 foreach (var (_, name) in list) {
                     Ꮡb.WriteString("\n\t"u8);
                     Ꮡb.WriteString(name);

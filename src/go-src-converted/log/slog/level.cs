@@ -46,6 +46,12 @@ public static readonly ΔLevel LevelWarn = 4;
 
 public static readonly ΔLevel LevelError = 8;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string debugˢ = "DEBUG"u8;
+private static readonly @string infoˢ = "INFO"u8;
+private static readonly @string warnˢ = "WARN"u8;
+private static readonly @string errorˢ = "ERROR"u8;
+
 // String returns a name for the level.
 // If the level has a name, then that name
 // in uppercase is returned.
@@ -64,16 +70,16 @@ public static @string String(this ΔLevel l) {
     };
     switch (ᐧ) {
     case {} when l < LevelInfo: {
-        return str("DEBUG"u8, l - LevelDebug);
+        return str(debugˢ, l - LevelDebug);
     }
     case {} when l < LevelWarn: {
-        return str("INFO"u8, l - LevelInfo);
+        return str(infoˢ, l - LevelInfo);
     }
     case {} when l < LevelError: {
-        return str("WARN"u8, l - LevelWarn);
+        return str(warnˢ, l - LevelWarn);
     }
     default: {
-        return str("ERROR"u8, l - LevelError);
+        return str(errorˢ, l - LevelError);
     }}
 
 }
@@ -115,6 +121,9 @@ public static error UnmarshalText(this ж<ΔLevel> Ꮡl, slice<byte> data) {
     return Ꮡl.parse(((@string)data));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownNameˢ = "unknown name"u8;
+
 internal static error /*err*/ parse(this ж<ΔLevel> Ꮡl, @string s) {
     error err = default!;
     func((defer, recover) => {
@@ -150,7 +159,7 @@ internal static error /*err*/ parse(this ж<ΔLevel> Ꮡl, @string s) {
             l = LevelError;
         }
         else { /* default: */
-            err = errors.New("unknown name"u8); return;
+            err = errors.New(unknownNameˢ); return;
         }
 
         l += ((ΔLevel)offset);

@@ -927,8 +927,11 @@ keep:;
     return 9223372036854775807L;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stopTheWorldˢ = "stop-the-world"u8;
+
 internal static bool isGCSTW(ΔRange r) {
-    return strings.HasPrefix(r.Name, "stop-the-world"u8) && strings.Contains(r.Name, "GC"u8);
+    return strings.HasPrefix(r.Name, stopTheWorldˢ) && strings.Contains(r.Name, "GC"u8);
 }
 
 internal static bool isGCMarkAssist(ΔRange r) {

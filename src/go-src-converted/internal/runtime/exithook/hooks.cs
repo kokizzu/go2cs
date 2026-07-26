@@ -47,6 +47,10 @@ public static void Add(Hook h) {
     Ꮡlocked.Store(0);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string exitHookInvokedExitˢ = "exit hook invoked exit"u8;
+private static readonly @string exitHookInvokedPanicˢ = "exit hook invoked panic"u8;
+
 // Run runs the exit hooks.
 //
 // If an exit hook panics, Run will throw with the panic on the stack.
@@ -55,7 +59,7 @@ public static void Add(Hook h) {
 public static void Run(nint code) => func((defer, recover) => {
     while (!Ꮡlocked.CompareAndSwap(0, 1)) {
         if (Goid() == ᏑrunGoid.Load()) {
-            Throw("exit hook invoked exit"u8);
+            Throw(exitHookInvokedExitˢ);
         }
         Gosched();
     }
@@ -65,7 +69,7 @@ public static void Run(nint code) => func((defer, recover) => {
     defer(() => {
         {
             var e = recover(); if (e != default!) {
-                Throw("exit hook invoked panic"u8);
+                Throw(exitHookInvokedPanicˢ);
             }
         }
     });

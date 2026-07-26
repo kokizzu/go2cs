@@ -243,6 +243,9 @@ public static ж<Decoder> NewTokenDecoder(TokenReader t) {
     return d;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedEofˢ = "unexpected EOF"u8;
+
 // Token returns the next XML token in the input stream.
 // At the end of the input stream, Token returns nil, [io.EOF].
 //
@@ -282,7 +285,7 @@ public static ж<Decoder> NewTokenDecoder(TokenReader t) {
         {
             (t, err) = d.rawToken(); if (t == default! && err != default!) {
                 if (AreEqual(err, io.EOF) && d.stk != nil && (~d.stk).kind != stkEOF) {
-                    err = d.syntaxError("unexpected EOF"u8);
+                    err = d.syntaxError(unexpectedEofˢ);
                 }
                 return (default!, err);
             }
@@ -560,6 +563,20 @@ internal static error errRawToken = errors.New("xml: cannot use RawToken from Un
     return d.rawToken();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string expectedElementNameAfterˢ = "expected element name after </"u8;
+private static readonly @string expectedTargetNameAfterˢ = "expected target name after <?"u8;
+private static readonly @string versionˢ = "version"u8;
+private static readonly @string encodingˢ = "encoding"u8;
+private static readonly @string utf8ˢ = "utf-8"u8;
+private static readonly @string invalidSequenceNotPartOfˢ = "invalid sequence <!- not part of <!--"u8;
+private static readonly @string invalidSequenceNotˢ = @"invalid sequence ""--"" not allowed in comments"u8;
+private static readonly @string invalidSequenceˢ = "invalid <![ sequence"u8;
+private static readonly @string expectedElementNameAfterˢ2 = "expected element name after <"u8;
+private static readonly @string expectedInElementˢ = "expected /> in element"u8;
+private static readonly @string expectedAttributeNameInˢ = "expected attribute name in element"u8;
+private static readonly @string attributeNameWithoutInˢ = "attribute name without = in element"u8;
+
 [GoRecv] internal static (ΔToken, error) rawToken(this ref Decoder d) {
     if (d.t != default!) {
         return d.t.Token();
@@ -599,7 +616,7 @@ internal static error errRawToken = errors.New("xml: cannot use RawToken from Un
         {
             (nameΔ2, ok) = d.nsname(); if (!ok) {
                 if (d.err == default!) {
-                    d.err = d.syntaxError("expected element name after </"u8);
+                    d.err = d.syntaxError(expectedElementNameAfterˢ);
                 }
                 return (default!, d.err);
             }
@@ -622,7 +639,7 @@ internal static error errRawToken = errors.New("xml: cannot use RawToken from Un
         {
             (targetΔ1, ok) = d.name(); if (!ok) {
                 if (d.err == default!) {
-                    d.err = d.syntaxError("expected target name after <?"u8);
+                    d.err = d.syntaxError(expectedTargetNameAfterˢ);
                 }
                 return (default!, d.err);
             }
@@ -647,13 +664,13 @@ internal static error errRawToken = errors.New("xml: cannot use RawToken from Un
         if (targetΔ1 == "xml"u8) {
             // chop ?>
             @string content = ((@string)data);
-            @string ver = procInst("version"u8, content);
+            @string ver = procInst(versionˢ, content);
             if (ver != ""u8 && ver != "1.0"u8) {
                 d.err = fmt.Errorf("xml: unsupported version %q; only version 1.0 is supported"u8, ver);
                 return (default!, d.err);
             }
-            @string enc = procInst("encoding"u8, content);
-            if (enc != ""u8 && enc != "utf-8"u8 && enc != "UTF-8"u8 && !strings.EqualFold(enc, "utf-8"u8)) {
+            @string enc = procInst(encodingˢ, content);
+            if (enc != ""u8 && enc != "utf-8"u8 && enc != "UTF-8"u8 && !strings.EqualFold(enc, utf8ˢ)) {
                 if (d.CharsetReader == default!) {
                     d.err = fmt.Errorf("xml: encoding %q declared but Decoder.CharsetReader is nil"u8, enc);
                     return (default!, d.err);
@@ -688,7 +705,7 @@ internal static error errRawToken = errors.New("xml: cannot use RawToken from Un
                 }
             }
             if (b != (rune)'-') {
-                d.err = d.syntaxError("invalid sequence <!- not part of <!--"u8);
+                d.err = d.syntaxError(invalidSequenceNotPartOfˢ);
                 return (default!, d.err);
             }
             d.buf.Reset();
@@ -705,7 +722,7 @@ internal static error errRawToken = errors.New("xml: cannot use RawToken from Un
                 if (b0 == (rune)'-' && b1 == (rune)'-') {
                     if (b != (rune)'>') {
                         d.err = d.syntaxError(
-                            @"invalid sequence ""--"" not allowed in comments"u8);
+                            invalidSequenceNotˢ);
                         return (default!, d.err);
                     }
                     break;
@@ -727,7 +744,7 @@ internal static error errRawToken = errors.New("xml: cannot use RawToken from Un
                     }
                 }
                 if (b != "CDATA["u8[(int)(i)]) {
-                    d.err = d.syntaxError("invalid <![ sequence"u8);
+                    d.err = d.syntaxError(invalidSequenceˢ);
                     return (default!, d.err);
                 }
             }
@@ -828,7 +845,7 @@ HandleB:
     {
         (name, ok) = d.nsname(); if (!ok) {
             if (d.err == default!) {
-                d.err = d.syntaxError("expected element name after <"u8);
+                d.err = d.syntaxError(expectedElementNameAfterˢ2);
             }
             return (default!, d.err);
         }
@@ -849,7 +866,7 @@ HandleB:
                 }
             }
             if (b != (rune)'>') {
-                d.err = d.syntaxError("expected /> in element"u8);
+                d.err = d.syntaxError(expectedInElementˢ);
                 return (default!, d.err);
             }
             break;
@@ -862,7 +879,7 @@ HandleB:
         {
             (a.Name, ok) = d.nsname(); if (!ok) {
                 if (d.err == default!) {
-                    d.err = d.syntaxError("expected attribute name in element"u8);
+                    d.err = d.syntaxError(expectedAttributeNameInˢ);
                 }
                 return (default!, d.err);
             }
@@ -875,7 +892,7 @@ HandleB:
         }
         if (b != (rune)'='){
             if (d.Strict) {
-                d.err = d.syntaxError("attribute name without = in element"u8);
+                d.err = d.syntaxError(attributeNameWithoutInˢ);
                 return (default!, d.err);
             }
             d.ungetc(b);
@@ -897,6 +914,9 @@ HandleB:
     return (new StartElement(name, attr), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unquotedOrMissingˢ = "unquoted or missing attribute value in element"u8;
+
 [GoRecv] internal static slice<byte> attrval(this ref Decoder d) {
     var (b, ok) = d.mustgetc();
     if (!ok) {
@@ -908,7 +928,7 @@ HandleB:
     }
     // Handle unquoted attribute values for strict parsers
     if (d.Strict) {
-        d.err = d.syntaxError("unquoted or missing attribute value in element"u8);
+        d.err = d.syntaxError(unquotedOrMissingˢ);
         return default!;
     }
     // Handle unquoted attribute values for unstrict parsers
@@ -1018,7 +1038,7 @@ HandleB:
     {
         (b, ok) = d.getc(); if (!ok) {
             if (AreEqual(d.err, io.EOF)) {
-                d.err = d.syntaxError("unexpected EOF"u8);
+                d.err = d.syntaxError(unexpectedEofˢ);
             }
         }
     }
@@ -1042,6 +1062,12 @@ internal static map<@string, rune> entity = new map<@string, rune>{
     ["quot"u8] = (rune)'"'
 };
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedEofInCdataˢ = "unexpected EOF in CDATA section"u8;
+private static readonly @string unescapedNotInCdataˢ = "unescaped ]]> not in CDATA section"u8;
+private static readonly @string unescapedInsideQuotedˢ = "unescaped < inside quoted string"u8;
+private static readonly @string invalidUtf8ˢ = "invalid UTF-8"u8;
+
 // Read plain text section (XML calls it character data).
 // If quote >= 0, we are in a quoted string and need to find the matching quote.
 // If cdata == true, we are in a <![CDATA[ section and need to find ]]>.
@@ -1057,7 +1083,7 @@ Input:
         if (!ok) {
             if (cdata) {
                 if (AreEqual(d.err, io.EOF)) {
-                    d.err = d.syntaxError("unexpected EOF in CDATA section"u8);
+                    d.err = d.syntaxError(unexpectedEofInCdataˢ);
                 }
                 return default!;
             }
@@ -1070,13 +1096,13 @@ Input:
                 trunc = 2;
                 goto break_Input;
             }
-            d.err = d.syntaxError("unescaped ]]> not in CDATA section"u8);
+            d.err = d.syntaxError(unescapedNotInCdataˢ);
             return default!;
         }
         // Stop reading text if we see a <.
         if (b == (rune)'<' && !cdata) {
             if (quote >= 0) {
-                d.err = d.syntaxError("unescaped < inside quoted string"u8);
+                d.err = d.syntaxError(unescapedInsideQuotedˢ);
                 return default!;
             }
             d.ungetc((rune)'<');
@@ -1206,7 +1232,7 @@ break_Input:;
     while (len(buf) > 0) {
         var (r, size) = utf8.DecodeRune(buf);
         if (r == utf8.RuneError && size == 1) {
-            d.err = d.syntaxError("invalid UTF-8"u8);
+            d.err = d.syntaxError(invalidUtf8ˢ);
             return default!;
         }
         buf = buf[(int)(size)..];
@@ -1953,19 +1979,19 @@ internal static void initᴛHTMLAutoClose() { HTMLAutoClose = htmlAutoClose; }
 		9 sed -n 's/<!ELEMENT ([^ ]*) +- O EMPTY.+/	"\1",/p' | tr A-Z a-z
 	*/
 internal static slice<@string> htmlAutoClose = new @string[]{
-    "basefont",
-    "br",
-    "area",
-    "link",
-    "img",
-    "param",
-    "hr",
-    "input",
-    "col",
-    "frame",
-    "isindex",
-    "base",
-    "meta"
+    "basefont"u8,
+    "br"u8,
+    "area"u8,
+    "link"u8,
+    "img"u8,
+    "param"u8,
+    "hr"u8,
+    "input"u8,
+    "col"u8,
+    "frame"u8,
+    "isindex"u8,
+    "base"u8,
+    "meta"u8
 }.slice();
 
 internal static slice<byte> escQuot = slice<byte>("&#34;"u8); // shorter than "&quot;"

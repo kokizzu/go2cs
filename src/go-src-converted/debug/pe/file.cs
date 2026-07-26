@@ -179,11 +179,14 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
 [GoType] partial struct nobitsSectionReader {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedReadFromˢ = "unexpected read from section with uninitialized data"u8;
+
 [GoRecv] internal static (nint n, error err) ReadAt(this ref nobitsSectionReader _, slice<byte> p, int64 off) {
     nint n = default!;
     error err = default!;
 
-    return (0, errors.New("unexpected read from section with uninitialized data"u8));
+    return (0, errors.New(unexpectedReadFromˢ));
 }
 
 // getString extracts a string from symbol string table.
@@ -210,13 +213,21 @@ internal static (@string, bool) getString(slice<byte> section, nint start) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string debugˢ = ".debug_"u8;
+private static readonly @string zdebugˢ = ".zdebug_"u8;
+private static readonly @string abbrevˢ = "abbrev"u8;
+private static readonly @string infoˢ = "info"u8;
+private static readonly @string lineˢ = "line"u8;
+private static readonly @string rangesˢ = "ranges"u8;
+
 [GoRecv] public static (ж<dwarf.Data>, error) DWARF(this ref File f) {
     var dwarfSuffix = @string (ж<ΔSection> s) => {
         switch (ᐧ) {
-        case {} when strings.HasPrefix((~s).Name, ".debug_"u8): {
+        case {} when strings.HasPrefix((~s).Name, debugˢ): {
             return (~s).Name[7..];
         }
-        case {} when strings.HasPrefix((~s).Name, ".zdebug_"u8): {
+        case {} when strings.HasPrefix((~s).Name, zdebugˢ): {
             return (~s).Name[8..];
         }
         default: {
@@ -274,7 +285,7 @@ internal static (@string, bool) getString(slice<byte> section, nint start) {
         }
         dat[suffix] = b;
     }
-    var (d, err) = dwarf.New(dat["abbrev"u8], default!, default!, dat["info"u8], dat["line"u8], default!, dat["ranges"u8], dat["str"u8]);
+    var (d, err) = dwarf.New(dat[abbrevˢ], default!, default!, dat[infoˢ], dat[lineˢ], default!, dat[rangesˢ], dat["str"u8]);
     if (err != default!) {
         return (default!, err);
     }
@@ -449,8 +460,11 @@ internal static (@string, bool) getString(slice<byte> section, nint start) {
 [GoType] partial struct FormatError {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownErrorˢ = "unknown error"u8;
+
 [GoRecv] public static @string Error(this ref FormatError e) {
-    return "unknown error"u8;
+    return unknownErrorˢ;
 }
 
 // readOptionalHeader accepts an io.ReadSeeker pointing to optional header in the PE file

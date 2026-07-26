@@ -651,6 +651,9 @@ public static error RunFuzzWorker(context.Context ctx, Func<CorpusEntry, error> 
     internal Func<CorpusEntry, (time.Duration, error)> fuzzFn;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noArgumentsProvidedForˢ = "no arguments provided for any call"u8;
+
 // serve reads serialized RPC messages on fuzzIn. When serve receives a message,
 // it calls the corresponding method, then sends the serialized result back
 // on fuzzOut.
@@ -692,7 +695,7 @@ internal static error serve(this ж<workerServer> Ꮡws, context.Context ctx) {
             break;
         }
         default: {
-            return errors.New("no arguments provided for any call"u8);
+            return errors.New(noArgumentsProvidedForˢ);
         }}
 
         {
@@ -713,6 +716,9 @@ internal static error serve(this ж<workerServer> Ꮡws, context.Context ctx) {
 // be what libFuzzer does, although there seems to be no documentation which
 // explains why this choice was made.)
 internal static readonly UntypedInt chainedMutations = 5;
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fuzzFunctionFailedWithNoˢ = "fuzz function failed with no input"u8;
 
 // fuzz runs the test function on random variations of the input value in shared
 // memory for a limited duration or number of iterations.
@@ -781,7 +787,7 @@ internal static fuzzResponse /*resp*/ fuzz(this ж<workerServer> Ꮡws, context.
             if (errΔ1 != default!) {
                 errMsg = errΔ1.Error();
                 if (errMsg == ""u8) {
-                    errMsg = "fuzz function failed with no input"u8;
+                    errMsg = fuzzFunctionFailedWithNoˢ;
                 }
                 return (dur, default!, errMsg);
             }
@@ -1157,6 +1163,9 @@ internal static (CorpusEntry entryOut, minimizeResponse resp, error retErr) mini
     return (entryOut, Ꮡresp.Value, retErr);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string workerServerFuzzModifiedˢ = "workerServer.fuzz modified input"u8;
+
 // fuzz tells the worker to call the fuzz method. See workerServer.fuzz.
 internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, error err) fuzz(this ж<workerClient> Ꮡwc, context.Context ctx, CorpusEntry entryIn, fuzzArgs args) {
     CorpusEntry entryOut = default!;
@@ -1196,7 +1205,7 @@ internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, 
         });
         resp.Count = mem.header().Value.count;
         if (!bytes.Equal(inp, mem.valueRef())) {
-            (entryOut, resp, isInternalError, err) = (new CorpusEntry(), new fuzzResponse(nil), true, errors.New("workerServer.fuzz modified input"u8)); return;
+            (entryOut, resp, isInternalError, err) = (new CorpusEntry(), new fuzzResponse(nil), true, errors.New(workerServerFuzzModifiedˢ)); return;
         }
         var needEntryOut = callErr != default! || resp.Err != ""u8 || (!args.Warmup && resp.CoverageData != default!);
         if (needEntryOut) {

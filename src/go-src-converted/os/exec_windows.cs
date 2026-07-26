@@ -12,6 +12,12 @@ using @internal.syscall;
 
 partial class os_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string waitForSingleObjectˢ = "WaitForSingleObject"u8;
+private static readonly @string osUnexpectedResultFromˢ = "os: unexpected result from WaitForSingleObject"u8;
+private static readonly @string getExitCodeProcessˢ = "GetExitCodeProcess"u8;
+private static readonly @string getProcessTimesˢ = "GetProcessTimes"u8;
+
 // Note that Process.mode is always modeHandle because Windows always requires
 // a handle. A manually-created Process literal is not valid.
 internal static (ж<ProcessState> ps, error err) wait(this ж<Process> Ꮡp) {
@@ -38,27 +44,31 @@ internal static (ж<ProcessState> ps, error err) wait(this ж<Process> Ꮡp) {
             } while (false);
         }
         else if (exprᴛ2 == syscall.WAIT_FAILED) {
-            (ps, err) = (default!, NewSyscallError("WaitForSingleObject"u8, e)); return;
+            (ps, err) = (default!, NewSyscallError(waitForSingleObjectˢ, e)); return;
         }
         else { /* default: */
-            (ps, err) = (default!, errors.New("os: unexpected result from WaitForSingleObject"u8)); return;
+            (ps, err) = (default!, errors.New(osUnexpectedResultFromˢ)); return;
         }
 
         ref var ec = ref heap(new uint32(), out var Ꮡec);
         e = syscall.GetExitCodeProcess(((syscallꓸHandle)handle), Ꮡec);
         if (e != default!) {
-            (ps, err) = (default!, NewSyscallError("GetExitCodeProcess"u8, e)); return;
+            (ps, err) = (default!, NewSyscallError(getExitCodeProcessˢ, e)); return;
         }
         ref var u = ref heap(new syscall.Rusage(), out var Ꮡu);
         e = syscall.GetProcessTimes(((syscallꓸHandle)handle), Ꮡu.of(syscall.Rusage.ᏑCreationTime), Ꮡu.of(syscall.Rusage.ᏑExitTime), Ꮡu.of(syscall.Rusage.ᏑKernelTime), Ꮡu.of(syscall.Rusage.ᏑUserTime));
         if (e != default!) {
-            (ps, err) = (default!, NewSyscallError("GetProcessTimes"u8, e)); return;
+            (ps, err) = (default!, NewSyscallError(getProcessTimesˢ, e)); return;
         }
         defer(() => Ꮡp.Release());
         (ps, err) = (Ꮡ(new ProcessState(p.Pid, new syscall.WaitStatus(ExitCode: ec), Ꮡu)), default!);
     });
     return (ps, err);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string duplicateHandleˢ = "DuplicateHandle"u8;
+private static readonly @string terminateProcessˢ = "TerminateProcess"u8;
 
 internal static error signal(this ж<Process> Ꮡp, ΔSignal sig) => func<error>((defer, recover) => {
     var (handle, status) = Ꮡp.handleTransientAcquire();
@@ -75,12 +85,12 @@ internal static error signal(this ж<Process> Ꮡp, ΔSignal sig) => func<error>
         ref var terminationHandle = ref heap(new syscallꓸHandle(), out var ᏑterminationHandle);
         var e = syscall.DuplicateHandle(~((syscallꓸHandle)((syscallꓸHandle)0)), ((syscallꓸHandle)handle), ~((syscallꓸHandle)((syscallꓸHandle)0)), ᏑterminationHandle, syscall.PROCESS_TERMINATE, false, 0);
         if (e != default!) {
-            return NewSyscallError("DuplicateHandle"u8, e);
+            return NewSyscallError(duplicateHandleˢ, e);
         }
         Δruntime.KeepAlive(Ꮡp);
         deferǃ(syscall.CloseHandle, terminationHandle, defer);
         e = syscall.TerminateProcess(terminationHandle, 1);
-        return NewSyscallError("TerminateProcess"u8, e);
+        return NewSyscallError(terminateProcessˢ, e);
     }
     // TODO(rsc): Handle Interrupt too?
     return ((syscall.Errno)syscall.EWINDOWS);
@@ -106,6 +116,9 @@ internal static error release(this ж<Process> Ꮡp) {
     syscall.CloseHandle(((syscallꓸHandle)p.handle));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string openProcessˢ = "OpenProcess"u8;
+
 internal static (ж<Process> p, error err) findProcess(nint pid) {
     ж<Process> p = default!;
     error err = default!;
@@ -114,7 +127,7 @@ internal static (ж<Process> p, error err) findProcess(nint pid) {
 	syscall.PROCESS_QUERY_INFORMATION | syscall.SYNCHRONIZE */ 1180672;
     var (h, e) = syscall.OpenProcess(da, false, (uint32)pid);
     if (e != default!) {
-        return (default!, NewSyscallError("OpenProcess"u8, e));
+        return (default!, NewSyscallError(openProcessˢ, e));
     }
     return (newHandleProcess(pid, (uintptr)h), default!);
 }

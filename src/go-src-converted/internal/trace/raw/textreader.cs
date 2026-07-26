@@ -138,7 +138,7 @@ public static (ж<TextReader>, error) NewTextReader(io.Reader r) {
     }
 }
 
-internal static slice<@string> frameFields = new @string[]{"pc", "func", "file", "line"}.slice();
+internal static slice<@string> frameFields = new @string[]{"pc"u8, "func"u8, "file"u8, "line"u8}.slice();
 
 internal static (slice<uint64>, error) readArgs(@string s, slice<@string> names) {
     slice<uint64> args = default!;

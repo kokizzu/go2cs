@@ -85,6 +85,10 @@ internal static bool limiting(this ж<gcCPULimiterState> Ꮡl) {
     return Ꮡl.of(gcCPULimiterState.Ꮡenabled).Load();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string failedToAcquireLockToˢ = "failed to acquire lock to start a GC transition"u8;
+private static readonly @string transitioningGcToTheSameˢ = "transitioning GC to the same state as before?"u8;
+
 // startGCTransition notifies the limiter of a GC transition.
 //
 // This call takes ownership of the limiter and disables all other means of
@@ -97,16 +101,19 @@ internal static void startGCTransition(this ж<gcCPULimiterState> Ꮡl, bool ena
     if (!Ꮡl.tryLock()) {
         // This must happen during a STW, so we can't fail to acquire the lock.
         // If we did, something went wrong. Throw.
-        @throw("failed to acquire lock to start a GC transition"u8);
+        @throw(failedToAcquireLockToˢ);
     }
     if (l.gcEnabled == enableGC) {
-        @throw("transitioning GC to the same state as before?"u8);
+        @throw(transitioningGcToTheSameˢ);
     }
     // Flush whatever was left between the last update and now.
     Ꮡl.updateLocked(now);
     l.gcEnabled = enableGC;
     l.transitioning = true;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string finishGCTransitionCalledˢ = "finishGCTransition called without starting one?"u8;
 
 // N.B. finishGCTransition releases the lock.
 //
@@ -120,7 +127,7 @@ internal static void finishGCTransition(this ж<gcCPULimiterState> Ꮡl, int64 n
     ref var l = ref Ꮡl.Value;
 
     if (!l.transitioning) {
-        @throw("finishGCTransition called without starting one?"u8);
+        @throw(finishGCTransitionCalledˢ);
     }
     // Count the full nprocs set of CPU time because the world is stopped
     // between startGCTransition and finishGCTransition. Even though the GC
@@ -158,6 +165,9 @@ internal static void addIdleTime(this ж<gcCPULimiterState> Ꮡl, int64 t) {
     Ꮡl.of(gcCPULimiterState.ᏑidleTimePool).Add(t);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string updateDuringTransitionˢ = "update during transition"u8;
+
 // update updates the bucket given runtime-specific information. now is the
 // current monotonic time in nanoseconds.
 //
@@ -172,11 +182,14 @@ internal static void update(this ж<gcCPULimiterState> Ꮡl, int64 now) {
         return;
     }
     if (l.transitioning) {
-        @throw("update during transition"u8);
+        @throw(updateDuringTransitionˢ);
     }
     Ꮡl.updateLocked(now);
     Ꮡl.unlock();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidLimiterEventTypeˢ = "invalid limiter event type found"u8;
 
 // updateLocked is the implementation of update. l.lock must be held.
 internal static void updateLocked(this ж<gcCPULimiterState> Ꮡl, int64 now) {
@@ -231,7 +244,7 @@ internal static void updateLocked(this ж<gcCPULimiterState> Ꮡl, int64 now) {
                 } while (false);
             }
             else if (!matchᴛ1) { /* default: */
-                @throw("invalid limiter event type found"u8);
+                @throw(invalidLimiterEventTypeˢ);
             }
 
         }
@@ -310,16 +323,22 @@ internal static bool tryLock(this ж<gcCPULimiterState> Ꮡl) {
     return Ꮡl.of(gcCPULimiterState.Ꮡlock).CompareAndSwap(0, 1);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string doubleUnlockˢ = "double unlock"u8;
+
 // unlock releases the lock on l. Must be called if tryLock returns true.
 internal static void unlock(this ж<gcCPULimiterState> Ꮡl) {
     var old = Ꮡl.of(gcCPULimiterState.Ꮡlock).Swap(0);
     if (old != 1) {
-        @throw("double unlock"u8);
+        @throw(doubleUnlockˢ);
     }
 }
 
 // capacityPerProc is the limiter's bucket capacity for each P in GOMAXPROCS.
 internal static readonly UntypedFloat capacityPerProc = 1e9; // 1 second in nanoseconds
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string failedToAcquireLockToˢ2 = "failed to acquire lock to reset capacity"u8;
 
 // resetCapacity updates the capacity based on GOMAXPROCS. Must not be called
 // while the GC is enabled.
@@ -331,7 +350,7 @@ internal static void resetCapacity(this ж<gcCPULimiterState> Ꮡl, int64 now, i
     if (!Ꮡl.tryLock()) {
         // This must happen during a STW, so we can't fail to acquire the lock.
         // If we did, something went wrong. Throw.
-        @throw("failed to acquire lock to reset capacity"u8);
+        @throw(failedToAcquireLockToˢ2);
     }
     // Flush the rest of the time for this period.
     Ꮡl.updateLocked(now);
@@ -444,6 +463,10 @@ internal static (limiterEventType typ, int64 duration) consume(this ж<limiterEv
     return (typ, duration);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string limiterEventStopFoundˢ = "limiterEvent.stop: found wrong event in p's limiter event slot"u8;
+private static readonly @string limiterEventStopInvalidˢ = "limiterEvent.stop: invalid limiter event type found"u8;
+
 // stop stops the active limiter event. Throws if the
 //
 // The caller must be non-preemptible across the event. See start as to why.
@@ -453,7 +476,7 @@ internal static void stop(this ж<limiterEvent> Ꮡe, limiterEventType typ, int6
         stamp = ((limiterEventStamp)Ꮡe.of(limiterEvent.Ꮡstamp).Load());
         if (stamp.typ() != typ) {
             print((@string)"runtime: want="u8, typ, (@string)" got="u8, stamp.typ(), (@string)"\n"u8);
-            @throw("limiterEvent.stop: found wrong event in p's limiter event slot"u8);
+            @throw(limiterEventStopFoundˢ);
         }
         if (Ꮡe.of(limiterEvent.Ꮡstamp).CompareAndSwap((uint64)stamp, (uint64)limiterEventStampNone)) {
             break;
@@ -486,7 +509,7 @@ internal static void stop(this ж<limiterEvent> Ꮡe, limiterEventType typ, int6
         ᏑgcCPULimiter.addAssistTime(duration);
     }
     else if (!matchᴛ1) { /* default: */
-        @throw("limiterEvent.stop: invalid limiter event type found"u8);
+        @throw(limiterEventStopInvalidˢ);
     }
 
 }

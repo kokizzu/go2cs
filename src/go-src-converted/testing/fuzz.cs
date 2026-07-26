@@ -21,12 +21,24 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class testing_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testFuzzˢ = "test.fuzz"u8;
+private static readonly @string runTheFuzzTestMatchingˢ = "run the fuzz test matching `regexp`"u8;
+private static readonly @string testFuzztimeˢ = "test.fuzztime"u8;
+private static readonly @string timeToSpendFuzzingˢ = "time to spend fuzzing; default is to run indefinitely"u8;
+private static readonly @string testFuzzminimizetimeˢ = "test.fuzzminimizetime"u8;
+private static readonly @string timeToSpendMinimizingAˢ = "time to spend minimizing a value after finding a failing input"u8;
+private static readonly @string testFuzzcachedirˢ = "test.fuzzcachedir"u8;
+private static readonly @string directoryWhereˢ = "directory where interesting fuzzing inputs are stored (for use only by cmd/go)"u8;
+private static readonly @string testFuzzworkerˢ = "test.fuzzworker"u8;
+private static readonly @string coordinateWithTheParentˢ = "coordinate with the parent process to fuzz random values (for use only by cmd/go)"u8;
+
 internal static void initFuzzFlags() {
-    matchFuzz = flag.String("test.fuzz"u8, ""u8, "run the fuzz test matching `regexp`"u8);
-    flag.Var(new durationOrCountFlagжValue(ᏑfuzzDuration), "test.fuzztime"u8, "time to spend fuzzing; default is to run indefinitely"u8);
-    flag.Var(new durationOrCountFlagжValue(ᏑminimizeDuration), "test.fuzzminimizetime"u8, "time to spend minimizing a value after finding a failing input"u8);
-    fuzzCacheDir = flag.String("test.fuzzcachedir"u8, ""u8, "directory where interesting fuzzing inputs are stored (for use only by cmd/go)"u8);
-    isFuzzWorker = flag.Bool("test.fuzzworker"u8, false, "coordinate with the parent process to fuzz random values (for use only by cmd/go)"u8);
+    matchFuzz = flag.String(testFuzzˢ, ""u8, runTheFuzzTestMatchingˢ);
+    flag.Var(new durationOrCountFlagжValue(ᏑfuzzDuration), testFuzztimeˢ, timeToSpendFuzzingˢ);
+    flag.Var(new durationOrCountFlagжValue(ᏑminimizeDuration), testFuzzminimizetimeˢ, timeToSpendMinimizingAˢ);
+    fuzzCacheDir = flag.String(testFuzzcachedirˢ, ""u8, directoryWhereˢ);
+    isFuzzWorker = flag.Bool(testFuzzworkerˢ, false, coordinateWithTheParentˢ);
 }
 
 internal static ж<@string> matchFuzz;
@@ -430,6 +442,10 @@ public static void Fuzz(this ж<F> Ꮡf, any ff) {
 
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object failˢ = (@string)"FAIL"u8;
+private static readonly object passˢ = (@string)"PASS"u8;
+
 internal static void report(this ж<F> Ꮡf) {
     ref var f = ref Ꮡf.Value;
 
@@ -439,13 +455,13 @@ internal static void report(this ж<F> Ꮡf) {
     @string dstr = fmtDuration(f.duration);
     @string format = "--- %s: %s (%s)\n"u8;
     if (Ꮡf.of(F.Ꮡcommon).Failed()){
-        Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, (@string)"FAIL"u8, f.name, dstr);
+        Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, failˢ, f.name, dstr);
     } else 
     if (f.chatty != nil) {
         if (Ꮡf.Skipped()){
-            Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, (@string)"SKIP"u8, f.name, dstr);
+            Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, skipˢ, f.name, dstr);
         } else {
-            Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, (@string)"PASS"u8, f.name, dstr);
+            Ꮡf.of(F.Ꮡcommon).flushToParent(f.name, format, passˢ, f.name, dstr);
         }
     }
 }
@@ -491,6 +507,9 @@ internal static readonly fuzzMode seedCorpusOnly = /* iota */ 0;
 internal static readonly fuzzMode fuzzCoordinator = 1;
 internal static readonly fuzzMode fuzzWorker = 2;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testFuzzˢ2 = "-test.fuzz"u8;
+
 // runFuzzTests runs the fuzz tests matching the pattern for -run. This will
 // only run the (*F).Fuzz function for each seed corpus without using the
 // fuzzing engine to generate or mutate inputs.
@@ -502,10 +521,10 @@ internal static (bool ran, bool ok) runFuzzTests(testDeps deps, slice<InternalFu
     if (len(fuzzTests) == 0 || isFuzzWorker.Value) {
         return (ran, ok);
     }
-    var m = newMatcher(deps.MatchString, match.Value, "-test.run"u8, skip.Value);
+    var m = newMatcher(deps.MatchString, match.Value, testRunˢ, skip.Value);
     ж<matcher> mFuzz = default!;
     if (matchFuzz.Value != ""u8) {
-        mFuzz = newMatcher(deps.MatchString, matchFuzz.Value, "-test.fuzz"u8, skip.Value);
+        mFuzz = newMatcher(deps.MatchString, matchFuzz.Value, testFuzzˢ2, skip.Value);
     }
     foreach (var (_, procs) in cpuList) {
         Δruntime.GOMAXPROCS(procs);
@@ -576,6 +595,9 @@ internal static (bool ran, bool ok) runFuzzTests(testDeps deps, slice<InternalFu
     return (ran, ok);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object testingWarningNoFuzzˢ = (@string)"testing: warning: no fuzz tests to fuzz"u8;
+
 // runFuzzing runs the fuzz test matching the pattern for -fuzz. Only one such
 // fuzz test must match. This will run the fuzzing engine to generate and
 // mutate new inputs against the fuzz target.
@@ -588,7 +610,7 @@ internal static bool /*ok*/ runFuzzing(testDeps deps, slice<InternalFuzzTarget> 
     if (len(fuzzTests) == 0 || matchFuzz.Value == ""u8) {
         return true;
     }
-    var m = newMatcher(deps.MatchString, matchFuzz.Value, "-test.fuzz"u8, skip.Value);
+    var m = newMatcher(deps.MatchString, matchFuzz.Value, testFuzzˢ2, skip.Value);
     var tctx = newTestContext(1, m);
     tctx.Value.isFuzzing = true;
     var fctx = Ꮡ(new fuzzContext(
@@ -618,7 +640,7 @@ internal static bool /*ok*/ runFuzzing(testDeps deps, slice<InternalFuzzTarget> 
         testName = name;
     }
     if (len(matched) == 0) {
-        fmt.Fprintln(new os.FileжWriter(os.Stderr), (@string)"testing: warning: no fuzz tests to fuzz"u8);
+        fmt.Fprintln(new os.FileжWriter(os.Stderr), testingWarningNoFuzzˢ);
         return true;
     }
     if (len(matched) > 1) {
@@ -649,6 +671,10 @@ internal static bool /*ok*/ runFuzzing(testDeps deps, slice<InternalFuzzTarget> 
     }
     return !(~f).failed;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object returnedWithoutCallingFˢ = (@string)"returned without calling F.Fuzz, F.Fail, or F.Skip"u8;
+private static readonly @string failSSˢ = "--- FAIL: %s (%s)\n"u8;
 
 // fRunner wraps a call to a fuzz test and ensures that cleanup functions are
 // called and status flags are set. fRunner should be called in its own
@@ -687,7 +713,7 @@ internal static void fRunner(ж<F> Ꮡf, Action<ж<F>> fn) => func((defer, recov
             }
             Ꮡf.of(F.Ꮡmu).RUnlock();
             if (fuzzNotCalled && err == default!) {
-                Ꮡf.of(F.Ꮡcommon).Error((@string)"returned without calling F.Fuzz, F.Fail, or F.Skip"u8);
+                Ꮡf.of(F.Ꮡcommon).Error(returnedWithoutCallingFˢ);
             }
         }
         // Use a deferred call to ensure that we report that the test is
@@ -715,7 +741,7 @@ internal static void fRunner(ж<F> Ꮡf, Action<ж<F>> fn) => func((defer, recov
                 root.Value.duration += highPrecisionTimeSince((~root).start);
                 var d = root.Value.duration;
                 root.of(common.Ꮡmu).Unlock();
-                root.flushToParent((~root).name, "--- FAIL: %s (%s)\n"u8, (~root).name, fmtDuration(d));
+                root.flushToParent((~root).name, failSSˢ, (~root).name, fmtDuration(d));
             }
             didPanic = true;
             throw panic(errΔ1);

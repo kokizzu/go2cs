@@ -73,10 +73,13 @@ public static map<uint16, SupportedKEMsᴛ1> SupportedKEMs = new map<uint16, Sup
     [0x0020] = new(ecdh.X25519(), crypto.SHA256, 32)
 };
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unsupportedSuiteIdˢ = "unsupported suite ID"u8;
+
 internal static (ж<dhKEM>, error) newDHKem(uint16 kemID) {
     var (suite, ok) = SupportedKEMs[kemID, ꟷ];
     if (!ok) {
-        return (default!, errors.New("unsupported suite ID"u8));
+        return (default!, errors.New(unsupportedSuiteIdˢ));
     }
     return (Ꮡ(new dhKEM(
         dh: suite.curve,
@@ -86,11 +89,15 @@ internal static (ж<dhKEM>, error) newDHKem(uint16 kemID) {
     )), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string eaePrkˢ = "eae_prk"u8;
+private static readonly @string sharedSecretˢ = "shared_secret"u8;
+
 internal static slice<byte> ExtractAndExpand(this ж<dhKEM> Ꮡdh, slice<byte> dhKey, slice<byte> kemContext) {
     ref var dh = ref Ꮡdh.Value;
 
-    var eaePRK = Ꮡdh.of(dhKEM.Ꮡkdf).LabeledExtract(dh.suiteID[..], default!, "eae_prk"u8, dhKey);
-    return Ꮡdh.of(dhKEM.Ꮡkdf).LabeledExpand(dh.suiteID[..], eaePRK, "shared_secret"u8, kemContext, dh.nSecret);
+    var eaePRK = Ꮡdh.of(dhKEM.Ꮡkdf).LabeledExtract(dh.suiteID[..], default!, eaePrkˢ, dhKey);
+    return Ꮡdh.of(dhKEM.Ꮡkdf).LabeledExpand(dh.suiteID[..], eaePRK, sharedSecretˢ, kemContext, dh.nSecret);
 }
 
 internal static (slice<byte> sharedSecret, slice<byte> encapPub, error err) Encap(this ж<dhKEM> Ꮡdh, ж<ecdhꓸPublicKey> ᏑpubRecipient) {
@@ -156,6 +163,15 @@ public static map<uint16, Func<ж<hkdfKDF>>> SupportedKDFs = new map<uint16, Fun
     [0x0001] = () => Ꮡ(new hkdfKDF(crypto.SHA256))
 };
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string incorrectPublicKeyTypeˢ = "incorrect public key type"u8;
+private static readonly @string unsupportedKdfIdˢ = "unsupported KDF id"u8;
+private static readonly @string unsupportedAeadIdˢ = "unsupported AEAD id"u8;
+private static readonly @string pskIdHashˢ = "psk_id_hash"u8;
+private static readonly @string infoHashˢ = "info_hash"u8;
+private static readonly @string secretˢ = "secret"u8;
+private static readonly @string baseNonceˢ = "base_nonce"u8;
+
 public static (slice<byte>, ж<Sender>, error) SetupSender(uint16 kemID, uint16 kdfID, uint16 aeadID, cryptoꓸPublicKey pub, slice<byte> info) {
     var suiteID = SuiteID(kemID, kdfID, aeadID);
     var (kem, err) = newDHKem(kemID);
@@ -164,7 +180,7 @@ public static (slice<byte>, ж<Sender>, error) SetupSender(uint16 kemID, uint16 
     }
     var (pubRecipient, ok) = pub._<ж<ecdhꓸPublicKey>>(ᐧ);
     if (!ok) {
-        return (default!, default!, errors.New("incorrect public key type"u8));
+        return (default!, default!, errors.New(incorrectPublicKeyTypeˢ));
     }
     (var sharedSecret, var encapsulatedKey, err) = kem.Encap(pubRecipient);
     if (err != default!) {
@@ -172,21 +188,21 @@ public static (slice<byte>, ж<Sender>, error) SetupSender(uint16 kemID, uint16 
     }
     (var kdfInit, ok) = SupportedKDFs[kdfID, ꟷ];
     if (!ok) {
-        return (default!, default!, errors.New("unsupported KDF id"u8));
+        return (default!, default!, errors.New(unsupportedKdfIdˢ));
     }
     var kdf = kdfInit();
     (var aeadInfo, ok) = SupportedAEADs[aeadID, ꟷ];
     if (!ok) {
-        return (default!, default!, errors.New("unsupported AEAD id"u8));
+        return (default!, default!, errors.New(unsupportedAeadIdˢ));
     }
-    var pskIDHash = kdf.LabeledExtract(suiteID, default!, "psk_id_hash"u8, default!);
-    var infoHash = kdf.LabeledExtract(suiteID, default!, "info_hash"u8, info);
+    var pskIDHash = kdf.LabeledExtract(suiteID, default!, pskIdHashˢ, default!);
+    var infoHash = kdf.LabeledExtract(suiteID, default!, infoHashˢ, info);
     var ksContext = append(new byte[]{0}.slice(), pskIDHash.ꓸꓸꓸ);
     ksContext = append(ksContext, infoHash.ꓸꓸꓸ);
-    var secret = kdf.LabeledExtract(suiteID, sharedSecret, "secret"u8, default!);
+    var secret = kdf.LabeledExtract(suiteID, sharedSecret, secretˢ, default!);
     var key = kdf.LabeledExpand(suiteID, secret, "key"u8, ksContext, (uint16)aeadInfo.keySize);
     /* Nk - key size for AEAD */
-    var baseNonce = kdf.LabeledExpand(suiteID, secret, "base_nonce"u8, ksContext, (uint16)aeadInfo.nonceSize);
+    var baseNonce = kdf.LabeledExpand(suiteID, secret, baseNonceˢ, ksContext, (uint16)aeadInfo.nonceSize);
     /* Nn - nonce size for AEAD */
     var exporterSecret = kdf.LabeledExpand(suiteID, secret, "exp"u8, ksContext, (uint16)(~kdf).hash.Size());
     /* Nh - hash output size of the kdf*/
@@ -233,10 +249,13 @@ public static slice<byte> SuiteID(uint16 kemID, uint16 kdfID, uint16 aeadID) {
     return suiteID;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unsupportedKemIdˢ = "unsupported KEM id"u8;
+
 public static (ж<ecdhꓸPublicKey>, error) ParseHPKEPublicKey(uint16 kemID, slice<byte> bytes) {
     var (kemInfo, ok) = SupportedKEMs[kemID, ꟷ];
     if (!ok) {
-        return (default!, errors.New("unsupported KEM id"u8));
+        return (default!, errors.New(unsupportedKemIdˢ));
     }
     return kemInfo.curve.NewPublicKey(bytes);
 }

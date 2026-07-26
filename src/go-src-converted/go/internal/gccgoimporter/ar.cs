@@ -57,6 +57,9 @@ internal static readonly UntypedInt arHdrSize = /* arFmagOff + arFmagSize */ 60;
 // The contents of the fmag field of a standard archive header.
 internal static readonly @string arfmag = "`\n"u8;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unsupportedThinArchiveˢ = "unsupported thin archive"u8;
+
 // arExportData takes an archive file and returns a ReadSeeker for the
 // export data in that file. This assumes that there is only one
 // object in the archive containing export data, which is not quite
@@ -79,7 +82,7 @@ internal static (io.ReadSeeker, error) arExportData(io.ReadSeeker archive) {
         return standardArExportData(archive);
     }
     if (exprᴛ1 == armagt) {
-        return (default!, errors.New("unsupported thin archive"u8));
+        return (default!, errors.New(unsupportedThinArchiveˢ));
     }
     if (exprᴛ1 == armagb) {
         return aixBigArExportData(archive);
@@ -131,6 +134,9 @@ internal static (io.ReadSeeker, error) standardArExportData(io.ReadSeeker archiv
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goExportˢ = ".go_export"u8;
+
 // elfFromAr tries to get export data from an archive member as an ELF file.
 // If there is no export data, this returns nil, nil.
 internal static (io.ReadSeeker, error) elfFromAr(ж<io.SectionReader> Ꮡmember) {
@@ -138,7 +144,7 @@ internal static (io.ReadSeeker, error) elfFromAr(ж<io.SectionReader> Ꮡmember)
     if (err != default!) {
         return (default!, err);
     }
-    var sec = ef.Section(".go_export"u8);
+    var sec = ef.Section(goExportˢ);
     if (sec == nil) {
         return (default!, default!);
     }
@@ -157,7 +163,7 @@ internal static (io.ReadSeeker, error) aixBigArExportData(io.ReadSeeker archive)
         if (errΔ1 != default!) {
             return (default!, errΔ1);
         }
-        var sdat = f.CSect(".go_export"u8);
+        var sdat = f.CSect(goExportˢ);
         if (sdat != default!) {
             return (new bytes_ReaderжReadSeeker(bytes.NewReader(sdat)), default!);
         }

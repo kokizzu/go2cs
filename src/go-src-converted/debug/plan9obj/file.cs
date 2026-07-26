@@ -326,15 +326,19 @@ internal static (slice<Sym>, error) newTable(slice<byte> symtab, nint ptrsz) {
 // in the File.
 public static error ErrNoSymbols = errors.New("no symbol section"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string symsˢ = "syms"u8;
+private static readonly @string cannotLoadSymbolSectionˢ = "cannot load symbol section"u8;
+
 // Symbols returns the symbol table for f.
 [GoRecv] public static (slice<Sym>, error) Symbols(this ref File f) {
-    var symtabSection = f.Section("syms"u8);
+    var symtabSection = f.Section(symsˢ);
     if (symtabSection == nil) {
         return (default!, ErrNoSymbols);
     }
     var (symtab, err) = symtabSection.Data();
     if (err != default!) {
-        return (default!, errors.New("cannot load symbol section"u8));
+        return (default!, errors.New(cannotLoadSymbolSectionˢ));
     }
     return newTable(symtab, f.PtrSize);
 }

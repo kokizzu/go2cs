@@ -145,6 +145,9 @@ internal static ж<g> sigFetchG() {
     return getg();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownSigtrampCallbackˢ = "unknown sigtramp callback"u8;
+
 // sigtrampgo is called from the exception handler function, sigtramp,
 // written in assembly code.
 // Return EXCEPTION_CONTINUE_EXECUTION if the exception is handled,
@@ -172,7 +175,7 @@ internal static int32 sigtrampgo(ж<exceptionpointers> Ꮡep, nint kind) {
         fn = lastcontinuehandler;
     }
     else { /* default: */
-        @throw("unknown sigtramp callback"u8);
+        @throw(unknownSigtrampCallbackˢ);
     }
 
     // Check if we are running on g0 stack, and if we are,
@@ -413,10 +416,14 @@ internal static void winthrow(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr, ж<
     exit(2);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedSignalDuringˢ = "unexpected signal during runtime execution"u8;
+private static readonly @string faultˢ = "fault"u8;
+
 internal static void sigpanic() {
     var gp = getg();
     if (!canpanic()) {
-        @throw("unexpected signal during runtime execution"u8);
+        @throw(unexpectedSignalDuringˢ);
     }
     var exprᴛ1 = (~gp).sig;
     if (exprᴛ1 == _EXCEPTION_ACCESS_VIOLATION || exprᴛ1 == _EXCEPTION_IN_PAGE_ERROR) {
@@ -434,7 +441,7 @@ internal static void sigpanic() {
         } else {
             print((@string)"unexpected fault address "u8, ((Δhex)(uint64)(~gp).sigcode1), (@string)"\n"u8);
         }
-        @throw("fault"u8);
+        @throw(faultˢ);
     }
     else if (exprᴛ1 == _EXCEPTION_INT_DIVIDE_BY_ZERO) {
         panicdivide();
@@ -446,7 +453,7 @@ internal static void sigpanic() {
         panicfloat();
     }
 
-    @throw("fault"u8);
+    @throw(faultˢ);
 }
 
 // Following are not implemented.

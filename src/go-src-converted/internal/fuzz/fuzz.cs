@@ -176,7 +176,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
         @string dir = ""u8;
         // same as self
         @string binPath = os.Args[0];
-        var args = append(new @string[]{"-test.fuzzworker"}.slice(), os.Args[1..].ꓸꓸꓸ);
+        var args = append(new @string[]{"-test.fuzzworker"u8}.slice(), os.Args[1..].ꓸꓸꓸ);
         var env = os.Environ();
         // same as self
         var errC = new channel<error>(0);

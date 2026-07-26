@@ -116,6 +116,9 @@ public static unsafe (@string val, uint32 valtype, error err) GetStringValue(thi
     return (syscall.UTF16ToString(u), typ, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string systemRootSystem32ˢ = "%SystemRoot%\\system32\\"u8;
+
 // GetMUIStringValue retrieves the localized string value for
 // the specified value name associated with an open key k.
 // If the value name doesn't exist or the localized string value
@@ -137,7 +140,7 @@ public static (@string, error) GetMUIStringValue(this Key k, @string name) {
         // This approach works with tzres.dll but may have to be revised
         // in the future to allow callers to provide custom search paths.
         @string s = default!;
-        (s, err) = ExpandString("%SystemRoot%\\system32\\"u8);
+        (s, err) = ExpandString(systemRootSystem32ˢ);
         if (err != default!) {
             return ("", err);
         }
@@ -225,6 +228,10 @@ public static unsafe (slice<@string> val, uint32 valtype, error err) GetStringsV
     return (val, typ, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dwordValueIsNot4Bytesˢ = "DWORD value is not 4 bytes long"u8;
+private static readonly @string qwordValueIsNot8Bytesˢ = "QWORD value is not 8 bytes long"u8;
+
 // GetIntegerValue retrieves the integer value for the specified
 // value name associated with an open key k. It also returns the value's type.
 // If value does not exist, GetIntegerValue returns ErrNotExist.
@@ -242,13 +249,13 @@ public static (uint64 val, uint32 valtype, error err) GetIntegerValue(this Key k
     var exprᴛ1 = typ;
     if (exprᴛ1 == DWORD) {
         if (len(data) != 4) {
-            return (0, typ, errors.New("DWORD value is not 4 bytes long"u8));
+            return (0, typ, errors.New(dwordValueIsNot4Bytesˢ));
         }
         return ((uint64)(~Ꮡ(data, 0).Reinterpret<byte, uint32>()), DWORD, default!);
     }
     if (exprᴛ1 == QWORD) {
         if (len(data) != 8) {
-            return (0, typ, errors.New("QWORD value is not 8 bytes long"u8));
+            return (0, typ, errors.New(qwordValueIsNot8Bytesˢ));
         }
         return (~Ꮡ(data, 0).Reinterpret<byte, uint64>(), QWORD, default!);
     }
@@ -322,6 +329,9 @@ public static error SetExpandStringValue(this Key k, @string name, @string value
     return k.setStringValue(name, EXPAND_SZ, value);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stringCannotHave0Insideˢ = "string cannot have 0 inside"u8;
+
 // SetStringsValue sets the data and type of a name value
 // under key k to value and MULTI_SZ. The value strings
 // must not contain a zero byte.
@@ -330,7 +340,7 @@ public static unsafe error SetStringsValue(this Key k, @string name, slice<@stri
     foreach (var (_, s) in value) {
         for (nint i = 0; i < len(s); i++) {
             if (s[i] == 0) {
-                return errors.New("string cannot have 0 inside"u8);
+                return errors.New(stringCannotHave0Insideˢ);
             }
         }
         ss += s + "\x00"u8;

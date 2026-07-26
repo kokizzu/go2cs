@@ -18,12 +18,16 @@ partial class types_package {
     internal slice<ж<Selection>> list;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string methodSetˢ = "MethodSet {}"u8;
+private static readonly object methodSetˢ2 = (@string)"MethodSet {"u8;
+
 [GoRecv] public static @string String(this ref MethodSet s) {
     if (s.Len() == 0) {
-        return "MethodSet {}"u8;
+        return methodSetˢ;
     }
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), (@string)"MethodSet {"u8);
+    fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), methodSetˢ2);
     foreach (var (_, f) in s.list) {
         fmt.Fprintf(new strings_BuilderжWriter(Ꮡbuf), "\t%s\n"u8, f);
     }

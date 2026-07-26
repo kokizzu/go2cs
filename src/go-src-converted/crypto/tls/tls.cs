@@ -97,6 +97,9 @@ public static net.Listener NewListener(net.Listener inner, ж<Config> Ꮡconfig)
     return new listenerжListener(l);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsNeitherCertificatesˢ = "tls: neither Certificates, GetCertificate, nor GetConfigForClient set in Config"u8;
+
 // Listen creates a TLS listener accepting connections on the
 // given network address using net.Listen.
 // The configuration config must be non-nil and must include
@@ -106,7 +109,7 @@ public static (net.Listener, error) Listen(@string network, @string laddr, ж<Co
 
     // If this condition changes, consider updating http.Server.ServeTLS too.
     if (Ꮡconfig == nil || len(config.Certificates) == 0 && config.GetCertificate == default! && config.GetConfigForClient == default!) {
-        return (default!, errors.New("tls: neither Certificates, GetCertificate, nor GetConfigForClient set in Config"u8));
+        return (default!, errors.New(tlsNeitherCertificatesˢ));
     }
     var (l, err) = net.Listen(network, laddr);
     if (err != default!) {
@@ -118,8 +121,11 @@ public static (net.Listener, error) Listen(@string network, @string laddr, ж<Co
 [GoType] partial struct timeoutError {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsDialWithDialerTimedˢ = "tls: DialWithDialer timed out"u8;
+
 internal static @string Error(this timeoutError _) {
-    return "tls: DialWithDialer timed out"u8;
+    return tlsDialWithDialerTimedˢ;
 }
 
 internal static bool Timeout(this timeoutError _) {
@@ -272,6 +278,17 @@ public static (Certificate, error) LoadX509KeyPair(@string certFile, @string key
 
 internal static ж<godebug.Setting> x509keypairleaf = godebug.New("x509keypairleaf"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsFailedToFindAnyPemˢ = "tls: failed to find any PEM data in certificate input"u8;
+private static readonly @string privateKeyˢ = "PRIVATE KEY"u8;
+private static readonly @string tlsFailedToFindˢ = "tls: failed to find certificate PEM data in certificate input, but did find a private key; PEM inputs may have been switched"u8;
+private static readonly @string tlsFailedToFindAnyPemˢ2 = "tls: failed to find any PEM data in key input"u8;
+private static readonly @string tlsFoundACertificateˢ = "tls: found a certificate rather than a key in the PEM for the private key"u8;
+private static readonly @string privateKeyˢ2 = " PRIVATE KEY"u8;
+private static readonly @string tlsPrivateKeyTypeDoesNotˢ = "tls: private key type does not match public key type"u8;
+private static readonly @string tlsPrivateKeyDoesNotˢ = "tls: private key does not match public key"u8;
+private static readonly @string tlsUnknownPublicKeyˢ = "tls: unknown public key algorithm"u8;
+
 // X509KeyPair parses a public/private key pair from a pair of
 // PEM encoded data. On successful return, Certificate.Leaf will be populated.
 //
@@ -296,10 +313,10 @@ public static (Certificate, error) X509KeyPair(slice<byte> certPEMBlock, slice<b
     }
     if (len(cert.ΔCertificate) == 0) {
         if (len(skippedBlockTypes) == 0) {
-            return fail(errors.New("tls: failed to find any PEM data in certificate input"u8));
+            return fail(errors.New(tlsFailedToFindAnyPemˢ));
         }
-        if (len(skippedBlockTypes) == 1 && strings.HasSuffix(skippedBlockTypes[0], "PRIVATE KEY"u8)) {
-            return fail(errors.New("tls: failed to find certificate PEM data in certificate input, but did find a private key; PEM inputs may have been switched"u8));
+        if (len(skippedBlockTypes) == 1 && strings.HasSuffix(skippedBlockTypes[0], privateKeyˢ)) {
+            return fail(errors.New(tlsFailedToFindˢ));
         }
         return fail(fmt.Errorf("tls: failed to find \"CERTIFICATE\" PEM block in certificate input after skipping PEM blocks of the following types: %v"u8, skippedBlockTypes));
     }
@@ -309,14 +326,14 @@ public static (Certificate, error) X509KeyPair(slice<byte> certPEMBlock, slice<b
         (keyDERBlock, keyPEMBlock) = pem.Decode(keyPEMBlock);
         if (keyDERBlock == nil) {
             if (len(skippedBlockTypes) == 0) {
-                return fail(errors.New("tls: failed to find any PEM data in key input"u8));
+                return fail(errors.New(tlsFailedToFindAnyPemˢ2));
             }
             if (len(skippedBlockTypes) == 1 && skippedBlockTypes[0] == "CERTIFICATE") {
-                return fail(errors.New("tls: found a certificate rather than a key in the PEM for the private key"u8));
+                return fail(errors.New(tlsFoundACertificateˢ));
             }
             return fail(fmt.Errorf("tls: failed to find PEM block with type ending in \"PRIVATE KEY\" in key input after skipping PEM blocks of the following types: %v"u8, skippedBlockTypes));
         }
-        if ((~keyDERBlock).Type == "PRIVATE KEY"u8 || strings.HasSuffix((~keyDERBlock).Type, " PRIVATE KEY"u8)) {
+        if ((~keyDERBlock).Type == "PRIVATE KEY"u8 || strings.HasSuffix((~keyDERBlock).Type, privateKeyˢ2)) {
             break;
         }
         skippedBlockTypes = append(skippedBlockTypes, (~keyDERBlock).Type);
@@ -340,39 +357,43 @@ public static (Certificate, error) X509KeyPair(slice<byte> certPEMBlock, slice<b
     case ж<rsa.PublicKey> pub: {
         var (priv, ok) = cert.PrivateKey._<ж<rsa.PrivateKey>>(ᐧ);
         if (!ok) {
-            return fail(errors.New("tls: private key type does not match public key type"u8));
+            return fail(errors.New(tlsPrivateKeyTypeDoesNotˢ));
         }
         if ((~pub).N.Cmp((~priv).N) != 0) {
-            return fail(errors.New("tls: private key does not match public key"u8));
+            return fail(errors.New(tlsPrivateKeyDoesNotˢ));
         }
         break;
     }
     case ж<ecdsa.PublicKey> pub: {
         var (priv, ok) = cert.PrivateKey._<ж<ecdsa.PrivateKey>>(ᐧ);
         if (!ok) {
-            return fail(errors.New("tls: private key type does not match public key type"u8));
+            return fail(errors.New(tlsPrivateKeyTypeDoesNotˢ));
         }
         if ((~pub).X.Cmp((~priv).X) != 0 || (~pub).Y.Cmp((~priv).Y) != 0) {
-            return fail(errors.New("tls: private key does not match public key"u8));
+            return fail(errors.New(tlsPrivateKeyDoesNotˢ));
         }
         break;
     }
     case ed25519.PublicKey pub: {
         var (priv, ok) = cert.PrivateKey._<ed25519.PrivateKey>(ᐧ);
         if (!ok) {
-            return fail(errors.New("tls: private key type does not match public key type"u8));
+            return fail(errors.New(tlsPrivateKeyTypeDoesNotˢ));
         }
         if (!bytes.Equal(priv.Public()._<ed25519.PublicKey>(), pub)) {
-            return fail(errors.New("tls: private key does not match public key"u8));
+            return fail(errors.New(tlsPrivateKeyDoesNotˢ));
         }
         break;
     }
     default: {
         var pub = (~x509Cert).PublicKey;
-        return fail(errors.New("tls: unknown public key algorithm"u8));
+        return fail(errors.New(tlsUnknownPublicKeyˢ));
     }}
     return (cert, default!);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsFoundUnknownPrivateˢ = "tls: found unknown private key type in PKCS#8 wrapping"u8;
+private static readonly @string tlsFailedToParsePrivateˢ = "tls: failed to parse private key"u8;
 
 // Attempt to parse the given private key DER block. OpenSSL 0.9.8 generates
 // PKCS #1 private keys by default, while OpenSSL 1.0.0 generates PKCS #8 keys.
@@ -394,7 +415,7 @@ internal static (cryptoꓸPrivateKey, error) parsePrivateKey(slice<byte> der) {
             }
             default: {
                 var keyΔ1 = key;
-                return (default!, errors.New("tls: found unknown private key type in PKCS#8 wrapping"u8));
+                return (default!, errors.New(tlsFoundUnknownPrivateˢ));
             }}
         }
     }
@@ -403,7 +424,7 @@ internal static (cryptoꓸPrivateKey, error) parsePrivateKey(slice<byte> der) {
             return (key, default!);
         }
     }
-    return (default!, errors.New("tls: failed to parse private key"u8));
+    return (default!, errors.New(tlsFailedToParsePrivateˢ));
 }
 
 } // end tls_package

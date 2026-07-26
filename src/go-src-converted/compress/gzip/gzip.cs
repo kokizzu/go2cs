@@ -94,10 +94,13 @@ public static (ж<Writer>, error) NewWriterLevel(io.Writer w, nint level) {
     z.init(w, z.level);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gzipWriteExtraDataIsTooˢ = "gzip.Write: Extra data is too large"u8;
+
 // writeBytes writes a length-prefixed byte slice to z.w.
 [GoRecv] internal static error writeBytes(this ref Writer z, slice<byte> b) {
     if (len(b) > 0xffff) {
-        return errors.New("gzip.Write: Extra data is too large"u8);
+        return errors.New(gzipWriteExtraDataIsTooˢ);
     }
     le.PutUint16(z.buf[..2], (uint16)len(b));
     var (_, err) = z.w.Write(z.buf[..2]);
@@ -108,6 +111,9 @@ public static (ж<Writer>, error) NewWriterLevel(io.Writer w, nint level) {
     return err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gzipWriteNonLatin1Headerˢ = "gzip.Write: non-Latin-1 header string"u8;
+
 // writeString writes a UTF-8 string s in GZIP's format to z.w.
 // GZIP (RFC 1952) specifies that strings are NUL-terminated ISO 8859-1 (Latin-1).
 [GoRecv] internal static error /*err*/ writeString(this ref Writer z, @string s) {
@@ -117,7 +123,7 @@ public static (ж<Writer>, error) NewWriterLevel(io.Writer w, nint level) {
     var needconv = false;
     foreach (var (_, v) in s) {
         if (v == 0 || v > 0xff) {
-            return errors.New("gzip.Write: non-Latin-1 header string"u8);
+            return errors.New(gzipWriteNonLatin1Headerˢ);
         }
         if (v > 0x7f) {
             needconv = true;

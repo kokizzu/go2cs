@@ -193,15 +193,20 @@ internal static slice<@string> lockNames = new golib.SparseArray<@string>{
     [(int)lockRankTestRInternal] = "testRInternal"u8
 }.slice();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownˢ = "UNKNOWN"u8;
+private static readonly @string leafˢ = "LEAF"u8;
+private static readonly @string badRankˢ = "BAD RANK"u8;
+
 internal static @string String(this lockRank rank) {
     if (rank == 0) {
-        return "UNKNOWN"u8;
+        return unknownˢ;
     }
     if (rank == lockRankLeafRank) {
-        return "LEAF"u8;
+        return leafˢ;
     }
     if (rank < 0 || (nint)rank >= len(lockNames)) {
-        return "BAD RANK"u8;
+        return badRankˢ;
     }
     return lockNames[rank];
 }

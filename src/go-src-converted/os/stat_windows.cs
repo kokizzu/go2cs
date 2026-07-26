@@ -123,10 +123,16 @@ internal static (FileInfo, error) statHandle(@string name, syscallꓸHandle h) {
     return (new fileStatжFileInfo(fs), err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string statˢ = "Stat"u8;
+
 // statNolog implements Stat for Windows.
 internal static (FileInfo, error) statNolog(@string name) {
-    return stat("Stat"u8, name, true);
+    return stat(statˢ, name, true);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lstatˢ = "Lstat"u8;
 
 // lstatNolog implements Lstat for Windows.
 internal static (FileInfo, error) lstatNolog(@string name) {
@@ -139,7 +145,7 @@ internal static (FileInfo, error) lstatNolog(@string name) {
         // follow symlinks in the last path element.
         followSurrogates = true;
     }
-    return stat("Lstat"u8, name, followSurrogates);
+    return stat(lstatˢ, name, followSurrogates);
 }
 
 } // end os_package

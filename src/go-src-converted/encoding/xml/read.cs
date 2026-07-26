@@ -140,6 +140,10 @@ public static error Decode(this ж<Decoder> Ꮡd, any v) {
     return Ꮡd.DecodeElement(v, nil);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nonPointerPassedToˢ = "non-pointer passed to Unmarshal"u8;
+private static readonly @string nilPointerPassedToˢ = "nil pointer passed to Unmarshal"u8;
+
 // DecodeElement works like [Unmarshal] except that it takes
 // a pointer to the start XML element to decode into v.
 // It is useful when a client reads some raw XML tokens itself
@@ -147,10 +151,10 @@ public static error Decode(this ж<Decoder> Ꮡd, any v) {
 public static error DecodeElement(this ж<Decoder> Ꮡd, any v, ж<StartElement> Ꮡstart) {
     var val = reflect.ValueOf(v);
     if (val.Kind() != reflect.ΔPointer) {
-        return errors.New("non-pointer passed to Unmarshal"u8);
+        return errors.New(nonPointerPassedToˢ);
     }
     if (val.IsNil()) {
-        return errors.New("nil pointer passed to Unmarshal"u8);
+        return errors.New(nilPointerPassedToˢ);
     }
     return Ꮡd.unmarshal(val.Elem(), Ꮡstart, 0);
 }

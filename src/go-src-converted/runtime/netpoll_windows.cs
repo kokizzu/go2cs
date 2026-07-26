@@ -28,6 +28,9 @@ internal static readonly UntypedInt netpollSourceTimer = 3;
 internal static readonly UntypedInt sourceBits = 4; // 4 bits can hold 16 different sources, which is more than enough.
 internal static readonly UntypedInt sourceMasks = /* 1<<sourceBits - 1 */ 15;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeSourceValueIsTooˢ = "runtime: source value is too large"u8;
+
 // packNetpollKey creates a key from a source and a tag.
 // Bits that don't fit in the result are discarded.
 internal static uintptr packNetpollKey(uint8 source, ж<pollDesc> Ꮡpd) {
@@ -36,7 +39,7 @@ internal static uintptr packNetpollKey(uint8 source, ж<pollDesc> Ꮡpd) {
     // TODO: Consider combining the source with pd.fdseq to detect stale pollDescs.
     if (source > ((1 << (int)(sourceBits))) - 1) {
         // Also fail on 64-bit systems, even though it can hold more bits.
-        @throw("runtime: source value is too large"u8);
+        @throw(runtimeSourceValueIsTooˢ);
     }
     if (goarch.PtrSize == 4) {
         return (uintptr)(((uintptr)new @unsafe.Pointer(Ꮡpd) << (int)(sourceBits)) | (uintptr)source);
@@ -98,11 +101,14 @@ internal static uintptr iocphandle = _INVALID_HANDLE_VALUE; // completion port i
 internal static ж<atomic.Uint32> ᏑnetpollWakeSig = new(default(atomic.Uint32));
 internal static ref atomic.Uint32 netpollWakeSig => ref ᏑnetpollWakeSig.Value; // used to avoid duplicate calls of netpollBreak
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeNetpollinitFailedˢ = "runtime: netpollinit failed"u8;
+
 internal static void netpollinit() {
     iocphandle = stdcall4(_CreateIoCompletionPort, _INVALID_HANDLE_VALUE, 0, 0, _DWORD_MAX);
     if (iocphandle == 0) {
         println((@string)"runtime: CreateIoCompletionPort failed (errno="u8, getlasterror(), (@string)")"u8);
-        @throw("runtime: netpollinit failed"u8);
+        @throw(runtimeNetpollinitFailedˢ);
     }
 }
 
@@ -123,9 +129,15 @@ internal static int32 netpollclose(uintptr fd) {
     return 0;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeUnusedˢ = "runtime: unused"u8;
+
 internal static void netpollarm(ж<pollDesc> Ꮡpd, nint mode) {
-    @throw("runtime: unused"u8);
+    @throw(runtimeUnusedˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeNetpollˢ = "runtime: netpoll: PostQueuedCompletionStatus failed"u8;
 
 internal static void netpollBreak() {
     // Failing to cas indicates there is an in-flight wakeup, so we're done here.
@@ -135,9 +147,12 @@ internal static void netpollBreak() {
     var key = packNetpollKey(netpollSourceBreak, nil);
     if (stdcall4(_PostQueuedCompletionStatus, iocphandle, 0, key, 0) == 0) {
         println((@string)"runtime: netpoll: PostQueuedCompletionStatus failed (errno="u8, getlasterror(), (@string)")"u8);
-        @throw("runtime: netpoll: PostQueuedCompletionStatus failed"u8);
+        @throw(runtimeNetpollˢ);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeNetpollFailedˢ = "runtime: netpoll failed"u8;
 
 // netpoll checks for ready network connections.
 // Returns list of goroutines that become runnable.
@@ -197,7 +212,7 @@ internal static (gList, int32) netpoll(int64 delay) {
             return (new gList(nil), 0);
         }
         println((@string)"runtime: GetQueuedCompletionStatusEx failed (errno="u8, errno, (@string)")"u8);
-        @throw("runtime: netpoll failed"u8);
+        @throw(runtimeNetpollFailedˢ);
     }
     mp.Value.blocked = false;
     var delta = (int32)0;
@@ -214,7 +229,7 @@ internal static (gList, int32) netpoll(int64 delay) {
             if (mode != (rune)'r' && mode != (rune)'w') {
                 // Entry from internal/poll.
                 println((@string)"runtime: GetQueuedCompletionStatusEx returned net_op with invalid mode="u8, mode);
-                @throw("runtime: netpoll failed"u8);
+                @throw(runtimeNetpollFailedˢ);
             }
             delta += netpollready(ᏑtoRun, (~op).pd, mode);
         }
@@ -230,7 +245,7 @@ internal static (gList, int32) netpoll(int64 delay) {
         else { /* default: */
             println((@string)"runtime: GetQueuedCompletionStatusEx returned net_op with invalid key="u8, // TODO: We could avoid calling NtCancelWaitCompletionPacket for expired wait completion packets.
  (~e).key);
-            @throw("runtime: netpoll failed"u8);
+            @throw(runtimeNetpollFailedˢ);
         }
 
     }
@@ -267,13 +282,13 @@ internal static bool /*signaled*/ netpollQueueTimer(int64 delay) {
  // relative sleep (negative), 100ns units
  (~mp).waitIocpTimer, (uintptr)new @unsafe.Pointer(Ꮡdt), 0, 0, 0, 0) == 0) {
             println((@string)"runtime: SetWaitableTimer failed; errno="u8, getlasterror());
-            @throw("runtime: netpoll failed"u8);
+            @throw(runtimeNetpollFailedˢ);
         }
         var key = packNetpollKey(netpollSourceTimer, nil);
         {
             var errnoΔ2 = stdcall8(_NtAssociateWaitCompletionPacket, (~mp).waitIocpHandle, iocphandle, (~mp).waitIocpTimer, key, 0, 0, 0, (uintptr)new @unsafe.Pointer(Ꮡsignaled)); if (errnoΔ2 != 0) {
                 println((@string)"runtime: NtAssociateWaitCompletionPacket failed; errno="u8, errnoΔ2);
-                @throw("runtime: netpoll failed"u8);
+                @throw(runtimeNetpollFailedˢ);
             }
         }
     }
@@ -286,7 +301,7 @@ internal static bool /*signaled*/ netpollQueueTimer(int64 delay) {
  // this call fails to cancel the association to avoid a race condition.
  // This is a rare case, so we can just avoid using the high resolution timer this time.
  errno);
-        @throw("runtime: netpoll failed"u8);
+        @throw(runtimeNetpollFailedˢ);
     }
 
     return signaled;

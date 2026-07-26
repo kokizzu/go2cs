@@ -299,10 +299,19 @@ internal static FormatError errMissingFF00 = ((FormatError)(@string)"missing 0xf
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string multipleSofMarkersˢ = "multiple SOF markers"u8;
+private static readonly @string numberOfComponentsˢ = "number of components"u8;
+private static readonly @string precisionˢ = "precision"u8;
+private static readonly @string sofHasWrongLengthˢ = "SOF has wrong length"u8;
+private static readonly @string repeatedComponentˢ = "repeated component identifier"u8;
+private static readonly @string badTqValueˢ = "bad Tq value"u8;
+private static readonly @string lumaChromaSubsamplingˢ = "luma/chroma subsampling ratio"u8;
+
 // Specified in section B.2.2.
 [GoRecv] internal static error processSOF(this ref decoder d, nint n) {
     if (d.nComp != 0) {
-        return ((FormatError)(@string)"multiple SOF markers"u8);
+        return ((FormatError)(@string)multipleSofMarkersˢ);
     }
     var exprᴛ1 = n;
     if (exprᴛ1 == 6 + 3 * 1) {
@@ -315,7 +324,7 @@ internal static FormatError errMissingFF00 = ((FormatError)(@string)"missing 0xf
         d.nComp = 4;
     }
     else { /* default: */
-        return ((UnsupportedError)(@string)"number of components"u8);
+        return ((UnsupportedError)(@string)numberOfComponentsˢ);
     }
 
     // Grayscale image.
@@ -328,12 +337,12 @@ internal static FormatError errMissingFF00 = ((FormatError)(@string)"missing 0xf
     }
     // We only support 8-bit precision.
     if (d.tmp[0] != 8) {
-        return ((UnsupportedError)(@string)"precision"u8);
+        return ((UnsupportedError)(@string)precisionˢ);
     }
     d.height = ((nint)d.tmp[1] << (int)(8)) + (nint)d.tmp[2];
     d.width = ((nint)d.tmp[3] << (int)(8)) + (nint)d.tmp[4];
     if ((nint)d.tmp[5] != d.nComp) {
-        return ((FormatError)(@string)"SOF has wrong length"u8);
+        return ((FormatError)(@string)sofHasWrongLengthˢ);
     }
     for (nint i = 0; i < d.nComp; i++) {
         d.comp[i].c = d.tmp[6 + 3 * i];
@@ -341,18 +350,18 @@ internal static FormatError errMissingFF00 = ((FormatError)(@string)"missing 0xf
         // the values of C_1 through C_(i-1)".
         for (nint j = 0; j < i; j++) {
             if (d.comp[i].c == d.comp[j].c) {
-                return ((FormatError)(@string)"repeated component identifier"u8);
+                return ((FormatError)(@string)repeatedComponentˢ);
             }
         }
         d.comp[i].tq = d.tmp[8 + 3 * i];
         if (d.comp[i].tq > maxTq) {
-            return ((FormatError)(@string)"bad Tq value"u8);
+            return ((FormatError)(@string)badTqValueˢ);
         }
         var hv = d.tmp[7 + 3 * i];
         nint h = (nint)((hv >> (int)(4)));
         nint v = (nint)((byte)(hv & 0x0f));
         if (h < 1 || 4 < h || v < 1 || 4 < v) {
-            return ((FormatError)(@string)"luma/chroma subsampling ratio"u8);
+            return ((FormatError)(@string)lumaChromaSubsamplingˢ);
         }
         if (h == 3 || v == 3) {
             return errUnsupportedSubsamplingRatio;
@@ -448,6 +457,10 @@ internal static FormatError errMissingFF00 = ((FormatError)(@string)"missing 0xf
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badPqValueˢ = "bad Pq value"u8;
+private static readonly @string dqtHasWrongLengthˢ = "DQT has wrong length"u8;
+
 // Specified in section B.2.4.1.
 [GoRecv] internal static error processDQT(this ref decoder d, nint n) {
 loop:
@@ -459,11 +472,11 @@ loop:
         }
         var tq = (byte)(x & 0x0f);
         if (tq > maxTq) {
-            return ((FormatError)(@string)"bad Tq value"u8);
+            return ((FormatError)(@string)badTqValueˢ);
         }
         switch ((x >> (int)(4))) {
         default: {
-            return ((FormatError)(@string)"bad Pq value"u8);
+            return ((FormatError)(@string)badPqValueˢ);
         }
         case 0: {
             if (n < blockSize) {
@@ -500,15 +513,18 @@ continue_loop:;
     }
 break_loop:;
     if (n != 0) {
-        return ((FormatError)(@string)"DQT has wrong length"u8);
+        return ((FormatError)(@string)dqtHasWrongLengthˢ);
     }
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string driHasWrongLengthˢ = "DRI has wrong length"u8;
+
 // Specified in section B.2.4.4.
 [GoRecv] internal static error processDRI(this ref decoder d, nint n) {
     if (n != 2) {
-        return ((FormatError)(@string)"DRI has wrong length"u8);
+        return ((FormatError)(@string)driHasWrongLengthˢ);
     }
     {
         var err = d.readFull(d.tmp[..2]); if (err != default!) {
@@ -556,6 +572,12 @@ break_loop:;
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingSoiMarkerˢ = "missing SOI marker"u8;
+private static readonly @string shortSegmentLengthˢ = "short segment length"u8;
+private static readonly @string unknownMarkerˢ = "unknown marker"u8;
+private static readonly @string missingSosMarkerˢ = "missing SOS marker"u8;
+
 // decode reads a JPEG image from r and returns it as an image.Image.
 [GoRecv] internal static (image.Image, error) decode(this ref decoder d, io.Reader r, bool configOnly) {
     d.r = r;
@@ -566,7 +588,7 @@ break_loop:;
         }
     }
     if (d.tmp[0] != 0xff || d.tmp[1] != soiMarker) {
-        return (default!, ((FormatError)(@string)"missing SOI marker"u8));
+        return (default!, ((FormatError)(@string)missingSoiMarkerˢ));
     }
     // Process the remaining segments until the End Of Image marker.
     while (ᐧ) {
@@ -636,7 +658,7 @@ break_loop:;
         }
         nint n = ((nint)d.tmp[0] << (int)(8)) + (nint)d.tmp[1] - 2;
         if (n < 0) {
-            return (default!, ((FormatError)(@string)"short segment length"u8));
+            return (default!, ((FormatError)(@string)shortSegmentLengthˢ));
         }
         var exprᴛ1 = marker;
         if (exprᴛ1 == sof0Marker || exprᴛ1 == sof1Marker || exprᴛ1 == sof2Marker) {
@@ -686,9 +708,9 @@ break_loop:;
             } else 
             if (marker < 0xc0){
                 // See Table B.1 "Marker code assignments".
-                err = ((FormatError)(@string)"unknown marker"u8);
+                err = ((FormatError)(@string)unknownMarkerˢ);
             } else {
-                err = ((UnsupportedError)(@string)"unknown marker"u8);
+                err = ((UnsupportedError)(@string)unknownMarkerˢ);
             }
         }
 
@@ -715,8 +737,11 @@ break_loop:;
         }
         return (new image.YCbCrжImage(d.img3), default!);
     }
-    return (default!, ((FormatError)(@string)"missing SOS marker"u8));
+    return (default!, ((FormatError)(@string)missingSosMarkerˢ));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownColorModel4ˢ = "unknown color model: 4-component JPEG doesn't have Adobe APP14 metadata"u8;
 
 [GoType("dyn")] partial struct applyBlack_translations {
     internal slice<byte> src;
@@ -732,7 +757,7 @@ break_loop:;
 // inversion is a no-op, so inversions might be implicit in the code below.
 [GoRecv] internal static (image.Image, error) applyBlack(this ref decoder d) {
     if (!d.adobeTransformValid) {
-        return (default!, ((UnsupportedError)(@string)"unknown color model: 4-component JPEG doesn't have Adobe APP14 metadata"u8));
+        return (default!, ((UnsupportedError)(@string)unknownColorModel4ˢ));
     }
     // If the 4-component JPEG image isn't explicitly marked as "Unknown (RGB
     // or CMYK)" as per
@@ -825,6 +850,9 @@ public static (image.Image, error) Decode(io.Reader r) {
     return d.decode(r, false);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingSofMarkerˢ = "missing SOF marker"u8;
+
 // DecodeConfig returns the color model and dimensions of a JPEG image without
 // decoding the entire image.
 public static (image.Config, error) DecodeConfig(io.Reader r) {
@@ -861,7 +889,7 @@ public static (image.Config, error) DecodeConfig(io.Reader r) {
         ), default!);
     }}
 
-    return (new image.Config(nil), ((FormatError)(@string)"missing SOF marker"u8));
+    return (new image.Config(nil), ((FormatError)(@string)missingSofMarkerˢ));
 }
 
 [GoInit] internal static void init() {

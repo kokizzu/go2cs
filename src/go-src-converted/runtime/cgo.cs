@@ -60,6 +60,9 @@ internal static Action set_crosscall2;
 // The extra M must be created before any C/C++ code calls cgocallback.
 internal static bool cgoHasExtraM;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cgoUseShouldNotBeCalledˢ = "cgoUse should not be called"u8;
+
 // cgoUse is called by cgo-generated code (using go:linkname to get at
 // an unexported name). The calls serve two purposes:
 // 1) they are opaque to escape analysis, so the argument is considered to
@@ -68,7 +71,7 @@ internal static bool cgoHasExtraM;
 // the end of the (presumed) use of the argument by C.
 // cgoUse should not actually be called (see cgoAlwaysFalse).
 internal static void cgoUse(any _) {
-    @throw("cgoUse should not be called"u8);
+    @throw(cgoUseShouldNotBeCalledˢ);
 }
 
 // cgoAlwaysFalse is a boolean value that is always false.

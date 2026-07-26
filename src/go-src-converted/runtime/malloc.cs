@@ -177,35 +177,46 @@ internal static uintptr physHugePageSize;
 
 internal static nuint physHugePageShift;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badTinySizeClassˢ = "bad TinySizeClass"u8;
+private static readonly @string heapArenaBitmapWordsNotAˢ = "heapArenaBitmapWords not a power of 2"u8;
+private static readonly @string failedToGetSystemPageˢ = "failed to get system page size"u8;
+private static readonly @string badSystemPageSizeˢ = "bad system page size"u8;
+private static readonly @string badSystemHugePageSizeˢ = "bad system huge page size"u8;
+private static readonly @string badPagesPerSpanRootˢ = "bad pagesPerSpanRoot"u8;
+private static readonly @string minSizeOfMallocHeaderIsˢ = "min size of malloc header is not a size class boundary"u8;
+private static readonly @string maxPointerScanBitmapSizeˢ = "max pointer/scan bitmap size for headerless objects is too large"u8;
+private static readonly @string taggedPointerbitsTooˢ = "taggedPointerbits too small"u8;
+
 internal static void mallocinit() {
     if (class_to_size[_TinySizeClass] != _TinySize) {
-        @throw("bad TinySizeClass"u8);
+        @throw(badTinySizeClassˢ);
     }
     if ((UntypedInt)(heapArenaBitmapWords & (heapArenaBitmapWords - 1)) != 0) {
         // heapBits expects modular arithmetic on bitmap
         // addresses to work.
-        @throw("heapArenaBitmapWords not a power of 2"u8);
+        @throw(heapArenaBitmapWordsNotAˢ);
     }
     // Check physPageSize.
     if (physPageSize == 0) {
         // The OS init code failed to fetch the physical page size.
-        @throw("failed to get system page size"u8);
+        @throw(failedToGetSystemPageˢ);
     }
     if (physPageSize > maxPhysPageSize) {
         print((@string)"system page size ("u8, physPageSize, (@string)") is larger than maximum page size ("u8, (nint)(maxPhysPageSize), (@string)")\n"u8);
-        @throw("bad system page size"u8);
+        @throw(badSystemPageSizeˢ);
     }
     if (physPageSize < minPhysPageSize) {
         print((@string)"system page size ("u8, physPageSize, (@string)") is smaller than minimum page size ("u8, (nint)(minPhysPageSize), (@string)")\n"u8);
-        @throw("bad system page size"u8);
+        @throw(badSystemPageSizeˢ);
     }
     if ((uintptr)(physPageSize & (physPageSize - 1)) != 0) {
         print((@string)"system page size ("u8, physPageSize, (@string)") must be a power of 2\n"u8);
-        @throw("bad system page size"u8);
+        @throw(badSystemPageSizeˢ);
     }
     if ((uintptr)(physHugePageSize & (physHugePageSize - 1)) != 0) {
         print((@string)"system huge page size ("u8, physHugePageSize, (@string)") must be a power of 2\n"u8);
-        @throw("bad system huge page size"u8);
+        @throw(badSystemHugePageSizeˢ);
     }
     if (physHugePageSize > maxPhysHugePageSize) {
         // physHugePageSize is greater than the maximum supported huge page size.
@@ -223,7 +234,7 @@ internal static void mallocinit() {
     }
     if (pagesPerArena % pagesPerSpanRoot != 0) {
         print((@string)"pagesPerArena ("u8, (nint)(pagesPerArena), (@string)") is not divisible by pagesPerSpanRoot ("u8, (nint)(pagesPerSpanRoot), (@string)")\n"u8);
-        @throw("bad pagesPerSpanRoot"u8);
+        @throw(badPagesPerSpanRootˢ);
     }
     if (pagesPerArena % pagesPerReclaimerChunk != 0) {
         print((@string)"pagesPerArena ("u8, (nint)(pagesPerArena), (@string)") is not divisible by pagesPerReclaimerChunk ("u8, (nint)(pagesPerReclaimerChunk), (@string)")\n"u8);
@@ -240,15 +251,15 @@ internal static void mallocinit() {
         }
     }
     if (!minSizeForMallocHeaderIsSizeClass) {
-        @throw("min size of malloc header is not a size class boundary"u8);
+        @throw(minSizeOfMallocHeaderIsˢ);
     }
     // Check that the pointer bitmap for all small sizes without a malloc header
     // fits in a word.
     if (minSizeForMallocHeader / goarch.PtrSize > 8 * goarch.PtrSize) {
-        @throw("max pointer/scan bitmap size for headerless objects is too large"u8);
+        @throw(maxPointerScanBitmapSizeˢ);
     }
     if (minTagBits > taggedPointerBits) {
-        @throw("taggedPointerbits too small"u8);
+        @throw(taggedPointerbitsTooˢ);
     }
     // Initialize the heap.
     Ꮡmheap_.init();
@@ -430,6 +441,18 @@ internal static void mallocinit() {
     ᏑgcController.of(gcControllerState.ᏑmemoryLimit).Store(maxInt64);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tooManyAddressSpaceˢ = "too many address space collisions for -race mode"u8;
+private static readonly @string regionExceedsUintptrˢ = "region exceeds uintptr range"u8;
+private static readonly @string baseOutsideUsableAddressˢ = "base outside usable address space"u8;
+private static readonly @string endOutsideUsableAddressˢ = "end outside usable address space"u8;
+private static readonly @string memoryReservationExceedsˢ = "memory reservation exceeds address space limit"u8;
+private static readonly @string misroundedAllocationInˢ = "misrounded allocation in sysAlloc"u8;
+private static readonly @string outOfMemoryAllocatingˢ = "out of memory allocating heap arena map"u8;
+private static readonly @string arenaAlreadyInitializedˢ = "arena already initialized"u8;
+private static readonly @string outOfMemoryAllocatingˢ2 = "out of memory allocating heap arena metadata"u8;
+private static readonly @string outOfMemoryAllocatingˢ3 = "out of memory allocating allArenas"u8;
+
 // sysAlloc allocates heap arena space for at least n bytes. The
 // returned pointer is always heapArenaBytes-aligned and backed by
 // h.arenas metadata. The returned size is always a multiple of
@@ -510,7 +533,7 @@ internal static (@unsafe.Pointer v, uintptr size) sysAlloc(this ж<mheap> Ꮡh, 
             // [0x00c000000000, 0x00e000000000), but we
             // just ran out of hints in this region. Give
             // a nice failure.
-            @throw("too many address space collisions for -race mode"u8);
+            @throw(tooManyAddressSpaceˢ);
         }
         // All of the hints failed, so we'll take any
         // (sufficiently aligned) address the kernel will give
@@ -535,23 +558,23 @@ internal static (@unsafe.Pointer v, uintptr size) sysAlloc(this ж<mheap> Ꮡh, 
         @string bad = default!;
         var Δp = (uintptr)v;
         if (Δp + size < Δp){
-            bad = "region exceeds uintptr range"u8;
+            bad = regionExceedsUintptrˢ;
         } else 
         if (arenaIndex(Δp) >= (arenaIdx)((nuint)1 << (int)(arenaBits))){
-            bad = "base outside usable address space"u8;
+            bad = baseOutsideUsableAddressˢ;
         } else 
         if (arenaIndex(Δp + size - 1) >= (arenaIdx)((nuint)1 << (int)(arenaBits))) {
-            bad = "end outside usable address space"u8;
+            bad = endOutsideUsableAddressˢ;
         }
         if (bad != ""u8) {
             // This should be impossible on most architectures,
             // but it would be really confusing to debug.
             print((@string)"runtime: memory allocated by OS ["u8, ((Δhex)(uint64)Δp), (@string)", "u8, ((Δhex)(uint64)(Δp + size)), (@string)") not in usable address space: "u8, bad, (@string)"\n"u8);
-            @throw("memory reservation exceeds address space limit"u8);
+            @throw(memoryReservationExceedsˢ);
         }
     }
     if ((uintptr)((uintptr)v & (uintptr)(heapArenaBytes - 1)) != 0) {
-        @throw("misrounded allocation in sysAlloc"u8);
+        @throw(misroundedAllocationInˢ);
     }
 mapped:
     for (arenaIdx ri = arenaIndex((uintptr)v); ri <= arenaIndex((uintptr)v + size - 1); ri++) {
@@ -568,7 +591,7 @@ mapped:
             // it is not.
             l2 = (ж<array<ж<heapArena>>>)(uintptr)(sysAllocOS(@unsafe.Sizeof(l2.Value)));
             if (l2 == nil) {
-                @throw("out of memory allocating heap arena map"u8);
+                @throw(outOfMemoryAllocatingˢ);
             }
             if (h.arenasHugePages){
                 sysHugePage(new @unsafe.Pointer(l2), @unsafe.Sizeof(l2.Value));
@@ -578,14 +601,14 @@ mapped:
             atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (Ꮡ(h.arenas[ri.l1()])).Value), new @unsafe.Pointer(l2));
         }
         if (l2.Value[ri.l2()] != nil) {
-            @throw("arena already initialized"u8);
+            @throw(arenaAlreadyInitializedˢ);
         }
         ж<heapArena> r = default!;
         r = (ж<heapArena>)(uintptr)(h.heapArenaAlloc.alloc(@unsafe.Sizeof(r.Value), goarch.PtrSize, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
         if (r == nil) {
             r = (ж<heapArena>)(uintptr)(persistentalloc(@unsafe.Sizeof(r.Value), goarch.PtrSize, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
             if (r == nil) {
-                @throw("out of memory allocating heap arena metadata"u8);
+                @throw(outOfMemoryAllocatingˢ2);
             }
         }
         // Register the arena in allArenas if requested.
@@ -597,7 +620,7 @@ mapped:
                 }
                 var newArray = (ж<notInHeap>)(uintptr)(persistentalloc(sizeΔ1, goarch.PtrSize, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
                 if (newArray == nil) {
-                    @throw("out of memory allocating allArenas"u8);
+                    @throw(outOfMemoryAllocatingˢ3);
                 }
                 var oldSlice = h.allArenas;
                 (Ꮡh.of(mheap.ᏑallArenas).Reinterpret<slice<arenaIdx>, notInHeapSlice>()).Value = new notInHeapSlice(newArray, len(h.allArenas), (nint)(sizeΔ1 / (uintptr)goarch.PtrSize));
@@ -624,6 +647,9 @@ break_mapped:;
     }
     return (v, size);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string failedToAllocateAlignedˢ = "failed to allocate aligned heap memory; too many retries"u8;
 
 // sysReserveAligned is like sysReserve, but the returned pointer is
 // aligned to align bytes. It may reserve either n or n+align bytes,
@@ -655,7 +681,7 @@ retry:
             sysFreeOS(p2, size);
             {
                 retries++; if (retries == 100) {
-                    @throw("failed to allocate aligned heap memory; too many retries"u8);
+                    @throw(failedToAllocateAlignedˢ);
                 }
             }
             goto retry;
@@ -744,6 +770,11 @@ internal static gclinkptr nextFreeFast(ж<mspan> Ꮡs) {
     return 0;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sAllocCountSNelemsˢ = "s.allocCount != s.nelems && freeIndex == s.nelems"u8;
+private static readonly @string freeIndexIsNotValidˢ = "freeIndex is not valid"u8;
+private static readonly @string sAllocCountSNelemsˢ2 = "s.allocCount > s.nelems"u8;
+
 // nextFree returns the next free object from the cached span if one is available.
 // Otherwise it refills the cache with a span with an available object and
 // returns that object along with a flag indicating that this was a heavy
@@ -765,7 +796,7 @@ internal static gclinkptr nextFreeFast(ж<mspan> Ꮡs) {
         // The span is full.
         if ((~s).allocCount != (~s).nelems) {
             println((@string)"runtime: s.allocCount="u8, (~s).allocCount, (@string)"s.nelems="u8, (~s).nelems);
-            @throw("s.allocCount != s.nelems && freeIndex == s.nelems"u8);
+            @throw(sAllocCountSNelemsˢ);
         }
         c.refill(spc);
         shouldhelpgc = true;
@@ -773,16 +804,19 @@ internal static gclinkptr nextFreeFast(ж<mspan> Ꮡs) {
         freeIndex = s.nextFreeIndex();
     }
     if (freeIndex >= (~s).nelems) {
-        @throw("freeIndex is not valid"u8);
+        @throw(freeIndexIsNotValidˢ);
     }
     v = ((gclinkptr)((uintptr)freeIndex * (~s).elemsize + s.@base()));
     s.Value.allocCount++;
     if ((~s).allocCount > (~s).nelems) {
         println((@string)"s.allocCount="u8, (~s).allocCount, (@string)"s.nelems="u8, (~s).nelems);
-        @throw("s.allocCount > s.nelems"u8);
+        @throw(sAllocCountSNelemsˢ2);
     }
     return (v, s, shouldhelpgc);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mallocgcCalledWithˢ = "mallocgc called with gcphase == _GCmarktermination"u8;
 
 // Allocate an object of size bytes.
 // Small objects are allocated from the per-P cache's free lists.
@@ -806,7 +840,7 @@ internal static @unsafe.Pointer mallocgc(uintptr size, ж<_type> Ꮡtyp, bool ne
     ref var typ = ref Ꮡtyp.DerefOrNil();
 
     if (gcphase == _GCmarktermination) {
-        @throw("mallocgc called with gcphase == _GCmarktermination"u8);
+        @throw(mallocgcCalledWithˢ);
     }
     if (size == 0) {
         return @unsafe.Pointer.FromRef(ref (Ꮡzerobase).Value);
@@ -858,17 +892,17 @@ internal static @unsafe.Pointer mallocgc(uintptr size, ж<_type> Ꮡtyp, bool ne
     // Set mp.mallocing to keep from being preempted by GC.
     var mp = acquirem();
     if ((~mp).mallocing != 0) {
-        @throw("malloc deadlock"u8);
+        @throw(mallocDeadlockˢ);
     }
     if ((~mp).gsignal == getg()) {
-        @throw("malloc during signal"u8);
+        @throw(mallocDuringSignalˢ);
     }
     mp.Value.mallocing = 1;
     var shouldhelpgc = false;
     var dataSize = userSize;
     var c = getMCache(mp);
     if (c == nil) {
-        @throw("mallocgc called without a P or outside bootstrapping"u8);
+        @throw(mallocgcCalledWithoutAPˢ);
     }
     ж<mspan> span = default!;
     ж<ж<_type>> header = default!;
@@ -1244,7 +1278,7 @@ internal static @unsafe.Pointer newarray(ж<_type> Ꮡtyp, nint n) {
     }
     var (mem, overflow) = math.MulUintptr(typ.Size_, (uintptr)n);
     if (overflow || mem > maxAlloc || n < 0) {
-        throw panic(((plainError)(@string)"runtime: allocation size out of range"u8));
+        throw panic(((plainError)(@string)runtimeAllocationSizeOutˢ));
     }
     return (uintptr)mallocgc(mem, Ꮡtyp, true);
 }
@@ -1268,10 +1302,13 @@ internal static @unsafe.Pointer reflect_unsafe_NewArray(ж<_type> Ꮡtyp, nint n
     return (uintptr)newarray(Ꮡtyp, n);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string profileallocCalledˢ = "profilealloc called without a P or outside bootstrapping"u8;
+
 internal static void profilealloc(ж<m> Ꮡmp, @unsafe.Pointer x, uintptr size) {
     var c = getMCache(Ꮡmp);
     if (c == nil) {
-        @throw("profilealloc called without a P or outside bootstrapping"u8);
+        @throw(profileallocCalledˢ);
     }
     c.Value.nextSample = nextSample();
     mProf_Malloc(Ꮡmp, x, size);
@@ -1390,6 +1427,12 @@ internal static @unsafe.Pointer persistentalloc(uintptr size, uintptr align, ж<
     return new @unsafe.Pointer(Δp);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string persistentallocSize0ˢ = "persistentalloc: size == 0"u8;
+private static readonly @string persistentallocAlignIsˢ = "persistentalloc: align is not a power of 2"u8;
+private static readonly @string persistentallocAlignIsˢ2 = "persistentalloc: align is too large"u8;
+private static readonly @string runtimeCannotAllocateˢ = "runtime: cannot allocate memory"u8;
+
 // Must run on system stack because stack growth can (re)invoke it.
 // See issue 9174.
 //
@@ -1397,14 +1440,14 @@ internal static @unsafe.Pointer persistentalloc(uintptr size, uintptr align, ж<
 internal static ж<notInHeap> persistentalloc1(uintptr size, uintptr align, ж<sysMemStat> ᏑsysStat) {
     uintptr maxBlock = /* 64 << 10 */ 65536; // VM reservation granularity is 64K on windows
     if (size == 0) {
-        @throw("persistentalloc: size == 0"u8);
+        @throw(persistentallocSize0ˢ);
     }
     if (align != 0){
         if ((uintptr)(align & (align - 1)) != 0) {
-            @throw("persistentalloc: align is not a power of 2"u8);
+            @throw(persistentallocAlignIsˢ);
         }
         if (align > _PageSize) {
-            @throw("persistentalloc: align is too large"u8);
+            @throw(persistentallocAlignIsˢ2);
         }
     } else {
         align = 8;
@@ -1427,7 +1470,7 @@ internal static ж<notInHeap> persistentalloc1(uintptr size, uintptr align, ж<s
             if (persistent == ᏑglobalAlloc.of(globalAllocᴛ1.ᏑpersistentAlloc)) {
                 unlock(ᏑglobalAlloc.of(globalAllocᴛ1.Ꮡmutex));
             }
-            @throw("runtime: cannot allocate memory"u8);
+            @throw(runtimeCannotAllocateˢ);
         }
         // Add the new chunk to the persistentChunks list.
         while (ᐧ) {

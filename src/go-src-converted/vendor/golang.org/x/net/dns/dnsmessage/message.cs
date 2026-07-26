@@ -233,11 +233,15 @@ internal static @string printUint32(uint32 i) {
     return ((@string)buf);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string trueˢ = "true"u8;
+private static readonly @string falseˢ = "false"u8;
+
 internal static @string printBool(bool b) {
     if (b) {
-        return "true"u8;
+        return trueˢ;
     }
-    return "false"u8;
+    return falseˢ;
 }
 
 public static error ErrNotStarted = errors.New("parsing/packing of this type isn't available yet"u8);
@@ -2296,6 +2300,11 @@ break_Loop:;
     return "dnsmessage.Question{"u8 + "Name: "u8 + q.Name.GoString() + ", "u8 + "Type: "u8 + q.Type.GoString() + ", "u8 + "Class: "u8 + q.Class.GoString() + "}"u8;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cnameˢ = "CNAME"u8;
+private static readonly @string aaaaˢ = "AAAA"u8;
+private static readonly @string unknownˢ = "Unknown"u8;
+
 internal static (ResourceBody, nint, error) unpackResourceBody(slice<byte> msg, nint off, ResourceHeader hdr) {
     ResourceBody r = default!;
     error err = default!;
@@ -2317,7 +2326,7 @@ internal static (ResourceBody, nint, error) unpackResourceBody(slice<byte> msg, 
         ref var rb = ref heap(new ΔCNAMEResource(), out var Ꮡrb);
         (rb, err) = unpackCNAMEResource(msg, off);
         r = new ΔCNAMEResourceжResourceBody(Ꮡrb);
-        name = "CNAME"u8;
+        name = cnameˢ;
     }
     else if (exprᴛ1 == TypeSOA) {
         ref var rb = ref heap(new ΔSOAResource(), out var Ꮡrb);
@@ -2347,7 +2356,7 @@ internal static (ResourceBody, nint, error) unpackResourceBody(slice<byte> msg, 
         ref var rb = ref heap(new ΔAAAAResource(), out var Ꮡrb);
         (rb, err) = unpackAAAAResource(msg, off);
         r = new ΔAAAAResourceжResourceBody(Ꮡrb);
-        name = "AAAA"u8;
+        name = aaaaˢ;
     }
     else if (exprᴛ1 == TypeSRV) {
         ref var rb = ref heap(new ΔSRVResource(), out var Ꮡrb);
@@ -2365,7 +2374,7 @@ internal static (ResourceBody, nint, error) unpackResourceBody(slice<byte> msg, 
         ref var rb = ref heap(new ΔUnknownResource(), out var Ꮡrb);
         (rb, err) = unpackUnknownResource(hdr.Type, msg, off, hdr.Length);
         r = new ΔUnknownResourceжResourceBody(Ꮡrb);
-        name = "Unknown"u8;
+        name = unknownˢ;
     }
 
     if (err != default!) {
@@ -2599,9 +2608,12 @@ internal static (ΔSOAResource, error) unpackSOAResource(slice<byte> msg, nint o
     return (msg, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dnsmessageTXTResourceTxtˢ = "dnsmessage.TXTResource{TXT: []string{"u8;
+
 // GoString implements fmt.GoStringer.GoString.
 [GoRecv] public static @string GoString(this ref ΔTXTResource r) {
-    @string s = "dnsmessage.TXTResource{TXT: []string{"u8;
+    @string s = dnsmessageTXTResourceTxtˢ;
     if (len(r.TXT) == 0) {
         return s + "}}"u8;
     }
@@ -2778,9 +2790,12 @@ internal static (ΔAAAAResource, error) unpackAAAAResource(slice<byte> msg, nint
     return (msg, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dnsmessageOPTResourceˢ = "dnsmessage.OPTResource{Options: []dnsmessage.Option{"u8;
+
 // GoString implements fmt.GoStringer.GoString.
 [GoRecv] public static @string GoString(this ref ΔOPTResource r) {
-    @string s = "dnsmessage.OPTResource{Options: []dnsmessage.Option{"u8;
+    @string s = dnsmessageOPTResourceˢ;
     if (len(r.Options) == 0) {
         return s + "}}"u8;
     }

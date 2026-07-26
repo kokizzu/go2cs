@@ -37,6 +37,9 @@ public static (ж<Form>, error) ReadForm(this ж<Reader> Ꮡr, int64 maxMemory) 
 internal static ж<godebug.Setting> multipartfiles = godebug.New("#multipartfiles"u8);   // TODO: document and remove #
 internal static ж<godebug.Setting> multipartmaxparts = godebug.New("multipartmaxparts"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string multipartˢ = "multipart-"u8;
+
 // os.File.ReadFrom will allocate its own copy buffer if we let io.Copy use it.
 [GoLocalName("writerOnly")] [GoType("dyn")] partial struct readForm_writerOnly {
     public io_package.Writer Writer;
@@ -180,7 +183,7 @@ internal static (ж<Form>, error err) readForm(this ж<Reader> Ꮡr, int64 maxMe
         }
         if (n > maxFileMemoryBytes){
             if (@file == nil) {
-                (@file, errΔ2) = os.CreateTemp(r.tempDir, "multipart-"u8);
+                (@file, errΔ2) = os.CreateTemp(r.tempDir, multipartˢ);
                 if (errΔ2 != default!) {
                     return (default!, errΔ2);
                 }

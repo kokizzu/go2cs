@@ -72,6 +72,10 @@ partial class runtime_package {
     internal bool stopped;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string suspendGFromNonˢ = "suspendG from non-preemptible goroutine"u8;
+private static readonly @string invalidGStatusˢ = "invalid g status"u8;
+
 // suspendG suspends goroutine gp at a safe-point and returns the
 // state of the suspended goroutine. The caller gets read access to
 // the goroutine until it calls resumeG.
@@ -109,7 +113,7 @@ internal static suspendGState suspendG(ж<g> Ꮡgp) {
             // Since we're on the system stack of this M, the user
             // G is stuck at an unsafe point. If another goroutine
             // were to try to preempt m.curg, it could deadlock.
-            @throw("suspendG from non-preemptible goroutine"u8);
+            @throw(suspendGFromNonˢ);
         }
     }
     // See https://golang.org/cl/21503 for justification of the yield delay.
@@ -232,7 +236,7 @@ g: Ꮡgp, stopped: stopped);
                         break;
                     }
                     dumpgstatus(Ꮡgp);
-                    @throw("invalid g status"u8);
+                    @throw(invalidGStatusˢ);
                 } while (false);
             }
         }
@@ -256,6 +260,9 @@ g: Ꮡgp, stopped: stopped);
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedGStatusˢ = "unexpected g status"u8;
+
 // resumeG undoes the effects of suspendG, allowing the suspended
 // goroutine to continue from its current safe-point.
 internal static void resumeG(suspendGState state) {
@@ -272,7 +279,7 @@ internal static void resumeG(suspendGState state) {
         }
         else { /* default: */
             dumpgstatus(gp);
-            @throw("unexpected g status"u8);
+            @throw(unexpectedGStatusˢ);
         }
     }
 
@@ -351,6 +358,11 @@ internal static bool wantAsyncPreempt(ж<g> Ꮡgp) {
     return (gp.preempt || (~gp.m).p != 0 && (~(~gp.m).p.ptr()).preempt) && (uint32)(readgstatus(Ꮡgp) & ~(uint32)_Gscan) == _Grunning;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeInternalˢ = "runtime/internal/"u8;
+private static readonly @string reflectˢ = "reflect."u8;
+private static readonly @string badRestartPcˢ = "bad restart PC"u8;
+
 // isAsyncSafePoint reports whether gp at instruction PC is an
 // asynchronous safe point. This indicates that:
 //
@@ -424,7 +436,7 @@ internal static (bool, uintptr) isAsyncSafePoint(ж<g> Ꮡgp, uintptr pc, uintpt
     // Check the inner-most name
     var (u, uf) = newInlineUnwinder(f, pc);
     @string name = u.srcFunc(uf).name();
-    if (stringslite.HasPrefix(name, "runtime."u8) || stringslite.HasPrefix(name, "runtime/internal/"u8) || stringslite.HasPrefix(name, "reflect."u8)) {
+    if (stringslite.HasPrefix(name, runtimeˢ) || stringslite.HasPrefix(name, runtimeInternalˢ) || stringslite.HasPrefix(name, reflectˢ)) {
         // For now we never async preempt the runtime or
         // anything closely tied to the runtime. Known issues
         // include: various points in the scheduler ("don't
@@ -442,7 +454,7 @@ internal static (bool, uintptr) isAsyncSafePoint(ж<g> Ꮡgp, uintptr pc, uintpt
         if (startpc == 0 || startpc > pc || pc - startpc > 20) {
             // Restartable instruction sequence. Back off PC to
             // the start PC.
-            @throw("bad restart PC"u8);
+            @throw(badRestartPcˢ);
         }
         return (true, startpc);
     }

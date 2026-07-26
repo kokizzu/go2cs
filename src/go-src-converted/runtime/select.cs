@@ -107,6 +107,11 @@ internal static void block() {
     gopark(default!, nil, waitReasonSelectNoCases, traceBlockForever, 1);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string selectBrokenSortˢ = "select: broken sort"u8;
+private static readonly @string gpWaitingNilˢ = "gp.waiting != nil"u8;
+private static readonly @string selectgoBadWakeupˢ = "selectgo: bad wakeup"u8;
+
 // forever
 
 // selectgo implements the select statement.
@@ -224,7 +229,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
         for (nint i = 0; i + 1 < len(lockorder); i++) {
             if (scases[lockorder[i]].c.sortkey() > scases[lockorder[i + 1]].c.sortkey()) {
                 print((@string)"i="u8, i, (@string)" x="u8, lockorder[i], (@string)" y="u8, lockorder[i + 1], (@string)"\n"u8);
-                @throw("select: broken sort"u8);
+                @throw(selectBrokenSortˢ);
             }
         }
     }
@@ -283,7 +288,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     // pass 2 - enqueue on all chans
     gp = getg();
     if ((~gp).waiting != nil) {
-        @throw("gp.waiting != nil"u8);
+        @throw(gpWaitingNilˢ);
     }
     nextp = gp.of(g.Ꮡwaiting);
     foreach (var (_, casei) in lockorder) {
@@ -368,7 +373,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
         sglist = sgnext;
     }
     if (cas == nil) {
-        @throw("selectgo: bad wakeup"u8);
+        @throw(selectgoBadWakeupˢ);
     }
     c = cas.Value.c;
     if (debugSelect) {
@@ -505,7 +510,7 @@ retc:
 sclose:
     selunlock(scases, // send on closed channel
  lockorder);
-    throw panic(((plainError)(@string)"send on closed channel"u8));
+    throw panic(((plainError)(@string)sendOnClosedChannelˢ));
 }
 
 internal static uintptr sortkey(this ж<Δhchan> Ꮡc) {

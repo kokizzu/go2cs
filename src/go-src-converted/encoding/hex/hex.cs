@@ -253,12 +253,15 @@ internal static byte toChar(byte b) {
     return b;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string encodingHexDumperClosedˢ = "encoding/hex: dumper closed"u8;
+
 [GoRecv] internal static (nint n, error err) Write(this ref dumper h, slice<byte> data) {
     nint n = default!;
     error err = default!;
 
     if (h.closed) {
-        return (0, errors.New("encoding/hex: dumper closed"u8));
+        return (0, errors.New(encodingHexDumperClosedˢ));
     }
     // Output lines look like:
     // 00000010  2e 2f 30 31 32 33 34 35  36 37 38 39 3a 3b 3c 3d  |./0123456789:;<=|

@@ -119,6 +119,10 @@ internal static uintptr syscall_cgocaller(@unsafe.Pointer fn, params ꓸꓸꓸui
 internal static ж<uint64> Ꮡncgocall = new(default(uint64));
 internal static ref uint64 ncgocall => ref Ꮡncgocall.Value; // number of cgo calls in total for dead m
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cgocallUnavailableˢ = "cgocall unavailable"u8;
+private static readonly @string cgocallNilˢ = "cgocall nil"u8;
+
 // Call from Go to C.
 //
 // This must be nosplit because it's used for syscalls on some
@@ -137,10 +141,10 @@ internal static ref uint64 ncgocall => ref Ꮡncgocall.Value; // number of cgo c
 //go:nosplit
 internal static int32 cgocall(@unsafe.Pointer fn, @unsafe.Pointer arg) {
     if (!iscgo && GOOS != "solaris"u8 && GOOS != "illumos"u8 && GOOS != "windows"u8) {
-        @throw("cgocall unavailable"u8);
+        @throw(cgocallUnavailableˢ);
     }
     if (fn == nil) {
-        @throw("cgocall nil"u8);
+        @throw(cgocallNilˢ);
     }
     if (raceenabled) {
         racereleasemerge(new @unsafe.Pointer(Ꮡracecgosync));
@@ -291,6 +295,9 @@ internal static void callbackUpdateSystemStack(ж<m> Ꮡmp, uintptr sp, bool sig
     g0.Value.stackguard1 = g0.Value.stackguard0;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mChangedUnexpectedlyInˢ = "m changed unexpectedly in cgocallbackg"u8;
+
 // Call from C back to Go. fn must point to an ABIInternal Go entry-point.
 //
 //go:nosplit
@@ -345,7 +352,7 @@ internal static void cgocallbackg(@unsafe.Pointer fn, @unsafe.Pointer frame, uin
         gp.Value.m.Value.isExtraInC = true;
     }
     if ((~gp).m != checkm) {
-        @throw("m changed unexpectedly in cgocallbackg"u8);
+        @throw(mChangedUnexpectedlyInˢ);
     }
     osPreemptExtEnter((~gp).m);
     // going back to cgo call
@@ -441,18 +448,27 @@ internal static void unwindm(ж<bool> Ꮡrestore) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string misalignedStackInˢ = "misaligned stack in cgocallback"u8;
+
 // called from assembly.
 internal static void badcgocallback() {
-    @throw("misaligned stack in cgocallback"u8);
+    @throw(misalignedStackInˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cgoNotImplementedˢ = "cgo not implemented"u8;
 
 // called from (incomplete) assembly.
 internal static void cgounimpl() {
-    @throw("cgo not implemented"u8);
+    @throw(cgoNotImplementedˢ);
 }
 
 internal static ж<uint64> Ꮡracecgosync = new(default(uint64));
 internal static ref uint64 racecgosync => ref Ꮡracecgosync.Value; // represents possible synchronization in C code
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string canTHappenˢ = "can't happen"u8;
 
 // Pointer checking for cgo code.
 // We want to detect all cases where a program that does not use
@@ -520,7 +536,7 @@ internal static void cgoCheckPointer(any ptr, any arg) {
             top = false;
         }
         else { /* default: */
-            @throw("can't happen"u8);
+            @throw(canTHappenˢ);
         }
 
     }
@@ -552,7 +568,7 @@ internal static void cgoCheckArg(ж<_type> Ꮡt, @unsafe.Pointer Δp, bool indir
         var at = Ꮡt.Reinterpret<_type, arraytype>();
         if (!indir) {
             if ((~at).Len != 1) {
-                @throw("can't happen"u8);
+                @throw(canTHappenˢ);
             }
             cgoCheckArg((~at).Elem, Δp, (abiꓸKind)((~(~at).Elem).Kind_ & abi.KindDirectIface) == 0, top, msg);
             return;
@@ -628,7 +644,7 @@ internal static void cgoCheckArg(ж<_type> Ꮡt, @unsafe.Pointer Δp, bool indir
         var st = Ꮡt.Reinterpret<_type, structtype>();
         if (!indir) {
             if (len((~st).Fields) != 1) {
-                @throw("can't happen"u8);
+                @throw(canTHappenˢ);
             }
             cgoCheckArg((~st).Fields[0].Typ, Δp, (abiꓸKind)((~(~st).Fields[0].Typ).Kind_ & abi.KindDirectIface) == 0, top, msg);
             return;
@@ -656,7 +672,7 @@ internal static void cgoCheckArg(ж<_type> Ꮡt, @unsafe.Pointer Δp, bool indir
         cgoCheckUnknownPointer(Δp, msg);
     }
     else { /* default: */
-        @throw("can't happen"u8);
+        @throw(canTHappenˢ);
     }
 
 }

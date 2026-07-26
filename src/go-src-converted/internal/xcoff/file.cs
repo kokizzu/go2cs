@@ -498,11 +498,14 @@ skip:
 [GoType] partial struct nobitsSectionReader {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedReadFromˢ = "unexpected read from section with uninitialized data"u8;
+
 [GoRecv] internal static (nint n, error err) ReadAt(this ref nobitsSectionReader _, slice<byte> p, int64 off) {
     nint n = default!;
     error err = default!;
 
-    return (0, errors.New("unexpected read from section with uninitialized data"u8));
+    return (0, errors.New(unexpectedReadFromˢ));
 }
 
 // Data reads and returns the contents of the XCOFF section s.

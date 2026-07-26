@@ -12,6 +12,9 @@ partial class mime_package {
     osInitMime = initMimeWindows;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string contentTypeˢ = "Content Type"u8;
+
 internal static void initMimeWindows() {
     var (names, err) = registry.CLASSES_ROOT.ReadSubKeyNames();
     if (err != default!) {
@@ -26,7 +29,7 @@ internal static void initMimeWindows() {
         if (errΔ1 != default!) {
             continue;
         }
-        (var v, _, errΔ1) = k.GetStringValue("Content Type"u8);
+        (var v, _, errΔ1) = k.GetStringValue(contentTypeˢ);
         k.Close();
         if (errΔ1 != default!) {
             continue;

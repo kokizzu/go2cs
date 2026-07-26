@@ -108,6 +108,9 @@ internal static error ReadRequestHeader(this ж<serverCodec> Ꮡc, ж<rpc.Reques
 internal static ж<json.RawMessage> Ꮡnull = new(((json.RawMessage)slice<byte>("null"u8)));
 internal static ref json.RawMessage @null => ref Ꮡnull.ValueSlot;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidSequenceNumberInˢ = "invalid sequence number in response"u8;
+
 internal static error WriteResponse(this ж<serverCodec> Ꮡc, ж<rpc.Response> Ꮡr, any x) {
     ref var c = ref Ꮡc.Value;
     ref var r = ref Ꮡr.Value;
@@ -116,7 +119,7 @@ internal static error WriteResponse(this ж<serverCodec> Ꮡc, ж<rpc.Response> 
     var (b, ok) = c.pending[r.Seq, ꟷ];
     if (!ok) {
         Ꮡc.of(serverCodec.Ꮡmutex).Unlock();
-        return errors.New("invalid sequence number in response"u8);
+        return errors.New(invalidSequenceNumberInˢ);
     }
     delete(c.pending, r.Seq);
     Ꮡc.of(serverCodec.Ꮡmutex).Unlock();

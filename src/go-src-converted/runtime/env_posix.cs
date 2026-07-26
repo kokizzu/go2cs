@@ -7,10 +7,13 @@ using @unsafe = unsafe_package;
 
 partial class runtime_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getenvBeforeEnvInitˢ = "getenv before env init"u8;
+
 internal static @string gogetenv(@string key) {
     var env = environ();
     if (env == default!) {
-        @throw("getenv before env init"u8);
+        @throw(getenvBeforeEnvInitˢ);
     }
     foreach (var (_, s) in env) {
         if (len(s) > len(key) && s[len(key)] == (rune)'=' && envKeyEqual(s[..(int)(len(key))], key)) {

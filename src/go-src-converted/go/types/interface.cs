@@ -194,6 +194,10 @@ internal static void cleanup(this ж<Interface> Ꮡt) {
     t.embedPos = default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string methodsMustHaveAUniqueˢ = "methods must have a unique non-blank name"u8;
+private static readonly @string methodsCannotHaveTypeˢ = "methods cannot have type parameters"u8;
+
 internal static void interfaceType(this ж<Checker> Ꮡcheck, ж<Interface> Ꮡityp, ж<ast.InterfaceType> Ꮡiface, ж<TypeName> Ꮡdef) {
     ref var check = ref Ꮡcheck.Value;
     ref var ityp = ref Ꮡityp.Value;
@@ -216,7 +220,7 @@ internal static void interfaceType(this ж<Checker> Ꮡcheck, ж<Interface> Ꮡi
         // We have a method with name f.Names[0].
         var name = (~f).Names[0];
         if ((~name).Name == "_"u8) {
-            Ꮡcheck.error(new ast_Identжpositioner(name), BlankIfaceMethod, "methods must have a unique non-blank name"u8);
+            Ꮡcheck.error(new ast_Identжpositioner(name), BlankIfaceMethod, methodsMustHaveAUniqueˢ);
             continue;
         }
         // ignore
@@ -237,7 +241,7 @@ internal static void interfaceType(this ж<Checker> Ꮡcheck, ж<Interface> Ꮡi
                     at = new ast_FieldListжpositioner(ftyp.Value.TypeParams);
                 }
             }
-            Ꮡcheck.error(at, InvalidSyntaxTree, "methods cannot have type parameters"u8);
+            Ꮡcheck.error(at, InvalidSyntaxTree, methodsCannotHaveTypeˢ);
         }
         // use named receiver type if available (for better error messages)
         ΔType recvTyp = new InterfaceжΔType(Ꮡityp);

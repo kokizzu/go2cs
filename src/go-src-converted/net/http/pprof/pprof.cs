@@ -107,12 +107,18 @@ partial class pprof_package {
     http.HandleFunc(prefix + "/debug/pprof/trace"u8, Trace);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string xContentTypeOptionsˢ = "X-Content-Type-Options"u8;
+private static readonly @string nosniffˢ = "nosniff"u8;
+private static readonly @string contentTypeˢ = "Content-Type"u8;
+private static readonly @string textPlainCharsetUtf8ˢ = "text/plain; charset=utf-8"u8;
+
 // Cmdline responds with the running program's
 // command line, with arguments separated by NUL bytes.
 // The package initialization registers it as /debug/pprof/cmdline.
 public static void Cmdline(http.ResponseWriter w, ж<http.Request> Ꮡr) {
-    w.Header().Set("X-Content-Type-Options"u8, "nosniff"u8);
-    w.Header().Set("Content-Type"u8, "text/plain; charset=utf-8"u8);
+    w.Header().Set(xContentTypeOptionsˢ, nosniffˢ);
+    w.Header().Set(contentTypeˢ, textPlainCharsetUtf8ˢ);
     fmt.Fprint(new http_ResponseWriterᴠWriter(w), strings.Join(os.Args, "\x00"u8));
 }
 
@@ -141,28 +147,37 @@ internal static void configureWriteDeadline(http.ResponseWriter w, ж<http.Reque
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string xGoPprofˢ = "X-Go-Pprof"u8;
+private static readonly @string contentDispositionˢ = "Content-Disposition"u8;
+
 internal static void serveError(http.ResponseWriter w, nint status, @string txt) {
-    w.Header().Set("Content-Type"u8, "text/plain; charset=utf-8"u8);
-    w.Header().Set("X-Go-Pprof"u8, "1"u8);
-    w.Header().Del("Content-Disposition"u8);
+    w.Header().Set(contentTypeˢ, textPlainCharsetUtf8ˢ);
+    w.Header().Set(xGoPprofˢ, "1"u8);
+    w.Header().Del(contentDispositionˢ);
     w.WriteHeader(status);
     fmt.Fprintln(new http_ResponseWriterᴠWriter(w), txt);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string secondsˢ = "seconds"u8;
+private static readonly @string applicationOctetStreamˢ = "application/octet-stream"u8;
+private static readonly @string attachmentFilenameˢ = @"attachment; filename=""profile"""u8;
 
 // Profile responds with the pprof-formatted cpu profile.
 // Profiling lasts for duration specified in seconds GET parameter, or for 30 seconds if not specified.
 // The package initialization registers it as /debug/pprof/profile.
 public static void Profile(http.ResponseWriter w, ж<http.Request> Ꮡr) {
-    w.Header().Set("X-Content-Type-Options"u8, "nosniff"u8);
-    var (sec, err) = strconv.ParseInt(Ꮡr.FormValue("seconds"u8), 10, 64);
+    w.Header().Set(xContentTypeOptionsˢ, nosniffˢ);
+    var (sec, err) = strconv.ParseInt(Ꮡr.FormValue(secondsˢ), 10, 64);
     if (sec <= 0 || err != default!) {
         sec = 30;
     }
     configureWriteDeadline(w, Ꮡr, (float64)sec);
     // Set Content Type assuming StartCPUProfile will work,
     // because if it does it starts writing.
-    w.Header().Set("Content-Type"u8, "application/octet-stream"u8);
-    w.Header().Set("Content-Disposition"u8, @"attachment; filename=""profile"""u8);
+    w.Header().Set(contentTypeˢ, applicationOctetStreamˢ);
+    w.Header().Set(contentDispositionˢ, attachmentFilenameˢ);
     {
         var errΔ1 = pprof.StartCPUProfile(new http_ResponseWriterᴠWriter(w)); if (errΔ1 != default!) {
             // StartCPUProfile failed, so no writes yet.
@@ -175,20 +190,23 @@ public static void Profile(http.ResponseWriter w, ж<http.Request> Ꮡr) {
     pprof.StopCPUProfile();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string attachmentFilenameTraceˢ = @"attachment; filename=""trace"""u8;
+
 // Trace responds with the execution trace in binary form.
 // Tracing lasts for duration specified in seconds GET parameter, or for 1 second if not specified.
 // The package initialization registers it as /debug/pprof/trace.
 public static void Trace(http.ResponseWriter w, ж<http.Request> Ꮡr) {
-    w.Header().Set("X-Content-Type-Options"u8, "nosniff"u8);
-    var (sec, err) = strconv.ParseFloat(Ꮡr.FormValue("seconds"u8), 64);
+    w.Header().Set(xContentTypeOptionsˢ, nosniffˢ);
+    var (sec, err) = strconv.ParseFloat(Ꮡr.FormValue(secondsˢ), 64);
     if (sec <= 0D || err != default!) {
         sec = 1D;
     }
     configureWriteDeadline(w, Ꮡr, sec);
     // Set Content Type assuming trace.Start will work,
     // because if it does it starts writing.
-    w.Header().Set("Content-Type"u8, "application/octet-stream"u8);
-    w.Header().Set("Content-Disposition"u8, @"attachment; filename=""trace"""u8);
+    w.Header().Set(contentTypeˢ, applicationOctetStreamˢ);
+    w.Header().Set(contentDispositionˢ, attachmentFilenameTraceˢ);
     {
         var errΔ1 = trace.Start(new http_ResponseWriterᴠWriter(w)); if (errΔ1 != default!) {
             // trace.Start failed, so no writes yet.
@@ -207,8 +225,8 @@ public static void Trace(http.ResponseWriter w, ж<http.Request> Ꮡr) {
 public static void Symbol(http.ResponseWriter w, ж<http.Request> Ꮡr) {
     ref var r = ref Ꮡr.Value;
 
-    w.Header().Set("X-Content-Type-Options"u8, "nosniff"u8);
-    w.Header().Set("Content-Type"u8, "text/plain; charset=utf-8"u8);
+    w.Header().Set(xContentTypeOptionsˢ, nosniffˢ);
+    w.Header().Set(contentTypeˢ, textPlainCharsetUtf8ˢ);
     // We have to read the whole POST body before
     // writing any output. Buffer the output here.
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
@@ -255,15 +273,19 @@ public static httpꓸHandler Handler(@string name) {
 
 [GoType("@string")] partial struct handler;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownProfileˢ = "Unknown profile"u8;
+private static readonly @string debugˢ = "debug"u8;
+
 internal static void ServeHTTP(this handler name, http.ResponseWriter w, ж<http.Request> Ꮡr) {
-    w.Header().Set("X-Content-Type-Options"u8, "nosniff"u8);
+    w.Header().Set(xContentTypeOptionsˢ, nosniffˢ);
     var p = pprof.Lookup(((@string)name));
     if (p == nil) {
-        serveError(w, http.StatusNotFound, "Unknown profile"u8);
+        serveError(w, http.StatusNotFound, unknownProfileˢ);
         return;
     }
     {
-        @string sec = Ꮡr.FormValue("seconds"u8); if (sec != ""u8) {
+        @string sec = Ꮡr.FormValue(secondsˢ); if (sec != ""u8) {
             name.serveDeltaProfile(w, Ꮡr, p, sec);
             return;
         }
@@ -272,38 +294,45 @@ internal static void ServeHTTP(this handler name, http.ResponseWriter w, ж<http
     if (name == "heap"u8 && gc > 0) {
         runtime.GC();
     }
-    var (debug, _) = strconv.Atoi(Ꮡr.FormValue("debug"u8));
+    var (debug, _) = strconv.Atoi(Ꮡr.FormValue(debugˢ));
     if (debug != 0){
-        w.Header().Set("Content-Type"u8, "text/plain; charset=utf-8"u8);
+        w.Header().Set(contentTypeˢ, textPlainCharsetUtf8ˢ);
     } else {
-        w.Header().Set("Content-Type"u8, "application/octet-stream"u8);
-        w.Header().Set("Content-Disposition"u8, fmt.Sprintf(@"attachment; filename=""%s"""u8, name));
+        w.Header().Set(contentTypeˢ, applicationOctetStreamˢ);
+        w.Header().Set(contentDispositionˢ, fmt.Sprintf(@"attachment; filename=""%s"""u8, name));
     }
     p.WriteTo(new http_ResponseWriterᴠWriter(w), debug);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidValueForSecondsˢ = @"invalid value for ""seconds"" - must be a positive integer"u8;
+private static readonly @string secondsParameterIsNotˢ = @"""seconds"" parameter is not supported for this profile type"u8;
+private static readonly @string secondsAndDebugParamsAreˢ = "seconds and debug params are incompatible"u8;
+private static readonly @string failedToCollectProfileˢ = "failed to collect profile"u8;
+private static readonly @string failedToComputeDeltaˢ = "failed to compute delta"u8;
 
 internal static void serveDeltaProfile(this handler name, http.ResponseWriter w, ж<http.Request> Ꮡr, ж<pprof.Profile> Ꮡp, @string secStr) => func((defer, recover) => {
     ref var r = ref Ꮡr.Value;
 
     var (sec, err) = strconv.ParseInt(secStr, 10, 64);
     if (err != default! || sec <= 0) {
-        serveError(w, http.StatusBadRequest, @"invalid value for ""seconds"" - must be a positive integer"u8);
+        serveError(w, http.StatusBadRequest, invalidValueForSecondsˢ);
         return;
     }
     // 'name' should be a key in profileSupportsDelta.
     if (!profileSupportsDelta[name]) {
-        serveError(w, http.StatusBadRequest, @"""seconds"" parameter is not supported for this profile type"u8);
+        serveError(w, http.StatusBadRequest, secondsParameterIsNotˢ);
         return;
     }
     configureWriteDeadline(w, Ꮡr, (float64)sec);
-    var (debug, _) = strconv.Atoi(Ꮡr.FormValue("debug"u8));
+    var (debug, _) = strconv.Atoi(Ꮡr.FormValue(debugˢ));
     if (debug != 0) {
-        serveError(w, http.StatusBadRequest, "seconds and debug params are incompatible"u8);
+        serveError(w, http.StatusBadRequest, secondsAndDebugParamsAreˢ);
         return;
     }
     (var p0, err) = collectProfile(Ꮡp);
     if (err != default!) {
-        serveError(w, http.StatusInternalServerError, "failed to collect profile"u8);
+        serveError(w, http.StatusInternalServerError, failedToCollectProfileˢ);
         return;
     }
     var t = time.NewTimer(((time.Duration)sec) * time.ΔSecond);
@@ -327,7 +356,7 @@ internal static void serveDeltaProfile(this handler name, http.ResponseWriter w,
     }}
     (var p1, err) = collectProfile(Ꮡp);
     if (err != default!) {
-        serveError(w, http.StatusInternalServerError, "failed to collect profile"u8);
+        serveError(w, http.StatusInternalServerError, failedToCollectProfileˢ);
         return;
     }
     var ts = p1.Value.TimeNanos;
@@ -335,14 +364,14 @@ internal static void serveDeltaProfile(this handler name, http.ResponseWriter w,
     p0.Scale(-1D);
     (p1, err) = profile.Merge(new ж<profile.Profile>[]{p0, p1}.slice());
     if (err != default!) {
-        serveError(w, http.StatusInternalServerError, "failed to compute delta"u8);
+        serveError(w, http.StatusInternalServerError, failedToComputeDeltaˢ);
         return;
     }
     p1.Value.TimeNanos = ts;
     // set since we don't know what profile.Merge set for TimeNanos.
     p1.Value.DurationNanos = dur;
-    w.Header().Set("Content-Type"u8, "application/octet-stream"u8);
-    w.Header().Set("Content-Disposition"u8, fmt.Sprintf(@"attachment; filename=""%s-delta"""u8, name));
+    w.Header().Set(contentTypeˢ, applicationOctetStreamˢ);
+    w.Header().Set(contentDispositionˢ, fmt.Sprintf(@"attachment; filename=""%s-delta"""u8, name));
     p1.Write(new http_ResponseWriterᴠWriter(w));
 });
 
@@ -390,6 +419,10 @@ internal static map<@string, @string> profileDescriptions = new map<@string, @st
     public nint Count;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string debugPprofˢ = "/debug/pprof/"u8;
+private static readonly @string textHtmlCharsetUtf8ˢ = "text/html; charset=utf-8"u8;
+
 // Index responds with the pprof-formatted profile named by the request.
 // For example, "/debug/pprof/heap" serves the "heap" profile.
 // Index responds to a request for "/debug/pprof/" with an HTML page
@@ -398,15 +431,15 @@ public static void Index(http.ResponseWriter w, ж<http.Request> Ꮡr) {
     ref var r = ref Ꮡr.Value;
 
     {
-        var (name, found) = strings.CutPrefix((~r.URL).Path, "/debug/pprof/"u8); if (found) {
+        var (name, found) = strings.CutPrefix((~r.URL).Path, debugPprofˢ); if (found) {
             if (name != ""u8) {
                 ((handler)name).ServeHTTP(w, Ꮡr);
                 return;
             }
         }
     }
-    w.Header().Set("X-Content-Type-Options"u8, "nosniff"u8);
-    w.Header().Set("Content-Type"u8, "text/html; charset=utf-8"u8);
+    w.Header().Set(xContentTypeOptionsˢ, nosniffˢ);
+    w.Header().Set(contentTypeˢ, textHtmlCharsetUtf8ˢ);
     slice<profileEntry> profiles = default!;
     foreach (var (_, p) in pprof.Profiles()) {
         profiles = append(profiles, new profileEntry(
@@ -417,7 +450,7 @@ public static void Index(http.ResponseWriter w, ж<http.Request> Ꮡr) {
         ));
     }
     // Adding other profiles exposed from within this package
-    foreach (var (_, p) in new @string[]{"cmdline", "profile", "trace"}.slice()) {
+    foreach (var (_, p) in new @string[]{"cmdline"u8, "profile"u8, "trace"u8}.slice()) {
         profiles = append(profiles, new profileEntry(
             Name: p,
             Href: p,
@@ -433,9 +466,8 @@ public static void Index(http.ResponseWriter w, ж<http.Request> Ꮡr) {
     }
 }
 
-internal static error indexTmplExecute(io.Writer w, slice<profileEntry> profiles) {
-    ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
-    b.WriteString("""
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string htmlHeadTitleDebugPprofˢ = """
 <html>
 <head>
 <title>/debug/pprof/</title>
@@ -455,12 +487,8 @@ Types of profiles available:
 <table>
 <thead><td>Count</td><td>Profile</td></thead>
 
-"""u8);
-    foreach (var (_, profile) in profiles) {
-        var link = Ꮡ(new url.URL(Path: profile.Href, RawQuery: "debug=1"u8));
-        fmt.Fprintf(new bytes_BufferжWriter(Ꮡb), "<tr><td>%d</td><td><a href='%s'>%s</a></td></tr>\n"u8, profile.Count, link, html.EscapeString(profile.Name));
-    }
-    b.WriteString("""
+"""u8;
+private static readonly @string tableAHrefGoroutineDebugˢ = """
 </table>
 <a href="goroutine?debug=2">full goroutine stack dump</a>
 <br>
@@ -468,16 +496,26 @@ Types of profiles available:
 Profile Descriptions:
 <ul>
 
-"""u8);
-    foreach (var (_, profile) in profiles) {
-        fmt.Fprintf(new bytes_BufferжWriter(Ꮡb), "<li><div class=profile-name>%s: </div> %s</li>\n"u8, html.EscapeString(profile.Name), html.EscapeString(profile.Desc));
-    }
-    b.WriteString("""
+"""u8;
+private static readonly @string ulPBodyHtmlˢ = """
 </ul>
 </p>
 </body>
 </html>
-"""u8);
+"""u8;
+
+internal static error indexTmplExecute(io.Writer w, slice<profileEntry> profiles) {
+    ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
+    b.WriteString(htmlHeadTitleDebugPprofˢ);
+    foreach (var (_, profile) in profiles) {
+        var link = Ꮡ(new url.URL(Path: profile.Href, RawQuery: "debug=1"u8));
+        fmt.Fprintf(new bytes_BufferжWriter(Ꮡb), "<tr><td>%d</td><td><a href='%s'>%s</a></td></tr>\n"u8, profile.Count, link, html.EscapeString(profile.Name));
+    }
+    b.WriteString(tableAHrefGoroutineDebugˢ);
+    foreach (var (_, profile) in profiles) {
+        fmt.Fprintf(new bytes_BufferжWriter(Ꮡb), "<li><div class=profile-name>%s: </div> %s</li>\n"u8, html.EscapeString(profile.Name), html.EscapeString(profile.Desc));
+    }
+    b.WriteString(ulPBodyHtmlˢ);
     var (_, err) = w.Write(b.Bytes());
     return err;
 }

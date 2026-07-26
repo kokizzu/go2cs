@@ -54,6 +54,10 @@ internal static slice<byte> appendFormatRFC3339(this Time t, slice<byte> b, bool
     return b;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string yearOutsideOfRange09999ˢ = "year outside of range [0,9999]"u8;
+private static readonly @string timezoneHourOutsideOfˢ = "timezone hour outside of range [0,23]"u8;
+
 internal static (slice<byte>, error) appendStrictRFC3339(this Time t, slice<byte> b) {
     nint n0 = len(b);
     b = t.appendFormatRFC3339(b, true);
@@ -63,13 +67,13 @@ internal static (slice<byte>, error) appendStrictRFC3339(this Time t, slice<byte
     var num2 = (slice<byte> bΔ1) => (byte)(10 * (bΔ1[0] - (rune)'0') + (bΔ1[1] - (rune)'0'));
     switch (ᐧ) {
     case {} when b[n0 + len("9999")] != (rune)'-': {
-        return (b, errors.New("year outside of range [0,9999]"u8));
+        return (b, errors.New(yearOutsideOfRange09999ˢ));
     }
     case {} when b[len(b) - 1] is not (rune)'Z': {
         var c = b[len(b) - len("Z07:00")];
         if (((rune)'0' <= c && c <= (rune)'9') || num2(b[(int)(len(b) - len("07:00"))..]) >= 24) {
             // year must be exactly 4 digits wide
-            return (b, errors.New("timezone hour outside of range [0,23]"u8));
+            return (b, errors.New(timezoneHourOutsideOfˢ));
         }
         break;
     }}

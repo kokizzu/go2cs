@@ -54,6 +54,9 @@ internal static nint sharedMemSize(nint valueSize) {
     return (nint)@unsafe.Sizeof(new sharedMemHeader(nil)) + valueSize;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fuzzˢ = "fuzz-*"u8;
+
 // sharedMemTempFile creates a new temporary file of the given size, then maps
 // it into memory. The file will be removed when the Close method is called.
 internal static (ж<sharedMem> m, error err) sharedMemTempFile(nint size) {
@@ -61,7 +64,7 @@ internal static (ж<sharedMem> m, error err) sharedMemTempFile(nint size) {
     error err = default!;
     func((defer, recover) => {
         // Create a temporary file.
-        (var f, err) = os.CreateTemp(""u8, "fuzz-*"u8);
+        (var f, err) = os.CreateTemp(""u8, fuzzˢ);
         if (err != default!) {
             (m, err) = (default!, err); return;
         }

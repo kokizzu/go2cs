@@ -46,6 +46,9 @@ internal static map<Format, @string> formatNames = new map<Format, @string>{
     [formatV7] = "V7"u8, [FormatUSTAR] = "USTAR"u8, [FormatPAX] = "PAX"u8, [FormatGNU] = "GNU"u8, [formatSTAR] = "STAR"u8
 };
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownˢ = "<unknown>"u8;
+
 public static @string String(this Format f) {
     slice<@string> ss = default!;
     for (Format f2 = ((Format)1); f2 < formatMax; f2 <<= (int)(1)) {
@@ -55,7 +58,7 @@ public static @string String(this Format f) {
     }
     switch (len(ss)) {
     case 0: {
-        return "<unknown>"u8;
+        return unknownˢ;
     }
     case 1: {
         return ss[0];

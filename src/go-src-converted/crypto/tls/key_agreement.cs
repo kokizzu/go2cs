@@ -48,6 +48,9 @@ internal static (ж<serverKeyExchangeMsg>, error) generateServerKeyExchange(this
     return (default!, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsCertificatePrivateKeyˢ = "tls: certificate private key does not implement crypto.Decrypter"u8;
+
 internal static (slice<byte>, error) processClientKeyExchange(this rsaKeyAgreement ka, ж<Config> Ꮡconfig, ж<Certificate> Ꮡcert, ж<clientKeyExchangeMsg> Ꮡckx, uint16 version) {
     ref var config = ref Ꮡconfig.Value;
     ref var cert = ref Ꮡcert.Value;
@@ -63,7 +66,7 @@ internal static (slice<byte>, error) processClientKeyExchange(this rsaKeyAgreeme
     var ciphertext = ckx.ciphertext[2..];
     var (priv, ok) = cert.PrivateKey._<crypto.Decrypter>(ᐧ);
     if (!ok) {
-        return (default!, errors.New("tls: certificate private key does not implement crypto.Decrypter"u8));
+        return (default!, errors.New(tlsCertificatePrivateKeyˢ));
     }
     // Perform constant time RSA PKCS #1 v1.5 decryption
     var (preMasterSecret, err) = priv.Decrypt(config.rand(), ciphertext, Ꮡ(new rsa.PKCS1v15DecryptOptions(SessionKeyLen: 48)));
@@ -79,9 +82,15 @@ internal static (slice<byte>, error) processClientKeyExchange(this rsaKeyAgreeme
     return (preMasterSecret, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsUnexpectedˢ = "tls: unexpected ServerKeyExchange"u8;
+
 internal static error processServerKeyExchange(this rsaKeyAgreement ka, ж<Config> Ꮡconfig, ж<clientHelloMsg> ᏑclientHello, ж<serverHelloMsg> ᏑserverHello, ж<Δx509.Certificate> Ꮡcert, ж<serverKeyExchangeMsg> Ꮡskx) {
-    return errors.New("tls: unexpected ServerKeyExchange"u8);
+    return errors.New(tlsUnexpectedˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsServerCertificateˢ = "tls: server certificate contains incorrect key type for selected ciphersuite"u8;
 
 internal static (slice<byte>, ж<clientKeyExchangeMsg>, error) generateClientKeyExchange(this rsaKeyAgreement ka, ж<Config> Ꮡconfig, ж<clientHelloMsg> ᏑclientHello, ж<Δx509.Certificate> Ꮡcert) {
     ref var config = ref Ꮡconfig.Value;
@@ -97,7 +106,7 @@ internal static (slice<byte>, ж<clientKeyExchangeMsg>, error) generateClientKey
     }
     var (rsaKey, ok) = cert.PublicKey._<ж<rsa.PublicKey>>(ᐧ);
     if (!ok) {
-        return (default!, default!, errors.New("tls: server certificate contains incorrect key type for selected ciphersuite"u8));
+        return (default!, default!, errors.New(tlsServerCertificateˢ));
     }
     (var encrypted, err) = rsa.EncryptPKCS1v15(config.rand(), rsaKey, preMasterSecret);
     if (err != default!) {
@@ -175,6 +184,10 @@ internal static slice<byte> hashForServerKeyExchange(uint8 sigType, crypto.Hash 
     internal slice<byte> preMasterSecret;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsNoSupportedEllipticˢ = "tls: no supported elliptic curves offered"u8;
+private static readonly @string tlsCertificateCannotBeˢ = "tls: certificate cannot be used with the selected cipher suite"u8;
+
 [GoRecv] internal static (ж<serverKeyExchangeMsg>, error) generateServerKeyExchange(this ref ecdheKeyAgreement ka, ж<Config> Ꮡconfig, ж<Certificate> Ꮡcert, ж<clientHelloMsg> ᏑclientHello, ж<serverHelloMsg> Ꮡhello) {
     ref var config = ref Ꮡconfig.Value;
     ref var cert = ref Ꮡcert.Value;
@@ -189,11 +202,11 @@ internal static slice<byte> hashForServerKeyExchange(uint8 sigType, crypto.Hash 
         }
     }
     if (curveID == 0) {
-        return (default!, errors.New("tls: no supported elliptic curves offered"u8));
+        return (default!, errors.New(tlsNoSupportedEllipticˢ));
     }
     {
         var (_, okΔ1) = curveForCurveID(curveID); if (!okΔ1) {
-            return (default!, errors.New("tls: CurvePreferences includes unsupported curve"u8));
+            return (default!, errors.New(tlsCurvePreferencesˢ));
         }
     }
     var (key, err) = generateECDHEKey(config.rand(), curveID);
@@ -233,7 +246,7 @@ internal static slice<byte> hashForServerKeyExchange(uint8 sigType, crypto.Hash 
         }
     }
     if ((sigType == signaturePKCS1v15 || sigType == signatureRSAPSS) != ka.isRSA) {
-        return (default!, errors.New("tls: certificate cannot be used with the selected cipher suite"u8));
+        return (default!, errors.New(tlsCertificateCannotBeˢ));
     }
     var signed = hashForServerKeyExchange(sigType, sigHash, ka.version, clientHello.random, hello.random, serverECDHEParams);
     var signOpts = ((crypto.SignerOpts)new crypto_HashᴠSignerOpts(sigHash));
@@ -280,6 +293,9 @@ internal static slice<byte> hashForServerKeyExchange(uint8 sigType, crypto.Hash 
     return (preMasterSecret, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsServerSelectedˢ4 = "tls: server selected unsupported curve"u8;
+
 [GoRecv] internal static error processServerKeyExchange(this ref ecdheKeyAgreement ka, ж<Config> Ꮡconfig, ж<clientHelloMsg> ᏑclientHello, ж<serverHelloMsg> ᏑserverHello, ж<Δx509.Certificate> Ꮡcert, ж<serverKeyExchangeMsg> Ꮡskx) {
     ref var config = ref Ꮡconfig.Value;
     ref var clientHello = ref ᏑclientHello.Value;
@@ -292,7 +308,7 @@ internal static slice<byte> hashForServerKeyExchange(uint8 sigType, crypto.Hash 
     }
     if (skx.key[0] != 3) {
         // named curve
-        return errors.New("tls: server selected unsupported curve"u8);
+        return errors.New(tlsServerSelectedˢ4);
     }
     var curveID = (CurveID)((CurveID)(uint16)(((CurveID)(uint16)skx.key[1]) << (int)(8)) | ((CurveID)(uint16)skx.key[2]));
     nint publicLen = (nint)skx.key[3];
@@ -307,7 +323,7 @@ internal static slice<byte> hashForServerKeyExchange(uint8 sigType, crypto.Hash 
     }
     {
         var (_, ok) = curveForCurveID(curveID); if (!ok) {
-            return errors.New("tls: server selected unsupported curve"u8);
+            return errors.New(tlsServerSelectedˢ4);
         }
     }
     var (key, err) = generateECDHEKey(config.rand(), curveID);
@@ -337,7 +353,7 @@ internal static slice<byte> hashForServerKeyExchange(uint8 sigType, crypto.Hash 
             return errServerKeyExchange;
         }
         if (!isSupportedSignatureAlgorithm(signatureAlgorithm, clientHello.supportedSignatureAlgorithms)) {
-            return errors.New("tls: certificate used with invalid signature algorithm"u8);
+            return errors.New(tlsCertificateUsedWithˢ);
         }
         (sigType, sigHash, err) = typeAndHashFromSignatureScheme(signatureAlgorithm);
         if (err != default!) {
@@ -366,9 +382,12 @@ internal static slice<byte> hashForServerKeyExchange(uint8 sigType, crypto.Hash 
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsMissingˢ = "tls: missing ServerKeyExchange message"u8;
+
 [GoRecv] internal static (slice<byte>, ж<clientKeyExchangeMsg>, error) generateClientKeyExchange(this ref ecdheKeyAgreement ka, ж<Config> Ꮡconfig, ж<clientHelloMsg> ᏑclientHello, ж<Δx509.Certificate> Ꮡcert) {
     if (ka.ckx == nil) {
-        return (default!, default!, errors.New("tls: missing ServerKeyExchange message"u8));
+        return (default!, default!, errors.New(tlsMissingˢ));
     }
     return (ka.preMasterSecret, ka.ckx, default!);
 }

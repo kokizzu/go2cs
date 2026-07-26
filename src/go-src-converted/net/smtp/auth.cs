@@ -58,6 +58,11 @@ internal static bool isLocalhost(@string name) {
     return name == "localhost"u8 || name == "127.0.0.1"u8 || name == "::1"u8;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unencryptedConnectionˢ = "unencrypted connection"u8;
+private static readonly @string wrongHostNameˢ = "wrong host name"u8;
+private static readonly @string plainˢ = "PLAIN"u8;
+
 [GoRecv] internal static (@string, slice<byte>, error) Start(this ref plainAuth a, ж<ServerInfo> Ꮡserver) {
     ref var server = ref Ꮡserver.Value;
 
@@ -67,19 +72,22 @@ internal static bool isLocalhost(@string name) {
     // That might just be the attacker saying
     // "it's ok, you can trust me with your password."
     if (!server.TLS && !isLocalhost(server.Name)) {
-        return ("", default!, errors.New("unencrypted connection"u8));
+        return ("", default!, errors.New(unencryptedConnectionˢ));
     }
     if (server.Name != a.host) {
-        return ("", default!, errors.New("wrong host name"u8));
+        return ("", default!, errors.New(wrongHostNameˢ));
     }
     var resp = slice<byte>(a.identity + "\x00" + a.username + "\x00" + a.password);
-    return ("PLAIN", resp, default!);
+    return (plainˢ, resp, default!);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedServerˢ = "unexpected server challenge"u8;
 
 [GoRecv] internal static (slice<byte>, error) Next(this ref plainAuth a, slice<byte> fromServer, bool more) {
     if (more) {
         // We've already sent everything.
-        return (default!, errors.New("unexpected server challenge"u8));
+        return (default!, errors.New(unexpectedServerˢ));
     }
     return (default!, default!);
 }
@@ -96,8 +104,11 @@ public static ΔAuth CRAMMD5Auth(@string username, @string secret) {
     return new cramMD5AuthжΔAuth(Ꮡ(new cramMD5Auth(username, secret)));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cramMd5ˢ = "CRAM-MD5"u8;
+
 [GoRecv] internal static (@string, slice<byte>, error) Start(this ref cramMD5Auth a, ж<ServerInfo> Ꮡserver) {
-    return ("CRAM-MD5", default!, default!);
+    return (cramMd5ˢ, default!, default!);
 }
 
 [GoRecv] internal static (slice<byte>, error) Next(this ref cramMD5Auth a, slice<byte> fromServer, bool more) {

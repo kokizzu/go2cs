@@ -86,19 +86,19 @@ done:
 internal static error setReadBuffer(ж<netFD> Ꮡfd, nint bytes) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.SOL_SOCKET, syscall.SO_RCVBUF, bytes);
     Δruntime.KeepAlive(Ꮡfd);
-    return wrapSyscallError("setsockopt"u8, err);
+    return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setWriteBuffer(ж<netFD> Ꮡfd, nint bytes) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.SOL_SOCKET, syscall.SO_SNDBUF, bytes);
     Δruntime.KeepAlive(Ꮡfd);
-    return wrapSyscallError("setsockopt"u8, err);
+    return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setKeepAlive(ж<netFD> Ꮡfd, bool keepalive) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.SOL_SOCKET, syscall.SO_KEEPALIVE, boolint(keepalive));
     Δruntime.KeepAlive(Ꮡfd);
-    return wrapSyscallError("setsockopt"u8, err);
+    return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setLinger(ж<netFD> Ꮡfd, nint sec) {
@@ -112,7 +112,7 @@ internal static error setLinger(ж<netFD> Ꮡfd, nint sec) {
     }
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptLinger(syscall.SOL_SOCKET, syscall.SO_LINGER, Ꮡl);
     Δruntime.KeepAlive(Ꮡfd);
-    return wrapSyscallError("setsockopt"u8, err);
+    return wrapSyscallError(setsockoptˢ, err);
 }
 
 } // end net_package

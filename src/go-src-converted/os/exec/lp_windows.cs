@@ -118,9 +118,12 @@ internal static (@string, error) lookExtensions(@string path, @string dir) {
     return (path + ext, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pathextˢ = @"PATHEXT"u8;
+
 internal static slice<@string> pathExt() {
     slice<@string> exts = default!;
-    @string x = os.Getenv(@"PATHEXT"u8);
+    @string x = os.Getenv(pathextˢ);
     if (x != ""u8){
         foreach (var (_, vᴛ1) in strings.Split(strings.ToLower(x), @";"u8)) {
             var e = vᴛ1;
@@ -134,10 +137,14 @@ internal static slice<@string> pathExt() {
             exts = append(exts, e);
         }
     } else {
-        exts = new @string[]{".com", ".exe", ".bat", ".cmd"}.slice();
+        exts = new @string[]{".com"u8, ".exe"u8, ".bat"u8, ".cmd"u8}.slice();
     }
     return exts;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noDefaultCurrentDirectoryInExePathˢ = "NoDefaultCurrentDirectoryInExePath"u8;
+private static readonly @string pathˢ = "path"u8;
 
 // lookPath implements LookPath for the given PATHEXT list.
 internal static (@string, error) lookPath(@string @file, slice<@string> exts) {
@@ -161,7 +168,7 @@ internal static (@string, error) lookPath(@string @file, slice<@string> exts) {
     
     error dotErr = default!;
     {
-        var (_, found) = syscall.Getenv("NoDefaultCurrentDirectoryInExePath"u8); if (!found) {
+        var (_, found) = syscall.Getenv(noDefaultCurrentDirectoryInExePathˢ); if (!found) {
             {
                 var (f, err) = findExecutable(filepath.Join("."u8, @file), exts); if (err == default!) {
                     if (execerrdot.Value() == "0"u8) {
@@ -173,7 +180,7 @@ internal static (@string, error) lookPath(@string @file, slice<@string> exts) {
             }
         }
     }
-    @string path = os.Getenv("path"u8);
+    @string path = os.Getenv(pathˢ);
     foreach (var (_, dir) in filepath.SplitList(path)) {
         if (dir == ""u8) {
             // Skip empty entries, consistent with what PowerShell does.

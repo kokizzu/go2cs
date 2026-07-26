@@ -214,11 +214,17 @@ internal static (slice<ж<ast.File>>, error) parseFiles(this ж<Importer> Ꮡp, 
     return (files, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string srcimporterˢ = "srcimporter"u8;
+private static readonly @string cgoCppflagsˢ = "CGO_CPPFLAGS"u8;
+private static readonly @string cgoCflagsˢ = "CGO_CFLAGS"u8;
+private static readonly @string cgoGotypesGoˢ = "_cgo_gotypes.go"u8;
+
 internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Package> Ꮡbp) => func<(ж<ast.File>, error)>((defer, recover) => {
     ref var p = ref Ꮡp.Value;
     ref var bp = ref Ꮡbp.Value;
 
-    var (tmpdir, err) = os.MkdirTemp(""u8, "srcimporter"u8);
+    var (tmpdir, err) = os.MkdirTemp(""u8, srcimporterˢ);
     if (err != default!) {
         return (default!, err);
     }
@@ -227,7 +233,7 @@ internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Packa
     if ((~p.ctxt).GOROOT != ""u8) {
         goCmd = filepath.Join((~p.ctxt).GOROOT, "bin", "go");
     }
-    var args = new @string[]{goCmd, "tool", "cgo", "-objdir", tmpdir}.slice();
+    var args = new @string[]{goCmd, "tool"u8, "cgo"u8, "-objdir"u8, tmpdir}.slice();
     if (bp.Goroot) {
         var exprᴛ1 = bp.ImportPath;
         if (exprᴛ1 == "runtime/cgo"u8) {
@@ -239,10 +245,10 @@ internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Packa
 
     }
     args = append(args, "--"u8);
-    args = append(args, strings.Fields(os.Getenv("CGO_CPPFLAGS"u8)).ꓸꓸꓸ);
+    args = append(args, strings.Fields(os.Getenv(cgoCppflagsˢ)).ꓸꓸꓸ);
     args = append(args, bp.CgoCPPFLAGS.ꓸꓸꓸ);
     if (len(bp.CgoPkgConfig) > 0) {
-        var cmdΔ1 = exec.Command("pkg-config"u8, append(new @string[]{"--cflags"}.slice(), bp.CgoPkgConfig.ꓸꓸꓸ).ꓸꓸꓸ);
+        var cmdΔ1 = exec.Command("pkg-config"u8, append(new @string[]{"--cflags"u8}.slice(), bp.CgoPkgConfig.ꓸꓸꓸ).ꓸꓸꓸ);
         var (@out, errΔ1) = cmdΔ1.Output();
         if (errΔ1 != default!) {
             return (default!, fmt.Errorf("pkg-config --cflags: %w"u8, errΔ1));
@@ -250,7 +256,7 @@ internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Packa
         args = append(args, strings.Fields(((@string)@out)).ꓸꓸꓸ);
     }
     args = append(args, "-I"u8, tmpdir);
-    args = append(args, strings.Fields(os.Getenv("CGO_CFLAGS"u8)).ꓸꓸꓸ);
+    args = append(args, strings.Fields(os.Getenv(cgoCflagsˢ)).ꓸꓸꓸ);
     args = append(args, bp.CgoCFLAGS.ꓸꓸꓸ);
     args = append(args, bp.CgoFiles.ꓸꓸꓸ);
     var cmd = exec.Command(args[0], args[1..].ꓸꓸꓸ);
@@ -260,7 +266,7 @@ internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Packa
             return (default!, fmt.Errorf("go tool cgo: %w"u8, errΔ2));
         }
     }
-    return parser.ParseFile(p.fset, filepath.Join(tmpdir, "_cgo_gotypes.go"), default!, parser.SkipObjectResolution);
+    return parser.ParseFile(p.fset, filepath.Join(tmpdir, cgoGotypesGoˢ), default!, parser.SkipObjectResolution);
 });
 
 // context-controlled file system operations

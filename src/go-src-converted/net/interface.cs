@@ -52,12 +52,12 @@ public static readonly Flags FlagMulticast = 16;          // interface supports 
 public static readonly Flags FlagRunning = 32;            // interface is in running state
 
 internal static slice<@string> flagNames = new @string[]{
-    "up",
-    "broadcast",
-    "loopback",
-    "pointtopoint",
-    "multicast",
-    "running"
+    "up"u8,
+    "broadcast"u8,
+    "loopback"u8,
+    "pointtopoint"u8,
+    "multicast"u8,
+    "running"u8
 }.slice();
 
 public static @string String(this Flags f) {

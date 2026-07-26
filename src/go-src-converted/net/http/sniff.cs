@@ -33,7 +33,7 @@ public static @string DetectContentType(slice<byte> data) {
             }
         }
     }
-    return "application/octet-stream"u8;
+    return applicationOctetStreamˢ;
 }
 
 // fallback
@@ -201,7 +201,7 @@ internal static @string match(this htmlSig h, slice<byte> data, nint firstNonWS)
     if (!isTT(data[builtin.len(h)])) {
         return ""u8;
     }
-    return "text/html; charset=utf-8"u8;
+    return textHtmlCharsetUtf8ˢ;
 }
 
 internal static slice<byte> mp4ftype = slice<byte>("ftyp"u8);
@@ -210,6 +210,9 @@ internal static slice<byte> mp4 = slice<byte>("mp4"u8);
 
 [GoType] partial struct mp4Sig {
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string videoMp4ˢ = "video/mp4"u8;
 
 internal static @string match(this mp4Sig _, slice<byte> data, nint firstNonWS) {
     // https://mimesniff.spec.whatwg.org/#signature-for-mp4
@@ -230,7 +233,7 @@ internal static @string match(this mp4Sig _, slice<byte> data, nint firstNonWS) 
             continue;
         }
         if (bytes.Equal(data[(int)(st)..(int)(st + 3)], mp4)) {
-            return "video/mp4"u8;
+            return videoMp4ˢ;
         }
     }
     return ""u8;
@@ -248,7 +251,7 @@ internal static @string match(this textSig _, slice<byte> data, nint firstNonWS)
         }}
 
     }
-    return "text/plain; charset=utf-8"u8;
+    return textPlainCharsetUtf8ˢ;
 }
 
 } // end http_package

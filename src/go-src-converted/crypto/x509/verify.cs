@@ -46,10 +46,18 @@ public static readonly InvalidReason CANotAuthorizedForExtKeyUsage = 9;
     public @string Detail;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509CertificateIsNotˢ = "x509: certificate is not authorized to sign other certificates"u8;
+private static readonly @string x509TooManyIntermediatesˢ = "x509: too many intermediates for path length constraint"u8;
+private static readonly @string x509CertificateSpecifiesˢ = "x509: certificate specifies an incompatible key usage"u8;
+private static readonly @string x509IssuerNameDoesNotˢ = "x509: issuer name does not match subject from issuing certificate"u8;
+private static readonly @string x509IssuerHasNameˢ = "x509: issuer has name constraints but leaf doesn't have a SAN extension"u8;
+private static readonly @string x509UnknownErrorˢ = "x509: unknown error"u8;
+
 public static @string Error(this CertificateInvalidError e) {
     var exprᴛ1 = e.Reason;
     if (exprᴛ1 == NotAuthorizedToSign) {
-        return "x509: certificate is not authorized to sign other certificates"u8;
+        return x509CertificateIsNotˢ;
     }
     if (exprᴛ1 == Expired) {
         return "x509: certificate has expired or is not yet valid: "u8 + e.Detail;
@@ -61,22 +69,22 @@ public static @string Error(this CertificateInvalidError e) {
         return "x509: a root or intermediate certificate is not authorized for an extended key usage: "u8 + e.Detail;
     }
     if (exprᴛ1 == TooManyIntermediates) {
-        return "x509: too many intermediates for path length constraint"u8;
+        return x509TooManyIntermediatesˢ;
     }
     if (exprᴛ1 == IncompatibleUsage) {
-        return "x509: certificate specifies an incompatible key usage"u8;
+        return x509CertificateSpecifiesˢ;
     }
     if (exprᴛ1 == NameMismatch) {
-        return "x509: issuer name does not match subject from issuing certificate"u8;
+        return x509IssuerNameDoesNotˢ;
     }
     if (exprᴛ1 == NameConstraintsWithoutSANs) {
-        return "x509: issuer has name constraints but leaf doesn't have a SAN extension"u8;
+        return x509IssuerHasNameˢ;
     }
     if (exprᴛ1 == UnconstrainedName) {
         return "x509: issuer has name constraints but leaf contains unknown or unconstrained name: "u8 + e.Detail;
     }
 
-    return "x509: unknown error"u8;
+    return x509UnknownErrorˢ;
 }
 
 // HostnameError results when the set of authorized names doesn't match the
@@ -86,10 +94,13 @@ public static @string Error(this CertificateInvalidError e) {
     public @string Host;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509CertificateReliesOnˢ = "x509: certificate relies on legacy Common Name field, use SANs instead"u8;
+
 public static @string Error(this HostnameError h) {
     var c = h.Certificate;
     if (!c.hasSANExtension() && matchHostnames((~c).Subject.CommonName, h.Host)) {
-        return "x509: certificate relies on legacy Common Name field, use SANs instead"u8;
+        return x509CertificateReliesOnˢ;
     }
     @string valid = default!;
     {
@@ -125,8 +136,11 @@ public static @string Error(this HostnameError h) {
     internal ж<Certificate> hintCert;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509CertificateSignedByˢ = "x509: certificate signed by unknown authority"u8;
+
 public static @string Error(this UnknownAuthorityError e) {
-    @string s = "x509: certificate signed by unknown authority"u8;
+    @string s = x509CertificateSignedByˢ;
     if (e.hintErr != default!) {
         @string certName = e.hintCert.Value.Subject.CommonName;
         if (builtin.len(certName) == 0) {
@@ -146,8 +160,11 @@ public static @string Error(this UnknownAuthorityError e) {
     public error Err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509FailedToLoadSystemˢ = "x509: failed to load system roots and no roots provided"u8;
+
 public static @string Error(this SystemRootsError se) {
-    @string msg = "x509: failed to load system roots and no roots provided"u8;
+    @string msg = x509FailedToLoadSystemˢ;
     if (se.Err != default!) {
         return msg + "; "u8 + se.Err.Error();
     }
@@ -506,6 +523,12 @@ internal static error checkNameConstraints(this ж<Certificate> Ꮡc, ж<nint> �
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509InternalErrorEmptyˢ = "x509: internal error: empty chain when appending CA cert"u8;
+private static readonly @string emailAddressˢ = "email address"u8;
+private static readonly @string dnsNameˢ = "DNS name"u8;
+private static readonly @string ipAddressˢ = "IP address"u8;
+
 // isValid performs validity checks on c given that it is a candidate to append
 // to the chain in currentChain.
 internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж<Certificate>> currentChain, ж<VerifyOptions> Ꮡopts) {
@@ -547,7 +570,7 @@ internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж
     comparisonCount = 0;
     if (certType == intermediateCertificate || certType == rootCertificate) {
         if (builtin.len(currentChain) == 0) {
-            return errors.New("x509: internal error: empty chain when appending CA cert"u8);
+            return errors.New(x509InternalErrorEmptyˢ);
         }
     }
     if ((certType == intermediateCertificate || certType == rootCertificate) && c.hasNameConstraints()) {
@@ -568,7 +591,7 @@ internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж
                         return fmt.Errorf("x509: cannot parse rfc822Name %q"u8, mailbox);
                     }
                     {
-                        var errΔ6 = Ꮡc.checkNameConstraints(ᏑcomparisonCount, maxConstraintComparisons, "email address"u8, name, mailbox,
+                        var errΔ6 = Ꮡc.checkNameConstraints(ᏑcomparisonCount, maxConstraintComparisons, emailAddressˢ, name, mailbox,
                             (any parsedName, any constraint) => matchEmailConstraint(parsedName._<rfc2821Mailbox>(), constraint._<@string>()), Ꮡc.Value.PermittedEmailAddresses, Ꮡc.Value.ExcludedEmailAddresses); if (errΔ6 != default!) {
                             return errΔ6;
                         }
@@ -582,7 +605,7 @@ internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж
                         }
                     }
                     {
-                        var errΔ7 = Ꮡc.checkNameConstraints(ᏑcomparisonCount, maxConstraintComparisons, "DNS name"u8, name, name,
+                        var errΔ7 = Ꮡc.checkNameConstraints(ᏑcomparisonCount, maxConstraintComparisons, dnsNameˢ, name, name,
                             (any parsedName, any constraint) => matchDomainConstraint(parsedName._<@string>(), constraint._<@string>()), Ꮡc.Value.PermittedDNSDomains, Ꮡc.Value.ExcludedDNSDomains); if (errΔ7 != default!) {
                             return errΔ7;
                         }
@@ -609,7 +632,7 @@ internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж
                         }
                     }
                     {
-                        var errΔ10 = Ꮡc.checkNameConstraints(ᏑcomparisonCount, maxConstraintComparisons, "IP address"u8, ip.String(), ip,
+                        var errΔ10 = Ꮡc.checkNameConstraints(ᏑcomparisonCount, maxConstraintComparisons, ipAddressˢ, ip.String(), ip,
                             (any parsedName, any constraint) => matchIPConstraint(parsedName._<net.IP>(), constraint._<ж<net.IPNet>>()), Ꮡc.Value.PermittedIPRanges, Ꮡc.Value.ExcludedIPRanges); if (errΔ10 != default!) {
                             return errΔ10;
                         }
@@ -841,6 +864,9 @@ internal static bool alreadyInChain(ж<Certificate> Ꮡcandidate, slice<ж<Certi
 // for failed checks due to different intermediates having the same Subject.
 internal static readonly UntypedInt maxChainSignatureChecks = 100;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509SignatureCheckˢ = "x509: signature check attempts limit reached while verifying certificate chain"u8;
+
 internal static (slice<slice<ж<Certificate>>> chains, error err) buildChains(this ж<Certificate> Ꮡc, slice<ж<Certificate>> currentChain, ж<nint> ᏑsigChecks, ж<VerifyOptions> Ꮡopts) {
     slice<slice<ж<Certificate>>> chains = default!;
     error err = default!;
@@ -858,7 +884,7 @@ internal static (slice<slice<ж<Certificate>>> chains, error err) buildChains(th
         }
         ᏑsigChecks.Value++;
         if (ᏑsigChecks.Value > maxChainSignatureChecks) {
-            err = errors.New("x509: signature check attempts limit reached while verifying certificate chain"u8);
+            err = errors.New(x509SignatureCheckˢ);
             return;
         }
         {

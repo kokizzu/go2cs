@@ -70,12 +70,15 @@ internal static slice<byte> bytes(this ж<P521Element> Ꮡe, ж<array<byte>> Ꮡ
     return @out[..];
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidP521Elementˢ = "invalid P521Element encoding"u8;
+
 // SetBytes sets e = v, where v is a big-endian 66-byte encoding, and returns e.
 // If v is not 66 bytes or it encodes a value higher than 2^521 - 1,
 // SetBytes returns nil and an error, and e is unchanged.
 public static (ж<P521Element>, error) SetBytes(this ж<P521Element> Ꮡe, slice<byte> v) {
     if (len(v) != p521ElementLen) {
-        return (default!, errors.New("invalid P521Element encoding"u8));
+        return (default!, errors.New(invalidP521Elementˢ));
     }
     // Check for non-canonical encodings (p + k, 2p + k, etc.) by comparing to
     // the encoding of -1 mod p, so p - 1, the highest canonical encoding.
@@ -86,7 +89,7 @@ public static (ж<P521Element>, error) SetBytes(this ж<P521Element> Ꮡe, slice
             break;
         }
         if (v[i] > minusOneEncoding[i]) {
-            return (default!, errors.New("invalid P521Element encoding"u8));
+            return (default!, errors.New(invalidP521Elementˢ));
         }
     }
     ref var @in = ref heap(new array<byte>(66), out var Ꮡin);

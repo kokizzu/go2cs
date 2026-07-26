@@ -144,6 +144,10 @@ internal static bool quoteValue(@string value) {
     return buf.String();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pathˢ = "path\t"u8;
+private static readonly @string buildˢ = "build\t"u8;
+
 public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
     ж<BuildInfo> bi = default!;
     error err = default!;
@@ -154,11 +158,11 @@ public static (ж<BuildInfo> bi, error err) ParseBuildInfo(@string data) {
                 err = fmt.Errorf("could not parse Go build info: line %d: %w"u8, lineNum, err);
             }
         });
-        @string pathLine = "path\t"u8;
+        @string pathLine = pathˢ;
         @string modLine = "mod\t"u8;
         @string depLine = "dep\t"u8;
         @string repLine = "=>\t"u8;
-        @string buildLine = "build\t"u8;
+        @string buildLine = buildˢ;
         @string newline = "\n"u8;
         @string tab = "\t"u8;
         var readModuleLine = (slice<@string> elem) => {

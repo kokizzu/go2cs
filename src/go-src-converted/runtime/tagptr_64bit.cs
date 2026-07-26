@@ -21,12 +21,15 @@ internal static readonly UntypedInt riscv64TagBits = /* 64 - riscv64AddrBits + 3
 // The number of bits stored in the numeric tag of a taggedPointer
 internal static readonly UntypedInt taggedPointerBits = /* (goos.IsAix * aixTagBits) + (goarch.IsRiscv64 * riscv64TagBits) + ((1 - goos.IsAix) * (1 - goarch.IsRiscv64) * tagBits) */ 19;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string checkThisCodeForAixOnNonˢ = "check this code for aix on non-ppc64"u8;
+
 // taggedPointerPack created a taggedPointer from a pointer and a tag.
 // Tag bits that don't fit in the result are discarded.
 internal static taggedPointer taggedPointerPack(@unsafe.Pointer ptr, uintptr tag) {
     if (GOOS == "aix"u8) {
         if (GOARCH != "ppc64"u8) {
-            @throw("check this code for aix on non-ppc64"u8);
+            @throw(checkThisCodeForAixOnNonˢ);
         }
         return ((taggedPointer)((uint64)(((uint64)(uintptr)ptr << (int)((64 - aixAddrBits))) | (uint64)((uintptr)(tag & (uintptr)((1 << (int)(aixTagBits)) - 1))))));
     }

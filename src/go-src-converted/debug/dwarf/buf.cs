@@ -55,9 +55,12 @@ internal static buf makeBuf(ж<Data> Ꮡd, dataFormat format, @string name, Offs
     return new buf(Ꮡd, d.order, format, name, off, data, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string underflowˢ = "underflow"u8;
+
 [GoRecv] internal static uint8 uint8(this ref buf b) {
     if (len(b.data) < 1) {
-        b.error("underflow"u8);
+        b.error(underflowˢ);
         return 0;
     }
     var val = b.data[0];
@@ -68,7 +71,7 @@ internal static buf makeBuf(ж<Data> Ꮡd, dataFormat format, @string name, Offs
 
 [GoRecv] internal static slice<byte> bytes(this ref buf b, nint n) {
     if (n < 0 || len(b.data) < n) {
-        b.error("underflow"u8);
+        b.error(underflowˢ);
         return default!;
     }
     var data = b.data[0..(int)(n)];
@@ -84,7 +87,7 @@ internal static buf makeBuf(ж<Data> Ꮡd, dataFormat format, @string name, Offs
 [GoRecv] internal static @string @string(this ref buf b) {
     nint i = bytes_package.IndexByte(b.data, 0);
     if (i < 0) {
-        b.error("underflow"u8);
+        b.error(underflowˢ);
         return ""u8;
     }
     @string s = ((@string)(b.data[0..(int)(i)]));
@@ -164,6 +167,9 @@ internal static buf makeBuf(ж<Data> Ꮡd, dataFormat format, @string name, Offs
     return x;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownAddressSizeˢ = "unknown address size"u8;
+
 // Address-sized uint.
 [GoRecv] internal static uint64 addr(this ref buf b) {
     switch (b.format.addrsize()) {
@@ -180,9 +186,12 @@ internal static buf makeBuf(ж<Data> Ꮡd, dataFormat format, @string name, Offs
         return b.uint64();
     }}
 
-    b.error("unknown address size"u8);
+    b.error(unknownAddressSizeˢ);
     return 0;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unitLengthHasReservedˢ = "unit length has reserved value"u8;
 
 [GoRecv] internal static (Offset length, bool dwarf64) unitLength(this ref buf b) {
     Offset length = default!;
@@ -194,7 +203,7 @@ internal static buf makeBuf(ж<Data> Ꮡd, dataFormat format, @string name, Offs
         length = ((Offset)(uint32)b.uint64());
     } else 
     if (length >= 0xfffffff0U) {
-        b.error("unit length has reserved value"u8);
+        b.error(unitLengthHasReservedˢ);
     }
     return (length, dwarf64);
 }

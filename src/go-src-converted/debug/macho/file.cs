@@ -651,14 +651,22 @@ internal static @string cstring(slice<byte> b) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string debugˢ = "__debug_"u8;
+private static readonly @string zdebugˢ = "__zdebug_"u8;
+private static readonly @string abbrevˢ = "abbrev"u8;
+private static readonly @string infoˢ = "info"u8;
+private static readonly @string lineˢ = "line"u8;
+private static readonly @string rangesˢ = "ranges"u8;
+
 // DWARF returns the DWARF debug information for the Mach-O file.
 [GoRecv] public static (ж<dwarf.Data>, error) DWARF(this ref File f) {
     var dwarfSuffix = @string (ж<ΔSection> s) => {
         switch (ᐧ) {
-        case {} when strings.HasPrefix((~s).Name, "__debug_"u8): {
+        case {} when strings.HasPrefix((~s).Name, debugˢ): {
             return (~s).Name[8..];
         }
-        case {} when strings.HasPrefix((~s).Name, "__zdebug_"u8): {
+        case {} when strings.HasPrefix((~s).Name, zdebugˢ): {
             return (~s).Name[9..];
         }
         default: {
@@ -712,7 +720,7 @@ internal static @string cstring(slice<byte> b) {
         }
         dat[suffix] = b;
     }
-    var (d, err) = dwarf.New(dat["abbrev"u8], default!, default!, dat["info"u8], dat["line"u8], default!, dat["ranges"u8], dat["str"u8]);
+    var (d, err) = dwarf.New(dat[abbrevˢ], default!, default!, dat[infoˢ], dat[lineˢ], default!, dat[rangesˢ], dat["str"u8]);
     if (err != default!) {
         return (default!, err);
     }

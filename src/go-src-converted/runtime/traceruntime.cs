@@ -181,6 +181,9 @@ internal static traceLocker traceTryAcquire() {
     return traceTryAcquireEnabled();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badUseOfTraceSeqlockOrˢ = "bad use of trace.seqlock or tracer is reentrant"u8;
+
 // traceAcquireEnabled is the traceEnabled path for traceAcquire. It's explicitly
 // broken out to make traceAcquire inlineable to keep the overhead of the tracer
 // when it's disabled low.
@@ -203,7 +206,7 @@ internal static traceLocker traceAcquireEnabled() {
     // doing.
     var seq = mp.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Add(1);
     if (debugTraceReentrancy && seq % 2 != 1) {
-        @throw("bad use of trace.seqlock or tracer is reentrant"u8);
+        @throw(badUseOfTraceSeqlockOrˢ);
     }
     // N.B. This load of gen appears redundant with the one in traceEnabled.
     // However, it's very important that the gen we use for writing to the trace
@@ -250,6 +253,9 @@ internal static bool ok(this traceLocker tl) {
     return tl.gen != 0;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badUseOfTraceSeqlockˢ = "bad use of trace.seqlock"u8;
+
 // traceRelease indicates that this M is done writing trace events.
 //
 // nosplit because it's called on the syscall path when stack movement is forbidden.
@@ -259,7 +265,7 @@ internal static void traceRelease(traceLocker tl) {
     var seq = tl.mp.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Add(1);
     if (debugTraceReentrancy && seq % 2 != 0) {
         print((@string)"runtime: seq="u8, seq, (@string)"\n"u8);
-        @throw("bad use of trace.seqlock"u8);
+        @throw(badUseOfTraceSeqlockˢ);
     }
     releasem(tl.mp);
 }
@@ -346,6 +352,9 @@ internal static void STWDone(this traceLocker tl) {
     tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvSTWEnd);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string doubleTraceGCSweepStartˢ = "double traceGCSweepStart"u8;
+
 // GCSweepStart prepares to trace a sweep loop. This does not
 // emit any events until traceGCSweepSpan is called.
 //
@@ -358,7 +367,7 @@ internal static void GCSweepStart(this traceLocker tl) {
     // sweep. If we don't sweep anything, don't emit any events.
     var pp = (~tl.mp).p.ptr();
     if ((~pp).trace.maySweep) {
-        @throw("double traceGCSweepStart"u8);
+        @throw(doubleTraceGCSweepStartˢ);
     }
     pp.Value.trace.maySweep = true;
     pp.Value.trace.swept = 0;
@@ -384,6 +393,9 @@ internal static void GCSweepSpan(this traceLocker tl, uintptr bytesSwept) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingTraceGCSweepStartˢ = "missing traceGCSweepStart"u8;
+
 // GCSweepDone finishes tracing a sweep loop. If any memory was
 // swept (i.e. traceGCSweepSpan emitted an event) then this will emit
 // a GCSweepEnd event.
@@ -392,7 +404,7 @@ internal static void GCSweepSpan(this traceLocker tl, uintptr bytesSwept) {
 internal static void GCSweepDone(this traceLocker tl) {
     var pp = (~tl.mp).p.ptr();
     if (!(~pp).trace.maySweep) {
-        @throw("missing traceGCSweepStart"u8);
+        @throw(missingTraceGCSweepStartˢ);
     }
     if ((~pp).trace.inSweep) {
         tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGCSweepEnd, ((traceArg)(uint64)(~pp).trace.swept), ((traceArg)(uint64)(~pp).trace.reclaimed));
@@ -713,7 +725,7 @@ internal static void traceThreadDestroy(ж<m> Ꮡmp) {
     // as well.
     var seq = Ꮡmp.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Add(1);
     if (debugTraceReentrancy && seq % 2 != 1) {
-        @throw("bad use of trace.seqlock or tracer is reentrant"u8);
+        @throw(badUseOfTraceSeqlockOrˢ);
     }
     systemstack(() => {
         @lock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
@@ -730,7 +742,7 @@ internal static void traceThreadDestroy(ж<m> Ꮡmp) {
     var seq1 = Ꮡmp.of(m.Ꮡtrace).of(mTraceState.Ꮡseqlock).Add(1);
     if (seq1 != seq + 1) {
         print((@string)"runtime: seq1="u8, seq1, (@string)"\n"u8);
-        @throw("bad use of trace.seqlock"u8);
+        @throw(badUseOfTraceSeqlockˢ);
     }
 }
 

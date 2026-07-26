@@ -250,14 +250,18 @@ public static (@string, error) ToASCII(this ж<Profile> Ꮡp, @string s) {
     return Ꮡpp.process(s, false);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string transitionalˢ = "Transitional"u8;
+private static readonly @string nonTransitionalˢ = "NonTransitional"u8;
+
 // String reports a string with a description of the profile for debugging
 // purposes. The string format may change with different versions.
 [GoRecv] public static @string String(this ref Profile p) {
     @string s = ""u8;
     if (p.transitional){
-        s = "Transitional"u8;
+        s = transitionalˢ;
     } else {
-        s = "NonTransitional"u8;
+        s = nonTransitionalˢ;
     }
     if (p.useSTD3Rules) {
         s += ":UseSTD3Rules"u8;

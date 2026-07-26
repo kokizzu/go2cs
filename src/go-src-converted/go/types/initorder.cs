@@ -14,6 +14,12 @@ using errors = global::go.@internal.types.errors_package;
 
 partial class types_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object objectDependencyGraphˢ = (@string)"Object dependency graph:"u8;
+private static readonly object transposedObjectˢ = (@string)"Transposed object dependency graph (functions eliminated):"u8;
+private static readonly object processingNodesˢ = (@string)"Processing nodes:"u8;
+private static readonly object initializationOrderˢ = (@string)"Initialization order:"u8;
+
 // initOrder computes the Info.InitOrder for package variables.
 internal static void initOrder(this ж<Checker> Ꮡcheck) {
     ref var check = ref Ꮡcheck.Value;
@@ -29,7 +35,7 @@ internal static void initOrder(this ж<Checker> Ꮡcheck) {
     const bool debug = false;
     if (debug) {
         fmt.Printf("Computing initialization order for %s\n\n"u8, check.pkg);
-        fmt.Println((@string)"Object dependency graph:"u8);
+        fmt.Println(objectDependencyGraphˢ);
         foreach (var (obj, d) in check.objMap) {
             // only print objects that may appear in the dependency graph
             {
@@ -46,7 +52,7 @@ internal static void initOrder(this ж<Checker> Ꮡcheck) {
             }
         }
         fmt.Println();
-        fmt.Println((@string)"Transposed object dependency graph (functions eliminated):"u8);
+        fmt.Println(transposedObjectˢ);
         foreach (var (_, n) in pq) {
             fmt.Printf("\t%s depends on %d nodes\n"u8, (~n).obj.Name(), (~n).ndeps);
             foreach (var (p, _) in (~n).pred) {
@@ -54,7 +60,7 @@ internal static void initOrder(this ж<Checker> Ꮡcheck) {
             }
         }
         fmt.Println();
-        fmt.Println((@string)"Processing nodes:"u8);
+        fmt.Println(processingNodesˢ);
     }
     // Determine initialization order by removing the highest priority node
     // (the one with the fewest dependencies) and its edges from the graph,
@@ -119,7 +125,7 @@ internal static void initOrder(this ж<Checker> Ꮡcheck) {
     }
     if (debug) {
         fmt.Println();
-        fmt.Println((@string)"Initialization order:"u8);
+        fmt.Println(initializationOrderˢ);
         foreach (var (_, init) in (~check.Info).InitOrder) {
             fmt.Printf("\t%s\n"u8, init);
         }

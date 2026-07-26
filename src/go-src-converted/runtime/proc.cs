@@ -142,6 +142,16 @@ internal static int64 runtimeInitTime;
 // Value to use for signal mask for newly created M's.
 internal static sigset initSigmask;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeMainNotOnM0ˢ = "runtime.main not on m0"u8;
+private static readonly @string nanotimeReturningZeroˢ = "nanotime returning zero"u8;
+private static readonly @string cgoPthreadKeyCreatedˢ = "_cgo_pthread_key_created missing"u8;
+private static readonly @string cgoThreadStartMissingˢ = "_cgo_thread_start missing"u8;
+private static readonly @string cgoSetenvMissingˢ = "_cgo_setenv missing"u8;
+private static readonly @string cgoUnsetenvMissingˢ = "_cgo_unsetenv missing"u8;
+private static readonly @string cgoNotifyRuntimeInitDoneˢ = "_cgo_notify_runtime_init_done missing"u8;
+private static readonly @string setCrosscall2Missingˢ = "set_crosscall2 missing"u8;
+
 // The main goroutine.
 internal static void Main() => func((defer, recover) => {
     var mp = getg().Value.m;
@@ -175,13 +185,13 @@ internal static void Main() => func((defer, recover) => {
     // to preserve the lock.
     lockOSThread();
     if (mp != Ꮡm0) {
-        @throw("runtime.main not on m0"u8);
+        @throw(runtimeMainNotOnM0ˢ);
     }
     // Record when the world started.
     // Must be before doInit for tracing init.
     runtimeInitTime = nanotime();
     if (runtimeInitTime == 0) {
-        @throw("nanotime returning zero"u8);
+        @throw(nanotimeReturningZeroˢ);
     }
     if (debug.inittrace != 0) {
         inittrace.id = getg().Value.goid;
@@ -200,25 +210,25 @@ internal static void Main() => func((defer, recover) => {
     main_init_done = new channel<bool>(0);
     if (iscgo) {
         if (_cgo_pthread_key_created == nil) {
-            @throw("_cgo_pthread_key_created missing"u8);
+            @throw(cgoPthreadKeyCreatedˢ);
         }
         if (_cgo_thread_start == nil) {
-            @throw("_cgo_thread_start missing"u8);
+            @throw(cgoThreadStartMissingˢ);
         }
         if (GOOS != "windows"u8) {
             if (_cgo_setenv == nil) {
-                @throw("_cgo_setenv missing"u8);
+                @throw(cgoSetenvMissingˢ);
             }
             if (_cgo_unsetenv == nil) {
-                @throw("_cgo_unsetenv missing"u8);
+                @throw(cgoUnsetenvMissingˢ);
             }
         }
         if (_cgo_notify_runtime_init_done == nil) {
-            @throw("_cgo_notify_runtime_init_done missing"u8);
+            @throw(cgoNotifyRuntimeInitDoneˢ);
         }
         // Set the x_crosscall2_ptr C function pointer variable point to crosscall2.
         if (set_crosscall2 == default!) {
-            @throw("set_crosscall2 missing"u8);
+            @throw(setCrosscall2Missingˢ);
         }
         set_crosscall2();
         // Start the template thread in case we enter Go from
@@ -304,13 +314,16 @@ internal static void runExitHooks(nint code) {
     goǃ(forcegchelper);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string forcegcPhaseErrorˢ = "forcegc: phase error"u8;
+
 internal static void forcegchelper() {
     forcegc.g = getg();
     lockInit(Ꮡforcegc.of(forcegcstate.Ꮡlock), lockRankForcegc);
     while (ᐧ) {
         @lock(Ꮡforcegc.of(forcegcstate.Ꮡlock));
         if (Ꮡforcegc.of(forcegcstate.Ꮡidle).Load()) {
-            @throw("forcegc: phase error"u8);
+            @throw(forcegcPhaseErrorˢ);
         }
         Ꮡforcegc.of(forcegcstate.Ꮡidle).Store(true);
         goparkunlock(Ꮡforcegc.of(forcegcstate.Ꮡlock), waitReasonForceGCIdle, traceBlockSystemGoroutine, 1);
@@ -355,6 +368,9 @@ internal static void goschedIfBusy() {
     mcall(gosched_m);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goparkBadGStatusˢ = "gopark: bad g status"u8;
+
 // Puts the current goroutine into a waiting state and calls unlockf on the
 // system stack.
 //
@@ -392,7 +408,7 @@ internal static void gopark(Func<ж<g>, @unsafe.Pointer, bool> unlockf, @unsafe.
     var gp = mp.Value.curg;
     var status = readgstatus(gp);
     if (status != _Grunning && status != _Gscanrunning) {
-        @throw("gopark: bad g status"u8);
+        @throw(goparkBadGStatusˢ);
     }
     mp.Value.waitlock = @lock;
     mp.Value.waitunlockf = unlockf;
@@ -426,6 +442,9 @@ internal static void goready(ж<g> Ꮡgp, nint traceskip) {
     });
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string acquireSudogFoundSElemˢ = "acquireSudog: found s.elem != nil in cache"u8;
+
 //go:nosplit
 internal static ж<sudog> acquireSudog() {
     // Delicate dance: the semaphore implementation calls
@@ -458,37 +477,46 @@ internal static ж<sudog> acquireSudog() {
     pp.Value.sudogcache[n - 1] = default!;
     pp.Value.sudogcache = (~pp).sudogcache[..(int)(n - 1)];
     if ((~s).elem != nil) {
-        @throw("acquireSudog: found s.elem != nil in cache"u8);
+        @throw(acquireSudogFoundSElemˢ);
     }
     releasem(mp);
     return s;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeSudogWithNonNilˢ = "runtime: sudog with non-nil elem"u8;
+private static readonly @string runtimeSudogWithNonFalseˢ = "runtime: sudog with non-false isSelect"u8;
+private static readonly @string runtimeSudogWithNonNilˢ2 = "runtime: sudog with non-nil next"u8;
+private static readonly @string runtimeSudogWithNonNilˢ3 = "runtime: sudog with non-nil prev"u8;
+private static readonly @string runtimeSudogWithNonNilˢ4 = "runtime: sudog with non-nil waitlink"u8;
+private static readonly @string runtimeSudogWithNonNilCˢ = "runtime: sudog with non-nil c"u8;
+private static readonly @string runtimeReleaseSudogWithˢ = "runtime: releaseSudog with non-nil gp.param"u8;
 
 //go:nosplit
 internal static void releaseSudog(ж<sudog> Ꮡs) {
     ref var s = ref Ꮡs.Value;
 
     if (s.elem != nil) {
-        @throw("runtime: sudog with non-nil elem"u8);
+        @throw(runtimeSudogWithNonNilˢ);
     }
     if (s.isSelect) {
-        @throw("runtime: sudog with non-false isSelect"u8);
+        @throw(runtimeSudogWithNonFalseˢ);
     }
     if (s.next != nil) {
-        @throw("runtime: sudog with non-nil next"u8);
+        @throw(runtimeSudogWithNonNilˢ2);
     }
     if (s.prev != nil) {
-        @throw("runtime: sudog with non-nil prev"u8);
+        @throw(runtimeSudogWithNonNilˢ3);
     }
     if (s.waitlink != nil) {
-        @throw("runtime: sudog with non-nil waitlink"u8);
+        @throw(runtimeSudogWithNonNilˢ4);
     }
     if (s.c != nil) {
-        @throw("runtime: sudog with non-nil c"u8);
+        @throw(runtimeSudogWithNonNilCˢ);
     }
     var gp = getg();
     if ((~gp).param != nil) {
-        @throw("runtime: releaseSudog with non-nil gp.param"u8);
+        @throw(runtimeReleaseSudogWithˢ);
     }
     var mp = acquirem();
     // avoid rescheduling to another P
@@ -518,24 +546,37 @@ internal static void releaseSudog(ж<sudog> Ꮡs) {
     releasem(mp);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeMcallCalledOnMG0ˢ = "runtime: mcall called on m->g0 stack"u8;
+
 // called from assembly.
 internal static void badmcall(Action<ж<g>> fn) {
-    @throw("runtime: mcall called on m->g0 stack"u8);
+    @throw(runtimeMcallCalledOnMG0ˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeMcallFunctionˢ = "runtime: mcall function returned"u8;
 
 internal static void badmcall2(Action<ж<g>> fn) {
-    @throw("runtime: mcall function returned"u8);
+    @throw(runtimeMcallFunctionˢ);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string argSizeToReflectCallMoreˢ = "arg size to reflect.call more than 1GB"u8;
+
 internal static void badreflectcall() {
-    throw panic(((plainError)(@string)"arg size to reflect.call more than 1GB"u8));
+    throw panic(((plainError)(@string)argSizeToReflectCallMoreˢ));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fatalMorestackOnG0ˢ = "fatal: morestack on g0\n"u8;
+private static readonly @string morestackOnG0ˢ = "morestack on g0"u8;
 
 //go:nosplit
 //go:nowritebarrierrec
 internal static void badmorestackg0() {
     if (!crashStackImplemented) {
-        writeErrStr("fatal: morestack on g0\n"u8);
+        writeErrStr(fatalMorestackOnG0ˢ);
         return;
     }
     var g = getg();
@@ -546,19 +587,25 @@ internal static void badmorestackg0() {
         // include pc and sp in stack trace
         traceback1((~gʗ1).sched.pc, (~gʗ1).sched.sp, (~gʗ1).sched.lr, gʗ1, 0);
         print((@string)"\n"u8);
-        @throw("morestack on g0"u8);
+        @throw(morestackOnG0ˢ);
     });
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fatalMorestackOnGsignalˢ = "fatal: morestack on gsignal\n"u8;
 
 //go:nosplit
 //go:nowritebarrierrec
 internal static void badmorestackgsignal() {
-    writeErrStr("fatal: morestack on gsignal\n"u8);
+    writeErrStr(fatalMorestackOnGsignalˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ctxt0ˢ = "ctxt != 0"u8;
 
 //go:nosplit
 internal static void badctxt() {
-    @throw("ctxt != 0"u8);
+    @throw(ctxt0ˢ);
 }
 
 // gcrash is a fake g that can be used when crashing due to bad
@@ -567,6 +614,10 @@ internal static g gcrash = new();
 
 internal static ж<atomic.Pointer<g>> ᏑcrashingG = new(default(atomic.Pointer<g>));
 internal static ref atomic.Pointer<g> crashingG => ref ᏑcrashingG.Value;
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fatalRecursiveˢ = "fatal: recursive switchToCrashStack\n"u8;
+private static readonly @string fatalConcurrentˢ = "fatal: concurrent switchToCrashStack\n"u8;
 
 // Switch to crashstack and call fn, with special handling of
 // concurrent and recursive cases.
@@ -585,12 +636,12 @@ internal static void switchToCrashStack(Action fn) {
     }
     if (ᏑcrashingG.Load() == me) {
         // recursive crashing. too bad.
-        writeErrStr("fatal: recursive switchToCrashStack\n"u8);
+        writeErrStr(fatalRecursiveˢ);
         abort();
     }
     // Another g is crashing. Give it some time, hopefully it will finish traceback.
     usleep_no_g(100);
-    writeErrStr("fatal: concurrent switchToCrashStack\n"u8);
+    writeErrStr(fatalConcurrentˢ);
     abort();
 }
 
@@ -617,9 +668,12 @@ internal static ref uintptr allglen => ref Ꮡallglen.Value;
 internal static ж<ж<ж<g>>> Ꮡallgptr = new(default(ж<ж<g>>));
 internal static ref ж<ж<g>> allgptr => ref Ꮡallgptr.ValueSlot;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string allgaddBadStatusGidleˢ = "allgadd: bad status Gidle"u8;
+
 internal static void allgadd(ж<g> Ꮡgp) {
     if (readgstatus(Ꮡgp) == _Gidle) {
-        @throw("allgadd: bad status Gidle"u8);
+        @throw(allgaddBadStatusGidleˢ);
     }
     @lock(Ꮡallglock);
     allgs = append(allgs, Ꮡgp);
@@ -735,6 +789,11 @@ internal static @string getGodebugEarly() {
     return env;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gomaxprocsˢ = "GOMAXPROCS"u8;
+private static readonly @string unknownRunnableGoroutineˢ = "unknown runnable goroutine during bootstrap"u8;
+private static readonly @string unknownˢ2 = "unknown"u8;
+
 // The bootstrap sequence is:
 //
 //	call osinit
@@ -819,12 +878,12 @@ internal static void schedinit() {
     Ꮡsched.of(schedt.Ꮡlastpoll).Store(nanotime());
     var procs = ncpu;
     {
-        var (n, ok) = atoi32(gogetenv("GOMAXPROCS"u8)); if (ok && n > 0) {
+        var (n, ok) = atoi32(gogetenv(gomaxprocsˢ)); if (ok && n > 0) {
             procs = n;
         }
     }
     if (procresize(procs) != nil) {
-        @throw("unknown runnable goroutine during bootstrap"u8);
+        @throw(unknownRunnableGoroutineˢ);
     }
     unlock(Ꮡsched.of(schedt.Ꮡlock));
     // World is effectively started now, as P's can run.
@@ -832,7 +891,7 @@ internal static void schedinit() {
     if (buildVersion == ""u8) {
         // Condition should never trigger. This code just serves
         // to ensure runtime·buildVersion is kept in the resulting binary.
-        buildVersion = "unknown"u8;
+        buildVersion = unknownˢ2;
     }
     if (len(modinfo) == 1) {
         // Condition should never trigger. This code just serves
@@ -849,6 +908,9 @@ internal static void dumpgstatus(ж<g> Ꮡgp) {
     print((@string)"runtime: getg:  g="u8, thisg, (@string)", goid="u8, (~thisg).goid, (@string)",  g->atomicstatus="u8, readgstatus(thisg), (@string)"\n"u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string threadExhaustionˢ = "thread exhaustion"u8;
+
 // sched.lock must be held.
 internal static void checkmcount() {
     assertLockHeld(Ꮡsched.of(schedt.Ꮡlock));
@@ -863,9 +925,12 @@ internal static void checkmcount() {
     var count = mcount() - (int32)ᏑextraMInUse.Load() - (int32)ᏑextraMLength.Load();
     if (count > sched.maxmcount) {
         print((@string)"runtime: program exceeds "u8, sched.maxmcount, (@string)"-thread limit\n"u8);
-        @throw("thread exhaustion"u8);
+        @throw(threadExhaustionˢ);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeThreadIdOverflowˢ = "runtime: thread ID overflow"u8;
 
 // mReserveID returns the next ID to use for a new m. This new m is immediately
 // considered 'running' by checkdead.
@@ -874,7 +939,7 @@ internal static void checkmcount() {
 internal static int64 mReserveID() {
     assertLockHeld(Ꮡsched.of(schedt.Ꮡlock));
     if (sched.mnext + 1 < sched.mnext) {
-        @throw("runtime: thread ID overflow"u8);
+        @throw(runtimeThreadIdOverflowˢ);
     }
     var id = sched.mnext;
     sched.mnext++;
@@ -970,6 +1035,9 @@ internal const bool osHasLowResTimer = /* GOOS == "windows" || GOOS == "openbsd"
 internal static readonly UntypedInt osHasLowResClockInt = /* goos.IsWindows */ 1;
 internal const bool osHasLowResClock = /* osHasLowResClockInt > 0 */ true;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badGStatusInReadyˢ = "bad g->status in ready"u8;
+
 // Mark gp ready to run.
 internal static void ready(ж<g> Ꮡgp, nint traceskip, bool next) {
     var status = readgstatus(Ꮡgp);
@@ -978,7 +1046,7 @@ internal static void ready(ж<g> Ꮡgp, nint traceskip, bool next) {
     // disable preemption because it can be holding p in a local var
     if ((uint32)(status & ~(uint32)_Gscan) != _Gwaiting) {
         dumpgstatus(Ꮡgp);
-        @throw("bad g->status in ready"u8);
+        @throw(badGStatusInReadyˢ);
     }
     // status is Gwaiting or Gscanwaiting, make Grunnable and put on runq
     var Δtrace = traceAcquire();
@@ -1062,6 +1130,10 @@ internal static uint32 readgstatus(ж<g> Ꮡgp) {
     return Ꮡgp.of(g.Ꮡatomicstatus).Load();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string casfromGscanstatusTopGpˢ = "casfrom_Gscanstatus:top gp->status is not in scan state"u8;
+private static readonly @string casfromGscanstatusGpˢ = "casfrom_Gscanstatus: gp->status is not in scan state"u8;
+
 // The Gscanstatuses are acting like locks and this releases them.
 // If it proves to be a performance hit we should be able to make these
 // simple atomic stores but for now we are going to throw if
@@ -1080,16 +1152,19 @@ internal static void casfrom_Gscanstatus(ж<g> Ꮡgp, uint32 oldval, uint32 newv
     else { /* default: */
         print((@string)"runtime: casfrom_Gscanstatus bad oldval gp="u8, Ꮡgp, (@string)", oldval="u8, ((Δhex)(uint64)oldval), (@string)", newval="u8, ((Δhex)(uint64)newval), (@string)"\n"u8);
         dumpgstatus(Ꮡgp);
-        @throw("casfrom_Gscanstatus:top gp->status is not in scan state"u8);
+        @throw(casfromGscanstatusTopGpˢ);
     }
 
     if (!success) {
         print((@string)"runtime: casfrom_Gscanstatus failed gp="u8, Ꮡgp, (@string)", oldval="u8, ((Δhex)(uint64)oldval), (@string)", newval="u8, ((Δhex)(uint64)newval), (@string)"\n"u8);
         dumpgstatus(Ꮡgp);
-        @throw("casfrom_Gscanstatus: gp->status is not in scan state"u8);
+        @throw(casfromGscanstatusGpˢ);
     }
     releaseLockRankAndM(lockRankGscan);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string castogscanstatusˢ = "castogscanstatus"u8;
 
 // This will return false if the gp is not in the expected status and the cas fails.
 // This acts like a lock acquire while the casfromgstatus acts like a lock release.
@@ -1106,13 +1181,17 @@ internal static bool castogscanstatus(ж<g> Ꮡgp, uint32 oldval, uint32 newval)
     }
 
     print((@string)"runtime: castogscanstatus oldval="u8, ((Δhex)(uint64)oldval), (@string)" newval="u8, ((Δhex)(uint64)newval), (@string)"\n"u8);
-    @throw("castogscanstatus"u8);
+    @throw(castogscanstatusˢ);
     throw panic("not reached");
 }
 
 // casgstatusAlwaysTrack is a debug flag that causes casgstatus to always track
 // various latencies on every transition instead of sampling them.
 internal static bool casgstatusAlwaysTrack = false;
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string casgstatusBadIncomingˢ = "casgstatus: bad incoming values"u8;
+private static readonly @string casgstatusWaitingForˢ = "casgstatus: waiting for Gwaiting but is Grunnable"u8;
 
 // If asked to move to or from a Gscanstatus this will throw. Use the castogscanstatus
 // and casfrom_Gscanstatus instead.
@@ -1128,7 +1207,7 @@ internal static void casgstatus(ж<g> Ꮡgp, uint32 oldval, uint32 newval) {
             // Call on the systemstack to prevent print and throw from counting
             // against the nosplit stack reservation.
             print((@string)"runtime: casgstatus: oldval="u8, ((Δhex)(uint64)oldval), (@string)" newval="u8, ((Δhex)(uint64)newval), (@string)"\n"u8);
-            @throw("casgstatus: bad incoming values"u8);
+            @throw(casgstatusBadIncomingˢ);
         });
     }
     lockWithRankMayAcquire(nil, lockRankGscan);
@@ -1142,7 +1221,7 @@ internal static void casgstatus(ж<g> Ꮡgp, uint32 oldval, uint32 newval) {
             systemstack(() => {
                 // Call on the systemstack to prevent throw from counting
                 // against the nosplit stack reservation.
-                @throw("casgstatus: waiting for Gwaiting but is Grunnable"u8);
+                @throw(casgstatusWaitingForˢ);
             });
         }
         if (i == 0) {
@@ -1239,16 +1318,22 @@ internal static void casGToWaiting(ж<g> Ꮡgp, uint32 old, waitReason reason) {
     casgstatus(Ꮡgp, old, _Gwaiting);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string casGToWaitingForGCWithˢ = "casGToWaitingForGC with non-isWaitingForGC wait reason"u8;
+
 // casGToWaitingForGC transitions gp from old to _Gwaiting, and sets the wait reason.
 // The wait reason must be a valid isWaitingForGC wait reason.
 //
 // Use this over casgstatus when possible to ensure that a waitreason is set.
 internal static void casGToWaitingForGC(ж<g> Ꮡgp, uint32 old, waitReason reason) {
     if (!reason.isWaitingForGC()) {
-        @throw("casGToWaitingForGC with non-isWaitingForGC wait reason"u8);
+        @throw(casGToWaitingForGCWithˢ);
     }
     casGToWaiting(Ꮡgp, old, reason);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string copystackBadStatusNotˢ = "copystack: bad status, not Gwaiting or Grunnable"u8;
 
 // casgstatus(gp, oldstatus, Gcopystack), assuming oldstatus is Gwaiting or Grunnable.
 // Returns old status. Cannot call casgstatus directly, because we are racing with an
@@ -1261,7 +1346,7 @@ internal static uint32 casgcopystack(ж<g> Ꮡgp) {
     while (ᐧ) {
         var oldstatus = (uint32)(readgstatus(Ꮡgp) & ~(uint32)_Gscan);
         if (oldstatus != _Gwaiting && oldstatus != _Grunnable) {
-            @throw("copystack: bad status, not Gwaiting or Grunnable"u8);
+            @throw(copystackBadStatusNotˢ);
         }
         if (Ꮡgp.of(g.Ꮡatomicstatus).CompareAndSwap(oldstatus, _Gcopystack)) {
             return oldstatus;
@@ -1269,13 +1354,16 @@ internal static uint32 casgcopystack(ж<g> Ꮡgp) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badGTransitionˢ = "bad g transition"u8;
+
 // casGToPreemptScan transitions gp from _Grunning to _Gscan|_Gpreempted.
 //
 // TODO(austin): This is the only status operation that both changes
 // the status and locks the _Gscan bit. Rethink this.
 internal static void casGToPreemptScan(ж<g> Ꮡgp, uint32 old, uint32 @new) {
     if (old != _Grunning || @new != (uint32)((uint32)_Gscan | (uint32)_Gpreempted)) {
-        @throw("bad g transition"u8);
+        @throw(badGTransitionˢ);
     }
     acquireLockRankAndM(lockRankGscan);
     while (!Ꮡgp.of(g.Ꮡatomicstatus).CompareAndSwap(_Grunning, (uint32)((uint32)_Gscan | (uint32)_Gpreempted))) {
@@ -1289,7 +1377,7 @@ internal static bool casGFromPreempted(ж<g> Ꮡgp, uint32 old, uint32 @new) {
     ref var gp = ref Ꮡgp.Value;
 
     if (old != _Gpreempted || @new != _Gwaiting) {
-        @throw("bad g transition"u8);
+        @throw(badGTransitionˢ);
     }
     gp.waitreason = waitReasonPreempted;
     return Ꮡgp.of(g.Ꮡatomicstatus).CompareAndSwap(_Gpreempted, _Gwaiting);
@@ -1482,6 +1570,12 @@ internal static ref uint32 worldsema => ref Ꮡworldsema.Value;
 internal static ж<uint32> Ꮡgcsema = new(1);
 internal static ref uint32 gcsema => ref Ꮡgcsema.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stopTheWorldHoldingLocksˢ = "stopTheWorld: holding locks"u8;
+private static readonly @string stopTheWorldNotStoppedˢ = "stopTheWorld: not stopped (stopwait != 0)"u8;
+private static readonly @string stopTheWorldNotStoppedˢ2 = "stopTheWorld: not stopped (status != _Pgcstop)"u8;
+private static readonly @string stopTheWorldBrokenCpuˢ = "stopTheWorld: broken CPU time accounting"u8;
+
 // stopTheWorldWithSema is the core implementation of stopTheWorld.
 // The caller is responsible for acquiring worldsema and disabling
 // preemption first and then should stopTheWorldWithSema on the system
@@ -1522,7 +1616,7 @@ internal static worldStop stopTheWorldWithSema(stwReason reason) {
     // If we hold a lock, then we won't be able to stop another M
     // that is blocked trying to acquire the lock.
     if ((~(~gp).m).locks > 0) {
-        @throw("stopTheWorld: holding locks"u8);
+        @throw(stopTheWorldHoldingLocksˢ);
     }
     @lock(Ꮡsched.of(schedt.Ꮡlock));
     var start = nanotime();
@@ -1589,14 +1683,14 @@ internal static worldStop stopTheWorldWithSema(stwReason reason) {
     var stoppingCPUTime = (int64)0;
     @string bad = ""u8;
     if (sched.stopwait != 0){
-        bad = "stopTheWorld: not stopped (stopwait != 0)"u8;
+        bad = stopTheWorldNotStoppedˢ;
     } else {
         foreach (var (_, pp) in allp) {
             if ((~pp).status != _Pgcstop) {
-                bad = "stopTheWorld: not stopped (status != _Pgcstop)"u8;
+                bad = stopTheWorldNotStoppedˢ2;
             }
             if ((~pp).gcStopTime == 0 && bad == ""u8) {
-                bad = "stopTheWorld: broken CPU time accounting"u8;
+                bad = stopTheWorldBrokenCpuˢ;
             }
             stoppingCPUTime += finish - (~pp).gcStopTime;
             pp.Value.gcStopTime = 0;
@@ -1621,6 +1715,9 @@ internal static worldStop stopTheWorldWithSema(stwReason reason) {
         stoppingCPUTime: stoppingCPUTime
     );
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string startTheWorldˢ = "startTheWorld: inconsistent mp->nextp"u8;
 
 // reason is the same STW reason passed to stopTheWorld. start is the start
 // time returned by stopTheWorld.
@@ -1660,7 +1757,7 @@ internal static int64 startTheWorldWithSema(int64 now, worldStop w) {
             var mpΔ1 = (~Δp).m.ptr();
             Δp.Value.m = 0;
             if ((~mpΔ1).nextp != 0) {
-                @throw("startTheWorld: inconsistent mp->nextp"u8);
+                @throw(startTheWorldˢ);
             }
             mpΔ1.of(m.Ꮡnextp).set(Δp);
             notewakeup(mpΔ1.of(m.Ꮡpark));
@@ -1770,6 +1867,9 @@ internal static void mstart0() {
     mexit(osStack);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badRuntimeMstartˢ = "bad runtime·mstart"u8;
+
 // The go:noinline is to guarantee the getcallerpc/getcallersp below are safe,
 // so that we can set up g0.sched to return to the call of mstart1 above.
 //
@@ -1777,7 +1877,7 @@ internal static void mstart0() {
 internal static void mstart1() {
     var gp = getg();
     if (gp != (~(~gp).m).g0) {
-        @throw("bad runtime·mstart"u8);
+        @throw(badRuntimeMstartˢ);
     }
     // Set up m.g0.sched as a label returning to just
     // after the mstart1 call in mstart0 above, for use by goexit0 and mcall.
@@ -1833,6 +1933,10 @@ internal static void mPark() {
     noteclear((~gp).m.of(m.Ꮡpark));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lockedM0WokeUpˢ = "locked m0 woke up"u8;
+private static readonly @string mNotFoundInAllmˢ = "m not found in allm"u8;
+
 // mexit tears down and exits the current thread.
 //
 // Don't call this directly to exit the thread, since it must run at
@@ -1863,7 +1967,7 @@ internal static void mexit(bool osStack) {
         checkdead();
         unlock(Ꮡsched.of(schedt.Ꮡlock));
         mPark();
-        @throw("locked m0 woke up"u8);
+        @throw(lockedM0WokeUpˢ);
     }
     sigblock(true);
     unminit();
@@ -1884,7 +1988,7 @@ internal static void mexit(bool osStack) {
             goto found;
         }
     }
-    @throw("m not found in allm"u8);
+    @throw(mNotFoundInAllmˢ);
 found:
     mp.of(m.ᏑfreeWait).Store(freeMWait);
     // Events must not be traced after this point.
@@ -1966,6 +2070,11 @@ internal static void forEachP(waitReason reason, Action<ж<Δp>> fn) {
     });
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string forEachPSchedˢ = "forEachP: sched.safePointWait != 0"u8;
+private static readonly @string forEachPNotDoneˢ = "forEachP: not done"u8;
+private static readonly @string forEachPPDidNotRunFnˢ = "forEachP: P did not run fn"u8;
+
 // forEachPInternal calls fn(p) for every P p when p reaches a GC safe point.
 // It is the internal implementation of forEachP.
 //
@@ -1980,7 +2089,7 @@ internal static void forEachPInternal(Action<ж<Δp>> fn) {
     var pp = (~(~getg()).m).p.ptr();
     @lock(Ꮡsched.of(schedt.Ꮡlock));
     if (sched.safePointWait != 0) {
-        @throw("forEachP: sched.safePointWait != 0"u8);
+        @throw(forEachPSchedˢ);
     }
     sched.safePointWait = gomaxprocs - 1;
     sched.safePointFn = fn;
@@ -2041,11 +2150,11 @@ internal static void forEachPInternal(Action<ж<Δp>> fn) {
         }
     }
     if (sched.safePointWait != 0) {
-        @throw("forEachP: not done"u8);
+        @throw(forEachPNotDoneˢ);
     }
     foreach (var (_, p2) in allp) {
         if ((~p2).runSafePointFn != 0) {
-            @throw("forEachP: P did not run fn"u8);
+            @throw(forEachPPDidNotRunFnˢ);
         }
     }
     @lock(Ꮡsched.of(schedt.Ꮡlock));
@@ -2175,6 +2284,9 @@ internal static ж<m> allocm(ж<Δp> Ꮡpp, Action fn, int64 id) {
     return mp;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fatalErrorCgoCallbackˢ = "fatal error: cgo callback before cgo call\n"u8;
+
 // needm is called when a cgo callback happens on a
 // thread without an m (a thread not created by Go).
 // In this case, needm is expected to find an m to use
@@ -2222,7 +2334,7 @@ internal static void needm(bool signal) {
         // for details.
         //
         // Can not throw, because scheduler is not initialized yet.
-        writeErrStr("fatal error: cgo callback before cgo call\n"u8);
+        writeErrStr(fatalErrorCgoCallbackˢ);
         exit(1);
     }
     // Save and block signals before getting an M.
@@ -2466,6 +2578,10 @@ internal static void dropm() {
     msigrestore(sigmask);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bindmInUnexpectedGoosˢ = "bindm in unexpected GOOS"u8;
+private static readonly @string theCurrentGIsNotG0ˢ = "the current g is not g0"u8;
+
 // bindm store the g0 of the current m into a thread-specific value.
 //
 // We allocate a pthread per-thread variable using pthread_key_create,
@@ -2488,11 +2604,11 @@ internal static void dropm() {
 //go:nowritebarrierrec
 internal static void cgoBindM() {
     if (GOOS == "windows"u8 || GOOS == "plan9"u8) {
-        fatal("bindm in unexpected GOOS"u8);
+        fatal(bindmInUnexpectedGoosˢ);
     }
     var g = getg();
     if ((~(~g).m).g0 != g) {
-        fatal("the current g is not g0"u8);
+        fatal(theCurrentGIsNotG0ˢ);
     }
     if (_cgo_bindm != nil) {
         asmcgocall(_cgo_bindm, new @unsafe.Pointer(g));
@@ -2633,6 +2749,9 @@ internal static readonly @string failallocatestack = "runtime: failed to allocat
 internal static ж<newmHandoffᴛ1> ᏑnewmHandoff = new(new newmHandoffᴛ1());
 internal static ref newmHandoffᴛ1 newmHandoff => ref ᏑnewmHandoff.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string onALockedThreadWithNoˢ = "on a locked thread with no template thread"u8;
+
 // Create a new m. It will start off with a call to fn, or else the scheduler.
 // fn needs to be static and not a heap allocated closure.
 // May run with m.p==nil, so write barriers are not allowed.
@@ -2670,7 +2789,7 @@ internal static void newm(Action fn, ж<Δp> Ꮡpp, int64 id) {
             // doesn't model thread creation off fork.
             @lock(ᏑnewmHandoff.of(newmHandoffᴛ1.Ꮡlock));
             if (newmHandoff.haveTemplateThread == 0) {
-                @throw("on a locked thread with no template thread"u8);
+                @throw(onALockedThreadWithNoˢ);
             }
             mp.Value.schedlink = newmHandoff.newm;
             ᏑnewmHandoff.of(newmHandoffᴛ1.Ꮡnewm).set(mp);
@@ -2696,7 +2815,7 @@ internal static void newm1(ж<m> Ꮡmp) {
     if (iscgo) {
         ref var ts = ref heap(new cgothreadstart(), out var Ꮡts);
         if (_cgo_thread_start == nil) {
-            @throw("_cgo_thread_start missing"u8);
+            @throw(cgoThreadStartMissingˢ);
         }
         ts.g.set(mp.g0);
         ts.tls = Ꮡmp.at(m.Ꮡtls, 0).Reinterpret<uintptr, uint64>();
@@ -2777,18 +2896,23 @@ internal static void templateThread() {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stopmHoldingLocksˢ = "stopm holding locks"u8;
+private static readonly @string stopmHoldingPˢ = "stopm holding p"u8;
+private static readonly @string stopmSpinningˢ = "stopm spinning"u8;
+
 // Stops execution of the current m until new work is available.
 // Returns with acquired P.
 internal static void stopm() {
     var gp = getg();
     if ((~(~gp).m).locks != 0) {
-        @throw("stopm holding locks"u8);
+        @throw(stopmHoldingLocksˢ);
     }
     if ((~(~gp).m).p != 0) {
-        @throw("stopm holding p"u8);
+        @throw(stopmHoldingPˢ);
     }
     if ((~(~gp).m).spinning) {
-        @throw("stopm spinning"u8);
+        @throw(stopmSpinningˢ);
     }
     @lock(Ꮡsched.of(schedt.Ꮡlock));
     mput((~gp).m);
@@ -2802,6 +2926,12 @@ internal static void mspinning() {
     // startm's caller incremented nmspinning. Set the new M's spinning.
     getg().Value.m.Value.spinning = true;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string startmPRequiredForˢ = "startm: P required for spinning=true"u8;
+private static readonly @string startmMIsSpinningˢ = "startm: m is spinning"u8;
+private static readonly @string startmMHasPˢ = "startm: m has p"u8;
+private static readonly @string startmPHasRunnableGsˢ = "startm: p has runnable gs"u8;
 
 // Schedules some M to run the p (creates an M if necessary).
 // If p==nil, tries to get an idle P, if no idle P's does nothing.
@@ -2848,7 +2978,7 @@ internal static void startm(ж<Δp> Ꮡpp, bool spinning, bool lockheld) {
             // TODO(prattmic): All remaining calls to this function
             // with _p_ == nil could be cleaned up to find a P
             // before calling startm.
-            @throw("startm: P required for spinning=true"u8);
+            @throw(startmPRequiredForˢ);
         }
         (Ꮡpp, _) = pidleget(0); pp = ref Ꮡpp.DerefOrNil();
         if (Ꮡpp == nil) {
@@ -2895,13 +3025,13 @@ internal static void startm(ж<Δp> Ꮡpp, bool spinning, bool lockheld) {
         unlock(Ꮡsched.of(schedt.Ꮡlock));
     }
     if ((~nmp).spinning) {
-        @throw("startm: m is spinning"u8);
+        @throw(startmMIsSpinningˢ);
     }
     if ((~nmp).nextp != 0) {
-        @throw("startm: m has p"u8);
+        @throw(startmMHasPˢ);
     }
     if (spinning && !runqempty(Ꮡpp)) {
-        @throw("startm: p has runnable gs"u8);
+        @throw(startmPHasRunnableGsˢ);
     }
     // The caller incremented nmspinning, so set m.spinning in the new M.
     nmp.Value.spinning = spinning;
@@ -2984,6 +3114,9 @@ internal static void handoffp(ж<Δp> Ꮡpp) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string wakepNegativeNmspinningˢ = "wakep: negative nmspinning"u8;
+
 // Tries to add one more P to execute G's.
 // Called when a G is made runnable (newproc, ready).
 // Must be called with a P.
@@ -3014,7 +3147,7 @@ internal static void wakep() {
     (pp, _) = pidlegetSpinning(0);
     if (pp == nil) {
         if (Ꮡsched.of(schedt.Ꮡnmspinning).Add(-1) < 0) {
-            @throw("wakep: negative nmspinning"u8);
+            @throw(wakepNegativeNmspinningˢ);
         }
         unlock(Ꮡsched.of(schedt.Ꮡlock));
         releasem(mp);
@@ -3029,12 +3162,16 @@ internal static void wakep() {
     releasem(mp);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stoplockedmInconsistentˢ = "stoplockedm: inconsistent locking"u8;
+private static readonly @string stoplockedmNotRunnableˢ = "stoplockedm: not runnable"u8;
+
 // Stops execution of the current m that is locked to a g until the g is runnable again.
 // Returns with acquired P.
 internal static void stoplockedm() {
     var gp = getg();
     if ((~(~gp).m).lockedg == 0 || (~(~(~gp).m).lockedg.ptr()).lockedm.ptr() != (~gp).m) {
-        @throw("stoplockedm: inconsistent locking"u8);
+        @throw(stoplockedmInconsistentˢ);
     }
     if ((~(~gp).m).p != 0) {
         // Schedule another M to run this p.
@@ -3048,11 +3185,15 @@ internal static void stoplockedm() {
     if ((uint32)(status & ~(uint32)_Gscan) != _Grunnable) {
         print((@string)"runtime:stoplockedm: lockedg (atomicstatus="u8, status, (@string)") is not Grunnable or Gscanrunnable\n"u8);
         dumpgstatus((~(~gp).m).lockedg.ptr());
-        @throw("stoplockedm: not runnable"u8);
+        @throw(stoplockedmNotRunnableˢ);
     }
     acquirep((~(~gp).m).nextp.ptr());
     gp.Value.m.Value.nextp = 0;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string startlockedmLockedToMeˢ = "startlockedm: locked to me"u8;
+private static readonly @string startlockedmMHasPˢ = "startlockedm: m has p"u8;
 
 // Schedules the locked m to run the locked gp.
 // May run during STW, so write barriers are not allowed.
@@ -3063,10 +3204,10 @@ internal static void startlockedm(ж<g> Ꮡgp) {
 
     var mp = gp.lockedm.ptr();
     if (mp == (~getg()).m) {
-        @throw("startlockedm: locked to me"u8);
+        @throw(startlockedmLockedToMeˢ);
     }
     if ((~mp).nextp != 0) {
-        @throw("startlockedm: m has p"u8);
+        @throw(startlockedmMHasPˢ);
     }
     // directly handoff current P to the locked m
     incidlelocked(-1);
@@ -3076,19 +3217,23 @@ internal static void startlockedm(ж<g> Ꮡgp) {
     stopm();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gcstopmNotWaitingForGcˢ = "gcstopm: not waiting for gc"u8;
+private static readonly @string gcstopmNegativeˢ = "gcstopm: negative nmspinning"u8;
+
 // Stops the current m for stopTheWorld.
 // Returns when the world is restarted.
 internal static void gcstopm() {
     var gp = getg();
     if (!Ꮡsched.of(schedt.Ꮡgcwaiting).Load()) {
-        @throw("gcstopm: not waiting for gc"u8);
+        @throw(gcstopmNotWaitingForGcˢ);
     }
     if ((~(~gp).m).spinning) {
         gp.Value.m.Value.spinning = false;
         // OK to just drop nmspinning here,
         // startTheWorld will unpark threads as necessary.
         if (Ꮡsched.of(schedt.Ꮡnmspinning).Add(-1) < 0) {
-            @throw("gcstopm: negative nmspinning"u8);
+            @throw(gcstopmNegativeˢ);
         }
     }
     var pp = releasep();
@@ -3145,6 +3290,13 @@ internal static void execute(ж<g> Ꮡgp, bool inheritTime) {
     }
     gogo(Ꮡgp.of(g.Ꮡsched));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string findrunnableWrongPˢ = "findrunnable: wrong p"u8;
+private static readonly @string findrunnableNegativeˢ = "findrunnable: negative nmspinning"u8;
+private static readonly @string globalRunqEmptyWithNonˢ = "global runq empty with non-zero runqsize"u8;
+private static readonly @string findrunnableNetpollWithPˢ = "findrunnable: netpoll with p"u8;
+private static readonly @string findrunnableNetpollWithˢ = "findrunnable: netpoll with spinning"u8;
 
 // Finds a runnable goroutine to execute.
 // Tries to steal from other P's, get g from local or global queue, poll network.
@@ -3344,7 +3496,7 @@ top:
         goto top;
     }
     if (releasep() != pp) {
-        @throw("findrunnable: wrong p"u8);
+        @throw(findrunnableWrongPˢ);
     }
     now = pidleput(pp, now);
     unlock(Ꮡsched.of(schedt.Ꮡlock));
@@ -3388,7 +3540,7 @@ top:
     if ((~mp).spinning) {
         mp.Value.spinning = false;
         if (Ꮡsched.of(schedt.Ꮡnmspinning).Add(-1) < 0) {
-            @throw("findrunnable: negative nmspinning"u8);
+            @throw(findrunnableNegativeˢ);
         }
         // Note the for correctness, only the last M transitioning from
         // spinning to non-spinning must perform these rechecks to
@@ -3405,7 +3557,7 @@ top:
             if (ppΔ1 != nil) {
                 var gpΔ11 = globrunqget(ppΔ1, 0);
                 if (gpΔ11 == nil) {
-                    @throw("global runq empty with non-zero runqsize"u8);
+                    @throw(globalRunqEmptyWithNonˢ);
                 }
                 unlock(Ꮡsched.of(schedt.Ꮡlock));
                 acquirep(ppΔ1);
@@ -3447,10 +3599,10 @@ top:
     if (netpollinited() && (netpollAnyWaiters() || pollUntil != 0) && Ꮡsched.of(schedt.Ꮡlastpoll).Swap(0) != 0){
         Ꮡsched.of(schedt.ᏑpollUntil).Store(pollUntil);
         if ((~mp).p != 0) {
-            @throw("findrunnable: netpoll with p"u8);
+            @throw(findrunnableNetpollWithPˢ);
         }
         if ((~mp).spinning) {
-            @throw("findrunnable: netpoll with spinning"u8);
+            @throw(findrunnableNetpollWithˢ);
         }
         var delay = (int64)(-1);
         if (pollUntil != 0) {
@@ -3737,15 +3889,18 @@ internal static void wakeNetPoller(int64 when) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string resetspinningNotAˢ = "resetspinning: not a spinning m"u8;
+
 internal static void resetspinning() {
     var gp = getg();
     if (!(~(~gp).m).spinning) {
-        @throw("resetspinning: not a spinning m"u8);
+        @throw(resetspinningNotAˢ);
     }
     gp.Value.m.Value.spinning = false;
     var nmspinning = Ꮡsched.of(schedt.Ꮡnmspinning).Add(-1);
     if (nmspinning < 0) {
-        @throw("findrunnable: negative nmspinning"u8);
+        @throw(findrunnableNegativeˢ);
     }
     // M wakeup policy is deliberately somewhat conservative, so check if we
     // need to wakeup another P here. See "Worker thread parking/unparking"
@@ -3846,12 +4001,17 @@ internal static void injectglist(ж<gList> Ꮡglist) {
     wakep();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string scheduleHoldingLocksˢ = "schedule: holding locks"u8;
+private static readonly @string scheduleInCgoˢ = "schedule: in cgo"u8;
+private static readonly @string scheduleSpinningWithˢ = "schedule: spinning with local work"u8;
+
 // One round of scheduler: find a runnable goroutine and execute it.
 // Never returns.
 internal static void schedule() {
     var mp = getg().Value.m;
     if ((~mp).locks != 0) {
-        @throw("schedule: holding locks"u8);
+        @throw(scheduleHoldingLocksˢ);
     }
     if ((~mp).lockedg != 0) {
         stoplockedm();
@@ -3861,7 +4021,7 @@ internal static void schedule() {
     // We should not schedule away from a g that is executing a cgo call,
     // since the cgo call is using the m's g0 stack.
     if ((~mp).incgo) {
-        @throw("schedule: in cgo"u8);
+        @throw(scheduleInCgoˢ);
     }
 top:
     var pp = (~mp).p.ptr();
@@ -3870,7 +4030,7 @@ top:
     // Check this before calling checkTimers, as that might call
     // goready to put a ready goroutine on the local run queue.
     if ((~mp).spinning && ((~pp).runnext != 0 || (~pp).runqhead != (~pp).runqtail)) {
-        @throw("schedule: spinning with local work"u8);
+        @throw(scheduleSpinningWithˢ);
     }
     var (gp, inheritTime, tryWakeP) = findRunnable();
     // blocks until work is available
@@ -3976,12 +4136,15 @@ internal static void park_m(ж<g> Ꮡgp) {
     schedule();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badGStatusˢ = "bad g status"u8;
+
 internal static void goschedImpl(ж<g> Ꮡgp, bool preempted) {
     var Δtrace = traceAcquire();
     var status = readgstatus(Ꮡgp);
     if ((uint32)(status & ~(uint32)_Gscan) != _Grunning) {
         dumpgstatus(Ꮡgp);
-        @throw("bad g status"u8);
+        @throw(badGStatusˢ);
     }
     if (Δtrace.ok()) {
         // Trace the event before the transition. It may take a
@@ -4027,6 +4190,10 @@ internal static void gopreempt_m(ж<g> Ꮡgp) {
     goschedImpl(Ꮡgp, true);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string preemptAtUnknownPcˢ = "preempt at unknown pc"u8;
+private static readonly @string preemptSpwriteˢ = "preempt SPWRITE"u8;
+
 // preemptPark parks gp and puts it in _Gpreempted.
 //
 //go:systemstack
@@ -4036,7 +4203,7 @@ internal static void preemptPark(ж<g> Ꮡgp) {
     var status = readgstatus(Ꮡgp);
     if ((uint32)(status & ~(uint32)_Gscan) != _Grunning) {
         dumpgstatus(Ꮡgp);
-        @throw("bad g status"u8);
+        @throw(badGStatusˢ);
     }
     if (gp.asyncSafePoint) {
         // Double-check that async preemption does not
@@ -4044,11 +4211,11 @@ internal static void preemptPark(ж<g> Ꮡgp) {
         // isAsyncSafePoint must exclude this case.
         var f = findfunc(gp.sched.pc);
         if (!f.valid()) {
-            @throw("preempt at unknown pc"u8);
+            @throw(preemptAtUnknownPcˢ);
         }
         if ((abi.FuncFlag)(f.flag & abi.FuncFlagSPWrite) != 0) {
             println((@string)"runtime: unexpected SPWRITE function"u8, funcname(f), (@string)"in async preempt"u8);
-            @throw("preempt SPWRITE"u8);
+            @throw(preemptSpwriteˢ);
         }
     }
     // Transition from _Grunning to _Gscan|_Gpreempted. We can't
@@ -4143,6 +4310,9 @@ internal static void goexit0(ж<g> Ꮡgp) {
     schedule();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string exitedAGoroutineˢ = "exited a goroutine internally locked to the OS thread"u8;
+
 internal static void gdestroy(ж<g> Ꮡgp) {
     ref var gp = ref Ꮡgp.Value;
 
@@ -4185,7 +4355,7 @@ internal static void gdestroy(ж<g> Ꮡgp) {
     }
     if (locked && (~mp).lockedInt != 0) {
         print((@string)"runtime: mp.lockedInt = "u8, (~mp).lockedInt, (@string)"\n"u8);
-        @throw("exited a goroutine internally locked to the OS thread"u8);
+        @throw(exitedAGoroutineˢ);
     }
     gfput(pp, Ꮡgp);
     if (locked) {
@@ -4205,6 +4375,9 @@ internal static void gdestroy(ж<g> Ꮡgp) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string saveOnSystemGNotAllowedˢ = "save on system g not allowed"u8;
+
 // save updates getg().sched to refer to pc and sp so that a following
 // gogo will restore pc and sp.
 //
@@ -4221,7 +4394,7 @@ internal static void save(uintptr pc, uintptr sp, uintptr bp) {
         // m.gsignal.sched should not be used at all.
         // This check makes sure save calls do not accidentally
         // run in contexts where they'd write to system g's.
-        @throw("save on system g not allowed"u8);
+        @throw(saveOnSystemGNotAllowedˢ);
     }
     gp.Value.sched.pc = pc;
     gp.Value.sched.sp = sp;
@@ -4235,6 +4408,9 @@ internal static void save(uintptr pc, uintptr sp, uintptr bp) {
         badctxt();
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string entersyscallˢ = "entersyscall"u8;
 
 // The goroutine g is about to enter a system call.
 // Record that it's not using the cpu anymore.
@@ -4288,14 +4464,14 @@ internal static void reentersyscall(uintptr pc, uintptr sp, uintptr bp) {
         var gpʗ1 = gp;
         systemstack(() => {
             print((@string)"entersyscall inconsistent sp "u8, ((Δhex)(uint64)(~gpʗ1).syscallsp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ1).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ1).stack.hi), (@string)"]\n"u8);
-            @throw("entersyscall"u8);
+            @throw(entersyscallˢ);
         });
     }
     if ((~gp).syscallbp != 0 && (~gp).syscallbp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallbp) {
         var gpʗ3 = gp;
         systemstack(() => {
             print((@string)"entersyscall inconsistent bp "u8, ((Δhex)(uint64)(~gpʗ3).syscallbp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ3).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ3).stack.hi), (@string)"]\n"u8);
-            @throw("entersyscall"u8);
+            @throw(entersyscallˢ);
         });
     }
     if (Δtrace.ok()) {
@@ -4396,6 +4572,9 @@ internal static void entersyscall_gcwait() {
     unlock(Ꮡsched.of(schedt.Ꮡlock));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string entersyscallblockˢ = "entersyscallblock"u8;
+
 // The same as entersyscall(), but with a hint that the syscall is blocking.
 
 // entersyscallblock should be an internal detail,
@@ -4432,7 +4611,7 @@ internal static void entersyscallblock() {
         var gpʗ1 = gp;
         systemstack(() => {
             print((@string)"entersyscallblock inconsistent sp "u8, ((Δhex)(uint64)sp1), (@string)" "u8, ((Δhex)(uint64)sp2), (@string)" "u8, ((Δhex)(uint64)sp3), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ1).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ1).stack.hi), (@string)"]\n"u8);
-            @throw("entersyscallblock"u8);
+            @throw(entersyscallblockˢ);
         });
     }
     casgstatus(gp, _Grunning, _Gsyscall);
@@ -4440,14 +4619,14 @@ internal static void entersyscallblock() {
         var gpʗ3 = gp;
         systemstack(() => {
             print((@string)"entersyscallblock inconsistent sp "u8, ((Δhex)(uint64)sp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ3).sched.sp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ3).syscallsp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ3).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ3).stack.hi), (@string)"]\n"u8);
-            @throw("entersyscallblock"u8);
+            @throw(entersyscallblockˢ);
         });
     }
     if ((~gp).syscallbp != 0 && (~gp).syscallbp < (~gp).stack.lo || (~gp).stack.hi < (~gp).syscallbp) {
         var gpʗ5 = gp;
         systemstack(() => {
             print((@string)"entersyscallblock inconsistent bp "u8, ((Δhex)(uint64)bp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ5).sched.bp), (@string)" "u8, ((Δhex)(uint64)(~gpʗ5).syscallbp), (@string)" ["u8, ((Δhex)(uint64)(~gpʗ5).stack.lo), (@string)","u8, ((Δhex)(uint64)(~gpʗ5).stack.hi), (@string)"]\n"u8);
-            @throw("entersyscallblock"u8);
+            @throw(entersyscallblockˢ);
         });
     }
     systemstack(entersyscallblock_handoff);
@@ -4464,6 +4643,9 @@ internal static void entersyscallblock_handoff() {
     }
     handoffp(releasep());
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string exitsyscallSyscallFrameˢ = "exitsyscall: syscall frame is no longer valid"u8;
 
 // The goroutine g exited its system call.
 // Arrange for it to run on a cpu again.
@@ -4490,7 +4672,7 @@ internal static void exitsyscall() {
     gp.Value.m.Value.locks++;
     // see comment in entersyscall
     if (getcallersp() > (~gp).syscallsp) {
-        @throw("exitsyscall: syscall frame is no longer valid"u8);
+        @throw(exitsyscallSyscallFrameˢ);
     }
     gp.Value.waitsince = 0;
     var oldp = (~(~gp).m).oldp.ptr();
@@ -4853,6 +5035,11 @@ internal static void newproc(ж<funcval> Ꮡfn) {
     });
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goOfNilFuncValueˢ = "go of nil func value"u8;
+private static readonly @string newproc1NewgMissingStackˢ = "newproc1: newg missing stack"u8;
+private static readonly @string newproc1NewGIsNotGdeadˢ = "newproc1: new g is not Gdead"u8;
+
 // Create a new g in state _Grunnable (or _Gwaiting if parked is true), starting at fn.
 // callerpc is the address of the go statement that created this. The caller is responsible
 // for adding the new g to the scheduler. If parked is true, waitreason must be non-zero.
@@ -4861,7 +5048,7 @@ internal static ж<g> newproc1(ж<funcval> Ꮡfn, ж<g> Ꮡcallergp, uintptr cal
     ref var callergp = ref Ꮡcallergp.Value;
 
     if (Ꮡfn == nil) {
-        fatal("go of nil func value"u8);
+        fatal(goOfNilFuncValueˢ);
     }
     var mp = acquirem();
     // disable preemption because we hold M and P in local vars.
@@ -4874,10 +5061,10 @@ internal static ж<g> newproc1(ж<funcval> Ꮡfn, ж<g> Ꮡcallergp, uintptr cal
     }
     // publishes with a g->status of Gdead so GC scanner doesn't look at uninitialized stack.
     if ((~newg).stack.hi == 0) {
-        @throw("newproc1: newg missing stack"u8);
+        @throw(newproc1NewgMissingStackˢ);
     }
     if (readgstatus(newg) != _Gdead) {
-        @throw("newproc1: new g is not Gdead"u8);
+        @throw(newproc1NewGIsNotGdeadˢ);
     }
     var totalSize = (uintptr)(4 * goarch.PtrSize + sys.MinFrameSize);
     // extra space in case of reads slightly beyond frame
@@ -4996,6 +5183,9 @@ internal static ж<slice<ancestorInfo>> saveAncestors(ж<g> Ꮡcallergp) {
     return ancestorsp;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gfputBadStatusNotGdeadˢ = "gfput: bad status (not Gdead)"u8;
+
 // Put on gfree list.
 // If local list is too long, transfer a batch to the global list.
 internal static void gfput(ж<Δp> Ꮡpp, ж<g> Ꮡgp) {
@@ -5003,7 +5193,7 @@ internal static void gfput(ж<Δp> Ꮡpp, ж<g> Ꮡgp) {
     ref var gp = ref Ꮡgp.Value;
 
     if (readgstatus(Ꮡgp) != _Gdead) {
-        @throw("gfput: bad status (not Gdead)"u8);
+        @throw(gfputBadStatusNotGdeadˢ);
     }
     var stksize = gp.stack.hi - gp.stack.lo;
     if (stksize != (uintptr)startingStackSize) {
@@ -5233,8 +5423,11 @@ internal static void unlockOSThread() {
     dounlockOSThread();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeInternalErrorˢ2 = "runtime: internal error: misuse of lockOSThread/unlockOSThread"u8;
+
 internal static void badunlockosthread() {
-    @throw("runtime: internal error: misuse of lockOSThread/unlockOSThread"u8);
+    @throw(runtimeInternalErrorˢ2);
 }
 
 internal static int32 gcount() {
@@ -5292,6 +5485,9 @@ internal static void _VDSO() {
     _VDSO();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string internalRuntimeAtomicˢ = "internal/runtime/atomic"u8;
+
 // Called if we receive a SIGPROF signal.
 // Called by the signal handler, may run during STW.
 //
@@ -5318,7 +5514,7 @@ internal static void sigprof(uintptr pc, uintptr sp, uintptr lr, ж<g> Ꮡgp, ж
     if (GOARCH == "mips"u8 || GOARCH == "mipsle"u8 || GOARCH == "arm"u8) {
         {
             var f = findfunc(pc); if (f.valid()) {
-                if (stringslite.HasPrefix(funcname(f), "internal/runtime/atomic"u8)) {
+                if (stringslite.HasPrefix(funcname(f), internalRuntimeAtomicˢ)) {
                     cpuprof.lostAtomic++;
                     return;
                 }
@@ -5446,6 +5642,9 @@ internal static void setcpuprofilerate(int32 hz) {
     gp.Value.m.Value.locks--;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingMcacheˢ = "missing mcache?"u8;
+
 // init initializes pp, which may be a freshly allocated p or a
 // previously destroyed p, and transitions it to status _Pgcstop.
 [GoRecv] internal static void init(this ref Δp pp, int32 id) {
@@ -5457,7 +5656,7 @@ internal static void setcpuprofilerate(int32 hz) {
     if (pp.mcache == nil) {
         if (id == 0){
             if (mcache0 == nil) {
-                @throw("missing mcache?"u8);
+                @throw(missingMcacheˢ);
             }
             // Use the bootstrap mcache0. Only one P will get
             // mcache0: the one with ID 0.
@@ -5555,6 +5754,9 @@ internal static void destroy(this ж<Δp> Ꮡpp) {
     pp.status = _Pdead;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string procresizeInvalidArgˢ = "procresize: invalid arg"u8;
+
 // Change number of processors.
 //
 // sched.lock must be held, and the world must be stopped.
@@ -5568,7 +5770,7 @@ internal static ж<Δp> procresize(int32 nprocs) {
     assertWorldStopped();
     var old = gomaxprocs;
     if (old < 0 || nprocs <= 0) {
-        @throw("procresize: invalid arg"u8);
+        @throw(procresizeInvalidArgˢ);
     }
     var Δtrace = traceAcquire();
     if (Δtrace.ok()) {
@@ -5716,6 +5918,10 @@ internal static void acquirep(ж<Δp> Ꮡpp) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string wirepAlreadyInGoˢ = "wirep: already in go"u8;
+private static readonly @string wirepInvalidPStateˢ = "wirep: invalid p state"u8;
+
 // wirep is the first step of acquirep, which actually associates the
 // current M to pp. This is broken out so we can disallow write
 // barriers for this part, since we don't yet have a P.
@@ -5730,7 +5936,7 @@ internal static void wirep(ж<Δp> Ꮡpp) {
         // Call on the systemstack to avoid a nosplit overflow build failure
         // on some platforms when built with -N -l. See #64113.
         systemstack(() => {
-            @throw("wirep: already in go"u8);
+            @throw(wirepAlreadyInGoˢ);
         });
     }
     if (pp.m != 0 || pp.status != _Pidle) {
@@ -5742,7 +5948,7 @@ internal static void wirep(ж<Δp> Ꮡpp) {
                 id = Ꮡpp.Value.m.ptr().Value.id;
             }
             print((@string)"wirep: p->m="u8, Ꮡpp.Value.m, (@string)"("u8, id, (@string)") p->status="u8, Ꮡpp.Value.status, (@string)"\n"u8);
-            @throw("wirep: invalid p state"u8);
+            @throw(wirepInvalidPStateˢ);
         });
     }
     (~gp).m.of(m.Ꮡp).set(Ꮡpp);
@@ -5760,16 +5966,20 @@ internal static ж<Δp> releasep() {
     return releasepNoTrace();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string releasepInvalidArgˢ = "releasep: invalid arg"u8;
+private static readonly @string releasepInvalidPStateˢ = "releasep: invalid p state"u8;
+
 // Disassociate p and the current m without tracing an event.
 internal static ж<Δp> releasepNoTrace() {
     var gp = getg();
     if ((~(~gp).m).p == 0) {
-        @throw("releasep: invalid arg"u8);
+        @throw(releasepInvalidArgˢ);
     }
     var pp = (~(~gp).m).p.ptr();
     if ((~pp).m.ptr() != (~gp).m || (~pp).status != _Prunning) {
         print((@string)"releasep: m="u8, (~gp).m, (@string)" m->p="u8, (~(~gp).m).p.ptr(), (@string)" p->m="u8, ((Δhex)(uint64)(uintptr)(~pp).m), (@string)" p->status="u8, (~pp).status, (@string)"\n"u8);
-        @throw("releasep: invalid p state"u8);
+        @throw(releasepInvalidPStateˢ);
     }
     gp.Value.m.Value.p = 0;
     pp.Value.m = 0;
@@ -5785,6 +5995,14 @@ internal static void incidlelocked(int32 v) {
     }
     unlock(Ꮡsched.of(schedt.Ꮡlock));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string checkdeadInconsistentˢ = "checkdead: inconsistent counts"u8;
+private static readonly @string checkdeadRunnableGˢ = "checkdead: runnable g"u8;
+private static readonly @string noGoroutinesMainCalledˢ = "no goroutines (main called runtime.Goexit) - deadlock!"u8;
+private static readonly @string checkdeadNoPForTimerˢ = "checkdead: no p for timer"u8;
+private static readonly @string checkdeadNoMForTimerˢ = "checkdead: no m for timer"u8;
+private static readonly @string allGoroutinesAreAsleepˢ = "all goroutines are asleep - deadlock!"u8;
 
 // Check for deadlock situation.
 // The check is based on number of running M's, if 0 -> deadlock.
@@ -5819,7 +6037,7 @@ internal static void checkdead() {
     if (run < 0) {
         print((@string)"runtime: checkdead: nmidle="u8, sched.nmidle, (@string)" nmidlelocked="u8, sched.nmidlelocked, (@string)" mcount="u8, mcount(), (@string)" nmsys="u8, sched.nmsys, (@string)"\n"u8);
         unlock(Ꮡsched.of(schedt.Ꮡlock));
-        @throw("checkdead: inconsistent counts"u8);
+        @throw(checkdeadInconsistentˢ);
     }
     nint grunning = 0;
     forEachG((ж<g> gp) => {
@@ -5834,7 +6052,7 @@ internal static void checkdead() {
         else if (exprᴛ1 == _Grunnable || exprᴛ1 == _Grunning || exprᴛ1 == _Gsyscall) {
             print((@string)"runtime: checkdead: find g "u8, (~gp).goid, (@string)" in status "u8, s, (@string)"\n"u8);
             unlock(Ꮡsched.of(schedt.Ꮡlock));
-            @throw("checkdead: runnable g"u8);
+            @throw(checkdeadRunnableGˢ);
         }
 
     });
@@ -5842,7 +6060,7 @@ internal static void checkdead() {
         // possible if main goroutine calls runtime·Goexit()
         unlock(Ꮡsched.of(schedt.Ꮡlock));
         // unlock so that GODEBUG=scheddetail=1 doesn't hang
-        fatal("no goroutines (main called runtime.Goexit) - deadlock!"u8);
+        fatal(noGoroutinesMainCalledˢ);
     }
     // Maybe jump time forward for playground.
     if (faketime != 0) {
@@ -5855,14 +6073,14 @@ internal static void checkdead() {
                     // There should always be a free P since
                     // nothing is running.
                     unlock(Ꮡsched.of(schedt.Ꮡlock));
-                    @throw("checkdead: no p for timer"u8);
+                    @throw(checkdeadNoPForTimerˢ);
                 }
                 var mp = mget();
                 if (mp == nil) {
                     // There should always be a free M since
                     // nothing is running.
                     unlock(Ꮡsched.of(schedt.Ꮡlock));
-                    @throw("checkdead: no m for timer"u8);
+                    @throw(checkdeadNoMForTimerˢ);
                 }
                 // M must be spinning to steal. We set this to be
                 // explicit, but since this is the only M it would
@@ -5883,7 +6101,7 @@ internal static void checkdead() {
     }
     unlock(Ꮡsched.of(schedt.Ꮡlock));
     // unlock so that GODEBUG=scheddetail=1 doesn't hang
-    fatal("all goroutines are asleep - deadlock!"u8);
+    fatal(allGoroutinesAreAsleepˢ);
 }
 
 // forcegcperiod is the maximum time in nanoseconds between garbage
@@ -6443,6 +6661,10 @@ internal static void clear(this pMask Δp, int32 id) {
     atomic.And(Ꮡ(Δp, word), ~mask);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pidleputPHasNonEmptyRunˢ = "pidleput: P has non-empty run queue"u8;
+private static readonly @string mustBeAbleToTrackIdleˢ = "must be able to track idle limiter event"u8;
+
 // pidleput puts p on the _Pidle list. now must be a relatively recent call
 // to nanotime or zero. Returns now or the current time if now was zero.
 //
@@ -6459,7 +6681,7 @@ internal static int64 pidleput(ж<Δp> Ꮡpp, int64 now) {
 
     assertLockHeld(Ꮡsched.of(schedt.Ꮡlock));
     if (!runqempty(Ꮡpp)) {
-        @throw("pidleput: P has non-empty run queue"u8);
+        @throw(pidleputPHasNonEmptyRunˢ);
     }
     if (now == 0) {
         now = nanotime();
@@ -6472,7 +6694,7 @@ internal static int64 pidleput(ж<Δp> Ꮡpp, int64 now) {
     Ꮡsched.of(schedt.Ꮡpidle).set(Ꮡpp);
     Ꮡsched.of(schedt.Ꮡnpidle).Add(1);
     if (!Ꮡpp.of(runtime_package.Δp.ᏑlimiterEvent).start(limiterEventIdle, now)) {
-        @throw("must be able to track idle limiter event"u8);
+        @throw(mustBeAbleToTrackIdleˢ);
     }
     return now;
 }
@@ -6606,6 +6828,9 @@ retry:
     goto retry;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runqputslowQueueIsNotˢ = "runqputslow: queue is not full"u8;
+
 // Put g and a batch of work from local runnable queue on global queue.
 // Executed only by the owner P.
 internal static bool runqputslow(ж<Δp> Ꮡpp, ж<g> Ꮡgp, uint32 h, uint32 t) {
@@ -6616,7 +6841,7 @@ internal static bool runqputslow(ж<Δp> Ꮡpp, ж<g> Ꮡgp, uint32 h, uint32 t)
     var n = t - h;
     n = n / 2;
     if (n != (uint32)(len(pp.runq) / 2)) {
-        @throw("runqputslow: queue is not full"u8);
+        @throw(runqputslowQueueIsNotˢ);
     }
     for (var i = (uint32)0; i < n; i++) {
         batch[(nint)(i)] = pp.runq[(nint)((h + i) % (uint32)len(pp.runq))].ptr();
@@ -6819,6 +7044,9 @@ internal static uint32 runqgrab(ж<Δp> Ꮡpp, ж<array<Δguintptr>> Ꮡbatch, u
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runqstealRunqOverflowˢ = "runqsteal: runq overflow"u8;
+
 // Steal half of elements from local runnable queue of p2
 // and put onto local runnable queue of p.
 // Returns one of the stolen elements (or nil if failed).
@@ -6838,7 +7066,7 @@ internal static ж<g> runqsteal(ж<Δp> Ꮡpp, ж<Δp> Ꮡp2, bool stealRunNextG
     var h = atomic.LoadAcq(Ꮡpp.of(runtime_package.Δp.Ꮡrunqhead));
     // load-acquire, synchronize with consumers
     if (t - h + n >= (uint32)len(pp.runq)) {
-        @throw("runqsteal: runq overflow"u8);
+        @throw(runqstealRunqOverflowˢ);
     }
     atomic.StoreRel(Ꮡpp.of(runtime_package.Δp.Ꮡrunqtail), t + n);
     // store-release, makes the item available for consumption
@@ -7159,6 +7387,10 @@ internal static void doInit(slice<ж<initTask>> ts) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string recursiveCallDuringˢ = "recursive call during initialization - linker skew"u8;
+private static readonly @string inittaskWithNoFunctionsˢ = "inittask with no functions"u8;
+
 internal static void doInit1(ж<initTask> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
@@ -7167,7 +7399,7 @@ internal static void doInit1(ж<initTask> Ꮡt) {
         return;
     }
     case 1: {
-        @throw("recursive call during initialization - linker skew"u8);
+        @throw(recursiveCallDuringˢ);
         break;
     }
     default: {
@@ -7185,7 +7417,7 @@ internal static void doInit1(ж<initTask> Ꮡt) {
         }
         if (t.nfns == 0) {
             // We should have pruned all of these in the linker.
-            @throw("inittask with no functions"u8);
+            @throw(inittaskWithNoFunctionsˢ);
         }
         ref var firstFunc = ref heap<@unsafe.Pointer>(out var ᏑfirstFunc);
         firstFunc = (uintptr)add(new @unsafe.Pointer(Ꮡt), 8);

@@ -37,10 +37,13 @@ internal static error Close(this ж<netFD> Ꮡfd) {
     return Ꮡfd.of(netFD.Ꮡpfd).Close();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string shutdownˢ = "shutdown"u8;
+
 internal static error shutdown(this ж<netFD> Ꮡfd, nint how) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).Shutdown(how);
     Δruntime.KeepAlive(Ꮡfd);
-    return wrapSyscallError("shutdown"u8, err);
+    return wrapSyscallError(shutdownˢ, err);
 }
 
 internal static error closeRead(this ж<netFD> Ꮡfd) {

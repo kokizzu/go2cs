@@ -333,6 +333,9 @@ internal static Value assignTo(this Value v, @string context, ж<abi.Type> Ꮡds
     throw panic(context + ": value of type " + toRType(v.typ()).String() + " is not assignable to type " + toRType(Ꮡdst).String());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string iLenˢ = "i < len"u8;
+
 // arrayAt returns the i-th element of p,
 // an array whose elements are eltSize bytes wide.
 // The array pointed at by p must have at least i+1 elements:
@@ -341,7 +344,7 @@ internal static Value assignTo(this Value v, @string context, ж<abi.Type> Ꮡds
 // whySafe must explain why i < len. (Passing "i < len" is fine;
 // the benefit is to surface this assumption at the call site.)
 internal static @unsafe.Pointer arrayAt(@unsafe.Pointer p, nint i, uintptr eltSize, @string whySafe) {
-    return (uintptr)add(p, (uintptr)i * eltSize, "i < len"u8);
+    return (uintptr)add(p, (uintptr)i * eltSize, iLenˢ);
 }
 
 internal static partial void ifaceE2I(ж<abi.Type> t, any src, @unsafe.Pointer dst);

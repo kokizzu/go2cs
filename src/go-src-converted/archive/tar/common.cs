@@ -314,6 +314,22 @@ internal static slice<sparseEntry> invertSparseEntries(slice<sparseEntry> src, i
     int64 physicalRemaining();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nameˢ = "Name"u8;
+private static readonly @string linknameˢ = "Linkname"u8;
+private static readonly @string unameˢ = "Uname"u8;
+private static readonly @string gnameˢ = "Gname"u8;
+private static readonly @string modeˢ = "Mode"u8;
+private static readonly @string sizeˢ = "Size"u8;
+private static readonly @string devmajorˢ = "Devmajor"u8;
+private static readonly @string devminorˢ = "Devminor"u8;
+private static readonly @string modTimeˢ = "ModTime"u8;
+private static readonly @string accessTimeˢ = "AccessTime"u8;
+private static readonly @string changeTimeˢ = "ChangeTime"u8;
+private static readonly @string onlyPaxSupportsˢ = "only PAX supports TypeXGlobalHeader"u8;
+private static readonly @string onlyPaxSupportsXattrsˢ = "only PAX supports Xattrs"u8;
+private static readonly @string onlyPaxSupportsˢ2 = "only PAX supports PAXRecords"u8;
+
 // allowedFormats determines which formats can be used.
 // The value returned is the logical OR of multiple possible formats.
 // If the value is FormatUnknown, then the input Header cannot be encoded
@@ -428,19 +444,19 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
     var v7 = Ꮡblk.toV7();
     var ustar = Ꮡblk.toUSTAR();
     var gnu = Ꮡblk.toGNU();
-    verifyString(h.Name, len(v7.name()), "Name"u8, paxPath);
-    verifyString(h.Linkname, len(v7.linkName()), "Linkname"u8, paxLinkpath);
-    verifyString(h.Uname, len(ustar.userName()), "Uname"u8, paxUname);
-    verifyString(h.Gname, len(ustar.groupName()), "Gname"u8, paxGname);
-    verifyNumeric(h.Mode, len(v7.mode()), "Mode"u8, paxNone);
+    verifyString(h.Name, len(v7.name()), nameˢ, paxPath);
+    verifyString(h.Linkname, len(v7.linkName()), linknameˢ, paxLinkpath);
+    verifyString(h.Uname, len(ustar.userName()), unameˢ, paxUname);
+    verifyString(h.Gname, len(ustar.groupName()), gnameˢ, paxGname);
+    verifyNumeric(h.Mode, len(v7.mode()), modeˢ, paxNone);
     verifyNumeric((int64)h.Uid, len(v7.uid()), "Uid"u8, paxUid);
     verifyNumeric((int64)h.Gid, len(v7.gid()), "Gid"u8, paxGid);
-    verifyNumeric(h.Size, len(v7.size()), "Size"u8, paxSize);
-    verifyNumeric(h.Devmajor, len(ustar.devMajor()), "Devmajor"u8, paxNone);
-    verifyNumeric(h.Devminor, len(ustar.devMinor()), "Devminor"u8, paxNone);
-    verifyTime(h.ModTime, len(v7.modTime()), "ModTime"u8, paxMtime);
-    verifyTime(h.AccessTime, len(gnu.accessTime()), "AccessTime"u8, paxAtime);
-    verifyTime(h.ChangeTime, len(gnu.changeTime()), "ChangeTime"u8, paxCtime);
+    verifyNumeric(h.Size, len(v7.size()), sizeˢ, paxSize);
+    verifyNumeric(h.Devmajor, len(ustar.devMajor()), devmajorˢ, paxNone);
+    verifyNumeric(h.Devminor, len(ustar.devMinor()), devminorˢ, paxNone);
+    verifyTime(h.ModTime, len(v7.modTime()), modTimeˢ, paxMtime);
+    verifyTime(h.AccessTime, len(gnu.accessTime()), accessTimeˢ, paxAtime);
+    verifyTime(h.ChangeTime, len(gnu.changeTime()), changeTimeˢ, paxCtime);
     // Check for header-only types.
     @string whyOnlyPAX = default!;
     @string whyOnlyGNU = default!;
@@ -448,30 +464,30 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
     if (exprᴛ1 == TypeReg || exprᴛ1 == TypeChar || exprᴛ1 == TypeBlock || exprᴛ1 == TypeFifo || exprᴛ1 == TypeGNUSparse) {
         if (strings.HasSuffix(h.Name, // Exclude TypeLink and TypeSymlink, since they may reference directories.
  "/"u8)) {
-            return (FormatUnknown, default!, new headerError(new @string[]{"filename may not have trailing slash"}.slice()));
+            return (FormatUnknown, default!, new headerError(new @string[]{"filename may not have trailing slash"u8}.slice()));
         }
     }
     else if (exprᴛ1 == TypeXHeader || exprᴛ1 == TypeGNULongName || exprᴛ1 == TypeGNULongLink) {
-        return (FormatUnknown, default!, new headerError(new @string[]{"cannot manually encode TypeXHeader, TypeGNULongName, or TypeGNULongLink headers"}.slice()));
+        return (FormatUnknown, default!, new headerError(new @string[]{"cannot manually encode TypeXHeader, TypeGNULongName, or TypeGNULongLink headers"u8}.slice()));
     }
     else if (exprᴛ1 == TypeXGlobalHeader) {
         var h2 = new Header(Name: h.Name, Typeflag: h.Typeflag, Xattrs: h.Xattrs, PAXRecords: h.PAXRecords, Format: h.Format);
         if (!reflect.DeepEqual(h, h2)) {
-            return (FormatUnknown, default!, new headerError(new @string[]{"only PAXRecords should be set for TypeXGlobalHeader"}.slice()));
+            return (FormatUnknown, default!, new headerError(new @string[]{"only PAXRecords should be set for TypeXGlobalHeader"u8}.slice()));
         }
-        whyOnlyPAX = "only PAX supports TypeXGlobalHeader"u8;
+        whyOnlyPAX = onlyPaxSupportsˢ;
         format.mayOnlyBe(FormatPAX);
     }
 
     if (!isHeaderOnlyType(h.Typeflag) && h.Size < 0) {
-        return (FormatUnknown, default!, new headerError(new @string[]{"negative size on header-only type"}.slice()));
+        return (FormatUnknown, default!, new headerError(new @string[]{"negative size on header-only type"u8}.slice()));
     }
     // Check PAX records.
     if (len(h.Xattrs) > 0) {
         foreach (var (k, v) in h.Xattrs) {
             paxHdrs[paxSchilyXattr + k] = v;
         }
-        whyOnlyPAX = "only PAX supports Xattrs"u8;
+        whyOnlyPAX = onlyPaxSupportsXattrsˢ;
         format.mayOnlyBe(FormatPAX);
     }
     if (len(h.PAXRecords) > 0) {
@@ -497,7 +513,7 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
 
         }
         // Ignore local records that may conflict
-        whyOnlyPAX = "only PAX supports PAXRecords"u8;
+        whyOnlyPAX = onlyPaxSupportsˢ2;
         format.mayOnlyBe(FormatPAX);
     }
     foreach (var (k, v) in paxHdrs) {
@@ -541,13 +557,13 @@ internal static (Format format, map<@string, @string> paxHdrs, error err) allowe
     if (format == FormatUnknown) {
         var exprᴛ2 = h.Format;
         if (exprᴛ2 == FormatUSTAR) {
-            err = new headerError(new @string[]{"Format specifies USTAR", whyNoUSTAR, whyOnlyPAX, whyOnlyGNU}.slice());
+            err = new headerError(new @string[]{"Format specifies USTAR"u8, whyNoUSTAR, whyOnlyPAX, whyOnlyGNU}.slice());
         }
         else if (exprᴛ2 == FormatPAX) {
-            err = new headerError(new @string[]{"Format specifies PAX", whyNoPAX, whyOnlyGNU}.slice());
+            err = new headerError(new @string[]{"Format specifies PAX"u8, whyNoPAX, whyOnlyGNU}.slice());
         }
         else if (exprᴛ2 == FormatGNU) {
-            err = new headerError(new @string[]{"Format specifies GNU", whyNoGNU, whyOnlyPAX}.slice());
+            err = new headerError(new @string[]{"Format specifies GNU"u8, whyNoGNU, whyOnlyPAX}.slice());
         }
         else { /* default: */
             err = new headerError(new @string[]{whyNoUSTAR, whyNoPAX, whyNoGNU, whyOnlyPAX, whyOnlyGNU}.slice());
@@ -671,6 +687,9 @@ internal static readonly UntypedInt c_ISBLK = /* 060000 */ 24576; // Block speci
 internal static readonly UntypedInt c_ISCHR = /* 020000 */ 8192; // Character special file
 internal static readonly UntypedInt c_ISSOCK = /* 0140000 */ 49152; // Socket
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string archiveTarFileInfoIsNilˢ = "archive/tar: FileInfo is nil"u8;
+
 // FileInfoHeader creates a partially-populated [Header] from fi.
 // If fi describes a symlink, FileInfoHeader records link as the link target.
 // If fi describes a directory, a slash is appended to the name.
@@ -684,7 +703,7 @@ internal static readonly UntypedInt c_ISSOCK = /* 0140000 */ 49152; // Socket
 // are provided by the methods of the interface.
 public static (ж<Header>, error) FileInfoHeader(fs.FileInfo fi, @string link) {
     if (fi == default!) {
-        return (default!, errors.New("archive/tar: FileInfo is nil"u8));
+        return (default!, errors.New(archiveTarFileInfoIsNilˢ));
     }
     var fm = fi.Mode();
     var h = Ꮡ(new Header(

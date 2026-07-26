@@ -12,6 +12,10 @@ partial class time_package {
 
 internal static slice<@string> platformZoneSources; // none: Windows uses system calls instead
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string muiStdˢ = "MUI_Std"u8;
+private static readonly @string muiDltˢ = "MUI_Dlt"u8;
+
 // TODO(rsc): Fall back to copy of zoneinfo files.
 // BUG(brainman,rsc): On Windows, the operating system does not provide complete
 // time zone information.
@@ -33,9 +37,9 @@ internal static (bool matched, error err2) matchZoneKey(registry.Key zones, @str
         @string std = default!;
         @string dlt = default!;
         // Try MUI_Std and MUI_Dlt first, fallback to Std and Dlt if *any* error occurs
-        (std, err) = k.GetMUIStringValue("MUI_Std"u8);
+        (std, err) = k.GetMUIStringValue(muiStdˢ);
         if (err == default!) {
-            (dlt, err) = k.GetMUIStringValue("MUI_Dlt"u8);
+            (dlt, err) = k.GetMUIStringValue(muiDltˢ);
         }
         if (err != default!) {
             // Fallback to Std and Dlt
@@ -61,10 +65,13 @@ internal static (bool matched, error err2) matchZoneKey(registry.Key zones, @str
     return (matched, err2);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string softwareMicrosoftWindowsˢ = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Time Zones"u8;
+
 // toEnglishName searches the registry for an English name of a time zone
 // whose zone names are stdname and dstname and returns the English name.
 internal static (@string, error) toEnglishName(@string stdname, @string dstname) => func<(@string, error)>((defer, recover) => {
-    var (k, err) = registry.OpenKey(registry.LOCAL_MACHINE, @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Time Zones"u8, (uint32)((uint32)registry.ENUMERATE_SUB_KEYS | (uint32)registry.QUERY_VALUE));
+    var (k, err) = registry.OpenKey(registry.LOCAL_MACHINE, softwareMicrosoftWindowsˢ, (uint32)((uint32)registry.ENUMERATE_SUB_KEYS | (uint32)registry.QUERY_VALUE));
     if (err != default!) {
         return ("", err);
     }
@@ -149,11 +156,14 @@ internal static int64 pseudoUnix(nint year, ж<syscall.Systemtime> Ꮡd) {
     return t.sec() + (int64)(day - 1) * (int64)secondsPerDay + internalToUnix;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string localˢ = "Local"u8;
+
 internal static void initLocalFromTZI(ж<syscall.Timezoneinformation> Ꮡi) {
     ref var i = ref Ꮡi.Value;
 
     var l = ᏑlocalLoc;
-    l.Value.name = "Local"u8;
+    l.Value.name = localˢ;
     nint nzone = 1;
     if (i.StandardDate.Month > 0) {
         nzone++;

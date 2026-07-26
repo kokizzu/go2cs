@@ -57,6 +57,9 @@ public static readonly ParameterSizes L3072N256 = 3;
 // pick the largest recommended number from table C.1 of FIPS 186-3.
 internal static readonly UntypedInt numMRTests = 64;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoDsaInvalidˢ = "crypto/dsa: invalid ParameterSizes"u8;
+
 // GenerateParameters puts a random, valid set of DSA parameters into params.
 // This function can take many seconds, even on fast machines.
 public static error GenerateParameters(ж<Parameters> Ꮡparams, io.Reader rand, ParameterSizes sizes) {
@@ -86,7 +89,7 @@ public static error GenerateParameters(ж<Parameters> Ꮡparams, io.Reader rand,
         N = 256;
     }
     else { /* default: */
-        return errors.New("crypto/dsa: invalid ParameterSizes"u8);
+        return errors.New(cryptoDsaInvalidˢ);
     }
 
     var qBytes = new slice<byte>(N / 8);
@@ -150,13 +153,16 @@ break_GeneratePrimes:;
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoDsaParametersNotˢ = "crypto/dsa: parameters not set up before generating key"u8;
+
 // GenerateKey generates a public&private key pair. The Parameters of the
 // [PrivateKey] must already be valid (see [GenerateParameters]).
 public static error GenerateKey(ж<PrivateKey> Ꮡpriv, io.Reader rand) {
     ref var priv = ref Ꮡpriv.Value;
 
     if (priv.P == nil || priv.Q == nil || priv.G == nil) {
-        return errors.New("crypto/dsa: parameters not set up before generating key"u8);
+        return errors.New(cryptoDsaParametersNotˢ);
     }
     var x = @new<bigꓸInt>();
     var xBytes = new slice<byte>(priv.Q.BitLen() / 8);

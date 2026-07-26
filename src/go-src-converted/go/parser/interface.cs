@@ -19,6 +19,9 @@ using path;
 
 partial class parser_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidSourceˢ = "invalid source"u8;
+
 // If src != nil, readSource converts src to a []byte if possible;
 // otherwise it returns an error. If src == nil, readSource returns
 // the result of reading the file specified by filename.
@@ -41,7 +44,7 @@ internal static (slice<byte>, error) readSource(@string filename, any src) {
         case {} Δs when Δs._<io.Reader>(out var s): {
             return io.ReadAll(s);
         }}
-        return (default!, errors.New("invalid source"u8));
+        return (default!, errors.New(invalidSourceˢ));
     }
     return os.ReadFile(filename);
 }

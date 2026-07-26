@@ -636,6 +636,9 @@ internal static void enlistWorker(this ж<gcControllerState> Ꮡc) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gcControllerStateˢ = "gcControllerState.findRunnable: blackening not enabled"u8;
+
 // findRunnableGCWorker returns a background mark worker for pp if it
 // should be run. This must only be called when gcBlackenEnabled != 0.
 internal static (ж<g>, int64) findRunnableGCWorker(this ж<gcControllerState> Ꮡc, ж<Δp> Ꮡpp, int64 now) {
@@ -643,7 +646,7 @@ internal static (ж<g>, int64) findRunnableGCWorker(this ж<gcControllerState> �
     ref var pp = ref Ꮡpp.Value;
 
     if (gcBlackenEnabled == 0) {
-        @throw("gcControllerState.findRunnable: blackening not enabled"u8);
+        @throw(gcControllerStateˢ);
     }
     // Since we have the current time, check if the GC CPU limiter
     // hasn't had an update in a while. This check is necessary in
@@ -746,6 +749,9 @@ internal static void resetLive(this ж<gcControllerState> Ꮡc, uint64 bytesMark
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string markWorkerStopUnknownˢ = "markWorkerStop: unknown mark worker mode"u8;
+
 // markWorkerStop must be called whenever a mark worker stops executing.
 //
 // It updates mark work accounting in the controller by a duration of
@@ -766,7 +772,7 @@ internal static void markWorkerStop(this ж<gcControllerState> Ꮡc, gcMarkWorke
         Ꮡc.removeIdleMarkWorker();
     }
     else { /* default: */
-        @throw("markWorkerStop: unknown mark worker mode"u8);
+        @throw(markWorkerStopUnknownˢ);
     }
 
 }
@@ -988,6 +994,9 @@ internal static readonly UntypedInt triggerRatioDen = 64;
 internal static readonly UntypedInt minTriggerRatioNum = 45; // ~0.7
 internal static readonly UntypedInt maxTriggerRatioNum = 61; // ~0.95
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string producedATriggerGreaterˢ = "produced a trigger greater than the heap goal"u8;
+
 // trigger returns the current point at which a GC should trigger along with
 // the heap goal.
 //
@@ -1054,7 +1063,7 @@ internal static (uint64, uint64) trigger(this ж<gcControllerState> Ꮡc) {
     if (trigger > goal) {
         print((@string)"trigger="u8, trigger, (@string)" heapGoal="u8, goal, (@string)"\n"u8);
         print((@string)"minTrigger="u8, minTrigger, (@string)" maxTrigger="u8, maxTrigger, (@string)"\n"u8);
-        @throw("produced a trigger greater than the heap goal"u8);
+        @throw(producedATriggerGreaterˢ);
     }
     return (trigger, goal);
 }
@@ -1171,8 +1180,11 @@ internal static int32 /*out*/ setGCPercent(int32 @in) {
     return @out;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gogcˢ = "GOGC"u8;
+
 internal static int32 readGOGC() {
-    @string Δp = gogetenv("GOGC"u8);
+    @string Δp = gogetenv(gogcˢ);
     if (Δp == "off"u8) {
         return -1;
     }
@@ -1221,18 +1233,25 @@ internal static int64 /*out*/ setMemoryLimit(int64 @in) {
     return @out;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gomemlimitˢ = "GOMEMLIMIT"u8;
+private static readonly @string malformedGomemlimitSeeGoˢ = "malformed GOMEMLIMIT; see `go doc runtime/debug.SetMemoryLimit`"u8;
+
 internal static int64 readGOMEMLIMIT() {
-    @string Δp = gogetenv("GOMEMLIMIT"u8);
+    @string Δp = gogetenv(gomemlimitˢ);
     if (Δp == ""u8 || Δp == "off"u8) {
         return maxInt64;
     }
     var (n, ok) = parseByteCount(Δp);
     if (!ok) {
         print((@string)"GOMEMLIMIT="u8, Δp, (@string)"\n"u8);
-        @throw("malformed GOMEMLIMIT; see `go doc runtime/debug.SetMemoryLimit`"u8);
+        @throw(malformedGomemlimitSeeGoˢ);
     }
     return n;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string negativeIdleMarkWorkersˢ = "negative idle mark workers"u8;
 
 // addIdleMarkWorker attempts to add a new idle mark worker.
 //
@@ -1255,7 +1274,7 @@ internal static bool addIdleMarkWorker(this ж<gcControllerState> Ꮡc) {
         }
         if (n < 0) {
             print((@string)"n="u8, n, (@string)" max="u8, max, (@string)"\n"u8);
-            @throw("negative idle mark workers"u8);
+            @throw(negativeIdleMarkWorkersˢ);
         }
         var @new = (uint64)((uint64)(uint32)(n + 1) | (((uint64)max << (int)(32))));
         if (Ꮡc.of(gcControllerState.ᏑidleMarkWorkers).CompareAndSwap(old, @new)) {
@@ -1285,7 +1304,7 @@ internal static void removeIdleMarkWorker(this ж<gcControllerState> Ꮡc) {
         var (n, max) = ((int32)((uint64)(old & (uint64)(~(uint32)0))), (int32)((old >> (int)(32))));
         if (n - 1 < 0) {
             print((@string)"n="u8, n, (@string)" max="u8, max, (@string)"\n"u8);
-            @throw("negative idle mark workers"u8);
+            @throw(negativeIdleMarkWorkersˢ);
         }
         var @new = (uint64)((uint64)(uint32)(n - 1) | (((uint64)max << (int)(32))));
         if (Ꮡc.of(gcControllerState.ᏑidleMarkWorkers).CompareAndSwap(old, @new)) {
@@ -1305,7 +1324,7 @@ internal static void setMaxIdleMarkWorkers(this ж<gcControllerState> Ꮡc, int3
         var n = (int32)((uint64)(old & (uint64)(~(uint32)0)));
         if (n < 0) {
             print((@string)"n="u8, n, (@string)" max="u8, max, (@string)"\n"u8);
-            @throw("negative idle mark workers"u8);
+            @throw(negativeIdleMarkWorkersˢ);
         }
         var @new = (uint64)((uint64)(uint32)n | (((uint64)max << (int)(32))));
         if (Ꮡc.of(gcControllerState.ᏑidleMarkWorkers).CompareAndSwap(old, @new)) {

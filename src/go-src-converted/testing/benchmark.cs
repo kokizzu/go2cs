@@ -22,10 +22,18 @@ using go.sync;
 
 partial class testing_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testBenchˢ = "test.bench"u8;
+private static readonly @string runOnlyBenchmarksˢ = "run only benchmarks matching `regexp`"u8;
+private static readonly @string testBenchmemˢ = "test.benchmem"u8;
+private static readonly @string printMemoryAllocationsˢ = "print memory allocations for benchmarks"u8;
+private static readonly @string testBenchtimeˢ = "test.benchtime"u8;
+private static readonly @string runEachBenchmarkForˢ = "run each benchmark for duration `d` or N times if `d` is of the form Nx"u8;
+
 internal static void initBenchmarkFlags() {
-    matchBenchmarks = flag.String("test.bench"u8, ""u8, "run only benchmarks matching `regexp`"u8);
-    benchmarkMemory = flag.Bool("test.benchmem"u8, false, "print memory allocations for benchmarks"u8);
-    flag.Var(new durationOrCountFlagжValue(ᏑbenchTime), "test.benchtime"u8, "run each benchmark for duration `d` or N times if `d` is of the form Nx"u8);
+    matchBenchmarks = flag.String(testBenchˢ, ""u8, runOnlyBenchmarksˢ);
+    benchmarkMemory = flag.Bool(testBenchmemˢ, false, printMemoryAllocationsˢ);
+    flag.Var(new durationOrCountFlagжValue(ᏑbenchTime), testBenchtimeˢ, runEachBenchmarkForˢ);
 }
 
 internal static ж<@string> matchBenchmarks;
@@ -201,6 +209,10 @@ internal static void runN(this ж<B> Ꮡb, nint n) => func((defer, recover) => {
     b.previousDuration = b.duration;
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string benchˢ = "BENCH"u8;
+private static readonly @string skipˢ = "SKIP"u8;
+
 // run1 runs the first iteration of benchFunc. It reports whether more
 // iterations of this benchmarks should be run.
 internal static bool run1(this ж<B> Ꮡb) {
@@ -236,9 +248,9 @@ internal static bool run1(this ж<B> Ꮡb) {
     var finished = b.finished;
     Ꮡb.of(B.Ꮡmu).RUnlock();
     if (Ꮡb.of(B.ᏑhasSub).Load() || finished) {
-        @string tag = "BENCH"u8;
+        @string tag = benchˢ;
         if (b.skipped) {
-            tag = "SKIP"u8;
+            tag = skipˢ;
         }
         if (b.chatty != nil && (len(b.output) > 0 || finished)) {
             b.trimOutput();
@@ -380,10 +392,13 @@ internal static void launch(this ж<B> Ꮡb) => func((defer, recover) => {
     public map<@string, float64> Extra;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nsOpˢ = "ns/op"u8;
+
 // NsPerOp returns the "ns/op" metric.
 public static int64 NsPerOp(this BenchmarkResult r) {
     {
-        var (v, ok) = r.Extra["ns/op"u8, ꟷ]; if (ok) {
+        var (v, ok) = r.Extra[nsOpˢ, ꟷ]; if (ok) {
             return (int64)v;
         }
     }
@@ -406,11 +421,14 @@ internal static float64 mbPerSec(this BenchmarkResult r) {
     return ((float64)r.Bytes * (float64)r.N / 1e6D) / r.T.Seconds();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string allocsOpˢ = "allocs/op"u8;
+
 // AllocsPerOp returns the "allocs/op" metric,
 // which is calculated as r.MemAllocs / r.N.
 public static int64 AllocsPerOp(this BenchmarkResult r) {
     {
-        var (v, ok) = r.Extra["allocs/op"u8, ꟷ]; if (ok) {
+        var (v, ok) = r.Extra[allocsOpˢ, ꟷ]; if (ok) {
             return (int64)v;
         }
     }
@@ -445,13 +463,13 @@ public static @string String(this BenchmarkResult r) {
     var buf = @new<strings.Builder>();
     fmt.Fprintf(new strings_BuilderжWriter(buf), "%8d"u8, r.N);
     // Get ns/op as a float.
-    var (ns, ok) = r.Extra["ns/op"u8, ꟷ];
+    var (ns, ok) = r.Extra[nsOpˢ, ꟷ];
     if (!ok) {
         ns = (float64)r.T.Nanoseconds() / (float64)r.N;
     }
     if (ns != 0D) {
         buf.WriteByte((rune)'\t');
-        prettyPrint(new strings_BuilderжWriter(buf), ns, "ns/op"u8);
+        prettyPrint(new strings_BuilderжWriter(buf), ns, nsOpˢ);
     }
     {
         var mbs = r.mbPerSec(); if (mbs != 0D) {
@@ -550,6 +568,9 @@ public static void RunBenchmarks(Func<@string, @string, (bool, error)> matchStri
     runBenchmarks(""u8, matchString, benchmarks);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testBenchˢ2 = "-test.bench"u8;
+
 internal static bool runBenchmarks(@string importPath, Func<@string, @string, (bool, error)> matchString, slice<InternalBenchmark> benchmarks) {
     // If no flag was specified, don't run benchmarks.
     if (len(matchBenchmarks.Value) == 0) {
@@ -563,7 +584,7 @@ internal static bool runBenchmarks(@string importPath, Func<@string, @string, (b
         }
     }
     var ctx = Ꮡ(new benchContext(
-        match: newMatcher(matchString, matchBenchmarks.Value, "-test.bench"u8, skip.Value),
+        match: newMatcher(matchString, matchBenchmarks.Value, testBenchˢ2, skip.Value),
         extLen: len(benchmarkName(""u8, maxprocs))
     ));
     slice<InternalBenchmark> bs = default!;
@@ -810,6 +831,9 @@ internal static void add(this ж<B> Ꮡb, BenchmarkResult other) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object runParallelBodyExitedˢ = (@string)"RunParallel: body exited without pb.Next() == false"u8;
+
 // RunParallel runs a benchmark in parallel.
 // It creates multiple goroutines and distributes b.N iterations among them.
 // The number of goroutines defaults to GOMAXPROCS. To increase parallelism for
@@ -864,7 +888,7 @@ public static void RunParallel(this ж<B> Ꮡb, Action<ж<PB>> body) {
     }
     Ꮡwg.Wait();
     if (Ꮡn.Load() <= (uint64)b.N && !Ꮡb.of(B.Ꮡcommon).Failed()) {
-        Ꮡb.of(B.Ꮡcommon).Fatal((@string)"RunParallel: body exited without pb.Next() == false"u8);
+        Ꮡb.of(B.Ꮡcommon).Fatal(runParallelBodyExitedˢ);
     }
 }
 

@@ -77,6 +77,9 @@ internal static traceWriter flush(this traceWriter w) {
     return w;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string traceOutOfMemoryˢ = "trace: out of memory"u8;
+
 // refill puts w.traceBuf on the queue of full buffers and refresh's w's buffer.
 //
 // exp indicates whether the refilled batch should be EvExperimentalBatch.
@@ -94,7 +97,7 @@ internal static traceWriter refill(this traceWriter w, traceExperiment exp) {
             unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
             w.traceBuf = (ж<traceBuf>)(uintptr)(sysAlloc(@unsafe.Sizeof(new traceBuf(nil)), Ꮡmemstats.of(mstats.Ꮡother_sys)));
             if (w.traceBuf == nil) {
-                @throw("trace: out of memory"u8);
+                @throw(traceOutOfMemoryˢ);
             }
         }
     });
@@ -218,6 +221,9 @@ internal static traceWriter refill(this traceWriter w, traceExperiment exp) {
     return len(buf.arr) - buf.pos >= size;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string vCouldNotFitInˢ = "v could not fit in traceBytesPerNumber"u8;
+
 // varintAt writes varint v at byte position pos in buf. This always
 // consumes traceBytesPerNumber bytes. This is intended for when the caller
 // needs to reserve space for a varint but can't populate it until later.
@@ -233,7 +239,7 @@ internal static traceWriter refill(this traceWriter w, traceExperiment exp) {
         pos++;
     }
     if (v != 0) {
-        @throw("v could not fit in traceBytesPerNumber"u8);
+        @throw(vCouldNotFitInˢ);
     }
 }
 

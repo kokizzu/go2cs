@@ -74,6 +74,12 @@ public static @string String(this ж<Struct> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string embeddedFieldTypeCannotˢ = "embedded field type cannot be unsafe.Pointer"u8;
+private static readonly @string embeddedFieldTypeCannotˢ2 = "embedded field type cannot be a pointer"u8;
+private static readonly @string embeddedFieldTypeCannotˢ3 = "embedded field type cannot be a (pointer to a) type parameter"u8;
+private static readonly @string embeddedFieldTypeCannotˢ4 = "embedded field type cannot be a pointer to an interface"u8;
+
 internal static void structType(this ж<Checker> Ꮡcheck, ж<Struct> Ꮡstyp, ж<ast.StructType> Ꮡe) {
     ref var check = ref Ꮡcheck.Value;
     ref var styp = ref Ꮡstyp.Value;
@@ -169,21 +175,21 @@ internal static void structType(this ж<Checker> Ꮡcheck, ж<Struct> Ꮡstyp, �
                         return;
                     }
                     if ((~u).kind == UnsafePointer) {
-                        Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ7), InvalidPtrEmbed, "embedded field type cannot be unsafe.Pointer"u8);
+                        Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ7), InvalidPtrEmbed, embeddedFieldTypeCannotˢ);
                     }
                     break;
                 }
                 case ж<Pointer> u: {
-                    Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ7), InvalidPtrEmbed, "embedded field type cannot be a pointer"u8);
+                    Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ7), InvalidPtrEmbed, embeddedFieldTypeCannotˢ2);
                     break;
                 }
                 case ж<Interface> u: {
                     if (isTypeParam(t)) {
-                        Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ7), MisplacedTypeParam, "embedded field type cannot be a (pointer to a) type parameter"u8);
+                        Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ7), MisplacedTypeParam, embeddedFieldTypeCannotˢ3);
                         break;
                     }
                     if (isPtr) {
-                        Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ7), InvalidPtrEmbed, "embedded field type cannot be a pointer to an interface"u8);
+                        Ꮡcheck.error(new ast_Exprᴠpositioner(embeddedPosʗ7), InvalidPtrEmbed, embeddedFieldTypeCannotˢ4);
                     }
                     break;
                 }}

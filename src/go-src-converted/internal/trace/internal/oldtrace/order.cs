@@ -110,6 +110,9 @@ internal static bool transitionReady(uint64 g, gState curr, gState init) {
     return g == unordered || (init.seq == noseq || init.seq == curr.seq) && init.status == curr.status;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string encounteredImpossibleˢ = "encountered impossible goroutine state transition"u8;
+
 internal static error transition(map<uint64, gState> gs, uint64 g, gState init, gState next) {
     if (g == unordered) {
         return default!;
@@ -118,7 +121,7 @@ internal static error transition(map<uint64, gState> gs, uint64 g, gState init, 
     if (!transitionReady(g, curr, init)) {
         // See comment near the call to transition, where we're building the frontier, for details on how this could
         // possibly happen.
-        return errors.New("encountered impossible goroutine state transition"u8);
+        return errors.New(encounteredImpossibleˢ);
     }
     switch (next.seq) {
     case noseq: {

@@ -162,6 +162,12 @@ internal static error refill(this ж<Reader> Ꮡr) {
     return Ꮡr.readBlock();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidMagicNumberˢ = "invalid magic number"u8;
+private static readonly @string reservedBitSetInFrameˢ = "reserved bit set in frame header descriptor"u8;
+private static readonly @string windowSizeTooLargeˢ = "windowSize too large"u8;
+private static readonly @string dictionariesAreNotˢ = "dictionaries are not supported"u8;
+
 // readFrameHeader reads the frame header and prepares to read a block.
 [GoRecv] internal static error readFrameHeader(this ref Reader r) {
 retry:
@@ -189,7 +195,7 @@ retry:
                 r.readOneFrame = true;
                 goto retry;
             }
-            return r.makeError(relativeOffset, "invalid magic number"u8);
+            return r.makeError(relativeOffset, invalidMagicNumberˢ);
         }
     }
     relativeOffset += 4;
@@ -212,7 +218,7 @@ retry:
         windowDescriptorSize = 1;
     }
     if ((byte)(descriptor & ((byte)(1 << (int)(3)))) != 0) {
-        return r.makeError(relativeOffset, "reserved bit set in frame header descriptor"u8);
+        return r.makeError(relativeOffset, reservedBitSetInFrameˢ);
     }
     r.hasChecksum = (byte)(descriptor & ((byte)(1 << (int)(2)))) != 0;
     if (r.hasChecksum) {
@@ -246,7 +252,7 @@ retry:
         windowSize = windowBase + windowAdd;
         // Default zstd sets limits on the window size.
         if (fuzzing && (windowLog > 31 || windowSize > ((uint64)1 << (int)(27)))) {
-            return r.makeError(relativeOffset, "windowSize too large"u8);
+            return r.makeError(relativeOffset, windowSizeTooLargeˢ);
         }
     }
     // Dictionary_ID. RFC 3.1.1.1.3.
@@ -255,7 +261,7 @@ retry:
         // Allow only zero Dictionary ID.
         foreach (var (_, b) in dictionaryId) {
             if (b != 0) {
-                return r.makeError(relativeOffset, "dictionaries are not supported"u8);
+                return r.makeError(relativeOffset, dictionariesAreNotˢ);
             }
         }
     }
@@ -385,6 +391,12 @@ retry:
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string blockSizeTooLargeˢ = "block size too large"u8;
+private static readonly @string invalidBlockTypeˢ = "invalid block type"u8;
+private static readonly @string tooManyUncompressedBytesˢ = "too many uncompressed bytes in frame"u8;
+private static readonly @string notEnoughUncompressedˢ = "not enough uncompressed bytes for frame"u8;
+
 // readBlock reads the next block from a frame.
 internal static error readBlock(this ж<Reader> Ꮡr) {
     ref var r = ref Ꮡr.Value;
@@ -405,7 +417,7 @@ internal static error readBlock(this ж<Reader> Ꮡr) {
     // We don't record the window size for a single segment frame,
     // so just use 128K. RFC 3.1.1.2.3, 3.1.1.2.4.
     if (blockSize > (128 << (int)(10)) || (r.window.size > 0 && blockSize > r.window.size)) {
-        return r.makeError(relativeOffset, "block size too large"u8);
+        return r.makeError(relativeOffset, blockSizeTooLargeˢ);
     }
     // Handle different block types. RFC 3.1.1.2.2.
     switch (blockType) {
@@ -446,12 +458,12 @@ internal static error readBlock(this ж<Reader> Ꮡr) {
         break;
     }
     case 3: {
-        return r.makeError(relativeOffset, "invalid block type"u8);
+        return r.makeError(relativeOffset, invalidBlockTypeˢ);
     }}
 
     if (!r.frameSizeUnknown) {
         if ((uint64)builtin.len(r.buffer) > r.remainingFrameSize) {
-            return r.makeError(relativeOffset, "too many uncompressed bytes in frame"u8);
+            return r.makeError(relativeOffset, tooManyUncompressedBytesˢ);
         }
         r.remainingFrameSize -= (uint64)builtin.len(r.buffer);
     }
@@ -462,7 +474,7 @@ internal static error readBlock(this ж<Reader> Ꮡr) {
         r.window.save(r.buffer);
     } else {
         if (!r.frameSizeUnknown && r.remainingFrameSize != 0) {
-            return r.makeError(relativeOffset, "not enough uncompressed bytes for frame"u8);
+            return r.makeError(relativeOffset, notEnoughUncompressedˢ);
         }
         // Check for checksum at end of frame. RFC 3.1.1.
         if (r.hasChecksum) {

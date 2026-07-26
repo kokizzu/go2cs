@@ -16,13 +16,18 @@ internal static ref sync.Once symlinkOnce => ref ᏑsymlinkOnce.Value;
 
 internal static error winSymlinkErr;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string symtestˢ = "symtest"u8;
+private static readonly @string targetˢ = "target"u8;
+private static readonly @string symlinkˢ = "symlink"u8;
+
 internal static void initWinHasSymlink() => func((defer, recover) => {
-    var (tmpdir, err) = os.MkdirTemp(""u8, "symtest"u8);
+    var (tmpdir, err) = os.MkdirTemp(""u8, symtestˢ);
     if (err != default!) {
         throw panic("failed to create temp directory: " + err.Error());
     }
     deferǃ(os.RemoveAll, tmpdir, defer);
-    err = os.Symlink("target"u8, filepath.Join(tmpdir, "symlink"));
+    err = os.Symlink(targetˢ, filepath.Join(tmpdir, symlinkˢ));
     if (err != default!) {
         err = err._<ж<os.LinkError>>().Value.Err;
         var exprᴛ1 = err;
@@ -32,6 +37,10 @@ internal static void initWinHasSymlink() => func((defer, recover) => {
 
     }
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string symlinksAreNotSupportedˢ = ": symlinks are not supported on your version of Windows"u8;
+private static readonly @string youDonTHaveEnoughˢ = ": you don't have enough privileges to create symlinks"u8;
 
 internal static (bool ok, @string reason) hasSymlink() {
     bool ok = default!;
@@ -43,10 +52,10 @@ internal static (bool ok, @string reason) hasSymlink() {
         return (true, "");
     }
     if (AreEqual(exprᴛ1, Δsyscall.EWINDOWS)) {
-        return (false, ": symlinks are not supported on your version of Windows");
+        return (false, symlinksAreNotSupportedˢ);
     }
     if (AreEqual(exprᴛ1, Δsyscall.ERROR_PRIVILEGE_NOT_HELD)) {
-        return (false, ": you don't have enough privileges to create symlinks");
+        return (false, youDonTHaveEnoughˢ);
     }
 
     return (false, "");

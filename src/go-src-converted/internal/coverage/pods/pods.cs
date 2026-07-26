@@ -90,6 +90,10 @@ public static slice<Pod> CollectPodsFromFiles(slice<@string> files, bool warn) {
     internal slice<fileWithAnnotations> elements;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string skippingOrphanedCounterˢ = "skipping orphaned counter file: %s"u8;
+private static readonly @string noCoverageDataFilesFoundˢ = "no coverage data files found"u8;
+
 // collectPodsImpl examines the specified list of files and picks out
 // subsets that correspond to coverage pods. The first stage in this
 // process is collecting a set { M1, M2, ... MN } where each M_k is a
@@ -166,7 +170,7 @@ internal static slice<Pod> collectPodsImpl(slice<@string> files, slice<nint> dir
                         mm[tag] = v;
                     } else {
                         if (warn) {
-                            warning("skipping orphaned counter file: %s"u8, f);
+                            warning(skippingOrphanedCounterˢ, f);
                         }
                     }
                 }
@@ -175,7 +179,7 @@ internal static slice<Pod> collectPodsImpl(slice<@string> files, slice<nint> dir
     }
     if (len(mm) == 0) {
         if (warn) {
-            warning("no coverage data files found"u8);
+            warning(noCoverageDataFilesFoundˢ);
         }
         return default!;
     }

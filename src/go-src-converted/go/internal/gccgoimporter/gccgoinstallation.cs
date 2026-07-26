@@ -29,13 +29,16 @@ partial class gccgoimporter_package {
     public slice<@string> LibPaths;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string targetˢ = "Target: "u8;
+
 // Ask the driver at the given path for information for this GccgoInstallation.
 // The given arguments are passed directly to the call of the driver.
 [GoRecv] public static error /*err*/ InitFromDriver(this ref GccgoInstallation inst, @string gccgoPath, params ꓸꓸꓸstring argsʗp) {
     error err = default!;
     var args = argsʗp.slice();
 
-    var argv = append(new @string[]{"-###", "-S", "-x", "go", "-"}.slice(), args.ꓸꓸꓸ);
+    var argv = append(new @string[]{"-###"u8, "-S"u8, "-x"u8, "go"u8, "-"u8}.slice(), args.ꓸꓸꓸ);
     var cmd = exec.Command(gccgoPath, argv.ꓸꓸꓸ);
     (var stderr, err) = cmd.StderrPipe();
     if (err != default!) {
@@ -49,7 +52,7 @@ partial class gccgoimporter_package {
     while (scanner.Scan()) {
         @string line = scanner.Text();
         switch (ᐧ) {
-        case {} when strings.HasPrefix(line, "Target: "u8): {
+        case {} when strings.HasPrefix(line, targetˢ): {
             inst.TargetTriple = line[8..];
             break;
         }
@@ -64,7 +67,7 @@ partial class gccgoimporter_package {
         }}
 
     }
-    argv = append(new @string[]{"-dumpversion"}.slice(), args.ꓸꓸꓸ);
+    argv = append(new @string[]{"-dumpversion"u8}.slice(), args.ꓸꓸꓸ);
     (var stdout, err) = exec.Command(gccgoPath, argv.ꓸꓸꓸ).Output();
     if (err != default!) {
         return err;

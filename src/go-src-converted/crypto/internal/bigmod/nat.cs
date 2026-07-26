@@ -149,6 +149,9 @@ internal static ж<ΔNat> setBig(this ж<ΔNat> Ꮡx, ж<bigꓸInt> Ꮡn) {
     return bytes;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inputOverflowsTheModulusˢ = "input overflows the modulus"u8;
+
 // SetBytes assigns x = b, where b is a slice of big-endian bytes.
 // SetBytes returns an error if b >= m.
 //
@@ -163,10 +166,13 @@ public static (ж<ΔNat>, error) SetBytes(this ж<ΔNat> Ꮡx, slice<byte> b, ж
         }
     }
     if (x.cmpGeq(m.nat) == yes) {
-        return (default!, errors.New("input overflows the modulus"u8));
+        return (default!, errors.New(inputOverflowsTheModulusˢ));
     }
     return (Ꮡx, default!);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inputOverflowsTheModulusˢ2 = "input overflows the modulus size"u8;
 
 // SetOverflowingBytes assigns x = b, where b is a slice of big-endian bytes.
 // SetOverflowingBytes returns an error if b has a longer bit length than m, but
@@ -184,7 +190,7 @@ public static (ж<ΔNat>, error) SetOverflowingBytes(this ж<ΔNat> Ꮡx, slice<
     }
     nint leading = (nint)_W - bitLen(x.limbs[len(x.limbs) - 1]);
     if (leading < m.leading) {
-        return (default!, errors.New("input overflows the modulus size"u8));
+        return (default!, errors.New(inputOverflowsTheModulusˢ2));
     }
     Ꮡx.maybeSubtractModulus(no, Ꮡm);
     return (Ꮡx, default!);
@@ -215,7 +221,7 @@ internal static error setBytes(this ж<ΔNat> Ꮡx, slice<byte> b, ж<Modulus> �
         i--;
     }
     if (i > 0) {
-        return errors.New("input overflows the modulus size"u8);
+        return errors.New(inputOverflowsTheModulusˢ2);
     }
     return default!;
 }
@@ -399,6 +405,10 @@ internal static nuint minusInverseModW(nuint x) {
     return ((nuint)0 - y);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string modulusMustBe0ˢ = "modulus must be >= 0"u8;
+private static readonly @string modulusMustBeOddˢ = "modulus must be odd"u8;
+
 // NewModulusFromBig creates a new Modulus from a [big.Int].
 //
 // The Int must be odd. The number of significant bits (and nothing else) is
@@ -408,10 +418,10 @@ public static (ж<Modulus>, error) NewModulusFromBig(ж<bigꓸInt> Ꮡn) {
 
     {
         var b = n.Bits(); if (len(b) == 0){
-            return (default!, errors.New("modulus must be >= 0"u8));
+            return (default!, errors.New(modulusMustBe0ˢ));
         } else 
         if ((big.Word)(b[0] & 1) != 1) {
-            return (default!, errors.New("modulus must be odd"u8));
+            return (default!, errors.New(modulusMustBeOddˢ));
         }
     }
     var m = Ꮡ(new Modulus(nil));

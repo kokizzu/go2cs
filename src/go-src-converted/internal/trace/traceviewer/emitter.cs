@@ -23,6 +23,11 @@ partial class traceviewer_package {
     public Action Flush;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string displayTimeUnitˢ = @"""displayTimeUnit"":"u8;
+private static readonly @string traceEventsˢ = @"""traceEvents"": ["u8;
+private static readonly @string stackFramesˢ = @"], ""stackFrames"":"u8;
+
 // ViewerDataTraceConsumer returns a TraceConsumer that writes to w. The
 // startIdx and endIdx are used for splitting large traces. They refer to
 // indexes in the traceEvents output array, not the events in the trace input.
@@ -45,7 +50,7 @@ public static TraceConsumer ViewerDataTraceConsumer(io.Writer w, int64 startIdx,
         var requiredFramesʗ6 = requiredFrames;
     return new TraceConsumer(
         ConsumeTimeUnit: (@string unit) => {
-            io.WriteString(w, @"""displayTimeUnit"":"u8);
+            io.WriteString(w, displayTimeUnitˢ);
             encʗ1.Encode(unit);
             io.WriteString(w, ","u8);
         },
@@ -68,7 +73,7 @@ public static TraceConsumer ViewerDataTraceConsumer(io.Writer w, int64 startIdx,
                 requiredFramesʗ4[s] = allFramesʗ4[s];
             });
             if (written == 0) {
-                io.WriteString(w, @"""traceEvents"": ["u8);
+                io.WriteString(w, traceEventsˢ);
             }
             if (written > 0) {
                 io.WriteString(w, ","u8);
@@ -82,7 +87,7 @@ public static TraceConsumer ViewerDataTraceConsumer(io.Writer w, int64 startIdx,
             allFramesʗ6[k] = v;
         },
         Flush: () => {
-            io.WriteString(w, @"], ""stackFrames"":"u8);
+            io.WriteString(w, stackFramesˢ);
             encʗ3.Encode(requiredFramesʗ6);
             io.WriteString(w, @"}"u8);
         }
@@ -628,19 +633,26 @@ public static ж<Emitter> NewEmitter(TraceConsumer c, time.Duration rangeStart, 
     e.c.ConsumeViewerEvent(Ꮡev, false);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string statsˢ = "STATS"u8;
+private static readonly @string tasksˢ = "TASKS"u8;
+private static readonly @string networkˢ = "Network"u8;
+private static readonly @string timersˢ = "Timers"u8;
+private static readonly @string syscallsˢ = "Syscalls"u8;
+
 [GoRecv] public static void Flush(this ref Emitter e) {
-    e.processMeta(format.StatsSection, "STATS"u8, 0);
+    e.processMeta(format.StatsSection, statsˢ, 0);
     if (len(e.tasks) != 0) {
-        e.processMeta(format.TasksSection, "TASKS"u8, 1);
+        e.processMeta(format.TasksSection, tasksˢ, 1);
     }
     foreach (var (id, task) in e.tasks) {
         e.threadMeta(format.TasksSection, id, task.name, task.sortIndex);
     }
     e.processMeta(format.ProcsSection, e.resourceType, 2);
     e.threadMeta(format.ProcsSection, trace.GCP, "GC"u8, -6);
-    e.threadMeta(format.ProcsSection, trace.NetpollP, "Network"u8, -5);
-    e.threadMeta(format.ProcsSection, trace.TimerP, "Timers"u8, -4);
-    e.threadMeta(format.ProcsSection, trace.SyscallP, "Syscalls"u8, -3);
+    e.threadMeta(format.ProcsSection, trace.NetpollP, networkˢ, -5);
+    e.threadMeta(format.ProcsSection, trace.TimerP, timersˢ, -4);
+    e.threadMeta(format.ProcsSection, trace.SyscallP, syscallsˢ, -3);
     foreach (var (id, name) in e.resources) {
         nint priority = (nint)id;
         if (e.focusResource != 0 && id == e.focusResource) {

@@ -53,26 +53,33 @@ public static bool IsStandardPackage(@string goroot, @string compiler, @string p
 internal static ж<gccgoDirs> ᏑgccgoSearch = new(default(gccgoDirs));
 internal static ref gccgoDirs gccgoSearch => ref ᏑgccgoSearch.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gccgoˢ = "GCCGO"u8;
+private static readonly @string gccgoˢ2 = "gccgo"u8;
+private static readonly @string printSearchDirsˢ = "-print-search-dirs"u8;
+private static readonly @string dumpversionˢ = "-dumpversion"u8;
+private static readonly @string dumpmachineˢ = "-dumpmachine"u8;
+
 // init finds the gccgo search directories. If this fails it leaves dirs == nil.
 [GoRecv] internal static void init(this ref gccgoDirs gd) {
-    @string gccgo = os.Getenv("GCCGO"u8);
+    @string gccgo = os.Getenv(gccgoˢ);
     if (gccgo == ""u8) {
-        gccgo = "gccgo"u8;
+        gccgo = gccgoˢ2;
     }
     var (bin, err) = exec.LookPath(gccgo);
     if (err != default!) {
         return;
     }
-    (var allDirs, err) = exec.Command(bin, "-print-search-dirs"u8).Output();
+    (var allDirs, err) = exec.Command(bin, printSearchDirsˢ).Output();
     if (err != default!) {
         return;
     }
-    (var versionB, err) = exec.Command(bin, "-dumpversion"u8).Output();
+    (var versionB, err) = exec.Command(bin, dumpversionˢ).Output();
     if (err != default!) {
         return;
     }
     @string version = strings.TrimSpace(((@string)versionB));
-    (var machineB, err) = exec.Command(bin, "-dumpmachine"u8).Output();
+    (var machineB, err) = exec.Command(bin, dumpmachineˢ).Output();
     if (err != default!) {
         return;
     }

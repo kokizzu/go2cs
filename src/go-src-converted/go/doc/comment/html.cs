@@ -29,6 +29,9 @@ public static slice<byte> HTML(this ж<Printer> Ꮡp, ж<Doc> Ꮡd) {
     return @out.Bytes();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string valueˢ = @" value="""u8;
+
 // block prints the block x to out.
 [GoRecv] internal static void block(this ref htmlPrinter p, ж<bytes.Buffer> Ꮡout, Block x) {
     ref var @out = ref Ꮡout.Value;
@@ -84,7 +87,7 @@ public static slice<byte> HTML(this ж<Printer> Ꮡp, ж<Doc> Ꮡd) {
             {
                 @string n = item.Value.Number; if (n != ""u8) {
                     if (n != next) {
-                        @out.WriteString(@" value="""u8);
+                        @out.WriteString(valueˢ);
                         @out.WriteString(n);
                         @out.WriteString(@""""u8);
                         next = n;
@@ -119,6 +122,9 @@ internal static @string inc(@string s) {
     return "1"u8 + ((sstring)b);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string aHrefˢ = @"<a href="""u8;
+
 // text prints the text sequence x to out.
 [GoRecv] internal static void text(this ref htmlPrinter p, ж<bytes.Buffer> Ꮡout, slice<ΔText> x) {
     ref var @out = ref Ꮡout.Value;
@@ -136,7 +142,7 @@ internal static @string inc(@string s) {
             break;
         }
         case ж<Link> tΔ1: {
-            @out.WriteString(@"<a href="""u8);
+            @out.WriteString(aHrefˢ);
             p.escape(Ꮡout, (~tΔ1).URL);
             @out.WriteString(@""">"u8);
             p.text(Ꮡout, (~tΔ1).Text);
@@ -146,7 +152,7 @@ internal static @string inc(@string s) {
         case ж<DocLink> tΔ1: {
             @string url = p.docLinkURL(tΔ1);
             if (url != ""u8) {
-                @out.WriteString(@"<a href="""u8);
+                @out.WriteString(aHrefˢ);
                 p.escape(Ꮡout, url);
                 @out.WriteString(@""">"u8);
             }
@@ -158,6 +164,10 @@ internal static @string inc(@string s) {
         }}
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string quotˢ = "&quot;"u8;
+private static readonly @string aposˢ = "&apos;"u8;
 
 // escape prints s to out as plain text,
 // escaping < & " ' and > to avoid being misinterpreted
@@ -182,13 +192,13 @@ internal static @string inc(@string s) {
         }
         case (rune)'"': {
             @out.WriteString(s[(int)(start)..(int)(i)]);
-            @out.WriteString("&quot;"u8);
+            @out.WriteString(quotˢ);
             start = i + 1;
             break;
         }
         case (rune)'\'': {
             @out.WriteString(s[(int)(start)..(int)(i)]);
-            @out.WriteString("&apos;"u8);
+            @out.WriteString(aposˢ);
             start = i + 1;
             break;
         }

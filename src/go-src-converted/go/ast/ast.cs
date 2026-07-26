@@ -176,6 +176,11 @@ public static @string Text(this ж<CommentGroup> Ꮡg) {
     return strings.Join(lines, "\n"u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lineˢ = "line "u8;
+private static readonly @string externˢ = "extern "u8;
+private static readonly @string exportˢ = "export "u8;
+
 // isDirective reports whether c is a comment directive.
 // This code is also in go/printer.
 internal static bool isDirective(@string c) {
@@ -183,7 +188,7 @@ internal static bool isDirective(@string c) {
     // "//extern " is for gccgo.
     // "//export " is for cgo.
     // (The // has been removed.)
-    if (strings.HasPrefix(c, "line "u8) || strings.HasPrefix(c, "extern "u8) || strings.HasPrefix(c, "export "u8)) {
+    if (strings.HasPrefix(c, lineˢ) || strings.HasPrefix(c, externˢ) || strings.HasPrefix(c, exportˢ)) {
         return true;
     }
     // "//[a-z0-9]+:[a-z0-9]"
@@ -1436,6 +1441,9 @@ public static bool IsGenerated(ж<File> Ꮡfile) {
     return ok;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string doNotEditˢ = " DO NOT EDIT."u8;
+
 internal static (@string, bool) generator(ж<File> Ꮡfile) {
     ref var @file = ref Ꮡfile.Value;
 
@@ -1452,7 +1460,7 @@ internal static (@string, bool) generator(ж<File> Ꮡfile) {
                     {
                         var (rest, ok) = strings.CutPrefix(line, prefix); if (ok) {
                             {
-                                var (gen, okΔ1) = strings.CutSuffix(rest, " DO NOT EDIT."u8); if (okΔ1) {
+                                var (gen, okΔ1) = strings.CutSuffix(rest, doNotEditˢ); if (okΔ1) {
                                     return (gen, true);
                                 }
                             }

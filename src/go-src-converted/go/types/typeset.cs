@@ -72,6 +72,9 @@ partial class types_package {
     return methodIndex(s.methods, Ꮡpkg, name, foldCase);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string comparableˢ = "comparable"u8;
+
 [GoRecv] internal static @string String(this ref _TypeSet s) {
     switch (ᐧ) {
     case {} when s.IsEmpty(): {
@@ -86,7 +89,7 @@ partial class types_package {
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
     Ꮡbuf.WriteByte((rune)'{');
     if (s.comparable) {
-        Ꮡbuf.WriteString("comparable"u8);
+        Ꮡbuf.WriteString(comparableˢ);
         if (hasMethods || hasTerms) {
             Ꮡbuf.WriteString("; "u8);
         }
@@ -169,6 +172,9 @@ internal static ж<_TypeSet> ᏑtopTypeSet = new(default(_TypeSet));
 internal static ref _TypeSet topTypeSet => ref ᏑtopTypeSet.Value;
 internal static void initᴛtopTypeSet() { topTypeSet = new _TypeSet(terms: allTermlist); }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string typeSetForSˢ = "-- type set for %s"u8;
+
 // computeInterfaceTypeSet may be called with check == nil.
 internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, tokenꓸPos pos, ж<Interface> Ꮡityp) => func((defer, recover) => {
     ref var check = ref Ꮡcheck.DerefOrNil();
@@ -197,7 +203,7 @@ internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, token
         if (!pos.IsValid() && len(ityp.methods) > 0) {
             pos = ityp.methods[0].Value.pos;
         }
-        Ꮡcheck.trace(pos, "-- type set for %s"u8, Ꮡityp);
+        Ꮡcheck.trace(pos, typeSetForSˢ, Ꮡityp);
         check.indent++;
         defer(() => {
             Ꮡcheck.Value.indent--;

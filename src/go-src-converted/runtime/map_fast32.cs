@@ -22,7 +22,7 @@ internal static @unsafe.Pointer mapaccess1_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡ
         return new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map read and map write"u8);
+        fatal(concurrentMapReadAndMapˢ);
     }
     ж<bmap> b = default!;
     if (h.B == 0){
@@ -76,7 +76,7 @@ internal static (@unsafe.Pointer, bool) mapaccess2_fast32(ж<maptype> Ꮡt, ж<h
         return (new @unsafe.Pointer(ᏑzeroVal.at<byte>(0)), false);
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map read and map write"u8);
+        fatal(concurrentMapReadAndMapˢ);
     }
     ж<bmap> b = default!;
     if (h.B == 0){
@@ -125,14 +125,14 @@ internal static @unsafe.Pointer mapassign_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh
     ref var h = ref Ꮡh.DerefOrNil();
 
     if (Ꮡh == nil) {
-        throw panic(((plainError)(@string)"assignment to entry in nil map"u8));
+        throw panic(((plainError)(@string)assignmentToEntryInNilˢ));
     }
     if (raceenabled) {
         var callerpc = getcallerpc();
         racewritepc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(mapassign_fast32));
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡ(key))), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapassign.
@@ -202,7 +202,7 @@ break_bucketloop:;
 done:
     @unsafe.Pointer elem = (uintptr)add(new @unsafe.Pointer(insertb), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 4)) + inserti * (uintptr)t.ValueSize);
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     h.flags &= unchecked((uint8)~hashWriting);
     return elem;
@@ -222,14 +222,14 @@ internal static @unsafe.Pointer mapassign_fast32ptr(ж<maptype> Ꮡt, ж<hmap> �
     ref var h = ref Ꮡh.DerefOrNil();
 
     if (Ꮡh == nil) {
-        throw panic(((plainError)(@string)"assignment to entry in nil map"u8));
+        throw panic(((plainError)(@string)assignmentToEntryInNilˢ));
     }
     if (raceenabled) {
         var callerpc = getcallerpc();
         racewritepc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(mapassign_fast32));
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     var hash = t.Hasher((uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(key)).Value)), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapassign.
@@ -299,7 +299,7 @@ break_bucketloop:;
 done:
     @unsafe.Pointer elem = (uintptr)add(new @unsafe.Pointer(insertb), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 4)) + inserti * (uintptr)t.ValueSize);
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     h.flags &= unchecked((uint8)~hashWriting);
     return elem;
@@ -317,7 +317,7 @@ internal static void mapdelete_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 ke
         return;
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡ(key))), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapdelete
@@ -392,7 +392,7 @@ continue_search:;
     }
 break_search:;
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     h.flags &= unchecked((uint8)~hashWriting);
 }
@@ -442,7 +442,7 @@ internal static void evacuate_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr ol
                     continue;
                 }
                 if (top < minTopHash) {
-                    @throw("bad map state"u8);
+                    @throw(badMapStateˢ);
                 }
                 uint8 useY = default!;
                 if (!h.sameSizeGrow()) {

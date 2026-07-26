@@ -32,6 +32,9 @@ internal static readonly UntypedInt debugLogBytes = /* 16 << 10 */ 16384;
 // Above this, the string will be truncated with "..(n more bytes).."
 internal static readonly UntypedInt debugLogStringLimit = /* debugLogBytes / 8 */ 2048;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string failedToAllocateDebugLogˢ = "failed to allocate debug log"u8;
+
 // dlog returns a debug logger. The caller can use methods on the
 // returned logger to add values, which will be space-separated in the
 // final output, much like println. The caller must call end() to
@@ -75,7 +78,7 @@ internal static ж<dlogger> dlog() {
         // with the runtime as little as possible, and sysAlloc updates accounting.
         l = (ж<dlogger>)(uintptr)(sysAllocOS(@unsafe.Sizeof(new dlogger(nil))));
         if (l == nil) {
-            @throw("failed to allocate debug log"u8);
+            @throw(failedToAllocateDebugLogˢ);
         }
         l.Value.w.r.data = l.of(dlogger.Ꮡw).of(debugLogWriter.Ꮡdata);
         l.of(dlogger.Ꮡowned).Store(1);
@@ -131,6 +134,9 @@ internal static ж<dlogger> dlog() {
 internal static ж<ж<dlogger>> ᏑallDloggers = new(default(ж<dlogger>));
 internal static ref ж<dlogger> allDloggers => ref ᏑallDloggers.ValueSlot;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string recordTooLargeˢ = "record too large"u8;
+
 //go:nosplit
 internal static void end(this ж<dlogger> Ꮡl) {
     ref var l = ref Ꮡl.Value;
@@ -141,7 +147,7 @@ internal static void end(this ж<dlogger> Ꮡl) {
     // Fill in framing header.
     var size = l.w.write - l.w.r.end;
     if (!l.w.writeFrameAt(l.w.r.end, size)) {
-        @throw("record too large"u8);
+        @throw(recordTooLargeˢ);
     }
     // Commit the record.
     l.w.r.end = l.w.write;
@@ -262,6 +268,9 @@ internal static ж<dlogger> hex(this ж<dlogger> Ꮡl, uint64 x) {
     return Ꮡl;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string notAPointerTypeˢ = "not a pointer type"u8;
+
 //go:nosplit
 internal static ж<dlogger> p(this ж<dlogger> Ꮡl, any x) {
     ref var l = ref Ꮡl.Value;
@@ -279,7 +288,7 @@ internal static ж<dlogger> p(this ж<dlogger> Ꮡl, any x) {
             l.w.uvarint((uint64)(uintptr)(~v).data);
         }
         else { /* default: */
-            @throw("not a pointer type"u8);
+            @throw(notAPointerTypeˢ);
         }
 
     }
@@ -388,6 +397,9 @@ internal static ж<dlogger> traceback(this ж<dlogger> Ꮡl, slice<uintptr> x) {
 internal static readonly UntypedInt debugLogHeaderSize = 2;
 internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2*8 */ 18;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string recordWrappedAroundˢ = "record wrapped around"u8;
+
 //go:nosplit
 [GoRecv] internal static void ensure(this ref debugLogWriter l, uint64 n) {
     while (l.write + n >= l.r.begin + (uint64)len(l.data.b)) {
@@ -399,7 +411,7 @@ internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2
             // eat the whole buffer at this point, but we
             // have to communicate that to the reader
             // somehow.
-            @throw("record wrapped around"u8);
+            @throw(recordWrappedAroundˢ);
         }
     }
 }

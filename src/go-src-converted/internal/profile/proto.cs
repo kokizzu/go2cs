@@ -188,12 +188,15 @@ internal static uint32 le32(slice<byte> p) {
     return (uint32)((uint32)((uint32)((uint32)p[0] | ((uint32)p[1] << (int)(8))) | ((uint32)p[2] << (int)(16))) | ((uint32)p[3] << (int)(24)));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badVarintˢ = "bad varint"u8;
+
 internal static (uint64, slice<byte>, error) decodeVarint(slice<byte> data) {
     nint i = default!;
     uint64 u = default!;
     for (i = 0; ᐧ ; i++) {
         if (i >= 10 || i >= len(data)) {
-            return (0, default!, errors.New("bad varint"u8));
+            return (0, default!, errors.New(badVarintˢ));
         }
         u |= (uint64)(((uint64)((byte)(data[i] & 0x7F))).Lsh((nuint)(7 * i)));
         if ((byte)(data[i] & 0x80) == 0) {
@@ -201,6 +204,10 @@ internal static (uint64, slice<byte>, error) decodeVarint(slice<byte> data) {
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string notEnoughDataˢ = "not enough data"u8;
+private static readonly @string tooMuchDataˢ = "too much data"u8;
 
 internal static (slice<byte>, error) decodeField(ж<buffer> Ꮡb, slice<byte> data) {
     ref var b = ref Ꮡb.Value;
@@ -223,7 +230,7 @@ internal static (slice<byte>, error) decodeField(ж<buffer> Ꮡb, slice<byte> da
     }
     case 1: {
         if (len(data) < 8) {
-            return (default!, errors.New("not enough data"u8));
+            return (default!, errors.New(notEnoughDataˢ));
         }
         b.u64 = le64(data[..8]);
         data = data[8..];
@@ -236,7 +243,7 @@ internal static (slice<byte>, error) decodeField(ж<buffer> Ꮡb, slice<byte> da
             return (default!, err);
         }
         if (n > (uint64)len(data)) {
-            return (default!, errors.New("too much data"u8));
+            return (default!, errors.New(tooMuchDataˢ));
         }
         b.data = data[..(int)(n)];
         data = data[(int)(n)..];
@@ -244,7 +251,7 @@ internal static (slice<byte>, error) decodeField(ж<buffer> Ꮡb, slice<byte> da
     }
     case 5: {
         if (len(data) < 4) {
-            return (default!, errors.New("not enough data"u8));
+            return (default!, errors.New(notEnoughDataˢ));
         }
         b.u64 = (uint64)le32(data[..4]);
         data = data[4..];
@@ -257,11 +264,14 @@ internal static (slice<byte>, error) decodeField(ж<buffer> Ꮡb, slice<byte> da
     return (data, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string typeMismatchˢ = "type mismatch"u8;
+
 internal static error checkType(ж<buffer> Ꮡb, nint typ) {
     ref var b = ref Ꮡb.Value;
 
     if (b.typ != typ) {
-        return errors.New("type mismatch"u8);
+        return errors.New(typeMismatchˢ);
     }
     return default!;
 }

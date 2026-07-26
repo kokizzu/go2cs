@@ -57,6 +57,10 @@ partial class ecdsa_package {
     public ж<bigꓸInt> X, Y;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ecdsaUnsupportedCurveByˢ = "ecdsa: unsupported curve by crypto/ecdh"u8;
+private static readonly @string ecdsaInvalidPublicKeyˢ = "ecdsa: invalid public key"u8;
+
 // Any methods implemented on PublicKey might need to also be implemented on
 // PrivateKey, as the latter embeds the former and will expose its methods.
 
@@ -66,10 +70,10 @@ partial class ecdsa_package {
 [GoRecv] public static (ж<ecdhꓸPublicKey>, error) ECDH(this ref PublicKey k) {
     var c = curveToECDH(k.Curve);
     if (c == default!) {
-        return (default!, errors.New("ecdsa: unsupported curve by crypto/ecdh"u8));
+        return (default!, errors.New(ecdsaUnsupportedCurveByˢ));
     }
     if (!k.Curve.IsOnCurve(k.X, k.Y)) {
-        return (default!, errors.New("ecdsa: invalid public key"u8));
+        return (default!, errors.New(ecdsaInvalidPublicKeyˢ));
     }
     return c.NewPublicKey(elliptic.Marshal(k.Curve, k.X, k.Y));
 }
@@ -98,17 +102,20 @@ partial class ecdsa_package {
     public ж<bigꓸInt> D;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ecdsaInvalidPrivateKeyˢ = "ecdsa: invalid private key"u8;
+
 // ECDH returns k as a [ecdh.PrivateKey]. It returns an error if the key is
 // invalid according to the definition of [ecdh.Curve.NewPrivateKey], or if the
 // Curve is not supported by [crypto/ecdh].
 [GoRecv] public static (ж<ecdh.PrivateKey>, error) ECDH(this ref PrivateKey k) {
     var c = curveToECDH(k.Curve);
     if (c == default!) {
-        return (default!, errors.New("ecdsa: unsupported curve by crypto/ecdh"u8));
+        return (default!, errors.New(ecdsaUnsupportedCurveByˢ));
     }
     nint size = ((~k.Curve.Params()).N.BitLen() + 7) / 8;
     if (k.D.BitLen() > size * 8) {
-        return (default!, errors.New("ecdsa: invalid private key"u8));
+        return (default!, errors.New(ecdsaInvalidPrivateKeyˢ));
     }
     return c.NewPrivateKey(k.D.FillBytes(new slice<byte>(size)));
 }
@@ -324,6 +331,10 @@ public static (slice<byte>, error) SignASN1(io.Reader rand, ж<PrivateKey> Ꮡpr
 
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ecdsaInternalErrorRIsˢ = "ecdsa: internal error: r is zero"u8;
+private static readonly @string ecdsaInternalErrorSIsˢ = "ecdsa: internal error: s is zero"u8;
+
 internal static (slice<byte> sig, error err) signNISTEC<Point>(ж<nistCurve<Point>> Ꮡc, ж<PrivateKey> Ꮡpriv, io.Reader csprng, slice<byte> hash)
     where Point : nistPoint<Point>
 {
@@ -352,7 +363,7 @@ internal static (slice<byte> sig, error err) signNISTEC<Point>(ж<nistCurve<Poin
     // on a large prime-order group like the NIST curves we support is
     // cryptographically negligible. If we hit it, something is awfully wrong.
     if (r.IsZero() == 1) {
-        return (default!, errors.New("ecdsa: internal error: r is zero"u8));
+        return (default!, errors.New(ecdsaInternalErrorRIsˢ));
     }
     var e = bigmod.NewNat();
     hashToNat(Ꮡc, e, hash);
@@ -365,7 +376,7 @@ internal static (slice<byte> sig, error err) signNISTEC<Point>(ж<nistCurve<Poin
     s.Mul(kInv, c.N);
     // Again, the chance of this happening is cryptographically negligible.
     if (s.IsZero() == 1) {
-        return (default!, errors.New("ecdsa: internal error: s is zero"u8));
+        return (default!, errors.New(ecdsaInternalErrorSIsˢ));
     }
     return encodeSignature(r.Bytes(c.N), s.Bytes(c.N));
 }
@@ -381,6 +392,9 @@ internal static (slice<byte>, error) encodeSignature(slice<byte> r, slice<byte> 
     return b.Bytes();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidIntegerˢ = "invalid integer"u8;
+
 // addASN1IntBytes encodes in ASN.1 a positive integer represented as
 // a big-endian byte slice with zero or more leading zeroes.
 internal static void addASN1IntBytes(ж<cryptobyte.Builder> Ꮡb, slice<byte> bytes) {
@@ -390,7 +404,7 @@ internal static void addASN1IntBytes(ж<cryptobyte.Builder> Ꮡb, slice<byte> by
         bytes = bytes[1..];
     }
     if (len(bytes) == 0) {
-        b.SetError(errors.New("invalid integer"u8));
+        b.SetError(errors.New(invalidIntegerˢ));
         return;
     }
     var bytesʗ1 = bytes;
@@ -611,6 +625,9 @@ internal static bool verifyNISTEC<Point>(ж<nistCurve<Point>> Ꮡc, ж<PublicKey
     return v.Equal(r) == 1;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidAsn1ˢ = "invalid ASN.1"u8;
+
 internal static (slice<byte> r, slice<byte> s, error err) parseSignature(slice<byte> sig) {
     ref var r = ref heap<slice<byte>>(out var Ꮡr);
     ref var s = ref heap<slice<byte>>(out var Ꮡs);
@@ -619,7 +636,7 @@ internal static (slice<byte> r, slice<byte> s, error err) parseSignature(slice<b
     ref var inner = ref heap<cryptobyte.String>(out var Ꮡinner);
     var input = ((cryptobyte.String)sig);
     if (!input.ReadASN1(Ꮡinner, asn1.SEQUENCE) || !input.Empty() || !inner.ReadASN1Integer(Ꮡr) || !inner.ReadASN1Integer(Ꮡs) || !inner.Empty()) {
-        return (default!, default!, errors.New("invalid ASN.1"u8));
+        return (default!, default!, errors.New(invalidAsn1ˢ));
     }
     return (r, s, default!);
 }
@@ -643,6 +660,10 @@ internal static (slice<byte> r, slice<byte> s, error err) parseSignature(slice<b
     (T, error) ScalarBaseMult(slice<byte> _);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string negativeCoordinateˢ = "negative coordinate"u8;
+private static readonly @string overflowingCoordinateˢ = "overflowing coordinate"u8;
+
 // pointFromAffine is used to convert the PublicKey to a nistec Point.
 [GoRecv] internal static (Point p, error err) pointFromAffine<Point>(this ref nistCurve<Point> curve, ж<bigꓸInt> Ꮡx, ж<bigꓸInt> Ꮡy)
     where Point : nistPoint<Point>
@@ -655,10 +676,10 @@ internal static (slice<byte> r, slice<byte> s, error err) parseSignature(slice<b
     nint bitSize = curve.curve.Params().Value.BitSize;
     // Reject values that would not get correctly encoded.
     if (x.Sign() < 0 || y.Sign() < 0) {
-        return (p, errors.New("negative coordinate"u8));
+        return (p, errors.New(negativeCoordinateˢ));
     }
     if (x.BitLen() > bitSize || y.BitLen() > bitSize) {
-        return (p, errors.New("overflowing coordinate"u8));
+        return (p, errors.New(overflowingCoordinateˢ));
     }
     // Encode the coordinates and let SetBytes reject invalid points.
     nint byteLen = (bitSize + 7) / 8;
@@ -669,6 +690,9 @@ internal static (slice<byte> r, slice<byte> s, error err) parseSignature(slice<b
     y.FillBytes(buf[(int)(1 + byteLen)..(int)(1 + 2 * byteLen)]);
     return curve.newPoint().SetBytes(buf);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ecdsaPublicKeyPointIsTheˢ = "ecdsa: public key point is the infinity"u8;
 
 // pointToAffine is used to convert a nistec Point to a PublicKey.
 [GoRecv] internal static (ж<bigꓸInt> x, ж<bigꓸInt> y, error err) pointToAffine<Point>(this ref nistCurve<Point> curve, Point p)
@@ -681,7 +705,7 @@ internal static (slice<byte> r, slice<byte> s, error err) parseSignature(slice<b
     var @out = p.Bytes();
     if (len(@out) == 1 && @out[0] == 0) {
         // This is the encoding of the point at infinity.
-        return (default!, default!, errors.New("ecdsa: public key point is the infinity"u8));
+        return (default!, default!, errors.New(ecdsaPublicKeyPointIsTheˢ));
     }
     nint byteLen = ((~curve.curve.Params()).BitSize + 7) / 8;
     x = @new<bigꓸInt>().SetBytes(@out[1..(int)(1 + byteLen)]);

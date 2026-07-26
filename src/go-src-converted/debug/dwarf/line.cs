@@ -118,6 +118,10 @@ partial class dwarf_package {
     public nint Length;   // File length, or 0 if unknown
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string attrStmtListValueOutOfˢ = "AttrStmtList value out of range"u8;
+private static readonly @string lineˢ = "line"u8;
+
 // LineReader returns a new reader for the line table of compilation
 // unit cu, which must be an [Entry] with tag [TagCompileUnit].
 //
@@ -137,14 +141,14 @@ public static (ж<ΔLineReader>, error) LineReader(this ж<Data> Ꮡd, ж<Entry>
         return (default!, default!);
     }
     if (off < 0 || off > (int64)len(d.line)) {
-        return (default!, errors.New("AttrStmtList value out of range"u8));
+        return (default!, errors.New(attrStmtListValueOutOfˢ));
     }
     // AttrCompDir is optional if all file names are absolute. Use
     // the empty string if it's not present.
     var (compDir, _) = cu.Val(AttrCompDir)._<@string>(ᐧ);
     // Create the LineReader.
     var u = Ꮡ(d.unit, Ꮡd.offsetToUnit(cu.Offset));
-    var buf = makeBuf(Ꮡd, new unitжdataFormat(u), "line"u8, ((Offset)(uint32)off), d.line[(int)(off)..]);
+    var buf = makeBuf(Ꮡd, new unitжdataFormat(u), lineˢ, ((Offset)(uint32)off), d.line[(int)(off)..]);
     // The compilation directory is implicitly directories[0].
     ref var r = ref heap<ΔLineReader>(out var Ꮡr);
     r = new ΔLineReader(
@@ -348,7 +352,7 @@ internal static error readHeader(this ж<ΔLineReader> Ꮡr, @string compDir) {
             if (lf.form == formStrp){
                 b1 = makeBuf(r.buf.dwarf, r.buf.format, "str"u8, 0, r.str);
             } else {
-                b1 = makeBuf(r.buf.dwarf, r.buf.format, "line_str"u8, 0, r.lineStr);
+                b1 = makeBuf(r.buf.dwarf, r.buf.format, lineStrˢ, 0, r.lineStr);
             }
             b1.skip((nint)off);
             str = b1.@string();
@@ -571,7 +575,7 @@ internal static map<nint, nint> knownOpcodeLengths = new map<nint, nint>{
                 break;
             }
             default: {
-                r.buf.error("unknown address size"u8);
+                r.buf.error(unknownAddressSizeˢ);
                 break;
             }}
 

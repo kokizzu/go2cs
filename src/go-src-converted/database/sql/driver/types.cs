@@ -62,8 +62,11 @@ public static boolType Bool;
 
 internal static ValueConverter _ᴛ3ʗ = new boolType(nil);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string boolˢ = "Bool"u8;
+
 public static @string String(this boolType _) {
-    return "Bool"u8;
+    return boolˢ;
 }
 
 public static (Value, error) ConvertValue(this boolType _, any src) {

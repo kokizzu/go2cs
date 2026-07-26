@@ -5,6 +5,9 @@ namespace go;
 
 partial class strconv_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string parseBoolˢ = "ParseBool"u8;
+
 // ParseBool returns the boolean value represented by the string.
 // It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.
 // Any other value returns an error.
@@ -17,15 +20,19 @@ public static (bool, error) ParseBool(@string str) {
         return (false, default!);
     }
 
-    return (false, new NumErrorжerror(syntaxError("ParseBool"u8, str)));
+    return (false, new NumErrorжerror(syntaxError(parseBoolˢ, str)));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string trueˢ = "true"u8;
+private static readonly @string falseˢ = "false"u8;
 
 // FormatBool returns "true" or "false" according to the value of b.
 public static @string FormatBool(bool b) {
     if (b) {
-        return "true"u8;
+        return trueˢ;
     }
-    return "false"u8;
+    return falseˢ;
 }
 
 // AppendBool appends "true" or "false", according to the value of b,

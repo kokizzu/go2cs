@@ -228,6 +228,9 @@ internal static void run(this ж<paragraph> Ꮡp) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object assertIEndˢ = (@string)"assert (i <= end)"u8;
+
 // determineParagraphEmbeddingLevel reports the resolved paragraph direction of
 // the substring limited by the given range [start, end).
 //
@@ -246,7 +249,7 @@ internal static void run(this ж<paragraph> Ꮡp) {
                 i = p.matchingPDI[i];
                 // skip over to the matching PDI
                 if (i > end) {
-                    log.Panic((@string)"assert (i <= end)"u8);
+                    log.Panic(assertIEndˢ);
                 }
             }
         }

@@ -161,6 +161,11 @@ internal static bool ipv6only(IPAddr addr) {
     return len(addr.IP) == IPv6len && addr.IP.To4() == default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingInAddressˢ = "missing ']' in address"u8;
+private static readonly @string unexpectedInAddressˢ = "unexpected '[' in address"u8;
+private static readonly @string unexpectedInAddressˢ2 = "unexpected ']' in address"u8;
+
 // SplitHostPort splits a network address of the form "host:port",
 // "host%zone:port", "[host]:port" or "[host%zone]:port" into host or
 // host%zone and port.
@@ -194,7 +199,7 @@ public static (@string host, @string port, error err) SplitHostPort(@string host
         // Expect the first ']' just before the last ':'.
         nint end = bytealg.IndexByteString(hostport, (rune)']');
         if (end < 0) {
-            return addrErr(hostport, "missing ']' in address"u8);
+            return addrErr(hostport, missingInAddressˢ);
         }
         var exprᴛ1 = end + 1;
         if (exprᴛ1 == len(hostport)) {
@@ -223,10 +228,10 @@ public static (@string host, @string port, error err) SplitHostPort(@string host
         }
     }
     if (bytealg.IndexByteString(hostport[(int)(j)..], (rune)'[') >= 0) {
-        return addrErr(hostport, "unexpected '[' in address"u8);
+        return addrErr(hostport, unexpectedInAddressˢ);
     }
     if (bytealg.IndexByteString(hostport[(int)(k)..], (rune)']') >= 0) {
-        return addrErr(hostport, "unexpected ']' in address"u8);
+        return addrErr(hostport, unexpectedInAddressˢ2);
     }
     port = hostport[(int)(i + 1)..];
     return (host, port, default!);

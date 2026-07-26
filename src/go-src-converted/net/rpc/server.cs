@@ -345,6 +345,9 @@ internal static map<@string, ж<methodType>> suitableMethods(reflectꓸType typ,
 // contains an error when it is used.
 internal static EmptyStruct invalidRequest = new EmptyStruct();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object rpcWritingResponseˢ = (@string)"rpc: writing response:"u8;
+
 internal static void sendResponse(this ж<Server> Ꮡserver, ж<sync.Mutex> Ꮡsending, ж<Request> Ꮡreq, any reply, ServerCodec codec, @string errmsg) {
     ref var req = ref Ꮡreq.Value;
 
@@ -359,7 +362,7 @@ internal static void sendResponse(this ж<Server> Ꮡserver, ж<sync.Mutex> Ꮡs
     Ꮡsending.Lock();
     var err = codec.WriteResponse(resp, reply);
     if (debugLog && err != default!) {
-        log.Println((@string)"rpc: writing response:"u8, err);
+        log.Println(rpcWritingResponseˢ, err);
     }
     Ꮡsending.Unlock();
     Ꮡserver.freeResponse(resp);
@@ -414,6 +417,10 @@ internal static void call(this ж<service> Ꮡs, ж<Server> Ꮡserver, ж<sync.M
     return c.dec.Decode(body);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object rpcGobErrorEncodingˢ = (@string)"rpc: gob error encoding response:"u8;
+private static readonly object rpcGobErrorEncodingBodyˢ = (@string)"rpc: gob error encoding body:"u8;
+
 [GoRecv] internal static error /*err*/ WriteResponse(this ref gobServerCodec c, ж<Response> Ꮡr, any body) {
     error err = default!;
 
@@ -422,7 +429,7 @@ internal static void call(this ж<service> Ꮡs, ж<Server> Ꮡserver, ж<sync.M
             if (c.encBuf.Flush() == default!) {
                 // Gob couldn't encode the header. Should not happen, so if it does,
                 // shut down the connection to signal that the connection is broken.
-                log.Println((@string)"rpc: gob error encoding response:"u8, err);
+                log.Println(rpcGobErrorEncodingˢ, err);
                 c.Close();
             }
             return err;
@@ -433,7 +440,7 @@ internal static void call(this ж<service> Ꮡs, ж<Server> Ꮡserver, ж<sync.M
             if (c.encBuf.Flush() == default!) {
                 // Was a gob problem encoding the body but the header has been written.
                 // Shut down the connection to signal that the connection is broken.
-                log.Println((@string)"rpc: gob error encoding body:"u8, err);
+                log.Println(rpcGobErrorEncodingBodyˢ, err);
                 c.Close();
             }
             return err;
@@ -662,6 +669,9 @@ internal static (ж<service> svc, ж<methodType> mtype, ж<Request> req, bool ke
     return (svc, mtype, req, keepReading, err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object rpcServeAcceptˢ = (@string)"rpc.Serve: accept:"u8;
+
 // Accept accepts connections on the listener and serves requests
 // for each incoming connection. Accept blocks until the listener
 // returns a non-nil error. The caller typically invokes Accept in a
@@ -670,7 +680,7 @@ public static void Accept(this ж<Server> Ꮡserver, net.Listener lis) {
     while (ᐧ) {
         var (conn, err) = lis.Accept();
         if (err != default!) {
-            log.Print((@string)"rpc.Serve: accept:"u8, err.Error());
+            log.Print(rpcServeAcceptˢ, err.Error());
             return;
         }
         goǃ(Ꮡserver.ServeConn, new net_ConnᴠReadWriteCloser(conn));
@@ -736,19 +746,25 @@ public static void Accept(net.Listener lis) {
 // Can connect to RPC service using HTTP CONNECT to rpcPath.
 internal static @string connected = "200 Connected to Go RPC"u8;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string contentTypeˢ = "Content-Type"u8;
+private static readonly @string textPlainCharsetUtf8ˢ = "text/plain; charset=utf-8"u8;
+private static readonly @string mustConnectˢ = "405 must CONNECT\n"u8;
+private static readonly object rpcHijackingˢ = (@string)"rpc hijacking "u8;
+
 // ServeHTTP implements an [http.Handler] that answers RPC requests.
 public static void ServeHTTP(this ж<Server> Ꮡserver, Δhttp.ResponseWriter w, ж<Δhttp.Request> Ꮡreq) {
     ref var req = ref Ꮡreq.Value;
 
     if (req.Method != "CONNECT"u8) {
-        w.Header().Set("Content-Type"u8, "text/plain; charset=utf-8"u8);
+        w.Header().Set(contentTypeˢ, textPlainCharsetUtf8ˢ);
         w.WriteHeader(Δhttp.StatusMethodNotAllowed);
-        io.WriteString(new http_ResponseWriterᴠWriter(w), "405 must CONNECT\n"u8);
+        io.WriteString(new http_ResponseWriterᴠWriter(w), mustConnectˢ);
         return;
     }
     var (conn, _, err) = w._<Δhttp.Hijacker>().Hijack();
     if (err != default!) {
-        log.Print((@string)"rpc hijacking "u8, req.RemoteAddr, (@string)": "u8, err.Error());
+        log.Print(rpcHijackingˢ, req.RemoteAddr, (@string)": "u8, err.Error());
         return;
     }
     io.WriteString(new net_ConnᴠWriter(conn), "HTTP/1.0 "u8 + connected + "\n\n"u8);

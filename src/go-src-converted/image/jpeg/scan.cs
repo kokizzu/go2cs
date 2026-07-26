@@ -59,6 +59,19 @@ partial class jpeg_package {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sosHasWrongLengthˢ = "SOS has wrong length"u8;
+private static readonly @string sosLengthInconsistentˢ = "SOS length inconsistent with number of components"u8;
+private static readonly @string unknownComponentSelectorˢ = "unknown component selector"u8;
+private static readonly @string repeatedComponentˢ2 = "repeated component selector"u8;
+private static readonly @string badTdValueˢ = "bad Td value"u8;
+private static readonly @string badTaValueˢ = "bad Ta value"u8;
+private static readonly @string totalSamplingFactorsTooˢ = "total sampling factors too large"u8;
+private static readonly @string badSpectralSelectionˢ = "bad spectral selection bounds"u8;
+private static readonly @string progressiveAcˢ = "progressive AC coefficients for more than one component"u8;
+private static readonly @string badSuccessiveˢ = "bad successive approximation values"u8;
+private static readonly @string excessiveDcComponentˢ = "excessive DC component"u8;
+
 [GoType("dyn")] partial struct processSOS_scan {
     internal uint8 compIndex;
     internal uint8 td; // DC table selector.
@@ -68,10 +81,10 @@ partial class jpeg_package {
 // Specified in section B.2.3.
 [GoRecv] internal static error processSOS(this ref decoder d, nint n) {
     if (d.nComp == 0) {
-        return ((FormatError)(@string)"missing SOF marker"u8);
+        return ((FormatError)(@string)missingSofMarkerˢ);
     }
     if (n < 6 || 4 + 2 * d.nComp < n || n % 2 != 0) {
-        return ((FormatError)(@string)"SOS has wrong length"u8);
+        return ((FormatError)(@string)sosHasWrongLengthˢ);
     }
     {
         var err = d.readFull(d.tmp[..(int)(n)]); if (err != default!) {
@@ -80,7 +93,7 @@ partial class jpeg_package {
     }
     nint nComp = (nint)d.tmp[0];
     if (n != 4 + 2 * nComp) {
-        return ((FormatError)(@string)"SOS length inconsistent with number of components"u8);
+        return ((FormatError)(@string)sosLengthInconsistentˢ);
     }
     array<processSOS_scan> scan = new(4); /* maxComponents */
     nint totalHV = 0;
@@ -94,7 +107,7 @@ partial class jpeg_package {
             }
         }
         if (compIndex < 0) {
-            return ((FormatError)(@string)"unknown component selector"u8);
+            return ((FormatError)(@string)unknownComponentSelectorˢ);
         }
         scan[i].compIndex = (uint8)compIndex;
         // Section B.2.3 states that "the value of Cs_j shall be different from
@@ -104,7 +117,7 @@ partial class jpeg_package {
         // into d.comp are unique.
         for (nint j = 0; j < i; j++) {
             if (scan[i].compIndex == scan[j].compIndex) {
-                return ((FormatError)(@string)"repeated component selector"u8);
+                return ((FormatError)(@string)repeatedComponentˢ2);
             }
         }
         totalHV += d.comp[compIndex].h * d.comp[compIndex].v;
@@ -112,20 +125,20 @@ partial class jpeg_package {
         scan[i].td = (uint8)((d.tmp[2 + 2 * i] >> (int)(4)));
         {
             var t = scan[i].td; if (t > maxTh || (d.baseline && t > 1)) {
-                return ((FormatError)(@string)"bad Td value"u8);
+                return ((FormatError)(@string)badTdValueˢ);
             }
         }
         scan[i].ta = (uint8)((byte)(d.tmp[2 + 2 * i] & 0x0f));
         {
             var t = scan[i].ta; if (t > maxTh || (d.baseline && t > 1)) {
-                return ((FormatError)(@string)"bad Ta value"u8);
+                return ((FormatError)(@string)badTaValueˢ);
             }
         }
     }
     // Section B.2.3 states that if there is more than one component then the
     // total H*V values in a scan must be <= 10.
     if (d.nComp > 1 && totalHV > 10) {
-        return ((FormatError)(@string)"total sampling factors too large"u8);
+        return ((FormatError)(@string)totalSamplingFactorsTooˢ);
     }
     // zigStart and zigEnd are the spectral selection bounds.
     // ah and al are the successive approximation high and low values.
@@ -151,13 +164,13 @@ partial class jpeg_package {
         ah = (uint32)((d.tmp[3 + 2 * nComp] >> (int)(4)));
         al = (uint32)((byte)(d.tmp[3 + 2 * nComp] & 0x0f));
         if ((zigStart == 0 && zigEnd != 0) || zigStart > zigEnd || blockSize <= zigEnd) {
-            return ((FormatError)(@string)"bad spectral selection bounds"u8);
+            return ((FormatError)(@string)badSpectralSelectionˢ);
         }
         if (zigStart != 0 && nComp != 1) {
-            return ((FormatError)(@string)"progressive AC coefficients for more than one component"u8);
+            return ((FormatError)(@string)progressiveAcˢ);
         }
         if (ah != 0 && ah != al + 1) {
-            return ((FormatError)(@string)"bad successive approximation values"u8);
+            return ((FormatError)(@string)badSuccessiveˢ);
         }
     }
     // mxx and myy are the number of MCUs (Minimum Coded Units) in the image.
@@ -251,7 +264,7 @@ partial class jpeg_package {
                                 return err;
                             }
                             if (value > 16) {
-                                return ((UnsupportedError)(@string)"excessive DC component"u8);
+                                return ((UnsupportedError)(@string)excessiveDcComponentˢ);
                             }
                             (var dcDelta, err) = d.receiveExtend(value);
                             if (err != default!) {
@@ -356,6 +369,10 @@ partial class jpeg_package {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedHuffmanCodeˢ = "unexpected Huffman code"u8;
+private static readonly @string tooManyCoefficientsˢ = "too many coefficients"u8;
+
 // refine decodes a successive approximation refinement block, as specified in
 // section G.1.2.
 [GoRecv] internal static error refine(this ref decoder d, ж<block> Ꮡb, ж<huffman> Ꮡh, int32 zigStart, int32 zigEnd, int32 delta) {
@@ -414,7 +431,7 @@ loop:
                 break;
             }
             default: {
-                return ((FormatError)(@string)"unexpected Huffman code"u8);
+                return ((FormatError)(@string)unexpectedHuffmanCodeˢ);
             }}
 
             (zig, err) = d.refineNonZeroes(Ꮡb, zig, zigEnd, (int32)val0, delta);
@@ -422,7 +439,7 @@ loop:
                 return err;
             }
             if (zig > zigEnd) {
-                return ((FormatError)(@string)"too many coefficients"u8);
+                return ((FormatError)(@string)tooManyCoefficientsˢ);
             }
             if (z != 0) {
                 b[unzig[zig]] = z;
@@ -497,6 +514,9 @@ break_loop:;
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tooManyComponentsˢ = "too many components"u8;
+
 // reconstructBlock dequantizes, performs the inverse DCT and stores the block
 // to the image.
 [GoRecv] internal static error reconstructBlock(this ref decoder d, ж<block> Ꮡb, nint bx, nint by, nint compIndex) {
@@ -530,7 +550,7 @@ break_loop:;
             break;
         }
         default: {
-            return ((UnsupportedError)(@string)"too many components"u8);
+            return ((UnsupportedError)(@string)tooManyComponentsˢ);
         }}
 
     }
@@ -553,6 +573,9 @@ break_loop:;
     }
     return default!;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badRstMarkerˢ = "bad RST marker"u8;
 
 // findRST advances past the next RST restart marker that matches expectedRST.
 // Other than I/O errors, it is also an error if we encounter an {0xFF, M}
@@ -585,7 +608,7 @@ break_loop:;
                 // cases is frequent enough to be worth the complexity, we take
                 // a simpler approach for now. Any marker that's not 0x00, 0xff
                 // or expectedRST is a fatal FormatError.
-                return ((FormatError)(@string)"bad RST marker"u8);
+                return ((FormatError)(@string)badRstMarkerˢ);
             }
         } else 
         if (d.tmp[1] == 0xff) {

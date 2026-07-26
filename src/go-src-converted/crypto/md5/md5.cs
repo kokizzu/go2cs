@@ -66,12 +66,16 @@ internal const nint marshaledSize = /* len(magic) + 4*4 + BlockSize + 8 */ 92;
     return (b, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoMd5InvalidHashˢ = "crypto/md5: invalid hash state identifier"u8;
+private static readonly @string cryptoMd5InvalidHashˢ2 = "crypto/md5: invalid hash state size"u8;
+
 [GoRecv] internal static error UnmarshalBinary(this ref digest d, slice<byte> b) {
     if (len(b) < len(magic) || ((sstring)(b[..(int)(len(magic))])) != magic) {
-        return errors.New("crypto/md5: invalid hash state identifier"u8);
+        return errors.New(cryptoMd5InvalidHashˢ);
     }
     if (len(b) != marshaledSize) {
-        return errors.New("crypto/md5: invalid hash state size"u8);
+        return errors.New(cryptoMd5InvalidHashˢ2);
     }
     b = b[(int)(len(magic))..];
     (b, d.s[0]) = consumeUint32(b);

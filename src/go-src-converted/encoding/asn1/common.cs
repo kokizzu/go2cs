@@ -99,6 +99,9 @@ public static readonly UntypedInt ClassPrivate = 3;
     internal bool omitEmpty;   // true iff this should be omitted if empty when marshaling.
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string defaultˢ = "default:"u8;
+
 // Invariants:
 //   if explicit is set, tag is non-nil.
 
@@ -147,7 +150,7 @@ internal static fieldParameters /*ret*/ parseFieldParameters(@string str) {
             ret.stringType = TagUTF8String;
             break;
         }
-        case {} when strings.HasPrefix(part, "default:"u8): {
+        case {} when strings.HasPrefix(part, defaultˢ): {
             var (i, err) = strconv.ParseInt(part[8..], 10, 64);
             if (err == default!) {
                 ret.defaultValue = @new<int64>();

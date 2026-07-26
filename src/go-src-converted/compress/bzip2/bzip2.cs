@@ -53,6 +53,11 @@ internal static readonly UntypedInt bzip2BlockMagic = 0x314159265359;
 
 internal static readonly UntypedInt bzip2FinalMagic = 0x177245385090;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badMagicValueˢ = "bad magic value"u8;
+private static readonly @string nonHuffmanEntropyˢ = "non-Huffman entropy encoding"u8;
+private static readonly @string invalidCompressionLevelˢ = "invalid compression level"u8;
+
 // setup parses the bzip2 header.
 internal static error setup(this ж<reader> Ꮡbz2, bool needMagic) {
     ref var bz2 = ref Ꮡbz2.Value;
@@ -61,16 +66,16 @@ internal static error setup(this ж<reader> Ꮡbz2, bool needMagic) {
     if (needMagic) {
         nint magic = br.ReadBits(16);
         if (magic != bzip2FileMagic) {
-            return ((StructuralError)(@string)"bad magic value"u8);
+            return ((StructuralError)(@string)badMagicValueˢ);
         }
     }
     nint t = br.ReadBits(8);
     if (t != (rune)'h') {
-        return ((StructuralError)(@string)"non-Huffman entropy encoding"u8);
+        return ((StructuralError)(@string)nonHuffmanEntropyˢ);
     }
     nint level = br.ReadBits(8);
     if (level < (rune)'1' || level > (rune)'9') {
-        return ((StructuralError)(@string)"invalid compression level"u8);
+        return ((StructuralError)(@string)invalidCompressionLevelˢ);
     }
     bz2.fileCRC = 0;
     bz2.blockSize = 100 * 1000 * (level - (rune)'0');
@@ -153,6 +158,12 @@ internal static (nint n, error err) Read(this ж<reader> Ꮡbz2, slice<byte> buf
     return n;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string blockChecksumMismatchˢ = "block checksum mismatch"u8;
+private static readonly @string badMagicValueFoundˢ = "bad magic value found"u8;
+private static readonly @string fileChecksumMismatchˢ = "file checksum mismatch"u8;
+private static readonly @string badMagicValueInˢ = "bad magic value in continuation file"u8;
+
 internal static (nint, error) read(this ж<reader> Ꮡbz2, slice<byte> buf) {
     ref var bz2 = ref Ꮡbz2.Value;
 
@@ -164,7 +175,7 @@ internal static (nint, error) read(this ж<reader> Ꮡbz2, slice<byte> buf) {
         }
         // End of block. Check CRC.
         if (bz2.blockCRC != bz2.wantBlockCRC) {
-            bz2.br.err = ((StructuralError)(@string)"block checksum mismatch"u8);
+            bz2.br.err = ((StructuralError)(@string)blockChecksumMismatchˢ);
             return (0, bz2.br.err);
         }
         // Find next block.
@@ -184,7 +195,7 @@ internal static (nint, error) read(this ж<reader> Ꮡbz2, slice<byte> buf) {
                 return (0, (~br).err);
             }
             if (bz2.fileCRC != wantFileCRC) {
-                br.Value.err = ((StructuralError)(@string)"file checksum mismatch"u8);
+                br.Value.err = ((StructuralError)(@string)fileChecksumMismatchˢ);
                 return (0, (~br).err);
             }
             if ((~br).bits % 8 != 0) {
@@ -212,7 +223,7 @@ internal static (nint, error) read(this ж<reader> Ꮡbz2, slice<byte> buf) {
                 return (0, err);
             }
             if (b != (rune)'B' || z != (rune)'Z') {
-                return (0, ((StructuralError)(@string)"bad magic value in continuation file"u8));
+                return (0, ((StructuralError)(@string)badMagicValueInˢ));
             }
             {
                 var errΔ1 = Ꮡbz2.setup(false); if (errΔ1 != default!) {
@@ -221,11 +232,25 @@ internal static (nint, error) read(this ж<reader> Ꮡbz2, slice<byte> buf) {
             }
         }
         else { /* default: */
-            return (0, ((StructuralError)(@string)"bad magic value found"u8));
+            return (0, ((StructuralError)(@string)badMagicValueFoundˢ));
         }
 
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string deprecatedRandomizedˢ = "deprecated randomized files"u8;
+private static readonly @string noSymbolsInInputˢ = "no symbols in input"u8;
+private static readonly @string invalidNumberOfHuffmanˢ = "invalid number of Huffman trees"u8;
+private static readonly @string treeIndexTooLargeˢ = "tree index too large"u8;
+private static readonly @string huffmanLengthOutOfRangeˢ = "Huffman length out of range"u8;
+private static readonly @string noTreeSelectorsGivenˢ = "no tree selectors given"u8;
+private static readonly @string treeSelectorOutOfRangeˢ = "tree selector out of range"u8;
+private static readonly @string insufficientSelectorˢ = "insufficient selector indices for number of symbols"u8;
+private static readonly @string repeatCountTooLargeˢ = "repeat count too large"u8;
+private static readonly @string repeatsPastEndOfBlockˢ = "repeats past end of block"u8;
+private static readonly @string dataExceedsBlockSizeˢ = "data exceeds block size"u8;
+private static readonly @string origPtrOutOfBoundsˢ = "origPtr out of bounds"u8;
 
 // readBlock reads a bzip2 block. The magic number should already have been consumed.
 internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
@@ -239,7 +264,7 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
     bz2.fileCRC = (uint32)(((uint32)((bz2.fileCRC << (int)(1)) | (bz2.fileCRC >> (int)(31)))) ^ bz2.wantBlockCRC);
     nint randomized = br.ReadBits(1);
     if (randomized != 0) {
-        return ((StructuralError)(@string)"deprecated randomized files"u8);
+        return ((StructuralError)(@string)deprecatedRandomizedˢ);
     }
     nuint origPtr = (nuint)br.ReadBits(24);
     // If not every byte value is used in the block (i.e., it's text) then
@@ -261,12 +286,12 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
     }
     if (numSymbols == 0) {
         // There must be an EOF symbol.
-        return ((StructuralError)(@string)"no symbols in input"u8);
+        return ((StructuralError)(@string)noSymbolsInInputˢ);
     }
     // A block uses between two and six different Huffman trees.
     nint numHuffmanTrees = br.ReadBits(3);
     if (numHuffmanTrees < 2 || numHuffmanTrees > 6) {
-        return ((StructuralError)(@string)"invalid number of Huffman trees"u8);
+        return ((StructuralError)(@string)invalidNumberOfHuffmanˢ);
     }
     // The Huffman tree can switch every 50 symbols so there's a list of
     // tree indexes telling us which tree to use for each 50 symbol block.
@@ -285,7 +310,7 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
             c++;
         }
         if (c >= numHuffmanTrees) {
-            return ((StructuralError)(@string)"tree index too large"u8);
+            return ((StructuralError)(@string)treeIndexTooLargeˢ);
         }
         treeIndexes[i] = mtfTreeDecoder.Decode(c);
     }
@@ -311,7 +336,7 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
         foreach (var (j, _) in lengths) {
             while (ᐧ) {
                 if (length < 1 || length > 20) {
-                    return ((StructuralError)(@string)"Huffman length out of range"u8);
+                    return ((StructuralError)(@string)huffmanLengthOutOfRangeˢ);
                 }
                 if (!br.ReadBit()) {
                     break;
@@ -332,10 +357,10 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
     nint selectorIndex = 1;
     // the next tree index to use
     if (len(treeIndexes) == 0) {
-        return ((StructuralError)(@string)"no tree selectors given"u8);
+        return ((StructuralError)(@string)noTreeSelectorsGivenˢ);
     }
     if ((nint)treeIndexes[0] >= len(huffmanTrees)) {
-        return ((StructuralError)(@string)"tree selector out of range"u8);
+        return ((StructuralError)(@string)treeSelectorOutOfRangeˢ);
     }
     var currentHuffmanTree = huffmanTrees[treeIndexes[0]];
     nint bufIndex = 0;
@@ -353,10 +378,10 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
     while (ᐧ) {
         if (decoded == 50) {
             if (selectorIndex >= numSelectors) {
-                return ((StructuralError)(@string)"insufficient selector indices for number of symbols"u8);
+                return ((StructuralError)(@string)insufficientSelectorˢ);
             }
             if ((nint)treeIndexes[selectorIndex] >= len(huffmanTrees)) {
-                return ((StructuralError)(@string)"tree selector out of range"u8);
+                return ((StructuralError)(@string)treeSelectorOutOfRangeˢ);
             }
             currentHuffmanTree = huffmanTrees[treeIndexes[selectorIndex]];
             selectorIndex++;
@@ -374,7 +399,7 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
             // This limit of 2 million comes from the bzip2 source
             // code. It prevents repeat from overflowing.
             if (repeat > 2 * 1024 * 1024) {
-                return ((StructuralError)(@string)"repeat count too large"u8);
+                return ((StructuralError)(@string)repeatCountTooLargeˢ);
             }
             continue;
         }
@@ -382,7 +407,7 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
             // We have decoded a complete run-length so we need to
             // replicate the last output symbol.
             if (repeat > bz2.blockSize - bufIndex) {
-                return ((StructuralError)(@string)"repeats past end of block"u8);
+                return ((StructuralError)(@string)repeatsPastEndOfBlockˢ);
             }
             for (nint i = 0; i < repeat; i++) {
                 var bΔ1 = mtf.First();
@@ -406,14 +431,14 @@ internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {
         // line.
         var b = mtf.Decode((nint)(v - 1));
         if (bufIndex >= bz2.blockSize) {
-            return ((StructuralError)(@string)"data exceeds block size"u8);
+            return ((StructuralError)(@string)dataExceedsBlockSizeˢ);
         }
         bz2.tt[bufIndex] = (uint32)b;
         bz2.c[b]++;
         bufIndex++;
     }
     if (origPtr >= (nuint)bufIndex) {
-        return ((StructuralError)(@string)"origPtr out of bounds"u8);
+        return ((StructuralError)(@string)origPtrOutOfBoundsˢ);
     }
     // We have completed the entropy decoding. Now we can perform the
     // inverse BWT and setup the RLE buffer.

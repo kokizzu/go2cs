@@ -18,6 +18,9 @@ internal static void validType(this ж<Checker> Ꮡcheck, ж<Named> Ꮡtyp) {
     Ꮡcheck.validType0(nopos, new NamedжΔType(Ꮡtyp), default!, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string validTypeSNestVPathVˢ = "validType(%s) nest %v, path %v"u8;
+
 // validType0 checks if the given type is valid. If typ is a type parameter
 // its value is looked up in the type argument list of the instantiated
 // (enclosing) type, if it exists. Otherwise the type parameter must be from
@@ -40,7 +43,7 @@ internal static bool validType0(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔTy
             }
         }
         check.indent++;
-        Ꮡcheck.trace(pos, "validType(%s) nest %v, path %v"u8, typ, pathString(makeObjList(nest)), pathString(makeObjList(path)));
+        Ꮡcheck.trace(pos, validTypeSNestVPathVˢ, typ, pathString(makeObjList(nest)), pathString(makeObjList(path)));
         defer(() => {
             Ꮡcheck.Value.indent--;
         });

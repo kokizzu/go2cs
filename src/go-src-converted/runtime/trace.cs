@@ -132,6 +132,9 @@ internal static ref uint32 traceAdvanceSema => ref ᏑtraceAdvanceSema.Value;
 internal static ж<uint32> ᏑtraceShutdownSema = new(1);
 internal static ref uint32 traceShutdownSema => ref ᏑtraceShutdownSema.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tracingIsAlreadyEnabledˢ = "tracing is already enabled"u8;
+
 // StartTrace enables tracing for the current process.
 // While tracing, the data will be buffered and available via [ReadTrace].
 // StartTrace returns an error if tracing is already enabled.
@@ -139,7 +142,7 @@ internal static ref uint32 traceShutdownSema => ref ᏑtraceShutdownSema.Value;
 // -test.trace flag instead of calling StartTrace directly.
 public static error StartTrace() {
     if (traceEnabled() || traceShuttingDown()) {
-        return ((errorString)(@string)"tracing is already enabled"u8);
+        return ((errorString)(@string)tracingIsAlreadyEnabledˢ);
     }
     // Block until cleanup of the last trace is done.
     semacquire(ᏑtraceShutdownSema);
@@ -285,6 +288,11 @@ public static error StartTrace() {
 public static void StopTrace() {
     traceAdvance(true);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string traceNonEmptyFullTraceˢ = "trace: non-empty full trace buffer for done generation"u8;
+private static readonly @string traceNonEmptyFullTraceˢ2 = "trace: non-empty full trace buffer for next generation"u8;
+private static readonly @string traceReadingAfterˢ = "trace: reading after shutdown"u8;
 
 // Collect all the untraced Gs.
 [GoLocalName("untracedG")] [GoType("dyn")] partial struct traceAdvance_untracedG {
@@ -603,14 +611,14 @@ internal static void traceAdvance(bool stopTrace) {
     systemstack(() => {
         @lock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
         if (!Δtrace.full[(nint)(gen % 2)].empty()) {
-            @throw("trace: non-empty full trace buffer for done generation"u8);
+            @throw(traceNonEmptyFullTraceˢ);
         }
         if (stopTrace) {
             if (!Δtrace.full[(nint)(1 - (gen % 2))].empty()) {
-                @throw("trace: non-empty full trace buffer for next generation"u8);
+                @throw(traceNonEmptyFullTraceˢ2);
             }
             if (Δtrace.reading != nil || ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡreader).Load() != nil) {
-                @throw("trace: reading after shutdown"u8);
+                @throw(traceReadingAfterˢ);
             }
             // Free all the empty buffers.
             while (Δtrace.empty != nil) {
@@ -685,6 +693,9 @@ internal static void traceRegisterLabelsAndReasons(uintptr gen) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedTraceReaderˢ = "unexpected trace reader"u8;
+
 // ReadTrace returns the next chunk of binary tracing data, blocking until data
 // is available. If tracing is turned off and all the data accumulated while it
 // was on has been returned, ReadTrace returns nil. The caller must copy the
@@ -714,7 +725,7 @@ top:
                 if (g2 != nil) {
                     printlock();
                     println((@string)"runtime: got trace reader"u8, g2, (~g2).goid);
-                    @throw("unexpected trace reader"u8);
+                    @throw(unexpectedTraceReaderˢ);
                 }
             }
             return true;
@@ -723,6 +734,9 @@ top:
     }
     return buf;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string expectedRacectx0ˢ = "expected racectx == 0"u8;
 
 // readTrace0 is ReadTrace's continuation on g0. This must run on the
 // system stack because it acquires trace.lock.
@@ -735,7 +749,7 @@ internal static (slice<byte> buf, bool park) readTrace0() {
         if (raceenabled) {
             // g0 doesn't have a race context. Borrow the user G's.
             if ((~getg()).racectx != 0) {
-                @throw("expected racectx == 0"u8);
+                @throw(expectedRacectx0ˢ);
             }
             getg().Value.racectx = getg().Value.m.Value.curg.Value.racectx;
             // (This defer should get open-coded, which is safe on

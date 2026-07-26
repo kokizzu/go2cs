@@ -8,6 +8,10 @@ using @internal;
 
 partial class runtime_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string checkptrMisalignedˢ = "checkptr: misaligned pointer conversion"u8;
+private static readonly @string checkptrConvertedPointerˢ = "checkptr: converted pointer straddles multiple allocations"u8;
+
 internal static void checkptrAlignment(@unsafe.Pointer Δp, ж<_type> Ꮡelem, uintptr n) {
     ref var elem = ref Ꮡelem.Value;
 
@@ -20,12 +24,12 @@ internal static void checkptrAlignment(@unsafe.Pointer Δp, ж<_type> Ꮡelem, u
     // no pointers themselves. See issue 37298.
     // TODO(mdempsky): What about fieldAlign?
     if (elem.Pointers() && (uintptr)((uintptr)Δp & ((uintptr)elem.Align_ - 1)) != 0) {
-        @throw("checkptr: misaligned pointer conversion"u8);
+        @throw(checkptrMisalignedˢ);
     }
     // Check that (*[n]elem)(p) doesn't straddle multiple heap objects.
     // TODO(mdempsky): Fix #46938 so we don't need to worry about overflow here.
     if (checkptrStraddles(Δp, n * elem.Size_)) {
-        @throw("checkptr: converted pointer straddles multiple allocations"u8);
+        @throw(checkptrConvertedPointerˢ);
     }
 }
 
@@ -46,9 +50,13 @@ internal static bool checkptrStraddles(@unsafe.Pointer ptr, uintptr size) {
     return checkptrBase(ptr) != checkptrBase(end);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string checkptrPointerˢ = "checkptr: pointer arithmetic computed bad pointer value"u8;
+private static readonly @string checkptrPointerˢ2 = "checkptr: pointer arithmetic result points to invalid allocation"u8;
+
 internal static void checkptrArithmetic(@unsafe.Pointer Δp, slice<@unsafe.Pointer> originals) {
     if (0 < (uintptr)Δp && (uintptr)Δp < minLegalPointer) {
-        @throw("checkptr: pointer arithmetic computed bad pointer value"u8);
+        @throw(checkptrPointerˢ);
     }
     // Check that if the computed pointer p points into a heap
     // object, then one of the original pointers must have pointed
@@ -62,7 +70,7 @@ internal static void checkptrArithmetic(@unsafe.Pointer Δp, slice<@unsafe.Point
             return;
         }
     }
-    @throw("checkptr: pointer arithmetic result points to invalid allocation"u8);
+    @throw(checkptrPointerˢ2);
 }
 
 // checkptrBase returns the base address for the allocation containing

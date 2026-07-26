@@ -12,6 +12,12 @@ partial class zstd_package {
 // maxHuffmanBits is the largest possible Huffman table bits.
 internal static readonly UntypedInt maxHuffmanBits = 11;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string huffmanCountOverflowˢ = "Huffman count overflow"u8;
+private static readonly @string huffmanWeightOverflowˢ = "Huffman weight overflow"u8;
+private static readonly @string badHuffmanWeightsˢ = "bad Huffman weights"u8;
+private static readonly @string huffmanTableTooSmallˢ = "Huffman table too small"u8;
+
 // readHuff reads Huffman table from data starting at off into table.
 // Each entry in a Huffman table is a pair of bytes.
 // The high byte is the encoded value. The low byte is the number
@@ -64,7 +70,7 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
             var pt = Ꮡ(fseTable, (int)(state1));
             if (!rbr.fetch((~pt).bits)) {
                 if (count >= 254) {
-                    return (0, 0, rbr.makeError("Huffman count overflow"u8));
+                    return (0, 0, rbr.makeError(huffmanCountOverflowˢ));
                 }
                 weights[count] = pt.Value.sym;
                 weights[count + 1] = fseTable[(nint)(state2)].sym;
@@ -77,14 +83,14 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
             }
             state1 = (uint32)(~pt).@base + v;
             if (count >= 255) {
-                return (0, 0, rbr.makeError("Huffman count overflow"u8));
+                return (0, 0, rbr.makeError(huffmanCountOverflowˢ));
             }
             weights[count] = pt.Value.sym;
             count++;
             pt = Ꮡ(fseTable, (int)(state2));
             if (!rbr.fetch((~pt).bits)) {
                 if (count >= 254) {
-                    return (0, 0, rbr.makeError("Huffman count overflow"u8));
+                    return (0, 0, rbr.makeError(huffmanCountOverflowˢ));
                 }
                 weights[count] = pt.Value.sym;
                 weights[count + 1] = fseTable[(nint)(state1)].sym;
@@ -97,7 +103,7 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
             }
             state2 = (uint32)(~pt).@base + v;
             if (count >= 255) {
-                return (0, 0, rbr.makeError("Huffman count overflow"u8));
+                return (0, 0, rbr.makeError(huffmanCountOverflowˢ));
             }
             weights[count] = pt.Value.sym;
             count++;
@@ -121,7 +127,7 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
     var weightMask = (uint32)0;
     foreach (var (_, w) in weights[..(int)(count)]) {
         if (w > 12) {
-            return (0, 0, r.makeError(off, "Huffman weight overflow"u8));
+            return (0, 0, r.makeError(off, huffmanWeightOverflowˢ));
         }
         weightMark[w]++;
         if (w > 0) {
@@ -129,33 +135,33 @@ internal static (nint tableBits, nint roff, error err) readHuff(this ж<Reader> 
         }
     }
     if (weightMask == 0) {
-        return (0, 0, r.makeError(off, "bad Huffman weights"u8));
+        return (0, 0, r.makeError(off, badHuffmanWeightsˢ));
     }
     tableBits = 32 - bits.LeadingZeros32(weightMask);
     if (tableBits > maxHuffmanBits) {
-        return (0, 0, r.makeError(off, "bad Huffman weights"u8));
+        return (0, 0, r.makeError(off, badHuffmanWeightsˢ));
     }
     if (builtin.len(table) < ((nint)1).Lsh((uint64)(tableBits))) {
-        return (0, 0, r.makeError(off, "Huffman table too small"u8));
+        return (0, 0, r.makeError(off, huffmanTableTooSmallˢ));
     }
     // Work out the last weight value, which is omitted because
     // the weights must sum to a power of two.
     var left = (((uint32)1).Lsh((uint64)(tableBits))) - weightMask;
     if (left == 0) {
-        return (0, 0, r.makeError(off, "bad Huffman weights"u8));
+        return (0, 0, r.makeError(off, badHuffmanWeightsˢ));
     }
     nint highBit = 31 - bits.LeadingZeros32(left);
     if (((uint32)1).Lsh((uint64)(highBit)) != left) {
-        return (0, 0, r.makeError(off, "bad Huffman weights"u8));
+        return (0, 0, r.makeError(off, badHuffmanWeightsˢ));
     }
     if (count >= 256) {
-        return (0, 0, r.makeError(off, "Huffman weight overflow"u8));
+        return (0, 0, r.makeError(off, huffmanWeightOverflowˢ));
     }
     weights[count] = (uint8)(highBit + 1);
     count++;
     weightMark[highBit + 1]++;
     if (weightMark[1] < 2 || (uint32)(weightMark[1] & 1) != 0) {
-        return (0, 0, r.makeError(off, "bad Huffman weights"u8));
+        return (0, 0, r.makeError(off, badHuffmanWeightsˢ));
     }
     // Change weightMark from a count of weights to the index of
     // the first symbol for that weight. We shift the indexes to

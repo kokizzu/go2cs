@@ -85,6 +85,9 @@ public static (slice<ж<ΔCookie>>, error) ParseCookie(@string line) {
     return (cookies, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mon02Jan2006150405Mstˢ = "Mon, 02-Jan-2006 15:04:05 MST"u8;
+
 // ParseSetCookie parses a Set-Cookie header value and returns a cookie.
 // It returns an error on syntax error.
 public static (ж<ΔCookie>, error) ParseSetCookie(@string line) {
@@ -182,7 +185,7 @@ public static (ж<ΔCookie>, error) ParseSetCookie(@string line) {
                 c.Value.RawExpires = val;
                 var (exptime, err) = time.Parse(time.RFC1123, val);
                 if (err != default!) {
-                    (exptime, err) = time.Parse("Mon, 02-Jan-2006 15:04:05 MST"u8, val);
+                    (exptime, err) = time.Parse(mon02Jan2006150405Mstˢ, val);
                     if (err != default!) {
                         c.Value.Expires = new time.Time(nil);
                         break;
@@ -206,15 +209,18 @@ public static (ж<ΔCookie>, error) ParseSetCookie(@string line) {
     return (c, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string setCookieˢ = "Set-Cookie"u8;
+
 // readSetCookies parses all "Set-Cookie" values from
 // the header h and returns the successfully parsed Cookies.
 internal static slice<ж<ΔCookie>> readSetCookies(ΔHeader h) {
-    nint cookieCount = builtin.len(h["Set-Cookie"u8]);
+    nint cookieCount = builtin.len(h[setCookieˢ]);
     if (cookieCount == 0) {
         return new ж<ΔCookie>[]{}.slice();
     }
     var cookies = new slice<ж<ΔCookie>>(0, cookieCount);
-    foreach (var (_, line) in h["Set-Cookie"u8]) {
+    foreach (var (_, line) in h[setCookieˢ]) {
         {
             var (cookie, err) = ParseSetCookie(line); if (err == default!) {
                 cookies = append(cookies, cookie);
@@ -230,10 +236,23 @@ internal static slice<ж<ΔCookie>> readSetCookies(ΔHeader h) {
 public static void SetCookie(ResponseWriter w, ж<ΔCookie> Ꮡcookie) {
     {
         @string v = Ꮡcookie.String(); if (v != ""u8) {
-            w.Header().Add("Set-Cookie"u8, v);
+            w.Header().Add(setCookieˢ, v);
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pathˢ = "; Path="u8;
+private static readonly @string domainˢ = "; Domain="u8;
+private static readonly @string expiresˢ = "; Expires="u8;
+private static readonly @string maxAgeˢ = "; Max-Age="u8;
+private static readonly @string maxAge0ˢ = "; Max-Age=0"u8;
+private static readonly @string httpOnlyˢ = "; HttpOnly"u8;
+private static readonly @string secureˢ = "; Secure"u8;
+private static readonly @string sameSiteNoneˢ = "; SameSite=None"u8;
+private static readonly @string sameSiteLaxˢ = "; SameSite=Lax"u8;
+private static readonly @string sameSiteStrictˢ = "; SameSite=Strict"u8;
+private static readonly @string partitionedˢ = "; Partitioned"u8;
 
 // String returns the serialization of the cookie for use in a [Cookie]
 // header (if only Name and Value are set) or a Set-Cookie response
@@ -254,7 +273,7 @@ public static @string String(this ж<ΔCookie> Ꮡc) {
     Ꮡb.WriteRune((rune)'=');
     Ꮡb.WriteString(sanitizeCookieValue(c.Value, c.Quoted));
     if (builtin.len(c.Path) > 0) {
-        Ꮡb.WriteString("; Path="u8);
+        Ꮡb.WriteString(pathˢ);
         Ꮡb.WriteString(sanitizeCookiePath(c.Path));
     }
     if (builtin.len(c.Domain) > 0) {
@@ -267,7 +286,7 @@ public static @string String(this ж<ΔCookie> Ꮡc) {
             if (d[0] == (rune)'.') {
                 d = d[1..];
             }
-            Ꮡb.WriteString("; Domain="u8);
+            Ꮡb.WriteString(domainˢ);
             Ꮡb.WriteString(d);
         } else {
             log.Printf("net/http: invalid Cookie.Domain %q; dropping domain attribute"u8, c.Domain);
@@ -275,54 +294,61 @@ public static @string String(this ж<ΔCookie> Ꮡc) {
     }
     array<byte> buf = new(29); /* builtin.len(TimeFormat) */
     if (validCookieExpires(c.Expires)) {
-        Ꮡb.WriteString("; Expires="u8);
+        Ꮡb.WriteString(expiresˢ);
         Ꮡb.Write(c.Expires.UTC().AppendFormat(buf[..0], TimeFormat));
     }
     if (c.MaxAge > 0){
-        Ꮡb.WriteString("; Max-Age="u8);
+        Ꮡb.WriteString(maxAgeˢ);
         Ꮡb.Write(strconv.AppendInt(buf[..0], (int64)c.MaxAge, 10));
     } else 
     if (c.MaxAge < 0) {
-        Ꮡb.WriteString("; Max-Age=0"u8);
+        Ꮡb.WriteString(maxAge0ˢ);
     }
     if (c.HttpOnly) {
-        Ꮡb.WriteString("; HttpOnly"u8);
+        Ꮡb.WriteString(httpOnlyˢ);
     }
     if (c.Secure) {
-        Ꮡb.WriteString("; Secure"u8);
+        Ꮡb.WriteString(secureˢ);
     }
     var exprᴛ1 = c.SameSite;
     if (exprᴛ1 == SameSiteDefaultMode) {
     }
     else if (exprᴛ1 == SameSiteNoneMode) {
-        Ꮡb.WriteString("; SameSite=None"u8);
+        Ꮡb.WriteString(sameSiteNoneˢ);
     }
     else if (exprᴛ1 == SameSiteLaxMode) {
-        Ꮡb.WriteString("; SameSite=Lax"u8);
+        Ꮡb.WriteString(sameSiteLaxˢ);
     }
     else if (exprᴛ1 == SameSiteStrictMode) {
-        Ꮡb.WriteString("; SameSite=Strict"u8);
+        Ꮡb.WriteString(sameSiteStrictˢ);
     }
 
     // Skip, default mode is obtained by not emitting the attribute.
     if (c.Partitioned) {
-        Ꮡb.WriteString("; Partitioned"u8);
+        Ꮡb.WriteString(partitionedˢ);
     }
     return b.String();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpNilCookieˢ = "http: nil Cookie"u8;
+private static readonly @string httpInvalidCookieNameˢ = "http: invalid Cookie.Name"u8;
+private static readonly @string httpInvalidCookieExpiresˢ = "http: invalid Cookie.Expires"u8;
+private static readonly @string httpInvalidCookieDomainˢ = "http: invalid Cookie.Domain"u8;
+private static readonly @string httpPartitionedCookiesˢ = "http: partitioned cookies must be set with Secure"u8;
 
 // Valid reports whether the cookie is valid.
 public static error Valid(this ж<ΔCookie> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNil();
 
     if (Ꮡc == nil) {
-        return errors.New("http: nil Cookie"u8);
+        return errors.New(httpNilCookieˢ);
     }
     if (!isCookieNameValid(c.Name)) {
-        return errors.New("http: invalid Cookie.Name"u8);
+        return errors.New(httpInvalidCookieNameˢ);
     }
     if (!c.Expires.IsZero() && !validCookieExpires(c.Expires)) {
-        return errors.New("http: invalid Cookie.Expires"u8);
+        return errors.New(httpInvalidCookieExpiresˢ);
     }
     for (nint i = 0; i < builtin.len(c.Value); i++) {
         if (!validCookieValueByte(c.Value[i])) {
@@ -338,12 +364,12 @@ public static error Valid(this ж<ΔCookie> Ꮡc) {
     }
     if (builtin.len(c.Domain) > 0) {
         if (!validCookieDomain(c.Domain)) {
-            return errors.New("http: invalid Cookie.Domain"u8);
+            return errors.New(httpInvalidCookieDomainˢ);
         }
     }
     if (c.Partitioned) {
         if (!c.Secure) {
-            return errors.New("http: partitioned cookies must be set with Secure"u8);
+            return errors.New(httpPartitionedCookiesˢ);
         }
     }
     return default!;
@@ -354,7 +380,7 @@ public static error Valid(this ж<ΔCookie> Ꮡc) {
 //
 // if filter isn't empty, only cookies of that name are returned.
 internal static slice<ж<ΔCookie>> readCookies(ΔHeader h, @string filter) {
-    var lines = h["Cookie"u8];
+    var lines = h[cookieˢ];
     if (builtin.len(lines) == 0) {
         return new ж<ΔCookie>[]{}.slice();
     }
@@ -478,6 +504,9 @@ internal static @string sanitizeCookieName(@string n) {
     return cookieNameSanitizer.Replace(n);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cookieValueˢ = "Cookie.Value"u8;
+
 // sanitizeCookieValue produces a suitable cookie-value from v.
 // It receives a quoted bool indicating whether the value was originally
 // quoted.
@@ -493,7 +522,7 @@ internal static @string sanitizeCookieName(@string n) {
 // thus we produce a quoted cookie-value if v contains commas or spaces.
 // See https://golang.org/issue/7243 for the discussion.
 internal static @string sanitizeCookieValue(@string v, bool quoted) {
-    v = sanitizeOrWarn("Cookie.Value"u8, validCookieValueByte, v);
+    v = sanitizeOrWarn(cookieValueˢ, validCookieValueByte, v);
     if (builtin.len(v) == 0) {
         return v;
     }
@@ -507,10 +536,13 @@ internal static bool validCookieValueByte(byte b) {
     return 0x20 <= b && b < 0x7f && b != (rune)'"' && b != (rune)';' && b != (rune)'\\';
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cookiePathˢ = "Cookie.Path"u8;
+
 // path-av           = "Path=" path-value
 // path-value        = <any CHAR except CTLs or ";">
 internal static @string sanitizeCookiePath(@string v) {
-    return sanitizeOrWarn("Cookie.Path"u8, validCookiePathByte, v);
+    return sanitizeOrWarn(cookiePathˢ, validCookiePathByte, v);
 }
 
 internal static bool validCookiePathByte(byte b) {

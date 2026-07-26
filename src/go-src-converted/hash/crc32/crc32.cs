@@ -181,15 +181,20 @@ internal const nint marshaledSize = /* len(magic) + 4 + 4 */ 12;
     return (b, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string hashCrc32InvalidHashˢ = "hash/crc32: invalid hash state identifier"u8;
+private static readonly @string hashCrc32InvalidHashˢ2 = "hash/crc32: invalid hash state size"u8;
+private static readonly @string hashCrc32TablesDoNotˢ = "hash/crc32: tables do not match"u8;
+
 [GoRecv] internal static error UnmarshalBinary(this ref digest d, slice<byte> b) {
     if (len(b) < len(magic) || ((sstring)(b[..(int)(len(magic))])) != magic) {
-        return errors.New("hash/crc32: invalid hash state identifier"u8);
+        return errors.New(hashCrc32InvalidHashˢ);
     }
     if (len(b) != marshaledSize) {
-        return errors.New("hash/crc32: invalid hash state size"u8);
+        return errors.New(hashCrc32InvalidHashˢ2);
     }
     if (tableSum(d.tab) != byteorder.BeUint32(b[4..])) {
-        return errors.New("hash/crc32: tables do not match"u8);
+        return errors.New(hashCrc32TablesDoNotˢ);
     }
     d.crc = byteorder.BeUint32(b[8..]);
     return default!;

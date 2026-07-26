@@ -143,6 +143,12 @@ internal static error testFS(fs.FS fsys, params ꓸꓸꓸstring expectedʗp) {
     return d;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string firstOpenReadDir1Vsˢ = "first Open+ReadDir(-1) vs second Open+ReadDir(-1)"u8;
+private static readonly @string firstOpenReadDir1VsThirdˢ = "first Open+ReadDir(-1) vs third Open+ReadDir(1,2) loop"u8;
+private static readonly @string firstOpenReadDir1VsFsysˢ = "first Open+ReadDir(-1) vs fsys.ReadDir"u8;
+private static readonly @string firstOpenReadDir1VsFsˢ = "first Open+ReadDir(-1) vs fs.ReadDir"u8;
+
 // checkDir checks the directory dir, which is expected to exist
 // (it is either the root or was found in a directory listing with IsDir true).
 internal static void checkDir(this ж<fsTester> Ꮡt, @string dir) => func((defer, recover) => {
@@ -231,7 +237,7 @@ internal static void checkDir(this ж<fsTester> Ꮡt, @string dir) => func((defe
         t.errorf("%s: second Open+ReadDir(-1): %w"u8, dir, err);
         return;
     }
-    Ꮡt.checkDirList(dir, "first Open+ReadDir(-1) vs second Open+ReadDir(-1)"u8, list, list2);
+    Ꮡt.checkDirList(dir, firstOpenReadDir1Vsˢ, list, list2);
     // Reopen directory, read a third time in pieces, make sure contents match.
     {
         d = t.openDir(dir); if (d == default!) {
@@ -264,7 +270,7 @@ internal static void checkDir(this ж<fsTester> Ꮡt, @string dir) => func((defe
             return;
         }
     }
-    Ꮡt.checkDirList(dir, "first Open+ReadDir(-1) vs third Open+ReadDir(1,2) loop"u8, list, list2);
+    Ꮡt.checkDirList(dir, firstOpenReadDir1VsThirdˢ, list, list2);
     // If fsys has ReadDir, check that it matches and is sorted.
     {
         var (fsys, ok) = t.fsys._<fs.ReadDirFS>(ᐧ); if (ok) {
@@ -273,7 +279,7 @@ internal static void checkDir(this ж<fsTester> Ꮡt, @string dir) => func((defe
                 t.errorf("%s: fsys.ReadDir: %w"u8, dir, errΔ3);
                 return;
             }
-            Ꮡt.checkDirList(dir, "first Open+ReadDir(-1) vs fsys.ReadDir"u8, list, list2Δ1);
+            Ꮡt.checkDirList(dir, firstOpenReadDir1VsFsysˢ, list, list2Δ1);
             for (nint i = 0; i + 1 < len(list2Δ1); i++) {
                 if (list2Δ1[i].Name() >= list2Δ1[i + 1].Name()) {
                     t.errorf("%s: fsys.ReadDir: list not sorted: %s before %s"u8, dir, list2Δ1[i].Name(), list2Δ1[i + 1].Name());
@@ -287,7 +293,7 @@ internal static void checkDir(this ж<fsTester> Ꮡt, @string dir) => func((defe
         t.errorf("%s: fs.ReadDir: %w"u8, dir, err);
         return;
     }
-    Ꮡt.checkDirList(dir, "first Open+ReadDir(-1) vs fs.ReadDir"u8, list, list2);
+    Ꮡt.checkDirList(dir, firstOpenReadDir1VsFsˢ, list, list2);
     for (nint i = 0; i + 1 < len(list2); i++) {
         if (list2[i].Name() >= list2[i + 1].Name()) {
             t.errorf("%s: fs.ReadDir: list not sorted: %s before %s"u8, dir, list2[i].Name(), list2[i + 1].Name());
@@ -533,6 +539,12 @@ internal static void checkDirList(this ж<fsTester> Ꮡt, @string dir, @string d
     t.errorf("%s: diff %s:\n\t%s"u8, dir, desc, strings.Join(diffs, "\n\t"u8));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string readAllVsFsysReadFileˢ = "ReadAll vs fsys.ReadFile"u8;
+private static readonly @string readallVsSecondFsysˢ = "Readall vs second fsys.ReadFile"u8;
+private static readonly @string readFileˢ = "ReadFile"u8;
+private static readonly @string readAllVsFsReadFileˢ = "ReadAll vs fs.ReadFile"u8;
+
 // checkFile checks that basic file reading works correctly.
 internal static void checkFile(this ж<fsTester> Ꮡt, @string @file) => func((defer, recover) => {
     ref var t = ref Ꮡt.Value;
@@ -566,7 +578,7 @@ internal static void checkFile(this ж<fsTester> Ꮡt, @string @file) => func((d
                 t.errorf("%s: fsys.ReadFile: %w"u8, @file, errΔ2);
                 return;
             }
-            t.checkFileRead(@file, "ReadAll vs fsys.ReadFile"u8, data, data2Δ1);
+            t.checkFileRead(@file, readAllVsFsysReadFileˢ, data, data2Δ1);
             // Modify the data and check it again. Modifying the
             // returned byte slice should not affect the next call.
             foreach (var (i, _) in data2Δ1) {
@@ -577,9 +589,9 @@ internal static void checkFile(this ж<fsTester> Ꮡt, @string @file) => func((d
                 t.errorf("%s: second call to fsys.ReadFile: %w"u8, @file, errΔ2);
                 return;
             }
-            t.checkFileRead(@file, "Readall vs second fsys.ReadFile"u8, data, data2Δ1);
+            t.checkFileRead(@file, readallVsSecondFsysˢ, data, data2Δ1);
                 var fsysʗ1 = fsys;
-            t.checkBadPath(@file, "ReadFile"u8,
+            t.checkBadPath(@file, readFileˢ,
                 (@string name) => {
                     var (_, errΔ3) = fsysʗ1.ReadFile(name);
                     return errΔ3;
@@ -592,7 +604,7 @@ internal static void checkFile(this ж<fsTester> Ꮡt, @string @file) => func((d
         t.errorf("%s: fs.ReadFile: %w"u8, @file, err);
         return;
     }
-    t.checkFileRead(@file, "ReadAll vs fs.ReadFile"u8, data, data2);
+    t.checkFileRead(@file, readAllVsFsReadFileˢ, data, data2);
     // Use iotest.TestReader to check small reads, Seek, ReadAt.
     (f, err) = t.fsys.Open(@file);
     if (err != default!) {
@@ -615,11 +627,14 @@ internal static void checkFile(this ж<fsTester> Ꮡt, @string @file) => func((d
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string openˢ = "Open"u8;
+
 // checkBadPath checks that various invalid forms of file's name cannot be opened using t.fsys.Open.
 internal static void checkOpen(this ж<fsTester> Ꮡt, @string @file) {
     ref var t = ref Ꮡt.Value;
 
-    t.checkBadPath(@file, "Open"u8, (@string fileΔ1) => {
+    t.checkBadPath(@file, openˢ, (@string fileΔ1) => {
         var (f, err) = Ꮡt.Value.fsys.Open(fileΔ1);
         if (err == default!) {
             f.Close();

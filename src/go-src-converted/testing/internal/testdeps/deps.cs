@@ -81,20 +81,32 @@ public static @string ImportPath(this TestDeps _) {
     internal bool set;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getenvˢ = "getenv"u8;
+
 internal static void Getenv(this ж<testLog> Ꮡl, @string key) {
-    Ꮡl.add("getenv"u8, key);
+    Ꮡl.add(getenvˢ, key);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string openˢ = "open"u8;
 
 internal static void Open(this ж<testLog> Ꮡl, @string name) {
-    Ꮡl.add("open"u8, name);
+    Ꮡl.add(openˢ, name);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string statˢ = "stat"u8;
 
 internal static void Stat(this ж<testLog> Ꮡl, @string name) {
-    Ꮡl.add("stat"u8, name);
+    Ꮡl.add(statˢ, name);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string chdirˢ = "chdir"u8;
+
 internal static void Chdir(this ж<testLog> Ꮡl, @string name) {
-    Ꮡl.add("chdir"u8, name);
+    Ꮡl.add(chdirˢ, name);
 }
 
 // add adds the (op, name) pair to the test log.
@@ -118,6 +130,9 @@ internal static void add(this ж<testLog> Ꮡl, @string op, @string name) => fun
 internal static ж<testLog> Ꮡlog = new(default(testLog));
 internal static ref testLog log => ref Ꮡlog.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testLogˢ = "# test log\n"u8;
+
 public static void StartTestLog(this TestDeps _, io.Writer w) {
     Ꮡlog.of(testLog.Ꮡmu).Lock();
     log.w = bufio.NewWriter(w);
@@ -128,7 +143,7 @@ public static void StartTestLog(this TestDeps _, io.Writer w) {
         // (which will panic) and also avoids writing the header multiple times.
         log.set = true;
         testlog.SetLogger(new testLogжInterface(Ꮡlog));
-        log.w.WriteString("# test log\n"u8);
+        log.w.WriteString(testLogˢ);
     }
     // known to cmd/go/internal/test/test.go
     Ꮡlog.of(testLog.Ꮡmu).Unlock();
@@ -235,12 +250,17 @@ public static (@string mode, Func<@string, @string, (@string, error)> tearDown, 
     return (CoverMode, coverTearDown, CoverSnapshotFunc);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gocoverdirˢ = "gocoverdir"u8;
+private static readonly @string errorSettingGocoverdirˢ = "error setting GOCOVERDIR: bad os.MkdirTemp return"u8;
+private static readonly @string errorGeneratingCoverageˢ = "error generating coverage report"u8;
+
 internal static (@string, error) coverTearDown(@string coverprofile, @string gocoverdir) => func<(@string, error)>((defer, recover) => {
     error err = default!;
     if (gocoverdir == ""u8) {
-        (gocoverdir, err) = os.MkdirTemp(""u8, "gocoverdir"u8);
+        (gocoverdir, err) = os.MkdirTemp(""u8, gocoverdirˢ);
         if (err != default!) {
-            return ("error setting GOCOVERDIR: bad os.MkdirTemp return", err);
+            return (errorSettingGocoverdirˢ, err);
         }
         deferǃ(os.RemoveAll, gocoverdir, defer);
     }
@@ -248,7 +268,7 @@ internal static (@string, error) coverTearDown(@string coverprofile, @string goc
     @string cmode = CoverMode;
     {
         var errΔ1 = CoverProcessTestDirFunc(gocoverdir, coverprofile, cmode, Covered, new os.FileжWriter(os.Stdout), CoverSelectedPackages); if (errΔ1 != default!) {
-            return ("error generating coverage report", errΔ1);
+            return (errorGeneratingCoverageˢ, errΔ1);
         }
     }
     return ("", default!);

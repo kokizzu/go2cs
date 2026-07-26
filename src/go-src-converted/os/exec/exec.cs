@@ -347,6 +347,10 @@ internal static ж<godebug.Setting> execwait = godebug.New("#execwait"u8);
 
 internal static ж<godebug.Setting> execerrdot = godebug.New("execerrdot"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string setGodebugExecwait2Toˢ = " (set GODEBUG=execwait=2 to capture stacks for debugging)"u8;
+private static readonly @string godebugExecwait2Detectedˢ = "GODEBUG=execwait=2 detected a leaked exec.Cmd created by:\n"u8;
+
 // Command returns the [Cmd] struct to execute the named program with
 // the given arguments.
 //
@@ -401,9 +405,9 @@ public static ж<Cmd> Command(@string name, params ꓸꓸꓸstring argʗp) {
                 if ((~c).Process != nil && (~c).ProcessState == nil) {
                     @string debugHint = ""u8;
                     if ((~c).createdByStack == default!){
-                        debugHint = " (set GODEBUG=execwait=2 to capture stacks for debugging)"u8;
+                        debugHint = setGodebugExecwait2Toˢ;
                     } else {
-                        os.Stderr.WriteString("GODEBUG=execwait=2 detected a leaked exec.Cmd created by:\n"u8);
+                        os.Stderr.WriteString(godebugExecwait2Detectedˢ);
                         os.Stderr.Write((~c).createdByStack);
                         os.Stderr.WriteString("\n"u8);
                         debugHint = ""u8;
@@ -614,6 +618,11 @@ public static error Run(this ж<Cmd> Ꮡc) {
     return Ꮡc.Wait();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string execAlreadyStartedˢ = "exec: already started"u8;
+private static readonly @string execNoCommandˢ = "exec: no command"u8;
+private static readonly @string execCommandWithANonNilˢ = "exec: command with a non-nil Cancel was not created with CommandContext"u8;
+
 [GoLocalName("goroutineStatus")] [GoType("dyn")] partial struct Start_goroutineStatus {
     internal nint running;
     internal error firstErr;
@@ -631,7 +640,7 @@ public static error Start(this ж<Cmd> Ꮡc) => func<error>((defer, recover) => 
     // Check for doubled Start calls before we defer failure cleanup. If the prior
     // call to Start succeeded, we don't want to spuriously close its pipes.
     if (c.Process != nil) {
-        return errors.New("exec: already started"u8);
+        return errors.New(execAlreadyStartedˢ);
     }
     var started = false;
     defer(() => {
@@ -643,7 +652,7 @@ public static error Start(this ж<Cmd> Ꮡc) => func<error>((defer, recover) => 
         }
     });
     if (c.Path == ""u8 && c.Err == default! && c.lookPathErr == default!) {
-        c.Err = errors.New("exec: no command"u8);
+        c.Err = errors.New(execNoCommandˢ);
     }
     if (c.Err != default! || c.lookPathErr != default!) {
         if (c.lookPathErr != default!) {
@@ -681,7 +690,7 @@ public static error Start(this ж<Cmd> Ꮡc) => func<error>((defer, recover) => 
         }
     }
     if (c.Cancel != default! && c.ctx == default!) {
-        return errors.New("exec: command with a non-nil Cancel was not created with CommandContext"u8);
+        return errors.New(execCommandWithANonNilˢ);
     }
     if (c.ctx != default!) {
         var selᴛ1 = c.ctx.Done();
@@ -892,6 +901,10 @@ public static error Start(this ж<Cmd> Ꮡc) => func<error>((defer, recover) => 
     return e.ProcessState.String();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string execNotStartedˢ = "exec: not started"u8;
+private static readonly @string execWaitWasAlreadyCalledˢ = "exec: Wait was already called"u8;
+
 // Wait waits for the command to exit and waits for any copying to
 // stdin or copying from stdout or stderr to complete.
 //
@@ -913,10 +926,10 @@ public static error Wait(this ж<Cmd> Ꮡc) {
     ref var c = ref Ꮡc.Value;
 
     if (c.Process == nil) {
-        return errors.New("exec: not started"u8);
+        return errors.New(execNotStartedˢ);
     }
     if (c.ProcessState != nil) {
-        return errors.New("exec: Wait was already called"u8);
+        return errors.New(execWaitWasAlreadyCalledˢ);
     }
     var (state, err) = c.Process.Wait();
     if (err == default! && !state.Success()) {
@@ -999,6 +1012,9 @@ internal static error awaitGoroutines(this ж<Cmd> Ꮡc, ж<time.Timer> Ꮡtimer
     return default!;
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string execStdoutAlreadySetˢ = "exec: Stdout already set"u8;
+
 // Wait for the copying goroutines to finish, but ignore any error
 // (since it was probably caused by closing the pipes).
 
@@ -1009,7 +1025,7 @@ public static (slice<byte>, error) Output(this ж<Cmd> Ꮡc) {
     ref var c = ref Ꮡc.Value;
 
     if (c.Stdout != default!) {
-        return (default!, errors.New("exec: Stdout already set"u8));
+        return (default!, errors.New(execStdoutAlreadySetˢ));
     }
     ref var stdout = ref heap(new bytes.Buffer(), out var Ꮡstdout);
     c.Stdout = new bytes_BufferжWriter(Ꮡstdout);
@@ -1028,16 +1044,19 @@ public static (slice<byte>, error) Output(this ж<Cmd> Ꮡc) {
     return (stdout.Bytes(), err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string execStderrAlreadySetˢ = "exec: Stderr already set"u8;
+
 // CombinedOutput runs the command and returns its combined standard
 // output and standard error.
 public static (slice<byte>, error) CombinedOutput(this ж<Cmd> Ꮡc) {
     ref var c = ref Ꮡc.Value;
 
     if (c.Stdout != default!) {
-        return (default!, errors.New("exec: Stdout already set"u8));
+        return (default!, errors.New(execStdoutAlreadySetˢ));
     }
     if (c.Stderr != default!) {
-        return (default!, errors.New("exec: Stderr already set"u8));
+        return (default!, errors.New(execStderrAlreadySetˢ));
     }
     ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
     c.Stdout = new bytes_BufferжWriter(Ꮡb);
@@ -1045,6 +1064,10 @@ public static (slice<byte>, error) CombinedOutput(this ж<Cmd> Ꮡc) {
     var err = Ꮡc.Run();
     return (b.Bytes(), err);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string execStdinAlreadySetˢ = "exec: Stdin already set"u8;
+private static readonly @string execStdinPipeAfterˢ = "exec: StdinPipe after process started"u8;
 
 // StdinPipe returns a pipe that will be connected to the command's
 // standard input when the command starts.
@@ -1054,10 +1077,10 @@ public static (slice<byte>, error) CombinedOutput(this ж<Cmd> Ꮡc) {
 // is closed, the caller must close the pipe.
 [GoRecv] public static (io.WriteCloser, error) StdinPipe(this ref Cmd c) {
     if (c.Stdin != default!) {
-        return (default!, errors.New("exec: Stdin already set"u8));
+        return (default!, errors.New(execStdinAlreadySetˢ));
     }
     if (c.Process != nil) {
-        return (default!, errors.New("exec: StdinPipe after process started"u8));
+        return (default!, errors.New(execStdinPipeAfterˢ));
     }
     var (pr, pw, err) = os.Pipe();
     if (err != default!) {
@@ -1069,6 +1092,9 @@ public static (slice<byte>, error) CombinedOutput(this ж<Cmd> Ꮡc) {
     return (new os_FileжWriteCloser(pw), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string execStdoutPipeAfterˢ = "exec: StdoutPipe after process started"u8;
+
 // StdoutPipe returns a pipe that will be connected to the command's
 // standard output when the command starts.
 //
@@ -1079,10 +1105,10 @@ public static (slice<byte>, error) CombinedOutput(this ж<Cmd> Ꮡc) {
 // See the example for idiomatic usage.
 [GoRecv] public static (io.ReadCloser, error) StdoutPipe(this ref Cmd c) {
     if (c.Stdout != default!) {
-        return (default!, errors.New("exec: Stdout already set"u8));
+        return (default!, errors.New(execStdoutAlreadySetˢ));
     }
     if (c.Process != nil) {
-        return (default!, errors.New("exec: StdoutPipe after process started"u8));
+        return (default!, errors.New(execStdoutPipeAfterˢ));
     }
     var (pr, pw, err) = os.Pipe();
     if (err != default!) {
@@ -1094,6 +1120,9 @@ public static (slice<byte>, error) CombinedOutput(this ж<Cmd> Ꮡc) {
     return (new os_FileжReadCloser(pr), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string execStderrPipeAfterˢ = "exec: StderrPipe after process started"u8;
+
 // StderrPipe returns a pipe that will be connected to the command's
 // standard error when the command starts.
 //
@@ -1104,10 +1133,10 @@ public static (slice<byte>, error) CombinedOutput(this ж<Cmd> Ꮡc) {
 // See the StdoutPipe example for idiomatic usage.
 [GoRecv] public static (io.ReadCloser, error) StderrPipe(this ref Cmd c) {
     if (c.Stderr != default!) {
-        return (default!, errors.New("exec: Stderr already set"u8));
+        return (default!, errors.New(execStderrAlreadySetˢ));
     }
     if (c.Process != nil) {
-        return (default!, errors.New("exec: StderrPipe after process started"u8));
+        return (default!, errors.New(execStderrPipeAfterˢ));
     }
     var (pr, pw, err) = os.Pipe();
     if (err != default!) {
@@ -1180,6 +1209,10 @@ internal static (nint n, error err) Write(this ж<prefixSuffixSaver> Ꮡw, slice
     return p;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string omittingˢ = "\n... omitting "u8;
+private static readonly @string bytesˢ = " bytes ...\n"u8;
+
 [GoRecv] internal static slice<byte> Bytes(this ref prefixSuffixSaver w) {
     if (w.suffix == default!) {
         return w.prefix;
@@ -1190,9 +1223,9 @@ internal static (nint n, error err) Write(this ж<prefixSuffixSaver> Ꮡw, slice
     bytes.Buffer buf = default!;
     buf.Grow(len(w.prefix) + len(w.suffix) + 50);
     buf.Write(w.prefix);
-    buf.WriteString("\n... omitting "u8);
+    buf.WriteString(omittingˢ);
     buf.WriteString(strconv.FormatInt(w.skipped, 10));
-    buf.WriteString(" bytes ...\n"u8);
+    buf.WriteString(bytesˢ);
     buf.Write(w.suffix[(int)(w.suffixOff)..]);
     buf.Write(w.suffix[..(int)(w.suffixOff)]);
     return buf.Bytes();
@@ -1261,6 +1294,9 @@ internal static (slice<@string>, error) dedupEnv(slice<@string> env) {
     return dedupEnvCase(runtime.GOOS == "windows"u8, runtime.GOOS == "plan9"u8, env);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string execEnvironmentVariableˢ = "exec: environment variable contains NUL"u8;
+
 // dedupEnvCase is dedupEnv with a case option for testing.
 // If caseInsensitive is true, the case of keys is ignored.
 // If nulOK is false, items containing NUL characters are allowed.
@@ -1275,7 +1311,7 @@ internal static (slice<@string>, error) dedupEnvCase(bool caseInsensitive, bool 
         // Reject NUL in environment variables to prevent security issues (#56284);
         // except on Plan 9, which uses NUL as os.PathListSeparator (#56544).
         if (!nulOK && strings.IndexByte(kv, 0) != -1) {
-            err = errors.New("exec: environment variable contains NUL"u8);
+            err = errors.New(execEnvironmentVariableˢ);
             continue;
         }
         nint i = strings.Index(kv, "="u8);
@@ -1312,6 +1348,9 @@ internal static (slice<@string>, error) dedupEnvCase(bool caseInsensitive, bool 
     return (@out, err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string systemrootˢ = "SYSTEMROOT"u8;
+
 // addCriticalEnv adds any critical environment variables that are required
 // (or at least almost always required) on the operating system.
 // Currently this is only used for Windows.
@@ -1324,12 +1363,12 @@ internal static slice<@string> addCriticalEnv(slice<@string> env) {
         if (!ok) {
             continue;
         }
-        if (strings.EqualFold(k, "SYSTEMROOT"u8)) {
+        if (strings.EqualFold(k, systemrootˢ)) {
             // We already have it.
             return env;
         }
     }
-    return append(env, "SYSTEMROOT="u8 + os.Getenv("SYSTEMROOT"u8));
+    return append(env, "SYSTEMROOT="u8 + os.Getenv(systemrootˢ));
 }
 
 // ErrDot indicates that a path lookup resolved to an executable

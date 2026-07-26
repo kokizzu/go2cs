@@ -148,8 +148,11 @@ public static slice<byte> Marshal(ж<State> Ꮡs) {
 [GoType] partial struct errUnmarshalChaCha8 {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidChaCha8Encodingˢ = "invalid ChaCha8 encoding"u8;
+
 [GoRecv] internal static @string Error(this ref errUnmarshalChaCha8 _) {
-    return "invalid ChaCha8 encoding"u8;
+    return invalidChaCha8Encodingˢ;
 }
 
 // Unmarshal unmarshals the state from a byte slice.

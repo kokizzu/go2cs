@@ -133,10 +133,13 @@ internal static void semacquire(ж<uint32> Ꮡaddr) {
     semacquire1(Ꮡaddr, false, 0, 0, waitReasonSemacquire);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string semacquireNotOnTheGStackˢ = "semacquire not on the G stack"u8;
+
 internal static void semacquire1(ж<uint32> Ꮡaddr, bool lifo, semaProfileFlags profile, nint skipframes, waitReason reason) {
     var gp = getg();
     if (gp != (~(~gp).m).curg) {
-        @throw("semacquire not on the G stack"u8);
+        @throw(semacquireNotOnTheGStackˢ);
     }
     // Easy case.
     if (cansemacquire(Ꮡaddr)) {
@@ -192,6 +195,9 @@ internal static void semrelease(ж<uint32> Ꮡaddr) {
     semrelease1(Ꮡaddr, false, 0);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string corruptedSemaphoreTicketˢ = "corrupted semaphore ticket"u8;
+
 internal static void semrelease1(ж<uint32> Ꮡaddr, bool handoff, nint skipframes) {
     var root = semtable.rootFor(Ꮡaddr);
     atomic.Xadd(Ꮡaddr, 1);
@@ -242,7 +248,7 @@ internal static void semrelease1(ж<uint32> Ꮡaddr, bool handoff, nint skipfram
             mutexevent(dt, 3 + skipframes);
         }
         if ((~s).ticket != 0) {
-            @throw("corrupted semaphore ticket"u8);
+            @throw(corruptedSemaphoreTicketˢ);
         }
         if (handoff && cansemacquire(Ꮡaddr)) {
             s.Value.ticket = 1;
@@ -469,6 +475,9 @@ Found:
     return (s, now, tailtime);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string semaRootRotateLeftˢ = "semaRoot rotateLeft"u8;
+
 // rotateLeft rotates the tree rooted at node x.
 // turning (x a (y b c)) into (y (x a b) c).
 [GoRecv] internal static void rotateLeft(this ref semaRoot root, ж<sudog> Ꮡx) {
@@ -492,11 +501,14 @@ Found:
         Δp.Value.prev = y;
     } else {
         if ((~Δp).next != Ꮡx) {
-            @throw("semaRoot rotateLeft"u8);
+            @throw(semaRootRotateLeftˢ);
         }
         Δp.Value.next = y;
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string semaRootRotateRightˢ = "semaRoot rotateRight"u8;
 
 // rotateRight rotates the tree rooted at node y.
 // turning (y (x a b) c) into (x a (y b c)).
@@ -521,7 +533,7 @@ Found:
         Δp.Value.prev = x;
     } else {
         if ((~Δp).next != Ꮡy) {
-            @throw("semaRoot rotateRight"u8);
+            @throw(semaRootRotateRightˢ);
         }
         Δp.Value.next = x;
     }
@@ -686,11 +698,14 @@ internal static void notifyListNotifyOne(ж<notifyList> Ꮡl) {
     unlock(Ꮡl.of(notifyList.Ꮡlock));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badNotifyListSizeˢ = "bad notifyList size"u8;
+
 //go:linkname notifyListCheck sync.runtime_notifyListCheck
 internal static void notifyListCheck(uintptr sz) {
     if (sz != @unsafe.Sizeof(new notifyList(nil))) {
         print((@string)"runtime: bad notifyList size - sync="u8, sz, (@string)" runtime="u8, @unsafe.Sizeof(new notifyList(nil)), (@string)"\n"u8);
-        @throw("bad notifyList size"u8);
+        @throw(badNotifyListSizeˢ);
     }
 }
 

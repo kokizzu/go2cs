@@ -36,6 +36,11 @@ internal const bool debug = false;
 internal static ж<sync.Map> ᏑexportMap = new(default(sync.Map));
 internal static ref sync.Map exportMap => ref ᏑexportMap.Value; // package dir → func() (string, error)
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string listˢ = "list"u8;
+private static readonly @string exportˢ = "-export"u8;
+private static readonly @string exportˢ2 = "{{.Export}}"u8;
+
 // lookupGorootExport returns the location of the export data
 // (normally found in the build cache, but located in GOROOT/pkg
 // in prior Go releases) for the package located in pkgDir.
@@ -51,7 +56,7 @@ internal static (@string, error) lookupGorootExport(@string pkgDir) {
         ref var err = ref heap<error>(out var Ꮡerr);
         (f, _) = ᏑexportMap.LoadOrStore(pkgDir, () => {
             ᏑlistOnce.Do(() => {
-                var cmd = exec.Command(filepath.Join(build.Default.GOROOT, "bin", "go"), "list"u8, "-export", "-f", "{{.Export}}", pkgDir);
+                var cmd = exec.Command(filepath.Join(build.Default.GOROOT, "bin", "go"), listˢ, exportˢ, "-f", exportˢ2, pkgDir);
                 cmd.Value.Dir = build.Default.GOROOT;
                 cmd.Value.Env = append(os.Environ(), "PWD="u8 + (~cmd).Dir, "GOROOT=" + build.Default.GOROOT);
                 slice<byte> output = default!;
@@ -77,7 +82,10 @@ internal static (@string, error) lookupGorootExport(@string pkgDir) {
     return f._<Func<(@string, error)>>()();
 }
 
-internal static array<@string> pkgExts = new @string[]{".a", ".o"}.array(); // a file from the build cache will have no extension
+internal static array<@string> pkgExts = new @string[]{".a"u8, ".o"u8}.array(); // a file from the build cache will have no extension
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pathIsEmptyˢ = "path is empty"u8;
 
 // FindPkg returns the filename and unique package id for an import
 // path based on package information provided by build.Import (using
@@ -89,7 +97,7 @@ public static (@string filename, @string id, error err) FindPkg(@string path, @s
     error err = default!;
 
     if (path == ""u8) {
-        return ("", "", errors.New("path is empty"u8));
+        return ("", "", errors.New(pathIsEmptyˢ));
     }
     @string noext = default!;
     switch (ᐧ) {

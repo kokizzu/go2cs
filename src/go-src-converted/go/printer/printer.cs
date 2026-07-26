@@ -738,6 +738,9 @@ internal static void writeComment(this ж<printer> Ꮡp, ж<ast.Comment> Ꮡcomm
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object intersperseCommentsˢ = (@string)"intersperseComments called without pending comments"u8;
+
 // intersperseComments consumes all comments that appear before the next token
 // tok and prints it together with the buffered whitespace (i.e., the whitespace
 // that needs to be written before the next token). A heuristic is used to mix
@@ -812,9 +815,12 @@ internal static (bool wroteNewline, bool droppedFF) intersperseComments(this ж<
     }
     // no comment was written - we should never reach here since
     // intersperseComments should not be called in that case
-    p.internalError((@string)"intersperseComments called without pending comments"u8);
+    p.internalError(intersperseCommentsˢ);
     return (wroteNewline, droppedFF);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object negativeIndentationˢ = (@string)"negative indentation:"u8;
 
 // writeWhitespace writes the first n whitespace entries.
 [GoRecv] internal static void writeWhitespace(this ref printer p, nint n) {
@@ -833,7 +839,7 @@ internal static (bool wroteNewline, bool droppedFF) intersperseComments(this ж<
                 p.indent--;
                 if (p.indent < 0) {
                     // ignore!
-                    p.internalError((@string)"negative indentation:"u8, p.indent);
+                    p.internalError(negativeIndentationˢ, p.indent);
                     p.indent = 0;
                 }
             }
@@ -913,6 +919,9 @@ internal static bool /*b*/ mayCombine(token.Token prev, byte next) {
         p.pos = p.posFor(pos);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object whitespaceBufferNotEmptyˢ = (@string)"whitespace buffer not empty"u8;
 
 // accurate position of next item
 
@@ -1006,7 +1015,7 @@ internal static void print(this ж<printer> Ꮡp, params ꓸꓸꓸany argsʗp) {
                 // should never happen because it is taken care
                 // of via binary expression formatting)
                 if (len(p.wsbuf) != 0) {
-                    p.internalError((@string)"whitespace buffer not empty"u8);
+                    p.internalError(whitespaceBufferNotEmptyˢ);
                 }
                 p.wsbuf = p.wsbuf[0..1];
                 p.wsbuf[0] = (rune)' ';

@@ -148,6 +148,10 @@ internal static escaper makeEscaper(ж<nameSpace> Ꮡn) {
 // via a search engine.
 internal static readonly @string filterFailsafe = "ZgotmplZ"u8;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rangeˢ = "range"u8;
+private static readonly @string withˢ = "with"u8;
+
 // escape escapes a template node.
 [GoRecv] internal static context escape(this ref escaper e, context c, parse.Node n) {
     switch (n.type()) {
@@ -174,7 +178,7 @@ internal static readonly @string filterFailsafe = "ZgotmplZ"u8;
         return e.escapeList(c, nΔ1);
     }
     case ж<parse.RangeNode> nΔ1: {
-        return e.escapeBranch(c, nΔ1.of(parse.RangeNode.ᏑBranchNode), "range"u8);
+        return e.escapeBranch(c, nΔ1.of(parse.RangeNode.ᏑBranchNode), rangeˢ);
     }
     case ж<parse.TemplateNode> nΔ1: {
         return e.escapeTemplate(c, nΔ1);
@@ -183,7 +187,7 @@ internal static readonly @string filterFailsafe = "ZgotmplZ"u8;
         return e.escapeText(c, nΔ1);
     }
     case ж<parse.WithNode> nΔ1: {
-        return e.escapeBranch(c, nΔ1.of(parse.WithNode.ᏑBranchNode), "with"u8);
+        return e.escapeBranch(c, nΔ1.of(parse.WithNode.ᏑBranchNode), withˢ);
     }}
     throw panic("escaping " + n.String() + " is unimplemented");
 }
@@ -316,6 +320,9 @@ internal static ж<godebug.Setting> debugAllowActionJSTmpl = godebug.New("jstmpl
     return c;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string evalArgsˢ = "_eval_args_"u8;
+
 // ensurePipelineContains ensures that the pipeline ends with the commands with
 // the identifiers in s in order. If the pipeline ends with a predefined escaper
 // (i.e. "html" or "urlquery"), merge it with the identifiers in s.
@@ -343,7 +350,7 @@ internal static void ensurePipelineContains(ж<parse.PipeNode> Ꮡp, slice<@stri
                             // Convert this into the equivalent form
                             // {{ _eval_args_ arg1 arg2 ... argN | esc }}, so that esc can be easily
                             // merged with the escapers in s.
-                            lastCmd.Value.Args[0] = new parse_IdentifierNodeжNode(parse.NewIdentifier("_eval_args_"u8).SetTree(nil).SetPos((~lastCmd).Args[0].Position()));
+                            lastCmd.Value.Args[0] = new parse_IdentifierNodeжNode(parse.NewIdentifier(evalArgsˢ).SetTree(nil).SetPos((~lastCmd).Args[0].Position()));
                             p.Cmds = appendCmd(p.Cmds, newIdentCmd(esc, p.Position()));
                             pipelineLen++;
                         }
@@ -619,7 +626,7 @@ internal static context joinRange(context c0, ж<rangeContext> Ꮡrc) {
     // In theory we could treat breaks differently from continues, but for now it is
     // enough to treat them both as going back to the start of the loop (which may then stop).
     foreach (var (_, c) in rc.breaks) {
-        c0 = join(c0, c, c.n, "range"u8);
+        c0 = join(c0, c, c.n, rangeˢ);
         if (c0.state == stateError) {
             c0.err.Value.Line = c.n._<ж<parse.BreakNode>>().Value.Line;
             c0.err.Value.Description = "at range loop break: "u8 + (~c0.err).Description;
@@ -627,7 +634,7 @@ internal static context joinRange(context c0, ж<rangeContext> Ꮡrc) {
         }
     }
     foreach (var (_, c) in rc.continues) {
-        c0 = join(c0, c, c.n, "range"u8);
+        c0 = join(c0, c, c.n, rangeˢ);
         if (c0.state == stateError) {
             c0.err.Value.Line = c.n._<ж<parse.ContinueNode>>().Value.Line;
             c0.err.Value.Description = "at range loop continue: "u8 + (~c0.err).Description;

@@ -210,6 +210,11 @@ break_claimLoop:;
     return s;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string attemptToClearNonEmptyˢ = "attempt to clear non-empty span set"u8;
+private static readonly @string spanSetBlockWithUnpoppedˢ = "span set block with unpopped elements found in reset"u8;
+private static readonly @string fullyEmptyUnfreedSpanSetˢ = "fully empty unfreed span set block found in reset"u8;
+
 // reset resets a spanSet which is empty. It will also clean up
 // any left over blocks.
 //
@@ -221,7 +226,7 @@ internal static void reset(this ж<spanSet> Ꮡb) {
     var (head, tail) = Ꮡb.of(spanSet.Ꮡindex).load().split();
     if (head < tail) {
         print((@string)"head = "u8, head, (@string)", tail = "u8, tail, (@string)"\n"u8);
-        @throw("attempt to clear non-empty span set"u8);
+        @throw(attemptToClearNonEmptyˢ);
     }
     var top = head / (uint32)spanSetBlockEntries;
     if ((uintptr)top < Ꮡb.of(spanSet.ᏑspineLen).Load()) {
@@ -238,13 +243,13 @@ internal static void reset(this ж<spanSet> Ꮡb) {
                 // popped should never be zero because that means we have
                 // pushed at least one value but not yet popped if this
                 // block pointer is not nil.
-                @throw("span set block with unpopped elements found in reset"u8);
+                @throw(spanSetBlockWithUnpoppedˢ);
             }
             if (block.of(spanSetBlock.Ꮡpopped).Load() == spanSetBlockEntries) {
                 // popped should also never be equal to spanSetBlockEntries
                 // because the last popper should have made the block pointer
                 // in this slot nil.
-                @throw("fully empty unfreed span set block found in reset"u8);
+                @throw(fullyEmptyUnfreedSpanSetˢ);
             }
             // Clear the pointer to the block.
             blockp.StoreNoWB(nil);
@@ -364,13 +369,16 @@ internal static headTailIndex decHead(this ж<atomicHeadTailIndex> Ꮡh) {
     return ((headTailIndex)Ꮡh.of(atomicHeadTailIndex.Ꮡu).Add(-(4294967296L)));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string headTailIndexOverflowˢ = "headTailIndex overflow"u8;
+
 // incTail atomically increments the tail of a headTailIndex.
 internal static headTailIndex incTail(this ж<atomicHeadTailIndex> Ꮡh) {
     var ht = ((headTailIndex)Ꮡh.of(atomicHeadTailIndex.Ꮡu).Add(1));
     // Check for overflow.
     if (ht.tail() == 0) {
         print((@string)"runtime: head = "u8, ht.head(), (@string)", tail = "u8, ht.tail(), (@string)"\n"u8);
-        @throw("headTailIndex overflow"u8);
+        @throw(headTailIndexOverflowˢ);
     }
     return ht;
 }

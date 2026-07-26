@@ -215,6 +215,9 @@ internal static void increment(this ж<mProfCycleHolder> Ꮡc) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidProfileBucketTypeˢ = "invalid profile bucket type"u8;
+
 // newBucket allocates a bucket with the given type and number of stack entries.
 internal static ж<bucket> newBucket(bucketType typ, nint nstk) {
     var size = @unsafe.Sizeof(new bucket(nil)) + (uintptr)nstk * @unsafe.Sizeof((uintptr)0);
@@ -226,7 +229,7 @@ internal static ж<bucket> newBucket(bucketType typ, nint nstk) {
         size += @unsafe.Sizeof(new blockRecord(nil));
     }
     else { /* default: */
-        @throw("invalid profile bucket type"u8);
+        @throw(invalidProfileBucketTypeˢ);
     }
 
     var b = (ж<bucket>)(uintptr)(persistentalloc(size, 0, Ꮡmemstats.of(mstats.Ꮡbuckhash_sys)));
@@ -234,6 +237,9 @@ internal static ж<bucket> newBucket(bucketType typ, nint nstk) {
     b.Value.nstk = (uintptr)nstk;
     return b;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badProfileStackCountˢ = "bad profile stack count"u8;
 
 // stk returns the slice in b holding the stack. The caller can asssume that the
 // backing array is immutable.
@@ -243,28 +249,34 @@ internal static slice<uintptr> stk(this ж<bucket> Ꮡb) {
     var stk = (ж<array<uintptr>>)(uintptr)(add((uintptr)@unsafe.Pointer.FromRef(ref b), @unsafe.Sizeof(b)));
     if (b.nstk > maxProfStackDepth) {
         // prove that slicing works; otherwise a failure requires a P
-        @throw("bad profile stack count"u8);
+        @throw(badProfileStackCountˢ);
     }
     return (~stk).slice(-1, (int)(b.nstk), (int)(b.nstk));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badUseOfBucketMpˢ = "bad use of bucket.mp"u8;
 
 // mp returns the memRecord associated with the memProfile bucket b.
 internal static ж<memRecord> mp(this ж<bucket> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
     if (b.typ != memProfile) {
-        @throw("bad use of bucket.mp"u8);
+        @throw(badUseOfBucketMpˢ);
     }
     @unsafe.Pointer data = (uintptr)add((uintptr)@unsafe.Pointer.FromRef(ref b), @unsafe.Sizeof(b) + b.nstk * @unsafe.Sizeof((uintptr)0));
     return (ж<memRecord>)(uintptr)(data);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badUseOfBucketBpˢ = "bad use of bucket.bp"u8;
 
 // bp returns the blockRecord associated with the blockProfile bucket b.
 internal static ж<blockRecord> bp(this ж<bucket> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
     if (b.typ != blockProfile && b.typ != mutexProfile) {
-        @throw("bad use of bucket.bp"u8);
+        @throw(badUseOfBucketBpˢ);
     }
     @unsafe.Pointer data = (uintptr)add((uintptr)@unsafe.Pointer.FromRef(ref b), @unsafe.Sizeof(b) + b.nstk * @unsafe.Sizeof((uintptr)0));
     return (ж<blockRecord>)(uintptr)(data);
@@ -280,7 +292,7 @@ internal static ж<bucket> stkbucket(bucketType typ, uintptr size, slice<uintptr
         if (bh == nil) {
             bh = (ж<buckhashArray>)(uintptr)(sysAlloc(@unsafe.Sizeof(new buckhashArray(new atomic.UnsafePointer[179999].array())), Ꮡmemstats.of(mstats.Ꮡbuckhash_sys)));
             if (bh == nil) {
-                @throw("runtime: cannot allocate memory"u8);
+                @throw(runtimeCannotAllocateˢ);
             }
             Ꮡbuckhash.StoreNoWB(new @unsafe.Pointer(bh));
         }
@@ -511,6 +523,9 @@ internal static bool blocksampled(int64 cycles, int64 rate) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidSkipValueˢ = "invalid skip value"u8;
+
 // saveblockevent records a profile event of the type specified by which.
 // cycles is the quantity associated with this event and rate is the sampling rate,
 // used to adjust the cycles value in the manner determined by the profile type.
@@ -526,7 +541,7 @@ internal static void saveblockevent(int64 cycles, int64 rate, nint skip, bucketT
     }
     if (skip > maxSkip) {
         print((@string)"requested skip="u8, skip);
-        @throw("invalid skip value"u8);
+        @throw(invalidSkipValueˢ);
     }
     var gp = getg();
     var mp = acquirem();
@@ -1505,13 +1520,16 @@ internal static (nint n, bool ok) goroutineProfileWithLabelsConcurrent(slice<pro
     return (n, true);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noPAvailableWriteˢ = "no P available, write barriers are forbidden"u8;
+
 // tryRecordGoroutineProfileWB asserts that write barriers are allowed and calls
 // tryRecordGoroutineProfile.
 //
 //go:yeswritebarrierrec
 internal static void tryRecordGoroutineProfileWB(ж<g> Ꮡgp1) {
     if ((~(~getg()).m).p.ptr() == nil) {
-        @throw("no P available, write barriers are forbidden"u8);
+        @throw(noPAvailableWriteˢ);
     }
     tryRecordGoroutineProfile(Ꮡgp1, default!, osyield);
 }
@@ -1561,6 +1579,9 @@ internal static void tryRecordGoroutineProfile(ж<g> Ꮡgp1, slice<uintptr> pcbu
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cannotReadStackOfRunningˢ = "cannot read stack of running goroutine"u8;
+
 // doRecordGoroutineProfile writes gp1's call stack and labels to an in-progress
 // goroutine profile. Preemption is disabled.
 //
@@ -1573,7 +1594,7 @@ internal static void doRecordGoroutineProfile(ж<g> Ꮡgp1, slice<uintptr> pcbuf
 
     if (readgstatus(Ꮡgp1) == _Grunning) {
         print((@string)"doRecordGoroutineProfile gp1="u8, gp1.goid, (@string)"\n"u8);
-        @throw("cannot read stack of running goroutine"u8);
+        @throw(cannotReadStackOfRunningˢ);
     }
     nint offset = (nint)ᏑgoroutineProfile.of(goroutineProfileᴛ1.Ꮡoffset).Add(1) - 1;
     if (offset >= len(goroutineProfile.records)) {

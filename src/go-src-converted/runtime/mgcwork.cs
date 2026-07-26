@@ -319,19 +319,25 @@ internal static readonly UntypedInt workbufAlloc = /* 32 << 10 */ 32768;
     internal array<uintptr> obj = new((uintptr)((uintptr)_WorkbufSize - @unsafe.Sizeof(new workbufhdr(nil))) / goarch.PtrSize);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string workbufIsEmptyˢ = "workbuf is empty"u8;
+
 // workbuf factory routines. These funcs are used to manage the
 // workbufs.
 // If the GC asks for some work these are the only routines that
 // make wbufs available to the GC.
 [GoRecv] internal static void checknonempty(this ref workbuf b) {
     if (b.nobj == 0) {
-        @throw("workbuf is empty"u8);
+        @throw(workbufIsEmptyˢ);
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string workbufIsNotEmptyˢ = "workbuf is not empty"u8;
+
 [GoRecv] internal static void checkempty(this ref workbuf b) {
     if (b.nobj != 0) {
-        @throw("workbuf is not empty"u8);
+        @throw(workbufIsNotEmptyˢ);
     }
 }
 
@@ -368,7 +374,7 @@ internal static ж<workbuf> getempty() {
                 Ꮡs.ValueSlot = Ꮡmheap_.allocManual(workbufAlloc / pageSize, spanAllocWorkBuf);
             });
             if (s == nil) {
-                @throw("out of memory"u8);
+                @throw(outOfMemoryˢ);
             }
             // Record the new span in the busy list.
             @lock(Ꮡwork.of(workType.ᏑwbufSpans).of(workType_wbufSpans.Ꮡlock));
@@ -442,13 +448,16 @@ internal static ж<workbuf> handoff(ж<workbuf> Ꮡb) {
     return b1;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cannotFreeWorkbufsWhenˢ = "cannot free workbufs when work.full != 0"u8;
+
 // prepareFreeWorkbufs moves busy workbuf spans to free list so they
 // can be freed to the heap. This must only be called when all
 // workbufs are on the empty list.
 internal static void prepareFreeWorkbufs() {
     @lock(Ꮡwork.of(workType.ᏑwbufSpans).of(workType_wbufSpans.Ꮡlock));
     if (work.full != 0) {
-        @throw("cannot free workbufs when work.full != 0"u8);
+        @throw(cannotFreeWorkbufsWhenˢ);
     }
     // Since all workbufs are on the empty list, we don't care
     // which ones are in which spans. We can wipe the entire empty

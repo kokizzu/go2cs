@@ -542,6 +542,9 @@ public static slice<byte> AppendMarker(slice<byte> dst, uint64 id) {
     return append(dst, buf[..].ꓸꓸꓸ);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bisectMatchˢ = "[bisect-match "u8;
+
 // CutMarker finds the first match marker in line and removes it,
 // returning the shortened line (with the marker removed),
 // the ID from the match marker,
@@ -553,7 +556,7 @@ public static (@string @short, uint64 id, bool ok) CutMarker(@string line) {
     bool ok = default!;
 
     // Find first instance of prefix.
-    @string prefix = "[bisect-match "u8;
+    @string prefix = bisectMatchˢ;
     nint i = 0;
     for (; ᐧ ; i++) {
         if (i >= len(line) - len(prefix)) {

@@ -19,48 +19,64 @@ partial class nettest_package {
 
 // type MakePipe is a methodless func type — rendered inline as its base delegate
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string basicIOˢ = "BasicIO"u8;
+private static readonly @string pingPongˢ = "PingPong"u8;
+private static readonly @string racyReadˢ = "RacyRead"u8;
+private static readonly @string racyWriteˢ = "RacyWrite"u8;
+private static readonly @string readTimeoutˢ = "ReadTimeout"u8;
+private static readonly @string writeTimeoutˢ = "WriteTimeout"u8;
+private static readonly @string pastTimeoutˢ = "PastTimeout"u8;
+private static readonly @string presentTimeoutˢ = "PresentTimeout"u8;
+private static readonly @string futureTimeoutˢ = "FutureTimeout"u8;
+private static readonly @string closeTimeoutˢ = "CloseTimeout"u8;
+private static readonly @string concurrentMethodsˢ = "ConcurrentMethods"u8;
+
 // TestConn tests that a net.Conn implementation properly satisfies the interface.
 // The tests should not produce any false positives, but may experience
 // false negatives. Thus, some issues may only be detected when the test is
 // run multiple times. For maximal effectiveness, run the tests under the
 // race detector.
 public static void TestConn(ж<testing.T> Ꮡt, Func<(net.Conn, net.Conn, Action, error)> mp) {
-    Ꮡt.Run("BasicIO"u8, (ж<testing.T> tΔ1) => {
+    Ꮡt.Run(basicIOˢ, (ж<testing.T> tΔ1) => {
         timeoutWrapper(tΔ1, mp, new Action<ж<testing.T>, net.Conn, net.Conn>(testBasicIO));
     });
-    Ꮡt.Run("PingPong"u8, (ж<testing.T> tΔ2) => {
+    Ꮡt.Run(pingPongˢ, (ж<testing.T> tΔ2) => {
         timeoutWrapper(tΔ2, mp, new Action<ж<testing.T>, net.Conn, net.Conn>(testPingPong));
     });
-    Ꮡt.Run("RacyRead"u8, (ж<testing.T> tΔ3) => {
+    Ꮡt.Run(racyReadˢ, (ж<testing.T> tΔ3) => {
         timeoutWrapper(tΔ3, mp, new Action<ж<testing.T>, net.Conn, net.Conn>(testRacyRead));
     });
-    Ꮡt.Run("RacyWrite"u8, (ж<testing.T> tΔ4) => {
+    Ꮡt.Run(racyWriteˢ, (ж<testing.T> tΔ4) => {
         timeoutWrapper(tΔ4, mp, new Action<ж<testing.T>, net.Conn, net.Conn>(testRacyWrite));
     });
-    Ꮡt.Run("ReadTimeout"u8, (ж<testing.T> tΔ5) => {
+    Ꮡt.Run(readTimeoutˢ, (ж<testing.T> tΔ5) => {
         timeoutWrapper(tΔ5, mp, new Action<ж<testing.T>, net.Conn, net.Conn>(testReadTimeout));
     });
-    Ꮡt.Run("WriteTimeout"u8, (ж<testing.T> tΔ6) => {
+    Ꮡt.Run(writeTimeoutˢ, (ж<testing.T> tΔ6) => {
         timeoutWrapper(tΔ6, mp, new Action<ж<testing.T>, net.Conn, net.Conn>(testWriteTimeout));
     });
-    Ꮡt.Run("PastTimeout"u8, (ж<testing.T> tΔ7) => {
+    Ꮡt.Run(pastTimeoutˢ, (ж<testing.T> tΔ7) => {
         timeoutWrapper(tΔ7, mp, new Action<ж<testing.T>, net.Conn, net.Conn>(testPastTimeout));
     });
-    Ꮡt.Run("PresentTimeout"u8, (ж<testing.T> tΔ8) => {
+    Ꮡt.Run(presentTimeoutˢ, (ж<testing.T> tΔ8) => {
         timeoutWrapper(tΔ8, mp, new Action<ж<testing.T>, net.Conn, net.Conn>(testPresentTimeout));
     });
-    Ꮡt.Run("FutureTimeout"u8, (ж<testing.T> tΔ9) => {
+    Ꮡt.Run(futureTimeoutˢ, (ж<testing.T> tΔ9) => {
         timeoutWrapper(tΔ9, mp, new Action<ж<testing.T>, net.Conn, net.Conn>(testFutureTimeout));
     });
-    Ꮡt.Run("CloseTimeout"u8, (ж<testing.T> tΔ10) => {
+    Ꮡt.Run(closeTimeoutˢ, (ж<testing.T> tΔ10) => {
         timeoutWrapper(tΔ10, mp, new Action<ж<testing.T>, net.Conn, net.Conn>(testCloseTimeout));
     });
-    Ꮡt.Run("ConcurrentMethods"u8, (ж<testing.T> tΔ11) => {
+    Ꮡt.Run(concurrentMethodsˢ, (ж<testing.T> tΔ11) => {
         timeoutWrapper(tΔ11, mp, new Action<ж<testing.T>, net.Conn, net.Conn>(testConcurrentMethods));
     });
 }
 
 // type connTester is a methodless func type — rendered inline as its base delegate
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object testTimedOutTerminatingˢ = (@string)"test timed out; terminating pipe"u8;
 
 internal static void timeoutWrapper(ж<testing.T> Ꮡt, Func<(net.Conn, net.Conn, Action, error)> mp, Action<ж<testing.T>, net.Conn, net.Conn> f) => func((defer, recover) => {
     Ꮡt.Helper();
@@ -77,7 +93,7 @@ internal static void timeoutWrapper(ж<testing.T> Ꮡt, Func<(net.Conn, net.Conn
     var timer = time.AfterFunc(time.ΔMinute, () => {
         var stopʗ4 = stopʗ3;
         Ꮡonce.Do(() => {
-            Ꮡt.Error((@string)"test timed out; terminating pipe"u8);
+            Ꮡt.Error(testTimedOutTerminatingˢ);
             stopʗ4();
         });
     });
@@ -85,6 +101,9 @@ internal static void timeoutWrapper(ж<testing.T> Ꮡt, Func<(net.Conn, net.Conn
     defer(() => timerʗ1.Stop());
     f(Ꮡt, c1, c2);
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object transmittedDataDiffersˢ = (@string)"transmitted data differs"u8;
 
 // testBasicIO tests that the data sent on c1 is properly received on c2.
 internal static void testBasicIO(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
@@ -122,7 +141,7 @@ internal static void testBasicIO(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
     });
     {
         var got = ᐸꟷ(dataCh); if (!bytes.Equal(got, want)) {
-            Ꮡt.Error((@string)"transmitted data differs"u8);
+            Ꮡt.Error(transmittedDataDiffersˢ);
         }
     }
 }
@@ -277,6 +296,10 @@ internal static void testPastTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c
     testRoundtrip(Ꮡt, c1);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object readTimedOutBeforeˢ = (@string)"Read timed out before deadline is set"u8;
+private static readonly object writeTimedOutBeforeˢ = (@string)"Write timed out before deadline is set"u8;
+
 // testPresentTimeout tests that a past deadline set while there are pending
 // Read and Write operations immediately times out those operations.
 internal static void testPresentTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) => func((defer, recover) => {
@@ -301,7 +324,7 @@ internal static void testPresentTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Con
         }
         checkForTimeoutError(Ꮡt, err);
         if (len(deadlineSetʗ2) == 0) {
-            Ꮡt.Error((@string)"Read timed out before deadline is set"u8);
+            Ꮡt.Error(readTimedOutBeforeˢ);
         }
     }));
     var deadlineSetʗ3 = deadlineSet;
@@ -313,7 +336,7 @@ internal static void testPresentTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Con
         }
         checkForTimeoutError(Ꮡt, err);
         if (len(deadlineSetʗ3) == 0) {
-            Ꮡt.Error((@string)"Write timed out before deadline is set"u8);
+            Ꮡt.Error(writeTimedOutBeforeˢ);
         }
     }));
 });
@@ -375,11 +398,14 @@ internal static void testCloseTimeout(ж<testing.T> Ꮡt, net.Conn c1, net.Conn 
     }));
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object skippingOnPlan9SeeHttpsˢ = (@string)"skipping on plan9; see https://golang.org/issue/20489"u8;
+
 // testConcurrentMethods tests that the methods of net.Conn can safely
 // be called concurrently.
 internal static void testConcurrentMethods(ж<testing.T> Ꮡt, net.Conn c1, net.Conn c2) {
     if (runtime.GOOS == "plan9"u8) {
-        Ꮡt.Skip((@string)"skipping on plan9; see https://golang.org/issue/20489"u8);
+        Ꮡt.Skip(skippingOnPlan9SeeHttpsˢ);
     }
     goǃ((ᴛ1, ᴛ2) => chunkedCopy(ᴛ1, ᴛ2), new net_ConnᴠWriter(c2), new net_ConnᴠReader(c2));
     // The results of the calls may be nonsensical, but this should

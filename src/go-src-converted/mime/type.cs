@@ -167,13 +167,17 @@ public static error AddExtensionType(@string ext, @string typ) {
     return setExtensionType(ext, typ);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string textˢ = "text/"u8;
+private static readonly @string charsetˢ = "charset"u8;
+
 internal static error setExtensionType(@string extension, @string mimeType) => func<error>((defer, recover) => {
     var (justType, param, err) = ParseMediaType(mimeType);
     if (err != default!) {
         return err;
     }
-    if (strings.HasPrefix(mimeType, "text/"u8) && param["charset"u8] == "") {
-        param["charset"u8] = "utf-8"u8;
+    if (strings.HasPrefix(mimeType, textˢ) && param[charsetˢ] == "") {
+        param[charsetˢ] = utf8ˢ2;
         mimeType = FormatMediaType(mimeType, param);
     }
     @string extLower = strings.ToLower(extension);

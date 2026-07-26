@@ -34,7 +34,7 @@ internal static error setKeepAliveIdle(ж<netFD> Ꮡfd, time.Duration d) {
     nint secs = (nint)(int64)roundDurationUp(d, time.ΔSecond);
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_TCP, windows.TCP_KEEPIDLE, secs);
     Δruntime.KeepAlive(Ꮡfd);
-    return os.NewSyscallError("setsockopt"u8, err);
+    return os.NewSyscallError(setsockoptˢ, err);
 }
 
 internal static error setKeepAliveInterval(ж<netFD> Ꮡfd, time.Duration d) {
@@ -51,7 +51,7 @@ internal static error setKeepAliveInterval(ж<netFD> Ꮡfd, time.Duration d) {
     nint secs = (nint)(int64)roundDurationUp(d, time.ΔSecond);
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_TCP, windows.TCP_KEEPINTVL, secs);
     Δruntime.KeepAlive(Ꮡfd);
-    return os.NewSyscallError("setsockopt"u8, err);
+    return os.NewSyscallError(setsockoptˢ, err);
 }
 
 internal static error setKeepAliveCount(ж<netFD> Ꮡfd, nint n) {
@@ -63,8 +63,11 @@ internal static error setKeepAliveCount(ж<netFD> Ꮡfd, nint n) {
     }
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_TCP, windows.TCP_KEEPCNT, n);
     Δruntime.KeepAlive(Ꮡfd);
-    return os.NewSyscallError("setsockopt"u8, err);
+    return os.NewSyscallError(setsockoptˢ, err);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string wsaioctlˢ = "wsaioctl"u8;
 
 // setKeepAliveIdleAndInterval serves for kernels prior to Windows 10, version 1709.
 internal static error setKeepAliveIdleAndInterval(ж<netFD> Ꮡfd, time.Duration idle, time.Duration interval) {
@@ -120,7 +123,7 @@ internal static error setKeepAliveIdleAndInterval(ж<netFD> Ꮡfd, time.Duration
     var size = (uint32)@unsafe.Sizeof(ka);
     var err = Ꮡfd.of(netFD.Ꮡpfd).WSAIoctl(syscall.SIO_KEEPALIVE_VALS, Ꮡka.Reinterpret<syscall.TCPKeepalive, byte>(), size, nil, 0, Ꮡret, nil, 0);
     Δruntime.KeepAlive(Ꮡfd);
-    return os.NewSyscallError("wsaioctl"u8, err);
+    return os.NewSyscallError(wsaioctlˢ, err);
 }
 
 } // end net_package

@@ -124,6 +124,11 @@ public static @string String(this ж<Selection> Ꮡs) {
     return SelectionString(Ꮡs, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fieldˢ2 = "field "u8;
+private static readonly @string methodˢ2 = "method "u8;
+private static readonly @string methodExprˢ = "method expr "u8;
+
 // SelectionString returns the string form of s.
 // The Qualifier controls the printing of
 // package-level objects, and may be nil.
@@ -139,13 +144,13 @@ public static @string SelectionString(ж<Selection> Ꮡs, Func<ж<Package>, @str
     @string k = default!;
     var exprᴛ1 = s.kind;
     if (exprᴛ1 == FieldVal) {
-        k = "field "u8;
+        k = fieldˢ2;
     }
     else if (exprᴛ1 == MethodVal) {
-        k = "method "u8;
+        k = methodˢ2;
     }
     else if (exprᴛ1 == MethodExpr) {
-        k = "method expr "u8;
+        k = methodExprˢ;
     }
     else { /* default: */
         throw panic("unreachable");

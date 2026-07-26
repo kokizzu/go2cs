@@ -99,6 +99,9 @@ internal static slice<byte> deriveKey(this rfc1423Algo c, slice<byte> password, 
     return @out;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dekInfoˢ = "DEK-Info"u8;
+
 // IsEncryptedPEMBlock returns whether the PEM block is password encrypted
 // according to RFC 1423.
 //
@@ -108,12 +111,20 @@ internal static slice<byte> deriveKey(this rfc1423Algo c, slice<byte> password, 
 public static bool IsEncryptedPEMBlock(ж<pem.Block> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    var (_, ok) = b.Headers["DEK-Info"u8, ꟷ];
+    var (_, ok) = b.Headers[dekInfoˢ, ꟷ];
     return ok;
 }
 
 // IncorrectPasswordError is returned when an incorrect password is detected.
 public static error IncorrectPasswordError = errors.New("x509: decryption password incorrect"u8);
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509NoDekInfoHeaderInˢ = "x509: no DEK-Info header in block"u8;
+private static readonly @string x509MalformedDekInfoˢ = "x509: malformed DEK-Info header"u8;
+private static readonly @string x509UnknownEncryptionˢ = "x509: unknown encryption mode"u8;
+private static readonly @string x509IncorrectIvSizeˢ = "x509: incorrect IV size"u8;
+private static readonly @string x509EncryptedPemDataIsˢ = "x509: encrypted PEM data is not a multiple of the block size"u8;
+private static readonly @string x509InvalidPaddingˢ = "x509: invalid padding"u8;
 
 // DecryptPEMBlock takes a PEM block encrypted according to RFC 1423 and the
 // password used to encrypt it and returns a slice of decrypted DER encoded
@@ -130,24 +141,24 @@ public static error IncorrectPasswordError = errors.New("x509: decryption passwo
 public static (slice<byte>, error) DecryptPEMBlock(ж<pem.Block> Ꮡb, slice<byte> password) {
     ref var b = ref Ꮡb.Value;
 
-    var (dek, ok) = b.Headers["DEK-Info"u8, ꟷ];
+    var (dek, ok) = b.Headers[dekInfoˢ, ꟷ];
     if (!ok) {
-        return (default!, errors.New("x509: no DEK-Info header in block"u8));
+        return (default!, errors.New(x509NoDekInfoHeaderInˢ));
     }
     (var mode, var hexIV, ok) = strings.Cut(dek, ","u8);
     if (!ok) {
-        return (default!, errors.New("x509: malformed DEK-Info header"u8));
+        return (default!, errors.New(x509MalformedDekInfoˢ));
     }
     var ciph = cipherByName(mode);
     if (ciph == nil) {
-        return (default!, errors.New("x509: unknown encryption mode"u8));
+        return (default!, errors.New(x509UnknownEncryptionˢ));
     }
     var (iv, err) = hex.DecodeString(hexIV);
     if (err != default!) {
         return (default!, err);
     }
     if (builtin.len(iv) != (~ciph).blockSize) {
-        return (default!, errors.New("x509: incorrect IV size"u8));
+        return (default!, errors.New(x509IncorrectIvSizeˢ));
     }
     // Based on the OpenSSL implementation. The salt is the first 8 bytes
     // of the initialization vector.
@@ -157,7 +168,7 @@ public static (slice<byte>, error) DecryptPEMBlock(ж<pem.Block> Ꮡb, slice<byt
         return (default!, err);
     }
     if (builtin.len(b.Bytes) % block.BlockSize() != 0) {
-        return (default!, errors.New("x509: encrypted PEM data is not a multiple of the block size"u8));
+        return (default!, errors.New(x509EncryptedPemDataIsˢ));
     }
     var data = new slice<byte>(builtin.len(b.Bytes));
     var dec = cipher.NewCBCDecrypter(block, iv);
@@ -170,7 +181,7 @@ public static (slice<byte>, error) DecryptPEMBlock(ж<pem.Block> Ꮡb, slice<byt
     // If we detect a bad padding, we assume it is an invalid password.
     nint dlen = builtin.len(data);
     if (dlen == 0 || dlen % (~ciph).blockSize != 0) {
-        return (default!, errors.New("x509: invalid padding"u8));
+        return (default!, errors.New(x509InvalidPaddingˢ));
     }
     nint last = (nint)data[dlen - 1];
     if (dlen < last) {
@@ -197,7 +208,7 @@ public static (slice<byte>, error) DecryptPEMBlock(ж<pem.Block> Ꮡb, slice<byt
 public static (ж<pem.Block>, error) EncryptPEMBlock(io.Reader rand, @string blockType, slice<byte> data, slice<byte> password, PEMCipher alg) {
     var ciph = cipherByKey(alg);
     if (ciph == nil) {
-        return (default!, errors.New("x509: unknown encryption mode"u8));
+        return (default!, errors.New(x509UnknownEncryptionˢ));
     }
     var iv = new slice<byte>((~ciph).blockSize);
     {

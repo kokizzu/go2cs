@@ -25,12 +25,15 @@ internal static readonly traceProcStatus traceProcIdle = 2;
 internal static readonly traceProcStatus traceProcSyscall = 3;
 internal static readonly traceProcStatus traceProcSyscallAbandoned = 4;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string attemptedToTraceABadˢ = "attempted to trace a bad status for a goroutine"u8;
+
 // writeGoStatus emits a GoStatus event as well as any active ranges on the goroutine.
 internal static traceWriter writeGoStatus(this traceWriter w, uint64 goid, int64 mid, traceGoStatus status, bool markAssist, uint64 stackID) {
     // The status should never be bad. Some invariant must have been violated.
     if (status == traceGoBad) {
         print((@string)"runtime: goid="u8, goid, (@string)"\n"u8);
-        @throw("attempted to trace a bad status for a goroutine"u8);
+        @throw(attemptedToTraceABadˢ);
     }
     // Trace the status.
     if (stackID == 0){
@@ -44,6 +47,9 @@ internal static traceWriter writeGoStatus(this traceWriter w, uint64 goid, int64
     }
     return w;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string attemptToTraceInvalidOrˢ = "attempt to trace invalid or unsupported P status"u8;
 
 // writeProcStatusForP emits a ProcStatus event for the provided p based on its status.
 //
@@ -79,12 +85,15 @@ internal static traceWriter writeProcStatusForP(this traceWriter w, ж<Δp> Ꮡp
         status = traceProcSyscall;
     }
     else { /* default: */
-        @throw("attempt to trace invalid or unsupported P status"u8);
+        @throw(attemptToTraceInvalidOrˢ);
     }
 
     w = w.writeProcStatus((uint64)pp.id, status, pp.trace.inSweep);
     return w;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string attemptedToTraceABadˢ2 = "attempted to trace a bad status for a proc"u8;
 
 // writeProcStatus emits a ProcStatus event with all the provided information.
 //
@@ -94,7 +103,7 @@ internal static traceWriter writeProcStatus(this traceWriter w, uint64 pid, trac
     // The status should never be bad. Some invariant must have been violated.
     if (status == traceProcBad) {
         print((@string)"runtime: pid="u8, pid, (@string)"\n"u8);
-        @throw("attempted to trace a bad status for a proc"u8);
+        @throw(attemptedToTraceABadˢ2);
     }
     // Trace the status.
     w = w.@event(traceEvProcStatus, ((traceArg)pid), ((traceArg)(uint64)(uint8)status));
@@ -104,6 +113,10 @@ internal static traceWriter writeProcStatus(this traceWriter w, uint64 pid, trac
     }
     return w;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string triedToTraceDeadˢ = "tried to trace dead goroutine"u8;
+private static readonly @string triedToTraceGoroutineˢ = "tried to trace goroutine with invalid or unsupported status"u8;
 
 // goStatusToTraceGoStatus translates the internal status to tracGoStatus.
 //
@@ -134,10 +147,10 @@ internal static traceGoStatus goStatusToTraceGoStatus(uint32 status, waitReason 
         }
     }
     else if (exprᴛ1 == _Gdead) {
-        @throw("tried to trace dead goroutine"u8);
+        @throw(triedToTraceDeadˢ);
     }
     else { /* default: */
-        @throw("tried to trace goroutine with invalid or unsupported status"u8);
+        @throw(triedToTraceGoroutineˢ);
     }
 
     return tgs;

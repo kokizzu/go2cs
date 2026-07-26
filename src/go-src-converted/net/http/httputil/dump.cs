@@ -101,6 +101,10 @@ internal static int64 outgoingLength(ж<http.Request> Ꮡreq) {
     return -1;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpˢ = "http"u8;
+private static readonly @string http11204NoContentˢ = "HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n"u8;
+
 // DumpRequestOut is like [DumpRequest] but for outgoing client requests. It
 // includes any headers that the standard [http.Transport] adds, such as
 // User-Agent.
@@ -132,7 +136,7 @@ public static (slice<byte>, error) DumpRequestOut(ж<http.Request> Ꮡreq, bool 
         reqSend.Value = req;
         reqSend.Value.URL = @new<url.URL>();
         (~reqSend).URL.Value = req.URL.Value;
-        reqSend.Value.URL.Value.Scheme = "http"u8;
+        reqSend.Value.URL.Value.Scheme = httpˢ;
     }
     // Use the actual Transport code to record what we would send
     // on the wire, but not using TCP.  Use a Transport with a
@@ -169,7 +173,7 @@ public static (slice<byte>, error) DumpRequestOut(ж<http.Request> Ꮡreq, bool 
             io.Copy(io.Discard, (~reqΔ1).Body);
             (~reqΔ1).Body.Close();
         }
-        var selᴛ1 = (~drʗ2).c.ᐸꟷ(new strings_ReaderжReader(strings.NewReader("HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n"u8)), ꓸꓸꓸ);
+        var selᴛ1 = (~drʗ2).c.ᐸꟷ(new strings_ReaderжReader(strings.NewReader(http11204NoContentˢ)), ꓸꓸꓸ);
         var selᴛ2 = quitReadChʗ1;
         switch (select(selᴛ1, ᐸꟷ(selᴛ2, ꓸꓸꓸ))) {
         case 0: {
@@ -240,6 +244,10 @@ internal static map<@string, bool> reqWriteExcludeHeaderDump = new map<@string, 
     ["Trailer"u8] = true
 };
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpˢ2 = "http://"u8;
+private static readonly @string httpsˢ = "https://"u8;
+
 // DumpRequest returns the given request in its HTTP/1.x wire
 // representation. It should only be used by servers to debug client
 // requests. The returned representation is an approximation only;
@@ -282,7 +290,7 @@ public static (slice<byte>, error) DumpRequest(ж<http.Request> Ꮡreq, bool bod
     }
     fmt.Fprintf(new bytes_BufferжWriter(Ꮡb), "%s %s HTTP/%d.%d\r\n"u8, valueOrDefault(req.Method, "GET"u8),
         reqURI, req.ProtoMajor, req.ProtoMinor);
-    var absRequestURI = strings.HasPrefix(req.RequestURI, "http://"u8) || strings.HasPrefix(req.RequestURI, "https://"u8);
+    var absRequestURI = strings.HasPrefix(req.RequestURI, httpˢ2) || strings.HasPrefix(req.RequestURI, httpsˢ);
     if (!absRequestURI) {
         @string host = req.Host;
         if (host == ""u8 && req.URL != nil) {

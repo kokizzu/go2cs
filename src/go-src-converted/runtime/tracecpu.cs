@@ -10,12 +10,15 @@ using atomic = @internal.runtime.atomic_package;
 
 partial class runtime_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string traceInitReadCPUCalledˢ = "traceInitReadCPU called with trace enabled"u8;
+
 // traceInitReadCPU initializes CPU profile -> tracer state for tracing.
 //
 // Returns a profBuf for reading from.
 internal static void traceInitReadCPU() {
     if (traceEnabled()) {
-        @throw("traceInitReadCPU called with trace enabled"u8);
+        @throw(traceInitReadCPUCalledˢ);
     }
     // Create new profBuf for CPU samples that will be emitted as events.
     // Format: after the timestamp, header is [pp.id, gp.goid, mp.procid].
@@ -32,13 +35,16 @@ internal static void traceInitReadCPU() {
     ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑcpuLogWrite, 1).Store(Δtrace.cpuLogRead[1]);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string traceStartReadCPUCalledˢ = "traceStartReadCPU called with trace disabled"u8;
+
 // traceStartReadCPU creates a goroutine to start reading CPU profile
 // data into an active trace.
 //
 // traceAdvanceSema must be held.
 internal static void traceStartReadCPU() {
     if (!traceEnabled()) {
-        @throw("traceStartReadCPU called with trace disabled"u8);
+        @throw(traceStartReadCPUCalledˢ);
     }
     // Spin up the logger goroutine.
     Δtrace.cpuSleep = newWakeableSleep();
@@ -74,12 +80,15 @@ internal static void traceStartReadCPU() {
     Δtrace.cpuLogDone = done;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string traceStopReadCPUCalledˢ = "traceStopReadCPU called with trace enabled"u8;
+
 // traceStopReadCPU blocks until the trace CPU reading goroutine exits.
 //
 // traceAdvanceSema must be held, and tracing must be disabled.
 internal static void traceStopReadCPU() {
     if (traceEnabled()) {
-        @throw("traceStopReadCPU called with trace enabled"u8);
+        @throw(traceStopReadCPUCalledˢ);
     }
     // Once we close the profbuf, we'll be in one of two situations:
     // - The logger goroutine has already exited because it observed

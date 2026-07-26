@@ -497,6 +497,9 @@ public static error Flush(this ж<Writer> Ꮡb) {
     return Ꮡb.flush();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string flushˢ = "Flush"u8;
+
 // flush is the internal version of Flush, with a named return value which we
 // don't want to expose.
 internal static error /*err*/ flush(this ж<Writer> Ꮡb) {
@@ -505,7 +508,7 @@ internal static error /*err*/ flush(this ж<Writer> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
     ref var err = ref Ꮡerr.ValueSlot;
-        deferǃ(Ꮡb.handlePanic, Ꮡerr, (@string)"Flush", defer);
+        deferǃ(Ꮡb.handlePanic, Ꮡerr, flushˢ, defer);
         b.flushNoDefers();
         err = default!;
     });
@@ -531,6 +534,9 @@ internal static error /*err*/ flush(this ж<Writer> Ꮡb) {
 
 internal static slice<byte> hbar = slice<byte>("---\n"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string writeˢ = "Write"u8;
+
 // Write writes buf to the writer b.
 // The only errors returned are ones encountered
 // while writing to the underlying output stream.
@@ -541,7 +547,7 @@ public static (nint n, error err) Write(this ж<Writer> Ꮡb, slice<byte> buf) {
     ref var b = ref Ꮡb.Value;
 
     ref var err = ref Ꮡerr.ValueSlot;
-        deferǃ(Ꮡb.handlePanic, Ꮡerr, (@string)"Write", defer);
+        deferǃ(Ꮡb.handlePanic, Ꮡerr, writeˢ, defer);
         // split text into cells
         n = 0;
         foreach (var (i, ch) in buf) {

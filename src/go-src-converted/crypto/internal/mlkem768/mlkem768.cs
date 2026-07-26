@@ -125,9 +125,12 @@ public static (ж<DecapsulationKey>, error) NewKeyFromSeed(slice<byte> seed) {
     return newKeyFromSeed(dk, seed);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mlkem768InvalidSeedˢ = "mlkem768: invalid seed length"u8;
+
 internal static (ж<DecapsulationKey>, error) newKeyFromSeed(ж<DecapsulationKey> Ꮡdk, slice<byte> seed) {
     if (len(seed) != SeedSize) {
-        return (default!, errors.New("mlkem768: invalid seed length"u8));
+        return (default!, errors.New(mlkem768InvalidSeedˢ));
     }
     var d = Ꮡ(new array<byte>(seed[..32], 32));
     var z = Ꮡ(new array<byte>(seed[32..], 32));
@@ -142,11 +145,14 @@ public static (ж<DecapsulationKey>, error) NewKeyFromExtendedEncoding(slice<byt
     return newKeyFromExtendedEncoding(dk, decapsulationKey);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mlkem768Invalidˢ = "mlkem768: invalid decapsulation key length"u8;
+
 internal static (ж<DecapsulationKey>, error) newKeyFromExtendedEncoding(ж<DecapsulationKey> Ꮡdk, slice<byte> dkBytes) {
     ref var dk = ref Ꮡdk.Value;
 
     if (len(dkBytes) != DecapsulationKeySize) {
-        return (default!, errors.New("mlkem768: invalid decapsulation key length"u8));
+        return (default!, errors.New(mlkem768Invalidˢ));
     }
     // Note that we don't check that H(ek) matches ekPKE, as that's not
     // specified in FIPS 203 (DRAFT). This is one reason to prefer the seed
@@ -247,13 +253,16 @@ public static (slice<byte> ciphertext, slice<byte> sharedKey, error err) Encapsu
     return encapsulate(Ꮡcc, encapsulationKey);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mlkem768Invalidˢ2 = "mlkem768: invalid encapsulation key length"u8;
+
 internal static (slice<byte> ciphertext, slice<byte> sharedKey, error err) encapsulate(ж<array<byte>> Ꮡcc, slice<byte> encapsulationKey) {
     slice<byte> ciphertext = default!;
     slice<byte> sharedKey = default!;
     error err = default!;
 
     if (len(encapsulationKey) != EncapsulationKeySize) {
-        return (default!, default!, errors.New("mlkem768: invalid encapsulation key length"u8));
+        return (default!, default!, errors.New(mlkem768Invalidˢ2));
     }
     ref var m = ref heap(new array<byte>(32), out var Ꮡm);
     {
@@ -294,6 +303,9 @@ internal static (slice<byte> c, slice<byte> K, error err) kemEncaps(ж<array<byt
     return (c, K, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mlkem768Invalidˢ3 = "mlkem768: invalid encryption key length"u8;
+
 // parseEK parses an encryption key from its encoded form.
 //
 // It implements the initial stages of K-PKE.Encrypt according to FIPS 203
@@ -302,7 +314,7 @@ internal static error parseEK(ж<encryptionKey> Ꮡex, slice<byte> ekPKE) {
     ref var ex = ref Ꮡex.Value;
 
     if (len(ekPKE) != encryptionKeySize) {
-        return errors.New("mlkem768: invalid encryption key length"u8);
+        return errors.New(mlkem768Invalidˢ3);
     }
     foreach (var (i, _) in ex.t) {
         error err = default!;
@@ -367,6 +379,9 @@ internal static slice<byte> pkeEncrypt(ж<array<byte>> Ꮡcc, ж<encryptionKey> 
     return c;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mlkem768Invalidˢ4 = "mlkem768: invalid ciphertext length"u8;
+
 // Decapsulate generates a shared key from a ciphertext and a decapsulation key.
 // If the ciphertext is not valid, Decapsulate returns an error.
 //
@@ -376,7 +391,7 @@ public static (slice<byte> sharedKey, error err) Decapsulate(ж<DecapsulationKey
     error err = default!;
 
     if (len(ciphertext) != CiphertextSize) {
-        return (default!, errors.New("mlkem768: invalid ciphertext length"u8));
+        return (default!, errors.New(mlkem768Invalidˢ4));
     }
     var c = Ꮡ(new array<byte>(ciphertext, 1088));
     return (kemDecaps(Ꮡdk, c), default!);
@@ -409,6 +424,9 @@ internal static slice<byte> /*K*/ kemDecaps(ж<DecapsulationKey> Ꮡdk, ж<array
     return Kout;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mlkem768Invalidˢ5 = "mlkem768: invalid decryption key length"u8;
+
 // parseDK parses a decryption key from its encoded form.
 //
 // It implements the computation of s from K-PKE.Decrypt according to FIPS 203
@@ -417,7 +435,7 @@ internal static error parseDK(ж<decryptionKey> Ꮡdx, slice<byte> dkPKE) {
     ref var dx = ref Ꮡdx.Value;
 
     if (len(dkPKE) != decryptionKeySize) {
-        return errors.New("mlkem768: invalid decryption key length"u8);
+        return errors.New(mlkem768Invalidˢ5);
     }
     foreach (var (i, _) in dx.s) {
         var (f, err) = polyByteDecode<nttElement>(dkPKE[..(int)(encodingSize12)]);
@@ -455,10 +473,13 @@ internal static slice<byte> pkeDecrypt(ж<decryptionKey> Ꮡdx, ж<array<byte>> 
 
 [GoType("num:uint16")] public partial struct fieldElement;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unreducedFieldElementˢ = "unreduced field element"u8;
+
 // fieldCheckReduced checks that a value a is < q.
 internal static (fieldElement, error) fieldCheckReduced(uint16 a) {
     if (a >= q) {
-        return (0, errors.New("unreduced field element"u8));
+        return (0, errors.New(unreducedFieldElementˢ));
     }
     return (((fieldElement)a), default!);
 }
@@ -601,6 +622,10 @@ internal static slice<byte> polyByteEncode<T>(slice<byte> b, T f)
     return @out;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mlkem768InvalidEncodingˢ = "mlkem768: invalid encoding length"u8;
+private static readonly @string mlkem768Invalidˢ6 = "mlkem768: invalid polynomial encoding"u8;
+
 // polyByteDecode decodes the 384-byte encoding of a polynomial, checking that
 // all the coefficients are properly reduced. This achieves the "Modulus check"
 // step of ML-KEM Encapsulation Input Validation.
@@ -613,7 +638,7 @@ internal static (T, error) polyByteDecode<T>(slice<byte> b)
     where T : /* ~[256]crypto/internal/mlkem768.fieldElement */ IArray<fieldElement>, new()
 {
     if (len(b) != encodingSize12) {
-        return (new T{}, errors.New("mlkem768: invalid encoding length"u8));
+        return (new T{}, errors.New(mlkem768InvalidEncodingˢ));
     }
     T f = default!;
     for (nint i = 0; i < n; i += 2) {
@@ -622,12 +647,12 @@ internal static (T, error) polyByteDecode<T>(slice<byte> b)
         error err = default!;
         {
             (f[i], err) = fieldCheckReduced((uint16)((uint32)(d & mask12))); if (err != default!) {
-                return (new T{}, errors.New("mlkem768: invalid polynomial encoding"u8));
+                return (new T{}, errors.New(mlkem768Invalidˢ6));
             }
         }
         {
             (f[i + 1], err) = fieldCheckReduced((uint16)((d >> (int)(12)))); if (err != default!) {
-                return (new T{}, errors.New("mlkem768: invalid polynomial encoding"u8));
+                return (new T{}, errors.New(mlkem768Invalidˢ6));
             }
         }
         b = b[3..];

@@ -289,6 +289,11 @@ public static @string Error(this SetupError s) {
     return fmt.Sprintf("#%d: failed on input %s. Output 1: %s. Output 2: %s"u8, s.Count, toString(s.In), toString(s.Out1), toString(s.Out2));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string argumentIsNotAFunctionˢ = "argument is not a function"u8;
+private static readonly @string functionDoesNotReturnOneˢ = "function does not return one value"u8;
+private static readonly @string functionDoesNotReturnAˢ = "function does not return a bool"u8;
+
 // Check looks for an input to f, any function that returns bool,
 // such that f returns false. It calls f repeatedly, with arbitrary
 // values for each argument. If f returns false on a given input,
@@ -312,13 +317,13 @@ public static error Check(any f, ж<Config> Ꮡconfig) {
     }
     var (fVal, fType, ok) = functionAndType(f);
     if (!ok) {
-        return ((SetupError)(@string)"argument is not a function"u8);
+        return ((SetupError)(@string)argumentIsNotAFunctionˢ);
     }
     if (fType.NumOut() != 1) {
-        return ((SetupError)(@string)"function does not return one value"u8);
+        return ((SetupError)(@string)functionDoesNotReturnOneˢ);
     }
     if (fType.Out(0).Kind() != reflect.ΔBool) {
-        return ((SetupError)(@string)"function does not return a bool"u8);
+        return ((SetupError)(@string)functionDoesNotReturnAˢ);
     }
     var arguments = new slice<reflectꓸValue>(fType.NumIn());
     var rand = config.getRand();
@@ -335,6 +340,11 @@ public static error Check(any f, ж<Config> Ꮡconfig) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fIsNotAFunctionˢ = "f is not a function"u8;
+private static readonly @string gIsNotAFunctionˢ = "g is not a function"u8;
+private static readonly @string functionsHaveDifferentˢ = "functions have different types"u8;
+
 // CheckEqual looks for an input on which f and g return different results.
 // It calls f and g repeatedly with arbitrary values for each argument.
 // If f and g return different answers, CheckEqual returns a *[CheckEqualError]
@@ -347,14 +357,14 @@ public static error CheckEqual(any f, any g, ж<Config> Ꮡconfig) {
     }
     var (x, xType, ok) = functionAndType(f);
     if (!ok) {
-        return ((SetupError)(@string)"f is not a function"u8);
+        return ((SetupError)(@string)fIsNotAFunctionˢ);
     }
     (var y, var yType, ok) = functionAndType(g);
     if (!ok) {
-        return ((SetupError)(@string)"g is not a function"u8);
+        return ((SetupError)(@string)gIsNotAFunctionˢ);
     }
     if (!AreEqual(xType, yType)) {
-        return ((SetupError)(@string)"functions have different types"u8);
+        return ((SetupError)(@string)functionsHaveDifferentˢ);
     }
     var arguments = new slice<reflectꓸValue>(xType.NumIn());
     var rand = config.getRand();

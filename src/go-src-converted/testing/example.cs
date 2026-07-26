@@ -26,12 +26,15 @@ public static bool /*ok*/ RunExamples(Func<@string, @string, (bool, error)> matc
     return ok;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testRunˢ = "-test.run"u8;
+
 internal static (bool ran, bool ok) runExamples(Func<@string, @string, (bool, error)> matchString, slice<InternalExample> examples) {
     bool ran = default!;
     bool ok = default!;
 
     ok = true;
-    var m = newMatcher(matchString, match.Value, "-test.run"u8, skip.Value);
+    var m = newMatcher(matchString, match.Value, testRunˢ, skip.Value);
     InternalExample eg = default!;
     foreach (var (_, vᴛ1) in examples) {
         eg = vᴛ1;

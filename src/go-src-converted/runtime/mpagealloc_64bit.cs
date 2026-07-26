@@ -53,6 +53,9 @@ internal static array<nuint> levelLogPages = new nuint[]{
     logPallocChunkPages
 }.array();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string failedToReservePageˢ = "failed to reserve page summary memory"u8;
+
 // sysInit performs architecture-dependent initialization of fields
 // in pageAlloc. pageAlloc should be uninitialized except for sysStat
 // if any runtime statistic should be updated.
@@ -65,7 +68,7 @@ internal static array<nuint> levelLogPages = new nuint[]{
         var b = alignUp((uintptr)entries * pallocSumBytes, physPageSize);
         @unsafe.Pointer r = (uintptr)sysReserve(nil, b);
         if (r == nil) {
-            @throw("failed to reserve page summary memory"u8);
+            @throw(failedToReservePageˢ);
         }
         // Put this reservation into a slice.
         ref var sl = ref heap<notInHeapSlice>(out var Ꮡsl);
@@ -73,6 +76,9 @@ internal static array<nuint> levelLogPages = new nuint[]{
         Δp.summary[l] = ~Ꮡsl.Reinterpret<notInHeapSlice, slice<pallocSum>>();
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sysGrowBoundsNotAlignedˢ = "sysGrow bounds not aligned to pallocChunkBytes"u8;
 
 // sysGrow performs architecture-dependent operations on heap
 // growth for the page allocator, such as mapping in new memory
@@ -89,7 +95,7 @@ internal static void sysGrow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr lim
 
     if (@base % (uintptr)pallocChunkBytes != 0 || limit % (uintptr)pallocChunkBytes != 0) {
         print((@string)"runtime: base = "u8, ((Δhex)(uint64)@base), (@string)", limit = "u8, ((Δhex)(uint64)limit), (@string)"\n"u8);
-        @throw("sysGrow bounds not aligned to pallocChunkBytes"u8);
+        @throw(sysGrowBoundsNotAlignedˢ);
     }
     // addrRangeToSummaryRange converts a range of addresses into a range
     // of summary indices which must be mapped to support those addresses
@@ -174,7 +180,7 @@ internal static uintptr sysGrow(this ж<scavengeIndex> Ꮡs, uintptr @base, uint
 
     if (@base % (uintptr)pallocChunkBytes != 0 || limit % (uintptr)pallocChunkBytes != 0) {
         print((@string)"runtime: base = "u8, ((Δhex)(uint64)@base), (@string)", limit = "u8, ((Δhex)(uint64)limit), (@string)"\n"u8);
-        @throw("sysGrow bounds not aligned to pallocChunkBytes"u8);
+        @throw(sysGrowBoundsNotAlignedˢ);
     }
     var scSize = @unsafe.Sizeof(new atomicScavChunkData(nil));
     // Map and commit the pieces of chunks that we need.

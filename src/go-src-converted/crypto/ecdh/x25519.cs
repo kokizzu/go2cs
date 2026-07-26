@@ -30,8 +30,11 @@ internal static ж<x25519Curve> x25519 = Ꮡ(new x25519Curve(nil));
 [GoType] partial struct x25519Curve {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x25519ˢ = "X25519"u8;
+
 [GoRecv] internal static @string String(this ref x25519Curve c) {
-    return "X25519"u8;
+    return x25519ˢ;
 }
 
 internal static (ж<PrivateKey>, error) GenerateKey(this ж<x25519Curve> Ꮡc, io.Reader rand) {
@@ -47,7 +50,7 @@ internal static (ж<PrivateKey>, error) GenerateKey(this ж<x25519Curve> Ꮡc, i
 
 internal static (ж<PrivateKey>, error) NewPrivateKey(this ж<x25519Curve> Ꮡc, slice<byte> key) {
     if (len(key) != x25519PrivateKeySize) {
-        return (default!, errors.New("crypto/ecdh: invalid private key size"u8));
+        return (default!, errors.New(cryptoEcdhInvalidPrivateˢ));
     }
     return (Ꮡ(new PrivateKey(
         curve: new x25519CurveжΔCurve(Ꮡc),
@@ -72,13 +75,16 @@ internal static ж<ΔPublicKey> privateKeyToPublicKey(this ж<x25519Curve> Ꮡc,
 
 internal static (ж<ΔPublicKey>, error) NewPublicKey(this ж<x25519Curve> Ꮡc, slice<byte> key) {
     if (len(key) != x25519PublicKeySize) {
-        return (default!, errors.New("crypto/ecdh: invalid public key"u8));
+        return (default!, errors.New(cryptoEcdhInvalidPublicˢ));
     }
     return (Ꮡ(new ΔPublicKey(
         curve: new x25519CurveжΔCurve(Ꮡc),
         publicKey: append(new byte[]{}.slice(), key.ꓸꓸꓸ)
     )), default!);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoEcdhBadX25519ˢ = "crypto/ecdh: bad X25519 remote ECDH input: low order point"u8;
 
 [GoRecv] internal static (slice<byte>, error) ecdh(this ref x25519Curve c, ж<PrivateKey> Ꮡlocal, ж<ΔPublicKey> Ꮡremote) {
     ref var local = ref Ꮡlocal.Value;
@@ -87,7 +93,7 @@ internal static (ж<ΔPublicKey>, error) NewPublicKey(this ж<x25519Curve> Ꮡc,
     var @out = new slice<byte>(x25519SharedSecretSize);
     x25519ScalarMult(@out, local.privateKey, remote.publicKey);
     if (isZero(@out)) {
-        return (default!, errors.New("crypto/ecdh: bad X25519 remote ECDH input: low order point"u8));
+        return (default!, errors.New(cryptoEcdhBadX25519ˢ));
     }
     return (@out, default!);
 }

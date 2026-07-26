@@ -236,10 +236,13 @@ internal static nint pixelBufferLength(nint bytesPerPixel, Rectangle r, @string 
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rgbaˢ = "RGBA"u8;
+
 // NewRGBA returns a new [RGBA] image with the given bounds.
 public static ж<ΔRGBA> NewRGBA(Rectangle r) {
     return Ꮡ(new ΔRGBA(
-        Pix: new slice<uint8>(pixelBufferLength(4, r, "RGBA"u8)),
+        Pix: new slice<uint8>(pixelBufferLength(4, r, rgbaˢ)),
         Stride: 4 * r.Dx(),
         Rect: r
     ));
@@ -361,10 +364,13 @@ public static ж<ΔRGBA> NewRGBA(Rectangle r) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rgba64ˢ = "RGBA64"u8;
+
 // NewRGBA64 returns a new [RGBA64] image with the given bounds.
 public static ж<RGBA64> NewRGBA64(Rectangle r) {
     return Ꮡ(new RGBA64(
-        Pix: new slice<uint8>(pixelBufferLength(8, r, "RGBA64"u8)),
+        Pix: new slice<uint8>(pixelBufferLength(8, r, rgba64ˢ)),
         Stride: 8 * r.Dx(),
         Rect: r
     ));
@@ -497,10 +503,13 @@ public static ж<RGBA64> NewRGBA64(Rectangle r) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nrgbaˢ = "NRGBA"u8;
+
 // NewNRGBA returns a new [NRGBA] image with the given bounds.
 public static ж<NRGBA> NewNRGBA(Rectangle r) {
     return Ꮡ(new NRGBA(
-        Pix: new slice<uint8>(pixelBufferLength(4, r, "NRGBA"u8)),
+        Pix: new slice<uint8>(pixelBufferLength(4, r, nrgbaˢ)),
         Stride: 4 * r.Dx(),
         Rect: r
     ));
@@ -650,10 +659,13 @@ public static ж<NRGBA> NewNRGBA(Rectangle r) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nrgba64ˢ = "NRGBA64"u8;
+
 // NewNRGBA64 returns a new [NRGBA64] image with the given bounds.
 public static ж<NRGBA64> NewNRGBA64(Rectangle r) {
     return Ꮡ(new NRGBA64(
-        Pix: new slice<uint8>(pixelBufferLength(8, r, "NRGBA64"u8)),
+        Pix: new slice<uint8>(pixelBufferLength(8, r, nrgba64ˢ)),
         Stride: 8 * r.Dx(),
         Rect: r
     ));
@@ -763,10 +775,13 @@ public static ж<NRGBA64> NewNRGBA64(Rectangle r) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string alphaˢ = "Alpha"u8;
+
 // NewAlpha returns a new [Alpha] image with the given bounds.
 public static ж<Alpha> NewAlpha(Rectangle r) {
     return Ꮡ(new Alpha(
-        Pix: new slice<uint8>(pixelBufferLength(1, r, "Alpha"u8)),
+        Pix: new slice<uint8>(pixelBufferLength(1, r, alphaˢ)),
         Stride: 1 * r.Dx(),
         Rect: r
     ));
@@ -879,10 +894,13 @@ public static ж<Alpha> NewAlpha(Rectangle r) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string alpha16ˢ = "Alpha16"u8;
+
 // NewAlpha16 returns a new [Alpha16] image with the given bounds.
 public static ж<Alpha16> NewAlpha16(Rectangle r) {
     return Ꮡ(new Alpha16(
-        Pix: new slice<uint8>(pixelBufferLength(2, r, "Alpha16"u8)),
+        Pix: new slice<uint8>(pixelBufferLength(2, r, alpha16ˢ)),
         Stride: 2 * r.Dx(),
         Rect: r
     ));
@@ -980,10 +998,13 @@ public static ж<Alpha16> NewAlpha16(Rectangle r) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string grayˢ = "Gray"u8;
+
 // NewGray returns a new [Gray] image with the given bounds.
 public static ж<Gray> NewGray(Rectangle r) {
     return Ꮡ(new Gray(
-        Pix: new slice<uint8>(pixelBufferLength(1, r, "Gray"u8)),
+        Pix: new slice<uint8>(pixelBufferLength(1, r, grayˢ)),
         Stride: 1 * r.Dx(),
         Rect: r
     ));
@@ -1084,10 +1105,13 @@ public static ж<Gray> NewGray(Rectangle r) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gray16ˢ = "Gray16"u8;
+
 // NewGray16 returns a new [Gray16] image with the given bounds.
 public static ж<Gray16> NewGray16(Rectangle r) {
     return Ꮡ(new Gray16(
-        Pix: new slice<uint8>(pixelBufferLength(2, r, "Gray16"u8)),
+        Pix: new slice<uint8>(pixelBufferLength(2, r, gray16ˢ)),
         Stride: 2 * r.Dx(),
         Rect: r
     ));
@@ -1201,10 +1225,13 @@ public static ж<Gray16> NewGray16(Rectangle r) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cmykˢ = "CMYK"u8;
+
 // NewCMYK returns a new CMYK image with the given bounds.
 public static ж<CMYK> NewCMYK(Rectangle r) {
     return Ꮡ(new CMYK(
-        Pix: new slice<uint8>(pixelBufferLength(4, r, "CMYK"u8)),
+        Pix: new slice<uint8>(pixelBufferLength(4, r, cmykˢ)),
         Stride: 4 * r.Dx(),
         Rect: r
     ));
@@ -1345,11 +1372,14 @@ public static ж<CMYK> NewCMYK(Rectangle r) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string palettedˢ = "Paletted"u8;
+
 // NewPaletted returns a new [Paletted] image with the given width, height and
 // palette.
 public static ж<Paletted> NewPaletted(Rectangle r, color.Palette p) {
     return Ꮡ(new Paletted(
-        Pix: new slice<uint8>(pixelBufferLength(1, r, "Paletted"u8)),
+        Pix: new slice<uint8>(pixelBufferLength(1, r, palettedˢ)),
         Stride: 1 * r.Dx(),
         Rect: r,
         Palette: p

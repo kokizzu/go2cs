@@ -22,6 +22,9 @@ internal static partial void debugCallV2();
 
 internal static partial void debugCallPanicked(any val);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeˢ = "runtime."u8;
+
 // debugCallCheck checks whether it is safe to inject a debugger
 // function call with return PC pc. If not, it returns a string
 // explaining why.
@@ -65,7 +68,7 @@ internal static @string debugCallCheck(uintptr pc) {
         // coded sequences (e.g., defer handling) that it's
         // better to play it safe.
         {
-            @string pfx = "runtime."u8; if (len(name) > len(pfx) && name[..(int)(len(pfx))] == pfx) {
+            @string pfx = runtimeˢ; if (len(name) > len(pfx) && name[..(int)(len(pfx))] == pfx) {
                 ret = debugCallRuntime;
                 return;
             }
@@ -82,6 +85,9 @@ internal static @string debugCallCheck(uintptr pc) {
     });
     return ret;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inconsistentLockedmˢ = "inconsistent lockedm"u8;
 
 // debugCallWrap starts a new goroutine to run a debug call and blocks
 // the calling goroutine. On the goroutine, it prepares to recover
@@ -122,7 +128,7 @@ internal static void debugCallWrap(uintptr dispatch) {
         // Save lock state to restore later.
         var mpΔ1 = gpʗ1.Value.m;
         if (mpΔ1 != (~gpʗ1).lockedm.ptr()) {
-            @throw("inconsistent lockedm"u8);
+            @throw(inconsistentLockedmˢ);
         }
         // Save the external lock count and clear it so
         // that it can't be unlocked from the debug call.

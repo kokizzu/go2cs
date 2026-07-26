@@ -54,13 +54,16 @@ public static nint Getegid() {
     return syscall.Getegid();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getgroupsˢ = "getgroups"u8;
+
 // Getgroups returns a list of the numeric ids of groups that the caller belongs to.
 //
 // On Windows, it returns [syscall.EWINDOWS]. See the [os/user] package
 // for a possible alternative.
 public static (slice<nint>, error) Getgroups() {
     var (gids, e) = syscall.Getgroups();
-    return (gids, NewSyscallError("getgroups"u8, e));
+    return (gids, NewSyscallError(getgroupsˢ, e));
 }
 
 // Exit causes the current program to exit with the given status code.

@@ -37,6 +37,9 @@ internal static (@string name, nint size, error err) readGopackHeader(ж<bufio.R
     return (name, size, err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goObjectˢ = "go object "u8;
+
 // FindExportData positions the reader r at the beginning of the
 // export data section of an underlying GC-created object/archive
 // file by reading from it. The reader must be positioned at the
@@ -78,7 +81,7 @@ public static (@string hdr, nint size, error err) FindExportData(ж<bufio.Reader
     }
     // Now at __.PKGDEF in archive or still at beginning of file.
     // Either way, line should begin with "go object ".
-    if (!strings.HasPrefix(((@string)line), "go object "u8)) {
+    if (!strings.HasPrefix(((@string)line), goObjectˢ)) {
         err = fmt.Errorf("not a Go object file"u8);
         return (hdr, size, err);
     }

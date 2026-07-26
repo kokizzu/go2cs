@@ -86,9 +86,12 @@ internal static ref sync.Once serverInit => ref ᏑserverInit.Value;
     return pd.prepare((rune)'w', isFile);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string waitingForUnsupportedˢ = "waiting for unsupported file type"u8;
+
 [GoRecv] internal static error wait(this ref pollDesc pd, nint mode, bool isFile) {
     if (pd.runtimeCtx == 0) {
-        return errors.New("waiting for unsupported file type"u8);
+        return errors.New(waitingForUnsupportedˢ);
     }
     nint res = runtime_pollWait(pd.runtimeCtx, mode);
     return convertErr(res, isFile);

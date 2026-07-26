@@ -325,13 +325,16 @@ public static @string String(this Func f) {
 internal static ж<Map> Ꮡvars = new(default(Map));
 internal static ref Map vars => ref Ꮡvars.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object reuseOfExportedVarNameˢ = (@string)"Reuse of exported var name:"u8;
+
 // Publish declares a named exported variable. This should be called from a
 // package's init function when it creates its Vars. If the name is already
 // registered then this will log.Panic.
 public static void Publish(@string name, Var v) => func((defer, recover) => {
     {
         var (_, dup) = Ꮡvars.of(Map.Ꮡm).LoadOrStore(name, v); if (dup) {
-            Δlog.Panicln((@string)"Reuse of exported var name:"u8, name);
+            Δlog.Panicln(reuseOfExportedVarNameˢ, name);
         }
     }
     Ꮡvars.of(Map.ᏑkeysMu).Lock();
@@ -378,8 +381,12 @@ public static void Do(Action<KeyValue> f) {
     Ꮡvars.Do(f);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string contentTypeˢ = "Content-Type"u8;
+private static readonly @string applicationJsonCharsetˢ = "application/json; charset=utf-8"u8;
+
 internal static void expvarHandler(http.ResponseWriter w, ж<http.Request> Ꮡr) {
-    w.Header().Set("Content-Type"u8, "application/json; charset=utf-8"u8);
+    w.Header().Set(contentTypeˢ, applicationJsonCharsetˢ);
     w.Write(Ꮡvars.appendJSONMayExpand(default!, true));
 }
 

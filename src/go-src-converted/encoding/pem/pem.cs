@@ -236,6 +236,9 @@ internal static error writeHeader(io.Writer @out, @string k, @string v) {
     return err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pemCannotEncodeAHeaderˢ = "pem: cannot encode a header key that contains a colon"u8;
+
 // Encode writes the PEM encoding of b to out.
 public static error Encode(io.Writer @out, ж<Block> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -243,7 +246,7 @@ public static error Encode(io.Writer @out, ж<Block> Ꮡb) {
     // Check for invalid block before writing any output.
     foreach (var (k, _) in b.Headers) {
         if (strings.Contains(k, ":"u8)) {
-            return errors.New("pem: cannot encode a header key that contains a colon"u8);
+            return errors.New(pemCannotEncodeAHeaderˢ);
         }
     }
     // All errors below are relayed from underlying io.Writer,

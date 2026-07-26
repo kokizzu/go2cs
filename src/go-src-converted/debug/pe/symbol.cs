@@ -26,6 +26,9 @@ public static readonly UntypedInt COFFSymbolSize = 18;
     public uint8 NumberOfAuxSymbols;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tooManySymbolsFileMayBeˢ = "too many symbols; file may be corrupt"u8;
+
 // readCOFFSymbols reads in the symbol table for a PE file, returning
 // a slice of COFFSymbol objects. The PE format includes both primary
 // symbols (whose fields are described by COFFSymbol above) and
@@ -64,7 +67,7 @@ internal static (slice<COFFSymbol>, error) readCOFFSymbols(ж<FileHeader> Ꮡfh,
     }
     nint c = saferio.SliceCap<COFFSymbol>((uint64)fh.NumberOfSymbols);
     if (c < 0) {
-        return (default!, errors.New("too many symbols; file may be corrupt"u8));
+        return (default!, errors.New(tooManySymbolsFileMayBeˢ));
     }
     var syms = new slice<COFFSymbol>(0, c);
     nint naux = 0;

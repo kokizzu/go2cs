@@ -75,6 +75,15 @@ partial class httpproxy_package {
     internal slice<matcher> domainMatchers;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpProxyˢ = "HTTP_PROXY"u8;
+private static readonly @string httpProxyˢ2 = "http_proxy"u8;
+private static readonly @string httpsProxyˢ = "HTTPS_PROXY"u8;
+private static readonly @string httpsProxyˢ2 = "https_proxy"u8;
+private static readonly @string noProxyˢ = "NO_PROXY"u8;
+private static readonly @string noProxyˢ2 = "no_proxy"u8;
+private static readonly @string requestMethodˢ = "REQUEST_METHOD"u8;
+
 // FromEnvironment returns a Config instance populated from the
 // environment variables HTTP_PROXY, HTTPS_PROXY and NO_PROXY (or the
 // lowercase versions thereof).
@@ -84,10 +93,10 @@ partial class httpproxy_package {
 // is returned if the value is a different form.
 public static ж<Config> FromEnvironment() {
     return Ꮡ(new Config(
-        HTTPProxy: getEnvAny("HTTP_PROXY"u8, "http_proxy"),
-        HTTPSProxy: getEnvAny("HTTPS_PROXY"u8, "https_proxy"),
-        NoProxy: getEnvAny("NO_PROXY"u8, "no_proxy"),
-        CGI: os.Getenv("REQUEST_METHOD"u8) != ""u8
+        HTTPProxy: getEnvAny(httpProxyˢ, httpProxyˢ2),
+        HTTPSProxy: getEnvAny(httpsProxyˢ, httpsProxyˢ2),
+        NoProxy: getEnvAny(noProxyˢ, noProxyˢ2),
+        CGI: os.Getenv(requestMethodˢ) != ""u8
     ));
 }
 
@@ -123,6 +132,9 @@ internal static @string getEnvAny(params ꓸꓸꓸstring namesʗp) {
     return cfg1.proxyForURL;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string refusingToUseHttpProxyˢ = "refusing to use HTTP_PROXY value in CGI environment; see golang.org/s/cgihttpproxy"u8;
+
 [GoRecv] internal static (ж<url.URL>, error) proxyForURL(this ref config cfg, ж<url.URL> ᏑreqURL) {
     ref var reqURL = ref ᏑreqURL.Value;
 
@@ -133,7 +145,7 @@ internal static @string getEnvAny(params ꓸꓸꓸstring namesʗp) {
     if (reqURL.Scheme == "http"u8) {
         proxy = cfg.httpProxy;
         if (proxy != nil && cfg.CGI) {
-            return (default!, errors.New("refusing to use HTTP_PROXY value in CGI environment; see golang.org/s/cgihttpproxy"u8));
+            return (default!, errors.New(refusingToUseHttpProxyˢ));
         }
     }
     if (proxy == nil) {

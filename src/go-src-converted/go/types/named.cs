@@ -645,6 +645,10 @@ internal static (nint, ж<Func>) lookupMethod(this ж<Named> Ꮡn, ж<Package> �
     return check.ctxt;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string namedExpandUnderlyingSˢ = "-- Named.expandUnderlying %s"u8;
+private static readonly @string sTparamsSUnderSˢ = "=> %s (tparams = %s, under = %s)"u8;
+
 // expandUnderlying substitutes type arguments in the underlying type n.orig,
 // returning the result. Returns Typ[Invalid] if there was an error.
 internal static ΔType expandUnderlying(this ж<Named> Ꮡn) => func((defer, recover) => {
@@ -652,12 +656,12 @@ internal static ΔType expandUnderlying(this ж<Named> Ꮡn) => func((defer, rec
 
     var check = n.check;
     if (check != nil && (~(~check).conf)._Trace) {
-        check.trace((~n.obj).pos, "-- Named.expandUnderlying %s"u8, Ꮡn);
+        check.trace((~n.obj).pos, namedExpandUnderlyingSˢ, Ꮡn);
         check.Value.indent++;
         var checkʗ1 = check;
         defer(() => {
             checkʗ1.Value.indent--;
-            checkʗ1.trace((~Ꮡn.Value.obj).pos, "=> %s (tparams = %s, under = %s)"u8, Ꮡn, Ꮡn.Value.tparams.list(), Ꮡn.Value.underlying);
+            checkʗ1.trace((~Ꮡn.Value.obj).pos, sTparamsSUnderSˢ, Ꮡn, Ꮡn.Value.tparams.list(), Ꮡn.Value.underlying);
         });
     }
     assert((~(~n.inst).orig).underlying != default!);

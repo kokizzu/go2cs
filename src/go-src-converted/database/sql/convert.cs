@@ -240,6 +240,10 @@ internal static error convertAssign(any dest, any src) {
     return convertAssignRows(dest, src, nil);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidContextToConvertˢ = "invalid context to convert cursor rows, missing parent *Rows"u8;
+private static readonly @string destinationNotAPointerˢ = "destination not a pointer"u8;
+
 // convertAssignRows copies to dest the value in src, converting it if possible.
 // An error is returned if the copy would result in loss of information.
 // dest should be a pointer type. If rows is passed in, the rows will
@@ -374,7 +378,7 @@ internal static error convertAssignRows(any dest, any src, ж<Rows> Ꮡrows) {
                 return errNilPtr;
             }
             if (Ꮡrows == nil) {
-                return errors.New("invalid context to convert cursor rows, missing parent *Rows"u8);
+                return errors.New(invalidContextToConvertˢ);
             }
             Ꮡrows.of(Rows.Ꮡclosemu).Lock();
             d.Value = new Rows(
@@ -449,7 +453,7 @@ internal static error convertAssignRows(any dest, any src, ж<Rows> Ꮡrows) {
     }
     var dpv = reflect.ValueOf(dest);
     if (dpv.Kind() != reflect.ΔPointer) {
-        return errors.New("destination not a pointer"u8);
+        return errors.New(destinationNotAPointerˢ);
     }
     if (dpv.IsNil()) {
         return errNilPtr;

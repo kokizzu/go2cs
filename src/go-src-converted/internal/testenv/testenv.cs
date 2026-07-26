@@ -40,18 +40,26 @@ partial class testenv_package {
 // environment might cause environment checks to behave erratically.
 internal static slice<@string> origEnv = os.Environ();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goBuilderNameˢ = "GO_BUILDER_NAME"u8;
+
 // Builder reports the name of the builder running this test
 // (for example, "linux-amd64" or "windows-386-gce").
 // If the test is not running on the build infrastructure,
 // Builder returns the empty string.
 public static @string Builder() {
-    return os.Getenv("GO_BUILDER_NAME"u8);
+    return os.Getenv(goBuilderNameˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goGcflagsˢ = "GO_GCFLAGS"u8;
+private static readonly @string toolˢ = "tool"u8;
+private static readonly @string compileˢ = "compile"u8;
 
 // HasGoBuild reports whether the current system can build programs with “go build”
 // and then run them with os.StartProcess or exec.Command.
 public static bool HasGoBuild() {
-    if (os.Getenv("GO_GCFLAGS"u8) != ""u8) {
+    if (os.Getenv(goGcflagsˢ) != ""u8) {
         // It's too much work to require every caller of the go command
         // to pass along "-gcflags="+os.Getenv("GO_GCFLAGS").
         // For now, if $GO_GCFLAGS is set, report that we simply can't
@@ -64,7 +72,7 @@ public static bool HasGoBuild() {
         // also confirms that cmd/go can find the compiler. (Before CL 472096,
         // we sometimes ended up with cmd/go installed in the test environment
         // without a cmd/compile it could use to actually build things.)
-        var cmd = exec.Command("go"u8, "tool"u8, "-n", "compile");
+        var cmd = exec.Command("go"u8, toolˢ, "-n", compileˢ);
         cmd.Value.Env = origEnv;
         var (@out, err) = cmd.Output();
         if (err != default!) {
@@ -119,7 +127,7 @@ internal static error goBuildErr;
 // and then run them with os.StartProcess or exec.Command.
 // If not, MustHaveGoBuild calls t.Skip with an explanation.
 public static void MustHaveGoBuild(testing.TB t) {
-    if (os.Getenv("GO_GCFLAGS"u8) != ""u8) {
+    if (os.Getenv(goGcflagsˢ) != ""u8) {
         t.Helper();
         t.Skipf("skipping test: 'go build' not compatible with setting $GO_GCFLAGS"u8);
     }
@@ -187,6 +195,9 @@ internal static ref sync.Once gorootOnce => ref ᏑgorootOnce.Value;
 internal static @string gorootPath;
 internal static error gorootErr;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goModˢ = "go.mod"u8;
+
 internal static (@string, error) findGOROOT() {
     ᏑgorootOnce.Do(() => {
         gorootPath = Δruntime.GOROOT();
@@ -229,7 +240,7 @@ internal static (@string, error) findGOROOT() {
                 }
             }
             // dir cannot be GOROOT/src if it doesn't end in "src".
-            var (b, errΔ1) = os.ReadFile(filepath.Join(dir, "go.mod"));
+            var (b, errΔ1) = os.ReadFile(filepath.Join(dir, goModˢ));
             if (errΔ1 != default!) {
                 if (os.IsNotExist(errΔ1)) {
                     dir = parent;
@@ -273,10 +284,13 @@ public static @string GOROOT(testing.TB t) {
     return path;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string platformCannotRunGoToolˢ = "platform cannot run go tool"u8;
+
 // GoTool reports the path to the Go tool.
 public static (@string, error) GoTool() {
     if (!HasGoBuild()) {
-        return ("", errors.New("platform cannot run go tool"u8));
+        return ("", errors.New(platformCannotRunGoToolˢ));
     }
     ᏑgoToolOnce.Do(() => {
         (goToolPath, goToolErr) = exec.LookPath("go"u8);
@@ -319,6 +333,9 @@ public static void MustHaveExternalNetwork(testing.TB t) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cgoEnabledˢ = "CGO_ENABLED"u8;
+
 // HasCGO reports whether the current system can use cgo.
 public static bool HasCGO() {
     ᏑhasCgoOnce.Do(() => {
@@ -326,7 +343,7 @@ public static bool HasCGO() {
         if (err != default!) {
             return;
         }
-        var cmd = exec.Command(goTool, "env"u8, "CGO_ENABLED");
+        var cmd = exec.Command(goTool, "env"u8, cgoEnabledˢ);
         cmd.Value.Env = origEnv;
         (var @out, err) = cmd.Output();
         if (err != default!) {
@@ -427,11 +444,15 @@ public static void SkipFlaky(testing.TB t, nint issue) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goBuilderFlakyNetˢ = "GO_BUILDER_FLAKY_NET"u8;
+private static readonly object skippingTestOnBuilderˢ = (@string)"skipping test on builder known to have frequent network failures"u8;
+
 public static void SkipFlakyNet(testing.TB t) {
     t.Helper();
     {
-        var (v, _) = strconv.ParseBool(os.Getenv("GO_BUILDER_FLAKY_NET"u8)); if (v) {
-            t.Skip((@string)"skipping test on builder known to have frequent network failures"u8);
+        var (v, _) = strconv.ParseBool(os.Getenv(goBuilderFlakyNetˢ)); if (v) {
+            t.Skip(skippingTestOnBuilderˢ);
         }
     }
 }
@@ -457,13 +478,23 @@ public static void SkipIfShortAndSlow(testing.TB t) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object skippingTestWithˢ = (@string)"skipping test with optimization disabled"u8;
+
 // SkipIfOptimizationOff skips t if optimization is disabled.
 public static void SkipIfOptimizationOff(testing.TB t) {
     if (OptimizationOff()) {
         t.Helper();
-        t.Skip((@string)"skipping test with optimization disabled"u8);
+        t.Skip(skippingTestWithˢ);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string importConfigˢ = "# import config\n"u8;
+private static readonly @string listˢ = "list"u8;
+private static readonly @string exportˢ = "-export"u8;
+private static readonly @string depsˢ = "-deps"u8;
+private static readonly @string ifNeImportPathCommandˢ = @"{{if ne .ImportPath ""command-line-arguments""}}{{if .Export}}{{.ImportPath}}={{.Export}}{{end}}{{end}}"u8;
 
 // WriteImportcfg writes an importcfg file used by the compiler or linker to
 // dstPath containing entries for the file mappings in packageFiles, as well
@@ -476,13 +507,13 @@ public static void WriteImportcfg(testing.TB t, @string dstPath, map<@string, @s
 
     t.Helper();
     var icfg = @new<bytes.Buffer>();
-    icfg.WriteString("# import config\n"u8);
+    icfg.WriteString(importConfigˢ);
     foreach (var (k, v) in packageFiles) {
         fmt.Fprintf(new bytes_BufferжWriter(icfg), "packagefile %s=%s\n"u8, k, v);
     }
     if (len(pkgs) > 0) {
         // Use 'go list' to resolve any missing packages and rewrite the import map.
-        var cmd = Command(t, GoToolPath(t), "list"u8, "-export", "-deps", "-f", @"{{if ne .ImportPath ""command-line-arguments""}}{{if .Export}}{{.ImportPath}}={{.Export}}{{end}}{{end}}");
+        var cmd = Command(t, GoToolPath(t), listˢ, exportˢ, depsˢ, "-f", ifNeImportPathCommandˢ);
         cmd.Value.Args = append((~cmd).Args, pkgs.ꓸꓸꓸ);
         cmd.Value.Stderr = new strings_BuilderжWriter(@new<strings.Builder>());
         var (@out, err) = cmd.Output();

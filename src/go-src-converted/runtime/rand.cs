@@ -35,12 +35,15 @@ internal static ref globalRandᴛ1 globalRand => ref ᏑglobalRand.Value;
 
 internal static bool readRandomFailed;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string randinitTwiceˢ = "randinit twice"u8;
+
 // randinit initializes the global random state.
 // It must be called before any use of grand.
 internal static void randinit() {
     @lock(ᏑglobalRand.of(globalRandᴛ1.Ꮡlock));
     if (globalRand.init) {
-        fatal("randinit twice"u8);
+        fatal(randinitTwiceˢ);
     }
     var seed = ᏑglobalRand.of(globalRandᴛ1.Ꮡseed);
     if (startupRand != default!){
@@ -90,11 +93,14 @@ internal static void readTimeRandom(slice<byte> r) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string randinitMissedˢ = "randinit missed"u8;
+
 // bootstrapRand returns a random uint64 from the global random generator.
 internal static uint64 bootstrapRand() {
     @lock(ᏑglobalRand.of(globalRandᴛ1.Ꮡlock));
     if (!globalRand.init) {
-        fatal("randinit missed"u8);
+        fatal(randinitMissedˢ);
     }
     while (ᐧ) {
         {
@@ -112,7 +118,7 @@ internal static uint64 bootstrapRand() {
 internal static void bootstrapRandReseed() {
     @lock(ᏑglobalRand.of(globalRandᴛ1.Ꮡlock));
     if (!globalRand.init) {
-        fatal("randinit missed"u8);
+        fatal(randinitMissedˢ);
     }
     ᏑglobalRand.of(globalRandᴛ1.Ꮡstate).Reseed();
     unlock(ᏑglobalRand.of(globalRandᴛ1.Ꮡlock));

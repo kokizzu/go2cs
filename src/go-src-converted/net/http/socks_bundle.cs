@@ -20,6 +20,13 @@ partial class http_package {
 internal static time.Time socksnoDeadline = new time.Time(nil);
 internal static time.Time socksaLongTimeAgo = time.Unix(1, 0);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tooManyAuthenticationˢ = "too many authentication methods"u8;
+private static readonly @string noAcceptableˢ = "no acceptable authentication methods"u8;
+private static readonly @string unknownAddressTypeˢ = "unknown address type"u8;
+private static readonly @string fqdnTooLongˢ = "FQDN too long"u8;
+private static readonly @string nonZeroReservedFieldˢ = "non-zero reserved field"u8;
+
 internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, context.Context ctx, net.Conn c, @string address) => func<(netꓸAddr, error ctxErr)>((defer, recover) => {
     error ctxErr = default!;
 
@@ -70,7 +77,7 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
     } else {
         var ams = d.AuthMethods;
         if (builtin.len(ams) > 255) {
-            return (default!, errors.New("too many authentication methods"u8));
+            return (default!, errors.New(tooManyAuthenticationˢ));
         }
         b = append(b, (byte)builtin.len(ams));
         foreach (var (_, amΔ1) in ams) {
@@ -92,7 +99,7 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
     }
     socksAuthMethod am = ((socksAuthMethod)(nint)b[1]);
     if (am == socksAuthMethodNoAcceptableMethods) {
-        return (default!, errors.New("no acceptable authentication methods"u8));
+        return (default!, errors.New(noAcceptableˢ));
     }
     if (d.Authenticate != default!) {
         {
@@ -115,13 +122,13 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
                         b = append(b, (byte)(socksAddrTypeIPv6));
                         b = append(b, ip6.ꓸꓸꓸ);
                     } else {
-                        return (default!, errors.New("unknown address type"u8));
+                        return (default!, errors.New(unknownAddressTypeˢ));
                     }
                 }
             }
         } else {
             if (builtin.len(host) > 255) {
-                return (default!, errors.New("FQDN too long"u8));
+                return (default!, errors.New(fqdnTooLongˢ));
             }
             b = append(b, (byte)(socksAddrTypeFQDN));
             b = append(b, (byte)builtin.len(host));
@@ -148,7 +155,7 @@ internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, co
         }
     }
     if (b[2] != 0) {
-        return (default!, errors.New("non-zero reserved field"u8));
+        return (default!, errors.New(nonZeroReservedFieldˢ));
     }
     nint l = 2;
     ref var a = ref heap(new socksAddr(), out var Ꮡa);
@@ -209,13 +216,17 @@ internal static (@string, nint, error) sockssplitHostPort(@string address) {
 
 [GoType("num:nint")] partial struct socksCommand;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string socksConnectˢ = "socks connect"u8;
+private static readonly @string socksBindˢ = "socks bind"u8;
+
 internal static @string String(this socksCommand cmd) {
     var exprᴛ1 = cmd;
     if (exprᴛ1 == socksCmdConnect) {
-        return "socks connect"u8;
+        return socksConnectˢ;
     }
     if (exprᴛ1 == sockscmdBind) {
-        return "socks bind"u8;
+        return socksBindˢ;
     }
     { /* default: */
         return "socks "u8 + strconv.Itoa((nint)cmd);
@@ -227,34 +238,45 @@ internal static @string String(this socksCommand cmd) {
 
 [GoType("num:nint")] partial struct socksReply;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string succeededˢ = "succeeded"u8;
+private static readonly @string generalSocksServerˢ = "general SOCKS server failure"u8;
+private static readonly @string connectionNotAllowedByˢ = "connection not allowed by ruleset"u8;
+private static readonly @string networkUnreachableˢ = "network unreachable"u8;
+private static readonly @string hostUnreachableˢ = "host unreachable"u8;
+private static readonly @string connectionRefusedˢ = "connection refused"u8;
+private static readonly @string ttlExpiredˢ = "TTL expired"u8;
+private static readonly @string commandNotSupportedˢ = "command not supported"u8;
+private static readonly @string addressTypeNotSupportedˢ = "address type not supported"u8;
+
 internal static @string String(this socksReply code) {
     var exprᴛ1 = code;
     if (exprᴛ1 == socksStatusSucceeded) {
-        return "succeeded"u8;
+        return succeededˢ;
     }
     if (exprᴛ1 == (socksReply)(0x01)) {
-        return "general SOCKS server failure"u8;
+        return generalSocksServerˢ;
     }
     if (exprᴛ1 == (socksReply)(0x02)) {
-        return "connection not allowed by ruleset"u8;
+        return connectionNotAllowedByˢ;
     }
     if (exprᴛ1 == (socksReply)(0x03)) {
-        return "network unreachable"u8;
+        return networkUnreachableˢ;
     }
     if (exprᴛ1 == (socksReply)(0x04)) {
-        return "host unreachable"u8;
+        return hostUnreachableˢ;
     }
     if (exprᴛ1 == (socksReply)(0x05)) {
-        return "connection refused"u8;
+        return connectionRefusedˢ;
     }
     if (exprᴛ1 == (socksReply)(0x06)) {
-        return "TTL expired"u8;
+        return ttlExpiredˢ;
     }
     if (exprᴛ1 == (socksReply)(0x07)) {
-        return "command not supported"u8;
+        return commandNotSupportedˢ;
     }
     if (exprᴛ1 == (socksReply)(0x08)) {
-        return "address type not supported"u8;
+        return addressTypeNotSupportedˢ;
     }
     { /* default: */
         return "unknown code: "u8 + strconv.Itoa((nint)code);
@@ -291,8 +313,11 @@ internal static readonly socksReply socksStatusSucceeded = 0x00;
     public nint Port;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string socksˢ = "socks"u8;
+
 [GoRecv] internal static @string Network(this ref socksAddr a) {
-    return "socks"u8;
+    return socksˢ;
 }
 
 internal static @string String(this ж<socksAddr> Ꮡa) {
@@ -343,6 +368,9 @@ internal static netꓸAddr BoundAddr(this ж<socksConn> Ꮡc) {
     public Func<context.Context, io.ReadWriter, socksAuthMethod, error> Authenticate;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilContextˢ = "nil context"u8;
+
 // DialContext connects to the provided address on the provided
 // network.
 //
@@ -364,7 +392,7 @@ internal static (net.Conn, error) DialContext(this ж<socksDialer> Ꮡd, context
     }
     if (ctx == default!) {
         var (proxy, dst, _) = d.pathAddrs(address);
-        return (default!, new net.OpErrorжerror(Ꮡ(new net.OpError(Op: d.cmd.String(), Net: network, Source: proxy, Addr: dst, Err: errors.New("nil context"u8)))));
+        return (default!, new net.OpErrorжerror(Ꮡ(new net.OpError(Op: d.cmd.String(), Net: network, Source: proxy, Addr: dst, Err: errors.New(nilContextˢ)))));
     }
     error err = default!;
     net.Conn c = default!;
@@ -404,7 +432,7 @@ internal static (netꓸAddr, error) DialWithConn(this ж<socksDialer> Ꮡd, cont
     }
     if (ctx == default!) {
         var (proxy, dst, _) = d.pathAddrs(address);
-        return (default!, new net.OpErrorжerror(Ꮡ(new net.OpError(Op: d.cmd.String(), Net: network, Source: proxy, Addr: dst, Err: errors.New("nil context"u8)))));
+        return (default!, new net.OpErrorжerror(Ꮡ(new net.OpError(Op: d.cmd.String(), Net: network, Source: proxy, Addr: dst, Err: errors.New(nilContextˢ)))));
     }
     var (a, err) = Ꮡd.connect(ctx, c, address);
     if (err != default!) {
@@ -449,19 +477,23 @@ internal static (net.Conn, error) Dial(this ж<socksDialer> Ꮡd, @string networ
     return (c, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string networkNotImplementedˢ = "network not implemented"u8;
+private static readonly @string commandNotImplementedˢ = "command not implemented"u8;
+
 [GoRecv] internal static error validateTarget(this ref socksDialer d, @string network, @string address) {
     var exprᴛ1 = network;
     if (exprᴛ1 == "tcp"u8 || exprᴛ1 == "tcp6"u8 || exprᴛ1 == "tcp4"u8) {
     }
     else { /* default: */
-        return errors.New("network not implemented"u8);
+        return errors.New(networkNotImplementedˢ);
     }
 
     var exprᴛ2 = d.cmd;
     if (exprᴛ2 == socksCmdConnect || exprᴛ2 == sockscmdBind) {
     }
     else { /* default: */
-        return errors.New("command not implemented"u8);
+        return errors.New(commandNotImplementedˢ);
     }
 
     return default!;
@@ -508,6 +540,11 @@ internal static readonly UntypedInt socksauthStatusSucceeded = 0x00;
     public @string Password;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidUsernamePasswordˢ = "invalid username/password"u8;
+private static readonly @string invalidUsernamePasswordˢ2 = "invalid username/password version"u8;
+private static readonly @string usernamePasswordˢ = "username/password authentication failed"u8;
+
 // Authenticate authenticates a pair of username and password with the
 // proxy server.
 [GoRecv] internal static error Authenticate(this ref socksUsernamePassword up, context.Context ctx, io.ReadWriter rw, socksAuthMethod auth) {
@@ -517,7 +554,7 @@ internal static readonly UntypedInt socksauthStatusSucceeded = 0x00;
     }
     if (exprᴛ1 == socksAuthMethodUsernamePassword) {
         if (builtin.len(up.Username) == 0 || builtin.len(up.Username) > 255 || builtin.len(up.Password) > 255) {
-            return errors.New("invalid username/password"u8);
+            return errors.New(invalidUsernamePasswordˢ);
         }
         var b = new byte[]{socksauthUsernamePasswordVersion}.slice();
         b = append(b, (byte)builtin.len(up.Username));
@@ -537,10 +574,10 @@ internal static readonly UntypedInt socksauthStatusSucceeded = 0x00;
             }
         }
         if (b[0] != socksauthUsernamePasswordVersion) {
-            return errors.New("invalid username/password version"u8);
+            return errors.New(invalidUsernamePasswordˢ2);
         }
         if (b[1] != socksauthStatusSucceeded) {
-            return errors.New("username/password authentication failed"u8);
+            return errors.New(usernamePasswordˢ);
         }
         return default!;
     }

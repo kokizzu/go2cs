@@ -11,6 +11,9 @@ using @internal.syscall;
 
 partial class net_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getadaptersaddressesˢ = "getadaptersaddresses"u8;
+
 // adapterAddresses returns a list of IP adapter and address
 // structures. The structure contains an IP adapter and flattened
 // multiple IP addresses including unicast, anycast and multicast
@@ -31,10 +34,10 @@ internal static (slice<ж<windows.IpAdapterAddresses>>, error) adapterAddresses(
             break;
         }
         if (err._<syscall.Errno>() != syscall.ERROR_BUFFER_OVERFLOW) {
-            return (default!, os.NewSyscallError("getadaptersaddresses"u8, err));
+            return (default!, os.NewSyscallError(getadaptersaddressesˢ, err));
         }
         if (l <= (uint32)len(b)) {
-            return (default!, os.NewSyscallError("getadaptersaddresses"u8, err));
+            return (default!, os.NewSyscallError(getadaptersaddressesˢ, err));
         }
     }
     slice<ж<windows.IpAdapterAddresses>> aas = default!;
@@ -105,6 +108,9 @@ internal static (slice<Interface>, error) interfaceTable(nint ifindex) {
     return (ift, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sockaddrˢ = "sockaddr"u8;
+
 // If the ifi is nil, interfaceAddrTable returns addresses for all
 // network interfaces. Otherwise it returns addresses for a specific
 // interface.
@@ -126,7 +132,7 @@ internal static (slice<ΔAddr>, error) interfaceAddrTable(ж<Interface> Ꮡifi) 
             for (var puni = aa.Value.FirstUnicastAddress; puni != nil; puni = puni.Value.Next) {
                 var (sa, errΔ1) = (~puni).Address.Sockaddr.Sockaddr();
                 if (errΔ1 != default!) {
-                    return (default!, os.NewSyscallError("sockaddr"u8, errΔ1));
+                    return (default!, os.NewSyscallError(sockaddrˢ, errΔ1));
                 }
                 switch (sa.type()) {
                 case ж<syscall.SockaddrInet4> saΔ1: {
@@ -143,7 +149,7 @@ internal static (slice<ΔAddr>, error) interfaceAddrTable(ж<Interface> Ꮡifi) 
             for (var pany = aa.Value.FirstAnycastAddress; pany != nil; pany = pany.Value.Next) {
                 var (sa, errΔ2) = (~pany).Address.Sockaddr.Sockaddr();
                 if (errΔ2 != default!) {
-                    return (default!, os.NewSyscallError("sockaddr"u8, errΔ2));
+                    return (default!, os.NewSyscallError(sockaddrˢ, errΔ2));
                 }
                 switch (sa.type()) {
                 case ж<syscall.SockaddrInet4> saΔ1: {
@@ -182,7 +188,7 @@ internal static (slice<ΔAddr>, error) interfaceMulticastAddrTable(ж<Interface>
             for (var pmul = aa.Value.FirstMulticastAddress; pmul != nil; pmul = pmul.Value.Next) {
                 var (sa, errΔ1) = (~pmul).Address.Sockaddr.Sockaddr();
                 if (errΔ1 != default!) {
-                    return (default!, os.NewSyscallError("sockaddr"u8, errΔ1));
+                    return (default!, os.NewSyscallError(sockaddrˢ, errΔ1));
                 }
                 switch (sa.type()) {
                 case ж<syscall.SockaddrInet4> saΔ1: {

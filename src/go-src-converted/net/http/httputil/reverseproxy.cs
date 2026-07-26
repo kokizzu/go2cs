@@ -58,6 +58,12 @@ partial class httputil_package {
     r.Out.Value.Host = ""u8;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string xForwardedForˢ = "X-Forwarded-For"u8;
+private static readonly @string xForwardedHostˢ = "X-Forwarded-Host"u8;
+private static readonly @string xForwardedProtoˢ = "X-Forwarded-Proto"u8;
+private static readonly @string httpsˢ2 = "https"u8;
+
 // SetXForwarded sets the X-Forwarded-For, X-Forwarded-Host, and
 // X-Forwarded-Proto headers of the outbound request.
 //
@@ -80,19 +86,19 @@ partial class httputil_package {
 [GoRecv] public static void SetXForwarded(this ref ProxyRequest r) {
     var (clientIP, _, err) = net.SplitHostPort((~r.In).RemoteAddr);
     if (err == default!){
-        var prior = (~r.Out).Header["X-Forwarded-For"u8];
+        var prior = (~r.Out).Header[xForwardedForˢ];
         if (len(prior) > 0) {
             clientIP = strings.Join(prior, ", "u8) + ", "u8 + clientIP;
         }
-        (~r.Out).Header.Set("X-Forwarded-For"u8, clientIP);
+        (~r.Out).Header.Set(xForwardedForˢ, clientIP);
     } else {
-        (~r.Out).Header.Del("X-Forwarded-For"u8);
+        (~r.Out).Header.Del(xForwardedForˢ);
     }
-    (~r.Out).Header.Set("X-Forwarded-Host"u8, (~r.In).Host);
+    (~r.Out).Header.Set(xForwardedHostˢ, (~r.In).Host);
     if ((~r.In).TLS == nil){
-        (~r.Out).Header.Set("X-Forwarded-Proto"u8, "http"u8);
+        (~r.Out).Header.Set(xForwardedProtoˢ, httpˢ);
     } else {
-        (~r.Out).Header.Set("X-Forwarded-Proto"u8, "https"u8);
+        (~r.Out).Header.Set(xForwardedProtoˢ, httpsˢ2);
     }
 }
 
@@ -300,15 +306,15 @@ internal static void copyHeader(httpꓸHeader dst, httpꓸHeader src) {
 // obsoleted RFC 2616 (section 13.5.1) and are used for backward
 // compatibility.
 internal static slice<@string> hopHeaders = new @string[]{
-    "Connection",
-    "Proxy-Connection",
-    "Keep-Alive",
-    "Proxy-Authenticate",
-    "Proxy-Authorization",
-    "Te",
-    "Trailer",
-    "Transfer-Encoding",
-    "Upgrade"
+    "Connection"u8,
+    "Proxy-Connection"u8,
+    "Keep-Alive"u8,
+    "Proxy-Authenticate"u8,
+    "Proxy-Authorization"u8,
+    "Te"u8,
+    "Trailer"u8,
+    "Transfer-Encoding"u8,
+    "Upgrade"u8
 }.slice();
 
 [GoRecv] internal static void defaultErrorHandler(this ref ReverseProxy p, http.ResponseWriter rw, ж<http.Request> Ꮡreq, error err) {
@@ -343,6 +349,15 @@ internal static bool modifyResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWri
     }
     return true;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string reverseProxyMustHaveˢ = "ReverseProxy must have exactly one of Director or Rewrite set"u8;
+private static readonly @string trailersˢ = "trailers"u8;
+private static readonly @string connectionˢ = "Connection"u8;
+private static readonly @string upgradeˢ = "Upgrade"u8;
+private static readonly @string forwardedˢ = "Forwarded"u8;
+private static readonly @string userAgentˢ = "User-Agent"u8;
+private static readonly @string trailerˢ = "Trailer"u8;
 
 public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw, ж<http.Request> Ꮡreq) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -409,7 +424,7 @@ public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw,
     }
     // Issue 33142: historical behavior was to always allocate
     if ((p.Director != default!) == (p.Rewrite != default!)) {
-        Ꮡp.getErrorHandler()(rw, Ꮡreq, errors.New("ReverseProxy must have exactly one of Director or Rewrite set"u8));
+        Ꮡp.getErrorHandler()(rw, Ꮡreq, errors.New(reverseProxyMustHaveˢ));
         return;
     }
     if (p.Director != default!) {
@@ -430,23 +445,23 @@ public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw,
     // advertise that unless the incoming client request thought it was worth
     // mentioning.) Note that we look at req.Header, not outreq.Header, since
     // the latter has passed through removeHopByHopHeaders.
-    if (httpguts.HeaderValuesContainsToken(req.Header["Te"u8], "trailers"u8)) {
-        (~outreq).Header.Set("Te"u8, "trailers"u8);
+    if (httpguts.HeaderValuesContainsToken(req.Header["Te"u8], trailersˢ)) {
+        (~outreq).Header.Set("Te"u8, trailersˢ);
     }
     // After stripping all the hop-by-hop connection headers above, add back any
     // necessary for protocol upgrades, such as for websockets.
     if (reqUpType != ""u8) {
-        (~outreq).Header.Set("Connection"u8, "Upgrade"u8);
-        (~outreq).Header.Set("Upgrade"u8, reqUpType);
+        (~outreq).Header.Set(connectionˢ, upgradeˢ);
+        (~outreq).Header.Set(upgradeˢ, reqUpType);
     }
     if (p.Rewrite != default!){
         // Strip client-provided forwarding headers.
         // The Rewrite func may use SetXForwarded to set new values
         // for these or copy the previous values from the inbound request.
-        (~outreq).Header.Del("Forwarded"u8);
-        (~outreq).Header.Del("X-Forwarded-For"u8);
-        (~outreq).Header.Del("X-Forwarded-Host"u8);
-        (~outreq).Header.Del("X-Forwarded-Proto"u8);
+        (~outreq).Header.Del(forwardedˢ);
+        (~outreq).Header.Del(xForwardedForˢ);
+        (~outreq).Header.Del(xForwardedHostˢ);
+        (~outreq).Header.Del(xForwardedProtoˢ);
         // Remove unparsable query parameters from the outbound request.
         outreq.Value.URL.Value.RawQuery = cleanQueryParams((~(~outreq).URL).RawQuery);
         var pr = Ꮡ(new ProxyRequest(
@@ -461,23 +476,23 @@ public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw,
                 // If we aren't the first proxy retain prior
                 // X-Forwarded-For information as a comma+space
                 // separated list and fold multiple headers into one.
-                var (prior, ok) = (~outreq).Header["X-Forwarded-For"u8, ꟷ];
+                var (prior, ok) = (~outreq).Header[xForwardedForˢ, ꟷ];
                 var omit = ok && prior == default!;
                 // Issue 38079: nil now means don't populate the header
                 if (len(prior) > 0) {
                     clientIP = strings.Join(prior, ", "u8) + ", "u8 + clientIP;
                 }
                 if (!omit) {
-                    (~outreq).Header.Set("X-Forwarded-For"u8, clientIP);
+                    (~outreq).Header.Set(xForwardedForˢ, clientIP);
                 }
             }
         }
     }
     {
-        var (_, ok) = (~outreq).Header["User-Agent"u8, ꟷ]; if (!ok) {
+        var (_, ok) = (~outreq).Header[userAgentˢ, ꟷ]; if (!ok) {
             // If the outbound request doesn't have a User-Agent header set,
             // don't send the default Go HTTP client User-Agent.
-            (~outreq).Header.Set("User-Agent"u8, ""u8);
+            (~outreq).Header.Set(userAgentˢ, ""u8);
         }
     }
     ref var roundTripMutex = ref heap(new sync.Mutex(), out var ᏑroundTripMutex);
@@ -529,7 +544,7 @@ public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw,
         foreach (var (k, _) in (~res).Trailer) {
             trailerKeys = append(trailerKeys, k);
         }
-        rw.Header().Add("Trailer"u8, strings.Join(trailerKeys, ", "u8));
+        rw.Header().Add(trailerˢ, strings.Join(trailerKeys, ", "u8));
     }
     rw.WriteHeader((~res).StatusCode);
     err = Ꮡp.copyResponse(rw, (~res).Body, p.flushInterval(res));
@@ -594,7 +609,7 @@ internal static bool shouldPanicOnCopyError(ж<http.Request> Ꮡreq) {
 // removeHopByHopHeaders removes hop-by-hop headers.
 internal static void removeHopByHopHeaders(httpꓸHeader h) {
     // RFC 7230, section 6.1: Remove headers listed in the "Connection" header.
-    foreach (var (_, f) in h["Connection"u8]) {
+    foreach (var (_, f) in h[connectionˢ]) {
         foreach (var (_, vᴛ1) in strings.Split(f, ","u8)) {
             var sf = vᴛ1;
 
@@ -613,12 +628,15 @@ internal static void removeHopByHopHeaders(httpꓸHeader h) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string contentTypeˢ = "Content-Type"u8;
+
 // flushInterval returns the p.FlushInterval value, conditionally
 // overriding its value for a specific request/response.
 [GoRecv] internal static time.Duration flushInterval(this ref ReverseProxy p, ж<http.Response> Ꮡres) {
     ref var res = ref Ꮡres.Value;
 
-    @string resCT = res.Header.Get("Content-Type"u8);
+    @string resCT = res.Header.Get(contentTypeˢ);
     // For Server-Sent Events responses, flush immediately.
     // The MIME type is defined in https://www.w3.org/TR/eventsource/#text-event-stream
     {
@@ -763,10 +781,10 @@ internal static void stop(this ж<maxLatencyWriter> Ꮡm) => func((defer, recove
 });
 
 internal static @string upgradeType(httpꓸHeader h) {
-    if (!httpguts.HeaderValuesContainsToken(h["Connection"u8], "Upgrade"u8)) {
+    if (!httpguts.HeaderValuesContainsToken(h[connectionˢ], upgradeˢ)) {
         return ""u8;
     }
-    return h.Get("Upgrade"u8);
+    return h.Get(upgradeˢ);
 }
 
 internal static void handleUpgradeResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw, ж<http.Request> Ꮡreq, ж<http.Response> Ꮡres) => func((defer, recover) => {

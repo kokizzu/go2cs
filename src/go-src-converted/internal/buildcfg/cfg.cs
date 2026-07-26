@@ -66,9 +66,12 @@ internal static @string envOr(@string key, @string value) {
     return value;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goamd64ˢ = "GOAMD64"u8;
+
 internal static nint goamd64() {
     {
-        @string v = envOr("GOAMD64"u8, defaultGOAMD64);
+        @string v = envOr(goamd64ˢ, defaultGOAMD64);
         var exprᴛ1 = v;
         if (exprᴛ1 == "v1"u8) {
             return 1;
@@ -103,6 +106,9 @@ public static @string String(this goarmFeatures g) {
     return armStr;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goarmˢ = "GOARM"u8;
+
 internal static goarmFeatures /*g*/ goarm() {
     goarmFeatures g = default!;
 
@@ -113,7 +119,7 @@ internal static goarmFeatures /*g*/ goarm() {
         // Android arm devices always support GOARM=7.
         def = "7"u8;
     }
-    @string v = envOr("GOARM"u8, def);
+    @string v = envOr(goarmˢ, def);
     var floatSpecified = false;
     if (strings.HasSuffix(v, softFloatOpt)) {
         g.SoftFloat = true;
@@ -209,10 +215,13 @@ public static (Goarm64Features g, error e) ParseGoarm64(@string v) {
     return (g, e);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goarm64ˢ = "GOARM64"u8;
+
 internal static Goarm64Features /*g*/ goarm64() {
     Goarm64Features g = default!;
 
-    (g, Error) = ParseGoarm64(envOr("GOARM64"u8, defaultGOARM64));
+    (g, Error) = ParseGoarm64(envOr(goarm64ˢ, defaultGOARM64));
     return g;
 }
 
@@ -242,9 +251,12 @@ public static bool Supports(this Goarm64Features g, @string s) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gomipsˢ = "GOMIPS"u8;
+
 internal static @string gomips() {
     {
-        @string v = envOr("GOMIPS"u8, defaultGOMIPS);
+        @string v = envOr(gomipsˢ, defaultGOMIPS);
         var exprᴛ1 = v;
         if (exprᴛ1 == "hardfloat"u8 || exprᴛ1 == "softfloat"u8) {
             return v;
@@ -255,9 +267,12 @@ internal static @string gomips() {
     return defaultGOMIPS;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gomips64ˢ = "GOMIPS64"u8;
+
 internal static @string gomips64() {
     {
-        @string v = envOr("GOMIPS64"u8, defaultGOMIPS64);
+        @string v = envOr(gomips64ˢ, defaultGOMIPS64);
         var exprᴛ1 = v;
         if (exprᴛ1 == "hardfloat"u8 || exprᴛ1 == "softfloat"u8) {
             return v;
@@ -268,9 +283,12 @@ internal static @string gomips64() {
     return defaultGOMIPS64;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goppc64ˢ = "GOPPC64"u8;
+
 internal static nint goppc64() {
     {
-        @string v = envOr("GOPPC64"u8, defaultGOPPC64);
+        @string v = envOr(goppc64ˢ, defaultGOPPC64);
         var exprᴛ1 = v;
         if (exprᴛ1 == "power8"u8) {
             return 8;
@@ -287,9 +305,12 @@ internal static nint goppc64() {
     return (nint)(defaultGOPPC64[len("power")] - (rune)'0');
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goriscv64ˢ = "GORISCV64"u8;
+
 internal static nint goriscv64() {
     {
-        @string vΔ1 = envOr("GORISCV64"u8, defaultGORISCV64);
+        @string vΔ1 = envOr(goriscv64ˢ, defaultGORISCV64);
         var exprᴛ1 = vΔ1;
         if (exprᴛ1 == "rva20u64"u8) {
             return 20;
@@ -322,10 +343,13 @@ public static @string String(this gowasmFeatures f) {
     return strings.Join(flags, ","u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gowasmˢ = "GOWASM"u8;
+
 internal static gowasmFeatures /*f*/ gowasm() {
     gowasmFeatures f = default!;
 
-    foreach (var (_, opt) in strings.Split(envOr("GOWASM"u8, ""u8), ","u8)) {
+    foreach (var (_, opt) in strings.Split(envOr(gowasmˢ, ""u8), ","u8)) {
         var exprᴛ1 = opt;
         if (exprᴛ1 == "satconv"u8) {
             f.SatConv = true;
@@ -344,8 +368,11 @@ internal static gowasmFeatures /*f*/ gowasm() {
     return f;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goExtlinkEnabledˢ = "GO_EXTLINK_ENABLED"u8;
+
 public static @string Getgoextlinkenabled() {
-    return envOr("GO_EXTLINK_ENABLED"u8, defaultGO_EXTLINK_ENABLED);
+    return envOr(goExtlinkEnabledˢ, defaultGO_EXTLINK_ENABLED);
 }
 
 internal static slice<@string> toolTags() {
@@ -367,6 +394,9 @@ internal static slice<@string> experimentTags() {
     return list;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string go386ˢ = "GO386"u8;
+
 // GOGOARCH returns the name and value of the GO$GOARCH setting.
 // For example, if GOARCH is "amd64" it might return "GOAMD64", "v2".
 public static (@string name, @string value) GOGOARCH() {
@@ -375,28 +405,28 @@ public static (@string name, @string value) GOGOARCH() {
 
     var exprᴛ1 = GOARCH;
     if (exprᴛ1 == "386"u8) {
-        return ("GO386", GO386);
+        return (go386ˢ, GO386);
     }
     if (exprᴛ1 == "amd64"u8) {
-        return ("GOAMD64", fmt.Sprintf("v%d"u8, GOAMD64));
+        return (goamd64ˢ, fmt.Sprintf("v%d"u8, GOAMD64));
     }
     if (exprᴛ1 == "arm"u8) {
-        return ("GOARM", GOARM.String());
+        return (goarmˢ, GOARM.String());
     }
     if (exprᴛ1 == "arm64"u8) {
-        return ("GOARM64", GOARM64.String());
+        return (goarm64ˢ, GOARM64.String());
     }
     if (exprᴛ1 == "mips"u8 || exprᴛ1 == "mipsle"u8) {
-        return ("GOMIPS", GOMIPS);
+        return (gomipsˢ, GOMIPS);
     }
     if (exprᴛ1 == "mips64"u8 || exprᴛ1 == "mips64le"u8) {
-        return ("GOMIPS64", GOMIPS64);
+        return (gomips64ˢ, GOMIPS64);
     }
     if (exprᴛ1 == "ppc64"u8 || exprᴛ1 == "ppc64le"u8) {
-        return ("GOPPC64", fmt.Sprintf("power%d"u8, GOPPC64));
+        return (goppc64ˢ, fmt.Sprintf("power%d"u8, GOPPC64));
     }
     if (exprᴛ1 == "wasm"u8) {
-        return ("GOWASM", GOWASM.String());
+        return (gowasmˢ, GOWASM.String());
     }
 
     return ("", "");

@@ -123,6 +123,9 @@ internal static bool heapBitsInSpan(uintptr userSize) {
     return tp.fastForward(addr - tp.addr, addr + size);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string typePointersOfUncheckedˢ = "typePointersOfUnchecked consisting of non-base-address for object"u8;
+
 // typePointersOfUnchecked is like typePointersOf, but assumes addr is the base
 // of an allocation slot in a span (the start of the object if no header, the
 // header otherwise). It returns an iterator that generates all pointers
@@ -135,7 +138,7 @@ internal static bool heapBitsInSpan(uintptr userSize) {
     const bool doubleCheck = false;
     if (doubleCheck && span.objBase(addr) != addr) {
         print((@string)"runtime: addr="u8, addr, (@string)" base="u8, span.objBase(addr), (@string)"\n"u8);
-        @throw("typePointersOfUnchecked consisting of non-base-address for object"u8);
+        @throw(typePointersOfUncheckedˢ);
     }
     var spc = span.spanclass;
     if (spc.noscan()) {
@@ -162,6 +165,9 @@ internal static bool heapBitsInSpan(uintptr userSize) {
     return new typePointers(elem: addr, addr: addr, mask: readUintptr(gcdata), typ: typ);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badTypePassedToˢ = "bad type passed to typePointersOfType"u8;
+
 // typePointersOfType is like typePointersOf, but assumes addr points to one or more
 // contiguous instances of the provided type. The provided type must not be nil and
 // it must not have its type metadata encoded as a gcprog.
@@ -177,7 +183,7 @@ internal static bool heapBitsInSpan(uintptr userSize) {
 
     const bool doubleCheck = false;
     if (doubleCheck && (Ꮡtyp == nil || (abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0)) {
-        @throw("bad type passed to typePointersOfType"u8);
+        @throw(badTypePassedToˢ);
     }
     if (span.spanclass.noscan()) {
         return new typePointers(nil);
@@ -329,6 +335,9 @@ internal static typePointers fastForward(this typePointers tp, uintptr n, uintpt
     return span.@base() + span.objIndex(addr) * span.elemsize;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bulkBarrierPreWriteˢ = "bulkBarrierPreWrite: unaligned arguments"u8;
+
 // bulkBarrierPreWrite executes a write barrier
 // for every pointer slot in the memory range [src, src+size),
 // using pointer/scalar information from [dst, dst+size).
@@ -375,7 +384,7 @@ internal static void bulkBarrierPreWrite(uintptr dst, uintptr src, uintptr size,
     ref var typ = ref Ꮡtyp.DerefOrNil();
 
     if ((uintptr)(((uintptr)((uintptr)(dst | src) | size)) & (uintptr)(goarch.PtrSize - 1)) != 0) {
-        @throw("bulkBarrierPreWrite: unaligned arguments"u8);
+        @throw(bulkBarrierPreWriteˢ);
     }
     if (!writeBarrier.enabled) {
         return;
@@ -466,7 +475,7 @@ internal static void bulkBarrierPreWriteSrcOnly(uintptr dst, uintptr src, uintpt
     ref var typ = ref Ꮡtyp.DerefOrNil();
 
     if ((uintptr)(((uintptr)((uintptr)(dst | src) | size)) & (uintptr)(goarch.PtrSize - 1)) != 0) {
-        @throw("bulkBarrierPreWrite: unaligned arguments"u8);
+        @throw(bulkBarrierPreWriteˢ);
     }
     if (!writeBarrier.enabled) {
         return;
@@ -509,6 +518,10 @@ internal static void bulkBarrierPreWriteSrcOnly(uintptr dst, uintptr src, uintpt
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string heapBitsCalledForNoscanˢ = "heapBits called for noscan"u8;
+private static readonly @string heapBitsCalledForSpanˢ = "heapBits called for span class that should have a malloc header"u8;
+
 // heapBits returns the heap ptr/scalar bits stored at the end of the span for
 // small object spans and heap arena spans.
 //
@@ -527,10 +540,10 @@ internal static void bulkBarrierPreWriteSrcOnly(uintptr dst, uintptr src, uintpt
     const bool doubleCheck = false;
     if (doubleCheck && !span.isUserArenaChunk) {
         if (span.spanclass.noscan()) {
-            @throw("heapBits called for noscan"u8);
+            @throw(heapBitsCalledForNoscanˢ);
         }
         if (span.elemsize > minSizeForMallocHeader) {
-            @throw("heapBits called for span class that should have a malloc header"u8);
+            @throw(heapBitsCalledForSpanˢ);
         }
     }
     // Find the bitmap at the end of the span.
@@ -591,6 +604,9 @@ internal static slice<uintptr> heapBitsSlice(uintptr spanBase, uintptr spanSize)
     return read;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badPointerBitsWrittenForˢ = "bad pointer bits written for small object"u8;
+
 // writeHeapBitsSmall writes the heap bits for small objects whose ptr/scalar data is
 // stored as a bitmap at the end of the span.
 //
@@ -642,11 +658,15 @@ internal static slice<uintptr> heapBitsSlice(uintptr spanBase, uintptr spanSize)
             print((@string)"runtime: x="u8, ((Δhex)(uint64)x), (@string)" i="u8, i, (@string)" j="u8, j, (@string)" bits="u8, bits, (@string)"\n"u8);
             print((@string)"runtime: dataSize="u8, dataSize, (@string)" typ.Size_="u8, typ.Size_, (@string)" typ.PtrBytes="u8, typ.PtrBytes, (@string)"\n"u8);
             print((@string)"runtime: src0="u8, ((Δhex)(uint64)src0), (@string)" src="u8, ((Δhex)(uint64)src), (@string)" srcRead="u8, ((Δhex)(uint64)srcRead), (@string)"\n"u8);
-            @throw("bad pointer bits written for small object"u8);
+            @throw(badPointerBitsWrittenForˢ);
         }
     }
     return scanSize;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string triedToWriteHeapBitsButˢ = "tried to write heap bits, but no heap bits in span"u8;
+private static readonly @string gCProgForTypeThatIsnTˢ = "GCProg for type that isn't large"u8;
 
 // heapSetType records that the new allocation [x, x+size)
 // holds in [x, x+dataSize) one or more values of type typ.
@@ -674,7 +694,7 @@ internal static uintptr /*scanSize*/ heapSetType(uintptr x, uintptr dataSize, ж
     var gctyp = Ꮡtyp;
     if (Ꮡheader == nil){
         if (doubleCheck && (!heapBitsInSpan(dataSize) || !heapBitsInSpan(span.elemsize))) {
-            @throw("tried to write heap bits, but no heap bits in span"u8);
+            @throw(triedToWriteHeapBitsButˢ);
         }
         // Handle the case where we have no malloc header.
         scanSize = span.writeHeapBitsSmall(x, dataSize, Ꮡtyp);
@@ -684,7 +704,7 @@ internal static uintptr /*scanSize*/ heapSetType(uintptr x, uintptr dataSize, ж
             // a dummy _type value and the unrolled gcprog. The dummy _type will
             // refer to the bitmap, and the mspan will refer to the dummy _type.
             if (span.spanclass.sizeclass() != 0) {
-                @throw("GCProg for type that isn't large"u8);
+                @throw(gCProgForTypeThatIsnTˢ);
             }
             var spaceNeeded = alignUp(@unsafe.Sizeof(new _type()), goarch.PtrSize);
             var heapBitsOff = spaceNeeded;
@@ -740,6 +760,9 @@ internal static uintptr /*scanSize*/ heapSetType(uintptr x, uintptr dataSize, ж
     }
     return scanSize;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string heapSetTypePointerEntryˢ = "heapSetType: pointer entry not correct"u8;
 
 internal static void doubleCheckHeapPointers(uintptr x, uintptr dataSize, ж<_type> Ꮡtyp, ж<ж<_type>> Ꮡheader, ж<mspan> Ꮡspan) {
     ref var typ = ref Ꮡtyp.Value;
@@ -800,8 +823,11 @@ internal static void doubleCheckHeapPointers(uintptr x, uintptr dataSize, ж<_ty
         print((@string)"runtime: addr="u8, ((Δhex)(uint64)addr), (@string)"\n"u8);
         dumpTypePointers(tp);
     }
-    @throw("heapSetType: pointer entry not correct"u8);
+    @throw(heapSetTypePointerEntryˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string foundBadInteriorPointerˢ = "found bad interior pointer"u8;
 
 internal static void doubleCheckHeapPointersInterior(uintptr x, uintptr interior, uintptr size, uintptr dataSize, ж<_type> Ꮡtyp, ж<ж<_type>> Ꮡheader, ж<mspan> Ꮡspan) {
     ref var typ = ref Ꮡtyp.Value;
@@ -810,7 +836,7 @@ internal static void doubleCheckHeapPointersInterior(uintptr x, uintptr interior
     var bad = false;
     if (interior < x) {
         print((@string)"runtime: interior="u8, ((Δhex)(uint64)interior), (@string)" x="u8, ((Δhex)(uint64)x), (@string)"\n"u8);
-        @throw("found bad interior pointer"u8);
+        @throw(foundBadInteriorPointerˢ);
     }
     var off = interior - x;
     var tp = span.typePointersOf(interior, size);
@@ -880,8 +906,11 @@ internal static void doubleCheckHeapPointersInterior(uintptr x, uintptr interior
         }
     }
     println();
-    @throw("heapSetType: pointer entry not correct"u8);
+    @throw(heapSetTypePointerEntryˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mismatchBetweenˢ = "mismatch between typePointersOfType and typePointersOf"u8;
 
 //go:nosplit
 internal static void doubleCheckTypePointersOfType(ж<mspan> Ꮡs, ж<_type> Ꮡtyp, uintptr addr, uintptr size) {
@@ -930,7 +959,7 @@ internal static void doubleCheckTypePointersOfType(ж<mspan> Ꮡs, ж<_type> Ꮡ
                 break;
             }
         }
-        @throw("mismatch between typePointersOfType and typePointersOf"u8);
+        @throw(mismatchBetweenˢ);
     }
 }
 
@@ -1032,6 +1061,9 @@ internal static ж<byte> subtract1(ж<byte> Ꮡp) {
     s.allocCache = ~aCache;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sFreeindexSNelemsˢ = "s.freeindex > s.nelems"u8;
+
 // nextFreeIndex returns the index of the next free object in s at
 // or after s.freeindex.
 // There are hardware instructions that can be used to make this
@@ -1043,7 +1075,7 @@ internal static ж<byte> subtract1(ж<byte> Ꮡp) {
         return sfreeindex;
     }
     if (sfreeindex > snelems) {
-        @throw("s.freeindex > s.nelems"u8);
+        @throw(sFreeindexSNelemsˢ);
     }
     var aCache = s.allocCache;
     nint bitIndex = sys.TrailingZeros64(aCache);
@@ -1095,6 +1127,9 @@ internal static ж<byte> subtract1(ж<byte> Ꮡp) {
     return (uint8)(bytep.Value & mask) == 0;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badMagicDivisionˢ = "bad magic division"u8;
+
 // divideByElemSize returns n/s.elemsize.
 // n must be within [0, s.npages*_PageSize),
 // or may be exactly s.npages*_PageSize
@@ -1109,7 +1144,7 @@ internal static ж<byte> subtract1(ж<byte> Ꮡp) {
     var q = (uintptr)((((uint64)n * (uint64)s.divMul) >> (int)(32)));
     if (doubleCheck && q != n / s.elemsize) {
         println(n, (@string)"/"u8, s.elemsize, (@string)"should be"u8, n / s.elemsize, (@string)"but got"u8, q);
-        @throw("bad magic division"u8);
+        @throw(badMagicDivisionˢ);
     }
     return q;
 }
@@ -1162,13 +1197,16 @@ internal static void clearMarked(this markBits m) {
     atomic.And8(m.bytep, (uint8)(~m.mask));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string markBitsForSpanUnalignedˢ = "markBitsForSpan: unaligned start"u8;
+
 // markBitsForSpan returns the markBits for the span base address base.
 internal static markBits /*mbits*/ markBitsForSpan(uintptr @base) {
     markBits mbits = default!;
 
     mbits = markBitsForAddr(@base);
     if (mbits.mask != 1) {
-        @throw("markBitsForSpan: unaligned start"u8);
+        @throw(markBitsForSpanUnalignedˢ);
     }
     return mbits;
 }
@@ -1187,6 +1225,10 @@ internal static markBits /*mbits*/ markBitsForSpan(uintptr @base) {
 // clobberdeadPtr is a special value that is used by the compiler to
 // clobber dead stack slots, when -clobberdead flag is set.
 internal static readonly uintptr clobberdeadPtr = /* uintptr(0xdeaddead | 0xdeaddead<<((^uintptr(0)>>63)*32)) */ unchecked((uintptr)16045725885737590445);
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string objectˢ = "object"u8;
+private static readonly @string foundBadPointerInGoHeapˢ = "found bad pointer in Go heap (incorrect use of unsafe or cgo?)"u8;
 
 // badPointer throws bad pointer in heap panic.
 internal static void badPointer(ж<mspan> Ꮡs, uintptr Δp, uintptr refBase, uintptr refOff) {
@@ -1214,10 +1256,10 @@ internal static void badPointer(ж<mspan> Ꮡs, uintptr Δp, uintptr refBase, ui
     print((@string)"\n"u8);
     if (refBase != 0) {
         print((@string)"runtime: found in object at *("u8, ((Δhex)(uint64)refBase), (@string)"+"u8, ((Δhex)(uint64)refOff), (@string)")\n"u8);
-        gcDumpObject("object"u8, refBase, refOff);
+        gcDumpObject(objectˢ, refBase, refOff);
     }
     getg().Value.m.Value.traceback = 2;
-    @throw("found bad pointer in Go heap (incorrect use of unsafe or cgo?)"u8);
+    @throw(foundBadPointerInGoHeapˢ);
 }
 
 // findObject returns the base address for the heap object containing
@@ -1337,6 +1379,10 @@ internal static void bulkBarrierBitmap(uintptr dst, uintptr src, uintptr size, u
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeˢ2 = "runtime: typeBitsBulkBarrier without type"u8;
+private static readonly @string runtimeInvalidˢ = "runtime: invalid typeBitsBulkBarrier"u8;
+
 // typeBitsBulkBarrier executes a write barrier for every
 // pointer that would be copied from [src, src+size) to [dst,
 // dst+size) by a memmove using the type bitmap to locate those
@@ -1358,15 +1404,15 @@ internal static void typeBitsBulkBarrier(ж<_type> Ꮡtyp, uintptr dst, uintptr 
     ref var typ = ref Ꮡtyp.DerefOrNil();
 
     if (Ꮡtyp == nil) {
-        @throw("runtime: typeBitsBulkBarrier without type"u8);
+        @throw(runtimeˢ2);
     }
     if (typ.Size_ != size) {
         println((@string)"runtime: typeBitsBulkBarrier with type "u8, toRType(Ꮡtyp).@string(), (@string)" of size "u8, typ.Size_, (@string)" but memory size"u8, size);
-        @throw("runtime: invalid typeBitsBulkBarrier"u8);
+        @throw(runtimeInvalidˢ);
     }
     if ((abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0) {
         println((@string)"runtime: typeBitsBulkBarrier with type "u8, toRType(Ꮡtyp).@string(), (@string)" with GC prog"u8);
-        @throw("runtime: invalid typeBitsBulkBarrier"u8);
+        @throw(runtimeInvalidˢ);
     }
     if (!writeBarrier.enabled) {
         return;
@@ -1431,6 +1477,9 @@ internal static uintptr readUintptr(ж<byte> Ꮡp) {
 }
 internal static debugPtrmaskᴛ1 debugPtrmask = new();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string progToPointerMaskˢ = "progToPointerMask: overflow"u8;
+
 // progToPointerMask returns the 1-bit pointer mask output by the GC program prog.
 // size the size of the region described by prog, in bytes.
 // The resulting bitvector will have no more than size/goarch.PtrSize bits.
@@ -1441,7 +1490,7 @@ internal static unsafe bitvector progToPointerMask(ж<byte> Ꮡprog, uintptr siz
     // overflow check sentinel
     n = runGCProg(Ꮡprog, Ꮡ(x, 0));
     if (x[len(x) - 1] != 0xa1) {
-        @throw("progToPointerMask: overflow"u8);
+        @throw(progToPointerMaskˢ);
     }
     return new bitvector((int32)n, Ꮡ(x, 0));
 }
@@ -1730,6 +1779,11 @@ internal static slice<byte> reflect_gcbits(any x) {
     return getgcmask(x);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badArgumentToGetgcmaskˢ = "bad argument to getgcmask: expected type to be a pointer to the value type whose mask is being queried"u8;
+private static readonly @string foundNonZeroedTailOfˢ = "found non-zeroed tail of allocation"u8;
+private static readonly @string foundTwoDifferentMasksˢ = "found two different masks from two different methods"u8;
+
 // Returns GC type info for the pointer stored in ep for testing.
 // If ep points to the stack, only static live information will be returned
 // (i.e. not for objects which are only dynamically live stack objects).
@@ -1741,7 +1795,7 @@ internal static slice<byte> /*mask*/ getgcmask(any ep) {
     var t = e._type;
     ж<_type> et = default!;
     if ((abiꓸKind)((~t).Kind_ & abi.KindMask) != abi.Pointer) {
-        @throw("bad argument to getgcmask: expected type to be a pointer to the value type whose mask is being queried"u8);
+        @throw(badArgumentToGetgcmaskˢ);
     }
     et = (t.Reinterpret<_type, ptrtype>()).Value.Elem;
     // data or bss
@@ -1797,7 +1851,7 @@ internal static slice<byte> /*mask*/ getgcmask(any ep) {
             // that information is actually irrelevant.
             for (var i = limit; i < (~s).elemsize; i++) {
                 if (~(ж<byte>)(uintptr)((@unsafe.Pointer)i) != 0) {
-                    @throw("found non-zeroed tail of allocation"u8);
+                    @throw(foundNonZeroedTailOfˢ);
                 }
             }
             // Callers (and a check we're about to run) expects this mask
@@ -1847,7 +1901,7 @@ internal static slice<byte> /*mask*/ getgcmask(any ep) {
                     }
                     println();
                     print((@string)"runtime: type="u8, toRType(et).@string(), (@string)"\n"u8);
-                    @throw("found two different masks from two different methods"u8);
+                    @throw(foundTwoDifferentMasksˢ);
                 }
             }
             // Select the heap mask to return. We may not have a type mask.

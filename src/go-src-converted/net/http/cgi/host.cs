@@ -42,22 +42,22 @@ internal static ж<regexp.Regexp> trailingPort = regexp.MustCompile(@":([0-9]+)$
 internal static slice<@string> osDefaultInheritEnv = ((Func<slice<@string>>)(() => {
     var exprᴛ1 = runtime.GOOS;
     if (exprᴛ1 == "darwin"u8 || exprᴛ1 == "ios"u8) {
-        return new @string[]{"DYLD_LIBRARY_PATH"}.slice();
+        return new @string[]{"DYLD_LIBRARY_PATH"u8}.slice();
     }
     if (exprᴛ1 == "android"u8 || exprᴛ1 == "linux"u8 || exprᴛ1 == "freebsd"u8 || exprᴛ1 == "netbsd"u8 || exprᴛ1 == "openbsd"u8) {
-        return new @string[]{"LD_LIBRARY_PATH"}.slice();
+        return new @string[]{"LD_LIBRARY_PATH"u8}.slice();
     }
     if (exprᴛ1 == "hpux"u8) {
-        return new @string[]{"LD_LIBRARY_PATH", "SHLIB_PATH"}.slice();
+        return new @string[]{"LD_LIBRARY_PATH"u8, "SHLIB_PATH"u8}.slice();
     }
     if (exprᴛ1 == "irix"u8) {
-        return new @string[]{"LD_LIBRARY_PATH", "LD_LIBRARYN32_PATH", "LD_LIBRARY64_PATH"}.slice();
+        return new @string[]{"LD_LIBRARY_PATH"u8, "LD_LIBRARYN32_PATH"u8, "LD_LIBRARY64_PATH"u8}.slice();
     }
     if (exprᴛ1 == "illumos"u8 || exprᴛ1 == "solaris"u8) {
-        return new @string[]{"LD_LIBRARY_PATH", "LD_LIBRARY_PATH_32", "LD_LIBRARY_PATH_64"}.slice();
+        return new @string[]{"LD_LIBRARY_PATH"u8, "LD_LIBRARY_PATH_32"u8, "LD_LIBRARY_PATH_64"u8}.slice();
     }
     if (exprᴛ1 == "windows"u8) {
-        return new @string[]{"SystemRoot", "COMSPEC", "PATHEXT", "WINDIR"}.slice();
+        return new @string[]{"SystemRoot"u8, "COMSPEC"u8, "PATHEXT"u8, "WINDIR"u8}.slice();
     }
 
     return default!;
@@ -126,6 +126,11 @@ internal static slice<@string> /*ret*/ removeLeadingDuplicates(slice<@string> en
     return ret;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pathˢ = "PATH"u8;
+private static readonly @string binUsrBinUsrUcbUsrBsdUsrˢ = "/bin:/usr/bin:/usr/ucb:/usr/bsd:/usr/local/bin"u8;
+private static readonly @string locationˢ = "Location"u8;
+
 public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<http.Request> Ꮡreq) => func((defer, recover) => {
     ref var h = ref Ꮡh.Value;
     ref var req = ref Ꮡreq.Value;
@@ -147,10 +152,10 @@ public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<h
         }
     }
     var env = new @string[]{
-        "SERVER_SOFTWARE=go",
-        "SERVER_PROTOCOL=HTTP/1.1",
+        "SERVER_SOFTWARE=go"u8,
+        "SERVER_PROTOCOL=HTTP/1.1"u8,
         "HTTP_HOST=" + req.Host,
-        "GATEWAY_INTERFACE=CGI/1.1",
+        "GATEWAY_INTERFACE=CGI/1.1"u8,
         "REQUEST_METHOD=" + req.Method,
         "QUERY_STRING=" + (~req.URL).RawQuery,
         "REQUEST_URI=" + req.URL.RequestURI(),
@@ -195,13 +200,13 @@ public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<h
         env = append(env, fmt.Sprintf("CONTENT_LENGTH=%d"u8, req.ContentLength));
     }
     {
-        @string ctype = req.Header.Get("Content-Type"u8); if (ctype != ""u8) {
+        @string ctype = req.Header.Get(contentTypeˢ2); if (ctype != ""u8) {
             env = append(env, "CONTENT_TYPE="u8 + ctype);
         }
     }
-    @string envPath = os.Getenv("PATH"u8);
+    @string envPath = os.Getenv(pathˢ);
     if (envPath == ""u8) {
-        envPath = "/bin:/usr/bin:/usr/ucb:/usr/bsd:/usr/local/bin"u8;
+        envPath = binUsrBinUsrUcbUsrBsdUsrˢ;
     }
     env = append(env, "PATH="u8 + envPath);
     foreach (var (_, e) in h.InheritEnv) {
@@ -328,7 +333,7 @@ public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<h
         return;
     }
     {
-        @string loc = headers.Get("Location"u8); if (loc != ""u8) {
+        @string loc = headers.Get(locationˢ); if (loc != ""u8) {
             if (strings.HasPrefix(loc, "/"u8) && h.PathLocationHandler != default!) {
                 h.handleInternalRedirect(rw, Ꮡreq, loc);
                 return;
@@ -338,7 +343,7 @@ public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<h
             }
         }
     }
-    if (statusCode == 0 && headers.Get("Content-Type"u8) == ""u8) {
+    if (statusCode == 0 && headers.Get(contentTypeˢ2) == ""u8) {
         rw.WriteHeader(http.StatusInternalServerError);
         h.printf("cgi: missing required Content-Type in headers"u8);
         return;

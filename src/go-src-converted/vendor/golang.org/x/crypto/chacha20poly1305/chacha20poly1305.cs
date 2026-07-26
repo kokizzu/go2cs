@@ -23,10 +23,13 @@ public static readonly UntypedInt ΔOverhead = 16;
     internal array<byte> key = new(KeySize);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string chacha20poly1305BadKeyˢ = "chacha20poly1305: bad key length"u8;
+
 // New returns a ChaCha20-Poly1305 AEAD that uses the given 256-bit key.
 public static (cipher.AEAD, error) New(slice<byte> key) {
     if (len(key) != KeySize) {
-        return (default!, errors.New("chacha20poly1305: bad key length"u8));
+        return (default!, errors.New(chacha20poly1305BadKeyˢ));
     }
     var ret = @new<chacha20poly1305>();
     copy((~ret).key[..], key);

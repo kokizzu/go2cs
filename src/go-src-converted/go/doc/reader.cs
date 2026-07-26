@@ -22,6 +22,9 @@ partial class doc_package {
 
 [GoType("map[@string, ж<Func>]")] partial struct methodSet;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badrecvˢ = "BADRECV"u8;
+
 // ----------------------------------------------------------------------------
 // function/method sets
 //
@@ -57,8 +60,11 @@ internal static @string recvString(ast.Expr recv) {
         }
         break;
     }}
-    return "BADRECV"u8;
+    return badrecvˢ;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badparamˢ = "BADPARAM"u8;
 
 internal static @string recvParam(ast.Expr p) {
     {
@@ -66,7 +72,7 @@ internal static @string recvParam(ast.Expr p) {
             return (~id).Name;
         }
     }
-    return "BADPARAM"u8;
+    return badparamˢ;
 }
 
 // set creates the corresponding Func for f and adds it to mset.

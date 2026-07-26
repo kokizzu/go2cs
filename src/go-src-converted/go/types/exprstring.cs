@@ -23,6 +23,14 @@ public static @string ExprString(ast.Expr x) {
     return Ꮡbuf.String();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string literalˢ = " literal)"u8;
+private static readonly @string structˢ2 = "struct{"u8;
+private static readonly @string interfaceˢ2 = "interface{"u8;
+private static readonly @string chanˢ2 = "chan<- "u8;
+private static readonly @string chanˢ3 = "<-chan "u8;
+private static readonly @string chanˢ4 = "chan "u8;
+
 // WriteExpr writes the (possibly shortened) string representation for x to buf.
 // Shortened representations are suitable for user interfaces but may not
 // necessarily follow Go syntax.
@@ -58,7 +66,7 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
     case ж<ast.FuncLit> xΔ1: {
         buf.WriteByte((rune)'(');
         WriteExpr(Ꮡbuf, new ast_FuncTypeжExpr((~xΔ1).Type));
-        buf.WriteString(" literal)"u8);
+        buf.WriteString(literalˢ);
         break;
     }
     case ж<ast.CompositeLit> xΔ1: {
@@ -157,18 +165,18 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
         break;
     }
     case ж<ast.StructType> xΔ1: {
-        buf.WriteString("struct{"u8);
+        buf.WriteString(structˢ2);
         writeFieldList(Ꮡbuf, (~(~xΔ1).Fields).List, "; "u8, false);
         buf.WriteByte((rune)'}');
         break;
     }
     case ж<ast.FuncType> xΔ1: {
-        buf.WriteString("func"u8);
+        buf.WriteString(funcˢ);
         writeSigExpr(Ꮡbuf, xΔ1);
         break;
     }
     case ж<ast.InterfaceType> xΔ1: {
-        buf.WriteString("interface{"u8);
+        buf.WriteString(interfaceˢ2);
         writeFieldList(Ꮡbuf, (~(~xΔ1).Methods).List, "; "u8, true);
         buf.WriteByte((rune)'}');
         break;
@@ -184,13 +192,13 @@ public static void WriteExpr(ж<bytes.Buffer> Ꮡbuf, ast.Expr x) {
         @string s = default!;
         var exprᴛ1 = (~xΔ1).Dir;
         if (exprᴛ1 == ast.SEND) {
-            s = "chan<- "u8;
+            s = chanˢ2;
         }
         else if (exprᴛ1 == ast.RECV) {
-            s = "<-chan "u8;
+            s = chanˢ3;
         }
         else { /* default: */
-            s = "chan "u8;
+            s = chanˢ4;
         }
 
         buf.WriteString(s);

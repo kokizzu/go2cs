@@ -156,32 +156,42 @@ public static readonly IsolationLevel LevelSerializable = 6;
 
 public static readonly IsolationLevel LevelLinearizable = 7;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string defaultˢ = "Default"u8;
+private static readonly @string readUncommittedˢ = "Read Uncommitted"u8;
+private static readonly @string readCommittedˢ = "Read Committed"u8;
+private static readonly @string writeCommittedˢ = "Write Committed"u8;
+private static readonly @string repeatableReadˢ = "Repeatable Read"u8;
+private static readonly @string snapshotˢ = "Snapshot"u8;
+private static readonly @string serializableˢ = "Serializable"u8;
+private static readonly @string linearizableˢ = "Linearizable"u8;
+
 // String returns the name of the transaction isolation level.
 public static @string String(this IsolationLevel i) {
     var exprᴛ1 = i;
     if (exprᴛ1 == LevelDefault) {
-        return "Default"u8;
+        return defaultˢ;
     }
     if (exprᴛ1 == LevelReadUncommitted) {
-        return "Read Uncommitted"u8;
+        return readUncommittedˢ;
     }
     if (exprᴛ1 == LevelReadCommitted) {
-        return "Read Committed"u8;
+        return readCommittedˢ;
     }
     if (exprᴛ1 == LevelWriteCommitted) {
-        return "Write Committed"u8;
+        return writeCommittedˢ;
     }
     if (exprᴛ1 == LevelRepeatableRead) {
-        return "Repeatable Read"u8;
+        return repeatableReadˢ;
     }
     if (exprᴛ1 == LevelSnapshot) {
-        return "Snapshot"u8;
+        return snapshotˢ;
     }
     if (exprᴛ1 == LevelSerializable) {
-        return "Serializable"u8;
+        return serializableˢ;
     }
     if (exprᴛ1 == LevelLinearizable) {
-        return "Linearizable"u8;
+        return linearizableˢ;
     }
     { /* default: */
         return "IsolationLevel("u8 + strconv.Itoa((nint)i) + ")"u8;
@@ -682,6 +692,9 @@ internal static (ж<driverStmt>, error) prepareLocked(this ж<driverConn> Ꮡdc,
     return (ds, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sqlDuplicateDriverConnˢ = "sql: duplicate driverConn close"u8;
+
 // the dc.db's Mutex is held.
 internal static Func<error> closeDBLocked(this ж<driverConn> Ꮡdc) => func((defer, recover) => {
     ref var dc = ref Ꮡdc.Value;
@@ -689,7 +702,7 @@ internal static Func<error> closeDBLocked(this ж<driverConn> Ꮡdc) => func((de
     Ꮡdc.of(driverConn.ᏑMutex).Lock();
     defer(Ꮡdc.of(driverConn.ᏑMutex).Unlock);
     if (dc.closed) {
-        return () => errors.New("sql: duplicate driverConn close"u8);
+        return () => errors.New(sqlDuplicateDriverConnˢ);
     }
     dc.closed = true;
     return dc.db.removeDepLocked(new driverConnжfinalCloser(Ꮡdc), Ꮡdc);
@@ -701,7 +714,7 @@ internal static error Close(this ж<driverConn> Ꮡdc) {
     Ꮡdc.of(driverConn.ᏑMutex).Lock();
     if (dc.closed) {
         Ꮡdc.of(driverConn.ᏑMutex).Unlock();
-        return errors.New("sql: duplicate driverConn close"u8);
+        return errors.New(sqlDuplicateDriverConnˢ);
     }
     dc.closed = true;
     Ꮡdc.of(driverConn.ᏑMutex).Unlock();
@@ -2555,6 +2568,9 @@ public static (ж<ΔStmt>, error) Prepare(this ж<Tx> Ꮡtx, @string query) {
     return Ꮡtx.PrepareContext(context.Background(), query);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sqlTxStmtStatementFromˢ = "sql: Tx.Stmt: statement from different database used"u8;
+
 // StmtContext returns a transaction-specific prepared statement from
 // an existing statement.
 //
@@ -2583,7 +2599,7 @@ public static ж<ΔStmt> StmtContext(this ж<Tx> Ꮡtx, context.Context ctx, ж<
     var releaseʗ1 = release;
     deferǃ(releaseʗ1, (error)(default!), defer);
     if (tx.db != stmt.db) {
-        return Ꮡ(new ΔStmt(stickyErr: errors.New("sql: Tx.Stmt: statement from different database used"u8)));
+        return Ꮡ(new ΔStmt(stickyErr: errors.New(sqlTxStmtStatementFromˢ)));
     }
     ref var si = ref heap<driver.Stmt>(out var Ꮡsi);
     ж<ΔStmt> parentStmt = default!;
@@ -2879,6 +2895,9 @@ internal static (Result, error) resultFromStatement(context.Context ctx, driver.
     s.lastNumClosed = dbClosed;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sqlStatementIsClosedˢ = "sql: statement is closed"u8;
+
 // connStmt returns a free driver connection on which to execute the
 // statement, a function to call to release the connection, and a
 // statement bound to that connection.
@@ -2897,7 +2916,7 @@ internal static (ж<driverConn> dc, Action<error> ΔreleaseConn, ж<driverStmt> 
     Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Lock();
     if (s.closed) {
         Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock();
-        err = errors.New("sql: statement is closed"u8);
+        err = errors.New(sqlStatementIsClosedˢ);
         return (dc, ΔreleaseConn, ds, err);
     }
     // In a transaction or connection, we always use the connection that the
@@ -3518,6 +3537,9 @@ internal static slice<ж<ColumnType>> rowsColumnInfoSetupConnLocked(driver.Rows 
     return list;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sqlScanCalledWithoutˢ = "sql: Scan called without calling Next"u8;
+
 // Scan copies the columns in the current row into the values pointed
 // at by dest. The number of values in dest must be the same as the
 // number of columns in [Rows].
@@ -3605,7 +3627,7 @@ public static error Scan(this ж<Rows> Ꮡrs, params ꓸꓸꓸany destʗp) {
     }
     if (rs.lastcols == default!) {
         Ꮡrs.closemuRUnlockIfHeldByScan();
-        return errors.New("sql: Scan called without calling Next"u8);
+        return errors.New(sqlScanCalledWithoutˢ);
     }
     if (len(dest) != len(rs.lastcols)) {
         Ꮡrs.closemuRUnlockIfHeldByScan();
@@ -3697,6 +3719,9 @@ internal static error close(this ж<Rows> Ꮡrs, error err) => func<error>((defe
     internal ж<Rows> rows;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sqlRawBytesIsnTAllowedOnˢ = "sql: RawBytes isn't allowed on Row.Scan"u8;
+
 // Scan copies the columns from the matched row into the values
 // pointed at by dest. See the documentation on [Rows.Scan] for details.
 // If more than one row matches the query,
@@ -3724,7 +3749,7 @@ public static error Scan(this ж<Row> Ꮡr, params ꓸꓸꓸany destʗp) => func
     // don't care.
     defer(() => Ꮡr.Value.rows.Close());
     if (scanArgsContainRawBytes(dest)) {
-        return errors.New("sql: RawBytes isn't allowed on Row.Scan"u8);
+        return errors.New(sqlRawBytesIsnTAllowedOnˢ);
     }
     if (!r.rows.Next()) {
         {

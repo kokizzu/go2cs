@@ -8,6 +8,11 @@ namespace go.go;
 
 partial class types_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string objectˢ = "object"u8;
+private static readonly @string fieldˢ = "field"u8;
+private static readonly @string methodˢ = "method"u8;
+
 // lookupError returns a case-specific error when a lookup of selector sel in the
 // given type fails but an object with alternative spelling (case folding) is found.
 // If structLit is set, the error message is specifically for struct literal fields.
@@ -87,14 +92,14 @@ internal static @string lookupError(this ж<Checker> Ꮡcheck, ΔType typ, @stri
         }
 
     } else {
-        @string what = "object"u8;
+        @string what = objectˢ;
         switch (obj.type()) {
         case ж<Var>: {
-            what = "field"u8;
+            what = fieldˢ;
             break;
         }
         case ж<Func>: {
-            what = "method"u8;
+            what = methodˢ;
             break;
         }}
 

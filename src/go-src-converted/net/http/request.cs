@@ -389,9 +389,12 @@ internal static map<@string, bool> reqWriteExcludeHeader = new map<@string, bool
     return r.ProtoMajor > major || r.ProtoMajor == major && r.ProtoMinor >= minor;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string userAgentˢ2 = "User-Agent"u8;
+
 // UserAgent returns the client's User-Agent, if sent in the request.
 [GoRecv] public static @string UserAgent(this ref Request r) {
-    return r.Header.Get("User-Agent"u8);
+    return r.Header.Get(userAgentˢ2);
 }
 
 // Cookies parses and returns the HTTP cookies sent with the request.
@@ -436,10 +439,10 @@ public static error ErrNoCookie = errors.New("http: named cookie not present"u8)
 
     @string s = fmt.Sprintf("%s=%s"u8, sanitizeCookieName(c.Name), sanitizeCookieValue(c.Value, c.Quoted));
     {
-        @string cΔ1 = r.Header.Get("Cookie"u8); if (cΔ1 != ""u8){
-            r.Header.Set("Cookie"u8, cΔ1 + "; "u8 + s);
+        @string cΔ1 = r.Header.Get(cookieˢ); if (cΔ1 != ""u8){
+            r.Header.Set(cookieˢ, cΔ1 + "; "u8 + s);
         } else {
-            r.Header.Set("Cookie"u8, s);
+            r.Header.Set(cookieˢ, s);
         }
     }
 }
@@ -453,7 +456,7 @@ public static error ErrNoCookie = errors.New("http: named cookie not present"u8)
 // alternate (correct English) spelling req.Referrer() but cannot
 // diagnose programs that use Header["Referrer"].
 [GoRecv] public static @string Referer(this ref Request r) {
-    return r.Header.Get("Referer"u8);
+    return r.Header.Get(refererˢ);
 }
 
 // multipartByReader is a sentinel value.
@@ -464,34 +467,42 @@ internal static ж<multipart.Form> multipartByReader = Ꮡ(new multipart.Form(
     File: new map<@string, slice<ж<multipart.FileHeader>>>()
 ));
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpMultipartReaderˢ = "http: MultipartReader called twice"u8;
+private static readonly @string httpMultipartHandledByˢ = "http: multipart handled by ParseMultipartForm"u8;
+
 // MultipartReader returns a MIME multipart reader if this is a
 // multipart/form-data or a multipart/mixed POST request, else returns nil and an error.
 // Use this function instead of [Request.ParseMultipartForm] to
 // process the request body as a stream.
 [GoRecv] public static (ж<multipart.Reader>, error) MultipartReader(this ref Request r) {
     if (r.MultipartForm == multipartByReader) {
-        return (default!, errors.New("http: MultipartReader called twice"u8));
+        return (default!, errors.New(httpMultipartReaderˢ));
     }
     if (r.MultipartForm != nil) {
-        return (default!, errors.New("http: multipart handled by ParseMultipartForm"u8));
+        return (default!, errors.New(httpMultipartHandledByˢ));
     }
     r.MultipartForm = multipartByReader;
     return r.multipartReader(true);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingFormBodyˢ = "missing form body"u8;
+private static readonly @string boundaryˢ = "boundary"u8;
+
 [GoRecv] internal static (ж<multipart.Reader>, error) multipartReader(this ref Request r, bool allowMixed) {
-    @string v = r.Header.Get("Content-Type"u8);
+    @string v = r.Header.Get(contentTypeˢ);
     if (v == ""u8) {
         return (default!, new ProtocolErrorжerror(ErrNotMultipart));
     }
     if (r.Body == default!) {
-        return (default!, errors.New("missing form body"u8));
+        return (default!, errors.New(missingFormBodyˢ));
     }
     var (d, @params, err) = mime.ParseMediaType(v);
     if (err != default! || !(d == "multipart/form-data"u8 || allowMixed && d == "multipart/mixed"u8)) {
         return (default!, new ProtocolErrorжerror(ErrNotMultipart));
     }
-    var (boundary, ok) = @params["boundary"u8, ꟷ];
+    var (boundary, ok) = @params[boundaryˢ, ꟷ];
     if (!ok) {
         return (default!, new ProtocolErrorжerror(ErrMissingBoundary));
     }
@@ -549,6 +560,10 @@ public static error WriteProxy(this ж<Request> Ꮡr, io.Writer w) {
 // errMissingHost is returned by Write when there is no Host or URL present in
 // the Request.
 internal static error errMissingHost = errors.New("http: Request.Write on Request with no Host or URL set"u8);
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpInvalidHostHeaderˢ = "http: invalid Host header"u8;
+private static readonly @string netHttpCanTWriteControlˢ = "net/http: can't write control character in Request.URL"u8;
 
 // extraHeaders may be nil
 // waitForContinue may be nil
@@ -615,7 +630,7 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
             if (!usingProxy){
                 host = ""u8;
             } else {
-                err = errors.New("http: invalid Host header"u8); return;
+                err = errors.New(httpInvalidHostHeaderˢ); return;
             }
         }
         // According to RFC 6874, an HTTP client, proxy, or other
@@ -634,7 +649,7 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
             }
         }
         if (stringContainsCTLByte(ruri)) {
-            err = errors.New("net/http: can't write control character in Request.URL"u8); return;
+            err = errors.New(netHttpCanTWriteControlˢ); return;
         }
         // TODO: validate r.Method too? At least it's less likely to
         // come from an attacker (more likely to be a constant in
@@ -660,13 +675,13 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
             return;
         }
         if (trace != nil && (~trace).WroteHeaderField != default!) {
-            (~trace).WroteHeaderField("Host"u8, new @string[]{host}.slice());
+            (~trace).WroteHeaderField(hostˢ, new @string[]{host}.slice());
         }
         // Use the defaultUserAgent unless the Header contains one, which
         // may be blank to not send the header.
         @string userAgent = defaultUserAgent;
-        if (r.Header.has("User-Agent"u8)) {
-            userAgent = r.Header.Get("User-Agent"u8);
+        if (r.Header.has(userAgentˢ2)) {
+            userAgent = r.Header.Get(userAgentˢ2);
         }
         if (userAgent != ""u8) {
             userAgent = headerNewlineToSpace.Replace(userAgent);
@@ -676,7 +691,7 @@ internal static error /*err*/ write(this ж<Request> Ꮡr, io.Writer w, bool usi
                 return;
             }
             if (trace != nil && (~trace).WroteHeaderField != default!) {
-                (~trace).WroteHeaderField("User-Agent"u8, new @string[]{userAgent}.slice());
+                (~trace).WroteHeaderField(userAgentˢ2, new @string[]{userAgent}.slice());
             }
         }
         // Process Body,ContentLength,Close,Trailer
@@ -790,6 +805,9 @@ internal static @string removeZone(@string host) {
     return host[..(int)(j)] + host[(int)(i)..];
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpˢ2 = "HTTP/"u8;
+
 // ParseHTTPVersion parses an HTTP version string according to RFC 7230, section 2.6.
 // "HTTP/1.0" returns (1, 0, true). Note that strings without
 // a minor version, such as "HTTP/2", are not valid.
@@ -806,7 +824,7 @@ public static (nint major, nint minor, bool ok) ParseHTTPVersion(@string vers) {
         return (1, 0, true);
     }
 
-    if (!strings.HasPrefix(vers, "HTTP/"u8)) {
+    if (!strings.HasPrefix(vers, httpˢ2)) {
         return (0, 0, false);
     }
     if (builtin.len(vers) != builtin.len("HTTP/X.Y")) {
@@ -848,6 +866,9 @@ public static (ж<Request>, error) NewRequest(@string method, @string url, io.Re
     return NewRequestWithContext(context_package.Background(), method, url, body);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string netHttpNilContextˢ = "net/http: nil Context"u8;
+
 // NewRequestWithContext returns a new [Request] given a method, URL, and
 // optional body.
 //
@@ -882,7 +903,7 @@ public static (ж<Request>, error) NewRequestWithContext(context.Context ctx, @s
         return (default!, fmt.Errorf("net/http: invalid method %q"u8, method));
     }
     if (ctx == default!) {
-        return (default!, errors.New("net/http: nil Context"u8));
+        return (default!, errors.New(netHttpNilContextˢ));
     }
     var (u, err) = urlpkg.Parse(url);
     if (err != default!) {
@@ -974,7 +995,7 @@ public static (ж<Request>, error) NewRequestWithContext(context.Context ctx, @s
     @string password = default!;
     bool ok = default!;
 
-    @string auth = r.Header.Get("Authorization"u8);
+    @string auth = r.Header.Get(authorizationˢ);
     if (auth == ""u8) {
         return ("", "", false);
     }
@@ -1027,7 +1048,7 @@ internal static (@string username, @string password, bool ok) parseBasicAuth(@st
 // password. For instance, when used with OAuth2, both arguments must
 // be URL encoded first with [url.QueryEscape].
 [GoRecv] public static void SetBasicAuth(this ref Request r, @string username, @string password) {
-    r.Header.Set("Authorization"u8, "Basic "u8 + basicAuth(username, password));
+    r.Header.Set(authorizationˢ, "Basic "u8 + basicAuth(username, password));
 }
 
 // parseRequestLine parses "GET /foo HTTP/1.1" into its three parts.
@@ -1081,6 +1102,11 @@ public static (ж<Request>, error) ReadRequest(ж<bufio.Reader> Ꮡb) {
     return (req, err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string malformedHttpRequestˢ = "malformed HTTP request"u8;
+private static readonly @string invalidMethodˢ = "invalid method"u8;
+private static readonly @string malformedHttpVersionˢ = "malformed HTTP version"u8;
+
 // readRequest should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
@@ -1116,15 +1142,15 @@ internal static (ж<Request> req, error err) readRequest(ж<bufio.Reader> Ꮡb) 
         bool ok = default!;
         (req.Value.Method, req.Value.RequestURI, req.Value.Proto, ok) = parseRequestLine(s);
         if (!ok) {
-            (req, err) = (default!, badStringError("malformed HTTP request"u8, s)); return;
+            (req, err) = (default!, badStringError(malformedHttpRequestˢ, s)); return;
         }
         if (!validMethod((~req).Method)) {
-            (req, err) = (default!, badStringError("invalid method"u8, (~req).Method)); return;
+            (req, err) = (default!, badStringError(invalidMethodˢ, (~req).Method)); return;
         }
         @string rawurl = req.Value.RequestURI;
         {
             (req.Value.ProtoMajor, req.Value.ProtoMinor, ok) = ParseHTTPVersion((~req).Proto); if (!ok) {
-                (req, err) = (default!, badStringError("malformed HTTP version"u8, (~req).Proto)); return;
+                (req, err) = (default!, badStringError(malformedHttpVersionˢ, (~req).Proto)); return;
             }
         }
         // CONNECT requests are used two different ways, and neither uses a full URL:
@@ -1155,7 +1181,7 @@ internal static (ж<Request> req, error err) readRequest(ж<bufio.Reader> Ꮡb) 
             (req, err) = (default!, err); return;
         }
         req.Value.Header = ((ΔHeader)(map<@string, slice<@string>>)mimeHeader);
-        if (builtin.len((~req).Header["Host"u8]) > 1) {
+        if (builtin.len((~req).Header[hostˢ]) > 1) {
             (req, err) = (default!, fmt.Errorf("too many Host headers"u8)); return;
         }
         // RFC 7230, section 5.3: Must treat
@@ -1167,7 +1193,7 @@ internal static (ж<Request> req, error err) readRequest(ж<bufio.Reader> Ꮡb) 
         // the same. In the second case, any Host line is ignored.
         req.Value.Host = req.Value.URL.Value.Host;
         if ((~req).Host == ""u8) {
-            req.Value.Host = (~req).Header.get("Host"u8);
+            req.Value.Host = (~req).Header.get(hostˢ);
         }
         fixPragmaCacheControl((~req).Header);
         req.Value.Close = shouldClose((~req).ProtoMajor, (~req).ProtoMinor, (~req).Header, false);
@@ -1212,9 +1238,12 @@ public static io.ReadCloser MaxBytesReader(ResponseWriter w, io.ReadCloser r, in
     public int64 Limit;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpRequestBodyTooLargeˢ = "http: request body too large"u8;
+
 [GoRecv] public static @string Error(this ref MaxBytesError e) {
     // Due to Hyrum's law, this text cannot be changed.
-    return "http: request body too large"u8;
+    return httpRequestBodyTooLargeˢ;
 }
 
 [GoType] partial struct maxBytesReader {
@@ -1280,20 +1309,24 @@ internal static void copyValues(urlpkg.Values dst, urlpkg.Values src) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string applicationOctetStreamˢ = "application/octet-stream"u8;
+private static readonly @string httpPostTooLargeˢ = "http: POST too large"u8;
+
 internal static (urlpkg.Values vs, error err) parsePostForm(ж<Request> Ꮡr) {
     urlpkg.Values vs = default!;
     error err = default!;
 
     ref var r = ref Ꮡr.Value;
     if (r.Body == default!) {
-        err = errors.New("missing form body"u8);
+        err = errors.New(missingFormBodyˢ);
         return (vs, err);
     }
-    @string ct = r.Header.Get("Content-Type"u8);
+    @string ct = r.Header.Get(contentTypeˢ);
     // RFC 7231, section 3.1.1.5 - empty type
     //   MAY be treated as application/octet-stream
     if (ct == ""u8) {
-        ct = "application/octet-stream"u8;
+        ct = applicationOctetStreamˢ;
     }
     (ct, _, err) = mime.ParseMediaType(ct);
     switch (ᐧ) {
@@ -1315,7 +1348,7 @@ internal static (urlpkg.Values vs, error err) parsePostForm(ж<Request> Ꮡr) {
             break;
         }
         if ((int64)builtin.len(b) > maxFormSize) {
-            err = errors.New("http: POST too large"u8);
+            err = errors.New(httpPostTooLargeˢ);
             return (vs, err);
         }
         (vs, e) = url.ParseQuery(((@string)b));
@@ -1392,6 +1425,9 @@ public static error ParseForm(this ж<Request> Ꮡr) {
     return err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpMultipartHandledByˢ2 = "http: multipart handled by MultipartReader"u8;
+
 // ParseMultipartForm parses a request body as multipart/form-data.
 // The whole request body is parsed and up to a total of maxMemory bytes of
 // its file parts are stored in memory, with the remainder stored on
@@ -1404,7 +1440,7 @@ public static error ParseMultipartForm(this ж<Request> Ꮡr, int64 maxMemory) {
     ref var r = ref Ꮡr.Value;
 
     if (r.MultipartForm == multipartByReader) {
-        return errors.New("http: multipart handled by MultipartReader"u8);
+        return errors.New(httpMultipartHandledByˢ2);
     }
     error parseFormErr = default!;
     if (r.Form == default!) {
@@ -1485,7 +1521,7 @@ public static (multipart.File, ж<multipart.FileHeader>, error) FormFile(this ж
     ref var r = ref Ꮡr.Value;
 
     if (r.MultipartForm == multipartByReader) {
-        return (default!, default!, errors.New("http: multipart handled by MultipartReader"u8));
+        return (default!, default!, errors.New(httpMultipartHandledByˢ2));
     }
     if (r.MultipartForm == nil) {
         var err = Ꮡr.ParseMultipartForm(defaultMaxMemory);
@@ -1553,21 +1589,21 @@ public static (multipart.File, ж<multipart.FileHeader>, error) FormFile(this ж
 }
 
 [GoRecv] internal static bool expectsContinue(this ref Request r) {
-    return hasToken(r.Header.get("Expect"u8), "100-continue"u8);
+    return hasToken(r.Header.get(expectˢ), continueˢ);
 }
 
 [GoRecv] internal static bool wantsHttp10KeepAlive(this ref Request r) {
     if (r.ProtoMajor != 1 || r.ProtoMinor != 0) {
         return false;
     }
-    return hasToken(r.Header.get("Connection"u8), "keep-alive"u8);
+    return hasToken(r.Header.get(connectionˢ), keepAliveˢ);
 }
 
 [GoRecv] internal static bool wantsClose(this ref Request r) {
     if (r.Close) {
         return true;
     }
-    return hasToken(r.Header.get("Connection"u8), "close"u8);
+    return hasToken(r.Header.get(connectionˢ), closeˢ);
 }
 
 [GoRecv] internal static error closeBody(this ref Request r) {
@@ -1576,6 +1612,10 @@ public static (multipart.File, ж<multipart.FileHeader>, error) FormFile(this ж
     }
     return r.Body.Close();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string idempotencyKeyˢ = "Idempotency-Key"u8;
+private static readonly @string xIdempotencyKeyˢ = "X-Idempotency-Key"u8;
 
 [GoRecv] internal static bool isReplayable(this ref Request r) {
     if (r.Body == default! || AreEqual(r.Body, NoBody) || r.GetBody != default!) {
@@ -1587,7 +1627,7 @@ public static (multipart.File, ж<multipart.FileHeader>, error) FormFile(this ж
         // The Idempotency-Key, while non-standard, is widely used to
         // mean a POST or other request is idempotent. See
         // https://golang.org/issue/19943#issuecomment-421092421
-        if (r.Header.has("Idempotency-Key"u8) || r.Header.has("X-Idempotency-Key"u8)) {
+        if (r.Header.has(idempotencyKeyˢ) || r.Header.has(xIdempotencyKeyˢ)) {
             return true;
         }
     }
@@ -1622,10 +1662,13 @@ internal static bool requestMethodUsuallyLacksBody(@string method) {
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string websocketˢ = "websocket"u8;
+
 // requiresHTTP1 reports whether this request requires being sent on
 // an HTTP/1 connection.
 [GoRecv] internal static bool requiresHTTP1(this ref Request r) {
-    return hasToken(r.Header.Get("Connection"u8), "upgrade"u8) && ascii.EqualFold(r.Header.Get("Upgrade"u8), "websocket"u8);
+    return hasToken(r.Header.Get(connectionˢ), upgradeˢ2) && ascii.EqualFold(r.Header.Get(upgradeˢ), websocketˢ);
 }
 
 } // end http_package

@@ -76,16 +76,16 @@ partial class event_package {
 //
 // See the documentation of Args for more details.
 public static array<@string> ArgTypes = new @string[]{
-    "seq",
-    "pstatus",
-    "gstatus",
-    "g",
-    "m",
-    "p",
-    "string",
-    "stack",
-    "value",
-    "task"
+    "seq"u8,
+    "pstatus"u8,
+    "gstatus"u8,
+    "g"u8,
+    "m"u8,
+    "p"u8,
+    "string"u8,
+    "stack"u8,
+    "value"u8,
+    "task"u8
 }.array();
 
 // Names is a helper that produces a mapping of event names to event types.

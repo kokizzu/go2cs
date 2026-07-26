@@ -527,12 +527,12 @@ internal static (encoder e, error err) makeBody(reflectꓸValue value, fieldPara
                     return (((bytesEncoder)default!), default!);
                 }
                 case 1: {
-                    return makeField(v.Field(startingField), parseFieldParameters(t.Field(startingField).Tag.Get("asn1"u8)));
+                    return makeField(v.Field(startingField), parseFieldParameters(t.Field(startingField).Tag.Get(asn1ˢ)));
                 }
                 default: {
                     var m = new slice<encoder>(n1);
                     for (nint i = 0; i < n1; i++) {
-                        (m[i], err) = makeField(v.Field(i + startingField), parseFieldParameters(t.Field(i + startingField).Tag.Get("asn1"u8)));
+                        (m[i], err) = makeField(v.Field(i + startingField), parseFieldParameters(t.Field(i + startingField).Tag.Get(asn1ˢ)));
                         if (err != default!) {
                             return (default!, err);
                         }
@@ -594,6 +594,9 @@ internal static (encoder e, error err) makeBody(reflectꓸValue value, fieldPara
     return (default!, new StructuralError("unknown Go type"u8));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string asn1StringNotValidUtf8ˢ = "asn1: string not valid UTF-8"u8;
+
 internal static (encoder e, error err) makeField(reflectꓸValue v, fieldParameters @params) {
     encoder e = default!;
     error err = default!;
@@ -652,7 +655,7 @@ internal static (encoder e, error err) makeField(reflectꓸValue v, fieldParamet
             foreach (var (_, r) in v.String()) {
                 if (r >= utf8.RuneSelf || !isPrintable((byte)r, rejectAsterisk, rejectAmpersand)) {
                     if (!utf8.ValidString(v.String())) {
-                        return (default!, errors.New("asn1: string not valid UTF-8"u8));
+                        return (default!, errors.New(asn1StringNotValidUtf8ˢ));
                     }
                     tag = TagUTF8String;
                     break;

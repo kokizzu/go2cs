@@ -76,6 +76,9 @@ partial class runtime_package {
     return Ꮡ(c.full[sweepgen / 2 % 2]);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string spanHasNoFreeObjectsˢ = "span has no free objects"u8;
+
 // Allocate a span to use in an mcache.
 [GoRecv] internal static ж<mspan> cacheSpan(this ref mcentral c) {
     // Deduct credit for this span allocation and sweep if necessary.
@@ -181,7 +184,7 @@ havespan:
     }
     nint n = (nint)(~s).nelems - (nint)(~s).allocCount;
     if (n == 0 || (~s).freeindex == (~s).nelems || (~s).allocCount == (~s).nelems) {
-        @throw("span has no free objects"u8);
+        @throw(spanHasNoFreeObjectsˢ);
     }
     var freeByteBase = (uint16)((~s).freeindex & ~(64 - 1));
     var whichByte = (uint16)(freeByteBase / 8);
@@ -193,6 +196,9 @@ havespan:
     return s;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string uncachingSpanButSˢ = "uncaching span but s.allocCount == 0"u8;
+
 // Return span from an mcache.
 //
 // s must have a span class corresponding to this
@@ -201,7 +207,7 @@ havespan:
     ref var s = ref Ꮡs.Value;
 
     if (s.allocCount == 0) {
-        @throw("uncaching span but s.allocCount == 0"u8);
+        @throw(uncachingSpanButSˢ);
     }
     var sg = mheap_.sweepgen;
     var stale = s.sweepgen == sg + 1;

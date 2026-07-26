@@ -168,8 +168,11 @@ public static error DeadlineExceeded = new deadlineExceededError(nil);
 [GoType] partial struct deadlineExceededError {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string contextDeadlineExceededˢ = "context deadline exceeded"u8;
+
 internal static @string Error(this deadlineExceededError _) {
-    return "context deadline exceeded"u8;
+    return contextDeadlineExceededˢ;
 }
 
 internal static bool Timeout(this deadlineExceededError _) {
@@ -208,16 +211,22 @@ internal static any Value(this emptyCtx _, any key) {
     internal partial ref emptyCtx emptyCtx { get; }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string contextBackgroundˢ = "context.Background"u8;
+
 internal static @string String(this backgroundCtx _) {
-    return "context.Background"u8;
+    return contextBackgroundˢ;
 }
 
 [GoType] partial struct todoCtx {
     internal partial ref emptyCtx emptyCtx { get; }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string contextTodoˢ = "context.TODO"u8;
+
 internal static @string String(this todoCtx _) {
-    return "context.TODO"u8;
+    return contextTodoˢ;
 }
 
 // Background returns a non-nil, empty [Context]. It is never canceled, has no

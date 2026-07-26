@@ -453,8 +453,11 @@ public static error ErrWriteToConnected = errors.New("use of WriteTo with pre-co
 [GoType] partial struct canceledError {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string operationWasCanceledˢ = "operation was canceled"u8;
+
 internal static @string Error(this canceledError _) {
-    return "operation was canceled"u8;
+    return operationWasCanceledˢ;
 }
 
 internal static bool Is(this canceledError _, error err) {
@@ -662,8 +665,11 @@ internal static error errTimeout = new timeoutErrorжerror(Ꮡ(new timeoutError(
 [GoType] partial struct timeoutError {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string iOTimeoutˢ = "i/o timeout"u8;
+
 [GoRecv] internal static @string Error(this ref timeoutError e) {
-    return "i/o timeout"u8;
+    return iOTimeoutˢ;
 }
 
 [GoRecv] internal static bool Timeout(this ref timeoutError e) {

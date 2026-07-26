@@ -136,7 +136,7 @@ internal static readonly uintptr pageCachePages = /* 8 * unsafe.Sizeof(pageCache
         chunk = Δp.chunkOf(ci);
         var (j, _) = chunk.of(pallocData.ᏑpallocBits).find(1, chunkPageIndex(Δp.searchAddr.addr()));
         if (j == ~(nuint)0) {
-            @throw("bad summary data"u8);
+            @throw(badSummaryDataˢ);
         }
         c = new pageCache(
             @base: chunkBase(ci) + alignDown((uintptr)j, 64) * (uintptr)pageSize,

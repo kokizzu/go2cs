@@ -269,6 +269,9 @@ internal static (nint, nint) blockAlignSummaryRange(nint level, nint lo, nint hi
     internal bool test;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rootLevelMaxPagesDoesnTˢ = "root level max pages doesn't fit in summary"u8;
+
 internal static void init(this ж<pageAlloc> Ꮡp, ж<mutex> ᏑmheapLock, ж<sysMemStat> ᏑsysStat, bool test) {
     ref var Δp = ref Ꮡp.Value;
     ref var mheapLock = ref ᏑmheapLock.Value;
@@ -280,7 +283,7 @@ internal static void init(this ж<pageAlloc> Ꮡp, ж<mutex> ᏑmheapLock, ж<sy
         // is a big problem. Throw.
         print((@string)"runtime: root level max pages = "u8, ((nint)1).Lsh(levelLogPages[0]), (@string)"\n"u8);
         print((@string)"runtime: summary max pages = "u8, (nint)(maxPackedValue), (@string)"\n"u8);
-        @throw("root level max pages doesn't fit in summary"u8);
+        @throw(rootLevelMaxPagesDoesnTˢ);
     }
     Δp.sysStat = ᏑsysStat;
     // Initialize p.inUse.
@@ -314,6 +317,9 @@ internal static void init(this ж<pageAlloc> Ꮡp, ж<mutex> ᏑmheapLock, ж<sy
 [GoRecv] internal static ж<pallocData> chunkOf(this ref pageAlloc Δp, chunkIdx ci) {
     return Δp.chunks[(nint)(ci.l1())].at<pallocData>((nint)(ci.l2()));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pageAllocOutOfMemoryˢ = "pageAlloc: out of memory"u8;
 
 // grow sets up the metadata for the address range [base, base+size).
 // It may allocate metadata, in which case *p.sysStat will be updated.
@@ -367,7 +373,7 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
             uintptr l2Size = /* unsafe.Sizeof(*p.chunks[0]) */ 1048576;
             @unsafe.Pointer r = (uintptr)sysAlloc(l2Size, Δp.sysStat);
             if (r == nil) {
-                @throw("pageAlloc: out of memory"u8);
+                @throw(pageAllocOutOfMemoryˢ);
             }
             if (!Δp.test) {
                 // Make the chunk mapping eligible or ineligible
@@ -582,6 +588,10 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
     return addr;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rangePartiallyOverlapsˢ = "range partially overlaps"u8;
+private static readonly @string badSummaryDataˢ = "bad summary data"u8;
+
 [GoType("dyn")] partial struct find_firstFree {
     internal offAddr @base, bound;
 }
@@ -669,7 +679,7 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
             // so throw.
             print((@string)"runtime: addr = "u8, ((Δhex)(uint64)addrΔ1.addr()), (@string)", size = "u8, size, (@string)"\n"u8);
             print((@string)"runtime: base = "u8, ((Δhex)(uint64)ᏑfirstFree.Value.@base.addr()), (@string)", bound = "u8, ((Δhex)(uint64)ᏑfirstFree.Value.bound.addr()), (@string)"\n"u8);
-            @throw("range partially overlaps"u8);
+            @throw(rangePartiallyOverlapsˢ);
         }
     };
     // lastSum is the summary which we saw on the previous level that made us
@@ -775,7 +785,7 @@ nextLevel:
             var sum = entries[jΔ2];
             print((@string)"runtime: summary["u8, l, (@string)"]["u8, i + jΔ2, (@string)"] = ("u8, sum.start(), (@string)", "u8, sum.max(), (@string)", "u8, sum.end(), (@string)")\n"u8);
         }
-        @throw("bad summary data"u8);
+        @throw(badSummaryDataˢ);
 continue_nextLevel:;
     }
 break_nextLevel:;
@@ -794,7 +804,7 @@ break_nextLevel:;
         var sum = Δp.summary[len(Δp.summary) - 1][i];
         print((@string)"runtime: summary["u8, (nint)(len(Δp.summary) - 1), (@string)"]["u8, i, (@string)"] = ("u8, sum.start(), (@string)", "u8, sum.max(), (@string)", "u8, sum.end(), (@string)")\n"u8);
         print((@string)"runtime: npages = "u8, npages, (@string)"\n"u8);
-        @throw("bad summary data"u8);
+        @throw(badSummaryDataˢ);
     }
     // Compute the address at which the free space starts.
     var addr = chunkBase(ci) + (uintptr)j * (uintptr)pageSize;
@@ -839,7 +849,7 @@ break_nextLevel:;
                 if (j == ~(nuint)0) {
                     print((@string)"runtime: max = "u8, max, (@string)", npages = "u8, npages, (@string)"\n"u8);
                     print((@string)"runtime: searchIdx = "u8, chunkPageIndex(Δp.searchAddr.addr()), (@string)", p.searchAddr = "u8, ((Δhex)(uint64)Δp.searchAddr.addr()), (@string)"\n"u8);
-                    @throw("bad summary data"u8);
+                    @throw(badSummaryDataˢ);
                 }
                 addr = chunkBase(i) + (uintptr)j * (uintptr)pageSize;
                 searchAddr = new offAddr(chunkBase(i) + (uintptr)searchIdx * (uintptr)pageSize);

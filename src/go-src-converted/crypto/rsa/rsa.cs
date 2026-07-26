@@ -173,6 +173,9 @@ public static (slice<byte>, error) Sign(this ж<PrivateKey> Ꮡpriv, io.Reader r
     return SignPKCS1v15(rand, Ꮡpriv, opts.HashFunc(), digest);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoRsaInvalidOptionsˢ = "crypto/rsa: invalid options for Decrypt"u8;
+
 // Decrypt decrypts ciphertext with priv. If opts is nil or of type
 // *[PKCS1v15DecryptOptions] then PKCS #1 v1.5 decryption is performed. Otherwise
 // opts must have type *[OAEPOptions] and OAEP decryption is done.
@@ -215,7 +218,7 @@ public static (slice<byte> plaintext, error err) Decrypt(this ж<PrivateKey> Ꮡ
     }
     default: {
         var optsΔ1 = opts;
-        return (default!, errors.New("crypto/rsa: invalid options for Decrypt"u8));
+        return (default!, errors.New(cryptoRsaInvalidOptionsˢ));
     }}
 }
 
@@ -242,6 +245,11 @@ public static (slice<byte> plaintext, error err) Decrypt(this ж<PrivateKey> Ꮡ
     public ж<bigꓸInt> R; // product of primes prior to this (inc p and q).
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoRsaInvalidPrimeˢ = "crypto/rsa: invalid prime value"u8;
+private static readonly @string cryptoRsaInvalidModulusˢ = "crypto/rsa: invalid modulus"u8;
+private static readonly @string cryptoRsaInvalidˢ = "crypto/rsa: invalid exponents"u8;
+
 // Validate performs basic sanity checks on the key.
 // It returns nil if the key is valid, or else an error describing a problem.
 public static error Validate(this ж<PrivateKey> Ꮡpriv) {
@@ -257,12 +265,12 @@ public static error Validate(this ж<PrivateKey> Ꮡpriv) {
     foreach (var (_, prime) in priv.Primes) {
         // Any primes ≤ 1 will cause divide-by-zero panics later.
         if (prime.Cmp(bigOne) <= 0) {
-            return errors.New("crypto/rsa: invalid prime value"u8);
+            return errors.New(cryptoRsaInvalidPrimeˢ);
         }
         modulus.Mul(modulus, prime);
     }
     if (modulus.Cmp(priv.N) != 0) {
-        return errors.New("crypto/rsa: invalid modulus"u8);
+        return errors.New(cryptoRsaInvalidModulusˢ);
     }
     // Check that de ≡ 1 mod p-1, for each prime.
     // This implies that e is coprime to each p-1 as e has a multiplicative
@@ -276,7 +284,7 @@ public static error Validate(this ж<PrivateKey> Ꮡpriv) {
         var pminus1 = @new<bigꓸInt>().Sub(prime, bigOne);
         congruence.Mod(de, pminus1);
         if (congruence.Cmp(bigOne) != 0) {
-            return errors.New("crypto/rsa: invalid exponents"u8);
+            return errors.New(cryptoRsaInvalidˢ);
         }
     }
     return default!;
@@ -290,6 +298,11 @@ public static error Validate(this ж<PrivateKey> Ꮡpriv) {
 public static (ж<PrivateKey>, error) GenerateKey(io.Reader random, nint bits) {
     return GenerateMultiPrimeKey(random, 2, bits);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoRsaGeneratedKeyˢ = "crypto/rsa: generated key exponent too large"u8;
+private static readonly @string cryptoRsaˢ = "crypto/rsa: GenerateMultiPrimeKey: nprimes must be >= 2"u8;
+private static readonly @string cryptoRsaTooFewPrimesOfˢ = "crypto/rsa: too few primes of given length to generate an RSA key"u8;
 
 // GenerateMultiPrimeKey generates a multi-prime RSA keypair of the given bit
 // size and the given random source.
@@ -327,7 +340,7 @@ public static (ж<PrivateKey>, error) GenerateMultiPrimeKey(io.Reader random, ni
         var Qinv = bbig.Dec(bQinv);
         var e64 = E.Int64();
         if (!E.IsInt64() || (int64)(nint)e64 != e64) {
-            return (default!, errors.New("crypto/rsa: generated key exponent too large"u8));
+            return (default!, errors.New(cryptoRsaGeneratedKeyˢ));
         }
         (var mn, err) = bigmod.NewModulusFromBig(N);
         if (err != default!) {
@@ -364,7 +377,7 @@ public static (ж<PrivateKey>, error) GenerateMultiPrimeKey(io.Reader random, ni
     var priv = @new<PrivateKey>();
     priv.Value.E = 65537;
     if (nprimes < 2) {
-        return (default!, errors.New("crypto/rsa: GenerateMultiPrimeKey: nprimes must be >= 2"u8));
+        return (default!, errors.New(cryptoRsaˢ));
     }
     if (bits < 64) {
         var primeLimit = (float64)(((uint64)1).Lsh((nuint)(bits / nprimes)));
@@ -377,7 +390,7 @@ public static (ж<PrivateKey>, error) GenerateMultiPrimeKey(io.Reader random, ni
         // in a reasonable amount of time.
         pi /= 2D;
         if (pi <= (float64)nprimes) {
-            return (default!, errors.New("crypto/rsa: too few primes of given length to generate an RSA key"u8));
+            return (default!, errors.New(cryptoRsaTooFewPrimesOfˢ));
         }
     }
     var primes = new slice<ж<bigꓸInt>>(nprimes);

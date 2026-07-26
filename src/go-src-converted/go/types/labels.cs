@@ -11,12 +11,17 @@ using global::go.go;
 
 partial class types_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string labelˢ = "label"u8;
+private static readonly @string gotoSJumpsIntoBlockˢ = "goto %s jumps into block"u8;
+private static readonly @string labelSNotDeclaredˢ = "label %s not declared"u8;
+
 // labels checks correct label use in body.
 internal static void labels(this ж<Checker> Ꮡcheck, ж<ast.BlockStmt> Ꮡbody) {
     ref var body = ref Ꮡbody.Value;
 
     // set of all labels in this body
-    var all = NewScope(nil, body.Pos(), body.End(), "label"u8);
+    var all = NewScope(nil, body.Pos(), body.End(), labelˢ);
     var fwdJumps = Ꮡcheck.blockBranches(all, nil, nil, body.List);
     // If there are any forward jumps left, no label was found for
     // the corresponding goto statements. Either those labels were
@@ -28,12 +33,12 @@ internal static void labels(this ж<Checker> Ꮡcheck, ж<ast.BlockStmt> Ꮡbody
         @string name = jmp.Value.Label.Value.Name;
         {
             var alt = all.Lookup(name); if (alt != default!){
-                msg = "goto %s jumps into block"u8;
+                msg = gotoSJumpsIntoBlockˢ;
                 code = JumpIntoBlock;
                 alt._<ж<Label>>().Value.used = true;
             } else {
                 // avoid another error
-                msg = "label %s not declared"u8;
+                msg = labelSNotDeclaredˢ;
                 code = UndeclaredLabel;
             }
         }

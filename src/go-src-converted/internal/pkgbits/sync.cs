@@ -10,6 +10,9 @@ using ꓸꓸꓸuintptr = Span<uintptr>;
 
 partial class pkgbits_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cmdCompileInternalNoderˢ = "cmd/compile/internal/noder."u8;
+
 // fmtFrames formats a backtrace for reporting reader/writer desyncs.
 internal static slice<@string> fmtFrames(params ꓸꓸꓸuintptr pcsʗp) {
     var pcs = pcsʗp.slice();
@@ -18,7 +21,7 @@ internal static slice<@string> fmtFrames(params ꓸꓸꓸuintptr pcsʗp) {
     res = new slice<@string>(0, len(pcs));
     walkFrames(pcs, (@string @file, nint line, @string name, uintptr offset) => {
         // Trim package from function name. It's just redundant noise.
-        name = strings.TrimPrefix(name, "cmd/compile/internal/noder."u8);
+        name = strings.TrimPrefix(name, cmdCompileInternalNoderˢ);
         Ꮡres.ValueSlot = append(Ꮡres.ValueSlot, fmt.Sprintf("%s:%v: %s +0x%v"u8, @file, line, name, offset));
     });
     return res;

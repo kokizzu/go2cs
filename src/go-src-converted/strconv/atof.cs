@@ -34,6 +34,9 @@ internal static nint commonPrefixLenIgnoreCase(@string s, @string prefix) {
     return n;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string infinityˢ = "infinity"u8;
+
 // special returns the floating-point value for the special,
 // possibly signed floating-point representations inf, infinity,
 // and NaN. The result is ok if a prefix of s contains one
@@ -60,7 +63,7 @@ internal static (float64 f, nint n, bool ok) special(@string s) {
         fallthrough = true;
     }
     if (fallthrough || !matchᴛ1 && (exprᴛ1 is (rune)'i' or (rune)'I')) {
-        nint nΔ2 = commonPrefixLenIgnoreCase(s, "infinity"u8);
+        nint nΔ2 = commonPrefixLenIgnoreCase(s, infinityˢ);
         if (3 < nΔ2 && nΔ2 < 8) {
             // Anything longer than "inf" is ok, but if we
             // don't have "infinity", only consume "inf".

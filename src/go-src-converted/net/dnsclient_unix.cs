@@ -180,9 +180,9 @@ internal static (dnsmessage.Parser, dnsmessage.Header, error) exchange(this ж<R
     }
     slice<@string> networks = default!;
     if (useTCP){
-        networks = new @string[]{"tcp"}.slice();
+        networks = new @string[]{"tcp"u8}.slice();
     } else {
-        networks = new @string[]{"udp", "tcp"}.slice();
+        networks = new @string[]{"udp"u8, "tcp"u8}.slice();
     }
     foreach (var (_, network) in networks) {
         var (ctxΔ1, cancel) = context.WithDeadline(ctx, time.Now().Add(timeout));
@@ -382,8 +382,11 @@ internal static (dnsmessage.Parser, @string, error) tryOneName(this ж<Resolver>
 internal static ж<resolverConfig> ᏑresolvConf = new(default(resolverConfig));
 internal static ref resolverConfig resolvConf => ref ᏑresolvConf.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string etcResolvConfˢ = "/etc/resolv.conf"u8;
+
 internal static ж<dnsConfig> getSystemDNSConfig() {
-    ᏑresolvConf.tryUpdate("/etc/resolv.conf"u8);
+    ᏑresolvConf.tryUpdate(etcResolvConfˢ);
     return ᏑresolvConf.of(resolverConfig.ᏑdnsConfig).Load();
 }
 
@@ -393,7 +396,7 @@ internal static void init(this ж<resolverConfig> Ꮡconf) {
 
     // Set dnsConfig and lastChecked so we don't parse
     // resolv.conf twice the first time.
-    Ꮡconf.of(resolverConfig.ᏑdnsConfig).Store(dnsReadConfig("/etc/resolv.conf"u8));
+    Ꮡconf.of(resolverConfig.ᏑdnsConfig).Store(dnsReadConfig(etcResolvConfˢ));
     conf.lastChecked = time.Now();
     // Prepare ch so that only one update of resolverConfig may
     // run at once.
@@ -503,6 +506,9 @@ internal static (dnsmessage.Parser, @string, error) lookup(this ж<Resolver> Ꮡ
     return (new dnsmessage.Parser(nil), "", err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string onionˢ = ".onion"u8;
+
 // avoidDNS reports whether this is a hostname for which we should not
 // use DNS. Currently this includes only .onion, per RFC 7686. See
 // golang.org/issue/13705. Does not cover .local names (RFC 6762),
@@ -514,7 +520,7 @@ internal static bool avoidDNS(@string name) {
     if (name[len(name) - 1] == (rune)'.') {
         name = name[..(int)(len(name) - 1)];
     }
-    return stringsHasSuffixFold(name, ".onion"u8);
+    return stringsHasSuffixFold(name, onionˢ);
 }
 
 // nameList returns a list of names for sequential DNS queries.
@@ -867,9 +873,12 @@ break_loop:;
     return (addrs, cname, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cnameˢ = "CNAME"u8;
+
 // goLookupCNAME is the native Go (non-cgo) implementation of LookupCNAME.
 internal static (@string, error) goLookupCNAME(this ж<Resolver> Ꮡr, context.Context ctx, @string host, ΔhostLookupOrder order, ж<dnsConfig> Ꮡconf) {
-    var (_, cname, err) = Ꮡr.goLookupIPCNAMEOrder(ctx, "CNAME"u8, host, order, Ꮡconf);
+    var (_, cname, err) = Ꮡr.goLookupIPCNAMEOrder(ctx, cnameˢ, host, order, Ꮡconf);
     return (cname.String(), err);
 }
 

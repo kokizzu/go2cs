@@ -124,9 +124,12 @@ internal static ref array<stackpoolᴛ1> stackpool => ref Ꮡstackpool.Value;
 internal static ж<stackLargeᴛ1> ᏑstackLarge = new(new stackLargeᴛ1());
 internal static ref stackLargeᴛ1 stackLarge => ref ᏑstackLarge.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cacheSizeMustBeAMultipleˢ = "cache size must be a multiple of page size"u8;
+
 internal static void stackinit() {
     if ((UntypedInt)(_StackCacheSize & _PageMask) != 0) {
-        @throw("cache size must be a multiple of page size"u8);
+        @throw(cacheSizeMustBeAMultipleˢ);
     }
     foreach (var (i, _) in stackpool) {
         stackpool[i].item.span.init();
@@ -148,6 +151,11 @@ internal static nint stacklog2(uintptr n) {
     return log2;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badAllocCountˢ = "bad allocCount"u8;
+private static readonly @string badManualFreeListˢ = "bad manualFreeList"u8;
+private static readonly @string spanHasNoFreeStacksˢ = "span has no free stacks"u8;
+
 // Allocates a stack from the free pool. Must be called with
 // stackpool[order].item.mu held.
 internal static gclinkptr stackpoolalloc(uint8 order) {
@@ -158,13 +166,13 @@ internal static gclinkptr stackpoolalloc(uint8 order) {
         // no free stacks. Allocate another span worth.
         s = Ꮡmheap_.allocManual((uintptr)(_StackCacheSize >> (int)(_PageShift)), spanAllocStack);
         if (s == nil) {
-            @throw("out of memory"u8);
+            @throw(outOfMemoryˢ);
         }
         if ((~s).allocCount != 0) {
-            @throw("bad allocCount"u8);
+            @throw(badAllocCountˢ);
         }
         if ((~s).manualFreeList.ptr() != nil) {
-            @throw("bad manualFreeList"u8);
+            @throw(badManualFreeListˢ);
         }
         osStackAlloc(s);
         s.Value.elemsize = ((uintptr)fixedStack).Lsh((uint64)(order));
@@ -177,7 +185,7 @@ internal static gclinkptr stackpoolalloc(uint8 order) {
     }
     var x = s.Value.manualFreeList;
     if (x.ptr() == nil) {
-        @throw("span has no free stacks"u8);
+        @throw(spanHasNoFreeStacksˢ);
     }
     s.Value.manualFreeList = x.ptr().Value.next;
     s.Value.allocCount++;
@@ -188,11 +196,14 @@ internal static gclinkptr stackpoolalloc(uint8 order) {
     return x;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string freeingStackNotInAStackˢ = "freeing stack not in a stack span"u8;
+
 // Adds stack x to the free pool. Must be called with stackpool[order].item.mu held.
 internal static void stackpoolfree(gclinkptr x, uint8 order) {
     var s = spanOfUnchecked((uintptr)x);
     if (s.of(mspan.Ꮡstate).get() != mSpanManual) {
-        @throw("freeing stack not in a stack span"u8);
+        @throw(freeingStackNotInAStackˢ);
     }
     if ((~s).manualFreeList.ptr() == nil) {
         // s will now have a free stack
@@ -292,6 +303,11 @@ internal static void stackcache_clear(ж<mcache> Ꮡc) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stackallocNotOnSchedulerˢ = "stackalloc not on scheduler stack"u8;
+private static readonly @string stackSizeNotAPowerOf2ˢ = "stack size not a power of 2"u8;
+private static readonly @string outOfMemoryStackallocˢ = "out of memory (stackalloc)"u8;
+
 // stackalloc allocates an n byte stack.
 //
 // stackalloc must run on the system stack because it uses per-P
@@ -304,10 +320,10 @@ internal static Δstack @stackalloc(uint32 n) {
     // Doing so would cause a deadlock (issue 1547).
     var thisg = getg();
     if (thisg != (~(~thisg).m).g0) {
-        @throw("stackalloc not on scheduler stack"u8);
+        @throw(stackallocNotOnSchedulerˢ);
     }
     if ((uint32)(n & (n - 1)) != 0) {
-        @throw("stack size not a power of 2"u8);
+        @throw(stackSizeNotAPowerOf2ˢ);
     }
     if (stackDebug >= 1) {
         print((@string)"stackalloc "u8, n, (@string)"\n"u8);
@@ -316,7 +332,7 @@ internal static Δstack @stackalloc(uint32 n) {
         n = (uint32)alignUp((uintptr)n, physPageSize);
         @unsafe.Pointer vΔ1 = (uintptr)sysAlloc((uintptr)n, Ꮡmemstats.of(mstats.Ꮡstacks_sys));
         if (vΔ1 == nil) {
-            @throw("out of memory (stackalloc)"u8);
+            @throw(outOfMemoryStackallocˢ);
         }
         return new Δstack((uintptr)vΔ1, (uintptr)vΔ1 + (uintptr)n);
     }
@@ -367,7 +383,7 @@ internal static Δstack @stackalloc(uint32 n) {
             // Allocate a new stack from the heap.
             s = Ꮡmheap_.allocManual(npage, spanAllocStack);
             if (s == nil) {
-                @throw("out of memory"u8);
+                @throw(outOfMemoryˢ);
             }
             osStackAlloc(s);
             s.Value.elemsize = (uintptr)n;
@@ -396,6 +412,11 @@ internal static Δstack @stackalloc(uint32 n) {
     return new Δstack((uintptr)v, (uintptr)v + (uintptr)n);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stackNotAPowerOf2ˢ = "stack not a power of 2"u8;
+private static readonly @string badStackSizeˢ = "bad stack size"u8;
+private static readonly @string badSpanStateˢ = "bad span state"u8;
+
 // stackfree frees an n byte stack allocation at stk.
 //
 // stackfree must run on the system stack because it uses per-P
@@ -407,10 +428,10 @@ internal static void stackfree(Δstack stk) {
     @unsafe.Pointer v = (@unsafe.Pointer)stk.lo;
     var n = stk.hi - stk.lo;
     if ((uintptr)(n & (n - 1)) != 0) {
-        @throw("stack not a power of 2"u8);
+        @throw(stackNotAPowerOf2ˢ);
     }
     if (stk.lo + n < stk.hi) {
-        @throw("bad stack size"u8);
+        @throw(badStackSizeˢ);
     }
     if (stackDebug >= 1) {
         println((@string)"stackfree"u8, v, n);
@@ -463,7 +484,7 @@ internal static void stackfree(Δstack stk) {
         var s = spanOfUnchecked((uintptr)v);
         if (s.of(mspan.Ꮡstate).get() != mSpanManual) {
             println(((Δhex)(uint64)s.@base()), v);
-            @throw("bad span state"u8);
+            @throw(badSpanStateˢ);
         }
         if (gcphase == _GCoff){
             // Free the stack immediately if we're
@@ -566,6 +587,9 @@ internal static void adjustpointer(ж<adjustinfo> Ꮡadjinfo, @unsafe.Pointer vp
     return (uint8)((byte)(((b >> (int)((i % 8)))) & 1));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidPointerFoundOnˢ = "invalid pointer found on stack"u8;
+
 // bv describes the memory starting at address scanp.
 // Adjust any pointers contained therein.
 internal static void adjustpointers(@unsafe.Pointer scanp, ж<bitvector> Ꮡbv, ж<adjustinfo> Ꮡadjinfo, ΔfuncInfo f) {
@@ -600,7 +624,7 @@ retry:
                 // Live analysis wrong?
                 getg().Value.m.Value.traceback = 2;
                 print((@string)"runtime: bad pointer in frame "u8, funcname(f), (@string)" at "u8, pp, (@string)": "u8, ((Δhex)(uint64)Δp), (@string)"\n"u8);
-                @throw("invalid pointer found on stack"u8);
+                @throw(invalidPointerFoundOnˢ);
             }
             if (minp <= Δp && Δp < maxp) {
                 if (stackDebug >= 3) {
@@ -618,6 +642,9 @@ retry:
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badFramePointerˢ = "bad frame pointer"u8;
 
 // Note: the argument/return area is adjusted by the callee.
 internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinfo) {
@@ -644,7 +671,7 @@ internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinf
             if (bp != 0 && (bp < adjinfo.old.lo || bp >= adjinfo.old.hi)) {
                 println((@string)"runtime: found invalid frame pointer"u8);
                 print((@string)"bp="u8, ((Δhex)(uint64)bp), (@string)" min="u8, ((Δhex)(uint64)adjinfo.old.lo), (@string)" max="u8, ((Δhex)(uint64)adjinfo.old.hi), (@string)"\n"u8);
-                @throw("bad frame pointer"u8);
+                @throw(badFramePointerˢ);
             }
         }
         // On AMD64, this is the caller's frame pointer saved in the current
@@ -707,6 +734,9 @@ internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinf
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badTopFramePointerˢ = "bad top frame pointer"u8;
+
 internal static void adjustctxt(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
     ref var gp = ref Ꮡgp.Value;
     ref var adjinfo = ref Ꮡadjinfo.Value;
@@ -720,7 +750,7 @@ internal static void adjustctxt(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
         if (bp != 0 && (bp < adjinfo.old.lo || bp >= adjinfo.old.hi)) {
             println((@string)"runtime: found invalid top frame pointer"u8);
             print((@string)"bp="u8, ((Δhex)(uint64)bp), (@string)" min="u8, ((Δhex)(uint64)adjinfo.old.lo), (@string)" max="u8, ((Δhex)(uint64)adjinfo.old.hi), (@string)"\n"u8);
-            @throw("bad top frame pointer"u8);
+            @throw(badTopFramePointerˢ);
         }
     }
     var oldfp = gp.sched.bp;
@@ -835,17 +865,22 @@ internal static uintptr syncadjustsudogs(ж<g> Ꮡgp, uintptr used, ж<adjustinf
     return sgsize;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stackGrowthNotAllowedInˢ = "stack growth not allowed in system call"u8;
+private static readonly @string nilStackbaseˢ = "nil stackbase"u8;
+private static readonly @string racySudogAdjustmentDueToˢ = "racy sudog adjustment due to parking on channel"u8;
+
 // Copies gp's stack to a new stack of a different size.
 // Caller must have changed gp status to Gcopystack.
 internal static void copystack(ж<g> Ꮡgp, uintptr newsize) {
     ref var gp = ref Ꮡgp.Value;
 
     if (gp.syscallsp != 0) {
-        @throw("stack growth not allowed in system call"u8);
+        @throw(stackGrowthNotAllowedInˢ);
     }
     var old = gp.stack;
     if (old.lo == 0) {
-        @throw("nil stackbase"u8);
+        @throw(nilStackbaseˢ);
     }
     var used = old.hi - gp.sched.sp;
     // Add just the difference to gcController.addScannableStack.
@@ -873,7 +908,7 @@ internal static void copystack(ж<g> Ꮡgp, uintptr newsize) {
             // parking on a channel, but it is safe to grow since we do that
             // ourselves and explicitly don't want to synchronize with channels
             // since we could self-deadlock.
-            @throw("racy sudog adjustment due to parking on channel"u8);
+            @throw(racySudogAdjustmentDueToˢ);
         }
         adjustsudogs(Ꮡgp, Ꮡadjinfo);
     } else {
@@ -927,6 +962,17 @@ internal static int32 round2(int32 x) {
     return ((int32)1).Lsh(s);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stackGrowthAfterForkˢ = "stack growth after fork"u8;
+private static readonly @string runtimeWrongGoroutineInˢ = "runtime: wrong goroutine in newstack"u8;
+private static readonly @string unknownˢ3 = "(unknown)"u8;
+private static readonly @string runtimeStackSplitAtBadˢ = "runtime: stack split at bad time"u8;
+private static readonly @string missingStackInNewstackˢ = "missing stack in newstack"u8;
+private static readonly @string runtimeSplitStackˢ = "runtime: split stack overflow"u8;
+private static readonly @string runtimePreemptG0ˢ = "runtime: preempt g0"u8;
+private static readonly @string runtimeGIsRunningButPIsˢ = "runtime: g is running but p is not"u8;
+private static readonly @string stackOverflowˢ = "stack overflow"u8;
+
 // Called from runtime·morestack when more stack is needed.
 // Allocate larger stack and relocate to new stack.
 // Stack growth is multiplicative, for constant amortized cost.
@@ -943,13 +989,13 @@ internal static void newstack() {
     var thisg = getg();
     // TODO: double check all gp. shouldn't be getg().
     if ((~(~(~thisg).m).morebuf.g.ptr()).stackguard0 == stackFork) {
-        @throw("stack growth after fork"u8);
+        @throw(stackGrowthAfterForkˢ);
     }
     if ((~(~thisg).m).morebuf.g.ptr() != (~(~thisg).m).curg) {
         print((@string)"runtime: newstack called from g="u8, ((Δhex)(uint64)(uintptr)(~(~thisg).m).morebuf.g), (@string)("\n" + "\tm="), (~thisg).m, (@string)" m->curg="u8, (~(~thisg).m).curg, (@string)" m->g0="u8, (~(~thisg).m).g0, (@string)" m->gsignal="u8, (~(~thisg).m).gsignal, (@string)"\n"u8);
         var morebufΔ1 = thisg.Value.m.Value.morebuf;
         traceback(morebufΔ1.pc, morebufΔ1.sp, morebufΔ1.lr, morebufΔ1.g.ptr());
-        @throw("runtime: wrong goroutine in newstack"u8);
+        @throw(runtimeWrongGoroutineInˢ);
     }
     var gp = thisg.Value.m.Value.curg;
     if ((~(~(~thisg).m).curg).throwsplit) {
@@ -957,7 +1003,7 @@ internal static void newstack() {
         var morebufΔ2 = thisg.Value.m.Value.morebuf;
         gp.Value.syscallsp = morebufΔ2.sp;
         gp.Value.syscallpc = morebufΔ2.pc;
-        @string pcname = "(unknown)"u8;
+        @string pcname = unknownˢ3;
         var pcoff = (uintptr)0;
         var f = findfunc((~gp).sched.pc);
         if (f.valid()) {
@@ -971,7 +1017,7 @@ internal static void newstack() {
         thisg.Value.m.Value.traceback = 2;
         // Include runtime frames
         traceback(morebufΔ2.pc, morebufΔ2.sp, morebufΔ2.lr, gp);
-        @throw("runtime: stack split at bad time"u8);
+        @throw(runtimeStackSplitAtBadˢ);
     }
     var morebuf = thisg.Value.m.Value.morebuf;
     thisg.Value.m.Value.morebuf.pc = 0;
@@ -1005,7 +1051,7 @@ internal static void newstack() {
     }
     // never return
     if ((~gp).stack.lo == 0) {
-        @throw("missing stack in newstack"u8);
+        @throw(missingStackInNewstackˢ);
     }
     var sp = gp.Value.sched.sp;
     if (goarch.ArchFamily == goarch.AMD64 || goarch.ArchFamily == goarch.I386 || goarch.ArchFamily == goarch.WASM) {
@@ -1020,14 +1066,14 @@ internal static void newstack() {
     if (sp < (~gp).stack.lo) {
         print((@string)"runtime: gp="u8, gp, (@string)", goid="u8, (~gp).goid, (@string)", gp->status="u8, ((Δhex)(uint64)readgstatus(gp)), (@string)"\n "u8);
         print((@string)"runtime: split stack overflow: "u8, ((Δhex)(uint64)sp), (@string)" < "u8, ((Δhex)(uint64)(~gp).stack.lo), (@string)"\n"u8);
-        @throw("runtime: split stack overflow"u8);
+        @throw(runtimeSplitStackˢ);
     }
     if (preempt) {
         if (gp == (~(~thisg).m).g0) {
-            @throw("runtime: preempt g0"u8);
+            @throw(runtimePreemptG0ˢ);
         }
         if ((~(~thisg).m).p == 0 && (~(~thisg).m).locks == 0) {
-            @throw("runtime: g is running but p is not"u8);
+            @throw(runtimeGIsRunningButPIsˢ);
         }
         if ((~gp).preemptShrink) {
             // We're at a synchronous safe point now, so
@@ -1072,7 +1118,7 @@ internal static void newstack() {
             print((@string)"runtime: goroutine stack exceeds "u8, maxstackceiling, (@string)"-byte limit\n"u8);
         }
         print((@string)"runtime: sp="u8, ((Δhex)(uint64)sp), (@string)" stack=["u8, ((Δhex)(uint64)(~gp).stack.lo), (@string)", "u8, ((Δhex)(uint64)(~gp).stack.hi), (@string)"]\n"u8);
-        @throw("stack overflow"u8);
+        @throw(stackOverflowˢ);
     }
     // The goroutine must be executing in order to call newstack,
     // so it must be Grunning (or Gscanrunning).
@@ -1146,6 +1192,12 @@ internal static bool isShrinkStackSafe(ж<g> Ꮡgp) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingStackInˢ = "missing stack in shrinkstack"u8;
+private static readonly @string badStatusInShrinkstackˢ = "bad status in shrinkstack"u8;
+private static readonly @string shrinkstackAtBadTimeˢ = "shrinkstack at bad time"u8;
+private static readonly @string shrinkingStackInLibcallˢ = "shrinking stack in libcall"u8;
+
 // Maybe shrink the stack being used by gp.
 //
 // gp must be stopped and we must own its stack. It may be in
@@ -1154,7 +1206,7 @@ internal static void shrinkstack(ж<g> Ꮡgp) {
     ref var gp = ref Ꮡgp.DerefOrNil();
 
     if (gp.stack.lo == 0) {
-        @throw("missing stack in shrinkstack"u8);
+        @throw(missingStackInˢ);
     }
     {
         var s = readgstatus(Ꮡgp); if ((uint32)(s & (uint32)_Gscan) == 0) {
@@ -1163,18 +1215,18 @@ internal static void shrinkstack(ж<g> Ꮡgp) {
             // system stack.
             if (!(Ꮡgp == (~(~getg()).m).curg && getg() != (~(~getg()).m).curg && s == _Grunning)) {
                 // We don't own the stack.
-                @throw("bad status in shrinkstack"u8);
+                @throw(badStatusInShrinkstackˢ);
             }
         }
     }
     if (!isShrinkStackSafe(Ꮡgp)) {
-        @throw("shrinkstack at bad time"u8);
+        @throw(shrinkstackAtBadTimeˢ);
     }
     // Check for self-shrinks while in a libcall. These may have
     // pointers into the stack disguised as uintptrs, but these
     // code paths should all be nosplit.
     if (Ꮡgp == (~(~getg()).m).curg && (~gp.m).libcallsp != 0) {
-        @throw("shrinking stack in libcall"u8);
+        @throw(shrinkingStackInLibcallˢ);
     }
     if (debug.gcshrinkstackoff > 0) {
         return;
@@ -1284,12 +1336,15 @@ internal static ж<byte> gcdata(this ж<stackObjectRecord> Ꮡr) {
     return (ж<byte>)(uintptr)((@unsafe.Pointer)res);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string attemptToExecuteSystemˢ = "attempt to execute system stack code on user stack"u8;
+
 // This is exported as ABI0 via linkname so obj can call it.
 //
 //go:nosplit
 //go:linkname morestackc
 internal static void morestackc() {
-    @throw("attempt to execute system stack code on user stack"u8);
+    @throw(attemptToExecuteSystemˢ);
 }
 
 // startingStackSize is the amount of stack that new goroutines start with.

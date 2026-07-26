@@ -11,6 +11,9 @@ using Δunicode = unicode_package;
 
 partial class mime_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string utf8ˢ3 = "utf-8''"u8;
+
 // FormatMediaType serializes mediatype t and the parameters
 // param as a media type conforming to RFC 2045 and RFC 2616.
 // The type and parameter names are written in lower-case.
@@ -53,7 +56,7 @@ public static @string FormatMediaType(@string t, map<@string, @string> param) {
         }
         Ꮡb.WriteByte((rune)'=');
         if (needEnc) {
-            Ꮡb.WriteString("utf-8''"u8);
+            Ꮡb.WriteString(utf8ˢ3);
             nint offsetΔ1 = 0;
             for (nint index = 0; index < len(value); index++) {
                 var ch = value[index];
@@ -90,23 +93,29 @@ public static @string FormatMediaType(@string t, map<@string, @string> param) {
     return b.String();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mimeNoMediaTypeˢ = "mime: no media type"u8;
+private static readonly @string mimeExpectedSlashAfterˢ = "mime: expected slash after first token"u8;
+private static readonly @string mimeExpectedTokenAfterˢ = "mime: expected token after slash"u8;
+private static readonly @string mimeUnexpectedContentˢ = "mime: unexpected content after media subtype"u8;
+
 internal static error checkMediaTypeDisposition(@string s) {
     var (typ, rest) = consumeToken(s);
     if (typ == ""u8) {
-        return errors.New("mime: no media type"u8);
+        return errors.New(mimeNoMediaTypeˢ);
     }
     if (rest == ""u8) {
         return default!;
     }
     if (!strings.HasPrefix(rest, "/"u8)) {
-        return errors.New("mime: expected slash after first token"u8);
+        return errors.New(mimeExpectedSlashAfterˢ);
     }
     (var subtype, rest) = consumeToken(rest[1..]);
     if (subtype == ""u8) {
-        return errors.New("mime: expected token after slash"u8);
+        return errors.New(mimeExpectedTokenAfterˢ);
     }
     if (rest != ""u8) {
-        return errors.New("mime: unexpected content after media subtype"u8);
+        return errors.New(mimeUnexpectedContentˢ);
     }
     return default!;
 }
@@ -115,6 +124,9 @@ internal static error checkMediaTypeDisposition(@string s) {
 // the media type value was found but there was an error parsing
 // the optional parameters
 public static error ErrInvalidMediaParameter = errors.New("mime: invalid media parameter"u8);
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mimeDuplicateParameterˢ = "mime: duplicate parameter name"u8;
 
 // ParseMediaType parses a media type value and any optional
 // parameters, per RFC 1521.  Media types are the values in
@@ -176,7 +188,7 @@ public static (@string mediatype, map<@string, @string> @params, error err) Pars
         {
             var (vΔ1, exists) = pmap[key, ꟷ]; if (exists && vΔ1 != value) {
                 // Duplicate parameter names are incorrect, but we allow them if they are equal.
-                return ("", default!, errors.New("mime: duplicate parameter name"u8));
+                return ("", default!, errors.New(mimeDuplicateParameterˢ));
             }
         }
         pmap[key] = value;

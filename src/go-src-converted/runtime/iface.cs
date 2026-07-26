@@ -39,6 +39,9 @@ internal static uintptr itabHashFunc(ж<interfacetype> Ꮡinter, ж<_type> Ꮡty
     return (uintptr)((uint32)(inter.Type.Hash ^ typ.Hash));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string internalErrorMisuseOfˢ = "internal error - misuse of itab"u8;
+
 // getitab should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
@@ -53,7 +56,7 @@ internal static ж<itab> getitab(ж<interfacetype> Ꮡinter, ж<_type> Ꮡtyp, b
     ref var typ = ref Ꮡtyp.Value;
 
     if (len(inter.Methods) == 0) {
-        @throw("internal error - misuse of itab"u8);
+        @throw(internalErrorMisuseOfˢ);
     }
     // easy case
     if ((abi.TFlag)(typ.TFlag & abi.TFlagUncommon) == 0) {
@@ -138,6 +141,9 @@ internal static ж<itab> find(this ж<itabTableType> Ꮡt, ж<interfacetype> Ꮡ
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mismatchedCountDuringˢ = "mismatched count during itab table copy"u8;
+
 // itabAdd adds the given itab to the itab hash table.
 // itabLock must be held.
 internal static void itabAdd(ж<itab> Ꮡm) {
@@ -148,7 +154,7 @@ internal static void itabAdd(ж<itab> Ꮡm) {
     // Crash reliably, rather than only when we need to grow
     // the hash table.
     if ((~(~getg()).m).mallocing != 0) {
-        @throw("malloc deadlock"u8);
+        @throw(mallocDeadlockˢ);
     }
     var t = itabTable;
     if ((~t).count >= 3 * ((~t).size / 4)) {
@@ -165,7 +171,7 @@ internal static void itabAdd(ж<itab> Ꮡm) {
         // and as a consequence wait until this copying is complete.
         iterate_itabs(t2.add);
         if ((~t2).count != (~t).count) {
-            @throw("mismatched count during itab table copy"u8);
+            @throw(mismatchedCountDuringˢ);
         }
         // Publish new hash table. Use an atomic write: see comment in getitab.
         atomicstorep(@unsafe.Pointer.FromRef(ref (ᏑitabTable).Value), new @unsafe.Pointer(t2));
@@ -758,11 +764,14 @@ internal static ж<array<uint64>> Ꮡstaticuint64s = new(new uint64[]{
 }.array());
 internal static ref array<uint64> staticuint64s => ref Ꮡstaticuint64s.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unreachableMethodCalledˢ = "unreachable method called. linker bug?"u8;
+
 // The linker redirects a reference of a method that it determined
 // unreachable to a reference to this function, so it will throw if
 // ever called.
 internal static void unreachableMethod() {
-    @throw("unreachable method called. linker bug?"u8);
+    @throw(unreachableMethodCalledˢ);
 }
 
 } // end runtime_package

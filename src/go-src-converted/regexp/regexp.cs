@@ -1302,7 +1302,7 @@ public static slice<@string> Split(this ж<Regexp> Ꮡre, @string s, nint n) {
         return default!;
     }
     if (len(re.expr) > 0 && len(s) == 0) {
-        return new @string[]{""}.slice();
+        return new @string[]{""u8}.slice();
     }
     var matches = Ꮡre.FindAllStringIndex(s, n);
     var strings = new slice<@string>(0, len(matches));

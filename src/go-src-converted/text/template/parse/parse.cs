@@ -201,13 +201,16 @@ public static (@string location, @string context) ErrorContext(this ж<Tree> Ꮡ
     return token;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string actionˢ = " action"u8;
+
 // unexpected complains about the token and terminates processing.
 [GoRecv] internal static void unexpected(this ref Tree t, item token, @string context) {
     if (token.typ == itemError) {
         @string extra = ""u8;
         if (t.actionLine != 0 && t.actionLine != token.line) {
             extra = fmt.Sprintf(" in action started at %s:%d"u8, t.ParseName, t.actionLine);
-            if (strings.HasSuffix(token.val, " action"u8)) {
+            if (strings.HasSuffix(token.val, actionˢ)) {
                 extra = extra[(int)(len(" in action"))..];
             }
         }
@@ -236,19 +239,23 @@ internal static void recover(this ж<Tree> Ꮡt, ж<error> Ꮡerrp) => func((def
     }
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string breakˢ2 = "break"u8;
+private static readonly @string continueˢ2 = "continue"u8;
+
 // startParse initializes the parser, using the lexer.
 [GoRecv] internal static void startParse(this ref Tree t, slice<map<@string, any>> funcs, ж<lexer> Ꮡlex, map<@string, ж<Tree>> treeSet) {
     ref var lex = ref Ꮡlex.Value;
 
     t.Root = default!;
     t.lex = Ꮡlex;
-    t.vars = new @string[]{"$"}.slice();
+    t.vars = new @string[]{"$"u8}.slice();
     t.funcs = funcs;
     t.treeSet = treeSet;
     lex.options = new lexOptions(
         emitComment: (Mode)(t.Mode & ParseComments) != 0,
-        breakOK: !t.hasFunction("break"u8),
-        continueOK: !t.hasFunction("continue"u8)
+        breakOK: !t.hasFunction(breakˢ2),
+        continueOK: !t.hasFunction(continueˢ2)
     );
 }
 
@@ -342,6 +349,9 @@ public static bool IsEmptyTree(Node n) {
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string definitionˢ = "definition"u8;
+
 // parse is the top-level parser for a template, essentially the same
 // as itemList except it also parses {{define}} actions.
 // It runs to EOF.
@@ -353,7 +363,7 @@ internal static void parse(this ж<Tree> Ꮡt) {
         if (t.peek().typ == itemLeftDelim) {
             var delim = t.next();
             if (t.nextNonSpace().typ == itemDefine) {
-                var newT = New("definition"u8);
+                var newT = New(definitionˢ);
                 // name will be updated once we know it.
                 newT.Value.text = t.text;
                 newT.Value.Mode = t.Mode;
@@ -425,6 +435,9 @@ internal static (ж<ListNode> list, Node next) itemList(this ж<Tree> Ꮡt) {
     return (list, next);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inputˢ = "input"u8;
+
 // textOrAction:
 //
 //	text | comment | action
@@ -446,7 +459,7 @@ internal static Node textOrAction(this ж<Tree> Ꮡt) => func<Node>((defer, reco
             return new CommentNodeжNode(Ꮡt.newComment(token.pos, token.val));
         }
         { /* default: */
-            t.unexpected(token, "input"u8);
+            t.unexpected(token, inputˢ);
         }
     }
 
@@ -456,6 +469,9 @@ internal static Node textOrAction(this ж<Tree> Ꮡt) => func<Node>((defer, reco
 [GoRecv] internal static void clearActionLine(this ref Tree t) {
     t.actionLine = 0;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string commandˢ = "command"u8;
 
 // Action:
 //
@@ -503,7 +519,7 @@ internal static Node /*n*/ action(this ж<Tree> Ꮡt) {
     t.backup();
     var token = t.peek();
     // Do not pop variables; they persist until "end".
-    return new ActionNodeжNode(Ꮡt.newAction(token.pos, token.line, Ꮡt.pipeline("command"u8, itemRightDelim)));
+    return new ActionNodeжNode(Ꮡt.newAction(token.pos, token.line, Ꮡt.pipeline(commandˢ, itemRightDelim)));
 }
 
 // Break:
@@ -516,7 +532,7 @@ internal static Node breakControl(this ж<Tree> Ꮡt, Pos pos, nint line) {
 
     {
         var token = t.nextNonSpace(); if (token.typ != itemRightDelim) {
-            t.unexpected(token, "{{break}}"u8);
+            t.unexpected(token, breakˢ);
         }
     }
     if (t.rangeDepth == 0) {
@@ -535,7 +551,7 @@ internal static Node continueControl(this ж<Tree> Ꮡt, Pos pos, nint line) {
 
     {
         var token = t.nextNonSpace(); if (token.typ != itemRightDelim) {
-            t.unexpected(token, "{{continue}}"u8);
+            t.unexpected(token, continueˢ);
         }
     }
     if (t.rangeDepth == 0) {
@@ -715,7 +731,7 @@ internal static Node ifControl(this ж<Tree> Ꮡt) {
 //
 // Range keyword is past.
 internal static Node rangeControl(this ж<Tree> Ꮡt) {
-    var (ᴛ6, ᴛ7, ᴛ8, ᴛ9, ᴛ10) = Ꮡt.parseControl("range"u8);
+    var (ᴛ6, ᴛ7, ᴛ8, ᴛ9, ᴛ10) = Ꮡt.parseControl(rangeˢ);
     var r = Ꮡt.newRange(ᴛ6, ᴛ7, ᴛ8, ᴛ9, ᴛ10);
     return new RangeNodeжNode(r);
 }
@@ -727,7 +743,7 @@ internal static Node rangeControl(this ж<Tree> Ꮡt) {
 //
 // If keyword is past.
 internal static Node withControl(this ж<Tree> Ꮡt) {
-    var (ᴛ11, ᴛ12, ᴛ13, ᴛ14, ᴛ15) = Ꮡt.parseControl("with"u8);
+    var (ᴛ11, ᴛ12, ᴛ13, ᴛ14, ᴛ15) = Ꮡt.parseControl(withˢ);
     return new WithNodeжNode(Ꮡt.newWith(ᴛ11, ᴛ12, ᴛ13, ᴛ14, ᴛ15));
 }
 
@@ -741,6 +757,9 @@ internal static Node endControl(this ж<Tree> Ꮡt) {
 
     return new endNodeжNode(Ꮡt.newEnd(t.expect(itemRightDelim, "end"u8).pos));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string elseˢ2 = "else"u8;
 
 // Else:
 //
@@ -757,7 +776,7 @@ internal static Node elseControl(this ж<Tree> Ꮡt) {
     if (peek.typ == itemIf || peek.typ == itemWith) {
         return new elseNodeжNode(Ꮡt.newElse(peek.pos, peek.line));
     }
-    var token = t.expect(itemRightDelim, "else"u8);
+    var token = t.expect(itemRightDelim, elseˢ2);
     return new elseNodeжNode(Ꮡt.newElse(token.pos, token.line));
 }
 
@@ -830,6 +849,9 @@ internal static Node templateControl(this ж<Tree> Ꮡt) {
     return name;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string operandˢ = "operand"u8;
+
 // command:
 //
 //	operand (space operand)*
@@ -860,7 +882,7 @@ internal static ж<CommandNode> command(this ж<Tree> Ꮡt) {
             }
             else { /* default: */
                 t.unexpected(token, // nothing here; break loop below
- "operand"u8);
+ operandˢ);
             }
         }
 
@@ -914,6 +936,9 @@ internal static Node operand(this ж<Tree> Ꮡt) {
     return node;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string parenthesizedPipelineˢ = "parenthesized pipeline"u8;
+
 // term:
 //
 //	literal (number, string, nil, boolean)
@@ -961,7 +986,7 @@ internal static Node term(this ж<Tree> Ꮡt) {
             return new NumberNodeжNode(number);
         }
         if (exprᴛ1 == itemLeftParen) {
-            return new PipeNodeжNode(Ꮡt.pipeline("parenthesized pipeline"u8, itemRightParen));
+            return new PipeNodeжNode(Ꮡt.pipeline(parenthesizedPipelineˢ, itemRightParen));
         }
         if (exprᴛ1 == itemString || exprᴛ1 == itemRawString) {
             var (s, err) = strconv.Unquote(token.val);

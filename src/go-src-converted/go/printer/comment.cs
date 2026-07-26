@@ -108,6 +108,11 @@ internal static slice<ж<ast.Comment>> formatDocComment(slice<ж<ast.Comment>> l
     return @out;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lineˢ = "line "u8;
+private static readonly @string externˢ = "extern "u8;
+private static readonly @string exportˢ = "export "u8;
+
 // isDirective reports whether c is a comment directive.
 // See go.dev/issue/37974.
 // This code is also in go/ast.
@@ -116,7 +121,7 @@ internal static bool isDirective(@string c) {
     // "//extern " is for gccgo.
     // "//export " is for cgo.
     // (The // has been removed.)
-    if (strings.HasPrefix(c, "line "u8) || strings.HasPrefix(c, "extern "u8) || strings.HasPrefix(c, "export "u8)) {
+    if (strings.HasPrefix(c, lineˢ) || strings.HasPrefix(c, externˢ) || strings.HasPrefix(c, exportˢ)) {
         return true;
     }
     // "//[a-z0-9]+:[a-z0-9]"

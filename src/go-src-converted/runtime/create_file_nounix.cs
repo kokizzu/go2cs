@@ -8,8 +8,11 @@ partial class runtime_package {
 
 internal const bool canCreateFile = false;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unimplementedˢ = "unimplemented"u8;
+
 internal static int32 create(ж<byte> Ꮡname, int32 perm) {
-    @throw("unimplemented"u8);
+    @throw(unimplementedˢ);
     return -1;
 }
 

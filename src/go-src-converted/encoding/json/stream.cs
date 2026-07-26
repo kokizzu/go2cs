@@ -264,12 +264,15 @@ public static (slice<byte>, error) MarshalJSON(this RawMessage m) {
     return (m, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string jsonRawMessageˢ = "json.RawMessage: UnmarshalJSON on nil pointer"u8;
+
 // UnmarshalJSON sets *m to a copy of data.
 public static error UnmarshalJSON(this ж<RawMessage> Ꮡm, slice<byte> data) {
     ref var m = ref Ꮡm.DerefOrNil();
 
     if (Ꮡm == nil) {
-        return errors.New("json.RawMessage: UnmarshalJSON on nil pointer"u8);
+        return errors.New(jsonRawMessageˢ);
     }
     m = append((m)[0..0], data.ꓸꓸꓸ);
     return default!;
@@ -458,26 +461,33 @@ public static (ΔToken, error) Token(this ж<Decoder> Ꮡdec) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lookingForBeginningOfˢ3 = " looking for beginning of value"u8;
+private static readonly @string afterArrayElementˢ2 = " after array element"u8;
+private static readonly @string lookingForBeginningOfˢ4 = " looking for beginning of object key string"u8;
+private static readonly @string afterObjectKeyˢ2 = " after object key"u8;
+private static readonly @string afterObjectKeyValuePairˢ2 = " after object key:value pair"u8;
+
 [GoRecv] internal static (ΔToken, error) tokenError(this ref Decoder dec, byte c) {
     @string context = default!;
     var exprᴛ1 = dec.tokenState;
     if (exprᴛ1 == tokenTopValue) {
-        context = " looking for beginning of value"u8;
+        context = lookingForBeginningOfˢ3;
     }
     else if (exprᴛ1 == tokenArrayStart || exprᴛ1 == tokenArrayValue || exprᴛ1 == tokenObjectValue) {
-        context = " looking for beginning of value"u8;
+        context = lookingForBeginningOfˢ3;
     }
     else if (exprᴛ1 == tokenArrayComma) {
-        context = " after array element"u8;
+        context = afterArrayElementˢ2;
     }
     else if (exprᴛ1 == tokenObjectKey) {
-        context = " looking for beginning of object key string"u8;
+        context = lookingForBeginningOfˢ4;
     }
     else if (exprᴛ1 == tokenObjectColon) {
-        context = " after object key"u8;
+        context = afterObjectKeyˢ2;
     }
     else if (exprᴛ1 == tokenObjectComma) {
-        context = " after object key:value pair"u8;
+        context = afterObjectKeyValuePairˢ2;
     }
 
     return (default!, new SyntaxErrorжerror(Ꮡ(new SyntaxError("invalid character " + quoteChar(c) + context, dec.InputOffset()))));

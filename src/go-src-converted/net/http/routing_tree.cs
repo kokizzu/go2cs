@@ -255,7 +255,7 @@ internal static void matchingMethods(this ж<routingNode> Ꮡroot, @string host,
     }
     root.emptyChild.matchingMethodsPath(path, methodSet);
     if (methodSet["GET"u8]) {
-        methodSet["HEAD"u8] = true;
+        methodSet[headˢ] = true;
     }
 }
 

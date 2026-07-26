@@ -43,12 +43,15 @@ public static slice<byte> Extract(Func<hash.Hash> hashΔ1, slice<byte> secret, s
     internal slice<byte> buf;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string hkdfEntropyLimitReachedˢ = "hkdf: entropy limit reached"u8;
+
 [GoRecv] internal static (nint, error) Read(this ref hkdf f, slice<byte> p) {
     // Check whether enough data can be generated
     nint need = len(p);
     nint remains = len(f.buf) + (nint)(255 - f.counter + 1) * f.size;
     if (remains < need) {
-        return (0, errors.New("hkdf: entropy limit reached"u8));
+        return (0, errors.New(hkdfEntropyLimitReachedˢ));
     }
     // Read any leftover from the buffer
     nint n = copy(p, f.buf);

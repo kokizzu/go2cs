@@ -79,16 +79,21 @@ internal static ΔAddr sockaddrToUnixpacket(syscallꓸSockaddr sa) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unixˢ = "unix"u8;
+private static readonly @string unixgramˢ = "unixgram"u8;
+private static readonly @string unixpacketˢ = "unixpacket"u8;
+
 internal static @string sotypeToNet(nint sotype) {
     var exprᴛ1 = sotype;
     if (exprᴛ1 == syscall.SOCK_STREAM) {
-        return "unix"u8;
+        return unixˢ;
     }
     if (exprᴛ1 == syscall.SOCK_DGRAM) {
-        return "unixgram"u8;
+        return unixgramˢ;
     }
     if (exprᴛ1 == syscall.SOCK_SEQPACKET) {
-        return "unixpacket"u8;
+        return unixpacketˢ;
     }
     { /* default: */
         throw panic("sotypeToNet unknown socket type");
@@ -190,7 +195,7 @@ internal static (ж<UnixConn>, error) dialUnix(this ж<sysDialer> Ꮡsd, context
     if (ctrlCtxFn == default! && sd.Dialer.Control != default!) {
         ctrlCtxFn = (context.Context ctxΔ1, @string network, @string address, syscall.RawConn c) => Ꮡsd.Value.Dialer.Control(network, address, c);
     }
-    var (fd, err) = unixSocket(ctx, sd.network, new UnixAddrжΔsockaddr(Ꮡladdr), new UnixAddrжΔsockaddr(Ꮡraddr), "dial"u8, ctrlCtxFn);
+    var (fd, err) = unixSocket(ctx, sd.network, new UnixAddrжΔsockaddr(Ꮡladdr), new UnixAddrжΔsockaddr(Ꮡraddr), dialˢ, ctrlCtxFn);
     if (err != default!) {
         return (default!, err);
     }
@@ -255,7 +260,7 @@ internal static (ж<UnixListener>, error) listenUnix(this ж<sysListener> Ꮡsl,
     if (sl.ListenConfig.Control != default!) {
         ctrlCtxFn = (context.Context ctxΔ1, @string network, @string address, syscall.RawConn c) => Ꮡsl.Value.ListenConfig.Control(network, address, c);
     }
-    var (fd, err) = unixSocket(ctx, sl.network, new UnixAddrжΔsockaddr(Ꮡladdr), default!, "listen"u8, ctrlCtxFn);
+    var (fd, err) = unixSocket(ctx, sl.network, new UnixAddrжΔsockaddr(Ꮡladdr), default!, listenˢ, ctrlCtxFn);
     if (err != default!) {
         return (default!, err);
     }
@@ -269,7 +274,7 @@ internal static (ж<UnixConn>, error) listenUnixgram(this ж<sysListener> Ꮡsl,
     if (sl.ListenConfig.Control != default!) {
         ctrlCtxFn = (context.Context ctxΔ1, @string network, @string address, syscall.RawConn c) => Ꮡsl.Value.ListenConfig.Control(network, address, c);
     }
-    var (fd, err) = unixSocket(ctx, sl.network, new UnixAddrжΔsockaddr(Ꮡladdr), default!, "listen"u8, ctrlCtxFn);
+    var (fd, err) = unixSocket(ctx, sl.network, new UnixAddrжΔsockaddr(Ꮡladdr), default!, listenˢ, ctrlCtxFn);
     if (err != default!) {
         return (default!, err);
     }

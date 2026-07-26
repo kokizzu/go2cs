@@ -161,9 +161,14 @@ internal static (slice<any>, error) unmarshalCorpusFile(slice<byte> b) {
     return (vals, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testˢ = "(test)"u8;
+private static readonly @string uint32ˢ = "uint32"u8;
+private static readonly @string uint64ˢ = "uint64"u8;
+
 internal static (any, error) parseCorpusValue(slice<byte> line) {
     var fs = token.NewFileSet();
-    var (expr, err) = parser.ParseExprFrom(fs, "(test)"u8, line, 0);
+    var (expr, err) = parser.ParseExprFrom(fs, testˢ, line, 0);
     if (err != default!) {
         return (default!, err);
     }
@@ -354,7 +359,7 @@ internal static (any, error) parseCorpusValue(slice<byte> line) {
             if (kind != token.INT) {
                 return (default!, fmt.Errorf("integer literal required for math.Float32frombits type"u8));
             }
-            var (bits, errΔ5) = parseUint(val, "uint32"u8);
+            var (bits, errΔ5) = parseUint(val, uint32ˢ);
             if (errΔ5 != default!) {
                 return (default!, errΔ5);
             }
@@ -364,7 +369,7 @@ internal static (any, error) parseCorpusValue(slice<byte> line) {
             if (kind != token.FLOAT && kind != token.INT) {
                 return (default!, fmt.Errorf("integer literal required for math.Float64frombits type"u8));
             }
-            var (bits, errΔ6) = parseUint(val, "uint64"u8);
+            var (bits, errΔ6) = parseUint(val, uint64ˢ);
             if (errΔ6 != default!) {
                 return (default!, errΔ6);
             }

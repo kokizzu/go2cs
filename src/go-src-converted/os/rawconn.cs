@@ -14,9 +14,12 @@ partial class os_package {
     internal ж<File> @file;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string syscallConnControlˢ = "SyscallConn.Control"u8;
+
 [GoRecv] internal static error Control(this ref rawConn c, Action<uintptr> f) {
     {
-        var errΔ1 = c.@file.checkValid("SyscallConn.Control"u8); if (errΔ1 != default!) {
+        var errΔ1 = c.@file.checkValid(syscallConnControlˢ); if (errΔ1 != default!) {
             return errΔ1;
         }
     }
@@ -25,9 +28,12 @@ partial class os_package {
     return err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string syscallConnReadˢ = "SyscallConn.Read"u8;
+
 [GoRecv] internal static error Read(this ref rawConn c, Func<uintptr, bool> f) {
     {
-        var errΔ1 = c.@file.checkValid("SyscallConn.Read"u8); if (errΔ1 != default!) {
+        var errΔ1 = c.@file.checkValid(syscallConnReadˢ); if (errΔ1 != default!) {
             return errΔ1;
         }
     }
@@ -36,9 +42,12 @@ partial class os_package {
     return err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string syscallConnWriteˢ = "SyscallConn.Write"u8;
+
 [GoRecv] internal static error Write(this ref rawConn c, Func<uintptr, bool> f) {
     {
-        var errΔ1 = c.@file.checkValid("SyscallConn.Write"u8); if (errΔ1 != default!) {
+        var errΔ1 = c.@file.checkValid(syscallConnWriteˢ); if (errΔ1 != default!) {
             return errΔ1;
         }
     }

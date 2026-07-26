@@ -339,11 +339,14 @@ public static nint Callers(nint skip, slice<uintptr> pc) {
 
 internal static @string defaultGOROOT; // set by cmd/link
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gorootˢ = "GOROOT"u8;
+
 // GOROOT returns the root of the Go tree. It uses the
 // GOROOT environment variable, if set at process start,
 // or else the root used during the Go build.
 public static @string GOROOT() {
-    @string s = gogetenv("GOROOT"u8);
+    @string s = gogetenv(gorootˢ);
     if (s != ""u8) {
         return s;
     }

@@ -55,6 +55,10 @@ public static ж<P256Point> Set(this ж<P256Point> Ꮡp, ж<P256Point> Ꮡq) {
     return Ꮡp;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidP256Compressedˢ = "invalid P256 compressed point encoding"u8;
+private static readonly @string invalidP256PointEncodingˢ = "invalid P256 point encoding"u8;
+
 // SetBytes sets p to the compressed, uncompressed, or infinity value encoded in
 // b, as specified in SEC 1, Version 2.0, Section 2.3.4. If the point is not on
 // the curve, it returns nil and an error, and the receiver is unchanged.
@@ -96,7 +100,7 @@ public static (ж<P256Point>, error) SetBytes(this ж<P256Point> Ꮡp, slice<byt
         var y = p256Polynomial(@new<fiat.P256Element>(), // y² = x³ - 3x + b
  x);
         if (!p256Sqrt(y, y)) {
-            return (default!, errors.New("invalid P256 compressed point encoding"u8));
+            return (default!, errors.New(invalidP256Compressedˢ));
         }
         var otherRoot = @new<fiat.P256Element>();
         otherRoot.Sub(otherRoot, // Select the positive or negative root, as indicated by the least
@@ -110,7 +114,7 @@ public static (ж<P256Point>, error) SetBytes(this ж<P256Point> Ꮡp, slice<byt
         return (Ꮡp, default!);
     }
     default: {
-        return (default!, errors.New("invalid P256 point encoding"u8));
+        return (default!, errors.New(invalidP256PointEncodingˢ));
     }}
 
 }
@@ -137,6 +141,9 @@ internal static ж<fiat.P256Element> p256Polynomial(ж<fiat.P256Element> Ꮡy2, 
     return Ꮡy2.Add(Ꮡy2, p256B());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string p256PointNotOnCurveˢ = "P256 point not on curve"u8;
+
 internal static error p256CheckOnCurve(ж<fiat.P256Element> Ꮡx, ж<fiat.P256Element> Ꮡy) {
     ref var x = ref Ꮡx.Value;
     ref var y = ref Ꮡy.Value;
@@ -145,7 +152,7 @@ internal static error p256CheckOnCurve(ж<fiat.P256Element> Ꮡx, ж<fiat.P256El
     var rhs = p256Polynomial(@new<fiat.P256Element>(), Ꮡx);
     var lhs = @new<fiat.P256Element>().Square(Ꮡy);
     if (rhs.Equal(lhs) != 1) {
-        return errors.New("P256 point not on curve"u8);
+        return errors.New(p256PointNotOnCurveˢ);
     }
     return default!;
 }
@@ -184,11 +191,14 @@ internal static error p256CheckOnCurve(ж<fiat.P256Element> Ꮡx, ж<fiat.P256El
     return p.bytesX(Ꮡout);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string p256PointIsThePointAtˢ = "P256 point is the point at infinity"u8;
+
 [GoRecv] internal static (slice<byte>, error) bytesX(this ref P256Point p, ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.Value;
 
     if (p.z.IsZero() == 1) {
-        return (default!, errors.New("P256 point is the point at infinity"u8));
+        return (default!, errors.New(p256PointIsThePointAtˢ));
     }
     var zinv = @new<fiat.P256Element>().Invert(p.z);
     var x = @new<fiat.P256Element>().Mul(p.x, zinv);
@@ -505,7 +515,7 @@ public static (ж<P256Point>, error) ScalarBaseMult(this ж<P256Point> Ꮡp, sli
     ref var p = ref Ꮡp.Value;
 
     if (len(scalar) != p256ElementLength) {
-        return (default!, errors.New("invalid scalar length"u8));
+        return (default!, errors.New(invalidScalarLengthˢ));
     }
     var tables = p.generatorTable();
     // This is also a scalar multiplication with a four-bit window like in

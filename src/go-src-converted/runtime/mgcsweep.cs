@@ -161,16 +161,20 @@ internal static sweepLocker begin(this ж<activeSweep> Ꮡa) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sweeperLeftOutstandingˢ = "sweeper left outstanding across sweep generations"u8;
+private static readonly @string mismatchedBeginEndOfˢ = "mismatched begin/end of activeSweep"u8;
+
 // end deregisters a sweeper. Must be called once for each time
 // begin is called if the sweepLocker is valid.
 internal static void end(this ж<activeSweep> Ꮡa, sweepLocker sl) {
     if (sl.sweepGen != mheap_.sweepgen) {
-        @throw("sweeper left outstanding across sweep generations"u8);
+        @throw(sweeperLeftOutstandingˢ);
     }
     while (ᐧ) {
         var state = Ꮡa.of(activeSweep.Ꮡstate).Load();
         if (((uint32)(state & ~(uint32)sweepDrainedMask)) - 1 >= sweepDrainedMask) {
-            @throw("mismatched begin/end of activeSweep"u8);
+            @throw(mismatchedBeginEndOfˢ);
         }
         if (Ꮡa.of(activeSweep.Ꮡstate).CompareAndSwap(state, state - 1)) {
             if (state != sweepDrainedMask) {
@@ -223,6 +227,9 @@ internal static void reset(this ж<activeSweep> Ꮡa) {
     Ꮡa.of(activeSweep.Ꮡstate).Store(0);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string activeSweepersFoundAtˢ = "active sweepers found at start of mark phase"u8;
+
 // finishsweep_m ensures that all spans are swept.
 //
 // The world must be stopped. This ensures there are no sweeps in
@@ -244,7 +251,7 @@ internal static void finishsweep_m() {
     // a sweeper didn't call sweep.active.end when it should have.
     // Both cases indicate a bug, so throw.
     if (ᏑΔsweep.of(sweepdata.Ꮡactive).sweepers() != 0) {
-        @throw("active sweepers found at start of mark phase"u8);
+        @throw(activeSweepersFoundAtˢ);
     }
     // Reset all the unswept buffers, which should be empty.
     // Do this in sweep termination as opposed to mark termination
@@ -326,13 +333,16 @@ internal static void bgsweep(channel<nint> c) {
     internal partial ref ж<mspan> mspan { get; }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string useOfInvalidSweepLockerˢ = "use of invalid sweepLocker"u8;
+
 // tryAcquire attempts to acquire sweep ownership of span s. If it
 // successfully acquires ownership, it blocks sweep completion.
 [GoRecv] internal static (sweepLocked, bool) tryAcquire(this ref sweepLocker l, ж<mspan> Ꮡs) {
     ref var s = ref Ꮡs.Value;
 
     if (!l.valid) {
-        @throw("use of invalid sweepLocker"u8);
+        @throw(useOfInvalidSweepLockerˢ);
     }
     // Check before attempting to CAS.
     if (atomic.Load(Ꮡs.of(mspan.Ꮡsweepgen)) != l.sweepGen - 2) {
@@ -344,6 +354,9 @@ internal static void bgsweep(channel<nint> c) {
     }
     return (new sweepLocked(Ꮡs), true);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nonInUseSpanInUnsweptˢ = "non in-use span in unswept list"u8;
 
 // sweepone sweeps some unswept heap span and returns the number of pages returned
 // to the heap, or ^uintptr(0) if there was nothing to sweep.
@@ -375,7 +388,7 @@ internal static uintptr sweepone() {
                 // generation should always be up-to-date.
                 if (!((~s).sweepgen == sl.sweepGen || (~s).sweepgen == sl.sweepGen + 3)) {
                     print((@string)"runtime: bad span s.state="u8, state, (@string)" s.sweepgen="u8, (~s).sweepgen, (@string)" sweepgen="u8, sl.sweepGen, (@string)"\n"u8);
-                    @throw("non in-use span in unswept list"u8);
+                    @throw(nonInUseSpanInUnsweptˢ);
                 }
                 continue;
             }
@@ -445,6 +458,9 @@ internal static bool isSweepDone() {
     return ᏑΔsweep.of(sweepdata.Ꮡactive).isDone();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mspanEnsureSweptMIsNotˢ = "mspan.ensureSwept: m is not locked"u8;
+
 // Returns only when span s has been swept.
 //
 //go:nowritebarrier
@@ -456,7 +472,7 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
     // (if GC is triggered on another goroutine).
     var gp = getg();
     if ((~(~gp).m).locks == 0 && (~(~gp).m).mallocing == 0 && gp != (~(~gp).m).g0) {
-        @throw("mspan.ensureSwept: m is not locked"u8);
+        @throw(mspanEnsureSweptMIsNotˢ);
     }
     // If this operation fails, then that means that there are
     // no more spans to be swept. In this case, either s has already
@@ -485,6 +501,15 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mspanSweepMIsNotLockedˢ = "mspan.sweep: m is not locked"u8;
+private static readonly @string mspanSweepBadSpanStateˢ = "mspan.sweep: bad span state"u8;
+private static readonly @string sweepIncreasedAllocationˢ = "sweep increased allocation count"u8;
+private static readonly @string mspanSweepBadSpanStateˢ2 = "mspan.sweep: bad span state after sweep"u8;
+private static readonly @string sweptCachedSpanˢ = "swept cached span"u8;
+private static readonly @string sweepTriedToPreserveAˢ = "sweep: tried to preserve a user arena span"u8;
+private static readonly @string userArenaSpanIsOnTheˢ = "user arena span is on the wrong list"u8;
+
 // sweep frees or collects finalizers for blocks not marked in the mark phase.
 // It clears the mark bits in preparation for the next GC round.
 // Returns true if the span was returned to heap.
@@ -495,7 +520,7 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
     // GC must not start while we are in the middle of this function.
     var gp = getg();
     if ((~(~gp).m).locks == 0 && (~(~gp).m).mallocing == 0 && gp != (~(~gp).m).g0) {
-        @throw("mspan.sweep: m is not locked"u8);
+        @throw(mspanSweepMIsNotLockedˢ);
     }
     var s = sl.mspan;
     if (!preserve) {
@@ -507,7 +532,7 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
     {
         var state = s.of(mspan.Ꮡstate).get(); if (state != mSpanInUse || (~s).sweepgen != sweepgen - 1) {
             print((@string)"mspan.sweep: state="u8, state, (@string)" sweepgen="u8, (~s).sweepgen, (@string)" mheap.sweepgen="u8, sweepgen, (@string)"\n"u8);
-            @throw("mspan.sweep: bad span state"u8);
+            @throw(mspanSweepBadSpanStateˢ);
         }
     }
     var Δtrace = traceAcquire();
@@ -654,7 +679,7 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
         // The zombie check above should have caught this in
         // more detail.
         print((@string)"runtime: nelems="u8, (~s).nelems, (@string)" nalloc="u8, nalloc, (@string)" previous allocCount="u8, (~s).allocCount, (@string)" nfreed="u8, nfreed, (@string)"\n"u8);
-        @throw("sweep increased allocation count"u8);
+        @throw(sweepIncreasedAllocationˢ);
     }
     s.Value.allocCount = nalloc;
     s.Value.freeindex = 0;
@@ -678,11 +703,11 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
     {
         var state = s.of(mspan.Ꮡstate).get(); if (state != mSpanInUse || (~s).sweepgen != sweepgen - 1) {
             print((@string)"mspan.sweep: state="u8, state, (@string)" sweepgen="u8, (~s).sweepgen, (@string)" mheap.sweepgen="u8, sweepgen, (@string)"\n"u8);
-            @throw("mspan.sweep: bad span state after sweep"u8);
+            @throw(mspanSweepBadSpanStateˢ2);
         }
     }
     if ((~s).sweepgen == sweepgen + 1 || (~s).sweepgen == sweepgen + 3) {
-        @throw("swept cached span"u8);
+        @throw(sweptCachedSpanˢ);
     }
     // We need to set s.sweepgen = h.sweepgen only when all blocks are swept,
     // because of the potential for a concurrent free/SetFinalizer.
@@ -699,7 +724,7 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
         if (preserve) {
             // This is a case that should never be handled by a sweeper that
             // preserves the span for reuse.
-            @throw("sweep: tried to preserve a user arena span"u8);
+            @throw(sweepTriedToPreserveAˢ);
         }
         if (nalloc > 0) {
             // There still exist pointers into the span or the span hasn't been
@@ -719,7 +744,7 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
             // It's the arena code's responsibility to get the chunk on the quarantine
             // list by the time all references to the chunk are gone.
             if ((~sʗ1).list != Ꮡmheap_.of(mheap.ᏑuserArena).of(mheap_userArena.ᏑquarantineList)) {
-                @throw("user arena span is on the wrong list"u8);
+                @throw(userArenaSpanIsOnTheˢ);
             }
             @lock(Ꮡmheap_.of(mheap.Ꮡlock));
             Ꮡmheap_.of(mheap.ᏑuserArena).of(mheap_userArena.ᏑquarantineList).remove(sʗ1);
@@ -818,6 +843,9 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string foundPointerToFreeObjectˢ = "found pointer to free object"u8;
+
 // reportZombies reports any marked but free objects in s and throws.
 //
 // This generally means one of the following:
@@ -868,7 +896,7 @@ internal static void reportZombies(this ж<mspan> Ꮡs) {
         mbits.advance();
         abits.advance();
     }
-    @throw("found pointer to free object"u8);
+    @throw(foundPointerToFreeObjectˢ);
 }
 
 // deductSweepCredit deducts sweep credit for allocating a span of

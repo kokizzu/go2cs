@@ -144,6 +144,10 @@ internal static (huffmanTree, error) newHuffmanTree(slice<uint8> lengths) {
     internal uint16 value;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string emptyHuffmanTreeˢ = "empty Huffman tree"u8;
+private static readonly @string equalSymbolsInHuffmanˢ = "equal symbols in Huffman tree"u8;
+
 // buildHuffmanNode takes a slice of sorted huffmanCodes and builds a node in
 // the Huffman tree at the given level. It returns the index of the newly
 // constructed node.
@@ -176,7 +180,7 @@ internal static (uint16 nodeIndex, error err) buildHuffmanNode(ж<huffmanTree> �
         // tree cannot encode anything and a length-1 tree can only
         // encode EOF and so is superfluous. We reject both.
         if (len(codes) < 2) {
-            return (0, ((StructuralError)(@string)"empty Huffman tree"u8));
+            return (0, ((StructuralError)(@string)emptyHuffmanTreeˢ));
         }
         // In this case the recursion doesn't always reduce the length
         // of codes so we need to ensure termination via another
@@ -186,7 +190,7 @@ internal static (uint16 nodeIndex, error err) buildHuffmanNode(ж<huffmanTree> �
             // can match at all 32 bits is if they are equal, which
             // is invalid. This ensures that we never enter
             // infinite recursion.
-            return (0, ((StructuralError)(@string)"equal symbols in Huffman tree"u8));
+            return (0, ((StructuralError)(@string)equalSymbolsInHuffmanˢ));
         }
         if (len(left) == 0) {
             return buildHuffmanNode(Ꮡt, right, level + 1);

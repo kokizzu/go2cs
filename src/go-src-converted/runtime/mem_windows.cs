@@ -24,6 +24,9 @@ internal static @unsafe.Pointer sysAllocOS(uintptr n) {
     return (@unsafe.Pointer)stdcall4(_VirtualAlloc, 0, n, (uintptr)((uintptr)_MEM_COMMIT | (uintptr)_MEM_RESERVE), _PAGE_READWRITE);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeFailedToDecommitˢ = "runtime: failed to decommit pages"u8;
+
 internal static void sysUnusedOS(@unsafe.Pointer v, uintptr n) {
     var r = stdcall3(_VirtualFree, (uintptr)v, n, _MEM_DECOMMIT);
     if (r != 0) {
@@ -46,12 +49,15 @@ internal static void sysUnusedOS(@unsafe.Pointer v, uintptr n) {
         }
         if (small < 4096) {
             print((@string)"runtime: VirtualFree of "u8, small, (@string)" bytes failed with errno="u8, getlasterror(), (@string)"\n"u8);
-            @throw("runtime: failed to decommit pages"u8);
+            @throw(runtimeFailedToDecommitˢ);
         }
         v.Value = (uintptr)add(v, small);
         n -= small;
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeFailedToCommitˢ = "runtime: failed to commit pages"u8;
 
 internal static void sysUsedOS(@unsafe.Pointer v, uintptr n) {
     var Δp = stdcall4(_VirtualAlloc, (uintptr)v, n, _MEM_COMMIT, _PAGE_READWRITE);
@@ -73,11 +79,11 @@ internal static void sysUsedOS(@unsafe.Pointer v, uintptr n) {
             var exprᴛ1 = errno;
             if (exprᴛ1 == _ERROR_NOT_ENOUGH_MEMORY || exprᴛ1 == _ERROR_COMMITMENT_LIMIT) {
                 print((@string)"runtime: VirtualAlloc of "u8, n, (@string)" bytes failed with errno="u8, errno, (@string)"\n"u8);
-                @throw("out of memory"u8);
+                @throw(outOfMemoryˢ);
             }
             else { /* default: */
                 print((@string)"runtime: VirtualAlloc of "u8, small, (@string)" bytes failed with errno="u8, errno, (@string)"\n"u8);
-                @throw("runtime: failed to commit pages"u8);
+                @throw(runtimeFailedToCommitˢ);
             }
 
         }
@@ -95,6 +101,9 @@ internal static void sysNoHugePageOS(@unsafe.Pointer v, uintptr n) {
 internal static void sysHugePageCollapseOS(@unsafe.Pointer v, uintptr n) {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeFailedToReleaseˢ = "runtime: failed to release pages"u8;
+
 // Don't split the stack as this function may be invoked without a valid G,
 // which prevents us from allocating more stack.
 //
@@ -103,7 +112,7 @@ internal static void sysFreeOS(@unsafe.Pointer v, uintptr n) {
     var r = stdcall3(_VirtualFree, (uintptr)v, 0, _MEM_RELEASE);
     if (r == 0) {
         print((@string)"runtime: VirtualFree of "u8, n, (@string)" bytes failed with errno="u8, getlasterror(), (@string)"\n"u8);
-        @throw("runtime: failed to release pages"u8);
+        @throw(runtimeFailedToReleaseˢ);
     }
 }
 

@@ -133,195 +133,258 @@ public static readonly UntypedInt StatusNotExtended = 510; // RFC 2774, 7
 
 public static readonly UntypedInt StatusNetworkAuthenticationRequired = 511; // RFC 6585, 6
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string continueˢ2 = "Continue"u8;
+private static readonly @string switchingProtocolsˢ = "Switching Protocols"u8;
+private static readonly @string processingˢ = "Processing"u8;
+private static readonly @string earlyHintsˢ = "Early Hints"u8;
+private static readonly @string createdˢ = "Created"u8;
+private static readonly @string acceptedˢ = "Accepted"u8;
+private static readonly @string nonAuthoritativeˢ = "Non-Authoritative Information"u8;
+private static readonly @string noContentˢ = "No Content"u8;
+private static readonly @string resetContentˢ = "Reset Content"u8;
+private static readonly @string partialContentˢ = "Partial Content"u8;
+private static readonly @string multiStatusˢ = "Multi-Status"u8;
+private static readonly @string alreadyReportedˢ = "Already Reported"u8;
+private static readonly @string imUsedˢ = "IM Used"u8;
+private static readonly @string multipleChoicesˢ = "Multiple Choices"u8;
+private static readonly @string movedPermanentlyˢ = "Moved Permanently"u8;
+private static readonly @string foundˢ = "Found"u8;
+private static readonly @string seeOtherˢ = "See Other"u8;
+private static readonly @string notModifiedˢ = "Not Modified"u8;
+private static readonly @string useProxyˢ = "Use Proxy"u8;
+private static readonly @string temporaryRedirectˢ = "Temporary Redirect"u8;
+private static readonly @string permanentRedirectˢ = "Permanent Redirect"u8;
+private static readonly @string badRequestˢ = "Bad Request"u8;
+private static readonly @string unauthorizedˢ = "Unauthorized"u8;
+private static readonly @string paymentRequiredˢ = "Payment Required"u8;
+private static readonly @string forbiddenˢ2 = "Forbidden"u8;
+private static readonly @string notFoundˢ = "Not Found"u8;
+private static readonly @string methodNotAllowedˢ = "Method Not Allowed"u8;
+private static readonly @string notAcceptableˢ = "Not Acceptable"u8;
+private static readonly @string proxyAuthenticationˢ = "Proxy Authentication Required"u8;
+private static readonly @string requestTimeoutˢ = "Request Timeout"u8;
+private static readonly @string conflictˢ = "Conflict"u8;
+private static readonly @string goneˢ = "Gone"u8;
+private static readonly @string lengthRequiredˢ = "Length Required"u8;
+private static readonly @string preconditionFailedˢ = "Precondition Failed"u8;
+private static readonly @string requestEntityTooLargeˢ = "Request Entity Too Large"u8;
+private static readonly @string requestUriTooLongˢ = "Request URI Too Long"u8;
+private static readonly @string unsupportedMediaTypeˢ = "Unsupported Media Type"u8;
+private static readonly @string requestedRangeNotˢ = "Requested Range Not Satisfiable"u8;
+private static readonly @string expectationFailedˢ = "Expectation Failed"u8;
+private static readonly @string iMATeapotˢ = "I'm a teapot"u8;
+private static readonly @string misdirectedRequestˢ = "Misdirected Request"u8;
+private static readonly @string unprocessableEntityˢ = "Unprocessable Entity"u8;
+private static readonly @string lockedˢ = "Locked"u8;
+private static readonly @string failedDependencyˢ = "Failed Dependency"u8;
+private static readonly @string tooEarlyˢ = "Too Early"u8;
+private static readonly @string upgradeRequiredˢ = "Upgrade Required"u8;
+private static readonly @string preconditionRequiredˢ = "Precondition Required"u8;
+private static readonly @string tooManyRequestsˢ = "Too Many Requests"u8;
+private static readonly @string requestHeaderFieldsTooˢ = "Request Header Fields Too Large"u8;
+private static readonly @string unavailableForLegalˢ = "Unavailable For Legal Reasons"u8;
+private static readonly @string internalServerErrorˢ2 = "Internal Server Error"u8;
+private static readonly @string notImplementedˢ = "Not Implemented"u8;
+private static readonly @string badGatewayˢ = "Bad Gateway"u8;
+private static readonly @string serviceUnavailableˢ = "Service Unavailable"u8;
+private static readonly @string gatewayTimeoutˢ = "Gateway Timeout"u8;
+private static readonly @string httpVersionNotSupportedˢ = "HTTP Version Not Supported"u8;
+private static readonly @string variantAlsoNegotiatesˢ = "Variant Also Negotiates"u8;
+private static readonly @string insufficientStorageˢ = "Insufficient Storage"u8;
+private static readonly @string loopDetectedˢ = "Loop Detected"u8;
+private static readonly @string notExtendedˢ = "Not Extended"u8;
+private static readonly @string networkAuthenticationˢ = "Network Authentication Required"u8;
+
 // StatusText returns a text for the HTTP status code. It returns the empty
 // string if the code is unknown.
 public static @string StatusText(nint code) {
     var exprᴛ1 = code;
     if (exprᴛ1 == StatusContinue) {
-        return "Continue"u8;
+        return continueˢ2;
     }
     if (exprᴛ1 == StatusSwitchingProtocols) {
-        return "Switching Protocols"u8;
+        return switchingProtocolsˢ;
     }
     if (exprᴛ1 == StatusProcessing) {
-        return "Processing"u8;
+        return processingˢ;
     }
     if (exprᴛ1 == StatusEarlyHints) {
-        return "Early Hints"u8;
+        return earlyHintsˢ;
     }
     if (exprᴛ1 == StatusOK) {
         return "OK"u8;
     }
     if (exprᴛ1 == StatusCreated) {
-        return "Created"u8;
+        return createdˢ;
     }
     if (exprᴛ1 == StatusAccepted) {
-        return "Accepted"u8;
+        return acceptedˢ;
     }
     if (exprᴛ1 == StatusNonAuthoritativeInfo) {
-        return "Non-Authoritative Information"u8;
+        return nonAuthoritativeˢ;
     }
     if (exprᴛ1 == StatusNoContent) {
-        return "No Content"u8;
+        return noContentˢ;
     }
     if (exprᴛ1 == StatusResetContent) {
-        return "Reset Content"u8;
+        return resetContentˢ;
     }
     if (exprᴛ1 == StatusPartialContent) {
-        return "Partial Content"u8;
+        return partialContentˢ;
     }
     if (exprᴛ1 == StatusMultiStatus) {
-        return "Multi-Status"u8;
+        return multiStatusˢ;
     }
     if (exprᴛ1 == StatusAlreadyReported) {
-        return "Already Reported"u8;
+        return alreadyReportedˢ;
     }
     if (exprᴛ1 == StatusIMUsed) {
-        return "IM Used"u8;
+        return imUsedˢ;
     }
     if (exprᴛ1 == StatusMultipleChoices) {
-        return "Multiple Choices"u8;
+        return multipleChoicesˢ;
     }
     if (exprᴛ1 == StatusMovedPermanently) {
-        return "Moved Permanently"u8;
+        return movedPermanentlyˢ;
     }
     if (exprᴛ1 == StatusFound) {
-        return "Found"u8;
+        return foundˢ;
     }
     if (exprᴛ1 == StatusSeeOther) {
-        return "See Other"u8;
+        return seeOtherˢ;
     }
     if (exprᴛ1 == StatusNotModified) {
-        return "Not Modified"u8;
+        return notModifiedˢ;
     }
     if (exprᴛ1 == StatusUseProxy) {
-        return "Use Proxy"u8;
+        return useProxyˢ;
     }
     if (exprᴛ1 == StatusTemporaryRedirect) {
-        return "Temporary Redirect"u8;
+        return temporaryRedirectˢ;
     }
     if (exprᴛ1 == StatusPermanentRedirect) {
-        return "Permanent Redirect"u8;
+        return permanentRedirectˢ;
     }
     if (exprᴛ1 == StatusBadRequest) {
-        return "Bad Request"u8;
+        return badRequestˢ;
     }
     if (exprᴛ1 == StatusUnauthorized) {
-        return "Unauthorized"u8;
+        return unauthorizedˢ;
     }
     if (exprᴛ1 == StatusPaymentRequired) {
-        return "Payment Required"u8;
+        return paymentRequiredˢ;
     }
     if (exprᴛ1 == StatusForbidden) {
-        return "Forbidden"u8;
+        return forbiddenˢ2;
     }
     if (exprᴛ1 == StatusNotFound) {
-        return "Not Found"u8;
+        return notFoundˢ;
     }
     if (exprᴛ1 == StatusMethodNotAllowed) {
-        return "Method Not Allowed"u8;
+        return methodNotAllowedˢ;
     }
     if (exprᴛ1 == StatusNotAcceptable) {
-        return "Not Acceptable"u8;
+        return notAcceptableˢ;
     }
     if (exprᴛ1 == StatusProxyAuthRequired) {
-        return "Proxy Authentication Required"u8;
+        return proxyAuthenticationˢ;
     }
     if (exprᴛ1 == StatusRequestTimeout) {
-        return "Request Timeout"u8;
+        return requestTimeoutˢ;
     }
     if (exprᴛ1 == StatusConflict) {
-        return "Conflict"u8;
+        return conflictˢ;
     }
     if (exprᴛ1 == StatusGone) {
-        return "Gone"u8;
+        return goneˢ;
     }
     if (exprᴛ1 == StatusLengthRequired) {
-        return "Length Required"u8;
+        return lengthRequiredˢ;
     }
     if (exprᴛ1 == StatusPreconditionFailed) {
-        return "Precondition Failed"u8;
+        return preconditionFailedˢ;
     }
     if (exprᴛ1 == StatusRequestEntityTooLarge) {
-        return "Request Entity Too Large"u8;
+        return requestEntityTooLargeˢ;
     }
     if (exprᴛ1 == StatusRequestURITooLong) {
-        return "Request URI Too Long"u8;
+        return requestUriTooLongˢ;
     }
     if (exprᴛ1 == StatusUnsupportedMediaType) {
-        return "Unsupported Media Type"u8;
+        return unsupportedMediaTypeˢ;
     }
     if (exprᴛ1 == StatusRequestedRangeNotSatisfiable) {
-        return "Requested Range Not Satisfiable"u8;
+        return requestedRangeNotˢ;
     }
     if (exprᴛ1 == StatusExpectationFailed) {
-        return "Expectation Failed"u8;
+        return expectationFailedˢ;
     }
     if (exprᴛ1 == StatusTeapot) {
-        return "I'm a teapot"u8;
+        return iMATeapotˢ;
     }
     if (exprᴛ1 == StatusMisdirectedRequest) {
-        return "Misdirected Request"u8;
+        return misdirectedRequestˢ;
     }
     if (exprᴛ1 == StatusUnprocessableEntity) {
-        return "Unprocessable Entity"u8;
+        return unprocessableEntityˢ;
     }
     if (exprᴛ1 == StatusLocked) {
-        return "Locked"u8;
+        return lockedˢ;
     }
     if (exprᴛ1 == StatusFailedDependency) {
-        return "Failed Dependency"u8;
+        return failedDependencyˢ;
     }
     if (exprᴛ1 == StatusTooEarly) {
-        return "Too Early"u8;
+        return tooEarlyˢ;
     }
     if (exprᴛ1 == StatusUpgradeRequired) {
-        return "Upgrade Required"u8;
+        return upgradeRequiredˢ;
     }
     if (exprᴛ1 == StatusPreconditionRequired) {
-        return "Precondition Required"u8;
+        return preconditionRequiredˢ;
     }
     if (exprᴛ1 == StatusTooManyRequests) {
-        return "Too Many Requests"u8;
+        return tooManyRequestsˢ;
     }
     if (exprᴛ1 == StatusRequestHeaderFieldsTooLarge) {
-        return "Request Header Fields Too Large"u8;
+        return requestHeaderFieldsTooˢ;
     }
     if (exprᴛ1 == StatusUnavailableForLegalReasons) {
-        return "Unavailable For Legal Reasons"u8;
+        return unavailableForLegalˢ;
     }
     if (exprᴛ1 == StatusInternalServerError) {
-        return "Internal Server Error"u8;
+        return internalServerErrorˢ2;
     }
     if (exprᴛ1 == StatusNotImplemented) {
-        return "Not Implemented"u8;
+        return notImplementedˢ;
     }
     if (exprᴛ1 == StatusBadGateway) {
-        return "Bad Gateway"u8;
+        return badGatewayˢ;
     }
     if (exprᴛ1 == StatusServiceUnavailable) {
-        return "Service Unavailable"u8;
+        return serviceUnavailableˢ;
     }
     if (exprᴛ1 == StatusGatewayTimeout) {
-        return "Gateway Timeout"u8;
+        return gatewayTimeoutˢ;
     }
     if (exprᴛ1 == StatusHTTPVersionNotSupported) {
-        return "HTTP Version Not Supported"u8;
+        return httpVersionNotSupportedˢ;
     }
     if (exprᴛ1 == StatusVariantAlsoNegotiates) {
-        return "Variant Also Negotiates"u8;
+        return variantAlsoNegotiatesˢ;
     }
     if (exprᴛ1 == StatusInsufficientStorage) {
-        return "Insufficient Storage"u8;
+        return insufficientStorageˢ;
     }
     if (exprᴛ1 == StatusLoopDetected) {
-        return "Loop Detected"u8;
+        return loopDetectedˢ;
     }
     if (exprᴛ1 == StatusNotExtended) {
-        return "Not Extended"u8;
+        return notExtendedˢ;
     }
     if (exprᴛ1 == StatusNetworkAuthenticationRequired) {
-        return "Network Authentication Required"u8;
+        return networkAuthenticationˢ;
     }
     { /* default: */
         return ""u8;

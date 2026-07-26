@@ -66,10 +66,13 @@ internal static partial void mcall(Action<ж<g>> fn);
 //go:noescape
 internal static partial void systemstack(Action fn);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fatalSystemstackCalledˢ = "fatal: systemstack called from unexpected goroutine"u8;
+
 //go:nosplit
 //go:nowritebarrierrec
 internal static void badsystemstack() {
-    writeErrStr("fatal: systemstack called from unexpected goroutine"u8);
+    writeErrStr(fatalSystemstackCalledˢ);
 }
 
 // memclrNoHeapPointers clears n bytes starting at ptr.

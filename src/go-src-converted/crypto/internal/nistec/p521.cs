@@ -54,6 +54,10 @@ public static ж<P521Point> Set(this ж<P521Point> Ꮡp, ж<P521Point> Ꮡq) {
     return Ꮡp;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidP521Compressedˢ = "invalid P521 compressed point encoding"u8;
+private static readonly @string invalidP521PointEncodingˢ = "invalid P521 point encoding"u8;
+
 // SetBytes sets p to the compressed, uncompressed, or infinity value encoded in
 // b, as specified in SEC 1, Version 2.0, Section 2.3.4. If the point is not on
 // the curve, it returns nil and an error, and the receiver is unchanged.
@@ -95,7 +99,7 @@ public static (ж<P521Point>, error) SetBytes(this ж<P521Point> Ꮡp, slice<byt
         var y = p521Polynomial(@new<fiat.P521Element>(), // y² = x³ - 3x + b
  x);
         if (!p521Sqrt(y, y)) {
-            return (default!, errors.New("invalid P521 compressed point encoding"u8));
+            return (default!, errors.New(invalidP521Compressedˢ));
         }
         var otherRoot = @new<fiat.P521Element>();
         otherRoot.Sub(otherRoot, // Select the positive or negative root, as indicated by the least
@@ -109,7 +113,7 @@ public static (ж<P521Point>, error) SetBytes(this ж<P521Point> Ꮡp, slice<byt
         return (Ꮡp, default!);
     }
     default: {
-        return (default!, errors.New("invalid P521 point encoding"u8));
+        return (default!, errors.New(invalidP521PointEncodingˢ));
     }}
 
 }
@@ -136,6 +140,9 @@ internal static ж<fiat.P521Element> p521Polynomial(ж<fiat.P521Element> Ꮡy2, 
     return Ꮡy2.Add(Ꮡy2, p521B());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string p521PointNotOnCurveˢ = "P521 point not on curve"u8;
+
 internal static error p521CheckOnCurve(ж<fiat.P521Element> Ꮡx, ж<fiat.P521Element> Ꮡy) {
     ref var x = ref Ꮡx.Value;
     ref var y = ref Ꮡy.Value;
@@ -144,7 +151,7 @@ internal static error p521CheckOnCurve(ж<fiat.P521Element> Ꮡx, ж<fiat.P521El
     var rhs = p521Polynomial(@new<fiat.P521Element>(), Ꮡx);
     var lhs = @new<fiat.P521Element>().Square(Ꮡy);
     if (rhs.Equal(lhs) != 1) {
-        return errors.New("P521 point not on curve"u8);
+        return errors.New(p521PointNotOnCurveˢ);
     }
     return default!;
 }
@@ -183,11 +190,14 @@ internal static error p521CheckOnCurve(ж<fiat.P521Element> Ꮡx, ж<fiat.P521El
     return p.bytesX(Ꮡout);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string p521PointIsThePointAtˢ = "P521 point is the point at infinity"u8;
+
 [GoRecv] internal static (slice<byte>, error) bytesX(this ref P521Point p, ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.Value;
 
     if (p.z.IsZero() == 1) {
-        return (default!, errors.New("P521 point is the point at infinity"u8));
+        return (default!, errors.New(p521PointIsThePointAtˢ));
     }
     var zinv = @new<fiat.P521Element>().Invert(p.z);
     var x = @new<fiat.P521Element>().Mul(p.x, zinv);
@@ -504,7 +514,7 @@ public static (ж<P521Point>, error) ScalarBaseMult(this ж<P521Point> Ꮡp, sli
     ref var p = ref Ꮡp.Value;
 
     if (len(scalar) != p521ElementLength) {
-        return (default!, errors.New("invalid scalar length"u8));
+        return (default!, errors.New(invalidScalarLengthˢ));
     }
     var tables = p.generatorTable();
     // This is also a scalar multiplication with a four-bit window like in

@@ -9,16 +9,21 @@ using syscall = syscall_package;
 
 partial class socktest_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inet4ˢ = "inet4"u8;
+private static readonly @string inet6ˢ = "inet6"u8;
+private static readonly @string localˢ = "local"u8;
+
 internal static @string familyString(nint family) {
     var exprᴛ1 = family;
     if (exprᴛ1 == syscall.AF_INET) {
-        return "inet4"u8;
+        return inet4ˢ;
     }
     if (exprᴛ1 == syscall.AF_INET6) {
-        return "inet6"u8;
+        return inet6ˢ;
     }
     if (exprᴛ1 == syscall.AF_UNIX) {
-        return "local"u8;
+        return localˢ;
     }
     { /* default: */
         return fmt.Sprintf("%d"u8, family);
@@ -26,20 +31,25 @@ internal static @string familyString(nint family) {
 
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string streamˢ = "stream"u8;
+private static readonly @string datagramˢ = "datagram"u8;
+private static readonly @string seqpacketˢ = "seqpacket"u8;
+
 internal static @string typeString(nint sotype) {
     @string s = default!;
     var exprᴛ1 = (nint)(sotype & 0xff);
     if (exprᴛ1 == syscall.SOCK_STREAM) {
-        s = "stream"u8;
+        s = streamˢ;
     }
     else if (exprᴛ1 == syscall.SOCK_DGRAM) {
-        s = "datagram"u8;
+        s = datagramˢ;
     }
     else if (exprᴛ1 == syscall.SOCK_RAW) {
         s = "raw"u8;
     }
     else if (exprᴛ1 == syscall.SOCK_SEQPACKET) {
-        s = "seqpacket"u8;
+        s = seqpacketˢ;
     }
     else { /* default: */
         s = fmt.Sprintf("%d"u8, (nint)(sotype & 0xff));
@@ -53,10 +63,13 @@ internal static @string typeString(nint sotype) {
     return s;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string defaultˢ = "default"u8;
+
 internal static @string protocolString(nint proto) {
     var exprᴛ1 = proto;
     if (exprᴛ1 is 0) {
-        return "default"u8;
+        return defaultˢ;
     }
     if (exprᴛ1 == syscall.IPPROTO_TCP) {
         return "tcp"u8;

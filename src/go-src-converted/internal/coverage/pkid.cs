@@ -45,18 +45,18 @@ partial class coverage_package {
 // this were to be the case, we would need a table of some sort below
 // as opposed to a fixed list.
 internal static array<@string> rtPkgs = new @string[]{
-    "internal/cpu",
-    "internal/goarch",
-    "internal/runtime/atomic",
-    "internal/goos",
-    "internal/chacha8rand",
-    "runtime/internal/sys",
-    "internal/abi",
-    "runtime/internal/math",
-    "internal/bytealg",
-    "internal/goexperiment",
-    "internal/runtime/syscall",
-    "runtime"
+    "internal/cpu"u8,
+    "internal/goarch"u8,
+    "internal/runtime/atomic"u8,
+    "internal/goos"u8,
+    "internal/chacha8rand"u8,
+    "runtime/internal/sys"u8,
+    "internal/abi"u8,
+    "runtime/internal/math"u8,
+    "internal/bytealg"u8,
+    "internal/goexperiment"u8,
+    "internal/runtime/syscall"u8,
+    "runtime"u8
 }.array();
 
 // Scoping note: the constants and apis in this file are internal

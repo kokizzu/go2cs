@@ -11,6 +11,9 @@ using global::go.go;
 
 partial class types_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string evalˢ = "eval"u8;
+
 // Eval returns the type and, if constant, the value for the
 // expression expr, evaluated at position pos of package pkg,
 // which must have been derived from type-checking an AST with
@@ -25,7 +28,7 @@ public static (TypeAndValue, error err) Eval(ж<token.FileSet> Ꮡfset, ж<Packa
     error err = default!;
 
     // parse expressions
-    (var node, err) = parser.ParseExprFrom(Ꮡfset, "eval"u8, expr, 0);
+    (var node, err) = parser.ParseExprFrom(Ꮡfset, evalˢ, expr, 0);
     if (err != default!) {
         return (new TypeAndValue(nil), err);
     }

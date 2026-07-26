@@ -30,21 +30,30 @@ internal static void unsafestring64(@unsafe.Pointer ptr, int64 len64) {
     unsafestring(ptr, len);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string checkptrUnsafeStringˢ = "checkptr: unsafe.String result straddles multiple allocations"u8;
+
 internal static void unsafestringcheckptr(@unsafe.Pointer ptr, int64 len64) {
     unsafestring64(ptr, len64);
     // Check that underlying array doesn't straddle multiple heap objects.
     // unsafestring64 has already checked for overflow.
     if (checkptrStraddles(ptr, (uintptr)len64)) {
-        @throw("checkptr: unsafe.String result straddles multiple allocations"u8);
+        @throw(checkptrUnsafeStringˢ);
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unsafeStringLenOutOfˢ = "unsafe.String: len out of range"u8;
+
 internal static void panicunsafestringlen() {
-    throw panic(((errorString)(@string)"unsafe.String: len out of range"u8));
+    throw panic(((errorString)(@string)unsafeStringLenOutOfˢ));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unsafeStringPtrIsNilAndˢ = "unsafe.String: ptr is nil and len is not zero"u8;
+
 internal static void panicunsafestringnilptr() {
-    throw panic(((errorString)(@string)"unsafe.String: ptr is nil and len is not zero"u8));
+    throw panic(((errorString)(@string)unsafeStringPtrIsNilAndˢ));
 }
 
 // Keep this code in sync with cmd/compile/internal/walk/builtin.go:walkUnsafeSlice
@@ -77,6 +86,9 @@ internal static void unsafeslice64(ж<_type> Ꮡet, @unsafe.Pointer ptr, int64 l
     unsafeslice(Ꮡet, ptr, len);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string checkptrUnsafeSliceˢ = "checkptr: unsafe.Slice result straddles multiple allocations"u8;
+
 internal static void unsafeslicecheckptr(ж<_type> Ꮡet, @unsafe.Pointer ptr, int64 len64) {
     ref var et = ref Ꮡet.Value;
 
@@ -84,7 +96,7 @@ internal static void unsafeslicecheckptr(ж<_type> Ꮡet, @unsafe.Pointer ptr, i
     // Check that underlying array doesn't straddle multiple heap objects.
     // unsafeslice64 has already checked for overflow.
     if (checkptrStraddles(ptr, (uintptr)len64 * et.Size_)) {
-        @throw("checkptr: unsafe.Slice result straddles multiple allocations"u8);
+        @throw(checkptrUnsafeSliceˢ);
     }
 }
 
@@ -94,10 +106,13 @@ internal static void panicunsafeslicelen() {
     panicunsafeslicelen1(getcallerpc());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unsafeSliceLenOutOfRangeˢ = "unsafe.Slice: len out of range"u8;
+
 //go:yeswritebarrierrec
 internal static void panicunsafeslicelen1(uintptr pc) {
-    panicCheck1(pc, "unsafe.Slice: len out of range"u8);
-    throw panic(((errorString)(@string)"unsafe.Slice: len out of range"u8));
+    panicCheck1(pc, unsafeSliceLenOutOfRangeˢ);
+    throw panic(((errorString)(@string)unsafeSliceLenOutOfRangeˢ));
 }
 
 internal static void panicunsafeslicenilptr() {
@@ -106,10 +121,13 @@ internal static void panicunsafeslicenilptr() {
     panicunsafeslicenilptr1(getcallerpc());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unsafeSlicePtrIsNilAndˢ = "unsafe.Slice: ptr is nil and len is not zero"u8;
+
 //go:yeswritebarrierrec
 internal static void panicunsafeslicenilptr1(uintptr pc) {
-    panicCheck1(pc, "unsafe.Slice: ptr is nil and len is not zero"u8);
-    throw panic(((errorString)(@string)"unsafe.Slice: ptr is nil and len is not zero"u8));
+    panicCheck1(pc, unsafeSlicePtrIsNilAndˢ);
+    throw panic(((errorString)(@string)unsafeSlicePtrIsNilAndˢ));
 }
 
 //go:linkname reflect_unsafeslice reflect.unsafeslice

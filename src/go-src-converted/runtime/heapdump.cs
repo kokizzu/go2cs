@@ -251,6 +251,9 @@ internal static void dumpbv(ж<bitvector> Ꮡcbv, uintptr offset) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownFunctionˢ = "unknown function"u8;
+
 internal static void dumpframe(ж<stkframe> Ꮡs, ж<childInfo> Ꮡchild) {
     ref var s = ref Ꮡs.Value;
     ref var child = ref Ꮡchild.Value;
@@ -292,7 +295,7 @@ internal static void dumpframe(ж<stkframe> Ꮡs, ж<childInfo> Ꮡchild) {
     dumpint((uint64)s.continpc);
     @string name = funcname(f);
     if (name == ""u8) {
-        name = "unknown function"u8;
+        name = unknownFunctionˢ;
     }
     dumpstr(name);
     // Dump fields in the outargs section
@@ -411,6 +414,9 @@ internal static void dumpgoroutine(ж<g> Ꮡgp) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dumpgsInStwBadStatusˢ = "dumpgs in STW - bad status"u8;
+
 internal static void dumpgs() {
     assertWorldStopped();
     // goroutines & stacks
@@ -425,7 +431,7 @@ internal static void dumpgs() {
         }
         else { /* default: */
             print((@string)"runtime: unexpected G.status "u8, ((Δhex)(uint64)status), (@string)"\n"u8);
-            @throw("dumpgs in STW - bad status"u8);
+            @throw(dumpgsInStwBadStatusˢ);
         }
 
     });
@@ -479,6 +485,9 @@ internal static void dumproots() {
 // Needs to be as big as the largest number of objects per span.
 internal static array<bool> freemark = new(1024);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string freemarkArrayDoesnTHaveˢ = "freemark array doesn't have enough entries"u8;
+
 internal static void dumpobjs() {
     // To protect mheap_.allspans.
     assertWorldStopped();
@@ -490,7 +499,7 @@ internal static void dumpobjs() {
         var size = s.Value.elemsize;
         var n = (((~s).npages << (int)(_PageShift))) / size;
         if (n > (uintptr)len(freemark)) {
-            @throw("freemark array doesn't have enough entries"u8);
+            @throw(freemarkArrayDoesnTHaveˢ);
         }
         for (var freeIndex = (uint16)0; freeIndex < (~s).nelems; freeIndex++) {
             if (s.isFree((uintptr)freeIndex)) {
@@ -725,6 +734,9 @@ internal static void dumpfields(bitvector bv) {
     dumpint(fieldKindEol);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string heapdumpOutOfMemoryˢ = "heapdump: out of memory"u8;
+
 internal static unsafe bitvector makeheapobjbv(uintptr Δp, uintptr size) {
     // Extend the temp buffer if necessary.
     var nptr = size / (uintptr)goarch.PtrSize;
@@ -735,7 +747,7 @@ internal static unsafe bitvector makeheapobjbv(uintptr Δp, uintptr size) {
         var n = nptr / 8 + 1;
         @unsafe.Pointer pΔ1 = (uintptr)sysAlloc(n, Ꮡmemstats.of(mstats.Ꮡother_sys));
         if (pΔ1 == nil) {
-            @throw("heapdump: out of memory"u8);
+            @throw(heapdumpOutOfMemoryˢ);
         }
         tmpbuf = new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(pΔ1), (int)(n)));
     }

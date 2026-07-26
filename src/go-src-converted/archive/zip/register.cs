@@ -33,6 +33,9 @@ internal static io.WriteCloser newFlateWriter(io.Writer w) {
     internal ж<flate.Writer> fw;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string writeAfterCloseˢ = "Write after Close"u8;
+
 internal static (nint n, error err) Write(this ж<pooledFlateWriter> Ꮡw, slice<byte> p) {
     nint n = default!;
     error err = default!;
@@ -42,7 +45,7 @@ internal static (nint n, error err) Write(this ж<pooledFlateWriter> Ꮡw, slice
         Ꮡw.of(pooledFlateWriter.Ꮡmu).Lock();
         defer(Ꮡw.of(pooledFlateWriter.Ꮡmu).Unlock);
         if (w.fw == nil) {
-            (n, err) = (0, errors.New("Write after Close"u8)); return;
+            (n, err) = (0, errors.New(writeAfterCloseˢ)); return;
         }
         (n, err) = w.fw.Write(p);
     });
@@ -81,6 +84,9 @@ internal static io.ReadCloser newFlateReader(io.Reader r) {
     internal io.ReadCloser fr;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string readAfterCloseˢ = "Read after Close"u8;
+
 internal static (nint n, error err) Read(this ж<pooledFlateReader> Ꮡr, slice<byte> p) {
     nint n = default!;
     error err = default!;
@@ -90,7 +96,7 @@ internal static (nint n, error err) Read(this ж<pooledFlateReader> Ꮡr, slice<
         Ꮡr.of(pooledFlateReader.Ꮡmu).Lock();
         defer(Ꮡr.of(pooledFlateReader.Ꮡmu).Unlock);
         if (r.fr == default!) {
-            (n, err) = (0, errors.New("Read after Close"u8)); return;
+            (n, err) = (0, errors.New(readAfterCloseˢ)); return;
         }
         (n, err) = r.fr.Read(p);
     });

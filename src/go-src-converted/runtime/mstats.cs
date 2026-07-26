@@ -333,6 +333,14 @@ public static void ReadMemStats(ж<MemStats> Ꮡm) {
 // runtime-internal stats.
 internal static bool doubleCheckReadMemStats = false;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string heapInUseAndConsistentˢ = "heapInUse and consistent stats are not equal"u8;
+private static readonly @string heapReleasedAndˢ = "heapReleased and consistent stats are not equal"u8;
+private static readonly @string measuresOfTheRetainedˢ = "measures of the retained heap are not equal"u8;
+private static readonly @string totalAllocAndConsistentˢ = "totalAlloc and consistent stats are not equal"u8;
+private static readonly @string totalFreeAndConsistentˢ = "totalFree and consistent stats are not equal"u8;
+private static readonly @string mappedReadyAndOtherˢ = "mappedReady and other memstats are not equal"u8;
+
 [GoType("dyn")] partial struct readmemstats_m_bySize {
     public uint32 Size;
     public uint64 Mallocs;
@@ -418,29 +426,29 @@ internal static void readmemstats_m(ж<MemStats> Ꮡstats) {
         if (ᏑgcController.of(gcControllerState.ᏑheapInUse).load() != (uint64)consStats.inHeap) {
             print((@string)"runtime: heapInUse="u8, ᏑgcController.of(gcControllerState.ᏑheapInUse).load(), (@string)"\n"u8);
             print((@string)"runtime: consistent value="u8, consStats.inHeap, (@string)"\n"u8);
-            @throw("heapInUse and consistent stats are not equal"u8);
+            @throw(heapInUseAndConsistentˢ);
         }
         if (ᏑgcController.of(gcControllerState.ᏑheapReleased).load() != (uint64)consStats.released) {
             print((@string)"runtime: heapReleased="u8, ᏑgcController.of(gcControllerState.ᏑheapReleased).load(), (@string)"\n"u8);
             print((@string)"runtime: consistent value="u8, consStats.released, (@string)"\n"u8);
-            @throw("heapReleased and consistent stats are not equal"u8);
+            @throw(heapReleasedAndˢ);
         }
         var heapRetained = ᏑgcController.of(gcControllerState.ᏑheapInUse).load() + ᏑgcController.of(gcControllerState.ᏑheapFree).load();
         var consRetained = (uint64)(consStats.committed - consStats.inStacks - consStats.inWorkBufs - consStats.inPtrScalarBits);
         if (heapRetained != consRetained) {
             print((@string)"runtime: global value="u8, heapRetained, (@string)"\n"u8);
             print((@string)"runtime: consistent value="u8, consRetained, (@string)"\n"u8);
-            @throw("measures of the retained heap are not equal"u8);
+            @throw(measuresOfTheRetainedˢ);
         }
         if (ᏑgcController.of(gcControllerState.ᏑtotalAlloc).Load() != totalAlloc) {
             print((@string)"runtime: totalAlloc="u8, ᏑgcController.of(gcControllerState.ᏑtotalAlloc).Load(), (@string)"\n"u8);
             print((@string)"runtime: consistent value="u8, totalAlloc, (@string)"\n"u8);
-            @throw("totalAlloc and consistent stats are not equal"u8);
+            @throw(totalAllocAndConsistentˢ);
         }
         if (ᏑgcController.of(gcControllerState.ᏑtotalFree).Load() != totalFree) {
             print((@string)"runtime: totalFree="u8, ᏑgcController.of(gcControllerState.ᏑtotalFree).Load(), (@string)"\n"u8);
             print((@string)"runtime: consistent value="u8, totalFree, (@string)"\n"u8);
-            @throw("totalFree and consistent stats are not equal"u8);
+            @throw(totalFreeAndConsistentˢ);
         }
         // Also check that mappedReady lines up with totalMapped - released.
         // This isn't really the same type of "make sure consistent stats line up" situation,
@@ -450,7 +458,7 @@ internal static void readmemstats_m(ж<MemStats> Ꮡstats) {
             print((@string)"runtime: totalMapped="u8, totalMapped, (@string)"\n"u8);
             print((@string)"runtime: released="u8, (uint64)consStats.released, (@string)"\n"u8);
             print((@string)"runtime: totalMapped-released="u8, totalMapped - (uint64)consStats.released, (@string)"\n"u8);
-            @throw("mappedReady and other memstats are not equal"u8);
+            @throw(mappedReadyAndOtherˢ);
         }
         unlock(ᏑΔtrace.of(Δtraceᴛ1.Ꮡlock));
         unlock(Ꮡsched.of(schedt.Ꮡsysmonlock));
@@ -520,6 +528,9 @@ internal static void readGCStats(ж<slice<uint64>> Ꮡpauses) {
     });
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string shortSlicePassedToˢ = "short slice passed to readGCStats"u8;
+
 // readGCStats_m must be called on the system stack because it acquires the heap
 // lock. See mheap for details.
 //
@@ -530,7 +541,7 @@ internal static void readGCStats_m(ж<slice<uint64>> Ꮡpauses) {
     var Δp = pauses;
     // Calling code in runtime/debug should make the slice large enough.
     if (cap(Δp) < len(memstats.pause_ns) + 3) {
-        @throw("short slice passed to readGCStats"u8);
+        @throw(shortSlicePassedToˢ);
     }
     // Pass back: pauses, pause ends, last gc (absolute time), number of gc, total pause ns.
     @lock(Ꮡmheap_.of(mheap.Ꮡlock));
@@ -596,6 +607,9 @@ internal static uint64 load(this ж<sysMemStat> Ꮡs) {
     return atomic.Load64(Ꮡ((uint64)(s)));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sysMemStatOverflowˢ = "sysMemStat overflow"u8;
+
 // add atomically adds the sysMemStat by n.
 //
 // Must be nosplit as it is called in runtime initialization, e.g. newosproc0.
@@ -607,7 +621,7 @@ internal static void add(this ж<sysMemStat> Ꮡs, int64 n) {
     var val = atomic.Xadd64(Ꮡ((uint64)(s)), n);
     if ((n > 0 && (int64)val < n) || (n < 0 && (int64)val + n < n)) {
         print((@string)"runtime: val="u8, val, (@string)" n="u8, n, (@string)"\n"u8);
-        @throw("sysMemStat overflow"u8);
+        @throw(sysMemStatOverflowˢ);
     }
 }
 
@@ -703,6 +717,9 @@ internal static void add(this ж<sysMemStat> Ꮡs, int64 n) {
     internal mutex noPLock;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badSequenceNumberˢ = "bad sequence number"u8;
+
 // acquire returns a heapStatsDelta to be updated. In effect,
 // it acquires the shard for writing. release must be called
 // as soon as the relevant deltas are updated.
@@ -729,7 +746,7 @@ internal static ж<heapStatsDelta> acquire(this ж<consistentHeapStats> Ꮡm) {
             if (seq % 2 == 0) {
                 // Should have been incremented to odd.
                 print((@string)"runtime: seq="u8, seq, (@string)"\n"u8);
-                @throw("bad sequence number"u8);
+                @throw(badSequenceNumberˢ);
             }
         } else {
             @lock(Ꮡm.of(consistentHeapStats.ᏑnoPLock));
@@ -762,7 +779,7 @@ internal static void release(this ж<consistentHeapStats> Ꮡm) {
             if (seq % 2 != 0) {
                 // Should have been incremented to even.
                 print((@string)"runtime: seq="u8, seq, (@string)"\n"u8);
-                @throw("bad sequence number"u8);
+                @throw(badSequenceNumberˢ);
             }
         } else {
             unlock(Ꮡm.of(consistentHeapStats.ᏑnoPLock));

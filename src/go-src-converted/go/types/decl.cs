@@ -51,6 +51,10 @@ internal static @string pathString(slice<Object> path) {
     return s;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string checkingSSObjPathSˢ = "-- checking %s (%s, objPath = %s)"u8;
+private static readonly @string vSShouldHaveBeenDeclaredˢ = "%v: %s should have been declared"u8;
+
 // objDecl type-checks the declaration of obj in its respective (file) environment.
 // For the meaning of def, see Checker.definedType, in typexpr.go.
 internal static void objDecl(this ж<Checker> Ꮡcheck, Object obj, ж<TypeName> Ꮡdef) => func((defer, recover) => {
@@ -61,7 +65,7 @@ internal static void objDecl(this ж<Checker> Ꮡcheck, Object obj, ж<TypeName>
             fmt.Println();
         }
         // empty line between top-level objects for readability
-        Ꮡcheck.trace(obj.Pos(), "-- checking %s (%s, objPath = %s)"u8, obj, obj.color(), pathString(check.objPath));
+        Ꮡcheck.trace(obj.Pos(), checkingSSObjPathSˢ, obj, obj.color(), pathString(check.objPath));
         check.indent++;
         defer(() => {
             Ꮡcheck.Value.indent--;
@@ -176,7 +180,7 @@ internal static void objDecl(this ж<Checker> Ꮡcheck, Object obj, ж<TypeName>
     // initialize a variable with the function.
     var d = check.objMap[obj];
     if (d == nil) {
-        Ꮡcheck.dump("%v: %s should have been declared"u8, obj.Pos(), obj);
+        Ꮡcheck.dump(vSShouldHaveBeenDeclaredˢ, obj.Pos(), obj);
         throw panic("unreachable");
     }
     // save/restore current environment and set up object environment
@@ -223,6 +227,14 @@ internal static void objDecl(this ж<Checker> Ꮡcheck, Object obj, ж<TypeName>
     }}
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string vInconsistentObjectMapˢ = "%v: inconsistent object map for %s (isPkgObj = %v, inObjMap = %v)"u8;
+private static readonly @string cycleDetectedObjPathSSˢ = "## cycle detected: objPath = %s->%s (len = %d)"u8;
+private static readonly @string cycleContainsGenericTypeˢ = "## cycle contains: generic type in a type parameter list"u8;
+private static readonly @string cycleContainsDValuesDˢ = "## cycle contains: %d values, %d type definitions"u8;
+private static readonly @string cycleIsValidˢ = "=> cycle is valid"u8;
+private static readonly @string errorCycleIsInvalidˢ = "=> error: cycle is invalid"u8;
+
 // validCycle checks if the cycle starting with obj is valid and
 // reports an error if it is not.
 internal static bool /*valid*/ validCycle(this ж<Checker> Ꮡcheck, Object obj) {
@@ -237,7 +249,7 @@ internal static bool /*valid*/ validCycle(this ж<Checker> Ꮡcheck, Object obj)
             // exclude methods
             var isPkgObj = obj.Parent() == (~check.pkg).scope;
             if (isPkgObj != inObjMap) {
-                Ꮡcheck.dump("%v: inconsistent object map for %s (isPkgObj = %v, inObjMap = %v)"u8, obj.Pos(), obj, isPkgObj, inObjMap);
+                Ꮡcheck.dump(vInconsistentObjectMapˢ, obj.Pos(), obj, isPkgObj, inObjMap);
                 throw panic("unreachable");
             }
         }
@@ -310,17 +322,17 @@ continue_loop:;
 break_loop:;
         // ignored for now
         if ((~check.conf)._Trace) {
-            Ꮡcheck.trace(obj.Pos(), "## cycle detected: objPath = %s->%s (len = %d)"u8, pathString(cycle), obj.Name(), len(cycle));
+            Ꮡcheck.trace(obj.Pos(), cycleDetectedObjPathSSˢ, pathString(cycle), obj.Name(), len(cycle));
             if (tparCycle){
-                Ꮡcheck.trace(obj.Pos(), "## cycle contains: generic type in a type parameter list"u8);
+                Ꮡcheck.trace(obj.Pos(), cycleContainsGenericTypeˢ);
             } else {
-                Ꮡcheck.trace(obj.Pos(), "## cycle contains: %d values, %d type definitions"u8, nval, ndef);
+                Ꮡcheck.trace(obj.Pos(), cycleContainsDValuesDˢ, nval, ndef);
             }
             defer(() => {
                 if (valid){
-                    Ꮡcheck.trace(obj.Pos(), "=> cycle is valid"u8);
+                    Ꮡcheck.trace(obj.Pos(), cycleIsValidˢ);
                 } else {
-                    Ꮡcheck.trace(obj.Pos(), "=> error: cycle is invalid"u8);
+                    Ꮡcheck.trace(obj.Pos(), errorCycleIsInvalidˢ);
                 }
             });
         }
@@ -573,6 +585,9 @@ internal static void constDecl(this ж<Checker> Ꮡcheck, ж<Const> Ꮡobj, ast.
     Ꮡcheck.initConst(Ꮡobj, Ꮡx);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string variableDeclarationˢ = "variable declaration"u8;
+
 internal static void varDecl(this ж<Checker> Ꮡcheck, ж<Var> Ꮡobj, slice<ж<Var>> lhs, ast.Expr typ, ast.Expr init) {
     ref var check = ref Ꮡcheck.Value;
     ref var obj = ref Ꮡobj.DerefOrNil();
@@ -602,7 +617,7 @@ internal static void varDecl(this ж<Checker> Ꮡcheck, ж<Var> Ꮡobj, slice<ж
         assert(lhs == default! || lhs[0] == Ꮡobj);
         ref var x = ref heap(new operand(), out var Ꮡx);
         Ꮡcheck.expr(newTarget(obj.typ, obj.name), Ꮡx, init);
-        Ꮡcheck.initVar(Ꮡobj, Ꮡx, "variable declaration"u8);
+        Ꮡcheck.initVar(Ꮡobj, Ꮡx, variableDeclarationˢ);
         return;
     }
     if (debug) {
@@ -639,6 +654,12 @@ internal static void varDecl(this ж<Checker> Ꮡcheck, ж<Var> Ꮡobj, slice<ж
     var (u, _) = named.under()._<ж<Interface>>(ᐧ);
     return u != nil && !u.IsMethodSet();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string genericTypeAliasRequiresˢ = "generic type alias requires GOEXPERIMENT=aliastypeparams"u8;
+private static readonly @string typeParametersˢ = "type parameters"u8;
+private static readonly @string genericTypeAliasRequiresˢ2 = "generic type alias requires GODEBUG=gotypesalias=1 or unset"u8;
+private static readonly @string cannotUseATypeParameterˢ = "cannot use a type parameter as RHS in type declaration"u8;
 
 internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж<ast.TypeSpec> Ꮡtdecl, ж<TypeName> Ꮡdef) => func((defer, recover) => {
     ref var check = ref Ꮡcheck.Value;
@@ -686,10 +707,10 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
             // handle type parameters even if not allowed (Alias type is supported)
             if (tparam0 != nil) {
                 if (!versionErr && !buildcfg.Experiment.AliasTypeParams) {
-                    Ꮡcheck.error(new ast_TypeSpecжpositioner(Ꮡtdecl), UnsupportedFeature, "generic type alias requires GOEXPERIMENT=aliastypeparams"u8);
+                    Ꮡcheck.error(new ast_TypeSpecжpositioner(Ꮡtdecl), UnsupportedFeature, genericTypeAliasRequiresˢ);
                     versionErr = true;
                 }
-                check.openScope(new ast_TypeSpecжNode(Ꮡtdecl), "type parameters"u8);
+                check.openScope(new ast_TypeSpecжNode(Ꮡtdecl), typeParametersˢ);
                 defer(Ꮡcheck.closeScope);
                 Ꮡcheck.collectTypeParams(alias.of(Alias.Ꮡtparams), tdecl.TypeParams);
             }
@@ -706,7 +727,7 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
             //           tracking of non-default behavior for tests?
             gotypesalias.IncNonDefault();
             if (!versionErr && tparam0 != nil) {
-                Ꮡcheck.error(new ast_TypeSpecжpositioner(Ꮡtdecl), UnsupportedFeature, "generic type alias requires GODEBUG=gotypesalias=1 or unset"u8);
+                Ꮡcheck.error(new ast_TypeSpecжpositioner(Ꮡtdecl), UnsupportedFeature, genericTypeAliasRequiresˢ2);
                 versionErr = true;
             }
             check.brokenAlias(Ꮡobj);
@@ -722,7 +743,7 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
     var named = Ꮡcheck.newNamed(Ꮡobj, default!, default!);
     setDefType(Ꮡdef, new NamedжΔType(named));
     if (tdecl.TypeParams != nil) {
-        check.openScope(new ast_TypeSpecжNode(Ꮡtdecl), "type parameters"u8);
+        check.openScope(new ast_TypeSpecжNode(Ꮡtdecl), typeParametersˢ);
         defer(Ꮡcheck.closeScope);
         Ꮡcheck.collectTypeParams(named.of(Named.Ꮡtparams), tdecl.TypeParams);
     }
@@ -741,10 +762,13 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
     // use its underlying type (like we do for any RHS in a type declaration), and its
     // underlying type is an interface and the type declaration is well defined.
     if (isTypeParam(rhs)) {
-        Ꮡcheck.error(new ast_Exprᴠpositioner(tdecl.Type), MisplacedTypeParam, "cannot use a type parameter as RHS in type declaration"u8);
+        Ꮡcheck.error(new ast_Exprᴠpositioner(tdecl.Type), MisplacedTypeParam, cannotUseATypeParameterˢ);
         named.Value.underlying = new BasicжΔType(Typ[Invalid]);
     }
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cannotUseATypeParameterˢ2 = "cannot use a type parameter as constraint"u8;
 
 internal static void collectTypeParams(this ж<Checker> Ꮡcheck, ж<ж<TypeParamList>> Ꮡdst, ж<ast.FieldList> Ꮡlist) => func((defer, recover) => {
     ref var check = ref Ꮡcheck.Value;
@@ -787,7 +811,7 @@ internal static void collectTypeParams(this ж<Checker> Ꮡcheck, ж<ж<TypePara
                 // the underlying type and thus type set of a type parameter is.
                 // But we may need some additional form of cycle detection within
                 // type parameter lists.
-                Ꮡcheck.error(new ast_Exprᴠpositioner((~f).Type), MisplacedTypeParam, "cannot use a type parameter as constraint"u8);
+                Ꮡcheck.error(new ast_Exprᴠpositioner((~f).Type), MisplacedTypeParam, cannotUseATypeParameterˢ2);
                 bound = new BasicжΔType(Typ[Invalid]);
             }
         } else {
@@ -828,6 +852,9 @@ internal static ΔType bound(this ж<Checker> Ꮡcheck, ast.Expr x) {
     return Ꮡcheck.typ(x);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string typeParamsVˢ = "type params = %v"u8;
+
 internal static slice<ж<TypeParam>> declareTypeParams(this ж<Checker> Ꮡcheck, slice<ж<TypeParam>> tparams, slice<ж<ast.Ident>> names, tokenꓸPos scopePos) {
     ref var check = ref Ꮡcheck.Value;
 
@@ -845,7 +872,7 @@ internal static slice<ж<TypeParam>> declareTypeParams(this ж<Checker> Ꮡcheck
         tparams = append(tparams, tpar);
     }
     if ((~check.conf)._Trace && len(names) > 0) {
-        Ꮡcheck.trace(names[0].Pos(), "type params = %v"u8, tparams[(int)(len(tparams) - len(names))..]);
+        Ꮡcheck.trace(names[0].Pos(), typeParamsVˢ, tparams[(int)(len(tparams) - len(names))..]);
     }
     return tparams;
 }

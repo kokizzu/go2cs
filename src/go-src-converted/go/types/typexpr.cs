@@ -17,6 +17,10 @@ using token = global::go.go.token_package;
 
 partial class types_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cannotUseAsValueOrTypeˢ = "cannot use _ as value or type"u8;
+private static readonly @string cannotUseIotaOutsideˢ = "cannot use iota outside constant declaration"u8;
+
 // ident type-checks identifier e and initializes x with the value or type of e.
 // If an error occurred, x.mode is set to invalid.
 // For the meaning of def, see Checker.definedType, below.
@@ -42,7 +46,7 @@ internal static void ident(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.I
                     x.mode = typexpr;
                     x.typ = new TypeParamжΔType(tpar);
                 } else {
-                    Ꮡcheck.error(new ast_Identжpositioner(Ꮡe), InvalidBlank, "cannot use _ as value or type"u8);
+                    Ꮡcheck.error(new ast_Identжpositioner(Ꮡe), InvalidBlank, cannotUseAsValueOrTypeˢ);
                 }
             }
         } else {
@@ -118,7 +122,7 @@ internal static void ident(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.I
         }
         if (AreEqual(objΔ1, universeIota)){
             if (check.iota == default!) {
-                Ꮡcheck.error(new ast_Identжpositioner(Ꮡe), InvalidIota, "cannot use iota outside constant declaration"u8);
+                Ꮡcheck.error(new ast_Identжpositioner(Ꮡe), InvalidIota, cannotUseIotaOutsideˢ);
                 return;
             }
             x.val = check.iota;
@@ -253,11 +257,20 @@ internal static ΔType genericType(this ж<Checker> Ꮡcheck, ast.Expr e, ж<@st
     return typ;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string typesˢ = "types."u8;
+
 // goTypeName returns the Go type name for typ and
 // removes any occurrences of "types." from that name.
 internal static @string goTypeName(ΔType typ) {
-    return strings.ReplaceAll(fmt.Sprintf("%T"u8, typ), "types."u8, ""u8);
+    return strings.ReplaceAll(fmt.Sprintf("%T"u8, typ), typesˢ, ""u8);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string typeSˢ = "-- type %s"u8;
+private static readonly @string sUnderSSˢ = "=> %s (under = %s) // %s"u8;
+private static readonly @string invalidUseOfArrayOutsideˢ = "invalid use of [...] array (outside a composite literal)"u8;
+private static readonly @string missingComparableˢ = " (missing comparable constraint)"u8;
 
 // typInternal drives type checking of types.
 // Must only be called by definedType or genericType.
@@ -267,7 +280,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
     ref var check = ref Ꮡcheck.Value;
 
         if ((~check.conf)._Trace) {
-            Ꮡcheck.trace(e0.Pos(), "-- type %s"u8, e0);
+            Ꮡcheck.trace(e0.Pos(), typeSˢ, e0);
             check.indent++;
             defer(() => {
                 Ꮡcheck.Value.indent--;
@@ -280,7 +293,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
                 if (AreEqual(T, under)){
                     Ꮡcheck.trace(e0.Pos(), "=> %s // %s"u8, T, goTypeName(T));
                 } else {
-                    Ꮡcheck.trace(e0.Pos(), "=> %s (under = %s) // %s"u8, T, under, goTypeName(T));
+                    Ꮡcheck.trace(e0.Pos(), sUnderSSˢ, T, under, goTypeName(T));
                 }
             });
         }
@@ -356,7 +369,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
                 var (_, ok) = (~e).Len._<ж<ast.Ellipsis>>(ᐧ); if (ok){
                     // Provide a more specific error when encountering a [...] array
                     // rather than leaving it to the handling of the ... expression.
-                    Ꮡcheck.error(new ast_Exprᴠpositioner((~e).Len), BadDotDotDotSyntax, "invalid use of [...] array (outside a composite literal)"u8);
+                    Ꮡcheck.error(new ast_Exprᴠpositioner((~e).Len), BadDotDotDotSyntax, invalidUseOfArrayOutsideˢ);
                     typΔ6.Value.len = -1;
                 } else {
                     typΔ6.Value.len = Ꮡcheck.arrayLength((~e).Len);
@@ -372,7 +385,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
             Ꮡcheck.error(new ast_Ellipsisжpositioner(e), // report error if we encountered [...]
  // dots are handled explicitly where they are legal
  // (array composite literals and parameter lists)
- InvalidDotDotDot, "invalid use of '...'"u8);
+ InvalidDotDotDot, invalidUseOfˢ);
             Ꮡcheck.use((~e).Elt);
             break;
         }
@@ -418,7 +431,7 @@ internal static ΔType /*T*/ typInternal(this ж<Checker> Ꮡcheck, ast.Expr e0,
                 if (!Comparable((~typʗ7).key)) {
                     @string why = default!;
                     if (isTypeParam((~typʗ7).key)) {
-                        why = " (missing comparable constraint)"u8;
+                        why = missingComparableˢ;
                     }
                     Ꮡcheck.errorf(new ast_Exprᴠpositioner((~e).Key), IncomparableMapKey, "invalid map key type %s%s"u8, (~typʗ7).key, why);
                 }
@@ -491,6 +504,9 @@ internal static void setDefType(ж<TypeName> Ꮡdef, ΔType typ) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string instantiatingTypeSWithSˢ = "-- instantiating type %s with %s"u8;
+
 internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<typeparams.IndexExpr> Ꮡix, ж<TypeName> Ꮡdef) {
     ΔType res = default!;
     func((defer, recover) => {
@@ -498,7 +514,7 @@ internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<ty
     ref var ix = ref Ꮡix.Value;
 
         if ((~check.conf)._Trace) {
-            Ꮡcheck.trace(ix.Pos(), "-- instantiating type %s with %s"u8, ix.X, ix.Indices);
+            Ꮡcheck.trace(ix.Pos(), instantiatingTypeSWithSˢ, ix.X, ix.Indices);
             check.indent++;
             defer(() => {
                 Ꮡcheck.Value.indent--;
@@ -564,6 +580,10 @@ internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<ty
     return res;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidArrayLengthSˢ = "invalid array length %s"u8;
+private static readonly @string arrayLengthSMustBeˢ = "array length %s must be integer"u8;
+
 // arrayLength type-checks the array length expression e
 // and returns the constant length >= 0, or a value < 0
 // to indicate an error (and thus an unknown length).
@@ -610,9 +630,9 @@ internal static int64 arrayLength(this ж<Checker> Ꮡcheck, ast.Expr e) {
     }
     @string msg = default!;
     if (isInteger(x.typ)){
-        msg = "invalid array length %s"u8;
+        msg = invalidArrayLengthSˢ;
     } else {
-        msg = "array length %s must be integer"u8;
+        msg = arrayLengthSMustBeˢ;
     }
     Ꮡcheck.errorf(new operandжpositioner(Ꮡx), InvalidArrayLen, msg, Ꮡx);
     return -1;

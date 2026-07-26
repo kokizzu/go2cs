@@ -116,7 +116,7 @@ internal static (io.ReadSeeker reader, io.Closer closer, error err) openExportFi
         // Raw export data.
         (var ef, err) = elf.NewFile(objreader);
         if (err == default!) {
-            var sec = ef.Section(".go_export"u8);
+            var sec = ef.Section(goExportˢ);
             if (sec == nil) {
                 err = fmt.Errorf("%s: .go_export section not found"u8, fpath);
                 return;
@@ -126,7 +126,7 @@ internal static (io.ReadSeeker reader, io.Closer closer, error err) openExportFi
         }
         (var xf, err) = xcoff.NewFile(objreader);
         if (err == default!) {
-            var sdat = xf.CSect(".go_export"u8);
+            var sdat = xf.CSect(goExportˢ);
             if (sdat == default!) {
                 err = fmt.Errorf("%s: .go_export section not found"u8, fpath);
                 return;

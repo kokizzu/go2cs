@@ -127,6 +127,10 @@ internal static bool isReservedName(@string name) {
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string coninˢ = "CONIN$"u8;
+private static readonly @string conoutˢ = "CONOUT$"u8;
+
 internal static bool isReservedBaseName(@string name) {
     if (len(name) == 3) {
         var exprᴛ1 = ((sstring)new byte[]{toUpper(name[0]), toUpper(name[1]), toUpper(name[2])}.slice());
@@ -156,10 +160,10 @@ internal static bool isReservedBaseName(@string name) {
     //
     // While CONIN$ and CONOUT$ aren't documented as being files,
     // they behave the same as CON. For example, ./CONIN$ also opens the console input.
-    if (len(name) == 6 && name[5] == (rune)'$' && equalFold(name, "CONIN$"u8)) {
+    if (len(name) == 6 && name[5] == (rune)'$' && equalFold(name, coninˢ)) {
         return true;
     }
-    if (len(name) == 7 && name[6] == (rune)'$' && equalFold(name, "CONOUT$"u8)) {
+    if (len(name) == 7 && name[6] == (rune)'$' && equalFold(name, conoutˢ)) {
         return true;
     }
     return false;

@@ -48,6 +48,9 @@ partial class types_package {
     m[obj] = true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingTypeOrInitExprˢ = "missing type or init expr"u8;
+
 // arityMatch checks that the lhs and rhs of a const or var decl
 // have the appropriate number of names and init exprs. For const
 // decls, init is the value spec providing the init exprs; for
@@ -67,7 +70,7 @@ internal static void arityMatch(this ж<Checker> Ꮡcheck, ж<ast.ValueSpec> Ꮡ
     case {} when Ꮡinit == nil && r == 0: {
         if (s.Type == default!) {
             // var decl w/o init expr
-            Ꮡcheck.error(new ast_ValueSpecжpositioner(Ꮡs), code, "missing type or init expr"u8);
+            Ꮡcheck.error(new ast_ValueSpecжpositioner(Ꮡs), code, missingTypeOrInitExprˢ);
         }
         break;
     }
@@ -109,6 +112,10 @@ internal static (@string, error) validatedImportPath(@string path) {
     return (s, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cannotDeclareInitMustBeˢ = "cannot declare init - must be func"u8;
+private static readonly @string cannotDeclareMainMustBeˢ = "cannot declare main - must be func"u8;
+
 // declarePkgObj declares obj in the package scope, records its ident -> obj mapping,
 // and updates check.objMap. The object must not be a function or method.
 internal static void declarePkgObj(this ж<Checker> Ꮡcheck, ж<ast.Ident> Ꮡident, Object obj, ж<declInfo> Ꮡd) {
@@ -119,13 +126,13 @@ internal static void declarePkgObj(this ж<Checker> Ꮡcheck, ж<ast.Ident> Ꮡi
     // spec: "A package-scope or file-scope identifier with name init
     // may only be declared to be a function with this (func()) signature."
     if (ident.Name == "init"u8) {
-        Ꮡcheck.error(new ast_Identжpositioner(Ꮡident), InvalidInitDecl, "cannot declare init - must be func"u8);
+        Ꮡcheck.error(new ast_Identжpositioner(Ꮡident), InvalidInitDecl, cannotDeclareInitMustBeˢ);
         return;
     }
     // spec: "The main package must have package name main and declare
     // a function main that takes no arguments and returns no value."
     if (ident.Name == "main"u8 && (~check.pkg).name == "main"u8) {
-        Ꮡcheck.error(new ast_Identжpositioner(Ꮡident), InvalidMainDecl, "cannot declare main - must be func"u8);
+        Ꮡcheck.error(new ast_Identжpositioner(Ꮡident), InvalidMainDecl, cannotDeclareMainMustBeˢ);
         return;
     }
     Ꮡcheck.declare((~check.pkg).scope, Ꮡident, obj, nopos);
@@ -144,6 +151,9 @@ internal static void declarePkgObj(this ж<Checker> Ꮡcheck, ж<ast.Ident> Ꮡi
     return fmt.Sprintf("file[%d]"u8, fileNo);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cannotUseFakeImportCAndˢ = "cannot use FakeImportC and go115UsesCgo together"u8;
+
 internal static ж<Package> importPackage(this ж<Checker> Ꮡcheck, positioner at, @string path, @string dir) {
     ref var check = ref Ꮡcheck.Value;
 
@@ -160,7 +170,7 @@ internal static ж<Package> importPackage(this ж<Checker> Ꮡcheck, positioner 
     // no package yet => import it
     if (path == "C"u8 && ((~check.conf).FakeImportC || (~check.conf).go115UsesCgo)){
         if ((~check.conf).FakeImportC && (~check.conf).go115UsesCgo) {
-            Ꮡcheck.error(at, BadImportPath, "cannot use FakeImportC and go115UsesCgo together"u8);
+            Ꮡcheck.error(at, BadImportPath, cannotUseFakeImportCAndˢ);
         }
         imp = NewPackage("C"u8, "C"u8);
         imp.Value.fake = true;
@@ -231,6 +241,11 @@ internal static ж<Package> importPackage(this ж<Checker> Ꮡcheck, positioner 
     // something went wrong (importer may have returned incomplete package without error)
     return default!;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cannotRenameImportCˢ = @"cannot rename import ""C"""u8;
+private static readonly @string cannotImportPackageAsˢ = "cannot import package as init - init must be a func"u8;
+private static readonly @string methodHasNoReceiverˢ = "method has no receiver"u8;
 
 [GoLocalName("methodInfo")] [GoType("dyn")] partial struct collectObjects_methodInfo {
     internal ж<Func> obj;   // method
@@ -304,12 +319,12 @@ internal static void collectObjects(this ж<Checker> Ꮡcheck) {
                     name = dΔ1.spec.Value.Name.Value.Name;
                     if (path == "C"u8) {
                         // match 1.17 cmd/compile (not prescribed by spec)
-                        Ꮡcheck.error(new ast_Identжpositioner((~dΔ1.spec).Name), ImportCRenamed, @"cannot rename import ""C"""u8);
+                        Ꮡcheck.error(new ast_Identжpositioner((~dΔ1.spec).Name), ImportCRenamed, cannotRenameImportCˢ);
                         return;
                     }
                 }
                 if (name == "init"u8) {
-                    Ꮡcheck.error(new ast_ImportSpecжpositioner(dΔ1.spec), InvalidInitDecl, "cannot import package as init - init must be a func"u8);
+                    Ꮡcheck.error(new ast_ImportSpecжpositioner(dΔ1.spec), InvalidInitDecl, cannotImportPackageAsˢ);
                     return;
                 }
                 if (!pkgImportsʗ1[imp]) {
@@ -426,7 +441,7 @@ internal static void collectObjects(this ж<Checker> Ꮡcheck) {
                     // avoid duplicate type parameter errors
                     // regular function
                     if ((~dΔ1.decl).Recv != nil) {
-                        Ꮡcheck.error(new ast_FieldListжpositioner((~dΔ1.decl).Recv), BadRecv, "method has no receiver"u8);
+                        Ꮡcheck.error(new ast_FieldListжpositioner((~dΔ1.decl).Recv), BadRecv, methodHasNoReceiverˢ);
                     }
                     // treat as function
                     if (name == "init"u8 || (name == "main"u8 && (~Ꮡcheck.Value.pkg).name == "main"u8)) {
@@ -528,6 +543,9 @@ internal static void collectObjects(this ж<Checker> Ꮡcheck) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string parameterizedReceiverˢ = "parameterized receiver contains nil parameters"u8;
+
 // unpackRecv unpacks a receiver type and returns its components: ptr indicates whether
 // rtyp is a pointer receiver, rname is the receiver type name, and tparams are its
 // type parameters, if any. The type parameters are only unpacked if unpackParams is
@@ -581,7 +599,7 @@ break_L:;
                 }
                 case null: {
                     Ꮡcheck.error(new ast_Exprᴠpositioner((~ix).Orig), // ignore - error already reported by parser
- InvalidSyntaxTree, "parameterized receiver contains nil parameters"u8);
+ InvalidSyntaxTree, parameterizedReceiverˢ);
                     break;
                 }
                 default: {

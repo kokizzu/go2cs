@@ -127,7 +127,7 @@ public static error ErrNoLocation = errors.New("http: no Location header in resp
 // [Response.Request]. [ErrNoLocation] is returned if no
 // Location header is present.
 [GoRecv] public static (ж<url.URL>, error) Location(this ref Response r) {
-    @string lv = r.Header.Get("Location"u8);
+    @string lv = r.Header.Get(locationˢ);
     if (lv == ""u8) {
         return (default!, ErrNoLocation);
     }
@@ -136,6 +136,10 @@ public static error ErrNoLocation = errors.New("http: no Location header in resp
     }
     return url.Parse(lv);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string malformedHttpResponseˢ = "malformed HTTP response"u8;
+private static readonly @string malformedHttpStatusCodeˢ = "malformed HTTP status code"u8;
 
 // ReadResponse reads and returns an HTTP response from r.
 // The req parameter optionally specifies the [Request] that corresponds
@@ -158,21 +162,21 @@ public static (ж<Response>, error) ReadResponse(ж<bufio.Reader> Ꮡr, ж<Reque
     }
     var (proto, status, ok) = strings.Cut(line, " "u8);
     if (!ok) {
-        return (default!, badStringError("malformed HTTP response"u8, line));
+        return (default!, badStringError(malformedHttpResponseˢ, line));
     }
     resp.Value.Proto = proto;
     resp.Value.Status = strings.TrimLeft(status, " "u8);
     var (statusCode, _, _) = strings.Cut((~resp).Status, " "u8);
     if (builtin.len(statusCode) != 3) {
-        return (default!, badStringError("malformed HTTP status code"u8, statusCode));
+        return (default!, badStringError(malformedHttpStatusCodeˢ, statusCode));
     }
     (resp.Value.StatusCode, err) = strconv.Atoi(statusCode);
     if (err != default! || (~resp).StatusCode < 0) {
-        return (default!, badStringError("malformed HTTP status code"u8, statusCode));
+        return (default!, badStringError(malformedHttpStatusCodeˢ, statusCode));
     }
     {
         (resp.Value.ProtoMajor, resp.Value.ProtoMinor, ok) = ParseHTTPVersion((~resp).Proto); if (!ok) {
-            return (default!, badStringError("malformed HTTP version"u8, (~resp).Proto));
+            return (default!, badStringError(malformedHttpVersionˢ, (~resp).Proto));
         }
     }
     // Parse the response headers.
@@ -192,6 +196,10 @@ public static (ж<Response>, error) ReadResponse(ж<bufio.Reader> Ꮡr, ж<Reque
     return (resp, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pragmaˢ = "Pragma"u8;
+private static readonly @string cacheControlˢ = "Cache-Control"u8;
+
 // RFC 7234, section 5.4: Should treat
 //
 //	Pragma: no-cache
@@ -201,10 +209,10 @@ public static (ж<Response>, error) ReadResponse(ж<bufio.Reader> Ꮡr, ж<Reque
 //	Cache-Control: no-cache
 internal static void fixPragmaCacheControl(ΔHeader header) {
     {
-        var (hp, ok) = header["Pragma"u8, ꟷ]; if (ok && builtin.len(hp) > 0 && hp[0] == "no-cache") {
+        var (hp, ok) = header[pragmaˢ, ꟷ]; if (ok && builtin.len(hp) > 0 && hp[0] == "no-cache") {
             {
-                var (_, presentcc) = header["Cache-Control"u8, ꟷ]; if (!presentcc) {
-                    header["Cache-Control"u8] = new @string[]{"no-cache"}.slice();
+                var (_, presentcc) = header[cacheControlˢ, ꟷ]; if (!presentcc) {
+                    header[cacheControlˢ] = new @string[]{"no-cache"u8}.slice();
                 }
             }
         }
@@ -216,6 +224,9 @@ internal static void fixPragmaCacheControl(ΔHeader header) {
 [GoRecv] public static bool ProtoAtLeast(this ref Response r, nint major, nint minor) {
     return r.ProtoMajor > major || r.ProtoMajor == major && r.ProtoMinor >= minor;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string contentLength0ˢ = "Content-Length: 0\r\n"u8;
 
 [GoType("dyn")] partial struct Write_type {
     public io_package.Reader Reader;
@@ -304,7 +315,7 @@ internal static void fixPragmaCacheControl(ΔHeader header) {
     var contentLengthAlreadySent = tw.shouldSendContentLength();
     if ((~r1).ContentLength == 0 && !chunked((~r1).TransferEncoding) && !contentLengthAlreadySent && bodyAllowedForStatus(r.StatusCode)) {
         {
-            var (_, errΔ3) = io.WriteString(w, "Content-Length: 0\r\n"u8); if (errΔ3 != default!) {
+            var (_, errΔ3) = io.WriteString(w, contentLength0ˢ); if (errΔ3 != default!) {
                 return errΔ3;
             }
         }
@@ -357,7 +368,7 @@ internal static bool isProtocolSwitchResponse(nint code, ΔHeader h) {
 // isProtocolSwitchHeader reports whether the request or response header
 // is for a protocol switch.
 internal static bool isProtocolSwitchHeader(ΔHeader h) {
-    return h.Get("Upgrade"u8) != ""u8 && httpguts.HeaderValuesContainsToken(h["Connection"u8], "Upgrade"u8);
+    return h.Get(upgradeˢ) != ""u8 && httpguts.HeaderValuesContainsToken(h[connectionˢ], upgradeˢ);
 }
 
 } // end http_package

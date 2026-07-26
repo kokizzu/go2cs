@@ -171,8 +171,11 @@ internal static void splitWord(this WordEncoder e, ж<strings.Builder> Ꮡbuf, @
     e.openWord(Ꮡbuf, charset);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string utf8ˢ = "UTF-8"u8;
+
 internal static bool isUTF8(@string charset) {
-    return strings.EqualFold(charset, "UTF-8"u8);
+    return strings.EqualFold(charset, utf8ˢ);
 }
 
 internal static readonly @string upperhex = "0123456789ABCDEF"u8;
@@ -297,19 +300,24 @@ internal static (slice<byte>, error) decode(byte encoding, @string text) {
 
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string utf8ˢ2 = "utf-8"u8;
+private static readonly @string iso88591ˢ = "iso-8859-1"u8;
+private static readonly @string usAsciiˢ = "us-ascii"u8;
+
 [GoRecv] internal static error convert(this ref WordDecoder d, ж<strings.Builder> Ꮡbuf, @string charset, slice<byte> content) {
     switch (ᐧ) {
-    case {} when strings.EqualFold("utf-8"u8, charset): {
+    case {} when strings.EqualFold(utf8ˢ2, charset): {
         Ꮡbuf.Write(content);
         break;
     }
-    case {} when strings.EqualFold("iso-8859-1"u8, charset): {
+    case {} when strings.EqualFold(iso88591ˢ, charset): {
         foreach (var (_, c) in content) {
             Ꮡbuf.WriteRune((rune)c);
         }
         break;
     }
-    case {} when strings.EqualFold("us-ascii"u8, charset): {
+    case {} when strings.EqualFold(usAsciiˢ, charset): {
         foreach (var (_, c) in content) {
             if (c >= utf8.RuneSelf){
                 Ꮡbuf.WriteRune(Δunicode.ReplacementChar);

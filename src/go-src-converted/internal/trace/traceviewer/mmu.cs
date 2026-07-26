@@ -41,6 +41,9 @@ partial class traceviewer_package {
 
 // type MutatorUtilFunc is a methodless func type — rendered inline as its base delegate
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string modeˢ = "mode"u8;
+
 public static http.HandlerFunc MMUHandlerFunc(slice<Range> ranges, Func<trace.UtilFlags, (slice<slice<trace.MutatorUtil>>, error)> f) {
     var mmu = Ꮡ(new mmu(
         cache: new map<trace.UtilFlags, ж<mmuCacheEntry>>(),
@@ -49,7 +52,7 @@ public static http.HandlerFunc MMUHandlerFunc(slice<Range> ranges, Func<trace.Ut
     ));
     var mmuʗ1 = mmu;
     return (http.ResponseWriter w, ж<http.Request> r) => {
-        var exprᴛ1 = r.FormValue("mode"u8);
+        var exprᴛ1 = r.FormValue(modeˢ);
         if (exprᴛ1 == "plot"u8) {
             mmuʗ1.HandlePlot(w, r);
             return;
@@ -71,9 +74,12 @@ internal static map<@string, trace.UtilFlags> utilFlagNames = new map<@string, t
     ["sweep"u8] = trace.UtilSweep
 };
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string flagsˢ = "flags"u8;
+
 internal static trace.UtilFlags requestUtilFlags(ж<http.Request> Ꮡr) {
     trace.UtilFlags flags = default!;
-    foreach (var (_, flagStr) in strings.Split(Ꮡr.FormValue("flags"u8), "|"u8)) {
+    foreach (var (_, flagStr) in strings.Split(Ꮡr.FormValue(flagsˢ), "|"u8)) {
         flags |= (trace.UtilFlags)(utilFlagNames[flagStr]);
     }
     return flags;
@@ -124,7 +130,7 @@ internal static void HandlePlot(this ж<mmu> Ꮡm, http.ResponseWriter w, ж<htt
         return;
     }
     slice<float64> quantiles = default!;
-    foreach (var (_, flagStr) in strings.Split(Ꮡr.FormValue("flags"u8), "|"u8)) {
+    foreach (var (_, flagStr) in strings.Split(Ꮡr.FormValue(flagsˢ), "|"u8)) {
         if (flagStr == "mut"u8) {
             quantiles = new float64[]{0D, 1D - .999D, 1D - .99D, 1D - .95D}.slice();
             break;
@@ -377,6 +383,9 @@ internal static @string templMMU = """
 
 """u8;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string windowˢ = "window"u8;
+
 // HandleDetails serves details of an MMU graph at a particular window.
 internal static void HandleDetails(this ж<mmu> Ꮡm, http.ResponseWriter w, ж<http.Request> Ꮡr) {
     ref var m = ref Ꮡm.Value;
@@ -386,7 +395,7 @@ internal static void HandleDetails(this ж<mmu> Ꮡm, http.ResponseWriter w, ж<
         http.Error(w, fmt.Sprintf("failed to produce MMU data: %v"u8, err), http.StatusInternalServerError);
         return;
     }
-    @string windowStr = Ꮡr.FormValue("window"u8);
+    @string windowStr = Ꮡr.FormValue(windowˢ);
     (var window, err) = strconv.ParseUint(windowStr, 10, 64);
     if (err != default!) {
         http.Error(w, fmt.Sprintf("failed to parse window parameter %q: %v"u8, windowStr, err), http.StatusBadRequest);

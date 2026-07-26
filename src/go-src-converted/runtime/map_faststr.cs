@@ -22,7 +22,7 @@ internal static @unsafe.Pointer mapaccess1_faststr(ж<maptype> Ꮡt, ж<hmap> �
         return new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map read and map write"u8);
+        fatal(concurrentMapReadAndMapˢ);
     }
     var key = stringStructOf(Ꮡ(ky));
     if (h.B == 0) {
@@ -131,7 +131,7 @@ internal static (@unsafe.Pointer, bool) mapaccess2_faststr(ж<maptype> Ꮡt, ж<
         return (new @unsafe.Pointer(ᏑzeroVal.at<byte>(0)), false);
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map read and map write"u8);
+        fatal(concurrentMapReadAndMapˢ);
     }
     var key = stringStructOf(Ꮡ(ky));
     if (h.B == 0) {
@@ -235,14 +235,14 @@ internal static @unsafe.Pointer mapassign_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡ
     ref var h = ref Ꮡh.DerefOrNil();
 
     if (Ꮡh == nil) {
-        throw panic(((plainError)(@string)"assignment to entry in nil map"u8));
+        throw panic(((plainError)(@string)assignmentToEntryInNilˢ));
     }
     if (raceenabled) {
         var callerpc = getcallerpc();
         racewritepc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(mapassign_faststr));
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     var key = stringStructOf(Ꮡ(s));
     var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡ(s))), (uintptr)h.hash0);
@@ -321,7 +321,7 @@ break_bucketloop:;
 done:
     @unsafe.Pointer elem = (uintptr)add(new @unsafe.Pointer(insertb), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 2 * goarch.PtrSize)) + inserti * (uintptr)t.ValueSize);
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     h.flags &= unchecked((uint8)~hashWriting);
     return elem;
@@ -339,7 +339,7 @@ internal static void mapdelete_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @string 
         return;
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     var key = stringStructOf(Ꮡ(ky));
     var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡ(ky))), (uintptr)h.hash0);
@@ -414,7 +414,7 @@ continue_search:;
     }
 break_search:;
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     h.flags &= unchecked((uint8)~hashWriting);
 }
@@ -464,7 +464,7 @@ internal static void evacuate_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr o
                     continue;
                 }
                 if (top < minTopHash) {
-                    @throw("bad map state"u8);
+                    @throw(badMapStateˢ);
                 }
                 uint8 useY = default!;
                 if (!h.sameSizeGrow()) {

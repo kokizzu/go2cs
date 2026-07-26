@@ -42,6 +42,9 @@ public static io.Reader NewChunkedReader(io.Reader r) {
     internal int64 excess; // "excessive" chunk overhead, for malicious sender detection
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string chunkedEncodingContainsˢ = "chunked encoding contains too much non-data"u8;
+
 [GoRecv] internal static void beginChunk(this ref chunkedReader cr) {
     // chunk-size CRLF
     slice<byte> line = default!;
@@ -78,7 +81,7 @@ public static io.Reader NewChunkedReader(io.Reader r) {
     cr.excess -= 16 + (2 * (int64)cr.n);
     cr.excess = max(cr.excess, 0);
     if (cr.excess > 16 * 1024) {
-        cr.err = errors.New("chunked encoding contains too much non-data"u8);
+        cr.err = errors.New(chunkedEncodingContainsˢ);
     }
     if (cr.n == 0) {
         cr.err = io.EOF;
@@ -93,6 +96,9 @@ public static io.Reader NewChunkedReader(io.Reader r) {
     }
     return false;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string malformedChunkedEncodingˢ = "malformed chunked encoding"u8;
 
 [GoRecv] internal static (nint n, error err) Read(this ref chunkedReader cr, slice<uint8> b) {
     nint n = default!;
@@ -109,7 +115,7 @@ public static io.Reader NewChunkedReader(io.Reader r) {
             {
                 (_, cr.err) = io.ReadFull(new bufio_ReaderжReader(cr.r), cr.buf[..2]); if (cr.err == default!){
                     if (((sstring)(cr.buf[..])) != "\r\n"u8) {
-                        cr.err = errors.New("malformed chunked encoding"u8);
+                        cr.err = errors.New(malformedChunkedEncodingˢ);
                         break;
                     }
                 } else {
@@ -280,12 +286,17 @@ public static io.WriteCloser NewChunkedWriter(io.Writer w) {
     public partial ref ж<bufio_package.Writer> Writer { get; }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string emptyHexNumberForChunkˢ = "empty hex number for chunk length"u8;
+private static readonly @string invalidByteInChunkLengthˢ = "invalid byte in chunk length"u8;
+private static readonly @string httpChunkLengthTooLargeˢ = "http chunk length too large"u8;
+
 internal static (uint64 n, error err) parseHexUint(slice<byte> v) {
     uint64 n = default!;
     error err = default!;
 
     if (len(v) == 0) {
-        return (0, errors.New("empty hex number for chunk length"u8));
+        return (0, errors.New(emptyHexNumberForChunkˢ));
     }
     foreach (var (i, vᴛ1) in v) {
         var b = vᴛ1;
@@ -304,11 +315,11 @@ internal static (uint64 n, error err) parseHexUint(slice<byte> v) {
             break;
         }
         default: {
-            return (0, errors.New("invalid byte in chunk length"u8));
+            return (0, errors.New(invalidByteInChunkLengthˢ));
         }}
 
         if (i == 16) {
-            return (0, errors.New("http chunk length too large"u8));
+            return (0, errors.New(httpChunkLengthTooLargeˢ));
         }
         n <<= (int)(4);
         n |= (uint64)((uint64)b);

@@ -123,6 +123,9 @@ public static (nint, error) Read(this ж<Reader> Ꮡr, slice<byte> b) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lzwInvalidCodeˢ = "lzw: invalid code"u8;
+
 // decode decompresses bytes from r and leaves them in d.toRead.
 // read specifies how to decode bytes into codes.
 // litWidth is the width in bits of literal codes.
@@ -196,7 +199,7 @@ loop:
             break;
         }
         default: {
-            r.err = errors.New("lzw: invalid code"u8);
+            r.err = errors.New(lzwInvalidCodeˢ);
             goto break_loop;
             break;
         }}
@@ -268,6 +271,9 @@ internal static ж<Reader> newReader(io.Reader src, Order order, nint litWidth) 
     return r;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lzwUnknownOrderˢ = "lzw: unknown order"u8;
+
 [GoRecv] internal static void init(this ref Reader r, io.Reader src, Order order, nint litWidth) {
     var exprᴛ1 = order;
     if (exprᴛ1 == LSB) {
@@ -277,7 +283,7 @@ internal static ж<Reader> newReader(io.Reader src, Order order, nint litWidth) 
         r.read = (Func<ж<Reader>, (uint16, error)>)(readMSB);
     }
     else { /* default: */
-        r.err = errors.New("lzw: unknown order"u8);
+        r.err = errors.New(lzwUnknownOrderˢ);
         return;
     }
 

@@ -15,13 +15,20 @@ partial class cryptotest_package {
 
 // type MakeHash is a methodless func type — rendered inline as its base delegate
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sumAppendˢ = "SumAppend"u8;
+private static readonly @string writeWithoutErrorˢ = "WriteWithoutError"u8;
+private static readonly @string resetStateˢ = "ResetState"u8;
+private static readonly @string outOfBoundsReadˢ = "OutOfBoundsRead"u8;
+private static readonly @string statefulWriteˢ = "StatefulWrite"u8;
+
 // TestHash performs a set of tests on hash.Hash implementations, checking the
 // documented requirements of Write, Sum, Reset, Size, and BlockSize.
 public static void TestHash(ж<testing.T> Ꮡt, Func<hash.Hash> mh) {
     ref var t = ref Ꮡt.Value;
 
     // Test that Sum returns an appended digest matching output of Size
-    Ꮡt.Run("SumAppend"u8, (ж<testing.T> tΔ1) => {
+    Ꮡt.Run(sumAppendˢ, (ж<testing.T> tΔ1) => {
         var h = mh();
         var rng = newRandReader(tΔ1);
         var emptyBuff = slice<byte>(""u8);
@@ -55,7 +62,7 @@ public static void TestHash(ж<testing.T> Ꮡt, Func<hash.Hash> mh) {
         }
     });
     // Test that Hash.Write never returns error.
-    Ꮡt.Run("WriteWithoutError"u8, (ж<testing.T> tΔ2) => {
+    Ꮡt.Run(writeWithoutErrorˢ, (ж<testing.T> tΔ2) => {
         var h = mh();
         var rng = newRandReader(tΔ2);
         var emptySlice = slice<byte>(""u8);
@@ -69,7 +76,7 @@ public static void TestHash(ж<testing.T> Ꮡt, Func<hash.Hash> mh) {
         }
     });
     // Writes and checks Write doesn't error
-    Ꮡt.Run("ResetState"u8, (ж<testing.T> tΔ3) => {
+    Ꮡt.Run(resetStateˢ, (ж<testing.T> tΔ3) => {
         var h = mh();
         var rng = newRandReader(tΔ3);
         var emptySum = getSum(tΔ3, h, default!);
@@ -84,7 +91,7 @@ public static void TestHash(ж<testing.T> Ꮡt, Func<hash.Hash> mh) {
         }
     });
     // Check that Write isn't reading from beyond input slice's bounds
-    Ꮡt.Run("OutOfBoundsRead"u8, (ж<testing.T> tΔ4) => {
+    Ꮡt.Run(outOfBoundsReadˢ, (ж<testing.T> tΔ4) => {
         var h = mh();
         nint blockSize = h.BlockSize();
         var rng = newRandReader(tΔ4);
@@ -108,7 +115,7 @@ public static void TestHash(ж<testing.T> Ꮡt, Func<hash.Hash> mh) {
         }
     });
     // Test that multiple calls to Write is stateful
-    Ꮡt.Run("StatefulWrite"u8, (ж<testing.T> tΔ5) => {
+    Ꮡt.Run(statefulWriteˢ, (ж<testing.T> tΔ5) => {
         var h = mh();
         var rng = newRandReader(tΔ5);
         var (prefix, suffix) = (new slice<byte>(h.BlockSize()), new slice<byte>(h.BlockSize()));

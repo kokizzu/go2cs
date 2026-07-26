@@ -95,6 +95,9 @@ public static ж<JSONHandler> NewJSONHandler(io.Writer w, ж<HandlerOptions> Ꮡ
     return h.commonHandler.handle(r);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string timeTimeYearOutsideOfˢ = "time.Time year outside of range [0,9999]"u8;
+
 // Adapted from time.Time.MarshalJSON to avoid allocation.
 internal static void appendJSONTime(ж<handleState> Ꮡs, time.Time t) {
     ref var s = ref Ꮡs.Value;
@@ -103,7 +106,7 @@ internal static void appendJSONTime(ж<handleState> Ꮡs, time.Time t) {
         nint y = t.Year(); if (y < 0 || y >= 10000) {
             // RFC 3339 is clear that years are 4 digits exactly.
             // See golang.org/issue/4556#c15 for more discussion.
-            s.appendError(errors.New("time.Time year outside of range [0,9999]"u8));
+            s.appendError(errors.New(timeTimeYearOutsideOfˢ));
         }
     }
     s.buf.WriteByte((rune)'"');
@@ -180,6 +183,10 @@ internal static error appendJSONMarshal(ж<buffer.Buffer> Ꮡbuf, any v) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ufffdˢ = @"\ufffd"u8;
+private static readonly @string u202ˢ = @"\u202"u8;
+
 // appendEscapedJSONString escapes s for JSON and appends it to buf.
 // It does not surround the string in quotation marks.
 //
@@ -239,7 +246,7 @@ internal static slice<byte> appendEscapedJSONString(slice<byte> buf, @string s) 
             if (start < i) {
                 str(s[(int)(start)..(int)(i)]);
             }
-            str(@"\ufffd"u8);
+            str(ufffdˢ);
             i += size;
             start = i;
             continue;
@@ -255,7 +262,7 @@ internal static slice<byte> appendEscapedJSONString(slice<byte> buf, @string s) 
             if (start < i) {
                 str(s[(int)(start)..(int)(i)]);
             }
-            str(@"\u202"u8);
+            str(u202ˢ);
             @char(hex[(rune)(c & 0xF)]);
             i += size;
             start = i;

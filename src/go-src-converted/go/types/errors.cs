@@ -17,9 +17,12 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class types_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string assertionFailedˢ = "assertion failed"u8;
+
 internal static void assert(bool p) {
     if (!p) {
-        @string msg = "assertion failed"u8;
+        @string msg = assertionFailedˢ;
         // Include information about the assertion location. Due to panic recovery,
         // this location is otherwise buried in the middle of the panicking stack.
         {
@@ -92,10 +95,13 @@ internal static ж<error_> newError(this ж<Checker> Ꮡcheck, errors.Code code)
     return err.desc[0].posn;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noErrorˢ = "no error"u8;
+
 // msg returns the formatted error message without the primary error position pos().
 [GoRecv] internal static @string msg(this ref error_ err) {
     if (err.empty()) {
-        return "no error"u8;
+        return noErrorˢ;
     }
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
     foreach (var (i, _) in err.desc) {
@@ -111,6 +117,11 @@ internal static ж<error_> newError(this ж<Checker> Ꮡcheck, errors.Code code)
     return buf.String();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidOperandˢ = "invalid operand"u8;
+private static readonly @string invalidTypeˢ = "invalid type"u8;
+private static readonly @string errorSCodeDˢ = "ERROR: %s (code = %d)"u8;
+
 // report reports the error err, setting check.firstError if necessary.
 [GoRecv] internal static void report(this ref error_ err) {
     if (err.empty()) {
@@ -125,12 +136,12 @@ internal static ж<error_> newError(this ж<Checker> Ꮡcheck, errors.Code code)
     if ((~check).firstErr != default!) {
         // It is sufficient to look at the first sub-error only.
         @string msg = err.desc[0].msg;
-        if (strings.Index(msg, "invalid operand"u8) > 0 || strings.Index(msg, "invalid type"u8) > 0) {
+        if (strings.Index(msg, invalidOperandˢ) > 0 || strings.Index(msg, invalidTypeˢ) > 0) {
             return;
         }
     }
     if ((~(~check).conf)._Trace) {
-        check.trace(err.posn().Pos(), "ERROR: %s (code = %d)"u8, err.desc[0].msg, err.code);
+        check.trace(err.posn().Pos(), errorSCodeDˢ, err.desc[0].msg, err.code);
     }
     // In go/types, if there is a sub-error with a valid position,
     // call the typechecker error handler for each sub-error.

@@ -32,6 +32,9 @@ internal static void closefd(uintptr fd) {
     syscall.Close(((syscallꓸHandle)fd));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string shortReadˢ = "short read"u8;
+
 internal static error preadn(uintptr fd, slice<byte> buf, nint off) {
     nint whence = seekStart;
     if (off < 0) {
@@ -46,7 +49,7 @@ internal static error preadn(uintptr fd, slice<byte> buf, nint off) {
         var (m, err) = syscall.Read(((syscallꓸHandle)fd), buf);
         if (m <= 0) {
             if (err == default!) {
-                return errors.New("short read"u8);
+                return errors.New(shortReadˢ);
             }
             return err;
         }

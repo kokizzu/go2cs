@@ -129,6 +129,9 @@ internal static readonly @string magic512_256 = "sha\x06"u8;
 internal static readonly @string magic512 = "sha\x07"u8;
 internal const nint marshaledSize = /* len(magic512) + 8*8 + chunk + 8 */ 204;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoSha512InvalidHashˢ = "crypto/sha512: invalid hash function"u8;
+
 [GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref digest d) {
     var b = new slice<byte>(0, marshaledSize);
     var exprᴛ1 = d.function;
@@ -145,7 +148,7 @@ internal const nint marshaledSize = /* len(magic512) + 8*8 + chunk + 8 */ 204;
         b = append(b, magic512.ꓸꓸꓸ);
     }
     else { /* default: */
-        return (default!, errors.New("crypto/sha512: invalid hash function"u8));
+        return (default!, errors.New(cryptoSha512InvalidHashˢ));
     }
 
     b = byteorder.BeAppendUint64(b, d.h[0]);
@@ -163,9 +166,13 @@ internal const nint marshaledSize = /* len(magic512) + 8*8 + chunk + 8 */ 204;
     return (b, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoSha512InvalidHashˢ2 = "crypto/sha512: invalid hash state identifier"u8;
+private static readonly @string cryptoSha512InvalidHashˢ3 = "crypto/sha512: invalid hash state size"u8;
+
 [GoRecv] internal static error UnmarshalBinary(this ref digest d, slice<byte> b) {
     if (len(b) < len(magic512)) {
-        return errors.New("crypto/sha512: invalid hash state identifier"u8);
+        return errors.New(cryptoSha512InvalidHashˢ2);
     }
     switch (ᐧ) {
     case {} when d.function == crypto.SHA384 && ((sstring)(b[..(int)(len(magic384))])) == magic384: {
@@ -181,11 +188,11 @@ internal const nint marshaledSize = /* len(magic512) + 8*8 + chunk + 8 */ 204;
         break;
     }
     default: {
-        return errors.New("crypto/sha512: invalid hash state identifier"u8);
+        return errors.New(cryptoSha512InvalidHashˢ2);
     }}
 
     if (len(b) != marshaledSize) {
-        return errors.New("crypto/sha512: invalid hash state size"u8);
+        return errors.New(cryptoSha512InvalidHashˢ3);
     }
     b = b[(int)(len(magic512))..];
     (b, d.h[0]) = consumeUint64(b);

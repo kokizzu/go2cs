@@ -1309,6 +1309,9 @@ public static int64 UnixNano(this Time t) {
 internal const byte timeBinaryVersionV1 = /* iota + 1 */ 1;    // For general situation
 internal const byte timeBinaryVersionV2 = 2;    // For LMT only
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string timeMarshalBinaryˢ = "Time.MarshalBinary: unexpected zone offset"u8;
+
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
 public static (slice<byte>, error) MarshalBinary(this Time t) {
     int16 offsetMin = default!;   // minutes east of UTC. -1 is UTC.
@@ -1324,7 +1327,7 @@ public static (slice<byte>, error) MarshalBinary(this Time t) {
         }
         offset /= 60;
         if (offset < -32768 || offset == -1 || offset > 32767) {
-            return (default!, errors.New("Time.MarshalBinary: unexpected zone offset"u8));
+            return (default!, errors.New(timeMarshalBinaryˢ));
         }
         offsetMin = (int16)offset;
     }
@@ -1357,15 +1360,20 @@ public static (slice<byte>, error) MarshalBinary(this Time t) {
     return (enc, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string timeUnmarshalBinaryNoˢ = "Time.UnmarshalBinary: no data"u8;
+private static readonly @string timeUnmarshalBinaryˢ = "Time.UnmarshalBinary: unsupported version"u8;
+private static readonly @string timeUnmarshalBinaryˢ2 = "Time.UnmarshalBinary: invalid length"u8;
+
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
 [GoRecv] public static error UnmarshalBinary(this ref Time t, slice<byte> data) {
     var buf = data;
     if (len(buf) == 0) {
-        return errors.New("Time.UnmarshalBinary: no data"u8);
+        return errors.New(timeUnmarshalBinaryNoˢ);
     }
     var version = buf[0];
     if (version != timeBinaryVersionV1 && version != timeBinaryVersionV2) {
-        return errors.New("Time.UnmarshalBinary: unsupported version"u8);
+        return errors.New(timeUnmarshalBinaryˢ);
     }
     nint wantLen = 1 + 8 + 4 + 2;
     /*version*/
@@ -1376,7 +1384,7 @@ public static (slice<byte>, error) MarshalBinary(this Time t) {
         wantLen++;
     }
     if (len(buf) != wantLen) {
-        return errors.New("Time.UnmarshalBinary: invalid length"u8);
+        return errors.New(timeUnmarshalBinaryˢ2);
     }
     buf = buf[1..];
     var sec = (int64)((int64)((int64)((int64)((int64)((int64)((int64)((int64)buf[7] | ((int64)buf[6] << (int)(8))) | ((int64)buf[5] << (int)(16))) | ((int64)buf[4] << (int)(24))) | ((int64)buf[3] << (int)(32))) | ((int64)buf[2] << (int)(40))) | ((int64)buf[1] << (int)(48))) | ((int64)buf[0] << (int)(56)));
@@ -1432,6 +1440,9 @@ public static (slice<byte>, error) MarshalJSON(this Time t) {
     return (b, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string timeUnmarshalJSONInputIsˢ = "Time.UnmarshalJSON: input is not a JSON string"u8;
+
 // UnmarshalJSON implements the [json.Unmarshaler] interface.
 // The time must be a quoted string in the RFC 3339 format.
 [GoRecv] public static error UnmarshalJSON(this ref Time t, slice<byte> data) {
@@ -1440,7 +1451,7 @@ public static (slice<byte>, error) MarshalJSON(this Time t) {
     }
     // TODO(https://go.dev/issue/47353): Properly unescape a JSON string.
     if (len(data) < 2 || data[0] != (rune)'"' || data[len(data) - 1] != (rune)'"') {
-        return errors.New("Time.UnmarshalJSON: input is not a JSON string"u8);
+        return errors.New(timeUnmarshalJSONInputIsˢ);
     }
     data = data[(int)(len(@""""))..(int)(len(data) - len(@""""))];
     error err = default!;

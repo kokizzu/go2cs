@@ -75,6 +75,12 @@ internal static ж<conf> systemConf() {
     return confVal;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string localdomainˢ = "LOCALDOMAIN"u8;
+private static readonly @string resOptionsˢ = "RES_OPTIONS"u8;
+private static readonly @string hostaliasesˢ = "HOSTALIASES"u8;
+private static readonly @string asrConfigˢ = "ASR_CONFIG"u8;
+
 // initConfVal initializes confVal based on the environment
 // that will not change during program execution.
 internal static void initConfVal() => func((defer, recover) => {
@@ -134,14 +140,14 @@ internal static void initConfVal() => func((defer, recover) => {
     // prefer the cgo resolver.
     // Note that LOCALDOMAIN can change behavior merely by being
     // specified with the empty string.
-    var (_, localDomainDefined) = syscall.Getenv("LOCALDOMAIN"u8);
-    if (localDomainDefined || os.Getenv("RES_OPTIONS"u8) != ""u8 || os.Getenv("HOSTALIASES"u8) != ""u8) {
+    var (_, localDomainDefined) = syscall.Getenv(localdomainˢ);
+    if (localDomainDefined || os.Getenv(resOptionsˢ) != ""u8 || os.Getenv(hostaliasesˢ) != ""u8) {
         confVal.Value.preferCgo = true;
         return;
     }
     // OpenBSD apparently lets you override the location of resolv.conf
     // with ASR_CONFIG. If we notice that, defer to libc.
-    if (Δruntime.GOOS == "openbsd"u8 && os.Getenv("ASR_CONFIG"u8) != ""u8) {
+    if (Δruntime.GOOS == "openbsd"u8 && os.Getenv(asrConfigˢ) != ""u8) {
         confVal.Value.preferCgo = true;
         return;
     }
@@ -238,6 +244,12 @@ internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) hostLookupOrder(t
     });
     return (ret, dnsConf);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string hostsˢ = "hosts"u8;
+private static readonly @string mdnsˢ = "mdns"u8;
+private static readonly @string localˢ = ".local"u8;
+private static readonly @string etcMdnsAllowˢ = "/etc/mdns.allow"u8;
 
 [GoRecv] internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) lookupOrder(this ref conf c, ж<Resolver> Ꮡr, @string hostname) {
     ΔhostLookupOrder ret = default!;
@@ -346,7 +358,7 @@ internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) hostLookupOrder(t
     // Canonicalize the hostname by removing any trailing dot.
     hostname = stringslite.TrimSuffix(hostname, "."u8);
     var nss = getSystemNSS();
-    var srcs = (~nss).sources["hosts"u8];
+    var srcs = (~nss).sources[hostsˢ];
     // If /etc/nsswitch.conf doesn't exist or doesn't specify any
     // sources for "hosts", assume Go's DNS will work fine.
     if (errors.Is((~nss).err, fs.ErrNotExist) || ((~nss).err == default! && len(srcs) == 0)) {
@@ -401,8 +413,8 @@ internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) hostLookupOrder(t
                 continue;
                 break;
             }
-            case {} when hostname != ""u8 && stringslite.HasPrefix(src.source, "mdns"u8): {
-                if (stringsHasSuffixFold(hostname, ".local"u8)) {
+            case {} when hostname != ""u8 && stringslite.HasPrefix(src.source, mdnsˢ): {
+                if (stringsHasSuffixFold(hostname, localˢ)) {
                     // Per RFC 6762, the ".local" TLD is special. And
                     // because Go's native resolver doesn't do mDNS or
                     // similar local resolution mechanisms, assume that
@@ -415,7 +427,7 @@ internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) hostLookupOrder(t
                 bool haveMDNSAllow = default!;
                 var exprᴛ3 = c.mdnsTest;
                 if (exprᴛ3 == mdnsFromSystem) {
-                    var (_, err) = os.Stat("/etc/mdns.allow"u8);
+                    var (_, err) = os.Stat(etcMdnsAllowˢ);
                     if (err != default! && !errors.Is(err, fs.ErrNotExist)) {
                         // Let libc figure out what is going on.
                         return (hostLookupCgo, dnsConf);
@@ -522,22 +534,34 @@ internal static (@string dnsMode, nint debugLevel) goDebugNetDNS() {
     return (dnsMode, debugLevel);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string localhostˢ = "localhost"u8;
+private static readonly @string localhostLocaldomainˢ = "localhost.localdomain"u8;
+private static readonly @string localhostˢ2 = ".localhost"u8;
+private static readonly @string localhostLocaldomainˢ2 = ".localhost.localdomain"u8;
+
 // isLocalhost reports whether h should be considered a "localhost"
 // name for the myhostname NSS module.
 internal static bool isLocalhost(@string h) {
-    return stringsEqualFold(h, "localhost"u8) || stringsEqualFold(h, "localhost.localdomain"u8) || stringsHasSuffixFold(h, ".localhost"u8) || stringsHasSuffixFold(h, ".localhost.localdomain"u8);
+    return stringsEqualFold(h, localhostˢ) || stringsEqualFold(h, localhostLocaldomainˢ) || stringsHasSuffixFold(h, localhostˢ2) || stringsHasSuffixFold(h, localhostLocaldomainˢ2);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gatewayˢ = "_gateway"u8;
 
 // isGateway reports whether h should be considered a "gateway"
 // name for the myhostname NSS module.
 internal static bool isGateway(@string h) {
-    return stringsEqualFold(h, "_gateway"u8);
+    return stringsEqualFold(h, gatewayˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string outboundˢ = "_outbound"u8;
 
 // isOutbound reports whether h should be considered an "outbound"
 // name for the myhostname NSS module.
 internal static bool isOutbound(@string h) {
-    return stringsEqualFold(h, "_outbound"u8);
+    return stringsEqualFold(h, outboundˢ);
 }
 
 } // end net_package

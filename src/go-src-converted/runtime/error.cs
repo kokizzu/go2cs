@@ -32,8 +32,11 @@ partial class runtime_package {
 [GoRecv] public static void RuntimeError(this ref TypeAssertionError _) {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string interfaceˢ = "interface"u8;
+
 [GoRecv] public static @string Error(this ref TypeAssertionError e) {
-    @string inter = "interface"u8;
+    @string inter = interfaceˢ;
     if (e._interface != nil) {
         inter = toRType(e._interface).@string();
     }

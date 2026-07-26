@@ -49,9 +49,9 @@ public static @string Synopsis(@string text) {
 // of a copyright notice immediately before a package statement
 // as being a doc comment.
 public static slice<@string> IllegalPrefixes = new @string[]{
-    "copyright",
-    "all rights",
-    "author"
+    "copyright"u8,
+    "all rights"u8,
+    "author"u8
 }.slice();
 
 // Synopsis returns a cleaned version of the first sentence in text.

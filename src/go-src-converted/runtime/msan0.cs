@@ -11,25 +11,28 @@ partial class runtime_package {
 
 internal const bool msanenabled = false;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string msanˢ = "msan"u8;
+
 // Because msanenabled is false, none of these functions should be called.
 internal static void msanread(@unsafe.Pointer addr, uintptr sz) {
-    @throw("msan"u8);
+    @throw(msanˢ);
 }
 
 internal static void msanwrite(@unsafe.Pointer addr, uintptr sz) {
-    @throw("msan"u8);
+    @throw(msanˢ);
 }
 
 internal static void msanmalloc(@unsafe.Pointer addr, uintptr sz) {
-    @throw("msan"u8);
+    @throw(msanˢ);
 }
 
 internal static void msanfree(@unsafe.Pointer addr, uintptr sz) {
-    @throw("msan"u8);
+    @throw(msanˢ);
 }
 
 internal static void msanmove(@unsafe.Pointer dst, @unsafe.Pointer src, uintptr sz) {
-    @throw("msan"u8);
+    @throw(msanˢ);
 }
 
 } // end runtime_package

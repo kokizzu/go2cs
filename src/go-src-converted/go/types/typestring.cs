@@ -102,6 +102,15 @@ internal static ж<typeWriter> newTypeHasher(ж<bytes.Buffer> Ꮡbuf, ж<Context
     w.buf.WriteString("<"u8 + msg + ">"u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string packageˢ = " /* package "u8;
+private static readonly @string emptyUnionˢ = "empty union"u8;
+private static readonly @string interfaceComparableˢ = "interface{comparable}"u8;
+private static readonly @string implicitˢ = "/* implicit */ "u8;
+private static readonly @string unknownChannelDirectionˢ = "unknown channel direction"u8;
+private static readonly @string unnamedTypeParameterˢ = "unnamed type parameter"u8;
+private static readonly @string typeParameterˢ2 = "/* type parameter */"u8;
+
 internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, recover) => {
     ref var w = ref Ꮡw.Value;
 
@@ -143,7 +152,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
         break;
     }
     case ж<Struct> t: {
-        w.@string("struct{"u8);
+        w.@string(structˢ2);
         foreach (var (i, f) in (~t).fields) {
             if (i > 0) {
                 w.@byte((rune)';');
@@ -166,7 +175,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
             }
             Ꮡw.typ((~f).typ);
             if (pkgAnnotate) {
-                w.@string(" /* package "u8);
+                w.@string(packageˢ);
                 w.@string((~f).pkg.Path());
                 w.@string(" */ "u8);
             }
@@ -193,7 +202,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
         break;
     }
     case ж<ΔSignature> t: {
-        w.@string("func"u8);
+        w.@string(funcˢ);
         Ꮡw.signature(t);
         break;
     }
@@ -201,7 +210,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
         if (t.Len() == 0) {
             // Unions only appear as (syntactic) embedded elements
             // in interfaces and syntactically cannot be empty.
-            w.error("empty union"u8);
+            w.error(emptyUnionˢ);
             break;
         }
         foreach (var (i, tΔ1) in (~t).terms) {
@@ -226,7 +235,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
                 break;
             }
             if (AreEqual(t, (~asNamed(universeComparable.Type())).underlying)) {
-                w.@string("interface{comparable}"u8);
+                w.@string(interfaceComparableˢ);
                 break;
             }
         }
@@ -237,9 +246,9 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
             }
             // Something's wrong with the implicit interface.
             // Print it as such and continue.
-            w.@string("/* implicit */ "u8);
+            w.@string(implicitˢ);
         }
-        w.@string("interface{"u8);
+        w.@string(interfaceˢ2);
         var first = true;
         if (w.ctxt != nil){
             Ꮡw.typeSet(t.typeSet());
@@ -275,7 +284,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
         bool parens = default!;
         var exprᴛ1 = (~t).dir;
         if (exprᴛ1 == SendRecv) {
-            s = "chan "u8;
+            s = chanˢ4;
             {
                 var (c, _) = (~t).elem._<ж<Chan>>(ᐧ); if (c != nil && (~c).dir == RecvOnly) {
                     // chan (<-chan T) requires parentheses
@@ -284,13 +293,13 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
             }
         }
         else if (exprᴛ1 == SendOnly) {
-            s = "chan<- "u8;
+            s = chanˢ2;
         }
         else if (exprᴛ1 == RecvOnly) {
-            s = "<-chan "u8;
+            s = chanˢ3;
         }
         else { /* default: */
-            w.error("unknown channel direction"u8);
+            w.error(unknownChannelDirectionˢ);
         }
 
         w.@string(s);
@@ -324,7 +333,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
     }
     case ж<TypeParam> t: {
         if ((~t).obj == nil) {
-            w.error("unnamed type parameter"u8);
+            w.error(unnamedTypeParameterˢ);
             break;
         }
         {
@@ -348,7 +357,7 @@ internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, r
                     } else {
                         // Can't print position information because
                         // we don't have a token.FileSet accessible.
-                        w.@string("/* type parameter */"u8);
+                        w.@string(typeParameterˢ2);
                     }
                 }
             }
@@ -437,6 +446,9 @@ internal static void typeList(this ж<typeWriter> Ꮡw, slice<ΔType> list) {
     w.@byte((rune)']');
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilTypeParameterˢ = "nil type parameter"u8;
+
 internal static void tParamList(this ж<typeWriter> Ꮡw, slice<ж<TypeParam>> list) {
     ref var w = ref Ꮡw.Value;
 
@@ -447,7 +459,7 @@ internal static void tParamList(this ж<typeWriter> Ꮡw, slice<ж<TypeParam>> l
         // list is expected to hold type parameter names,
         // but don't crash if that's not the case.
         if (tpar == nil) {
-            w.error("nil type parameter"u8);
+            w.error(nilTypeParameterˢ);
             continue;
         }
         if (i > 0) {
@@ -475,6 +487,9 @@ internal static void tParamList(this ж<typeWriter> Ꮡw, slice<ж<TypeParam>> l
     w.@string(obj.name);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string expectedStringTypeˢ = "expected string type"u8;
+
 internal static void tuple(this ж<typeWriter> Ꮡw, ж<Tuple> Ꮡtup, bool variadic) {
     ref var w = ref Ꮡw.Value;
     ref var tup = ref Ꮡtup.DerefOrNil();
@@ -501,7 +516,7 @@ internal static void tuple(this ж<typeWriter> Ꮡw, ж<Tuple> Ꮡtup, bool vari
                         // append(s, "foo"...) leads to signature func([]byte, string...)
                         {
                             var (t, _) = under(typ)._<ж<Basic>>(ᐧ); if (t == nil || (~t).kind != ΔString) {
-                                w.error("expected string type"u8);
+                                w.error(expectedStringTypeˢ);
                                 continue;
                             }
                         }

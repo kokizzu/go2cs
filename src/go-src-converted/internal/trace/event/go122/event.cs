@@ -107,14 +107,14 @@ public static slice<@event.Spec> Specs() {
 internal static array<@event.Spec> specs = new golib.SparseArray<@event.Spec>{
     [EvEventBatch] = new @event.Spec(
         Name: "EventBatch"u8,
-        Args: new @string[]{"gen", "m", "time", "size"}.slice()
+        Args: new @string[]{"gen"u8, "m"u8, "time"u8, "size"u8}.slice()
     ),
     [EvStacks] = new @event.Spec(
         Name: "Stacks"u8
     ),
     [EvStack] = new @event.Spec(
         Name: "Stack"u8,
-        Args: new @string[]{"id", "nframes"}.slice(),
+        Args: new @string[]{"id"u8, "nframes"u8}.slice(),
         IsStack: true
     ),
     [EvStrings] = new @event.Spec(
@@ -122,7 +122,7 @@ internal static array<@event.Spec> specs = new golib.SparseArray<@event.Spec>{
     ),
     [EvString] = new @event.Spec(
         Name: "String"u8,
-        Args: new @string[]{"id"}.slice(),
+        Args: new @string[]{"id"u8}.slice(),
         HasData: true
     ),
     [EvCPUSamples] = new @event.Spec(
@@ -130,218 +130,218 @@ internal static array<@event.Spec> specs = new golib.SparseArray<@event.Spec>{
     ),
     [EvCPUSample] = new @event.Spec(
         Name: "CPUSample"u8,
-        Args: new @string[]{"time", "m", "p", "g", "stack"}.slice()
+        Args: new @string[]{"time"u8, "m"u8, "p"u8, "g"u8, "stack"u8}.slice()
     ),
     [EvFrequency] = new @event.Spec(
         Name: "Frequency"u8,
-        Args: new @string[]{"freq"}.slice()
+        Args: new @string[]{"freq"u8}.slice()
     ),
     [EvExperimentalBatch] = new @event.Spec(
         Name: "ExperimentalBatch"u8,
-        Args: new @string[]{"exp", "gen", "m", "time"}.slice(),
+        Args: new @string[]{"exp"u8, "gen"u8, "m"u8, "time"u8}.slice(),
         HasData: true
     ),
     [EvProcsChange] = new @event.Spec(
         Name: "ProcsChange"u8,
-        Args: new @string[]{"dt", "procs_value", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "procs_value"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{2}.slice()
     ),
     [EvProcStart] = new @event.Spec(
         Name: "ProcStart"u8,
-        Args: new @string[]{"dt", "p", "p_seq"}.slice(),
+        Args: new @string[]{"dt"u8, "p"u8, "p_seq"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvProcStop] = new @event.Spec(
         Name: "ProcStop"u8,
-        Args: new @string[]{"dt"}.slice(),
+        Args: new @string[]{"dt"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvProcSteal] = new @event.Spec(
         Name: "ProcSteal"u8,
-        Args: new @string[]{"dt", "p", "p_seq", "m"}.slice(),
+        Args: new @string[]{"dt"u8, "p"u8, "p_seq"u8, "m"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvProcStatus] = new @event.Spec(
         Name: "ProcStatus"u8,
-        Args: new @string[]{"dt", "p", "pstatus"}.slice(),
+        Args: new @string[]{"dt"u8, "p"u8, "pstatus"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvGoCreate] = new @event.Spec(
         Name: "GoCreate"u8,
-        Args: new @string[]{"dt", "new_g", "new_stack", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "new_g"u8, "new_stack"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{3, 2}.slice()
     ),
     [EvGoCreateSyscall] = new @event.Spec(
         Name: "GoCreateSyscall"u8,
-        Args: new @string[]{"dt", "new_g"}.slice(),
+        Args: new @string[]{"dt"u8, "new_g"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvGoStart] = new @event.Spec(
         Name: "GoStart"u8,
-        Args: new @string[]{"dt", "g", "g_seq"}.slice(),
+        Args: new @string[]{"dt"u8, "g"u8, "g_seq"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvGoDestroy] = new @event.Spec(
         Name: "GoDestroy"u8,
-        Args: new @string[]{"dt"}.slice(),
+        Args: new @string[]{"dt"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvGoDestroySyscall] = new @event.Spec(
         Name: "GoDestroySyscall"u8,
-        Args: new @string[]{"dt"}.slice(),
+        Args: new @string[]{"dt"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvGoStop] = new @event.Spec(
         Name: "GoStop"u8,
-        Args: new @string[]{"dt", "reason_string", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "reason_string"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{2}.slice(),
         StringIDs: new nint[]{1}.slice()
     ),
     [EvGoBlock] = new @event.Spec(
         Name: "GoBlock"u8,
-        Args: new @string[]{"dt", "reason_string", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "reason_string"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{2}.slice(),
         StringIDs: new nint[]{1}.slice()
     ),
     [EvGoUnblock] = new @event.Spec(
         Name: "GoUnblock"u8,
-        Args: new @string[]{"dt", "g", "g_seq", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "g"u8, "g_seq"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{3}.slice()
     ),
     [EvGoSyscallBegin] = new @event.Spec(
         Name: "GoSyscallBegin"u8,
-        Args: new @string[]{"dt", "p_seq", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "p_seq"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{2}.slice()
     ),
     [EvGoSyscallEnd] = new @event.Spec(
         Name: "GoSyscallEnd"u8,
-        Args: new @string[]{"dt"}.slice(),
+        Args: new @string[]{"dt"u8}.slice(),
         StartEv: EvGoSyscallBegin,
         IsTimedEvent: true
     ),
     [EvGoSyscallEndBlocked] = new @event.Spec(
         Name: "GoSyscallEndBlocked"u8,
-        Args: new @string[]{"dt"}.slice(),
+        Args: new @string[]{"dt"u8}.slice(),
         StartEv: EvGoSyscallBegin,
         IsTimedEvent: true
     ),
     [EvGoStatus] = new @event.Spec(
         Name: "GoStatus"u8,
-        Args: new @string[]{"dt", "g", "m", "gstatus"}.slice(),
+        Args: new @string[]{"dt"u8, "g"u8, "m"u8, "gstatus"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvSTWBegin] = new @event.Spec(
         Name: "STWBegin"u8,
-        Args: new @string[]{"dt", "kind_string", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "kind_string"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{2}.slice(),
         StringIDs: new nint[]{1}.slice()
     ),
     [EvSTWEnd] = new @event.Spec(
         Name: "STWEnd"u8,
-        Args: new @string[]{"dt"}.slice(),
+        Args: new @string[]{"dt"u8}.slice(),
         StartEv: EvSTWBegin,
         IsTimedEvent: true
     ),
     [EvGCActive] = new @event.Spec(
         Name: "GCActive"u8,
-        Args: new @string[]{"dt", "gc_seq"}.slice(),
+        Args: new @string[]{"dt"u8, "gc_seq"u8}.slice(),
         IsTimedEvent: true,
         StartEv: EvGCBegin
     ),
     [EvGCBegin] = new @event.Spec(
         Name: "GCBegin"u8,
-        Args: new @string[]{"dt", "gc_seq", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "gc_seq"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{2}.slice()
     ),
     [EvGCEnd] = new @event.Spec(
         Name: "GCEnd"u8,
-        Args: new @string[]{"dt", "gc_seq"}.slice(),
+        Args: new @string[]{"dt"u8, "gc_seq"u8}.slice(),
         StartEv: EvGCBegin,
         IsTimedEvent: true
     ),
     [EvGCSweepActive] = new @event.Spec(
         Name: "GCSweepActive"u8,
-        Args: new @string[]{"dt", "p"}.slice(),
+        Args: new @string[]{"dt"u8, "p"u8}.slice(),
         StartEv: EvGCSweepBegin,
         IsTimedEvent: true
     ),
     [EvGCSweepBegin] = new @event.Spec(
         Name: "GCSweepBegin"u8,
-        Args: new @string[]{"dt", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{1}.slice()
     ),
     [EvGCSweepEnd] = new @event.Spec(
         Name: "GCSweepEnd"u8,
-        Args: new @string[]{"dt", "swept_value", "reclaimed_value"}.slice(),
+        Args: new @string[]{"dt"u8, "swept_value"u8, "reclaimed_value"u8}.slice(),
         StartEv: EvGCSweepBegin,
         IsTimedEvent: true
     ),
     [EvGCMarkAssistActive] = new @event.Spec(
         Name: "GCMarkAssistActive"u8,
-        Args: new @string[]{"dt", "g"}.slice(),
+        Args: new @string[]{"dt"u8, "g"u8}.slice(),
         StartEv: EvGCMarkAssistBegin,
         IsTimedEvent: true
     ),
     [EvGCMarkAssistBegin] = new @event.Spec(
         Name: "GCMarkAssistBegin"u8,
-        Args: new @string[]{"dt", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{1}.slice()
     ),
     [EvGCMarkAssistEnd] = new @event.Spec(
         Name: "GCMarkAssistEnd"u8,
-        Args: new @string[]{"dt"}.slice(),
+        Args: new @string[]{"dt"u8}.slice(),
         StartEv: EvGCMarkAssistBegin,
         IsTimedEvent: true
     ),
     [EvHeapAlloc] = new @event.Spec(
         Name: "HeapAlloc"u8,
-        Args: new @string[]{"dt", "heapalloc_value"}.slice(),
+        Args: new @string[]{"dt"u8, "heapalloc_value"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvHeapGoal] = new @event.Spec(
         Name: "HeapGoal"u8,
-        Args: new @string[]{"dt", "heapgoal_value"}.slice(),
+        Args: new @string[]{"dt"u8, "heapgoal_value"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvGoLabel] = new @event.Spec(
         Name: "GoLabel"u8,
-        Args: new @string[]{"dt", "label_string"}.slice(),
+        Args: new @string[]{"dt"u8, "label_string"u8}.slice(),
         IsTimedEvent: true,
         StringIDs: new nint[]{1}.slice()
     ),
     [EvUserTaskBegin] = new @event.Spec(
         Name: "UserTaskBegin"u8,
-        Args: new @string[]{"dt", "task", "parent_task", "name_string", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "task"u8, "parent_task"u8, "name_string"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{4}.slice(),
         StringIDs: new nint[]{3}.slice()
     ),
     [EvUserTaskEnd] = new @event.Spec(
         Name: "UserTaskEnd"u8,
-        Args: new @string[]{"dt", "task", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "task"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{2}.slice()
     ),
     [EvUserRegionBegin] = new @event.Spec(
         Name: "UserRegionBegin"u8,
-        Args: new @string[]{"dt", "task", "name_string", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "task"u8, "name_string"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{3}.slice(),
         StringIDs: new nint[]{2}.slice()
     ),
     [EvUserRegionEnd] = new @event.Spec(
         Name: "UserRegionEnd"u8,
-        Args: new @string[]{"dt", "task", "name_string", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "task"u8, "name_string"u8, "stack"u8}.slice(),
         StartEv: EvUserRegionBegin,
         IsTimedEvent: true,
         StackIDs: new nint[]{3}.slice(),
@@ -349,84 +349,84 @@ internal static array<@event.Spec> specs = new golib.SparseArray<@event.Spec>{
     ),
     [EvUserLog] = new @event.Spec(
         Name: "UserLog"u8,
-        Args: new @string[]{"dt", "task", "key_string", "value_string", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "task"u8, "key_string"u8, "value_string"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{4}.slice(),
         StringIDs: new nint[]{2, 3}.slice()
     ),
     [EvGoSwitch] = new @event.Spec(
         Name: "GoSwitch"u8,
-        Args: new @string[]{"dt", "g", "g_seq"}.slice(),
+        Args: new @string[]{"dt"u8, "g"u8, "g_seq"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvGoSwitchDestroy] = new @event.Spec(
         Name: "GoSwitchDestroy"u8,
-        Args: new @string[]{"dt", "g", "g_seq"}.slice(),
+        Args: new @string[]{"dt"u8, "g"u8, "g_seq"u8}.slice(),
         IsTimedEvent: true
     ),
     [EvGoCreateBlocked] = new @event.Spec(
         Name: "GoCreateBlocked"u8,
-        Args: new @string[]{"dt", "new_g", "new_stack", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "new_g"u8, "new_stack"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{3, 2}.slice()
     ),
     [EvGoStatusStack] = new @event.Spec(
         Name: "GoStatusStack"u8,
-        Args: new @string[]{"dt", "g", "m", "gstatus", "stack"}.slice(),
+        Args: new @string[]{"dt"u8, "g"u8, "m"u8, "gstatus"u8, "stack"u8}.slice(),
         IsTimedEvent: true,
         StackIDs: new nint[]{4}.slice()
     ),
     [EvSpan] = new @event.Spec(
         Name: "Span"u8,
-        Args: new @string[]{"dt", "id", "npages_value", "kindclass"}.slice(),
+        Args: new @string[]{"dt"u8, "id"u8, "npages_value"u8, "kindclass"u8}.slice(),
         IsTimedEvent: true,
         Experiment: AllocFree
     ),
     [EvSpanAlloc] = new @event.Spec(
         Name: "SpanAlloc"u8,
-        Args: new @string[]{"dt", "id", "npages_value", "kindclass"}.slice(),
+        Args: new @string[]{"dt"u8, "id"u8, "npages_value"u8, "kindclass"u8}.slice(),
         IsTimedEvent: true,
         Experiment: AllocFree
     ),
     [EvSpanFree] = new @event.Spec(
         Name: "SpanFree"u8,
-        Args: new @string[]{"dt", "id"}.slice(),
+        Args: new @string[]{"dt"u8, "id"u8}.slice(),
         IsTimedEvent: true,
         Experiment: AllocFree
     ),
     [EvHeapObject] = new @event.Spec(
         Name: "HeapObject"u8,
-        Args: new @string[]{"dt", "id", "type"}.slice(),
+        Args: new @string[]{"dt"u8, "id"u8, "type"u8}.slice(),
         IsTimedEvent: true,
         Experiment: AllocFree
     ),
     [EvHeapObjectAlloc] = new @event.Spec(
         Name: "HeapObjectAlloc"u8,
-        Args: new @string[]{"dt", "id", "type"}.slice(),
+        Args: new @string[]{"dt"u8, "id"u8, "type"u8}.slice(),
         IsTimedEvent: true,
         Experiment: AllocFree
     ),
     [EvHeapObjectFree] = new @event.Spec(
         Name: "HeapObjectFree"u8,
-        Args: new @string[]{"dt", "id"}.slice(),
+        Args: new @string[]{"dt"u8, "id"u8}.slice(),
         IsTimedEvent: true,
         Experiment: AllocFree
     ),
     [EvGoroutineStack] = new @event.Spec(
         Name: "GoroutineStack"u8,
-        Args: new @string[]{"dt", "id", "order"}.slice(),
+        Args: new @string[]{"dt"u8, "id"u8, "order"u8}.slice(),
         IsTimedEvent: true,
         Experiment: AllocFree
     ),
     [EvGoroutineStackAlloc] = new @event.Spec(
         Name: "GoroutineStackAlloc"u8,
-        Args: new @string[]{"dt", "id", "order"}.slice(),
+        Args: new @string[]{"dt"u8, "id"u8, "order"u8}.slice(),
         IsTimedEvent: true,
         Experiment: AllocFree
     ),
     [EvGoroutineStackFree] = new @event.Spec(
         Name: "GoroutineStackFree"u8,
-        Args: new @string[]{"dt", "id"}.slice(),
+        Args: new @string[]{"dt"u8, "id"u8}.slice(),
         IsTimedEvent: true,
         Experiment: AllocFree
     )
@@ -440,19 +440,25 @@ public static readonly GoStatus GoRunning = 2;
 public static readonly GoStatus GoSyscall = 3;
 public static readonly GoStatus GoWaiting = 4;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runnableˢ = "Runnable"u8;
+private static readonly @string runningˢ = "Running"u8;
+private static readonly @string syscallˢ = "Syscall"u8;
+private static readonly @string waitingˢ = "Waiting"u8;
+
 public static @string String(this GoStatus s) {
     var exprᴛ1 = s;
     if (exprᴛ1 == GoRunnable) {
-        return "Runnable"u8;
+        return runnableˢ;
     }
     if (exprᴛ1 == GoRunning) {
-        return "Running"u8;
+        return runningˢ;
     }
     if (exprᴛ1 == GoSyscall) {
-        return "Syscall"u8;
+        return syscallˢ;
     }
     if (exprᴛ1 == GoWaiting) {
-        return "Waiting"u8;
+        return waitingˢ;
     }
 
     return "Bad"u8;
@@ -466,16 +472,19 @@ public static readonly ProcStatus ProcIdle = 2;
 public static readonly ProcStatus ProcSyscall = 3;
 public static readonly ProcStatus ProcSyscallAbandoned = 4;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string idleˢ = "Idle"u8;
+
 public static @string String(this ProcStatus s) {
     var exprᴛ1 = s;
     if (exprᴛ1 == ProcRunning) {
-        return "Running"u8;
+        return runningˢ;
     }
     if (exprᴛ1 == ProcIdle) {
-        return "Idle"u8;
+        return idleˢ;
     }
     if (exprᴛ1 == ProcSyscall) {
-        return "Syscall"u8;
+        return syscallˢ;
     }
 
     return "Bad"u8;

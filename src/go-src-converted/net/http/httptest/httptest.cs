@@ -22,6 +22,11 @@ public static ж<http.Request> NewRequest(@string method, @string target, io.Rea
     return NewRequestWithContext(context.Background(), method, target, body);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string http11ˢ = "HTTP/1.1"u8;
+private static readonly @string exampleComˢ = "example.com"u8;
+private static readonly @string httpsˢ = "https://"u8;
+
 // NewRequestWithContext returns a new incoming server Request, suitable
 // for passing to an [http.Handler] for testing.
 //
@@ -55,7 +60,7 @@ public static ж<http.Request> NewRequestWithContext(context.Context ctx, @strin
     }
     req = req.WithContext(ctx);
     // HTTP/1.0 was used above to avoid needing a Host field. Change it to 1.1 here.
-    req.Value.Proto = "HTTP/1.1"u8;
+    req.Value.Proto = http11ˢ;
     req.Value.ProtoMinor = 1;
     req.Value.Close = false;
     if (body != default!) {
@@ -90,9 +95,9 @@ public static ж<http.Request> NewRequestWithContext(context.Context ctx, @strin
     // used publicly.
     req.Value.RemoteAddr = "192.0.2.1:1234"u8;
     if ((~req).Host == ""u8) {
-        req.Value.Host = "example.com"u8;
+        req.Value.Host = exampleComˢ;
     }
-    if (strings.HasPrefix(target, "https://"u8)) {
+    if (strings.HasPrefix(target, httpsˢ)) {
         req.Value.TLS = Ꮡ(new tlsꓸConnectionState(
             Version: tls.VersionTLS12,
             HandshakeComplete: true,

@@ -14,6 +14,9 @@ using io;
 
 partial class filepath_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string evalSymlinksTooManyLinksˢ = "EvalSymlinks: too many links"u8;
+
 internal static (@string, error) walkSymlinks(@string path) {
     nint volLen = filepathlite.VolumeNameLen(path);
     @string pathSeparator = ((@string)(rune)os.PathSeparator);
@@ -89,7 +92,7 @@ internal static (@string, error) walkSymlinks(@string path) {
         // Found symlink.
         linksWalked++;
         if (linksWalked > 255) {
-            return ("", errors.New("EvalSymlinks: too many links"u8));
+            return ("", errors.New(evalSymlinksTooManyLinksˢ));
         }
         (var link, err) = os.Readlink(dest);
         if (err != default!) {

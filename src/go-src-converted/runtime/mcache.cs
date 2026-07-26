@@ -135,6 +135,11 @@ internal static ж<mcache> getMCache(ж<m> Ꮡmp) {
     return c;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string refillOfSpanWithFreeˢ = "refill of span with free space remaining"u8;
+private static readonly @string badSweepgenInRefillˢ = "bad sweepgen in refill"u8;
+private static readonly @string spanHasNoFreeSpaceˢ = "span has no free space"u8;
+
 // refill acquires a new span of span class spc for c. This span will
 // have at least one free object. The current span in c must be full.
 //
@@ -144,12 +149,12 @@ internal static ж<mcache> getMCache(ж<m> Ꮡmp) {
     // Return the current cached span to the central lists.
     var s = c.alloc[spc];
     if ((~s).allocCount != (~s).nelems) {
-        @throw("refill of span with free space remaining"u8);
+        @throw(refillOfSpanWithFreeˢ);
     }
     if (s != Ꮡemptymspan) {
         // Mark this span as no longer cached.
         if ((~s).sweepgen != mheap_.sweepgen + 3) {
-            @throw("bad sweepgen in refill"u8);
+            @throw(badSweepgenInRefillˢ);
         }
         mheap_.central[spc].mcentral.uncacheSpan(s);
         // Count up how many slots were used and record it.
@@ -171,10 +176,10 @@ internal static ж<mcache> getMCache(ж<m> Ꮡmp) {
     // Get a new cached span from the central lists.
     s = mheap_.central[spc].mcentral.cacheSpan();
     if (s == nil) {
-        @throw("out of memory"u8);
+        @throw(outOfMemoryˢ);
     }
     if ((~s).allocCount == (~s).nelems) {
-        @throw("span has no free space"u8);
+        @throw(spanHasNoFreeSpaceˢ);
     }
     // Indicate that this span is cached and prevent asynchronous
     // sweeping in the next sweep phase.
@@ -203,7 +208,7 @@ internal static ж<mcache> getMCache(ж<m> Ꮡmp) {
 // allocLarge allocates a span for a large object.
 [GoRecv] internal static ж<mspan> allocLarge(this ref mcache c, uintptr size, bool noscan) {
     if (size + (uintptr)_PageSize < size) {
-        @throw("out of memory"u8);
+        @throw(outOfMemoryˢ);
     }
     var npages = (size >> (int)(_PageShift));
     if ((uintptr)(size & (uintptr)_PageMask) != 0) {
@@ -216,7 +221,7 @@ internal static ж<mcache> getMCache(ж<m> Ꮡmp) {
     var spc = makeSpanClass(0, noscan);
     var s = Ꮡmheap_.alloc(npages, spc);
     if (s == nil) {
-        @throw("out of memory"u8);
+        @throw(outOfMemoryˢ);
     }
     // Count the alloc in consistent, external stats.
     var stats = Ꮡmemstats.of(mstats.ᏑheapStats).acquire();
@@ -278,6 +283,9 @@ internal static ж<mcache> getMCache(ж<m> Ꮡmp) {
     ᏑgcController.update(dHeapLive, scanAlloc);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badFlushGenˢ = "bad flushGen"u8;
+
 // prepareForSweep flushes c if the system has entered a new sweep phase
 // since c was populated. This must happen between the sweep phase
 // starting and the first allocation from c.
@@ -298,7 +306,7 @@ internal static void prepareForSweep(this ж<mcache> Ꮡc) {
     } else 
     if (flushGen != sg - 2) {
         println((@string)"bad flushGen"u8, flushGen, (@string)"in prepareForSweep; sweepgen"u8, sg);
-        @throw("bad flushGen"u8);
+        @throw(badFlushGenˢ);
     }
     c.releaseAll();
     stackcache_clear(Ꮡc);

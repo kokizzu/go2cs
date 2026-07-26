@@ -32,6 +32,9 @@ partial class dwarf_package {
 
 [GoType("map[uint32, abbrev]")] partial struct abbrevTable;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abbrevˢ = "abbrev"u8;
+
 // parseAbbrev returns the abbreviation table that starts at byte off
 // in the .debug_abbrev section.
 internal static (abbrevTable, error) parseAbbrev(this ж<Data> Ꮡd, uint64 off, nint vers) {
@@ -49,7 +52,7 @@ internal static (abbrevTable, error) parseAbbrev(this ж<Data> Ꮡd, uint64 off,
         data = data[(int)(off)..];
     }
     ref var b = ref heap<buf>(out var Ꮡb);
-    b = makeBuf(Ꮡd, new unknownFormat(nil), "abbrev"u8, 0, data);
+    b = makeBuf(Ꮡd, new unknownFormat(nil), abbrevˢ, 0, data);
     // Error handling is simplified by the buf getters
     // returning an endless stream of 0s after an error.
     var m = new abbrevTable(0);
@@ -152,6 +155,9 @@ internal static map<Attr, Class> attrPtrClass = new map<Attr, Class>{
     [AttrLoclistsBase] = ClassLocListPtr
 };
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cannotDetermineClassOfˢ = "cannot determine class of unknown attribute form"u8;
+
 // formToClass returns the DWARF 4 Class for the given form. If the
 // DWARF version is less then 4, it will disambiguate some forms
 // depending on the attribute.
@@ -229,7 +235,7 @@ internal static Class formToClass(format form, Attr attr, nint vers, ж<buf> Ꮡ
         return ClassRngList;
     }
     { /* default: */
-        b.error("cannot determine class of unknown attribute form"u8);
+        b.error(cannotDetermineClassOfˢ);
         return 0;
     }
 
@@ -329,6 +335,25 @@ public static @string GoString(this Class i) {
 
 [GoType("num:uint32")] partial struct Offset;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownAbbreviationTableˢ = "unknown abbreviation table index"u8;
+private static readonly @string dwFormStrxOffsetOutOfˢ = "DW_FORM_strx offset out of range"u8;
+private static readonly @string strOffsetsˢ = "str_offsets"u8;
+private static readonly @string dwFormStrxIndirectOffsetˢ = "DW_FORM_strx indirect offset out of range"u8;
+private static readonly @string dwFormRnglistxOffsetOutˢ = "DW_FORM_rnglistx offset out of range"u8;
+private static readonly @string rnglistsˢ = "rnglists"u8;
+private static readonly @string dwFormRnglistxIndirectˢ = "DW_FORM_rnglistx indirect offset out of range"u8;
+private static readonly @string dwFormAddrxWithNoDebugˢ = "DW_FORM_addrx with no .debug_addr section"u8;
+private static readonly @string unknownVersionForDwFormˢ = "unknown version for DW_FORM_ref_addr"u8;
+private static readonly @string unknownSizeForDwFormRefˢ = "unknown size for DW_FORM_ref_addr"u8;
+private static readonly @string unknownSizeForDwFormStrpˢ = "unknown size for DW_FORM_strp/line_strp"u8;
+private static readonly @string dwFormStrpLineStrpOffsetˢ = "DW_FORM_strp/line_strp offset out of range"u8;
+private static readonly @string dwFormLineStrpWithNoˢ = "DW_FORM_line_strp with no .debug_line_str section"u8;
+private static readonly @string lineStrˢ = "line_str"u8;
+private static readonly @string dwFormStrxWithNoDebugStrˢ = "DW_FORM_strx with no .debug_str_offsets section"u8;
+private static readonly @string unknownOffsetSizeForDwˢ = "unknown offset size for DW_FORM_strx"u8;
+private static readonly @string unknownSizeForDwFormStrpˢ2 = "unknown size for DW_FORM_strp_sup"u8;
+
 // If we are currently parsing the compilation unit,
 // we can't evaluate Addrx or Strx until we've seen the
 // relevant base entry.
@@ -352,7 +377,7 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
     }
     var (a, ok) = atab[id, ꟷ];
     if (!ok) {
-        b.error("unknown abbreviation table index"u8);
+        b.error(unknownAbbreviationTableˢ);
         return default!;
     }
     var e = Ꮡ(new Entry(
@@ -365,10 +390,10 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
     var resolveStrx = @string (uint64 strBase, uint64 offΔ1) => {
         offΔ1 += strBase;
         if ((uint64)(nint)offΔ1 != offΔ1) {
-            Ꮡb.Value.error("DW_FORM_strx offset out of range"u8);
+            Ꮡb.Value.error(dwFormStrxOffsetOutOfˢ);
         }
         ref var b1 = ref heap<buf>(out var Ꮡb1);
-        b1 = makeBuf(Ꮡb.Value.dwarf, Ꮡb.Value.format, "str_offsets"u8, 0, (~Ꮡb.Value.dwarf).strOffsets);
+        b1 = makeBuf(Ꮡb.Value.dwarf, Ꮡb.Value.format, strOffsetsˢ, 0, (~Ꮡb.Value.dwarf).strOffsets);
         b1.skip((nint)offΔ1);
         var (is64, _) = Ꮡb.Value.format.dwarf64();
         if (is64){
@@ -381,7 +406,7 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
             return ""u8;
         }
         if ((uint64)(nint)offΔ1 != offΔ1) {
-            Ꮡb.Value.error("DW_FORM_strx indirect offset out of range"u8);
+            Ꮡb.Value.error(dwFormStrxIndirectOffsetˢ);
         }
         b1 = makeBuf(Ꮡb.Value.dwarf, Ꮡb.Value.format, "str"u8, 0, (~Ꮡb.Value.dwarf).str);
         b1.skip((nint)offΔ1);
@@ -400,10 +425,10 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
         }
         offΔ2 += rnglistsBase;
         if ((uint64)(nint)offΔ2 != offΔ2) {
-            Ꮡb.Value.error("DW_FORM_rnglistx offset out of range"u8);
+            Ꮡb.Value.error(dwFormRnglistxOffsetOutˢ);
         }
         ref var b1 = ref heap<buf>(out var Ꮡb1);
-        b1 = makeBuf(Ꮡb.Value.dwarf, Ꮡb.Value.format, "rnglists"u8, 0, (~Ꮡb.Value.dwarf).rngLists);
+        b1 = makeBuf(Ꮡb.Value.dwarf, Ꮡb.Value.format, rnglistsˢ, 0, (~Ꮡb.Value.dwarf).rngLists);
         b1.skip((nint)offΔ2);
         if (is64){
             offΔ2 = b1.uint64();
@@ -415,7 +440,7 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
             return (uint64)(0);
         }
         if ((uint64)(nint)offΔ2 != offΔ2) {
-            Ꮡb.Value.error("DW_FORM_rnglistx indirect offset out of range"u8);
+            Ꮡb.Value.error(dwFormRnglistxIndirectˢ);
         }
         return rnglistsBase + offΔ2;
     };
@@ -454,7 +479,7 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
                 }
 
                 if ((~b.dwarf).addr == default!) {
-                    b.error("DW_FORM_addrx with no .debug_addr section"u8);
+                    b.error(dwFormAddrxWithNoDebugˢ);
                 }
                 if (b.err != default!) {
                     return default!;
@@ -533,14 +558,14 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
                 // The attribute is implicitly indicated as present, and no value is
                 // encoded in the debugging information entry itself.
                 // reference to other entry
-                b.error("unknown version for DW_FORM_ref_addr"u8);
+                b.error(unknownVersionForDwFormˢ);
             } else 
             if (versΔ2 == 2){
                 val = ((Offset)(uint32)b.addr());
             } else {
                 var (is64, known) = b.format.dwarf64();
                 if (!known){
-                    b.error("unknown size for DW_FORM_ref_addr"u8);
+                    b.error(unknownSizeForDwFormRefˢ);
                 } else 
                 if (is64){
                     val = ((Offset)(uint32)b.uint64());
@@ -572,7 +597,7 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
             uint64 offΔ7 = default!;        // offset into .debug_str
             var (is64, known) = b.format.dwarf64();
             if (!known){
-                b.error("unknown size for DW_FORM_strp/line_strp"u8);
+                b.error(unknownSizeForDwFormStrpˢ);
             } else 
             if (is64){
                 offΔ7 = b.uint64();
@@ -580,7 +605,7 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
                 offΔ7 = (uint64)b.uint32();
             }
             if ((uint64)(nint)offΔ7 != offΔ7) {
-                b.error("DW_FORM_strp/line_strp offset out of range"u8);
+                b.error(dwFormStrpLineStrpOffsetˢ);
             }
             if (b.err != default!) {
                 return default!;
@@ -590,10 +615,10 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
                 b1 = makeBuf(b.dwarf, b.format, "str"u8, 0, (~b.dwarf).str);
             } else {
                 if (len((~b.dwarf).lineStr) == 0) {
-                    b.error("DW_FORM_line_strp with no .debug_line_str section"u8);
+                    b.error(dwFormLineStrpWithNoˢ);
                     return default!;
                 }
-                b1 = makeBuf(b.dwarf, b.format, "line_str"u8, 0, (~b.dwarf).lineStr);
+                b1 = makeBuf(b.dwarf, b.format, lineStrˢ, 0, (~b.dwarf).lineStr);
             }
             b1.skip((nint)offΔ7);
             val = b1.@string();
@@ -623,11 +648,11 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
                 }
 
                 if (len((~b.dwarf).strOffsets) == 0) {
-                    b.error("DW_FORM_strx with no .debug_str_offsets section"u8);
+                    b.error(dwFormStrxWithNoDebugStrˢ);
                 }
                 var (is64, known) = b.format.dwarf64();
                 if (!known) {
-                    b.error("unknown offset size for DW_FORM_strx"u8);
+                    b.error(unknownOffsetSizeForDwˢ);
                 }
                 if (b.err != default!) {
                     return default!;
@@ -655,7 +680,7 @@ internal static ж<Entry> entry(this ж<buf> Ꮡb, ж<Entry> Ꮡcu, abbrevTable 
         else if (exprᴛ1 == formStrpSup) {
             var (is64, known) = b.format.dwarf64();
             if (!known){
-                b.error("unknown size for DW_FORM_strp_sup"u8);
+                b.error(unknownSizeForDwFormStrpˢ2);
             } else 
             if (is64){
                 val = b.uint64();
@@ -794,6 +819,10 @@ public static ж<ΔReader> Reader(this ж<Data> Ꮡd) {
     return r.b.order;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string infoˢ = "info"u8;
+private static readonly @string offsetOutOfRangeˢ = "offset out of range"u8;
+
 // Seek positions the [Reader] at offset off in the encoded entry stream.
 // Offset 0 can be used to denote the first entry.
 [GoRecv] public static void Seek(this ref ΔReader r, Offset off) {
@@ -806,13 +835,13 @@ public static ж<ΔReader> Reader(this ж<Data> Ꮡd) {
         }
         var uΔ1 = Ꮡ((~d).unit, 0);
         r.unit = 0;
-        r.b = makeBuf(r.d, new unitжdataFormat(uΔ1), "info"u8, (~uΔ1).off, (~uΔ1).data);
+        r.b = makeBuf(r.d, new unitжdataFormat(uΔ1), infoˢ, (~uΔ1).off, (~uΔ1).data);
         r.cu = default!;
         return;
     }
     nint i = d.offsetToUnit(off);
     if (i == -1) {
-        r.err = errors.New("offset out of range"u8);
+        r.err = errors.New(offsetOutOfRangeˢ);
         return;
     }
     if (i != r.unit) {
@@ -820,7 +849,7 @@ public static ж<ΔReader> Reader(this ж<Data> Ꮡd) {
     }
     var u = Ꮡ((~d).unit, i);
     r.unit = i;
-    r.b = makeBuf(r.d, new unitжdataFormat(u), "info"u8, off, (~u).data[(int)(uint32)(off - (~u).off)..]);
+    r.b = makeBuf(r.d, new unitжdataFormat(u), infoˢ, off, (~u).data[(int)(uint32)(off - (~u).off)..]);
 }
 
 // maybeNextUnit advances to the next unit if this one is finished.
@@ -834,7 +863,7 @@ public static ж<ΔReader> Reader(this ж<Data> Ꮡd) {
 [GoRecv] internal static void nextUnit(this ref ΔReader r) {
     r.unit++;
     var u = Ꮡ((~r.d).unit, r.unit);
-    r.b = makeBuf(r.d, new unitжdataFormat(u), "info"u8, (~u).off, (~u).data);
+    r.b = makeBuf(r.d, new unitжdataFormat(u), infoˢ, (~u).off, (~u).data);
     r.cu = default!;
 }
 
@@ -943,7 +972,7 @@ public static (ж<Entry>, error) SeekPC(this ж<ΔReader> Ꮡr, uint64 pc) {
         r.unit = unit;
         r.cu = default!;
         var u = Ꮡ((~r.d).unit, unit);
-        r.b = makeBuf(r.d, new unitжdataFormat(u), "info"u8, (~u).off, (~u).data);
+        r.b = makeBuf(r.d, new unitжdataFormat(u), infoˢ, (~u).off, (~u).data);
         var (e, err) = Ꮡr.Next();
         if (err != default!) {
             return (default!, err);
@@ -1048,6 +1077,9 @@ public static (slice<array<uint64>>, error) Ranges(this ж<Data> Ꮡd, ж<Entry>
     return (ret, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noUnitForEntryˢ = "no unit for entry"u8;
+
 // baseAddressForEntry returns the initial base address to be used when
 // looking up the range list of entry e.
 // DWARF specifies that this should be the lowpc attribute of the enclosing
@@ -1063,11 +1095,11 @@ internal static (ж<Entry>, uint64, error) baseAddressForEntry(this ж<Data> Ꮡ
     } else {
         nint i = Ꮡd.offsetToUnit(e.Offset);
         if (i == -1) {
-            return (default!, 0, errors.New("no unit for entry"u8));
+            return (default!, 0, errors.New(noUnitForEntryˢ));
         }
         var u = Ꮡ(d.unit, i);
         ref var b = ref heap<buf>(out var Ꮡb);
-        b = makeBuf(Ꮡd, new unitжdataFormat(u), "info"u8, (~u).off, (~u).data);
+        b = makeBuf(Ꮡd, new unitжdataFormat(u), infoˢ, (~u).off, (~u).data);
         cu = Ꮡb.entry(nil, (~u).atable, (~u).@base, (~u).vers);
         if (b.err != default!) {
             return (default!, 0, b.err);
@@ -1086,6 +1118,9 @@ internal static (ж<Entry>, uint64, error) baseAddressForEntry(this ж<Data> Ꮡ
     return (cu, 0, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rangesˢ = "ranges"u8;
+
 internal static (slice<array<uint64>>, error) dwarf2Ranges(this ж<Data> Ꮡd, ж<unit> Ꮡu, uint64 @base, int64 ranges, slice<array<uint64>> ret) {
     ref var d = ref Ꮡd.Value;
     ref var u = ref Ꮡu.Value;
@@ -1093,7 +1128,7 @@ internal static (slice<array<uint64>>, error) dwarf2Ranges(this ж<Data> Ꮡd, �
     if (ranges < 0 || ranges > (int64)len(d.ranges)) {
         return (default!, fmt.Errorf("invalid range offset %d (max %d)"u8, ranges, len(d.ranges)));
     }
-    var buf = makeBuf(Ꮡd, new unitжdataFormat(Ꮡu), "ranges"u8, ((Offset)(uint32)ranges), d.ranges[(int)(ranges)..]);
+    var buf = makeBuf(Ꮡd, new unitжdataFormat(Ꮡu), rangesˢ, ((Offset)(uint32)ranges), d.ranges[(int)(ranges)..]);
     while (len(buf.data) > 0) {
         var low = buf.addr();
         var high = buf.addr();
@@ -1122,7 +1157,7 @@ internal static (slice<array<uint64>>, error) dwarf5Ranges(this ж<Data> Ꮡd, �
     if (Ꮡcu != nil) {
         (addrBase, _) = cu.Val(AttrAddrBase)._<int64>(ᐧ);
     }
-    var buf = makeBuf(Ꮡd, new unitжdataFormat(Ꮡu), "rnglists"u8, 0, d.rngLists);
+    var buf = makeBuf(Ꮡd, new unitжdataFormat(Ꮡu), rnglistsˢ, 0, d.rngLists);
     buf.skip((nint)ranges);
     while (ᐧ) {
         var opcode = buf.uint8();
@@ -1185,15 +1220,18 @@ internal static (slice<array<uint64>>, error) dwarf5Ranges(this ж<Data> Ꮡd, �
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string addrˢ = "addr"u8;
+
 // debugAddr returns the address at idx in debug_addr
 internal static (uint64, error) debugAddr(this ж<Data> Ꮡd, dataFormat format, uint64 addrBase, uint64 idx) {
     ref var d = ref Ꮡd.Value;
 
     var off = idx * (uint64)format.addrsize() + addrBase;
     if ((uint64)(nint)off != off) {
-        return (0, errors.New("offset out of range"u8));
+        return (0, errors.New(offsetOutOfRangeˢ));
     }
-    var b = makeBuf(Ꮡd, format, "addr"u8, 0, d.addr);
+    var b = makeBuf(Ꮡd, format, addrˢ, 0, d.addr);
     b.skip((nint)off);
     var val = b.addr();
     if (b.err != default!) {

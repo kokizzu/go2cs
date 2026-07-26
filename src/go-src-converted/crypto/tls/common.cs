@@ -36,25 +36,32 @@ public static readonly UntypedInt VersionTLS12 = 0x0303;
 public static readonly UntypedInt VersionTLS13 = 0x0304;
 public static readonly UntypedInt VersionSSL30 = 0x0300;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sSLv3ˢ = "SSLv3"u8;
+private static readonly @string tls10ˢ = "TLS 1.0"u8;
+private static readonly @string tls11ˢ = "TLS 1.1"u8;
+private static readonly @string tls12ˢ = "TLS 1.2"u8;
+private static readonly @string tls13ˢ = "TLS 1.3"u8;
+
 // VersionName returns the name for the provided TLS version number
 // (e.g. "TLS 1.3"), or a fallback representation of the value if the
 // version is not implemented by this package.
 public static @string VersionName(uint16 version) {
     var exprᴛ1 = version;
     if (exprᴛ1 == VersionSSL30) {
-        return "SSLv3"u8;
+        return sSLv3ˢ;
     }
     if (exprᴛ1 == VersionTLS10) {
-        return "TLS 1.0"u8;
+        return tls10ˢ;
     }
     if (exprᴛ1 == VersionTLS11) {
-        return "TLS 1.1"u8;
+        return tls11ˢ;
     }
     if (exprᴛ1 == VersionTLS12) {
-        return "TLS 1.2"u8;
+        return tls12ˢ;
     }
     if (exprᴛ1 == VersionTLS13) {
-        return "TLS 1.3"u8;
+        return tls13ˢ;
     }
     { /* default: */
         return fmt.Sprintf("0x%04X"u8, version);
@@ -1133,6 +1140,13 @@ public static error errNoCertificates = errors.New("tls: no certificates configu
     return (Ꮡ(c.Certificates, 0), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noMutuallySupportedˢ = "no mutually supported protocol versions"u8;
+private static readonly @string clientDoesnTSupportEcdheˢ = "client doesn't support ECDHE, can only use legacy RSA key exchange"u8;
+private static readonly @string clientDoesnTSupportˢ = "client doesn't support certificate curve"u8;
+private static readonly @string connectionDoesnTSupportˢ = "connection doesn't support Ed25519"u8;
+private static readonly @string clientDoesnTSupportAnyˢ = "client doesn't support any cipher suites compatible with the certificate"u8;
+
 // SupportsCertificate returns nil if the provided certificate is supported by
 // the client that sent the ClientHello. Otherwise, it returns an error
 // describing the reason for the incompatibility.
@@ -1158,7 +1172,7 @@ public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Cert
     }
     var (vers, ok) = config.mutualVersion(roleServer, chi.SupportedVersions);
     if (!ok) {
-        return errors.New("no mutually supported protocol versions"u8);
+        return errors.New(noMutuallySupportedˢ);
     }
     // If the client specified the name they are trying to connect to, the
     // certificate needs to be valid for it.
@@ -1230,7 +1244,7 @@ public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Cert
     }
     // The only signed key exchange we support is ECDHE.
     if (!supportsECDHE(config, vers, chi.SupportedCurves, chi.SupportedPoints)) {
-        return supportsRSAFallback(errors.New("client doesn't support ECDHE, can only use legacy RSA key exchange"u8));
+        return supportsRSAFallback(errors.New(clientDoesnTSupportEcdheˢ));
     }
     bool ecdsaCipherSuite = default!;
     {
@@ -1261,14 +1275,14 @@ public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Cert
                     }
                 }
                 if (!curveOk) {
-                    return errors.New("client doesn't support certificate curve"u8);
+                    return errors.New(clientDoesnTSupportˢ);
                 }
                 ecdsaCipherSuite = true;
                 break;
             }
             case ed25519.PublicKey pub: {
                 if (vers < VersionTLS12 || len(chi.SignatureSchemes) == 0) {
-                    return errors.New("connection doesn't support Ed25519"u8);
+                    return errors.New(connectionDoesnTSupportˢ);
                 }
                 ecdsaCipherSuite = true;
                 break;
@@ -1306,10 +1320,13 @@ public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Cert
         return true;
     });
     if (cipherSuite == nil) {
-        return supportsRSAFallback(errors.New("client doesn't support any cipher suites compatible with the certificate"u8));
+        return supportsRSAFallback(errors.New(clientDoesnTSupportAnyˢ));
     }
     return default!;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string chainIsNotSignedByAnˢ = "chain is not signed by an acceptable CA"u8;
 
 // SupportsCertificate returns nil if the provided certificate is supported by
 // the server that sent the CertificateRequest. Otherwise, it returns an error
@@ -1343,7 +1360,7 @@ public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Cert
             }
         }
     }
-    return errors.New("chain is not signed by an acceptable CA"u8);
+    return errors.New(chainIsNotSignedByAnˢ);
 }
 
 // BuildNameToCertificate parses c.Certificates and builds c.NameToCertificate

@@ -301,6 +301,10 @@ public static (slice<byte>, error) SignPKCS1v15(io.Reader random, ж<PrivateKey>
     return decrypt(Ꮡpriv, em, withCheck);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoRsaInputMustBeˢ = "crypto/rsa: input must be hashed message"u8;
+private static readonly @string cryptoRsaUnsupportedHashˢ = "crypto/rsa: unsupported hash function"u8;
+
 internal static (slice<byte>, error) pkcs1v15ConstructEM(ж<PublicKey> Ꮡpub, crypto.Hash hash, slice<byte> hashed) {
     ref var pub = ref Ꮡpub.Value;
 
@@ -309,12 +313,12 @@ internal static (slice<byte>, error) pkcs1v15ConstructEM(ж<PublicKey> Ꮡpub, c
     slice<byte> prefix = default!;
     if (hash != 0) {
         if (len(hashed) != hash.Size()) {
-            return (default!, errors.New("crypto/rsa: input must be hashed message"u8));
+            return (default!, errors.New(cryptoRsaInputMustBeˢ));
         }
         bool ok = default!;
         (prefix, ok) = hashPrefixes[hash, ꟷ];
         if (!ok) {
-            return (default!, errors.New("crypto/rsa: unsupported hash function"u8));
+            return (default!, errors.New(cryptoRsaUnsupportedHashˢ));
         }
     }
     // EM = 0x00 || 0x01 || PS || 0x00 || T

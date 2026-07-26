@@ -603,11 +603,15 @@ internal static ж<BoolNode> newBool(this ж<Tree> Ꮡt, Pos pos, bool @true) {
     return Ꮡ(new BoolNode(tr: Ꮡt, NodeType: NodeBool, Pos: pos, True: @true));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string trueˢ = "true"u8;
+private static readonly @string falseˢ = "false"u8;
+
 [GoRecv] public static @string String(this ref BoolNode b) {
     if (b.True) {
-        return "true"u8;
+        return trueˢ;
     }
-    return "false"u8;
+    return falseˢ;
 }
 
 [GoRecv] internal static void writeTo(this ref BoolNode b, ж<strings.Builder> Ꮡsb) {
@@ -639,6 +643,9 @@ internal static ж<BoolNode> newBool(this ж<Tree> Ꮡt, Pos pos, bool @true) {
     public complex128 Complex128; // The complex value.
     public @string Text;    // The original textual representation from the input.
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string eEpPˢ = ".eEpP"u8;
 
 internal static (ж<NumberNode>, error) newNumber(this ж<Tree> Ꮡt, Pos pos, @string text, itemType typ) {
     var n = Ꮡ(new NumberNode(tr: Ꮡt, NodeType: NodeNumber, Pos: pos, Text: text));
@@ -712,7 +719,7 @@ internal static (ж<NumberNode>, error) newNumber(this ж<Tree> Ꮡt, Pos pos, @
         if (errΔ6 == default!) {
             // If we parsed it as a float but it looks like an integer,
             // it's a huge number too large to fit in an int. Reject it.
-            if (!strings.ContainsAny(text, ".eEpP"u8)) {
+            if (!strings.ContainsAny(text, eEpPˢ)) {
                 return (default!, fmt.Errorf("integer overflow: %q"u8, text));
             }
             n.Value.IsFloat = true;
@@ -843,8 +850,11 @@ internal static ж<elseNode> newElse(this ж<Tree> Ꮡt, Pos pos, nint line) {
     return nodeElse;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string elseˢ = "{{else}}"u8;
+
 [GoRecv] internal static @string String(this ref elseNode e) {
-    return "{{else}}"u8;
+    return elseˢ;
 }
 
 [GoRecv] internal static void writeTo(this ref elseNode e, ж<strings.Builder> Ꮡsb) {
@@ -876,6 +886,10 @@ internal static ж<elseNode> newElse(this ж<Tree> Ꮡt, Pos pos, nint line) {
     return sb.String();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rangeˢ = "range"u8;
+private static readonly @string withˢ = "with"u8;
+
 [GoRecv] internal static void writeTo(this ref BranchNode b, ж<strings.Builder> Ꮡsb) {
     @string name = ""u8;
     var exprᴛ1 = b.NodeType;
@@ -883,10 +897,10 @@ internal static ж<elseNode> newElse(this ж<Tree> Ꮡt, Pos pos, nint line) {
         name = "if"u8;
     }
     else if (exprᴛ1 == NodeRange) {
-        name = "range"u8;
+        name = rangeˢ;
     }
     else if (exprᴛ1 == NodeWith) {
-        name = "with"u8;
+        name = withˢ;
     }
     else { /* default: */
         throw panic("unknown branch type");
@@ -899,7 +913,7 @@ internal static ж<elseNode> newElse(this ж<Tree> Ꮡt, Pos pos, nint line) {
     Ꮡsb.WriteString("}}"u8);
     b.List.writeTo(Ꮡsb);
     if (b.ElseList != nil) {
-        Ꮡsb.WriteString("{{else}}"u8);
+        Ꮡsb.WriteString(elseˢ);
         b.ElseList.writeTo(Ꮡsb);
     }
     Ꮡsb.WriteString("{{end}}"u8);
@@ -955,8 +969,11 @@ internal static ж<BreakNode> newBreak(this ж<Tree> Ꮡt, Pos pos, nint line) {
     return new BreakNodeжNode(b.tr.newBreak(b.Pos, b.Line));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string breakˢ = "{{break}}"u8;
+
 [GoRecv] public static @string String(this ref BreakNode b) {
-    return "{{break}}"u8;
+    return breakˢ;
 }
 
 [GoRecv] internal static ж<Tree> tree(this ref BreakNode b) {
@@ -964,7 +981,7 @@ internal static ж<BreakNode> newBreak(this ж<Tree> Ꮡt, Pos pos, nint line) {
 }
 
 [GoRecv] internal static void writeTo(this ref BreakNode b, ж<strings.Builder> Ꮡsb) {
-    Ꮡsb.WriteString("{{break}}"u8);
+    Ꮡsb.WriteString(breakˢ);
 }
 
 // ContinueNode represents a {{continue}} action.
@@ -983,8 +1000,11 @@ internal static ж<ContinueNode> newContinue(this ж<Tree> Ꮡt, Pos pos, nint l
     return new ContinueNodeжNode(c.tr.newContinue(c.Pos, c.Line));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string continueˢ = "{{continue}}"u8;
+
 [GoRecv] public static @string String(this ref ContinueNode c) {
-    return "{{continue}}"u8;
+    return continueˢ;
 }
 
 [GoRecv] internal static ж<Tree> tree(this ref ContinueNode c) {
@@ -992,7 +1012,7 @@ internal static ж<ContinueNode> newContinue(this ж<Tree> Ꮡt, Pos pos, nint l
 }
 
 [GoRecv] internal static void writeTo(this ref ContinueNode c, ж<strings.Builder> Ꮡsb) {
-    Ꮡsb.WriteString("{{continue}}"u8);
+    Ꮡsb.WriteString(continueˢ);
 }
 
 // RangeNode represents a {{range}} action and its commands.
@@ -1041,8 +1061,11 @@ internal static ж<TemplateNode> newTemplate(this ж<Tree> Ꮡt, Pos pos, nint l
     return sb.String();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string templateˢ = "{{template "u8;
+
 [GoRecv] internal static void writeTo(this ref TemplateNode t, ж<strings.Builder> Ꮡsb) {
-    Ꮡsb.WriteString("{{template "u8);
+    Ꮡsb.WriteString(templateˢ);
     Ꮡsb.WriteString(strconv.Quote(t.Name));
     if (t.Pipe != nil) {
         Ꮡsb.WriteByte((rune)' ');

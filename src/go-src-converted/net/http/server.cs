@@ -505,7 +505,7 @@ public static readonly @string TrailerPrefix = "Trailer:"u8;
     w.closeAfterReply = true;
     w.requestBodyLimitHit = true;
     if (!w.wroteHeader) {
-        w.Header().Set("Connection"u8, "close"u8);
+        w.Header().Set(connectionˢ, closeˢ);
     }
 }
 
@@ -573,6 +573,9 @@ internal static (int64 n, error err) ReadFrom(this ж<response> Ꮡw, io.Reader 
 // with a verbose logging wrapper.
 internal const bool debugServerConnections = false;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string serverˢ = "server"u8;
+
 // Create new connection from rwc.
 internal static ж<conn> newConn(this ж<Server> Ꮡsrv, net.Conn rwc) {
     var c = Ꮡ(new conn(
@@ -580,7 +583,7 @@ internal static ж<conn> newConn(this ж<Server> Ꮡsrv, net.Conn rwc) {
         rwc: rwc
     ));
     if (debugServerConnections) {
-        c.Value.rwc = newLoggingConn("server"u8, (~c).rwc);
+        c.Value.rwc = newLoggingConn(serverˢ, (~c).rwc);
     }
     return c;
 }
@@ -940,6 +943,9 @@ public static readonly UntypedInt DefaultMaxHeaderBytes = /* 1 << 20 */ 1048576;
     internal atomic.Bool sawEOF;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string http11100Continueˢ = "HTTP/1.1 100 Continue\r\n\r\n"u8;
+
 internal static (nint n, error err) Read(this ж<expectContinueReader> Ꮡecr, slice<byte> p) {
     nint n = default!;
     error err = default!;
@@ -952,7 +958,7 @@ internal static (nint n, error err) Read(this ж<expectContinueReader> Ꮡecr, s
     if (w.of(response.ᏑcanWriteContinue).Load()) {
         w.of(response.ᏑwriteContinueMu).Lock();
         if (w.of(response.ᏑcanWriteContinue).Load()) {
-            (~(~w).conn).bufw.WriteString("HTTP/1.1 100 Continue\r\n\r\n"u8);
+            (~(~w).conn).bufw.WriteString(http11100Continueˢ);
             (~(~w).conn).bufw.Flush();
             w.of(response.ᏑcanWriteContinue).Store(false);
         }
@@ -1001,6 +1007,12 @@ internal static slice<byte> appendTime(slice<byte> b, time.Time t) {
 }
 
 internal static error errTooLarge = errors.New("http: request too large"u8);
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingRequiredHostˢ = "missing required Host header"u8;
+private static readonly @string malformedHostHeaderˢ = "malformed Host header"u8;
+private static readonly @string invalidHeaderNameˢ = "invalid header name"u8;
+private static readonly @string invalidHeaderValueˢ = "invalid header value"u8;
 
 // Read next request from connection.
 internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, context.Context ctx) {
@@ -1052,21 +1064,21 @@ internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, cont
         }
         c.lastMethod = req.Value.Method;
         c.r.setInfiniteReadLimit();
-        var (hosts, haveHost) = (~req).Header["Host"u8, ꟷ];
+        var (hosts, haveHost) = (~req).Header[hostˢ, ꟷ];
         var isH2Upgrade = req.isH2Upgrade();
         if (req.ProtoAtLeast(1, 1) && (!haveHost || builtin.len(hosts) == 0) && !isH2Upgrade && (~req).Method != "CONNECT"u8) {
-            (w, err) = (default!, badRequestError("missing required Host header"u8)); return;
+            (w, err) = (default!, badRequestError(missingRequiredHostˢ)); return;
         }
         if (builtin.len(hosts) == 1 && !httpguts.ValidHostHeader(hosts[0])) {
-            (w, err) = (default!, badRequestError("malformed Host header"u8)); return;
+            (w, err) = (default!, badRequestError(malformedHostHeaderˢ)); return;
         }
         foreach (var (k, vv) in (~req).Header) {
             if (!httpguts.ValidHeaderFieldName(k)) {
-                (w, err) = (default!, badRequestError("invalid header name"u8)); return;
+                (w, err) = (default!, badRequestError(invalidHeaderNameˢ)); return;
             }
             foreach (var (_, v) in vv) {
                 if (!httpguts.ValidHeaderFieldValue(v)) {
-                    (w, err) = (default!, badRequestError("invalid header value"u8)); return;
+                    (w, err) = (default!, badRequestError(invalidHeaderValueˢ)); return;
                 }
             }
         }
@@ -1164,6 +1176,9 @@ internal static void checkWriteHeaderCode(nint code) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string netHttpˢ = "net/http."u8;
+
 // relevantCaller searches the call stack for the first function outside of net/http.
 // The purpose of this function is to provide more helpful error messages.
 internal static runtime.Frame relevantCaller() {
@@ -1173,7 +1188,7 @@ internal static runtime.Frame relevantCaller() {
     runtime.Frame frame = new();
     while (ᐧ) {
         var (frameΔ1, more) = frames.Next();
-        if (!strings.HasPrefix(frameΔ1.Function, "net/http."u8)) {
+        if (!strings.HasPrefix(frameΔ1.Function, netHttpˢ)) {
             return frameΔ1;
         }
         if (!more) {
@@ -1220,13 +1235,13 @@ internal static void WriteHeader(this ж<response> Ꮡw, nint code) {
         w.cw.header = w.handlerHeader.Clone();
     }
     {
-        @string cl = w.handlerHeader.get("Content-Length"u8); if (cl != ""u8) {
+        @string cl = w.handlerHeader.get(contentLengthˢ); if (cl != ""u8) {
             var (v, err) = strconv.ParseInt(cl, 10, 64);
             if (err == default! && v >= 0){
                 w.contentLength = v;
             } else {
                 (~w.conn).server.logf("http: invalid Content-Length of %q"u8, cl);
-                w.handlerHeader.Del("Content-Length"u8);
+                w.handlerHeader.Del(contentLengthˢ);
             }
         }
     }
@@ -1280,6 +1295,9 @@ internal static void Write(this extraHeader h, ж<bufio.Writer> Ꮡw) {
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string chunkedˢ = "chunked"u8;
 
 // writeHeader finalizes the header sent to the client and writes it
 // to cw.res.conn.bufw.
@@ -1336,11 +1354,11 @@ internal static void Write(this extraHeader h, ж<bufio.Writer> Ꮡw) {
             trailers = true;
         }
     }
-    foreach (var (_, v) in cw.header["Trailer"u8]) {
+    foreach (var (_, v) in cw.header[trailerˢ]) {
         trailers = true;
         foreachHeaderElement(v, cw.res.declareTrailer);
     }
-    @string te = header.get("Transfer-Encoding"u8);
+    @string te = header.get(transferEncodingˢ);
     var hasTE = te != ""u8;
     // If the handler is done but never sent a Content-Length
     // response header and this is our first (and last) write, set
@@ -1356,30 +1374,30 @@ internal static void Write(this extraHeader h, ж<bufio.Writer> Ꮡw) {
     // send a Content-Length header.
     // Further, we don't send an automatic Content-Length if they
     // set a Transfer-Encoding, because they're generally incompatible.
-    if (w.of(response.ᏑhandlerDone).Load() && !trailers && !hasTE && bodyAllowedForStatus((~w).status) && !header.has("Content-Length"u8) && (!isHEAD || builtin.len(p) > 0)) {
+    if (w.of(response.ᏑhandlerDone).Load() && !trailers && !hasTE && bodyAllowedForStatus((~w).status) && !header.has(contentLengthˢ) && (!isHEAD || builtin.len(p) > 0)) {
         w.Value.contentLength = (int64)builtin.len(p);
         setHeader.contentLength = strconv.AppendInt((~cw.res).clenBuf[..0], (int64)builtin.len(p), 10);
     }
     // If this was an HTTP/1.0 request with keep-alive and we sent a
     // Content-Length back, we can make this a keep-alive response ...
     if ((~w).wants10KeepAlive && keepAlivesEnabled) {
-        var sentLength = header.get("Content-Length"u8) != ""u8;
-        if (sentLength && header.get("Connection"u8) == "keep-alive"u8) {
+        var sentLength = header.get(contentLengthˢ) != ""u8;
+        if (sentLength && header.get(connectionˢ) == "keep-alive"u8) {
             w.Value.closeAfterReply = false;
         }
     }
     // Check for an explicit (and valid) Content-Length header.
     var hasCL = (~w).contentLength != -1;
     if ((~w).wants10KeepAlive && (isHEAD || hasCL || !bodyAllowedForStatus((~w).status))){
-        var (_, connectionHeaderSet) = header["Connection"u8, ꟷ];
+        var (_, connectionHeaderSet) = header[connectionˢ, ꟷ];
         if (!connectionHeaderSet) {
-            setHeader.connection = "keep-alive"u8;
+            setHeader.connection = keepAliveˢ;
         }
     } else 
     if (!(~w).req.ProtoAtLeast(1, 1) || (~w).wantsClose) {
         w.Value.closeAfterReply = true;
     }
-    if (header.get("Connection"u8) == "close"u8 || !keepAlivesEnabled) {
+    if (header.get(connectionˢ) == "close"u8 || !keepAlivesEnabled) {
         w.Value.closeAfterReply = true;
     }
     // If the client wanted a 100-continue but we never sent it to
@@ -1481,17 +1499,17 @@ internal static void Write(this extraHeader h, ж<bufio.Writer> Ꮡw) {
         // on the wire must not be parsed as another HTTP request.
         if (tooBig) {
             w.requestTooLarge();
-            delHeader("Connection"u8);
-            setHeader.connection = "close"u8;
+            delHeader(connectionˢ);
+            setHeader.connection = closeˢ;
         }
     }
     nint code = w.Value.status;
     if (bodyAllowedForStatus(code)){
         // If no content type, apply sniffing algorithm to body.
-        var (_, haveType) = header["Content-Type"u8, ꟷ];
+        var (_, haveType) = header[contentTypeˢ, ꟷ];
         // If the Content-Encoding was set and is non-blank,
         // we shouldn't sniff the body. See Issue 31753.
-        @string ce = header.Get("Content-Encoding"u8);
+        @string ce = header.Get(contentEncodingˢ);
         var hasCE = builtin.len(ce) > 0;
         if (!hasCE && !haveType && !hasTE && builtin.len(p) > 0) {
             setHeader.contentType = DetectContentType(p);
@@ -1501,7 +1519,7 @@ internal static void Write(this extraHeader h, ж<bufio.Writer> Ꮡw) {
             delHeader(k);
         }
     }
-    if (!header.has("Date"u8)) {
+    if (!header.has(dateˢ)) {
         setHeader.date = appendTime((~cw.res).dateBuf[..0], time.Now());
     }
     if (hasCL && hasTE && te != "identity"u8) {
@@ -1509,16 +1527,16 @@ internal static void Write(this extraHeader h, ж<bufio.Writer> Ꮡw) {
         // For now just ignore the Content-Length.
         (~(~w).conn).server.logf("http: WriteHeader called with both Transfer-Encoding of %q and a Content-Length of %d"u8,
             te, (~w).contentLength);
-        delHeader("Content-Length"u8);
+        delHeader(contentLengthˢ);
         hasCL = false;
     }
     if ((~(~w).req).Method == "HEAD"u8 || !bodyAllowedForStatus(code) || code == StatusNoContent){
         // Response has no body.
-        delHeader("Transfer-Encoding"u8);
+        delHeader(transferEncodingˢ);
     } else 
     if (hasCL){
         // Content-Length has been provided, so no chunking is to be done.
-        delHeader("Transfer-Encoding"u8);
+        delHeader(transferEncodingˢ);
     } else 
     if ((~w).req.ProtoAtLeast(1, 1)){
         // HTTP/1.1 or greater: Transfer-Encoding has been set to identity, and no
@@ -1529,15 +1547,15 @@ internal static void Write(this extraHeader h, ж<bufio.Writer> Ꮡw) {
         if (hasTE && te == "identity"u8){
             cw.chunking = false;
             w.Value.closeAfterReply = true;
-            delHeader("Transfer-Encoding"u8);
+            delHeader(transferEncodingˢ);
         } else {
             // HTTP/1.1 or greater: use chunked transfer encoding
             // to avoid closing the connection at EOF.
             cw.chunking = true;
-            setHeader.transferEncoding = "chunked"u8;
+            setHeader.transferEncoding = chunkedˢ;
             if (hasTE && te == "chunked"u8) {
                 // We will send the chunked Transfer-Encoding header later.
-                delHeader("Transfer-Encoding"u8);
+                delHeader(transferEncodingˢ);
             }
         }
     } else {
@@ -1545,12 +1563,12 @@ internal static void Write(this extraHeader h, ж<bufio.Writer> Ꮡw) {
         // encoding and we don't know the Content-Length so
         // signal EOF by closing connection.
         w.Value.closeAfterReply = true;
-        delHeader("Transfer-Encoding"u8);
+        delHeader(transferEncodingˢ);
     }
     // in case already set
     // Cannot use Content-Length with non-identity Transfer-Encoding.
     if (cw.chunking) {
-        delHeader("Content-Length"u8);
+        delHeader(contentLengthˢ);
     }
     if (!(~w).req.ProtoAtLeast(1, 0)) {
         return;
@@ -1558,11 +1576,11 @@ internal static void Write(this extraHeader h, ж<bufio.Writer> Ꮡw) {
     // Only override the Connection header if it is not a successful
     // protocol switch response and if KeepAlives are not enabled.
     // See https://golang.org/issue/36381.
-    var delConnectionHeader = (~w).closeAfterReply && (!keepAlivesEnabled || !hasToken(cw.header.get("Connection"u8), "close"u8)) && !isProtocolSwitchResponse((~w).status, header);
+    var delConnectionHeader = (~w).closeAfterReply && (!keepAlivesEnabled || !hasToken(cw.header.get(connectionˢ), closeˢ)) && !isProtocolSwitchResponse((~w).status, header);
     if (delConnectionHeader) {
-        delHeader("Connection"u8);
+        delHeader(connectionˢ);
         if ((~w).req.ProtoAtLeast(1, 1)) {
-            setHeader.connection = "close"u8;
+            setHeader.connection = closeˢ;
         }
     }
     writeStatusLine((~(~w).conn).bufw, (~w).req.ProtoAtLeast(1, 1), code, (~w).statusBuf[..]);
@@ -1593,6 +1611,10 @@ internal static void foreachHeaderElement(@string v, Action<@string> fn) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string http11ˢ2 = "HTTP/1.1 "u8;
+private static readonly @string http10ˢ = "HTTP/1.0 "u8;
+
 // writeStatusLine writes an HTTP/1.x Status-Line (RFC 7230 Section 3.1.2)
 // to bw. is11 is whether the HTTP request is HTTP/1.1. false means HTTP/1.0.
 // code is the response status code.
@@ -1601,9 +1623,9 @@ internal static void writeStatusLine(ж<bufio.Writer> Ꮡbw, bool is11, nint cod
     ref var bw = ref Ꮡbw.Value;
 
     if (is11){
-        bw.WriteString("HTTP/1.1 "u8);
+        bw.WriteString(http11ˢ2);
     } else {
-        bw.WriteString("HTTP/1.0 "u8);
+        bw.WriteString(http10ˢ);
     }
     {
         @string text = StatusText(code); if (text != ""u8){
@@ -1952,6 +1974,10 @@ internal static bool isCommonNetReadError(error err) {
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string http10400BadRequestˢ = "HTTP/1.0 400 Bad Request\r\n\r\nClient sent an HTTP request to an HTTPS server.\n"u8;
+private static readonly @string clientSentAnHttpRequestˢ = "client sent an HTTP request to an HTTPS server"u8;
+
 // Serve a new connection.
 internal static void serve(this ж<conn> Ꮡc, context.Context ctx) => func((defer, recover) => {
     ref var c = ref Ꮡc.Value;
@@ -2001,9 +2027,9 @@ internal static void serve(this ж<conn> Ꮡc, context.Context ctx) => func((def
                     @string reason = default!;
                     {
                         var (re, okΔ1) = err._<tls.RecordHeaderError>(ᐧ); if (okΔ1 && re.Conn != default! && tlsRecordHeaderLooksLikeHTTP(re.RecordHeader)){
-                            io.WriteString(new net_ConnᴠWriter(re.Conn), "HTTP/1.0 400 Bad Request\r\n\r\nClient sent an HTTP request to an HTTPS server.\n"u8);
+                            io.WriteString(new net_ConnᴠWriter(re.Conn), http10400BadRequestˢ);
                             re.Conn.Close();
-                            reason = "client sent an HTTP request to an HTTPS server"u8;
+                            reason = clientSentAnHttpRequestˢ;
                         } else {
                             reason = err.Error();
                         }
@@ -2101,7 +2127,7 @@ internal static void serve(this ж<conn> Ꮡc, context.Context ctx) => func((def
                 w.of(response.ᏑcanWriteContinue).Store(true);
             }
         } else 
-        if ((~req).Header.get("Expect"u8) != ""u8) {
+        if ((~req).Header.get(expectˢ) != ""u8) {
             w.sendExpectationFailed();
             return;
         }
@@ -2177,7 +2203,7 @@ internal static void sendExpectationFailed(this ж<response> Ꮡw) {
     // than 100-continue MAY respond with a 417 (Expectation
     // Failed) status code to indicate that the unexpected
     // expectation cannot be met."
-    w.Header().Set("Connection"u8, "close"u8);
+    w.Header().Set(connectionˢ, closeˢ);
     Ꮡw.WriteHeader(StatusExpectationFailed);
     Ꮡw.finishRequest();
 }
@@ -2266,6 +2292,11 @@ public static void ServeHTTP(this HandlerFunc f, ResponseWriter w, ж<Request> �
     f(w, Ꮡr);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string textPlainCharsetUtf8ˢ = "text/plain; charset=utf-8"u8;
+private static readonly @string xContentTypeOptionsˢ = "X-Content-Type-Options"u8;
+private static readonly @string nosniffˢ = "nosniff"u8;
+
 // Helper handlers
 
 // Error replies to the request with the specified error message and HTTP code.
@@ -2287,18 +2318,18 @@ public static void Error(ResponseWriter w, @string error, nint code) {
     // We don't delete Content-Encoding, because some middleware sets
     // Content-Encoding: gzip and wraps the ResponseWriter to compress on-the-fly.
     // See https://go.dev/issue/66343.
-    h.Del("Content-Length"u8);
+    h.Del(contentLengthˢ);
     // There might be content type already set, but we reset it to
     // text/plain for the error message.
-    h.Set("Content-Type"u8, "text/plain; charset=utf-8"u8);
-    h.Set("X-Content-Type-Options"u8, "nosniff"u8);
+    h.Set(contentTypeˢ, textPlainCharsetUtf8ˢ);
+    h.Set(xContentTypeOptionsˢ, nosniffˢ);
     w.WriteHeader(code);
     fmt.Fprintln(w, error);
 }
 
 // NotFound replies to the request with an HTTP 404 not found error.
 public static void NotFound(ResponseWriter w, ж<Request> Ꮡr) {
-    Error(w, "404 page not found"u8, StatusNotFound);
+    Error(w, pageNotFoundˢ, StatusNotFound);
 }
 
 // NotFoundHandler returns a simple request handler
@@ -2386,10 +2417,10 @@ public static void Redirect(ResponseWriter w, ж<Request> Ꮡr, @string url, nin
     // RFC 7231 notes that a short HTML body is usually included in
     // the response because older user agents may not understand 301/307.
     // Do it only if the request didn't already have a Content-Type header.
-    var (_, hadCT) = h["Content-Type"u8, ꟷ];
-    h.Set("Location"u8, hexEscapeNonASCII(url));
+    var (_, hadCT) = h[contentTypeˢ, ꟷ];
+    h.Set(locationˢ, hexEscapeNonASCII(url));
     if (!hadCT && (r.Method == "GET"u8 || r.Method == "HEAD"u8)) {
-        h.Set("Content-Type"u8, "text/html; charset=utf-8"u8);
+        h.Set(contentTypeˢ, textHtmlCharsetUtf8ˢ);
     }
     w.WriteHeader(code);
     // Shouldn't send the body for POST or HEAD; that leaves GET.
@@ -2631,6 +2662,9 @@ public static (ΔHandler h, @string pattern) Handler(this ж<ServeMux> Ꮡmux, �
     return (h, p);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string allowˢ = "Allow"u8;
+
 // findHandler finds a handler for a request.
 // If there is a matching handler, it returns it and the pattern that matched.
 // Otherwise it returns a Redirect or NotFound handler with the path that would match
@@ -2689,7 +2723,7 @@ internal static (ΔHandler h, @string patStr, ж<pattern>, slice<@string> matche
         if (builtin.len(allowedMethods) > 0) {
             var allowedMethodsʗ1 = allowedMethods;
             return (new HandlerFuncᴠΔHandler(new HandlerFunc((ResponseWriter w, ж<Request> rΔ1) => {
-                w.Header().Set("Allow"u8, strings.Join(allowedMethodsʗ1, ", "u8));
+                w.Header().Set(allowˢ, strings.Join(allowedMethodsʗ1, ", "u8));
                 Error(w, StatusText(StatusMethodNotAllowed), StatusMethodNotAllowed);
             })), "", default!, default!);
         }
@@ -2798,7 +2832,7 @@ public static void ServeHTTP(this ж<ServeMux> Ꮡmux, ResponseWriter w, ж<Requ
 
     if (r.RequestURI == "*"u8) {
         if (r.ProtoAtLeast(1, 1)) {
-            w.Header().Set("Connection"u8, "close"u8);
+            w.Header().Set(connectionˢ, closeˢ);
         }
         w.WriteHeader(StatusBadRequest);
         return;
@@ -2865,18 +2899,23 @@ internal static void register(this ж<ServeMux> Ꮡmux, @string pattern, ΔHandl
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpInvalidPatternˢ = "http: invalid pattern"u8;
+private static readonly @string httpNilHandlerˢ = "http: nil handler"u8;
+private static readonly @string unknownLocationˢ = "unknown location"u8;
+
 internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHandler handler) => func<error>((defer, recover) => {
     ref var mux = ref Ꮡmux.Value;
 
     if (patstr == ""u8) {
-        return errors.New("http: invalid pattern"u8);
+        return errors.New(httpInvalidPatternˢ);
     }
     if (handler == default!) {
-        return errors.New("http: nil handler"u8);
+        return errors.New(httpNilHandlerˢ);
     }
     {
         var (f, okΔ1) = handler._<HandlerFunc>(ᐧ); if (okΔ1 && f == default!) {
-            return errors.New("http: nil handler"u8);
+            return errors.New(httpNilHandlerˢ);
         }
     }
     var (pat, err) = parsePattern(patstr);
@@ -2887,7 +2926,7 @@ internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHa
     // Skip register and whatever calls it.
     var (_, @file, line, ok) = runtime.Caller(3);
     if (!ok){
-        pat.Value.loc = "unknown location"u8;
+        pat.Value.loc = unknownLocationˢ;
     } else {
         pat.Value.loc = fmt.Sprintf("%s:%d"u8, @file, line);
     }
@@ -3270,6 +3309,9 @@ public static ΔHandler AllowQuerySemicolons(ΔHandler h) {
     }));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpˢ3 = ":http"u8;
+
 // ListenAndServe listens on the TCP network address srv.Addr and then
 // calls [Serve] to handle requests on incoming connections.
 // Accepted connections are configured to enable TCP keep-alives.
@@ -3286,7 +3328,7 @@ public static error ListenAndServe(this ж<Server> Ꮡsrv) {
     }
     @string addr = srv.Addr;
     if (addr == ""u8) {
-        addr = ":http"u8;
+        addr = httpˢ3;
     }
     var (ln, err) = net.Listen("tcp"u8, addr);
     if (err != default!) {
@@ -3431,7 +3473,7 @@ public static error ServeTLS(this ж<Server> Ꮡsrv, net.Listener l, @string cer
         }
     }
     var config = cloneTLSConfig(srv.TLSConfig);
-    if (!slices.Contains((~config).NextProtos, (@string)"http/1.1")) {
+    if (!slices.Contains((~config).NextProtos, http11ˢ)) {
         config.Value.NextProtos = append((~config).NextProtos, "http/1.1"u8);
     }
     var configHasCert = builtin.len((~config).Certificates) > 0 || (~config).GetCertificate != default! || (~config).GetConfigForClient != default!;
@@ -3577,6 +3619,9 @@ public static error ListenAndServeTLS(@string addr, @string certFile, @string ke
     return server.ListenAndServeTLS(certFile, keyFile);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpsˢ2 = ":https"u8;
+
 // ListenAndServeTLS listens on the TCP network address srv.Addr and
 // then calls [ServeTLS] to handle requests on incoming TLS connections.
 // Accepted connections are configured to enable TCP keep-alives.
@@ -3600,7 +3645,7 @@ public static error ListenAndServeTLS(this ж<Server> Ꮡsrv, @string certFile, 
     }
     @string addr = srv.Addr;
     if (addr == ""u8) {
-        addr = ":https"u8;
+        addr = httpsˢ2;
     }
     var (ln, err) = net.Listen("tcp"u8, addr);
     if (err != default!) {
@@ -3699,11 +3744,14 @@ public static error ErrHandlerTimeout = errors.New("http: Handler timeout"u8);
     internal context.Context testContext;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string htmlHeadTitleTimeoutˢ = "<html><head><title>Timeout</title></head><body><h1>Timeout</h1></body></html>"u8;
+
 [GoRecv] internal static @string errorBody(this ref timeoutHandler h) {
     if (h.body != ""u8) {
         return h.body;
     }
-    return "<html><head><title>Timeout</title></head><body><h1>Timeout</h1></body></html>"u8;
+    return htmlHeadTitleTimeoutˢ;
 }
 
 internal static void ServeHTTP(this ж<timeoutHandler> Ꮡh, ResponseWriter w, ж<Request> Ꮡr) => func((defer, recover) => {
@@ -3881,7 +3929,7 @@ internal static error Close(this ж<onceCloseListener> Ꮡoc) {
 internal static void ServeHTTP(this globalOptionsHandler _, ResponseWriter w, ж<Request> Ꮡr) {
     ref var r = ref Ꮡr.Value;
 
-    w.Header().Set("Content-Length"u8, "0"u8);
+    w.Header().Set(contentLengthˢ, "0"u8);
     if (r.ContentLength != 0) {
         // Read up to 4KB of OPTIONS body (as mentioned in the
         // spec as being reserved for future use), but anything

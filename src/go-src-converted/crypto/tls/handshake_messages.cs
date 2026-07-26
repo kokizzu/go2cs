@@ -434,15 +434,18 @@ internal static (slice<byte>, error) marshalWithoutBinders(this ж<clientHelloMs
     return (fullMessage[..(int)(len(fullMessage) - bindersLen)], default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsInternalErrorˢ5 = "tls: internal error: pskBinders length mismatch"u8;
+
 // updateBinders updates the m.pskBinders field. The supplied binders must have
 // the same length as the current m.pskBinders.
 [GoRecv] internal static error updateBinders(this ref clientHelloMsg m, slice<slice<byte>> pskBinders) {
     if (len(pskBinders) != len(m.pskBinders)) {
-        return errors.New("tls: internal error: pskBinders length mismatch"u8);
+        return errors.New(tlsInternalErrorˢ5);
     }
     foreach (var (i, _) in m.pskBinders) {
         if (len(pskBinders[i]) != len(m.pskBinders[i])) {
-            return errors.New("tls: internal error: pskBinders length mismatch"u8);
+            return errors.New(tlsInternalErrorˢ5);
         }
     }
     m.pskBinders = pskBinders;

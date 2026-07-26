@@ -102,6 +102,9 @@ internal static (@string username, @string domain, error e) lookupUsernameAndDom
     return (username, domain, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string profileImagePathˢ = "ProfileImagePath"u8;
+
 // findHomeDirInRegistry finds the user home path based on the uid.
 internal static (@string dir, error e) findHomeDirInRegistry(@string uid) {
     @string dir = default!;
@@ -112,7 +115,7 @@ internal static (@string dir, error e) findHomeDirInRegistry(@string uid) {
             (dir, e) = ("", e); return;
         }
         defer(() => k.Close());
-        (dir, _, e) = k.GetStringValue("ProfileImagePath"u8);
+        (dir, _, e) = k.GetStringValue(profileImagePathˢ);
         if (e != default!) {
             (dir, e) = ("", e); return;
         }

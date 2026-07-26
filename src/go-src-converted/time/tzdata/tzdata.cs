@@ -50,6 +50,9 @@ internal static nint get2s(@string s) {
     return (nint)((nint)s[0] | ((nint)s[1] << (int)(8)));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string corruptEmbeddedTzdataˢ = "corrupt embedded tzdata"u8;
+
 // loadFromEmbeddedTZData returns the contents of the file with the given
 // name in an uncompressed zip file, where the contents of the file can
 // be found in embeddedTzdata.
@@ -88,7 +91,7 @@ internal static (@string, error) loadFromEmbeddedTZData(@string name) {
         // See time.loadTzinfoFromZip for zip per-file header layout.
         idx = off;
         if (get4s(z[(int)(idx)..]) != zheader || get2s(z[(int)(idx + 8)..]) != meth || get2s(z[(int)(idx + 26)..]) != namelen || z[(int)(idx + 30)..(int)(idx + 30 + namelen)] != name) {
-            return ("", errors.New("corrupt embedded tzdata"u8));
+            return ("", errors.New(corruptEmbeddedTzdataˢ));
         }
         xlen = get2s(z[(int)(idx + 28)..]);
         idx += 30 + namelen + xlen;

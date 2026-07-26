@@ -360,6 +360,9 @@ internal static bool isValidDirective(Directive dir) {
     internal error err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string xmlnsˢ = @"xmlns:"u8;
+
 // createAttrPrefix finds the name space prefix attribute to use for the given name space,
 // defining a new prefix if necessary. It returns the prefix.
 internal static @string createAttrPrefix(this ж<printer> Ꮡp, @string url) {
@@ -413,7 +416,7 @@ internal static @string createAttrPrefix(this ж<printer> Ꮡp, @string url) {
     }
     p.attrPrefix[url] = prefix;
     p.attrNS[prefix] = url;
-    p.WriteString(@"xmlns:"u8);
+    p.WriteString(xmlnsˢ);
     p.WriteString(prefix);
     p.WriteString(@"="""u8);
     EscapeText(new printerжWriter(Ꮡp), slice<byte>(url));
@@ -748,6 +751,9 @@ internal static error marshalTextInterface(this ж<printer> Ꮡp, encoding.TextM
     return p.writeEnd(start.Name);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string xmlnsˢ2 = @" xmlns="""u8;
+
 // writeStart writes the given start element.
 internal static error writeStart(this ж<printer> Ꮡp, ж<StartElement> Ꮡstart) {
     ref var p = ref Ꮡp.Value;
@@ -762,7 +768,7 @@ internal static error writeStart(this ж<printer> Ꮡp, ж<StartElement> Ꮡstar
     p.WriteByte((rune)'<');
     p.WriteString(start.Name.Local);
     if (start.Name.Space != ""u8) {
-        p.WriteString(@" xmlns="""u8);
+        p.WriteString(xmlnsˢ2);
         p.EscapeString(start.Name.Space);
         p.WriteByte((rune)'"');
     }
@@ -1070,13 +1076,16 @@ internal static error marshalStruct(this ж<printer> Ꮡp, ж<typeInfo> Ꮡtinfo
     return p.cachedWriteError();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string useOfClosedEncoderˢ = "use of closed Encoder"u8;
+
 // Write implements io.Writer
 [GoRecv] internal static (nint n, error err) Write(this ref printer p, slice<byte> b) {
     nint n = default!;
     error err = default!;
 
     if (p.closed && p.err == default!) {
-        p.err = errors.New("use of closed Encoder"u8);
+        p.err = errors.New(useOfClosedEncoderˢ);
     }
     if (p.err == default!) {
         (n, p.err) = p.w.Write(b);
@@ -1090,7 +1099,7 @@ internal static error marshalStruct(this ж<printer> Ꮡp, ж<typeInfo> Ꮡtinfo
     error err = default!;
 
     if (p.closed && p.err == default!) {
-        p.err = errors.New("use of closed Encoder"u8);
+        p.err = errors.New(useOfClosedEncoderˢ);
     }
     if (p.err == default!) {
         (n, p.err) = p.w.WriteString(s);
@@ -1101,7 +1110,7 @@ internal static error marshalStruct(this ж<printer> Ꮡp, ж<typeInfo> Ꮡtinfo
 // WriteByte implements io.ByteWriter
 [GoRecv] internal static error WriteByte(this ref printer p, byte c) {
     if (p.closed && p.err == default!) {
-        p.err = errors.New("use of closed Encoder"u8);
+        p.err = errors.New(useOfClosedEncoderˢ);
     }
     if (p.err == default!) {
         p.err = p.w.WriteByte(c);

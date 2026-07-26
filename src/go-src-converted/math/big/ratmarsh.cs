@@ -15,6 +15,9 @@ partial class big_package {
 // Gob codec version. Permits backward-compatible changes to the encoding.
 internal const byte ratGobVersion = 1;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ratGobEncodeNumeratorTooˢ = "Rat.GobEncode: numerator too large"u8;
+
 // GobEncode implements the [encoding/gob.GobEncoder] interface.
 public static (slice<byte>, error) GobEncode(this ж<ΔRat> Ꮡx) {
     ref var x = ref Ꮡx.DerefOrNil();
@@ -29,7 +32,7 @@ public static (slice<byte>, error) GobEncode(this ж<ΔRat> Ꮡx) {
     nint n = i - j;
     if ((nint)(uint32)n != n) {
         // this should never happen
-        return (default!, errors.New("Rat.GobEncode: numerator too large"u8));
+        return (default!, errors.New(ratGobEncodeNumeratorTooˢ));
     }
     byteorder.BePutUint32(buf[(int)(j - 4)..(int)(j)], (uint32)n);
     j -= 1 + 4;
@@ -42,6 +45,10 @@ public static (slice<byte>, error) GobEncode(this ж<ΔRat> Ꮡx) {
     return (buf[(int)(j)..], default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ratGobDecodeBufferTooˢ = "Rat.GobDecode: buffer too small"u8;
+private static readonly @string ratGobDecodeInvalidˢ = "Rat.GobDecode: invalid length"u8;
+
 // GobDecode implements the [encoding/gob.GobDecoder] interface.
 [GoRecv] public static error GobDecode(this ref ΔRat z, slice<byte> buf) {
     if (len(buf) == 0) {
@@ -50,7 +57,7 @@ public static (slice<byte>, error) GobEncode(this ж<ΔRat> Ꮡx) {
         return default!;
     }
     if (len(buf) < 5) {
-        return errors.New("Rat.GobDecode: buffer too small"u8);
+        return errors.New(ratGobDecodeBufferTooˢ);
     }
     var b = buf[0];
     if ((byte)((b >> (int)(1))) != ratGobVersion) {
@@ -59,11 +66,11 @@ public static (slice<byte>, error) GobEncode(this ж<ΔRat> Ꮡx) {
     UntypedInt j = /* 1 + 4 */ 5;
     var ln = byteorder.BeUint32(buf[(int)(j - 4)..(int)(j)]);
     if ((uint64)ln > math.MaxInt - j) {
-        return errors.New("Rat.GobDecode: invalid length"u8);
+        return errors.New(ratGobDecodeInvalidˢ);
     }
     nint i = (nint)j + (nint)ln;
     if (len(buf) < i) {
-        return errors.New("Rat.GobDecode: buffer too small"u8);
+        return errors.New(ratGobDecodeBufferTooˢ);
     }
     z.a.neg = (byte)(b & 1) != 0;
     z.a.abs = z.a.abs.setBytes(buf[(int)(j)..(int)(i)]);

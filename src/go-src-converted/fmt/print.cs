@@ -755,6 +755,9 @@ internal static void fmtPointer(this ж<pp> Ꮡp, reflectꓸValue value, rune ve
 
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string methodˢ = " method: "u8;
+
 internal static void catchPanic(this ж<pp> Ꮡp, any arg, rune verb, @string method) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
 
@@ -782,7 +785,7 @@ internal static void catchPanic(this ж<pp> Ꮡp, any arg, rune verb, @string me
             p.buf.writeRune(verb);
             p.buf.writeString(panicString);
             p.buf.writeString(method);
-            p.buf.writeString(" method: "u8);
+            p.buf.writeString(methodˢ);
             p.panicking = true;
             Ꮡp.printArg(err, (rune)'v');
             p.panicking = false;
@@ -791,6 +794,12 @@ internal static void catchPanic(this ж<pp> Ꮡp, any arg, rune verb, @string me
         }
     }
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string formatˢ = "Format"u8;
+private static readonly @string goStringˢ = "GoString"u8;
+private static readonly @string errorˢ = "Error"u8;
+private static readonly @string stringˢ = "String"u8;
 
 internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
     bool handled = default!;
@@ -814,7 +823,7 @@ internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
         {
             var (formatter, ok) = p.arg._<Formatter>(ᐧ); if (ok) {
                 handled = true;
-                deferǃ(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, (@string)"Format", defer);
+                deferǃ(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, formatˢ, defer);
                 formatter.Format(new ppжState(Ꮡp), verb);
                 return;
             }
@@ -824,7 +833,7 @@ internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
             {
                 var (stringer, ok) = p.arg._<GoStringer>(ᐧ); if (ok) {
                     handled = true;
-                    deferǃ(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, (@string)"GoString", defer);
+                    deferǃ(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, goStringˢ, defer);
                     // Print the result of GoString unadorned.
                     p.fmt.fmtS(stringer.GoString());
                     return;
@@ -839,13 +848,13 @@ internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
                 switch (p.arg.type()) {
                 case {} Δv when Δv._<error>(out var v): {
                     handled = true;
-                    deferǃ(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, (@string)"Error", defer);
+                    deferǃ(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, errorˢ, defer);
                     Ꮡp.fmtString(v.Error(), verb);
                     return;
                 }
                 case {} Δv when Δv._<Stringer>(out var v): {
                     handled = true;
-                    deferǃ(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, (@string)"String", defer);
+                    deferǃ(Ꮡp.catchPanic, Ꮡp.Value.arg, verb, stringˢ, defer);
                     Ꮡp.fmtString(v.String(), verb);
                     return;
                 }}
@@ -857,6 +866,9 @@ internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
     });
     return handled;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string byteˢ = "[]byte"u8;
 
 internal static void printArg(this ж<pp> Ꮡp, any arg, rune verb) {
     ref var p = ref Ꮡp.Value;
@@ -959,7 +971,7 @@ internal static void printArg(this ж<pp> Ꮡp, any arg, rune verb) {
         break;
     }
     case slice<byte> f: {
-        Ꮡp.fmtBytes(f, verb, "[]byte"u8);
+        Ꮡp.fmtBytes(f, verb, byteˢ);
         break;
     }
     case reflectꓸValue f: {

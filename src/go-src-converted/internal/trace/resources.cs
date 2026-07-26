@@ -40,28 +40,34 @@ public static bool Executing(this GoState s) {
     return s == GoRunning || s == GoSyscall;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string notExistˢ = "NotExist"u8;
+private static readonly @string runnableˢ = "Runnable"u8;
+private static readonly @string waitingˢ = "Waiting"u8;
+private static readonly @string syscallˢ = "Syscall"u8;
+
 // String returns a human-readable representation of a GoState.
 //
 // The format of the returned string is for debugging purposes and is subject to change.
 public static @string String(this GoState s) {
     var exprᴛ1 = s;
     if (exprᴛ1 == GoUndetermined) {
-        return "Undetermined"u8;
+        return undeterminedˢ;
     }
     if (exprᴛ1 == GoNotExist) {
-        return "NotExist"u8;
+        return notExistˢ;
     }
     if (exprᴛ1 == GoRunnable) {
-        return "Runnable"u8;
+        return runnableˢ;
     }
     if (exprᴛ1 == GoRunning) {
-        return "Running"u8;
+        return runningˢ;
     }
     if (exprᴛ1 == GoWaiting) {
-        return "Waiting"u8;
+        return waitingˢ;
     }
     if (exprᴛ1 == GoSyscall) {
-        return "Syscall"u8;
+        return syscallˢ;
     }
 
     return "Bad"u8;
@@ -80,22 +86,25 @@ public static bool Executing(this ProcState s) {
     return s == ProcRunning;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string idleˢ = "Idle"u8;
+
 // String returns a human-readable representation of a ProcState.
 //
 // The format of the returned string is for debugging purposes and is subject to change.
 public static @string String(this ProcState s) {
     var exprᴛ1 = s;
     if (exprᴛ1 == ProcUndetermined) {
-        return "Undetermined"u8;
+        return undeterminedˢ;
     }
     if (exprᴛ1 == ProcNotExist) {
-        return "NotExist"u8;
+        return notExistˢ;
     }
     if (exprᴛ1 == ProcRunning) {
-        return "Running"u8;
+        return runningˢ;
     }
     if (exprᴛ1 == ProcIdle) {
-        return "Idle"u8;
+        return idleˢ;
     }
 
     return "Bad"u8;
@@ -108,22 +117,28 @@ public static readonly ResourceKind ResourceGoroutine = 1;  // Goroutine.
 public static readonly ResourceKind ResourceProc = 2;       // Proc.
 public static readonly ResourceKind ResourceThread = 3;     // Thread.
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noneˢ = "None"u8;
+private static readonly @string goroutineˢ = "Goroutine"u8;
+private static readonly @string procˢ = "Proc"u8;
+private static readonly @string threadˢ = "Thread"u8;
+
 // String returns a human-readable representation of a ResourceKind.
 //
 // The format of the returned string is for debugging purposes and is subject to change.
 public static @string String(this ResourceKind r) {
     var exprᴛ1 = r;
     if (exprᴛ1 == ResourceNone) {
-        return "None"u8;
+        return noneˢ;
     }
     if (exprᴛ1 == ResourceGoroutine) {
-        return "Goroutine"u8;
+        return goroutineˢ;
     }
     if (exprᴛ1 == ResourceProc) {
-        return "Proc"u8;
+        return procˢ;
     }
     if (exprᴛ1 == ResourceThread) {
-        return "Thread"u8;
+        return threadˢ;
     }
 
     return "Bad"u8;

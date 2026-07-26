@@ -119,12 +119,15 @@ public static (@string, bool) LookupEnv(@string key) {
     return syscall.Getenv(key);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string setenvˢ = "setenv"u8;
+
 // Setenv sets the value of the environment variable named by the key.
 // It returns an error, if any.
 public static error Setenv(@string key, @string value) {
     var err = syscall.Setenv(key, value);
     if (err != default!) {
-        return NewSyscallError("setenv"u8, err);
+        return NewSyscallError(setenvˢ, err);
     }
     return default!;
 }

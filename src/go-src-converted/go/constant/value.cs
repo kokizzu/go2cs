@@ -132,8 +132,11 @@ internal static ΔKind Kind(this complexVal _) {
     return Complex;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownˢ = "unknown"u8;
+
 internal static @string String(this unknownVal _) {
-    return "unknown"u8;
+    return unknownˢ;
 }
 
 internal static @string String(this boolVal x) {

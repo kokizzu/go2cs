@@ -69,6 +69,10 @@ internal static array<ж<Basic>> basicAliases = new ж<Basic>[]{
     Ꮡ(new Basic(Rune, IsInteger, "rune"u8))
 }.array();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string errorˢ = "error"u8;
+private static readonly @string errorˢ2 = "Error"u8;
+
 internal static void defPredeclaredTypes() {
     foreach (var (_, t) in Typ) {
         def(new TypeNameжObject(NewTypeName(nopos, nil, (~t).name, new BasicжΔType(t))));
@@ -109,14 +113,14 @@ internal static void defPredeclaredTypes() {
     }
     // type error interface{ Error() string }
     {
-        var obj = NewTypeName(nopos, nil, "error"u8, default!);
+        var obj = NewTypeName(nopos, nil, errorˢ, default!);
         obj.of(TypeName.Ꮡobject).setColor(black);
         var typ = NewNamed(obj, default!, default!);
         // error.Error() string
         var recv = NewVar(nopos, nil, ""u8, new NamedжΔType(typ));
         var res = NewVar(nopos, nil, ""u8, new BasicжΔType(Typ[ΔString]));
         var sig = NewSignatureType(recv, default!, default!, nil, NewTuple(res), false);
-        var err = NewFunc(nopos, nil, "Error"u8, sig);
+        var err = NewFunc(nopos, nil, errorˢ2, sig);
         // interface{ Error() string }
         var ityp = Ꮡ(new Interface(methods: new ж<Func>[]{err}.slice(), complete: true));
         computeInterfaceTypeSet(nil, nopos, ityp);
@@ -126,7 +130,7 @@ internal static void defPredeclaredTypes() {
     }
     // type comparable interface{} // marked as comparable
     {
-        var obj = NewTypeName(nopos, nil, "comparable"u8, default!);
+        var obj = NewTypeName(nopos, nil, comparableˢ, default!);
         obj.of(TypeName.Ꮡobject).setColor(black);
         var typ = NewNamed(obj, default!, default!);
         // interface{} // marked as comparable
@@ -239,11 +243,14 @@ internal static void defPredeclaredFuncs() {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string assertˢ = "assert"u8;
+
 // DefPredeclaredTestFuncs defines the assert and trace built-ins.
 // These built-ins are intended for debugging and testing of this
 // package only.
 public static void DefPredeclaredTestFuncs() {
-    if (Universe.Lookup("assert"u8) != default!) {
+    if (Universe.Lookup(assertˢ) != default!) {
         return;
     }
     // already defined

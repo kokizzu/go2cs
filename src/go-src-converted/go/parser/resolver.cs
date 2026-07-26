@@ -15,6 +15,12 @@ partial class parser_package {
 
 internal const bool debugResolve = false;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unbalancedScopesˢ = "unbalanced scopes"u8;
+private static readonly @string unbalancedLabelScopesˢ = "unbalanced label scopes"u8;
+private static readonly @string objectAlreadyResolvedˢ = "object already resolved"u8;
+private static readonly @string resolvedSVToPackageˢ = "resolved %s@%v to package object %v"u8;
+
 [GoType("dyn")] partial interface resolveFile_type {
     tokenꓸPos Pos();
 }
@@ -40,13 +46,13 @@ internal static void resolveFile(ж<ast.File> Ꮡfile, ж<tokenꓸFile> Ꮡhandl
         ast.Walk(new resolverжVisitor(r), decl);
     }
     r.closeScope();
-    assert((~r).topScope == nil, "unbalanced scopes"u8);
-    assert((~r).labelScope == nil, "unbalanced label scopes"u8);
+    assert((~r).topScope == nil, unbalancedScopesˢ);
+    assert((~r).labelScope == nil, unbalancedLabelScopesˢ);
     // resolve global identifiers within the same file
     nint i = 0;
     foreach (var (_, ident) in (~r).unresolved) {
         // i <= index for current ident
-        assert((~ident).Obj == unresolved, "object already resolved"u8);
+        assert((~ident).Obj == unresolved, objectAlreadyResolvedˢ);
         ident.Value.Obj = (~r).pkgScope.Lookup((~ident).Name);
         // also removes unresolved sentinel
         if ((~ident).Obj == nil){
@@ -55,7 +61,7 @@ internal static void resolveFile(ж<ast.File> Ꮡfile, ж<tokenꓸFile> Ꮡhandl
         } else 
         if (debugResolve) {
             tokenꓸPos pos = (~(~ident).Obj).Decl._<resolveFile_type>().Pos();
-            r.trace("resolved %s@%v to package object %v"u8, (~ident).Name, ident.Pos(), pos);
+            r.trace(resolvedSVToPackageˢ, (~ident).Name, ident.Pos(), pos);
         }
     }
     @file.Scope = r.Value.pkgScope;
@@ -97,21 +103,27 @@ internal const nint maxScopeDepth = 1000;
     return fmt.Sprintf(format, args.ꓸꓸꓸ);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string openingScopeVˢ = "opening scope @%v"u8;
+
 [GoRecv] internal static void openScope(this ref resolver r, tokenꓸPos pos) {
     r.depth++;
     if (r.depth > maxScopeDepth) {
         throw panic(new bailout(pos: pos, msg: "exceeded max scope depth during object resolution"u8));
     }
     if (debugResolve) {
-        r.trace("opening scope @%v"u8, pos);
+        r.trace(openingScopeVˢ, pos);
     }
     r.topScope = ast.NewScope(r.topScope);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string closingScopeˢ = "closing scope"u8;
+
 [GoRecv] internal static void closeScope(this ref resolver r) {
     r.depth--;
     if (debugResolve) {
-        r.trace("closing scope"u8);
+        r.trace(closingScopeˢ);
     }
     r.topScope = r.topScope.Value.Outer;
 }
@@ -136,6 +148,9 @@ internal const nint maxScopeDepth = 1000;
     r.labelScope = r.labelScope.Value.Outer;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string declaringSVˢ = "declaring %s@%v"u8;
+
 [GoRecv] internal static void declare(this ref resolver r, any decl, any data, ж<ast.Scope> Ꮡscope, ast.ObjKind kind, params ꓸꓸꓸжastꓸIdent identsʗp) {
     var idents = identsʗp.sslice();
 
@@ -158,7 +173,7 @@ internal const nint maxScopeDepth = 1000;
         }
         if ((~ident).Name != "_"u8) {
             if (debugResolve) {
-                r.trace("declaring %s@%v"u8, (~ident).Name, ident.Pos());
+                r.trace(declaringSVˢ, (~ident).Name, ident.Pos());
             }
             {
                 var alt = scope.Insert(obj); if (alt != nil && r.declErr != default!) {
@@ -175,6 +190,10 @@ internal const nint maxScopeDepth = 1000;
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string identifierAlreadyˢ = "identifier already declared or resolved"u8;
+private static readonly @string noNewVariablesOnLeftSideˢ = "no new variables on left side of :="u8;
+
 [GoRecv] internal static void shortVarDecl(this ref resolver r, ж<ast.AssignStmt> Ꮡdecl) {
     ref var decl = ref Ꮡdecl.Value;
 
@@ -186,14 +205,14 @@ internal const nint maxScopeDepth = 1000;
     foreach (var (_, x) in decl.Lhs) {
         {
             var (ident, isIdent) = x._<ж<ast.Ident>>(ᐧ); if (isIdent) {
-                assert((~ident).Obj == nil, "identifier already declared or resolved"u8);
+                assert((~ident).Obj == nil, identifierAlreadyˢ);
                 var obj = ast.NewObj(ast.Var, (~ident).Name);
                 // remember corresponding assignment for other tools
                 obj.Value.Decl = Ꮡdecl;
                 ident.Value.Obj = obj;
                 if ((~ident).Name != "_"u8) {
                     if (debugResolve) {
-                        r.trace("declaring %s@%v"u8, (~ident).Name, ident.Pos());
+                        r.trace(declaringSVˢ, (~ident).Name, ident.Pos());
                     }
                     {
                         var alt = r.topScope.Insert(obj); if (alt != nil){
@@ -209,7 +228,7 @@ internal const nint maxScopeDepth = 1000;
     }
     // new declaration
     if (n == 0 && r.declErr != default!) {
-        r.declErr(decl.Lhs[0].Pos(), "no new variables on left side of :="u8);
+        r.declErr(decl.Lhs[0].Pos(), noNewVariablesOnLeftSideˢ);
     }
 }
 
@@ -217,6 +236,10 @@ internal const nint maxScopeDepth = 1000;
 // to the list of unresolved identifiers. The sentinel is only used for verifying
 // internal consistency.
 internal static ж<ast.Object> unresolved = @new<ast.Object>();
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string resolvedVSToVˢ = "resolved %v:%s to %v"u8;
+private static readonly @string objWithNoNameˢ = "obj with no name"u8;
 
 // If x is an identifier, resolve attempts to resolve x by looking up
 // the object it denotes. If no object is found and collectUnresolved is
@@ -237,9 +260,9 @@ internal static ж<ast.Object> unresolved = @new<ast.Object>();
         {
             var obj = s.Lookup(ident.Name); if (obj != nil) {
                 if (debugResolve) {
-                    r.trace("resolved %v:%s to %v"u8, ident.Pos(), ident.Name, obj);
+                    r.trace(resolvedVSToVˢ, ident.Pos(), ident.Name, obj);
                 }
-                assert((~obj).Name != ""u8, "obj with no name"u8);
+                assert((~obj).Name != ""u8, objWithNoNameˢ);
                 // Identifiers (for receiver type parameters) are written to the scope,
                 // but never set as the resolved object. See go.dev/issue/50956.
                 {
@@ -284,11 +307,14 @@ internal static void walkStmts(this ж<resolver> Ꮡr, slice<ast.Stmt> list) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nodeTVˢ = "node %T@%v"u8;
+
 internal static ast.Visitor Visit(this ж<resolver> Ꮡr, ast.Node node) => func<ast.Visitor>((defer, recover) => {
     ref var r = ref Ꮡr.Value;
 
     if (debugResolve && node != default!) {
-        r.trace("node %T@%v"u8, node, node.Pos());
+        r.trace(nodeTVˢ, node, node.Pos());
     }
     switch (node.type()) {
     case ж<ast.Ident> n: {

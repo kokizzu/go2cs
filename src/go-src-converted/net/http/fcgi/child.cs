@@ -109,6 +109,12 @@ internal static ж<response> newResponse(ж<child> Ꮡc, ж<request> Ꮡreq) {
     return r.w.Value.Writer.Value.Write(p);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string contentTypeˢ = "Content-Type"u8;
+private static readonly @string contentLengthˢ = "Content-Length"u8;
+private static readonly @string transferEncodingˢ = "Transfer-Encoding"u8;
+private static readonly @string dateˢ = "Date"u8;
+
 [GoRecv] internal static void WriteHeader(this ref response r, nint code) {
     if (r.wroteHeader) {
         return;
@@ -117,12 +123,12 @@ internal static ж<response> newResponse(ж<child> Ꮡc, ж<request> Ꮡreq) {
     r.code = code;
     if (code == http.StatusNotModified) {
         // Must not have body.
-        r.header.Del("Content-Type"u8);
-        r.header.Del("Content-Length"u8);
-        r.header.Del("Transfer-Encoding"u8);
+        r.header.Del(contentTypeˢ);
+        r.header.Del(contentLengthˢ);
+        r.header.Del(transferEncodingˢ);
     }
-    if (r.header.Get("Date"u8) == ""u8) {
-        r.header.Set("Date"u8, time.Now().UTC().Format(http.TimeFormat));
+    if (r.header.Get(dateˢ) == ""u8) {
+        r.header.Set(dateˢ, time.Now().UTC().Format(http.TimeFormat));
     }
 }
 
@@ -137,8 +143,8 @@ internal static ж<response> newResponse(ж<child> Ꮡc, ж<request> Ꮡreq) {
     r.wroteCGIHeader = true;
     fmt.Fprintf(new bufWriterжWriter(r.w), "Status: %d %s\r\n"u8, r.code, http.StatusText(r.code));
     {
-        var (_, hasType) = r.header["Content-Type"u8, ꟷ]; if (r.code != http.StatusNotModified && !hasType) {
-            r.header.Set("Content-Type"u8, http.DetectContentType(p));
+        var (_, hasType) = r.header[contentTypeˢ, ꟷ]; if (r.code != http.StatusNotModified && !hasType) {
+            r.header.Set(contentTypeˢ, http.DetectContentType(p));
         }
     }
     r.header.Write(new bufWriterжWriter(r.w));
@@ -204,6 +210,9 @@ public static error ErrRequestAborted = errors.New("fcgi: request aborted by web
 // a request after the connection to the web server has been closed.
 public static error ErrConnClosed = errors.New("fcgi: connection to web server closed"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fcgiReceivedIdThatIsˢ = "fcgi: received ID that is already in-flight"u8;
+
 internal static error handleRecord(this ж<child> Ꮡc, ж<record> Ꮡrec) {
     ref var c = ref Ꮡc.Value;
     ref var rec = ref Ꮡrec.Value;
@@ -218,7 +227,7 @@ internal static error handleRecord(this ж<child> Ꮡc, ж<record> Ꮡrec) {
         if (req != nil) {
             // The server is trying to begin a request with the same ID
             // as an in-progress request. This is an error.
-            return errors.New("fcgi: received ID that is already in-flight"u8);
+            return errors.New(fcgiReceivedIdThatIsˢ);
         }
         beginRequest br = new();
         {
@@ -397,6 +406,9 @@ public static map<@string, @string> ProcessEnv(ж<http.Request> Ꮡr) {
     return env;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpˢ = "HTTP_"u8;
+
 // addFastCGIEnvToContext reports whether to include the FastCGI environment variable s
 // in the http.Request.Context, accessible via ProcessEnv.
 internal static bool addFastCGIEnvToContext(@string s) {
@@ -406,7 +418,7 @@ internal static bool addFastCGIEnvToContext(@string s) {
         return false;
     }
 
-    if (strings.HasPrefix(s, "HTTP_"u8)) {
+    if (strings.HasPrefix(s, httpˢ)) {
         return false;
     }
     // Explicitly include FastCGI-specific things.

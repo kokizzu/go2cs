@@ -436,6 +436,9 @@ internal static @string readString(exe x, nint ptrSize, Func<slice<byte>, uint64
     internal ж<xcoff.File> f;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string addressNotMappedˢ = "address not mapped"u8;
+
 [GoRecv] internal static (slice<byte>, error) ReadData(this ref xcoffExe x, uint64 addr, uint64 size) {
     foreach (var (_, sect) in (~x.f).Sections) {
         if ((~sect).VirtualAddress <= addr && addr <= (~sect).VirtualAddress + (~sect).Size - 1) {
@@ -446,7 +449,7 @@ internal static @string readString(exe x, nint ptrSize, Func<slice<byte>, uint64
             return saferio.ReadDataAt(new xcoff_ΔSectionжReaderAt(sect), n, (int64)(addr - (~sect).VirtualAddress));
         }
     }
-    return (default!, errors.New("address not mapped"u8));
+    return (default!, errors.New(addressNotMappedˢ));
 }
 
 [GoRecv] internal static (uint64, uint64) DataStart(this ref xcoffExe x) {
@@ -463,9 +466,12 @@ internal static @string readString(exe x, nint ptrSize, Func<slice<byte>, uint64
     internal ж<plan9obj.File> f;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dataˢ = "data"u8;
+
 [GoRecv] internal static (uint64, uint64) DataStart(this ref plan9objExe x) {
     {
-        var s = x.f.Section("data"u8); if (s != nil) {
+        var s = x.f.Section(dataˢ); if (s != nil) {
             return ((uint64)(~s).Offset, (uint64)(~s).Size);
         }
     }
@@ -482,7 +488,7 @@ internal static @string readString(exe x, nint ptrSize, Func<slice<byte>, uint64
             return saferio.ReadDataAt(new plan9obj_ΔSectionжReaderAt(sect), n, (int64)(addr - (uint64)(~sect).Offset));
         }
     }
-    return (default!, errors.New("address not mapped"u8));
+    return (default!, errors.New(addressNotMappedˢ));
 }
 
 } // end buildinfo_package

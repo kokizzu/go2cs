@@ -63,6 +63,12 @@ internal static error init(this ж<netFD> Ꮡfd) {
     return err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string connectˢ = "connect"u8;
+private static readonly @string bindˢ = "bind"u8;
+private static readonly @string connectexˢ = "connectex"u8;
+private static readonly @string setsockoptˢ = "setsockopt"u8;
+
 // Always returns nil for connected peer address result.
 internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, context.Context ctx, syscallꓸSockaddr la, syscallꓸSockaddr ra) => func<(syscallꓸSockaddr, error)>((defer, recover) => {
     ref var fd = ref Ꮡfd.Value;
@@ -110,7 +116,7 @@ internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, contex
     }
     if (!canUseConnectEx(fd.net)) {
         var err = connectFunc(fd.pfd.Sysfd, ra);
-        return (default!, os.NewSyscallError("connect"u8, err));
+        return (default!, os.NewSyscallError(connectˢ, err));
     }
     // ConnectEx windows API requires an unconnected, previously bound socket.
     if (la == default!) {
@@ -130,7 +136,7 @@ internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, contex
 
         {
             var err = syscall.Bind(fd.pfd.Sysfd, la); if (err != default!) {
-                return (default!, os.NewSyscallError("bind"u8, err));
+                return (default!, os.NewSyscallError(bindˢ, err));
             }
         }
     }
@@ -179,7 +185,7 @@ internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, contex
             default: {
                 {
                     var (_, ok) = err._<syscall.Errno>(ᐧ); if (ok) {
-                        err = os.NewSyscallError("connectex"u8, err);
+                        err = os.NewSyscallError(connectexˢ, err);
                     }
                 }
                 return (default!, err);
@@ -187,7 +193,7 @@ internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, contex
         }
     }
     // Refresh socket properties.
-    return (default!, os.NewSyscallError("setsockopt"u8, syscall.Setsockopt(fd.pfd.Sysfd, syscall.SOL_SOCKET, syscall.SO_UPDATE_CONNECT_CONTEXT, Ꮡfd.of(netFD.Ꮡpfd).of(poll.FD.ᏑSysfd).Reinterpret<syscallꓸHandle, byte>(), (int32)@unsafe.Sizeof(fd.pfd.Sysfd))));
+    return (default!, os.NewSyscallError(setsockoptˢ, syscall.Setsockopt(fd.pfd.Sysfd, syscall.SOL_SOCKET, syscall.SO_UPDATE_CONNECT_CONTEXT, Ꮡfd.of(netFD.Ꮡpfd).of(poll.FD.ᏑSysfd).Reinterpret<syscallꓸHandle, byte>(), (int32)@unsafe.Sizeof(fd.pfd.Sysfd))));
 });
 
 internal static (int64, error) writeBuffers(this ж<conn> Ꮡc, ж<Buffers> Ꮡv) {
@@ -203,10 +209,13 @@ internal static (int64, error) writeBuffers(this ж<conn> Ꮡc, ж<Buffers> Ꮡv
     return (n, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string wsasendˢ = "wsasend"u8;
+
 internal static (int64, error) writeBuffers(this ж<netFD> Ꮡfd, ж<Buffers> Ꮡbuf) {
     var (n, err) = Ꮡfd.of(netFD.Ꮡpfd).Writev(Ꮡbuf.of(Buffers.Ꮡm_value));
     Δruntime.KeepAlive(Ꮡfd);
-    return (n, wrapSyscallError("wsasend"u8, err));
+    return (n, wrapSyscallError(wsasendˢ, err));
 }
 
 internal static (ж<netFD>, error) accept(this ж<netFD> Ꮡfd) {

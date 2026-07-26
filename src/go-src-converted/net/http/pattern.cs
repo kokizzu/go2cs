@@ -65,6 +65,17 @@ partial class http_package {
     internal bool multi; // "..." wildcard
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string emptyPatternˢ = "empty pattern"u8;
+private static readonly @string hostPathMissingˢ = "host/path missing /"u8;
+private static readonly @string hostContainsMissingˢ = "host contains '{' (missing initial '/'?)"u8;
+private static readonly @string nonConnectPatternWithˢ = "non-CONNECT pattern with unclean path can never match"u8;
+private static readonly @string badWildcardSegmentMustˢ = "bad wildcard segment (must start with '{')"u8;
+private static readonly @string badWildcardSegmentMustˢ2 = "bad wildcard segment (must end with '}')"u8;
+private static readonly @string notAtEndˢ = "{$} not at end"u8;
+private static readonly @string wildcardNotAtEndˢ = "{...} wildcard not at end"u8;
+private static readonly @string emptyWildcardˢ = "empty wildcard"u8;
+
 // parsePattern parses a string into a Pattern.
 // The string's syntax is
 //
@@ -86,7 +97,7 @@ internal static (ж<pattern>, error err) parsePattern(@string s) => func<(ж<pat
     error err = default!;
 
     if (builtin.len(s) == 0) {
-        return (default!, errors.New("empty pattern"u8));
+        return (default!, errors.New(emptyPatternˢ));
     }
     nint off = 0;
     // offset into string
@@ -117,14 +128,14 @@ internal static (ж<pattern>, error err) parsePattern(@string s) => func<(ж<pat
     }
     nint i = strings.IndexByte(rest, (rune)'/');
     if (i < 0) {
-        return (default!, errors.New("host/path missing /"u8));
+        return (default!, errors.New(hostPathMissingˢ));
     }
     p.Value.host = rest[..(int)(i)];
     rest = rest[(int)(i)..];
     {
         nint j = strings.IndexByte((~p).host, (rune)'{'); if (j >= 0) {
             off += j;
-            return (default!, errors.New("host contains '{' (missing initial '/'?)"u8));
+            return (default!, errors.New(hostContainsMissingˢ));
         }
     }
     // At this point, rest is the path.
@@ -132,7 +143,7 @@ internal static (ж<pattern>, error err) parsePattern(@string s) => func<(ж<pat
     // An unclean path with a method that is not CONNECT can never match,
     // because paths are cleaned before matching.
     if (method != ""u8 && method != "CONNECT"u8 && rest != cleanPath(rest)) {
-        return (default!, errors.New("non-CONNECT pattern with unclean path can never match"u8));
+        return (default!, errors.New(nonConnectPatternWithˢ));
     }
     var seenNames = new map<@string, bool>{};
     // remember wildcard names to catch dups
@@ -159,25 +170,25 @@ internal static (ж<pattern>, error err) parsePattern(@string s) => func<(ж<pat
             } else {
                 // Wildcard.
                 if (iΔ3 != 0) {
-                    return (default!, errors.New("bad wildcard segment (must start with '{')"u8));
+                    return (default!, errors.New(badWildcardSegmentMustˢ));
                 }
                 if (seg[builtin.len(seg) - 1] != (rune)'}') {
-                    return (default!, errors.New("bad wildcard segment (must end with '}')"u8));
+                    return (default!, errors.New(badWildcardSegmentMustˢ2));
                 }
                 @string name = seg[1..(int)(builtin.len(seg) - 1)];
                 if (name == "$"u8) {
                     if (builtin.len(rest) != 0) {
-                        return (default!, errors.New("{$} not at end"u8));
+                        return (default!, errors.New(notAtEndˢ));
                     }
                     p.Value.segments = append((~p).segments, new segment(s: "/"u8));
                     break;
                 }
                 (name, var multi) = strings.CutSuffix(name, "..."u8);
                 if (multi && builtin.len(rest) != 0) {
-                    return (default!, errors.New("{...} wildcard not at end"u8));
+                    return (default!, errors.New(wildcardNotAtEndˢ));
                 }
                 if (name == ""u8) {
-                    return (default!, errors.New("empty wildcard"u8));
+                    return (default!, errors.New(emptyWildcardˢ));
                 }
                 if (!isValidWildcardName(name)) {
                     return (default!, fmt.Errorf("bad wildcard name %q"u8, name));

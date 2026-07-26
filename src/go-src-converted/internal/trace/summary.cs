@@ -694,11 +694,14 @@ public static map<GoID, EmptyStruct> RelatedGoroutinesV2(slice<ΔEvent> events, 
     return gmap;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeˢ = "runtime."u8;
+
 public static bool IsSystemGoroutine(@string entryFn) {
     // This mimics runtime.isSystemGoroutine as closely as
     // possible.
     // Also, locked g in extra M (with empty entryFn) is system goroutine.
-    return entryFn == ""u8 || entryFn != "runtime.main"u8 && strings.HasPrefix(entryFn, "runtime."u8);
+    return entryFn == ""u8 || entryFn != "runtime.main"u8 && strings.HasPrefix(entryFn, runtimeˢ);
 }
 
 } // end trace_package

@@ -17,7 +17,7 @@ internal static error setDefaultSockopts(syscallꓸHandle s, nint family, nint s
     }
     if ((sotype == syscall.SOCK_DGRAM || sotype == syscall.SOCK_RAW) && family != syscall.AF_UNIX && family != syscall.AF_INET6) {
         // Allow broadcast.
-        return os.NewSyscallError("setsockopt"u8, syscall.SetsockoptInt(s, syscall.SOL_SOCKET, syscall.SO_BROADCAST, 1));
+        return os.NewSyscallError(setsockoptˢ, syscall.SetsockoptInt(s, syscall.SOL_SOCKET, syscall.SO_BROADCAST, 1));
     }
     return default!;
 }
@@ -35,7 +35,7 @@ internal static error setDefaultListenerSockopts(syscallꓸHandle s) {
 internal static error setDefaultMulticastSockopts(syscallꓸHandle s) {
     // Allow multicast UDP and raw IP datagram sockets to listen
     // concurrently across multiple listeners.
-    return os.NewSyscallError("setsockopt"u8, syscall.SetsockoptInt(s, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1));
+    return os.NewSyscallError(setsockoptˢ, syscall.SetsockoptInt(s, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1));
 }
 
 } // end net_package

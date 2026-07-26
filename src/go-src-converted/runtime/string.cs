@@ -18,6 +18,9 @@ internal static readonly UntypedInt tmpStringBufSize = 32;
 [GoType("[32]byte")] /* [tmpStringBufSize]byte */
 partial struct tmpBuf;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stringConcatenationTooˢ = "string concatenation too long"u8;
+
 // concatstrings implements a Go string concatenation x+y+z+...
 // The operands are passed in the slice a.
 // If buf != nil, the compiler has determined that the result does not
@@ -35,7 +38,7 @@ internal static @string concatstrings(ж<tmpBuf> Ꮡbuf, slice<@string> a) {
             continue;
         }
         if (l + n < l) {
-            @throw("string concatenation too long"u8);
+            @throw(stringConcatenationTooˢ);
         }
         l += n;
         count++;
@@ -312,7 +315,7 @@ internal static slice<rune> /*b*/ rawruneslice(nint size) {
     ref var b = ref heap<slice<rune>>(out var Ꮡb);
 
     if ((uintptr)size > maxAlloc / 4) {
-        @throw("out of memory"u8);
+        @throw(outOfMemoryˢ);
     }
     var mem = roundupsize((uintptr)size * 4, true);
     @unsafe.Pointer Δp = (uintptr)mallocgc(mem, nil, false);
@@ -323,6 +326,9 @@ internal static slice<rune> /*b*/ rawruneslice(nint size) {
     return b;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gobytesLengthOutOfRangeˢ = "gobytes: length out of range"u8;
+
 // used by cmd/cgo
 internal static slice<byte> /*b*/ gobytes(ж<byte> Ꮡp, nint n) {
     ref var b = ref heap<slice<byte>>(out var Ꮡb);
@@ -331,7 +337,7 @@ internal static slice<byte> /*b*/ gobytes(ж<byte> Ꮡp, nint n) {
         return new slice<byte>(0);
     }
     if (n < 0 || (uintptr)n > maxAlloc) {
-        throw panic(((errorString)(@string)"gobytes: length out of range"u8));
+        throw panic(((errorString)(@string)gobytesLengthOutOfRangeˢ));
     }
     @unsafe.Pointer bp = (uintptr)mallocgc((uintptr)n, nil, false);
     memmove(bp, new @unsafe.Pointer(Ꮡp), (uintptr)n);

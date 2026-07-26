@@ -321,6 +321,12 @@ internal static bool callGC; // for testing; see TestCallMethodJump and TestCall
 
 internal const bool debugReflectCall = false;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string reflectValueCallˢ = "reflect.Value.Call"u8;
+private static readonly @string precomputedStackArgˢ = "precomputed stack arg offset"u8;
+private static readonly @string precomputedValueOffsetˢ = "precomputed value offset"u8;
+private static readonly @string tvSize0ˢ = "tv.Size() != 0"u8;
+
 internal static slice<ΔValue> call(this ΔValue v, @string op, slice<ΔValue> @in) {
     // Get function pointer, type.
     var t = v.typ().Reinterpret<abi.Type, funcType>();
@@ -460,13 +466,13 @@ internal static slice<ΔValue> call(this ΔValue v, @string op, slice<ΔValue> @
         // TODO(mknyszek): Figure out if it's possible to get some
         // scratch space for this assignment check. Previously, it
         // was possible to use space in the argument frame.
-        vΔ1 = vΔ1.assignTo("reflect.Value.Call"u8, targ.of(rtype.Ꮡt), nil);
+        vΔ1 = vΔ1.assignTo(reflectValueCallˢ, targ.of(rtype.Ꮡt), nil);
 stepsLoop:
         foreach (var (_, st) in abid.call.stepsForValue(i + inStart)) {
             var exprᴛ2 = st.kind;
             if (exprᴛ2 == abiStepStack) {
                 @unsafe.Pointer addr = (uintptr)add(stackArgs, // Copy values to the "stack."
- st.stkOff, "precomputed stack arg offset"u8);
+ st.stkOff, precomputedStackArgˢ);
                 if ((flag)(vΔ1.flag & flagIndir) != 0){
                     typedmemmove(targ.of(rtype.Ꮡt), addr, vΔ1.ptr);
                 } else {
@@ -478,7 +484,7 @@ stepsLoop:
                 if ((flag)(vΔ1.flag & flagIndir) != 0){
                     // There's only one step for a stack-allocated value.
                     // Copy values to "integer registers."
-                    @unsafe.Pointer offset = (uintptr)add(vΔ1.ptr, st.offset, "precomputed value offset"u8);
+                    @unsafe.Pointer offset = (uintptr)add(vΔ1.ptr, st.offset, precomputedValueOffsetˢ);
                     if (st.kind == abiStepPointer) {
                         // Duplicate this pointer in the pointer area of the
                         // register space. Otherwise, there's the potential for
@@ -499,7 +505,7 @@ stepsLoop:
                     // Copy values to "float registers."
                     throw panic("attempted to copy pointer to FP register");
                 }
-                @unsafe.Pointer offset = (uintptr)add(vΔ1.ptr, st.offset, "precomputed value offset"u8);
+                @unsafe.Pointer offset = (uintptr)add(vΔ1.ptr, st.offset, precomputedValueOffsetˢ);
                 floatToReg(ᏑregArgs, st.freg, st.size, offset);
             }
             else { /* default: */
@@ -559,7 +565,7 @@ break_stepsLoop:;
                     // allocated, the entire value is according to the ABI. So
                     // just make an indirection into the allocated frame.
                     var fl = (flag)(flagIndir | ((flag)(uintptr)(uint8)tv.Kind()));
-                    ret[i] = new ΔValue(tv, (uintptr)add(stackArgs, st.stkOff, "tv.Size() != 0"u8), fl);
+                    ret[i] = new ΔValue(tv, (uintptr)add(stackArgs, st.stkOff, tvSize0ˢ), fl);
                     // Note: this does introduce false sharing between results -
                     // if any result is live, they are all live.
                     // (And the space for the args is live as well, but as we've
@@ -591,15 +597,15 @@ break_stepsLoop:;
             foreach (var (_, st) in steps) {
                 var exprᴛ3 = st.kind;
                 if (exprᴛ3 == abiStepIntReg) {
-                    @unsafe.Pointer offset = (uintptr)add(s, st.offset, "precomputed value offset"u8);
+                    @unsafe.Pointer offset = (uintptr)add(s, st.offset, precomputedValueOffsetˢ);
                     intFromReg(ᏑregArgs, st.ireg, st.size, offset);
                 }
                 else if (exprᴛ3 == abiStepPointer) {
-                    @unsafe.Pointer sΔ2 = (uintptr)add(s, st.offset, "precomputed value offset"u8);
+                    @unsafe.Pointer sΔ2 = (uintptr)add(s, st.offset, precomputedValueOffsetˢ);
                     ((ж<@unsafe.Pointer>)(uintptr)(sΔ2)).Value = regArgs.Ptrs[st.ireg];
                 }
                 else if (exprᴛ3 == abiStepFloatReg) {
-                    @unsafe.Pointer offset = (uintptr)add(s, st.offset, "precomputed value offset"u8);
+                    @unsafe.Pointer offset = (uintptr)add(s, st.offset, precomputedValueOffsetˢ);
                     floatFromReg(ᏑregArgs, st.freg, st.size, offset);
                 }
                 else if (exprᴛ3 == abiStepStack) {
@@ -615,6 +621,10 @@ break_stepsLoop:;
     }
     return ret;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string typSize0ˢ = "typ.size > 0"u8;
+private static readonly @string reflectMakeFuncˢ = "reflect.MakeFunc"u8;
 
 // callReflect is the call implementation used by a function
 // returned by MakeFunc. In many ways it is the opposite of the
@@ -671,7 +681,7 @@ internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame
                     // after this function returns, not even a read-only reference.
                     v.ptr = (uintptr)unsafe_New(typ);
                     if (typ.Size() > 0) {
-                        typedmemmove(typ, v.ptr, (uintptr)add(ptr, st.stkOff, "typ.size > 0"u8));
+                        typedmemmove(typ, v.ptr, (uintptr)add(ptr, st.stkOff, typSize0ˢ));
                     }
                     v.flag |= flagIndir;
                 } else {
@@ -686,15 +696,15 @@ internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame
                     foreach (var (_, stΔ1) in steps) {
                         var exprᴛ1 = stΔ1.kind;
                         if (exprᴛ1 == abiStepIntReg) {
-                            @unsafe.Pointer offset = (uintptr)add(v.ptr, stΔ1.offset, "precomputed value offset"u8);
+                            @unsafe.Pointer offset = (uintptr)add(v.ptr, stΔ1.offset, precomputedValueOffsetˢ);
                             intFromReg(Ꮡregs, stΔ1.ireg, stΔ1.size, offset);
                         }
                         else if (exprᴛ1 == abiStepPointer) {
-                            @unsafe.Pointer s = (uintptr)add(v.ptr, stΔ1.offset, "precomputed value offset"u8);
+                            @unsafe.Pointer s = (uintptr)add(v.ptr, stΔ1.offset, precomputedValueOffsetˢ);
                             ((ж<@unsafe.Pointer>)(uintptr)(s)).Value = regs.Ptrs[stΔ1.ireg];
                         }
                         else if (exprᴛ1 == abiStepFloatReg) {
-                            @unsafe.Pointer offset = (uintptr)add(v.ptr, stΔ1.offset, "precomputed value offset"u8);
+                            @unsafe.Pointer offset = (uintptr)add(v.ptr, stΔ1.offset, precomputedValueOffsetˢ);
                             floatFromReg(Ꮡregs, stΔ1.freg, stΔ1.size, offset);
                         }
                         else if (exprᴛ1 == abiStepStack) {
@@ -751,13 +761,13 @@ internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame
             // We must clear the destination before calling assignTo,
             // in case assignTo writes (with memory barriers) to the
             // target location used as scratch space. See issue 39541.
-            v = v.assignTo("reflect.MakeFunc"u8, typ, nil);
+            v = v.assignTo(reflectMakeFuncˢ, typ, nil);
 stepsLoop:
             foreach (var (_, st) in abid.ret.stepsForValue(i)) {
                 var exprᴛ2 = st.kind;
                 if (exprᴛ2 == abiStepStack) {
                     @unsafe.Pointer addr = (uintptr)add(ptr, // Copy values to the "stack."
- st.stkOff, "precomputed stack arg offset"u8);
+ st.stkOff, precomputedStackArgˢ);
                     if ((flag)(v.flag & flagIndir) != 0){
                         // Do not use write barriers. The stack space used
                         // for this call is not adequately zeroed, and we
@@ -774,7 +784,7 @@ stepsLoop:
                     if ((flag)(v.flag & flagIndir) != 0){
                         // There's only one step for a stack-allocated value.
                         // Copy values to "integer registers."
-                        @unsafe.Pointer offset = (uintptr)add(v.ptr, st.offset, "precomputed value offset"u8);
+                        @unsafe.Pointer offset = (uintptr)add(v.ptr, st.offset, precomputedValueOffsetˢ);
                         intToReg(Ꮡregs, st.ireg, st.size, offset);
                     } else {
                         // Only populate the Ints space on the return path.
@@ -790,7 +800,7 @@ stepsLoop:
                         // Copy values to "float registers."
                         throw panic("attempted to copy pointer to FP register");
                     }
-                    @unsafe.Pointer offset = (uintptr)add(v.ptr, st.offset, "precomputed value offset"u8);
+                    @unsafe.Pointer offset = (uintptr)add(v.ptr, st.offset, precomputedValueOffsetˢ);
                     floatToReg(Ꮡregs, st.freg, st.size, offset);
                 }
                 else { /* default: */
@@ -887,6 +897,12 @@ internal static uintptr align(uintptr x, uintptr n) {
     return (uintptr)((x + n - 1) & ~(n - 1));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string callˢ = "call"u8;
+private static readonly @string precomputedStackOffsetˢ = "precomputed stack offset"u8;
+private static readonly @string valueFrameSSizeRetOffsetˢ = "valueFrame's size > retOffset"u8;
+private static readonly @string methodFrameSSizeˢ = "methodFrame's size > retOffset"u8;
+
 // callMethod is the call implementation used by a function returned
 // by makeMethodValue (used by v.Method(i).Interface()).
 // It is a streamlined version of the usual reflect call: the caller has
@@ -912,7 +928,7 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
     ref var regs = ref Ꮡregs.Value;
 
     var rcvr = ctxt.rcvr;
-    var (rcvrType, valueFuncType, methodFn) = methodReceiver("call"u8, rcvr, ctxt.method);
+    var (rcvrType, valueFuncType, methodFn) = methodReceiver(callˢ, rcvr, ctxt.method);
     // There are two ABIs at play here.
     //
     // methodValueCall was invoked with the ABI assuming there was no
@@ -984,13 +1000,13 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
                         throw panic("method ABI and value ABI do not align");
                     }
                     typedmemmove(t,
-                        (uintptr)add(methodFrame, mStep.stkOff, "precomputed stack offset"u8),
-                        (uintptr)add(valueFrame, vStep.stkOff, "precomputed stack offset"u8));
+                        (uintptr)add(methodFrame, mStep.stkOff, precomputedStackOffsetˢ),
+                        (uintptr)add(valueFrame, vStep.stkOff, precomputedStackOffsetˢ));
                     continue;
                 }
                 // Handle stack -> register translation.
                 foreach (var (_, mStepΔ1) in methodSteps) {
-                    @unsafe.Pointer from = (uintptr)add(valueFrame, vStep.stkOff + mStepΔ1.offset, "precomputed stack offset"u8);
+                    @unsafe.Pointer from = (uintptr)add(valueFrame, vStep.stkOff + mStepΔ1.offset, precomputedStackOffsetˢ);
                     var exprᴛ2 = mStepΔ1.kind;
                     var matchᴛ2 = false;
                     if (exprᴛ2 == abiStepPointer) { matchᴛ2 = true;
@@ -1017,7 +1033,7 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
         {
             var mStep = methodSteps[0]; if (mStep.kind == abiStepStack) {
                 foreach (var (_, vStep) in valueSteps) {
-                    @unsafe.Pointer to = (uintptr)add(methodFrame, mStep.stkOff + vStep.offset, "precomputed stack offset"u8);
+                    @unsafe.Pointer to = (uintptr)add(methodFrame, mStep.stkOff + vStep.offset, precomputedStackOffsetˢ);
                     var exprᴛ3 = vStep.kind;
                     if (exprᴛ3 == abiStepPointer) {
                         ((ж<@unsafe.Pointer>)(uintptr)(to)).Value = (~valueRegs).Ptrs[vStep.ireg];
@@ -1093,8 +1109,8 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
     }
     {
         var retSize = methodFrameType.Size() - methodABI.retOffset; if (retSize > 0) {
-            @unsafe.Pointer valueRet = (uintptr)add(valueFrame, valueABI.retOffset, "valueFrame's size > retOffset"u8);
-            @unsafe.Pointer methodRet = (uintptr)add(methodFrame, methodABI.retOffset, "methodFrame's size > retOffset"u8);
+            @unsafe.Pointer valueRet = (uintptr)add(valueFrame, valueABI.retOffset, valueFrameSSizeRetOffsetˢ);
+            @unsafe.Pointer methodRet = (uintptr)add(methodFrame, methodABI.retOffset, methodFrameSSizeˢ);
             // This copies to the stack. Write barriers are not needed.
             memmove(valueRet, methodRet, retSize);
         }
@@ -1115,6 +1131,9 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
     Δruntime.KeepAlive(valueRegs);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string closureˢ = "closure"u8;
+
 // funcName returns the name of f, for use in error messages.
 internal static @string funcName(Func<slice<ΔValue>, slice<ΔValue>> f) {
     var pc = ~Ꮡ(f).Reinterpret<Func<slice<ΔValue>, slice<ΔValue>>, uintptr>();
@@ -1122,7 +1141,7 @@ internal static @string funcName(Func<slice<ΔValue>, slice<ΔValue>> f) {
     if (rf != nil) {
         return rf.Name();
     }
-    return "closure"u8;
+    return closureˢ;
 }
 
 // Cap returns v's capacity.
@@ -1538,6 +1557,9 @@ internal static nint lenNonSlice(this ΔValue v) {
 
 internal static ж<abi.Type> stringType = rtypeOf((@string)""u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string reflectValueMapIndexˢ = "reflect.Value.MapIndex"u8;
+
 // MapIndex returns the value associated with key in the map v.
 // It panics if v's Kind is not [Map].
 // It returns the zero Value if key is not found in the map or if v represents a nil map.
@@ -1557,7 +1579,7 @@ public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
         @string k = ~(ж<@string>)(uintptr)(key.ptr);
         e = (uintptr)mapaccess_faststr(v.typ(), (uintptr)v.pointer(), k);
     } else {
-        key = key.assignTo("reflect.Value.MapIndex"u8, (~tt).Key, nil);
+        key = key.assignTo(reflectValueMapIndexˢ, (~tt).Key, nil);
         @unsafe.Pointer k = default!;
         if ((flag)(key.flag & flagIndir) != 0){
             k = key.ptr;
@@ -1642,6 +1664,9 @@ public static slice<ΔValue> MapKeys(this ΔValue v) {
 
 // go2cs generated this placeholder — func Key is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string reflectMapIterSetKeyˢ = "reflect.MapIter.SetKey"u8;
+
 // SetIterKey assigns to v the key of iter's current map entry.
 // It is equivalent to v.Set(iter.Key()), but it avoids allocating a new Value.
 // As in Go, the key must be assignable to v's type and
@@ -1666,11 +1691,14 @@ public static void SetIterKey(this ΔValue v, ж<MapIter> Ꮡiter) {
     iter.m.mustBeExported();
     // do not let unexported m leak
     var key = new ΔValue(ktype, iterkey.Value, (flag)((flag)(iter.m.flag | ((flag)(uintptr)(uint8)ktype.Kind())) | flagIndir));
-    key = key.assignTo("reflect.MapIter.SetKey"u8, v.typ(), target);
+    key = key.assignTo(reflectMapIterSetKeyˢ, v.typ(), target);
     typedmemmove(v.typ(), v.ptr, key.ptr);
 }
 
 // go2cs generated this placeholder — func Value is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string reflectMapIterSetValueˢ = "reflect.MapIter.SetValue"u8;
 
 // SetIterValue assigns to v the value of iter's current map entry.
 // It is equivalent to v.Set(iter.Value()), but it avoids allocating a new Value.
@@ -1696,7 +1724,7 @@ public static void SetIterValue(this ΔValue v, ж<MapIter> Ꮡiter) {
     iter.m.mustBeExported();
     // do not let unexported m leak
     var elem = new ΔValue(vtype, iterelem.Value, (flag)((flag)(iter.m.flag | ((flag)(uintptr)(uint8)vtype.Kind())) | flagIndir));
-    elem = elem.assignTo("reflect.MapIter.SetValue"u8, v.typ(), target);
+    elem = elem.assignTo(reflectMapIterSetValueˢ, v.typ(), target);
     typedmemmove(v.typ(), v.ptr, elem.ptr);
 }
 
@@ -1935,6 +1963,9 @@ public static void Send(this ΔValue v, ΔValue x) {
     v.send(x, false);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string reflectValueSendˢ = "reflect.Value.Send"u8;
+
 // internal send, possibly non-blocking.
 // v is known to be a channel.
 internal static bool /*selected*/ send(this ΔValue v, ΔValue x, bool nb) {
@@ -1945,7 +1976,7 @@ internal static bool /*selected*/ send(this ΔValue v, ΔValue x, bool nb) {
         throw panic("reflect: send on recv-only channel");
     }
     x.mustBeExported();
-    x = x.assignTo("reflect.Value.Send"u8, (~tt).Elem, nil);
+    x = x.assignTo(reflectValueSendˢ, (~tt).Elem, nil);
     @unsafe.Pointer p = default!;
     if ((flag)(x.flag & flagIndir) != 0){
         p = x.ptr;
@@ -2032,6 +2063,9 @@ public static void SetPointer(this ΔValue v, @unsafe.Pointer x) {
 
 // go2cs generated this placeholder — func Slice is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string iKCapˢ = "i < k <= cap"u8;
+
 // Reinterpret as *unsafeheader.Slice to edit.
 // do not advance pointer, to avoid pointing beyond end of slice
 
@@ -2076,7 +2110,7 @@ public static ΔValue Slice3(this ΔValue v, nint i, nint j, nint k) {
     s.Value.Len = j - i;
     s.Value.Cap = k - i;
     if (k - i > 0){
-        s.Value.Data = (uintptr)arrayAt(@base, i, (~typ).Elem.Size(), "i < k <= cap"u8);
+        s.Value.Data = (uintptr)arrayAt(@base, i, (~typ).Elem.Size(), iKCapˢ);
     } else {
         // do not advance pointer, to avoid pointing beyond end of slice
         s.Value.Data = @base;
@@ -2087,10 +2121,13 @@ public static ΔValue Slice3(this ΔValue v, nint i, nint j, nint k) {
 
 // go2cs generated this placeholder — func String is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidValueˢ = "<invalid Value>"u8;
+
 // stringNonString is split out to keep String inlineable for string kinds.
 internal static @string stringNonString(this ΔValue v) {
     if (v.kind() == Invalid) {
-        return "<invalid Value>"u8;
+        return invalidValueˢ;
     }
     // If you call String on a reflect.Value of other type, it's better to
     // print something than to panic. Useful in debugging.
@@ -2234,6 +2271,9 @@ internal static void typesMustMatch(@string what, ΔType t1, ΔType t2) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string iLenˢ = "i < len"u8;
+
 // arrayAt returns the i-th element of p,
 // an array whose elements are eltSize bytes wide.
 // The array pointed at by p must have at least i+1 elements:
@@ -2242,7 +2282,7 @@ internal static void typesMustMatch(@string what, ΔType t1, ΔType t2) {
 // whySafe must explain why i < len. (Passing "i < len" is fine;
 // the benefit is to surface this assumption at the call site.)
 internal static @unsafe.Pointer arrayAt(@unsafe.Pointer p, nint i, uintptr eltSize, @string whySafe) {
-    return (uintptr)add(p, (uintptr)i * eltSize, "i < len"u8);
+    return (uintptr)add(p, (uintptr)i * eltSize, iLenˢ);
 }
 
 // Grow increases the slice's capacity, if necessary, to guarantee space for
@@ -2332,18 +2372,24 @@ public static ΔValue Append(ΔValue s, params ꓸꓸꓸValue xʗp) {
     return s;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string reflectAppendSliceˢ = "reflect.AppendSlice"u8;
+
 // AppendSlice appends a slice t to a slice s and returns the resulting slice.
 // The slices s and t must have the same element type.
 public static ΔValue AppendSlice(ΔValue s, ΔValue t) {
     s.mustBe(ΔSlice);
     t.mustBe(ΔSlice);
-    typesMustMatch("reflect.AppendSlice"u8, s.Type().Elem(), t.Type().Elem());
+    typesMustMatch(reflectAppendSliceˢ, s.Type().Elem(), t.Type().Elem());
     nint ns = s.Len();
     nint nt = t.Len();
     s = s.extendSlice(nt);
     Copy(s.Slice(ns, ns + nt), t);
     return s;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string reflectCopyˢ = "reflect.Copy"u8;
 
 // Copy copies the contents of src into dst until either
 // dst has been filled or src has been exhausted.
@@ -2375,7 +2421,7 @@ public static nint Copy(ΔValue dst, ΔValue src) {
     var de = dst.typ().Elem();
     if (!stringCopy) {
         var se = src.typ().Elem();
-        typesMustMatch("reflect.Copy"u8, toType(de), toType(se));
+        typesMustMatch(reflectCopyˢ, toType(de), toType(se));
     }
     unsafeheader.Slice ds = default!;
     unsafeheader.Slice ss = default!;
@@ -2454,6 +2500,9 @@ public static readonly SelectDir SelectDefault = 3; // default
     public ΔValue Send;   // value to send (for send)
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string reflectSelectˢ = "reflect.Select"u8;
+
 // Select executes a select operation described by the list of cases.
 // Like the Go select statement, it blocks until at least one of the cases
 // can proceed, makes a uniform pseudo-random choice,
@@ -2519,7 +2568,7 @@ public static (nint chosen, ΔValue recv, bool recvOK) Select(slice<SelectCase> 
                     throw panic("reflect.Select: SendDir case missing Send value");
                 }
                 v.mustBeExported();
-                v = v.assignTo("reflect.Select"u8, (~tt).Elem, nil);
+                v = v.assignTo(reflectSelectˢ, (~tt).Elem, nil);
                 if ((flag)(v.flag & flagIndir) != 0){
                     rc.Value.val = v.ptr;
                 } else {
@@ -2686,12 +2735,15 @@ internal static ΔValue assignTo(this ΔValue v, @string context, ж<abi.Type> �
     throw panic(context + ": value of type " + stringFor(v.typ()) + " is not assignable to type " + stringFor(Ꮡdst));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string convertˢ = "Convert"u8;
+
 // Convert returns the value v converted to type t.
 // If the usual Go conversion rules do not allow conversion
 // of the value v to type t, or if converting v to type t panics, Convert panics.
 public static ΔValue Convert(this ΔValue v, ΔType t) {
     if ((flag)(v.flag & flagMethod) != 0) {
-        v = makeMethodValue("Convert"u8, v);
+        v = makeMethodValue(convertˢ, v);
     }
     var op = convertOp(t.common(), v.typ());
     if (op == default!) {

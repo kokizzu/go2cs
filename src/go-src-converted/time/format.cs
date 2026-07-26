@@ -375,53 +375,53 @@ internal static (@string prefix, nint std, @string suffix) nextStdChunk(@string 
 }
 
 internal static slice<@string> longDayNames = new @string[]{
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday"
+    "Sunday"u8,
+    "Monday"u8,
+    "Tuesday"u8,
+    "Wednesday"u8,
+    "Thursday"u8,
+    "Friday"u8,
+    "Saturday"u8
 }.slice();
 
 internal static slice<@string> shortDayNames = new @string[]{
-    "Sun",
-    "Mon",
-    "Tue",
-    "Wed",
-    "Thu",
-    "Fri",
-    "Sat"
+    "Sun"u8,
+    "Mon"u8,
+    "Tue"u8,
+    "Wed"u8,
+    "Thu"u8,
+    "Fri"u8,
+    "Sat"u8
 }.slice();
 
 internal static slice<@string> shortMonthNames = new @string[]{
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec"
+    "Jan"u8,
+    "Feb"u8,
+    "Mar"u8,
+    "Apr"u8,
+    "May"u8,
+    "Jun"u8,
+    "Jul"u8,
+    "Aug"u8,
+    "Sep"u8,
+    "Oct"u8,
+    "Nov"u8,
+    "Dec"u8
 }.slice();
 
 internal static slice<@string> longMonthNames = new @string[]{
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December"
+    "January"u8,
+    "February"u8,
+    "March"u8,
+    "April"u8,
+    "May"u8,
+    "June"u8,
+    "July"u8,
+    "August"u8,
+    "September"u8,
+    "October"u8,
+    "November"u8,
+    "December"u8
 }.slice();
 
 // match reports whether s1 and s2 match ignoring case.
@@ -1120,6 +1120,19 @@ public static (Time, error) ParseInLocation(@string layout, @string value, ж<Δ
     return parse(layout, value, Ꮡloc, Ꮡloc);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string monthˢ = "month"u8;
+private static readonly @string hourˢ = "hour"u8;
+private static readonly @string minuteˢ = "minute"u8;
+private static readonly @string secondˢ = "second"u8;
+private static readonly @string timeZoneOffsetHourˢ = "time zone offset hour"u8;
+private static readonly @string timeZoneOffsetMinuteˢ = "time zone offset minute"u8;
+private static readonly @string timeZoneOffsetSecondˢ = "time zone offset second"u8;
+private static readonly @string dayOfYearOutOfRangeˢ = ": day-of-year out of range"u8;
+private static readonly @string dayOfYearDoesNotMatchˢ = ": day-of-year does not match month"u8;
+private static readonly @string dayOfYearDoesNotMatchDayˢ = ": day-of-year does not match day"u8;
+private static readonly @string dayOutOfRangeˢ = ": day out of range"u8;
+
 internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation> ᏑdefaultLocation, ж<ΔLocation> Ꮡlocal) {
     ref var local = ref Ꮡlocal.Value;
 
@@ -1213,7 +1226,7 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
         else if (exprᴛ1 == stdNumMonth || exprᴛ1 == stdZeroMonth) { matchᴛ1 = true;
             (month, value, err) = getnum(value, std == stdZeroMonth);
             if (err == default! && (month <= 0 || 12 < month)) {
-                rangeErrString = "month"u8;
+                rangeErrString = monthˢ;
             }
         }
         else if (exprᴛ1 == stdWeekDay) { matchᴛ1 = true;
@@ -1244,19 +1257,19 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
  // The year-day, year combination is validated after we've completed parsing.
  false);
             if (hour < 0 || 24 <= hour) {
-                rangeErrString = "hour"u8;
+                rangeErrString = hourˢ;
             }
         }
         else if (exprᴛ1 == stdHour12 || exprᴛ1 == stdZeroHour12) { matchᴛ1 = true;
             (hour, value, err) = getnum(value, std == stdZeroHour12);
             if (hour < 0 || 12 < hour) {
-                rangeErrString = "hour"u8;
+                rangeErrString = hourˢ;
             }
         }
         else if (exprᴛ1 == stdMinute || exprᴛ1 == stdZeroMinute) { matchᴛ1 = true;
             (min, value, err) = getnum(value, std == stdZeroMinute);
             if (min < 0 || 60 <= min) {
-                rangeErrString = "minute"u8;
+                rangeErrString = minuteˢ;
             }
         }
         else if (exprᴛ1 == stdSecond || exprᴛ1 == stdZeroSecond) { matchᴛ1 = true;
@@ -1266,7 +1279,7 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
                     break;
                 }
                 if (sec < 0 || 60 <= sec) {
-                    rangeErrString = "second"u8;
+                    rangeErrString = secondˢ;
                     break;
                 }
                 if (len(value) >= 2 && commaOrPeriod(value[0]) && isDigit(value, // Special case: do we have a fractional second but no
@@ -1399,13 +1412,13 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
                     // The range test use > rather than >=,
                     // as some people do write offsets of 24 hours
                     // or 60 minutes or 60 seconds.
-                    rangeErrString = "time zone offset hour"u8;
+                    rangeErrString = timeZoneOffsetHourˢ;
                 }
                 if (mm > 60) {
-                    rangeErrString = "time zone offset minute"u8;
+                    rangeErrString = timeZoneOffsetMinuteˢ;
                 }
                 if (ss > 60) {
-                    rangeErrString = "time zone offset second"u8;
+                    rangeErrString = timeZoneOffsetSecondˢ;
                 }
                 zoneOffset = (hr * 60 + mm) * 60 + ss;
                 switch (sign[0]) {
@@ -1497,7 +1510,7 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
             }
         }
         if (yday < 1 || yday > 365) {
-            return (new Time(nil), new ParseErrorжerror(newParseError(alayout, avalue, ""u8, value, ": day-of-year out of range"u8)));
+            return (new Time(nil), new ParseErrorжerror(newParseError(alayout, avalue, ""u8, value, dayOfYearOutOfRangeˢ)));
         }
         if (m == 0) {
             m = (yday - 1) / 31 + 1;
@@ -1509,11 +1522,11 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
         // If month, day already seen, yday's m, d must match.
         // Otherwise, set them from m, d.
         if (month >= 0 && month != m) {
-            return (new Time(nil), new ParseErrorжerror(newParseError(alayout, avalue, ""u8, value, ": day-of-year does not match month"u8)));
+            return (new Time(nil), new ParseErrorжerror(newParseError(alayout, avalue, ""u8, value, dayOfYearDoesNotMatchˢ)));
         }
         month = m;
         if (day >= 0 && day != d) {
-            return (new Time(nil), new ParseErrorжerror(newParseError(alayout, avalue, ""u8, value, ": day-of-year does not match day"u8)));
+            return (new Time(nil), new ParseErrorжerror(newParseError(alayout, avalue, ""u8, value, dayOfYearDoesNotMatchDayˢ)));
         }
         day = d;
     } else {
@@ -1526,7 +1539,7 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
     }
     // Validate the day of the month.
     if (day < 1 || day > daysIn(((ΔMonth)month), year)) {
-        return (new Time(nil), new ParseErrorжerror(newParseError(alayout, avalue, ""u8, value, ": day out of range"u8)));
+        return (new Time(nil), new ParseErrorжerror(newParseError(alayout, avalue, ""u8, value, dayOutOfRangeˢ)));
     }
     if (z != nil) {
         return (Date(year, ((ΔMonth)month), day, hour, min, sec, nsec, z), default!);
@@ -1676,6 +1689,9 @@ internal static bool commaOrPeriod(byte b) {
     return b == (rune)'.' || b == (rune)',';
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fractionalSecondˢ = "fractional second"u8;
+
 internal static (nint ns, @string rangeErrString, error err) parseNanoseconds<bytes>(bytes value, nint nbytes)
     where bytes : /* []byte | string */ IByteSeq<byte>, new()
 {
@@ -1697,7 +1713,7 @@ internal static (nint ns, @string rangeErrString, error err) parseNanoseconds<by
         }
     }
     if (ns < 0) {
-        rangeErrString = "fractional second"u8;
+        rangeErrString = fractionalSecondˢ;
         return (ns, rangeErrString, err);
     }
     // We need nanoseconds, which means scaling by the number

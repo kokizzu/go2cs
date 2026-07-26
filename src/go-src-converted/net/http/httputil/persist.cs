@@ -168,6 +168,9 @@ public static nint Pending(this ж<ServerConn> Ꮡsc) => func((defer, recover) =
     return sc.nread - sc.nwritten;
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string persistServerPipeCountˢ = "persist server pipe count"u8;
+
 // Write writes resp in response to req. To close the connection gracefully, set the
 // Response.Close field to true. Write should be considered operational until
 // it returns an error, regardless of any errors returned on the [ServerConn.Read] side.
@@ -200,7 +203,7 @@ public static error Write(this ж<ServerConn> Ꮡsc, ж<http.Request> Ꮡreq, ж
     var c = sc.c;
     if (sc.nread <= sc.nwritten) {
         defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock);
-        return errors.New("persist server pipe count"u8);
+        return errors.New(persistServerPipeCountˢ);
     }
     if (resp.Close) {
         // After signaling a keep-alive close, any pipelined unread

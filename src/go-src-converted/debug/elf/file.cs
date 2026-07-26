@@ -111,14 +111,20 @@ public static (slice<byte>, error) Data(this ж<ΔSection> Ꮡs) {
     return saferio.ReadData(new io_ReadSeekerᴠReader(Ꮡs.Open()), s.Size);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sectionHasInvalidStringˢ = "section has invalid string table link"u8;
+
 // stringTable reads and returns the string table given by the
 // specified link value.
 [GoRecv] internal static (slice<byte>, error) stringTable(this ref File f, uint32 link) {
     if (link <= 0 || link >= (uint32)len(f.Sections)) {
-        return (default!, errors.New("section has invalid string table link"u8));
+        return (default!, errors.New(sectionHasInvalidStringˢ));
     }
     return f.Sections[(nint)(link)].Data();
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string zdebugˢ = ".zdebug"u8;
 
 // Open returns a new ReadSeeker reading the ELF section.
 // Even if the section is stored compressed in the ELF file,
@@ -134,7 +140,7 @@ public static io.ReadSeeker Open(this ж<ΔSection> Ꮡs) {
     }
     Func<io.Reader, (io.ReadCloser, error)> zrd = default!;
     if ((SectionFlag)(s.Flags & SHF_COMPRESSED) == 0){
-        if (!strings.HasPrefix(s.Name, ".zdebug"u8)) {
+        if (!strings.HasPrefix(s.Name, zdebugˢ)) {
             return new io_SectionReaderжReadSeeker(io.NewSectionReader(new io_SectionReaderжReaderAt(s.sr), 0, 9223372036854775807L));
         }
         var b = new slice<byte>(12);
@@ -620,6 +626,9 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     return (f, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string notImplementedˢ = "not implemented"u8;
+
 // getSymbols returns a slice of Symbols from parsing the symbol table
 // with the given type, along with the associated string table.
 [GoRecv] internal static (slice<Symbol>, slice<byte>, error) getSymbols(this ref File f, SectionType typ) {
@@ -631,12 +640,16 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         return f.getSymbols32(typ);
     }
 
-    return (default!, default!, errors.New("not implemented"u8));
+    return (default!, default!, errors.New(notImplementedˢ));
 }
 
 // ErrNoSymbols is returned by [File.Symbols] and [File.DynamicSymbols]
 // if there is no such section in the File.
 public static error ErrNoSymbols = errors.New("no symbol section"u8);
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string symbolSectionIsEmptyˢ = "symbol section is empty"u8;
+private static readonly @string lengthOfSymbolSectionIsˢ = "length of symbol section is not a multiple of SymSize"u8;
 
 [GoRecv] internal static (slice<Symbol>, slice<byte>, error) getSymbols32(this ref File f, SectionType typ) {
     var symtabSection = f.SectionByType(typ);
@@ -648,10 +661,10 @@ public static error ErrNoSymbols = errors.New("no symbol section"u8);
         return (default!, default!, fmt.Errorf("cannot load symbol section: %w"u8, err));
     }
     if (len(data) == 0) {
-        return (default!, default!, errors.New("symbol section is empty"u8));
+        return (default!, default!, errors.New(symbolSectionIsEmptyˢ));
     }
     if (len(data) % (nint)Sym32Size != 0) {
-        return (default!, default!, errors.New("length of symbol section is not a multiple of SymSize"u8));
+        return (default!, default!, errors.New(lengthOfSymbolSectionIsˢ));
     }
     (var strdata, err) = f.stringTable((~symtabSection).Link);
     if (err != default!) {
@@ -682,6 +695,9 @@ public static error ErrNoSymbols = errors.New("no symbol section"u8);
     return (symbols, strdata, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lengthOfSymbolSectionIsˢ2 = "length of symbol section is not a multiple of Sym64Size"u8;
+
 [GoRecv] internal static (slice<Symbol>, slice<byte>, error) getSymbols64(this ref File f, SectionType typ) {
     var symtabSection = f.SectionByType(typ);
     if (symtabSection == nil) {
@@ -692,7 +708,7 @@ public static error ErrNoSymbols = errors.New("no symbol section"u8);
         return (default!, default!, fmt.Errorf("cannot load symbol section: %w"u8, err));
     }
     if (len(data) % (nint)Sym64Size != 0) {
-        return (default!, default!, errors.New("length of symbol section is not a multiple of Sym64Size"u8));
+        return (default!, default!, errors.New(lengthOfSymbolSectionIsˢ2));
     }
     (var strdata, err) = f.stringTable((~symtabSection).Link);
     if (err != default!) {
@@ -747,6 +763,9 @@ internal static (@string, bool) getString(slice<byte> section, nint start) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string applyRelocationsNotˢ = "applyRelocations: not implemented"u8;
+
 // applyRelocations applies relocations to dst. rels is a relocations section
 // in REL or RELA format.
 [GoRecv] internal static error applyRelocations(this ref File f, slice<byte> dst, slice<byte> rels) {
@@ -788,7 +807,7 @@ internal static (@string, bool) getString(slice<byte> section, nint start) {
         return f.applyRelocationsSPARC64(dst, rels);
     }
     default: {
-        return errors.New("applyRelocations: not implemented"u8);
+        return errors.New(applyRelocationsNotˢ);
     }}
 
 }
@@ -805,10 +824,13 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
     return sym.Section != SHN_UNDEF && sym.Section < SHN_LORESERVE;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lengthOfRelocationˢ = "length of relocation section is not a multiple of 24"u8;
+
 [GoRecv] internal static error applyRelocationsAMD64(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 24 is the size of Rela64.
     if (len(rels) % 24 != 0) {
-        return errors.New("length of relocation section is not a multiple of 24"u8);
+        return errors.New(lengthOfRelocationˢ);
     }
     var (symbols, _, err) = f.getSymbols(SHT_SYMTAB);
     if (err != default!) {
@@ -850,10 +872,13 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lengthOfRelocationˢ2 = "length of relocation section is not a multiple of 8"u8;
+
 [GoRecv] internal static error applyRelocations386(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 8 is the size of Rel32.
     if (len(rels) % 8 != 0) {
-        return errors.New("length of relocation section is not a multiple of 8"u8);
+        return errors.New(lengthOfRelocationˢ2);
     }
     var (symbols, _, err) = f.getSymbols(SHT_SYMTAB);
     if (err != default!) {
@@ -884,7 +909,7 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
 [GoRecv] internal static error applyRelocationsARM(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 8 is the size of Rel32.
     if (len(rels) % 8 != 0) {
-        return errors.New("length of relocation section is not a multiple of 8"u8);
+        return errors.New(lengthOfRelocationˢ2);
     }
     var (symbols, _, err) = f.getSymbols(SHT_SYMTAB);
     if (err != default!) {
@@ -917,7 +942,7 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
 [GoRecv] internal static error applyRelocationsARM64(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 24 is the size of Rela64.
     if (len(rels) % 24 != 0) {
-        return errors.New("length of relocation section is not a multiple of 24"u8);
+        return errors.New(lengthOfRelocationˢ);
     }
     var (symbols, _, err) = f.getSymbols(SHT_SYMTAB);
     if (err != default!) {
@@ -959,10 +984,13 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lengthOfRelocationˢ3 = "length of relocation section is not a multiple of 12"u8;
+
 [GoRecv] internal static error applyRelocationsPPC(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 12 is the size of Rela32.
     if (len(rels) % 12 != 0) {
-        return errors.New("length of relocation section is not a multiple of 12"u8);
+        return errors.New(lengthOfRelocationˢ3);
     }
     var (symbols, _, err) = f.getSymbols(SHT_SYMTAB);
     if (err != default!) {
@@ -997,7 +1025,7 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
 [GoRecv] internal static error applyRelocationsPPC64(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 24 is the size of Rela64.
     if (len(rels) % 24 != 0) {
-        return errors.New("length of relocation section is not a multiple of 24"u8);
+        return errors.New(lengthOfRelocationˢ);
     }
     var (symbols, _, err) = f.getSymbols(SHT_SYMTAB);
     if (err != default!) {
@@ -1039,7 +1067,7 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
 [GoRecv] internal static error applyRelocationsMIPS(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 8 is the size of Rel32.
     if (len(rels) % 8 != 0) {
-        return errors.New("length of relocation section is not a multiple of 8"u8);
+        return errors.New(lengthOfRelocationˢ2);
     }
     var (symbols, _, err) = f.getSymbols(SHT_SYMTAB);
     if (err != default!) {
@@ -1072,7 +1100,7 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
 [GoRecv] internal static error applyRelocationsMIPS64(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 24 is the size of Rela64.
     if (len(rels) % 24 != 0) {
-        return errors.New("length of relocation section is not a multiple of 24"u8);
+        return errors.New(lengthOfRelocationˢ);
     }
     var (symbols, _, err) = f.getSymbols(SHT_SYMTAB);
     if (err != default!) {
@@ -1121,7 +1149,7 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
 [GoRecv] internal static error applyRelocationsLOONG64(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 24 is the size of Rela64.
     if (len(rels) % 24 != 0) {
-        return errors.New("length of relocation section is not a multiple of 24"u8);
+        return errors.New(lengthOfRelocationˢ);
     }
     var (symbols, _, err) = f.getSymbols(SHT_SYMTAB);
     if (err != default!) {
@@ -1165,7 +1193,7 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
 [GoRecv] internal static error applyRelocationsRISCV64(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 24 is the size of Rela64.
     if (len(rels) % 24 != 0) {
-        return errors.New("length of relocation section is not a multiple of 24"u8);
+        return errors.New(lengthOfRelocationˢ);
     }
     var (symbols, _, err) = f.getSymbols(SHT_SYMTAB);
     if (err != default!) {
@@ -1207,7 +1235,7 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
 [GoRecv] internal static error applyRelocationss390x(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 24 is the size of Rela64.
     if (len(rels) % 24 != 0) {
-        return errors.New("length of relocation section is not a multiple of 24"u8);
+        return errors.New(lengthOfRelocationˢ);
     }
     var (symbols, _, err) = f.getSymbols(SHT_SYMTAB);
     if (err != default!) {
@@ -1249,7 +1277,7 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
 [GoRecv] internal static error applyRelocationsSPARC64(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 24 is the size of Rela64.
     if (len(rels) % 24 != 0) {
-        return errors.New("length of relocation section is not a multiple of 24"u8);
+        return errors.New(lengthOfRelocationˢ);
     }
     var (symbols, _, err) = f.getSymbols(SHT_SYMTAB);
     if (err != default!) {
@@ -1288,15 +1316,23 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string debugˢ = ".debug_"u8;
+private static readonly @string zdebugˢ2 = ".zdebug_"u8;
+private static readonly @string abbrevˢ = "abbrev"u8;
+private static readonly @string infoˢ = "info"u8;
+private static readonly @string lineˢ = "line"u8;
+private static readonly @string rangesˢ = "ranges"u8;
+
 public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
     ref var f = ref Ꮡf.Value;
 
     var dwarfSuffix = @string (ж<ΔSection> s) => {
         switch (ᐧ) {
-        case {} when strings.HasPrefix((~s).Name, ".debug_"u8): {
+        case {} when strings.HasPrefix((~s).Name, debugˢ): {
             return (~s).Name[7..];
         }
-        case {} when strings.HasPrefix((~s).Name, ".zdebug_"u8): {
+        case {} when strings.HasPrefix((~s).Name, zdebugˢ2): {
             return (~s).Name[8..];
         }
         default: {
@@ -1354,7 +1390,7 @@ public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
         }
         dat[suffix] = b;
     }
-    var (d, err) = dwarf.New(dat["abbrev"u8], default!, default!, dat["info"u8], dat["line"u8], default!, dat["ranges"u8], dat["str"u8]);
+    var (d, err) = dwarf.New(dat[abbrevˢ], default!, default!, dat[infoˢ], dat[lineˢ], default!, dat[rangesˢ], dat["str"u8]);
     if (err != default!) {
         return (default!, err);
     }
@@ -1554,6 +1590,9 @@ public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
     return f.DynString(DT_NEEDED);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lengthOfDynamicSectionIsˢ = "length of dynamic section is not a multiple of dynamic entry size"u8;
+
 // DynString returns the strings listed for the given tag in the file's dynamic
 // section.
 //
@@ -1581,7 +1620,7 @@ public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
         dynSize = 16;
     }
     if (len(d) % dynSize != 0) {
-        return (default!, errors.New("length of dynamic section is not a multiple of dynamic entry size"u8));
+        return (default!, errors.New(lengthOfDynamicSectionIsˢ));
     }
     (var str, err) = f.stringTable((~ds).Link);
     if (err != default!) {
@@ -1629,7 +1668,7 @@ public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
         dynSize = 16;
     }
     if (len(d) % dynSize != 0) {
-        return (default!, errors.New("length of dynamic section is not a multiple of dynamic entry size"u8));
+        return (default!, errors.New(lengthOfDynamicSectionIsˢ));
     }
     // Parse the .dynamic section as a string of bytes.
     slice<uint64> vals = default!;
@@ -1658,11 +1697,14 @@ public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
 [GoType] partial struct nobitsSectionReader {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedReadFromShtˢ = "unexpected read from SHT_NOBITS section"u8;
+
 [GoRecv] internal static (nint n, error err) ReadAt(this ref nobitsSectionReader _, slice<byte> p, int64 off) {
     nint n = default!;
     error err = default!;
 
-    return (0, errors.New("unexpected read from SHT_NOBITS section"u8));
+    return (0, errors.New(unexpectedReadFromShtˢ));
 }
 
 } // end elf_package

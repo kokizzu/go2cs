@@ -17,6 +17,9 @@ partial class os_package {
 internal static ж<getwdCacheᴛ1> ᏑgetwdCache = new(new getwdCacheᴛ1(nil));
 internal static ref getwdCacheᴛ1 getwdCache => ref ᏑgetwdCache.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getwdˢ = "getwd"u8;
+
 // Getwd returns a rooted path name corresponding to the
 // current directory. If the current directory can be
 // reached via multiple paths (due to symbolic links),
@@ -52,7 +55,7 @@ public static (@string dir, error err) Getwd() {
                 break;
             }
         }
-        return (s, NewSyscallError("getwd"u8, e));
+        return (s, NewSyscallError(getwdˢ, e));
     }
     // Apply same kludge but to cached dir instead of $PWD.
     ᏑgetwdCache.of(getwdCacheᴛ1.ᏑMutex).Lock();

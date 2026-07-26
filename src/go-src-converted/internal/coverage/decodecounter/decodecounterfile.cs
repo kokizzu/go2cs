@@ -172,6 +172,11 @@ internal static error readSegmentPreamble(this ж<CounterDataReader> Ꮡcdr) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string argcˢ = "argc"u8;
+private static readonly @string goosˢ = "GOOS"u8;
+private static readonly @string goarchˢ = "GOARCH"u8;
+
 internal static error readArgs(this ж<CounterDataReader> Ꮡcdr) {
     ref var cdr = ref Ꮡcdr.Value;
 
@@ -212,7 +217,7 @@ internal static error readArgs(this ж<CounterDataReader> Ꮡcdr) {
         cdr.args[k] = v;
     }
     {
-        var (argcs, ok) = cdr.args["argc"u8, ꟷ]; if (ok) {
+        var (argcs, ok) = cdr.args[argcˢ, ꟷ]; if (ok) {
             var (argc, errΔ1) = strconv.Atoi(argcs);
             if (errΔ1 != default!) {
                 return fmt.Errorf("malformed argc in counter data file args section"u8);
@@ -225,12 +230,12 @@ internal static error readArgs(this ж<CounterDataReader> Ꮡcdr) {
         }
     }
     {
-        var (goos, ok) = cdr.args["GOOS"u8, ꟷ]; if (ok) {
+        var (goos, ok) = cdr.args[goosˢ, ꟷ]; if (ok) {
             cdr.goos = goos;
         }
     }
     {
-        var (goarch, ok) = cdr.args["GOARCH"u8, ꟷ]; if (ok) {
+        var (goarch, ok) = cdr.args[goarchˢ, ꟷ]; if (ok) {
             cdr.goarch = goarch;
         }
     }

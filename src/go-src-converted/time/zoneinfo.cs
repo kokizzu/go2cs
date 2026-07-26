@@ -273,6 +273,9 @@ internal static (@string name, nint offset, int64 start, int64 end, bool isDST) 
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string m320M1110ˢ = ",M3.2.0,M11.1.0"u8;
+
 // tzset takes a timezone string like the one found in the TZ environment
 // variable, the time of the last time zone transition expressed as seconds
 // since January 1, 1970 00:00:00 UTC, and a time expressed the same way.
@@ -321,7 +324,7 @@ internal static (@string name, nint offset, int64 start, int64 end, bool isDST, 
     }
     if (len(s) == 0) {
         // Default DST rules per tzcode.
-        s = ",M3.2.0,M11.1.0"u8;
+        s = m320M1110ˢ;
     }
     // The TZ definition does not mention ';' here but tzcode accepts it.
     if (s[0] != (rune)',' && s[0] != (rune)';') {
@@ -658,6 +661,9 @@ internal static ж<@string> zoneinfo;
 internal static ж<Δsync.Once> ᏑzoneinfoOnce = new(default(Δsync.Once));
 internal static ref Δsync.Once zoneinfoOnce => ref ᏑzoneinfoOnce.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string zoneinfoˢ = "ZONEINFO"u8;
+
 // LoadLocation returns the Location with the given name.
 //
 // If the name is "" or "UTC", LoadLocation returns UTC.
@@ -687,7 +693,7 @@ public static (ж<ΔLocation>, error) LoadLocation(@string name) {
     }
     ᏑzoneinfoOnce.Do(() => {
         ref var env = ref heap<@string>(out var Ꮡenv);
-        (env, _) = syscall.Getenv("ZONEINFO"u8);
+        (env, _) = syscall.Getenv(zoneinfoˢ);
         zoneinfo = Ꮡenv;
     });
     error firstErr = default!;

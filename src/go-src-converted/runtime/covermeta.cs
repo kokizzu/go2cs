@@ -9,6 +9,9 @@ using @internal.coverage;
 
 partial class runtime_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeAddCovMetaˢ = "runtime.addCovMeta: coverage package map collision"u8;
+
 // The compiler emits calls to runtime.addCovMeta
 // but this code has moved to rtcov.AddMeta.
 internal static uint32 addCovMeta(@unsafe.Pointer Δp, uint32 dlen, array<byte> hash, @string pkgpath, nint pkgid, uint8 cmode, uint8 cgran) {
@@ -16,7 +19,7 @@ internal static uint32 addCovMeta(@unsafe.Pointer Δp, uint32 dlen, array<byte> 
 
     var id = rtcov.AddMeta(Δp, dlen, hash, pkgpath, pkgid, cmode, cgran);
     if (id == 0) {
-        @throw("runtime.addCovMeta: coverage package map collision"u8);
+        @throw(runtimeAddCovMetaˢ);
     }
     return id;
 }

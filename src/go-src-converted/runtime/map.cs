@@ -392,6 +392,9 @@ internal static (@unsafe.Pointer buckets, ж<bmap> nextOverflow) makeBucketArray
     return (buckets, nextOverflow);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string concurrentMapReadAndMapˢ = "concurrent map read and map write"u8;
+
 // mapaccess1 returns a pointer to h[key].  Never returns nil, instead
 // it will return a reference to the zero object for the elem type if
 // the key is not in the map.
@@ -423,7 +426,7 @@ internal static @unsafe.Pointer mapaccess1(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @uns
         return new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map read and map write"u8);
+        fatal(concurrentMapReadAndMapˢ);
     }
     var hash = t.Hasher(key, (uintptr)h.hash0);
     var m = bucketMask(h.B);
@@ -503,7 +506,7 @@ internal static (@unsafe.Pointer, bool) mapaccess2(ж<maptype> Ꮡt, ж<hmap> �
         return (new @unsafe.Pointer(ᏑzeroVal.at<byte>(0)), false);
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map read and map write"u8);
+        fatal(concurrentMapReadAndMapˢ);
     }
     var hash = t.Hasher(key, (uintptr)h.hash0);
     var m = bucketMask(h.B);
@@ -615,6 +618,10 @@ internal static (@unsafe.Pointer, bool) mapaccess2_fat(ж<maptype> Ꮡt, ж<hmap
     return (e, true);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string assignmentToEntryInNilˢ = "assignment to entry in nil map"u8;
+private static readonly @string concurrentMapWritesˢ = "concurrent map writes"u8;
+
 // Like mapaccess, but allocates a slot for the key if it is not present in the map.
 //
 // mapassign should be an internal detail,
@@ -635,7 +642,7 @@ internal static @unsafe.Pointer mapassign(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsa
     ref var h = ref Ꮡh.DerefOrNil();
 
     if (Ꮡh == nil) {
-        throw panic(((plainError)(@string)"assignment to entry in nil map"u8));
+        throw panic(((plainError)(@string)assignmentToEntryInNilˢ));
     }
     if (raceenabled) {
         var callerpc = getcallerpc();
@@ -650,7 +657,7 @@ internal static @unsafe.Pointer mapassign(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsa
         asanread(key, (~t.Key).Size_);
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     var hash = t.Hasher(key, (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher, since t.hasher may panic,
@@ -736,7 +743,7 @@ break_bucketloop:;
     h.count++;
 done:
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     h.flags &= unchecked((uint8)~hashWriting);
     if (t.IndirectElem()) {
@@ -780,7 +787,7 @@ internal static void mapdelete(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer 
         return;
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     var hash = t.Hasher(key, (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher, since t.hasher may panic,
@@ -872,10 +879,13 @@ continue_search:;
     }
 break_search:;
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     h.flags &= unchecked((uint8)~hashWriting);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string hashIterSizeIncorrectˢ = "hash_iter size incorrect"u8;
 
 // mapiterinit initializes the hiter struct used for ranging over maps.
 // The hiter struct pointed to by 'it' is allocated on the stack
@@ -911,7 +921,7 @@ internal static void mapiterinit(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<hiter> Ꮡi
         return;
     }
     if (@unsafe.Sizeof(new hiter(nil)) / (uintptr)goarch.PtrSize != 12) {
-        @throw("hash_iter size incorrect"u8);
+        @throw(hashIterSizeIncorrectˢ);
     }
     // see cmd/compile/internal/reflectdata/reflect.go
     it.h = Ꮡh;
@@ -943,6 +953,9 @@ internal static void mapiterinit(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<hiter> Ꮡi
     mapiternext(Ꮡit);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string concurrentMapIterationˢ = "concurrent map iteration and map write"u8;
+
 // mapiternext should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
@@ -966,7 +979,7 @@ internal static void mapiternext(ж<hiter> Ꮡit) {
         racereadpc(new @unsafe.Pointer(h), callerpc, abi.FuncPCABIInternal(mapiternext));
     }
     if ((uint8)((~h).flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map iteration and map write"u8);
+        fatal(concurrentMapIterationˢ);
     }
     var t = it.t;
     var bucket = it.bucket;
@@ -1109,7 +1122,7 @@ internal static void mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
         return;
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     h.flags ^= hashWriting;
     // Mark buckets empty, so existing iterators can be terminated, see issue #59411.
@@ -1151,10 +1164,13 @@ internal static void mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
         h.extra.Value.nextOverflow = nextOverflow;
     }
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
-        fatal("concurrent map writes"u8);
+        fatal(concurrentMapWritesˢ);
     }
     h.flags &= unchecked((uint8)~hashWriting);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string oldoverflowIsNotNilˢ = "oldoverflow is not nil"u8;
 
 internal static void hashGrow(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
     ref var h = ref Ꮡh.Value;
@@ -1183,7 +1199,7 @@ internal static void hashGrow(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
     if (h.extra != nil && (~h.extra).overflow != nil) {
         // Promote current overflow buckets to the old generation.
         if ((~h.extra).oldoverflow != nil) {
-            @throw("oldoverflow is not nil"u8);
+            @throw(oldoverflowIsNotNilˢ);
         }
         h.extra.Value.oldoverflow = h.extra.Value.overflow;
         h.extra.Value.overflow = default!;
@@ -1271,6 +1287,10 @@ internal static bool bucketEvacuated(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr bu
     internal @unsafe.Pointer e; // pointer to current elem storage
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badMapStateˢ = "bad map state"u8;
+private static readonly @string badEvacuatedNˢ = "bad evacuatedN"u8;
+
 internal static void evacuate(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket) {
     ref var t = ref Ꮡt.Value;
     ref var h = ref Ꮡh.Value;
@@ -1304,7 +1324,7 @@ internal static void evacuate(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket
                     continue;
                 }
                 if (top < minTopHash) {
-                    @throw("bad map state"u8);
+                    @throw(badMapStateˢ);
                 }
                 @unsafe.Pointer k2 = k;
                 if (t.IndirectKey()) {
@@ -1336,7 +1356,7 @@ internal static void evacuate(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket
                     }
                 }
                 if (evacuatedX + 1 != evacuatedY || (UntypedInt)(evacuatedX ^ 1) != evacuatedY) {
-                    @throw("bad evacuatedN"u8);
+                    @throw(badEvacuatedNˢ);
                 }
                 b.Value.tophash[i] = (uint8)((uint8)evacuatedX + useY);
                 // evacuatedX + 1 == evacuatedY
@@ -1413,6 +1433,18 @@ internal static void advanceEvacuationMark(ж<hmap> Ꮡh, ж<maptype> Ꮡt, uint
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeReflectMakemapˢ = "runtime.reflect_makemap: unsupported map key type"u8;
+private static readonly @string keySizeWrongˢ = "key size wrong"u8;
+private static readonly @string elemSizeWrongˢ = "elem size wrong"u8;
+private static readonly @string keyAlignTooBigˢ = "key align too big"u8;
+private static readonly @string elemAlignTooBigˢ = "elem align too big"u8;
+private static readonly @string keySizeNotAMultipleOfKeyˢ = "key size not a multiple of key align"u8;
+private static readonly @string elemSizeNotAMultipleOfˢ = "elem size not a multiple of elem align"u8;
+private static readonly @string bucketsizeTooSmallForˢ = "bucketsize too small for proper alignment"u8;
+private static readonly @string needPaddingInBucketKeyˢ = "need padding in bucket (key)"u8;
+private static readonly @string needPaddingInBucketElemˢ = "need padding in bucket (elem)"u8;
+
 // Reflect stubs. Called from ../reflect/asm_*.s
 
 // reflect_makemap is for package reflect,
@@ -1434,34 +1466,34 @@ internal static ж<hmap> reflect_makemap(ж<maptype> Ꮡt, nint cap) {
 
     // Check invariants and reflects math.
     if ((~t.Key).Equal == default!) {
-        @throw("runtime.reflect_makemap: unsupported map key type"u8);
+        @throw(runtimeReflectMakemapˢ);
     }
     if ((~t.Key).Size_ > abi.MapMaxKeyBytes && (!t.IndirectKey() || t.KeySize != (uint8)goarch.PtrSize) || (~t.Key).Size_ <= abi.MapMaxKeyBytes && (t.IndirectKey() || t.KeySize != (uint8)(~t.Key).Size_)) {
-        @throw("key size wrong"u8);
+        @throw(keySizeWrongˢ);
     }
     if ((~t.Elem).Size_ > abi.MapMaxElemBytes && (!t.IndirectElem() || t.ValueSize != (uint8)goarch.PtrSize) || (~t.Elem).Size_ <= abi.MapMaxElemBytes && (t.IndirectElem() || t.ValueSize != (uint8)(~t.Elem).Size_)) {
-        @throw("elem size wrong"u8);
+        @throw(elemSizeWrongˢ);
     }
     if ((~t.Key).Align_ > abi.MapBucketCount) {
-        @throw("key align too big"u8);
+        @throw(keyAlignTooBigˢ);
     }
     if ((~t.Elem).Align_ > abi.MapBucketCount) {
-        @throw("elem align too big"u8);
+        @throw(elemAlignTooBigˢ);
     }
     if ((~t.Key).Size_ % (uintptr)(~t.Key).Align_ != 0) {
-        @throw("key size not a multiple of key align"u8);
+        @throw(keySizeNotAMultipleOfKeyˢ);
     }
     if ((~t.Elem).Size_ % (uintptr)(~t.Elem).Align_ != 0) {
-        @throw("elem size not a multiple of elem align"u8);
+        @throw(elemSizeNotAMultipleOfˢ);
     }
     if (abi.MapBucketCount < 8) {
-        @throw("bucketsize too small for proper alignment"u8);
+        @throw(bucketsizeTooSmallForˢ);
     }
     if (dataOffset % (uintptr)(~t.Key).Align_ != 0) {
-        @throw("need padding in bucket (key)"u8);
+        @throw(needPaddingInBucketKeyˢ);
     }
     if (dataOffset % (uintptr)(~t.Elem).Align_ != 0) {
-        @throw("need padding in bucket (elem)"u8);
+        @throw(needPaddingInBucketElemˢ);
     }
     return makemap(Ꮡt, cap, nil);
 }
@@ -1707,6 +1739,9 @@ internal static (ж<bmap>, nint) moveToBmap(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<
     return (Ꮡdst, pos);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string concurrentMapCloneAndMapˢ = "concurrent map clone and map write"u8;
+
 internal static ж<hmap> mapclone2(ж<maptype> Ꮡt, ж<hmap> Ꮡsrc) {
     ref var t = ref Ꮡt.Value;
     ref var src = ref Ꮡsrc.Value;
@@ -1719,7 +1754,7 @@ internal static ж<hmap> mapclone2(ж<maptype> Ꮡt, ж<hmap> Ꮡsrc) {
         return dst;
     }
     if ((uint8)(src.flags & (uint8)hashWriting) != 0) {
-        fatal("concurrent map clone and map write"u8);
+        fatal(concurrentMapCloneAndMapˢ);
     }
     if (src.B == 0 && !(t.IndirectKey() && t.NeedKeyUpdate()) && !t.IndirectElem()) {
         // Quick copy for small maps.
@@ -1780,7 +1815,7 @@ internal static ж<hmap> mapclone2(ж<maptype> Ꮡt, ж<hmap> Ꮡsrc) {
                     continue;
                 }
                 if ((uint8)(src.flags & (uint8)hashWriting) != 0) {
-                    fatal("concurrent map clone and map write"u8);
+                    fatal(concurrentMapCloneAndMapˢ);
                 }
                 @unsafe.Pointer srcK = (uintptr)add(new @unsafe.Pointer(srcBmap), dataOffset + iΔ1 * (uintptr)t.KeySize);
                 if (t.IndirectKey()) {
@@ -1850,14 +1885,14 @@ internal static void copyKeys(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<bmap> Ꮡb, ж
                 continue;
             }
             if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-                fatal("concurrent map read and map write"u8);
+                fatal(concurrentMapReadAndMapˢ);
             }
             @unsafe.Pointer k = (uintptr)add(new @unsafe.Pointer(Ꮡb), dataOffset + offi * (uintptr)t.KeySize);
             if (t.IndirectKey()) {
                 k = ((ж<@unsafe.Pointer>)(uintptr)(k)).Value;
             }
             if (s.len >= s.cap) {
-                fatal("concurrent map read and map write"u8);
+                fatal(concurrentMapReadAndMapˢ);
             }
             typedmemmove(t.Key, (uintptr)add(s.Δarray, (uintptr)s.len * (uintptr)t.Key.Size()), k);
             s.len++;
@@ -1917,14 +1952,14 @@ internal static void copyValues(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<bmap> Ꮡb, 
                 continue;
             }
             if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
-                fatal("concurrent map read and map write"u8);
+                fatal(concurrentMapReadAndMapˢ);
             }
             @unsafe.Pointer ele = (uintptr)add(new @unsafe.Pointer(Ꮡb), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + offi * (uintptr)t.ValueSize);
             if (t.IndirectElem()) {
                 ele = ((ж<@unsafe.Pointer>)(uintptr)(ele)).Value;
             }
             if (s.len >= s.cap) {
-                fatal("concurrent map read and map write"u8);
+                fatal(concurrentMapReadAndMapˢ);
             }
             typedmemmove(t.Elem, (uintptr)add(s.Δarray, (uintptr)s.len * (uintptr)t.Elem.Size()), ele);
             s.len++;

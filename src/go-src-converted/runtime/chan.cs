@@ -59,12 +59,19 @@ internal static ж<Δhchan> reflect_makechan(ж<chantype> Ꮡt, nint size) {
     return makechan(Ꮡt, size);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string makechanSizeOutOfRangeˢ = "makechan: size out of range"u8;
+
 internal static ж<Δhchan> makechan64(ж<chantype> Ꮡt, int64 size) {
     if ((int64)(nint)size != size) {
-        throw panic(((plainError)(@string)"makechan: size out of range"u8));
+        throw panic(((plainError)(@string)makechanSizeOutOfRangeˢ));
     }
     return makechan(Ꮡt, (nint)size);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string makechanInvalidChannelˢ = "makechan: invalid channel element type"u8;
+private static readonly @string makechanBadAlignmentˢ = "makechan: bad alignment"u8;
 
 internal static ж<Δhchan> makechan(ж<chantype> Ꮡt, nint size) {
     ref var t = ref Ꮡt.Value;
@@ -72,14 +79,14 @@ internal static ж<Δhchan> makechan(ж<chantype> Ꮡt, nint size) {
     var elem = t.Elem;
     // compiler checks this but be safe.
     if ((~elem).Size_ >= (uintptr)(1 << (int)(16))) {
-        @throw("makechan: invalid channel element type"u8);
+        @throw(makechanInvalidChannelˢ);
     }
     if (hchanSize % (uintptr)maxAlign != 0 || (~elem).Align_ > maxAlign) {
-        @throw("makechan: bad alignment"u8);
+        @throw(makechanBadAlignmentˢ);
     }
     var (mem, overflow) = math.MulUintptr((~elem).Size_, (uintptr)size);
     if (overflow || mem > (uintptr)maxAlloc - hchanSize || size < 0) {
-        throw panic(((plainError)(@string)"makechan: size out of range"u8));
+        throw panic(((plainError)(@string)makechanSizeOutOfRangeˢ));
     }
     // Hchan does not contain pointers interesting for GC when elements stored in buf do not contain pointers.
     // buf points into the same allocation, elemtype is persistent.
@@ -159,6 +166,12 @@ internal static void chansend1(ж<Δhchan> Ꮡc, @unsafe.Pointer elem) {
     chansend(Ꮡc, elem, true, getcallerpc());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unreachableˢ = "unreachable"u8;
+private static readonly @string sendOnClosedChannelˢ = "send on closed channel"u8;
+private static readonly @string gWaitingListIsCorruptedˢ = "G waiting list is corrupted"u8;
+private static readonly @string chansendSpuriousWakeupˢ = "chansend: spurious wakeup"u8;
+
 /*
  * generic single channel send/recv
  * If block is not nil,
@@ -179,7 +192,7 @@ internal static bool chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer ep, bool block, 
             return false;
         }
         gopark(default!, nil, waitReasonChanSendNilChan, traceBlockForever, 2);
-        @throw("unreachable"u8);
+        @throw(unreachableˢ);
     }
     if (debugChan) {
         print((@string)"chansend: chan="u8, Ꮡc, (@string)"\n"u8);
@@ -213,7 +226,7 @@ internal static bool chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer ep, bool block, 
     @lock(Ꮡc.of(runtime_package.Δhchan.Ꮡlock));
     if (c.closed != 0) {
         unlock(Ꮡc.of(runtime_package.Δhchan.Ꮡlock));
-        throw panic(((plainError)(@string)"send on closed channel"u8));
+        throw panic(((plainError)(@string)sendOnClosedChannelˢ));
     }
     {
         var sg = c.recvq.dequeue(); if (sg != nil) {
@@ -274,7 +287,7 @@ internal static bool chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer ep, bool block, 
     KeepAlive(ep);
     // someone woke us up.
     if (mysg != (~gp).waiting) {
-        @throw("G waiting list is corrupted"u8);
+        @throw(gWaitingListIsCorruptedˢ);
     }
     gp.Value.waiting = default!;
     gp.Value.activeStackChans = false;
@@ -287,9 +300,9 @@ internal static bool chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer ep, bool block, 
     releaseSudog(mysg);
     if (closed) {
         if (c.closed == 0) {
-            @throw("chansend: spurious wakeup"u8);
+            @throw(chansendSpuriousWakeupˢ);
         }
-        throw panic(((plainError)(@string)"send on closed channel"u8));
+        throw panic(((plainError)(@string)sendOnClosedChannelˢ));
     }
     return true;
 }
@@ -402,16 +415,20 @@ internal static void recvDirect(ж<_type> Ꮡt, ж<sudog> Ꮡsg, @unsafe.Pointer
     memmove(dst, src, t.Size_);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string closeOfNilChannelˢ = "close of nil channel"u8;
+private static readonly @string closeOfClosedChannelˢ = "close of closed channel"u8;
+
 internal static void closechan(ж<Δhchan> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNil();
 
     if (Ꮡc == nil) {
-        throw panic(((plainError)(@string)"close of nil channel"u8));
+        throw panic(((plainError)(@string)closeOfNilChannelˢ));
     }
     @lock(Ꮡc.of(runtime_package.Δhchan.Ꮡlock));
     if (c.closed != 0) {
         unlock(Ꮡc.of(runtime_package.Δhchan.Ꮡlock));
-        throw panic(((plainError)(@string)"close of closed channel"u8));
+        throw panic(((plainError)(@string)closeOfClosedChannelˢ));
     }
     if (raceenabled) {
         var callerpc = getcallerpc();
@@ -523,7 +540,7 @@ internal static (bool selected, bool received) chanrecv(ж<Δhchan> Ꮡc, @unsaf
             return (selected, received);
         }
         gopark(default!, nil, waitReasonChanReceiveNilChan, traceBlockForever, 2);
-        @throw("unreachable"u8);
+        @throw(unreachableˢ);
     }
     if (c.timer != nil) {
         c.timer.maybeRunChan();
@@ -642,7 +659,7 @@ internal static (bool selected, bool received) chanrecv(ж<Δhchan> Ꮡc, @unsaf
     gopark(chanparkcommit, new @unsafe.Pointer(Ꮡc.of(runtime_package.Δhchan.Ꮡlock)), waitReasonChanReceive, traceBlockChanRecv, 2);
     // someone woke us up
     if (mysg != (~gp).waiting) {
-        @throw("G waiting list is corrupted"u8);
+        @throw(gWaitingListIsCorruptedˢ);
     }
     if (c.timer != nil) {
         unblockTimerChan(Ꮡc);

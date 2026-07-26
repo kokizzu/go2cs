@@ -44,6 +44,10 @@ internal static ж<sync.Once> ᏑtryExecOnce = new(default(sync.Once));
 internal static ref sync.Once tryExecOnce => ref ᏑtryExecOnce.Value;
 internal static error tryExecErr;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string canTProbeForExecSupportˢ = "can't probe for exec support with a non-test executable"u8;
+private static readonly @string testListˢ = "-test.list=^$"u8;
+
 internal static error tryExec() {
     var exprᴛ1 = Δruntime.GOOS;
     if (exprᴛ1 == "wasip1"u8 || exprᴛ1 == "js"u8 || exprᴛ1 == "ios"u8) {
@@ -65,7 +69,7 @@ internal static error tryExec() {
         // This isn't a standard 'go test' binary, so we don't know how to
         // self-exec in a way that should succeed without side effects.
         // Just forget it.
-        return errors.New("can't probe for exec support with a non-test executable"u8);
+        return errors.New(canTProbeForExecSupportˢ);
     }
     // We know that this is a test executable. We should be able to run it with a
     // no-op flag to check for overall exec support.
@@ -73,7 +77,7 @@ internal static error tryExec() {
     if (err != default!) {
         return fmt.Errorf("can't probe for exec support: %w"u8, err);
     }
-    var cmd = exec.Command(exe, "-test.list=^$"u8);
+    var cmd = exec.Command(exe, testListˢ);
     cmd.Value.Env = origEnv;
     return cmd.Run();
 }
@@ -96,6 +100,10 @@ public static void MustHaveExecPath(testing.TB t, @string path) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string godebugˢ = "GODEBUG="u8;
+private static readonly @string gotracebackˢ = "GOTRACEBACK="u8;
+
 // CleanCmdEnv will fill cmd.Env with the environment, excluding certain
 // variables that could modify the behavior of the Go tools such as
 // GODEBUG and GOTRACEBACK.
@@ -111,17 +119,20 @@ public static ж<exec.Cmd> CleanCmdEnv(ж<exec.Cmd> Ꮡcmd) {
     foreach (var (_, env) in cmd.Environ()) {
         // Exclude GODEBUG from the environment to prevent its output
         // from breaking tests that are trying to parse other command output.
-        if (strings.HasPrefix(env, "GODEBUG="u8)) {
+        if (strings.HasPrefix(env, godebugˢ)) {
             continue;
         }
         // Exclude GOTRACEBACK for the same reason.
-        if (strings.HasPrefix(env, "GOTRACEBACK="u8)) {
+        if (strings.HasPrefix(env, gotracebackˢ)) {
             continue;
         }
         cmd.Env = append(cmd.Env, env);
     }
     return Ꮡcmd;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goTestTimeoutScaleˢ = "GO_TEST_TIMEOUT_SCALE"u8;
 
 [GoType("dyn")] partial interface CommandContext_type :
     testing.TB
@@ -152,7 +163,7 @@ public static ж<exec.Cmd> CommandContext(testing.TB t, context.Context ctx, @st
                     // output of a reasonable program after it terminates.
                     gracePeriod = 100 * time.Millisecond;
                     {
-                        @string s = os.Getenv("GO_TEST_TIMEOUT_SCALE"u8); if (s != ""u8) {
+                        @string s = os.Getenv(goTestTimeoutScaleˢ); if (s != ""u8) {
                             var (scale, err) = strconv.Atoi(s);
                             if (err != default!) {
                                 tΔ1.Fatalf("invalid GO_TEST_TIMEOUT_SCALE: %v"u8, err);

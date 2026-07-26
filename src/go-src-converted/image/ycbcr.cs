@@ -17,28 +17,37 @@ public static readonly YCbCrSubsampleRatio YCbCrSubsampleRatio440 = 3;
 public static readonly YCbCrSubsampleRatio YCbCrSubsampleRatio411 = 4;
 public static readonly YCbCrSubsampleRatio YCbCrSubsampleRatio410 = 5;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string yCbCrSubsampleRatio444ˢ = "YCbCrSubsampleRatio444"u8;
+private static readonly @string yCbCrSubsampleRatio422ˢ = "YCbCrSubsampleRatio422"u8;
+private static readonly @string yCbCrSubsampleRatio420ˢ = "YCbCrSubsampleRatio420"u8;
+private static readonly @string yCbCrSubsampleRatio440ˢ = "YCbCrSubsampleRatio440"u8;
+private static readonly @string yCbCrSubsampleRatio411ˢ = "YCbCrSubsampleRatio411"u8;
+private static readonly @string yCbCrSubsampleRatio410ˢ = "YCbCrSubsampleRatio410"u8;
+private static readonly @string yCbCrSubsampleRatioUnknownˢ = "YCbCrSubsampleRatioUnknown"u8;
+
 public static @string String(this YCbCrSubsampleRatio s) {
     var exprᴛ1 = s;
     if (exprᴛ1 == YCbCrSubsampleRatio444) {
-        return "YCbCrSubsampleRatio444"u8;
+        return yCbCrSubsampleRatio444ˢ;
     }
     if (exprᴛ1 == YCbCrSubsampleRatio422) {
-        return "YCbCrSubsampleRatio422"u8;
+        return yCbCrSubsampleRatio422ˢ;
     }
     if (exprᴛ1 == YCbCrSubsampleRatio420) {
-        return "YCbCrSubsampleRatio420"u8;
+        return yCbCrSubsampleRatio420ˢ;
     }
     if (exprᴛ1 == YCbCrSubsampleRatio440) {
-        return "YCbCrSubsampleRatio440"u8;
+        return yCbCrSubsampleRatio440ˢ;
     }
     if (exprᴛ1 == YCbCrSubsampleRatio411) {
-        return "YCbCrSubsampleRatio411"u8;
+        return yCbCrSubsampleRatio411ˢ;
     }
     if (exprᴛ1 == YCbCrSubsampleRatio410) {
-        return "YCbCrSubsampleRatio410"u8;
+        return yCbCrSubsampleRatio410ˢ;
     }
 
-    return "YCbCrSubsampleRatioUnknown"u8;
+    return yCbCrSubsampleRatioUnknownˢ;
 }
 
 // YCbCr is an in-memory image of Y'CbCr colors. There is one Y sample per

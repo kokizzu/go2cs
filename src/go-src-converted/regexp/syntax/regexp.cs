@@ -231,6 +231,11 @@ internal static (printFlags must, printFlags cant) calcFlags(ж<Regexp> Ꮡre, �
 
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x00X10ffffˢ = @"[^\x00-\x{10FFFF}]"u8;
+private static readonly @string invalidCharClassˢ = @"[invalid char class]"u8;
+private static readonly @string x00X10ffffˢ2 = @"^\x00-\x{10FFFF}"u8;
+
 // writeRegexp writes the Perl syntax for the regular expression re to b.
 internal static void writeRegexp(ж<strings.Builder> Ꮡb, ж<Regexp> Ꮡre, printFlags f, map<ж<Regexp>, printFlags> flags) => func((defer, recover) => {
     ref var b = ref Ꮡb.Value;
@@ -272,7 +277,7 @@ internal static void writeRegexp(ж<strings.Builder> Ꮡb, ж<Regexp> Ꮡre, pri
     }
     var exprᴛ1 = re.Op;
     if (exprᴛ1 == OpNoMatch) {
-        Ꮡb.WriteString(@"[^\x00-\x{10FFFF}]"u8);
+        Ꮡb.WriteString(x00X10ffffˢ);
     }
     else if (exprᴛ1 == OpEmptyMatch) {
         Ꮡb.WriteString(@"(?:)"u8);
@@ -285,12 +290,12 @@ internal static void writeRegexp(ж<strings.Builder> Ꮡb, ж<Regexp> Ꮡre, pri
     else if (exprᴛ1 == OpCharClass) {
         do {
             if (len(re.Rune) % 2 != 0) {
-                Ꮡb.WriteString(@"[invalid char class]"u8);
+                Ꮡb.WriteString(invalidCharClassˢ);
                 break;
             }
             Ꮡb.WriteRune((rune)'[');
             if (len(re.Rune) == 0){
-                Ꮡb.WriteString(@"^\x00-\x{10FFFF}"u8);
+                Ꮡb.WriteString(x00X10ffffˢ2);
             } else 
             if (re.Rune[0] == 0 && re.Rune[len(re.Rune) - 1] == unicode.MaxRune && len(re.Rune) > 2){
                 // Contains 0 and MaxRune. Probably a negated class.

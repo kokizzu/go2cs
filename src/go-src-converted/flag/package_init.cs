@@ -8,6 +8,7 @@ namespace go;
 
 partial class flag_package {
     static flag_package() {
+        initᴛCommandLine();
         initᴛUsage();
     }
 } // end flag_package

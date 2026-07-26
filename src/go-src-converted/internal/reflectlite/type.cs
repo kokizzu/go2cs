@@ -131,12 +131,15 @@ internal static bool embedded(this Δname n) {
     return (byte)((n.bytes.Value) & ((byte)(1 << (int)(3)))) != 0;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string readVarintˢ = "read varint"u8;
+
 // readVarint parses a varint as encoded by encoding/binary.
 // It returns the number of encoded bytes and the encoded value.
 internal static (nint, nint) readVarint(this Δname n, nint off) {
     nint v = 0;
     for (nint i = 0; ᐧ ; i++) {
-        var x = n.data(off + i, "read varint"u8).Value;
+        var x = n.data(off + i, readVarintˢ).Value;
         v += ((nint)((byte)(x & 0x7f))).Lsh((uint64)((7 * i)));
         if ((byte)(x & 0x80) == 0) {
             return (i + 1, v);
@@ -144,12 +147,15 @@ internal static (nint, nint) readVarint(this Δname n, nint off) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nonEmptyStringˢ = "non-empty string"u8;
+
 internal static @string name(this Δname n) {
     if (n.bytes == nil) {
         return ""u8;
     }
     var (i, l) = n.readVarint(1);
-    return @unsafe.String(n.data(1 + i, "non-empty string"u8), l);
+    return @unsafe.String(n.data(1 + i, nonEmptyStringˢ), l);
 }
 
 internal static @string tag(this Δname n) {
@@ -158,11 +164,15 @@ internal static @string tag(this Δname n) {
     }
     var (i, l) = n.readVarint(1);
     var (i2, l2) = n.readVarint(1 + i + l);
-    return @unsafe.String(n.data(1 + i + l + i2, "non-empty string"u8), l2);
+    return @unsafe.String(n.data(1 + i + l + i2, nonEmptyStringˢ), l2);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nameFlagFieldˢ = "name flag field"u8;
+private static readonly @string nameOffsetFieldˢ = "name offset field"u8;
+
 internal static @string pkgPath(abiꓸName n) {
-    if (n.Bytes == nil || (byte)(n.DataChecked(0, "name flag field"u8).Value & ((byte)(1 << (int)(2)))) == 0) {
+    if (n.Bytes == nil || (byte)(n.DataChecked(0, nameFlagFieldˢ).Value & ((byte)(1 << (int)(2)))) == 0) {
         return ""u8;
     }
     var (i, l) = n.ReadVarint(1);
@@ -174,7 +184,7 @@ internal static @string pkgPath(abiꓸName n) {
     ref var nameOff = ref heap(new int32(), out var ᏑnameOff);
     // Note that this field may not be aligned in memory,
     // so we cannot use a direct int32 assignment here.
-    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(n.DataChecked(off, "name offset field"u8))))[..]);
+    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(n.DataChecked(off, nameOffsetFieldˢ))))[..]);
     var pkgPathName = new Δname((ж<byte>)(uintptr)(resolveTypeOff(new @unsafe.Pointer(n.Bytes), nameOff)));
     return pkgPathName.name();
 }

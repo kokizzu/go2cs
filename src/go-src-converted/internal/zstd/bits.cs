@@ -76,6 +76,9 @@ internal static bitReader makeBitReader(this ж<Reader> Ꮡr, block data, nint o
     internal uint32 cnt;  // number of valid bits in bits field
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string zeroByteAtReverseBitˢ = "zero byte at reverse bit stream start"u8;
+
 // makeReverseBitReader makes a reverseBitReader reading backward
 // from off to start. The bitstream starts with a 1 bit in the last
 // byte, at off.
@@ -84,7 +87,7 @@ internal static (reverseBitReader, error) makeReverseBitReader(this ж<Reader> �
 
     var streamStart = data[off];
     if (streamStart == 0) {
-        return (new reverseBitReader(nil), r.makeError(off, "zero byte at reverse bit stream start"u8));
+        return (new reverseBitReader(nil), r.makeError(off, zeroByteAtReverseBitˢ));
     }
     var rbr = new reverseBitReader(
         r: Ꮡr,

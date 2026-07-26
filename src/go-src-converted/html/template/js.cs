@@ -157,6 +157,13 @@ internal static any indirectToJSONMarshaler(any a) {
     return v.Interface();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string scriptˢ = "</script"u8;
+private static readonly @string x3CScriptˢ = @"\x3C/script"u8;
+private static readonly @string nullˢ = " null "u8;
+private static readonly @string u2028ˢ = @"\u2028"u8;
+private static readonly @string u2029ˢ = @"\u2029"u8;
+
 // jsValEscaper escapes its inputs to a JS Expression (section 11.14) that has
 // neither side-effects nor free variables outside (NaN, Infinity).
 internal static @string jsValEscaper(params ꓸꓸꓸany argsʗp) {
@@ -213,7 +220,7 @@ internal static @string jsValEscaper(params ꓸꓸꓸany argsʗp) {
         //          second line of error message */null
         @string errStr = err.Error();
         errStr = strings.ReplaceAll(errStr, "*/"u8, "* /"u8);
-        errStr = strings.ReplaceAll(errStr, "</script"u8, @"\x3C/script"u8);
+        errStr = strings.ReplaceAll(errStr, scriptˢ, x3CScriptˢ);
         errStr = strings.ReplaceAll(errStr, "<!--"u8, @"\x3C!--"u8);
         return fmt.Sprintf(" /* %s */null "u8, errStr);
     }
@@ -225,7 +232,7 @@ internal static @string jsValEscaper(params ꓸꓸꓸany argsʗp) {
     if (len(b) == 0) {
         // In, `x=y/{{.}}*z` a json.Marshaler that produces "" should
         // not cause the output `x=y/*z`.
-        return " null "u8;
+        return nullˢ;
     }
     var (first, _) = utf8.DecodeRune(b);
     var (last, _) = utf8.DecodeLastRune(b);
@@ -243,10 +250,10 @@ internal static @string jsValEscaper(params ꓸꓸꓸany argsʗp) {
         var (rune, n) = utf8.DecodeRune(b[(int)(i)..]);
         @string repl = ""u8;
         if (rune == 0x2028){
-            repl = @"\u2028"u8;
+            repl = u2028ˢ;
         } else 
         if (rune == 0x2029) {
-            repl = @"\u2029"u8;
+            repl = u2029ˢ;
         }
         if (repl != ""u8) {
             Ꮡbuf.Write(b[(int)(written)..(int)(i)]);
@@ -325,11 +332,11 @@ internal static @string replace(@string s, slice<@string> replacementTable) {
             break;
         }
         case {} when r is (rune)'\u2028': {
-            repl = @"\u2028"u8;
+            repl = u2028ˢ;
             break;
         }
         case {} when r is (rune)'\u2029': {
-            repl = @"\u2029"u8;
+            repl = u2029ˢ;
             break;
         }
         default: {

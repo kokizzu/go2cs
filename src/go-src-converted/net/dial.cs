@@ -453,6 +453,9 @@ public static (Conn, error) Dial(this ж<Dialer> Ꮡd, @string network, @string 
     return Ꮡd.DialContext(context.Background(), network, address);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dialˢ = "dial"u8;
+
 // DialContext connects to the address on the named network using
 // the provided context.
 //
@@ -523,7 +526,7 @@ public static (Conn, error) DialContext(this ж<Dialer> Ꮡd, context.Context ct
             resolveCtx = context.WithValue(resolveCtx, new nettrace.TraceKey(nil), Ꮡshadow);
         }
     }
-    var (addrs, err) = d.resolver().resolveAddrList(resolveCtx, "dial"u8, network, address, d.LocalAddr);
+    var (addrs, err) = d.resolver().resolveAddrList(resolveCtx, dialˢ, network, address, d.LocalAddr);
     if (err != default!) {
         return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "dial"u8, Net: network, Source: default!, Addr: default!, Err: err))));
     }
@@ -796,12 +799,15 @@ internal static (Conn c, error err) dialSingle(this ж<sysDialer> Ꮡsd, context
     lc.mptcpStatus.set(use);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string listenˢ = "listen"u8;
+
 // Listen announces on the local network address.
 //
 // See func Listen for a description of the network and address
 // parameters.
 [GoRecv] public static (Listener, error) Listen(this ref ListenConfig lc, context.Context ctx, @string network, @string address) {
-    var (addrs, err) = DefaultResolver.resolveAddrList(ctx, "listen"u8, network, address, default!);
+    var (addrs, err) = DefaultResolver.resolveAddrList(ctx, listenˢ, network, address, default!);
     if (err != default!) {
         return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "listen"u8, Net: network, Source: default!, Addr: default!, Err: err))));
     }
@@ -844,7 +850,7 @@ internal static (Conn c, error err) dialSingle(this ж<sysDialer> Ꮡsd, context
 // See func ListenPacket for a description of the network and address
 // parameters.
 [GoRecv] public static (PacketConn, error) ListenPacket(this ref ListenConfig lc, context.Context ctx, @string network, @string address) {
-    var (addrs, err) = DefaultResolver.resolveAddrList(ctx, "listen"u8, network, address, default!);
+    var (addrs, err) = DefaultResolver.resolveAddrList(ctx, listenˢ, network, address, default!);
     if (err != default!) {
         return (default!, new OpErrorжerror(Ꮡ(new OpError(Op: "listen"u8, Net: network, Source: default!, Addr: default!, Err: err))));
     }

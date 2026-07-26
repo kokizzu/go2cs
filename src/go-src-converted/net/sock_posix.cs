@@ -132,7 +132,7 @@ internal static error dial(this ж<netFD> Ꮡfd, context.Context ctx, Δsockaddr
             if (lsa != default!) {
                 {
                     err = syscall.Bind(fd.pfd.Sysfd, lsa); if (err != default!) {
-                        return os.NewSyscallError("bind"u8, err);
+                        return os.NewSyscallError(bindˢ, err);
                     }
                 }
             }
@@ -204,12 +204,12 @@ internal static error listenStream(this ж<netFD> Ꮡfd, context.Context ctx, Δ
     }
     {
         err = syscall.Bind(fd.pfd.Sysfd, lsa); if (err != default!) {
-            return os.NewSyscallError("bind"u8, err);
+            return os.NewSyscallError(bindˢ, err);
         }
     }
     {
         err = listenFunc(fd.pfd.Sysfd, backlog); if (err != default!) {
-            return os.NewSyscallError("listen"u8, err);
+            return os.NewSyscallError(listenˢ, err);
         }
     }
     {
@@ -271,7 +271,7 @@ internal static error listenDatagram(this ж<netFD> Ꮡfd, context.Context ctx, 
     }
     {
         err = syscall.Bind(fd.pfd.Sysfd, lsa); if (err != default!) {
-            return os.NewSyscallError("bind"u8, err);
+            return os.NewSyscallError(bindˢ, err);
         }
     }
     {

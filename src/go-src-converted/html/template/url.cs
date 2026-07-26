@@ -45,12 +45,17 @@ internal static @string urlFilter(params ꓸꓸꓸany argsʗp) {
     return s;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpˢ = "http"u8;
+private static readonly @string httpsˢ = "https"u8;
+private static readonly @string mailtoˢ = "mailto"u8;
+
 // isSafeURL is true if s is a relative URL or if URL has a protocol in
 // (http, https, mailto).
 internal static bool isSafeURL(@string s) {
     {
         var (protocol, _, ok) = strings.Cut(s, ":"u8); if (ok && !strings.Contains(protocol, "/"u8)) {
-            if (!strings.EqualFold(protocol, "http"u8) && !strings.EqualFold(protocol, "https"u8) && !strings.EqualFold(protocol, "mailto"u8)) {
+            if (!strings.EqualFold(protocol, httpˢ) && !strings.EqualFold(protocol, httpsˢ) && !strings.EqualFold(protocol, mailtoˢ)) {
                 return false;
             }
         }

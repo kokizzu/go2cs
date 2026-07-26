@@ -685,11 +685,14 @@ internal static reflectꓸValue decodeIntoValue(ж<decoderState> Ꮡstate, Actio
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noErrorˢ = "no error"u8;
+
 // ignoreArrayHelper does the work for discarding arrays and slices.
 [GoRecv] internal static void ignoreArrayHelper(this ref Decoder dec, ж<decoderState> Ꮡstate, Action<ж<decInstr>, ж<decoderState>, reflectꓸValue> elemOp, nint length) {
     ref var state = ref Ꮡstate.Value;
 
-    var instr = Ꮡ(new decInstr(elemOp, 0, default!, errors.New("no error"u8)));
+    var instr = Ꮡ(new decInstr(elemOp, 0, default!, errors.New(noErrorˢ)));
     for (nint i = 0; i < length; i++) {
         if (state.b.Len() == 0) {
             errorf("decoding array or slice: length exceeds input size (%d elements)"u8, length);
@@ -715,8 +718,8 @@ internal static reflectꓸValue decodeIntoValue(ж<decoderState> Ꮡstate, Actio
     ref var state = ref Ꮡstate.Value;
 
     nint n = (nint)state.decodeUint();
-    var keyInstr = Ꮡ(new decInstr(keyOp, 0, default!, errors.New("no error"u8)));
-    var elemInstr = Ꮡ(new decInstr(elemOp, 0, default!, errors.New("no error"u8)));
+    var keyInstr = Ꮡ(new decInstr(keyOp, 0, default!, errors.New(noErrorˢ)));
+    var elemInstr = Ꮡ(new decInstr(elemOp, 0, default!, errors.New(noErrorˢ)));
     for (nint i = 0; i < n; i++) {
         keyOp(keyInstr, Ꮡstate, noValue);
         elemOp(elemInstr, Ꮡstate, noValue);
@@ -1036,6 +1039,9 @@ internal static ж<Action<ж<decInstr>, ж<decoderState>, reflectꓸValue>> decO
 
 internal static nint maxIgnoreNestingDepth = 10000;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidNestingDepthˢ = "invalid nesting depth"u8;
+
 // decIgnoreOpFor returns the decoding op for a field that has no destination.
 internal static ж<Action<ж<decInstr>, ж<decoderState>, reflectꓸValue>> decIgnoreOpFor(this ж<Decoder> Ꮡdec, typeId wireId, map<typeId, ж<Action<ж<decInstr>, ж<decoderState>, reflectꓸValue>>> inProgress) => func((defer, recover) => {
     ref var dec = ref Ꮡdec.Value;
@@ -1046,7 +1052,7 @@ internal static ж<Action<ж<decInstr>, ж<decoderState>, reflectꓸValue>> decI
         Ꮡdec.Value.ignoreDepth--;
     });
     if (dec.ignoreDepth > maxIgnoreNestingDepth) {
-        error_(errors.New("invalid nesting depth"u8));
+        error_(errors.New(invalidNestingDepthˢ));
     }
     // If this type is already in progress, it's a recursive type (e.g. map[string]*T).
     // Return the pointer to the op we're already building.

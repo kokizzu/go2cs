@@ -106,11 +106,15 @@ internal static void printnl() {
     printstring("\n"u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string trueˢ = "true"u8;
+private static readonly @string falseˢ = "false"u8;
+
 internal static void printbool(bool v) {
     if (v){
-        printstring("true"u8);
+        printstring(trueˢ);
     } else {
-        printstring("false"u8);
+        printstring(falseˢ);
     }
 }
 

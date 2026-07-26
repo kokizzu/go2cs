@@ -105,16 +105,21 @@ internal static readonly Δcolor black = 1;
 
 internal static readonly Δcolor grey = 2; // must be > white and black
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string whiteˢ = "white"u8;
+private static readonly @string blackˢ = "black"u8;
+private static readonly @string greyˢ = "grey"u8;
+
 internal static @string String(this Δcolor c) {
     var exprᴛ1 = c;
     if (exprᴛ1 == white) {
-        return "white"u8;
+        return whiteˢ;
     }
     if (exprᴛ1 == black) {
-        return "black"u8;
+        return blackˢ;
     }
     { /* default: */
-        return "grey"u8;
+        return greyˢ;
     }
 
 }
@@ -567,6 +572,12 @@ internal static ж<Builtin> newBuiltin(builtinId id) {
     internal partial ref @object @object { get; }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string constˢ = "const"u8;
+private static readonly @string parameterˢ = " parameter"u8;
+private static readonly @string funcˢ2 = "func "u8;
+private static readonly @string builtinˢ = "builtin"u8;
+
 internal static void writeObject(ж<bytes.Buffer> Ꮡbuf, Object obj, Func<ж<Package>, @string> qf) {
     ref var buf = ref Ꮡbuf.Value;
 
@@ -583,27 +594,27 @@ internal static void writeObject(ж<bytes.Buffer> Ꮡbuf, Object obj, Func<ж<Pa
         return;
     }
     case ж<Const> objΔ1: {
-        buf.WriteString("const"u8);
+        buf.WriteString(constˢ);
         break;
     }
     case ж<TypeName> objΔ1: {
         tname = objΔ1;
-        buf.WriteString("type"u8);
+        buf.WriteString(typeˢ);
         if (isTypeParam(typ)) {
-            buf.WriteString(" parameter"u8);
+            buf.WriteString(parameterˢ);
         }
         break;
     }
     case ж<Var> objΔ1: {
         if ((~objΔ1).isField){
-            buf.WriteString("field"u8);
+            buf.WriteString(fieldˢ);
         } else {
             buf.WriteString("var"u8);
         }
         break;
     }
     case ж<Func> objΔ1: {
-        buf.WriteString("func "u8);
+        buf.WriteString(funcˢ2);
         writeFuncName(Ꮡbuf, objΔ1, qf);
         if (typ != default!) {
             WriteSignature(Ꮡbuf, typ._<ж<ΔSignature>>(), qf);
@@ -611,12 +622,12 @@ internal static void writeObject(ж<bytes.Buffer> Ꮡbuf, Object obj, Func<ж<Pa
         return;
     }
     case ж<Label> objΔ1: {
-        buf.WriteString("label"u8);
+        buf.WriteString(labelˢ);
         typ = default!;
         break;
     }
     case ж<Builtin> objΔ1: {
-        buf.WriteString("builtin"u8);
+        buf.WriteString(builtinˢ);
         typ = default!;
         break;
     }
@@ -755,7 +766,7 @@ internal static void writeFuncName(ж<bytes.Buffer> Ꮡbuf, ж<Func> Ꮡf, Func<
                         // named interfaces using the interface type
                         // (not the named type) as the receiver.
                         // Don't print it in full.
-                        buf.WriteString("interface"u8);
+                        buf.WriteString(interfaceˢ);
                     } else {
                         WriteType(Ꮡbuf, recv.of(Var.Ꮡobject).Type(), qf);
                     }

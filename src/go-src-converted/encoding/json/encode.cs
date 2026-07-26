@@ -236,10 +236,13 @@ public static (slice<byte>, error) MarshalIndent(any v, @string prefix, @string 
     internal @string sourceFunc;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string marshalJSONˢ = "MarshalJSON"u8;
+
 [GoRecv] public static @string Error(this ref MarshalerError e) {
     @string srcFunc = e.sourceFunc;
     if (srcFunc == ""u8) {
-        srcFunc = "MarshalJSON"u8;
+        srcFunc = marshalJSONˢ;
     }
     return "json: error calling "u8 + srcFunc + " for type "u8 + e.Type.String() + ": "u8 + e.Err.Error();
 }
@@ -447,19 +450,19 @@ internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newTypeEncoder
 }
 
 internal static void invalidValueEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, encOpts _) {
-    Ꮡe.of(encodeState.ᏑBuffer).WriteString("null"u8);
+    Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
 }
 
 internal static void marshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
     ref var e = ref Ꮡe.Value;
 
     if (v.Kind() == reflect.ΔPointer && v.IsNil()) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString("null"u8);
+        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
         return;
     }
     var (m, ok) = v.Interface()._<Marshaler>(ᐧ);
     if (!ok) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString("null"u8);
+        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
         return;
     }
     var (b, err) = m.MarshalJSON();
@@ -479,7 +482,7 @@ internal static void addrMarshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue 
 
     var va = v.Addr();
     if (va.IsNil()) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString("null"u8);
+        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
         return;
     }
     var m = va.Interface()._<Marshaler>();
@@ -499,12 +502,12 @@ internal static void textMarshalerEncoder(ж<encodeState> Ꮡe, reflectꓸValue 
     ref var e = ref Ꮡe.Value;
 
     if (v.Kind() == reflect.ΔPointer && v.IsNil()) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString("null"u8);
+        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
         return;
     }
     var (m, ok) = v.Interface()._<encoding.TextMarshaler>(ᐧ);
     if (!ok) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString("null"u8);
+        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
         return;
     }
     var (b, err) = m.MarshalText();
@@ -519,7 +522,7 @@ internal static void addrTextMarshalerEncoder(ж<encodeState> Ꮡe, reflectꓸVa
 
     var va = v.Addr();
     if (va.IsNil()) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString("null"u8);
+        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
         return;
     }
     var m = va.Interface()._<encoding.TextMarshaler>();
@@ -693,7 +696,7 @@ internal static bool isValidNumber(@string s) {
 
 internal static void interfaceEncoder(ж<encodeState> Ꮡe, reflectꓸValue v, encOpts opts) {
     if (v.IsNil()) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString("null"u8);
+        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
         return;
     }
     Ꮡe.reflectValue(v.Elem(), opts);
@@ -766,7 +769,7 @@ internal static void encode(this mapEncoder me, ж<encodeState> Ꮡe, reflectꓸ
     ref var e = ref Ꮡe.Value;
 
     if (v.IsNil()) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString("null"u8);
+        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
         return;
     }
     {
@@ -827,7 +830,7 @@ internal static Action<ж<encodeState>, reflectꓸValue, encOpts> newMapEncoder(
 
 internal static void encodeByteSlice(ж<encodeState> Ꮡe, reflectꓸValue v, encOpts _) {
     if (v.IsNil()) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString("null"u8);
+        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
         return;
     }
     var s = v.Bytes();
@@ -852,7 +855,7 @@ internal static void encode(this sliceEncoder se, ж<encodeState> Ꮡe, reflect�
     ref var e = ref Ꮡe.Value;
 
     if (v.IsNil()) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString("null"u8);
+        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
         return;
     }
     {
@@ -917,7 +920,7 @@ internal static void encode(this ptrEncoder pe, ж<encodeState> Ꮡe, reflectꓸ
     ref var e = ref Ꮡe.Value;
 
     if (v.IsNil()) {
-        Ꮡe.of(encodeState.ᏑBuffer).WriteString("null"u8);
+        Ꮡe.of(encodeState.ᏑBuffer).WriteString(nullˢ);
         return;
     }
     {
@@ -1125,6 +1128,11 @@ internal static slice<byte> appendString<Bytes>(slice<byte> dst, Bytes src, bool
     internal Action<ж<encodeState>, reflectꓸValue, encOpts> encoder;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string jsonˢ = "json"u8;
+private static readonly @string stringˢ = "string"u8;
+private static readonly @string omitemptyˢ = "omitempty"u8;
+
 // typeFields returns a list of fields that JSON should recognize for the given type.
 // The algorithm is breadth-first search over the set of structs to include - the top struct
 // and then any reachable anonymous structs.
@@ -1178,7 +1186,7 @@ internal static structFields typeFields(reflectꓸType t) {
                     // Ignore unexported non-embedded fields.
                     continue;
                 }
-                @string tag = sf.Tag.Get("json"u8);
+                @string tag = sf.Tag.Get(jsonˢ);
                 if (tag == "-"u8) {
                     continue;
                 }
@@ -1196,7 +1204,7 @@ internal static structFields typeFields(reflectꓸType t) {
                 }
                 // Only strings, floats, integers, and booleans can be quoted.
                 var quoted = false;
-                if (opts.Contains("string"u8)) {
+                if (opts.Contains(stringˢ)) {
                     var exprᴛ1 = ft.Kind();
                     if (exprᴛ1 == reflect.ΔBool || exprᴛ1 == reflect.ΔInt || exprᴛ1 == reflect.Int8 || exprᴛ1 == reflect.Int16 || exprᴛ1 == reflect.Int32 || exprᴛ1 == reflect.Int64 || exprᴛ1 == reflect.ΔUint || exprᴛ1 == reflect.Uint8 || exprᴛ1 == reflect.Uint16 || exprᴛ1 == reflect.Uint32 || exprᴛ1 == reflect.Uint64 || exprᴛ1 == reflect.Uintptr || exprᴛ1 == reflect.Float32 || exprᴛ1 == reflect.Float64 || exprᴛ1 == reflect.ΔString) {
                         quoted = true;
@@ -1214,7 +1222,7 @@ internal static structFields typeFields(reflectꓸType t) {
                         tag: tagged,
                         index: index,
                         typ: ft,
-                        omitEmpty: opts.Contains("omitempty"u8),
+                        omitEmpty: opts.Contains(omitemptyˢ),
                         quoted: quoted
                     );
                     field.nameBytes = slice<byte>(field.name);

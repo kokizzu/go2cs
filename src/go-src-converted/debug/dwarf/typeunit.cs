@@ -21,6 +21,10 @@ partial class dwarf_package {
     internal ΔType cache; // Cache the type, nil to start.
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string typeUnitLengthOverflowˢ = "type unit length overflow"u8;
+private static readonly @string typeUnitTypeOffsetˢ = "type unit type offset overflow"u8;
+
 // Parse a .debug_types section.
 internal static error parseTypes(this ж<Data> Ꮡd, @string name, slice<byte> types) {
     ref var d = ref Ꮡd.Value;
@@ -30,7 +34,7 @@ internal static error parseTypes(this ж<Data> Ꮡd, @string name, slice<byte> t
         var @base = b.off;
         var (n, dwarf64) = b.unitLength();
         if (n != ((Offset)(uint32)n)) {
-            b.error("type unit length overflow"u8);
+            b.error(typeUnitLengthOverflowˢ);
             return b.err;
         }
         var hdroff = b.off;
@@ -57,7 +61,7 @@ internal static error parseTypes(this ж<Data> Ꮡd, @string name, slice<byte> t
         } else {
             var to64 = b.uint64();
             if (to64 != (uint64)(uint32)to64) {
-                b.error("type unit type offset overflow"u8);
+                b.error(typeUnitTypeOffsetˢ);
                 return b.err;
             }
             toff = (uint32)to64;

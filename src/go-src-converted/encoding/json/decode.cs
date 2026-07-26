@@ -156,9 +156,12 @@ public static error Unmarshal(slice<byte> data, any v) {
     public reflectꓸType Type;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string jsonUnmarshalNilˢ = "json: Unmarshal(nil)"u8;
+
 [GoRecv] public static @string Error(this ref InvalidUnmarshalError e) {
     if (e.Type == default!) {
-        return "json: Unmarshal(nil)"u8;
+        return jsonUnmarshalNilˢ;
     }
     if (e.Type.Kind() != reflect.ΔPointer) {
         return "json: Unmarshal(non-pointer "u8 + e.Type.String() + ")"u8;
@@ -921,6 +924,11 @@ Value: "object"u8, Type: t, Offset: (int64)d.off))));
 
 internal static reflectꓸType numberType = reflect.TypeFor<Number>();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string numberˢ = "number"u8;
+private static readonly @string nullˢ = "null"u8;
+private static readonly @string boolˢ = "bool"u8;
+
 // literalStore decodes a literal stored in item into v.
 //
 // fromQuoted indicates whether this literal came from unwrapping a
@@ -946,14 +954,14 @@ internal static reflectꓸType numberType = reflect.TypeFor<Number>();
                 return default!;
             }
             ref var val = ref heap<@string>(out var Ꮡval);
-            val = "number"u8;
+            val = numberˢ;
             switch (item[0]) {
             case (rune)'n': {
-                val = "null"u8;
+                val = nullˢ;
                 break;
             }
             case (rune)'t' or (rune)'f': {
-                val = "bool"u8;
+                val = boolˢ;
                 break;
             }}
 

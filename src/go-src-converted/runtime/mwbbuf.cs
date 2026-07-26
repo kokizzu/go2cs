@@ -58,6 +58,9 @@ internal const bool testSmallBuf = false;
 internal static readonly UntypedInt wbBufEntries = 512;
 internal static readonly UntypedInt wbMaxEntriesPerCall = 8;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badWriteBarrierBufferˢ = "bad write barrier buffer bounds"u8;
+
 // reset empties b by resetting its next and end pointers.
 [GoRecv] internal static void reset(this ref wbBuf b) {
     var start = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf[0])).Value);
@@ -71,7 +74,7 @@ internal static readonly UntypedInt wbMaxEntriesPerCall = 8;
         b.end = start + (uintptr)len(b.buf) * @unsafe.Sizeof(b.buf[0]);
     }
     if ((b.end - b.next) % @unsafe.Sizeof(b.buf[0]) != 0) {
-        @throw("bad write barrier buffer bounds"u8);
+        @throw(badWriteBarrierBufferˢ);
     }
 }
 

@@ -17,11 +17,14 @@ internal static nint maxListenerBacklog() {
     return syscall.SOMAXCONN;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string socketˢ = "socket"u8;
+
 internal static (syscallꓸHandle, error) sysSocket(nint family, nint sotype, nint proto) {
     var (s, err) = wsaSocketFunc((int32)family, (int32)sotype, (int32)proto,
         nil, 0, (uint32)((uint32)windows.WSA_FLAG_OVERLAPPED | (uint32)windows.WSA_FLAG_NO_HANDLE_INHERIT));
     if (err != default!) {
-        return (syscall.InvalidHandle, os.NewSyscallError("socket"u8, err));
+        return (syscall.InvalidHandle, os.NewSyscallError(socketˢ, err));
     }
     return (s, default!);
 }

@@ -235,6 +235,9 @@ public static ж<Element> Set(this ж<Element> Ꮡv, ж<Element> Ꮡa) {
     return Ꮡv;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string edwards25519InvalidFieldˢ = "edwards25519: invalid field element input size"u8;
+
 // SetBytes sets v to x, where x is a 32-byte little-endian encoding. If x is
 // not of the right length, SetBytes returns nil and an error, and the
 // receiver is unchanged.
@@ -247,7 +250,7 @@ public static (ж<Element>, error) SetBytes(this ж<Element> Ꮡv, slice<byte> x
     ref var v = ref Ꮡv.Value;
 
     if (len(x) != 32) {
-        return (default!, errors.New("edwards25519: invalid field element input size"u8));
+        return (default!, errors.New(edwards25519InvalidFieldˢ));
     }
     // Bits 0:51 (bytes 0:8, bits 0:64, shift 0, mask 51).
     v.l0 = byteorder.LeUint64(x[0..8]);

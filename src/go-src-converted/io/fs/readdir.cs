@@ -20,6 +20,9 @@ partial class fs_package {
     (slice<DirEntry>, error) ReadDir(@string name);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string notImplementedˢ = "not implemented"u8;
+
 // ReadDir reads the named directory
 // and returns a list of directory entries sorted by filename.
 //
@@ -40,7 +43,7 @@ public static (slice<DirEntry>, error) ReadDir(FS fsys, @string name) => func<(s
     defer(() => fileʗ1.Close());
     var (dir, ok) = @file._<ReadDirFile>(ᐧ);
     if (!ok) {
-        return (default!, new PathErrorжerror(Ꮡ(new PathError(Op: "readdir"u8, Path: name, Err: errors.New("not implemented"u8)))));
+        return (default!, new PathErrorжerror(Ꮡ(new PathError(Op: "readdir"u8, Path: name, Err: errors.New(notImplementedˢ)))));
     }
     (var list, err) = dir.ReadDir(-1);
     slices.SortFunc(list, (DirEntry a, DirEntry b) => bytealg.CompareString(a.Name(), b.Name()));

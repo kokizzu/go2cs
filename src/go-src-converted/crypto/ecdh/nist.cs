@@ -80,13 +80,16 @@ internal static (ж<PrivateKey>, error) GenerateKey<Point>(this ж<nistCurve<Poi
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoEcdhInvalidPrivateˢ = "crypto/ecdh: invalid private key size"u8;
+
 internal static (ж<PrivateKey>, error) NewPrivateKey<Point>(this ж<nistCurve<Point>> Ꮡc, slice<byte> key)
     where Point : nistPoint<Point>
 {
     ref var c = ref Ꮡc.Value;
 
     if (len(key) != len(c.scalarOrder)) {
-        return (default!, errors.New("crypto/ecdh: invalid private key size"u8));
+        return (default!, errors.New(cryptoEcdhInvalidPrivateˢ));
     }
     if (isZero(key) || !isLess(key, c.scalarOrder)) {
         return (default!, errInvalidPrivateKey);
@@ -178,6 +181,9 @@ internal static bool isLess(slice<byte> a, slice<byte> b) {
     return borrow == 1;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoEcdhInvalidPublicˢ = "crypto/ecdh: invalid public key"u8;
+
 internal static (ж<ΔPublicKey>, error) NewPublicKey<Point>(this ж<nistCurve<Point>> Ꮡc, slice<byte> key)
     where Point : nistPoint<Point>
 {
@@ -185,7 +191,7 @@ internal static (ж<ΔPublicKey>, error) NewPublicKey<Point>(this ж<nistCurve<P
 
     // Reject the point at infinity and compressed encodings.
     if (len(key) == 0 || key[0] != 4) {
-        return (default!, errors.New("crypto/ecdh: invalid public key"u8));
+        return (default!, errors.New(cryptoEcdhInvalidPublicˢ));
     }
     var k = Ꮡ(new ΔPublicKey(
         curve: new nistCurveжΔCurve<Point>(Ꮡc),

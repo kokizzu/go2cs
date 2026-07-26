@@ -54,6 +54,10 @@ partial class gosym_package {
     return s.Name[0..(int)(start)] + s.Name[(int)(end + 1)..];
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string typeˢ = "type:"u8;
+private static readonly @string typeˢ2 = "type."u8;
+
 // PackageName returns the package part of the symbol name,
 // or the empty string if there is none.
 [GoRecv] public static @string PackageName(this ref Sym s) {
@@ -62,11 +66,11 @@ partial class gosym_package {
     // they do not belong to any package.
     //
     // See cmd/compile/internal/base/link.go:ReservedImports variable.
-    if (s.goVersion >= ver120 && (strings.HasPrefix(name, "go:"u8) || strings.HasPrefix(name, "type:"u8))) {
+    if (s.goVersion >= ver120 && (strings.HasPrefix(name, "go:"u8) || strings.HasPrefix(name, typeˢ))) {
         return ""u8;
     }
     // For go1.18 and below, the prefix are "type." and "go." instead.
-    if (s.goVersion <= ver118 && (strings.HasPrefix(name, "go."u8) || strings.HasPrefix(name, "type."u8))) {
+    if (s.goVersion <= ver118 && (strings.HasPrefix(name, "go."u8) || strings.HasPrefix(name, typeˢ2))) {
         return ""u8;
     }
     nint pathend = strings.LastIndex(name, "/"u8);
@@ -692,6 +696,9 @@ break_countloop:;
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string malformedSymbolTableˢ = "<malformed symbol table>"u8;
+
 [GoLocalName("stackEnt")] [GoType("dyn")] partial struct lineFromAline_stackEnt {
     internal @string path;
     internal nint start;
@@ -728,7 +735,7 @@ s.Name, val, 0, noPath));
         case {} when s.Name == ""u8: {
             if (tos == noPath) {
                 // Pop
-                return ("<malformed symbol table>", 0);
+                return (malformedSymbolTableˢ, 0);
             }
             tos.Value.prev.Value.offset += val - (~tos).start;
             tos = tos.Value.prev;

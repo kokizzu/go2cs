@@ -235,8 +235,11 @@ internal static slice<option> options;
     public bool Required; // whether feature is mandatory and can not be disabled
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string godebugˢ = "GODEBUG"u8;
+
 internal static void processOptions() {
-    @string env = os.Getenv("GODEBUG"u8);
+    @string env = os.Getenv(godebugˢ);
 field:
     while (env != ""u8) {
         @string field = ""u8;

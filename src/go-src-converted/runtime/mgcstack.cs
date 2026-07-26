@@ -192,13 +192,16 @@ internal static void setRecord(this ж<stackObject> Ꮡobj, ж<stackObjectRecord
     internal ж<stackObject> root;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string addressNotAStackAddressˢ = "address not a stack address"u8;
+
 // Add p as a potential pointer to a stack object.
 // p must be a stack address.
 internal static void putPtr(this ж<stackScanState> Ꮡs, uintptr Δp, bool conservative) {
     ref var s = ref Ꮡs.Value;
 
     if (Δp < s.stack.lo || Δp >= s.stack.hi) {
-        @throw("address not a stack address"u8);
+        @throw(addressNotAStackAddressˢ);
     }
     var head = Ꮡs.of(stackScanState.Ꮡbuf);
     if (conservative) {
@@ -268,6 +271,9 @@ internal static (uintptr Δp, bool conservative) getPtr(this ж<stackScanState> 
     return (0, false);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string objectsAddedOutOfOrderOrˢ = "objects added out of order or overlapping"u8;
+
 // addObject adds a stack object at addr of type typ to the set of stack objects.
 [GoRecv] internal static void addObject(this ref stackScanState s, uintptr addr, ж<stackObjectRecord> Ꮡr) {
     ref var r = ref Ꮡr.Value;
@@ -281,7 +287,7 @@ internal static (uintptr Δp, bool conservative) getPtr(this ж<stackScanState> 
         s.tail = x;
     }
     if ((~x).nobj > 0 && (uint32)(addr - s.stack.lo) < (~x).obj[(~x).nobj - 1].off + (~x).obj[(~x).nobj - 1].size) {
-        @throw("objects added out of order or overlapping"u8);
+        @throw(objectsAddedOutOfOrderOrˢ);
     }
     if ((~x).nobj == len((~x).obj)) {
         // full buffer - allocate a new buffer, add to end of linked list

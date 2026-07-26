@@ -103,7 +103,7 @@ internal static (ж<transferWriter> t, error err) newTransferWriter(any r) {
         t.Value.BodyCloser = rr.Value.Body;
         t.Value.ContentLength = rr.outgoingLength();
         if ((~t).ContentLength < 0 && builtin.len((~t).TransferEncoding) == 0 && t.shouldSendChunkedRequestBody()) {
-            t.Value.TransferEncoding = new @string[]{"chunked"}.slice();
+            t.Value.TransferEncoding = new @string[]{"chunked"u8}.slice();
         }
         if ((~t).ContentLength != 0 && !isKnownInMemoryReader((~t).Body)) {
             // If there's a body, conservatively flush the headers
@@ -298,17 +298,23 @@ internal static bool noResponseBodyExpected(@string requestMethod) {
     return false;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string connectionCloseˢ = "Connection: close\r\n"u8;
+private static readonly @string contentLengthˢ3 = "Content-Length: "u8;
+private static readonly @string transferEncodingChunkedˢ = "Transfer-Encoding: chunked\r\n"u8;
+private static readonly @string invalidTrailerKeyˢ = "invalid Trailer key"u8;
+
 [GoRecv] internal static error writeHeader(this ref transferWriter t, io.Writer w, ж<httptrace.ClientTrace> Ꮡtrace) {
     ref var trace = ref Ꮡtrace.DerefOrNil();
 
-    if (t.Close && !hasToken(t.Header.get("Connection"u8), "close"u8)) {
+    if (t.Close && !hasToken(t.Header.get(connectionˢ), closeˢ)) {
         {
-            var (_, err) = io.WriteString(w, "Connection: close\r\n"u8); if (err != default!) {
+            var (_, err) = io.WriteString(w, connectionCloseˢ); if (err != default!) {
                 return err;
             }
         }
         if (Ꮡtrace != nil && trace.WroteHeaderField != default!) {
-            trace.WroteHeaderField("Connection"u8, new @string[]{"close"}.slice());
+            trace.WroteHeaderField(connectionˢ, new @string[]{"close"u8}.slice());
         }
     }
     // Write Content-Length and/or Transfer-Encoding whose values are a
@@ -316,7 +322,7 @@ internal static bool noResponseBodyExpected(@string requestMethod) {
     // TransferEncoding)
     if (t.shouldSendContentLength()){
         {
-            var (_, err) = io.WriteString(w, "Content-Length: "u8); if (err != default!) {
+            var (_, err) = io.WriteString(w, contentLengthˢ3); if (err != default!) {
                 return err;
             }
         }
@@ -326,17 +332,17 @@ internal static bool noResponseBodyExpected(@string requestMethod) {
             }
         }
         if (Ꮡtrace != nil && trace.WroteHeaderField != default!) {
-            trace.WroteHeaderField("Content-Length"u8, new @string[]{strconv.FormatInt(t.ContentLength, 10)}.slice());
+            trace.WroteHeaderField(contentLengthˢ, new @string[]{strconv.FormatInt(t.ContentLength, 10)}.slice());
         }
     } else 
     if (chunked(t.TransferEncoding)) {
         {
-            var (_, err) = io.WriteString(w, "Transfer-Encoding: chunked\r\n"u8); if (err != default!) {
+            var (_, err) = io.WriteString(w, transferEncodingChunkedˢ); if (err != default!) {
                 return err;
             }
         }
         if (Ꮡtrace != nil && trace.WroteHeaderField != default!) {
-            trace.WroteHeaderField("Transfer-Encoding"u8, new @string[]{"chunked"}.slice());
+            trace.WroteHeaderField(transferEncodingˢ, new @string[]{"chunked"u8}.slice());
         }
     }
     // Write Trailer header
@@ -348,7 +354,7 @@ internal static bool noResponseBodyExpected(@string requestMethod) {
             k = CanonicalHeaderKey(k);
             var exprᴛ1 = k;
             if (exprᴛ1 == "Transfer-Encoding"u8 || exprᴛ1 == "Trailer"u8 || exprᴛ1 == "Content-Length"u8) {
-                return badStringError("invalid Trailer key"u8, k);
+                return badStringError(invalidTrailerKeyˢ, k);
             }
 
             keys = append(keys, k);
@@ -363,7 +369,7 @@ internal static bool noResponseBodyExpected(@string requestMethod) {
                 }
             }
             if (Ꮡtrace != nil && trace.WroteHeaderField != default!) {
-                trace.WroteHeaderField("Trailer"u8, keys);
+                trace.WroteHeaderField(trailerˢ, keys);
             }
         }
     }
@@ -529,8 +535,8 @@ internal static bool bodyAllowedForStatus(nint status) {
     return true;
 }
 
-internal static slice<@string> suppressedHeaders304 = new @string[]{"Content-Type", "Content-Length", "Transfer-Encoding"}.slice();
-internal static slice<@string> suppressedHeadersNoBody = new @string[]{"Content-Length", "Transfer-Encoding"}.slice();
+internal static slice<@string> suppressedHeaders304 = new @string[]{"Content-Type"u8, "Content-Length"u8, "Transfer-Encoding"u8}.slice();
+internal static slice<@string> suppressedHeadersNoBody = new @string[]{"Content-Length"u8, "Transfer-Encoding"u8}.slice();
 internal static map<@string, bool> excludedHeadersNoBody = new map<@string, bool>{["Content-Length"u8] = true, ["Transfer-Encoding"u8] = true};
 
 internal static slice<@string> suppressedHeaders(nint status) {
@@ -600,7 +606,7 @@ internal static error /*err*/ readTransfer(any msg, ж<bufio.Reader> Ꮡr) {
     }
     if (isResponse && (~t).RequestMethod == "HEAD"u8){
         {
-            var (n, errΔ2) = parseContentLength((~t).Header["Content-Length"u8]); if (errΔ2 != default!){
+            var (n, errΔ2) = parseContentLength((~t).Header[contentLengthˢ]); if (errΔ2 != default!){
                 return errΔ2;
             } else {
                 t.Value.ContentLength = n;
@@ -663,7 +669,7 @@ internal static error /*err*/ readTransfer(any msg, ж<bufio.Reader> Ꮡr) {
         rr.Value.Body = t.Value.Body;
         rr.Value.ContentLength = t.Value.ContentLength;
         if ((~t).Chunked) {
-            rr.Value.TransferEncoding = new @string[]{"chunked"}.slice();
+            rr.Value.TransferEncoding = new @string[]{"chunked"u8}.slice();
         }
         rr.Value.Close = t.Value.Close;
         rr.Value.Trailer = t.Value.Trailer;
@@ -673,7 +679,7 @@ internal static error /*err*/ readTransfer(any msg, ж<bufio.Reader> Ꮡr) {
         rr.Value.Body = t.Value.Body;
         rr.Value.ContentLength = t.Value.ContentLength;
         if ((~t).Chunked) {
-            rr.Value.TransferEncoding = new @string[]{"chunked"}.slice();
+            rr.Value.TransferEncoding = new @string[]{"chunked"u8}.slice();
         }
         rr.Value.Close = t.Value.Close;
         rr.Value.Trailer = t.Value.Trailer;
@@ -710,7 +716,7 @@ internal static bool isUnsupportedTEError(error err) {
 
 // parseTransferEncoding sets t.Chunked based on the Transfer-Encoding header.
 [GoRecv] internal static error parseTransferEncoding(this ref transferReader t) {
-    var (raw, present) = t.Header["Transfer-Encoding"u8, ꟷ];
+    var (raw, present) = t.Header[transferEncodingˢ, ꟷ];
     if (!present) {
         return default!;
     }
@@ -726,7 +732,7 @@ internal static bool isUnsupportedTEError(error err) {
     if (builtin.len(raw) != 1) {
         return new unsupportedTEErrorжerror(Ꮡ(new unsupportedTEError(fmt.Sprintf("too many transfer encodings: %q"u8, raw))));
     }
-    if (!ascii.EqualFold(raw[0], "chunked"u8)) {
+    if (!ascii.EqualFold(raw[0], chunkedˢ)) {
         return new unsupportedTEErrorжerror(Ꮡ(new unsupportedTEError(fmt.Sprintf("unsupported transfer encoding: %q"u8, raw[0]))));
     }
     t.Chunked = true;
@@ -741,7 +747,7 @@ internal static (int64 n, error err) fixLength(bool isResponse, nint status, @st
     error err = default!;
 
     var isRequest = !isResponse;
-    var contentLens = header["Content-Length"u8];
+    var contentLens = header[contentLengthˢ];
     // Hardening against HTTP request smuggling
     if (builtin.len(contentLens) > 1) {
         // Per RFC 7230 Section 3.3.2, prevent multiple
@@ -755,9 +761,9 @@ internal static (int64 n, error err) fixLength(bool isResponse, nint status, @st
             }
         }
         // deduplicate Content-Length
-        header.Del("Content-Length"u8);
-        header.Add("Content-Length"u8, first);
-        contentLens = header["Content-Length"u8];
+        header.Del(contentLengthˢ);
+        header.Add(contentLengthˢ, first);
+        contentLens = header[contentLengthˢ];
     }
     // Reject requests with invalid Content-Length headers.
     if (builtin.len(contentLens) > 0) {
@@ -792,14 +798,14 @@ internal static (int64 n, error err) fixLength(bool isResponse, nint status, @st
     //
     // Logic based on Transfer-Encoding
     if (chunked) {
-        header.Del("Content-Length"u8);
+        header.Del(contentLengthˢ);
         return (-1, default!);
     }
     // Logic based on Content-Length
     if (builtin.len(contentLens) > 0) {
         return (n, default!);
     }
-    header.Del("Content-Length"u8);
+    header.Del(contentLengthˢ);
     if (isRequest) {
         // RFC 7230 neither explicitly permits nor forbids an
         // entity-body on a GET request so we permit one if
@@ -821,20 +827,23 @@ internal static bool shouldClose(nint major, nint minor, ΔHeader header, bool r
     if (major < 1) {
         return true;
     }
-    var conv = header["Connection"u8];
-    var hasClose = httpguts.HeaderValuesContainsToken(conv, "close"u8);
+    var conv = header[connectionˢ];
+    var hasClose = httpguts.HeaderValuesContainsToken(conv, closeˢ);
     if (major == 1 && minor == 0) {
-        return hasClose || !httpguts.HeaderValuesContainsToken(conv, "keep-alive"u8);
+        return hasClose || !httpguts.HeaderValuesContainsToken(conv, keepAliveˢ);
     }
     if (hasClose && removeCloseHeader) {
-        header.Del("Connection"u8);
+        header.Del(connectionˢ);
     }
     return hasClose;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badTrailerKeyˢ = "bad trailer key"u8;
+
 // Parse the trailer header.
 internal static (ΔHeader, error) fixTrailer(ΔHeader header, bool chunked) {
-    var (vv, ok) = header["Trailer"u8, ꟷ];
+    var (vv, ok) = header[trailerˢ, ꟷ];
     if (!ok) {
         return (default!, default!);
     }
@@ -848,7 +857,7 @@ internal static (ΔHeader, error) fixTrailer(ΔHeader header, bool chunked) {
         // See issue #27197.
         return (default!, default!);
     }
-    header.Del("Trailer"u8);
+    header.Del(trailerˢ);
     var trailer = new ΔHeader(0);
     ref var err = ref heap<error>(out var Ꮡerr);
     foreach (var (_, v) in vv) {
@@ -858,7 +867,7 @@ internal static (ΔHeader, error) fixTrailer(ΔHeader header, bool chunked) {
             var exprᴛ1 = key;
             if (exprᴛ1 == "Transfer-Encoding"u8 || exprᴛ1 == "Trailer"u8 || exprᴛ1 == "Content-Length"u8) {
                 if (Ꮡerr.ValueSlot == default!) {
-                    Ꮡerr.ValueSlot = badStringError("bad trailer key"u8, key);
+                    Ꮡerr.ValueSlot = badStringError(badTrailerKeyˢ, key);
                     return;
                 }
             }
@@ -989,6 +998,9 @@ internal static bool seeUpcomingDoubleCRLF(ж<bufio.Reader> Ꮡr) {
 
 internal static error errTrailerEOF = errors.New("http: unexpected EOF reading trailer"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpSuspiciouslyLongˢ = "http: suspiciously long trailer after chunked body"u8;
+
 [GoRecv] internal static error readTrailer(this ref body b) {
     // The common case, since nobody uses trailers.
     var (buf, err) = b.r.Peek(2);
@@ -1011,7 +1023,7 @@ internal static error errTrailerEOF = errors.New("http: unexpected EOF reading t
     // to the bufio.Reader's max size, looking for a double CRLF.
     // This limits the trailer to the underlying buffer size, typically 4kB.
     if (!seeUpcomingDoubleCRLF(b.r)) {
-        return errors.New("http: suspiciously long trailer after chunked body"u8);
+        return errors.New(httpSuspiciouslyLongˢ);
     }
     (var hdr, err) = textproto.NewReader(b.r).ReadMIMEHeader();
     if (err != default!) {
@@ -1153,6 +1165,10 @@ internal static (nint n, error err) Read(this bodyLocked bl, slice<byte> p) {
 
 internal static ж<godebug.Setting> httplaxcontentlength = godebug.New("httplaxcontentlength"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidEmptyContentˢ = "invalid empty Content-Length"u8;
+private static readonly @string badContentLengthˢ = "bad Content-Length"u8;
+
 // parseContentLength checks that the header is valid and then trims
 // whitespace. It returns -1 if no value is set otherwise the value
 // if it's >= 0.
@@ -1168,11 +1184,11 @@ internal static (int64, error) parseContentLength(slice<@string> clHeaders) {
             httplaxcontentlength.IncNonDefault();
             return (-1, default!);
         }
-        return (0, badStringError("invalid empty Content-Length"u8, cl));
+        return (0, badStringError(invalidEmptyContentˢ, cl));
     }
     var (n, err) = strconv.ParseUint(cl, 10, 63);
     if (err != default!) {
-        return (0, badStringError("bad Content-Length"u8, cl));
+        return (0, badStringError(badContentLengthˢ, cl));
     }
     return ((int64)n, default!);
 }

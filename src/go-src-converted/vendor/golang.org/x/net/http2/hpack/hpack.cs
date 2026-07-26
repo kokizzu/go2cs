@@ -46,10 +46,13 @@ public static bool IsPseudo(this HeaderField hf) {
     return builtin.len(hf.Name) != 0 && hf.Name[0] == (rune)':';
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sensitiveˢ = " (sensitive)"u8;
+
 public static @string String(this HeaderField hf) {
     @string suffix = default!;
     if (hf.Sensitive) {
-        suffix = " (sensitive)"u8;
+        suffix = sensitiveˢ;
     }
     return fmt.Sprintf("header field %q = %q%s"u8, hf.Name, hf.Value, suffix);
 }
@@ -238,13 +241,16 @@ public static (slice<HeaderField>, error) DecodeFull(this ж<Decoder> Ꮡd, slic
     return (hf, default!);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string truncatedHeadersˢ = "truncated headers"u8;
+
 // Close declares that the decoding is complete and resets the Decoder
 // to be reused again for a new header block. If there is any remaining
 // data in the decoder's buffer, Close returns an error.
 [GoRecv] public static error Close(this ref Decoder d) {
     if (d.saveBuf.Len() > 0) {
         d.saveBuf.Reset();
-        return new DecodingError(errors.New("truncated headers"u8));
+        return new DecodingError(errors.New(truncatedHeadersˢ));
     }
     d.firstField = true;
     return default!;
@@ -311,6 +317,9 @@ internal static bool sensitive(this indexType v) {
     return v == indexedNever;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidEncodingˢ = "invalid encoding"u8;
+
 // returns errNeedMore if there isn't enough data available.
 // any other error is fatal.
 // consumes d.buf iff it returns nil.
@@ -349,7 +358,7 @@ internal static bool sensitive(this indexType v) {
     // 6.3 Dynamic Table Size Update
     // Top three bits are '001'.
     // https://httpwg.org/specs/rfc7541.html#rfc.section.6.3
-    return new DecodingError(errors.New("invalid encoding"u8));
+    return new DecodingError(errors.New(invalidEncodingˢ));
 }
 
 // (same invariants and behavior as parseHeaderFieldRepr)
@@ -425,12 +434,16 @@ internal static bool sensitive(this indexType v) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dynamicTableSizeUpdateˢ = "dynamic table size update MUST occur at the beginning of a header block"u8;
+private static readonly @string dynamicTableSizeUpdateˢ2 = "dynamic table size update too large"u8;
+
 // (same invariants and behavior as parseHeaderFieldRepr)
 [GoRecv] internal static error parseDynamicTableSizeUpdate(this ref Decoder d) {
     // RFC 7541, sec 4.2: This dynamic table size update MUST occur at the
     // beginning of the first header block following the change to the dynamic table size.
     if (!d.firstField && d.dynTab.size > 0) {
-        return new DecodingError(errors.New("dynamic table size update MUST occur at the beginning of a header block"u8));
+        return new DecodingError(errors.New(dynamicTableSizeUpdateˢ));
     }
     var buf = d.buf;
     (var size, buf, var err) = readVarInt(5, buf);
@@ -438,7 +451,7 @@ internal static bool sensitive(this indexType v) {
         return err;
     }
     if (size > (uint64)d.dynTab.allowedMaxSize) {
-        return new DecodingError(errors.New("dynamic table size update too large"u8));
+        return new DecodingError(errors.New(dynamicTableSizeUpdateˢ2));
     }
     d.dynTab.setMaxSize((uint32)size);
     d.buf = buf;

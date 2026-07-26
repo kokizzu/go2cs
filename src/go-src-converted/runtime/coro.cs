@@ -93,6 +93,11 @@ internal static void coroswitch(ж<coro> Ꮡc) {
     mcall(coroswitch_m);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string coroOsThreadLockingMustˢ = "coro: OS thread locking must match locking at coroutine creation"u8;
+private static readonly @string coroswitchOnExitedCoroˢ = "coroswitch on exited coro"u8;
+private static readonly @string coroswitchOfAGoroutineToˢ = "coroswitch of a goroutine to itself"u8;
+
 // coroswitch_m is the implementation of coroswitch
 // that runs on the m stack.
 //
@@ -125,7 +130,7 @@ internal static void coroswitch_m(ж<g> Ꮡgp) {
             print((@string)"coro: got thread "u8, new @unsafe.Pointer(mp), (@string)", want "u8, new @unsafe.Pointer((~c).mp), (@string)"\n"u8);
             print((@string)"coro: got lock internal "u8, (~mp).lockedInt, (@string)", want "u8, (~c).lockedInt, (@string)"\n"u8);
             print((@string)"coro: got lock external "u8, (~mp).lockedExt, (@string)", want "u8, (~c).lockedExt, (@string)"\n"u8);
-            @throw("coro: OS thread locking must match locking at coroutine creation"u8);
+            @throw(coroOsThreadLockingMustˢ);
         }
     }
     // Acquire tracer for writing for the duration of this call.
@@ -176,7 +181,7 @@ internal static void coroswitch_m(ж<g> Ꮡgp) {
         // (The atomic load is free on x86 but not free elsewhere.)
         var next = c.Value.gp;
         if (next.ptr() == nil) {
-            @throw("coroswitch on exited coro"u8);
+            @throw(coroswitchOnExitedCoroˢ);
         }
         Δguintptr self = default!;
         self.set(Ꮡgp);
@@ -190,7 +195,7 @@ internal static void coroswitch_m(ж<g> Ꮡgp) {
     // coroswitch would deadlock. It's clear that this case should just not
     // work.
     if (gnext == Ꮡgp) {
-        @throw("coroswitch of a goroutine to itself"u8);
+        @throw(coroswitchOfAGoroutineToˢ);
     }
     // Emit the trace event after getting gnext but before changing curg.
     // GoSwitch expects that the current G is running and that we haven't

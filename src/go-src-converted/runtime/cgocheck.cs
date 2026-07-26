@@ -295,7 +295,7 @@ internal static void cgoCheckUsingType(ж<_type> Ꮡtyp, @unsafe.Pointer src, ui
         }
     }
     else { /* default: */
-        @throw("can't happen"u8);
+        @throw(canTHappenˢ);
     }
 
 }

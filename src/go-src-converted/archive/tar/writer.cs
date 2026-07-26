@@ -144,6 +144,10 @@ internal static error writeUSTARHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr)
     return tw.writeRawHeader(blk, hdr.Size, hdr.Typeflag);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string globalHead00ˢ = "GlobalHead.0.0"u8;
+private static readonly @string paxHeaders0ˢ = "PaxHeaders.0"u8;
+
 internal static error writePAXHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr, map<@string, @string> paxHdrs) {
     ref var tw = ref Ꮡtw.Value;
     ref var hdr = ref Ꮡhdr.Value;
@@ -209,12 +213,12 @@ internal static error writePAXHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr, m
         if (isGlobal){
             name = realName;
             if (name == ""u8) {
-                name = "GlobalHead.0.0"u8;
+                name = globalHead00ˢ;
             }
             flag = TypeXGlobalHeader;
         } else {
             var (dir, @file) = path.Split(realName);
-            name = path.Join(dir, "PaxHeaders.0", @file);
+            name = path.Join(dir, paxHeaders0ˢ, @file);
             flag = TypeXHeader;
         }
         @string data = buf.String();
@@ -443,6 +447,9 @@ internal static error writeRawFile(this ж<Writer> Ꮡtw, @string name, @string 
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tarCannotAddNonRegularˢ = "tar: cannot add non-regular file"u8;
+
 // AddFS adds the files from fs.FS to the archive.
 // It walks the directory tree starting at the root of the filesystem
 // adding each file to the tar archive while maintaining the directory structure.
@@ -460,7 +467,7 @@ public static error AddFS(this ж<Writer> Ꮡtw, fs.FS fsys) {
         }
         // TODO(#49580): Handle symlinks when fs.ReadLinkFS is available.
         if (!info.Mode().IsRegular()) {
-            return errors.New("tar: cannot add non-regular file"u8);
+            return errors.New(tarCannotAddNonRegularˢ);
         }
         (var h, err) = FileInfoHeader(info, ""u8);
         if (err != default!) {

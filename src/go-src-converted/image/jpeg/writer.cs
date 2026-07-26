@@ -587,6 +587,9 @@ public static readonly UntypedInt DefaultQuality = 75;
     public nint Quality;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string jpegImageIsTooLargeToˢ = "jpeg: image is too large to encode"u8;
+
 // Encode writes the Image m to w in JPEG 4:2:0 baseline format with the given
 // options. Default parameters are used if a nil *[Options] is passed.
 public static error Encode(io.Writer w, image.Image m, ж<Options> Ꮡo) {
@@ -594,7 +597,7 @@ public static error Encode(io.Writer w, image.Image m, ж<Options> Ꮡo) {
 
     var b = m.Bounds();
     if (b.Dx() >= (1 << (int)(16)) || b.Dy() >= (1 << (int)(16))) {
-        return errors.New("jpeg: image is too large to encode"u8);
+        return errors.New(jpegImageIsTooLargeToˢ);
     }
     encoder e = new();
     {

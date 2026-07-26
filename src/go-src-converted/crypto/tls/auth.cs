@@ -17,6 +17,11 @@ using go.crypto;
 
 partial class tls_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ecdsaVerificationFailureˢ = "ECDSA verification failure"u8;
+private static readonly @string ed25519Verificationˢ = "Ed25519 verification failure"u8;
+private static readonly @string internalErrorUnknownˢ = "internal error: unknown signature type"u8;
+
 // verifyHandshakeSignature verifies a signature against pre-hashed
 // (if required) handshake contents.
 internal static error verifyHandshakeSignature(uint8 sigType, cryptoꓸPublicKey pubkey, crypto.Hash hashFunc, slice<byte> signed, slice<byte> sig) {
@@ -27,7 +32,7 @@ internal static error verifyHandshakeSignature(uint8 sigType, cryptoꓸPublicKey
             return fmt.Errorf("expected an ECDSA public key, got %T"u8, pubkey);
         }
         if (!ecdsa.VerifyASN1(pubKey, signed, sig)) {
-            return errors.New("ECDSA verification failure"u8);
+            return errors.New(ecdsaVerificationFailureˢ);
         }
         break;
     }
@@ -37,7 +42,7 @@ internal static error verifyHandshakeSignature(uint8 sigType, cryptoꓸPublicKey
             return fmt.Errorf("expected an Ed25519 public key, got %T"u8, pubkey);
         }
         if (!ed25519.Verify(pubKey, signed, sig)) {
-            return errors.New("Ed25519 verification failure"u8);
+            return errors.New(ed25519Verificationˢ);
         }
         break;
     }
@@ -67,7 +72,7 @@ internal static error verifyHandshakeSignature(uint8 sigType, cryptoꓸPublicKey
         break;
     }
     default: {
-        return errors.New("internal error: unknown signature type"u8);
+        return errors.New(internalErrorUnknownˢ);
     }}
 
     return default!;
@@ -274,6 +279,9 @@ internal static slice<SignatureScheme> signatureSchemesForCertificate(uint16 ver
     return sigAlgs;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsPeerDoesnTSupportAnyˢ = "tls: peer doesn't support any of the certificate's signature algorithms"u8;
+
 // selectSignatureScheme picks a SignatureScheme from the peer's preference list
 // that works with the selected certificate. It's only called for protocol
 // versions that support signature algorithms, so TLS 1.2 and 1.3.
@@ -297,7 +305,7 @@ internal static (SignatureScheme, error) selectSignatureScheme(uint16 vers, ж<C
             return (preferredAlg, default!);
         }
     }
-    return (0, errors.New("tls: peer doesn't support any of the certificate's signature algorithms"u8));
+    return (0, errors.New(tlsPeerDoesnTSupportAnyˢ));
 }
 
 // unsupportedCertificateError returns a helpful error for certificates with

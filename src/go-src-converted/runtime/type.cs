@@ -125,6 +125,10 @@ internal static void reflectOffsUnlock() {
     unlock(ᏑreflectOffs.of(reflectOffsᴛ1.Ꮡlock));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeNameOffsetOutOfˢ = "runtime: name offset out of range"u8;
+private static readonly @string runtimeNameOffsetBaseˢ = "runtime: name offset base pointer out of range"u8;
+
 // resolveNameOff should be an internal detail,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
@@ -144,7 +148,7 @@ internal static abiꓸName resolveNameOff(@unsafe.Pointer ptrInModule, nameOff o
             var resΔ1 = (~md).types + (uintptr)(int32)off;
             if (resΔ1 > (~md).etypes) {
                 println((@string)"runtime: nameOff"u8, ((Δhex)(uint64)(int32)off), (@string)"out of range"u8, ((Δhex)(uint64)(~md).types), (@string)"-"u8, ((Δhex)(uint64)(~md).etypes));
-                @throw("runtime: name offset out of range"u8);
+                @throw(runtimeNameOffsetOutOfˢ);
             }
             return new name(Bytes: (ж<byte>)(uintptr)((@unsafe.Pointer)resΔ1));
         }
@@ -158,7 +162,7 @@ internal static abiꓸName resolveNameOff(@unsafe.Pointer ptrInModule, nameOff o
         for (var next = Ꮡfirstmoduledata; next != nil; next = next.Value.next) {
             println((@string)"\ttypes"u8, ((Δhex)(uint64)(~next).types), (@string)"etypes"u8, ((Δhex)(uint64)(~next).etypes));
         }
-        @throw("runtime: name offset base pointer out of range"u8);
+        @throw(runtimeNameOffsetBaseˢ);
     }
     return new name(Bytes: (ж<byte>)(uintptr)(res));
 }
@@ -166,6 +170,10 @@ internal static abiꓸName resolveNameOff(@unsafe.Pointer ptrInModule, nameOff o
 internal static abiꓸName nameOff(this Δrtype t, nameOff off) {
     return resolveNameOff(new @unsafe.Pointer(t.Type), off);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeTypeOffsetBaseˢ = "runtime: type offset base pointer out of range"u8;
+private static readonly @string runtimeTypeOffsetOutOfˢ = "runtime: type offset out of range"u8;
 
 // resolveTypeOff should be an internal detail,
 // but widely used packages access it using linkname.
@@ -199,7 +207,7 @@ internal static ж<_type> resolveTypeOff(@unsafe.Pointer ptrInModule, typeOff of
             for (var next = Ꮡfirstmoduledata; next != nil; next = next.Value.next) {
                 println((@string)"\ttypes"u8, ((Δhex)(uint64)(~next).types), (@string)"etypes"u8, ((Δhex)(uint64)(~next).etypes));
             }
-            @throw("runtime: type offset base pointer out of range"u8);
+            @throw(runtimeTypeOffsetBaseˢ);
         }
         return (ж<_type>)(uintptr)(resΔ1);
     }
@@ -211,7 +219,7 @@ internal static ж<_type> resolveTypeOff(@unsafe.Pointer ptrInModule, typeOff of
     var res = (~md).types + (uintptr)(int32)off;
     if (res > (~md).etypes) {
         println((@string)"runtime: typeOff"u8, ((Δhex)(uint64)(int32)off), (@string)"out of range"u8, ((Δhex)(uint64)(~md).types), (@string)"-"u8, ((Δhex)(uint64)(~md).etypes));
-        @throw("runtime: type offset out of range"u8);
+        @throw(runtimeTypeOffsetOutOfˢ);
     }
     return (ж<_type>)(uintptr)((@unsafe.Pointer)res);
 }
@@ -219,6 +227,9 @@ internal static ж<_type> resolveTypeOff(@unsafe.Pointer ptrInModule, typeOff of
 internal static ж<_type> typeOff(this Δrtype t, typeOff off) {
     return resolveTypeOff(new @unsafe.Pointer(t.Type), off);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeTextOffsetBaseˢ = "runtime: text offset base pointer out of range"u8;
 
 internal static @unsafe.Pointer textOff(this Δrtype t, textOff off) {
     if (off == -1) {
@@ -243,7 +254,7 @@ internal static @unsafe.Pointer textOff(this Δrtype t, textOff off) {
             for (var next = Ꮡfirstmoduledata; next != nil; next = next.Value.next) {
                 println((@string)"\ttypes"u8, ((Δhex)(uint64)(~next).types), (@string)"etypes"u8, ((Δhex)(uint64)(~next).etypes));
             }
-            @throw("runtime: text offset base pointer out of range"u8);
+            @throw(runtimeTextOffsetBaseˢ);
         }
         return resΔ1;
     }
@@ -328,6 +339,9 @@ break_collect:;
 internal static Δrtype toRType(ж<abi.Type> Ꮡt) {
     return new Δrtype(Ꮡt);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeImpossibleTypeˢ = "runtime: impossible type kind"u8;
 
 // typesEqual reports whether two types are equal.
 //
@@ -492,7 +506,7 @@ internal static bool typesEqual(ж<_type> Ꮡt, ж<_type> Ꮡv, map<_typePair, E
     }
     { /* default: */
         println((@string)"runtime: impossible type kind"u8, kind);
-        @throw("runtime: impossible type kind"u8);
+        @throw(runtimeImpossibleTypeˢ);
         return false;
     }
 

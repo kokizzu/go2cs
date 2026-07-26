@@ -361,6 +361,9 @@ internal static (nint, error) Read(this ж<decompressor> Ꮡf, slice<byte> b) {
 // Compression with dynamic Huffman codes
 internal static array<nint> codeOrder = new nint[]{16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15}.array();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unexpectedLengthCodeˢ = "unexpected length code"u8;
+
 internal static error readHuffman(this ж<decompressor> Ꮡf) {
     ref var f = ref Ꮡf.Value;
 
@@ -424,7 +427,7 @@ internal static error readHuffman(this ж<decompressor> Ꮡf) {
         nint b = default!;
         switch (x) {
         default: {
-            return ((InternalError)(@string)"unexpected length code"u8);
+            return ((InternalError)(@string)unexpectedLengthCodeˢ);
         }
         case 16: {
             rep = 3;

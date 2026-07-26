@@ -12,6 +12,9 @@ partial class runtime_package {
 
 [GoType("num:uint64")] partial struct lfstack;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lfstackPushˢ = "lfstack.push"u8;
+
 internal static void push(this ж<lfstack> Ꮡhead, ж<lfnode> Ꮡnode) {
     ref var head = ref Ꮡhead.Value;
     ref var node = ref Ꮡnode.DerefOrNil();
@@ -21,7 +24,7 @@ internal static void push(this ж<lfstack> Ꮡhead, ж<lfnode> Ꮡnode) {
     {
         var node1 = lfstackUnpack(@new); if (node1 != Ꮡnode) {
             print((@string)"runtime: lfstack.push invalid packing: node="u8, Ꮡnode, (@string)" cnt="u8, ((Δhex)(uint64)node.pushcnt), (@string)" packed="u8, ((Δhex)@new), (@string)" -> node="u8, node1, (@string)"\n"u8);
-            @throw("lfstack.push"u8);
+            @throw(lfstackPushˢ);
         }
     }
     while (ᐧ) {
@@ -55,20 +58,22 @@ internal static bool empty(this ж<lfstack> Ꮡhead) {
     return atomic.Load64(Ꮡ((uint64)(head))) == 0;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lfstackNodeAllocatedFromˢ = "lfstack node allocated from the heap"u8;
+private static readonly @string badLfnodeAddressˢ = "bad lfnode address"u8;
+
 // lfnodeValidate panics if node is not a valid address for use with
 // lfstack.push. This only needs to be called when node is allocated.
 internal static void lfnodeValidate(ж<lfnode> Ꮡnode) {
-    ref var node = ref Ꮡnode.DerefOrNil();
-
     {
         var (@base, _, _) = findObject((uintptr)new @unsafe.Pointer(Ꮡnode), 0, 0); if (@base != 0) {
-            @throw("lfstack node allocated from the heap"u8);
+            @throw(lfstackNodeAllocatedFromˢ);
         }
     }
     if (lfstackUnpack(lfstackPack(Ꮡnode, ~(uintptr)0)) != Ꮡnode) {
         printlock();
         println((@string)"runtime: bad lfnode address"u8, ((Δhex)(uint64)(uintptr)new @unsafe.Pointer(Ꮡnode)));
-        @throw("bad lfnode address"u8);
+        @throw(badLfnodeAddressˢ);
     }
 }
 

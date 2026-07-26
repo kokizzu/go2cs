@@ -97,6 +97,9 @@ internal static error hello(this ж<Client> Ꮡc) {
     return c.helloError;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string smtpHelloCalledAfterˢ = "smtp: Hello called after other methods"u8;
+
 // Hello sends a HELO or EHLO to the server as the given host name.
 // Calling this method is only necessary if the client needs control
 // over the host name used. The client will introduce itself as "localhost"
@@ -111,7 +114,7 @@ public static error Hello(this ж<Client> Ꮡc, @string localName) {
         }
     }
     if (c.didHello) {
-        return errors.New("smtp: Hello called after other methods"u8);
+        return errors.New(smtpHelloCalledAfterˢ);
     }
     c.localName = localName;
     return Ꮡc.hello();
@@ -132,22 +135,29 @@ internal static (nint, @string, error) cmd(this ж<Client> Ꮡc, nint expectCode
     return (code, msg, err);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string heloSˢ = "HELO %s"u8;
+
 // helo sends the HELO greeting to the server. It should be used only when the
 // server does not support ehlo.
 internal static error helo(this ж<Client> Ꮡc) {
     ref var c = ref Ꮡc.Value;
 
     c.ext = default!;
-    var (_, _, err) = Ꮡc.cmd(250, "HELO %s"u8, c.localName);
+    var (_, _, err) = Ꮡc.cmd(250, heloSˢ, c.localName);
     return err;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ehloSˢ = "EHLO %s"u8;
+private static readonly @string authˢ = "AUTH"u8;
 
 // ehlo sends the EHLO (extended hello) greeting to the server. It
 // should be the preferred greeting for servers that support it.
 internal static error ehlo(this ж<Client> Ꮡc) {
     ref var c = ref Ꮡc.Value;
 
-    var (_, msg, err) = Ꮡc.cmd(250, "EHLO %s"u8, c.localName);
+    var (_, msg, err) = Ꮡc.cmd(250, ehloSˢ, c.localName);
     if (err != default!) {
         return err;
     }
@@ -161,13 +171,16 @@ internal static error ehlo(this ж<Client> Ꮡc) {
         }
     }
     {
-        var (mechs, ok) = ext["AUTH"u8, ꟷ]; if (ok) {
+        var (mechs, ok) = ext[authˢ, ꟷ]; if (ok) {
             c.auth = strings.Split(mechs, " "u8);
         }
     }
     c.ext = ext;
     return err;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string starttlsˢ = "STARTTLS"u8;
 
 // StartTLS sends the STARTTLS command and encrypts all further communication.
 // Only servers that advertise the STARTTLS extension support this function.
@@ -179,7 +192,7 @@ public static error StartTLS(this ж<Client> Ꮡc, ж<tls.Config> Ꮡconfig) {
             return errΔ1;
         }
     }
-    var (_, _, err) = Ꮡc.cmd(220, "STARTTLS"u8);
+    var (_, _, err) = Ꮡc.cmd(220, starttlsˢ);
     if (err != default!) {
         return err;
     }
@@ -203,6 +216,9 @@ public static error StartTLS(this ж<Client> Ꮡc, ж<tls.Config> Ꮡconfig) {
     return (tc.ConnectionState(), true);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string vrfySˢ = "VRFY %s"u8;
+
 // Verify checks the validity of an email address on the server.
 // If Verify returns nil, the address is valid. A non-nil return
 // does not necessarily indicate an invalid address. Many servers
@@ -218,7 +234,7 @@ public static error Verify(this ж<Client> Ꮡc, @string addr) {
             return errΔ2;
         }
     }
-    var (_, _, err) = Ꮡc.cmd(250, "VRFY %s"u8, addr);
+    var (_, _, err) = Ꮡc.cmd(250, vrfySˢ, addr);
     return err;
 }
 
@@ -280,6 +296,10 @@ Code: code, Msg: msg64)));
     return err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mailFromSˢ = "MAIL FROM:<%s>"u8;
+private static readonly @string smtputf8ˢ = "SMTPUTF8"u8;
+
 // Mail issues a MAIL command to the server using the provided email address.
 // If the server supports the 8BITMIME extension, Mail adds the BODY=8BITMIME
 // parameter. If the server supports the SMTPUTF8 extension, Mail adds the
@@ -298,7 +318,7 @@ public static error Mail(this ж<Client> Ꮡc, @string from) {
             return errΔ2;
         }
     }
-    @string cmdStr = "MAIL FROM:<%s>"u8;
+    @string cmdStr = mailFromSˢ;
     if (c.ext != default!) {
         {
             var (_, ok) = c.ext["8BITMIME"u8, ꟷ]; if (ok) {
@@ -306,7 +326,7 @@ public static error Mail(this ж<Client> Ꮡc, @string from) {
             }
         }
         {
-            var (_, ok) = c.ext["SMTPUTF8"u8, ꟷ]; if (ok) {
+            var (_, ok) = c.ext[smtputf8ˢ, ꟷ]; if (ok) {
                 cmdStr += " SMTPUTF8"u8;
             }
         }
@@ -314,6 +334,9 @@ public static error Mail(this ж<Client> Ꮡc, @string from) {
     var (_, _, err) = Ꮡc.cmd(250, cmdStr, from);
     return err;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rcptToSˢ = "RCPT TO:<%s>"u8;
 
 // Rcpt issues a RCPT command to the server using the provided email address.
 // A call to Rcpt must be preceded by a call to [Client.Mail] and may be followed by
@@ -324,7 +347,7 @@ public static error Rcpt(this ж<Client> Ꮡc, @string to) {
             return errΔ1;
         }
     }
-    var (_, _, err) = Ꮡc.cmd(25, "RCPT TO:<%s>"u8, to);
+    var (_, _, err) = Ꮡc.cmd(25, rcptToSˢ, to);
     return err;
 }
 
@@ -339,6 +362,9 @@ public static error Rcpt(this ж<Client> Ꮡc, @string to) {
     return err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dataˢ = "DATA"u8;
+
 // Data issues a DATA command to the server and returns a writer that
 // can be used to write the mail headers and body. The caller should
 // close the writer before calling any more methods on c. A call to
@@ -346,7 +372,7 @@ public static error Rcpt(this ж<Client> Ꮡc, @string to) {
 public static (io.WriteCloser, error) Data(this ж<Client> Ꮡc) {
     ref var c = ref Ꮡc.Value;
 
-    var (_, _, err) = Ꮡc.cmd(354, "DATA"u8);
+    var (_, _, err) = Ꮡc.cmd(354, dataˢ);
     if (err != default!) {
         return (default!, err);
     }
@@ -354,6 +380,9 @@ public static (io.WriteCloser, error) Data(this ж<Client> Ꮡc) {
 }
 
 internal static Action<ж<tls.Config>> testHookStartTLS;      // nil, except for tests
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string smtpServerDoesnTSupportˢ = "smtp: server doesn't support AUTH"u8;
 
 // SendMail connects to the server at addr, switches to TLS if
 // possible, authenticates with the optional mechanism a if possible,
@@ -400,7 +429,7 @@ public static error SendMail(@string addr, ΔAuth a, @string from, slice<@string
         }
     }
     {
-        var (ok, _) = c.Extension("STARTTLS"u8); if (ok) {
+        var (ok, _) = c.Extension(starttlsˢ); if (ok) {
             var config = Ꮡ(new tls.Config(ServerName: (~c).serverName));
             if (testHookStartTLS != default!) {
                 testHookStartTLS(config);
@@ -414,8 +443,8 @@ public static error SendMail(@string addr, ΔAuth a, @string from, slice<@string
     }
     if (a != default! && (~c).ext != default!) {
         {
-            var (_, ok) = (~c).ext["AUTH"u8, ꟷ]; if (!ok) {
-                return errors.New("smtp: server doesn't support AUTH"u8);
+            var (_, ok) = (~c).ext[authˢ, ꟷ]; if (!ok) {
+                return errors.New(smtpServerDoesnTSupportˢ);
             }
         }
         {
@@ -471,6 +500,9 @@ public static (bool, @string) Extension(this ж<Client> Ꮡc, @string ext) {
     return (ok, param);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rsetˢ = "RSET"u8;
+
 // Reset sends the RSET command to the server, aborting the current mail
 // transaction.
 public static error Reset(this ж<Client> Ꮡc) {
@@ -479,9 +511,12 @@ public static error Reset(this ж<Client> Ꮡc) {
             return errΔ1;
         }
     }
-    var (_, _, err) = Ꮡc.cmd(250, "RSET"u8);
+    var (_, _, err) = Ꮡc.cmd(250, rsetˢ);
     return err;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noopˢ = "NOOP"u8;
 
 // Noop sends the NOOP command to the server. It does nothing but check
 // that the connection to the server is okay.
@@ -491,9 +526,12 @@ public static error Noop(this ж<Client> Ꮡc) {
             return errΔ1;
         }
     }
-    var (_, _, err) = Ꮡc.cmd(250, "NOOP"u8);
+    var (_, _, err) = Ꮡc.cmd(250, noopˢ);
     return err;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string quitˢ = "QUIT"u8;
 
 // Quit sends the QUIT command and closes the connection to the server.
 public static error Quit(this ж<Client> Ꮡc) {
@@ -504,17 +542,20 @@ public static error Quit(this ж<Client> Ꮡc) {
             return errΔ1;
         }
     }
-    var (_, _, err) = Ꮡc.cmd(221, "QUIT"u8);
+    var (_, _, err) = Ꮡc.cmd(221, quitˢ);
     if (err != default!) {
         return err;
     }
     return c.Text.Close();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string smtpALineMustNotContainˢ = "smtp: A line must not contain CR or LF"u8;
+
 // validateLine checks to see if a line has CR or LF as per RFC 5321.
 internal static error validateLine(@string line) {
     if (strings.ContainsAny(line, "\n\r"u8)) {
-        return errors.New("smtp: A line must not contain CR or LF"u8);
+        return errors.New(smtpALineMustNotContainˢ);
     }
     return default!;
 }

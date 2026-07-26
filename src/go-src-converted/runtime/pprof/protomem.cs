@@ -12,15 +12,22 @@ using go.@internal;
 
 partial class pprof_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string spaceˢ = "space"u8;
+private static readonly @string bytesˢ = "bytes"u8;
+private static readonly @string allocObjectsˢ = "alloc_objects"u8;
+private static readonly @string inuseObjectsˢ = "inuse_objects"u8;
+private static readonly @string inuseSpaceˢ = "inuse_space"u8;
+
 // writeHeapProto writes the current heap profile in protobuf format to w.
 internal static error writeHeapProto(io.Writer w, slice<profilerecord.MemProfileRecord> p, int64 rate, @string defaultSampleType) {
     var b = newProfileBuilder(w);
-    b.pbValueType(tagProfile_PeriodType, "space"u8, "bytes"u8);
+    b.pbValueType(tagProfile_PeriodType, spaceˢ, bytesˢ);
     b.of(profileBuilder.Ꮡpb).int64Opt(tagProfile_Period, rate);
-    b.pbValueType(tagProfile_SampleType, "alloc_objects"u8, "count"u8);
-    b.pbValueType(tagProfile_SampleType, "alloc_space"u8, "bytes"u8);
-    b.pbValueType(tagProfile_SampleType, "inuse_objects"u8, "count"u8);
-    b.pbValueType(tagProfile_SampleType, "inuse_space"u8, "bytes"u8);
+    b.pbValueType(tagProfile_SampleType, allocObjectsˢ, countˢ);
+    b.pbValueType(tagProfile_SampleType, allocSpaceˢ, bytesˢ);
+    b.pbValueType(tagProfile_SampleType, inuseObjectsˢ, countˢ);
+    b.pbValueType(tagProfile_SampleType, inuseSpaceˢ, bytesˢ);
     if (defaultSampleType != ""u8) {
         b.of(profileBuilder.Ꮡpb).int64Opt(tagProfile_DefaultSampleType, b.stringIndex(defaultSampleType));
     }
@@ -38,7 +45,7 @@ internal static error writeHeapProto(io.Writer w, slice<profilerecord.MemProfile
             if (hideRuntime) {
                 foreach (var (i, addr) in stk) {
                     {
-                        var f = runtime.FuncForPC(addr); if (f != nil && strings_package.HasPrefix(f.Name(), "runtime."u8)) {
+                        var f = runtime.FuncForPC(addr); if (f != nil && strings_package.HasPrefix(f.Name(), runtimeˢ)) {
                             continue;
                         }
                     }
@@ -63,7 +70,7 @@ internal static error writeHeapProto(io.Writer w, slice<profilerecord.MemProfile
         var bʗ1 = b;
         b.pbSample(values, locs, () => {
             if (blockSize != 0) {
-                bʗ1.pbLabel(tagSample_Label, "bytes"u8, ""u8, blockSize);
+                bʗ1.pbLabel(tagSample_Label, bytesˢ, ""u8, blockSize);
             }
         });
     }

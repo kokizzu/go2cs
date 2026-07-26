@@ -65,6 +65,10 @@ partial class x509_package {
     public asn1.BitString BitString;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509FailedToParsePublicˢ2 = "x509: failed to parse public key (use ParsePKCS1PublicKey instead for this key format)"u8;
+private static readonly @string x509TrailingDataAfterAsnˢ = "x509: trailing data after ASN.1 of public-key"u8;
+
 // ParsePKIXPublicKey parses a public key in PKIX, ASN.1 DER form. The encoded
 // public key is a SubjectPublicKeyInfo structure (see RFC 5280, Section 4.1).
 //
@@ -82,17 +86,20 @@ public static (any pub, error err) ParsePKIXPublicKey(slice<byte> derBytes) {
         var (rest, errΔ1) = asn1.Unmarshal(derBytes, Ꮡpki); if (errΔ1 != default!){
             {
                 var (_, errΔ2) = asn1.Unmarshal(derBytes, Ꮡ(new pkcs1PublicKey(nil))); if (errΔ2 == default!) {
-                    return (default!, errors.New("x509: failed to parse public key (use ParsePKCS1PublicKey instead for this key format)"u8));
+                    return (default!, errors.New(x509FailedToParsePublicˢ2));
                 }
             }
             return (default!, errΔ1);
         } else 
         if (builtin.len(rest) != 0) {
-            return (default!, errors.New("x509: trailing data after ASN.1 of public-key"u8));
+            return (default!, errors.New(x509TrailingDataAfterAsnˢ));
         }
     }
     return parsePublicKey(Ꮡpki);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509InvalidEllipticCurveˢ2 = "x509: invalid elliptic curve public key"u8;
 
 internal static (slice<byte> publicKeyBytes, pkix.AlgorithmIdentifier publicKeyAlgorithm, error err) marshalPublicKey(any pub) {
     slice<byte> publicKeyBytes = default!;
@@ -117,10 +124,10 @@ internal static (slice<byte> publicKeyBytes, pkix.AlgorithmIdentifier publicKeyA
         if (!ok) {
             // This is a NULL parameters value which is required by
             // RFC 3279, Section 2.3.1.
-            return (default!, new pkix.AlgorithmIdentifier(nil), errors.New("x509: unsupported elliptic curve"u8));
+            return (default!, new pkix.AlgorithmIdentifier(nil), errors.New(x509UnsupportedEllipticˢ));
         }
         if (!(~pubΔ1).Curve.IsOnCurve((~pubΔ1).X, (~pubΔ1).Y)) {
-            return (default!, new pkix.AlgorithmIdentifier(nil), errors.New("x509: invalid elliptic curve public key"u8));
+            return (default!, new pkix.AlgorithmIdentifier(nil), errors.New(x509InvalidEllipticCurveˢ2));
         }
         publicKeyBytes = elliptic.Marshal((~pubΔ1).Curve, (~pubΔ1).X, (~pubΔ1).Y);
         publicKeyAlgorithm.Algorithm = oidPublicKeyECDSA;
@@ -144,7 +151,7 @@ internal static (slice<byte> publicKeyBytes, pkix.AlgorithmIdentifier publicKeyA
         } else {
             var (oid, ok) = oidFromECDHCurve(pubΔ1.Curve());
             if (!ok) {
-                return (default!, new pkix.AlgorithmIdentifier(nil), errors.New("x509: unsupported elliptic curve"u8));
+                return (default!, new pkix.AlgorithmIdentifier(nil), errors.New(x509UnsupportedEllipticˢ));
             }
             publicKeyAlgorithm.Algorithm = oidPublicKeyECDSA;
             slice<byte> paramBytes = default!;
@@ -826,10 +833,13 @@ public static error ErrUnsupportedAlgorithm = errors.New("x509: cannot verify si
 
 [GoType("num:nint")] partial struct InsecureAlgorithmError;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string temporarilyOverrideWithˢ = " (temporarily override with GODEBUG=x509sha1=1)"u8;
+
 public static @string Error(this InsecureAlgorithmError e) {
     @string @override = default!;
     if (((SignatureAlgorithm)(nint)e) == SHA1WithRSA || ((SignatureAlgorithm)(nint)e) == ECDSAWithSHA1) {
-        @override = " (temporarily override with GODEBUG=x509sha1=1)"u8;
+        @override = temporarilyOverrideWithˢ;
     }
     return fmt.Sprintf("x509: cannot verify signature: insecure algorithm %v"u8, ((SignatureAlgorithm)(nint)e)) + @override;
 }
@@ -840,8 +850,11 @@ public static @string Error(this InsecureAlgorithmError e) {
 [GoType] partial struct ConstraintViolationError {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509InvalidSignatureˢ = "x509: invalid signature: parent certificate cannot sign this kind of certificate"u8;
+
 public static @string Error(this ConstraintViolationError _) {
-    return "x509: invalid signature: parent certificate cannot sign this kind of certificate"u8;
+    return x509InvalidSignatureˢ;
 }
 
 public static bool Equal(this ж<Certificate> Ꮡc, ж<Certificate> Ꮡother) {
@@ -912,6 +925,10 @@ internal static error signaturePublicKeyAlgoMismatchError(PublicKeyAlgorithm exp
 
 internal static ж<godebug.Setting> x509sha1 = godebug.New("x509sha1"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509EcdsaVerificationˢ = "x509: ECDSA verification failure"u8;
+private static readonly @string x509Ed25519Verificationˢ = "x509: Ed25519 verification failure"u8;
+
 // checkSignature verifies that signature is a valid signature over signed from
 // a crypto.PublicKey.
 internal static error /*err*/ checkSignature(SignatureAlgorithm algo, slice<byte> signed, slice<byte> signature, cryptoꓸPublicKey publicKey, bool allowSHA1) {
@@ -972,7 +989,7 @@ internal static error /*err*/ checkSignature(SignatureAlgorithm algo, slice<byte
             return signaturePublicKeyAlgoMismatchError(pubKeyAlgo, pub);
         }
         if (!ecdsa.VerifyASN1(pub, signed, signature)) {
-            return errors.New("x509: ECDSA verification failure"u8);
+            return errors.New(x509EcdsaVerificationˢ);
         }
         return err;
     }
@@ -981,7 +998,7 @@ internal static error /*err*/ checkSignature(SignatureAlgorithm algo, slice<byte
             return signaturePublicKeyAlgoMismatchError(pubKeyAlgo, pub);
         }
         if (!ed25519.Verify(pub, signed, signature)) {
-            return errors.New("x509: Ed25519 verification failure"u8);
+            return errors.New(x509Ed25519Verificationˢ);
         }
         return err;
     }}
@@ -1001,8 +1018,11 @@ internal static error /*err*/ checkSignature(SignatureAlgorithm algo, slice<byte
 [GoType] partial struct UnhandledCriticalExtension {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509UnhandledCriticalˢ = "x509: unhandled critical extension"u8;
+
 public static @string Error(this UnhandledCriticalExtension h) {
-    return "x509: unhandled critical extension"u8;
+    return x509UnhandledCriticalˢ;
 }
 
 [GoType] partial struct basicConstraints {
@@ -1373,6 +1393,9 @@ internal static (pkix.Extension, error) marshalKeyUsage(KeyUsage ku) {
     return (ext, err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509UnknownExtendedKeyˢ = "x509: unknown extended key usage"u8;
+
 internal static (pkix.Extension, error) marshalExtKeyUsage(slice<ExtKeyUsage> extUsages, slice<asn1.ObjectIdentifier> unknownUsages) {
     var ext = new pkix.Extension(Id: oidExtensionExtendedKeyUsage);
     var oids = new slice<asn1.ObjectIdentifier>(builtin.len(extUsages) + builtin.len(unknownUsages));
@@ -1381,7 +1404,7 @@ internal static (pkix.Extension, error) marshalExtKeyUsage(slice<ExtKeyUsage> ex
             var (oid, ok) = oidFromExtKeyUsage(u); if (ok){
                 oids[i] = oid;
             } else {
-                return (ext, errors.New("x509: unknown extended key usage"u8));
+                return (ext, errors.New(x509UnknownExtendedKeyˢ));
             }
         }
     }
@@ -1404,6 +1427,9 @@ internal static (pkix.Extension, error) marshalBasicConstraints(bool isCA, nint 
     return (ext, err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidPolicyObjectˢ = "invalid policy object identifier"u8;
+
 internal static (pkix.Extension, error) marshalCertificatePolicies(slice<OID> policies, slice<asn1.ObjectIdentifier> policyIdentifiers) {
     var ext = new pkix.Extension(Id: oidExtensionCertificatePolicies);
     var b = cryptobyte.NewBuilder(new slice<byte>(0, 128));
@@ -1421,7 +1447,7 @@ internal static (pkix.Extension, error) marshalCertificatePolicies(slice<OID> po
                     var vʗ2 = vʗ1;
                     childΔ1.AddASN1(cryptobyte_asn1.OBJECT_IDENTIFIER, (ж<cryptobyte.Builder> childΔ2) => {
                         if (builtin.len(vʗ2.der) == 0) {
-                            childΔ2.SetError(errors.New("invalid policy object identifier"u8));
+                            childΔ2.SetError(errors.New(invalidPolicyObjectˢ));
                             return;
                         }
                         childΔ2.AddBytes(vʗ2.der);
@@ -1468,6 +1494,12 @@ internal static (slice<byte>, error) subjectBytes(ж<Certificate> Ꮡcert) {
     return asn1.Marshal(cert.Subject.ToRDNSequence());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509OnlyRsaEcdsaAndˢ = "x509: only RSA, ECDSA and Ed25519 keys supported"u8;
+private static readonly @string x509Requestedˢ = "x509: requested SignatureAlgorithm does not match private key type"u8;
+private static readonly @string x509SigningWithMd5IsNotˢ = "x509: signing with MD5 is not supported"u8;
+private static readonly @string x509Unknownˢ = "x509: unknown SignatureAlgorithm"u8;
+
 // signingParamsForKey returns the signature algorithm and its Algorithm
 // Identifier to use for signing, based on the key type. If sigAlgo is not zero
 // then it overrides the default.
@@ -1495,7 +1527,7 @@ internal static (SignatureAlgorithm, pkix.AlgorithmIdentifier, error) signingPar
             defaultAlgo = ECDSAWithSHA512;
         }
         else { /* default: */
-            return (0, ai, errors.New("x509: unsupported elliptic curve"u8));
+            return (0, ai, errors.New(x509UnsupportedEllipticˢ));
         }
 
         break;
@@ -1507,7 +1539,7 @@ internal static (SignatureAlgorithm, pkix.AlgorithmIdentifier, error) signingPar
     }
     default: {
         var pub = switchᴛ1;
-        return (0, ai, errors.New("x509: only RSA, ECDSA and Ed25519 keys supported"u8));
+        return (0, ai, errors.New(x509OnlyRsaEcdsaAndˢ));
     }}
     if (sigAlgo == 0) {
         sigAlgo = defaultAlgo;
@@ -1515,10 +1547,10 @@ internal static (SignatureAlgorithm, pkix.AlgorithmIdentifier, error) signingPar
     foreach (var (_, details) in signatureAlgorithmDetails) {
         if (details.algo == sigAlgo) {
             if (details.pubKeyAlgo != pubType) {
-                return (0, ai, errors.New("x509: requested SignatureAlgorithm does not match private key type"u8));
+                return (0, ai, errors.New(x509Requestedˢ));
             }
             if (details.hash == crypto.MD5) {
-                return (0, ai, errors.New("x509: signing with MD5 is not supported"u8));
+                return (0, ai, errors.New(x509SigningWithMd5IsNotˢ));
             }
             return (sigAlgo, new pkix.AlgorithmIdentifier(
                 Algorithm: details.oid,
@@ -1526,7 +1558,7 @@ internal static (SignatureAlgorithm, pkix.AlgorithmIdentifier, error) signingPar
             ), default!);
         }
     }
-    return (0, ai, errors.New("x509: unknown SignatureAlgorithm"u8));
+    return (0, ai, errors.New(x509Unknownˢ));
 }
 
 internal static (slice<byte>, error) signTBS(slice<byte> tbs, crypto.Signer key, SignatureAlgorithm sigAlg, io.Reader rand) {
@@ -1561,6 +1593,14 @@ internal static (slice<byte>, error) signTBS(slice<byte> tbs, crypto.Signer key,
 // emptyASN1Subject is the ASN.1 DER encoding of an empty Subject, which is
 // just an empty SEQUENCE.
 internal static slice<byte> emptyASN1Subject = new byte[]{0x30, 0}.slice();
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509CertificatePrivateˢ = "x509: certificate private key does not implement crypto.Signer"u8;
+private static readonly @string x509NoSerialNumberGivenˢ = "x509: no SerialNumber given"u8;
+private static readonly @string x509SerialNumberMustBeˢ = "x509: serial number must be positive"u8;
+private static readonly @string x509OnlyCAsAreAllowedToˢ = "x509: only CAs are allowed to specify MaxPathLen"u8;
+private static readonly @string x509InternalErrorˢ = "x509: internal error: supported public key does not implement Equal"u8;
+private static readonly @string x509ProvidedPrivateKeyˢ = "x509: provided PrivateKey doesn't match parent's PublicKey"u8;
 
 // Check that the signer's public key matches the private key, if available.
 [GoType("dyn")] partial interface CreateCertificate_privateKey {
@@ -1633,10 +1673,10 @@ public static (slice<byte>, error) CreateCertificate(io.Reader rand, ж<Certific
 
     var (key, ok) = priv._<crypto.Signer>(ᐧ);
     if (!ok) {
-        return (default!, errors.New("x509: certificate private key does not implement crypto.Signer"u8));
+        return (default!, errors.New(x509CertificatePrivateˢ));
     }
     if (template.SerialNumber == nil) {
-        return (default!, errors.New("x509: no SerialNumber given"u8));
+        return (default!, errors.New(x509NoSerialNumberGivenˢ));
     }
     // RFC 5280 Section 4.1.2.2: serial number must positive
     //
@@ -1644,10 +1684,10 @@ public static (slice<byte>, error) CreateCertificate(io.Reader rand, ж<Certific
     // get this wrong, in part because the encoding can itself alter the length of the
     // serial. For now we accept these non-conformant serials.
     if (template.SerialNumber.Sign() == -1) {
-        return (default!, errors.New("x509: serial number must be positive"u8));
+        return (default!, errors.New(x509SerialNumberMustBeˢ));
     }
     if (template.BasicConstraintsValid && !template.IsCA && template.MaxPathLen != -1 && (template.MaxPathLen != 0 || template.MaxPathLenZero)) {
-        return (default!, errors.New("x509: only CAs are allowed to specify MaxPathLen"u8));
+        return (default!, errors.New(x509OnlyCAsAreAllowedToˢ));
     }
     var (signatureAlgorithm, algorithmIdentifier, err) = signingParamsForKey(key, template.SignatureAlgorithm);
     if (err != default!) {
@@ -1683,10 +1723,10 @@ public static (slice<byte>, error) CreateCertificate(io.Reader rand, ж<Certific
     }
     {
         var (privPub, okΔ1) = key.Public()._<CreateCertificate_privateKey>(ᐧ); if (!okΔ1){
-            return (default!, errors.New("x509: internal error: supported public key does not implement Equal"u8));
+            return (default!, errors.New(x509InternalErrorˢ));
         } else 
         if (parent.PublicKey != default! && !privPub.Equal(parent.PublicKey)) {
-            return (default!, errors.New("x509: provided PrivateKey doesn't match parent's PublicKey"u8));
+            return (default!, errors.New(x509ProvidedPrivateKeyˢ));
         }
     }
     (var extensions, err) = buildCertExtensions(Ꮡtemplate, bytes.Equal(asn1Subject, emptyASN1Subject), authorityKeyId, subjectKeyId);
@@ -1743,6 +1783,9 @@ public static (ж<pkix.CertificateList>, error) ParseCRL(slice<byte> crlBytes) {
     return ParseDERCRL(crlBytes);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509TrailingDataAfterCrlˢ = "x509: trailing data after CRL"u8;
+
 // ParseDERCRL parses a DER encoded CRL from the given bytes.
 //
 // Deprecated: Use [ParseRevocationList] instead.
@@ -1753,7 +1796,7 @@ public static (ж<pkix.CertificateList>, error) ParseDERCRL(slice<byte> derBytes
             return (default!, err);
         } else 
         if (builtin.len(rest) != 0) {
-            return (default!, errors.New("x509: trailing data after CRL"u8));
+            return (default!, errors.New(x509TrailingDataAfterCrlˢ));
         }
     }
     return (certList, default!);
@@ -1770,7 +1813,7 @@ public static (ж<pkix.CertificateList>, error) ParseDERCRL(slice<byte> derBytes
 
     var (key, ok) = priv._<crypto.Signer>(ᐧ);
     if (!ok) {
-        return (default!, errors.New("x509: certificate private key does not implement crypto.Signer"u8));
+        return (default!, errors.New(x509CertificatePrivateˢ));
     }
     (var signatureAlgorithm, var algorithmIdentifier, err) = signingParamsForKey(key, 0);
     if (err != default!) {
@@ -1877,6 +1920,9 @@ public static (ж<pkix.CertificateList>, error) ParseDERCRL(slice<byte> derBytes
 // extensions in a CSR.
 internal static asn1.ObjectIdentifier oidExtensionRequest = new asn1.ObjectIdentifier(new nint[]{1, 2, 840, 113549, 1, 9, 14}.slice());
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509FailedToUnmarshalRawˢ = "x509: failed to unmarshal raw CSR Attributes"u8;
+
 // newRawAttributes converts AttributeTypeAndValueSETs from a template
 // CertificateRequest's Attributes into tbsCertificateRequest RawAttributes.
 internal static (slice<asn1.RawValue>, error) newRawAttributes(slice<pkix.AttributeTypeAndValueSET> attributes) {
@@ -1890,7 +1936,7 @@ internal static (slice<asn1.RawValue>, error) newRawAttributes(slice<pkix.Attrib
         return (default!, err);
     }
     if (builtin.len(rest) != 0) {
-        return (default!, errors.New("x509: failed to unmarshal raw CSR Attributes"u8));
+        return (default!, errors.New(x509FailedToUnmarshalRawˢ));
     }
     return (rawAttributes, default!);
 }
@@ -1909,6 +1955,9 @@ internal static slice<pkix.AttributeTypeAndValueSET> parseRawAttributes(slice<as
     }
     return attributes;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509CertificateRequestˢ = "x509: certificate request contains duplicate requested extensions"u8;
 
 // pkcs10Attribute reflects the Attribute structure from RFC 2986, Section 4.1.
 [GoLocalName("pkcs10Attribute")] [GoType("dyn")] partial struct parseCSRExtensions_pkcs10Attribute {
@@ -1942,7 +1991,7 @@ internal static (slice<pkix.Extension>, error) parseCSRExtensions(slice<asn1.Raw
         foreach (var (_, ext) in extensions) {
             @string oidStr = ext.Id.String();
             if (requestedExts[oidStr]) {
-                return (default!, errors.New("x509: certificate request contains duplicate requested extensions"u8));
+                return (default!, errors.New(x509CertificateRequestˢ));
             }
             requestedExts[oidStr] = true;
         }
@@ -1983,7 +2032,7 @@ public static (slice<byte> csr, error err) CreateCertificateRequest(io.Reader ra
     ref var template = ref Ꮡtemplate.Value;
     var (key, ok) = priv._<crypto.Signer>(ᐧ);
     if (!ok) {
-        return (default!, errors.New("x509: certificate private key does not implement crypto.Signer"u8));
+        return (default!, errors.New(x509CertificatePrivateˢ));
     }
     (var signatureAlgorithm, var algorithmIdentifier, err) = signingParamsForKey(key, template.SignatureAlgorithm);
     if (err != default!) {
@@ -2117,6 +2166,9 @@ public static (ж<CertificateRequest>, error) ParseCertificateRequest(slice<byte
     return parseCertificateRequest(Ꮡcsr);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509TrailingDataAfterXˢ = "x509: trailing data after X.509 Subject"u8;
+
 internal static (ж<CertificateRequest>, error) parseCertificateRequest(ж<certificateRequest> Ꮡin) {
     ref var @in = ref Ꮡin.Value;
 
@@ -2144,7 +2196,7 @@ internal static (ж<CertificateRequest>, error) parseCertificateRequest(ж<certi
             return (default!, errΔ1);
         } else 
         if (builtin.len(rest) != 0) {
-            return (default!, errors.New("x509: trailing data after X.509 Subject"u8));
+            return (default!, errors.New(x509TrailingDataAfterXˢ));
         }
     }
     @out.of(CertificateRequest.ᏑSubject).FillFromRDNSequence(Ꮡsubject);
@@ -2288,6 +2340,18 @@ internal static (ж<CertificateRequest>, error) parseCertificateRequest(ж<certi
     public slice<pkix.Extension> Extensions;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509TemplateCanNotBeNilˢ = "x509: template can not be nil"u8;
+private static readonly @string x509IssuerCanNotBeNilˢ = "x509: issuer can not be nil"u8;
+private static readonly @string x509IssuerMustHaveTheˢ = "x509: issuer must have the crlSign key usage bit set"u8;
+private static readonly @string x509IssuerCertificateˢ = "x509: issuer certificate doesn't contain a subject key identifier"u8;
+private static readonly @string x509TemplateThisUpdateIsˢ = "x509: template.ThisUpdate is after template.NextUpdate"u8;
+private static readonly @string x509TemplateContainsNilˢ = "x509: template contains nil Number field"u8;
+private static readonly @string x509TemplateContainsˢ = "x509: template contains entry with nil SerialNumber field"u8;
+private static readonly @string x509TemplateContainsˢ2 = "x509: template contains entry with zero RevocationTime field"u8;
+private static readonly @string x509TemplateContainsˢ3 = "x509: template contains entry with ReasonCode ExtraExtension; use ReasonCode field instead"u8;
+private static readonly @string x509CrlNumberExceeds20ˢ = "x509: CRL number exceeds 20 octets"u8;
+
 // CreateRevocationList creates a new X.509 v2 [Certificate] Revocation List,
 // according to RFC 5280, based on template.
 //
@@ -2305,22 +2369,22 @@ public static (slice<byte>, error) CreateRevocationList(io.Reader rand, ж<Revoc
     ref var issuer = ref Ꮡissuer.DerefOrNil();
 
     if (Ꮡtemplate == nil) {
-        return (default!, errors.New("x509: template can not be nil"u8));
+        return (default!, errors.New(x509TemplateCanNotBeNilˢ));
     }
     if (Ꮡissuer == nil) {
-        return (default!, errors.New("x509: issuer can not be nil"u8));
+        return (default!, errors.New(x509IssuerCanNotBeNilˢ));
     }
     if (((KeyUsage)(issuer.KeyUsage & KeyUsageCRLSign)) == 0) {
-        return (default!, errors.New("x509: issuer must have the crlSign key usage bit set"u8));
+        return (default!, errors.New(x509IssuerMustHaveTheˢ));
     }
     if (builtin.len(issuer.SubjectKeyId) == 0) {
-        return (default!, errors.New("x509: issuer certificate doesn't contain a subject key identifier"u8));
+        return (default!, errors.New(x509IssuerCertificateˢ));
     }
     if (template.NextUpdate.Before(template.ThisUpdate)) {
-        return (default!, errors.New("x509: template.ThisUpdate is after template.NextUpdate"u8));
+        return (default!, errors.New(x509TemplateThisUpdateIsˢ));
     }
     if (template.Number == nil) {
-        return (default!, errors.New("x509: template contains nil Number field"u8));
+        return (default!, errors.New(x509TemplateContainsNilˢ));
     }
     var (signatureAlgorithm, algorithmIdentifier, err) = signingParamsForKey(priv, template.SignatureAlgorithm);
     if (err != default!) {
@@ -2344,10 +2408,10 @@ public static (slice<byte>, error) CreateRevocationList(io.Reader rand, ж<Revoc
         revokedCerts = new slice<pkix.RevokedCertificate>(builtin.len(template.RevokedCertificateEntries));
         foreach (var (i, rce) in template.RevokedCertificateEntries) {
             if (rce.SerialNumber == nil) {
-                return (default!, errors.New("x509: template contains entry with nil SerialNumber field"u8));
+                return (default!, errors.New(x509TemplateContainsˢ));
             }
             if (rce.RevocationTime.IsZero()) {
-                return (default!, errors.New("x509: template contains entry with zero RevocationTime field"u8));
+                return (default!, errors.New(x509TemplateContainsˢ2));
             }
             var rc = new pkix.RevokedCertificate(
                 SerialNumber: rce.SerialNumber,
@@ -2358,7 +2422,7 @@ public static (slice<byte>, error) CreateRevocationList(io.Reader rand, ж<Revoc
             var exts = new slice<pkix.Extension>(0, builtin.len(rce.ExtraExtensions));
             foreach (var (_, ext) in rce.ExtraExtensions) {
                 if (ext.Id.Equal(oidExtensionReasonCode)) {
-                    return (default!, errors.New("x509: template contains entry with ReasonCode ExtraExtension; use ReasonCode field instead"u8));
+                    return (default!, errors.New(x509TemplateContainsˢ3));
                 }
                 exts = append(exts, ext);
             }
@@ -2386,7 +2450,7 @@ public static (slice<byte>, error) CreateRevocationList(io.Reader rand, ж<Revoc
     }
     {
         var numBytes = template.Number.Bytes(); if (builtin.len(numBytes) > 20 || (builtin.len(numBytes) == 20 && (byte)(numBytes[0] & 0x80) != 0)) {
-            return (default!, errors.New("x509: CRL number exceeds 20 octets"u8));
+            return (default!, errors.New(x509CrlNumberExceeds20ˢ));
         }
     }
     (var crlNum, err) = asn1.Marshal(template.Number);

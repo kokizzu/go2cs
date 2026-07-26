@@ -489,6 +489,9 @@ internal static (@string ret, error err) parseT61String(slice<byte> bytes) {
     return (((@string)bytes), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string asn1InvalidUtf8Stringˢ = "asn1: invalid UTF-8 string"u8;
+
 // UTF8String
 
 // parseUTF8String parses an ASN.1 UTF8String (raw UTF-8) from the given byte
@@ -498,10 +501,13 @@ internal static (@string ret, error err) parseUTF8String(slice<byte> bytes) {
     error err = default!;
 
     if (!utf8.Valid(bytes)) {
-        return ("", errors.New("asn1: invalid UTF-8 string"u8));
+        return ("", errors.New(asn1InvalidUtf8Stringˢ));
     }
     return (((@string)bytes), default!);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pkcs12OddLengthBmpStringˢ = "pkcs12: odd-length BMP string"u8;
 
 // BMPString
 
@@ -509,7 +515,7 @@ internal static (@string ret, error err) parseUTF8String(slice<byte> bytes) {
 // ISO/IEC/ITU 10646-1) from the given byte slice and returns it.
 internal static (@string, error) parseBMPString(slice<byte> bmpString) {
     if (len(bmpString) % 2 != 0) {
-        return ("", errors.New("pkcs12: odd-length BMP string"u8));
+        return ("", errors.New(pkcs12OddLengthBmpStringˢ));
     }
     // Strip terminator if present.
     {
@@ -535,6 +541,9 @@ internal static (@string, error) parseBMPString(slice<byte> bmpString) {
 
 [GoType("[]byte")] partial struct RawContent;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string asn1InternalErrorInˢ = "asn1: internal error in parseTagAndLength"u8;
+
 // Tagging
 
 // parseTagAndLength parses an ASN.1 tag and length pair from the given offset
@@ -550,7 +559,7 @@ internal static (tagAndLength ret, nint offset, error err) parseTagAndLength(sli
     // parseTagAndLength should not be called without at least a single
     // byte to read. Thus this check is for robustness:
     if (offset >= len(bytes)) {
-        err = errors.New("asn1: internal error in parseTagAndLength"u8);
+        err = errors.New(asn1InternalErrorInˢ);
         return (ret, offset, err);
     }
     var b = bytes[offset];
@@ -688,6 +697,9 @@ internal static reflectꓸType bigIntType = reflect.TypeFor<ж<bigꓸInt>>();
 internal static bool invalidLength(nint offset, nint length, nint sliceLength) {
     return offset + length < offset || offset + length > sliceLength;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string asn1ˢ = "asn1"u8;
 
 // parseField is the main parsing function. Given a byte slice and an offset
 // into the array, it will try to parse a suitable ASN.1 value out and store it
@@ -965,7 +977,7 @@ internal static (nint offset, error err) parseField(reflectꓸValue v, slice<byt
                 if (i == 0 && AreEqual(field.Type, rawContentsType)) {
                     continue;
                 }
-                (innerOffset, err) = parseField(val.Field(i), innerBytes, innerOffset, parseFieldParameters(field.Tag.Get("asn1"u8)));
+                (innerOffset, err) = parseField(val.Field(i), innerBytes, innerOffset, parseFieldParameters(field.Tag.Get(asn1ˢ)));
                 if (err != default!) {
                     return (offset, err);
                 }
@@ -1144,9 +1156,12 @@ public static (slice<byte> rest, error err) Unmarshal(slice<byte> b, any val) {
     public reflectꓸType Type;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string asn1UnmarshalRecipientˢ = "asn1: Unmarshal recipient value is nil"u8;
+
 [GoRecv] internal static @string Error(this ref invalidUnmarshalError e) {
     if (e.Type == default!) {
-        return "asn1: Unmarshal recipient value is nil"u8;
+        return asn1UnmarshalRecipientˢ;
     }
     if (e.Type.Kind() != reflect.ΔPointer) {
         return "asn1: Unmarshal recipient value is non-pointer "u8 + e.Type.String();

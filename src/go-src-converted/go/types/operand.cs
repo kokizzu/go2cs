@@ -72,6 +72,14 @@ internal static array<@string> operandModeString = new golib.SparseArray<@string
     return x.expr.Pos();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilWithInvalidTypeˢ = "nil (with invalid type)"u8;
+private static readonly @string ofGenericTypeˢ = " of generic type "u8;
+private static readonly @string ofTypeˢ = " of type "u8;
+private static readonly @string constrainedByˢ = " constrained by "u8;
+private static readonly @string withEmptyTypeSetˢ = " with empty type set"u8;
+private static readonly @string withInvalidTypeˢ = " with invalid type"u8;
+
 // Operand string formats
 // (not all "untyped" cases can appear due to the type system,
 // but they fall out naturally here)
@@ -116,7 +124,7 @@ internal static @string operandString(ж<operand> Ꮡx, Func<ж<Package>, @strin
         if (x.mode == nilvalue) {
             var exprᴛ1 = x.typ;
             if (AreEqual(exprᴛ1, default!) || AreEqual(exprᴛ1, Typ[Invalid])) {
-                return "nil (with invalid type)"u8;
+                return nilWithInvalidTypeˢ;
             }
             if (AreEqual(exprᴛ1, Typ[UntypedNil])) {
                 return "nil"u8;
@@ -190,25 +198,25 @@ internal static @string operandString(ж<operand> Ꮡx, Func<ж<Package>, @strin
         if (isValid(x.typ)){
             @string intro = default!;
             if (isGeneric(x.typ)){
-                intro = " of generic type "u8;
+                intro = ofGenericTypeˢ;
             } else {
-                intro = " of type "u8;
+                intro = ofTypeˢ;
             }
             buf.WriteString(intro);
             WriteType(Ꮡbuf, x.typ, qf);
             {
                 var (tpar, _) = Unalias(x.typ)._<ж<TypeParam>>(ᐧ); if (tpar != nil) {
-                    buf.WriteString(" constrained by "u8);
+                    buf.WriteString(constrainedByˢ);
                     WriteType(Ꮡbuf, (~tpar).bound, qf);
                     // do not compute interface type sets here
                     // If we have the type set and it's empty, say so for better error messages.
                     if (hasEmptyTypeset(new TypeParamжΔType(tpar))) {
-                        buf.WriteString(" with empty type set"u8);
+                        buf.WriteString(withEmptyTypeSetˢ);
                     }
                 }
             }
         } else {
-            buf.WriteString(" with invalid type"u8);
+            buf.WriteString(withInvalidTypeˢ);
         }
     }
     // )
@@ -265,6 +273,9 @@ internal static @string String(this ж<operand> Ꮡx) {
         return x.mode == value && AreEqual(x.typ, Typ[UntypedNil]);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string needTypeAssertionˢ = "need type assertion"u8;
 
 // assignableTo reports whether x is assignable to a variable of type T. If the
 // result is false and a non-nil cause is provided, it may be set to a more
@@ -343,7 +354,7 @@ internal static (bool, errors.Code) assignableTo(this ж<operand> Ꮡx, ж<Check
             if (Ꮡcheck.implements(x.Pos(), T, V, false, nil)) {
                 // T implements V, so give hint about type assertion.
                 if (Ꮡcause != nil) {
-                    cause = "need type assertion"u8;
+                    cause = needTypeAssertionˢ;
                 }
                 return (false, IncompatibleAssign);
             }

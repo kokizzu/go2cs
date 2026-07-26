@@ -33,6 +33,9 @@ partial class runtime_package {
 // bits instead of the standard mark bits.
 internal static bool useCheckmark = false;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string outOfMemoryAllocatingˢ4 = "out of memory allocating checkmarks bitmap"u8;
+
 // startCheckmarks prepares for the checkmarks phase.
 //
 // The world must be stopped.
@@ -46,7 +49,7 @@ internal static void startCheckmarks() {
             // Allocate bitmap on first use.
             bitmap = (ж<checkmarksMap>)(uintptr)(persistentalloc(@unsafe.Sizeof(bitmap.Value), 0, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
             if (bitmap == nil) {
-                @throw("out of memory allocating checkmarks bitmap"u8);
+                @throw(outOfMemoryAllocatingˢ4);
             }
             arena.Value.checkmarks = bitmap;
         } else {
@@ -58,13 +61,20 @@ internal static void startCheckmarks() {
     useCheckmark = true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gcWorkNotFlushedˢ = "GC work not flushed"u8;
+
 // endCheckmarks ends the checkmarks phase.
 internal static void endCheckmarks() {
     if (gcMarkWorkAvailable(nil)) {
-        @throw("GC work not flushed"u8);
+        @throw(gcWorkNotFlushedˢ);
     }
     useCheckmark = false;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string baseˢ = "base"u8;
+private static readonly @string checkmarkFoundUnmarkedˢ = "checkmark found unmarked object"u8;
 
 // setCheckmark throws if marking object is a checkmarks violation,
 // and otherwise sets obj's checkmark. It returns true if obj was
@@ -75,11 +85,11 @@ internal static bool setCheckmark(uintptr obj, uintptr @base, uintptr off, markB
         print((@string)"runtime: checkmarks found unexpected unmarked object obj="u8, ((Δhex)(uint64)obj), (@string)"\n"u8);
         print((@string)"runtime: found obj at *("u8, ((Δhex)(uint64)@base), (@string)"+"u8, ((Δhex)(uint64)off), (@string)")\n"u8);
         // Dump the source (base) object
-        gcDumpObject("base"u8, @base, off);
+        gcDumpObject(baseˢ, @base, off);
         // Dump the object
         gcDumpObject("obj"u8, obj, ~(uintptr)0);
         getg().Value.m.Value.traceback = 2;
-        @throw("checkmark found unmarked object"u8);
+        @throw(checkmarkFoundUnmarkedˢ);
     }
     arenaIdx ai = arenaIndex(obj);
     var arena = mheap_.arenas[(nint)(ai.l1())].Value[ai.l2()];

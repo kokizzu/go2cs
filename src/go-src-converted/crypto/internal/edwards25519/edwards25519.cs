@@ -142,6 +142,10 @@ internal static slice<byte> bytes(this ж<Point> Ꮡv, ж<array<byte>> Ꮡbuf) {
 
 internal static ж<field.Element> feOne = @new<field.Element>().One();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string edwards25519InvalidPointˢ = "edwards25519: invalid point encoding length"u8;
+private static readonly @string edwards25519InvalidPointˢ2 = "edwards25519: invalid point encoding"u8;
+
 // SetBytes sets v = x, where x is a 32-byte encoding of v. If x does not
 // represent a valid point on the curve, SetBytes returns nil and an error and
 // the receiver is unchanged. Otherwise, SetBytes returns v.
@@ -161,7 +165,7 @@ public static (ж<Point>, error) SetBytes(this ж<Point> Ꮡv, slice<byte> x) {
     // specifically the "Canonical A, R" section.
     var (y, err) = @new<field.Element>().SetBytes(x);
     if (err != default!) {
-        return (default!, errors.New("edwards25519: invalid point encoding length"u8));
+        return (default!, errors.New(edwards25519InvalidPointˢ));
     }
     // -x² + y² = 1 + dx²y²
     // x² + dx²y² = x²(dy² + 1) = y² - 1
@@ -175,7 +179,7 @@ public static (ж<Point>, error) SetBytes(this ж<Point> Ꮡv, slice<byte> x) {
     // x = +√(u/v)
     var (xx, wasSquare) = @new<field.Element>().SqrtRatio(u, vv);
     if (wasSquare == 0) {
-        return (default!, errors.New("edwards25519: invalid point encoding"u8));
+        return (default!, errors.New(edwards25519InvalidPointˢ2));
     }
     // Select the negative square root if the sign bit is set.
     var xxNeg = @new<field.Element>().Negate(xx);

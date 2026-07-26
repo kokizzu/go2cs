@@ -27,6 +27,11 @@ partial class x509_package {
     public slice<byte> PrivateKey;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509FailedToParsePrivateˢ3 = "x509: failed to parse private key (use ParsePKCS1PrivateKey instead for this key format)"u8;
+private static readonly @string x509InvalidEd25519ˢ = "x509: invalid Ed25519 private key parameters"u8;
+private static readonly @string x509InvalidX25519Privateˢ = "x509: invalid X25519 private key parameters"u8;
+
 // optional attributes omitted.
 
 // ParsePKCS8PrivateKey parses an unencrypted private key in PKCS #8, ASN.1 DER form.
@@ -45,12 +50,12 @@ public static (any key, error err) ParsePKCS8PrivateKey(slice<byte> der) {
         var (_, errΔ1) = asn1.Unmarshal(der, ᏑprivKey); if (errΔ1 != default!) {
             {
                 var (_, errΔ2) = asn1.Unmarshal(der, Ꮡ(new ecPrivateKey(nil))); if (errΔ2 == default!) {
-                    return (default!, errors.New("x509: failed to parse private key (use ParseECPrivateKey instead for this key format)"u8));
+                    return (default!, errors.New(x509FailedToParsePrivateˢ));
                 }
             }
             {
                 var (_, errΔ3) = asn1.Unmarshal(der, Ꮡ(new pkcs1PrivateKey(nil))); if (errΔ3 == default!) {
-                    return (default!, errors.New("x509: failed to parse private key (use ParsePKCS1PrivateKey instead for this key format)"u8));
+                    return (default!, errors.New(x509FailedToParsePrivateˢ3));
                 }
             }
             return (default!, errΔ1);
@@ -81,7 +86,7 @@ public static (any key, error err) ParsePKCS8PrivateKey(slice<byte> der) {
     case {} when privKey.Algo.Algorithm.Equal(oidPublicKeyEd25519): {
         {
             nint l = builtin.len(privKey.Algo.Parameters.FullBytes); if (l != 0) {
-                return (default!, errors.New("x509: invalid Ed25519 private key parameters"u8));
+                return (default!, errors.New(x509InvalidEd25519ˢ));
             }
         }
         ref var curvePrivateKey = ref heap<slice<byte>>(out var ᏑcurvePrivateKey);
@@ -100,7 +105,7 @@ public static (any key, error err) ParsePKCS8PrivateKey(slice<byte> der) {
     case {} when privKey.Algo.Algorithm.Equal(oidPublicKeyX25519): {
         {
             nint l = builtin.len(privKey.Algo.Parameters.FullBytes); if (l != 0) {
-                return (default!, errors.New("x509: invalid X25519 private key parameters"u8));
+                return (default!, errors.New(x509InvalidX25519Privateˢ));
             }
         }
         ref var curvePrivateKey = ref heap<slice<byte>>(out var ᏑcurvePrivateKey);
@@ -117,6 +122,9 @@ public static (any key, error err) ParsePKCS8PrivateKey(slice<byte> der) {
     }}
 
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509UnknownCurveWhileˢ = "x509: unknown curve while marshaling to PKCS#8"u8;
 
 // MarshalPKCS8PrivateKey converts a private key to PKCS #8, ASN.1 DER form.
 //
@@ -139,7 +147,7 @@ public static (slice<byte>, error) MarshalPKCS8PrivateKey(any key) {
     case ж<ecdsa.PrivateKey> k: {
         var (oid, ok) = oidFromNamedCurve((~k).Curve);
         if (!ok) {
-            return (default!, errors.New("x509: unknown curve while marshaling to PKCS#8"u8));
+            return (default!, errors.New(x509UnknownCurveWhileˢ));
         }
         var (oidBytes, err) = asn1.Marshal(oid);
         if (err != default!) {
@@ -183,7 +191,7 @@ public static (slice<byte>, error) MarshalPKCS8PrivateKey(any key) {
         } else {
             var (oid, ok) = oidFromECDHCurve(k.Curve());
             if (!ok) {
-                return (default!, errors.New("x509: unknown curve while marshaling to PKCS#8"u8));
+                return (default!, errors.New(x509UnknownCurveWhileˢ));
             }
             var (oidBytes, err) = asn1.Marshal(oid);
             if (err != default!) {

@@ -185,6 +185,9 @@ public static bool IsGoBuild(@string line) {
     return ok;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goBuildˢ = "//go:build"u8;
+
 // splitGoBuild splits apart the leading //go:build prefix in line from the build expression itself.
 // It returns "", false if the input is not a //go:build line or if the input contains multiple lines.
 internal static (@string expr, bool ok) splitGoBuild(@string line) {
@@ -198,7 +201,7 @@ internal static (@string expr, bool ok) splitGoBuild(@string line) {
     if (strings.Contains(line, "\n"u8)) {
         return ("", false);
     }
-    if (!strings.HasPrefix(line, "//go:build"u8)) {
+    if (!strings.HasPrefix(line, goBuildˢ)) {
         return ("", false);
     }
     line = strings.TrimSpace(line);
@@ -300,6 +303,9 @@ internal static Expr not(this ж<exprParser> Ꮡp) {
     return Ꮡp.atom();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingCloseParenˢ = "missing close paren"u8;
+
 // atom parses a tag or a parenthesized expression.
 // On entry, the next input token HAS been lexed.
 // On exit, the next input token has been lexed and is in p.tok.
@@ -315,7 +321,7 @@ internal static Expr atom(this ж<exprParser> Ꮡp) => func((defer, recover) => 
                 var e = recover(); if (e != default!) {
                     {
                         var (eΔ1, ok) = e._<ж<SyntaxError>>(ᐧ); if (ok && (~eΔ1).Err == "unexpected end of expression"u8) {
-                            eΔ1.Value.Err = "missing close paren"u8;
+                            eΔ1.Value.Err = missingCloseParenˢ;
                         }
                     }
                     throw panic(e);
@@ -397,6 +403,9 @@ public static bool IsPlusBuild(@string line) {
     return ok;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string buildˢ = "+build"u8;
+
 // splitPlusBuild splits apart the leading // +build prefix in line from the build expression itself.
 // It returns "", false if the input is not a // +build line or if the input contains multiple lines.
 internal static (@string expr, bool ok) splitPlusBuild(@string line) {
@@ -416,7 +425,7 @@ internal static (@string expr, bool ok) splitPlusBuild(@string line) {
     line = line[(int)(len("//"))..];
     // Note the space is optional; "//+build" is recognized too.
     line = strings.TrimSpace(line);
-    if (!strings.HasPrefix(line, "+build"u8)) {
+    if (!strings.HasPrefix(line, buildˢ)) {
         return ("", false);
     }
     line = line[(int)(len("+build"))..];
@@ -430,6 +439,9 @@ internal static (@string expr, bool ok) splitPlusBuild(@string line) {
     }
     return (trim, true);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ignoreˢ = "ignore"u8;
 
 // parsePlusBuildExpr parses a legacy build tag expression (as used with “// +build”).
 internal static (Expr, error) parsePlusBuildExpr(@string text) {
@@ -447,7 +459,7 @@ internal static (Expr, error) parsePlusBuildExpr(@string text) {
             Expr z = default!;
             bool neg = default!;
             if (strings.HasPrefix(lit, "!!"u8) || lit == "!"u8){
-                z = tag("ignore"u8);
+                z = tag(ignoreˢ);
             } else {
                 if (strings.HasPrefix(lit, "!"u8)) {
                     neg = true;
@@ -456,7 +468,7 @@ internal static (Expr, error) parsePlusBuildExpr(@string text) {
                 if (isValidTag(lit)){
                     z = tag(lit);
                 } else {
-                    z = tag("ignore"u8);
+                    z = tag(ignoreˢ);
                 }
                 if (neg) {
                     z = not(z);
@@ -485,7 +497,7 @@ internal static (Expr, error) parsePlusBuildExpr(@string text) {
         }
     }
     if (x == default!) {
-        x = tag("ignore"u8);
+        x = tag(ignoreˢ);
     }
     return (x, default!);
 }
@@ -506,6 +518,9 @@ internal static bool isValidTag(@string word) {
 }
 
 internal static error errComplex = errors.New("expression too complex for // +build lines"u8);
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string buildˢ2 = "// +build"u8;
 
 // PlusBuildLines returns a sequence of “// +build” lines that evaluate to the build expression x.
 // If the expression is too complex to convert directly to “// +build” lines, PlusBuildLines returns an error.
@@ -555,7 +570,7 @@ public static (slice<@string>, error) PlusBuildLines(Expr x) {
     // Prepare the +build lines.
     slice<@string> lines = default!;
     foreach (var (_, or) in split) {
-        @string line = "// +build"u8;
+        @string line = buildˢ2;
         foreach (var (_, and) in or) {
             @string clause = ""u8;
             foreach (var (i, lit) in and) {

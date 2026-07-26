@@ -23,7 +23,7 @@ partial class chacha20poly1305_package {
 // nonces are randomly generated.
 public static (cipher.AEAD, error) NewX(slice<byte> key) {
     if (len(key) != KeySize) {
-        return (default!, errors.New("chacha20poly1305: bad key length"u8));
+        return (default!, errors.New(chacha20poly1305BadKeyˢ));
     }
     var ret = @new<xchacha20poly1305>();
     copy((~ret).key[..], key);

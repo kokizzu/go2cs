@@ -141,7 +141,8 @@ partial class profile_package {
 // repeated int64 period = 12
 // repeated int64 comment = 13
 // int64 defaultSampleType = 14
-internal static slice<Func<ж<buffer>, message, error>> profileDecoder = new Func<ж<buffer>, message, error>[]{
+internal static slice<Func<ж<buffer>, message, error>> profileDecoder;
+internal static void initᴛprofileDecoder() { profileDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
     (ж<buffer> b, message m) => {
         var x = @new<ValueType>();
@@ -196,7 +197,7 @@ internal static slice<Func<ж<buffer>, message, error>> profileDecoder = new Fun
     (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Profile>>()).Period)),
     (ж<buffer> b, message m) => decodeInt64s(b, Ꮡ((~m._<ж<Profile>>()).commentX)),
     (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Profile>>()).defaultSampleTypeX))
-}.slice();
+}.slice(); }
 
 // postDecode takes the unexported fields populated by decode (with
 // suffix X) and populates the corresponding exported fields.
@@ -307,11 +308,12 @@ internal static error postDecode(this ж<Profile> Ꮡp) {
 // 0
 // optional int64 type = 1
 // optional int64 unit = 2
-internal static slice<Func<ж<buffer>, message, error>> valueTypeDecoder = new Func<ж<buffer>, message, error>[]{
+internal static slice<Func<ж<buffer>, message, error>> valueTypeDecoder;
+internal static void initᴛvalueTypeDecoder() { valueTypeDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
     (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<ValueType>>()).typeX)),
     (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<ValueType>>()).unitX))
-}.slice();
+}.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Sample p) {
     return sampleDecoder;
@@ -331,7 +333,8 @@ internal static slice<Func<ж<buffer>, message, error>> valueTypeDecoder = new F
 // repeated uint64 location = 1
 // repeated int64 value = 2
 // repeated Label label = 3
-internal static slice<Func<ж<buffer>, message, error>> sampleDecoder = new Func<ж<buffer>, message, error>[]{
+internal static slice<Func<ж<buffer>, message, error>> sampleDecoder;
+internal static void initᴛsampleDecoder() { sampleDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
     (ж<buffer> b, message m) => decodeUint64s(b, Ꮡ((~m._<ж<Sample>>()).locationIDX)),
     (ж<buffer> b, message m) => decodeInt64s(b, Ꮡ((~m._<ж<Sample>>()).Value)),
@@ -341,7 +344,7 @@ internal static slice<Func<ж<buffer>, message, error>> sampleDecoder = new Func
         s.Value.labelX = append((~s).labelX, new Label(nil));
         return decodeMessage(b, new Labelжmessage(Ꮡ((~s).labelX, n)));
     }
-}.slice();
+}.slice(); }
 
 internal static slice<Func<ж<buffer>, message, error>> decoder(this Label p) {
     return labelDecoder;
@@ -357,12 +360,13 @@ internal static void encode(this Label p, ж<buffer> Ꮡb) {
 // optional int64 key = 1
 // optional int64 str = 2
 // optional int64 num = 3
-internal static slice<Func<ж<buffer>, message, error>> labelDecoder = new Func<ж<buffer>, message, error>[]{
+internal static slice<Func<ж<buffer>, message, error>> labelDecoder;
+internal static void initᴛlabelDecoder() { labelDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
     (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Label>>()).keyX)),
     (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Label>>()).strX)),
     (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Label>>()).numX))
-}.slice();
+}.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Mapping p) {
     return mappingDecoder;
@@ -392,7 +396,8 @@ internal static slice<Func<ж<buffer>, message, error>> labelDecoder = new Func<
 // optional bool has_filenames = 8
 // optional bool has_line_numbers = 9
 // optional bool has_inline_frames = 10
-internal static slice<Func<ж<buffer>, message, error>> mappingDecoder = new Func<ж<buffer>, message, error>[]{
+internal static slice<Func<ж<buffer>, message, error>> mappingDecoder;
+internal static void initᴛmappingDecoder() { mappingDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
     (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Mapping>>()).ID)),
     (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Mapping>>()).Start)),
@@ -404,7 +409,7 @@ internal static slice<Func<ж<buffer>, message, error>> mappingDecoder = new Fun
     (ж<buffer> b, message m) => decodeBool(b, Ꮡ((~m._<ж<Mapping>>()).HasFilenames)),
     (ж<buffer> b, message m) => decodeBool(b, Ꮡ((~m._<ж<Mapping>>()).HasLineNumbers)),
     (ж<buffer> b, message m) => decodeBool(b, Ꮡ((~m._<ж<Mapping>>()).HasInlineFrames))
-}.slice();
+}.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Location p) {
     return locationDecoder;
@@ -424,7 +429,8 @@ internal static slice<Func<ж<buffer>, message, error>> mappingDecoder = new Fun
 // optional uint64 mapping_id = 2;
 // optional uint64 address = 3;
 // repeated Line line = 4
-internal static slice<Func<ж<buffer>, message, error>> locationDecoder = new Func<ж<buffer>, message, error>[]{
+internal static slice<Func<ж<buffer>, message, error>> locationDecoder;
+internal static void initᴛlocationDecoder() { locationDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
     (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Location>>()).ID)),
     (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Location>>()).mappingIDX)),
@@ -435,7 +441,7 @@ internal static slice<Func<ж<buffer>, message, error>> locationDecoder = new Fu
         pp.Value.Line = append((~pp).Line, new Line(nil));
         return decodeMessage(b, new Lineжmessage(Ꮡ((~pp).Line, n)));
     }
-}.slice();
+}.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Line p) {
     return lineDecoder;
@@ -449,11 +455,12 @@ internal static slice<Func<ж<buffer>, message, error>> locationDecoder = new Fu
 // 0
 // optional uint64 function_id = 1
 // optional int64 line = 2
-internal static slice<Func<ж<buffer>, message, error>> lineDecoder = new Func<ж<buffer>, message, error>[]{
+internal static slice<Func<ж<buffer>, message, error>> lineDecoder;
+internal static void initᴛlineDecoder() { lineDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
     (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Line>>()).functionIDX)),
     (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Line>>()).ΔLine))
-}.slice();
+}.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Function p) {
     return functionDecoder;
@@ -473,14 +480,15 @@ internal static slice<Func<ж<buffer>, message, error>> lineDecoder = new Func<�
 // optional int64 function_system_name = 3
 // repeated int64 filename = 4
 // optional int64 start_line = 5
-internal static slice<Func<ж<buffer>, message, error>> functionDecoder = new Func<ж<buffer>, message, error>[]{
+internal static slice<Func<ж<buffer>, message, error>> functionDecoder;
+internal static void initᴛfunctionDecoder() { functionDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
     (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Function>>()).ID)),
     (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Function>>()).nameX)),
     (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Function>>()).systemNameX)),
     (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Function>>()).filenameX)),
     (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Function>>()).StartLine))
-}.slice();
+}.slice(); }
 
 internal static int64 addString(map<@string, nint> strings, @string s) {
     var (i, ok) = strings[s, ꟷ];

@@ -13,6 +13,9 @@ partial class net_package {
 
 internal const bool supportsSendfile = true;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string transmitfileˢ = "transmitfile"u8;
+
 // sendFile copies the contents of r to c using the TransmitFile
 // system call to minimize copies.
 //
@@ -39,7 +42,7 @@ internal static (int64 written, error err, bool handled) sendFile(ж<netFD> Ꮡf
     }
     (written, err) = poll.SendFile(Ꮡfd.of(netFD.Ꮡpfd), ((syscallꓸHandle)f.Fd()), n);
     if (err != default!) {
-        err = wrapSyscallError("transmitfile"u8, err);
+        err = wrapSyscallError(transmitfileˢ, err);
     }
     // If any byte was copied, regardless of any error
     // encountered mid-way, handled must be set to true.

@@ -364,7 +364,7 @@ internal static void onceSetNextProtoDefaults(this ж<Transport> Ꮡt) {
     // requested. (Issue 22891)
     var (altProto, _) = Ꮡt.of(Transport.ᏑaltProto).Load()._<map<@string, RoundTripper>>(ᐧ);
     {
-        var rv = reflect.ValueOf(altProto["https"u8]); if (rv.IsValid() && rv.Type().Kind() == reflect.Struct && rv.Type().NumField() == 1) {
+        var rv = reflect.ValueOf(altProto[httpsˢ]); if (rv.IsValid() && rv.Type().Kind() == reflect.Struct && rv.Type().NumField() == 1) {
             {
                 var v = rv.Field(0); if (v.CanInterface()) {
                     {
@@ -521,6 +521,11 @@ internal static @string validateHeaders(ΔHeader hdrs) {
     return ""u8;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpNilRequestHeaderˢ = "http: nil Request.Header"u8;
+private static readonly @string unsupportedProtocolˢ = "unsupported protocol scheme"u8;
+private static readonly @string httpNoHostInRequestUrlˢ = "http: no Host in request URL"u8;
+
 // roundTrip implements a RoundTripper over HTTP.
 internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<Request> Ꮡreq) => func<(ж<Response>, error err)>((defer, recover) => {
     error err = default!;
@@ -532,11 +537,11 @@ internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<
     var trace = httptrace.ContextClientTrace(ctx);
     if (req.URL == nil) {
         req.closeBody();
-        return (default!, errors.New("http: nil Request.URL"u8));
+        return (default!, errors.New(httpNilRequestUrlˢ));
     }
     if (req.Header == default!) {
         req.closeBody();
-        return (default!, errors.New("http: nil Request.Header"u8));
+        return (default!, errors.New(httpNilRequestHeaderˢ));
     }
     @string scheme = req.URL.Value.Scheme;
     var isHTTP = scheme == "http"u8 || scheme == "https"u8;
@@ -574,7 +579,7 @@ internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<
     }
     if (!isHTTP) {
         req.closeBody();
-        return (default!, badStringError("unsupported protocol scheme"u8, scheme));
+        return (default!, badStringError(unsupportedProtocolˢ, scheme));
     }
     if (req.Method != ""u8 && !validMethod(req.Method)) {
         req.closeBody();
@@ -582,7 +587,7 @@ internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<
     }
     if ((~req.URL).Host == ""u8) {
         req.closeBody();
-        return (default!, errors.New("http: no Host in request URL"u8));
+        return (default!, errors.New(httpNoHostInRequestUrlˢ));
     }
     // Transport request context.
     //
@@ -1285,18 +1290,22 @@ internal static bool removeIdleConn(this ж<Transport> Ꮡt, ж<persistConn> Ꮡ
 internal static ж<net.Dialer> ᏑzeroDialer = new(default(net.Dialer));
 internal static ref net.Dialer zeroDialer => ref ᏑzeroDialer.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string netHttpTransportˢ = "net/http: Transport.DialContext hook returned (nil, nil)"u8;
+private static readonly @string netHttpTransportDialHookˢ = "net/http: Transport.Dial hook returned (nil, nil)"u8;
+
 [GoRecv] internal static (net.Conn, error) dial(this ref Transport t, context.Context ctx, @string network, @string addr) {
     if (t.DialContext != default!) {
         var (c, err) = t.DialContext(ctx, network, addr);
         if (c == default! && err == default!) {
-            err = errors.New("net/http: Transport.DialContext hook returned (nil, nil)"u8);
+            err = errors.New(netHttpTransportˢ);
         }
         return (c, err);
     }
     if (t.Dial != default!) {
         var (c, err) = t.Dial(network, addr);
         if (c == default! && err == default!) {
-            err = errors.New("net/http: Transport.Dial hook returned (nil, nil)"u8);
+            err = errors.New(netHttpTransportDialHookˢ);
         }
         return (c, err);
     }
@@ -1484,6 +1493,9 @@ internal static void cancel(this ж<wantConn> Ꮡw, ж<Transport> Ꮡt, error er
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string netHttpTransportDialTLSˢ = "net/http: Transport.DialTLS or DialTLSContext returned (nil, nil)"u8;
+
 [GoRecv] internal static (net.Conn conn, error err) customDialTLS(this ref Transport t, context.Context ctx, @string network, @string addr) {
     net.Conn conn = default!;
     error err = default!;
@@ -1494,7 +1506,7 @@ internal static void cancel(this ж<wantConn> Ꮡw, ж<Transport> Ꮡt, error er
         (conn, err) = t.DialTLS(network, addr);
     }
     if (conn == default! && err == default!) {
-        err = errors.New("net/http: Transport.DialTLS or DialTLSContext returned (nil, nil)"u8);
+        err = errors.New(netHttpTransportDialTLSˢ);
     }
     return (conn, err);
 }
@@ -1782,6 +1794,10 @@ internal static void decConnsPerHost(this ж<Transport> Ꮡt, connectMethodKey k
 
 internal static Func<context.Context, time.Duration, (context.Context, Action)> testHookProxyConnectTimeout = context_package.WithTimeout;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string proxyAuthorizationˢ = "Proxy-Authorization"u8;
+private static readonly @string unknownStatusCodeˢ = "unknown status code"u8;
+
 internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> Ꮡt, context.Context ctx, connectMethod cm) {
     ж<persistConn> pconn = default!;
     error err = default!;
@@ -1892,7 +1908,7 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
             {
                 @string pa = cm.proxyAuth(); if (pa != ""u8) {
                     pconn.Value.mutateHeaderFunc = (ΔHeader h) => {
-                        h.Set("Proxy-Authorization"u8, pa);
+                        h.Set(proxyAuthorizationˢ, pa);
                     };
                 }
             }
@@ -1917,7 +1933,7 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
             {
                 @string pa = cm.proxyAuth(); if (pa != ""u8) {
                     hdr = hdr.Clone();
-                    hdr.Set("Proxy-Authorization"u8, pa);
+                    hdr.Set(proxyAuthorizationˢ, pa);
                 }
             }
             var connectReq = Ꮡ(new Request(
@@ -1978,7 +1994,7 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
                 var (_, text, ok) = strings.Cut((~resp).Status, " "u8);
                 conn.Close();
                 if (!ok) {
-                    (pconn, err) = (default!, errors.New("unknown status code"u8)); return;
+                    (pconn, err) = (default!, errors.New(unknownStatusCodeˢ)); return;
                 }
                 (pconn, err) = (default!, errors.New(text)); return;
             }
@@ -2472,10 +2488,10 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) => func((defer, recove
             }
         ));
         resp.Value.Body = new bodyEOFSignalжReadCloser(body);
-        if (rc.addedGzip && ascii.EqualFold((~resp).Header.Get("Content-Encoding"u8), "gzip"u8)) {
+        if (rc.addedGzip && ascii.EqualFold((~resp).Header.Get(contentEncodingˢ), gzipˢ)) {
             resp.Value.Body = new gzipReaderжReadCloser(Ꮡ(new gzipReader(body: body)));
-            (~resp).Header.Del("Content-Encoding"u8);
-            (~resp).Header.Del("Content-Length"u8);
+            (~resp).Header.Del(contentEncodingˢ);
+            (~resp).Header.Del(contentLengthˢ);
             resp.Value.ContentLength = -1;
             resp.Value.Uncompressed = true;
         }
@@ -2552,6 +2568,9 @@ internal static bool is408Message(slice<byte> buf) {
     return ((sstring)(buf[8..12])) == " 408"u8;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string netHttpTooMany1xxˢ = "net/http: too many 1xx informational responses"u8;
+
 // readResponse reads an HTTP response (or two, in the case of "Expect:
 // 100-continue") from the server. It returns the final non-100 one.
 // trace is optional.
@@ -2590,7 +2609,7 @@ internal static bool is408Message(slice<byte> buf) {
         if (is1xxNonTerminal) {
             num1xx++;
             if (num1xx > max1xxResponses) {
-                return (default!, errors.New("net/http: too many 1xx informational responses"u8));
+                return (default!, errors.New(netHttpTooMany1xxˢ));
             }
             pc.readLimit = pc.maxHeaderResponseSize();
             // reset the limit
@@ -2918,7 +2937,7 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
         // uncompress the gzip stream if we were the layer that
         // requested it.
         var requestedGzip = false;
-        if (!(~pc.t).DisableCompression && req.Header.Get("Accept-Encoding"u8) == ""u8 && req.Header.Get("Range"u8) == ""u8 && req.Method != "HEAD"u8) {
+        if (!(~pc.t).DisableCompression && req.Header.Get(acceptEncodingˢ) == ""u8 && req.Header.Get(rangeˢ) == ""u8 && req.Method != "HEAD"u8) {
             // Request gzip only, not deflate. Deflate is ambiguous and
             // not as universally supported anyway.
             // See: https://zlib.net/zlib_faq.html#faq39
@@ -2932,14 +2951,14 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
             // auto-decoding a portion of a gzipped document will just fail
             // anyway. See https://golang.org/issue/8923
             requestedGzip = true;
-            req.extraHeaders().Set("Accept-Encoding"u8, "gzip"u8);
+            req.extraHeaders().Set(acceptEncodingˢ, gzipˢ);
         }
         channel<EmptyStruct> continueCh = default!;
         if (req.ProtoAtLeast(1, 1) && req.Body != default! && req.expectsContinue()) {
             continueCh = new channel<EmptyStruct>(1);
         }
         if ((~pc.t).DisableKeepAlives && !req.wantsClose() && !isProtocolSwitchHeader(req.Header)) {
-            req.extraHeaders().Set("Connection"u8, "close"u8);
+            req.extraHeaders().Set(connectionˢ, closeˢ);
         }
         var gone = new channel<EmptyStruct>(0);
         deferǃ(ᴛ1 => builtin.close(ᴛ1), gone, defer);
@@ -3262,8 +3281,11 @@ internal static bool Temporary(this tlsHandshakeTimeoutError _) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string netHttpTlsHandshakeˢ = "net/http: TLS handshake timeout"u8;
+
 internal static @string Error(this tlsHandshakeTimeoutError _) {
-    return "net/http: TLS handshake timeout"u8;
+    return netHttpTlsHandshakeˢ;
 }
 
 // fakeLocker is a sync.Locker which does nothing. It's used to guard

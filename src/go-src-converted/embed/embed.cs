@@ -326,6 +326,9 @@ public static (fs.File, error) Open(this FS f, @string name) {
     return (new openFileжFile(Ꮡ(new openFile(@file, 0))), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string notADirectoryˢ = "not a directory"u8;
+
 // ReadDir reads and returns the entire named directory.
 public static (slice<fs.DirEntry>, error) ReadDir(this FS f, @string name) {
     var (@file, err) = f.Open(name);
@@ -334,7 +337,7 @@ public static (slice<fs.DirEntry>, error) ReadDir(this FS f, @string name) {
     }
     var (dir, ok) = @file._<ж<openDir>>(ᐧ);
     if (!ok) {
-        return (default!, new fs.PathErrorжerror(Ꮡ(new fs.PathError(Op: "read"u8, Path: name, Err: errors.New("not a directory"u8)))));
+        return (default!, new fs.PathErrorжerror(Ꮡ(new fs.PathError(Op: "read"u8, Path: name, Err: errors.New(notADirectoryˢ)))));
     }
     var list = new slice<fs.DirEntry>(len((~dir).files));
     foreach (var (i, _) in list) {
@@ -342,6 +345,9 @@ public static (slice<fs.DirEntry>, error) ReadDir(this FS f, @string name) {
     }
     return (list, default!);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string isADirectoryˢ = "is a directory"u8;
 
 // ReadFile reads and returns the content of the named file.
 public static (slice<byte>, error) ReadFile(this FS f, @string name) {
@@ -351,7 +357,7 @@ public static (slice<byte>, error) ReadFile(this FS f, @string name) {
     }
     var (ofile, ok) = @file._<ж<openFile>>(ᐧ);
     if (!ok) {
-        return (default!, new fs.PathErrorжerror(Ꮡ(new fs.PathError(Op: "read"u8, Path: name, Err: errors.New("is a directory"u8)))));
+        return (default!, new fs.PathErrorжerror(Ꮡ(new fs.PathError(Op: "read"u8, Path: name, Err: errors.New(isADirectoryˢ)))));
     }
     return (slice<byte>((~(~ofile).f).data), default!);
 }
@@ -434,7 +440,7 @@ internal static Δio.ReaderAt _ᴛ6ʗ = new openFileжReaderAt(((ж<openFile>)ni
 }
 
 [GoRecv] internal static (nint, error) Read(this ref openDir d, slice<byte> _) {
-    return (0, new fs.PathErrorжerror(Ꮡ(new fs.PathError(Op: "read"u8, Path: (~d.f).name, Err: errors.New("is a directory"u8)))));
+    return (0, new fs.PathErrorжerror(Ꮡ(new fs.PathError(Op: "read"u8, Path: (~d.f).name, Err: errors.New(isADirectoryˢ)))));
 }
 
 [GoRecv] internal static (slice<fs.DirEntry>, error) ReadDir(this ref openDir d, nint count) {

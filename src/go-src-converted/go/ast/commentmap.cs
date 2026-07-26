@@ -323,6 +323,9 @@ break_loop:;
     return ((@string)bytesΔ1);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object commentMapˢ = (@string)"CommentMap {"u8;
+
 public static @string String(this CommentMap cmap) {
     // print map entries in sorted order
     slice<Node> nodes = default!;
@@ -337,7 +340,7 @@ public static @string String(this CommentMap cmap) {
         return cmp.Compare(a.End(), b.End());
     });
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), (@string)"CommentMap {"u8);
+    fmt.Fprintln(new strings_BuilderжWriter(Ꮡbuf), commentMapˢ);
     foreach (var (_, node) in nodes) {
         var comment = cmap[node];
         // print name of identifiers; print node type for other nodes

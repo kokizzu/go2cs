@@ -39,10 +39,13 @@ partial class scanner_package {
     return pos.Line > 0;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inputˢ = "<input>"u8;
+
 public static @string String(this Position pos) {
     @string s = pos.Filename;
     if (s == ""u8) {
-        s = "<input>"u8;
+        s = inputˢ;
     }
     if (pos.IsValid()) {
         s += fmt.Sprintf(":%d:%d"u8, pos.Line, pos.Column);
@@ -216,6 +219,10 @@ public static ж<Scanner> Init(this ж<Scanner> Ꮡs, io.Reader src) {
     return Ꮡs;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidUtf8Encodingˢ = "invalid UTF-8 encoding"u8;
+private static readonly @string invalidCharacterNulˢ = "invalid character NUL"u8;
+
 // next reads and returns the next Unicode character. It is designed such
 // that only a minimal amount of work needs to be done in the common ASCII
 // case (one test to check for both ASCII and end-of-buffer, and one test
@@ -278,7 +285,7 @@ internal static rune next(this ж<Scanner> Ꮡs) {
                 s.srcPos += width;
                 s.lastCharLen = width;
                 s.column++;
-                Ꮡs.error("invalid UTF-8 encoding"u8);
+                Ꮡs.error(invalidUtf8Encodingˢ);
                 return ch;
             }
         }
@@ -290,7 +297,7 @@ internal static rune next(this ж<Scanner> Ꮡs) {
     // special situations
     switch (ch) {
     case 0: {
-        Ꮡs.error("invalid character NUL"u8);
+        Ꮡs.error(invalidCharacterNulˢ);
         break;
     }
     case (rune)'\n': {
@@ -433,6 +440,11 @@ internal static (rune ch, nint digsep) digits(this ж<Scanner> Ꮡs, rune ch0, n
     return (ch, digsep);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string exponentHasNoDigitsˢ = "exponent has no digits"u8;
+private static readonly @string hexadecimalMantissaˢ = "hexadecimal mantissa requires a 'p' exponent"u8;
+private static readonly @string mustSeparateSuccessiveˢ = "'_' must separate successive digits"u8;
+
 internal static (rune, rune) scanNumber(this ж<Scanner> Ꮡs, rune ch, bool seenDot) {
     ref var s = ref Ꮡs.Value;
 
@@ -516,11 +528,11 @@ internal static (rune, rune) scanNumber(this ж<Scanner> Ꮡs, rune ch, bool see
             (ch, ds) = Ꮡs.digits(ch, 10, nil);
             digsep |= (nint)(ds);
             if ((nint)(ds & 1) == 0) {
-                Ꮡs.error("exponent has no digits"u8);
+                Ꮡs.error(exponentHasNoDigitsˢ);
             }
         } else 
         if (prefix == (rune)'x' && tok == Float) {
-            Ꮡs.error("hexadecimal mantissa requires a 'p' exponent"u8);
+            Ꮡs.error(hexadecimalMantissaˢ);
         }
     }
     if (tok == Int && invalid != 0) {
@@ -531,26 +543,32 @@ internal static (rune, rune) scanNumber(this ж<Scanner> Ꮡs, rune ch, bool see
         // make sure token text is terminated
         {
             nint i = invalidSep(Ꮡs.TokenText()); if (i >= 0) {
-                Ꮡs.error("'_' must separate successive digits"u8);
+                Ꮡs.error(mustSeparateSuccessiveˢ);
             }
         }
     }
     return (tok, ch);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string decimalLiteralˢ = "decimal literal"u8;
+private static readonly @string hexadecimalLiteralˢ = "hexadecimal literal"u8;
+private static readonly @string octalLiteralˢ = "octal literal"u8;
+private static readonly @string binaryLiteralˢ = "binary literal"u8;
+
 internal static @string litname(rune prefix) {
     switch (prefix) {
     default: {
-        return "decimal literal"u8;
+        return decimalLiteralˢ;
     }
     case (rune)'x': {
-        return "hexadecimal literal"u8;
+        return hexadecimalLiteralˢ;
     }
     case (rune)'o' or (rune)'0': {
-        return "octal literal"u8;
+        return octalLiteralˢ;
     }
     case (rune)'b': {
-        return "binary literal"u8;
+        return binaryLiteralˢ;
     }}
 
 }
@@ -613,6 +631,9 @@ internal static nint digitVal(rune ch) {
     return 16;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidCharEscapeˢ = "invalid char escape"u8;
+
 // larger than any legal digit val
 internal static rune scanDigits(this ж<Scanner> Ꮡs, rune ch, nint @base, nint n) {
     while (n > 0 && digitVal(ch) < @base) {
@@ -620,7 +641,7 @@ internal static rune scanDigits(this ж<Scanner> Ꮡs, rune ch, nint @base, nint
         n--;
     }
     if (n > 0) {
-        Ꮡs.error("invalid char escape"u8);
+        Ꮡs.error(invalidCharEscapeˢ);
     }
     return ch;
 }
@@ -646,11 +667,14 @@ internal static rune scanEscape(this ж<Scanner> Ꮡs, rune quote) {
         ch = Ꮡs.scanDigits(Ꮡs.next(), 16, 8);
     }
     else { /* default: */
-        Ꮡs.error("invalid char escape"u8);
+        Ꮡs.error(invalidCharEscapeˢ);
     }
 
     return ch;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string literalNotTerminatedˢ = "literal not terminated"u8;
 
 internal static nint /*n*/ scanString(this ж<Scanner> Ꮡs, rune quote) {
     nint n = default!;
@@ -659,7 +683,7 @@ internal static nint /*n*/ scanString(this ж<Scanner> Ꮡs, rune quote) {
     // read character after quote
     while (ch != quote) {
         if (ch == (rune)'\n' || ch < 0) {
-            Ꮡs.error("literal not terminated"u8);
+            Ꮡs.error(literalNotTerminatedˢ);
             return n;
         }
         if (ch == (rune)'\\'){
@@ -677,18 +701,24 @@ internal static void scanRawString(this ж<Scanner> Ꮡs) {
     // read character after '`'
     while (ch != (rune)'`') {
         if (ch < 0) {
-            Ꮡs.error("literal not terminated"u8);
+            Ꮡs.error(literalNotTerminatedˢ);
             return;
         }
         ch = Ꮡs.next();
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidCharLiteralˢ = "invalid char literal"u8;
+
 internal static void scanChar(this ж<Scanner> Ꮡs) {
     if (Ꮡs.scanString((rune)'\'') != 1) {
-        Ꮡs.error("invalid char literal"u8);
+        Ꮡs.error(invalidCharLiteralˢ);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string commentNotTerminatedˢ = "comment not terminated"u8;
 
 internal static rune scanComment(this ж<Scanner> Ꮡs, rune ch) {
     // ch == '/' || ch == '*'
@@ -706,7 +736,7 @@ internal static rune scanComment(this ж<Scanner> Ꮡs, rune ch) {
     // read character after "/*"
     while (ᐧ) {
         if (ch < 0) {
-            Ꮡs.error("comment not terminated"u8);
+            Ꮡs.error(commentNotTerminatedˢ);
             break;
         }
         var ch0 = ch;

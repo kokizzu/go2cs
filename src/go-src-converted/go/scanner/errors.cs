@@ -93,11 +93,14 @@ public static void RemoveMultiples(this ж<ErrorList> Ꮡp) {
     p = (p)[0..(int)(i)];
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noErrorsˢ = "no errors"u8;
+
 // An [ErrorList] implements the error interface.
 public static @string Error(this ErrorList p) {
     switch (len(p)) {
     case 0: {
-        return "no errors"u8;
+        return noErrorsˢ;
     }
     case 1: {
         return (~p[0]).Error();

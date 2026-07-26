@@ -134,6 +134,10 @@ internal static (slice<ΔType>, slice<ast.Expr>) funcInst(this ж<Checker> Ꮡch
     return (default!, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string instantiatingSignatureSˢ = "-- instantiating signature %s with %s"u8;
+private static readonly @string sUnderSˢ = "=> %s (under = %s)"u8;
+
 internal static ж<ΔSignature> /*res*/ instantiateSignature(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ast.Expr expr, ж<ΔSignature> Ꮡtyp, slice<ΔType> targs, slice<ast.Expr> xlist) {
     ж<ΔSignature> res = default!;
     func((defer, recover) => {
@@ -143,11 +147,11 @@ internal static ж<ΔSignature> /*res*/ instantiateSignature(this ж<Checker> �
         assert(Ꮡcheck != nil);
         assert(len(targs) == typ.TypeParams().Len());
         if ((~check.conf)._Trace) {
-            Ꮡcheck.trace(pos, "-- instantiating signature %s with %s"u8, Ꮡtyp, targs);
+            Ꮡcheck.trace(pos, instantiatingSignatureSˢ, Ꮡtyp, targs);
             check.indent++;
             defer(() => {
                 Ꮡcheck.Value.indent--;
-                Ꮡcheck.trace(pos, "=> %s (under = %s)"u8, res, res.Underlying());
+                Ꮡcheck.trace(pos, sUnderSˢ, res, res.Underlying());
             });
         }
         var inst = Ꮡcheck.instance(pos, new ΔSignatureжΔgenericType(Ꮡtyp), targs, nil, check.context())._<ж<ΔSignature>>();
@@ -572,11 +576,11 @@ internal static ж<ΔSignature> /*rsig*/ arguments(this ж<Checker> Ꮡcheck, ж
     // check argument count
     if (nargs != npars) {
         positioner at = new ast_CallExprжpositioner(Ꮡcall);
-        @string qualifier = "not enough"u8;
+        @string qualifier = notEnoughˢ;
         if (nargs > npars){
             at = new ast_Exprᴠpositioner(args[npars].Value.expr);
             // report at first extra argument
-            qualifier = "too many"u8;
+            qualifier = tooManyˢ;
         } else {
             at = ((atPos)call.Rparen);
         }
@@ -719,15 +723,23 @@ internal static ж<ΔSignature> /*rsig*/ arguments(this ж<Checker> Ꮡcheck, ж
 // actually a pointer to the var
 // function to evaluate the expanded expression
 internal static array<@string> cgoPrefixes = new @string[]{
-    "_Ciconst_",
-    "_Cfconst_",
-    "_Csconst_",
-    "_Ctype_",
-    "_Cvar_",
-    "_Cfpvar_fp_",
-    "_Cfunc_",
-    "_Cmacro_"
+    "_Ciconst_"u8,
+    "_Cfconst_"u8,
+    "_Csconst_"u8,
+    "_Ctype_"u8,
+    "_Cvar_"u8,
+    "_Cfpvar_fp_"u8,
+    "_Cfunc_"u8,
+    "_Cmacro_"u8
 }.array();
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cMallocˢ = "_CMalloc"u8;
+private static readonly @string cvarˢ = "_Cvar_"u8;
+private static readonly @string cmacroˢ = "_Cmacro_"u8;
+private static readonly @string vUnexpectedObjectVˢ = "%v: unexpected object %v"u8;
+private static readonly @string illegalCycleInMethodˢ = "illegal cycle in method declaration"u8;
+private static readonly @string vSVSˢ = "%v: (%s).%v -> %s"u8;
 
 internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.SelectorExpr> Ꮡe, ж<TypeName> Ꮡdef, bool wantType) {
     ref var check = ref Ꮡcheck.Value;
@@ -762,7 +774,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
                         // rewritten to _CMalloc and does not
                         // support two-result calls.
                         if (sel == "malloc"u8){
-                            sel = "_CMalloc"u8;
+                            sel = cMallocˢ;
                         } else {
                             funcMode = cgofunc;
                         }
@@ -812,7 +824,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
                     case ж<Var> expΔ1: {
                         x.mode = variable;
                         x.typ = expΔ1.Value.typ;
-                        if ((~pkg).cgo && strings.HasPrefix((~expΔ1).name, "_Cvar_"u8)) {
+                        if ((~pkg).cgo && strings.HasPrefix((~expΔ1).name, cvarˢ)) {
                             x.typ = x.typ._<ж<Pointer>>().Value.@base;
                         }
                         break;
@@ -820,7 +832,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
                     case ж<Func> expΔ1: {
                         x.mode = funcMode;
                         x.typ = expΔ1.Value.typ;
-                        if ((~pkg).cgo && strings.HasPrefix((~expΔ1).name, "_Cmacro_"u8)) {
+                        if ((~pkg).cgo && strings.HasPrefix((~expΔ1).name, cmacroˢ)) {
                             x.mode = value;
                             x.typ = (~(~x.typ._<ж<ΔSignature>>()).results).vars[0].Value.typ;
                         }
@@ -834,7 +846,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
                     }
                     default: {
                         var expΔ1 = exp;
-                        Ꮡcheck.dump("%v: unexpected object %v"u8, e.Sel.Pos(), expΔ1);
+                        Ꮡcheck.dump(vUnexpectedObjectVˢ, e.Sel.Pos(), expΔ1);
                         throw panic("unreachable");
                         break;
                     }}
@@ -925,7 +937,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
         check.recordSelection(Ꮡe, MethodExpr, x.typ, new FuncжObject(m), index, indirect);
         var sig = (~m).typ._<ж<ΔSignature>>();
         if ((~sig).recv == nil) {
-            Ꮡcheck.error(new ast_SelectorExprжpositioner(Ꮡe), InvalidDeclCycle, "illegal cycle in method declaration"u8);
+            Ꮡcheck.error(new ast_SelectorExprжpositioner(Ꮡe), InvalidDeclCycle, illegalCycleInMethodˢ);
             goto ΔError;
         }
         // the receiver type becomes the type of the first function
@@ -1011,7 +1023,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
                 var mset = NewMethodSet(typ);
                 {
                     var m = mset.Lookup(check.pkg, sel); if (m == nil || !AreEqual((~m).obj, objΔ2)) {
-                        Ꮡcheck.dump("%v: (%s).%v -> %s"u8, e.Pos(), typ, (~objΔ2).name, m);
+                        Ꮡcheck.dump(vSVSˢ, e.Pos(), typ, (~objΔ2).name, m);
                         Ꮡcheck.dump("%s\n"u8, mset);
                         // Caution: MethodSets are supposed to be used externally
                         // only (after all interface types were completed). It's

@@ -61,6 +61,9 @@ public static ж<Encoder> NewEncoder(io.Writer w) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gobEncoderMessageTooBigˢ = "gob: encoder: message too big"u8;
+
 // writeMessage sends the data item preceded by an unsigned count of its length.
 [GoRecv] internal static void writeMessage(this ref Encoder enc, io.Writer w, ж<encBuffer> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -72,7 +75,7 @@ public static ж<Encoder> NewEncoder(io.Writer w) {
     nint messageLen = len(message) - (nint)maxLength;
     // Length cannot be bigger than the decoder can handle.
     if (messageLen >= tooBig) {
-        enc.setError(errors.New("gob: encoder: message too big"u8));
+        enc.setError(errors.New(gobEncoderMessageTooBigˢ));
         return;
     }
     // Encode the length.
@@ -252,6 +255,9 @@ internal static void sendTypeDescriptor(this ж<Encoder> Ꮡenc, io.Writer w, ж
     state.encodeInt((int64)(int32)enc.sent[ut.@base]);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gobCannotEncodeNilValueˢ = "gob: cannot encode nil value"u8;
+
 // EncodeValue transmits the data item represented by the reflection value,
 // guaranteeing that all necessary type information has been transmitted first.
 // Passing a nil pointer to EncodeValue will panic, as they cannot be transmitted by gob.
@@ -259,7 +265,7 @@ public static error EncodeValue(this ж<Encoder> Ꮡenc, reflectꓸValue value) 
     ref var enc = ref Ꮡenc.Value;
 
     if (value.Kind() == reflect.Invalid) {
-        return errors.New("gob: cannot encode nil value"u8);
+        return errors.New(gobCannotEncodeNilValueˢ);
     }
     if (value.Kind() == reflect.ΔPointer && value.IsNil()) {
         throw panic("gob: cannot encode nil pointer of type " + value.Type().String());

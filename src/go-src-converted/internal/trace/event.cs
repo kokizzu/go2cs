@@ -326,6 +326,11 @@ public static ΔStack Stack(this ΔEvent e) {
     return new ΔStack(table: e.table, id: id);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string schedGomaxprocsThreadsˢ = "/sched/gomaxprocs:threads"u8;
+private static readonly @string memoryClassesHeapObjectsˢ = "/memory/classes/heap/objects:bytes"u8;
+private static readonly @string gcHeapGoalBytesˢ = "/gc/heap/goal:bytes"u8;
+
 // Metric returns details about a Metric event.
 //
 // Panics if Kind != EventMetric.
@@ -336,15 +341,15 @@ public static ΔMetric Metric(this ΔEvent e) {
     ΔMetric m = default!;
     var exprᴛ1 = e.@base.typ;
     if (exprᴛ1 == go122.EvProcsChange) {
-        m.Name = "/sched/gomaxprocs:threads"u8;
+        m.Name = schedGomaxprocsThreadsˢ;
         m.Value = new Value(kind: ValueUint64, scalar: e.@base.args[0]);
     }
     else if (exprᴛ1 == go122.EvHeapAlloc) {
-        m.Name = "/memory/classes/heap/objects:bytes"u8;
+        m.Name = memoryClassesHeapObjectsˢ;
         m.Value = new Value(kind: ValueUint64, scalar: e.@base.args[0]);
     }
     else if (exprᴛ1 == go122.EvHeapGoal) {
-        m.Name = "/gc/heap/goal:bytes"u8;
+        m.Name = gcHeapGoalBytesˢ;
         m.Value = new Value(kind: ValueUint64, scalar: e.@base.args[0]);
     }
     else { /* default: */
@@ -370,6 +375,11 @@ public static ΔLabel Label(this ΔEvent e) {
     );
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gcConcurrentMarkPhaseˢ = "GC concurrent mark phase"u8;
+private static readonly @string gcIncrementalSweepˢ = "GC incremental sweep"u8;
+private static readonly @string gcMarkAssistˢ = "GC mark assist"u8;
+
 // Range returns details about an EventRangeBegin, EventRangeActive, or EventRangeEnd event.
 //
 // Panics if Kind != EventRangeBegin, Kind != EventRangeActive, and Kind != EventRangeEnd.
@@ -388,11 +398,11 @@ public static ΔRange Range(this ΔEvent e) {
 Kind: ResourceGoroutine, id: (int64)e.Goroutine());
     }
     else if (exprᴛ1 == go122.EvGCBegin || exprᴛ1 == go122.EvGCActive || exprᴛ1 == go122.EvGCEnd) {
-        r.Name = "GC concurrent mark phase"u8;
+        r.Name = gcConcurrentMarkPhaseˢ;
         r.Scope = new ResourceID(Kind: ResourceNone);
     }
     else if (exprᴛ1 == go122.EvGCSweepBegin || exprᴛ1 == go122.EvGCSweepActive || exprᴛ1 == go122.EvGCSweepEnd) {
-        r.Name = "GC incremental sweep"u8;
+        r.Name = gcIncrementalSweepˢ;
         r.Scope = new ResourceID(Kind: ResourceProc);
         if (e.@base.typ == go122.EvGCSweepActive){
             r.Scope.id = (int64)e.@base.args[0];
@@ -402,7 +412,7 @@ Kind: ResourceGoroutine, id: (int64)e.Goroutine());
         r.Scope.id = (int64)e.Proc();
     }
     else if (exprᴛ1 == go122.EvGCMarkAssistBegin || exprᴛ1 == go122.EvGCMarkAssistActive || exprᴛ1 == go122.EvGCMarkAssistEnd) {
-        r.Name = "GC mark assist"u8;
+        r.Name = gcMarkAssistˢ;
         r.Scope = new ResourceID(Kind: ResourceGoroutine);
         if (e.@base.typ == go122.EvGCMarkAssistActive){
             r.Scope.id = (int64)e.@base.args[0];
@@ -690,6 +700,10 @@ internal static array<ProcState> go122ProcStatus2ProcState = new golib.SparseArr
     [go122.ProcSyscallAbandoned] = ProcIdle
 }.array(5);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object transitionStackˢ = (@string)"TransitionStack="u8;
+private static readonly object stackˢ = (@string)"Stack="u8;
+
 // String returns the event as a human-readable string.
 //
 // The format of the string is intended for debugging and is subject to change.
@@ -752,7 +766,7 @@ public static @string String(this ΔEvent e) {
 
             if (s.Stack != NoStack) {
                 fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb));
-                fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb), (@string)"TransitionStack="u8);
+                fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb), transitionStackˢ);
                 s.Stack.Frames((StackFrame f) => {
                     fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "\t%s @ 0x%x\n"u8, f.Func, f.PC);
                     fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "\t\t%s:%d\n"u8, f.File, f.Line);
@@ -769,7 +783,7 @@ public static @string String(this ΔEvent e) {
     {
         var stk = e.Stack(); if (stk != NoStack) {
             fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb));
-            fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb), (@string)"Stack="u8);
+            fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb), stackˢ);
             stk.Frames((StackFrame f) => {
                 fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "\t%s @ 0x%x\n"u8, f.Func, f.PC);
                 fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "\t\t%s:%d\n"u8, f.File, f.Line);

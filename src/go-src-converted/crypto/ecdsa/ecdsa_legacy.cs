@@ -49,6 +49,9 @@ internal static ж<bigꓸInt> hashToInt(slice<byte> hash, elliptic.Curve c) {
 
 internal static error errZeroParam = errors.New("zero parameter"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidAsn1FromSignASN1ˢ = "invalid ASN.1 from SignASN1"u8;
+
 // Sign signs a hash (which should be the result of hashing a larger message)
 // using the private key, priv. If the hash is longer than the bit-length of the
 // private key's curve order, the hash will be truncated to that length. It
@@ -67,7 +70,7 @@ public static (ж<bigꓸInt> r, ж<bigꓸInt> s, error err) Sign(io.Reader rand,
     ref var inner = ref heap<cryptobyte.String>(out var Ꮡinner);
     var input = ((cryptobyte.String)sig);
     if (!input.ReadASN1(Ꮡinner, asn1.SEQUENCE) || !input.Empty() || !inner.ReadASN1Integer(r) || !inner.ReadASN1Integer(s) || !inner.Empty()) {
-        return (default!, default!, errors.New("invalid ASN.1 from SignASN1"u8));
+        return (default!, default!, errors.New(invalidAsn1FromSignASN1ˢ));
     }
     return (r, s, default!);
 }

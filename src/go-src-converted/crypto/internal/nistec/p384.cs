@@ -54,6 +54,10 @@ public static ж<P384Point> Set(this ж<P384Point> Ꮡp, ж<P384Point> Ꮡq) {
     return Ꮡp;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidP384Compressedˢ = "invalid P384 compressed point encoding"u8;
+private static readonly @string invalidP384PointEncodingˢ = "invalid P384 point encoding"u8;
+
 // SetBytes sets p to the compressed, uncompressed, or infinity value encoded in
 // b, as specified in SEC 1, Version 2.0, Section 2.3.4. If the point is not on
 // the curve, it returns nil and an error, and the receiver is unchanged.
@@ -95,7 +99,7 @@ public static (ж<P384Point>, error) SetBytes(this ж<P384Point> Ꮡp, slice<byt
         var y = p384Polynomial(@new<fiat.P384Element>(), // y² = x³ - 3x + b
  x);
         if (!p384Sqrt(y, y)) {
-            return (default!, errors.New("invalid P384 compressed point encoding"u8));
+            return (default!, errors.New(invalidP384Compressedˢ));
         }
         var otherRoot = @new<fiat.P384Element>();
         otherRoot.Sub(otherRoot, // Select the positive or negative root, as indicated by the least
@@ -109,7 +113,7 @@ public static (ж<P384Point>, error) SetBytes(this ж<P384Point> Ꮡp, slice<byt
         return (Ꮡp, default!);
     }
     default: {
-        return (default!, errors.New("invalid P384 point encoding"u8));
+        return (default!, errors.New(invalidP384PointEncodingˢ));
     }}
 
 }
@@ -136,6 +140,9 @@ internal static ж<fiat.P384Element> p384Polynomial(ж<fiat.P384Element> Ꮡy2, 
     return Ꮡy2.Add(Ꮡy2, p384B());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string p384PointNotOnCurveˢ = "P384 point not on curve"u8;
+
 internal static error p384CheckOnCurve(ж<fiat.P384Element> Ꮡx, ж<fiat.P384Element> Ꮡy) {
     ref var x = ref Ꮡx.Value;
     ref var y = ref Ꮡy.Value;
@@ -144,7 +151,7 @@ internal static error p384CheckOnCurve(ж<fiat.P384Element> Ꮡx, ж<fiat.P384El
     var rhs = p384Polynomial(@new<fiat.P384Element>(), Ꮡx);
     var lhs = @new<fiat.P384Element>().Square(Ꮡy);
     if (rhs.Equal(lhs) != 1) {
-        return errors.New("P384 point not on curve"u8);
+        return errors.New(p384PointNotOnCurveˢ);
     }
     return default!;
 }
@@ -183,11 +190,14 @@ internal static error p384CheckOnCurve(ж<fiat.P384Element> Ꮡx, ж<fiat.P384El
     return p.bytesX(Ꮡout);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string p384PointIsThePointAtˢ = "P384 point is the point at infinity"u8;
+
 [GoRecv] internal static (slice<byte>, error) bytesX(this ref P384Point p, ж<array<byte>> Ꮡout) {
     ref var @out = ref Ꮡout.Value;
 
     if (p.z.IsZero() == 1) {
-        return (default!, errors.New("P384 point is the point at infinity"u8));
+        return (default!, errors.New(p384PointIsThePointAtˢ));
     }
     var zinv = @new<fiat.P384Element>().Invert(p.z);
     var x = @new<fiat.P384Element>().Mul(p.x, zinv);
@@ -504,7 +514,7 @@ public static (ж<P384Point>, error) ScalarBaseMult(this ж<P384Point> Ꮡp, sli
     ref var p = ref Ꮡp.Value;
 
     if (len(scalar) != p384ElementLength) {
-        return (default!, errors.New("invalid scalar length"u8));
+        return (default!, errors.New(invalidScalarLengthˢ));
     }
     var tables = p.generatorTable();
     // This is also a scalar multiplication with a four-bit window like in

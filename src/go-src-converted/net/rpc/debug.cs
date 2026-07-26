@@ -89,6 +89,9 @@ internal static void Swap(this methodArray m, nint i, nint j) {
     public partial ref ж<Server> Server { get; }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object rpcErrorExecutingˢ = (@string)"rpc: error executing template:"u8;
+
 // Runs at /debug/rpc
 internal static void ServeHTTP(this debugHTTP server, Δhttp.ResponseWriter w, ж<Δhttp.Request> Ꮡreq) {
     // Build a sorted version of the data.
@@ -107,7 +110,7 @@ internal static void ServeHTTP(this debugHTTP server, Δhttp.ResponseWriter w, �
     slices.SortFunc(services, (debugService a, debugService b) => strings.Compare(a.Name, b.Name));
     var err = debug.Execute(new http_ResponseWriterᴠWriter(w), services);
     if (err != default!) {
-        fmt.Fprintln(new http_ResponseWriterᴠWriter(w), (@string)"rpc: error executing template:"u8, err.Error());
+        fmt.Fprintln(new http_ResponseWriterᴠWriter(w), rpcErrorExecutingˢ, err.Error());
     }
 }
 

@@ -88,6 +88,9 @@ public static void Attrs(this Record r, Func<Attr, bool> f) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string addAttrsUnsafelyCalledOnˢ = "AddAttrs unsafely called on copy of Record made without using Record.Clone"u8;
+
 // AddAttrs appends the given Attrs to the [Record]'s list of Attrs.
 // It omits empty groups.
 [GoRecv] public static void AddAttrs(this ref Record r, params ꓸꓸꓸAttr attrsʗp) {
@@ -109,7 +112,7 @@ public static void Attrs(this Record r, Func<Attr, bool> f) {
         if (!end.isEmpty()) {
             // Don't panic; copy and muddle through.
             r.back = slices.Clip<slice<Attr>, Attr>(r.back);
-            r.back = builtin.append(r.back, String("!BUG"u8, "AddAttrs unsafely called on copy of Record made without using Record.Clone"u8));
+            r.back = builtin.append(r.back, String("!BUG"u8, addAttrsUnsafelyCalledOnˢ));
         }
     }
     nint ne = countEmptyGroups(attrs[(int)(i)..]);
@@ -199,6 +202,11 @@ internal static (Attr, slice<any>) argsToAttr(slice<any> args) {
     public nint Line;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string functionˢ = "function"u8;
+private static readonly @string fileˢ = "file"u8;
+private static readonly @string lineˢ = "line"u8;
+
 // group returns the non-zero fields of s as a slice of attrs.
 // It is similar to a LogValue method, but we don't want Source
 // to implement LogValuer because it would be resolved before
@@ -206,13 +214,13 @@ internal static (Attr, slice<any>) argsToAttr(slice<any> args) {
 [GoRecv] internal static Value group(this ref Source s) {
     slice<Attr> @as = default!;
     if (s.Function != ""u8) {
-        @as = builtin.append(@as, String("function"u8, s.Function));
+        @as = builtin.append(@as, String(functionˢ, s.Function));
     }
     if (s.File != ""u8) {
-        @as = builtin.append(@as, String("file"u8, s.File));
+        @as = builtin.append(@as, String(fileˢ, s.File));
     }
     if (s.Line != 0) {
-        @as = builtin.append(@as, Int("line"u8, s.Line));
+        @as = builtin.append(@as, Int(lineˢ, s.Line));
     }
     return GroupValue(@as.ꓸꓸꓸ);
 }

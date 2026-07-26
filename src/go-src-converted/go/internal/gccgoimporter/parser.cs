@@ -135,11 +135,14 @@ internal static @string Error(this importError e) {
     return str;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object unexpectedEofˢ = (@string)"unexpected EOF"u8;
+
 // unquotedString     = { unquotedStringChar } .
 // unquotedStringChar = <neither a whitespace nor a ';' char> .
 [GoRecv] internal static @string parseUnquotedString(this ref parser p) {
     if (p.tok == scanner.EOF) {
-        p.error((@string)"unexpected EOF"u8);
+        p.error(unexpectedEofˢ);
     }
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     Ꮡb.WriteString(p.scanner.TokenText());
@@ -268,6 +271,9 @@ internal static typesꓸType deref(typesꓸType typ) {
     return typ;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object embeddedFieldExpectedˢ = (@string)"embedded field expected"u8;
+
 // Field = Name Type [string] .
 internal static (ж<types.Var> field, @string tag) parseField(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
     ж<types.Var> field = default!;
@@ -296,7 +302,7 @@ internal static (ж<types.Var> field, @string tag) parseField(this ж<parser> �
                 }
                 default: {
                     var typΔ1 = switchᴛ1;
-                    p.error((@string)"embedded field expected"u8);
+                    p.error(embeddedFieldExpectedˢ);
                     break;
                 }}
             }
@@ -357,13 +363,16 @@ internal static ж<types.Var> parseVar(this ж<parser> Ꮡp, ж<types.Package> �
     return v;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string convertˢ = "convert"u8;
+
 // Conversion = "convert" "(" Type "," ConstValue ")" .
 internal static (constant.Value val, typesꓸType typ) parseConversion(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
     constant.Value val = default!;
     typesꓸType typ = default!;
 
     ref var p = ref Ꮡp.Value;
-    p.expectKeyword("convert"u8);
+    p.expectKeyword(convertˢ);
     p.expect((rune)'(');
     typ = Ꮡp.parseType(Ꮡpkg);
     p.expect((rune)',');
@@ -371,6 +380,12 @@ internal static (constant.Value val, typesꓸType typ) parseConversion(this ж<p
     p.expect((rune)')');
     return (val, typ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object couldNotParseIntegerˢ = (@string)"could not parse integer literal"u8;
+private static readonly object couldNotParseFloatˢ = (@string)"could not parse float literal"u8;
+private static readonly object couldNotParseRealˢ = (@string)"could not parse real component of complex literal"u8;
+private static readonly object couldNotParseImagˢ = (@string)"could not parse imag component of complex literal"u8;
 
 // ConstValue     = string | "false" | "true" | ["-"] (int ["'"] | FloatOrComplex) | Conversion .
 // FloatOrComplex = float ["i" | ("+"|"-") float "i"] .
@@ -424,7 +439,7 @@ internal static (constant.Value val, typesꓸType typ) parseConstValue(this ж<p
     if (exprᴛ3 == scanner.Int) {
         val = constant.MakeFromLiteral(sign + p.lit, token.INT, 0);
         if (val == default!) {
-            p.error((@string)"could not parse integer literal"u8);
+            p.error(couldNotParseIntegerˢ);
         }
         p.next();
         if (p.tok == (rune)'\''){
@@ -455,7 +470,7 @@ internal static (constant.Value val, typesꓸType typ) parseConstValue(this ж<p
             val = constant.MakeFromLiteral(re, // re is in fact the imaginary component. Expect "i" below.
  token.FLOAT, 0);
             if (val == default!) {
-                p.error((@string)"could not parse float literal"u8);
+                p.error(couldNotParseFloatˢ);
             }
             typ = new types.BasicжΔType(types.Typ[types.ΔUntypedFloat]);
             return (val, typ);
@@ -464,11 +479,11 @@ internal static (constant.Value val, typesꓸType typ) parseConstValue(this ж<p
         p.expectKeyword("i"u8);
         var reval = constant.MakeFromLiteral(re, token.FLOAT, 0);
         if (reval == default!) {
-            p.error((@string)"could not parse real component of complex literal"u8);
+            p.error(couldNotParseRealˢ);
         }
         var imval = constant.MakeFromLiteral(im + "i"u8, token.IMAG, 0);
         if (imval == default!) {
-            p.error((@string)"could not parse imag component of complex literal"u8);
+            p.error(couldNotParseImagˢ);
         }
         val = constant.BinaryOp(reval, token.ADD, imval);
         typ = new types.BasicжΔType(types.Typ[types.ΔUntypedComplex]);
@@ -583,6 +598,10 @@ internal static ж<reservedᴛ1> reserved = @new<reservedᴛ1>();
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object unexpectedUnderlyingTypeˢ = (@string)"unexpected underlying type for non-named TypeName"u8;
+private static readonly @string funcˢ = "func"u8;
+
 // NamedType = TypeName [ "=" ] Type { Method } .
 // TypeName  = ExportedName .
 // Method    = "func" "(" Param ")" Name ParamList ResultList [InlineBody] ";" .
@@ -635,7 +654,7 @@ internal static typesꓸType parseNamedType(this ж<parser> Ꮡp, slice<any> nli
         // This can happen for unsafe.Pointer, which is a TypeName holding a Basic type.
         var pt = Ꮡp.parseType(pkg);
         if (!AreEqual(pt, t)) {
-            p.error((@string)"unexpected underlying type for non-named TypeName"u8);
+            p.error(unexpectedUnderlyingTypeˢ);
         }
         return t;
     }
@@ -652,7 +671,7 @@ internal static typesꓸType parseNamedType(this ж<parser> Ꮡp, slice<any> nli
         p.next();
         // collect associated methods
         while (p.tok == scanner.Ident) {
-            p.expectKeyword("func"u8);
+            p.expectKeyword(funcˢ);
             if (p.tok == (rune)'/') {
                 // Skip a /*nointerface*/ or /*asm ID */ comment.
                 p.expect((rune)'/');
@@ -732,11 +751,14 @@ internal static typesꓸType parseMapType(this ж<parser> Ꮡp, ж<types.Package
     return new types.MapжΔType(t);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string chanˢ = "chan"u8;
+
 // ChanType = "chan" ["<-" | "-<"] Type .
 internal static typesꓸType parseChanType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
     ref var p = ref Ꮡp.Value;
 
-    p.expectKeyword("chan"u8);
+    p.expectKeyword(chanˢ);
     var t = @new<types.Chan>();
     p.update(new types.ChanжΔType(t), nlist);
     types.ChanDir dir = types.SendRecv;
@@ -761,11 +783,14 @@ internal static typesꓸType parseChanType(this ж<parser> Ꮡp, ж<types.Packag
     return new types.ChanжΔType(t);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string structˢ = "struct"u8;
+
 // StructType = "struct" "{" { Field } "}" .
 internal static typesꓸType parseStructType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
     ref var p = ref Ꮡp.Value;
 
-    p.expectKeyword("struct"u8);
+    p.expectKeyword(structˢ);
     var t = @new<types.Struct>();
     p.update(new types.StructжΔType(t), nlist);
     slice<ж<types.Var>> fields = default!;
@@ -782,6 +807,9 @@ internal static typesꓸType parseStructType(this ж<parser> Ꮡp, ж<types.Pack
     return new types.StructжΔType(t);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object notOnFinalArgumentˢ = (@string)"... not on final argument"u8;
+
 // ParamList = "(" [ { Parameter "," } Parameter ] ")" .
 internal static (ж<types.Tuple>, bool) parseParamList(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
     ref var p = ref Ꮡp.Value;
@@ -797,7 +825,7 @@ internal static (ж<types.Tuple>, bool) parseParamList(this ж<parser> Ꮡp, ж<
         list = append(list, par);
         if (variadic) {
             if (isVariadic) {
-                p.error((@string)"... not on final argument"u8);
+                p.error(notOnFinalArgumentˢ);
             }
             isVariadic = true;
         }
@@ -868,11 +896,14 @@ internal static ж<types.Func> parseFunc(this ж<parser> Ꮡp, ж<types.Package>
     return f;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string interfaceˢ = "interface"u8;
+
 // InterfaceType = "interface" "{" { ("?" Type | Func) ";" } "}" .
 internal static typesꓸType parseInterfaceType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
     ref var p = ref Ꮡp.Value;
 
-    p.expectKeyword("interface"u8);
+    p.expectKeyword(interfaceˢ);
     var t = @new<types.Interface>();
     p.update(new types.InterfaceжΔType(t), nlist);
     slice<ж<types.Func>> methods = default!;
@@ -972,8 +1003,13 @@ internal static readonly UntypedInt gccgoBuiltinBYTE = 20;
 internal static readonly UntypedInt gccgoBuiltinRUNE = 21;
 internal static readonly UntypedInt gccgoBuiltinANY = 22;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string errorˢ = "error"u8;
+private static readonly @string byteˢ = "byte"u8;
+private static readonly @string runeˢ = "rune"u8;
+
 internal static typesꓸType lookupBuiltinType(nint typ) {
-    return new golib.SparseArray<typesꓸType>{[gccgoBuiltinINT8] = new types.BasicжΔType(types.Typ[types.Int8]), [gccgoBuiltinINT16] = new types.BasicжΔType(types.Typ[types.Int16]), [gccgoBuiltinINT32] = new types.BasicжΔType(types.Typ[types.Int32]), [gccgoBuiltinINT64] = new types.BasicжΔType(types.Typ[types.Int64]), [gccgoBuiltinUINT8] = new types.BasicжΔType(types.Typ[types.Uint8]), [gccgoBuiltinUINT16] = new types.BasicжΔType(types.Typ[types.Uint16]), [gccgoBuiltinUINT32] = new types.BasicжΔType(types.Typ[types.Uint32]), [gccgoBuiltinUINT64] = new types.BasicжΔType(types.Typ[types.Uint64]), [gccgoBuiltinFLOAT32] = new types.BasicжΔType(types.Typ[types.Float32]), [gccgoBuiltinFLOAT64] = new types.BasicжΔType(types.Typ[types.Float64]), [gccgoBuiltinINT] = new types.BasicжΔType(types.Typ[types.Int]), [gccgoBuiltinUINT] = new types.BasicжΔType(types.Typ[types.Uint]), [gccgoBuiltinUINTPTR] = new types.BasicжΔType(types.Typ[types.Uintptr]), [gccgoBuiltinBOOL] = new types.BasicжΔType(types.Typ[types.Bool]), [gccgoBuiltinSTRING] = new types.BasicжΔType(types.Typ[types.ΔString]), [gccgoBuiltinCOMPLEX64] = new types.BasicжΔType(types.Typ[types.Complex64]), [gccgoBuiltinCOMPLEX128] = new types.BasicжΔType(types.Typ[types.Complex128]), [gccgoBuiltinERROR] = types.Universe.Lookup("error"u8).Type(), [gccgoBuiltinBYTE] = types.Universe.Lookup("byte"u8).Type(), [gccgoBuiltinRUNE] = types.Universe.Lookup("rune"u8).Type(), [gccgoBuiltinANY] = types.Universe.Lookup("any"u8).Type()
+    return new golib.SparseArray<typesꓸType>{[gccgoBuiltinINT8] = new types.BasicжΔType(types.Typ[types.Int8]), [gccgoBuiltinINT16] = new types.BasicжΔType(types.Typ[types.Int16]), [gccgoBuiltinINT32] = new types.BasicжΔType(types.Typ[types.Int32]), [gccgoBuiltinINT64] = new types.BasicжΔType(types.Typ[types.Int64]), [gccgoBuiltinUINT8] = new types.BasicжΔType(types.Typ[types.Uint8]), [gccgoBuiltinUINT16] = new types.BasicжΔType(types.Typ[types.Uint16]), [gccgoBuiltinUINT32] = new types.BasicжΔType(types.Typ[types.Uint32]), [gccgoBuiltinUINT64] = new types.BasicжΔType(types.Typ[types.Uint64]), [gccgoBuiltinFLOAT32] = new types.BasicжΔType(types.Typ[types.Float32]), [gccgoBuiltinFLOAT64] = new types.BasicжΔType(types.Typ[types.Float64]), [gccgoBuiltinINT] = new types.BasicжΔType(types.Typ[types.Int]), [gccgoBuiltinUINT] = new types.BasicжΔType(types.Typ[types.Uint]), [gccgoBuiltinUINTPTR] = new types.BasicжΔType(types.Typ[types.Uintptr]), [gccgoBuiltinBOOL] = new types.BasicжΔType(types.Typ[types.Bool]), [gccgoBuiltinSTRING] = new types.BasicжΔType(types.Typ[types.ΔString]), [gccgoBuiltinCOMPLEX64] = new types.BasicжΔType(types.Typ[types.Complex64]), [gccgoBuiltinCOMPLEX128] = new types.BasicжΔType(types.Typ[types.Complex128]), [gccgoBuiltinERROR] = types.Universe.Lookup(errorˢ).Type(), [gccgoBuiltinBYTE] = types.Universe.Lookup(byteˢ).Type(), [gccgoBuiltinRUNE] = types.Universe.Lookup(runeˢ).Type(), [gccgoBuiltinANY] = types.Universe.Lookup("any"u8).Type()
     }.array(23)[typ];
 }
 
@@ -989,6 +1025,9 @@ internal static typesꓸType parseType(this ж<parser> Ꮡp, ж<types.Package> �
     return t;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string typeˢ = "type"u8;
+
 // (*parser).Type after reading the "<".
 internal static (typesꓸType t, nint n1) parseTypeAfterAngle(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, params ꓸꓸꓸany nʗp) {
     typesꓸType t = default!;
@@ -996,7 +1035,7 @@ internal static (typesꓸType t, nint n1) parseTypeAfterAngle(this ж<parser> �
     var n = nʗp.slice();
 
     ref var p = ref Ꮡp.Value;
-    p.expectKeyword("type"u8);
+    p.expectKeyword(typeˢ);
     n1 = 0;
     var exprᴛ1 = p.tok;
     if (exprᴛ1 == scanner.Int) {
@@ -1074,7 +1113,7 @@ internal static void skipInlineBody(this ж<parser> Ꮡp) => func((defer, recove
     while (got < want) {
         var r = p.scanner.Next();
         if (r == scanner.EOF) {
-            p.error((@string)"unexpected EOF"u8);
+            p.error(unexpectedEofˢ);
         }
         got += utf8.RuneLen(r);
     }
@@ -1109,12 +1148,12 @@ internal static void parseTypes(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) 
     while (sb.Len() < total) {
         var r = p.scanner.Next();
         if (r == scanner.EOF) {
-            p.error((@string)"unexpected EOF"u8);
+            p.error(unexpectedEofˢ);
         }
         Ꮡsb.WriteRune(r);
     }
     @string allTypeData = sb.String();
-    p.typeData = new @string[]{""}.slice();
+    p.typeData = new @string[]{""u8}.slice();
     // type 0, unused
     foreach (var (_, to) in typeOffsets) {
         p.typeData = append(p.typeData, allTypeData[(int)(to.offset)..(int)(to.offset + to.length)]);
@@ -1135,7 +1174,7 @@ internal static void parseSavedType(this ж<parser> Ꮡp, ж<types.Package> Ꮡp
     }, Ꮡp.Value.scanner, Ꮡp.Value.tok, Ꮡp.Value.lit, defer);
     p.scanner = @new<scanner.Scanner>();
     Ꮡp.initScanner((~p.scanner).Filename, new strings_ReaderжReader(strings.NewReader(p.typeData[i])));
-    p.expectKeyword("type"u8);
+    p.expectKeyword(typeˢ);
     nint id = p.parseInt();
     if (id != i) {
         p.errorf("type ID mismatch: got %d, want %d"u8, id, i);

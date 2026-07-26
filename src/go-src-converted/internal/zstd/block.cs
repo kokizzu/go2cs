@@ -10,6 +10,9 @@ partial class zstd_package {
 // debug can be set in the source to print debug info using println.
 internal const bool debug = false;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string extraneousDataAfterNoˢ = "extraneous data after no sequences"u8;
+
 // compressedBlock decompresses a compressed block, storing the decompressed
 // data in r.buffer. The blockSize argument is the compressed size.
 // RFC 3.1.1.3.
@@ -45,7 +48,7 @@ internal static error compressedBlock(this ж<Reader> Ꮡr, nint blockSize) {
     if (seqCount == 0) {
         // No sequences, just literals.
         if (off < builtin.len(data)) {
-            return r.makeError(off, "extraneous data after no sequences"u8);
+            return r.makeError(off, extraneousDataAfterNoˢ);
         }
         r.buffer = append(r.buffer, litbuf.ꓸꓸꓸ);
         return default!;
@@ -97,6 +100,9 @@ internal static void initᴛseqCodeInfo() { seqCodeInfo = new golib.SparseArray<
     )
 }.array(); }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidSymbolCompressionˢ = "invalid symbol compression mode"u8;
+
 // initSeqs reads the Sequences_Section_Header and sets up the FSE
 // tables used to read the sequence codes. It returns the number of
 // sequences and the new offset. RFC 3.1.1.3.2.1.
@@ -134,7 +140,7 @@ internal static (nint, nint, error) initSeqs(this ж<Reader> Ꮡr, block data, n
     }
     var symMode = data[off];
     if ((byte)(symMode & 3) != 0) {
-        return (0, 0, r.makeError(off, "invalid symbol compression mode"u8));
+        return (0, 0, r.makeError(off, invalidSymbolCompressionˢ));
     }
     off++;
     // Set up the FSE tables used to decode the sequence codes.
@@ -153,6 +159,9 @@ internal static (nint, nint, error) initSeqs(this ж<Reader> Ꮡr, block data, n
     }
     return (seqCount, off, default!);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingRepeatSequenceFseˢ = "missing repeat sequence FSE table"u8;
 
 // setSeqTable uses the Compression_Mode in mode to set up r.seqTables and
 // r.seqTableBits for kind. We store these in the Reader because one of
@@ -223,13 +232,18 @@ internal static (nint, error) setSeqTable(this ж<Reader> Ꮡr, block data, nint
     case 3: {
         if (builtin.len(r.seqTables[kind]) == 0) {
             // Repeat_Mode
-            return (0, r.makeError(off, "missing repeat sequence FSE table"u8));
+            return (0, r.makeError(off, missingRepeatSequenceFseˢ));
         }
         return (off, default!);
     }}
 
     throw panic("unreachable");
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string uncompressedSizeTooBigˢ = "uncompressed size too big"u8;
+private static readonly @string literalByteOverflowˢ = "literal byte overflow"u8;
+private static readonly @string extraneousDataAfterˢ = "extraneous data after sequences"u8;
 
 // execSeqs reads and executes the sequences. RFC 3.1.1.3.2.1.2.
 internal static error execSeqs(this ж<Reader> Ꮡr, block data, nint off, slice<byte> litbuf, nint seqCount) {
@@ -257,7 +271,7 @@ internal static error execSeqs(this ж<Reader> Ꮡr, block data, nint off, slice
     nint seq = 0;
     while (seq < seqCount) {
         if (builtin.len(r.buffer) + builtin.len(litbuf) > (128 << (int)(10))) {
-            return rbr.makeError("uncompressed size too big"u8);
+            return rbr.makeError(uncompressedSizeTooBigˢ);
         }
         var ptoffset = Ꮡ(r.seqTables[seqOffset], (int)(offsetState));
         var ptmatch = Ꮡ(r.seqTables[seqMatch], (int)(matchState));
@@ -339,7 +353,7 @@ internal static error execSeqs(this ж<Reader> Ꮡr, block data, nint off, slice
         }
         // Copy literal bytes from litbuf.
         if (literal > (uint32)builtin.len(litbuf)) {
-            return rbr.makeError("literal byte overflow"u8);
+            return rbr.makeError(literalByteOverflowˢ);
         }
         if (literal > 0) {
             r.buffer = append(r.buffer, litbuf[..(int)(literal)].ꓸꓸꓸ);
@@ -355,17 +369,21 @@ internal static error execSeqs(this ж<Reader> Ꮡr, block data, nint off, slice
     }
     r.buffer = append(r.buffer, litbuf.ꓸꓸꓸ);
     if (rbr.cnt != 0) {
-        return r.makeError(off, "extraneous data after sequences"u8);
+        return r.makeError(off, extraneousDataAfterˢ);
     }
     return default!;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidZeroOffsetˢ = "invalid zero offset"u8;
+private static readonly @string offsetPastWindowˢ = "offset past window"u8;
 
 // Copy match bytes from the decoded output, or the window, at offset.
 [GoRecv] internal static error copyFromWindow(this ref Reader r, ж<reverseBitReader> Ꮡrbr, uint32 offset, uint32 match) {
     ref var rbr = ref Ꮡrbr.Value;
 
     if (offset == 0) {
-        return rbr.makeError("invalid zero offset"u8);
+        return rbr.makeError(invalidZeroOffsetˢ);
     }
     // Offset may point into the buffer or the window and
     // match may extend past the end of the initial buffer.
@@ -378,7 +396,7 @@ internal static error execSeqs(this ж<Reader> Ꮡr, block data, nint off, slice
         var lenWindow = r.window.len();
         var copy = offset - lenBlock;
         if (copy > lenWindow) {
-            return rbr.makeError("offset past window"u8);
+            return rbr.makeError(offsetPastWindowˢ);
         }
         var windowOffset = lenWindow - copy;
         if (copy > match) {

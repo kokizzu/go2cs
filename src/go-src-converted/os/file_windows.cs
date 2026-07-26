@@ -50,17 +50,21 @@ public static uintptr Fd(this ж<File> Ꮡfile) {
     return (uintptr)@file.pfd.Sysfd;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string consoleˢ = "console"u8;
+private static readonly @string pipeˢ = "pipe"u8;
+
 // newFile returns a new File with the given file handle and name.
 // Unlike NewFile, it does not check that h is syscall.InvalidHandle.
 internal static ж<File> newFile(syscallꓸHandle h, @string name, @string kind) {
     if (kind == "file"u8) {
         ref var m = ref heap(new uint32(), out var Ꮡm);
         if (syscall.GetConsoleMode(h, Ꮡm) == default!) {
-            kind = "console"u8;
+            kind = consoleˢ;
         }
         {
             var (t, err) = syscall.GetFileType(h); if (err == default! && t == syscall.FILE_TYPE_PIPE) {
-                kind = "pipe"u8;
+                kind = pipeˢ;
             }
         }
     }
@@ -82,8 +86,11 @@ internal static ж<File> newFile(syscallꓸHandle h, @string name, @string kind)
 
 // newConsoleFile creates new File that will be used as console.
 internal static ж<File> newConsoleFile(syscallꓸHandle h, @string name) {
-    return newFile(h, name, "console"u8);
+    return newFile(h, name, consoleˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fileˢ = "file"u8;
 
 // NewFile returns a new File with the given file descriptor and
 // name. The returned value will be nil if fd is not a valid file
@@ -93,7 +100,7 @@ public static ж<File> NewFile(uintptr fd, @string name) {
     if (h == syscall.InvalidHandle) {
         return default!;
     }
-    return newFile(h, name, "file"u8);
+    return newFile(h, name, fileˢ);
 }
 
 internal static void epipecheck(ж<File> Ꮡfile, error e) {
@@ -124,7 +131,7 @@ internal static (ж<File>, error) openFileNolog(@string name, nint flag, FileMod
         }
         return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "open"u8, Path: name, Err: e))));
     }
-    return (newFile(r, name, "file"u8), default!);
+    return (newFile(r, name, fileˢ), default!);
 }
 
 internal static (ж<File>, error) openDirNolog(@string name) {
@@ -253,9 +260,9 @@ public static (ж<File> r, ж<File> w, error err) Pipe() {
     array<syscallꓸHandle> p = new(2);
     var e = syscall.Pipe(p[..]);
     if (e != default!) {
-        return (default!, default!, NewSyscallError("pipe"u8, e));
+        return (default!, default!, NewSyscallError(pipeˢ, e));
     }
-    return (newFile(p[0], "|0"u8, "pipe"u8), newFile(p[1], "|1"u8, "pipe"u8), default!);
+    return (newFile(p[0], "|0"u8, pipeˢ), newFile(p[1], "|1"u8, pipeˢ), default!);
 }
 
 internal static ж<Δsync.Once> ᏑuseGetTempPath2Once = new(default(Δsync.Once));

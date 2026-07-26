@@ -95,6 +95,9 @@ public static (ж<ReadCloser>, error) OpenReader(@string name) {
     return (r, err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string zipSizeCannotBeNegativeˢ = "zip: size cannot be negative"u8;
+
 // NewReader returns a new [Reader] reading from r, which is assumed to
 // have the given size in bytes.
 //
@@ -107,7 +110,7 @@ public static (ж<ReadCloser>, error) OpenReader(@string name) {
 // the [ErrInsecurePath] error and use the returned reader.
 public static (ж<Reader>, error) NewReader(io.ReaderAt r, int64 size) {
     if (size < 0) {
-        return (default!, errors.New("zip: size cannot be negative"u8));
+        return (default!, errors.New(zipSizeCannotBeNegativeˢ));
     }
     var zr = @new<Reader>();
     error err = default!;
@@ -612,6 +615,9 @@ internal static error readDataDescriptor(io.Reader r, ж<File> Ꮡf) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string zipInvalidCommentLengthˢ = "zip: invalid comment length"u8;
+
 internal static (ж<directoryEnd> dir, int64 baseOffset, error err) readDirectoryEnd(io.ReaderAt r, int64 size) {
     ж<directoryEnd> dir = default!;
     int64 baseOffset = default!;
@@ -657,7 +663,7 @@ internal static (ж<directoryEnd> dir, int64 baseOffset, error err) readDirector
     ));
     nint l = (nint)(~d).commentLen;
     if (l > len(b)) {
-        return (default!, 0, errors.New("zip: invalid comment length"u8));
+        return (default!, 0, errors.New(zipInvalidCommentLengthˢ));
     }
     d.Value.comment = ((@string)(slice<byte>)b[..(int)(l)]);
     // These values mean that the file can be a zip64 file
@@ -1080,8 +1086,11 @@ internal static ж<fileListEntry> dotFile = Ꮡ(new fileListEntry(name: "./"u8, 
     return d.e.stat();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string isADirectoryˢ = "is a directory"u8;
+
 [GoRecv] internal static (nint, error) Read(this ref openDir d, slice<byte> _) {
-    return (0, new fs.PathErrorжerror(Ꮡ(new fs.PathError(Op: "read"u8, Path: (~d.e).name, Err: errors.New("is a directory"u8)))));
+    return (0, new fs.PathErrorжerror(Ꮡ(new fs.PathError(Op: "read"u8, Path: (~d.e).name, Err: errors.New(isADirectoryˢ)))));
 }
 
 [GoRecv] internal static (slice<fs.DirEntry>, error) ReadDir(this ref openDir d, nint count) {

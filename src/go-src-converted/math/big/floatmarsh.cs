@@ -60,6 +60,10 @@ public static (slice<byte>, error) GobEncode(this ж<Float> Ꮡx) {
     return (buf, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string floatGobDecodeBufferTooˢ = "Float.GobDecode: buffer too small"u8;
+private static readonly @string floatGobDecodeBufferTooˢ2 = "Float.GobDecode: buffer too small for finite form float"u8;
+
 // GobDecode implements the [encoding/gob.GobDecoder] interface.
 // The result is rounded per the precision and rounding mode of
 // z unless z's precision is 0, in which case z is set exactly
@@ -73,7 +77,7 @@ public static error GobDecode(this ж<Float> Ꮡz, slice<byte> buf) {
         return default!;
     }
     if (len(buf) < 6) {
-        return errors.New("Float.GobDecode: buffer too small"u8);
+        return errors.New(floatGobDecodeBufferTooˢ);
     }
     if (buf[0] != floatGobVersion) {
         return fmt.Errorf("Float.GobDecode: encoding version %d not supported"u8, buf[0]);
@@ -88,7 +92,7 @@ public static error GobDecode(this ж<Float> Ꮡz, slice<byte> buf) {
     z.prec = byteorder.BeUint32(buf[2..]);
     if (z.form == finite) {
         if (len(buf) < 10) {
-            return errors.New("Float.GobDecode: buffer too small for finite form float"u8);
+            return errors.New(floatGobDecodeBufferTooˢ2);
         }
         z.exp = (int32)byteorder.BeUint32(buf[6..]);
         z.mant = z.mant.setBytes(buf[10..]);

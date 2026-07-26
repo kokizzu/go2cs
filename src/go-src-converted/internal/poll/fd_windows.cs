@@ -146,6 +146,9 @@ internal static void InitMsg(this ж<operation> Ꮡo, slice<byte> p, slice<byte>
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string internalErrorPollingOnˢ = "internal error: polling on unsupported descriptor type"u8;
+
 // execIO executes a single IO operation o. It submits and cancels
 // IO in the current thread for systems where Windows CancelIoEx API
 // is available. Alternatively, it passes the request onto
@@ -154,7 +157,7 @@ internal static (nint, error) execIO(ж<operation> Ꮡo, Func<ж<operation>, err
     ref var o = ref Ꮡo.Value;
 
     if ((~o.fd).pd.runtimeCtx == 0) {
-        return (0, errors.New("internal error: polling on unsupported descriptor type"u8));
+        return (0, errors.New(internalErrorPollingOnˢ));
     }
     var fd = o.fd;
     // Notify runtime netpoll about starting IO.
@@ -273,6 +276,9 @@ internal static readonly fileKind kindPipe = 3;
 // logInitFD is set by tests to enable file descriptor initialization logging.
 internal static Action<@string, ж<FD>, error> logInitFD;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string wsaioctlˢ = "wsaioctl"u8;
+
 // Init initializes the FD. The Sysfd field should already be set.
 // This can be called multiple times on a single FD.
 // The net argument is a network name from the net package (e.g., "tcp"),
@@ -347,7 +353,7 @@ public static (@string, error) Init(this ж<FD> Ꮡfd, @string net, bool pollabl
         var size = (uint32)@unsafe.Sizeof(flag);
         var errΔ3 = Δsyscall.WSAIoctl(fd.Sysfd, Δsyscall.SIO_UDP_CONNRESET, Ꮡflag.Reinterpret<uint32, byte>(), size, nil, 0, Ꮡret, nil, 0);
         if (errΔ3 != default!) {
-            return ("wsaioctl", errΔ3);
+            return (wsaioctlˢ, errΔ3);
         }
     }
 
@@ -964,6 +970,10 @@ public static error ConnectEx(this ж<FD> Ꮡfd, syscallꓸSockaddr ra) {
     return err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string acceptexˢ = "acceptex"u8;
+private static readonly @string setsockoptˢ = "setsockopt"u8;
+
 internal static (@string, error) acceptOne(this ж<FD> Ꮡfd, syscallꓸHandle s, slice<Δsyscall.RawSockaddrAny> rawsa, ж<operation> Ꮡo) {
     ref var fd = ref Ꮡfd.Value;
     ref var o = ref Ꮡo.Value;
@@ -975,13 +985,13 @@ internal static (@string, error) acceptOne(this ж<FD> Ꮡfd, syscallꓸHandle s
     var (_, err) = execIO(Ꮡo, (ж<operation> oΔ1) => AcceptFunc((~(~oΔ1).fd).Sysfd, (~oΔ1).handle, Ꮡ(rawsaʗ1, 0).Reinterpret<Δsyscall.RawSockaddrAny, byte>(), 0, (uint32)(~oΔ1).rsan, (uint32)(~oΔ1).rsan, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo)));
     if (err != default!) {
         CloseFunc(s);
-        return ("acceptex", err);
+        return (acceptexˢ, err);
     }
     // Inherit properties of the listening socket.
     err = Δsyscall.Setsockopt(s, Δsyscall.SOL_SOCKET, Δsyscall.SO_UPDATE_ACCEPT_CONTEXT, Ꮡfd.of(FD.ᏑSysfd).Reinterpret<syscallꓸHandle, byte>(), (int32)@unsafe.Sizeof(fd.Sysfd));
     if (err != default!) {
         CloseFunc(s);
-        return ("setsockopt", err);
+        return (setsockoptˢ, err);
     }
     return ("", default!);
 }
@@ -1314,12 +1324,15 @@ public static (nint, nint, nint, error) ReadMsgInet6(this ж<FD> Ꮡfd, slice<by
     return (n, (nint)(~o).msg.Control.Len, (nint)(~o).msg.Flags, err);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string packetIsTooLargeOnly1gbˢ = "packet is too large (only 1GB is allowed)"u8;
+
 // WriteMsg wraps the WSASendMsg network call.
 public static (nint, nint, error) WriteMsg(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, syscallꓸSockaddr sa) => func<(nint, nint, error)>((defer, recover) => {
     ref var fd = ref Ꮡfd.Value;
 
     if (len(p) > maxRW) {
-        return (0, 0, errors.New("packet is too large (only 1GB is allowed)"u8));
+        return (0, 0, errors.New(packetIsTooLargeOnly1gbˢ));
     }
     {
         var errΔ1 = Ꮡfd.writeLock(); if (errΔ1 != default!) {
@@ -1349,7 +1362,7 @@ public static (nint, nint, error) WriteMsgInet4(this ж<FD> Ꮡfd, slice<byte> p
     ref var fd = ref Ꮡfd.Value;
 
     if (len(p) > maxRW) {
-        return (0, 0, errors.New("packet is too large (only 1GB is allowed)"u8));
+        return (0, 0, errors.New(packetIsTooLargeOnly1gbˢ));
     }
     {
         var errΔ1 = Ꮡfd.writeLock(); if (errΔ1 != default!) {
@@ -1374,7 +1387,7 @@ public static (nint, nint, error) WriteMsgInet6(this ж<FD> Ꮡfd, slice<byte> p
     ref var fd = ref Ꮡfd.Value;
 
     if (len(p) > maxRW) {
-        return (0, 0, errors.New("packet is too large (only 1GB is allowed)"u8));
+        return (0, 0, errors.New(packetIsTooLargeOnly1gbˢ));
     }
     {
         var errΔ1 = Ꮡfd.writeLock(); if (errΔ1 != default!) {
@@ -1394,16 +1407,20 @@ public static (nint, nint, error) WriteMsgInet6(this ж<FD> Ꮡfd, slice<byte> p
     return (n, (nint)(~o).msg.Control.Len, err);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getCurrentProcessˢ = "GetCurrentProcess"u8;
+private static readonly @string duplicateHandleˢ = "DuplicateHandle"u8;
+
 public static (nint, @string, error) DupCloseOnExec(nint fd) {
     var (proc, err) = Δsyscall.GetCurrentProcess();
     if (err != default!) {
-        return (0, "GetCurrentProcess", err);
+        return (0, getCurrentProcessˢ, err);
     }
     ref var nfd = ref heap(new syscallꓸHandle(), out var Ꮡnfd);
     const bool inherit = false; // analogous to CLOEXEC
     {
         var errΔ1 = Δsyscall.DuplicateHandle(proc, ((syscallꓸHandle)(uintptr)fd), proc, Ꮡnfd, 0, inherit, Δsyscall.DUPLICATE_SAME_ACCESS); if (errΔ1 != default!) {
-            return (0, "DuplicateHandle", errΔ1);
+            return (0, duplicateHandleˢ, errΔ1);
         }
     }
     return ((nint)(uintptr)nfd, "", default!);

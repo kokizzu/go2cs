@@ -137,6 +137,9 @@ public static io.Reader ErrReader(error err) {
     return (n, err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilOrEofˢ = "nil or EOF"u8;
+
 // TestReader tests that reading from r returns the expected file content.
 // It does reads of different sizes, until EOF.
 // If r implements [io.ReaderAt] or [io.Seeker], TestReader also checks
@@ -273,7 +276,7 @@ public static error TestReader(io.Reader r, slice<byte> content) {
                 if (nΔ2 != 1 || errΔ11 != default! && (i != len(dataΔ2) - 1 || !AreEqual(errΔ11, io.EOF))) {
                     @string want = "nil"u8;
                     if (i == len(dataΔ2) - 1) {
-                        want = "nil or EOF"u8;
+                        want = nilOrEofˢ;
                     }
                     return fmt.Errorf("ReadAt(1, %d) = %v, %v, want 1, %s"u8, i, nΔ2, errΔ11, want);
                 }

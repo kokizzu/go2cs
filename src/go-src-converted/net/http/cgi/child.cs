@@ -48,26 +48,40 @@ internal static map<@string, @string> envMap(slice<@string> env) {
     return m;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cgiNoRequestMethodInˢ = "cgi: no REQUEST_METHOD in environment"u8;
+private static readonly @string serverProtocolˢ = "SERVER_PROTOCOL"u8;
+private static readonly @string cgiInvalidServerProtocolˢ = "cgi: invalid SERVER_PROTOCOL version"u8;
+private static readonly @string httpHostˢ = "HTTP_HOST"u8;
+private static readonly @string contentLengthˢ = "CONTENT_LENGTH"u8;
+private static readonly @string contentTypeˢ = "CONTENT_TYPE"u8;
+private static readonly @string contentTypeˢ2 = "Content-Type"u8;
+private static readonly @string httpˢ = "HTTP_"u8;
+private static readonly @string queryStringˢ = "QUERY_STRING"u8;
+private static readonly @string httpsˢ = "HTTPS"u8;
+private static readonly @string remotePortˢ = "REMOTE_PORT"u8;
+private static readonly @string remoteAddrˢ = "REMOTE_ADDR"u8;
+
 // RequestFromMap creates an [http.Request] from CGI variables.
 // The returned Request's Body field is not populated.
 public static (ж<http.Request>, error) RequestFromMap(map<@string, @string> @params) {
     var r = @new<http.Request>();
-    r.Value.Method = @params["REQUEST_METHOD"u8];
+    r.Value.Method = @params[requestMethodˢ];
     if ((~r).Method == ""u8) {
-        return (default!, errors.New("cgi: no REQUEST_METHOD in environment"u8));
+        return (default!, errors.New(cgiNoRequestMethodInˢ));
     }
-    r.Value.Proto = @params["SERVER_PROTOCOL"u8];
+    r.Value.Proto = @params[serverProtocolˢ];
     bool ok = default!;
     (r.Value.ProtoMajor, r.Value.ProtoMinor, ok) = http.ParseHTTPVersion((~r).Proto);
     if (!ok) {
-        return (default!, errors.New("cgi: invalid SERVER_PROTOCOL version"u8));
+        return (default!, errors.New(cgiInvalidServerProtocolˢ));
     }
     r.Value.Close = true;
     r.Value.Trailer = new httpꓸHeader(new map<@string, slice<@string>>{});
     r.Value.Header = new httpꓸHeader(new map<@string, slice<@string>>{});
-    r.Value.Host = @params["HTTP_HOST"u8];
+    r.Value.Host = @params[httpHostˢ];
     {
-        @string lenstr = @params["CONTENT_LENGTH"u8]; if (lenstr != ""u8) {
+        @string lenstr = @params[contentLengthˢ]; if (lenstr != ""u8) {
             var (clen, err) = strconv.ParseInt(lenstr, 10, 64);
             if (err != default!) {
                 return (default!, errors.New("cgi: bad CONTENT_LENGTH in environment: "u8 + lenstr));
@@ -76,8 +90,8 @@ public static (ж<http.Request>, error) RequestFromMap(map<@string, @string> @pa
         }
     }
     {
-        @string ct = @params["CONTENT_TYPE"u8]; if (ct != ""u8) {
-            (~r).Header.Set("Content-Type"u8, ct);
+        @string ct = @params[contentTypeˢ]; if (ct != ""u8) {
+            (~r).Header.Set(contentTypeˢ2, ct);
         }
     }
     // Copy "HTTP_FOO_BAR" variables to "Foo-Bar" Headers
@@ -86,16 +100,16 @@ public static (ж<http.Request>, error) RequestFromMap(map<@string, @string> @pa
             continue;
         }
         {
-            var (after, found) = strings.CutPrefix(k, "HTTP_"u8); if (found) {
+            var (after, found) = strings.CutPrefix(k, httpˢ); if (found) {
                 (~r).Header.Add(strings.ReplaceAll(after, "_"u8, "-"u8), v);
             }
         }
     }
-    @string uriStr = @params["REQUEST_URI"u8];
+    @string uriStr = @params[requestUriˢ];
     if (uriStr == ""u8) {
         // Fallback to SCRIPT_NAME, PATH_INFO and QUERY_STRING.
-        uriStr = @params["SCRIPT_NAME"u8] + @params["PATH_INFO"u8];
-        @string s = @params["QUERY_STRING"u8];
+        uriStr = @params[scriptNameˢ] + @params[pathInfoˢ];
+        @string s = @params[queryStringˢ];
         if (s != ""u8) {
             uriStr += "?"u8 + s;
         }
@@ -103,7 +117,7 @@ public static (ж<http.Request>, error) RequestFromMap(map<@string, @string> @pa
     // There's apparently a de-facto standard for this.
     // https://web.archive.org/web/20170105004655/http://docstore.mik.ua/orelly/linux/cgi/ch03_02.htm#ch03-35636
     {
-        @string s = @params["HTTPS"u8]; if (s == "on"u8 || s == "ON"u8 || s == "1"u8) {
+        @string s = @params[httpsˢ]; if (s == "on"u8 || s == "ON"u8 || s == "1"u8) {
             r.Value.TLS = Ꮡ(new tlsꓸConnectionState(HandshakeComplete: true));
         }
     }
@@ -132,9 +146,9 @@ public static (ж<http.Request>, error) RequestFromMap(map<@string, @string> @pa
     }
     // Request.RemoteAddr has its port set by Go's standard http
     // server, so we do here too.
-    var (remotePort, _) = strconv.Atoi(@params["REMOTE_PORT"u8]);
+    var (remotePort, _) = strconv.Atoi(@params[remotePortˢ]);
     // zero if unset or invalid
-    r.Value.RemoteAddr = net.JoinHostPort(@params["REMOTE_ADDR"u8], strconv.Itoa(remotePort));
+    r.Value.RemoteAddr = net.JoinHostPort(@params[remoteAddrˢ], strconv.Itoa(remotePort));
     return (r, default!);
 }
 
@@ -220,8 +234,8 @@ public static error Serve(httpꓸHandler handler) {
     r.wroteCGIHeader = true;
     fmt.Fprintf(new bufio_WriterжWriter(r.bufw), "Status: %d %s\r\n"u8, r.code, http.StatusText(r.code));
     {
-        var (_, hasType) = r.header["Content-Type"u8, ꟷ]; if (!hasType) {
-            r.header.Set("Content-Type"u8, http.DetectContentType(p));
+        var (_, hasType) = r.header[contentTypeˢ2, ꟷ]; if (!hasType) {
+            r.header.Set(contentTypeˢ2, http.DetectContentType(p));
         }
     }
     r.header.Write(new bufio_WriterжWriter(r.bufw));

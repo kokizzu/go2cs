@@ -191,6 +191,9 @@ internal static void addLengthPrefixed(this ж<Builder> Ꮡb, nint lenLen, bool 
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string pendingAsn1ChildTooLongˢ = "pending ASN.1 child too long"u8;
+
 [GoRecv] internal static void flushChild(this ref Builder b) {
     if (b.child == nil) {
         return;
@@ -217,7 +220,7 @@ internal static void addLengthPrefixed(this ж<Builder> Ꮡb, nint lenLen, bool 
         uint8 lenLen = default!;
         uint8 lenByte = default!;
         if ((int64)length > (nint)0xfffffffeL){
-            b.err = errors.New("pending ASN.1 child too long"u8);
+            b.err = errors.New(pendingAsn1ChildTooLongˢ);
             return;
         } else 
         if (length > 0xffffff){
@@ -267,6 +270,10 @@ internal static void addLengthPrefixed(this ж<Builder> Ꮡb, nint lenLen, bool 
     b.result = child.Value.result;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptobyteLengthOverflowˢ = "cryptobyte: length overflow"u8;
+private static readonly @string cryptobyteBuilderIsˢ = "cryptobyte: Builder is exceeding its fixed-size buffer"u8;
+
 [GoRecv] internal static void add(this ref Builder b, params ꓸꓸꓸbyte bytesʗp) {
     var bytes = bytesʗp.slice();
 
@@ -277,10 +284,10 @@ internal static void addLengthPrefixed(this ж<Builder> Ꮡb, nint lenLen, bool 
         throw panic("cryptobyte: attempted write while child is pending");
     }
     if (len(b.result) + len(bytes) < len(bytes)) {
-        b.err = errors.New("cryptobyte: length overflow"u8);
+        b.err = errors.New(cryptobyteLengthOverflowˢ);
     }
     if (b.fixedSize && len(b.result) + len(bytes) > cap(b.result)) {
-        b.err = errors.New("cryptobyte: Builder is exceeding its fixed-size buffer"u8);
+        b.err = errors.New(cryptobyteBuilderIsˢ);
         return;
     }
     b.result = append(b.result, bytes.ꓸꓸꓸ);

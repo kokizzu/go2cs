@@ -282,6 +282,10 @@ internal static void sortUnits(this ж<pstate> Ꮡp, slice<extcu> units) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object totalˢ = (@string)"total"u8;
+private static readonly object statementsˢ = (@string)"(statements)"u8;
+
 // EmitFuncs writes out a function-level summary to the writer 'w'. A
 // note on handling function literals: although we collect coverage
 // data for unnamed literals, it probably does not make sense to
@@ -387,7 +391,7 @@ public static error EmitFuncs(this ж<Formatter> Ꮡfm, io.Writer w) => func<err
     }
     {
         var (_, err) = fmt.Fprintf(new tabwriter_WriterжWriter(tabber), "%s\t%s\t%.1f%%\n"u8,
-            (@string)"total"u8, (@string)"(statements)"u8, perc(covStmts, allStmts)); if (err != default!) {
+            totalˢ, statementsˢ, perc(covStmts, allStmts)); if (err != default!) {
             return err;
         }
     }

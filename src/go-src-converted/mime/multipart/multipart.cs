@@ -71,6 +71,9 @@ internal static readonly UntypedInt peekBufferSize = 4096;
     internal error readErr; // read error observed from mr.bufReader
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nameˢ = "name"u8;
+
 // FormName returns the name parameter if p has a Content-Disposition
 // of type "form-data".  Otherwise it returns the empty string.
 [GoRecv] public static @string FormName(this ref Part p) {
@@ -82,8 +85,11 @@ internal static readonly UntypedInt peekBufferSize = 4096;
     if (p.disposition != "form-data"u8) {
         return ""u8;
     }
-    return p.dispositionParams["name"u8];
+    return p.dispositionParams[nameˢ];
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string filenameˢ = "filename"u8;
 
 // FileName returns the filename parameter of the [Part]'s Content-Disposition
 // header. If not empty, the filename is passed through filepath.Base (which is
@@ -92,7 +98,7 @@ internal static readonly UntypedInt peekBufferSize = 4096;
     if (p.dispositionParams == default!) {
         p.parseContentDisposition();
     }
-    @string filename = p.dispositionParams["filename"u8];
+    @string filename = p.dispositionParams[filenameˢ];
     if (filename == ""u8) {
         return ""u8;
     }
@@ -101,8 +107,11 @@ internal static readonly UntypedInt peekBufferSize = 4096;
     return filepath.Base(filename);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string contentDispositionˢ = "Content-Disposition"u8;
+
 [GoRecv] internal static void parseContentDisposition(this ref Part p) {
-    @string v = p.Header.Get("Content-Disposition"u8);
+    @string v = p.Header.Get(contentDispositionˢ);
     error err = default!;
     (p.disposition, p.dispositionParams, err) = mime.ParseMediaType(v);
     if (err != default!) {
@@ -147,6 +156,9 @@ public static ж<Reader> NewReader(io.Reader r, @string boundary) {
     return (n, r.err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string quotedPrintableˢ = "quoted-printable"u8;
+
 internal static (ж<Part>, error) newPart(ж<Reader> Ꮡmr, bool rawPart, int64 maxMIMEHeaderSize, int64 maxMIMEHeaders) {
     ref var mr = ref Ꮡmr.Value;
 
@@ -163,7 +175,7 @@ internal static (ж<Part>, error) newPart(ж<Reader> Ꮡmr, bool rawPart, int64 
     // rawPart is used to switch between Part.NextPart and Part.NextRawPart.
     if (!rawPart) {
         @string cte = "Content-Transfer-Encoding"u8;
-        if (strings.EqualFold((~bp).Header.Get(cte), "quoted-printable"u8)) {
+        if (strings.EqualFold((~bp).Header.Get(cte), quotedPrintableˢ)) {
             (~bp).Header.Del(cte);
             bp.Value.r = new quotedprintable_ReaderжReader(quotedprintable.NewReader((~bp).r));
         }

@@ -215,6 +215,12 @@ internal static @string refererForURL(ж<url.URL> ᏑlastReq, ж<url.URL> Ꮡnew
 // ErrSchemeMismatch is returned when a server returns an HTTP response to an HTTPS client.
 public static error ErrSchemeMismatch = errors.New("http: server gave HTTP response to HTTPS client"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string httpNoClientTransportOrˢ = "http: no Client.Transport or DefaultTransport"u8;
+private static readonly @string httpNilRequestUrlˢ = "http: nil Request.URL"u8;
+private static readonly @string httpRequestRequestURICanˢ = "http: Request.RequestURI can't be set in client requests"u8;
+private static readonly @string authorizationˢ = "Authorization"u8;
+
 // send issues an HTTP request.
 // Caller should close resp.Body when done reading from it.
 internal static (ж<Response> resp, Func<bool> didTimeout, error err) send(ж<Request> Ꮡireq, RoundTripper rt, time.Time deadline) {
@@ -228,15 +234,15 @@ internal static (ж<Response> resp, Func<bool> didTimeout, error err) send(ж<Re
     // req is either the original request, or a modified fork
     if (rt == default!) {
         req.closeBody();
-        return (default!, alwaysFalse, errors.New("http: no Client.Transport or DefaultTransport"u8));
+        return (default!, alwaysFalse, errors.New(httpNoClientTransportOrˢ));
     }
     if ((~req).URL == nil) {
         req.closeBody();
-        return (default!, alwaysFalse, errors.New("http: nil Request.URL"u8));
+        return (default!, alwaysFalse, errors.New(httpNilRequestUrlˢ));
     }
     if ((~req).RequestURI != ""u8) {
         req.closeBody();
-        return (default!, alwaysFalse, errors.New("http: Request.RequestURI can't be set in client requests"u8));
+        return (default!, alwaysFalse, errors.New(httpRequestRequestURICanˢ));
     }
     // forkReq forks req into a shallow clone of ireq the first
     // time it's called.
@@ -255,12 +261,12 @@ internal static (ж<Response> resp, Func<bool> didTimeout, error err) send(ж<Re
         req.Value.Header = new ΔHeader(0);
     }
     {
-        var u = req.Value.URL.Value.User; if (u != nil && (~req).Header.Get("Authorization"u8) == ""u8) {
+        var u = req.Value.URL.Value.User; if (u != nil && (~req).Header.Get(authorizationˢ) == ""u8) {
             @string username = u.Username();
             var (password, _) = u.Password();
             forkReq();
             req.Value.Header = cloneOrMakeHeader(ireq.Header);
-            (~req).Header.Set("Authorization"u8, "Basic "u8 + basicAuth(username, password));
+            (~req).Header.Set(authorizationˢ, "Basic "u8 + basicAuth(username, password));
         }
     }
     if (!deadline.IsZero()) {
@@ -647,6 +653,10 @@ public static (ж<Response>, error) Do(this ж<Client> Ꮡc, ж<Request> Ꮡreq)
 
 internal static Action<ж<Response>, error> testHookClientDoResult;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string locationˢ = "Location"u8;
+private static readonly @string refererˢ = "Referer"u8;
+
 internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж<Request> Ꮡreq) {
     ж<Response> retres = default!;
     error reterr = default!;
@@ -663,7 +673,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
             req.closeBody();
             (retres, reterr) = (default!, new url_ΔErrorжerror(Ꮡ(new urlꓸError(
                 Op: urlErrorOp(req.Method),
-                Err: errors.New("http: nil Request.URL"u8)
+                Err: errors.New(httpNilRequestUrlˢ)
             )))); return;
         }
         _ = c;
@@ -696,7 +706,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
             // For all but the first request, create the next
             // request hop and replace req.
             if (builtin.len(reqs) > 0) {
-                @string loc = (~resp).Header.Get("Location"u8);
+                @string loc = (~resp).Header.Get(locationˢ);
                 if (loc == ""u8) {
                     // While most 3xx responses include a Location, it is not
                     // required and 3xx responses without a Location have been
@@ -746,8 +756,8 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                 // Add the Referer header from the most recent
                 // request URL to the new one, if it's not https->http:
                 {
-                    @string @ref = refererForURL((~reqs[builtin.len(reqs) - 1]).URL, req.URL, req.Header.Get("Referer"u8)); if (@ref != ""u8) {
-                        req.Header.Set("Referer"u8, @ref);
+                    @string @ref = refererForURL((~reqs[builtin.len(reqs) - 1]).URL, req.URL, req.Header.Get(refererˢ)); if (@ref != ""u8) {
+                        req.Header.Set(refererˢ, @ref);
                     }
                 }
                 errΔ1 = c.checkRedirect(Ꮡreq, reqs);
@@ -801,6 +811,9 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
     return (retres, reterr);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cookieˢ = "Cookie"u8;
+
 // makeHeadersCopier makes a function that copies headers from the
 // initial Request, ireq. For every redirect, this function must be called
 // so that it can copy headers into the upcoming Request.
@@ -813,7 +826,7 @@ internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<R
     ΔHeader ireqhdr = cloneOrMakeHeader(ireq.Header);
     
     map<@string, slice<ж<ΔCookie>>> icookies = default!;
-    if (c.Jar != default! && ireq.Header.Get("Cookie"u8) != ""u8) {
+    if (c.Jar != default! && ireq.Header.Get(cookieˢ) != ""u8) {
         icookies = new map<@string, slice<ж<ΔCookie>>>();
         foreach (var (_, cΔ1) in ireq.Cookies()) {
             icookies[(~cΔ1).Name] = append(icookies[(~cΔ1).Name], cΔ1);
@@ -849,7 +862,7 @@ internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<R
                 }
             }
             if (changed) {
-                ireqhdrʗ1.Del("Cookie"u8);
+                ireqhdrʗ1.Del(cookieˢ);
                 slice<@string> ss = default!;
                 foreach (var (_, cs) in icookiesʗ1) {
                     foreach (var (_, cΔ3) in cs) {
@@ -858,7 +871,7 @@ internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<R
                 }
                 slices.Sort<slice<@string>, @string>(ss);
                 // Ensure deterministic headers
-                ireqhdrʗ1.Set("Cookie"u8, strings.Join(ss, "; "u8));
+                ireqhdrʗ1.Set(cookieˢ, strings.Join(ss, "; "u8));
             }
         }
         // Copy the initial request's Header values
@@ -872,10 +885,13 @@ internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<R
     };
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stoppedAfter10Redirectsˢ = "stopped after 10 redirects"u8;
+
 // Update previous Request with the current request
 internal static error defaultCheckRedirect(ж<Request> Ꮡreq, slice<ж<Request>> via) {
     if (builtin.len(via) >= 10) {
-        return errors.New("stopped after 10 redirects"u8);
+        return errors.New(stoppedAfter10Redirectsˢ);
     }
     return default!;
 }
@@ -903,6 +919,10 @@ public static (ж<Response> resp, error err) Post(@string url, @string contentTy
     return DefaultClient.Post(url, contentType, body);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string postˢ = "POST"u8;
+private static readonly @string contentTypeˢ = "Content-Type"u8;
+
 // Post issues a POST to the specified URL.
 //
 // Caller should close resp.Body when done reading from it.
@@ -921,11 +941,11 @@ public static (ж<Response> resp, error err) Post(this ж<Client> Ꮡc, @string 
     ж<Response> resp = default!;
     error err = default!;
 
-    (var req, err) = NewRequest("POST"u8, url, body);
+    (var req, err) = NewRequest(postˢ, url, body);
     if (err != default!) {
         return (default!, err);
     }
-    (~req).Header.Set("Content-Type"u8, contentType);
+    (~req).Header.Set(contentTypeˢ, contentType);
     return Ꮡc.Do(req);
 }
 
@@ -952,6 +972,9 @@ public static (ж<Response> resp, error err) PostForm(@string urlΔ1, url.Values
     return DefaultClient.PostForm(urlΔ1, data);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string applicationXWwwFormˢ = "application/x-www-form-urlencoded"u8;
+
 // PostForm issues a POST to the specified URL,
 // with data's keys and values URL-encoded as the request body.
 //
@@ -970,7 +993,7 @@ public static (ж<Response> resp, error err) PostForm(this ж<Client> Ꮡc, @str
     ж<Response> resp = default!;
     error err = default!;
 
-    return Ꮡc.Post(urlΔ1, "application/x-www-form-urlencoded"u8, new strings_ReaderжReader(strings.NewReader(data.Encode())));
+    return Ꮡc.Post(urlΔ1, applicationXWwwFormˢ, new strings_ReaderжReader(strings.NewReader(data.Encode())));
 }
 
 // Head issues a HEAD to the specified URL. If the response is one of
@@ -994,6 +1017,9 @@ public static (ж<Response> resp, error err) Head(@string url) {
     return DefaultClient.Head(url);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string headˢ = "HEAD"u8;
+
 // Head issues a HEAD to the specified URL. If the response is one of the
 // following redirect codes, Head follows the redirect after calling the
 // [Client.CheckRedirect] function:
@@ -1010,7 +1036,7 @@ public static (ж<Response> resp, error err) Head(this ж<Client> Ꮡc, @string 
     ж<Response> resp = default!;
     error err = default!;
 
-    (var req, err) = NewRequest("HEAD"u8, url, default!);
+    (var req, err) = NewRequest(headˢ, url, default!);
     if (err != default!) {
         return (default!, err);
     }

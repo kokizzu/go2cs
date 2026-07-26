@@ -281,9 +281,9 @@ internal static readonly mSpanState mSpanManual = 2; // allocated for manual man
 // mSpanStateNames are the names of the span states, indexed by
 // mSpanState.
 internal static slice<@string> mSpanStateNames = new @string[]{
-    "mSpanDead",
-    "mSpanInUse",
-    "mSpanManual"
+    "mSpanDead"u8,
+    "mSpanInUse"u8,
+    "mSpanManual"u8
 }.slice();
 
 // mSpanStateBox holds an atomic.Uint8 to provide atomic operations on
@@ -447,7 +447,7 @@ internal static void recordspan(@unsafe.Pointer vh, @unsafe.Pointer Δp) {
         var sp = Ꮡnew.Reinterpret<slice<ж<mspan>>, Δsliceᴛ>();
         sp.Value.Δarray = (uintptr)sysAlloc((uintptr)n * (uintptr)goarch.PtrSize, Ꮡmemstats.of(mstats.Ꮡother_sys));
         if ((~sp).Δarray == nil) {
-            @throw("runtime: cannot allocate memory"u8);
+            @throw(runtimeCannotAllocateˢ);
         }
         sp.Value.len = len((~h).allspans);
         sp.Value.cap = n;
@@ -869,6 +869,9 @@ internal static ж<mspan> alloc(this ж<mheap> Ꮡh, uintptr npages, spanClass s
     return s;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string manualSpanAllocationˢ = "manual span allocation called with non-manually-managed type"u8;
+
 // allocManual allocates a manually-managed span of npage pages.
 // allocManual returns nil if allocation fails.
 //
@@ -888,7 +891,7 @@ internal static ж<mspan> alloc(this ж<mheap> Ꮡh, uintptr npages, spanClass s
 //go:systemstack
 internal static ж<mspan> allocManual(this ж<mheap> Ꮡh, uintptr npages, spanAllocType typ) {
     if (!typ.manual()) {
-        @throw("manual span allocation called with non-manually-managed type"u8);
+        @throw(manualSpanAllocationˢ);
     }
     return Ꮡh.allocSpan(npages, typ, 0);
 }
@@ -908,6 +911,9 @@ internal static ж<mspan> allocManual(this ж<mheap> Ꮡh, uintptr npages, spanA
         ha.Value.spans[(nint)(i)] = Ꮡs;
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string potentiallyOverlappingInˢ = "potentially overlapping in-use allocations detected"u8;
 
 // allocNeedsZero checks if the region of address space [base, base+npage*pageSize),
 // assumed to be allocated, needs to be zeroed, updating heap arena metadata for
@@ -960,7 +966,7 @@ internal static ж<mspan> allocManual(this ж<mheap> Ꮡh, uintptr npages, spanA
                 // The zeroedBase moved into the space we were trying to
                 // claim. That's very bad, and indicates someone allocated
                 // the same region we did.
-                @throw("potentially overlapping in-use allocations detected"u8);
+                @throw(potentiallyOverlappingInˢ);
             }
         }
         // Move base forward and subtract from npage to move into
@@ -1055,6 +1061,9 @@ internal static void freeMSpanLocked(this ж<mheap> Ꮡh, ж<mspan> Ꮡs) {
     h.spanalloc.free(new @unsafe.Pointer(Ꮡs));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string grewHeapButNoAdequateˢ = "grew heap, but no adequate free space found"u8;
+
 // allocSpan allocates an mspan which owns npages worth of memory.
 //
 // If typ.manual() == false, allocSpan allocates a heap span of class spanclass
@@ -1131,7 +1140,7 @@ internal static ж<mspan> /*s*/ allocSpan(this ж<mheap> Ꮡh, uintptr npages, s
             }
             (@base, _) = h.pages.find(npages + extraPages);
             if (@base == 0) {
-                @throw("grew heap, but no adequate free space found"u8);
+                @throw(grewHeapButNoAdequateˢ);
             }
         }
         @base = alignUp(@base, physPageSize);
@@ -1149,7 +1158,7 @@ internal static ж<mspan> /*s*/ allocSpan(this ж<mheap> Ꮡh, uintptr npages, s
             }
             (@base, scav) = h.pages.alloc(npages);
             if (@base == 0) {
-                @throw("grew heap, but no adequate free space found"u8);
+                @throw(grewHeapButNoAdequateˢ);
             }
         }
     }
@@ -1508,6 +1517,12 @@ internal static void freeManual(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAllocTy
     unlock(Ꮡh.of(mheap.Ꮡlock));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mheapFreeSpanLockedˢ = "mheap.freeSpanLocked - invalid stack free"u8;
+private static readonly @string mheapFreeSpanLockedˢ2 = "mheap.freeSpanLocked - invalid free of user arena chunk"u8;
+private static readonly @string mheapFreeSpanLockedˢ3 = "mheap.freeSpanLocked - invalid free"u8;
+private static readonly @string mheapFreeSpanLockedˢ4 = "mheap.freeSpanLocked - invalid span state"u8;
+
 internal static void freeSpanLocked(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAllocType typ) {
     ref var h = ref Ꮡh.Value;
     ref var s = ref Ꮡs.Value;
@@ -1516,16 +1531,16 @@ internal static void freeSpanLocked(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAll
     var exprᴛ1 = Ꮡs.of(mspan.Ꮡstate).get();
     if (exprᴛ1 == mSpanManual) {
         if (s.allocCount != 0) {
-            @throw("mheap.freeSpanLocked - invalid stack free"u8);
+            @throw(mheapFreeSpanLockedˢ);
         }
     }
     else if (exprᴛ1 == mSpanInUse) {
         if (s.isUserArenaChunk) {
-            @throw("mheap.freeSpanLocked - invalid free of user arena chunk"u8);
+            @throw(mheapFreeSpanLockedˢ2);
         }
         if (s.allocCount != 0 || s.sweepgen != h.sweepgen) {
             print((@string)"mheap.freeSpanLocked - span "u8, Ꮡs, (@string)" ptr "u8, ((Δhex)(uint64)s.@base()), (@string)" allocCount "u8, s.allocCount, (@string)" sweepgen "u8, s.sweepgen, (@string)"/"u8, h.sweepgen, (@string)"\n"u8);
-            @throw("mheap.freeSpanLocked - invalid free"u8);
+            @throw(mheapFreeSpanLockedˢ3);
         }
         Ꮡh.of(mheap.ᏑpagesInUse).Add(((uintptr)0 - s.npages));
         var (arena, pageIdx, pageMask) = pageIndexOf(s.@base());
@@ -1533,7 +1548,7 @@ internal static void freeSpanLocked(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAll
  (uint8)(~pageMask));
     }
     else { /* default: */
-        @throw("mheap.freeSpanLocked - invalid span state"u8);
+        @throw(mheapFreeSpanLockedˢ4);
     }
 
     // Update stats.
@@ -1632,6 +1647,9 @@ internal static void init(this ж<mspan> Ꮡspan, uintptr @base, uintptr npages)
     list.last = default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mSpanListRemoveˢ = "mSpanList.remove"u8;
+
 internal static void remove(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
     ref var list = ref Ꮡlist.DerefOrNil();
     ref var span = ref Ꮡspan.DerefOrNil();
@@ -1639,7 +1657,7 @@ internal static void remove(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
     if (span.list != Ꮡlist) {
         print((@string)"runtime: failed mSpanList.remove span.npages="u8, span.npages,
             (@string)" span="u8, Ꮡspan, (@string)" prev="u8, span.prev, (@string)" span.list="u8, span.list, (@string)" list="u8, Ꮡlist, (@string)"\n"u8);
-        @throw("mSpanList.remove"u8);
+        @throw(mSpanListRemoveˢ);
     }
     if (list.first == Ꮡspan){
         list.first = span.next;
@@ -1660,13 +1678,16 @@ internal static void remove(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
     return list.first == nil;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mSpanListInsertˢ = "mSpanList.insert"u8;
+
 internal static void insert(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
     ref var list = ref Ꮡlist.Value;
     ref var span = ref Ꮡspan.Value;
 
     if (span.next != nil || span.prev != nil || span.list != nil) {
         println((@string)"runtime: failed mSpanList.insert"u8, Ꮡspan, span.next, span.prev, span.list);
-        @throw("mSpanList.insert"u8);
+        @throw(mSpanListInsertˢ);
     }
     span.next = list.first;
     if (list.first != nil){
@@ -1681,13 +1702,16 @@ internal static void insert(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
     span.list = Ꮡlist;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mSpanListInsertBackˢ = "mSpanList.insertBack"u8;
+
 internal static void insertBack(this ж<mSpanList> Ꮡlist, ж<mspan> Ꮡspan) {
     ref var list = ref Ꮡlist.Value;
     ref var span = ref Ꮡspan.Value;
 
     if (span.next != nil || span.prev != nil || span.list != nil) {
         println((@string)"runtime: failed mSpanList.insertBack"u8, Ꮡspan, span.next, span.prev, span.list);
-        @throw("mSpanList.insertBack"u8);
+        @throw(mSpanListInsertBackˢ);
     }
     span.prev = list.last;
     if (list.last != nil){
@@ -1760,6 +1784,9 @@ internal static void spanHasNoSpecials(ж<mspan> Ꮡs) {
     atomic.And8(ha.at(heapArena.ᏑpageSpecials, (nint)(arenaPage / 8)), (uint8)(~((uint8)((uint8)1 << (int)((arenaPage % 8))))));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string addspecialOnInvalidˢ = "addspecial on invalid pointer"u8;
+
 // Adds the special record s to the list of special records for
 // the object p. All fields of s should be filled in except for
 // offset & next, which this routine will fill in.
@@ -1771,7 +1798,7 @@ internal static bool addspecial(@unsafe.Pointer Δp, ж<special> Ꮡs) {
 
     var span = spanOfHeap((uintptr)Δp);
     if (span == nil) {
-        @throw("addspecial on invalid pointer"u8);
+        @throw(addspecialOnInvalidˢ);
     }
     // Ensure that the span is swept.
     // Sweeping accesses the specials list w/o locks, so we have
@@ -1795,6 +1822,9 @@ internal static bool addspecial(@unsafe.Pointer Δp, ж<special> Ꮡs) {
     return !exists;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string removespecialOnInvalidˢ = "removespecial on invalid pointer"u8;
+
 // already exists
 
 // Removes the Special record of the given kind for the object p.
@@ -1803,7 +1833,7 @@ internal static bool addspecial(@unsafe.Pointer Δp, ж<special> Ꮡs) {
 internal static ж<special> removespecial(@unsafe.Pointer Δp, uint8 kind) {
     var span = spanOfHeap((uintptr)Δp);
     if (span == nil) {
-        @throw("removespecial on invalid pointer"u8);
+        @throw(removespecialOnInvalidˢ);
     }
     // Ensure that the span is swept.
     // Sweeping accesses the specials list w/o locks, so we have
@@ -1984,6 +2014,9 @@ internal static @unsafe.Pointer internal_weak_runtime_makeStrongFromWeak(@unsafe
     return ptr;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string failedToGetOrCreateWeakˢ = "failed to get or create weak handle"u8;
+
 // Retrieves or creates a weak pointer handle for the object p.
 internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
     // First try to retrieve without allocating.
@@ -2025,7 +2058,7 @@ internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
     unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     handle = getWeakHandle(Δp);
     if (handle == nil) {
-        @throw("failed to get or create weak handle"u8);
+        @throw(failedToGetOrCreateWeakˢ);
     }
     // Keep p alive for the duration of the function to ensure
     // that it cannot die while we're trying to this.
@@ -2033,10 +2066,13 @@ internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
     return handle;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getWeakHandleOnInvalidˢ = "getWeakHandle on invalid pointer"u8;
+
 internal static ж<atomic.Uintptr> getWeakHandle(@unsafe.Pointer Δp) {
     var span = spanOfHeap((uintptr)Δp);
     if (span == nil) {
-        @throw("getWeakHandle on invalid pointer"u8);
+        @throw(getWeakHandleOnInvalidˢ);
     }
     // Ensure that the span is swept.
     // Sweeping accesses the specials list w/o locks, so we have
@@ -2063,6 +2099,9 @@ internal static ж<atomic.Uintptr> getWeakHandle(@unsafe.Pointer Δp) {
     internal ж<bucket> b;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string setprofilebucketProfileˢ = "setprofilebucket: profile already set"u8;
+
 // Set the heap profile bucket associated with addr to b.
 internal static void setprofilebucket(@unsafe.Pointer Δp, ж<bucket> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -2073,7 +2112,7 @@ internal static void setprofilebucket(@unsafe.Pointer Δp, ж<bucket> Ꮡb) {
     s.Value.special.kind = _KindSpecialProfile;
     s.Value.b = Ꮡb;
     if (!addspecial(Δp, s.of(specialprofile.Ꮡspecial))) {
-        @throw("setprofilebucket: profile already set"u8);
+        @throw(setprofilebucketProfileˢ);
     }
 }
 
@@ -2121,6 +2160,9 @@ internal static specialsIter newSpecialsIter(ж<mspan> Ꮡspan) {
     return cur;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badSpecialKindˢ = "bad special kind"u8;
+
 // freeSpecial performs any cleanup on special s and deallocates it.
 // s must already be unlinked from the specials list.
 internal static void freeSpecial(ж<special> Ꮡs, @unsafe.Pointer Δp, uintptr size) {
@@ -2158,7 +2200,7 @@ internal static void freeSpecial(ж<special> Ꮡs, @unsafe.Pointer Δp, uintptr 
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     }
     else { /* default: */
-        @throw("bad special kind"u8);
+        @throw(badSpecialKindˢ);
         throw panic("not reached");
     }
 
@@ -2232,6 +2274,9 @@ internal static ж<gcBits> tryAlloc(this ж<gcBitsArena> Ꮡb, uintptr bytes) {
     return Ꮡ(b.bits[start]);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string markBitsOverflowˢ = "markBits overflow"u8;
+
 // newMarkBits returns a pointer to 8 byte aligned bytes
 // to be used for a span's mark bits.
 internal static ж<gcBits> newMarkBits(uintptr nelems) {
@@ -2275,7 +2320,7 @@ internal static ж<gcBits> newMarkBits(uintptr nelems) {
     // this cannot race and is guaranteed to succeed.
     var Δp = fresh.tryAlloc(bytesNeeded);
     if (Δp == nil) {
-        @throw("markBits overflow"u8);
+        @throw(markBitsOverflowˢ);
     }
     // Add the fresh arena to the "next" list.
     fresh.Value.next = gcBitsArenas.next;
@@ -2337,7 +2382,7 @@ internal static ж<gcBitsArena> newArenaMayUnlock() {
         unlock(ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡlock));
         result = (ж<gcBitsArena>)(uintptr)(sysAlloc(gcBitsChunkBytes, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
         if (result == nil) {
-            @throw("runtime: cannot allocate memory"u8);
+            @throw(runtimeCannotAllocateˢ);
         }
         @lock(ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡlock));
     } else {

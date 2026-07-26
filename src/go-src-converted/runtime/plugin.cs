@@ -9,6 +9,12 @@ using @internal;
 
 partial class runtime_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string runtimeNoPluginModuleˢ = "runtime: no plugin module data"u8;
+private static readonly @string runtimePluginHasEmptyˢ = "runtime: plugin has empty pluginpath"u8;
+private static readonly @string pluginAlreadyLoadedˢ = "plugin already loaded"u8;
+private static readonly @string pluginNewModuleDataˢ = "plugin: new module data overlaps with previous moduledata"u8;
+
 //go:linkname plugin_lastmoduleinit plugin.lastmoduleinit
 internal static (@string path, map<@string, any> syms, slice<ж<initTask>> initTasks, @string errstr) plugin_lastmoduleinit() {
     @string path = default!;
@@ -26,18 +32,18 @@ internal static (@string path, map<@string, any> syms, slice<ж<initTask>> initT
         md = pmd;
     }
     if (md == nil) {
-        @throw("runtime: no plugin module data"u8);
+        @throw(runtimeNoPluginModuleˢ);
     }
     if ((~md).pluginpath == ""u8) {
-        @throw("runtime: plugin has empty pluginpath"u8);
+        @throw(runtimePluginHasEmptyˢ);
     }
     if ((~md).typemap != default!) {
-        return ("", default!, default!, "plugin already loaded");
+        return ("", default!, default!, pluginAlreadyLoadedˢ);
     }
     foreach (var (_, pmd) in activeModules()) {
         if ((~pmd).pluginpath == (~md).pluginpath) {
             md.Value.bad = true;
-            return ("", default!, default!, "plugin already loaded");
+            return ("", default!, default!, pluginAlreadyLoadedˢ);
         }
         if (inRange((~pmd).text, (~pmd).etext, (~md).text, (~md).etext) || inRange((~pmd).bss, (~pmd).ebss, (~md).bss, (~md).ebss) || inRange((~pmd).data, (~pmd).edata, (~md).data, (~md).edata) || inRange((~pmd).types, (~pmd).etypes, (~md).types, (~md).etypes)) {
             println((@string)"plugin: new module data overlaps with previous moduledata"u8);
@@ -49,7 +55,7 @@ internal static (@string path, map<@string, any> syms, slice<ж<initTask>> initT
             println((@string)"\tmd.bss-ebss="u8, ((Δhex)(uint64)(~md).bss), (@string)"-"u8, ((Δhex)(uint64)(~md).ebss));
             println((@string)"\tmd.data-edata="u8, ((Δhex)(uint64)(~md).data), (@string)"-"u8, ((Δhex)(uint64)(~md).edata));
             println((@string)"\tmd.types-etypes="u8, ((Δhex)(uint64)(~md).types), (@string)"-"u8, ((Δhex)(uint64)(~md).etypes));
-            @throw("plugin: new module data overlaps with previous moduledata"u8);
+            @throw(pluginNewModuleDataˢ);
         }
     }
     foreach (var (_, pkghash) in (~md).pkghashes) {
@@ -93,6 +99,10 @@ internal static (@string path, map<@string, any> syms, slice<ж<initTask>> initT
     return ((~md).pluginpath, syms, (~md).inittasks, "");
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noneˢ = "none"u8;
+private static readonly @string runtimePluginHasBadˢ = "runtime: plugin has bad symbol table"u8;
+
 internal static void pluginftabverify(ж<moduledata> Ꮡmd) {
     ref var md = ref Ꮡmd.Value;
 
@@ -107,7 +117,7 @@ internal static void pluginftabverify(ж<moduledata> Ꮡmd) {
         // A common bug is f.entry has a relocation to a duplicate
         // function symbol, meaning if we search for its PC we get
         // a valid entry with a name that is useful for debugging.
-        @string name2 = "none"u8;
+        @string name2 = noneˢ;
         var entry2 = (uintptr)0;
         var f2 = findfunc(entry);
         if (f2.valid()) {
@@ -119,7 +129,7 @@ internal static void pluginftabverify(ж<moduledata> Ꮡmd) {
             name, (@string)"/"u8, name2, (@string)"outside pc range:["u8, ((Δhex)(uint64)md.minpc), (@string)","u8, ((Δhex)(uint64)md.maxpc), (@string)"], modulename="u8, md.modulename, (@string)", pluginpath="u8, md.pluginpath);
     }
     if (badtable) {
-        @throw("runtime: plugin has bad symbol table"u8);
+        @throw(runtimePluginHasBadˢ);
     }
 }
 

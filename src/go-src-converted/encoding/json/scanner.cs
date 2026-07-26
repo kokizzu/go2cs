@@ -180,6 +180,9 @@ internal static nint eof(this ж<scanner> Ꮡs) {
     return scanError;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string exceededMaxDepthˢ = "exceeded max depth"u8;
+
 // pushParseState pushes a new parse state p onto the parse stack.
 // an error state is returned if maxNestingDepth was exceeded, otherwise successState is returned.
 [GoRecv] internal static nint pushParseState(this ref scanner s, byte c, nint newParseState, nint successState) {
@@ -187,7 +190,7 @@ internal static nint eof(this ж<scanner> Ꮡs) {
     if (len(s.parseState) <= maxNestingDepth) {
         return successState;
     }
-    return s.error(c, "exceeded max depth"u8);
+    return s.error(c, exceededMaxDepthˢ);
 }
 
 // popParseState pops a parse state (already obtained) off the stack
@@ -217,6 +220,9 @@ internal static nint stateBeginValueOrEmpty(ж<scanner> Ꮡs, byte c) {
     }
     return stateBeginValue(Ꮡs, c);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lookingForBeginningOfˢ = "looking for beginning of value"u8;
 
 // stateBeginValue is the state at the beginning of the input.
 internal static nint stateBeginValue(ж<scanner> Ꮡs, byte c) {
@@ -268,7 +274,7 @@ internal static nint stateBeginValue(ж<scanner> Ꮡs, byte c) {
         s.step = state1;
         return scanBeginLiteral;
     }
-    return s.error(c, "looking for beginning of value"u8);
+    return s.error(c, lookingForBeginningOfˢ);
 }
 
 // stateBeginStringOrEmpty is the state after reading `{`.
@@ -286,6 +292,9 @@ internal static nint stateBeginStringOrEmpty(ж<scanner> Ꮡs, byte c) {
     return stateBeginString(Ꮡs, c);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lookingForBeginningOfˢ2 = "looking for beginning of object key string"u8;
+
 // stateBeginString is the state after reading `{"key": value,`.
 internal static nint stateBeginString(ж<scanner> Ꮡs, byte c) {
     ref var s = ref Ꮡs.Value;
@@ -297,8 +306,13 @@ internal static nint stateBeginString(ж<scanner> Ꮡs, byte c) {
         s.step = stateInString;
         return scanBeginLiteral;
     }
-    return s.error(c, "looking for beginning of object key string"u8);
+    return s.error(c, lookingForBeginningOfˢ2);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string afterObjectKeyˢ = "after object key"u8;
+private static readonly @string afterObjectKeyValuePairˢ = "after object key:value pair"u8;
+private static readonly @string afterArrayElementˢ = "after array element"u8;
 
 // stateEndValue is the state after completing a value,
 // such as after reading `{}` or `true` or `["x"`.
@@ -324,7 +338,7 @@ internal static nint stateEndValue(ж<scanner> Ꮡs, byte c) {
             s.step = stateBeginValue;
             return scanObjectKey;
         }
-        return s.error(c, "after object key"u8);
+        return s.error(c, afterObjectKeyˢ);
     }
     if (exprᴛ1 == parseObjectValue) {
         if (c == (rune)',') {
@@ -336,7 +350,7 @@ internal static nint stateEndValue(ж<scanner> Ꮡs, byte c) {
             s.popParseState();
             return scanEndObject;
         }
-        return s.error(c, "after object key:value pair"u8);
+        return s.error(c, afterObjectKeyValuePairˢ);
     }
     if (exprᴛ1 == parseArrayValue) {
         if (c == (rune)',') {
@@ -347,11 +361,14 @@ internal static nint stateEndValue(ж<scanner> Ꮡs, byte c) {
             s.popParseState();
             return scanEndArray;
         }
-        return s.error(c, "after array element"u8);
+        return s.error(c, afterArrayElementˢ);
     }
 
     return s.error(c, ""u8);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string afterTopLevelValueˢ = "after top-level value"u8;
 
 // stateEndTop is the state after finishing the top-level value,
 // such as after reading `{}` or `[1,2,3]`.
@@ -361,10 +378,13 @@ internal static nint stateEndTop(ж<scanner> Ꮡs, byte c) {
 
     if (!isSpace(c)) {
         // Complain about non-space byte on next call.
-        s.error(c, "after top-level value"u8);
+        s.error(c, afterTopLevelValueˢ);
     }
     return scanEnd;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inStringLiteralˢ = "in string literal"u8;
 
 // stateInString is the state after reading `"`.
 internal static nint stateInString(ж<scanner> Ꮡs, byte c) {
@@ -379,10 +399,13 @@ internal static nint stateInString(ж<scanner> Ꮡs, byte c) {
         return scanContinue;
     }
     if (c < 0x20) {
-        return s.error(c, "in string literal"u8);
+        return s.error(c, inStringLiteralˢ);
     }
     return scanContinue;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inStringEscapeCodeˢ = "in string escape code"u8;
 
 // stateInStringEsc is the state after reading `"\` during a quoted string.
 internal static nint stateInStringEsc(ж<scanner> Ꮡs, byte c) {
@@ -398,8 +421,11 @@ internal static nint stateInStringEsc(ж<scanner> Ꮡs, byte c) {
         return scanContinue;
     }}
 
-    return s.error(c, "in string escape code"u8);
+    return s.error(c, inStringEscapeCodeˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inUHexadecimalCharacterˢ = "in \\u hexadecimal character escape"u8;
 
 // stateInStringEscU is the state after reading `"\u` during a quoted string.
 internal static nint stateInStringEscU(ж<scanner> Ꮡs, byte c) {
@@ -410,7 +436,7 @@ internal static nint stateInStringEscU(ж<scanner> Ꮡs, byte c) {
         return scanContinue;
     }
     // numbers
-    return s.error(c, "in \\u hexadecimal character escape"u8);
+    return s.error(c, inUHexadecimalCharacterˢ);
 }
 
 // stateInStringEscU1 is the state after reading `"\u1` during a quoted string.
@@ -422,7 +448,7 @@ internal static nint stateInStringEscU1(ж<scanner> Ꮡs, byte c) {
         return scanContinue;
     }
     // numbers
-    return s.error(c, "in \\u hexadecimal character escape"u8);
+    return s.error(c, inUHexadecimalCharacterˢ);
 }
 
 // stateInStringEscU12 is the state after reading `"\u12` during a quoted string.
@@ -434,7 +460,7 @@ internal static nint stateInStringEscU12(ж<scanner> Ꮡs, byte c) {
         return scanContinue;
     }
     // numbers
-    return s.error(c, "in \\u hexadecimal character escape"u8);
+    return s.error(c, inUHexadecimalCharacterˢ);
 }
 
 // stateInStringEscU123 is the state after reading `"\u123` during a quoted string.
@@ -446,8 +472,11 @@ internal static nint stateInStringEscU123(ж<scanner> Ꮡs, byte c) {
         return scanContinue;
     }
     // numbers
-    return s.error(c, "in \\u hexadecimal character escape"u8);
+    return s.error(c, inUHexadecimalCharacterˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inNumericLiteralˢ = "in numeric literal"u8;
 
 // stateNeg is the state after reading `-` during a number.
 internal static nint stateNeg(ж<scanner> Ꮡs, byte c) {
@@ -461,7 +490,7 @@ internal static nint stateNeg(ж<scanner> Ꮡs, byte c) {
         s.step = state1;
         return scanContinue;
     }
-    return s.error(c, "in numeric literal"u8);
+    return s.error(c, inNumericLiteralˢ);
 }
 
 // state1 is the state after reading a non-zero integer during a number,
@@ -491,6 +520,9 @@ internal static nint state0(ж<scanner> Ꮡs, byte c) {
     return stateEndValue(Ꮡs, c);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string afterDecimalPointInˢ = "after decimal point in numeric literal"u8;
+
 // stateDot is the state after reading the integer and decimal point in a number,
 // such as after reading `1.`.
 internal static nint stateDot(ж<scanner> Ꮡs, byte c) {
@@ -500,7 +532,7 @@ internal static nint stateDot(ж<scanner> Ꮡs, byte c) {
         s.step = stateDot0;
         return scanContinue;
     }
-    return s.error(c, "after decimal point in numeric literal"u8);
+    return s.error(c, afterDecimalPointInˢ);
 }
 
 // stateDot0 is the state after reading the integer, decimal point, and subsequent
@@ -530,6 +562,9 @@ internal static nint stateE(ж<scanner> Ꮡs, byte c) {
     return stateESign(Ꮡs, c);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inExponentOfNumericˢ = "in exponent of numeric literal"u8;
+
 // stateESign is the state after reading the mantissa, e, and sign in a number,
 // such as after reading `314e-` or `0.314e+`.
 internal static nint stateESign(ж<scanner> Ꮡs, byte c) {
@@ -539,7 +574,7 @@ internal static nint stateESign(ж<scanner> Ꮡs, byte c) {
         s.step = stateE0;
         return scanContinue;
     }
-    return s.error(c, "in exponent of numeric literal"u8);
+    return s.error(c, inExponentOfNumericˢ);
 }
 
 // stateE0 is the state after reading the mantissa, e, optional sign,
@@ -552,6 +587,9 @@ internal static nint stateE0(ж<scanner> Ꮡs, byte c) {
     return stateEndValue(Ꮡs, c);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inLiteralTrueExpectingRˢ = "in literal true (expecting 'r')"u8;
+
 // stateT is the state after reading `t`.
 internal static nint stateT(ж<scanner> Ꮡs, byte c) {
     ref var s = ref Ꮡs.Value;
@@ -560,8 +598,11 @@ internal static nint stateT(ж<scanner> Ꮡs, byte c) {
         s.step = stateTr;
         return scanContinue;
     }
-    return s.error(c, "in literal true (expecting 'r')"u8);
+    return s.error(c, inLiteralTrueExpectingRˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inLiteralTrueExpectingUˢ = "in literal true (expecting 'u')"u8;
 
 // stateTr is the state after reading `tr`.
 internal static nint stateTr(ж<scanner> Ꮡs, byte c) {
@@ -571,8 +612,11 @@ internal static nint stateTr(ж<scanner> Ꮡs, byte c) {
         s.step = stateTru;
         return scanContinue;
     }
-    return s.error(c, "in literal true (expecting 'u')"u8);
+    return s.error(c, inLiteralTrueExpectingUˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inLiteralTrueExpectingEˢ = "in literal true (expecting 'e')"u8;
 
 // stateTru is the state after reading `tru`.
 internal static nint stateTru(ж<scanner> Ꮡs, byte c) {
@@ -582,8 +626,11 @@ internal static nint stateTru(ж<scanner> Ꮡs, byte c) {
         s.step = stateEndValue;
         return scanContinue;
     }
-    return s.error(c, "in literal true (expecting 'e')"u8);
+    return s.error(c, inLiteralTrueExpectingEˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inLiteralFalseExpectingAˢ = "in literal false (expecting 'a')"u8;
 
 // stateF is the state after reading `f`.
 internal static nint stateF(ж<scanner> Ꮡs, byte c) {
@@ -593,8 +640,11 @@ internal static nint stateF(ж<scanner> Ꮡs, byte c) {
         s.step = stateFa;
         return scanContinue;
     }
-    return s.error(c, "in literal false (expecting 'a')"u8);
+    return s.error(c, inLiteralFalseExpectingAˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inLiteralFalseExpectingLˢ = "in literal false (expecting 'l')"u8;
 
 // stateFa is the state after reading `fa`.
 internal static nint stateFa(ж<scanner> Ꮡs, byte c) {
@@ -604,8 +654,11 @@ internal static nint stateFa(ж<scanner> Ꮡs, byte c) {
         s.step = stateFal;
         return scanContinue;
     }
-    return s.error(c, "in literal false (expecting 'l')"u8);
+    return s.error(c, inLiteralFalseExpectingLˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inLiteralFalseExpectingSˢ = "in literal false (expecting 's')"u8;
 
 // stateFal is the state after reading `fal`.
 internal static nint stateFal(ж<scanner> Ꮡs, byte c) {
@@ -615,8 +668,11 @@ internal static nint stateFal(ж<scanner> Ꮡs, byte c) {
         s.step = stateFals;
         return scanContinue;
     }
-    return s.error(c, "in literal false (expecting 's')"u8);
+    return s.error(c, inLiteralFalseExpectingSˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inLiteralFalseExpectingEˢ = "in literal false (expecting 'e')"u8;
 
 // stateFals is the state after reading `fals`.
 internal static nint stateFals(ж<scanner> Ꮡs, byte c) {
@@ -626,8 +682,11 @@ internal static nint stateFals(ж<scanner> Ꮡs, byte c) {
         s.step = stateEndValue;
         return scanContinue;
     }
-    return s.error(c, "in literal false (expecting 'e')"u8);
+    return s.error(c, inLiteralFalseExpectingEˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inLiteralNullExpectingUˢ = "in literal null (expecting 'u')"u8;
 
 // stateN is the state after reading `n`.
 internal static nint stateN(ж<scanner> Ꮡs, byte c) {
@@ -637,8 +696,11 @@ internal static nint stateN(ж<scanner> Ꮡs, byte c) {
         s.step = stateNu;
         return scanContinue;
     }
-    return s.error(c, "in literal null (expecting 'u')"u8);
+    return s.error(c, inLiteralNullExpectingUˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inLiteralNullExpectingLˢ = "in literal null (expecting 'l')"u8;
 
 // stateNu is the state after reading `nu`.
 internal static nint stateNu(ж<scanner> Ꮡs, byte c) {
@@ -648,7 +710,7 @@ internal static nint stateNu(ж<scanner> Ꮡs, byte c) {
         s.step = stateNul;
         return scanContinue;
     }
-    return s.error(c, "in literal null (expecting 'l')"u8);
+    return s.error(c, inLiteralNullExpectingLˢ);
 }
 
 // stateNul is the state after reading `nul`.
@@ -659,7 +721,7 @@ internal static nint stateNul(ж<scanner> Ꮡs, byte c) {
         s.step = stateEndValue;
         return scanContinue;
     }
-    return s.error(c, "in literal null (expecting 'l')"u8);
+    return s.error(c, inLiteralNullExpectingLˢ);
 }
 
 // stateError is the state after reaching a syntax error,

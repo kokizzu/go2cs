@@ -45,6 +45,13 @@ partial class x509_package {
     public nint E;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509FailedToParsePrivateˢ = "x509: failed to parse private key (use ParseECPrivateKey instead for this key format)"u8;
+private static readonly @string x509FailedToParsePrivateˢ2 = "x509: failed to parse private key (use ParsePKCS8PrivateKey instead for this key format)"u8;
+private static readonly @string x509UnsupportedPrivateˢ = "x509: unsupported private key version"u8;
+private static readonly @string x509PrivateKeyContainsˢ = "x509: private key contains zero or negative value"u8;
+private static readonly @string x509PrivateKeyContainsˢ2 = "x509: private key contains zero or negative prime"u8;
+
 // ParsePKCS1PrivateKey parses an [RSA] private key in PKCS #1, ASN.1 DER form.
 //
 // This kind of key is commonly encoded in PEM blocks of type "RSA PRIVATE KEY".
@@ -57,21 +64,21 @@ public static (ж<rsa.PrivateKey>, error) ParsePKCS1PrivateKey(slice<byte> der) 
     if (err != default!) {
         {
             var (_, errΔ1) = asn1.Unmarshal(der, Ꮡ(new ecPrivateKey(nil))); if (errΔ1 == default!) {
-                return (default!, errors.New("x509: failed to parse private key (use ParseECPrivateKey instead for this key format)"u8));
+                return (default!, errors.New(x509FailedToParsePrivateˢ));
             }
         }
         {
             var (_, errΔ2) = asn1.Unmarshal(der, Ꮡ(new pkcs8(nil))); if (errΔ2 == default!) {
-                return (default!, errors.New("x509: failed to parse private key (use ParsePKCS8PrivateKey instead for this key format)"u8));
+                return (default!, errors.New(x509FailedToParsePrivateˢ2));
             }
         }
         return (default!, err);
     }
     if (priv.Version > 1) {
-        return (default!, errors.New("x509: unsupported private key version"u8));
+        return (default!, errors.New(x509UnsupportedPrivateˢ));
     }
     if (priv.N.Sign() <= 0 || priv.D.Sign() <= 0 || priv.P.Sign() <= 0 || priv.Q.Sign() <= 0) {
-        return (default!, errors.New("x509: private key contains zero or negative value"u8));
+        return (default!, errors.New(x509PrivateKeyContainsˢ));
     }
     var key = @new<rsa.PrivateKey>();
     key.Value.PublicKey = new rsa.PublicKey(
@@ -84,7 +91,7 @@ public static (ж<rsa.PrivateKey>, error) ParsePKCS1PrivateKey(slice<byte> der) 
     key.Value.Primes[1] = priv.Q;
     foreach (var (i, a) in priv.AdditionalPrimes) {
         if (a.Prime.Sign() <= 0) {
-            return (default!, errors.New("x509: private key contains zero or negative prime"u8));
+            return (default!, errors.New(x509PrivateKeyContainsˢ2));
         }
         key.Value.Primes[i + 2] = a.Prime;
     }
@@ -132,6 +139,11 @@ public static slice<byte> MarshalPKCS1PrivateKey(ж<rsa.PrivateKey> Ꮡkey) {
     return b;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509FailedToParsePublicˢ = "x509: failed to parse public key (use ParsePKIXPublicKey instead for this key format)"u8;
+private static readonly @string x509PublicKeyContainsˢ = "x509: public key contains zero or negative value"u8;
+private static readonly @string x509PublicKeyContainsˢ2 = "x509: public key contains large public exponent"u8;
+
 // ParsePKCS1PublicKey parses an [RSA] public key in PKCS #1, ASN.1 DER form.
 //
 // This kind of key is commonly encoded in PEM blocks of type "RSA PUBLIC KEY".
@@ -141,7 +153,7 @@ public static (ж<rsa.PublicKey>, error) ParsePKCS1PublicKey(slice<byte> der) {
     if (err != default!) {
         {
             var (_, errΔ1) = asn1.Unmarshal(der, Ꮡ(new publicKeyInfo(nil))); if (errΔ1 == default!) {
-                return (default!, errors.New("x509: failed to parse public key (use ParsePKIXPublicKey instead for this key format)"u8));
+                return (default!, errors.New(x509FailedToParsePublicˢ));
             }
         }
         return (default!, err);
@@ -150,10 +162,10 @@ public static (ж<rsa.PublicKey>, error) ParsePKCS1PublicKey(slice<byte> der) {
         return (default!, new asn1.SyntaxError(Msg: "trailing data"u8));
     }
     if (pub.N.Sign() <= 0 || pub.E <= 0) {
-        return (default!, errors.New("x509: public key contains zero or negative value"u8));
+        return (default!, errors.New(x509PublicKeyContainsˢ));
     }
     if (pub.E > (nint)(2147483648L - 1)) {
-        return (default!, errors.New("x509: public key contains large public exponent"u8));
+        return (default!, errors.New(x509PublicKeyContainsˢ2));
     }
     return (Ꮡ(new rsa.PublicKey(
         E: pub.E,

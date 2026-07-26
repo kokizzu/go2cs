@@ -34,13 +34,16 @@ internal static error winError(@string call, error err) {
     return os.NewSyscallError(call, err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getprotobynameˢ = "getprotobyname"u8;
+
 internal static (nint proto, error err) getprotobyname(@string name) {
     nint proto = default!;
     error err = default!;
 
     (var p, err) = syscall.GetProtoByName(name);
     if (err != default!) {
-        return (0, winError("getprotobyname"u8, err));
+        return (0, winError(getprotobynameˢ, err));
     }
     return ((nint)(~p).Proto, default!);
 }
@@ -113,6 +116,9 @@ internal static (slice<@string>, error) lookupHost(this ж<Resolver> Ꮡr, conte
     return (addrs, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getaddrinfowˢ = "getaddrinfow"u8;
+
 [GoLocalName("ret")] [GoType("dyn")] partial struct lookupIP_ret {
     internal slice<IPAddr> addrs;
     internal error err;
@@ -169,7 +175,7 @@ internal static (slice<IPAddr>, error) lookupIP(this ж<Resolver> Ꮡr, context.
             }
         }
         if (e != default!) {
-            return (default!, new DNSErrorжerror(newDNSError(winError("getaddrinfow"u8, e), name, ""u8)));
+            return (default!, new DNSErrorжerror(newDNSError(winError(getaddrinfowˢ, e), name, ""u8)));
         }
         deferǃ(syscall.FreeAddrInfoW, result, defer);
         var addrs = new slice<IPAddr>(0, 5);
@@ -281,7 +287,7 @@ Err: "unknown network"u8, Name: network + "/"u8 + service))));
         if (AreEqual(e, _WSATYPE_NOT_FOUND) || AreEqual(e, _WSAHOST_NOT_FOUND)) {
             return (0, new DNSErrorжerror(newDNSError(new notFoundErrorжerror(errUnknownPort), network + "/"u8 + service, ""u8)));
         }
-        return (0, new DNSErrorжerror(newDNSError(winError("getaddrinfow"u8, e), network + "/"u8 + service, ""u8)));
+        return (0, new DNSErrorжerror(newDNSError(winError(getaddrinfowˢ, e), network + "/"u8 + service, ""u8)));
     }
     deferǃ(syscall.FreeAddrInfoW, result, defer);
     if (result == nil) {
@@ -300,6 +306,9 @@ Err: "unknown network"u8, Name: network + "/"u8 + service))));
 
     return (0, new DNSErrorжerror(newDNSError(syscall.EINVAL, network + "/"u8 + service, ""u8)));
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dnsqueryˢ = "dnsquery"u8;
 
 internal static (@string, error) lookupCNAME(this ж<Resolver> Ꮡr, context.Context ctx, @string name) => func<(@string, error)>((defer, recover) => {
     {
@@ -328,7 +337,7 @@ internal static (@string, error) lookupCNAME(this ж<Resolver> Ꮡr, context.Con
         }
     }
     if (e != default!) {
-        return ("", new DNSErrorжerror(newDNSError(winError("dnsquery"u8, e), name, ""u8)));
+        return ("", new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
     }
     deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
     var resolved = resolveCNAME(syscall.StringToUTF16Ptr(name), rec);
@@ -360,7 +369,7 @@ internal static (@string, slice<ж<SRV>>, error) lookupSRV(this ж<Resolver> Ꮡ
     ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
     var e = syscall.DnsQuery(target, syscall.DNS_TYPE_SRV, 0, nil, Ꮡrec, nil);
     if (e != default!) {
-        return ("", default!, new DNSErrorжerror(newDNSError(winError("dnsquery"u8, e), name, ""u8)));
+        return ("", default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
     }
     deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
     var srvs = new slice<ж<SRV>>(0, 10);
@@ -390,7 +399,7 @@ internal static (slice<ж<MX>>, error) lookupMX(this ж<Resolver> Ꮡr, context.
     ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
     var e = syscall.DnsQuery(name, syscall.DNS_TYPE_MX, 0, nil, Ꮡrec, nil);
     if (e != default!) {
-        return (default!, new DNSErrorжerror(newDNSError(winError("dnsquery"u8, e), name, ""u8)));
+        return (default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
     }
     deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
     var mxs = new slice<ж<MX>>(0, 10);
@@ -420,7 +429,7 @@ internal static (slice<ж<NS>>, error) lookupNS(this ж<Resolver> Ꮡr, context.
     ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
     var e = syscall.DnsQuery(name, syscall.DNS_TYPE_NS, 0, nil, Ꮡrec, nil);
     if (e != default!) {
-        return (default!, new DNSErrorжerror(newDNSError(winError("dnsquery"u8, e), name, ""u8)));
+        return (default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
     }
     deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
     var nss = new slice<ж<NS>>(0, 10);
@@ -449,7 +458,7 @@ internal static unsafe (slice<@string>, error) lookupTXT(this ж<Resolver> Ꮡr,
     ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
     var e = syscall.DnsQuery(name, syscall.DNS_TYPE_TEXT, 0, nil, Ꮡrec, nil);
     if (e != default!) {
-        return (default!, new DNSErrorжerror(newDNSError(winError("dnsquery"u8, e), name, ""u8)));
+        return (default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), name, ""u8)));
     }
     deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
     var txts = new slice<@string>(0, 10);
@@ -488,7 +497,7 @@ internal static (slice<@string>, error) lookupAddr(this ж<Resolver> Ꮡr, conte
     ref var rec = ref heap<ж<syscall.DNSRecord>>(out var Ꮡrec);
     var e = syscall.DnsQuery(arpa, syscall.DNS_TYPE_PTR, 0, nil, Ꮡrec, nil);
     if (e != default!) {
-        return (default!, new DNSErrorжerror(newDNSError(winError("dnsquery"u8, e), addr, ""u8)));
+        return (default!, new DNSErrorжerror(newDNSError(winError(dnsqueryˢ, e), addr, ""u8)));
     }
     deferǃ(syscall.DnsRecordListFree, rec, (uint32)(1), defer);
     var ptrs = new slice<@string>(0, 10);

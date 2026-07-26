@@ -13,19 +13,19 @@ partial class net_package {
 internal static error setIPv4MulticastInterface(ж<netFD> Ꮡfd, ж<Interface> Ꮡifi) {
     var (ip, err) = interfaceToIPv4Addr(Ꮡifi);
     if (err != default!) {
-        return os.NewSyscallError("setsockopt"u8, err);
+        return os.NewSyscallError(setsockoptˢ, err);
     }
     array<byte> a = new(4);
     copy(a[..], ip.To4());
     err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInet4Addr(syscall.IPPROTO_IP, syscall.IP_MULTICAST_IF, a);
     Δruntime.KeepAlive(Ꮡfd);
-    return wrapSyscallError("setsockopt"u8, err);
+    return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setIPv4MulticastLoopback(ж<netFD> Ꮡfd, bool v) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_IP, syscall.IP_MULTICAST_LOOP, boolint(v));
     Δruntime.KeepAlive(Ꮡfd);
-    return wrapSyscallError("setsockopt"u8, err);
+    return wrapSyscallError(setsockoptˢ, err);
 }
 
 } // end net_package

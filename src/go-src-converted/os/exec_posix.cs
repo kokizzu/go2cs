@@ -23,6 +23,9 @@ public static ΔSignal Interrupt = new syscall_ΔSignalᴠΔSignal(((syscallꓸS
 
 public static ΔSignal ΔKill = new syscall_ΔSignalᴠΔSignal(((syscallꓸSignal)syscall.SIGKILL));
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string chdirˢ = "chdir"u8;
+
 internal static (ж<Process> p, error err) startProcess(@string name, slice<@string> argv, ж<ProcAttr> Ꮡattr) {
     ж<Process> p = default!;
     error err = default!;
@@ -35,7 +38,7 @@ internal static (ж<Process> p, error err) startProcess(@string name, slice<@str
         {
             var (_, errΔ1) = Stat(attr.Dir); if (errΔ1 != default!) {
                 var pe = errΔ1._<ж<PathError>>();
-                pe.Value.Op = "chdir"u8;
+                pe.Value.Op = chdirˢ;
                 return (default!, new fs.PathErrorжerror(pe));
             }
         }
@@ -104,6 +107,9 @@ internal static error kill(this ж<Process> Ꮡp) {
     return p.rusage;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string continuedˢ = "continued"u8;
+
 public static @string String(this ж<ProcessState> Ꮡp) {
     ref var p = ref Ꮡp.DerefOrNil();
 
@@ -137,7 +143,7 @@ public static @string String(this ж<ProcessState> Ꮡp) {
         break;
     }
     case {} when status.Continued(): {
-        res = "continued"u8;
+        res = continuedˢ;
         break;
     }}
 

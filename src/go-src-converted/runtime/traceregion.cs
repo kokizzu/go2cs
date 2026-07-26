@@ -39,16 +39,21 @@ partial class runtime_package {
 
 internal static readonly uintptr traceRegionAllocBlockData = /* 64<<10 - unsafe.Sizeof(traceRegionAllocBlockHeader{}) */ 65520;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string traceRegionAllocTooLargeˢ = "traceRegion: alloc too large"u8;
+private static readonly @string traceRegionAllocWithˢ = "traceRegion: alloc with concurrent drop"u8;
+private static readonly @string traceRegionOutOfMemoryˢ = "traceRegion: out of memory"u8;
+
 // alloc allocates n-byte block. The block is always aligned to 8 bytes, regardless of platform.
 internal static ж<notInHeap> alloc(this ж<traceRegionAlloc> Ꮡa, uintptr n) {
     ref var a = ref Ꮡa.Value;
 
     n = alignUp(n, 8);
     if (n > traceRegionAllocBlockData) {
-        @throw("traceRegion: alloc too large"u8);
+        @throw(traceRegionAllocTooLargeˢ);
     }
     if (Ꮡa.of(traceRegionAlloc.Ꮡdropping).Load()) {
-        @throw("traceRegion: alloc with concurrent drop"u8);
+        @throw(traceRegionAllocWithˢ);
     }
     // Try to bump-pointer allocate into the current block.
     var block = (ж<traceRegionAllocBlock>)(uintptr)(Ꮡa.of(traceRegionAlloc.Ꮡcurrent).Load());
@@ -76,7 +81,7 @@ internal static ж<notInHeap> alloc(this ж<traceRegionAlloc> Ꮡa, uintptr n) {
     // Allocate a new block.
     block = (ж<traceRegionAllocBlock>)(uintptr)(sysAlloc(@unsafe.Sizeof(new traceRegionAllocBlock(nil)), Ꮡmemstats.of(mstats.Ꮡother_sys)));
     if (block == nil) {
-        @throw("traceRegion: out of memory"u8);
+        @throw(traceRegionOutOfMemoryˢ);
     }
     // Allocate space for our current request, so we always make
     // progress.

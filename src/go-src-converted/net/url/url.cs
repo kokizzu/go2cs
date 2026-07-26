@@ -480,6 +480,9 @@ public static @string String(this ж<Userinfo> Ꮡu) {
     return s;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingProtocolSchemeˢ = "missing protocol scheme"u8;
+
 // Maybe rawURL is of the form scheme:path.
 // (Scheme must be [a-zA-Z][a-zA-Z0-9+.-]*)
 // If so, return scheme, path; else return "", rawURL.
@@ -503,7 +506,7 @@ internal static (@string scheme, @string path, error err) getScheme(@string rawU
         }
         case {} when c is (rune)':': {
             if (i == 0) {
-                return ("", "", errors.New("missing protocol scheme"u8));
+                return ("", "", errors.New(missingProtocolSchemeˢ));
             }
             return (rawURL[..(int)(i)], rawURL[(int)(i + 1)..], default!);
         }
@@ -555,6 +558,12 @@ public static (ж<URL>, error) ParseRequestURI(@string rawURL) {
     return (url, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string netUrlInvalidControlˢ = "net/url: invalid control character in URL"u8;
+private static readonly @string emptyUrlˢ = "empty url"u8;
+private static readonly @string invalidUriForRequestˢ = "invalid URI for request"u8;
+private static readonly @string firstPathSegmentInUrlˢ = "first path segment in URL cannot contain colon"u8;
+
 // parse parses a URL from a string in one of two contexts. If
 // viaRequest is true, the URL is assumed to have arrived via an HTTP request,
 // in which case only absolute URLs or path-absolute relative URLs are allowed.
@@ -563,10 +572,10 @@ internal static (ж<URL>, error) parse(@string rawURL, bool viaRequest) {
     @string rest = default!;
     error err = default!;
     if (stringContainsCTLByte(rawURL)) {
-        return (default!, errors.New("net/url: invalid control character in URL"u8));
+        return (default!, errors.New(netUrlInvalidControlˢ));
     }
     if (rawURL == ""u8 && viaRequest) {
-        return (default!, errors.New("empty url"u8));
+        return (default!, errors.New(emptyUrlˢ));
     }
     var url = @new<URL>();
     if (rawURL == "*"u8) {
@@ -594,7 +603,7 @@ internal static (ж<URL>, error) parse(@string rawURL, bool viaRequest) {
             return (url, default!);
         }
         if (viaRequest) {
-            return (default!, errors.New("invalid URI for request"u8));
+            return (default!, errors.New(invalidUriForRequestˢ));
         }
         // Avoid confusion with malformed schemes, like cache_object:foo/bar.
         // See golang.org/issue/16822.
@@ -605,7 +614,7 @@ internal static (ж<URL>, error) parse(@string rawURL, bool viaRequest) {
         {
             var (segment, _, _) = strings.Cut(rest, "/"u8); if (strings.Contains(segment, ":"u8)) {
                 // First path segment has colon. Not allowed in relative URL.
-                return (default!, errors.New("first path segment in URL cannot contain colon"u8));
+                return (default!, errors.New(firstPathSegmentInUrlˢ));
             }
         }
     }
@@ -639,6 +648,9 @@ internal static (ж<URL>, error) parse(@string rawURL, bool viaRequest) {
     return (url, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string netUrlInvalidUserinfoˢ = "net/url: invalid userinfo"u8;
+
 internal static (ж<Userinfo> user, @string host, error err) parseAuthority(@string authority) {
     ж<Userinfo> user = default!;
     @string host = default!;
@@ -658,7 +670,7 @@ internal static (ж<Userinfo> user, @string host, error err) parseAuthority(@str
     }
     @string userinfo = authority[..(int)(i)];
     if (!validUserinfo(userinfo)) {
-        return (default!, "", errors.New("net/url: invalid userinfo"u8));
+        return (default!, "", errors.New(netUrlInvalidUserinfoˢ));
     }
     if (!strings.Contains(userinfo, ":"u8)){
         {
@@ -684,6 +696,9 @@ internal static (ж<Userinfo> user, @string host, error err) parseAuthority(@str
     return (user, host, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingInHostˢ = "missing ']' in host"u8;
+
 // parseHost parses host as an authority without user
 // information. That is, as host[:port].
 internal static (@string, error) parseHost(@string host) {
@@ -692,7 +707,7 @@ internal static (@string, error) parseHost(@string host) {
         // E.g., "[fe80::1]", "[fe80::1%25en0]", "[fe80::1]:80".
         nint i = strings.LastIndex(host, "]"u8);
         if (i < 0) {
-            return ("", errors.New("missing ']' in host"u8));
+            return ("", errors.New(missingInHostˢ));
         }
         @string colonPort = host[(int)(i + 1)..];
         if (!validOptionalPort(colonPort)) {
@@ -980,6 +995,9 @@ internal static bool validOptionalPort(@string port) {
     return buf.String();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string xxxxxˢ = "xxxxx"u8;
+
 // Redacted is like [URL.String] but replaces any password with "xxxxx".
 // Only the password in u.User is redacted.
 public static @string Redacted(this ж<URL> Ꮡu) {
@@ -991,7 +1009,7 @@ public static @string Redacted(this ж<URL> Ꮡu) {
     var ru = u;
     {
         var (_, has) = ru.User.Password(); if (has) {
-            ru.User = UserPassword(ru.User.Username(), "xxxxx"u8);
+            ru.User = UserPassword(ru.User.Username(), xxxxxˢ);
         }
     }
     return ru.String();

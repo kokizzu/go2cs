@@ -62,13 +62,16 @@ internal static (ж<syscall.CertContext>, error) createStoreContext(ж<Certifica
     return (storeCtx, default!);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509InvalidSimpleChainˢ = "x509: invalid simple chain"u8;
+
 // extractSimpleChain extracts the final certificate chain from a CertSimpleChain.
 internal static (slice<ж<Certificate>> chain, error err) extractSimpleChain(ж<ж<syscall.CertSimpleChain>> ᏑsimpleChain, nint count) {
     slice<ж<Certificate>> chain = default!;
     error err = default!;
 
     if (ᏑsimpleChain == nil || count == 0) {
-        return (default!, errors.New("x509: invalid simple chain"u8));
+        return (default!, errors.New(x509InvalidSimpleChainˢ));
     }
     var simpleChains = @unsafe.Slice(ᏑsimpleChain, count);
     var lastChain = simpleChains[count - 1];
@@ -168,6 +171,9 @@ internal static void initᴛwindowsExtKeyUsageOIDs() { windowsExtKeyUsageOIDs = 
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string x509InternalErrorSystemˢ = "x509: internal error: system verifier returned an empty chain"u8;
+
 internal static (slice<ж<Certificate>> chain, error err) verifyChain(ж<Certificate> Ꮡc, ж<syscall.CertChainContext> ᏑchainCtx, ж<VerifyOptions> Ꮡopts) {
     slice<ж<Certificate>> chain = default!;
     error err = default!;
@@ -189,7 +195,7 @@ internal static (slice<ж<Certificate>> chain, error err) verifyChain(ж<Certifi
         return (default!, err);
     }
     if (builtin.len(chain) == 0) {
-        return (default!, errors.New("x509: internal error: system verifier returned an empty chain"u8));
+        return (default!, errors.New(x509InternalErrorSystemˢ));
     }
     // Mitigate CVE-2020-0601, where the Windows system verifier might be
     // tricked into using custom curve parameters for a trusted root, by

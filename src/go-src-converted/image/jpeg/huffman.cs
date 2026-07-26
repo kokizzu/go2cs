@@ -87,12 +87,19 @@ internal static FormatError errShortHuffmanData = ((FormatError)(@string)"short 
     return (x, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string dhtHasWrongLengthˢ = "DHT has wrong length"u8;
+private static readonly @string badTcValueˢ = "bad Tc value"u8;
+private static readonly @string badThValueˢ = "bad Th value"u8;
+private static readonly @string huffmanTableHasZeroˢ = "Huffman table has zero length"u8;
+private static readonly @string huffmanTableHasExcessiveˢ = "Huffman table has excessive length"u8;
+
 // processDHT processes a Define Huffman Table marker, and initializes a huffman
 // struct from its contents. Specified in section B.2.4.2.
 [GoRecv] internal static error processDHT(this ref decoder d, nint n) {
     while (n > 0) {
         if (n < 17) {
-            return ((FormatError)(@string)"DHT has wrong length"u8);
+            return ((FormatError)(@string)dhtHasWrongLengthˢ);
         }
         {
             var err = d.readFull(d.tmp[..17]); if (err != default!) {
@@ -101,12 +108,12 @@ internal static FormatError errShortHuffmanData = ((FormatError)(@string)"short 
         }
         var tc = (byte)((d.tmp[0] >> (int)(4)));
         if (tc > maxTc) {
-            return ((FormatError)(@string)"bad Tc value"u8);
+            return ((FormatError)(@string)badTcValueˢ);
         }
         var th = (byte)(d.tmp[0] & 0x0f);
         // The baseline th <= 1 restriction is specified in table B.5.
         if (th > maxTh || (d.baseline && th > 1)) {
-            return ((FormatError)(@string)"bad Th value"u8);
+            return ((FormatError)(@string)badThValueˢ);
         }
         var h = Ꮡ(d.huff[tc][th]);
         // Read nCodes and h.vals (and derive h.nCodes).
@@ -119,14 +126,14 @@ internal static FormatError errShortHuffmanData = ((FormatError)(@string)"short 
             h.Value.nCodes += nCodes[i];
         }
         if ((~h).nCodes == 0) {
-            return ((FormatError)(@string)"Huffman table has zero length"u8);
+            return ((FormatError)(@string)huffmanTableHasZeroˢ);
         }
         if ((~h).nCodes > maxNCodes) {
-            return ((FormatError)(@string)"Huffman table has excessive length"u8);
+            return ((FormatError)(@string)huffmanTableHasExcessiveˢ);
         }
         n -= (nint)(~h).nCodes + 17;
         if (n < 0) {
-            return ((FormatError)(@string)"DHT has wrong length"u8);
+            return ((FormatError)(@string)dhtHasWrongLengthˢ);
         }
         {
             var err = d.readFull((~h).vals[..(int)((~h).nCodes)]); if (err != default!) {
@@ -175,13 +182,17 @@ internal static FormatError errShortHuffmanData = ((FormatError)(@string)"short 
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string uninitializedHuffmanˢ = "uninitialized Huffman table"u8;
+private static readonly @string badHuffmanCodeˢ = "bad Huffman code"u8;
+
 // decodeHuffman returns the next Huffman-coded value from the bit-stream,
 // decoded according to h.
 [GoRecv] internal static (uint8, error) decodeHuffman(this ref decoder d, ж<huffman> Ꮡh) {
     ref var h = ref Ꮡh.Value;
 
     if (h.nCodes == 0) {
-        return (0, ((FormatError)(@string)"uninitialized Huffman table"u8));
+        return (0, ((FormatError)(@string)uninitializedHuffmanˢ));
     }
     if (d.bits.n < 8) {
         {
@@ -228,7 +239,7 @@ slowPath:
 continue_slowPath:;
     }
 break_slowPath:;
-    return (0, ((FormatError)(@string)"bad Huffman code"u8));
+    return (0, ((FormatError)(@string)badHuffmanCodeˢ));
 }
 
 [GoRecv] internal static (bool, error) decodeBit(this ref decoder d) {

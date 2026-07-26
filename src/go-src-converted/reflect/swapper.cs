@@ -11,6 +11,10 @@ using @internal;
 
 partial class reflect_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string iSLenˢ = "i < s.Len"u8;
+private static readonly @string jSLenˢ = "j < s.Len"u8;
+
 // Swapper returns a function that swaps the elements in the provided
 // slice.
 //
@@ -95,8 +99,8 @@ public static Action<nint, nint> Swapper(any Δslice) {
         if ((nuint)i >= (nuint)(~sʗ1).Len || (nuint)j >= (nuint)(~sʗ1).Len) {
             throw panic("reflect: slice index out of range");
         }
-        @unsafe.Pointer val1 = (uintptr)arrayAt((~sʗ1).Data, i, size, "i < s.Len"u8);
-        @unsafe.Pointer val2 = (uintptr)arrayAt((~sʗ1).Data, j, size, "j < s.Len"u8);
+        @unsafe.Pointer val1 = (uintptr)arrayAt((~sʗ1).Data, i, size, iSLenˢ);
+        @unsafe.Pointer val2 = (uintptr)arrayAt((~sʗ1).Data, j, size, jSLenˢ);
         typedmemmove(typʗ1, tmp, val1);
         typedmemmove(typʗ1, val1, val2);
         typedmemmove(typʗ1, val2, tmp);

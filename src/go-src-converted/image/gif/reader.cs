@@ -388,6 +388,9 @@ internal static error decode(this ж<decoder> Ꮡd, io.Reader r, bool configOnly
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gifNoColorTableˢ = "gif: no color table"u8;
+
 internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFrames) => func<error>((defer, recover) => {
     ref var d = ref Ꮡd.Value;
 
@@ -403,7 +406,7 @@ internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFra
         }
     } else {
         if (d.globalColorTable == default!) {
-            return errors.New("gif: no color table"u8);
+            return errors.New(gifNoColorTableˢ);
         }
         m.Value.Palette = d.globalColorTable;
     }
@@ -503,6 +506,9 @@ internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFra
     return default!;
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gifFrameBoundsLargerThanˢ = "gif: frame bounds larger than image bounds"u8;
+
 [GoRecv] internal static (ж<image.Paletted>, error) newImageFromDescriptor(this ref decoder d) {
     {
         var err = readFull(d.r, d.tmp[..9]); if (err != default!) {
@@ -531,7 +537,7 @@ internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFra
     // imageBounds.Max (d.width, d.height) and not frameBounds.Min (left, top)
     // against imageBounds.Min (0, 0).
     if (left + width > d.width || top + height > d.height) {
-        return (default!, errors.New("gif: frame bounds larger than image bounds"u8));
+        return (default!, errors.New(gifFrameBoundsLargerThanˢ));
     }
     return (image.NewPaletted(new image.Rectangle(
         Min: new image.Point(left, top),

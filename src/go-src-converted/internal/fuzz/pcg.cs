@@ -42,12 +42,16 @@ internal const uint64 multiplier = 6364136223846793005;
     internal uint64 inc;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string godebugˢ = "GODEBUG"u8;
+private static readonly @string fuzzseedˢ = "fuzzseed="u8;
+
 internal static ж<nint> godebugSeed() {
-    var debug = strings.Split(os.Getenv("GODEBUG"u8), ","u8);
+    var debug = strings.Split(os.Getenv(godebugˢ), ","u8);
     foreach (var (_, f) in debug) {
-        if (strings.HasPrefix(f, "fuzzseed="u8)) {
+        if (strings.HasPrefix(f, fuzzseedˢ)) {
             ref var seed = ref heap<nint>(out var Ꮡseed);
-            (seed, var err) = strconv.Atoi(strings.TrimPrefix(f, "fuzzseed="u8));
+            (seed, var err) = strconv.Atoi(strings.TrimPrefix(f, fuzzseedˢ));
             if (err != default!) {
                 throw panic("malformed fuzzseed");
             }

@@ -655,11 +655,14 @@ internal static ж<typesꓸScope> pkgScope(ж<types.Package> Ꮡpkg) {
     return types.Universe;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gotypesaliasˢ = "gotypesalias"u8;
+
 // newAliasTypeName returns a new TypeName, with a materialized *types.Alias if supported.
 internal static ж<types.TypeName> newAliasTypeName(tokenꓸPos pos, ж<types.Package> Ꮡpkg, @string name, typesꓸType rhs) {
     // When GODEBUG=gotypesalias=1 or unset, the Type() of the return value is a
     // *types.Alias. Copied from x/tools/internal/aliases.NewAlias.
-    var exprᴛ1 = godebug.New("gotypesalias"u8).Value();
+    var exprᴛ1 = godebug.New(gotypesaliasˢ).Value();
     if (exprᴛ1 == ""u8 || exprᴛ1 == "1"u8) {
         var tname = types.NewTypeName(pos, Ꮡpkg, name, default!);
         _ = types.NewAlias(tname, rhs);

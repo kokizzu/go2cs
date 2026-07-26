@@ -32,6 +32,11 @@ internal static time.Time neverTimeout = new time.Time(nil);
 internal static error errNoAvailableInterface = errors.New("no available interface"u8);
 internal static error errNoAvailableAddress = errors.New("no available address"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tcp4ˢ = "tcp4"u8;
+private static readonly @string tcp6ˢ = "tcp6"u8;
+private static readonly @string oslevelˢ = "oslevel"u8;
+
 internal static void probeStack() {
     {
         var (_, err) = RoutedInterface("ip4"u8, net.FlagUp); if (err == default!) {
@@ -39,7 +44,7 @@ internal static void probeStack() {
         }
     }
     {
-        var (ln, err) = net.Listen("tcp4"u8, "127.0.0.1:0"u8); if (err == default!) {
+        var (ln, err) = net.Listen(tcp4ˢ, "127.0.0.1:0"u8); if (err == default!) {
             ln.Close();
             canListenTCP4OnLoopback = true;
         }
@@ -50,7 +55,7 @@ internal static void probeStack() {
         }
     }
     {
-        var (ln, err) = net.Listen("tcp6"u8, "[::1]:0"u8); if (err == default!) {
+        var (ln, err) = net.Listen(tcp6ˢ, "[::1]:0"u8); if (err == default!) {
             ln.Close();
             canListenTCP6OnLoopback = true;
         }
@@ -58,7 +63,7 @@ internal static void probeStack() {
     rawSocketSess = supportsRawSocket();
     var exprᴛ1 = runtime.GOOS;
     if (exprᴛ1 == "aix"u8) {
-        var (@out, _) = exec.Command("oslevel"u8, // Unix network isn't properly working on AIX 7.2 with
+        var (@out, _) = exec.Command(oslevelˢ, // Unix network isn't properly working on AIX 7.2 with
  // Technical Level < 2.
  "-s"u8).Output();
         if (len(@out) >= len("7200-XX-ZZ-YYMM")) {
@@ -185,23 +190,23 @@ public static (net.Listener, error) NewLocalListener(@string network) {
     if (exprᴛ1 == "tcp"u8) {
         if (canListenTCP4OnLoopback) {
             {
-                var (ln, err) = net.Listen("tcp4"u8, "127.0.0.1:0"u8); if (err == default!) {
+                var (ln, err) = net.Listen(tcp4ˢ, "127.0.0.1:0"u8); if (err == default!) {
                     return (ln, default!);
                 }
             }
         }
         if (canListenTCP6OnLoopback) {
-            return net.Listen("tcp6"u8, "[::1]:0"u8);
+            return net.Listen(tcp6ˢ, "[::1]:0"u8);
         }
     }
     else if (exprᴛ1 == "tcp4"u8) {
         if (canListenTCP4OnLoopback) {
-            return net.Listen("tcp4"u8, "127.0.0.1:0"u8);
+            return net.Listen(tcp4ˢ, "127.0.0.1:0"u8);
         }
     }
     else if (exprᴛ1 == "tcp6"u8) {
         if (canListenTCP6OnLoopback) {
-            return net.Listen("tcp6"u8, "[::1]:0"u8);
+            return net.Listen(tcp6ˢ, "[::1]:0"u8);
         }
     }
     else if (exprᴛ1 == "unix"u8 || exprᴛ1 == "unixpacket"u8) {
@@ -215,6 +220,10 @@ public static (net.Listener, error) NewLocalListener(@string network) {
     return (default!, fmt.Errorf("%s is not supported on %s/%s"u8, network, runtime.GOOS, runtime.GOARCH));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string udp4ˢ = "udp4"u8;
+private static readonly @string udp6ˢ = "udp6"u8;
+
 // NewLocalPacketListener returns a packet listener which listens to a
 // loopback IP address or local file system path.
 //
@@ -225,23 +234,23 @@ public static (net.PacketConn, error) NewLocalPacketListener(@string network) {
     if (exprᴛ1 == "udp"u8) {
         if (canListenTCP4OnLoopback) {
             {
-                var (c, err) = net.ListenPacket("udp4"u8, "127.0.0.1:0"u8); if (err == default!) {
+                var (c, err) = net.ListenPacket(udp4ˢ, "127.0.0.1:0"u8); if (err == default!) {
                     return (c, default!);
                 }
             }
         }
         if (canListenTCP6OnLoopback) {
-            return net.ListenPacket("udp6"u8, "[::1]:0"u8);
+            return net.ListenPacket(udp6ˢ, "[::1]:0"u8);
         }
     }
     else if (exprᴛ1 == "udp4"u8) {
         if (canListenTCP4OnLoopback) {
-            return net.ListenPacket("udp4"u8, "127.0.0.1:0"u8);
+            return net.ListenPacket(udp4ˢ, "127.0.0.1:0"u8);
         }
     }
     else if (exprᴛ1 == "udp6"u8) {
         if (canListenTCP6OnLoopback) {
-            return net.ListenPacket("udp6"u8, "[::1]:0"u8);
+            return net.ListenPacket(udp6ˢ, "[::1]:0"u8);
         }
     }
     else if (exprᴛ1 == "unixgram"u8) {
@@ -255,6 +264,9 @@ public static (net.PacketConn, error) NewLocalPacketListener(@string network) {
     return (default!, fmt.Errorf("%s is not supported on %s/%s"u8, network, runtime.GOOS, runtime.GOARCH));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goNettestˢ = "go-nettest"u8;
+
 // LocalPath returns a local path that can be used for Unix-domain
 // protocol testing.
 public static (@string, error) LocalPath() {
@@ -262,7 +274,7 @@ public static (@string, error) LocalPath() {
     if (runtime.GOOS == "darwin"u8) {
         dir = "/tmp"u8;
     }
-    var (f, err) = os.CreateTemp(dir, "go-nettest"u8);
+    var (f, err) = os.CreateTemp(dir, goNettestˢ);
     if (err != default!) {
         return ("", err);
     }

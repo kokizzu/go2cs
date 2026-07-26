@@ -20,6 +20,9 @@ partial class importer_package {
 
 // type Lookup is a methodless func type — rendered inline as its base delegate
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gccgoˢ = "gccgo"u8;
+
 // ForCompiler returns an Importer for importing from installed packages
 // for the compilers "gc" and "gccgo", or for importing directly
 // from the source if the compiler argument is "source". In this
@@ -51,7 +54,7 @@ public static types.Importer ForCompiler(ж<token.FileSet> Ꮡfset, @string comp
     if (exprᴛ1 == "gccgo"u8) {
         gccgoimporter.GccgoInstallation inst = default!;
         {
-            var err = inst.InitFromDriver("gccgo"u8); if (err != default!) {
+            var err = inst.InitFromDriver(gccgoˢ); if (err != default!) {
                 return default!;
             }
         }

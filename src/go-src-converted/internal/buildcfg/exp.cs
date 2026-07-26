@@ -52,6 +52,9 @@ public static readonly @string DefaultGOEXPERIMENT = "";
 public static bool FramePointerEnabled;
 internal static void initᴛFramePointerEnabled() { FramePointerEnabled = GOARCH == "amd64"u8 || GOARCH == "arm64"u8; }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string regabiˢ = "regabi"u8;
+
 // ParseGOEXPERIMENT parses a (GOOS, GOARCH, GOEXPERIMENT)
 // configuration tuple and returns the enabled and baseline experiment
 // flag sets.
@@ -99,7 +102,7 @@ public static (ж<ExperimentFlags>, error) ParseGOEXPERIMENT(@string goos, @stri
         // this as an alias make both "regabi" and "noregabi"
         // do the right thing.
         var flagsʗ1 = flags;
-        names["regabi"u8] = (bool v) => {
+        names[regabiˢ] = (bool v) => {
             flagsʗ1.Value.RegabiWrappers = v;
             flagsʗ1.Value.RegabiArgs = v;
         };

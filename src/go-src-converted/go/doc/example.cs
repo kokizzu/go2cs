@@ -35,6 +35,12 @@ partial class doc_package {
     public nint Order; // original source code order
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testˢ = "Test"u8;
+private static readonly @string benchmarkˢ = "Benchmark"u8;
+private static readonly @string fuzzˢ = "Fuzz"u8;
+private static readonly @string exampleˢ = "Example"u8;
+
 // Examples returns the examples found in testFiles, sorted by Name field.
 // The Order fields record the order in which the examples were encountered.
 // The Suffix field is not populated when Examples is called directly, it is
@@ -73,11 +79,11 @@ public static slice<ж<Example>> Examples(params ꓸꓸꓸжastꓸFile testFiles
             }
             numDecl++;
             @string name = f.Value.Name.Value.Name;
-            if (isTest(name, "Test"u8) || isTest(name, "Benchmark"u8) || isTest(name, "Fuzz"u8)) {
+            if (isTest(name, testˢ) || isTest(name, benchmarkˢ) || isTest(name, fuzzˢ)) {
                 hasTests = true;
                 continue;
             }
-            if (!isTest(name, "Example"u8)) {
+            if (!isTest(name, exampleˢ)) {
                 continue;
             }
             {
@@ -171,6 +177,10 @@ internal static bool isTest(@string name, @string prefix) {
     return !unicode.IsLower(rune);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testˢ2 = "_test"u8;
+private static readonly @string mainˢ = "main"u8;
+
 // playExample synthesizes a new *ast.File based on the provided
 // file with the provided function body as the body of main.
 internal static ж<ast.File> playExample(ж<ast.File> Ꮡfile, ж<ast.FuncDecl> Ꮡf) {
@@ -178,7 +188,7 @@ internal static ж<ast.File> playExample(ж<ast.File> Ꮡfile, ж<ast.FuncDecl> 
     ref var f = ref Ꮡf.Value;
 
     var body = f.Body;
-    if (!strings.HasSuffix((~@file.Name).Name, "_test"u8)) {
+    if (!strings.HasSuffix((~@file.Name).Name, testˢ2)) {
         // We don't support examples that are part of the
         // greater package (yet).
         return default!;
@@ -329,7 +339,7 @@ internal static ж<ast.File> playExample(ж<ast.File> Ꮡfile, ж<ast.FuncDecl> 
     importDecl.Value.Specs = append(namedImports, blankImports.ꓸꓸꓸ);
     // Synthesize main function.
     var funcDecl = Ꮡ(new ast.FuncDecl(
-        Name: ast.NewIdent("main"u8),
+        Name: ast.NewIdent(mainˢ),
         Type: f.Type,
         Body: body
     ));
@@ -341,7 +351,7 @@ internal static ж<ast.File> playExample(ж<ast.File> Ꮡfile, ж<ast.FuncDecl> 
     slices.SortFunc(comments, (ж<ast.CommentGroup> a, ж<ast.CommentGroup> b) => cmp.Compare(a.Pos(), b.Pos()));
     // Synthesize file.
     return Ꮡ(new ast.File(
-        Name: ast.NewIdent("main"u8),
+        Name: ast.NewIdent(mainˢ),
         Decls: decls,
         Comments: comments
     ));
@@ -585,6 +595,9 @@ internal static slice<ж<ast.ImportSpec>> findImportGroupStarts1(slice<ж<ast.Im
     return groupStarts;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string copyrightˢ = "Copyright"u8;
+
 // playExampleFile takes a whole file example and synthesizes a new *ast.File
 // such that the example is function main in package main.
 internal static ж<ast.File> playExampleFile(ж<ast.File> Ꮡfile) {
@@ -592,7 +605,7 @@ internal static ж<ast.File> playExampleFile(ж<ast.File> Ꮡfile) {
 
     // Strip copyright comment if present.
     var comments = @file.Comments;
-    if (len(comments) > 0 && strings.HasPrefix(comments[0].Text(), "Copyright"u8)) {
+    if (len(comments) > 0 && strings.HasPrefix(comments[0].Text(), copyrightˢ)) {
         comments = comments[1..];
     }
     // Copy declaration slice, rewriting the ExampleX function to main.
@@ -601,11 +614,11 @@ internal static ж<ast.File> playExampleFile(ж<ast.File> Ꮡfile) {
         var d = vᴛ1;
 
         {
-            var (fΔ1, ok) = d._<ж<ast.FuncDecl>>(ᐧ); if (ok && isTest((~(~fΔ1).Name).Name, "Example"u8)) {
+            var (fΔ1, ok) = d._<ж<ast.FuncDecl>>(ᐧ); if (ok && isTest((~(~fΔ1).Name).Name, exampleˢ)) {
                 // Copy the FuncDecl, as it may be used elsewhere.
                 ref var newF = ref heap<ast.FuncDecl>(out var ᏑnewF);
                 newF = fΔ1.Value;
-                newF.Name = ast.NewIdent("main"u8);
+                newF.Name = ast.NewIdent(mainˢ);
                 (newF.Body, comments) = stripOutputComment((~fΔ1).Body, comments);
                 d = new ast_FuncDeclжDecl(ᏑnewF);
             }
@@ -615,7 +628,7 @@ internal static ж<ast.File> playExampleFile(ж<ast.File> Ꮡfile) {
     // Copy the File, as it may be used elsewhere.
     ref var f = ref heap<ast.File>(out var Ꮡf);
     f = @file;
-    f.Name = ast.NewIdent("main"u8);
+    f.Name = ast.NewIdent(mainˢ);
     f.Decls = decls;
     f.Comments = comments;
     return Ꮡf;

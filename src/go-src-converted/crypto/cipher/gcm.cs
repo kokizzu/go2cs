@@ -108,12 +108,17 @@ public static (AEAD, error) NewGCMWithTagSize(Block cipher, nint tagSize) {
     return newGCMWithNonceAndTagSize(cipher, gcmStandardNonceSize, tagSize);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cipherIncorrectTagSizeˢ = "cipher: incorrect tag size given to GCM"u8;
+private static readonly @string cipherTheNonceCanTHaveˢ = "cipher: the nonce can't have zero length, or the security of the key will be immediately compromised"u8;
+private static readonly @string cipherNewGCMRequires128ˢ = "cipher: NewGCM requires 128-bit block cipher"u8;
+
 internal static (AEAD, error) newGCMWithNonceAndTagSize(Block cipher, nint nonceSize, nint tagSize) {
     if (tagSize < gcmMinimumTagSize || tagSize > gcmBlockSize) {
-        return (default!, errors.New("cipher: incorrect tag size given to GCM"u8));
+        return (default!, errors.New(cipherIncorrectTagSizeˢ));
     }
     if (nonceSize <= 0) {
-        return (default!, errors.New("cipher: the nonce can't have zero length, or the security of the key will be immediately compromised"u8));
+        return (default!, errors.New(cipherTheNonceCanTHaveˢ));
     }
     {
         var (cipherΔ1, ok) = cipher._<gcmAble>(ᐧ); if (ok) {
@@ -121,7 +126,7 @@ internal static (AEAD, error) newGCMWithNonceAndTagSize(Block cipher, nint nonce
         }
     }
     if (cipher.BlockSize() != gcmBlockSize) {
-        return (default!, errors.New("cipher: NewGCM requires 128-bit block cipher"u8));
+        return (default!, errors.New(cipherNewGCMRequires128ˢ));
     }
     array<byte> key = new(16); /* gcmBlockSize */
     cipher.Encrypt(key[..], key[..]);

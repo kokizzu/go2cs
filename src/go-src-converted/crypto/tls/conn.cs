@@ -607,6 +607,12 @@ internal static error readChangeCipherSpec(this ж<Conn> Ꮡc) {
     return Ꮡc.readRecordOrCCS(true);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsInternalErrorˢ = "tls: internal error: attempted to read record with pending application data"u8;
+private static readonly @string tlsInternalErrorˢ2 = "tls: internal error: attempted to read record with QUIC transport"u8;
+private static readonly @string unsupportedSSLv2ˢ = "unsupported SSLv2 handshake received"u8;
+private static readonly @string firstRecordDoesNotLookˢ = "first record does not look like a TLS handshake"u8;
+
 // readRecordOrCCS reads one or more TLS records from the connection and
 // updates the record layer state. Some invariants:
 //   - c.in must be locked
@@ -630,11 +636,11 @@ internal static error readRecordOrCCS(this ж<Conn> Ꮡc, bool expectChangeCiphe
     var handshakeComplete = Ꮡc.of(Conn.ᏑisHandshakeComplete).Load();
     // This function modifies c.rawInput, which owns the c.input memory.
     if (c.input.Len() != 0) {
-        return c.@in.setErrorLocked(errors.New("tls: internal error: attempted to read record with pending application data"u8));
+        return c.@in.setErrorLocked(errors.New(tlsInternalErrorˢ));
     }
     c.input.Reset(default!);
     if (c.quic != nil) {
-        return c.@in.setErrorLocked(errors.New("tls: internal error: attempted to read record with QUIC transport"u8));
+        return c.@in.setErrorLocked(errors.New(tlsInternalErrorˢ2));
     }
     // Read header, payload.
     {
@@ -661,7 +667,7 @@ internal static error readRecordOrCCS(this ж<Conn> Ꮡc, bool expectChangeCiphe
     // an SSLv2 client.
     if (!handshakeComplete && typ == 0x80) {
         Ꮡc.sendAlert(alertProtocolVersion);
-        return c.@in.setErrorLocked(c.newRecordHeaderError(default!, "unsupported SSLv2 handshake received"u8));
+        return c.@in.setErrorLocked(c.newRecordHeaderError(default!, unsupportedSSLv2ˢ));
     }
     var vers = (uint16)((uint16)((uint16)hdr[1] << (int)(8)) | (uint16)hdr[2]);
     var expectedVers = c.vers;
@@ -682,7 +688,7 @@ internal static error readRecordOrCCS(this ж<Conn> Ꮡc, bool expectChangeCiphe
         // The current max version is 3.3 so if the version is >= 16.0,
         // it's probably not real.
         if ((typ != recordTypeAlert && typ != recordTypeHandshake) || vers >= 0x1000) {
-            return c.@in.setErrorLocked(c.newRecordHeaderError(c.conn, "first record does not look like a TLS handshake"u8));
+            return c.@in.setErrorLocked(c.newRecordHeaderError(c.conn, firstRecordDoesNotLookˢ));
         }
     }
     if (c.vers == VersionTLS13 && n > maxCiphertextTLS13 || n > maxCiphertext) {
@@ -800,6 +806,9 @@ Op: "remote error"u8, Err: ((alert)data[1])))));
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsTooManyIgnoredRecordsˢ = "tls: too many ignored records"u8;
+
 // retryReadRecord recurs into readRecordOrCCS to drop a non-advancing record, like
 // a warning alert, empty application_data, or a change_cipher_spec in TLS 1.3.
 internal static error retryReadRecord(this ж<Conn> Ꮡc, bool expectChangeCipherSpec) {
@@ -808,7 +817,7 @@ internal static error retryReadRecord(this ж<Conn> Ꮡc, bool expectChangeCiphe
     c.retryCount++;
     if (c.retryCount > maxUselessRecords) {
         Ꮡc.sendAlert(alertUnexpectedMessage);
-        return c.@in.setErrorLocked(errors.New("tls: too many ignored records"u8));
+        return c.@in.setErrorLocked(errors.New(tlsTooManyIgnoredRecordsˢ));
     }
     return Ꮡc.readRecordOrCCS(expectChangeCipherSpec);
 }
@@ -982,6 +991,9 @@ internal static ж<sync.Pool> ᏑoutBufPool = new(new sync.Pool(
 ));
 internal static ref sync.Pool outBufPool => ref ᏑoutBufPool.Value;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsInternalErrorSendingˢ = "tls: internal error: sending non-handshake message to QUIC transport"u8;
+
 // writeRecordLocked writes a TLS record with the given type and payload to the
 // connection and updates the record layer state.
 internal static (nint, error) writeRecordLocked(this ж<Conn> Ꮡc, recordType typ, slice<byte> data) => func<(nint, error)>((defer, recover) => {
@@ -989,7 +1001,7 @@ internal static (nint, error) writeRecordLocked(this ж<Conn> Ꮡc, recordType t
 
     if (c.quic != nil) {
         if (typ != recordTypeHandshake) {
-            return (0, errors.New("tls: internal error: sending non-handshake message to QUIC transport"u8));
+            return (0, errors.New(tlsInternalErrorSendingˢ));
         }
         c.quicWriteCryptoData(c.@out.level, data);
         if (!c.buffering) {
@@ -1302,12 +1314,16 @@ public static (nint, error) Write(this ж<Conn> Ꮡc, slice<byte> b) => func<(ni
     return (n + m, c.@out.setErrorLocked(err));
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsInternalErrorˢ3 = "tls: internal error: unexpected renegotiation"u8;
+private static readonly @string tlsUnknownRenegotiationˢ = "tls: unknown Renegotiation value"u8;
+
 // handleRenegotiation processes a HelloRequest handshake message.
 internal static error handleRenegotiation(this ж<Conn> Ꮡc) => func((defer, recover) => {
     ref var c = ref Ꮡc.Value;
 
     if (c.vers == VersionTLS13) {
-        return errors.New("tls: internal error: unexpected renegotiation"u8);
+        return errors.New(tlsInternalErrorˢ3);
     }
     var (msg, err) = Ꮡc.readHandshake(default!);
     if (err != default!) {
@@ -1334,7 +1350,7 @@ internal static error handleRenegotiation(this ж<Conn> Ꮡc) => func((defer, re
     }
     else { /* default: */
         Ꮡc.sendAlert(alertInternalError);
-        return errors.New("tls: unknown Renegotiation value"u8);
+        return errors.New(tlsUnknownRenegotiationˢ);
     }
 
     // Ok.
@@ -1348,6 +1364,9 @@ internal static error handleRenegotiation(this ж<Conn> Ꮡc) => func((defer, re
     }
     return c.handshakeErr;
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsTooManyNonAdvancingˢ = "tls: too many non-advancing records"u8;
 
 // handlePostHandshakeMessage processes a handshake message arrived after the
 // handshake is complete. Up to TLS 1.2, it indicates the start of a renegotiation.
@@ -1364,7 +1383,7 @@ internal static error handlePostHandshakeMessage(this ж<Conn> Ꮡc) {
     c.retryCount++;
     if (c.retryCount > maxUselessRecords) {
         Ꮡc.sendAlert(alertUnexpectedMessage);
-        return c.@in.setErrorLocked(errors.New("tls: too many non-advancing records"u8));
+        return c.@in.setErrorLocked(errors.New(tlsTooManyNonAdvancingˢ));
     }
     switch (msg.type()) {
     case ж<newSessionTicketMsgTLS13> msgΔ1: {
@@ -1381,13 +1400,16 @@ internal static error handlePostHandshakeMessage(this ж<Conn> Ꮡc) {
     return fmt.Errorf("tls: received unexpected handshake message of type %T"u8, msg);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsReceivedUnexpectedKeyˢ = "tls: received unexpected key update message"u8;
+
 internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> ᏑkeyUpdate) => func<error>((defer, recover) => {
     ref var c = ref Ꮡc.Value;
     ref var keyUpdate = ref ᏑkeyUpdate.Value;
 
     if (c.quic != nil) {
         Ꮡc.sendAlert(alertUnexpectedMessage);
-        return c.@in.setErrorLocked(errors.New("tls: received unexpected key update message"u8));
+        return c.@in.setErrorLocked(errors.New(tlsReceivedUnexpectedKeyˢ));
     }
     var cipherSuite = cipherSuiteTLS13ByID(c.cipherSuite);
     if (cipherSuite == nil) {
@@ -1570,6 +1592,9 @@ public static error HandshakeContext(this ж<Conn> Ꮡc, context.Context ctx) {
     return Ꮡc.handshakeContext(ctx);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsInternalErrorˢ4 = "tls: internal error: handshake should have had a result"u8;
+
 internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Context ctx) {
     error ret = default!;
     func((defer, recover) => {
@@ -1650,7 +1675,7 @@ internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Conte
             c.flush();
         }
         if (c.handshakeErr == default! && !Ꮡc.of(Conn.ᏑisHandshakeComplete).Load()) {
-            c.handshakeErr = errors.New("tls: internal error: handshake should have had a result"u8);
+            c.handshakeErr = errors.New(tlsInternalErrorˢ4);
         }
         if (c.handshakeErr != default! && Ꮡc.of(Conn.ᏑisHandshakeComplete).Load()) {
             throw panic("tls: internal error: handshake returned an error but is marked successful");
@@ -1745,6 +1770,11 @@ public static slice<byte> OCSPResponse(this ж<Conn> Ꮡc) => func((defer, recov
     return c.ocspResponse;
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsVerifyHostnameCalledˢ = "tls: VerifyHostname called on TLS server connection"u8;
+private static readonly @string tlsHandshakeHasNotYetˢ = "tls: handshake has not yet been performed"u8;
+private static readonly @string tlsHandshakeDidNotVerifyˢ = "tls: handshake did not verify certificate chain"u8;
+
 // VerifyHostname checks that the peer certificate chain is valid for
 // connecting to host. If so, it returns nil; if not, it returns an error
 // describing the problem.
@@ -1754,13 +1784,13 @@ public static error VerifyHostname(this ж<Conn> Ꮡc, @string host) => func((de
     Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
     defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock);
     if (!c.isClient) {
-        return errors.New("tls: VerifyHostname called on TLS server connection"u8);
+        return errors.New(tlsVerifyHostnameCalledˢ);
     }
     if (!Ꮡc.of(Conn.ᏑisHandshakeComplete).Load()) {
-        return errors.New("tls: handshake has not yet been performed"u8);
+        return errors.New(tlsHandshakeHasNotYetˢ);
     }
     if (len(c.verifiedChains) == 0) {
-        return errors.New("tls: handshake did not verify certificate chain"u8);
+        return errors.New(tlsHandshakeDidNotVerifyˢ);
     }
     return c.peerCertificates[0].VerifyHostname(host);
 });

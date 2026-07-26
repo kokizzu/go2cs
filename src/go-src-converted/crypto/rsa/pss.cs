@@ -15,6 +15,9 @@ using go.math;
 
 partial class rsa_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoRsaInputMustBeˢ2 = "crypto/rsa: input must be hashed with given hash"u8;
+
 // Per RFC 8017, Section 9.1
 //
 //     EM = MGF1 xor DB || H( 8*0x00 || mHash || salt ) || 0xbc
@@ -38,7 +41,7 @@ internal static (slice<byte>, error) emsaPSSEncode(slice<byte> mHash, nint emBit
     //
     // 2.  Let mHash = Hash(M), an octet string of length hLen.
     if (len(mHash) != hLen) {
-        return (default!, errors.New("crypto/rsa: input must be hashed with given hash"u8));
+        return (default!, errors.New(cryptoRsaInputMustBeˢ2));
     }
     // 3.  If emLen < hLen + sLen + 2, output "encoding error" and stop.
     if (emLen < hLen + sLen + 2) {
@@ -84,6 +87,9 @@ internal static (slice<byte>, error) emsaPSSEncode(slice<byte> mHash, nint emBit
     return (em, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string rsaInternalErrorˢ = "rsa: internal error: inconsistent length"u8;
+
 internal static error emsaPSSVerify(slice<byte> mHash, slice<byte> em, nint emBits, nint sLen, hash.Hash hashΔ1) {
     // See RFC 8017, Section 9.1.2.
     nint hLen = hashΔ1.Size();
@@ -92,7 +98,7 @@ internal static error emsaPSSVerify(slice<byte> mHash, slice<byte> em, nint emBi
     }
     nint emLen = (emBits + 7) / 8;
     if (emLen != len(em)) {
-        return errors.New("rsa: internal error: inconsistent length"u8);
+        return errors.New(rsaInternalErrorˢ);
     }
     // 1.  If the length of M is greater than the input limitation for the
     //     hash function (2^61 - 1 octets for SHA-1), output "inconsistent"

@@ -77,6 +77,9 @@ partial class runtime_package {
     return (uintptr)argMap.n * (uintptr)goarch.PtrSize;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string reflectMismatchˢ = "reflect mismatch"u8;
+
 // argMapInternal is used internally by stkframe to fetch special
 // argument maps.
 //
@@ -125,7 +128,7 @@ partial class runtime_package {
             // empty.
             if (frame.pc != f.entry()) {
                 print((@string)"runtime: confused by "u8, funcname(f), (@string)": no frame (sp="u8, ((Δhex)(uint64)frame.sp), (@string)" fp="u8, ((Δhex)(uint64)frame.fp), (@string)") at entry+"u8, ((Δhex)(uint64)(frame.pc - f.entry())), (@string)"\n"u8);
-                @throw("reflect mismatch"u8);
+                @throw(reflectMismatchˢ);
             }
             return (new bitvector(nil), false);
         }
@@ -138,7 +141,7 @@ partial class runtime_package {
             // Reflect will update this value after it copies
             // in the return values.
             print((@string)"runtime: confused by "u8, funcname(f), (@string)"\n"u8);
-            @throw("reflect mismatch"u8);
+            @throw(reflectMismatchˢ);
         }
         argMap = (~mv).stack.Value;
         if (!retValid) {
@@ -153,6 +156,10 @@ partial class runtime_package {
 
     return (argMap, hasReflectStackObj);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string missingStackmapˢ = "missing stackmap"u8;
+private static readonly @string badSymbolTableˢ = "bad symbol table"u8;
 
 // getStackMap returns the locals and arguments live pointer maps, and
 // stack object list for frame.
@@ -198,14 +205,14 @@ partial class runtime_package {
         var stkmap = (ж<stackmap>)(uintptr)(funcdata(f, abi.FUNCDATA_LocalsPointerMaps));
         if (stkmap == nil || (~stkmap).n <= 0) {
             print((@string)"runtime: frame "u8, funcname(f), (@string)" untyped locals "u8, ((Δhex)(uint64)(frame.varp - size)), (@string)"+"u8, ((Δhex)(uint64)size), (@string)"\n"u8);
-            @throw("missing stackmap"u8);
+            @throw(missingStackmapˢ);
         }
         // If nbit == 0, there's no work to do.
         if ((~stkmap).nbit > 0){
             if (stackid < 0 || stackid >= (~stkmap).n) {
                 // don't know where we are
                 print((@string)"runtime: pcdata is "u8, stackid, (@string)" and "u8, (~stkmap).n, (@string)" locals stack map entries for "u8, funcname(f), (@string)" (targetpc="u8, ((Δhex)(uint64)targetpc), (@string)")\n"u8);
-                @throw("bad symbol table"u8);
+                @throw(badSymbolTableˢ);
             }
             locals = stackmapdata(stkmap, stackid);
             if (stackDebug >= 3 && debug) {
@@ -225,12 +232,12 @@ partial class runtime_package {
         var stackmap = (ж<stackmap>)(uintptr)(funcdata(f, abi.FUNCDATA_ArgsPointerMaps));
         if (stackmap == nil || (~stackmap).n <= 0) {
             print((@string)"runtime: frame "u8, funcname(f), (@string)" untyped args "u8, ((Δhex)(uint64)frame.argp), (@string)"+"u8, ((Δhex)(uint64)(args.n * (int32)goarch.PtrSize)), (@string)"\n"u8);
-            @throw("missing stackmap"u8);
+            @throw(missingStackmapˢ);
         }
         if (pcdata < 0 || pcdata >= (~stackmap).n) {
             // don't know where we are
             print((@string)"runtime: pcdata is "u8, pcdata, (@string)" and "u8, (~stackmap).n, (@string)" args stack map entries for "u8, funcname(f), (@string)" (targetpc="u8, ((Δhex)(uint64)targetpc), (@string)")\n"u8);
-            @throw("bad symbol table"u8);
+            @throw(badSymbolTableˢ);
         }
         if ((~stackmap).nbit == 0){
             args.n = 0;
@@ -265,13 +272,17 @@ partial class runtime_package {
 internal static ж<array<stackObjectRecord>> ᏑmethodValueCallFrameObjs = new(new array<stackObjectRecord>(1));
 internal static ref array<stackObjectRecord> methodValueCallFrameObjs => ref ᏑmethodValueCallFrameObjs.Value;    // initialized in stackobjectinit
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abiRegArgsTypeNeedsGcˢ = "abiRegArgsType needs GC Prog, update methodValueCallFrameObjs"u8;
+private static readonly @string methodValueCallFrameObjsˢ = "methodValueCallFrameObjs is not in a module"u8;
+
 internal static void stkobjinit() {
     ref var abiRegArgsEface = ref heap<any>(out var ᏑabiRegArgsEface);
 
     abiRegArgsEface = new abi.RegArgs(nil);
     var abiRegArgsType = efaceOf(ᏑabiRegArgsEface).Value._type;
     if ((abiꓸKind)((~abiRegArgsType).Kind_ & abi.KindGCProg) != 0) {
-        @throw("abiRegArgsType needs GC Prog, update methodValueCallFrameObjs"u8);
+        @throw(abiRegArgsTypeNeedsGcˢ);
     }
     // Set methodValueCallFrameObjs[0].gcdataoff so that
     // stackObjectRecord.gcdata() will work correctly with it.
@@ -284,7 +295,7 @@ internal static void stkobjinit() {
         }
     }
     if (mod == nil) {
-        @throw("methodValueCallFrameObjs is not in a module"u8);
+        @throw(methodValueCallFrameObjsˢ);
     }
     methodValueCallFrameObjs[0] = new stackObjectRecord(
         off: -(int32)alignUp((~abiRegArgsType).Size_, 8), // It's always the highest address local.

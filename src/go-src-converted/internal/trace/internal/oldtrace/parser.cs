@@ -170,6 +170,9 @@ public static (Trace, error) Parse(io.Reader r, version.Version vers) {
     return p.parse();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noEvFrequencyEventˢ = "no EvFrequency event"u8;
+
 // parse parses, post-processes and verifies the trace.
 internal static (Trace, error) parse(this ж<parser> Ꮡp) => func<(Trace, error)>((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -208,7 +211,7 @@ internal static (Trace, error) parse(this ж<parser> Ꮡp) => func<(Trace, error
         return (new Trace(nil), err);
     }
     if (p.ticksPerSec == 0) {
-        return (new Trace(nil), errors.New("no EvFrequency event"u8));
+        return (new Trace(nil), errors.New(noEvFrequencyEventˢ));
     }
     if (events.Len() > 0) {
         // Translate cpu ticks to real time.
@@ -599,6 +602,10 @@ internal static readonly UntypedInt skipStrings = 2;
     return (buf, default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stringHasInvalidId0ˢ = "string has invalid id 0"u8;
+private static readonly @string stringHasInvalidLength0ˢ = "string has invalid length 0"u8;
+
 // readRawEvent reads a raw event into ev. The slices in ev are only valid until
 // the next call to readRawEvent, even when storing to a different location.
 [GoRecv] internal static error readRawEvent(this ref parser p, nuint flags, ж<rawEvent> Ꮡev) {
@@ -653,7 +660,7 @@ internal static readonly UntypedInt skipStrings = 2;
                 return err;
             }
             if (id == 0) {
-                return errors.New("string has invalid id 0"u8);
+                return errors.New(stringHasInvalidId0ˢ);
             }
             if (p.strings[id] != "") {
                 return fmt.Errorf("string has duplicate id %d"u8, id);
@@ -664,7 +671,7 @@ internal static readonly UntypedInt skipStrings = 2;
                 return err;
             }
             if (ln == 0) {
-                return errors.New("string has invalid length 0"u8);
+                return errors.New(stringHasInvalidLength0ˢ);
             }
             if (ln > 1000000) {
                 return fmt.Errorf("string has too large length %d"u8, ln);
@@ -1506,27 +1513,27 @@ public static readonly @event.Type EvCount = 50;
 }
 public static ж<array<EventDescriptionsᴛ1>> ᏑEventDescriptions = new(new golib.SparseArray<EventDescriptionsᴛ1>{
     [EvNone] = new("None"u8, 5, false, new @string[]{}.slice(), default!),
-    [EvBatch] = new("Batch"u8, 5, false, new @string[]{"p", "ticks"}.slice(), default!),
-    [EvFrequency] = new("Frequency"u8, 5, false, new @string[]{"freq"}.slice(), default!),
-    [EvStack] = new("Stack"u8, 5, false, new @string[]{"id", "siz"}.slice(), default!),
-    [EvGomaxprocs] = new("Gomaxprocs"u8, 5, true, new @string[]{"procs"}.slice(), default!),
-    [EvProcStart] = new("ProcStart"u8, 5, false, new @string[]{"thread"}.slice(), default!),
+    [EvBatch] = new("Batch"u8, 5, false, new @string[]{"p"u8, "ticks"u8}.slice(), default!),
+    [EvFrequency] = new("Frequency"u8, 5, false, new @string[]{"freq"u8}.slice(), default!),
+    [EvStack] = new("Stack"u8, 5, false, new @string[]{"id"u8, "siz"u8}.slice(), default!),
+    [EvGomaxprocs] = new("Gomaxprocs"u8, 5, true, new @string[]{"procs"u8}.slice(), default!),
+    [EvProcStart] = new("ProcStart"u8, 5, false, new @string[]{"thread"u8}.slice(), default!),
     [EvProcStop] = new("ProcStop"u8, 5, false, new @string[]{}.slice(), default!),
-    [EvGCStart] = new("GCStart"u8, 5, true, new @string[]{"seq"}.slice(), default!),
+    [EvGCStart] = new("GCStart"u8, 5, true, new @string[]{"seq"u8}.slice(), default!),
     [EvGCDone] = new("GCDone"u8, 5, false, new @string[]{}.slice(), default!),
-    [EvSTWStart] = new("GCSTWStart"u8, 5, false, new @string[]{"kindid"}.slice(), new @string[]{"kind"}.slice()),
+    [EvSTWStart] = new("GCSTWStart"u8, 5, false, new @string[]{"kindid"u8}.slice(), new @string[]{"kind"u8}.slice()),
     [EvSTWDone] = new("GCSTWDone"u8, 5, false, new @string[]{}.slice(), default!),
     [EvGCSweepStart] = new("GCSweepStart"u8, 5, true, new @string[]{}.slice(), default!),
-    [EvGCSweepDone] = new("GCSweepDone"u8, 5, false, new @string[]{"swept", "reclaimed"}.slice(), default!),
-    [EvGoCreate] = new("GoCreate"u8, 5, true, new @string[]{"g", "stack"}.slice(), default!),
-    [EvGoStart] = new("GoStart"u8, 5, false, new @string[]{"g", "seq"}.slice(), default!),
+    [EvGCSweepDone] = new("GCSweepDone"u8, 5, false, new @string[]{"swept"u8, "reclaimed"u8}.slice(), default!),
+    [EvGoCreate] = new("GoCreate"u8, 5, true, new @string[]{"g"u8, "stack"u8}.slice(), default!),
+    [EvGoStart] = new("GoStart"u8, 5, false, new @string[]{"g"u8, "seq"u8}.slice(), default!),
     [EvGoEnd] = new("GoEnd"u8, 5, false, new @string[]{}.slice(), default!),
     [EvGoStop] = new("GoStop"u8, 5, true, new @string[]{}.slice(), default!),
     [EvGoSched] = new("GoSched"u8, 5, true, new @string[]{}.slice(), default!),
     [EvGoPreempt] = new("GoPreempt"u8, 5, true, new @string[]{}.slice(), default!),
     [EvGoSleep] = new("GoSleep"u8, 5, true, new @string[]{}.slice(), default!),
     [EvGoBlock] = new("GoBlock"u8, 5, true, new @string[]{}.slice(), default!),
-    [EvGoUnblock] = new("GoUnblock"u8, 5, true, new @string[]{"g", "seq"}.slice(), default!),
+    [EvGoUnblock] = new("GoUnblock"u8, 5, true, new @string[]{"g"u8, "seq"u8}.slice(), default!),
     [EvGoBlockSend] = new("GoBlockSend"u8, 5, true, new @string[]{}.slice(), default!),
     [EvGoBlockRecv] = new("GoBlockRecv"u8, 5, true, new @string[]{}.slice(), default!),
     [EvGoBlockSelect] = new("GoBlockSelect"u8, 5, true, new @string[]{}.slice(), default!),
@@ -1534,27 +1541,27 @@ public static ж<array<EventDescriptionsᴛ1>> ᏑEventDescriptions = new(new go
     [EvGoBlockCond] = new("GoBlockCond"u8, 5, true, new @string[]{}.slice(), default!),
     [EvGoBlockNet] = new("GoBlockNet"u8, 5, true, new @string[]{}.slice(), default!),
     [EvGoSysCall] = new("GoSysCall"u8, 5, true, new @string[]{}.slice(), default!),
-    [EvGoSysExit] = new("GoSysExit"u8, 5, false, new @string[]{"g", "seq", "ts"}.slice(), default!),
+    [EvGoSysExit] = new("GoSysExit"u8, 5, false, new @string[]{"g"u8, "seq"u8, "ts"u8}.slice(), default!),
     [EvGoSysBlock] = new("GoSysBlock"u8, 5, false, new @string[]{}.slice(), default!),
-    [EvGoWaiting] = new("GoWaiting"u8, 5, false, new @string[]{"g"}.slice(), default!),
-    [EvGoInSyscall] = new("GoInSyscall"u8, 5, false, new @string[]{"g"}.slice(), default!),
-    [EvHeapAlloc] = new("HeapAlloc"u8, 5, false, new @string[]{"mem"}.slice(), default!),
-    [EvHeapGoal] = new("HeapGoal"u8, 5, false, new @string[]{"mem"}.slice(), default!),
-    [EvTimerGoroutine] = new("TimerGoroutine"u8, 5, false, new @string[]{"g"}.slice(), default!),
+    [EvGoWaiting] = new("GoWaiting"u8, 5, false, new @string[]{"g"u8}.slice(), default!),
+    [EvGoInSyscall] = new("GoInSyscall"u8, 5, false, new @string[]{"g"u8}.slice(), default!),
+    [EvHeapAlloc] = new("HeapAlloc"u8, 5, false, new @string[]{"mem"u8}.slice(), default!),
+    [EvHeapGoal] = new("HeapGoal"u8, 5, false, new @string[]{"mem"u8}.slice(), default!),
+    [EvTimerGoroutine] = new("TimerGoroutine"u8, 5, false, new @string[]{"g"u8}.slice(), default!),
     [EvFutileWakeup] = new("FutileWakeup"u8, 5, false, new @string[]{}.slice(), default!),
     [EvString] = new("String"u8, 7, false, new @string[]{}.slice(), default!),
-    [EvGoStartLocal] = new("GoStartLocal"u8, 7, false, new @string[]{"g"}.slice(), default!),
-    [EvGoUnblockLocal] = new("GoUnblockLocal"u8, 7, true, new @string[]{"g"}.slice(), default!),
-    [EvGoSysExitLocal] = new("GoSysExitLocal"u8, 7, false, new @string[]{"g", "ts"}.slice(), default!),
-    [EvGoStartLabel] = new("GoStartLabel"u8, 8, false, new @string[]{"g", "seq", "labelid"}.slice(), new @string[]{"label"}.slice()),
+    [EvGoStartLocal] = new("GoStartLocal"u8, 7, false, new @string[]{"g"u8}.slice(), default!),
+    [EvGoUnblockLocal] = new("GoUnblockLocal"u8, 7, true, new @string[]{"g"u8}.slice(), default!),
+    [EvGoSysExitLocal] = new("GoSysExitLocal"u8, 7, false, new @string[]{"g"u8, "ts"u8}.slice(), default!),
+    [EvGoStartLabel] = new("GoStartLabel"u8, 8, false, new @string[]{"g"u8, "seq"u8, "labelid"u8}.slice(), new @string[]{"label"u8}.slice()),
     [EvGoBlockGC] = new("GoBlockGC"u8, 8, true, new @string[]{}.slice(), default!),
     [EvGCMarkAssistStart] = new("GCMarkAssistStart"u8, 9, true, new @string[]{}.slice(), default!),
     [EvGCMarkAssistDone] = new("GCMarkAssistDone"u8, 9, false, new @string[]{}.slice(), default!),
-    [EvUserTaskCreate] = new("UserTaskCreate"u8, 11, true, new @string[]{"taskid", "pid", "typeid"}.slice(), new @string[]{"name"}.slice()),
-    [EvUserTaskEnd] = new("UserTaskEnd"u8, 11, true, new @string[]{"taskid"}.slice(), default!),
-    [EvUserRegion] = new("UserRegion"u8, 11, true, new @string[]{"taskid", "mode", "typeid"}.slice(), new @string[]{"name"}.slice()),
-    [EvUserLog] = new("UserLog"u8, 11, true, new @string[]{"id", "keyid"}.slice(), new @string[]{"category", "message"}.slice()),
-    [EvCPUSample] = new("CPUSample"u8, 19, true, new @string[]{"ts", "p", "g"}.slice(), default!)
+    [EvUserTaskCreate] = new("UserTaskCreate"u8, 11, true, new @string[]{"taskid"u8, "pid"u8, "typeid"u8}.slice(), new @string[]{"name"u8}.slice()),
+    [EvUserTaskEnd] = new("UserTaskEnd"u8, 11, true, new @string[]{"taskid"u8}.slice(), default!),
+    [EvUserRegion] = new("UserRegion"u8, 11, true, new @string[]{"taskid"u8, "mode"u8, "typeid"u8}.slice(), new @string[]{"name"u8}.slice()),
+    [EvUserLog] = new("UserLog"u8, 11, true, new @string[]{"id"u8, "keyid"u8}.slice(), new @string[]{"category"u8, "message"u8}.slice()),
+    [EvCPUSample] = new("CPUSample"u8, 19, true, new @string[]{"ts"u8, "p"u8, "g"u8}.slice(), default!)
 }.array(256));
 public static ref array<EventDescriptionsᴛ1> EventDescriptions => ref ᏑEventDescriptions.Value;
 

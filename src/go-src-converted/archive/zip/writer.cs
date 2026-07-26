@@ -64,15 +64,21 @@ public static ж<Writer> NewWriter(io.Writer w) {
     return (~w.cw).w._<ж<bufio.Writer>>().Flush();
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string zipWriterCommentTooLongˢ = "zip: Writer.Comment too long"u8;
+
 // SetComment sets the end-of-central-directory comment field.
 // It can only be called before [Writer.Close].
 [GoRecv] public static error SetComment(this ref Writer w, @string comment) {
     if (len(comment) > uint16max) {
-        return errors.New("zip: Writer.Comment too long"u8);
+        return errors.New(zipWriterCommentTooLongˢ);
     }
     w.comment = comment;
     return default!;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string zipWriterClosedTwiceˢ = "zip: writer closed twice"u8;
 
 // Close finishes writing the zip file by writing the central directory.
 // It does not close the underlying writer.
@@ -86,7 +92,7 @@ public static ж<Writer> NewWriter(io.Writer w) {
         w.last = default!;
     }
     if (w.closed) {
-        return errors.New("zip: writer closed twice"u8);
+        return errors.New(zipWriterClosedTwiceˢ);
     }
     w.closed = true;
     // write central directory
@@ -280,6 +286,9 @@ internal static (bool valid, bool require) detectUTF8(@string s) {
     return (true, require);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string archiveZipInvalidˢ = "archive/zip: invalid duplicate FileHeader"u8;
+
 // prepare performs the bookkeeping operations required at the start of
 // CreateHeader and CreateRaw.
 [GoRecv] internal static error prepare(this ref Writer w, ж<FileHeader> Ꮡfh) {
@@ -292,7 +301,7 @@ internal static (bool valid, bool require) detectUTF8(@string s) {
     }
     if (len(w.dir) > 0 && (~w.dir[len(w.dir) - 1]).FileHeader == Ꮡfh) {
         // See https://golang.org/issue/11144 confusion.
-        return errors.New("archive/zip: invalid duplicate FileHeader"u8);
+        return errors.New(archiveZipInvalidˢ);
     }
     return default!;
 }
@@ -549,6 +558,9 @@ internal static error writeHeader(io.Writer w, ж<header> Ꮡh) {
     w.compressors[method] = comp;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string zipCannotAddNonRegularˢ = "zip: cannot add non-regular file"u8;
+
 // AddFS adds the files from fs.FS to the archive.
 // It walks the directory tree starting at the root of the filesystem
 // adding each file to the zip using deflate while maintaining the directory structure.
@@ -565,7 +577,7 @@ public static error AddFS(this ж<Writer> Ꮡw, fs.FS fsys) {
             return err;
         }
         if (!info.Mode().IsRegular()) {
-            return errors.New("zip: cannot add non-regular file"u8);
+            return errors.New(zipCannotAddNonRegularˢ);
         }
         (var h, err) = FileInfoHeader(info);
         if (err != default!) {
@@ -599,11 +611,14 @@ public static error AddFS(this ж<Writer> Ꮡw, fs.FS fsys) {
 [GoType] partial struct dirWriter {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string zipWriteToDirectoryˢ = "zip: write to directory"u8;
+
 internal static (nint, error) Write(this dirWriter _, slice<byte> b) {
     if (len(b) == 0) {
         return (0, default!);
     }
-    return (0, errors.New("zip: write to directory"u8));
+    return (0, errors.New(zipWriteToDirectoryˢ));
 }
 
 [GoType] partial struct fileWriter {
@@ -616,9 +631,12 @@ internal static (nint, error) Write(this dirWriter _, slice<byte> b) {
     internal bool closed;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string zipWriteToClosedFileˢ = "zip: write to closed file"u8;
+
 [GoRecv] internal static (nint, error) Write(this ref fileWriter w, slice<byte> p) {
     if (w.closed) {
-        return (0, errors.New("zip: write to closed file"u8));
+        return (0, errors.New(zipWriteToClosedFileˢ));
     }
     if (w.raw) {
         return w.zipw.Write(p);
@@ -627,9 +645,12 @@ internal static (nint, error) Write(this dirWriter _, slice<byte> b) {
     return w.rawCount.Write(p);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string zipFileClosedTwiceˢ = "zip: file closed twice"u8;
+
 [GoRecv] internal static error close(this ref fileWriter w) {
     if (w.closed) {
-        return errors.New("zip: file closed twice"u8);
+        return errors.New(zipFileClosedTwiceˢ);
     }
     w.closed = true;
     if (w.raw) {

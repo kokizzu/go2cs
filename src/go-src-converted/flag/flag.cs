@@ -628,6 +628,13 @@ internal static (bool ok, error err) isZeroValue(ж<Flag> Ꮡflag, @string value
     return (ok, err);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string valueˢ = "value"u8;
+private static readonly @string durationˢ = "duration"u8;
+private static readonly @string floatˢ = "float"u8;
+private static readonly @string stringˢ = "string"u8;
+private static readonly @string uintˢ = "uint"u8;
+
 // UnquoteUsage extracts a back-quoted name from the usage
 // string for a flag and returns it and the un-quoted usage.
 // Given "a `name` to show" it returns ("name", "a name to show").
@@ -654,7 +661,7 @@ public static (@string name, @string usage) UnquoteUsage(ж<Flag> Ꮡflag) {
     }
     // Only one back quote; use type name.
     // No explicit name, so use type if we can find one.
-    name = "value"u8;
+    name = valueˢ;
     switch (flag.Value.type()) {
     case {} Δfv when Δfv._<boolFlag>(out var fv): {
         if (fv.IsBoolFlag()) {
@@ -663,11 +670,11 @@ public static (@string name, @string usage) UnquoteUsage(ж<Flag> Ꮡflag) {
         break;
     }
     case ж<durationValue> fv: {
-        name = "duration"u8;
+        name = durationˢ;
         break;
     }
     case ж<float64Value> fv: {
-        name = "float"u8;
+        name = floatˢ;
         break;
     }
     case ж<intValue> _:
@@ -677,13 +684,13 @@ public static (@string name, @string usage) UnquoteUsage(ж<Flag> Ꮡflag) {
         break;
     }
     case ж<stringValue> fv: {
-        name = "string"u8;
+        name = stringˢ;
         break;
     }
     case ж<uintValue> _:
     case ж<uint64Value> _: {
         var fv = flag.Value;
-        name = "uint"u8;
+        name = uintˢ;
         break;
     }}
     return (name, usage);
@@ -1194,6 +1201,9 @@ internal static void usage(this ж<FlagSet> Ꮡf) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string trueˢ = "true"u8;
+
 // parseOne parses one flag. It reports whether a flag was seen.
 internal static (bool, error) parseOne(this ж<FlagSet> Ꮡf) {
     ref var f = ref Ꮡf.Value;
@@ -1251,7 +1261,7 @@ internal static (bool, error) parseOne(this ж<FlagSet> Ꮡf) {
                 }
             } else {
                 {
-                    var err = fv.Set("true"u8); if (err != default!) {
+                    var err = fv.Set(trueˢ); if (err != default!) {
                         return (false, Ꮡf.failf("invalid boolean flag %s: %v"u8, name, err));
                     }
                 }
@@ -1336,7 +1346,8 @@ public static bool Parsed() {
 // CommandLine is the default set of command-line flags, parsed from [os.Args].
 // The top-level functions such as [BoolVar], [Arg], and so on are wrappers for the
 // methods of CommandLine.
-public static ж<FlagSet> CommandLine = NewFlagSet(os.Args[0], ExitOnError);
+public static ж<FlagSet> CommandLine;
+internal static void initᴛCommandLine() { CommandLine = NewFlagSet(os.Args[0], ExitOnError); }
 
 [GoInit] internal static void init() {
     // Override generic FlagSet default Usage with call to global Usage.

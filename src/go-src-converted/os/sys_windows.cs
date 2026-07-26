@@ -9,6 +9,9 @@ using @internal.syscall;
 
 partial class os_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string computerNameExˢ = "ComputerNameEx"u8;
+
 internal static (@string name, error err) hostname() {
     @string name = default!;
     error err = default!;
@@ -24,12 +27,12 @@ internal static (@string name, error err) hostname() {
             return (syscall.UTF16ToString(b[..(int)(n)]), default!);
         }
         if (!AreEqual(errΔ1, syscall.ERROR_MORE_DATA)) {
-            return ("", NewSyscallError("ComputerNameEx"u8, errΔ1));
+            return ("", NewSyscallError(computerNameExˢ, errΔ1));
         }
         // If we received an ERROR_MORE_DATA, but n doesn't get larger,
         // something has gone wrong and we may be in an infinite loop
         if (n <= (uint32)len(b)) {
-            return ("", NewSyscallError("ComputerNameEx"u8, errΔ1));
+            return ("", NewSyscallError(computerNameExˢ, errΔ1));
         }
     }
 }

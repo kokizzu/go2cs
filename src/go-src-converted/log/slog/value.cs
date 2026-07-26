@@ -56,23 +56,26 @@ public static readonly ΔKind KindGroup = 8;
 public static readonly ΔKind KindLogValuer = 9;
 
 internal static slice<@string> kindStrings = new @string[]{
-    "Any",
-    "Bool",
-    "Duration",
-    "Float64",
-    "Int64",
-    "String",
-    "Time",
-    "Uint64",
-    "Group",
-    "LogValuer"
+    "Any"u8,
+    "Bool"u8,
+    "Duration"u8,
+    "Float64"u8,
+    "Int64"u8,
+    "String"u8,
+    "Time"u8,
+    "Uint64"u8,
+    "Group"u8,
+    "LogValuer"u8
 }.slice();
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unknownSlogKindˢ = "<unknown slog.Kind>"u8;
 
 public static @string String(this ΔKind k) {
     if (k >= 0 && (nint)k < len(kindStrings)) {
         return kindStrings[k];
     }
-    return "<unknown slog.Kind>"u8;
+    return unknownSlogKindˢ;
 }
 
 [GoType("num:nint")] partial struct kind;
@@ -599,11 +602,14 @@ public static Value /*rv*/ Resolve(this Value v) {
     return rv;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noStackˢ = "(no stack)"u8;
+
 internal static @string stack(nint skip, nint nFrames) {
     var pcs = new slice<uintptr>(nFrames + 1);
     nint n = runtime.Callers(skip + 1, pcs);
     if (n == 0) {
-        return "(no stack)"u8;
+        return noStackˢ;
     }
     var frames = runtime.CallersFrames(pcs[..(int)(n)]);
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);

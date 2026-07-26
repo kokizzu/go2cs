@@ -64,6 +64,9 @@ internal static readonly UntypedInt sigIdle = iota;
 internal static readonly UntypedInt sigReceiving = 1;
 internal static readonly UntypedInt sigSending = 2;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sigsendInconsistentStateˢ = "sigsend: inconsistent state"u8;
+
 // sigsend delivers a signal from sighandler to the internal signal delivery queue.
 // It reports whether the signal was sent. If not, the caller typically crashes the program.
 // It runs from the signal handler, so it's limited in what it can do.
@@ -116,7 +119,7 @@ Send:
             }
         }
         else { /* default: */
-            @throw("sigsend: inconsistent state"u8);
+            @throw(sigsendInconsistentStateˢ);
         }
 
 continue_Send:;
@@ -125,6 +128,9 @@ break_Send:;
     Ꮡsig.of(sigᴛ1.Ꮡdelivering).Add(-1);
     return true;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string signalRecvInconsistentˢ = "signal_recv: inconsistent state"u8;
 
 // Called to receive the next queued signal.
 // Must only be called from a single goroutine at a time.
@@ -160,7 +166,7 @@ Receive:
                 }
             }
             else { /* default: */
-                @throw("signal_recv: inconsistent state"u8);
+                @throw(signalRecvInconsistentˢ);
             }
 
 continue_Receive:;

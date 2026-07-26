@@ -98,6 +98,10 @@ internal static readonly UntypedInt noFile = /* 1 << iota */ 1;
 internal static readonly UntypedInt metaDataFile = 2;
 internal static readonly UntypedInt counterDataFile = 4;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gocoverdebugˢ = "GOCOVERDEBUG"u8;
+private static readonly @string gocoverdirˢ = "GOCOVERDIR"u8;
+
 // emitMetaData emits the meta-data output file for this coverage run.
 // This entry point is intended to be invoked by the compiler from
 // an instrumented program's main package init func.
@@ -108,7 +112,7 @@ internal static void emitMetaData() {
     var (ml, err) = prepareForMetaEmit();
     if (err != default!) {
         fmt.Fprintf(new os.FileжWriter(os.Stderr), "error: coverage meta-data prep failed: %v\n"u8, err);
-        if (os.Getenv("GOCOVERDEBUG"u8) != ""u8) {
+        if (os.Getenv(gocoverdebugˢ) != ""u8) {
             throw panic("meta-data write failure");
         }
     }
@@ -116,7 +120,7 @@ internal static void emitMetaData() {
         fmt.Fprintf(new os.FileжWriter(os.Stderr), "program not built with -cover\n"u8);
         return;
     }
-    goCoverDir = os.Getenv("GOCOVERDIR"u8);
+    goCoverDir = os.Getenv(gocoverdirˢ);
     if (goCoverDir == ""u8) {
         fmt.Fprintf(new os.FileжWriter(os.Stderr), "warning: GOCOVERDIR not set, no coverage data emitted\n"u8);
         return;
@@ -124,7 +128,7 @@ internal static void emitMetaData() {
     {
         var errΔ1 = emitMetaDataToDirectory(goCoverDir, ml); if (errΔ1 != default!) {
             fmt.Fprintf(new os.FileжWriter(os.Stderr), "error: coverage meta-data emit failed: %v\n"u8, errΔ1);
-            if (os.Getenv("GOCOVERDEBUG"u8) != ""u8) {
+            if (os.Getenv(gocoverdebugˢ) != ""u8) {
                 throw panic("meta-data write failure");
             }
         }
@@ -166,13 +170,13 @@ internal static (slice<rtcov.CovMetaBlob>, error) prepareForMetaEmit() {
     }
     var s = Ꮡ(new emitState(
         metalist: ml,
-        debug: os.Getenv("GOCOVERDEBUG"u8) != ""u8
+        debug: os.Getenv(gocoverdebugˢ) != ""u8
     ));
     // Capture os.Args() now so as to avoid issues if args
     // are rewritten during program execution.
     capturedOsArgs = captureOsArgs();
     if ((~s).debug) {
-        fmt.Fprintf(new os.FileжWriter(os.Stderr), "=+= GOCOVERDIR is %s\n"u8, os.Getenv("GOCOVERDIR"u8));
+        fmt.Fprintf(new os.FileжWriter(os.Stderr), "=+= GOCOVERDIR is %s\n"u8, os.Getenv(gocoverdirˢ));
         fmt.Fprintf(new os.FileжWriter(os.Stderr), "=+= contents of covmetalist:\n"u8);
         foreach (var (k, b) in ml) {
             fmt.Fprintf(new os.FileжWriter(os.Stderr), "=+= slot: %d path: %s "u8, k, b.PkgPath);
@@ -230,7 +234,7 @@ internal static error emitMetaDataToDirectory(@string outdir, slice<rtcov.CovMet
     metaDataEmitAttempted = true;
     var s = Ꮡ(new emitState(
         metalist: ml,
-        debug: os.Getenv("GOCOVERDEBUG"u8) != ""u8,
+        debug: os.Getenv(gocoverdebugˢ) != ""u8,
         outdir: outdir
     ));
     // Open output files.
@@ -260,7 +264,7 @@ internal static void emitCounterData() {
     {
         var err = emitCounterDataToDirectory(goCoverDir); if (err != default!) {
             fmt.Fprintf(new os.FileжWriter(os.Stderr), "error: coverage counter data emit failed: %v\n"u8, err);
-            if (os.Getenv("GOCOVERDEBUG"u8) != ""u8) {
+            if (os.Getenv(gocoverdebugˢ) != ""u8) {
                 throw panic("counter-data write failure");
             }
         }
@@ -284,7 +288,7 @@ internal static error emitCounterDataToDirectory(@string outdir) {
         counterlist: cl,
         pkgmap: pm,
         outdir: outdir,
-        debug: os.Getenv("GOCOVERDEBUG"u8) != ""u8
+        debug: os.Getenv(gocoverdebugˢ) != ""u8
     ));
     // Open output file.
     {
@@ -439,10 +443,13 @@ internal static error emitCounterDataToWriter(this ж<emitState> Ꮡs, io.Writer
     return s.mf != nil;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ioWriterˢ = "<io.Writer>"u8;
+
 internal static error writeMetaData(io.Writer w, slice<rtcov.CovMetaBlob> metalist, coverage.CounterMode cmode, coverage.CounterGranularity gran, array<byte> finalHash) {
     finalHash = finalHash.Clone();
 
-    var mfw = encodemeta.NewCoverageMetaFileWriter("<io.Writer>"u8, w);
+    var mfw = encodemeta.NewCoverageMetaFileWriter(ioWriterˢ, w);
     slice<slice<byte>> blobs = default!;
     foreach (var (_, e) in metalist) {
         var sd = @unsafe.Slice(e.P, (nint)e.Len);
@@ -542,6 +549,11 @@ internal static error writeMetaData(io.Writer w, slice<rtcov.CovMetaBlob> metali
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string argcˢ = "argc"u8;
+private static readonly @string goosˢ = "GOOS"u8;
+private static readonly @string goarchˢ = "GOARCH"u8;
+
 // captureOsArgs converts os.Args() into the format we use to store
 // this info in the counter data file (counter data file "args"
 // section is a generic key-value collection). See the 'args' section
@@ -549,12 +561,12 @@ internal static error writeMetaData(io.Writer w, slice<rtcov.CovMetaBlob> metali
 // is also used to capture GOOS + GOARCH values as well.
 internal static map<@string, @string> captureOsArgs() {
     var m = new map<@string, @string>();
-    m["argc"u8] = strconv.Itoa(len(os.Args));
+    m[argcˢ] = strconv.Itoa(len(os.Args));
     foreach (var (k, a) in os.Args) {
         m[fmt.Sprintf("argv%d"u8, k)] = a;
     }
-    m["GOOS"u8] = runtime.GOOS;
-    m["GOARCH"u8] = runtime.GOARCH;
+    m[goosˢ] = runtime.GOOS;
+    m[goarchˢ] = runtime.GOARCH;
     return m;
 }
 

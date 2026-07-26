@@ -166,6 +166,9 @@ internal static ж<echConfig> pickECHConfig(slice<echConfig> list) {
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsNoSupportedSymmetricˢ = "tls: no supported symmetric ciphersuites for ECH"u8;
+
 internal static (echCipher, error) pickECHCipherSuite(slice<echCipher> suites) {
     foreach (var (_, s) in suites) {
         // NOTE: all of the supported AEADs and KDFs are fine, rather than
@@ -183,7 +186,7 @@ internal static (echCipher, error) pickECHCipherSuite(slice<echCipher> suites) {
         }
         return (s, default!);
     }
-    return (new echCipher(nil), errors.New("tls: no supported symmetric ciphersuites for ECH"u8));
+    return (new echCipher(nil), errors.New(tlsNoSupportedSymmetricˢ));
 }
 
 internal static (slice<byte>, error) encodeInnerClientHello(ж<clientHelloMsg> Ꮡinner, nint maxNameLength) {
@@ -300,8 +303,11 @@ internal static bool validDNSName(@string name) {
     public slice<byte> RetryConfigList;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tlsServerRejectedEchˢ = "tls: server rejected ECH"u8;
+
 [GoRecv] public static @string Error(this ref ECHRejectionError e) {
-    return "tls: server rejected ECH"u8;
+    return tlsServerRejectedEchˢ;
 }
 
 } // end tls_package

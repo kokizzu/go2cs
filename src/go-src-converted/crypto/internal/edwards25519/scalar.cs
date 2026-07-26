@@ -121,6 +121,9 @@ public static ж<Scalar> Set(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx) {
     return Ꮡs;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string edwards25519Invalidˢ = "edwards25519: invalid SetUniformBytes input length"u8;
+
 // SetUniformBytes sets s = x mod l, where x is a 64-byte little-endian integer.
 // If x is not of the right length, SetUniformBytes returns nil and an error,
 // and the receiver is unchanged.
@@ -129,7 +132,7 @@ public static ж<Scalar> Set(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx) {
 // 64 uniformly distributed random bytes.
 public static (ж<Scalar>, error) SetUniformBytes(this ж<Scalar> Ꮡs, slice<byte> x) {
     if (len(x) != 64) {
-        return (default!, errors.New("edwards25519: invalid SetUniformBytes input length"u8));
+        return (default!, errors.New(edwards25519Invalidˢ));
     }
     // We have a value x of 512 bits, but our fiatScalarFromBytes function
     // expects an input lower than l, which is a little over 252 bits.
@@ -173,15 +176,19 @@ internal static ж<Scalar> setShortBytes(this ж<Scalar> Ꮡs, slice<byte> x) {
     return Ꮡs;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string invalidScalarLengthˢ = "invalid scalar length"u8;
+private static readonly @string invalidScalarEncodingˢ = "invalid scalar encoding"u8;
+
 // SetCanonicalBytes sets s = x, where x is a 32-byte little-endian encoding of
 // s, and returns s. If x is not a canonical encoding of s, SetCanonicalBytes
 // returns nil and an error, and the receiver is unchanged.
 public static (ж<Scalar>, error) SetCanonicalBytes(this ж<Scalar> Ꮡs, slice<byte> x) {
     if (len(x) != 32) {
-        return (default!, errors.New("invalid scalar length"u8));
+        return (default!, errors.New(invalidScalarLengthˢ));
     }
     if (!isReduced(x)) {
-        return (default!, errors.New("invalid scalar encoding"u8));
+        return (default!, errors.New(invalidScalarEncodingˢ));
     }
     fiatScalarFromBytes(Ꮡ((Ꮡs.of(Scalar.Ꮡs)).Value.Value), Ꮡ(new array<byte>(x, 32)));
     fiatScalarToMontgomery(Ꮡs.of(Scalar.Ꮡs), Ꮡ((fiatScalarNonMontgomeryDomainFieldElement)((Ꮡs.of(Scalar.Ꮡs)).Value.Value)));
@@ -210,6 +217,9 @@ internal static bool isReduced(slice<byte> s) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string edwards25519Invalidˢ2 = "edwards25519: invalid SetBytesWithClamping input length"u8;
+
 // SetBytesWithClamping applies the buffer pruning described in RFC 8032,
 // Section 5.1.5 (also known as clamping) and sets s to the result. The input
 // must be 32 bytes, and it is not modified. If x is not of the right length,
@@ -227,7 +237,7 @@ public static (ж<Scalar>, error) SetBytesWithClamping(this ж<Scalar> Ꮡs, sli
     // irrelevant to edwards25519 as they protect against a specific
     // implementation bug that was once observed in a generic Montgomery ladder.
     if (len(x) != 32) {
-        return (default!, errors.New("edwards25519: invalid SetBytesWithClamping input length"u8));
+        return (default!, errors.New(edwards25519Invalidˢ2));
     }
     // We need to use the wide reduction from SetUniformBytes, since clamping
     // sets the 2^254 bit, making the value higher than the order.

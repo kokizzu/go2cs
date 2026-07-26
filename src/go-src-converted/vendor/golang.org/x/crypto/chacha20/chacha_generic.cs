@@ -65,11 +65,15 @@ public static (ж<Cipher>, error) NewUnauthenticatedCipher(slice<byte> key, slic
     return newUnauthenticatedCipher(c, key, nonce);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string chacha20WrongKeySizeˢ = "chacha20: wrong key size"u8;
+private static readonly @string chacha20WrongNonceSizeˢ = "chacha20: wrong nonce size"u8;
+
 internal static (ж<Cipher>, error) newUnauthenticatedCipher(ж<Cipher> Ꮡc, slice<byte> key, slice<byte> nonce) {
     ref var c = ref Ꮡc.Value;
 
     if (len(key) != KeySize) {
-        return (default!, errors.New("chacha20: wrong key size"u8));
+        return (default!, errors.New(chacha20WrongKeySizeˢ));
     }
     if (len(nonce) == NonceSizeX){
         // XChaCha20 uses the ChaCha20 core to mix 16 bytes of the nonce into a
@@ -81,7 +85,7 @@ internal static (ж<Cipher>, error) newUnauthenticatedCipher(ж<Cipher> Ꮡc, sl
         nonce = cNonce;
     } else 
     if (len(nonce) != NonceSize) {
-        return (default!, errors.New("chacha20: wrong nonce size"u8));
+        return (default!, errors.New(chacha20WrongNonceSizeˢ));
     }
     (key, nonce) = (key[..(int)(KeySize)], nonce[..(int)(NonceSize)]);
     // bounds check elimination hint
@@ -340,12 +344,16 @@ public static (slice<byte>, error) HChaCha20(slice<byte> key, slice<byte> nonce)
     return hChaCha20(@out, key, nonce);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string chacha20WrongHChaCha20ˢ = "chacha20: wrong HChaCha20 key size"u8;
+private static readonly @string chacha20WrongHChaCha20ˢ2 = "chacha20: wrong HChaCha20 nonce size"u8;
+
 internal static (slice<byte>, error) hChaCha20(slice<byte> @out, slice<byte> key, slice<byte> nonce) {
     if (len(key) != KeySize) {
-        return (default!, errors.New("chacha20: wrong HChaCha20 key size"u8));
+        return (default!, errors.New(chacha20WrongHChaCha20ˢ));
     }
     if (len(nonce) != 16) {
-        return (default!, errors.New("chacha20: wrong HChaCha20 nonce size"u8));
+        return (default!, errors.New(chacha20WrongHChaCha20ˢ2));
     }
     var (x0, x1, x2, x3) = (j0, j1, j2, j3);
     var x4 = binary.LittleEndian.Uint32(key[0..4]);

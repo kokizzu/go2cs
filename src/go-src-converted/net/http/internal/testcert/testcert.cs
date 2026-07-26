@@ -37,7 +37,8 @@ WkBKOclmOV2xlTVuPw==
 """u8);
 
 // LocalhostKey is the private key for LocalhostCert.
-public static slice<byte> LocalhostKey = slice<byte>(testingKey("""
+public static slice<byte> LocalhostKey;
+internal static void initᴛLocalhostKey() { LocalhostKey = slice<byte>(testingKey("""
 -----BEGIN RSA TESTING KEY-----
 MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDoZtrm0dXV0Aqi
 4Bpc7f95sNRTiu/AJSD8I1onY9PnEsPg3VVxvytsVJbYdcqr4w99V3AgpH/UNzMS
@@ -66,10 +67,14 @@ Ckq9yzvP/ib05rvgbvrne00YeOxqJ9gtTrzgh7koqJyX1L4NwdkEza4ilDWpucn0
 xiUZS4SoaJq6ZvcBYS62Yr1t8n09iG47YL8ibgtmH3L+svaotvpVxVK+d7BLevA/
 ZboOWVe3icTy64BT3OQhmg==
 -----END RSA TESTING KEY-----
-"""u8));
+"""u8)); }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testingKeyˢ = "TESTING KEY"u8;
+private static readonly @string privateKeyˢ = "PRIVATE KEY"u8;
 
 internal static @string testingKey(@string s) {
-    return strings.ReplaceAll(s, "TESTING KEY"u8, "PRIVATE KEY"u8);
+    return strings.ReplaceAll(s, testingKeyˢ, privateKeyˢ);
 }
 
 } // end testcert_package

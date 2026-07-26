@@ -22,6 +22,25 @@ public static Hash HashFunc(this Hash h) {
     return h;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sha1ˢ = "SHA-1"u8;
+private static readonly @string sha224ˢ = "SHA-224"u8;
+private static readonly @string sha256ˢ = "SHA-256"u8;
+private static readonly @string sha384ˢ = "SHA-384"u8;
+private static readonly @string sha512ˢ = "SHA-512"u8;
+private static readonly @string md5Sha1ˢ = "MD5+SHA1"u8;
+private static readonly @string ripemd160ˢ = "RIPEMD-160"u8;
+private static readonly @string sha3224ˢ = "SHA3-224"u8;
+private static readonly @string sha3256ˢ = "SHA3-256"u8;
+private static readonly @string sha3384ˢ = "SHA3-384"u8;
+private static readonly @string sha3512ˢ = "SHA3-512"u8;
+private static readonly @string sha512224ˢ = "SHA-512/224"u8;
+private static readonly @string sha512256ˢ = "SHA-512/256"u8;
+private static readonly @string bLAKE2s256ˢ = "BLAKE2s-256"u8;
+private static readonly @string bLAKE2b256ˢ = "BLAKE2b-256"u8;
+private static readonly @string bLAKE2b384ˢ = "BLAKE2b-384"u8;
+private static readonly @string bLAKE2b512ˢ = "BLAKE2b-512"u8;
+
 public static @string String(this Hash h) {
     var exprᴛ1 = h;
     if (exprᴛ1 == MD4) {
@@ -31,55 +50,55 @@ public static @string String(this Hash h) {
         return "MD5"u8;
     }
     if (exprᴛ1 == SHA1) {
-        return "SHA-1"u8;
+        return sha1ˢ;
     }
     if (exprᴛ1 == SHA224) {
-        return "SHA-224"u8;
+        return sha224ˢ;
     }
     if (exprᴛ1 == SHA256) {
-        return "SHA-256"u8;
+        return sha256ˢ;
     }
     if (exprᴛ1 == SHA384) {
-        return "SHA-384"u8;
+        return sha384ˢ;
     }
     if (exprᴛ1 == SHA512) {
-        return "SHA-512"u8;
+        return sha512ˢ;
     }
     if (exprᴛ1 == MD5SHA1) {
-        return "MD5+SHA1"u8;
+        return md5Sha1ˢ;
     }
     if (exprᴛ1 == RIPEMD160) {
-        return "RIPEMD-160"u8;
+        return ripemd160ˢ;
     }
     if (exprᴛ1 == SHA3_224) {
-        return "SHA3-224"u8;
+        return sha3224ˢ;
     }
     if (exprᴛ1 == SHA3_256) {
-        return "SHA3-256"u8;
+        return sha3256ˢ;
     }
     if (exprᴛ1 == SHA3_384) {
-        return "SHA3-384"u8;
+        return sha3384ˢ;
     }
     if (exprᴛ1 == SHA3_512) {
-        return "SHA3-512"u8;
+        return sha3512ˢ;
     }
     if (exprᴛ1 == SHA512_224) {
-        return "SHA-512/224"u8;
+        return sha512224ˢ;
     }
     if (exprᴛ1 == SHA512_256) {
-        return "SHA-512/256"u8;
+        return sha512256ˢ;
     }
     if (exprᴛ1 == BLAKE2s_256) {
-        return "BLAKE2s-256"u8;
+        return bLAKE2s256ˢ;
     }
     if (exprᴛ1 == BLAKE2b_256) {
-        return "BLAKE2b-256"u8;
+        return bLAKE2b256ˢ;
     }
     if (exprᴛ1 == BLAKE2b_384) {
-        return "BLAKE2b-384"u8;
+        return bLAKE2b384ˢ;
     }
     if (exprᴛ1 == BLAKE2b_512) {
-        return "BLAKE2b-512"u8;
+        return bLAKE2b512ˢ;
     }
     { /* default: */
         return "unknown hash value "u8 + strconv.Itoa((nint)(nuint)h);

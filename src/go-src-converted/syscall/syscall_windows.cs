@@ -1641,6 +1641,9 @@ public static (ΔHandle, error) CreateIoCompletionPort(ΔHandle filehandle, ΔHa
     return createIoCompletionPort(filehandle, cphandle, (uintptr)key, threadcnt);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string getQueuedCompletionStatusˢ = "GetQueuedCompletionStatus returned key overflow"u8;
+
 // Deprecated: GetQueuedCompletionStatus has the wrong function signature. Use x/sys/windows.GetQueuedCompletionStatus.
 public static error GetQueuedCompletionStatus(ΔHandle cphandle, ж<uint32> Ꮡqty, ж<uint32> Ꮡkey, ж<ж<Overlapped>> Ꮡoverlapped, uint32 timeout) {
     ref var key = ref Ꮡkey.DerefOrNil();
@@ -1655,7 +1658,7 @@ public static error GetQueuedCompletionStatus(ΔHandle cphandle, ж<uint32> Ꮡq
     if (Ꮡkey != nil) {
         key = (uint32)ukey;
         if ((uintptr)(key) != ukey && err == default!) {
-            err = errorspkg.New("GetQueuedCompletionStatus returned key overflow"u8);
+            err = errorspkg.New(getQueuedCompletionStatusˢ);
         }
     }
     return err;
@@ -1666,6 +1669,9 @@ public static error PostQueuedCompletionStatus(ΔHandle cphandle, uint32 qty, ui
     return postQueuedCompletionStatus(cphandle, qty, (uintptr)key, Ꮡoverlapped);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unableToQueryBufferSizeˢ = "unable to query buffer size from InitializeProcThreadAttributeList"u8;
+
 // newProcThreadAttributeList allocates new PROC_THREAD_ATTRIBUTE_LIST, with
 // the requested maximum number of attributes, which must be cleaned up by
 // deleteProcThreadAttributeList.
@@ -1674,7 +1680,7 @@ internal static (ж<_PROC_THREAD_ATTRIBUTE_LIST>, error) newProcThreadAttributeL
     var err = initializeProcThreadAttributeList(nil, maxAttrCount, 0, Ꮡsize);
     if (!AreEqual(err, ERROR_INSUFFICIENT_BUFFER)) {
         if (err == default!) {
-            return (default!, errorspkg.New("unable to query buffer size from InitializeProcThreadAttributeList"u8));
+            return (default!, errorspkg.New(unableToQueryBufferSizeˢ));
         }
         return (default!, err);
     }

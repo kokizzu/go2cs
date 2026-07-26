@@ -47,6 +47,9 @@ internal static ж<matcher> allMatcher() {
     return newMatcher(default!, ""u8, ""u8, ""u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testSkipˢ = "-test.skip"u8;
+
 internal static ж<matcher> newMatcher(Func<@string, @string, (bool, error)> matchString, @string patterns, @string name, @string skips) {
     filterMatch filter = default!;
     filterMatch skip = default!;
@@ -68,7 +71,7 @@ internal static ж<matcher> newMatcher(Func<@string, @string, (bool, error)> mat
         // always false
         skip = splitRegexp(skips);
         {
-            var err = skip.verify("-test.skip"u8, matchString); if (err != default!) {
+            var err = skip.verify(testSkipˢ, matchString); if (err != default!) {
                 fmt.Fprintf(new os.FileжWriter(os.Stderr), "testing: invalid regexp for %v\n"u8, err);
                 os.Exit(1);
             }
@@ -144,6 +147,9 @@ internal static (bool ok, bool partial) matches(this simpleMatch m, slice<@strin
     return (true, len(name) < len(m));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nonEmptyˢ = "non-empty"u8;
+
 internal static error verify(this simpleMatch m, @string name, Func<@string, @string, (bool, error)> matchString) {
     foreach (var (i, s) in m) {
         m[i] = rewrite(s);
@@ -151,7 +157,7 @@ internal static error verify(this simpleMatch m, @string name, Func<@string, @st
     // Verify filters before doing any processing.
     foreach (var (i, s) in m) {
         {
-            var (_, err) = matchString(s, "non-empty"u8); if (err != default!) {
+            var (_, err) = matchString(s, nonEmptyˢ); if (err != default!) {
                 return fmt.Errorf("element %d of %s (%q): %s"u8, i, name, s, err);
             }
         }

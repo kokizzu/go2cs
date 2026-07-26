@@ -310,14 +310,19 @@ public static ж<Context> ᏑDefault = new(default(Context));
 public static ref Context Default => ref ᏑDefault.Value;
 internal static void initᴛDefault() { Default = defaultContext(); }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string homeˢ = "HOME"u8;
+private static readonly @string userprofileˢ = "USERPROFILE"u8;
+private static readonly @string homeˢ2 = "home"u8;
+
 // Keep consistent with cmd/go/internal/cfg.defaultGOPATH.
 internal static @string defaultGOPATH() {
-    @string env = "HOME"u8;
+    @string env = homeˢ;
     if (runtime.GOOS == "windows"u8){
-        env = "USERPROFILE"u8;
+        env = userprofileˢ;
     } else 
     if (runtime.GOOS == "plan9"u8) {
-        env = "home"u8;
+        env = homeˢ2;
     }
     {
         @string home = os.Getenv(env); if (home != ""u8) {
@@ -355,6 +360,10 @@ public static slice<@string> defaultToolTags;
 //go:linkname defaultReleaseTags
 public static slice<@string> defaultReleaseTags;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gopathˢ = "GOPATH"u8;
+private static readonly @string cgoEnabledˢ = "CGO_ENABLED"u8;
+
 internal static Context defaultContext() {
     Context c = default!;
     c.GOARCH = buildcfg.GOARCH;
@@ -364,7 +373,7 @@ internal static Context defaultContext() {
             c.GOROOT = filepath.Clean(goroot);
         }
     }
-    c.GOPATH = envOr("GOPATH"u8, defaultGOPATH());
+    c.GOPATH = envOr(gopathˢ, defaultGOPATH());
     c.Compiler = runtime.Compiler;
     c.ToolTags = append(c.ToolTags, buildcfg.ToolTags.ꓸꓸꓸ);
     defaultToolTags = append(new @string[]{}.slice(), c.ToolTags.ꓸꓸꓸ);
@@ -381,7 +390,7 @@ internal static Context defaultContext() {
     }
     defaultReleaseTags = append(new @string[]{}.slice(), c.ReleaseTags.ꓸꓸꓸ);
     // our own private copy
-    @string env = os.Getenv("CGO_ENABLED"u8);
+    @string env = os.Getenv(cgoEnabledˢ);
     if (env == ""u8) {
         env = defaultCGO_ENABLED;
     }
@@ -540,6 +549,17 @@ internal static @string nameExt(@string name) {
 
 internal static ж<godebug.Setting> installgoroot = godebug.New("installgoroot"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testdataˢ = "/testdata/"u8;
+private static readonly @string testdataˢ2 = "/testdata"u8;
+private static readonly @string testdataˢ3 = "testdata/"u8;
+private static readonly @string vendorˢ = "vendor"u8;
+private static readonly @string vendorˢ2 = "vendor/"u8;
+private static readonly @string sVendorTreeˢ = "\t%s (vendor tree)"u8;
+private static readonly @string sFromGopathˢ = "\t%s (from $GOPATH)"u8;
+private static readonly @string testGoˢ = "_test.go"u8;
+private static readonly @string testˢ = "_test"u8;
+
 [GoType("dyn")] partial struct Import_tried {
     internal slice<@string> vendor;
     internal @string goroot;
@@ -615,7 +635,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
         // p.Dir directory may or may not exist. Gather partial information first, check if it exists later.
         // Determine canonical import path, if any.
         // Exclude results where the import path would include /testdata/.
-        var inTestdata = (@string sub) => strings.Contains(sub, "/testdata/"u8) || strings.HasSuffix(sub, "/testdata"u8) || strings.HasPrefix(sub, "testdata/"u8) || sub == "testdata"u8;
+        var inTestdata = (@string sub) => strings.Contains(sub, testdataˢ) || strings.HasSuffix(sub, testdataˢ2) || strings.HasPrefix(sub, testdataˢ3) || sub == "testdata"u8;
         if (ctxt.GOROOT != ""u8) {
             @string root = ctxt.joinPath(ctxt.GOROOT, "src");
             {
@@ -687,16 +707,16 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
             var setPkgaʗ1 = setPkga;
             var searchVendor = (@string root, bool isGoroot) => {
                 var (sub, ok) = Ꮡctxt.Value.hasSubdir(root, srcDir);
-                if (!ok || !strings.HasPrefix(sub, "src/"u8) || strings.Contains(sub, "/testdata/"u8)) {
+                if (!ok || !strings.HasPrefix(sub, "src/"u8) || strings.Contains(sub, testdataˢ)) {
                     return false;
                 }
                 while (ᐧ) {
-                    @string vendor = Ꮡctxt.Value.joinPath(root, sub, "vendor");
+                    @string vendor = Ꮡctxt.Value.joinPath(root, sub, vendorˢ);
                     if (Ꮡctxt.Value.isDir(vendor)) {
                         @string dir = Ꮡctxt.Value.joinPath(vendor, path);
                         if (Ꮡctxt.Value.isDir(dir) && hasGoFiles(Ꮡctxt, dir)) {
                             pʗ2.Value.Dir = dir;
-                            pʗ2.Value.ImportPath = strings.TrimPrefix(pathpkg.Join(sub, "vendor", path), "src/"u8);
+                            pʗ2.Value.ImportPath = strings.TrimPrefix(pathpkg.Join(sub, vendorˢ, path), "src/"u8);
                             pʗ2.Value.Goroot = isGoroot;
                             pʗ2.Value.Root = root;
                             setPkgaʗ1();
@@ -728,7 +748,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
             // GOPATH if the importer is also within GOROOT. That way, if the user has
             // vendored in a package that is subsequently included in the standard
             // distribution, they'll continue to pick up their own vendored copy.
-            var gorootFirst = srcDir == ""u8 || !strings.HasPrefix(path, "vendor/"u8);
+            var gorootFirst = srcDir == ""u8 || !strings.HasPrefix(path, vendorˢ2);
             if (!gorootFirst) {
                 (_, gorootFirst) = ctxt.hasSubdir(ctxt.GOROOT, srcDir);
             }
@@ -786,7 +806,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
         }
         // package was not found
         slice<@string> paths = default!;
-        @string format = "\t%s (vendor tree)"u8;
+        @string format = sVendorTreeˢ;
         foreach (var (_, dir) in tried.vendor) {
             paths = append(paths, fmt.Sprintf(format, dir));
             format = "\t%s"u8;
@@ -796,7 +816,7 @@ public static (ж<Package>, error) Import(this ж<Context> Ꮡctxt, @string path
         } else {
             paths = append(paths, "\t($GOROOT not set)"u8);
         }
-        format = "\t%s (from $GOPATH)"u8;
+        format = sFromGopathˢ;
         foreach (var (_, dir) in tried.gopath) {
             paths = append(paths, fmt.Sprintf(format, dir));
             format = "\t%s"u8;
@@ -938,9 +958,9 @@ Found:
                 continue;
             }
         }
-        var isTest = strings.HasSuffix(name, "_test.go"u8);
+        var isTest = strings.HasSuffix(name, testGoˢ);
         var isXTest = false;
-        if (isTest && strings.HasSuffix(pkg, "_test"u8) && (~p).Name != pkg) {
+        if (isTest && strings.HasSuffix(pkg, testˢ) && (~p).Name != pkg) {
             isXTest = true;
             pkg = pkg[..(int)(len(pkg) - len("_test"))];
         }
@@ -1131,6 +1151,12 @@ internal static slice<@string> uniq(slice<@string> list) {
 
 internal static error errNoModules = errors.New("not using modules"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string go111moduleˢ = "GO111MODULE"u8;
+private static readonly @string goModˢ = "go.mod"u8;
+private static readonly @string listˢ = "list"u8;
+private static readonly @string fDirImportPathRootGorootˢ = "-f={{.Dir}}\n{{.ImportPath}}\n{{.Root}}\n{{.Goroot}}\n{{if .Error}}{{.Error}}{{end}}\n"u8;
+
 // importGo checks whether it can use the go command to find the directory for path.
 // If using the go command is not appropriate, importGo returns errNoModules.
 // Otherwise, importGo tries using the go command and reports whether that succeeded.
@@ -1160,7 +1186,7 @@ internal static error errNoModules = errors.New("not using modules"u8);
     // GO111MODULE and looking for a go.mod file in the source directory or
     // one of its parents. Running 'go env GOMOD' in the source directory would
     // give a canonical answer, but we'd prefer not to execute another command.
-    @string go111Module = os.Getenv("GO111MODULE"u8);
+    @string go111Module = os.Getenv(go111moduleˢ);
     var exprᴛ1 = go111Module;
     if (exprᴛ1 == "off"u8) {
         return errNoModules;
@@ -1222,7 +1248,7 @@ internal static error errNoModules = errors.New("not using modules"u8);
         }
         while (ᐧ) {
             {
-                var (fΔ1, errΔ1) = ctxt.openFile(ctxt.joinPath(parent, "go.mod")); if (errΔ1 == default!) {
+                var (fΔ1, errΔ1) = ctxt.openFile(ctxt.joinPath(parent, goModˢ)); if (errΔ1 == default!) {
                     var buf = new slice<byte>(100);
                     var (_, errΔ2) = fΔ1.Read(buf);
                     fΔ1.Close();
@@ -1241,7 +1267,7 @@ internal static error errNoModules = errors.New("not using modules"u8);
         }
     }
     @string goCmd = filepath.Join(ctxt.GOROOT, "bin", "go");
-    var cmd = exec.Command(goCmd, "list"u8, "-e", "-compiler=" + ctxt.Compiler, "-tags=" + strings.Join(ctxt.BuildTags, ","u8), "-installsuffix=" + ctxt.InstallSuffix, "-f={{.Dir}}\n{{.ImportPath}}\n{{.Root}}\n{{.Goroot}}\n{{if .Error}}{{.Error}}{{end}}\n", "--", path);
+    var cmd = exec.Command(goCmd, listˢ, "-e", "-compiler=" + ctxt.Compiler, "-tags=" + strings.Join(ctxt.BuildTags, ","u8), "-installsuffix=" + ctxt.InstallSuffix, fDirImportPathRootGorootˢ, "--", path);
     if (ctxt.Dir != ""u8) {
         cmd.Value.Dir = ctxt.Dir;
     }
@@ -1506,7 +1532,7 @@ internal static (ж<fileInfo>, error) matchFile(this ж<Context> Ꮡctxt, @strin
     }
     if (strings.HasSuffix(name, ".go"u8)){
         err = readGoInfo(f, info);
-        if (strings.HasSuffix(name, "_test.go"u8)) {
+        if (strings.HasSuffix(name, testGoˢ)) {
             binaryOnly = default!;
         }
     } else {
@@ -1829,6 +1855,9 @@ internal static error saveCgo(this ж<Context> Ꮡctxt, @string filename, ж<Pac
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string srcdirˢ = "${SRCDIR}"u8;
+
 // expandSrcDir expands any occurrence of ${SRCDIR}, making sure
 // the result is safe for the shell.
 internal static (@string, bool) expandSrcDir(@string str, @string srcdir) {
@@ -1836,7 +1865,7 @@ internal static (@string, bool) expandSrcDir(@string str, @string srcdir) {
     // so convert native paths with a different delimiter
     // to "/" before starting (eg: on windows).
     srcdir = filepath.ToSlash(srcdir);
-    var chunks = strings.Split(str, "${SRCDIR}"u8);
+    var chunks = strings.Split(str, srcdirˢ);
     if (len(chunks) < 2) {
         return (str, safeCgoName(str));
     }
@@ -1904,6 +1933,10 @@ internal static bool safeCgoName(@string s) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string unclosedQuoteˢ = "unclosed quote"u8;
+private static readonly @string unfinishedEscapingˢ = "unfinished escaping"u8;
+
 // splitQuoted splits the string s around each instance of one or more consecutive
 // white space characters while taking into account quotes and escaping, and
 // returns an array of substrings of s or an empty list if s contains only white space.
@@ -1970,10 +2003,10 @@ internal static (slice<@string> r, error err) splitQuoted(@string s) {
         args = append(args, ((@string)(arg[..(int)(i)])));
     }
     if (quote != 0){
-        err = errors.New("unclosed quote"u8);
+        err = errors.New(unclosedQuoteˢ);
     } else 
     if (escaped) {
-        err = errors.New("unfinished escaping"u8);
+        err = errors.New(unfinishedEscapingˢ);
     }
     return (args, err);
 }
@@ -2000,6 +2033,9 @@ internal static bool eval(this ж<Context> Ꮡctxt, constraint.Expr x, map<@stri
     var allTagsʗ1 = allTags;
     return x.Eval((@string tag) => Ꮡctxt.Value.matchTag(tag, allTagsʗ1));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goexperimentBoringcryptoˢ = "goexperiment.boringcrypto"u8;
 
 // matchTag reports whether the name is one of:
 //
@@ -2039,7 +2075,7 @@ internal static bool eval(this ж<Context> Ꮡctxt, constraint.Expr x, map<@stri
         return true;
     }
     if (name == "boringcrypto"u8) {
-        name = "goexperiment.boringcrypto"u8;
+        name = goexperimentBoringcryptoˢ;
     }
     // boringcrypto is an old name for goexperiment.boringcrypto
     // other tags
@@ -2120,13 +2156,16 @@ public static bool IsLocalImport(@string path) {
     return path == "."u8 || path == ".."u8 || strings.HasPrefix(path, "./"u8) || strings.HasPrefix(path, "../"u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string architectureLetterNoˢ = "architecture letter no longer used"u8;
+
 // ArchChar returns "?" and an error.
 // In earlier versions of Go, the returned string was used to derive
 // the compiler and linker tool names, the default object file suffix,
 // and the default linker output name. As of Go 1.5, those strings
 // no longer vary by architecture; they are compile, link, .o, and a.out, respectively.
 public static (@string, error) ArchChar(@string goarch) {
-    return ("?", errors.New("architecture letter no longer used"u8));
+    return ("?", errors.New(architectureLetterNoˢ));
 }
 
 } // end build_package

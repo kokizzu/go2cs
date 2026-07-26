@@ -18,12 +18,15 @@ partial class poll_package {
 [GoType] public partial struct errNetClosing {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string useOfClosedNetworkˢ = "use of closed network connection"u8;
+
 // Error returns the error message for ErrNetClosing.
 // Keep this string consistent because of issue #4373:
 // since historically programs have not been able to detect
 // this error, they look for the string.
 public static @string Error(this errNetClosing e) {
-    return "use of closed network connection"u8;
+    return useOfClosedNetworkˢ;
 }
 
 public static bool Timeout(this errNetClosing e) {
@@ -62,12 +65,15 @@ public static error ErrDeadlineExceeded = new DeadlineExceededErrorжerror(Ꮡ(n
 [GoType] partial struct DeadlineExceededError {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string iOTimeoutˢ = "i/o timeout"u8;
+
 // Implement the net.Error interface.
 // The string is "i/o timeout" because that is what was returned
 // by earlier Go versions. Changing it may break programs that
 // match on error strings.
 [GoRecv] public static @string Error(this ref DeadlineExceededError e) {
-    return "i/o timeout"u8;
+    return iOTimeoutˢ;
 }
 
 [GoRecv] public static bool Timeout(this ref DeadlineExceededError e) {

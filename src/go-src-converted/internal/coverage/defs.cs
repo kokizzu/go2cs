@@ -201,25 +201,32 @@ public static readonly CounterMode CtrModeAtomic = 3; // "atomic" mode
 public static readonly CounterMode CtrModeRegOnly = 4; // registration-only pseudo-mode
 public static readonly CounterMode CtrModeTestMain = 5; // testmain pseudo-mode
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string countˢ = "count"u8;
+private static readonly @string atomicˢ = "atomic"u8;
+private static readonly @string regonlyˢ = "regonly"u8;
+private static readonly @string testmainˢ = "testmain"u8;
+private static readonly @string invalidˢ = "<invalid>"u8;
+
 public static @string String(this CounterMode cm) {
     var exprᴛ1 = cm;
     if (exprᴛ1 == CtrModeSet) {
         return "set"u8;
     }
     if (exprᴛ1 == CtrModeCount) {
-        return "count"u8;
+        return countˢ;
     }
     if (exprᴛ1 == CtrModeAtomic) {
-        return "atomic"u8;
+        return atomicˢ;
     }
     if (exprᴛ1 == CtrModeRegOnly) {
-        return "regonly"u8;
+        return regonlyˢ;
     }
     if (exprᴛ1 == CtrModeTestMain) {
-        return "testmain"u8;
+        return testmainˢ;
     }
 
-    return "<invalid>"u8;
+    return invalidˢ;
 }
 
 public static CounterMode ParseCounterMode(@string mode) {
@@ -253,16 +260,20 @@ public static readonly CounterGranularity CtrGranularityInvalid = /* iota */ 0;
 public static readonly CounterGranularity CtrGranularityPerBlock = 1;
 public static readonly CounterGranularity CtrGranularityPerFunc = 2;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string perblockˢ = "perblock"u8;
+private static readonly @string perfuncˢ = "perfunc"u8;
+
 public static @string String(this CounterGranularity cm) {
     var exprᴛ1 = cm;
     if (exprᴛ1 == CtrGranularityPerBlock) {
-        return "perblock"u8;
+        return perblockˢ;
     }
     if (exprᴛ1 == CtrGranularityPerFunc) {
-        return "perfunc"u8;
+        return perfuncˢ;
     }
 
-    return "<invalid>"u8;
+    return invalidˢ;
 }
 
 // Name of file within the "go test -cover" temp coverdir directory

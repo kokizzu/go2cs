@@ -168,6 +168,9 @@ public static ж<Package> New(ж<ast.Package> Ꮡpkg, @string importPath, Mode m
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testGoˢ = "_test.go"u8;
+
 // NewFromFiles computes documentation for a package.
 //
 // The package is specified by a list of *ast.Files and corresponding
@@ -229,11 +232,11 @@ public static (ж<Package>, error) NewFromFiles(ж<token.FileSet> Ꮡfset, slice
         {
             @string name = f.Name();
             switch (ᐧ) {
-            case {} when strings.HasSuffix(name, ".go"u8) && !strings.HasSuffix(name, "_test.go"u8): {
+            case {} when strings.HasSuffix(name, ".go"u8) && !strings.HasSuffix(name, testGoˢ): {
                 goFiles[name] = files[i];
                 break;
             }
-            case {} when strings.HasSuffix(name, "_test.go"u8): {
+            case {} when strings.HasSuffix(name, testGoˢ): {
                 testGoFiles = append(testGoFiles, files[i]);
                 break;
             }

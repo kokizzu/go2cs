@@ -282,6 +282,9 @@ internal static error UnreadByte(this byteReader r) {
 
 internal static fmt.Scanner _ᴛ5ʗ = new ΔIntжScanner(intOne); // *Int must implement fmt.Scanner
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string intScanInvalidVerbˢ = "Int.Scan: invalid verb"u8;
+
 // Scan is a support routine for [fmt.Scanner]; it sets z to the value of
 // the scanned number. It accepts the formats 'b' (binary), 'o' (octal),
 // 'd' (decimal), 'x' (lowercase hexadecimal), and 'X' (uppercase hexadecimal).
@@ -310,7 +313,7 @@ public static error Scan(this ж<ΔInt> Ꮡz, fmt.ScanState s, rune ch) {
         break;
     }
     default: {
-        return errors.New("Int.Scan: invalid verb"u8);
+        return errors.New(intScanInvalidVerbˢ);
     }}
 
     // let scan determine the base
