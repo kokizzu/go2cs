@@ -396,6 +396,9 @@ public static void TestScanSelectedMask(ж<testing.T> Ꮡt) {
     testScanSelectedMode(Ꮡt, ScanComments, Comment);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string b123ˢ = "b123"u8;
+
 public static void TestScanCustomIdent(ж<testing.T> Ꮡt) {
     @string src = "faab12345 a12b123 a12 3b"u8;
     var s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader(src)));
@@ -406,10 +409,10 @@ public static void TestScanCustomIdent(ж<testing.T> Ꮡt) {
     checkTok(Ꮡt, s, 1, s.Scan(), (rune)'f', "f"u8);
     checkTok(Ꮡt, s, 1, s.Scan(), Ident, "a"u8);
     checkTok(Ꮡt, s, 1, s.Scan(), Ident, "a"u8);
-    checkTok(Ꮡt, s, 1, s.Scan(), Ident, "b123"u8);
+    checkTok(Ꮡt, s, 1, s.Scan(), Ident, b123ˢ);
     checkTok(Ꮡt, s, 1, s.Scan(), Int, "45"u8);
     checkTok(Ꮡt, s, 1, s.Scan(), Ident, "a12"u8);
-    checkTok(Ꮡt, s, 1, s.Scan(), Ident, "b123"u8);
+    checkTok(Ꮡt, s, 1, s.Scan(), Ident, b123ˢ);
     checkTok(Ꮡt, s, 1, s.Scan(), Ident, "a12"u8);
     checkTok(Ꮡt, s, 1, s.Scan(), Int, "3"u8);
     checkTok(Ꮡt, s, 1, s.Scan(), Ident, "b"u8);
@@ -489,36 +492,48 @@ internal static void testError(ж<testing.T> Ꮡt, @string src, @string pos, @st
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string input11ˢ = "<input>:1:1"u8;
+private static readonly @string input12ˢ = "<input>:1:2"u8;
+private static readonly @string input13ˢ = "<input>:1:3"u8;
+private static readonly @string input14ˢ = "<input>:1:4"u8;
+private static readonly @string input15ˢ = "<input>:1:5"u8;
+private static readonly @string input16ˢ = "<input>:1:6"u8;
+private static readonly @string invalidDigit8InOctalˢ = "invalid digit '8' in octal literal"u8;
+private static readonly @string input19ˢ = "<input>:1:9"u8;
+private static readonly @string hexadecimalLiteralHasNoˢ = "hexadecimal literal has no digits"u8;
+private static readonly @string input21ˢ = "<input>:2:1"u8;
+
 public static void TestError(ж<testing.T> Ꮡt) {
-    testError(Ꮡt, "\x00"u8, "<input>:1:1"u8, "invalid character NUL"u8, 0);
-    testError(Ꮡt, ((@string)(new byte[]{0x80})), "<input>:1:1"u8, "invalid UTF-8 encoding"u8, utf8.RuneError);
-    testError(Ꮡt, ((@string)(new byte[]{0xff})), "<input>:1:1"u8, "invalid UTF-8 encoding"u8, utf8.RuneError);
-    testError(Ꮡt, "a\x00"u8, "<input>:1:2"u8, "invalid character NUL"u8, Ident);
-    testError(Ꮡt, ((@string)(new byte[]{0x61, 0x62, 0x80})), "<input>:1:3"u8, "invalid UTF-8 encoding"u8, Ident);
-    testError(Ꮡt, ((@string)(new byte[]{0x61, 0x62, 0x63, 0xff})), "<input>:1:4"u8, "invalid UTF-8 encoding"u8, Ident);
-    testError(Ꮡt, @"""a"u8 + "\x00"u8, "<input>:1:3"u8, "invalid character NUL"u8, ΔString);
-    testError(Ꮡt, @"""ab"u8 + ((@string)(new byte[]{0x80})), "<input>:1:4"u8, "invalid UTF-8 encoding"u8, ΔString);
-    testError(Ꮡt, @"""abc"u8 + ((@string)(new byte[]{0xff})), "<input>:1:5"u8, "invalid UTF-8 encoding"u8, ΔString);
-    testError(Ꮡt, "`a"u8 + "\x00"u8, "<input>:1:3"u8, "invalid character NUL"u8, RawString);
-    testError(Ꮡt, "`ab"u8 + ((@string)(new byte[]{0x80})), "<input>:1:4"u8, "invalid UTF-8 encoding"u8, RawString);
-    testError(Ꮡt, "`abc"u8 + ((@string)(new byte[]{0xff})), "<input>:1:5"u8, "invalid UTF-8 encoding"u8, RawString);
-    testError(Ꮡt, @"'\""'"u8, "<input>:1:3"u8, "invalid char escape"u8, Char);
-    testError(Ꮡt, @"""\'"""u8, "<input>:1:3"u8, "invalid char escape"u8, ΔString);
-    testError(Ꮡt, @"01238"u8, "<input>:1:6"u8, "invalid digit '8' in octal literal"u8, Int);
-    testError(Ꮡt, @"01238123"u8, "<input>:1:9"u8, "invalid digit '8' in octal literal"u8, Int);
-    testError(Ꮡt, @"0x"u8, "<input>:1:3"u8, "hexadecimal literal has no digits"u8, Int);
-    testError(Ꮡt, @"0xg"u8, "<input>:1:3"u8, "hexadecimal literal has no digits"u8, Int);
-    testError(Ꮡt, @"'aa'"u8, "<input>:1:4"u8, "invalid char literal"u8, Char);
-    testError(Ꮡt, @"1.5e"u8, "<input>:1:5"u8, "exponent has no digits"u8, Float);
-    testError(Ꮡt, @"1.5E"u8, "<input>:1:5"u8, "exponent has no digits"u8, Float);
-    testError(Ꮡt, @"1.5e+"u8, "<input>:1:6"u8, "exponent has no digits"u8, Float);
-    testError(Ꮡt, @"1.5e-"u8, "<input>:1:6"u8, "exponent has no digits"u8, Float);
-    testError(Ꮡt, @"'"u8, "<input>:1:2"u8, "literal not terminated"u8, Char);
-    testError(Ꮡt, @"'"u8 + "\n"u8, "<input>:1:2"u8, "literal not terminated"u8, Char);
-    testError(Ꮡt, @"""abc"u8, "<input>:1:5"u8, "literal not terminated"u8, ΔString);
-    testError(Ꮡt, @"""abc"u8 + "\n"u8, "<input>:1:5"u8, "literal not terminated"u8, ΔString);
-    testError(Ꮡt, "`abc\n"u8, "<input>:2:1"u8, "literal not terminated"u8, RawString);
-    testError(Ꮡt, @"/*/"u8, "<input>:1:4"u8, "comment not terminated"u8, EOF);
+    testError(Ꮡt, "\x00"u8, input11ˢ, invalidCharacterNulˢ, 0);
+    testError(Ꮡt, ((@string)(new byte[]{0x80})), input11ˢ, invalidUtf8Encodingˢ, utf8.RuneError);
+    testError(Ꮡt, ((@string)(new byte[]{0xff})), input11ˢ, invalidUtf8Encodingˢ, utf8.RuneError);
+    testError(Ꮡt, "a\x00"u8, input12ˢ, invalidCharacterNulˢ, Ident);
+    testError(Ꮡt, ((@string)(new byte[]{0x61, 0x62, 0x80})), input13ˢ, invalidUtf8Encodingˢ, Ident);
+    testError(Ꮡt, ((@string)(new byte[]{0x61, 0x62, 0x63, 0xff})), input14ˢ, invalidUtf8Encodingˢ, Ident);
+    testError(Ꮡt, @"""a"u8 + "\x00"u8, input13ˢ, invalidCharacterNulˢ, ΔString);
+    testError(Ꮡt, @"""ab"u8 + ((@string)(new byte[]{0x80})), input14ˢ, invalidUtf8Encodingˢ, ΔString);
+    testError(Ꮡt, @"""abc"u8 + ((@string)(new byte[]{0xff})), input15ˢ, invalidUtf8Encodingˢ, ΔString);
+    testError(Ꮡt, "`a"u8 + "\x00"u8, input13ˢ, invalidCharacterNulˢ, RawString);
+    testError(Ꮡt, "`ab"u8 + ((@string)(new byte[]{0x80})), input14ˢ, invalidUtf8Encodingˢ, RawString);
+    testError(Ꮡt, "`abc"u8 + ((@string)(new byte[]{0xff})), input15ˢ, invalidUtf8Encodingˢ, RawString);
+    testError(Ꮡt, @"'\""'"u8, input13ˢ, invalidCharEscapeˢ, Char);
+    testError(Ꮡt, @"""\'"""u8, input13ˢ, invalidCharEscapeˢ, ΔString);
+    testError(Ꮡt, @"01238"u8, input16ˢ, invalidDigit8InOctalˢ, Int);
+    testError(Ꮡt, @"01238123"u8, input19ˢ, invalidDigit8InOctalˢ, Int);
+    testError(Ꮡt, @"0x"u8, input13ˢ, hexadecimalLiteralHasNoˢ, Int);
+    testError(Ꮡt, @"0xg"u8, input13ˢ, hexadecimalLiteralHasNoˢ, Int);
+    testError(Ꮡt, @"'aa'"u8, input14ˢ, invalidCharLiteralˢ, Char);
+    testError(Ꮡt, @"1.5e"u8, input15ˢ, exponentHasNoDigitsˢ, Float);
+    testError(Ꮡt, @"1.5E"u8, input15ˢ, exponentHasNoDigitsˢ, Float);
+    testError(Ꮡt, @"1.5e+"u8, input16ˢ, exponentHasNoDigitsˢ, Float);
+    testError(Ꮡt, @"1.5e-"u8, input16ˢ, exponentHasNoDigitsˢ, Float);
+    testError(Ꮡt, @"'"u8, input12ˢ, literalNotTerminatedˢ, Char);
+    testError(Ꮡt, @"'"u8 + "\n"u8, input12ˢ, literalNotTerminatedˢ, Char);
+    testError(Ꮡt, @"""abc"u8, input15ˢ, literalNotTerminatedˢ, ΔString);
+    testError(Ꮡt, @"""abc"u8 + "\n"u8, input15ˢ, literalNotTerminatedˢ, ΔString);
+    testError(Ꮡt, "`abc\n"u8, input21ˢ, literalNotTerminatedˢ, RawString);
+    testError(Ꮡt, @"/*/"u8, input14ˢ, commentNotTerminatedˢ, EOF);
 }
 
 // An errReader returns (0, err) where err is not io.EOF.
@@ -587,6 +602,9 @@ internal static void checkScanPos(ж<testing.T> Ꮡt, ж<Scanner> Ꮡs, nint off
     checkPos(Ꮡt, s.Position, want);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abcXˢ = "abc\n本語\n\nx"u8;
+
 public static void TestPos(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
@@ -644,7 +662,7 @@ public static void TestPos(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("%d errors"u8, (~s).ErrorCount);
     }
     // positions after calling Scan
-    s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader("abc\n本語\n\nx"u8)));
+    s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader(abcXˢ)));
     s.Value.Mode = 0;
     s.Value.Whitespace = 0;
     checkScanPos(Ꮡt, s, 0, 1, 1, (rune)'a');
@@ -674,17 +692,21 @@ public static void TestPos(ж<testing.T> Ꮡt) {
     return (0, io.EOF);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object eofNotReportedˢ = (@string)"1) EOF not reported"u8;
+private static readonly object eofNotReportedˢ2 = (@string)"2) EOF not reported"u8;
+
 public static void TestNextEOFHandling(ж<testing.T> Ꮡt) {
     ref var r = ref heap(new countReader(), out var Ꮡr);
     // corner case: empty source
     var s = @new<Scanner>().Init(new countReaderжReader(Ꮡr));
     var tok = s.Next();
     if (tok != EOF) {
-        Ꮡt.Error((@string)"1) EOF not reported"u8);
+        Ꮡt.Error(eofNotReportedˢ);
     }
     tok = s.Peek();
     if (tok != EOF) {
-        Ꮡt.Error((@string)"2) EOF not reported"u8);
+        Ꮡt.Error(eofNotReportedˢ2);
     }
     if (r != 1) {
         Ꮡt.Errorf("scanner called Read %d times, not once"u8, r);
@@ -697,11 +719,11 @@ public static void TestScanEOFHandling(ж<testing.T> Ꮡt) {
     var s = @new<Scanner>().Init(new countReaderжReader(Ꮡr));
     var tok = s.Scan();
     if (tok != EOF) {
-        Ꮡt.Error((@string)"1) EOF not reported"u8);
+        Ꮡt.Error(eofNotReportedˢ);
     }
     tok = s.Peek();
     if (tok != EOF) {
-        Ꮡt.Error((@string)"2) EOF not reported"u8);
+        Ꮡt.Error(eofNotReportedˢ2);
     }
     if (r != 1) {
         Ꮡt.Errorf("scanner called Read %d times, not once"u8, r);
@@ -918,9 +940,12 @@ internal static @string /*res*/ extractInts(@string t, nuint mode) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloWorldˢ = "hello \n\nworld\n!\n"u8;
+
 public static void TestIssue50909(ж<testing.T> Ꮡt) {
     ref var s = ref heap(new Scanner(), out var Ꮡs);
-    Ꮡs.Init(new strings_ReaderжReader(strings.NewReader("hello \n\nworld\n!\n"u8)));
+    Ꮡs.Init(new strings_ReaderжReader(strings.NewReader(helloWorldˢ)));
     s.IsIdentRune = (rune ch, nint _) => ch != (rune)'\n';
     @string r = ""u8;
     nint n = 0;

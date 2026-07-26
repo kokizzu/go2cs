@@ -15,33 +15,49 @@ using text;
 
 partial class rand_test_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object magic8BallSaysˢ = (@string)"Magic 8-Ball says:"u8;
+
 // These tests serve as an example but also make sure we don't change
 // the output of the random number generator when given a fixed seed.
 public static void Example() {
     var answers = new @string[]{
-        "It is certain",
-        "It is decidedly so",
-        "Without a doubt",
-        "Yes definitely",
-        "You may rely on it",
-        "As I see it yes",
-        "Most likely",
-        "Outlook good",
-        "Yes",
-        "Signs point to yes",
-        "Reply hazy try again",
-        "Ask again later",
-        "Better not tell you now",
-        "Cannot predict now",
-        "Concentrate and ask again",
-        "Don't count on it",
-        "My reply is no",
-        "My sources say no",
-        "Outlook not so good",
-        "Very doubtful"
+        "It is certain"u8,
+        "It is decidedly so"u8,
+        "Without a doubt"u8,
+        "Yes definitely"u8,
+        "You may rely on it"u8,
+        "As I see it yes"u8,
+        "Most likely"u8,
+        "Outlook good"u8,
+        "Yes"u8,
+        "Signs point to yes"u8,
+        "Reply hazy try again"u8,
+        "Ask again later"u8,
+        "Better not tell you now"u8,
+        "Cannot predict now"u8,
+        "Concentrate and ask again"u8,
+        "Don't count on it"u8,
+        "My reply is no"u8,
+        "My sources say no"u8,
+        "Outlook not so good"u8,
+        "Very doubtful"u8
     }.slice();
-    fmt.Println((@string)"Magic 8-Ball says:"u8, answers[rand.IntN(len(answers))]);
+    fmt.Println(magic8BallSaysˢ, answers[rand.IntN(len(answers))]);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string float32ˢ = "Float32"u8;
+private static readonly @string float64ˢ = "Float64"u8;
+private static readonly @string expFloat64ˢ = "ExpFloat64"u8;
+private static readonly @string normFloat64ˢ = "NormFloat64"u8;
+private static readonly @string int32ˢ = "Int32"u8;
+private static readonly @string int64ˢ = "Int64"u8;
+private static readonly @string uint32ˢ = "Uint32"u8;
+private static readonly @string intN10ˢ = "IntN(10)"u8;
+private static readonly @string int32N10ˢ = "Int32N(10)"u8;
+private static readonly @string int64N10ˢ = "Int64N(10)"u8;
+private static readonly @string permˢ = "Perm"u8;
 
 // This example shows the use of each of the methods on a *Rand.
 // The use of the global functions is the same, without the receiver.
@@ -59,25 +75,25 @@ public static void Example_rand() => func((defer, recover) => {
         fmt.Fprintf(new tabwriter_WriterжWriter(wʗ2), "%s\t%v\t%v\t%v\n"u8, name, v1, v2, v3);
     };
     // Float32 and Float64 values are in [0, 1).
-    show("Float32"u8, r.Float32(), r.Float32(), r.Float32());
-    show("Float64"u8, r.Float64(), r.Float64(), r.Float64());
+    show(float32ˢ, r.Float32(), r.Float32(), r.Float32());
+    show(float64ˢ, r.Float64(), r.Float64(), r.Float64());
     // ExpFloat64 values have an average of 1 but decay exponentially.
-    show("ExpFloat64"u8, r.ExpFloat64(), r.ExpFloat64(), r.ExpFloat64());
+    show(expFloat64ˢ, r.ExpFloat64(), r.ExpFloat64(), r.ExpFloat64());
     // NormFloat64 values have an average of 0 and a standard deviation of 1.
-    show("NormFloat64"u8, r.NormFloat64(), r.NormFloat64(), r.NormFloat64());
+    show(normFloat64ˢ, r.NormFloat64(), r.NormFloat64(), r.NormFloat64());
     // Int32, Int64, and Uint32 generate values of the given width.
     // The Int method (not shown) is like either Int32 or Int64
     // depending on the size of 'int'.
-    show("Int32"u8, r.Int32(), r.Int32(), r.Int32());
-    show("Int64"u8, r.Int64(), r.Int64(), r.Int64());
-    show("Uint32"u8, r.Uint32(), r.Uint32(), r.Uint32());
+    show(int32ˢ, r.Int32(), r.Int32(), r.Int32());
+    show(int64ˢ, r.Int64(), r.Int64(), r.Int64());
+    show(uint32ˢ, r.Uint32(), r.Uint32(), r.Uint32());
     // IntN, Int32N, and Int64N limit their output to be < n.
     // They do so more carefully than using r.Int()%n.
-    show("IntN(10)"u8, r.IntN(10), r.IntN(10), r.IntN(10));
-    show("Int32N(10)"u8, r.Int32N(10), r.Int32N(10), r.Int32N(10));
-    show("Int64N(10)"u8, r.Int64N(10), r.Int64N(10), r.Int64N(10));
+    show(intN10ˢ, r.IntN(10), r.IntN(10), r.IntN(10));
+    show(int32N10ˢ, r.Int32N(10), r.Int32N(10), r.Int32N(10));
+    show(int64N10ˢ, r.Int64N(10), r.Int64N(10), r.Int64N(10));
     // Perm generates a random permutation of the numbers [0, n).
-    show("Perm"u8, r.Perm(5), r.Perm(5), r.Perm(5));
+    show(permˢ, r.Perm(5), r.Perm(5), r.Perm(5));
 });
 
 // Output:
@@ -108,8 +124,11 @@ public static void ExampleN() {
     time.Sleep(rand.N(100 * time.Millisecond));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string inkRunsFromTheCornersOfˢ = "ink runs from the corners of my mouth"u8;
+
 public static void ExampleShuffle() {
-    var words = strings.Fields("ink runs from the corners of my mouth"u8);
+    var words = strings.Fields(inkRunsFromTheCornersOfˢ);
     var wordsʗ1 = words;
     rand.Shuffle(len(words), (nint i, nint j) => {
         (wordsʗ1[i], wordsʗ1[j]) = (wordsʗ1[j], wordsʗ1[i]);

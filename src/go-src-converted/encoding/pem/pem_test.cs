@@ -167,9 +167,12 @@ public static void TestBadDecode(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string beginˢ = "-----BEGIN \n"u8;
+
 public static void TestCVE202224675(ж<testing.T> Ꮡt) {
     // Prior to CVE-2022-24675, this input would cause a stack overflow.
-    var input = slice<byte>(strings.Repeat("-----BEGIN \n"u8, 10000000));
+    var input = slice<byte>(strings.Repeat(beginˢ, 10000000));
     var (result, rest) = Decode(input);
     if (result != nil || !reflect.DeepEqual(rest, input)) {
         Ꮡt.Errorf("Encode of %#v decoded as %#v"u8, input, rest);

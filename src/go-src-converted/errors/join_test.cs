@@ -37,8 +37,8 @@ public static void TestJoinReturnsNil(ж<testing.T> Ꮡt) {
 }
 
 public static void TestJoin(ж<testing.T> Ꮡt) {
-    var err1 = errors.New("err1"u8);
-    var err2 = errors.New("err2"u8);
+    var err1 = errors.New(err1ˢ);
+    var err2 = errors.New(err2ˢ);
     foreach (var (_, test) in new TestJoin_type[]{new(
         errs: new error[]{err1}.slice(),
         want: new error[]{err1}.slice()
@@ -66,8 +66,8 @@ public static void TestJoin(ж<testing.T> Ꮡt) {
 }
 
 public static void TestJoinErrorMethod(ж<testing.T> Ꮡt) {
-    var err1 = errors.New("err1"u8);
-    var err2 = errors.New("err2"u8);
+    var err1 = errors.New(err1ˢ);
+    var err2 = errors.New(err2ˢ);
     foreach (var (_, test) in new TestJoinErrorMethod_type[]{new(
         errs: new error[]{err1}.slice(),
         want: "err1"u8

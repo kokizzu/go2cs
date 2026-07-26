@@ -23,7 +23,7 @@ internal static array<nint> ints = new nint[]{74, 59, 238, -784, 9845, 959, 905,
 
 internal static array<float64> float64s = new float64[]{74.3D, 59.0D, Δmath.Inf(1), 238.2D, -784.0D, 2.3D, Δmath.NaN(), Δmath.NaN(), Δmath.Inf(-1), 9845.768D, -959.7485D, 905D, 7.8D, 7.8D}.array();
 
-internal static array<@string> stringsData = new @string[]{"", "Hello", "foo", "bar", "foo", "f00", "%*&^*&^&", "***"}.array();
+internal static array<@string> stringsData = new @string[]{""u8, "Hello"u8, "foo"u8, "bar"u8, "foo"u8, "f00"u8, "%*&^*&^&"u8, "***"u8}.array();
 
 public static void TestSortIntSlice(ж<testing.T> Ꮡt) {
     var data = ints.Clone();
@@ -464,8 +464,8 @@ internal static void testBentleyMcIlroy(ж<testing.T> Ꮡt, Action<sort.Interfac
     if (testing.Short()) {
         sizes = new nint[]{100, 127, 128, 129}.slice();
     }
-    var dists = new @string[]{"sawtooth", "rand", "stagger", "plateau", "shuffle"}.slice();
-    var modes = new @string[]{"copy", "reverse", "reverse1", "reverse2", "sort", "dither"}.slice();
+    var dists = new @string[]{"sawtooth"u8, "rand"u8, "stagger"u8, "plateau"u8, "shuffle"u8}.slice();
+    var modes = new @string[]{"copy"u8, "reverse"u8, "reverse1"u8, "reverse2"u8, "sort"u8, "dither"u8}.slice();
     array<nint> tmp1 = new(1025);
     array<nint> tmp2 = new(1025);
     foreach (var (_, n) in sizes) {
@@ -750,6 +750,9 @@ public static void TestStability(ж<testing.T> Ꮡt) {
 
 internal static slice<nint> countOpsSizes = new nint[]{100, 300, 1000, 3000, 10000, 30000, 100000, 300000, 1000000}.slice();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object countingSkippedAsNonˢ = (@string)"Counting skipped as non-verbose mode."u8;
+
 internal static void countOps(ж<testing.T> Ꮡt, Action<sort.Interface> algo, @string name) {
     ref var t = ref Ꮡt.Value;
 
@@ -758,7 +761,7 @@ internal static void countOps(ж<testing.T> Ꮡt, Action<sort.Interface> algo, @
         sizes = sizes[..5];
     }
     if (!testing.Verbose()) {
-        Ꮡt.Skip((@string)"Counting skipped as non-verbose mode."u8);
+        Ꮡt.Skip(countingSkippedAsNonˢ);
     }
     foreach (var (_, n) in sizes) {
         ref var td = ref heap<testingData>(out var Ꮡtd);
@@ -776,19 +779,29 @@ internal static void countOps(ж<testing.T> Ꮡt, Action<sort.Interface> algo, @
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string stableˢ = "Stable"u8;
+
 public static void TestCountStableOps(ж<testing.T> Ꮡt) {
-    countOps(Ꮡt, Stable, "Stable"u8);
+    countOps(Ꮡt, Stable, stableˢ);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sortˢ = "Sort  "u8;
+
 public static void TestCountSortOps(ж<testing.T> Ꮡt) {
-    countOps(Ꮡt, Sort, "Sort  "u8);
+    countOps(Ꮡt, Sort, sortˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string raceˢ = "-race"u8;
+private static readonly object skippingSlowBenchmarkOnˢ = (@string)"skipping slow benchmark on race builder"u8;
 
 internal static void bench(ж<testing.B> Ꮡb, nint size, Action<sort.Interface> algo, @string name) {
     ref var b = ref Ꮡb.Value;
 
-    if (strings.HasSuffix(testenv.Builder(), "-race"u8) && size > 10000) {
-        Ꮡb.Skip((@string)"skipping slow benchmark on race builder"u8);
+    if (strings.HasSuffix(testenv.Builder(), raceˢ) && size > 10000) {
+        Ꮡb.Skip(skippingSlowBenchmarkOnˢ);
     }
     b.StopTimer();
     var data = new intPairs(size);
@@ -817,28 +830,31 @@ internal static void bench(ж<testing.B> Ꮡb, nint size, Action<sort.Interface>
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string sortˢ2 = "Sort"u8;
+
 public static void BenchmarkSort1e2(ж<testing.B> Ꮡb) {
-    bench(Ꮡb, 100, Sort, "Sort"u8);
+    bench(Ꮡb, 100, Sort, sortˢ2);
 }
 
 public static void BenchmarkStable1e2(ж<testing.B> Ꮡb) {
-    bench(Ꮡb, 100, Stable, "Stable"u8);
+    bench(Ꮡb, 100, Stable, stableˢ);
 }
 
 public static void BenchmarkSort1e4(ж<testing.B> Ꮡb) {
-    bench(Ꮡb, 10000, Sort, "Sort"u8);
+    bench(Ꮡb, 10000, Sort, sortˢ2);
 }
 
 public static void BenchmarkStable1e4(ж<testing.B> Ꮡb) {
-    bench(Ꮡb, 10000, Stable, "Stable"u8);
+    bench(Ꮡb, 10000, Stable, stableˢ);
 }
 
 public static void BenchmarkSort1e6(ж<testing.B> Ꮡb) {
-    bench(Ꮡb, 1000000, Sort, "Sort"u8);
+    bench(Ꮡb, 1000000, Sort, sortˢ2);
 }
 
 public static void BenchmarkStable1e6(ж<testing.B> Ꮡb) {
-    bench(Ꮡb, 1000000, Stable, "Stable"u8);
+    bench(Ꮡb, 1000000, Stable, stableˢ);
 }
 
 } // end sort_test_package

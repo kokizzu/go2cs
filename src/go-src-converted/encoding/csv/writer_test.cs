@@ -73,25 +73,31 @@ public static void TestWrite(ж<testing.T> Ꮡt) {
 [GoType] partial struct errorWriter {
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testˢ = "Test"u8;
+
 internal static (nint, error) Write(this errorWriter e, slice<byte> b) {
-    return (0, errors.New("Test"u8));
+    return (0, errors.New(testˢ));
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object errorShouldNotBeNilˢ = (@string)"Error should not be nil"u8;
 
 public static void TestError(ж<testing.T> Ꮡt) {
     var b = Ꮡ(new bytes.Buffer(nil));
     var f = NewWriter(new bytes_BufferжWriter(b));
-    f.Write(new @string[]{"abc"}.slice());
+    f.Write(new @string[]{"abc"u8}.slice());
     f.Flush();
     var err = f.Error();
     if (err != default!) {
         Ꮡt.Errorf("Unexpected error: %s\n"u8, err);
     }
     f = NewWriter(new errorWriter(nil));
-    f.Write(new @string[]{"abc"}.slice());
+    f.Write(new @string[]{"abc"u8}.slice());
     f.Flush();
     err = f.Error();
     if (err == default!) {
-        Ꮡt.Error((@string)"Error should not be nil"u8);
+        Ꮡt.Error(errorShouldNotBeNilˢ);
     }
 }
 

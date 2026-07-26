@@ -73,12 +73,16 @@ public static void TestClean(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object skippingMallocCountInˢ = (@string)"skipping malloc count in short mode"u8;
+private static readonly object skippingAllocsPerRunˢ = (@string)"skipping AllocsPerRun checks; GOMAXPROCS>1"u8;
+
 public static void TestCleanMallocs(ж<testing.T> Ꮡt) {
     if (testing.Short()) {
-        Ꮡt.Skip((@string)"skipping malloc count in short mode"u8);
+        Ꮡt.Skip(skippingMallocCountInˢ);
     }
     if (Δruntime.GOMAXPROCS(0) > 1) {
-        Ꮡt.Log((@string)"skipping AllocsPerRun checks; GOMAXPROCS>1"u8);
+        Ꮡt.Log(skippingAllocsPerRunˢ);
         return;
     }
     foreach (var (_, vᴛ1) in cleantests) {
@@ -127,16 +131,16 @@ public static void TestSplit(ж<testing.T> Ꮡt) {
 // two parameters
 internal static slice<JoinTest> jointests = new JoinTest[]{
     new(new @string[]{}.slice(), ""u8),
-    new(new @string[]{""}.slice(), ""u8),
-    new(new @string[]{"a"}.slice(), "a"u8),
-    new(new @string[]{"a", "b"}.slice(), "a/b"u8),
-    new(new @string[]{"a", ""}.slice(), "a"u8),
-    new(new @string[]{"", "b"}.slice(), "b"u8),
-    new(new @string[]{"/", "a"}.slice(), "/a"u8),
-    new(new @string[]{"/", ""}.slice(), "/"u8),
-    new(new @string[]{"a/", "b"}.slice(), "a/b"u8),
-    new(new @string[]{"a/", ""}.slice(), "a"u8),
-    new(new @string[]{"", ""}.slice(), ""u8)
+    new(new @string[]{""u8}.slice(), ""u8),
+    new(new @string[]{"a"u8}.slice(), "a"u8),
+    new(new @string[]{"a"u8, "b"u8}.slice(), "a/b"u8),
+    new(new @string[]{"a"u8, ""u8}.slice(), "a"u8),
+    new(new @string[]{""u8, "b"u8}.slice(), "b"u8),
+    new(new @string[]{"/"u8, "a"u8}.slice(), "/a"u8),
+    new(new @string[]{"/"u8, ""u8}.slice(), "/"u8),
+    new(new @string[]{"a/"u8, "b"u8}.slice(), "a/b"u8),
+    new(new @string[]{"a/"u8, ""u8}.slice(), "a"u8),
+    new(new @string[]{""u8, ""u8}.slice(), ""u8)
 }.slice();
 
 public static void TestJoin(ж<testing.T> Ꮡt) {

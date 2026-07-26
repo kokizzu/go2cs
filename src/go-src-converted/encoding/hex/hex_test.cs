@@ -212,6 +212,9 @@ public static void TestDumper(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gopherˢ = "00000000  67 6f 70 68 65 72                                 |gopher|\n"u8;
+
 public static void TestDumper_doubleclose(ж<testing.T> Ꮡt) {
     ref var @out = ref heap(new strings.Builder(), out var Ꮡout);
     var dumper = Dumper(new strings_BuilderжWriter(Ꮡout));
@@ -220,7 +223,7 @@ public static void TestDumper_doubleclose(ж<testing.T> Ꮡt) {
     dumper.Close();
     dumper.Write(slice<byte>(@"gopher"u8));
     dumper.Close();
-    @string expected = "00000000  67 6f 70 68 65 72                                 |gopher|\n"u8;
+    @string expected = gopherˢ;
     if (@out.String() != expected) {
         Ꮡt.Fatalf("got:\n%#v\nwant:\n%#v"u8, @out.String(), expected);
     }

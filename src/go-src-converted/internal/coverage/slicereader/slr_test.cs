@@ -10,6 +10,10 @@ using encoding;
 
 partial class slicereader_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string foobarˢ = "foobar"u8;
+private static readonly @string bazbasherˢ = "bazbasher"u8;
+
 public static void TestSliceReader(ж<testing.T> Ꮡt) {
     var b = new byte[]{}.slice();
     var bt = new slice<byte>(4);
@@ -23,11 +27,11 @@ public static void TestSliceReader(ж<testing.T> Ꮡt) {
     b = appendUleb128(b, (nuint)e32);
     b = appendUleb128(b, (nuint)e64);
     b = appendUleb128(b, 6);
-    @string s1 = "foobar"u8;
+    @string s1 = foobarˢ;
     var s1b = slice<byte>(s1);
     b = append(b, s1b.ꓸꓸꓸ);
     b = appendUleb128(b, 9);
-    @string s2 = "bazbasher"u8;
+    @string s2 = bazbasherˢ;
     var s2b = slice<byte>(s2);
     b = append(b, s2b.ꓸꓸꓸ);
     var readStr = @string (ж<Reader> slr) => {

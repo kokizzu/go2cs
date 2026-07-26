@@ -59,12 +59,15 @@ internal static @string strip85(@string s) {
     return ((@string)(t[0..(int)(w)]));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string encodeQQWantQˢ = "Encode(%q) = %q, want %q"u8;
+
 public static void TestEncode(ж<testing.T> Ꮡt) {
     foreach (var (_, p) in pairs) {
         var buf = new slice<byte>(MaxEncodedLen(len(p.decoded)));
         nint n = Encode(buf, slice<byte>(p.decoded));
         buf = buf[0..(int)(n)];
-        testEqual(Ꮡt, "Encode(%q) = %q, want %q"u8, p.decoded, strip85(((@string)buf)), strip85(p.encoded));
+        testEqual(Ꮡt, encodeQQWantQˢ, p.decoded, strip85(((@string)buf)), strip85(p.encoded));
     }
 }
 
@@ -74,9 +77,15 @@ public static void TestEncoder(ж<testing.T> Ꮡt) {
         var encoder = NewEncoder(new strings_BuilderжWriter(bb));
         encoder.Write(slice<byte>(p.decoded));
         encoder.Close();
-        testEqual(Ꮡt, "Encode(%q) = %q, want %q"u8, p.decoded, strip85(bb.String()), strip85(p.encoded));
+        testEqual(Ꮡt, encodeQQWantQˢ, p.decoded, strip85(bb.String()), strip85(p.encoded));
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string writeQGaveErrorVWantVˢ = "Write(%q) gave error %v, want %v"u8;
+private static readonly @string writeQGaveLengthVWantVˢ = "Write(%q) gave length %v, want %v"u8;
+private static readonly @string closeGaveErrorVWantVˢ = "Close gave error %v, want %v"u8;
+private static readonly @string encodingDOfQQWantQˢ = "Encoding/%d of %q = %q, want %q"u8;
 
 public static void TestEncoderBuffering(ж<testing.T> Ꮡt) {
     var input = slice<byte>(bigtest.decoded);
@@ -89,40 +98,55 @@ public static void TestEncoderBuffering(ж<testing.T> Ꮡt) {
                 end = len(input);
             }
             var (n, errΔ1) = encoder.Write(input[(int)(pos)..(int)(end)]);
-            testEqual(Ꮡt, "Write(%q) gave error %v, want %v"u8, input[(int)(pos)..(int)(end)], errΔ1, ((error)default!));
-            testEqual(Ꮡt, "Write(%q) gave length %v, want %v"u8, input[(int)(pos)..(int)(end)], n, end - pos);
+            testEqual(Ꮡt, writeQGaveErrorVWantVˢ, input[(int)(pos)..(int)(end)], errΔ1, ((error)default!));
+            testEqual(Ꮡt, writeQGaveLengthVWantVˢ, input[(int)(pos)..(int)(end)], n, end - pos);
         }
         var err = encoder.Close();
-        testEqual(Ꮡt, "Close gave error %v, want %v"u8, err, ((error)default!));
-        testEqual(Ꮡt, "Encoding/%d of %q = %q, want %q"u8, bs, bigtest.decoded, strip85(bb.String()), strip85(bigtest.encoded));
+        testEqual(Ꮡt, closeGaveErrorVWantVˢ, err, ((error)default!));
+        testEqual(Ꮡt, encodingDOfQQWantQˢ, bs, bigtest.decoded, strip85(bb.String()), strip85(bigtest.encoded));
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string decodeQErrorVWantVˢ = "Decode(%q) = error %v, want %v"u8;
+private static readonly @string decodeQNsrcVWantVˢ = "Decode(%q) = nsrc %v, want %v"u8;
+private static readonly @string decodeQNdstVWantVˢ = "Decode(%q) = ndst %v, want %v"u8;
+private static readonly @string decodeQQWantQˢ = "Decode(%q) = %q, want %q"u8;
 
 public static void TestDecode(ж<testing.T> Ꮡt) {
     foreach (var (_, p) in pairs) {
         var dbuf = new slice<byte>(4 * len(p.encoded));
         var (ndst, nsrc, err) = Decode(dbuf, slice<byte>(p.encoded), true);
-        testEqual(Ꮡt, "Decode(%q) = error %v, want %v"u8, p.encoded, err, ((error)default!));
-        testEqual(Ꮡt, "Decode(%q) = nsrc %v, want %v"u8, p.encoded, nsrc, len(p.encoded));
-        testEqual(Ꮡt, "Decode(%q) = ndst %v, want %v"u8, p.encoded, ndst, len(p.decoded));
-        testEqual(Ꮡt, "Decode(%q) = %q, want %q"u8, p.encoded, ((@string)(dbuf[0..(int)(ndst)])), p.decoded);
+        testEqual(Ꮡt, decodeQErrorVWantVˢ, p.encoded, err, ((error)default!));
+        testEqual(Ꮡt, decodeQNsrcVWantVˢ, p.encoded, nsrc, len(p.encoded));
+        testEqual(Ꮡt, decodeQNdstVWantVˢ, p.encoded, ndst, len(p.decoded));
+        testEqual(Ꮡt, decodeQQWantQˢ, p.encoded, ((@string)(dbuf[0..(int)(ndst)])), p.decoded);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object readFailedˢ = (@string)"Read failed"u8;
+private static readonly @string readFromQLengthVWantVˢ = "Read from %q = length %v, want %v"u8;
+private static readonly @string decodingOfQQWantQˢ = "Decoding of %q = %q, want %q"u8;
+private static readonly @string readFromQVWantVˢ = "Read from %q = %v, want %v"u8;
 
 public static void TestDecoder(ж<testing.T> Ꮡt) {
     foreach (var (_, p) in pairs) {
         var decoder = NewDecoder(new strings_ReaderжReader(strings.NewReader(p.encoded)));
         var (dbuf, err) = io.ReadAll(decoder);
         if (err != default!) {
-            Ꮡt.Fatal((@string)"Read failed"u8, err);
+            Ꮡt.Fatal(readFailedˢ, err);
         }
-        testEqual(Ꮡt, "Read from %q = length %v, want %v"u8, p.encoded, len(dbuf), len(p.decoded));
-        testEqual(Ꮡt, "Decoding of %q = %q, want %q"u8, p.encoded, ((@string)dbuf), p.decoded);
+        testEqual(Ꮡt, readFromQLengthVWantVˢ, p.encoded, len(dbuf), len(p.decoded));
+        testEqual(Ꮡt, decodingOfQQWantQˢ, p.encoded, ((@string)dbuf), p.decoded);
         if (err != default!) {
-            testEqual(Ꮡt, "Read from %q = %v, want %v"u8, p.encoded, err, io.EOF);
+            testEqual(Ꮡt, readFromQVWantVˢ, p.encoded, err, io.EOF);
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string decodingDOfQQWantQˢ = "Decoding/%d of %q = %q, want %q"u8;
 
 public static void TestDecoderBuffering(ж<testing.T> Ꮡt) {
     for (nint bs = 1; bs <= 12; bs++) {
@@ -138,9 +162,13 @@ public static void TestDecoderBuffering(ж<testing.T> Ꮡt) {
         if (err != default! && !AreEqual(err, io.EOF)) {
             Ꮡt.Errorf("Read from %q at pos %d = %d, unexpected error %v"u8, bigtest.encoded, total, n, err);
         }
-        testEqual(Ꮡt, "Decoding/%d of %q = %q, want %q"u8, bs, bigtest.encoded, ((@string)(buf[0..(int)(total)])), bigtest.decoded);
+        testEqual(Ꮡt, decodingDOfQQWantQˢ, bs, bigtest.encoded, ((@string)(buf[0..(int)(total)])), bigtest.decoded);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string corruptionInQAtOffsetVˢ = "Corruption in %q at offset %v, want %v"u8;
+private static readonly object decoderFailedToDetectˢ = (@string)"Decoder failed to detect corruption in"u8;
 
 [GoLocalName("corrupt")] [GoType("dyn")] partial struct TestDecodeCorrupt_corrupt {
     internal @string e;
@@ -157,12 +185,12 @@ public static void TestDecodeCorrupt(ж<testing.T> Ꮡt) {
         var (_, _, err) = Decode(dbuf, slice<byte>(e.e), true);
         switch (err.type()) {
         case CorruptInputError errΔ1: {
-            testEqual(Ꮡt, "Corruption in %q at offset %v, want %v"u8, e.e, (nint)(int64)errΔ1, e.p);
+            testEqual(Ꮡt, corruptionInQAtOffsetVˢ, e.e, (nint)(int64)errΔ1, e.p);
             break;
         }
         default: {
             var errΔ1 = err;
-            Ꮡt.Error((@string)"Decoder failed to detect corruption in"u8, e);
+            Ꮡt.Error(decoderFailedToDetectˢ, e);
             break;
         }}
     }

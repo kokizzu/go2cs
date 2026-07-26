@@ -8,10 +8,13 @@ using testing = testing_package;
 
 partial class ring_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object emptyˢ = (@string)"empty"u8;
+
 // For debugging - keep around.
 internal static void dump(ж<Ring> Ꮡr) {
     if (Ꮡr == nil) {
-        fmt.Println((@string)"empty"u8);
+        fmt.Println(emptyˢ);
         return;
     }
     nint i = 0;

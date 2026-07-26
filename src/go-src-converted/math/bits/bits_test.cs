@@ -751,6 +751,14 @@ internal static readonly UntypedInt _M = /* 1<<UintSize - 1 */ 18446744073709551
 internal static readonly UntypedInt _M32 = /* 1<<32 - 1 */ 4294967295;
 internal static readonly UntypedInt _M64 = /* 1<<64 - 1 */ 18446744073709551615;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string addSymmetricˢ = "Add symmetric"u8;
+private static readonly @string subSymmetricˢ = "Sub symmetric"u8;
+private static readonly @string addIntrinsicˢ = "Add intrinsic"u8;
+private static readonly @string addIntrinsicSymmetricˢ = "Add intrinsic symmetric"u8;
+private static readonly @string subIntrinsicˢ = "Sub intrinsic"u8;
+private static readonly @string subIntrinsicSymmetricˢ = "Sub intrinsic symmetric"u8;
+
 [GoType("dyn")] partial struct TestAddSubUint_type {
     internal nuint x, y, c, z, cout;
 }
@@ -778,17 +786,23 @@ public static void TestAddSubUint(ж<testing.T> Ꮡt) {
         new(_M, _M, 1, _M, 1)
     }.slice()) {
         test("Add"u8, Add, a.x, a.y, a.c, a.z, a.cout);
-        test("Add symmetric"u8, Add, a.y, a.x, a.c, a.z, a.cout);
+        test(addSymmetricˢ, Add, a.y, a.x, a.c, a.z, a.cout);
         test("Sub"u8, Sub, a.z, a.x, a.c, a.y, a.cout);
-        test("Sub symmetric"u8, Sub, a.z, a.y, a.c, a.x, a.cout);
+        test(subSymmetricˢ, Sub, a.z, a.y, a.c, a.x, a.cout);
         // The above code can't test intrinsic implementation, because the passed function is not called directly.
         // The following code uses a closure to test the intrinsic version in case the function is intrinsified.
-        test("Add intrinsic"u8, (nuint x, nuint y, nuint c) => Add(x, y, c), a.x, a.y, a.c, a.z, a.cout);
-        test("Add intrinsic symmetric"u8, (nuint x, nuint y, nuint c) => Add(x, y, c), a.y, a.x, a.c, a.z, a.cout);
-        test("Sub intrinsic"u8, (nuint x, nuint y, nuint c) => Sub(x, y, c), a.z, a.x, a.c, a.y, a.cout);
-        test("Sub intrinsic symmetric"u8, (nuint x, nuint y, nuint c) => Sub(x, y, c), a.z, a.y, a.c, a.x, a.cout);
+        test(addIntrinsicˢ, (nuint x, nuint y, nuint c) => Add(x, y, c), a.x, a.y, a.c, a.z, a.cout);
+        test(addIntrinsicSymmetricˢ, (nuint x, nuint y, nuint c) => Add(x, y, c), a.y, a.x, a.c, a.z, a.cout);
+        test(subIntrinsicˢ, (nuint x, nuint y, nuint c) => Sub(x, y, c), a.z, a.x, a.c, a.y, a.cout);
+        test(subIntrinsicSymmetricˢ, (nuint x, nuint y, nuint c) => Sub(x, y, c), a.z, a.y, a.c, a.x, a.cout);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string add32ˢ = "Add32"u8;
+private static readonly @string add32Symmetricˢ = "Add32 symmetric"u8;
+private static readonly @string sub32ˢ = "Sub32"u8;
+private static readonly @string sub32Symmetricˢ = "Sub32 symmetric"u8;
 
 [GoType("dyn")] partial struct TestAddSubUint32_type {
     internal uint32 x, y, c, z, cout;
@@ -814,12 +828,22 @@ public static void TestAddSubUint32(ж<testing.T> Ꮡt) {
         new(_M32, _M32, 0, _M32 - 1, 1),
         new(_M32, _M32, 1, _M32, 1)
     }.slice()) {
-        test("Add32"u8, Add32, a.x, a.y, a.c, a.z, a.cout);
-        test("Add32 symmetric"u8, Add32, a.y, a.x, a.c, a.z, a.cout);
-        test("Sub32"u8, Sub32, a.z, a.x, a.c, a.y, a.cout);
-        test("Sub32 symmetric"u8, Sub32, a.z, a.y, a.c, a.x, a.cout);
+        test(add32ˢ, Add32, a.x, a.y, a.c, a.z, a.cout);
+        test(add32Symmetricˢ, Add32, a.y, a.x, a.c, a.z, a.cout);
+        test(sub32ˢ, Sub32, a.z, a.x, a.c, a.y, a.cout);
+        test(sub32Symmetricˢ, Sub32, a.z, a.y, a.c, a.x, a.cout);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string add64ˢ = "Add64"u8;
+private static readonly @string add64Symmetricˢ = "Add64 symmetric"u8;
+private static readonly @string sub64ˢ = "Sub64"u8;
+private static readonly @string sub64Symmetricˢ = "Sub64 symmetric"u8;
+private static readonly @string add64Intrinsicˢ = "Add64 intrinsic"u8;
+private static readonly @string add64IntrinsicSymmetricˢ = "Add64 intrinsic symmetric"u8;
+private static readonly @string sub64Intrinsicˢ = "Sub64 intrinsic"u8;
+private static readonly @string sub64IntrinsicSymmetricˢ = "Sub64 intrinsic symmetric"u8;
 
 [GoType("dyn")] partial struct TestAddSubUint64_type {
     internal uint64 x, y, c, z, cout;
@@ -847,16 +871,16 @@ public static void TestAddSubUint64(ж<testing.T> Ꮡt) {
         new(_M64, _M64, 0, _M64 - 1, 1),
         new(_M64, _M64, 1, _M64, 1)
     }.slice()) {
-        test("Add64"u8, Add64, a.x, a.y, a.c, a.z, a.cout);
-        test("Add64 symmetric"u8, Add64, a.y, a.x, a.c, a.z, a.cout);
-        test("Sub64"u8, Sub64, a.z, a.x, a.c, a.y, a.cout);
-        test("Sub64 symmetric"u8, Sub64, a.z, a.y, a.c, a.x, a.cout);
+        test(add64ˢ, Add64, a.x, a.y, a.c, a.z, a.cout);
+        test(add64Symmetricˢ, Add64, a.y, a.x, a.c, a.z, a.cout);
+        test(sub64ˢ, Sub64, a.z, a.x, a.c, a.y, a.cout);
+        test(sub64Symmetricˢ, Sub64, a.z, a.y, a.c, a.x, a.cout);
         // The above code can't test intrinsic implementation, because the passed function is not called directly.
         // The following code uses a closure to test the intrinsic version in case the function is intrinsified.
-        test("Add64 intrinsic"u8, (uint64 x, uint64 y, uint64 c) => Add64(x, y, c), a.x, a.y, a.c, a.z, a.cout);
-        test("Add64 intrinsic symmetric"u8, (uint64 x, uint64 y, uint64 c) => Add64(x, y, c), a.y, a.x, a.c, a.z, a.cout);
-        test("Sub64 intrinsic"u8, (uint64 x, uint64 y, uint64 c) => Sub64(x, y, c), a.z, a.x, a.c, a.y, a.cout);
-        test("Sub64 intrinsic symmetric"u8, (uint64 x, uint64 y, uint64 c) => Sub64(x, y, c), a.z, a.y, a.c, a.x, a.cout);
+        test(add64Intrinsicˢ, (uint64 x, uint64 y, uint64 c) => Add64(x, y, c), a.x, a.y, a.c, a.z, a.cout);
+        test(add64IntrinsicSymmetricˢ, (uint64 x, uint64 y, uint64 c) => Add64(x, y, c), a.y, a.x, a.c, a.z, a.cout);
+        test(sub64Intrinsicˢ, (uint64 x, uint64 y, uint64 c) => Sub64(x, y, c), a.z, a.x, a.c, a.y, a.cout);
+        test(sub64IntrinsicSymmetricˢ, (uint64 x, uint64 y, uint64 c) => Sub64(x, y, c), a.z, a.y, a.c, a.x, a.cout);
     }
 }
 
@@ -1002,6 +1026,14 @@ public static void TestSub64OverflowPanic(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mulSymmetricˢ = "Mul symmetric"u8;
+private static readonly @string divSymmetricˢ = "Div symmetric"u8;
+private static readonly @string mulIntrinsicˢ = "Mul intrinsic"u8;
+private static readonly @string mulIntrinsicSymmetricˢ = "Mul intrinsic symmetric"u8;
+private static readonly @string divIntrinsicˢ = "Div intrinsic"u8;
+private static readonly @string divIntrinsicSymmetricˢ = "Div intrinsic symmetric"u8;
+
 [GoType("dyn")] partial struct TestMulDiv_type {
     internal nuint x, y;
     internal nuint hi, lo, r;
@@ -1027,17 +1059,23 @@ public static void TestMulDiv(ж<testing.T> Ꮡt) {
         new(_M, _M, _M - 1, 1, 42)
     }.slice()) {
         testMul("Mul"u8, Mul, a.x, a.y, a.hi, a.lo);
-        testMul("Mul symmetric"u8, Mul, a.y, a.x, a.hi, a.lo);
+        testMul(mulSymmetricˢ, Mul, a.y, a.x, a.hi, a.lo);
         testDiv("Div"u8, Div, a.hi, a.lo + a.r, a.y, a.x, a.r);
-        testDiv("Div symmetric"u8, Div, a.hi, a.lo + a.r, a.x, a.y, a.r);
+        testDiv(divSymmetricˢ, Div, a.hi, a.lo + a.r, a.x, a.y, a.r);
         // The above code can't test intrinsic implementation, because the passed function is not called directly.
         // The following code uses a closure to test the intrinsic version in case the function is intrinsified.
-        testMul("Mul intrinsic"u8, (nuint x, nuint y) => Mul(x, y), a.x, a.y, a.hi, a.lo);
-        testMul("Mul intrinsic symmetric"u8, (nuint x, nuint y) => Mul(x, y), a.y, a.x, a.hi, a.lo);
-        testDiv("Div intrinsic"u8, (nuint hi, nuint lo, nuint y) => Div(hi, lo, y), a.hi, a.lo + a.r, a.y, a.x, a.r);
-        testDiv("Div intrinsic symmetric"u8, (nuint hi, nuint lo, nuint y) => Div(hi, lo, y), a.hi, a.lo + a.r, a.x, a.y, a.r);
+        testMul(mulIntrinsicˢ, (nuint x, nuint y) => Mul(x, y), a.x, a.y, a.hi, a.lo);
+        testMul(mulIntrinsicSymmetricˢ, (nuint x, nuint y) => Mul(x, y), a.y, a.x, a.hi, a.lo);
+        testDiv(divIntrinsicˢ, (nuint hi, nuint lo, nuint y) => Div(hi, lo, y), a.hi, a.lo + a.r, a.y, a.x, a.r);
+        testDiv(divIntrinsicSymmetricˢ, (nuint hi, nuint lo, nuint y) => Div(hi, lo, y), a.hi, a.lo + a.r, a.x, a.y, a.r);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mul32ˢ = "Mul32"u8;
+private static readonly @string mul32Symmetricˢ = "Mul32 symmetric"u8;
+private static readonly @string div32ˢ = "Div32"u8;
+private static readonly @string div32Symmetricˢ = "Div32 symmetric"u8;
 
 [GoType("dyn")] partial struct TestMulDiv32_type {
     internal uint32 x, y;
@@ -1062,12 +1100,22 @@ public static void TestMulDiv32(ж<testing.T> Ꮡt) {
         new(0xc47dfa8cU, 50911, 0x98a4, 0x998587f4U, 13),
         new(_M32, _M32, _M32 - 1, 1, 42)
     }.slice()) {
-        testMul("Mul32"u8, Mul32, a.x, a.y, a.hi, a.lo);
-        testMul("Mul32 symmetric"u8, Mul32, a.y, a.x, a.hi, a.lo);
-        testDiv("Div32"u8, Div32, a.hi, a.lo + a.r, a.y, a.x, a.r);
-        testDiv("Div32 symmetric"u8, Div32, a.hi, a.lo + a.r, a.x, a.y, a.r);
+        testMul(mul32ˢ, Mul32, a.x, a.y, a.hi, a.lo);
+        testMul(mul32Symmetricˢ, Mul32, a.y, a.x, a.hi, a.lo);
+        testDiv(div32ˢ, Div32, a.hi, a.lo + a.r, a.y, a.x, a.r);
+        testDiv(div32Symmetricˢ, Div32, a.hi, a.lo + a.r, a.x, a.y, a.r);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mul64ˢ = "Mul64"u8;
+private static readonly @string mul64Symmetricˢ = "Mul64 symmetric"u8;
+private static readonly @string div64ˢ = "Div64"u8;
+private static readonly @string div64Symmetricˢ = "Div64 symmetric"u8;
+private static readonly @string mul64Intrinsicˢ = "Mul64 intrinsic"u8;
+private static readonly @string mul64IntrinsicSymmetricˢ = "Mul64 intrinsic symmetric"u8;
+private static readonly @string div64Intrinsicˢ = "Div64 intrinsic"u8;
+private static readonly @string div64IntrinsicSymmetricˢ = "Div64 intrinsic symmetric"u8;
 
 [GoType("dyn")] partial struct TestMulDiv64_type {
     internal uint64 x, y;
@@ -1094,28 +1142,31 @@ public static void TestMulDiv64(ж<testing.T> Ꮡt) {
         new(0x3626229738a3b9UL, 0xd8988a9f1cc4a61UL, 0x2dd0712657fe8UL, 0x9dd6a3364c358319UL, 13),
         new(_M64, _M64, _M64 - 1, 1, 42)
     }.slice()) {
-        testMul("Mul64"u8, Mul64, a.x, a.y, a.hi, a.lo);
-        testMul("Mul64 symmetric"u8, Mul64, a.y, a.x, a.hi, a.lo);
-        testDiv("Div64"u8, Div64, a.hi, a.lo + a.r, a.y, a.x, a.r);
-        testDiv("Div64 symmetric"u8, Div64, a.hi, a.lo + a.r, a.x, a.y, a.r);
+        testMul(mul64ˢ, Mul64, a.x, a.y, a.hi, a.lo);
+        testMul(mul64Symmetricˢ, Mul64, a.y, a.x, a.hi, a.lo);
+        testDiv(div64ˢ, Div64, a.hi, a.lo + a.r, a.y, a.x, a.r);
+        testDiv(div64Symmetricˢ, Div64, a.hi, a.lo + a.r, a.x, a.y, a.r);
         // The above code can't test intrinsic implementation, because the passed function is not called directly.
         // The following code uses a closure to test the intrinsic version in case the function is intrinsified.
-        testMul("Mul64 intrinsic"u8, (uint64 x, uint64 y) => Mul64(x, y), a.x, a.y, a.hi, a.lo);
-        testMul("Mul64 intrinsic symmetric"u8, (uint64 x, uint64 y) => Mul64(x, y), a.y, a.x, a.hi, a.lo);
-        testDiv("Div64 intrinsic"u8, (uint64 hi, uint64 lo, uint64 y) => Div64(hi, lo, y), a.hi, a.lo + a.r, a.y, a.x, a.r);
-        testDiv("Div64 intrinsic symmetric"u8, (uint64 hi, uint64 lo, uint64 y) => Div64(hi, lo, y), a.hi, a.lo + a.r, a.x, a.y, a.r);
+        testMul(mul64Intrinsicˢ, (uint64 x, uint64 y) => Mul64(x, y), a.x, a.y, a.hi, a.lo);
+        testMul(mul64IntrinsicSymmetricˢ, (uint64 x, uint64 y) => Mul64(x, y), a.y, a.x, a.hi, a.lo);
+        testDiv(div64Intrinsicˢ, (uint64 hi, uint64 lo, uint64 y) => Div64(hi, lo, y), a.hi, a.lo + a.r, a.y, a.x, a.r);
+        testDiv(div64IntrinsicSymmetricˢ, (uint64 hi, uint64 lo, uint64 y) => Div64(hi, lo, y), a.hi, a.lo + a.r, a.x, a.y, a.r);
     }
 }
 
 internal static readonly @string divZeroError = "runtime error: integer divide by zero"u8;
 internal static readonly @string overflowError = "runtime error: integer overflow"u8;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object divShouldHavePanickedˢ = (@string)"Div should have panicked when y<=hi"u8;
+
 public static void TestDivPanicOverflow(ж<testing.T> Ꮡt) => func((defer, recover) => {
     // Expect a panic
     defer(() => {
         {
             var err = recover(); if (err == default!){
-                Ꮡt.Error((@string)"Div should have panicked when y<=hi"u8);
+                Ꮡt.Error(divShouldHavePanickedˢ);
             } else 
             {
                 var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != overflowError) {
@@ -1128,12 +1179,15 @@ public static void TestDivPanicOverflow(ж<testing.T> Ꮡt) => func((defer, reco
     Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div should have panicked"u8, q, r);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object div32ShouldHavePanickedˢ = (@string)"Div32 should have panicked when y<=hi"u8;
+
 public static void TestDiv32PanicOverflow(ж<testing.T> Ꮡt) => func((defer, recover) => {
     // Expect a panic
     defer(() => {
         {
             var err = recover(); if (err == default!){
-                Ꮡt.Error((@string)"Div32 should have panicked when y<=hi"u8);
+                Ꮡt.Error(div32ShouldHavePanickedˢ);
             } else 
             {
                 var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != overflowError) {
@@ -1146,12 +1200,15 @@ public static void TestDiv32PanicOverflow(ж<testing.T> Ꮡt) => func((defer, re
     Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div32 should have panicked"u8, q, r);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object div64ShouldHavePanickedˢ = (@string)"Div64 should have panicked when y<=hi"u8;
+
 public static void TestDiv64PanicOverflow(ж<testing.T> Ꮡt) => func((defer, recover) => {
     // Expect a panic
     defer(() => {
         {
             var err = recover(); if (err == default!){
-                Ꮡt.Error((@string)"Div64 should have panicked when y<=hi"u8);
+                Ꮡt.Error(div64ShouldHavePanickedˢ);
             } else 
             {
                 var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != overflowError) {
@@ -1164,12 +1221,15 @@ public static void TestDiv64PanicOverflow(ж<testing.T> Ꮡt) => func((defer, re
     Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div64 should have panicked"u8, q, r);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object divShouldHavePanickedˢ2 = (@string)"Div should have panicked when y==0"u8;
+
 public static void TestDivPanicZero(ж<testing.T> Ꮡt) => func((defer, recover) => {
     // Expect a panic
     defer(() => {
         {
             var err = recover(); if (err == default!){
-                Ꮡt.Error((@string)"Div should have panicked when y==0"u8);
+                Ꮡt.Error(divShouldHavePanickedˢ2);
             } else 
             {
                 var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != divZeroError) {
@@ -1182,12 +1242,15 @@ public static void TestDivPanicZero(ж<testing.T> Ꮡt) => func((defer, recover)
     Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div should have panicked"u8, q, r);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object div32ShouldHavePanickedˢ2 = (@string)"Div32 should have panicked when y==0"u8;
+
 public static void TestDiv32PanicZero(ж<testing.T> Ꮡt) => func((defer, recover) => {
     // Expect a panic
     defer(() => {
         {
             var err = recover(); if (err == default!){
-                Ꮡt.Error((@string)"Div32 should have panicked when y==0"u8);
+                Ꮡt.Error(div32ShouldHavePanickedˢ2);
             } else 
             {
                 var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != divZeroError) {
@@ -1200,12 +1263,15 @@ public static void TestDiv32PanicZero(ж<testing.T> Ꮡt) => func((defer, recove
     Ꮡt.Errorf("undefined q, r = %v, %v calculated when Div32 should have panicked"u8, q, r);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object div64ShouldHavePanickedˢ2 = (@string)"Div64 should have panicked when y==0"u8;
+
 public static void TestDiv64PanicZero(ж<testing.T> Ꮡt) => func((defer, recover) => {
     // Expect a panic
     defer(() => {
         {
             var err = recover(); if (err == default!){
-                Ꮡt.Error((@string)"Div64 should have panicked when y==0"u8);
+                Ꮡt.Error(div64ShouldHavePanickedˢ2);
             } else 
             {
                 var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != divZeroError) {

@@ -8,8 +8,11 @@ using testing = testing_package;
 
 partial class version_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string compareˢ = "Compare"u8;
+
 public static void TestCompare(ж<testing.T> Ꮡt) {
-    test2<@string, @string, nint>(Ꮡt, compareTests, "Compare"u8, Compare);
+    test2<@string, @string, nint>(Ꮡt, compareTests, compareˢ, Compare);
 }
 
 internal static slice<testCase2<@string, @string, nint>> compareTests = new testCase2<@string, @string, nint>[]{
@@ -44,8 +47,11 @@ internal static slice<testCase2<@string, @string, nint>> compareTests = new test
     new("go1.99999999999999998"u8, "go1.99999999999999999"u8, -1)
 }.slice();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string langˢ = "Lang"u8;
+
 public static void TestLang(ж<testing.T> Ꮡt) {
-    test1<@string, @string>(Ꮡt, langTests, "Lang"u8, Lang);
+    test1<@string, @string>(Ꮡt, langTests, langˢ, Lang);
 }
 
 internal static slice<testCase1<@string, @string>> langTests = new testCase1<@string, @string>[]{
@@ -58,8 +64,11 @@ internal static slice<testCase1<@string, @string>> langTests = new testCase1<@st
     new("go1.999testmod"u8, "go1.999"u8)
 }.slice();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string isValidˢ = "IsValid"u8;
+
 public static void TestIsValid(ж<testing.T> Ꮡt) {
-    test1<@string, bool>(Ꮡt, isValidTests, "IsValid"u8, IsValid);
+    test1<@string, bool>(Ꮡt, isValidTests, isValidˢ, IsValid);
 }
 
 internal static slice<testCase1<@string, bool>> isValidTests = new testCase1<@string, bool>[]{

@@ -60,6 +60,12 @@ internal static slice<Planet> planets = new Planet[]{
     new("Mars"u8, 0.107D, 1.5D)
 }.slice();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object byNameˢ = (@string)"By name:"u8;
+private static readonly object byMassˢ = (@string)"By mass:"u8;
+private static readonly object byDistanceˢ = (@string)"By distance:"u8;
+private static readonly object byDecreasingDistanceˢ = (@string)"By decreasing distance:"u8;
+
 // ExampleSortKeys demonstrates a technique for sorting a struct type using programmable sort criteria.
 public static void Example_sortKeys() {
     // Closures that order the Planet structure.
@@ -70,13 +76,13 @@ public static void Example_sortKeys() {
     var decreasingDistance = (ж<Planet> p1, ж<Planet> p2) => distanceʗ1(p2, p1);
     // Sort the planets by the various criteria.
     new By(name).ΔSort(planets);
-    fmt.Println((@string)"By name:"u8, planets);
+    fmt.Println(byNameˢ, planets);
     new By(mass).ΔSort(planets);
-    fmt.Println((@string)"By mass:"u8, planets);
+    fmt.Println(byMassˢ, planets);
     new By(distance).ΔSort(planets);
-    fmt.Println((@string)"By distance:"u8, planets);
+    fmt.Println(byDistanceˢ, planets);
     new By(decreasingDistance).ΔSort(planets);
-    fmt.Println((@string)"By decreasing distance:"u8, planets);
+    fmt.Println(byDecreasingDistanceˢ, planets);
 }
 
 // Output: By name: [{Earth 1 1} {Mars 0.107 1.5} {Mercury 0.055 0.4} {Venus 0.815 0.7}]

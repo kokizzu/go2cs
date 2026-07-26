@@ -71,6 +71,9 @@ internal static void checkListPointers(ж<testing.T> Ꮡt, ж<List> Ꮡl, slice<
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object bananaˢ = (@string)"banana"u8;
+
 public static void TestList(ж<testing.T> Ꮡt) {
     var l = New();
     checkListPointers(Ꮡt, l, new ж<Element>[]{}.slice());
@@ -87,7 +90,7 @@ public static void TestList(ж<testing.T> Ꮡt) {
     var e2 = l.PushFront((nint)(2));
     var e1 = l.PushFront((nint)(1));
     var e3 = l.PushBack((nint)(3));
-    var e4 = l.PushBack((@string)"banana"u8);
+    var e4 = l.PushBack(bananaˢ);
     checkListPointers(Ꮡt, l, new ж<Element>[]{e1, e2, e3, e4}.slice());
     l.Remove(e2);
     checkListPointers(Ꮡt, l, new ж<Element>[]{e1, e3, e4}.slice());

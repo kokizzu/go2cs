@@ -161,14 +161,18 @@ public static void TestOr(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string someTextˢ = "some text"u8;
+private static readonly @string defaultˢ = "default"u8;
+
 public static void ExampleOr() {
     // Suppose we have some user input
     // that may or may not be an empty string
     @string userInput1 = ""u8;
-    @string userInput2 = "some text"u8;
-    fmt.Println(cmp.Or(userInput1, (@string)"default"));
-    fmt.Println(cmp.Or(userInput2, (@string)"default"));
-    fmt.Println(cmp.Or(userInput1, userInput2, (@string)"default"));
+    @string userInput2 = someTextˢ;
+    fmt.Println(cmp.Or(userInput1, defaultˢ));
+    fmt.Println(cmp.Or(userInput2, defaultˢ));
+    fmt.Println(cmp.Or(userInput1, userInput2, defaultˢ));
 }
 
 [GoLocalName("Order")] [GoType("dyn")] partial struct ExampleOr_sort_Order {

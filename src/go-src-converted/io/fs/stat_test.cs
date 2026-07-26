@@ -19,6 +19,9 @@ internal static (fs.File, error) Open(this statOnly _, @string name) {
     return (default!, ErrNotExist);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string statOnlyˢ = "statOnly"u8;
+
 public static void TestStat(ж<testing.T> Ꮡt) {
     var check = (@string desc, fs.FileInfo infoΔ1, error errΔ1) => {
         Ꮡt.Helper();
@@ -31,11 +34,11 @@ public static void TestStat(ж<testing.T> Ꮡt) {
         }
     };
     // Test that Stat uses the method when present.
-    var (info, err) = Stat(new statOnly(new fstest_MapFSᴠStatFS(testFsys)), "hello.txt"u8);
-    check("statOnly"u8, info, err);
+    var (info, err) = Stat(new statOnly(new fstest_MapFSᴠStatFS(testFsys)), helloTxtˢ);
+    check(statOnlyˢ, info, err);
     // Test that Stat uses Open when the method is not present.
-    (info, err) = Stat(new openOnly(testFsys), "hello.txt"u8);
-    check("openOnly"u8, info, err);
+    (info, err) = Stat(new openOnly(testFsys), helloTxtˢ);
+    check(openOnlyˢ, info, err);
 }
 
 } // end fs_test_package

@@ -342,10 +342,13 @@ public static void TestExpTables(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goarmˢ = "GOARM"u8;
+
 internal static bool hasSlowFloatingPoint() {
     var exprᴛ1 = runtime.GOARCH;
     if (exprᴛ1 == "arm"u8) {
-        return os.Getenv("GOARM"u8) == "5"u8;
+        return os.Getenv(goarmˢ) == "5"u8;
     }
     if (exprᴛ1 == "mips"u8 || exprᴛ1 == "mipsle"u8 || exprᴛ1 == "mips64"u8 || exprᴛ1 == "mips64le"u8) {
         return true;
@@ -356,6 +359,9 @@ internal static bool hasSlowFloatingPoint() {
     // TODO: detect what it actually has.
     return false;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object float32ShouldBeInRange01ˢ = (@string)"Float32() should be in range [0,1). ct:"u8;
 
 public static void TestFloat32(ж<testing.T> Ꮡt) {
     // For issue 6721, the problem came after 7533753 calls, so check 10e6.
@@ -371,7 +377,7 @@ public static void TestFloat32(ж<testing.T> Ꮡt) {
     for (nint ct = 0; ct < num; ct++) {
         var f = r.Float32();
         if (f >= 1F) {
-            Ꮡt.Fatal((@string)"Float32() should be in range [0,1). ct:"u8, ct, (@string)"f:"u8, f);
+            Ꮡt.Fatal(float32ShouldBeInRange01ˢ, ct, (@string)"f:"u8, f);
         }
     }
 }

@@ -30,33 +30,43 @@ public static void TestFuncPC(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testdataˢ = "testdata"u8;
+private static readonly @string symabiˢ = "symabi"u8;
+private static readonly @string helloImportcfgˢ = "hello.importcfg"u8;
+private static readonly @string internalAbiˢ = "internal/abi"u8;
+private static readonly @string toolˢ = "tool"u8;
+private static readonly @string gensymabisˢ = "-gensymabis"u8;
+private static readonly @string compileˢ = "compile"u8;
+private static readonly @string symabisˢ = "-symabis"u8;
+
 public static void TestFuncPCCompileError(ж<testing.T> Ꮡt) {
     // Test that FuncPC* on a function of a mismatched ABI is rejected.
     testenv.MustHaveGoBuild(new testing_TжTB(Ꮡt));
     // We want to test internal package, which we cannot normally import.
     // Run the assembler and compiler manually.
     @string tmpdir = Ꮡt.TempDir();
-    @string asmSrc = filepath.Join("testdata"u8, "x.s");
-    @string goSrc = filepath.Join("testdata"u8, "x.go");
-    @string symabi = filepath.Join(tmpdir, "symabi");
+    @string asmSrc = filepath.Join(testdataˢ, "x.s");
+    @string goSrc = filepath.Join(testdataˢ, "x.go");
+    @string symabi = filepath.Join(tmpdir, symabiˢ);
     @string obj = filepath.Join(tmpdir, "x.o");
     // Write an importcfg file for the dependencies of the package.
-    @string importcfgfile = filepath.Join(tmpdir, "hello.importcfg");
-    testenv.WriteImportcfg(new testing_TжTB(Ꮡt), importcfgfile, default!, "internal/abi"u8);
+    @string importcfgfile = filepath.Join(tmpdir, helloImportcfgˢ);
+    testenv.WriteImportcfg(new testing_TжTB(Ꮡt), importcfgfile, default!, internalAbiˢ);
     // parse assembly code for symabi.
-    var cmd = testenv.Command(new testing_TжTB(Ꮡt), testenv.GoToolPath(new testing_TжTB(Ꮡt)), "tool"u8, "asm", "-p=p", "-gensymabis", "-o", symabi, asmSrc);
+    var cmd = testenv.Command(new testing_TжTB(Ꮡt), testenv.GoToolPath(new testing_TжTB(Ꮡt)), toolˢ, "asm", "-p=p", gensymabisˢ, "-o", symabi, asmSrc);
     var (@out, err) = cmd.CombinedOutput();
     if (err != default!) {
         Ꮡt.Fatalf("go tool asm -gensymabis failed: %v\n%s"u8, err, @out);
     }
     // compile go code.
-    cmd = testenv.Command(new testing_TжTB(Ꮡt), testenv.GoToolPath(new testing_TжTB(Ꮡt)), "tool"u8, "compile", "-importcfg=" + importcfgfile, "-p=p", "-symabis", symabi, "-o", obj, goSrc);
+    cmd = testenv.Command(new testing_TжTB(Ꮡt), testenv.GoToolPath(new testing_TжTB(Ꮡt)), toolˢ, compileˢ, "-importcfg=" + importcfgfile, "-p=p", symabisˢ, symabi, "-o", obj, goSrc);
     (@out, err) = cmd.CombinedOutput();
     if (err == default!) {
         Ꮡt.Fatalf("go tool compile did not fail"u8);
     }
     // Expect errors in line 17, 18, 20, no errors on other lines.
-    var want = new @string[]{"x.go:17", "x.go:18", "x.go:20"}.slice();
+    var want = new @string[]{"x.go:17"u8, "x.go:18"u8, "x.go:20"u8}.slice();
     var got = strings.Split(((@string)@out), "\n"u8);
     if (got[len(got) - 1] == "") {
         got = got[..(int)(len(got) - 1)];

@@ -19,6 +19,13 @@ internal static (fs.File, error) Open(this subOnly _, @string name) {
     return (default!, ErrNotExist);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string goodbyeTxtˢ = "goodbye.txt"u8;
+private static readonly object goodbyeWorldˢ = (@string)"goodbye, world"u8;
+private static readonly @string subOnlyˢ = "subOnly"u8;
+private static readonly @string nonexistˢ = "nonexist"u8;
+private static readonly object openNonexistSucceededˢ = (@string)"Open(nonexist): succeeded"u8;
+
 public static void TestSub(ж<testing.T> Ꮡt) {
     var check = (@string desc, fs.FS subΔ1, error errΔ1) => {
         Ꮡt.Helper();
@@ -26,9 +33,9 @@ public static void TestSub(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("Sub(sub): %v"u8, errΔ1);
             return;
         }
-        (var data, errΔ1) = ReadFile(subΔ1, "goodbye.txt"u8);
+        (var data, errΔ1) = ReadFile(subΔ1, goodbyeTxtˢ);
         if (((sstring)data) != "goodbye, world"u8 || errΔ1 != default!) {
-            Ꮡt.Errorf(@"ReadFile(%s, ""goodbye.txt"" = %q, %v, want %q, nil"u8, desc, ((@string)data), errΔ1, (@string)"goodbye, world"u8);
+            Ꮡt.Errorf(@"ReadFile(%s, ""goodbye.txt"" = %q, %v, want %q, nil"u8, desc, ((@string)data), errΔ1, goodbyeWorldˢ);
         }
         (var dirs, errΔ1) = ReadDir(subΔ1, "."u8);
         if (errΔ1 != default! || len(dirs) != 1 || dirs[0].Name() != "goodbye.txt"u8) {
@@ -36,25 +43,25 @@ public static void TestSub(ж<testing.T> Ꮡt) {
             foreach (var (_, d) in dirs) {
                 names = append(names, d.Name());
             }
-            Ꮡt.Errorf(@"ReadDir(%s, ""."") = %v, %v, want %v, nil"u8, desc, names, errΔ1, new @string[]{"goodbye.txt"}.slice());
+            Ꮡt.Errorf(@"ReadDir(%s, ""."") = %v, %v, want %v, nil"u8, desc, names, errΔ1, new @string[]{"goodbye.txt"u8}.slice());
         }
     };
     // Test that Sub uses the method when present.
     var (sub, err) = Sub(new subOnly(new fstest_MapFSᴠSubFS(testFsys)), "sub"u8);
-    check("subOnly"u8, sub, err);
+    check(subOnlyˢ, sub, err);
     // Test that Sub uses Open when the method is not present.
     (sub, err) = Sub(new openOnly(testFsys), "sub"u8);
-    check("openOnly"u8, sub, err);
-    (_, err) = sub.Open("nonexist"u8);
+    check(openOnlyˢ, sub, err);
+    (_, err) = sub.Open(nonexistˢ);
     if (err == default!) {
-        Ꮡt.Fatal((@string)"Open(nonexist): succeeded"u8);
+        Ꮡt.Fatal(openNonexistSucceededˢ);
     }
     var (pe, ok) = err._<ж<fs.PathError>>(ᐧ);
     if (!ok) {
         Ꮡt.Fatalf("Open(nonexist): error is %T, want *PathError"u8, err);
     }
     if ((~pe).Path != "nonexist"u8) {
-        Ꮡt.Fatalf("Open(nonexist): err.Path = %q, want %q"u8, (~pe).Path, (@string)"nonexist"u8);
+        Ꮡt.Fatalf("Open(nonexist): err.Path = %q, want %q"u8, (~pe).Path, nonexistˢ);
     }
     (_, err) = sub.Open("./"u8);
     if (!errors.Is(err, ErrInvalid)) {

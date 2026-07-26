@@ -67,14 +67,14 @@ public static void TestSearch(ж<testing.T> Ꮡt) {
 }
 
 public static void TestFind(ж<testing.T> Ꮡt) {
-    var str1 = new @string[]{"foo"}.slice();
-    var str2 = new @string[]{"ab", "ca"}.slice();
-    var str3 = new @string[]{"mo", "qo", "vo"}.slice();
-    var str4 = new @string[]{"ab", "ad", "ca", "xy"}.slice();
+    var str1 = new @string[]{"foo"u8}.slice();
+    var str2 = new @string[]{"ab"u8, "ca"u8}.slice();
+    var str3 = new @string[]{"mo"u8, "qo"u8, "vo"u8}.slice();
+    var str4 = new @string[]{"ab"u8, "ad"u8, "ca"u8, "xy"u8}.slice();
     // slice with repeating elements
-    var strRepeats = new @string[]{"ba", "ca", "da", "da", "da", "ka", "ma", "ma", "ta"}.slice();
+    var strRepeats = new @string[]{"ba"u8, "ca"u8, "da"u8, "da"u8, "da"u8, "ka"u8, "ma"u8, "ma"u8, "ta"u8}.slice();
     // slice with all element equal
-    var strSame = new @string[]{"xx", "xx", "xx"}.slice();
+    var strSame = new @string[]{"xx"u8, "xx"u8, "xx"u8}.slice();
     var tests = new TestFind_tests[]{
         new(new @string[]{}.slice(), "foo"u8, 0, false),
         new(new @string[]{}.slice(), ""u8, 0, false),
@@ -202,12 +202,16 @@ internal static void runSearchWrappers() {
     ((sort.StringSlice)sdata).Search("x"u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object skippingMallocCountInˢ = (@string)"skipping malloc count in short mode"u8;
+private static readonly object skippingGomaxprocs1ˢ = (@string)"skipping; GOMAXPROCS>1"u8;
+
 public static void TestSearchWrappersDontAlloc(ж<testing.T> Ꮡt) {
     if (testing.Short()) {
-        Ꮡt.Skip((@string)"skipping malloc count in short mode"u8);
+        Ꮡt.Skip(skippingMallocCountInˢ);
     }
     if (Δruntime.GOMAXPROCS(0) > 1) {
-        Ꮡt.Skip((@string)"skipping; GOMAXPROCS>1"u8);
+        Ꮡt.Skip(skippingGomaxprocs1ˢ);
     }
     var allocs = testing.AllocsPerRun(100, runSearchWrappers);
     if (allocs != 0D) {

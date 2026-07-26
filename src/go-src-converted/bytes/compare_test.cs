@@ -56,13 +56,16 @@ public static void TestCompare(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object bB1Failedˢ = (@string)"b > b[:1] failed"u8;
+
 public static void TestCompareIdenticalSlice(ж<testing.T> Ꮡt) {
     slice<byte> b = slice<byte>("Hello Gophers!"u8);
     if (Compare(b, b) != 0) {
         Ꮡt.Error((@string)"b != b"u8);
     }
     if (Compare(b, b[..1]) != 1) {
-        Ꮡt.Error((@string)"b > b[:1] failed"u8);
+        Ꮡt.Error(bB1Failedˢ);
     }
 }
 
@@ -153,6 +156,9 @@ public static void TestEndianBaseCompare(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object b1B2ˢ = (@string)"b1 != b2"u8;
+
 public static void BenchmarkCompareBytesEqual(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
@@ -160,10 +166,13 @@ public static void BenchmarkCompareBytesEqual(ж<testing.B> Ꮡb) {
     var b2 = slice<byte>("Hello Gophers!"u8);
     for (nint i = 0; i < b.N; i++) {
         if (Compare(b1, b2) != 0) {
-            Ꮡb.Fatal((@string)"b1 != b2"u8);
+            Ꮡb.Fatal(b1B2ˢ);
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object b1B2Failedˢ = (@string)"b1 > b2 failed"u8;
 
 public static void BenchmarkCompareBytesToNil(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -172,7 +181,7 @@ public static void BenchmarkCompareBytesToNil(ж<testing.B> Ꮡb) {
     slice<byte> b2 = default!;
     for (nint i = 0; i < b.N; i++) {
         if (Compare(b1, b2) != 1) {
-            Ꮡb.Fatal((@string)"b1 > b2 failed"u8);
+            Ꮡb.Fatal(b1B2Failedˢ);
         }
     }
 }
@@ -184,7 +193,7 @@ public static void BenchmarkCompareBytesEmpty(ж<testing.B> Ꮡb) {
     var b2 = b1;
     for (nint i = 0; i < b.N; i++) {
         if (Compare(b1, b2) != 0) {
-            Ꮡb.Fatal((@string)"b1 != b2"u8);
+            Ꮡb.Fatal(b1B2ˢ);
         }
     }
 }
@@ -196,10 +205,13 @@ public static void BenchmarkCompareBytesIdentical(ж<testing.B> Ꮡb) {
     var b2 = b1;
     for (nint i = 0; i < b.N; i++) {
         if (Compare(b1, b2) != 0) {
-            Ꮡb.Fatal((@string)"b1 != b2"u8);
+            Ꮡb.Fatal(b1B2ˢ);
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object b1B2Failedˢ2 = (@string)"b1 < b2 failed"u8;
 
 public static void BenchmarkCompareBytesSameLength(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -208,7 +220,7 @@ public static void BenchmarkCompareBytesSameLength(ж<testing.B> Ꮡb) {
     var b2 = slice<byte>("Hello, Gophers"u8);
     for (nint i = 0; i < b.N; i++) {
         if (Compare(b1, b2) != -1) {
-            Ꮡb.Fatal((@string)"b1 < b2 failed"u8);
+            Ꮡb.Fatal(b1B2Failedˢ2);
         }
     }
 }
@@ -220,7 +232,7 @@ public static void BenchmarkCompareBytesDifferentLength(ж<testing.B> Ꮡb) {
     var b2 = slice<byte>("Hello, Gophers!"u8);
     for (nint i = 0; i < b.N; i++) {
         if (Compare(b1, b2) != -1) {
-            Ꮡb.Fatal((@string)"b1 < b2 failed"u8);
+            Ꮡb.Fatal(b1B2Failedˢ2);
         }
     }
 }
@@ -237,7 +249,7 @@ internal static void benchmarkCompareBytesBigUnaligned(ж<testing.B> Ꮡb, nint 
     b.StartTimer();
     for (nint j = 0; j < b.N; j++) {
         if (Compare(b1, b2[(int)(offset)..]) != 0) {
-            Ꮡb.Fatal((@string)"b1 != b2"u8);
+            Ꮡb.Fatal(b1B2ˢ);
         }
     }
     b.SetBytes((int64)len(b1));
@@ -266,7 +278,7 @@ internal static void benchmarkCompareBytesBigBothUnaligned(ж<testing.B> Ꮡb, n
     b.StartTimer();
     for (nint j = 0; j < b.N; j++) {
         if (Compare(b1[(int)(offset)..], b2[(int)(offset)..]) != 0) {
-            Ꮡb.Fatal((@string)"b1 != b2"u8);
+            Ꮡb.Fatal(b1B2ˢ);
         }
     }
     b.SetBytes((int64)len(b1[(int)(offset)..]));
@@ -293,7 +305,7 @@ public static void BenchmarkCompareBytesBig(ж<testing.B> Ꮡb) {
     b.StartTimer();
     for (nint i = 0; i < b.N; i++) {
         if (Compare(b1, b2) != 0) {
-            Ꮡb.Fatal((@string)"b1 != b2"u8);
+            Ꮡb.Fatal(b1B2ˢ);
         }
     }
     b.SetBytes((int64)len(b1));
@@ -311,7 +323,7 @@ public static void BenchmarkCompareBytesBigIdentical(ж<testing.B> Ꮡb) {
     b.StartTimer();
     for (nint i = 0; i < b.N; i++) {
         if (Compare(b1, b2) != 0) {
-            Ꮡb.Fatal((@string)"b1 != b2"u8);
+            Ꮡb.Fatal(b1B2ˢ);
         }
     }
     b.SetBytes((int64)len(b1));

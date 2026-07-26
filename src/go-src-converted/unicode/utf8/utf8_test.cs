@@ -81,11 +81,11 @@ internal static slice<Utf8Map> surrogateMap = new Utf8Map[]{
 }.slice();
 
 internal static slice<@string> testStrings = new @string[]{
-    "",
-    "abcd",
-    "☺☻☹",
-    "日a本b語ç日ð本Ê語þ日¥本¼語i日©",
-    "日a本b語ç日ð本Ê語þ日¥本¼語i日©日a本b語ç日ð本Ê語þ日¥本¼語i日©日a本b語ç日ð本Ê語þ日¥本¼語i日©",
+    ""u8,
+    "abcd"u8,
+    "☺☻☹"u8,
+    "日a本b語ç日ð本Ê語þ日¥本¼語i日©"u8,
+    "日a本b語ç日ð本Ê語þ日¥本¼語i日©日a本b語ç日ð本Ê語þ日¥本¼語i日©日a本b語ç日ð本Ê語þ日¥本¼語i日©"u8,
     ((@string)(new byte[]{0x80, 0x80, 0x80, 0x80}))
 }.slice();
 

@@ -26,17 +26,54 @@ internal static ж<strings.Replacer> htmlUnescaper = NewReplacer(
     "&quot;", @"""",
     "&apos;", "'");
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string quotˢ = "&quot;"u8;
+private static readonly @string aposˢ = "&apos;"u8;
+
 // The http package's old HTML escaping function.
 internal static @string oldHTMLEscape(@string s) {
     s = Replace(s, "&"u8, "&amp;"u8, -1);
     s = Replace(s, "<"u8, "&lt;"u8, -1);
     s = Replace(s, ">"u8, "&gt;"u8, -1);
-    s = Replace(s, @""""u8, "&quot;"u8, -1);
-    s = Replace(s, "'"u8, "&apos;"u8, -1);
+    s = Replace(s, @""""u8, quotˢ, -1);
+    s = Replace(s, "'"u8, aposˢ, -1);
     return s;
 }
 
 internal static ж<strings.Replacer> capitalLetters = NewReplacer("a"u8, "A", "b", "B");
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string longerstˢ = "longerst"u8;
+private static readonly @string mostLongˢ = "most long"u8;
+private static readonly @string longerˢ = "longer"u8;
+private static readonly @string mediumˢ = "medium"u8;
+private static readonly @string longˢ = "long"u8;
+private static readonly @string shortˢ = "short"u8;
+private static readonly @string rosesˢ = "roses"u8;
+private static readonly @string violetsˢ = "violets"u8;
+private static readonly @string blueˢ = "blue"u8;
+private static readonly @string sugarˢ = "sugar"u8;
+private static readonly @string sweetˢ = "sweet"u8;
+private static readonly @string abracadabraˢ = "abracadabra"u8;
+private static readonly @string poofˢ = "poof"u8;
+private static readonly @string abracadabrakazamˢ = "abracadabrakazam"u8;
+private static readonly @string splatˢ = "splat"u8;
+private static readonly @string abrahamˢ = "abraham"u8;
+private static readonly @string lincolnˢ = "lincoln"u8;
+private static readonly @string abrasionˢ = "abrasion"u8;
+private static readonly @string scrapeˢ = "scrape"u8;
+private static readonly @string isaacˢ = "isaac"u8;
+private static readonly @string foo1ˢ = "foo1"u8;
+private static readonly @string foo2ˢ = "foo2"u8;
+private static readonly @string foo3ˢ = "foo3"u8;
+private static readonly @string foo31ˢ = "foo31"u8;
+private static readonly @string foo32ˢ = "foo32"u8;
+private static readonly @string foo11ˢ = "foo11"u8;
+private static readonly @string foo12ˢ = "foo12"u8;
+private static readonly @string foobarˢ = "foobar"u8;
+private static readonly @string foobazˢ = "foobaz"u8;
+private static readonly @string matchˢ = "[match]"u8;
+private static readonly @string helloˢ5 = "Hello"u8;
 
 [GoLocalName("testCase")] [GoType("dyn")] partial struct TestReplacer_testCase {
     internal ж<strings.Replacer> r;
@@ -101,9 +138,9 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         "aa", "2[aa]",
         "a", "1[a]",
         "i", "i",
-        "longerst", "most long",
-        "longer", "medium",
-        "long", "short",
+        longerstˢ, mostLongˢ,
+        longerˢ, mediumˢ,
+        longˢ, shortˢ,
         "xx", "xx",
         "x", "X",
         "X", "Y",
@@ -116,19 +153,19 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         new TestReplacer_testCase(gen1, ""u8, ""u8));
     // gen2 has multiple old strings with no pairwise common prefix.
     var gen2 = NewReplacer(
-        "roses"u8, "red",
-        "violets", "blue",
-        "sugar", "sweet");
+        rosesˢ, "red",
+        violetsˢ, blueˢ,
+        sugarˢ, sweetˢ);
     testCases = append(testCases,
         new TestReplacer_testCase(gen2, "roses are red, violets are blue..."u8, "red are red, blue are blue..."u8),
         new TestReplacer_testCase(gen2, ""u8, ""u8));
     // gen3 has multiple old strings with an overall common prefix.
     var gen3 = NewReplacer(
-        "abracadabra"u8, "poof",
-        "abracadabrakazam", "splat",
-        "abraham", "lincoln",
-        "abrasion", "scrape",
-        "abraham", "isaac");
+        abracadabraˢ, poofˢ,
+        abracadabrakazamˢ, splatˢ,
+        abrahamˢ, lincolnˢ,
+        abrasionˢ, scrapeˢ,
+        abrahamˢ, isaacˢ);
     testCases = append(testCases,
         new TestReplacer_testCase(gen3, "abracadabrakazam abraham"u8, "poofkazam lincoln"u8),
         new TestReplacer_testCase(gen3, "abrasion abracad"u8, "scrape abracad"u8),
@@ -137,22 +174,22 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
     // foo{1,2,3,4} have multiple old strings with an overall common prefix
     // and 1- or 2- byte extensions from the common prefix.
     var foo1 = NewReplacer(
-        "foo1"u8, "A",
-        "foo2", "B",
-        "foo3", "C");
+        foo1ˢ, "A",
+        foo2ˢ, "B",
+        foo3ˢ, "C");
     var foo2 = NewReplacer(
-        "foo1"u8, "A",
-        "foo2", "B",
-        "foo31", "C",
-        "foo32", "D");
+        foo1ˢ, "A",
+        foo2ˢ, "B",
+        foo31ˢ, "C",
+        foo32ˢ, "D");
     var foo3 = NewReplacer(
-        "foo11"u8, "A",
-        "foo12", "B",
-        "foo31", "C",
-        "foo32", "D");
+        foo11ˢ, "A",
+        foo12ˢ, "B",
+        foo31ˢ, "C",
+        foo32ˢ, "D");
     var foo4 = NewReplacer(
-        "foo12"u8, "B",
-        "foo32", "D");
+        foo12ˢ, "B",
+        foo32ˢ, "D");
     testCases = append(testCases,
         new TestReplacer_testCase(foo1, "fofoofoo12foo32oo"u8, "fofooA2C2oo"u8),
         new TestReplacer_testCase(foo1, ""u8, ""u8),
@@ -183,7 +220,7 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
     var blankLowPriority = NewReplacer("o"u8, "O", "", "X");
     var blankNoOp1 = NewReplacer(""u8, "");
     var blankNoOp2 = NewReplacer(""u8, "", "", "A");
-    var blankFoo = NewReplacer(""u8, "X", "foobar", "R", "foobaz", "Z");
+    var blankFoo = NewReplacer(""u8, "X", foobarˢ, "R", foobazˢ, "Z");
     testCases = append(testCases,
         new TestReplacer_testCase(blankToX1, "foo"u8, "XfXoXoX"u8),
         new TestReplacer_testCase(blankToX1, ""u8, "X"u8),
@@ -207,7 +244,7 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         new TestReplacer_testCase(blankFoo, "foobar-foobaz"u8, "XRX-XZX"u8),
         new TestReplacer_testCase(blankFoo, ""u8, "X"u8));
     // single string replacer
-    var abcMatcher = NewReplacer("abc"u8, "[match]");
+    var abcMatcher = NewReplacer("abc"u8, matchˢ);
     testCases = append(testCases,
         new TestReplacer_testCase(abcMatcher, ""u8, ""u8),
         new TestReplacer_testCase(abcMatcher, "ab"u8, "ab"u8),
@@ -215,7 +252,7 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         new TestReplacer_testCase(abcMatcher, "abcd"u8, "[match]d"u8),
         new TestReplacer_testCase(abcMatcher, "cabcabcdabca"u8, "c[match][match]d[match]a"u8));
     // Issue 6659 cases (more single string replacer)
-    var noHello = NewReplacer("Hello"u8, "");
+    var noHello = NewReplacer(helloˢ5, "");
     testCases = append(testCases,
         new TestReplacer_testCase(noHello, "Hello"u8, ""u8),
         new TestReplacer_testCase(noHello, "Hellox"u8, "x"u8),
@@ -400,10 +437,13 @@ public static void BenchmarkGenericMatch1(ж<testing.B> Ꮡb) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string itAposSLtBGtHtmlLtBGtˢ = "It&apos;s &lt;b&gt;HTML&lt;/b&gt;!"u8;
+
 public static void BenchmarkGenericMatch2(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    @string str = Repeat("It&apos;s &lt;b&gt;HTML&lt;/b&gt;!"u8, 100);
+    @string str = Repeat(itAposSLtBGtHtmlLtBGtˢ, 100);
     for (nint i = 0; i < b.N; i++) {
         htmlUnescaper.Replace(str);
     }
@@ -412,7 +452,7 @@ public static void BenchmarkGenericMatch2(ж<testing.B> Ꮡb) {
 internal static void benchmarkSingleString(ж<testing.B> Ꮡb, @string pattern, @string text) {
     ref var b = ref Ꮡb.Value;
 
-    var r = NewReplacer(pattern, "[match]");
+    var r = NewReplacer(pattern, matchˢ);
     b.SetBytes((int64)len(text));
     b.ResetTimer();
     for (nint i = 0; i < b.N; i++) {
@@ -432,8 +472,12 @@ public static void BenchmarkSingleLongSuffixFail(ж<testing.B> Ꮡb) {
     benchmarkSingleString(Ꮡb, "b"u8 + Repeat("a"u8, 500), Repeat("a"u8, 1002));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abcdefˢ = "abcdef"u8;
+private static readonly @string abcdefghijklmnoˢ = "abcdefghijklmno"u8;
+
 public static void BenchmarkSingleMatch(ж<testing.B> Ꮡb) {
-    benchmarkSingleString(Ꮡb, "abcdef"u8, Repeat("abcdefghijklmno"u8, 1000));
+    benchmarkSingleString(Ꮡb, abcdefˢ, Repeat(abcdefghijklmnoˢ, 1000));
 }
 
 public static void BenchmarkByteByteNoMatch(ж<testing.B> Ꮡb) {
@@ -463,10 +507,13 @@ public static void BenchmarkByteStringMatch(ж<testing.B> Ꮡb) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string i3ToEscapeHtmlOtherTextˢ = "I <3 to escape HTML & other text too."u8;
+
 public static void BenchmarkHTMLEscapeNew(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    @string str = "I <3 to escape HTML & other text too."u8;
+    @string str = i3ToEscapeHtmlOtherTextˢ;
     for (nint i = 0; i < b.N; i++) {
         htmlEscaper.Replace(str);
     }
@@ -475,7 +522,7 @@ public static void BenchmarkHTMLEscapeNew(ж<testing.B> Ꮡb) {
 public static void BenchmarkHTMLEscapeOld(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    @string str = "I <3 to escape HTML & other text too."u8;
+    @string str = i3ToEscapeHtmlOtherTextˢ;
     for (nint i = 0; i < b.N; i++) {
         oldHTMLEscape(str);
     }
@@ -484,7 +531,7 @@ public static void BenchmarkHTMLEscapeOld(ж<testing.B> Ꮡb) {
 public static void BenchmarkByteStringReplacerWriteString(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    @string str = Repeat("I <3 to escape HTML & other text too."u8, 100);
+    @string str = Repeat(i3ToEscapeHtmlOtherTextˢ, 100);
     var buf = @new<bytes.Buffer>();
     for (nint i = 0; i < b.N; i++) {
         htmlEscaper.WriteString(new bytes_BufferжWriter(buf), str);
@@ -492,10 +539,13 @@ public static void BenchmarkByteStringReplacerWriteString(ж<testing.B> Ꮡb) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
+
 public static void BenchmarkByteReplacerWriteString(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    @string str = Repeat("abcdefghijklmnopqrstuvwxyz"u8, 100);
+    @string str = Repeat(abcdefghijklmnopqrstuvwxyzˢ, 100);
     var buf = @new<bytes.Buffer>();
     for (nint i = 0; i < b.N; i++) {
         capitalLetters.WriteString(new bytes_BufferжWriter(buf), str);
@@ -543,10 +593,14 @@ internal static slice<mapdataᴛ1> mapdata = new mapdataᴛ1[]{
     new("Greek"u8, "α β γ δ ε ζ η θ ι κ λ μ ν ξ ο π ρ ς σ τ υ φ χ ψ ω"u8)
 }.slice();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string identityˢ = "identity"u8;
+private static readonly @string changeˢ = "change"u8;
+
 public static void BenchmarkMap(ж<testing.B> Ꮡb) {
     var mapidentity = (rune r) => r;
     var mapidentityʗ1 = mapidentity;
-    Ꮡb.Run("identity"u8, (ж<testing.B> bΔ1) => {
+    Ꮡb.Run(identityˢ, (ж<testing.B> bΔ1) => {
         foreach (var (_, vᴛ1) in mapdata) {
             ref var md = ref heap(new mapdataᴛ1(), out var Ꮡmd);
             md = vᴛ1;
@@ -570,7 +624,7 @@ public static void BenchmarkMap(ж<testing.B> Ꮡb) {
         return r;
     };
     var mapchangeʗ1 = mapchange;
-    Ꮡb.Run("change"u8, (ж<testing.B> bΔ3) => {
+    Ꮡb.Run(changeˢ, (ж<testing.B> bΔ3) => {
         foreach (var (_, vᴛ3) in mapdata) {
             ref var md = ref heap(new mapdataᴛ1(), out var Ꮡmd);
             md = vᴛ3;

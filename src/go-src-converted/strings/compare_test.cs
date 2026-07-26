@@ -44,13 +44,17 @@ public static void TestCompare(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloGophersˢ = "Hello Gophers!"u8;
+private static readonly object sS1Failedˢ = (@string)"s > s[:1] failed"u8;
+
 public static void TestCompareIdenticalString(ж<testing.T> Ꮡt) {
-    @string s = "Hello Gophers!"u8;
+    @string s = helloGophersˢ;
     if (Compare(s, s) != 0) {
         Ꮡt.Error((@string)"s != s"u8);
     }
     if (Compare(s, s[..1]) != 1) {
-        Ꮡt.Error((@string)"s > s[:1] failed"u8);
+        Ꮡt.Error(sS1Failedˢ);
     }
 }
 

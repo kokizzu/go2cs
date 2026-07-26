@@ -119,8 +119,12 @@ public static void TestSimple(ж<testing.T> Ꮡt) {
     testGoldenCastagnoli(Ꮡt, (slice<byte> b) => simpleUpdate(0, Ꮡtab.ValueSlot, b));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ieeeˢ = "IEEE"u8;
+private static readonly @string castagnoliˢ = "Castagnoli"u8;
+
 public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
-    Ꮡt.Run("IEEE"u8, (ж<testing.T> tΔ1) => {
+    Ꮡt.Run(ieeeˢ, (ж<testing.T> tΔ1) => {
         foreach (var (_, vᴛ1) in golden) {
             ref var g = ref heap(new test(), out var Ꮡg);
             g = vᴛ1;
@@ -150,7 +154,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
             }
         }
     });
-    Ꮡt.Run("Castagnoli"u8, (ж<testing.T> tΔ2) => {
+    Ꮡt.Run(castagnoliˢ, (ж<testing.T> tΔ2) => {
         var table = MakeTable(Castagnoli);
         foreach (var (_, vᴛ3) in golden) {
             ref var g = ref heap(new test(), out var Ꮡg);
@@ -216,9 +220,12 @@ public static void TestSlicing(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object archSpecificIeeeNotˢ = (@string)"Arch-specific IEEE not available."u8;
+
 public static void TestArchIEEE(ж<testing.T> Ꮡt) {
     if (!archAvailableIEEE()) {
-        Ꮡt.Skip((@string)"Arch-specific IEEE not available."u8);
+        Ꮡt.Skip(archSpecificIeeeNotˢ);
     }
     archInitIEEE();
     var slicingTable = slicingMakeTable(IEEE);
@@ -226,9 +233,12 @@ public static void TestArchIEEE(ж<testing.T> Ꮡt) {
     testCrossCheck(Ꮡt, archUpdateIEEE, (uint32 crc, slice<byte> b) => slicingUpdate(crc, slicingTableʗ1, b));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object archSpecificCastagnoliˢ = (@string)"Arch-specific Castagnoli not available."u8;
+
 public static void TestArchCastagnoli(ж<testing.T> Ꮡt) {
     if (!archAvailableCastagnoli()) {
-        Ꮡt.Skip((@string)"Arch-specific Castagnoli not available."u8);
+        Ꮡt.Skip(archSpecificCastagnoliˢ);
     }
     archInitCastagnoli();
     var slicingTable = slicingMakeTable(Castagnoli);
@@ -281,10 +291,15 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string polyIeeeˢ = "poly=IEEE"u8;
+private static readonly @string polyCastagnoliˢ = "poly=Castagnoli"u8;
+private static readonly @string polyKoopmanˢ = "poly=Koopman"u8;
+
 public static void BenchmarkCRC32(ж<testing.B> Ꮡb) {
-    Ꮡb.Run("poly=IEEE"u8, benchmarkAll(NewIEEE()));
-    Ꮡb.Run("poly=Castagnoli"u8, benchmarkAll(New(MakeTable(Castagnoli))));
-    Ꮡb.Run("poly=Koopman"u8, benchmarkAll(New(MakeTable(Koopman))));
+    Ꮡb.Run(polyIeeeˢ, benchmarkAll(NewIEEE()));
+    Ꮡb.Run(polyCastagnoliˢ, benchmarkAll(New(MakeTable(Castagnoli))));
+    Ꮡb.Run(polyKoopmanˢ, benchmarkAll(New(MakeTable(Koopman))));
 }
 
 internal static Action<ж<testing.B>> benchmarkAll(hash.Hash32 h) {

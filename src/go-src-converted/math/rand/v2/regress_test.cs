@@ -28,6 +28,10 @@ partial class rand_test_package {
 
 internal static ж<bool> update = flag.Bool("update"u8, false, "update golden results for regression test"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string truncatedˢ = "truncated"u8;
+private static readonly @string regressTestGoˢ = "regress_test.go"u8;
+
 public static void TestRegress(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
@@ -129,7 +133,7 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
                 var big = (int64)(1152921504606846976L);
                 if ((int64)(nint)big != big && (m.Name == "Int"u8 || m.Name == "IntN"u8 || m.Name == "Uint"u8 || m.Name == "UintN"u8)){
                     // 32-bit machine cannot print 64-bit results
-                    val = "truncated"u8;
+                    val = truncatedˢ;
                 } else 
                 if (reflect.TypeOf(@out).Kind() == reflect.ΔSlice){
                     val = fmt.Sprintf("%#v"u8, @out);
@@ -156,15 +160,19 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
         }
     }
     if (update.Value) {
-        replace(Ꮡt, "regress_test.go"u8, buf.Bytes());
+        replace(Ꮡt, regressTestGoˢ, buf.Bytes());
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object updateNotGivenˢ = (@string)"-update not given"u8;
+private static readonly @string exampleTestGoˢ = "example_test.go"u8;
 
 public static void TestUpdateExample(ж<testing.T> Ꮡt) => func((defer, recover) => {
     ref var t = ref Ꮡt.Value;
 
     if (!update.Value) {
-        Ꮡt.Skip((@string)"-update not given"u8);
+        Ꮡt.Skip(updateNotGivenˢ);
     }
     var oldStdout = os.Stdout;
     var oldStdoutʗ1 = oldStdout;
@@ -198,7 +206,7 @@ public static void TestUpdateExample(ж<testing.T> Ꮡt) => func((defer, recover
             fmt.Fprintf(new bytes_BufferжWriter(Ꮡbuf), "\t// %s\n"u8, line);
         }
     }
-    replace(Ꮡt, "example_test.go"u8, buf.Bytes());
+    replace(Ꮡt, exampleTestGoˢ, buf.Bytes());
     // Exit so that Example_rand cannot fail.
     fmt.Printf("UPDATED; ignore non-zero exit status\n"u8);
     os.Exit(1);

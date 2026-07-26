@@ -249,6 +249,9 @@ public static void TestUnreadRuneError(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object unreadByteExpectedErrorˢ = (@string)"UnreadByte: expected error, got nil"u8;
+
 public static void TestReaderDoubleUnreadRune(ж<testing.T> Ꮡt) {
     var buf = NewBuffer(slice<byte>("groucho"u8));
     {
@@ -265,7 +268,7 @@ public static void TestReaderDoubleUnreadRune(ж<testing.T> Ꮡt) {
     }
     {
         var err = buf.UnreadByte(); if (err == default!) {
-            Ꮡt.Fatal((@string)"UnreadByte: expected error, got nil"u8);
+            Ꮡt.Fatal(unreadByteExpectedErrorˢ);
         }
     }
 }

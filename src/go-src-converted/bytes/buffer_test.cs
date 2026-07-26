@@ -101,9 +101,12 @@ internal static @string fillBytes(ж<testing.T> Ꮡt, @string testname, ж<bytes
     return s;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string newBufferˢ = "NewBuffer"u8;
+
 public static void TestNewBuffer(ж<testing.T> Ꮡt) {
     var buf = NewBuffer(testBytes);
-    check(Ꮡt, "NewBuffer"u8, buf, testString);
+    check(Ꮡt, newBufferˢ, buf, testString);
 }
 
 internal static ж<bytes.Buffer> Ꮡbuf = new(default(bytes.Buffer));
@@ -120,12 +123,15 @@ public static void TestNewBufferShallow(ж<testing.T> Ꮡt) {
     if (n > 0D) {
         Ꮡt.Errorf("allocations occurred while shallow copying"u8);
     }
-    check(Ꮡt, "NewBuffer"u8, Ꮡbuf, testString);
+    check(Ꮡt, newBufferˢ, Ꮡbuf, testString);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string newBufferStringˢ = "NewBufferString"u8;
 
 public static void TestNewBufferString(ж<testing.T> Ꮡt) {
     var buf = NewBufferString(testString);
-    check(Ꮡt, "NewBufferString"u8, buf, testString);
+    check(Ꮡt, newBufferStringˢ, buf, testString);
 }
 
 // Empty buf through repeated reads into fub.
@@ -148,36 +154,48 @@ internal static void empty(ж<testing.T> Ꮡt, @string testname, ж<bytes.Buffer
     check(Ꮡt, testname + " (empty 4)"u8, Ꮡbuf, ""u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testBasicOperations1ˢ = "TestBasicOperations (1)"u8;
+private static readonly @string testBasicOperations2ˢ = "TestBasicOperations (2)"u8;
+private static readonly @string testBasicOperations3ˢ = "TestBasicOperations (3)"u8;
+private static readonly @string testBasicOperations4ˢ = "TestBasicOperations (4)"u8;
+private static readonly @string testBasicOperations5ˢ = "TestBasicOperations (5)"u8;
+private static readonly @string testBasicOperations6ˢ = "TestBasicOperations (6)"u8;
+private static readonly @string testBasicOperations7ˢ = "TestBasicOperations (7)"u8;
+private static readonly @string testBasicOperations8ˢ = "TestBasicOperations (8)"u8;
+private static readonly @string testBasicOperations9ˢ = "TestBasicOperations (9)"u8;
+private static readonly @string testBasicOperations10ˢ = "TestBasicOperations (10)"u8;
+
 public static void TestBasicOperations(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     for (nint i = 0; i < 5; i++) {
-        check(Ꮡt, "TestBasicOperations (1)"u8, Ꮡbuf, ""u8);
+        check(Ꮡt, testBasicOperations1ˢ, Ꮡbuf, ""u8);
         buf.Reset();
-        check(Ꮡt, "TestBasicOperations (2)"u8, Ꮡbuf, ""u8);
+        check(Ꮡt, testBasicOperations2ˢ, Ꮡbuf, ""u8);
         buf.Truncate(0);
-        check(Ꮡt, "TestBasicOperations (3)"u8, Ꮡbuf, ""u8);
+        check(Ꮡt, testBasicOperations3ˢ, Ꮡbuf, ""u8);
         var (n, err) = buf.Write(testBytes[0..1]);
         {
             nint want = 1; if (err != default! || n != want) {
                 Ꮡt.Errorf("Write: got (%d, %v), want (%d, %v)"u8, n, err, want, default!);
             }
         }
-        check(Ꮡt, "TestBasicOperations (4)"u8, Ꮡbuf, "a"u8);
+        check(Ꮡt, testBasicOperations4ˢ, Ꮡbuf, "a"u8);
         buf.WriteByte(testString[1]);
-        check(Ꮡt, "TestBasicOperations (5)"u8, Ꮡbuf, "ab"u8);
+        check(Ꮡt, testBasicOperations5ˢ, Ꮡbuf, "ab"u8);
         (n, err) = buf.Write(testBytes[2..26]);
         {
             nint want = 24; if (err != default! || n != want) {
                 Ꮡt.Errorf("Write: got (%d, %v), want (%d, %v)"u8, n, err, want, default!);
             }
         }
-        check(Ꮡt, "TestBasicOperations (6)"u8, Ꮡbuf, testString[0..26]);
+        check(Ꮡt, testBasicOperations6ˢ, Ꮡbuf, testString[0..26]);
         buf.Truncate(26);
-        check(Ꮡt, "TestBasicOperations (7)"u8, Ꮡbuf, testString[0..26]);
+        check(Ꮡt, testBasicOperations7ˢ, Ꮡbuf, testString[0..26]);
         buf.Truncate(20);
-        check(Ꮡt, "TestBasicOperations (8)"u8, Ꮡbuf, testString[0..20]);
-        empty(Ꮡt, "TestBasicOperations (9)"u8, Ꮡbuf, testString[0..20], new slice<byte>(5));
-        empty(Ꮡt, "TestBasicOperations (10)"u8, Ꮡbuf, ""u8, new slice<byte>(100));
+        check(Ꮡt, testBasicOperations8ˢ, Ꮡbuf, testString[0..20]);
+        empty(Ꮡt, testBasicOperations9ˢ, Ꮡbuf, testString[0..20], new slice<byte>(5));
+        empty(Ꮡt, testBasicOperations10ˢ, Ꮡbuf, ""u8, new slice<byte>(100));
         buf.WriteByte(testString[1]);
         (var c, err) = buf.ReadByte();
         {
@@ -192,6 +210,11 @@ public static void TestBasicOperations(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testLargeWrites1ˢ = "TestLargeWrites (1)"u8;
+private static readonly @string testLargeStringWrites2ˢ = "TestLargeStringWrites (2)"u8;
+private static readonly @string testLargeStringWrites3ˢ = "TestLargeStringWrites (3)"u8;
+
 public static void TestLargeStringWrites(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     nint limit = 30;
@@ -199,11 +222,15 @@ public static void TestLargeStringWrites(ж<testing.T> Ꮡt) {
         limit = 9;
     }
     for (nint i = 3; i < limit; i += 3) {
-        @string s = fillString(Ꮡt, "TestLargeWrites (1)"u8, Ꮡbuf, ""u8, 5, testString);
-        empty(Ꮡt, "TestLargeStringWrites (2)"u8, Ꮡbuf, s, new slice<byte>(len(testString) / i));
+        @string s = fillString(Ꮡt, testLargeWrites1ˢ, Ꮡbuf, ""u8, 5, testString);
+        empty(Ꮡt, testLargeStringWrites2ˢ, Ꮡbuf, s, new slice<byte>(len(testString) / i));
     }
-    check(Ꮡt, "TestLargeStringWrites (3)"u8, Ꮡbuf, ""u8);
+    check(Ꮡt, testLargeStringWrites3ˢ, Ꮡbuf, ""u8);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testLargeByteWrites2ˢ = "TestLargeByteWrites (2)"u8;
+private static readonly @string testLargeByteWrites3ˢ = "TestLargeByteWrites (3)"u8;
 
 public static void TestLargeByteWrites(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
@@ -212,29 +239,41 @@ public static void TestLargeByteWrites(ж<testing.T> Ꮡt) {
         limit = 9;
     }
     for (nint i = 3; i < limit; i += 3) {
-        @string s = fillBytes(Ꮡt, "TestLargeWrites (1)"u8, Ꮡbuf, ""u8, 5, testBytes);
-        empty(Ꮡt, "TestLargeByteWrites (2)"u8, Ꮡbuf, s, new slice<byte>(len(testString) / i));
+        @string s = fillBytes(Ꮡt, testLargeWrites1ˢ, Ꮡbuf, ""u8, 5, testBytes);
+        empty(Ꮡt, testLargeByteWrites2ˢ, Ꮡbuf, s, new slice<byte>(len(testString) / i));
     }
-    check(Ꮡt, "TestLargeByteWrites (3)"u8, Ꮡbuf, ""u8);
+    check(Ꮡt, testLargeByteWrites3ˢ, Ꮡbuf, ""u8);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testLargeReads1ˢ = "TestLargeReads (1)"u8;
+private static readonly @string testLargeReads2ˢ = "TestLargeReads (2)"u8;
+private static readonly @string testLargeStringReads3ˢ = "TestLargeStringReads (3)"u8;
 
 public static void TestLargeStringReads(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     for (nint i = 3; i < 30; i += 3) {
-        @string s = fillString(Ꮡt, "TestLargeReads (1)"u8, Ꮡbuf, ""u8, 5, testString[0..(int)(len(testString) / i)]);
-        empty(Ꮡt, "TestLargeReads (2)"u8, Ꮡbuf, s, new slice<byte>(len(testString)));
+        @string s = fillString(Ꮡt, testLargeReads1ˢ, Ꮡbuf, ""u8, 5, testString[0..(int)(len(testString) / i)]);
+        empty(Ꮡt, testLargeReads2ˢ, Ꮡbuf, s, new slice<byte>(len(testString)));
     }
-    check(Ꮡt, "TestLargeStringReads (3)"u8, Ꮡbuf, ""u8);
+    check(Ꮡt, testLargeStringReads3ˢ, Ꮡbuf, ""u8);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testLargeByteReads3ˢ = "TestLargeByteReads (3)"u8;
 
 public static void TestLargeByteReads(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     for (nint i = 3; i < 30; i += 3) {
-        @string s = fillBytes(Ꮡt, "TestLargeReads (1)"u8, Ꮡbuf, ""u8, 5, testBytes[0..(int)(len(testBytes) / i)]);
-        empty(Ꮡt, "TestLargeReads (2)"u8, Ꮡbuf, s, new slice<byte>(len(testString)));
+        @string s = fillBytes(Ꮡt, testLargeReads1ˢ, Ꮡbuf, ""u8, 5, testBytes[0..(int)(len(testBytes) / i)]);
+        empty(Ꮡt, testLargeReads2ˢ, Ꮡbuf, s, new slice<byte>(len(testString)));
     }
-    check(Ꮡt, "TestLargeByteReads (3)"u8, Ꮡbuf, ""u8);
+    check(Ꮡt, testLargeByteReads3ˢ, Ꮡbuf, ""u8);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testMixedReadsAndWrites1ˢ = "TestMixedReadsAndWrites (1)"u8;
+private static readonly @string testMixedReadsAndWrites2ˢ = "TestMixedReadsAndWrites (2)"u8;
 
 public static void TestMixedReadsAndWrites(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
@@ -242,16 +281,16 @@ public static void TestMixedReadsAndWrites(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < 50; i++) {
         nint wlen = rand.Intn(len(testString));
         if (i % 2 == 0){
-            s = fillString(Ꮡt, "TestMixedReadsAndWrites (1)"u8, Ꮡbuf, s, 1, testString[0..(int)(wlen)]);
+            s = fillString(Ꮡt, testMixedReadsAndWrites1ˢ, Ꮡbuf, s, 1, testString[0..(int)(wlen)]);
         } else {
-            s = fillBytes(Ꮡt, "TestMixedReadsAndWrites (1)"u8, Ꮡbuf, s, 1, testBytes[0..(int)(wlen)]);
+            s = fillBytes(Ꮡt, testMixedReadsAndWrites1ˢ, Ꮡbuf, s, 1, testBytes[0..(int)(wlen)]);
         }
         nint rlen = rand.Intn(len(testString));
         var fub = new slice<byte>(rlen);
         var (n, _) = buf.Read(fub);
         s = s[(int)(n)..];
     }
-    empty(Ꮡt, "TestMixedReadsAndWrites (2)"u8, Ꮡbuf, s, new slice<byte>(buf.Len()));
+    empty(Ꮡt, testMixedReadsAndWrites2ˢ, Ꮡbuf, s, new slice<byte>(buf.Len()));
 }
 
 public static void TestCapWithPreallocatedSlice(ж<testing.T> Ꮡt) {
@@ -278,13 +317,17 @@ public static void TestNil(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testReadFrom1ˢ = "TestReadFrom (1)"u8;
+private static readonly @string testReadFrom2ˢ = "TestReadFrom (2)"u8;
+
 public static void TestReadFrom(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     for (nint i = 3; i < 30; i += 3) {
-        @string s = fillBytes(Ꮡt, "TestReadFrom (1)"u8, Ꮡbuf, ""u8, 5, testBytes[0..(int)(len(testBytes) / i)]);
+        @string s = fillBytes(Ꮡt, testReadFrom1ˢ, Ꮡbuf, ""u8, 5, testBytes[0..(int)(len(testBytes) / i)]);
         ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
         b.ReadFrom(new bytes.BufferжReader(Ꮡbuf));
-        empty(Ꮡt, "TestReadFrom (2)"u8, Ꮡb, s, new slice<byte>(len(testString)));
+        empty(Ꮡt, testReadFrom2ˢ, Ꮡb, s, new slice<byte>(len(testString)));
     }
 }
 
@@ -299,6 +342,10 @@ internal static (nint, error) Read(this panicReader r, slice<byte> p) {
     return (0, Δio.EOF);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testReadFromPanicReader1ˢ = "TestReadFromPanicReader (1)"u8;
+private static readonly @string testReadFromPanicReader2ˢ = "TestReadFromPanicReader (2)"u8;
+
 // Make sure that an empty Buffer remains empty when
 // it is "grown" before a Read that panics
 public static void TestReadFromPanicReader(ж<testing.T> Ꮡt) => func((defer, recover) => {
@@ -311,29 +358,31 @@ public static void TestReadFromPanicReader(ж<testing.T> Ꮡt) => func((defer, r
     if (i != 0) {
         Ꮡt.Fatalf("unexpected return from bytes.ReadFrom (1): got: %d, want %d"u8, i, (nint)(0));
     }
-    check(Ꮡt, "TestReadFromPanicReader (1)"u8, Ꮡbuf, ""u8);
+    check(Ꮡt, testReadFromPanicReader1ˢ, Ꮡbuf, ""u8);
     // Confirm that when Reader panics, the empty buffer remains empty
     ref var buf2 = ref heap(new bytes.Buffer(), out var Ꮡbuf2);
     defer(() => {
         recover();
-        check(Ꮡt, "TestReadFromPanicReader (2)"u8, Ꮡbuf2, ""u8);
+        check(Ꮡt, testReadFromPanicReader2ˢ, Ꮡbuf2, ""u8);
     });
     buf2.ReadFrom(new panicReader(panic: true));
 });
 
-public static void TestReadFromNegativeReader(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    ref var t = ref Ꮡt.Value;
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object bytesBufferReadFromDidnTˢ = (@string)"bytes.Buffer.ReadFrom didn't panic"u8;
+private static readonly @string bytesBufferReaderˢ = "bytes.Buffer: reader returned negative count from Read"u8;
 
+public static void TestReadFromNegativeReader(ж<testing.T> Ꮡt) => func((defer, recover) => {
     bytes.Buffer b = default!;
     defer(() => {
         var switchᴛ1 = recover();
         switch (switchᴛ1.type()) {
         case null: {
-            Ꮡt.Fatal((@string)"bytes.Buffer.ReadFrom didn't panic"u8);
+            Ꮡt.Fatal(bytesBufferReadFromDidnTˢ);
             break;
         }
         case {} Δerr when Δerr._<error>(out var err): {
-            @string wantError = "bytes.Buffer: reader returned negative count from Read"u8;
+            @string wantError = bytesBufferReaderˢ;
             if (err.Error() != wantError) {
                 // this is the error string of errNegativeRead
                 Ꮡt.Fatalf("recovered panic: got %v, want %v"u8, err.Error(), wantError);
@@ -349,13 +398,17 @@ public static void TestReadFromNegativeReader(ж<testing.T> Ꮡt) => func((defer
     b.ReadFrom(new negativeReaderжReader(@new<negativeReader>()));
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testWriteTo1ˢ = "TestWriteTo (1)"u8;
+private static readonly @string testWriteTo2ˢ = "TestWriteTo (2)"u8;
+
 public static void TestWriteTo(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     for (nint i = 3; i < 30; i += 3) {
-        @string s = fillBytes(Ꮡt, "TestWriteTo (1)"u8, Ꮡbuf, ""u8, 5, testBytes[0..(int)(len(testBytes) / i)]);
+        @string s = fillBytes(Ꮡt, testWriteTo1ˢ, Ꮡbuf, ""u8, 5, testBytes[0..(int)(len(testBytes) / i)]);
         ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
         buf.WriteTo(new bytes.BufferжWriter(Ꮡb));
-        empty(Ꮡt, "TestWriteTo (2)"u8, Ꮡb, s, new slice<byte>(len(testString)));
+        empty(Ꮡt, testWriteTo2ˢ, Ꮡb, s, new slice<byte>(len(testString)));
     }
 }
 
@@ -384,6 +437,11 @@ public static void TestWriteAppend(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("allocations occurred while appending"u8);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object unreadRuneAtEofGotNoˢ = (@string)"UnreadRune at EOF: got no error"u8;
+private static readonly object readRuneAtEofGotNoErrorˢ = (@string)"ReadRune at EOF: got no error"u8;
+private static readonly object unreadRuneAfterReadRuneˢ = (@string)"UnreadRune after ReadRune at EOF: got no error"u8;
 
 public static void TestRuneIO(ж<testing.T> Ꮡt) {
     UntypedInt NRune = 1000;
@@ -421,17 +479,17 @@ public static void TestRuneIO(ж<testing.T> Ꮡt) {
     // check at EOF
     {
         var err = buf.UnreadRune(); if (err == default!) {
-            Ꮡt.Fatal((@string)"UnreadRune at EOF: got no error"u8);
+            Ꮡt.Fatal(unreadRuneAtEofGotNoˢ);
         }
     }
     {
         var (_, _, err) = buf.ReadRune(); if (err == default!) {
-            Ꮡt.Fatal((@string)"ReadRune at EOF: got no error"u8);
+            Ꮡt.Fatal(readRuneAtEofGotNoErrorˢ);
         }
     }
     {
         var err = buf.UnreadRune(); if (err == default!) {
-            Ꮡt.Fatal((@string)"UnreadRune after ReadRune at EOF: got no error"u8);
+            Ꮡt.Fatal(unreadRuneAfterReadRuneˢ);
         }
     }
     // check not at EOF
@@ -501,13 +559,13 @@ public static void TestNext(ж<testing.T> Ꮡt) {
     internal error err;
 }
 internal static slice<readBytesTestsᴛ1> readBytesTests = new readBytesTestsᴛ1[]{
-    new(""u8, 0, new @string[]{""}.slice(), Δio.EOF),
-    new("a\x00"u8, 0, new @string[]{"a\x00"}.slice(), default!),
-    new("abbbaaaba"u8, (rune)'b', new @string[]{"ab", "b", "b", "aaab"}.slice(), default!),
-    new("hello\x01world"u8, 1, new @string[]{"hello\x01"}.slice(), default!),
-    new("foo\nbar"u8, 0, new @string[]{"foo\nbar"}.slice(), Δio.EOF),
-    new("alpha\nbeta\ngamma\n"u8, (rune)'\n', new @string[]{"alpha\n", "beta\n", "gamma\n"}.slice(), default!),
-    new("alpha\nbeta\ngamma"u8, (rune)'\n', new @string[]{"alpha\n", "beta\n", "gamma"}.slice(), Δio.EOF)
+    new(""u8, 0, new @string[]{""u8}.slice(), Δio.EOF),
+    new("a\x00"u8, 0, new @string[]{"a\x00"u8}.slice(), default!),
+    new("abbbaaaba"u8, (rune)'b', new @string[]{"ab"u8, "b"u8, "b"u8, "aaab"u8}.slice(), default!),
+    new("hello\x01world"u8, 1, new @string[]{"hello\x01"u8}.slice(), default!),
+    new("foo\nbar"u8, 0, new @string[]{"foo\nbar"u8}.slice(), Δio.EOF),
+    new("alpha\nbeta\ngamma\n"u8, (rune)'\n', new @string[]{"alpha\n"u8, "beta\n"u8, "gamma\n"u8}.slice(), default!),
+    new("alpha\nbeta\ngamma"u8, (rune)'\n', new @string[]{"alpha\n"u8, "beta\n"u8, "gamma"u8}.slice(), Δio.EOF)
 }.slice();
 
 public static void TestReadBytes(ж<testing.T> Ꮡt) {
@@ -624,26 +682,33 @@ public static void TestReadEmptyAtEOF(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object unreadByteAtEofGotNoˢ = (@string)"UnreadByte at EOF: got no error"u8;
+private static readonly object readByteAtEofGotNoErrorˢ = (@string)"ReadByte at EOF: got no error"u8;
+private static readonly object unreadByteAfterReadByteˢ = (@string)"UnreadByte after ReadByte at EOF: got no error"u8;
+private static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
+private static readonly object unreadByteAfterReadNilˢ = (@string)"UnreadByte after Read(nil): got no error"u8;
+
 public static void TestUnreadByte(ж<testing.T> Ꮡt) {
     var b = @new<bytes.Buffer>();
     // check at EOF
     {
         var errΔ1 = b.UnreadByte(); if (errΔ1 == default!) {
-            Ꮡt.Fatal((@string)"UnreadByte at EOF: got no error"u8);
+            Ꮡt.Fatal(unreadByteAtEofGotNoˢ);
         }
     }
     {
         var (_, errΔ2) = b.ReadByte(); if (errΔ2 == default!) {
-            Ꮡt.Fatal((@string)"ReadByte at EOF: got no error"u8);
+            Ꮡt.Fatal(readByteAtEofGotNoErrorˢ);
         }
     }
     {
         var errΔ3 = b.UnreadByte(); if (errΔ3 == default!) {
-            Ꮡt.Fatal((@string)"UnreadByte after ReadByte at EOF: got no error"u8);
+            Ꮡt.Fatal(unreadByteAfterReadByteˢ);
         }
     }
     // check not at EOF
-    b.WriteString("abcdefghijklmnopqrstuvwxyz"u8);
+    b.WriteString(abcdefghijklmnopqrstuvwxyzˢ);
     // after unsuccessful read
     {
         var (n, errΔ4) = b.Read(default!); if (n != 0 || errΔ4 != default!) {
@@ -652,7 +717,7 @@ public static void TestUnreadByte(ж<testing.T> Ꮡt) {
     }
     {
         var errΔ5 = b.UnreadByte(); if (errΔ5 == default!) {
-            Ꮡt.Fatal((@string)"UnreadByte after Read(nil): got no error"u8);
+            Ꮡt.Fatal(unreadByteAfterReadNilˢ);
         }
     }
     // after successful read

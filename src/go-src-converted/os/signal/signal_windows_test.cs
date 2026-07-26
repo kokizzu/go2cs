@@ -17,12 +17,16 @@ using path;
 
 partial class signal_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string kernel32Dllˢ = "kernel32.dll"u8;
+private static readonly @string generateConsoleCtrlEventˢ = "GenerateConsoleCtrlEvent"u8;
+
 internal static void sendCtrlBreak(ж<testing.T> Ꮡt, nint pid) {
-    var (d, e) = syscall.LoadDLL("kernel32.dll"u8);
+    var (d, e) = syscall.LoadDLL(kernel32Dllˢ);
     if (e != default!) {
         Ꮡt.Fatalf("LoadDLL: %v\n"u8, e);
     }
-    (var p, e) = d.FindProc("GenerateConsoleCtrlEvent"u8);
+    (var p, e) = d.FindProc(generateConsoleCtrlEventˢ);
     if (e != default!) {
         Ꮡt.Fatalf("FindProc: %v\n"u8, e);
     }
@@ -31,6 +35,10 @@ internal static void sendCtrlBreak(ж<testing.T> Ꮡt, nint pid) {
         Ꮡt.Fatalf("GenerateConsoleCtrlEvent: %v\n"u8, e);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ctlbreakˢ = "ctlbreak"u8;
+private static readonly @string buildˢ = "build"u8;
 
 public static void TestCtrlBreak(ж<testing.T> Ꮡt) => func((defer, recover) => {
     // create source file
@@ -62,7 +70,7 @@ func main() {
 """u8;
     @string tmp = Ꮡt.TempDir();
     // write ctrlbreak.go
-    @string name = filepath.Join(tmp, "ctlbreak");
+    @string name = filepath.Join(tmp, ctlbreakˢ);
     @string src = name + ".go"u8;
     var (f, err) = os.Create(src);
     if (err != default!) {
@@ -74,7 +82,7 @@ func main() {
     // compile it
     @string exe = name + ".exe"u8;
     deferǃ(os.Remove, exe, defer);
-    (var o, err) = testenv.Command(new testing_TжTB(Ꮡt), testenv.GoToolPath(new testing_TжTB(Ꮡt)), "build"u8, "-o", exe, src).CombinedOutput();
+    (var o, err) = testenv.Command(new testing_TжTB(Ꮡt), testenv.GoToolPath(new testing_TжTB(Ꮡt)), buildˢ, "-o", exe, src).CombinedOutput();
     if (err != default!) {
         Ꮡt.Fatalf("Failed to compile: %v\n%v"u8, err, ((@string)o));
     }

@@ -31,15 +31,15 @@ public static void TestReadDir(ж<testing.T> Ꮡt) {
             foreach (var (_, d) in dirsΔ1) {
                 names = append(names, d.Name());
             }
-            Ꮡt.Errorf("ReadDir(%s) = %v, %v, want %v, nil"u8, desc, names, errΔ1, new @string[]{"hello.txt", "sub"}.slice());
+            Ꮡt.Errorf("ReadDir(%s) = %v, %v, want %v, nil"u8, desc, names, errΔ1, new @string[]{"hello.txt"u8, "sub"u8}.slice());
         }
     };
     // Test that ReadDir uses the method when present.
     var (dirs, err) = ReadDir(new readDirOnly(new fstest_MapFSᴠReadDirFS(testFsys)), "."u8);
-    check("readDirOnly"u8, dirs, err);
+    check(readDirOnlyˢ, dirs, err);
     // Test that ReadDir uses Open when the method is not present.
     (dirs, err) = ReadDir(new openOnly(testFsys), "."u8);
-    check("openOnly"u8, dirs, err);
+    check(openOnlyˢ, dirs, err);
     // Test that ReadDir on Sub of . works (sub_test checks non-trivial subs).
     (var sub, err) = Sub(testFsys, "."u8);
     if (err != default!) {
@@ -111,14 +111,17 @@ internal static @string errorPath(error err) {
     return (~perr).Path;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nonExistentˢ = "non-existent"u8;
+
 [GoType("dyn")] partial struct TestReadDirPath_fsys {
     public go.io.fs_package.FS FS;
 }
 
 public static void TestReadDirPath(ж<testing.T> Ꮡt) {
     var fsys = os.DirFS(Ꮡt.TempDir());
-    var (_, err1) = ReadDir(fsys, "non-existent"u8);
-    var (_, err2) = ReadDir(new TestReadDirPath_fsys(fsys), "non-existent"u8);
+    var (_, err1) = ReadDir(fsys, nonExistentˢ);
+    var (_, err2) = ReadDir(new TestReadDirPath_fsys(fsys), nonExistentˢ);
     {
         @string s1 = errorPath(err1);
         @string s2 = errorPath(err2); if (s1 != s2) {

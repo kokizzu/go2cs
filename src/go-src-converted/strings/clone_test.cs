@@ -14,10 +14,10 @@ internal static @string emptyString;
 
 public static void TestClone(ж<testing.T> Ꮡt) {
     slice<@string> cloneTests = new @string[]{
-        "",
+        ""u8,
         strings.Clone(""u8),
         strings.Repeat("a"u8, 42)[..0],
-        "short",
+        "short"u8,
         strings.Repeat("a"u8, 42)
     }.slice();
     foreach (var (_, input) in cloneTests) {

@@ -224,16 +224,21 @@ public static void TestBigEndianPtrWrite(ж<testing.T> Ꮡt) {
     testWrite(Ꮡt, BigEndian, big, Ꮡs);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string readˢ = "Read"u8;
+private static readonly @string readSliceˢ = "ReadSlice"u8;
+private static readonly @string decodeˢ = "Decode"u8;
+
 public static void TestReadSlice(ж<testing.T> Ꮡt) {
-    Ꮡt.Run("Read"u8, (ж<testing.T> tΔ1) => {
+    Ꮡt.Run(readˢ, (ж<testing.T> tΔ1) => {
         var Δslice = new slice<int32>(2);
         var err = Read(new bytes_ReaderжReader(bytes.NewReader(src)), BigEndian, Δslice);
-        checkResult(tΔ1, "ReadSlice"u8, BigEndian, err, Δslice, res);
+        checkResult(tΔ1, readSliceˢ, BigEndian, err, Δslice, res);
     });
-    Ꮡt.Run("Decode"u8, (ж<testing.T> tΔ2) => {
+    Ꮡt.Run(decodeˢ, (ж<testing.T> tΔ2) => {
         var Δslice = new slice<int32>(2);
         var (_, err) = Decode(src, BigEndian, Δslice);
-        checkResult(tΔ2, "ReadSlice"u8, BigEndian, err, Δslice, res);
+        checkResult(tΔ2, readSliceˢ, BigEndian, err, Δslice, res);
     });
 }
 
@@ -554,6 +559,9 @@ public static void TestSizeInvalid(ж<testing.T> Ꮡt) {
     internal int32 a;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object didNotPanicˢ = (@string)"did not panic"u8;
+
 public static void TestUnexportedRead(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     ref var u1 = ref heap<Unexported>(out var Ꮡu1);
@@ -571,7 +579,7 @@ public static void TestUnexportedRead(ж<testing.T> Ꮡt) {
         Ꮡt.Run(dec.name, (ж<testing.T> tΔ1) => func((defer, recover) => {
             defer(() => {
                 if (recover() == default!) {
-                    tΔ1.Fatal((@string)"did not panic"u8);
+                    tΔ1.Fatal(didNotPanicˢ);
                 }
             });
             ref var u2 = ref heap(new Unexported(), out var Ꮡu2);
@@ -815,6 +823,9 @@ public static void TestNoFixedSize(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object appendFailedˢ = (@string)"Append failed:"u8;
+
 public static void TestAppendAllocs(ж<testing.T> Ꮡt) {
     var buf = new slice<byte>(0, Size(Ꮡs));
     ref var err = ref heap<error>(out var Ꮡerr);
@@ -823,7 +834,7 @@ public static void TestAppendAllocs(ж<testing.T> Ꮡt) {
         (_, Ꮡerr.ValueSlot) = Append(bufʗ1, LittleEndian, Ꮡs);
     });
     if (err != default!) {
-        Ꮡt.Fatal((@string)"Append failed:"u8, err);
+        Ꮡt.Fatal(appendFailedˢ, err);
     }
     if (allocs != 0D) {
         Ꮡt.Fatalf("Append allocated %v times instead of not allocating at all"u8, allocs);

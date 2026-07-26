@@ -13,6 +13,9 @@ internal static map<nint, nint> m1 = new map<nint, nint>{[1] = 2, [2] = 4, [4] =
 
 internal static map<nint, @string> m2 = new map<nint, @string>{[1] = "2"u8, [2] = "4"u8, [4] = "8"u8, [8] = "16"u8};
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object equalNilNilFalseWantTrueˢ = (@string)"Equal(nil, nil) = false, want true"u8;
+
 public static void TestEqual(ж<testing.T> Ꮡt) {
     if (!Equal<map<nint, nint>, map<nint, nint>, nint, nint>(m1, m1)) {
         Ꮡt.Errorf("Equal(%v, %v) = false, want true"u8, m1, m1);
@@ -24,7 +27,7 @@ public static void TestEqual(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("Equal(nil, %v) = true, want false"u8, m1);
     }
     if (!Equal<map<nint, nint>, map<nint, nint>, nint, nint>(default!, default!)) {
-        Ꮡt.Error((@string)"Equal(nil, nil) = false, want true"u8);
+        Ꮡt.Error(equalNilNilFalseWantTrueˢ);
     }
     {
         var ms = new map<nint, nint>{[1] = 2}; if (Equal<map<nint, nint>, map<nint, nint>, nint, nint>(m1, ms)) {
@@ -58,6 +61,9 @@ internal static bool equalIntStr(nint v1, @string v2) {
     return strconv.Itoa(v1) == v2;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object equalFuncNilNilEqualˢ = (@string)"EqualFunc(nil, nil, equal) = false, want true"u8;
+
 public static void TestEqualFunc(ж<testing.T> Ꮡt) {
     if (!EqualFunc<map<nint, nint>, map<nint, nint>, nint, nint, nint>(m1, m1, equal<nint>)) {
         Ꮡt.Errorf("EqualFunc(%v, %v, equal) = false, want true"u8, m1, m1);
@@ -69,7 +75,7 @@ public static void TestEqualFunc(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("EqualFunc(nil, %v, equal) = true, want false"u8, m1);
     }
     if (!EqualFunc<map<nint, nint>, map<nint, nint>, nint, nint, nint>(default!, default!, equal<nint>)) {
-        Ꮡt.Error((@string)"EqualFunc(nil, nil, equal) = false, want true"u8);
+        Ꮡt.Error(equalFuncNilNilEqualˢ);
     }
     {
         var ms = new map<nint, nint>{[1] = 2}; if (EqualFunc<map<nint, nint>, map<nint, nint>, nint, nint, nint>(m1, ms, equal<nint>)) {

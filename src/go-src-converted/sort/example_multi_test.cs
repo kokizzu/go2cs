@@ -93,6 +93,13 @@ internal static slice<Change> changes = new Change[]{
     new("gri"u8, "Smalltalk"u8, 80)
 }.slice();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object byUserˢ = (@string)"By user:"u8;
+private static readonly object byUserLinesˢ = (@string)"By user,<lines:"u8;
+private static readonly object byUserLinesˢ2 = (@string)"By user,>lines:"u8;
+private static readonly object byLanguageLinesˢ = (@string)"By language,<lines:"u8;
+private static readonly object byLanguageLinesUserˢ = (@string)"By language,<lines,user:"u8;
+
 // ExampleMultiKeys demonstrates a technique for sorting a struct type using different
 // sets of multiple fields in the comparison. We chain together "Less" functions, each of
 // which compares a single field.
@@ -105,16 +112,16 @@ public static void Example_sortMultiKeys() {
     // Note: > orders downwards.
     // Simple use: Sort by user.
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(user)).ΔSort(changes);
-    fmt.Println((@string)"By user:"u8, changes);
+    fmt.Println(byUserˢ, changes);
     // More examples.
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(user), increasingLines).ΔSort(changes);
-    fmt.Println((@string)"By user,<lines:"u8, changes);
+    fmt.Println(byUserLinesˢ, changes);
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(user), decreasingLines).ΔSort(changes);
-    fmt.Println((@string)"By user,>lines:"u8, changes);
+    fmt.Println(byUserLinesˢ2, changes);
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(language), increasingLines).ΔSort(changes);
-    fmt.Println((@string)"By language,<lines:"u8, changes);
+    fmt.Println(byLanguageLinesˢ, changes);
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(language), increasingLines, user).ΔSort(changes);
-    fmt.Println((@string)"By language,<lines,user:"u8, changes);
+    fmt.Println(byLanguageLinesUserˢ, changes);
 }
 
 // Output:

@@ -21,6 +21,9 @@ partial class rand_test_package {
 
 internal static ж<bool> printgolden = flag.Bool("printgolden"u8, false, "print golden results for regression test"u8);
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string truncatedˢ = "truncated"u8;
+
 public static void TestRegress(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
@@ -100,7 +103,7 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
                 var big = (int64)(1152921504606846976L);
                 if ((int64)(nint)big != big && (m.Name == "Int"u8 || m.Name == "Intn"u8)){
                     // 32-bit machine cannot print 64-bit results
-                    val = "truncated"u8;
+                    val = truncatedˢ;
                 } else 
                 if (reflect.TypeOf(@out).Kind() == reflect.ΔSlice){
                     val = fmt.Sprintf("%#v"u8, @out);

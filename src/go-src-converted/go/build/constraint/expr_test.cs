@@ -333,13 +333,13 @@ public static void TestParse(ж<testing.T> Ꮡt) {
     internal error err;
 }
 internal static slice<plusBuildLinesTestsᴛ1> plusBuildLinesTests = new plusBuildLinesTestsᴛ1[]{
-    new("x"u8, new @string[]{"x"}.slice(), default!),
-    new("x && !y"u8, new @string[]{"x,!y"}.slice(), default!),
-    new("x || y"u8, new @string[]{"x y"}.slice(), default!),
-    new("x && (y || z)"u8, new @string[]{"x", "y z"}.slice(), default!),
-    new("!(x && y)"u8, new @string[]{"!x !y"}.slice(), default!),
-    new("x || (y && z)"u8, new @string[]{"x y,z"}.slice(), default!),
-    new("w && (x || (y && z))"u8, new @string[]{"w", "x y,z"}.slice(), default!),
+    new("x"u8, new @string[]{"x"u8}.slice(), default!),
+    new("x && !y"u8, new @string[]{"x,!y"u8}.slice(), default!),
+    new("x || y"u8, new @string[]{"x y"u8}.slice(), default!),
+    new("x && (y || z)"u8, new @string[]{"x"u8, "y z"u8}.slice(), default!),
+    new("!(x && y)"u8, new @string[]{"!x !y"u8}.slice(), default!),
+    new("x || (y && z)"u8, new @string[]{"x y,z"u8}.slice(), default!),
+    new("w && (x || (y && z))"u8, new @string[]{"w"u8, "x y,z"u8}.slice(), default!),
     new("v || (w && (x || (y && z)))"u8, default!, errComplex)
 }.slice();
 
@@ -379,6 +379,9 @@ public static void TestPlusBuildLines(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object expressionDidNotTriggerˢ = (@string)"expression did not trigger limit"u8;
+
 [GoType("dyn")] partial struct TestSizeLimits_type {
     internal @string name;
     internal @string expr;
@@ -410,7 +413,7 @@ public static void TestSizeLimits(ж<testing.T> Ꮡt) {
         Ꮡt.Run(tc.name, (ж<testing.T> tΔ1) => {
             var (_, err) = Parse(tcʗ1.expr);
             if (err == default!){
-                tΔ1.Error((@string)"expression did not trigger limit"u8);
+                tΔ1.Error(expressionDidNotTriggerˢ);
             } else 
             {
                 var (syntaxErr, ok) = err._<ж<SyntaxError>>(ᐧ); if (!ok || (~syntaxErr).Err != "build expression too large"u8) {
@@ -449,7 +452,7 @@ public static void TestPlusSizeLimits(ж<testing.T> Ꮡt) {
         Ꮡt.Run(tc.name, (ж<testing.T> tΔ1) => {
             var (_, err) = Parse(tcʗ1.expr);
             if (err == default!){
-                tΔ1.Error((@string)"expression did not trigger limit"u8);
+                tΔ1.Error(expressionDidNotTriggerˢ);
             } else 
             if (!AreEqual(err, errComplex)) {
                 tΔ1.Errorf("unexpected error: got %q, want %q"u8, err, errComplex);

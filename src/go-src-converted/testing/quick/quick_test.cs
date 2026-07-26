@@ -252,53 +252,99 @@ internal static void reportError(@string property, error err, ж<testing.T> Ꮡt
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fArrayˢ = "fArray"u8;
+private static readonly @string fArrayAliasˢ = "fArrayAlias"u8;
+private static readonly @string fBoolˢ = "fBool"u8;
+private static readonly @string fBoolAliasˢ = "fBoolAlias"u8;
+private static readonly @string fFloat32ˢ = "fFloat32"u8;
+private static readonly @string fFloat32Aliasˢ = "fFloat32Alias"u8;
+private static readonly @string fFloat64ˢ = "fFloat64"u8;
+private static readonly @string fFloat64Aliasˢ = "fFloat64Alias"u8;
+private static readonly @string fComplex64ˢ = "fComplex64"u8;
+private static readonly @string fComplex64Aliasˢ = "fComplex64Alias"u8;
+private static readonly @string fComplex128ˢ = "fComplex128"u8;
+private static readonly @string fComplex128Aliasˢ = "fComplex128Alias"u8;
+private static readonly @string fInt16ˢ = "fInt16"u8;
+private static readonly @string fInt16Aliasˢ = "fInt16Alias"u8;
+private static readonly @string fInt32ˢ = "fInt32"u8;
+private static readonly @string fInt32Aliasˢ = "fInt32Alias"u8;
+private static readonly @string fInt64ˢ = "fInt64"u8;
+private static readonly @string fInt64Aliasˢ = "fInt64Alias"u8;
+private static readonly @string fInt8ˢ = "fInt8"u8;
+private static readonly @string fInt8Aliasˢ = "fInt8Alias"u8;
+private static readonly @string fIntˢ = "fInt"u8;
+private static readonly @string fIntAliasˢ = "fIntAlias"u8;
+private static readonly @string fMapˢ = "fMap"u8;
+private static readonly @string fMapAliasˢ = "fMapAlias"u8;
+private static readonly @string fPtrˢ = "fPtr"u8;
+private static readonly @string fPtrAliasˢ = "fPtrAlias"u8;
+private static readonly @string fSliceˢ = "fSlice"u8;
+private static readonly @string fSliceAliasˢ = "fSliceAlias"u8;
+private static readonly @string fStringˢ = "fString"u8;
+private static readonly @string fStringAliasˢ = "fStringAlias"u8;
+private static readonly @string fStructˢ = "fStruct"u8;
+private static readonly @string fStructAliasˢ = "fStructAlias"u8;
+private static readonly @string fUint16ˢ = "fUint16"u8;
+private static readonly @string fUint16Aliasˢ = "fUint16Alias"u8;
+private static readonly @string fUint32ˢ = "fUint32"u8;
+private static readonly @string fUint32Aliasˢ = "fUint32Alias"u8;
+private static readonly @string fUint64ˢ = "fUint64"u8;
+private static readonly @string fUint64Aliasˢ = "fUint64Alias"u8;
+private static readonly @string fUint8ˢ = "fUint8"u8;
+private static readonly @string fUint8Aliasˢ = "fUint8Alias"u8;
+private static readonly @string fUintˢ = "fUint"u8;
+private static readonly @string fUintAliasˢ = "fUintAlias"u8;
+private static readonly @string fUintptrˢ = "fUintptr"u8;
+private static readonly @string fUintptrAliasˢ = "fUintptrAlias"u8;
+
 public static void TestCheckEqual(ж<testing.T> Ꮡt) {
-    reportError("fArray"u8, CheckEqual(fArray, fArray, nil), Ꮡt);
-    reportError("fArrayAlias"u8, CheckEqual(fArrayAlias, fArrayAlias, nil), Ꮡt);
-    reportError("fBool"u8, CheckEqual(fBool, fBool, nil), Ꮡt);
-    reportError("fBoolAlias"u8, CheckEqual(fBoolAlias, fBoolAlias, nil), Ꮡt);
-    reportError("fFloat32"u8, CheckEqual(fFloat32, fFloat32, nil), Ꮡt);
-    reportError("fFloat32Alias"u8, CheckEqual(fFloat32Alias, fFloat32Alias, nil), Ꮡt);
-    reportError("fFloat64"u8, CheckEqual(fFloat64, fFloat64, nil), Ꮡt);
-    reportError("fFloat64Alias"u8, CheckEqual(fFloat64Alias, fFloat64Alias, nil), Ꮡt);
-    reportError("fComplex64"u8, CheckEqual(fComplex64, fComplex64, nil), Ꮡt);
-    reportError("fComplex64Alias"u8, CheckEqual(fComplex64Alias, fComplex64Alias, nil), Ꮡt);
-    reportError("fComplex128"u8, CheckEqual(fComplex128, fComplex128, nil), Ꮡt);
-    reportError("fComplex128Alias"u8, CheckEqual(fComplex128Alias, fComplex128Alias, nil), Ꮡt);
-    reportError("fInt16"u8, CheckEqual(fInt16, fInt16, nil), Ꮡt);
-    reportError("fInt16Alias"u8, CheckEqual(fInt16Alias, fInt16Alias, nil), Ꮡt);
-    reportError("fInt32"u8, CheckEqual(fInt32, fInt32, nil), Ꮡt);
-    reportError("fInt32Alias"u8, CheckEqual(fInt32Alias, fInt32Alias, nil), Ꮡt);
-    reportError("fInt64"u8, CheckEqual(fInt64, fInt64, nil), Ꮡt);
-    reportError("fInt64Alias"u8, CheckEqual(fInt64Alias, fInt64Alias, nil), Ꮡt);
-    reportError("fInt8"u8, CheckEqual(fInt8, fInt8, nil), Ꮡt);
-    reportError("fInt8Alias"u8, CheckEqual(fInt8Alias, fInt8Alias, nil), Ꮡt);
-    reportError("fInt"u8, CheckEqual(fInt, fInt, nil), Ꮡt);
-    reportError("fIntAlias"u8, CheckEqual(fIntAlias, fIntAlias, nil), Ꮡt);
-    reportError("fInt32"u8, CheckEqual(fInt32, fInt32, nil), Ꮡt);
-    reportError("fInt32Alias"u8, CheckEqual(fInt32Alias, fInt32Alias, nil), Ꮡt);
-    reportError("fMap"u8, CheckEqual(fMap, fMap, nil), Ꮡt);
-    reportError("fMapAlias"u8, CheckEqual(fMapAlias, fMapAlias, nil), Ꮡt);
-    reportError("fPtr"u8, CheckEqual(fPtr, fPtr, nil), Ꮡt);
-    reportError("fPtrAlias"u8, CheckEqual(fPtrAlias, fPtrAlias, nil), Ꮡt);
-    reportError("fSlice"u8, CheckEqual(fSlice, fSlice, nil), Ꮡt);
-    reportError("fSliceAlias"u8, CheckEqual(fSliceAlias, fSliceAlias, nil), Ꮡt);
-    reportError("fString"u8, CheckEqual(fString, fString, nil), Ꮡt);
-    reportError("fStringAlias"u8, CheckEqual(fStringAlias, fStringAlias, nil), Ꮡt);
-    reportError("fStruct"u8, CheckEqual(fStruct, fStruct, nil), Ꮡt);
-    reportError("fStructAlias"u8, CheckEqual(fStructAlias, fStructAlias, nil), Ꮡt);
-    reportError("fUint16"u8, CheckEqual(fUint16, fUint16, nil), Ꮡt);
-    reportError("fUint16Alias"u8, CheckEqual(fUint16Alias, fUint16Alias, nil), Ꮡt);
-    reportError("fUint32"u8, CheckEqual(fUint32, fUint32, nil), Ꮡt);
-    reportError("fUint32Alias"u8, CheckEqual(fUint32Alias, fUint32Alias, nil), Ꮡt);
-    reportError("fUint64"u8, CheckEqual(fUint64, fUint64, nil), Ꮡt);
-    reportError("fUint64Alias"u8, CheckEqual(fUint64Alias, fUint64Alias, nil), Ꮡt);
-    reportError("fUint8"u8, CheckEqual(fUint8, fUint8, nil), Ꮡt);
-    reportError("fUint8Alias"u8, CheckEqual(fUint8Alias, fUint8Alias, nil), Ꮡt);
-    reportError("fUint"u8, CheckEqual(fUint, fUint, nil), Ꮡt);
-    reportError("fUintAlias"u8, CheckEqual(fUintAlias, fUintAlias, nil), Ꮡt);
-    reportError("fUintptr"u8, CheckEqual(fUintptr, fUintptr, nil), Ꮡt);
-    reportError("fUintptrAlias"u8, CheckEqual(fUintptrAlias, fUintptrAlias, nil), Ꮡt);
+    reportError(fArrayˢ, CheckEqual(fArray, fArray, nil), Ꮡt);
+    reportError(fArrayAliasˢ, CheckEqual(fArrayAlias, fArrayAlias, nil), Ꮡt);
+    reportError(fBoolˢ, CheckEqual(fBool, fBool, nil), Ꮡt);
+    reportError(fBoolAliasˢ, CheckEqual(fBoolAlias, fBoolAlias, nil), Ꮡt);
+    reportError(fFloat32ˢ, CheckEqual(fFloat32, fFloat32, nil), Ꮡt);
+    reportError(fFloat32Aliasˢ, CheckEqual(fFloat32Alias, fFloat32Alias, nil), Ꮡt);
+    reportError(fFloat64ˢ, CheckEqual(fFloat64, fFloat64, nil), Ꮡt);
+    reportError(fFloat64Aliasˢ, CheckEqual(fFloat64Alias, fFloat64Alias, nil), Ꮡt);
+    reportError(fComplex64ˢ, CheckEqual(fComplex64, fComplex64, nil), Ꮡt);
+    reportError(fComplex64Aliasˢ, CheckEqual(fComplex64Alias, fComplex64Alias, nil), Ꮡt);
+    reportError(fComplex128ˢ, CheckEqual(fComplex128, fComplex128, nil), Ꮡt);
+    reportError(fComplex128Aliasˢ, CheckEqual(fComplex128Alias, fComplex128Alias, nil), Ꮡt);
+    reportError(fInt16ˢ, CheckEqual(fInt16, fInt16, nil), Ꮡt);
+    reportError(fInt16Aliasˢ, CheckEqual(fInt16Alias, fInt16Alias, nil), Ꮡt);
+    reportError(fInt32ˢ, CheckEqual(fInt32, fInt32, nil), Ꮡt);
+    reportError(fInt32Aliasˢ, CheckEqual(fInt32Alias, fInt32Alias, nil), Ꮡt);
+    reportError(fInt64ˢ, CheckEqual(fInt64, fInt64, nil), Ꮡt);
+    reportError(fInt64Aliasˢ, CheckEqual(fInt64Alias, fInt64Alias, nil), Ꮡt);
+    reportError(fInt8ˢ, CheckEqual(fInt8, fInt8, nil), Ꮡt);
+    reportError(fInt8Aliasˢ, CheckEqual(fInt8Alias, fInt8Alias, nil), Ꮡt);
+    reportError(fIntˢ, CheckEqual(fInt, fInt, nil), Ꮡt);
+    reportError(fIntAliasˢ, CheckEqual(fIntAlias, fIntAlias, nil), Ꮡt);
+    reportError(fInt32ˢ, CheckEqual(fInt32, fInt32, nil), Ꮡt);
+    reportError(fInt32Aliasˢ, CheckEqual(fInt32Alias, fInt32Alias, nil), Ꮡt);
+    reportError(fMapˢ, CheckEqual(fMap, fMap, nil), Ꮡt);
+    reportError(fMapAliasˢ, CheckEqual(fMapAlias, fMapAlias, nil), Ꮡt);
+    reportError(fPtrˢ, CheckEqual(fPtr, fPtr, nil), Ꮡt);
+    reportError(fPtrAliasˢ, CheckEqual(fPtrAlias, fPtrAlias, nil), Ꮡt);
+    reportError(fSliceˢ, CheckEqual(fSlice, fSlice, nil), Ꮡt);
+    reportError(fSliceAliasˢ, CheckEqual(fSliceAlias, fSliceAlias, nil), Ꮡt);
+    reportError(fStringˢ, CheckEqual(fString, fString, nil), Ꮡt);
+    reportError(fStringAliasˢ, CheckEqual(fStringAlias, fStringAlias, nil), Ꮡt);
+    reportError(fStructˢ, CheckEqual(fStruct, fStruct, nil), Ꮡt);
+    reportError(fStructAliasˢ, CheckEqual(fStructAlias, fStructAlias, nil), Ꮡt);
+    reportError(fUint16ˢ, CheckEqual(fUint16, fUint16, nil), Ꮡt);
+    reportError(fUint16Aliasˢ, CheckEqual(fUint16Alias, fUint16Alias, nil), Ꮡt);
+    reportError(fUint32ˢ, CheckEqual(fUint32, fUint32, nil), Ꮡt);
+    reportError(fUint32Aliasˢ, CheckEqual(fUint32Alias, fUint32Alias, nil), Ꮡt);
+    reportError(fUint64ˢ, CheckEqual(fUint64, fUint64, nil), Ꮡt);
+    reportError(fUint64Aliasˢ, CheckEqual(fUint64Alias, fUint64Alias, nil), Ꮡt);
+    reportError(fUint8ˢ, CheckEqual(fUint8, fUint8, nil), Ꮡt);
+    reportError(fUint8Aliasˢ, CheckEqual(fUint8Alias, fUint8Alias, nil), Ꮡt);
+    reportError(fUintˢ, CheckEqual(fUint, fUint, nil), Ꮡt);
+    reportError(fUintAliasˢ, CheckEqual(fUintAlias, fUintAlias, nil), Ꮡt);
+    reportError(fUintptrˢ, CheckEqual(fUintptr, fUintptr, nil), Ꮡt);
+    reportError(fUintptrAliasˢ, CheckEqual(fUintptrAlias, fUintptrAlias, nil), Ꮡt);
 }
 
 // This tests that ArbitraryValue is working by checking that all the arbitrary
@@ -315,8 +361,11 @@ internal static bool myStructProperty(myStruct @in) {
     return @in.x == 42;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string myStructPropertyˢ = "myStructProperty"u8;
+
 public static void TestCheckProperty(ж<testing.T> Ꮡt) {
-    reportError("myStructProperty"u8, Check(myStructProperty, nil), Ꮡt);
+    reportError(myStructPropertyˢ, Check(myStructProperty, nil), Ꮡt);
 }
 
 public static void TestFailure(ж<testing.T> Ꮡt) {

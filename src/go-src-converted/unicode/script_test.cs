@@ -93,6 +93,10 @@ internal static slice<T> inPropTest = new T[]{
     new(0x0020, "White_Space"u8)
 }.slice();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object notAKnownCategoryˢ = (@string)"not a known category"u8;
+private static readonly object categoryNotTestedˢ = (@string)"category not tested:"u8;
+
 public static void TestCategories(ж<testing.T> Ꮡt) {
     var notTested = new map<@string, bool>();
     foreach (var (k, _) in Categories) {
@@ -101,7 +105,7 @@ public static void TestCategories(ж<testing.T> Ꮡt) {
     foreach (var (_, test) in inCategoryTest) {
         {
             var (_, ok) = Categories[test.script, ꟷ]; if (!ok) {
-                Ꮡt.Fatal(test.script, (@string)"not a known category"u8);
+                Ꮡt.Fatal(test.script, notAKnownCategoryˢ);
             }
         }
         if (!Is(Categories[test.script], test.rune)) {
@@ -110,9 +114,13 @@ public static void TestCategories(ж<testing.T> Ꮡt) {
         delete(notTested, test.script);
     }
     foreach (var (k, _) in notTested) {
-        Ꮡt.Error((@string)"category not tested:"u8, k);
+        Ꮡt.Error(categoryNotTestedˢ, k);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object notAKnownPropˢ = (@string)"not a known prop"u8;
+private static readonly object propertyNotTestedˢ = (@string)"property not tested:"u8;
 
 public static void TestProperties(ж<testing.T> Ꮡt) {
     var notTested = new map<@string, bool>();
@@ -122,7 +130,7 @@ public static void TestProperties(ж<testing.T> Ꮡt) {
     foreach (var (_, test) in inPropTest) {
         {
             var (_, ok) = Properties[test.script, ꟷ]; if (!ok) {
-                Ꮡt.Fatal(test.script, (@string)"not a known prop"u8);
+                Ꮡt.Fatal(test.script, notAKnownPropˢ);
             }
         }
         if (!Is(Properties[test.script], test.rune)) {
@@ -131,7 +139,7 @@ public static void TestProperties(ж<testing.T> Ꮡt) {
         delete(notTested, test.script);
     }
     foreach (var (k, _) in notTested) {
-        Ꮡt.Error((@string)"property not tested:"u8, k);
+        Ꮡt.Error(propertyNotTestedˢ, k);
     }
 }
 

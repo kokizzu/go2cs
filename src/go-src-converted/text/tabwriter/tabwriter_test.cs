@@ -469,8 +469,11 @@ internal static void wantPanicString(ж<testing.T> Ꮡt, @string want) => func((
     }
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tabwriterPanicDuringˢ = "tabwriter: panic during Flush (cannot write)"u8;
+
 public static void TestPanicDuringFlush(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    deferǃ(wantPanicString, Ꮡt, (@string)"tabwriter: panic during Flush (cannot write)", defer);
+    deferǃ(wantPanicString, Ꮡt, tabwriterPanicDuringˢ, defer);
     panicWriter p = default!;
     var w = @new<tabwriter.Writer>();
     w.Init(p, 0, 0, 5, (rune)' ', 0);
@@ -479,8 +482,11 @@ public static void TestPanicDuringFlush(ж<testing.T> Ꮡt) => func((defer, reco
     Ꮡt.Errorf("failed to panic during Flush"u8);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string tabwriterPanicDuringˢ2 = "tabwriter: panic during Write (cannot write)"u8;
+
 public static void TestPanicDuringWrite(ж<testing.T> Ꮡt) => func((defer, recover) => {
-    deferǃ(wantPanicString, Ꮡt, (@string)"tabwriter: panic during Write (cannot write)", defer);
+    deferǃ(wantPanicString, Ꮡt, tabwriterPanicDuringˢ2, defer);
     panicWriter p = default!;
     var w = @new<tabwriter.Writer>();
     w.Init(p, 0, 0, 5, (rune)' ', 0);
@@ -488,6 +494,9 @@ public static void TestPanicDuringWrite(ж<testing.T> Ꮡt) => func((defer, reco
     // the second \n triggers a call to w.Write and thus a panic
     Ꮡt.Errorf("failed to panic during Write"u8);
 });
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string reuseˢ = "reuse"u8;
 
 public static void BenchmarkTable(ж<testing.B> Ꮡb) {
     foreach (var (_, w) in new nint[]{1, 10, 100}.array()) {
@@ -509,7 +518,7 @@ public static void BenchmarkTable(ж<testing.B> Ꮡb) {
                         wΔ1.Flush();
                     }
                 });
-                bΔ1.Run("reuse"u8, (ж<testing.B> bΔ3) => {
+                bΔ1.Run(reuseˢ, (ж<testing.B> bΔ3) => {
                     bΔ3.ReportAllocs();
                     var wΔ2 = NewWriter(io.Discard, 4, 4, 1, (rune)' ', 0);
                     // no particular reason for these settings

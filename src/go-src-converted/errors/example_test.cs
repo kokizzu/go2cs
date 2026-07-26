@@ -37,9 +37,12 @@ public static void Example() {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string emitMachoDwarfElfHeaderˢ = "emit macho dwarf: elf header corrupted"u8;
+
 // Output: 1989-03-15 22:30:00 +0000 UTC: the file system has gone away
 public static void ExampleNew() {
-    var err = errors.New("emit macho dwarf: elf header corrupted"u8);
+    var err = errors.New(emitMachoDwarfElfHeaderˢ);
     if (err != default!) {
         fmt.Print(err);
     }
@@ -58,19 +61,29 @@ public static void ExampleNew_errorf() {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string err1ˢ = "err1"u8;
+private static readonly @string err2ˢ = "err2"u8;
+private static readonly object errIsErr1ˢ = (@string)"err is err1"u8;
+private static readonly object errIsErr2ˢ = (@string)"err is err2"u8;
+
 // Output: user "bimmler" (id 17) not found
 public static void ExampleJoin() {
-    var err1 = errors.New("err1"u8);
-    var err2 = errors.New("err2"u8);
+    var err1 = errors.New(err1ˢ);
+    var err2 = errors.New(err2ˢ);
     var err = errors.Join(err1, err2);
     fmt.Println(err);
     if (errors.Is(err, err1)) {
-        fmt.Println((@string)"err is err1"u8);
+        fmt.Println(errIsErr1ˢ);
     }
     if (errors.Is(err, err2)) {
-        fmt.Println((@string)"err is err2"u8);
+        fmt.Println(errIsErr2ˢ);
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nonExistingˢ = "non-existing"u8;
+private static readonly object fileDoesNotExistˢ = (@string)"file does not exist"u8;
 
 // Output:
 // err1
@@ -79,24 +92,27 @@ public static void ExampleJoin() {
 // err is err2
 public static void ExampleIs() {
     {
-        var (_, err) = os.Open("non-existing"u8); if (err != default!) {
+        var (_, err) = os.Open(nonExistingˢ); if (err != default!) {
             if (errors.Is(err, fs.ErrNotExist)){
-                fmt.Println((@string)"file does not exist"u8);
+                fmt.Println(fileDoesNotExistˢ);
             } else {
                 fmt.Println(err);
             }
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object failedAtPathˢ = (@string)"Failed at path:"u8;
 
 // Output:
 // file does not exist
 public static void ExampleAs() {
     {
-        var (_, err) = os.Open("non-existing"u8); if (err != default!) {
+        var (_, err) = os.Open(nonExistingˢ); if (err != default!) {
             ref var pathError = ref heap<ж<fs.PathError>>(out var ᏑpathError);
             if (errors.As(err, ᏑpathError)){
-                fmt.Println((@string)"Failed at path:"u8, (~pathError).Path);
+                fmt.Println(failedAtPathˢ, (~pathError).Path);
             } else {
                 fmt.Println(err);
             }
@@ -104,10 +120,13 @@ public static void ExampleAs() {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string error1ˢ = "error1"u8;
+
 // Output:
 // Failed at path: non-existing
 public static void ExampleUnwrap() {
-    var err1 = errors.New("error1"u8);
+    var err1 = errors.New(error1ˢ);
     var err2 = fmt.Errorf("error2: [%w]"u8, err1);
     fmt.Println(err2);
     fmt.Println(errors.Unwrap(err2));

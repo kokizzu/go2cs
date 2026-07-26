@@ -37,7 +37,7 @@ public static void TestGlob(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("Glob(%#q) = %#v want %v"u8, tt.pattern, matches, tt.result);
         }
     }
-    foreach (var (_, pattern) in new @string[]{"no_match", "../*/no_match", @"\*"}.slice()) {
+    foreach (var (_, pattern) in new @string[]{"no_match"u8, "../*/no_match"u8, @"\*"u8}.slice()) {
         var (matches, err) = Glob(os.DirFS("."u8), pattern);
         if (err != default!) {
             Ꮡt.Errorf("Glob error for %q: %s"u8, pattern, err);
@@ -50,7 +50,7 @@ public static void TestGlob(ж<testing.T> Ꮡt) {
 }
 
 public static void TestGlobError(ж<testing.T> Ꮡt) {
-    var bad = new @string[]{@"[]", @"nonexist/[]"}.slice();
+    var bad = new @string[]{@"[]"u8, @"nonexist/[]"u8}.slice();
     foreach (var (_, pattern) in bad) {
         var (_, err) = Glob(os.DirFS("."u8), pattern);
         if (!AreEqual(err, path.ErrBadPattern)) {
@@ -76,19 +76,23 @@ internal static (fs.File, error) Open(this globOnly _, @string name) {
     return (default!, ErrNotExist);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string readDirOnlyˢ = "readDirOnly"u8;
+private static readonly @string openOnlyˢ = "openOnly"u8;
+
 public static void TestGlobMethod(ж<testing.T> Ꮡt) {
     var check = (@string desc, slice<@string> namesΔ1, error errΔ1) => {
         Ꮡt.Helper();
         if (errΔ1 != default! || len(namesΔ1) != 1 || namesΔ1[0] != "hello.txt") {
-            Ꮡt.Errorf("Glob(%s) = %v, %v, want %v, nil"u8, desc, namesΔ1, errΔ1, new @string[]{"hello.txt"}.slice());
+            Ꮡt.Errorf("Glob(%s) = %v, %v, want %v, nil"u8, desc, namesΔ1, errΔ1, new @string[]{"hello.txt"u8}.slice());
         }
     };
     // Test that ReadDir uses the method when present.
     var (names, err) = Glob(new globOnly(new fstest_MapFSᴠGlobFS(testFsys)), "*.txt"u8);
-    check("readDirOnly"u8, names, err);
+    check(readDirOnlyˢ, names, err);
     // Test that ReadDir uses Open when the method is not present.
     (names, err) = Glob(new openOnly(testFsys), "*.txt"u8);
-    check("openOnly"u8, names, err);
+    check(openOnlyˢ, names, err);
 }
 
 } // end fs_test_package

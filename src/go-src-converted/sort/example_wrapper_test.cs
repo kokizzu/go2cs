@@ -50,6 +50,10 @@ public static bool Less(this ByWeight s, nint i, nint j) {
     return (~s.Organs[i]).Weight < (~s.Organs[j]).Weight;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object organsByWeightˢ = (@string)"Organs by weight:"u8;
+private static readonly object organsByNameˢ = (@string)"Organs by name:"u8;
+
 public static void Example_sortWrapper() {
     var s = new ж<Organ>[]{
         Ꮡ(new Organ("brain"u8, 1340)),
@@ -60,10 +64,10 @@ public static void Example_sortWrapper() {
         Ꮡ(new Organ("spleen"u8, 162))
     }.slice();
     sort.Sort(new ByWeight(s));
-    fmt.Println((@string)"Organs by weight:"u8);
+    fmt.Println(organsByWeightˢ);
     printOrgans(s);
     sort.Sort(new ByName(s));
-    fmt.Println((@string)"Organs by name:"u8);
+    fmt.Println(organsByNameˢ);
     printOrgans(s);
 }
 

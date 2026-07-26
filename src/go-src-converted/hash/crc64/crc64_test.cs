@@ -73,6 +73,9 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ecmaˢ = "ECMA"u8;
+
 public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
     Ꮡt.Run("ISO"u8, (ж<testing.T> tΔ1) => {
         var table = MakeTable(ISO);
@@ -105,7 +108,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
             }
         }
     });
-    Ꮡt.Run("ECMA"u8, (ж<testing.T> tΔ2) => {
+    Ꮡt.Run(ecmaˢ, (ж<testing.T> tΔ2) => {
         var table = MakeTable(ECMA);
         foreach (var (_, vᴛ3) in golden) {
             ref var g = ref heap(new test(), out var Ꮡg);
@@ -170,23 +173,31 @@ internal static void bench(ж<testing.B> Ꮡb, uint64 poly, int64 size) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string iso64kbˢ = "ISO64KB"u8;
+private static readonly @string iso4kbˢ = "ISO4KB"u8;
+private static readonly @string iso1kbˢ = "ISO1KB"u8;
+private static readonly @string ecma64kbˢ = "ECMA64KB"u8;
+private static readonly @string random64KBˢ = "Random64KB"u8;
+private static readonly @string random16KBˢ = "Random16KB"u8;
+
 public static void BenchmarkCrc64(ж<testing.B> Ꮡb) {
-    Ꮡb.Run("ISO64KB"u8, (ж<testing.B> bΔ1) => {
+    Ꮡb.Run(iso64kbˢ, (ж<testing.B> bΔ1) => {
         bench(bΔ1, ISO, ((int64)64 << (int)(10)));
     });
-    Ꮡb.Run("ISO4KB"u8, (ж<testing.B> bΔ2) => {
+    Ꮡb.Run(iso4kbˢ, (ж<testing.B> bΔ2) => {
         bench(bΔ2, ISO, ((int64)4 << (int)(10)));
     });
-    Ꮡb.Run("ISO1KB"u8, (ж<testing.B> bΔ3) => {
+    Ꮡb.Run(iso1kbˢ, (ж<testing.B> bΔ3) => {
         bench(bΔ3, ISO, ((int64)1 << (int)(10)));
     });
-    Ꮡb.Run("ECMA64KB"u8, (ж<testing.B> bΔ4) => {
+    Ꮡb.Run(ecma64kbˢ, (ж<testing.B> bΔ4) => {
         bench(bΔ4, ECMA, ((int64)64 << (int)(10)));
     });
-    Ꮡb.Run("Random64KB"u8, (ж<testing.B> bΔ5) => {
+    Ꮡb.Run(random64KBˢ, (ж<testing.B> bΔ5) => {
         bench(bΔ5, 0x777, ((int64)64 << (int)(10)));
     });
-    Ꮡb.Run("Random16KB"u8, (ж<testing.B> bΔ6) => {
+    Ꮡb.Run(random16KBˢ, (ж<testing.B> bΔ6) => {
         bench(bΔ6, 0x777, ((int64)16 << (int)(10)));
     });
 }

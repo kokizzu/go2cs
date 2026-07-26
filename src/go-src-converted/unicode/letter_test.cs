@@ -260,19 +260,25 @@ public static void TestIsUpper(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string upperCaseˢ = "UpperCase"u8;
+private static readonly @string lowerCaseˢ = "LowerCase"u8;
+private static readonly @string titleCaseˢ = "TitleCase"u8;
+private static readonly @string errorCaseˢ = "ErrorCase"u8;
+
 internal static @string caseString(nint c) {
     var exprᴛ1 = c;
     if (exprᴛ1 == UpperCase) {
-        return "UpperCase"u8;
+        return upperCaseˢ;
     }
     if (exprᴛ1 == LowerCase) {
-        return "LowerCase"u8;
+        return lowerCaseˢ;
     }
     if (exprᴛ1 == TitleCase) {
-        return "TitleCase"u8;
+        return titleCaseˢ;
     }
 
-    return "ErrorCase"u8;
+    return errorCaseˢ;
 }
 
 public static void TestTo(ж<testing.T> Ꮡt) {
@@ -398,15 +404,15 @@ public static void TestTurkishCase(ж<testing.T> Ꮡt) {
 // Extra special cases: has lower/upper but no case fold.
 // Upper comes before lower (Cherokee).
 internal static slice<@string> simpleFoldTests = new @string[]{
-    "Aa",
-    "δΔ",
-    "KkK",
-    "Ssſ",
-    "ρϱΡ",
-    "ͅΙιι",
-    "İ",
-    "ı",
-    "\u13b0\uab80"
+    "Aa"u8,
+    "δΔ"u8,
+    "KkK"u8,
+    "Ssſ"u8,
+    "ρϱΡ"u8,
+    "ͅΙιι"u8,
+    "İ"u8,
+    "ı"u8,
+    "\u13b0\uab80"u8
 }.slice();
 
 public static void TestSimpleFold(ж<testing.T> Ꮡt) {

@@ -41,25 +41,29 @@ internal static (fs.File, error) Open(this readFileOnly _, @string name) {
     public go.io.fs_package.FS FS;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloTxtˢ = "hello.txt"u8;
+private static readonly object helloWorldˢ = (@string)"hello, world"u8;
+
 public static void TestReadFile(ж<testing.T> Ꮡt) {
     // Test that ReadFile uses the method when present.
-    var (data, err) = ReadFile(new readFileOnly(new fstest_MapFSᴠReadFileFS(testFsys)), "hello.txt"u8);
+    var (data, err) = ReadFile(new readFileOnly(new fstest_MapFSᴠReadFileFS(testFsys)), helloTxtˢ);
     if (((sstring)data) != "hello, world"u8 || err != default!) {
-        Ꮡt.Fatalf(@"ReadFile(readFileOnly, ""hello.txt"") = %q, %v, want %q, nil"u8, data, err, (@string)"hello, world"u8);
+        Ꮡt.Fatalf(@"ReadFile(readFileOnly, ""hello.txt"") = %q, %v, want %q, nil"u8, data, err, helloWorldˢ);
     }
     // Test that ReadFile uses Open when the method is not present.
-    (data, err) = ReadFile(new openOnly(testFsys), "hello.txt"u8);
+    (data, err) = ReadFile(new openOnly(testFsys), helloTxtˢ);
     if (((sstring)data) != "hello, world"u8 || err != default!) {
-        Ꮡt.Fatalf(@"ReadFile(openOnly, ""hello.txt"") = %q, %v, want %q, nil"u8, data, err, (@string)"hello, world"u8);
+        Ꮡt.Fatalf(@"ReadFile(openOnly, ""hello.txt"") = %q, %v, want %q, nil"u8, data, err, helloWorldˢ);
     }
     // Test that ReadFile on Sub of . works (sub_test checks non-trivial subs).
     (var sub, err) = Sub(testFsys, "."u8);
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
-    (data, err) = ReadFile(sub, "hello.txt"u8);
+    (data, err) = ReadFile(sub, helloTxtˢ);
     if (((sstring)data) != "hello, world"u8 || err != default!) {
-        Ꮡt.Fatalf(@"ReadFile(sub(.), ""hello.txt"") = %q, %v, want %q, nil"u8, data, err, (@string)"hello, world"u8);
+        Ꮡt.Fatalf(@"ReadFile(sub(.), ""hello.txt"") = %q, %v, want %q, nil"u8, data, err, helloWorldˢ);
     }
 }
 
@@ -69,8 +73,8 @@ public static void TestReadFile(ж<testing.T> Ꮡt) {
 
 public static void TestReadFilePath(ж<testing.T> Ꮡt) {
     var fsys = os.DirFS(Ꮡt.TempDir());
-    var (_, err1) = ReadFile(fsys, "non-existent"u8);
-    var (_, err2) = ReadFile(new TestReadFilePath_fsys(fsys), "non-existent"u8);
+    var (_, err1) = ReadFile(fsys, nonExistentˢ);
+    var (_, err2) = ReadFile(new TestReadFilePath_fsys(fsys), nonExistentˢ);
     {
         @string s1 = errorPath(err1);
         @string s2 = errorPath(err2); if (s1 != s2) {

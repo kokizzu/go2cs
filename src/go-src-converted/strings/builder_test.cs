@@ -33,53 +33,66 @@ internal static void check(ж<testing.T> Ꮡt, ж<strings.Builder> Ꮡb, @string
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloˢ = "hello"u8;
+private static readonly @string helloˢ2 = "hello "u8;
+private static readonly @string worldˢ = "world"u8;
+private static readonly @string helloWorldˢ = "hello world"u8;
+
 public static void TestBuilder(ж<testing.T> Ꮡt) {
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     check(Ꮡt, Ꮡb, ""u8);
-    var (n, err) = Ꮡb.WriteString("hello"u8);
+    var (n, err) = Ꮡb.WriteString(helloˢ);
     if (err != default! || n != 5) {
         Ꮡt.Errorf("WriteString: got %d,%s; want 5,nil"u8, n, err);
     }
-    check(Ꮡt, Ꮡb, "hello"u8);
+    check(Ꮡt, Ꮡb, helloˢ);
     {
         err = Ꮡb.WriteByte((rune)' '); if (err != default!) {
             Ꮡt.Errorf("WriteByte: %s"u8, err);
         }
     }
-    check(Ꮡt, Ꮡb, "hello "u8);
-    (n, err) = Ꮡb.WriteString("world"u8);
+    check(Ꮡt, Ꮡb, helloˢ2);
+    (n, err) = Ꮡb.WriteString(worldˢ);
     if (err != default! || n != 5) {
         Ꮡt.Errorf("WriteString: got %d,%s; want 5,nil"u8, n, err);
     }
-    check(Ꮡt, Ꮡb, "hello world"u8);
+    check(Ꮡt, Ꮡb, helloWorldˢ);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string alphaˢ = "alpha"u8;
+private static readonly @string betaˢ = "beta"u8;
+private static readonly @string alphabetaˢ = "alphabeta"u8;
+private static readonly @string gammaˢ = "gamma"u8;
+private static readonly @string alphabetagammaˢ = "alphabetagamma"u8;
 
 public static void TestBuilderString(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
-    Ꮡb.WriteString("alpha"u8);
-    check(Ꮡt, Ꮡb, "alpha"u8);
+    Ꮡb.WriteString(alphaˢ);
+    check(Ꮡt, Ꮡb, alphaˢ);
     @string s1 = b.String();
-    Ꮡb.WriteString("beta"u8);
-    check(Ꮡt, Ꮡb, "alphabeta"u8);
+    Ꮡb.WriteString(betaˢ);
+    check(Ꮡt, Ꮡb, alphabetaˢ);
     @string s2 = b.String();
-    Ꮡb.WriteString("gamma"u8);
-    check(Ꮡt, Ꮡb, "alphabetagamma"u8);
+    Ꮡb.WriteString(gammaˢ);
+    check(Ꮡt, Ꮡb, alphabetagammaˢ);
     @string s3 = b.String();
     // Check that subsequent operations didn't change the returned strings.
     {
-        @string want = "alpha"u8; if (s1 != want) {
+        @string want = alphaˢ; if (s1 != want) {
             Ꮡt.Errorf("first String result is now %q; want %q"u8, s1, want);
         }
     }
     {
-        @string want = "alphabeta"u8; if (s2 != want) {
+        @string want = alphabetaˢ; if (s2 != want) {
             Ꮡt.Errorf("second String result is now %q; want %q"u8, s2, want);
         }
     }
     {
-        @string want = "alphabetagamma"u8; if (s3 != want) {
+        @string want = alphabetagammaˢ; if (s3 != want) {
             Ꮡt.Errorf("third String result is now %q; want %q"u8, s3, want);
         }
     }
@@ -222,6 +235,9 @@ public static void TestBuilderWriteByte(ж<testing.T> Ꮡt) {
     check(Ꮡt, Ꮡb, "a\x00"u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abcdeˢ = "abcde"u8;
+
 public static void TestBuilderAllocs(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
@@ -230,7 +246,7 @@ public static void TestBuilderAllocs(ж<testing.T> Ꮡt) {
     var n = testing.AllocsPerRun(10000, () => {
         ref var b = ref heap(new strings.Builder(), out var Ꮡb);
         Ꮡb.Grow(5);
-        Ꮡb.WriteString("abcde"u8);
+        Ꮡb.WriteString(abcdeˢ);
         _ = b.String();
     });
     if (n != 1D) {
@@ -384,16 +400,21 @@ internal static slice<byte> someBytes = slice<byte>("some bytes sdljlk jsklj3lkj
 
 internal static @string sinkS;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noGrowˢ = "1Write_NoGrow"u8;
+private static readonly @string noGrowˢ2 = "3Write_NoGrow"u8;
+private static readonly @string growˢ = "3Write_Grow"u8;
+
 internal static void benchmarkBuilder(ж<testing.B> Ꮡb, Action<ж<testing.B>, nint, bool> f) {
-    Ꮡb.Run("1Write_NoGrow"u8, (ж<testing.B> bΔ1) => {
+    Ꮡb.Run(noGrowˢ, (ж<testing.B> bΔ1) => {
         bΔ1.ReportAllocs();
         f(bΔ1, 1, false);
     });
-    Ꮡb.Run("3Write_NoGrow"u8, (ж<testing.B> bΔ2) => {
+    Ꮡb.Run(noGrowˢ2, (ж<testing.B> bΔ2) => {
         bΔ2.ReportAllocs();
         f(bΔ2, 3, false);
     });
-    Ꮡb.Run("3Write_Grow"u8, (ж<testing.B> bΔ3) => {
+    Ꮡb.Run(growˢ, (ж<testing.B> bΔ3) => {
         bΔ3.ReportAllocs();
         f(bΔ3, 3, true);
     });

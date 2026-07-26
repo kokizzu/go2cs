@@ -292,20 +292,32 @@ internal static void runIndexAnyTests(ж<testing.T> Ꮡt, Func<slice<byte>, @str
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string indexˢ = "Index"u8;
+
 public static void TestIndex(ж<testing.T> Ꮡt) {
-    runIndexTests(Ꮡt, Index, "Index"u8, indexTests);
+    runIndexTests(Ꮡt, Index, indexˢ, indexTests);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lastIndexˢ = "LastIndex"u8;
 
 public static void TestLastIndex(ж<testing.T> Ꮡt) {
-    runIndexTests(Ꮡt, LastIndex, "LastIndex"u8, lastIndexTests);
+    runIndexTests(Ꮡt, LastIndex, lastIndexˢ, lastIndexTests);
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string indexAnyˢ = "IndexAny"u8;
 
 public static void TestIndexAny(ж<testing.T> Ꮡt) {
-    runIndexAnyTests(Ꮡt, IndexAny, "IndexAny"u8, indexAnyTests);
+    runIndexAnyTests(Ꮡt, IndexAny, indexAnyˢ, indexAnyTests);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string lastIndexAnyˢ = "LastIndexAny"u8;
+
 public static void TestLastIndexAny(ж<testing.T> Ꮡt) {
-    runIndexAnyTests(Ꮡt, LastIndexAny, "LastIndexAny"u8, lastIndexAnyTests);
+    runIndexAnyTests(Ꮡt, LastIndexAny, lastIndexAnyˢ, lastIndexAnyTests);
 }
 
 public static void TestIndexByte(ж<testing.T> Ꮡt) {
@@ -609,6 +621,9 @@ public static void BenchmarkIndexBytePortable(ж<testing.B> Ꮡb) {
     benchBytes(Ꮡb, indexSizes, bmIndexByte(IndexBytePortable));
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object badIndexˢ = (@string)"bad index"u8;
+
 internal static Action<ж<testing.B>, nint> bmIndexByte(Func<slice<byte>, byte, nint> index) {
     return (ж<testing.B> b, nint n) => {
         var buf = bmbuf[0..(int)(n)];
@@ -616,7 +631,7 @@ internal static Action<ж<testing.B>, nint> bmIndexByte(Func<slice<byte>, byte, 
         for (nint i = 0; i < (~b).N; i++) {
             nint j = index(buf, (rune)'x');
             if (j != n - 1) {
-                b.Fatal((@string)"bad index"u8, j);
+                b.Fatal(badIndexˢ, j);
             }
         }
         buf[n - 1] = (rune)'\x00';
@@ -638,7 +653,7 @@ internal static Action<ж<testing.B>, nint> bmIndexRuneASCII(Func<slice<byte>, r
         for (nint i = 0; i < (~b).N; i++) {
             nint j = index(buf, (rune)'x');
             if (j != n - 1) {
-                b.Fatal((@string)"bad index"u8, j);
+                b.Fatal(badIndexˢ, j);
             }
         }
         buf[n - 1] = (rune)'\x00';
@@ -652,7 +667,7 @@ internal static Action<ж<testing.B>, nint> bmIndexRune(Func<slice<byte>, rune, 
         for (nint i = 0; i < (~b).N; i++) {
             nint j = index(buf, (rune)'世');
             if (j != n - 3) {
-                b.Fatal((@string)"bad index"u8, j);
+                b.Fatal(badIndexˢ, j);
             }
         }
         buf[n - 3] = (rune)'\x00';
@@ -660,6 +675,10 @@ internal static Action<ж<testing.B>, nint> bmIndexRune(Func<slice<byte>, rune, 
         buf[n - 1] = (rune)'\x00';
     };
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object badEqualˢ = (@string)"bad equal"u8;
+private static readonly @string sameˢ = "same"u8;
 
 public static void BenchmarkEqual(ж<testing.B> Ꮡb) {
     Ꮡb.Run("0"u8, (ж<testing.B> bΔ1) => {
@@ -669,13 +688,13 @@ public static void BenchmarkEqual(ж<testing.B> Ꮡb) {
         for (nint i = 0; i < (~bΔ1).N; i++) {
             var eq = Equal(buf1, buf2);
             if (!eq) {
-                bΔ1.Fatal((@string)"bad equal"u8);
+                bΔ1.Fatal(badEqualˢ);
             }
         }
     });
     var sizes = new nint[]{1, 6, 9, 15, 16, 20, 32, (4 << (int)(10)), (4 << (int)(20)), (64 << (int)(20))}.slice();
     var sizesʗ1 = sizes;
-    Ꮡb.Run("same"u8, (ж<testing.B> bΔ2) => {
+    Ꮡb.Run(sameˢ, (ж<testing.B> bΔ2) => {
         benchBytes(bΔ2, sizesʗ1, bmEqual((slice<byte> a, slice<byte> bΔ3) => Equal(a, a)));
     });
     benchBytes(Ꮡb, sizes, bmEqual(Equal));
@@ -693,7 +712,7 @@ internal static Action<ж<testing.B>, nint> bmEqual(Func<slice<byte>, slice<byte
         for (nint i = 0; i < (~b).N; i++) {
             var eq = equal(buf1, buf2);
             if (!eq) {
-                b.Fatal((@string)"bad equal"u8);
+                b.Fatal(badEqualˢ);
             }
         }
         buf1[n - 1] = (rune)'\x00';
@@ -724,7 +743,7 @@ public static void BenchmarkEqualBothUnaligned(ж<testing.B> Ꮡb) {
                 for (nint i = 0; i < (~bΔ1).N; i++) {
                     var eq = Equal(buf1ʗ1, buf2ʗ1);
                     if (!eq) {
-                        bΔ1.Fatal((@string)"bad equal"u8);
+                        bΔ1.Fatal(badEqualˢ);
                     }
                 }
             });
@@ -741,7 +760,7 @@ public static void BenchmarkIndex(ж<testing.B> Ꮡb) {
         for (nint i = 0; i < (~bΔ1).N; i++) {
             nint j = Index(buf, buf[(int)(n - 7)..]);
             if (j != n - 7) {
-                bΔ1.Fatal((@string)"bad index"u8, j);
+                bΔ1.Fatal(badIndexˢ, j);
             }
         }
         buf[n - 1] = (rune)'\x00';
@@ -756,13 +775,16 @@ public static void BenchmarkIndexEasy(ж<testing.B> Ꮡb) {
         for (nint i = 0; i < (~bΔ1).N; i++) {
             nint j = Index(buf, buf[(int)(n - 7)..]);
             if (j != n - 7) {
-                bΔ1.Fatal((@string)"bad index"u8, j);
+                bΔ1.Fatal(badIndexˢ, j);
             }
         }
         buf[n - 1] = (rune)'\x00';
         buf[n - 7] = (rune)'\x00';
     });
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object badCountˢ = (@string)"bad count"u8;
 
 public static void BenchmarkCount(ж<testing.B> Ꮡb) {
     benchBytes(Ꮡb, indexSizes, (ж<testing.B> bΔ1, nint n) => {
@@ -771,7 +793,7 @@ public static void BenchmarkCount(ж<testing.B> Ꮡb) {
         for (nint i = 0; i < (~bΔ1).N; i++) {
             nint j = Count(buf, buf[(int)(n - 7)..]);
             if (j != 1) {
-                bΔ1.Fatal((@string)"bad count"u8, j);
+                bΔ1.Fatal(badCountˢ, j);
             }
         }
         buf[n - 1] = (rune)'\x00';
@@ -786,7 +808,7 @@ public static void BenchmarkCountEasy(ж<testing.B> Ꮡb) {
         for (nint i = 0; i < (~bΔ1).N; i++) {
             nint j = Count(buf, buf[(int)(n - 7)..]);
             if (j != 1) {
-                bΔ1.Fatal((@string)"bad count"u8, j);
+                bΔ1.Fatal(badCountˢ, j);
             }
         }
         buf[n - 1] = (rune)'\x00';
@@ -805,7 +827,7 @@ public static void BenchmarkCountSingle(ж<testing.B> Ꮡb) {
         for (nint i = 0; i < (~bΔ1).N; i++) {
             nint j = Count(buf, new byte[]{1}.slice());
             if (j != expect) {
-                bΔ1.Fatal((@string)"bad count"u8, j, expect);
+                bΔ1.Fatal(badCountˢ, j, expect);
             }
         }
         for (nint i = 0; i < len(buf); i++) {
@@ -824,21 +846,21 @@ public static void BenchmarkCountSingle(ж<testing.B> Ꮡb) {
 internal static slice<SplitTest> splittests = new SplitTest[]{
     new(""u8, ""u8, -1, new @string[]{}.slice()),
     new(abcd, "a"u8, 0, default!),
-    new(abcd, ""u8, 2, new @string[]{"a", "bcd"}.slice()),
-    new(abcd, "a"u8, -1, new @string[]{"", "bcd"}.slice()),
-    new(abcd, "z"u8, -1, new @string[]{"abcd"}.slice()),
-    new(abcd, ""u8, -1, new @string[]{"a", "b", "c", "d"}.slice()),
-    new(commas, ","u8, -1, new @string[]{"1", "2", "3", "4"}.slice()),
-    new(dots, "..."u8, -1, new @string[]{"1", ".2", ".3", ".4"}.slice()),
-    new(faces, "☹"u8, -1, new @string[]{"☺☻", ""}.slice()),
+    new(abcd, ""u8, 2, new @string[]{"a"u8, "bcd"u8}.slice()),
+    new(abcd, "a"u8, -1, new @string[]{""u8, "bcd"u8}.slice()),
+    new(abcd, "z"u8, -1, new @string[]{"abcd"u8}.slice()),
+    new(abcd, ""u8, -1, new @string[]{"a"u8, "b"u8, "c"u8, "d"u8}.slice()),
+    new(commas, ","u8, -1, new @string[]{"1"u8, "2"u8, "3"u8, "4"u8}.slice()),
+    new(dots, "..."u8, -1, new @string[]{"1"u8, ".2"u8, ".3"u8, ".4"u8}.slice()),
+    new(faces, "☹"u8, -1, new @string[]{"☺☻"u8, ""u8}.slice()),
     new(faces, "~"u8, -1, new @string[]{faces}.slice()),
-    new(faces, ""u8, -1, new @string[]{"☺", "☻", "☹"}.slice()),
-    new("1 2 3 4"u8, " "u8, 3, new @string[]{"1", "2", "3 4"}.slice()),
-    new("1 2"u8, " "u8, 3, new @string[]{"1", "2"}.slice()),
-    new("123"u8, ""u8, 2, new @string[]{"1", "23"}.slice()),
-    new("123"u8, ""u8, 17, new @string[]{"1", "2", "3"}.slice()),
-    new("bT"u8, "T"u8, (nint)(2305843009213693951L), new @string[]{"b", ""}.slice()),
-    new(((@string)(new byte[]{0xff, 0x2d, 0xff})), ""u8, -1, new @string[]{((@string)(new byte[]{0xff})), "-", ((@string)(new byte[]{0xff}))}.slice()),
+    new(faces, ""u8, -1, new @string[]{"☺"u8, "☻"u8, "☹"u8}.slice()),
+    new("1 2 3 4"u8, " "u8, 3, new @string[]{"1"u8, "2"u8, "3 4"u8}.slice()),
+    new("1 2"u8, " "u8, 3, new @string[]{"1"u8, "2"u8}.slice()),
+    new("123"u8, ""u8, 2, new @string[]{"1"u8, "23"u8}.slice()),
+    new("123"u8, ""u8, 17, new @string[]{"1"u8, "2"u8, "3"u8}.slice()),
+    new("bT"u8, "T"u8, (nint)(2305843009213693951L), new @string[]{"b"u8, ""u8}.slice()),
+    new(((@string)(new byte[]{0xff, 0x2d, 0xff})), ""u8, -1, new @string[]{((@string)(new byte[]{0xff})), "-"u8, ((@string)(new byte[]{0xff}))}.slice()),
     new(((@string)(new byte[]{0xff, 0x2d, 0xff})), "-"u8, -1, new @string[]{((@string)(new byte[]{0xff})), ((@string)(new byte[]{0xff}))}.slice())
 }.slice();
 
@@ -885,19 +907,19 @@ public static void TestSplit(ж<testing.T> Ꮡt) {
 }
 
 internal static slice<SplitTest> splitaftertests = new SplitTest[]{
-    new(abcd, "a"u8, -1, new @string[]{"a", "bcd"}.slice()),
-    new(abcd, "z"u8, -1, new @string[]{"abcd"}.slice()),
-    new(abcd, ""u8, -1, new @string[]{"a", "b", "c", "d"}.slice()),
-    new(commas, ","u8, -1, new @string[]{"1,", "2,", "3,", "4"}.slice()),
-    new(dots, "..."u8, -1, new @string[]{"1...", ".2...", ".3...", ".4"}.slice()),
-    new(faces, "☹"u8, -1, new @string[]{"☺☻☹", ""}.slice()),
+    new(abcd, "a"u8, -1, new @string[]{"a"u8, "bcd"u8}.slice()),
+    new(abcd, "z"u8, -1, new @string[]{"abcd"u8}.slice()),
+    new(abcd, ""u8, -1, new @string[]{"a"u8, "b"u8, "c"u8, "d"u8}.slice()),
+    new(commas, ","u8, -1, new @string[]{"1,"u8, "2,"u8, "3,"u8, "4"u8}.slice()),
+    new(dots, "..."u8, -1, new @string[]{"1..."u8, ".2..."u8, ".3..."u8, ".4"u8}.slice()),
+    new(faces, "☹"u8, -1, new @string[]{"☺☻☹"u8, ""u8}.slice()),
     new(faces, "~"u8, -1, new @string[]{faces}.slice()),
-    new(faces, ""u8, -1, new @string[]{"☺", "☻", "☹"}.slice()),
-    new("1 2 3 4"u8, " "u8, 3, new @string[]{"1 ", "2 ", "3 4"}.slice()),
-    new("1 2 3"u8, " "u8, 3, new @string[]{"1 ", "2 ", "3"}.slice()),
-    new("1 2"u8, " "u8, 3, new @string[]{"1 ", "2"}.slice()),
-    new("123"u8, ""u8, 2, new @string[]{"1", "23"}.slice()),
-    new("123"u8, ""u8, 17, new @string[]{"1", "2", "3"}.slice())
+    new(faces, ""u8, -1, new @string[]{"☺"u8, "☻"u8, "☹"u8}.slice()),
+    new("1 2 3 4"u8, " "u8, 3, new @string[]{"1 "u8, "2 "u8, "3 4"u8}.slice()),
+    new("1 2 3"u8, " "u8, 3, new @string[]{"1 "u8, "2 "u8, "3"u8}.slice()),
+    new("1 2"u8, " "u8, 3, new @string[]{"1 "u8, "2"u8}.slice()),
+    new("123"u8, ""u8, 2, new @string[]{"1"u8, "23"u8}.slice()),
+    new("123"u8, ""u8, 17, new @string[]{"1"u8, "2"u8, "3"u8}.slice())
 }.slice();
 
 public static void TestSplitAfter(ж<testing.T> Ꮡt) {
@@ -940,13 +962,13 @@ internal static slice<FieldsTest> fieldstests = new FieldsTest[]{
     new(""u8, new @string[]{}.slice()),
     new(" "u8, new @string[]{}.slice()),
     new(" \t "u8, new @string[]{}.slice()),
-    new("  abc  "u8, new @string[]{"abc"}.slice()),
-    new("1 2 3 4"u8, new @string[]{"1", "2", "3", "4"}.slice()),
-    new("1  2  3  4"u8, new @string[]{"1", "2", "3", "4"}.slice()),
-    new("1\t\t2\t\t3\t4"u8, new @string[]{"1", "2", "3", "4"}.slice()),
-    new("1\u20002\u20013\u20024"u8, new @string[]{"1", "2", "3", "4"}.slice()),
+    new("  abc  "u8, new @string[]{"abc"u8}.slice()),
+    new("1 2 3 4"u8, new @string[]{"1"u8, "2"u8, "3"u8, "4"u8}.slice()),
+    new("1  2  3  4"u8, new @string[]{"1"u8, "2"u8, "3"u8, "4"u8}.slice()),
+    new("1\t\t2\t\t3\t4"u8, new @string[]{"1"u8, "2"u8, "3"u8, "4"u8}.slice()),
+    new("1\u20002\u20013\u20024"u8, new @string[]{"1"u8, "2"u8, "3"u8, "4"u8}.slice()),
     new("\u2000\u2001\u2002"u8, new @string[]{}.slice()),
-    new("\n™\t™\n"u8, new @string[]{"™", "™"}.slice()),
+    new("\n™\t™\n"u8, new @string[]{"™"u8, "™"u8}.slice()),
     new(faces, new @string[]{faces}.slice())
 }.slice();
 
@@ -990,8 +1012,8 @@ public static void TestFieldsFunc(ж<testing.T> Ꮡt) {
     slice<FieldsTest> fieldsFuncTests = new FieldsTest[]{
         new(""u8, new @string[]{}.slice()),
         new("XX"u8, new @string[]{}.slice()),
-        new("XXhiXXX"u8, new @string[]{"hi"}.slice()),
-        new("aXXbXXXcX"u8, new @string[]{"a", "b", "c"}.slice())
+        new("XXhiXXX"u8, new @string[]{"hi"u8}.slice()),
+        new("aXXbXXXcX"u8, new @string[]{"a"u8, "b"u8, "c"u8}.slice())
     }.slice();
     foreach (var (_, tt) in fieldsFuncTests) {
         var b = slice<byte>(tt.s);
@@ -1114,6 +1136,11 @@ internal static rune rot13(rune r) {
     return r;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nGbMrqˢ = "n gb mrq"u8;
+private static readonly @string aToZedˢ = "a to zed"u8;
+private static readonly @string helloˢ = "Hello"u8;
+
 public static void TestMap(ж<testing.T> Ꮡt) {
     // Run a couple of awful growth/shrinkage tests
     @string a = tenRunes((rune)'a');
@@ -1133,13 +1160,13 @@ public static void TestMap(ж<testing.T> Ꮡt) {
     }
     // 3. Rot13
     m = Map(rot13, slice<byte>("a to zed"u8));
-    expect = "n gb mrq"u8;
+    expect = nGbMrqˢ;
     if (((sstring)m) != expect) {
         Ꮡt.Errorf("rot13: expected %q got %q"u8, expect, m);
     }
     // 4. Rot13^2
     m = Map(rot13, Map(rot13, slice<byte>("a to zed"u8)));
-    expect = "a to zed"u8;
+    expect = aToZedˢ;
     if (((sstring)m) != expect) {
         Ꮡt.Errorf("rot13: expected %q got %q"u8, expect, m);
     }
@@ -1151,7 +1178,7 @@ public static void TestMap(ж<testing.T> Ꮡt) {
         return -1;
     };
     m = Map(dropNotLatin, slice<byte>("Hello, 세계"u8));
-    expect = "Hello"u8;
+    expect = helloˢ;
     if (((sstring)m) != expect) {
         Ꮡt.Errorf("drop: expected %q got %q"u8, expect, m);
     }
@@ -1164,12 +1191,18 @@ public static void TestMap(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string toUpperˢ = "ToUpper"u8;
+
 public static void TestToUpper(ж<testing.T> Ꮡt) {
-    runStringTests(Ꮡt, ToUpper, "ToUpper"u8, upperTests);
+    runStringTests(Ꮡt, ToUpper, toUpperˢ, upperTests);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string toLowerˢ = "ToLower"u8;
+
 public static void TestToLower(ж<testing.T> Ꮡt) {
-    runStringTests(Ꮡt, ToLower, "ToLower"u8, lowerTests);
+    runStringTests(Ꮡt, ToLower, toLowerˢ, lowerTests);
 }
 
 public static void BenchmarkToUpper(ж<testing.B> Ꮡb) {
@@ -1242,8 +1275,11 @@ public static void TestToValidUTF8(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string trimSpaceˢ = "TrimSpace"u8;
+
 public static void TestTrimSpace(ж<testing.T> Ꮡt) {
-    runStringTests(Ꮡt, TrimSpace, "TrimSpace"u8, trimSpaceTests);
+    runStringTests(Ꮡt, TrimSpace, trimSpaceˢ, trimSpaceTests);
 }
 
 [GoType] partial struct RepeatTest {
@@ -1899,11 +1935,14 @@ public static void TestCutSuffix(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object grow1ShouldHavePanickedˢ = (@string)"Grow(-1) should have panicked"u8;
+
 public static void TestBufferGrowNegative(ж<testing.T> Ꮡt) => func((defer, recover) => {
     defer(() => {
         {
             var err = recover(); if (err == default!) {
-                Ꮡt.Fatal((@string)"Grow(-1) should have panicked"u8);
+                Ꮡt.Fatal(grow1ShouldHavePanickedˢ);
             }
         }
     });
@@ -1911,11 +1950,14 @@ public static void TestBufferGrowNegative(ж<testing.T> Ꮡt) => func((defer, re
     b.Grow(-1);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object truncate1ShouldHaveˢ = (@string)"Truncate(-1) should have panicked"u8;
+
 public static void TestBufferTruncateNegative(ж<testing.T> Ꮡt) => func((defer, recover) => {
     defer(() => {
         {
             var err = recover(); if (err == default!) {
-                Ꮡt.Fatal((@string)"Truncate(-1) should have panicked"u8);
+                Ꮡt.Fatal(truncate1ShouldHaveˢ);
             }
         }
     });
@@ -1923,11 +1965,14 @@ public static void TestBufferTruncateNegative(ж<testing.T> Ꮡt) => func((defer
     b.Truncate(-1);
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object truncate20ShouldHaveˢ = (@string)"Truncate(20) should have panicked"u8;
+
 public static void TestBufferTruncateOutOfRange(ж<testing.T> Ꮡt) => func((defer, recover) => {
     defer(() => {
         {
             var err = recover(); if (err == default!) {
-                Ꮡt.Fatal((@string)"Truncate(20) should have panicked"u8);
+                Ꮡt.Fatal(truncate20ShouldHaveˢ);
             }
         }
     });
@@ -2177,9 +2222,9 @@ public static void BenchmarkToValidUTF8(ж<testing.B> Ꮡb) {
 
 internal static slice<byte> makeBenchInputHard() {
     var tokens = new @string[]{
-        "<a>", "<p>", "<b>", "<strong>",
-        "</a>", "</p>", "</b>", "</strong>",
-        "hello", "world"
+        "<a>"u8, "<p>"u8, "<b>"u8, "<strong>"u8,
+        "</a>"u8, "</p>"u8, "</b>"u8, "</strong>"u8,
+        "hello"u8, "world"u8
     }.array();
     var x = new slice<byte>(0, (1 << (int)(20)));
     while (ᐧ) {
@@ -2376,10 +2421,13 @@ public static void BenchmarkIndexAnyASCII(ж<testing.B> Ꮡb) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string helloWorldHelloWorldˢ = "你好世界, hello world. 你好世界, hello world. 你好世界, hello world."u8;
+
 public static void BenchmarkIndexAnyUTF8(ж<testing.B> Ꮡb) {
     var x = Repeat(new byte[]{(rune)'#'}.slice(), 2048);
     // Never matches set
-    @string cs = "你好世界, hello world. 你好世界, hello world. 你好世界, hello world."u8;
+    @string cs = helloWorldHelloWorldˢ;
     for (nint kᴛ1 = 1; kᴛ1 <= 2048; kᴛ1 <<= (int)(4)) {
         var k = kᴛ1;
         for (nint jᴛ1 = 1; jᴛ1 <= 64; jᴛ1 <<= (int)(1)) {
@@ -2415,7 +2463,7 @@ public static void BenchmarkLastIndexAnyASCII(ж<testing.B> Ꮡb) {
 public static void BenchmarkLastIndexAnyUTF8(ж<testing.B> Ꮡb) {
     var x = Repeat(new byte[]{(rune)'#'}.slice(), 2048);
     // Never matches set
-    @string cs = "你好世界, hello world. 你好世界, hello world. 你好世界, hello world."u8;
+    @string cs = helloWorldHelloWorldˢ;
     for (nint kᴛ1 = 1; kᴛ1 <= 2048; kᴛ1 <<= (int)(4)) {
         var k = kᴛ1;
         for (nint jᴛ1 = 1; jᴛ1 <= 64; jᴛ1 <<= (int)(1)) {

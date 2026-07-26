@@ -2748,9 +2748,12 @@ public static void TestErfcinv(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string expGoˢ = "ExpGo"u8;
+
 public static void TestExp(ж<testing.T> Ꮡt) {
     testExp(Ꮡt, Exp, "Exp"u8);
-    testExp(Ꮡt, ExpGo, "ExpGo"u8);
+    testExp(Ꮡt, ExpGo, expGoˢ);
 }
 
 internal static void testExp(ж<testing.T> Ꮡt, Func<float64, float64> Exp, @string name) {
@@ -2796,9 +2799,13 @@ public static void TestExpm1(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string exp2ˢ = "Exp2"u8;
+private static readonly @string exp2Goˢ = "Exp2Go"u8;
+
 public static void TestExp2(ж<testing.T> Ꮡt) {
-    testExp2(Ꮡt, Exp2, "Exp2"u8);
-    testExp2(Ꮡt, Exp2Go, "Exp2Go"u8);
+    testExp2(Ꮡt, Exp2, exp2ˢ);
+    testExp2(Ꮡt, Exp2Go, exp2Goˢ);
 }
 
 internal static void testExp2(ж<testing.T> Ꮡt, Func<float64, float64> Exp2, @string name) {

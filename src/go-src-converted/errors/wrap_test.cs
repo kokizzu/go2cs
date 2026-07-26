@@ -127,7 +127,7 @@ public static void TestAs(ж<testing.T> Ꮡt) {
     ref var errP = ref heap<ж<fs.PathError>>(out var ᏑerrP);
     ref var timeout = ref heap<TestAs_timeout>(out var Ꮡtimeout);
     ref var p = ref heap<ж<poser>>(out var Ꮡp);
-    var (_, errF) = os.Open("non-existing"u8);
+    var (_, errF) = os.Open(nonExistingˢ);
     var poserErr = Ꮡ(new poser("oh no"u8, default!));
     var testCases = new TestAs_testCases[]{new(
         default!,
@@ -249,15 +249,18 @@ public static void TestAs(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string errorˢ = "error"u8;
+
 public static void TestAsValidation(ж<testing.T> Ꮡt) {
     ref var s = ref heap(new @string(), out var Ꮡs);
     var testCases = new any[]{
         default!,
         ((ж<nint>)nil),
-        (@string)"error",
+        (@string)"error"u8,
         Ꮡs
     }.slice();
-    var err = errors.New("error"u8);
+    var err = errors.New(errorˢ);
     foreach (var (_, tc) in testCases) {
         var errʗ1 = err;
         var tcʗ1 = tc;
@@ -274,6 +277,9 @@ public static void TestAsValidation(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object isFailedˢ = (@string)"Is failed"u8;
+
 public static void BenchmarkIs(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
@@ -281,10 +287,13 @@ public static void BenchmarkIs(ж<testing.B> Ꮡb) {
     var err2 = new multiErr(new error[]{new multiErr(new error[]{new multiErr(new error[]{err1, new errorT("a"u8)}.slice()), new errorT("b"u8)}.slice())}.slice());
     for (nint i = 0; i < b.N; i++) {
         if (!errors.Is(err2, err1)) {
-            Ꮡb.Fatal((@string)"Is failed"u8);
+            Ꮡb.Fatal(isFailedˢ);
         }
     }
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object asFailedˢ = (@string)"As failed"u8;
 
 public static void BenchmarkAs(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -293,7 +302,7 @@ public static void BenchmarkAs(ж<testing.B> Ꮡb) {
     for (nint i = 0; i < b.N; i++) {
         ref var target = ref heap(new errorT(), out var Ꮡtarget);
         if (!errors.As(err, Ꮡtarget)) {
-            Ꮡb.Fatal((@string)"As failed"u8);
+            Ꮡb.Fatal(asFailedˢ);
         }
     }
 }
@@ -345,8 +354,11 @@ internal static error Unwrap(this wrapped e) {
 
 [GoType("[]error")] partial struct multiErr;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string multiErrorˢ = "multiError"u8;
+
 internal static @string Error(this multiErr m) {
-    return "multiError"u8;
+    return multiErrorˢ;
 }
 
 internal static slice<error> Unwrap(this multiErr m) {
@@ -357,8 +369,11 @@ internal static slice<error> Unwrap(this multiErr m) {
     internal slice<@string> f;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string uncomparableErrorˢ = "uncomparable error"u8;
+
 internal static @string Error(this errorUncomparable _) {
-    return "uncomparable error"u8;
+    return uncomparableErrorˢ;
 }
 
 internal static bool Is(this errorUncomparable _Δp0, error target) {

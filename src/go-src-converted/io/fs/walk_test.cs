@@ -91,15 +91,19 @@ internal static error mark(fs.DirEntry entry, error err, ж<slice<error>> Ꮡerr
     return default!;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object findingWorkingDirˢ = (@string)"finding working dir:"u8;
+private static readonly object enteringTempDirˢ = (@string)"entering temp dir:"u8;
+
 public static void TestWalkDir(ж<testing.T> Ꮡt) => func((defer, recover) => {
     @string tmpDir = Ꮡt.TempDir();
     var (origDir, err) = os.Getwd();
     if (err != default!) {
-        Ꮡt.Fatal((@string)"finding working dir:"u8, err);
+        Ꮡt.Fatal(findingWorkingDirˢ, err);
     }
     {
         err = os.Chdir(tmpDir); if (err != default!) {
-            Ꮡt.Fatal((@string)"entering temp dir:"u8, err);
+            Ꮡt.Fatal(enteringTempDirˢ, err);
         }
     }
     deferǃ(os.Chdir, origDir, defer);
@@ -124,9 +128,12 @@ public static void TestWalkDir(ж<testing.T> Ꮡt) => func((defer, recover) => {
     });
 });
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nextˢ = "next"u8;
+
 public static void TestIssue51617(ж<testing.T> Ꮡt) => func((defer, recover) => {
     @string dir = Ꮡt.TempDir();
-    foreach (var (_, sub) in new @string[]{"a", filepath.Join("a"u8, "bad"), filepath.Join("a"u8, "next")}.slice()) {
+    foreach (var (_, sub) in new @string[]{"a"u8, filepath.Join("a"u8, "bad"), filepath.Join("a"u8, nextˢ)}.slice()) {
         {
             var errΔ1 = os.Mkdir(filepath.Join(dir, sub), 493); if (errΔ1 != default!) {
                 Ꮡt.Fatal(errΔ1);
@@ -154,7 +161,7 @@ public static void TestIssue51617(ж<testing.T> Ꮡt) => func((defer, recover) =
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
-    var want = new @string[]{".", "a", "a/bad", "a/next"}.slice();
+    var want = new @string[]{"."u8, "a"u8, "a/bad"u8, "a/next"u8}.slice();
     if (!reflect.DeepEqual(saw, want)) {
         Ꮡt.Errorf("got directories %v, want %v"u8, saw, want);
     }
