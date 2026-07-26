@@ -37,6 +37,9 @@
 //   - ReadMemStats fills the fields the CLR genuinely measures and leaves the allocator-internal
 //     ones (Mallocs/Frees/HeapObjects/BySize, the per-pause histories) zero rather than inventing
 //     numbers.
+//   - Goexit is exact for the GOROUTINE case (defers run, recover() sees nil, no other goroutine is
+//     affected) and GATED for the main goroutine, whose "main ends but the program keeps running"
+//     shape has no managed counterpart yet — docs/Phase4/DESIGN-goexit.md option C.
 //   - LockOSThread/UnlockOSThread are no-ops BY CONSTRUCTION, not by omission: go2cs runs each
 //     goroutine on its own managed thread, so the guarantee they exist to provide — "this
 //     goroutine will not be migrated to another OS thread" — already holds unconditionally.
@@ -47,6 +50,7 @@ using System;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
+using go.golib;
 
 [module: go.GoManualConversion]
 
@@ -89,6 +93,32 @@ partial class runtime_package
         System.GC.Collect(System.GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
         System.GC.WaitForPendingFinalizers();
         System.GC.Collect(System.GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+    }
+
+    // Goexit terminates the goroutine that calls it. No other goroutine is affected. Goexit runs
+    // all deferred calls before terminating the goroutine. Because Goexit is not a panic, any
+    // recover calls in those deferred functions will return nil.
+    public static void Goexit()
+    {
+        // Calling Goexit from the MAIN goroutine terminates main without returning while the
+        // program keeps running its other goroutines — and crashes with "no goroutines" once they
+        // all exit. That needs a live-goroutine registry and a main-thread parking protocol the
+        // managed model does not have yet (DESIGN-goexit.md option A), so the main-goroutine case
+        // stays GATED rather than silently doing something else: ending the process here would
+        // kill goroutines Go would keep running. The gate is honest and loud, never a no-op.
+        if (!Goroutine.OnGoroutine)
+        {
+            throw new NotSupportedException(
+                "runtime.Goexit from the main goroutine is not supported: main-goroutine Goexit " +
+                "must leave the other goroutines running (see docs/Phase4/DESIGN-goexit.md). " +
+                "Goexit from a goroutine is fully supported.");
+        }
+
+        // The goroutine case: unwind. GoFunc's finally-based defer machinery runs this goroutine's
+        // deferred calls on the way out, recover() cannot observe the unwind (GoexitException is
+        // deliberately not a PanicException), and the goroutine root swallows it — Go's three
+        // documented Goexit properties, each falling out of machinery that already existed.
+        throw new GoexitException();
     }
 
     // Stack formats a stack trace of the calling goroutine into buf and returns the number of

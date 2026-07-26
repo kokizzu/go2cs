@@ -1757,16 +1757,19 @@ func supportedTestCapabilities() []string {
 // the capability unsupported is both more honest and more useful — the one test is excluded and
 // disclosed by name, and the rest of the package is measurable.
 //
-// runtime.Goexit is the only entry so far. Go terminates the calling goroutine after running its
-// defers; the managed shape (an unwinding sentinel exception that defers observe, recover() does
-// NOT see, and the goroutine root swallows) is a real design question that has not been decided —
-// see the r14 report. Add an entry ONLY for something provably unavailable, never for something
-// merely unimplemented; and before adding one, scan every VALIDATED package for the symbol, since
-// gating it removes those tests from the run set (the mirror of the widening trap in the charter's
-// §9).
-var unsupportedRuntimeCapabilities = map[string]bool{
-	"runtime.Goexit": true,
-}
+// The map is EMPTY today: runtime.Goexit, its only entry, graduated when the managed shape landed —
+// an unwinding golib GoexitException that the defer machinery runs defers for, recover() cannot see,
+// and the goroutine root swallows (docs/Phase4/DESIGN-goexit.md, §2 + option C). Goexit from the
+// MAIN goroutine is still unimplemented, but that case cannot be distinguished statically — a
+// function's call graph says nothing about which goroutine will run it — so it is gated where the
+// distinction actually exists, at runtime, by runtime/managed_impl.cs (a loud NotSupportedException,
+// never a silent no-op).
+//
+// Add an entry ONLY for something provably unavailable, never for something merely unimplemented;
+// and before adding one, scan every VALIDATED package for the symbol, since gating it removes those
+// tests from the run set (the mirror of the widening trap in the charter's §9). Guarded by
+// TestUnsupportedRuntimeCapabilityGate, which keeps the mechanism honest while the map is empty.
+var unsupportedRuntimeCapabilities = map[string]bool{}
 
 // unsupportedRuntimeCapability reports whether fn is a listed unsupported runtime capability,
 // returning the capability name used in the requirement set.

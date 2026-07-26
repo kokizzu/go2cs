@@ -2842,7 +2842,7 @@ public static class builtin
     // to disambiguate the method name from the namespace.
     public static void goǃ(WaitCallback action)
     {
-        ThreadPool.QueueUserWorkItem(action);
+        Goroutine.Start(() => action(null));
     }
 
     /// <summary>
@@ -2854,7 +2854,7 @@ public static class builtin
     // to disambiguate the method name from the namespace.
     public static void goǃ(Action action)
     {
-        ThreadPool.QueueUserWorkItem(_ => action());
+        Goroutine.Start(action);
     }
 
     // ** Go Routine Handlers with Parameters **
@@ -2867,7 +2867,7 @@ public static class builtin
     /// <param name="arg">First parameter.</param>
     public static void goǃ<T>(Action<T> action, T arg)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg));
+        Goroutine.Start(() => action(arg));
     }
 
     #region [ goǃ<T1, T2, ... T16> Implementations ]
@@ -2882,7 +2882,7 @@ public static class builtin
     /// <param name="arg2">Second parameter.</param>
     public static void goǃ<T1, T2>(Action<T1, T2> action, T1 arg1, T2 arg2)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2));
+        Goroutine.Start(() => action(arg1, arg2));
     }
 
     /// <summary>
@@ -2897,7 +2897,7 @@ public static class builtin
     /// <param name="arg3">Third parameter.</param>
     public static void goǃ<T1, T2, T3>(Action<T1, T2, T3> action, T1 arg1, T2 arg2, T3 arg3)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3));
+        Goroutine.Start(() => action(arg1, arg2, arg3));
     }
 
     /// <summary>
@@ -2914,7 +2914,7 @@ public static class builtin
     /// <param name="arg4">Fourth parameter.</param>
     public static void goǃ<T1, T2, T3, T4>(Action<T1, T2, T3, T4> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4));
     }
 
     /// <summary>
@@ -2933,7 +2933,7 @@ public static class builtin
     /// <param name="arg5">Fifth parameter.</param>
     public static void goǃ<T1, T2, T3, T4, T5>(Action<T1, T2, T3, T4, T5> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4, arg5));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5));
     }
 
     /// <summary>
@@ -2954,7 +2954,7 @@ public static class builtin
     /// <param name="arg6">Sixth parameter.</param>
     public static void goǃ<T1, T2, T3, T4, T5, T6>(Action<T1, T2, T3, T4, T5, T6> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4, arg5, arg6));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5, arg6));
     }
 
     /// <summary>
@@ -2977,7 +2977,7 @@ public static class builtin
     /// <param name="arg7">Seventh parameter.</param>
     public static void goǃ<T1, T2, T3, T4, T5, T6, T7>(Action<T1, T2, T3, T4, T5, T6, T7> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7));
     }
 
     /// <summary>
@@ -3002,7 +3002,7 @@ public static class builtin
     /// <param name="arg8">Eighth parameter.</param>
     public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8>(Action<T1, T2, T3, T4, T5, T6, T7, T8> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8));
     }
 
     /// <summary>
@@ -3029,7 +3029,7 @@ public static class builtin
     /// <param name="arg9">Ninth parameter.</param>
     public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9));
     }
 
     /// <summary>
@@ -3058,7 +3058,7 @@ public static class builtin
     /// <param name="arg10">Tenth parameter.</param>
     public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10));
     }
 
     /// <summary>
@@ -3089,7 +3089,7 @@ public static class builtin
     /// <param name="arg11">Eleventh parameter.</param>
     public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11));
     }
 
     /// <summary>
@@ -3122,7 +3122,7 @@ public static class builtin
     /// <param name="arg12">Twelfth parameter.</param>
     public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12));
     }
 
     /// <summary>
@@ -3157,7 +3157,7 @@ public static class builtin
     /// <param name="arg13">Thirteenth parameter.</param>
     public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13));
     }
 
     /// <summary>
@@ -3194,7 +3194,7 @@ public static class builtin
     /// <param name="arg14">Fourteenth parameter.</param>
     public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14));
     }
 
     /// <summary>
@@ -3233,7 +3233,7 @@ public static class builtin
     /// <param name="arg15">Fifteenth parameter.</param>
     public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15));
     }
 
     /// <summary>
@@ -3274,7 +3274,7 @@ public static class builtin
     /// <param name="arg16">Sixteenth parameter.</param>
     public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16)
     {
-        ThreadPool.QueueUserWorkItem(_ => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16));
+        Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16));
     }
 
     #endregion

@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>go</RootNamespace>
+    <AssemblyName>runtime_package</AssemblyName>
+    <ApplicationIcon>..\go2cs.ico</ApplicationIcon>
+    <PackageId>go.runtime</PackageId>
+    <Authors>$(Product) Authors</Authors>
+    <Company>The go2cs Authors</Company>
+    <Product>go2cs</Product>
+    <Title>go2cs runtime package</Title>
+    <PackageDescription>Go runtime package in .NET for use with go2cs</PackageDescription>
+    <Description>Go runtime package in .NET for use with go2cs</Description>
+    <Copyright>Copyright Â© 2026 The go2cs Authors</Copyright>
+    <PackageProjectUrl>https://github.com/ritchiecarroll/go2cs</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ritchiecarroll/go2cs</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>go2cs.png</PackageIcon>
+    <PackageTags>go2cs;Golang;go</PackageTags>
+    <Nullable>enable</Nullable>
+    <NoWarn>660;661;1701;1702;IDE1006;CS8981;CA2255</NoWarn>
+    <Version>0.1.0</Version>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The *_impl.cs files here are the canonical hand-owned sources for the FULL conversion tree
+         (src/go-src-converted/runtime); they name runtime-internal types that exist only there, so
+         they are not part of this baseline stub's build. See runtime.cs's header. -->
+    <Compile Remove="*_impl.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\go2cs.ico" Pack="true" PackagePath="" Visible="false" />
+    <None Include="..\go2cs.png" Pack="true" PackagePath="" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="go.builtin" Static="True" />
+    <Using Include="System.Byte" Alias="uint8" />
+    <Using Include="System.UInt16" Alias="uint16" />
+    <Using Include="System.UInt32" Alias="uint32" />
+    <Using Include="System.UInt64" Alias="uint64" />
+    <Using Include="System.SByte" Alias="int8" />
+    <Using Include="System.Int16" Alias="int16" />
+    <Using Include="System.Int32" Alias="int32" />
+    <Using Include="System.Int64" Alias="int64" />
+    <Using Include="System.Single" Alias="float32" />
+    <Using Include="System.Double" Alias="float64" />
+    <Using Include="System.Numerics.Complex" Alias="complex128" />
+    <Using Include="System.Int32" Alias="rune" />
+
+    <ProjectReference Include="..\golib\golib.csproj" /> <!--Condition="'$(Configuration)'=='Debug'"-->
+    <!--<PackageReference Include="go.lib" Version="0.1.0" Condition="'$(Configuration)'=='Release'" />-->
+  </ItemGroup>
+
+</Project>

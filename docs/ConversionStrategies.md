@@ -1294,7 +1294,13 @@ pacer down to a `getg()`/`mcall()` compiler intrinsic — and a throw on a gorou
 whole process with it. They are hand-owned in `runtime/managed_impl.cs` as their **contracts**:
 `Gosched` is `Thread.Yield()`, `GC` is a blocking collect plus finalizers, `GOMAXPROCS` is a real
 get/set that does not cap parallelism, `LockOSThread` is a no-op *by construction* (a goroutine
-already is a managed thread). `runtime/debug`'s tuning knobs (`SetGCPercent`, `SetMemoryLimit`, …)
+already is a managed thread). `runtime.Goexit` joins them as an **unwind**: it throws golib's
+`GoexitException`, which is deliberately not a `PanicException` — so `recover()` is blind to it by
+construction, exactly as Go specifies — while `GoFunc`'s `finally`-based defer machinery still runs the
+goroutine's defers on the way out and the single goroutine root swallows it, ending that goroutine and
+no other. Goexit from the *main* goroutine, whose contract leaves the other goroutines running, has no
+managed shape yet and is gated with a loud `NotSupportedException`.
+`runtime/debug`'s tuning knobs (`SetGCPercent`, `SetMemoryLimit`, …)
 get the same treatment one package over. Two intrinsics do have exact managed forms and are
 implemented rather than stubbed — `systemstack(fn)` is simply `fn()` (there is one stack per
 goroutine and no g0 to switch to) and `procyield` is `Thread.SpinWait` — and the whole

@@ -7,6 +7,7 @@
 package main
 
 import (
+	"go/token"
 	"go/types"
 	"os"
 	"path/filepath"
@@ -943,6 +944,38 @@ func TestUnsupportedTestingCapabilityIsDiscovered(t *testing.T) {
 	}
 	if NewHashSet(supportedTestCapabilities()).Contains("T.Deadline") {
 		t.Fatal("T.Deadline unexpectedly appears in the runtime capability list")
+	}
+}
+
+// The unsupported-RUNTIME-capability gate carries no entries today — runtime.Goexit, its only one,
+// graduated when the managed Goexit shape landed (docs/Phase4/DESIGN-goexit.md). An empty map makes
+// the mechanism invisible: a scan that gates nothing because the list is empty reads exactly like a
+// scan that gates nothing because the lookup is broken. This is that POSITIVE CONTROL, plus the
+// regression assertion that Goexit itself is no longer gated statically (its remaining unimplemented
+// case — Goexit from the MAIN goroutine — is not statically decidable and is gated at runtime).
+func TestUnsupportedRuntimeCapabilityGate(t *testing.T) {
+	runtimePkg := types.NewPackage("runtime", "runtime")
+	signature := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	goexit := types.NewFunc(token.NoPos, runtimePkg, "Goexit", signature)
+
+	if name, blocked := unsupportedRuntimeCapability(goexit); blocked {
+		t.Fatalf("runtime.Goexit must no longer be statically capability-gated (matched %q)", name)
+	}
+
+	// Positive control: the SAME lookup must gate a listed symbol.
+	unsupportedRuntimeCapabilities["runtime.Goexit"] = true
+	defer delete(unsupportedRuntimeCapabilities, "runtime.Goexit")
+
+	if name, blocked := unsupportedRuntimeCapability(goexit); !blocked || name != "runtime.Goexit" {
+		t.Fatalf("gate did not fire for a listed symbol: name %q, blocked %v", name, blocked)
+	}
+
+	// And it stays package-scope only — a METHOD named Goexit is not runtime.Goexit.
+	receiver := types.NewVar(token.NoPos, runtimePkg, "g", types.Typ[types.Int])
+	method := types.NewFunc(token.NoPos, runtimePkg, "Goexit", types.NewSignatureType(receiver, nil, nil, nil, nil, false))
+
+	if _, blocked := unsupportedRuntimeCapability(method); blocked {
+		t.Fatal("a method named Goexit must not match the package-scope runtime.Goexit entry")
 	}
 }
 

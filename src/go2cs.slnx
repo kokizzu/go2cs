@@ -21,6 +21,7 @@
     <Project Path="core/io/io.csproj" />
     <Project Path="core/math/math.csproj" />
     <Project Path="core/math/rand/math.rand.csproj" />
+    <Project Path="core/runtime/runtime.csproj" />
     <Project Path="core/sort/sort.csproj" />
     <Project Path="core/strings/strings.csproj" />
     <Project Path="core/sync/sync.csproj" />
@@ -236,6 +237,7 @@
     <Project Path="Tests/Behavioral/GuardedNilPointerParamDeref/GuardedNilPointerParamDeref.csproj" />
     <Project Path="Tests/Behavioral/GlobalTupleVarDecl/GlobalTupleVarDecl.csproj" />
     <Project Path="Tests/Behavioral/GoCallVariations/GoCallVariations.csproj" />
+    <Project Path="Tests/Behavioral/GoexitDefers/GoexitDefers.csproj" />
     <Project Path="Tests/Behavioral/GoNamespaceShadow/GoNamespaceShadow.csproj" />
     <Project Path="Tests/Behavioral/GoNamespaceShadow/nsshadowlib/go.nsshadow.csproj" />
     <Project Path="Tests/Behavioral/GoOnlyFloatLiteralForms/GoOnlyFloatLiteralForms.csproj" />

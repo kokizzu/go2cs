@@ -8473,16 +8473,69 @@ empty slot came back "occupied", `pushHead` returned false forever and `TestPool
 `TestPoolChain` spun. `unsafe.cs` now marks the zero address nil (a protected `ж<T>(value, isNull)`
 constructor holds the address *and* the nil flag) and tolerates a nil box on the way out.
 
-**A runtime capability the managed model cannot provide gates the TEST, it does not crash the host.**
-`runtime.Goexit` terminates the calling goroutine after running its defers; the managed shape (an
-unwinding sentinel that defers observe, `recover()` does not see, and the goroutine root swallows) is
-an open design question. Until it is decided, the name sits in `unsupportedRuntimeCapabilities`
-(`testConversion.go`) and participates in the **same** capability gate as an unsupported `testing.*`
-member: a test whose transitive closure reaches it converts as `unsupported`, disclosed by name.
-This is both more honest and far more useful than the alternative — sync's `TestOnceFuncGoexit` used
-to take the whole host down and leave 28 tests with no result at all. Add an entry only for something
-*provably* unavailable, never merely unimplemented, and scan every validated package for the symbol
-first: gating one **removes** tests from a banked package's run set, the mirror of the widening trap.
+**`runtime.Goexit` unwinds the goroutine with a `GoexitException`, and every one of Go's three
+properties falls out of machinery that already existed.** Go specifies that Goexit ends the calling
+goroutine only: its deferred calls all run, `recover()` inside them returns **nil** (a Goexit is not a
+panic, and a defer cannot cancel it), and other goroutines are untouched. The managed form is a golib
+`GoexitException` that is deliberately **not** a `PanicException` — `recover()`'s implementation keys
+on `PanicException` (`GoFunc.Execute`'s filter via `RuntimeErrorPanic.TryAsPanic`), so it is blind to
+this type BY CONSTRUCTION and the recover path needed **zero** change. The defers still run because
+`GoFunc.HandleFinally` sits in a `finally`, popping the defer stack during the unwind exactly as it
+does for a panic, across frames. Every `go` statement dispatches through one **goroutine root**
+(`golib.Goroutine.Start` → `Run`, the single site all 18 `builtin.goǃ` arity overloads funnel into),
+which catches `GoexitException` and ends that thread silently; a `PanicException` reaching the same
+point is deliberately NOT caught and keeps its Go-faithful fatal path (stderr report, exit 2 — guarded
+by the `GoroutinePanicExitCode` behavioral test). `runtime.Goexit`'s body is hand-owned in the runtime
+package's `managed_impl.cs` (`manualConversionFuncs`), since the converted body drives Go's own
+`_panic` record and stack unwinder (`getcallerpc`/`nextDefer`/`goexit1` — all assembly). Guarded by
+the `GoexitDefers` behavioral test (defers run across frames, `recover()` sees nil, other goroutines
+still run, main continues) and by sync's `TestOnceFuncGoexit`, which this unblocked.
+
+**Goexit from the MAIN goroutine stays gated — at runtime, not statically.** There, Go ends `main`
+without returning while the *program continues* running its other goroutines, crashing with
+"no goroutines" once they all exit; that needs a live-goroutine registry and a main-thread parking
+protocol the managed model does not have (`docs/Phase4/DESIGN-goexit.md` option C). The distinction is
+not statically decidable — a function's call graph says nothing about which goroutine will run it — so
+`Goroutine.OnGoroutine` (a `[ThreadStatic]` the root sets and restores, because goroutines run on
+pooled threads) answers it at the call, and the main-goroutine case throws a loud
+`NotSupportedException` naming the design doc rather than silently doing something else. Consequently
+`unsupportedRuntimeCapabilities` (`testConversion.go`) is now **empty**: the mechanism remains — a test
+whose transitive closure reaches a listed symbol converts as `unsupported`, disclosed by name, the
+same gate an unsupported `testing.*` member uses — with `TestUnsupportedRuntimeCapabilityGate` as its
+positive control so an empty list cannot masquerade as a working lookup. Add an entry only for
+something *provably* unavailable, never merely unimplemented, and scan every validated package for the
+symbol first: gating one **removes** tests from a banked package's run set, the mirror of the widening
+trap.
+
+**The test host treats an escaping `GoexitException` as Go's `tRunner` does**, and each test's
+dedicated thread is marked a goroutine (`Goroutine.Enter`) because in Go a test body IS one. Go's
+`FailNow` is *specified* as "mark failed, then `runtime.Goexit`", so a Goexit escaping a test body
+means the test ended without completing — Go reports `errNilPanicOrGoexit` ("test executed panic(nil)
+or runtime.Goexit") against that test. The host logs exactly that text and fails the one test, where
+Go additionally panics the whole binary; keeping the run alive leaves the rest of the package
+measurable. This is also the path `testing.T.FailNow` fidelity will take.
+
+**An unhandled NON-panic exception on a goroutine fails ONE test instead of killing the host — and
+that containment is TEST-HOST-ONLY.** A converted program keeps Go's fidelity (an unhandled failure in
+a goroutine is process death), which is golib's default: nothing contains it and it reaches the
+AppDomain backstop. A host that runs many independent Go programs in one process is different — the
+crash discarded every result not yet written and blanked the tail of the package, so one defect read as
+a mass infrastructure wall. `Goroutine.ContainUnhandledExceptions(policy)` lets such a host install a
+containment policy, which golib consults through an exception **filter** (never a catch-and-rethrow, so
+the uncontained path is bit-for-bit the old behavior — unhandled, stack intact, intervening `finally`
+blocks unrun). A panic is never offered to a policy. The host attributes the failure to the right test
+with an `AsyncLocal` set on the test thread: it flows with the `ExecutionContext` that
+`ThreadPool.QueueUserWorkItem` captures, which is exactly how golib dispatches a goroutine, so the
+attribution survives goroutines spawning goroutines. If the crashed goroutine was the one that would
+have unblocked its test, that test now waits for the package timeout — which still writes every result
+gathered so far, where the crash wrote none.
+
+**The unhandled-exception backstop prints the whole exception chain for a NON-panic failure.** A real
+panic keeps Go's report shape (`panic: <value>` on stderr, exit 2). Anything else is a *defect to
+diagnose*, and `ex.Message` alone threw the evidence away: a `TypeInitializationException`'s own
+message merely names the type and says "see inner exception", so the actual fault and its stack were
+lost (a whole `gob` run's real cause was invisible this way). The backstop now writes `ex.ToString()`
+for the non-panic case, carrying the full inner-exception chain and stacks.
 
 ## Deterministic Output
 

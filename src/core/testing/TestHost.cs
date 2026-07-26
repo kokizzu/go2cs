@@ -672,6 +672,11 @@ public sealed class TestExecution
         // and goroutine scheduling independent at stdlib-suite scale.
         Thread thread = new(() =>
         {
+            // This dedicated thread IS the test's goroutine (Go's tRunner runs every test in one),
+            // so mark it as such: runtime.Goexit — which testing.T.FailNow is specified in terms
+            // of — is supported from a goroutine and gated from the main goroutine.
+            using Goroutine.Scope goroutine = Goroutine.Enter();
+
             try
             {
                 Execute(action);
@@ -836,6 +841,17 @@ public sealed class TestExecution
         }
         catch (TestAbortException)
         {
+        }
+        catch (GoexitException)
+        {
+            // The test's goroutine ended without the test function completing — Go's tRunner
+            // detects the same state and reports errNilPanicOrGoexit against the test. FailNow's
+            // contract IS this (Go: mark failed, then runtime.Goexit) and it arrives above as a
+            // TestAbortException, so a GoexitException here means the test body called
+            // runtime.Goexit itself. Go fails the test and then panics the whole binary; failing
+            // this one test and letting the run finish keeps the rest of the package measurable.
+            Log("test executed panic(nil) or runtime.Goexit");
+            Fail();
         }
         catch (PanicException ex)
         {

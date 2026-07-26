@@ -648,29 +648,7 @@ internal static void deferreturn() {
     }
 }
 
-// Goexit terminates the goroutine that calls it. No other goroutine is affected.
-// Goexit runs all deferred calls before terminating the goroutine. Because Goexit
-// is not a panic, any recover calls in those deferred functions will return nil.
-//
-// Calling Goexit from the main goroutine terminates that goroutine
-// without func main returning. Since func main has not returned,
-// the program continues execution of other goroutines.
-// If all other goroutines exit, the program crashes.
-public static void Goexit() {
-    // Create a panic object for Goexit, so we can recognize when it might be
-    // bypassed by a recover().
-    ref var Δp = ref heap(new _panic(), out var Ꮡp);
-    Δp.goexit = true;
-    Ꮡp.start(getcallerpc(), (@unsafe.Pointer)getcallersp());
-    while (ᐧ) {
-        var (fn, ok) = Ꮡp.nextDefer();
-        if (!ok) {
-            break;
-        }
-        fn();
-    }
-    goexit1();
-}
+// go2cs generated this placeholder — func Goexit is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string panicWhilePrintingPanicˢ = "panic while printing panic value"u8;

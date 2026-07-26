@@ -67,6 +67,12 @@ var manualConversionFuncs = map[string]map[string]bool{
 		"GC":             true,
 		"GOMAXPROCS":     true,
 		"Gosched":        true,
+		// Goexit belongs to the same surface for the same reason: its converted body drives Go's
+		// own _panic record and stack unwinder (p.start(getcallerpc(), getcallersp()) → nextDefer →
+		// goexit1), all of it assembly. The managed shape unwinds the calling goroutine with a
+		// golib GoexitException, which the defer machinery and the goroutine root already handle —
+		// see managed_impl.cs and docs/Phase4/DESIGN-goexit.md.
+		"Goexit":         true,
 		"Stack":          true,
 		"ReadMemStats":   true,
 		"LockOSThread":   true,
