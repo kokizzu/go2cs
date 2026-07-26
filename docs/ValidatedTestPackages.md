@@ -18,9 +18,9 @@ a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **49 / 215 testable packages validated — 22.8%**
+> ### Phase 4 progress: **51 / 215 testable packages validated — 23.7%**
 >
-> **1,229 matching test verdicts · 43 disclosed** *(updated 2026-07-26 — maintained as part of the
+> **1,286 matching test verdicts · 43 disclosed** *(updated 2026-07-26 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -65,6 +65,8 @@ any other failure is still a hard mismatch.
 | [`net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/net/http/internal/ascii) | 13 | | ASCII case-insensitive helpers. |
 | [`os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/os/signal) | 1 | | Console-signal delivery (Ctrl+Break) through real channels and `select`. |
 | [`path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/path) | 9 | | Pure path manipulation (`Clean`/`Split`/`Join`/`Match`…). |
+| [`regexp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/regexp) | 45 | | The full RE2 engine — NFA/backtracker/one-pass executors, the RE2 exhaustive corpus, `TextMarshaler` round-trips. |
+| [`regexp/syntax`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/regexp/syntax) | 12 | | Regexp parsing, simplification and program compilation; named-type constant tables. |
 | [`sort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/sort) | 63 | | Interface-driven sort, `sort.Slice` reflection swaps, NaN-aware ordering, stability. |
 | [`strconv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/strconv) | 55 | 11 | Number↔string conversion at full precision — Ryū/Grisu float formatting, arbitrary-precision decimal shifts, complex parsing; alloc-profile disclosures. |
 | [`strings`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/strings) | 68 | 4 | String algorithms; alloc-count/alloc-profile disclosures. |
