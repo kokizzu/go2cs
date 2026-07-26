@@ -27,4 +27,16 @@ func main() {
 	q := unsafe.StringData("abc")
 	t := fmt.Sprintf("%v", q)
 	fmt.Println(q != nil, len(t) > 2, t[0] == '0', t[1] == 'x')
+
+	// The ZERO address IS the nil pointer, and the uintptr round-trip must preserve that in BOTH
+	// directions. The converter bridges every unsafe.Pointer-valued expression through uintptr
+	// (unsafe lives in its own assembly and can carry no implicit conversion on the core pointer
+	// class), so a reloaded nil pointer used to come back NON-nil and a nil-constructed pointer
+	// panicked on the way out. sync's poolDequeue reads each ring slot's type word through exactly
+	// this round-trip to decide whether the slot is free; every empty slot read as occupied and
+	// TestPoolDequeue/TestPoolChain spun forever.
+	var z unsafe.Pointer = unsafe.Pointer(uintptr(0))
+	var back unsafe.Pointer = unsafe.Pointer(uintptr(z))
+
+	fmt.Println(z == nil, back == nil, uintptr(z) == 0)
 }

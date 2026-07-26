@@ -253,6 +253,17 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         m_isNull = true;
     }
 
+    // Creates a box that HOLDS value but is nonetheless the nil pointer. Needed by
+    // unsafe.Pointer, whose value IS its address: `unsafe.Pointer(uintptr(0))` must compare equal
+    // to nil (Go treats the zero address as the nil pointer), yet the wrapped uintptr still has to
+    // round-trip back out as 0. Protected rather than public — an ordinary ж<T> is nil or it holds
+    // a value, never both.
+    protected ж(in T value, bool isNull)
+    {
+        m_val = value;
+        m_isNull = isNull;
+    }
+
     /// <summary>
     /// Creates a new nil pointer.
     /// </summary>

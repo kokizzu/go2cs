@@ -204,7 +204,14 @@ unsafe partial class unsafe_package  {
 //	hdr.Len = n
 //	s := *(*string)(unsafe.Pointer(&hdr)) // p possibly already lost
 public class Pointer : ж<uintptr> {
-    public Pointer(uintptr value) : base(value)
+    // The ZERO address IS the nil pointer: Go's `unsafe.Pointer(uintptr(0)) == nil` holds, and
+    // every uintptr round-trip of a nil pointer lands here (the converter bridges an
+    // unsafe.Pointer-valued call through uintptr because unsafe lives in its own assembly and can
+    // carry no implicit conversion on the core pointer class). Marking the box nil while still
+    // holding the address keeps that round-trip EXACT in both directions. Without it a reloaded
+    // nil pointer came back non-nil, and sync's poolDequeue read every empty ring slot as
+    // occupied — pushHead returned false forever and TestPoolDequeue/TestPoolChain spun.
+    public Pointer(uintptr value) : base(value, value == 0)
     {
     }
 
@@ -258,10 +265,11 @@ public class Pointer : ж<uintptr> {
     }
 
     public static implicit operator uintptr(Pointer value) {
-        // A nil unsafe.Pointer can be modeled as a C# null reference (the ==/!= operators above
-        // already treat null as nil); its uintptr value is 0. Honor that same null-tolerance here
-        // so `uintptr(unsafe.Pointer(nil))` yields 0 instead of dereferencing a null Pointer.
-        return value is null ? (uintptr)0 : value.Value;
+        // A nil unsafe.Pointer can be modeled EITHER as a C# null reference or as a nil-constructed
+        // box (the ==/!= operators above treat both as nil); its uintptr value is 0 in both cases.
+        // Reading .Value off a nil-constructed box would instead panic with a nil dereference —
+        // which is what `atomic.StorePointer(&slot.typ, nil)` followed by a reload used to do.
+        return value is null || value.IsNull ? (uintptr)0 : value.Value;
     }
 
     public static implicit operator Pointer(void* value) {
@@ -269,7 +277,9 @@ public class Pointer : ж<uintptr> {
     }
 
     public static implicit operator void*(Pointer value) {
-        return value is null ? null : (void*)value.Value;
+        // Same nil tolerance as the uintptr bridge above: a nil-constructed box has no value to
+        // read (.Value panics), and a nil pointer's native form is the null address.
+        return value is null || value.IsNull ? null : (void*)value.Value;
     }
 
     public static Pointer FromRef<T>(ref T type)
