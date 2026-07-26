@@ -389,6 +389,25 @@ Per-function blocks: 1,634 blocks, median **1**, p90 **4**, p99 **11**, max **61
 beyond it. Per file: median **3**, p90 16, p99 76, max **127** (the 20k-line bundled
 `net/http/h2_bundle.cs`, i.e. the same density spread over many functions, not a single block).
 
+### 4.10 Accepted naming amendments (2026-07-26 — user-approved, pending implementation, queued r15)
+
+Two §4.3 refinements accepted during the user's corpus review of the landed Tier C output (the
+crypto `Hash.String()` table made both visible):
+
+1. **Degenerate threshold ≤ 3 → ≤ 2.** Three-character slugs (`mD4ˢ`, `mD5ˢ`) become hoistable,
+   unifying tables where the rule boundary currently lands mid-function (`"MD4"u8` inline beside
+   fifteen hoisted siblings). Admits names for the ~8.7% of distinct literals in the 3-char-slug
+   class; the empty and ≤2 classes stay inline.
+2. **Mixed-case leading-word fold.** `"BLAKE2s-256"` currently slugs to `bLAKE2s256ˢ` — the
+   camelCase first-character lowering applied to a mixed-case word. The fold must produce a natural
+   reading (e.g. `blake2s256ˢ`), deterministic, keeping the existing ALL-CAPS whole-word fold
+   (`SHA` → `sha`); exact rule proposed by the implementer with corpus A/B examples.
+
+Both are one-constant/one-function converter changes with a mechanical corpus-wide re-baseline
+(goldens + corpus regen; collision ordinals may shift) through the standard gate stack; the
+`StringLiteralHoisting` guard updates its degenerate case to the new rule and gains a 3-char-hoist
+and a mixed-case-fold case.
+
 ## 5. Sequencing (one session) and rollback
 
 | Order | Landing | Risk | Revert story |
