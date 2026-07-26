@@ -361,6 +361,43 @@ public static class GoReflect
     }
 
     /// <summary>
+    /// The Go IMPORT PATH of the package that DEFINES a converted named type
+    /// (<c>go.encoding.gob_package.N2</c> → <c>"encoding/gob"</c>) — <c>reflect.Type.PkgPath</c>.
+    /// Empty for a type that is not a defined Go type: a primitive, a raw container
+    /// (<c>slice&lt;T&gt;</c> / <c>map&lt;K,V&gt;</c> / <c>ж&lt;T&gt;</c>), or anything not nested in a
+    /// <c>&lt;pkg&gt;_package</c> class — exactly Go's rule that only a DEFINED type has a package path.
+    /// </summary>
+    /// <remarks>
+    /// Derived from the managed nesting, which is where the converter puts the package identity: the
+    /// declaring class names the package and the enclosing namespace names its parent directories
+    /// (<c>go</c> is the emission root). The mapping is not a strict inverse for the two cases where
+    /// the class name is not the path's last segment — a major-version directory
+    /// (<c>math/rand/v2</c> emits namespace <c>go.math.rand</c> + class <c>rand_package</c>, so this
+    /// recovers <c>"math/rand"</c>) and a module dependency whose package name differs from its path
+    /// segment. Both are naming-only losses; the Go-visible path is exact for every other package.
+    /// </remarks>
+    public static string GoPackagePath(Type? t)
+    {
+        if (t is null)
+            return "";
+
+        if (t.DeclaringType is not { } decl || !decl.Name.EndsWith(PackageSuffix, StringComparison.Ordinal))
+            return "";
+
+        string pkg = decl.Name[..^PackageSuffix.Length];
+        string ns = t.Namespace ?? "";
+
+        if (ns.Length > EmissionRootNamespace.Length + 1 && ns.StartsWith(EmissionRootNamespace + ".", StringComparison.Ordinal))
+            return ns[(EmissionRootNamespace.Length + 1)..].Replace('.', '/') + "/" + pkg;
+
+        return pkg;
+    }
+
+    // The namespace every converted package is emitted under; its dotted tail mirrors the import
+    // path's parent directories (go.encoding.gob_package ⇒ "encoding/gob").
+    private const string EmissionRootNamespace = "go";
+
+    /// <summary>
     /// The Go element type of a managed container <see cref="Type"/> — <c>slice&lt;T&gt;</c>/
     /// <c>array&lt;T&gt;</c>/<c>channel&lt;T&gt;</c>/<c>ж&lt;T&gt;</c> → <c>T</c>, <c>map&lt;K,V&gt;</c> → <c>V</c>
     /// — for <c>reflect.Type.Elem()</c>; <c>null</c> if <paramref name="t"/> has no element type.
@@ -540,9 +577,22 @@ public static class GoReflect
     /// method-set rules — the SAME probe the emitted <c>_&lt;T&gt;</c> asserts use, so reflection
     /// and direct asserts can never disagree about a method set.
     /// </summary>
+    /// <remarks>
+    /// Go's EMPTY interface (<c>interface{}</c> / <c>any</c>) is emitted as <c>object</c>, which is
+    /// not a CLR interface — but it IS the interface with no methods, and every Go type satisfies
+    /// it. <see cref="Type.IsAssignableFrom"/> already answers that (boxing included); only the
+    /// <see cref="Type.IsInterface"/> gate stood in the way, so <c>reflect.Type.AssignableTo</c> /
+    /// <c>Implements</c> answered FALSE for every type against <c>interface{}</c> — gob's
+    /// <c>decodeInterface</c> rejected every concrete value it had just decoded ("gob: int is not
+    /// assignable to type interface {}", TestInterfaceBasic / TestInterfacePointer /
+    /// TestNestedInterfaces).
+    /// </remarks>
     public static bool GoImplements(Type? ifaceType, Type? valueType)
     {
-        if (ifaceType is null || valueType is null || !ifaceType.IsInterface)
+        if (ifaceType is null || valueType is null)
+            return false;
+
+        if (!ifaceType.IsInterface && ifaceType != typeof(object))
             return false;
 
         return ifaceType.IsAssignableFrom(valueType) || valueType.StructurallyImplements(ifaceType);
@@ -557,6 +607,18 @@ public static class GoReflect
     public static bool TryMarshalAssignable(object? src, Type dstType, out object? marshalled)
     {
         marshalled = null;
+
+        // `any` destination — Go's EMPTY interface holds the value DIRECTLY, and every type is
+        // assignable to it. System.Object reports IsInterface false (the same trap KindOf and
+        // TryConvertTo already carry an explicit arm for), so without this the interface arm below
+        // never fired and reflect.Value.Set into an `any` slot rejected every concrete value gob
+        // had just decoded ("reflect.Set: value of type int is not assignable to type
+        // interface {}" — TestInterfaceBasic / TestInterfacePointer / TestNestedInterfaces).
+        if (dstType == typeof(object))
+        {
+            marshalled = src;
+            return true;
+        }
 
         // A valid-but-nil SOURCE: assignable to an interface destination (stays the nil
         // interface) and to any REFERENCE-typed slot (a null slot value IS the nil pointer/

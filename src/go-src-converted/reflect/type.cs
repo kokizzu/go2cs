@@ -637,18 +637,7 @@ internal static (ΔMethod m, bool ok) MethodByName(this ж<rtype> Ꮡt, @string 
     return (new ΔMethod(nil), false);
 }
 
-internal static @string PkgPath(this ж<rtype> Ꮡt) {
-    ref var t = ref Ꮡt.Value;
-
-    if ((abi.TFlag)(t.t.TFlag & abi.TFlagNamed) == 0) {
-        return ""u8;
-    }
-    var ut = Ꮡt.uncommon();
-    if (ut == nil) {
-        return ""u8;
-    }
-    return Ꮡt.nameOff((~ut).PkgPath).Name();
-}
+// go2cs generated this placeholder — func PkgPath is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static @string pkgPathFor(ж<abi.Type> Ꮡt) {
     return toRType(Ꮡt).PkgPath();

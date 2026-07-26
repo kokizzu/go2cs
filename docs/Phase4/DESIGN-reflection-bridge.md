@@ -53,6 +53,44 @@
 > internal/fmtsort 3/3, go/token 31/31; gob runs its Encoder/Decoder engines end-to-end (full gob
 > validation remains open).
 >
+> **Phase-3 increment 3a (SHIPPED 2026-07-26) — `Value.Addr`, `rtype.PkgPath`, and the EMPTY
+> interface.** Found by running encoding/gob's own 98-Test suite (68 → 79 passing). Three roots,
+> each general:
+>
+> - **`Value.Addr`** derived its pointer TYPE through `ptrTo → typesByString → typelinks()` — the
+>   linker-built, string-sorted type table, a runtime intrinsic with no managed form (its stub
+>   throws). Every `Addr` therefore threw, taking out ELEVEN gob GobEncoder round-trip tests. But
+>   the bridge already *holds* the address: an addressable Value ALIASES the `ж<T>` box its storage
+>   lives in (`addrBox`), so `Addr` surfaces that box as a Pointer-kind Value, and `Elem` on the
+>   result re-enters the same box — Go's `v.Addr().Elem() == v` contract (#32772) by construction.
+> - **`rtype.PkgPath`** read the descriptor's `TFlagNamed` bit and `uncommon().PkgPath` name-offset,
+>   which a synthesized descriptor never populates, so it answered `""` for EVERY type — gob's
+>   `Register` then keyed its wire-type registry on the bare `"N2"` instead of `"encoding/gob.N2"`
+>   (`TestRegistrationNaming`). The managed nesting carries the package identity: the declaring
+>   `<pkg>_package` class names the package and the enclosing namespace names its parent
+>   directories (`GoReflect.GoPackagePath`). Not a strict inverse for a major-version directory
+>   (`math/rand/v2` → recovers `"math/rand"`) or a module dependency renamed away from its path
+>   segment; exact everywhere else.
+> - **The EMPTY interface is `object`, which reports `IsInterface == false`.** `GoReflect`'s
+>   `GoImplements` and `TryMarshalAssignable` both gated their interface arms on `IsInterface`, so
+>   `AssignableTo(t, interface{})` and `Set` into an `any` slot answered NO for every type —
+>   gob's `decodeInterface` rejected every concrete value it had just decoded, then
+>   `reflect.Value.Set` rejected it again ("gob: int is not assignable to type interface {}" →
+>   "reflect.Set: value of type int is not assignable to type interface {}"). Both now carry the
+>   explicit `typeof(object)` arm `KindOf` and `TryConvertTo` already had. Cleared gob's
+>   TestInterfaceBasic / TestInterfacePointer / TestNestedInterfaces.
+>
+> **Rooted gob residues (open, NOT disclosure candidates).** The managed `array<T>` type does not
+> carry its LENGTH, so `reflect.Type.Elem()` of a `*[N]T` loses N and gob sees a length-0 array
+> where the wire says N — `TestSingletons`, part of `TestIndirectSliceMapArray` (`Value.Elem`/
+> `abi.TypeOf` recover dims from the LIVE value, but a type-only walk cannot). The five remaining
+> GobEncoder tests share ONE root that is not reflection at all: their `GobDecode` bodies write
+> through a reinterpreted named-type pointer via `fmt.Sscanf(s, "VALUE=%s", (*string)(v))` — the
+> direct-field-write case (`ByteStruct`, `TestGobEncoderStructSingleton`) passes, so `Addr`'s
+> write-back path is sound. `TestNetIP` is blocked on `net`'s package init (`sync.OnceFunc` panics
+> nil in `fd_windows`), `TestIgnoreDepthLimit` on `reflect.ArrayOf` (the same `typelinks` stub),
+> and the rest are gob wire/nil-pointer behaviours listed in the r18 report.
+>
 > **NOT implemented — remaining Phase-3 surface:** `MakeFunc`; variadic `Call`/`CallSlice`
 > (text/template); `SetMapIndex` delete-on-invalid + `MapKeys` (encoding/json); the Go
 > unnamed↔named `directlyAssignable` refinement beyond identity+wrapper (binary named-slice cases

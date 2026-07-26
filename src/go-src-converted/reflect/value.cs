@@ -232,23 +232,12 @@ internal static void mustBeAssignableSlow(this flag f) {
     }
 }
 
-// Addr returns a pointer value representing the address of v.
-// It panics if [Value.CanAddr] returns false.
-// Addr is typically used to obtain a pointer to a struct field
-// or slice element in order to call a method that requires a
-// pointer receiver.
-public static ΔValue Addr(this ΔValue v) {
-    if ((flag)(v.flag & flagAddr) == 0) {
-        throw panic("reflect.Value.Addr of unaddressable value");
-    }
-    // Preserve flagRO instead of using v.flag.ro() so that
-    // v.Addr().Elem() is equivalent to v (#32772)
-    var fl = (flag)(v.flag & flagRO);
-    return new ΔValue(ptrTo(v.typ()), v.ptr, (flag)(fl | ((flag)(uintptr)(nuint)ΔPointer)));
-}
+// go2cs generated this placeholder — func Addr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func Bool is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// Preserve flagRO instead of using v.flag.ro() so that
+// v.Addr().Elem() is equivalent to v (#32772)
 // panicNotBool is split out to keep Bool inlineable.
 internal static void panicNotBool(this ΔValue v) {
     v.mustBe(ΔBool);

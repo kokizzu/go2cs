@@ -355,6 +355,29 @@ public static ΔValue Elem(this ΔValue v) {
     throw panic(Ꮡ(new ValueError("reflect.Value.Elem", v.kind())));
 }
 
+// Addr returns a pointer Value representing the address of v (v must be addressable). The bridge
+// already HOLDS that address: an addressable Value ALIASES the ж<T> box its storage lives in
+// (addrBox), so Addr just surfaces that box as a Pointer-kind Value — and Elem on the result
+// aliases the same box, which is exactly Go's `v.Addr().Elem()` equivalence (#32772). The auto
+// form derives the pointer TYPE through ptrTo → typesByString → the typelinks() runtime stub: the
+// linker-built type table has no managed form, so every Addr threw NotImplementedException. gob's
+// gobEncodeOpFor/gobDecodeOpFor climb one level with Addr for every GobEncoder-implementing field,
+// which is why all eleven GobEncoder round-trip tests died there.
+public static ΔValue Addr(this ΔValue v) {
+    if ((flag)(v.flag & flagAddr) == 0) {
+        throw panic("reflect.Value.Addr of unaddressable value");
+    }
+    if (v.addrBox is null) {
+        // flagAddr without an aliased box is a bridge invariant violation, not a Go state — fail
+        // loud rather than hand back a pointer to a detached copy.
+        throw panic("reflect.Value.Addr of value with no aliased storage");
+    }
+    var p = makeReflectValue(v.addrBox);
+    // Preserve flagRO instead of using v.flag.ro() so that v.Addr().Elem() is equivalent to v.
+    p.flag |= (flag)(v.flag & flagRO);
+    return p;
+}
+
 // Bytes returns v's underlying value (v's underlying value must be a slice of bytes or an addressable array of bytes).
 // A named []byte wrapper answers through its ISlice<byte> view (sharing the backing store).
 public static slice<byte> Bytes(this ΔValue v) {
@@ -856,6 +879,15 @@ internal static @string Name(this ж<rtype> Ꮡt) {
     string full = GoReflect.GoTypeName(st);
     int dot = full.LastIndexOf('.');
     return (@string)(dot >= 0 ? full[(dot + 1)..] : full);
+}
+
+// PkgPath returns a DEFINED type's package import path ("encoding/gob"), empty for a type that is
+// not a defined Go type — the managed nesting carries that identity (GoReflect.GoPackagePath). The
+// auto form reads the descriptor's TFlagNamed bit and uncommon().PkgPath name-offset, sub-records a
+// synthesized abi.Type never populates, so it answered "" for EVERY type: gob's Register then keyed
+// its registry on the bare "N2" instead of "encoding/gob.N2" (TestRegistrationNaming).
+internal static @string PkgPath(this ж<rtype> Ꮡt) {
+    return (@string)GoReflect.GoPackagePath(Ꮡt.Value.t.sysType);
 }
 
 // Elem returns the element type of a slice/array/pointer/map/chan. An array descriptor's inner

@@ -128,6 +128,12 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// Type side: reflect.rtype's ΔType methods over the abi.Type's System.Type (%T, %+v names).
 		"rtype.String":   true,
 		"rtype.Name":     true,
+		// rtype.PkgPath reads the descriptor's TFlagNamed bit and uncommon().PkgPath name-offset —
+		// sub-records a synthesized abi.Type never populates, so it answered "" for every type and
+		// gob's Register keyed its registry on the bare "N2" instead of "encoding/gob.N2"
+		// (TestRegistrationNaming). The managed nesting carries the package identity
+		// (GoReflect.GoPackagePath).
+		"rtype.PkgPath":  true,
 		"rtype.Elem":     true,
 		"rtype.Field":    true,
 		"rtype.NumField": true,
@@ -208,6 +214,12 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// Go's s[:n]) and writes it back through the aliased box.
 		"Value.Cap":    true,
 		"Value.SetLen": true,
+		// Value.Addr derives the pointer type through ptrTo → typesByString → the typelinks()
+		// runtime stub (the linker-built type table has no managed form), so every Addr threw.
+		// The bridge already holds the address: an addressable Value ALIASES the ж<T> box its
+		// storage lives in, so Addr surfaces that box (gob's gobEncodeOpFor/gobDecodeOpFor climb
+		// one level with Addr for every GobEncoder-implementing field).
+		"Value.Addr": true,
 	},
 	// internal/reflectlite mirrors the reflect bridge for the mini-surface sort.Slice
 	// exercises (ValueOf → Len, Swapper — sort's TestSlice was the first operational hit):
