@@ -6,7 +6,7 @@ partial class main_package {
 
 [GoType("num:nint")] partial struct reply;
 
-internal static readonly reply statusOK = 0x00;
+internal static reply statusOK => 0x00;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string generalFailureˢ = "general failure"u8;

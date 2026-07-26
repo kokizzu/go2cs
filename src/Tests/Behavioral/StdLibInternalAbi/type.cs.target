@@ -20,45 +20,45 @@ partial class main_package {
 
 [GoType("num:uint8")] partial struct ΔKind;
 
-public static readonly ΔKind Invalid = /* iota */ 0;
-public static readonly ΔKind Bool = 1;
-public static readonly ΔKind Int = 2;
-public static readonly ΔKind Int8 = 3;
-public static readonly ΔKind Int16 = 4;
-public static readonly ΔKind Int32 = 5;
-public static readonly ΔKind Int64 = 6;
-public static readonly ΔKind Uint = 7;
-public static readonly ΔKind Uint8 = 8;
-public static readonly ΔKind Uint16 = 9;
-public static readonly ΔKind Uint32 = 10;
-public static readonly ΔKind Uint64 = 11;
-public static readonly ΔKind Uintptr = 12;
-public static readonly ΔKind Float32 = 13;
-public static readonly ΔKind Float64 = 14;
-public static readonly ΔKind Complex64 = 15;
-public static readonly ΔKind Complex128 = 16;
-public static readonly ΔKind Array = 17;
-public static readonly ΔKind Chan = 18;
-public static readonly ΔKind Func = 19;
-public static readonly ΔKind Interface = 20;
-public static readonly ΔKind Map = 21;
-public static readonly ΔKind Pointer = 22;
-public static readonly ΔKind Slice = 23;
-public static readonly ΔKind ΔString = 24;
-public static readonly ΔKind Struct = 25;
-public static readonly ΔKind UnsafePointer = 26;
+public static ΔKind Invalid => /* iota */ 0;
+public static ΔKind Bool => 1;
+public static ΔKind Int => 2;
+public static ΔKind Int8 => 3;
+public static ΔKind Int16 => 4;
+public static ΔKind Int32 => 5;
+public static ΔKind Int64 => 6;
+public static ΔKind Uint => 7;
+public static ΔKind Uint8 => 8;
+public static ΔKind Uint16 => 9;
+public static ΔKind Uint32 => 10;
+public static ΔKind Uint64 => 11;
+public static ΔKind Uintptr => 12;
+public static ΔKind Float32 => 13;
+public static ΔKind Float64 => 14;
+public static ΔKind Complex64 => 15;
+public static ΔKind Complex128 => 16;
+public static ΔKind Array => 17;
+public static ΔKind Chan => 18;
+public static ΔKind Func => 19;
+public static ΔKind Interface => 20;
+public static ΔKind Map => 21;
+public static ΔKind Pointer => 22;
+public static ΔKind Slice => 23;
+public static ΔKind ΔString => 24;
+public static ΔKind Struct => 25;
+public static ΔKind UnsafePointer => 26;
 
-public static readonly ΔKind KindDirectIface = /* 1 << 5 */ 32;
-public static readonly ΔKind KindGCProg = /* 1 << 6 */ 64;
-public static readonly ΔKind KindMask = /* (1 << 5) - 1 */ 31;
+public static ΔKind KindDirectIface => /* 1 << 5 */ 32;
+public static ΔKind KindGCProg => /* 1 << 6 */ 64;
+public static ΔKind KindMask => /* (1 << 5) - 1 */ 31;
 
 [GoType("num:uint8")] partial struct TFlag;
 
-public static readonly TFlag TFlagUncommon = /* 1 << 0 */ 1;
-public static readonly TFlag TFlagExtraStar = /* 1 << 1 */ 2;
-public static readonly TFlag TFlagNamed = /* 1 << 2 */ 4;
-public static readonly TFlag TFlagRegularMemory = /* 1 << 3 */ 8;
-public static readonly TFlag TFlagUnrolledBitmap = /* 1 << 4 */ 16;
+public static TFlag TFlagUncommon => /* 1 << 0 */ 1;
+public static TFlag TFlagExtraStar => /* 1 << 1 */ 2;
+public static TFlag TFlagNamed => /* 1 << 2 */ 4;
+public static TFlag TFlagRegularMemory => /* 1 << 3 */ 8;
+public static TFlag TFlagUnrolledBitmap => /* 1 << 4 */ 16;
 
 [GoType("num:int32")] partial struct NameOff;
 
@@ -212,10 +212,10 @@ public static ж<Type> Common(this ж<Type> Ꮡt) {
 
 [GoType("num:nint")] partial struct ΔChanDir;
 
-public static readonly ΔChanDir RecvDir = /* 1 << iota */ 1;
-public static readonly ΔChanDir SendDir = 2;
-public static readonly ΔChanDir BothDir = /* RecvDir | SendDir */ 3;
-public static readonly ΔChanDir InvalidDir = 0;
+public static ΔChanDir RecvDir => /* 1 << iota */ 1;
+public static ΔChanDir SendDir => 2;
+public static ΔChanDir BothDir => /* RecvDir | SendDir */ 3;
+public static ΔChanDir InvalidDir => 0;
 
 [GoType] partial struct ChanType {
     public partial ref Type Type { get; }
@@ -670,17 +670,17 @@ public static ΔName NewName(@string n, @string tag, bool exported, bool embedde
     return new ΔName(Bytes: Ꮡ(b, 0));
 }
 
-public static readonly UntypedInt TraceArgsLimit = 10;
-public static readonly UntypedInt TraceArgsMaxDepth = 5;
-public static readonly UntypedInt TraceArgsMaxLen = /* (TraceArgsMaxDepth*3+2)*TraceArgsLimit + 1 */ 171;
+public static UntypedInt TraceArgsLimit => 10;
+public static UntypedInt TraceArgsMaxDepth => 5;
+public static UntypedInt TraceArgsMaxLen => /* (TraceArgsMaxDepth*3+2)*TraceArgsLimit + 1 */ 171;
 
-public static readonly UntypedInt TraceArgsEndSeq = 0xff;
-public static readonly UntypedInt TraceArgsStartAgg = 0xfe;
-public static readonly UntypedInt TraceArgsEndAgg = 0xfd;
-public static readonly UntypedInt TraceArgsDotdotdot = 0xfc;
-public static readonly UntypedInt TraceArgsOffsetTooLarge = 0xfb;
-public static readonly UntypedInt TraceArgsSpecial = 0xf0;
+public static UntypedInt TraceArgsEndSeq => 0xff;
+public static UntypedInt TraceArgsStartAgg => 0xfe;
+public static UntypedInt TraceArgsEndAgg => 0xfd;
+public static UntypedInt TraceArgsDotdotdot => 0xfc;
+public static UntypedInt TraceArgsOffsetTooLarge => 0xfb;
+public static UntypedInt TraceArgsSpecial => 0xf0;
 
-public static readonly UntypedInt MaxPtrmaskBytes = 2048;
+public static UntypedInt MaxPtrmaskBytes => 2048;
 
 } // end main_package

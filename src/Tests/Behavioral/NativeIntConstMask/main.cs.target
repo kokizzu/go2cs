@@ -4,9 +4,9 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly uintptr shift = 3;
+internal static uintptr shift => 3;
 
-internal static readonly uintptr blockSize = 16;
+internal static uintptr blockSize => 16;
 
 internal static uintptr low(uintptr i) {
     return (uintptr)(i & (uintptr)(((1 << (int)(shift))) - 1));
@@ -24,7 +24,7 @@ internal static uintptr alignSmall(uintptr i) {
     return (uintptr)(i & ~(uintptr)15);
 }
 
-internal static readonly UntypedInt ptrWords = 8;
+internal static UntypedInt ptrWords => 8;
 
 internal static uintptr fieldAddr(uintptr @base) {
     return @base + (uintptr)(4 * ptrWords);

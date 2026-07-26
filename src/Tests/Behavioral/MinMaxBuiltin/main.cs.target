@@ -4,9 +4,9 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly UntypedInt limit = /* 128 << 10 */ 131072;
+internal static UntypedInt limit => /* 128 << 10 */ 131072;
 
-internal static readonly UntypedInt floor = 16;
+internal static UntypedInt floor => 16;
 
 internal static uintptr clampU(uintptr n) {
     return min(n, (uintptr)(limit));

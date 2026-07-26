@@ -68,4 +68,51 @@ func main() {
 	share[1][0] = 2
 	share[2][0] = 3
 	fmt.Println(share[0][0], share[1][0], share[2][0])
+
+	// An ADDRESS-TAKEN nested local takes a THIRD emission path — the heap-boxed
+	// declaration (`ref var x = ref heap(new array<...>(N), out var Ꮡx)`) — which is
+	// separate from the plain local and the global above and had no element factory:
+	// every inner array stayed len 0 and the first indexed write panicked
+	// (compress/flate's `leafCounts [16][16]int32` in bitCounts).
+	var boxed [3][4]int32
+	pb := &boxed
+	fmt.Println(len(pb), len(pb[1]))
+	pb[1][2] = 11
+	pb[2][3] = 12
+	fmt.Println(pb[1][2], pb[2][3], pb[0][2])
+
+	// Slicing an element of the boxed array must see real backing too.
+	pb[0][0] = 1
+	pb[0][1] = 2
+	copy(pb[2][:2], pb[0][:2])
+	fmt.Println(pb[2][0], pb[2][1])
+
+	// Boxed array whose ELEMENT is a struct needing construction.
+	var boxedStruct [2]inner
+	ps := &boxedStruct
+	fmt.Println(len(ps), len(ps[1].b))
+	ps[1].b[2] = 13
+	fmt.Println(ps[1].b[2], ps[0].b[2])
+
+	// `new([N]T)` is a FOURTH path: the builtin built the zero value through the
+	// parameterless constructor, where the managed array carries no length at all, so the
+	// box came back length 0 (compress/flate's `f.bits = new([maxNumLit+maxNumDist]int)`).
+	np := new([12]int)
+	fmt.Println(len(np), len(*np))
+	np[3] = 14
+	fmt.Println(np[3], np[0])
+
+	// Nested, and with a struct element needing construction.
+	nq := new([2][3]int)
+	nq[1][2] = 15
+	fmt.Println(len(nq), len(nq[0]), nq[1][2], nq[0][2])
+
+	ns := new([2]inner)
+	ns[1].b[2] = 16
+	fmt.Println(len(ns), len(ns[1].b), ns[1].b[2], ns[0].b[2])
+
+	// A NAMED array element type keeps the zero-value form (its wrapper self-allocates).
+	nr2 := new(row)
+	nr2[3] = 17
+	fmt.Println(len(nr2), nr2[3], nr2[0])
 }

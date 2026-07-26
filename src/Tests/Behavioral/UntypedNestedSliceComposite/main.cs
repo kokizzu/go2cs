@@ -6,9 +6,9 @@ partial class main_package {
 
 [GoType("num:nint")] partial struct rank;
 
-internal static readonly rank rA = /* iota */ 0;
-internal static readonly rank rB = 1;
-internal static readonly rank rC = 2;
+internal static rank rA => /* iota */ 0;
+internal static rank rB => 1;
+internal static rank rC => 2;
 
 internal static slice<slice<rank>> order = new golib.SparseArray<slice<rank>>{
     [(int)rA] = new rank[]{}.slice(),
@@ -36,11 +36,11 @@ internal static slice<ж<dbgVar>> dbgvars = new ж<dbgVar>[]{
 
 [GoType("num:nint")] partial struct js;
 
-internal static readonly js j0 = /* iota */ 0;
-internal static readonly js j1 = 1;
-internal static readonly js j2 = 2;
-internal static readonly js j3 = 3;
-internal static readonly js numJS = 4;
+internal static js j0 => /* iota */ 0;
+internal static js j1 => 1;
+internal static js j2 => 2;
+internal static js j3 => 3;
+internal static js numJS => 4;
 
 internal static slice<array<js>> jsTable = new golib.SparseArray<array<js>>{
     [(int)j0] = new golib.SparseArray<js>{[(int)j1] = j2, [(int)j3] = j1}.array(4),

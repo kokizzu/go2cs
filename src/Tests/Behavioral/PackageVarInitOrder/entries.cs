@@ -16,4 +16,8 @@ internal static void initᴛcomputed() { computed = ((Func<nint>)(() => {
     return @base * 2;
 }))(); }
 
+internal static ж<table> sizedTable = newTable(tableSize);
+
+internal static holder chunkHolder = new();
+
 } // end main_package

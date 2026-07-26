@@ -156,9 +156,9 @@ which fits how C# developers usually consume dependencies.
 ## Constant Values
 
 A **typed** Go constant emits with its concrete C# type. An **untyped** constant emits as a golib
-`Untyped*` wrapper declared `static readonly`, so it adapts to whatever numeric type its use site needs —
-just like an untyped Go constant taking its type from context. Numeric literal *formatting* is preserved
-where Go and C# overlap (hex, binary, `_` separators), so bit masks and addresses stay recognizable.
+`Untyped*` wrapper, so it adapts to whatever numeric type its use site needs — just like an untyped Go
+constant taking its type from context. Numeric literal *formatting* is preserved where Go and C#
+overlap (hex, binary, `_` separators), so bit masks and addresses stay recognizable.
 
 ```go
 const MaxRetries = 3          // typed by use
@@ -167,9 +167,18 @@ const mask = 0x4000           // formatting preserved
 ```
 ```csharp
 public const nint MaxRetries = 3;
-internal static readonly UntypedInt win = 100;
-internal static readonly UntypedInt mask = 0x4000;   // not flattened to 16384
+internal static UntypedInt win => 100;
+internal static UntypedInt mask => 0x4000;   // not flattened to 16384
 ```
+
+Whenever C# can say `const` it does. When it cannot — a `[GoType]` struct such as the `Untyped*`
+wrappers, a named type, `uintptr`, or a complex is not a legal constant type — the declaration is a
+get-only **property**, not a `static readonly` field. A Go constant has no initialization at all,
+while C# runs static field *initializers* in class-textual order, so as a field a constant could be
+read as its type's DEFAULT by any package-level variable declared ahead of it — silently. That is how
+`compress/flate`'s Huffman decode table was allocated at length 0 instead of 512. (Two allocating
+forms — `@string` and `GoUntyped` — stay fields on purpose; see the
+[reference](ConversionStrategies-Reference.md#a-constant-c-cannot-declare-const-is-a-get-only-property-not-a-static-readonly-field).)
 
 Float constant values emit **exactly**: the Go source literal verbatim when it is valid C#, else the
 shortest round-trip form — never a shortened decimal. And a **function-local** untyped constant whose
@@ -195,7 +204,7 @@ t *= G + F / (s + E + D / s);
 ```
 
 A **complex** constant emits a real complex value, built from its two halves by the same exact-float
-rendering and recombined in the postfix `.i()` form written imaginary literals use — `static readonly`,
+rendering and recombined in the postfix `.i()` form written imaginary literals use — as a property,
 because C# forbids `const` of a struct and both `complex128` (`System.Numerics.Complex`) and `complex64`
 are structs:
 
@@ -204,12 +213,12 @@ const cRational = 5.5 + 1.5i
 const c64 complex64 = 1.5 + 2.5i
 ```
 ```csharp
-internal static readonly UntypedComplex cRational = /* 5.5 + 1.5i */ 5.5D + 1.5D.i();
-internal static readonly complex64 c64 = /* 1.5 + 2.5i */ 1.5F + 2.5F.i();
+internal static UntypedComplex cRational => /* 5.5 + 1.5i */ 5.5D + 1.5D.i();
+internal static complex64 c64 => /* 1.5 + 2.5i */ 1.5F + 2.5F.i();
 ```
 
-A native-sized constant whose value doesn't fit a C# `const` (e.g. `^uintptr(0)`) falls back to
-`static readonly` with an `unchecked` cast. Note `uintptr` is a **distinct golib struct**, not an alias of
+A native-sized constant whose value doesn't fit a C# `const` (e.g. `^uintptr(0)`) falls back to the
+same property form with an `unchecked` cast. Note `uintptr` is a **distinct golib struct**, not an alias of
 `System.UIntPtr` — Go treats `uint` and `uintptr` as different types, and the struct preserves that
 identity.
 

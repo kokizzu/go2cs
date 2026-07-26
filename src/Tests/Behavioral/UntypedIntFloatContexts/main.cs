@@ -4,9 +4,9 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly UntypedInt pkgConst = 1000;
+internal static UntypedInt pkgConst => 1000;
 
-internal static readonly UntypedInt hugeConst = /* 1 << 63 */ 9223372036854775808;
+internal static UntypedInt hugeConst => /* 1 << 63 */ 9223372036854775808;
 
 internal static void Main() {
     UntypedInt m = 3;

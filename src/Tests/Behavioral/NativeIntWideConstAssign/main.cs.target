@@ -4,7 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly UntypedInt maxBits = 57;
+internal static UntypedInt maxBits => 57;
 
 internal static (uintptr, nuint, nint) run() {
     uintptr p = default!;

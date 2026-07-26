@@ -4,7 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly UntypedInt two32 = /* 1 << 32 */ 4294967296;
+internal static UntypedInt two32 => /* 1 << 32 */ 4294967296;
 
 internal static int64 sum(int64 n) {
     return n;

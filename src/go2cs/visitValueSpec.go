@@ -999,8 +999,30 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					} else {
 						v.writeOutput("%s %s %s =%s %s;", constExpr, csTypeName, csIDName, orgExpr, constValExpr)
 					}
-				} else {
+				} else if constExpr == "const" {
 					v.writeOutput("%s %s %s %s =%s %s;", access, constExpr, csTypeName, csIDName, orgExpr, constValExpr)
+				} else {
+					// A Go constant has NO initialization: it is a compile-time value usable from
+					// anywhere in the package regardless of declaration order. When C# cannot say
+					// `const` — a [GoType] struct (UntypedInt/UntypedFloat/UntypedComplex, a named
+					// type, uintptr, complex) is not a legal constant type — a `static readonly`
+					// FIELD reintroduces initialization, and C# runs static field initializers in
+					// class-TEXTUAL order. A package-level variable declared ahead of the constant
+					// then reads it as the type's DEFAULT, silently: compress/flate declares
+					// `var fixedHuffmanDecoder huffmanDecoder` before `huffmanNumChunks`, so the
+					// struct's `chunks = new(huffmanNumChunks)` field initializer allocated a
+					// length-0 table (Go: 512) — `init` filled nothing and every later
+					// `chunks[i]` read panicked with "index out of range with length 0"; the same
+					// order trap zeroed `maxNumLit` for `fixedLiteralEncoding`'s initializer
+					// across files (Compile-item order).
+					//
+					// A get-only property carries no initialization, so declaration order cannot be
+					// observed and the JIT folds the literal at every use — the Go semantics
+					// exactly. RESIDUE: the two ALLOCATING const forms stay fields, because a
+					// property would rebuild their value on every read — `@string` (the u8-literal
+					// hoisting the string-literal arc introduced) and `GoUntyped` (a BigInteger
+					// parse). Both remain order-sensitive; neither can serve as an array length.
+					v.writeOutput("%s static %s %s =>%s %s;", access, csTypeName, csIDName, orgExpr, constValExpr)
 				}
 
 				v.writeComment(valueSpec.Comment, tokEnd+typeLenDeviation+1)

@@ -4,9 +4,9 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly UntypedInt bias = 1023;
+internal static UntypedInt bias => 1023;
 
-internal static readonly UntypedInt bits = 0x7FF8000000000000;
+internal static UntypedInt bits => 0x7FF8000000000000;
 
 internal static void Main() {
     var s = new nint[]{52, 40, 33}.slice();

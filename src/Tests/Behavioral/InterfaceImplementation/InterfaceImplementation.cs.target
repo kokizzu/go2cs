@@ -61,7 +61,7 @@ internal static @string Error(this errno e) {
     return errnoˢ;
 }
 
-internal static readonly errno errAgain = 11;
+internal static errno errAgain => 11;
 
 internal static error mayFail(nint n) {
     if (n > 0) {

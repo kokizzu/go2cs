@@ -23,4 +23,10 @@ func main() {
 	fmt.Println(stdinName)
 	fmt.Println(computed)
 	fmt.Println(registry.count)
+	fmt.Println(len(sizedTable.codes), tableSize)
+	fmt.Println(len(chunkHolder.chunks), numChunks)
+
+	// The table must be real storage, not a zero-length placeholder.
+	chunkHolder.chunks[numChunks-1] = 7
+	fmt.Println(chunkHolder.chunks[numChunks-1])
 }

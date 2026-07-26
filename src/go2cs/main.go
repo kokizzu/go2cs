@@ -6100,16 +6100,25 @@ func (v *Visitor) convertToHeapTypeDecl(ident *ast.Ident, createNew bool) string
 		// Get array element type
 		arrayType := convertToCSTypeName(goTypeName[strings.Index(goTypeName, "]")+1:])
 
+		// A heap-boxed local array needs the SAME per-element construction the plain-local and
+		// global paths already emit: `new array<array<int32>>(16)` fills its backing with
+		// `default(array<int32>)`, whose inner length exists only in the Go type — every element
+		// reports len 0 and the first indexed write panics (flate's `leafCounts [16][16]int32`,
+		// which is boxed because `copy(leafCounts[i][:i], …)` slices an element). Only the
+		// address-taken shapes reach here, so the plain length is unchanged for every element
+		// type whose `default(T)` is already the correct Go zero value (arrayZeroValueArgs).
+		arrayCtorArgs := v.arrayZeroValueArgs(arrayLen, identType)
+
 		if v.options.preferVarDecl {
 			if createNew {
-				return fmt.Sprintf("ref var %s = ref heap(new array<%s>(%s), out var %s%s);", varName, arrayType, arrayLen, AddressPrefix, csIDName)
+				return fmt.Sprintf("ref var %s = ref heap(new array<%s>(%s), out var %s%s);", varName, arrayType, arrayCtorArgs, AddressPrefix, csIDName)
 			}
 
 			return fmt.Sprintf("ref var %s = ref heap<array<%s>>(out var %s%s);", varName, arrayType, AddressPrefix, csIDName)
 		}
 
 		if createNew {
-			return fmt.Sprintf("ref array<%s> %s = ref heap(new array<%s>(%s), out %s<array<%s>> %s%s);", arrayType, varName, arrayType, arrayLen, PointerPrefix, arrayType, AddressPrefix, csIDName)
+			return fmt.Sprintf("ref array<%s> %s = ref heap(new array<%s>(%s), out %s<array<%s>> %s%s);", arrayType, varName, arrayType, arrayCtorArgs, PointerPrefix, arrayType, AddressPrefix, csIDName)
 		}
 
 		return fmt.Sprintf("ref array<%s> %s = ref heap<array<%s>>(out %s%s);", arrayType, varName, arrayType, AddressPrefix, csIDName)

@@ -5,13 +5,13 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class main_package {
 
-internal static readonly UntypedInt namedInt = 7;
+internal static UntypedInt namedInt => 7;
 
-internal static readonly UntypedInt namedRune = /* 'A' */ 65;
+internal static UntypedInt namedRune => /* 'A' */ 65;
 
-internal static readonly UntypedFloat namedFloat = 2.5;
+internal static UntypedFloat namedFloat => 2.5;
 
-internal static readonly UntypedInt namedWide = /* 1 << 40 */ 1099511627776;
+internal static UntypedInt namedWide => /* 1 << 40 */ 1099511627776;
 
 internal static readonly @string namedStr = "seed"u8;
 

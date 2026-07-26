@@ -4,7 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly UntypedFloat gPi = 3.141592653589793;
+internal static UntypedFloat gPi => 3.141592653589793;
 
 [GoType("num:float32")] partial struct main_meters;
 

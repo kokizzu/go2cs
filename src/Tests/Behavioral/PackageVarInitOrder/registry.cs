@@ -21,4 +21,22 @@ internal static ж<reg> registry = newReg();
 
 internal static slice<@string> names = new @string[]{"stdin"u8, "stdout"u8}.slice();
 
+internal static UntypedInt chunkBits => 4;
+
+internal static UntypedInt numChunks => /* 1 << chunkBits */ 16;
+
+internal static UntypedInt tableSize => 37;
+
+[GoType] partial struct holder {
+    internal array<uint32> chunks = new(numChunks);
+}
+
+[GoType] partial struct table {
+    internal slice<byte> codes;
+}
+
+internal static ж<table> newTable(nint n) {
+    return Ꮡ(new table(codes: new slice<byte>(n)));
+}
+
 } // end main_package

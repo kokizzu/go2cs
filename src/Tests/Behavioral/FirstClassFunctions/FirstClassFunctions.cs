@@ -7,8 +7,8 @@ using ꓸꓸꓸnint = Span<nint>;
 
 partial class main_package {
 
-internal static readonly UntypedInt win = 100;
-internal static readonly UntypedInt gamesPerSeries = 10;
+internal static UntypedInt win => 100;
+internal static UntypedInt gamesPerSeries => 10;
 
 [GoType] partial struct score {
     internal nint player, opponent, thisTurn;

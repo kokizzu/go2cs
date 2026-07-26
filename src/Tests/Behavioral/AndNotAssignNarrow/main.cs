@@ -4,7 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly UntypedInt writing = 4;
+internal static UntypedInt writing => 4;
 
 [GoType] partial struct hmap {
     internal uint8 flags;

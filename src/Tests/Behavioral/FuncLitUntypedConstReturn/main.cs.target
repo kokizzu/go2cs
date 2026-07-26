@@ -4,11 +4,11 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-internal static readonly UntypedInt maxRune = /* '\U0010FFFF' */ 1114111;
+internal static UntypedInt maxRune => /* '\U0010FFFF' */ 1114111;
 
-internal static readonly UntypedInt runeSelf = 0x80;
+internal static UntypedInt runeSelf => 0x80;
 
-internal static readonly UntypedInt bigConst = /* 1 << 40 */ 1099511627776;
+internal static UntypedInt bigConst => /* 1 << 40 */ 1099511627776;
 
 internal static rune apply(Func<rune, rune> f, rune r) {
     return f(r);
