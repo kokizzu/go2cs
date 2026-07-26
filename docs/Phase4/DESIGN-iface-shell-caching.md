@@ -780,7 +780,37 @@ Owed to `docs/Phase4/DESIGN-named-interface-wrappers.md`: relabel the A/B tables
 "2M asserts (1M iterations)". Recorded here rather than edited there, because that document is a
 banked record of a completed arc.
 
-### 10.5 What Stage 0 changes about the plan
+### 10.5 Measured progression through Stage 3
+
+The ledger §8 asked for, filled in as each stage landed. `PerfIfaceShell` is 5M iterations of two
+asserts plus two forwarded calls (one per tier). All figures **provisional** — taken with another
+agent resident on the box; the authoritative full-table `--update-readme` re-measure on a quiet
+machine is owed at coordinator integration.
+
+| stage | Go (ms) | JIT (ms) | × Go | ns/iter | AOT (ms) | × Go |
+|---|---:|---:|---:|---:|---:|---:|
+| shipped (clobbered JIT binary) | 13.0 | 2,514.9 | 193.77 | 503.0 | 971.2 | 73.09 |
+| **Stage 1 — P0** (output isolation) | 13.1 | **789.8** | **60.43** | 158.0 | 976.5 | 74.72 |
+| Stage 2 — +P1 (unified itab) | 13.0 | 683.1 | 52.66 | 136.6 | 866.2 | 66.77 |
+| **Stage 2 — +P1+P2** (monomorphic slot) | 12.9 | **633.7** | **49.16** | 126.7 | **760.1** | **58.97** |
+| **Stage 3 — +P6** (arity dispatch) | 13.3 | **588.0** | **44.36** | 117.6 | **727.8** | **54.90** |
+
+**193.77× → 44.36× on the JIT row, 73.09× → 54.90× under Native AOT.** Against the design's
+hypotheses: P1 delivered 21.4 ns/iteration (predicted 20–30), P2 a further 9.9 (predicted 10–14,
+and the predicted overlap with P1 is visible), P6 a further 9.1 on JIT and 6.4 on AOT (predicted
+"a couple of ns" on JIT — it is worth more than that because it removes an allocation, not just
+work). §9's projected post-P0/P1/P2/P6 floor of ~50–60 ns/iteration was measured against the
+replica's 86.2 ns baseline; against the benchmark's own 158.0 ns the same absolute savings land at
+**117.6 ns**, so the *shape* of the projection held and only its origin was wrong.
+
+The remaining residual is no longer dominated by the `_<T>` walk — the walk is now a static field
+read, an int compare and a reference compare. What is left per iteration is two shell allocations,
+one reflective forwarded call with a boxed return, and one delegate forwarded call. That changes
+the case for the deferred proposals: **P7's premise ("if the residual is still walk-dominated") is
+no longer true**, so its emitted-code footprint buys much less than §6.7 estimated. P3 (the CWT
+instance cache) now attacks the largest remaining line, so it is the one worth the experiment.
+
+### 10.6 What Stage 0 changes about the plan
 
 - P0-a **withdrawn** (§10.3); Stage 1 is P0-b + P0-c.
 - §0's attribution table is computed from the replica's 86.2 ns post-P0 figure. The benchmark's own

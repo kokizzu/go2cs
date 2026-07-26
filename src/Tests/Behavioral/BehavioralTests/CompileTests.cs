@@ -1222,6 +1222,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckSharedEmbeddedInterfaceMember() => CheckTarget("SharedEmbeddedInterfaceMember");
 
     [TestMethod]
+    public void CheckShellForwardArity() => CheckTarget("ShellForwardArity");
+
+    [TestMethod]
     public void CheckShiftNegativeWideConst() => CheckTarget("ShiftNegativeWideConst");
 
     [TestMethod]

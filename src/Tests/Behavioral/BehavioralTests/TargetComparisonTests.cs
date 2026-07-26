@@ -1225,6 +1225,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckSharedEmbeddedInterfaceMember() => CheckTarget("SharedEmbeddedInterfaceMember");
 
     [TestMethod]
+    public void CheckShellForwardArity() => CheckTarget("ShellForwardArity");
+
+    [TestMethod]
     public void CheckShiftNegativeWideConst() => CheckTarget("ShiftNegativeWideConst");
 
     [TestMethod]

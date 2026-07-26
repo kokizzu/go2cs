@@ -146,31 +146,44 @@ What the numbers above actually show, and why:
 - **Channel (~1.9×):** `channel<T>` + goroutine emulation over managed threading vs Go's runtime
   scheduler. Down from ~2.7–3.4× in the 2026-07-12 table (see *History*) — the channels redesign
   (real unbuffered rendezvous, single-fire select, operand-once hoisting) landed in between.
-- **IfaceShell (JIT ~60×, AOT ~75×) — read this row differently from every other row.**
-  > ⚠ **The JIT cell in the table above is stale and too slow.** Until 2026-07-26 the Native AOT
-  > publish's build step overwrote the JIT binary in place — the converter csproj template pinned
-  > `$(OutDir)` to the JIT tree, which outranks the `$(BaseOutputPath)` isolation in
-  > `Directory.Build.props` — so the "JIT" column was timing a self-contained binary with
-  > `IsDynamicCodeSupported=false`, whose reflective invokers can never emit their IL stubs. Fixed at
-  > the template; `PerformanceRunner` now reads the runtimeconfig before measuring and **fails the
-  > run** if the JIT binary is self-contained or has dynamic code disabled. Re-measured on the fixed
-  > tree: **789.8 ms (60.43×)**, down from 2,504.4 ms (188.47×) — 3.17× — and a *full-suite* run,
-  > with all eleven AOT publishes in the same pass, reproduced it at 798.8 ms (56.99×), which is the
-  > proof the isolation holds under exactly the condition that used to break it. Those figures are
-  > provisional (taken with another agent resident on the box); the whole table's authoritative
-  > `--update-readme` re-measure on a quiet machine is owed.
+- **IfaceShell (JIT ~44×, AOT ~55×) — read this row differently from every other row.**
+  > ⚠ **Both cells in the table above are stale and too slow — a re-measure is owed.** Two things
+  > changed on 2026-07-26. First, a measurement defect: until then the Native AOT publish's build
+  > step overwrote the JIT binary *in place* — the converter csproj template pinned `$(OutDir)` to
+  > the JIT tree, which outranks the `$(BaseOutputPath)` isolation in `Directory.Build.props` — so
+  > the "JIT" column was timing a self-contained binary with `IsDynamicCodeSupported=false`, whose
+  > reflective invokers can never emit their IL stubs. Fixed at the template; `PerformanceRunner`
+  > now reads the runtimeconfig before measuring and **fails the run** if the JIT binary is
+  > self-contained or has dynamic code disabled. Second, the assert ladder itself was reworked
+  > ([`DESIGN-iface-shell-caching.md`](../../../docs/Phase4/DESIGN-iface-shell-caching.md)): the two
+  > memoized tiers became one per-interface itab cache with a monomorphic slot, and the reflective
+  > forwarder stopped allocating an argument array per call. Measured progression (provisional —
+  > another agent was resident on the box):
+  >
+  > | | Go | JIT | AOT |
+  > |---|---:|---:|---:|
+  > | as shipped (clobbered JIT binary) | 13.0 | 2,514.9 (193.77×) | 971.2 (73.09×) |
+  > | + output-tree fix | 13.1 | 789.8 (60.43×) | 976.5 (74.72×) |
+  > | + unified itab cache & slot | 12.9 | 633.7 (49.16×) | 760.1 (58.97×) |
+  > | + arity-dispatched forwarder | 13.3 | **588.0 (44.36×)** | **727.8 (54.90×)** |
+  >
+  > A *full-suite* run with all eleven AOT publishes in the same pass reproduced the post-fix JIT
+  > figure, which is the proof the output isolation holds under exactly the condition that used to
+  > break it. The whole table's authoritative `--update-readme` re-measure on a quiet machine is
+  > owed.
 
   It measures the one operation C# has *no* answer for: satisfying an interface **structurally at run
   time**. Go answers it with a cached itab lookup that is essentially free (~13 ms for 10M asserts
-  ≈ 1.3 ns each); go2cs has to *construct* an implementation. A memoized assert is not one dictionary
-  hit but **two** lookups (one of which, the nominal `(Type,Type)` probe, cannot hit on this path by
-  construction), three `GetType()` calls, ~7 type tests, a fresh shell allocation, and then the
-  forwarded call — which on the reflective tier adds an `object[]` and a boxed return. The ratio is
-  the price of the *capability*, not a regression, and it is **not** what ordinary interface use
-  costs: an assertion the converter could record resolves through a generated nominal adapter
-  (≈1.1 ns) and never reaches this path, while a shell obtained once and called repeatedly pays
-  4.4 ns/call on the delegate tier and 22 ns/call on the reflective tier. The remaining work on this
-  row is itemized in [`docs/Phase4/DESIGN-iface-shell-caching.md`](../../../docs/Phase4/DESIGN-iface-shell-caching.md).
+  ≈ 1.3 ns each); go2cs has to *construct* an implementation. The lookup itself is now Go-shaped —
+  one itab entry per (dynamic type, interface) behind a monomorphic slot, so a resolved pair costs a
+  static field read, an int compare and a reference compare — and what remains per iteration is what
+  Go genuinely does not pay: **two shell allocations**, one reflective forwarded call with a boxed
+  return, and one delegate forwarded call. The ratio is the price of the *capability*, not a
+  regression, and it is **not** what ordinary interface use costs: an assertion the converter could
+  record resolves through a generated nominal adapter (≈1.1 ns) and never reaches this path, while a
+  shell obtained once and called repeatedly pays 4.4 ns/call on the delegate tier and 22 ns/call on
+  the reflective tier. The remaining work on this row is itemized in
+  [`docs/Phase4/DESIGN-iface-shell-caching.md`](../../../docs/Phase4/DESIGN-iface-shell-caching.md).
 
   What this row is really for is that the numbers **exist at all** under Native AOT: before the
   shells, the equivalent assert was resolved by reflecting for a generated conversion method and
@@ -182,7 +195,7 @@ What the numbers above actually show, and why:
   fires** under AOT — the pointer tier's `Δ<Iface><pointee>` instantiation is unavailable, so it
   degrades to the reflective object shell rather than to a miss (verified by tier name:
   `Δrun_typeᴛ1<box>` on the JIT, `Δrun_typeᴛ1ᴛObj` under AOT). That degradation, plus AOT's own
-  `IsDynamicCodeSupported=false`, is why AOT is now the *slower* column here (976.5 ms vs 789.8):
+  `IsDynamicCodeSupported=false`, is why AOT is now the *slower* column here (727.8 ms vs 588.0):
   under AOT **both** tiers are reflective and neither can emit an invoke stub. The previous claim
   that AOT was ~2.7× faster on this row was an artifact of the clobbered JIT binary described above.
 

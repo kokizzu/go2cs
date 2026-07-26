@@ -478,6 +478,7 @@
     <Project Path="Tests/Behavioral/SharedEmbeddedInterfaceMember/SharedEmbeddedInterfaceMember.csproj" />
     <Project Path="Tests/Behavioral/ShiftNegativeWideConst/ShiftNegativeWideConst.csproj" />
     <Project Path="Tests/Behavioral/ShiftPrecedenceUnsigned/ShiftPrecedenceUnsigned.csproj" />
+    <Project Path="Tests/Behavioral/ShellForwardArity/ShellForwardArity.csproj" />
     <Project Path="Tests/Behavioral/Slice3IndexWideBound/Slice3IndexWideBound.csproj" />
     <Project Path="Tests/Behavioral/SliceAliasing/SliceAliasing.csproj" />
     <Project Path="Tests/Behavioral/SliceFieldElementAddress/SliceFieldElementAddress.csproj" />

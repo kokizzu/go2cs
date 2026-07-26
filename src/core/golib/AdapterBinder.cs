@@ -1,4 +1,4 @@
-// AdapterBinder.cs - Gbtc
+﻿// AdapterBinder.cs - Gbtc
 // Copyright © 2026 The go2cs Authors. All rights reserved.
 //
 // Use of this source code is governed by an MIT-style license
@@ -352,12 +352,34 @@ public sealed class GoShellBinding
         if (m_dereference[index] && m_pointee is not null)
             target = m_pointee.GetValue(target)!;
 
+        MethodInvoker invoker = m_invokers[index];
+
+        // The bound members are static extension methods, so MethodInvoker's `obj` is always null
+        // and the RECEIVER occupies the first invoker argument -- which is why each arm below is
+        // offset by one, and why arity 3 is the last fixed one (the BCL tops out at four arguments).
+        // Taking those overloads avoids allocating and zeroing a fresh object?[] on every forwarded
+        // call. A Go method with no parameters -- Len, Error, String, Less -- is the common case and
+        // now allocates nothing here at all. It matters most under Native AOT, where the binder's
+        // belt degrades BOTH shell tiers to this reflective one, so the cost is paid twice per
+        // interface value rather than once.
+        switch (args.Length)
+        {
+            case 0:
+                return invoker.Invoke(null, target);
+            case 1:
+                return invoker.Invoke(null, target, args[0]);
+            case 2:
+                return invoker.Invoke(null, target, args[0], args[1]);
+            case 3:
+                return invoker.Invoke(null, target, args[0], args[1], args[2]);
+        }
+
         object?[] arguments = new object?[args.Length + 1];
         arguments[0] = target;
         args.CopyTo(arguments, 1);
 
         // Span overload chosen explicitly: the object?[] would otherwise be ambiguous with the
         // single-argument overload.
-        return m_invokers[index].Invoke(null, (Span<object?>)arguments);
+        return invoker.Invoke(null, (Span<object?>)arguments);
     }
 }
