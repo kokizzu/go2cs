@@ -21,9 +21,8 @@
 // the uint32 the pointer addresses, exactly as in Go — the bucket carries only the lock and the queue —
 // because a caller may SEED it (sync's TestSemaphore starts at 1); see SemaBucket.
 //
-// Known Phase-4 limitations: bucket/notify-list entries persist for the process lifetime (a bounded leak
-// for programs that churn many short-lived locks), and sync.Pool sharding (procPin/registerPoolCleanup)
-// is a best-effort no-op (correct single-threaded; not yet a faithful per-P concurrent pool).
+// Known Phase-4 limitation: bucket/notify-list entries persist for the process lifetime (a bounded leak
+// for programs that churn many short-lived locks).
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -254,13 +253,47 @@ partial class sync_package
     internal static partial uint32 runtime_randn(uint32 n) =>
         n == 0 ? 0u : unchecked((uint32)((ulong)System.Random.Shared.NextInt64() % n));
 
-    // ---- Pool sharding (best-effort) --------------------------------------------------------------
+    // ---- Pool sharding and GC-time cleanup --------------------------------------------------------
+    //
+    // Go's procPin pins the goroutine to its P and returns the P's id; sync.Pool uses that id to index
+    // a per-P shard, and the pin is what gives each shard's dequeue its SINGLE producer. There is no P
+    // here — a goroutine IS a managed thread and the CLR schedules it — so the shard index is
+    // THREAD-affine instead: a thread draws a sticky id once, in arrival order, and folds it into the
+    // GOMAXPROCS in force. That delivers what the pin exists to deliver (a stable shard per concurrent
+    // worker, so a Put and the Get after it reach the same private slot) without pretending to control
+    // scheduling, and procUnpin has nothing to undo.
+    //
+    // Threads outnumber shards, so two of them CAN land on one shard — the one thing a real pin rules
+    // out. This function only hands out the index; sync.Pool closes that gap on its own side with
+    // interlocked private slots and a per-shard producer gate (see pool.cs).
 
-    internal static partial void runtime_registerPoolCleanup(Action cleanup) { }
+    private static long s_nextProcId;
 
-    internal static partial nint runtime_procPin() => 0;
+    [ThreadStatic]
+    private static nint t_procId;
+
+    [ThreadStatic]
+    private static bool t_procIdAssigned;
+
+    internal static partial nint runtime_procPin()
+    {
+        if (!t_procIdAssigned)
+        {
+            t_procId = (nint)(Interlocked.Increment(ref s_nextProcId) - 1);
+            t_procIdAssigned = true;
+        }
+
+        nint procs = runtime_package.GOMAXPROCS(0);
+
+        return procs > 1 ? t_procId % procs : 0;
+    }
 
     internal static partial void runtime_procUnpin() { }
+
+    // Hands sync's poolCleanup to the runtime, which runs it when a garbage collection is requested —
+    // Go registers it the same way and the runtime calls it from gcStart → clearpools.
+    internal static partial void runtime_registerPoolCleanup(Action cleanup) =>
+        runtime_package.registerPoolCleanup(cleanup);
 
     internal static partial uintptr runtime_LoadAcquintptr(ж<uintptr> ptr) => ptr.Value;
 

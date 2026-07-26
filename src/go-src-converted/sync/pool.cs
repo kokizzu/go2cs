@@ -2,22 +2,40 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// go2cs NATIVE IMPLEMENTATION (hand-owned; replaces the converted pool.go output — the next
-// member of the native sync family after Mutex/RWMutex/WaitGroup/runtime hooks). Go's Pool is a
-// per-P sharded cache co-designed with the scheduler (procPin pins the goroutine to a P and
-// indexes a GC-managed poolLocal array); converted literally it fails on two fronts: the
-// poolLocal shards are slice elements whose promoted-embed boxes only constructors create (a
-// zero-valued element NREs on first field access — fmt's first Println), and the pin/victim-GC
-// choreography presumes Go's runtime. Reimplemented natively: one ConcurrentBag per Pool
-// (thread-safe, lock-free work-stealing), lazily created through the Pool's heap box so every
-// user of the same boxed Pool shares it. Pool semantics permit dropping cached items at any
-// time; this implementation lets the bag live for the Pool's lifetime (no victim-cache GC
-// integration — items are reclaimed with the Pool itself).
-using System;
-using System.Collections.Concurrent;
+// go2cs NATIVE IMPLEMENTATION (hand-owned; replaces the converted pool.go output — a member of the
+// native sync family alongside Mutex/RWMutex/WaitGroup, the runtime hooks in runtime_impl.cs, and the
+// poolDequeue slot fork in poolqueue.cs). Go's Pool is a per-P sharded cache co-designed with the
+// scheduler: procPin pins the goroutine to a P, the P's id indexes a [P]poolLocal block reached by
+// POINTER ARITHMETIC through an unsafe.Pointer (indexLocal), and the GC drives the victim-cache aging.
+// Converted literally that is raw metal on a managed referent — the block is a managed array, so the
+// pointer arithmetic has no meaning here — and the pin, which is what gives each shard's dequeue its
+// single producer, has nothing to pin to.
+//
+// So the whole type is reimplemented on managed primitives, keeping every piece of Go's ALGORITHM
+// (private slot, then the shard's shared chain, then stealing from other shards, then the victim
+// cache; poolCleanup ages local → victim → dropped) and replacing only the three pieces that cannot
+// exist here:
+//
+//   - The [P]poolLocal block becomes a poolLocal[] held directly (poolState), so a shard is an object
+//     reference instead of an offset. The cache-line pad Go adds against false sharing has no managed
+//     expression — each shard is separately allocated — so it is gone.
+//   - The P pin becomes a THREAD-affine shard index (runtime_procPin in runtime_impl.cs). Threads
+//     outnumber shards, so two threads can share one shard, which a real pin rules out; this file
+//     closes that gap where it matters: the private slot is taken and filled with a single interlocked
+//     step, and the shard's shared-chain HEAD — single-producer by poolqueue.go's contract — is
+//     serialized by a per-shard producer gate. Stealing (popTail) stays lock-free, as designed.
+//   - poolCleanup is registered with the runtime exactly as Go registers it, and runs when a garbage
+//     collection is REQUESTED (runtime.GC() → the pool hook; see runtime's managed_impl.cs) rather
+//     than at the start of every cycle including automatic ones. Two honest consequences: a program
+//     that never calls runtime.GC() holds its cached items longer than Go's would (a retention
+//     divergence, not a correctness one — Pool only promises that items MAY vanish), and the cleanup
+//     runs on the caller's thread instead of with the world stopped, so a Put racing it can land in a
+//     shard that just became a victim and age one cycle early. Pool's contract permits exactly that.
+using System.Collections.Generic;
+using System.Threading;
 
-// Hand-owned native replacement of the converted pool.go output — the converter skips
-// regenerating a file that carries this marker, so a -stdlib reconvert preserves it (see
+// Hand-owned native replacement of the converted pool.go output — the converter skips regenerating a
+// file that carries this marker, so a -stdlib reconvert preserves it (see
 // containsManualConversionMarker).
 [module: go.GoManualConversion]
 
@@ -36,10 +54,12 @@ partial class sync_package {
 //
 // A Pool must not be copied after first use.
 [GoType] partial struct Pool {
-    // items lazily materializes through the Pool's heap box on first Put/Get, so all
-    // access through the same boxed Pool shares one bag (never through a copy - Go
-    // forbids copying a Pool after first use).
-    internal ConcurrentBag<any>? items;
+    // state materializes through the Pool's heap box on first Put/Get, so every access through the
+    // same boxed Pool shares it (never through a copy — Go forbids copying a Pool after first use).
+    // Go keeps this state in the Pool struct itself, as an unsafe.Pointer to the shard block plus its
+    // length; holding it in one object instead also gives the cleanup registry a reference identity,
+    // which a `ref Pool` receiver cannot supply.
+    internal poolState? state;
 
     // New optionally specifies a function to generate
     // a value when Get would otherwise return nil.
@@ -47,13 +67,51 @@ partial class sync_package {
     public Func<any> New;
 }
 
+// A Pool's mutable state; see Pool.state.
+internal sealed class poolState
+{
+    // local is this cycle's shard array and victim is the previous cycle's. poolCleanup swaps them
+    // without stopping the world, so both are read and written with Volatile.
+    internal poolLocal[]? local;
+    internal poolLocal[]? victim;
+}
+
+// poolLocal is one shard of a Pool's cache — Go's poolLocal, minus the false-sharing pad (see the
+// file header).
+internal sealed class poolLocal
+{
+    // Can be used only by the shard's current producer, and only through interlocked access (two
+    // threads can share a shard here).
+    internal any? @private;
+
+    // The shard's producer can pushHead/popHead; any thread can popTail.
+    internal readonly ж<poolChain> shared = @new<poolChain>();
+}
+
+// Pools with a shard array in this cycle, and those that had one in the previous cycle. Both are
+// rebuilt by pin/poolCleanup exactly as Go rebuilds allPools/oldPools, so an abandoned Pool drops out
+// of both within two cleanups and becomes collectible.
+private static readonly object allPoolsMu = new();
+private static List<poolState> allPools = [];
+private static List<poolState> oldPools = [];
+
 // Put adds x to the pool.
 [GoRecv] public static void Put(this ref Pool p, any x) {
     if (x is null or NilType) {
         return;
     }
 
-    (p.items ??= new ConcurrentBag<any>()).Add(x);
+    var (l, _) = p.pin();
+
+    // Claim the private slot if it is free. One interlocked step, because the shard may have more
+    // than one producer here (see the file header).
+    if (Interlocked.CompareExchange(ref l.@private, x, null) is not null) {
+        lock (l) {
+            l.shared.pushHead(x);
+        }
+    }
+
+    runtime_procUnpin();
 }
 
 // Get selects an arbitrary item from the [Pool], removes it from the
@@ -65,17 +123,170 @@ partial class sync_package {
 // If Get would otherwise return nil and p.New is non-nil, Get returns
 // the result of calling p.New.
 [GoRecv] public static any Get(this ref Pool p) {
-    ConcurrentBag<any>? items = p.items;
+    var (l, pid) = p.pin();
+    any? x = Interlocked.Exchange(ref l.@private, null);
 
-    if (items is not null && items.TryTake(out any? item)) {
-        return item!;
+    if (x is null) {
+        // Try to pop the head of the local shard. We prefer the head over the tail for temporal
+        // locality of reuse.
+        lock (l) {
+            (x, _) = l.shared.popHead();
+        }
+
+        if (x is null) {
+            x = p.getSlow(pid);
+        }
     }
 
-    if (p.New != default!) {
-        return p.New();
+    runtime_procUnpin();
+
+    if (x is null && p.New != default!) {
+        x = p.New();
     }
 
+    return x!;
+}
+
+// getSlow looks for an item outside this shard: first the tail of every other shard (stealing), then
+// the victim cache.
+[GoRecv] internal static any getSlow(this ref Pool p, nint pid) {
+    poolState state = stateOf(ref p);
+
+    // Try to steal one element from other shards.
+    poolLocal[]? locals = Volatile.Read(ref state.local);
+    nint size = locals is null ? 0 : locals.Length;
+
+    for (nint i = 0; i < size; i++) {
+        var (x, _) = locals![(pid + i + 1) % size].shared.popTail();
+
+        if (x is not null) {
+            return x;
+        }
+    }
+
+    // Try the victim cache. We do this after attempting to steal from all primary caches because we
+    // want objects in the victim cache to age out if at all possible.
+    locals = Volatile.Read(ref state.victim);
+    size = locals is null ? 0 : locals.Length;
+
+    if (pid >= size) {
+        return default!;
+    }
+    {
+        any? x = Interlocked.Exchange(ref locals![pid].@private, null);
+
+        if (x is not null) {
+            return x;
+        }
+    }
+
+    for (nint i = 0; i < size; i++) {
+        var (x, _) = locals![(pid + i) % size].shared.popTail();
+
+        if (x is not null) {
+            return x;
+        }
+    }
+
+    // Mark the victim cache as empty so future gets don't bother with it. Go zeroes victimSize;
+    // dropping the array does the same and releases the shards with it.
+    Volatile.Write(ref state.victim, null);
     return default!;
+}
+
+// stateOf returns the Pool's state, creating it once on first use (race-safe).
+private static poolState stateOf(ref Pool p) {
+    poolState? s = Volatile.Read(ref p.state);
+
+    if (s is not null) {
+        return s;
+    }
+
+    var created = new poolState();
+
+    return Interlocked.CompareExchange(ref p.state, created, null) ?? created;
+}
+
+// pin returns the poolLocal shard for the calling goroutine and the shard's index. Go pins the
+// goroutine to its P for the duration and the caller must runtime_procUnpin(); the index here is
+// thread-affine, so the pin costs nothing and the unpin has nothing to undo (see runtime_procPin).
+[GoRecv] internal static (poolLocal, nint) pin(this ref Pool p) {
+    // A nil Pool has already panicked by now: the receiver deref happens before this body runs, which
+    // is what Go's explicit `if p == nil` check in pin buys (it panics rather than taking a nil deref
+    // while pinned, where it would be a fatal error).
+    poolState state = stateOf(ref p);
+    nint pid = runtime_procPin();
+    poolLocal[]? locals = Volatile.Read(ref state.local);
+
+    if (locals is not null && pid < locals.Length) {
+        return (locals[pid], pid);
+    }
+
+    return pinSlow(state);
+}
+
+// pinSlow allocates this cycle's shard array — Go's [P]poolLocal block — and enrolls the pool for
+// cleanup. allPoolsMu serializes it against both other pins and poolCleanup.
+private static (poolLocal, nint) pinSlow(poolState state) {
+    lock (allPoolsMu) {
+        // Retry under the lock: another thread may have built the array, or poolCleanup may have
+        // taken it away, since pin looked.
+        nint pid = runtime_procPin();
+        poolLocal[]? locals = state.local;
+
+        if (locals is not null && pid < locals.Length) {
+            return (locals[pid], pid);
+        }
+
+        if (locals is null) {
+            allPools.Add(state);
+        }
+
+        // If GOMAXPROCS changes between cleanups, re-allocate the array and lose the old one. The
+        // index came from the GOMAXPROCS in force a moment ago, so keep room for it either way.
+        nint size = runtime_package.GOMAXPROCS(0);
+
+        if (size <= pid) {
+            size = pid + 1;
+        }
+
+        var local = new poolLocal[size];
+
+        for (nint i = 0; i < size; i++) {
+            local[i] = new poolLocal();
+        }
+
+        Volatile.Write(ref state.local, local);
+        return (local[pid], pid);
+    }
+}
+
+// poolCleanup drops every pool's victim cache and moves its primary cache into the victim slot. This
+// is the aging step that lets a Pool release what it cached; Go's runtime runs it at the start of each
+// GC cycle with the world stopped, and here it runs when a collection is requested (see the file
+// header for both divergences).
+internal static void poolCleanup() {
+    lock (allPoolsMu) {
+        // Drop victim caches from all pools.
+        foreach (poolState state in oldPools) {
+            Volatile.Write(ref state.victim, null);
+        }
+
+        // Move primary cache to victim cache.
+        foreach (poolState state in allPools) {
+            Volatile.Write(ref state.victim, Volatile.Read(ref state.local));
+            Volatile.Write(ref state.local, null);
+        }
+
+        // The pools with non-empty primary caches now have non-empty victim caches and no pools have
+        // primary caches.
+        oldPools.Clear();
+        (oldPools, allPools) = (allPools, oldPools);
+    }
+}
+
+[GoInit] internal static void init() {
+    runtime_registerPoolCleanup(poolCleanup);
 }
 
 // The runtime-provided hooks below stay declared here (their home file in Go is pool.go);

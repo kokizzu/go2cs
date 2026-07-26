@@ -8537,6 +8537,74 @@ message merely names the type and says "see inner exception", so the actual faul
 lost (a whole `gob` run's real cause was invisible this way). The backstop now writes `ex.ToString()`
 for the non-panic case, carrying the full inner-exception chain and stacks.
 
+### `sync.Pool` — a managed-reference ring slot, and a thread-affine stand-in for the P pin
+
+`sync.Pool` is the third shape of the same wall, and the most instructive: **the raw-metal type is not
+a pointer-in-an-integer, it is the `any` itself.** Go's `poolDequeue` is a lock-free ring of `eface`
+slots — the two-word `{type, value}` form of an interface — and its whole ownership protocol hangs on
+the TYPE word: a slot is empty **iff** `typ == nil`, and a consumer publishes "done with this slot" by
+atomically storing nil into `typ` alone, leaving `val` to be overwritten later. Under the CLR an `any`
+is ONE reference, so the literal conversion reinterprets the two-word struct as an `any`
+(`Unsafe.As`) and the `typ` word ends up doing double duty as both the type tag and the value. Two
+failures follow immediately, and both were observed: a stored value read back through the
+reinterpretation surfaces as its own type word (`panic: interface conversion: interface {} is
+unsafe.Pointer, not int`), and the empty-slot sentinel — a nil `unsafe.Pointer` — is indistinguishable
+from a *stored value of that type*, so `pushHead` and `popTail` disagree about who owns a slot and the
+ring corrupts or wedges. `TestPoolChain` took the whole test host down with the panic above, which cost
+the 14 tests that sort after it alphabetically.
+
+The fork is confined to the **slot representation** and keeps every other line of Go's algorithm —
+the packed `head`/`tail`, the fullness test, the CAS protocol, the single-producer/multi-consumer
+contract, and the entire `poolChain` half:
+
+```csharp
+// eface is Go's two-word {type, value} representation of an `any`. Under the CLR an `any` IS a single
+// managed reference, so the slot holds that reference directly.
+[GoType] partial struct eface {
+    internal any? val;
+}
+```
+
+`null` is the empty-slot sentinel — a state no stored value can forge — and a private singleton stands
+in for Go's typed-nil `dequeueNil(nil)` marker (a slot holding a *nil interface value* must still read
+as occupied). That also collapses Go's two-step release into one: with a single word there is nothing
+to tear, so **one** `Volatile.Write(ref slot.val, null)` both clears the value and hands the slot back
+to the producer, where Go needs a value store followed by a publishing `atomic.StorePointer` on `typ`.
+`TestPoolDequeue` proves the release protocol end to end — 2·10⁶ items through a **fixed** 16-element
+ring, with the head/tail seeded 500 short of wrapping.
+
+`Pool` itself is a whole-file hand-own for a different reason: its `[P]poolLocal` shard block is
+reached by **pointer arithmetic** through an `unsafe.Pointer` (`indexLocal`), which is meaningless when
+the block is a managed array, and `procPin` — the thing that gives each shard's dequeue its *single*
+producer — has no P to pin to. Go's algorithm survives intact (private slot → the shard's shared chain
+→ steal from other shards' tails → the victim cache; `poolCleanup` ageing local → victim → dropped);
+three pieces are replaced:
+
+| Go mechanism | Managed realization | Divergence |
+|---|---|---|
+| `[P]poolLocal` block + `indexLocal` pointer arithmetic | a `poolLocal[]` held directly, one heap object per shard | the cache-line pad against false sharing is gone — separate objects, nothing to pad |
+| `procPin()` → P id, preemption off | **thread-affine** index: a thread draws a sticky id once, in arrival order, folded into the current `GOMAXPROCS`; `procUnpin` has nothing to undo | threads outnumber shards, so two threads CAN share one shard — the one thing a real pin rules out. Closed on Pool's side: the private slot is claimed/taken with a single `Interlocked` step, and the shard's shared-chain HEAD (single-producer by contract) is serialized by a per-shard producer gate. Stealing (`popTail`) stays lock-free, as designed |
+| `poolCleanup` at the start of every GC cycle, world stopped | registered with the runtime exactly as Go registers it (`runtime_registerPoolCleanup` → `runtime.GC()` invokes the hook, mirroring `gcStart` → `clearpools`) | narrower trigger: **requested** collections age the pool, automatic CLR collections do not, so a program that never calls `runtime.GC()` retains its cached items longer than Go's would. And the swap runs on the caller's thread, not under STW, so a `Put` racing it can land in a shard that just became a victim and age one cycle early. Both sit inside Pool's contract — *any item may be removed at any time* — so they cost a cache hit, never correctness |
+
+The registration path is worth noting because it is a **general** cross-assembly constraint, not a Pool
+detail: sync reaches the runtime through `//go:linkname runtime_registerPoolCleanup`, whose target
+`sync_runtime_registerPoolCleanup` the exported-ness rule makes `internal` to the runtime assembly — and
+[a linkname forwarder cannot bind an internal target across assemblies](#a-cross-package-golinkname-pull-emits-a-forwarder-not-a-throwing-stub).
+A one-line `public` shim in `runtime/managed_impl.cs` is the crossing point, the same remedy
+`blockUntilEmptyFinalizerQueue` already uses in `mfinal.cs`.
+
+**What the arc could NOT satisfy, stated precisely.** `TestPoolGC` asserts that after draining a Pool
+and collecting, at least `N-1` of `N` finalizers have run — a budget of exactly **one** straggler still
+reachable "on stack or elsewhere". A drained Pool here holds nothing (proven with a `WeakReference`
+probe: run the drain in its own frame and **zero** of 100 survive), but the test's own frame spends the
+budget twice under an **unoptimized** build: the fill loop's `v` keeps the last item, and the JIT's
+MinOpts codegen keeps the *discarded* return value of the final `Get()` reachable from the calling
+frame for the rest of the method. That second straggler reproduces with no Pool in sight — a factory
+whose result is discarded in a loop leaves its last object alive in Debug — and the test passes in
+`Release`, where the JIT's liveness is precise. So it is a codegen-liveness divergence of the
+Debug-configured CLR, not a Pool defect; the honest classification is the disclosed-divergence class,
+not a contortion of the drain order to make one assert land.
+
 ## Deterministic Output
 
 Converter output is **byte-reproducible**: converting the same Go source with the same converter build produces byte-identical C# every run. This is a hard guarantee the goldens, the full-conversion error measurements, and any future release tag all rest on. Three mechanisms enforce it (all landed 2026-07-01, proven by two consecutive full-stdlib conversions diffing to zero across 305 packages):

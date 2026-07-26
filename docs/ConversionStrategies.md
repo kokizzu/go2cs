@@ -1287,6 +1287,17 @@ tick would fire a 1 ms Go timer late and out of order. `tick.cs` is hand-owned f
 its `(*Ticker)(unsafe.Pointer(newTimer(…)))` reinterpret compiles but yields a *dangling* pointer in a
 managed runtime, so the Ticker is built directly and its timer addressed by box identity.
 
+`sync.Pool` is the sharpest form of the same wall, because there the raw-metal type is **the `any`
+itself**: `poolDequeue`'s ring holds `eface` slots (the two-word `{type, value}` interface form) and
+decides a slot is free by testing the TYPE word for nil. An `any` in C# is one reference, so the
+reinterpreted slot makes the type word double as the value — a stored `int` reads back as
+`unsafe.Pointer`, and the empty-slot sentinel is indistinguishable from a value of that type. The
+hand-owned slot is simply `internal any? val`, with `null` as the empty sentinel, which also collapses
+Go's two-step release (store the value, then publish by nilling `typ`) into the one write a single-word
+slot makes atomic. `Pool` around it keeps Go's whole algorithm — private slot, shared chain, stealing,
+victim cache — with the P pin replaced by a thread-affine shard index plus a per-shard producer gate,
+since a managed thread cannot be pinned to a P.
+
 The same ruling scales up to the runtime's whole **process-control surface**. `runtime.GC`,
 `GOMAXPROCS`, `Gosched`, `Stack`, `ReadMemStats` and `LockOSThread`/`UnlockOSThread` convert
 faithfully and compile, then die on the first call, because each body drives Go's scheduler or GC
@@ -1330,7 +1341,10 @@ model, `sync/atomic.Value`, the reflection bridge (`abi.TypeOf`/`reflect` value+
 [the runtime's process-control surface](ConversionStrategies-Reference.md#the-runtimes-process-control-surface-implement-the-contract-never-the-mechanism)
 (the per-API divergence table, `runtime/debug`'s knobs, the `internal/runtime/atomic` native fork, the
 `unsafe.Pointer(uintptr(0)) == nil` round-trip, and how an unavailable runtime capability gates a test
-instead of crashing the host).
+instead of crashing the host), and
+[`sync.Pool`'s managed ring slot and thread-affine shard index](ConversionStrategies-Reference.md#syncpool--a-managed-reference-ring-slot-and-a-thread-affine-stand-in-for-the-p-pin)
+(the three replaced mechanisms with their divergences, the cross-assembly `internal`-linkname-target
+shim, and why `TestPoolGC`'s one-straggler budget is unsatisfiable under an unoptimized build).
 
 ---
 

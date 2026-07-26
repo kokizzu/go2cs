@@ -143,6 +143,27 @@ is already behind `notify` (wraparound-safe signed comparison, Go's `less`) retu
 parking. All four `sync.Cond` tests pass on it. The lesson generalizes: when the Go primitive's contract names
 a *specific* waiter, a counting primitive is a divergence, not an implementation detail.
 
+**`sync.Pool` — the raw-metal type can be the `any` itself (2026-07-26).** The same wall in its third
+shape, and the sharpest one: `poolDequeue`'s ring stores `eface` slots — the two-word `{type, value}`
+form of an interface — and keys ownership on the TYPE word (empty **iff** `typ == nil`; a consumer
+releases a slot by storing nil into `typ` alone). An `any` under the CLR is ONE reference, so the
+literal conversion reinterprets the struct as an `any` and the type word does double duty as the value:
+a stored value reads back as its own type descriptor (`panic: interface conversion: interface {} is
+unsafe.Pointer, not int`, which took the whole test host down and cost the 14 tests sorting after
+`TestPoolChain`), and the empty-slot sentinel becomes indistinguishable from a stored value of that
+type. The hand-owned `poolqueue.cs` forks **only** the slot — one managed reference, `null` as the
+empty sentinel, a singleton standing in for Go's typed-nil `dequeueNil` marker, and Go's two-step
+release collapsed into the single write a one-word slot makes atomic — leaving the packed head/tail,
+the fullness test, the CAS protocol and the whole `poolChain` half untouched. `pool.cs` was already
+hand-owned (its `[P]poolLocal` block is reached by pointer arithmetic through an `unsafe.Pointer`) and
+is now a faithful port of Go's algorithm rather than a `ConcurrentBag`: private slot → shared chain →
+steal → victim cache, with `poolCleanup` registered exactly as Go registers it. Two divergences are
+stated in the file and in
+[`ConversionStrategies-Reference.md`](ConversionStrategies-Reference.md#syncpool--a-managed-reference-ring-slot-and-a-thread-affine-stand-in-for-the-p-pin):
+`procPin` becomes a **thread-affine** shard index (so two threads can share a shard, which Pool closes
+with interlocked private slots and a per-shard producer gate), and the cleanup is triggered by
+*requested* collections rather than every GC cycle. `sync` goes 21 → 35 of 50 on this arc.
+
 There are **two** ways a package carries hand-owned C#, and they are NOT interchangeable:
 
 1. **`*_impl.cs` supplement — for SOME declarations in a file.** The converter emits the file normally but,
@@ -162,8 +183,9 @@ There are **two** ways a package carries hand-owned C#, and they are NOT interch
    durable across reconverts.
 
    Complete inventory of whole-file replacements (every non-`*_impl` file carrying a real module-level
-   marker in `src/go-src-converted`; grep-verified 2026-07-16): sync `mutex.cs` / `waitgroup.cs` /
-   `rwmutex.cs` / `pool.cs`; runtime `runtime2.cs` / `mfinal.cs`; syscall `dll_windows.cs` /
+   marker in `src/go-src-converted`; grep-verified 2026-07-16, `poolqueue.cs` added 2026-07-26): sync
+   `mutex.cs` / `waitgroup.cs` /
+   `rwmutex.cs` / `pool.cs` / `poolqueue.cs`; runtime `runtime2.cs` / `mfinal.cs`; syscall `dll_windows.cs` /
    `exec_windows.cs` (2026-07-19 — `StartProcess` only; see *Child-process creation* below);
    internal/godebug
    `godebug.cs` (2026-07-17, blocker R2 — parses $GODEBUG once on first use instead of the Go runtime's

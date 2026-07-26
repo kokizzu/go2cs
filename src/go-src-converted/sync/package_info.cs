@@ -57,15 +57,10 @@ public static partial class sync_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial class dequeueNil {}
     internal partial struct copyChecker {}
-    internal partial struct eface {}
     internal partial struct entry {}
     internal partial struct noCopy {}
     internal partial struct notifyList {}
-    internal partial struct poolChain {}
-    internal partial struct poolChainElt {}
-    internal partial struct poolDequeue {}
     internal partial struct readOnly {}
     public partial struct Cond {}
     public partial struct Map {}

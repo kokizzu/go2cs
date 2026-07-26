@@ -83,9 +83,24 @@ partial class runtime_package
         Thread.Yield();
     }
 
+    // registerPoolCleanup is where sync's //go:linkname runtime_registerPoolCleanup crosses into this
+    // assembly. The symbol that linkname names, sync_runtime_registerPoolCleanup (mgc.cs), is
+    // `internal` under the exported-ness rule, and a cross-assembly forwarder cannot reach an internal
+    // target — the same constraint blockUntilEmptyFinalizerQueue documents in mfinal.cs. So sync calls
+    // this shim, which hands the cleanup to the converted registration unchanged.
+    public static void registerPoolCleanup(Action cleanup) => sync_runtime_registerPoolCleanup(cleanup);
+
     // GC runs a garbage collection and blocks the caller until the garbage collection is complete.
     public static void GC()
     {
+        // Go's gcStart runs clearpools() at the START of every cycle, and that is what ages
+        // sync.Pool's victim cache — without it a Pool never releases what it cached. Only the
+        // sync.Pool arm of clearpools is wired here: the boringcrypto cache is cleared by pointer
+        // stores that have no managed meaning, and unique's map cleanup is a channel handoff, both
+        // separate arcs.
+        if (poolcleanup != default!)
+            poolcleanup();
+
         // Go's GC() is documented to complete a full cycle, and callers (sync's pool/oncefunc
         // tests among them) rely on finalizers having RUN by the time it returns. The second
         // collect reclaims what the finalizers released, matching the state a completed Go cycle
