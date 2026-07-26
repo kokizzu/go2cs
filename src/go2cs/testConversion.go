@@ -501,6 +501,19 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 	// test files emit into the production package class, where those names are already taken.
 	productionLiftSeed := packageLiftedTypeNames
 
+	// The simple type names BOTH variant classes declare (see testAmbiguousLocalTypeNames). Both
+	// `using static` directives are in scope in the merged metadata, so these must emit
+	// class-qualified. Computed from the loaded variants before either converts, and session-scoped
+	// — resetPackageState does not clear it.
+	testAmbiguousLocalTypeNames = ambiguousVariantTypeNames(internal, external)
+
+	productionAnchor := metadataClassPrefix(projectNamespace, production.Name)
+	testAnchor := productionAnchor
+
+	if external != nil {
+		testAnchor = metadataClassPrefix(projectNamespace, external.Name)
+	}
+
 	testInfoPath := filepath.Join(outputPath, testPackageInfoFileName)
 
 	if model == testProjectReference {
@@ -614,9 +627,12 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 					return result, errProductionAnchoredRecords
 				}
 
+				// Reference model: the seeded package_test_info.cs declares the TEST class as its
+				// first — and only — class, so that is its anchor.
+				metadataAnchorClassPrefix = testAnchor
 				writePackageInfoFile(testInfoPath, true)
 			} else {
-				unitName, err := writeExternalVariantMetadata(testInfoPath, outputPath, production.Name)
+				unitName, err := writeExternalVariantMetadata(testInfoPath, outputPath, production.Name, productionAnchor, testAnchor)
 				if err != nil {
 					return result, err
 				}
@@ -626,6 +642,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 				}
 			}
 		} else {
+			metadataAnchorClassPrefix = productionAnchor
 			writePackageInfoFile(testInfoPath, true)
 		}
 
@@ -643,6 +660,49 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 	}
 
 	return result, nil
+}
+
+// metadataClassPrefix renders the fully-qualified C# class a converted Go package emits into —
+// the anchor a metadata file's bare local type references bind to.
+func metadataClassPrefix(namespace, goPackageName string) string {
+	return namespace + "." + getSanitizedImport(goPackageName+PackageSuffix)
+}
+
+// ambiguousVariantTypeNames returns the simple type names declared by BOTH `-tests` variants: the
+// package under test (production + its internal `_test.go` files) and the external `<pkg>_test`
+// suite. Both classes are `using static`-imported by the merged metadata, so a bare reference to
+// one of these names cannot bind (CS0104) — see testAmbiguousLocalTypeNames. The Go name and its
+// core-sanitized C# spelling are both recorded: membership is tested against an EMITTED name, and
+// an entry that can never be emitted is inert. Empty unless BOTH variants exist.
+func ambiguousVariantTypeNames(internal, external *packages.Package) HashSet[string] {
+	ambiguous := HashSet[string]{}
+
+	if internal == nil || external == nil || internal.Types == nil || external.Types == nil {
+		return ambiguous
+	}
+
+	externalTypeNames := HashSet[string]{}
+
+	for _, name := range external.Types.Scope().Names() {
+		if _, ok := external.Types.Scope().Lookup(name).(*types.TypeName); ok {
+			externalTypeNames.Add(name)
+		}
+	}
+
+	for _, name := range internal.Types.Scope().Names() {
+		if _, ok := internal.Types.Scope().Lookup(name).(*types.TypeName); !ok {
+			continue
+		}
+
+		if !externalTypeNames.Contains(name) {
+			continue
+		}
+
+		ambiguous.Add(name)
+		ambiguous.Add(getCoreSanitizedIdentifier(name))
+	}
+
+	return ambiguous
 }
 
 // referenceModelTestPackageInfoSeed composes package_test_info.cs for a REFERENCE-model test
@@ -1466,7 +1526,7 @@ func externalTestPackageInfoSeed(projectNamespace, productionClassName, testClas
 // package_test_info.cs as before. Returns the unit's file name when it was written (the caller
 // adds it to the test project's compile items), or "" when the variant introduced no
 // test-anchored records — utf8-class packages keep their single-file shape byte-identical.
-func writeExternalVariantMetadata(testInfoPath, outputPath, productionPackageName string) (string, error) {
+func writeExternalVariantMetadata(testInfoPath, outputPath, productionPackageName, productionAnchor, testAnchor string) (string, error) {
 	productionClassName := getSanitizedImport(productionPackageName + PackageSuffix)
 	testAnchored, productionAnchored := splitExternalVariantRecords(productionClassName)
 
@@ -1494,6 +1554,7 @@ func writeExternalVariantMetadata(testInfoPath, outputPath, productionPackageNam
 		exportedTypeAliases = map[string]string{}
 
 		testAnchored.install()
+		metadataAnchorClassPrefix = testAnchor
 		writePackageInfoFile(unitPath, true)
 
 		importedTypeAliases, exportedTypeAliases = savedImported, savedExported
@@ -1509,6 +1570,11 @@ func writeExternalVariantMetadata(testInfoPath, outputPath, productionPackageNam
 	packageEmittedTypeAccess = HashSet[string]{}
 
 	productionAnchored.install()
+
+	// package_test_info.cs anchors to the PRODUCTION class even though the EXTERNAL variant is the
+	// one merging into it here — the anchor is a property of the file (its first class), not of the
+	// variant writing it.
+	metadataAnchorClassPrefix = productionAnchor
 	writePackageInfoFile(testInfoPath, true)
 
 	return unitName, nil

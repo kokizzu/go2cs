@@ -6728,6 +6728,39 @@ A Go package can name one of its own exported types after a top-level C# `System
 
 Foreign types are always package-qualified already (dotted) and are left untouched; no non-colliding name changes, so every non-colliding attribute emits byte-identically. (Guarded by the `SystemCollidingTypeName` behavioral test.)
 
+### A name both `-tests` variant classes declare is qualified with the FILE's anchor class
+The same file-scope ambiguity has a second source under `-tests`. The merged test metadata carries a
+`using static` for the package under test (`<pkg>_package`) **and** for the external suite
+(`<pkg>_test_package`) — the second one added so an attribute argument can name a type the external
+test files declare (B3). A Go package is free to declare the same simple type name on both sides,
+and encoding/gob does: `Point` and `Vector` are declared by `codec_test.go` (package `gob`) and
+again by `example_encdec_test.go` / `example_interface_test.go` (package `gob_test`). The bare
+reference then binds to neither — CS0104 ×3, which blocked the whole package build.
+
+Such a name is emitted **class-qualified**, with the class the metadata FILE anchors to — its first
+class, which is also what the `go2cs-gen` generators host output in:
+
+```csharp
+// package_test_info.cs — anchored at the production class:
+[assembly: GoImplement<go.encoding.gob_package.Point, Squarer>]
+[assembly: GoImplement<go.encoding.gob_package.Vector, Squarer>]
+// package_info_external_test.cs — anchored at the external test class:
+[assembly: GoImplement<go.encoding.gob_test_package.Point, Pythagoras>]
+```
+
+The anchor is a property of the file, **not** of the variant writing it: the external variant also
+merges its production-anchored partition into `package_test_info.cs`, and a bare local reference
+there still means the production class — the very invariant the B4/B5 record split already relies on
+(`isTestAnchoredImplementRecord`: "a BARE impl name is a type declared in the external test package
+itself"). Making the reference explicit states that invariant instead of assuming it. Because the
+qualification runs LAST in the name pipeline — after `stripLocalTypeQualifier` — both arrival forms
+(bare from the declaring variant, class-qualified then stripped from the other) converge on ONE
+canonical spelling, so the merge HashSet still dedupes them to a single record.
+
+The name set is computed once per `-tests` conversion from the two loaded variants and is empty
+otherwise, so nothing outside `-tests` changes (check-no-regression: byte-identical across all 495
+behavioral projects). Guarded by `TestAmbiguousVariantTypeNamesAreClassQualified`.
+
 ## Pointers
 Pointer conversions use the golib heap box [`ж<T>`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/%D0%B6.cs) (read "zhe"). Taking the address of a value uses the address-of operator `Ꮡ` (e.g. `Ꮡx`); an escaping local is allocated via `heap(...)`, and addresses of a struct field or array element are taken through `.of(Type.ᏑField)` / `.at<T>(index)`.
 

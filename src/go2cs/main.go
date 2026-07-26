@@ -642,6 +642,26 @@ var packageLiftedTypeNames HashSet[string]
 // caller captured before the first variant's resetPackageState.
 var productionLiftedTypeNames HashSet[string]
 
+// testAmbiguousLocalTypeNames holds the SIMPLE type names declared by BOTH `-tests` variant
+// classes — the package under test (`<pkg>_package`, production files plus its internal `_test.go`
+// files) and the external suite (`<pkg>_test_package`). The merged test metadata files carry a
+// `using static` for BOTH classes, so at the file scope where the `[assembly: GoImplement<…>]`
+// attributes sit a bare reference to such a name is CS0104-ambiguous (encoding/gob declares Point
+// and Vector in codec_test.go AND in example_encdec_test.go / example_interface_test.go). Those
+// references are emitted class-qualified instead — see qualifyAmbiguousTestTypeRefs. Session-scoped
+// to one `-tests` conversion (computed in convertTestVariants from the two loaded variants, before
+// either is converted) and, like testMethodRenames, deliberately NOT cleared by resetPackageState;
+// nil for every other conversion, so no other emission changes.
+var testAmbiguousLocalTypeNames HashSet[string]
+
+// metadataAnchorClassPrefix is the fully-qualified class the metadata file currently being WRITTEN
+// anchors to — `go.encoding.gob_package` for package_test_info.cs, `go.encoding.gob_test_package`
+// for package_info_external_test.cs. It is a property of the FILE, not of the variant doing the
+// writing: the external variant merges into package_test_info.cs too, and a bare local reference
+// there still means the production class (the same invariant the B4/B5 record split is built on).
+// Empty outside those writes, where the current package's own class is the anchor.
+var metadataAnchorClassPrefix string
+
 // packageManualTypeNames records the CONVERTED names of this package's manually-converted
 // types (see manualTypeOperations.go), collected as visitTypeSpec skips their declarations.
 // Consumed by the GoImplicitConv attribute emission, which must not reference the skipped
@@ -1574,11 +1594,23 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 	// qualifySystemCollidingLocalTypeRefs.
 	localTypePrefix := packageNamespace + "." + getSanitizedImport(fmt.Sprintf("%s%s", packageName, PackageSuffix))
 
+	// The class a BARE local reference in THIS file binds to. Normally the current package's own
+	// class; a merged `-tests` metadata file pins it, because the file's anchor and the variant
+	// writing it are not always the same class (see metadataAnchorClassPrefix).
+	anchorTypePrefix := localTypePrefix
+
+	if metadataAnchorClassPrefix != "" {
+		anchorTypePrefix = metadataAnchorClassPrefix
+	}
+
 	qualifyLocalTypeRef := func(name string) string {
 		// The strip runs AFTER rooting: a record's rendered name arrives WITHOUT the root prefix
 		// (`math.rand.rand_package.PCG`), and rootQualifySubNamespaceTypeRefs is what supplies the
-		// `go.` the local-class prefixes are expressed with.
-		return qualifySystemCollidingLocalTypeRefs(stripLocalTypeQualifier(rootQualifySubNamespaceTypeRefs(name), localTypePrefix), localTypePrefix)
+		// `go.` the local-class prefixes are expressed with. The ambiguity qualification runs LAST,
+		// so a name both `-tests` variant classes declare converges on ONE canonical spelling
+		// whichever form the record arrived in (bare from its own variant, class-qualified and
+		// then stripped from the other) — the merge HashSet dedupes on that spelling.
+		return qualifyAmbiguousTestTypeRefs(qualifySystemCollidingLocalTypeRefs(stripLocalTypeQualifier(rootQualifySubNamespaceTypeRefs(name), localTypePrefix), localTypePrefix), anchorTypePrefix)
 	}
 
 	// Handle interface implementations

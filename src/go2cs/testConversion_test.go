@@ -1374,7 +1374,7 @@ func TestWriteExternalVariantMetadataSplitsAnchors(t *testing.T) {
 	})
 	importedTypeAliases["alpha"] = "go.alpha_package.Alpha"
 
-	unitName, err := writeExternalVariantMetadata(testInfoPath, dir, "value")
+	unitName, err := writeExternalVariantMetadata(testInfoPath, dir, "value", metadataClassPrefix("go", "value"), metadataClassPrefix("go", "value_test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1434,7 +1434,7 @@ func TestWriteExternalVariantMetadataSplitsAnchors(t *testing.T) {
 	packageNamespace = "go"
 	interfaceImplementations["value_package.Interface"] = NewHashSet([]string{"value_package.IntSlice"})
 
-	unitName, err = writeExternalVariantMetadata(secondInfoPath, unitOnlyDir, "value")
+	unitName, err = writeExternalVariantMetadata(secondInfoPath, unitOnlyDir, "value", metadataClassPrefix("go", "value"), metadataClassPrefix("go", "value_test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1769,6 +1769,83 @@ func TestTestVariantPinsProductionLiftedTypeNames(t *testing.T) {
 	}
 	if !strings.Contains(seededCs, "partial struct "+steppedName+" {") {
 		t.Fatalf("the test-side lift must step to %q:\n%s", steppedName, seededCs)
+	}
+}
+
+// G5 guard (a name BOTH test-variant classes declare emits class-qualified): the merged test
+// metadata carries a `using static` for the package under test AND for the external `<pkg>_test`
+// class, so a bare reference to a name both declare cannot bind — CS0104 on the
+// `[assembly: GoImplement<…>]` arguments (encoding/gob declares Point and Vector in codec_test.go
+// and again in example_encdec_test.go / example_interface_test.go: 3 errors that blocked the whole
+// package build). The reference is qualified with the class the metadata FILE anchors to.
+func TestAmbiguousVariantTypeNamesAreClassQualified(t *testing.T) {
+	dir := t.TempDir()
+	files := map[string]string{
+		"go.mod": "module example/ambig\n\ngo 1.23\n",
+		"value.go": "package ambig\n\ntype Squarer interface{ Square() int }\n\nfunc Probe(s Squarer) int { return s.Square() }\n",
+		// The package's own Point is declared by an INTERNAL test file, exactly as gob's is
+		// (codec_test.go) — it lands in the production package class all the same.
+		"value_test.go": "package ambig\n\ntype Point struct{ X, Y int }\n\n" +
+			"func (p Point) Square() int { return p.X*p.X + p.Y*p.Y }\n\n" +
+			"func internalProbe() int { var s Squarer = Point{1, 2}; return s.Square() }\n",
+		// The EXTERNAL suite declares its OWN Point — the same simple name, a different type.
+		"example_test.go": "package ambig_test\n\nimport \"example/ambig\"\n\n" +
+			"type Point struct{ X, Y int }\n\n" +
+			"type Pythagoras interface{ Hypot() int }\n\n" +
+			"func (p Point) Hypot() int { return p.X + p.Y }\n\n" +
+			"func externalProbe() int { var h Pythagoras = Point{1, 2}; return h.Hypot() + ambig.Probe(nil) }\n",
+	}
+	for name, contents := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(contents), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	internal, external := loadBothTestVariantsForDir(t, dir)
+	if internal == nil || external == nil {
+		t.Fatal("both test variants must load")
+	}
+
+	ambiguous := ambiguousVariantTypeNames(internal, external)
+
+	if !ambiguous.Contains("Point") {
+		t.Fatalf("a type name declared by BOTH variants must be recorded: %v", ambiguous.Keys())
+	}
+	for _, unique := range []string{"Squarer", "Pythagoras"} {
+		if ambiguous.Contains(unique) {
+			t.Fatalf("a type name declared by only ONE variant must stay bare: %q in %v", unique, ambiguous.Keys())
+		}
+	}
+
+	testAmbiguousLocalTypeNames = ambiguous
+	t.Cleanup(func() { testAmbiguousLocalTypeNames = nil })
+
+	productionAnchor := metadataClassPrefix("go", "ambig")
+	testAnchor := metadataClassPrefix("go", "ambig_test")
+
+	// package_test_info.cs anchors to the PRODUCTION class; package_info_external_test.cs to the
+	// external test class. The same bare record therefore renders differently per file — which is
+	// the whole point: each names the type its own file's first class declares.
+	if got, want := qualifyAmbiguousTestTypeRefs("[assembly: GoImplement<Point, Squarer>]", productionAnchor),
+		"[assembly: GoImplement<go.ambig_package.Point, Squarer>]"; got != want {
+		t.Fatalf("production-anchored render:\n got %s\nwant %s", got, want)
+	}
+	if got, want := qualifyAmbiguousTestTypeRefs("[assembly: GoImplement<Point, Pythagoras>]", testAnchor),
+		"[assembly: GoImplement<go.ambig_test_package.Point, Pythagoras>]"; got != want {
+		t.Fatalf("test-anchored render:\n got %s\nwant %s", got, want)
+	}
+
+	// An already-qualified reference names its class and is left alone; so is every conversion
+	// outside -tests, where the name set is empty.
+	qualified := "[assembly: GoImplement<go.ambig_package.Point, Squarer>]"
+	if got := qualifyAmbiguousTestTypeRefs(qualified, testAnchor); got != qualified {
+		t.Fatalf("an already-qualified reference must not be re-qualified: %s", got)
+	}
+
+	testAmbiguousLocalTypeNames = nil
+	bare := "[assembly: GoImplement<Point, Squarer>]"
+	if got := qualifyAmbiguousTestTypeRefs(bare, productionAnchor); got != bare {
+		t.Fatalf("outside -tests nothing may change: %s", got)
 	}
 }
 

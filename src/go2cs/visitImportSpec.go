@@ -170,6 +170,36 @@ func qualifySystemCollidingLocalTypeRefs(name string, packagePrefix string) stri
 	})
 }
 
+// qualifyAmbiguousTestTypeRefs roots any BARE type reference whose simple name is declared by BOTH
+// `-tests` variant classes (testAmbiguousLocalTypeNames) at anchorPrefix — the class the metadata
+// file being written anchors to. The merged test metadata carries a `using static` for the package
+// under test AND for the external `<pkg>_test` class, so at the file scope where the
+// GoImplement/GoImplicitConv attributes sit the bare name is ambiguous between them (CS0104 — gob's
+// Point/Vector, declared in codec_test.go and again in example_encdec_test.go /
+// example_interface_test.go). Making the reference explicit also states the invariant the B4/B5
+// record split already relies on: a bare local name means the file's ANCHOR class.
+//
+// A no-op outside a `-tests` conversion (the name set is nil), so no other emission changes.
+func qualifyAmbiguousTestTypeRefs(name string, anchorPrefix string) string {
+	if len(testAmbiguousLocalTypeNames) == 0 || anchorPrefix == "" {
+		return name
+	}
+
+	return packageQualifiedNameRegex.ReplaceAllStringFunc(name, func(match string) string {
+		// Only bare (dotless) identifiers can be a local type name; qualified references already
+		// name their class.
+		if strings.Contains(match, ".") {
+			return match
+		}
+
+		if testAmbiguousLocalTypeNames.Contains(match) {
+			return anchorPrefix + "." + match
+		}
+
+		return match
+	})
+}
+
 func (v *Visitor) visitImportSpec(importSpec *ast.ImportSpec, doc *ast.CommentGroup) {
 	v.currentImportPath = strings.Trim(importSpec.Path.Value, "\"")
 
