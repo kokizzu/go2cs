@@ -18,9 +18,9 @@ a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **50 / 215 testable packages validated — 23.3%**
+> ### Phase 4 progress: **51 / 215 testable packages validated — 23.7%**
 >
-> **1,309 matching test verdicts · 44 disclosed** *(updated 2026-07-26 — maintained as part of the
+> **1,321 matching test verdicts · 45 disclosed** *(updated 2026-07-26 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -33,6 +33,7 @@ any other failure is still a hard mismatch.
 | [`container/heap`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/heap) | 7 | | Heap interface over a slice. |
 | [`container/list`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/list) | 10 | | Doubly-linked list — pointers and receiver methods. |
 | [`container/ring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/ring) | 8 | | Circular linked list — a pointer graph. |
+| [`crypto/sha1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/sha1) | 12 | 1 | SHA-1 — the struct-carrying-arrays value copy `Sum` depends on; binary marshal round-trips. |
 | [`encoding/ascii85`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/encoding/ascii85) | 9 | | Ascii85 encode/decode and streaming wrappers. |
 | [`encoding/base32`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/encoding/base32) | 26 | | Base32 round-trips; `io.Pipe` rendezvous over the real channel core. |
 | [`encoding/base64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/encoding/base64) | 17 | | Base64 round-trips; goroutine + `time.After` timer path. |
