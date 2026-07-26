@@ -146,64 +146,38 @@ What the numbers above actually show, and why:
 - **Channel (~1.9×):** `channel<T>` + goroutine emulation over managed threading vs Go's runtime
   scheduler. Down from ~2.7–3.4× in the 2026-07-12 table (see *History*) — the channels redesign
   (real unbuffered rendezvous, single-fire select, operand-once hoisting) landed in between.
-- **IfaceShell (JIT ~44×, AOT ~55×) — read this row differently from every other row.**
-  > ⚠ **Both cells in the table above are stale and too slow — a re-measure is owed.** Two things
-  > changed on 2026-07-26. First, a measurement defect: until then the Native AOT publish's build
-  > step overwrote the JIT binary *in place* — the converter csproj template pinned `$(OutDir)` to
-  > the JIT tree, which outranks the `$(BaseOutputPath)` isolation in `Directory.Build.props` — so
-  > the "JIT" column was timing a self-contained binary with `IsDynamicCodeSupported=false`, whose
-  > reflective invokers can never emit their IL stubs. Fixed at the template; `PerformanceRunner`
-  > now reads the runtimeconfig before measuring and **fails the run** if the JIT binary is
-  > self-contained or has dynamic code disabled. Second, the assert ladder itself was reworked
-  > ([`DESIGN-iface-shell-caching.md`](../../../docs/Phase4/DESIGN-iface-shell-caching.md)): the two
-  > memoized tiers became one per-interface itab cache with a monomorphic slot, and the reflective
-  > forwarder stopped allocating an argument array per call. Measured progression (provisional —
-  > another agent was resident on the box):
-  >
-  > | | Go | JIT | AOT |
-  > |---|---:|---:|---:|
-  > | as shipped (clobbered JIT binary) | 13.0 | 2,514.9 (193.77×) | 971.2 (73.09×) |
-  > | + output-tree fix | 13.1 | 789.8 (60.43×) | 976.5 (74.72×) |
-  > | + unified itab cache & slot | 12.9 | 633.7 (49.16×) | 760.1 (58.97×) |
-  > | + arity-dispatched forwarder | 13.3 | **588.0 (44.36×)** | **727.8 (54.90×)** |
-  >
-  > A *full-suite* run with all eleven AOT publishes in the same pass reproduced the post-fix JIT
-  > figure, which is the proof the output isolation holds under exactly the condition that used to
-  > break it. The whole table's authoritative `--update-readme` re-measure on a quiet machine is
-  > owed.
+- **IfaceShell — read this row differently from every other row.** It measures the one operation
+  C# has *no* native answer for: satisfying an interface **structurally at run time**. Go resolves
+  an interface assertion with a cached itab lookup — a hash probe into a global
+  (concrete type, interface) table, roughly a nanosecond, with the interface value itself just two
+  machine words. C# has no two-word interface value, so go2cs must *construct* a wrapper (a runtime
+  "shell") that implements the interface by forwarding to the concrete value, and hand one back on
+  every assertion.
 
-  It measures the one operation C# has *no* answer for: satisfying an interface **structurally at run
-  time**. Go answers it with a cached itab lookup that is essentially free (~13 ms for 10M asserts
-  ≈ 1.3 ns each); go2cs has to *construct* an implementation. The lookup itself is now Go-shaped —
-  one itab entry per (dynamic type, interface) behind a monomorphic slot, so a resolved pair costs a
-  static field read, an int compare and a reference compare — and what remains per iteration is what
-  Go genuinely does not pay: **two shell allocations**, one reflective forwarded call with a boxed
-  return, and one delegate forwarded call. The ratio is the price of the *capability*, not a
-  regression, and it is **not** what ordinary interface use costs: an assertion the converter could
-  record resolves through a generated nominal adapter (≈1.1 ns) and never reaches this path, while a
-  shell obtained once and called repeatedly pays 4.4 ns/call on the delegate tier and 22 ns/call on
-  the reflective tier. The remaining work on this row is itemized in
-  [`docs/Phase4/DESIGN-iface-shell-caching.md`](../../../docs/Phase4/DESIGN-iface-shell-caching.md).
+  The mechanics of the gap: the *lookup* side is Go-shaped — one cache entry per
+  (dynamic type, interface) behind a monomorphic slot, so a resolved pair costs a static field read
+  and two compares. What remains per iteration is what Go genuinely does not pay: allocating the
+  shell object per assertion, and, on the value-typed tier, a reflective forwarded call with a boxed
+  return. The ratio is the price of the *capability*, not a regression — and it is **not** what
+  ordinary interface use costs. An assertion the converter can resolve nominally goes through a
+  generated adapter (an ordinary cast) and never reaches this path, and a shell obtained once and
+  called repeatedly pays only the per-call forwarding cost: a delegate hop for pointer-sourced
+  values, a reflective invoke for value-typed ones. Remaining optimization directions are itemized
+  in [`docs/Phase4/DESIGN-iface-shell-caching.md`](../../../docs/Phase4/DESIGN-iface-shell-caching.md).
 
-  What this row is really for is that the numbers **exist at all** under Native AOT: before the
-  shells, the equivalent assert was resolved by reflecting for a generated conversion method and
-  closing it with `MakeGenericMethod`, which under AOT can only succeed for an instantiation `ilc`
-  already rooted — and a measured A/B against that mechanism has the AOT binary answer **MISS for
-  both tiers and print a checksum of 0**, silently computing the wrong result (and taking 9.8 s doing
-  it, since a failing close is retried per iteration). With the shells the AOT binary produces the
-  correct checksum, which is why this benchmark exists. One honest detail visible here: the **belt
-  fires** under AOT — the pointer tier's `Δ<Iface><pointee>` instantiation is unavailable, so it
-  degrades to the reflective object shell rather than to a miss (verified by tier name:
-  `Δrun_typeᴛ1<box>` on the JIT, `Δrun_typeᴛ1ᴛObj` under AOT). That degradation, plus AOT's own
-  `IsDynamicCodeSupported=false`, is why AOT is now the *slower* column here (727.8 ms vs 588.0):
-  under AOT **both** tiers are reflective and neither can emit an invoke stub. The previous claim
-  that AOT was ~2.7× faster on this row was an artifact of the clobbered JIT binary described above.
+  Why AOT is the *slower* column here, unlike Startup: under Native AOT the pointer tier's generic
+  shell instantiation may not exist in the compiled image, so it degrades — by design — to the
+  reflective object shell, and AOT's reflective invokers cannot emit IL stubs; both tiers then pay
+  the slow forwarding path. The row's real purpose is that the numbers **exist at all** under AOT:
+  the shells' predecessor (closing a generic conversion method with `MakeGenericMethod`) silently
+  computed a *wrong checksum* under AOT. The shells produce the correct one, and the runner's
+  Verify phase requires that before anything is timed.
 
 ### History
 
-When the toolchain moves (e.g. .NET 9 → .NET 10), copy the current results block into this section
-with its environment line before re-running `--update-readme`, so version-over-version comparisons
-accumulate here.
+> **Note:** when the toolchain moves (e.g. .NET 9 → .NET 10), copy the current results block into
+> this section with its environment line before re-running `--update-readme`, so
+> version-over-version comparisons accumulate here.
 
 **Captured 2026-07-25 on .NET SDK 9.0.316 -- the PRE-ARC baseline for the `@string` literal-allocation
 arc** (Tiers A / A′ / B / C, [`docs/Phase4/DESIGN-string-literal-allocation.md`](../../../docs/Phase4/DESIGN-string-literal-allocation.md)).
