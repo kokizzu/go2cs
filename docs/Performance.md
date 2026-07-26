@@ -26,7 +26,7 @@ where the two runtimes should be close. Results below give the "common expected"
 | **Map** | 2M inserts + 2M comma-ok lookups + 1M deletes on `map[int]int` (`map<K,V>` emulation). |
 | **Sort** | `sort.Ints` on 2M deterministic pseudo-random ints (`sort.Interface` dispatch through the runtime's reflection-bound `Interface<T>`). |
 | **Channel** | 1M ints producer→consumer through a buffered channel with one goroutine (`channel<T>` + goroutine scheduling emulation). |
-| **Iface** | 20M iterations of the **common** interface cases: method dispatch through interface values of statically-known types, concrete comma-ok assertions, and a type switch over a closed set — all resolved by the compile-time (nominal) machinery: generated adapters and cast-shaped asserts. The row that shows what ordinary Go interface code costs; IfaceShell below is the exception, not the rule. |
+| **Iface** | 20M iterations of the **common** interface cases: method dispatch through interface values of statically-known types, concrete comma-ok assertions, and a type switch over a closed set — all resolved by the compile-time (nominal) machinery: generated adapters and cast-shaped asserts. The row that shows what ordinary Go interface code costs. |
 | **IfaceShell** | 5M iterations × 2 duck-typed interface asserts + forwarded calls — one on a value-typed dynamic value (the reflective **object shell**), one on a pointer-sourced one (the delegate-bound **generic shell**). The one path with no compile-time answer, and the only shared mechanism whose Native AOT behavior is otherwise unexercised. |
 
 Every benchmark prints a deterministic **checksum** (verified byte-identical across Go, C# JIT, and
@@ -78,33 +78,35 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 15.0 | 38.8 (2.60×) | 16.1 (1.08×) |
-| Fib | 80.0 | 98.4 (1.23×) | 82.3 (1.03×) |
-| Sieve | 73.2 | 93.6 (1.28×) | 138.1 (1.89×) |
-| MatMul | 54.3 | 133.6 (2.46×) | 194.0 (3.57×) |
-| String | 69.4 | 745.1 (10.73×) | 760.0 (10.94×) |
-| Map | 315.1 | 261.1 (0.83×) | 92.8 (0.29×) |
-| Sort | 112.7 | 403.3 (3.58×) | 418.0 (3.71×) |
-| Channel | 45.7 | 89.3 (1.95×) | 89.5 (1.96×) |
-| StringView | 7.2 | 20.8 (2.88×) | 14.0 (1.94×) |
-| StringMatch | 147.6 | 1,400.9 (9.49×) | 1,382.3 (9.36×) |
-| IfaceShell | 12.8 | 556.7 (43.39×) | 646.9 (50.42×) |
+| Startup | 15.4 | 41.4 (2.69×) | 16.7 (1.09×) |
+| Fib | 80.3 | 99.1 (1.23×) | 82.6 (1.03×) |
+| Sieve | 73.3 | 94.4 (1.29×) | 138.3 (1.89×) |
+| MatMul | 55.2 | 133.8 (2.42×) | 196.3 (3.55×) |
+| String | 69.7 | 748.8 (10.75×) | 754.7 (10.83×) |
+| Map | 309.5 | 268.6 (0.87×) | 97.0 (0.31×) |
+| Sort | 114.1 | 423.7 (3.71×) | 422.3 (3.70×) |
+| Channel | 45.4 | 89.6 (1.97×) | 94.4 (2.08×) |
+| StringView | 7.2 | 21.2 (2.93×) | 14.2 (1.97×) |
+| StringMatch | 147.8 | 1,417.4 (9.59×) | 1,352.2 (9.15×) |
+| Iface | 63.9 | 10,117.8 (158.24×) | 42,228.2 (660.42×) |
+| IfaceShell | 12.9 | 575.4 (44.58×) | 624.2 (48.36×) |
 
 **Peak memory** (working set, MB -- lower is better):
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 2.5 | 18.2 | 4.1 |
-| Fib | 5.3 | 20.9 | 10.8 |
-| Sieve | 34.9 | 40.7 | 30.1 |
-| MatMul | 10.4 | 26.2 | 17.0 |
-| String | 5.3 | 40.6 | 29.2 |
-| Map | 158.3 | 140.0 | 128.5 |
-| Sort | 21.7 | 43.6 | 29.2 |
-| Channel | 5.4 | 27.4 | 19.5 |
-| StringView | 2.6 | 19.9 | 10.8 |
-| StringMatch | 5.4 | 42.7 | 31.0 |
-| IfaceShell | 5.4 | 43.8 | 31.3 |
+| Startup | 2.5 | 19.2 | 2.6 |
+| Fib | 5.4 | 21.9 | 10.7 |
+| Sieve | 35.3 | 39.2 | 30.1 |
+| MatMul | 10.3 | 26.5 | 17.0 |
+| String | 5.3 | 39.5 | 29.2 |
+| Map | 158.9 | 140.0 | 128.5 |
+| Sort | 21.6 | 42.3 | 29.2 |
+| Channel | 5.3 | 29.6 | 17.3 |
+| StringView | 5.3 | 20.5 | 10.8 |
+| StringMatch | 5.4 | 44.2 | 29.1 |
+| Iface | 5.4 | 41.3 | 29.6 |
+| IfaceShell | 5.3 | 44.0 | 31.6 |
 
 <!-- PERF-RESULTS:END -->
 
@@ -149,10 +151,17 @@ What the numbers above actually show, and why:
 - **Channel (~1.9×):** `channel<T>` + goroutine emulation over managed threading vs Go's runtime
   scheduler. Down from ~2.7–3.4× in the 2026-07-12 table (see *History*) — the channels redesign
   (real unbuffered rendezvous, single-fire select, operand-once hoisting) landed in between.
-- **Iface:** the *default* interface story — dispatch, known-type assertion, and type switching all
-  go through generated nominal adapters and ordinary casts, never the runtime shell machinery. If
-  you read one pair of rows together, read this one and the next: this is the rule, IfaceShell is
-  the exception.
+- **Iface (~158× — OPEN, unexplained):** the *default* interface story — dispatch, known-type
+  assertion, and type switching, all resolved by generated nominal adapters and ordinary casts,
+  never the runtime shell machinery (verified in the emitted code: `Rect`/`Circle`/`Tri` each carry
+  a generated explicit `Shape` implementation, and the comma-ok assert to a concrete struct is a
+  plain type test). **This row was published without a prior measurement**, on the expectation that
+  the nominal path would land in the low single digits; it did not, and it is currently the *worst*
+  row in the table — 3.6× worse than the structural-shell row below it, which has no compile-time
+  answer at all. The number is reproducible and is **not** a regression: an A/B of this exact
+  benchmark across the r18 integration measured 161.3× before and 160.2× after. Until it is
+  root-caused, read this row as an open question about the common interface path, not as the
+  baseline that ordinary Go interface code costs in go2cs.
 - **IfaceShell — read this row differently from every other row.** It measures the one operation
   C# has *no* native answer for: satisfying an interface **structurally at run time**. Go resolves
   an interface assertion with a cached itab lookup — a hash probe into a global
@@ -165,11 +174,13 @@ What the numbers above actually show, and why:
   (dynamic type, interface) behind a monomorphic slot, so a resolved pair costs a static field read
   and two compares. What remains per iteration is what Go genuinely does not pay: allocating the
   shell object per assertion, and, on the value-typed tier, a reflective forwarded call with a boxed
-  return. The ratio is the price of the *capability*, not a regression — and it is **not** what
-  ordinary interface use costs. An assertion the converter can resolve nominally goes through a
-  generated adapter (an ordinary cast) and never reaches this path, and a shell obtained once and
-  called repeatedly pays only the per-call forwarding cost: a delegate hop for pointer-sourced
-  values, a reflective invoke for value-typed ones. Remaining optimization directions are itemized
+  return. The ratio is the price of the *capability*, not a regression. An assertion the converter
+  can resolve nominally goes through a generated adapter (an ordinary cast) and never reaches this
+  path — mechanically true, and it used to be stated here as though it also made the nominal path
+  cheaper; the Iface row above measures that claim for the first time and does **not** support it,
+  so treat the two rows as independent measurements until Iface is root-caused. A shell obtained
+  once and called repeatedly pays only the per-call forwarding cost: a delegate hop for
+  pointer-sourced values, a reflective invoke for value-typed ones. Remaining optimization directions are itemized
   in [`docs/Phase4/DESIGN-iface-shell-caching.md`](../../../docs/Phase4/DESIGN-iface-shell-caching.md).
 
   Why AOT is the *slower* column here, unlike Startup: under Native AOT the pointer tier's generic

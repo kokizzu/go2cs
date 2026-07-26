@@ -423,6 +423,29 @@ construct; otherwise add a new one (example: `Tests/Behavioral/GlobalStructField
     `<pkg>.csproj` also updates on this run (the IP-4 test-artifact `<Compile Remove>` exclusion) — that
     change is intended, not drift. Refresh the committed test sources at each milestone rebank alongside
     the production tree.
+  - **⚠ After an operational SWEEP, `git status` is dirty and it is (almost always) NOTHING — classify,
+    don't chase, and never bank it.** Two *different* phenomena get conflated here; a sweep produces only
+    the first.
+    1. **CRLF phantoms — the whole of a healthy sweep's dirt.** The converter preserves the Go source's
+       **LF** inside multi-line string literals while emitting CRLF everywhere else, and `core.autocrlf`
+       smudges those in-string LFs to CRLF on checkout. A `-tests` run re-emits them as LF, so every
+       banked file containing a multi-line literal — plus verbatim `testdata`/`*.s` copies — shows
+       **modified with an EMPTY content diff**. **The counting rule: `git diff --numstat` must be empty.**
+       If it is, `git checkout -- src/go-src-converted` and move on. Do **not** memorize a file list —
+       the count tracks how many banked packages hold multi-line literals and grows with every bank
+       (measured **15** at the 47-package roster, **16** once strconv's `testdata/testfp.txt` joined).
+       *Positive control:* `git diff --numstat HEAD~1` must be non-empty, or your check is broken, not clean.
+    2. **`-tests`-CLOSURE production files — NOT visible to a sweep at all.** A handful of production
+       `.cs` are committed in the emission a `-tests` run produces (`Δio` alias, `global::go.*`
+       qualification) rather than the `-stdlib` one, because that closure imports more. A sweep re-emits
+       them **byte-identically**, so they never appear in its `git status`; they surface only under an
+       `-stdlib` **reconvert control**, and the whole-corpus rebank does not level them. Six were
+       recorded in [`docs/Phase4/DESIGN-named-interface-wrappers.md`](docs/Phase4/DESIGN-named-interface-wrappers.md)
+       §7 (`bytes/{buffer,reader}.cs`, `strings/{reader,replace}.cs`, `math/rand/v2/{pcg,rand}.cs`).
+       Both emissions are correct for their own closure — only the pipeline pairs them — so this is
+       owed to the rebank owner, not fixed in passing.
+    Anything that is neither — a non-empty `numstat` on a production `.cs` — is **real drift**: stop and
+    root-cause it before landing.
 - Open converter items: `src/go2cs/ToDo.md` (e.g. `visitMapType` completion, remaining dynamic-struct
   implicit-cast checks, optional recursive dependent-package conversion, comment conversion, cgo/asm targets).
 
