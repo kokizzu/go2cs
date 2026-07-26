@@ -816,6 +816,17 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 		// its own type under C#'s `~`. A NAMED type routes through its golib wrapper's operator.
 		if basic, isBasic := types.Unalias(v.getType(unaryExpr.X, false)).(*types.Basic); isBasic {
 			if basic.Kind() == types.Uint8 || basic.Kind() == types.Uint16 {
+				// A CONSTANT operand makes the whole thing a C# constant expression, and a
+				// narrowing constant conversion is CHECKED at compile time: `~(ushort)0` promotes
+				// to the `int` -1, and `(ushort)(-1)` is a hard CS0221 however correct the runtime
+				// truncation would be. The all-ones idiom is exactly that shape —
+				// dnsmessage's `int(^uint16(0))` bounds check, ×7 — so state `unchecked` there.
+				// A variable operand needs nothing: C#'s default context is already unchecked, and
+				// the extra keyword would only add noise at flate's `^uint16(length)` sites.
+				if tv, ok := v.info.Types[unaryExpr.X]; ok && tv.Value != nil {
+					return fmt.Sprintf("unchecked((%s)(~%s))", convertToCSTypeName(v.getTypeName(basic, false)), operand)
+				}
+
 				return fmt.Sprintf("((%s)(~%s))", convertToCSTypeName(v.getTypeName(basic, false)), operand)
 			}
 		}

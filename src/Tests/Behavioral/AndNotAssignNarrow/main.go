@@ -57,4 +57,14 @@ func main() {
 	var u16 uint16 = 5
 	u16 = ^u16
 	fmt.Println(u16) // 65530
+
+	// A CONSTANT operand turns that same truncation into a C# CONSTANT conversion, which is
+	// CHECKED whatever the enclosing context says: `~(ushort)0` promotes to the int -1 and
+	// `(ushort)(-1)` is a hard CS0221. The all-ones idiom is exactly that shape — it is the
+	// bound x/net/dnsmessage compares each section count against, seven times in one file.
+	fmt.Println(int(^uint16(0))) // 65535
+	fmt.Println(int(^uint8(0)))  // 255
+
+	const seed uint16 = 5
+	fmt.Println(uint64(^seed)) // 65530
 }

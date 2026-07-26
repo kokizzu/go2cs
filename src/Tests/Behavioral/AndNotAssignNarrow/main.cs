@@ -35,6 +35,10 @@ internal static void Main() {
     uint16 u16 = 5;
     u16 = (uint16)(((uint16)(~u16)));
     fmt.Println(u16);
+    fmt.Println((nint)(unchecked((uint16)(~(uint16)0))));
+    fmt.Println((nint)(unchecked((uint8)(~(uint8)0))));
+    const uint16 seed = 5;
+    fmt.Println((uint64)(unchecked((uint16)(~seed))));
 }
 
 } // end main_package
