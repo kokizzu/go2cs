@@ -16,7 +16,7 @@ partial class nistec_package {
 
 // p256ElementLength is the length of an element of the base or scalar field,
 // which have the same bytes length for all NIST P curves.
-internal static readonly UntypedInt p256ElementLength = 32;
+internal static UntypedInt p256ElementLength => 32;
 
 // P256Point is a P256 point. The zero value is NOT valid.
 [GoType] partial struct P256Point {
@@ -493,7 +493,7 @@ internal static ref sync.Once p256GeneratorTableOnce => ref Ꮡp256GeneratorTabl
 // times.
 [GoRecv] internal static ж<array<p256Table>> generatorTable(this ref P256Point p) {
     Ꮡp256GeneratorTableOnce.Do(() => {
-        p256GeneratorTable = @new<array<p256Table>>();
+        p256GeneratorTable = Ꮡ(new array<p256Table>(64));
         var @base = NewP256Point().SetGenerator();
         for (nint i = 0; i < p256ElementLength * 2; i++) {
             p256GeneratorTable.Value[i][0] = NewP256Point().Set(@base);

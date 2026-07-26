@@ -28,26 +28,26 @@ using syscall = syscall_package;
 
 partial class registry_package {
 
-public static readonly UntypedInt ALL_ACCESS = 0xf003f;
-public static readonly UntypedInt CREATE_LINK = 0x00020;
-public static readonly UntypedInt CREATE_SUB_KEY = 0x00004;
-public static readonly UntypedInt ENUMERATE_SUB_KEYS = 0x00008;
-public static readonly UntypedInt EXECUTE = 0x20019;
-public static readonly UntypedInt NOTIFY = 0x00010;
-public static readonly UntypedInt QUERY_VALUE = 0x00001;
-public static readonly UntypedInt READ = 0x20019;
-public static readonly UntypedInt SET_VALUE = 0x00002;
-public static readonly UntypedInt WOW64_32KEY = 0x00200;
-public static readonly UntypedInt WOW64_64KEY = 0x00100;
-public static readonly UntypedInt WRITE = 0x20006;
+public static UntypedInt ALL_ACCESS => 0xf003f;
+public static UntypedInt CREATE_LINK => 0x00020;
+public static UntypedInt CREATE_SUB_KEY => 0x00004;
+public static UntypedInt ENUMERATE_SUB_KEYS => 0x00008;
+public static UntypedInt EXECUTE => 0x20019;
+public static UntypedInt NOTIFY => 0x00010;
+public static UntypedInt QUERY_VALUE => 0x00001;
+public static UntypedInt READ => 0x20019;
+public static UntypedInt SET_VALUE => 0x00002;
+public static UntypedInt WOW64_32KEY => 0x00200;
+public static UntypedInt WOW64_64KEY => 0x00100;
+public static UntypedInt WRITE => 0x20006;
 
 [GoType("syscall_package.ΔHandle")] partial struct Key;
 
-public static readonly Key CLASSES_ROOT = /* Key(syscall.HKEY_CLASSES_ROOT) */ unchecked((Key)(syscallꓸHandle)2147483648);
-public static readonly Key CURRENT_USER = /* Key(syscall.HKEY_CURRENT_USER) */ unchecked((Key)(syscallꓸHandle)2147483649);
-public static readonly Key LOCAL_MACHINE = /* Key(syscall.HKEY_LOCAL_MACHINE) */ unchecked((Key)(syscallꓸHandle)2147483650);
-public static readonly Key USERS = /* Key(syscall.HKEY_USERS) */ unchecked((Key)(syscallꓸHandle)2147483651);
-public static readonly Key CURRENT_CONFIG = /* Key(syscall.HKEY_CURRENT_CONFIG) */ unchecked((Key)(syscallꓸHandle)2147483653);
+public static Key CLASSES_ROOT => /* Key(syscall.HKEY_CLASSES_ROOT) */ unchecked((Key)(syscallꓸHandle)2147483648);
+public static Key CURRENT_USER => /* Key(syscall.HKEY_CURRENT_USER) */ unchecked((Key)(syscallꓸHandle)2147483649);
+public static Key LOCAL_MACHINE => /* Key(syscall.HKEY_LOCAL_MACHINE) */ unchecked((Key)(syscallꓸHandle)2147483650);
+public static Key USERS => /* Key(syscall.HKEY_USERS) */ unchecked((Key)(syscallꓸHandle)2147483651);
+public static Key CURRENT_CONFIG => /* Key(syscall.HKEY_CURRENT_CONFIG) */ unchecked((Key)(syscallꓸHandle)2147483653);
 
 // Close closes open key k.
 public static error Close(this Key k) {

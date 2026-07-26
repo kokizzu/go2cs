@@ -182,7 +182,7 @@ public static (ж<Block> p, slice<byte> rest) Decode(slice<byte> data) {
     }
 }
 
-internal static readonly UntypedInt pemLineLength = 64;
+internal static UntypedInt pemLineLength => 64;
 
 [GoType] [GoValueClone("line")] partial struct lineBreaker {
     internal array<byte> line = new(pemLineLength);

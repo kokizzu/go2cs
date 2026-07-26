@@ -228,14 +228,14 @@ internal static bool /*updated*/ updateHeap(this ж<timer> Ꮡt) {
     assertLockHeld(ts.of(timers.Ꮡmu));
     if ((uint8)(t.state & timerZombie) != 0) {
         // Take timer out of heap.
-        t.state &= unchecked((uint8)~(uint8)((uint8)(timerHeaped | timerZombie) | timerModified));
+        t.state &= unchecked((uint8)~(uint8)((uint8)((uint8)(timerHeaped | timerZombie) | timerModified)));
         ts.of(timers.Ꮡzombies).Add(-1);
         ts.deleteMin();
         return true;
     }
     if ((uint8)(t.state & timerModified) != 0) {
         // Update ts.heap[0].when and move within heap.
-        t.state &= unchecked((uint8)~timerModified);
+        t.state &= unchecked((uint8)~(uint8)(timerModified));
         (~ts).heap[0].when = t.when;
         ts.siftDown(0);
         ts.updateMinWhenHeap();
@@ -245,7 +245,7 @@ internal static bool /*updated*/ updateHeap(this ж<timer> Ꮡt) {
 }
 
 // maxWhen is the maximum value for timer's when field.
-internal static readonly UntypedInt maxWhen = /* 1<<63 - 1 */ 9223372036854775807;
+internal static UntypedInt maxWhen => /* 1<<63 - 1 */ 9223372036854775807;
 
 // verifyTimers can be set to true to add debugging checks that the
 // timer heaps are valid.
@@ -433,9 +433,9 @@ internal static bool stop(this ж<timer> Ꮡt) {
         Ꮡt.maybeRunAsync();
     }
     if ((uint8)(t.state & timerHeaped) != 0) {
-        t.state |= timerModified;
+        t.state |= (uint8)(timerModified);
         if ((uint8)(t.state & timerZombie) == 0) {
-            t.state |= timerZombie;
+            t.state |= (uint8)(timerZombie);
             t.ts.of(timers.Ꮡzombies).Add(1);
         }
     }
@@ -523,12 +523,12 @@ internal static bool modify(this ж<timer> Ꮡt, int64 when, int64 period, Actio
     var pending = t.when > 0;
     t.when = when;
     if ((uint8)(t.state & timerHeaped) != 0) {
-        t.state |= timerModified;
+        t.state |= (uint8)(timerModified);
         if ((uint8)(t.state & timerZombie) != 0) {
             // In the heap but marked for removal (by a Stop).
             // Unmark it, since it has been Reset and will be running again.
             t.ts.of(timers.Ꮡzombies).Add(-1);
-            t.state &= unchecked((uint8)~timerZombie);
+            t.state &= unchecked((uint8)~(uint8)(timerZombie));
         }
         // The corresponding heap[i].when is updated later.
         // See comment in type timer above and in timers.adjust below.
@@ -625,7 +625,7 @@ internal static void maybeAdd(this ж<timer> Ꮡt) {
     var when = (int64)0;
     var wake = false;
     if (Ꮡt.needsAdd()) {
-        t.state |= timerHeaped;
+        t.state |= (uint8)(timerHeaped);
         when = t.when;
         var wakeTime = ts.wakeTime();
         wake = wakeTime == 0 || when < wakeTime;
@@ -680,7 +680,7 @@ internal static void cleanHead(this ж<timers> Ꮡts) {
             var tΔ1 = ts.heap[n - 1].timer; if ((uint8)(tΔ1.of(timer.Ꮡastate).Load() & timerZombie) != 0) {
                 tΔ1.@lock();
                 if ((uint8)((~tΔ1).state & timerZombie) != 0) {
-                    tΔ1.Value.state &= unchecked((uint8)~(uint8)((uint8)(timerHeaped | timerZombie) | timerModified));
+                    tΔ1.Value.state &= unchecked((uint8)~(uint8)((uint8)((uint8)(timerHeaped | timerZombie) | timerModified)));
                     tΔ1.Value.ts = default!;
                     Ꮡts.of(timers.Ꮡzombies).Add(-1);
                     ts.heap[n - 1] = new timerWhen(nil);
@@ -730,9 +730,9 @@ internal static void take(this ж<timers> Ꮡts, ж<timers> Ꮡsrc) {
             var t = tw.timer;
             t.Value.ts = default!;
             if ((uint8)((~t).state & timerZombie) != 0){
-                t.Value.state &= unchecked((uint8)~(uint8)((uint8)(timerHeaped | timerZombie) | timerModified));
+                t.Value.state &= unchecked((uint8)~(uint8)((uint8)((uint8)(timerHeaped | timerZombie) | timerModified)));
             } else {
-                t.Value.state &= unchecked((uint8)~timerModified);
+                t.Value.state &= unchecked((uint8)~(uint8)(timerModified));
                 Ꮡts.addHeap(t);
             }
         }
@@ -843,7 +843,7 @@ internal static void adjust(this ж<timers> Ꮡts, int64 now, bool force) {
         }
         case {} when (uint8)((~t).state & timerZombie) != 0: {
             Ꮡts.of(timers.Ꮡzombies).Add(-1);
-            t.Value.state &= unchecked((uint8)~(uint8)((uint8)(timerHeaped | timerZombie) | timerModified));
+            t.Value.state &= unchecked((uint8)~(uint8)((uint8)((uint8)(timerHeaped | timerZombie) | timerModified)));
             nint n = len(ts.heap);
             ts.heap[i] = ts.heap[n - 1];
             ts.heap[n - 1] = new timerWhen(nil);
@@ -855,7 +855,7 @@ internal static void adjust(this ж<timers> Ꮡts, int64 now, bool force) {
         }
         case {} when (uint8)((~t).state & timerModified) != 0: {
             tw.Value.when = t.Value.when;
-            t.Value.state &= unchecked((uint8)~timerModified);
+            t.Value.state &= unchecked((uint8)~(uint8)(timerModified));
             changed = true;
             break;
         }}
@@ -1059,9 +1059,9 @@ internal static void unlockAndRun(this ж<timer> Ꮡt, int64 now) {
     var ts = t.ts;
     t.when = next;
     if ((uint8)(t.state & timerHeaped) != 0) {
-        t.state |= timerModified;
+        t.state |= (uint8)(timerModified);
         if (next == 0) {
-            t.state |= timerZombie;
+            t.state |= (uint8)(timerZombie);
             t.ts.of(timers.Ꮡzombies).Add(1);
         }
         Ꮡt.updateHeap();
@@ -1194,7 +1194,7 @@ internal static int64 timeSleepUntil() {
     return next;
 }
 
-internal static readonly UntypedInt timerHeapN = 4;
+internal static UntypedInt timerHeapN => 4;
 
 // Heap maintenance algorithms.
 // These algorithms check for slice index errors manually.
@@ -1346,7 +1346,7 @@ internal static void blockTimerChan(ж<Δhchan> Ꮡc) {
     // the timer may still be in the heap but marked as a zombie.
     // Unmark it in this case, if the timer is still pending.
     if ((uint8)((~t).state & timerHeaped) != 0 && (uint8)((~t).state & timerZombie) != 0 && (~t).when > 0) {
-        t.Value.state &= unchecked((uint8)~timerZombie);
+        t.Value.state &= unchecked((uint8)~(uint8)(timerZombie));
         (~t).ts.of(timers.Ꮡzombies).Add(-1);
     }
     // t.maybeAdd must be called with t unlocked,
@@ -1385,7 +1385,7 @@ internal static void unblockTimerChan(ж<Δhchan> Ꮡc) {
         // Last goroutine that was blocked on this timer.
         // Mark for removal from heap but do not clear t.when,
         // so that we know what time it is still meant to trigger.
-        t.Value.state |= timerZombie;
+        t.Value.state |= (uint8)(timerZombie);
         (~t).ts.of(timers.Ꮡzombies).Add(1);
     }
     t.unlock();

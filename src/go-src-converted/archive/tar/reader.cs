@@ -518,8 +518,7 @@ internal static (ж<Header>, ж<block>, error) readHeader(this ж<Reader> Ꮡtr)
                 //
                 // See https://golang.org/issues/12594
                 // See https://golang.org/issues/21005
-                hdr.Value.AccessTime = new time.Time(nil);
-                hdr.Value.ChangeTime = new time.Time(nil);
+                (hdr.Value.AccessTime, hdr.Value.ChangeTime) = (new time.Time(nil), new time.Time(nil));
                 var ustarΔ4 = Ꮡtr.of(Reader.Ꮡblk).toUSTAR();
                 {
                     @string s = p.parseString(ustarΔ4.prefix()); if (isASCII(s)) {

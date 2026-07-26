@@ -37,29 +37,29 @@ internal static (traceExpWriter, bool) ensure(this traceExpWriter w, nint maxSiz
 
 [GoType("num:uint8")] partial struct traceExperiment;
 
-internal static readonly traceExperiment traceNoExperiment = /* iota */ 0;
-internal static readonly traceExperiment traceExperimentAllocFree = 1;
+internal static traceExperiment traceNoExperiment => /* iota */ 0;
+internal static traceExperiment traceExperimentAllocFree => 1;
 
 // Experimental events.
-internal static readonly traceEv _ᴛ4ʗ = /* 127 + iota */ 127;
+internal static traceEv _ᴛ4ʗ => /* 127 + iota */ 127;
 // Experimental events for ExperimentAllocFree.
 
-internal static readonly traceEv traceEvSpan = 128; // heap span exists [timestamp, id, npages, type/class]
+internal static traceEv traceEvSpan => 128; // heap span exists [timestamp, id, npages, type/class]
 
-internal static readonly traceEv traceEvSpanAlloc = 129; // heap span alloc [timestamp, id, npages, type/class]
+internal static traceEv traceEvSpanAlloc => 129; // heap span alloc [timestamp, id, npages, type/class]
 
-internal static readonly traceEv traceEvSpanFree = 130; // heap span free [timestamp, id]
+internal static traceEv traceEvSpanFree => 130; // heap span free [timestamp, id]
 
-internal static readonly traceEv traceEvHeapObject = 131; // heap object exists [timestamp, id, type]
+internal static traceEv traceEvHeapObject => 131; // heap object exists [timestamp, id, type]
 
-internal static readonly traceEv traceEvHeapObjectAlloc = 132; // heap object alloc [timestamp, id, type]
+internal static traceEv traceEvHeapObjectAlloc => 132; // heap object alloc [timestamp, id, type]
 
-internal static readonly traceEv traceEvHeapObjectFree = 133; // heap object free [timestamp, id]
+internal static traceEv traceEvHeapObjectFree => 133; // heap object free [timestamp, id]
 
-internal static readonly traceEv traceEvGoroutineStack = 134; // stack exists [timestamp, id, order]
+internal static traceEv traceEvGoroutineStack => 134; // stack exists [timestamp, id, order]
 
-internal static readonly traceEv traceEvGoroutineStackAlloc = 135; // stack alloc [timestamp, id, order]
+internal static traceEv traceEvGoroutineStackAlloc => 135; // stack alloc [timestamp, id, order]
 
-internal static readonly traceEv traceEvGoroutineStackFree = 136; // stack free [timestamp, id]
+internal static traceEv traceEvGoroutineStackFree => 136; // stack free [timestamp, id]
 
 } // end runtime_package

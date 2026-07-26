@@ -43,31 +43,31 @@ partial class template_package {
 //	  <img src="#ZgotmplZ">
 //	If the data comes from a trusted source, use content types to exempt it
 //	from filtering: URL(`javascript:...`).
-public static readonly ErrorCode OK = /* iota */ 0;
+public static ErrorCode OK => /* iota */ 0;
 
-public static readonly ErrorCode ErrAmbigContext = 1;
+public static ErrorCode ErrAmbigContext => 1;
 
-public static readonly ErrorCode ErrBadHTML = 2;
+public static ErrorCode ErrBadHTML => 2;
 
-public static readonly ErrorCode ErrBranchEnd = 3;
+public static ErrorCode ErrBranchEnd => 3;
 
-public static readonly ErrorCode ErrEndContext = 4;
+public static ErrorCode ErrEndContext => 4;
 
-public static readonly ErrorCode ErrNoSuchTemplate = 5;
+public static ErrorCode ErrNoSuchTemplate => 5;
 
-public static readonly ErrorCode ErrOutputContext = 6;
+public static ErrorCode ErrOutputContext => 6;
 
-public static readonly ErrorCode ErrPartialCharset = 7;
+public static ErrorCode ErrPartialCharset => 7;
 
-public static readonly ErrorCode ErrPartialEscape = 8;
+public static ErrorCode ErrPartialEscape => 8;
 
-public static readonly ErrorCode ErrRangeLoopReentry = 9;
+public static ErrorCode ErrRangeLoopReentry => 9;
 
-public static readonly ErrorCode ErrSlashAmbig = 10;
+public static ErrorCode ErrSlashAmbig => 10;
 
-public static readonly ErrorCode ErrPredefinedEscaper = 11;
+public static ErrorCode ErrPredefinedEscaper => 11;
 
-public static readonly ErrorCode ErrJSTemplate = 12;
+public static ErrorCode ErrJSTemplate => 12;
 
 [GoRecv] public static @string Error(this ref ΔError e) {
     switch (ᐧ) {

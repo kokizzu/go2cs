@@ -30,9 +30,9 @@ partial class norm_package {
 // there is an additional leading ccc. The value of tccc itself is the
 // trailing CCC shifted left 2 bits. The two least-significant bits of tccc
 // are the number of trailing non-starters.
-internal static readonly UntypedInt qcInfoMask = 0x3F; // to clear all but the relevant bits in a qcInfo
-internal static readonly UntypedInt headerLenMask = 0x3F; // extract the length value from the header byte
-internal static readonly UntypedInt headerFlagsMask = 0xC0; // extract the qcInfo bits from the header byte
+internal static UntypedInt qcInfoMask => 0x3F; // to clear all but the relevant bits in a qcInfo
+internal static UntypedInt headerLenMask => 0x3F; // extract the length value from the header byte
+internal static UntypedInt headerFlagsMask => 0xC0; // extract the qcInfo bits from the header byte
 
 // Properties provides access to normalization properties of a rune.
 [GoType] partial struct ΔProperties {
@@ -270,12 +270,12 @@ internal static ΔProperties compInfo(uint16 v, nint sz) {
         v += (uint16)((uint16)((byte)(h & (byte)headerLenMask)) + 1);
         var c = decomps[v];
         p.tccc = (uint8)((c >> (int)(2)));
-        p.flags |= ((qcInfo)((byte)(c & 0x3)));
+        p.flags |= (qcInfo)(((qcInfo)((byte)(c & 0x3))));
         if (v >= firstLeadingCCC) {
             p.nLead = (uint8)((byte)(c & 0x3));
             if (v >= firstStarterWithNLead) {
                 // We were tricked. Remove the decomposition.
-                p.flags &= 0x03;
+                p.flags &= (qcInfo)(0x03);
                 p.index = 0;
                 return p;
             }

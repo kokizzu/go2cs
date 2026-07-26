@@ -726,7 +726,7 @@ internal static void forEachGRace(Action<ж<g>> fn) {
     return;
 }
 
-internal static readonly UntypedInt _GoidCacheBatch = 16;
+internal static UntypedInt _GoidCacheBatch => 16;
 
 // cpuinit sets up CPU feature flags and calls internal/cpu.Initialize. env should be the complete
 // value of the GODEBUG environment variable.
@@ -1025,7 +1025,7 @@ internal static slice<uintptr> pprof_makeProfStack() {
 }
 
 internal const bool osHasLowResTimer = /* GOOS == "windows" || GOOS == "openbsd" || GOOS == "netbsd" */ true;
-internal static readonly UntypedInt osHasLowResClockInt = /* goos.IsWindows */ 1;
+internal static UntypedInt osHasLowResClockInt => /* goos.IsWindows */ 1;
 internal const bool osHasLowResClock = /* osHasLowResClockInt > 0 */ true;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1055,7 +1055,7 @@ internal static void ready(ж<g> Ꮡgp, nint traceskip, bool next) {
 
 // freezeStopWait is a large value that freezetheworld sets
 // sched.stopwait to in order to request that all Gs permanently stop.
-internal static readonly UntypedInt freezeStopWait = 0x7fffffff;
+internal static UntypedInt freezeStopWait => 0x7fffffff;
 
 // freezing is set to non-zero if the runtime is trying to freeze the
 // world.
@@ -1381,39 +1381,39 @@ internal static bool casGFromPreempted(ж<g> Ꮡgp, uint32 old, uint32 @new) {
 // Reasons to stop-the-world.
 //
 // Avoid reusing reasons and add new ones instead.
-internal static readonly stwReason stwUnknown = /* iota */ 0;                    // "unknown"
+internal static stwReason stwUnknown => /* iota */ 0;                    // "unknown"
 
-internal static readonly stwReason stwGCMarkTerm = 1;                 // "GC mark termination"
+internal static stwReason stwGCMarkTerm => 1;                 // "GC mark termination"
 
-internal static readonly stwReason stwGCSweepTerm = 2;                // "GC sweep termination"
+internal static stwReason stwGCSweepTerm => 2;                // "GC sweep termination"
 
-internal static readonly stwReason stwWriteHeapDump = 3;              // "write heap dump"
+internal static stwReason stwWriteHeapDump => 3;              // "write heap dump"
 
-internal static readonly stwReason stwGoroutineProfile = 4;           // "goroutine profile"
+internal static stwReason stwGoroutineProfile => 4;           // "goroutine profile"
 
-internal static readonly stwReason stwGoroutineProfileCleanup = 5;    // "goroutine profile cleanup"
+internal static stwReason stwGoroutineProfileCleanup => 5;    // "goroutine profile cleanup"
 
-internal static readonly stwReason stwAllGoroutinesStack = 6;         // "all goroutines stack trace"
+internal static stwReason stwAllGoroutinesStack => 6;         // "all goroutines stack trace"
 
-internal static readonly stwReason stwReadMemStats = 7;               // "read mem stats"
+internal static stwReason stwReadMemStats => 7;               // "read mem stats"
 
-internal static readonly stwReason stwAllThreadsSyscall = 8;          // "AllThreadsSyscall"
+internal static stwReason stwAllThreadsSyscall => 8;          // "AllThreadsSyscall"
 
-internal static readonly stwReason stwGOMAXPROCS = 9;                 // "GOMAXPROCS"
+internal static stwReason stwGOMAXPROCS => 9;                 // "GOMAXPROCS"
 
-internal static readonly stwReason stwStartTrace = 10;                 // "start trace"
+internal static stwReason stwStartTrace => 10;                 // "start trace"
 
-internal static readonly stwReason stwStopTrace = 11;                  // "stop trace"
+internal static stwReason stwStopTrace => 11;                  // "stop trace"
 
-internal static readonly stwReason stwForTestCountPagesInUse = 12;     // "CountPagesInUse (test)"
+internal static stwReason stwForTestCountPagesInUse => 12;     // "CountPagesInUse (test)"
 
-internal static readonly stwReason stwForTestReadMetricsSlow = 13;     // "ReadMetricsSlow (test)"
+internal static stwReason stwForTestReadMetricsSlow => 13;     // "ReadMetricsSlow (test)"
 
-internal static readonly stwReason stwForTestReadMemStatsSlow = 14;    // "ReadMemStatsSlow (test)"
+internal static stwReason stwForTestReadMemStatsSlow => 14;    // "ReadMemStatsSlow (test)"
 
-internal static readonly stwReason stwForTestPageCachePagesLeaked = 15; // "PageCachePagesLeaked (test)"
+internal static stwReason stwForTestPageCachePagesLeaked => 15; // "PageCachePagesLeaked (test)"
 
-internal static readonly stwReason stwForTestResetDebugLog = 16;       // "ResetDebugLog (test)"
+internal static stwReason stwForTestResetDebugLog => 16;       // "ResetDebugLog (test)"
 
 internal static @string String(this stwReason r) {
     return stwReasonStrings[r];
@@ -6219,7 +6219,7 @@ internal static void sysmon() {
 
 // forcePreemptNS is the time slice given to a G before it is
 // preempted.
-internal static readonly UntypedInt forcePreemptNS = /* 10 * 1000 * 1000 */ 10000000; // 10ms
+internal static UntypedInt forcePreemptNS => /* 10 * 1000 * 1000 */ 10000000; // 10ms
 
 internal static uint32 retake(int64 now) {
     nint n = 0;

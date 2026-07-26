@@ -24,8 +24,8 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt maxAlign = 8;
-internal static readonly uintptr hchanSize = /* unsafe.Sizeof(hchan{}) + uintptr(-int(unsafe.Sizeof(hchan{}))&(maxAlign-1)) */ 104;
+internal static UntypedInt maxAlign => 8;
+internal static uintptr hchanSize => /* unsafe.Sizeof(hchan{}) + uintptr(-int(unsafe.Sizeof(hchan{}))&(maxAlign-1)) */ 104;
 internal const bool debugChan = false;
 
 [GoType] partial struct Δhchan {

@@ -14,7 +14,7 @@ using go.crypto.@internal;
 partial class des_package {
 
 // The DES block size in bytes.
-public static readonly UntypedInt ΔBlockSize = 8;
+public static UntypedInt ΔBlockSize => 8;
 
 [GoType("num:nint")] partial struct KeySizeError;
 

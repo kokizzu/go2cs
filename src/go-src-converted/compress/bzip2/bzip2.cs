@@ -47,11 +47,11 @@ public static io.Reader NewReader(io.Reader r) {
     return new readerжReader(bz2);
 }
 
-internal static readonly UntypedInt bzip2FileMagic = 0x425a; // "BZ"
+internal static UntypedInt bzip2FileMagic => 0x425a; // "BZ"
 
-internal static readonly UntypedInt bzip2BlockMagic = 0x314159265359;
+internal static UntypedInt bzip2BlockMagic => 0x314159265359;
 
-internal static readonly UntypedInt bzip2FinalMagic = 0x177245385090;
+internal static UntypedInt bzip2FinalMagic => 0x177245385090;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string badMagicValueˢ = "bad magic value"u8;

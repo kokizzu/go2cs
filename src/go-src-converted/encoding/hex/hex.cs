@@ -144,7 +144,7 @@ public static @string Dump(slice<byte> data) {
 }
 
 // bufferSize is the number of hexadecimal characters to buffer in encoder and decoder.
-internal static readonly UntypedInt bufferSize = 1024;
+internal static UntypedInt bufferSize => 1024;
 
 [GoType] [GoValueClone("@out")] partial struct encoder {
     internal io.Writer w;
@@ -219,8 +219,7 @@ public static io.Reader NewDecoder(io.Reader r) {
     (var numDec, err) = Decode(p, d.@in[..(int)(len(p) * 2)]);
     d.@in = d.@in[(int)(2 * numDec)..];
     if (err != default!) {
-        d.@in = default!;
-        d.err = err;
+        (d.@in, d.err) = (default!, err);
     }
     // Decode error; discard input remainder
     if (len(d.@in) < 2) {

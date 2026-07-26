@@ -63,10 +63,10 @@ public static io.WriteCloser DotWriter(this ж<Writer> Ꮡw) {
     internal nint state;
 }
 
-internal static readonly UntypedInt wstateBegin = iota; // initial state; must be zero
-internal static readonly UntypedInt wstateBeginLine = 1; // beginning of line
-internal static readonly UntypedInt wstateCR = 2; // wrote \r (possibly at end of line)
-internal static readonly UntypedInt wstateData = 3; // writing data in middle of line
+internal static UntypedInt wstateBegin => iota; // initial state; must be zero
+internal static UntypedInt wstateBeginLine => 1; // beginning of line
+internal static UntypedInt wstateCR => 2; // wrote \r (possibly at end of line)
+internal static UntypedInt wstateData => 3; // writing data in middle of line
 
 [GoRecv] internal static (nint n, error err) Write(this ref dotWriter d, slice<byte> b) {
     nint n = default!;

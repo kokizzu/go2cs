@@ -13,7 +13,7 @@ using go.crypto.@internal;
 partial class aes_package {
 
 // The AES block size in bytes.
-public static readonly UntypedInt ΔBlockSize = 16;
+public static UntypedInt ΔBlockSize => 16;
 
 // A cipher is an instance of AES encryption using a particular key.
 [GoType] [GoValueClone("enc", "dec")] partial struct aesCipher {

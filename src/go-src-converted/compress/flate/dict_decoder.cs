@@ -168,8 +168,7 @@ partial class flate_package {
     var toRead = dd.hist[(int)(dd.rdPos)..(int)(dd.wrPos)];
     dd.rdPos = dd.wrPos;
     if (dd.wrPos == len(dd.hist)) {
-        dd.wrPos = 0;
-        dd.rdPos = 0;
+        (dd.wrPos, dd.rdPos) = (0, 0);
         dd.full = true;
     }
     return toRead;

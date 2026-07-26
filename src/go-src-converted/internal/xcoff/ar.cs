@@ -13,12 +13,12 @@ using encoding;
 
 partial class xcoff_package {
 
-public static readonly UntypedInt SAIAMAG = 0x8;
+public static UntypedInt SAIAMAG => 0x8;
 public static readonly @string AIAFMAG = "`\n"u8;
 public static readonly @string AIAMAG = "<aiaff>\n"u8;
 public static readonly @string AIAMAGBIG = "<bigaf>\n"u8;
-public static readonly UntypedInt FL_HSZ_BIG = 0x80;
-public static readonly UntypedInt AR_HSZ_BIG = 0x70;
+public static UntypedInt FL_HSZ_BIG => 0x80;
+public static UntypedInt AR_HSZ_BIG => 0x70;
 
 [GoType] [GoValueClone("Flmagic", "Flmemoff", "Flgstoff", "Flgst64off", "Flfstmoff", "Fllstmoff", "Flfreeoff")] partial struct bigarFileHeader {
     public array<byte> Flmagic = new(SAIAMAG); // Archive magic string

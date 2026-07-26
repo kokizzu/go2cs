@@ -19,21 +19,21 @@ partial class dnsmessage_package {
 [GoType("num:uint16")] partial struct Type;
 
 // Message formats
-public static readonly Type TypeA = 1;
-public static readonly Type TypeNS = 2;
-public static readonly Type TypeCNAME = 5;
-public static readonly Type TypeSOA = 6;
-public static readonly Type TypePTR = 12;
-public static readonly Type TypeMX = 15;
-public static readonly Type TypeTXT = 16;
-public static readonly Type TypeAAAA = 28;
-public static readonly Type TypeSRV = 33;
-public static readonly Type TypeOPT = 41;
-public static readonly Type TypeWKS = 11;
-public static readonly Type TypeHINFO = 13;
-public static readonly Type TypeMINFO = 14;
-public static readonly Type TypeAXFR = 252;
-public static readonly Type TypeALL = 255;
+public static Type TypeA => 1;
+public static Type TypeNS => 2;
+public static Type TypeCNAME => 5;
+public static Type TypeSOA => 6;
+public static Type TypePTR => 12;
+public static Type TypeMX => 15;
+public static Type TypeTXT => 16;
+public static Type TypeAAAA => 28;
+public static Type TypeSRV => 33;
+public static Type TypeOPT => 41;
+public static Type TypeWKS => 11;
+public static Type TypeHINFO => 13;
+public static Type TypeMINFO => 14;
+public static Type TypeAXFR => 252;
+public static Type TypeALL => 255;
 
 internal static map<Type, @string> typeNames = new map<Type, @string>{
     [TypeA] = "TypeA"u8,
@@ -75,11 +75,11 @@ public static @string GoString(this Type t) {
 
 [GoType("num:uint16")] partial struct Class;
 
-public static readonly Class ClassINET = 1;
-public static readonly Class ClassCSNET = 2;
-public static readonly Class ClassCHAOS = 3;
-public static readonly Class ClassHESIOD = 4;
-public static readonly Class ClassANY = 255;
+public static Class ClassINET => 1;
+public static Class ClassCSNET => 2;
+public static Class ClassCHAOS => 3;
+public static Class ClassHESIOD => 4;
+public static Class ClassANY => 255;
 
 internal static map<Class, @string> classNames = new map<Class, @string>{
     [ClassINET] = "ClassINET"u8,
@@ -119,17 +119,17 @@ public static @string GoString(this OpCode o) {
 [GoType("num:uint16")] partial struct RCode;
 
 // Header.RCode values.
-public static readonly RCode RCodeSuccess = 0;      // NoError
+public static RCode RCodeSuccess => 0;      // NoError
 
-public static readonly RCode RCodeFormatError = 1;  // FormErr
+public static RCode RCodeFormatError => 1;  // FormErr
 
-public static readonly RCode RCodeServerFailure = 2; // ServFail
+public static RCode RCodeServerFailure => 2; // ServFail
 
-public static readonly RCode RCodeNameError = 3;    // NXDomain
+public static RCode RCodeNameError => 3;    // NXDomain
 
-public static readonly RCode RCodeNotImplemented = 4; // NotImp
+public static RCode RCodeNotImplemented => 4; // NotImp
 
-public static readonly RCode RCodeRefused = 5;      // Refused
+public static RCode RCodeRefused => 5;      // Refused
 
 internal static map<RCode, @string> rCodeNames = new map<RCode, @string>{
     [RCodeSuccess] = "RCodeSuccess"u8,
@@ -266,13 +266,13 @@ internal static error errNonCanonicalName = errors.New("name is not in canonical
 internal static error errStringTooLong = errors.New("character string exceeds maximum length (255)"u8);
 
 // Internal constants.
-internal static readonly UntypedInt packStartingCap = 512;
+internal static UntypedInt packStartingCap => 512;
 
-internal static readonly UntypedInt uint16Len = 2;
+internal static UntypedInt uint16Len => 2;
 
-internal static readonly UntypedInt uint32Len = 4;
+internal static UntypedInt uint32Len => 4;
 
-internal static readonly UntypedInt headerLen = /* 6 * uint16Len */ 12;
+internal static UntypedInt headerLen => /* 6 * uint16Len */ 12;
 
 [GoType] partial struct nestedError {
     // s is the current level's error message.
@@ -346,20 +346,20 @@ internal static readonly UntypedInt headerLen = /* 6 * uint16Len */ 12;
 
 [GoType("num:uint8")] partial struct section;
 
-internal static readonly section sectionNotStarted = /* iota */ 0;
-internal static readonly section sectionHeader = 1;
-internal static readonly section sectionQuestions = 2;
-internal static readonly section sectionAnswers = 3;
-internal static readonly section sectionAuthorities = 4;
-internal static readonly section sectionAdditionals = 5;
-internal static readonly section sectionDone = 6;
-internal static readonly UntypedInt headerBitQR = /* 1 << 15 */ 32768; // query/response (response=1)
-internal static readonly UntypedInt headerBitAA = /* 1 << 10 */ 1024; // authoritative
-internal static readonly UntypedInt headerBitTC = /* 1 << 9 */ 512; // truncated
-internal static readonly UntypedInt headerBitRD = /* 1 << 8 */ 256; // recursion desired
-internal static readonly UntypedInt headerBitRA = /* 1 << 7 */ 128; // recursion available
-internal static readonly UntypedInt headerBitAD = /* 1 << 5 */ 32; // authentic data
-internal static readonly UntypedInt headerBitCD = /* 1 << 4 */ 16; // checking disabled
+internal static section sectionNotStarted => /* iota */ 0;
+internal static section sectionHeader => 1;
+internal static section sectionQuestions => 2;
+internal static section sectionAnswers => 3;
+internal static section sectionAuthorities => 4;
+internal static section sectionAdditionals => 5;
+internal static section sectionDone => 6;
+internal static UntypedInt headerBitQR => /* 1 << 15 */ 32768; // query/response (response=1)
+internal static UntypedInt headerBitAA => /* 1 << 10 */ 1024; // authoritative
+internal static UntypedInt headerBitTC => /* 1 << 9 */ 512; // truncated
+internal static UntypedInt headerBitRD => /* 1 << 8 */ 256; // recursion desired
+internal static UntypedInt headerBitRA => /* 1 << 7 */ 128; // recursion available
+internal static UntypedInt headerBitAD => /* 1 << 5 */ 32; // authentic data
+internal static UntypedInt headerBitCD => /* 1 << 4 */ 16; // checking disabled
 
 internal static map<section, @string> sectionNames = new map<section, @string>{
     [sectionHeader] = "header"u8,
@@ -1119,16 +1119,16 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     // Validate the lengths. It is very unlikely that anyone will try to
     // pack more than 65535 of any particular type, but it is possible and
     // we should fail gracefully.
-    if (len(m.Questions) > (nint)(~(uint16)0)) {
+    if (len(m.Questions) > (nint)(unchecked((uint16)(~(uint16)0)))) {
         return (default!, errTooManyQuestions);
     }
-    if (len(m.Answers) > (nint)(~(uint16)0)) {
+    if (len(m.Answers) > (nint)(unchecked((uint16)(~(uint16)0)))) {
         return (default!, errTooManyAnswers);
     }
-    if (len(m.Authorities) > (nint)(~(uint16)0)) {
+    if (len(m.Authorities) > (nint)(unchecked((uint16)(~(uint16)0)))) {
         return (default!, errTooManyAuthorities);
     }
-    if (len(m.Additionals) > (nint)(~(uint16)0)) {
+    if (len(m.Additionals) > (nint)(unchecked((uint16)(~(uint16)0)))) {
         return (default!, errTooManyAdditionals);
     }
     Δheader h = default!;
@@ -1362,7 +1362,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
         err = errTooManyAdditionals;
     }
 
-    if (count.Value == ~(uint16)0) {
+    if (count.Value == unchecked((uint16)(~(uint16)0))) {
         return err;
     }
     count.Value++;
@@ -1883,7 +1883,7 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 // preLen is the length that msg was before the ResourceBody was packed.
 [GoRecv] internal static error fixLen(this ref ResourceHeader h, slice<byte> msg, nint lenOff, nint preLen) {
     nint conLen = len(msg) - preLen;
-    if (conLen > (nint)(~(uint16)0)) {
+    if (conLen > (nint)(unchecked((uint16)(~(uint16)0)))) {
         return errResTooLong;
     }
     // Fill in the length now that we know how long the content is.
@@ -1893,13 +1893,13 @@ public static Builder NewBuilder(slice<byte> buf, Header h) {
 }
 
 // EDNS(0) wire constants.
-internal static readonly UntypedInt edns0Version = 0;
+internal static UntypedInt edns0Version => 0;
 
-internal static readonly UntypedInt edns0DNSSECOK = 0x00008000;
+internal static UntypedInt edns0DNSSECOK => 0x00008000;
 
-internal static readonly UntypedInt ednsVersionMask = 0x00ff0000;
+internal static UntypedInt ednsVersionMask => 0x00ff0000;
 
-internal static readonly UntypedInt edns0DNSSECOKMask = 0x00ff8000;
+internal static UntypedInt edns0DNSSECOKMask => 0x00ff8000;
 
 // SetEDNS0 configures h for EDNS(0).
 //
@@ -1911,7 +1911,7 @@ internal static readonly UntypedInt edns0DNSSECOKMask = 0x00ff8000;
     h.Class = ((Class)(uint16)udpPayloadLen);
     h.TTL = (((uint32)(uint16)extRCode >> (int)(4)) << (int)(24));
     if (dnssecOK) {
-        h.TTL |= edns0DNSSECOK;
+        h.TTL |= (uint32)(edns0DNSSECOK);
     }
     return default!;
 }
@@ -2075,7 +2075,7 @@ internal static (nint, error) unpackBytes(slice<byte> msg, nint off, slice<byte>
     return (newOff, default!);
 }
 
-internal static readonly UntypedInt nonEncodedNameMax = 254;
+internal static UntypedInt nonEncodedNameMax => 254;
 
 // A Name is a non-encoded and non-escaped domain name. It is used instead of strings to avoid
 // allocations.
@@ -2173,7 +2173,7 @@ public static @string String(this Name n) {
             // Miss. Add the suffix to the compression table if the
             // offset can be stored in the available 14 bits.
             nint newPtr = len(msg) - compressionOff;
-            if (newPtr <= (nint)((~(uint16)0 >> (int)(2)))) {
+            if (newPtr <= (nint)((unchecked((uint16)(~(uint16)0)) >> (int)(2)))) {
                 if (nameAsStr == ""u8) {
                     // allocate n.Data on the heap once, to avoid allocating it
                     // multiple times (for next labels).

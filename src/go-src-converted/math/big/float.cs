@@ -92,11 +92,11 @@ public static ж<Float> NewFloat(float64 x) {
 }
 
 // Exponent and precision limits.
-public static readonly UntypedInt MaxExp = /* math.MaxInt32 */ 2147483647; // largest supported exponent
+public static UntypedInt MaxExp => /* math.MaxInt32 */ 2147483647; // largest supported exponent
 
-public static readonly UntypedInt MinExp = /* math.MinInt32 */ -2147483648; // smallest supported exponent
+public static UntypedInt MinExp => /* math.MinInt32 */ -2147483648; // smallest supported exponent
 
-public static readonly UntypedInt MaxPrec = /* math.MaxUint32 */ 4294967295; // largest (theoretically) supported precision; likely memory-limited
+public static UntypedInt MaxPrec => /* math.MaxUint32 */ 4294967295; // largest (theoretically) supported precision; likely memory-limited
 
 [GoType("num:byte")] partial struct form;
 
@@ -118,37 +118,37 @@ public static readonly UntypedInt MaxPrec = /* math.MaxUint32 */ 4294967295; // 
 // ±Inf              inf       sign     -            -
 
 // The form value order is relevant - do not change!
-internal static readonly form zero = /* iota */ 0;
+internal static form zero => /* iota */ 0;
 
-internal static readonly form finite = 1;
+internal static form finite => 1;
 
-internal static readonly form inf = 2;
+internal static form inf => 2;
 
 [GoType("num:byte")] partial struct RoundingMode;
 
 // These constants define supported rounding modes.
-public static readonly RoundingMode ToNearestEven = /* iota */ 0;  // == IEEE 754-2008 roundTiesToEven
+public static RoundingMode ToNearestEven => /* iota */ 0;  // == IEEE 754-2008 roundTiesToEven
 
-public static readonly RoundingMode ToNearestAway = 1;  // == IEEE 754-2008 roundTiesToAway
+public static RoundingMode ToNearestAway => 1;  // == IEEE 754-2008 roundTiesToAway
 
-public static readonly RoundingMode ToZero = 2;         // == IEEE 754-2008 roundTowardZero
+public static RoundingMode ToZero => 2;         // == IEEE 754-2008 roundTowardZero
 
-public static readonly RoundingMode AwayFromZero = 3;   // no IEEE 754-2008 equivalent
+public static RoundingMode AwayFromZero => 3;   // no IEEE 754-2008 equivalent
 
-public static readonly RoundingMode ToNegativeInf = 4;  // == IEEE 754-2008 roundTowardNegative
+public static RoundingMode ToNegativeInf => 4;  // == IEEE 754-2008 roundTowardNegative
 
-public static readonly RoundingMode ToPositiveInf = 5;  // == IEEE 754-2008 roundTowardPositive
+public static RoundingMode ToPositiveInf => 5;  // == IEEE 754-2008 roundTowardPositive
 
 [GoType("num:int8")] partial struct Accuracy;
 
 //go:generate stringer -type=RoundingMode
 
 // Constants describing the [Accuracy] of a [Float].
-public static readonly Accuracy Below = -1;
+public static Accuracy Below => -1;
 
-public static readonly Accuracy Exact = 0;
+public static Accuracy Exact => 0;
 
-public static readonly Accuracy Above = 1;
+public static Accuracy Above => 1;
 
 //go:generate stringer -type=Accuracy
 

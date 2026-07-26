@@ -183,7 +183,7 @@ public static (nint n, error err) Fscanf(Δio.Reader r, @string format, params �
     internal error err;
 }
 
-internal static readonly UntypedInt eof = -1;
+internal static UntypedInt eof => -1;
 
 // ss is the internal implementation of ScanState.
 [GoType] partial struct ss {
@@ -1107,9 +1107,9 @@ private static readonly @string noHexDataForXStringˢ = "no hex data for %x stri
 }
 
 internal static readonly @string floatVerbs = "beEfFgGv"u8;
-internal static readonly UntypedInt hugeWid = /* 1 << 30 */ 1073741824;
-internal static readonly UntypedInt intBits = /* 32 << (^uint(0) >> 63) */ 64;
-internal static readonly UntypedInt uintptrBits = /* 32 << (^uintptr(0) >> 63) */ 64;
+internal static UntypedInt hugeWid => /* 1 << 30 */ 1073741824;
+internal static UntypedInt intBits => /* 32 << (^uint(0) >> 63) */ 64;
+internal static UntypedInt uintptrBits => /* 32 << (^uintptr(0) >> 63) */ 64;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string missingLiteralˢ = "missing literal %"u8;

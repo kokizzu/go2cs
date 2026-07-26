@@ -38,35 +38,35 @@ internal static UnsupportedError errUnsupportedSubsamplingRatio = ((UnsupportedE
     internal uint8 tq; // Quantization table destination selector.
 }
 
-internal static readonly UntypedInt dcTable = 0;
-internal static readonly UntypedInt acTable = 1;
-internal static readonly UntypedInt maxTc = 1;
-internal static readonly UntypedInt maxTh = 3;
-internal static readonly UntypedInt maxTq = 3;
-internal static readonly UntypedInt maxComponents = 4;
+internal static UntypedInt dcTable => 0;
+internal static UntypedInt acTable => 1;
+internal static UntypedInt maxTc => 1;
+internal static UntypedInt maxTh => 3;
+internal static UntypedInt maxTq => 3;
+internal static UntypedInt maxComponents => 4;
 
-internal static readonly UntypedInt sof0Marker = 0xc0; // Start Of Frame (Baseline Sequential).
-internal static readonly UntypedInt sof1Marker = 0xc1; // Start Of Frame (Extended Sequential).
-internal static readonly UntypedInt sof2Marker = 0xc2; // Start Of Frame (Progressive).
-internal static readonly UntypedInt dhtMarker = 0xc4; // Define Huffman Table.
-internal static readonly UntypedInt rst0Marker = 0xd0; // ReSTart (0).
-internal static readonly UntypedInt rst7Marker = 0xd7; // ReSTart (7).
-internal static readonly UntypedInt soiMarker = 0xd8; // Start Of Image.
-internal static readonly UntypedInt eoiMarker = 0xd9; // End Of Image.
-internal static readonly UntypedInt sosMarker = 0xda; // Start Of Scan.
-internal static readonly UntypedInt dqtMarker = 0xdb; // Define Quantization Table.
-internal static readonly UntypedInt driMarker = 0xdd; // Define Restart Interval.
-internal static readonly UntypedInt comMarker = 0xfe; // COMment.
-internal static readonly UntypedInt app0Marker = 0xe0;
-internal static readonly UntypedInt app14Marker = 0xee;
-internal static readonly UntypedInt app15Marker = 0xef;
+internal static UntypedInt sof0Marker => 0xc0; // Start Of Frame (Baseline Sequential).
+internal static UntypedInt sof1Marker => 0xc1; // Start Of Frame (Extended Sequential).
+internal static UntypedInt sof2Marker => 0xc2; // Start Of Frame (Progressive).
+internal static UntypedInt dhtMarker => 0xc4; // Define Huffman Table.
+internal static UntypedInt rst0Marker => 0xd0; // ReSTart (0).
+internal static UntypedInt rst7Marker => 0xd7; // ReSTart (7).
+internal static UntypedInt soiMarker => 0xd8; // Start Of Image.
+internal static UntypedInt eoiMarker => 0xd9; // End Of Image.
+internal static UntypedInt sosMarker => 0xda; // Start Of Scan.
+internal static UntypedInt dqtMarker => 0xdb; // Define Quantization Table.
+internal static UntypedInt driMarker => 0xdd; // Define Restart Interval.
+internal static UntypedInt comMarker => 0xfe; // COMment.
+internal static UntypedInt app0Marker => 0xe0;
+internal static UntypedInt app14Marker => 0xee;
+internal static UntypedInt app15Marker => 0xef;
 
 // See https://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/JPEG.html#Adobe
-internal static readonly UntypedInt adobeTransformUnknown = 0;
+internal static UntypedInt adobeTransformUnknown => 0;
 
-internal static readonly UntypedInt adobeTransformYCbCr = 1;
+internal static UntypedInt adobeTransformYCbCr => 1;
 
-internal static readonly UntypedInt adobeTransformYCbCrK = 2;
+internal static UntypedInt adobeTransformYCbCrK => 2;
 
 // unzig maps from the zig-zag ordering to the natural ordering. For example,
 // unzig[3] is the column and row of the fourth element in zig-zag order. The
@@ -152,8 +152,7 @@ internal static array<nint> unzig = new nint[]{
     if (d.bytes.j > 2) {
         d.bytes.buf[0] = d.bytes.buf[d.bytes.j - 2];
         d.bytes.buf[1] = d.bytes.buf[d.bytes.j - 1];
-        d.bytes.i = 2;
-        d.bytes.j = 2;
+        (d.bytes.i, d.bytes.j) = (2, 2);
     }
     // Fill in the rest of the buffer.
     var (n, err) = d.r.Read(d.bytes.buf[(int)(d.bytes.j)..]);

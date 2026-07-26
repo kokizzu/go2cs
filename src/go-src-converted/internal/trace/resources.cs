@@ -11,28 +11,28 @@ partial class trace_package {
 
 // NoThread indicates that the relevant events don't correspond to any
 // thread in particular.
-public static readonly ThreadID NoThread = /* ThreadID(-1) */ -1;
+public static ThreadID NoThread => /* ThreadID(-1) */ -1;
 
 [GoType("num:int64")] partial struct ProcID;
 
 // NoProc indicates that the relevant events don't correspond to any
 // P in particular.
-public static readonly ProcID NoProc = /* ProcID(-1) */ -1;
+public static ProcID NoProc => /* ProcID(-1) */ -1;
 
 [GoType("num:int64")] partial struct GoID;
 
 // NoGoroutine indicates that the relevant events don't correspond to any
 // goroutine in particular.
-public static readonly GoID NoGoroutine = /* GoID(-1) */ -1;
+public static GoID NoGoroutine => /* GoID(-1) */ -1;
 
 [GoType("num:uint8")] partial struct GoState;
 
-public static readonly GoState GoUndetermined = /* iota */ 0;  // No information is known about the goroutine.
-public static readonly GoState GoNotExist = 1;      // Goroutine does not exist.
-public static readonly GoState GoRunnable = 2;      // Goroutine is runnable but not running.
-public static readonly GoState GoRunning = 3;       // Goroutine is running.
-public static readonly GoState GoWaiting = 4;       // Goroutine is waiting on something to happen.
-public static readonly GoState GoSyscall = 5;       // Goroutine is in a system call.
+public static GoState GoUndetermined => /* iota */ 0;  // No information is known about the goroutine.
+public static GoState GoNotExist => 1;      // Goroutine does not exist.
+public static GoState GoRunnable => 2;      // Goroutine is runnable but not running.
+public static GoState GoRunning => 3;       // Goroutine is running.
+public static GoState GoWaiting => 4;       // Goroutine is waiting on something to happen.
+public static GoState GoSyscall => 5;       // Goroutine is in a system call.
 
 // Executing returns true if the state indicates that the goroutine is executing
 // and bound to its thread.
@@ -75,10 +75,10 @@ public static @string String(this GoState s) {
 
 [GoType("num:uint8")] partial struct ProcState;
 
-public static readonly ProcState ProcUndetermined = /* iota */ 0;  // No information is known about the proc.
-public static readonly ProcState ProcNotExist = 1;      // Proc does not exist.
-public static readonly ProcState ProcRunning = 2;       // Proc is running.
-public static readonly ProcState ProcIdle = 3;          // Proc is idle.
+public static ProcState ProcUndetermined => /* iota */ 0;  // No information is known about the proc.
+public static ProcState ProcNotExist => 1;      // Proc does not exist.
+public static ProcState ProcRunning => 2;       // Proc is running.
+public static ProcState ProcIdle => 3;          // Proc is idle.
 
 // Executing returns true if the state indicates that the proc is executing
 // and bound to its thread.
@@ -112,10 +112,10 @@ public static @string String(this ProcState s) {
 
 [GoType("num:uint8")] partial struct ResourceKind;
 
-public static readonly ResourceKind ResourceNone = /* iota */ 0;       // No resource.
-public static readonly ResourceKind ResourceGoroutine = 1;  // Goroutine.
-public static readonly ResourceKind ResourceProc = 2;       // Proc.
-public static readonly ResourceKind ResourceThread = 3;     // Thread.
+public static ResourceKind ResourceNone => /* iota */ 0;       // No resource.
+public static ResourceKind ResourceGoroutine => 1;  // Goroutine.
+public static ResourceKind ResourceProc => 2;       // Proc.
+public static ResourceKind ResourceThread => 3;     // Thread.
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string noneˢ = "None"u8;

@@ -375,8 +375,7 @@ internal static (slice<ast.Decl>, map<@string, bool>) findDeclsAndUnresolved(ast
     // set of top-level decls reachable from the body
     var usedObjs = new map<ж<ast.Object>, bool>();
     // set of objects reachable from the body (each declared by a usedDecl)
-    Func<ast.Node, bool> inspectFunc = default!;
-    var inspectFuncʗ1 = inspectFunc;
+    ref var inspectFunc = ref heap<Func<ast.Node, bool>>(out var ᏑinspectFunc);
     var topDeclsʗ1 = topDecls;
     var unresolvedʗ1 = unresolved;
     var usedDeclsʗ1 = usedDecls;
@@ -402,23 +401,22 @@ internal static (slice<ast.Decl>, map<@string, bool>) findDeclsAndUnresolved(ast
             ast.Inspect((~e).X, // For selector expressions, only inspect the left hand side.
  // (For an expression like fmt.Println, only add "fmt" to the
  // set of unresolved names, not "Println".)
- inspectFuncʗ1);
+ ᏑinspectFunc.ValueSlot);
             return false;
         }
         case ж<ast.KeyValueExpr> e: {
             ast.Inspect((~e).Value, // For key value expressions, only inspect the value
  // as the key should be resolved by the type of the
  // composite literal.
- inspectFuncʗ1);
+ ᏑinspectFunc.ValueSlot);
             return false;
         }}
         return true;
     };
-    var inspectFuncʗ2 = inspectFunc;
     var inspectFieldList = (ж<ast.FieldList> fl) => {
         if (fl != nil) {
             foreach (var (_, f) in (~fl).List) {
-                ast.Inspect((~f).Type, inspectFuncʗ2);
+                ast.Inspect((~f).Type, ᏑinspectFunc.ValueSlot);
             }
         }
     };

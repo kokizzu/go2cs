@@ -37,7 +37,7 @@ partial class runtime_package {
     internal atomic.Uintptr off;
 }
 
-internal static readonly uintptr traceRegionAllocBlockData = /* 64<<10 - unsafe.Sizeof(traceRegionAllocBlockHeader{}) */ 65520;
+internal static uintptr traceRegionAllocBlockData => /* 64<<10 - unsafe.Sizeof(traceRegionAllocBlockHeader{}) */ 65520;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string traceRegionAllocTooLargeˢ = "traceRegion: alloc too large"u8;

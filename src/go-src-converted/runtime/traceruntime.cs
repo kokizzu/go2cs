@@ -72,21 +72,21 @@ internal static void lockRankMayTraceFlush() {
 
 [GoType("num:uint8")] partial struct traceBlockReason;
 
-internal static readonly traceBlockReason traceBlockGeneric = /* iota */ 0;
-internal static readonly traceBlockReason traceBlockForever = 1;
-internal static readonly traceBlockReason traceBlockNet = 2;
-internal static readonly traceBlockReason traceBlockSelect = 3;
-internal static readonly traceBlockReason traceBlockCondWait = 4;
-internal static readonly traceBlockReason traceBlockSync = 5;
-internal static readonly traceBlockReason traceBlockChanSend = 6;
-internal static readonly traceBlockReason traceBlockChanRecv = 7;
-internal static readonly traceBlockReason traceBlockGCMarkAssist = 8;
-internal static readonly traceBlockReason traceBlockGCSweep = 9;
-internal static readonly traceBlockReason traceBlockSystemGoroutine = 10;
-internal static readonly traceBlockReason traceBlockPreempted = 11;
-internal static readonly traceBlockReason traceBlockDebugCall = 12;
-internal static readonly traceBlockReason traceBlockUntilGCEnds = 13;
-internal static readonly traceBlockReason traceBlockSleep = 14;
+internal static traceBlockReason traceBlockGeneric => /* iota */ 0;
+internal static traceBlockReason traceBlockForever => 1;
+internal static traceBlockReason traceBlockNet => 2;
+internal static traceBlockReason traceBlockSelect => 3;
+internal static traceBlockReason traceBlockCondWait => 4;
+internal static traceBlockReason traceBlockSync => 5;
+internal static traceBlockReason traceBlockChanSend => 6;
+internal static traceBlockReason traceBlockChanRecv => 7;
+internal static traceBlockReason traceBlockGCMarkAssist => 8;
+internal static traceBlockReason traceBlockGCSweep => 9;
+internal static traceBlockReason traceBlockSystemGoroutine => 10;
+internal static traceBlockReason traceBlockPreempted => 11;
+internal static traceBlockReason traceBlockDebugCall => 12;
+internal static traceBlockReason traceBlockUntilGCEnds => 13;
+internal static traceBlockReason traceBlockSleep => 14;
 
 internal static array<@string> traceBlockReasonStrings = new golib.SparseArray<@string>{
     [traceBlockGeneric] = "unspecified"u8,
@@ -108,9 +108,9 @@ internal static array<@string> traceBlockReasonStrings = new golib.SparseArray<@
 
 [GoType("num:uint8")] partial struct traceGoStopReason;
 
-internal static readonly traceGoStopReason traceGoStopGeneric = /* iota */ 0;
-internal static readonly traceGoStopReason traceGoStopGoSched = 1;
-internal static readonly traceGoStopReason traceGoStopPreempted = 2;
+internal static traceGoStopReason traceGoStopGeneric => /* iota */ 0;
+internal static traceGoStopReason traceGoStopGoSched => 1;
+internal static traceGoStopReason traceGoStopPreempted => 2;
 
 internal static array<@string> traceGoStopReasonStrings = new golib.SparseArray<@string>{
     [traceGoStopGeneric] = "unspecified"u8,
@@ -369,9 +369,7 @@ internal static void GCSweepStart(this traceLocker tl) {
     if ((~pp).trace.maySweep) {
         @throw(doubleTraceGCSweepStartˢ);
     }
-    pp.Value.trace.maySweep = true;
-    pp.Value.trace.swept = 0;
-    pp.Value.trace.reclaimed = 0;
+    (pp.Value.trace.maySweep, pp.Value.trace.swept, pp.Value.trace.reclaimed) = (true, 0, 0);
 }
 
 // GCSweepSpan traces the sweep of a single span. If this is

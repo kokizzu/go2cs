@@ -104,8 +104,8 @@ partial class runtime_package {
 
 [GoType("num:uint64")] partial struct profIndex;
 
-internal static readonly profIndex profReaderSleeping = /* 1 << 32 */ unchecked((profIndex)4294967296);   // reader is sleeping and must be woken up
-internal static readonly profIndex profWriteExtra = /* 1 << 33 */ unchecked((profIndex)8589934592);       // overflow or eof waiting
+internal static profIndex profReaderSleeping => /* 1 << 32 */ unchecked((profIndex)4294967296);   // reader is sleeping and must be woken up
+internal static profIndex profWriteExtra => /* 1 << 33 */ unchecked((profIndex)8589934592);       // overflow or eof waiting
 
 internal static profIndex load(this ж<profAtomic> Ꮡx) {
     ref var x = ref Ꮡx.Value;
@@ -432,8 +432,8 @@ internal static void wakeupExtra(this ж<profBuf> Ꮡb) {
 
 [GoType("num:nint")] partial struct profBufReadMode;
 
-internal static readonly profBufReadMode profBufBlocking = /* iota */ 0;
-internal static readonly profBufReadMode profBufNonBlocking = 1;
+internal static profBufReadMode profBufBlocking => /* iota */ 0;
+internal static profBufReadMode profBufNonBlocking => 1;
 
 internal static array<@unsafe.Pointer> overflowTag = new(1);           // always nil
 

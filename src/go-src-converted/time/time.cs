@@ -158,11 +158,11 @@ partial class time_package {
     internal ж<ΔLocation> loc;
 }
 
-internal static readonly UntypedInt hasMonotonic = /* 1 << 63 */ 9223372036854775808;
+internal static UntypedInt hasMonotonic => /* 1 << 63 */ 9223372036854775808;
 internal const int64 maxWall = /* wallToInternal + (1<<33 - 1) */ 68043243391; // year 2157
 internal const int64 minWall = /* wallToInternal */ 59453308800;        // year 1885
-internal static readonly UntypedInt nsecMask = /* 1<<30 - 1 */ 1073741823;
-internal static readonly UntypedInt nsecShift = 30;
+internal static UntypedInt nsecMask => /* 1<<30 - 1 */ 1073741823;
+internal static UntypedInt nsecShift => 30;
 
 // These helpers for manipulating the wall and monotonic clock readings
 // take pointer receivers, even when they don't modify the time,
@@ -216,7 +216,7 @@ internal static readonly UntypedInt nsecShift = 30;
     ref var loc = ref Ꮡloc.DerefOrNil();
 
     if (Ꮡloc == ᏑutcLoc) {
-        loc = default!;
+        Ꮡloc = default!; loc = ref Ꮡloc.DerefOrNil();
     }
     t.stripMono();
     t.loc = Ꮡloc;
@@ -226,7 +226,7 @@ internal static readonly UntypedInt nsecShift = 30;
 [GoRecv] internal static void stripMono(this ref Time t) {
     if ((uint64)(t.wall & (uint64)hasMonotonic) != 0) {
         t.ext = t.sec();
-        t.wall &= nsecMask;
+        t.wall &= (uint64)(nsecMask);
     }
 }
 
@@ -240,7 +240,7 @@ internal static readonly UntypedInt nsecShift = 30;
         if (sec < minWall || maxWall < sec) {
             return;
         }
-        t.wall |= (uint64)((uint64)hasMonotonic | ((uint64)(sec - minWall) << (int)(nsecShift)));
+        t.wall |= (uint64)((uint64)((uint64)hasMonotonic | ((uint64)(sec - minWall) << (int)(nsecShift))));
     }
     t.ext = m;
 }
@@ -315,18 +315,18 @@ public static bool Equal(this Time t, Time u) {
 
 [GoType("num:nint")] partial struct ΔMonth;
 
-public static readonly ΔMonth January = /* 1 + iota */ 1;
-public static readonly ΔMonth February = 2;
-public static readonly ΔMonth March = 3;
-public static readonly ΔMonth April = 4;
-public static readonly ΔMonth May = 5;
-public static readonly ΔMonth June = 6;
-public static readonly ΔMonth July = 7;
-public static readonly ΔMonth August = 8;
-public static readonly ΔMonth September = 9;
-public static readonly ΔMonth October = 10;
-public static readonly ΔMonth November = 11;
-public static readonly ΔMonth December = 12;
+public static ΔMonth January => /* 1 + iota */ 1;
+public static ΔMonth February => 2;
+public static ΔMonth March => 3;
+public static ΔMonth April => 4;
+public static ΔMonth May => 5;
+public static ΔMonth June => 6;
+public static ΔMonth July => 7;
+public static ΔMonth August => 8;
+public static ΔMonth September => 9;
+public static ΔMonth October => 10;
+public static ΔMonth November => 11;
+public static ΔMonth December => 12;
 
 // String returns the English name of the month ("January", "February", ...).
 public static @string String(this ΔMonth m) {
@@ -340,13 +340,13 @@ public static @string String(this ΔMonth m) {
 
 [GoType("num:nint")] partial struct ΔWeekday;
 
-public static readonly ΔWeekday Sunday = /* iota */ 0;
-public static readonly ΔWeekday Monday = 1;
-public static readonly ΔWeekday Tuesday = 2;
-public static readonly ΔWeekday Wednesday = 3;
-public static readonly ΔWeekday Thursday = 4;
-public static readonly ΔWeekday Friday = 5;
-public static readonly ΔWeekday Saturday = 6;
+public static ΔWeekday Sunday => /* iota */ 0;
+public static ΔWeekday Monday => 1;
+public static ΔWeekday Tuesday => 2;
+public static ΔWeekday Wednesday => 3;
+public static ΔWeekday Thursday => 4;
+public static ΔWeekday Friday => 5;
+public static ΔWeekday Saturday => 6;
 
 // String returns the English name of the day ("Sunday", "Monday", ...).
 public static @string String(this ΔWeekday d) {
@@ -437,8 +437,8 @@ public static @string String(this ΔWeekday d) {
 //
 // All this is opaque to clients of the API and can be changed if a
 // better implementation presents itself.
-internal static readonly UntypedInt absoluteZeroYear = -292277022399;
-internal static readonly UntypedInt internalYear = 1;
+internal static UntypedInt absoluteZeroYear => -292277022399;
+internal static UntypedInt internalYear => 1;
 internal const int64 absoluteToInternal = /* (absoluteZeroYear - internalYear) * 365.2425 * secondsPerDay */ -9223371966579724800;
 internal const int64 internalToAbsolute = /* -absoluteToInternal */ 9223371966579724800;
 internal const int64 unixToInternal = /* (1969*365 + 1969/4 - 1969/100 + 1969/400) * secondsPerDay */ 62135596800;
@@ -634,8 +634,8 @@ public static nint YearDay(this Time t) {
 
 [GoType("num:int64")] partial struct Duration;
 
-internal static readonly Duration minDuration = /* -1 << 63 */ -9223372036854775808;
-internal static readonly Duration maxDuration = /* 1<<63 - 1 */ 9223372036854775807;
+internal static Duration minDuration => /* -1 << 63 */ -9223372036854775808;
+internal static Duration maxDuration => /* 1<<63 - 1 */ 9223372036854775807;
 
 // Common durations. There is no definition for units of Day or larger
 // to avoid confusion across daylight savings time zone transitions.
@@ -649,17 +649,17 @@ internal static readonly Duration maxDuration = /* 1<<63 - 1 */ 9223372036854775
 //
 //	seconds := 10
 //	fmt.Print(time.Duration(seconds)*time.Second) // prints 10s
-public static readonly Duration ΔNanosecond = 1;
+public static Duration ΔNanosecond => 1;
 
-public static readonly Duration Microsecond = /* 1000 * Nanosecond */ 1000;
+public static Duration Microsecond => /* 1000 * Nanosecond */ 1000;
 
-public static readonly Duration Millisecond = /* 1000 * Microsecond */ 1000000;
+public static Duration Millisecond => /* 1000 * Microsecond */ 1000000;
 
-public static readonly Duration ΔSecond = /* 1000 * Millisecond */ 1000000000;
+public static Duration ΔSecond => /* 1000 * Millisecond */ 1000000000;
 
-public static readonly Duration ΔMinute = /* 60 * Second */ 60000000000;
+public static Duration ΔMinute => /* 60 * Second */ 60000000000;
 
-public static readonly Duration ΔHour = /* 60 * Minute */ 3600000000000;
+public static Duration ΔHour => /* 60 * Minute */ 3600000000000;
 
 // String returns a string representing the duration in the form "72h3m0.5s".
 // Leading zero units are omitted. As a special case, durations less than one
@@ -1016,13 +1016,13 @@ public static Time AddDate(this Time t, nint years, nint months, nint days) {
     return Date(year + years, month + ((ΔMonth)months), day + days, hour, min, sec, (nint)t.nsec(), t.Location());
 }
 
-internal static readonly UntypedInt secondsPerMinute = 60;
-internal static readonly UntypedInt secondsPerHour = /* 60 * secondsPerMinute */ 3600;
-internal static readonly UntypedInt secondsPerDay = /* 24 * secondsPerHour */ 86400;
-internal static readonly UntypedInt secondsPerWeek = /* 7 * secondsPerDay */ 604800;
-internal static readonly UntypedInt daysPer400Years = /* 365*400 + 97 */ 146097;
-internal static readonly UntypedInt daysPer100Years = /* 365*100 + 24 */ 36524;
-internal static readonly UntypedInt daysPer4Years = /* 365*4 + 1 */ 1461;
+internal static UntypedInt secondsPerMinute => 60;
+internal static UntypedInt secondsPerHour => /* 60 * secondsPerMinute */ 3600;
+internal static UntypedInt secondsPerDay => /* 24 * secondsPerHour */ 86400;
+internal static UntypedInt secondsPerWeek => /* 7 * secondsPerDay */ 604800;
+internal static UntypedInt daysPer400Years => /* 365*400 + 97 */ 146097;
+internal static UntypedInt daysPer100Years => /* 365*100 + 24 */ 36524;
+internal static UntypedInt daysPer4Years => /* 365*4 + 1 */ 1461;
 
 // date computes the year, day of year, and when full=true,
 // the month and day in which t occurs.

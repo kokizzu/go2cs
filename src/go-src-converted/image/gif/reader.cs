@@ -31,38 +31,38 @@ internal static error errBadPixel = errors.New("gif: invalid pixel value"u8);
 }
 
 // Masks etc.
-internal static readonly UntypedInt fColorTable = /* 1 << 7 */ 128;
+internal static UntypedInt fColorTable => /* 1 << 7 */ 128;
 
-internal static readonly UntypedInt fInterlace = /* 1 << 6 */ 64;
+internal static UntypedInt fInterlace => /* 1 << 6 */ 64;
 
-internal static readonly UntypedInt fColorTableBitsMask = 7;
+internal static UntypedInt fColorTableBitsMask => 7;
 
-internal static readonly UntypedInt gcTransparentColorSet = /* 1 << 0 */ 1;
+internal static UntypedInt gcTransparentColorSet => /* 1 << 0 */ 1;
 
-internal static readonly UntypedInt gcDisposalMethodMask = /* 7 << 2 */ 28;
+internal static UntypedInt gcDisposalMethodMask => /* 7 << 2 */ 28;
 
 // Disposal Methods.
-public static readonly UntypedInt DisposalNone = 0x01;
+public static UntypedInt DisposalNone => 0x01;
 
-public static readonly UntypedInt DisposalBackground = 0x02;
+public static UntypedInt DisposalBackground => 0x02;
 
-public static readonly UntypedInt DisposalPrevious = 0x03;
+public static UntypedInt DisposalPrevious => 0x03;
 
 // Section indicators.
-internal static readonly UntypedInt sExtension = 0x21;
+internal static UntypedInt sExtension => 0x21;
 
-internal static readonly UntypedInt sImageDescriptor = 0x2C;
+internal static UntypedInt sImageDescriptor => 0x2C;
 
-internal static readonly UntypedInt sTrailer = 0x3B;
+internal static UntypedInt sTrailer => 0x3B;
 
 // Extensions.
-internal static readonly UntypedInt eText = 0x01; // Plain Text
+internal static UntypedInt eText => 0x01; // Plain Text
 
-internal static readonly UntypedInt eGraphicControl = 0xF9; // Graphic Control
+internal static UntypedInt eGraphicControl => 0xF9; // Graphic Control
 
-internal static readonly UntypedInt eComment = 0xFE; // Comment
+internal static UntypedInt eComment => 0xFE; // Comment
 
-internal static readonly UntypedInt eApplication = 0xFF; // Application
+internal static UntypedInt eApplication => 0xFF; // Application
 
 internal static error readFull(io.Reader r, slice<byte> b) {
     var (_, err) = io.ReadFull(r, b);

@@ -26,7 +26,7 @@ partial class gob_package {
 // Before we encode a message, we reserve space at the head of the
 // buffer in which to encode its length. This means we can use the
 // buffer to assemble the message without another allocation.
-internal static readonly UntypedInt maxLength = 9; // Maximum size of an encoded length.
+internal static UntypedInt maxLength => 9; // Maximum size of an encoded length.
 
 internal static slice<byte> spaceForLength = new slice<byte>(maxLength);
 

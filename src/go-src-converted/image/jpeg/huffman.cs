@@ -8,13 +8,13 @@ using io = io_package;
 partial class jpeg_package {
 
 // maxCodeLength is the maximum (inclusive) number of bits in a Huffman code.
-internal static readonly UntypedInt maxCodeLength = 16;
+internal static UntypedInt maxCodeLength => 16;
 
 // maxNCodes is the maximum (inclusive) number of codes in a Huffman tree.
-internal static readonly UntypedInt maxNCodes = 256;
+internal static UntypedInt maxNCodes => 256;
 
 // lutSize is the log-2 size of the Huffman decoder's look-up table.
-internal static readonly UntypedInt lutSize = 8;
+internal static UntypedInt lutSize => 8;
 
 // huffman is a Huffman decoder, specified in section C.
 [GoType] [GoValueClone("lut", "vals", "minCodes", "maxCodes", "valsIndices")] partial struct huffman {

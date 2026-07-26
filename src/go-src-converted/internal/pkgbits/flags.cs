@@ -5,6 +5,6 @@ namespace go.@internal;
 
 partial class pkgbits_package {
 
-internal static readonly UntypedInt flagSyncMarkers = /* 1 << iota */ 1; // file format contains sync markers
+internal static UntypedInt flagSyncMarkers => /* 1 << iota */ 1; // file format contains sync markers
 
 } // end pkgbits_package

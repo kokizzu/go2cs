@@ -29,7 +29,7 @@ partial class macho_package {
     public uint32 Align;
 }
 
-internal static readonly UntypedInt fatArchHeaderSize = /* 5 * 4 */ 20;
+internal static UntypedInt fatArchHeaderSize => /* 5 * 4 */ 20;
 
 // A FatArch is a Mach-O File inside a FatFile.
 [GoType] partial struct FatArch {

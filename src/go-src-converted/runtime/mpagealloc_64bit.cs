@@ -9,10 +9,10 @@ using @internal.runtime;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt summaryLevels = 5;
-internal static readonly UntypedInt pageAlloc32Bit = 0;
-internal static readonly UntypedInt pageAlloc64Bit = 1;
-internal static readonly UntypedInt pallocChunksL1Bits = 13;
+internal static UntypedInt summaryLevels => 5;
+internal static UntypedInt pageAlloc32Bit => 0;
+internal static UntypedInt pageAlloc64Bit => 1;
+internal static UntypedInt pallocChunksL1Bits => 13;
 
 // levelBits is the number of bits in the radix for a given level in the super summary
 // structure.

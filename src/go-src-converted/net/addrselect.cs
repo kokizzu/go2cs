@@ -295,12 +295,12 @@ internal static policyTableEntry Classify(this policyTable t, netipꓸAddr ip) {
 
 [GoType("num:uint8")] public partial struct scope;
 
-internal static readonly scope scopeInterfaceLocal = 0x1;
-internal static readonly scope scopeLinkLocal = 0x2;
-internal static readonly scope scopeAdminLocal = 0x4;
-internal static readonly scope scopeSiteLocal = 0x5;
-internal static readonly scope scopeOrgLocal = 0x8;
-internal static readonly scope scopeGlobal = 0xe;
+internal static scope scopeInterfaceLocal => 0x1;
+internal static scope scopeLinkLocal => 0x2;
+internal static scope scopeAdminLocal => 0x4;
+internal static scope scopeSiteLocal => 0x5;
+internal static scope scopeOrgLocal => 0x8;
+internal static scope scopeGlobal => 0xe;
 
 internal static scope classifyScope(netipꓸAddr ip) {
     if (ip.IsLoopback() || ip.IsLinkLocalUnicast()) {

@@ -292,9 +292,9 @@ public static void WalkStackFrames(map<@string, format.Frame> allFrames, nint id
 
 [GoType("num:nint")] partial struct Mode;
 
-public static readonly Mode ModeGoroutineOriented = /* 1 << iota */ 1;
-public static readonly Mode ModeTaskOriented = 2;
-public static readonly Mode ModeThreadOriented = 4; // Mutually exclusive with ModeGoroutineOriented.
+public static Mode ModeGoroutineOriented => /* 1 << iota */ 1;
+public static Mode ModeTaskOriented => 2;
+public static Mode ModeThreadOriented => 4; // Mutually exclusive with ModeGoroutineOriented.
 
 // NewEmitter returns a new Emitter that writes to c. The rangeStart and
 // rangeEnd args are used for splitting large traces.
@@ -732,19 +732,19 @@ internal static float64 viewerTime(time.Duration t) {
 
 [GoType("num:nint")] partial struct GState;
 
-public static readonly GState GDead = /* iota */ 0;
-public static readonly GState GRunnable = 1;
-public static readonly GState GRunning = 2;
-public static readonly GState GWaiting = 3;
-public static readonly GState GWaitingGC = 4;
-internal static readonly GState gStateCount = 5;
+public static GState GDead => /* iota */ 0;
+public static GState GRunnable => 1;
+public static GState GRunning => 2;
+public static GState GWaiting => 3;
+public static GState GWaitingGC => 4;
+internal static GState gStateCount => 5;
 
 [GoType("num:nint")] partial struct ThreadState;
 
-public static readonly ThreadState ThreadStateInSyscall = /* iota */ 0;
-public static readonly ThreadState ThreadStateInSyscallRuntime = 1;
-public static readonly ThreadState ThreadStateRunning = 2;
-internal static readonly ThreadState threadStateCount = 3;
+public static ThreadState ThreadStateInSyscall => /* iota */ 0;
+public static ThreadState ThreadStateInSyscallRuntime => 1;
+public static ThreadState ThreadStateRunning => 2;
+internal static ThreadState threadStateCount => 3;
 
 [GoType] partial struct frameNode {
     internal nint id;

@@ -145,7 +145,7 @@ internal static void finishGCTransition(this ж<gcCPULimiterState> Ꮡl, int64 n
 
 // gcCPULimiterUpdatePeriod dictates the maximum amount of wall-clock time
 // we can go before updating the limiter.
-internal static readonly UntypedFloat gcCPULimiterUpdatePeriod = 10e6; // 10ms
+internal static UntypedFloat gcCPULimiterUpdatePeriod => 10e6; // 10ms
 
 // needUpdate returns true if the limiter's maximum update period has been
 // exceeded, and so would benefit from an update.
@@ -335,7 +335,7 @@ internal static void unlock(this ж<gcCPULimiterState> Ꮡl) {
 }
 
 // capacityPerProc is the limiter's bucket capacity for each P in GOMAXPROCS.
-internal static readonly UntypedFloat capacityPerProc = 1e9; // 1 second in nanoseconds
+internal static UntypedFloat capacityPerProc => 1e9; // 1 second in nanoseconds
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string failedToAcquireLockToˢ2 = "failed to acquire lock to reset capacity"u8;
@@ -369,18 +369,18 @@ internal static void resetCapacity(this ж<gcCPULimiterState> Ꮡl, int64 now, i
 
 [GoType("num:uint8")] partial struct limiterEventType;
 
-internal static readonly limiterEventType limiterEventNone = /* iota */ 0;          // None of the following events.
-internal static readonly limiterEventType limiterEventIdleMarkWork = 1;  // Refers to an idle mark worker (see gcMarkWorkerMode).
-internal static readonly limiterEventType limiterEventMarkAssist = 2;    // Refers to mark assist (see gcAssistAlloc).
-internal static readonly limiterEventType limiterEventScavengeAssist = 3; // Refers to a scavenge assist (see allocSpan).
-internal static readonly limiterEventType limiterEventIdle = 4;          // Refers to time a P spent on the idle list.
-internal static readonly UntypedInt limiterEventBits = 3;
+internal static limiterEventType limiterEventNone => /* iota */ 0;          // None of the following events.
+internal static limiterEventType limiterEventIdleMarkWork => 1;  // Refers to an idle mark worker (see gcMarkWorkerMode).
+internal static limiterEventType limiterEventMarkAssist => 2;    // Refers to mark assist (see gcAssistAlloc).
+internal static limiterEventType limiterEventScavengeAssist => 3; // Refers to a scavenge assist (see allocSpan).
+internal static limiterEventType limiterEventIdle => 4;          // Refers to time a P spent on the idle list.
+internal static UntypedInt limiterEventBits => 3;
 
 // limiterEventTypeMask is a mask for the bits in p.limiterEventStart that represent
 // the event type. The rest of the bits of that field represent a timestamp.
 internal const uint64 limiterEventTypeMask = /* uint64((1<<limiterEventBits)-1) << (64 - limiterEventBits) */ 16140901064495857664;
 
-internal static readonly limiterEventStamp limiterEventStampNone = /* limiterEventStamp(0) */ 0;
+internal static limiterEventStamp limiterEventStampNone => /* limiterEventStamp(0) */ 0;
 
 [GoType("num:uint64")] partial struct limiterEventStamp;
 

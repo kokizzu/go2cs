@@ -17,7 +17,7 @@ using io = io_package;
 
 partial class gob_package {
 
-internal static readonly UntypedInt uint64Size = 8;
+internal static UntypedInt uint64Size => 8;
 
 // type encHelper is a methodless func type — rendered inline as its base delegate
 
@@ -297,7 +297,7 @@ internal static void encStructTerminator(ж<encInstr> Ꮡi, ж<encoderState> Ꮡ
     internal slice<encInstr> instr;
 }
 
-internal static readonly UntypedInt singletonField = 0;
+internal static UntypedInt singletonField => 0;
 
 // valid reports whether the value is valid and a non-nil pointer.
 // (Slices, maps, and chans take care of themselves.)

@@ -11,9 +11,9 @@ partial class template_package {
 
 [GoType("num:nint")] partial struct missingKeyAction;
 
-internal static readonly missingKeyAction mapInvalid = /* iota */ 0;  // Return an invalid reflect.Value.
-internal static readonly missingKeyAction mapZeroValue = 1; // Return the zero value for the map element.
-internal static readonly missingKeyAction mapError = 2;    // Error out
+internal static missingKeyAction mapInvalid => /* iota */ 0;  // Return an invalid reflect.Value.
+internal static missingKeyAction mapZeroValue => 1; // Return the zero value for the map element.
+internal static missingKeyAction mapError => 2;    // Error out
 
 [GoType] partial struct option {
     internal missingKeyAction missingKey;

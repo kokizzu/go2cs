@@ -15,7 +15,7 @@ using @unsafe = unsafe_package;
 
 partial class subtle_package {
 
-internal static readonly uintptr wordSize = /* unsafe.Sizeof(uintptr(0)) */ 8;
+internal static uintptr wordSize => /* unsafe.Sizeof(uintptr(0)) */ 8;
 
 internal const bool supportsUnaligned = /* runtime.GOARCH == "386" ||
 	runtime.GOARCH == "amd64" ||

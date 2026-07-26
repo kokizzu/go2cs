@@ -13,10 +13,10 @@ partial class tls_package {
 
 [GoType("num:nint")] partial struct QUICEncryptionLevel;
 
-public static readonly QUICEncryptionLevel QUICEncryptionLevelInitial = /* QUICEncryptionLevel(iota) */ 0;
-public static readonly QUICEncryptionLevel QUICEncryptionLevelEarly = 1;
-public static readonly QUICEncryptionLevel QUICEncryptionLevelHandshake = 2;
-public static readonly QUICEncryptionLevel QUICEncryptionLevelApplication = 3;
+public static QUICEncryptionLevel QUICEncryptionLevelInitial => /* QUICEncryptionLevel(iota) */ 0;
+public static QUICEncryptionLevel QUICEncryptionLevelEarly => 1;
+public static QUICEncryptionLevel QUICEncryptionLevelHandshake => 2;
+public static QUICEncryptionLevel QUICEncryptionLevelApplication => 3;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string initialˢ = "Initial"u8;
@@ -66,16 +66,16 @@ public static @string String(this QUICEncryptionLevel l) {
 
 [GoType("num:nint")] partial struct QUICEventKind;
 
-public static readonly QUICEventKind QUICNoEvent = /* iota */ 0;
-public static readonly QUICEventKind QUICSetReadSecret = 1;
-public static readonly QUICEventKind QUICSetWriteSecret = 2;
-public static readonly QUICEventKind QUICWriteData = 3;
-public static readonly QUICEventKind QUICTransportParameters = 4;
-public static readonly QUICEventKind QUICTransportParametersRequired = 5;
-public static readonly QUICEventKind QUICRejectedEarlyData = 6;
-public static readonly QUICEventKind QUICHandshakeDone = 7;
-public static readonly QUICEventKind QUICResumeSession = 8;
-public static readonly QUICEventKind QUICStoreSession = 9;
+public static QUICEventKind QUICNoEvent => /* iota */ 0;
+public static QUICEventKind QUICSetReadSecret => 1;
+public static QUICEventKind QUICSetWriteSecret => 2;
+public static QUICEventKind QUICWriteData => 3;
+public static QUICEventKind QUICTransportParameters => 4;
+public static QUICEventKind QUICTransportParametersRequired => 5;
+public static QUICEventKind QUICRejectedEarlyData => 6;
+public static QUICEventKind QUICHandshakeDone => 7;
+public static QUICEventKind QUICResumeSession => 8;
+public static QUICEventKind QUICStoreSession => 9;
 
 // A QUICEvent is an event occurring on a QUIC connection.
 //

@@ -616,8 +616,7 @@ public static error ErrVerification = errors.New("crypto/rsa: verification error
         (priv.Precomputed.q, err) = bigmod.NewModulusFromBig(priv.Primes[1]);
         if (err != default!) {
             // Unset previous values, so we either have everything or nothing
-            priv.Precomputed.n = default!;
-            priv.Precomputed.p = default!;
+            (priv.Precomputed.n, priv.Precomputed.p) = (default!, default!);
             return;
         }
     }

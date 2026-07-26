@@ -9,7 +9,7 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly uintptr pageCachePages = /* 8 * unsafe.Sizeof(pageCache{}.cache) */ 64;
+internal static uintptr pageCachePages => /* 8 * unsafe.Sizeof(pageCache{}.cache) */ 64;
 
 // pageCache represents a per-p cache of pages the allocator can
 // allocate from without a lock. More specifically, it represents
@@ -41,9 +41,9 @@ internal static readonly uintptr pageCachePages = /* 8 * unsafe.Sizeof(pageCache
     if (npages == 1) {
         var i = (uintptr)sys.TrailingZeros64(c.cache);
         var scav = (uint64)((c.scav.Rsh((uint64)(i))) & 1);
-        c.cache &= unchecked((uint64)~((uint64)1).Lsh((uint64)(i)));
+        c.cache &= unchecked((uint64)~(uint64)(((uint64)1).Lsh((uint64)(i))));
         // set bit to mark in-use
-        c.scav &= unchecked((uint64)~((uint64)1).Lsh((uint64)(i)));
+        c.scav &= unchecked((uint64)~(uint64)(((uint64)1).Lsh((uint64)(i))));
         // clear bit to mark unscavenged
         return (c.@base + i * (uintptr)pageSize, (uintptr)scav * (uintptr)pageSize);
     }
@@ -63,9 +63,9 @@ internal static readonly uintptr pageCachePages = /* 8 * unsafe.Sizeof(pageCache
     }
     var mask = ((((uint64)1).Lsh((uint64)(npages))) - 1).Lsh(i);
     nint scav = sys.OnesCount64((uint64)(c.scav & mask));
-    c.cache &= unchecked((uint64)~mask);
+    c.cache &= unchecked((uint64)~(uint64)(mask));
     // mark in-use bits
-    c.scav &= unchecked((uint64)~mask);
+    c.scav &= unchecked((uint64)~(uint64)(mask));
     // clear scavenged bits
     return (c.@base + (uintptr)(i * (nuint)pageSize), (uintptr)scav * (uintptr)pageSize);
 }

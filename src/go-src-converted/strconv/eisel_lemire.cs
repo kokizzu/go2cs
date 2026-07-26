@@ -161,9 +161,9 @@ internal static (float32 f, bool ok) eiselLemire32(uint64 man, nint exp10, bool 
 
 // detailedPowersOfTen{Min,Max}Exp10 is the power of 10 represented by the
 // first and last rows of detailedPowersOfTen. Both bounds are inclusive.
-internal static readonly UntypedInt detailedPowersOfTenMinExp10 = -348;
+internal static UntypedInt detailedPowersOfTenMinExp10 => -348;
 
-internal static readonly UntypedInt detailedPowersOfTenMaxExp10 = 347;
+internal static UntypedInt detailedPowersOfTenMaxExp10 => 347;
 
 // 1e-348
 // 1e-347

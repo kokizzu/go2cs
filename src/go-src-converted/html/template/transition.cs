@@ -195,8 +195,7 @@ internal static (context, nint) tBeforeValue(context c, slice<byte> s) {
         break;
     }}
 
-    c.state = attrStartStates[c.attr];
-    c.delim = delim;
+    (c.state, c.delim) = (attrStartStates[c.attr], delim);
     return (c, i);
 }
 
@@ -294,30 +293,25 @@ internal static (context, nint) tJS(context c, slice<byte> s) {
     c.jsCtx = nextJSCtx(s[..(int)(i)], c.jsCtx);
     switch (s[i]) {
     case (rune)'"': {
-        c.state = stateJSDqStr;
-        c.jsCtx = jsCtxRegexp;
+        (c.state, c.jsCtx) = (stateJSDqStr, jsCtxRegexp);
         break;
     }
     case (rune)'\'': {
-        c.state = stateJSSqStr;
-        c.jsCtx = jsCtxRegexp;
+        (c.state, c.jsCtx) = (stateJSSqStr, jsCtxRegexp);
         break;
     }
     case (rune)'`': {
-        c.state = stateJSTmplLit;
-        c.jsCtx = jsCtxRegexp;
+        (c.state, c.jsCtx) = (stateJSTmplLit, jsCtxRegexp);
         break;
     }
     case (rune)'/': {
         switch (ᐧ) {
         case {} when i + 1 < len(s) && s[i + 1] == (rune)'/': {
-            c.state = stateJSLineCmt;
-            i = i + 1;
+            (c.state, i) = (stateJSLineCmt, i + 1);
             break;
         }
         case {} when i + 1 < len(s) && s[i + 1] == (rune)'*': {
-            c.state = stateJSBlockCmt;
-            i = i + 1;
+            (c.state, i) = (stateJSBlockCmt, i + 1);
             break;
         }
         case {} when c.jsCtx == jsCtxRegexp: {
@@ -346,23 +340,20 @@ internal static (context, nint) tJS(context c, slice<byte> s) {
  // ignored. As such we simply treat any line prefixed with "<!--" or "-->"
  // as if it were actually prefixed with "//" and move on.
  s[(int)(i)..(int)(i + 4)])) {
-            c.state = stateJSHTMLOpenCmt;
-            i = i + 3;
+            (c.state, i) = (stateJSHTMLOpenCmt, i + 3);
         }
         break;
     }
     case (rune)'-': {
         if (i + 2 < len(s) && bytes.Equal(commentEnd, s[(int)(i)..(int)(i + 3)])) {
-            c.state = stateJSHTMLCloseCmt;
-            i = i + 2;
+            (c.state, i) = (stateJSHTMLCloseCmt, i + 2);
         }
         break;
     }
     case (rune)'#': {
         if (i + 1 < len(s) && s[i + 1] == (rune)'!') {
             // ECMAScript also supports "hashbang" comment lines, see Section 12.5.
-            c.state = stateJSLineCmt;
-            i = i + 1;
+            (c.state, i) = (stateJSLineCmt, i + 1);
         }
         break;
     }
@@ -482,8 +473,7 @@ internal static (context, nint) tJSDelimited(context c, slice<byte> s) {
                 i++;
             } else 
             if (!inCharset) {
-                c.state = stateJS;
-                c.jsCtx = jsCtxDivOp;
+                (c.state, c.jsCtx) = (stateJS, jsCtxDivOp);
                 return (c, i + 1);
             }
             break;
@@ -491,8 +481,7 @@ internal static (context, nint) tJSDelimited(context c, slice<byte> s) {
         default: {
             if (!inCharset) {
                 // end delimiter
-                c.state = stateJS;
-                c.jsCtx = jsCtxDivOp;
+                (c.state, c.jsCtx) = (stateJS, jsCtxDivOp);
                 return (c, i + 1);
             }
             break;
@@ -610,13 +599,11 @@ internal static (context, nint) tCSS(context c, slice<byte> s) {
                 nint j = len(s) - len(bytes.TrimLeft(s[(int)(i + 1)..], "\t\n\f\r "u8));
                 switch (ᐧ) {
                 case {} when j != len(s) && s[j] == (rune)'"': {
-                    c.state = stateCSSDqURL;
-                    j = j + 1;
+                    (c.state, j) = (stateCSSDqURL, j + 1);
                     break;
                 }
                 case {} when j != len(s) && s[j] == (rune)'\'': {
-                    c.state = stateCSSSqURL;
-                    j = j + 1;
+                    (c.state, j) = (stateCSSSqURL, j + 1);
                     break;
                 }
                 default: {

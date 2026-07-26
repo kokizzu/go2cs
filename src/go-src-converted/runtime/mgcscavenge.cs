@@ -98,12 +98,12 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt scavengePercent = 1; // 1%
-internal static readonly UntypedInt retainExtraPercent = 10;
-internal static readonly UntypedInt reduceExtraPercent = 5;
-internal static readonly UntypedInt maxPagesPerPhysPage = /* maxPhysPageSize / pageSize */ 64;
-internal static readonly UntypedFloat scavengeCostRatio = /* 0.7 * (goos.IsDarwin + goos.IsIos) */ 0;
-internal static readonly UntypedFloat scavChunkHiOccFrac = 0.96875;
+internal static UntypedInt scavengePercent => 1; // 1%
+internal static UntypedInt retainExtraPercent => 10;
+internal static UntypedInt reduceExtraPercent => 5;
+internal static UntypedInt maxPagesPerPhysPage => /* maxPhysPageSize / pageSize */ 64;
+internal static UntypedFloat scavengeCostRatio => /* 0.7 * (goos.IsDarwin + goos.IsIos) */ 0;
+internal static UntypedFloat scavChunkHiOccFrac => 0.96875;
 internal const uint16 scavChunkHiOccPages = /* uint16(scavChunkHiOccFrac * pallocChunkPages) */ 496;
 
 // heapRetained returns an estimate of the current heap RSS.
@@ -211,8 +211,8 @@ internal static void gcPaceScavenger(int64 memoryLimit, uint64 heapGoal, uint64 
 internal static ж<Δscavengeᴛ1> ᏑΔscavenge = new(default(Δscavengeᴛ1));
 internal static ref Δscavengeᴛ1 Δscavenge => ref ᏑΔscavenge.Value;
 
-internal static readonly UntypedFloat startingScavSleepRatio = 0.001;
-internal static readonly UntypedFloat minScavWorkTime = 1e6;
+internal static UntypedFloat startingScavSleepRatio => 0.001;
+internal static UntypedFloat minScavWorkTime => 1e6;
 
 // Sleep/wait state of the background scavenger.
 internal static ж<scavengerState> Ꮡscavenger = new(new scavengerState());
@@ -1192,11 +1192,11 @@ internal static uint64 pack(this scavChunkData sc) {
     return (uint64)((uint64)((uint64)((uint64)sc.inUse | (((uint64)sc.lastInUse << (int)(16)))) | (((uint64)(uint8)sc.scavChunkFlags << (int)((16 + logScavChunkInUseMax))))) | (((uint64)sc.gen << (int)(32))));
 }
 
-internal static readonly scavChunkFlags scavChunkHasFree = /* 1 << iota */ 1;
-internal static readonly UntypedInt scavChunkMaxFlags = 6;
-internal static readonly UntypedInt scavChunkFlagsMask = /* (1 << scavChunkMaxFlags) - 1 */ 63;
-internal static readonly UntypedInt logScavChunkInUseMax = /* logPallocChunkPages + 1 */ 10;
-internal static readonly UntypedInt scavChunkInUseMask = /* (1 << logScavChunkInUseMax) - 1 */ 1023;
+internal static scavChunkFlags scavChunkHasFree => /* 1 << iota */ 1;
+internal static UntypedInt scavChunkMaxFlags => 6;
+internal static UntypedInt scavChunkFlagsMask => /* (1 << scavChunkMaxFlags) - 1 */ 63;
+internal static UntypedInt logScavChunkInUseMax => /* logPallocChunkPages + 1 */ 10;
+internal static UntypedInt scavChunkInUseMask => /* (1 << logScavChunkInUseMax) - 1 */ 1023;
 
 [GoType("num:uint8")] partial struct scavChunkFlags;
 

@@ -62,15 +62,15 @@ partial class reflectlite_package {
 // the receiver r, but the flag's Kind bits say Func (methods are
 // functions), and the top bits of the flag give the method number
 // in r's type's method table.
-internal static readonly UntypedInt flagKindWidth = 5; // there are 27 kinds
-internal static readonly flag flagKindMask = /* 1<<flagKindWidth - 1 */ 31;
-internal static readonly flag flagStickyRO = /* 1 << 5 */ 32;
-internal static readonly flag flagEmbedRO = /* 1 << 6 */ 64;
-internal static readonly flag flagIndir = /* 1 << 7 */ 128;
-internal static readonly flag flagAddr = /* 1 << 8 */ 256;
-internal static readonly flag flagMethod = /* 1 << 9 */ 512;
-internal static readonly UntypedInt flagMethodShift = 10;
-internal static readonly flag flagRO = /* flagStickyRO | flagEmbedRO */ 96;
+internal static UntypedInt flagKindWidth => 5; // there are 27 kinds
+internal static flag flagKindMask => /* 1<<flagKindWidth - 1 */ 31;
+internal static flag flagStickyRO => /* 1 << 5 */ 32;
+internal static flag flagEmbedRO => /* 1 << 6 */ 64;
+internal static flag flagIndir => /* 1 << 7 */ 128;
+internal static flag flagAddr => /* 1 << 8 */ 256;
+internal static flag flagMethod => /* 1 << 9 */ 512;
+internal static UntypedInt flagMethodShift => 10;
+internal static flag flagRO => /* flagStickyRO | flagEmbedRO */ 96;
 
 internal static abiꓸKind kind(this flag f) {
     return ((abiꓸKind)(uint8)((uintptr)((flag)(f & flagKindMask))));

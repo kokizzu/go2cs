@@ -204,8 +204,7 @@ internal static void assign(this ж<monoGraph> Ꮡw, ж<Package> Ꮡpkg, token�
     };
     // Recursively walk the type argument to find any defined types or
     // type parameters.
-    Action<ΔType> @do = default!;
-    var doʗ1 = @do;
+    ref var @do = ref heap<Action<ΔType>>(out var Ꮡdo);
     var flowʗ1 = flow;
     @do = (ΔType typ) => {
         var switchᴛ11 = Unalias(typ);
@@ -228,46 +227,45 @@ internal static void assign(this ж<monoGraph> Ꮡw, ж<Package> Ꮡpkg, token�
             }
             var targs = typΔ1.TypeArgs();
             for (nint i = 0; i < targs.Len(); i++) {
-                doʗ1(targs.At(i));
+                Ꮡdo.ValueSlot(targs.At(i));
             }
             break;
         }
         case ж<Array> typΔ1: {
-            doʗ1(typΔ1.Elem());
+            Ꮡdo.ValueSlot(typΔ1.Elem());
             break;
         }
         case ж<Basic> typΔ1: {
             break;
         }
         case ж<Chan> typΔ1: {
-            doʗ1(typΔ1.Elem());
+            Ꮡdo.ValueSlot(typΔ1.Elem());
             break;
         }
         case ж<Map> typΔ1: {
-            doʗ1(typΔ1.Key());
-            doʗ1(typΔ1.Elem());
+            Ꮡdo.ValueSlot(typΔ1.Key());
+            Ꮡdo.ValueSlot(typΔ1.Elem());
             break;
         }
         case ж<Pointer> typΔ1: {
-            doʗ1(typΔ1.Elem());
+            Ꮡdo.ValueSlot(typΔ1.Elem());
             break;
         }
         case ж<Slice> typΔ1: {
-            doʗ1(typΔ1.Elem());
+            Ꮡdo.ValueSlot(typΔ1.Elem());
             break;
         }
         case ж<Interface> typΔ1: {
             for (nint i = 0; i < typΔ1.NumMethods(); i++) {
                 // ok
-                doʗ1(typΔ1.Method(i).of(Func.Ꮡobject).Type());
+                Ꮡdo.ValueSlot(typΔ1.Method(i).of(Func.Ꮡobject).Type());
             }
             break;
         }
         case ж<ΔSignature> typΔ1: {
-            var doʗ2 = doʗ1;
             var tuple = (ж<Tuple> tup) => {
                 for (nint i = 0; i < tup.Len(); i++) {
-                    doʗ2(tup.At(i).of(Var.Ꮡobject).Type());
+                    Ꮡdo.ValueSlot(tup.At(i).of(Var.Ꮡobject).Type());
                 }
             };
             tuple(typΔ1.Params());
@@ -276,7 +274,7 @@ internal static void assign(this ж<monoGraph> Ꮡw, ж<Package> Ꮡpkg, token�
         }
         case ж<Struct> typΔ1: {
             for (nint i = 0; i < typΔ1.NumFields(); i++) {
-                doʗ1(typΔ1.Field(i).of(Var.Ꮡobject).Type());
+                Ꮡdo.ValueSlot(typΔ1.Field(i).of(Var.Ꮡobject).Type());
             }
             break;
         }}

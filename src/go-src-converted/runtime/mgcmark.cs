@@ -15,13 +15,13 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt fixedRootFinalizers = iota;
-internal static readonly UntypedInt fixedRootFreeGStacks = 1;
-internal static readonly UntypedInt fixedRootCount = 2;
-internal static readonly UntypedInt rootBlockBytes = /* 256 << 10 */ 262144;
-internal static readonly UntypedInt maxObletBytes = /* 128 << 10 */ 131072;
-internal static readonly UntypedInt drainCheckThreshold = 100000;
-internal static readonly UntypedInt pagesPerSpanRoot = 512;
+internal static UntypedInt fixedRootFinalizers => iota;
+internal static UntypedInt fixedRootFreeGStacks => 1;
+internal static UntypedInt fixedRootCount => 2;
+internal static UntypedInt rootBlockBytes => /* 256 << 10 */ 262144;
+internal static UntypedInt maxObletBytes => /* 128 << 10 */ 131072;
+internal static UntypedInt drainCheckThreshold => 100000;
+internal static UntypedInt pagesPerSpanRoot => 512;
 
 // gcMarkRootPrepare queues root scanning jobs (stacks, globals, and
 // some miscellany) and initializes scanning-related state.
@@ -1055,10 +1055,10 @@ internal static void scanframeworker(ж<stkframe> Ꮡframe, ж<stackScanState> �
 
 [GoType("num:nint")] partial struct gcDrainFlags;
 
-internal static readonly gcDrainFlags gcDrainUntilPreempt = /* 1 << iota */ 1;
-internal static readonly gcDrainFlags gcDrainFlushBgCredit = 2;
-internal static readonly gcDrainFlags gcDrainIdle = 4;
-internal static readonly gcDrainFlags gcDrainFractional = 8;
+internal static gcDrainFlags gcDrainUntilPreempt => /* 1 << iota */ 1;
+internal static gcDrainFlags gcDrainFlushBgCredit => 2;
+internal static gcDrainFlags gcDrainIdle => 4;
+internal static gcDrainFlags gcDrainFractional => 8;
 
 // gcDrainMarkWorkerIdle is a wrapper for gcDrain that exists to better account
 // mark time in profiles.

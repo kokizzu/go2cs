@@ -8,7 +8,7 @@ using io = io_package;
 partial class hpack_package {
 
 internal const uint32 uint32Max = /* ^uint32(0) */ 4294967295;
-internal static readonly UntypedInt initialHeaderTableSize = 4096;
+internal static UntypedInt initialHeaderTableSize => 4096;
 
 [GoType] partial struct Encoder {
     internal dynamicTable dynTab;

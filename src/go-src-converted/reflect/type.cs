@@ -242,36 +242,36 @@ partial class reflect_package {
  * A few are known to ../runtime/type.go to convey to debuggers.
  * They are also known to ../runtime/type.go.
  */
-public static readonly ΔKind Invalid = /* iota */ 0;
-public static readonly ΔKind ΔBool = 1;
-public static readonly ΔKind ΔInt = 2;
-public static readonly ΔKind Int8 = 3;
-public static readonly ΔKind Int16 = 4;
-public static readonly ΔKind Int32 = 5;
-public static readonly ΔKind Int64 = 6;
-public static readonly ΔKind ΔUint = 7;
-public static readonly ΔKind Uint8 = 8;
-public static readonly ΔKind Uint16 = 9;
-public static readonly ΔKind Uint32 = 10;
-public static readonly ΔKind Uint64 = 11;
-public static readonly ΔKind Uintptr = 12;
-public static readonly ΔKind Float32 = 13;
-public static readonly ΔKind Float64 = 14;
-public static readonly ΔKind Complex64 = 15;
-public static readonly ΔKind Complex128 = 16;
-public static readonly ΔKind Array = 17;
-public static readonly ΔKind Chan = 18;
-public static readonly ΔKind Func = 19;
-public static readonly ΔKind ΔInterface = 20;
-public static readonly ΔKind Map = 21;
-public static readonly ΔKind ΔPointer = 22;
-public static readonly ΔKind ΔSlice = 23;
-public static readonly ΔKind ΔString = 24;
-public static readonly ΔKind Struct = 25;
-public static readonly ΔKind ΔUnsafePointer = 26;
+public static ΔKind Invalid => /* iota */ 0;
+public static ΔKind ΔBool => 1;
+public static ΔKind ΔInt => 2;
+public static ΔKind Int8 => 3;
+public static ΔKind Int16 => 4;
+public static ΔKind Int32 => 5;
+public static ΔKind Int64 => 6;
+public static ΔKind ΔUint => 7;
+public static ΔKind Uint8 => 8;
+public static ΔKind Uint16 => 9;
+public static ΔKind Uint32 => 10;
+public static ΔKind Uint64 => 11;
+public static ΔKind Uintptr => 12;
+public static ΔKind Float32 => 13;
+public static ΔKind Float64 => 14;
+public static ΔKind Complex64 => 15;
+public static ΔKind Complex128 => 16;
+public static ΔKind Array => 17;
+public static ΔKind Chan => 18;
+public static ΔKind Func => 19;
+public static ΔKind ΔInterface => 20;
+public static ΔKind Map => 21;
+public static ΔKind ΔPointer => 22;
+public static ΔKind ΔSlice => 23;
+public static ΔKind ΔString => 24;
+public static ΔKind Struct => 25;
+public static ΔKind ΔUnsafePointer => 26;
 
 // Ptr is the old name for the [Pointer] kind.
-public static readonly ΔKind Ptr = /* Pointer */ 22;
+public static ΔKind Ptr => /* Pointer */ 22;
 
 // Embed this type to get common/uncommon
 [GoType] partial struct Δcommon {
@@ -294,9 +294,9 @@ internal static ж<abi.UncommonType> uncommon(this ж<rtype> Ꮡt) {
 
 [GoType("num:nint")] partial struct ΔChanDir;
 
-public static readonly ΔChanDir RecvDir = /* 1 << iota */ 1;                 // <-chan
-public static readonly ΔChanDir SendDir = 2;                 // chan<-
-public static readonly ΔChanDir BothDir = /* RecvDir | SendDir */ 3; // chan
+public static ΔChanDir RecvDir => /* 1 << iota */ 1;                 // <-chan
+public static ΔChanDir SendDir => 2;                 // chan<-
+public static ΔChanDir BothDir => /* RecvDir | SendDir */ 3; // chan
 
 // interfaceType represents an interface type.
 [GoType] partial struct interfaceType {
@@ -1773,27 +1773,27 @@ public static ΔType MapOf(ΔType key, ΔType elem) {
     mt.Flags = 0;
     if ((~ktyp).Size_ > abi.MapMaxKeyBytes){
         mt.KeySize = (uint8)goarch.PtrSize;
-        mt.Flags |= 1;
+        mt.Flags |= (uint32)(1);
     } else {
         // indirect key
         mt.KeySize = (uint8)(~ktyp).Size_;
     }
     if ((~etyp).Size_ > abi.MapMaxElemBytes){
         mt.ValueSize = (uint8)goarch.PtrSize;
-        mt.Flags |= 2;
+        mt.Flags |= (uint32)(2);
     } else {
         // indirect value
         mt.MapType.ValueSize = (uint8)(~etyp).Size_;
     }
     mt.MapType.BucketSize = (uint16)(~mt.Bucket).Size_;
     if (isReflexive(ktyp)) {
-        mt.Flags |= 4;
+        mt.Flags |= (uint32)(4);
     }
     if (needKeyUpdate(ktyp)) {
-        mt.Flags |= 8;
+        mt.Flags |= (uint32)(8);
     }
     if (hashMightPanic(ktyp)) {
-        mt.Flags |= 16;
+        mt.Flags |= (uint32)(16);
     }
     mt.PtrToThis = 0;
     var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡmt.of(mapType.ᏑType)));
@@ -1874,7 +1874,7 @@ public static ΔType FuncOf(slice<ΔType> @in, slice<ΔType> @out, bool variadic
     ft.Value.InCount = (uint16)len(@in);
     ft.Value.OutCount = (uint16)len(@out);
     if (variadic) {
-        ft.Value.OutCount |= (uint16)(1 << (int)(15));
+        ft.Value.OutCount |= (uint16)((uint16)(1 << (int)(15)));
     }
     // Look in cache.
     {
@@ -2596,7 +2596,7 @@ public static ΔType StructOf(slice<StructField> fields) => func((defer, recover
     typ.Value.FieldAlign_ = typalign;
     typ.Value.PtrToThis = 0;
     if (len(methods) > 0) {
-        typ.Value.TFlag |= abi.TFlagUncommon;
+        typ.Value.TFlag |= (abi.TFlag)(abi.TFlagUncommon);
     }
     if (hasGCProg){
         nint lastPtrField = 0;
@@ -2636,10 +2636,10 @@ public static ΔType StructOf(slice<StructField> fields) => func((defer, recover
         }
         prog = builtin.append(prog, (byte)(0));
         (Ꮡ(prog, 0).Reinterpret<byte, uint32>()).Value = (uint32)(len(prog) - 4);
-        typ.Value.Kind_ |= abi.KindGCProg;
+        typ.Value.Kind_ |= (abiꓸKind)(abi.KindGCProg);
         typ.Value.GCData = Ꮡ(prog, 0);
     } else {
-        typ.Value.Kind_ &= unchecked((abiꓸKind)~abi.KindGCProg);
+        typ.Value.Kind_ &= unchecked((abiꓸKind)~(abiꓸKind)(abi.KindGCProg));
         var bv = @new<bitVector>();
         addTypeBits(bv, 0, typ.of(structType.ᏑType));
         if (len((~bv).data) > 0) {
@@ -2665,11 +2665,11 @@ public static ΔType StructOf(slice<StructField> fields) => func((defer, recover
     }
     switch (ᐧ) {
     case {} when len(fs) == 1 && !fs[0].Typ.IfaceIndir(): {
-        typ.Value.Kind_ |= abi.KindDirectIface;
+        typ.Value.Kind_ |= (abiꓸKind)(abi.KindDirectIface);
         break;
     }
     default: {
-        typ.Value.Kind_ &= unchecked((abiꓸKind)~abi.KindDirectIface);
+        typ.Value.Kind_ &= unchecked((abiꓸKind)~(abiꓸKind)(abi.KindDirectIface));
         break;
     }}
 
@@ -2801,7 +2801,7 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
         break;
     }
     case {} when length is 1: {
-        Δarray.Kind_ |= (abiꓸKind)((~typ).Kind_ & abi.KindGCProg);
+        Δarray.Kind_ |= (abiꓸKind)((abiꓸKind)((~typ).Kind_ & abi.KindGCProg));
         Δarray.GCData = typ.Value.GCData;
         Δarray.PtrBytes = typ.Value.PtrBytes;
         break;
@@ -2847,7 +2847,7 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
         prog = appendVarint(prog, (uintptr)length - 1);
         prog = builtin.append(prog, (byte)(0));
         (Ꮡ(prog, 0).Reinterpret<byte, uint32>()).Value = (uint32)(len(prog) - 4);
-        Δarray.Kind_ |= abi.KindGCProg;
+        Δarray.Kind_ |= (abiꓸKind)(abi.KindGCProg);
         Δarray.GCData = Ꮡ(prog, 0);
         Δarray.PtrBytes = Δarray.Size_;
         break;
@@ -2874,11 +2874,11 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
     }
     switch (ᐧ) {
     case {} when length == 1 && !typ.IfaceIndir(): {
-        Δarray.Kind_ |= abi.KindDirectIface;
+        Δarray.Kind_ |= (abiꓸKind)(abi.KindDirectIface);
         break;
     }
     default: {
-        Δarray.Kind_ &= unchecked((abiꓸKind)~abi.KindDirectIface);
+        Δarray.Kind_ &= unchecked((abiꓸKind)~(abiꓸKind)(abi.KindDirectIface));
         break;
     }}
 

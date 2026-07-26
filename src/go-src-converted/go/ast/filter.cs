@@ -327,9 +327,9 @@ internal static bool filterPackage(ж<Package> Ꮡpkg, Func<@string, bool> f, bo
 
 // ----------------------------------------------------------------------------
 // Merging of package files
-public static readonly MergeMode FilterFuncDuplicates = /* 1 << iota */ 1;
-public static readonly MergeMode FilterUnassociatedComments = 2;
-public static readonly MergeMode FilterImportDuplicates = 4;
+public static MergeMode FilterFuncDuplicates => /* 1 << iota */ 1;
+public static MergeMode FilterUnassociatedComments => 2;
+public static MergeMode FilterImportDuplicates => 4;
 
 // nameOf returns the function (foo) or method name (foo.bar) for
 // the given function declaration. If the AST is incorrect for the

@@ -22,15 +22,15 @@ partial class md5_package {
 }
 
 // The size of an MD5 checksum in bytes.
-public static readonly UntypedInt ΔSize = 16;
+public static UntypedInt ΔSize => 16;
 
 // The blocksize of MD5 in bytes.
-public static readonly UntypedInt ΔBlockSize = 64;
+public static UntypedInt ΔBlockSize => 64;
 
-internal static readonly UntypedInt init0 = 0x67452301;
-internal static readonly UntypedInt init1 = 0xEFCDAB89;
-internal static readonly UntypedInt init2 = 0x98BADCFE;
-internal static readonly UntypedInt init3 = 0x10325476;
+internal static UntypedInt init0 => 0x67452301;
+internal static UntypedInt init1 => 0xEFCDAB89;
+internal static UntypedInt init2 => 0x98BADCFE;
+internal static UntypedInt init3 => 0x10325476;
 
 // digest represents the partial evaluation of a checksum.
 [GoType] [GoValueClone("s", "x")] partial struct digest {

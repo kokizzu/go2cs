@@ -266,7 +266,7 @@ internal static readonly @string hex = "0123456789abcdef"u8;
     internal map<any, EmptyStruct> ptrSeen;
 }
 
-internal static readonly UntypedInt startDetectingCyclesAfter = 1000;
+internal static UntypedInt startDetectingCyclesAfter => 1000;
 
 internal static ж<sync.Pool> ᏑencodeStatePool = new(default(sync.Pool));
 internal static ref sync.Pool encodeStatePool => ref ᏑencodeStatePool.Value;

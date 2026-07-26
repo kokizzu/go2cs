@@ -16,7 +16,7 @@ using go.math;
 
 partial class x509_package {
 
-internal static readonly UntypedInt ecPrivKeyVersion = 1;
+internal static UntypedInt ecPrivKeyVersion => 1;
 
 // ecPrivateKey reflects an ASN.1 Elliptic Curve Private Key Structure.
 // References:

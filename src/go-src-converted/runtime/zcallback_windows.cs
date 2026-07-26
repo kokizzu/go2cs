@@ -3,6 +3,6 @@ namespace go;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt cb_max = 2000; // maximum number of windows callbacks allowed
+internal static UntypedInt cb_max => 2000; // maximum number of windows callbacks allowed
 
 } // end runtime_package

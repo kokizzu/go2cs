@@ -33,8 +33,7 @@ internal static ж<template.Template> tp(this ж<Template> Ꮡr) {
 [GoRecv] internal static void build(this ref Template r) {
     var (ᴛ1, ᴛ2) = template.New(r.name).Parse(r.text);
     r.tmpl = template.Must(ᴛ1, ᴛ2);
-    r.name = ""u8;
-    r.text = ""u8;
+    (r.name, r.text) = ("", "");
 }
 
 public static error Execute(this ж<Template> Ꮡr, io.Writer w, any data) {

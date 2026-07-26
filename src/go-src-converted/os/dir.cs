@@ -17,9 +17,9 @@ partial class os_package {
 
 [GoType("num:nint")] partial struct readdirMode;
 
-internal static readonly readdirMode readdirName = /* iota */ 0;
-internal static readonly readdirMode readdirDirEntry = 1;
-internal static readonly readdirMode readdirFileInfo = 2;
+internal static readdirMode readdirName => /* iota */ 0;
+internal static readdirMode readdirDirEntry => 1;
+internal static readdirMode readdirFileInfo => 2;
 
 // Readdir reads the contents of the directory associated with file and
 // returns a slice of up to n [FileInfo] values, as would be returned

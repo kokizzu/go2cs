@@ -8,15 +8,15 @@ using @unsafe = unsafe_package;
 
 partial class windows_package {
 
-public static readonly UntypedInt SecurityAnonymous = 0;
-public static readonly UntypedInt SecurityIdentification = 1;
-public static readonly UntypedInt SecurityImpersonation = 2;
-public static readonly UntypedInt SecurityDelegation = 3;
+public static UntypedInt SecurityAnonymous => 0;
+public static UntypedInt SecurityIdentification => 1;
+public static UntypedInt SecurityImpersonation => 2;
+public static UntypedInt SecurityDelegation => 3;
 
 //sys	ImpersonateSelf(impersonationlevel uint32) (err error) = advapi32.ImpersonateSelf
 //sys	RevertToSelf() (err error) = advapi32.RevertToSelf
-public static readonly UntypedInt TOKEN_ADJUST_PRIVILEGES = 0x0020;
-public static readonly UntypedInt SE_PRIVILEGE_ENABLED = 0x00000002;
+public static UntypedInt TOKEN_ADJUST_PRIVILEGES => 0x0020;
+public static UntypedInt SE_PRIVILEGE_ENABLED => 0x00000002;
 
 [GoType] partial struct LUID {
     public uint32 LowPart;
@@ -65,16 +65,16 @@ public static error AdjustTokenPrivileges(syscall.Token token, bool disableAllPr
     return (uint32)@unsafe.Sizeof(new TOKEN_MANDATORY_LABEL(nil)) + syscall.GetLengthSid(tml.Label.Sid);
 }
 
-public static readonly UntypedInt SE_GROUP_INTEGRITY = 0x00000020;
+public static UntypedInt SE_GROUP_INTEGRITY => 0x00000020;
 
 [GoType("num:uint32")] partial struct TokenType;
 
-public static readonly TokenType TokenPrimary = 1;
-public static readonly TokenType TokenImpersonation = 2;
+public static TokenType TokenPrimary => 1;
+public static TokenType TokenImpersonation => 2;
 
 //sys	GetProfilesDirectory(dir *uint16, dirLen *uint32) (err error) = userenv.GetProfilesDirectoryW
-public static readonly UntypedInt LG_INCLUDE_INDIRECT = 0x1;
-public static readonly UntypedInt MAX_PREFERRED_LENGTH = 0xFFFFFFFF;
+public static UntypedInt LG_INCLUDE_INDIRECT => 0x1;
+public static UntypedInt MAX_PREFERRED_LENGTH => 0xFFFFFFFF;
 
 [GoType] partial struct LocalGroupUserInfo0 {
     public ж<uint16> Name;

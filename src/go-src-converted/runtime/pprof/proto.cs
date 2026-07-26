@@ -58,52 +58,52 @@ internal static void lostProfileEvent() {
 
 [GoType("num:uint8")] partial struct symbolizeFlag;
 
-internal static readonly symbolizeFlag lookupTried = /* 1 << iota */ 1;
-internal static readonly symbolizeFlag lookupFailed = /* 1 << iota */ 2;
+internal static symbolizeFlag lookupTried => /* 1 << iota */ 1;
+internal static symbolizeFlag lookupFailed => /* 1 << iota */ 2;
 
-internal static readonly UntypedInt tagProfile_SampleType = 1; // repeated ValueType
-internal static readonly UntypedInt tagProfile_Sample = 2; // repeated Sample
-internal static readonly UntypedInt tagProfile_Mapping = 3; // repeated Mapping
-internal static readonly UntypedInt tagProfile_Location = 4; // repeated Location
-internal static readonly UntypedInt tagProfile_Function = 5; // repeated Function
-internal static readonly UntypedInt tagProfile_StringTable = 6; // repeated string
-internal static readonly UntypedInt tagProfile_DropFrames = 7; // int64 (string table index)
-internal static readonly UntypedInt tagProfile_KeepFrames = 8; // int64 (string table index)
-internal static readonly UntypedInt tagProfile_TimeNanos = 9; // int64
-internal static readonly UntypedInt tagProfile_DurationNanos = 10; // int64
-internal static readonly UntypedInt tagProfile_PeriodType = 11; // ValueType (really optional string???)
-internal static readonly UntypedInt tagProfile_Period = 12; // int64
-internal static readonly UntypedInt tagProfile_Comment = 13; // repeated int64
-internal static readonly UntypedInt tagProfile_DefaultSampleType = 14; // int64
-internal static readonly UntypedInt tagValueType_Type = 1; // int64 (string table index)
-internal static readonly UntypedInt tagValueType_Unit = 2; // int64 (string table index)
-internal static readonly UntypedInt tagSample_Location = 1; // repeated uint64
-internal static readonly UntypedInt tagSample_Value = 2; // repeated int64
-internal static readonly UntypedInt tagSample_Label = 3; // repeated Label
-internal static readonly UntypedInt tagLabel_Key = 1; // int64 (string table index)
-internal static readonly UntypedInt tagLabel_Str = 2; // int64 (string table index)
-internal static readonly UntypedInt tagLabel_Num = 3; // int64
-internal static readonly UntypedInt tagMapping_ID = 1; // uint64
-internal static readonly UntypedInt tagMapping_Start = 2; // uint64
-internal static readonly UntypedInt tagMapping_Limit = 3; // uint64
-internal static readonly UntypedInt tagMapping_Offset = 4; // uint64
-internal static readonly UntypedInt tagMapping_Filename = 5; // int64 (string table index)
-internal static readonly UntypedInt tagMapping_BuildID = 6; // int64 (string table index)
-internal static readonly UntypedInt tagMapping_HasFunctions = 7; // bool
-internal static readonly UntypedInt tagMapping_HasFilenames = 8; // bool
-internal static readonly UntypedInt tagMapping_HasLineNumbers = 9; // bool
-internal static readonly UntypedInt tagMapping_HasInlineFrames = 10; // bool
-internal static readonly UntypedInt tagLocation_ID = 1; // uint64
-internal static readonly UntypedInt tagLocation_MappingID = 2; // uint64
-internal static readonly UntypedInt tagLocation_Address = 3; // uint64
-internal static readonly UntypedInt tagLocation_Line = 4; // repeated Line
-internal static readonly UntypedInt tagLine_FunctionID = 1; // uint64
-internal static readonly UntypedInt tagLine_Line = 2; // int64
-internal static readonly UntypedInt tagFunction_ID = 1; // uint64
-internal static readonly UntypedInt tagFunction_Name = 2; // int64 (string table index)
-internal static readonly UntypedInt tagFunction_SystemName = 3; // int64 (string table index)
-internal static readonly UntypedInt tagFunction_Filename = 4; // int64 (string table index)
-internal static readonly UntypedInt tagFunction_StartLine = 5; // int64
+internal static UntypedInt tagProfile_SampleType => 1; // repeated ValueType
+internal static UntypedInt tagProfile_Sample => 2; // repeated Sample
+internal static UntypedInt tagProfile_Mapping => 3; // repeated Mapping
+internal static UntypedInt tagProfile_Location => 4; // repeated Location
+internal static UntypedInt tagProfile_Function => 5; // repeated Function
+internal static UntypedInt tagProfile_StringTable => 6; // repeated string
+internal static UntypedInt tagProfile_DropFrames => 7; // int64 (string table index)
+internal static UntypedInt tagProfile_KeepFrames => 8; // int64 (string table index)
+internal static UntypedInt tagProfile_TimeNanos => 9; // int64
+internal static UntypedInt tagProfile_DurationNanos => 10; // int64
+internal static UntypedInt tagProfile_PeriodType => 11; // ValueType (really optional string???)
+internal static UntypedInt tagProfile_Period => 12; // int64
+internal static UntypedInt tagProfile_Comment => 13; // repeated int64
+internal static UntypedInt tagProfile_DefaultSampleType => 14; // int64
+internal static UntypedInt tagValueType_Type => 1; // int64 (string table index)
+internal static UntypedInt tagValueType_Unit => 2; // int64 (string table index)
+internal static UntypedInt tagSample_Location => 1; // repeated uint64
+internal static UntypedInt tagSample_Value => 2; // repeated int64
+internal static UntypedInt tagSample_Label => 3; // repeated Label
+internal static UntypedInt tagLabel_Key => 1; // int64 (string table index)
+internal static UntypedInt tagLabel_Str => 2; // int64 (string table index)
+internal static UntypedInt tagLabel_Num => 3; // int64
+internal static UntypedInt tagMapping_ID => 1; // uint64
+internal static UntypedInt tagMapping_Start => 2; // uint64
+internal static UntypedInt tagMapping_Limit => 3; // uint64
+internal static UntypedInt tagMapping_Offset => 4; // uint64
+internal static UntypedInt tagMapping_Filename => 5; // int64 (string table index)
+internal static UntypedInt tagMapping_BuildID => 6; // int64 (string table index)
+internal static UntypedInt tagMapping_HasFunctions => 7; // bool
+internal static UntypedInt tagMapping_HasFilenames => 8; // bool
+internal static UntypedInt tagMapping_HasLineNumbers => 9; // bool
+internal static UntypedInt tagMapping_HasInlineFrames => 10; // bool
+internal static UntypedInt tagLocation_ID => 1; // uint64
+internal static UntypedInt tagLocation_MappingID => 2; // uint64
+internal static UntypedInt tagLocation_Address => 3; // uint64
+internal static UntypedInt tagLocation_Line => 4; // repeated Line
+internal static UntypedInt tagLine_FunctionID => 1; // uint64
+internal static UntypedInt tagLine_Line => 2; // int64
+internal static UntypedInt tagFunction_ID => 1; // uint64
+internal static UntypedInt tagFunction_Name => 2; // int64 (string table index)
+internal static UntypedInt tagFunction_SystemName => 3; // int64 (string table index)
+internal static UntypedInt tagFunction_Filename => 4; // int64 (string table index)
+internal static UntypedInt tagFunction_StartLine => 5; // int64
 
 // stringIndex adds s to the string table if not already present
 // and returns the index of s in the string table.
@@ -561,7 +561,7 @@ internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuil
     }
     d.pcs = append(d.pcs, pc);
     d.frames = append(d.frames, frames.ꓸꓸꓸ);
-    d.symbolizeResult |= symbolizeResult;
+    d.symbolizeResult |= (symbolizeFlag)(symbolizeResult);
     if (len(d.pcs) == 1) {
         d.firstPCFrames = len(d.frames);
         d.firstPCSymbolizeResult = symbolizeResult;
@@ -625,7 +625,7 @@ internal static uint64 emitLocation(this ж<profileBuilder> Ꮡb) => func<uint64
         if (b.mem[i].start <= addr && addr < b.mem[i].end || b.mem[i].fake) {
             b.pb.uint64Opt(tagLocation_MappingID, (uint64)(i + 1));
             var m = b.mem[i];
-            m.funcs |= b.deck.symbolizeResult;
+            m.funcs |= (symbolizeFlag)(b.deck.symbolizeResult);
             b.mem[i] = m;
             break;
         }

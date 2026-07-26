@@ -24,11 +24,11 @@ partial class trace_package {
 
 [GoType("num:nint")] partial struct UtilFlags;
 
-public static readonly UtilFlags UtilSTW = /* 1 << iota */ 1;
-public static readonly UtilFlags UtilBackground = 2;
-public static readonly UtilFlags UtilAssist = 4;
-public static readonly UtilFlags UtilSweep = 8;
-public static readonly UtilFlags UtilPerProc = 16;
+public static UtilFlags UtilSTW => /* 1 << iota */ 1;
+public static UtilFlags UtilBackground => 2;
+public static UtilFlags UtilAssist => 4;
+public static UtilFlags UtilSweep => 8;
+public static UtilFlags UtilPerProc => 16;
 
 // Set up a bunch of analysis state.
 [GoLocalName("perP")] [GoType("dyn")] partial struct MutatorUtilizationV2_perP {
@@ -575,8 +575,7 @@ keep:;
             // Update distribution.
             acc.mud.add(acc.lastMU, mu, (float64)(timeΔ1 - acc.lastTime));
         }
-        acc.lastTime = timeΔ1;
-        acc.lastMU = mu;
+        (acc.lastTime, acc.lastMU) = (timeΔ1, mu);
         {
             var (_, mudBound, ok) = acc.mud.approxInvCumulativeSum(); if (ok){
                 acc.bound = math.Max(acc.bound, mudBound);

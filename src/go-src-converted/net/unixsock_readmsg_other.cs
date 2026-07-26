@@ -6,7 +6,7 @@ namespace go;
 
 partial class net_package {
 
-internal static readonly UntypedInt readMsgFlags = 0;
+internal static UntypedInt readMsgFlags => 0;
 
 internal static void setReadMsgCloseOnExec(slice<byte> oob) {
 }

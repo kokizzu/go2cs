@@ -10,13 +10,13 @@ partial class runtime_package {
 
 internal const nuint mantbits64 = 52;
 internal const nuint expbits64 = 11;
-internal static readonly UntypedInt bias64 = /* -1<<(expbits64-1) + 1 */ -1023;
+internal static UntypedInt bias64 => /* -1<<(expbits64-1) + 1 */ -1023;
 internal const uint64 nan64 = /* (1<<expbits64-1)<<mantbits64 + 1<<(mantbits64-1) */ 9221120237041090560;                                            // quiet NaN, 0 payload
 internal const uint64 inf64 = /* (1<<expbits64 - 1) << mantbits64 */ 9218868437227405312;
 internal const uint64 neg64 = /* 1 << (expbits64 + mantbits64) */ 9223372036854775808;
 internal const nuint mantbits32 = 23;
 internal const nuint expbits32 = 8;
-internal static readonly UntypedInt bias32 = /* -1<<(expbits32-1) + 1 */ -127;
+internal static UntypedInt bias32 => /* -1<<(expbits32-1) + 1 */ -127;
 internal const uint32 nan32 = /* (1<<expbits32-1)<<mantbits32 + 1<<(mantbits32-1) */ 2143289344;                                            // quiet NaN, 0 payload
 internal const uint32 inf32 = /* (1<<expbits32 - 1) << mantbits32 */ 2139095040;
 internal const uint32 neg32 = /* 1 << (expbits32 + mantbits32) */ 2147483648;

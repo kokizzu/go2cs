@@ -434,7 +434,7 @@ internal static handleState newHandleState(this ж<commonHandler> Ꮡh, ж<buffe
 }
 
 // Separator for group names and keys.
-internal static readonly UntypedInt keyComponentSep = /* '.' */ 46;
+internal static UntypedInt keyComponentSep => /* '.' */ 46;
 
 // openGroup starts a new group of attributes
 // with the given name.

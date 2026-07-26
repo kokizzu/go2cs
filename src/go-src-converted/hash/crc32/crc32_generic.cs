@@ -55,7 +55,7 @@ internal static uint32 simpleUpdate(uint32 crc, ж<Table> Ꮡtab, slice<byte> p)
 }
 
 // Use slicing-by-8 when payload >= this value.
-internal static readonly UntypedInt slicing8Cutoff = 16;
+internal static UntypedInt slicing8Cutoff => 16;
 
 [GoType("[8]Table")] partial struct slicing8Table;
 

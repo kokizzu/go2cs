@@ -53,9 +53,9 @@ public static void Sort(Interface data) {
 
 [GoType("num:nint")] partial struct sortedHint;
 
-internal static readonly sortedHint unknownHint = /* iota */ 0;
-internal static readonly sortedHint increasingHint = 1;
-internal static readonly sortedHint decreasingHint = 2;
+internal static sortedHint unknownHint => /* iota */ 0;
+internal static sortedHint increasingHint => 1;
+internal static sortedHint decreasingHint => 2;
 
 [GoType("num:uint64")] partial struct xorshift;
 

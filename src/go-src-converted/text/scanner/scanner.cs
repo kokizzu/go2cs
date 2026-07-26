@@ -67,42 +67,42 @@ public static @string String(this Position pos) {
 //
 // Use GoTokens to configure the Scanner such that it accepts all Go
 // literal tokens including Go identifiers. Comments will be skipped.
-public static readonly UntypedInt ScanIdents = /* 1 << -Ident */ 4;
+public static UntypedInt ScanIdents => /* 1 << -Ident */ 4;
 
-public static readonly UntypedInt ScanInts = /* 1 << -Int */ 8;
+public static UntypedInt ScanInts => /* 1 << -Int */ 8;
 
-public static readonly UntypedInt ScanFloats = /* 1 << -Float */ 16; // includes Ints and hexadecimal floats
+public static UntypedInt ScanFloats => /* 1 << -Float */ 16; // includes Ints and hexadecimal floats
 
-public static readonly UntypedInt ScanChars = /* 1 << -Char */ 32;
+public static UntypedInt ScanChars => /* 1 << -Char */ 32;
 
-public static readonly UntypedInt ScanStrings = /* 1 << -String */ 64;
+public static UntypedInt ScanStrings => /* 1 << -String */ 64;
 
-public static readonly UntypedInt ScanRawStrings = /* 1 << -RawString */ 128;
+public static UntypedInt ScanRawStrings => /* 1 << -RawString */ 128;
 
-public static readonly UntypedInt ScanComments = /* 1 << -Comment */ 256;
+public static UntypedInt ScanComments => /* 1 << -Comment */ 256;
 
-public static readonly UntypedInt SkipComments = /* 1 << -skipComment */ 512; // if set with ScanComments, comments become white space
+public static UntypedInt SkipComments => /* 1 << -skipComment */ 512; // if set with ScanComments, comments become white space
 
-public static readonly UntypedInt GoTokens = /* ScanIdents | ScanFloats | ScanChars | ScanStrings | ScanRawStrings | ScanComments | SkipComments */ 1012;
+public static UntypedInt GoTokens => /* ScanIdents | ScanFloats | ScanChars | ScanStrings | ScanRawStrings | ScanComments | SkipComments */ 1012;
 
 // The result of Scan is one of these tokens or a Unicode character.
-public static readonly UntypedInt EOF = /* -(iota + 1) */ -1;
+public static UntypedInt EOF => /* -(iota + 1) */ -1;
 
-public static readonly UntypedInt Ident = -2;
+public static UntypedInt Ident => -2;
 
-public static readonly UntypedInt Int = -3;
+public static UntypedInt Int => -3;
 
-public static readonly UntypedInt Float = -4;
+public static UntypedInt Float => -4;
 
-public static readonly UntypedInt Char = -5;
+public static UntypedInt Char => -5;
 
-public static readonly UntypedInt ΔString = -6;
+public static UntypedInt ΔString => -6;
 
-public static readonly UntypedInt RawString = -7;
+public static UntypedInt RawString => -7;
 
-public static readonly UntypedInt Comment = -8;
+public static UntypedInt Comment => -8;
 
-internal static readonly UntypedInt skipComment = -9;
+internal static UntypedInt skipComment => -9;
 
 internal static map<rune, @string> tokenString = new map<rune, @string>{
     [EOF] = "EOF"u8,
@@ -127,9 +127,9 @@ public static @string TokenString(rune tok) {
 
 // GoWhitespace is the default value for the [Scanner]'s Whitespace field.
 // Its value selects Go's white space characters.
-public static readonly UntypedInt GoWhitespace = /* 1<<'\t' | 1<<'\n' | 1<<'\r' | 1<<' ' */ 4294977024;
+public static UntypedInt GoWhitespace => /* 1<<'\t' | 1<<'\n' | 1<<'\r' | 1<<' ' */ 4294977024;
 
-internal static readonly UntypedInt bufLen = 1024; // at least utf8.UTFMax
+internal static UntypedInt bufLen => 1024; // at least utf8.UTFMax
 
 // A Scanner implements reading of Unicode characters and tokens from an [io.Reader].
 [GoType] [GoValueClone("srcBuf")] partial struct Scanner {

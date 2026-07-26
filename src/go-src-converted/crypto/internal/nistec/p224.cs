@@ -15,7 +15,7 @@ partial class nistec_package {
 
 // p224ElementLength is the length of an element of the base or scalar field,
 // which have the same bytes length for all NIST P curves.
-internal static readonly UntypedInt p224ElementLength = 28;
+internal static UntypedInt p224ElementLength => 28;
 
 // P224Point is a P224 point. The zero value is NOT valid.
 [GoType] partial struct P224Point {
@@ -492,7 +492,7 @@ internal static ref sync.Once p224GeneratorTableOnce => ref Ꮡp224GeneratorTabl
 // times.
 [GoRecv] internal static ж<array<p224Table>> generatorTable(this ref P224Point p) {
     Ꮡp224GeneratorTableOnce.Do(() => {
-        p224GeneratorTable = @new<array<p224Table>>();
+        p224GeneratorTable = Ꮡ(new array<p224Table>(56));
         var @base = NewP224Point().SetGenerator();
         for (nint i = 0; i < p224ElementLength * 2; i++) {
             p224GeneratorTable.Value[i][0] = NewP224Point().Set(@base);

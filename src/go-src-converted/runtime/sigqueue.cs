@@ -60,9 +60,9 @@ partial class runtime_package {
 internal static ж<sigᴛ1> Ꮡsig = new(new sigᴛ1());
 internal static ref sigᴛ1 sig => ref Ꮡsig.Value;
 
-internal static readonly UntypedInt sigIdle = iota;
-internal static readonly UntypedInt sigReceiving = 1;
-internal static readonly UntypedInt sigSending = 2;
+internal static UntypedInt sigIdle => iota;
+internal static UntypedInt sigReceiving => 1;
+internal static UntypedInt sigSending => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string sigsendInconsistentStateˢ = "sigsend: inconsistent state"u8;

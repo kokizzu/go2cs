@@ -12,8 +12,8 @@ using math;
 
 partial class bigmod_package {
 
-internal static readonly UntypedInt _W = /* bits.UintSize */ 64;
-internal static readonly UntypedInt _S = /* _W / 8 */ 8;
+internal static UntypedInt _W => /* bits.UintSize */ 64;
+internal static UntypedInt _S => /* _W / 8 */ 8;
 
 [GoType("num:nuint")] public partial struct choice;
 
@@ -21,9 +21,9 @@ internal static choice not(choice c) {
     return (choice)(1 ^ c);
 }
 
-internal static readonly choice yes = /* choice(1) */ 1;
+internal static choice yes => /* choice(1) */ 1;
 
-internal static readonly choice no = /* choice(0) */ 0;
+internal static choice no => /* choice(0) */ 0;
 
 // ctMask is all 1s if on is yes, and all 0s otherwise.
 internal static nuint ctMask(choice on) {
@@ -52,9 +52,9 @@ internal static choice ctEq(nuint x, nuint y) {
 // preallocTarget is the size in bits of the numbers used to implement the most
 // common and most performant RSA key size. It's also enough to cover some of
 // the operations of key sizes up to 4096.
-internal static readonly UntypedInt preallocTarget = 2048;
+internal static UntypedInt preallocTarget => 2048;
 
-internal static readonly UntypedInt preallocLimbs = /* (preallocTarget + _W - 1) / _W */ 32;
+internal static UntypedInt preallocLimbs => /* (preallocTarget + _W - 1) / _W */ 32;
 
 // NewNat returns a new nat with a size of zero, just like new(Nat), but with
 // the preallocated capacity to hold a number of up to preallocTarget bits.

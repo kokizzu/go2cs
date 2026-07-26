@@ -30,7 +30,7 @@ internal static void errorf(@string format, params ꓸꓸꓸany argsʗp) {
 // deltaNewFile is a magic line delta offset indicating a new file.
 // We use -64 because it is rare; see issue 20080 and CL 41619.
 // -64 is the smallest int that fits in a single byte as a varint.
-internal static readonly UntypedInt deltaNewFile = -64;
+internal static UntypedInt deltaNewFile => -64;
 
 // Synthesize a token.Pos
 [GoType] partial struct fakeFileSet {
@@ -43,7 +43,7 @@ internal static readonly UntypedInt deltaNewFile = -64;
     internal nint lastline;
 }
 
-internal static readonly UntypedInt maxlines = /* 64 * 1024 */ 65536;
+internal static UntypedInt maxlines => /* 64 * 1024 */ 65536;
 
 [GoRecv] internal static tokenꓸPos pos(this ref fakeFileSet s, @string @file, nint line, nint column) {
     // TODO(mdempsky): Make use of column.

@@ -23,7 +23,7 @@ partial class aes_package {
 // Addition of these binary polynomials corresponds to binary xor.
 // Reducing mod poly corresponds to binary xor with poly every
 // time a 0x100 bit appears.
-internal static readonly UntypedInt poly = /* 1<<8 | 1<<4 | 1<<3 | 1<<1 | 1<<0 */ 283; // x⁸ + x⁴ + x³ + x + 1
+internal static UntypedInt poly => /* 1<<8 | 1<<4 | 1<<3 | 1<<1 | 1<<0 */ 283; // x⁸ + x⁴ + x³ + x + 1
 
 // Powers of x mod poly in GF(2).
 internal static array<byte> powx = new byte[]{

@@ -39,7 +39,7 @@ partial class trace_package {
     internal array<float64> hist = new(mudDegree);
 }
 
-internal static readonly UntypedInt mudDegree = 1024;
+internal static UntypedInt mudDegree => 1024;
 
 [GoType] partial struct edge {
     // At x, the function increases by y.

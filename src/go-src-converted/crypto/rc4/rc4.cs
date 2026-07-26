@@ -54,8 +54,7 @@ public static (ж<Cipher>, error) NewCipher(slice<byte> key) {
     foreach (var (i, _) in c.s) {
         c.s[i] = 0;
     }
-    c.i = 0;
-    c.j = 0;
+    (c.i, c.j) = (0, 0);
 }
 
 // XORKeyStream sets dst to the result of XORing src with the key stream.
@@ -79,8 +78,7 @@ public static (ж<Cipher>, error) NewCipher(slice<byte> key) {
         (c.s[i], c.s[j]) = (y, x);
         dst[k] = (byte)(v ^ (uint8)c.s[(uint8)(x + y)]);
     }
-    c.i = i;
-    c.j = j;
+    (c.i, c.j) = (i, j);
 }
 
 } // end rc4_package

@@ -228,12 +228,10 @@ public static bool In(this Rectangle r, Rectangle s) {
 // and maximum coordinates swapped if necessary so that it is well-formed.
 public static Rectangle Canon(this Rectangle r) {
     if (r.Max.X < r.Min.X) {
-        r.Min.X = r.Max.X;
-        r.Max.X = r.Min.X;
+        (r.Min.X, r.Max.X) = (r.Max.X, r.Min.X);
     }
     if (r.Max.Y < r.Min.Y) {
-        r.Min.Y = r.Max.Y;
-        r.Max.Y = r.Min.Y;
+        (r.Min.Y, r.Max.Y) = (r.Max.Y, r.Min.Y);
     }
     return r;
 }

@@ -19,20 +19,20 @@ partial class pkgbits_package {
 }
 
 // Reserved indices within the meta relocation section.
-public static readonly Index PublicRootIdx = 0;
+public static Index PublicRootIdx => 0;
 
-public static readonly Index PrivateRootIdx = 1;
+public static Index PrivateRootIdx => 1;
 
-public static readonly RelocKind RelocString = /* iota */ 0;
-public static readonly RelocKind RelocMeta = 1;
-public static readonly RelocKind RelocPosBase = 2;
-public static readonly RelocKind RelocPkg = 3;
-public static readonly RelocKind RelocName = 4;
-public static readonly RelocKind RelocType = 5;
-public static readonly RelocKind RelocObj = 6;
-public static readonly RelocKind RelocObjExt = 7;
-public static readonly RelocKind RelocObjDict = 8;
-public static readonly RelocKind RelocBody = 9;
-internal static readonly UntypedInt numRelocs = /* iota */ 10;
+public static RelocKind RelocString => /* iota */ 0;
+public static RelocKind RelocMeta => 1;
+public static RelocKind RelocPosBase => 2;
+public static RelocKind RelocPkg => 3;
+public static RelocKind RelocName => 4;
+public static RelocKind RelocType => 5;
+public static RelocKind RelocObj => 6;
+public static RelocKind RelocObjExt => 7;
+public static RelocKind RelocObjDict => 8;
+public static RelocKind RelocBody => 9;
+internal static UntypedInt numRelocs => /* iota */ 10;
 
 } // end pkgbits_package

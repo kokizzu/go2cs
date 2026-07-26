@@ -157,7 +157,7 @@ internal static (ж<bigꓸInt>, error) parseBigInt(slice<byte> bytes) {
         // This is a negative number.
         var notBytes = new slice<byte>(len(bytes));
         foreach (var (i, _) in notBytes) {
-            notBytes[i] = (byte)(~bytes[i]);
+            notBytes[i] = (byte)(((byte)(~bytes[i])));
         }
         ret.SetBytes(notBytes);
         ret.Add(ret, bigOne);
@@ -441,10 +441,10 @@ internal static (@string ret, error err) parsePrintableString(slice<byte> bytes)
 
 [GoType("bool")] partial struct ampersandFlag;
 
-internal static readonly asteriskFlag allowAsterisk = true;
-internal static readonly asteriskFlag rejectAsterisk = false;
-internal static readonly ampersandFlag allowAmpersand = true;
-internal static readonly ampersandFlag rejectAmpersand = false;
+internal static asteriskFlag allowAsterisk => true;
+internal static asteriskFlag rejectAsterisk => false;
+internal static ampersandFlag allowAmpersand => true;
+internal static ampersandFlag rejectAmpersand => false;
 
 // isPrintable reports whether the given b is in the ASN.1 PrintableString set.
 // If asterisk is allowAsterisk then '*' is also allowed, reflecting existing
@@ -611,7 +611,7 @@ internal static (tagAndLength ret, nint offset, error err) parseTagAndLength(sli
                 return (ret, offset, err);
             }
             ret.length <<= (int)(8);
-            ret.length |= (nint)b;
+            ret.length |= (nint)((nint)b);
             if (ret.length == 0) {
                 // DER requires that lengths be minimal.
                 err = new StructuralError("superfluous leading zeros in length"u8);

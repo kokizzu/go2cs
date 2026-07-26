@@ -25,15 +25,15 @@ partial class template_package {
 
 [GoType("num:uint8")] partial struct contentType;
 
-internal static readonly contentType contentTypePlain = /* iota */ 0;
-internal static readonly contentType contentTypeCSS = 1;
-internal static readonly contentType contentTypeHTML = 2;
-internal static readonly contentType contentTypeHTMLAttr = 3;
-internal static readonly contentType contentTypeJS = 4;
-internal static readonly contentType contentTypeJSStr = 5;
-internal static readonly contentType contentTypeURL = 6;
-internal static readonly contentType contentTypeSrcset = 7;
-internal static readonly contentType contentTypeUnsafe = 8;
+internal static contentType contentTypePlain => /* iota */ 0;
+internal static contentType contentTypeCSS => 1;
+internal static contentType contentTypeHTML => 2;
+internal static contentType contentTypeHTMLAttr => 3;
+internal static contentType contentTypeJS => 4;
+internal static contentType contentTypeJSStr => 5;
+internal static contentType contentTypeURL => 6;
+internal static contentType contentTypeSrcset => 7;
+internal static contentType contentTypeUnsafe => 8;
 
 // indirect returns the value, after dereferencing as many times
 // as necessary to reach the base type (or nil).

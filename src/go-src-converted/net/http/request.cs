@@ -36,7 +36,7 @@ using vendor.golang.org.x.net.http;
 
 partial class http_package {
 
-internal static readonly UntypedInt defaultMaxMemory = /* 32 << 20 */ 33554432; // 32 MB
+internal static UntypedInt defaultMaxMemory => /* 32 << 20 */ 33554432; // 32 MB
 
 // ErrMissingFile is returned by FormFile when the provided file field name
 // is either not present in the request or not a file field.

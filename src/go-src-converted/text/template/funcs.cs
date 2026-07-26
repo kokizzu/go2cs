@@ -482,13 +482,13 @@ internal static error errNoComparison = errors.New("missing argument for compari
 
 [GoType("num:nint")] partial struct kind;
 
-internal static readonly kind invalidKind = /* iota */ 0;
-internal static readonly kind boolKind = 1;
-internal static readonly kind complexKind = 2;
-internal static readonly kind intKind = 3;
-internal static readonly kind floatKind = 4;
-internal static readonly kind stringKind = 5;
-internal static readonly kind uintKind = 6;
+internal static kind invalidKind => /* iota */ 0;
+internal static kind boolKind => 1;
+internal static kind complexKind => 2;
+internal static kind intKind => 3;
+internal static kind floatKind => 4;
+internal static kind stringKind => 5;
+internal static kind uintKind => 6;
 
 internal static (kind, error) basicKind(reflectꓸValue v) {
     var exprᴛ1 = v.Kind();

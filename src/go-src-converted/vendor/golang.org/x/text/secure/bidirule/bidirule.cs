@@ -49,12 +49,12 @@ public static error ErrInvalid = errors.New("bidirule: failed Bidi Rule"u8);
 
 [GoType("num:uint8")] partial struct ruleState;
 
-internal static readonly ruleState ruleInitial = /* iota */ 0;
-internal static readonly ruleState ruleLTR = 1;
-internal static readonly ruleState ruleLTRFinal = 2;
-internal static readonly ruleState ruleRTL = 3;
-internal static readonly ruleState ruleRTLFinal = 4;
-internal static readonly ruleState ruleInvalid = 5;
+internal static ruleState ruleInitial => /* iota */ 0;
+internal static ruleState ruleLTR => 1;
+internal static ruleState ruleLTRFinal => 2;
+internal static ruleState ruleRTL => 3;
+internal static ruleState ruleRTLFinal => 4;
+internal static ruleState ruleInvalid => 5;
 
 [GoType] partial struct ruleTransition {
     internal ruleState next;
@@ -288,7 +288,7 @@ internal static array<bidi.Properties> asciiTable = new(128);
         // TODO: using CompactClass would result in noticeable speedup.
         // See unicode/bidi/prop.go:Properties.CompactClass.
         var c = (uint16)(((uint16)1).Lsh(e.Class()));
-        t.seen |= c;
+        t.seen |= (uint16)(c);
         if ((uint16)(t.seen & exclusiveRTL) == exclusiveRTL) {
             t.state = ruleInvalid;
             return (n, false);
@@ -341,7 +341,7 @@ internal static array<bidi.Properties> asciiTable = new(128);
         // TODO: using CompactClass results in noticeable speedup.
         // See unicode/bidi/prop.go:Properties.CompactClass.
         var c = (uint16)(((uint16)1).Lsh(e.Class()));
-        t.seen |= c;
+        t.seen |= (uint16)(c);
         if ((uint16)(t.seen & exclusiveRTL) == exclusiveRTL) {
             t.state = ruleInvalid;
             return (n, false);

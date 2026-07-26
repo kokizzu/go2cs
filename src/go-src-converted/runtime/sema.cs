@@ -47,7 +47,7 @@ internal static ж<semTable> Ꮡsemtable = new(default(semTable));
 internal static ref semTable semtable => ref Ꮡsemtable.Value;
 
 // Prime to not correlate with any user patterns.
-internal static readonly UntypedInt semTabSize = 251;
+internal static UntypedInt semTabSize => 251;
 
 [GoType("dyn")] [GoValueClone("pad")] partial struct semTableᴛ1 {
     internal semaRoot root;
@@ -125,8 +125,8 @@ internal static void readyWithTime(ж<sudog> Ꮡs, nint traceskip) {
 
 [GoType("num:nint")] partial struct semaProfileFlags;
 
-internal static readonly semaProfileFlags semaBlockProfile = /* 1 << iota */ 1;
-internal static readonly semaProfileFlags semaMutexProfile = 2;
+internal static semaProfileFlags semaBlockProfile => /* 1 << iota */ 1;
+internal static semaProfileFlags semaMutexProfile => 2;
 
 // Called from runtime.
 internal static void semacquire(ж<uint32> Ꮡaddr) {

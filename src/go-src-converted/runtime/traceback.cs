@@ -24,15 +24,15 @@ partial class runtime_package {
 // In this file, the return PC is always called LR, no matter how it was found.
 internal const bool usesLR = /* sys.MinFrameSize > 0 */ false;
 
-internal static readonly UntypedInt tracebackInnerFrames = 50;
-internal static readonly UntypedInt tracebackOuterFrames = 50;
+internal static UntypedInt tracebackInnerFrames => 50;
+internal static UntypedInt tracebackOuterFrames => 50;
 
 [GoType("num:uint8")] partial struct unwindFlags;
 
-internal static readonly unwindFlags unwindPrintErrors = /* 1 << iota */ 1;
-internal static readonly unwindFlags unwindSilentErrors = 2;
-internal static readonly unwindFlags unwindTrap = 4;
-internal static readonly unwindFlags unwindJumpStack = 8;
+internal static unwindFlags unwindPrintErrors => /* 1 << iota */ 1;
+internal static unwindFlags unwindSilentErrors => 2;
+internal static unwindFlags unwindTrap => 4;
+internal static unwindFlags unwindJumpStack => 8;
 
 // An unwinder iterates the physical stack frames of a Go sack.
 //
@@ -448,9 +448,9 @@ internal static void next(this ж<unwinder> Ꮡu) {
     }
     var injectedCall = f.funcID == abi.FuncID_sigpanic || f.funcID == abi.FuncID_asyncPreempt || f.funcID == abi.FuncID_debugCallV2;
     if (injectedCall){
-        u.flags |= unwindTrap;
+        u.flags |= (unwindFlags)(unwindTrap);
     } else {
-        u.flags &= unchecked((unwindFlags)~unwindTrap);
+        u.flags &= unchecked((unwindFlags)~(unwindFlags)(unwindTrap));
     }
     // Unwind to next frame.
     u.calleeFuncID = f.funcID;

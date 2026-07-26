@@ -73,7 +73,7 @@ partial class sync_package {
     internal poolChain shared; // Local P can pushHead/popHead; any P can popTail.
 }
 
-[GoType] partial struct poolLocal {
+[GoType] [GoValueClone("pad")] partial struct poolLocal {
     internal partial ref poolLocalInternal poolLocalInternal { get; }
     // Prevents false sharing on widespread platforms with
     // 128 mod (cache line size) = 0 .

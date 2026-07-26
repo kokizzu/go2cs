@@ -23,7 +23,7 @@ partial class cipher_package {
     internal nint outUsed;
 }
 
-internal static readonly UntypedInt streamBufferSize = 512;
+internal static UntypedInt streamBufferSize => 512;
 
 // ctrAble is an interface implemented by ciphers that have a specific optimized
 // implementation of CTR, like crypto/aes. NewCTR will check for this interface

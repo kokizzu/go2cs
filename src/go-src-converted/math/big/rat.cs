@@ -417,8 +417,7 @@ public static ж<ΔRat> Inv(this ж<ΔRat> Ꮡz, ж<ΔRat> Ꮡx) {
         throw panic("division by zero");
     }
     Ꮡz.Set(Ꮡx);
-    z.a.abs = z.b.abs;
-    z.b.abs = z.a.abs;
+    (z.a.abs, z.b.abs) = (z.b.abs, z.a.abs);
     return Ꮡz;
 }
 

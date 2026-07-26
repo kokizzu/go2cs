@@ -8,17 +8,17 @@ using go.unicode;
 
 partial class norm_package {
 
-internal static readonly UntypedInt maxNonStarters = 30;
-internal static readonly UntypedInt maxBufferSize = /* maxNonStarters + 2 */ 32;
-internal static readonly UntypedInt maxNFCExpansion = 3; // NFC(0x1D160)
-internal static readonly UntypedInt maxNFKCExpansion = 18; // NFKC(0xFDFA)
-internal static readonly UntypedInt maxByteBufferSize = /* utf8.UTFMax * maxBufferSize */ 128; // 128
+internal static UntypedInt maxNonStarters => 30;
+internal static UntypedInt maxBufferSize => /* maxNonStarters + 2 */ 32;
+internal static UntypedInt maxNFCExpansion => 3; // NFC(0x1D160)
+internal static UntypedInt maxNFKCExpansion => 18; // NFKC(0xFDFA)
+internal static UntypedInt maxByteBufferSize => /* utf8.UTFMax * maxBufferSize */ 128; // 128
 
 [GoType("num:nint")] partial struct ssState;
 
-internal static readonly ssState ssSuccess = /* iota */ 0;
-internal static readonly ssState ssStarter = 1;
-internal static readonly ssState ssOverflow = 2;
+internal static ssState ssSuccess => /* iota */ 0;
+internal static ssState ssStarter => 1;
+internal static ssState ssOverflow => 2;
 
 [GoType("num:uint8")] partial struct streamSafe;
 
@@ -196,9 +196,9 @@ internal static bool appendFlush(ж<reorderBuffer> Ꮡrb) {
 
 [GoType("num:nint")] partial struct insertErr;
 
-internal static readonly insertErr iSuccess = /* -iota */ 0;
-internal static readonly insertErr iShortDst = -1;
-internal static readonly insertErr iShortSrc = -2;
+internal static insertErr iSuccess => /* -iota */ 0;
+internal static insertErr iShortDst => -1;
+internal static insertErr iShortSrc => -2;
 
 // insertFlush inserts the given rune in the buffer ordered by CCC.
 // If a decomposition with multiple segments are encountered, they leading
@@ -304,47 +304,47 @@ internal static insertErr insertDecomposed(this ж<reorderBuffer> Ꮡrb, slice<b
 }
 
 // For Hangul we combine algorithmically, instead of using tables.
-internal static readonly UntypedInt hangulBase = 0xAC00; // UTF-8(hangulBase) -> EA B0 80
+internal static UntypedInt hangulBase => 0xAC00; // UTF-8(hangulBase) -> EA B0 80
 
-internal static readonly UntypedInt hangulBase0 = 0xEA;
+internal static UntypedInt hangulBase0 => 0xEA;
 
-internal static readonly UntypedInt hangulBase1 = 0xB0;
+internal static UntypedInt hangulBase1 => 0xB0;
 
-internal static readonly UntypedInt hangulBase2 = 0x80;
+internal static UntypedInt hangulBase2 => 0x80;
 
-internal static readonly UntypedInt hangulEnd = /* hangulBase + jamoLVTCount */ 55204; // UTF-8(0xD7A4) -> ED 9E A4
+internal static UntypedInt hangulEnd => /* hangulBase + jamoLVTCount */ 55204; // UTF-8(0xD7A4) -> ED 9E A4
 
-internal static readonly UntypedInt hangulEnd0 = 0xED;
+internal static UntypedInt hangulEnd0 => 0xED;
 
-internal static readonly UntypedInt hangulEnd1 = 0x9E;
+internal static UntypedInt hangulEnd1 => 0x9E;
 
-internal static readonly UntypedInt hangulEnd2 = 0xA4;
+internal static UntypedInt hangulEnd2 => 0xA4;
 
-internal static readonly UntypedInt jamoLBase = 0x1100; // UTF-8(jamoLBase) -> E1 84 00
+internal static UntypedInt jamoLBase => 0x1100; // UTF-8(jamoLBase) -> E1 84 00
 
-internal static readonly UntypedInt jamoLBase0 = 0xE1;
+internal static UntypedInt jamoLBase0 => 0xE1;
 
-internal static readonly UntypedInt jamoLBase1 = 0x84;
+internal static UntypedInt jamoLBase1 => 0x84;
 
-internal static readonly UntypedInt jamoLEnd = 0x1113;
+internal static UntypedInt jamoLEnd => 0x1113;
 
-internal static readonly UntypedInt jamoVBase = 0x1161;
+internal static UntypedInt jamoVBase => 0x1161;
 
-internal static readonly UntypedInt jamoVEnd = 0x1176;
+internal static UntypedInt jamoVEnd => 0x1176;
 
-internal static readonly UntypedInt jamoTBase = 0x11A7;
+internal static UntypedInt jamoTBase => 0x11A7;
 
-internal static readonly UntypedInt jamoTEnd = 0x11C3;
+internal static UntypedInt jamoTEnd => 0x11C3;
 
-internal static readonly UntypedInt jamoTCount = 28;
+internal static UntypedInt jamoTCount => 28;
 
-internal static readonly UntypedInt jamoVCount = 21;
+internal static UntypedInt jamoVCount => 21;
 
-internal static readonly UntypedInt jamoVTCount = /* 21 * 28 */ 588;
+internal static UntypedInt jamoVTCount => /* 21 * 28 */ 588;
 
-internal static readonly UntypedInt jamoLVTCount = /* 19 * 21 * 28 */ 11172;
+internal static UntypedInt jamoLVTCount => /* 19 * 21 * 28 */ 11172;
 
-internal static readonly UntypedInt hangulUTF8Size = 3;
+internal static UntypedInt hangulUTF8Size => 3;
 
 internal static bool isHangul(slice<byte> b) {
     if (len(b) < hangulUTF8Size) {

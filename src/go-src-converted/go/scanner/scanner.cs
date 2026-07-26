@@ -44,8 +44,8 @@ partial class scanner_package {
     public nint ErrorCount; // number of errors encountered
 }
 
-internal static readonly UntypedInt bom = 0xFEFF; // byte order mark, only permitted as very first character
-internal static readonly UntypedInt eof = -1; // end of file
+internal static UntypedInt bom => 0xFEFF; // byte order mark, only permitted as very first character
+internal static UntypedInt eof => -1; // end of file
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string illegalCharacterNulˢ = "illegal character NUL"u8;
@@ -106,8 +106,8 @@ private static readonly @string illegalByteOrderMarkˢ = "illegal byte order mar
 
 [GoType("num:nuint")] partial struct Mode;
 
-public static readonly Mode ScanComments = /* 1 << iota */ 1;          // return comments as COMMENT tokens
-internal static readonly Mode dontInsertSemis = 2;     // do not automatically insert semicolons - for testing only
+public static Mode ScanComments => /* 1 << iota */ 1;          // return comments as COMMENT tokens
+internal static Mode dontInsertSemis => 2;     // do not automatically insert semicolons - for testing only
 
 // Init prepares the scanner s to tokenize the text src by setting the
 // scanner at the beginning of src. The scanner uses the file set file

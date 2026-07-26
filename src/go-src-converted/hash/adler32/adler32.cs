@@ -20,11 +20,11 @@ using @internal;
 
 partial class adler32_package {
 
-internal static readonly UntypedInt mod = 65521;
-internal static readonly UntypedInt nmax = 5552;
+internal static UntypedInt mod => 65521;
+internal static UntypedInt nmax => 5552;
 
 // The size of an Adler-32 checksum in bytes.
-public static readonly UntypedInt ΔSize = 4;
+public static UntypedInt ΔSize => 4;
 
 [GoType("num:uint32")] partial struct digest;
 

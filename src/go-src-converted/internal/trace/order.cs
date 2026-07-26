@@ -1272,9 +1272,9 @@ internal static error validateCtx(schedCtx ctx, @event.SchedReqs reqs) {
 
 [GoType("num:uint8")] partial struct gcState;
 
-internal static readonly gcState gcUndetermined = /* iota */ 0;
-internal static readonly gcState gcNotRunning = 1;
-internal static readonly gcState gcRunning = 2;
+internal static gcState gcUndetermined => /* iota */ 0;
+internal static gcState gcNotRunning => 1;
+internal static gcState gcRunning => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string undeterminedˢ = "Undetermined"u8;

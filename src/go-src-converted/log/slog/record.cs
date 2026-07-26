@@ -11,7 +11,7 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class slog_package {
 
-internal static readonly UntypedInt nAttrsInline = 5;
+internal static UntypedInt nAttrsInline => 5;
 
 // A Record holds information about a log event.
 // Copies of a Record share state.

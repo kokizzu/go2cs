@@ -55,10 +55,10 @@ partial class png_package {
 
 [GoType("num:nint")] partial struct CompressionLevel;
 
-public static readonly CompressionLevel DefaultCompression = 0;
-public static readonly CompressionLevel NoCompression = -1;
-public static readonly CompressionLevel BestSpeed = -2;
-public static readonly CompressionLevel BestCompression = -3;
+public static CompressionLevel DefaultCompression => 0;
+public static CompressionLevel NoCompression => -1;
+public static CompressionLevel BestSpeed => -2;
+public static CompressionLevel BestCompression => -3;
 
 // Positive CompressionLevel values are reserved to mean a numeric zlib
 // compression level, although that is not implemented yet.

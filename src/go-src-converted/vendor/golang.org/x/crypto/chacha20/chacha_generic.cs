@@ -18,9 +18,9 @@ using math;
 
 partial class chacha20_package {
 
-public static readonly UntypedInt KeySize = 32;
-public static readonly UntypedInt NonceSize = 12;
-public static readonly UntypedInt NonceSizeX = 24;
+public static UntypedInt KeySize => 32;
+public static UntypedInt NonceSize => 12;
+public static UntypedInt NonceSizeX => 24;
 
 // Cipher is a stateful instance of ChaCha20 or XChaCha20 using a particular key
 // and nonce. A *Cipher implements the cipher.Stream interface.
@@ -116,7 +116,7 @@ internal const uint32 j2 = 0x79622d32;      // 2-by
 
 internal const uint32 j3 = 0x6b206574;      // te k
 
-internal static readonly UntypedInt blockSize = 64;
+internal static UntypedInt blockSize => 64;
 
 // quarterRound is the core of ChaCha20. It shuffles the bits of 4 state words.
 // It's executed 4 times for each of the 20 ChaCha20 rounds, operating on all 16

@@ -11,8 +11,8 @@ using @internal.syscall;
 
 partial class os_package {
 
-public static readonly UntypedInt PathSeparator = /* '\\' */ 92; // OS-specific path separator
-public static readonly UntypedInt PathListSeparator = /* ';' */ 59; // OS-specific path list separator
+public static UntypedInt PathSeparator => /* '\\' */ 92; // OS-specific path separator
+public static UntypedInt PathListSeparator => /* ';' */ 59; // OS-specific path list separator
 
 // IsPathSeparator reports whether c is a directory separator character.
 public static bool IsPathSeparator(uint8 c) {

@@ -16,7 +16,7 @@ using go.unicode;
 
 partial class strings_package {
 
-internal static readonly nint maxInt = /* int(^uint(0) >> 1) */ unchecked((nint)9223372036854775807);
+internal static nint maxInt => /* int(^uint(0) >> 1) */ unchecked((nint)9223372036854775807);
 
 // explode splits s into a slice of UTF-8 strings,
 // one string per Unicode character up to a maximum of n (n < 0 means no limit).

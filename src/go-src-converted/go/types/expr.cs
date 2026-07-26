@@ -1021,9 +1021,9 @@ internal static void matchTypes(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<
 
 [GoType("num:nint")] partial struct exprKind;
 
-internal static readonly exprKind Δconversion = /* iota */ 0;
-internal static readonly exprKind expression = 1;
-internal static readonly exprKind statement = 2;
+internal static exprKind Δconversion => /* iota */ 0;
+internal static exprKind expression => 1;
+internal static exprKind statement => 2;
 
 // target represent the (signature) type and description of the LHS
 // variable of an assignment, or of a function result variable.
@@ -1532,7 +1532,7 @@ internal static exprKind exprInternal(this ж<Checker> Ꮡcheck, ж<target> ᏑT
         var ix = typeparams.UnpackIndexExpr(eΔ1);
         if (Ꮡcheck.indexExpr(Ꮡx, ix)) {
             if (!enableReverseTypeInference) {
-                T = default!;
+                ᏑT = default!; T = ref ᏑT.Value;
             }
             Ꮡcheck.funcInst(ᏑT, eΔ1.Pos(), Ꮡx, ix, true);
         }

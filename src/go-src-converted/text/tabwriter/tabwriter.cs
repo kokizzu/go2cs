@@ -416,7 +416,7 @@ internal static slice<byte> vbar = new byte[]{(rune)'|'}.slice();
 // width one for formatting purposes.
 //
 // The value 0xff was chosen because it cannot appear in a valid UTF-8 sequence.
-public static readonly UntypedInt Escape = /* '\xff' */ 255;
+public static UntypedInt Escape => /* '\xff' */ 255;
 
 // Start escaped mode.
 [GoRecv] internal static void startEscape(this ref Writer b, byte ch) {

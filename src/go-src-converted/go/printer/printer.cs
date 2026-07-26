@@ -22,24 +22,24 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class printer_package {
 
-internal static readonly UntypedInt maxNewlines = 2; // max. number of newlines between source text
+internal static UntypedInt maxNewlines => 2; // max. number of newlines between source text
 internal const bool debug = false; // enable for debugging
-internal static readonly UntypedInt infinity = /* 1 << 30 */ 1073741824;
+internal static UntypedInt infinity => /* 1 << 30 */ 1073741824;
 
 [GoType("num:byte")] partial struct whiteSpace;
 
-internal static readonly whiteSpace ignore = /* whiteSpace(0) */ 0;
-internal static readonly whiteSpace blank = /* whiteSpace(' ') */ 32;
-internal static readonly whiteSpace vtab = /* whiteSpace('\v') */ 11;
-internal static readonly whiteSpace newline = /* whiteSpace('\n') */ 10;
-internal static readonly whiteSpace formfeed = /* whiteSpace('\f') */ 12;
-internal static readonly whiteSpace indent = /* whiteSpace('>') */ 62;
-internal static readonly whiteSpace unindent = /* whiteSpace('<') */ 60;
+internal static whiteSpace ignore => /* whiteSpace(0) */ 0;
+internal static whiteSpace blank => /* whiteSpace(' ') */ 32;
+internal static whiteSpace vtab => /* whiteSpace('\v') */ 11;
+internal static whiteSpace newline => /* whiteSpace('\n') */ 10;
+internal static whiteSpace formfeed => /* whiteSpace('\f') */ 12;
+internal static whiteSpace indent => /* whiteSpace('>') */ 62;
+internal static whiteSpace unindent => /* whiteSpace('<') */ 60;
 
 [GoType("num:nint")] partial struct pmode;
 
-internal static readonly pmode noExtraBlank = /* 1 << iota */ 1;         // disables extra blank after /*-style comment
-internal static readonly pmode noExtraLinebreak = 2;     // disables extra line break after /*-style comment
+internal static pmode noExtraBlank => /* 1 << iota */ 1;         // disables extra blank after /*-style comment
+internal static pmode noExtraLinebreak => 2;     // disables extra line break after /*-style comment
 
 [GoType] partial struct commentInfo {
     internal nint cindex;              // current comment index
@@ -959,7 +959,7 @@ internal static void print(this ж<printer> Ꮡp, params ꓸꓸꓸany argsʗp) {
         // other tokens followed any opening token
         switch (arg.type()) {
         case pmode x: {
-            p.mode ^= x;
+            p.mode ^= (pmode)(x);
             continue;
             break;
         }
@@ -1286,11 +1286,11 @@ unsupported:
 
 // trimmer is implemented as a state machine.
 // It can be in one of the following states:
-internal static readonly UntypedInt inSpace = iota; // inside space
+internal static UntypedInt inSpace => iota; // inside space
 
-internal static readonly UntypedInt inEscape = 1; // inside text bracketed by tabwriter.Escapes
+internal static UntypedInt inEscape => 1; // inside text bracketed by tabwriter.Escapes
 
-internal static readonly UntypedInt inText = 2; // inside text
+internal static UntypedInt inText => 2; // inside text
 
 [GoRecv] internal static void resetSpace(this ref trimmer p) {
     p.state = inSpace;
@@ -1397,17 +1397,17 @@ internal static slice<byte> aNewline = slice<byte>("\n"u8);
 
 // ----------------------------------------------------------------------------
 // Public interface
-public static readonly Mode RawFormat = /* 1 << iota */ 1;       // do not use a tabwriter; if set, UseSpaces is ignored
-public static readonly Mode TabIndent = 2;       // use tabs for indentation independent of UseSpaces
-public static readonly Mode UseSpaces = 4;       // use spaces instead of tabs for alignment
-public static readonly Mode SourcePos = 8;       // emit //line directives to preserve original source positions
+public static Mode RawFormat => /* 1 << iota */ 1;       // do not use a tabwriter; if set, UseSpaces is ignored
+public static Mode TabIndent => 2;       // use tabs for indentation independent of UseSpaces
+public static Mode UseSpaces => 4;       // use spaces instead of tabs for alignment
+public static Mode SourcePos => 8;       // emit //line directives to preserve original source positions
 
 // The mode below is not included in printer's public API because
 // editing code text is deemed out of scope. Because this mode is
 // unexported, it's also possible to modify or remove it based on
 // the evolving needs of go/format and cmd/gofmt without breaking
 // users. See discussion in CL 240683.
-internal static readonly Mode normalizeNumbers = /* 1 << 30 */ 1073741824;
+internal static Mode normalizeNumbers => /* 1 << 30 */ 1073741824;
 
 // A Config node controls the output of Fprint.
 [GoType] partial struct Config {

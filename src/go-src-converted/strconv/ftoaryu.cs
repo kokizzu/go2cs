@@ -28,8 +28,7 @@ internal static void ryuFtoaFixed32(ж<decimalSlice> Ꮡd, uint32 mant, nint exp
     }
     // Zero input.
     if (mant == 0) {
-        d.nd = 0;
-        d.dp = 0;
+        (d.nd, d.dp) = (0, 0);
         return;
     }
     // Renormalize to a 25-bit mantissa.
@@ -95,8 +94,7 @@ internal static void ryuFtoaFixed64(ж<decimalSlice> Ꮡd, uint64 mant, nint exp
     }
     // Zero input.
     if (mant == 0) {
-        d.nd = 0;
-        d.dp = 0;
+        (d.nd, d.dp) = (0, 0);
         return;
     }
     // Renormalize to a 55-bit mantissa.
@@ -233,8 +231,7 @@ internal static void ryuFtoaShortest(ж<decimalSlice> Ꮡd, uint64 mant, nint ex
     ref var d = ref Ꮡd.Value;
 
     if (mant == 0) {
-        d.nd = 0;
-        d.dp = 0;
+        (d.nd, d.dp) = (0, 0);
         return;
     }
     // If input is an exact integer with fewer bits than the mantissa,

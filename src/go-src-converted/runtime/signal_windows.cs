@@ -12,10 +12,10 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt _SEM_FAILCRITICALERRORS = 0x0001;
-internal static readonly UntypedInt _SEM_NOGPFAULTERRORBOX = 0x0002;
-internal static readonly UntypedInt _SEM_NOOPENFILEERRORBOX = 0x8000;
-internal static readonly UntypedInt _WER_FAULT_REPORTING_NO_UI = 0x0020;
+internal static UntypedInt _SEM_FAILCRITICALERRORS => 0x0001;
+internal static UntypedInt _SEM_NOGPFAULTERRORBOX => 0x0002;
+internal static UntypedInt _SEM_NOOPENFILEERRORBOX => 0x8000;
+internal static UntypedInt _WER_FAULT_REPORTING_NO_UI => 0x0020;
 
 internal static void preventErrorDialogs() {
     var errormode = stdcall0(_GetErrorMode);
@@ -127,9 +127,9 @@ internal static bool isgoexception(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr
     return true;
 }
 
-internal static readonly UntypedInt callbackVEH = iota;
-internal static readonly UntypedInt callbackFirstVCH = 1;
-internal static readonly UntypedInt callbackLastVCH = 2;
+internal static UntypedInt callbackVEH => iota;
+internal static UntypedInt callbackFirstVCH => 1;
+internal static UntypedInt callbackLastVCH => 2;
 
 // sigFetchGSafe is like getg() but without panicking
 // when TLS is not set.

@@ -30,7 +30,7 @@ internal static void loop() {
     watchSignalLoop = loop;
 }
 
-internal static readonly UntypedInt numSig = 65; // max across all systems
+internal static UntypedInt numSig => 65; // max across all systems
 
 internal static nint signum(osꓸSignal sig) {
     switch (sig.type()) {

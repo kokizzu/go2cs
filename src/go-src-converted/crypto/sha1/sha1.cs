@@ -23,17 +23,17 @@ partial class sha1_package {
 }
 
 // The size of a SHA-1 checksum in bytes.
-public static readonly UntypedInt ΔSize = 20;
+public static UntypedInt ΔSize => 20;
 
 // The blocksize of SHA-1 in bytes.
-public static readonly UntypedInt ΔBlockSize = 64;
+public static UntypedInt ΔBlockSize => 64;
 
-internal static readonly UntypedInt chunk = 64;
-internal static readonly UntypedInt init0 = 0x67452301;
-internal static readonly UntypedInt init1 = 0xEFCDAB89;
-internal static readonly UntypedInt init2 = 0x98BADCFE;
-internal static readonly UntypedInt init3 = 0x10325476;
-internal static readonly UntypedInt init4 = 0xC3D2E1F0;
+internal static UntypedInt chunk => 64;
+internal static UntypedInt init0 => 0x67452301;
+internal static UntypedInt init1 => 0xEFCDAB89;
+internal static UntypedInt init2 => 0x98BADCFE;
+internal static UntypedInt init3 => 0x10325476;
+internal static UntypedInt init4 => 0xC3D2E1F0;
 
 // digest represents the partial evaluation of a checksum.
 [GoType] [GoValueClone("h", "x")] partial struct digest {
@@ -216,7 +216,7 @@ internal static array<byte> constSum(this ж<digest> Ꮡd) {
         var mask = (byte)(((int8)(i - nx) >> (int)(7)));
         // 0x00 after the end of data
         // if we reached the end of the data, replace with 0x80 or 0x00
-        d.x[i] = (byte)(((byte)(~mask & separator)) | ((byte)(mask & d.x[i])));
+        d.x[i] = (byte)(((byte)(((byte)(~mask)) & separator)) | ((byte)(mask & d.x[i])));
         // zero the separator once used
         separator &= (byte)(mask);
         if (i >= 56) {
@@ -245,10 +245,10 @@ internal static array<byte> constSum(this ж<digest> Ꮡd) {
     // compress, and only keep the digest if we actually needed the second block
     block(Ꮡd, d.x[..]);
     foreach (var (i, s) in d.h) {
-        digest[i * 4] |= (byte)((byte)(~mask1b & (byte)((s >> (int)(24)))));
-        digest[i * 4 + 1] |= (byte)((byte)(~mask1b & (byte)((s >> (int)(16)))));
-        digest[i * 4 + 2] |= (byte)((byte)(~mask1b & (byte)((s >> (int)(8)))));
-        digest[i * 4 + 3] |= (byte)((byte)(~mask1b & (byte)s));
+        digest[i * 4] |= (byte)((byte)(((byte)(~mask1b)) & (byte)((s >> (int)(24)))));
+        digest[i * 4 + 1] |= (byte)((byte)(((byte)(~mask1b)) & (byte)((s >> (int)(16)))));
+        digest[i * 4 + 2] |= (byte)((byte)(((byte)(~mask1b)) & (byte)((s >> (int)(8)))));
+        digest[i * 4 + 3] |= (byte)((byte)(((byte)(~mask1b)) & (byte)s));
     }
     return digest.Clone();
 }

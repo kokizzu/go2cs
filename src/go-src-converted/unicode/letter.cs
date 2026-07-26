@@ -8,10 +8,10 @@ namespace go;
 
 partial class unicode_package {
 
-public static readonly UntypedInt MaxRune = /* '\U0010FFFF' */ 1114111; // Maximum valid Unicode code point.
-public static readonly UntypedInt ReplacementChar = /* '\uFFFD' */ 65533; // Represents invalid code points.
-public static readonly UntypedInt MaxASCII = /* '\u007F' */ 127; // maximum ASCII value.
-public static readonly UntypedInt MaxLatin1 = /* '\u00FF' */ 255; // maximum Latin-1 value.
+public static UntypedInt MaxRune => /* '\U0010FFFF' */ 1114111; // Maximum valid Unicode code point.
+public static UntypedInt ReplacementChar => /* '\uFFFD' */ 65533; // Represents invalid code points.
+public static UntypedInt MaxASCII => /* '\u007F' */ 127; // maximum ASCII value.
+public static UntypedInt MaxLatin1 => /* '\u00FF' */ 255; // maximum Latin-1 value.
 
 // RangeTable defines a set of Unicode code points by listing the ranges of
 // code points within the set. The ranges are listed in two slices
@@ -65,13 +65,13 @@ public static readonly UntypedInt MaxLatin1 = /* '\u00FF' */ 255; // maximum Lat
 // characters that involve multiple runes in the input or output.
 
 // Indices into the Delta arrays inside CaseRanges for case mapping.
-public static readonly UntypedInt UpperCase = iota;
+public static UntypedInt UpperCase => iota;
 
-public static readonly UntypedInt LowerCase = 1;
+public static UntypedInt LowerCase => 1;
 
-public static readonly UntypedInt TitleCase = 2;
+public static UntypedInt TitleCase => 2;
 
-public static readonly UntypedInt MaxCase = 3;
+public static UntypedInt MaxCase => 3;
 
 [GoType("[3]rune")] /* [MaxCase]rune */
 public partial struct d; // to make the CaseRanges text shorter
@@ -79,11 +79,11 @@ public partial struct d; // to make the CaseRanges text shorter
 // If the Delta field of a [CaseRange] is UpperLower, it means
 // this CaseRange represents a sequence of the form (say)
 // [Upper] [Lower] [Upper] [Lower].
-public static readonly UntypedInt UpperLower = /* MaxRune + 1 */ 1114112; // (Cannot be a valid delta.)
+public static UntypedInt UpperLower => /* MaxRune + 1 */ 1114112; // (Cannot be a valid delta.)
 
 // linearMax is the maximum size table for linear search for non-Latin1 rune.
 // Derived by running 'go test -calibrate'.
-internal static readonly UntypedInt linearMax = 18;
+internal static UntypedInt linearMax => 18;
 
 // is16 reports whether r is in the sorted slice of 16-bit ranges.
 internal static bool is16(slice<Range16> ranges, uint16 r) {

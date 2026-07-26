@@ -23,14 +23,14 @@ using go.sync;
 partial class crc32_package {
 
 // The size of a CRC-32 checksum in bytes.
-public static readonly UntypedInt ΔSize = 4;
+public static UntypedInt ΔSize => 4;
 
 // Predefined polynomials.
-public static readonly UntypedInt IEEE = 0xedb88320;
+public static UntypedInt IEEE => 0xedb88320;
 
-public static readonly UntypedInt Castagnoli = 0x82f63b78;
+public static UntypedInt Castagnoli => 0x82f63b78;
 
-public static readonly UntypedInt Koopman = 0xeb31d82e;
+public static UntypedInt Koopman => 0xeb31d82e;
 
 [GoType("[256]uint32")] partial struct Table;
 

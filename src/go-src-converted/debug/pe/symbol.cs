@@ -14,7 +14,7 @@ using encoding;
 
 partial class pe_package {
 
-public static readonly UntypedInt COFFSymbolSize = 18;
+public static UntypedInt COFFSymbolSize => 18;
 
 // COFFSymbol represents single COFF symbol table record.
 [GoType] [GoValueClone("Name")] partial struct COFFSymbol {
@@ -184,17 +184,17 @@ internal static (slice<ж<Symbol>>, error) removeAuxSymbols(slice<COFFSymbol> al
 
 // These constants make up the possible values for the 'Selection'
 // field in an AuxFormat5.
-public static readonly UntypedInt IMAGE_COMDAT_SELECT_NODUPLICATES = 1;
+public static UntypedInt IMAGE_COMDAT_SELECT_NODUPLICATES => 1;
 
-public static readonly UntypedInt IMAGE_COMDAT_SELECT_ANY = 2;
+public static UntypedInt IMAGE_COMDAT_SELECT_ANY => 2;
 
-public static readonly UntypedInt IMAGE_COMDAT_SELECT_SAME_SIZE = 3;
+public static UntypedInt IMAGE_COMDAT_SELECT_SAME_SIZE => 3;
 
-public static readonly UntypedInt IMAGE_COMDAT_SELECT_EXACT_MATCH = 4;
+public static UntypedInt IMAGE_COMDAT_SELECT_EXACT_MATCH => 4;
 
-public static readonly UntypedInt IMAGE_COMDAT_SELECT_ASSOCIATIVE = 5;
+public static UntypedInt IMAGE_COMDAT_SELECT_ASSOCIATIVE => 5;
 
-public static readonly UntypedInt IMAGE_COMDAT_SELECT_LARGEST = 6;
+public static UntypedInt IMAGE_COMDAT_SELECT_LARGEST => 6;
 
 // COFFSymbolReadSectionDefAux returns a blob of auxiliary information
 // (including COMDAT info) for a section definition symbol. Here 'idx'

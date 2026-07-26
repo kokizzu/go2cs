@@ -109,21 +109,21 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt maxTinySize = /* _TinySize */ 16;
+internal static UntypedInt maxTinySize => /* _TinySize */ 16;
 internal const int8 tinySizeClass = /* _TinySizeClass */ 2;
-internal static readonly UntypedInt maxSmallSize = /* _MaxSmallSize */ 32768;
-internal static readonly UntypedInt pageShift = /* _PageShift */ 13;
-internal static readonly UntypedInt pageSize = /* _PageSize */ 8192;
-internal static readonly UntypedInt _PageSize = /* 1 << _PageShift */ 8192;
-internal static readonly UntypedInt _PageMask = /* _PageSize - 1 */ 8191;
-internal static readonly UntypedInt _64bit = /* 1 << (^uintptr(0) >> 63) / 2 */ 1;
-internal static readonly UntypedInt _TinySize = 16;
+internal static UntypedInt maxSmallSize => /* _MaxSmallSize */ 32768;
+internal static UntypedInt pageShift => /* _PageShift */ 13;
+internal static UntypedInt pageSize => /* _PageSize */ 8192;
+internal static UntypedInt _PageSize => /* 1 << _PageShift */ 8192;
+internal static UntypedInt _PageMask => /* _PageSize - 1 */ 8191;
+internal static UntypedInt _64bit => /* 1 << (^uintptr(0) >> 63) / 2 */ 1;
+internal static UntypedInt _TinySize => 16;
 internal const int8 _TinySizeClass = /* int8(2) */ 2;
-internal static readonly UntypedInt _FixAllocChunk = /* 16 << 10 */ 16384; // Chunk size for FixAlloc
-internal static readonly UntypedInt _StackCacheSize = /* 32 * 1024 */ 32768;
-internal static readonly UntypedInt _NumStackOrders = /* 4 - goarch.PtrSize/4*goos.IsWindows - 1*goos.IsPlan9 */ 2;
-internal static readonly UntypedInt heapAddrBits = /* (_64bit*(1-goarch.IsWasm)*(1-goos.IsIos*goarch.IsArm64))*48 + (1-_64bit+goarch.IsWasm)*(32-(goarch.IsMips+goarch.IsMipsle)) + 40*goos.IsIos*goarch.IsArm64 */ 48;
-internal static readonly UntypedInt maxAlloc = /* (1 << heapAddrBits) - (1-_64bit)*1 */ 281474976710656;
+internal static UntypedInt _FixAllocChunk => /* 16 << 10 */ 16384; // Chunk size for FixAlloc
+internal static UntypedInt _StackCacheSize => /* 32 * 1024 */ 32768;
+internal static UntypedInt _NumStackOrders => /* 4 - goarch.PtrSize/4*goos.IsWindows - 1*goos.IsPlan9 */ 2;
+internal static UntypedInt heapAddrBits => /* (_64bit*(1-goarch.IsWasm)*(1-goos.IsIos*goarch.IsArm64))*48 + (1-_64bit+goarch.IsWasm)*(32-(goarch.IsMips+goarch.IsMipsle)) + 40*goos.IsIos*goarch.IsArm64 */ 48;
+internal static UntypedInt maxAlloc => /* (1 << heapAddrBits) - (1-_64bit)*1 */ 281474976710656;
 // The number of bits in a heap address, the size of heap
 // arenas, and the L1 and L2 arena map sizes are related by
 //
@@ -138,20 +138,20 @@ internal static readonly UntypedInt maxAlloc = /* (1 << heapAddrBits) - (1-_64bi
 //      ios/arm64         33         4MB           1  2048  (8KB)
 //       */32-bit         32         4MB           1  1024  (4KB)
 //     */mips(le)         31         4MB           1   512  (2KB)
-internal static readonly UntypedInt heapArenaBytes = /* 1 << logHeapArenaBytes */ 4194304;
-internal static readonly UntypedInt heapArenaWords = /* heapArenaBytes / goarch.PtrSize */ 524288;
-internal static readonly UntypedInt logHeapArenaBytes = /* (6+20)*(_64bit*(1-goos.IsWindows)*(1-goarch.IsWasm)*(1-goos.IsIos*goarch.IsArm64)) + (2+20)*(_64bit*goos.IsWindows) + (2+20)*(1-_64bit) + (2+20)*goarch.IsWasm + (2+20)*goos.IsIos*goarch.IsArm64 */ 22;
-internal static readonly UntypedInt heapArenaBitmapWords = /* heapArenaWords / (8 * goarch.PtrSize) */ 8192;
-internal static readonly UntypedInt pagesPerArena = /* heapArenaBytes / pageSize */ 512;
-internal static readonly UntypedInt arenaL1Bits = /* 6 * (_64bit * goos.IsWindows) */ 6;
-internal static readonly UntypedInt arenaL2Bits = /* heapAddrBits - logHeapArenaBytes - arenaL1Bits */ 20;
-internal static readonly UntypedInt arenaL1Shift = /* arenaL2Bits */ 20;
-internal static readonly UntypedInt arenaBits = /* arenaL1Bits + arenaL2Bits */ 26;
-internal static readonly UntypedInt arenaBaseOffset = /* 0xffff800000000000*goarch.IsAmd64 + 0x0a00000000000000*goos.IsAix */ 18446603336221196288;
-internal static readonly uintptr arenaBaseOffsetUintptr = /* uintptr(arenaBaseOffset) */ unchecked((uintptr)18446603336221196288);
-internal static readonly UntypedInt _MaxGcproc = 32;
-internal static readonly uintptr minLegalPointer = 4096;
-internal static readonly UntypedInt minHeapForMetadataHugePages = /* 1 << 30 */ 1073741824;
+internal static UntypedInt heapArenaBytes => /* 1 << logHeapArenaBytes */ 4194304;
+internal static UntypedInt heapArenaWords => /* heapArenaBytes / goarch.PtrSize */ 524288;
+internal static UntypedInt logHeapArenaBytes => /* (6+20)*(_64bit*(1-goos.IsWindows)*(1-goarch.IsWasm)*(1-goos.IsIos*goarch.IsArm64)) + (2+20)*(_64bit*goos.IsWindows) + (2+20)*(1-_64bit) + (2+20)*goarch.IsWasm + (2+20)*goos.IsIos*goarch.IsArm64 */ 22;
+internal static UntypedInt heapArenaBitmapWords => /* heapArenaWords / (8 * goarch.PtrSize) */ 8192;
+internal static UntypedInt pagesPerArena => /* heapArenaBytes / pageSize */ 512;
+internal static UntypedInt arenaL1Bits => /* 6 * (_64bit * goos.IsWindows) */ 6;
+internal static UntypedInt arenaL2Bits => /* heapAddrBits - logHeapArenaBytes - arenaL1Bits */ 20;
+internal static UntypedInt arenaL1Shift => /* arenaL2Bits */ 20;
+internal static UntypedInt arenaBits => /* arenaL1Bits + arenaL2Bits */ 26;
+internal static UntypedInt arenaBaseOffset => /* 0xffff800000000000*goarch.IsAmd64 + 0x0a00000000000000*goos.IsAix */ 18446603336221196288;
+internal static uintptr arenaBaseOffsetUintptr => /* uintptr(arenaBaseOffset) */ unchecked((uintptr)18446603336221196288);
+internal static UntypedInt _MaxGcproc => 32;
+internal static uintptr minLegalPointer => 4096;
+internal static UntypedInt minHeapForMetadataHugePages => /* 1 << 30 */ 1073741824;
 
 // physPageSize is the size in bytes of the OS's physical pages.
 // Mapping and unmapping operations must be done at multiples of
@@ -360,8 +360,7 @@ internal static void mallocinit() {
             }
             var hint = (ж<arenaHint>)(uintptr)(Ꮡmheap_.of(mheap.ᏑarenaHintAlloc).alloc());
             hint.Value.addr = Δp;
-            hint.Value.next = hintList.ValueSlot;
-            hintList.ValueSlot = hint;
+            (hint.Value.next, hintList.ValueSlot) = (hintList.ValueSlot, hint);
         }
     } else {
         // On a 32-bit machine, we're much more concerned
@@ -426,16 +425,14 @@ internal static void mallocinit() {
         }
         var hint = (ж<arenaHint>)(uintptr)(Ꮡmheap_.of(mheap.ᏑarenaHintAlloc).alloc());
         hint.Value.addr = Δp;
-        hint.Value.next = mheap_.arenaHints;
-        mheap_.arenaHints = hint;
+        (hint.Value.next, mheap_.arenaHints) = (mheap_.arenaHints, hint);
         // Place the hint for user arenas just after the large reservation.
         //
         // While this potentially competes with the hint above, in practice we probably
         // aren't going to be getting this far anyway on 32-bit platforms.
         var userArenaHint = (ж<arenaHint>)(uintptr)(Ꮡmheap_.of(mheap.ᏑarenaHintAlloc).alloc());
         userArenaHint.Value.addr = Δp;
-        userArenaHint.Value.next = mheap_.userArena.arenaHints;
-        mheap_.userArena.arenaHints = userArenaHint;
+        (userArenaHint.Value.next, mheap_.userArena.arenaHints) = (mheap_.userArena.arenaHints, userArenaHint);
     }
     // Initialize the memory limit here because the allocator is going to look at it
     // but we haven't called gcinit yet and we're definitely going to allocate memory before then.
@@ -545,14 +542,11 @@ internal static (@unsafe.Pointer v, uintptr size) sysAlloc(this ж<mheap> Ꮡh, 
         }
         // Create new hints for extending this region.
         var hint = (ж<arenaHint>)(uintptr)(h.arenaHintAlloc.alloc());
-        hint.Value.addr = (uintptr)v;
-        hint.Value.down = true;
-        hint.Value.next = mheap_.arenaHints;
-        mheap_.arenaHints = hint;
+        (hint.Value.addr, hint.Value.down) = ((uintptr)v, true);
+        (hint.Value.next, mheap_.arenaHints) = (mheap_.arenaHints, hint);
         hint = (ж<arenaHint>)(uintptr)(h.arenaHintAlloc.alloc());
         hint.Value.addr = (uintptr)v + size;
-        hint.Value.next = mheap_.arenaHints;
-        mheap_.arenaHints = hint;
+        (hint.Value.next, mheap_.arenaHints) = (mheap_.arenaHints, hint);
     }
     // Check for bad pointers or pointers we can't use.
     {
@@ -1403,7 +1397,7 @@ internal static ref globalAllocᴛ1 globalAlloc => ref ᏑglobalAlloc.Value;
 
 // persistentChunkSize is the number of bytes we allocate when we grow
 // a persistentAlloc.
-internal static readonly UntypedInt persistentChunkSize = /* 256 << 10 */ 262144;
+internal static UntypedInt persistentChunkSize => /* 256 << 10 */ 262144;
 
 // persistentChunks is a list of all the persistent chunks we have
 // allocated. The list is maintained through the first word in the
@@ -1532,8 +1526,7 @@ internal static bool inPersistentAlloc(uintptr Δp) {
         // later.
         size -= 1;
     }
-    l.next = @base;
-    l.mapped = @base;
+    (l.next, l.mapped) = (@base, @base);
     l.end = @base + size;
     l.mapMemory = mapMemory;
 }

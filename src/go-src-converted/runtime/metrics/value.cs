@@ -10,10 +10,10 @@ partial class metrics_package {
 
 [GoType("num:nint")] partial struct ValueKind;
 
-public static readonly ValueKind KindBad = /* iota */ 0;
-public static readonly ValueKind KindUint64 = 1;
-public static readonly ValueKind KindFloat64 = 2;
-public static readonly ValueKind KindFloat64Histogram = 3;
+public static ValueKind KindBad => /* iota */ 0;
+public static ValueKind KindUint64 => 1;
+public static ValueKind KindFloat64 => 2;
+public static ValueKind KindFloat64Histogram => 3;
 
 // Value represents a metric value returned by the runtime.
 [GoType] partial struct Value {

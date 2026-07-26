@@ -16,11 +16,11 @@ partial class types_package {
 [GoType("num:nint")] partial struct ChanDir;
 
 // The direction of a channel is indicated by one of these constants.
-public static readonly ChanDir SendRecv = /* iota */ 0;
+public static ChanDir SendRecv => /* iota */ 0;
 
-public static readonly ChanDir SendOnly = 1;
+public static ChanDir SendOnly => 1;
 
-public static readonly ChanDir RecvOnly = 2;
+public static ChanDir RecvOnly => 2;
 
 // NewChan returns a new channel type for the given direction and element type.
 public static ж<Chan> NewChan(ChanDir dir, ΔType elem) {

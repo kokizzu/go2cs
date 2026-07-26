@@ -20,9 +20,9 @@ using net;
 partial class net_package {
 
 // IP address lengths (bytes).
-public static readonly UntypedInt IPv4len = 4;
+public static UntypedInt IPv4len => 4;
 
-public static readonly UntypedInt IPv6len = 16;
+public static UntypedInt IPv6len => 16;
 
 [GoType("[]byte")] partial struct IP;
 
@@ -78,7 +78,7 @@ public static IPMask CIDRMask(nint ones, nint bits) {
             n -= 8;
             continue;
         }
-        m[i] = (byte)(~(byte)(((byte)0xff).Rsh(n)));
+        m[i] = (byte)(((byte)(~(byte)(((byte)0xff).Rsh(n)))));
         n = 0;
     }
     return m;

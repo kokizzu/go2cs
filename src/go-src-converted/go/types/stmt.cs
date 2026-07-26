@@ -89,11 +89,11 @@ internal static void usage(this ж<Checker> Ꮡcheck, ж<ΔScope> Ꮡscope) {
 
 [GoType("num:nuint")] partial struct stmtContext;
 
-internal static readonly stmtContext breakOk = /* 1 << iota */ 1;
-internal static readonly stmtContext continueOk = 2;
-internal static readonly stmtContext fallthroughOk = 4;
-internal static readonly stmtContext finalSwitchCase = 8;
-internal static readonly stmtContext inTypeSwitch = 16;
+internal static stmtContext breakOk => /* 1 << iota */ 1;
+internal static stmtContext continueOk => 2;
+internal static stmtContext fallthroughOk => 4;
+internal static stmtContext finalSwitchCase => 8;
+internal static stmtContext inTypeSwitch => 16;
 
 internal static void simpleStmt(this ж<Checker> Ꮡcheck, ast.Stmt s) {
     if (s != default!) {

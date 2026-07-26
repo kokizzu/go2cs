@@ -18,11 +18,11 @@ using Δsync = sync_package;
 partial class io_package {
 
 // Seek whence values.
-public static readonly UntypedInt SeekStart = 0; // seek relative to the origin of the file
+public static UntypedInt SeekStart => 0; // seek relative to the origin of the file
 
-public static readonly UntypedInt SeekCurrent = 1; // seek relative to the current offset
+public static UntypedInt SeekCurrent => 1; // seek relative to the current offset
 
-public static readonly UntypedInt SeekEnd = 2; // seek relative to the end
+public static UntypedInt SeekEnd => 2; // seek relative to the end
 
 // ErrShortWrite means that a write accepted fewer bytes than requested
 // but failed to return an explicit error.

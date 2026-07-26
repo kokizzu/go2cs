@@ -62,7 +62,7 @@ internal static void init(this ж<rwmutex> Ꮡrw, lockRank readRank, lockRank re
     lockInit(Ꮡrw.of(rwmutex.ᏑwLock), writeRank);
 }
 
-internal static readonly UntypedInt rwmutexMaxReaders = /* 1 << 30 */ 1073741824;
+internal static UntypedInt rwmutexMaxReaders => /* 1 << 30 */ 1073741824;
 
 // rlock locks rw for reading.
 internal static void rlock(this ж<rwmutex> Ꮡrw) {

@@ -6,6 +6,6 @@ partial class goexperiment_package {
 
 public const bool CacheProg = false;
 
-public static readonly UntypedInt CacheProgInt = 0;
+public static UntypedInt CacheProgInt => 0;
 
 } // end goexperiment_package

@@ -12,18 +12,18 @@ using unicode;
 
 partial class registry_package {
 
-public static readonly UntypedInt NONE = 0;
-public static readonly UntypedInt SZ = 1;
-public static readonly UntypedInt EXPAND_SZ = 2;
-public static readonly UntypedInt BINARY = 3;
-public static readonly UntypedInt DWORD = 4;
-public static readonly UntypedInt DWORD_BIG_ENDIAN = 5;
-public static readonly UntypedInt LINK = 6;
-public static readonly UntypedInt MULTI_SZ = 7;
-public static readonly UntypedInt RESOURCE_LIST = 8;
-public static readonly UntypedInt FULL_RESOURCE_DESCRIPTOR = 9;
-public static readonly UntypedInt RESOURCE_REQUIREMENTS_LIST = 10;
-public static readonly UntypedInt QWORD = 11;
+public static UntypedInt NONE => 0;
+public static UntypedInt SZ => 1;
+public static UntypedInt EXPAND_SZ => 2;
+public static UntypedInt BINARY => 3;
+public static UntypedInt DWORD => 4;
+public static UntypedInt DWORD_BIG_ENDIAN => 5;
+public static UntypedInt LINK => 6;
+public static UntypedInt MULTI_SZ => 7;
+public static UntypedInt RESOURCE_LIST => 8;
+public static UntypedInt FULL_RESOURCE_DESCRIPTOR => 9;
+public static UntypedInt RESOURCE_REQUIREMENTS_LIST => 10;
+public static UntypedInt QWORD => 11;
 
 public static syscall.Errno ErrShortBuffer = syscall.ERROR_MORE_DATA;
 public static syscall.Errno ErrNotExist = syscall.ERROR_FILE_NOT_FOUND;

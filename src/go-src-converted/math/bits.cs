@@ -5,15 +5,15 @@ namespace go;
 
 partial class math_package {
 
-internal static readonly UntypedInt uvnan = 0x7FF8000000000001;
-internal static readonly UntypedInt uvinf = 0x7FF0000000000000;
-internal static readonly UntypedInt uvneginf = 0xFFF0000000000000;
-internal static readonly UntypedInt uvone = 0x3FF0000000000000;
-internal static readonly UntypedInt mask = 0x7FF;
-internal static readonly UntypedInt shift = /* 64 - 11 - 1 */ 52;
-internal static readonly UntypedInt bias = 1023;
-internal static readonly UntypedInt signMask = /* 1 << 63 */ 9223372036854775808;
-internal static readonly UntypedInt fracMask = /* 1<<shift - 1 */ 4503599627370495;
+internal static UntypedInt uvnan => 0x7FF8000000000001;
+internal static UntypedInt uvinf => 0x7FF0000000000000;
+internal static UntypedInt uvneginf => 0xFFF0000000000000;
+internal static UntypedInt uvone => 0x3FF0000000000000;
+internal static UntypedInt mask => 0x7FF;
+internal static UntypedInt shift => /* 64 - 11 - 1 */ 52;
+internal static UntypedInt bias => 1023;
+internal static UntypedInt signMask => /* 1 << 63 */ 9223372036854775808;
+internal static UntypedInt fracMask => /* 1<<shift - 1 */ 4503599627370495;
 
 // Inf returns positive infinity if sign >= 0, negative infinity if sign < 0.
 public static float64 Inf(nint sign) {

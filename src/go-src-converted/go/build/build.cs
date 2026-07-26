@@ -428,10 +428,10 @@ internal static @string envOr(@string name, @string def) {
 
 [GoType("num:nuint")] partial struct ImportMode;
 
-public static readonly ImportMode FindOnly = /* 1 << iota */ 1;
-public static readonly ImportMode AllowBinary = 2;
-public static readonly ImportMode ImportComment = 4;
-public static readonly ImportMode IgnoreVendor = 8;
+public static ImportMode FindOnly => /* 1 << iota */ 1;
+public static ImportMode AllowBinary => 2;
+public static ImportMode ImportComment => 4;
+public static ImportMode IgnoreVendor => 8;
 
 // A Package describes the Go package found in a directory.
 [GoType] partial struct Package {
@@ -1540,11 +1540,11 @@ internal static (ж<fileInfo>, error) matchFile(this ж<Context> Ꮡctxt, @strin
     if (strings.HasSuffix(name, ".go"u8)){
         err = readGoInfo(f, info);
         if (strings.HasSuffix(name, testGoˢ)) {
-            binaryOnly = default!;
+            ᏑbinaryOnly = default!; binaryOnly = ref ᏑbinaryOnly.DerefOrNil();
         }
     } else {
         // ignore //go:binary-only-package comments in _test.go files
-        binaryOnly = default!;
+        ᏑbinaryOnly = default!; binaryOnly = ref ᏑbinaryOnly.DerefOrNil();
         // ignore //go:binary-only-package comments in non-Go sources
         (info.Value.header, err) = readComments(f);
     }

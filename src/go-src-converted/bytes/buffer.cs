@@ -12,7 +12,7 @@ using go.unicode;
 partial class bytes_package {
 
 // smallBufferSize is an initial allocation minimal capacity.
-internal static readonly UntypedInt smallBufferSize = 64;
+internal static UntypedInt smallBufferSize => 64;
 
 // A Buffer is a variable-sized buffer of bytes with [Buffer.Read] and [Buffer.Write] methods.
 // The zero value for Buffer is an empty buffer ready to use.
@@ -26,24 +26,24 @@ internal static readonly UntypedInt smallBufferSize = 64;
 
 // Don't use iota for these, as the values need to correspond with the
 // names and comments, which is easier to see when being explicit.
-internal static readonly readOp opRead = -1;   // Any other read operation.
+internal static readOp opRead => -1;   // Any other read operation.
 
-internal static readonly readOp opInvalid = 0; // Non-read operation.
+internal static readOp opInvalid => 0; // Non-read operation.
 
-internal static readonly readOp opReadRune1 = 1; // Read rune of size 1.
+internal static readOp opReadRune1 => 1; // Read rune of size 1.
 
-internal static readonly readOp opReadRune2 = 2; // Read rune of size 2.
+internal static readOp opReadRune2 => 2; // Read rune of size 2.
 
-internal static readonly readOp opReadRune3 = 3; // Read rune of size 3.
+internal static readOp opReadRune3 => 3; // Read rune of size 3.
 
-internal static readonly readOp opReadRune4 = 4; // Read rune of size 4.
+internal static readOp opReadRune4 => 4; // Read rune of size 4.
 
 // ErrTooLarge is passed to panic if memory cannot be allocated to store data in a buffer.
 public static error ErrTooLarge = errors.New("bytes.Buffer: too large"u8);
 
 internal static error errNegativeRead = errors.New("bytes.Buffer: reader returned negative count from Read"u8);
 
-internal static readonly nint maxInt = /* int(^uint(0) >> 1) */ unchecked((nint)9223372036854775807);
+internal static nint maxInt => /* int(^uint(0) >> 1) */ unchecked((nint)9223372036854775807);
 
 // Bytes returns a slice of length b.Len() holding the unread portion of the buffer.
 // The slice is valid for use only until the next buffer modification (that is,
@@ -224,7 +224,7 @@ public static @string String(this ж<Buffer> Ꮡb) {
 // [Buffer.ReadFrom]. As long as the [Buffer] has at least MinRead bytes beyond
 // what is required to hold the contents of r, [Buffer.ReadFrom] will not grow the
 // underlying buffer.
-public static readonly UntypedInt MinRead = 512;
+public static UntypedInt MinRead => 512;
 
 // ReadFrom reads data from r until EOF and appends it to the buffer, growing
 // the buffer as needed. The return value n is the number of bytes read. Any

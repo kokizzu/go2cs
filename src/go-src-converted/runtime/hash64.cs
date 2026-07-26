@@ -12,7 +12,7 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt m5 = 0x1d8e4e27c47d124f;
+internal static UntypedInt m5 => 0x1d8e4e27c47d124f;
 
 internal static uintptr memhashFallback(@unsafe.Pointer Δp, uintptr seed, uintptr s) {
     uintptr a = default!;

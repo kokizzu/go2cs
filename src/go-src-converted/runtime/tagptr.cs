@@ -8,6 +8,6 @@ partial class runtime_package {
 [GoType("num:uint64")] partial struct taggedPointer;
 
 // minTagBits is the minimum number of tag bits that we expect.
-internal static readonly UntypedInt minTagBits = 10;
+internal static UntypedInt minTagBits => 10;
 
 } // end runtime_package

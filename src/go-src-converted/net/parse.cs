@@ -144,7 +144,7 @@ internal static slice<@string> getFields(@string s) {
 }
 
 // Bigger than we need, not too big to worry about overflow
-internal static readonly UntypedInt big = 0xFFFFFF;
+internal static UntypedInt big => 0xFFFFFF;
 
 // Decimal to integer.
 // Returns number, characters consumed, success.

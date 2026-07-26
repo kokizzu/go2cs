@@ -22,31 +22,31 @@ partial class sha256_package {
 }
 
 // The size of a SHA256 checksum in bytes.
-public static readonly UntypedInt ΔSize = 32;
+public static UntypedInt ΔSize => 32;
 
 // The size of a SHA224 checksum in bytes.
-public static readonly UntypedInt Size224 = 28;
+public static UntypedInt Size224 => 28;
 
 // The blocksize of SHA256 and SHA224 in bytes.
-public static readonly UntypedInt ΔBlockSize = 64;
+public static UntypedInt ΔBlockSize => 64;
 
-internal static readonly UntypedInt chunk = 64;
-internal static readonly UntypedInt init0 = 0x6A09E667;
-internal static readonly UntypedInt init1 = 0xBB67AE85;
-internal static readonly UntypedInt init2 = 0x3C6EF372;
-internal static readonly UntypedInt init3 = 0xA54FF53A;
-internal static readonly UntypedInt init4 = 0x510E527F;
-internal static readonly UntypedInt init5 = 0x9B05688C;
-internal static readonly UntypedInt init6 = 0x1F83D9AB;
-internal static readonly UntypedInt init7 = 0x5BE0CD19;
-internal static readonly UntypedInt init0_224 = 0xC1059ED8;
-internal static readonly UntypedInt init1_224 = 0x367CD507;
-internal static readonly UntypedInt init2_224 = 0x3070DD17;
-internal static readonly UntypedInt init3_224 = 0xF70E5939;
-internal static readonly UntypedInt init4_224 = 0xFFC00B31;
-internal static readonly UntypedInt init5_224 = 0x68581511;
-internal static readonly UntypedInt init6_224 = 0x64F98FA7;
-internal static readonly UntypedInt init7_224 = 0xBEFA4FA4;
+internal static UntypedInt chunk => 64;
+internal static UntypedInt init0 => 0x6A09E667;
+internal static UntypedInt init1 => 0xBB67AE85;
+internal static UntypedInt init2 => 0x3C6EF372;
+internal static UntypedInt init3 => 0xA54FF53A;
+internal static UntypedInt init4 => 0x510E527F;
+internal static UntypedInt init5 => 0x9B05688C;
+internal static UntypedInt init6 => 0x1F83D9AB;
+internal static UntypedInt init7 => 0x5BE0CD19;
+internal static UntypedInt init0_224 => 0xC1059ED8;
+internal static UntypedInt init1_224 => 0x367CD507;
+internal static UntypedInt init2_224 => 0x3070DD17;
+internal static UntypedInt init3_224 => 0xF70E5939;
+internal static UntypedInt init4_224 => 0xFFC00B31;
+internal static UntypedInt init5_224 => 0x68581511;
+internal static UntypedInt init6_224 => 0x64F98FA7;
+internal static UntypedInt init7_224 => 0xBEFA4FA4;
 
 // digest represents the partial evaluation of a checksum.
 [GoType] [GoValueClone("h", "x")] partial struct digest {

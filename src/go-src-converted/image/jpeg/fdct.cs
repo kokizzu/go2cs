@@ -60,33 +60,33 @@ assumed by the product vendor.
 */
 
 // Trigonometric constants in 13-bit fixed point format.
-internal static readonly UntypedInt fix_0_298631336 = 2446;
+internal static UntypedInt fix_0_298631336 => 2446;
 
-internal static readonly UntypedInt fix_0_390180644 = 3196;
+internal static UntypedInt fix_0_390180644 => 3196;
 
-internal static readonly UntypedInt fix_0_541196100 = 4433;
+internal static UntypedInt fix_0_541196100 => 4433;
 
-internal static readonly UntypedInt fix_0_765366865 = 6270;
+internal static UntypedInt fix_0_765366865 => 6270;
 
-internal static readonly UntypedInt fix_0_899976223 = 7373;
+internal static UntypedInt fix_0_899976223 => 7373;
 
-internal static readonly UntypedInt fix_1_175875602 = 9633;
+internal static UntypedInt fix_1_175875602 => 9633;
 
-internal static readonly UntypedInt fix_1_501321110 = 12299;
+internal static UntypedInt fix_1_501321110 => 12299;
 
-internal static readonly UntypedInt fix_1_847759065 = 15137;
+internal static UntypedInt fix_1_847759065 => 15137;
 
-internal static readonly UntypedInt fix_1_961570560 = 16069;
+internal static UntypedInt fix_1_961570560 => 16069;
 
-internal static readonly UntypedInt fix_2_053119869 = 16819;
+internal static UntypedInt fix_2_053119869 => 16819;
 
-internal static readonly UntypedInt fix_2_562915447 = 20995;
+internal static UntypedInt fix_2_562915447 => 20995;
 
-internal static readonly UntypedInt fix_3_072711026 = 25172;
+internal static UntypedInt fix_3_072711026 => 25172;
 
-internal static readonly UntypedInt constBits = 13;
-internal static readonly UntypedInt pass1Bits = 2;
-internal static readonly UntypedInt centerJSample = 128;
+internal static UntypedInt constBits => 13;
+internal static UntypedInt pass1Bits => 2;
+internal static UntypedInt centerJSample => 128;
 
 // fdct performs a forward DCT on an 8x8 block of coefficients, including a
 // level shift.

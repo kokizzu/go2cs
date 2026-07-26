@@ -42,21 +42,21 @@ partial class log_package {
 // while flags Ldate | Ltime | Lmicroseconds | Llongfile produce,
 //
 //	2009/01/23 01:23:23.123123 /a/b/c/d.go:23: message
-public static readonly UntypedInt Ldate = /* 1 << iota */ 1; // the date in the local time zone: 2009/01/23
+public static UntypedInt Ldate => /* 1 << iota */ 1; // the date in the local time zone: 2009/01/23
 
-public static readonly UntypedInt Ltime = 2;        // the time in the local time zone: 01:23:23
+public static UntypedInt Ltime => 2;        // the time in the local time zone: 01:23:23
 
-public static readonly UntypedInt Lmicroseconds = 4; // microsecond resolution: 01:23:23.123123.  assumes Ltime.
+public static UntypedInt Lmicroseconds => 4; // microsecond resolution: 01:23:23.123123.  assumes Ltime.
 
-public static readonly UntypedInt Llongfile = 8;    // full file name and line number: /a/b/c/d.go:23
+public static UntypedInt Llongfile => 8;    // full file name and line number: /a/b/c/d.go:23
 
-public static readonly UntypedInt Lshortfile = 16;   // final file name element and line number: d.go:23. overrides Llongfile
+public static UntypedInt Lshortfile => 16;   // final file name element and line number: d.go:23. overrides Llongfile
 
-public static readonly UntypedInt LUTC = 32;         // if Ldate or Ltime is set, use UTC rather than the local time zone
+public static UntypedInt LUTC => 32;         // if Ldate or Ltime is set, use UTC rather than the local time zone
 
-public static readonly UntypedInt Lmsgprefix = 64;   // move the "prefix" from the beginning of the line to before the message
+public static UntypedInt Lmsgprefix => 64;   // move the "prefix" from the beginning of the line to before the message
 
-public static readonly UntypedInt LstdFlags = /* Ldate | Ltime */ 3; // initial values for the standard logger
+public static UntypedInt LstdFlags => /* Ldate | Ltime */ 3; // initial values for the standard logger
 
 // A Logger represents an active logging object that generates lines of
 // output to an [io.Writer]. Each logging operation makes a single call to

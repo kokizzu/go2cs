@@ -8,10 +8,10 @@ using math;
 
 partial class sha1_package {
 
-internal static readonly UntypedInt _K0 = 0x5A827999;
-internal static readonly UntypedInt _K1 = 0x6ED9EBA1;
-internal static readonly UntypedInt _K2 = 0x8F1BBCDC;
-internal static readonly UntypedInt _K3 = 0xCA62C1D6;
+internal static UntypedInt _K0 => 0x5A827999;
+internal static UntypedInt _K1 => 0x6ED9EBA1;
+internal static UntypedInt _K2 => 0x8F1BBCDC;
+internal static UntypedInt _K3 => 0xCA62C1D6;
 
 // blockGeneric is a portable, pure Go version of the SHA-1 block step.
 // It's used by sha1block_generic.go and tests.

@@ -31,7 +31,7 @@ partial class bzip2_package {
 }
 
 // invalidNodeValue is an invalid index which marks a leaf node in the tree.
-internal static readonly UntypedInt invalidNodeValue = 0xffff;
+internal static UntypedInt invalidNodeValue => 0xffff;
 
 // Decode reads bits from the given bitReader and navigates the tree until a
 // symbol is found.

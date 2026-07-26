@@ -30,10 +30,10 @@ using hash = hash_package;
 
 partial class ed25519_package {
 
-public static readonly UntypedInt PublicKeySize = 32;
-public static readonly UntypedInt PrivateKeySize = 64;
-public static readonly UntypedInt SignatureSize = 64;
-public static readonly UntypedInt SeedSize = 32;
+public static UntypedInt PublicKeySize => 32;
+public static UntypedInt PrivateKeySize => 64;
+public static UntypedInt SignatureSize => 64;
+public static UntypedInt SeedSize => 32;
 
 [GoType("[]byte")] partial struct PublicKey;
 

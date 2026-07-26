@@ -81,9 +81,9 @@ partial class format_package {
     public uint64 NextGC;
 }
 
-public static readonly UntypedInt ProcsSection = 0; // where Goroutines or per-P timelines are presented.
-public static readonly UntypedInt StatsSection = 1; // where counters are presented.
-public static readonly UntypedInt TasksSection = 2; // where Task hierarchy & timeline is presented.
+public static UntypedInt ProcsSection => 0; // where Goroutines or per-P timelines are presented.
+public static UntypedInt StatsSection => 1; // where counters are presented.
+public static UntypedInt TasksSection => 2; // where Task hierarchy & timeline is presented.
 
 [GoType] partial struct GoroutineCountersArg {
     public uint64 Running;

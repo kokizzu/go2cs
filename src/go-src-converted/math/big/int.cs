@@ -346,8 +346,7 @@ public static (ж<ΔInt>, ж<ΔInt>) QuoRem(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx,
     ref var r = ref Ꮡr.Value;
 
     (z.abs, r.abs) = z.abs.div(r.abs, x.abs, y.abs);
-    z.neg = len(z.abs) > 0 && x.neg != y.neg;
-    r.neg = len(r.abs) > 0 && x.neg;
+    (z.neg, r.neg) = (len(z.abs) > 0 && x.neg != y.neg, len(r.abs) > 0 && x.neg);
     // 0 has no sign
     return (Ꮡz, Ꮡr);
 }

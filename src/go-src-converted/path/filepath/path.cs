@@ -23,8 +23,8 @@ using ꓸꓸꓸstring = Span<@string>;
 
 partial class filepath_package {
 
-public static readonly UntypedInt Separator = /* os.PathSeparator */ 92;
-public static readonly UntypedInt ListSeparator = /* os.PathListSeparator */ 59;
+public static UntypedInt Separator => /* os.PathSeparator */ 92;
+public static UntypedInt ListSeparator => /* os.PathListSeparator */ 59;
 
 // Clean returns the shortest path name equivalent to path
 // by purely lexical processing. It applies the following rules

@@ -7,22 +7,22 @@ using @unsafe = unsafe_package;
 
 partial class syscall_package {
 
-public static readonly UntypedInt STANDARD_RIGHTS_REQUIRED = 0xf0000;
-public static readonly UntypedInt STANDARD_RIGHTS_READ = 0x20000;
-public static readonly UntypedInt STANDARD_RIGHTS_WRITE = 0x20000;
-public static readonly UntypedInt STANDARD_RIGHTS_EXECUTE = 0x20000;
-public static readonly UntypedInt STANDARD_RIGHTS_ALL = 0x1F0000;
+public static UntypedInt STANDARD_RIGHTS_REQUIRED => 0xf0000;
+public static UntypedInt STANDARD_RIGHTS_READ => 0x20000;
+public static UntypedInt STANDARD_RIGHTS_WRITE => 0x20000;
+public static UntypedInt STANDARD_RIGHTS_EXECUTE => 0x20000;
+public static UntypedInt STANDARD_RIGHTS_ALL => 0x1F0000;
 
-public static readonly UntypedInt NameUnknown = 0;
-public static readonly UntypedInt NameFullyQualifiedDN = 1;
-public static readonly UntypedInt NameSamCompatible = 2;
-public static readonly UntypedInt NameDisplay = 3;
-public static readonly UntypedInt NameUniqueId = 6;
-public static readonly UntypedInt NameCanonical = 7;
-public static readonly UntypedInt NameUserPrincipal = 8;
-public static readonly UntypedInt NameCanonicalEx = 9;
-public static readonly UntypedInt NameServicePrincipal = 10;
-public static readonly UntypedInt NameDnsDomain = 12;
+public static UntypedInt NameUnknown => 0;
+public static UntypedInt NameFullyQualifiedDN => 1;
+public static UntypedInt NameSamCompatible => 2;
+public static UntypedInt NameDisplay => 3;
+public static UntypedInt NameUniqueId => 6;
+public static UntypedInt NameCanonical => 7;
+public static UntypedInt NameUserPrincipal => 8;
+public static UntypedInt NameCanonicalEx => 9;
+public static UntypedInt NameServicePrincipal => 10;
+public static UntypedInt NameDnsDomain => 12;
 
 // This function returns 1 byte BOOLEAN rather than the 4 byte BOOL.
 // https://learn.microsoft.com/en-gb/archive/blogs/drnick/windows-and-upn-format-credentials
@@ -53,10 +53,10 @@ public static (@string, error) TranslateAccountName(@string username, uint32 fro
     }
 }
 
-public static readonly UntypedInt NetSetupUnknownStatus = iota;
-public static readonly UntypedInt NetSetupUnjoined = 1;
-public static readonly UntypedInt NetSetupWorkgroupName = 2;
-public static readonly UntypedInt NetSetupDomainName = 3;
+public static UntypedInt NetSetupUnknownStatus => iota;
+public static UntypedInt NetSetupUnjoined => 1;
+public static UntypedInt NetSetupWorkgroupName => 2;
+public static UntypedInt NetSetupDomainName => 3;
 
 [GoType] partial struct UserInfo10 {
     public ж<uint16> Name;
@@ -68,16 +68,16 @@ public static readonly UntypedInt NetSetupDomainName = 3;
 //sys	NetUserGetInfo(serverName *uint16, userName *uint16, level uint32, buf **byte) (neterr error) = netapi32.NetUserGetInfo
 //sys	NetGetJoinInformation(server *uint16, name **uint16, bufType *uint32) (neterr error) = netapi32.NetGetJoinInformation
 //sys	NetApiBufferFree(buf *byte) (neterr error) = netapi32.NetApiBufferFree
-public static readonly UntypedInt SidTypeUser = /* 1 + iota */ 1;
-public static readonly UntypedInt SidTypeGroup = 2;
-public static readonly UntypedInt SidTypeDomain = 3;
-public static readonly UntypedInt SidTypeAlias = 4;
-public static readonly UntypedInt SidTypeWellKnownGroup = 5;
-public static readonly UntypedInt SidTypeDeletedAccount = 6;
-public static readonly UntypedInt SidTypeInvalid = 7;
-public static readonly UntypedInt SidTypeUnknown = 8;
-public static readonly UntypedInt SidTypeComputer = 9;
-public static readonly UntypedInt SidTypeLabel = 10;
+public static UntypedInt SidTypeUser => /* 1 + iota */ 1;
+public static UntypedInt SidTypeGroup => 2;
+public static UntypedInt SidTypeDomain => 3;
+public static UntypedInt SidTypeAlias => 4;
+public static UntypedInt SidTypeWellKnownGroup => 5;
+public static UntypedInt SidTypeDeletedAccount => 6;
+public static UntypedInt SidTypeInvalid => 7;
+public static UntypedInt SidTypeUnknown => 8;
+public static UntypedInt SidTypeComputer => 9;
+public static UntypedInt SidTypeLabel => 10;
 
 //sys	LookupAccountSid(systemName *uint16, sid *SID, name *uint16, nameLen *uint32, refdDomainName *uint16, refdDomainNameLen *uint32, use *uint32) (err error) = advapi32.LookupAccountSidW
 //sys	LookupAccountName(systemName *uint16, accountName *uint16, sid *SID, sidLen *uint32, refdDomainName *uint16, refdDomainNameLen *uint32, use *uint32) (err error) = advapi32.LookupAccountNameW
@@ -215,16 +215,16 @@ public static (@string account, @string domain, uint32 accType, error err) Looku
     }
 }
 
-public static readonly UntypedInt TOKEN_ASSIGN_PRIMARY = /* 1 << iota */ 1;
-public static readonly UntypedInt TOKEN_DUPLICATE = 2;
-public static readonly UntypedInt TOKEN_IMPERSONATE = 4;
-public static readonly UntypedInt TOKEN_QUERY = 8;
-public static readonly UntypedInt TOKEN_QUERY_SOURCE = 16;
-public static readonly UntypedInt TOKEN_ADJUST_PRIVILEGES = 32;
-public static readonly UntypedInt TOKEN_ADJUST_GROUPS = 64;
-public static readonly UntypedInt TOKEN_ADJUST_DEFAULT = 128;
-public static readonly UntypedInt TOKEN_ADJUST_SESSIONID = 256;
-public static readonly UntypedInt TOKEN_ALL_ACCESS = /* STANDARD_RIGHTS_REQUIRED |
+public static UntypedInt TOKEN_ASSIGN_PRIMARY => /* 1 << iota */ 1;
+public static UntypedInt TOKEN_DUPLICATE => 2;
+public static UntypedInt TOKEN_IMPERSONATE => 4;
+public static UntypedInt TOKEN_QUERY => 8;
+public static UntypedInt TOKEN_QUERY_SOURCE => 16;
+public static UntypedInt TOKEN_ADJUST_PRIVILEGES => 32;
+public static UntypedInt TOKEN_ADJUST_GROUPS => 64;
+public static UntypedInt TOKEN_ADJUST_DEFAULT => 128;
+public static UntypedInt TOKEN_ADJUST_SESSIONID => 256;
+public static UntypedInt TOKEN_ALL_ACCESS => /* STANDARD_RIGHTS_REQUIRED |
 	TOKEN_ASSIGN_PRIMARY |
 	TOKEN_DUPLICATE |
 	TOKEN_IMPERSONATE |
@@ -234,42 +234,42 @@ public static readonly UntypedInt TOKEN_ALL_ACCESS = /* STANDARD_RIGHTS_REQUIRED
 	TOKEN_ADJUST_GROUPS |
 	TOKEN_ADJUST_DEFAULT |
 	TOKEN_ADJUST_SESSIONID */ 983551;
-public static readonly UntypedInt TOKEN_READ = /* STANDARD_RIGHTS_READ | TOKEN_QUERY */ 131080;
-public static readonly UntypedInt TOKEN_WRITE = /* STANDARD_RIGHTS_WRITE |
+public static UntypedInt TOKEN_READ => /* STANDARD_RIGHTS_READ | TOKEN_QUERY */ 131080;
+public static UntypedInt TOKEN_WRITE => /* STANDARD_RIGHTS_WRITE |
 	TOKEN_ADJUST_PRIVILEGES |
 	TOKEN_ADJUST_GROUPS |
 	TOKEN_ADJUST_DEFAULT */ 131296;
-public static readonly UntypedInt TOKEN_EXECUTE = /* STANDARD_RIGHTS_EXECUTE */ 131072;
+public static UntypedInt TOKEN_EXECUTE => /* STANDARD_RIGHTS_EXECUTE */ 131072;
 
-public static readonly UntypedInt TokenUser = /* 1 + iota */ 1;
-public static readonly UntypedInt TokenGroups = 2;
-public static readonly UntypedInt TokenPrivileges = 3;
-public static readonly UntypedInt TokenOwner = 4;
-public static readonly UntypedInt TokenPrimaryGroup = 5;
-public static readonly UntypedInt TokenDefaultDacl = 6;
-public static readonly UntypedInt TokenSource = 7;
-public static readonly UntypedInt TokenType = 8;
-public static readonly UntypedInt TokenImpersonationLevel = 9;
-public static readonly UntypedInt TokenStatistics = 10;
-public static readonly UntypedInt TokenRestrictedSids = 11;
-public static readonly UntypedInt TokenSessionId = 12;
-public static readonly UntypedInt TokenGroupsAndPrivileges = 13;
-public static readonly UntypedInt TokenSessionReference = 14;
-public static readonly UntypedInt TokenSandBoxInert = 15;
-public static readonly UntypedInt TokenAuditPolicy = 16;
-public static readonly UntypedInt TokenOrigin = 17;
-public static readonly UntypedInt TokenElevationType = 18;
-public static readonly UntypedInt TokenLinkedToken = 19;
-public static readonly UntypedInt TokenElevation = 20;
-public static readonly UntypedInt TokenHasRestrictions = 21;
-public static readonly UntypedInt TokenAccessInformation = 22;
-public static readonly UntypedInt TokenVirtualizationAllowed = 23;
-public static readonly UntypedInt TokenVirtualizationEnabled = 24;
-public static readonly UntypedInt TokenIntegrityLevel = 25;
-public static readonly UntypedInt TokenUIAccess = 26;
-public static readonly UntypedInt TokenMandatoryPolicy = 27;
-public static readonly UntypedInt TokenLogonSid = 28;
-public static readonly UntypedInt MaxTokenInfoClass = 29;
+public static UntypedInt TokenUser => /* 1 + iota */ 1;
+public static UntypedInt TokenGroups => 2;
+public static UntypedInt TokenPrivileges => 3;
+public static UntypedInt TokenOwner => 4;
+public static UntypedInt TokenPrimaryGroup => 5;
+public static UntypedInt TokenDefaultDacl => 6;
+public static UntypedInt TokenSource => 7;
+public static UntypedInt TokenType => 8;
+public static UntypedInt TokenImpersonationLevel => 9;
+public static UntypedInt TokenStatistics => 10;
+public static UntypedInt TokenRestrictedSids => 11;
+public static UntypedInt TokenSessionId => 12;
+public static UntypedInt TokenGroupsAndPrivileges => 13;
+public static UntypedInt TokenSessionReference => 14;
+public static UntypedInt TokenSandBoxInert => 15;
+public static UntypedInt TokenAuditPolicy => 16;
+public static UntypedInt TokenOrigin => 17;
+public static UntypedInt TokenElevationType => 18;
+public static UntypedInt TokenLinkedToken => 19;
+public static UntypedInt TokenElevation => 20;
+public static UntypedInt TokenHasRestrictions => 21;
+public static UntypedInt TokenAccessInformation => 22;
+public static UntypedInt TokenVirtualizationAllowed => 23;
+public static UntypedInt TokenVirtualizationEnabled => 24;
+public static UntypedInt TokenIntegrityLevel => 25;
+public static UntypedInt TokenUIAccess => 26;
+public static UntypedInt TokenMandatoryPolicy => 27;
+public static UntypedInt TokenLogonSid => 28;
+public static UntypedInt MaxTokenInfoClass => 29;
 
 [GoType] partial struct SIDAndAttributes {
     public ж<SID> Sid;

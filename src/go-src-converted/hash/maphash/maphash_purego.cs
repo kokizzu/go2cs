@@ -32,11 +32,11 @@ internal static uint64 randUint64() {
 
 // This is a port of wyhash implementation in runtime/hash64.go,
 // without using unsafe for purego.
-internal static readonly UntypedInt m1 = 0xa0761d6478bd642f;
-internal static readonly UntypedInt m2 = 0xe7037ed1a0b428db;
-internal static readonly UntypedInt m3 = 0x8ebc6af09c88c6e3;
-internal static readonly UntypedInt m4 = 0x589965cc75374cc3;
-internal static readonly UntypedInt m5 = 0x1d8e4e27c47d124f;
+internal static UntypedInt m1 => 0xa0761d6478bd642f;
+internal static UntypedInt m2 => 0xe7037ed1a0b428db;
+internal static UntypedInt m3 => 0x8ebc6af09c88c6e3;
+internal static UntypedInt m4 => 0x589965cc75374cc3;
+internal static UntypedInt m5 => 0x1d8e4e27c47d124f;
 
 internal static uint64 wyhash(slice<byte> key, uint64 seed, uint64 len) {
     var p = key;

@@ -527,8 +527,7 @@ internal static error marshalValue(this ж<printer> Ꮡp, reflectꓸValue val, �
     if ((~tinfo).xmlname != nil) {
         var xmlname = tinfo.Value.xmlname;
         if ((~xmlname).name != ""u8){
-            start.Name.Space = xmlname.Value.xmlns;
-            start.Name.Local = xmlname.Value.name;
+            (start.Name.Space, start.Name.Local) = (xmlname.Value.xmlns, xmlname.Value.name);
         } else {
             var fv = xmlname.value(val, dontInitNilPointers);
             {
@@ -539,8 +538,7 @@ internal static error marshalValue(this ж<printer> Ꮡp, reflectꓸValue val, �
         }
     }
     if (start.Name.Local == ""u8 && Ꮡfinfo != nil) {
-        start.Name.Space = finfo.xmlns;
-        start.Name.Local = finfo.name;
+        (start.Name.Space, start.Name.Local) = (finfo.xmlns, finfo.name);
     }
     if (start.Name.Local == ""u8) {
         @string name = typ.Name();

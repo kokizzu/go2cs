@@ -16,7 +16,7 @@ partial class gob_package {
 // tooBig provides a sanity check for sizes; used in several places. Upper limit
 // of is 1GB on 32-bit systems, 8GB on 64-bit, allowing room to grow a little
 // without overflow.
-internal static readonly UntypedInt tooBig = /* (1 << 30) << (^uint(0) >> 62) */ 8589934592;
+internal static UntypedInt tooBig => /* (1 << 30) << (^uint(0) >> 62) */ 8589934592;
 
 // A Decoder manages the receipt of type and data information read from the
 // remote side of a connection.  It is safe for concurrent use by multiple

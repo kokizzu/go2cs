@@ -5,38 +5,38 @@ partial class bidi_package {
 
 [GoType("num:nuint")] partial struct ΔClass;
 
-public static readonly ΔClass L = /* iota */ 0;      // LeftToRight
-public static readonly ΔClass R = 1;      // RightToLeft
-public static readonly ΔClass EN = 2;     // EuropeanNumber
-public static readonly ΔClass ES = 3;     // EuropeanSeparator
-public static readonly ΔClass ET = 4;     // EuropeanTerminator
-public static readonly ΔClass AN = 5;     // ArabicNumber
-public static readonly ΔClass CS = 6;     // CommonSeparator
-public static readonly ΔClass B = 7;      // ParagraphSeparator
-public static readonly ΔClass S = 8;      // SegmentSeparator
-public static readonly ΔClass WS = 9;     // WhiteSpace
-public static readonly ΔClass ON = 10;     // OtherNeutral
-public static readonly ΔClass BN = 11;     // BoundaryNeutral
-public static readonly ΔClass NSM = 12;    // NonspacingMark
-public static readonly ΔClass AL = 13;     // ArabicLetter
-public static readonly ΔClass Control = 14; // Control LRO - PDI
-internal static readonly ΔClass numClass = 15;
-public static readonly ΔClass LRO = 16; // LeftToRightOverride
-public static readonly ΔClass RLO = 17; // RightToLeftOverride
-public static readonly ΔClass LRE = 18; // LeftToRightEmbedding
-public static readonly ΔClass RLE = 19; // RightToLeftEmbedding
-public static readonly ΔClass PDF = 20; // PopDirectionalFormat
-public static readonly ΔClass LRI = 21; // LeftToRightIsolate
-public static readonly ΔClass RLI = 22; // RightToLeftIsolate
-public static readonly ΔClass FSI = 23; // FirstStrongIsolate
-public static readonly ΔClass PDI = 24; // PopDirectionalIsolate
-internal static readonly ΔClass unknownClass = /* ^Class(0) */ unchecked((ΔClass)18446744073709551615);
+public static ΔClass L => /* iota */ 0;      // LeftToRight
+public static ΔClass R => 1;      // RightToLeft
+public static ΔClass EN => 2;     // EuropeanNumber
+public static ΔClass ES => 3;     // EuropeanSeparator
+public static ΔClass ET => 4;     // EuropeanTerminator
+public static ΔClass AN => 5;     // ArabicNumber
+public static ΔClass CS => 6;     // CommonSeparator
+public static ΔClass B => 7;      // ParagraphSeparator
+public static ΔClass S => 8;      // SegmentSeparator
+public static ΔClass WS => 9;     // WhiteSpace
+public static ΔClass ON => 10;     // OtherNeutral
+public static ΔClass BN => 11;     // BoundaryNeutral
+public static ΔClass NSM => 12;    // NonspacingMark
+public static ΔClass AL => 13;     // ArabicLetter
+public static ΔClass Control => 14; // Control LRO - PDI
+internal static ΔClass numClass => 15;
+public static ΔClass LRO => 16; // LeftToRightOverride
+public static ΔClass RLO => 17; // RightToLeftOverride
+public static ΔClass LRE => 18; // LeftToRightEmbedding
+public static ΔClass RLE => 19; // RightToLeftEmbedding
+public static ΔClass PDF => 20; // PopDirectionalFormat
+public static ΔClass LRI => 21; // LeftToRightIsolate
+public static ΔClass RLI => 22; // RightToLeftIsolate
+public static ΔClass FSI => 23; // FirstStrongIsolate
+public static ΔClass PDI => 24; // PopDirectionalIsolate
+internal static ΔClass unknownClass => /* ^Class(0) */ unchecked((ΔClass)18446744073709551615);
 
 // A trie entry has the following bits:
 // 7..5  XOR mask for brackets
 // 4     1: Bracket open, 0: Bracket close
 // 3..0  Class type
-internal static readonly UntypedInt openMask = 0x10;
-internal static readonly UntypedInt xorMaskShift = 5;
+internal static UntypedInt openMask => 0x10;
+internal static UntypedInt xorMaskShift => 5;
 
 } // end bidi_package

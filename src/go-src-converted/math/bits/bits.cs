@@ -15,10 +15,10 @@ namespace go.math;
 
 partial class bits_package {
 
-internal static readonly UntypedInt uintSize = /* 32 << (^uint(0) >> 63) */ 64; // 32 or 64
+internal static UntypedInt uintSize => /* 32 << (^uint(0) >> 63) */ 64; // 32 or 64
 
 // UintSize is the size of a uint in bits.
-public static readonly UntypedInt UintSize = /* uintSize */ 64;
+public static UntypedInt UintSize => /* uintSize */ 64;
 
 // --- LeadingZeros ---
 
@@ -50,14 +50,14 @@ public static nint LeadingZeros64(uint64 x) {
 // --- TrailingZeros ---
 
 // See http://supertech.csail.mit.edu/papers/debruijn.pdf
-internal static readonly UntypedInt deBruijn32 = 0x077CB531;
+internal static UntypedInt deBruijn32 => 0x077CB531;
 
 internal static array<byte> deBruijn32tab = new byte[]{
     0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
     31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
 }.array();
 
-internal static readonly UntypedInt deBruijn64 = 0x03f79d71b4ca8b09;
+internal static UntypedInt deBruijn64 => 0x03f79d71b4ca8b09;
 
 internal static array<byte> deBruijn64tab = new byte[]{
     0, 1, 56, 2, 57, 49, 28, 3, 61, 58, 42, 50, 38, 29, 17, 4,
@@ -117,15 +117,15 @@ public static nint TrailingZeros64(uint64 x) {
 }
 
 // --- OnesCount ---
-internal static readonly UntypedInt m0 = 0x5555555555555555; // 01010101 ...
+internal static UntypedInt m0 => 0x5555555555555555; // 01010101 ...
 
-internal static readonly UntypedInt m1 = 0x3333333333333333; // 00110011 ...
+internal static UntypedInt m1 => 0x3333333333333333; // 00110011 ...
 
-internal static readonly UntypedInt m2 = 0x0f0f0f0f0f0f0f0f; // 00001111 ...
+internal static UntypedInt m2 => 0x0f0f0f0f0f0f0f0f; // 00001111 ...
 
-internal static readonly UntypedInt m3 = 0x00ff00ff00ff00ff; // etc.
+internal static UntypedInt m3 => 0x00ff00ff00ff00ff; // etc.
 
-internal static readonly UntypedInt m4 = 0x0000ffff0000ffff;
+internal static UntypedInt m4 => 0x0000ffff0000ffff;
 
 // OnesCount returns the number of one bits ("population count") in x.
 public static nint OnesCount(nuint x) {

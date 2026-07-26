@@ -140,21 +140,21 @@ public static NamedArg Named(@string name, any value) {
 // If a driver does not support a given isolation level an error may be returned.
 //
 // See https://en.wikipedia.org/wiki/Isolation_(database_systems)#Isolation_levels.
-public static readonly IsolationLevel LevelDefault = /* iota */ 0;
+public static IsolationLevel LevelDefault => /* iota */ 0;
 
-public static readonly IsolationLevel LevelReadUncommitted = 1;
+public static IsolationLevel LevelReadUncommitted => 1;
 
-public static readonly IsolationLevel LevelReadCommitted = 2;
+public static IsolationLevel LevelReadCommitted => 2;
 
-public static readonly IsolationLevel LevelWriteCommitted = 3;
+public static IsolationLevel LevelWriteCommitted => 3;
 
-public static readonly IsolationLevel LevelRepeatableRead = 4;
+public static IsolationLevel LevelRepeatableRead => 4;
 
-public static readonly IsolationLevel LevelSnapshot = 5;
+public static IsolationLevel LevelSnapshot => 5;
 
-public static readonly IsolationLevel LevelSerializable = 6;
+public static IsolationLevel LevelSerializable => 6;
 
-public static readonly IsolationLevel LevelLinearizable = 7;
+public static IsolationLevel LevelLinearizable => 7;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string defaultˢ = "Default"u8;
@@ -233,8 +233,7 @@ public static error Scan(this ж<NullString> Ꮡns, any value) {
     ref var ns = ref Ꮡns.Value;
 
     if (value == default!) {
-        ns.String = ""u8;
-        ns.Valid = false;
+        (ns.String, ns.Valid) = ("", false);
         return default!;
     }
     ns.Valid = true;
@@ -262,8 +261,7 @@ public static error Scan(this ж<NullInt64> Ꮡn, any value) {
     ref var n = ref Ꮡn.Value;
 
     if (value == default!) {
-        n.Int64 = 0;
-        n.Valid = false;
+        (n.Int64, n.Valid) = (0, false);
         return default!;
     }
     n.Valid = true;
@@ -291,8 +289,7 @@ public static error Scan(this ж<NullInt32> Ꮡn, any value) {
     ref var n = ref Ꮡn.Value;
 
     if (value == default!) {
-        n.Int32 = 0;
-        n.Valid = false;
+        (n.Int32, n.Valid) = (0, false);
         return default!;
     }
     n.Valid = true;
@@ -320,8 +317,7 @@ public static error Scan(this ж<NullInt16> Ꮡn, any value) {
     ref var n = ref Ꮡn.Value;
 
     if (value == default!) {
-        n.Int16 = 0;
-        n.Valid = false;
+        (n.Int16, n.Valid) = (0, false);
         return default!;
     }
     var err = convertAssign(Ꮡn.of(NullInt16.ᏑInt16), value);
@@ -350,8 +346,7 @@ public static error Scan(this ж<NullByte> Ꮡn, any value) {
     ref var n = ref Ꮡn.Value;
 
     if (value == default!) {
-        n.Byte = 0;
-        n.Valid = false;
+        (n.Byte, n.Valid) = (0, false);
         return default!;
     }
     var err = convertAssign(Ꮡn.of(NullByte.ᏑByte), value);
@@ -380,8 +375,7 @@ public static error Scan(this ж<NullFloat64> Ꮡn, any value) {
     ref var n = ref Ꮡn.Value;
 
     if (value == default!) {
-        n.Float64 = 0D;
-        n.Valid = false;
+        (n.Float64, n.Valid) = (0D, false);
         return default!;
     }
     n.Valid = true;
@@ -409,8 +403,7 @@ public static error Scan(this ж<NullBool> Ꮡn, any value) {
     ref var n = ref Ꮡn.Value;
 
     if (value == default!) {
-        n.Bool = false;
-        n.Valid = false;
+        (n.Bool, n.Valid) = (false, false);
         return default!;
     }
     n.Valid = true;
@@ -438,8 +431,7 @@ public static error Scan(this ж<NullTime> Ꮡn, any value) {
     ref var n = ref Ꮡn.Value;
 
     if (value == default!) {
-        n.Time = new time.Time(nil);
-        n.Valid = false;
+        (n.Time, n.Valid) = (new time.Time(nil), false);
         return default!;
     }
     n.Valid = true;
@@ -475,8 +467,7 @@ public static error Scan<T>(this ж<Null<T>> Ꮡn, any value) {
     ref var n = ref Ꮡn.Value;
 
     if (value == default!) {
-        n.V = @new<T>().ValueSlot;
-        n.Valid = false;
+        (n.V, n.Valid) = (@new<T>().ValueSlot, false);
         return default!;
     }
     n.Valid = true;
@@ -587,8 +578,8 @@ public static error ErrNoRows = errors.New("sql: no rows in result set"u8);
 
 [GoType("num:uint8")] partial struct connReuseStrategy;
 
-internal static readonly connReuseStrategy alwaysNewConn = /* iota */ 0;
-internal static readonly connReuseStrategy cachedOrNewConn = 1;
+internal static connReuseStrategy alwaysNewConn => /* iota */ 0;
+internal static connReuseStrategy cachedOrNewConn => 1;
 
 // driverConn wraps a driver.Conn with a mutex, to
 // be held during all calls into the Conn. (including any calls onto
@@ -1025,7 +1016,7 @@ public static error Close(this ж<DB> Ꮡdb) {
     return err;
 }
 
-internal static readonly UntypedInt defaultMaxIdleConns = 2;
+internal static UntypedInt defaultMaxIdleConns => 2;
 
 [GoRecv] internal static nint maxIdleConnsLocked(this ref DB db) {
     nint n = db.maxIdleCount;
@@ -1683,7 +1674,7 @@ internal static bool putConnDBLocked(this ж<DB> Ꮡdb, ж<driverConn> Ꮡdc, er
 // maxBadConnRetries is the number of maximum retries if the driver returns
 // driver.ErrBadConn to signal a broken connection before forcing a new
 // connection to be opened.
-internal static readonly UntypedInt maxBadConnRetries = 2;
+internal static UntypedInt maxBadConnRetries => 2;
 
 [GoRecv] internal static error retry(this ref DB db, Func<connReuseStrategy, error> fn) {
     for (var i = (int64)0; i < maxBadConnRetries; i++) {

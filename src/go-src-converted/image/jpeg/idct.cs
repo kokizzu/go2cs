@@ -35,24 +35,24 @@ partial class jpeg_package {
  * design.
  *
  */
-internal static readonly UntypedInt blockSize = 64; // A DCT block is 8x8.
+internal static UntypedInt blockSize => 64; // A DCT block is 8x8.
 
 [GoType("[64]int32")] /* [blockSize]int32 */
 partial struct block;
 
-internal static readonly UntypedInt w1 = 2841; // 2048*sqrt(2)*cos(1*pi/16)
-internal static readonly UntypedInt w2 = 2676; // 2048*sqrt(2)*cos(2*pi/16)
-internal static readonly UntypedInt w3 = 2408; // 2048*sqrt(2)*cos(3*pi/16)
-internal static readonly UntypedInt w5 = 1609; // 2048*sqrt(2)*cos(5*pi/16)
-internal static readonly UntypedInt w6 = 1108; // 2048*sqrt(2)*cos(6*pi/16)
-internal static readonly UntypedInt w7 = 565; // 2048*sqrt(2)*cos(7*pi/16)
-internal static readonly UntypedInt w1pw7 = /* w1 + w7 */ 3406;
-internal static readonly UntypedInt w1mw7 = /* w1 - w7 */ 2276;
-internal static readonly UntypedInt w2pw6 = /* w2 + w6 */ 3784;
-internal static readonly UntypedInt w2mw6 = /* w2 - w6 */ 1568;
-internal static readonly UntypedInt w3pw5 = /* w3 + w5 */ 4017;
-internal static readonly UntypedInt w3mw5 = /* w3 - w5 */ 799;
-internal static readonly UntypedInt r2 = 181; // 256/sqrt(2)
+internal static UntypedInt w1 => 2841; // 2048*sqrt(2)*cos(1*pi/16)
+internal static UntypedInt w2 => 2676; // 2048*sqrt(2)*cos(2*pi/16)
+internal static UntypedInt w3 => 2408; // 2048*sqrt(2)*cos(3*pi/16)
+internal static UntypedInt w5 => 1609; // 2048*sqrt(2)*cos(5*pi/16)
+internal static UntypedInt w6 => 1108; // 2048*sqrt(2)*cos(6*pi/16)
+internal static UntypedInt w7 => 565; // 2048*sqrt(2)*cos(7*pi/16)
+internal static UntypedInt w1pw7 => /* w1 + w7 */ 3406;
+internal static UntypedInt w1mw7 => /* w1 - w7 */ 2276;
+internal static UntypedInt w2pw6 => /* w2 + w6 */ 3784;
+internal static UntypedInt w2mw6 => /* w2 - w6 */ 1568;
+internal static UntypedInt w3pw5 => /* w3 + w5 */ 4017;
+internal static UntypedInt w3mw5 => /* w3 - w5 */ 799;
+internal static UntypedInt r2 => 181; // 256/sqrt(2)
 
 // idct performs a 2-D Inverse Discrete Cosine Transformation.
 //

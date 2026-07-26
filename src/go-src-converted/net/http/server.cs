@@ -286,7 +286,7 @@ internal static (net.Conn rwc, ж<bufio.ReadWriter> buf, error err) hijackLocked
 
 // This should be >= 512 bytes for DetectContentType,
 // but otherwise it's somewhat arbitrary.
-internal static readonly UntypedInt bufferBeforeChunkingSize = 2048;
+internal static UntypedInt bufferBeforeChunkingSize => 2048;
 
 // chunkWriter writes to a response's conn buffer, and is the writer
 // wrapped by the response.w buffered writer.
@@ -787,9 +787,9 @@ internal static ref sync.Pool bufioWriter2kPool => ref ᏑbufioWriter2kPool.Valu
 internal static ж<sync.Pool> ᏑbufioWriter4kPool = new(default(sync.Pool));
 internal static ref sync.Pool bufioWriter4kPool => ref ᏑbufioWriter4kPool.Value;
 
-internal static readonly UntypedInt copyBufPoolSize = /* 32 * 1024 */ 32768;
+internal static UntypedInt copyBufPoolSize => /* 32 * 1024 */ 32768;
 
-internal static ж<sync.Pool> ᏑcopyBufPool = new(new sync.Pool(New: () => @new<array<byte>>()));
+internal static ж<sync.Pool> ᏑcopyBufPool = new(new sync.Pool(New: () => Ꮡ(new array<byte>(32768))));
 internal static ref sync.Pool copyBufPool => ref ᏑcopyBufPool.Value;
 
 internal static slice<byte> getCopyBuf() {
@@ -897,7 +897,7 @@ internal static void putBufioWriter(ж<bufio.Writer> Ꮡbw) {
 // DefaultMaxHeaderBytes is the maximum permitted size of the headers
 // in an HTTP request.
 // This can be overridden by setting [Server.MaxHeaderBytes].
-public static readonly UntypedInt DefaultMaxHeaderBytes = /* 1 << 20 */ 1048576; // 1 MB
+public static UntypedInt DefaultMaxHeaderBytes => /* 1 << 20 */ 1048576; // 1 MB
 
 [GoRecv] internal static nint maxHeaderBytes(this ref Server srv) {
     if (srv.MaxHeaderBytes > 0) {
@@ -1158,7 +1158,7 @@ internal static bool http1ServerSupportsRequest(ж<Request> Ꮡreq) {
 // This number is approximately what a typical machine's TCP buffer
 // size is anyway.  (if we have the bytes on the machine, we might as
 // well read them)
-internal static readonly UntypedInt maxPostHandlerReadBytes = /* 256 << 10 */ 262144;
+internal static UntypedInt maxPostHandlerReadBytes => /* 256 << 10 */ 262144;
 
 internal static void checkWriteHeaderCode(nint code) {
     // Issue 22880: require valid WriteHeader status codes.
@@ -2738,26 +2738,30 @@ internal static (ΔHandler h, @string patStr, ж<pattern>, slice<@string> matche
 // redirection: when a path doesn't match exactly, the match is tried again
 // after appending "/" to the path. If that second match succeeds, the last
 // return value is the URL to redirect to.
-internal static (ж<routingNode>, slice<@string> matches, ж<urlpkg.URL> redirectTo) matchOrRedirect(this ж<ServeMux> Ꮡmux, @string host, @string method, @string path, ж<urlpkg.URL> Ꮡu) => func<(ж<routingNode>, slice<@string> matches, ж<urlpkg.URL> redirectTo)>((defer, recover) => {
+internal static (ж<routingNode>, slice<@string> matches, ж<urlpkg.URL> redirectTo) matchOrRedirect(this ж<ServeMux> Ꮡmux, @string host, @string method, @string path, ж<urlpkg.URL> Ꮡu) {
+    ж<routingNode> _ᴛ1 = default!;
     slice<@string> matches = default!;
     ж<urlpkg.URL> redirectTo = default!;
-
+    func((defer, recover) => {
     ref var u = ref Ꮡu.DerefOrNil();
-    Ꮡmux.of(ServeMux.Ꮡmu).RLock();
-    defer(Ꮡmux.of(ServeMux.Ꮡmu).RUnlock);
-    (var n, matches) = Ꮡmux.of(ServeMux.Ꮡtree).match(host, method, path);
-    // If we have an exact match, or we were asked not to try trailing-slash redirection,
-    // or the URL already has a trailing slash, then we're done.
-    if (!exactMatch(n, path) && Ꮡu != nil && !strings.HasSuffix(path, "/"u8)) {
-        // If there is an exact match with a trailing slash, then redirect.
-        path += "/"u8;
-        var (n2, _) = Ꮡmux.of(ServeMux.Ꮡtree).match(host, method, path);
-        if (exactMatch(n2, path)) {
-            return (default!, default!, Ꮡ(new url.URL(Path: cleanPath(u.Path) + "/"u8, RawQuery: u.RawQuery)));
+
+        Ꮡmux.of(ServeMux.Ꮡmu).RLock();
+        defer(Ꮡmux.of(ServeMux.Ꮡmu).RUnlock);
+        (var n, matches) = Ꮡmux.of(ServeMux.Ꮡtree).match(host, method, path);
+        // If we have an exact match, or we were asked not to try trailing-slash redirection,
+        // or the URL already has a trailing slash, then we're done.
+        if (!exactMatch(n, path) && Ꮡu != nil && !strings.HasSuffix(path, "/"u8)) {
+            // If there is an exact match with a trailing slash, then redirect.
+            path += "/"u8;
+            var (n2, _) = Ꮡmux.of(ServeMux.Ꮡtree).match(host, method, path);
+            if (exactMatch(n2, path)) {
+                (_ᴛ1, matches, redirectTo) = (default!, default!, Ꮡ(new url.URL(Path: cleanPath(u.Path) + "/"u8, RawQuery: u.RawQuery))); return;
+            }
         }
-    }
-    return (n, matches, default!);
-});
+        (_ᴛ1, matches, redirectTo) = (n, matches, default!);
+    });
+    return (_ᴛ1, matches, redirectTo);
+}
 
 // exactMatch reports whether the node's pattern exactly matches the path.
 // As a special case, if the node is nil, exactMatch return false.
@@ -3117,7 +3121,7 @@ public static error Close(this ж<Server> Ꮡsrv) => func((defer, recover) => {
 // but which also doesn't have a high runtime cost (and doesn't
 // involve any contentious mutexes), but that is left as an
 // exercise for the reader.
-internal static readonly time.Duration shutdownPollIntervalMax = /* 500 * time.Millisecond */ 500000000;
+internal static time.Duration shutdownPollIntervalMax => /* 500 * time.Millisecond */ 500000000;
 
 // Shutdown gracefully shuts down the server without interrupting any
 // active connections. Shutdown works by first closing all open
@@ -3237,11 +3241,11 @@ internal static bool closeIdleConns(this ж<Server> Ꮡs) => func((defer, recove
 
 [GoType("num:nint")] partial struct ConnState;
 
-public static readonly ConnState StateNew = /* iota */ 0;
-public static readonly ConnState StateActive = 1;
-public static readonly ConnState StateIdle = 2;
-public static readonly ConnState StateHijacked = 3;
-public static readonly ConnState StateClosed = 4;
+public static ConnState StateNew => /* iota */ 0;
+public static ConnState StateActive => 1;
+public static ConnState StateIdle => 2;
+public static ConnState StateHijacked => 3;
+public static ConnState StateClosed => 4;
 
 internal static map<ConnState, @string> stateName = new map<ConnState, @string>{
     [StateNew] = "new"u8,

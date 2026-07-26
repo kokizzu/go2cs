@@ -36,8 +36,8 @@ using go.hash;
 
 partial class zlib_package {
 
-internal static readonly UntypedInt zlibDeflate = 8;
-internal static readonly UntypedInt zlibMaxWindow = 7;
+internal static UntypedInt zlibDeflate => 8;
+internal static UntypedInt zlibMaxWindow => 7;
 
 public static error ErrChecksum = errors.New("zlib: invalid checksum"u8);
 public static error ErrDictionary = errors.New("zlib: invalid dictionary"u8);

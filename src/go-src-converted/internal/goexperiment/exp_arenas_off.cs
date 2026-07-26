@@ -6,6 +6,6 @@ partial class goexperiment_package {
 
 public const bool Arenas = false;
 
-public static readonly UntypedInt ArenasInt = 0;
+public static UntypedInt ArenasInt => 0;
 
 } // end goexperiment_package

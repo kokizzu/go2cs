@@ -26,12 +26,12 @@ partial class lzw_package {
 
 [GoType("num:nint")] partial struct Order;
 
-public static readonly Order LSB = /* iota */ 0;
-public static readonly Order MSB = 1;
+public static Order LSB => /* iota */ 0;
+public static Order MSB => 1;
 
-internal static readonly UntypedInt maxWidth = 12;
-internal static readonly UntypedInt decoderInvalidCode = 0xffff;
-internal static readonly UntypedInt flushBuffer = /* 1 << maxWidth */ 4096;
+internal static UntypedInt maxWidth => 12;
+internal static UntypedInt decoderInvalidCode => 0xffff;
+internal static UntypedInt flushBuffer => /* 1 << maxWidth */ 4096;
 
 // Reader is an io.Reader which can be used to read compressed data in the
 // LZW format.
@@ -81,7 +81,7 @@ internal static readonly UntypedInt flushBuffer = /* 1 << maxWidth */ 4096;
         if (err != default!) {
             return (0, err);
         }
-        r.bits |= ((uint32)x).Lsh(r.nBits);
+        r.bits |= (uint32)(((uint32)x).Lsh(r.nBits));
         r.nBits += 8;
     }
     var code = (uint16)((uint32)(r.bits & (((uint32)1).Lsh(r.width) - 1)));
@@ -97,7 +97,7 @@ internal static readonly UntypedInt flushBuffer = /* 1 << maxWidth */ 4096;
         if (err != default!) {
             return (0, err);
         }
-        r.bits |= ((uint32)x).Lsh((24 - r.nBits));
+        r.bits |= (uint32)(((uint32)x).Lsh((24 - r.nBits)));
         r.nBits += 8;
     }
     var code = (uint16)(r.bits.Rsh((32 - r.width)));
@@ -204,8 +204,7 @@ loop:
             break;
         }}
 
-        r.last = code;
-        r.hi = (uint16)(r.hi + 1);
+        (r.last, r.hi) = (code, (uint16)(r.hi + 1));
         if (r.hi >= r.overflow) {
             if (r.hi > r.overflow) {
                 throw panic("unreachable");
@@ -299,8 +298,7 @@ private static readonly @string lzwUnknownOrderˢ = "lzw: unknown order"u8;
     r.litWidth = litWidth;
     r.width = 1 + (nuint)litWidth;
     r.clear = (uint16)(((uint16)1).Lsh((nuint)litWidth));
-    r.eof = (uint16)(r.clear + 1);
-    r.hi = (uint16)(r.clear + 1);
+    (r.eof, r.hi) = ((uint16)(r.clear + 1), (uint16)(r.clear + 1));
     r.overflow = (uint16)(((uint16)1).Lsh(r.width));
     r.last = decoderInvalidCode;
 }

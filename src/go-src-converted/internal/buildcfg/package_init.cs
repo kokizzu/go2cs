@@ -8,6 +8,11 @@ namespace go.@internal;
 
 partial class buildcfg_package {
     static buildcfg_package() {
+        initᴛGOARCH();
+        initᴛGOOS();
+        initᴛGO386();
+        initᴛGO_LDSO();
+        initᴛVersion();
         initᴛGOAMD64();
         initᴛGOARM();
         initᴛGOARM64();

@@ -43,41 +43,41 @@ internal static @string String(this item i) {
 
 [GoType("num:nint")] partial struct itemType;
 
-internal static readonly itemType itemError = /* iota */ 0;       // error occurred; value is text of error
-internal static readonly itemType itemBool = 1;        // boolean constant
-internal static readonly itemType itemChar = 2;        // printable ASCII character; grab bag for comma etc.
-internal static readonly itemType itemCharConstant = 3; // character constant
-internal static readonly itemType itemComment = 4;     // comment text
-internal static readonly itemType itemComplex = 5;     // complex constant (1+2i); imaginary is just a number
-internal static readonly itemType itemAssign = 6;      // equals ('=') introducing an assignment
-internal static readonly itemType itemDeclare = 7;     // colon-equals (':=') introducing a declaration
-internal static readonly itemType itemEOF = 8;
-internal static readonly itemType itemField = 9; // alphanumeric identifier starting with '.'
-internal static readonly itemType itemIdentifier = 10; // alphanumeric identifier not starting with '.'
-internal static readonly itemType itemLeftDelim = 11; // left action delimiter
-internal static readonly itemType itemLeftParen = 12; // '(' inside action
-internal static readonly itemType itemNumber = 13; // simple number, including imaginary
-internal static readonly itemType itemPipe = 14; // pipe symbol
-internal static readonly itemType itemRawString = 15; // raw quoted string (includes quotes)
-internal static readonly itemType itemRightDelim = 16; // right action delimiter
-internal static readonly itemType itemRightParen = 17; // ')' inside action
-internal static readonly itemType itemSpace = 18; // run of spaces separating arguments
-internal static readonly itemType itemString = 19; // quoted string (includes quotes)
-internal static readonly itemType itemText = 20; // plain text
-internal static readonly itemType itemVariable = 21; // variable starting with '$', such as '$' or  '$1' or '$hello'
-internal static readonly itemType itemKeyword = 22; // used only to delimit the keywords
-internal static readonly itemType itemBlock = 23; // block keyword
-internal static readonly itemType itemBreak = 24; // break keyword
-internal static readonly itemType itemContinue = 25; // continue keyword
-internal static readonly itemType itemDot = 26; // the cursor, spelled '.'
-internal static readonly itemType itemDefine = 27; // define keyword
-internal static readonly itemType itemElse = 28; // else keyword
-internal static readonly itemType itemEnd = 29; // end keyword
-internal static readonly itemType itemIf = 30; // if keyword
-internal static readonly itemType itemNil = 31; // the untyped nil constant, easiest to treat as a keyword
-internal static readonly itemType itemRange = 32; // range keyword
-internal static readonly itemType itemTemplate = 33; // template keyword
-internal static readonly itemType itemWith = 34; // with keyword
+internal static itemType itemError => /* iota */ 0;       // error occurred; value is text of error
+internal static itemType itemBool => 1;        // boolean constant
+internal static itemType itemChar => 2;        // printable ASCII character; grab bag for comma etc.
+internal static itemType itemCharConstant => 3; // character constant
+internal static itemType itemComment => 4;     // comment text
+internal static itemType itemComplex => 5;     // complex constant (1+2i); imaginary is just a number
+internal static itemType itemAssign => 6;      // equals ('=') introducing an assignment
+internal static itemType itemDeclare => 7;     // colon-equals (':=') introducing a declaration
+internal static itemType itemEOF => 8;
+internal static itemType itemField => 9; // alphanumeric identifier starting with '.'
+internal static itemType itemIdentifier => 10; // alphanumeric identifier not starting with '.'
+internal static itemType itemLeftDelim => 11; // left action delimiter
+internal static itemType itemLeftParen => 12; // '(' inside action
+internal static itemType itemNumber => 13; // simple number, including imaginary
+internal static itemType itemPipe => 14; // pipe symbol
+internal static itemType itemRawString => 15; // raw quoted string (includes quotes)
+internal static itemType itemRightDelim => 16; // right action delimiter
+internal static itemType itemRightParen => 17; // ')' inside action
+internal static itemType itemSpace => 18; // run of spaces separating arguments
+internal static itemType itemString => 19; // quoted string (includes quotes)
+internal static itemType itemText => 20; // plain text
+internal static itemType itemVariable => 21; // variable starting with '$', such as '$' or  '$1' or '$hello'
+internal static itemType itemKeyword => 22; // used only to delimit the keywords
+internal static itemType itemBlock => 23; // block keyword
+internal static itemType itemBreak => 24; // break keyword
+internal static itemType itemContinue => 25; // continue keyword
+internal static itemType itemDot => 26; // the cursor, spelled '.'
+internal static itemType itemDefine => 27; // define keyword
+internal static itemType itemElse => 28; // else keyword
+internal static itemType itemEnd => 29; // end keyword
+internal static itemType itemIf => 30; // if keyword
+internal static itemType itemNil => 31; // the untyped nil constant, easiest to treat as a keyword
+internal static itemType itemRange => 32; // range keyword
+internal static itemType itemTemplate => 33; // template keyword
+internal static itemType itemWith => 34; // with keyword
 
 internal static map<@string, itemType> key = new map<@string, itemType>{
     ["."u8] = itemDot,
@@ -94,7 +94,7 @@ internal static map<@string, itemType> key = new map<@string, itemType>{
     ["with"u8] = itemWith
 };
 
-internal static readonly UntypedInt eof = -1;
+internal static UntypedInt eof => -1;
 
 // Trimming spaces.
 // If the action begins "{{- " rather than "{{", then all space/tab/newlines
@@ -106,9 +106,9 @@ internal static readonly UntypedInt eof = -1;
 // does the job.
 internal static readonly @string spaceChars = " \t\r\n"u8; // These are the space characters defined by Go itself.
 
-internal static readonly UntypedInt trimMarker = /* '-' */ 45; // Attached to left/right delimiter, trims trailing spaces from preceding/following text.
+internal static UntypedInt trimMarker => /* '-' */ 45; // Attached to left/right delimiter, trims trailing spaces from preceding/following text.
 
-internal static readonly Pos trimMarkerLen = /* Pos(1 + 1) */ 2; // marker plus space before or after
+internal static Pos trimMarkerLen => /* Pos(1 + 1) */ 2; // marker plus space before or after
 
 internal delegate stateFn stateFn(ж<lexer> _);
 

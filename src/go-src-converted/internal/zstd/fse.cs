@@ -214,7 +214,7 @@ private static readonly @string fseStateErrorˢ = "FSE state error"u8;
 // Given a literal length code, we need to read a number of bits and
 // add that to a baseline. For states 0 to 15 the baseline is the
 // state and the number of bits is zero. RFC 3.1.1.3.2.1.1.
-internal static readonly UntypedInt literalLengthOffset = 16;
+internal static UntypedInt literalLengthOffset => 16;
 
 internal static slice<uint32> literalLengthBase = new uint32[]{
     (uint32)(16 | ((1 << (int)(24)))),
@@ -309,7 +309,7 @@ private static readonly @string fseOffsetSymbolOverflowˢ = "FSE offset symbol o
 // Given a match length code, we need to read a number of bits and add
 // that to a baseline. For states 0 to 31 the baseline is state+3 and
 // the number of bits is zero. RFC 3.1.1.3.2.1.1.
-internal static readonly UntypedInt matchLengthOffset = 32;
+internal static UntypedInt matchLengthOffset => 32;
 
 internal static slice<uint32> matchLengthBase = new uint32[]{
     (uint32)(35 | ((1 << (int)(24)))),

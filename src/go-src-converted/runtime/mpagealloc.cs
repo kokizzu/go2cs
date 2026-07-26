@@ -51,14 +51,14 @@ using @internal.runtime;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt pallocChunkPages = /* 1 << logPallocChunkPages */ 512;
-internal static readonly UntypedInt pallocChunkBytes = /* pallocChunkPages * pageSize */ 4194304;
-internal static readonly UntypedInt logPallocChunkPages = 9;
-internal static readonly UntypedInt logPallocChunkBytes = /* logPallocChunkPages + pageShift */ 22;
-internal static readonly UntypedInt summaryLevelBits = 3;
-internal static readonly UntypedInt summaryL0Bits = /* heapAddrBits - logPallocChunkBytes - (summaryLevels-1)*summaryLevelBits */ 14;
-internal static readonly UntypedInt pallocChunksL2Bits = /* heapAddrBits - logPallocChunkBytes - pallocChunksL1Bits */ 13;
-internal static readonly UntypedInt pallocChunksL1Shift = /* pallocChunksL2Bits */ 13;
+internal static UntypedInt pallocChunkPages => /* 1 << logPallocChunkPages */ 512;
+internal static UntypedInt pallocChunkBytes => /* pallocChunkPages * pageSize */ 4194304;
+internal static UntypedInt logPallocChunkPages => 9;
+internal static UntypedInt logPallocChunkBytes => /* logPallocChunkPages + pageShift */ 22;
+internal static UntypedInt summaryLevelBits => 3;
+internal static UntypedInt summaryL0Bits => /* heapAddrBits - logPallocChunkBytes - (summaryLevels-1)*summaryLevelBits */ 14;
+internal static UntypedInt pallocChunksL2Bits => /* heapAddrBits - logPallocChunkBytes - pallocChunksL1Bits */ 13;
+internal static UntypedInt pallocChunksL1Shift => /* pallocChunksL2Bits */ 13;
 
 // maxSearchAddr returns the maximum searchAddr value, which indicates
 // that the heap has no free space.
@@ -933,10 +933,10 @@ internal static void free(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr npages
     Δp.update(@base, npages, true, false);
 }
 
-internal static readonly uintptr pallocSumBytes = /* unsafe.Sizeof(pallocSum(0)) */ 8;
-internal static readonly UntypedInt maxPackedValue = /* 1 << logMaxPackedValue */ 2097152;
-internal static readonly UntypedInt logMaxPackedValue = /* logPallocChunkPages + (summaryLevels-1)*summaryLevelBits */ 21;
-internal static readonly pallocSum freeChunkSum = /* pallocSum(uint64(pallocChunkPages) |
+internal static uintptr pallocSumBytes => /* unsafe.Sizeof(pallocSum(0)) */ 8;
+internal static UntypedInt maxPackedValue => /* 1 << logMaxPackedValue */ 2097152;
+internal static UntypedInt logMaxPackedValue => /* logPallocChunkPages + (summaryLevels-1)*summaryLevelBits */ 21;
+internal static pallocSum freeChunkSum => /* pallocSum(uint64(pallocChunkPages) |
 	uint64(pallocChunkPages<<logMaxPackedValue) |
 	uint64(pallocChunkPages<<(2*logMaxPackedValue))) */ unchecked((pallocSum)2251800887427584);
 

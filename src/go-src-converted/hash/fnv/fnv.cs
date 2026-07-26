@@ -33,14 +33,14 @@ partial class fnv_package {
 
 [GoType("[2]uint64")] partial struct sum128a;
 
-internal static readonly UntypedInt offset32 = 2166136261;
-internal static readonly UntypedInt offset64 = 14695981039346656037;
-internal static readonly UntypedInt offset128Lower = 0x62b821756295c58d;
-internal static readonly UntypedInt offset128Higher = 0x6c62272e07bb0142;
-internal static readonly UntypedInt prime32 = 16777619;
-internal static readonly UntypedInt prime64 = 1099511628211;
-internal static readonly UntypedInt prime128Lower = 0x13b;
-internal static readonly UntypedInt prime128Shift = 24;
+internal static UntypedInt offset32 => 2166136261;
+internal static UntypedInt offset64 => 14695981039346656037;
+internal static UntypedInt offset128Lower => 0x62b821756295c58d;
+internal static UntypedInt offset128Higher => 0x6c62272e07bb0142;
+internal static UntypedInt prime32 => 16777619;
+internal static UntypedInt prime64 => 1099511628211;
+internal static UntypedInt prime128Lower => 0x13b;
+internal static UntypedInt prime128Shift => 24;
 
 // New32 returns a new 32-bit FNV-1 [hash.Hash].
 // Its Sum method will lay the value out in big-endian byte order.

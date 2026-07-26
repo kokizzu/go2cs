@@ -8,10 +8,10 @@ using syscall = syscall_package;
 
 partial class registry_package {
 
-internal static readonly UntypedInt _REG_OPTION_NON_VOLATILE = 0;
-internal static readonly UntypedInt _REG_CREATED_NEW_KEY = 1;
-internal static readonly UntypedInt _REG_OPENED_EXISTING_KEY = 2;
-internal static readonly syscall.Errno _ERROR_NO_MORE_ITEMS = 259;
+internal static UntypedInt _REG_OPTION_NON_VOLATILE => 0;
+internal static UntypedInt _REG_CREATED_NEW_KEY => 1;
+internal static UntypedInt _REG_OPENED_EXISTING_KEY => 2;
+internal static syscall.Errno _ERROR_NO_MORE_ITEMS => 259;
 
 //sys	regCreateKeyEx(key syscall.Handle, subkey *uint16, reserved uint32, class *uint16, options uint32, desired uint32, sa *syscall.SecurityAttributes, result *syscall.Handle, disposition *uint32) (regerrno error) = advapi32.RegCreateKeyExW
 //sys	regDeleteKey(key syscall.Handle, subkey *uint16) (regerrno error) = advapi32.RegDeleteKeyW

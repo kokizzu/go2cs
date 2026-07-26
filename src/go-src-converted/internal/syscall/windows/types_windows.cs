@@ -6,10 +6,10 @@ namespace go.@internal.syscall;
 partial class windows_package {
 
 // Socket related.
-public static readonly UntypedInt TCP_KEEPIDLE = 0x03;
+public static UntypedInt TCP_KEEPIDLE => 0x03;
 
-public static readonly UntypedInt TCP_KEEPCNT = 0x10;
+public static UntypedInt TCP_KEEPCNT => 0x10;
 
-public static readonly UntypedInt TCP_KEEPINTVL = 0x11;
+public static UntypedInt TCP_KEEPINTVL => 0x11;
 
 } // end windows_package

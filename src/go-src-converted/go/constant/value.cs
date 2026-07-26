@@ -29,12 +29,12 @@ partial class constant_package {
 [GoType("num:nint")] partial struct ΔKind;
 
 //go:generate stringer -type Kind
-public static readonly ΔKind Unknown = /* iota */ 0;
-public static readonly ΔKind Bool = 1;
-public static readonly ΔKind ΔString = 2;
-public static readonly ΔKind Int = 3;
-public static readonly ΔKind Float = 4;
-public static readonly ΔKind Complex = 5;
+public static ΔKind Unknown => /* iota */ 0;
+public static ΔKind Bool => 1;
+public static ΔKind ΔString => 2;
+public static ΔKind Int => 3;
+public static ΔKind Float => 4;
+public static ΔKind Complex => 5;
 
 // A Value represents the value of a Go constant.
 [GoType] partial interface Value :
@@ -54,7 +54,7 @@ public static readonly ΔKind Complex = 5;
 
 // Maximum supported mantissa precision.
 // The spec requires at least 256 bits; typical implementations use 512 bits.
-internal static readonly UntypedInt prec = 512;
+internal static UntypedInt prec => 512;
 
 // TODO(gri) Consider storing "error" information in an unknownVal so clients
 // can provide better error messages. For instance, if a number is
@@ -461,7 +461,7 @@ internal static Value makeFloatFromLiteral(@string lit) {
 
 // Permit fractions with component sizes up to maxExp
 // before switching to using floating-point numbers.
-internal static readonly UntypedInt maxExp = /* 4 << 10 */ 4096;
+internal static UntypedInt maxExp => /* 4 << 10 */ 4096;
 
 // smallInt reports whether x would lead to "reasonably"-sized fraction
 // if converted to a *big.Rat.
@@ -893,9 +893,9 @@ public static nint Sign(Value x) {
 
 // ----------------------------------------------------------------------------
 // Support for assembling/disassembling numeric values
-internal static readonly big.Word _m = /* ^big.Word(0) */ unchecked((big.Word)18446744073709551615);
-internal static readonly big.Word _log = /* _m>>8&1 + _m>>16&1 + _m>>32&1 */ 3;
-internal static readonly UntypedInt wordSize = /* 1 << _log */ 8;
+internal static big.Word _m => /* ^big.Word(0) */ unchecked((big.Word)18446744073709551615);
+internal static big.Word _log => /* _m>>8&1 + _m>>16&1 + _m>>32&1 */ 3;
+internal static UntypedInt wordSize => /* 1 << _log */ 8;
 
 // Bytes returns the bytes for the absolute value of x in little-
 // endian binary representation; x must be an [Int].

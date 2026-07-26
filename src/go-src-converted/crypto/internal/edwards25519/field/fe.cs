@@ -254,20 +254,20 @@ public static (ж<Element>, error) SetBytes(this ж<Element> Ꮡv, slice<byte> x
     }
     // Bits 0:51 (bytes 0:8, bits 0:64, shift 0, mask 51).
     v.l0 = byteorder.LeUint64(x[0..8]);
-    v.l0 &= maskLow51Bits;
+    v.l0 &= (uint64)(maskLow51Bits);
     // Bits 51:102 (bytes 6:14, bits 48:112, shift 3, mask 51).
     v.l1 = (byteorder.LeUint64(x[6..14]) >> (int)(3));
-    v.l1 &= maskLow51Bits;
+    v.l1 &= (uint64)(maskLow51Bits);
     // Bits 102:153 (bytes 12:20, bits 96:160, shift 6, mask 51).
     v.l2 = (byteorder.LeUint64(x[12..20]) >> (int)(6));
-    v.l2 &= maskLow51Bits;
+    v.l2 &= (uint64)(maskLow51Bits);
     // Bits 153:204 (bytes 19:27, bits 152:216, shift 1, mask 51).
     v.l3 = (byteorder.LeUint64(x[19..27]) >> (int)(1));
-    v.l3 &= maskLow51Bits;
+    v.l3 &= (uint64)(maskLow51Bits);
     // Bits 204:255 (bytes 24:32, bits 192:256, shift 12, mask 51).
     // Note: not bytes 25:33, shift 4, to avoid overread.
     v.l4 = (byteorder.LeUint64(x[24..32]) >> (int)(12));
-    v.l4 &= maskLow51Bits;
+    v.l4 &= (uint64)(maskLow51Bits);
     return (Ꮡv, default!);
 }
 
@@ -334,20 +334,20 @@ public static ж<Element> Select(this ж<Element> Ꮡv, ж<Element> Ꮡa, ж<Ele
 
     var m = mask64Bits(cond);
     var t = (uint64)(m & ((uint64)(v.l0 ^ u.l0)));
-    v.l0 ^= t;
-    u.l0 ^= t;
+    v.l0 ^= (uint64)(t);
+    u.l0 ^= (uint64)(t);
     t = (uint64)(m & ((uint64)(v.l1 ^ u.l1)));
-    v.l1 ^= t;
-    u.l1 ^= t;
+    v.l1 ^= (uint64)(t);
+    u.l1 ^= (uint64)(t);
     t = (uint64)(m & ((uint64)(v.l2 ^ u.l2)));
-    v.l2 ^= t;
-    u.l2 ^= t;
+    v.l2 ^= (uint64)(t);
+    u.l2 ^= (uint64)(t);
     t = (uint64)(m & ((uint64)(v.l3 ^ u.l3)));
-    v.l3 ^= t;
-    u.l3 ^= t;
+    v.l3 ^= (uint64)(t);
+    u.l3 ^= (uint64)(t);
     t = (uint64)(m & ((uint64)(v.l4 ^ u.l4)));
-    v.l4 ^= t;
-    u.l4 ^= t;
+    v.l4 ^= (uint64)(t);
+    u.l4 ^= (uint64)(t);
 }
 
 // IsNegative returns 1 if v is negative, and 0 otherwise.

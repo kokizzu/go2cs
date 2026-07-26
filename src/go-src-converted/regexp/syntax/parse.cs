@@ -47,24 +47,24 @@ public static @string String(this ErrorCode e) {
 
 [GoType("num:uint16")] partial struct Flags;
 
-public static readonly Flags FoldCase = /* 1 << iota */ 1;            // case-insensitive match
-public static readonly Flags Literal = 2;             // treat pattern as literal string
-public static readonly Flags ClassNL = 4;             // allow character classes like [^a-z] and [[:space:]] to match newline
-public static readonly Flags DotNL = 8;               // allow . to match newline
-public static readonly Flags OneLine = 16;             // treat ^ and $ as only matching at beginning and end of text
-public static readonly Flags NonGreedy = 32;           // make repetition operators default to non-greedy
-public static readonly Flags PerlX = 64;               // allow Perl extensions
-public static readonly Flags UnicodeGroups = 128;       // allow \p{Han}, \P{Han} for Unicode group and negation
-public static readonly Flags WasDollar = 256;           // regexp OpEndText was $, not \z
-public static readonly Flags Simple = 512;              // regexp contains no counted repetition
-public static readonly Flags MatchNL = /* ClassNL | DotNL */ 12;
-public static readonly Flags Perl = /* ClassNL | OneLine | PerlX | UnicodeGroups */ 212; // as close to Perl as possible
-public static readonly Flags POSIX = 0;                                       // POSIX syntax
+public static Flags FoldCase => /* 1 << iota */ 1;            // case-insensitive match
+public static Flags Literal => 2;             // treat pattern as literal string
+public static Flags ClassNL => 4;             // allow character classes like [^a-z] and [[:space:]] to match newline
+public static Flags DotNL => 8;               // allow . to match newline
+public static Flags OneLine => 16;             // treat ^ and $ as only matching at beginning and end of text
+public static Flags NonGreedy => 32;           // make repetition operators default to non-greedy
+public static Flags PerlX => 64;               // allow Perl extensions
+public static Flags UnicodeGroups => 128;       // allow \p{Han}, \P{Han} for Unicode group and negation
+public static Flags WasDollar => 256;           // regexp OpEndText was $, not \z
+public static Flags Simple => 512;              // regexp contains no counted repetition
+public static Flags MatchNL => /* ClassNL | DotNL */ 12;
+public static Flags Perl => /* ClassNL | OneLine | PerlX | UnicodeGroups */ 212; // as close to Perl as possible
+public static Flags POSIX => 0;                                       // POSIX syntax
 
 // Pseudo-ops for parsing stack.
-internal static readonly Op opLeftParen = /* opPseudo + iota */ 128;
+internal static Op opLeftParen => /* opPseudo + iota */ 128;
 
-internal static readonly Op opVerticalBar = 129;
+internal static Op opVerticalBar => 129;
 
 // maxHeight is the maximum height of a regexp parse tree.
 // It is somewhat arbitrarily chosen, but the idea is to be large enough
@@ -78,7 +78,7 @@ internal static readonly Op opVerticalBar = 129;
 // Using depth 1000 should be plenty of margin.
 // As an optimization, we don't even bother calculating heights
 // until we've allocated at least maxHeight Regexp structures.
-internal static readonly UntypedInt maxHeight = 1000;
+internal static UntypedInt maxHeight => 1000;
 
 // maxSize is the maximum size of a compiled regexp in Insts.
 // It too is somewhat arbitrarily chosen, but the idea is to be large enough
@@ -86,9 +86,9 @@ internal static readonly UntypedInt maxHeight = 1000;
 // the compiled form will not take up too much memory.
 // 128 MB is enough for a 3.3 million Inst structures, which roughly
 // corresponds to a 3.3 MB regexp.
-internal static readonly UntypedInt maxSize = /* 128 << 20 / instSize */ 3355443;
+internal static UntypedInt maxSize => /* 128 << 20 / instSize */ 3355443;
 
-internal static readonly UntypedInt instSize = /* 5 * 8 */ 40; // byte, 2 uint32, slice is 5 64-bit words
+internal static UntypedInt instSize => /* 5 * 8 */ 40; // byte, 2 uint32, slice is 5 64-bit words
 
 // maxRunes is the maximum number of runes allowed in a regexp tree
 // counting the runes in all the nodes.
@@ -105,9 +105,9 @@ internal static readonly UntypedInt instSize = /* 5 * 8 */ 40; // byte, 2 uint32
 // there is not an opportunity to change the representation to allow
 // partial sharing between different character classes.
 // So the limit is the best we can do.
-internal static readonly UntypedInt maxRunes = /* 128 << 20 / runeSize */ 33554432;
+internal static UntypedInt maxRunes => /* 128 << 20 / runeSize */ 33554432;
 
-internal static readonly UntypedInt runeSize = 4; // rune is int32
+internal static UntypedInt runeSize => 4; // rune is int32
 
 [GoType] partial struct parser {
     internal Flags flags;     // parse mode flags
@@ -887,273 +887,276 @@ public static (ж<Regexp>, error) Parse(@string s, Flags flags) {
     return parse(s, flags);
 }
 
-internal static (ж<Regexp>, error err) parse(@string s, Flags flags) => func<(ж<Regexp>, error err)>((defer, recover) => {
+internal static (ж<Regexp>, error err) parse(@string s, Flags flags) {
+    ж<Regexp> _ᴛ1 = default!;
     error err = default!;
-
-    defer(() => {
-        {
-            var r = recover();
-            var exprᴛ1 = r;
-            if (AreEqual(exprᴛ1, default!)) {
-            }
-            else if (AreEqual(exprᴛ1, ErrLarge)) {
-                err = new ΔErrorжerror(Ꮡ(new ΔError( // ok
+    func((defer, recover) => {
+        defer(() => {
+            {
+                var r = recover();
+                var exprᴛ1 = r;
+                if (AreEqual(exprᴛ1, default!)) {
+                }
+                else if (AreEqual(exprᴛ1, ErrLarge)) {
+                    err = new ΔErrorжerror(Ꮡ(new ΔError( // ok
  // too big
 Code: ErrLarge, Expr: s)));
-            }
-            else if (AreEqual(exprᴛ1, ErrNestingDepth)) {
-                err = new ΔErrorжerror(Ꮡ(new ΔError(Code: ErrNestingDepth, Expr: s)));
-            }
-            else { /* default: */
-                throw panic(r);
-            }
-        }
-
-    });
-    if ((Flags)(flags & Literal) != 0) {
-        // Trivial parser for literal string.
-        {
-            var errΔ1 = checkUTF8(s); if (errΔ1 != default!) {
-                return (default!, errΔ1);
-            }
-        }
-        return (literalRegexp(s, flags), default!);
-    }
-    // Otherwise, must do real work.
-    ref var p = ref heap(new parser(), out var Ꮡp);
-    
-    rune c = default!;
-    
-    Op op = default!;
-    
-    @string lastRepeat = default!;
-    p.flags = flags;
-    p.wholeRegexp = s;
-    @string t = s;
-    while (t != ""u8) {
-        @string repeat = ""u8;
-BigSwitch:
-        switch (t[0]) {
-        default: {
-            {
-                (c, t, err) = nextRune(t); if (err != default!) {
-                    return (default!, err);
+                }
+                else if (AreEqual(exprᴛ1, ErrNestingDepth)) {
+                    err = new ΔErrorжerror(Ꮡ(new ΔError(Code: ErrNestingDepth, Expr: s)));
+                }
+                else { /* default: */
+                    throw panic(r);
                 }
             }
-            p.literal(c);
-            break;
+
+        });
+        if ((Flags)(flags & Literal) != 0) {
+            // Trivial parser for literal string.
+            {
+                var errΔ1 = checkUTF8(s); if (errΔ1 != default!) {
+                    (_ᴛ1, err) = (default!, errΔ1); return;
+                }
+            }
+            (_ᴛ1, err) = (literalRegexp(s, flags), default!); return;
         }
-        case (rune)'(': {
-            if ((Flags)(p.flags & PerlX) != 0 && len(t) >= 2 && t[1] == (rune)'?') {
-                // Flag changes and non-capturing groups.
+        // Otherwise, must do real work.
+        ref var p = ref heap(new parser(), out var Ꮡp);
+        
+        rune c = default!;
+        
+        Op op = default!;
+        
+        @string lastRepeat = default!;
+        p.flags = flags;
+        p.wholeRegexp = s;
+        @string t = s;
+        while (t != ""u8) {
+            @string repeat = ""u8;
+BigSwitch:
+            switch (t[0]) {
+            default: {
                 {
-                    (t, err) = p.parsePerlFlags(t); if (err != default!) {
-                        return (default!, err);
+                    (c, t, err) = nextRune(t); if (err != default!) {
+                        (_ᴛ1, err) = (default!, err); return;
                     }
                 }
+                p.literal(c);
                 break;
             }
-            p.numCap++;
-            p.op(opLeftParen).Value.Cap = p.numCap;
-            t = t[1..];
-            break;
-        }
-        case (rune)'|': {
-            p.parseVerticalBar();
-            t = t[1..];
-            break;
-        }
-        case (rune)')': {
-            {
-                err = p.parseRightParen(); if (err != default!) {
-                    return (default!, err);
+            case (rune)'(': {
+                if ((Flags)(p.flags & PerlX) != 0 && len(t) >= 2 && t[1] == (rune)'?') {
+                    // Flag changes and non-capturing groups.
+                    {
+                        (t, err) = p.parsePerlFlags(t); if (err != default!) {
+                            (_ᴛ1, err) = (default!, err); return;
+                        }
+                    }
+                    break;
                 }
-            }
-            t = t[1..];
-            break;
-        }
-        case (rune)'^': {
-            if ((Flags)(p.flags & OneLine) != 0){
-                p.op(OpBeginText);
-            } else {
-                p.op(OpBeginLine);
-            }
-            t = t[1..];
-            break;
-        }
-        case (rune)'$': {
-            if ((Flags)(p.flags & OneLine) != 0){
-                p.op(OpEndText).Value.Flags |= WasDollar;
-            } else {
-                p.op(OpEndLine);
-            }
-            t = t[1..];
-            break;
-        }
-        case (rune)'.': {
-            if ((Flags)(p.flags & DotNL) != 0){
-                p.op(OpAnyChar);
-            } else {
-                p.op(OpAnyCharNotNL);
-            }
-            t = t[1..];
-            break;
-        }
-        case (rune)'[': {
-            {
-                (t, err) = Ꮡp.parseClass(t); if (err != default!) {
-                    return (default!, err);
-                }
-            }
-            break;
-        }
-        case (rune)'*' or (rune)'+' or (rune)'?': {
-            @string before = t;
-            switch (t[0]) {
-            case (rune)'*': {
-                op = OpStar;
-                break;
-            }
-            case (rune)'+': {
-                op = OpPlus;
-                break;
-            }
-            case (rune)'?': {
-                op = OpQuest;
-                break;
-            }}
-
-            @string afterΔ1 = t[1..];
-            {
-                (afterΔ1, err) = p.repeat(op, 0, 0, before, afterΔ1, lastRepeat); if (err != default!) {
-                    return (default!, err);
-                }
-            }
-            repeat = before;
-            t = afterΔ1;
-            break;
-        }
-        case (rune)'{': {
-            op = OpRepeat;
-            @string before = t;
-            var (min, max, after, ok) = p.parseRepeat(t);
-            if (!ok) {
-                // If the repeat cannot be parsed, { is a literal.
-                p.literal((rune)'{');
+                p.numCap++;
+                p.op(opLeftParen).Value.Cap = p.numCap;
                 t = t[1..];
                 break;
             }
-            if (min < 0 || min > 1000 || max > 1000 || max >= 0 && min > max) {
-                // Numbers were too big, or max is present and min > max.
-                return (default!, new ΔErrorжerror(Ꮡ(new ΔError(ErrInvalidRepeatSize, before[..(int)(len(before) - len(after))]))));
+            case (rune)'|': {
+                p.parseVerticalBar();
+                t = t[1..];
+                break;
             }
-            {
-                (after, err) = p.repeat(op, min, max, before, after, lastRepeat); if (err != default!) {
-                    return (default!, err);
-                }
-            }
-            repeat = before;
-            t = after;
-            break;
-        }
-        case (rune)'\\': {
-            if ((Flags)(p.flags & PerlX) != 0 && len(t) >= 2) {
-                switch (t[1]) {
-                case (rune)'A': {
-                    p.op(OpBeginText);
-                    t = t[2..];
-                    goto break_BigSwitch;
-                    break;
-                }
-                case (rune)'b': {
-                    p.op(OpWordBoundary);
-                    t = t[2..];
-                    goto break_BigSwitch;
-                    break;
-                }
-                case (rune)'B': {
-                    p.op(OpNoWordBoundary);
-                    t = t[2..];
-                    goto break_BigSwitch;
-                    break;
-                }
-                case (rune)'C': {
-                    return (default!, new ΔErrorжerror(Ꮡ(new ΔError( // any byte; not supported
-ErrInvalidEscape, t[..2]))));
-                }
-                case (rune)'Q': {
-                    // \Q ... \E: the ... is always literals
-                    @string lit = default!;
-                    (lit, t, _) = strings.Cut(t[2..], @"\E"u8);
-                    while (lit != ""u8) {
-                        var (cΔ4, rest, errΔ6) = nextRune(lit);
-                        if (errΔ6 != default!) {
-                            return (default!, errΔ6);
-                        }
-                        p.literal(cΔ4);
-                        lit = rest;
+            case (rune)')': {
+                {
+                    err = p.parseRightParen(); if (err != default!) {
+                        (_ᴛ1, err) = (default!, err); return;
                     }
-                    goto break_BigSwitch;
+                }
+                t = t[1..];
+                break;
+            }
+            case (rune)'^': {
+                if ((Flags)(p.flags & OneLine) != 0){
+                    p.op(OpBeginText);
+                } else {
+                    p.op(OpBeginLine);
+                }
+                t = t[1..];
+                break;
+            }
+            case (rune)'$': {
+                if ((Flags)(p.flags & OneLine) != 0){
+                    p.op(OpEndText).Value.Flags |= (Flags)(WasDollar);
+                } else {
+                    p.op(OpEndLine);
+                }
+                t = t[1..];
+                break;
+            }
+            case (rune)'.': {
+                if ((Flags)(p.flags & DotNL) != 0){
+                    p.op(OpAnyChar);
+                } else {
+                    p.op(OpAnyCharNotNL);
+                }
+                t = t[1..];
+                break;
+            }
+            case (rune)'[': {
+                {
+                    (t, err) = Ꮡp.parseClass(t); if (err != default!) {
+                        (_ᴛ1, err) = (default!, err); return;
+                    }
+                }
+                break;
+            }
+            case (rune)'*' or (rune)'+' or (rune)'?': {
+                @string before = t;
+                switch (t[0]) {
+                case (rune)'*': {
+                    op = OpStar;
                     break;
                 }
-                case (rune)'z': {
-                    p.op(OpEndText);
-                    t = t[2..];
-                    goto break_BigSwitch;
+                case (rune)'+': {
+                    op = OpPlus;
+                    break;
+                }
+                case (rune)'?': {
+                    op = OpQuest;
                     break;
                 }}
 
-            }
-            var re = p.newRegexp(OpCharClass);
-            re.Value.Flags = p.flags;
-            if (len(t) >= 2 && (t[1] == (rune)'p' || t[1] == (rune)'P')) {
-                // Look for Unicode character group like \p{Han}
-                var (r, rest, errΔ7) = Ꮡp.parseUnicodeClass(t, (~re).Rune0[..0]);
-                if (errΔ7 != default!) {
-                    return (default!, errΔ7);
+                @string afterΔ1 = t[1..];
+                {
+                    (afterΔ1, err) = p.repeat(op, 0, 0, before, afterΔ1, lastRepeat); if (err != default!) {
+                        (_ᴛ1, err) = (default!, err); return;
+                    }
                 }
-                if (r != default!) {
-                    re.Value.Rune = r;
-                    t = rest;
-                    p.push(re);
-                    goto break_BigSwitch;
-                }
+                repeat = before;
+                t = afterΔ1;
+                break;
             }
-            {
-                var (r, rest) = Ꮡp.parsePerlClassEscape(t, // Perl character class escape.
- (~re).Rune0[..0]); if (r != default!) {
-                    re.Value.Rune = r;
-                    t = rest;
-                    p.push(re);
-                    goto break_BigSwitch;
+            case (rune)'{': {
+                op = OpRepeat;
+                @string before = t;
+                var (min, max, after, ok) = p.parseRepeat(t);
+                if (!ok) {
+                    // If the repeat cannot be parsed, { is a literal.
+                    p.literal((rune)'{');
+                    t = t[1..];
+                    break;
                 }
-            }
-            p.reuse(re);
-            {
-                (c, t, err) = p.parseEscape(t); if (err != default!) {
-                    // Ordinary single-character escape.
-                    return (default!, err);
+                if (min < 0 || min > 1000 || max > 1000 || max >= 0 && min > max) {
+                    // Numbers were too big, or max is present and min > max.
+                    (_ᴛ1, err) = (default!, new ΔErrorжerror(Ꮡ(new ΔError(ErrInvalidRepeatSize, before[..(int)(len(before) - len(after))])))); return;
                 }
+                {
+                    (after, err) = p.repeat(op, min, max, before, after, lastRepeat); if (err != default!) {
+                        (_ᴛ1, err) = (default!, err); return;
+                    }
+                }
+                repeat = before;
+                t = after;
+                break;
             }
-            p.literal(c);
-            break;
-        }}
+            case (rune)'\\': {
+                if ((Flags)(p.flags & PerlX) != 0 && len(t) >= 2) {
+                    switch (t[1]) {
+                    case (rune)'A': {
+                        p.op(OpBeginText);
+                        t = t[2..];
+                        goto break_BigSwitch;
+                        break;
+                    }
+                    case (rune)'b': {
+                        p.op(OpWordBoundary);
+                        t = t[2..];
+                        goto break_BigSwitch;
+                        break;
+                    }
+                    case (rune)'B': {
+                        p.op(OpNoWordBoundary);
+                        t = t[2..];
+                        goto break_BigSwitch;
+                        break;
+                    }
+                    case (rune)'C': {
+                        (_ᴛ1, err) = (default!, new ΔErrorжerror(Ꮡ(new ΔError( // any byte; not supported
+ErrInvalidEscape, t[..2])))); return;
+                    }
+                    case (rune)'Q': {
+                        // \Q ... \E: the ... is always literals
+                        @string lit = default!;
+                        (lit, t, _) = strings.Cut(t[2..], @"\E"u8);
+                        while (lit != ""u8) {
+                            var (cΔ4, rest, errΔ6) = nextRune(lit);
+                            if (errΔ6 != default!) {
+                                (_ᴛ1, err) = (default!, errΔ6); return;
+                            }
+                            p.literal(cΔ4);
+                            lit = rest;
+                        }
+                        goto break_BigSwitch;
+                        break;
+                    }
+                    case (rune)'z': {
+                        p.op(OpEndText);
+                        t = t[2..];
+                        goto break_BigSwitch;
+                        break;
+                    }}
 
-        break_BigSwitch:;
-        lastRepeat = repeat;
-    }
-    p.concat();
-    if (p.swapVerticalBar()) {
-        // pop vertical bar
-        p.stack = p.stack[..(int)(len(p.stack) - 1)];
-    }
-    p.alternate();
-    nint n = len(p.stack);
-    if (n != 1) {
-        return (default!, new ΔErrorжerror(Ꮡ(new ΔError(ErrMissingParen, s))));
-    }
-    return (p.stack[0], default!);
-});
+                }
+                var re = p.newRegexp(OpCharClass);
+                re.Value.Flags = p.flags;
+                if (len(t) >= 2 && (t[1] == (rune)'p' || t[1] == (rune)'P')) {
+                    // Look for Unicode character group like \p{Han}
+                    var (r, rest, errΔ7) = Ꮡp.parseUnicodeClass(t, (~re).Rune0[..0]);
+                    if (errΔ7 != default!) {
+                        (_ᴛ1, err) = (default!, errΔ7); return;
+                    }
+                    if (r != default!) {
+                        re.Value.Rune = r;
+                        t = rest;
+                        p.push(re);
+                        goto break_BigSwitch;
+                    }
+                }
+                {
+                    var (r, rest) = Ꮡp.parsePerlClassEscape(t, // Perl character class escape.
+ (~re).Rune0[..0]); if (r != default!) {
+                        re.Value.Rune = r;
+                        t = rest;
+                        p.push(re);
+                        goto break_BigSwitch;
+                    }
+                }
+                p.reuse(re);
+                {
+                    (c, t, err) = p.parseEscape(t); if (err != default!) {
+                        // Ordinary single-character escape.
+                        (_ᴛ1, err) = (default!, err); return;
+                    }
+                }
+                p.literal(c);
+                break;
+            }}
+
+            break_BigSwitch:;
+            lastRepeat = repeat;
+        }
+        p.concat();
+        if (p.swapVerticalBar()) {
+            // pop vertical bar
+            p.stack = p.stack[..(int)(len(p.stack) - 1)];
+        }
+        p.alternate();
+        nint n = len(p.stack);
+        if (n != 1) {
+            (_ᴛ1, err) = (default!, new ΔErrorжerror(Ꮡ(new ΔError(ErrMissingParen, s)))); return;
+        }
+        (_ᴛ1, err) = (p.stack[0], default!);
+    });
+    return (_ᴛ1, err);
+}
 
 // parseRepeat parses {min} (max=min) or {min,} (max=-1) or {min,max}.
 // If s is not of that form, it returns ok == false.
@@ -2061,8 +2064,8 @@ internal static slice<rune> appendRange(slice<rune> r, rune lo, rune hi) {
     return builtin.append(r, lo, hi);
 }
 
-internal static readonly UntypedInt minFold = 0x0041;
-internal static readonly UntypedInt maxFold = 0x1e943;
+internal static UntypedInt minFold => 0x0041;
+internal static UntypedInt maxFold => 0x1e943;
 
 // appendFoldedRange returns the result of appending the range lo-hi
 // and its case folding-equivalent runes to the class r.

@@ -64,7 +64,7 @@ internal static void initᴛDefaultTransport() { DefaultTransport = new Transpor
 
 // DefaultMaxIdleConnsPerHost is the default value of [Transport]'s
 // MaxIdleConnsPerHost.
-public static readonly UntypedInt DefaultMaxIdleConnsPerHost = 2;
+public static UntypedInt DefaultMaxIdleConnsPerHost => 2;
 
 // Transport is an implementation of [RoundTripper] that supports HTTP,
 // HTTPS, and HTTP proxies (for either HTTP or HTTPS with CONNECT).
@@ -527,175 +527,179 @@ private static readonly @string unsupportedProtocolˢ = "unsupported protocol sc
 private static readonly @string httpNoHostInRequestUrlˢ = "http: no Host in request URL"u8;
 
 // roundTrip implements a RoundTripper over HTTP.
-internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<Request> Ꮡreq) => func<(ж<Response>, error err)>((defer, recover) => {
+internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<Request> Ꮡreq) {
+    ж<Response> _ᴛ1 = default!;
     error err = default!;
-
+    func((defer, recover) => {
     ref var t = ref Ꮡt.Value;
     ref var req = ref Ꮡreq.Value;
-    Ꮡt.of(Transport.ᏑnextProtoOnce).Do(Ꮡt.onceSetNextProtoDefaults);
-    var ctx = req.Context();
-    var trace = httptrace.ContextClientTrace(ctx);
-    if (req.URL == nil) {
-        req.closeBody();
-        return (default!, errors.New(httpNilRequestUrlˢ));
-    }
-    if (req.Header == default!) {
-        req.closeBody();
-        return (default!, errors.New(httpNilRequestHeaderˢ));
-    }
-    @string scheme = req.URL.Value.Scheme;
-    var isHTTP = scheme == "http"u8 || scheme == "https"u8;
-    if (isHTTP) {
-        // Validate the outgoing headers.
-        {
-            @string errΔ1 = validateHeaders(req.Header); if (errΔ1 != ""u8) {
-                req.closeBody();
-                return (default!, fmt.Errorf("net/http: invalid header %s"u8, errΔ1));
-            }
+
+        Ꮡt.of(Transport.ᏑnextProtoOnce).Do(Ꮡt.onceSetNextProtoDefaults);
+        var ctx = req.Context();
+        var trace = httptrace.ContextClientTrace(ctx);
+        if (req.URL == nil) {
+            req.closeBody();
+            (_ᴛ1, err) = (default!, errors.New(httpNilRequestUrlˢ)); return;
         }
-        // Validate the outgoing trailers too.
-        {
-            @string errΔ2 = validateHeaders(req.Trailer); if (errΔ2 != ""u8) {
-                req.closeBody();
-                return (default!, fmt.Errorf("net/http: invalid trailer %s"u8, errΔ2));
-            }
+        if (req.Header == default!) {
+            req.closeBody();
+            (_ᴛ1, err) = (default!, errors.New(httpNilRequestHeaderˢ)); return;
         }
-    }
-    var origReq = Ꮡreq;
-    Ꮡreq = setupRewindBody(Ꮡreq); req = ref Ꮡreq.Value;
-    {
-        var altRT = Ꮡt.alternateRoundTripper(Ꮡreq); if (altRT != default!) {
+        @string scheme = req.URL.Value.Scheme;
+        var isHTTP = scheme == "http"u8 || scheme == "https"u8;
+        if (isHTTP) {
+            // Validate the outgoing headers.
             {
-                var (resp, errΔ3) = altRT.RoundTrip(Ꮡreq); if (!AreEqual(errΔ3, ErrSkipAltProtocol)) {
-                    return (resp, errΔ3);
+                @string errΔ1 = validateHeaders(req.Header); if (errΔ1 != ""u8) {
+                    req.closeBody();
+                    (_ᴛ1, err) = (default!, fmt.Errorf("net/http: invalid header %s"u8, errΔ1)); return;
                 }
             }
-            error errΔ4 = default!;
-            (Ꮡreq, errΔ4) = rewindBody(Ꮡreq); req = ref Ꮡreq.Value;
-            if (errΔ4 != default!) {
-                return (default!, errΔ4);
+            // Validate the outgoing trailers too.
+            {
+                @string errΔ2 = validateHeaders(req.Trailer); if (errΔ2 != ""u8) {
+                    req.closeBody();
+                    (_ᴛ1, err) = (default!, fmt.Errorf("net/http: invalid trailer %s"u8, errΔ2)); return;
+                }
             }
         }
-    }
-    if (!isHTTP) {
-        req.closeBody();
-        return (default!, badStringError(unsupportedProtocolˢ, scheme));
-    }
-    if (req.Method != ""u8 && !validMethod(req.Method)) {
-        req.closeBody();
-        return (default!, fmt.Errorf("net/http: invalid method %q"u8, req.Method));
-    }
-    if ((~req.URL).Host == ""u8) {
-        req.closeBody();
-        return (default!, errors.New(httpNoHostInRequestUrlˢ));
-    }
-    // Transport request context.
-    //
-    // If RoundTrip returns an error, it cancels this context before returning.
-    //
-    // If RoundTrip returns no error:
-    //   - For an HTTP/1 request, persistConn.readLoop cancels this context
-    //     after reading the request body.
-    //   - For an HTTP/2 request, RoundTrip cancels this context after the HTTP/2
-    //     RoundTripper returns.
-    (ctx, var cancel) = context_package.WithCancelCause(req.Context());
-    // Convert Request.Cancel into context cancelation.
-    if ((~origReq).Cancel != default!) {
-        goǃ(awaitLegacyCancel, ctx, cancel, origReq);
-    }
-    // Convert Transport.CancelRequest into context cancelation.
-    //
-    // This is lamentably expensive. CancelRequest has been deprecated for a long time
-    // and doesn't work on HTTP/2 requests. Perhaps we should drop support for it entirely.
-    cancel = Ꮡt.prepareTransportCancel(origReq, cancel);
-    var cancelʗ1 = cancel;
-    defer(() => {
-        if (err != default!) {
-            cancelʗ1(err);
+        var origReq = Ꮡreq;
+        Ꮡreq = setupRewindBody(Ꮡreq); req = ref Ꮡreq.Value;
+        {
+            var altRT = Ꮡt.alternateRoundTripper(Ꮡreq); if (altRT != default!) {
+                {
+                    var (resp, errΔ3) = altRT.RoundTrip(Ꮡreq); if (!AreEqual(errΔ3, ErrSkipAltProtocol)) {
+                        (_ᴛ1, err) = (resp, errΔ3); return;
+                    }
+                }
+                error errΔ4 = default!;
+                (Ꮡreq, errΔ4) = rewindBody(Ꮡreq); req = ref Ꮡreq.Value;
+                if (errΔ4 != default!) {
+                    (_ᴛ1, err) = (default!, errΔ4); return;
+                }
+            }
+        }
+        if (!isHTTP) {
+            req.closeBody();
+            (_ᴛ1, err) = (default!, badStringError(unsupportedProtocolˢ, scheme)); return;
+        }
+        if (req.Method != ""u8 && !validMethod(req.Method)) {
+            req.closeBody();
+            (_ᴛ1, err) = (default!, fmt.Errorf("net/http: invalid method %q"u8, req.Method)); return;
+        }
+        if ((~req.URL).Host == ""u8) {
+            req.closeBody();
+            (_ᴛ1, err) = (default!, errors.New(httpNoHostInRequestUrlˢ)); return;
+        }
+        // Transport request context.
+        //
+        // If RoundTrip returns an error, it cancels this context before returning.
+        //
+        // If RoundTrip returns no error:
+        //   - For an HTTP/1 request, persistConn.readLoop cancels this context
+        //     after reading the request body.
+        //   - For an HTTP/2 request, RoundTrip cancels this context after the HTTP/2
+        //     RoundTripper returns.
+        (ctx, var cancel) = context_package.WithCancelCause(req.Context());
+        // Convert Request.Cancel into context cancelation.
+        if ((~origReq).Cancel != default!) {
+            goǃ(awaitLegacyCancel, ctx, cancel, origReq);
+        }
+        // Convert Transport.CancelRequest into context cancelation.
+        //
+        // This is lamentably expensive. CancelRequest has been deprecated for a long time
+        // and doesn't work on HTTP/2 requests. Perhaps we should drop support for it entirely.
+        cancel = Ꮡt.prepareTransportCancel(origReq, cancel);
+        var cancelʗ1 = cancel;
+        defer(() => {
+            if (err != default!) {
+                cancelʗ1(err);
+            }
+        });
+        while (ᐧ) {
+            var selᴛ90 = ctx.Done();
+            switch (trySelect(ᐸꟷ(selᴛ90, ꓸꓸꓸ))) {
+            case 0 when selᴛ90.ꟷᐳ(out _): {
+                req.closeBody();
+                (_ᴛ1, err) = (default!, context_package.Cause(ctx)); return;
+            }
+            default: {
+                break;
+            }}
+            // treq gets modified by roundTrip, so we need to recreate for each retry.
+            var treq = Ꮡ(new transportRequest(Request: Ꮡreq, trace: trace, ctx: ctx, cancel: cancel));
+            var (cm, errΔ5) = t.connectMethodForRequest(treq);
+            if (errΔ5 != default!) {
+                req.closeBody();
+                (_ᴛ1, err) = (default!, errΔ5); return;
+            }
+            // Get the cached or newly-created connection to either the
+            // host (for http or https), the http proxy, or the http proxy
+            // pre-CONNECTed to https server. In any case, we'll be ready
+            // to send it requests.
+            (var pconn, errΔ5) = Ꮡt.getConn(treq, cm);
+            if (errΔ5 != default!) {
+                req.closeBody();
+                (_ᴛ1, err) = (default!, errΔ5); return;
+            }
+            ж<Response> resp = default!;
+            if ((~pconn).alt != default!){
+                // HTTP/2 path.
+                (resp, errΔ5) = (~pconn).alt.RoundTrip(Ꮡreq);
+            } else {
+                (resp, errΔ5) = pconn.roundTrip(treq);
+            }
+            if (errΔ5 == default!) {
+                if ((~pconn).alt != default!) {
+                    // HTTP/2 requests are not cancelable with CancelRequest,
+                    // so we have no further need for the request context.
+                    //
+                    // On the HTTP/1 path, roundTrip takes responsibility for
+                    // canceling the context after the response body is read.
+                    cancel(errRequestDone);
+                }
+                resp.Value.Request = origReq;
+                (_ᴛ1, err) = (resp, default!); return;
+            }
+            // Failed. Clean up and determine whether to retry.
+            if (http2isNoCachedConnError(errΔ5)){
+                if (Ꮡt.removeIdleConn(pconn)) {
+                    Ꮡt.decConnsPerHost((~pconn).cacheKey);
+                }
+            } else 
+            if (!pconn.shouldRetryRequest(Ꮡreq, errΔ5)) {
+                // Issue 16465: return underlying net.Conn.Read error from peek,
+                // as we've historically done.
+                {
+                    var (e, ok) = errΔ5._<nothingWrittenError>(ᐧ); if (ok) {
+                        errΔ5 = e.error;
+                    }
+                }
+                {
+                    var (e, ok) = errΔ5._<transportReadFromServerError>(ᐧ); if (ok) {
+                        errΔ5 = e.err;
+                    }
+                }
+                {
+                    var (b, ok) = req.Body._<ж<readTrackingBody>>(ᐧ); if (ok && !(~b).didClose) {
+                        // Issue 49621: Close the request body if pconn.roundTrip
+                        // didn't do so already. This can happen if the pconn
+                        // write loop exits without reading the write request.
+                        req.closeBody();
+                    }
+                }
+                (_ᴛ1, err) = (default!, errΔ5); return;
+            }
+            testHookRoundTripRetried();
+            // Rewind the body if we're able to.
+            (Ꮡreq, errΔ5) = rewindBody(Ꮡreq); req = ref Ꮡreq.Value;
+            if (errΔ5 != default!) {
+                (_ᴛ1, err) = (default!, errΔ5); return;
+            }
         }
     });
-    while (ᐧ) {
-        var selᴛ90 = ctx.Done();
-        switch (trySelect(ᐸꟷ(selᴛ90, ꓸꓸꓸ))) {
-        case 0 when selᴛ90.ꟷᐳ(out _): {
-            req.closeBody();
-            return (default!, context_package.Cause(ctx));
-        }
-        default: {
-            break;
-        }}
-        // treq gets modified by roundTrip, so we need to recreate for each retry.
-        var treq = Ꮡ(new transportRequest(Request: Ꮡreq, trace: trace, ctx: ctx, cancel: cancel));
-        var (cm, errΔ5) = t.connectMethodForRequest(treq);
-        if (errΔ5 != default!) {
-            req.closeBody();
-            return (default!, errΔ5);
-        }
-        // Get the cached or newly-created connection to either the
-        // host (for http or https), the http proxy, or the http proxy
-        // pre-CONNECTed to https server. In any case, we'll be ready
-        // to send it requests.
-        (var pconn, errΔ5) = Ꮡt.getConn(treq, cm);
-        if (errΔ5 != default!) {
-            req.closeBody();
-            return (default!, errΔ5);
-        }
-        ж<Response> resp = default!;
-        if ((~pconn).alt != default!){
-            // HTTP/2 path.
-            (resp, errΔ5) = (~pconn).alt.RoundTrip(Ꮡreq);
-        } else {
-            (resp, errΔ5) = pconn.roundTrip(treq);
-        }
-        if (errΔ5 == default!) {
-            if ((~pconn).alt != default!) {
-                // HTTP/2 requests are not cancelable with CancelRequest,
-                // so we have no further need for the request context.
-                //
-                // On the HTTP/1 path, roundTrip takes responsibility for
-                // canceling the context after the response body is read.
-                cancel(errRequestDone);
-            }
-            resp.Value.Request = origReq;
-            return (resp, default!);
-        }
-        // Failed. Clean up and determine whether to retry.
-        if (http2isNoCachedConnError(errΔ5)){
-            if (Ꮡt.removeIdleConn(pconn)) {
-                Ꮡt.decConnsPerHost((~pconn).cacheKey);
-            }
-        } else 
-        if (!pconn.shouldRetryRequest(Ꮡreq, errΔ5)) {
-            // Issue 16465: return underlying net.Conn.Read error from peek,
-            // as we've historically done.
-            {
-                var (e, ok) = errΔ5._<nothingWrittenError>(ᐧ); if (ok) {
-                    errΔ5 = e.error;
-                }
-            }
-            {
-                var (e, ok) = errΔ5._<transportReadFromServerError>(ᐧ); if (ok) {
-                    errΔ5 = e.err;
-                }
-            }
-            {
-                var (b, ok) = req.Body._<ж<readTrackingBody>>(ᐧ); if (ok && !(~b).didClose) {
-                    // Issue 49621: Close the request body if pconn.roundTrip
-                    // didn't do so already. This can happen if the pconn
-                    // write loop exits without reading the write request.
-                    req.closeBody();
-                }
-            }
-            return (default!, errΔ5);
-        }
-        testHookRoundTripRetried();
-        // Rewind the body if we're able to.
-        (Ꮡreq, errΔ5) = rewindBody(Ꮡreq); req = ref Ꮡreq.Value;
-        if (errΔ5 != default!) {
-            return (default!, errΔ5);
-        }
-    }
-});
+    return (_ᴛ1, err);
+}
 
 internal static void awaitLegacyCancel(context.Context ctx, Action<error> cancel, ж<Request> Ꮡreq) {
     ref var req = ref Ꮡreq.Value;
@@ -1435,9 +1439,7 @@ internal static void cancel(this ж<wantConn> Ꮡw, ж<Transport> Ꮡt, error er
             return default!;
         }
         // Pick up tail as new head, clear tail.
-        q.head = q.tail;
-        q.headPos = 0;
-        q.tail = q.head[..0];
+        (q.head, q.headPos, q.tail) = (q.tail, 0, q.head[..0]);
     }
     var w = q.head[q.headPos];
     q.head[q.headPos] = default!;
@@ -1515,90 +1517,93 @@ private static readonly @string netHttpTransportDialTLSˢ = "net/http: Transport
 // specified in the connectMethod. This includes doing a proxy CONNECT
 // and/or setting up TLS.  If this doesn't return an error, the persistConn
 // is ready to write requests to.
-internal static (ж<persistConn>, error err) getConn(this ж<Transport> Ꮡt, ж<transportRequest> Ꮡtreq, connectMethod cm) => func<(ж<persistConn>, error err)>((defer, recover) => {
+internal static (ж<persistConn>, error err) getConn(this ж<Transport> Ꮡt, ж<transportRequest> Ꮡtreq, connectMethod cm) {
+    ж<persistConn> _ᴛ1 = default!;
     error err = default!;
-
+    func((defer, recover) => {
     ref var treq = ref Ꮡtreq.Value;
-    var req = treq.Request;
-    var trace = treq.trace;
-    var ctx = req.Context();
-    if (trace != nil && (~trace).GetConn != default!) {
-        (~trace).GetConn(cm.addr());
-    }
-    // Detach from the request context's cancellation signal.
-    // The dial should proceed even if the request is canceled,
-    // because a future request may be able to make use of the connection.
-    //
-    // We retain the request context's values.
-    var (dialCtx, dialCancel) = context_package.WithCancel(context_package.WithoutCancel(ctx));
-    var w = Ꮡ(new wantConn(
-        cm: cm,
-        key: cm.key(),
-        ctx: dialCtx,
-        cancelCtx: dialCancel,
-        result: new channel<connOrError>(1),
-        beforeDial: testHookPrePendingDial,
-        afterDial: testHookPostPendingDial
-    ));
-    var wʗ1 = w;
-    defer(() => {
-        if (err != default!) {
-            wʗ1.cancel(Ꮡt, err);
+
+        var req = treq.Request;
+        var trace = treq.trace;
+        var ctx = req.Context();
+        if (trace != nil && (~trace).GetConn != default!) {
+            (~trace).GetConn(cm.addr());
         }
-    });
-    // Queue for idle connection.
-    {
-        var delivered = Ꮡt.queueForIdleConn(w); if (!delivered) {
-            Ꮡt.queueForDial(w);
-        }
-    }
-    // Wait for completion or cancellation.
-    var selᴛ93 = (~w).result;
-    var selᴛ94 = treq.ctx.Done();
-    switch (select(ᐸꟷ(selᴛ93, ꓸꓸꓸ), ᐸꟷ(selᴛ94, ꓸꓸꓸ))) {
-    case 0 when selᴛ93.ꟷᐳ(out var r): {
-        if (r.pc != nil && (~r.pc).alt == default! && trace != nil && (~trace).GotConn != default!) {
-            // Trace success but only for HTTP/1.
-            // HTTP/2 calls trace.GotConn itself.
-            var info = new httptrace.GotConnInfo(
-                Conn: (~r.pc).conn,
-                Reused: r.pc.isReused()
-            );
-            if (!r.idleAt.IsZero()) {
-                info.WasIdle = true;
-                info.IdleTime = time.Since(r.idleAt);
+        // Detach from the request context's cancellation signal.
+        // The dial should proceed even if the request is canceled,
+        // because a future request may be able to make use of the connection.
+        //
+        // We retain the request context's values.
+        var (dialCtx, dialCancel) = context_package.WithCancel(context_package.WithoutCancel(ctx));
+        var w = Ꮡ(new wantConn(
+            cm: cm,
+            key: cm.key(),
+            ctx: dialCtx,
+            cancelCtx: dialCancel,
+            result: new channel<connOrError>(1),
+            beforeDial: testHookPrePendingDial,
+            afterDial: testHookPostPendingDial
+        ));
+        var wʗ1 = w;
+        defer(() => {
+            if (err != default!) {
+                wʗ1.cancel(Ꮡt, err);
             }
-            (~trace).GotConn(info);
+        });
+        // Queue for idle connection.
+        {
+            var delivered = Ꮡt.queueForIdleConn(w); if (!delivered) {
+                Ꮡt.queueForDial(w);
+            }
         }
-        if (r.err != default!) {
-            // If the request has been canceled, that's probably
-            // what caused r.err; if so, prefer to return the
-            // cancellation error (see golang.org/issue/16049).
-            var selᴛ95 = treq.ctx.Done();
-            switch (trySelect(ᐸꟷ(selᴛ95, ꓸꓸꓸ))) {
-            case 0 when selᴛ95.ꟷᐳ(out _): {
-                var errΔ1 = context_package.Cause(treq.ctx);
-                if (AreEqual(errΔ1, errRequestCanceled)) {
-                    errΔ1 = errRequestCanceledConn;
+        // Wait for completion or cancellation.
+        var selᴛ93 = (~w).result;
+        var selᴛ94 = treq.ctx.Done();
+        switch (select(ᐸꟷ(selᴛ93, ꓸꓸꓸ), ᐸꟷ(selᴛ94, ꓸꓸꓸ))) {
+        case 0 when selᴛ93.ꟷᐳ(out var r): {
+            if (r.pc != nil && (~r.pc).alt == default! && trace != nil && (~trace).GotConn != default!) {
+                // Trace success but only for HTTP/1.
+                // HTTP/2 calls trace.GotConn itself.
+                var info = new httptrace.GotConnInfo(
+                    Conn: (~r.pc).conn,
+                    Reused: r.pc.isReused()
+                );
+                if (!r.idleAt.IsZero()) {
+                    info.WasIdle = true;
+                    info.IdleTime = time.Since(r.idleAt);
                 }
-                return (default!, errΔ1);
+                (~trace).GotConn(info);
             }
-            default: {
-                break;
-            }}
+            if (r.err != default!) {
+                // If the request has been canceled, that's probably
+                // what caused r.err; if so, prefer to return the
+                // cancellation error (see golang.org/issue/16049).
+                var selᴛ95 = treq.ctx.Done();
+                switch (trySelect(ᐸꟷ(selᴛ95, ꓸꓸꓸ))) {
+                case 0 when selᴛ95.ꟷᐳ(out _): {
+                    var errΔ1 = context_package.Cause(treq.ctx);
+                    if (AreEqual(errΔ1, errRequestCanceled)) {
+                        errΔ1 = errRequestCanceledConn;
+                    }
+                    (_ᴛ1, err) = (default!, errΔ1); return;
+                }
+                default: {
+                    break;
+                }}
+            }
+            (_ᴛ1, err) = (r.pc, r.err); return;
         }
-        return (r.pc, r.err);
-    }
-    case 1 when selᴛ94.ꟷᐳ(out _): {
-        var errΔ2 = context_package.Cause(treq.ctx);
-        if (AreEqual(errΔ2, errRequestCanceled)) {
-            // return below
-            errΔ2 = errRequestCanceledConn;
-        }
-        return (default!, errΔ2);
-    }}
-    return default!;
-});
+        case 1 when selᴛ94.ꟷᐳ(out _): {
+            var errΔ2 = context_package.Cause(treq.ctx);
+            if (AreEqual(errΔ2, errRequestCanceled)) {
+                // return below
+                errΔ2 = errRequestCanceledConn;
+            }
+            (_ᴛ1, err) = (default!, errΔ2); return;
+        }}
+    });
+    return (_ᴛ1, err);
+}
 
 // queueForDial queues w to wait for permission to begin dialing.
 // Once w receives permission to dial, it will do so in a separate goroutine.
@@ -1890,9 +1895,8 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
                         socksAuthMethodNotRequired,
                         socksAuthMethodUsernamePassword
                     }.slice();
-                    
                     var authʗ1 = auth;
-                    d.Value.Authenticate = (context.Context p1, io.ReadWriter p2, socksAuthMethod p3) => authʗ1.Authenticate(p1, p2, p3);
+                                        d.Value.Authenticate = (context.Context p1, io.ReadWriter p2, socksAuthMethod p3) => authʗ1.Authenticate(p1, p2, p3);
                 }
             }
             {

@@ -105,8 +105,7 @@ internal static (nint, error) Read(this ж<normReader> Ꮡr, slice<byte> p) {
         r.bufStart = 0;
         var (n, err) = r.r.Read(r.inbuf);
         r.rb.src = inputBytes(r.inbuf[0..(int)(n)]);
-        r.rb.nsrc = n;
-        r.err = err;
+        (r.rb.nsrc, r.err) = (n, err);
         if (n > 0) {
             r.outbuf = doAppend(Ꮡr.of(normReader.Ꮡrb), r.outbuf, 0);
         }

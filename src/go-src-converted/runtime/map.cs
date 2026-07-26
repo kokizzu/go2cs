@@ -61,24 +61,24 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt bucketCntBits = /* abi.MapBucketCountBits */ 3;
-internal static readonly UntypedInt loadFactorDen = 2;
-internal static readonly UntypedInt loadFactorNum = /* loadFactorDen * abi.MapBucketCount * 13 / 16 */ 13;
-internal static readonly uintptr dataOffset = /* unsafe.Offsetof(struct {
+internal static UntypedInt bucketCntBits => /* abi.MapBucketCountBits */ 3;
+internal static UntypedInt loadFactorDen => 2;
+internal static UntypedInt loadFactorNum => /* loadFactorDen * abi.MapBucketCount * 13 / 16 */ 13;
+internal static uintptr dataOffset => /* unsafe.Offsetof(struct {
 	b	bmap
 	v	int64
 }{}.v) */ 8;
-internal static readonly UntypedInt emptyRest = 0; // this cell is empty, and there are no more non-empty cells at higher indexes or overflows.
-internal static readonly UntypedInt emptyOne = 1; // this cell is empty
-internal static readonly UntypedInt evacuatedX = 2; // key/elem is valid.  Entry has been evacuated to first half of larger table.
-internal static readonly UntypedInt evacuatedY = 3; // same as above, but evacuated to second half of larger table.
-internal static readonly UntypedInt evacuatedEmpty = 4; // cell is empty, bucket is evacuated.
-internal static readonly UntypedInt minTopHash = 5; // minimum tophash for a normal filled cell.
-internal static readonly UntypedInt iterator = 1; // there may be an iterator using buckets
-internal static readonly UntypedInt oldIterator = 2; // there may be an iterator using oldbuckets
-internal static readonly UntypedInt hashWriting = 4; // a goroutine is writing to the map
-internal static readonly UntypedInt ΔsameSizeGrow = 8; // the current map growth is to a new map of the same size
-internal static readonly UntypedInt noCheck = /* 1<<(8*goarch.PtrSize) - 1 */ 18446744073709551615;
+internal static UntypedInt emptyRest => 0; // this cell is empty, and there are no more non-empty cells at higher indexes or overflows.
+internal static UntypedInt emptyOne => 1; // this cell is empty
+internal static UntypedInt evacuatedX => 2; // key/elem is valid.  Entry has been evacuated to first half of larger table.
+internal static UntypedInt evacuatedY => 3; // same as above, but evacuated to second half of larger table.
+internal static UntypedInt evacuatedEmpty => 4; // cell is empty, bucket is evacuated.
+internal static UntypedInt minTopHash => 5; // minimum tophash for a normal filled cell.
+internal static UntypedInt iterator => 1; // there may be an iterator using buckets
+internal static UntypedInt oldIterator => 2; // there may be an iterator using oldbuckets
+internal static UntypedInt hashWriting => 4; // a goroutine is writing to the map
+internal static UntypedInt ΔsameSizeGrow => 8; // the current map growth is to a new map of the same size
+internal static UntypedInt noCheck => /* 1<<(8*goarch.PtrSize) - 1 */ 18446744073709551615;
 
 // isEmpty reports whether the given tophash array entry represents an empty bucket entry.
 internal static bool isEmpty(uint8 x) {
@@ -662,7 +662,7 @@ internal static @unsafe.Pointer mapassign(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsa
     var hash = t.Hasher(key, (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher, since t.hasher may panic,
     // in which case we have not actually done a write.
-    h.flags ^= hashWriting;
+    h.flags ^= (uint8)(hashWriting);
     if (h.buckets == nil) {
         h.buckets = (uintptr)newobject(t.Bucket);
     }
@@ -745,7 +745,7 @@ done:
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
         fatal(concurrentMapWritesˢ);
     }
-    h.flags &= unchecked((uint8)~hashWriting);
+    h.flags &= unchecked((uint8)~(uint8)(hashWriting));
     if (t.IndirectElem()) {
         elem = ((ж<@unsafe.Pointer>)(uintptr)(elem)).Value;
     }
@@ -792,7 +792,7 @@ internal static void mapdelete(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer 
     var hash = t.Hasher(key, (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher, since t.hasher may panic,
     // in which case we have not actually done a write (delete).
-    h.flags ^= hashWriting;
+    h.flags ^= (uint8)(hashWriting);
     var bucket = (uintptr)(hash & bucketMask(h.B));
     if (h.growing()) {
         growWork(Ꮡt, Ꮡh, bucket);
@@ -881,7 +881,7 @@ break_search:;
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
         fatal(concurrentMapWritesˢ);
     }
-    h.flags &= unchecked((uint8)~hashWriting);
+    h.flags &= unchecked((uint8)~(uint8)(hashWriting));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1124,7 +1124,7 @@ internal static void mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapWritesˢ);
     }
-    h.flags ^= hashWriting;
+    h.flags ^= (uint8)(hashWriting);
     // Mark buckets empty, so existing iterators can be terminated, see issue #59411.
     var markBucketsEmpty = (@unsafe.Pointer bucket, uintptr mask) => {
         for (var i = (uintptr)0; i <= mask; i++) {
@@ -1142,7 +1142,7 @@ internal static void mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
             markBucketsEmpty(oldBuckets, h.oldbucketmask());
         }
     }
-    h.flags &= unchecked((uint8)~ΔsameSizeGrow);
+    h.flags &= unchecked((uint8)~(uint8)(ΔsameSizeGrow));
     h.oldbuckets = default!;
     h.nevacuate = 0;
     h.noverflow = 0;
@@ -1166,7 +1166,7 @@ internal static void mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
         fatal(concurrentMapWritesˢ);
     }
-    h.flags &= unchecked((uint8)~hashWriting);
+    h.flags &= unchecked((uint8)~(uint8)(hashWriting));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1181,7 +1181,7 @@ internal static void hashGrow(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
     var bigger = (uint8)1;
     if (!overLoadFactor(h.count + 1, h.B)) {
         bigger = 0;
-        h.flags |= ΔsameSizeGrow;
+        h.flags |= (uint8)(ΔsameSizeGrow);
     }
     @unsafe.Pointer oldbuckets = h.buckets;
     var (newbuckets, nextOverflow) = makeBucketArray(Ꮡt, (uint8)(h.B + bigger), nil);
@@ -1429,7 +1429,7 @@ internal static void advanceEvacuationMark(ж<hmap> Ꮡh, ж<maptype> Ꮡt, uint
         if (h.extra != nil) {
             h.extra.Value.oldoverflow = default!;
         }
-        h.flags &= unchecked((uint8)~ΔsameSizeGrow);
+        h.flags &= unchecked((uint8)~(uint8)(ΔsameSizeGrow));
     }
 }
 

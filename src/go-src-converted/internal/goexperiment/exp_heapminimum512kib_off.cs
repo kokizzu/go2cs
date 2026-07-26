@@ -6,6 +6,6 @@ partial class goexperiment_package {
 
 public const bool HeapMinimum512KiB = false;
 
-public static readonly UntypedInt HeapMinimum512KiBInt = 0;
+public static UntypedInt HeapMinimum512KiBInt => 0;
 
 } // end goexperiment_package

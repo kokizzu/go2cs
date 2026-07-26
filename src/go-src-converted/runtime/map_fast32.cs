@@ -136,7 +136,7 @@ internal static @unsafe.Pointer mapassign_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh
     }
     var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡ(key))), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapassign.
-    h.flags ^= hashWriting;
+    h.flags ^= (uint8)(hashWriting);
     if (h.buckets == nil) {
         h.buckets = (uintptr)newobject(t.Bucket);
     }
@@ -204,7 +204,7 @@ done:
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
         fatal(concurrentMapWritesˢ);
     }
-    h.flags &= unchecked((uint8)~hashWriting);
+    h.flags &= unchecked((uint8)~(uint8)(hashWriting));
     return elem;
 }
 
@@ -233,7 +233,7 @@ internal static @unsafe.Pointer mapassign_fast32ptr(ж<maptype> Ꮡt, ж<hmap> �
     }
     var hash = t.Hasher((uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(key)).Value)), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapassign.
-    h.flags ^= hashWriting;
+    h.flags ^= (uint8)(hashWriting);
     if (h.buckets == nil) {
         h.buckets = (uintptr)newobject(t.Bucket);
     }
@@ -301,7 +301,7 @@ done:
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
         fatal(concurrentMapWritesˢ);
     }
-    h.flags &= unchecked((uint8)~hashWriting);
+    h.flags &= unchecked((uint8)~(uint8)(hashWriting));
     return elem;
 }
 
@@ -321,7 +321,7 @@ internal static void mapdelete_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 ke
     }
     var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡ(key))), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapdelete
-    h.flags ^= hashWriting;
+    h.flags ^= (uint8)(hashWriting);
     var bucket = (uintptr)(hash & bucketMask(h.B));
     if (h.growing()) {
         growWork_fast32(Ꮡt, Ꮡh, bucket);
@@ -394,7 +394,7 @@ break_search:;
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
         fatal(concurrentMapWritesˢ);
     }
-    h.flags &= unchecked((uint8)~hashWriting);
+    h.flags &= unchecked((uint8)~(uint8)(hashWriting));
 }
 
 internal static void growWork_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr bucket) {

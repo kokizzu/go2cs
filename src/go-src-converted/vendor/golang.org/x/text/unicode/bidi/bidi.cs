@@ -25,10 +25,10 @@ partial class bidi_package {
 // these will be computed, but the question is to which extent the user should
 // know they exist. We should at some point allow the user to specify an
 // embedding hierarchy, though.
-public static readonly ΔDirection LeftToRight = /* iota */ 0;
-public static readonly ΔDirection RightToLeft = 1;
-public static readonly ΔDirection Mixed = 2;
-public static readonly ΔDirection Neutral = 3;
+public static ΔDirection LeftToRight => /* iota */ 0;
+public static ΔDirection RightToLeft => 1;
+public static ΔDirection Mixed => 2;
+public static ΔDirection Neutral => 3;
 
 [GoType] public partial struct options {
     internal ΔDirection defaultDirection;

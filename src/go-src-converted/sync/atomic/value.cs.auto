@@ -132,8 +132,7 @@ public static any /*old*/ Swap(this ж<Value> Ꮡv, any @new) {
             throw panic("sync/atomic: swap of inconsistently typed value into Value");
         }
         var op = Ꮡold.Reinterpret<any, efaceWords>();
-        op.Value.typ = np.Value.typ;
-        op.Value.data = (uintptr)SwapPointer(vp.of(efaceWords.Ꮡdata), (~np).data);
+        (op.Value.typ, op.Value.data) = (np.Value.typ, (uintptr)SwapPointer(vp.of(efaceWords.Ꮡdata), (~np).data));
         return old;
     }
 }

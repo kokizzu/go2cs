@@ -70,7 +70,7 @@ public static @string String(this ж<ΔTerm> Ꮡt) {
 // Implementation
 
 // Avoid excessive type-checking times due to quadratic termlist operations.
-internal static readonly UntypedInt maxTermCount = 100;
+internal static UntypedInt maxTermCount => 100;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string cannotUseComparableInˢ = "cannot use comparable in union"u8;

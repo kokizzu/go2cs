@@ -6,6 +6,6 @@ partial class goexperiment_package {
 
 public const bool CgoCheck2 = false;
 
-public static readonly UntypedInt CgoCheck2Int = 0;
+public static UntypedInt CgoCheck2Int => 0;
 
 } // end goexperiment_package

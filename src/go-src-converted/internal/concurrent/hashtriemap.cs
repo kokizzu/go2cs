@@ -346,9 +346,9 @@ public static Action<Func<K, V, bool>> All<K, V>(this ж<HashTrieMap<K, V>> Ꮡh
     return true;
 }
 
-internal static readonly UntypedInt nChildrenLog2 = 4;
-internal static readonly UntypedInt nChildren = /* 1 << nChildrenLog2 */ 16;
-internal static readonly UntypedInt nChildrenMask = /* nChildren - 1 */ 15;
+internal static UntypedInt nChildrenLog2 => 4;
+internal static UntypedInt nChildren => /* 1 << nChildrenLog2 */ 16;
+internal static UntypedInt nChildrenMask => /* nChildren - 1 */ 15;
 
 // indirect is an internal node in the hash-trie.
 [GoType] [GoValueClone("children")] partial struct Δindirect<K, V>

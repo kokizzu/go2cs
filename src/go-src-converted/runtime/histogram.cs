@@ -11,12 +11,12 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt timeHistMinBucketBits = 9;
-internal static readonly UntypedInt timeHistMaxBucketBits = 48; // Note that this is exclusive; 1 higher than the actual range.
-internal static readonly UntypedInt timeHistSubBucketBits = 2;
-internal static readonly UntypedInt timeHistNumSubBuckets = /* 1 << timeHistSubBucketBits */ 4;
-internal static readonly UntypedInt timeHistNumBuckets = /* timeHistMaxBucketBits - timeHistMinBucketBits + 1 */ 40;
-internal static readonly UntypedInt timeHistTotalBuckets = /* timeHistNumBuckets*timeHistNumSubBuckets + 2 */ 162;
+internal static UntypedInt timeHistMinBucketBits => 9;
+internal static UntypedInt timeHistMaxBucketBits => 48; // Note that this is exclusive; 1 higher than the actual range.
+internal static UntypedInt timeHistSubBucketBits => 2;
+internal static UntypedInt timeHistNumSubBuckets => /* 1 << timeHistSubBucketBits */ 4;
+internal static UntypedInt timeHistNumBuckets => /* timeHistMaxBucketBits - timeHistMinBucketBits + 1 */ 40;
+internal static UntypedInt timeHistTotalBuckets => /* timeHistNumBuckets*timeHistNumSubBuckets + 2 */ 162;
 
 // timeHistogram represents a distribution of durations in
 // nanoseconds.
@@ -101,8 +101,8 @@ internal static void write(this ж<timeHistogram> Ꮡh, ж<metricValue> Ꮡout) 
     hist.Value.counts[len((~hist).counts) - 1] = Ꮡh.of(timeHistogram.Ꮡoverflow).Load();
 }
 
-internal static readonly UntypedInt fInf = 0x7FF0000000000000;
-internal static readonly UntypedInt fNegInf = 0xFFF0000000000000;
+internal static UntypedInt fInf => 0x7FF0000000000000;
+internal static UntypedInt fNegInf => 0xFFF0000000000000;
 
 internal static float64 float64Inf() {
     ref var inf = ref heap<uint64>(out var Ꮡinf);

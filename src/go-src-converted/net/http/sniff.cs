@@ -10,7 +10,7 @@ using encoding;
 partial class http_package {
 
 // The algorithm uses at most sniffLen bytes to make its decision.
-internal static readonly UntypedInt sniffLen = 512;
+internal static UntypedInt sniffLen => 512;
 
 // DetectContentType implements the algorithm described
 // at https://mimesniff.spec.whatwg.org/ to determine the

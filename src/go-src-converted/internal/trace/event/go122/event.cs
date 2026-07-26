@@ -9,81 +9,81 @@ using go.@internal.trace;
 
 partial class go122_package {
 
-public static readonly @event.Type EvNone = /* iota */ 0; // unused
-public static readonly @event.Type EvEventBatch = 1; // start of per-M batch of events [generation, M ID, timestamp, batch length]
-public static readonly @event.Type EvStacks = 2; // start of a section of the stack table [...EvStack]
-public static readonly @event.Type EvStack = 3; // stack table entry [ID, ...{PC, func string ID, file string ID, line #}]
-public static readonly @event.Type EvStrings = 4; // start of a section of the string dictionary [...EvString]
-public static readonly @event.Type EvString = 5; // string dictionary entry [ID, length, string]
-public static readonly @event.Type EvCPUSamples = 6; // start of a section of CPU samples [...EvCPUSample]
-public static readonly @event.Type EvCPUSample = 7; // CPU profiling sample [timestamp, M ID, P ID, goroutine ID, stack ID]
-public static readonly @event.Type EvFrequency = 8; // timestamp units per sec [freq]
-public static readonly @event.Type EvProcsChange = 9; // current value of GOMAXPROCS [timestamp, GOMAXPROCS, stack ID]
-public static readonly @event.Type EvProcStart = 10; // start of P [timestamp, P ID, P seq]
-public static readonly @event.Type EvProcStop = 11; // stop of P [timestamp]
-public static readonly @event.Type EvProcSteal = 12; // P was stolen [timestamp, P ID, P seq, M ID]
-public static readonly @event.Type EvProcStatus = 13; // P status at the start of a generation [timestamp, P ID, status]
-public static readonly @event.Type EvGoCreate = 14; // goroutine creation [timestamp, new goroutine ID, new stack ID, stack ID]
-public static readonly @event.Type EvGoCreateSyscall = 15; // goroutine appears in syscall (cgo callback) [timestamp, new goroutine ID]
-public static readonly @event.Type EvGoStart = 16; // goroutine starts running [timestamp, goroutine ID, goroutine seq]
-public static readonly @event.Type EvGoDestroy = 17; // goroutine ends [timestamp]
-public static readonly @event.Type EvGoDestroySyscall = 18; // goroutine ends in syscall (cgo callback) [timestamp]
-public static readonly @event.Type EvGoStop = 19; // goroutine yields its time, but is runnable [timestamp, reason, stack ID]
-public static readonly @event.Type EvGoBlock = 20; // goroutine blocks [timestamp, reason, stack ID]
-public static readonly @event.Type EvGoUnblock = 21; // goroutine is unblocked [timestamp, goroutine ID, goroutine seq, stack ID]
-public static readonly @event.Type EvGoSyscallBegin = 22; // syscall enter [timestamp, P seq, stack ID]
-public static readonly @event.Type EvGoSyscallEnd = 23; // syscall exit [timestamp]
-public static readonly @event.Type EvGoSyscallEndBlocked = 24; // syscall exit and it blocked at some point [timestamp]
-public static readonly @event.Type EvGoStatus = 25; // goroutine status at the start of a generation [timestamp, goroutine ID, thread ID, status]
-public static readonly @event.Type EvSTWBegin = 26; // STW start [timestamp, kind]
-public static readonly @event.Type EvSTWEnd = 27; // STW done [timestamp]
-public static readonly @event.Type EvGCActive = 28; // GC active [timestamp, seq]
-public static readonly @event.Type EvGCBegin = 29; // GC start [timestamp, seq, stack ID]
-public static readonly @event.Type EvGCEnd = 30; // GC done [timestamp, seq]
-public static readonly @event.Type EvGCSweepActive = 31; // GC sweep active [timestamp, P ID]
-public static readonly @event.Type EvGCSweepBegin = 32; // GC sweep start [timestamp, stack ID]
-public static readonly @event.Type EvGCSweepEnd = 33; // GC sweep done [timestamp, swept bytes, reclaimed bytes]
-public static readonly @event.Type EvGCMarkAssistActive = 34; // GC mark assist active [timestamp, goroutine ID]
-public static readonly @event.Type EvGCMarkAssistBegin = 35; // GC mark assist start [timestamp, stack ID]
-public static readonly @event.Type EvGCMarkAssistEnd = 36; // GC mark assist done [timestamp]
-public static readonly @event.Type EvHeapAlloc = 37; // gcController.heapLive change [timestamp, heap alloc in bytes]
-public static readonly @event.Type EvHeapGoal = 38; // gcController.heapGoal() change [timestamp, heap goal in bytes]
-public static readonly @event.Type EvGoLabel = 39; // apply string label to current running goroutine [timestamp, label string ID]
-public static readonly @event.Type EvUserTaskBegin = 40; // trace.NewTask [timestamp, internal task ID, internal parent task ID, name string ID, stack ID]
-public static readonly @event.Type EvUserTaskEnd = 41; // end of a task [timestamp, internal task ID, stack ID]
-public static readonly @event.Type EvUserRegionBegin = 42; // trace.{Start,With}Region [timestamp, internal task ID, name string ID, stack ID]
-public static readonly @event.Type EvUserRegionEnd = 43; // trace.{End,With}Region [timestamp, internal task ID, name string ID, stack ID]
-public static readonly @event.Type EvUserLog = 44; // trace.Log [timestamp, internal task ID, key string ID, value string ID, stack]
-public static readonly @event.Type EvGoSwitch = 45; // goroutine switch (coroswitch) [timestamp, goroutine ID, goroutine seq]
-public static readonly @event.Type EvGoSwitchDestroy = 46; // goroutine switch and destroy [timestamp, goroutine ID, goroutine seq]
-public static readonly @event.Type EvGoCreateBlocked = 47; // goroutine creation (starts blocked) [timestamp, new goroutine ID, new stack ID, stack ID]
-public static readonly @event.Type EvGoStatusStack = 48; // goroutine status at the start of a generation, with a stack [timestamp, goroutine ID, M ID, status, stack ID]
-public static readonly @event.Type EvExperimentalBatch = 49; // start of extra data [experiment ID, generation, M ID, timestamp, batch length, batch data...]
+public static @event.Type EvNone => /* iota */ 0; // unused
+public static @event.Type EvEventBatch => 1; // start of per-M batch of events [generation, M ID, timestamp, batch length]
+public static @event.Type EvStacks => 2; // start of a section of the stack table [...EvStack]
+public static @event.Type EvStack => 3; // stack table entry [ID, ...{PC, func string ID, file string ID, line #}]
+public static @event.Type EvStrings => 4; // start of a section of the string dictionary [...EvString]
+public static @event.Type EvString => 5; // string dictionary entry [ID, length, string]
+public static @event.Type EvCPUSamples => 6; // start of a section of CPU samples [...EvCPUSample]
+public static @event.Type EvCPUSample => 7; // CPU profiling sample [timestamp, M ID, P ID, goroutine ID, stack ID]
+public static @event.Type EvFrequency => 8; // timestamp units per sec [freq]
+public static @event.Type EvProcsChange => 9; // current value of GOMAXPROCS [timestamp, GOMAXPROCS, stack ID]
+public static @event.Type EvProcStart => 10; // start of P [timestamp, P ID, P seq]
+public static @event.Type EvProcStop => 11; // stop of P [timestamp]
+public static @event.Type EvProcSteal => 12; // P was stolen [timestamp, P ID, P seq, M ID]
+public static @event.Type EvProcStatus => 13; // P status at the start of a generation [timestamp, P ID, status]
+public static @event.Type EvGoCreate => 14; // goroutine creation [timestamp, new goroutine ID, new stack ID, stack ID]
+public static @event.Type EvGoCreateSyscall => 15; // goroutine appears in syscall (cgo callback) [timestamp, new goroutine ID]
+public static @event.Type EvGoStart => 16; // goroutine starts running [timestamp, goroutine ID, goroutine seq]
+public static @event.Type EvGoDestroy => 17; // goroutine ends [timestamp]
+public static @event.Type EvGoDestroySyscall => 18; // goroutine ends in syscall (cgo callback) [timestamp]
+public static @event.Type EvGoStop => 19; // goroutine yields its time, but is runnable [timestamp, reason, stack ID]
+public static @event.Type EvGoBlock => 20; // goroutine blocks [timestamp, reason, stack ID]
+public static @event.Type EvGoUnblock => 21; // goroutine is unblocked [timestamp, goroutine ID, goroutine seq, stack ID]
+public static @event.Type EvGoSyscallBegin => 22; // syscall enter [timestamp, P seq, stack ID]
+public static @event.Type EvGoSyscallEnd => 23; // syscall exit [timestamp]
+public static @event.Type EvGoSyscallEndBlocked => 24; // syscall exit and it blocked at some point [timestamp]
+public static @event.Type EvGoStatus => 25; // goroutine status at the start of a generation [timestamp, goroutine ID, thread ID, status]
+public static @event.Type EvSTWBegin => 26; // STW start [timestamp, kind]
+public static @event.Type EvSTWEnd => 27; // STW done [timestamp]
+public static @event.Type EvGCActive => 28; // GC active [timestamp, seq]
+public static @event.Type EvGCBegin => 29; // GC start [timestamp, seq, stack ID]
+public static @event.Type EvGCEnd => 30; // GC done [timestamp, seq]
+public static @event.Type EvGCSweepActive => 31; // GC sweep active [timestamp, P ID]
+public static @event.Type EvGCSweepBegin => 32; // GC sweep start [timestamp, stack ID]
+public static @event.Type EvGCSweepEnd => 33; // GC sweep done [timestamp, swept bytes, reclaimed bytes]
+public static @event.Type EvGCMarkAssistActive => 34; // GC mark assist active [timestamp, goroutine ID]
+public static @event.Type EvGCMarkAssistBegin => 35; // GC mark assist start [timestamp, stack ID]
+public static @event.Type EvGCMarkAssistEnd => 36; // GC mark assist done [timestamp]
+public static @event.Type EvHeapAlloc => 37; // gcController.heapLive change [timestamp, heap alloc in bytes]
+public static @event.Type EvHeapGoal => 38; // gcController.heapGoal() change [timestamp, heap goal in bytes]
+public static @event.Type EvGoLabel => 39; // apply string label to current running goroutine [timestamp, label string ID]
+public static @event.Type EvUserTaskBegin => 40; // trace.NewTask [timestamp, internal task ID, internal parent task ID, name string ID, stack ID]
+public static @event.Type EvUserTaskEnd => 41; // end of a task [timestamp, internal task ID, stack ID]
+public static @event.Type EvUserRegionBegin => 42; // trace.{Start,With}Region [timestamp, internal task ID, name string ID, stack ID]
+public static @event.Type EvUserRegionEnd => 43; // trace.{End,With}Region [timestamp, internal task ID, name string ID, stack ID]
+public static @event.Type EvUserLog => 44; // trace.Log [timestamp, internal task ID, key string ID, value string ID, stack]
+public static @event.Type EvGoSwitch => 45; // goroutine switch (coroswitch) [timestamp, goroutine ID, goroutine seq]
+public static @event.Type EvGoSwitchDestroy => 46; // goroutine switch and destroy [timestamp, goroutine ID, goroutine seq]
+public static @event.Type EvGoCreateBlocked => 47; // goroutine creation (starts blocked) [timestamp, new goroutine ID, new stack ID, stack ID]
+public static @event.Type EvGoStatusStack => 48; // goroutine status at the start of a generation, with a stack [timestamp, goroutine ID, M ID, status, stack ID]
+public static @event.Type EvExperimentalBatch => 49; // start of extra data [experiment ID, generation, M ID, timestamp, batch length, batch data...]
 
 // Experiments.
-public static readonly @event.Experiment AllocFree = /* 1 + iota */ 1;
+public static @event.Experiment AllocFree => /* 1 + iota */ 1;
 
 // Experimental events.
-internal static readonly @event.Type _ᴛ1ʗ = /* 127 + iota */ 127;
+internal static @event.Type _ᴛ1ʗ => /* 127 + iota */ 127;
 // Experimental events for AllocFree.
 
-public static readonly @event.Type EvSpan = 128; // heap span exists [timestamp, id, npages, type/class]
+public static @event.Type EvSpan => 128; // heap span exists [timestamp, id, npages, type/class]
 
-public static readonly @event.Type EvSpanAlloc = 129; // heap span alloc [timestamp, id, npages, type/class]
+public static @event.Type EvSpanAlloc => 129; // heap span alloc [timestamp, id, npages, type/class]
 
-public static readonly @event.Type EvSpanFree = 130; // heap span free [timestamp, id]
+public static @event.Type EvSpanFree => 130; // heap span free [timestamp, id]
 
-public static readonly @event.Type EvHeapObject = 131; // heap object exists [timestamp, id, type]
+public static @event.Type EvHeapObject => 131; // heap object exists [timestamp, id, type]
 
-public static readonly @event.Type EvHeapObjectAlloc = 132; // heap object alloc [timestamp, id, type]
+public static @event.Type EvHeapObjectAlloc => 132; // heap object alloc [timestamp, id, type]
 
-public static readonly @event.Type EvHeapObjectFree = 133; // heap object free [timestamp, id]
+public static @event.Type EvHeapObjectFree => 133; // heap object free [timestamp, id]
 
-public static readonly @event.Type EvGoroutineStack = 134; // stack exists [timestamp, id, order]
+public static @event.Type EvGoroutineStack => 134; // stack exists [timestamp, id, order]
 
-public static readonly @event.Type EvGoroutineStackAlloc = 135; // stack alloc [timestamp, id, order]
+public static @event.Type EvGoroutineStackAlloc => 135; // stack alloc [timestamp, id, order]
 
-public static readonly @event.Type EvGoroutineStackFree = 136; // stack free [timestamp, id]
+public static @event.Type EvGoroutineStackFree => 136; // stack free [timestamp, id]
 
 // EventString returns the name of a Go 1.22 event.
 public static @string EventString(@event.Type typ) {
@@ -434,11 +434,11 @@ internal static array<@event.Spec> specs = new golib.SparseArray<@event.Spec>{
 
 [GoType("num:uint8")] partial struct GoStatus;
 
-public static readonly GoStatus GoBad = /* iota */ 0;
-public static readonly GoStatus GoRunnable = 1;
-public static readonly GoStatus GoRunning = 2;
-public static readonly GoStatus GoSyscall = 3;
-public static readonly GoStatus GoWaiting = 4;
+public static GoStatus GoBad => /* iota */ 0;
+public static GoStatus GoRunnable => 1;
+public static GoStatus GoRunning => 2;
+public static GoStatus GoSyscall => 3;
+public static GoStatus GoWaiting => 4;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string runnableˢ = "Runnable"u8;
@@ -467,11 +467,11 @@ public static @string String(this GoStatus s) {
 
 [GoType("num:uint8")] partial struct ProcStatus;
 
-public static readonly ProcStatus ProcBad = /* iota */ 0;
-public static readonly ProcStatus ProcRunning = 1;
-public static readonly ProcStatus ProcIdle = 2;
-public static readonly ProcStatus ProcSyscall = 3;
-public static readonly ProcStatus ProcSyscallAbandoned = 4;
+public static ProcStatus ProcBad => /* iota */ 0;
+public static ProcStatus ProcRunning => 1;
+public static ProcStatus ProcIdle => 2;
+public static ProcStatus ProcSyscall => 3;
+public static ProcStatus ProcSyscallAbandoned => 4;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string idleˢ = "Idle"u8;
@@ -491,8 +491,8 @@ public static @string String(this ProcStatus s) {
     return badˢ;
 }
 
-public static readonly UntypedInt MaxBatchSize = /* 64 << 10 */ 65536;
-public static readonly UntypedInt MaxFramesPerStack = 128;
-public static readonly UntypedInt MaxStringSize = /* 1 << 10 */ 1024;
+public static UntypedInt MaxBatchSize => /* 64 << 10 */ 65536;
+public static UntypedInt MaxFramesPerStack => 128;
+public static UntypedInt MaxStringSize => /* 1 << 10 */ 1024;
 
 } // end go122_package

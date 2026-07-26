@@ -16,9 +16,9 @@ partial class net_package {
 
 // Default values of KeepAliveTime and KeepAliveInterval on Windows,
 // check out https://learn.microsoft.com/en-us/windows/win32/winsock/sio-keepalive-vals#remarks for details.
-internal static readonly time.Duration defaultKeepAliveIdle = /* 2 * time.Hour */ 7200000000000;
+internal static time.Duration defaultKeepAliveIdle => /* 2 * time.Hour */ 7200000000000;
 
-internal static readonly time.Duration defaultKeepAliveInterval = /* time.Second */ 1000000000;
+internal static time.Duration defaultKeepAliveInterval => /* time.Second */ 1000000000;
 
 internal static error setKeepAliveIdle(ж<netFD> Ꮡfd, time.Duration d) {
     if (!windows.SupportTCPKeepAliveIdle()) {

@@ -17,11 +17,11 @@ partial class lzw_package {
     error Flush();
 }
 
-internal static readonly UntypedInt maxCode = /* 1<<12 - 1 */ 4095;
-internal static readonly UntypedInt invalidCode = /* 1<<32 - 1 */ 4294967295;
-internal static readonly UntypedInt tableSize = /* 4 * 1 << 12 */ 16384;
-internal static readonly UntypedInt tableMask = /* tableSize - 1 */ 16383;
-internal static readonly UntypedInt invalidEntry = 0;
+internal static UntypedInt maxCode => /* 1<<12 - 1 */ 4095;
+internal static UntypedInt invalidCode => /* 1<<32 - 1 */ 4294967295;
+internal static UntypedInt tableSize => /* 4 * 1 << 12 */ 16384;
+internal static UntypedInt tableMask => /* tableSize - 1 */ 16383;
+internal static UntypedInt invalidEntry => 0;
 
 // Writer is an LZW compressor. It writes the compressed form of the data
 // to an underlying writer (see [NewWriter]).
@@ -55,7 +55,7 @@ internal static readonly UntypedInt invalidEntry = 0;
 
 // writeLSB writes the code c for "Least Significant Bits first" data.
 [GoRecv] internal static error writeLSB(this ref Writer w, uint32 c) {
-    w.bits |= c.Lsh(w.nBits);
+    w.bits |= (uint32)(c.Lsh(w.nBits));
     w.nBits += w.width;
     while (w.nBits >= 8) {
         {
@@ -71,7 +71,7 @@ internal static readonly UntypedInt invalidEntry = 0;
 
 // writeMSB writes the code c for "Most Significant Bits first" data.
 [GoRecv] internal static error writeMSB(this ref Writer w, uint32 c) {
-    w.bits |= c.Lsh((32 - w.width - w.nBits));
+    w.bits |= (uint32)(c.Lsh((32 - w.width - w.nBits)));
     w.nBits += w.width;
     while (w.nBits >= 8) {
         {

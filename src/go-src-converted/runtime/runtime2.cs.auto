@@ -40,44 +40,44 @@ partial class runtime_package {
 // _Gscanwaiting -> _Gscanrunnable are actually okay because
 // they don't affect stack ownership.
 // defined constants
-internal static readonly UntypedInt _Gidle = iota; // 0
+internal static UntypedInt _Gidle => iota; // 0
 
-internal static readonly UntypedInt _Grunnable = 1; // 1
+internal static UntypedInt _Grunnable => 1; // 1
 
-internal static readonly UntypedInt _Grunning = 2; // 2
+internal static UntypedInt _Grunning => 2; // 2
 
-internal static readonly UntypedInt _Gsyscall = 3; // 3
+internal static UntypedInt _Gsyscall => 3; // 3
 
-internal static readonly UntypedInt _Gwaiting = 4; // 4
+internal static UntypedInt _Gwaiting => 4; // 4
 
-internal static readonly UntypedInt _Gmoribund_unused = 5; // 5
+internal static UntypedInt _Gmoribund_unused => 5; // 5
 
-internal static readonly UntypedInt _Gdead = 6; // 6
+internal static UntypedInt _Gdead => 6; // 6
 
-internal static readonly UntypedInt _Genqueue_unused = 7; // 7
+internal static UntypedInt _Genqueue_unused => 7; // 7
 
-internal static readonly UntypedInt _Gcopystack = 8; // 8
+internal static UntypedInt _Gcopystack => 8; // 8
 
-internal static readonly UntypedInt _Gpreempted = 9; // 9
+internal static UntypedInt _Gpreempted => 9; // 9
 
-internal static readonly UntypedInt _Gscan = 0x1000;
+internal static UntypedInt _Gscan => 0x1000;
 
-internal static readonly UntypedInt _Gscanrunnable = /* _Gscan + _Grunnable */ 4097; // 0x1001
+internal static UntypedInt _Gscanrunnable => /* _Gscan + _Grunnable */ 4097; // 0x1001
 
-internal static readonly UntypedInt _Gscanrunning = /* _Gscan + _Grunning */ 4098; // 0x1002
+internal static UntypedInt _Gscanrunning => /* _Gscan + _Grunning */ 4098; // 0x1002
 
-internal static readonly UntypedInt _Gscansyscall = /* _Gscan + _Gsyscall */ 4099; // 0x1003
+internal static UntypedInt _Gscansyscall => /* _Gscan + _Gsyscall */ 4099; // 0x1003
 
-internal static readonly UntypedInt _Gscanwaiting = /* _Gscan + _Gwaiting */ 4100; // 0x1004
+internal static UntypedInt _Gscanwaiting => /* _Gscan + _Gwaiting */ 4100; // 0x1004
 
-internal static readonly UntypedInt _Gscanpreempted = /* _Gscan + _Gpreempted */ 4105; // 0x1009
+internal static UntypedInt _Gscanpreempted => /* _Gscan + _Gpreempted */ 4105; // 0x1009
 
 // P status
-internal static readonly UntypedInt _Pidle = iota;
-internal static readonly UntypedInt _Prunning = 1;
-internal static readonly UntypedInt _Psyscall = 2;
-internal static readonly UntypedInt _Pgcstop = 3;
-internal static readonly UntypedInt _Pdead = 4;
+internal static UntypedInt _Pidle => iota;
+internal static UntypedInt _Prunning => 1;
+internal static UntypedInt _Psyscall => 2;
+internal static UntypedInt _Pgcstop => 3;
+internal static UntypedInt _Pdead => 4;
 
 // Mutual exclusion locks.  In the uncontended case,
 // as fast as spin locks (just a few user-level instructions),
@@ -382,19 +382,19 @@ internal static ж<eface> efaceOf(ж<any> Ꮡep) {
 
 // gTrackingPeriod is the number of transitions out of _Grunning between
 // latency tracking runs.
-internal static readonly UntypedInt gTrackingPeriod = 8;
+internal static UntypedInt gTrackingPeriod => 8;
 
-internal static readonly UntypedInt tlsSlots = 6;
-internal static readonly UntypedInt tlsSize = /* tlsSlots * goarch.PtrSize */ 48;
+internal static UntypedInt tlsSlots => 6;
+internal static UntypedInt tlsSize => /* tlsSlots * goarch.PtrSize */ 48;
 
 // Values for m.freeWait.
-internal static readonly UntypedInt freeMStack = 0; // M done, free stack and reference.
+internal static UntypedInt freeMStack => 0; // M done, free stack and reference.
 
-internal static readonly UntypedInt freeMRef = 1; // M done, free reference.
+internal static UntypedInt freeMRef => 1; // M done, free reference.
 
-internal static readonly UntypedInt freeMWait = 2; // M still in use.
+internal static UntypedInt freeMWait => 2; // M still in use.
 
-[GoType] partial struct m {
+[GoType] [GoValueClone("tls", "createstack", "Δtrace", "pcvalueCache", "chacha8", "locksHeld")] partial struct m {
     internal ж<g> g0;  // goroutine with scheduling stack
     internal gobuf morebuf;  // gobuf arg to morestack
     internal uint32 divmod; // div/mod denominator for arm - known to liblink
@@ -483,7 +483,7 @@ internal static readonly UntypedInt freeMWait = 2; // M still in use.
     internal int32 n;
 }
 
-[GoType("dyn")] partial struct p_mspancache {
+[GoType("dyn")] [GoValueClone("buf")] partial struct p_mspancache {
     // We need an explicit length here because this field is used
     // in allocation codepaths where write barriers are not allowed,
     // and eliminating the write barrier/keeping it eliminated from
@@ -493,7 +493,7 @@ internal static readonly UntypedInt freeMWait = 2; // M still in use.
     internal array<ж<mspan>> buf = new(128);
 }
 
-[GoType] partial struct Δp {
+[GoType] [GoValueClone("deferpoolbuf", "runq", "sudogbuf", "mspancache", "wbBuf")] partial struct Δp {
     internal int32 id;
     internal uint32 status; // one of pidle/prunning/...
     internal puintptr link;
@@ -600,7 +600,7 @@ internal static readonly UntypedInt freeMWait = 2; // M still in use.
 
 // Padding is no longer needed. False sharing is now not a worry because p is large enough
 // that its size class is an integer multiple of the cache line size (for any of our architectures).
-[GoType] partial struct schedt {
+[GoType] [GoValueClone("timeToRun", "stwStoppingTimeGC", "stwStoppingTimeOther", "stwTotalTimeGC", "stwTotalTimeOther")] partial struct schedt {
     internal atomic.Uint64 goidgen;
     internal atomic.Int64 lastpoll; // time of last network poll, 0 if currently polling
     internal atomic.Int64 pollUntil; // time to which current poll is sleeping
@@ -689,23 +689,23 @@ internal static readonly UntypedInt freeMWait = 2; // M still in use.
 }
 
 // Values for the flags field of a sigTabT.
-internal static readonly UntypedInt _SigNotify = /* 1 << iota */ 1; // let signal.Notify have signal, even if from kernel
+internal static UntypedInt _SigNotify => /* 1 << iota */ 1; // let signal.Notify have signal, even if from kernel
 
-internal static readonly UntypedInt _SigKill = 2; // if signal.Notify doesn't take it, exit quietly
+internal static UntypedInt _SigKill => 2; // if signal.Notify doesn't take it, exit quietly
 
-internal static readonly UntypedInt _SigThrow = 4; // if signal.Notify doesn't take it, exit loudly
+internal static UntypedInt _SigThrow => 4; // if signal.Notify doesn't take it, exit loudly
 
-internal static readonly UntypedInt _SigPanic = 8; // if the signal is from the kernel, panic
+internal static UntypedInt _SigPanic => 8; // if the signal is from the kernel, panic
 
-internal static readonly UntypedInt _SigDefault = 16; // if the signal isn't explicitly requested, don't monitor it
+internal static UntypedInt _SigDefault => 16; // if the signal isn't explicitly requested, don't monitor it
 
-internal static readonly UntypedInt _SigGoExit = 32; // cause all runtime procs to exit (only used on Plan 9).
+internal static UntypedInt _SigGoExit => 32; // cause all runtime procs to exit (only used on Plan 9).
 
-internal static readonly UntypedInt _SigSetStack = 64; // Don't explicitly install handler, but add SA_ONSTACK to existing libc handler
+internal static UntypedInt _SigSetStack => 64; // Don't explicitly install handler, but add SA_ONSTACK to existing libc handler
 
-internal static readonly UntypedInt _SigUnblock = 128; // always unblock; see blockableSig
+internal static UntypedInt _SigUnblock => 128; // always unblock; see blockableSig
 
-internal static readonly UntypedInt _SigIgn = 256; // _SIG_DFL action is to ignore the signal
+internal static UntypedInt _SigIgn => 256; // _SIG_DFL action is to ignore the signal
 
 // Layout of in-memory per-function information prepared by linker
 // See https://golang.org/s/go12symtab.
@@ -844,43 +844,43 @@ internal static readonly UntypedInt _SigIgn = 256; // _SIG_DFL action is to igno
 
 [GoType("num:uint8")] partial struct waitReason;
 
-internal static readonly waitReason waitReasonZero = /* iota */ 0;                 // ""
-internal static readonly waitReason waitReasonGCAssistMarking = 1;      // "GC assist marking"
-internal static readonly waitReason waitReasonIOWait = 2;               // "IO wait"
-internal static readonly waitReason waitReasonChanReceiveNilChan = 3;   // "chan receive (nil chan)"
-internal static readonly waitReason waitReasonChanSendNilChan = 4;      // "chan send (nil chan)"
-internal static readonly waitReason waitReasonDumpingHeap = 5;          // "dumping heap"
-internal static readonly waitReason waitReasonGarbageCollection = 6;    // "garbage collection"
-internal static readonly waitReason waitReasonGarbageCollectionScan = 7; // "garbage collection scan"
-internal static readonly waitReason waitReasonPanicWait = 8;            // "panicwait"
-internal static readonly waitReason waitReasonSelect = 9;               // "select"
-internal static readonly waitReason waitReasonSelectNoCases = 10;        // "select (no cases)"
-internal static readonly waitReason waitReasonGCAssistWait = 11;         // "GC assist wait"
-internal static readonly waitReason waitReasonGCSweepWait = 12;          // "GC sweep wait"
-internal static readonly waitReason waitReasonGCScavengeWait = 13;       // "GC scavenge wait"
-internal static readonly waitReason waitReasonChanReceive = 14;          // "chan receive"
-internal static readonly waitReason waitReasonChanSend = 15;             // "chan send"
-internal static readonly waitReason waitReasonFinalizerWait = 16;        // "finalizer wait"
-internal static readonly waitReason waitReasonForceGCIdle = 17;          // "force gc (idle)"
-internal static readonly waitReason waitReasonSemacquire = 18;           // "semacquire"
-internal static readonly waitReason waitReasonSleep = 19;                // "sleep"
-internal static readonly waitReason waitReasonSyncCondWait = 20;         // "sync.Cond.Wait"
-internal static readonly waitReason waitReasonSyncMutexLock = 21;        // "sync.Mutex.Lock"
-internal static readonly waitReason waitReasonSyncRWMutexRLock = 22;     // "sync.RWMutex.RLock"
-internal static readonly waitReason waitReasonSyncRWMutexLock = 23;      // "sync.RWMutex.Lock"
-internal static readonly waitReason waitReasonTraceReaderBlocked = 24;   // "trace reader (blocked)"
-internal static readonly waitReason waitReasonWaitForGCCycle = 25;       // "wait for GC cycle"
-internal static readonly waitReason waitReasonGCWorkerIdle = 26;         // "GC worker (idle)"
-internal static readonly waitReason waitReasonGCWorkerActive = 27;       // "GC worker (active)"
-internal static readonly waitReason waitReasonPreempted = 28;            // "preempted"
-internal static readonly waitReason waitReasonDebugCall = 29;            // "debug call"
-internal static readonly waitReason waitReasonGCMarkTermination = 30;    // "GC mark termination"
-internal static readonly waitReason waitReasonStoppingTheWorld = 31;     // "stopping the world"
-internal static readonly waitReason waitReasonFlushProcCaches = 32;      // "flushing proc caches"
-internal static readonly waitReason waitReasonTraceGoroutineStatus = 33; // "trace goroutine status"
-internal static readonly waitReason waitReasonTraceProcStatus = 34;      // "trace proc status"
-internal static readonly waitReason waitReasonPageTraceFlush = 35;       // "page trace flush"
-internal static readonly waitReason waitReasonCoroutine = 36;            // "coroutine"
+internal static waitReason waitReasonZero => /* iota */ 0;                 // ""
+internal static waitReason waitReasonGCAssistMarking => 1;      // "GC assist marking"
+internal static waitReason waitReasonIOWait => 2;               // "IO wait"
+internal static waitReason waitReasonChanReceiveNilChan => 3;   // "chan receive (nil chan)"
+internal static waitReason waitReasonChanSendNilChan => 4;      // "chan send (nil chan)"
+internal static waitReason waitReasonDumpingHeap => 5;          // "dumping heap"
+internal static waitReason waitReasonGarbageCollection => 6;    // "garbage collection"
+internal static waitReason waitReasonGarbageCollectionScan => 7; // "garbage collection scan"
+internal static waitReason waitReasonPanicWait => 8;            // "panicwait"
+internal static waitReason waitReasonSelect => 9;               // "select"
+internal static waitReason waitReasonSelectNoCases => 10;        // "select (no cases)"
+internal static waitReason waitReasonGCAssistWait => 11;         // "GC assist wait"
+internal static waitReason waitReasonGCSweepWait => 12;          // "GC sweep wait"
+internal static waitReason waitReasonGCScavengeWait => 13;       // "GC scavenge wait"
+internal static waitReason waitReasonChanReceive => 14;          // "chan receive"
+internal static waitReason waitReasonChanSend => 15;             // "chan send"
+internal static waitReason waitReasonFinalizerWait => 16;        // "finalizer wait"
+internal static waitReason waitReasonForceGCIdle => 17;          // "force gc (idle)"
+internal static waitReason waitReasonSemacquire => 18;           // "semacquire"
+internal static waitReason waitReasonSleep => 19;                // "sleep"
+internal static waitReason waitReasonSyncCondWait => 20;         // "sync.Cond.Wait"
+internal static waitReason waitReasonSyncMutexLock => 21;        // "sync.Mutex.Lock"
+internal static waitReason waitReasonSyncRWMutexRLock => 22;     // "sync.RWMutex.RLock"
+internal static waitReason waitReasonSyncRWMutexLock => 23;      // "sync.RWMutex.Lock"
+internal static waitReason waitReasonTraceReaderBlocked => 24;   // "trace reader (blocked)"
+internal static waitReason waitReasonWaitForGCCycle => 25;       // "wait for GC cycle"
+internal static waitReason waitReasonGCWorkerIdle => 26;         // "GC worker (idle)"
+internal static waitReason waitReasonGCWorkerActive => 27;       // "GC worker (active)"
+internal static waitReason waitReasonPreempted => 28;            // "preempted"
+internal static waitReason waitReasonDebugCall => 29;            // "debug call"
+internal static waitReason waitReasonGCMarkTermination => 30;    // "GC mark termination"
+internal static waitReason waitReasonStoppingTheWorld => 31;     // "stopping the world"
+internal static waitReason waitReasonFlushProcCaches => 32;      // "flushing proc caches"
+internal static waitReason waitReasonTraceGoroutineStatus => 33; // "trace goroutine status"
+internal static waitReason waitReasonTraceProcStatus => 34;      // "trace proc status"
+internal static waitReason waitReasonPageTraceFlush => 35;       // "page trace flush"
+internal static waitReason waitReasonCoroutine => 36;            // "coroutine"
 
 internal static array<@string> waitReasonStrings = new golib.SparseArray<@string>{
     [waitReasonZero] = ""u8,

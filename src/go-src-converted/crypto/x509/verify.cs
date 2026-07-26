@@ -27,16 +27,16 @@ partial class x509_package {
 
 [GoType("num:nint")] partial struct InvalidReason;
 
-public static readonly InvalidReason NotAuthorizedToSign = /* iota */ 0;
-public static readonly InvalidReason Expired = 1;
-public static readonly InvalidReason CANotAuthorizedForThisName = 2;
-public static readonly InvalidReason TooManyIntermediates = 3;
-public static readonly InvalidReason IncompatibleUsage = 4;
-public static readonly InvalidReason NameMismatch = 5;
-public static readonly InvalidReason NameConstraintsWithoutSANs = 6;
-public static readonly InvalidReason UnconstrainedName = 7;
-public static readonly InvalidReason TooManyConstraints = 8;
-public static readonly InvalidReason CANotAuthorizedForExtKeyUsage = 9;
+public static InvalidReason NotAuthorizedToSign => /* iota */ 0;
+public static InvalidReason Expired => 1;
+public static InvalidReason CANotAuthorizedForThisName => 2;
+public static InvalidReason TooManyIntermediates => 3;
+public static InvalidReason IncompatibleUsage => 4;
+public static InvalidReason NameMismatch => 5;
+public static InvalidReason NameConstraintsWithoutSANs => 6;
+public static InvalidReason UnconstrainedName => 7;
+public static InvalidReason TooManyConstraints => 8;
+public static InvalidReason CANotAuthorizedForExtKeyUsage => 9;
 
 // CertificateInvalidError results when an odd error occurs. Users of this
 // library probably want to handle all these errors uniformly.
@@ -206,9 +206,9 @@ internal static error errNotParsed = errors.New("x509: missing ASN.1 contents; u
     public nint MaxConstraintComparisions;
 }
 
-internal static readonly UntypedInt leafCertificate = iota;
-internal static readonly UntypedInt intermediateCertificate = 1;
-internal static readonly UntypedInt rootCertificate = 2;
+internal static UntypedInt leafCertificate => iota;
+internal static UntypedInt intermediateCertificate => 1;
+internal static UntypedInt rootCertificate => 2;
 
 // rfc2821Mailbox represents a “mailbox” (which is an email address to most
 // people) by breaking it into the “local” (i.e. before the '@') and “domain”
@@ -863,7 +863,7 @@ internal static bool alreadyInChain(ж<Certificate> Ꮡcandidate, slice<ж<Certi
 // that an invocation of buildChains will (transitively) make. Most chains are
 // less than 15 certificates long, so this leaves space for multiple chains and
 // for failed checks due to different intermediates having the same Subject.
-internal static readonly UntypedInt maxChainSignatureChecks = 100;
+internal static UntypedInt maxChainSignatureChecks => 100;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string x509SignatureCheckˢ = "x509: signature check attempts limit reached while verifying certificate chain"u8;

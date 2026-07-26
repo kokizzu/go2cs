@@ -132,11 +132,11 @@ using ꓸꓸꓸunsafeꓸPointer = Span<unsafe_package.Pointer>;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt _DebugGC = 0;
-internal static readonly UntypedInt _FinBlockSize = /* 4 * 1024 */ 4096;
+internal static UntypedInt _DebugGC => 0;
+internal static UntypedInt _FinBlockSize => /* 4 * 1024 */ 4096;
 internal const bool concurrentSweep = true;
 internal const bool debugScanConservative = false;
-internal static readonly UntypedInt sweepMinHeapDistance = /* 1024 * 1024 */ 1048576;
+internal static UntypedInt sweepMinHeapDistance => /* 1024 * 1024 */ 1048576;
 
 // heapObjectsCanMove always returns false in the current garbage collector.
 // It exists for go4.org/unsafe/assume-no-moving-gc, which is an
@@ -230,9 +230,9 @@ internal static writeBarrierᴛ1 writeBarrier = new();
 internal static ж<uint32> ᏑgcBlackenEnabled = new(default(uint32));
 internal static ref uint32 gcBlackenEnabled => ref ᏑgcBlackenEnabled.Value;
 
-internal static readonly UntypedInt _GCoff = iota; // GC not running; sweeping in background, write barrier disabled
-internal static readonly UntypedInt _GCmark = 1; // GC marking roots and workbufs: allocate black, write barrier ENABLED
-internal static readonly UntypedInt _GCmarktermination = 2; // GC mark termination: allocate black, P's help GC, write barrier ENABLED
+internal static UntypedInt _GCoff => iota; // GC not running; sweeping in background, write barrier disabled
+internal static UntypedInt _GCmark => 1; // GC marking roots and workbufs: allocate black, write barrier ENABLED
+internal static UntypedInt _GCmarktermination => 2; // GC mark termination: allocate black, P's help GC, write barrier ENABLED
 
 //go:nosplit
 internal static void setGCPhase(uint32 x) {
@@ -242,10 +242,10 @@ internal static void setGCPhase(uint32 x) {
 
 [GoType("num:nint")] partial struct gcMarkWorkerMode;
 
-internal static readonly gcMarkWorkerMode gcMarkWorkerNotWorker = /* iota */ 0;
-internal static readonly gcMarkWorkerMode gcMarkWorkerDedicatedMode = 1;
-internal static readonly gcMarkWorkerMode gcMarkWorkerFractionalMode = 2;
-internal static readonly gcMarkWorkerMode gcMarkWorkerIdleMode = 3;
+internal static gcMarkWorkerMode gcMarkWorkerNotWorker => /* iota */ 0;
+internal static gcMarkWorkerMode gcMarkWorkerDedicatedMode => 1;
+internal static gcMarkWorkerMode gcMarkWorkerFractionalMode => 2;
+internal static gcMarkWorkerMode gcMarkWorkerIdleMode => 3;
 
 // gcMarkWorkerModeStrings are the strings labels of gcMarkWorkerModes
 // to use in execution traces.
@@ -465,9 +465,9 @@ internal static void gcWaitOnMark(uint32 n) {
 
 [GoType("num:nint")] partial struct gcMode;
 
-internal static readonly gcMode gcBackgroundMode = /* iota */ 0; // concurrent GC and sweep
-internal static readonly gcMode gcForceMode = 1;     // stop-the-world GC now, concurrent sweep
-internal static readonly gcMode gcForceBlockMode = 2; // stop-the-world GC now and STW sweep (forced by user)
+internal static gcMode gcBackgroundMode => /* iota */ 0; // concurrent GC and sweep
+internal static gcMode gcForceMode => 1;     // stop-the-world GC now, concurrent sweep
+internal static gcMode gcForceBlockMode => 2; // stop-the-world GC now and STW sweep (forced by user)
 
 // A gcTrigger is a predicate for starting a GC cycle. Specifically,
 // it is an exit condition for the _GCoff phase.
@@ -479,9 +479,9 @@ internal static readonly gcMode gcForceBlockMode = 2; // stop-the-world GC now a
 
 [GoType("num:nint")] partial struct gcTriggerKind;
 
-internal static readonly gcTriggerKind gcTriggerHeap = /* iota */ 0;
-internal static readonly gcTriggerKind gcTriggerTime = 1;
-internal static readonly gcTriggerKind gcTriggerCycle = 2;
+internal static gcTriggerKind gcTriggerHeap => /* iota */ 0;
+internal static gcTriggerKind gcTriggerTime => 1;
+internal static gcTriggerKind gcTriggerCycle => 2;
 
 // test reports whether the trigger condition is satisfied, meaning
 // that the exit condition for the _GCoff phase has been met. The exit
@@ -586,8 +586,7 @@ internal static void gcStart(gcTrigger trigger) {
     }
     gcBgMarkStartWorkers();
     systemstack(gcResetMarkState);
-    work.stwprocs = gomaxprocs;
-    work.maxprocs = gomaxprocs;
+    (work.stwprocs, work.maxprocs) = (gomaxprocs, gomaxprocs);
     if (work.stwprocs > ncpu) {
         // This is used to compute CPU time of the STW phases,
         // so it can't be more than ncpu, even if GOMAXPROCS is.

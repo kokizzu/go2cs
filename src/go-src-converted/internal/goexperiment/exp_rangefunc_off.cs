@@ -6,6 +6,6 @@ partial class goexperiment_package {
 
 public const bool RangeFunc = false;
 
-public static readonly UntypedInt RangeFuncInt = 0;
+public static UntypedInt RangeFuncInt => 0;
 
 } // end goexperiment_package

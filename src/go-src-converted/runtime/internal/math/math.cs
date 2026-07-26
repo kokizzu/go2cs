@@ -8,7 +8,7 @@ using go.@internal;
 
 partial class math_package {
 
-public static readonly uintptr MaxUintptr = /* ^uintptr(0) */ unchecked((uintptr)18446744073709551615);
+public static uintptr MaxUintptr => /* ^uintptr(0) */ unchecked((uintptr)18446744073709551615);
 
 // MulUintptr returns a * b and whether the multiplication overflowed.
 // On supported platforms this is an intrinsic lowered by the compiler.

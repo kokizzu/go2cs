@@ -61,12 +61,12 @@ internal static ж<NumError> bitSizeError(@string fn, @string str, nint bitSize)
     return Ꮡ(new NumError(fn, stringslite.Clone(str), errors.New("invalid bit size "u8 + Itoa(bitSize))));
 }
 
-internal static readonly UntypedInt intSize = /* 32 << (^uint(0) >> 63) */ 64;
+internal static UntypedInt intSize => /* 32 << (^uint(0) >> 63) */ 64;
 
 // IntSize is the size in bits of an int or uint value.
-public static readonly UntypedInt IntSize = /* intSize */ 64;
+public static UntypedInt IntSize => /* intSize */ 64;
 
-internal static readonly UntypedInt maxUint64 = /* 1<<64 - 1 */ 18446744073709551615;
+internal static UntypedInt maxUint64 => /* 1<<64 - 1 */ 18446744073709551615;
 
 // ParseUint is like [ParseInt] but for unsigned numbers.
 //

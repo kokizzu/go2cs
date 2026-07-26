@@ -24,23 +24,23 @@ partial class poll_package {
 // 20 bits - total number of references (read+write+misc).
 // 20 bits - number of outstanding read waiters.
 // 20 bits - number of outstanding write waiters.
-internal static readonly UntypedInt mutexClosed = /* 1 << 0 */ 1;
+internal static UntypedInt mutexClosed => /* 1 << 0 */ 1;
 
-internal static readonly UntypedInt mutexRLock = /* 1 << 1 */ 2;
+internal static UntypedInt mutexRLock => /* 1 << 1 */ 2;
 
-internal static readonly UntypedInt mutexWLock = /* 1 << 2 */ 4;
+internal static UntypedInt mutexWLock => /* 1 << 2 */ 4;
 
-internal static readonly UntypedInt mutexRef = /* 1 << 3 */ 8;
+internal static UntypedInt mutexRef => /* 1 << 3 */ 8;
 
-internal static readonly UntypedInt mutexRefMask = /* (1<<20 - 1) << 3 */ 8388600;
+internal static UntypedInt mutexRefMask => /* (1<<20 - 1) << 3 */ 8388600;
 
-internal static readonly UntypedInt mutexRWait = /* 1 << 23 */ 8388608;
+internal static UntypedInt mutexRWait => /* 1 << 23 */ 8388608;
 
-internal static readonly UntypedInt mutexRMask = /* (1<<20 - 1) << 23 */ 8796084633600;
+internal static UntypedInt mutexRMask => /* (1<<20 - 1) << 23 */ 8796084633600;
 
-internal static readonly UntypedInt mutexWWait = /* 1 << 43 */ 8796093022208;
+internal static UntypedInt mutexWWait => /* 1 << 43 */ 8796093022208;
 
-internal static readonly UntypedInt mutexWMask = /* (1<<20 - 1) << 43 */ 9223363240761753600;
+internal static UntypedInt mutexWMask => /* (1<<20 - 1) << 43 */ 9223363240761753600;
 
 internal static readonly @string overflowMsg = "too many concurrent operations on a single file or socket (max 1048575)"u8;
 

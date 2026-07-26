@@ -15,7 +15,7 @@ using net;
 
 partial class net_package {
 
-internal static readonly time.Duration cacheMaxAge = /* 5 * time.Second */ 5000000000;
+internal static time.Duration cacheMaxAge => /* 5 * time.Second */ 5000000000;
 
 internal static @string parseLiteralIP(@string addr) {
     var (ip, err) = netip.ParseAddr(addr);

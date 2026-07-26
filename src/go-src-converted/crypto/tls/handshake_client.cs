@@ -241,8 +241,7 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
         if (errΔ4 != default!) {
             return (default!, default!, default!, errΔ4);
         }
-        ech.Value.kdfID = suite.KDFID;
-        ech.Value.aeadID = suite.AEADID;
+        (ech.Value.kdfID, ech.Value.aeadID) = (suite.KDFID, suite.AEADID);
         var info = append(slice<byte>("tls ech\x00"u8), (~(~ech).config).raw.ꓸꓸꓸ);
         (ech.Value.encapsulatedKey, ech.Value.hpkeContext, errΔ4) = hpke.SetupSender((~(~ech).config).KemID, suite.KDFID, suite.AEADID, echPK, info);
         if (errΔ4 != default!) {
@@ -1095,7 +1094,7 @@ internal static error sendFinished(this ж<clientHandshakeState> Ꮡhs, slice<by
 
 // defaultMaxRSAKeySize is the maximum RSA key size in bits that we are willing
 // to verify the signatures of during a TLS handshake.
-internal static readonly UntypedInt defaultMaxRSAKeySize = 8192;
+internal static UntypedInt defaultMaxRSAKeySize => 8192;
 
 internal static ж<godebug.Setting> tlsmaxrsasize = godebug.New("tlsmaxrsasize"u8);
 

@@ -15,7 +15,7 @@ using io = io_package;
 
 partial class internal_package {
 
-internal static readonly UntypedInt maxLineLength = 4096; // assumed <= bufio.defaultBufSize
+internal static UntypedInt maxLineLength => 4096; // assumed <= bufio.defaultBufSize
 
 public static error ErrLineTooLong = errors.New("header line too long"u8);
 

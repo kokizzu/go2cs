@@ -341,11 +341,11 @@ private static readonly @string archiveZipInvalidˢ = "archive/zip: invalid dupl
     var (utf8Valid2, utf8Require2) = detectUTF8(fh.Comment);
     switch (ᐧ) {
     case {} when fh.NonUTF8: {
-        fh.Flags &= unchecked((uint16)~0x800);
+        fh.Flags &= unchecked((uint16)~(uint16)(0x800));
         break;
     }
     case {} when (utf8Require1 || utf8Require2) && (utf8Valid1 && utf8Valid2): {
-        fh.Flags |= 0x800;
+        fh.Flags |= (uint16)(0x800);
         break;
     }}
 
@@ -393,7 +393,7 @@ private static readonly @string archiveZipInvalidˢ = "archive/zip: invalid dupl
         // This is necessary as most compression formats have non-zero lengths
         // even when compressing an empty string.
         fh.Method = Store;
-        fh.Flags &= unchecked((uint16)~0x8);
+        fh.Flags &= unchecked((uint16)~(uint16)(0x8));
         // we will not write a data descriptor
         // Explicitly clear sizes as they have no meaning for directories.
         fh.CompressedSize = 0;
@@ -402,7 +402,7 @@ private static readonly @string archiveZipInvalidˢ = "archive/zip: invalid dupl
         fh.UncompressedSize64 = 0;
         ow = new dirWriter(nil);
     } else {
-        fh.Flags |= 0x8;
+        fh.Flags |= (uint16)(0x8);
         // we will write a data descriptor
         fw = Ꮡ(new fileWriter(
             zipw: new countWriterжWriter(w.cw),

@@ -19,10 +19,10 @@ partial class oldtrace_package {
     internal gStatus status;
 }
 
-internal static readonly gStatus gDead = /* iota */ 0;
-internal static readonly gStatus gRunnable = 1;
-internal static readonly gStatus gRunning = 2;
-internal static readonly gStatus gWaiting = 3;
+internal static gStatus gDead => /* iota */ 0;
+internal static gStatus gRunnable => 1;
+internal static gStatus gRunning => 2;
+internal static gStatus gWaiting => 3;
 internal const uint64 unordered = /* ^uint64(0) */ 18446744073709551615;
 internal const uint64 garbage = /* ^uint64(0) - 1 */ 18446744073709551614;
 internal const uint64 noseq = /* ^uint64(0) */ 18446744073709551615;

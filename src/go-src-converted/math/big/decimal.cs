@@ -39,7 +39,7 @@ partial class big_package {
 
 // Maximum shift amount that can be done in one pass without overflow.
 // A Word has _W bits and (1<<maxShift - 1)*10 + 9 must fit into Word.
-internal static readonly UntypedInt maxShift = /* _W - 4 */ 60;
+internal static UntypedInt maxShift => /* _W - 4 */ 60;
 
 // TODO(gri) Since we know the desired decimal precision when converting
 // a floating-point number, we may be able to limit the number of decimal

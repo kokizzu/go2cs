@@ -42,9 +42,9 @@ internal static array<byte> bitCount = new byte[]{
 
 [GoType("num:nint")] partial struct quantIndex;
 
-internal static readonly quantIndex quantIndexLuminance = /* iota */ 0;
-internal static readonly quantIndex quantIndexChrominance = 1;
-internal static readonly quantIndex nQuantIndex = 2;
+internal static quantIndex quantIndexLuminance => /* iota */ 0;
+internal static quantIndex quantIndexChrominance => 1;
+internal static quantIndex nQuantIndex => 2;
 
 // Luminance.
 // Chrominance.
@@ -75,11 +75,11 @@ internal static array<array<byte>> unscaledQuant = new array<byte>[]{
 
 [GoType("num:nint")] partial struct huffIndex;
 
-internal static readonly huffIndex huffIndexLuminanceDC = /* iota */ 0;
-internal static readonly huffIndex huffIndexLuminanceAC = 1;
-internal static readonly huffIndex huffIndexChrominanceDC = 2;
-internal static readonly huffIndex huffIndexChrominanceAC = 3;
-internal static readonly huffIndex nHuffIndex = 4;
+internal static huffIndex huffIndexLuminanceDC => /* iota */ 0;
+internal static huffIndex huffIndexLuminanceAC => 1;
+internal static huffIndex huffIndexChrominanceDC => 2;
+internal static huffIndex huffIndexChrominanceAC => 3;
+internal static huffIndex nHuffIndex => 4;
 
 // huffmanSpec specifies a Huffman encoding.
 [GoType] [GoValueClone("count")] partial struct huffmanSpec {
@@ -253,8 +253,7 @@ internal static ref array<huffmanLUT> theHuffmanLUT => ref ᏑtheHuffmanLUT.Valu
         bits <<= (int)(8);
         nBits -= 8;
     }
-    e.bits = bits;
-    e.nBits = nBits;
+    (e.bits, e.nBits) = (bits, nBits);
 }
 
 // emitHuff emits the given value with the given Huffman encoder.
@@ -587,7 +586,7 @@ internal static slice<byte> sosHeaderYCbCr = new byte[]{
 }
 
 // DefaultQuality is the default quality encoding parameter.
-public static readonly UntypedInt DefaultQuality = 75;
+public static UntypedInt DefaultQuality => 75;
 
 // Options are the encoding parameters.
 // Quality ranges from 1 to 100 inclusive, higher is better.

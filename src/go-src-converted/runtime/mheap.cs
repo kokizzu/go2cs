@@ -17,10 +17,10 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt minPhysPageSize = 4096;
-internal static readonly UntypedInt maxPhysPageSize = /* 512 << 10 */ 524288;
-internal static readonly UntypedInt maxPhysHugePageSize = /* pallocChunkBytes */ 4194304;
-internal static readonly UntypedInt pagesPerReclaimerChunk = 512;
+internal static UntypedInt minPhysPageSize => 4096;
+internal static UntypedInt maxPhysPageSize => /* 512 << 10 */ 524288;
+internal static UntypedInt maxPhysHugePageSize => /* pallocChunkBytes */ 4194304;
+internal static UntypedInt pagesPerReclaimerChunk => 512;
 internal const bool physPageAlignedStacks = /* GOOS == "openbsd" */ false;
 
 [GoType("dyn")] partial struct mheap_curArena {
@@ -274,9 +274,9 @@ internal static ref mheap mheap_ => ref Ꮡmheap_.Value;
 // and heapmap(i) == span for all s->start <= i < s->start+s->npages.
 // Every mspan is in one doubly-linked list, either in the mheap's
 // busy list or one of the mcentral's span lists.
-internal static readonly mSpanState mSpanDead = /* iota */ 0;
-internal static readonly mSpanState mSpanInUse = 1; // allocated for garbage collected heap
-internal static readonly mSpanState mSpanManual = 2; // allocated for manual management (e.g., stack allocator)
+internal static mSpanState mSpanDead => /* iota */ 0;
+internal static mSpanState mSpanInUse => 1; // allocated for garbage collected heap
+internal static mSpanState mSpanManual => 2; // allocated for manual management (e.g., stack allocator)
 
 // mSpanStateNames are the names of the span states, indexed by
 // mSpanState.
@@ -466,8 +466,8 @@ internal static void recordspan(@unsafe.Pointer vh, @unsafe.Pointer Δp) {
 
 [GoType("num:uint8")] partial struct spanClass;
 
-internal static readonly UntypedInt numSpanClasses = /* _NumSizeClasses << 1 */ 136;
-internal static readonly spanClass tinySpanClass = /* spanClass(tinySizeClass<<1 | 1) */ 5;
+internal static UntypedInt numSpanClasses => /* _NumSizeClasses << 1 */ 136;
+internal static spanClass tinySpanClass => /* spanClass(tinySizeClass<<1 | 1) */ 5;
 
 internal static spanClass makeSpanClass(uint8 sizeclass, bool noscan) {
     return (spanClass)(((spanClass)((uint8)(sizeclass << (int)(1)))) | ((spanClass)(uint8)bool2int(noscan)));
@@ -837,10 +837,10 @@ internal static uintptr reclaimChunk(this ж<mheap> Ꮡh, slice<arenaIdx> arenas
 
 [GoType("num:uint8")] partial struct spanAllocType;
 
-internal static readonly spanAllocType spanAllocHeap = /* iota */ 0;         // heap span
-internal static readonly spanAllocType spanAllocStack = 1;        // stack span
-internal static readonly spanAllocType spanAllocPtrScalarBits = 2; // unrolled GC prog bitmap span
-internal static readonly spanAllocType spanAllocWorkBuf = 3;      // work buf span
+internal static spanAllocType spanAllocHeap => /* iota */ 0;         // heap span
+internal static spanAllocType spanAllocStack => 1;        // stack span
+internal static spanAllocType spanAllocPtrScalarBits => 2; // unrolled GC prog bitmap span
+internal static spanAllocType spanAllocWorkBuf => 3;      // work buf span
 
 // manual returns true if the span allocation is manually managed.
 internal static bool manual(this spanAllocType s) {
@@ -1545,7 +1545,7 @@ internal static void freeSpanLocked(this ж<mheap> Ꮡh, ж<mspan> Ꮡs, spanAll
         Ꮡh.of(mheap.ᏑpagesInUse).Add(((uintptr)0 - s.npages));
         var (arena, pageIdx, pageMask) = pageIndexOf(s.@base());
         atomic.And8(arena.at(heapArena.ᏑpageInUse, (nint)(pageIdx)), // Clear in-use bit in arena page bitmap.
- (uint8)(~pageMask));
+ (uint8)(((uint8)(~pageMask))));
     }
     else { /* default: */
         @throw(mheapFreeSpanLockedˢ4);
@@ -1747,15 +1747,14 @@ internal static void takeAll(this ж<mSpanList> Ꮡlist, ж<mSpanList> Ꮡother)
         list.first.Value.prev = other.last;
         list.first = other.first;
     }
-    other.first = default!;
-    other.last = default!;
+    (other.first, other.last) = (default!, default!);
 }
 
-internal static readonly UntypedInt _KindSpecialFinalizer = 1;
-internal static readonly UntypedInt _KindSpecialWeakHandle = 2;
-internal static readonly UntypedInt _KindSpecialProfile = 3;
-internal static readonly UntypedInt _KindSpecialReachable = 4;
-internal static readonly UntypedInt _KindSpecialPinCounter = 5;
+internal static UntypedInt _KindSpecialFinalizer => 1;
+internal static UntypedInt _KindSpecialWeakHandle => 2;
+internal static UntypedInt _KindSpecialProfile => 3;
+internal static UntypedInt _KindSpecialReachable => 4;
+internal static UntypedInt _KindSpecialPinCounter => 5;
 
 [GoType] partial struct special {
     internal sys.NotInHeap _;
@@ -1781,7 +1780,7 @@ internal static void spanHasNoSpecials(ж<mspan> Ꮡs) {
     var arenaPage = (s.@base() / (uintptr)pageSize) % (uintptr)pagesPerArena;
     arenaIdx ai = arenaIndex(s.@base());
     var ha = mheap_.arenas[(nint)(ai.l1())].Value[ai.l2()];
-    atomic.And8(ha.at(heapArena.ᏑpageSpecials, (nint)(arenaPage / 8)), (uint8)(~((uint8)((uint8)1 << (int)((arenaPage % 8))))));
+    atomic.And8(ha.at(heapArena.ᏑpageSpecials, (nint)(arenaPage / 8)), (uint8)(((uint8)(~((uint8)((uint8)1 << (int)((arenaPage % 8))))))));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -2228,9 +2227,9 @@ internal static (ж<uint8> bytep, uint8 mask) bitp(this ж<gcBits> Ꮡb, uintptr
     return (Ꮡb.bytep(n / 8), (uint8)(1 << (int)((n % 8))));
 }
 
-internal static readonly uintptr gcBitsChunkBytes = /* uintptr(64 << 10) */ 65536;
+internal static uintptr gcBitsChunkBytes => /* uintptr(64 << 10) */ 65536;
 
-internal static readonly uintptr gcBitsHeaderBytes = /* unsafe.Sizeof(gcBitsHeader{}) */ 16;
+internal static uintptr gcBitsHeaderBytes => /* unsafe.Sizeof(gcBitsHeader{}) */ 16;
 
 [GoType] partial struct gcBitsHeader {
     internal uintptr free; // free is the index into bits of the next free byte.

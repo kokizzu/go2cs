@@ -45,13 +45,13 @@ partial class sha3_package {
 }
 
 // Consts for configuring initial SHA-3 state
-internal static readonly UntypedInt dsbyteShake = 0x1f;
+internal static UntypedInt dsbyteShake => 0x1f;
 
-internal static readonly UntypedInt dsbyteCShake = 0x04;
+internal static UntypedInt dsbyteCShake => 0x04;
 
-internal static readonly UntypedInt rate128 = 168;
+internal static UntypedInt rate128 => 168;
 
-internal static readonly UntypedInt rate256 = 136;
+internal static UntypedInt rate256 => 136;
 
 internal static slice<byte> bytepad(slice<byte> input, nint w) {
     // leftEncode always returns max 9 bytes

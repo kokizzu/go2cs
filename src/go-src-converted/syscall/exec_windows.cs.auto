@@ -366,7 +366,7 @@ public static (nint pid, uintptr handle, error err) StartProcess(@string argv0, 
         si.Value.Cb = (uint32)@unsafe.Sizeof(si.Value);
         si.Value.Flags = STARTF_USESTDHANDLES;
         if ((~sys).HideWindow) {
-            si.Value.Flags |= STARTF_USESHOWWINDOW;
+            si.Value.Flags |= (uint32)(STARTF_USESHOWWINDOW);
             si.Value.ShowWindow = SW_HIDE;
         }
         if ((~sys).ParentProcess != 0) {

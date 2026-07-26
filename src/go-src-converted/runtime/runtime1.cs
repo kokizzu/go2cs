@@ -18,11 +18,11 @@ partial class runtime_package {
 // The cached value is a uint32 in which the low bits
 // are the "crash" and "all" settings and the remaining
 // bits are the traceback value (0 off, 1 on, 2 include system).
-internal static readonly UntypedInt tracebackCrash = /* 1 << iota */ 1;
+internal static UntypedInt tracebackCrash => /* 1 << iota */ 1;
 
-internal static readonly UntypedInt tracebackAll = 2;
+internal static UntypedInt tracebackAll => 2;
 
-internal static readonly UntypedInt tracebackShift = /* iota */ 2;
+internal static UntypedInt tracebackShift => /* iota */ 2;
 
 internal static ж<uint32> Ꮡtraceback_cache = new(((uint32)2 << (int)(tracebackShift)));
 internal static ref uint32 traceback_cache => ref Ꮡtraceback_cache.Value;

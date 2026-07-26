@@ -15,9 +15,9 @@ partial class event_package {
 
 [GoType("num:uint8")] partial struct Constraint;
 
-public static readonly Constraint MustNotHave = /* iota */ 0;
-public static readonly Constraint MayHave = 1;
-public static readonly Constraint MustHave = 2;
+public static Constraint MustNotHave => /* iota */ 0;
+public static Constraint MayHave => 1;
+public static Constraint MustHave => 2;
 
 // UserGoReqs is a common requirement among events that are running
 // or are close to running user code.

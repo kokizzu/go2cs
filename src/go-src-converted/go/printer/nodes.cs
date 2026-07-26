@@ -104,8 +104,8 @@ internal static void setComment(this ж<printer> Ꮡp, ж<ast.CommentGroup> Ꮡg
 [GoType("num:nuint")] partial struct exprListMode;
 
 // get comment ready for use
-internal static readonly exprListMode commaTerm = /* 1 << iota */ 1;     // list is optionally terminated by a comma
-internal static readonly exprListMode noIndent = 2;      // no extra indentation in multi-line lists
+internal static exprListMode commaTerm => /* 1 << iota */ 1;     // list is optionally terminated by a comma
+internal static exprListMode noIndent => 2;      // no extra indentation in multi-line lists
 
 // If indent is set, a multi-line identifier list is indented after the
 // first linebreak encountered.
@@ -317,9 +317,9 @@ internal static void exprList(this ж<printer> Ꮡp, tokenꓸPos prev0, slice<as
 
 [GoType("num:nint")] partial struct paramMode;
 
-internal static readonly paramMode funcParam = /* iota */ 0;
-internal static readonly paramMode funcTParam = 1;
-internal static readonly paramMode typeTParam = 2;
+internal static paramMode funcParam => /* iota */ 0;
+internal static paramMode funcTParam => 1;
+internal static paramMode typeTParam => 2;
 
 internal static void parameters(this ж<printer> Ꮡp, ж<ast.FieldList> Ꮡfields, paramMode mode) {
     ref var p = ref Ꮡp.Value;

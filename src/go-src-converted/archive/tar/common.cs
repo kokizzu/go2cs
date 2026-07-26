@@ -59,33 +59,33 @@ internal static @string Error(this headerError he) {
 }
 
 // Type flags for Header.Typeflag.
-public static readonly UntypedInt TypeReg = /* '0' */ 48;
+public static UntypedInt TypeReg => /* '0' */ 48;
 
-public static readonly UntypedInt TypeRegA = /* '\x00' */ 0;
+public static UntypedInt TypeRegA => /* '\x00' */ 0;
 
-public static readonly UntypedInt TypeLink = /* '1' */ 49; // Hard link
+public static UntypedInt TypeLink => /* '1' */ 49; // Hard link
 
-public static readonly UntypedInt TypeSymlink = /* '2' */ 50; // Symbolic link
+public static UntypedInt TypeSymlink => /* '2' */ 50; // Symbolic link
 
-public static readonly UntypedInt TypeChar = /* '3' */ 51; // Character device node
+public static UntypedInt TypeChar => /* '3' */ 51; // Character device node
 
-public static readonly UntypedInt TypeBlock = /* '4' */ 52; // Block device node
+public static UntypedInt TypeBlock => /* '4' */ 52; // Block device node
 
-public static readonly UntypedInt TypeDir = /* '5' */ 53; // Directory
+public static UntypedInt TypeDir => /* '5' */ 53; // Directory
 
-public static readonly UntypedInt TypeFifo = /* '6' */ 54; // FIFO node
+public static UntypedInt TypeFifo => /* '6' */ 54; // FIFO node
 
-public static readonly UntypedInt TypeCont = /* '7' */ 55;
+public static UntypedInt TypeCont => /* '7' */ 55;
 
-public static readonly UntypedInt TypeXHeader = /* 'x' */ 120;
+public static UntypedInt TypeXHeader => /* 'x' */ 120;
 
-public static readonly UntypedInt TypeXGlobalHeader = /* 'g' */ 103;
+public static UntypedInt TypeXGlobalHeader => /* 'g' */ 103;
 
-public static readonly UntypedInt TypeGNUSparse = /* 'S' */ 83;
+public static UntypedInt TypeGNUSparse => /* 'S' */ 83;
 
-public static readonly UntypedInt TypeGNULongName = /* 'L' */ 76;
+public static UntypedInt TypeGNULongName => /* 'L' */ 76;
 
-public static readonly UntypedInt TypeGNULongLink = /* 'K' */ 75;
+public static UntypedInt TypeGNULongLink => /* 'K' */ 75;
 
 // Keywords for PAX extended header records.
 internal static readonly @string paxNone = ""u8; // Indicates that no PAX key is suitable
@@ -681,16 +681,16 @@ internal static @string String(this headerFileInfo fi) {
 // sysStat, if non-nil, populates h from system-dependent fields of fi.
 internal static Func<fs.FileInfo, ж<Header>, bool, error> sysStat;
 
-internal static readonly UntypedInt c_ISUID = /* 04000 */ 2048; // Set uid
-internal static readonly UntypedInt c_ISGID = /* 02000 */ 1024; // Set gid
-internal static readonly UntypedInt c_ISVTX = /* 01000 */ 512; // Save text (sticky bit)
-internal static readonly UntypedInt c_ISDIR = /* 040000 */ 16384; // Directory
-internal static readonly UntypedInt c_ISFIFO = /* 010000 */ 4096; // FIFO
-internal static readonly UntypedInt c_ISREG = /* 0100000 */ 32768; // Regular file
-internal static readonly UntypedInt c_ISLNK = /* 0120000 */ 40960; // Symbolic link
-internal static readonly UntypedInt c_ISBLK = /* 060000 */ 24576; // Block special file
-internal static readonly UntypedInt c_ISCHR = /* 020000 */ 8192; // Character special file
-internal static readonly UntypedInt c_ISSOCK = /* 0140000 */ 49152; // Socket
+internal static UntypedInt c_ISUID => /* 04000 */ 2048; // Set uid
+internal static UntypedInt c_ISGID => /* 02000 */ 1024; // Set gid
+internal static UntypedInt c_ISVTX => /* 01000 */ 512; // Save text (sticky bit)
+internal static UntypedInt c_ISDIR => /* 040000 */ 16384; // Directory
+internal static UntypedInt c_ISFIFO => /* 010000 */ 4096; // FIFO
+internal static UntypedInt c_ISREG => /* 0100000 */ 32768; // Regular file
+internal static UntypedInt c_ISLNK => /* 0120000 */ 40960; // Symbolic link
+internal static UntypedInt c_ISBLK => /* 060000 */ 24576; // Block special file
+internal static UntypedInt c_ISCHR => /* 020000 */ 8192; // Character special file
+internal static UntypedInt c_ISSOCK => /* 0140000 */ 49152; // Socket
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string archiveTarFileInfoIsNilˢ = "archive/tar: FileInfo is nil"u8;
@@ -753,13 +753,13 @@ public static (ж<Header>, error) FileInfoHeader(fs.FileInfo fi, @string link) {
     }}
 
     if ((fs.FileMode)(fm & fs.ModeSetuid) != 0) {
-        h.Value.Mode |= c_ISUID;
+        h.Value.Mode |= (int64)(c_ISUID);
     }
     if ((fs.FileMode)(fm & fs.ModeSetgid) != 0) {
-        h.Value.Mode |= c_ISGID;
+        h.Value.Mode |= (int64)(c_ISGID);
     }
     if ((fs.FileMode)(fm & fs.ModeSticky) != 0) {
-        h.Value.Mode |= c_ISVTX;
+        h.Value.Mode |= (int64)(c_ISVTX);
     }
     // If possible, populate additional fields from OS-specific
     // FileInfo fields.

@@ -74,7 +74,7 @@ internal static (syscallꓸSockaddr, error) sockaddr(this ж<UDPAddr> Ꮡa, nint
 
     if (err != default!) {
         // No sockaddr, so don't return UDPAddr.
-        addr = default!;
+        Ꮡaddr = default!; addr = ref Ꮡaddr.Value;
     }
     return (n, Ꮡaddr, err);
 }

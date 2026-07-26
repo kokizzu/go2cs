@@ -280,26 +280,26 @@ internal static Class formToClass(format form, Attr attr, nint vers, ж<buf> Ꮡ
 
 [GoType("num:nint")] partial struct Class;
 
-public static readonly Class ClassUnknown = /* iota */ 0;
-public static readonly Class ClassAddress = 1;
-public static readonly Class ClassBlock = 2;
-public static readonly Class ClassConstant = 3;
-public static readonly Class ClassExprLoc = 4;
-public static readonly Class ClassFlag = 5;
-public static readonly Class ClassLinePtr = 6;
-public static readonly Class ClassLocListPtr = 7;
-public static readonly Class ClassMacPtr = 8;
-public static readonly Class ClassRangeListPtr = 9;
-public static readonly Class ClassReference = 10;
-public static readonly Class ClassReferenceSig = 11;
-public static readonly Class ClassString = 12;
-public static readonly Class ClassReferenceAlt = 13;
-public static readonly Class ClassStringAlt = 14;
-public static readonly Class ClassAddrPtr = 15;
-public static readonly Class ClassLocList = 16;
-public static readonly Class ClassRngList = 17;
-public static readonly Class ClassRngListsPtr = 18;
-public static readonly Class ClassStrOffsetsPtr = 19;
+public static Class ClassUnknown => /* iota */ 0;
+public static Class ClassAddress => 1;
+public static Class ClassBlock => 2;
+public static Class ClassConstant => 3;
+public static Class ClassExprLoc => 4;
+public static Class ClassFlag => 5;
+public static Class ClassLinePtr => 6;
+public static Class ClassLocListPtr => 7;
+public static Class ClassMacPtr => 8;
+public static Class ClassRangeListPtr => 9;
+public static Class ClassReference => 10;
+public static Class ClassReferenceSig => 11;
+public static Class ClassString => 12;
+public static Class ClassReferenceAlt => 13;
+public static Class ClassStringAlt => 14;
+public static Class ClassAddrPtr => 15;
+public static Class ClassLocList => 16;
+public static Class ClassRngList => 17;
+public static Class ClassRngListsPtr => 18;
+public static Class ClassStrOffsetsPtr => 19;
 
 //go:generate stringer -type=Class
 public static @string GoString(this Class i) {

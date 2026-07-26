@@ -11,7 +11,7 @@ internal static @unsafe.Pointer _ᴛ1ʗ;
 
 // Do the interface allocations only once for common
 // Errno values.
-internal static readonly UntypedInt errnoERROR_IO_PENDING = 997;
+internal static UntypedInt errnoERROR_IO_PENDING => 997;
 
 internal static error errERROR_IO_PENDING = ((Errno)errnoERROR_IO_PENDING);
 internal static error errERROR_EINVAL = ((Errno)EINVAL);

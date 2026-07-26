@@ -10,12 +10,12 @@ partial class image_package {
 
 [GoType("num:nint")] partial struct YCbCrSubsampleRatio;
 
-public static readonly YCbCrSubsampleRatio YCbCrSubsampleRatio444 = /* iota */ 0;
-public static readonly YCbCrSubsampleRatio YCbCrSubsampleRatio422 = 1;
-public static readonly YCbCrSubsampleRatio YCbCrSubsampleRatio420 = 2;
-public static readonly YCbCrSubsampleRatio YCbCrSubsampleRatio440 = 3;
-public static readonly YCbCrSubsampleRatio YCbCrSubsampleRatio411 = 4;
-public static readonly YCbCrSubsampleRatio YCbCrSubsampleRatio410 = 5;
+public static YCbCrSubsampleRatio YCbCrSubsampleRatio444 => /* iota */ 0;
+public static YCbCrSubsampleRatio YCbCrSubsampleRatio422 => 1;
+public static YCbCrSubsampleRatio YCbCrSubsampleRatio420 => 2;
+public static YCbCrSubsampleRatio YCbCrSubsampleRatio440 => 3;
+public static YCbCrSubsampleRatio YCbCrSubsampleRatio411 => 4;
+public static YCbCrSubsampleRatio YCbCrSubsampleRatio410 => 5;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string yCbCrSubsampleRatio444ˢ = "YCbCrSubsampleRatio444"u8;

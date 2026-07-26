@@ -38,25 +38,25 @@ using vendor.golang.org.x.crypto;
 
 partial class mlkem768_package {
 
-internal static readonly UntypedInt n = 256;
-internal static readonly UntypedInt q = 3329;
-internal static readonly UntypedInt log2q = 12;
-internal static readonly UntypedInt k = 3;
-internal static readonly UntypedInt η = 2;
-internal static readonly UntypedInt du = 10;
-internal static readonly UntypedInt dv = 4;
-internal static readonly UntypedInt encodingSize12 = /* n * log2q / 8 */ 384;
-internal static readonly UntypedInt encodingSize10 = /* n * du / 8 */ 320;
-internal static readonly UntypedInt encodingSize4 = /* n * dv / 8 */ 128;
-internal static readonly UntypedInt encodingSize1 = /* n * 1 / 8 */ 32;
-internal static readonly UntypedInt messageSize = /* encodingSize1 */ 32;
-internal static readonly UntypedInt decryptionKeySize = /* k * encodingSize12 */ 1152;
-internal static readonly UntypedInt encryptionKeySize = /* k*encodingSize12 + 32 */ 1184;
-public static readonly UntypedInt CiphertextSize = /* k*encodingSize10 + encodingSize4 */ 1088;
-public static readonly UntypedInt EncapsulationKeySize = /* encryptionKeySize */ 1184;
-public static readonly UntypedInt DecapsulationKeySize = /* decryptionKeySize + encryptionKeySize + 32 + 32 */ 2400;
-public static readonly UntypedInt SharedKeySize = 32;
-public static readonly UntypedInt SeedSize = /* 32 + 32 */ 64;
+internal static UntypedInt n => 256;
+internal static UntypedInt q => 3329;
+internal static UntypedInt log2q => 12;
+internal static UntypedInt k => 3;
+internal static UntypedInt η => 2;
+internal static UntypedInt du => 10;
+internal static UntypedInt dv => 4;
+internal static UntypedInt encodingSize12 => /* n * log2q / 8 */ 384;
+internal static UntypedInt encodingSize10 => /* n * du / 8 */ 320;
+internal static UntypedInt encodingSize4 => /* n * dv / 8 */ 128;
+internal static UntypedInt encodingSize1 => /* n * 1 / 8 */ 32;
+internal static UntypedInt messageSize => /* encodingSize1 */ 32;
+internal static UntypedInt decryptionKeySize => /* k * encodingSize12 */ 1152;
+internal static UntypedInt encryptionKeySize => /* k*encodingSize12 + 32 */ 1184;
+public static UntypedInt CiphertextSize => /* k*encodingSize10 + encodingSize4 */ 1088;
+public static UntypedInt EncapsulationKeySize => /* encryptionKeySize */ 1184;
+public static UntypedInt DecapsulationKeySize => /* decryptionKeySize + encryptionKeySize + 32 + 32 */ 2400;
+public static UntypedInt SharedKeySize => 32;
+public static UntypedInt SeedSize => /* 32 + 32 */ 64;
 
 // A DecapsulationKey is the secret key used to decapsulate a shared key from a
 // ciphertext. It includes various precomputed values.
@@ -502,8 +502,8 @@ internal static fieldElement fieldSub(fieldElement a, fieldElement b) {
     return fieldReduceOnce(x);
 }
 
-internal static readonly UntypedInt barrettMultiplier = 5039; // 2¹² * 2¹² / q
-internal static readonly UntypedInt barrettShift = 24; // log₂(2¹² * 2¹²)
+internal static UntypedInt barrettMultiplier => 5039; // 2¹² * 2¹² / q
+internal static UntypedInt barrettShift => 24; // log₂(2¹² * 2¹²)
 
 // fieldReduce reduces a value a < 2q² using Barrett reduction, to avoid
 // potentially variable-time division.

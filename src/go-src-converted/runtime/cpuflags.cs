@@ -10,17 +10,17 @@ using @internal;
 partial class runtime_package {
 
 // Offsets into internal/cpu records for use in assembly.
-internal static readonly uintptr offsetX86HasAVX = /* unsafe.Offsetof(cpu.X86.HasAVX) */ 66;
+internal static uintptr offsetX86HasAVX => /* unsafe.Offsetof(cpu.X86.HasAVX) */ 66;
 
-internal static readonly uintptr offsetX86HasAVX2 = /* unsafe.Offsetof(cpu.X86.HasAVX2) */ 67;
+internal static uintptr offsetX86HasAVX2 => /* unsafe.Offsetof(cpu.X86.HasAVX2) */ 67;
 
-internal static readonly uintptr offsetX86HasERMS = /* unsafe.Offsetof(cpu.X86.HasERMS) */ 73;
+internal static uintptr offsetX86HasERMS => /* unsafe.Offsetof(cpu.X86.HasERMS) */ 73;
 
-internal static readonly uintptr offsetX86HasRDTSCP = /* unsafe.Offsetof(cpu.X86.HasRDTSCP) */ 78;
+internal static uintptr offsetX86HasRDTSCP => /* unsafe.Offsetof(cpu.X86.HasRDTSCP) */ 78;
 
-internal static readonly uintptr offsetARMHasIDIVA = /* unsafe.Offsetof(cpu.ARM.HasIDIVA) */ 65;
+internal static uintptr offsetARMHasIDIVA => /* unsafe.Offsetof(cpu.ARM.HasIDIVA) */ 65;
 
-internal static readonly uintptr offsetMIPS64XHasMSA = /* unsafe.Offsetof(cpu.MIPS64X.HasMSA) */ 64;
+internal static uintptr offsetMIPS64XHasMSA => /* unsafe.Offsetof(cpu.MIPS64X.HasMSA) */ 64;
 
 internal static bool x86HasPOPCNT;
 internal static bool x86HasSSE41;

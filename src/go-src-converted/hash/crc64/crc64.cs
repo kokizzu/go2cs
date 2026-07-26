@@ -16,12 +16,12 @@ using @internal;
 partial class crc64_package {
 
 // The size of a CRC-64 checksum in bytes.
-public static readonly UntypedInt ΔSize = 8;
+public static UntypedInt ΔSize => 8;
 
 // Predefined polynomials.
-public static readonly UntypedInt ISO = 0xD800000000000000;
+public static UntypedInt ISO => 0xD800000000000000;
 
-public static readonly UntypedInt ECMA = 0xC96C5795D7870F42;
+public static UntypedInt ECMA => 0xC96C5795D7870F42;
 
 [GoType("[256]uint64")] partial struct Table;
 

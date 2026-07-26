@@ -24,17 +24,17 @@ partial class syntax_package {
 
 [GoType("num:uint8")] partial struct InstOp;
 
-public static readonly InstOp InstAlt = /* iota */ 0;
-public static readonly InstOp InstAltMatch = 1;
-public static readonly InstOp InstCapture = 2;
-public static readonly InstOp InstEmptyWidth = 3;
-public static readonly InstOp InstMatch = 4;
-public static readonly InstOp InstFail = 5;
-public static readonly InstOp InstNop = 6;
-public static readonly InstOp InstRune = 7;
-public static readonly InstOp InstRune1 = 8;
-public static readonly InstOp InstRuneAny = 9;
-public static readonly InstOp InstRuneAnyNotNL = 10;
+public static InstOp InstAlt => /* iota */ 0;
+public static InstOp InstAltMatch => 1;
+public static InstOp InstCapture => 2;
+public static InstOp InstEmptyWidth => 3;
+public static InstOp InstMatch => 4;
+public static InstOp InstFail => 5;
+public static InstOp InstNop => 6;
+public static InstOp InstRune => 7;
+public static InstOp InstRune1 => 8;
+public static InstOp InstRuneAny => 9;
+public static InstOp InstRuneAnyNotNL => 10;
 
 internal static slice<@string> instOpNames = new @string[]{
     "InstAlt"u8,
@@ -59,12 +59,12 @@ public static @string String(this InstOp i) {
 
 [GoType("num:uint8")] partial struct EmptyOp;
 
-public static readonly EmptyOp EmptyBeginLine = /* 1 << iota */ 1;
-public static readonly EmptyOp EmptyEndLine = 2;
-public static readonly EmptyOp EmptyBeginText = 4;
-public static readonly EmptyOp EmptyEndText = 8;
-public static readonly EmptyOp EmptyWordBoundary = 16;
-public static readonly EmptyOp EmptyNoWordBoundary = 32;
+public static EmptyOp EmptyBeginLine => /* 1 << iota */ 1;
+public static EmptyOp EmptyEndLine => 2;
+public static EmptyOp EmptyBeginText => 4;
+public static EmptyOp EmptyEndText => 8;
+public static EmptyOp EmptyWordBoundary => 16;
+public static EmptyOp EmptyNoWordBoundary => 32;
 
 // EmptyOpContext returns the zero-width assertions
 // satisfied at the position between the runes r1 and r2.
@@ -204,7 +204,7 @@ break_Loop:;
     return flag;
 }
 
-internal static readonly UntypedInt noMatch = -1;
+internal static UntypedInt noMatch => -1;
 
 // MatchRune reports whether the instruction matches (and consumes) r.
 // It should only be called when i.Op == [InstRune].

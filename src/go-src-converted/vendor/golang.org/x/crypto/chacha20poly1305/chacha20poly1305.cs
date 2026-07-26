@@ -14,10 +14,10 @@ using go.crypto;
 
 partial class chacha20poly1305_package {
 
-public static readonly UntypedInt KeySize = 32;
-public static readonly UntypedInt ΔNonceSize = 12;
-public static readonly UntypedInt NonceSizeX = 24;
-public static readonly UntypedInt ΔOverhead = 16;
+public static UntypedInt KeySize => 32;
+public static UntypedInt ΔNonceSize => 12;
+public static UntypedInt NonceSizeX => 24;
+public static UntypedInt ΔOverhead => 16;
 
 [GoType] [GoValueClone("key")] partial struct chacha20poly1305 {
     internal array<byte> key = new(KeySize);

@@ -52,8 +52,8 @@ internal static ref sweepdata Δsweep => ref ᏑΔsweep.Value;
 
 [GoType("num:uint32")] partial struct sweepClass;
 
-internal static readonly UntypedInt numSweepClasses = /* numSpanClasses * 2 */ 272;
-internal static readonly sweepClass sweepClassDone = /* sweepClass(^uint32(0)) */ 4294967295;
+internal static UntypedInt numSweepClasses => /* numSpanClasses * 2 */ 272;
+internal static sweepClass sweepClassDone => /* sweepClass(^uint32(0)) */ 4294967295;
 
 internal static sweepClass load(this ж<sweepClass> Ꮡs) {
     ref var s = ref Ꮡs.Value;
@@ -120,7 +120,7 @@ internal static (spanClass spc, bool full) split(this sweepClass s) {
     return default!;
 }
 
-internal static readonly UntypedInt sweepDrainedMask = /* 1 << 31 */ 2147483648;
+internal static UntypedInt sweepDrainedMask => /* 1 << 31 */ 2147483648;
 
 // activeSweep is a type that captures whether sweeping
 // is done, and whether there are any outstanding sweepers.

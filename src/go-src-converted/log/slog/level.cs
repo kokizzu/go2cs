@@ -38,13 +38,13 @@ partial class slog_package {
 // Level range. OpenTelemetry also has the names TRACE and FATAL, which slog
 // does not. But those OpenTelemetry levels can still be represented as slog
 // Levels by using the appropriate integers.
-public static readonly ΔLevel LevelDebug = -4;
+public static ΔLevel LevelDebug => -4;
 
-public static readonly ΔLevel LevelInfo = 0;
+public static ΔLevel LevelInfo => 0;
 
-public static readonly ΔLevel LevelWarn = 4;
+public static ΔLevel LevelWarn => 4;
 
-public static readonly ΔLevel LevelError = 8;
+public static ΔLevel LevelError => 8;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string debugˢ = "DEBUG"u8;

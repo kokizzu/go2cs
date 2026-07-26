@@ -14,8 +14,8 @@ partial class cmerge_package {
 
 [GoType("num:uint8")] partial struct ModeMergePolicy;
 
-public static readonly ModeMergePolicy ModeMergeStrict = /* iota */ 0;
-public static readonly ModeMergePolicy ModeMergeRelaxed = 1;
+public static ModeMergePolicy ModeMergeStrict => /* iota */ 0;
+public static ModeMergePolicy ModeMergeRelaxed => 1;
 
 // Merger provides state and methods to help manage the process of
 // merging together coverage counter data for a given function, for

@@ -43,10 +43,10 @@ partial class http_package {
 
 [GoType("num:nint")] partial struct SameSite;
 
-public static readonly SameSite SameSiteDefaultMode = /* iota + 1 */ 1;
-public static readonly SameSite SameSiteLaxMode = 2;
-public static readonly SameSite SameSiteStrictMode = 3;
-public static readonly SameSite SameSiteNoneMode = 4;
+public static SameSite SameSiteDefaultMode => /* iota + 1 */ 1;
+public static SameSite SameSiteLaxMode => 2;
+public static SameSite SameSiteStrictMode => 3;
+public static SameSite SameSiteNoneMode => 4;
 
 internal static error errBlankCookie = errors.New("http: blank cookie"u8);
 internal static error errEqualNotFoundInCookie = errors.New("http: '=' not found in cookie"u8);

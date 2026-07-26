@@ -29,7 +29,7 @@ internal static void p224SqrtCandidate(ж<fiat.P224Element> Ꮡr, ж<fiat.P224El
     // g^(2^n) = 1 -> g = 11 ^ q (where 11 is the smallest non-square)
     // GG[j] = g^(2^j) for j = 0 to n-1
     Ꮡp224GGOnce.Do(() => {
-        p224GG = @new<array<fiat.P224Element>>();
+        p224GG = Ꮡ(new array<fiat.P224Element>(96, () => new()));
         foreach (var (i, _) in p224GG.Value) {
             if (i == 0){
                 p224GG.at<fiat.P224Element>(i).SetBytes(new byte[]{0x6a, 0x0f, 0xec, 0x67,

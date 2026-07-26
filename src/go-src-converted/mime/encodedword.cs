@@ -18,8 +18,8 @@ partial class mime_package {
 
 [GoType("num:byte")] partial struct WordEncoder;
 
-public static readonly WordEncoder BEncoding = /* WordEncoder('b') */ 98;
-public static readonly WordEncoder QEncoding = /* WordEncoder('q') */ 113;
+public static WordEncoder BEncoding => /* WordEncoder('b') */ 98;
+public static WordEncoder QEncoding => /* WordEncoder('q') */ 113;
 
 internal static error errInvalidWord = errors.New("mime: invalid RFC 2047 encoded-word"u8);
 
@@ -59,7 +59,7 @@ internal static @string encodeWord(this WordEncoder e, @string charset, @string 
     return buf.String();
 }
 
-internal static readonly UntypedInt maxEncodedWordLen = 75;
+internal static UntypedInt maxEncodedWordLen => 75;
 internal const nint maxContentLen = /* maxEncodedWordLen - len("=?UTF-8?q?") - len("?=") */ 63;
 
 internal static nint maxBase64Len = base64.StdEncoding.DecodedLen(maxContentLen);

@@ -28,7 +28,7 @@ partial class tls_package {
 // maxClientPSKIdentities is the number of client PSK identities the server will
 // attempt to validate. It will ignore the rest not to let cheap ClientHello
 // messages cause too much work in session ticket decryption attempts.
-internal static readonly UntypedInt maxClientPSKIdentities = 5;
+internal static UntypedInt maxClientPSKIdentities => 5;
 
 [GoType] partial struct serverHandshakeStateTLS13 {
     internal ж<Conn> c;

@@ -19,7 +19,7 @@ partial class http_package {
 
 // maxInt64 is the effective "infinite" value for the Server and
 // Transport's byte-limiting readers.
-internal static readonly UntypedInt maxInt64 = /* 1<<63 - 1 */ 9223372036854775807;
+internal static UntypedInt maxInt64 => /* 1<<63 - 1 */ 9223372036854775807;
 
 // aLongTimeAgo is a non-zero time, far in the past, used for
 // immediate cancellation of network operations.

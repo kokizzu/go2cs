@@ -19,7 +19,7 @@ partial class math_package {
 //
 // So, conservatively we can take x < 1<<29.
 // Above this threshold Payne-Hanek range reduction must be used.
-internal static readonly UntypedInt reduceThreshold = /* 1 << 29 */ 536870912;
+internal static UntypedInt reduceThreshold => /* 1 << 29 */ 536870912;
 
 // trigReduce implements Payne-Hanek range reduction by Pi/4
 // for x > 0. It returns the integer part mod 8 (j) and

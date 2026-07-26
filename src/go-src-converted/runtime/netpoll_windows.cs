@@ -11,22 +11,22 @@ using @internal.runtime;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt _DWORD_MAX = 0xffffffff;
+internal static UntypedInt _DWORD_MAX => 0xffffffff;
 
-internal static readonly uintptr _INVALID_HANDLE_VALUE = /* ^uintptr(0) */ unchecked((uintptr)18446744073709551615);
+internal static uintptr _INVALID_HANDLE_VALUE => /* ^uintptr(0) */ unchecked((uintptr)18446744073709551615);
 
 // Sources are used to identify the event that created an overlapped entry.
 // The source values are arbitrary. There is no risk of collision with user
 // defined values because the only way to set the key of an overlapped entry
 // is using the iocphandle, which is not accessible to user code.
-internal static readonly UntypedInt netpollSourceReady = /* iota + 1 */ 1;
+internal static UntypedInt netpollSourceReady => /* iota + 1 */ 1;
 
-internal static readonly UntypedInt netpollSourceBreak = 2;
+internal static UntypedInt netpollSourceBreak => 2;
 
-internal static readonly UntypedInt netpollSourceTimer = 3;
+internal static UntypedInt netpollSourceTimer => 3;
 
-internal static readonly UntypedInt sourceBits = 4; // 4 bits can hold 16 different sources, which is more than enough.
-internal static readonly UntypedInt sourceMasks = /* 1<<sourceBits - 1 */ 15;
+internal static UntypedInt sourceBits => 4; // 4 bits can hold 16 different sources, which is more than enough.
+internal static UntypedInt sourceMasks => /* 1<<sourceBits - 1 */ 15;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string runtimeSourceValueIsTooˢ = "runtime: source value is too large"u8;

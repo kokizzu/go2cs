@@ -399,9 +399,9 @@ internal static readonly @string xmlPrefix = "xml"u8;
     internal bool ok;
 }
 
-internal static readonly UntypedInt stkStart = iota;
-internal static readonly UntypedInt stkNs = 1;
-internal static readonly UntypedInt stkEOF = 2;
+internal static UntypedInt stkStart => iota;
+internal static UntypedInt stkNs => 1;
+internal static UntypedInt stkEOF => 2;
 
 [GoRecv] internal static ж<stack> push(this ref Decoder d, nint kind) {
     var s = d.free;

@@ -8,7 +8,7 @@ using go.@internal;
 
 partial class bytealg_package {
 
-public static readonly UntypedInt MaxBruteForce = 64;
+public static UntypedInt MaxBruteForce => 64;
 
 [GoInit] internal static void init() {
     if (cpu.X86.HasAVX2){

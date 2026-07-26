@@ -19,9 +19,9 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt maxCPUProfStack = 64;
-internal static readonly UntypedInt profBufWordCount = /* 1 << 17 */ 131072;
-internal static readonly UntypedInt profBufTagCount = /* 1 << 14 */ 16384;
+internal static UntypedInt maxCPUProfStack => 64;
+internal static UntypedInt profBufWordCount => /* 1 << 17 */ 131072;
+internal static UntypedInt profBufTagCount => /* 1 << 14 */ 16384;
 
 [GoType] [GoValueClone("extra")] partial struct cpuProfile {
     internal mutex @lock;

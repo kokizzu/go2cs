@@ -52,12 +52,12 @@ partial class oldtrace_package {
     public nint Line;
 }
 
-public static readonly UntypedInt FakeP = /* 1000000 + iota */ 1000000;
-public static readonly UntypedInt TimerP = 1000001; // contains timer unblocks
-public static readonly UntypedInt NetpollP = 1000002; // contains network unblocks
-public static readonly UntypedInt SyscallP = 1000003; // contains returns from syscalls
-public static readonly UntypedInt GCP = 1000004; // contains GC state
-public static readonly UntypedInt ProfileP = 1000005; // contains recording of CPU profile samples
+public static UntypedInt FakeP => /* 1000000 + iota */ 1000000;
+public static UntypedInt TimerP => 1000001; // contains timer unblocks
+public static UntypedInt NetpollP => 1000002; // contains network unblocks
+public static UntypedInt SyscallP => 1000003; // contains returns from syscalls
+public static UntypedInt GCP => 1000004; // contains GC state
+public static UntypedInt ProfileP => 1000005; // contains recording of CPU profile samples
 
 // Trace is the result of Parse.
 [GoType] partial struct Trace {
@@ -266,7 +266,7 @@ internal static (Trace, error) parse(this ж<parser> Ꮡp) => func<(Trace, error
     internal bool done;
 }
 
-internal static readonly UntypedInt eventsBucketSize = 524288; // 32 MiB of events
+internal static UntypedInt eventsBucketSize => 524288; // 32 MiB of events
 
 [GoType] partial struct Events {
     // Events is a slice of slices that grows one slice of size eventsBucketSize
@@ -283,7 +283,7 @@ internal static readonly UntypedInt eventsBucketSize = 524288; // 32 MiB of even
 [GoRecv] internal static ж<Event> grow(this ref Events l) {
     var (a, b) = l.index(l.n);
     if (a >= len(l.buckets)) {
-        l.buckets = builtin.append(l.buckets, @new<array<Event>>());
+        l.buckets = builtin.append(l.buckets, Ꮡ(new array<Event>(524288, () => new())));
     }
     var ptr = l.buckets[a].at<Event>(b);
     l.n++;
@@ -582,8 +582,8 @@ break_pidLoop:;
     return default!;
 }
 
-internal static readonly UntypedInt skipArgs = /* 1 << iota */ 1;
-internal static readonly UntypedInt skipStrings = 2;
+internal static UntypedInt skipArgs => /* 1 << iota */ 1;
+internal static UntypedInt skipStrings => 2;
 
 [GoRecv] internal static (byte, bool) readByte(this ref parser p) {
     if (p.off < len(p.data) && p.off >= 0){
@@ -1399,107 +1399,107 @@ internal static (uint64 v, slice<byte> rem, error err) readValFrom(slice<byte> b
 
 // Event types in the trace.
 // Verbatim copy from src/runtime/trace.go with the "trace" prefix removed.
-public static readonly @event.Type EvNone = 0;            // unused
+public static @event.Type EvNone => 0;            // unused
 
-public static readonly @event.Type EvBatch = 1;           // start of per-P batch of events [pid, timestamp]
+public static @event.Type EvBatch => 1;           // start of per-P batch of events [pid, timestamp]
 
-public static readonly @event.Type EvFrequency = 2;       // contains tracer timer frequency [frequency (ticks per second)]
+public static @event.Type EvFrequency => 2;       // contains tracer timer frequency [frequency (ticks per second)]
 
-public static readonly @event.Type EvStack = 3;           // stack [stack id, number of PCs, array of {PC, func string ID, file string ID, line}]
+public static @event.Type EvStack => 3;           // stack [stack id, number of PCs, array of {PC, func string ID, file string ID, line}]
 
-public static readonly @event.Type EvGomaxprocs = 4;      // current value of GOMAXPROCS [timestamp, GOMAXPROCS, stack id]
+public static @event.Type EvGomaxprocs => 4;      // current value of GOMAXPROCS [timestamp, GOMAXPROCS, stack id]
 
-public static readonly @event.Type EvProcStart = 5;       // start of P [timestamp, thread id]
+public static @event.Type EvProcStart => 5;       // start of P [timestamp, thread id]
 
-public static readonly @event.Type EvProcStop = 6;        // stop of P [timestamp]
+public static @event.Type EvProcStop => 6;        // stop of P [timestamp]
 
-public static readonly @event.Type EvGCStart = 7;         // GC start [timestamp, seq, stack id]
+public static @event.Type EvGCStart => 7;         // GC start [timestamp, seq, stack id]
 
-public static readonly @event.Type EvGCDone = 8;          // GC done [timestamp]
+public static @event.Type EvGCDone => 8;          // GC done [timestamp]
 
-public static readonly @event.Type EvSTWStart = 9;        // GC mark termination start [timestamp, kind]
+public static @event.Type EvSTWStart => 9;        // GC mark termination start [timestamp, kind]
 
-public static readonly @event.Type EvSTWDone = 10;         // GC mark termination done [timestamp]
+public static @event.Type EvSTWDone => 10;         // GC mark termination done [timestamp]
 
-public static readonly @event.Type EvGCSweepStart = 11;    // GC sweep start [timestamp, stack id]
+public static @event.Type EvGCSweepStart => 11;    // GC sweep start [timestamp, stack id]
 
-public static readonly @event.Type EvGCSweepDone = 12;     // GC sweep done [timestamp, swept, reclaimed]
+public static @event.Type EvGCSweepDone => 12;     // GC sweep done [timestamp, swept, reclaimed]
 
-public static readonly @event.Type EvGoCreate = 13;        // goroutine creation [timestamp, new goroutine id, new stack id, stack id]
+public static @event.Type EvGoCreate => 13;        // goroutine creation [timestamp, new goroutine id, new stack id, stack id]
 
-public static readonly @event.Type EvGoStart = 14;         // goroutine starts running [timestamp, goroutine id, seq]
+public static @event.Type EvGoStart => 14;         // goroutine starts running [timestamp, goroutine id, seq]
 
-public static readonly @event.Type EvGoEnd = 15;           // goroutine ends [timestamp]
+public static @event.Type EvGoEnd => 15;           // goroutine ends [timestamp]
 
-public static readonly @event.Type EvGoStop = 16;          // goroutine stops (like in select{}) [timestamp, stack]
+public static @event.Type EvGoStop => 16;          // goroutine stops (like in select{}) [timestamp, stack]
 
-public static readonly @event.Type EvGoSched = 17;         // goroutine calls Gosched [timestamp, stack]
+public static @event.Type EvGoSched => 17;         // goroutine calls Gosched [timestamp, stack]
 
-public static readonly @event.Type EvGoPreempt = 18;       // goroutine is preempted [timestamp, stack]
+public static @event.Type EvGoPreempt => 18;       // goroutine is preempted [timestamp, stack]
 
-public static readonly @event.Type EvGoSleep = 19;         // goroutine calls Sleep [timestamp, stack]
+public static @event.Type EvGoSleep => 19;         // goroutine calls Sleep [timestamp, stack]
 
-public static readonly @event.Type EvGoBlock = 20;         // goroutine blocks [timestamp, stack]
+public static @event.Type EvGoBlock => 20;         // goroutine blocks [timestamp, stack]
 
-public static readonly @event.Type EvGoUnblock = 21;       // goroutine is unblocked [timestamp, goroutine id, seq, stack]
+public static @event.Type EvGoUnblock => 21;       // goroutine is unblocked [timestamp, goroutine id, seq, stack]
 
-public static readonly @event.Type EvGoBlockSend = 22;     // goroutine blocks on chan send [timestamp, stack]
+public static @event.Type EvGoBlockSend => 22;     // goroutine blocks on chan send [timestamp, stack]
 
-public static readonly @event.Type EvGoBlockRecv = 23;     // goroutine blocks on chan recv [timestamp, stack]
+public static @event.Type EvGoBlockRecv => 23;     // goroutine blocks on chan recv [timestamp, stack]
 
-public static readonly @event.Type EvGoBlockSelect = 24;   // goroutine blocks on select [timestamp, stack]
+public static @event.Type EvGoBlockSelect => 24;   // goroutine blocks on select [timestamp, stack]
 
-public static readonly @event.Type EvGoBlockSync = 25;     // goroutine blocks on Mutex/RWMutex [timestamp, stack]
+public static @event.Type EvGoBlockSync => 25;     // goroutine blocks on Mutex/RWMutex [timestamp, stack]
 
-public static readonly @event.Type EvGoBlockCond = 26;     // goroutine blocks on Cond [timestamp, stack]
+public static @event.Type EvGoBlockCond => 26;     // goroutine blocks on Cond [timestamp, stack]
 
-public static readonly @event.Type EvGoBlockNet = 27;      // goroutine blocks on network [timestamp, stack]
+public static @event.Type EvGoBlockNet => 27;      // goroutine blocks on network [timestamp, stack]
 
-public static readonly @event.Type EvGoSysCall = 28;       // syscall enter [timestamp, stack]
+public static @event.Type EvGoSysCall => 28;       // syscall enter [timestamp, stack]
 
-public static readonly @event.Type EvGoSysExit = 29;       // syscall exit [timestamp, goroutine id, seq, real timestamp]
+public static @event.Type EvGoSysExit => 29;       // syscall exit [timestamp, goroutine id, seq, real timestamp]
 
-public static readonly @event.Type EvGoSysBlock = 30;      // syscall blocks [timestamp]
+public static @event.Type EvGoSysBlock => 30;      // syscall blocks [timestamp]
 
-public static readonly @event.Type EvGoWaiting = 31;       // denotes that goroutine is blocked when tracing starts [timestamp, goroutine id]
+public static @event.Type EvGoWaiting => 31;       // denotes that goroutine is blocked when tracing starts [timestamp, goroutine id]
 
-public static readonly @event.Type EvGoInSyscall = 32;     // denotes that goroutine is in syscall when tracing starts [timestamp, goroutine id]
+public static @event.Type EvGoInSyscall => 32;     // denotes that goroutine is in syscall when tracing starts [timestamp, goroutine id]
 
-public static readonly @event.Type EvHeapAlloc = 33;       // gcController.heapLive change [timestamp, heap live bytes]
+public static @event.Type EvHeapAlloc => 33;       // gcController.heapLive change [timestamp, heap live bytes]
 
-public static readonly @event.Type EvHeapGoal = 34;        // gcController.heapGoal change [timestamp, heap goal bytes]
+public static @event.Type EvHeapGoal => 34;        // gcController.heapGoal change [timestamp, heap goal bytes]
 
-public static readonly @event.Type EvTimerGoroutine = 35;  // denotes timer goroutine [timer goroutine id]
+public static @event.Type EvTimerGoroutine => 35;  // denotes timer goroutine [timer goroutine id]
 
-public static readonly @event.Type EvFutileWakeup = 36;    // denotes that the previous wakeup of this goroutine was futile [timestamp]
+public static @event.Type EvFutileWakeup => 36;    // denotes that the previous wakeup of this goroutine was futile [timestamp]
 
-public static readonly @event.Type EvString = 37;          // string dictionary entry [ID, length, string]
+public static @event.Type EvString => 37;          // string dictionary entry [ID, length, string]
 
-public static readonly @event.Type EvGoStartLocal = 38;    // goroutine starts running on the same P as the last event [timestamp, goroutine id]
+public static @event.Type EvGoStartLocal => 38;    // goroutine starts running on the same P as the last event [timestamp, goroutine id]
 
-public static readonly @event.Type EvGoUnblockLocal = 39;  // goroutine is unblocked on the same P as the last event [timestamp, goroutine id, stack]
+public static @event.Type EvGoUnblockLocal => 39;  // goroutine is unblocked on the same P as the last event [timestamp, goroutine id, stack]
 
-public static readonly @event.Type EvGoSysExitLocal = 40;  // syscall exit on the same P as the last event [timestamp, goroutine id, real timestamp]
+public static @event.Type EvGoSysExitLocal => 40;  // syscall exit on the same P as the last event [timestamp, goroutine id, real timestamp]
 
-public static readonly @event.Type EvGoStartLabel = 41;    // goroutine starts running with label [timestamp, goroutine id, seq, label string id]
+public static @event.Type EvGoStartLabel => 41;    // goroutine starts running with label [timestamp, goroutine id, seq, label string id]
 
-public static readonly @event.Type EvGoBlockGC = 42;       // goroutine blocks on GC assist [timestamp, stack]
+public static @event.Type EvGoBlockGC => 42;       // goroutine blocks on GC assist [timestamp, stack]
 
-public static readonly @event.Type EvGCMarkAssistStart = 43; // GC mark assist start [timestamp, stack]
+public static @event.Type EvGCMarkAssistStart => 43; // GC mark assist start [timestamp, stack]
 
-public static readonly @event.Type EvGCMarkAssistDone = 44; // GC mark assist done [timestamp]
+public static @event.Type EvGCMarkAssistDone => 44; // GC mark assist done [timestamp]
 
-public static readonly @event.Type EvUserTaskCreate = 45;  // trace.NewTask [timestamp, internal task id, internal parent id, stack, name string]
+public static @event.Type EvUserTaskCreate => 45;  // trace.NewTask [timestamp, internal task id, internal parent id, stack, name string]
 
-public static readonly @event.Type EvUserTaskEnd = 46;     // end of task [timestamp, internal task id, stack]
+public static @event.Type EvUserTaskEnd => 46;     // end of task [timestamp, internal task id, stack]
 
-public static readonly @event.Type EvUserRegion = 47;      // trace.WithRegion [timestamp, internal task id, mode(0:start, 1:end), name string]
+public static @event.Type EvUserRegion => 47;      // trace.WithRegion [timestamp, internal task id, mode(0:start, 1:end), name string]
 
-public static readonly @event.Type EvUserLog = 48;         // trace.Log [timestamp, internal id, key string id, stack, value string]
+public static @event.Type EvUserLog => 48;         // trace.Log [timestamp, internal id, key string id, stack, value string]
 
-public static readonly @event.Type EvCPUSample = 49;       // CPU profiling sample [timestamp, stack, real timestamp, real P id (-1 when absent), goroutine id]
+public static @event.Type EvCPUSample => 49;       // CPU profiling sample [timestamp, stack, real timestamp, real P id (-1 when absent), goroutine id]
 
-public static readonly @event.Type EvCount = 50;
+public static @event.Type EvCount => 50;
 
 // in 1.5 format it was {"p", "seq", "ticks"}
 // in 1.5 format it was {"freq", "unused"}
@@ -1609,23 +1609,23 @@ public static ref array<EventDescriptionsᴛ1> EventDescriptions => ref ᏑEvent
 
 [GoType("num:nint")] partial struct ΔSTWReason;
 
-public static readonly ΔSTWReason STWUnknown = 0;
-public static readonly ΔSTWReason STWGCMarkTermination = 1;
-public static readonly ΔSTWReason STWGCSweepTermination = 2;
-public static readonly ΔSTWReason STWWriteHeapDump = 3;
-public static readonly ΔSTWReason STWGoroutineProfile = 4;
-public static readonly ΔSTWReason STWGoroutineProfileCleanup = 5;
-public static readonly ΔSTWReason STWAllGoroutinesStackTrace = 6;
-public static readonly ΔSTWReason STWReadMemStats = 7;
-public static readonly ΔSTWReason STWAllThreadsSyscall = 8;
-public static readonly ΔSTWReason STWGOMAXPROCS = 9;
-public static readonly ΔSTWReason STWStartTrace = 10;
-public static readonly ΔSTWReason STWStopTrace = 11;
-public static readonly ΔSTWReason STWCountPagesInUse = 12;
-public static readonly ΔSTWReason STWReadMetricsSlow = 13;
-public static readonly ΔSTWReason STWReadMemStatsSlow = 14;
-public static readonly ΔSTWReason STWPageCachePagesLeaked = 15;
-public static readonly ΔSTWReason STWResetDebugLog = 16;
-public static readonly UntypedInt NumSTWReasons = 17;
+public static ΔSTWReason STWUnknown => 0;
+public static ΔSTWReason STWGCMarkTermination => 1;
+public static ΔSTWReason STWGCSweepTermination => 2;
+public static ΔSTWReason STWWriteHeapDump => 3;
+public static ΔSTWReason STWGoroutineProfile => 4;
+public static ΔSTWReason STWGoroutineProfileCleanup => 5;
+public static ΔSTWReason STWAllGoroutinesStackTrace => 6;
+public static ΔSTWReason STWReadMemStats => 7;
+public static ΔSTWReason STWAllThreadsSyscall => 8;
+public static ΔSTWReason STWGOMAXPROCS => 9;
+public static ΔSTWReason STWStartTrace => 10;
+public static ΔSTWReason STWStopTrace => 11;
+public static ΔSTWReason STWCountPagesInUse => 12;
+public static ΔSTWReason STWReadMetricsSlow => 13;
+public static ΔSTWReason STWReadMemStatsSlow => 14;
+public static ΔSTWReason STWPageCachePagesLeaked => 15;
+public static ΔSTWReason STWResetDebugLog => 16;
+public static UntypedInt NumSTWReasons => 17;
 
 } // end oldtrace_package

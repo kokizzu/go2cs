@@ -13,16 +13,16 @@ using @unsafe = unsafe_package;
 
 partial class runtime_package {
 
-internal static readonly UntypedFloat gcGoalUtilization = /* gcBackgroundUtilization */ 0.25;
-internal static readonly UntypedFloat gcBackgroundUtilization = 0.25;
-internal static readonly UntypedInt gcCreditSlack = 2000;
-internal static readonly UntypedInt gcAssistTimeSlack = 5000;
-internal static readonly UntypedInt gcOverAssistWork = /* 64 << 10 */ 65536;
-internal static readonly UntypedInt defaultHeapMinimum = /* (goexperiment.HeapMinimum512KiBInt)*(512<<10) +
+internal static UntypedFloat gcGoalUtilization => /* gcBackgroundUtilization */ 0.25;
+internal static UntypedFloat gcBackgroundUtilization => 0.25;
+internal static UntypedInt gcCreditSlack => 2000;
+internal static UntypedInt gcAssistTimeSlack => 5000;
+internal static UntypedInt gcOverAssistWork => /* 64 << 10 */ 65536;
+internal static UntypedInt defaultHeapMinimum => /* (goexperiment.HeapMinimum512KiBInt)*(512<<10) +
 	(1-goexperiment.HeapMinimum512KiBInt)*(4<<20) */ 4194304;
-internal static readonly UntypedInt maxStackScanSlack = /* 8 << 10 */ 8192;
-internal static readonly UntypedInt memoryLimitMinHeapGoalHeadroom = /* 1 << 20 */ 1048576;
-internal static readonly UntypedInt memoryLimitHeapGoalHeadroomPercent = 3;
+internal static UntypedInt maxStackScanSlack => /* 8 << 10 */ 8192;
+internal static UntypedInt memoryLimitMinHeapGoalHeadroom => /* 1 << 20 */ 1048576;
+internal static UntypedInt memoryLimitHeapGoalHeadroomPercent => 3;
 
 // gcController implements the GC pacing controller that determines
 // when to trigger concurrent garbage collection and how much marking
@@ -990,9 +990,9 @@ internal static uint64 memoryLimitHeapGoal(this ж<gcControllerState> Ꮡc) {
     return goal;
 }
 
-internal static readonly UntypedInt triggerRatioDen = 64;
-internal static readonly UntypedInt minTriggerRatioNum = 45; // ~0.7
-internal static readonly UntypedInt maxTriggerRatioNum = 61; // ~0.95
+internal static UntypedInt triggerRatioDen => 64;
+internal static UntypedInt minTriggerRatioNum => 45; // ~0.7
+internal static UntypedInt maxTriggerRatioNum => 61; // ~0.95
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string producedATriggerGreaterˢ = "produced a trigger greater than the heap goal"u8;

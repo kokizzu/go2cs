@@ -13,7 +13,7 @@ using @internal.runtime;
 partial class runtime_package {
 
 // TODO(brainman): should not need those
-internal static readonly UntypedInt _NSIG = 65;
+internal static UntypedInt _NSIG => 65;
 
 [GoType("unsafe_package.Pointer")] partial struct stdFunction;
 
@@ -212,7 +212,7 @@ internal static stdFunction windowsFindfunc(uintptr lib, slice<byte> name) {
     return ((stdFunction)(@unsafe.Pointer)f);
 }
 
-internal static readonly UntypedInt _MAX_PATH = 260; // https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
+internal static UntypedInt _MAX_PATH => 260; // https://docs.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
 
 internal static ж<array<byte>> ᏑsysDirectory = new(new array<byte>(261));
 internal static ref array<byte> sysDirectory => ref ᏑsysDirectory.Value;
@@ -351,8 +351,8 @@ internal static uintptr getPageSize() {
     return (uintptr)info.dwpagesize;
 }
 
-internal static readonly uintptr currentProcess = /* ^uintptr(0) */ unchecked((uintptr)18446744073709551615); // -1 = current process
-internal static readonly uintptr currentThread = /* ^uintptr(1) */ unchecked((uintptr)18446744073709551614); // -2 = current thread
+internal static uintptr currentProcess => /* ^uintptr(0) */ unchecked((uintptr)18446744073709551615); // -1 = current process
+internal static uintptr currentThread => /* ^uintptr(1) */ unchecked((uintptr)18446744073709551614); // -2 = current thread
 
 // in sys_windows_386.s and sys_windows_amd64.s:
 internal static partial uint32 getlasterror();
@@ -363,7 +363,7 @@ internal static uint32 timeBeginPeriodRetValue;
 // timer is less than 60 ms from now. Since osRelaxing may reduce
 // timer resolution to 15.6 ms, this keeps timer error under roughly 1
 // part in 4.
-internal static readonly UntypedFloat osRelaxMinNS = /* 60 * 1e6 */ 6e+07;
+internal static UntypedFloat osRelaxMinNS => /* 60 * 1e6 */ 6e+07;
 
 // osRelax is called by the scheduler when transitioning to and from
 // all Ps being idle.

@@ -5,7 +5,7 @@ namespace go;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt _CONTEXT_CONTROL = 0x100001;
+internal static UntypedInt _CONTEXT_CONTROL => 0x100001;
 
 [GoType] partial struct m128a {
     internal uint64 low;

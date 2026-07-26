@@ -10,21 +10,21 @@ partial class tar_package {
 [GoType("num:nint")] partial struct Format;
 
 // Constants to identify various tar formats.
-internal static readonly Format _ᴛ1ʗ = /* (1 << iota) / 4 */ 0;     // Sequence of 0, 0, 1, 2, 4, 8, etc...
+internal static Format _ᴛ1ʗ => /* (1 << iota) / 4 */ 0;     // Sequence of 0, 0, 1, 2, 4, 8, etc...
 
-public static readonly Format FormatUnknown = 0;
+public static Format FormatUnknown => 0;
 
-internal static readonly Format formatV7 = 1;
+internal static Format formatV7 => 1;
 
-public static readonly Format FormatUSTAR = 2;
+public static Format FormatUSTAR => 2;
 
-public static readonly Format FormatPAX = 4;
+public static Format FormatPAX => 4;
 
-public static readonly Format FormatGNU = 8;
+public static Format FormatGNU => 8;
 
-internal static readonly Format formatSTAR = 16;
+internal static Format formatSTAR => 16;
 
-internal static readonly Format formatMax = 32;
+internal static Format formatMax => 32;
 
 internal static bool has(this Format f, Format f2) {
     return (Format)(f & f2) != 0;
@@ -79,13 +79,13 @@ internal static readonly @string versionUSTAR = "00"u8;
 internal static readonly @string trailerSTAR = "tar\x00"u8;
 
 // Size constants from various tar specifications.
-internal static readonly UntypedInt blockSize = 512; // Size of each block in a tar stream
+internal static UntypedInt blockSize => 512; // Size of each block in a tar stream
 
-internal static readonly UntypedInt nameSize = 100; // Max length of the name field in USTAR format
+internal static UntypedInt nameSize => 100; // Max length of the name field in USTAR format
 
-internal static readonly UntypedInt prefixSize = 155; // Max length of the prefix field in USTAR format
+internal static UntypedInt prefixSize => 155; // Max length of the prefix field in USTAR format
 
-internal static readonly UntypedInt maxSpecialFileSize = /* 1 << 20 */ 1048576;
+internal static UntypedInt maxSpecialFileSize => /* 1 << 20 */ 1048576;
 
 // blockPadding computes the number of bytes needed to pad offset up to the
 // nearest block edge where 0 <= n < blockSize.

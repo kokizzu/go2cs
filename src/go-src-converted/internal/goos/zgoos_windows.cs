@@ -6,40 +6,40 @@ partial class goos_package {
 
 public static readonly @string GOOS = @"windows"u8;
 
-public static readonly UntypedInt IsAix = 0;
+public static UntypedInt IsAix => 0;
 
-public static readonly UntypedInt IsAndroid = 0;
+public static UntypedInt IsAndroid => 0;
 
-public static readonly UntypedInt IsDarwin = 0;
+public static UntypedInt IsDarwin => 0;
 
-public static readonly UntypedInt IsDragonfly = 0;
+public static UntypedInt IsDragonfly => 0;
 
-public static readonly UntypedInt IsFreebsd = 0;
+public static UntypedInt IsFreebsd => 0;
 
-public static readonly UntypedInt IsHurd = 0;
+public static UntypedInt IsHurd => 0;
 
-public static readonly UntypedInt IsIllumos = 0;
+public static UntypedInt IsIllumos => 0;
 
-public static readonly UntypedInt IsIos = 0;
+public static UntypedInt IsIos => 0;
 
-public static readonly UntypedInt IsJs = 0;
+public static UntypedInt IsJs => 0;
 
-public static readonly UntypedInt IsLinux = 0;
+public static UntypedInt IsLinux => 0;
 
-public static readonly UntypedInt IsNacl = 0;
+public static UntypedInt IsNacl => 0;
 
-public static readonly UntypedInt IsNetbsd = 0;
+public static UntypedInt IsNetbsd => 0;
 
-public static readonly UntypedInt IsOpenbsd = 0;
+public static UntypedInt IsOpenbsd => 0;
 
-public static readonly UntypedInt IsPlan9 = 0;
+public static UntypedInt IsPlan9 => 0;
 
-public static readonly UntypedInt IsSolaris = 0;
+public static UntypedInt IsSolaris => 0;
 
-public static readonly UntypedInt IsWasip1 = 0;
+public static UntypedInt IsWasip1 => 0;
 
-public static readonly UntypedInt IsWindows = 1;
+public static UntypedInt IsWindows => 1;
 
-public static readonly UntypedInt IsZos = 0;
+public static UntypedInt IsZos => 0;
 
 } // end goos_package

@@ -787,11 +787,11 @@ internal static bool http2shouldRetryDial(ж<http2dialCall> Ꮡcall, ж<Request>
 // improved enough that we can instead allocate chunks like this:
 // make([]byte, max(16<<10, expectedBytesRemaining))
 internal static ж<array<sync.Pool>> Ꮡhttp2dataChunkPools = new(new sync.Pool[]{
-    new(New: () => @new<array<byte>>()),
-    new(New: () => @new<array<byte>>()),
-    new(New: () => @new<array<byte>>()),
-    new(New: () => @new<array<byte>>()),
-    new(New: () => @new<array<byte>>())
+    new(New: () => Ꮡ(new array<byte>(1024))),
+    new(New: () => Ꮡ(new array<byte>(2048))),
+    new(New: () => Ꮡ(new array<byte>(4096))),
+    new(New: () => Ꮡ(new array<byte>(8192))),
+    new(New: () => Ꮡ(new array<byte>(16384)))
 }.array());
 internal static ref array<sync.Pool> http2dataChunkPools => ref Ꮡhttp2dataChunkPools.Value;
 
@@ -928,20 +928,20 @@ internal static error http2errReadEmpty = errors.New("read from empty dataBuffer
 
 [GoType("num:uint32")] public partial struct http2ErrCode;
 
-internal static readonly http2ErrCode http2ErrCodeNo = 0x0;
-internal static readonly http2ErrCode http2ErrCodeProtocol = 0x1;
-internal static readonly http2ErrCode http2ErrCodeInternal = 0x2;
-internal static readonly http2ErrCode http2ErrCodeFlowControl = 0x3;
-internal static readonly http2ErrCode http2ErrCodeSettingsTimeout = 0x4;
-internal static readonly http2ErrCode http2ErrCodeStreamClosed = 0x5;
-internal static readonly http2ErrCode http2ErrCodeFrameSize = 0x6;
-internal static readonly http2ErrCode http2ErrCodeRefusedStream = 0x7;
-internal static readonly http2ErrCode http2ErrCodeCancel = 0x8;
-internal static readonly http2ErrCode http2ErrCodeCompression = 0x9;
-internal static readonly http2ErrCode http2ErrCodeConnect = 0xa;
-internal static readonly http2ErrCode http2ErrCodeEnhanceYourCalm = 0xb;
-internal static readonly http2ErrCode http2ErrCodeInadequateSecurity = 0xc;
-internal static readonly http2ErrCode http2ErrCodeHTTP11Required = 0xd;
+internal static http2ErrCode http2ErrCodeNo => 0x0;
+internal static http2ErrCode http2ErrCodeProtocol => 0x1;
+internal static http2ErrCode http2ErrCodeInternal => 0x2;
+internal static http2ErrCode http2ErrCodeFlowControl => 0x3;
+internal static http2ErrCode http2ErrCodeSettingsTimeout => 0x4;
+internal static http2ErrCode http2ErrCodeStreamClosed => 0x5;
+internal static http2ErrCode http2ErrCodeFrameSize => 0x6;
+internal static http2ErrCode http2ErrCodeRefusedStream => 0x7;
+internal static http2ErrCode http2ErrCodeCancel => 0x8;
+internal static http2ErrCode http2ErrCodeCompression => 0x9;
+internal static http2ErrCode http2ErrCodeConnect => 0xa;
+internal static http2ErrCode http2ErrCodeEnhanceYourCalm => 0xb;
+internal static http2ErrCode http2ErrCodeInadequateSecurity => 0xc;
+internal static http2ErrCode http2ErrCodeHTTP11Required => 0xd;
 
 internal static map<http2ErrCode, @string> http2errCodeName = new map<http2ErrCode, @string>{
     [http2ErrCodeNo] = "NO_ERROR"u8,
@@ -1068,7 +1068,7 @@ internal static error http2errPseudoAfterRegular = errors.New("pseudo header fie
 
 // inflowMinRefresh is the minimum number of bytes we'll send for a
 // flow control window update.
-internal static readonly UntypedInt http2inflowMinRefresh = /* 4 << 10 */ 4096;
+internal static UntypedInt http2inflowMinRefresh => /* 4 << 10 */ 4096;
 
 // inflow accounts for an inbound flow control window.
 // It tracks both the latest window sent to the peer (used for enforcement)
@@ -1184,22 +1184,22 @@ internal static bool http2takeInflows(ж<http2inflow> Ꮡf1, ж<http2inflow> Ꮡ
     return false;
 }
 
-internal static readonly UntypedInt http2frameHeaderLen = 9;
+internal static UntypedInt http2frameHeaderLen => 9;
 
 internal static slice<byte> http2padZeros = new slice<byte>(255); // zeros for padding
 
 [GoType("num:uint8")] public partial struct http2FrameType;
 
-internal static readonly http2FrameType http2FrameData = 0x0;
-internal static readonly http2FrameType http2FrameHeaders = 0x1;
-internal static readonly http2FrameType http2FramePriority = 0x2;
-internal static readonly http2FrameType http2FrameRSTStream = 0x3;
-internal static readonly http2FrameType http2FrameSettings = 0x4;
-internal static readonly http2FrameType http2FramePushPromise = 0x5;
-internal static readonly http2FrameType http2FramePing = 0x6;
-internal static readonly http2FrameType http2FrameGoAway = 0x7;
-internal static readonly http2FrameType http2FrameWindowUpdate = 0x8;
-internal static readonly http2FrameType http2FrameContinuation = 0x9;
+internal static http2FrameType http2FrameData => 0x0;
+internal static http2FrameType http2FrameHeaders => 0x1;
+internal static http2FrameType http2FramePriority => 0x2;
+internal static http2FrameType http2FrameRSTStream => 0x3;
+internal static http2FrameType http2FrameSettings => 0x4;
+internal static http2FrameType http2FramePushPromise => 0x5;
+internal static http2FrameType http2FramePing => 0x6;
+internal static http2FrameType http2FrameGoAway => 0x7;
+internal static http2FrameType http2FrameWindowUpdate => 0x8;
+internal static http2FrameType http2FrameContinuation => 0x9;
 
 internal static map<http2FrameType, @string> http2frameName = new map<http2FrameType, @string>{
     [http2FrameData] = "DATA"u8,
@@ -1231,27 +1231,27 @@ public static bool Has(this http2Flags f, http2Flags v) {
 }
 
 // Frame-specific FrameHeader flag bits.
-internal static readonly http2Flags http2FlagDataEndStream = 0x1;
+internal static http2Flags http2FlagDataEndStream => 0x1;
 
-internal static readonly http2Flags http2FlagDataPadded = 0x8;
+internal static http2Flags http2FlagDataPadded => 0x8;
 
-internal static readonly http2Flags http2FlagHeadersEndStream = 0x1;
+internal static http2Flags http2FlagHeadersEndStream => 0x1;
 
-internal static readonly http2Flags http2FlagHeadersEndHeaders = 0x4;
+internal static http2Flags http2FlagHeadersEndHeaders => 0x4;
 
-internal static readonly http2Flags http2FlagHeadersPadded = 0x8;
+internal static http2Flags http2FlagHeadersPadded => 0x8;
 
-internal static readonly http2Flags http2FlagHeadersPriority = 0x20;
+internal static http2Flags http2FlagHeadersPriority => 0x20;
 
-internal static readonly http2Flags http2FlagSettingsAck = 0x1;
+internal static http2Flags http2FlagSettingsAck => 0x1;
 
-internal static readonly http2Flags http2FlagPingAck = 0x1;
+internal static http2Flags http2FlagPingAck => 0x1;
 
-internal static readonly http2Flags http2FlagContinuationEndHeaders = 0x4;
+internal static http2Flags http2FlagContinuationEndHeaders => 0x4;
 
-internal static readonly http2Flags http2FlagPushPromiseEndHeaders = 0x4;
+internal static http2Flags http2FlagPushPromiseEndHeaders => 0x4;
 
-internal static readonly http2Flags http2FlagPushPromisePadded = 0x8;
+internal static http2Flags http2FlagPushPromisePadded => 0x8;
 
 internal static map<http2FrameType, map<http2Flags, @string>> http2flagName = new map<http2FrameType, map<http2Flags, @string>>{
     [http2FrameData] = new map<http2Flags, @string>{
@@ -1563,8 +1563,8 @@ internal static void logWrite(this ж<http2Framer> Ꮡf) {
     f.wbuf = append(f.wbuf, (byte)((v >> (int)(24))), (byte)((v >> (int)(16))), (byte)((v >> (int)(8))), (byte)v);
 }
 
-internal static readonly UntypedInt http2minMaxFrameSize = /* 1 << 14 */ 16384;
-internal static readonly UntypedInt http2maxFrameSize = /* 1<<24 - 1 */ 16777215;
+internal static UntypedInt http2minMaxFrameSize => /* 1 << 14 */ 16384;
+internal static UntypedInt http2maxFrameSize => /* 1<<24 - 1 */ 16777215;
 
 // SetReuseFrames allows the Framer to reuse Frames.
 // If called on a Framer, Frames returned by calls to ReadFrame are only
@@ -3272,11 +3272,11 @@ internal static bool http2inTests;
 }
 
 internal static readonly @string http2ClientPreface = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"u8;
-internal static readonly UntypedInt http2initialMaxFrameSize = 16384;
+internal static UntypedInt http2initialMaxFrameSize => 16384;
 internal static readonly @string http2NextProtoTLS = "h2"u8;
-internal static readonly UntypedInt http2initialHeaderTableSize = 4096;
-internal static readonly UntypedInt http2initialWindowSize = 65535; // 6.9.2 Initial Flow Control Window Size
-internal static readonly UntypedInt http2defaultMaxReadFrameSize = /* 1 << 20 */ 1048576;
+internal static UntypedInt http2initialHeaderTableSize => 4096;
+internal static UntypedInt http2initialWindowSize => 65535; // 6.9.2 Initial Flow Control Window Size
+internal static UntypedInt http2defaultMaxReadFrameSize => /* 1 << 20 */ 1048576;
 
 internal static slice<byte> http2clientPreface = slice<byte>(http2ClientPreface);
 
@@ -3294,15 +3294,15 @@ internal static slice<byte> http2clientPreface = slice<byte>(http2ClientPreface)
 //
 // "reserved (remote)" is omitted since the client code does not
 // support server push.
-internal static readonly http2streamState http2stateIdle = /* iota */ 0;
+internal static http2streamState http2stateIdle => /* iota */ 0;
 
-internal static readonly http2streamState http2stateOpen = 1;
+internal static http2streamState http2stateOpen => 1;
 
-internal static readonly http2streamState http2stateHalfClosedLocal = 2;
+internal static http2streamState http2stateHalfClosedLocal => 2;
 
-internal static readonly http2streamState http2stateHalfClosedRemote = 3;
+internal static http2streamState http2stateHalfClosedRemote => 3;
 
-internal static readonly http2streamState http2stateClosed = 4;
+internal static http2streamState http2stateClosed => 4;
 
 internal static array<@string> http2stateName = new golib.SparseArray<@string>{
     [(int)http2stateIdle] = "Idle"u8,
@@ -3354,12 +3354,12 @@ internal static error Valid(this http2Setting s) {
 
 [GoType("num:uint16")] public partial struct http2SettingID;
 
-internal static readonly http2SettingID http2SettingHeaderTableSize = 0x1;
-internal static readonly http2SettingID http2SettingEnablePush = 0x2;
-internal static readonly http2SettingID http2SettingMaxConcurrentStreams = 0x3;
-internal static readonly http2SettingID http2SettingInitialWindowSize = 0x4;
-internal static readonly http2SettingID http2SettingMaxFrameSize = 0x5;
-internal static readonly http2SettingID http2SettingMaxHeaderListSize = 0x6;
+internal static http2SettingID http2SettingHeaderTableSize => 0x1;
+internal static http2SettingID http2SettingEnablePush => 0x2;
+internal static http2SettingID http2SettingMaxConcurrentStreams => 0x3;
+internal static http2SettingID http2SettingInitialWindowSize => 0x4;
+internal static http2SettingID http2SettingMaxFrameSize => 0x5;
+internal static http2SettingID http2SettingMaxHeaderListSize => 0x6;
 
 internal static map<http2SettingID, @string> http2settingName = new map<http2SettingID, @string>{
     [http2SettingHeaderTableSize] = "HEADER_TABLE_SIZE"u8,
@@ -3459,7 +3459,7 @@ internal static ж<http2bufferedWriter> http2newBufferedWriter(io.Writer w) {
 // TODO: pick a less arbitrary value? this is a bit under
 // (3 x typical 1500 byte MTU) at least. Other than that,
 // not much thought went into it.
-internal static readonly UntypedInt http2bufWriterPoolBufferSize = /* 4 << 10 */ 4096;
+internal static UntypedInt http2bufWriterPoolBufferSize => /* 4 << 10 */ 4096;
 
 internal static ж<sync.Pool> Ꮡhttp2bufWriterPool = new(new sync.Pool(
     New: () => bufio.NewWriterSize(default!, http2bufWriterPoolBufferSize)
@@ -3831,11 +3831,11 @@ internal static /*<-*/channel<EmptyStruct> Done(this ж<http2pipe> Ꮡp) => func
     return p.donec;
 });
 
-internal static readonly time.Duration http2prefaceTimeout = /* 10 * time.Second */ 10000000000;
-internal static readonly time.Duration http2firstSettingsTimeout = /* 2 * time.Second */ 2000000000; // should be in-flight with preface anyway
-internal static readonly UntypedInt http2handlerChunkWriteSize = /* 4 << 10 */ 4096;
-internal static readonly UntypedInt http2defaultMaxStreams = 250; // TODO: make this 100 as the GFE seems to?
-internal static readonly UntypedInt http2maxQueuedControlFrames = 10000;
+internal static time.Duration http2prefaceTimeout => /* 10 * time.Second */ 10000000000;
+internal static time.Duration http2firstSettingsTimeout => /* 2 * time.Second */ 2000000000; // should be in-flight with preface anyway
+internal static UntypedInt http2handlerChunkWriteSize => /* 4 << 10 */ 4096;
+internal static UntypedInt http2defaultMaxStreams => 250; // TODO: make this 100 as the GFE seems to?
+internal static UntypedInt http2maxQueuedControlFrames => 10000;
 
 internal static error http2errClientDisconnected = errors.New("client disconnected"u8);
 internal static error http2errClosedBody = errors.New("body closed by handler"u8);
@@ -4634,7 +4634,7 @@ internal static bool http2isClosedConnError(error err) {
 // This should be larger than the size of unique, uncommon header keys likely to
 // be sent by the peer, while not so high as to permit unreasonable memory usage
 // if the peer sends an unbounded number of unique header keys.
-internal static readonly UntypedInt http2maxCachedCanonicalHeadersKeysSize = 2048;
+internal static UntypedInt http2maxCachedCanonicalHeadersKeysSize => 2048;
 
 [GoRecv] internal static @string canonicalHeader(this ref http2serverConn sc, @string v) {
     sc.serveG.check();
@@ -7572,11 +7572,11 @@ internal static /*<-*/channel<time.Time> C(this http2timeTimer t) {
     return (~t.Timer).C;
 }
 
-internal static readonly UntypedInt http2transportDefaultConnFlow = /* 1 << 30 */ 1073741824;
-internal static readonly UntypedInt http2transportDefaultStreamFlow = /* 4 << 20 */ 4194304;
+internal static UntypedInt http2transportDefaultConnFlow => /* 1 << 30 */ 1073741824;
+internal static UntypedInt http2transportDefaultStreamFlow => /* 4 << 20 */ 4194304;
 internal static readonly @string http2defaultUserAgent = "Go-http-client/2.0"u8;
-internal static readonly UntypedInt http2initialMaxConcurrentStreams = 100;
-internal static readonly UntypedInt http2defaultMaxConcurrentStreams = 1000;
+internal static UntypedInt http2initialMaxConcurrentStreams => 100;
+internal static UntypedInt http2defaultMaxConcurrentStreams => 1000;
 
 // Transport is an HTTP/2 Transport.
 //
@@ -11932,7 +11932,7 @@ public static @string String(this http2FrameWriteRequest wr) {
 }
 
 // RFC 7540, Section 5.3.5: the default weight is 16.
-internal static readonly UntypedInt http2priorityDefaultWeight = 15; // 16 = 15 + 1
+internal static UntypedInt http2priorityDefaultWeight => 15; // 16 = 15 + 1
 
 // PriorityWriteSchedulerConfig configures a priorityWriteScheduler.
 [GoType] partial struct http2PriorityWriteSchedulerConfig {
@@ -12003,9 +12003,9 @@ internal static http2WriteScheduler http2NewPriorityWriteScheduler(ж<http2Prior
 
 [GoType("num:nint")] partial struct http2priorityNodeState;
 
-internal static readonly http2priorityNodeState http2priorityNodeOpen = /* iota */ 0;
-internal static readonly http2priorityNodeState http2priorityNodeClosed = 1;
-internal static readonly http2priorityNodeState http2priorityNodeIdle = 2;
+internal static http2priorityNodeState http2priorityNodeOpen => /* iota */ 0;
+internal static http2priorityNodeState http2priorityNodeClosed => 1;
+internal static http2priorityNodeState http2priorityNodeIdle => 2;
 
 // priorityNode is a node in an HTTP/2 priority tree.
 // Each node is associated with a single stream ID.

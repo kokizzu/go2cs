@@ -64,8 +64,8 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt mallocHeaderSize = 8;
-internal static readonly UntypedInt minSizeForMallocHeader = /* goarch.PtrSize * ptrBits */ 512;
+internal static UntypedInt mallocHeaderSize => 8;
+internal static UntypedInt minSizeForMallocHeader => /* goarch.PtrSize * ptrBits */ 512;
 
 // heapBitsInSpan returns true if the size of an object implies its ptr/scalar
 // data is stored at the end of the span, and is accessible via span.heapBits.
@@ -226,7 +226,7 @@ internal static (typePointers, uintptr) nextFast(this typePointers tp) {
         i = sys.TrailingZeros32((uint32)tp.mask);
     }
     // BTCQ
-    tp.mask ^= ((uintptr)1 << (int)(((nint)(i & (nint)(ptrBits - 1)))));
+    tp.mask ^= (uintptr)(((uintptr)1 << (int)(((nint)(i & (nint)(ptrBits - 1))))));
     // LEAQ (XX)(XX*8)
     return (tp, tp.addr + (uintptr)i * (uintptr)goarch.PtrSize);
 }
@@ -263,7 +263,7 @@ internal static (typePointers, uintptr) next(this typePointers tp, uintptr limit
         tp.mask = readUintptr(addb((~tp.typ).GCData, (tp.addr - tp.elem) / (uintptr)goarch.PtrSize / 8));
         if (tp.addr + (uintptr)(goarch.PtrSize * ptrBits) > limit) {
             var bits = (tp.addr + (uintptr)(goarch.PtrSize * ptrBits) - limit) / (uintptr)goarch.PtrSize;
-            tp.mask &= unchecked((uintptr)~((((uintptr)1).Lsh((uint64)((bits)))) - 1).Lsh((uint64)(((uintptr)ptrBits - bits))));
+            tp.mask &= unchecked((uintptr)~(uintptr)(((((uintptr)1).Lsh((uint64)((bits)))) - 1).Lsh((uint64)(((uintptr)ptrBits - bits)))));
         }
     }
 }
@@ -284,11 +284,11 @@ internal static typePointers fastForward(this typePointers tp, uintptr n, uintpt
     if (tp.typ == nil) {
         // Handle small objects.
         // Clear any bits before the target address.
-        tp.mask &= unchecked((uintptr)~(((uintptr)1).Lsh((uint64)(((target - tp.addr) / (uintptr)goarch.PtrSize)))) - 1);
+        tp.mask &= unchecked((uintptr)~(uintptr)((((uintptr)1).Lsh((uint64)(((target - tp.addr) / (uintptr)goarch.PtrSize)))) - 1));
         // Clear any bits past the limit.
         if (tp.addr + (uintptr)(goarch.PtrSize * ptrBits) > limit) {
             var bits = (tp.addr + (uintptr)(goarch.PtrSize * ptrBits) - limit) / (uintptr)goarch.PtrSize;
-            tp.mask &= unchecked((uintptr)~((((uintptr)1).Lsh((uint64)((bits)))) - 1).Lsh((uint64)(((uintptr)ptrBits - bits))));
+            tp.mask &= unchecked((uintptr)~(uintptr)(((((uintptr)1).Lsh((uint64)((bits)))) - 1).Lsh((uint64)(((uintptr)ptrBits - bits)))));
         }
         return tp;
     }
@@ -317,11 +317,11 @@ internal static typePointers fastForward(this typePointers tp, uintptr n, uintpt
         // Grab the mask, but then clear any bits before the target address and any
         // bits over the limit.
         tp.mask = readUintptr(addb((~tp.typ).GCData, (tp.addr - tp.elem) / (uintptr)goarch.PtrSize / 8));
-        tp.mask &= unchecked((uintptr)~(((uintptr)1).Lsh((uint64)(((target - tp.addr) / (uintptr)goarch.PtrSize)))) - 1);
+        tp.mask &= unchecked((uintptr)~(uintptr)((((uintptr)1).Lsh((uint64)(((target - tp.addr) / (uintptr)goarch.PtrSize)))) - 1));
     }
     if (tp.addr + (uintptr)(goarch.PtrSize * ptrBits) > limit) {
         var bits = (tp.addr + (uintptr)(goarch.PtrSize * ptrBits) - limit) / (uintptr)goarch.PtrSize;
-        tp.mask &= unchecked((uintptr)~((((uintptr)1).Lsh((uint64)((bits)))) - 1).Lsh((uint64)(((uintptr)ptrBits - bits))));
+        tp.mask &= unchecked((uintptr)~(uintptr)(((((uintptr)1).Lsh((uint64)((bits)))) - 1).Lsh((uint64)(((uintptr)ptrBits - bits)))));
     }
     return tp;
 }
@@ -1194,7 +1194,7 @@ internal static void clearMarked(this markBits m) {
     // Might be racing with other updates, so use atomic update always.
     // We used to be clever here and use a non-atomic update in certain
     // cases, but it's not worth the risk.
-    atomic.And8(m.bytep, (uint8)(~m.mask));
+    atomic.And8(m.bytep, (uint8)(((uint8)(~m.mask))));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1224,7 +1224,7 @@ internal static markBits /*mbits*/ markBitsForSpan(uintptr @base) {
 
 // clobberdeadPtr is a special value that is used by the compiler to
 // clobber dead stack slots, when -clobberdead flag is set.
-internal static readonly uintptr clobberdeadPtr = /* uintptr(0xdeaddead | 0xdeaddead<<((^uintptr(0)>>63)*32)) */ unchecked((uintptr)16045725885737590445);
+internal static uintptr clobberdeadPtr => /* uintptr(0xdeaddead | 0xdeaddead<<((^uintptr(0)>>63)*32)) */ unchecked((uintptr)16045725885737590445);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string objectˢ = "object"u8;
@@ -1336,7 +1336,7 @@ internal static bool reflect_verifyNotInHeapPtr(uintptr Δp) {
     return spanOf(Δp) == nil && Δp != clobberdeadPtr;
 }
 
-internal static readonly UntypedInt ptrBits = /* 8 * goarch.PtrSize */ 64;
+internal static UntypedInt ptrBits => /* 8 * goarch.PtrSize */ 64;
 
 // bulkBarrierBitmap executes write barriers for copying from [src,
 // src+size) to [dst, dst+size) using a 1-bit pointer bitmap. src is

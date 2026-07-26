@@ -32,12 +32,12 @@ internal static ref array<mutex> profMemFutureLock => ref ᏑprofMemFutureLock.V
 
 // All memory allocations are local and do not escape outside of the profiler.
 // The profiler is forbidden from referring to garbage-collected memory.
-internal static readonly bucketType memProfile = /* 1 + iota */ 1;
-internal static readonly bucketType blockProfile = 2;
-internal static readonly bucketType mutexProfile = 3;
-internal static readonly UntypedInt buckHashSize = 179999;
-internal static readonly UntypedInt maxSkip = 5;
-internal static readonly UntypedInt maxProfStackDepth = 1024;
+internal static bucketType memProfile => /* 1 + iota */ 1;
+internal static bucketType blockProfile => 2;
+internal static bucketType mutexProfile => 3;
+internal static UntypedInt buckHashSize => 179999;
+internal static UntypedInt maxSkip => 5;
+internal static UntypedInt maxProfStackDepth => 1024;
 
 [GoType("num:nint")] partial struct bucketType;
 
@@ -840,8 +840,7 @@ internal static void captureStack(this ж<mLockProfile> Ꮡprof) {
         }
     }
     var (cycles, lost) = (prof.cycles, prof.cyclesLost);
-    prof.cycles = 0;
-    prof.cyclesLost = 0;
+    (prof.cycles, prof.cyclesLost) = (0, 0);
     var rate = (int64)atomic.Load64(Ꮡmutexprofilerate);
     saveBlockEventStack(cycles, rate, prof.stack[..(int)(nstk)], mutexProfile);
     if (lost > 0) {
@@ -1385,9 +1384,9 @@ internal static ref goroutineProfileᴛ1 goroutineProfile => ref ᏑgoroutinePro
 
 [GoType("num:uint32")] partial struct goroutineProfileState;
 
-internal static readonly goroutineProfileState goroutineProfileAbsent = /* iota */ 0;
-internal static readonly goroutineProfileState goroutineProfileInProgress = 1;
-internal static readonly goroutineProfileState goroutineProfileSatisfied = 2;
+internal static goroutineProfileState goroutineProfileAbsent => /* iota */ 0;
+internal static goroutineProfileState goroutineProfileInProgress => 1;
+internal static goroutineProfileState goroutineProfileSatisfied => 2;
 
 [GoType("@internal.runtime.atomic_package.Uint32")] partial struct goroutineProfileStateHolder;
 

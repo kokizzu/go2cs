@@ -29,7 +29,7 @@ partial class os_package {
     internal @string path; // absolute directory path, empty if the file system supports FILE_ID_BOTH_DIR_INFO
 }
 
-internal static readonly UntypedInt dirBufSize = /* 64 * 1024 */ 65536; // 64kB
+internal static UntypedInt dirBufSize => /* 64 * 1024 */ 65536; // 64kB
 
 // The buffer must be at least a block long.
 internal static ж<Δsync.Pool> ᏑdirBufPool = new(new Δsync.Pool(

@@ -6,6 +6,6 @@ partial class goexperiment_package {
 
 public const bool StaticLockRanking = false;
 
-public static readonly UntypedInt StaticLockRankingInt = 0;
+public static UntypedInt StaticLockRankingInt => 0;
 
 } // end goexperiment_package

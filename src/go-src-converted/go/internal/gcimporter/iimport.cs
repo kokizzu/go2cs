@@ -47,37 +47,37 @@ partial class gcimporter_package {
 }
 
 // Keep this in sync with constants in iexport.go.
-internal static readonly UntypedInt iexportVersionGo1_11 = 0;
+internal static UntypedInt iexportVersionGo1_11 => 0;
 
-internal static readonly UntypedInt iexportVersionPosCol = 1;
+internal static UntypedInt iexportVersionPosCol => 1;
 
-internal static readonly UntypedInt iexportVersionGenerics = 2;
+internal static UntypedInt iexportVersionGenerics => 2;
 
-internal static readonly UntypedInt iexportVersionGo1_18 = 2;
+internal static UntypedInt iexportVersionGo1_18 => 2;
 
-internal static readonly UntypedInt iexportVersionCurrent = 2;
+internal static UntypedInt iexportVersionCurrent => 2;
 
 [GoType] partial struct Δident {
     internal ж<types.Package> pkg;
     internal @string name;
 }
 
-internal static readonly UntypedInt predeclReserved = 32;
+internal static UntypedInt predeclReserved => 32;
 
 [GoType("num:uint64")] partial struct itag;
 
-internal static readonly itag definedType = /* iota */ 0;
-internal static readonly itag pointerType = 1;
-internal static readonly itag sliceType = 2;
-internal static readonly itag arrayType = 3;
-internal static readonly itag chanType = 4;
-internal static readonly itag mapType = 5;
-internal static readonly itag signatureType = 6;
-internal static readonly itag ΔstructType = 7;
-internal static readonly itag ΔinterfaceType = 8;
-internal static readonly itag typeParamType = 9;
-internal static readonly itag instanceType = 10;
-internal static readonly itag ΔunionType = 11;
+internal static itag definedType => /* iota */ 0;
+internal static itag pointerType => 1;
+internal static itag sliceType => 2;
+internal static itag arrayType => 3;
+internal static itag chanType => 4;
+internal static itag mapType => 5;
+internal static itag signatureType => 6;
+internal static itag ΔstructType => 7;
+internal static itag ΔinterfaceType => 8;
+internal static itag typeParamType => 9;
+internal static itag instanceType => 10;
+internal static itag ΔunionType => 11;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string anyˢ = "any"u8;

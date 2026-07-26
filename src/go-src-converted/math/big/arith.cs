@@ -15,11 +15,11 @@ partial class big_package {
 
 [GoType("num:nuint")] partial struct Word;
 
-internal static readonly UntypedInt _S = /* _W / 8 */ 8; // word size in bytes
-internal static readonly UntypedInt _W = /* bits.UintSize */ 64; // word size in bits
+internal static UntypedInt _S => /* _W / 8 */ 8; // word size in bytes
+internal static UntypedInt _W => /* bits.UintSize */ 64; // word size in bits
 internal static readonly GoUntyped _B = /* 1 << _W */    // digit base
     GoUntyped.Parse("18446744073709551616");
-internal static readonly UntypedInt _M = /* _B - 1 */ 18446744073709551615; // digit mask
+internal static UntypedInt _M => /* _B - 1 */ 18446744073709551615; // digit mask
 
 // Many of the loops in this file are of the form
 //   for i := 0; i < len(z) && i < len(x) && i < len(y); i++

@@ -35,7 +35,7 @@ public static (nint, error) Read(this randReader _, slice<byte> b) {
     throw panic("boringcrypto: not available");
 }
 
-public static readonly randReader RandReader = /* randReader(0) */ 0;
+public static randReader RandReader => /* randReader(0) */ 0;
 
 public static hash.Hash NewSHA1() {
     throw panic("boringcrypto: not available");

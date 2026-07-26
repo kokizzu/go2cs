@@ -7,14 +7,14 @@ using @unsafe = unsafe_package;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt _MEM_COMMIT = 0x1000;
-internal static readonly UntypedInt _MEM_RESERVE = 0x2000;
-internal static readonly UntypedInt _MEM_DECOMMIT = 0x4000;
-internal static readonly UntypedInt _MEM_RELEASE = 0x8000;
-internal static readonly UntypedInt _PAGE_READWRITE = 0x0004;
-internal static readonly UntypedInt _PAGE_NOACCESS = 0x0001;
-internal static readonly UntypedInt _ERROR_NOT_ENOUGH_MEMORY = 8;
-internal static readonly UntypedInt _ERROR_COMMITMENT_LIMIT = 1455;
+internal static UntypedInt _MEM_COMMIT => 0x1000;
+internal static UntypedInt _MEM_RESERVE => 0x2000;
+internal static UntypedInt _MEM_DECOMMIT => 0x4000;
+internal static UntypedInt _MEM_RELEASE => 0x8000;
+internal static UntypedInt _PAGE_READWRITE => 0x0004;
+internal static UntypedInt _PAGE_NOACCESS => 0x0001;
+internal static UntypedInt _ERROR_NOT_ENOUGH_MEMORY => 8;
+internal static UntypedInt _ERROR_COMMITMENT_LIMIT => 1455;
 
 // Don't split the stack as this function may be invoked without a valid G,
 // which prevents us from allocating more stack.

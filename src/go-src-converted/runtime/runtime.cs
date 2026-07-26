@@ -51,7 +51,7 @@ internal static ref ticksType ticks => ref Ꮡticks.Value;
 // converting durations, not timestamps. Durations are usually going to be much larger, and so
 // the tiny error doesn't matter. The error is definitely going to be a problem when trying to
 // use this for timestamps, as it'll make those timestamps much less likely to line up.
-internal static readonly UntypedInt minTimeForTicksPerSecond = /* 5_000_000*(1-osHasLowResClockInt) + 100_000_000*osHasLowResClockInt */ 100000000;
+internal static UntypedInt minTimeForTicksPerSecond => /* 5_000_000*(1-osHasLowResClockInt) + 100_000_000*osHasLowResClockInt */ 100000000;
 
 // ticksPerSecond returns a conversion rate between the cputicks clock and the nanotime clock.
 //

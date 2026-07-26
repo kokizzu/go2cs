@@ -724,7 +724,7 @@ internal static bool greaterThan(Word x1, Word x2, Word y1, Word y2) {
 
 // divRecursiveThreshold is the number of divisor digits
 // at which point divRecursive is faster than divBasic.
-internal static readonly UntypedInt divRecursiveThreshold = 100;
+internal static UntypedInt divRecursiveThreshold => 100;
 
 // divRecursive implements recursive division as described above.
 // It overwrites z with ⌊u/v⌋ and overwrites u with the remainder r.

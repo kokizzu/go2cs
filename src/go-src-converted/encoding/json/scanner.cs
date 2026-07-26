@@ -112,43 +112,43 @@ internal static void freeScanner(ж<scanner> Ꮡscan) {
 // It is okay to ignore the return value of any particular
 // call to scanner.state: if one call returns scanError,
 // every subsequent call will return scanError too.
-internal static readonly UntypedInt scanContinue = iota; // uninteresting byte
+internal static UntypedInt scanContinue => iota; // uninteresting byte
 
-internal static readonly UntypedInt scanBeginLiteral = 1; // end implied by next result != scanContinue
+internal static UntypedInt scanBeginLiteral => 1; // end implied by next result != scanContinue
 
-internal static readonly UntypedInt scanBeginObject = 2; // begin object
+internal static UntypedInt scanBeginObject => 2; // begin object
 
-internal static readonly UntypedInt scanObjectKey = 3; // just finished object key (string)
+internal static UntypedInt scanObjectKey => 3; // just finished object key (string)
 
-internal static readonly UntypedInt scanObjectValue = 4; // just finished non-last object value
+internal static UntypedInt scanObjectValue => 4; // just finished non-last object value
 
-internal static readonly UntypedInt scanEndObject = 5; // end object (implies scanObjectValue if possible)
+internal static UntypedInt scanEndObject => 5; // end object (implies scanObjectValue if possible)
 
-internal static readonly UntypedInt scanBeginArray = 6; // begin array
+internal static UntypedInt scanBeginArray => 6; // begin array
 
-internal static readonly UntypedInt scanArrayValue = 7; // just finished array value
+internal static UntypedInt scanArrayValue => 7; // just finished array value
 
-internal static readonly UntypedInt scanEndArray = 8; // end array (implies scanArrayValue if possible)
+internal static UntypedInt scanEndArray => 8; // end array (implies scanArrayValue if possible)
 
-internal static readonly UntypedInt scanSkipSpace = 9; // space byte; can skip; known to be last "continue" result
+internal static UntypedInt scanSkipSpace => 9; // space byte; can skip; known to be last "continue" result
 
-internal static readonly UntypedInt scanEnd = 10; // top-level value ended *before* this byte; known to be first "stop" result
+internal static UntypedInt scanEnd => 10; // top-level value ended *before* this byte; known to be first "stop" result
 
-internal static readonly UntypedInt scanError = 11; // hit an error, scanner.err.
+internal static UntypedInt scanError => 11; // hit an error, scanner.err.
 
 // These values are stored in the parseState stack.
 // They give the current state of a composite value
 // being scanned. If the parser is inside a nested value
 // the parseState describes the nested state, outermost at entry 0.
-internal static readonly UntypedInt parseObjectKey = iota; // parsing object key (before colon)
+internal static UntypedInt parseObjectKey => iota; // parsing object key (before colon)
 
-internal static readonly UntypedInt parseObjectValue = 1; // parsing object value (after colon)
+internal static UntypedInt parseObjectValue => 1; // parsing object value (after colon)
 
-internal static readonly UntypedInt parseArrayValue = 2; // parsing array value
+internal static UntypedInt parseArrayValue => 2; // parsing array value
 
 // This limits the max nesting depth to prevent stack overflow.
 // This is permitted by https://tools.ietf.org/html/rfc7159#section-9
-internal static readonly UntypedInt maxNestingDepth = 10000;
+internal static UntypedInt maxNestingDepth => 10000;
 
 // reset prepares the scanner for use.
 // It must be called before calling s.step.

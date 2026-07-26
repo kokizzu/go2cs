@@ -49,9 +49,9 @@ internal static void cbsUnlock() {
 
 [GoType("num:nint")] partial struct abiPartKind;
 
-internal static readonly abiPartKind abiPartBad = /* iota */ 0;
-internal static readonly abiPartKind abiPartStack = 1; // Move a value from memory to the stack.
-internal static readonly abiPartKind abiPartReg = 2; // Move a value from memory to a register.
+internal static abiPartKind abiPartBad => /* iota */ 0;
+internal static abiPartKind abiPartStack => 1; // Move a value from memory to the stack.
+internal static abiPartKind abiPartReg => 2; // Move a value from memory to a register.
 
 // abiPart encodes a step in translating between calling ABIs.
 [GoType] partial struct abiPart {
@@ -263,7 +263,7 @@ internal static uintptr callbackasmAddr(nint i) {
     return abi.FuncPCABI0(callbackasm) + (uintptr)(i * entrySize);
 }
 
-internal static readonly UntypedInt callbackMaxFrame = /* 64 * goarch.PtrSize */ 512;
+internal static UntypedInt callbackMaxFrame => /* 64 * goarch.PtrSize */ 512;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string tooManyCallbackFunctionsˢ = "too many callback functions"u8;
@@ -421,7 +421,7 @@ internal static void callbackWrap(ж<callbackArgs> Ꮡa) {
     }
 }
 
-internal static readonly UntypedInt _LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800;
+internal static UntypedInt _LOAD_LIBRARY_SEARCH_SYSTEM32 => 0x00000800;
 
 //go:linkname syscall_loadsystemlibrary syscall.loadsystemlibrary
 internal static (uintptr handle, uintptr err) syscall_loadsystemlibrary(ж<uint16> Ꮡfilename) {
@@ -541,7 +541,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_Syscall18(uintptr 
 //
 // Although it only permits maximum 42 parameters, it
 // is arguably large enough.
-internal static readonly UntypedInt maxArgs = 42;
+internal static UntypedInt maxArgs => 42;
 
 //go:linkname syscall_SyscallN syscall.SyscallN
 //go:nosplit

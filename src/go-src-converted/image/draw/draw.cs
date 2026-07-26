@@ -17,7 +17,7 @@ using go.image.@internal;
 partial class draw_package {
 
 // m is the maximum color value returned by image.Color.RGBA.
-internal static readonly UntypedInt m = /* 1<<16 - 1 */ 65535;
+internal static UntypedInt m => /* 1<<16 - 1 */ 65535;
 
 // Image is an image.Image with a Set method to change a single pixel.
 [GoType] partial interface Image :
@@ -46,8 +46,8 @@ internal static readonly UntypedInt m = /* 1<<16 - 1 */ 65535;
 
 [GoType("num:nint")] partial struct Op;
 
-public static readonly Op Over = /* iota */ 0;
-public static readonly Op Src = 1;
+public static Op Over => /* iota */ 0;
+public static Op Src => 1;
 
 // Draw implements the [Drawer] interface by calling the Draw function with this
 // [Op].

@@ -144,47 +144,47 @@ public static readonly @string DateOnly = "2006-01-02"u8;
 
 public static readonly @string TimeOnly = "15:04:05"u8;
 
-internal static readonly UntypedInt _ᴛ1ʗ = iota;
-internal static readonly UntypedInt stdLongMonth = /* iota + stdNeedDate */ 257; // "January"
-internal static readonly UntypedInt stdMonth = 258;                    // "Jan"
-internal static readonly UntypedInt stdNumMonth = 259;                 // "1"
-internal static readonly UntypedInt stdZeroMonth = 260;                // "01"
-internal static readonly UntypedInt stdLongWeekDay = 261;              // "Monday"
-internal static readonly UntypedInt stdWeekDay = 262;                  // "Mon"
-internal static readonly UntypedInt stdDay = 263;                      // "2"
-internal static readonly UntypedInt stdUnderDay = 264;                 // "_2"
-internal static readonly UntypedInt stdZeroDay = 265;                  // "02"
-internal static readonly UntypedInt stdUnderYearDay = 266;             // "__2"
-internal static readonly UntypedInt stdZeroYearDay = 267;              // "002"
-internal static readonly UntypedInt stdHour = /* iota + stdNeedClock */ 524; // "15"
-internal static readonly UntypedInt stdHour12 = 525;                   // "3"
-internal static readonly UntypedInt stdZeroHour12 = 526;               // "03"
-internal static readonly UntypedInt stdMinute = 527;                   // "4"
-internal static readonly UntypedInt stdZeroMinute = 528;               // "04"
-internal static readonly UntypedInt stdSecond = 529;                   // "5"
-internal static readonly UntypedInt stdZeroSecond = 530;               // "05"
-internal static readonly UntypedInt stdLongYear = /* iota + stdNeedDate */ 275; // "2006"
-internal static readonly UntypedInt stdYear = 276;                     // "06"
-internal static readonly UntypedInt stdPM = /* iota + stdNeedClock */ 533; // "PM"
-internal static readonly UntypedInt stdpm = 534;                       // "pm"
-internal static readonly UntypedInt stdTZ = /* iota */ 23;   // "MST"
-internal static readonly UntypedInt stdISO8601TZ = 24;                // "Z0700"  // prints Z for UTC
-internal static readonly UntypedInt stdISO8601SecondsTZ = 25;         // "Z070000"
-internal static readonly UntypedInt stdISO8601ShortTZ = 26;           // "Z07"
-internal static readonly UntypedInt stdISO8601ColonTZ = 27;           // "Z07:00" // prints Z for UTC
-internal static readonly UntypedInt stdISO8601ColonSecondsTZ = 28;    // "Z07:00:00"
-internal static readonly UntypedInt stdNumTZ = 29;                    // "-0700"  // always numeric
-internal static readonly UntypedInt stdNumSecondsTz = 30;             // "-070000"
-internal static readonly UntypedInt stdNumShortTZ = 31;               // "-07"    // always numeric
-internal static readonly UntypedInt stdNumColonTZ = 32;               // "-07:00" // always numeric
-internal static readonly UntypedInt stdNumColonSecondsTZ = 33;        // "-07:00:00"
-internal static readonly UntypedInt stdFracSecond0 = 34;              // ".0", ".00", ... , trailing zeros included
-internal static readonly UntypedInt stdFracSecond9 = 35;              // ".9", ".99", ..., trailing zeros omitted
-internal static readonly UntypedInt stdNeedDate = /* 1 << 8 */ 256; // need month, day, year
-internal static readonly UntypedInt stdNeedClock = /* 2 << 8 */ 512; // need hour, minute, second
-internal static readonly UntypedInt stdArgShift = 16;  // extra argument in high bits, above low stdArgShift
-internal static readonly UntypedInt stdSeparatorShift = 28;  // extra argument in high 4 bits for fractional second separators
-internal static readonly UntypedInt stdMask = /* 1<<stdArgShift - 1 */ 65535; // mask out argument
+internal static UntypedInt _ᴛ1ʗ => iota;
+internal static UntypedInt stdLongMonth => /* iota + stdNeedDate */ 257; // "January"
+internal static UntypedInt stdMonth => 258;                    // "Jan"
+internal static UntypedInt stdNumMonth => 259;                 // "1"
+internal static UntypedInt stdZeroMonth => 260;                // "01"
+internal static UntypedInt stdLongWeekDay => 261;              // "Monday"
+internal static UntypedInt stdWeekDay => 262;                  // "Mon"
+internal static UntypedInt stdDay => 263;                      // "2"
+internal static UntypedInt stdUnderDay => 264;                 // "_2"
+internal static UntypedInt stdZeroDay => 265;                  // "02"
+internal static UntypedInt stdUnderYearDay => 266;             // "__2"
+internal static UntypedInt stdZeroYearDay => 267;              // "002"
+internal static UntypedInt stdHour => /* iota + stdNeedClock */ 524; // "15"
+internal static UntypedInt stdHour12 => 525;                   // "3"
+internal static UntypedInt stdZeroHour12 => 526;               // "03"
+internal static UntypedInt stdMinute => 527;                   // "4"
+internal static UntypedInt stdZeroMinute => 528;               // "04"
+internal static UntypedInt stdSecond => 529;                   // "5"
+internal static UntypedInt stdZeroSecond => 530;               // "05"
+internal static UntypedInt stdLongYear => /* iota + stdNeedDate */ 275; // "2006"
+internal static UntypedInt stdYear => 276;                     // "06"
+internal static UntypedInt stdPM => /* iota + stdNeedClock */ 533; // "PM"
+internal static UntypedInt stdpm => 534;                       // "pm"
+internal static UntypedInt stdTZ => /* iota */ 23;   // "MST"
+internal static UntypedInt stdISO8601TZ => 24;                // "Z0700"  // prints Z for UTC
+internal static UntypedInt stdISO8601SecondsTZ => 25;         // "Z070000"
+internal static UntypedInt stdISO8601ShortTZ => 26;           // "Z07"
+internal static UntypedInt stdISO8601ColonTZ => 27;           // "Z07:00" // prints Z for UTC
+internal static UntypedInt stdISO8601ColonSecondsTZ => 28;    // "Z07:00:00"
+internal static UntypedInt stdNumTZ => 29;                    // "-0700"  // always numeric
+internal static UntypedInt stdNumSecondsTz => 30;             // "-070000"
+internal static UntypedInt stdNumShortTZ => 31;               // "-07"    // always numeric
+internal static UntypedInt stdNumColonTZ => 32;               // "-07:00" // always numeric
+internal static UntypedInt stdNumColonSecondsTZ => 33;        // "-07:00:00"
+internal static UntypedInt stdFracSecond0 => 34;              // ".0", ".00", ... , trailing zeros included
+internal static UntypedInt stdFracSecond9 => 35;              // ".9", ".99", ..., trailing zeros omitted
+internal static UntypedInt stdNeedDate => /* 1 << 8 */ 256; // need month, day, year
+internal static UntypedInt stdNeedClock => /* 2 << 8 */ 512; // need hour, minute, second
+internal static UntypedInt stdArgShift => 16;  // extra argument in high bits, above low stdArgShift
+internal static UntypedInt stdSeparatorShift => 28;  // extra argument in high 4 bits for fractional second separators
+internal static UntypedInt stdMask => /* 1<<stdArgShift - 1 */ 65535; // mask out argument
 
 // std0x records the std values for "01", "02", ..., "06".
 internal static array<nint> std0x = new nint[]{stdZeroMonth, stdZeroDay, stdZeroHour12, stdZeroMinute, stdZeroSecond, stdYear}.array();
@@ -933,9 +933,9 @@ internal static ж<ParseError> newParseError(@string layout, @string value, @str
 // that package, since we can't take a dependency on either.
 internal static readonly @string lowerhex = "0123456789abcdef"u8;
 
-internal static readonly UntypedInt runeSelf = 0x80;
+internal static UntypedInt runeSelf => 0x80;
 
-internal static readonly UntypedInt runeError = /* '\uFFFD' */ 65533;
+internal static UntypedInt runeError => /* '\uFFFD' */ 65533;
 
 internal static @string quote(@string s) {
     var buf = new slice<byte>(1, len(s) + 2);

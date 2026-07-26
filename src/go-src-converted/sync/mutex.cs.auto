@@ -53,11 +53,11 @@ internal static partial void fatal(@string _);
     void Unlock();
 }
 
-internal static readonly UntypedInt mutexLocked = /* 1 << iota */ 1; // mutex is locked
-internal static readonly UntypedInt mutexWoken = 2;
-internal static readonly UntypedInt mutexStarving = 4;
-internal static readonly UntypedInt mutexWaiterShift = /* iota */ 3;
-internal static readonly UntypedFloat starvationThresholdNs = 1e6;
+internal static UntypedInt mutexLocked => /* 1 << iota */ 1; // mutex is locked
+internal static UntypedInt mutexWoken => 2;
+internal static UntypedInt mutexStarving => 4;
+internal static UntypedInt mutexWaiterShift => /* iota */ 3;
+internal static UntypedFloat starvationThresholdNs => 1e6;
 
 // Lock locks m.
 // If the lock is already in use, the calling goroutine

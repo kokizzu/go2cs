@@ -6,6 +6,6 @@ namespace go.runtime.@internal;
 
 partial class sys_package {
 
-internal static readonly UntypedInt isRace = 0;
+internal static UntypedInt isRace => 0;
 
 } // end sys_package

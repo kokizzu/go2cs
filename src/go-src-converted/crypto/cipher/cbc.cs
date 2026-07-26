@@ -174,8 +174,7 @@ internal static BlockMode newCBCGenericDecrypter(Block b, slice<byte> iv) {
     x.b.Decrypt(dst[(int)(start)..(int)(end)], src[(int)(start)..(int)(end)]);
     subtle.XORBytes(dst[(int)(start)..(int)(end)], dst[(int)(start)..(int)(end)], x.iv);
     // Set the new iv to the first block we copied earlier.
-    x.iv = x.tmp;
-    x.tmp = x.iv;
+    (x.iv, x.tmp) = (x.tmp, x.iv);
 }
 
 [GoRecv] internal static void SetIV(this ref cbcDecrypter x, slice<byte> iv) {

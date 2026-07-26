@@ -9,7 +9,7 @@ using @unsafe = unsafe_package;
 partial class runtime_package {
 
 // Trace strings.
-internal static readonly UntypedInt maxTraceStringLen = 1024;
+internal static UntypedInt maxTraceStringLen => 1024;
 
 // traceStringTable is map of string -> unique ID that also manages
 // writing strings out into the trace.

@@ -69,15 +69,15 @@ partial class reflect_package {
 // the receiver r, but the flag's Kind bits say Func (methods are
 // functions), and the top bits of the flag give the method number
 // in r's type's method table.
-internal static readonly UntypedInt flagKindWidth = 5; // there are 27 kinds
-internal static readonly flag flagKindMask = /* 1<<flagKindWidth - 1 */ 31;
-internal static readonly flag flagStickyRO = /* 1 << 5 */ 32;
-internal static readonly flag flagEmbedRO = /* 1 << 6 */ 64;
-internal static readonly flag flagIndir = /* 1 << 7 */ 128;
-internal static readonly flag flagAddr = /* 1 << 8 */ 256;
-internal static readonly flag flagMethod = /* 1 << 9 */ 512;
-internal static readonly UntypedInt flagMethodShift = 10;
-internal static readonly flag flagRO = /* flagStickyRO | flagEmbedRO */ 96;
+internal static UntypedInt flagKindWidth => 5; // there are 27 kinds
+internal static flag flagKindMask => /* 1<<flagKindWidth - 1 */ 31;
+internal static flag flagStickyRO => /* 1 << 5 */ 32;
+internal static flag flagEmbedRO => /* 1 << 6 */ 64;
+internal static flag flagIndir => /* 1 << 7 */ 128;
+internal static flag flagAddr => /* 1 << 8 */ 256;
+internal static flag flagMethod => /* 1 << 9 */ 512;
+internal static UntypedInt flagMethodShift => 10;
+internal static flag flagRO => /* flagStickyRO | flagEmbedRO */ 96;
 
 internal static ΔKind kind(this flag f) {
     return ((ΔKind)(nuint)((uintptr)((flag)(f & flagKindMask))));
@@ -673,7 +673,7 @@ internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame
                     if (typ.Size() > 0) {
                         typedmemmove(typ, v.ptr, (uintptr)add(ptr, st.stkOff, typSize0ˢ));
                     }
-                    v.flag |= flagIndir;
+                    v.flag |= (flag)(flagIndir);
                 } else {
                     v.ptr = ~(ж<@unsafe.Pointer>)(uintptr)((uintptr)add(ptr, st.stkOff, ptrˢ));
                 }
@@ -681,7 +681,7 @@ internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame
                 if (typ.IfaceIndir()){
                     // All that's left is values passed in registers that we need to
                     // create space for the values.
-                    v.flag |= flagIndir;
+                    v.flag |= (flag)(flagIndir);
                     v.ptr = (uintptr)unsafe_New(typ);
                     foreach (var (_, stΔ1) in steps) {
                         var exprᴛ1 = stΔ1.kind;
@@ -1926,7 +1926,7 @@ internal static (ΔValue val, bool ok) recv(this ΔValue v, bool nb) {
     if (t.IfaceIndir()){
         p = (uintptr)unsafe_New(t);
         val.ptr = p;
-        val.flag |= flagIndir;
+        val.flag |= (flag)(flagIndir);
     } else {
         p = @unsafe.Pointer.FromRef(ref (Ꮡval.of(reflect_package.ΔValue.Ꮡptr)).Value);
     }
@@ -2445,10 +2445,10 @@ internal static partial (nint chosen, bool recvOK) rselect(slice<runtimeSelect> 
 [GoType("num:nint")] partial struct SelectDir;
 
 // NOTE: These values must match ../runtime/select.go:/selectDir.
-internal static readonly SelectDir _ᴛ1ʗ = /* iota */ 0;
-public static readonly SelectDir SelectSend = 1; // case Chan <- Send
-public static readonly SelectDir SelectRecv = 2; // case <-Chan:
-public static readonly SelectDir SelectDefault = 3; // default
+internal static SelectDir _ᴛ1ʗ => /* iota */ 0;
+public static SelectDir SelectSend => 1; // case Chan <- Send
+public static SelectDir SelectRecv => 2; // case <-Chan:
+public static SelectDir SelectDefault => 3; // default
 
 // A SelectCase describes a single case in a select operation.
 // The kind of case depends on Dir, the communication direction.
@@ -3206,7 +3206,7 @@ internal static ΔValue cvtT2I(ΔValue v, ΔType typ) {
 internal static ΔValue cvtI2I(ΔValue v, ΔType typ) {
     if (v.IsNil()) {
         var ret = Zero(typ);
-        ret.flag |= v.flag.ro();
+        ret.flag |= (flag)(v.flag.ro());
         return ret;
     }
     return cvtT2I(v.Elem(), typ);

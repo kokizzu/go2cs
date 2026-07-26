@@ -45,29 +45,29 @@ public static NodeType Type(this NodeType t) {
     return t;
 }
 
-public static readonly NodeType NodeText = /* iota */ 0;        // Plain text.
-public static readonly NodeType NodeAction = 1;      // A non-control action such as a field evaluation.
-public static readonly NodeType NodeBool = 2;        // A boolean constant.
-public static readonly NodeType NodeChain = 3;       // A sequence of field accesses.
-public static readonly NodeType NodeCommand = 4;     // An element of a pipeline.
-public static readonly NodeType NodeDot = 5;         // The cursor, dot.
-internal static readonly NodeType nodeElse = 6;      // An else action. Not added to tree.
-internal static readonly NodeType nodeEnd = 7;       // An end action. Not added to tree.
-public static readonly NodeType NodeField = 8;       // A field or method name.
-public static readonly NodeType NodeIdentifier = 9;  // An identifier; always a function name.
-public static readonly NodeType NodeIf = 10;          // An if action.
-public static readonly NodeType NodeList = 11;        // A list of Nodes.
-public static readonly NodeType NodeNil = 12;         // An untyped nil constant.
-public static readonly NodeType NodeNumber = 13;      // A numerical constant.
-public static readonly NodeType NodePipe = 14;        // A pipeline of commands.
-public static readonly NodeType NodeRange = 15;       // A range action.
-public static readonly NodeType NodeString = 16;      // A string constant.
-public static readonly NodeType NodeTemplate = 17;    // A template invocation action.
-public static readonly NodeType NodeVariable = 18;    // A $ variable.
-public static readonly NodeType NodeWith = 19;        // A with action.
-public static readonly NodeType NodeComment = 20;     // A comment.
-public static readonly NodeType NodeBreak = 21;       // A break action.
-public static readonly NodeType NodeContinue = 22;    // A continue action.
+public static NodeType NodeText => /* iota */ 0;        // Plain text.
+public static NodeType NodeAction => 1;      // A non-control action such as a field evaluation.
+public static NodeType NodeBool => 2;        // A boolean constant.
+public static NodeType NodeChain => 3;       // A sequence of field accesses.
+public static NodeType NodeCommand => 4;     // An element of a pipeline.
+public static NodeType NodeDot => 5;         // The cursor, dot.
+internal static NodeType nodeElse => 6;      // An else action. Not added to tree.
+internal static NodeType nodeEnd => 7;       // An end action. Not added to tree.
+public static NodeType NodeField => 8;       // A field or method name.
+public static NodeType NodeIdentifier => 9;  // An identifier; always a function name.
+public static NodeType NodeIf => 10;          // An if action.
+public static NodeType NodeList => 11;        // A list of Nodes.
+public static NodeType NodeNil => 12;         // An untyped nil constant.
+public static NodeType NodeNumber => 13;      // A numerical constant.
+public static NodeType NodePipe => 14;        // A pipeline of commands.
+public static NodeType NodeRange => 15;       // A range action.
+public static NodeType NodeString => 16;      // A string constant.
+public static NodeType NodeTemplate => 17;    // A template invocation action.
+public static NodeType NodeVariable => 18;    // A $ variable.
+public static NodeType NodeWith => 19;        // A with action.
+public static NodeType NodeComment => 20;     // A comment.
+public static NodeType NodeBreak => 21;       // A break action.
+public static NodeType NodeContinue => 22;    // A continue action.
 
 // Nodes.
 

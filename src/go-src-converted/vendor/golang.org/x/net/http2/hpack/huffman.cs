@@ -126,7 +126,7 @@ internal static error huffmanDecode(ж<bytes.Buffer> Ꮡbuf, nint maxLen, slice<
 }
 
 internal static ж<node> newInternalNode() {
-    return Ꮡ(new node(children: @new<array<ж<node>>>()));
+    return Ꮡ(new node(children: Ꮡ(new array<ж<node>>(256))));
 }
 
 internal static ж<sync.Once> ᏑbuildRootOnce = new(default(sync.Once));
@@ -144,7 +144,7 @@ internal static void buildRootHuffmanNode() {
     }
     lazyRootHuffmanNode = newInternalNode();
     // allocate a leaf node for each of the 256 symbols
-    var leaves = @new<array<node>>();
+    var leaves = Ꮡ(new array<node>(256));
     foreach (var (sym, code) in huffmanCodes) {
         var codeLen = huffmanCodeLen[sym];
         var cur = lazyRootHuffmanNode;

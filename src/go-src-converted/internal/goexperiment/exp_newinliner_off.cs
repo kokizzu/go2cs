@@ -6,6 +6,6 @@ partial class goexperiment_package {
 
 public const bool NewInliner = false;
 
-public static readonly UntypedInt NewInlinerInt = 0;
+public static UntypedInt NewInlinerInt => 0;
 
 } // end goexperiment_package

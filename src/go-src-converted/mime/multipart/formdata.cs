@@ -45,185 +45,189 @@ private static readonly @string multipartˢ = "multipart-"u8;
     public io_package.Writer Writer;
 }
 
-internal static (ж<Form>, error err) readForm(this ж<Reader> Ꮡr, int64 maxMemory) => func<(ж<Form>, error err)>((defer, recover) => {
+internal static (ж<Form>, error err) readForm(this ж<Reader> Ꮡr, int64 maxMemory) {
+    ж<Form> _ᴛ1 = default!;
     error err = default!;
-
+    func((defer, recover) => {
     ref var r = ref Ꮡr.Value;
-    var form = Ꮡ(new Form(new map<@string, slice<@string>>(), new map<@string, slice<ж<FileHeader>>>()));
-    ref var @file = ref heap<ж<os.File>>(out var Ꮡfile);
-    int64 fileOff = default!;
-    nint numDiskFiles = 0;
-    var combineFiles = true;
-    if (multipartfiles.Value() == "distinct"u8) {
-        combineFiles = false;
-    }
-    // multipartfiles.IncNonDefault() // TODO: uncomment after documenting
-    nint maxParts = 1000;
-    {
-        @string s = multipartmaxparts.Value(); if (s != ""u8) {
-            {
-                var (v, errΔ1) = strconv.Atoi(s); if (errΔ1 == default! && v >= 0) {
-                    maxParts = v;
-                    multipartmaxparts.IncNonDefault();
-                }
-            }
+
+        var form = Ꮡ(new Form(new map<@string, slice<@string>>(), new map<@string, slice<ж<FileHeader>>>()));
+        ref var @file = ref heap<ж<os.File>>(out var Ꮡfile);
+        int64 fileOff = default!;
+        nint numDiskFiles = 0;
+        var combineFiles = true;
+        if (multipartfiles.Value() == "distinct"u8) {
+            combineFiles = false;
         }
-    }
-    var maxHeaders = maxMIMEHeaders();
-    var formʗ1 = form;
-    defer(() => {
-        if (Ꮡfile.ValueSlot != nil) {
-            {
-                var cerr = Ꮡfile.ValueSlot.Close(); if (err == default!) {
-                    err = cerr;
-                }
-            }
-        }
-        if (combineFiles && numDiskFiles > 1) {
-            foreach (var (_, fhs) in (~formʗ1).File) {
-                foreach (var (_, fh) in fhs) {
-                    fh.Value.tmpshared = true;
-                }
-            }
-        }
-        if (err != default!) {
-            formʗ1.RemoveAll();
-            if (Ꮡfile.ValueSlot != nil) {
-                os.Remove(Ꮡfile.ValueSlot.Name());
-            }
-        }
-    });
-    // maxFileMemoryBytes is the maximum bytes of file data we will store in memory.
-    // Data past this limit is written to disk.
-    // This limit strictly applies to content, not metadata (filenames, MIME headers, etc.),
-    // since metadata is always stored in memory, not disk.
-    //
-    // maxMemoryBytes is the maximum bytes we will store in memory, including file content,
-    // non-file part values, metadata, and map entry overhead.
-    //
-    // We reserve an additional 10 MB in maxMemoryBytes for non-file data.
-    //
-    // The relationship between these parameters, as well as the overly-large and
-    // unconfigurable 10 MB added on to maxMemory, is unfortunate but difficult to change
-    // within the constraints of the API as documented.
-    var maxFileMemoryBytes = maxMemory;
-    if (maxFileMemoryBytes == math.MaxInt64) {
-        maxFileMemoryBytes--;
-    }
-    var maxMemoryBytes = maxMemory + (int64)(((int64)10 << (int)(20)));
-    if (maxMemoryBytes <= 0) {
-        if (maxMemory < 0){
-            maxMemoryBytes = 0;
-        } else {
-            maxMemoryBytes = math.MaxInt64;
-        }
-    }
-    slice<byte> copyBuf = default!;
-    while (ᐧ) {
-        var (p, errΔ2) = Ꮡr.nextPart(false, maxMemoryBytes, maxHeaders);
-        if (AreEqual(errΔ2, io.EOF)) {
-            break;
-        }
-        if (errΔ2 != default!) {
-            return (default!, errΔ2);
-        }
-        if (maxParts <= 0) {
-            return (default!, ErrMessageTooLarge);
-        }
-        maxParts--;
-        @string name = p.FormName();
-        if (name == ""u8) {
-            continue;
-        }
-        ref var filename = ref heap<@string>(out var Ꮡfilename);
-        filename = p.FileName();
-        // Multiple values for the same key (one map entry, longer slice) are cheaper
-        // than the same number of values for different keys (many map entries), but
-        // using a consistent per-value cost for overhead is simpler.
-        const int64 mapEntryOverhead = 200;
-        maxMemoryBytes -= (int64)len(name);
-        maxMemoryBytes -= mapEntryOverhead;
-        if (maxMemoryBytes < 0) {
-            // We can't actually take this path, since nextPart would already have
-            // rejected the MIME headers for being too large. Check anyway.
-            return (default!, ErrMessageTooLarge);
-        }
-        ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
-        if (filename == ""u8) {
-            // value, store as string in memory
-            var (nΔ1, errΔ3) = io.CopyN(new bytes_BufferжWriter(Ꮡb), new PartжReader(p), maxMemoryBytes + 1);
-            if (errΔ3 != default! && !AreEqual(errΔ3, io.EOF)) {
-                return (default!, errΔ3);
-            }
-            maxMemoryBytes -= nΔ1;
-            if (maxMemoryBytes < 0) {
-                return (default!, ErrMessageTooLarge);
-            }
-            form.Value.Value[name] = append((~form).Value[name], Ꮡb.String());
-            continue;
-        }
-        // file, store in memory or on disk
-        const int64 fileHeaderSize = 100;
-        maxMemoryBytes -= mimeHeaderSize((~p).Header);
-        maxMemoryBytes -= mapEntryOverhead;
-        maxMemoryBytes -= fileHeaderSize;
-        if (maxMemoryBytes < 0) {
-            return (default!, ErrMessageTooLarge);
-        }
-        foreach (var (_, v) in (~p).Header) {
-            maxHeaders -= (int64)len(v);
-        }
-        var fh = Ꮡ(new FileHeader(
-            Filename: filename,
-            Header: (~p).Header
-        ));
-        (var n, errΔ2) = io.CopyN(new bytes_BufferжWriter(Ꮡb), new PartжReader(p), maxFileMemoryBytes + 1);
-        if (errΔ2 != default! && !AreEqual(errΔ2, io.EOF)) {
-            return (default!, errΔ2);
-        }
-        if (n > maxFileMemoryBytes){
-            if (@file == nil) {
-                (@file, errΔ2) = os.CreateTemp(r.tempDir, multipartˢ);
-                if (errΔ2 != default!) {
-                    return (default!, errΔ2);
-                }
-            }
-            numDiskFiles++;
-            {
-                var (_, errΔ4) = @file.Write(b.Bytes()); if (errΔ4 != default!) {
-                    return (default!, errΔ4);
-                }
-            }
-            if (copyBuf == default!) {
-                copyBuf = new slice<byte>(32 * 1024);
-            }
-            // same buffer size as io.Copy uses
-            var (remainingSize, errΔ5) = io.CopyBuffer(new readForm_writerOnly(new os.FileжWriter(@file)), new PartжReader(p), copyBuf);
-            if (errΔ5 != default!) {
-                return (default!, errΔ5);
-            }
-            fh.Value.tmpfile = @file.Name();
-            fh.Value.Size = (int64)b.Len() + remainingSize;
-            fh.Value.tmpoff = fileOff;
-            fileOff += fh.Value.Size;
-            if (!combineFiles) {
+        // multipartfiles.IncNonDefault() // TODO: uncomment after documenting
+        nint maxParts = 1000;
+        {
+            @string s = multipartmaxparts.Value(); if (s != ""u8) {
                 {
-                    var errΔ6 = @file.Close(); if (errΔ6 != default!) {
-                        return (default!, errΔ6);
+                    var (v, errΔ1) = strconv.Atoi(s); if (errΔ1 == default! && v >= 0) {
+                        maxParts = v;
+                        multipartmaxparts.IncNonDefault();
                     }
                 }
-                @file = default!;
             }
-        } else {
-            fh.Value.content = b.Bytes();
-            fh.Value.Size = (int64)len((~fh).content);
-            maxFileMemoryBytes -= n;
-            maxMemoryBytes -= n;
         }
-        form.Value.File[name] = append((~form).File[name], fh);
-    }
-    return (form, default!);
-});
+        var maxHeaders = maxMIMEHeaders();
+        var formʗ1 = form;
+        defer(() => {
+            if (Ꮡfile.ValueSlot != nil) {
+                {
+                    var cerr = Ꮡfile.ValueSlot.Close(); if (err == default!) {
+                        err = cerr;
+                    }
+                }
+            }
+            if (combineFiles && numDiskFiles > 1) {
+                foreach (var (_, fhs) in (~formʗ1).File) {
+                    foreach (var (_, fh) in fhs) {
+                        fh.Value.tmpshared = true;
+                    }
+                }
+            }
+            if (err != default!) {
+                formʗ1.RemoveAll();
+                if (Ꮡfile.ValueSlot != nil) {
+                    os.Remove(Ꮡfile.ValueSlot.Name());
+                }
+            }
+        });
+        // maxFileMemoryBytes is the maximum bytes of file data we will store in memory.
+        // Data past this limit is written to disk.
+        // This limit strictly applies to content, not metadata (filenames, MIME headers, etc.),
+        // since metadata is always stored in memory, not disk.
+        //
+        // maxMemoryBytes is the maximum bytes we will store in memory, including file content,
+        // non-file part values, metadata, and map entry overhead.
+        //
+        // We reserve an additional 10 MB in maxMemoryBytes for non-file data.
+        //
+        // The relationship between these parameters, as well as the overly-large and
+        // unconfigurable 10 MB added on to maxMemory, is unfortunate but difficult to change
+        // within the constraints of the API as documented.
+        var maxFileMemoryBytes = maxMemory;
+        if (maxFileMemoryBytes == math.MaxInt64) {
+            maxFileMemoryBytes--;
+        }
+        var maxMemoryBytes = maxMemory + (int64)(((int64)10 << (int)(20)));
+        if (maxMemoryBytes <= 0) {
+            if (maxMemory < 0){
+                maxMemoryBytes = 0;
+            } else {
+                maxMemoryBytes = math.MaxInt64;
+            }
+        }
+        slice<byte> copyBuf = default!;
+        while (ᐧ) {
+            var (p, errΔ2) = Ꮡr.nextPart(false, maxMemoryBytes, maxHeaders);
+            if (AreEqual(errΔ2, io.EOF)) {
+                break;
+            }
+            if (errΔ2 != default!) {
+                (_ᴛ1, err) = (default!, errΔ2); return;
+            }
+            if (maxParts <= 0) {
+                (_ᴛ1, err) = (default!, ErrMessageTooLarge); return;
+            }
+            maxParts--;
+            @string name = p.FormName();
+            if (name == ""u8) {
+                continue;
+            }
+            ref var filename = ref heap<@string>(out var Ꮡfilename);
+            filename = p.FileName();
+            // Multiple values for the same key (one map entry, longer slice) are cheaper
+            // than the same number of values for different keys (many map entries), but
+            // using a consistent per-value cost for overhead is simpler.
+            const int64 mapEntryOverhead = 200;
+            maxMemoryBytes -= (int64)len(name);
+            maxMemoryBytes -= mapEntryOverhead;
+            if (maxMemoryBytes < 0) {
+                // We can't actually take this path, since nextPart would already have
+                // rejected the MIME headers for being too large. Check anyway.
+                (_ᴛ1, err) = (default!, ErrMessageTooLarge); return;
+            }
+            ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
+            if (filename == ""u8) {
+                // value, store as string in memory
+                var (nΔ1, errΔ3) = io.CopyN(new bytes_BufferжWriter(Ꮡb), new PartжReader(p), maxMemoryBytes + 1);
+                if (errΔ3 != default! && !AreEqual(errΔ3, io.EOF)) {
+                    (_ᴛ1, err) = (default!, errΔ3); return;
+                }
+                maxMemoryBytes -= nΔ1;
+                if (maxMemoryBytes < 0) {
+                    (_ᴛ1, err) = (default!, ErrMessageTooLarge); return;
+                }
+                form.Value.Value[name] = append((~form).Value[name], Ꮡb.String());
+                continue;
+            }
+            // file, store in memory or on disk
+            const int64 fileHeaderSize = 100;
+            maxMemoryBytes -= mimeHeaderSize((~p).Header);
+            maxMemoryBytes -= mapEntryOverhead;
+            maxMemoryBytes -= fileHeaderSize;
+            if (maxMemoryBytes < 0) {
+                (_ᴛ1, err) = (default!, ErrMessageTooLarge); return;
+            }
+            foreach (var (_, v) in (~p).Header) {
+                maxHeaders -= (int64)len(v);
+            }
+            var fh = Ꮡ(new FileHeader(
+                Filename: filename,
+                Header: (~p).Header
+            ));
+            (var n, errΔ2) = io.CopyN(new bytes_BufferжWriter(Ꮡb), new PartжReader(p), maxFileMemoryBytes + 1);
+            if (errΔ2 != default! && !AreEqual(errΔ2, io.EOF)) {
+                (_ᴛ1, err) = (default!, errΔ2); return;
+            }
+            if (n > maxFileMemoryBytes){
+                if (@file == nil) {
+                    (@file, errΔ2) = os.CreateTemp(r.tempDir, multipartˢ);
+                    if (errΔ2 != default!) {
+                        (_ᴛ1, err) = (default!, errΔ2); return;
+                    }
+                }
+                numDiskFiles++;
+                {
+                    var (_, errΔ4) = @file.Write(b.Bytes()); if (errΔ4 != default!) {
+                        (_ᴛ1, err) = (default!, errΔ4); return;
+                    }
+                }
+                if (copyBuf == default!) {
+                    copyBuf = new slice<byte>(32 * 1024);
+                }
+                // same buffer size as io.Copy uses
+                var (remainingSize, errΔ5) = io.CopyBuffer(new readForm_writerOnly(new os.FileжWriter(@file)), new PartжReader(p), copyBuf);
+                if (errΔ5 != default!) {
+                    (_ᴛ1, err) = (default!, errΔ5); return;
+                }
+                fh.Value.tmpfile = @file.Name();
+                fh.Value.Size = (int64)b.Len() + remainingSize;
+                fh.Value.tmpoff = fileOff;
+                fileOff += fh.Value.Size;
+                if (!combineFiles) {
+                    {
+                        var errΔ6 = @file.Close(); if (errΔ6 != default!) {
+                            (_ᴛ1, err) = (default!, errΔ6); return;
+                        }
+                    }
+                    @file = default!;
+                }
+            } else {
+                fh.Value.content = b.Bytes();
+                fh.Value.Size = (int64)len((~fh).content);
+                maxFileMemoryBytes -= n;
+                maxMemoryBytes -= n;
+            }
+            form.Value.File[name] = append((~form).File[name], fh);
+        }
+        (_ᴛ1, err) = (form, default!);
+    });
+    return (_ᴛ1, err);
+}
 
 internal static int64 /*size*/ mimeHeaderSize(textproto.MIMEHeader h) {
     int64 size = default!;

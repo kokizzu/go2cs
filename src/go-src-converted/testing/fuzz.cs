@@ -53,7 +53,7 @@ internal static @string corpusDir = "testdata/fuzz"u8;
 // fuzzWorkerExitCode is used as an exit code by fuzz worker processes after an
 // internal error. This distinguishes internal errors from uncontrolled panics
 // and other failures. Keep in sync with internal/fuzz.workerExitCode.
-internal static readonly UntypedInt fuzzWorkerExitCode = 70;
+internal static UntypedInt fuzzWorkerExitCode => 70;
 
 // InternalFuzzTarget is an internal type but exported because it is
 // cross-package; it is part of the implementation of the "go test" command.
@@ -342,8 +342,7 @@ public static void Fuzz(this ж<F> Ꮡf, any ff) {
         if ((~t).chatty != nil) {
             (~t).chatty.Updatef((~t).name, "=== RUN   %s\n"u8, (~t).name);
         }
-        Ꮡf.Value.common.inFuzzFn = true;
-        Ꮡf.Value.inFuzzFn = true;
+        (Ꮡf.Value.common.inFuzzFn, Ꮡf.Value.inFuzzFn) = (true, true);
         var eʗ1 = e;
         var fnʗ2 = fnʗ1;
         goǃ(tRunner, t, (ж<T> tΔ1) => func((defer, recover) => {
@@ -365,8 +364,7 @@ public static void Fuzz(this ж<F> Ꮡf, any ff) {
         if ((~t).chatty != nil && (~(~t).chatty).json) {
             (~t).chatty.Updatef((~(~t).parent).name, "=== NAME  %s\n"u8, (~(~t).parent).name);
         }
-        Ꮡf.Value.common.inFuzzFn = false;
-        Ꮡf.Value.inFuzzFn = false;
+        (Ꮡf.Value.common.inFuzzFn, Ꮡf.Value.inFuzzFn) = (false, false);
         return !t.of(T.Ꮡcommon).Failed();
     };
     var exprᴛ1 = (~f.fuzzContext).mode;
@@ -504,9 +502,9 @@ internal static @string String(this fuzzResult r) {
 
 [GoType("num:uint8")] partial struct fuzzMode;
 
-internal static readonly fuzzMode seedCorpusOnly = /* iota */ 0;
-internal static readonly fuzzMode fuzzCoordinator = 1;
-internal static readonly fuzzMode fuzzWorker = 2;
+internal static fuzzMode seedCorpusOnly => /* iota */ 0;
+internal static fuzzMode fuzzCoordinator => 1;
+internal static fuzzMode fuzzWorker => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string testFuzzˢ2 = "-test.fuzz"u8;

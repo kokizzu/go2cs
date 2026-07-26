@@ -991,27 +991,27 @@ internal static typesꓸType parseTypeSpec(this ж<parser> Ꮡp, ж<types.Packag
     return default!;
 }
 
-internal static readonly UntypedInt gccgoBuiltinINT8 = 1;
-internal static readonly UntypedInt gccgoBuiltinINT16 = 2;
-internal static readonly UntypedInt gccgoBuiltinINT32 = 3;
-internal static readonly UntypedInt gccgoBuiltinINT64 = 4;
-internal static readonly UntypedInt gccgoBuiltinUINT8 = 5;
-internal static readonly UntypedInt gccgoBuiltinUINT16 = 6;
-internal static readonly UntypedInt gccgoBuiltinUINT32 = 7;
-internal static readonly UntypedInt gccgoBuiltinUINT64 = 8;
-internal static readonly UntypedInt gccgoBuiltinFLOAT32 = 9;
-internal static readonly UntypedInt gccgoBuiltinFLOAT64 = 10;
-internal static readonly UntypedInt gccgoBuiltinINT = 11;
-internal static readonly UntypedInt gccgoBuiltinUINT = 12;
-internal static readonly UntypedInt gccgoBuiltinUINTPTR = 13;
-internal static readonly UntypedInt gccgoBuiltinBOOL = 15;
-internal static readonly UntypedInt gccgoBuiltinSTRING = 16;
-internal static readonly UntypedInt gccgoBuiltinCOMPLEX64 = 17;
-internal static readonly UntypedInt gccgoBuiltinCOMPLEX128 = 18;
-internal static readonly UntypedInt gccgoBuiltinERROR = 19;
-internal static readonly UntypedInt gccgoBuiltinBYTE = 20;
-internal static readonly UntypedInt gccgoBuiltinRUNE = 21;
-internal static readonly UntypedInt gccgoBuiltinANY = 22;
+internal static UntypedInt gccgoBuiltinINT8 => 1;
+internal static UntypedInt gccgoBuiltinINT16 => 2;
+internal static UntypedInt gccgoBuiltinINT32 => 3;
+internal static UntypedInt gccgoBuiltinINT64 => 4;
+internal static UntypedInt gccgoBuiltinUINT8 => 5;
+internal static UntypedInt gccgoBuiltinUINT16 => 6;
+internal static UntypedInt gccgoBuiltinUINT32 => 7;
+internal static UntypedInt gccgoBuiltinUINT64 => 8;
+internal static UntypedInt gccgoBuiltinFLOAT32 => 9;
+internal static UntypedInt gccgoBuiltinFLOAT64 => 10;
+internal static UntypedInt gccgoBuiltinINT => 11;
+internal static UntypedInt gccgoBuiltinUINT => 12;
+internal static UntypedInt gccgoBuiltinUINTPTR => 13;
+internal static UntypedInt gccgoBuiltinBOOL => 15;
+internal static UntypedInt gccgoBuiltinSTRING => 16;
+internal static UntypedInt gccgoBuiltinCOMPLEX64 => 17;
+internal static UntypedInt gccgoBuiltinCOMPLEX128 => 18;
+internal static UntypedInt gccgoBuiltinERROR => 19;
+internal static UntypedInt gccgoBuiltinBYTE => 20;
+internal static UntypedInt gccgoBuiltinRUNE => 21;
+internal static UntypedInt gccgoBuiltinANY => 22;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string errorˢ = "error"u8;
@@ -1266,7 +1266,7 @@ internal static void parseInitDataDirective(this ж<parser> Ꮡp) => func((defer
         deferǃ((nuint mode) => {
             Ꮡp.Value.scanner.Value.Mode = mode;
         }, (~Ꮡp.Value.scanner).Mode, defer);
-        p.scanner.Value.Mode &= unchecked((nuint)~(nuint)((nuint)scanner.ScanInts | (nuint)scanner.ScanFloats));
+        p.scanner.Value.Mode &= unchecked((nuint)~(nuint)((nuint)((nuint)scanner.ScanInts | (nuint)scanner.ScanFloats)));
         p.next();
         p.parseUnquotedString();
         p.expectEOL();

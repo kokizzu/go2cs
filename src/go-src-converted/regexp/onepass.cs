@@ -329,11 +329,10 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
     }
     ж<queueOnePass> instQueue = newQueue(len(p.Inst));
     ж<queueOnePass> visitQueue = newQueue(len(p.Inst));
-    Func<uint32, slice<bool>, bool> check = default!;
+    ref var check = ref heap<Func<uint32, slice<bool>, bool>>(out var Ꮡcheck);
     slice<slice<rune>> onePassRunes = new slice<slice<rune>>(len(p.Inst));
     // check that paths from Alt instructions are unambiguous, and rebuild the new
     // program as a onepass program
-    var checkʗ1 = check;
     var instQueueʗ1 = instQueue;
     var onePassRunesʗ1 = onePassRunes;
     var visitQueueʗ1 = visitQueue;
@@ -348,7 +347,7 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
         var exprᴛ1 = (~inst).Op;
         if (exprᴛ1 == syntax.InstAlt || exprᴛ1 == syntax.InstAltMatch) {
             do {
-                ok = checkʗ1((~inst).Out, mΔ1) && checkʗ1((~inst).Arg, mΔ1);
+                ok = Ꮡcheck.ValueSlot((~inst).Out, mΔ1) && Ꮡcheck.ValueSlot((~inst).Arg, mΔ1);
                 var matchOut = mΔ1[(nint)((~inst).Out)];
                 var matchArg = mΔ1[(nint)((~inst).Arg)];
                 if (matchOut && matchArg) {
@@ -358,8 +357,7 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
                 }
                 if (matchArg) {
                     // Match on empty goes in inst.Out
-                    inst.Value.Out = inst.Value.Arg;
-                    inst.Value.Arg = inst.Value.Out;
+                    (inst.Value.Out, inst.Value.Arg) = (inst.Value.Arg, inst.Value.Out);
                     (matchOut, matchArg) = (matchArg, matchOut);
                 }
                 if (matchOut) {
@@ -376,7 +374,7 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
             } while (false);
         }
         else if (exprᴛ1 == syntax.InstCapture || exprᴛ1 == syntax.InstNop) {
-            ok = checkʗ1((~inst).Out, mΔ1);
+            ok = Ꮡcheck.ValueSlot((~inst).Out, mΔ1);
             mΔ1[(nint)(pc)] = mΔ1[(nint)((~inst).Out)];
             onePassRunesʗ1[(nint)(pc)] = append(new rune[]{}.slice(), // pass matching runes back through these no-ops.
  onePassRunesʗ1[(nint)((~inst).Out)].ꓸꓸꓸ);
@@ -386,7 +384,7 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
             }
         }
         else if (exprᴛ1 == syntax.InstEmptyWidth) {
-            ok = checkʗ1((~inst).Out, mΔ1);
+            ok = Ꮡcheck.ValueSlot((~inst).Out, mΔ1);
             mΔ1[(nint)(pc)] = mΔ1[(nint)((~inst).Out)];
             onePassRunesʗ1[(nint)(pc)] = append(new rune[]{}.slice(), onePassRunesʗ1[(nint)((~inst).Out)].ꓸꓸꓸ);
             inst.Value.Next = new slice<uint32>(len(onePassRunesʗ1[(nint)(pc)]) / 2 + 1);
@@ -490,7 +488,7 @@ internal static ж<onePassProg> makeOnePass(ж<onePassProg> Ꮡp) {
         visitQueue.clear();
         var pc = instQueue.next();
         if (!check(pc, m)) {
-            p = default!;
+            Ꮡp = default!; p = ref Ꮡp.DerefOrNil();
             break;
         }
     }

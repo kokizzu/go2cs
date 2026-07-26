@@ -98,11 +98,9 @@ public static ж<Frames> CallersFrames(slice<uintptr> callers) {
         }
         uintptr pc = default!;
         if (ci.nextPC != 0){
-            pc = ci.nextPC;
-            ci.nextPC = 0;
+            (pc, ci.nextPC) = (ci.nextPC, 0);
         } else {
-            pc = ci.callers[0];
-            ci.callers = ci.callers[1..];
+            (pc, ci.callers) = (ci.callers[0], ci.callers[1..]);
         }
         var ΔfuncInfo = findfunc(pc);
         if (!ΔfuncInfo.valid()) {
@@ -194,8 +192,7 @@ public static ж<Frames> CallersFrames(slice<uintptr> callers) {
         // as it can be expensive. This avoids computing file/line
         // for the Frame we find but don't return. See issue 32093.
         var (@file, line) = funcline1(frame.funcInfo, frame.PC, false);
-        frame.File = @file;
-        frame.Line = (nint)line;
+        (frame.File, frame.Line) = (@file, (nint)line);
     }
     return (frame, more);
 }

@@ -8,7 +8,7 @@ using Δsync = sync_package;
 partial class html_package {
 
 // All entities that do not end with ';' are 6 or fewer bytes long.
-internal static readonly UntypedInt longestEntityWithoutSemicolon = 6;
+internal static UntypedInt longestEntityWithoutSemicolon => 6;
 
 // entity is a map from HTML entity names to their values. The semicolon matters:
 // https://html.spec.whatwg.org/multipage/named-characters.html

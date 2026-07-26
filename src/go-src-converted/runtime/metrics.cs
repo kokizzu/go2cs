@@ -499,11 +499,11 @@ internal static void godebug_registerMetric(@string name, Func<uint64> read) {
 
 [GoType("num:nuint")] partial struct statDep;
 
-internal static readonly statDep heapStatsDep = /* iota */ 0; // corresponds to heapStatsAggregate
-internal static readonly statDep sysStatsDep = 1; // corresponds to sysStatsAggregate
-internal static readonly statDep cpuStatsDep = 2; // corresponds to cpuStatsAggregate
-internal static readonly statDep gcStatsDep = 3;  // corresponds to gcStatsAggregate
-internal static readonly statDep numStatsDeps = 4;
+internal static statDep heapStatsDep => /* iota */ 0; // corresponds to heapStatsAggregate
+internal static statDep sysStatsDep => 1; // corresponds to sysStatsAggregate
+internal static statDep cpuStatsDep => 2; // corresponds to cpuStatsAggregate
+internal static statDep gcStatsDep => 3;  // corresponds to gcStatsAggregate
+internal static statDep numStatsDeps => 4;
 
 [GoType("[1]uint64")] partial struct statDepSet;
 
@@ -735,10 +735,10 @@ internal static void ensure(this ж<statAggregate> Ꮡa, ж<statDepSet> Ꮡdeps)
 
 [GoType("num:nint")] partial struct metricKind;
 
-internal static readonly metricKind metricKindBad = /* iota */ 0;
-internal static readonly metricKind metricKindUint64 = 1;
-internal static readonly metricKind metricKindFloat64 = 2;
-internal static readonly metricKind metricKindFloat64Histogram = 3;
+internal static metricKind metricKindBad => /* iota */ 0;
+internal static metricKind metricKindUint64 => 1;
+internal static metricKind metricKindFloat64 => 2;
+internal static metricKind metricKindFloat64Histogram => 3;
 
 // metricSample is a runtime copy of runtime/metrics.Sample and
 // must be kept structurally identical to that type.

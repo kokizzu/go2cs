@@ -10,15 +10,15 @@ partial class windows_package {
 
 // Reparse tag values are taken from
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/c8e77b37-3909-4fe6-a4ea-2b9d423b1ee4
-public static readonly UntypedInt FSCTL_SET_REPARSE_POINT = 0x000900A4;
+public static UntypedInt FSCTL_SET_REPARSE_POINT => 0x000900A4;
 
-public static readonly UntypedInt IO_REPARSE_TAG_MOUNT_POINT = 0xA0000003;
+public static UntypedInt IO_REPARSE_TAG_MOUNT_POINT => 0xA0000003;
 
-public static readonly UntypedInt IO_REPARSE_TAG_DEDUP = 0x80000013;
+public static UntypedInt IO_REPARSE_TAG_DEDUP => 0x80000013;
 
-public static readonly UntypedInt IO_REPARSE_TAG_AF_UNIX = 0x80000023;
+public static UntypedInt IO_REPARSE_TAG_AF_UNIX => 0x80000023;
 
-public static readonly UntypedInt SYMLINK_FLAG_RELATIVE = 1;
+public static UntypedInt SYMLINK_FLAG_RELATIVE => 1;
 
 // These structures are described
 // in https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/ca069dad-ed16-42aa-b057-b6b207f447cc

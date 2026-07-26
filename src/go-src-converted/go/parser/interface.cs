@@ -51,14 +51,14 @@ internal static (slice<byte>, error) readSource(@string filename, any src) {
 
 [GoType("num:nuint")] partial struct Mode;
 
-public static readonly Mode PackageClauseOnly = /* 1 << iota */ 1;                      // stop parsing after package clause
-public static readonly Mode ImportsOnly = 2;                            // stop parsing after import declarations
-public static readonly Mode ParseComments = 4;                          // parse comments and add them to AST
-public static readonly Mode Trace = 8;                                  // print a trace of parsed productions
-public static readonly Mode DeclarationErrors = 16;                      // report declaration errors
-public static readonly Mode SpuriousErrors = 32;                         // same as AllErrors, for backward-compatibility
-public static readonly Mode SkipObjectResolution = 64;                   // skip deprecated identifier resolution; see ParseFile
-public static readonly Mode AllErrors = /* SpuriousErrors */ 32;                  // report all errors (not just the first 10 on different lines)
+public static Mode PackageClauseOnly => /* 1 << iota */ 1;                      // stop parsing after package clause
+public static Mode ImportsOnly => 2;                            // stop parsing after import declarations
+public static Mode ParseComments => 4;                          // parse comments and add them to AST
+public static Mode Trace => 8;                                  // print a trace of parsed productions
+public static Mode DeclarationErrors => 16;                      // report declaration errors
+public static Mode SpuriousErrors => 32;                         // same as AllErrors, for backward-compatibility
+public static Mode SkipObjectResolution => 64;                   // skip deprecated identifier resolution; see ParseFile
+public static Mode AllErrors => /* SpuriousErrors */ 32;                  // report all errors (not just the first 10 on different lines)
 
 // ParseFile parses the source code of a single Go source file and returns
 // the corresponding [ast.File] node. The source code may be provided via

@@ -1485,8 +1485,8 @@ internal static void decodeIgnoredValue(this ж<Decoder> Ꮡdec, typeId wireId) 
     }
 }
 
-internal static readonly UntypedInt intBits = /* 32 << (^uint(0) >> 63) */ 64;
-internal static readonly UntypedInt uintptrBits = /* 32 << (^uintptr(0) >> 63) */ 64;
+internal static UntypedInt intBits => /* 32 << (^uint(0) >> 63) */ 64;
+internal static UntypedInt uintptrBits => /* 32 << (^uintptr(0) >> 63) */ 64;
 
 [GoInit] internal static void init() {
     Action<ж<decInstr>, ж<decoderState>, reflectꓸValue> iop = default!;

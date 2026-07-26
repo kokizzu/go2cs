@@ -23,48 +23,48 @@ using go.image;
 partial class png_package {
 
 // Color type, as per the PNG spec.
-internal static readonly UntypedInt ctGrayscale = 0;
+internal static UntypedInt ctGrayscale => 0;
 
-internal static readonly UntypedInt ctTrueColor = 2;
+internal static UntypedInt ctTrueColor => 2;
 
-internal static readonly UntypedInt ctPaletted = 3;
+internal static UntypedInt ctPaletted => 3;
 
-internal static readonly UntypedInt ctGrayscaleAlpha = 4;
+internal static UntypedInt ctGrayscaleAlpha => 4;
 
-internal static readonly UntypedInt ctTrueColorAlpha = 6;
+internal static UntypedInt ctTrueColorAlpha => 6;
 
 // A cb is a combination of color type and bit depth.
-internal static readonly UntypedInt cbInvalid = iota;
+internal static UntypedInt cbInvalid => iota;
 
-internal static readonly UntypedInt cbG1 = 1;
+internal static UntypedInt cbG1 => 1;
 
-internal static readonly UntypedInt cbG2 = 2;
+internal static UntypedInt cbG2 => 2;
 
-internal static readonly UntypedInt cbG4 = 3;
+internal static UntypedInt cbG4 => 3;
 
-internal static readonly UntypedInt cbG8 = 4;
+internal static UntypedInt cbG8 => 4;
 
-internal static readonly UntypedInt cbGA8 = 5;
+internal static UntypedInt cbGA8 => 5;
 
-internal static readonly UntypedInt cbTC8 = 6;
+internal static UntypedInt cbTC8 => 6;
 
-internal static readonly UntypedInt cbP1 = 7;
+internal static UntypedInt cbP1 => 7;
 
-internal static readonly UntypedInt cbP2 = 8;
+internal static UntypedInt cbP2 => 8;
 
-internal static readonly UntypedInt cbP4 = 9;
+internal static UntypedInt cbP4 => 9;
 
-internal static readonly UntypedInt cbP8 = 10;
+internal static UntypedInt cbP8 => 10;
 
-internal static readonly UntypedInt cbTCA8 = 11;
+internal static UntypedInt cbTCA8 => 11;
 
-internal static readonly UntypedInt cbG16 = 12;
+internal static UntypedInt cbG16 => 12;
 
-internal static readonly UntypedInt cbGA16 = 13;
+internal static UntypedInt cbGA16 => 13;
 
-internal static readonly UntypedInt cbTC16 = 14;
+internal static UntypedInt cbTC16 => 14;
 
-internal static readonly UntypedInt cbTCA16 = 15;
+internal static UntypedInt cbTCA16 => 15;
 
 internal static bool cbPaletted(nint cb) {
     return cbP1 <= cb && cb <= cbP8;
@@ -75,22 +75,22 @@ internal static bool cbTrueColor(nint cb) {
 }
 
 // Filter type, as per the PNG spec.
-internal static readonly UntypedInt ftNone = 0;
+internal static UntypedInt ftNone => 0;
 
-internal static readonly UntypedInt ftSub = 1;
+internal static UntypedInt ftSub => 1;
 
-internal static readonly UntypedInt ftUp = 2;
+internal static UntypedInt ftUp => 2;
 
-internal static readonly UntypedInt ftAverage = 3;
+internal static UntypedInt ftAverage => 3;
 
-internal static readonly UntypedInt ftPaeth = 4;
+internal static UntypedInt ftPaeth => 4;
 
-internal static readonly UntypedInt nFilter = 5;
+internal static UntypedInt nFilter => 5;
 
 // Interlace type.
-internal static readonly UntypedInt itNone = 0;
+internal static UntypedInt itNone => 0;
 
-internal static readonly UntypedInt itAdam7 = 1;
+internal static UntypedInt itAdam7 => 1;
 
 // interlaceScan defines the placement and size of a pass for Adam7 interlacing.
 [GoType] partial struct interlaceScan {
@@ -115,17 +115,17 @@ internal static slice<interlaceScan> interlacing = new interlaceScan[]{
 // multiple IDAT chunks, and IDAT chunks must be sequential (i.e. they may not
 // have any other chunks between them).
 // https://www.w3.org/TR/PNG/#5ChunkOrdering
-internal static readonly UntypedInt dsStart = iota;
+internal static UntypedInt dsStart => iota;
 
-internal static readonly UntypedInt dsSeenIHDR = 1;
+internal static UntypedInt dsSeenIHDR => 1;
 
-internal static readonly UntypedInt dsSeenPLTE = 2;
+internal static UntypedInt dsSeenPLTE => 2;
 
-internal static readonly UntypedInt dsSeentRNS = 3;
+internal static UntypedInt dsSeentRNS => 3;
 
-internal static readonly UntypedInt dsSeenIDAT = 4;
+internal static UntypedInt dsSeenIDAT => 4;
 
-internal static readonly UntypedInt dsSeenIEND = 5;
+internal static UntypedInt dsSeenIEND => 5;
 
 internal static readonly @string pngHeader = ((@string)(new byte[]{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}));
 
@@ -280,8 +280,7 @@ private static readonly @string dimensionOverflowˢ = "dimension overflow"u8;
     if (d.cb == cbInvalid) {
         return ((UnsupportedError)fmt.Sprintf("bit depth %d, color type %d"u8, d.tmp[8], d.tmp[9]));
     }
-    d.width = (nint)w;
-    d.height = (nint)h;
+    (d.width, d.height) = ((nint)w, (nint)h);
     return d.verifyChecksum();
 }
 

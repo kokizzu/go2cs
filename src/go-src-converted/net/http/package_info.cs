@@ -71,9 +71,9 @@ using static go.net.http_package;
 [assembly: GoImplement<ResponseWriter, io_package.Writer>]
 [assembly: GoImplement<ServeMux, ΔHandler>(Pointer = true)]
 [assembly: GoImplement<Transport, RoundTripper>(Pointer = true)]
-[assembly: GoImplement<Write_type, io_package.Closer>(Promoted = true)]
-[assembly: GoImplement<Write_type, io_package.ReadCloser>]
-[assembly: GoImplement<Write_type, io_package.Reader>(Promoted = true)]
+[assembly: GoImplement<Write_r1, io_package.Closer>(Promoted = true)]
+[assembly: GoImplement<Write_r1, io_package.ReadCloser>]
+[assembly: GoImplement<Write_r1, io_package.Reader>(Promoted = true)]
 [assembly: GoImplement<body, io_package.ReadCloser>(Pointer = true)]
 [assembly: GoImplement<bodyEOFSignal, io_package.ReadCloser>(Pointer = true)]
 [assembly: GoImplement<bodyEOFSignal, io_package.Reader>(Pointer = true)]
@@ -486,7 +486,7 @@ public static partial class http_package
     public partial struct ServeMux {}
     public partial struct Server {}
     public partial struct Transport {}
-    public partial struct Write_type {}
+    public partial struct Write_r1 {}
     public partial struct contextKey {}
     public partial struct http2ClientConn {}
     public partial struct http2ClientConnState {}

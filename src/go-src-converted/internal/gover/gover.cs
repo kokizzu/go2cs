@@ -161,8 +161,7 @@ public static Version Parse(@string x) {
     if (i == 0) {
         return new Version(nil);
     }
-    v.Kind = x[..(int)(i)];
-    x = x[(int)(i)..];
+    (v.Kind, x) = (x[..(int)(i)], x[(int)(i)..]);
     if (x == ""u8) {
         return v;
     }

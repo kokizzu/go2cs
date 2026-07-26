@@ -23,7 +23,7 @@ partial class trace_package {
 // TODO(mknyszek): This is only 6 instead of 5 because GoStatusStack
 // has 5 arguments and needs to smuggle in a 6th. Figure out a way to
 // shrink this in the future.
-internal static readonly UntypedInt maxArgs = 6;
+internal static UntypedInt maxArgs => 6;
 
 [GoType("[5]uint64")] /* [maxArgs - 1]uint64 */
 partial struct timedEventArgs;

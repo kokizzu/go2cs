@@ -128,8 +128,7 @@ internal static error writeUSTARHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr)
     @string namePrefix = default!;
     {
         var (prefix, suffix, ok) = splitUSTARPath(hdr.Name); if (ok) {
-            namePrefix = prefix;
-            hdr.Name = suffix;
+            (namePrefix, hdr.Name) = (prefix, suffix);
         }
     }
     // Pack the main header.

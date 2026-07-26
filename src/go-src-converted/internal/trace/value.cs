@@ -15,8 +15,8 @@ partial class trace_package {
 
 [GoType("num:uint8")] partial struct ValueKind;
 
-public static readonly ValueKind ValueBad = /* iota */ 0;
-public static readonly ValueKind ValueUint64 = 1;
+public static ValueKind ValueBad => /* iota */ 0;
+public static ValueKind ValueUint64 => 1;
 
 // Kind returns the ValueKind of the value.
 //

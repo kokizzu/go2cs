@@ -50,7 +50,7 @@ internal static map<@string, @string> emptyParams = new map<@string, @string>();
 // This constant needs to be at least 76 for this package to work correctly.
 // This is because \r\n--separator_of_len_70- would fill the buffer and it
 // wouldn't be safe to consume a single byte from it.
-internal static readonly UntypedInt peekBufferSize = 4096;
+internal static UntypedInt peekBufferSize => 4096;
 
 // A Part represents a single part in a multipart body.
 [GoType] partial struct Part {
@@ -364,7 +364,7 @@ public static error Close(this ж<Part> Ꮡp) {
 
 // maxMIMEHeaderSize is the maximum size of a MIME header we will parse,
 // including header keys, values, and map overhead.
-internal static readonly UntypedInt maxMIMEHeaderSize = /* 10 << 20 */ 10485760;
+internal static UntypedInt maxMIMEHeaderSize => /* 10 << 20 */ 10485760;
 
 // multipartmaxheaders is the maximum number of header entries NextPart will return,
 // as well as the maximum combined total of header entries Reader.ReadForm will return

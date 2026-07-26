@@ -62,7 +62,7 @@ internal static (ж<generation>, ж<spilledBatch>, error) readGeneration(ж<bufi
                 return (default!, default!, err);
             }
         }
-        spill = default!;
+        Ꮡspill = default!; spill = ref Ꮡspill.DerefOrNil();
     }
     // Read batches one at a time until we either hit EOF or
     // the next generation.

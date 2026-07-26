@@ -10,13 +10,13 @@ partial class utf16_package {
 // The conditions replacementChar==unicode.ReplacementChar and
 // maxRune==unicode.MaxRune are verified in the tests.
 // Defining them locally avoids this package depending on package unicode.
-internal static readonly UntypedInt replacementChar = /* '\uFFFD' */ 65533; // Unicode replacement character
-internal static readonly UntypedInt maxRune = /* '\U0010FFFF' */ 1114111; // Maximum valid Unicode code point.
+internal static UntypedInt replacementChar => /* '\uFFFD' */ 65533; // Unicode replacement character
+internal static UntypedInt maxRune => /* '\U0010FFFF' */ 1114111; // Maximum valid Unicode code point.
 
-internal static readonly UntypedInt surr1 = 0xd800;
-internal static readonly UntypedInt surr2 = 0xdc00;
-internal static readonly UntypedInt surr3 = 0xe000;
-internal static readonly UntypedInt surrSelf = 0x10000;
+internal static UntypedInt surr1 => 0xd800;
+internal static UntypedInt surr2 => 0xdc00;
+internal static UntypedInt surr3 => 0xe000;
+internal static UntypedInt surrSelf => 0x10000;
 
 // IsSurrogate reports whether the specified Unicode code point
 // can appear in a surrogate pair.

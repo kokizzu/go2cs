@@ -59,9 +59,9 @@ partial class time_package {
 
 // alpha and omega are the beginning and end of time for zone
 // transitions.
-internal static readonly UntypedInt alpha = /* -1 << 63 */ -9223372036854775808; // math.MinInt64
+internal static UntypedInt alpha => /* -1 << 63 */ -9223372036854775808; // math.MinInt64
 
-internal static readonly UntypedInt omega = /* 1<<63 - 1 */ 9223372036854775807; // math.MaxInt64
+internal static UntypedInt omega => /* 1<<63 - 1 */ 9223372036854775807; // math.MaxInt64
 
 // UTC represents Universal Coordinated Time (UTC).
 public static ж<ΔLocation> ΔUTC;
@@ -464,9 +464,9 @@ internal static (nint offset, @string rest, bool ok) tzsetOffset(@string s) {
 
 [GoType("num:nint")] partial struct ruleKind;
 
-internal static readonly ruleKind ruleJulian = /* iota */ 0;
-internal static readonly ruleKind ruleDOY = 1;
-internal static readonly ruleKind ruleMonthWeekDay = 2;
+internal static ruleKind ruleJulian => /* iota */ 0;
+internal static ruleKind ruleDOY => 1;
+internal static ruleKind ruleMonthWeekDay => 2;
 
 // rule is a rule read from a tzset string.
 [GoType] partial struct rule {

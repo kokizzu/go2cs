@@ -512,9 +512,9 @@ internal static bool etagWeakMatch(@string a, @string b) {
 
 [GoType("num:nint")] partial struct condResult;
 
-internal static readonly condResult condNone = /* iota */ 0;
-internal static readonly condResult condTrue = 1;
-internal static readonly condResult condFalse = 2;
+internal static condResult condNone => /* iota */ 0;
+internal static condResult condTrue => 1;
+internal static condResult condFalse => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string ifMatchˢ = "If-Match"u8;

@@ -198,10 +198,10 @@ internal static any arena_heapify(any s) {
     return x;
 }
 
-internal static readonly UntypedInt userArenaChunkBytesMax = /* 8 << 20 */ 8388608;
-internal static readonly uintptr userArenaChunkBytes = /* uintptr(int64(userArenaChunkBytesMax-heapArenaBytes)&(int64(userArenaChunkBytesMax-heapArenaBytes)>>63) + heapArenaBytes) */ 4194304; // min(userArenaChunkBytesMax, heapArenaBytes)
-internal static readonly uintptr userArenaChunkPages = /* userArenaChunkBytes / pageSize */ 512;
-internal static readonly uintptr userArenaChunkMaxAllocBytes = /* userArenaChunkBytes / 4 */ 1048576;
+internal static UntypedInt userArenaChunkBytesMax => /* 8 << 20 */ 8388608;
+internal static uintptr userArenaChunkBytes => /* uintptr(int64(userArenaChunkBytesMax-heapArenaBytes)&(int64(userArenaChunkBytesMax-heapArenaBytes)>>63) + heapArenaBytes) */ 4194304; // min(userArenaChunkBytesMax, heapArenaBytes)
+internal static uintptr userArenaChunkPages => /* userArenaChunkBytes / pageSize */ 512;
+internal static uintptr userArenaChunkMaxAllocBytes => /* userArenaChunkBytes / 4 */ 1048576;
 
 /* [GoInit] runtime bootstrap init - not run; .NET is the runtime */ internal static void init() {
     if (userArenaChunkPages * (uintptr)pageSize != userArenaChunkBytes) {
@@ -641,7 +641,7 @@ internal static ΔwriteUserArenaHeapBits write(this ΔwriteUserArenaHeapBits h, 
 
     if (h.valid + valid <= ptrBits) {
         // Fast path - just accumulate the bits.
-        h.mask |= bits.Lsh((uint64)(h.valid));
+        h.mask |= (uintptr)(bits.Lsh((uint64)(h.valid)));
         h.valid += valid;
         return h;
     }

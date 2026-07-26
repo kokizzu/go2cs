@@ -89,10 +89,7 @@ internal static ж<huffmanBitWriter> newHuffmanBitWriter(io.Writer w) {
 
 [GoRecv] internal static void reset(this ref huffmanBitWriter w, io.Writer writer) {
     w.writer = writer;
-    w.bits = 0;
-    w.nbits = 0;
-    w.nbytes = 0;
-    w.err = default!;
+    (w.bits, w.nbits, w.nbytes, w.err) = (0, 0, 0, default!);
 }
 
 [GoRecv] internal static void flush(this ref huffmanBitWriter w) {
@@ -128,7 +125,7 @@ internal static ж<huffmanBitWriter> newHuffmanBitWriter(io.Writer w) {
     if (w.err != default!) {
         return;
     }
-    w.bits |= ((uint64)b).Lsh(w.nbits);
+    w.bits |= (uint64)(((uint64)b).Lsh(w.nbits));
     w.nbits += nb;
     if (w.nbits >= 48) {
         var bits = w.bits;
@@ -315,7 +312,7 @@ private static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with un
     if (w.err != default!) {
         return;
     }
-    w.bits |= ((uint64)c.code).Lsh(w.nbits);
+    w.bits |= (uint64)(((uint64)c.code).Lsh(w.nbits));
     w.nbits += (nuint)c.len;
     if (w.nbits >= 48) {
         var bits = w.bits;
@@ -632,7 +629,7 @@ internal static ж<huffmanEncoder> huffOffset;
     foreach (var (_, t) in input) {
         // Bitwriting inlined, ~30% speedup
         var c = encoding[t];
-        w.bits |= ((uint64)c.code).Lsh(w.nbits);
+        w.bits |= (uint64)(((uint64)c.code).Lsh(w.nbits));
         w.nbits += (nuint)c.len;
         if (w.nbits < 48) {
             continue;

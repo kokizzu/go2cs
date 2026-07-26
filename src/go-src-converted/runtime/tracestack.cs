@@ -13,8 +13,8 @@ using atomic = @internal.runtime.atomic_package;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt traceStackSize = 128;
-internal static readonly uintptr logicalStackSentinel = /* ^uintptr(0) */ unchecked((uintptr)18446744073709551615);
+internal static UntypedInt traceStackSize => 128;
+internal static uintptr logicalStackSentinel => /* ^uintptr(0) */ unchecked((uintptr)18446744073709551615);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string attemptedToTraceStackOfAˢ = "attempted to trace stack of a goroutine this thread does not own"u8;

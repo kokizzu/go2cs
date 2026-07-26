@@ -21,7 +21,7 @@ partial class fiat_package {
     internal p521MontgomeryDomainFieldElement x;
 }
 
-internal static readonly UntypedInt p521ElementLen = 66;
+internal static UntypedInt p521ElementLen => 66;
 
 // One sets e = 1, and returns e.
 public static ж<P521Element> One(this ж<P521Element> Ꮡe) {

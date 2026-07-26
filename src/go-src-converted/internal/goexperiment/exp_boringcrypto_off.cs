@@ -6,6 +6,6 @@ partial class goexperiment_package {
 
 public const bool BoringCrypto = false;
 
-public static readonly UntypedInt BoringCryptoInt = 0;
+public static UntypedInt BoringCryptoInt => 0;
 
 } // end goexperiment_package

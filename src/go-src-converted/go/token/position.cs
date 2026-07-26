@@ -66,7 +66,7 @@ public static @string String(this ΔPosition pos) {
 // associated with it, and NoPos.IsValid() is false. NoPos is always
 // smaller than any other [Pos] value. The corresponding [Position] value
 // for NoPos is the zero value for [Position].
-public static readonly ΔPos NoPos = 0;
+public static ΔPos NoPos => 0;
 
 // IsValid reports whether the position is valid.
 public static bool IsValid(this ΔPos p) {

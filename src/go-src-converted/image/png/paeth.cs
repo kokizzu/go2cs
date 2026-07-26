@@ -6,7 +6,7 @@ namespace go.image;
 partial class png_package {
 
 // intSize is either 32 or 64.
-internal static readonly UntypedInt intSize = /* 32 << (^uint(0) >> 63) */ 64;
+internal static UntypedInt intSize => /* 32 << (^uint(0) >> 63) */ 64;
 
 internal static nint abs(nint x) {
     // m := -1 if x < 0. m := 0 otherwise.

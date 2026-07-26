@@ -591,8 +591,7 @@ internal static error /*err*/ readTransfer(any msg, ж<bufio.Reader> Ꮡr) {
     // Responses with status code 200, responding to a GET method
     // Default to HTTP/1.1
     if ((~t).ProtoMajor == 0 && (~t).ProtoMinor == 0) {
-        t.Value.ProtoMajor = 1;
-        t.Value.ProtoMinor = 1;
+        (t.Value.ProtoMajor, t.Value.ProtoMinor) = (1, 1);
     }
     // Transfer-Encoding: chunked, and overriding Content-Length.
     {

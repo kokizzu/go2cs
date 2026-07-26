@@ -87,13 +87,13 @@ internal static byte unhex(byte c) {
 
 [GoType("num:nint")] partial struct encoding;
 
-internal static readonly encoding encodePath = /* 1 + iota */ 1;
-internal static readonly encoding encodePathSegment = 2;
-internal static readonly encoding encodeHost = 3;
-internal static readonly encoding encodeZone = 4;
-internal static readonly encoding encodeUserPassword = 5;
-internal static readonly encoding encodeQueryComponent = 6;
-internal static readonly encoding encodeFragment = 7;
+internal static encoding encodePath => /* 1 + iota */ 1;
+internal static encoding encodePathSegment => 2;
+internal static encoding encodeHost => 3;
+internal static encoding encodeZone => 4;
+internal static encoding encodeUserPassword => 5;
+internal static encoding encodeQueryComponent => 6;
+internal static encoding encodeFragment => 7;
 
 [GoType("@string")] partial struct EscapeError;
 

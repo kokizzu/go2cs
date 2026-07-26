@@ -33,7 +33,7 @@ internal static Func<@string, (@string, error)> loadFromEmbeddedTZData;
 // maxFileSize is the max permitted size of files read by readFile.
 // As reference, the zoneinfo.zip distributed by Go is ~350 KB,
 // so 10MB is overkill.
-internal static readonly UntypedInt maxFileSize = /* 10 << 20 */ 10485760;
+internal static UntypedInt maxFileSize => /* 10 << 20 */ 10485760;
 
 [GoType("@string")] partial struct fileSizeError;
 
@@ -42,11 +42,11 @@ internal static @string Error(this fileSizeError f) {
 }
 
 // Copies of io.Seek* constants to avoid importing "io":
-internal static readonly UntypedInt seekStart = 0;
+internal static UntypedInt seekStart => 0;
 
-internal static readonly UntypedInt seekCurrent = 1;
+internal static UntypedInt seekCurrent => 1;
 
-internal static readonly UntypedInt seekEnd = 2;
+internal static UntypedInt seekEnd => 2;
 
 // Simple I/O interface to binary blob of data.
 [GoType] partial struct dataIO {

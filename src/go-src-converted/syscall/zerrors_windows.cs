@@ -5,275 +5,275 @@ namespace go;
 partial class syscall_package {
 
 // Go names for Windows errors.
-public static readonly Errno ENOENT = /* ERROR_FILE_NOT_FOUND */ 2;
+public static Errno ENOENT => /* ERROR_FILE_NOT_FOUND */ 2;
 
-public static readonly Errno ENOTDIR = /* ERROR_PATH_NOT_FOUND */ 3;
+public static Errno ENOTDIR => /* ERROR_PATH_NOT_FOUND */ 3;
 
 // Windows reserves errors >= 1<<29 for application use.
-public static readonly UntypedInt APPLICATION_ERROR = /* 1 << 29 */ 536870912;
+public static UntypedInt APPLICATION_ERROR => /* 1 << 29 */ 536870912;
 
 // Invented values to support what package os and others expects.
-public static readonly Errno E2BIG = /* APPLICATION_ERROR + iota */ 536870912;
+public static Errno E2BIG => /* APPLICATION_ERROR + iota */ 536870912;
 
-public static readonly Errno EACCES = 536870913;
+public static Errno EACCES => 536870913;
 
-public static readonly Errno EADDRINUSE = 536870914;
+public static Errno EADDRINUSE => 536870914;
 
-public static readonly Errno EADDRNOTAVAIL = 536870915;
+public static Errno EADDRNOTAVAIL => 536870915;
 
-public static readonly Errno EADV = 536870916;
+public static Errno EADV => 536870916;
 
-public static readonly Errno EAFNOSUPPORT = 536870917;
+public static Errno EAFNOSUPPORT => 536870917;
 
-public static readonly Errno EAGAIN = 536870918;
+public static Errno EAGAIN => 536870918;
 
-public static readonly Errno EALREADY = 536870919;
+public static Errno EALREADY => 536870919;
 
-public static readonly Errno EBADE = 536870920;
+public static Errno EBADE => 536870920;
 
-public static readonly Errno EBADF = 536870921;
+public static Errno EBADF => 536870921;
 
-public static readonly Errno EBADFD = 536870922;
+public static Errno EBADFD => 536870922;
 
-public static readonly Errno EBADMSG = 536870923;
+public static Errno EBADMSG => 536870923;
 
-public static readonly Errno EBADR = 536870924;
+public static Errno EBADR => 536870924;
 
-public static readonly Errno EBADRQC = 536870925;
+public static Errno EBADRQC => 536870925;
 
-public static readonly Errno EBADSLT = 536870926;
+public static Errno EBADSLT => 536870926;
 
-public static readonly Errno EBFONT = 536870927;
+public static Errno EBFONT => 536870927;
 
-public static readonly Errno EBUSY = 536870928;
+public static Errno EBUSY => 536870928;
 
-public static readonly Errno ECANCELED = 536870929;
+public static Errno ECANCELED => 536870929;
 
-public static readonly Errno ECHILD = 536870930;
+public static Errno ECHILD => 536870930;
 
-public static readonly Errno ECHRNG = 536870931;
+public static Errno ECHRNG => 536870931;
 
-public static readonly Errno ECOMM = 536870932;
+public static Errno ECOMM => 536870932;
 
-public static readonly Errno ECONNABORTED = 536870933;
+public static Errno ECONNABORTED => 536870933;
 
-public static readonly Errno ECONNREFUSED = 536870934;
+public static Errno ECONNREFUSED => 536870934;
 
-public static readonly Errno ECONNRESET = 536870935;
+public static Errno ECONNRESET => 536870935;
 
-public static readonly Errno EDEADLK = 536870936;
+public static Errno EDEADLK => 536870936;
 
-public static readonly Errno EDEADLOCK = 536870937;
+public static Errno EDEADLOCK => 536870937;
 
-public static readonly Errno EDESTADDRREQ = 536870938;
+public static Errno EDESTADDRREQ => 536870938;
 
-public static readonly Errno EDOM = 536870939;
+public static Errno EDOM => 536870939;
 
-public static readonly Errno EDOTDOT = 536870940;
+public static Errno EDOTDOT => 536870940;
 
-public static readonly Errno EDQUOT = 536870941;
+public static Errno EDQUOT => 536870941;
 
-public static readonly Errno EEXIST = 536870942;
+public static Errno EEXIST => 536870942;
 
-public static readonly Errno EFAULT = 536870943;
+public static Errno EFAULT => 536870943;
 
-public static readonly Errno EFBIG = 536870944;
+public static Errno EFBIG => 536870944;
 
-public static readonly Errno EHOSTDOWN = 536870945;
+public static Errno EHOSTDOWN => 536870945;
 
-public static readonly Errno EHOSTUNREACH = 536870946;
+public static Errno EHOSTUNREACH => 536870946;
 
-public static readonly Errno EIDRM = 536870947;
+public static Errno EIDRM => 536870947;
 
-public static readonly Errno EILSEQ = 536870948;
+public static Errno EILSEQ => 536870948;
 
-public static readonly Errno EINPROGRESS = 536870949;
+public static Errno EINPROGRESS => 536870949;
 
-public static readonly Errno EINTR = 536870950;
+public static Errno EINTR => 536870950;
 
-public static readonly Errno EINVAL = 536870951;
+public static Errno EINVAL => 536870951;
 
-public static readonly Errno EIO = 536870952;
+public static Errno EIO => 536870952;
 
-public static readonly Errno EISCONN = 536870953;
+public static Errno EISCONN => 536870953;
 
-public static readonly Errno EISDIR = 536870954;
+public static Errno EISDIR => 536870954;
 
-public static readonly Errno EISNAM = 536870955;
+public static Errno EISNAM => 536870955;
 
-public static readonly Errno EKEYEXPIRED = 536870956;
+public static Errno EKEYEXPIRED => 536870956;
 
-public static readonly Errno EKEYREJECTED = 536870957;
+public static Errno EKEYREJECTED => 536870957;
 
-public static readonly Errno EKEYREVOKED = 536870958;
+public static Errno EKEYREVOKED => 536870958;
 
-public static readonly Errno EL2HLT = 536870959;
+public static Errno EL2HLT => 536870959;
 
-public static readonly Errno EL2NSYNC = 536870960;
+public static Errno EL2NSYNC => 536870960;
 
-public static readonly Errno EL3HLT = 536870961;
+public static Errno EL3HLT => 536870961;
 
-public static readonly Errno EL3RST = 536870962;
+public static Errno EL3RST => 536870962;
 
-public static readonly Errno ELIBACC = 536870963;
+public static Errno ELIBACC => 536870963;
 
-public static readonly Errno ELIBBAD = 536870964;
+public static Errno ELIBBAD => 536870964;
 
-public static readonly Errno ELIBEXEC = 536870965;
+public static Errno ELIBEXEC => 536870965;
 
-public static readonly Errno ELIBMAX = 536870966;
+public static Errno ELIBMAX => 536870966;
 
-public static readonly Errno ELIBSCN = 536870967;
+public static Errno ELIBSCN => 536870967;
 
-public static readonly Errno ELNRNG = 536870968;
+public static Errno ELNRNG => 536870968;
 
-public static readonly Errno ELOOP = 536870969;
+public static Errno ELOOP => 536870969;
 
-public static readonly Errno EMEDIUMTYPE = 536870970;
+public static Errno EMEDIUMTYPE => 536870970;
 
-public static readonly Errno EMFILE = 536870971;
+public static Errno EMFILE => 536870971;
 
-public static readonly Errno EMLINK = 536870972;
+public static Errno EMLINK => 536870972;
 
-public static readonly Errno EMSGSIZE = 536870973;
+public static Errno EMSGSIZE => 536870973;
 
-public static readonly Errno EMULTIHOP = 536870974;
+public static Errno EMULTIHOP => 536870974;
 
-public static readonly Errno ENAMETOOLONG = 536870975;
+public static Errno ENAMETOOLONG => 536870975;
 
-public static readonly Errno ENAVAIL = 536870976;
+public static Errno ENAVAIL => 536870976;
 
-public static readonly Errno ENETDOWN = 536870977;
+public static Errno ENETDOWN => 536870977;
 
-public static readonly Errno ENETRESET = 536870978;
+public static Errno ENETRESET => 536870978;
 
-public static readonly Errno ENETUNREACH = 536870979;
+public static Errno ENETUNREACH => 536870979;
 
-public static readonly Errno ENFILE = 536870980;
+public static Errno ENFILE => 536870980;
 
-public static readonly Errno ENOANO = 536870981;
+public static Errno ENOANO => 536870981;
 
-public static readonly Errno ENOBUFS = 536870982;
+public static Errno ENOBUFS => 536870982;
 
-public static readonly Errno ENOCSI = 536870983;
+public static Errno ENOCSI => 536870983;
 
-public static readonly Errno ENODATA = 536870984;
+public static Errno ENODATA => 536870984;
 
-public static readonly Errno ENODEV = 536870985;
+public static Errno ENODEV => 536870985;
 
-public static readonly Errno ENOEXEC = 536870986;
+public static Errno ENOEXEC => 536870986;
 
-public static readonly Errno ENOKEY = 536870987;
+public static Errno ENOKEY => 536870987;
 
-public static readonly Errno ENOLCK = 536870988;
+public static Errno ENOLCK => 536870988;
 
-public static readonly Errno ENOLINK = 536870989;
+public static Errno ENOLINK => 536870989;
 
-public static readonly Errno ENOMEDIUM = 536870990;
+public static Errno ENOMEDIUM => 536870990;
 
-public static readonly Errno ENOMEM = 536870991;
+public static Errno ENOMEM => 536870991;
 
-public static readonly Errno ENOMSG = 536870992;
+public static Errno ENOMSG => 536870992;
 
-public static readonly Errno ENONET = 536870993;
+public static Errno ENONET => 536870993;
 
-public static readonly Errno ENOPKG = 536870994;
+public static Errno ENOPKG => 536870994;
 
-public static readonly Errno ENOPROTOOPT = 536870995;
+public static Errno ENOPROTOOPT => 536870995;
 
-public static readonly Errno ENOSPC = 536870996;
+public static Errno ENOSPC => 536870996;
 
-public static readonly Errno ENOSR = 536870997;
+public static Errno ENOSR => 536870997;
 
-public static readonly Errno ENOSTR = 536870998;
+public static Errno ENOSTR => 536870998;
 
-public static readonly Errno ENOSYS = 536870999;
+public static Errno ENOSYS => 536870999;
 
-public static readonly Errno ENOTBLK = 536871000;
+public static Errno ENOTBLK => 536871000;
 
-public static readonly Errno ENOTCONN = 536871001;
+public static Errno ENOTCONN => 536871001;
 
-public static readonly Errno ENOTEMPTY = 536871002;
+public static Errno ENOTEMPTY => 536871002;
 
-public static readonly Errno ENOTNAM = 536871003;
+public static Errno ENOTNAM => 536871003;
 
-public static readonly Errno ENOTRECOVERABLE = 536871004;
+public static Errno ENOTRECOVERABLE => 536871004;
 
-public static readonly Errno ENOTSOCK = 536871005;
+public static Errno ENOTSOCK => 536871005;
 
-public static readonly Errno ENOTSUP = 536871006;
+public static Errno ENOTSUP => 536871006;
 
-public static readonly Errno ENOTTY = 536871007;
+public static Errno ENOTTY => 536871007;
 
-public static readonly Errno ENOTUNIQ = 536871008;
+public static Errno ENOTUNIQ => 536871008;
 
-public static readonly Errno ENXIO = 536871009;
+public static Errno ENXIO => 536871009;
 
-public static readonly Errno EOPNOTSUPP = 536871010;
+public static Errno EOPNOTSUPP => 536871010;
 
-public static readonly Errno EOVERFLOW = 536871011;
+public static Errno EOVERFLOW => 536871011;
 
-public static readonly Errno EOWNERDEAD = 536871012;
+public static Errno EOWNERDEAD => 536871012;
 
-public static readonly Errno EPERM = 536871013;
+public static Errno EPERM => 536871013;
 
-public static readonly Errno EPFNOSUPPORT = 536871014;
+public static Errno EPFNOSUPPORT => 536871014;
 
-public static readonly Errno EPIPE = 536871015;
+public static Errno EPIPE => 536871015;
 
-public static readonly Errno EPROTO = 536871016;
+public static Errno EPROTO => 536871016;
 
-public static readonly Errno EPROTONOSUPPORT = 536871017;
+public static Errno EPROTONOSUPPORT => 536871017;
 
-public static readonly Errno EPROTOTYPE = 536871018;
+public static Errno EPROTOTYPE => 536871018;
 
-public static readonly Errno ERANGE = 536871019;
+public static Errno ERANGE => 536871019;
 
-public static readonly Errno EREMCHG = 536871020;
+public static Errno EREMCHG => 536871020;
 
-public static readonly Errno EREMOTE = 536871021;
+public static Errno EREMOTE => 536871021;
 
-public static readonly Errno EREMOTEIO = 536871022;
+public static Errno EREMOTEIO => 536871022;
 
-public static readonly Errno ERESTART = 536871023;
+public static Errno ERESTART => 536871023;
 
-public static readonly Errno EROFS = 536871024;
+public static Errno EROFS => 536871024;
 
-public static readonly Errno ESHUTDOWN = 536871025;
+public static Errno ESHUTDOWN => 536871025;
 
-public static readonly Errno ESOCKTNOSUPPORT = 536871026;
+public static Errno ESOCKTNOSUPPORT => 536871026;
 
-public static readonly Errno ESPIPE = 536871027;
+public static Errno ESPIPE => 536871027;
 
-public static readonly Errno ESRCH = 536871028;
+public static Errno ESRCH => 536871028;
 
-public static readonly Errno ESRMNT = 536871029;
+public static Errno ESRMNT => 536871029;
 
-public static readonly Errno ESTALE = 536871030;
+public static Errno ESTALE => 536871030;
 
-public static readonly Errno ESTRPIPE = 536871031;
+public static Errno ESTRPIPE => 536871031;
 
-public static readonly Errno ETIME = 536871032;
+public static Errno ETIME => 536871032;
 
-public static readonly Errno ETIMEDOUT = 536871033;
+public static Errno ETIMEDOUT => 536871033;
 
-public static readonly Errno ETOOMANYREFS = 536871034;
+public static Errno ETOOMANYREFS => 536871034;
 
-public static readonly Errno ETXTBSY = 536871035;
+public static Errno ETXTBSY => 536871035;
 
-public static readonly Errno EUCLEAN = 536871036;
+public static Errno EUCLEAN => 536871036;
 
-public static readonly Errno EUNATCH = 536871037;
+public static Errno EUNATCH => 536871037;
 
-public static readonly Errno EUSERS = 536871038;
+public static Errno EUSERS => 536871038;
 
-public static readonly Errno EWOULDBLOCK = 536871039;
+public static Errno EWOULDBLOCK => 536871039;
 
-public static readonly Errno EXDEV = 536871040;
+public static Errno EXDEV => 536871040;
 
-public static readonly Errno EXFULL = 536871041;
+public static Errno EXFULL => 536871041;
 
-public static readonly Errno EWINDOWS = 536871042;
+public static Errno EWINDOWS => 536871042;
 
 // Error strings for invented errors
 internal static array<@string> errors = new golib.SparseArray<@string>{

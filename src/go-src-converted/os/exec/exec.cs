@@ -440,8 +440,7 @@ public static ж<Cmd> Command(@string name, params ꓸꓸꓸstring argʗp) {
         // cause the command to resolve to a different extension.
         {
             var (lp, err) = lookExtensions(name, ""u8); if (err == default!){
-                cmd.Value.cachedLookExtensions.@in = name;
-                cmd.Value.cachedLookExtensions.@out = lp;
+                (cmd.Value.cachedLookExtensions.@in, cmd.Value.cachedLookExtensions.@out) = (name, lp);
             } else {
                 cmd.Value.Err = err;
             }

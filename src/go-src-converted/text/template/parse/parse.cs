@@ -37,8 +37,8 @@ partial class parse_package {
 
 [GoType("num:nuint")] partial struct Mode;
 
-public static readonly Mode ParseComments = /* 1 << iota */ 1;       // parse comments and add them to AST
-public static readonly Mode SkipFuncCheck = 2;       // do not check that functions are defined
+public static Mode ParseComments => /* 1 << iota */ 1;       // parse comments and add them to AST
+public static Mode SkipFuncCheck => 2;       // do not check that functions are defined
 
 // Copy returns a copy of the [Tree]. Any parsing state is discarded.
 public static ж<Tree> Copy(this ж<Tree> Ꮡt) {

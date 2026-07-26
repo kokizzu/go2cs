@@ -118,13 +118,13 @@ private static readonly @string waitingForUnsupportedˢ = "waiting for unsupport
 
 // Error values returned by runtime_pollReset and runtime_pollWait.
 // These must match the values in runtime/netpoll.go.
-internal static readonly UntypedInt pollNoError = 0;
+internal static UntypedInt pollNoError => 0;
 
-internal static readonly UntypedInt pollErrClosing = 1;
+internal static UntypedInt pollErrClosing => 1;
 
-internal static readonly UntypedInt pollErrTimeout = 2;
+internal static UntypedInt pollErrTimeout => 2;
 
-internal static readonly UntypedInt pollErrNotPollable = 3;
+internal static UntypedInt pollErrNotPollable => 3;
 
 internal static error convertErr(nint res, bool isFile) {
     var exprᴛ1 = res;

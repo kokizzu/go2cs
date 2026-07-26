@@ -13,7 +13,7 @@ partial class runtime_package {
 
 // The constant is known to the compiler.
 // There is no fundamental theory behind this number.
-internal static readonly UntypedInt tmpStringBufSize = 32;
+internal static UntypedInt tmpStringBufSize => 32;
 
 [GoType("[32]byte")] /* [tmpStringBufSize]byte */
 partial struct tmpBuf;

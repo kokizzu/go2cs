@@ -7,10 +7,10 @@ partial class sha3_package {
 
 [GoType("num:nint")] partial struct spongeDirection;
 
-internal static readonly spongeDirection spongeAbsorbing = /* iota */ 0;
-internal static readonly spongeDirection spongeSqueezing = 1;
+internal static spongeDirection spongeAbsorbing => /* iota */ 0;
+internal static spongeDirection spongeSqueezing => 1;
 
-internal static readonly UntypedInt maxRate = 168;
+internal static UntypedInt maxRate => 168;
 
 [GoType] [GoValueClone("a", "storage")] partial struct state {
     // Generic sponge components.
@@ -54,8 +54,7 @@ internal static readonly UntypedInt maxRate = 168;
         d.a[i] = 0;
     }
     d.Δstate = spongeAbsorbing;
-    d.i = 0;
-    d.n = 0;
+    (d.i, d.n) = (0, 0);
 }
 
 [GoRecv] internal static ж<state> clone(this ref state d) {

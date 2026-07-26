@@ -26,15 +26,14 @@ public static slice<@string> Topo(this ж<Graph> Ꮡg) {
     ref var topo = ref heap<slice<@string>>(out var Ꮡtopo);
     topo = new slice<@string>(0, len(g.Nodes));
     var marks = new map<@string, bool>();
-    Action<@string> visit = default!;
+    ref var visit = ref heap<Action<@string>>(out var Ꮡvisit);
     var marksʗ1 = marks;
-    var visitʗ1 = visit;
     visit = (@string n) => {
         if (marksʗ1[n]) {
             return;
         }
         foreach (var (_, to) in Ꮡg.Edges(n)) {
-            visitʗ1(to);
+            Ꮡvisit.ValueSlot(to);
         }
         marksʗ1[n] = true;
         Ꮡtopo.ValueSlot = append(Ꮡtopo.ValueSlot, n);

@@ -110,9 +110,8 @@ private static readonly @string depˢ = "dep"u8;
     if (bi.Path != ""u8) {
         fmt.Fprintf(new strings_BuilderжWriter(buf), "path\t%s\n"u8, bi.Path);
     }
-    Action<@string, Module> formatMod = default!;
+    ref var formatMod = ref heap<Action<@string, Module>>(out var ᏑformatMod);
     var bufʗ1 = buf;
-    var formatModʗ1 = formatMod;
     formatMod = (@string word, Module m) => {
         bufʗ1.WriteString(word);
         bufʗ1.WriteByte((rune)'\t');
@@ -124,7 +123,7 @@ private static readonly @string depˢ = "dep"u8;
             bufʗ1.WriteString(m.Sum);
         } else {
             bufʗ1.WriteByte((rune)'\n');
-            formatModʗ1("=>"u8, m.Replace.Value);
+            ᏑformatMod.ValueSlot("=>"u8, m.Replace.Value);
         }
         bufʗ1.WriteByte((rune)'\n');
     };

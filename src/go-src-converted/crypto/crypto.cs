@@ -108,26 +108,26 @@ public static @string String(this Hash h) {
 
 }
 
-public static readonly Hash MD4 = /* 1 + iota */ 1;              // import golang.org/x/crypto/md4
-public static readonly Hash MD5 = 2;              // import crypto/md5
-public static readonly Hash SHA1 = 3;             // import crypto/sha1
-public static readonly Hash SHA224 = 4;           // import crypto/sha256
-public static readonly Hash SHA256 = 5;           // import crypto/sha256
-public static readonly Hash SHA384 = 6;           // import crypto/sha512
-public static readonly Hash SHA512 = 7;           // import crypto/sha512
-public static readonly Hash MD5SHA1 = 8;          // no implementation; MD5+SHA1 used for TLS RSA
-public static readonly Hash RIPEMD160 = 9;        // import golang.org/x/crypto/ripemd160
-public static readonly Hash SHA3_224 = 10;         // import golang.org/x/crypto/sha3
-public static readonly Hash SHA3_256 = 11;         // import golang.org/x/crypto/sha3
-public static readonly Hash SHA3_384 = 12;         // import golang.org/x/crypto/sha3
-public static readonly Hash SHA3_512 = 13;         // import golang.org/x/crypto/sha3
-public static readonly Hash SHA512_224 = 14;       // import crypto/sha512
-public static readonly Hash SHA512_256 = 15;       // import crypto/sha512
-public static readonly Hash BLAKE2s_256 = 16;      // import golang.org/x/crypto/blake2s
-public static readonly Hash BLAKE2b_256 = 17;      // import golang.org/x/crypto/blake2b
-public static readonly Hash BLAKE2b_384 = 18;      // import golang.org/x/crypto/blake2b
-public static readonly Hash BLAKE2b_512 = 19;      // import golang.org/x/crypto/blake2b
-internal static readonly Hash maxHash = 20;
+public static Hash MD4 => /* 1 + iota */ 1;              // import golang.org/x/crypto/md4
+public static Hash MD5 => 2;              // import crypto/md5
+public static Hash SHA1 => 3;             // import crypto/sha1
+public static Hash SHA224 => 4;           // import crypto/sha256
+public static Hash SHA256 => 5;           // import crypto/sha256
+public static Hash SHA384 => 6;           // import crypto/sha512
+public static Hash SHA512 => 7;           // import crypto/sha512
+public static Hash MD5SHA1 => 8;          // no implementation; MD5+SHA1 used for TLS RSA
+public static Hash RIPEMD160 => 9;        // import golang.org/x/crypto/ripemd160
+public static Hash SHA3_224 => 10;         // import golang.org/x/crypto/sha3
+public static Hash SHA3_256 => 11;         // import golang.org/x/crypto/sha3
+public static Hash SHA3_384 => 12;         // import golang.org/x/crypto/sha3
+public static Hash SHA3_512 => 13;         // import golang.org/x/crypto/sha3
+public static Hash SHA512_224 => 14;       // import crypto/sha512
+public static Hash SHA512_256 => 15;       // import crypto/sha512
+public static Hash BLAKE2s_256 => 16;      // import golang.org/x/crypto/blake2s
+public static Hash BLAKE2b_256 => 17;      // import golang.org/x/crypto/blake2b
+public static Hash BLAKE2b_384 => 18;      // import golang.org/x/crypto/blake2b
+public static Hash BLAKE2b_512 => 19;      // import golang.org/x/crypto/blake2b
+internal static Hash maxHash => 20;
 
 internal static slice<uint8> digestSizes = new golib.SparseArray<uint8>{
     [(int)((nuint)MD4)] = 16,

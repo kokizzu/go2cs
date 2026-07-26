@@ -6,6 +6,6 @@ partial class goexperiment_package {
 
 public const bool AliasTypeParams = false;
 
-public static readonly UntypedInt AliasTypeParamsInt = 0;
+public static UntypedInt AliasTypeParamsInt => 0;
 
 } // end goexperiment_package

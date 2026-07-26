@@ -51,11 +51,11 @@ internal static uintptr floatRegSize = (uintptr)abi.EffectiveFloatRegSize;
 
 [GoType("num:nint")] partial struct abiStepKind;
 
-internal static readonly abiStepKind abiStepBad = /* iota */ 0;
-internal static readonly abiStepKind abiStepStack = 1; // copy to/from stack
-internal static readonly abiStepKind abiStepIntReg = 2; // copy to/from integer register
-internal static readonly abiStepKind abiStepPointer = 3; // copy pointer to/from integer register
-internal static readonly abiStepKind abiStepFloatReg = 4; // copy to/from FP register
+internal static abiStepKind abiStepBad => /* iota */ 0;
+internal static abiStepKind abiStepStack => 1; // copy to/from stack
+internal static abiStepKind abiStepIntReg => 2; // copy to/from integer register
+internal static abiStepKind abiStepPointer => 3; // copy pointer to/from integer register
+internal static abiStepKind abiStepFloatReg => 4; // copy to/from FP register
 
 // abiSeq represents a sequence of ABI instructions for copying
 // from a series of reflect.Values to a call frame (for call arguments)

@@ -26,16 +26,16 @@ using global::go.go;
 partial class format_package {
 
 // Keep these in sync with cmd/gofmt/gofmt.go.
-internal static readonly UntypedInt tabWidth = 8;
+internal static UntypedInt tabWidth => 8;
 
-internal static readonly printer.Mode printerMode = /* printer.UseSpaces | printer.TabIndent | printerNormalizeNumbers */ 1073741830;
+internal static printer.Mode printerMode => /* printer.UseSpaces | printer.TabIndent | printerNormalizeNumbers */ 1073741830;
 
-internal static readonly UntypedInt printerNormalizeNumbers = /* 1 << 30 */ 1073741824;
+internal static UntypedInt printerNormalizeNumbers => /* 1 << 30 */ 1073741824;
 
 internal static ж<printer.Config> Ꮡconfig = new(new printer.Config(Mode: printerMode, Tabwidth: tabWidth));
 internal static ref printer.Config config => ref Ꮡconfig.Value;
 
-internal static readonly parser.Mode parserMode = /* parser.ParseComments | parser.SkipObjectResolution */ 68;
+internal static parser.Mode parserMode => /* parser.ParseComments | parser.SkipObjectResolution */ 68;
 
 // Node formats node in canonical gofmt style and writes the result to dst.
 //

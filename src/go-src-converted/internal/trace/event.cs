@@ -18,21 +18,21 @@ partial class trace_package {
 
 [GoType("num:uint16")] partial struct EventKind;
 
-public static readonly EventKind EventBad = /* iota */ 0;
-public static readonly EventKind EventSync = 1;
-public static readonly EventKind EventMetric = 2;
-public static readonly EventKind EventLabel = 3;
-public static readonly EventKind EventStackSample = 4;
-public static readonly EventKind EventRangeBegin = 5;
-public static readonly EventKind EventRangeActive = 6;
-public static readonly EventKind EventRangeEnd = 7;
-public static readonly EventKind EventTaskBegin = 8;
-public static readonly EventKind EventTaskEnd = 9;
-public static readonly EventKind EventRegionBegin = 10;
-public static readonly EventKind EventRegionEnd = 11;
-public static readonly EventKind EventLog = 12;
-public static readonly EventKind EventStateTransition = 13;
-public static readonly EventKind EventExperimental = 14;
+public static EventKind EventBad => /* iota */ 0;
+public static EventKind EventSync => 1;
+public static EventKind EventMetric => 2;
+public static EventKind EventLabel => 3;
+public static EventKind EventStackSample => 4;
+public static EventKind EventRangeBegin => 5;
+public static EventKind EventRangeActive => 6;
+public static EventKind EventRangeEnd => 7;
+public static EventKind EventTaskBegin => 8;
+public static EventKind EventTaskEnd => 9;
+public static EventKind EventRegionBegin => 10;
+public static EventKind EventRegionEnd => 11;
+public static EventKind EventLog => 12;
+public static EventKind EventStateTransition => 13;
+public static EventKind EventExperimental => 14;
 
 // String returns a string form of the EventKind.
 public static @string String(this EventKind e) {
@@ -60,7 +60,7 @@ internal static array<@string> eventKindStrings = new golib.SparseArray<@string>
     [EventExperimental] = "Experimental"u8
 }.array();
 
-internal static readonly ΔTime maxTime = /* Time(math.MaxInt64) */ 9223372036854775807;
+internal static ΔTime maxTime => /* Time(math.MaxInt64) */ 9223372036854775807;
 
 [GoType("num:int64")] partial struct ΔTime;
 
@@ -133,8 +133,8 @@ public static time.Duration Sub(this ΔTime t, ΔTime t0) {
 
 [GoType("num:uint64")] partial struct TaskID;
 
-public static readonly TaskID NoTask = /* TaskID(^uint64(0)) */ unchecked((TaskID)18446744073709551615);
-public static readonly TaskID BackgroundTask = /* TaskID(0) */ 0;
+public static TaskID NoTask => /* TaskID(^uint64(0)) */ unchecked((TaskID)18446744073709551615);
+public static TaskID BackgroundTask => /* TaskID(0) */ 0;
 
 // Task provides details about a Task event.
 [GoType] partial struct ΔTask {
@@ -660,7 +660,7 @@ public static ExperimentalEvent Experimental(this ΔEvent e) {
     );
 }
 
-internal static readonly @event.Type evSync = /* ^event.Type(0) */ 255;
+internal static @event.Type evSync => /* ^event.Type(0) */ 255;
 
 internal static array<EventKind> go122Type2Kind = new golib.SparseArray<EventKind>{
     [go122.EvCPUSample] = EventStackSample,

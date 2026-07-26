@@ -427,8 +427,8 @@ public static nint NumFields(this ж<FieldList> Ꮡf) {
 
 [GoType("num:nint")] partial struct ChanDir;
 
-public static readonly ChanDir SEND = /* 1 << iota */ 1;
-public static readonly ChanDir RECV = 2;
+public static ChanDir SEND => /* 1 << iota */ 1;
+public static ChanDir RECV => 2;
 
 // A type is represented by a tree consisting of one
 // or more of the following type-specific expression

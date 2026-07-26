@@ -20,15 +20,15 @@ public static error ErrProcessDone = errors.New("os: process already finished"u8
 
 [GoType("num:uint8")] partial struct processMode;
 
-internal static readonly processMode modePID = /* iota */ 0;
-internal static readonly processMode modeHandle = 1;
+internal static processMode modePID => /* iota */ 0;
+internal static processMode modeHandle => 1;
 
 [GoType("num:uint64")] partial struct processStatus;
 
-internal static readonly processStatus statusOK = 0;
-internal static readonly processStatus statusDone = /* 1 << 62 */ unchecked((processStatus)4611686018427387904);
-internal static readonly processStatus statusReleased = /* 1 << 63 */ unchecked((processStatus)9223372036854775808);
-internal static readonly UntypedInt processStatusMask = /* 0x3 << 62 */ 13835058055282163712;
+internal static processStatus statusOK => 0;
+internal static processStatus statusDone => /* 1 << 62 */ unchecked((processStatus)4611686018427387904);
+internal static processStatus statusReleased => /* 1 << 63 */ unchecked((processStatus)9223372036854775808);
+internal static UntypedInt processStatusMask => /* 0x3 << 62 */ 13835058055282163712;
 
 // Process stores the information about a process created by [StartProcess].
 [GoType] partial struct Process {

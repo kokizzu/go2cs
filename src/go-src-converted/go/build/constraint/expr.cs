@@ -19,7 +19,7 @@ partial class constraint_package {
 
 // maxSize is a limit used to control the complexity of expressions, in order
 // to prevent stack exhaustion issues due to recursion.
-internal static readonly UntypedInt maxSize = 1000;
+internal static UntypedInt maxSize => 1000;
 
 // An Expr is a build tag constraint expression.
 // The underlying concrete type is *[AndExpr], *[OrExpr], *[NotExpr], or *[TagExpr].

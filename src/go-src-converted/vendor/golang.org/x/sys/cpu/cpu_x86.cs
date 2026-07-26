@@ -8,7 +8,7 @@ using runtime = runtime_package;
 
 partial class cpu_package {
 
-internal static readonly UntypedInt cacheLineSize = 64;
+internal static UntypedInt cacheLineSize => 64;
 
 internal static void initOptions() {
     options = new option[]{

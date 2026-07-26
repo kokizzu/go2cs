@@ -303,7 +303,7 @@ private static readonly @string excessiveDcComponentˢ = "excessive DC component
                                             if (errΔ2 != default!) {
                                                 return errΔ2;
                                             }
-                                            d.eobRun |= (uint16)bits;
+                                            d.eobRun |= (uint16)((uint16)bits);
                                         }
                                         d.eobRun--;
                                         break;
@@ -413,7 +413,7 @@ loop:
                         if (errΔ3 != default!) {
                             return errΔ3;
                         }
-                        d.eobRun |= (uint16)bits;
+                        d.eobRun |= (uint16)((uint16)bits);
                     }
                     goto break_loop;
                 }

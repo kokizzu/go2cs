@@ -185,35 +185,35 @@ internal static error errClosed() {
 // The values of these bits should be considered part of the public API and
 // may be used in wire protocols or disk representations: they must not be
 // changed, although new bits might be added.
-public static readonly FileMode ModeDir = /* 1 << (32 - 1 - iota) */ 2147483648;                         // d: is a directory
+public static FileMode ModeDir => /* 1 << (32 - 1 - iota) */ 2147483648;                         // d: is a directory
 
-public static readonly FileMode ModeAppend = 1073741824;                      // a: append-only
+public static FileMode ModeAppend => 1073741824;                      // a: append-only
 
-public static readonly FileMode ModeExclusive = 536870912;                   // l: exclusive use
+public static FileMode ModeExclusive => 536870912;                   // l: exclusive use
 
-public static readonly FileMode ModeTemporary = 268435456;                   // T: temporary file; Plan 9 only
+public static FileMode ModeTemporary => 268435456;                   // T: temporary file; Plan 9 only
 
-public static readonly FileMode ModeSymlink = 134217728;                     // L: symbolic link
+public static FileMode ModeSymlink => 134217728;                     // L: symbolic link
 
-public static readonly FileMode ModeDevice = 67108864;                      // D: device file
+public static FileMode ModeDevice => 67108864;                      // D: device file
 
-public static readonly FileMode ModeNamedPipe = 33554432;                   // p: named pipe (FIFO)
+public static FileMode ModeNamedPipe => 33554432;                   // p: named pipe (FIFO)
 
-public static readonly FileMode ModeSocket = 16777216;                      // S: Unix domain socket
+public static FileMode ModeSocket => 16777216;                      // S: Unix domain socket
 
-public static readonly FileMode ModeSetuid = 8388608;                      // u: setuid
+public static FileMode ModeSetuid => 8388608;                      // u: setuid
 
-public static readonly FileMode ModeSetgid = 4194304;                      // g: setgid
+public static FileMode ModeSetgid => 4194304;                      // g: setgid
 
-public static readonly FileMode ModeCharDevice = 2097152;                  // c: Unix character device, when ModeDevice is set
+public static FileMode ModeCharDevice => 2097152;                  // c: Unix character device, when ModeDevice is set
 
-public static readonly FileMode ModeSticky = 1048576;                      // t: sticky
+public static FileMode ModeSticky => 1048576;                      // t: sticky
 
-public static readonly FileMode ModeIrregular = 524288;                   // ?: non-regular file; nothing else is known about this file
+public static FileMode ModeIrregular => 524288;                   // ?: non-regular file; nothing else is known about this file
 
-public static readonly FileMode ModeType = /* ModeDir | ModeSymlink | ModeNamedPipe | ModeSocket | ModeDevice | ModeCharDevice | ModeIrregular */ 2401763328;
+public static FileMode ModeType => /* ModeDir | ModeSymlink | ModeNamedPipe | ModeSocket | ModeDevice | ModeCharDevice | ModeIrregular */ 2401763328;
 
-public static readonly FileMode ModePerm = /* 0777 */ 511;  // Unix permission bits
+public static FileMode ModePerm => /* 0777 */ 511;  // Unix permission bits
 
 public static @string String(this FileMode m) {
     @string str = "dalTLDpSugct?"u8;

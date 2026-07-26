@@ -12,7 +12,7 @@ using runtime.@internal;
 partial class runtime_package {
 
 // Maximum number of bytes required to encode uint64 in base-128.
-internal static readonly UntypedInt traceBytesPerNumber = 10;
+internal static UntypedInt traceBytesPerNumber => 10;
 
 // traceWriter is the interface for writing all trace data.
 //

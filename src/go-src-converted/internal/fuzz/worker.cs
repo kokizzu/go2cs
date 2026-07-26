@@ -22,10 +22,10 @@ using global::go.os;
 
 partial class fuzz_package {
 
-internal static readonly time.Duration workerFuzzDuration = /* 100 * time.Millisecond */ 100000000;
-internal static readonly time.Duration workerTimeoutDuration = /* 1 * time.Second */ 1000000000;
-internal static readonly UntypedInt workerExitCode = 70;
-internal static readonly UntypedInt workerSharedMemSize = /* 100 << 20 */ 104857600; // 100 MB
+internal static time.Duration workerFuzzDuration => /* 100 * time.Millisecond */ 100000000;
+internal static time.Duration workerTimeoutDuration => /* 1 * time.Second */ 1000000000;
+internal static UntypedInt workerExitCode => 70;
+internal static UntypedInt workerSharedMemSize => /* 100 << 20 */ 104857600; // 100 MB
 
 // worker manages a worker process running a test binary. The worker object
 // exists only in the coordinator (the process started by 'go test -fuzz').
@@ -715,7 +715,7 @@ internal static error serve(this ж<workerServer> Ꮡws, context.Context ctx) {
 // mutations on each invocation of the workerServer.fuzz method (this appears to
 // be what libFuzzer does, although there seems to be no documentation which
 // explains why this choice was made.)
-internal static readonly UntypedInt chainedMutations = 5;
+internal static UntypedInt chainedMutations => 5;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string fuzzFunctionFailedWithNoˢ = "fuzz function failed with no input"u8;

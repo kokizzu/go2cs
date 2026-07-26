@@ -35,28 +35,28 @@ internal static void runtime_debug_WriteHeapDump(uintptr fd) {
     startTheWorld(stw);
 }
 
-internal static readonly UntypedInt fieldKindEol = 0;
-internal static readonly UntypedInt fieldKindPtr = 1;
-internal static readonly UntypedInt fieldKindIface = 2;
-internal static readonly UntypedInt fieldKindEface = 3;
-internal static readonly UntypedInt tagEOF = 0;
-internal static readonly UntypedInt tagObject = 1;
-internal static readonly UntypedInt tagOtherRoot = 2;
-internal static readonly UntypedInt tagType = 3;
-internal static readonly UntypedInt tagGoroutine = 4;
-internal static readonly UntypedInt tagStackFrame = 5;
-internal static readonly UntypedInt tagParams = 6;
-internal static readonly UntypedInt tagFinalizer = 7;
-internal static readonly UntypedInt tagItab = 8;
-internal static readonly UntypedInt tagOSThread = 9;
-internal static readonly UntypedInt tagMemStats = 10;
-internal static readonly UntypedInt tagQueuedFinalizer = 11;
-internal static readonly UntypedInt tagData = 12;
-internal static readonly UntypedInt tagBSS = 13;
-internal static readonly UntypedInt tagDefer = 14;
-internal static readonly UntypedInt tagPanic = 15;
-internal static readonly UntypedInt tagMemProf = 16;
-internal static readonly UntypedInt tagAllocSample = 17;
+internal static UntypedInt fieldKindEol => 0;
+internal static UntypedInt fieldKindPtr => 1;
+internal static UntypedInt fieldKindIface => 2;
+internal static UntypedInt fieldKindEface => 3;
+internal static UntypedInt tagEOF => 0;
+internal static UntypedInt tagObject => 1;
+internal static UntypedInt tagOtherRoot => 2;
+internal static UntypedInt tagType => 3;
+internal static UntypedInt tagGoroutine => 4;
+internal static UntypedInt tagStackFrame => 5;
+internal static UntypedInt tagParams => 6;
+internal static UntypedInt tagFinalizer => 7;
+internal static UntypedInt tagItab => 8;
+internal static UntypedInt tagOSThread => 9;
+internal static UntypedInt tagMemStats => 10;
+internal static UntypedInt tagQueuedFinalizer => 11;
+internal static UntypedInt tagData => 12;
+internal static UntypedInt tagBSS => 13;
+internal static UntypedInt tagDefer => 14;
+internal static UntypedInt tagPanic => 15;
+internal static UntypedInt tagMemProf => 16;
+internal static UntypedInt tagAllocSample => 17;
 
 internal static uintptr dumpfd; // fd to write the dump to.
 
@@ -64,7 +64,7 @@ internal static ж<slice<byte>> Ꮡtmpbuf = new(default(slice<byte>));
 internal static ref slice<byte> tmpbuf => ref Ꮡtmpbuf.ValueSlot;
 
 // buffer of pending write data
-internal static readonly UntypedInt bufSize = 4096;
+internal static UntypedInt bufSize => 4096;
 
 internal static ж<array<byte>> Ꮡbuf = new(new array<byte>(4096));
 internal static ref array<byte> buf => ref Ꮡbuf.Value;
@@ -105,9 +105,9 @@ internal static void flush() {
 // have been serialized so far, most recently used first.
 // Note: when a bucket overflows we may end up
 // serializing a type more than once. That's ok.
-internal static readonly UntypedInt typeCacheBuckets = 256;
+internal static UntypedInt typeCacheBuckets => 256;
 
-internal static readonly UntypedInt typeCacheAssoc = 4;
+internal static UntypedInt typeCacheAssoc => 4;
 
 [GoType] [GoValueClone("t")] partial struct typeCacheBucket {
     internal array<ж<_type>> t = new(typeCacheAssoc);

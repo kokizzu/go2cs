@@ -9,127 +9,127 @@ partial class runtime_package {
 // Locks with lower rank must be taken before locks with higher rank,
 // in addition to satisfying the partial order in lockPartialOrder.
 // A few ranks allow self-cycles, which are specified in lockPartialOrder.
-internal static readonly lockRank lockRankUnknown = /* iota */ 0;
+internal static lockRank lockRankUnknown => /* iota */ 0;
 
-internal static readonly lockRank lockRankSysmon = 1;
+internal static lockRank lockRankSysmon => 1;
 
-internal static readonly lockRank lockRankScavenge = 2;
+internal static lockRank lockRankScavenge => 2;
 
-internal static readonly lockRank lockRankForcegc = 3;
+internal static lockRank lockRankForcegc => 3;
 
-internal static readonly lockRank lockRankDefer = 4;
+internal static lockRank lockRankDefer => 4;
 
-internal static readonly lockRank lockRankSweepWaiters = 5;
+internal static lockRank lockRankSweepWaiters => 5;
 
-internal static readonly lockRank lockRankAssistQueue = 6;
+internal static lockRank lockRankAssistQueue => 6;
 
-internal static readonly lockRank lockRankSweep = 7;
+internal static lockRank lockRankSweep => 7;
 
-internal static readonly lockRank lockRankTestR = 8;
+internal static lockRank lockRankTestR => 8;
 
-internal static readonly lockRank lockRankTestW = 9;
+internal static lockRank lockRankTestW => 9;
 
-internal static readonly lockRank lockRankTimerSend = 10;
+internal static lockRank lockRankTimerSend => 10;
 
-internal static readonly lockRank lockRankAllocmW = 11;
+internal static lockRank lockRankAllocmW => 11;
 
-internal static readonly lockRank lockRankExecW = 12;
+internal static lockRank lockRankExecW => 12;
 
-internal static readonly lockRank lockRankCpuprof = 13;
+internal static lockRank lockRankCpuprof => 13;
 
-internal static readonly lockRank lockRankPollCache = 14;
+internal static lockRank lockRankPollCache => 14;
 
-internal static readonly lockRank lockRankPollDesc = 15;
+internal static lockRank lockRankPollDesc => 15;
 
-internal static readonly lockRank lockRankWakeableSleep = 16;
+internal static lockRank lockRankWakeableSleep => 16;
 
-internal static readonly lockRank lockRankHchan = 17;
+internal static lockRank lockRankHchan => 17;
 
-internal static readonly lockRank lockRankAllocmR = 18;
+internal static lockRank lockRankAllocmR => 18;
 
-internal static readonly lockRank lockRankExecR = 19;
+internal static lockRank lockRankExecR => 19;
 
-internal static readonly lockRank lockRankSched = 20;
+internal static lockRank lockRankSched => 20;
 
-internal static readonly lockRank lockRankAllg = 21;
+internal static lockRank lockRankAllg => 21;
 
-internal static readonly lockRank lockRankAllp = 22;
+internal static lockRank lockRankAllp => 22;
 
-internal static readonly lockRank lockRankNotifyList = 23;
+internal static lockRank lockRankNotifyList => 23;
 
-internal static readonly lockRank lockRankSudog = 24;
+internal static lockRank lockRankSudog => 24;
 
-internal static readonly lockRank lockRankTimers = 25;
+internal static lockRank lockRankTimers => 25;
 
-internal static readonly lockRank lockRankTimer = 26;
+internal static lockRank lockRankTimer => 26;
 
-internal static readonly lockRank lockRankNetpollInit = 27;
+internal static lockRank lockRankNetpollInit => 27;
 
-internal static readonly lockRank lockRankRoot = 28;
+internal static lockRank lockRankRoot => 28;
 
-internal static readonly lockRank lockRankItab = 29;
+internal static lockRank lockRankItab => 29;
 
-internal static readonly lockRank lockRankReflectOffs = 30;
+internal static lockRank lockRankReflectOffs => 30;
 
-internal static readonly lockRank lockRankUserArenaState = 31;
+internal static lockRank lockRankUserArenaState => 31;
 
-internal static readonly lockRank lockRankTraceBuf = 32;
+internal static lockRank lockRankTraceBuf => 32;
 
-internal static readonly lockRank lockRankTraceStrings = 33;
+internal static lockRank lockRankTraceStrings => 33;
 
-internal static readonly lockRank lockRankFin = 34;
+internal static lockRank lockRankFin => 34;
 
-internal static readonly lockRank lockRankSpanSetSpine = 35;
+internal static lockRank lockRankSpanSetSpine => 35;
 
-internal static readonly lockRank lockRankMspanSpecial = 36;
+internal static lockRank lockRankMspanSpecial => 36;
 
-internal static readonly lockRank lockRankTraceTypeTab = 37;
+internal static lockRank lockRankTraceTypeTab => 37;
 
-internal static readonly lockRank lockRankGcBitsArenas = 38;
+internal static lockRank lockRankGcBitsArenas => 38;
 
-internal static readonly lockRank lockRankProfInsert = 39;
+internal static lockRank lockRankProfInsert => 39;
 
-internal static readonly lockRank lockRankProfBlock = 40;
+internal static lockRank lockRankProfBlock => 40;
 
-internal static readonly lockRank lockRankProfMemActive = 41;
+internal static lockRank lockRankProfMemActive => 41;
 
-internal static readonly lockRank lockRankProfMemFuture = 42;
+internal static lockRank lockRankProfMemFuture => 42;
 
-internal static readonly lockRank lockRankGscan = 43;
+internal static lockRank lockRankGscan => 43;
 
-internal static readonly lockRank lockRankStackpool = 44;
+internal static lockRank lockRankStackpool => 44;
 
-internal static readonly lockRank lockRankStackLarge = 45;
+internal static lockRank lockRankStackLarge => 45;
 
-internal static readonly lockRank lockRankHchanLeaf = 46;
+internal static lockRank lockRankHchanLeaf => 46;
 
-internal static readonly lockRank lockRankWbufSpans = 47;
+internal static lockRank lockRankWbufSpans => 47;
 
-internal static readonly lockRank lockRankMheap = 48;
+internal static lockRank lockRankMheap => 48;
 
-internal static readonly lockRank lockRankMheapSpecial = 49;
+internal static lockRank lockRankMheapSpecial => 49;
 
-internal static readonly lockRank lockRankGlobalAlloc = 50;
+internal static lockRank lockRankGlobalAlloc => 50;
 
-internal static readonly lockRank lockRankTrace = 51;
+internal static lockRank lockRankTrace => 51;
 
-internal static readonly lockRank lockRankTraceStackTab = 52;
+internal static lockRank lockRankTraceStackTab => 52;
 
-internal static readonly lockRank lockRankPanic = 53;
+internal static lockRank lockRankPanic => 53;
 
-internal static readonly lockRank lockRankDeadlock = 54;
+internal static lockRank lockRankDeadlock => 54;
 
-internal static readonly lockRank lockRankRaceFini = 55;
+internal static lockRank lockRankRaceFini => 55;
 
-internal static readonly lockRank lockRankAllocmRInternal = 56;
+internal static lockRank lockRankAllocmRInternal => 56;
 
-internal static readonly lockRank lockRankExecRInternal = 57;
+internal static lockRank lockRankExecRInternal => 57;
 
-internal static readonly lockRank lockRankTestRInternal = 58;
+internal static lockRank lockRankTestRInternal => 58;
 
 // lockRankLeafRank is the rank of lock that does not have a declared rank,
 // and hence is a leaf lock.
-internal static readonly lockRank lockRankLeafRank = 1000;
+internal static lockRank lockRankLeafRank => 1000;
 
 // lockNames gives the names associated with each of the above ranks.
 internal static slice<@string> lockNames = new golib.SparseArray<@string>{

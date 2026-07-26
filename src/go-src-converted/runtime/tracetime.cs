@@ -37,7 +37,7 @@ partial class runtime_package {
 // The suggested increment frequency for PowerPC's time base register is
 // 512 MHz according to Power ISA v2.07 section 6.2, so we use 32 on ppc64
 // and ppc64le.
-internal static readonly UntypedInt traceTimeDiv = /* (1-osHasLowResClockInt)*64 + osHasLowResClockInt*(256-224*(goarch.IsPpc64|goarch.IsPpc64le)) */ 256;
+internal static UntypedInt traceTimeDiv => /* (1-osHasLowResClockInt)*64 + osHasLowResClockInt*(256-224*(goarch.IsPpc64|goarch.IsPpc64le)) */ 256;
 
 [GoType("num:uint64")] partial struct traceTime;
 

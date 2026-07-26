@@ -48,14 +48,14 @@ public static error ErrInvalidPublicKey = errors.New("crypto/dsa: invalid public
 
 [GoType("num:nint")] partial struct ParameterSizes;
 
-public static readonly ParameterSizes L1024N160 = /* iota */ 0;
-public static readonly ParameterSizes L2048N224 = 1;
-public static readonly ParameterSizes L2048N256 = 2;
-public static readonly ParameterSizes L3072N256 = 3;
+public static ParameterSizes L1024N160 => /* iota */ 0;
+public static ParameterSizes L2048N224 => 1;
+public static ParameterSizes L2048N256 => 2;
+public static ParameterSizes L3072N256 => 3;
 
 // numMRTests is the number of Miller-Rabin primality tests that we perform. We
 // pick the largest recommended number from table C.1 of FIPS 186-3.
-internal static readonly UntypedInt numMRTests = 64;
+internal static UntypedInt numMRTests => 64;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string cryptoDsaInvalidˢ = "crypto/dsa: invalid ParameterSizes"u8;

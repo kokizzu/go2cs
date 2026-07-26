@@ -181,7 +181,7 @@ internal static slice<byte> kyberSharedSecret(slice<byte> K, slice<byte> c) {
     return @out;
 }
 
-internal static readonly UntypedInt x25519PublicKeySize = 32;
+internal static UntypedInt x25519PublicKeySize => 32;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string tlsInternalErrorˢ6 = "tls: internal error: unsupported curve"u8;

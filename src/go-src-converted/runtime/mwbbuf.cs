@@ -55,8 +55,8 @@ internal const bool testSmallBuf = false;
     internal array<uintptr> buf = new(wbBufEntries);
 }
 
-internal static readonly UntypedInt wbBufEntries = 512;
-internal static readonly UntypedInt wbMaxEntriesPerCall = 8;
+internal static UntypedInt wbBufEntries => 512;
+internal static UntypedInt wbMaxEntriesPerCall => 8;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string badWriteBarrierBufferˢ = "bad write barrier buffer bounds"u8;

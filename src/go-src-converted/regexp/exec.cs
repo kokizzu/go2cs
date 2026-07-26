@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using io = io_package;
+using Δio = io_package;
 using syntax = regexp.syntax_package;
 using Δsync = sync_package;
 using regexp;
@@ -66,7 +66,7 @@ internal static input newString(this ж<inputs> Ꮡi, @string s) {
     return new inputStringжinput(Ꮡi.of(inputs.Ꮡstring));
 }
 
-internal static input newReader(this ж<inputs> Ꮡi, io.RuneReader r) {
+internal static input newReader(this ж<inputs> Ꮡi, Δio.RuneReader r) {
     ref var i = ref Ꮡi.Value;
 
     i.reader.r = r;
@@ -88,7 +88,7 @@ internal static input newReader(this ж<inputs> Ꮡi, io.RuneReader r) {
     }
 }
 
-internal static (input, nint) init(this ж<inputs> Ꮡi, io.RuneReader r, slice<byte> b, @string s) {
+internal static (input, nint) init(this ж<inputs> Ꮡi, Δio.RuneReader r, slice<byte> b, @string s) {
     if (r != default!) {
         return (Ꮡi.newReader(r), 0);
     }
@@ -390,7 +390,7 @@ Again:
             copy(t.cap, cap);
         }
         d.Value.t = Ꮡt;
-        t = default!;
+        Ꮡt = default!; t = ref Ꮡt.DerefOrNil();
     }
     else { /* default: */
         throw panic("unhandled");
@@ -423,7 +423,7 @@ internal static void freeOnePassMachine(ж<onePassMachine> Ꮡm) {
 }
 
 // doOnePass implements r.doExecute using the one-pass execution engine.
-internal static slice<nint> doOnePass(this ж<Regexp> Ꮡre, io.RuneReader ir, slice<byte> ib, @string @is, nint pos, nint ncap, slice<nint> dstCap) {
+internal static slice<nint> doOnePass(this ж<Regexp> Ꮡre, Δio.RuneReader ir, slice<byte> ib, @string @is, nint pos, nint ncap, slice<nint> dstCap) {
     ref var re = ref Ꮡre.Value;
 
     var startCond = re.cond;
@@ -547,7 +547,7 @@ Return:
 }
 
 // doMatch reports whether either r, b or s match the regexp.
-internal static bool doMatch(this ж<Regexp> Ꮡre, io.RuneReader r, slice<byte> b, @string s) {
+internal static bool doMatch(this ж<Regexp> Ꮡre, Δio.RuneReader r, slice<byte> b, @string s) {
     return Ꮡre.doExecute(r, b, s, 0, 0, default!) != default!;
 }
 
@@ -555,7 +555,7 @@ internal static bool doMatch(this ж<Regexp> Ꮡre, io.RuneReader r, slice<byte>
 // of its subexpressions to dstCap and returns dstCap.
 //
 // nil is returned if no matches are found and non-nil if matches are found.
-internal static slice<nint> doExecute(this ж<Regexp> Ꮡre, io.RuneReader r, slice<byte> b, @string s, nint pos, nint ncap, slice<nint> dstCap) {
+internal static slice<nint> doExecute(this ж<Regexp> Ꮡre, Δio.RuneReader r, slice<byte> b, @string s, nint pos, nint ncap, slice<nint> dstCap) {
     ref var re = ref Ꮡre.Value;
 
     if (dstCap == default!) {

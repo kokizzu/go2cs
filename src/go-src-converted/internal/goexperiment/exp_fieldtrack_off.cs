@@ -6,6 +6,6 @@ partial class goexperiment_package {
 
 public const bool FieldTrack = false;
 
-public static readonly UntypedInt FieldTrackInt = 0;
+public static UntypedInt FieldTrackInt => 0;
 
 } // end goexperiment_package

@@ -44,12 +44,12 @@ internal static error errNoSuchMulticastInterface = errors.New("no such multicas
 
 [GoType("num:nuint")] partial struct Flags;
 
-public static readonly Flags FlagUp = /* 1 << iota */ 1;                 // interface is administratively up
-public static readonly Flags FlagBroadcast = 2;          // interface supports broadcast access capability
-public static readonly Flags FlagLoopback = 4;           // interface is a loopback interface
-public static readonly Flags FlagPointToPoint = 8;       // interface belongs to a point-to-point link
-public static readonly Flags FlagMulticast = 16;          // interface supports multicast access capability
-public static readonly Flags FlagRunning = 32;            // interface is in running state
+public static Flags FlagUp => /* 1 << iota */ 1;                 // interface is administratively up
+public static Flags FlagBroadcast => 2;          // interface supports broadcast access capability
+public static Flags FlagLoopback => 4;           // interface is a loopback interface
+public static Flags FlagPointToPoint => 8;       // interface belongs to a point-to-point link
+public static Flags FlagMulticast => 16;          // interface supports multicast access capability
+public static Flags FlagRunning => 32;            // interface is in running state
 
 internal static slice<@string> flagNames = new @string[]{
     "up"u8,

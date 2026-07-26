@@ -344,7 +344,7 @@ internal static ж<bigꓸInt> bigOne = big.NewInt(1);
         // Negative number.
         var neg = new slice<byte>(len(bytes));
         foreach (var (i, b) in bytes) {
-            neg[i] = (byte)(~b);
+            neg[i] = (byte)(((byte)(~b)));
         }
         Ꮡout.SetBytes(neg);
         Ꮡout.Add(Ꮡout, bigOne);

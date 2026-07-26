@@ -27,9 +27,9 @@ partial class plan9obj_package {
     internal slice<byte> name;
 }
 
-public static readonly UntypedInt Magic64 = 0x8000; // 64-bit expanded header
-public static readonly UntypedInt Magic386 = /* (4*11+0)*11 + 7 */ 491;
-public static readonly UntypedInt MagicAMD64 = /* (4*26+0)*26 + 7 + Magic64 */ 35479;
-public static readonly UntypedInt MagicARM = /* (4*20+0)*20 + 7 */ 1607;
+public static UntypedInt Magic64 => 0x8000; // 64-bit expanded header
+public static UntypedInt Magic386 => /* (4*11+0)*11 + 7 */ 491;
+public static UntypedInt MagicAMD64 => /* (4*26+0)*26 + 7 + Magic64 */ 35479;
+public static UntypedInt MagicARM => /* (4*20+0)*20 + 7 */ 1607;
 
 } // end plan9obj_package

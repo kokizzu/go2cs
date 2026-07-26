@@ -20,18 +20,18 @@ partial class types_package {
 
 [GoType("num:byte")] partial struct operandMode;
 
-internal static readonly operandMode invalid = /* iota */ 0;  // operand is invalid
-internal static readonly operandMode novalue = 1;  // operand represents no value (result of a function call w/o result)
-internal static readonly operandMode Δbuiltinᴛ = 2; // operand is a built-in function
-internal static readonly operandMode typexpr = 3;  // operand is a type
-internal static readonly operandMode constant_ = 4; // operand is a constant; the operand's typ is a Basic type
-internal static readonly operandMode variable = 5; // operand is an addressable variable
-internal static readonly operandMode mapindex = 6; // operand is a map index expression (acts like a variable on lhs, commaok on rhs of an assignment)
-internal static readonly operandMode value = 7;    // operand is a computed value
-internal static readonly operandMode nilvalue = 8; // operand is the nil value - only used by types2
-internal static readonly operandMode commaok = 9;  // like value, but operand may be used in a comma,ok expression
-internal static readonly operandMode commaerr = 10; // like commaok, but second value is error, not boolean
-internal static readonly operandMode cgofunc = 11;  // operand is a cgo function
+internal static operandMode invalid => /* iota */ 0;  // operand is invalid
+internal static operandMode novalue => 1;  // operand represents no value (result of a function call w/o result)
+internal static operandMode Δbuiltinᴛ => 2; // operand is a built-in function
+internal static operandMode typexpr => 3;  // operand is a type
+internal static operandMode constant_ => 4; // operand is a constant; the operand's typ is a Basic type
+internal static operandMode variable => 5; // operand is an addressable variable
+internal static operandMode mapindex => 6; // operand is a map index expression (acts like a variable on lhs, commaok on rhs of an assignment)
+internal static operandMode value => 7;    // operand is a computed value
+internal static operandMode nilvalue => 8; // operand is the nil value - only used by types2
+internal static operandMode commaok => 9;  // like value, but operand may be used in a comma,ok expression
+internal static operandMode commaerr => 10; // like commaok, but second value is error, not boolean
+internal static operandMode cgofunc => 11;  // operand is a cgo function
 
 // only used by types2
 internal static array<@string> operandModeString = new golib.SparseArray<@string>{

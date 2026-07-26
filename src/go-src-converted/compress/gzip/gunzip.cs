@@ -283,8 +283,7 @@ public static (ж<Reader>, error) NewReader(io.Reader r) {
             z.err = ErrChecksum;
             return (n, z.err);
         }
-        z.digest = 0;
-        z.size = 0;
+        (z.digest, z.size) = (0, 0);
         // File is ok; check if there is another.
         if (!z.multistream) {
             return (n, io.EOF);

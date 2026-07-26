@@ -12,9 +12,9 @@ using runtime.@internal;
 partial class runtime_package {
 
 // Batch type values for the alloc/free experiment.
-internal static readonly UntypedInt traceAllocFreeTypesBatch = iota; // Contains types. [{id, address, size, ptrspan, name length, name string} ...]
+internal static UntypedInt traceAllocFreeTypesBatch => iota; // Contains types. [{id, address, size, ptrspan, name length, name string} ...]
 
-internal static readonly UntypedInt traceAllocFreeInfoBatch = 1; // Contains info for interpreting events. [min heap addr, page size, min heap align, min stack align]
+internal static UntypedInt traceAllocFreeInfoBatch => 1; // Contains info for interpreting events. [min heap addr, page size, min heap align, min stack align]
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string traceSnapshotMemoryˢ = "traceSnapshotMemory: tracing is not enabled"u8;

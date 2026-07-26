@@ -14,8 +14,8 @@ namespace go;
 
 using syntax = regexp.syntax_package;
 using Δsync = sync_package;
-using io = io_package;
 using regexp;
+using Δio = io_package;
 
 partial class regexp_package {
 
@@ -27,9 +27,9 @@ partial class regexp_package {
     internal nint pos;
 }
 
-internal static readonly UntypedInt visitedBits = 32;
-internal static readonly UntypedInt maxBacktrackProg = 500; // len(prog.Inst) <= max
-internal static readonly UntypedInt maxBacktrackVector = /* 256 * 1024 */ 262144; // bit vector size <= max (bits)
+internal static UntypedInt visitedBits => 32;
+internal static UntypedInt maxBacktrackProg => 500; // len(prog.Inst) <= max
+internal static UntypedInt maxBacktrackVector => /* 256 * 1024 */ 262144; // bit vector size <= max (bits)
 
 // bitState holds state for the backtracker.
 [GoType] partial struct bitState {

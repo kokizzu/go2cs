@@ -74,35 +74,35 @@ internal static @string mangle(this context c, @string templateName) {
 [GoType("num:uint8")] partial struct state;
 
 //go:generate stringer -type state
-internal static readonly state stateText = /* iota */ 0;
-internal static readonly state stateTag = 1;
-internal static readonly state stateAttrName = 2;
-internal static readonly state stateAfterName = 3;
-internal static readonly state stateBeforeValue = 4;
-internal static readonly state stateHTMLCmt = 5;
-internal static readonly state stateRCDATA = 6;
-internal static readonly state stateAttr = 7;
-internal static readonly state stateURL = 8;
-internal static readonly state stateSrcset = 9;
-internal static readonly state stateJS = 10;
-internal static readonly state stateJSDqStr = 11;
-internal static readonly state stateJSSqStr = 12;
-internal static readonly state stateJSTmplLit = 13;
-internal static readonly state stateJSRegexp = 14;
-internal static readonly state stateJSBlockCmt = 15;
-internal static readonly state stateJSLineCmt = 16;
-internal static readonly state stateJSHTMLOpenCmt = 17;
-internal static readonly state stateJSHTMLCloseCmt = 18;
-internal static readonly state stateCSS = 19;
-internal static readonly state stateCSSDqStr = 20;
-internal static readonly state stateCSSSqStr = 21;
-internal static readonly state stateCSSDqURL = 22;
-internal static readonly state stateCSSSqURL = 23;
-internal static readonly state stateCSSURL = 24;
-internal static readonly state stateCSSBlockCmt = 25;
-internal static readonly state stateCSSLineCmt = 26;
-internal static readonly state stateError = 27;
-internal static readonly state stateDead = 28;
+internal static state stateText => /* iota */ 0;
+internal static state stateTag => 1;
+internal static state stateAttrName => 2;
+internal static state stateAfterName => 3;
+internal static state stateBeforeValue => 4;
+internal static state stateHTMLCmt => 5;
+internal static state stateRCDATA => 6;
+internal static state stateAttr => 7;
+internal static state stateURL => 8;
+internal static state stateSrcset => 9;
+internal static state stateJS => 10;
+internal static state stateJSDqStr => 11;
+internal static state stateJSSqStr => 12;
+internal static state stateJSTmplLit => 13;
+internal static state stateJSRegexp => 14;
+internal static state stateJSBlockCmt => 15;
+internal static state stateJSLineCmt => 16;
+internal static state stateJSHTMLOpenCmt => 17;
+internal static state stateJSHTMLCloseCmt => 18;
+internal static state stateCSS => 19;
+internal static state stateCSSDqStr => 20;
+internal static state stateCSSSqStr => 21;
+internal static state stateCSSDqURL => 22;
+internal static state stateCSSSqURL => 23;
+internal static state stateCSSURL => 24;
+internal static state stateCSSBlockCmt => 25;
+internal static state stateCSSLineCmt => 26;
+internal static state stateError => 27;
+internal static state stateDead => 28;
 
 // isComment is true for any state that contains content meant for template
 // authors & maintainers, not for end-users or machines.
@@ -143,43 +143,43 @@ internal static bool isInScriptLiteral(state s) {
 [GoType("num:uint8")] partial struct delim;
 
 //go:generate stringer -type delim
-internal static readonly delim delimNone = /* iota */ 0;
-internal static readonly delim delimDoubleQuote = 1;
-internal static readonly delim delimSingleQuote = 2;
-internal static readonly delim delimSpaceOrTagEnd = 3;
+internal static delim delimNone => /* iota */ 0;
+internal static delim delimDoubleQuote => 1;
+internal static delim delimSingleQuote => 2;
+internal static delim delimSpaceOrTagEnd => 3;
 
 [GoType("num:uint8")] partial struct urlPart;
 
 //go:generate stringer -type urlPart
-internal static readonly urlPart urlPartNone = /* iota */ 0;
-internal static readonly urlPart urlPartPreQuery = 1;
-internal static readonly urlPart urlPartQueryOrFrag = 2;
-internal static readonly urlPart urlPartUnknown = 3;
+internal static urlPart urlPartNone => /* iota */ 0;
+internal static urlPart urlPartPreQuery => 1;
+internal static urlPart urlPartQueryOrFrag => 2;
+internal static urlPart urlPartUnknown => 3;
 
 [GoType("num:uint8")] partial struct jsCtx;
 
 //go:generate stringer -type jsCtx
-internal static readonly jsCtx jsCtxRegexp = /* iota */ 0;
-internal static readonly jsCtx jsCtxDivOp = 1;
-internal static readonly jsCtx jsCtxUnknown = 2;
+internal static jsCtx jsCtxRegexp => /* iota */ 0;
+internal static jsCtx jsCtxDivOp => 1;
+internal static jsCtx jsCtxUnknown => 2;
 
 [GoType("num:uint8")] partial struct element;
 
 //go:generate stringer -type element
-internal static readonly element elementNone = /* iota */ 0;
-internal static readonly element elementScript = 1;
-internal static readonly element elementStyle = 2;
-internal static readonly element elementTextarea = 3;
-internal static readonly element elementTitle = 4;
+internal static element elementNone => /* iota */ 0;
+internal static element elementScript => 1;
+internal static element elementStyle => 2;
+internal static element elementTextarea => 3;
+internal static element elementTitle => 4;
 
 [GoType("num:uint8")] partial struct attr;
 
 //go:generate stringer -type attr
-internal static readonly attr attrNone = /* iota */ 0;
-internal static readonly attr attrScript = 1;
-internal static readonly attr attrScriptType = 2;
-internal static readonly attr attrStyle = 3;
-internal static readonly attr attrURL = 4;
-internal static readonly attr attrSrcset = 5;
+internal static attr attrNone => /* iota */ 0;
+internal static attr attrScript => 1;
+internal static attr attrScriptType => 2;
+internal static attr attrStyle => 3;
+internal static attr attrURL => 4;
+internal static attr attrSrcset => 5;
 
 } // end template_package

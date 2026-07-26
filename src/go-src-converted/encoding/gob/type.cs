@@ -32,11 +32,11 @@ partial class gob_package {
 }
 
 // externalEncoding bits
-internal static readonly UntypedInt xGob = /* 1 + iota */ 1; // GobEncoder or GobDecoder
+internal static UntypedInt xGob => /* 1 + iota */ 1; // GobEncoder or GobDecoder
 
-internal static readonly UntypedInt xBinary = 2; // encoding.BinaryMarshaler or encoding.BinaryUnmarshaler
+internal static UntypedInt xBinary => 2; // encoding.BinaryMarshaler or encoding.BinaryUnmarshaler
 
-internal static readonly UntypedInt xText = 3; // encoding.TextMarshaler or encoding.TextUnmarshaler
+internal static UntypedInt xText => 3; // encoding.TextMarshaler or encoding.TextUnmarshaler
 
 internal static ж<sync.Map> ᏑuserTypeCache = new(default(sync.Map));
 internal static ref sync.Map userTypeCache => ref ᏑuserTypeCache.Value; // map[reflect.Type]*userTypeInfo
@@ -81,13 +81,11 @@ internal static (ж<userTypeInfo>, error) validUserType(reflectꓸType rt) {
     }
     {
         var (ok, indir) = implementsInterface((~ut).user, gobEncoderInterfaceType); if (ok){
-            ut.Value.externalEnc = xGob;
-            ut.Value.encIndir = indir;
+            (ut.Value.externalEnc, ut.Value.encIndir) = (xGob, indir);
         } else 
         {
             var (okΔ1, indirΔ1) = implementsInterface((~ut).user, binaryMarshalerInterfaceType); if (okΔ1) {
-                ut.Value.externalEnc = xBinary;
-                ut.Value.encIndir = indirΔ1;
+                (ut.Value.externalEnc, ut.Value.encIndir) = (xBinary, indirΔ1);
             }
         }
     }
@@ -98,13 +96,11 @@ internal static (ж<userTypeInfo>, error) validUserType(reflectꓸType rt) {
     // }
     {
         var (ok, indir) = implementsInterface((~ut).user, gobDecoderInterfaceType); if (ok){
-            ut.Value.externalDec = xGob;
-            ut.Value.decIndir = indir;
+            (ut.Value.externalDec, ut.Value.decIndir) = (xGob, indir);
         } else 
         {
             var (okΔ1, indirΔ1) = implementsInterface((~ut).user, binaryUnmarshalerInterfaceType); if (okΔ1) {
-                ut.Value.externalDec = xBinary;
-                ut.Value.decIndir = indirΔ1;
+                (ut.Value.externalDec, ut.Value.decIndir) = (xBinary, indirΔ1);
             }
         }
     }
@@ -180,7 +176,7 @@ internal static ж<userTypeInfo> userType(reflectꓸType rt) {
 internal static ж<sync.Mutex> ᏑtypeLock = new(default(sync.Mutex));
 internal static ref sync.Mutex typeLock => ref ᏑtypeLock.Value; // set while building a type
 
-internal static readonly UntypedInt firstUserId = 64; // lowest id number granted to user
+internal static UntypedInt firstUserId => 64; // lowest id number granted to user
 
 [GoType] partial interface ΔgobType {
     typeId id();

@@ -71,8 +71,8 @@ internal static Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>> prf12
     };
 }
 
-internal static readonly UntypedInt masterSecretLength = 48; // Length of a master secret in TLS 1.1.
-internal static readonly UntypedInt finishedVerifyLength = 12; // Length of verify_data in a Finished message.
+internal static UntypedInt masterSecretLength => 48; // Length of a master secret in TLS 1.1.
+internal static UntypedInt finishedVerifyLength => 12; // Length of verify_data in a Finished message.
 
 internal static slice<byte> masterSecretLabel = slice<byte>("master secret"u8);
 

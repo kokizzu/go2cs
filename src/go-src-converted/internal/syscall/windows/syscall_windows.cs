@@ -32,27 +32,27 @@ public static @string UTF16PtrToString(ж<uint16> Ꮡp) {
     return syscall.UTF16ToString(@unsafe.Slice(Ꮡp, n));
 }
 
-public static readonly syscall.Errno ERROR_BAD_LENGTH = 24;
-public static readonly syscall.Errno ERROR_SHARING_VIOLATION = 32;
-public static readonly syscall.Errno ERROR_LOCK_VIOLATION = 33;
-public static readonly syscall.Errno ERROR_NOT_SUPPORTED = 50;
-public static readonly syscall.Errno ERROR_CALL_NOT_IMPLEMENTED = 120;
-public static readonly syscall.Errno ERROR_INVALID_NAME = 123;
-public static readonly syscall.Errno ERROR_LOCK_FAILED = 167;
-public static readonly syscall.Errno ERROR_NO_UNICODE_TRANSLATION = 1113;
+public static syscall.Errno ERROR_BAD_LENGTH => 24;
+public static syscall.Errno ERROR_SHARING_VIOLATION => 32;
+public static syscall.Errno ERROR_LOCK_VIOLATION => 33;
+public static syscall.Errno ERROR_NOT_SUPPORTED => 50;
+public static syscall.Errno ERROR_CALL_NOT_IMPLEMENTED => 120;
+public static syscall.Errno ERROR_INVALID_NAME => 123;
+public static syscall.Errno ERROR_LOCK_FAILED => 167;
+public static syscall.Errno ERROR_NO_UNICODE_TRANSLATION => 1113;
 
-public static readonly UntypedInt GAA_FLAG_INCLUDE_PREFIX = 0x00000010;
-public static readonly UntypedInt GAA_FLAG_INCLUDE_GATEWAYS = 0x0080;
+public static UntypedInt GAA_FLAG_INCLUDE_PREFIX => 0x00000010;
+public static UntypedInt GAA_FLAG_INCLUDE_GATEWAYS => 0x0080;
 
-public static readonly UntypedInt IF_TYPE_OTHER = 1;
-public static readonly UntypedInt IF_TYPE_ETHERNET_CSMACD = 6;
-public static readonly UntypedInt IF_TYPE_ISO88025_TOKENRING = 9;
-public static readonly UntypedInt IF_TYPE_PPP = 23;
-public static readonly UntypedInt IF_TYPE_SOFTWARE_LOOPBACK = 24;
-public static readonly UntypedInt IF_TYPE_ATM = 37;
-public static readonly UntypedInt IF_TYPE_IEEE80211 = 71;
-public static readonly UntypedInt IF_TYPE_TUNNEL = 131;
-public static readonly UntypedInt IF_TYPE_IEEE1394 = 144;
+public static UntypedInt IF_TYPE_OTHER => 1;
+public static UntypedInt IF_TYPE_ETHERNET_CSMACD => 6;
+public static UntypedInt IF_TYPE_ISO88025_TOKENRING => 9;
+public static UntypedInt IF_TYPE_PPP => 23;
+public static UntypedInt IF_TYPE_SOFTWARE_LOOPBACK => 24;
+public static UntypedInt IF_TYPE_ATM => 37;
+public static UntypedInt IF_TYPE_IEEE80211 => 71;
+public static UntypedInt IF_TYPE_TUNNEL => 131;
+public static UntypedInt IF_TYPE_IEEE1394 => 144;
 
 [GoType] partial struct SocketAddress {
     public ж<syscall.RawSockaddrAny> Sockaddr;
@@ -168,13 +168,13 @@ public static readonly UntypedInt IF_TYPE_IEEE1394 = 144;
     internal uint32 _;
 }
 
-public static readonly UntypedInt IfOperStatusUp = 1;
-public static readonly UntypedInt IfOperStatusDown = 2;
-public static readonly UntypedInt IfOperStatusTesting = 3;
-public static readonly UntypedInt IfOperStatusUnknown = 4;
-public static readonly UntypedInt IfOperStatusDormant = 5;
-public static readonly UntypedInt IfOperStatusNotPresent = 6;
-public static readonly UntypedInt IfOperStatusLowerLayerDown = 7;
+public static UntypedInt IfOperStatusUp => 1;
+public static UntypedInt IfOperStatusDown => 2;
+public static UntypedInt IfOperStatusTesting => 3;
+public static UntypedInt IfOperStatusUnknown => 4;
+public static UntypedInt IfOperStatusDormant => 5;
+public static UntypedInt IfOperStatusNotPresent => 6;
+public static UntypedInt IfOperStatusLowerLayerDown => 7;
 
 //sys	GetAdaptersAddresses(family uint32, flags uint32, reserved uintptr, adapterAddresses *IpAdapterAddresses, sizePointer *uint32) (errcode error) = iphlpapi.GetAdaptersAddresses
 //sys	GetComputerNameEx(nameformat uint32, buf *uint16, n *uint32) (err error) = GetComputerNameExW
@@ -183,10 +183,10 @@ public static readonly UntypedInt IfOperStatusLowerLayerDown = 7;
 //sys	SetFileInformationByHandle(handle syscall.Handle, fileInformationClass uint32, buf unsafe.Pointer, bufsize uint32) (err error) = kernel32.SetFileInformationByHandle
 //sys	VirtualQuery(address uintptr, buffer *MemoryBasicInformation, length uintptr) (err error) = kernel32.VirtualQuery
 //sys	GetTempPath2(buflen uint32, buf *uint16) (n uint32, err error) = GetTempPath2W
-public static readonly UntypedInt TH32CS_SNAPMODULE = 0x08;
-public static readonly UntypedInt TH32CS_SNAPMODULE32 = 0x10;
+public static UntypedInt TH32CS_SNAPMODULE => 0x08;
+public static UntypedInt TH32CS_SNAPMODULE32 => 0x10;
 
-public static readonly UntypedInt MAX_MODULE_NAME32 = 255;
+public static UntypedInt MAX_MODULE_NAME32 => 255;
 
 [GoType] [GoValueClone("Module", "ExePath")] partial struct ModuleEntry32 {
     public uint32 Size;
@@ -201,19 +201,19 @@ public static readonly UntypedInt MAX_MODULE_NAME32 = 255;
     public array<uint16> ExePath = new(syscall.MAX_PATH);
 }
 
-public static readonly uintptr SizeofModuleEntry32 = /* unsafe.Sizeof(ModuleEntry32{}) */ 1080;
+public static uintptr SizeofModuleEntry32 => /* unsafe.Sizeof(ModuleEntry32{}) */ 1080;
 
 //sys	Module32First(snapshot syscall.Handle, moduleEntry *ModuleEntry32) (err error) = kernel32.Module32FirstW
 //sys	Module32Next(snapshot syscall.Handle, moduleEntry *ModuleEntry32) (err error) = kernel32.Module32NextW
-public static readonly UntypedInt WSA_FLAG_OVERLAPPED = 0x01;
-public static readonly UntypedInt WSA_FLAG_NO_HANDLE_INHERIT = 0x80;
-public static readonly syscall.Errno WSAEINVAL = 10022;
-public static readonly syscall.Errno WSAEMSGSIZE = 10040;
-public static readonly syscall.Errno WSAEAFNOSUPPORT = 10047;
-public static readonly UntypedInt MSG_PEEK = 0x2;
-public static readonly UntypedInt MSG_TRUNC = 0x0100;
-public static readonly UntypedInt MSG_CTRUNC = 0x0200;
-internal static readonly uintptr socket_error = /* uintptr(^uint32(0)) */ unchecked((uintptr)4294967295);
+public static UntypedInt WSA_FLAG_OVERLAPPED => 0x01;
+public static UntypedInt WSA_FLAG_NO_HANDLE_INHERIT => 0x80;
+public static syscall.Errno WSAEINVAL => 10022;
+public static syscall.Errno WSAEMSGSIZE => 10040;
+public static syscall.Errno WSAEAFNOSUPPORT => 10047;
+public static UntypedInt MSG_PEEK => 0x2;
+public static UntypedInt MSG_TRUNC => 0x0100;
+public static UntypedInt MSG_CTRUNC => 0x0200;
+internal static uintptr socket_error => /* uintptr(^uint32(0)) */ unchecked((uintptr)4294967295);
 
 public static ж<syscall.GUID> ᏑWSAID_WSASENDMSG = new(new syscall.GUID(
     Data1: 0xa441e712U,
@@ -314,21 +314,21 @@ public static error WSARecvMsg(syscallꓸHandle fd, ж<WSAMsg> Ꮡmsg, ж<uint32
     return err;
 }
 
-public static readonly UntypedInt ComputerNameNetBIOS = 0;
-public static readonly UntypedInt ComputerNameDnsHostname = 1;
-public static readonly UntypedInt ComputerNameDnsDomain = 2;
-public static readonly UntypedInt ComputerNameDnsFullyQualified = 3;
-public static readonly UntypedInt ComputerNamePhysicalNetBIOS = 4;
-public static readonly UntypedInt ComputerNamePhysicalDnsHostname = 5;
-public static readonly UntypedInt ComputerNamePhysicalDnsDomain = 6;
-public static readonly UntypedInt ComputerNamePhysicalDnsFullyQualified = 7;
-public static readonly UntypedInt ComputerNameMax = 8;
-public static readonly UntypedInt MOVEFILE_REPLACE_EXISTING = 0x1;
-public static readonly UntypedInt MOVEFILE_COPY_ALLOWED = 0x2;
-public static readonly UntypedInt MOVEFILE_DELAY_UNTIL_REBOOT = 0x4;
-public static readonly UntypedInt MOVEFILE_WRITE_THROUGH = 0x8;
-public static readonly UntypedInt MOVEFILE_CREATE_HARDLINK = 0x10;
-public static readonly UntypedInt MOVEFILE_FAIL_IF_NOT_TRACKABLE = 0x20;
+public static UntypedInt ComputerNameNetBIOS => 0;
+public static UntypedInt ComputerNameDnsHostname => 1;
+public static UntypedInt ComputerNameDnsDomain => 2;
+public static UntypedInt ComputerNameDnsFullyQualified => 3;
+public static UntypedInt ComputerNamePhysicalNetBIOS => 4;
+public static UntypedInt ComputerNamePhysicalDnsHostname => 5;
+public static UntypedInt ComputerNamePhysicalDnsDomain => 6;
+public static UntypedInt ComputerNamePhysicalDnsFullyQualified => 7;
+public static UntypedInt ComputerNameMax => 8;
+public static UntypedInt MOVEFILE_REPLACE_EXISTING => 0x1;
+public static UntypedInt MOVEFILE_COPY_ALLOWED => 0x2;
+public static UntypedInt MOVEFILE_DELAY_UNTIL_REBOOT => 0x4;
+public static UntypedInt MOVEFILE_WRITE_THROUGH => 0x8;
+public static UntypedInt MOVEFILE_CREATE_HARDLINK => 0x10;
+public static UntypedInt MOVEFILE_FAIL_IF_NOT_TRACKABLE => 0x20;
 
 public static error Rename(@string oldpath, @string newpath) {
     var (from, err) = syscall.UTF16PtrFromString(oldpath);
@@ -344,10 +344,10 @@ public static error Rename(@string oldpath, @string newpath) {
 
 //sys LockFileEx(file syscall.Handle, flags uint32, reserved uint32, bytesLow uint32, bytesHigh uint32, overlapped *syscall.Overlapped) (err error) = kernel32.LockFileEx
 //sys UnlockFileEx(file syscall.Handle, reserved uint32, bytesLow uint32, bytesHigh uint32, overlapped *syscall.Overlapped) (err error) = kernel32.UnlockFileEx
-public static readonly UntypedInt LOCKFILE_FAIL_IMMEDIATELY = 0x00000001;
-public static readonly UntypedInt LOCKFILE_EXCLUSIVE_LOCK = 0x00000002;
+public static UntypedInt LOCKFILE_FAIL_IMMEDIATELY => 0x00000001;
+public static UntypedInt LOCKFILE_EXCLUSIVE_LOCK => 0x00000002;
 
-public static readonly UntypedInt MB_ERR_INVALID_CHARS = 8;
+public static UntypedInt MB_ERR_INVALID_CHARS => 8;
 
 //sys	GetACP() (acp uint32) = kernel32.GetACP
 //sys	GetConsoleCP() (ccp uint32) = kernel32.GetConsoleCP
@@ -355,9 +355,9 @@ public static readonly UntypedInt MB_ERR_INVALID_CHARS = 8;
 //sys	GetCurrentThread() (pseudoHandle syscall.Handle, err error) = kernel32.GetCurrentThread
 
 // Constants from lmshare.h
-public static readonly UntypedInt STYPE_DISKTREE = 0x00;
+public static UntypedInt STYPE_DISKTREE => 0x00;
 
-public static readonly UntypedInt STYPE_TEMPORARY = 0x40000000;
+public static UntypedInt STYPE_TEMPORARY => 0x40000000;
 
 [GoType] partial struct SHARE_INFO_2 {
     public ж<uint16> Netname;
@@ -372,12 +372,12 @@ public static readonly UntypedInt STYPE_TEMPORARY = 0x40000000;
 
 //sys  NetShareAdd(serverName *uint16, level uint32, buf *byte, parmErr *uint16) (neterr error) = netapi32.NetShareAdd
 //sys  NetShareDel(serverName *uint16, netName *uint16, reserved uint32) (neterr error) = netapi32.NetShareDel
-public static readonly UntypedInt FILE_NAME_NORMALIZED = 0x0;
-public static readonly UntypedInt FILE_NAME_OPENED = 0x8;
-public static readonly UntypedInt VOLUME_NAME_DOS = 0x0;
-public static readonly UntypedInt VOLUME_NAME_GUID = 0x1;
-public static readonly UntypedInt VOLUME_NAME_NONE = 0x4;
-public static readonly UntypedInt VOLUME_NAME_NT = 0x2;
+public static UntypedInt FILE_NAME_NORMALIZED => 0x0;
+public static UntypedInt FILE_NAME_OPENED => 0x8;
+public static UntypedInt VOLUME_NAME_DOS => 0x0;
+public static UntypedInt VOLUME_NAME_GUID => 0x1;
+public static UntypedInt VOLUME_NAME_NONE => 0x4;
+public static UntypedInt VOLUME_NAME_NT => 0x2;
 
 //sys	GetFinalPathNameByHandle(file syscall.Handle, filePath *uint16, filePathSize uint32, flags uint32) (n uint32, err error) = kernel32.GetFinalPathNameByHandleW
 public static error ErrorLoadingGetTempPath2() {
@@ -435,8 +435,8 @@ public static error ErrorLoadingGetTempPath2() {
     public uint32 WaitHint;
 }
 
-public static readonly UntypedInt SERVICE_RUNNING = 4;
-public static readonly UntypedInt SERVICE_QUERY_STATUS = 4;
+public static UntypedInt SERVICE_RUNNING => 4;
+public static UntypedInt SERVICE_QUERY_STATUS => 4;
 
 //sys    OpenService(mgr syscall.Handle, serviceName *uint16, access uint32) (handle syscall.Handle, err error) = advapi32.OpenServiceW
 //sys	QueryServiceStatus(hService syscall.Handle, lpServiceStatus *SERVICE_STATUS) (err error)  = advapi32.QueryServiceStatus

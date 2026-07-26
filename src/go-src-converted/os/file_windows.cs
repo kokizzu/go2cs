@@ -22,7 +22,7 @@ using go.sync;
 partial class os_package {
 
 // This matches the value in syscall/syscall_windows.go.
-internal static readonly UntypedInt _UTIME_OMIT = -1;
+internal static UntypedInt _UTIME_OMIT => -1;
 
 // file is the real representation of *File.
 // The extra level of indirection ensures that no clients of os

@@ -750,8 +750,7 @@ break_Loop:;
     if (i == 0) {
         return ("", errors.New(mailInvalidStringˢ));
     }
-    atom = p.s[..(int)(i)];
-    p.s = p.s[(int)(i)..];
+    (atom, p.s) = (p.s[..(int)(i)], p.s[(int)(i)..]);
     if (!permissive) {
         if (strings.HasPrefix(atom, "."u8)) {
             return ("", errors.New(mailLeadingDotInAtomˢ));

@@ -65,35 +65,35 @@ StackGuard - StackSmall bytes at the bottom.
 The linkers explore all possible call traces involving non-splitting
 functions to make sure that this limit cannot be violated.
 */
-internal static readonly UntypedInt stackSystem = /* goos.IsWindows*512*goarch.PtrSize + goos.IsPlan9*512 + goos.IsIos*goarch.IsArm64*1024 */ 4096;
-internal static readonly UntypedInt stackMin = 2048;
-internal static readonly UntypedInt fixedStack0 = /* stackMin + stackSystem */ 6144;
-internal static readonly UntypedInt fixedStack1 = /* fixedStack0 - 1 */ 6143;
-internal static readonly UntypedInt fixedStack2 = /* fixedStack1 | (fixedStack1 >> 1) */ 8191;
-internal static readonly UntypedInt fixedStack3 = /* fixedStack2 | (fixedStack2 >> 2) */ 8191;
-internal static readonly UntypedInt fixedStack4 = /* fixedStack3 | (fixedStack3 >> 4) */ 8191;
-internal static readonly UntypedInt fixedStack5 = /* fixedStack4 | (fixedStack4 >> 8) */ 8191;
-internal static readonly UntypedInt fixedStack6 = /* fixedStack5 | (fixedStack5 >> 16) */ 8191;
-internal static readonly UntypedInt fixedStack = /* fixedStack6 + 1 */ 8192;
-internal static readonly UntypedInt stackNosplit = /* abi.StackNosplitBase * sys.StackGuardMultiplier */ 800;
-internal static readonly UntypedInt stackGuard = /* stackNosplit + stackSystem + abi.StackSmall */ 5024;
+internal static UntypedInt stackSystem => /* goos.IsWindows*512*goarch.PtrSize + goos.IsPlan9*512 + goos.IsIos*goarch.IsArm64*1024 */ 4096;
+internal static UntypedInt stackMin => 2048;
+internal static UntypedInt fixedStack0 => /* stackMin + stackSystem */ 6144;
+internal static UntypedInt fixedStack1 => /* fixedStack0 - 1 */ 6143;
+internal static UntypedInt fixedStack2 => /* fixedStack1 | (fixedStack1 >> 1) */ 8191;
+internal static UntypedInt fixedStack3 => /* fixedStack2 | (fixedStack2 >> 2) */ 8191;
+internal static UntypedInt fixedStack4 => /* fixedStack3 | (fixedStack3 >> 4) */ 8191;
+internal static UntypedInt fixedStack5 => /* fixedStack4 | (fixedStack4 >> 8) */ 8191;
+internal static UntypedInt fixedStack6 => /* fixedStack5 | (fixedStack5 >> 16) */ 8191;
+internal static UntypedInt fixedStack => /* fixedStack6 + 1 */ 8192;
+internal static UntypedInt stackNosplit => /* abi.StackNosplitBase * sys.StackGuardMultiplier */ 800;
+internal static UntypedInt stackGuard => /* stackNosplit + stackSystem + abi.StackSmall */ 5024;
 
-internal static readonly UntypedInt stackDebug = 0;
-internal static readonly UntypedInt stackFromSystem = 0; // allocate stacks from system memory instead of the heap
-internal static readonly UntypedInt stackFaultOnFree = 0; // old stacks are mapped noaccess to detect use after free
-internal static readonly UntypedInt stackNoCache = 0; // disable per-P small stack caches
+internal static UntypedInt stackDebug => 0;
+internal static UntypedInt stackFromSystem => 0; // allocate stacks from system memory instead of the heap
+internal static UntypedInt stackFaultOnFree => 0; // old stacks are mapped noaccess to detect use after free
+internal static UntypedInt stackNoCache => 0; // disable per-P small stack caches
 internal const bool debugCheckBP = false;
 
 internal static nint stackPoisonCopy = 0; // fill stack that should not be accessed with garbage, to detect bad dereferences during copy
 
-internal static readonly UntypedInt uintptrMask = /* 1<<(8*goarch.PtrSize) - 1 */ 18446744073709551615;
+internal static UntypedInt uintptrMask => /* 1<<(8*goarch.PtrSize) - 1 */ 18446744073709551615;
 // The values below can be stored to g.stackguard0 to force
 // the next stack check to fail.
 // These are all larger than any real SP.
-internal static readonly UntypedInt stackPreempt = /* uintptrMask & -1314 */ 18446744073709550302;
-internal static readonly UntypedInt stackFork = /* uintptrMask & -1234 */ 18446744073709550382;
-internal static readonly UntypedInt stackForceMove = /* uintptrMask & -275 */ 18446744073709551341;
-internal static readonly UntypedInt stackPoisonMin = /* uintptrMask & -4096 */ 18446744073709547520;
+internal static UntypedInt stackPreempt => /* uintptrMask & -1314 */ 18446744073709550302;
+internal static UntypedInt stackFork => /* uintptrMask & -1234 */ 18446744073709550382;
+internal static UntypedInt stackForceMove => /* uintptrMask & -275 */ 18446744073709551341;
+internal static UntypedInt stackPoisonMin => /* uintptrMask & -4096 */ 18446744073709547520;
 
 // Global pool of spans that have free stacks.
 // Stacks are assigned an order according to size.

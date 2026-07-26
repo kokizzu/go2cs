@@ -149,10 +149,10 @@ internal static (AEAD, error) newGCMWithNonceAndTagSize(Block cipher, nint nonce
     return (new gcmжAEAD(g), default!);
 }
 
-internal static readonly UntypedInt gcmBlockSize = 16;
-internal static readonly UntypedInt gcmTagSize = 16;
-internal static readonly UntypedInt gcmMinimumTagSize = 12; // NIST SP 800-38D recommends tags with 12 or more bytes.
-internal static readonly UntypedInt gcmStandardNonceSize = 12;
+internal static UntypedInt gcmBlockSize => 16;
+internal static UntypedInt gcmTagSize => 16;
+internal static UntypedInt gcmMinimumTagSize => 12; // NIST SP 800-38D recommends tags with 12 or more bytes.
+internal static UntypedInt gcmStandardNonceSize => 12;
 
 [GoRecv] internal static nint NonceSize(this ref gcm g) {
     return g.nonceSize;
@@ -251,7 +251,7 @@ internal static gcmFieldElement /*double*/ gcmDouble(ж<gcmFieldElement> Ꮡx) {
     var msbSet = (uint64)(x.high & 1) == 1;
     // Because of the bit-ordering, doubling is actually a right shift.
     @double.high = (x.high >> (int)(1));
-    @double.high |= (x.low << (int)(63));
+    @double.high |= (uint64)((x.low << (int)(63)));
     @double.low = (x.low >> (int)(1));
     // If the most-significant bit was set before shifting then it,
     // conceptually, becomes a term of x^128. This is greater than the
@@ -261,7 +261,7 @@ internal static gcmFieldElement /*double*/ gcmDouble(ж<gcmFieldElement> Ꮡx) {
     // four terms. In characteristic 2 fields, subtraction == addition ==
     // XOR.
     if (msbSet) {
-        @double.low ^= 0xe100000000000000UL;
+        @double.low ^= (uint64)(0xe100000000000000UL);
     }
     return @double;
 }
@@ -286,15 +286,15 @@ internal static slice<uint16> gcmReductionTable = new uint16[]{
         for (nint j = 0; j < 64; j += 4) {
             var msw = (uint64)(z.high & 0xf);
             z.high >>= (int)(4);
-            z.high |= (z.low << (int)(60));
+            z.high |= (uint64)((z.low << (int)(60)));
             z.low >>= (int)(4);
-            z.low ^= ((uint64)gcmReductionTable[(nint)(msw)] << (int)(48));
+            z.low ^= (uint64)(((uint64)gcmReductionTable[(nint)(msw)] << (int)(48)));
             // the values in |table| are ordered for
             // little-endian bit positions. See the comment
             // in NewGCMWithNonceSize.
             var t = Ꮡ(g.productTable[(uint64)(word & 0xf)]);
-            z.low ^= t.Value.low;
-            z.high ^= t.Value.high;
+            z.low ^= (uint64)(t.Value.low);
+            z.high ^= (uint64)(t.Value.high);
             word >>= (int)(4);
         }
     }
@@ -307,8 +307,8 @@ internal static slice<uint16> gcmReductionTable = new uint16[]{
     ref var y = ref Ꮡy.Value;
 
     while (len(blocks) > 0) {
-        y.low ^= byteorder.BeUint64(blocks);
-        y.high ^= byteorder.BeUint64(blocks[8..]);
+        y.low ^= (uint64)(byteorder.BeUint64(blocks));
+        y.high ^= (uint64)(byteorder.BeUint64(blocks[8..]));
         g.mul(Ꮡy);
         blocks = blocks[(int)(gcmBlockSize)..];
     }
@@ -392,7 +392,7 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
     } else {
         ref var y = ref heap(new gcmFieldElement(), out var Ꮡy);
         g.update(Ꮡy, nonce);
-        y.high ^= (uint64)len(nonce) * 8;
+        y.high ^= (uint64)((uint64)len(nonce) * 8);
         g.mul(Ꮡy);
         byteorder.BePutUint64(counter[..8], y.low);
         byteorder.BePutUint64(counter[8..], y.high);
@@ -407,8 +407,8 @@ internal static (slice<byte> head, slice<byte> tail) sliceForAppend(slice<byte> 
     ref var y = ref heap(new gcmFieldElement(), out var Ꮡy);
     g.update(Ꮡy, additionalData);
     g.update(Ꮡy, ciphertext);
-    y.low ^= (uint64)len(additionalData) * 8;
-    y.high ^= (uint64)len(ciphertext) * 8;
+    y.low ^= (uint64)((uint64)len(additionalData) * 8);
+    y.high ^= (uint64)((uint64)len(ciphertext) * 8);
     g.mul(Ꮡy);
     byteorder.BePutUint64(@out, y.low);
     byteorder.BePutUint64(@out[8..], y.high);

@@ -13,8 +13,8 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt _WorkbufSize = 2048; // in bytes; larger values result in less contention
-internal static readonly UntypedInt workbufAlloc = /* 32 << 10 */ 32768;
+internal static UntypedInt _WorkbufSize => 2048; // in bytes; larger values result in less contention
+internal static UntypedInt workbufAlloc => /* 32 << 10 */ 32768;
 
 /* [GoInit] runtime bootstrap init - not run; .NET is the runtime */ internal static void initΔ3() {
     if (workbufAlloc % pageSize != 0 || workbufAlloc % _WorkbufSize != 0) {
@@ -112,8 +112,7 @@ internal static readonly UntypedInt workbufAlloc = /* 32 << 10 */ 32768;
     } else 
     if ((~wbuf).nobj == len((~wbuf).obj)) {
         // wbuf is empty at this point.
-        w.wbuf1 = w.wbuf2;
-        w.wbuf2 = w.wbuf1;
+        (w.wbuf1, w.wbuf2) = (w.wbuf2, w.wbuf1);
         wbuf = w.wbuf1;
         if ((~wbuf).nobj == len((~wbuf).obj)) {
             putfull(wbuf);
@@ -166,8 +165,7 @@ internal static readonly UntypedInt workbufAlloc = /* 32 << 10 */ 32768;
         while ((~wbuf).nobj == len((~wbuf).obj)) {
             putfull(wbuf);
             w.flushedWork = true;
-            w.wbuf1 = w.wbuf2;
-            w.wbuf2 = getempty();
+            (w.wbuf1, w.wbuf2) = (w.wbuf2, getempty());
             wbuf = w.wbuf1;
             flushed = true;
         }
@@ -195,8 +193,7 @@ internal static readonly UntypedInt workbufAlloc = /* 32 << 10 */ 32768;
     }
     // wbuf is empty at this point.
     if ((~wbuf).nobj == 0) {
-        w.wbuf1 = w.wbuf2;
-        w.wbuf2 = w.wbuf1;
+        (w.wbuf1, w.wbuf2) = (w.wbuf2, w.wbuf1);
         wbuf = w.wbuf1;
         if ((~wbuf).nobj == 0) {
             var owbuf = wbuf;

@@ -11,11 +11,11 @@ partial class rand_package {
  * algorithm by
  * DP Mitchell and JA Reeds
  */
-internal static readonly UntypedInt rngLen = 607;
-internal static readonly UntypedInt rngTap = 273;
-internal static readonly UntypedInt rngMax = /* 1 << 63 */ 9223372036854775808;
-internal static readonly UntypedInt rngMask = /* rngMax - 1 */ 9223372036854775807;
-internal static readonly UntypedInt int32max = /* (1 << 31) - 1 */ 2147483647;
+internal static UntypedInt rngLen => 607;
+internal static UntypedInt rngTap => 273;
+internal static UntypedInt rngMax => /* 1 << 63 */ 9223372036854775808;
+internal static UntypedInt rngMask => /* rngMax - 1 */ 9223372036854775807;
+internal static UntypedInt int32max => /* (1 << 31) - 1 */ 2147483647;
 
 internal static array<int64> rngCooked = new int64[]{
     -(nint)4181792142133755926L, -(nint)4576982950128230565L, (nint)1395769623340756751L, (nint)5333664234075297259L,

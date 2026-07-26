@@ -33,9 +33,9 @@ partial class bidi_package {
 // algorithm defined in UAX#9. In particular, the stack referenced there
 // supports operations that go beyond a "basic" stack. An equivalent
 // implementation based on a linked list is used here.
-internal static readonly bracketType bpNone = /* iota */ 0;
-internal static readonly bracketType bpOpen = 1;
-internal static readonly bracketType bpClose = 2;
+internal static bracketType bpNone => /* iota */ 0;
+internal static bracketType bpOpen => 1;
+internal static bracketType bpClose => 2;
 
 // bracketPair holds a pair of index values for opening and closing bracket
 // location of a bracket pair.
@@ -119,7 +119,7 @@ internal static void resolvePairedBrackets(ж<ΔisolatingRunSequence> Ꮡs) {
     return pairValues[p.indexes[opener]] == pairValues[p.indexes[closer]];
 }
 
-internal static readonly UntypedInt maxPairingDepth = 63;
+internal static UntypedInt maxPairingDepth => 63;
 
 // locateBrackets locates matching bracket pairs according to BD16.
 //

@@ -62,7 +62,7 @@ public static array<byte> CovMetaMagic = new byte[]{(rune)'\x00', (rune)'\x63', 
 public static readonly @string MetaFilePref = "covmeta"u8;
 
 // MetaFileVersion contains the current (most recent) meta-data file version.
-public static readonly UntypedInt MetaFileVersion = 1;
+public static UntypedInt MetaFileVersion => 1;
 
 // MetaFileHeader stores file header information for a meta-data file.
 [GoType] [GoValueClone("Magic", "MetaFileHash")] partial struct MetaFileHeader {
@@ -93,7 +93,7 @@ public static readonly UntypedInt MetaFileVersion = 1;
     public uint32 NumFuncs;
 }
 
-public static readonly UntypedInt CovMetaHeaderSize = /* 16 + 4 + 4 + 4 + 4 + 4 + 4 + 4 */ 44; // keep in sync with above
+public static UntypedInt CovMetaHeaderSize => /* 16 + 4 + 4 + 4 + 4 + 4 + 4 + 4 */ 44; // keep in sync with above
 
 // As an example, consider the following Go package:
 //
@@ -194,12 +194,12 @@ public static readonly UntypedInt CovMetaHeaderSize = /* 16 + 4 + 4 + 4 + 4 + 4 
 
 [GoType("num:uint8")] partial struct CounterMode;
 
-public static readonly CounterMode CtrModeInvalid = /* iota */ 0;
-public static readonly CounterMode CtrModeSet = 1; // "set" mode
-public static readonly CounterMode CtrModeCount = 2; // "count" mode
-public static readonly CounterMode CtrModeAtomic = 3; // "atomic" mode
-public static readonly CounterMode CtrModeRegOnly = 4; // registration-only pseudo-mode
-public static readonly CounterMode CtrModeTestMain = 5; // testmain pseudo-mode
+public static CounterMode CtrModeInvalid => /* iota */ 0;
+public static CounterMode CtrModeSet => 1; // "set" mode
+public static CounterMode CtrModeCount => 2; // "count" mode
+public static CounterMode CtrModeAtomic => 3; // "atomic" mode
+public static CounterMode CtrModeRegOnly => 4; // registration-only pseudo-mode
+public static CounterMode CtrModeTestMain => 5; // testmain pseudo-mode
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string setˢ = "set"u8;
@@ -257,9 +257,9 @@ public static CounterMode ParseCounterMode(@string mode) {
 
 [GoType("num:uint8")] partial struct CounterGranularity;
 
-public static readonly CounterGranularity CtrGranularityInvalid = /* iota */ 0;
-public static readonly CounterGranularity CtrGranularityPerBlock = 1;
-public static readonly CounterGranularity CtrGranularityPerFunc = 2;
+public static CounterGranularity CtrGranularityInvalid => /* iota */ 0;
+public static CounterGranularity CtrGranularityPerBlock => 1;
+public static CounterGranularity CtrGranularityPerFunc => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string perblockˢ = "perblock"u8;
@@ -303,7 +303,7 @@ public static readonly @string MetaFilesFileName = "metafiles.txt"u8;
 public static array<byte> CovCounterMagic = new byte[]{(rune)'\x00', (rune)'\x63', (rune)'\x77', (rune)'\x6d'}.array();
 
 // CounterFileVersion stores the most recent counter data file version.
-public static readonly UntypedInt CounterFileVersion = 1;
+public static UntypedInt CounterFileVersion => 1;
 
 // CounterFileHeader stores files header information for a counter-data file.
 [GoType] [GoValueClone("Magic", "MetaHash")] partial struct CounterFileHeader {
@@ -359,8 +359,8 @@ public static readonly @string CounterFileRegexp = @"^%s\.(\S+)\.(\d+)\.(\d+)+$"
 
 [GoType("num:uint8")] partial struct CounterFlavor;
 
-public static readonly CounterFlavor CtrRaw = /* iota + 1 */ 1;
-public static readonly CounterFlavor CtrULeb128 = 2;
+public static CounterFlavor CtrRaw => /* iota + 1 */ 1;
+public static CounterFlavor CtrULeb128 => 2;
 
 public static nint Round4(nint x) {
     return (nint)((x + 3) & ~(nint)3);
@@ -388,12 +388,12 @@ public static nint Round4(nint x) {
 //
 // The counter variable itself is created not as a struct but as a flat
 // array of uint32's; we then use the offsets below to index into it.
-public static readonly UntypedInt NumCtrsOffset = 0;
+public static UntypedInt NumCtrsOffset => 0;
 
-public static readonly UntypedInt PkgIdOffset = 1;
+public static UntypedInt PkgIdOffset => 1;
 
-public static readonly UntypedInt FuncIdOffset = 2;
+public static UntypedInt FuncIdOffset => 2;
 
-public static readonly UntypedInt FirstCtrOffset = 3;
+public static UntypedInt FirstCtrOffset => 3;
 
 } // end coverage_package

@@ -15,7 +15,7 @@ partial class nistec_package {
 
 // p384ElementLength is the length of an element of the base or scalar field,
 // which have the same bytes length for all NIST P curves.
-internal static readonly UntypedInt p384ElementLength = 48;
+internal static UntypedInt p384ElementLength => 48;
 
 // P384Point is a P384 point. The zero value is NOT valid.
 [GoType] partial struct P384Point {
@@ -492,7 +492,7 @@ internal static ref sync.Once p384GeneratorTableOnce => ref Ꮡp384GeneratorTabl
 // times.
 [GoRecv] internal static ж<array<p384Table>> generatorTable(this ref P384Point p) {
     Ꮡp384GeneratorTableOnce.Do(() => {
-        p384GeneratorTable = @new<array<p384Table>>();
+        p384GeneratorTable = Ꮡ(new array<p384Table>(96));
         var @base = NewP384Point().SetGenerator();
         for (nint i = 0; i < p384ElementLength * 2; i++) {
             p384GeneratorTable.Value[i][0] = NewP384Point().Set(@base);

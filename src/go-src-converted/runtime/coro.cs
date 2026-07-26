@@ -152,7 +152,7 @@ internal static void coroswitch_m(ж<g> Ꮡgp) {
         // the thread, because we'll be switching back to another goroutine anyway, which
         // will take back its thread-lock state before returning.
         gdestroy(Ꮡgp);
-        gp = default!;
+        Ꮡgp = default!; gp = ref Ꮡgp.DerefOrNil();
     } else {
         // If we can CAS ourselves directly from running to waiting, so do,
         // keeping the control transfer as lightweight as possible.

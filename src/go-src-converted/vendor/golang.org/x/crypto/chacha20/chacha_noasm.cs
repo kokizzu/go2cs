@@ -6,7 +6,7 @@ namespace go.vendor.golang.org.x.crypto;
 
 partial class chacha20_package {
 
-internal static readonly UntypedInt bufSize = /* blockSize */ 64;
+internal static UntypedInt bufSize => /* blockSize */ 64;
 
 [GoRecv] internal static void xorKeyStreamBlocks(this ref Cipher s, slice<byte> dst, slice<byte> src) {
     s.xorKeyStreamBlocksGeneric(dst, src);

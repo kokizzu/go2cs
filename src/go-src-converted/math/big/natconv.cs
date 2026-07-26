@@ -20,9 +20,9 @@ internal static readonly @string digits = "0123456789abcdefghijklmnopqrstuvwxyzA
 //       for API compatibility.
 
 // MaxBase is the largest number base accepted for string conversions.
-public static readonly UntypedInt MaxBase = /* 10 + ('z' - 'a' + 1) + ('Z' - 'A' + 1) */ 62;
+public static UntypedInt MaxBase => /* 10 + ('z' - 'a' + 1) + ('Z' - 'A' + 1) */ 62;
 
-internal static readonly UntypedInt maxBaseSmall = /* 10 + ('z' - 'a' + 1) */ 36;
+internal static UntypedInt maxBaseSmall => /* 10 + ('z' - 'a' + 1) */ 36;
 
 // maxPow returns (b**n, n) such that b**n is the largest power b**n <= _M.
 // For instance maxPow(10) == (1e19, 19) for 19 decimal digits in a 64bit Word.

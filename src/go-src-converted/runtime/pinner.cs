@@ -35,8 +35,8 @@ partial class runtime_package {
 // cache is empty. If application code is reusing Pinners
 // on its own, we want to leave the backing store in place
 // so reuse is more efficient.
-internal static readonly UntypedInt pinnerSize = 64;
-internal static readonly uintptr pinnerRefStoreSize = /* (pinnerSize - unsafe.Sizeof([]unsafe.Pointer{})) / unsafe.Sizeof(unsafe.Pointer(nil)) */ 5;
+internal static UntypedInt pinnerSize => 64;
+internal static uintptr pinnerRefStoreSize => /* (pinnerSize - unsafe.Sizeof([]unsafe.Pointer{})) / unsafe.Sizeof(unsafe.Pointer(nil)) */ 5;
 
 [GoType] [GoValueClone("refStore")] partial struct pinner {
     internal slice<@unsafe.Pointer> refs;
@@ -218,7 +218,7 @@ internal static bool setPinned(@unsafe.Pointer ptr, bool pin) {
     if (val){
         atomic.Or8(v.bytep, mask);
     } else {
-        atomic.And8(v.bytep, (uint8)(~mask));
+        atomic.And8(v.bytep, (uint8)(((uint8)(~mask))));
     }
 }
 

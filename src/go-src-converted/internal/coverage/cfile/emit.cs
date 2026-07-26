@@ -94,9 +94,9 @@ internal static bool covProfileAlreadyEmitted;
 
 [GoType("num:nint")] partial struct fileType;
 
-internal static readonly UntypedInt noFile = /* 1 << iota */ 1;
-internal static readonly UntypedInt metaDataFile = 2;
-internal static readonly UntypedInt counterDataFile = 4;
+internal static UntypedInt noFile => /* 1 << iota */ 1;
+internal static UntypedInt metaDataFile => 2;
+internal static UntypedInt counterDataFile => 4;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string gocoverdebugˢ = "GOCOVERDEBUG"u8;

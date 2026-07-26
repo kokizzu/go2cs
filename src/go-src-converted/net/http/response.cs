@@ -228,7 +228,7 @@ internal static void fixPragmaCacheControl(ΔHeader header) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string contentLength0ˢ = "Content-Length: 0\r\n"u8;
 
-[GoType("dyn")] partial struct Write_type {
+[GoType("dyn")] partial struct Write_r1 {
     public io_package.Reader Reader;
     public io_package.Closer Closer;
 }
@@ -283,7 +283,7 @@ private static readonly @string contentLength0ˢ = "Content-Length: 0\r\n"u8;
             r1.Value.Body = NoBody;
         } else {
             r1.Value.ContentLength = -1;
-            r1.Value.Body = new Write_type(
+            r1.Value.Body = new Write_r1(
                 io.MultiReader(new bytes_ReaderжReader(bytes.NewReader(buf[..1])), r.Body),
                 r.Body
             );

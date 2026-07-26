@@ -129,9 +129,9 @@ partial class types_package {
 
 [GoType("num:uint32")] partial struct namedState;
 
-internal static readonly namedState unresolved = /* iota */ 0; // tparams, underlying type and methods might be unavailable
-internal static readonly namedState resolved = 1;  // resolve has run; methods might be incomplete (for instances)
-internal static readonly namedState complete = 2;  // all data is known
+internal static namedState unresolved => /* iota */ 0; // tparams, underlying type and methods might be unavailable
+internal static namedState resolved => 1;  // resolve has run; methods might be incomplete (for instances)
+internal static namedState complete => 2;  // all data is known
 
 // NewNamed returns a new named type for the given type name, underlying type, and associated methods.
 // If the given type name obj doesn't have a type yet, its type is set to the returned named type.

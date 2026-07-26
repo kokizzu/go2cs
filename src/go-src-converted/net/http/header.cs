@@ -117,11 +117,12 @@ public static ΔHeader Clone(this ΔHeader h) {
     return h2;
 }
 
-internal static slice<@string> timeFormats = new @string[]{
+internal static slice<@string> timeFormats;
+internal static void initᴛtimeFormats() { timeFormats = new @string[]{
     TimeFormat,
     time.RFC850,
     time.ANSIC
-}.slice();
+}.slice(); }
 
 // ParseTime parses a time header (such as the Date: header),
 // trying each of the three formats allowed by HTTP/1.1:

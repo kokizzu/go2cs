@@ -631,8 +631,7 @@ readLiteral:
             f.err = ((CorruptInputError)f.roffset);
             return;
         }
-        f.copyLen = length;
-        f.copyDist = dist;
+        (f.copyLen, f.copyDist) = (length, dist);
         goto copyHistory;
     }
 copyHistory:
@@ -729,7 +728,7 @@ internal static error noEOF(error e) {
         return noEOF(err);
     }
     f.roffset++;
-    f.b |= ((uint32)c).Lsh(f.nb);
+    f.b |= (uint32)(((uint32)c).Lsh(f.nb));
     f.nb += 8;
     return default!;
 }

@@ -5,10 +5,10 @@ namespace go.@internal;
 
 partial class goarch_package {
 
-internal static readonly ArchFamilyType _ArchFamily = /* AMD64 */ 0;
-internal static readonly UntypedInt _DefaultPhysPageSize = 4096;
-internal static readonly UntypedInt _PCQuantum = 1;
-internal static readonly UntypedInt _MinFrameSize = 0;
-internal static readonly UntypedInt _StackAlign = /* PtrSize */ 8;
+internal static ArchFamilyType _ArchFamily => /* AMD64 */ 0;
+internal static UntypedInt _DefaultPhysPageSize => 4096;
+internal static UntypedInt _PCQuantum => 1;
+internal static UntypedInt _MinFrameSize => 0;
+internal static UntypedInt _StackAlign => /* PtrSize */ 8;
 
 } // end goarch_package

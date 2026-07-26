@@ -13,18 +13,18 @@ using @internal;
 
 partial class net_package {
 
-internal static readonly time.Duration defaultTCPKeepAliveIdle = /* 15 * time.Second */ 15000000000;
-internal static readonly time.Duration defaultTCPKeepAliveInterval = /* 15 * time.Second */ 15000000000;
-internal static readonly UntypedInt defaultTCPKeepAliveCount = 9;
+internal static time.Duration defaultTCPKeepAliveIdle => /* 15 * time.Second */ 15000000000;
+internal static time.Duration defaultTCPKeepAliveInterval => /* 15 * time.Second */ 15000000000;
+internal static UntypedInt defaultTCPKeepAliveCount => 9;
 internal const bool defaultMPTCPEnabled = false;
 
 internal static ж<godebug.Setting> multipathtcp = godebug.New("multipathtcp"u8);
 
 [GoType("num:uint8")] partial struct mptcpStatus;
 
-internal static readonly mptcpStatus mptcpUseDefault = /* iota */ 0;
-internal static readonly mptcpStatus mptcpEnabled = 1;
-internal static readonly mptcpStatus mptcpDisabled = 2;
+internal static mptcpStatus mptcpUseDefault => /* iota */ 0;
+internal static mptcpStatus mptcpEnabled => 1;
+internal static mptcpStatus mptcpDisabled => 2;
 
 [GoRecv] internal static bool get(this ref mptcpStatus m) {
     var exprᴛ1 = m;

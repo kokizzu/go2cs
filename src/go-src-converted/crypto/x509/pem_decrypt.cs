@@ -24,17 +24,17 @@ partial class x509_package {
 [GoType("num:nint")] partial struct PEMCipher;
 
 // Possible values for the EncryptPEMBlock encryption algorithm.
-internal static readonly PEMCipher _ᴛ1ʗ = /* iota */ 0;
+internal static PEMCipher _ᴛ1ʗ => /* iota */ 0;
 
-public static readonly PEMCipher PEMCipherDES = 1;
+public static PEMCipher PEMCipherDES => 1;
 
-public static readonly PEMCipher PEMCipher3DES = 2;
+public static PEMCipher PEMCipher3DES => 2;
 
-public static readonly PEMCipher PEMCipherAES128 = 3;
+public static PEMCipher PEMCipherAES128 => 3;
 
-public static readonly PEMCipher PEMCipherAES192 = 4;
+public static PEMCipher PEMCipherAES192 => 4;
 
-public static readonly PEMCipher PEMCipherAES256 = 5;
+public static PEMCipher PEMCipherAES256 => 5;
 
 // rfc1423Algo holds a method for enciphering a PEM block.
 [GoType] partial struct rfc1423Algo {

@@ -26,11 +26,11 @@ partial class runtime_package {
 // debugLogBytes is the size of each per-M ring buffer. This is
 // allocated off-heap to avoid blowing up the M and hence the GC'd
 // heap size.
-internal static readonly UntypedInt debugLogBytes = /* 16 << 10 */ 16384;
+internal static UntypedInt debugLogBytes => /* 16 << 10 */ 16384;
 
 // debugLogStringLimit is the maximum number of bytes in a string.
 // Above this, the string will be truncated with "..(n more bytes).."
-internal static readonly UntypedInt debugLogStringLimit = /* debugLogBytes / 8 */ 2048;
+internal static UntypedInt debugLogStringLimit => /* debugLogBytes / 8 */ 2048;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string failedToAllocateDebugLogˢ = "failed to allocate debug log"u8;
@@ -159,18 +159,18 @@ internal static void end(this ж<dlogger> Ꮡl) {
     Ꮡl.of(dlogger.Ꮡowned).Store(0);
 }
 
-internal static readonly UntypedInt debugLogUnknown = /* 1 + iota */ 1;
-internal static readonly UntypedInt debugLogBoolTrue = 2;
-internal static readonly UntypedInt debugLogBoolFalse = 3;
-internal static readonly UntypedInt debugLogInt = 4;
-internal static readonly UntypedInt debugLogUint = 5;
-internal static readonly UntypedInt debugLogHex = 6;
-internal static readonly UntypedInt debugLogPtr = 7;
-internal static readonly UntypedInt debugLogString = 8;
-internal static readonly UntypedInt debugLogConstString = 9;
-internal static readonly UntypedInt debugLogStringOverflow = 10;
-internal static readonly UntypedInt debugLogPC = 11;
-internal static readonly UntypedInt debugLogTraceback = 12;
+internal static UntypedInt debugLogUnknown => /* 1 + iota */ 1;
+internal static UntypedInt debugLogBoolTrue => 2;
+internal static UntypedInt debugLogBoolFalse => 3;
+internal static UntypedInt debugLogInt => 4;
+internal static UntypedInt debugLogUint => 5;
+internal static UntypedInt debugLogHex => 6;
+internal static UntypedInt debugLogPtr => 7;
+internal static UntypedInt debugLogString => 8;
+internal static UntypedInt debugLogConstString => 9;
+internal static UntypedInt debugLogStringOverflow => 10;
+internal static UntypedInt debugLogPC => 11;
+internal static UntypedInt debugLogTraceback => 12;
 
 //go:nosplit
 internal static ж<dlogger> b(this ж<dlogger> Ꮡl, bool x) {
@@ -318,8 +318,7 @@ internal static ж<dlogger> s(this ж<dlogger> Ꮡl, @string x) {
         ref var b = ref heap<slice<byte>>(out var Ꮡb);
         var bb = Ꮡb.Reinterpret<slice<byte>, Δsliceᴛ>();
         bb.Value.Δarray = new @unsafe.Pointer(strData);
-        bb.Value.len = len(x);
-        bb.Value.cap = len(x);
+        (bb.Value.len, bb.Value.cap) = (len(x), len(x));
         if (len(b) > debugLogStringLimit) {
             b = b[..(int)(debugLogStringLimit)];
         }
@@ -394,8 +393,8 @@ internal static ж<dlogger> traceback(this ж<dlogger> Ꮡl, slice<uintptr> x) {
     internal array<byte> b = new(debugLogBytes);
 }
 
-internal static readonly UntypedInt debugLogHeaderSize = 2;
-internal static readonly UntypedInt debugLogSyncSize = /* debugLogHeaderSize + 2*8 */ 18;
+internal static UntypedInt debugLogHeaderSize => 2;
+internal static UntypedInt debugLogSyncSize => /* debugLogHeaderSize + 2*8 */ 18;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string recordWrappedAroundˢ = "record wrapped around"u8;
@@ -425,8 +424,7 @@ private static readonly @string recordWrappedAroundˢ = "record wrapped around"u
 
 //go:nosplit
 [GoRecv] internal static void writeSync(this ref debugLogWriter l, uint64 tick, uint64 nano) {
-    l.tick = tick;
-    l.nano = nano;
+    (l.tick, l.nano) = (tick, nano);
     l.ensure(debugLogHeaderSize);
     l.writeFrameAt(l.write, 0);
     l.write += debugLogHeaderSize;

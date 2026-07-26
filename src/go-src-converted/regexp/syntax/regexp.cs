@@ -31,27 +31,27 @@ partial class syntax_package {
 // Operators are listed in precedence order, tightest binding to weakest.
 // Character class operators are listed simplest to most complex
 // (OpLiteral, OpCharClass, OpAnyCharNotNL, OpAnyChar).
-public static readonly Op OpNoMatch = /* 1 + iota */ 1;             // matches no strings
-public static readonly Op OpEmptyMatch = 2;          // matches empty string
-public static readonly Op OpLiteral = 3;             // matches Runes sequence
-public static readonly Op OpCharClass = 4;           // matches Runes interpreted as range pair list
-public static readonly Op OpAnyCharNotNL = 5;        // matches any character except newline
-public static readonly Op OpAnyChar = 6;             // matches any character
-public static readonly Op OpBeginLine = 7;           // matches empty string at beginning of line
-public static readonly Op OpEndLine = 8;             // matches empty string at end of line
-public static readonly Op OpBeginText = 9;           // matches empty string at beginning of text
-public static readonly Op OpEndText = 10;             // matches empty string at end of text
-public static readonly Op OpWordBoundary = 11;        // matches word boundary `\b`
-public static readonly Op OpNoWordBoundary = 12;      // matches word non-boundary `\B`
-public static readonly Op OpCapture = 13;             // capturing subexpression with index Cap, optional name Name
-public static readonly Op OpStar = 14;                // matches Sub[0] zero or more times
-public static readonly Op OpPlus = 15;                // matches Sub[0] one or more times
-public static readonly Op OpQuest = 16;               // matches Sub[0] zero or one times
-public static readonly Op OpRepeat = 17;              // matches Sub[0] at least Min times, at most Max (Max == -1 is no limit)
-public static readonly Op OpConcat = 18;              // matches concatenation of Subs
-public static readonly Op OpAlternate = 19;           // matches alternation of Subs
+public static Op OpNoMatch => /* 1 + iota */ 1;             // matches no strings
+public static Op OpEmptyMatch => 2;          // matches empty string
+public static Op OpLiteral => 3;             // matches Runes sequence
+public static Op OpCharClass => 4;           // matches Runes interpreted as range pair list
+public static Op OpAnyCharNotNL => 5;        // matches any character except newline
+public static Op OpAnyChar => 6;             // matches any character
+public static Op OpBeginLine => 7;           // matches empty string at beginning of line
+public static Op OpEndLine => 8;             // matches empty string at end of line
+public static Op OpBeginText => 9;           // matches empty string at beginning of text
+public static Op OpEndText => 10;             // matches empty string at end of text
+public static Op OpWordBoundary => 11;        // matches word boundary `\b`
+public static Op OpNoWordBoundary => 12;      // matches word non-boundary `\B`
+public static Op OpCapture => 13;             // capturing subexpression with index Cap, optional name Name
+public static Op OpStar => 14;                // matches Sub[0] zero or more times
+public static Op OpPlus => 15;                // matches Sub[0] one or more times
+public static Op OpQuest => 16;               // matches Sub[0] zero or one times
+public static Op OpRepeat => 17;              // matches Sub[0] at least Min times, at most Max (Max == -1 is no limit)
+public static Op OpConcat => 18;              // matches concatenation of Subs
+public static Op OpAlternate => 19;           // matches alternation of Subs
 
-internal static readonly Op opPseudo = 128; // where pseudo-ops start
+internal static Op opPseudo => 128; // where pseudo-ops start
 
 // Equal reports whether x and y have identical structure.
 public static bool Equal(this ж<Regexp> Ꮡx, ж<Regexp> Ꮡy) {
@@ -98,12 +98,12 @@ public static bool Equal(this ж<Regexp> Ꮡx, ж<Regexp> Ꮡy) {
 
 [GoType("num:uint8")] partial struct printFlags;
 
-internal static readonly printFlags flagI = /* 1 << iota */ 1;        // (?i:
-internal static readonly printFlags flagM = 2;        // (?m:
-internal static readonly printFlags flagS = 4;        // (?s:
-internal static readonly printFlags flagOff = 8;      // )
-internal static readonly printFlags flagPrec = 16;     // (?: )
-internal static readonly UntypedInt negShift = 5;     // flagI<<negShift is (?-i:
+internal static printFlags flagI => /* 1 << iota */ 1;        // (?i:
+internal static printFlags flagM => 2;        // (?m:
+internal static printFlags flagS => 4;        // (?s:
+internal static printFlags flagOff => 8;      // )
+internal static printFlags flagPrec => 16;     // (?: )
+internal static UntypedInt negShift => 5;     // flagI<<negShift is (?-i:
 
 // addSpan enables the flags f around start..last,
 // by setting flags[start] = f and flags[last] = flagOff.

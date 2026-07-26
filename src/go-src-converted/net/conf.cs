@@ -61,9 +61,9 @@ partial class net_package {
 
 [GoType("num:nint")] partial struct mdnsTest;
 
-internal static readonly mdnsTest mdnsFromSystem = /* iota */ 0;
-internal static readonly mdnsTest mdnsAssumeExists = 1;
-internal static readonly mdnsTest mdnsAssumeDoesNotExist = 2;
+internal static mdnsTest mdnsFromSystem => /* iota */ 0;
+internal static mdnsTest mdnsAssumeExists => 1;
+internal static mdnsTest mdnsAssumeDoesNotExist => 2;
 
 internal static ж<Δsync.Once> ᏑconfOnce = new(default(Δsync.Once));
 internal static ref Δsync.Once confOnce => ref ᏑconfOnce.Value; // guards init of confVal via initConfVal

@@ -22,9 +22,12 @@ using path;
 partial class buildcfg_package {
 
 public static @string GOROOT = os.Getenv("GOROOT"u8); // cached for efficiency
-public static @string GOARCH = envOr("GOARCH"u8, defaultGOARCH);
-public static @string GOOS = envOr("GOOS"u8, defaultGOOS);
-public static @string GO386 = envOr("GO386"u8, defaultGO386);
+public static @string GOARCH;
+internal static void initᴛGOARCH() { GOARCH = envOr("GOARCH"u8, defaultGOARCH); }
+public static @string GOOS;
+internal static void initᴛGOOS() { GOOS = envOr("GOOS"u8, defaultGOOS); }
+public static @string GO386;
+internal static void initᴛGO386() { GO386 = envOr("GO386"u8, defaultGO386); }
 public static nint GOAMD64;
 internal static void initᴛGOAMD64() { GOAMD64 = goamd64(); }
 public static goarmFeatures GOARM;
@@ -43,8 +46,10 @@ public static gowasmFeatures GOWASM;
 internal static void initᴛGOWASM() { GOWASM = gowasm(); }
 public static slice<@string> ToolTags;
 internal static void initᴛToolTags() { ToolTags = toolTags(); }
-public static @string GO_LDSO = defaultGO_LDSO;
-public static @string Version = version;
+public static @string GO_LDSO;
+internal static void initᴛGO_LDSO() { GO_LDSO = defaultGO_LDSO; }
+public static @string Version;
+internal static void initᴛVersion() { Version = version; }
 
 // Error is one of the errors found (if any) in the build configuration.
 public static error Error;

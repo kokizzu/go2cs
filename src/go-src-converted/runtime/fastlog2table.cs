@@ -5,7 +5,7 @@ namespace go;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt fastlogNumBits = 5;
+internal static UntypedInt fastlogNumBits => 5;
 
 internal static array<float64> fastlog2Table = new float64[]{
     0D,

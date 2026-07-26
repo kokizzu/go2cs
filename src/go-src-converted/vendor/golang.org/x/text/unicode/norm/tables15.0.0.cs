@@ -7,7 +7,7 @@ using sync = sync_package;
 partial class norm_package {
 
 public static readonly @string Version = "15.0.0"u8;
-public static readonly UntypedInt MaxTransformChunkSize = /* 35 + maxNonStarters*4 */ 155;
+public static UntypedInt MaxTransformChunkSize => /* 35 + maxNonStarters*4 */ 155;
 
 internal static array<uint8> ccc = new uint8[]{
     0, 1, 6, 7, 8, 9, 10, 11,
@@ -19,14 +19,14 @@ internal static array<uint8> ccc = new uint8[]{
     224, 226, 228, 230, 232, 233, 234, 240
 }.array();
 
-internal static readonly UntypedInt firstMulti = 0x199A;
-internal static readonly UntypedInt firstCCC = 0x2DD5;
-internal static readonly UntypedInt endMulti = 0x30A1;
-internal static readonly UntypedInt firstLeadingCCC = 0x4AEF;
-internal static readonly UntypedInt firstCCCZeroExcept = 0x4BB9;
-internal static readonly UntypedInt firstStarterWithNLead = 0x4BE0;
-internal static readonly UntypedInt lastDecomp = 0x4BE2;
-internal static readonly UntypedInt maxDecomp = 0x8000;
+internal static UntypedInt firstMulti => 0x199A;
+internal static UntypedInt firstCCC => 0x2DD5;
+internal static UntypedInt endMulti => 0x30A1;
+internal static UntypedInt firstLeadingCCC => 0x4AEF;
+internal static UntypedInt firstCCCZeroExcept => 0x4BB9;
+internal static UntypedInt firstStarterWithNLead => 0x4BE0;
+internal static UntypedInt lastDecomp => 0x4BE2;
+internal static UntypedInt maxDecomp => 0x8000;
 
 // Bytes 0 - 3f
 // Bytes 40 - 7f

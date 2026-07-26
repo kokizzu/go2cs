@@ -39,9 +39,9 @@ internal static partial (uint32 retA, uint32 retB, uint32 retC) castagnoliSSE42T
 //go:noescape
 internal static partial uint32 ieeeCLMUL(uint32 crc, slice<byte> p);
 
-internal static readonly UntypedInt castagnoliK1 = 168;
+internal static UntypedInt castagnoliK1 => 168;
 
-internal static readonly UntypedInt castagnoliK2 = 1344;
+internal static UntypedInt castagnoliK2 => 1344;
 
 [GoType("[4]Table")] partial struct sse42Table;
 

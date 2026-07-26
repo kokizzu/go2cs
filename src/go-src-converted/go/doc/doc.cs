@@ -92,9 +92,9 @@ partial class doc_package {
 
 [GoType("num:nint")] partial struct Mode;
 
-public static readonly Mode AllDecls = /* 1 << iota */ 1;
-public static readonly Mode AllMethods = 2;
-public static readonly Mode PreserveAST = 4;
+public static Mode AllDecls => /* 1 << iota */ 1;
+public static Mode AllMethods => 2;
+public static Mode PreserveAST => 4;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string bugˢ = "BUG"u8;

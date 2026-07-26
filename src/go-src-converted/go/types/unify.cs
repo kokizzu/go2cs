@@ -41,7 +41,7 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class types_package {
 
-internal static readonly UntypedInt unificationDepthLimit = 50;
+internal static UntypedInt unificationDepthLimit => 50;
 internal const bool panicAtUnificationDepthLimit = true;
 internal const bool enableCoreTypeUnification = true;
 internal const bool traceInference = false;
@@ -87,8 +87,8 @@ internal static ж<unifier> newUnifier(slice<ж<TypeParam>> tparams, slice<ΔTyp
 
 [GoType("num:nuint")] partial struct unifyMode;
 
-internal static readonly unifyMode Δassign = /* 1 << iota */ 1;
-internal static readonly unifyMode exact = 2;
+internal static unifyMode Δassign => /* 1 << iota */ 1;
+internal static unifyMode exact => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string inexactˢ = "inexact"u8;

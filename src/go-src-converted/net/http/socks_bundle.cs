@@ -27,177 +27,181 @@ private static readonly @string unknownAddressTypeˢ = "unknown address type"u8;
 private static readonly @string fqdnTooLongˢ = "FQDN too long"u8;
 private static readonly @string nonZeroReservedFieldˢ = "non-zero reserved field"u8;
 
-internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, context.Context ctx, net.Conn c, @string address) => func<(netꓸAddr, error ctxErr)>((defer, recover) => {
+internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, context.Context ctx, net.Conn c, @string address) {
+    netꓸAddr _ᴛ1 = default!;
     error ctxErr = default!;
-
+    func((defer, recover) => {
     ref var d = ref Ꮡd.Value;
-    var (host, port, err) = sockssplitHostPort(address);
-    if (err != default!) {
-        return (default!, err);
-    }
-    {
-        var (deadline, ok) = ctx.Deadline(); if (ok && !deadline.IsZero()) {
-            c.SetDeadline(deadline);
-            deferǃ(c.SetDeadline, socksnoDeadline, defer);
+
+        var (host, port, err) = sockssplitHostPort(address);
+        if (err != default!) {
+            (_ᴛ1, ctxErr) = (default!, err); return;
         }
-    }
-    if (!AreEqual(ctx, context_package.Background())) {
-        var errCh = new channel<error>(1);
-        var done = new channel<EmptyStruct>(0);
-        var doneʗ1 = done;
-        var errChʗ1 = errCh;
-        defer(() => {
-            builtin.close(doneʗ1);
-            if (ctxErr == default!) {
-                ctxErr = ᐸꟷ(errChʗ1);
-            }
-        });
-        var doneʗ2 = done;
-        var errChʗ2 = errCh;
-        goǃ(() => {
-            var selᴛ86 = ctx.Done();
-            var selᴛ87 = doneʗ2;
-            switch (select(ᐸꟷ(selᴛ86, ꓸꓸꓸ), ᐸꟷ(selᴛ87, ꓸꓸꓸ))) {
-            case 0 when selᴛ86.ꟷᐳ(out _): {
-                c.SetDeadline(socksaLongTimeAgo);
-                errChʗ2.ᐸꟷ(ctx.Err());
-                break;
-            }
-            case 1 when selᴛ87.ꟷᐳ(out _): {
-                errChʗ2.ᐸꟷ(default!);
-                break;
-            }}
-        });
-    }
-    var b = new slice<byte>(0, 6 + builtin.len(host));
-    // the size here is just an estimate
-    b = append(b, (byte)(socksVersion5));
-    if (builtin.len(d.AuthMethods) == 0 || d.Authenticate == default!){
-        b = append(b, (byte)(1), (byte)(nint)socksAuthMethodNotRequired);
-    } else {
-        var ams = d.AuthMethods;
-        if (builtin.len(ams) > 255) {
-            return (default!, errors.New(tooManyAuthenticationˢ));
-        }
-        b = append(b, (byte)builtin.len(ams));
-        foreach (var (_, amΔ1) in ams) {
-            b = append(b, (byte)(nint)amΔ1);
-        }
-    }
-    {
-        (_, ctxErr) = c.Write(b); if (ctxErr != default!) {
-            return (default!, ctxErr);
-        }
-    }
-    {
-        (_, ctxErr) = io.ReadFull(new net_ConnᴠReader(c), b[..2]); if (ctxErr != default!) {
-            return (default!, ctxErr);
-        }
-    }
-    if (b[0] != socksVersion5) {
-        return (default!, errors.New("unexpected protocol version "u8 + strconv.Itoa((nint)b[0])));
-    }
-    socksAuthMethod am = ((socksAuthMethod)(nint)b[1]);
-    if (am == socksAuthMethodNoAcceptableMethods) {
-        return (default!, errors.New(noAcceptableˢ));
-    }
-    if (d.Authenticate != default!) {
         {
-            ctxErr = d.Authenticate(ctx, new net_ConnᴠReadWriter(c), am); if (ctxErr != default!) {
-                return (default!, ctxErr);
+            var (deadline, ok) = ctx.Deadline(); if (ok && !deadline.IsZero()) {
+                c.SetDeadline(deadline);
+                deferǃ(c.SetDeadline, socksnoDeadline, defer);
             }
         }
-    }
-    b = b[..0];
-    b = append(b, (byte)(socksVersion5), (byte)(nint)d.cmd, (byte)(0));
-    {
-        var ip = net.ParseIP(host); if (ip != default!){
+        if (!AreEqual(ctx, context_package.Background())) {
+            var errCh = new channel<error>(1);
+            var done = new channel<EmptyStruct>(0);
+            var doneʗ1 = done;
+            var errChʗ1 = errCh;
+            defer(() => {
+                builtin.close(doneʗ1);
+                if (ctxErr == default!) {
+                    ctxErr = ᐸꟷ(errChʗ1);
+                }
+            });
+            var doneʗ2 = done;
+            var errChʗ2 = errCh;
+            goǃ(() => {
+                var selᴛ86 = ctx.Done();
+                var selᴛ87 = doneʗ2;
+                switch (select(ᐸꟷ(selᴛ86, ꓸꓸꓸ), ᐸꟷ(selᴛ87, ꓸꓸꓸ))) {
+                case 0 when selᴛ86.ꟷᐳ(out _): {
+                    c.SetDeadline(socksaLongTimeAgo);
+                    errChʗ2.ᐸꟷ(ctx.Err());
+                    break;
+                }
+                case 1 when selᴛ87.ꟷᐳ(out _): {
+                    errChʗ2.ᐸꟷ(default!);
+                    break;
+                }}
+            });
+        }
+        var b = new slice<byte>(0, 6 + builtin.len(host));
+        // the size here is just an estimate
+        b = append(b, (byte)(socksVersion5));
+        if (builtin.len(d.AuthMethods) == 0 || d.Authenticate == default!){
+            b = append(b, (byte)(1), (byte)(nint)socksAuthMethodNotRequired);
+        } else {
+            var ams = d.AuthMethods;
+            if (builtin.len(ams) > 255) {
+                (_ᴛ1, ctxErr) = (default!, errors.New(tooManyAuthenticationˢ)); return;
+            }
+            b = append(b, (byte)builtin.len(ams));
+            foreach (var (_, amΔ1) in ams) {
+                b = append(b, (byte)(nint)amΔ1);
+            }
+        }
+        {
+            (_, ctxErr) = c.Write(b); if (ctxErr != default!) {
+                return;
+            }
+        }
+        {
+            (_, ctxErr) = io.ReadFull(new net_ConnᴠReader(c), b[..2]); if (ctxErr != default!) {
+                return;
+            }
+        }
+        if (b[0] != socksVersion5) {
+            (_ᴛ1, ctxErr) = (default!, errors.New("unexpected protocol version "u8 + strconv.Itoa((nint)b[0]))); return;
+        }
+        socksAuthMethod am = ((socksAuthMethod)(nint)b[1]);
+        if (am == socksAuthMethodNoAcceptableMethods) {
+            (_ᴛ1, ctxErr) = (default!, errors.New(noAcceptableˢ)); return;
+        }
+        if (d.Authenticate != default!) {
             {
-                var ip4 = ip.To4(); if (ip4 != default!){
-                    b = append(b, (byte)(socksAddrTypeIPv4));
-                    b = append(b, ip4.ꓸꓸꓸ);
-                } else 
-                {
-                    var ip6 = ip.To16(); if (ip6 != default!){
-                        b = append(b, (byte)(socksAddrTypeIPv6));
-                        b = append(b, ip6.ꓸꓸꓸ);
-                    } else {
-                        return (default!, errors.New(unknownAddressTypeˢ));
-                    }
+                ctxErr = d.Authenticate(ctx, new net_ConnᴠReadWriter(c), am); if (ctxErr != default!) {
+                    return;
                 }
             }
-        } else {
-            if (builtin.len(host) > 255) {
-                return (default!, errors.New(fqdnTooLongˢ));
-            }
-            b = append(b, (byte)(socksAddrTypeFQDN));
-            b = append(b, (byte)builtin.len(host));
-            b = append(b, host.ꓸꓸꓸ);
         }
-    }
-    b = append(b, (byte)((port >> (int)(8))), (byte)port);
-    {
-        (_, ctxErr) = c.Write(b); if (ctxErr != default!) {
-            return (default!, ctxErr);
-        }
-    }
-    {
-        (_, ctxErr) = io.ReadFull(new net_ConnᴠReader(c), b[..4]); if (ctxErr != default!) {
-            return (default!, ctxErr);
-        }
-    }
-    if (b[0] != socksVersion5) {
-        return (default!, errors.New("unexpected protocol version "u8 + strconv.Itoa((nint)b[0])));
-    }
-    {
-        socksReply cmdErr = ((socksReply)(nint)b[1]); if (cmdErr != socksStatusSucceeded) {
-            return (default!, errors.New("unknown error "u8 + cmdErr.String()));
-        }
-    }
-    if (b[2] != 0) {
-        return (default!, errors.New(nonZeroReservedFieldˢ));
-    }
-    nint l = 2;
-    ref var a = ref heap(new socksAddr(), out var Ꮡa);
-    var exprᴛ1 = b[3];
-    if (exprᴛ1 == socksAddrTypeIPv4) {
-        l += net.IPv4len;
-        a.IP = new net.IP(net.IPv4len);
-    }
-    else if (exprᴛ1 == socksAddrTypeIPv6) {
-        l += net.IPv6len;
-        a.IP = new net.IP(net.IPv6len);
-    }
-    else if (exprᴛ1 == socksAddrTypeFQDN) {
+        b = b[..0];
+        b = append(b, (byte)(socksVersion5), (byte)(nint)d.cmd, (byte)(0));
         {
-            var (_, errΔ2) = io.ReadFull(new net_ConnᴠReader(c), b[..1]); if (errΔ2 != default!) {
-                return (default!, errΔ2);
+            var ip = net.ParseIP(host); if (ip != default!){
+                {
+                    var ip4 = ip.To4(); if (ip4 != default!){
+                        b = append(b, (byte)(socksAddrTypeIPv4));
+                        b = append(b, ip4.ꓸꓸꓸ);
+                    } else 
+                    {
+                        var ip6 = ip.To16(); if (ip6 != default!){
+                            b = append(b, (byte)(socksAddrTypeIPv6));
+                            b = append(b, ip6.ꓸꓸꓸ);
+                        } else {
+                            (_ᴛ1, ctxErr) = (default!, errors.New(unknownAddressTypeˢ)); return;
+                        }
+                    }
+                }
+            } else {
+                if (builtin.len(host) > 255) {
+                    (_ᴛ1, ctxErr) = (default!, errors.New(fqdnTooLongˢ)); return;
+                }
+                b = append(b, (byte)(socksAddrTypeFQDN));
+                b = append(b, (byte)builtin.len(host));
+                b = append(b, host.ꓸꓸꓸ);
             }
         }
-        l += (nint)b[0];
-    }
-    else { /* default: */
-        return (default!, errors.New("unknown address type "u8 + strconv.Itoa((nint)b[3])));
-    }
-
-    if (cap(b) < l){
-        b = new slice<byte>(l);
-    } else {
-        b = b[..(int)(l)];
-    }
-    {
-        (_, ctxErr) = io.ReadFull(new net_ConnᴠReader(c), b); if (ctxErr != default!) {
-            return (default!, ctxErr);
+        b = append(b, (byte)((port >> (int)(8))), (byte)port);
+        {
+            (_, ctxErr) = c.Write(b); if (ctxErr != default!) {
+                return;
+            }
         }
-    }
-    if (a.IP != default!){
-        copy(a.IP, b);
-    } else {
-        a.Name = ((@string)(b[..(int)(builtin.len(b) - 2)]));
-    }
-    a.Port = (nint)(((nint)b[builtin.len(b) - 2] << (int)(8)) | (nint)b[builtin.len(b) - 1]);
-    return (new socksAddrжΔAddr(Ꮡa), default!);
-});
+        {
+            (_, ctxErr) = io.ReadFull(new net_ConnᴠReader(c), b[..4]); if (ctxErr != default!) {
+                return;
+            }
+        }
+        if (b[0] != socksVersion5) {
+            (_ᴛ1, ctxErr) = (default!, errors.New("unexpected protocol version "u8 + strconv.Itoa((nint)b[0]))); return;
+        }
+        {
+            socksReply cmdErr = ((socksReply)(nint)b[1]); if (cmdErr != socksStatusSucceeded) {
+                (_ᴛ1, ctxErr) = (default!, errors.New("unknown error "u8 + cmdErr.String())); return;
+            }
+        }
+        if (b[2] != 0) {
+            (_ᴛ1, ctxErr) = (default!, errors.New(nonZeroReservedFieldˢ)); return;
+        }
+        nint l = 2;
+        ref var a = ref heap(new socksAddr(), out var Ꮡa);
+        var exprᴛ1 = b[3];
+        if (exprᴛ1 == socksAddrTypeIPv4) {
+            l += net.IPv4len;
+            a.IP = new net.IP(net.IPv4len);
+        }
+        else if (exprᴛ1 == socksAddrTypeIPv6) {
+            l += net.IPv6len;
+            a.IP = new net.IP(net.IPv6len);
+        }
+        else if (exprᴛ1 == socksAddrTypeFQDN) {
+            {
+                var (_, errΔ2) = io.ReadFull(new net_ConnᴠReader(c), b[..1]); if (errΔ2 != default!) {
+                    (_ᴛ1, ctxErr) = (default!, errΔ2); return;
+                }
+            }
+            l += (nint)b[0];
+        }
+        else { /* default: */
+            (_ᴛ1, ctxErr) = (default!, errors.New("unknown address type "u8 + strconv.Itoa((nint)b[3]))); return;
+        }
+
+        if (cap(b) < l){
+            b = new slice<byte>(l);
+        } else {
+            b = b[..(int)(l)];
+        }
+        {
+            (_, ctxErr) = io.ReadFull(new net_ConnᴠReader(c), b); if (ctxErr != default!) {
+                return;
+            }
+        }
+        if (a.IP != default!){
+            copy(a.IP, b);
+        } else {
+            a.Name = ((@string)(b[..(int)(builtin.len(b) - 2)]));
+        }
+        a.Port = (nint)(((nint)b[builtin.len(b) - 2] << (int)(8)) | (nint)b[builtin.len(b) - 1]);
+        (_ᴛ1, ctxErr) = (new socksAddrжΔAddr(Ꮡa), default!);
+    });
+    return (_ᴛ1, ctxErr);
+}
 
 internal static (@string, nint, error) sockssplitHostPort(@string address) {
     var (host, port, err) = net.SplitHostPort(address);
@@ -285,25 +289,25 @@ internal static @string String(this socksReply code) {
 }
 
 // Wire protocol constants.
-internal static readonly UntypedInt socksVersion5 = 0x05;
+internal static UntypedInt socksVersion5 => 0x05;
 
-internal static readonly UntypedInt socksAddrTypeIPv4 = 0x01;
+internal static UntypedInt socksAddrTypeIPv4 => 0x01;
 
-internal static readonly UntypedInt socksAddrTypeFQDN = 0x03;
+internal static UntypedInt socksAddrTypeFQDN => 0x03;
 
-internal static readonly UntypedInt socksAddrTypeIPv6 = 0x04;
+internal static UntypedInt socksAddrTypeIPv6 => 0x04;
 
-internal static readonly socksCommand socksCmdConnect = 0x01; // establishes an active-open forward proxy connection
+internal static socksCommand socksCmdConnect => 0x01; // establishes an active-open forward proxy connection
 
-internal static readonly socksCommand sockscmdBind = 0x02;   // establishes a passive-open forward proxy connection
+internal static socksCommand sockscmdBind => 0x02;   // establishes a passive-open forward proxy connection
 
-internal static readonly socksAuthMethod socksAuthMethodNotRequired = 0x00;        // no authentication required
+internal static socksAuthMethod socksAuthMethodNotRequired => 0x00;        // no authentication required
 
-internal static readonly socksAuthMethod socksAuthMethodUsernamePassword = 0x02;   // use username/password
+internal static socksAuthMethod socksAuthMethodUsernamePassword => 0x02;   // use username/password
 
-internal static readonly socksAuthMethod socksAuthMethodNoAcceptableMethods = 0xff; // no acceptable authentication methods
+internal static socksAuthMethod socksAuthMethodNoAcceptableMethods => 0xff; // no acceptable authentication methods
 
-internal static readonly socksReply socksStatusSucceeded = 0x00;
+internal static socksReply socksStatusSucceeded => 0x00;
 
 // An Addr represents a SOCKS-specific address.
 // Either Name or IP is used exclusively.
@@ -533,8 +537,8 @@ internal static ж<socksDialer> socksNewDialer(@string network, @string address)
     return Ꮡ(new socksDialer(proxyNetwork: network, proxyAddress: address, cmd: socksCmdConnect));
 }
 
-internal static readonly UntypedInt socksauthUsernamePasswordVersion = 0x01;
-internal static readonly UntypedInt socksauthStatusSucceeded = 0x00;
+internal static UntypedInt socksauthUsernamePasswordVersion => 0x01;
+internal static UntypedInt socksauthStatusSucceeded => 0x00;
 
 // UsernamePassword are the credentials for the username/password
 // authentication method.

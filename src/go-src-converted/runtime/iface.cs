@@ -14,7 +14,7 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt itabInitSize = 512;
+internal static UntypedInt itabInitSize => 512;
 
 internal static ж<mutex> ᏑitabLock = new(new mutex(nil));
 internal static ref mutex itabLock => ref ᏑitabLock.Value;                         // lock for accessing itab table

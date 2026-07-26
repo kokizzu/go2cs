@@ -15,7 +15,7 @@ partial class nistec_package {
 
 // p521ElementLength is the length of an element of the base or scalar field,
 // which have the same bytes length for all NIST P curves.
-internal static readonly UntypedInt p521ElementLength = 66;
+internal static UntypedInt p521ElementLength => 66;
 
 // P521Point is a P521 point. The zero value is NOT valid.
 [GoType] partial struct P521Point {
@@ -492,7 +492,7 @@ internal static ref sync.Once p521GeneratorTableOnce => ref Ꮡp521GeneratorTabl
 // times.
 [GoRecv] internal static ж<array<p521Table>> generatorTable(this ref P521Point p) {
     Ꮡp521GeneratorTableOnce.Do(() => {
-        p521GeneratorTable = @new<array<p521Table>>();
+        p521GeneratorTable = Ꮡ(new array<p521Table>(132));
         var @base = NewP521Point().SetGenerator();
         for (nint i = 0; i < p521ElementLength * 2; i++) {
             p521GeneratorTable.Value[i][0] = NewP521Point().Set(@base);

@@ -22,13 +22,13 @@ partial class runtime_package {
 //
 //	func semawakeup(mp *m)
 //		Wake up mp, which is or will soon be sleeping on its semaphore.
-internal static readonly uintptr locked = 1;
+internal static uintptr locked => 1;
 
-internal static readonly UntypedInt active_spin = 4;
+internal static UntypedInt active_spin => 4;
 
-internal static readonly UntypedInt active_spin_cnt = 30;
+internal static UntypedInt active_spin_cnt => 30;
 
-internal static readonly UntypedInt passive_spin = 1;
+internal static UntypedInt passive_spin => 1;
 
 // go2cs generated this placeholder — func mutexContended is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 

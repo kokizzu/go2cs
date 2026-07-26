@@ -21,9 +21,9 @@ using go.image.color;
 partial class gif_package {
 
 // Graphic control extension fields.
-internal static readonly UntypedInt gcLabel = 0xF9;
+internal static UntypedInt gcLabel => 0xF9;
 
-internal static readonly UntypedInt gcBlockSize = 0x04;
+internal static UntypedInt gcBlockSize => 0x04;
 
 internal static array<nint> log2Lookup = new nint[]{2, 4, 8, 16, 32, 64, 128, 256}.array();
 

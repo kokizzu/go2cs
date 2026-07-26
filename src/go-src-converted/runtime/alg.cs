@@ -11,8 +11,8 @@ using @internal;
 
 partial class runtime_package {
 
-internal static readonly uintptr c0 = /* uintptr((8-goarch.PtrSize)/4*2860486313 + (goarch.PtrSize-4)/4*33054211828000289) */ unchecked((uintptr)33054211828000289);
-internal static readonly uintptr c1 = /* uintptr((8-goarch.PtrSize)/4*3267000013 + (goarch.PtrSize-4)/4*23344194077549503) */ unchecked((uintptr)23344194077549503);
+internal static uintptr c0 => /* uintptr((8-goarch.PtrSize)/4*2860486313 + (goarch.PtrSize-4)/4*33054211828000289) */ unchecked((uintptr)33054211828000289);
+internal static uintptr c1 => /* uintptr((8-goarch.PtrSize)/4*3267000013 + (goarch.PtrSize-4)/4*23344194077549503) */ unchecked((uintptr)23344194077549503);
 
 internal static uintptr memhash0(@unsafe.Pointer Δp, uintptr h) {
     return h;
@@ -510,7 +510,7 @@ internal static uintptr ifaceHash(ifaceHash_i i, uintptr seed) {
     return interhash((uintptr)noescape(new @unsafe.Pointer(Ꮡ(i))), seed);
 }
 
-internal static readonly UntypedInt hashRandomBytes = /* goarch.PtrSize / 4 * 64 */ 128;
+internal static UntypedInt hashRandomBytes => /* goarch.PtrSize / 4 * 64 */ 128;
 
 // used in asm_{386,amd64,arm64}.s to seed the hash function
 internal static ж<array<byte>> Ꮡaeskeysched = new(new array<byte>(128));

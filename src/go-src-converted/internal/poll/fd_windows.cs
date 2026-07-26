@@ -40,7 +40,7 @@ internal static void checkSetFileCompletionNotificationModes() {
     }
     ref var protos = ref heap<array<int32>>(out var Ꮡprotos);
     protos = new int32[]{Δsyscall.IPPROTO_TCP, 0}.array();
-    ref var buf = ref heap(new array<Δsyscall.WSAProtocolInfo>(32), out var Ꮡbuf);
+    ref var buf = ref heap(new array<Δsyscall.WSAProtocolInfo>(32, () => new()), out var Ꮡbuf);
     ref var len = ref heap<uint32>(out var Ꮡlen);
     len = (uint32)@unsafe.Sizeof(buf);
     (var n, err) = Δsyscall.WSAEnumProtocols(Ꮡprotos.at<int32>(0), Ꮡbuf.at<Δsyscall.WSAProtocolInfo>(0), Ꮡlen);
@@ -268,10 +268,10 @@ internal static (nint, error) execIO(ж<operation> Ꮡo, Func<ж<operation>, err
 
 [GoType("num:byte")] partial struct fileKind;
 
-internal static readonly fileKind kindNet = /* iota */ 0;
-internal static readonly fileKind kindFile = 1;
-internal static readonly fileKind kindConsole = 2;
-internal static readonly fileKind kindPipe = 3;
+internal static fileKind kindNet => /* iota */ 0;
+internal static fileKind kindFile => 1;
+internal static fileKind kindConsole => 2;
+internal static fileKind kindPipe => 3;
 
 // logInitFD is set by tests to enable file descriptor initialization logging.
 internal static Action<@string, ж<FD>, error> logInitFD;
@@ -413,7 +413,7 @@ public static error Close(this ж<FD> Ꮡfd) {
 // Windows ReadFile and WSARecv use DWORD (uint32) parameter to pass buffer length.
 // This prevents us reading blocks larger than 4GB.
 // See golang.org/issue/26923.
-internal static readonly UntypedInt maxRW = /* 1 << 30 */ 1073741824; // 1GB is large enough and keeps subsequent reads aligned
+internal static UntypedInt maxRW => /* 1 << 30 */ 1073741824; // 1GB is large enough and keeps subsequent reads aligned
 
 // Read implements io.Reader.
 public static (nint, error) Read(this ж<FD> Ꮡfd, slice<byte> buf) => func<(nint, error)>((defer, recover) => {
@@ -1143,7 +1143,7 @@ public static error RawRead(this ж<FD> Ꮡfd, Func<uintptr, bool> f) => func<er
         var o = Ꮡfd.of(FD.Ꮡrop);
         o.InitBuf(default!);
         if (!fd.IsStream) {
-            o.Value.flags |= windows.MSG_PEEK;
+            o.Value.flags |= (uint32)(windows.MSG_PEEK);
         }
         var (_, err) = execIO(o, (ж<operation> oΔ1) => Δsyscall.WSARecv((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡbuf), 1, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡflags), oΔ1.of(operation.Ꮡo), nil));
         if (AreEqual(err, windows.WSAEMSGSIZE)){

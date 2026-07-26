@@ -129,15 +129,15 @@ internal static @string Error(this plainError e) {
 
 [GoType("num:uint8")] partial struct boundsErrorCode;
 
-internal static readonly boundsErrorCode boundsIndex = /* iota */ 0; // s[x], 0 <= x < len(s) failed
-internal static readonly boundsErrorCode boundsSliceAlen = 1; // s[?:x], 0 <= x <= len(s) failed
-internal static readonly boundsErrorCode boundsSliceAcap = 2; // s[?:x], 0 <= x <= cap(s) failed
-internal static readonly boundsErrorCode boundsSliceB = 3; // s[x:y], 0 <= x <= y failed (but boundsSliceA didn't happen)
-internal static readonly boundsErrorCode boundsSlice3Alen = 4; // s[?:?:x], 0 <= x <= len(s) failed
-internal static readonly boundsErrorCode boundsSlice3Acap = 5; // s[?:?:x], 0 <= x <= cap(s) failed
-internal static readonly boundsErrorCode boundsSlice3B = 6; // s[?:x:y], 0 <= x <= y failed (but boundsSlice3A didn't happen)
-internal static readonly boundsErrorCode boundsSlice3C = 7; // s[x:y:?], 0 <= x <= y failed (but boundsSlice3A/B didn't happen)
-internal static readonly boundsErrorCode boundsConvert = 8; // (*[x]T)(s), 0 <= x <= len(s) failed
+internal static boundsErrorCode boundsIndex => /* iota */ 0; // s[x], 0 <= x < len(s) failed
+internal static boundsErrorCode boundsSliceAlen => 1; // s[?:x], 0 <= x <= len(s) failed
+internal static boundsErrorCode boundsSliceAcap => 2; // s[?:x], 0 <= x <= cap(s) failed
+internal static boundsErrorCode boundsSliceB => 3; // s[x:y], 0 <= x <= y failed (but boundsSliceA didn't happen)
+internal static boundsErrorCode boundsSlice3Alen => 4; // s[?:?:x], 0 <= x <= len(s) failed
+internal static boundsErrorCode boundsSlice3Acap => 5; // s[?:?:x], 0 <= x <= cap(s) failed
+internal static boundsErrorCode boundsSlice3B => 6; // s[?:x:y], 0 <= x <= y failed (but boundsSlice3A didn't happen)
+internal static boundsErrorCode boundsSlice3C => 7; // s[x:y:?], 0 <= x <= y failed (but boundsSlice3A/B didn't happen)
+internal static boundsErrorCode boundsConvert => 8; // (*[x]T)(s), 0 <= x <= len(s) failed
 
 // Note: in the above, len(s) and cap(s) are stored in y
 

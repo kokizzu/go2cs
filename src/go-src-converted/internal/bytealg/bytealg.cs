@@ -10,22 +10,22 @@ using go.@internal;
 partial class bytealg_package {
 
 // Offsets into internal/cpu records for use in assembly.
-internal static readonly uintptr offsetX86HasSSE42 = /* unsafe.Offsetof(cpu.X86.HasSSE42) */ 83;
+internal static uintptr offsetX86HasSSE42 => /* unsafe.Offsetof(cpu.X86.HasSSE42) */ 83;
 
-internal static readonly uintptr offsetX86HasAVX2 = /* unsafe.Offsetof(cpu.X86.HasAVX2) */ 67;
+internal static uintptr offsetX86HasAVX2 => /* unsafe.Offsetof(cpu.X86.HasAVX2) */ 67;
 
-internal static readonly uintptr offsetX86HasPOPCNT = /* unsafe.Offsetof(cpu.X86.HasPOPCNT) */ 77;
+internal static uintptr offsetX86HasPOPCNT => /* unsafe.Offsetof(cpu.X86.HasPOPCNT) */ 77;
 
-internal static readonly uintptr offsetS390xHasVX = /* unsafe.Offsetof(cpu.S390X.HasVX) */ 80;
+internal static uintptr offsetS390xHasVX => /* unsafe.Offsetof(cpu.S390X.HasVX) */ 80;
 
-internal static readonly uintptr offsetPPC64HasPOWER9 = /* unsafe.Offsetof(cpu.PPC64.IsPOWER9) */ 67;
+internal static uintptr offsetPPC64HasPOWER9 => /* unsafe.Offsetof(cpu.PPC64.IsPOWER9) */ 67;
 
 // MaxLen is the maximum length of the string to be searched for (argument b) in Index.
 // If MaxLen is not 0, make sure MaxLen >= 4.
 public static nint MaxLen;
 
 // PrimeRK is the prime base used in Rabin-Karp algorithm.
-public static readonly UntypedInt PrimeRK = 16777619;
+public static UntypedInt PrimeRK => 16777619;
 
 // HashStr returns the hash and the appropriate multiplicative
 // factor for use in Rabin-Karp algorithm.

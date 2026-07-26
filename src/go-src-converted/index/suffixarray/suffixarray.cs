@@ -30,7 +30,7 @@ partial class suffixarray_package {
 // Can change for testing
 internal static nint maxData32 = realMaxData32;
 
-internal static readonly UntypedInt realMaxData32 = /* math.MaxInt32 */ 2147483647;
+internal static UntypedInt realMaxData32 => /* math.MaxInt32 */ 2147483647;
 
 // Index implements a suffix array for fast substring search.
 [GoType] partial struct Index {
@@ -154,7 +154,7 @@ internal static (nint n, error err) readSlice(io.Reader r, slice<byte> buf, ints
     return (n, err);
 }
 
-internal static readonly UntypedInt bufSize = /* 16 << 10 */ 16384; // reasonable for BenchmarkSaveRestore
+internal static UntypedInt bufSize => /* 16 << 10 */ 16384; // reasonable for BenchmarkSaveRestore
 
 // Read reads the index from r into x; x must not be nil.
 [GoRecv] public static error Read(this ref Index x, io.Reader r) {

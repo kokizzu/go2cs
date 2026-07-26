@@ -6,32 +6,32 @@ namespace go;
 partial class runtime_package {
 
 // Numbers fundamental to the encoding.
-internal static readonly UntypedInt runeError = /* '\uFFFD' */ 65533; // the "error" Rune or "Unicode replacement character"
+internal static UntypedInt runeError => /* '\uFFFD' */ 65533; // the "error" Rune or "Unicode replacement character"
 
-internal static readonly UntypedInt runeSelf = 0x80; // characters below runeSelf are represented as themselves in a single byte.
+internal static UntypedInt runeSelf => 0x80; // characters below runeSelf are represented as themselves in a single byte.
 
-internal static readonly UntypedInt maxRune = /* '\U0010FFFF' */ 1114111; // Maximum valid Unicode code point.
+internal static UntypedInt maxRune => /* '\U0010FFFF' */ 1114111; // Maximum valid Unicode code point.
 
 // Code points in the surrogate range are not valid for UTF-8.
-internal static readonly UntypedInt surrogateMin = 0xD800;
+internal static UntypedInt surrogateMin => 0xD800;
 
-internal static readonly UntypedInt surrogateMax = 0xDFFF;
+internal static UntypedInt surrogateMax => 0xDFFF;
 
-internal static readonly UntypedInt t1 = 0x00; // 0000 0000
-internal static readonly UntypedInt tx = 0x80; // 1000 0000
-internal static readonly UntypedInt t2 = 0xC0; // 1100 0000
-internal static readonly UntypedInt t3 = 0xE0; // 1110 0000
-internal static readonly UntypedInt t4 = 0xF0; // 1111 0000
-internal static readonly UntypedInt t5 = 0xF8; // 1111 1000
-internal static readonly UntypedInt maskx = 0x3F; // 0011 1111
-internal static readonly UntypedInt mask2 = 0x1F; // 0001 1111
-internal static readonly UntypedInt mask3 = 0x0F; // 0000 1111
-internal static readonly UntypedInt mask4 = 0x07; // 0000 0111
-internal static readonly UntypedInt rune1Max = /* 1<<7 - 1 */ 127;
-internal static readonly UntypedInt rune2Max = /* 1<<11 - 1 */ 2047;
-internal static readonly UntypedInt rune3Max = /* 1<<16 - 1 */ 65535;
-internal static readonly UntypedInt locb = 0x80; // 1000 0000
-internal static readonly UntypedInt hicb = 0xBF; // 1011 1111
+internal static UntypedInt t1 => 0x00; // 0000 0000
+internal static UntypedInt tx => 0x80; // 1000 0000
+internal static UntypedInt t2 => 0xC0; // 1100 0000
+internal static UntypedInt t3 => 0xE0; // 1110 0000
+internal static UntypedInt t4 => 0xF0; // 1111 0000
+internal static UntypedInt t5 => 0xF8; // 1111 1000
+internal static UntypedInt maskx => 0x3F; // 0011 1111
+internal static UntypedInt mask2 => 0x1F; // 0001 1111
+internal static UntypedInt mask3 => 0x0F; // 0000 1111
+internal static UntypedInt mask4 => 0x07; // 0000 0111
+internal static UntypedInt rune1Max => /* 1<<7 - 1 */ 127;
+internal static UntypedInt rune2Max => /* 1<<11 - 1 */ 2047;
+internal static UntypedInt rune3Max => /* 1<<16 - 1 */ 65535;
+internal static UntypedInt locb => 0x80; // 1000 0000
+internal static UntypedInt hicb => 0xBF; // 1011 1111
 
 // countrunes returns the number of runes in s.
 internal static nint countrunes(@string s) {

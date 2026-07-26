@@ -894,8 +894,8 @@ internal static error sendAlert(this ж<Conn> Ꮡc, alert err) => func((defer, r
     return Ꮡc.sendAlertLocked(err);
 });
 
-internal static readonly UntypedInt tcpMSSEstimate = 1208;
-internal static readonly UntypedInt recordSizeBoostThreshold = /* 128 * 1024 */ 131072;
+internal static UntypedInt tcpMSSEstimate => 1208;
+internal static UntypedInt recordSizeBoostThreshold => /* 128 * 1024 */ 131072;
 
 // maxPayloadSizeForWrite returns the maximum TLS payload size to use for the
 // next application data record. There is the following trade-off:

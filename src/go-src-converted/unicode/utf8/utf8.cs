@@ -14,43 +14,43 @@ partial class utf8_package {
 // Defining them locally avoids this package depending on package unicode.
 
 // Numbers fundamental to the encoding.
-public static readonly UntypedInt RuneError = /* '\uFFFD' */ 65533; // the "error" Rune or "Unicode replacement character"
+public static UntypedInt RuneError => /* '\uFFFD' */ 65533; // the "error" Rune or "Unicode replacement character"
 
-public static readonly UntypedInt RuneSelf = 0x80; // characters below RuneSelf are represented as themselves in a single byte.
+public static UntypedInt RuneSelf => 0x80; // characters below RuneSelf are represented as themselves in a single byte.
 
-public static readonly UntypedInt MaxRune = /* '\U0010FFFF' */ 1114111; // Maximum valid Unicode code point.
+public static UntypedInt MaxRune => /* '\U0010FFFF' */ 1114111; // Maximum valid Unicode code point.
 
-public static readonly UntypedInt UTFMax = 4; // maximum number of bytes of a UTF-8 encoded Unicode character.
+public static UntypedInt UTFMax => 4; // maximum number of bytes of a UTF-8 encoded Unicode character.
 
 // Code points in the surrogate range are not valid for UTF-8.
-internal static readonly UntypedInt surrogateMin = 0xD800;
+internal static UntypedInt surrogateMin => 0xD800;
 
-internal static readonly UntypedInt surrogateMax = 0xDFFF;
+internal static UntypedInt surrogateMax => 0xDFFF;
 
-internal static readonly UntypedInt t1 = 0b00000000;
-internal static readonly UntypedInt tx = 0b10000000;
-internal static readonly UntypedInt t2 = 0b11000000;
-internal static readonly UntypedInt t3 = 0b11100000;
-internal static readonly UntypedInt t4 = 0b11110000;
-internal static readonly UntypedInt t5 = 0b11111000;
-internal static readonly UntypedInt maskx = 0b00111111;
-internal static readonly UntypedInt mask2 = 0b00011111;
-internal static readonly UntypedInt mask3 = 0b00001111;
-internal static readonly UntypedInt mask4 = 0b00000111;
-internal static readonly UntypedInt rune1Max = /* 1<<7 - 1 */ 127;
-internal static readonly UntypedInt rune2Max = /* 1<<11 - 1 */ 2047;
-internal static readonly UntypedInt rune3Max = /* 1<<16 - 1 */ 65535;
-internal static readonly UntypedInt locb = 0b10000000;
-internal static readonly UntypedInt hicb = 0b10111111;
-internal static readonly UntypedInt xx = 0xF1; // invalid: size 1
-internal static readonly UntypedInt @as = 0xF0; // ASCII: size 1
-internal static readonly UntypedInt s1 = 0x02; // accept 0, size 2
-internal static readonly UntypedInt s2 = 0x13; // accept 1, size 3
-internal static readonly UntypedInt s3 = 0x03; // accept 0, size 3
-internal static readonly UntypedInt s4 = 0x23; // accept 2, size 3
-internal static readonly UntypedInt s5 = 0x34; // accept 3, size 4
-internal static readonly UntypedInt s6 = 0x04; // accept 0, size 4
-internal static readonly UntypedInt s7 = 0x44; // accept 4, size 4
+internal static UntypedInt t1 => 0b00000000;
+internal static UntypedInt tx => 0b10000000;
+internal static UntypedInt t2 => 0b11000000;
+internal static UntypedInt t3 => 0b11100000;
+internal static UntypedInt t4 => 0b11110000;
+internal static UntypedInt t5 => 0b11111000;
+internal static UntypedInt maskx => 0b00111111;
+internal static UntypedInt mask2 => 0b00011111;
+internal static UntypedInt mask3 => 0b00001111;
+internal static UntypedInt mask4 => 0b00000111;
+internal static UntypedInt rune1Max => /* 1<<7 - 1 */ 127;
+internal static UntypedInt rune2Max => /* 1<<11 - 1 */ 2047;
+internal static UntypedInt rune3Max => /* 1<<16 - 1 */ 65535;
+internal static UntypedInt locb => 0b10000000;
+internal static UntypedInt hicb => 0b10111111;
+internal static UntypedInt xx => 0xF1; // invalid: size 1
+internal static UntypedInt @as => 0xF0; // ASCII: size 1
+internal static UntypedInt s1 => 0x02; // accept 0, size 2
+internal static UntypedInt s2 => 0x13; // accept 1, size 3
+internal static UntypedInt s3 => 0x03; // accept 0, size 3
+internal static UntypedInt s4 => 0x23; // accept 2, size 3
+internal static UntypedInt s5 => 0x34; // accept 3, size 4
+internal static UntypedInt s6 => 0x04; // accept 0, size 4
+internal static UntypedInt s7 => 0x44; // accept 4, size 4
 
 //   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
 // 0x00-0x0F

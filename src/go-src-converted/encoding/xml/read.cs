@@ -314,8 +314,8 @@ internal static reflectꓸType unmarshalerType = reflect.TypeFor<Unmarshaler>();
 internal static reflectꓸType unmarshalerAttrType = reflect.TypeFor<UnmarshalerAttr>();
 internal static reflectꓸType textUnmarshalerType = reflect.TypeFor<encoding.TextUnmarshaler>();
 
-internal static readonly UntypedInt maxUnmarshalDepth = 10000;
-internal static readonly UntypedInt maxUnmarshalDepthWasm = 5000; // go.dev/issue/56498
+internal static UntypedInt maxUnmarshalDepth => 10000;
+internal static UntypedInt maxUnmarshalDepthWasm => 5000; // go.dev/issue/56498
 
 internal static error errUnmarshalDepth = errors.New("exceeded max depth"u8);
 

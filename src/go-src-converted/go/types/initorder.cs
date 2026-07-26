@@ -309,8 +309,7 @@ internal static nint Len(this nodeQueue a) {
 internal static void Swap(this nodeQueue a, nint i, nint j) {
     var (x, y) = (a[i], a[j]);
     (a[i], a[j]) = (y, x);
-    x.Value.index = j;
-    y.Value.index = i;
+    (x.Value.index, y.Value.index) = (j, i);
 }
 
 internal static bool Less(this nodeQueue a, nint i, nint j) {

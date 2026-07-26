@@ -436,11 +436,11 @@ internal static bool IsBoolFlag(this boolFuncValue f) {
 [GoType("num:nint")] partial struct ΔErrorHandling;
 
 // These constants cause [FlagSet.Parse] to behave as described if the parse fails.
-public static readonly ΔErrorHandling ContinueOnError = /* iota */ 0; // Return a descriptive error.
+public static ΔErrorHandling ContinueOnError => /* iota */ 0; // Return a descriptive error.
 
-public static readonly ΔErrorHandling ExitOnError = 1;    // Call os.Exit(2) or for -h/-help Exit(0).
+public static ΔErrorHandling ExitOnError => 1;    // Call os.Exit(2) or for -h/-help Exit(0).
 
-public static readonly ΔErrorHandling PanicOnError = 2;   // Call panic with a descriptive error.
+public static ΔErrorHandling PanicOnError => 2;   // Call panic with a descriptive error.
 
 // A FlagSet represents a set of defined flags. The zero value of a FlagSet
 // has no name and has [ContinueOnError] error handling.
@@ -1272,8 +1272,7 @@ internal static (bool, error) parseOne(this ж<FlagSet> Ꮡf) {
             if (!hasValue && len(f.args) > 0) {
                 // value is the next arg
                 hasValue = true;
-                value = f.args[0];
-                f.args = f.args[1..];
+                (value, f.args) = (f.args[0], f.args[1..]);
             }
             if (!hasValue) {
                 return (false, Ꮡf.failf("flag needs an argument: -%s"u8, name));
@@ -1370,9 +1369,8 @@ public static ж<FlagSet> NewFlagSet(@string name, ΔErrorHandling errorHandling
         name: name,
         errorHandling: errorHandling
     ));
-    
     var fʗ1 = f;
-    fʗ1.Value.Usage = () => fʗ1.defaultUsage();
+        f.Value.Usage = () => fʗ1.defaultUsage();
     return f;
 }
 

@@ -100,6 +100,6 @@ public static map<@string, Type> Names(slice<Spec> specs) {
 [GoType("num:nuint")] partial struct Experiment;
 
 // NoExperiment is the reserved ID 0 indicating no experiment.
-public static readonly Experiment NoExperiment = 0;
+public static Experiment NoExperiment => 0;
 
 } // end event_package

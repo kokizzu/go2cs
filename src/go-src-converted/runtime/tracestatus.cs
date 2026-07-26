@@ -11,19 +11,19 @@ partial class runtime_package {
 
 [GoType("num:uint8")] partial struct traceGoStatus;
 
-internal static readonly traceGoStatus traceGoBad = /* iota */ 0;
-internal static readonly traceGoStatus traceGoRunnable = 1;
-internal static readonly traceGoStatus traceGoRunning = 2;
-internal static readonly traceGoStatus traceGoSyscall = 3;
-internal static readonly traceGoStatus traceGoWaiting = 4;
+internal static traceGoStatus traceGoBad => /* iota */ 0;
+internal static traceGoStatus traceGoRunnable => 1;
+internal static traceGoStatus traceGoRunning => 2;
+internal static traceGoStatus traceGoSyscall => 3;
+internal static traceGoStatus traceGoWaiting => 4;
 
 [GoType("num:uint8")] partial struct traceProcStatus;
 
-internal static readonly traceProcStatus traceProcBad = /* iota */ 0;
-internal static readonly traceProcStatus traceProcRunning = 1;
-internal static readonly traceProcStatus traceProcIdle = 2;
-internal static readonly traceProcStatus traceProcSyscall = 3;
-internal static readonly traceProcStatus traceProcSyscallAbandoned = 4;
+internal static traceProcStatus traceProcBad => /* iota */ 0;
+internal static traceProcStatus traceProcRunning => 1;
+internal static traceProcStatus traceProcIdle => 2;
+internal static traceProcStatus traceProcSyscall => 3;
+internal static traceProcStatus traceProcSyscallAbandoned => 4;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string attemptedToTraceABadˢ = "attempted to trace a bad status for a goroutine"u8;

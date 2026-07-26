@@ -17,9 +17,9 @@ partial class runtime_package {
 
 [GoType("num:uint32")] partial struct throwType;
 
-internal static readonly throwType throwTypeNone = /* iota */ 0;
-internal static readonly throwType throwTypeUser = 1;
-internal static readonly throwType throwTypeRuntime = 2;
+internal static throwType throwTypeNone => /* iota */ 0;
+internal static throwType throwTypeUser => 1;
+internal static throwType throwTypeRuntime => 2;
 
 // We have two different ways of doing defers. The older way involves creating a
 // defer record at the time that a defer statement is executing and adding it to a
@@ -884,8 +884,7 @@ internal static void start(this ж<_panic> Ꮡp, uintptr pc, @unsafe.Pointer sp)
     // caller instead, we avoid needing to unwind through an extra
     // frame. It also somewhat simplifies the terminating condition for
     // deferreturn.
-    Δp.lr = pc;
-    Δp.fp = sp;
+    (Δp.lr, Δp.fp) = (pc, sp);
     Ꮡp.nextFrame();
 }
 

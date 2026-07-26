@@ -10,7 +10,7 @@ using math;
 partial class zstd_package {
 
 // maxHuffmanBits is the largest possible Huffman table bits.
-internal static readonly UntypedInt maxHuffmanBits = 11;
+internal static UntypedInt maxHuffmanBits => 11;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string huffmanCountOverflowˢ = "Huffman count overflow"u8;

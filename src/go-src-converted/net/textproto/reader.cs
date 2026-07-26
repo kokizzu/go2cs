@@ -687,7 +687,7 @@ public static @string CanonicalMIMEHeaderKey(@string s) {
     return s;
 }
 
-internal static readonly UntypedInt toLower = /* 'a' - 'A' */ 32;
+internal static UntypedInt toLower => /* 'a' - 'A' */ 32;
 
 // validHeaderFieldByte reports whether c is a valid byte in a header
 // field name. RFC 7230 says:

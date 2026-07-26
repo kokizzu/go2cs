@@ -25,8 +25,8 @@ partial class macho_package {
     public uint32 Flags;
 }
 
-internal static readonly UntypedInt fileHeaderSize32 = /* 7 * 4 */ 28;
-internal static readonly UntypedInt fileHeaderSize64 = /* 8 * 4 */ 32;
+internal static UntypedInt fileHeaderSize32 => /* 7 * 4 */ 28;
+internal static UntypedInt fileHeaderSize64 => /* 8 * 4 */ 32;
 
 public const uint32 Magic32 = 0xfeedface;
 public const uint32 Magic64 = 0xfeedfacf;
@@ -34,10 +34,10 @@ public const uint32 MagicFat = 0xcafebabe;
 
 [GoType("num:uint32")] partial struct Type;
 
-public static readonly Type TypeObj = 1;
-public static readonly Type TypeExec = 2;
-public static readonly Type TypeDylib = 6;
-public static readonly Type TypeBundle = 8;
+public static Type TypeObj => 1;
+public static Type TypeExec => 2;
+public static Type TypeDylib => 6;
+public static Type TypeBundle => 8;
 
 internal static slice<intName> typeStrings = new intName[]{
     new((uint32)TypeObj, "Obj"u8),
@@ -56,14 +56,14 @@ public static @string GoString(this Type t) {
 
 [GoType("num:uint32")] partial struct Cpu;
 
-internal static readonly UntypedInt cpuArch64 = 0x01000000;
+internal static UntypedInt cpuArch64 => 0x01000000;
 
-public static readonly Cpu Cpu386 = 7;
-public static readonly Cpu CpuAmd64 = /* Cpu386 | cpuArch64 */ 16777223;
-public static readonly Cpu CpuArm = 12;
-public static readonly Cpu CpuArm64 = /* CpuArm | cpuArch64 */ 16777228;
-public static readonly Cpu CpuPpc = 18;
-public static readonly Cpu CpuPpc64 = /* CpuPpc | cpuArch64 */ 16777234;
+public static Cpu Cpu386 => 7;
+public static Cpu CpuAmd64 => /* Cpu386 | cpuArch64 */ 16777223;
+public static Cpu CpuArm => 12;
+public static Cpu CpuArm64 => /* CpuArm | cpuArch64 */ 16777228;
+public static Cpu CpuPpc => 18;
+public static Cpu CpuPpc64 => /* CpuPpc | cpuArch64 */ 16777234;
 
 internal static slice<intName> cpuStrings = new intName[]{
     new((uint32)Cpu386, "Cpu386"u8),
@@ -84,15 +84,15 @@ public static @string GoString(this Cpu i) {
 
 [GoType("num:uint32")] partial struct LoadCmd;
 
-public static readonly LoadCmd LoadCmdSegment = 0x1;
-public static readonly LoadCmd LoadCmdSymtab = 0x2;
-public static readonly LoadCmd LoadCmdThread = 0x4;
-public static readonly LoadCmd LoadCmdUnixThread = 0x5; // thread+stack
-public static readonly LoadCmd LoadCmdDysymtab = 0xb;
-public static readonly LoadCmd LoadCmdDylib = 0xc;      // load dylib command
-public static readonly LoadCmd LoadCmdDylinker = 0xf;   // id dylinker command (not load dylinker command)
-public static readonly LoadCmd LoadCmdSegment64 = 0x19;
-public static readonly LoadCmd LoadCmdRpath = 0x8000001c;
+public static LoadCmd LoadCmdSegment => 0x1;
+public static LoadCmd LoadCmdSymtab => 0x2;
+public static LoadCmd LoadCmdThread => 0x4;
+public static LoadCmd LoadCmdUnixThread => 0x5; // thread+stack
+public static LoadCmd LoadCmdDysymtab => 0xb;
+public static LoadCmd LoadCmdDylib => 0xc;      // load dylib command
+public static LoadCmd LoadCmdDylinker => 0xf;   // id dylinker command (not load dylinker command)
+public static LoadCmd LoadCmdSegment64 => 0x19;
+public static LoadCmd LoadCmdRpath => 0x8000001c;
 
 internal static slice<intName> cmdStrings = new intName[]{
     new((uint32)LoadCmdSegment, "LoadCmdSegment"u8),

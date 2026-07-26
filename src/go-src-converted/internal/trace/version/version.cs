@@ -14,12 +14,12 @@ partial class version_package {
 
 [GoType("num:uint32")] partial struct Version;
 
-public static readonly Version Go111 = 11;
-public static readonly Version Go119 = 19;
-public static readonly Version Go121 = 21;
-public static readonly Version Go122 = 22;
-public static readonly Version Go123 = 23;
-public static readonly Version Current = /* Go123 */ 23;
+public static Version Go111 => 11;
+public static Version Go119 => 19;
+public static Version Go121 => 21;
+public static Version Go122 => 22;
+public static Version Go123 => 23;
+public static Version Current => /* Go123 */ 23;
 
 // Go 1.11–1.21 use a different parser and are only set here for the sake of
 // Version.Valid.

@@ -16,12 +16,12 @@ partial class gosym_package {
 
 [GoType("num:nint")] partial struct version;
 
-internal static readonly version verUnknown = /* iota */ 0;
-internal static readonly version ver11 = 1;
-internal static readonly version ver12 = 2;
-internal static readonly version ver116 = 3;
-internal static readonly version ver118 = 4;
-internal static readonly version ver120 = 5;
+internal static version verUnknown => /* iota */ 0;
+internal static version ver11 => 1;
+internal static version ver12 => 2;
+internal static version ver116 => 3;
+internal static version ver118 => 4;
+internal static version ver120 => 5;
 
 // A LineTable is a data structure mapping program counters to line numbers.
 //
@@ -69,7 +69,7 @@ internal static readonly version ver120 = 5;
 // but we have no idea whether we're using arm or not. This only
 // matters in the old (pre-Go 1.2) symbol table format, so it's not worth
 // fixing.
-internal static readonly UntypedInt oldQuantum = 1;
+internal static UntypedInt oldQuantum => 1;
 
 [GoRecv] internal static (slice<byte> b, uint64 pc, nint line) parse(this ref LineTable t, uint64 targetPC, nint targetLine) {
     slice<byte> b = default!;
@@ -186,10 +186,10 @@ internal static bool isGo12(this ж<LineTable> Ꮡt) {
     return t.version >= ver12;
 }
 
-internal static readonly UntypedInt go12magic = 0xfffffffb;
-internal static readonly UntypedInt go116magic = 0xfffffffa;
-internal static readonly UntypedInt go118magic = 0xfffffff0;
-internal static readonly UntypedInt go120magic = 0xfffffff1;
+internal static UntypedInt go12magic => 0xfffffffb;
+internal static UntypedInt go116magic => 0xfffffffa;
+internal static UntypedInt go118magic => 0xfffffff0;
+internal static UntypedInt go120magic => 0xfffffff1;
 
 // uintptr returns the pointer-sized value encoded at b.
 // The pointer size is dictated by the table being read.
@@ -232,43 +232,35 @@ internal static void parsePclnTab(this ж<LineTable> Ꮡt) => func((defer, recov
     var beMagic = binary.BigEndian.Uint32(t.Data);
     switch (ᐧ) {
     case {} when leMagic == go12magic: {
-        t.binary = new binary_littleEndianᴠByteOrder(binary.LittleEndian);
-        possibleVersion = ver12;
+        (t.binary, possibleVersion) = (new binary_littleEndianᴠByteOrder(binary.LittleEndian), ver12);
         break;
     }
     case {} when beMagic == go12magic: {
-        t.binary = new binary_bigEndianᴠByteOrder(binary.BigEndian);
-        possibleVersion = ver12;
+        (t.binary, possibleVersion) = (new binary_bigEndianᴠByteOrder(binary.BigEndian), ver12);
         break;
     }
     case {} when leMagic == go116magic: {
-        t.binary = new binary_littleEndianᴠByteOrder(binary.LittleEndian);
-        possibleVersion = ver116;
+        (t.binary, possibleVersion) = (new binary_littleEndianᴠByteOrder(binary.LittleEndian), ver116);
         break;
     }
     case {} when beMagic == go116magic: {
-        t.binary = new binary_bigEndianᴠByteOrder(binary.BigEndian);
-        possibleVersion = ver116;
+        (t.binary, possibleVersion) = (new binary_bigEndianᴠByteOrder(binary.BigEndian), ver116);
         break;
     }
     case {} when leMagic == go118magic: {
-        t.binary = new binary_littleEndianᴠByteOrder(binary.LittleEndian);
-        possibleVersion = ver118;
+        (t.binary, possibleVersion) = (new binary_littleEndianᴠByteOrder(binary.LittleEndian), ver118);
         break;
     }
     case {} when beMagic == go118magic: {
-        t.binary = new binary_bigEndianᴠByteOrder(binary.BigEndian);
-        possibleVersion = ver118;
+        (t.binary, possibleVersion) = (new binary_bigEndianᴠByteOrder(binary.BigEndian), ver118);
         break;
     }
     case {} when leMagic == go120magic: {
-        t.binary = new binary_littleEndianᴠByteOrder(binary.LittleEndian);
-        possibleVersion = ver120;
+        (t.binary, possibleVersion) = (new binary_littleEndianᴠByteOrder(binary.LittleEndian), ver120);
         break;
     }
     case {} when beMagic == go120magic: {
-        t.binary = new binary_bigEndianᴠByteOrder(binary.BigEndian);
-        possibleVersion = ver120;
+        (t.binary, possibleVersion) = (new binary_bigEndianᴠByteOrder(binary.BigEndian), ver120);
         break;
     }
     default: {

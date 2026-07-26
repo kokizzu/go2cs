@@ -24,32 +24,32 @@ partial class fcgi_package {
 
 [GoType("num:uint8")] public partial struct recType;
 
-internal static readonly recType typeBeginRequest = 1;
-internal static readonly recType typeAbortRequest = 2;
-internal static readonly recType typeEndRequest = 3;
-internal static readonly recType typeParams = 4;
-internal static readonly recType typeStdin = 5;
-internal static readonly recType typeStdout = 6;
-internal static readonly recType typeStderr = 7;
-internal static readonly recType typeData = 8;
-internal static readonly recType typeGetValues = 9;
-internal static readonly recType typeGetValuesResult = 10;
-internal static readonly recType typeUnknownType = 11;
+internal static recType typeBeginRequest => 1;
+internal static recType typeAbortRequest => 2;
+internal static recType typeEndRequest => 3;
+internal static recType typeParams => 4;
+internal static recType typeStdin => 5;
+internal static recType typeStdout => 6;
+internal static recType typeStderr => 7;
+internal static recType typeData => 8;
+internal static recType typeGetValues => 9;
+internal static recType typeGetValuesResult => 10;
+internal static recType typeUnknownType => 11;
 
 // keep the connection between web-server and responder open after request
-internal static readonly UntypedInt flagKeepConn = 1;
+internal static UntypedInt flagKeepConn => 1;
 
-internal static readonly UntypedInt maxWrite = 65535; // maximum record body
-internal static readonly UntypedInt maxPad = 255;
+internal static UntypedInt maxWrite => 65535; // maximum record body
+internal static UntypedInt maxPad => 255;
 
-internal static readonly UntypedInt roleResponder = /* iota + 1 */ 1; // only Responders are implemented.
-internal static readonly UntypedInt roleAuthorizer = 2;
-internal static readonly UntypedInt roleFilter = 3;
+internal static UntypedInt roleResponder => /* iota + 1 */ 1; // only Responders are implemented.
+internal static UntypedInt roleAuthorizer => 2;
+internal static UntypedInt roleFilter => 3;
 
-internal static readonly UntypedInt statusRequestComplete = iota;
-internal static readonly UntypedInt statusCantMultiplex = 1;
-internal static readonly UntypedInt statusOverloaded = 2;
-internal static readonly UntypedInt statusUnknownRole = 3;
+internal static UntypedInt statusRequestComplete => iota;
+internal static UntypedInt statusCantMultiplex => 1;
+internal static UntypedInt statusOverloaded => 2;
+internal static UntypedInt statusUnknownRole => 3;
 
 [GoType] partial struct header {
     public uint8 Version;

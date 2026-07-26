@@ -20,7 +20,7 @@ partial class syscall_package {
 
 [GoType("num:uintptr")] partial struct ΔHandle;
 
-public static readonly ΔHandle InvalidHandle = /* ^Handle(0) */ unchecked((ΔHandle)18446744073709551615);
+public static ΔHandle InvalidHandle => /* ^Handle(0) */ unchecked((ΔHandle)18446744073709551615);
 
 // StringToUTF16 returns the UTF-16 encoding of the UTF-8 string s,
 // with a terminating NUL added. If s contains a NUL byte this
@@ -167,10 +167,10 @@ public static @string Error(this Errno e) {
     return UTF16ToString(b[..(int)(n)]);
 }
 
-internal static readonly Errno _ERROR_NOT_ENOUGH_MEMORY = /* Errno(8) */ 8;
-internal static readonly Errno _ERROR_NOT_SUPPORTED = /* Errno(50) */ 50;
-internal static readonly Errno _ERROR_BAD_NETPATH = /* Errno(53) */ 53;
-internal static readonly Errno _ERROR_CALL_NOT_IMPLEMENTED = /* Errno(120) */ 120;
+internal static Errno _ERROR_NOT_ENOUGH_MEMORY => /* Errno(8) */ 8;
+internal static Errno _ERROR_NOT_SUPPORTED => /* Errno(50) */ 50;
+internal static Errno _ERROR_BAD_NETPATH => /* Errno(53) */ 53;
+internal static Errno _ERROR_CALL_NOT_IMPLEMENTED => /* Errno(120) */ 120;
 
 public static bool Is(this Errno e, error target) {
     var exprᴛ1 = target;
@@ -499,7 +499,7 @@ internal static ref int64 ioSync => ref ᏑioSync.Value;
 internal static ж<LazyProc> procSetFilePointerEx;
 internal static void initᴛprocSetFilePointerEx() { procSetFilePointerEx = modkernel32.NewProc("SetFilePointerEx"u8); }
 
-internal static readonly uintptr ptrSize = /* unsafe.Sizeof(uintptr(0)) */ 8;
+internal static uintptr ptrSize => /* unsafe.Sizeof(uintptr(0)) */ 8;
 
 // setFilePointerEx calls SetFilePointerEx.
 // See https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfilepointerex
@@ -746,7 +746,7 @@ public static error /*err*/ Utimes(@string path, slice<Timeval> tv) {
 }
 
 // This matches the value in os/file_windows.go.
-internal static readonly UntypedInt _UTIME_OMIT = -1;
+internal static UntypedInt _UTIME_OMIT => -1;
 
 public static error /*err*/ UtimesNano(@string path, slice<Timespec> ts) {
     error err = default!;
@@ -814,7 +814,7 @@ public static error LoadSetFileCompletionNotificationModes() {
 }
 
 // net api calls
-internal static readonly uintptr socket_error = /* uintptr(^uint32(0)) */ unchecked((uintptr)4294967295);
+internal static uintptr socket_error => /* uintptr(^uint32(0)) */ unchecked((uintptr)4294967295);
 
 //sys	WSAStartup(verreq uint32, data *WSAData) (sockerr error) = ws2_32.WSAStartup
 //sys	WSACleanup() (err error) [failretval==socket_error] = ws2_32.WSACleanup

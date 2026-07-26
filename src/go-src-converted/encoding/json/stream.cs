@@ -282,15 +282,15 @@ internal static Marshaler _ᴛ1ʗ = new RawMessageжMarshaler(((ж<RawMessage>)n
 
 internal static Unmarshaler _ᴛ2ʗ = new RawMessageжUnmarshaler(((ж<RawMessage>)nil));
 
-internal static readonly UntypedInt tokenTopValue = iota;
-internal static readonly UntypedInt tokenArrayStart = 1;
-internal static readonly UntypedInt tokenArrayValue = 2;
-internal static readonly UntypedInt tokenArrayComma = 3;
-internal static readonly UntypedInt tokenObjectStart = 4;
-internal static readonly UntypedInt tokenObjectKey = 5;
-internal static readonly UntypedInt tokenObjectColon = 6;
-internal static readonly UntypedInt tokenObjectValue = 7;
-internal static readonly UntypedInt tokenObjectComma = 8;
+internal static UntypedInt tokenTopValue => iota;
+internal static UntypedInt tokenArrayStart => 1;
+internal static UntypedInt tokenArrayValue => 2;
+internal static UntypedInt tokenArrayComma => 3;
+internal static UntypedInt tokenObjectStart => 4;
+internal static UntypedInt tokenObjectKey => 5;
+internal static UntypedInt tokenObjectColon => 6;
+internal static UntypedInt tokenObjectValue => 7;
+internal static UntypedInt tokenObjectComma => 8;
 
 // advance tokenstate from a separator state to a value state
 [GoRecv] internal static error tokenPrepareForDecode(this ref Decoder dec) {

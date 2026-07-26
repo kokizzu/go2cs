@@ -305,9 +305,9 @@ internal static error errNeedMore = errors.New("need more data"u8);
 
 [GoType("num:nint")] partial struct indexType;
 
-internal static readonly indexType indexedTrue = /* iota */ 0;
-internal static readonly indexType indexedFalse = 1;
-internal static readonly indexType indexedNever = 2;
+internal static indexType indexedTrue => /* iota */ 0;
+internal static indexType indexedFalse => 1;
+internal static indexType indexedNever => 2;
 
 internal static bool indexed(this indexType v) {
     return v == indexedTrue;

@@ -1208,7 +1208,7 @@ public static (slice<ж<Certificate>>, error) ParseCertificates(slice<byte> der)
 
 // The X.509 standards confusingly 1-indexed the version names, but 0-indexed
 // the actual encoded version, so the version for X.509v2 is 1.
-internal static readonly UntypedInt x509v2Version = 1;
+internal static UntypedInt x509v2Version => 1;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string x509MalformedCrlˢ = "x509: malformed crl"u8;

@@ -33,33 +33,33 @@ public const uint16 Store = 0; // no compression
 
 public const uint16 Deflate = 8; // DEFLATE compressed
 
-internal static readonly UntypedInt fileHeaderSignature = 0x04034b50;
-internal static readonly UntypedInt directoryHeaderSignature = 0x02014b50;
-internal static readonly UntypedInt directoryEndSignature = 0x06054b50;
-internal static readonly UntypedInt directory64LocSignature = 0x07064b50;
-internal static readonly UntypedInt directory64EndSignature = 0x06064b50;
-internal static readonly UntypedInt dataDescriptorSignature = 0x08074b50; // de-facto standard; required by OS X Finder
-internal static readonly UntypedInt fileHeaderLen = 30; // + filename + extra
-internal static readonly UntypedInt directoryHeaderLen = 46; // + filename + extra + comment
-internal static readonly UntypedInt directoryEndLen = 22; // + comment
-internal static readonly UntypedInt dataDescriptorLen = 16; // four uint32: descriptor signature, crc32, compressed size, size
-internal static readonly UntypedInt dataDescriptor64Len = 24; // two uint32: signature, crc32 | two uint64: compressed size, size
-internal static readonly UntypedInt directory64LocLen = 20; //
-internal static readonly UntypedInt directory64EndLen = 56; // + extra
-internal static readonly UntypedInt creatorFAT = 0;
-internal static readonly UntypedInt creatorUnix = 3;
-internal static readonly UntypedInt creatorNTFS = 11;
-internal static readonly UntypedInt creatorVFAT = 14;
-internal static readonly UntypedInt creatorMacOSX = 19;
-internal static readonly UntypedInt zipVersion20 = 20; // 2.0
-internal static readonly UntypedInt zipVersion45 = 45; // 4.5 (reads and writes zip64 archives)
-internal static readonly UntypedInt uint16max = /* (1 << 16) - 1 */ 65535;
-internal static readonly UntypedInt uint32max = /* (1 << 32) - 1 */ 4294967295;
-internal static readonly UntypedInt zip64ExtraID = 0x0001; // Zip64 extended information
-internal static readonly UntypedInt ntfsExtraID = 0x000a; // NTFS
-internal static readonly UntypedInt unixExtraID = 0x000d; // UNIX
-internal static readonly UntypedInt extTimeExtraID = 0x5455; // Extended timestamp
-internal static readonly UntypedInt infoZipUnixExtraID = 0x5855; // Info-ZIP Unix extension
+internal static UntypedInt fileHeaderSignature => 0x04034b50;
+internal static UntypedInt directoryHeaderSignature => 0x02014b50;
+internal static UntypedInt directoryEndSignature => 0x06054b50;
+internal static UntypedInt directory64LocSignature => 0x07064b50;
+internal static UntypedInt directory64EndSignature => 0x06064b50;
+internal static UntypedInt dataDescriptorSignature => 0x08074b50; // de-facto standard; required by OS X Finder
+internal static UntypedInt fileHeaderLen => 30; // + filename + extra
+internal static UntypedInt directoryHeaderLen => 46; // + filename + extra + comment
+internal static UntypedInt directoryEndLen => 22; // + comment
+internal static UntypedInt dataDescriptorLen => 16; // four uint32: descriptor signature, crc32, compressed size, size
+internal static UntypedInt dataDescriptor64Len => 24; // two uint32: signature, crc32 | two uint64: compressed size, size
+internal static UntypedInt directory64LocLen => 20; //
+internal static UntypedInt directory64EndLen => 56; // + extra
+internal static UntypedInt creatorFAT => 0;
+internal static UntypedInt creatorUnix => 3;
+internal static UntypedInt creatorNTFS => 11;
+internal static UntypedInt creatorVFAT => 14;
+internal static UntypedInt creatorMacOSX => 19;
+internal static UntypedInt zipVersion20 => 20; // 2.0
+internal static UntypedInt zipVersion45 => 45; // 4.5 (reads and writes zip64 archives)
+internal static UntypedInt uint16max => /* (1 << 16) - 1 */ 65535;
+internal static UntypedInt uint32max => /* (1 << 32) - 1 */ 4294967295;
+internal static UntypedInt zip64ExtraID => 0x0001; // Zip64 extended information
+internal static UntypedInt ntfsExtraID => 0x000a; // NTFS
+internal static UntypedInt unixExtraID => 0x000d; // UNIX
+internal static UntypedInt extTimeExtraID => 0x5455; // Extended timestamp
+internal static UntypedInt infoZipUnixExtraID => 0x5855; // Info-ZIP Unix extension
 
 // FileHeader describes a file within a ZIP file.
 // See the [ZIP specification] for details.
@@ -277,19 +277,19 @@ internal static (uint16 fDate, uint16 fTime) timeToMsDosTime(time.Time t) {
     (h.ModifiedDate, h.ModifiedTime) = timeToMsDosTime(t);
 }
 
-internal static readonly UntypedInt s_IFMT = 0xf000;
-internal static readonly UntypedInt s_IFSOCK = 0xc000;
-internal static readonly UntypedInt s_IFLNK = 0xa000;
-internal static readonly UntypedInt s_IFREG = 0x8000;
-internal static readonly UntypedInt s_IFBLK = 0x6000;
-internal static readonly UntypedInt s_IFDIR = 0x4000;
-internal static readonly UntypedInt s_IFCHR = 0x2000;
-internal static readonly UntypedInt s_IFIFO = 0x1000;
-internal static readonly UntypedInt s_ISUID = 0x800;
-internal static readonly UntypedInt s_ISGID = 0x400;
-internal static readonly UntypedInt s_ISVTX = 0x200;
-internal static readonly UntypedInt msdosDir = 0x10;
-internal static readonly UntypedInt msdosReadOnly = 0x01;
+internal static UntypedInt s_IFMT => 0xf000;
+internal static UntypedInt s_IFSOCK => 0xc000;
+internal static UntypedInt s_IFLNK => 0xa000;
+internal static UntypedInt s_IFREG => 0x8000;
+internal static UntypedInt s_IFBLK => 0x6000;
+internal static UntypedInt s_IFDIR => 0x4000;
+internal static UntypedInt s_IFCHR => 0x2000;
+internal static UntypedInt s_IFIFO => 0x1000;
+internal static UntypedInt s_ISUID => 0x800;
+internal static UntypedInt s_ISGID => 0x400;
+internal static UntypedInt s_ISVTX => 0x200;
+internal static UntypedInt msdosDir => 0x10;
+internal static UntypedInt msdosReadOnly => 0x01;
 
 // Mode returns the permission and mode bits for the [FileHeader].
 [GoRecv] public static fs.FileMode /*mode*/ Mode(this ref FileHeader h) {
@@ -315,10 +315,10 @@ internal static readonly UntypedInt msdosReadOnly = 0x01;
     h.ExternalAttrs = (fileModeToUnixMode(mode) << (int)(16));
     // set MSDOS attributes too, as the original zip does.
     if ((fs.FileMode)(mode & fs.ModeDir) != 0) {
-        h.ExternalAttrs |= msdosDir;
+        h.ExternalAttrs |= (uint32)(msdosDir);
     }
     if ((fs.FileMode)(mode & 128) == 0) {
-        h.ExternalAttrs |= msdosReadOnly;
+        h.ExternalAttrs |= (uint32)(msdosReadOnly);
     }
 }
 

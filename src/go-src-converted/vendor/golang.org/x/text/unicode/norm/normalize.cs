@@ -19,10 +19,10 @@ partial class norm_package {
 
 [GoType("num:nint")] partial struct Form;
 
-public static readonly Form NFC = /* iota */ 0;
-public static readonly Form NFD = 1;
-public static readonly Form NFKC = 2;
-public static readonly Form NFKD = 3;
+public static Form NFC => /* iota */ 0;
+public static Form NFD => 1;
+public static Form NFKC => 2;
+public static Form NFKD => 3;
 
 // Bytes returns f(b). May return b if f(b) = b.
 public static slice<byte> Bytes(this Form f, slice<byte> b) {

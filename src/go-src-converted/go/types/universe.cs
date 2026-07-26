@@ -164,34 +164,34 @@ internal static void defPredeclaredNil() {
 
 [GoType("num:nint")] partial struct builtinId;
 
-internal static readonly builtinId _Append = /* iota */ 0;
-internal static readonly builtinId _Cap = 1;
-internal static readonly builtinId _Clear = 2;
-internal static readonly builtinId _Close = 3;
-internal static readonly builtinId _Complex = 4;
-internal static readonly builtinId _Copy = 5;
-internal static readonly builtinId _Delete = 6;
-internal static readonly builtinId _Imag = 7;
-internal static readonly builtinId _Len = 8;
-internal static readonly builtinId _Make = 9;
-internal static readonly builtinId _Max = 10;
-internal static readonly builtinId _Min = 11;
-internal static readonly builtinId _New = 12;
-internal static readonly builtinId _Panic = 13;
-internal static readonly builtinId _Print = 14;
-internal static readonly builtinId _Println = 15;
-internal static readonly builtinId _Real = 16;
-internal static readonly builtinId _Recover = 17;
-internal static readonly builtinId _Add = 18;
-internal static readonly builtinId _Alignof = 19;
-internal static readonly builtinId _Offsetof = 20;
-internal static readonly builtinId _Sizeof = 21;
-internal static readonly builtinId _Slice = 22;
-internal static readonly builtinId _SliceData = 23;
-internal static readonly builtinId _String = 24;
-internal static readonly builtinId _StringData = 25;
-internal static readonly builtinId _Assert = 26;
-internal static readonly builtinId _Trace = 27;
+internal static builtinId _Append => /* iota */ 0;
+internal static builtinId _Cap => 1;
+internal static builtinId _Clear => 2;
+internal static builtinId _Close => 3;
+internal static builtinId _Complex => 4;
+internal static builtinId _Copy => 5;
+internal static builtinId _Delete => 6;
+internal static builtinId _Imag => 7;
+internal static builtinId _Len => 8;
+internal static builtinId _Make => 9;
+internal static builtinId _Max => 10;
+internal static builtinId _Min => 11;
+internal static builtinId _New => 12;
+internal static builtinId _Panic => 13;
+internal static builtinId _Print => 14;
+internal static builtinId _Println => 15;
+internal static builtinId _Real => 16;
+internal static builtinId _Recover => 17;
+internal static builtinId _Add => 18;
+internal static builtinId _Alignof => 19;
+internal static builtinId _Offsetof => 20;
+internal static builtinId _Sizeof => 21;
+internal static builtinId _Slice => 22;
+internal static builtinId _SliceData => 23;
+internal static builtinId _String => 24;
+internal static builtinId _StringData => 25;
+internal static builtinId _Assert => 26;
+internal static builtinId _Trace => 27;
 
 // To disable max/min, remove the next two lines.
 

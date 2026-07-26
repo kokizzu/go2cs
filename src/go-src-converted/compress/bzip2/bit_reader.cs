@@ -45,7 +45,7 @@ internal static bitReader newBitReader(io.Reader r) {
             return 0;
         }
         br.n <<= (int)(8);
-        br.n |= (uint64)b;
+        br.n |= (uint64)((uint64)b);
         br.bits += 8;
     }
     // br.n looks like this (assuming that br.bits = 14 and bits = 6):

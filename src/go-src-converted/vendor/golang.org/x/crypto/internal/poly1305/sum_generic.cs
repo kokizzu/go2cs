@@ -102,9 +102,9 @@ internal static (nint, error) Write(this ж<macGeneric> Ꮡh, slice<byte> p) {
 // [rMask0, rMask1] is the specified Poly1305 clamping mask in little-endian. It
 // clears some bits of the secret coefficient to make it possible to implement
 // multiplication more efficiently.
-internal static readonly UntypedInt rMask0 = 0x0FFFFFFC0FFFFFFF;
+internal static UntypedInt rMask0 => 0x0FFFFFFC0FFFFFFF;
 
-internal static readonly UntypedInt rMask1 = 0x0FFFFFFC0FFFFFFC;
+internal static UntypedInt rMask1 => 0x0FFFFFFC0FFFFFFC;
 
 // initialize loads the 256-bit key into the two 128-bit secret values r and s.
 internal static void initialize(ж<array<byte>> Ꮡkey, ж<macState> Ꮡm) {
@@ -266,11 +266,11 @@ internal static uint64 select64(uint64 v, uint64 x, uint64 y) {
 }
 
 // [p0, p1, p2] is 2¹³⁰ - 5 in little endian order.
-internal static readonly UntypedInt p0 = 0xFFFFFFFFFFFFFFFB;
+internal static UntypedInt p0 => 0xFFFFFFFFFFFFFFFB;
 
-internal static readonly UntypedInt p1 = 0xFFFFFFFFFFFFFFFF;
+internal static UntypedInt p1 => 0xFFFFFFFFFFFFFFFF;
 
-internal static readonly UntypedInt p2 = 0x0000000000000003;
+internal static UntypedInt p2 => 0x0000000000000003;
 
 // finalize completes the modular reduction of h and computes
 //

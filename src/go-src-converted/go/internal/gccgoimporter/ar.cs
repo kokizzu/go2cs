@@ -24,35 +24,35 @@ internal static readonly @string armagt = "!<thin>\n"u8;
 internal static readonly @string armagb = "<bigaf>\n"u8;
 
 // Offsets and sizes for fields in a standard archive header.
-internal static readonly UntypedInt arNameOff = 0;
+internal static UntypedInt arNameOff => 0;
 
-internal static readonly UntypedInt arNameSize = 16;
+internal static UntypedInt arNameSize => 16;
 
-internal static readonly UntypedInt arDateOff = /* arNameOff + arNameSize */ 16;
+internal static UntypedInt arDateOff => /* arNameOff + arNameSize */ 16;
 
-internal static readonly UntypedInt arDateSize = 12;
+internal static UntypedInt arDateSize => 12;
 
-internal static readonly UntypedInt arUIDOff = /* arDateOff + arDateSize */ 28;
+internal static UntypedInt arUIDOff => /* arDateOff + arDateSize */ 28;
 
-internal static readonly UntypedInt arUIDSize = 6;
+internal static UntypedInt arUIDSize => 6;
 
-internal static readonly UntypedInt arGIDOff = /* arUIDOff + arUIDSize */ 34;
+internal static UntypedInt arGIDOff => /* arUIDOff + arUIDSize */ 34;
 
-internal static readonly UntypedInt arGIDSize = 6;
+internal static UntypedInt arGIDSize => 6;
 
-internal static readonly UntypedInt arModeOff = /* arGIDOff + arGIDSize */ 40;
+internal static UntypedInt arModeOff => /* arGIDOff + arGIDSize */ 40;
 
-internal static readonly UntypedInt arModeSize = 8;
+internal static UntypedInt arModeSize => 8;
 
-internal static readonly UntypedInt arSizeOff = /* arModeOff + arModeSize */ 48;
+internal static UntypedInt arSizeOff => /* arModeOff + arModeSize */ 48;
 
-internal static readonly UntypedInt arSizeSize = 10;
+internal static UntypedInt arSizeSize => 10;
 
-internal static readonly UntypedInt arFmagOff = /* arSizeOff + arSizeSize */ 58;
+internal static UntypedInt arFmagOff => /* arSizeOff + arSizeSize */ 58;
 
-internal static readonly UntypedInt arFmagSize = 2;
+internal static UntypedInt arFmagSize => 2;
 
-internal static readonly UntypedInt arHdrSize = /* arFmagOff + arFmagSize */ 60;
+internal static UntypedInt arHdrSize => /* arFmagOff + arFmagSize */ 60;
 
 // The contents of the fmag field of a standard archive header.
 internal static readonly @string arfmag = "`\n"u8;

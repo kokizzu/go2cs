@@ -6,6 +6,6 @@ partial class goexperiment_package {
 
 public const bool CoverageRedesign = true;
 
-public static readonly UntypedInt CoverageRedesignInt = 1;
+public static UntypedInt CoverageRedesignInt => 1;
 
 } // end goexperiment_package

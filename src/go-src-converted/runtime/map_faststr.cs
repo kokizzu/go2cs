@@ -247,7 +247,7 @@ internal static @unsafe.Pointer mapassign_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡ
     var key = stringStructOf(Ꮡ(s));
     var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡ(s))), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapassign.
-    h.flags ^= hashWriting;
+    h.flags ^= (uint8)(hashWriting);
     if (h.buckets == nil) {
         h.buckets = (uintptr)newobject(t.Bucket);
     }
@@ -323,7 +323,7 @@ done:
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
         fatal(concurrentMapWritesˢ);
     }
-    h.flags &= unchecked((uint8)~hashWriting);
+    h.flags &= unchecked((uint8)~(uint8)(hashWriting));
     return elem;
 }
 
@@ -344,7 +344,7 @@ internal static void mapdelete_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @string 
     var key = stringStructOf(Ꮡ(ky));
     var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡ(ky))), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapdelete
-    h.flags ^= hashWriting;
+    h.flags ^= (uint8)(hashWriting);
     var bucket = (uintptr)(hash & bucketMask(h.B));
     if (h.growing()) {
         growWork_faststr(Ꮡt, Ꮡh, bucket);
@@ -416,7 +416,7 @@ break_search:;
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
         fatal(concurrentMapWritesˢ);
     }
-    h.flags &= unchecked((uint8)~hashWriting);
+    h.flags &= unchecked((uint8)~(uint8)(hashWriting));
 }
 
 internal static void growWork_faststr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr bucket) {

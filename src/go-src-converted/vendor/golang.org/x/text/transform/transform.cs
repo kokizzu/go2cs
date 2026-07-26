@@ -112,7 +112,7 @@ public static void Reset(this NopResetter _) {
     internal bool transformComplete;
 }
 
-internal static readonly UntypedInt defaultBufSize = 4096;
+internal static UntypedInt defaultBufSize => 4096;
 
 // NewReader returns a new Reader that wraps r by transforming the bytes read
 // via t. It calls Reset on t.
@@ -186,8 +186,7 @@ public static ж<Reader> NewReader(io.Reader r, Transformer t) {
         // Move any untransformed source bytes to the start of the buffer
         // and read more bytes.
         if (r.src0 != 0) {
-            r.src0 = 0;
-            r.src1 = copy(r.src, r.src[(int)(r.src0)..(int)(r.src1)]);
+            (r.src0, r.src1) = (0, copy(r.src, r.src[(int)(r.src0)..(int)(r.src1)]));
         }
         (n, r.err) = r.r.Read(r.src[(int)(r.src1)..]);
         r.src1 += n;
@@ -414,8 +413,7 @@ public static Transformer Chain(params ꓸꓸꓸTransformer tʗp) {
         if (l.t != default!) {
             l.t.Reset();
         }
-        c.link[i].p = 0;
-        c.link[i].n = 0;
+        (c.link[i].p, c.link[i].n) = (0, 0);
     }
 }
 
@@ -430,11 +428,8 @@ public static Transformer Chain(params ꓸꓸꓸTransformer tʗp) {
     // Set up src and dst in the chain.
     var srcL = Ꮡ(c.link, 0);
     var dstL = Ꮡ(c.link, len(c.link) - 1);
-    srcL.Value.b = src;
-    srcL.Value.p = 0;
-    srcL.Value.n = len(src);
-    dstL.Value.b = dst;
-    dstL.Value.n = 0;
+    (srcL.Value.b, srcL.Value.p, srcL.Value.n) = (src, 0, len(src));
+    (dstL.Value.b, dstL.Value.n) = (dst, 0);
     bool lastFull = default!;                // for detecting progress
     bool needProgress = default!;
     // i is the index of the next Transformer to apply, for i in [low, high].
@@ -448,8 +443,7 @@ public static Transformer Chain(params ꓸꓸꓸTransformer tʗp) {
         @out.Value.n += nDstΔ1;
         @in.Value.p += nSrcΔ1;
         if (i > 0 && (~@in).p == (~@in).n) {
-            @in.Value.p = 0;
-            @in.Value.n = 0;
+            (@in.Value.p, @in.Value.n) = (0, 0);
         }
         (needProgress, lastFull) = (lastFull, false);
         var exprᴛ1 = err0;
@@ -490,9 +484,8 @@ public static Transformer Chain(params ꓸꓸꓸTransformer tʗp) {
                     c.fatalError(i, errShortInternal);
                     break;
                 }
-                @in.Value.p = 0;
-                @in.Value.n = copy((~@in).b, // in.b is an internal buffer and we can make progress.
- @in.src());
+                (@in.Value.p, @in.Value.n) = (0, copy((~@in).b, // in.b is an internal buffer and we can make progress.
+ @in.src()));
             } while (false);
             fallthrough = true;
         }
@@ -519,12 +512,9 @@ public static Transformer Chain(params ꓸꓸꓸTransformer tʗp) {
     // downstream, as Transform would have bailed while handling ErrShortDst.
     if (c.errStart > 0) {
         for (nint i = 1; i < c.errStart; i++) {
-            c.link[i].p = 0;
-            c.link[i].n = 0;
+            (c.link[i].p, c.link[i].n) = (0, 0);
         }
-        err = c.err;
-        c.errStart = 0;
-        c.err = default!;
+        (err, c.errStart, c.err) = (c.err, 0, default!);
     }
     return ((~dstL).n, (~srcL).p, err);
 }
@@ -602,7 +592,7 @@ internal static slice<byte> grow(slice<byte> b, nint n) {
     return buf;
 }
 
-internal static readonly UntypedInt initialBufSize = 128;
+internal static UntypedInt initialBufSize => 128;
 
 // String returns a string with the result of converting s[:n] using t, where
 // n <= len(s). If err == nil, n will be len(s). It calls Reset on t.

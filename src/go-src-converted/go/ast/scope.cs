@@ -170,19 +170,19 @@ public static ж<Object> NewObj(ObjKind kind, @string name) {
 [GoType("num:nint")] partial struct ObjKind;
 
 // The list of possible [Object] kinds.
-public static readonly ObjKind Bad = /* iota */ 0;  // for error handling
+public static ObjKind Bad => /* iota */ 0;  // for error handling
 
-public static readonly ObjKind Pkg = 1;  // package
+public static ObjKind Pkg => 1;  // package
 
-public static readonly ObjKind Con = 2;  // constant
+public static ObjKind Con => 2;  // constant
 
-public static readonly ObjKind Typ = 3;  // type
+public static ObjKind Typ => 3;  // type
 
-public static readonly ObjKind Var = 4;  // variable
+public static ObjKind Var => 4;  // variable
 
-public static readonly ObjKind Fun = 5;  // function or method
+public static ObjKind Fun => 5;  // function or method
 
-public static readonly ObjKind Lbl = 6;  // label
+public static ObjKind Lbl => 6;  // label
 
 internal static array<@string> objKindStrings = new golib.SparseArray<@string>{
     [(int)Bad] = "bad"u8,

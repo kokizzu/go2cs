@@ -99,11 +99,11 @@ public static @string Id(ж<Package> Ꮡpkg, @string name) {
 
 // An object may be painted in one of three colors.
 // Color values other than white or black are considered grey.
-internal static readonly Δcolor white = /* iota */ 0;
+internal static Δcolor white => /* iota */ 0;
 
-internal static readonly Δcolor black = 1;
+internal static Δcolor black => 1;
 
-internal static readonly Δcolor grey = 2; // must be > white and black
+internal static Δcolor grey => 2; // must be > white and black
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string whiteˢ = "white"u8;

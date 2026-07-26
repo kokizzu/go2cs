@@ -77,12 +77,12 @@ partial class reflectlite_package {
  * A few are known to ../runtime/type.go to convey to debuggers.
  * They are also known to ../runtime/type.go.
  */
-public static readonly abiꓸKind Ptr = /* abi.Pointer */ 22;
+public static abiꓸKind Ptr => /* abi.Pointer */ 22;
 
-public static readonly abiꓸKind Interface = /* abi.Interface */ 20;
-public static readonly abiꓸKind Slice = /* abi.Slice */ 23;
-public static readonly abiꓸKind ΔString = /* abi.String */ 24;
-public static readonly abiꓸKind Struct = /* abi.Struct */ 25;
+public static abiꓸKind Interface => /* abi.Interface */ 20;
+public static abiꓸKind Slice => /* abi.Slice */ 23;
+public static abiꓸKind ΔString => /* abi.String */ 24;
+public static abiꓸKind Struct => /* abi.Struct */ 25;
 
 [GoType] partial struct rtype {
     public partial ref ж<@internal.abi_package.Type> Type { get; }

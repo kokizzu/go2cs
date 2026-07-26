@@ -16,7 +16,7 @@ partial class saferio_package {
 
 // chunk is an arbitrary limit on how much memory we are willing
 // to allocate without concern.
-internal static readonly UntypedInt chunk = /* 10 << 20 */ 10485760; // 10M
+internal static UntypedInt chunk => /* 10 << 20 */ 10485760; // 10M
 
 // ReadData reads n bytes from the input stream, but avoids allocating
 // all n bytes if n is large. This avoids crashing the program by

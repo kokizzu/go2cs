@@ -107,7 +107,7 @@ internal static slice<byte> appendNewline(slice<byte> dst, @string prefix, @stri
 // Specify a growth factor slightly larger than what is observed
 // to reduce probability of allocation in appendIndent.
 // A factor no higher than 2 ensures that wasted space never exceeds 50%.
-internal static readonly UntypedInt indentGrowthFactor = 2;
+internal static UntypedInt indentGrowthFactor => 2;
 
 // Indent appends to dst an indented form of the JSON-encoded src.
 // Each element in a JSON object or array begins on a new,

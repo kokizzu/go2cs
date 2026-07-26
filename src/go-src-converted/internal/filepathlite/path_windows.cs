@@ -10,8 +10,8 @@ using go.@internal;
 
 partial class filepathlite_package {
 
-public static readonly UntypedInt Separator = /* '\\' */ 92; // OS-specific path separator
-public static readonly UntypedInt ListSeparator = /* ';' */ 59; // OS-specific path list separator
+public static UntypedInt Separator => /* '\\' */ 92; // OS-specific path separator
+public static UntypedInt ListSeparator => /* ';' */ 59; // OS-specific path list separator
 
 public static bool IsPathSeparator(uint8 c) {
     return c == (rune)'\\' || c == (rune)'/';

@@ -27,15 +27,15 @@ partial class xml_package {
 
 [GoType("num:nint")] partial struct fieldFlags;
 
-internal static readonly fieldFlags fElement = /* 1 << iota */ 1;
-internal static readonly fieldFlags fAttr = 2;
-internal static readonly fieldFlags fCDATA = 4;
-internal static readonly fieldFlags fCharData = 8;
-internal static readonly fieldFlags fInnerXML = 16;
-internal static readonly fieldFlags fComment = 32;
-internal static readonly fieldFlags fAny = 64;
-internal static readonly fieldFlags fOmitEmpty = 128;
-internal static readonly fieldFlags fMode = /* fElement | fAttr | fCDATA | fCharData | fInnerXML | fComment | fAny */ 127;
+internal static fieldFlags fElement => /* 1 << iota */ 1;
+internal static fieldFlags fAttr => 2;
+internal static fieldFlags fCDATA => 4;
+internal static fieldFlags fCharData => 8;
+internal static fieldFlags fInnerXML => 16;
+internal static fieldFlags fComment => 32;
+internal static fieldFlags fAny => 64;
+internal static fieldFlags fOmitEmpty => 128;
+internal static fieldFlags fMode => /* fElement | fAttr | fCDATA | fCharData | fInnerXML | fComment | fAny */ 127;
 internal static readonly @string xmlName = "XMLName"u8;
 
 internal static ж<sync.Map> ᏑtinfoMap = new(default(sync.Map));
@@ -118,8 +118,7 @@ internal static (ж<fieldInfo>, error) structFieldInfo(reflectꓸType typ, ж<re
     @string tag = f.Tag.Get(xmlˢ);
     {
         var (ns, t, ok) = strings.Cut(tag, " "u8); if (ok) {
-            finfo.Value.xmlns = ns;
-            tag = t;
+            (finfo.Value.xmlns, tag) = (ns, t);
         }
     }
     // Parse flags.
@@ -131,25 +130,25 @@ internal static (ж<fieldInfo>, error) structFieldInfo(reflectꓸType typ, ж<re
         foreach (var (_, flag) in tokens[1..]) {
             var exprᴛ1 = flag;
             if (exprᴛ1 == "attr"u8) {
-                finfo.Value.flags |= fAttr;
+                finfo.Value.flags |= (fieldFlags)(fAttr);
             }
             else if (exprᴛ1 == "cdata"u8) {
-                finfo.Value.flags |= fCDATA;
+                finfo.Value.flags |= (fieldFlags)(fCDATA);
             }
             else if (exprᴛ1 == "chardata"u8) {
-                finfo.Value.flags |= fCharData;
+                finfo.Value.flags |= (fieldFlags)(fCharData);
             }
             else if (exprᴛ1 == "innerxml"u8) {
-                finfo.Value.flags |= fInnerXML;
+                finfo.Value.flags |= (fieldFlags)(fInnerXML);
             }
             else if (exprᴛ1 == "comment"u8) {
-                finfo.Value.flags |= fComment;
+                finfo.Value.flags |= (fieldFlags)(fComment);
             }
             else if (exprᴛ1 == "any"u8) {
-                finfo.Value.flags |= fAny;
+                finfo.Value.flags |= (fieldFlags)(fAny);
             }
             else if (exprᴛ1 == "omitempty"u8) {
-                finfo.Value.flags |= fOmitEmpty;
+                finfo.Value.flags |= (fieldFlags)(fOmitEmpty);
             }
 
         }
@@ -159,7 +158,7 @@ internal static (ж<fieldInfo>, error) structFieldInfo(reflectꓸType typ, ж<re
             fieldFlags mode = (fieldFlags)((~finfo).flags & fMode);
             var exprᴛ2 = mode;
             if (exprᴛ2 == (fieldFlags)(0)) {
-                finfo.Value.flags |= fElement;
+                finfo.Value.flags |= (fieldFlags)(fElement);
             }
             else if (exprᴛ2 == fAttr || exprᴛ2 == fCDATA || exprᴛ2 == fCharData || exprᴛ2 == fInnerXML || exprᴛ2 == fComment || exprᴛ2 == fAny || exprᴛ2 == (fieldFlags)((fieldFlags)(fAny | fAttr))) {
                 if (f.Name == xmlName || tag != ""u8 && mode != fAttr) {
@@ -173,7 +172,7 @@ internal static (ж<fieldInfo>, error) structFieldInfo(reflectꓸType typ, ж<re
 
         // This will also catch multiple modes in a single field.
         if ((fieldFlags)((~finfo).flags & fMode) == fAny) {
-            finfo.Value.flags |= fElement;
+            finfo.Value.flags |= (fieldFlags)(fElement);
         }
         if ((fieldFlags)((~finfo).flags & fOmitEmpty) != 0 && (fieldFlags)((~finfo).flags & ((fieldFlags)(fElement | fAttr))) == 0) {
             valid = false;
@@ -201,8 +200,7 @@ internal static (ж<fieldInfo>, error) structFieldInfo(reflectꓸType typ, ж<re
         // or field name otherwise.
         {
             var xmlname = lookupXMLName(f.Type); if (xmlname != nil){
-                finfo.Value.xmlns = xmlname.Value.xmlns;
-                finfo.Value.name = xmlname.Value.name;
+                (finfo.Value.xmlns, finfo.Value.name) = (xmlname.Value.xmlns, xmlname.Value.name);
             } else {
                 finfo.Value.name = f.Name;
             }

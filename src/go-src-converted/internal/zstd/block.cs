@@ -58,9 +58,9 @@ internal static error compressedBlock(this ж<Reader> Ꮡr, nint blockSize) {
 
 [GoType("num:nint")] partial struct seqCode;
 
-internal static readonly seqCode seqLiteral = /* iota */ 0;
-internal static readonly seqCode seqOffset = 1;
-internal static readonly seqCode seqMatch = 2;
+internal static seqCode seqLiteral => /* iota */ 0;
+internal static seqCode seqOffset => 1;
+internal static seqCode seqMatch => 2;
 
 // seqCodeInfoData is the information needed to set up seqTables and
 // seqTableBits for a particular kind of sequence code.

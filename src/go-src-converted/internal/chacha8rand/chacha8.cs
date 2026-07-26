@@ -12,10 +12,10 @@ using go.@internal;
 
 partial class chacha8rand_package {
 
-internal static readonly UntypedInt ctrInc = 4; // increment counter by 4 between block calls
-internal static readonly UntypedInt ctrMax = 16; // reseed when counter reaches 16
-internal static readonly UntypedInt chunk = 32; // each chunk produced by block is 32 uint64s
-internal static readonly UntypedInt reseed = 4; // reseed with 4 words
+internal static UntypedInt ctrInc => 4; // increment counter by 4 between block calls
+internal static UntypedInt ctrMax => 16; // reseed when counter reaches 16
+internal static UntypedInt chunk => 32; // each chunk produced by block is 32 uint64s
+internal static UntypedInt reseed => 4; // reseed with 4 words
 
 // block is the chacha8rand block function.
 internal static partial void block(ж<array<uint64>> seed, ж<array<uint64>> blocks, uint32 counter);

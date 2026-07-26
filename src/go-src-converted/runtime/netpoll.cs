@@ -41,13 +41,13 @@ partial class runtime_package {
 
 // Error codes returned by runtime_pollReset and runtime_pollWait.
 // These must match the values in internal/poll/fd_poll_runtime.go.
-internal static readonly UntypedInt pollNoError = 0; // no error
+internal static UntypedInt pollNoError => 0; // no error
 
-internal static readonly UntypedInt pollErrClosing = 1; // descriptor is closed
+internal static UntypedInt pollErrClosing => 1; // descriptor is closed
 
-internal static readonly UntypedInt pollErrTimeout = 2; // I/O timeout
+internal static UntypedInt pollErrTimeout => 2; // I/O timeout
 
-internal static readonly UntypedInt pollErrNotPollable = 3; // general error polling descriptor
+internal static UntypedInt pollErrNotPollable => 3; // general error polling descriptor
 
 // pollDesc contains 2 binary semaphores, rg and wg, to park reader and writer
 // goroutines respectively. The semaphore can be in the following states:
@@ -62,13 +62,13 @@ internal static readonly UntypedInt pollErrNotPollable = 3; // general error pol
 //	            io notification or timeout/close changes the state to pdReady or pdNil respectively
 //	            and unparks the goroutine.
 //	pdNil - none of the above.
-internal static readonly uintptr pdNil = 0;
+internal static uintptr pdNil => 0;
 
-internal static readonly uintptr pdReady = 1;
+internal static uintptr pdReady => 1;
 
-internal static readonly uintptr pdWait = 2;
+internal static uintptr pdWait => 2;
 
-internal static readonly UntypedInt pollBlockSize = /* 4 * 1024 */ 4096;
+internal static UntypedInt pollBlockSize => /* 4 * 1024 */ 4096;
 
 // Network poller descriptor.
 //
@@ -114,14 +114,14 @@ internal static readonly UntypedInt pollBlockSize = /* 4 * 1024 */ 4096;
 
 [GoType("num:uint32")] partial struct pollInfo;
 
-internal static readonly UntypedInt pollClosing = /* 1 << iota */ 1;
-internal static readonly UntypedInt pollEventErr = 2;
-internal static readonly UntypedInt pollExpiredReadDeadline = 4;
-internal static readonly UntypedInt pollExpiredWriteDeadline = 8;
-internal static readonly UntypedInt pollFDSeq = 16; // 20 bit field, low 20 bits of fdseq field
+internal static UntypedInt pollClosing => /* 1 << iota */ 1;
+internal static UntypedInt pollEventErr => 2;
+internal static UntypedInt pollExpiredReadDeadline => 4;
+internal static UntypedInt pollExpiredWriteDeadline => 8;
+internal static UntypedInt pollFDSeq => 16; // 20 bit field, low 20 bits of fdseq field
 
-internal static readonly UntypedInt pollFDSeqBits = 20;    // number of bits in pollFDSeq
-internal static readonly UntypedInt pollFDSeqMask = /* 1<<pollFDSeqBits - 1 */ 1048575; // mask for pollFDSeq
+internal static UntypedInt pollFDSeqBits => 20;    // number of bits in pollFDSeq
+internal static UntypedInt pollFDSeqMask => /* 1<<pollFDSeqBits - 1 */ 1048575; // mask for pollFDSeq
 
 internal static bool closing(this pollInfo i) {
     return (pollInfo)(i & (uint32)pollClosing) != 0;

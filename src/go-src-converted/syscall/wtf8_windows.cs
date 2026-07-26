@@ -24,15 +24,15 @@ using unicode;
 
 partial class syscall_package {
 
-internal static readonly UntypedInt surr1 = 0xd800;
-internal static readonly UntypedInt surr2 = 0xdc00;
-internal static readonly UntypedInt surr3 = 0xe000;
-internal static readonly UntypedInt tx = 0b10000000;
-internal static readonly UntypedInt t3 = 0b11100000;
-internal static readonly UntypedInt maskx = 0b00111111;
-internal static readonly UntypedInt mask3 = 0b00001111;
-internal static readonly UntypedInt rune1Max = /* 1<<7 - 1 */ 127;
-internal static readonly UntypedInt rune2Max = /* 1<<11 - 1 */ 2047;
+internal static UntypedInt surr1 => 0xd800;
+internal static UntypedInt surr2 => 0xdc00;
+internal static UntypedInt surr3 => 0xe000;
+internal static UntypedInt tx => 0b10000000;
+internal static UntypedInt t3 => 0b11100000;
+internal static UntypedInt maskx => 0b00111111;
+internal static UntypedInt mask3 => 0b00001111;
+internal static UntypedInt rune1Max => /* 1<<7 - 1 */ 127;
+internal static UntypedInt rune2Max => /* 1<<11 - 1 */ 2047;
 
 // encodeWTF16 returns the potentially ill-formed
 // UTF-16 encoding of s.

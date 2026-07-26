@@ -10,11 +10,11 @@ using math;
 
 partial class zstd_package {
 
-internal static readonly UntypedInt xxhPrime64c1 = 0x9e3779b185ebca87;
-internal static readonly UntypedInt xxhPrime64c2 = 0xc2b2ae3d27d4eb4f;
-internal static readonly UntypedInt xxhPrime64c3 = 0x165667b19e3779f9;
-internal static readonly UntypedInt xxhPrime64c4 = 0x85ebca77c2b2ae63;
-internal static readonly UntypedInt xxhPrime64c5 = 0x27d4eb2f165667c5;
+internal static UntypedInt xxhPrime64c1 => 0x9e3779b185ebca87;
+internal static UntypedInt xxhPrime64c2 => 0xc2b2ae3d27d4eb4f;
+internal static UntypedInt xxhPrime64c3 => 0x165667b19e3779f9;
+internal static UntypedInt xxhPrime64c4 => 0x85ebca77c2b2ae63;
+internal static UntypedInt xxhPrime64c5 => 0x27d4eb2f165667c5;
 
 // xxhash64 is the state of a xxHash-64 checksum.
 [GoType] [GoValueClone("v", "buf")] partial struct xxhash64 {

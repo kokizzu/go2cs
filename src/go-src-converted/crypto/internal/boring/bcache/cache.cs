@@ -52,7 +52,7 @@ public static void Register<K, V>(this ж<Cache<K, V>> Ꮡc) {
 // cacheSize is the number of entries in the hash table.
 // The hash is the pointer value mod cacheSize, a prime.
 // Collisions are resolved by maintaining a linked list in each hash slot.
-internal static readonly UntypedInt cacheSize = 1021;
+internal static UntypedInt cacheSize => 1021;
 
 // table returns a pointer to the current cache hash table,
 // coping with the possibility of the GC clearing it out from under us.

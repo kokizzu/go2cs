@@ -109,10 +109,10 @@ public static @string CipherSuiteName(uint16 id) {
     return fmt.Sprintf("0x%04X"u8, id);
 }
 
-internal static readonly UntypedInt suiteECDHE = /* 1 << iota */ 1;
-internal static readonly UntypedInt suiteECSign = 2;
-internal static readonly UntypedInt suiteTLS12 = 4;
-internal static readonly UntypedInt suiteSHA384 = 8;
+internal static UntypedInt suiteECDHE => /* 1 << iota */ 1;
+internal static UntypedInt suiteECSign => 2;
+internal static UntypedInt suiteTLS12 => 4;
+internal static UntypedInt suiteSHA384 => 8;
 
 // A cipherSuite is a TLS 1.0–1.2 cipher suite, and defines the key exchange
 // mechanism, as well as the cipher+MAC pair or the AEAD.
@@ -421,8 +421,8 @@ internal static hash.Hash macSHA256(slice<byte> key) {
     nint explicitNonceLen();
 }
 
-internal static readonly UntypedInt aeadNonceLength = 12;
-internal static readonly UntypedInt noncePrefixLength = 4;
+internal static UntypedInt aeadNonceLength => 12;
+internal static UntypedInt noncePrefixLength => 4;
 
 // prefixNonceAEAD wraps an AEAD and prefixes a fixed portion of the nonce to
 // each call.

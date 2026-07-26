@@ -14,9 +14,9 @@ partial class types_package {
 
 [GoType("num:nint")] partial struct SelectionKind;
 
-public static readonly SelectionKind FieldVal = /* iota */ 0;    // x.f is a struct field selector
-public static readonly SelectionKind MethodVal = 1;   // x.f is a method selector
-public static readonly SelectionKind MethodExpr = 2;  // x.f is a method expression
+public static SelectionKind FieldVal => /* iota */ 0;    // x.f is a struct field selector
+public static SelectionKind MethodVal => 1;   // x.f is a method selector
+public static SelectionKind MethodExpr => 2;  // x.f is a method expression
 
 // A Selection describes a selector expression x.f.
 // For the declarations:

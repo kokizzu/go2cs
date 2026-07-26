@@ -16,7 +16,7 @@ public static partial error /*err*/ WSASendtoInet4(syscallꓸHandle s, ж<syscal
 //go:noescape
 public static partial error /*err*/ WSASendtoInet6(syscallꓸHandle s, ж<syscall.WSABuf> bufs, uint32 bufcnt, ж<uint32> sent, uint32 flags, ж<syscall.SockaddrInet6> to, ж<syscall.Overlapped> overlapped, ж<byte> croutine);
 
-public static readonly UntypedInt SIO_TCP_INITIAL_RTO = /* syscall.IOC_IN | syscall.IOC_VENDOR | 17 */ 2550136849;
+public static UntypedInt SIO_TCP_INITIAL_RTO => /* syscall.IOC_IN | syscall.IOC_VENDOR | 17 */ 2550136849;
 public const uint16 TCP_INITIAL_RTO_UNSPECIFIED_RTT = /* ^uint16(0) */ 65535;
 public const uint8 TCP_INITIAL_RTO_NO_SYN_RETRANSMISSIONS = /* ^uint8(1) */ 254;
 

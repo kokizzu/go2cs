@@ -125,7 +125,7 @@ internal static error emsaPSSVerify(slice<byte> mHash, slice<byte> em, nint emBi
     //     maskedDB are not all equal to zero, output "inconsistent" and
     //     stop.
     byte bitMask = (byte)(((byte)0xff).Rsh((uint64)((8 * emLen - emBits))));
-    if ((byte)(em[0] & ~bitMask) != 0) {
+    if ((byte)(em[0] & ((byte)(~bitMask))) != 0) {
         return ErrVerification;
     }
     // 7.  Let dbMask = MGF(H, emLen - hLen - 1).
@@ -220,8 +220,8 @@ internal static (slice<byte>, error) signPSSWithSalt(ж<PrivateKey> Ꮡpriv, cry
     return decrypt(Ꮡpriv, em, withCheck);
 }
 
-public static readonly UntypedInt PSSSaltLengthAuto = 0;
-public static readonly UntypedInt PSSSaltLengthEqualsHash = -1;
+public static UntypedInt PSSSaltLengthAuto => 0;
+public static UntypedInt PSSSaltLengthEqualsHash => -1;
 
 // PSSOptions contains options for creating and verifying PSS signatures.
 [GoType] partial struct PSSOptions {

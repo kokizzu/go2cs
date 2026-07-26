@@ -602,10 +602,8 @@ internal static error syncFlush(this ж<compressor> Ꮡd) {
             d.hashPrev[i] = 0;
         }
         d.hashOffset = 1;
-        d.index = 0;
-        d.windowEnd = 0;
-        d.blockStart = 0;
-        d.byteAvailable = false;
+        (d.index, d.windowEnd) = (0, 0);
+        (d.blockStart, d.byteAvailable) = (0, false);
         d.tokens = d.tokens[..0];
         d.length = minMatchLength - 1;
         d.offset = 0;

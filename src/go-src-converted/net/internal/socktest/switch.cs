@@ -121,12 +121,12 @@ internal static ж<Stat> getLocked(this stats st, Cookie c) {
 
 [GoType("num:nint")] partial struct FilterType;
 
-public static readonly FilterType FilterSocket = /* iota */ 0;         // for Socket
-public static readonly FilterType FilterConnect = 1;        // for Connect or ConnectEx
-public static readonly FilterType FilterListen = 2;         // for Listen
-public static readonly FilterType FilterAccept = 3;         // for Accept, Accept4 or AcceptEx
-public static readonly FilterType FilterGetsockoptInt = 4;  // for GetsockoptInt
-public static readonly FilterType FilterClose = 5;          // for Close or Closesocket
+public static FilterType FilterSocket => /* iota */ 0;         // for Socket
+public static FilterType FilterConnect => 1;        // for Connect or ConnectEx
+public static FilterType FilterListen => 2;         // for Listen
+public static FilterType FilterAccept => 3;         // for Accept, Accept4 or AcceptEx
+public static FilterType FilterGetsockoptInt => 4;  // for GetsockoptInt
+public static FilterType FilterClose => 5;          // for Close or Closesocket
 
 public delegate (AfterFilter, error) Filter(ж<Status> _);
 

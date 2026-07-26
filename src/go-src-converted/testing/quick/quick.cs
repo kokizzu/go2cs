@@ -58,7 +58,7 @@ internal static int64 randInt64(ж<rand.Rand> Ꮡrand) {
 
 // complexSize is the maximum length of arbitrary values that contain other
 // values.
-internal static readonly UntypedInt complexSize = 50;
+internal static UntypedInt complexSize => 50;
 
 // Value returns an arbitrary value of the given type.
 // If the type implements the [Generator] interface, that will be used.

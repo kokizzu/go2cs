@@ -7,7 +7,7 @@ using io = io_package;
 
 partial class quotedprintable_package {
 
-internal static readonly UntypedInt lineMaxLen = 76;
+internal static UntypedInt lineMaxLen => 76;
 
 // A Writer is a quoted-printable writer that implements [io.WriteCloser].
 [GoType] [GoValueClone("line")] partial struct Writer {

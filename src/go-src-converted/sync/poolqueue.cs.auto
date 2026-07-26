@@ -53,14 +53,14 @@ partial class sync_package {
     internal @unsafe.Pointer typ, val;
 }
 
-internal static readonly UntypedInt dequeueBits = 32;
+internal static UntypedInt dequeueBits => 32;
 
 // dequeueLimit is the maximum size of a poolDequeue.
 //
 // This must be at most (1<<dequeueBits)/2 because detecting fullness
 // depends on wrapping around the ring buffer without wrapping around
 // the index. We divide by 4 so this fits in an int on 32-bit.
-internal static readonly UntypedInt dequeueLimit = /* (1 << dequeueBits) / 4 */ 1073741824;
+internal static UntypedInt dequeueLimit => /* (1 << dequeueBits) / 4 */ 1073741824;
 
 [GoType("ж<EmptyStruct>")] partial class dequeueNil;
 

@@ -108,7 +108,7 @@ public static uint64 String(ΔSeed seed, @string s) {
 // The buffer ensures that writes depend only on the sequence of bytes,
 // not the sequence of WriteByte/Write/WriteString calls,
 // by always calling rthash with a full buffer (except for the tail).
-internal static readonly UntypedInt bufSize = 128;
+internal static UntypedInt bufSize => 128;
 
 // initSeed seeds the hash if necessary.
 // initSeed is called lazily before any operation that actually uses h.seed/h.state.

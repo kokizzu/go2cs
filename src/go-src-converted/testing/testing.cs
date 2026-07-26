@@ -657,7 +657,7 @@ internal static void Printf(this ж<chattyPrinter> Ꮡp, @string testName, @stri
 
 // The maximum number of stack frames to go through when skipping helper functions for
 // the purpose of decorating log messages.
-internal static readonly UntypedInt maxStackLen = 50;
+internal static UntypedInt maxStackLen => 50;
 
 // common holds the elements common between T and B and
 // captures common methods such as Errorf.
@@ -1475,8 +1475,8 @@ internal static void Setenv(this ж<common> Ꮡc, @string key, @string value) {
 
 [GoType("num:nint")] partial struct panicHandling;
 
-internal static readonly panicHandling normalPanic = /* iota */ 0;
-internal static readonly panicHandling recoverAndReturnPanic = 1;
+internal static panicHandling normalPanic => /* iota */ 0;
+internal static panicHandling recoverAndReturnPanic => 1;
 
 // runCleanup is called at the end of the test.
 // If ph is recoverAndReturnPanic, it will catch panics, and return the

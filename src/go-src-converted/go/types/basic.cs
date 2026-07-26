@@ -9,57 +9,57 @@ partial class types_package {
 
 [GoType("num:nint")] partial struct BasicKind;
 
-public static readonly BasicKind Invalid = /* iota */ 0;  // type is invalid
-public static readonly BasicKind Bool = 1;
-public static readonly BasicKind Int = 2;
-public static readonly BasicKind Int8 = 3;
-public static readonly BasicKind Int16 = 4;
-public static readonly BasicKind Int32 = 5;
-public static readonly BasicKind Int64 = 6;
-public static readonly BasicKind Uint = 7;
-public static readonly BasicKind Uint8 = 8;
-public static readonly BasicKind Uint16 = 9;
-public static readonly BasicKind Uint32 = 10;
-public static readonly BasicKind Uint64 = 11;
-public static readonly BasicKind Uintptr = 12;
-public static readonly BasicKind Float32 = 13;
-public static readonly BasicKind Float64 = 14;
-public static readonly BasicKind Complex64 = 15;
-public static readonly BasicKind Complex128 = 16;
-public static readonly BasicKind ΔString = 17;
-public static readonly BasicKind UnsafePointer = 18;
-public static readonly BasicKind UntypedBool = 19;
-public static readonly BasicKind ΔUntypedInt = 20;
-public static readonly BasicKind UntypedRune = 21;
-public static readonly BasicKind ΔUntypedFloat = 22;
-public static readonly BasicKind ΔUntypedComplex = 23;
-public static readonly BasicKind UntypedString = 24;
-public static readonly BasicKind UntypedNil = 25;
-public static readonly BasicKind Byte = /* Uint8 */ 8;
-public static readonly BasicKind Rune = /* Int32 */ 5;
+public static BasicKind Invalid => /* iota */ 0;  // type is invalid
+public static BasicKind Bool => 1;
+public static BasicKind Int => 2;
+public static BasicKind Int8 => 3;
+public static BasicKind Int16 => 4;
+public static BasicKind Int32 => 5;
+public static BasicKind Int64 => 6;
+public static BasicKind Uint => 7;
+public static BasicKind Uint8 => 8;
+public static BasicKind Uint16 => 9;
+public static BasicKind Uint32 => 10;
+public static BasicKind Uint64 => 11;
+public static BasicKind Uintptr => 12;
+public static BasicKind Float32 => 13;
+public static BasicKind Float64 => 14;
+public static BasicKind Complex64 => 15;
+public static BasicKind Complex128 => 16;
+public static BasicKind ΔString => 17;
+public static BasicKind UnsafePointer => 18;
+public static BasicKind UntypedBool => 19;
+public static BasicKind ΔUntypedInt => 20;
+public static BasicKind UntypedRune => 21;
+public static BasicKind ΔUntypedFloat => 22;
+public static BasicKind ΔUntypedComplex => 23;
+public static BasicKind UntypedString => 24;
+public static BasicKind UntypedNil => 25;
+public static BasicKind Byte => /* Uint8 */ 8;
+public static BasicKind Rune => /* Int32 */ 5;
 
 [GoType("num:nint")] partial struct BasicInfo;
 
 // Properties of basic types.
-public static readonly BasicInfo IsBoolean = /* 1 << iota */ 1;
+public static BasicInfo IsBoolean => /* 1 << iota */ 1;
 
-public static readonly BasicInfo IsInteger = 2;
+public static BasicInfo IsInteger => 2;
 
-public static readonly BasicInfo IsUnsigned = 4;
+public static BasicInfo IsUnsigned => 4;
 
-public static readonly BasicInfo IsFloat = 8;
+public static BasicInfo IsFloat => 8;
 
-public static readonly BasicInfo IsComplex = 16;
+public static BasicInfo IsComplex => 16;
 
-public static readonly BasicInfo IsString = 32;
+public static BasicInfo IsString => 32;
 
-public static readonly BasicInfo IsUntyped = 64;
+public static BasicInfo IsUntyped => 64;
 
-public static readonly BasicInfo IsOrdered = /* IsInteger | IsFloat | IsString */ 42;
+public static BasicInfo IsOrdered => /* IsInteger | IsFloat | IsString */ 42;
 
-public static readonly BasicInfo IsNumeric = /* IsInteger | IsFloat | IsComplex */ 26;
+public static BasicInfo IsNumeric => /* IsInteger | IsFloat | IsComplex */ 26;
 
-public static readonly BasicInfo IsConstType = /* IsBoolean | IsNumeric | IsString */ 59;
+public static BasicInfo IsConstType => /* IsBoolean | IsNumeric | IsString */ 59;
 
 // A Basic represents a basic type.
 [GoType] partial struct Basic {

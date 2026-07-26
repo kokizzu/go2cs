@@ -17,50 +17,50 @@ partial class asn1_package {
 // Here are some standard tags and classes
 
 // ASN.1 tags represent the type of the following object.
-public static readonly UntypedInt TagBoolean = 1;
+public static UntypedInt TagBoolean => 1;
 
-public static readonly UntypedInt TagInteger = 2;
+public static UntypedInt TagInteger => 2;
 
-public static readonly UntypedInt TagBitString = 3;
+public static UntypedInt TagBitString => 3;
 
-public static readonly UntypedInt TagOctetString = 4;
+public static UntypedInt TagOctetString => 4;
 
-public static readonly UntypedInt TagNull = 5;
+public static UntypedInt TagNull => 5;
 
-public static readonly UntypedInt TagOID = 6;
+public static UntypedInt TagOID => 6;
 
-public static readonly UntypedInt TagEnum = 10;
+public static UntypedInt TagEnum => 10;
 
-public static readonly UntypedInt TagUTF8String = 12;
+public static UntypedInt TagUTF8String => 12;
 
-public static readonly UntypedInt TagSequence = 16;
+public static UntypedInt TagSequence => 16;
 
-public static readonly UntypedInt TagSet = 17;
+public static UntypedInt TagSet => 17;
 
-public static readonly UntypedInt TagNumericString = 18;
+public static UntypedInt TagNumericString => 18;
 
-public static readonly UntypedInt TagPrintableString = 19;
+public static UntypedInt TagPrintableString => 19;
 
-public static readonly UntypedInt TagT61String = 20;
+public static UntypedInt TagT61String => 20;
 
-public static readonly UntypedInt TagIA5String = 22;
+public static UntypedInt TagIA5String => 22;
 
-public static readonly UntypedInt TagUTCTime = 23;
+public static UntypedInt TagUTCTime => 23;
 
-public static readonly UntypedInt TagGeneralizedTime = 24;
+public static UntypedInt TagGeneralizedTime => 24;
 
-public static readonly UntypedInt TagGeneralString = 27;
+public static UntypedInt TagGeneralString => 27;
 
-public static readonly UntypedInt TagBMPString = 30;
+public static UntypedInt TagBMPString => 30;
 
 // ASN.1 class types represent the namespace of the tag.
-public static readonly UntypedInt ClassUniversal = 0;
+public static UntypedInt ClassUniversal => 0;
 
-public static readonly UntypedInt ClassApplication = 1;
+public static UntypedInt ClassApplication => 1;
 
-public static readonly UntypedInt ClassContextSpecific = 2;
+public static UntypedInt ClassContextSpecific => 2;
 
-public static readonly UntypedInt ClassPrivate = 3;
+public static UntypedInt ClassPrivate => 3;
 
 [GoType] partial struct tagAndLength {
     internal nint @class, tag, length;

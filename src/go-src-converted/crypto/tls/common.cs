@@ -30,11 +30,11 @@ using go.crypto;
 
 partial class tls_package {
 
-public static readonly UntypedInt VersionTLS10 = 0x0301;
-public static readonly UntypedInt VersionTLS11 = 0x0302;
-public static readonly UntypedInt VersionTLS12 = 0x0303;
-public static readonly UntypedInt VersionTLS13 = 0x0304;
-public static readonly UntypedInt VersionSSL30 = 0x0300;
+public static UntypedInt VersionTLS10 => 0x0301;
+public static UntypedInt VersionTLS11 => 0x0302;
+public static UntypedInt VersionTLS12 => 0x0303;
+public static UntypedInt VersionTLS13 => 0x0304;
+public static UntypedInt VersionSSL30 => 0x0300;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string ssLv3ˢ = "SSLv3"u8;
@@ -69,20 +69,20 @@ public static @string VersionName(uint16 version) {
 
 }
 
-internal static readonly UntypedInt maxPlaintext = 16384; // maximum plaintext payload length
-internal static readonly UntypedInt maxCiphertext = /* 16384 + 2048 */ 18432; // maximum ciphertext payload length
-internal static readonly UntypedInt maxCiphertextTLS13 = /* 16384 + 256 */ 16640; // maximum ciphertext length in TLS 1.3
-internal static readonly UntypedInt recordHeaderLen = 5; // record header length
-internal static readonly UntypedInt maxHandshake = 65536; // maximum handshake we support (protocol max is 16 MB)
-internal static readonly UntypedInt maxHandshakeCertificateMsg = 262144; // maximum certificate message size (256 KiB)
-internal static readonly UntypedInt maxUselessRecords = 16; // maximum number of consecutive non-advancing records
+internal static UntypedInt maxPlaintext => 16384; // maximum plaintext payload length
+internal static UntypedInt maxCiphertext => /* 16384 + 2048 */ 18432; // maximum ciphertext payload length
+internal static UntypedInt maxCiphertextTLS13 => /* 16384 + 256 */ 16640; // maximum ciphertext length in TLS 1.3
+internal static UntypedInt recordHeaderLen => 5; // record header length
+internal static UntypedInt maxHandshake => 65536; // maximum handshake we support (protocol max is 16 MB)
+internal static UntypedInt maxHandshakeCertificateMsg => 262144; // maximum certificate message size (256 KiB)
+internal static UntypedInt maxUselessRecords => 16; // maximum number of consecutive non-advancing records
 
 [GoType("num:uint8")] partial struct recordType;
 
-internal static readonly recordType recordTypeChangeCipherSpec = 20;
-internal static readonly recordType recordTypeAlert = 21;
-internal static readonly recordType recordTypeHandshake = 22;
-internal static readonly recordType recordTypeApplicationData = 23;
+internal static recordType recordTypeChangeCipherSpec => 20;
+internal static recordType recordTypeAlert => 21;
+internal static recordType recordTypeHandshake => 22;
+internal static recordType recordTypeApplicationData => 23;
 
 // TLS handshake message types.
 internal const uint8 typeHelloRequest = 0;
@@ -168,11 +168,11 @@ internal const uint16 scsvRenegotiation = 0x00ff;
 
 [GoType("num:uint16")] partial struct CurveID;
 
-public static readonly CurveID CurveP256 = 23;
-public static readonly CurveID CurveP384 = 24;
-public static readonly CurveID CurveP521 = 25;
-public static readonly CurveID X25519 = 29;
-internal static readonly CurveID x25519Kyber768Draft00 = 0x6399;  // X25519Kyber768Draft00
+public static CurveID CurveP256 => 23;
+public static CurveID CurveP384 => 24;
+public static CurveID CurveP521 => 25;
+public static CurveID X25519 => 29;
+internal static CurveID x25519Kyber768Draft00 => 0x6399;  // X25519Kyber768Draft00
 
 // TLS 1.3 Key Share. See RFC 8446, Section 4.2.8.
 [GoType] partial struct keyShare {
@@ -200,9 +200,9 @@ internal const uint8 pointFormatUncompressed = 0;
 internal const uint8 statusTypeOCSP = 1;
 
 // Certificate types (for certificateRequestMsg)
-internal static readonly UntypedInt certTypeRSASign = 1;
+internal static UntypedInt certTypeRSASign => 1;
 
-internal static readonly UntypedInt certTypeECDSASign = 64; // ECDSA or EdDSA keys, see RFC 8422, Section 3.
+internal static UntypedInt certTypeECDSASign => 64; // ECDSA or EdDSA keys, see RFC 8422, Section 3.
 
 // Signature algorithms (for internal signaling use). Starting at 225 to avoid overlap with
 // TLS 1.2 codepoints (RFC 5246, Appendix A.4.1), with which these have nothing to do.
@@ -316,11 +316,11 @@ internal static bool testingOnlyForceDowngradeCanary;
 
 [GoType("num:nint")] partial struct ClientAuthType;
 
-public static readonly ClientAuthType NoClientCert = /* iota */ 0;
-public static readonly ClientAuthType RequestClientCert = 1;
-public static readonly ClientAuthType RequireAnyClientCert = 2;
-public static readonly ClientAuthType VerifyClientCertIfGiven = 3;
-public static readonly ClientAuthType RequireAndVerifyClientCert = 4;
+public static ClientAuthType NoClientCert => /* iota */ 0;
+public static ClientAuthType RequestClientCert => 1;
+public static ClientAuthType RequireAnyClientCert => 2;
+public static ClientAuthType VerifyClientCertIfGiven => 3;
+public static ClientAuthType RequireAndVerifyClientCert => 4;
 
 // requiresClientCert reports whether the ClientAuthType requires a client
 // certificate to be provided.
@@ -355,18 +355,18 @@ internal static bool requiresClientCert(ClientAuthType c) {
 [GoType("num:uint16")] partial struct SignatureScheme;
 
 //go:generate stringer -linecomment -type=SignatureScheme,CurveID,ClientAuthType -output=common_string.go
-public static readonly SignatureScheme PKCS1WithSHA256 = 0x0401;
-public static readonly SignatureScheme PKCS1WithSHA384 = 0x0501;
-public static readonly SignatureScheme PKCS1WithSHA512 = 0x0601;
-public static readonly SignatureScheme PSSWithSHA256 = 0x0804;
-public static readonly SignatureScheme PSSWithSHA384 = 0x0805;
-public static readonly SignatureScheme PSSWithSHA512 = 0x0806;
-public static readonly SignatureScheme ECDSAWithP256AndSHA256 = 0x0403;
-public static readonly SignatureScheme ECDSAWithP384AndSHA384 = 0x0503;
-public static readonly SignatureScheme ECDSAWithP521AndSHA512 = 0x0603;
-public static readonly SignatureScheme Ed25519 = 0x0807;
-public static readonly SignatureScheme PKCS1WithSHA1 = 0x0201;
-public static readonly SignatureScheme ECDSAWithSHA1 = 0x0203;
+public static SignatureScheme PKCS1WithSHA256 => 0x0401;
+public static SignatureScheme PKCS1WithSHA384 => 0x0501;
+public static SignatureScheme PKCS1WithSHA512 => 0x0601;
+public static SignatureScheme PSSWithSHA256 => 0x0804;
+public static SignatureScheme PSSWithSHA384 => 0x0805;
+public static SignatureScheme PSSWithSHA512 => 0x0806;
+public static SignatureScheme ECDSAWithP256AndSHA256 => 0x0403;
+public static SignatureScheme ECDSAWithP384AndSHA384 => 0x0503;
+public static SignatureScheme ECDSAWithP521AndSHA512 => 0x0603;
+public static SignatureScheme Ed25519 => 0x0807;
+public static SignatureScheme PKCS1WithSHA1 => 0x0201;
+public static SignatureScheme ECDSAWithSHA1 => 0x0203;
 
 // ClientHelloInfo contains information from a ClientHello message in order to
 // guide application logic in the GetCertificate and GetConfigForClient callbacks.
@@ -447,9 +447,9 @@ public static readonly SignatureScheme ECDSAWithSHA1 = 0x0203;
 
 [GoType("num:nint")] partial struct RenegotiationSupport;
 
-public static readonly RenegotiationSupport RenegotiateNever = /* iota */ 0;
-public static readonly RenegotiationSupport RenegotiateOnceAsClient = 1;
-public static readonly RenegotiationSupport RenegotiateFreelyAsClient = 2;
+public static RenegotiationSupport RenegotiateNever => /* iota */ 0;
+public static RenegotiationSupport RenegotiateOnceAsClient => 1;
+public static RenegotiationSupport RenegotiateFreelyAsClient => 2;
 
 // A Config structure is used to configure a TLS client or server.
 // After one has been passed to a TLS function it must not be
@@ -729,8 +729,8 @@ public static readonly RenegotiationSupport RenegotiateFreelyAsClient = 2;
     internal slice<ticketKey> autoSessionTicketKeys;
 }
 
-internal static readonly time.Duration ticketKeyLifetime = /* 7 * 24 * time.Hour */ 604800000000000; // 7 days
-internal static readonly time.Duration ticketKeyRotation = /* 24 * time.Hour */ 86400000000000;
+internal static time.Duration ticketKeyLifetime => /* 7 * 24 * time.Hour */ 604800000000000; // 7 days
+internal static time.Duration ticketKeyRotation => /* 24 * time.Hour */ 86400000000000;
 
 // ticketKey is the internal representation of a session ticket key.
 [GoType] [GoValueClone("aesKey", "hmacKey")] partial struct ticketKey {
@@ -760,7 +760,7 @@ internal static readonly time.Duration ticketKeyRotation = /* 24 * time.Hour */ 
 
 // maxSessionTicketLifetime is the maximum allowed lifetime of a TLS 1.3 session
 // ticket, and the lifetime we set for all tickets we send.
-internal static readonly time.Duration maxSessionTicketLifetime = /* 7 * 24 * time.Hour */ 604800000000000;
+internal static time.Duration maxSessionTicketLifetime => /* 7 * 24 * time.Hour */ 604800000000000;
 
 // Clone returns a shallow clone of c or nil if c is nil. It is safe to clone a [Config] that is
 // being used concurrently by a TLS client or server.

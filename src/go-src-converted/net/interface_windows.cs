@@ -68,8 +68,8 @@ internal static (slice<Interface>, error) interfaceTable(nint ifindex) {
                 Name: windows.UTF16PtrToString((~aa).FriendlyName)
             );
             if ((~aa).OperStatus == windows.IfOperStatusUp) {
-                ifi.Flags |= FlagUp;
-                ifi.Flags |= FlagRunning;
+                ifi.Flags |= (Flags)(FlagUp);
+                ifi.Flags |= (Flags)(FlagRunning);
             }
             // For now we need to infer link-layer service
             // capabilities from media types.
@@ -77,16 +77,16 @@ internal static (slice<Interface>, error) interfaceTable(nint ifindex) {
             // Windows XP.
             var exprᴛ1 = (~aa).IfType;
             if (exprᴛ1 == windows.IF_TYPE_ETHERNET_CSMACD || exprᴛ1 == windows.IF_TYPE_ISO88025_TOKENRING || exprᴛ1 == windows.IF_TYPE_IEEE80211 || exprᴛ1 == windows.IF_TYPE_IEEE1394) {
-                ifi.Flags |= (Flags)(FlagBroadcast | FlagMulticast);
+                ifi.Flags |= (Flags)((Flags)(FlagBroadcast | FlagMulticast));
             }
             else if (exprᴛ1 == windows.IF_TYPE_PPP || exprᴛ1 == windows.IF_TYPE_TUNNEL) {
-                ifi.Flags |= (Flags)(FlagPointToPoint | FlagMulticast);
+                ifi.Flags |= (Flags)((Flags)(FlagPointToPoint | FlagMulticast));
             }
             else if (exprᴛ1 == windows.IF_TYPE_SOFTWARE_LOOPBACK) {
-                ifi.Flags |= (Flags)(FlagLoopback | FlagMulticast);
+                ifi.Flags |= (Flags)((Flags)(FlagLoopback | FlagMulticast));
             }
             else if (exprᴛ1 == windows.IF_TYPE_ATM) {
-                ifi.Flags |= (Flags)((Flags)(FlagBroadcast | FlagPointToPoint) | FlagMulticast);
+                ifi.Flags |= (Flags)((Flags)((Flags)(FlagBroadcast | FlagPointToPoint) | FlagMulticast));
             }
 
             // assume all services available; LANE, point-to-point and point-to-multipoint

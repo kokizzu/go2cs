@@ -31,7 +31,7 @@ partial class net_package {
 
 internal const bool useTCPOnly = true;
 internal const bool useUDPOrTCP = false;
-internal static readonly UntypedInt maxDNSPacketSize = 1232;
+internal static UntypedInt maxDNSPacketSize => 1232;
 
 internal static error errLameReferral = errors.New("lame referral"u8);
 internal static error errCannotUnmarshalDNSMessage = errors.New("cannot unmarshal DNS message"u8);
@@ -573,11 +573,11 @@ internal static bool avoidDNS(@string name) {
 
 [GoType("num:nint")] partial struct ΔhostLookupOrder;
 
-internal static readonly ΔhostLookupOrder hostLookupCgo = /* iota */ 0;
-internal static readonly ΔhostLookupOrder hostLookupFilesDNS = 1; // files first
-internal static readonly ΔhostLookupOrder hostLookupDNSFiles = 2; // dns first
-internal static readonly ΔhostLookupOrder hostLookupFiles = 3; // only files
-internal static readonly ΔhostLookupOrder hostLookupDNS = 4; // only DNS
+internal static ΔhostLookupOrder hostLookupCgo => /* iota */ 0;
+internal static ΔhostLookupOrder hostLookupFilesDNS => 1; // files first
+internal static ΔhostLookupOrder hostLookupDNSFiles => 2; // dns first
+internal static ΔhostLookupOrder hostLookupFiles => 3; // only files
+internal static ΔhostLookupOrder hostLookupDNS => 4; // only DNS
 
 internal static map<ΔhostLookupOrder, @string> lookupOrderName = new map<ΔhostLookupOrder, @string>{
     [hostLookupCgo] = "cgo"u8,

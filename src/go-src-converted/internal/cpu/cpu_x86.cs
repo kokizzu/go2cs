@@ -8,7 +8,7 @@ using ꓸꓸꓸuint32 = Span<uint32>;
 
 partial class cpu_package {
 
-public static readonly UntypedInt CacheLinePadSize = 64;
+public static UntypedInt CacheLinePadSize => 64;
 
 // cpuid is implemented in cpu_x86.s.
 internal static partial (uint32 eax, uint32 ebx, uint32 ecx, uint32 edx) cpuid(uint32 eaxArg, uint32 ecxArg);
@@ -19,26 +19,26 @@ internal static partial (uint32 eax, uint32 edx) xgetbv();
 // getGOAMD64level is implemented in cpu_x86.s. Returns number in [1,4].
 internal static partial int32 getGOAMD64level();
 
-internal static readonly UntypedInt cpuid_SSE3 = /* 1 << 0 */ 1;
-internal static readonly UntypedInt cpuid_PCLMULQDQ = /* 1 << 1 */ 2;
-internal static readonly UntypedInt cpuid_SSSE3 = /* 1 << 9 */ 512;
-internal static readonly UntypedInt cpuid_FMA = /* 1 << 12 */ 4096;
-internal static readonly UntypedInt cpuid_SSE41 = /* 1 << 19 */ 524288;
-internal static readonly UntypedInt cpuid_SSE42 = /* 1 << 20 */ 1048576;
-internal static readonly UntypedInt cpuid_POPCNT = /* 1 << 23 */ 8388608;
-internal static readonly UntypedInt cpuid_AES = /* 1 << 25 */ 33554432;
-internal static readonly UntypedInt cpuid_OSXSAVE = /* 1 << 27 */ 134217728;
-internal static readonly UntypedInt cpuid_AVX = /* 1 << 28 */ 268435456;
-internal static readonly UntypedInt cpuid_BMI1 = /* 1 << 3 */ 8;
-internal static readonly UntypedInt cpuid_AVX2 = /* 1 << 5 */ 32;
-internal static readonly UntypedInt cpuid_BMI2 = /* 1 << 8 */ 256;
-internal static readonly UntypedInt cpuid_ERMS = /* 1 << 9 */ 512;
-internal static readonly UntypedInt cpuid_AVX512F = /* 1 << 16 */ 65536;
-internal static readonly UntypedInt cpuid_ADX = /* 1 << 19 */ 524288;
-internal static readonly UntypedInt cpuid_SHA = /* 1 << 29 */ 536870912;
-internal static readonly UntypedInt cpuid_AVX512BW = /* 1 << 30 */ 1073741824;
-internal static readonly UntypedInt cpuid_AVX512VL = /* 1 << 31 */ 2147483648;
-internal static readonly UntypedInt cpuid_RDTSCP = /* 1 << 27 */ 134217728;
+internal static UntypedInt cpuid_SSE3 => /* 1 << 0 */ 1;
+internal static UntypedInt cpuid_PCLMULQDQ => /* 1 << 1 */ 2;
+internal static UntypedInt cpuid_SSSE3 => /* 1 << 9 */ 512;
+internal static UntypedInt cpuid_FMA => /* 1 << 12 */ 4096;
+internal static UntypedInt cpuid_SSE41 => /* 1 << 19 */ 524288;
+internal static UntypedInt cpuid_SSE42 => /* 1 << 20 */ 1048576;
+internal static UntypedInt cpuid_POPCNT => /* 1 << 23 */ 8388608;
+internal static UntypedInt cpuid_AES => /* 1 << 25 */ 33554432;
+internal static UntypedInt cpuid_OSXSAVE => /* 1 << 27 */ 134217728;
+internal static UntypedInt cpuid_AVX => /* 1 << 28 */ 268435456;
+internal static UntypedInt cpuid_BMI1 => /* 1 << 3 */ 8;
+internal static UntypedInt cpuid_AVX2 => /* 1 << 5 */ 32;
+internal static UntypedInt cpuid_BMI2 => /* 1 << 8 */ 256;
+internal static UntypedInt cpuid_ERMS => /* 1 << 9 */ 512;
+internal static UntypedInt cpuid_AVX512F => /* 1 << 16 */ 65536;
+internal static UntypedInt cpuid_ADX => /* 1 << 19 */ 524288;
+internal static UntypedInt cpuid_SHA => /* 1 << 29 */ 536870912;
+internal static UntypedInt cpuid_AVX512BW => /* 1 << 30 */ 1073741824;
+internal static UntypedInt cpuid_AVX512VL => /* 1 << 31 */ 2147483648;
+internal static UntypedInt cpuid_RDTSCP => /* 1 << 27 */ 134217728;
 
 internal static uint32 maxExtendedFunctionInformation;
 

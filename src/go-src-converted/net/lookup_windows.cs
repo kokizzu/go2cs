@@ -19,11 +19,11 @@ partial class net_package {
 // does not actually use cgo.
 internal const bool cgoAvailable = true;
 
-internal static readonly syscall.Errno _DNS_ERROR_RCODE_NAME_ERROR = /* syscall.Errno(9003) */ 9003;
-internal static readonly syscall.Errno _DNS_INFO_NO_RECORDS = /* syscall.Errno(9501) */ 9501;
-internal static readonly syscall.Errno _WSAHOST_NOT_FOUND = /* syscall.Errno(11001) */ 11001;
-internal static readonly syscall.Errno _WSATRY_AGAIN = /* syscall.Errno(11002) */ 11002;
-internal static readonly syscall.Errno _WSATYPE_NOT_FOUND = /* syscall.Errno(10109) */ 10109;
+internal static syscall.Errno _DNS_ERROR_RCODE_NAME_ERROR => /* syscall.Errno(9003) */ 9003;
+internal static syscall.Errno _DNS_INFO_NO_RECORDS => /* syscall.Errno(9501) */ 9501;
+internal static syscall.Errno _WSAHOST_NOT_FOUND => /* syscall.Errno(11001) */ 11001;
+internal static syscall.Errno _WSATRY_AGAIN => /* syscall.Errno(11002) */ 11002;
+internal static syscall.Errno _WSATYPE_NOT_FOUND => /* syscall.Errno(10109) */ 10109;
 
 internal static error winError(@string call, error err) {
     var exprᴛ1 = err;
@@ -508,7 +508,7 @@ internal static (slice<@string>, error) lookupAddr(this ж<Resolver> Ꮡr, conte
     return (ptrs, default!);
 });
 
-internal static readonly UntypedInt dnsSectionMask = 0x0003;
+internal static UntypedInt dnsSectionMask => 0x0003;
 
 // returns only results applicable to name and resolves CNAME entries.
 internal static slice<ж<syscall.DNSRecord>> validRecs(ж<syscall.DNSRecord> Ꮡr, uint16 dnstype, @string name) {

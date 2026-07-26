@@ -1048,7 +1048,7 @@ internal static slice<ж<ast.Field>> /*params*/ parseParameterList(this ж<parse
             } else {
                 par = Ꮡp.parseParamDecl(Ꮡname0, tparams);
             }
-            name0 = default!;
+            Ꮡname0 = default!; name0 = ref Ꮡname0.DerefOrNil();
             // 1st name was consumed if present
             typ0 = default!;
             // 1st typ was consumed if present
@@ -2141,11 +2141,8 @@ internal static ast.Expr parseUnaryExpr(this ж<parser> Ꮡp) => func((defer, re
                         // error: (<-type) is (<-(<-chan T))
                         Ꮡp.errorExpected((~typ).Arrow, chanˢ);
                     }
-                    arrow = typ.Value.Arrow;
-                    typ.Value.Begin = arrow;
-                    typ.Value.Arrow = arrow;
-                    dir = typ.Value.Dir;
-                    typ.Value.Dir = ast.RECV;
+                    (arrow, typ.Value.Begin, typ.Value.Arrow) = (typ.Value.Arrow, arrow, arrow);
+                    (dir, typ.Value.Dir) = (typ.Value.Dir, ast.RECV);
                     (typ, ok) = (~typ).Value._<ж<ast.ChanType>>(ᐧ);
                 }
                 if (dir == ast.SEND) {
@@ -2241,11 +2238,11 @@ internal static ast.Expr parseRhs(this ж<parser> Ꮡp) {
 // Statements
 
 // Parsing modes for parseSimpleStmt.
-internal static readonly UntypedInt basic = iota;
+internal static UntypedInt basic => iota;
 
-internal static readonly UntypedInt labelOk = 1;
+internal static UntypedInt labelOk => 1;
 
-internal static readonly UntypedInt rangeOk = 2;
+internal static UntypedInt rangeOk => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string simpleStmtˢ = "SimpleStmt"u8;

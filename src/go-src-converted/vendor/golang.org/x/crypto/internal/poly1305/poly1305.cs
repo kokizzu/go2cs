@@ -23,7 +23,7 @@ using go.crypto;
 partial class poly1305_package {
 
 // TagSize is the size, in bytes, of a poly1305 authenticator.
-public static readonly UntypedInt TagSize = 16;
+public static UntypedInt TagSize => 16;
 
 // Sum generates an authenticator for msg using a one-time key and puts the
 // 16-byte result into out. Authenticating two different messages with the same

@@ -51,7 +51,7 @@ partial class bidi_package {
 // engine expects combining marks in visual order (e.g. to the left of their
 // base character in RTL runs) and that it adjusts the glyphs used to render
 // mirrored characters that are in RTL runs so that they render appropriately.
-internal static readonly level implicitLevel = -1;
+internal static level implicitLevel => -1;
 
 // in returns if x is equal to any of the values in set.
 internal static bool @in(this ΔClass c, params ꓸꓸꓸClass setʗp) {
@@ -271,7 +271,7 @@ private static readonly object assertIEndˢ = (@string)"assert (i <= end)"u8;
 // none found
 // default embedding level when no strong types found is 0.
 // AL, R
-internal static readonly UntypedInt maxDepth = 125;
+internal static UntypedInt maxDepth => 125;
 
 // This stack will store the embedding levels and override and isolated
 // statuses

@@ -11,15 +11,15 @@ using @internal;
 
 partial class runtime_package {
 
-internal static readonly UntypedInt addrBits = 48;
-internal static readonly UntypedInt tagBits = /* 64 - addrBits + 3 */ 19;
-internal static readonly UntypedInt aixAddrBits = 57;
-internal static readonly UntypedInt aixTagBits = /* 64 - aixAddrBits + 3 */ 10;
-internal static readonly UntypedInt riscv64AddrBits = 56;
-internal static readonly UntypedInt riscv64TagBits = /* 64 - riscv64AddrBits + 3 */ 11;
+internal static UntypedInt addrBits => 48;
+internal static UntypedInt tagBits => /* 64 - addrBits + 3 */ 19;
+internal static UntypedInt aixAddrBits => 57;
+internal static UntypedInt aixTagBits => /* 64 - aixAddrBits + 3 */ 10;
+internal static UntypedInt riscv64AddrBits => 56;
+internal static UntypedInt riscv64TagBits => /* 64 - riscv64AddrBits + 3 */ 11;
 
 // The number of bits stored in the numeric tag of a taggedPointer
-internal static readonly UntypedInt taggedPointerBits = /* (goos.IsAix * aixTagBits) + (goarch.IsRiscv64 * riscv64TagBits) + ((1 - goos.IsAix) * (1 - goarch.IsRiscv64) * tagBits) */ 19;
+internal static UntypedInt taggedPointerBits => /* (goos.IsAix * aixTagBits) + (goarch.IsRiscv64 * riscv64TagBits) + ((1 - goos.IsAix) * (1 - goarch.IsRiscv64) * tagBits) */ 19;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string checkThisCodeForAixOnNonˢ = "check this code for aix on non-ppc64"u8;

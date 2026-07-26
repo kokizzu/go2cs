@@ -44,9 +44,8 @@ public static ж<Conn> Server(net.Conn conn, ж<Config> Ꮡconfig) {
         conn: conn,
         config: Ꮡconfig
     ));
-    
     var cʗ1 = c;
-    cʗ1.Value.handshakeFn = (context.Context p1) => cʗ1.serverHandshake(p1);
+        c.Value.handshakeFn = (context.Context p1) => cʗ1.serverHandshake(p1);
     return c;
 }
 
@@ -62,9 +61,8 @@ public static ж<Conn> Client(net.Conn conn, ж<Config> Ꮡconfig) {
         config: Ꮡconfig,
         isClient: true
     ));
-    
     var cʗ1 = c;
-    cʗ1.Value.handshakeFn = (context.Context p1) => cʗ1.clientHandshake(p1);
+        c.Value.handshakeFn = (context.Context p1) => cʗ1.clientHandshake(p1);
     return c;
 }
 

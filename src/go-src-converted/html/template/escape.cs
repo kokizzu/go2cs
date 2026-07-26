@@ -29,8 +29,7 @@ internal static error escapeTemplate(ж<Template> Ꮡtmpl, parse.Node node, @str
     var (c, _) = tmpl.esc.escapeTree(new context(nil), node, name, 0);
     error err = default!;
     if (c.err != nil){
-        err = new ΔErrorжerror(c.err);
-        c.err.Value.Name = name;
+        (err, c.err.Value.Name) = (new ΔErrorжerror(c.err), name);
     } else 
     if (c.state != stateText) {
         err = new ΔErrorжerror(Ꮡ(new ΔError(ErrEndContext, default!, name, 0, fmt.Sprintf("ends in a non-text context: %v"u8, c))));
@@ -510,13 +509,10 @@ internal static context nudge(context c) {
         c.state = stateAttrName;
     }
     else if (exprᴛ1 == stateBeforeValue) {
-        c.state = attrStartStates[c.attr];
-        c.delim = delimSpaceOrTagEnd;
-        c.attr = attrNone;
+        (c.state, c.delim, c.attr) = (attrStartStates[c.attr], delimSpaceOrTagEnd, attrNone);
     }
     else if (exprᴛ1 == stateAfterName) {
-        c.state = stateAttrName;
-        c.attr = attrNone;
+        (c.state, c.attr) = (stateAttrName, attrNone);
     }
 
     // In `<foo {{.}}`, the action should emit an attribute.

@@ -530,10 +530,10 @@ internal static uintptr sortkey(this ж<Δhchan> Ꮡc) {
 
 [GoType("num:nint")] partial struct selectDir;
 
-internal static readonly selectDir _ᴛ3ʗ = /* iota */ 0;
-internal static readonly selectDir selectSend = 1; // case Chan <- Send
-internal static readonly selectDir selectRecv = 2; // case <-Chan:
-internal static readonly selectDir selectDefault = 3; // default
+internal static selectDir _ᴛ3ʗ => /* iota */ 0;
+internal static selectDir selectSend => 1; // case Chan <- Send
+internal static selectDir selectRecv => 2; // case <-Chan:
+internal static selectDir selectDefault => 3; // default
 
 //go:linkname reflect_rselect reflect.rselect
 internal static (nint, bool) reflect_rselect(slice<runtimeSelect> cases) {

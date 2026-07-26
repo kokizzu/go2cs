@@ -696,12 +696,12 @@ internal static readonly @string zwj = "\u200d"u8;
 
 [GoType("num:int8")] partial struct joinState;
 
-internal static readonly joinState stateStart = /* iota */ 0;
-internal static readonly joinState stateVirama = 1;
-internal static readonly joinState stateBefore = 2;
-internal static readonly joinState stateBeforeVirama = 3;
-internal static readonly joinState stateAfter = 4;
-internal static readonly joinState stateFAIL = 5;
+internal static joinState stateStart => /* iota */ 0;
+internal static joinState stateVirama => 1;
+internal static joinState stateBefore => 2;
+internal static joinState stateBeforeVirama => 3;
+internal static joinState stateAfter => 4;
+internal static joinState stateFAIL => 5;
 
 // no-op as we can't accept joiners here
 internal static slice<array<joinState>> joinStates = new golib.SparseArray<array<joinState>>{

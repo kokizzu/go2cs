@@ -44,16 +44,16 @@ partial class slog_package {
 
 // The following list is sorted alphabetically, but it's also important that
 // KindAny is 0 so that a zero Value represents nil.
-public static readonly ΔKind KindAny = /* iota */ 0;
-public static readonly ΔKind KindBool = 1;
-public static readonly ΔKind KindDuration = 2;
-public static readonly ΔKind KindFloat64 = 3;
-public static readonly ΔKind KindInt64 = 4;
-public static readonly ΔKind KindString = 5;
-public static readonly ΔKind KindTime = 6;
-public static readonly ΔKind KindUint64 = 7;
-public static readonly ΔKind KindGroup = 8;
-public static readonly ΔKind KindLogValuer = 9;
+public static ΔKind KindAny => /* iota */ 0;
+public static ΔKind KindBool => 1;
+public static ΔKind KindDuration => 2;
+public static ΔKind KindFloat64 => 3;
+public static ΔKind KindInt64 => 4;
+public static ΔKind KindString => 5;
+public static ΔKind KindTime => 6;
+public static ΔKind KindUint64 => 7;
+public static ΔKind KindGroup => 8;
+public static ΔKind KindLogValuer => 9;
 
 internal static slice<@string> kindStrings = new @string[]{
     "Any"u8,
@@ -570,7 +570,7 @@ internal static slice<byte> append(this Value v, slice<byte> dst) {
     Value LogValue();
 }
 
-internal static readonly UntypedInt maxLogValues = 100;
+internal static UntypedInt maxLogValues => 100;
 
 // Resolve repeatedly calls LogValue on v while it implements [LogValuer],
 // and returns the result.

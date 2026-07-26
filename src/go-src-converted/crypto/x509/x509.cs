@@ -246,23 +246,23 @@ public static (slice<byte>, error) MarshalPKIXPublicKey(any pub) {
 
 [GoType("num:nint")] partial struct SignatureAlgorithm;
 
-public static readonly SignatureAlgorithm UnknownSignatureAlgorithm = /* iota */ 0;
-public static readonly SignatureAlgorithm MD2WithRSA = 1; // Unsupported.
-public static readonly SignatureAlgorithm MD5WithRSA = 2; // Only supported for signing, not verification.
-public static readonly SignatureAlgorithm SHA1WithRSA = 3; // Only supported for signing, and verification of CRLs, CSRs, and OCSP responses.
-public static readonly SignatureAlgorithm SHA256WithRSA = 4;
-public static readonly SignatureAlgorithm SHA384WithRSA = 5;
-public static readonly SignatureAlgorithm SHA512WithRSA = 6;
-public static readonly SignatureAlgorithm DSAWithSHA1 = 7; // Unsupported.
-public static readonly SignatureAlgorithm DSAWithSHA256 = 8; // Unsupported.
-public static readonly SignatureAlgorithm ECDSAWithSHA1 = 9; // Only supported for signing, and verification of CRLs, CSRs, and OCSP responses.
-public static readonly SignatureAlgorithm ECDSAWithSHA256 = 10;
-public static readonly SignatureAlgorithm ECDSAWithSHA384 = 11;
-public static readonly SignatureAlgorithm ECDSAWithSHA512 = 12;
-public static readonly SignatureAlgorithm SHA256WithRSAPSS = 13;
-public static readonly SignatureAlgorithm SHA384WithRSAPSS = 14;
-public static readonly SignatureAlgorithm SHA512WithRSAPSS = 15;
-public static readonly SignatureAlgorithm PureEd25519 = 16;
+public static SignatureAlgorithm UnknownSignatureAlgorithm => /* iota */ 0;
+public static SignatureAlgorithm MD2WithRSA => 1; // Unsupported.
+public static SignatureAlgorithm MD5WithRSA => 2; // Only supported for signing, not verification.
+public static SignatureAlgorithm SHA1WithRSA => 3; // Only supported for signing, and verification of CRLs, CSRs, and OCSP responses.
+public static SignatureAlgorithm SHA256WithRSA => 4;
+public static SignatureAlgorithm SHA384WithRSA => 5;
+public static SignatureAlgorithm SHA512WithRSA => 6;
+public static SignatureAlgorithm DSAWithSHA1 => 7; // Unsupported.
+public static SignatureAlgorithm DSAWithSHA256 => 8; // Unsupported.
+public static SignatureAlgorithm ECDSAWithSHA1 => 9; // Only supported for signing, and verification of CRLs, CSRs, and OCSP responses.
+public static SignatureAlgorithm ECDSAWithSHA256 => 10;
+public static SignatureAlgorithm ECDSAWithSHA384 => 11;
+public static SignatureAlgorithm ECDSAWithSHA512 => 12;
+public static SignatureAlgorithm SHA256WithRSAPSS => 13;
+public static SignatureAlgorithm SHA384WithRSAPSS => 14;
+public static SignatureAlgorithm SHA512WithRSAPSS => 15;
+public static SignatureAlgorithm PureEd25519 => 16;
 
 internal static bool isRSAPSS(this SignatureAlgorithm algo) {
     foreach (var (_, details) in signatureAlgorithmDetails) {
@@ -293,11 +293,11 @@ public static @string String(this SignatureAlgorithm algo) {
 
 [GoType("num:nint")] partial struct PublicKeyAlgorithm;
 
-public static readonly PublicKeyAlgorithm UnknownPublicKeyAlgorithm = /* iota */ 0;
-public static readonly PublicKeyAlgorithm RSA = 1;
-public static readonly PublicKeyAlgorithm DSA = 2; // Only supported for parsing.
-public static readonly PublicKeyAlgorithm ECDSA = 3;
-public static readonly PublicKeyAlgorithm Ed25519 = 4;
+public static PublicKeyAlgorithm UnknownPublicKeyAlgorithm => /* iota */ 0;
+public static PublicKeyAlgorithm RSA => 1;
+public static PublicKeyAlgorithm DSA => 2; // Only supported for parsing.
+public static PublicKeyAlgorithm ECDSA => 3;
+public static PublicKeyAlgorithm Ed25519 => 4;
 
 internal static array<@string> publicKeyAlgoName = new golib.SparseArray<@string>{
     [(int)RSA] = "RSA"u8,
@@ -618,15 +618,15 @@ internal static (asn1.ObjectIdentifier, bool) oidFromECDHCurve(ecdhꓸCurve curv
 
 [GoType("num:nint")] partial struct KeyUsage;
 
-public static readonly KeyUsage KeyUsageDigitalSignature = /* 1 << iota */ 1;
-public static readonly KeyUsage KeyUsageContentCommitment = 2;
-public static readonly KeyUsage KeyUsageKeyEncipherment = 4;
-public static readonly KeyUsage KeyUsageDataEncipherment = 8;
-public static readonly KeyUsage KeyUsageKeyAgreement = 16;
-public static readonly KeyUsage KeyUsageCertSign = 32;
-public static readonly KeyUsage KeyUsageCRLSign = 64;
-public static readonly KeyUsage KeyUsageEncipherOnly = 128;
-public static readonly KeyUsage KeyUsageDecipherOnly = 256;
+public static KeyUsage KeyUsageDigitalSignature => /* 1 << iota */ 1;
+public static KeyUsage KeyUsageContentCommitment => 2;
+public static KeyUsage KeyUsageKeyEncipherment => 4;
+public static KeyUsage KeyUsageDataEncipherment => 8;
+public static KeyUsage KeyUsageKeyAgreement => 16;
+public static KeyUsage KeyUsageCertSign => 32;
+public static KeyUsage KeyUsageCRLSign => 64;
+public static KeyUsage KeyUsageEncipherOnly => 128;
+public static KeyUsage KeyUsageDecipherOnly => 256;
 
 // RFC 5280, 4.2.1.12  Extended Key Usage
 //
@@ -670,20 +670,20 @@ internal static asn1.ObjectIdentifier oidExtKeyUsageMicrosoftKernelCodeSigning =
 
 [GoType("num:nint")] partial struct ExtKeyUsage;
 
-public static readonly ExtKeyUsage ExtKeyUsageAny = /* iota */ 0;
-public static readonly ExtKeyUsage ExtKeyUsageServerAuth = 1;
-public static readonly ExtKeyUsage ExtKeyUsageClientAuth = 2;
-public static readonly ExtKeyUsage ExtKeyUsageCodeSigning = 3;
-public static readonly ExtKeyUsage ExtKeyUsageEmailProtection = 4;
-public static readonly ExtKeyUsage ExtKeyUsageIPSECEndSystem = 5;
-public static readonly ExtKeyUsage ExtKeyUsageIPSECTunnel = 6;
-public static readonly ExtKeyUsage ExtKeyUsageIPSECUser = 7;
-public static readonly ExtKeyUsage ExtKeyUsageTimeStamping = 8;
-public static readonly ExtKeyUsage ExtKeyUsageOCSPSigning = 9;
-public static readonly ExtKeyUsage ExtKeyUsageMicrosoftServerGatedCrypto = 10;
-public static readonly ExtKeyUsage ExtKeyUsageNetscapeServerGatedCrypto = 11;
-public static readonly ExtKeyUsage ExtKeyUsageMicrosoftCommercialCodeSigning = 12;
-public static readonly ExtKeyUsage ExtKeyUsageMicrosoftKernelCodeSigning = 13;
+public static ExtKeyUsage ExtKeyUsageAny => /* iota */ 0;
+public static ExtKeyUsage ExtKeyUsageServerAuth => 1;
+public static ExtKeyUsage ExtKeyUsageClientAuth => 2;
+public static ExtKeyUsage ExtKeyUsageCodeSigning => 3;
+public static ExtKeyUsage ExtKeyUsageEmailProtection => 4;
+public static ExtKeyUsage ExtKeyUsageIPSECEndSystem => 5;
+public static ExtKeyUsage ExtKeyUsageIPSECTunnel => 6;
+public static ExtKeyUsage ExtKeyUsageIPSECUser => 7;
+public static ExtKeyUsage ExtKeyUsageTimeStamping => 8;
+public static ExtKeyUsage ExtKeyUsageOCSPSigning => 9;
+public static ExtKeyUsage ExtKeyUsageMicrosoftServerGatedCrypto => 10;
+public static ExtKeyUsage ExtKeyUsageNetscapeServerGatedCrypto => 11;
+public static ExtKeyUsage ExtKeyUsageMicrosoftCommercialCodeSigning => 12;
+public static ExtKeyUsage ExtKeyUsageMicrosoftKernelCodeSigning => 13;
 
 // extKeyUsageOIDs contains the mapping between an ExtKeyUsage and its OID.
 
@@ -1038,10 +1038,10 @@ public static @string Error(this UnhandledCriticalExtension h) {
 }
 
 // policyQualifiers omitted
-internal static readonly UntypedInt nameTypeEmail = 1;
-internal static readonly UntypedInt nameTypeDNS = 2;
-internal static readonly UntypedInt nameTypeURI = 6;
-internal static readonly UntypedInt nameTypeIP = 7;
+internal static UntypedInt nameTypeEmail => 1;
+internal static UntypedInt nameTypeDNS => 2;
+internal static UntypedInt nameTypeURI => 6;
+internal static UntypedInt nameTypeIP => 7;
 
 // RFC 5280, 4.2.2.1
 [GoType] partial struct authorityInfoAccess {

@@ -11,7 +11,7 @@ partial class norm_package {
 
 // MaxSegmentSize is the maximum size of a byte buffer needed to consider any
 // sequence of starter and non-starter runes for the purpose of normalization.
-public static readonly UntypedInt MaxSegmentSize = /* maxByteBufferSize */ 128;
+public static UntypedInt MaxSegmentSize => /* maxByteBufferSize */ 128;
 
 // An Iter iterates over a string or byte slice, while normalizing it
 // to a given Form.
