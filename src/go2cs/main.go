@@ -97,6 +97,15 @@ type FileEntry struct {
 	// redirected to the non-compiled `<name>.cs.auto` review sibling instead of overwriting
 	// the hand-owned `<name>.cs`.
 	manualConversion bool
+	// emissionExcluded marks a `-tests` variant file the Phase-4D file-exclusion ruling drops from
+	// emission entirely (an Example/Benchmark-only `_test.go`, selectCompileExcludedTestFiles). It
+	// stays in the variant's analysis entry list — pkg.Syntax feeds the shared passes — but no C#
+	// is ever written for it, so, like a manualConversion file, it must never CLAIM a hoisted
+	// string-literal field: a claim would assign the declaration to a file that renders nothing,
+	// leaving every other use of that literal referencing a name that does not exist (strings'
+	// `"abc"` in ExampleClone did exactly this once 3-char slugs became hoistable — CS0103 across
+	// reader_test/replace_test).
+	emissionExcluded bool
 }
 
 // CapturedVarInfo tracks information about captured variables

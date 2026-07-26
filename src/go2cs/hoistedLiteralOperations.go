@@ -152,8 +152,9 @@ func collectHoistedLiterals(files []FileEntry, pkg *types.Package, info *types.I
 		// A [module: GoManualConversion] file's emission is redirected to a non-compiled
 		// `.cs.auto`, so it must never CLAIM a field (nothing would declare it) — and since its
 		// own literals then have no declaration to reference, they simply stay inline. Skipping
-		// the file entirely gives both properties at once (§4.4).
-		if fileEntry.manualConversion {
+		// the file entirely gives both properties at once (§4.4). A Phase-4D compile-excluded
+		// test file (emissionExcluded) renders no C# at all and is fenced for the same reason.
+		if fileEntry.manualConversion || fileEntry.emissionExcluded {
 			continue
 		}
 

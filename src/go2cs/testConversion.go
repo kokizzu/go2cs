@@ -1122,6 +1122,24 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 		return nil, HashSet[string]{}, nil
 	}
 
+	// A `_test.go` in the variant's syntax that the caller did NOT select for emission is a
+	// Phase-4D compile-excluded file (Example/Benchmark-only, selectCompileExcludedTestFiles):
+	// it participates in analysis but renders no C#, so it must never claim a hoisted literal
+	// field (see FileEntry.emissionExcluded). Production files are already claim-fenced by the
+	// hoist collector's seeded-mode emitted check.
+	selectedPaths := make(map[string]bool, len(selected))
+	for _, entry := range selected {
+		selectedPaths[filepath.Clean(entry.filePath)] = true
+	}
+
+	for i := range allEntries {
+		path := filepath.Clean(allEntries[i].filePath)
+
+		if strings.HasSuffix(strings.ToLower(path), "_test.go") && !selectedPaths[path] {
+			allEntries[i].emissionExcluded = true
+		}
+	}
+
 	globalIdentNames := make(map[*ast.Ident]string)
 	globalScope := map[string]*types.Var{}
 
