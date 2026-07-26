@@ -129,18 +129,19 @@ public static void TestWalkDir(ж<testing.T> Ꮡt) => func((defer, recover) => {
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string badˢ = "bad"u8;
 private static readonly @string nextˢ = "next"u8;
 
 public static void TestIssue51617(ж<testing.T> Ꮡt) => func((defer, recover) => {
     @string dir = Ꮡt.TempDir();
-    foreach (var (_, sub) in new @string[]{"a"u8, filepath.Join("a"u8, "bad"), filepath.Join("a"u8, nextˢ)}.slice()) {
+    foreach (var (_, sub) in new @string[]{"a"u8, filepath.Join("a"u8, badˢ), filepath.Join("a"u8, nextˢ)}.slice()) {
         {
             var errΔ1 = os.Mkdir(filepath.Join(dir, sub), 493); if (errΔ1 != default!) {
                 Ꮡt.Fatal(errΔ1);
             }
         }
     }
-    @string bad = filepath.Join(dir, "a", "bad");
+    @string bad = filepath.Join(dir, "a", badˢ);
     {
         var errΔ2 = os.Chmod(bad, 0); if (errΔ2 != default!) {
             Ꮡt.Fatal(errΔ2);

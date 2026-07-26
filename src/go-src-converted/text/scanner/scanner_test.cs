@@ -398,6 +398,7 @@ public static void TestScanSelectedMask(ж<testing.T> Ꮡt) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string b123ˢ = "b123"u8;
+private static readonly @string a12ˢ = "a12"u8;
 
 public static void TestScanCustomIdent(ж<testing.T> Ꮡt) {
     @string src = "faab12345 a12b123 a12 3b"u8;
@@ -411,9 +412,9 @@ public static void TestScanCustomIdent(ж<testing.T> Ꮡt) {
     checkTok(Ꮡt, s, 1, s.Scan(), Ident, "a"u8);
     checkTok(Ꮡt, s, 1, s.Scan(), Ident, b123ˢ);
     checkTok(Ꮡt, s, 1, s.Scan(), Int, "45"u8);
-    checkTok(Ꮡt, s, 1, s.Scan(), Ident, "a12"u8);
+    checkTok(Ꮡt, s, 1, s.Scan(), Ident, a12ˢ);
     checkTok(Ꮡt, s, 1, s.Scan(), Ident, b123ˢ);
-    checkTok(Ꮡt, s, 1, s.Scan(), Ident, "a12"u8);
+    checkTok(Ꮡt, s, 1, s.Scan(), Ident, a12ˢ);
     checkTok(Ꮡt, s, 1, s.Scan(), Int, "3"u8);
     checkTok(Ꮡt, s, 1, s.Scan(), Ident, "b"u8);
     checkTok(Ꮡt, s, 1, s.Scan(), EOF, ""u8);
@@ -502,6 +503,8 @@ private static readonly @string input16ˢ = "<input>:1:6"u8;
 private static readonly @string invalidDigit8InOctalˢ = "invalid digit '8' in octal literal"u8;
 private static readonly @string input19ˢ = "<input>:1:9"u8;
 private static readonly @string hexadecimalLiteralHasNoˢ = "hexadecimal literal has no digits"u8;
+private static readonly @string abcˢ = @"""abc"u8;
+private static readonly @string abcˢ2 = "`abc\n"u8;
 private static readonly @string input21ˢ = "<input>:2:1"u8;
 
 public static void TestError(ж<testing.T> Ꮡt) {
@@ -530,9 +533,9 @@ public static void TestError(ж<testing.T> Ꮡt) {
     testError(Ꮡt, @"1.5e-"u8, input16ˢ, exponentHasNoDigitsˢ, Float);
     testError(Ꮡt, @"'"u8, input12ˢ, literalNotTerminatedˢ, Char);
     testError(Ꮡt, @"'"u8 + "\n"u8, input12ˢ, literalNotTerminatedˢ, Char);
-    testError(Ꮡt, @"""abc"u8, input15ˢ, literalNotTerminatedˢ, ΔString);
+    testError(Ꮡt, abcˢ, input15ˢ, literalNotTerminatedˢ, ΔString);
     testError(Ꮡt, @"""abc"u8 + "\n"u8, input15ˢ, literalNotTerminatedˢ, ΔString);
-    testError(Ꮡt, "`abc\n"u8, input21ˢ, literalNotTerminatedˢ, RawString);
+    testError(Ꮡt, abcˢ2, input21ˢ, literalNotTerminatedˢ, RawString);
     testError(Ꮡt, @"/*/"u8, input14ˢ, commentNotTerminatedˢ, EOF);
 }
 
@@ -603,6 +606,7 @@ internal static void checkScanPos(ж<testing.T> Ꮡt, ж<Scanner> Ꮡs, nint off
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fooˢ = "  foo६४  \n\n本語\n"u8;
 private static readonly @string abcXˢ = "abc\n本語\n\nx"u8;
 
 public static void TestPos(ж<testing.T> Ꮡt) {
@@ -637,7 +641,7 @@ public static void TestPos(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("%d errors"u8, (~s).ErrorCount);
     }
     // positions after calling Next
-    s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader("  foo६४  \n\n本語\n"u8)));
+    s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader(fooˢ)));
     checkNextPos(Ꮡt, s, 1, 1, 2, (rune)' ');
     s.Peek();
     // peek doesn't affect the position

@@ -684,10 +684,10 @@ internal static rune rot13(rune r) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string aToZedˢ = "a to zed"u8;
 private static readonly @string nGbMrqˢ = "n gb mrq"u8;
-private static readonly @string helloˢ6 = "Hello, 세계"u8;
+private static readonly @string helloˢ4 = "Hello, 세계"u8;
 private static readonly @string inputStringThatWeExpectˢ = "Input string that we expect not to be copied."u8;
 private static readonly object unexpectedCopyDuringˢ = (@string)"unexpected copy during identity map"u8;
-private static readonly @string helloWorldˢ3 = "Hello\uFFFDWorld"u8;
+private static readonly @string helloWorldˢ2 = "Hello\uFFFDWorld"u8;
 private static readonly @string abc123ˢ = "   abc    123   "u8;
 private static readonly @string abc123ˢ2 = "abc123"u8;
 
@@ -727,8 +727,8 @@ public static void TestMap(ж<testing.T> Ꮡt) {
         }
         return -1;
     };
-    m = Map(dropNotLatin, helloˢ6);
-    expect = helloˢ5;
+    m = Map(dropNotLatin, helloˢ4);
+    expect = helloˢ3;
     if (m != expect) {
         Ꮡt.Errorf("drop: expected %q got %q"u8, expect, m);
     }
@@ -747,7 +747,7 @@ public static void TestMap(ж<testing.T> Ꮡt) {
         return utf8.RuneError;
     };
     m = Map(replaceNotLatin, ((@string)(new byte[]{0x48, 0x65, 0x6c, 0x6c, 0x6f, 0xad, 0x57, 0x6f, 0x72, 0x6c, 0x64})));
-    expect = helloWorldˢ3;
+    expect = helloWorldˢ2;
     if (m != expect) {
         Ꮡt.Errorf("replace invalid sequence: expected %q got %q"u8, expect, m);
     }
@@ -1324,6 +1324,9 @@ internal static error /*err*/ repeat(@string s, nint count) {
     return err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bitˢ = "64-bit"u8;
+
 [GoLocalName("testCase")] [GoType("dyn")] partial struct TestRepeatCatchesOverflow_testCase {
     internal @string s;
     internal nint count;
@@ -1363,7 +1366,7 @@ public static void TestRepeatCatchesOverflow(ж<testing.T> Ꮡt) {
     if (!is64Bit) {
         return;
     }
-    runTestCases("64-bit"u8, new slice<TestRepeatCatchesOverflow_testCase>(1){
+    runTestCases(bitˢ, new slice<TestRepeatCatchesOverflow_testCase>(1){
         [0] = new("-"u8, maxInt, "out of range"u8)
     });
 }
@@ -1999,8 +2002,11 @@ public static void BenchmarkIndexHard1(ж<testing.B> Ꮡb) {
     benchmarkIndexHard(Ꮡb, "<>"u8);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string preˢ = "</pre>"u8;
+
 public static void BenchmarkIndexHard2(ж<testing.B> Ꮡb) {
-    benchmarkIndexHard(Ꮡb, "</pre>"u8);
+    benchmarkIndexHard(Ꮡb, preˢ);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -2022,7 +2028,7 @@ public static void BenchmarkLastIndexHard1(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkLastIndexHard2(ж<testing.B> Ꮡb) {
-    benchmarkLastIndexHard(Ꮡb, "</pre>"u8);
+    benchmarkLastIndexHard(Ꮡb, preˢ);
 }
 
 public static void BenchmarkLastIndexHard3(ж<testing.B> Ꮡb) {
@@ -2034,7 +2040,7 @@ public static void BenchmarkCountHard1(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkCountHard2(ж<testing.B> Ꮡb) {
-    benchmarkCountHard(Ꮡb, "</pre>"u8);
+    benchmarkCountHard(Ꮡb, preˢ);
 }
 
 public static void BenchmarkCountHard3(ж<testing.B> Ꮡb) {
@@ -2061,11 +2067,14 @@ public static void BenchmarkCountTorture(ж<testing.B> Ꮡb) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abcˢ2 = "ABC"u8;
+
 public static void BenchmarkCountTortureOverlapping(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    @string A = Repeat("ABC"u8, (1 << (int)(20)));
-    @string B = Repeat("ABC"u8, (1 << (int)(10)));
+    @string A = Repeat(abcˢ2, (1 << (int)(20)));
+    @string B = Repeat(abcˢ2, (1 << (int)(10)));
     for (nint i = 0; i < b.N; i++) {
         Count(A, B);
     }
@@ -2376,6 +2385,9 @@ public static void BenchmarkIndexPeriodic(ж<testing.B> Ꮡb) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string andˢ = " and "u8;
+
 public static void BenchmarkJoin(ж<testing.B> Ꮡb) {
     var vals = new @string[]{"red"u8, "yellow"u8, "pink"u8, "green"u8, "purple"u8, "orange"u8, "blue"u8}.slice();
     for (nint lᴛ1 = 0; lᴛ1 <= len(vals); lᴛ1++) {
@@ -2385,7 +2397,7 @@ public static void BenchmarkJoin(ж<testing.B> Ꮡb) {
             bΔ1.ReportAllocs();
             var valsΔ1 = valsʗ1[..(int)(l)];
             for (nint i = 0; i < (~bΔ1).N; i++) {
-                Join(valsΔ1, " and "u8);
+                Join(valsΔ1, andˢ);
             }
         });
     }

@@ -77,6 +77,7 @@ internal static (fs.File, error) Open(this globOnly _, @string name) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string txtˢ = "*.txt"u8;
 private static readonly @string readDirOnlyˢ = "readDirOnly"u8;
 private static readonly @string openOnlyˢ = "openOnly"u8;
 
@@ -88,10 +89,10 @@ public static void TestGlobMethod(ж<testing.T> Ꮡt) {
         }
     };
     // Test that ReadDir uses the method when present.
-    var (names, err) = Glob(new globOnly(new fstest_MapFSᴠGlobFS(testFsys)), "*.txt"u8);
+    var (names, err) = Glob(new globOnly(new fstest_MapFSᴠGlobFS(testFsys)), txtˢ);
     check(readDirOnlyˢ, names, err);
     // Test that ReadDir uses Open when the method is not present.
-    (names, err) = Glob(new openOnly(testFsys), "*.txt"u8);
+    (names, err) = Glob(new openOnly(testFsys), txtˢ);
     check(openOnlyˢ, names, err);
 }
 

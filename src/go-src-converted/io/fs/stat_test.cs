@@ -20,13 +20,14 @@ internal static (fs.File, error) Open(this statOnly _, @string name) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "<nil>"u8;
 private static readonly @string statOnlyˢ = "statOnly"u8;
 
 public static void TestStat(ж<testing.T> Ꮡt) {
     var check = (@string desc, fs.FileInfo infoΔ1, error errΔ1) => {
         Ꮡt.Helper();
         if (errΔ1 != default! || infoΔ1 == default! || infoΔ1.Mode() != 302) {
-            @string infoStr = "<nil>"u8;
+            @string infoStr = nilˢ;
             if (infoΔ1 != default!) {
                 infoStr = fmt.Sprintf("FileInfo(Mode: %#o)"u8, infoΔ1.Mode());
             }

@@ -32,10 +32,12 @@ public static void TestFuncPC(ж<testing.T> Ꮡt) {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string testdataˢ = "testdata"u8;
+private static readonly @string xGoˢ = "x.go"u8;
 private static readonly @string symabiˢ = "symabi"u8;
 private static readonly @string helloImportcfgˢ = "hello.importcfg"u8;
 private static readonly @string internalAbiˢ = "internal/abi"u8;
 private static readonly @string toolˢ = "tool"u8;
+private static readonly @string asmˢ = "asm"u8;
 private static readonly @string gensymabisˢ = "-gensymabis"u8;
 private static readonly @string compileˢ = "compile"u8;
 private static readonly @string symabisˢ = "-symabis"u8;
@@ -47,14 +49,14 @@ public static void TestFuncPCCompileError(ж<testing.T> Ꮡt) {
     // Run the assembler and compiler manually.
     @string tmpdir = Ꮡt.TempDir();
     @string asmSrc = filepath.Join(testdataˢ, "x.s");
-    @string goSrc = filepath.Join(testdataˢ, "x.go");
+    @string goSrc = filepath.Join(testdataˢ, xGoˢ);
     @string symabi = filepath.Join(tmpdir, symabiˢ);
     @string obj = filepath.Join(tmpdir, "x.o");
     // Write an importcfg file for the dependencies of the package.
     @string importcfgfile = filepath.Join(tmpdir, helloImportcfgˢ);
     testenv.WriteImportcfg(new testing_TжTB(Ꮡt), importcfgfile, default!, internalAbiˢ);
     // parse assembly code for symabi.
-    var cmd = testenv.Command(new testing_TжTB(Ꮡt), testenv.GoToolPath(new testing_TжTB(Ꮡt)), toolˢ, "asm", "-p=p", gensymabisˢ, "-o", symabi, asmSrc);
+    var cmd = testenv.Command(new testing_TжTB(Ꮡt), testenv.GoToolPath(new testing_TжTB(Ꮡt)), toolˢ, asmˢ, "-p=p", gensymabisˢ, "-o", symabi, asmSrc);
     var (@out, err) = cmd.CombinedOutput();
     if (err != default!) {
         Ꮡt.Fatalf("go tool asm -gensymabis failed: %v\n%s"u8, err, @out);

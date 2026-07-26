@@ -1338,6 +1338,9 @@ internal static error /*err*/ repeat(slice<byte> b, nint count) {
     return err;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string bitˢ = "64-bit"u8;
+
 [GoLocalName("testCase")] [GoType("dyn")] partial struct TestRepeatCatchesOverflow_testCase {
     internal @string s;
     internal nint count;
@@ -1377,7 +1380,7 @@ public static void TestRepeatCatchesOverflow(ж<testing.T> Ꮡt) {
     if (!is64Bit) {
         return;
     }
-    runTestCases("64-bit"u8, new slice<TestRepeatCatchesOverflow_testCase>(1){
+    runTestCases(bitˢ, new slice<TestRepeatCatchesOverflow_testCase>(1){
         [0] = new("-"u8, maxInt, "out of range"u8)
     });
 }
@@ -1507,6 +1510,9 @@ internal static slice<TrimNilTest> trimNilTests = new TrimNilTest[]{
     new("TrimSuffix"u8, slice<byte>("☺"u8), "☺"u8, new byte[]{}.slice())
 }.slice();
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nilˢ = "nil"u8;
+
 public static void TestTrim(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
@@ -1563,7 +1569,7 @@ public static void TestTrim(ж<testing.T> Ꮡt) {
         }
         var report = @string (slice<byte> s) => {
             if (s == default!){
-                return "nil"u8;
+                return nilˢ;
             } else {
                 return fmt.Sprintf("%q"u8, s);
             }

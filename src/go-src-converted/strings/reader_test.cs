@@ -174,9 +174,12 @@ public static void TestWriteTo(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string abcˢ = "abc"u8;
+
 // tests that Len is affected by reads, but Size is not.
 public static void TestReaderLenSize(ж<testing.T> Ꮡt) {
-    var r = strings.NewReader("abc"u8);
+    var r = strings.NewReader(abcˢ);
     Δio.CopyN(Δio.Discard, new strings.ReaderжReader(r), 1);
     if (r.Len() != 2) {
         Ꮡt.Errorf("Len = %d; want 2"u8, r.Len());

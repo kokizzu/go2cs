@@ -40,7 +40,9 @@
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(OutDir)'==''">
+  <!-- Must defer to the bin\tests\ BaseOutputPath above: build outputs are copied to $(OutDir), so
+       an unconditional pin here would put the test host in the PRODUCTION project's bin\. -->
+  <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
     <OutDir>bin\$(Configuration)\$(TargetFramework)\</OutDir>
   </PropertyGroup>
 

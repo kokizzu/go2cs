@@ -98,22 +98,26 @@ public static void TestBuilderString(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string aaaˢ = "aaa"u8;
+private static readonly @string bbbˢ = "bbb"u8;
+
 public static void TestBuilderReset(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     check(Ꮡt, Ꮡb, ""u8);
-    Ꮡb.WriteString("aaa"u8);
+    Ꮡb.WriteString(aaaˢ);
     @string s = b.String();
-    check(Ꮡt, Ꮡb, "aaa"u8);
+    check(Ꮡt, Ꮡb, aaaˢ);
     b.Reset();
     check(Ꮡt, Ꮡb, ""u8);
     // Ensure that writing after Reset doesn't alter
     // previously returned strings.
-    Ꮡb.WriteString("bbb"u8);
-    check(Ꮡt, Ꮡb, "bbb"u8);
+    Ꮡb.WriteString(bbbˢ);
+    check(Ꮡt, Ꮡb, bbbˢ);
     {
-        @string want = "aaa"u8; if (s != want) {
+        @string want = aaaˢ; if (s != want) {
             Ꮡt.Errorf("previous String result changed after Reset: got %q; want %q"u8, s, want);
         }
     }

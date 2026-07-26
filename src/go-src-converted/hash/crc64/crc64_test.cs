@@ -74,10 +74,11 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string isoˢ = "ISO"u8;
 private static readonly @string ecmaˢ = "ECMA"u8;
 
 public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
-    Ꮡt.Run("ISO"u8, (ж<testing.T> tΔ1) => {
+    Ꮡt.Run(isoˢ, (ж<testing.T> tΔ1) => {
         var table = MakeTable(ISO);
         foreach (var (_, vᴛ1) in golden) {
             ref var g = ref heap(new test(), out var Ꮡg);

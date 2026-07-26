@@ -23,6 +23,9 @@ internal static (fs.File, error) Open(this readDirOnly _, @string name) {
     return (default!, ErrNotExist);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string subˢ = "sub(.)"u8;
+
 public static void TestReadDir(ж<testing.T> Ꮡt) {
     var check = (@string desc, slice<fs.DirEntry> dirsΔ1, error errΔ1) => {
         Ꮡt.Helper();
@@ -46,7 +49,7 @@ public static void TestReadDir(ж<testing.T> Ꮡt) {
         Ꮡt.Fatal(err);
     }
     (dirs, err) = ReadDir(sub, "."u8);
-    check("sub(.)"u8, dirs, err);
+    check(subˢ, dirs, err);
 }
 
 [GoType("dyn")] partial struct TestFileInfoToDirEntry_tests {

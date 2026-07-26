@@ -752,7 +752,9 @@ internal static readonly UntypedInt _M32 = /* 1<<32 - 1 */ 4294967295;
 internal static readonly UntypedInt _M64 = /* 1<<64 - 1 */ 18446744073709551615;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string addˢ = "Add"u8;
 private static readonly @string addSymmetricˢ = "Add symmetric"u8;
+private static readonly @string subˢ = "Sub"u8;
 private static readonly @string subSymmetricˢ = "Sub symmetric"u8;
 private static readonly @string addIntrinsicˢ = "Add intrinsic"u8;
 private static readonly @string addIntrinsicSymmetricˢ = "Add intrinsic symmetric"u8;
@@ -785,9 +787,9 @@ public static void TestAddSubUint(ж<testing.T> Ꮡt) {
         new(_M, _M, 0, _M - 1, 1),
         new(_M, _M, 1, _M, 1)
     }.slice()) {
-        test("Add"u8, Add, a.x, a.y, a.c, a.z, a.cout);
+        test(addˢ, Add, a.x, a.y, a.c, a.z, a.cout);
         test(addSymmetricˢ, Add, a.y, a.x, a.c, a.z, a.cout);
-        test("Sub"u8, Sub, a.z, a.x, a.c, a.y, a.cout);
+        test(subˢ, Sub, a.z, a.x, a.c, a.y, a.cout);
         test(subSymmetricˢ, Sub, a.z, a.y, a.c, a.x, a.cout);
         // The above code can't test intrinsic implementation, because the passed function is not called directly.
         // The following code uses a closure to test the intrinsic version in case the function is intrinsified.
@@ -1027,7 +1029,9 @@ public static void TestSub64OverflowPanic(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string mulˢ = "Mul"u8;
 private static readonly @string mulSymmetricˢ = "Mul symmetric"u8;
+private static readonly @string divˢ = "Div"u8;
 private static readonly @string divSymmetricˢ = "Div symmetric"u8;
 private static readonly @string mulIntrinsicˢ = "Mul intrinsic"u8;
 private static readonly @string mulIntrinsicSymmetricˢ = "Mul intrinsic symmetric"u8;
@@ -1058,9 +1062,9 @@ public static void TestMulDiv(ж<testing.T> Ꮡt) {
         new(((nuint)1 << (int)((UintSize - 1))), 2, 1, 0, 1),
         new(_M, _M, _M - 1, 1, 42)
     }.slice()) {
-        testMul("Mul"u8, Mul, a.x, a.y, a.hi, a.lo);
+        testMul(mulˢ, Mul, a.x, a.y, a.hi, a.lo);
         testMul(mulSymmetricˢ, Mul, a.y, a.x, a.hi, a.lo);
-        testDiv("Div"u8, Div, a.hi, a.lo + a.r, a.y, a.x, a.r);
+        testDiv(divˢ, Div, a.hi, a.lo + a.r, a.y, a.x, a.r);
         testDiv(divSymmetricˢ, Div, a.hi, a.lo + a.r, a.x, a.y, a.r);
         // The above code can't test intrinsic implementation, because the passed function is not called directly.
         // The following code uses a closure to test the intrinsic version in case the function is intrinsified.

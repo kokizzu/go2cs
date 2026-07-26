@@ -2749,10 +2749,11 @@ public static void TestErfcinv(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string expˢ = "Exp"u8;
 private static readonly @string expGoˢ = "ExpGo"u8;
 
 public static void TestExp(ж<testing.T> Ꮡt) {
-    testExp(Ꮡt, Exp, "Exp"u8);
+    testExp(Ꮡt, Exp, expˢ);
     testExp(Ꮡt, ExpGo, expGoˢ);
 }
 

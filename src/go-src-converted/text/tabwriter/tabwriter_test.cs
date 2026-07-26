@@ -496,6 +496,7 @@ public static void TestPanicDuringWrite(ж<testing.T> Ꮡt) => func((defer, reco
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string newˢ = "new"u8;
 private static readonly @string reuseˢ = "reuse"u8;
 
 public static void BenchmarkTable(ж<testing.B> Ꮡb) {
@@ -506,7 +507,7 @@ public static void BenchmarkTable(ж<testing.B> Ꮡb) {
         line = append(line, (byte)((rune)'\n'));
         foreach (var (_, h) in new nint[]{10, 1000, 100000}.array()) {
             Ꮡb.Run(fmt.Sprintf("%dx%d"u8, w, h), (ж<testing.B> bΔ1) => {
-                bΔ1.Run("new"u8, (ж<testing.B> bΔ2) => {
+                bΔ1.Run(newˢ, (ж<testing.B> bΔ2) => {
                     bΔ2.ReportAllocs();
                     for (nint i = 0; i < (~bΔ2).N; i++) {
                         var wΔ1 = NewWriter(io.Discard, 4, 4, 1, (rune)' ', 0);

@@ -350,6 +350,9 @@ public static void TestSliceRoundTrip(ж<testing.T> Ꮡt) {
     }
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string intˢ = "int"u8;
+
 public static void TestWriteT(ж<testing.T> Ꮡt) {
     foreach (var (_, vᴛ1) in encoders) {
         ref var enc = ref heap(new encodersᴛ1(), out var Ꮡenc);
@@ -369,7 +372,7 @@ public static void TestWriteT(ж<testing.T> Ꮡt) {
             for ((nint i, nint n) = (0, tv.NumField()); i < n; i++) {
                 @string typ = tv.Field(i).Type().String();
                 if (typ == "[4]int"u8) {
-                    typ = "int"u8;
+                    typ = intˢ;
                 }
                 // the problem is int, not the [4]
                 {

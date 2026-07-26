@@ -111,6 +111,9 @@ internal static bool As(this ж<poser> Ꮡp, any err) {
     return true;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string errˢ = "err"u8;
+
 [GoType("dyn")] partial interface TestAs_timeout {
     bool Timeout();
 }
@@ -170,7 +173,7 @@ public static void TestAs(ж<testing.T> Ꮡt) {
         true,
         poserErr
     ), new(
-        errors.New("err"u8),
+        errors.New(errˢ),
         Ꮡtimeout,
         false,
         default!

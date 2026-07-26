@@ -556,10 +556,10 @@ public static void TestDecoderIssue4779(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string yWJjZAˢ = "YWJjZA====="u8;
+private static readonly @string ywJjZAˢ = "YWJjZA====="u8;
 
 public static void TestDecoderIssue7733(ж<testing.T> Ꮡt) {
-    var (s, err) = StdEncoding.DecodeString(yWJjZAˢ);
+    var (s, err) = StdEncoding.DecodeString(ywJjZAˢ);
     var want = ((CorruptInputError)8);
     if (!reflect.DeepEqual(want, err)) {
         Ꮡt.Errorf("Error = %v; want CorruptInputError(8)"u8, err);

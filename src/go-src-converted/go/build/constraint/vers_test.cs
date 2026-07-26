@@ -35,7 +35,7 @@ public static void TestGoVersion(ж<testing.T> Ꮡt) {
         @string v = GoVersion(x);
         @string want = ""u8;
         if (tt.@out == 0){
-            want = "go1"u8;
+            want = go1ˢ;
         } else 
         if (tt.@out > 0) {
             want = fmt.Sprintf("go1.%d"u8, tt.@out);

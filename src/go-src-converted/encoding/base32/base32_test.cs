@@ -325,14 +325,14 @@ public static void TestIssue20044(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mZXW6YTbˢ = "MZXW6YTb"u8;
+private static readonly @string mzxw6YTbˢ = "MZXW6YTb"u8;
 private static readonly @string readAfterEofNDExpectedDˢ = "Read after EOF, n = %d, expected %d"u8;
 
 // TestDecoderError verifies decode errors are propagated when there are no read
 // errors.
 public static void TestDecoderError(ж<testing.T> Ꮡt) {
     foreach (var (_, readErr) in new error[]{io.EOF, default!}.slice()) {
-        @string input = mZXW6YTbˢ;
+        @string input = mzxw6YTbˢ;
         var dbuf = new slice<byte>(StdEncoding.DecodedLen(len(input)));
         ref var br = ref heap<badReader>(out var Ꮡbr);
         br = new badReader(data: slice<byte>(input), errs: new error[]{readErr}.slice());

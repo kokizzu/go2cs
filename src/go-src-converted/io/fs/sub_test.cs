@@ -22,6 +22,7 @@ internal static (fs.File, error) Open(this subOnly _, @string name) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string goodbyeTxtˢ = "goodbye.txt"u8;
 private static readonly object goodbyeWorldˢ = (@string)"goodbye, world"u8;
+private static readonly @string subˢ2 = "sub"u8;
 private static readonly @string subOnlyˢ = "subOnly"u8;
 private static readonly @string nonexistˢ = "nonexist"u8;
 private static readonly object openNonexistSucceededˢ = (@string)"Open(nonexist): succeeded"u8;
@@ -47,10 +48,10 @@ public static void TestSub(ж<testing.T> Ꮡt) {
         }
     };
     // Test that Sub uses the method when present.
-    var (sub, err) = Sub(new subOnly(new fstest_MapFSᴠSubFS(testFsys)), "sub"u8);
+    var (sub, err) = Sub(new subOnly(new fstest_MapFSᴠSubFS(testFsys)), subˢ2);
     check(subOnlyˢ, sub, err);
     // Test that Sub uses Open when the method is not present.
-    (sub, err) = Sub(new openOnly(testFsys), "sub"u8);
+    (sub, err) = Sub(new openOnly(testFsys), subˢ2);
     check(openOnlyˢ, sub, err);
     (_, err) = sub.Open(nonexistˢ);
     if (err == default!) {

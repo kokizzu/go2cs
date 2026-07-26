@@ -27,12 +27,13 @@ internal static ж<strings.Replacer> htmlUnescaper = NewReplacer(
     "&apos;", "'");
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string ampˢ = "&amp;"u8;
 private static readonly @string quotˢ = "&quot;"u8;
 private static readonly @string aposˢ = "&apos;"u8;
 
 // The http package's old HTML escaping function.
 internal static @string oldHTMLEscape(@string s) {
-    s = Replace(s, "&"u8, "&amp;"u8, -1);
+    s = Replace(s, "&"u8, ampˢ, -1);
     s = Replace(s, "<"u8, "&lt;"u8, -1);
     s = Replace(s, ">"u8, "&gt;"u8, -1);
     s = Replace(s, @""""u8, quotˢ, -1);
@@ -43,6 +44,8 @@ internal static @string oldHTMLEscape(@string s) {
 internal static ж<strings.Replacer> capitalLetters = NewReplacer("a"u8, "A", "b", "B");
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string xxxˢ = "xxx"u8;
+private static readonly @string aaaˢ2 = "3[aaa]"u8;
 private static readonly @string longerstˢ = "longerst"u8;
 private static readonly @string mostLongˢ = "most long"u8;
 private static readonly @string longerˢ = "longer"u8;
@@ -50,6 +53,7 @@ private static readonly @string mediumˢ = "medium"u8;
 private static readonly @string longˢ = "long"u8;
 private static readonly @string shortˢ = "short"u8;
 private static readonly @string rosesˢ = "roses"u8;
+private static readonly @string redˢ = "red"u8;
 private static readonly @string violetsˢ = "violets"u8;
 private static readonly @string blueˢ = "blue"u8;
 private static readonly @string sugarˢ = "sugar"u8;
@@ -70,10 +74,11 @@ private static readonly @string foo31ˢ = "foo31"u8;
 private static readonly @string foo32ˢ = "foo32"u8;
 private static readonly @string foo11ˢ = "foo11"u8;
 private static readonly @string foo12ˢ = "foo12"u8;
+private static readonly @string allˢ = "[all]"u8;
 private static readonly @string foobarˢ = "foobar"u8;
 private static readonly @string foobazˢ = "foobaz"u8;
 private static readonly @string matchˢ = "[match]"u8;
-private static readonly @string helloˢ5 = "Hello"u8;
+private static readonly @string helloˢ3 = "Hello"u8;
 
 [GoLocalName("testCase")] [GoType("dyn")] partial struct TestReplacer_testCase {
     internal ж<strings.Replacer> r;
@@ -128,13 +133,13 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         new TestReplacer_testCase(htmlUnescaper, "&amp;amp;"u8, "&amp;"u8),
         new TestReplacer_testCase(htmlUnescaper, "&lt;b&gt;HTML&apos;s neat&lt;/b&gt;"u8, "<b>HTML's neat</b>"u8),
         new TestReplacer_testCase(htmlUnescaper, ""u8, ""u8),
-        new TestReplacer_testCase(NewReplacer("a"u8, "1", "a", "2", "xxx", "xxx"), "brad"u8, "br1d"u8),
-        new TestReplacer_testCase(NewReplacer("a"u8, "1", "aa", "2", "aaa", "3"), "aaaa"u8, "1111"u8),
-        new TestReplacer_testCase(NewReplacer("aaa"u8, "3", "aa", "2", "a", "1"), "aaaa"u8, "31"u8));
+        new TestReplacer_testCase(NewReplacer("a"u8, "1", "a", "2", xxxˢ, xxxˢ), "brad"u8, "br1d"u8),
+        new TestReplacer_testCase(NewReplacer("a"u8, "1", "aa", "2", aaaˢ, "3"), "aaaa"u8, "1111"u8),
+        new TestReplacer_testCase(NewReplacer(aaaˢ, "3", "aa", "2", "a", "1"), "aaaa"u8, "31"u8));
     // gen1 has multiple old strings of variable length. There is no
     // overall non-empty common prefix, but some pairwise common prefixes.
     var gen1 = NewReplacer(
-        "aaa"u8, "3[aaa]",
+        aaaˢ, aaaˢ2,
         "aa", "2[aa]",
         "a", "1[a]",
         "i", "i",
@@ -153,7 +158,7 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         new TestReplacer_testCase(gen1, ""u8, ""u8));
     // gen2 has multiple old strings with no pairwise common prefix.
     var gen2 = NewReplacer(
-        rosesˢ, "red",
+        rosesˢ, redˢ,
         violetsˢ, blueˢ,
         sugarˢ, sweetˢ);
     testCases = append(testCases,
@@ -206,7 +211,7 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
     }
     @string allString = ((@string)allBytes);
     var genAll = NewReplacer(
-        allString, "[all]",
+        allString, allˢ,
         ((@string)(new byte[]{0xff})), "[ff]",
         "\x00", "[00]");
     testCases = append(testCases,
@@ -244,7 +249,7 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         new TestReplacer_testCase(blankFoo, "foobar-foobaz"u8, "XRX-XZX"u8),
         new TestReplacer_testCase(blankFoo, ""u8, "X"u8));
     // single string replacer
-    var abcMatcher = NewReplacer("abc"u8, matchˢ);
+    var abcMatcher = NewReplacer(abcˢ, matchˢ);
     testCases = append(testCases,
         new TestReplacer_testCase(abcMatcher, ""u8, ""u8),
         new TestReplacer_testCase(abcMatcher, "ab"u8, "ab"u8),
@@ -252,7 +257,7 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         new TestReplacer_testCase(abcMatcher, "abcd"u8, "[match]d"u8),
         new TestReplacer_testCase(abcMatcher, "cabcabcdabca"u8, "c[match][match]d[match]a"u8));
     // Issue 6659 cases (more single string replacer)
-    var noHello = NewReplacer(helloˢ5, "");
+    var noHello = NewReplacer(helloˢ3, "");
     testCases = append(testCases,
         new TestReplacer_testCase(noHello, "Hello"u8, ""u8),
         new TestReplacer_testCase(noHello, "Hellox"u8, "x"u8),
@@ -326,7 +331,7 @@ internal static (nint n, error err) Write(this errWriter _, slice<byte> p) {
 // received from the underlying io.Writer.
 public static void TestWriteStringError(ж<testing.T> Ꮡt) {
     foreach (var (i, tc) in algorithmTestCases) {
-        var (n, err) = tc.r.WriteString(new errWriter(nil), "abc"u8);
+        var (n, err) = tc.r.WriteString(new errWriter(nil), abcˢ);
         if (n != 0 || err == default! || err.Error() != "unwritable"u8) {
             Ꮡt.Errorf("%d. WriteStringError = %d, %v, want 0, unwritable"u8, i, n, err);
         }
