@@ -1640,6 +1640,48 @@ func supportedTestCapabilities() []string {
 	return capabilities
 }
 
+// unsupportedRuntimeCapabilities names non-testing symbols whose behavior the managed runtime
+// provably cannot reproduce today, keyed "<import path>.<func>". A test whose transitive closure
+// reaches one is gated to `unsupported` by the SAME mechanism that gates an unsupported testing.*
+// member — the name is a capability REQUIREMENT that supportedTestCapabilities deliberately does
+// not list.
+//
+// Why this exists as a gate rather than a runtime failure: an unimplemented assembly primitive
+// throws a .NET NotImplementedException, and when the reaching path runs on a goroutine (a managed
+// thread) that exception is unhandled and TERMINATES THE HOST — every test after it reports no
+// result and the whole package reads as a mass infrastructure wall. sync's TestOnceFuncGoexit did
+// exactly that: runtime.Goexit → getcallerpc, taking 28 of sync's 51 tests down with it. Declaring
+// the capability unsupported is both more honest and more useful — the one test is excluded and
+// disclosed by name, and the rest of the package is measurable.
+//
+// runtime.Goexit is the only entry so far. Go terminates the calling goroutine after running its
+// defers; the managed shape (an unwinding sentinel exception that defers observe, recover() does
+// NOT see, and the goroutine root swallows) is a real design question that has not been decided —
+// see the r14 report. Add an entry ONLY for something provably unavailable, never for something
+// merely unimplemented; and before adding one, scan every VALIDATED package for the symbol, since
+// gating it removes those tests from the run set (the mirror of the widening trap in the charter's
+// §9).
+var unsupportedRuntimeCapabilities = map[string]bool{
+	"runtime.Goexit": true,
+}
+
+// unsupportedRuntimeCapability reports whether fn is a listed unsupported runtime capability,
+// returning the capability name used in the requirement set.
+func unsupportedRuntimeCapability(fn *types.Func) (string, bool) {
+	if fn == nil || fn.Pkg() == nil || fn.Type() == nil {
+		return "", false
+	}
+
+	// Package-scope functions only — a method named Goexit on some type is not runtime.Goexit.
+	if sig, ok := fn.Type().(*types.Signature); ok && sig.Recv() != nil {
+		return "", false
+	}
+
+	name := fn.Pkg().Path() + "." + fn.Name()
+
+	return name, unsupportedRuntimeCapabilities[name]
+}
+
 // testCapabilityAnalysis is the per-variant capability attribution input (F4): the testing.*
 // members each function uses DIRECTLY, and the static same-package reference graph used to close
 // over helpers. References are collected conservatively (any use of a same-package function, not
@@ -1700,8 +1742,22 @@ func analyzeTestingCapabilities(pkg *packages.Package) testCapabilityAnalysis {
 							}
 						}
 					case *ast.Ident:
-						if referee, ok := pkg.TypesInfo.Uses[expr].(*types.Func); ok && referee.Pkg() == pkg.Types {
-							referees[referee] = true
+						used, ok := pkg.TypesInfo.Uses[expr].(*types.Func)
+
+						if !ok {
+							return true
+						}
+
+						if used.Pkg() == pkg.Types {
+							referees[used] = true
+						}
+
+						// A RUNTIME capability the managed model cannot provide is recorded the
+						// same way a testing.* member is, and gates the same way (it is absent
+						// from supportedTestCapabilities). This is keyed on the resolved OBJECT,
+						// so it catches the call however it is spelled or aliased.
+						if name, blocked := unsupportedRuntimeCapability(used); blocked {
+							direct.Add(name)
 						}
 					}
 					return true
