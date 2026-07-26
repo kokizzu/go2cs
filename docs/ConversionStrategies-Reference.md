@@ -2611,6 +2611,32 @@ internal static readonly @string asciiOctal = "\u0041\u0042\u0009\u0043"u8;
 
 Left unfixed, `len(octalData)` is 12 rather than 8 and every byte index past the first is wrong. This one is worth recording as a *latent* defect: it was found by design review, not by a miscompile, and the corpus had **no instance** of it (CNR is byte-identical across the behavioral corpus, and the rule is purely additive — it can only divert literals that were already being emitted with the wrong bytes). Note that the folded-value rule below catches the octal case for *concatenated* constants by a different test (`utf8.ValidString`), since a lone `\377` byte is not valid UTF-8. (Guarded by the extended `HexByteStringLiteral` behavioral test — a high-octal table, the `\200` low boundary, sub-0x80 controls asserting the readable form survives, and a non-const local, all byte-indexed and `len`-measured, output-compared vs `go run`; `stringLiteralNeedsByteArray`'s rule — both escape forms, the sub-0x80 controls, and the escaped-backslash parity cases — is unit-tested in `convBasicLit_test.go`.)
 
+The **sub-`\200` rewrite** that renders the readable form obeys the same backslash-parity rule, and
+it did not. `replaceOctalChars` matched `\NNN` with a plain regex, so in `"\\101"` — an *escaped
+backslash* followed by the ordinary characters `1`, `0`, `1` — it matched from the SECOND backslash
+and emitted `"\\u0041"`, whose C# value is the six characters `\u0041` where Go's is the four
+characters `\101`. Wrong content, wrong length, silently. (`"\\377"` is the same case above the
+diversion boundary: parity keeps it out of the byte-array path too, since it holds no raw byte.) The
+rewrite is now a positional parity scan — a `\NNN` is an escape only after an ODD run of
+backslashes — which also fixes a second defect of the regex form: it paired `FindAllString` with
+`strings.Replace(…, 1)`, replacing the first *textual* occurrence of each match rather than the
+matched position, so a literal carrying both forms rewrote the escaped one twice:
+
+```go
+const escapedOctal = "\\101|\101|\\\101|\\377"   // Go: `\101` | 'A' | `\`+'A' | `\377`
+```
+```csharp
+internal static readonly @string escapedOctal = "\\101|\u0041|\\\u0041|\\377"u8;
+```
+
+Three octal digits cap at `\777` = 0x1FF, so the C# `\uXXXX` code-unit escape always suffices (the
+old `\UXXXXXXXX` branch was unreachable). The same helper feeds the `token.CHAR` path, where the
+parity case cannot arise (a rune literal holds one character) but the escape rewrite is shared. This
+was found by review, not by a miscompile: CNR shows no corpus instance (byte-identical apart from
+the guard's own golden). (Guarded by the extended `HexByteStringLiteral` behavioral test — both
+forms as a const and as a local, plus the rune pair, output-compared vs `go run` — and by
+`TestReplaceOctalChars`.)
+
 The above routes a single `*ast.BasicLit` through `convBasicLit`'s scan. A string **constant** whose value is a *concatenation* — `const rev8tab = "" + "\x00\x80…" + …` (math/bits' bit-reversal table) — folds to one value with **no** single `BasicLit`, so it bypassed that scan and rendered a UTF-16 string literal: `rev8tab[1]` returned `0xC2` (the UTF-8 lead byte of U+0080), not `0x80`, and `Reverse8` was wrong. The const-string path now tests the FOLDED value directly — a value that is not valid UTF-8 (`utf8.ValidString`) cannot round-trip through a C# string/u8 literal, so it emits the same byte-array `@string` from its exact bytes (`byteArrayStringLiteral`, shared with `emitByteArrayString`); a valid-UTF-8 value keeps the readable `getStringLiteral` form. This catches any non-UTF-8 byte table built by concatenation (crypto S-boxes, embedded blobs), not just single literals. (Guarded by the `ByteTableStringConst` behavioral test — a concatenated `\x00\x80…` table byte-indexed and `len`-measured, output-compared vs `go run`; the pre-fix converter returns `0xC2` for index 1. The full corpus compiles with the byte-array consts, and CNR is byte-identical.)
 
 The **`var`** form of the same table needs no separate rule, and it is worth stating why, because

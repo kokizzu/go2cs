@@ -48,3 +48,41 @@ func TestStringLiteralNeedsByteArray(t *testing.T) {
 		}
 	}
 }
+
+// TestReplaceOctalChars locks the octal rewrite's backslash PARITY - the same rule
+// stringLiteralNeedsByteArray applies. An octal escape is `\NNN` after an ODD run of backslashes;
+// after an EVEN run the backslash is itself escaped and the digits are ordinary text, so the Go
+// value of `"\\377"` is the four characters `\377` and rewriting it to `\u00ff` produced six
+// different ones. The rewrite is positional too: the pre-fix regex + strings.Replace pair replaced
+// the first TEXTUAL occurrence of each match, so a literal carrying BOTH forms corrupted the
+// escaped one twice.
+func TestReplaceOctalChars(t *testing.T) {
+	cases := map[string]string{
+		// Real escapes (odd backslash run) - rewritten to the C# code-unit escape.
+		`"\101"`:     `"\u0041"`,
+		`"\101\102"`: `"\u0041\u0042"`,
+		`"a\177b"`:   `"a\u007fb"`,
+		`"\000"`:     `"\u0000"`,
+		`"\777"`:     `"\u01ff"`,   // the three-digit ceiling: still one \uXXXX
+		`'\101'`:     `'\u0041'`,   // the token.CHAR path shares this rewrite
+		`"\\\101"`:   `"\\\u0041"`, // an escaped backslash THEN a real escape
+		// Escaped backslashes (even run) - ordinary text, left exactly as written.
+		`"\\101"`:   `"\\101"`,
+		`"\\377"`:   `"\\377"`,
+		`"\\\\101"`: `"\\\\101"`,
+		`'\\'`:      `'\\'`,
+		// Both forms in one literal, the escaped one FIRST - the positional case.
+		`"\\101|\101"`: `"\\101|\u0041"`,
+		// Not an octal escape at all.
+		`"\37"`:        `"\37"`,
+		`"\181"`:       `"\181"`,
+		`"plain"`:      `"plain"`,
+		`"no escapes"`: `"no escapes"`,
+	}
+
+	for token, want := range cases {
+		if got := replaceOctalChars(token); got != want {
+			t.Errorf("replaceOctalChars(%s) = %s, want %s", token, got, want)
+		}
+	}
+}

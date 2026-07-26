@@ -10,6 +10,12 @@ internal static readonly @string octalData = ((@string)(new byte[]{0xff, 0x80, 0
 
 internal static readonly @string asciiOctal = "\u0041\u0042\u0009\u0043"u8;
 
+internal static readonly @string escapedOctal = "\\101|\u0041|\\\u0041|\\377"u8;
+
+internal static readonly UntypedInt backslashRune = /* '\\' */ 92;
+
+internal static readonly UntypedInt octalRune = /* '\101' */ 65;
+
 internal static nint get4(@string s, nint i) {
     return (nint)((nint)((nint)((nint)s[i] | ((nint)s[i + 1] << (int)(8))) | ((nint)s[i + 2] << (int)(16))) | ((nint)s[i + 3] << (int)(24)));
 }
@@ -27,6 +33,8 @@ internal static void dump(@string label, @string s) {
 private static readonly @string octalDataˢ = "octalData"u8;
 private static readonly @string asciiOctalˢ = "asciiOctal"u8;
 private static readonly @string localˢ = "local"u8;
+private static readonly @string escapedOctalˢ = "escapedOctal"u8;
+private static readonly @string localEscapedˢ = "localEscaped"u8;
 
 internal static void Main() {
     fmt.Println(len(data));
@@ -39,6 +47,10 @@ internal static void Main() {
     dump(asciiOctalˢ, asciiOctal);
     @string local = ((@string)(new byte[]{0xfe, 0xfd}));
     dump(localˢ, local);
+    dump(escapedOctalˢ, escapedOctal);
+    @string localEscaped = ((@string)(new byte[]{0x5c, 0x33, 0x37, 0x37, 0x7c, 0xff}));
+    dump(localEscapedˢ, localEscaped);
+    fmt.Println(((@string)(rune)backslashRune), ((@string)(rune)octalRune), (nint)backslashRune, (nint)octalRune);
 }
 
 } // end main_package

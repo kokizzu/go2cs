@@ -34,6 +34,19 @@ const octalData = "\377\200\303\277\101\000\177Z"
 // array and keeps the readable string form; its bytes are asserted identical either way.
 const asciiOctal = "\101\102\011\103"
 
+// escapedOctal separates an octal ESCAPE from text that merely LOOKS like one: backslash PARITY is
+// the whole rule. `\\101` is an escaped backslash followed by the ordinary characters `1`, `0`, `1`
+// — four characters, NOT 'A' — while `\101` is the escape and `\\\101` is both (a literal backslash
+// then 'A'). `\\377` is the same case for a high value, which must NOT divert to the byte array
+// either. The escaped forms come FIRST on purpose: a rewrite that replaces the first TEXTUAL
+// occurrence of a match, rather than the matched position, corrupts them.
+const escapedOctal = "\\101|\101|\\\101|\\377"
+
+// The same parity rule on the rune path, which shares the octal rewrite: a lone escaped backslash
+// stays a backslash, and a real octal escape is its character.
+const backslashRune = '\\'
+const octalRune = '\101'
+
 // get4 reads a little-endian uint32 the way time/tzdata's get4s does, proving byte indexing matches Go.
 func get4(s string, i int) int {
 	return int(s[i]) | int(s[i+1])<<8 | int(s[i+2])<<16 | int(s[i+3])<<24
@@ -64,4 +77,12 @@ func main() {
 	// A non-const octal literal takes the ordinary expression path rather than the const path.
 	local := "\376\375"
 	dump("local", local)
+
+	dump("escapedOctal", escapedOctal)
+
+	// The same parity cases through the ordinary expression path.
+	localEscaped := "\\377|\377"
+	dump("localEscaped", localEscaped)
+
+	fmt.Println(string(backslashRune), string(octalRune), int(backslashRune), int(octalRune))
 }

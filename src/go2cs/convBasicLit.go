@@ -13,20 +13,9 @@ import (
 	"go/token"
 	"go/types"
 	"math"
-	"regexp"
 	"strconv"
 	"strings"
 )
-
-var octalCharRegex *regexp.Regexp
-
-func getOctalCharRegex() *regexp.Regexp {
-	if octalCharRegex == nil {
-		octalCharRegex = regexp.MustCompile(`\\[0-7][0-7][0-7]`)
-	}
-
-	return octalCharRegex
-}
 
 // stringLiteralNeedsByteArray reports whether a Go interpreted (double-quoted) string literal token
 // must be emitted as a byte-array-backed @string rather than a C# string/u8 literal. It scans the
@@ -151,26 +140,50 @@ func byteArrayStringLiteral(decoded string) string {
 	return builder.String()
 }
 
+// replaceOctalChars rewrites every Go octal escape (`\NNN` — EXACTLY three digits) in a literal
+// TOKEN to the C# code-unit escape for the same value. It is the shared step for both the
+// token.STRING and the token.CHAR paths.
+//
+// Backslash PARITY decides what is an escape, exactly as in stringLiteralNeedsByteArray. In
+// `"\\377"` the second backslash is escaped BY the first, so `377` is ordinary text and the Go
+// value is the FOUR characters `\377`. A plain regex scan matched from that second backslash and
+// rewrote the literal to `"\\u00ff"` — whose C# value is the SIX characters `ÿ`: the wrong
+// content, the wrong length, and silently so. The scan is also positional: the old
+// regex + strings.Replace pair replaced the first TEXTUAL occurrence of each match, so a literal
+// carrying both forms could rewrite the wrong one.
+//
+// Three octal digits cap at `\777` = 0x1FF, so the C# `\uXXXX` code-unit escape always suffices.
 func replaceOctalChars(value string) string {
-	octals := getOctalCharRegex().FindAllString(value, -1)
-
-	if len(octals) > 0 {
-		for _, octal := range octals {
-			decimal, err := strconv.ParseInt(octal[1:], 8, 64)
-
-			if err == nil {
-				if decimal <= 0xFFFF {
-					value = strings.Replace(value, octal, fmt.Sprintf("\\u%04x", decimal), 1)
-				} else {
-					value = strings.Replace(value, octal, fmt.Sprintf("\\U%08x", decimal), 1)
-				}
-			} else {
-				showWarning("Failed to parse octal literal \\%s: %s", octal, err)
-			}
-		}
+	if !strings.Contains(value, "\\") {
+		return value
 	}
 
-	return value
+	builder := &strings.Builder{}
+	backslashes := 0
+
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+
+		if c == '\\' {
+			backslashes++
+			builder.WriteByte(c)
+			continue
+		}
+
+		if backslashes%2 == 1 && isOctalDigit(c) && i+2 < len(value) && isOctalDigit(value[i+1]) && isOctalDigit(value[i+2]) {
+			// The opening backslash is already written and C#'s escape opens with one too, so only
+			// the `uXXXX` tail is appended.
+			fmt.Fprintf(builder, "u%04x", int(c-'0')<<6|int(value[i+1]-'0')<<3|int(value[i+2]-'0'))
+			i += 2
+			backslashes = 0
+			continue
+		}
+
+		builder.WriteByte(c)
+		backslashes = 0
+	}
+
+	return builder.String()
 }
 
 // floatLiteralSourceText returns the SOURCE text of a float-constant initializer that is a
