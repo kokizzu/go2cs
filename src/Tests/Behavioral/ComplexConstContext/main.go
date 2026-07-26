@@ -7,6 +7,28 @@ import "fmt"
 // folded float literal would already emit `D` and rule out the float32 overload on its own.
 const gHalfPi = 1.5707963267948966
 
+// (5) A COMPLEX-kind CONSTANT must emit as a real complex value. go/constant's exact string for a
+// complex is the parenthesized rational form — `5.5+1.5i` is `(11/2 + 3/2i)` — which is neither C#
+// syntax nor a form strconv.ParseComplex accepts, so testing that text for complex128
+// representability could never succeed: EVERY complex constant was classified as beyond-complex128
+// and emitted through the untyped-BigInteger arm, which cannot hold a complex at all. Each half is
+// now rendered and range-tested on its own (converter: exactComplexConstString).
+const (
+	cRational   = 5.5 + 1.5i          // halves fold to RATIONALS: (11/2 + 3/2i)
+	cNegImag    = 2.25 - 0.75i        // a NEGATIVE imaginary part
+	cPureImag   = 3i                  // a ZERO real part
+	cWideEnough = 1.5e308 + 1.0e307i  // strconv atoc_test's shape: fits complex128, barely
+	cFolded     = (1 + 2i) * (3 + 4i) // a folded complex EXPRESSION (-5+10i)
+)
+
+// A complex64-typed const takes the F-suffixed halves (and, like every complex, cannot be a C#
+// `const` — complex64 is a struct).
+const c64 complex64 = 1.5 + 2.5i
+
+func showComplex(name string, c complex128) {
+	fmt.Println(name, real(c), imag(c))
+}
+
 func main() {
 	// (1) complex128-context int-literal SHIFTS out of int32 range must fold to the exact value,
 	// not a C# int32-masked shift (1<<35 masked to 1<<3 = 8). Guards floatContextConstLiteral's
@@ -41,4 +63,17 @@ func main() {
 	var rf float64 = 1.5
 	r := complex(rf, 0i)
 	fmt.Println(real(r), imag(r))
+
+	// (5) continued — the complex constants above, read back through real/imag.
+	showComplex("cRational", cRational)
+	showComplex("cNegImag", cNegImag)
+	showComplex("cPureImag", cPureImag)
+	showComplex("cWideEnough", cWideEnough)
+	showComplex("cFolded", cFolded)
+	fmt.Println("c64", real(c64), imag(c64))
+
+	// A function-LOCAL complex const takes the same rendering (a local of the complex type, never
+	// a C# `const`).
+	const local = 0.5 - 0.25i
+	showComplex("local", local)
 }

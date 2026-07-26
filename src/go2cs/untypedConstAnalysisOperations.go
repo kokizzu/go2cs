@@ -29,11 +29,15 @@ import (
 // doubt keeps today's wrapper form, correctness beats beauty):
 //
 //   - It is declared inside the function (package-level consts are out of scope this pass)
-//     with an untyped INTEGER/RUNE/FLOAT type. Untyped COMPLEX is excluded (complex128 is a
-//     golib struct with no C# const form and no corpus shape to validate against).
+//     with an untyped INTEGER/RUNE/FLOAT/COMPLEX type. (Untyped complex was excluded while
+//     complex128 had no non-`const` emission; visitValueSpec now emits every representable
+//     complex const as `static readonly` — the same demotion uintptr takes — and the wrapper it
+//     replaces is actively WRONG here: UntypedComplex converts implicitly in BOTH directions, so
+//     comparing a wrapper-typed const against a complex128 is AMBIGUOUS, CS0034 — strconv
+//     atoc_test's TestParseComplexIncorrectBitSize `c != want`.)
 //   - Its value fits the native numeric range — a value needing the GoUntyped (BigInteger)
 //     emission is never tightened (mirrors visitValueSpec's writeUntypedConst triggers).
-//   - EVERY use records a concrete (non-untyped) NUMERIC, non-complex *types.Basic in
+//   - EVERY use records a concrete (non-untyped) NUMERIC *types.Basic in
 //     go/types' Info.Types, and all uses record the SAME basic kind. go/types records the
 //     implicit-conversion target for an untyped operand (float64 for `C + x` with x float64),
 //     the untyped type where the constant stays untyped (another const's initializer), and a
@@ -84,10 +88,6 @@ func (v *Visitor) performUntypedConstAnalysis(funcDecl *ast.FuncDecl) {
 					continue
 				}
 
-				if basic.Kind() == types.UntypedComplex {
-					continue
-				}
-
 				if constNeedsGoUntyped(c.Val()) {
 					continue
 				}
@@ -132,14 +132,27 @@ func (v *Visitor) performUntypedConstAnalysis(funcDecl *ast.FuncDecl) {
 			return true
 		}
 
-		// The use must record a concrete numeric (non-complex) basic type.
+		// The use must record a concrete numeric basic type.
 		tv, hasType := v.info.Types[ident]
 		basic, isBasic := tv.Type.(*types.Basic)
 
-		if !hasType || !isBasic || basic.Info()&types.IsUntyped != 0 ||
-			basic.Info()&types.IsNumeric == 0 || basic.Info()&types.IsComplex != 0 {
+		if !hasType || !isBasic || basic.Info()&types.IsUntyped != 0 || basic.Info()&types.IsNumeric == 0 {
 			eligible[c] = false
 			return true
+		}
+
+		// A COMPLEX use type tightens only an untyped-COMPLEX const. Widening the other way —
+		// re-declaring `const k = 2` (untyped int) as complex128 because one use is complex-typed —
+		// would rewrite a perfectly good integer declaration into a struct for no gain, so that arm
+		// stays closed. An untyped COMPLEX const has no other concrete form and its wrapper is
+		// actively wrong (the two-way implicit conversion makes every comparison ambiguous).
+		if basic.Info()&types.IsComplex != 0 {
+			declared, isDeclaredBasic := c.Type().(*types.Basic)
+
+			if !isDeclaredBasic || declared.Kind() != types.UntypedComplex {
+				eligible[c] = false
+				return true
+			}
 		}
 
 		// No ancestor expression may itself be constant-folded (the ident is stack top;
@@ -235,6 +248,12 @@ func constNeedsGoUntyped(val constant.Value) bool {
 	case constant.Float:
 		f64, _ := constant.Float64Val(val)
 		return math.IsInf(f64, 0)
+	case constant.Complex:
+		// Mirrors exactComplexConstString's representability test: each HALF must land inside
+		// float64 (the emission renders and range-tests them independently).
+		re, _ := constant.Float64Val(constant.Real(val))
+		im, _ := constant.Float64Val(constant.Imag(val))
+		return math.IsInf(re, 0) || math.IsInf(im, 0)
 	}
 
 	return false
@@ -304,6 +323,21 @@ func constRepresentableAs(val constant.Value, target *types.Basic) bool {
 		case types.Float64:
 			f64, _ := constant.Float64Val(val)
 			return !math.IsInf(f64, 0)
+		}
+	}
+
+	if target.Info()&types.IsComplex != 0 {
+		// Both halves must land inside the target's element width — the same per-half test the
+		// complex emission applies (exactComplexConstString).
+		switch target.Kind() {
+		case types.Complex64:
+			re, _ := constant.Float32Val(constant.Real(val))
+			im, _ := constant.Float32Val(constant.Imag(val))
+			return !math.IsInf(float64(re), 0) && !math.IsInf(float64(im), 0)
+		case types.Complex128:
+			re, _ := constant.Float64Val(constant.Real(val))
+			im, _ := constant.Float64Val(constant.Imag(val))
+			return !math.IsInf(re, 0) && !math.IsInf(im, 0)
 		}
 	}
 

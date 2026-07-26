@@ -194,14 +194,29 @@ var s = C + r * t;
 t *= G + F / (s + E + D / s);
 ```
 
+A **complex** constant emits a real complex value, built from its two halves by the same exact-float
+rendering and recombined in the postfix `.i()` form written imaginary literals use — `static readonly`,
+because C# forbids `const` of a struct and both `complex128` (`System.Numerics.Complex`) and `complex64`
+are structs:
+
+```go
+const cRational = 5.5 + 1.5i
+const c64 complex64 = 1.5 + 2.5i
+```
+```csharp
+internal static readonly UntypedComplex cRational = /* 5.5 + 1.5i */ 5.5D + 1.5D.i();
+internal static readonly complex64 c64 = /* 1.5 + 2.5i */ 1.5F + 2.5F.i();
+```
+
 A native-sized constant whose value doesn't fit a C# `const` (e.g. `^uintptr(0)`) falls back to
 `static readonly` with an `unchecked` cast. Note `uintptr` is a **distinct golib struct**, not an alias of
 `System.UIntPtr` — Go treats `uint` and `uintptr` as different types, and the struct preserves that
 identity.
 
 **Full detail:** [Reference → Constant Values](ConversionStrategies-Reference.md#constant-values) — the
-exact-float and local-const tightening rules, the `unchecked` native-int cast rules, wide-unsigned named
-consts, and the full `uintptr` conversion matrix.
+exact-float, complex-halves, and local-const tightening rules, the wrapper's value-conversion and
+value-comparison contracts, the `unchecked` native-int cast rules, wide-unsigned named consts, and the
+full `uintptr` conversion matrix.
 
 ---
 

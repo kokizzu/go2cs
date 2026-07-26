@@ -313,12 +313,42 @@ t *= G + F / (s + E + D / s);
 The guards are deliberately conservative — any doubt keeps today's `Untyped*` wrapper form:
 
 - **Function-local only** (package-level constants keep the wrapper: they are visible across functions whose contexts may differ, including from other files of the package).
-- **Untyped integer/rune/float only** — untyped COMPLEX is excluded (`complex128` is a golib struct with no C# `const` form), as is any value on the `GoUntyped` (BigInteger) path.
+- **Untyped integer/rune/float/COMPLEX**, excluding any value on the `GoUntyped` (BigInteger) path. (Untyped complex was excluded while `complex128` had no non-`const` emission; a representable complex const now emits `static readonly` like `uintptr`, and the wrapper it replaces is actively *wrong* for it — see *A complex constant emits a complex VALUE* below. A complex use type tightens only an untyped-COMPLEX const: the converter never *widens* an untyped integer const to `complex128` because one use happens to be complex-typed.)
 - **Every use must record a concrete numeric basic type** in go/types' `Info.Types`, and all uses must agree on ONE basic kind. go/types records the implicit-conversion target for an untyped operand (`float64` for `C + x` with `x float64`), so a use that stays untyped (another constant's initializer), resolves to a NAMED type or type parameter, or records a non-numeric type (`string(c)`) disqualifies — as do mixed concrete types (`float64` and `float32` uses of one constant).
 - **No use may participate in constant folding**: an ancestor expression carrying a folded constant value (`uint64(B1) << 32` — cbrt's B1/B2 stay `UntypedInt`) disqualifies. Go folds untyped constant expressions at arbitrary precision; re-expressing an operand at a concrete C# type could change the folded result (or re-fold it in C#'s checked int32 arithmetic).
 - The exact value is re-checked representable in the resolved type (belt-and-braces — go/types already validated each use's conversion).
 
 A tightened constant composes with the exact-float emission above (the cbrt literals round-trip to their documented bit patterns, e.g. `C` ↔ `0x3FE15F15F15F15F1`), with the `iota` initializer (a position-0 `= iota` tightened to nint emits golib's constant bare — see the bare-iota rule below; any other tightened type keeps the folded value with the `/* iota */` comment), and with a float-KIND value under an INTEGER tightened type — `const infinity = 1e6` (go/printer; `1e6` lexes as a float literal) used only in int contexts emits the integer form `const nint infinity = 1000000;`, since a C# `1e6` double literal has no implicit conversion to nint and the tightening pass guaranteed integral representability. (Guarded by the `UntypedConstDefine` behavioral test's `tightenGuards` — single-type/append/defer/shift-operand uses tighten, mixed-type/const-feeding/folding uses keep the wrapper, and the narrow byte/int16/uint16 shifted consts keep the width retype (145, not 401), all output-compared vs Go — and by `BitwiseUntypedConst`, whose local `signBit = 1 << 63` now emits `const uint64` with the `(uint64)` operand casts dropped; `ConstShadowsParam` locks the shadow-rename interplay, its folded `int64(ns)` uses staying untightened.)
+
+### A complex constant emits a complex VALUE, rendered from its two exact halves
+
+A COMPLEX-kind constant is emitted as a real complex value built from its real and imaginary parts, each rendered by the same exact-float machinery a float const uses (`exactFloatText`) and recombined in the postfix `.i()` form `convBasicLit` already emits for written imaginary literals. Because `complex128` is `System.Numerics.Complex` and `complex64` is a golib struct — and C# forbids `const` of a library struct (CS0283) — the declaration is `static readonly`, the same demotion `uintptr` takes:
+
+```go
+const (
+    cRational   = 5.5 + 1.5i
+    cNegImag    = 2.25 - 0.75i
+    cPureImag   = 3i
+    cWideEnough = 1.5e308 + 1.0e307i
+    cFolded     = (1 + 2i) * (3 + 4i)
+)
+const c64 complex64 = 1.5 + 2.5i
+```
+```csharp
+internal static readonly UntypedComplex cRational = /* 5.5 + 1.5i */ 5.5D + 1.5D.i();
+internal static readonly UntypedComplex cNegImag = /* 2.25 - 0.75i */ 2.25D + -0.75D.i();
+internal static readonly UntypedComplex cPureImag = /* 3i */ 3D.i();
+internal static readonly UntypedComplex cWideEnough = /* 1.5e308 + 1.0e307i */ 1.5e+308D + 1e+307D.i();
+internal static readonly UntypedComplex cFolded = /* (1 + 2i) * (3 + 4i) */ -5D + 10D.i();
+
+internal static readonly complex64 c64 = /* 1.5 + 2.5i */ 1.5F + 2.5F.i();
+```
+
+The receiver's `F`/`D` suffix selects the golib `i()` overload (`i(this float)` → `complex64`, `i(this double)` → `complex128`) exactly as a written literal's does, and each half's implicit float→complex conversion closes the `+`. A ZERO real part renders as the bare imaginary literal (`3D.i()` — the Go source form of `3i`); a NEGATIVE imaginary part composes as written, because member invocation binds tighter than unary minus, so `2.25D + -0.75D.i()` is 2.25 + −(0.75·i).
+
+**Why the halves are tested individually.** Representability was previously decided by handing `go/constant`'s `Value.ExactString()` to `strconv.ParseComplex`. That text is the parenthesized RATIONAL form — `5.5+1.5i` is `(11/2 + 3/2i)` — which is neither C# syntax nor a form `ParseComplex` accepts (its grammar is Go *literal* syntax: no parentheses, no spaces around the sign, no `p/q`). The test could therefore never succeed: **every** complex constant, however ordinary, was classified as beyond-`complex128` and emitted through the `GoUntyped` arm — whose `BigInteger.Parse` cannot represent a complex at all. `strconv`'s `atoc_test.go` (`const want = 1.5e308 + 1.0e307i`, a value that fits `complex128` with room to spare) failed to compile on `c != want` (CS0019, `Complex` vs `GoUntyped`). Each half is now rendered and range-tested on its own at the declaration's element width; only a genuinely unrepresentable value keeps the `GoUntyped` arm, and that emission now **warns**, because it is knowingly lossy.
+
+A FUNCTION-LOCAL untyped complex const additionally tightens to its single concrete use type (the tightening pass above), which the wrapper form cannot substitute for: `UntypedComplex` converts implicitly to *and* from `complex128`, so comparing a wrapper-typed const against a `complex128` is AMBIGUOUS (CS0034) — `atoc_test`'s `TestParseComplexIncorrectBitSize` is exactly that shape, and it emits `complex128 want = …`. (Guarded by the `ComplexConstContext` behavioral test — rational halves, a negative imaginary part, a pure imaginary, the beyond-1e308-real strconv shape, a folded complex expression, a `complex64`-typed const, and a function-local const, all output-compared vs Go.)
 
 **A const initialized by exactly the builtin `iota` emits golib's constant bare when it can express the value.** golib's builtin declares `public const nint iota = 0` (`golib/builtin.cs`), so the initializer emits as bare `iota` — instead of the folded comment form `/* iota */ 0` — only when BOTH halves of that declaration match: the folded group-position value is `0` (position 0 of the Go const group) AND the emitted C# type accepts golib's `nint` constant, i.e. the emitted type *is* `nint` (an explicit Go `int` type, or a function-local untyped const tightened to it) or the `UntypedInt` wrapper (implicit from nint). Everything else keeps the folded form: a LATER group position folds to a value golib's constant cannot express (`x = iota` at position 1 emits `/* iota */ 1` — on the `UntypedInt` path a bare `iota` there would even compile, silently at the WRONG value), and any other emitted type — named wrappers (`ΔKind Invalid = /* iota */ 0`), other widths (`int64`) — keeps `/* iota */ N` rather than casting golib's nint. (No current emission path casts an in-range position-0 const, so no `(T)iota` form exists; should one ever require a cast anyway, the cast would wrap `iota` rather than the folded value.) The identifier must resolve to the *universe* `iota` — a user-shadowed `iota` keeps the folded value. From compress/flate's `huffmanBlock` states:
 

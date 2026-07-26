@@ -309,6 +309,54 @@ func exactFloatText(val constant.Value, lit string, isFloat32 bool) string {
 	return strconv.FormatFloat(target, 'g', -1, bitSize)
 }
 
+// exactComplexConstString returns the EXACT C# value text for a COMPLEX-kind constant declaration
+// and reports whether the value is representable at the declaration's width.
+//
+// go/constant's ExactString for a complex value is `(re + imi)` with RATIONAL parts — `5.5+1.5i`
+// renders as `(11/2 + 3/2i)` — which is neither C# syntax nor a form strconv.ParseComplex accepts
+// (its grammar is Go *literal* syntax: no parentheses, no spaces around the sign, no `p/q`). So
+// testing that whole text with ParseComplex was a representability check that could NEVER pass, and
+// every complex constant — however ordinary — was misclassified as beyond-complex128 and emitted
+// through the GoUntyped arm, whose BigInteger.Parse cannot hold a complex at all (strconv
+// atoc_test's `const want = 1.5e308 + 1.0e307i` → CS0019 comparing GoUntyped to a complex128).
+//
+// Each HALF is rendered and range-tested exactly like a float const (exactFloatText, which handles
+// the rational and hex-float forms), then recombined in the postfix `.i()` form convBasicLit's IMAG
+// arm uses for written imaginary literals — `1.5e+308D + 1e+307D.i()`. The receiver's F/D suffix
+// selects the golib i() overload (complex64 vs complex128), same as a literal's, and the halves'
+// implicit float→complex conversion closes the `+`.
+func exactComplexConstString(val constant.Value, isComplex64 bool) (string, bool) {
+	suffix := "D"
+	bitSize := 64
+
+	if isComplex64 {
+		suffix = "F"
+		bitSize = 32
+	}
+
+	reText := exactFloatText(constant.Real(val), "", isComplex64)
+	imText := exactFloatText(constant.Imag(val), "", isComplex64)
+
+	if _, err := strconv.ParseFloat(reText, bitSize); err != nil {
+		return "", false
+	}
+
+	if _, err := strconv.ParseFloat(imText, bitSize); err != nil {
+		return "", false
+	}
+
+	// A zero real part renders as the bare imaginary literal — `2D.i()`, exactly the Go source
+	// form of `const c = 2i` (the `0D + ` prefix would be noise).
+	if reText == "0" {
+		return imText + suffix + ".i()", true
+	}
+
+	// A NEGATIVE imaginary part composes correctly as written: member invocation binds tighter
+	// than unary minus, so `re + -imD.i()` is re + -(im·i) — the value Go wrote, sign included
+	// (see convBasicLit's IMAG arm).
+	return reText + suffix + " + " + imText + suffix + ".i()", true
+}
+
 // goFloatLiteralText returns the C# real-literal text for a Go float literal's SOURCE text (for
 // an imaginary literal, its mantissa — the trailing `i` already stripped). A form C# also accepts
 // is kept VERBATIM, preserving the developer's own formatting per preserveGoIntLiteral's goal

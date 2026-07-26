@@ -669,6 +669,10 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 			var srcVal string
 			var constVal string
 
+			// Whether a COMPLEX-kind constant's value fits the declaration's complex width (and so
+			// rendered as a real complex value rather than falling to the GoUntyped arm below).
+			complexRepresentable := false
+
 			if c.Val().Kind() == constant.String && len(valueSpec.Values) >= i+1 {
 				if lit, ok := valueSpec.Values[i].(*ast.BasicLit); ok && lit.Kind == token.STRING {
 					constVal = v.convBasicLit(lit, DefaultBasicLitContext())
@@ -723,6 +727,14 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					}
 
 					constVal = exactFloatConstString(c.Val(), srcExpr, csTypeName == "float32")
+				}
+			} else if c.Val().Kind() == constant.Complex {
+				// Rendered from the two EXACT halves; the whole-text ParseComplex representability
+				// test it replaces could never succeed — see exactComplexConstString.
+				constVal, complexRepresentable = exactComplexConstString(c.Val(), csTypeName == "complex64")
+
+				if !complexRepresentable {
+					constVal = c.Val().ExactString()
 				}
 			} else {
 				constVal = c.Val().ExactString()
@@ -786,14 +798,14 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				}
 			}
 
-			if c.Val().Kind() == constant.Complex {
-				// Check if const complex value will exceed complex128 limits
-				if _, err := strconv.ParseComplex(constVal, 128); err != nil {
-					constVal = c.Val().ExactString()
-
-					// TODO: Assignment of complex value to GoUntyped will need to be handled
-					writeUntypedConst()
-				}
+			if c.Val().Kind() == constant.Complex && !complexRepresentable {
+				// A complex constant beyond the declaration's width has NO C# form: GoUntyped is a
+				// BigInteger and cannot hold a complex at all, so this emission is knowingly lossy.
+				// Warn rather than silently emit something that is not the constant. (Before the
+				// representability test was fixed, EVERY complex const took this arm — see
+				// exactComplexConstString.)
+				v.showWarning("Go complex const exceeds %s range and has no C# representation - verify usage: const %s = %s", csTypeName, goIDName, constVal)
+				writeUntypedConst()
 			}
 
 			if c.Val().Kind() == constant.String {
@@ -830,6 +842,12 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 			// rather than `const`. Small native-int consts (e.g. `const nint iota = 0`) are fine.
 			nativeIntConst := false
 			uintptrConst := false
+
+			// complex128 is System.Numerics.Complex and complex64 is a golib struct; C# forbids
+			// `const` of a library struct entirely (CS0283) — the same gap uintptr has — so a
+			// representable complex const is `static readonly`. An UntypedComplex-typed one is
+			// already routed there by isNamedType.
+			complexConst := complexRepresentable && (csTypeName == "complex128" || csTypeName == "complex64")
 
 			// A NAMED type over uintptr (`type Handle uintptr`) has the same gap as raw uintptr:
 			// its generated struct bridges the numeric world only through nuint/UntypedInt
@@ -959,7 +977,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				} else if nativeIntConst {
 					constExpr = "static readonly"
 					constValExpr = fmt.Sprintf("unchecked((%s)%s)", csTypeName, constVal)
-				} else if uintptrConst {
+				} else if uintptrConst || complexConst {
 					constExpr = "static readonly"
 				} else {
 					constExpr = "const"
@@ -976,7 +994,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					// C# locals cannot be declared "static readonly"; for named
 					// (custom) types "const" is also invalid, so emit a plain local
 					// variable. Primitive/string consts can still use "const" locally.
-					if isNamedType || nativeIntConst || uintptrConst {
+					if isNamedType || nativeIntConst || uintptrConst || complexConst {
 						v.writeOutput("%s %s =%s %s;", csTypeName, csIDName, orgExpr, constValExpr)
 					} else {
 						v.writeOutput("%s %s %s =%s %s;", constExpr, csTypeName, csIDName, orgExpr, constValExpr)
