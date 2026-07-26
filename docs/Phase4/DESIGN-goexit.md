@@ -1,10 +1,11 @@
 # DESIGN — `runtime.Goexit`: the managed unwind shape
 
-> **Status: DECISION REQUESTED (user-owned).** Raised by the r14 runtime-stub arc, which classified
-> `Goexit` capability-blocked rather than land an architectural change unilaterally (charter §10).
-> Until ruled, tests requiring it are capability-gated — reported honestly, never crashing the host
-> (`bce7c12e7`). One sync test (`TestOnceFuncGoexit`) waits on the ruling; more will as coverage
-> widens (`testing.T.FailNow` is specified in terms of Goexit).
+> **Status: ACCEPTED — 2026-07-26 (user): §2 shape + Option C** (goroutine-side `GoexitException`
+> lands now; main-goroutine Goexit stays capability-gated until a real consumer justifies Option A).
+> Implementation queued in wave r16 with the §4 verification plan.
+> History: raised by the r14 runtime-stub arc, which classified `Goexit` capability-blocked rather
+> than land an architectural change unilaterally (charter §10); tests requiring it were
+> capability-gated — reported honestly, never crashing the host (`bce7c12e7`).
 
 ## 1. What Go specifies
 
