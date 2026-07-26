@@ -369,17 +369,17 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 	// excluded: the SEND site clones (see visitSendStmt), and a buffered element is received
 	// exactly once, so the received struct copy is already unaliased.
 	arrayCloneArm := isSlice || isArray || isMap
-	keyIsArrayValue := arrayCloneArm && rangeStmt.Key != nil && keyExpr != "_" && typeIsArrayValue(v.getExprType(rangeStmt.Key))
-	valIsArrayValue := arrayCloneArm && rangeStmt.Value != nil && len(valExpr) > 0 && valExpr != "_" && typeIsArrayValue(v.getExprType(rangeStmt.Value))
+	keyIsArrayValue := arrayCloneArm && rangeStmt.Key != nil && keyExpr != "_" && typeNeedsValueClone(v.getExprType(rangeStmt.Key))
+	valIsArrayValue := arrayCloneArm && rangeStmt.Value != nil && len(valExpr) > 0 && valExpr != "_" && typeNeedsValueClone(v.getExprType(rangeStmt.Value))
 
 	keyCloneSuffix, valCloneSuffix := "", ""
 
 	if keyIsArrayValue {
-		keyCloneSuffix = ".Clone()"
+		keyCloneSuffix = valueCloneSuffix(v.getExprType(rangeStmt.Key))
 	}
 
 	if valIsArrayValue {
-		valCloneSuffix = ".Clone()"
+		valCloneSuffix = valueCloneSuffix(v.getExprType(rangeStmt.Value))
 	}
 
 	// A newly-DEFINED range var that is reassigned in the body — or that receives a pointer-

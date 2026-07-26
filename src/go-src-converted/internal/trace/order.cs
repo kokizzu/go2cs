@@ -225,7 +225,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, fmt.Errorf("failed to find sched context for proc %d that's about to be stolen"u8, pid));
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (newCtx, true, default!);
 }
 
@@ -259,7 +259,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
     state.Value.seq = seq;
     var newCtx = curCtx;
     newCtx.P = pid;
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (newCtx, true, default!);
 }
 
@@ -291,7 +291,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
     state.Value.status = go122.ProcIdle;
     var newCtx = curCtx;
     newCtx.P = NoProc;
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (newCtx, true, default!);
 }
 
@@ -328,7 +328,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
     // If we've lost information then don't try to do anything with the M.
     // It may have moved on and we can't be sure.
     if (oldStatus == go122.ProcSyscallAbandoned) {
-        o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+        o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
         return (curCtx, true, default!);
     }
     // Validate that the M we're stealing from is what we expect.
@@ -341,7 +341,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, fmt.Errorf("tried to self-steal proc %d (thread %d), but got proc %d instead"u8, pid, mid, curCtx.P));
         }
         newCtx.P = NoProc;
-        o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+        o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
         return (newCtx, true, default!);
     }
     // We're stealing from some other M.
@@ -360,7 +360,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
     // GoSyscallEndBlocked cannot advance until the corresponding
     // M loses its P.
     mState.Value.p = NoProc;
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (newCtx, true, default!);
 }
 
@@ -449,7 +449,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
     // Don't set curCtx.G in this case because this event is the
     // binding event (and curCtx represents the "before" state).
     // Update the current context to the M we're talking about.
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (newCtx, true, default!);
 }
 
@@ -484,7 +484,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
         status = go122.GoWaiting;
     }
     o.gStates[newgid] = Ꮡ(new gState(id: newgid, status: status, seq: makeSeq(gen, 0)));
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -526,7 +526,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
 
     // Goroutine stopped (yielded). It's runnable but not running on this M.
     // Goroutine blocked. It's waiting now and not running on this M.
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (newCtx, true, default!);
 }
 
@@ -553,7 +553,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
     state.Value.seq = seq;
     var newCtx = curCtx;
     newCtx.G = gid;
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (newCtx, true, default!);
 }
 
@@ -574,7 +574,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
     state.Value.seq = seq;
     // N.B. No context to validate. Basically anything can unblock
     // a goroutine (e.g. sysmon).
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -612,7 +612,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
         // state emitted, or before we got to the right point in the trace yet.
         return (curCtx, false, default!);
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     // Update the state of the executing goroutine and emit an event for it
     // (GoSwitch and GoSwitchDestroy will be interpreted as GoUnblock events
     // for nextg).
@@ -685,7 +685,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
         return (curCtx, false, fmt.Errorf("failed to advance %s: can't make sequence: %s -> %s"u8, go122.EventString(ev.typ), (~pState).seq, pSeq));
     }
     pState.Value.seq = pSeq;
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -717,7 +717,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
         return (curCtx, false, fmt.Errorf("expected proc %d in state %v, but got %v instead"u8, curCtx.P, go122.ProcSyscall, (~pState).status));
     }
     pState.Value.status = go122.ProcRunning;
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -760,7 +760,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
     var newCtx = curCtx;
     newCtx.G = NoGoroutine;
     state.Value.status = go122.GoRunnable;
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (newCtx, true, default!);
 }
 
@@ -787,7 +787,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
     // Goroutine is executing. Bind it to the context.
     var newCtx = curCtx;
     newCtx.G = newgid;
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (newCtx, true, default!);
 }
 
@@ -844,7 +844,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
         extra.@base.extra(version.Go122)[0] = (uint64)(uint8)go122.ProcSyscall;
         o.queue.push(extra);
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (newCtx, true, default!);
 }
 
@@ -888,7 +888,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -916,7 +916,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -944,7 +944,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -972,7 +972,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -993,7 +993,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
         }
         o.gcSeq = seq;
         o.gcState = gcRunning;
-        o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+        o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
         return (curCtx, true, default!);
     }
     if (seq != o.gcSeq + 1) {
@@ -1009,7 +1009,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -1020,7 +1020,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
     if (o.gcState == gcUndetermined) {
         o.gcSeq = seq;
         o.gcState = gcRunning;
-        o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+        o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
         return (curCtx, true, default!);
     }
     if (seq != o.gcSeq + 1) {
@@ -1037,7 +1037,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -1062,7 +1062,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -1075,7 +1075,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -1088,7 +1088,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -1106,7 +1106,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -1127,7 +1127,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -1143,7 +1143,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
     if (err != default!) {
         return (curCtx, false, err);
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -1169,7 +1169,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -1189,7 +1189,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -1214,7 +1214,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
         // Don't use ev.extra here so we have symmetry with STWBegin.
         ev.args[0] = (uint64)desc;
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -1227,7 +1227,7 @@ internal static void initᴛorderingDispatch() { orderingDispatch = new golib.Sp
             return (curCtx, false, err);
         }
     }
-    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev));
+    o.queue.push(new ΔEvent(table: Ꮡevt, ctx: curCtx, @base: ev.ΔClone()));
     return (curCtx, true, default!);
 }
 
@@ -1552,7 +1552,7 @@ internal static ΔEvent makeEvent(ж<evTable> Ꮡtable, schedCtx ctx, @event.Typ
         )
     );
     copy(ev.@base.args[..], args);
-    return ev;
+    return ev.ΔClone();
 }
 
 } // end trace_package

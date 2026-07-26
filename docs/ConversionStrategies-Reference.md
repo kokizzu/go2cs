@@ -2315,14 +2315,115 @@ must write through. Its `unsafe.Pointer` half stays compile-shape only, with the
 deliberately discarded: reconstructing an array through an `unsafe.Pointer` round trip reads raw
 memory and cannot reproduce Go's values under the managed model.)
 
-**Known remaining gaps (documented, not yet emitted):** (1) STRUCT-typed copies whose fields embed
-arrays (`s2 := s1` memberwise-copies the `array<T>` field reference — needs a deep-copy strategy
-decision, likely a TypeGenerator-emitted clone for structs with array fields — and the same hole
-flows through every transfer site of a struct VALUE with array fields); (2) golib-internal
+**Known remaining gaps (documented, not yet emitted):** (1) golib-internal
 element-wise transfers of nested-array elements (`copy(dst, src)`, spread `append(dst, src...)`)
-copy element structs without re-cloning; (3) an array-typed map KEY at an index-STORE (`mk[k] = v`
-stores `k` uncloned — only the composite-literal key form clones); (4) a named↔underlying array
-CONVERSION (`[4]int(named)`) hands the wrapper's backing through the implicit operator uncloned.
+copy element structs without re-cloning; (2) an array-typed map KEY at an index-STORE (`mk[k] = v`
+stores `k` uncloned — only the composite-literal key form clones); (3) a named↔underlying array
+CONVERSION (`[4]int(named)`) hands the wrapper's backing through the implicit operator uncloned;
+(4) an EMBEDDED struct member is held as a `ж<T>` box, so a struct copy shares the embed outright
+(`b := a; b.n = 99` writes through to `a.n`) — a defect of the embed model, wider than arrays and
+untouched by the section below.
+
+### A STRUCT carrying array fields copies through its generated `ΔClone()`
+
+The aliasing above is not confined to array-typed variables: a struct whose FIELD is a fixed-size
+array has exactly the same problem one level up, because the plain C# struct copy carries the
+field's `array<T>` header — and therefore its shared `T[]` — into the copy. crypto/sha256's `Sum` is
+the canonical case; it copies the digest *precisely* so it can finalize the copy while the caller
+keeps writing the original:
+
+```go
+type digest struct{ h [8]uint32; x [chunk]byte; nx int; len uint64; is224 bool }
+
+func (d *digest) Sum(in []byte) []byte {
+	d0 := *d                 // Go copies h and x INLINE
+	hash := d0.checkSum()    // …then destroys d0's state finalizing it
+	return append(in, hash[:]...)
+}
+```
+
+With the copy sharing `h` and `x`, `checkSum` destroyed the CALLER's running state: every second
+`Sum` on one hash returned a different digest, and `TestGolden`'s write-half → `Sum` → write-rest
+sequence produced the hash of the empty string. sha1/sha256/sha512 all failed the same way, as did
+`cryptotest.TestHash`'s SumAppend/ResetState/OutOfBoundsRead/StatefulWrite subtests.
+
+The converter now treats such a struct exactly like an array. `typeNeedsValueClone`
+(`arrayCloneOperations.go`) is the widened gate — a fixed-size array, **or** a struct carrying one
+in a field, directly or through another such struct — so every site the array machinery already
+covered (assignment/var-decl RHS, composite-literal element and keyed field, map key and value,
+return, channel send, `append` element, range key/value, function/func-literal parameter and value
+receiver) clones a struct too. The struct declaration is stamped with the fields that need it, and
+go2cs-gen turns the stamp into the deep copy:
+
+```csharp
+[GoType] [GoValueClone("h", "x")] partial struct digest {
+    internal array<uint32> h = new(8);
+    internal array<byte> x = new(chunk);
+    internal nint nx;
+    internal uint64 len;
+    internal bool is224;
+}
+
+[GoRecv] internal static slice<byte> Sum(this ref digest d, slice<byte> @in) {
+    ref var d0 = ref heap<digest>(out var Ꮡd0);
+    d0 = d.ΔClone();                 // was `d0 = d;` — the arrays were shared
+    var hash = Ꮡd0.checkSum();
+    …
+}
+```
+
+```csharp
+// generated (go2cs-gen StructTypeTemplate)
+internal partial struct digest : IGoValueClone
+{
+    public digest ΔClone()
+    {
+        digest copy = this;
+        copy.h = h.ΔClone();
+        copy.x = x.ΔClone();
+        return copy;
+    }
+
+    object ICloneable.Clone() => ΔClone();
+}
+```
+
+Four details make this correct and collision-free:
+
+- **The CONVERTER decides which fields clone, not the generator.** Only the converter has the Go
+  type information, and it must agree with itself at the copy sites; `[GoValueClone("h", "x")]`
+  (golib `GoValueCloneAttribute`) is that single source of truth. A defined type over such a struct
+  (`type IpMaskString IpAddressString`, whose underlying holds a `[16]byte`) is emitted as go2cs-gen's
+  inherited wrapper, so it is stamped `[GoValueClone("Value")]` and its clone forwards to that one
+  member — without it, `syscall.IpAddrString`'s own clone had no `ΔClone` to call (CS1061).
+- **The method is NOT named `Clone`.** A Go type may declare its own `Clone` method, which converts
+  to an EXTENSION method on the package class — and an instance member of the same name silently
+  SHADOWS it. Vendored `x/crypto/sha3`'s `func (d *state) Clone() ShakeHash` is the real case: its
+  recv-overload forwarder bound to the generated `state Clone()` and failed CS0029. The name is
+  `Symbols.ValueCloneMethod` (`ΔClone`), reusing the same `Δ` collision-avoidance marker the
+  promoted-accessor rename uses. Copy SITES for plain arrays keep golib's public `Clone()`; only the
+  generated bodies use the uniform name, which `array<T>` and the named-array/array-view wrappers
+  alias to their own `Clone()` so one call form covers every clone-needing field type.
+- **`array<T>.Clone()` recurses through the new marker.** It already re-cloned an element that is
+  itself an array (`[2][3]int`); an element that is one of these structs (`[2]digest`) now clones the
+  same way, through `IGoValueClone`/`ICloneable`.
+- **EMBEDDED members are never listed and never cloned.** go2cs-gen holds an embed in a `ж<T>` box
+  whose member accessor writes THROUGH the box, so assigning one in a clone would corrupt the
+  source. Embedded-struct copy aliasing is the separate, pre-existing gap (4) above; this change
+  neither fixes nor worsens it, and a struct that needs cloning only because of an embed is not
+  stamped.
+
+A BLANK or unnamed parameter is skipped: it is emitted under a synthetic name and can never be
+referenced, so there is nothing for the copy to protect — and the preamble would otherwise be
+written against the empty analyzed name (` = .ΔClone();`, CS1525 ×2 in `log/slog`'s benchmark
+`Handle(disabledHandler, context.Context, slog.Record)`, every parameter of which is blank). The
+array-typed arm had the same latent hole; no blank array parameter happened to exist in the corpus.
+
+(Guarded by the `StructArrayFieldValueCopy` behavioral test — one output-compared line per site
+class: pointer-deref copy, ident copy, selector copy, composite-literal element, nested-struct copy,
+by-value parameter, returned field, array and slice index, range value, map value, value receiver.
+Validated end-to-end by crypto/sha1, crypto/sha256, crypto/sha512 and bufio, whose only residue is
+the `alloc-profile` disclosure the extra managed allocations force.)
 
 ### Nil-vs-empty slice identity (`s == nil` is representation nilness, not emptiness)
 Go distinguishes a **nil** slice (nil backing pointer) from a **non-nil empty** slice (a real backing
@@ -7710,6 +7811,44 @@ managed buffer rather than aliasing it the way Go does, so writes through the re
 native memory. That is sufficient for reading a block a syscall returned (the `Environ` shape) and is
 where the seam still differs from Go.
 
+### `unsafe.Slice` over MANAGED element storage ALIASES it
+
+The snapshot above is the right answer for a native address and the wrong one for the far commoner
+shape: `unsafe.Slice(&s[i], n)`, where the pointer addresses an element of a managed slice or array.
+Go's result shares that storage, so writes through the rebuilt slice must land in the original
+backing — and the snapshot silently swallowed every one of them. crypto/subtle is the case that
+exposed it: `XORBytes` hands `xorBytes` bare pointers, which rebuilds its three slices and writes the
+whole result through `dst`, so **`XORBytes` wrote nothing at all** (its test matrix compared `dst`
+against its untouched `0xdd` fill).
+
+`ж<T>` answers with the window when it has real managed element storage
+(`TryGetElementWindow`): the referent is reduced through the same `CanonicalElement` mapping pointer
+equality uses — so a pointer taken through a re-sliced view addresses the same absolute element Go's
+would — and the result is a `slice<T>` over that backing with `len == cap == n`, exactly Go's shape.
+A heap box, a struct-field ref, or a REINTERPRETING pointer (a `(*U)(unsafe.Pointer(&b[0]))` over a
+differently-typed array) has no such storage and keeps the snapshot; a `T[]` view over another
+element type does not exist in the managed model.
+
+That last exclusion is why `crypto/subtle/xor_generic.cs` is **hand-owned**
+(`[module: GoManualConversion]`). Its word-at-a-time loop reinterprets the byte slices as
+`[]uintptr` —
+
+```go
+func words(x []byte) []uintptr {
+	return unsafe.Slice((*uintptr)(unsafe.Pointer(&x[0])), uintptr(len(x))/wordSize)
+}
+```
+
+— which the converted form can only snapshot, so for every length that is a multiple of 8 the XOR
+went to a detached buffer and `dst` stayed untouched, while other lengths landed only their trailing
+`n % 8` bytes. The hand-owned file does the same reinterpret the managed way,
+`MemoryMarshal.Cast<byte, ulong>` over the slices' own spans — a genuine aliasing view, so the word
+writes land in place. It keeps Go's word-at-a-time behavior (and with it the performance contract
+crypto/cipher's CTR and GCM modes depend on) and drops only Go's `supportsUnaligned`/`aligned` gate,
+which exists for architectures whose unaligned word loads fault. (Validated by crypto/subtle's own
+suite: 7/7, no disclosures, over the full 1..1024 × 8 × 8 × 8 alignment matrix.)
+
+
 ### A reinterpret of a MANAGED pointer aliases the box — it never round-trips through the address
 The section above is about a pointer whose source genuinely *is* an address. The mirror case is
 `(*U)(unsafe.Pointer(p))` where `p` is an ordinary Go pointer `*T` — the shape `reflect` uses to view
@@ -8400,6 +8539,9 @@ The hand implementation (`src/core/<pkg>/<file>_impl.cs`, e.g. `core/runtime/run
 One call-site emission cooperates (`convCallExpr.go`): a conversion **to** a manual type from an `unsafe.Pointer` — `guintptr(unsafe.Pointer(newg))` — unwraps the inner conversion and emits the referent-preserving ctor form `new Δguintptr(newg)` instead of the numeric cast chain `(Δguintptr)(uintptr)new @unsafe.Pointer(newg)`, which would lose the referent at the `(uintptr)` hop.
 
 **The runtime lock/note model (`core/runtime/lock_sema_impl.cs`).** Go's `mutex.key` is a tagged atomic slot — 0 unlocked, `locked` (1) held, or an `*m` address|locked heading a waiter chain through `m.nextwaitm`, parked on OS semaphores. The managed model hand-owns `mutexContended`/`lock2`/`unlock2`/`notewakeup`/`notesleep`/`notetsleep_internal` (via the same registry; thin wrappers and consts stay auto) and keeps the **same key protocol restricted to `{0, locked}`**: the mutex is an `Interlocked` spinlock on the real `key` storage with `SpinWait` escalation standing in for the spin→yield→park ladder; the note is a signaled/clear latch (double-wakeup throw preserved; timeout at millisecond granularity). Deliberately not modeled, documented in place: the waiter queue (fairness), lock profiling, and the `m.locks`/preempt bookkeeping — `getg()` is a Go compiler intrinsic with no managed realization yet (a `[ThreadStatic]` g/m model is the future root that unlocks runtime-operational semantics; the bookkeeping returns to these bodies when it lands).
+
+
+**`crypto/subtle`'s word-at-a-time XOR (`go-src-converted/crypto/subtle/xor_generic.cs`, whole-file).** `xorBytes` XORs a machine WORD at a time by reinterpreting its three byte slices as `[]uintptr` (`unsafe.Slice((*uintptr)(unsafe.Pointer(&x[0])), len(x)/wordSize)`). A `uintptr[]` view over a `byte[]` does not exist in the managed model — golib's `slice<T>` is a window on a real `T[]` — so the converted `words()` could only SNAPSHOT the bytes into a detached `slice<uintptr>`, and the word loop XORed the snapshot and dropped it: for every length that is a multiple of 8, `XORBytes` wrote **nothing**. The whole file is hand-owned (marked `[module: GoManualConversion]`) and does the same reinterpret the managed way, `MemoryMarshal.Cast<byte, ulong>` over the slices' own spans — a genuine aliasing view, so the word writes land in place — keeping Go's word-at-a-time behavior and the performance contract crypto/cipher's CTR and GCM modes depend on. Only Go's `supportsUnaligned`/`aligned` gate is dropped (it exists for architectures whose unaligned word loads fault). Full detail: *`unsafe.Slice` over MANAGED element storage ALIASES it*. Guarded by crypto/subtle's own suite (7/7, no disclosures, over the full 1..1024 x 8 x 8 x 8 alignment matrix).
 
 **`sync/atomic.Value` (`core/sync/atomic/value.cs`, whole-file).** Go's `atomic.Value` stores and loads an `any` atomically by reinterpreting the interface's internal two-word `(type, data)` layout: `(*efaceWords)(unsafe.Pointer(&v))`, then `atomic.LoadPointer`/`StorePointer`/`CompareAndSwapPointer` on the `typ` and `data` slots, with a `firstStoreInProgress` sentinel guarding the first store. That layout is a Go runtime detail with **no managed equivalent** — an `any` here is a single `System.Object` reference (one word), and reinterpreting a managed reference as a raw address to poke type/data words simply NREs (the same managed-referent-through-`unsafe.Pointer` wall as the guintptr family). The first *operational* hit was `internal/testlog`'s package-level `var logger atomic.Value`, loaded during `os.Getenv` — so `atomic.Value.Load()` NRE'd on the zero value before any store. The whole file is hand-rewritten (marked `[module: GoManualConversion]`) to store the `any` **directly** in the `Value.v` field and use `Volatile.Read`/`Interlocked.CompareExchange` for the acquire/release ordering and CAS the literal conversion cannot provide; the nil-store and inconsistent-type panics, and `CompareAndSwap`'s by-value comparison (`AreEqual`, matching Go's `i != old`), preserve the spec. Guarded by the `AtomicValue` behavioral test (Load-nil / Store / Swap / CompareAndSwap over typed string values, output-compared vs Go).
 

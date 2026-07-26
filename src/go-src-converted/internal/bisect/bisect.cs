@@ -808,7 +808,7 @@ internal static uint64 fnvUint32(uint64 h, uint32 x) {
 // It has two modes: an approximate but lock-free mode that
 // may still emit some duplicates, and a precise mode that uses
 // a lock and never emits duplicates.
-[GoType] partial struct dedup {
+[GoType] [GoValueClone("recent")] partial struct dedup {
     // 128-entry 4-way, lossy cache for seenLossy
     internal array<array<uint64>> recent = new(128, () => new(4));
     // complete history for seen

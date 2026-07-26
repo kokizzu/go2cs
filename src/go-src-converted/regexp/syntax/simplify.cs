@@ -27,7 +27,7 @@ public static ж<Regexp> Simplify(this ж<Regexp> Ꮡre) {
             if (nre == Ꮡre && nsub != sub) {
                 // Start a copy.
                 nre = @new<Regexp>();
-                nre.Value = re;
+                nre.Value = re.ΔClone();
                 nre.Value.Rune = default!;
                 nre.Value.Sub = builtin.append((~nre).Sub0[..0], re.Sub[..(int)(i)].ꓸꓸꓸ);
             }

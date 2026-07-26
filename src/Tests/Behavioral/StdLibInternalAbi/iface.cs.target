@@ -4,7 +4,7 @@ using @unsafe = unsafe_package;
 
 partial class main_package {
 
-[GoType] partial struct ITab {
+[GoType] [GoValueClone("Fun")] partial struct ITab {
     public ж<ΔInterfaceType> Inter;
     public ж<Type> Type;
     public uint32 Hash;

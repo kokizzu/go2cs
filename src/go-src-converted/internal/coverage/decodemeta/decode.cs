@@ -20,7 +20,7 @@ using go.@internal.coverage;
 partial class decodemeta_package {
 
 // See comments in the encodecovmeta package for details on the format.
-[GoType] partial struct CoverageMetaDataDecoder {
+[GoType] [GoValueClone("hdr")] partial struct CoverageMetaDataDecoder {
     internal ж<slicereader.Reader> r;
     internal coverage.MetaSymbolHeader hdr;
     internal ж<stringtab.Reader> strtab;

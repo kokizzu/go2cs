@@ -75,7 +75,7 @@ type CallExprContext struct {
 	// cloneArrayArg appends the strongly-typed `.Clone()` to the indexed element — a POSITIONAL
 	// composite-literal element that reads an ARRAY value out of existing storage (Go copies the
 	// array into the composite's slot; the emitted struct copy would alias its backing — see
-	// exprReadsArrayValueFromStorage). Applied before any interface conversion so an `any`/
+	// exprReadsValueNeedingClone). Applied before any interface conversion so an `any`/
 	// interface slot boxes the clone. Keyed elements clone in convKeyValueExpr instead.
 	cloneArrayArg map[int]bool
 	// deferredDecls hoists a func-literal argument's capture declarations out of the call's

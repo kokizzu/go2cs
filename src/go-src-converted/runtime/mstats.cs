@@ -10,7 +10,7 @@ using @internal.runtime;
 
 partial class runtime_package {
 
-[GoType] partial struct mstats {
+[GoType] [GoValueClone("heapStats", "pause_ns", "pause_end")] partial struct mstats {
     // Statistics about malloc heap.
     internal consistentHeapStats heapStats;
     // Statistics about stacks.
@@ -56,7 +56,7 @@ internal static ref mstats memstats => ref Ꮡmemstats.Value;
 }
 
 // A MemStats records statistics about the memory allocator.
-[GoType] partial struct MemStats {
+[GoType] [GoValueClone("PauseNs", "PauseEnd", "BySize")] partial struct MemStats {
 // General statistics.
 
     // Alloc is bytes of allocated heap objects.
@@ -614,7 +614,7 @@ internal static void add(this ж<sysMemStat> Ꮡs, int64 n) {
 // heapStatsDelta contains deltas of various runtime memory statistics
 // that need to be updated together in order for them to be kept
 // consistent with one another.
-[GoType] partial struct heapStatsDelta {
+[GoType] [GoValueClone("smallAllocCount", "smallFreeCount")] partial struct heapStatsDelta {
     // Memory stats.
     internal int64 committed; // byte delta of memory committed
     internal int64 released; // byte delta of released memory generated
@@ -669,7 +669,7 @@ internal static void add(this ж<sysMemStat> Ꮡs, int64 n) {
 // To write updates to memory stats use the acquire and release
 // methods. To obtain a consistent global snapshot of these statistics,
 // use read.
-[GoType] partial struct consistentHeapStats {
+[GoType] [GoValueClone("stats")] partial struct consistentHeapStats {
     // stats is a ring buffer of heapStatsDelta values.
     // Writers always atomically update the delta at index gen.
     //
@@ -847,7 +847,7 @@ internal static void read(this ж<consistentHeapStats> Ꮡm, ж<heapStatsDelta> 
     m.stats[(nint)(currGen)].merge(Ꮡ(m.stats[prevGen]));
     m.stats[(nint)(prevGen)] = new heapStatsDelta(nil);
     // Finally, copy out the complete delta.
-    @out = m.stats[(nint)(currGen)];
+    @out = m.stats[(nint)(currGen)].ΔClone();
     releasem(mp);
 }
 

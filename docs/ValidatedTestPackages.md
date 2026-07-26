@@ -18,20 +18,25 @@ a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **49 / 215 testable packages validated — 22.8%**
+> ### Phase 4 progress: **54 / 215 testable packages validated — 25.1%**
 >
-> **1,229 matching test verdicts · 43 disclosed** *(updated 2026-07-26 — maintained as part of the
+> **1,387 matching test verdicts · 47 disclosed** *(updated 2026-07-26 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
 | Package | Tests | Disclosed | What it exercises |
 |:--|:--:|:--:|:--|
+| [`bufio`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/bufio) | 80 | 1 | Buffered reader/writer/scanner — fill, rewind, split functions, `io` error propagation. |
 | [`bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/bytes) | 81 | 7 | Byte-slice algorithms; alloc-profile disclosures. |
 | [`cmp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/cmp) | 4 | | Generics with an ordered-type constraint. |
 | [`compress/bzip2`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/compress/bzip2) | 4 | | Bzip2 decompression — bit readers, Huffman trees, the move-to-front decoder. |
 | [`container/heap`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/heap) | 7 | | Heap interface over a slice. |
 | [`container/list`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/list) | 10 | | Doubly-linked list — pointers and receiver methods. |
 | [`container/ring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/ring) | 8 | | Circular linked list — a pointer graph. |
+| [`crypto/sha1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/sha1) | 12 | 1 | SHA-1 — the struct-carrying-arrays value copy `Sum` depends on; binary marshal round-trips. |
+| [`crypto/sha256`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/sha256) | 23 | 1 | SHA-224/256 golden vectors and `cryptotest.TestHash`'s stateful-write matrix. |
+| [`crypto/sha512`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/sha512) | 36 | 1 | SHA-384/512/512-224/512-256 — the four-variant digest state machine. |
+| [`crypto/subtle`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/subtle) | 7 | | Constant-time primitives; word-at-a-time `XORBytes` over the full alignment matrix. |
 | [`encoding/ascii85`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/encoding/ascii85) | 9 | | Ascii85 encode/decode and streaming wrappers. |
 | [`encoding/base32`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/encoding/base32) | 26 | | Base32 round-trips; `io.Pipe` rendezvous over the real channel core. |
 | [`encoding/base64`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/encoding/base64) | 17 | | Base64 round-trips; goroutine + `time.After` timer path. |

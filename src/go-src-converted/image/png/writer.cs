@@ -35,9 +35,9 @@ partial class png_package {
     void Put(ж<EncoderBuffer> _);
 }
 
-[GoType("encoder")] partial struct EncoderBuffer;
+[GoType("encoder")] [GoValueClone("Value")] partial struct EncoderBuffer;
 
-[GoType] public partial struct encoder {
+[GoType] [GoValueClone("header", "footer", "tmp", "cr")] public partial struct encoder {
     internal ж<Encoder> enc;
     internal io.Writer w;
     internal image.Image m;

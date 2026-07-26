@@ -21,7 +21,7 @@ partial class pkgbits_package {
 
 // A PkgDecoder provides methods for decoding a package's Unified IR
 // export data.
-[GoType] partial struct PkgDecoder {
+[GoType] [GoValueClone("elemEndsEnds")] partial struct PkgDecoder {
     // version is the file format version.
     internal uint32 version;
     // sync indicates whether the file uses sync markers.
@@ -102,7 +102,7 @@ public static PkgDecoder NewPkgDecoder(@string pkgPath, @string input) {
     assert(err == default!);
     pr.elemData = input[(int)(pos)..];
     assert(len(pr.elemData) - 8 == (nint)pr.elemEnds[len(pr.elemEnds) - 1]);
-    return pr;
+    return pr.ΔClone();
 }
 
 // NumElems returns the number of elements in section k.

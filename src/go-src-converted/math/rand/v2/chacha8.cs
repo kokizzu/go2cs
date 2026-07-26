@@ -12,7 +12,7 @@ partial class rand_package {
 
 // A ChaCha8 is a ChaCha8-based cryptographically strong
 // random number generator.
-[GoType] partial struct ChaCha8 {
+[GoType] [GoValueClone("state", "readBuf")] partial struct ChaCha8 {
     internal chacha8rand.State state;
     // The last readLen bytes of readBuf are still to be consumed by Read.
     internal array<byte> readBuf = new(8);

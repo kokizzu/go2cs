@@ -15,7 +15,7 @@ partial class flate_package {
     internal uint16 code, len;
 }
 
-[GoType] partial struct huffmanEncoder {
+[GoType] [GoValueClone("bitCount")] partial struct huffmanEncoder {
     internal slice<hcode> codes;
     internal slice<literalNode> freqcache;
     internal array<int32> bitCount = new(17);

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestReadStringAllocs",
+      "class": "alloc-profile",
+      "signature": "Unexpected number of allocations, got ",
+      "reason": "at-most-one AllocsPerRun assert: ReadString returns a Go string built over the reader's buffered bytes, which in the managed model materializes a fresh byte[] for the @string plus the collectSlices/append working state — Go's single allocation is the string body alone, produced by a runtime concatenation the CLR has no equivalent for"
+    }
+  ]
+}

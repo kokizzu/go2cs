@@ -111,7 +111,7 @@ public static @string GoString(this LoadCmd i) {
     return stringName((uint32)i, cmdStrings, true);
 }
 
-[GoType] partial struct Segment32 {
+[GoType] [GoValueClone("Name")] partial struct Segment32 {
     public LoadCmd Cmd;
     public uint32 Len;
     public array<byte> Name = new(16);
@@ -125,7 +125,7 @@ public static @string GoString(this LoadCmd i) {
     public uint32 Flag;
 }
 
-[GoType] partial struct Segment64 {
+[GoType] [GoValueClone("Name")] partial struct Segment64 {
     public LoadCmd Cmd;
     public uint32 Len;
     public array<byte> Name = new(16);
@@ -221,7 +221,7 @@ public const uint32 FlagNoHeapExecution = 0x1000000;
 public const uint32 FlagAppExtensionSafe = 0x2000000;
 
 // A Section32 is a 32-bit Mach-O section header.
-[GoType] partial struct Section32 {
+[GoType] [GoValueClone("Name", "Seg")] partial struct Section32 {
     public array<byte> Name = new(16);
     public array<byte> Seg = new(16);
     public uint32 Addr;
@@ -236,7 +236,7 @@ public const uint32 FlagAppExtensionSafe = 0x2000000;
 }
 
 // A Section64 is a 64-bit Mach-O section header.
-[GoType] partial struct Section64 {
+[GoType] [GoValueClone("Name", "Seg")] partial struct Section64 {
     public array<byte> Name = new(16);
     public array<byte> Seg = new(16);
     public uint64 Addr;

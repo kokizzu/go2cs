@@ -13,7 +13,7 @@ partial class gob_package {
 // An Encoder manages the transmission of type and data information to the
 // other side of a connection.  It is safe for concurrent use by multiple
 // goroutines.
-[GoType] partial struct Encoder {
+[GoType] [GoValueClone("byteBuf")] partial struct Encoder {
     internal sync.Mutex mutex;              // each item must be sent atomically
     internal slice<io.Writer> w;        // where to send the data
     internal map<reflectꓸType, typeId> sent; // which types we've already sent

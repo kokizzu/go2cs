@@ -354,7 +354,7 @@ private static readonly @string tlsInternalErrorSessionˢ = "tls: internal error
             return (default!, errΔ1);
         }
     }
-    var key = ticketKeys[0];
+    var key = ticketKeys[0].ΔClone();
     var (block, err) = aes.NewCipher(key.aesKey[..]);
     if (err != default!) {
         return (default!, errors.New("tls: failed to create cipher while encrypting ticket: "u8 + err.Error()));
@@ -394,7 +394,9 @@ public static (ж<SessionState>, error) DecryptTicket(this ж<Config> Ꮡc, slic
     var ciphertext = encrypted[(int)(aes.ΔBlockSize)..(int)(len(encrypted) - (nint)sha256.ΔSize)];
     var authenticated = encrypted[..(int)(len(encrypted) - (nint)sha256.ΔSize)];
     var macBytes = encrypted[(int)(len(encrypted) - (nint)sha256.ΔSize)..];
-    foreach (var (_, key) in ticketKeys) {
+    foreach (var (_, vᴛ1) in ticketKeys) {
+        var key = vᴛ1.ΔClone();
+
         var mac = hmac.New(sha256.New, key.hmacKey[..]);
         mac.Write(authenticated);
         var expected = mac.Sum(default!);

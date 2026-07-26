@@ -19,7 +19,7 @@ internal static map<@string, metricData> metrics;
 internal static slice<float64> sizeClassBuckets;
 internal static slice<float64> timeHistBuckets;
 
-[GoType] partial struct metricData {
+[GoType] [GoValueClone("deps")] partial struct metricData {
     // deps is the set of runtime statistics that this metric
     // depends on. Before compute is called, the statAggregate
     // which will be passed must ensure() these dependencies.
@@ -493,7 +493,7 @@ internal static void godebug_registerMetric(@string name, Func<uint64> read) {
         @throw("runtime: unexpected metric registration for "u8 + name);
     }
     d.compute = (ж<statAggregate> p1, ж<metricValue> p2) => new metricReader(read).compute(p1, p2);
-    metrics[name] = d;
+    metrics[name] = d.ΔClone();
     metricsUnlock();
 }
 
@@ -693,7 +693,7 @@ internal static float64 nsToSec(int64 ns) {
 // It contains multiple aggregates of runtime statistics, as well
 // as a set of these aggregates that it has populated. The aggregates
 // are populated lazily by its ensure method.
-[GoType] partial struct statAggregate {
+[GoType] [GoValueClone("ensured")] partial struct statAggregate {
     internal statDepSet ensured;
     internal heapStatsAggregate heapStats;
     internal sysStatsAggregate sysStats;

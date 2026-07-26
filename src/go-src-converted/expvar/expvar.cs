@@ -404,7 +404,7 @@ internal static any cmdline() {
 internal static any memstats() {
     var stats = @new<Δruntime.MemStats>();
     Δruntime.ReadMemStats(stats);
-    return stats.Value;
+    return stats.Value.ΔClone();
 }
 
 [GoInit] internal static void init() {

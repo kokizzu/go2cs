@@ -363,7 +363,7 @@ internal static bool notSpace(rune r) {
 // readRune is a structure to enable reading UTF-8 encoded code points
 // from an io.Reader. It is used if the Reader given to the scanner does
 // not already implement io.RuneScanner.
-[GoType] partial struct readRune {
+[GoType] [GoValueClone("buf", "pendBuf")] partial struct readRune {
     internal Δio.Reader reader;
     internal array<byte> buf = new(utf8.UTFMax); // used only inside ReadRune
     internal nint pending;              // number of bytes in pendBuf; only >0 for bad UTF-8

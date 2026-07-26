@@ -104,8 +104,9 @@ internal static ж<defaultHandler> newDefaultHandler(Func<uintptr, slice<byte>, 
 // write it with the default log.Logger.
 // Let the log.Logger handle time and file/line.
 internal static error Handle(this ж<defaultHandler> Ꮡh, context.Context ctx, Record r) => func((defer, recover) => {
-    ref var h = ref Ꮡh.Value;
+    r = r.ΔClone();
 
+    ref var h = ref Ꮡh.Value;
     var buf = buffer.New();
     buf.WriteString(r.Level.String());
     buf.WriteByte((rune)' ');
@@ -261,8 +262,9 @@ internal static ж<commonHandler> withAttrs(this ж<commonHandler> Ꮡh, slice<A
 // handle is the internal implementation of Handler.Handle
 // used by TextHandler and JSONHandler.
 internal static error handle(this ж<commonHandler> Ꮡh, Record r) => func((defer, recover) => {
-    ref var h = ref Ꮡh.Value;
+    r = r.ΔClone();
 
+    ref var h = ref Ꮡh.Value;
     ref var state = ref heap<handleState>(out var Ꮡstate);
     state = Ꮡh.newHandleState(buffer.New(), true, ""u8);
     defer(Ꮡstate.free);
@@ -318,8 +320,9 @@ internal static error handle(this ж<commonHandler> Ꮡh, Record r) => func((def
 });
 
 internal static void appendNonBuiltIns(this ж<handleState> Ꮡs, Record r) {
-    ref var s = ref Ꮡs.Value;
+    r = r.ΔClone();
 
+    ref var s = ref Ꮡs.Value;
     // preformatted Attrs
     {
         var pfa = s.h.Value.preformattedAttrs; if (len(pfa) > 0) {

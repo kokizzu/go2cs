@@ -43,7 +43,7 @@ public static error ErrChecksum = errors.New("zlib: invalid checksum"u8);
 public static error ErrDictionary = errors.New("zlib: invalid dictionary"u8);
 public static error ErrHeader = errors.New("zlib: invalid header"u8);
 
-[GoType] partial struct reader {
+[GoType] [GoValueClone("scratch")] partial struct reader {
     internal flate.Reader r;
     internal io.ReadCloser decompressor;
     internal hash.Hash32 digest;

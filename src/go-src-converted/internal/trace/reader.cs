@@ -84,7 +84,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
                 // XXX do we have to emit an EventSync when the trace is done?
                 (e, err) = (new ΔEvent(nil), errΔ1); return;
             }
-            (e, err) = (evΔ1, default!); return;
+            (e, err) = (evΔ1.ΔClone(), default!); return;
         }
         // Go 1.22+ trace parsing algorithm.
         //
@@ -119,7 +119,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
         // Consume any events in the ordering first.
         {
             var (evΔ2, okΔ1) = r.order.Next(); if (okΔ1) {
-                (e, err) = (evΔ2, default!); return;
+                (e, err) = (evΔ2.ΔClone(), default!); return;
             }
         }
         // Check if we need to refresh the generation.
@@ -193,7 +193,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
             if (len(r.frontier) == 0 || r.cpuSamples[0].time < (~r.frontier[0]).ev.time) {
                 var eΔ1 = r.cpuSamples[0].asEvent((~r.gen).evTable);
                 r.cpuSamples = r.cpuSamples[1..];
-                (e, err) = (eΔ1, default!); return;
+                (e, err) = (eΔ1.ΔClone(), default!); return;
             }
         }
         // Try to advance the head of the frontier, which should have the minimum timestamp.
@@ -234,7 +234,7 @@ public static (ΔEvent e, error err) ReadEvent(this ж<Reader> Ꮡr) {
         if (!ok) {
             throw panic("invariant violation: advance successful, but queue is empty");
         }
-        (e, err) = (ev, default!);
+        (e, err) = (ev.ΔClone(), default!);
     });
     return (e, err);
 }

@@ -192,7 +192,7 @@ internal static (syscall.SockaddrInet4, error) ipToSockaddrInet4(IP ip, nint por
     }
     var sa = new syscall.SockaddrInet4(Port: port);
     copy(sa.Addr[..], ip4);
-    return (sa, default!);
+    return (sa.ΔClone(), default!);
 }
 
 internal static (syscall.SockaddrInet6, error) ipToSockaddrInet6(IP ip, nint port, @string zone) {
@@ -217,7 +217,7 @@ internal static (syscall.SockaddrInet6, error) ipToSockaddrInet6(IP ip, nint por
     }
     var sa = new syscall.SockaddrInet6(Port: port, ZoneId: (uint32)zoneCache.index(zone));
     copy(sa.Addr[..], ip6);
-    return (sa, default!);
+    return (sa.ΔClone(), default!);
 }
 
 // ipToSockaddr should be an internal detail,
@@ -264,7 +264,7 @@ internal static (syscall.SockaddrInet4, error) addrPortToSockaddrInet4(netip.Add
         Addr: addr.As4(),
         Port: (nint)ap.Port()
     );
-    return (sa, default!);
+    return (sa.ΔClone(), default!);
 }
 
 internal static (syscall.SockaddrInet6, error) addrPortToSockaddrInet6(netip.AddrPort ap) {
@@ -283,7 +283,7 @@ internal static (syscall.SockaddrInet6, error) addrPortToSockaddrInet6(netip.Add
         Port: (nint)ap.Port(),
         ZoneId: (uint32)zoneCache.index(addr.Zone())
     );
-    return (sa, default!);
+    return (sa.ΔClone(), default!);
 }
 
 } // end net_package

@@ -13,7 +13,7 @@ using unicode = unicode_package;
 partial class syntax_package {
 
 // A Regexp is a node in a regular expression syntax tree.
-[GoType] partial struct Regexp {
+[GoType] [GoValueClone("Sub0", "Rune0")] partial struct Regexp {
     public Op Op; // operator
     public Flags Flags;
     public slice<ж<Regexp>> Sub; // subexpressions, if any

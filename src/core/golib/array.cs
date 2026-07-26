@@ -227,13 +227,33 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
         // unboxing back to T (recursing through deeper nestings). The typeof test is a JIT-time
         // constant, so non-nested element types keep the single shallow copy with no per-element
         // work.
-        if (typeof(IArray).IsAssignableFrom(typeof(T)))
+        //
+        // A STRUCT element carrying array fields (IGoValueClone — see GoValueCloneAttribute) has
+        // exactly the same problem one level down: Go's `[2]digest` copy copies both digests'
+        // arrays inline, while the shallow element copy shares their backing. It clones through
+        // the same ICloneable surface.
+        if (typeof(IArray).IsAssignableFrom(typeof(T)) || typeof(IGoValueClone).IsAssignableFrom(typeof(T)))
         {
             for (int i = 0; i < copy.Length; i++)
                 copy[i] = (T)((ICloneable)copy[i]!).Clone();
         }
 
         return new array<T>(copy);
+    }
+
+    /// <summary>
+    /// Go by-value copy under the UNIFORM member name generated code uses
+    /// (<c>go2cs.Symbols.ValueCloneMethod</c>) — an alias of <see cref="Clone"/>.
+    /// </summary>
+    /// <remarks>
+    /// A generated struct clone (see <see cref="GoValueCloneAttribute"/>) copies each of its
+    /// clone-needing fields with ONE call form. A nested struct field declares this name itself; the
+    /// array kinds — this type and the generated named-array / array-view wrappers — alias it here so
+    /// the generated body needs no per-field branch. Copy SITES keep the public <c>Clone()</c>.
+    /// </remarks>
+    public array<T> ΔClone()
+    {
+        return Clone();
     }
 
     public IEnumerator<(nint, T)> GetEnumerator()

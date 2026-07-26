@@ -17,7 +17,7 @@ internal static readonly UntypedInt maxNCodes = 256;
 internal static readonly UntypedInt lutSize = 8;
 
 // huffman is a Huffman decoder, specified in section C.
-[GoType] partial struct huffman {
+[GoType] [GoValueClone("lut", "vals", "minCodes", "maxCodes", "valsIndices")] partial struct huffman {
     // length is the number of codes in the tree.
     internal int32 nCodes;
     // lut is the look-up table for the next lutSize bits in the bit-stream.

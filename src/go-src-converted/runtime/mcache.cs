@@ -17,7 +17,7 @@ partial class runtime_package {
 //
 // mcaches are allocated from non-GC'd memory, so any heap pointers
 // must be specially handled.
-[GoType] partial struct mcache {
+[GoType] [GoValueClone("alloc", "stackcache")] partial struct mcache {
     internal sys.NotInHeap _;
     // The following members are accessed on every malloc,
     // so they are grouped here for better caching.

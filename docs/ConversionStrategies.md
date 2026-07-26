@@ -567,10 +567,29 @@ var data = ints.Clone();
 foreach (var (_, vᴛ1) in m) { var row = vᴛ1.Clone(); row[0] = 9; }
 ```
 
+A **struct** whose field is a fixed-size array carries the same shared `T[]` into a plain struct copy,
+so it clones at exactly the same sites. The converter stamps the struct with the fields that need the
+deep copy and go2cs-gen generates it, under a `Δ`-marked name so it cannot shadow a Go type's own
+`Clone` method. crypto/sha256's `Sum` is the real case — it copies the digest so the caller can keep
+writing, then destroys the copy finalizing it:
+
+```go
+d0 := *d                 // sha256.go — Go copies the [8]uint32 state and [64]byte block INLINE
+hash := d0.checkSum()
+```
+```csharp
+[GoType] [GoValueClone("h", "x")] partial struct digest { internal array<uint32> h = new(8); … }
+
+ref var d0 = ref heap<digest>(out var Ꮡd0);
+d0 = d.ΔClone();         // sha256.cs — without the clone, checkSum destroyed the CALLER's state
+var hash = Ꮡd0.checkSum();
+```
+
 **Full detail:** [Reference → Slices and Arrays](ConversionStrategies-Reference.md#slices-and-arrays) —
 named slice/array wrappers, pointer-to-array slicing, named-slice pointer reinterpretation, structural
-composite rendering, array value-copy cloning (deep for nested arrays), and slice-aliasing/write-through
-semantics.
+composite rendering, array value-copy cloning (deep for nested arrays), the
+[struct-carrying-arrays clone](ConversionStrategies-Reference.md#a-struct-carrying-array-fields-copies-through-its-generated-δclone),
+and slice-aliasing/write-through semantics.
 
 ---
 

@@ -38,12 +38,12 @@ internal static macGeneric newMACGeneric(ж<array<byte>> Ꮡkey) {
     ref var m = ref heap<macGeneric>(out var Ꮡm);
     m = new macGeneric(nil);
     initialize(Ꮡkey, Ꮡm.of(macGeneric.ᏑmacState));
-    return m;
+    return m.ΔClone();
 }
 
 // macState holds numbers in saturated 64-bit little-endian limbs. That is,
 // the value of [x0, x1, x2] is x[0] + x[1] * 2⁶⁴ + x[2] * 2¹²⁸.
-[GoType] partial struct macState {
+[GoType] [GoValueClone("h", "r", "s")] partial struct macState {
     // h is the main accumulator. It is to be interpreted modulo 2¹³⁰ - 5, but
     // can grow larger during and after rounds. It must, however, remain below
     // 2 * (2¹³⁰ - 5).
@@ -53,7 +53,7 @@ internal static macGeneric newMACGeneric(ж<array<byte>> Ꮡkey) {
     internal array<uint64> s = new(2);
 }
 
-[GoType] partial struct macGeneric {
+[GoType] [GoValueClone("buffer")] partial struct macGeneric {
     internal partial ref macState macState { get; }
     internal array<byte> buffer = new(TagSize);
     internal nint offset;
@@ -92,7 +92,7 @@ internal static (nint, error) Write(this ж<macGeneric> Ꮡh, slice<byte> p) {
 // calls to Sum, even if no Write is allowed after Sum.
 [GoRecv] internal static void Sum(this ref macGeneric h, ж<array<byte>> Ꮡout) {
     ref var state = ref heap<macState>(out var Ꮡstate);
-    state = h.macState;
+    state = h.macState.ΔClone();
     if (h.offset > 0) {
         updateGeneric(Ꮡstate, h.buffer[..(int)(h.offset)]);
     }

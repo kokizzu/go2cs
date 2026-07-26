@@ -373,7 +373,7 @@ internal static slice<byte> colonSpace = slice<byte>(": "u8);
 }
 
 // A response represents the server side of an HTTP response.
-[GoType] partial struct response {
+[GoType] [GoValueClone("dateBuf", "clenBuf", "statusBuf")] partial struct response {
     internal ж<conn> conn;
     internal ж<Request> req; // request for this response
     internal io.ReadCloser reqBody;
@@ -600,7 +600,7 @@ internal static ж<conn> newConn(this ж<Server> Ꮡsrv, net.Conn rwc) {
 // read sizes) with support for selectively keeping an io.Reader.Read
 // call blocked in a background goroutine to wait for activity and
 // trigger a CloseNotifier channel.
-[GoType] partial struct connReader {
+[GoType] [GoValueClone("byteBuf")] partial struct connReader {
     internal ж<conn> conn;
     internal sync.Mutex mu; // guards following
     internal bool hasByte;

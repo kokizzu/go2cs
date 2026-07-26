@@ -15,7 +15,7 @@ partial class fiat_package {
 // P224Element is an integer modulo 2^224 - 2^96 + 1.
 //
 // The zero value is a valid zero element.
-[GoType] partial struct P224Element {
+[GoType] [GoValueClone("x")] partial struct P224Element {
     // Values are represented internally always in the Montgomery domain, and
     // converted in Bytes and SetBytes.
     internal p224MontgomeryDomainFieldElement x;

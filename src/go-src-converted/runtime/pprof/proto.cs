@@ -27,7 +27,7 @@ internal static void lostProfileEvent() {
 
 // A profileBuilder writes a profile incrementally from a
 // stream of profile samples delivered by the runtime.
-[GoType] partial struct profileBuilder {
+[GoType] [GoValueClone("pb")] partial struct profileBuilder {
     internal time.Time start;
     internal time.Time end;
     internal bool havePeriod;

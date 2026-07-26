@@ -14,7 +14,7 @@ using encoding;
 partial class pe_package {
 
 // SectionHeader32 represents real PE COFF section header.
-[GoType] partial struct SectionHeader32 {
+[GoType] [GoValueClone("Name")] partial struct SectionHeader32 {
     public array<uint8> Name = new(8);
     public uint32 VirtualSize;
     public uint32 VirtualAddress;

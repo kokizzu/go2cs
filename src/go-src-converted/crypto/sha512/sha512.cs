@@ -68,7 +68,7 @@ internal static readonly UntypedInt init6_384 = 0xdb0c2e0d64f98fa7;
 internal static readonly UntypedInt init7_384 = 0x47b5481dbefa4fa4;
 
 // digest represents the partial evaluation of a checksum.
-[GoType] partial struct digest {
+[GoType] [GoValueClone("h", "x")] partial struct digest {
     internal array<uint64> h = new(8);
     internal array<byte> x = new(chunk);
     internal nint nx;
@@ -304,7 +304,7 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
     }
     // Make a copy of d so that caller can keep writing and summing.
     var d0 = @new<digest>();
-    d0.Value = d;
+    d0.Value = d.ΔClone();
     var hash = d0.checkSum();
     var exprᴛ1 = (~d0).function;
     if (exprᴛ1 == crypto.SHA384) {

@@ -2,13 +2,13 @@ namespace go.CrossPackageArrayZeroValue;
 
 partial class bufpkg_package {
 
-[GoType] partial struct State {
+[GoType] [GoValueClone("Buf", "Seed")] partial struct State {
     public array<uint64> Buf = new(4);
     public array<uint64> Seed = new(2);
     public uint32 N;
 }
 
-[GoType] partial struct Nested {
+[GoType] [GoValueClone("Inner")] partial struct Nested {
     public State Inner;
     public @string Label;
 }

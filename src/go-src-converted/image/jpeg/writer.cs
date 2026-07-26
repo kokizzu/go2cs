@@ -82,7 +82,7 @@ internal static readonly huffIndex huffIndexChrominanceAC = 3;
 internal static readonly huffIndex nHuffIndex = 4;
 
 // huffmanSpec specifies a Huffman encoding.
-[GoType] partial struct huffmanSpec {
+[GoType] [GoValueClone("count")] partial struct huffmanSpec {
     // count[i] is the number of codes of length i bits.
     internal array<byte> count = new(16);
     // value[i] is the decoded value of the i'th codeword.
@@ -161,6 +161,8 @@ internal static array<huffmanSpec> theHuffmanSpec = new huffmanSpec[]{
 [GoType("[]uint32")] partial struct huffmanLUT;
 
 [GoRecv] internal static void init(this ref huffmanLUT h, huffmanSpec s) {
+    s = s.ΔClone();
+
     nint maxValue = 0;
     foreach (var (_, v) in s.value) {
         if ((nint)v > maxValue) {
@@ -186,7 +188,9 @@ internal static ж<array<huffmanLUT>> ᏑtheHuffmanLUT = new(new array<huffmanLU
 internal static ref array<huffmanLUT> theHuffmanLUT => ref ᏑtheHuffmanLUT.Value;
 
 [GoInit] internal static void initΔ1() {
-    foreach (var (i, s) in theHuffmanSpec) {
+    foreach (var (i, vᴛ1) in theHuffmanSpec) {
+        var s = vᴛ1.ΔClone();
+
         theHuffmanLUT[i].init(s);
     }
 }
@@ -200,7 +204,7 @@ internal static ref array<huffmanLUT> theHuffmanLUT => ref ᏑtheHuffmanLUT.Valu
 }
 
 // encoder encodes an image to the JPEG format.
-[GoType] partial struct encoder {
+[GoType] [GoValueClone("buf", "quant")] partial struct encoder {
     // w is the writer to write to. err is the first error encountered during
     // writing. All attempted writes after the first error become no-ops.
     internal writer w;
@@ -332,11 +336,15 @@ internal static ref array<huffmanLUT> theHuffmanLUT => ref ᏑtheHuffmanLUT.Valu
         // Drop the Chrominance tables.
         specs = specs[..2];
     }
-    foreach (var (_, s) in specs) {
+    foreach (var (_, vᴛ1) in specs) {
+        var s = vᴛ1.ΔClone();
+
         markerlen += 1 + 16 + len(s.value);
     }
     e.writeMarkerHeader(dhtMarker, markerlen);
-    foreach (var (i, s) in specs) {
+    foreach (var (i, vᴛ2) in specs) {
+        var s = vᴛ2.ΔClone();
+
         e.writeByte("\x00\x10\x01\x11"u8[(int)(i)]);
         e.write(s.count[..]);
         e.write(s.value);

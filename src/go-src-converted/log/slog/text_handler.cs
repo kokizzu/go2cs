@@ -97,6 +97,8 @@ public static ж<TextHandler> NewTextHandler(io.Writer w, ж<HandlerOptions> Ꮡ
 // Each call to Handle results in a single serialized call to
 // io.Writer.Write.
 [GoRecv] public static error Handle(this ref TextHandler h, context.Context _, Record r) {
+    r = r.ΔClone();
+
     return h.commonHandler.handle(r);
 }
 

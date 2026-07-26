@@ -103,8 +103,8 @@ func (v *Visitor) convSendValueExpr(sendStmt *ast.SendStmt) string {
 	// existing-storage array value clones here. The RECEIVE side needs no twin: a buffered
 	// element is dequeued exactly once, so the received struct copy is already unaliased.
 	// Applied before the interface wrap below so an interface-element channel boxes the clone.
-	if v.exprReadsArrayValueFromStorage(sendStmt.Value) {
-		sendExpr = appendArrayValueClone(sendExpr)
+	if v.exprReadsValueNeedingClone(sendStmt.Value) {
+		sendExpr = appendValueClone(sendExpr, v.getExprType(sendStmt.Value))
 	}
 
 	if elemIsNonEmptyIface {

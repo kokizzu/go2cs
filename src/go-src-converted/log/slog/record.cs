@@ -18,7 +18,7 @@ internal static readonly UntypedInt nAttrsInline = 5;
 // Do not modify a Record after handing out a copy to it.
 // Call [NewRecord] to create a new Record.
 // Use [Record.Clone] to create a copy with no shared state.
-[GoType] partial struct Record {
+[GoType] [GoValueClone("front")] partial struct Record {
     // The time at which the output method (Log, Info, etc.) was called.
     public time.Time Time;
     // The log message.
@@ -63,19 +63,25 @@ public static Record NewRecord(time.Time t, ΔLevel level, @string msg, uintptr 
 // The original record and the clone can both be modified
 // without interfering with each other.
 public static Record Clone(this Record r) {
+    r = r.ΔClone();
+
     r.back = slices.Clip<slice<Attr>, Attr>(r.back);
     // prevent append from mutating shared array
-    return r;
+    return r.ΔClone();
 }
 
 // NumAttrs returns the number of attributes in the [Record].
 public static nint NumAttrs(this Record r) {
+    r = r.ΔClone();
+
     return r.nFront + len(r.back);
 }
 
 // Attrs calls f on each Attr in the [Record].
 // Iteration stops if f returns false.
 public static void Attrs(this Record r, Func<Attr, bool> f) {
+    r = r.ΔClone();
+
     for (nint i = 0; i < r.nFront; i++) {
         if (!f(r.front[i])) {
             return;
@@ -231,6 +237,8 @@ private static readonly @string lineˢ = "line"u8;
 // or if the location is unavailable, it returns a non-nil *Source
 // with zero fields.
 internal static ж<Source> source(this Record r) {
+    r = r.ΔClone();
+
     var fs = runtime.CallersFrames(new uintptr[]{r.PC}.slice());
     var (f, _) = fs.Next();
     return Ꮡ(new Source(

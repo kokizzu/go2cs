@@ -372,6 +372,8 @@ internal static Func<map<@string, any>, @string> inGroup(@string name, Func<map<
 }
 
 [GoRecv] internal static error Handle(this ref wrapper h, context.Context ctx, slog.Record r) {
+    r = r.ΔClone();
+
     h.mod(Ꮡ(r));
     return h.Handler.Handle(ctx, r);
 }

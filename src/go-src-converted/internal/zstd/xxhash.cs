@@ -17,7 +17,7 @@ internal static readonly UntypedInt xxhPrime64c4 = 0x85ebca77c2b2ae63;
 internal static readonly UntypedInt xxhPrime64c5 = 0x27d4eb2f165667c5;
 
 // xxhash64 is the state of a xxHash-64 checksum.
-[GoType] partial struct xxhash64 {
+[GoType] [GoValueClone("v", "buf")] partial struct xxhash64 {
     internal uint64 len;    // total length hashed
     internal array<uint64> v = new(4); // accumulators
     internal array<byte> buf = new(32); // buffer

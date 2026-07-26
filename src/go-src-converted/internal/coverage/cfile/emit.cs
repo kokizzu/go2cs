@@ -178,7 +178,9 @@ internal static (slice<rtcov.CovMetaBlob>, error) prepareForMetaEmit() {
     if ((~s).debug) {
         fmt.Fprintf(new os.FileжWriter(os.Stderr), "=+= GOCOVERDIR is %s\n"u8, os.Getenv(gocoverdirˢ));
         fmt.Fprintf(new os.FileжWriter(os.Stderr), "=+= contents of covmetalist:\n"u8);
-        foreach (var (k, b) in ml) {
+        foreach (var (k, vᴛ1) in ml) {
+            var b = vᴛ1.ΔClone();
+
             fmt.Fprintf(new os.FileжWriter(os.Stderr), "=+= slot: %d path: %s "u8, k, b.PkgPath);
             if (b.PkgID != -1) {
                 fmt.Fprintf(new os.FileжWriter(os.Stderr), " hcid: %d"u8, b.PkgID);
@@ -194,7 +196,9 @@ internal static (slice<rtcov.CovMetaBlob>, error) prepareForMetaEmit() {
     }
     var h = md5.New();
     var tlen = (uint64)@unsafe.Sizeof(new coverage.MetaFileHeader(nil));
-    foreach (var (_, entry) in ml) {
+    foreach (var (_, vᴛ2) in ml) {
+        var entry = vᴛ2.ΔClone();
+
         {
             var (_, err) = h.Write(entry.Hash[..]); if (err != default!) {
                 return (default!, err);
@@ -451,7 +455,9 @@ internal static error writeMetaData(io.Writer w, slice<rtcov.CovMetaBlob> metali
 
     var mfw = encodemeta.NewCoverageMetaFileWriter(ioWriterˢ, w);
     slice<slice<byte>> blobs = default!;
-    foreach (var (_, e) in metalist) {
+    foreach (var (_, vᴛ1) in metalist) {
+        var e = vᴛ1.ΔClone();
+
         var sd = @unsafe.Slice(e.P, (nint)e.Len);
         blobs = append(blobs, sd);
     }
@@ -603,7 +609,9 @@ internal static void reportErrorInHardcodedList(int32 slot, int32 pkgID, uint32 
     println((@string)"[see the comment on the 'rtPkgs' var in "u8);
     println((@string)" <goroot>/src/internal/coverage/pkid.go]"u8);
     println((@string)"registered list:"u8);
-    foreach (var (k, b) in metaList) {
+    foreach (var (k, vᴛ1) in metaList) {
+        var b = vᴛ1.ΔClone();
+
         print((@string)"slot: "u8, k, (@string)" path='"u8, b.PkgPath, (@string)"' "u8);
         if (b.PkgID != -1) {
             print((@string)" hard-coded id: "u8, b.PkgID);

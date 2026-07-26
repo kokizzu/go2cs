@@ -60,7 +60,7 @@ public static readonly UntypedInt SeedSize = /* 32 + 32 */ 64;
 
 // A DecapsulationKey is the secret key used to decapsulate a shared key from a
 // ciphertext. It includes various precomputed values.
-[GoType] partial struct DecapsulationKey {
+[GoType] [GoValueClone("dk")] partial struct DecapsulationKey {
     internal array<byte> dk = new(DecapsulationKeySize);
     internal partial ref encryptionKey encryptionKey { get; }
     internal partial ref decryptionKey decryptionKey { get; }
@@ -83,13 +83,13 @@ public static readonly UntypedInt SeedSize = /* 32 + 32 */ 64;
 }
 
 // encryptionKey is the parsed and expanded form of a PKE encryption key.
-[GoType] partial struct encryptionKey {
+[GoType] [GoValueClone("t", "A")] partial struct encryptionKey {
     internal array<nttElement> t = new(k); // ByteDecode₁₂(ek[:384k])
     public array<nttElement> A = new(k * k); // A[i*k+j] = sampleNTT(ρ, j, i)
 }
 
 // decryptionKey is the parsed and expanded form of a PKE decryption key.
-[GoType] partial struct decryptionKey {
+[GoType] [GoValueClone("s")] partial struct decryptionKey {
     internal array<nttElement> s = new(k); // ByteDecode₁₂(dk[:decryptionKeySize])
 }
 

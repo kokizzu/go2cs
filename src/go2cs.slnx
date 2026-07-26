@@ -506,6 +506,7 @@
     <Project Path="Tests/Behavioral/StringPassByValue/StringPassByValue.csproj" />
     <Project Path="Tests/Behavioral/StringSliceAndUnsignedConst/StringSliceAndUnsignedConst.csproj" />
     <Project Path="Tests/Behavioral/StringZeroValueConcat/StringZeroValueConcat.csproj" />
+    <Project Path="Tests/Behavioral/StructArrayFieldValueCopy/StructArrayFieldValueCopy.csproj" />
     <Project Path="Tests/Behavioral/StructuralAssertFailSoftMiss/StructuralAssertFailSoftMiss.csproj" />
     <Project Path="Tests/Behavioral/StructFieldNamedOther/StructFieldNamedOther.csproj" />
     <Project Path="Tests/Behavioral/StructPointerPromotionWithInterface/StructPointerPromotionWithInterface.csproj" />

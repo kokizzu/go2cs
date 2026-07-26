@@ -30,7 +30,7 @@ partial struct timedEventArgs;
 
 // baseEvent is the basic unprocessed event. This serves as a common
 // fundamental data structure across.
-[GoType] partial struct baseEvent {
+[GoType] [GoValueClone("args")] partial struct baseEvent {
     internal @event.Type typ;
     internal ΔTime time;
     internal timedEventArgs args;
@@ -264,7 +264,7 @@ internal static ΔEvent asEvent(this cpuSample s, ж<evTable> Ꮡtable) {
         )
     );
     e.@base.args[0] = (uint64)s.stack;
-    return e;
+    return e.ΔClone();
 }
 
 // stack represents a goroutine stack sample.

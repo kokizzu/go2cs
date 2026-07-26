@@ -54,7 +54,7 @@ internal static slice<compressionLevel> levels = new compressionLevel[]{
     new(9, 32, 258, 258, 4096, skipNever)
 }.slice();
 
-[GoType] partial struct compressor {
+[GoType] [GoValueClone("hashHead", "hashPrev", "hashMatch")] partial struct compressor {
     internal partial ref compressionLevel compressionLevel { get; }
     internal ж<huffmanBitWriter> w;
     internal Action<slice<byte>, slice<uint32>> bulkHasher;
@@ -696,7 +696,7 @@ internal static error errWriterClosed = errors.New("flate: closed writer"u8);
 
 // A Writer takes data written to it and writes the compressed
 // form of that data to an underlying writer (see [NewWriter]).
-[GoType] partial struct Writer {
+[GoType] [GoValueClone("d")] partial struct Writer {
     internal compressor d;
     internal slice<byte> dict;
 }

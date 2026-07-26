@@ -4,17 +4,17 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-[GoType] partial struct wbBuf {
+[GoType] [GoValueClone("buf")] partial struct wbBuf {
     internal uintptr next;
     internal array<uintptr> buf = new(4);
 }
 
-[GoType] partial struct pstate {
+[GoType] [GoValueClone("wbBuf")] partial struct pstate {
     internal nint id;
     internal wbBuf wbBuf;
 }
 
-[GoType] partial struct cacheT {
+[GoType] [GoValueClone("entries")] partial struct cacheT {
     internal array<array<nint>> entries = new(2, () => new(3));
 }
 

@@ -30,6 +30,7 @@ public class TypeGenerator : ISourceGenerator
     private const string Namespace = "go";
     private const string AttributeName = "GoType";
     private const string FullAttributeName = $"{Namespace}.{AttributeName}Attribute";
+    private const string ValueCloneAttributeName = "GoValueClone";
 
     public void Initialize(GeneratorInitializationContext context)
     {
@@ -78,6 +79,10 @@ public class TypeGenerator : ISourceGenerator
 
             string[] usingStatements = GetFullyQualifiedUsingStatements(syntaxTree, semanticModel);
 
+            // Fields the converter marked as needing a DEEP copy on a Go by-value struct copy
+            // (see GoValueCloneAttribute / StructTypeTemplate.ValueCloneImplementation).
+            string[] valueCloneFields = GetValueCloneFields(targetSyntax);
+
             foreach (AttributeSyntax attribute in attributes)
             {
                 // Get the attribute's argument values
@@ -109,6 +114,7 @@ public class TypeGenerator : ISourceGenerator
                             FullyQualifiedStructType = fullyQualifiedIdentifier,
                             StructMembers = structDeclaration.GetStructMembers(context.Compilation, true),
                             HasEqualityOperators = hasEqualityOperators,
+                            ValueCloneFields = valueCloneFields,
                             UsingStatements = usingStatements
                         }
                         .Generate();
@@ -286,6 +292,7 @@ public class TypeGenerator : ISourceGenerator
                             TypeClass = typeDefinition,
                             ForwardedStructMembers = forwardedMembers,
                             UnderlyingArrayElementType = underlyingArrayElem,
+                            ValueClone = valueCloneFields.Length > 0,
                             UsingStatements = usingStatements
                         }
                         .Generate();
@@ -377,6 +384,31 @@ public class TypeGenerator : ISourceGenerator
                 context.AddSource(GetUniqueHintName(emittedHintNames, GetValidFileName($"{packageNamespace}.{packageClassName}.{identifier}.g.cs")), generatedSource);
             }
         }
+    }
+
+    // Reads the field names out of the converter's [GoValueClone("f1", "f2")] stamp — the fields a
+    // Go by-value copy of this struct must DEEP-copy (see GoValueCloneAttribute). Matched by syntax
+    // name, like every other attribute this generator reads; the converter emits it unqualified.
+    private static string[] GetValueCloneFields(BaseTypeDeclarationSyntax targetSyntax)
+    {
+        foreach (AttributeListSyntax attributeList in targetSyntax.AttributeLists)
+        {
+            foreach (AttributeSyntax attribute in attributeList.Attributes)
+            {
+                string attributeName = GetSimpleName(attribute.Name.ToString());
+
+                if (attributeName != ValueCloneAttributeName && attributeName != $"{ValueCloneAttributeName}Attribute")
+                    continue;
+
+                return attribute.GetArgumentValues()
+                    .Select(argument => argument.value.Trim())
+                    .Where(value => value.Length > 2 && value[0] == '"' && value[value.Length - 1] == '"')
+                    .Select(value => value[1..^1])
+                    .ToArray();
+            }
+        }
+
+        return [];
     }
 
     private static (string keyTypeName, string valueTypeName) SplitMapTypes(string typeDefinition)

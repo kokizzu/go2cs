@@ -35,6 +35,13 @@ internal class InheritedTypeTemplate : TemplateBase
     // and indexing bind IArray). Null for every other inherited kind.
     public string? UnderlyingArrayElementType = null;
 
+    // Set when the converter stamped [GoValueClone("Value")] on this wrapper — a defined type whose
+    // underlying is a STRUCT carrying fixed-size ARRAY fields (`type IpMaskString IpAddressString`,
+    // whose underlying holds a `[16]byte`). The wrapper's entire deep copy is its one Value member's,
+    // so Clone() forwards to it. See GoValueCloneAttribute; the array-backed kinds already carry a
+    // strongly-typed Clone() from their own templates and are excluded below.
+    public bool ValueClone = false;
+
     private string ImplementedInterface => TypeClass switch
     {
         "Slice" => $" : ISlice<{TargetTypeName}>, ISupportMake<{ObjectName}>, ISliceWrap<{ObjectName}, {TargetTypeName}>",
@@ -89,6 +96,25 @@ internal class InheritedTypeTemplate : TemplateBase
         "Pointer" => PointerTypeTemplate.Generate(ObjectName, TargetTypeName),
         _ => UnderlyingArrayElementType is null ? "" : IArrayViewTypeTemplate.Generate(ObjectName, TypeName, UnderlyingArrayElementType)
     };
+
+    // Only the plain (struct-underlying) wrapper needs this: every array/slice-backed kind already
+    // declares its own Clone()/ICloneable through IArrayTypeTemplate, IArrayViewTypeTemplate or
+    // ISliceTypeTemplate, and re-declaring would be CS0102/CS0111.
+    private bool EmitsValueClone => ValueClone && UnderlyingArrayElementType is null &&
+        TypeClass is not ("Array" or "Slice" or "Map" or "Channel" or "Pointer" or "Numeric");
+
+    private string ValueCloneInterface => EmitsValueClone ?
+        string.IsNullOrEmpty(ImplementedInterface) ? " : IGoValueClone" : ", IGoValueClone" : "";
+
+    private string ValueCloneImplementation => EmitsValueClone ?
+        $$"""
+
+                // Go by-value copy of {{ObjectKind}} '{{ObjectName}}'
+                public {{EscapeCsTypeName(ObjectName)}} {{ValueCloneMethod}}() => new {{ObjectName}}({{Value}}.{{ValueCloneMethod}}());
+
+                object global::System.ICloneable.Clone() => {{ValueCloneMethod}}();
+
+        """ : "";
 
     private string ValueGetter => TypeClass switch
     {
@@ -315,12 +341,12 @@ internal class InheritedTypeTemplate : TemplateBase
     public override string TemplateBody =>
         $$"""
             [{{GeneratedCodeAttribute}}]
-            {{Scope}} partial {{ObjectKind}} {{ObjectName}}{{ImplementedInterface}}
+            {{Scope}} partial {{ObjectKind}} {{ObjectName}}{{ImplementedInterface}}{{ValueCloneInterface}}
             {
                 // Value of the {{ObjectKind}} '{{ObjectName}}'
                 private {{ReadOnly}}{{TypeName}}{{Nullable}} m_value;
-                {{InterfaceImplementation}}{{ForwardedMembers}}
-                
+                {{InterfaceImplementation}}{{ForwardedMembers}}{{ValueCloneImplementation}}
+
                 public {{ConstructorName}}({{TypeName}} value) => m_value = value;
 
                 public {{ConstructorName}}(NilType _) => m_value = {{NilValueExpression}};

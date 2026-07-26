@@ -249,7 +249,7 @@ public static ΔStack NoStack = new ΔStack(nil);
 }
 
 // Event represents a single event in the trace.
-[GoType] partial struct ΔEvent {
+[GoType] [GoValueClone("@base")] partial struct ΔEvent {
     internal ж<evTable> table;
     internal schedCtx ctx;
     internal baseEvent @base;
@@ -257,11 +257,15 @@ public static ΔStack NoStack = new ΔStack(nil);
 
 // Kind returns the kind of event that this is.
 public static EventKind Kind(this ΔEvent e) {
+    e = e.ΔClone();
+
     return go122Type2Kind[e.@base.typ];
 }
 
 // Time returns the timestamp of the event.
 public static ΔTime Time(this ΔEvent e) {
+    e = e.ΔClone();
+
     return e.@base.time;
 }
 
@@ -275,6 +279,8 @@ public static ΔTime Time(this ΔEvent e) {
 // NoGoroutine. In this case, the goroutine starting to run will be
 // can be found at Event.StateTransition().Resource.
 public static GoID Goroutine(this ΔEvent e) {
+    e = e.ΔClone();
+
     return e.ctx.G;
 }
 
@@ -284,6 +290,8 @@ public static GoID Goroutine(this ΔEvent e) {
 // state before the transition. For example, if a proc is just
 // starting to run on this thread, then this will return NoProc.
 public static ProcID Proc(this ΔEvent e) {
+    e = e.ΔClone();
+
     return e.ctx.P;
 }
 
@@ -298,6 +306,8 @@ public static ProcID Proc(this ΔEvent e) {
 // may be tracked in the future, and callers must be robust to this
 // possibility.
 public static ThreadID Thread(this ΔEvent e) {
+    e = e.ΔClone();
+
     return e.ctx.M;
 }
 
@@ -306,6 +316,8 @@ public static ThreadID Thread(this ΔEvent e) {
 // This represents a stack trace at the current moment in time for
 // the current execution context.
 public static ΔStack Stack(this ΔEvent e) {
+    e = e.ΔClone();
+
     if (e.@base.typ == evSync) {
         return NoStack;
     }
@@ -335,6 +347,8 @@ private static readonly @string gcHeapGoalBytesˢ = "/gc/heap/goal:bytes"u8;
 //
 // Panics if Kind != EventMetric.
 public static ΔMetric Metric(this ΔEvent e) {
+    e = e.ΔClone();
+
     if (e.Kind() != EventMetric) {
         throw panic("Metric called on non-Metric event");
     }
@@ -363,6 +377,8 @@ public static ΔMetric Metric(this ΔEvent e) {
 //
 // Panics if Kind != EventLabel.
 public static ΔLabel Label(this ΔEvent e) {
+    e = e.ΔClone();
+
     if (e.Kind() != EventLabel) {
         throw panic("Label called on non-Label event");
     }
@@ -384,6 +400,8 @@ private static readonly @string gcMarkAssistˢ = "GC mark assist"u8;
 //
 // Panics if Kind != EventRangeBegin, Kind != EventRangeActive, and Kind != EventRangeEnd.
 public static ΔRange Range(this ΔEvent e) {
+    e = e.ΔClone();
+
     {
         var kind = e.Kind(); if (kind != EventRangeBegin && kind != EventRangeActive && kind != EventRangeEnd) {
             throw panic("Range called on non-Range event");
@@ -431,6 +449,8 @@ Kind: ResourceGoroutine, id: (int64)e.Goroutine());
 //
 // Panics if Kind != EventRangeEnd.
 public static slice<RangeAttribute> RangeAttributes(this ΔEvent e) {
+    e = e.ΔClone();
+
     if (e.Kind() != EventRangeEnd) {
         throw panic("Range called on non-Range event");
     }
@@ -453,6 +473,8 @@ public static slice<RangeAttribute> RangeAttributes(this ΔEvent e) {
 //
 // Panics if Kind != EventTaskBegin and Kind != EventTaskEnd.
 public static ΔTask Task(this ΔEvent e) {
+    e = e.ΔClone();
+
     {
         var kind = e.Kind(); if (kind != EventTaskBegin && kind != EventTaskEnd) {
             throw panic("Task called on non-Task event");
@@ -484,6 +506,8 @@ public static ΔTask Task(this ΔEvent e) {
 //
 // Panics if Kind != EventRegionBegin and Kind != EventRegionEnd.
 public static ΔRegion Region(this ΔEvent e) {
+    e = e.ΔClone();
+
     {
         var kind = e.Kind(); if (kind != EventRegionBegin && kind != EventRegionEnd) {
             throw panic("Region called on non-Region event");
@@ -502,6 +526,8 @@ public static ΔRegion Region(this ΔEvent e) {
 //
 // Panics if Kind != EventLog.
 public static ΔLog Log(this ΔEvent e) {
+    e = e.ΔClone();
+
     if (e.Kind() != EventLog) {
         throw panic("Log called on non-Log event");
     }
@@ -519,6 +545,8 @@ public static ΔLog Log(this ΔEvent e) {
 //
 // Panics if Kind != EventStateTransition.
 public static ΔStateTransition StateTransition(this ΔEvent e) {
+    e = e.ΔClone();
+
     if (e.Kind() != EventStateTransition) {
         throw panic("StateTransition called on non-StateTransition event");
     }
@@ -616,6 +644,8 @@ public static ΔStateTransition StateTransition(this ΔEvent e) {
 //
 // Panics if Kind != EventExperimental.
 public static ExperimentalEvent Experimental(this ΔEvent e) {
+    e = e.ΔClone();
+
     if (e.Kind() != EventExperimental) {
         throw panic("Experimental called on non-Experimental event");
     }
@@ -708,6 +738,8 @@ private static readonly object stackˢ = (@string)"Stack="u8;
 //
 // The format of the string is intended for debugging and is subject to change.
 public static @string String(this ΔEvent e) {
+    e = e.ΔClone();
+
     ref var sb = ref heap(new strings.Builder(), out var Ꮡsb);
     fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "M=%d P=%d G=%d"u8, e.Thread(), e.Proc(), e.Goroutine());
     fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), " %s Time=%d"u8, e.Kind(), e.Time());
@@ -797,6 +829,8 @@ public static @string String(this ΔEvent e) {
 // validateTableIDs checks to make sure lookups in e.table
 // will work.
 internal static error validateTableIDs(this ΔEvent e) {
+    e = e.ΔClone();
+
     if (e.@base.typ == evSync) {
         return default!;
     }

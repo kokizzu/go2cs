@@ -1019,8 +1019,8 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 func (v *Visitor) convInterfaceDeclValue(value ast.Expr, ifaceDeclType types.Type, context ExprContext) string {
 	if ifaceDeclType == nil {
 		// A `var` declaration initialized from an existing array value takes golib's
-		// `.Clone()` for independent backing storage (see cloneArrayValueCopy).
-		return v.cloneArrayValueCopy(nil, value, v.convExpr(value, []ExprContext{context}))
+		// `.Clone()` for independent backing storage (see cloneValueCopy).
+		return v.cloneValueCopy(nil, value, v.convExpr(value, []ExprContext{context}))
 	}
 
 	rhsType := v.info.TypeOf(value)

@@ -19,7 +19,7 @@ partial class edwards25519_package {
 // receivers are allowed to alias.
 //
 // The zero value is a valid zero element.
-[GoType] partial struct Scalar {
+[GoType] [GoValueClone("s")] partial struct Scalar {
     // s is the scalar in the Montgomery domain, in the format of the
     // fiat-crypto implementation.
     internal fiatScalarMontgomeryDomainFieldElement s;
@@ -117,7 +117,7 @@ public static ж<Scalar> Set(this ж<Scalar> Ꮡs, ж<Scalar> Ꮡx) {
     ref var s = ref Ꮡs.Value;
     ref var x = ref Ꮡx.Value;
 
-    s = x;
+    s = x.ΔClone();
     return Ꮡs;
 }
 

@@ -118,7 +118,7 @@ internal static ж<dlogger> dlog() {
 //
 // To obtain a dlogger, call dlog(). When done with the dlogger, call
 // end().
-[GoType] partial struct dlogger {
+[GoType] [GoValueClone("w")] partial struct dlogger {
     internal sys.NotInHeap _;
     internal debugLogWriter w;
     // allLink is the next dlogger in the allDloggers list.
@@ -373,7 +373,7 @@ internal static ж<dlogger> traceback(this ж<dlogger> Ꮡl, slice<uintptr> x) {
 // overwrite old records. Hence, it maintains a reader that consumes
 // the log as it gets overwritten. That reader state is where an
 // actual log reader would start.
-[GoType] partial struct debugLogWriter {
+[GoType] [GoValueClone("data", "buf")] partial struct debugLogWriter {
     internal sys.NotInHeap _;
     internal uint64 write;
     internal debugLogBuf data;
@@ -389,7 +389,7 @@ internal static ж<dlogger> traceback(this ж<dlogger> Ꮡl, slice<uintptr> x) {
     internal array<byte> buf = new(10);
 }
 
-[GoType] partial struct debugLogBuf {
+[GoType] [GoValueClone("b")] partial struct debugLogBuf {
     internal sys.NotInHeap _;
     internal array<byte> b = new(debugLogBytes);
 }

@@ -47,6 +47,10 @@ internal static class IArrayTypeTemplate
 
                 public {{structName}} Clone() => new {{structName}}(Value.Clone());
 
+                // Uniform value-copy member name a generated struct clone calls on every
+                // clone-needing field (see GoValueCloneAttribute); copy SITES use Clone().
+                public {{structName}} {{ValueCloneMethod}}() => Clone();
+
                 object global::System.ICloneable.Clone() => Clone();
 
                 public static {{structName}} Make(nint p1 = 0, nint p2 = -1) => new {{structName}}();

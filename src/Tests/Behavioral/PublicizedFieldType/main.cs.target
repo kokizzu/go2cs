@@ -12,7 +12,7 @@ partial class main_package {
 
 [GoType("num:nint")] public partial struct level;
 
-[GoType] partial struct CaseRange {
+[GoType] [GoValueClone("Delta")] partial struct CaseRange {
     public uint32 Lo;
     public d Delta;
     public inner Item;
@@ -31,10 +31,14 @@ partial class main_package {
 [GoType("num:nint")] public partial struct weight;
 
 public static tally Tally(this CaseRange cr) {
+    cr = cr.ΔClone();
+
     return ((tally)(nint)cr.Lo);
 }
 
 public static nint Weigh(this CaseRange cr, weight w) {
+    cr = cr.ΔClone();
+
     return (nint)w * 2;
 }
 

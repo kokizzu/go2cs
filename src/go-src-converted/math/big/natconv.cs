@@ -459,7 +459,7 @@ internal static nint leafSize = 8; // number of Word-size binary values treat as
 }
 
 
-[GoType("dyn")] partial struct cacheBase10ᴛ1 {
+[GoType("dyn")] [GoValueClone("table")] partial struct cacheBase10ᴛ1 {
     public partial ref sync_package.Mutex Mutex { get; }
     internal array<divisor> table = new(64); // cached divisors for base 10
 }

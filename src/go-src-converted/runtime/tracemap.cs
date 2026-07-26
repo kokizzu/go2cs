@@ -44,7 +44,7 @@ partial class runtime_package {
 //   - No deletion or rebalancing.
 //   - Intentionally devolves into a linked list on hash collisions (the hash bits will all
 //     get shifted out during iteration, and new nodes will just be appended to the 0th child).
-[GoType] partial struct traceMapNode {
+[GoType] [GoValueClone("children")] partial struct traceMapNode {
     internal sys.NotInHeap _;
     internal array<atomic.UnsafePointer> children = new(4); // *traceMapNode (can't use generics because it's notinheap)
     internal uintptr hash;

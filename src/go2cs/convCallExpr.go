@@ -1617,11 +1617,11 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			// A Go array VALUE appended as a slice ELEMENT (`append(rows, arr)` with rows of
 			// type [][3]int) is copied into the new slot; an existing-storage array element
 			// clones so the stored element does not alias the source's backing (see
-			// exprReadsArrayValueFromStorage). A spread `append(dst, src...)` is untouched —
+			// exprReadsValueNeedingClone). A spread `append(dst, src...)` is untouched —
 			// its element-wise copy happens inside golib (a documented remaining gap for
 			// nested-array elements, alongside copy()).
 			for i := 1; i < len(callExpr.Args); i++ {
-				if v.exprReadsArrayValueFromStorage(callExpr.Args[i]) {
+				if v.exprReadsValueNeedingClone(callExpr.Args[i]) {
 					if callExprContext.cloneArrayArg == nil {
 						callExprContext.cloneArrayArg = make(map[int]bool)
 					}

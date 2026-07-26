@@ -236,7 +236,9 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			}
 
 			v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access)
-			v.writeOutput("[GoType(\"%s\")] %spartial struct %s;", csName, access, getSanitizedIdentifier(name))
+			// Cross-package twin of visitIdent's stamp: a defined type over a struct carrying
+			// fixed-size ARRAY fields needs the forwarded `Clone()` (see wrapperValueCloneAttr).
+			v.writeOutput("[GoType(\"%s\")] %s%spartial struct %s;", csName, wrapperValueCloneAttr(rhsType), access, getSanitizedIdentifier(name))
 			v.targetFile.WriteString(v.newline)
 		} else {
 			v.targetFile.WriteString(v.convSelectorExpr(typeSpecType, DefaultLambdaContext()))

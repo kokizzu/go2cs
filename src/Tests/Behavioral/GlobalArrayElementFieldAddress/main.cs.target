@@ -16,7 +16,7 @@ internal static ж<array<item>> Ꮡpool = new(new array<item>(3));
 internal static ref array<item> pool => ref Ꮡpool.Value;
 
 
-[GoType("dyn")] partial struct gridᴛ1 {
+[GoType("dyn")] [GoValueClone("pad")] partial struct gridᴛ1 {
     internal sub cell;
     internal array<byte> pad = new(4);
 }

@@ -325,8 +325,8 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 
 				// An ARRAY param (direct, aliased, or named — see visitFuncDecl's parameter
 				// preamble) folds its Go by-value clone into the box init.
-				if typeIsArrayValue(v.getIdentType(ident)) {
-					incomingName += ".Clone()"
+				if typeNeedsValueClone(v.getIdentType(ident)) {
+					incomingName += valueCloneSuffix(v.getIdentType(ident))
 				}
 
 				if v.options.preferVarDecl {
@@ -354,12 +354,12 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 					continue
 				}
 
-				if !typeIsArrayValue(v.getIdentType(name)) {
+				if !typeNeedsValueClone(v.getIdentType(name)) {
 					continue
 				}
 
 				renderedName := getSanitizedIdentifier(v.getIdentName(name))
-				prologue.WriteString(fmt.Sprintf("%s%s%s = %s.Clone();", v.newline, v.indent(v.indentLevel+1), renderedName, renderedName))
+				prologue.WriteString(fmt.Sprintf("%s%s%s = %s%s;", v.newline, v.indent(v.indentLevel+1), renderedName, renderedName, valueCloneSuffix(v.getIdentType(name))))
 			}
 		}
 

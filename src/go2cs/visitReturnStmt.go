@@ -385,10 +385,10 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 				// have leaked the local's address (`return arr` after `p = &arr`), or the result
 				// reads a field/element/deref some other name still reaches — and the emitted
 				// struct copy aliases the shared backing either way (see
-				// exprReadsArrayValueFromStorage). Applied before any interface conversion below,
+				// exprReadsValueNeedingClone). Applied before any interface conversion below,
 				// so a boxed array result (`func f() any { return arr }`) boxes the clone.
-				if v.exprReadsArrayValueFromStorage(expr) {
-					resultExpr = appendArrayValueClone(resultExpr)
+				if v.exprReadsValueNeedingClone(expr) {
+					resultExpr = appendValueClone(resultExpr, v.getExprType(expr))
 				}
 
 				// Box an untyped CONSTANT returned as an EMPTY interface at Go's default type (the

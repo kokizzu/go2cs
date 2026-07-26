@@ -17,7 +17,7 @@ partial class rtcov_package {
 // the init function for a coverage-instrumented package executes, it
 // will make a call into the runtime which will create a covMetaBlob
 // object for the package and chain it onto a global list.
-[GoType] partial struct CovMetaBlob {
+[GoType] [GoValueClone("Hash")] partial struct CovMetaBlob {
     public ж<byte> P;
     public uint32 Len;
     public array<byte> Hash = new(16);

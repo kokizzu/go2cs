@@ -54,7 +54,7 @@ public static readonly UntypedInt F_SHROBJ = 0x2000;
 public static readonly UntypedInt F_LOADONLY = 0x4000;
 
 // Section Header.
-[GoType] partial struct SectionHeader32 {
+[GoType] [GoValueClone("Sname")] partial struct SectionHeader32 {
     public array<byte> Sname = new(8); // Section name
     public uint32 Spaddr;  // Physical address
     public uint32 Svaddr;  // Virtual address
@@ -67,7 +67,7 @@ public static readonly UntypedInt F_LOADONLY = 0x4000;
     public uint32 Sflags;  // Flags to define the section type
 }
 
-[GoType] partial struct SectionHeader64 {
+[GoType] [GoValueClone("Sname")] partial struct SectionHeader64 {
     public array<byte> Sname = new(8); // Section name
     public uint64 Spaddr;  // Physical address
     public uint64 Svaddr;  // Virtual address
@@ -119,7 +119,7 @@ public static readonly UntypedInt SSUBTYP_DWFRAME = 0xA0000; // DWARF frames sec
 public static readonly UntypedInt SSUBTYP_DWMAC = 0xB0000; // DWARF macros section
 
 // Symbol Table Entry.
-[GoType] partial struct SymEnt32 {
+[GoType] [GoValueClone("Nname")] partial struct SymEnt32 {
     public array<byte> Nname = new(8); // Symbol name
     public uint32 Nvalue;  // Symbol value
     public uint16 Nscnum;  // Section number of symbol
@@ -204,7 +204,7 @@ public static readonly UntypedInt C_GTLS = 145; // Global thread-local variable
 public static readonly UntypedInt C_STTLS = 146; // Static thread-local variable
 
 // File Auxiliary Entry
-[GoType] partial struct AuxFile64 {
+[GoType] [GoValueClone("Xfname")] partial struct AuxFile64 {
     public array<byte> Xfname = new(8); // Name or offset inside string table
     public uint8 Xftype;   // Source file string type
     public uint8 Xauxtype;   // Type of auxiliary entry
@@ -355,7 +355,7 @@ public static readonly UntypedInt LDHDRSZ_32 = 32;
 public static readonly UntypedInt LDHDRSZ_64 = 56;
 
 // Loader Symbol.
-[GoType] partial struct LoaderSymbol32 {
+[GoType] [GoValueClone("Lname")] partial struct LoaderSymbol32 {
     public array<byte> Lname = new(8); // Symbol name or byte offset into string table
     public uint32 Lvalue;  // Address field
     public uint16 Lscnum;  // Section number containing symbol

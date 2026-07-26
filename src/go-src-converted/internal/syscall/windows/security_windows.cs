@@ -28,7 +28,7 @@ public static readonly UntypedInt SE_PRIVILEGE_ENABLED = 0x00000002;
     public uint32 Attributes;
 }
 
-[GoType] partial struct TOKEN_PRIVILEGES {
+[GoType] [GoValueClone("Privileges")] partial struct TOKEN_PRIVILEGES {
     public uint32 PrivilegeCount;
     public array<LUID_AND_ATTRIBUTES> Privileges = new(1);
 }

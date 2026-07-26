@@ -641,12 +641,20 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 			// Direct, aliased, AND named array types all clone: a NAMED array's generated wrapper
 			// is a struct over the same shared backing, and its strongly-typed Clone() returns the
 			// wrapper (an array-typed VALUE RECEIVER — necessarily a named type — is a per-call
-			// copy in Go and clones here too).
-			if typeIsArrayValue(param.Type()) {
+			// copy in Go and clones here too). A struct carrying array fields clones the same way
+			// (typeNeedsValueClone), through its generated ΔClone().
+			//
+			// A BLANK or unnamed parameter is skipped: it is emitted with a synthetic name and can
+			// never be referenced, so there is nothing for the copy to protect — and the clone line
+			// would be written against the EMPTY analyzed name (` = .ΔClone();`, CS1525 ×2 in
+			// log/slog's benchmark `Handle(disabledHandler, context.Context, slog.Record)`, whose
+			// every parameter is blank). The existing array-typed arm had the same latent hole; no
+			// blank array parameter happened to exist in the corpus.
+			if analyzedName != "" && analyzedName != "_" && typeNeedsValueClone(param.Type()) {
 				// A heap-boxed array param folds its by-value clone into the box init below
 				// (the plain reassignment would reference the pre-rename name — CS0103).
 				if !v.paramNeedsHeapBox(param) {
-					v.writeString(arrayClones, "%s%s%s = %s.Clone();", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(analyzedName), getSanitizedIdentifier(analyzedName))
+					v.writeString(arrayClones, "%s%s%s = %s%s;", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(analyzedName), getSanitizedIdentifier(analyzedName), valueCloneSuffix(param.Type()))
 				}
 			}
 
@@ -725,8 +733,8 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 			if v.paramNeedsHeapBox(param) {
 				incomingName := getHeapBoxParamName(param)
 
-				if typeIsArrayValue(param.Type()) {
-					incomingName += ".Clone()"
+				if typeNeedsValueClone(param.Type()) {
+					incomingName += valueCloneSuffix(param.Type())
 				}
 
 				if v.options.preferVarDecl {

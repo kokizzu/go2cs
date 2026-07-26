@@ -9,13 +9,13 @@ partial class main_package {
     public uint64 Count;
 }
 
-[GoType] partial struct Stats {
+[GoType] [GoValueClone("BySize")] partial struct Stats {
     public nint Total;
     public array<Stats_BySize> BySize = new(3);
 }
 
 
-[GoType("dyn")] partial struct poolᴛ1 {
+[GoType("dyn")] [GoValueClone("pad")] partial struct poolᴛ1 {
     internal nint item;
     internal array<byte> pad = new(4);
 }

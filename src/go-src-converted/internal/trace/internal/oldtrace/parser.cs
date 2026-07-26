@@ -30,7 +30,7 @@ partial class oldtrace_package {
 [GoType("num:int64")] partial struct Timestamp;
 
 // Event describes one event in the trace.
-[GoType] partial struct Event {
+[GoType] [GoValueClone("Args")] partial struct Event {
 // The Event type is carefully laid out to optimize its size and to avoid
 // pointers, the latter so that the garbage collector won't have to scan any
 // memory of our millions of events.
@@ -292,8 +292,10 @@ internal static readonly UntypedInt eventsBucketSize = 524288; // 32 MiB of even
 
 // append appends v to the slice and returns a pointer to the new element.
 [GoRecv] internal static ж<Event> append(this ref Events l, Event v) {
+    v = v.ΔClone();
+
     var ptr = l.grow();
-    ptr.Value = v;
+    ptr.Value = v.ΔClone();
     return ptr;
 }
 
@@ -318,8 +320,8 @@ internal static readonly UntypedInt eventsBucketSize = 524288; // 32 MiB of even
 }
 
 [GoRecv] public static void Swap(this ref Events l, nint i, nint j) {
-    l.Ptr(i).Value = l.Ptr(j).Value;
-    l.Ptr(j).Value = l.Ptr(i).Value;
+    l.Ptr(i).Value = l.Ptr(j).Value.ΔClone();
+    l.Ptr(j).Value = l.Ptr(i).Value.ΔClone();
 }
 
 [GoRecv] public static (ж<Event>, bool) Pop(this ref Events l) {
@@ -364,7 +366,11 @@ public static Action<Func<ж<Event>, bool>> All(this ж<Events> Ꮡl) {
     // with original timestamps corresponding to when ReadTrace pulled the data
     // off of the profBuf queue. Re-sort them by the timestamp we captured
     // inside the signal handler.
-    slices.SortFunc(p.cpuSamples, (Event a, Event b) => cmp.Compare(a.Ts, b.Ts));
+    slices.SortFunc(p.cpuSamples, (Event a, Event b) => {
+        a = a.ΔClone();
+        b = b.ΔClone();
+        return cmp.Compare(a.Ts, b.Ts);
+    });
     var allProcs = new slice<proc>(0, len(p.batchOffsets));
     foreach (var (pid, _) in p.batchOffsets) {
         allProcs = builtin.append(allProcs, new proc(pid: pid));
@@ -428,7 +434,7 @@ pidLoop:
             proc.Value.events = (~proc).events[1..];
             (availableProcs[i], availableProcs[len(availableProcs) - 1]) = (availableProcs[len(availableProcs) - 1], availableProcs[i]);
             availableProcs = availableProcs[..(int)(len(availableProcs) - 1)];
-            Ꮡfrontier.Push(new orderEvent(ev.Value, proc));
+            Ꮡfrontier.Push(new orderEvent(ev.Value.ΔClone(), proc));
             // We swapped the element at i with another proc, so look at the
             // index again
             i--;
@@ -570,7 +576,7 @@ break_pidLoop:;
             // Note that we're not concerned about the memory usage of storing
             // all CPU samples during the indexing phase. There are orders of
             // magnitude fewer CPU samples than runtime events.
-            p.cpuSamples = builtin.append(p.cpuSamples, e);
+            p.cpuSamples = builtin.append(p.cpuSamples, e.ΔClone());
         }
     }
     return default!;
@@ -839,7 +845,7 @@ private static readonly @string stringHasInvalidLength0ˢ = "string has invalid 
             return (default!, err);
         }
         if (ev.Type != EvNone) {
-            events = builtin.append(events, ev);
+            events = builtin.append(events, ev.ΔClone());
         }
     }
     return (events, default!);

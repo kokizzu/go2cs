@@ -20,7 +20,7 @@ partial class decodecounter_package {
 
 // This file contains helpers for reading counter data files created
 // during the executions of a coverage-instrumented binary.
-[GoType] partial struct CounterDataReader {
+[GoType] [GoValueClone("hdr", "ftr")] partial struct CounterDataReader {
     internal ж<stringtab.Reader> stab;
     internal map<@string, @string> args;
     internal slice<@string> osargs;

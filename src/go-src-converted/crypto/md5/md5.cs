@@ -33,7 +33,7 @@ internal static readonly UntypedInt init2 = 0x98BADCFE;
 internal static readonly UntypedInt init3 = 0x10325476;
 
 // digest represents the partial evaluation of a checksum.
-[GoType] partial struct digest {
+[GoType] [GoValueClone("s", "x")] partial struct digest {
     internal array<uint32> s = new(4);
     internal array<byte> x = new(ΔBlockSize);
     internal nint nx;
@@ -154,7 +154,7 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
 [GoRecv] internal static slice<byte> Sum(this ref digest d, slice<byte> @in) {
     // Make a copy of d so that caller can keep writing and summing.
     ref var d0 = ref heap<digest>(out var Ꮡd0);
-    d0 = d;
+    d0 = d.ΔClone();
     var hash = Ꮡd0.checkSum();
     return append(@in, hash[..].ꓸꓸꓸ);
 }

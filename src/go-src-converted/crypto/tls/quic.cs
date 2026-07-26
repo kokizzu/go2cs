@@ -94,7 +94,7 @@ public static readonly QUICEventKind QUICStoreSession = 9;
     public ж<SessionState> SessionState;
 }
 
-[GoType] partial struct quicState {
+[GoType] [GoValueClone("eventArr")] partial struct quicState {
     internal slice<QUICEvent> events;
     internal nint nextEvent;
     // eventArr is a statically allocated event array, large enough to handle

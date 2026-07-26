@@ -27,7 +27,7 @@ partial class runtime_package {
 
 // trace is global tracing context.
 
-[GoType("dyn")] partial struct Δtraceᴛ1 {
+[GoType("dyn")] [GoValueClone("full", "doneSema", "stackTab", "stringTab", "typeTab", "cpuLogRead", "cpuLogWrite", "cpuBuf", "markWorkerLabels", "goStopReasons", "goBlockReasons")] partial struct Δtraceᴛ1 {
     // trace.lock must only be acquired on the system stack where
     // stack splits cannot happen while it is held.
     internal mutex @lock;

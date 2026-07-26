@@ -37,7 +37,7 @@ using go.@internal.trace.@internal;
 
 partial class trace_package {
 
-[GoType] partial struct oldTraceConverter {
+[GoType] [GoValueClone("extraArr")] partial struct oldTraceConverter {
     internal oldtrace.Trace trace;
     internal ж<evTable> evt;
     internal bool preInit;
@@ -230,7 +230,7 @@ internal static (ΔEvent, error) next(this ж<oldTraceConverter> Ꮡit) {
     ref var it = ref Ꮡit.Value;
 
     if (len(it.extra) > 0) {
-        var evΔ1 = it.extra[0];
+        var evΔ1 = it.extra[0].ΔClone();
         it.extra = it.extra[1..];
         if (len(it.extra) == 0) {
             it.extra = it.extraArr[..0];
@@ -241,7 +241,7 @@ internal static (ΔEvent, error) next(this ж<oldTraceConverter> Ꮡit) {
             evΔ1.@base.time = it.lastTs + 1;
         }
         it.lastTs = evΔ1.@base.time;
-        return (evΔ1, default!);
+        return (evΔ1.ΔClone(), default!);
     }
     var (oev, ok) = it.events.Pop();
     if (!ok) {
@@ -260,7 +260,7 @@ internal static (ΔEvent, error) next(this ж<oldTraceConverter> Ꮡit) {
         ev.@base.time = it.lastTs + 1;
     }
     it.lastTs = ev.@base.time;
-    return (ev, default!);
+    return (ev.ΔClone(), default!);
 }
 
 internal static error errSkip = errors.New("skip event"u8);
@@ -502,8 +502,8 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
                     args: new timedEventArgs(new uint64[5].array())
                 )
             );
-            it.extra = append(it.extra, out2);
-            return (out1, default!);
+            it.extra = append(it.extra, out2.ΔClone());
+            return (out1.ΔClone(), default!);
         }
     }
     else if (exprᴛ1 == oldtrace.EvGoSysExit) {
@@ -631,7 +631,7 @@ ev.Args[0], ev.Args[2], (uint64)ev.StkID}.array(5));
             args: mappedArgs.Clone()
         )
     );
-    return (@out, default!);
+    return (@out.ΔClone(), default!);
 }
 
 // convertOldFormat takes a fully loaded trace in the old trace format and

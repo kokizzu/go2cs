@@ -45,7 +45,7 @@ internal static nint log2(nint x) {
 }
 
 // encoder encodes an image to the GIF format.
-[GoType] partial struct encoder {
+[GoType] [GoValueClone("buf", "globalColorTable", "localColorTable")] partial struct encoder {
     // w is the writer to write to. err is the first error encountered during
     // writing. All attempted writes after the first error become no-ops.
     internal writer w;

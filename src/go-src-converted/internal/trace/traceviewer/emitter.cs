@@ -310,7 +310,7 @@ public static ж<Emitter> NewEmitter(TraceConsumer c, time.Duration rangeStart, 
     ));
 }
 
-[GoType] partial struct Emitter {
+[GoType] [GoValueClone("gstates", "prevGstates", "threadStats", "prevThreadStats")] partial struct Emitter {
     internal TraceConsumer c;
     internal time.Duration rangeStart;
     internal time.Duration rangeEnd;

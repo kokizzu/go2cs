@@ -18,7 +18,7 @@ partial class abi_package {
 // RegArgs also contains additional space to hold pointers
 // when it may not be safe to keep them only in the integer
 // register space otherwise.
-[GoType] partial struct RegArgs {
+[GoType] [GoValueClone("Ints", "Floats", "Ptrs", "ReturnIsPtr")] partial struct RegArgs {
     // Values in these slots should be precisely the bit-by-bit
     // representation of how they would appear in a register.
     //

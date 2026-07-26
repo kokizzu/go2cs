@@ -53,7 +53,7 @@ public static readonly UntypedInt MaxLatin1 = /* '\u00FF' */ 255; // maximum Lat
 //	{UpperLower, UpperLower, UpperLower}
 //
 // The constant UpperLower has an otherwise impossible delta value.
-[GoType] partial struct CaseRange {
+[GoType] [GoValueClone("Delta")] partial struct CaseRange {
     public uint32 Lo;
     public uint32 Hi;
     public d Delta;
@@ -223,7 +223,7 @@ internal static (rune mappedRune, bool foundMapping) to(nint _case, rune r, slic
     nint hi = len(caseRange);
     while (lo < hi) {
         nint m = (nint)(((nuint)(lo + hi) >> (int)(1)));
-        var cr = caseRange[m];
+        var cr = caseRange[m].ΔClone();
         if ((rune)cr.Lo <= r && r <= (rune)cr.Hi) {
             var delta = cr.Delta[_case];
             if (delta > MaxRune) {

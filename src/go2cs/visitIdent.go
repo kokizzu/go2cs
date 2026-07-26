@@ -81,7 +81,11 @@ func (v *Visitor) visitIdent(ident *ast.Ident, identType types.Type, name string
 		usesUnsafeCode = true
 	} else {
 		v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access)
-		v.writeString(target, " %spartial struct %s;", access, getSanitizedIdentifier(name))
+		// A defined type over a struct that carries fixed-size ARRAY fields inherits the by-value
+		// copy problem those fields cause (see wrapperValueCloneAttr): syscall's
+		// `type IpMaskString IpAddressString` wraps a `[16]byte`, and `IpAddrString`'s own clone
+		// needs a strongly-typed `Clone()` on it.
+		v.writeString(target, " %s%spartial struct %s;", wrapperValueCloneAttr(identType), access, getSanitizedIdentifier(name))
 	}
 
 	target.WriteString(v.newline)
