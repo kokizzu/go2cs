@@ -1,8 +1,14 @@
 # DESIGN — retiring per-evaluation `@string` literal allocation (Tiers A / A′ / B / C)
 
-> **Status: ACCEPTED — 2026-07-25.** Rev 2 reviewed and approved by the user: **all five §6
-> decisions accepted as recommended.** Implementation is **one session, gated landings in order
-> A → A′ → B → C**, each independently revertible, launching after train r11 lands (§4.7).
+> **Status: TIERS A / A′ / B LANDED — 2026-07-25 (rev 3).** Landed as three independently-gated
+> commits (`b5164da58` golib operators + both slice-route closures; `fecf02e5f` TypeGenerator span
+> operators; `b99cf4419` combined rendering + concat decoupling), preceded by the §4.8 quiet-machine
+> baseline (`2cde35fac`). Measured: `PerfStringMatch` **11.75× → 9.87×** (Tier A −13.4%; Tier B flat
+> on this benchmark as predicted), StringView flat, goldens byte-identical through Tier A. **Tier C
+> is PENDING** — a complete design-faithful draft of the §4 pre-pass exists (see §4.9) and lands in
+> its own fully-gated session. Rev 3 records the implementation round's findings in §7.
+> Underlying approval unchanged: rev 2 accepted by the user with **all five §6 decisions as
+> recommended**, implementation order A → A′ → B → C, each independently revertible (§4.7).
 > History: rev 1 went through a three-lens adversarial panel (semantics / converter mechanics /
 > scope+fidelity; all three verdicts **sound-with-fixes**); every confirmed finding is integrated
 > and the four blockers are resolved by design changes (§7 records them). Scope blessed by the user
@@ -135,11 +141,12 @@ the consumer instead of the producer); the corrected table:
 | visitReturnStmt.go:335 (empty-interface element form) | flip on |
 | visitValueSpec.go:170 (`var v any = "x"`) | becomes `u8StringOK = !isInterfaceType \|\| isAnyType` — the any arm gets u8+cast; non-empty-interface targets keep today's form |
 | convCallExpr.go:1345 (producer: `u8StringArgOK[j] = true` beside `useGoStringArg[j] = true`, inside the `isEmptyInterfaceTarget` gate) | flip on — the one-line producer edit; rev 1 wrongly pointed at the convExprList.go:95 *consumer* |
-| **Named-string-type conversion sites** (`new StructuralError("…")`, 86 sites / 10 types) | **new row** — render the argument `"…"u8` (binds the wrapper's `@string` ctor through one implicit conversion), retiring the corpus's last bare-UTF-16 literal class |
+| **Typed struct-composite element sites** (`new StructuralError("…")`, 83 converter-emitted sites / 10 types — rev 2 mislabelled these "named-string-type conversions"; they are POSITIONAL elements of a typed struct composite whose field is `@string`, a different path from the named-string conversion that already emitted `((errorString)(@string)"…"u8)`; 3 of the original 86 are hand-written `_impl.cs` lines) | flip on — renders the element `"…"u8`, binding the `@string` field through one implicit conversion |
+| **Two classes remain bare-UTF-16 after Tier B** (rev 3): `new @string[]{"…"}` slice/array composite elements (**250 corpus sites**) and `new any[]{(@string)"a"}` any-ELEMENT composites (convCompositeLit's `isEmptyInterfaceTarget(elementType)` arm sets `useGoStringArg` but not `u8StringArgOK`) | **queued** — fold into the Tier C session as its opening converter fix (same gate stack, and C's registry walks these sites anyway) |
 | visitStructType.go:162 (struct tags) | **stays off** — attribute arguments must be compile-time constants |
 | visitReturnStmt.go:238, visitAssignStmt.go:1387 (ValueTuple guards) | **stay off** — same ref-struct class as tags; relabeled, not flipped |
 | convCallExpr.go:1691 (`panic("…")`) | **stays off, resolved differently**: r10-sync's golib fix normalizes any C# string reaching `builtin.panic` to a boxed `@string`, so the dynamic type is already Go-correct with **no** emission change — and the bare interned literal is *zero-alloc until a panic actually fires*, which is optimal for a cold path |
-| convBinaryExpr.go:957 (concat suppression) | **decoupled, not flipped**: `concatSuppressed` currently derives from `!u8StringOK`, so flipping the any-target sites would silently re-enable u8 inside concats and emit `"a"u8 + "b"u8` — a **compile break** (no `span+span` operator can exist in C#). It gets its own dedicated signal on BasicLitContext so literal-only concats in any slots keep today's rendering; guard case: the `print("\n" + "\t")` shape (a compile break CNR cannot surface — only the corpus build can) |
+| convBinaryExpr.go:957 (concat suppression) | **decoupled, not flipped** — and the landed form needed two corrections rev 2 didn't anticipate (both corpus-only, invisible to behavioral CNR): the signal (`basicLitContext.spanTargetUnsupported = !basicLitContext.u8StringOK`) must be **re-derived at each binary node from that node's own operand u8 decision** — inheriting it changed syscall/exec_windows's `FullPath(d + "\\" + p[2:])`, computing it once changed net/dnsclient's `fqdn == name + "."` in the *reverse* direction. Mechanical proof of purity: across behavioral + corpus, changed lines with a `u8` REMOVED = 0. Guard: the `print("\n" + "\t")` shape |
 
 Measured effect: 2.1–2.4× (ASCII) / 4.2× (non-ASCII), allocation unchanged (transcode eliminated).
 
@@ -192,7 +199,7 @@ becomes cross-type.
 | standalone map-index keys (`counts["build"]++`) | ✅ | rebuilt per evaluation |
 | **named-string-type conversions** (`MyStr("…")` in function bodies) | ✅ | same value shape through the wrapper ctor |
 | **fmt/log/testing `*f` format-position literals** | ❌ **(changed in rev 2)** | 2,985 corpus sites; 372 are verb-only (`"%v"`, `"%d:%d"`) sluggging to `vˢ`/`dDˢ` — the least allocation saved per unit of readability lost; format calls' cost is dominated by formatting itself. Tier B covers them (2–4×) |
-| **degenerate-slug literals** (fallback-triggered, < 2 words, or < 6 alphabetic chars after stripping verbs) | ❌ **(rev 2)** | 9.7% of distinct literals hit the fallback, 8.7% more slug ≤ 3 chars — names like `strˢ7` carry no information; they stay inline in Tier-B form |
+| **degenerate-slug literals** — degenerate = **empty slug OR slug ≤ 3 chars** (rev 3 wording fix: rev 2's "< 2 words or < 6 alphabetic chars" contradicted the design's own headline example `trueˢ`; the corpus figures — 9.7% fallback + 8.7% slug ≤ 3 chars — were always computed against this rule, and the Tier C draft implements it) | ❌ | names like `strˢ7` or `dˢ` carry no information; they stay inline in Tier-B form |
 | **the empty literal `""`** | ❌ **(rev 2)** | measured 0 B already (`ToArray()` of an empty span returns `Array.Empty`) — hoisting buys nothing |
 | **composite-literal elements and keys** (in-function) | ❌ **(rev 2 — decided with data)** | uniform hoisting would emit **2,229 fields** above html's `populateMaps()` and move those allocations out from under its `sync.Once` guard into the type initializer. A composite materializes its whole table per evaluation anyway; revisit only if a profiled hot composite appears |
 | **literals inside `func init()` bodies** | ❌ **(rev 2)** | run once by construction; deterministic AST-level filter, not a hotness heuristic |
@@ -297,6 +304,21 @@ String/Map non-regressing as the oracle.
 
 ---
 
+### 4.9 Tier C handoff state (rev 3)
+
+The implementation session deliberately stopped before Tier C rather than land it half-gated: its
+full §4.6 stack (plus a ~20-case guard project with goldens) is a multi-hour block, and corpus-wide
+emission churn with synthetic identifiers and init-order relocation must never land unverified.
+**What exists for the next session:** a complete, design-faithful draft of the hoisting pre-pass
+(`hoistedLiteralOperations.go`, ~684 lines, reviewed but never compiled — session scratchpad), plus
+drafted guard-project sources and doc sections. The load-bearing architecture decision to carry
+forward: **the hoist decision must be a whole-package PRE-pass keyed per `*ast.BasicLit` node, not
+an emission-time decision** — §4.1's pre-boxing rule (a field is `object` only when *every* package
+use is an any-target) and §4.4's init-order rule (`collectMovedInitVars` must know the readers
+before any file emits) both make a forward-only decision structurally impossible. Emission then
+becomes a pure substitution at the single `convExpr` `*ast.BasicLit` arm. The Tier C session also
+opens with the two remaining bare-UTF-16 composite classes (§3 last row).
+
 ## 5. Sequencing (one session) and rollback
 
 | Order | Landing | Risk | Revert story |
@@ -323,6 +345,21 @@ refresh). The session runs after train r11 lands (§4.7).
    literals inline)? *Recommended: accept in v1; a cap is a knob the corpus A/B should justify.*
 5. **Tier B's standalone landing** — *recommended: keep* (now permanently owns the format-string and
    degenerate-slug classes, no longer just transitional).
+
+## 7a. Implementation round record (rev 3, 2026-07-25)
+
+Tiers 0/A/A′/B landed per spec; per-tier gates all green (suite PASS 494/494 ×3; corpus 0 errors ×3;
+seeded gates 28/0/14; canaries io/fs 18, errors 61, bytes 81 at banked counts; Tier A′'s overlay
+produced **zero content diff**, proving the reconvert byte-exact against the banked tree).
+`PerfStringMatch` quiet-machine progression: **baseline 1,699.5 ms (11.75×) → Tier A 1,471.9 ms
+(9.93×) → Tier B 1,488.3 ms (9.87×, flat as predicted — this benchmark's only any-slot literals are
+its two closing Printlns)**; the remaining ~10× is exactly Tier C's target. Findings folded into
+this rev: the degenerate-slug wording fix (§4.2), the §3 row relabel + the two remaining composite
+classes, the concat-decoupling re-derivation rule (§3), and two doctrine corrections recorded in
+CLAUDE.md (the seed gate's marker scan must anchor `^\s*\[module:` — two reflect files *mention* the
+marker in placeholder comments; the overlay csproj exception is two EXACT paths, never the
+`core\testing\` prefix, because `core\testing\iotest` is a relocated package). Tier A's
+pre-committed CS0121 vector never fired — no `byte[]` overloads were needed.
 
 ## 7. Panel record (round 1)
 

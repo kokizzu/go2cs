@@ -326,7 +326,10 @@ construct; otherwise add a new one (example: `Tests/Behavioral/GlobalStructField
      (either a `.cs.auto` sits beside it, or nothing was emitted there). Counts intentionally
      differ — 28 marked files but only 14 produce `.cs.auto` (the other 14 have build-tag-excluded
      sources the converter never re-emits, so they need no protection). A same-count assertion is
-     wrong in both directions.
+     wrong in both directions. **The marker scan must be LINE-ANCHORED (`^\s*\[module:`)** —
+     `reflect/value.cs` and `internal/reflectlite/value.cs` *mention* the marker inside
+     bodyless-partial placeholder comments; an unanchored `grep GoManualConversion` over-reports
+     (37 vs the real 28) and turns the gate into a false clobber alarm.
   1b. `go2cs.exe -stdlib -comments -go2cspath <tmp>` → output lands in **`<tmp>/core/<pkg>`**
      (the `core` subdir is hardcoded; `-go2cspath` is the *output* root, unrelated to the MSBuild
      `$(go2csPath)`). Full stdlib ≈ 3–4 min (per-file work is sub-second; the cost is `go/packages`
@@ -346,7 +349,14 @@ construct; otherwise add a new one (example: `Tests/Behavioral/GlobalStructField
   `core\testing`.** `internal/testenv` deliberately references `$(go2csPath)core\testing\testing.csproj` per the
   F15b one-testing-package ruling (`98642bca1`) — the Phase-4 test host must bind ONE testing package, not a
   per-tree copy. A blanket `core\` rewrite clobbers that reference and silently breaks `internal/testenv` and
-  everything downstream of it, so an overlay must except **both** `core\golib` and `core\testing`.
+  everything downstream of it, so an overlay must except **two EXACT paths — `core\golib\golib.csproj` and
+  `core\testing\testing.csproj` — never the `core\testing\` PREFIX**: `core\testing\iotest` is a relocated
+  stdlib package whose reference MUST be rewritten (a prefix exception silently breaks `testing/fstest`).
+  **⚠ csproj rewrite I/O (2026-07-25):** the rewrite must read AND write with explicit UTF-8/no-BOM
+  (`[System.IO.File]::ReadAllText/WriteAllText` + `UTF8Encoding($false)`) — PS 5.1 `Get-Content` reads the
+  converter's BOM-less UTF-8 as ANSI and `Out-File utf8` re-encodes the damage, double-encoding the
+  `©` in `<Copyright>` on every overlay pass (this is what created, then tripled, the 258-file corpus
+  mojibake; root-caused and leveled in the r11 bank).
 - **Metric:** measure **packages-compiling**, not raw error count. Fixing file-inclusion bugs (e.g. the
   filename build-constraint fix) *raises* the error count because newly-included files surface their own
   latent defects — that's progress, not regression.
