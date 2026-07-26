@@ -18,9 +18,9 @@ a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **48 / 215 testable packages validated — 22.3%**
+> ### Phase 4 progress: **49 / 215 testable packages validated — 22.8%**
 >
-> **1,174 matching test verdicts · 32 disclosed** *(updated 2026-07-26 — maintained as part of the
+> **1,229 matching test verdicts · 43 disclosed** *(updated 2026-07-26 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -66,6 +66,7 @@ any other failure is still a hard mismatch.
 | [`os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/os/signal) | 1 | | Console-signal delivery (Ctrl+Break) through real channels and `select`. |
 | [`path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/path) | 9 | | Pure path manipulation (`Clean`/`Split`/`Join`/`Match`…). |
 | [`sort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/sort) | 63 | | Interface-driven sort, `sort.Slice` reflection swaps, NaN-aware ordering, stability. |
+| [`strconv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/strconv) | 55 | 11 | Number↔string conversion at full precision — Ryū/Grisu float formatting, arbitrary-precision decimal shifts, complex parsing; alloc-profile disclosures. |
 | [`strings`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/strings) | 68 | 4 | String algorithms; alloc-count/alloc-profile disclosures. |
 | [`sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/sync) | 41 | 10 | The concurrency crown — `Mutex`/`RWMutex`/`WaitGroup`/`Once`/`Cond`/`Map`/`Pool` over real parked-thread semaphores, a hand-owned lock-free pool ring, and GC-integrated cleanup; `Cond`'s copy detector on root-allocation identity; alloc-profile and codegen-liveness disclosures. |
 | [`testing/quick`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/testing/quick) | 8 | | Property testing — `reflect` value generation and `Value.Call` dynamic invocation. |

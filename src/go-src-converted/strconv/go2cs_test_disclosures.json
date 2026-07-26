@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestAllocationsFromBytes/Atoi",
+      "class": "alloc-profile",
+      "signature": "allocs, want 0 allocs",
+      "reason": "want-zero AllocsPerRun assert: the closure's string([]byte) argument is proven non-escaping by Go's compiler and stays on the stack; the managed model must materialize an @string per run"
+    },
+    {
+      "name": "TestAllocationsFromBytes/ParseBool",
+      "class": "alloc-profile",
+      "signature": "allocs, want 0 allocs",
+      "reason": "want-zero AllocsPerRun assert: the closure's string([]byte) argument is proven non-escaping by Go's compiler and stays on the stack; the managed model must materialize an @string per run"
+    },
+    {
+      "name": "TestAllocationsFromBytes/ParseInt",
+      "class": "alloc-profile",
+      "signature": "allocs, want 0 allocs",
+      "reason": "want-zero AllocsPerRun assert: the closure's string([]byte) argument is proven non-escaping by Go's compiler and stays on the stack; the managed model must materialize an @string per run"
+    },
+    {
+      "name": "TestAllocationsFromBytes/ParseUint",
+      "class": "alloc-profile",
+      "signature": "allocs, want 0 allocs",
+      "reason": "want-zero AllocsPerRun assert: the closure's string([]byte) argument is proven non-escaping by Go's compiler and stays on the stack; the managed model must materialize an @string per run"
+    },
+    {
+      "name": "TestAllocationsFromBytes/ParseFloat",
+      "class": "alloc-profile",
+      "signature": "allocs, want 0 allocs",
+      "reason": "want-zero AllocsPerRun assert: the closure's string([]byte) argument is proven non-escaping by Go's compiler and stays on the stack; the managed model must materialize an @string per run"
+    },
+    {
+      "name": "TestAllocationsFromBytes/ParseComplex",
+      "class": "alloc-profile",
+      "signature": "allocs, want 0 allocs",
+      "reason": "want-zero AllocsPerRun assert: the closure's string([]byte) argument is proven non-escaping by Go's compiler and stays on the stack; the managed model must materialize an @string per run"
+    },
+    {
+      "name": "TestAllocationsFromBytes/CanBackquote",
+      "class": "alloc-profile",
+      "signature": "allocs, want 0 allocs",
+      "reason": "want-zero AllocsPerRun assert: the closure's string([]byte) argument is proven non-escaping by Go's compiler and stays on the stack; the managed model must materialize an @string per run"
+    },
+    {
+      "name": "TestAllocationsFromBytes/AppendQuote",
+      "class": "alloc-profile",
+      "signature": "allocs, want 0 allocs",
+      "reason": "want-zero AllocsPerRun assert: the closure's string([]byte) argument is proven non-escaping by Go's compiler and stays on the stack; the managed model must materialize an @string per run before the pre-sized append"
+    },
+    {
+      "name": "TestAllocationsFromBytes/AppendQuoteToASCII",
+      "class": "alloc-profile",
+      "signature": "allocs, want 0 allocs",
+      "reason": "want-zero AllocsPerRun assert: the closure's string([]byte) argument is proven non-escaping by Go's compiler and stays on the stack; the managed model must materialize an @string per run before the pre-sized append"
+    },
+    {
+      "name": "TestAllocationsFromBytes/AppendQuoteToGraphic",
+      "class": "alloc-profile",
+      "signature": "allocs, want 0 allocs",
+      "reason": "want-zero AllocsPerRun assert: the closure's string([]byte) argument is proven non-escaping by Go's compiler and stays on the stack; the managed model must materialize an @string per run before the pre-sized append"
+    }
+  ]
+}
