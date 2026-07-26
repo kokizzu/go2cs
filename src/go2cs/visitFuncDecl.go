@@ -1731,6 +1731,11 @@ var linknameForwardTargets = map[string]bool{
 	"syscall.loadlibrary":       true,
 	"syscall.loadsystemlibrary": true,
 	"syscall.getprocaddress":    true,
+	// runtime's finalizer-queue drain, pulled by sync's and runtime's own tests
+	// (`//go:linkname runtime_blockUntilEmptyFinalizerQueue runtime.blockUntilEmptyFinalizerQueue`).
+	// The converted runtime carries a real managed body for it — the finalizer bridge in
+	// mfinal.cs waits on GC.WaitForPendingFinalizers — so the pull has something to call.
+	"runtime.blockUntilEmptyFinalizerQueue": true,
 }
 
 // linknameForwardBuiltins is the whitelist of cross-package //go:linkname PULL targets whose
@@ -1782,12 +1787,21 @@ func (v *Visitor) funcLinknameForward(funcDecl *ast.FuncDecl) (alias string, tar
 		pkgPath := target[:dot]
 		targetFunc = getSanitizedFunctionName(target[dot+1:])
 
-		// The C# using-alias is the package's simple name — the last path segment (`syscall`).
-		if slash := strings.LastIndex(pkgPath, "/"); slash >= 0 {
-			pkgPath = pkgPath[slash+1:]
+		// The C# using-alias is whatever THIS file actually emitted for the target package —
+		// never the bare last path segment. When the package name collides with a namespace
+		// segment the collision analysis renames the alias (sync's oncefunc_test.go emits
+		// `using Δruntime = runtime_package;` because the bare `runtime` would bind the
+		// `go.runtime` NAMESPACE), and a forwarder spelled `runtime.<fn>` is then CS0234.
+		// An explicit `import r "runtime"` is recorded in importPathAliases; otherwise the
+		// canonical alias (which importQualifier has already renamed if needed) is what
+		// visitImportSpec emitted.
+		if emitted, ok := v.importPathAliases[pkgPath]; ok && emitted != "" {
+			return emitted, targetFunc, true
 		}
 
-		return getSanitizedIdentifier(pkgPath), targetFunc, true
+		alias, _ = packageUsingAlias(pkgPath)
+
+		return getSanitizedImport(importQualifier(alias)), targetFunc, true
 	}
 
 	return "", "", false
@@ -1914,5 +1928,11 @@ func (v *Visitor) isUintptrBridgeable(t types.Type) bool {
 
 	basic, ok := t.Underlying().(*types.Basic)
 
-	return ok && basic.Info()&types.IsInteger != 0
+	// UINTPTR-KIND only, not every integer. The bridge exists because a linkname pair can name
+	// the same uintptr-shaped value under two different NOMINAL types (x/sys/windows's `Handle`
+	// / `Errno` vs syscall's `uintptr`), which C# will not convert implicitly. A SIZED integer
+	// (int32/int64/…) is the same C# type on both sides and needs no bridge — casting it through
+	// uintptr instead narrows it on 32-bit and does not even bind (`(uintptr)timeout` handed to
+	// an `int64` parameter, sync's runtime.blockUntilEmptyFinalizerQueue pull, CS1503).
+	return ok && basic.Kind() == types.Uintptr
 }
