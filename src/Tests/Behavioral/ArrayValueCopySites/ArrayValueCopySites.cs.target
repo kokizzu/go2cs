@@ -6,7 +6,7 @@ partial class main_package {
 
 [GoType("[3]nint")] partial struct Row;
 
-[GoType] partial struct holder {
+[GoType] [GoValueClone("arr")] partial struct holder {
     internal array<nint> arr = new(3);
 }
 
@@ -29,6 +29,8 @@ internal static Row leakRow() {
 }
 
 internal static array<nint> get(this holder h) {
+    h = h.ΔClone();
+
     return h.arr.Clone();
 }
 

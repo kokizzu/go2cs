@@ -6,11 +6,11 @@ partial class main_package {
 
 [GoType("[4]byte")] partial struct row;
 
-[GoType] partial struct inner {
+[GoType] [GoValueClone("b")] partial struct inner {
     internal array<byte> b = new(3);
 }
 
-[GoType] partial struct holder {
+[GoType] [GoValueClone("grid")] partial struct holder {
     internal array<array<byte>> grid = new(2, () => new(3));
 }
 

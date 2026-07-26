@@ -183,7 +183,7 @@ internal static (int64, error) fill(this ж<tally> Ꮡt, Δio.Reader r) {
 
 [GoType("[4]byte")] partial struct quad;
 
-[GoType] partial struct frame {
+[GoType] [GoValueClone("data")] partial struct frame {
     internal quad data;
 }
 

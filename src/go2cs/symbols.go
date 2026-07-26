@@ -44,3 +44,23 @@ const PointerDerefOp = "~"                       // Example: `~ptr` for derefere
 // nil — the ref is never read while the box is nil, so the standard `*p` panic semantics are
 // preserved (a genuine nil deref still uses `~`/`.Value`). Includes `()` as it is a method call.
 const NilSafeDerefAccessor = "DerefOrNil()"
+
+// The -tests package-init hook: the erasable classic-partial method a production
+// package_init.cs static ctor ends with when converting under -tests, IMPLEMENTED by the
+// internal test variant's relocated-initializer file (go2cs initOrderOperations.go /
+// writeTestVariantInitFile). The PartialStubGenerator must never stub it - an
+// unimplemented hook is erased by C# by design (the production assembly excludes the
+// *_test.cs implementation), and a throwing stub would detonate the package class's
+// static ctor for every consumer of the production assembly. The doubled marker keeps
+// the name out of the relocated-var method space ("init" + marker + <var name>).
+const PackageTestInitHookMethod = "init\u1D1B\u1D1Btests"
+
+// ValueCloneMethod is the generated deep-copy method on a converted Go STRUCT that carries
+// fixed-size ARRAY fields (see GoValueCloneAttribute): a plain C# struct copy would leave those
+// arrays aliased, so every Go by-value copy site calls this instead. Deliberately NOT named
+// `Clone` — a Go type may declare its own `Clone` method (vendored x/crypto/sha3's `state`), which
+// converts to an extension method on the package class, and an instance member of the same name
+// SHADOWS it (the recv-overload forwarder then bound to the wrong return type). The Δ prefix is
+// the same collision-avoidance marker the promoted-accessor rename uses. Arrays keep golib's own
+// `Clone()` — see valueCloneSuffix.
+const ValueCloneMethod = "\u0394Clone"

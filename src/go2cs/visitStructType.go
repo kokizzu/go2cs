@@ -148,8 +148,26 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		access = "public "
 	}
 
+	// A struct carrying FIXED-SIZE ARRAY fields (directly, or through another such struct) is not
+	// completely copied by a plain C# struct assignment — `array<T>` is a struct over a shared T[]
+	// backing, so the copy's array writes reach back into the source. Name those fields for
+	// go2cs-gen, which generates the struct's IGoValueClone `Clone()`; every Go by-value copy site
+	// appends it (typeNeedsValueClone / arrayCloneOperations.go). A struct that needs nothing is
+	// unstamped and unchanged.
+	var valueCloneAttr string
+
+	if cloneFields := structValueCloneFields(identType); len(cloneFields) > 0 {
+		quotedFields := make([]string, len(cloneFields))
+
+		for i, fieldName := range cloneFields {
+			quotedFields[i] = fmt.Sprintf("%q", fieldName)
+		}
+
+		valueCloneAttr = fmt.Sprintf("[GoValueClone(%s)] ", strings.Join(quotedFields, ", "))
+	}
+
 	v.recordTypeAccessibility("struct", structTypeName, typeParams, access)
-	v.writeStringLn(target, "%s[GoType%s] %spartial struct %s%s%s{", localNameAttr, dynamic, access, structTypeName, typeParams, constraints)
+	v.writeStringLn(target, "%s[GoType%s] %s%spartial struct %s%s%s{", localNameAttr, dynamic, valueCloneAttr, access, structTypeName, typeParams, constraints)
 	v.indentLevel++
 
 	var prevNameDiscardedCount int

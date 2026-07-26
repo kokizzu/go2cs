@@ -358,6 +358,25 @@ public static class Common
         return SyntaxFacts.GetKeywordKind(identifier) != SyntaxKind.None ? $"@{identifier}" : identifier;
     }
 
+    // A type name written in a DECLARATION position needs the escape for CONTEXTUAL keywords too:
+    // `public record ΔClone()` parses as a positional RECORD DECLARATION rather than a method
+    // returning the struct named `record` (net/http/fcgi's `type record struct` — CS1514/CS1519 x7 in
+    // the generated value-clone). EscapeCsKeyword above covers only reserved words, which is what a
+    // member-name position needs. A generic name keeps its type ARGUMENTS unescaped (`@record<T>`).
+    public static string EscapeCsTypeName(string typeName)
+    {
+        if (string.IsNullOrWhiteSpace(typeName) || typeName.StartsWith("@"))
+            return typeName;
+
+        int angle = typeName.IndexOf('<');
+        string simpleName = angle < 0 ? typeName : typeName.Substring(0, angle);
+
+        if (SyntaxFacts.GetKeywordKind(simpleName) == SyntaxKind.None && SyntaxFacts.GetContextualKeywordKind(simpleName) == SyntaxKind.None)
+            return typeName;
+
+        return $"@{typeName}";
+    }
+
     public static string GetScope(string identifier)
     {
         char firstChar = identifier[0];

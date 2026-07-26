@@ -9,12 +9,12 @@ partial class main_package {
     internal @string name;
 }
 
-[GoType] partial struct formatter {
+[GoType] [GoValueClone("pad")] partial struct formatter {
     internal partial ref flags flags { get; }
     internal array<byte> pad = new(3);
 }
 
-[GoType] partial struct printer {
+[GoType] [GoValueClone("f")] partial struct printer {
     internal formatter f;
 }
 

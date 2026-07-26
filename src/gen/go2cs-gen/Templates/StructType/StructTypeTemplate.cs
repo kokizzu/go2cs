@@ -23,6 +23,7 @@ internal class StructTypeTemplate : TemplateBase
     public required string FullyQualifiedStructType;
     public required List<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct)> StructMembers;
     public required bool HasEqualityOperators;
+    public string[] ValueCloneFields = [];
 
     private string? m_nonGenericStructName;
     public string NonGenericStructName => m_nonGenericStructName ??= GetSimpleName(StructName, true);
@@ -42,17 +43,17 @@ internal class StructTypeTemplate : TemplateBase
     public override string TemplateBody =>
         $$"""
             [{{GeneratedCodeAttribute}}]
-            {{Scope}} partial struct {{StructName}}
+            {{Scope}} partial struct {{StructName}}{{ValueCloneBaseList}}
             {
                 // Promoted Struct References
                 {{PromotedStructDeclarations}}
-        
+
                 // Field References
                 {{FieldReferences}}
-                
+
                 // Constructors
                 {{Constructors}}
-                
+                {{ValueCloneImplementation}}
                 // Handle comparisons between struct '{{NonGenericStructName}}' instances
                 public bool Equals({{StructName}} other) =>
                     {{CompareFields}};
@@ -82,6 +83,51 @@ internal class StructTypeTemplate : TemplateBase
                 ]), "}");
             }{{PromotedStructReceivers()}}
         """;
+
+    // A Go struct carrying FIXED-SIZE ARRAY fields is not completely copied by a plain C# struct
+    // assignment: `array<T>` (and the generated named-array wrapper) is a struct over a shared T[]
+    // backing, so the copy's array writes reach back into the source — crypto/sha256's `Sum` copies
+    // the digest (`d0 := *d`) precisely so it can finalize the copy while the caller keeps writing
+    // the original, and the aliased state made every second Sum wrong. The CONVERTER decides which
+    // fields need the deep copy (it alone has the Go type information) and names them in
+    // [GoValueClone(…)]; this emits the matching Clone(), and every Go by-value copy site calls it.
+    // EMBEDDED members are never listed — they are held as ж<T> boxes whose accessor writes THROUGH
+    // the box (see GoValueCloneAttribute).
+    private string ValueCloneBaseList => ValueCloneFields.Length > 0 ? " : IGoValueClone" : "";
+
+    private string ValueCloneImplementation
+    {
+        get
+        {
+            if (ValueCloneFields.Length == 0)
+                return "";
+
+            StringBuilder result = new();
+
+            result.Append($"\r\n{TypeElemIndent}// Go by-value copy of struct '{NonGenericStructName}'");
+            // EscapeCsTypeName: a struct named after a CONTEXTUAL keyword makes
+            // `public record ΔClone()` parse as a positional record declaration.
+            string declaredName = EscapeCsTypeName(StructName);
+
+            result.Append($"\r\n{TypeElemIndent}public {declaredName} {ValueCloneMethod}()");
+            result.Append($"\r\n{TypeElemIndent}{{");
+            result.Append($"\r\n{TypeElemIndent}    {declaredName} copy = this;");
+
+            // One member name serves EVERY clone-needing field type: a nested struct declares
+            // ValueCloneMethod itself, and the array kinds (golib's array<T>, the named-array and
+            // array-view wrappers) alias it to their own public Clone(). The converter's stamp is
+            // the authority on WHICH fields need it.
+            foreach (string fieldName in ValueCloneFields)
+                result.Append($"\r\n{TypeElemIndent}    copy.{fieldName} = {fieldName}.{ValueCloneMethod}();");
+
+            result.Append($"\r\n{TypeElemIndent}    return copy;");
+            result.Append($"\r\n{TypeElemIndent}}}");
+            result.Append($"\r\n\r\n{TypeElemIndent}object ICloneable.Clone() => {ValueCloneMethod}();");
+            result.Append("\r\n");
+
+            return result.ToString();
+        }
+    }
 
     private string PromotedStructDeclarations
     {

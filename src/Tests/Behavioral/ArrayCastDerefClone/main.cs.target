@@ -15,7 +15,7 @@ internal static array<uintptr> typedCastDerefDirect(ж<array<uintptr>> Ꮡp) {
     return (~Ꮡp).Clone();
 }
 
-[GoType] partial struct holder {
+[GoType] [GoValueClone("r")] partial struct holder {
     internal Row r;
 }
 

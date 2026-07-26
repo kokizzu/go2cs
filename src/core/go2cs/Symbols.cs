@@ -48,5 +48,15 @@ public static class Symbols
     // *_test.cs implementation), and a throwing stub would detonate the package class's
     // static ctor for every consumer of the production assembly. The doubled marker keeps
     // the name out of the relocated-var method space ("init" + marker + <var name>).
-    public const string PackageTestInitHookMethod = "init" + TempVarMarker + TempVarMarker + "tests";
+    public const string PackageTestInitHookMethod = "initᴛᴛtests";
+
+    // ValueCloneMethod is the generated deep-copy method on a converted Go STRUCT that carries
+    // fixed-size ARRAY fields (see GoValueCloneAttribute): a plain C# struct copy would leave those
+    // arrays aliased, so every Go by-value copy site calls this instead. Deliberately NOT named
+    // `Clone` — a Go type may declare its own `Clone` method (vendored x/crypto/sha3's `state`), which
+    // converts to an extension method on the package class, and an instance member of the same name
+    // SHADOWS it (the recv-overload forwarder then bound to the wrong return type). The Δ prefix is
+    // the same collision-avoidance marker the promoted-accessor rename uses. Arrays keep golib's own
+    // `Clone()` — see valueCloneSuffix.
+    public const string ValueCloneMethod = "ΔClone";
 }

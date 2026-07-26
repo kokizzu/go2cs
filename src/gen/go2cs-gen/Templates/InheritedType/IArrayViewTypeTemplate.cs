@@ -71,6 +71,10 @@ internal static class IArrayViewTypeTemplate
 
                 public {{objectName}} Clone() => new {{objectName}}(view.Clone());
 
+                // Uniform value-copy member name a generated struct clone calls on every
+                // clone-needing field (see GoValueCloneAttribute); copy SITES use Clone().
+                public {{objectName}} {{ValueCloneMethod}}() => Clone();
+
                 object global::System.ICloneable.Clone() => Clone();
         """;
 }

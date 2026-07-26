@@ -1318,6 +1318,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckStringZeroValueConcat() => CheckTarget("StringZeroValueConcat");
 
     [TestMethod]
+    public void CheckStructArrayFieldValueCopy() => CheckTarget("StructArrayFieldValueCopy");
+
+    [TestMethod]
     public void CheckStructFieldNamedOther() => CheckTarget("StructFieldNamedOther");
 
     [TestMethod]

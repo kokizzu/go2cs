@@ -4,7 +4,7 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-[GoType] partial struct holder {
+[GoType] [GoValueClone("tbl")] partial struct holder {
     internal @string name;
     internal array<nint> tbl = new(8);
     internal slice<nint> tail;

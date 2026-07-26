@@ -210,14 +210,14 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 		// BEFORE any interface conversion, so an `any`/interface slot boxes the clone.
 		cloneArrayElement := callContext != nil && callContext.cloneArrayArg != nil && callContext.cloneArrayArg[i]
 
-		// Routed through appendArrayValueClone so a `~`-prefixed deref rendering is wrapped
+		// Routed through appendValueClone so a `~`-prefixed deref rendering is wrapped
 		// before the suffix binds (C# postfix beats unary); byte-neutral for every other shape.
 		clonedElement := func(rendered string) string {
 			if !cloneArrayElement {
 				return rendered
 			}
 
-			return appendArrayValueClone(rendered)
+			return appendValueClone(rendered, v.getExprType(expr))
 		}
 
 		if tupleExpanded {

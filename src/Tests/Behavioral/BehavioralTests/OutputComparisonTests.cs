@@ -1241,6 +1241,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckStringZeroValueConcat() => CheckTarget("StringZeroValueConcat");
 
     [TestMethod]
+    public void CheckStructArrayFieldValueCopy() => CheckTarget("StructArrayFieldValueCopy");
+
+    [TestMethod]
     public void CheckStructFieldNamedOther() => CheckTarget("StructFieldNamedOther");
 
     [TestMethod]
