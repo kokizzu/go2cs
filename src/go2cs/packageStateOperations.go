@@ -65,6 +65,8 @@ func resetPackageState(pkg *packages.Package) {
 	nameCollisions = make(map[string]bool)
 	globalTempVarCount = make(map[string]int)
 	packageDynamicTypeNames = make(map[string]string)
+	packageLiftedTypeNames = HashSet[string]{}
+	productionLiftedTypeNames = nil
 	packageManualTypeNames = make(map[string]bool)
 	packageAddressedGlobals = make(map[types.Object]bool)
 	packageNilArgPtrParams = make(map[*types.Func]HashSet[int])

@@ -3,7 +3,8 @@
 // type (`ref var tt = ref heap(new compareTestsᴛ1(), …)`) — the type-name render cannot
 // fall back to raw Go type text. compareTests (zvars.go) exercises the deferred-marker
 // path (declaring file visited after this one); sizeTests (avars.go) the direct
-// registry-hit path (declaring file visited first).
+// registry-hit path (declaring file visited first). bvars.go/yvars.go add the lifted-NAME
+// half: two sibling files whose lifts reach for the same generated name must not both claim it.
 package main
 
 import "fmt"
@@ -18,4 +19,7 @@ func main() {
 		q := &st
 		fmt.Println(q.name, q.want)
 	}
+
+	fmt.Println(Bee{}.probe())
+	fmt.Println(Why{}.probe())
 }

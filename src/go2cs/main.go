@@ -618,6 +618,30 @@ var packageLock = sync.Mutex{}
 // concurrent file-visit barrier, bridges that gap. Guarded by packageLock.
 var packageDynamicTypeNames map[string]string
 
+// packageLiftedTypeNames holds every lifted type name (an anonymous struct/interface, or a
+// function-local declaration hoisted out of its body) CLAIMED so far by this package's conversion.
+// Every lifted type is emitted as a NESTED type of the single `<pkg>_package` partial class, so the
+// uniquing scope must be the PACKAGE, not the file: two files that each lift `struct{…}` under the
+// fallback name `type` both emitted `Δtype`, and the class then declares it twice — CS0579 on the
+// duplicated `[GoType]` attribute plus CS0111/CS0557 on every member go2cs-gen generates for the
+// doubled definition (encoding/gob's type.cs vs encoder_test.cs, 32 errors). Reset per
+// package/variant by resetPackageState; written under packageLock.
+//
+// A `[module: GoManualConversion]` file does NOT claim here — its emission is redirected to a
+// non-compiled `.cs.auto` review sibling, so a claim would push a REAL file's type name to a higher
+// ordinal for a declaration that is never compiled. Those visitors keep the per-file set alone.
+var packageLiftedTypeNames HashSet[string]
+
+// productionLiftedTypeNames pins the lifted type names the PRODUCTION conversion of this package
+// already claimed, for the `-tests` INTERNAL variant only: that variant emits its `_test.go` files
+// into the SAME `<pkg>_package` class while the production `.cs` on disk are NOT regenerated, so
+// those names are immutable and a test-side lift must step around them. Same production-pinned rule
+// testMethodRenames applies to declarators and the Tier-C hoist seed applies to literal fields. Nil
+// for a production conversion and for the EXTERNAL variant, whose `<pkg>_test_package` class is a
+// separate scope that may reuse the names freely. Installed by convertTestVariant from the seed its
+// caller captured before the first variant's resetPackageState.
+var productionLiftedTypeNames HashSet[string]
+
 // packageManualTypeNames records the CONVERTED names of this package's manually-converted
 // types (see manualTypeOperations.go), collected as visitTypeSpec skips their declarations.
 // Consumed by the GoImplicitConv attribute emission, which must not reference the skipped
@@ -4328,14 +4352,53 @@ func (v *Visitor) getUniqueLiftedTypeName(typeName string) string {
 	// to `trace`→`Δtrace`) would check the sanitized `Δtrace`, miss the `trace` var, and collide with
 	// it (a nested type + a property both named `Δtrace`, CS0102). Also test the original name so the
 	// first iteration forces a `ᴛ1` suffix in that case.
-	for v.liftedTypeNames.Contains(uniqueTypeName) || v.typeExists(uniqueTypeName) || (count == 0 && v.typeExists(originalName)) {
+	for v.liftedTypeNameTaken(uniqueTypeName) || v.typeExists(uniqueTypeName) || (count == 0 && v.typeExists(originalName)) {
 		count++
 		uniqueTypeName = fmt.Sprintf("%s%s%d", typeName, TempVarMarker, count)
 	}
 
-	v.liftedTypeNames.Add(uniqueTypeName)
+	v.claimLiftedTypeName(uniqueTypeName)
 
 	return uniqueTypeName
+}
+
+// liftedTypeNameTaken reports whether a lifted type name is already claimed. The scope is the whole
+// PACKAGE — every lifted type nests in the one `<pkg>_package` class (see packageLiftedTypeNames) —
+// plus, on the `-tests` internal variant, the production names that class already declares on disk.
+// A hand-owned file's visitor sees only its own per-file claims: its emission lands in a
+// non-compiled `.cs.auto` sibling, so it neither collides with nor constrains the real declarations.
+func (v *Visitor) liftedTypeNameTaken(name string) bool {
+	if v.liftedTypeNames.Contains(name) {
+		return true
+	}
+
+	if v.manualConversion {
+		return false
+	}
+
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	return packageLiftedTypeNames.Contains(name) || productionLiftedTypeNames.Contains(name)
+}
+
+// claimLiftedTypeName records a lifted type name against this file and — unless the file is
+// hand-owned — against the package (see liftedTypeNameTaken).
+func (v *Visitor) claimLiftedTypeName(name string) {
+	v.liftedTypeNames.Add(name)
+
+	if v.manualConversion {
+		return
+	}
+
+	packageLock.Lock()
+
+	if packageLiftedTypeNames == nil {
+		packageLiftedTypeNames = HashSet[string]{}
+	}
+
+	packageLiftedTypeNames.Add(name)
+	packageLock.Unlock()
 }
 
 func (v *Visitor) liftedTypeExists(expr ast.Expr) bool {

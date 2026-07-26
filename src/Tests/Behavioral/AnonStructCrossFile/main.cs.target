@@ -19,6 +19,8 @@ internal static void Main() {
         var q = Ꮡst;
         fmt.Println((~q).name, (~q).want);
     }
+    fmt.Println(new Bee(nil).probe());
+    fmt.Println(new Why(nil).probe());
 }
 
 } // end main_package

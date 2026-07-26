@@ -494,6 +494,13 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 	// pass — resetPackageState deliberately does not clear this map.
 	testMethodRenames = make(map[types.Object]bool)
 
+	// The lifted type names the PRODUCTION conversion of this package claimed. It ran in this same
+	// process moments ago (processConversion converts the production sources, then calls
+	// processTestConversion), so its live claim set is still standing here — captured BEFORE the
+	// first variant's resetPackageState clears it. Only the INTERNAL variant is seeded with it: its
+	// test files emit into the production package class, where those names are already taken.
+	productionLiftSeed := packageLiftedTypeNames
+
 	testInfoPath := filepath.Join(outputPath, testPackageInfoFileName)
 
 	if model == testProjectReference {
@@ -583,7 +590,13 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			result.requiredCapabilities.UnionWith(foundMain.RequiredCapabilities)
 		}
 
-		variantOutputs, imports, err := convertTestVariant(variant, emitEntries, outputPath, projectNamespace, options)
+		var liftSeed HashSet[string]
+
+		if variant == internal {
+			liftSeed = productionLiftSeed
+		}
+
+		variantOutputs, imports, err := convertTestVariant(variant, emitEntries, outputPath, projectNamespace, liftSeed, options)
 		if err != nil {
 			return result, err
 		}
@@ -981,9 +994,15 @@ func selectCompileExcludedTestFiles(variants ...*packages.Package) map[string]bo
 // Files convert SEQUENTIALLY in pkg.Syntax order for byte-reproducible output, mirroring
 // processConversion (the per-file visitors share package-level state claimed at visit time; the
 // branch's concurrent goroutines reproduced exactly the nondeterminism master removed).
-func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPath, projectNamespace string, options Options) ([]string, HashSet[string], error) {
+func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPath, projectNamespace string, liftSeed HashSet[string], options Options) ([]string, HashSet[string], error) {
 	resetPackageState(pkg)
 	packageNamespace = projectNamespace
+
+	// The lifted type names the production conversion already claimed (see
+	// productionLiftedTypeNames). Non-nil for the INTERNAL variant only — its test files emit into
+	// the production `<pkg>_package` class, whose on-disk `.cs` are not regenerated here, so a lift
+	// that reuses one of those names declares the nested type twice.
+	productionLiftedTypeNames = liftSeed
 
 	// The package under test is RECOMPILED into this assembly, so a record naming one of its types
 	// through its fully-qualified class (how an external `<name>_test` variant renders it, having

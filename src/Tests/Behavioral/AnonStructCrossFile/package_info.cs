@@ -57,6 +57,12 @@ public static partial class main_package
 
     // <TypeAccessibility>
     internal partial struct compareTestsᴛ1 {}
+    internal partial struct probe_inner {}
+    internal partial struct probe_innerᴛ1 {}
     internal partial struct sizeTestsᴛ1 {}
+    public partial struct Bee {}
+    public partial struct Why {}
+    public partial struct Δtype {}
+    public partial struct Δtypeᴛ1 {}
     // </TypeAccessibility>
 }

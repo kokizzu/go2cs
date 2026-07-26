@@ -6657,10 +6657,63 @@ foreach (var (_, vᴛ1) in compareTests) {
 }
 ```
 
-Guarded by `AnonStructCrossFile` (a three-file package covering BOTH directions: `zvars.go`
-declares `compareTests` and sorts after `main.go`, forcing the marker path; `avars.go` declares
-`sizeTests` and sorts before it, taking the direct registry hit — main.go ranges over both with
-`&tt`/`&st` forcing the heap box, output-compared vs Go).
+Guarded by `AnonStructCrossFile` (`zvars.go` declares `compareTests` and sorts after `main.go`,
+forcing the marker path; `avars.go` declares `sizeTests` and sorts before it, taking the direct
+registry hit — main.go ranges over both with `&tt`/`&st` forcing the heap box, output-compared vs
+Go).
+
+### A lifted type name is unique across the PACKAGE, and the `-tests` variant inherits production's
+
+Resolution (above) is one half; **naming** is the other. Every lifted type — an anonymous
+struct/interface, or a function-local declaration hoisted out of its body — is emitted as a
+**nested type of the single `<pkg>_package` partial class**, so its name has to be unique across
+the whole package. The uniquing set was per-FILE, which is a scope narrower than the emission
+target: two sibling files whose lifts reach for the same generated name each believed the name
+free and both declared it.
+
+Both spellings a lift can start from are exposed to this. An anonymous type with no name of its
+own falls back to the generic `type` (rendered `Δtype`, then `Δtypeᴛ1`, `Δtypeᴛ2`, … per
+collision), and a function-local declaration is prefixed with the **method name only** — which
+sibling files legitimately share, since Go allows one `probe` method per receiver type.
+encoding/gob hit both at once: production `type.cs` and the internal-variant `encoder_test.cs`
+each lifted a differently-shaped `struct{…}` to `Δtype`/`Δtypeᴛ1`, and the class then carried two
+definitions of each — CS0579 on the doubled `[GoType]` attribute plus CS0111/CS0557 on every
+member `go2cs-gen`'s `TypeGenerator` emitted for the duplicate (32 errors, the whole package
+blocked). Note the failure is **not** avoided when the two anonymous structs happen to be
+structurally identical: the second `[GoType("dyn")]` is still a duplicate attribute.
+
+The claim set is therefore package-scoped (`packageLiftedTypeNames`, reset per package/variant),
+with two deliberate exemptions:
+
+- A `[module: GoManualConversion]` file **does not claim**. Its emission is redirected to a
+  non-compiled `.cs.auto` review sibling, so a claim there would push a real file's type name to a
+  higher ordinal for a declaration that never compiles. Those visitors keep the per-file set alone.
+- The `-tests` **INTERNAL** variant is pre-seeded with the names the production conversion claimed
+  (`productionLiftedTypeNames`). That variant emits its `_test.go` files into the production
+  package class while the production `.cs` on disk are **not** regenerated, so those names are
+  immutable and the test-side lift is the side that moves — the same production-pinned rule
+  `testMethodRenames` applies to declarators and the Tier-C hoist seed applies to literal fields.
+  The seed is the production run's live claim set, captured in `convertTestVariants` before the
+  first variant's `resetPackageState` (production conversion runs moments earlier in the same
+  process). The **EXTERNAL** variant is not seeded: its `<pkg>_test_package` is a separate class
+  and may reuse every production name freely.
+
+```csharp
+// type.cs (production, pinned):        encoder_test.cs (internal variant, steps around):
+[GoType("dyn")] partial struct Δtype {  [GoType("dyn")] partial struct Δtypeᴛ7 {
+    internal nint r7;                       internal nint A;
+}                                       }
+```
+
+Residual: two package-level anonymous structs that are structurally IDENTICAL but declared in
+different files still lift to two distinct C# types (one Go type split in two) rather than
+sharing one. That combination cannot compile today either — it is the CS0579 case above — so
+nothing regressed; unifying them needs the second declaration's *emission* suppressed, not just
+its name reused.
+
+Guarded by `AnonStructCrossFile`'s `bvars.go`/`yvars.go` (both manifestations, straddling
+`main.go` so file order is exercised in both directions) and, for the `-tests` seed,
+`TestTestVariantPinsProductionLiftedTypeNames`.
 
 ### Function-literal parameters share the body scope
 Go declares parameters in the function block, so a body-level `fpath, err := ...` REUSES a literal's `err` parameter. The variable analysis gives literals ONE merged scope (params + body declarations) mirroring real function declarations; a separate param scope had made the `:=` a shadow declaration beside later reuses (CS0841/CS0128, os CopyFS's WalkDir literal). Guarded by `LambdaFunctions` (`probe`).
