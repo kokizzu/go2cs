@@ -1570,8 +1570,17 @@ public static class builtin
         DynamicallyAccessedMemberTypes.PublicFields
     )] T>(object? target, out T value)
     {
-        while (target is IInterfaceAdapter interfaceAdapter)
+        // One IGoAdapter probe gates BOTH adapter tiers — this unwrap loop and the IжAdapter match
+        // below — so an ordinary Go value settles "not a wrapper" with a single failing interface
+        // test instead of one per kind (see IGoAdapter). Re-read after each unwrap, since what an
+        // adapter yields need not be one itself.
+        bool isAdapter = target is IGoAdapter;
+
+        while (isAdapter && target is IInterfaceAdapter interfaceAdapter)
+        {
             target = interfaceAdapter.Value;
+            isAdapter = target is IGoAdapter;
+        }
 
         // A nil interface asserts as a failure, never a match (Go: 'v, ok := nil.(T)' is ok=false)
         if (target is null)
@@ -1590,13 +1599,17 @@ public static class builtin
             case T typedTarget:
                 value = typedTarget;
                 return true;
-            // An interface value created from a Go POINTER (`var s Iface = &t`) is a generated
-            // IжAdapter wrapping the receiver box; a type assert back to the pointer type
-            // (`s.(*T)`, targeting ж<T>) unwraps the adapter to the original box, matching
-            // Go's interface-holds-the-pointer semantics.
-            case IжAdapter { Box: T box }:
-                value = box;
-                return true;
+        }
+
+        // An interface value created from a Go POINTER (`var s Iface = &t`) is a generated
+        // IжAdapter wrapping the receiver box; a type assert back to the pointer type
+        // (`s.(*T)`, targeting ж<T>) unwraps the adapter to the original box, matching
+        // Go's interface-holds-the-pointer semantics. Kept BELOW the two matches above: an
+        // adapter that is itself a T resolves as that T, exactly as the switch ordering did.
+        if (isAdapter && target is IжAdapter { Box: T box })
+        {
+            value = box;
+            return true;
         }
 
         if (AssertFacts<T>.IsInterface)
@@ -1855,25 +1868,29 @@ public static class builtin
     /// </remarks>
     public static object type(this object target)
     {
-        // Go interface-to-interface assignment preserves the original dynamic value — unwrap the
-        // generated interface adapters so case patterns see that value (mirrors the type-assert
-        // machinery in _<T>).
-        while (target is IInterfaceAdapter { Value: not null } interfaceAdapter)
-            target = interfaceAdapter.Value;
-
-        // Infer common go type as needed
-        return target switch
+        // Both adapter tiers below are gated on ONE IGoAdapter probe: an ordinary Go value is
+        // neither kind, and settling that with a single failing interface test rather than one per
+        // kind is what keeps a type switch off the ~3 ns-per-probe cost (see IGoAdapter).
+        if (target is IGoAdapter)
         {
-            string str => new @string(str),
+            // Go interface-to-interface assignment preserves the original dynamic value — unwrap the
+            // generated interface adapters so case patterns see that value (mirrors the type-assert
+            // machinery in _<T>).
+            while (target is IInterfaceAdapter { Value: not null } interfaceAdapter)
+                target = interfaceAdapter.Value;
+
             // An interface value created from a Go POINTER (`var s Iface = &t`) is a generated
             // IжAdapter wrapping the receiver box — its Go dynamic type is the pointer itself,
             // so a `case *T:` label (emitted `case ж<T> t:`) must match the box. A null Box
             // (interface holding a nil *T) stays wrapped: Go would still match `case *T:` there,
             // but no C# type pattern can bind null — the adapter at least keeps `case null:`
             // (Go `case nil:`) a non-match, since such an interface value is NOT nil.
-            IжAdapter { Box: not null } adapter => adapter.Box,
-            _ => target
-        };
+            if (target is IжAdapter { Box: not null } adapter)
+                return adapter.Box;
+        }
+
+        // Infer common go type as needed
+        return target is string str ? new @string(str) : target;
     }
 
     // ** Conversion Functions **

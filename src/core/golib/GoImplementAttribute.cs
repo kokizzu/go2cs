@@ -57,6 +57,19 @@ public class GoImplementAttribute<TStruct, TInterface> : Attribute
 }
 
 /// <summary>
+/// Marks a generated wrapper whose Go dynamic value is something OTHER than the wrapper itself.
+/// </summary>
+/// <remarks>
+/// The two adapter kinds below answer different unwrap questions, but every consumer asks the same
+/// one first — "is this object standing in for another value?" — and for ordinary Go values the
+/// answer is no. This base lets that be settled with ONE type test instead of one per kind, which
+/// matters because a FAILING interface type test costs ~3 ns (the runtime walks the type's interface
+/// map) where a failing class test is free. A type switch and a type assert each pay it per
+/// evaluation: probing both kinds separately was ~11.6 ns per iteration of the PerfIface benchmark.
+/// </remarks>
+public interface IGoAdapter;
+
+/// <summary>
 /// Implemented by generated interface-implementation adapters that wrap the receiver box
 /// <c>ж&lt;T&gt;</c> of a POINTER-sourced Go interface value.
 /// </summary>
@@ -65,7 +78,7 @@ public class GoImplementAttribute<TStruct, TInterface> : Attribute
 /// assert machinery unwraps the adapter through <see cref="Box"/>. Adapter equality also
 /// delegates to box identity, matching Go pointer-interface equality.
 /// </remarks>
-public interface IжAdapter
+public interface IжAdapter : IGoAdapter
 {
     /// <summary>
     /// Gets the wrapped receiver box (a <c>ж&lt;T&gt;</c>).
@@ -80,7 +93,7 @@ public interface IжAdapter
 /// Go interface-to-interface assignment preserves the original dynamic value. The runtime unwraps
 /// these adapters through <see cref="Value"/> for type assertions and interface equality.
 /// </remarks>
-public interface IInterfaceAdapter
+public interface IInterfaceAdapter : IGoAdapter
 {
     /// <summary>
     /// Gets the wrapped source interface value.
