@@ -40,4 +40,13 @@ public static class Symbols
     // channel wrapper template forwards these to its underlying channel<T>.
     public const string ChannelLeftOp = "ᐸꟷ";
     public const string ChannelRightOp = "ꟷᐳ";
+    // The -tests package-init hook: the erasable classic-partial method a production
+    // package_init.cs static ctor ends with when converting under -tests, IMPLEMENTED by the
+    // internal test variant's relocated-initializer file (go2cs initOrderOperations.go /
+    // writeTestVariantInitFile). The PartialStubGenerator must never stub it - an
+    // unimplemented hook is erased by C# by design (the production assembly excludes the
+    // *_test.cs implementation), and a throwing stub would detonate the package class's
+    // static ctor for every consumer of the production assembly. The doubled marker keeps
+    // the name out of the relocated-var method space ("init" + marker + <var name>).
+    public const string PackageTestInitHookMethod = "init" + TempVarMarker + TempVarMarker + "tests";
 }

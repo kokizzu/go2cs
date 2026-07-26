@@ -231,6 +231,15 @@ This is correct by C#'s own initialization guarantees: **all** static field init
 
 Notes: a **blank** (`_`) initializer never relocates (its value is unreadable, so its order is immaterial — it still runs as a field initializer for its side effect); the `initᴛ` method name composes the TempVarMarker so it cannot collide with any Go identifier; an **addressed** global relocates as a default-valued heap box whose ctor assignment writes through the ref property into the same box; the rare multi-value forms (tuple-deconstructing package vars, hoisted multi-value initializers) are not yet relocatable and warn loudly if flagged (no stdlib occurrence). Guarded by the `PackageVarInitOrder` behavioral test (all three hazard shapes plus IIFE and moved-dependency closure, output-compared vs Go).
 
+### Test-variant (`-tests`) initializers relocate too — through the erasable static-ctor hook
+
+The same pass runs in the `-tests` conversion driver (the three-drivers rule): a `_test.go` package-level var whose initializer reads a var declared later in the file, in another file, or in the production package cross-file has exactly the same hazard — internal/fmtsort's `compareTests` reads `chans`/`ints` declared 170 lines below it, so every test died in the class initializer on the default slice; encoding/gob's `basicTypes` table reads production `type.go` vars cross-file. The relocated **emission** is unchanged (bare field + `initᴛ<name>` method beside the declaration); only the **ordered-constructor site** differs by variant, because a C# class gets ONE static constructor across all partial parts:
+
+* **External variant** (`<pkg>_test` — its own `<pkg>_test_package` class): a generated `package_init_external_test.cs` supplies the class's static constructor directly, exactly like `package_init.cs`.
+* **Internal variant** (test files join the production `<pkg>_package` class): when the production `package_init.cs` exists it already owns the single static-ctor slot, so under `-tests` its constructor ends with a call to an **erasable classic partial method** — `static partial void initᴛᴛtests();` — and the test conversion emits `package_init_internal_test.cs` implementing it with the test-side relocations. Unimplemented (the production compile set excludes `*_test.cs`), C# erases both the declaration and the call, so the production assembly is untouched at runtime. Test relocations therefore run after every production relocation — semantically safe, since a production initializer can never depend on a test var. When the production package relocated nothing, the internal test variant claims the static ctor itself.
+
+Two hard-won rules ride along: the hook name doubles the TempVarMarker (`init` + `ᴛᴛ` + `tests`, `Symbols.PackageTestInitHookMethod`) so no relocated var's `initᴛ<name>` method can collide; and go2cs-gen's **PartialStubGenerator must never stub the hook** — its whole design is C# erasure when unimplemented, and the generator's `NotImplementedException` stub for "asm/cgo" bodyless partials detonated encoding/gob's static ctor for every consumer of the production assembly (go/token's serialize path) until the generator learned to skip it (guarded by `PartialStubGeneratorTests.StubsAsmPartialsButNeverTheTestInitHook`). The hook emission is `-tests`-gated, so a plain `-stdlib`/behavioral conversion is byte-identical — like the IP-4 csproj test-artifact exclusions, the production-file difference is intended `-tests` output, not drift. The relocated test files themselves ride the banked suites (fmtsort's cctor is the operational guard). The hoisted-literal interplay keeps its conservative setting (`initOrderRelocated=false` for the real test emission run): suppressing test-file hoists in initializer-reachable functions is a pure allocation pessimization, never a correctness risk, and flipping it would drift every banked `*_test.cs`.
+
 ## Compiled Library versus Source Code
 
 One big difference between Go and many other languages is the notion of _source availability_. Traditionally programming languages have depended on using a pre-compiled library — both to avoid recompiling the library and to protect source as intellectual property. Go was born in an era of faster computing and prolific open source; it relies on having access to all source at compile time, including library code. Go takes advantage of this to make interesting optimizations, especially around when a structure escapes the stack to the heap. Keeping structures off the heap means they do not need to be tracked for garbage collection, and the Go compiler manages this automatically. The interesting consequence is that, for a given use of a library as source, an application structure may or may not escape to the heap depending on how it flows through the code — an optimization only possible when all source is compiled together.
@@ -8336,6 +8345,49 @@ which Go reaches only through escape analysis (the test guards itself with `test
 and which the managed runtime provably cannot, since a returned `slice<rune>` is always a heap allocation.
 It discloses one `alloc-profile` row (signature `"Decode allocated "`) while `TestDecode` independently
 proves the decoded output is correct — the disclosure covers exactly the allocation profile, nothing else.
+
+**The reflect TYPE-RELATION mirrors + Convert (Phase-3 continuation, 2026-07-26).** Go's descriptor
+model reaches its type relations by **descriptor specialization**: when `Kind() == Interface` the
+`*abi.Type` IS an `interfaceType` allocation, so `implements()` does
+`Reinterpret<abi.Type, interfaceType>` and walks `.Methods`; `ptrTo` builds a `ptrType` prototype
+through an eface reinterpret; `FieldByName` reinterprets to `structType` and walks `.Fields`. Behind
+a **synthesized** descriptor none of that layout exists — the reinterpret produces a struct whose
+promoted-embed box is default, and the first read throws from `ж.ValueSlot` ("Cannot get reference
+to value…", the encoding/gob type-initializer crash). Reinterpret-specialization is therefore a
+class of descriptor reads that can never be honored behind the bridge; each surface severs at its
+semantic boundary onto the SAME golib machinery emitted asserts use: `rtype.Implements` /
+`rtype.AssignableTo` over `GoReflect.GoImplements` (mirroring the reflectlite increment-1 forms),
+`PointerTo` synthesizing the managed `ж<T>` pointer type (canonical via `toType`),
+`rtype.FieldByName` over the shared `GoFields` projection (top-level names; the embedded-field
+depth search is deferred with a named consumer — a promoted name answers Go's not-found path),
+and `Value.Convert` over `GoReflect.TryConvertTo` — THE convertibility relation (the recorded
+R-13 remedy), severing the `cvtInt → makeInt → unsafe_New` stub chain (R-14; internal/fmtsort's
+package-level `ct()` table). `Value.Cap`/`Value.SetLen` join over the golib container interfaces
+(gob's `decodeSlice` probes `Cap() < n` then re-lengths the header — SetLen writes the re-windowed
+slice back through the aliased box), and the hand-owned `rtype.Field` stamps the single-hop
+`StructField.Index` — an empty Index made the auto `FieldByIndex` return the struct ITSELF, so
+gob's `encodeStruct` walked every wireType field as the whole struct. Demonstrated consumers:
+encoding/gob's init + Encoder/Decoder engines (a struct round-trips end-to-end), go/token's
+`TestSerialization` (FileSet through gob, 31/31), internal/fmtsort (3/3). Registered in
+`manualConversionFuncs["reflect"]`; the banked fmtsort/go-token suites are the operational guards.
+
+**Pointer order tokens — `Value.Pointer()`/`UnsafePointer()` (golib `PointerOrderToken`).** Go
+programs order pointers *arithmetically* (`cmp.Compare(a.Pointer(), b.Pointer())` —
+internal/fmtsort's map-key ordering of `*T`/`chan`/`unsafe.Pointer` keys), so the bridge's token
+must be more than stable-per-instance: **equal Go pointers must token equally, and same-storage
+element pointers must order by element index** (Go's `&a[0] < &a[1] < &a[2]`). `INilPointer` gains
+the `PointerOrderToken` surface (a DIM default of per-instance identity): `ж<T>` answers nil → 0,
+a native alias → its real address, an array/slice-element reference → the canonical backing
+storage's identity in the high bits with the ABSOLUTE element index below (the same
+`CanonicalElement` reduction pointer equality uses), a struct-field reference → source identity ×
+field-identity token, a heap box → the referent's identity; `unsafe.Pointer` (whose VALUE is a
+real pinned address) overrides with the address itself; `channel<T>` answers through its shared
+core's identity, so every struct copy/boxing of one channel reports ONE token — what makes
+sorting channels by `Pointer()` self-consistent (fmtsort's `makeChans` pre-sorts by the same
+key). Tokens are order keys consistent with pointer equality, never an identity substitute
+(distinct storages can collide); generated named pointer/channel wrappers keep the DIM default —
+a recorded fidelity residual with no consumer. The banked fmtsort suite (TestCompare/TestOrder)
+is the operational guard.
 
 **The `reflect.DeepEqual` bridge (`reflect/deepequal_impl.cs`, Phase-4 — blocker-map R5).** Go's
 `deepValueEqual` keys its cycle-detection `visited` map on the values' internal data words (`v.ptr` /

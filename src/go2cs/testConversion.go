@@ -1144,11 +1144,8 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	globalScope := map[string]*types.Var{}
 
 	// Mirror processConversion's package-wide analysis sequence — a test file is an ordinary Go
-	// file and needs the same emission inputs. collectMovedInitVars is deliberately NOT run: the
-	// test project has no package_init.cs emission path yet, and marking vars as relocated
-	// without the emitter would drop their initializers (test-file package vars keep their
-	// inline-initializer emission; revisit if a real suite surfaces a cross-file init-order
-	// dependency in its _test.go files).
+	// file and needs the same emission inputs (collectMovedInitVars runs below, after the hoist
+	// collection whose reader set feeds its dependency graph — same ordering as processConversion).
 	performNameCollisionAnalysis(pkg)
 
 	for _, entry := range allEntries {
@@ -1193,11 +1190,24 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 
 	// The seed run SIMULATES processConversion, which does relocate an out-of-order initializer
 	// (initOrderRelocated=true), so it reproduces the production `.cs` on disk exactly. The real
-	// run cannot relocate — collectMovedInitVars does not run here — so it passes false and no
-	// literal inside a function a package-level initializer can reach is hoisted.
+	// run STILL passes false even though relocation now runs here (collectMovedInitVars below):
+	// suppressing test-file hoists in initializer-reachable functions is a pure (and tiny)
+	// allocation pessimization, never a correctness risk, and flipping the flag would drift the
+	// hoist claims of every banked *_test.cs for no behavioral gain.
 	collectHoistedLiterals(prodEntries, pkg.Types, pkg.TypesInfo, nil, true)
 	productionHoistSeed := packageHoistNames
 	collectHoistedLiterals(allEntries, pkg.Types, pkg.TypesInfo, productionHoistSeed, false)
+
+	// Find test-file package-level var initializers whose Go dependency order C#'s
+	// static-field-initializer order cannot reproduce — the same pass processConversion runs
+	// (three-drivers rule), over the whole variant package so an internal-variant test var that
+	// reads a production var cross-file (gob's basicTypes over type.go's tBool…) relocates too.
+	// Production vars it flags are never re-emitted here (only test files convert below), so
+	// only test-file relocations reach packageMovedInitMethods; the ordered assignments are
+	// emitted by writeTestVariantInitFile after the convert loop. First demonstrated consumer:
+	// internal/fmtsort's sort_test.go (compareTests reads chans/ints declared later in the file
+	// — every test died in the class cctor on the default slice).
+	collectMovedInitVars(pkg.Fset, pkg.Types, pkg.TypesInfo, pkg.Syntax)
 
 	var compileNames []string // emitted test .cs basenames — the csproj's compile items
 	var resolveNames []string // every emission (incl. .cs.auto review siblings) for marker resolution
@@ -1246,6 +1256,36 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 		if err := convert(entry); err != nil {
 			return nil, nil, err
 		}
+	}
+
+	// Emit the variant's ordered relocated-initializer file (no-op unless the convert loop
+	// recorded any relocation). The internal variant shares the production `<pkg>_package`
+	// class: when the production package_init.cs exists it owns the single static-ctor slot,
+	// so the test side implements its erasable partial hook instead of a second ctor. The
+	// `_test.cs` suffix keeps the file out of the production csproj's compile set (the IP-4
+	// test-artifact exclusion) — it compiles only into the test assembly.
+	if len(packageMovedInitMethods) > 0 {
+		isExternalVariant := strings.HasSuffix(pkg.Name, "_test")
+		variantKind := "internal"
+
+		if isExternalVariant {
+			variantKind = "external"
+		}
+
+		initFileName := fmt.Sprintf("package_init_%s_test.cs", variantKind)
+		variantClassName := getSanitizedImport(pkg.Name + PackageSuffix)
+		implementHook := false
+
+		if !isExternalVariant {
+			_, statErr := os.Stat(filepath.Join(outputPath, PackageInitFileName))
+			implementHook = statErr == nil
+		}
+
+		if err := writeTestVariantInitFile(outputPath, initFileName, packageNamespace, variantClassName, implementHook); err != nil {
+			return nil, nil, err
+		}
+
+		compileNames = append(compileNames, initFileName)
 	}
 
 	resolveDynamicTypeMarkers(resolveNames)

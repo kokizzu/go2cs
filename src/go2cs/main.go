@@ -1406,9 +1406,12 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		writePackageInfoFile(packageInfoFileName, !isDir)
 
 		// Emit the ordered package-var initialization file (no-op unless any initializer was
-		// relocated for init-order correctness). Package (directory) conversions only.
+		// relocated for init-order correctness). Package (directory) conversions only. Under
+		// -tests, the ctor carries the erasable test hook so the internal test variant can
+		// append its own relocations (writeTestVariantInitFile) — like the IP-4 csproj
+		// exclusions, this production-file difference is intended -tests output, not drift.
 		if isDir {
-			if err := writePackageInitFile(packageOutputPath, packageNamespace, packageName); err != nil {
+			if err := writePackageInitFile(packageOutputPath, packageNamespace, packageName, options.convertTests); err != nil {
 				log.Fatalf("Failed to write package init file for \"%s\": %s\n", packageOutputPath, err)
 			}
 		}

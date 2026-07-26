@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static go2cs.Common;
+using static go2cs.Symbols;
 
 namespace go2cs;
 
@@ -69,6 +70,13 @@ public class PartialStubGenerator : ISourceGenerator
             string identifier = methodSyntax.Identifier.Text;
 
             if (packageNamespace.Length == 0 || packageClassName.Length == 0)
+                continue;
+
+            // The -tests package-init hook is DESIGNED to erase when unimplemented (a classic
+            // partial method; the production assembly excludes the test-side implementation) —
+            // a stub here would throw from the package class's static ctor for every consumer
+            // of the production assembly. It is go2cs init machinery, never an asm/cgo function.
+            if (identifier == PackageTestInitHookMethod)
                 continue;
 
             // Reuse the declaration's exact signature (modifiers, return type, type params,
