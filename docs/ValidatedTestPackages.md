@@ -13,9 +13,9 @@ allocate). Each is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **43 / 215 testable packages validated — 20.0%**
+> ### Phase 4 progress: **44 / 215 testable packages validated — 20.5%**
 >
-> **1,078 matching test verdicts · 21 disclosed** *(updated 2026-07-25 — maintained as part of the
+> **1,095 matching test verdicts · 22 disclosed** *(updated 2026-07-26 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -53,6 +53,7 @@ any other failure is still a hard mismatch.
 | [`math/cmplx`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/math/cmplx) | 24 | | `complex128` transcendental math. |
 | [`math/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/math/rand) | 43 | | PRNG streams, including a child-process race test. |
 | [`math/rand/v2`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/math/rand/v2) | 36 | | The v2 PRNG API (PCG, ChaCha8). |
+| [`mime`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/mime) | 17 | 1 | MIME type tables and media-type parsing — the first package through the runtime process-control facade (`LockOSThread`, registry reads). |
 | [`net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/net/http/internal/ascii) | 13 | | ASCII case-insensitive helpers. |
 | [`os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/os/signal) | 1 | | Console-signal delivery (Ctrl+Break) through real channels and `select`. |
 | [`path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/path) | 9 | | Pure path manipulation (`Clean`/`Split`/`Join`/`Match`…). |

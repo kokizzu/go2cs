@@ -1,0 +1,261 @@
+// Copyright 2010 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+namespace go;
+
+using reflect = reflect_package;
+using strings = strings_package;
+using Δsync = sync_package;
+using testing = testing_package;
+
+partial class mime_package {
+
+internal static Action /*cleanup*/ setMimeInit(Action fn) {
+    Action cleanup = default!;
+
+    once = new Δsync.Once(nil);
+    testInitMime = fn;
+    return () => {
+        testInitMime = default!;
+        once = new Δsync.Once(nil);
+    };
+}
+
+internal static void clearMimeTypes() {
+    setMimeTypes(new map<@string, @string>{}, new map<@string, @string>{});
+}
+
+internal static void setType(@string ext, @string typ) {
+    if (!strings.HasPrefix(ext, "."u8)) {
+        throw panic("missing leading dot");
+    }
+    {
+        var err = setExtensionType(ext, typ); if (err != default!) {
+            throw panic("bad test data: " + err.Error());
+        }
+    }
+}
+
+public static void TestTypeByExtension(ж<testing.T> Ꮡt) {
+    once = new Δsync.Once(nil);
+    // initMimeForTests returns the platform-specific extension =>
+    // type tests. On Unix and Plan 9, this also tests the parsing
+    // of MIME text files (in testdata/*). On Windows, we test the
+    // real registry on the machine and assume that ".png" exists
+    // there, which empirically it always has, for all versions of
+    // Windows.
+    var typeTests = initMimeForTests();
+    foreach (var (ext, want) in typeTests) {
+        @string val = TypeByExtension(ext);
+        if (val != want) {
+            Ꮡt.Errorf("TypeByExtension(%q) = %q, want %q"u8, ext, val, want);
+        }
+    }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string fooˢ2 = ".foo"u8;
+private static readonly @string xFooˢ = "x/foo"u8;
+private static readonly @string barˢ2 = ".bar"u8;
+private static readonly @string xBarˢ = "x/bar"u8;
+private static readonly @string barˢ3 = ".Bar"u8;
+private static readonly @string xBarCapital1ˢ = "x/bar; capital=1"u8;
+
+public static void TestTypeByExtension_LocalData(ж<testing.T> Ꮡt) => func((defer, recover) => {
+    ref var t = ref Ꮡt.Value;
+
+    var cleanup = setMimeInit(() => {
+        clearMimeTypes();
+        setType(fooˢ2, xFooˢ);
+        setType(barˢ2, xBarˢ);
+        setType(barˢ3, xBarCapital1ˢ);
+    });
+    var cleanupʗ1 = cleanup;
+    defer(cleanupʗ1);
+    var tests = new map<@string, @string>{
+        [".foo"u8] = "x/foo"u8,
+        [".bar"u8] = "x/bar"u8,
+        [".Bar"u8] = "x/bar; capital=1"u8,
+        [".sdlkfjskdlfj"u8] = ""u8,
+        [".t1"u8] = ""u8
+    };
+    // testdata shouldn't be used
+    foreach (var (ext, want) in tests) {
+        @string val = TypeByExtension(ext);
+        if (val != want) {
+            Ꮡt.Errorf("TypeByExtension(%q) = %q, want %q"u8, ext, val, want);
+        }
+    }
+});
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string testˢ = ".TEST"u8;
+private static readonly @string tesTˢ = ".tesT"u8;
+private static readonly @string tesTˢ2 = ".TesT"u8;
+
+public static void TestTypeByExtensionCase(ж<testing.T> Ꮡt) => func((defer, recover) => {
+    @string custom = "test/test; charset=iso-8859-1"u8;
+    @string caps = "test/test; WAS=ALLCAPS"u8;
+    var cleanup = setMimeInit(() => {
+        clearMimeTypes();
+        setType(testˢ, caps);
+        setType(tesTˢ, custom);
+    });
+    var cleanupʗ1 = cleanup;
+    defer(cleanupʗ1);
+    // case-sensitive lookup
+    {
+        @string got = TypeByExtension(tesTˢ); if (got != custom) {
+            Ꮡt.Fatalf("for .tesT, got %q; want %q"u8, got, custom);
+        }
+    }
+    {
+        @string got = TypeByExtension(testˢ); if (got != caps) {
+            Ꮡt.Fatalf("for .TEST, got %q; want %s"u8, got, caps);
+        }
+    }
+    // case-insensitive
+    {
+        @string got = TypeByExtension(tesTˢ2); if (got != custom) {
+            Ꮡt.Fatalf("for .TesT, got %q; want %q"u8, got, custom);
+        }
+    }
+});
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string gifˢ = ".gif"u8;
+private static readonly @string imageGifˢ = "image/gif"u8;
+private static readonly @string fooLetterˢ = "foo/letter"u8;
+private static readonly @string pngˢ = ".PNG"u8;
+private static readonly @string imagePngˢ = "image/png"u8;
+
+[GoType("dyn")] partial struct TestExtensionsByType_tests {
+    internal @string typ;
+    internal slice<@string> want;
+    internal @string wantErr;
+}
+
+public static void TestExtensionsByType(ж<testing.T> Ꮡt) => func((defer, recover) => {
+    var cleanup = setMimeInit(() => {
+        clearMimeTypes();
+        setType(gifˢ, imageGifˢ);
+        setType(".a"u8, fooLetterˢ);
+        setType(".b"u8, fooLetterˢ);
+        setType(".B"u8, fooLetterˢ);
+        setType(pngˢ, imagePngˢ);
+    });
+    var cleanupʗ1 = cleanup;
+    defer(cleanupʗ1);
+    var tests = new TestExtensionsByType_tests[]{
+        new(typ: "image/gif"u8, want: new @string[]{".gif"u8}.slice()),
+        new(typ: "image/png"u8, want: new @string[]{".png"u8}.slice()), // lowercase
+
+        new(typ: "foo/letter"u8, want: new @string[]{".a"u8, ".b"u8}.slice()),
+        new(typ: "x/unknown"u8, want: default!)
+    }.slice();
+    foreach (var (_, tt) in tests) {
+        var (got, err) = ExtensionsByType(tt.typ);
+        if (err != default! && tt.wantErr != ""u8 && strings.Contains(err.Error(), tt.wantErr)) {
+            continue;
+        }
+        if (err != default!) {
+            Ꮡt.Errorf("ExtensionsByType(%q) error: %v"u8, tt.typ, err);
+            continue;
+        }
+        if (tt.wantErr != ""u8) {
+            Ꮡt.Errorf("ExtensionsByType(%q) = %q, %v; want error substring %q"u8, tt.typ, got, err, tt.wantErr);
+            continue;
+        }
+        if (!reflect.DeepEqual(got, tt.want)) {
+            Ꮡt.Errorf("ExtensionsByType(%q) = %q; want %q"u8, tt.typ, got, tt.want);
+        }
+    }
+});
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string htmlˢ3 = ".html"u8;
+private static readonly @string htMLˢ = ".HtML"u8;
+
+public static void TestLookupMallocs(ж<testing.T> Ꮡt) {
+    var n = testing.AllocsPerRun(10000, () => {
+        TypeByExtension(htmlˢ3);
+        TypeByExtension(htMLˢ);
+    });
+    if (n > 0D) {
+        Ꮡt.Errorf("allocs = %v; want 0"u8, n);
+    }
+}
+
+public static void BenchmarkTypeByExtension(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.Value;
+
+    initMime();
+    b.ResetTimer();
+    foreach (var (_, ext) in new @string[]{
+        ".html"u8,
+        ".HTML"u8,
+        ".unused"u8
+    }.slice()) {
+        Ꮡb.Run(ext, (ж<testing.B> bΔ1) => {
+            bΔ1.RunParallel((ж<testing.PB> pb) => {
+                while (pb.Next()) {
+                    TypeByExtension(ext);
+                }
+            });
+        });
+    }
+}
+
+public static void BenchmarkExtensionsByType(ж<testing.B> Ꮡb) {
+    ref var b = ref Ꮡb.Value;
+
+    initMime();
+    b.ResetTimer();
+    foreach (var (_, typ) in new @string[]{
+        "text/html"u8,
+        "text/html; charset=utf-8"u8,
+        "application/octet-stream"u8
+    }.slice()) {
+        Ꮡb.Run(typ, (ж<testing.B> bΔ1) => {
+            bΔ1.RunParallel((ж<testing.PB> pb) => {
+                while (pb.Next()) {
+                    {
+                        var (_, err) = ExtensionsByType(typ); if (err != default!) {
+                            bΔ1.Fatal(err);
+                        }
+                    }
+                }
+            });
+        });
+    }
+}
+
+[GoType("dyn")] partial struct TestExtensionsByType2_tests {
+    internal @string typ;
+    internal slice<@string> want;
+}
+
+public static void TestExtensionsByType2(ж<testing.T> Ꮡt) => func((defer, recover) => {
+    var cleanup = setMimeInit(() => {
+        clearMimeTypes();
+        // Initialize built-in types like in type.go before osInitMime.
+        setMimeTypes(builtinTypesLower, builtinTypesLower);
+    });
+    var cleanupʗ1 = cleanup;
+    defer(cleanupʗ1);
+    var tests = new TestExtensionsByType2_tests[]{
+        new(typ: "image/jpeg"u8, want: new @string[]{".jpeg"u8, ".jpg"u8}.slice())
+    }.slice();
+    foreach (var (_, tt) in tests) {
+        var (got, err) = ExtensionsByType(tt.typ);
+        if (err != default!) {
+            Ꮡt.Errorf("ExtensionsByType(%q): %v"u8, tt.typ, err);
+            continue;
+        }
+        if (!reflect.DeepEqual(got, tt.want)) {
+            Ꮡt.Errorf("ExtensionsByType(%q) = %q; want %q"u8, tt.typ, got, tt.want);
+        }
+    }
+});
+
+} // end mime_package

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestLookupMallocs",
+      "class": "alloc-profile",
+      "signature": "allocs = ",
+      "reason": "want-zero AllocsPerRun assert: TypeByExtension's converted lookup allocates in the managed runtime (sync.Map probe boxing and @string materialization) where Go's compiled lookup runs allocation-free; a malloc-counting shim would fail identically"
+    }
+  ]
+}
