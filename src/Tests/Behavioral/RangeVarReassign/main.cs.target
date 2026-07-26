@@ -49,8 +49,7 @@ internal static void Main() {
     foreach (var (_, vᴛ2) in tags) {
         var t = vᴛ2;
 
-        t.x = t.x + 1;
-        t.y = t.y + 1;
+        (t.x, t.y) = (t.x + 1, t.y + 1);
         sum += t.x + t.y;
     }
     fmt.Println(fieldwriteˢ, sum, tags[0].x, tags[1].y);

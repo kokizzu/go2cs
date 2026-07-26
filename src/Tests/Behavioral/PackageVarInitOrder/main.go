@@ -29,4 +29,6 @@ func main() {
 	// The table must be real storage, not a zero-length placeholder.
 	chunkHolder.chunks[numChunks-1] = 7
 	fmt.Println(chunkHolder.chunks[numChunks-1])
+	fmt.Println(len(kindNames), kindNames[kindFile], kindNames[kindPipe])
+	fmt.Println(pipeLabel)
 }

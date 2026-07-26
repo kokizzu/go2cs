@@ -31,3 +31,21 @@ var sizedTable = newTable(tableSize)
 // Same shape THROUGH a struct's fixed-array field initializer, which is where
 // flate's decoder table was silently zero-length.
 var chunkHolder holder
+
+// CROSS-FILE dependency on CONSTANTS, not vars. A Go constant of a NAMED type (or a string, or
+// an untyped value) has no C# `const` form — it is emitted as a `static readonly` FIELD, i.e. an
+// ordinary static field initializer, subject to exactly the cross-part ordering C# leaves
+// undefined. Go lists NO initialization order for constants (they are compile-time), so the
+// relocation analysis has to add this dependency edge itself. The kind constants live in
+// registry.go, which the compiler sees AFTER this file: read as their zero value, all three keys
+// collapse to slot 0 and the table's length drops from 3 to 1. That is what made
+// regexp/syntax's opNames table degenerate, so every Regexp.Dump() printed the numeric
+// fallback `op3{a}` instead of `lit{a}`.
+var kindNames = []string{
+	kindNone: "none",
+	kindFile: "file",
+	kindPipe: "pipe",
+}
+
+// Same edge through a named-STRING const.
+var pipeLabel = string(labelPipe) + "!"

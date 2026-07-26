@@ -407,6 +407,14 @@ x, y = y, x+y
 (x, y) = (y, x + y);
 ```
 
+The deconstruction is **mandatory** whenever the targets alias, and that includes fields — regexp's
+`inst.Out, inst.Arg = inst.Arg, inst.Out` must not shatter into two stores, or both fields end up holding
+the original `Arg`:
+
+```csharp
+(inst.Value.Out, inst.Value.Arg) = (inst.Value.Arg, inst.Value.Out);
+```
+
 Go's **partial redeclaration** (`a, b := f()` where `a` already exists) reuses `a` and declares only the
 new names, so the converter emits `var` per newly-declared element: `(frac, var e) = normalize(frac);`. A
 blank element is a discard with no `var` (`_ = fi;`).

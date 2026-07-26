@@ -28,4 +28,32 @@ func main() {
 	m := 5
 	m, n := m+1, 100
 	fmt.Println(m, n) // 6 100
+
+	// SELECTOR targets: a parallel assignment whose left-hand sides are all FIELDS. A field write
+	// is a write to existing storage, exactly like the star-deref and index forms — but it was
+	// counted as neither reassigned nor declared, so the statement matched no tuple-path gate and
+	// shattered into sequential stores, losing the swap's implicit temporary. This is regexp's
+	// onepass `inst.Out, inst.Arg = inst.Arg, inst.Out`, which left BOTH fields holding the
+	// original Arg and silently disabled the one-pass engine for `^[a-c]*$` and friends.
+	e := &edge{out: 7, arg: 9}
+	e.out, e.arg = e.arg, e.out
+	fmt.Println(e.out, e.arg) // 9 7   (not 9 9)
+
+	// Field swap on a VALUE struct, plus a cross-struct rotate reading pre-assignment values.
+	f := edge{out: 1, arg: 2}
+	g := edge{out: 3, arg: 4}
+	f.out, g.out, f.arg = g.out, f.arg, f.out
+	fmt.Println(f.out, f.arg, g.out, g.arg) // 3 1 2 4
+
+	// Package-level var targets take the same path.
+	left, right = right, left
+	fmt.Println(left, right) // 20 10
 }
+
+type edge struct {
+	out int
+	arg int
+}
+
+var left = 10
+var right = 20

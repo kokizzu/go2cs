@@ -568,6 +568,23 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 						name := ident.Name
 
 						if isDiscardedVar(name) {
+							// In namedReturnDeferMode a BLANK result is still a real slot: return
+							// statements write it and the post-wrapper return reads it back, so it
+							// must be declared out here alongside the named ones (its generated
+							// name comes from namedResultName). Outside that mode the slot never
+							// exists — the wrapper returns the tuple directly.
+							if v.namedReturnDeferMode {
+								blankParam := resultParams.At(paramIndex)
+								blankZeroValue := "default!"
+
+								if v.structHasPromotedEmbeds(blankParam.Type()) {
+									blankZeroValue = "new(nil)"
+								}
+
+								resultDeclTarget.WriteString(v.newline)
+								v.writeString(resultDeclTarget, "%s%s %s = %s;", v.indent(v.indentLevel+1), v.getCSTypeName(blankParam.Type()), v.namedResultName(blankParam), blankZeroValue)
+							}
+
 							paramIndex++
 							continue
 						}

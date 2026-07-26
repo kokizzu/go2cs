@@ -74,6 +74,18 @@ internal static void bumpFirstViaTuple(ж<node> Ꮡp) {
     }
 }
 
+internal static ж<node> dropIfShort(ж<node> Ꮡp, nint min) {
+    ref var p = ref Ꮡp.DerefOrNil();
+
+    if (sumList(Ꮡp) < min) {
+        Ꮡp = default!; p = ref Ꮡp.DerefOrNil();
+    }
+    if (Ꮡp != nil) {
+        p.val += 1000;
+    }
+    return Ꮡp;
+}
+
 internal static void Main() {
     var list = build(1, 2, 3, 4);
     fmt.Println(sumList(list));
@@ -84,6 +96,11 @@ internal static void Main() {
     fmt.Println(sumEveryOther(nil));
     bumpFirstViaTuple(list);
     fmt.Println(sumList(list));
+    var @short = build(1, 2);
+    fmt.Println(dropIfShort(@short, 100) == nil);
+    fmt.Println(sumList(@short));
+    var kept = dropIfShort(@short, 2);
+    fmt.Println(kept != nil, sumList(@short));
 }
 
 } // end main_package

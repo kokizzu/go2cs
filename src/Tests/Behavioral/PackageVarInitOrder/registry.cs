@@ -27,7 +27,7 @@ internal static UntypedInt numChunks => /* 1 << chunkBits */ 16;
 
 internal static UntypedInt tableSize => 37;
 
-[GoType] partial struct holder {
+[GoType] [GoValueClone("chunks")] partial struct holder {
     internal array<uint32> chunks = new(numChunks);
 }
 
@@ -38,5 +38,15 @@ internal static UntypedInt tableSize => 37;
 internal static ж<table> newTable(nint n) {
     return Ꮡ(new table(codes: new slice<byte>(n)));
 }
+
+[GoType("num:uint8")] partial struct kind;
+
+internal static kind kindNone => /* iota */ 0;
+internal static kind kindFile => 1;
+internal static kind kindPipe => 2;
+
+[GoType("@string")] partial struct label;
+
+internal static readonly label labelPipe = "pipe"u8;
 
 } // end main_package

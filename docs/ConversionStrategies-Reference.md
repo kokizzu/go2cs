@@ -240,6 +240,49 @@ The same pass runs in the `-tests` conversion driver (the three-drivers rule): a
 
 Two hard-won rules ride along: the hook name doubles the TempVarMarker (`init` + `ᴛᴛ` + `tests`, `Symbols.PackageTestInitHookMethod`) so no relocated var's `initᴛ<name>` method can collide; and go2cs-gen's **PartialStubGenerator must never stub the hook** — its whole design is C# erasure when unimplemented, and the generator's `NotImplementedException` stub for "asm/cgo" bodyless partials detonated encoding/gob's static ctor for every consumer of the production assembly (go/token's serialize path) until the generator learned to skip it (guarded by `PartialStubGeneratorTests.StubsAsmPartialsButNeverTheTestInitHook`). The hook emission is `-tests`-gated, so a plain `-stdlib`/behavioral conversion is byte-identical — like the IP-4 csproj test-artifact exclusions, the production-file difference is intended `-tests` output, not drift. The relocated test files themselves ride the banked suites (fmtsort's cctor is the operational guard). The hoisted-literal interplay keeps its conservative setting (`initOrderRelocated=false` for the real test emission run): suppressing test-file hoists in initializer-reachable functions is a pure allocation pessimization, never a correctness risk, and flipping it would drift every banked `*_test.cs`.
 
+### A CONSTANT emitted as `static readonly` is an initialization dependency too
+
+Go constants are compile-time values with no initialization order at all, so `types.Info.InitOrder` never mentions them — but a Go constant only becomes a C# **`const`** when its type has a constant form. A constant of a **named** type is a `[GoType]` wrapper struct (C# forbids `const` of a struct, CS0283); a **string** constant is an `@string` struct; so are **complex** and **uintptr**; and an **untyped** constant renders as an `UntypedInt`/`UntypedFloat`/`UntypedComplex`/`GoUntyped` wrapper. Every one of those is emitted as an ordinary **`static readonly` FIELD** — and therefore carries exactly the cross-part field-initializer ordering hazard a package *var* has. The relocation analysis has to supply that dependency edge itself, because Go's own analysis has no reason to model it:
+
+```go
+// regexp.go — Op is a named uint8, so these are `static readonly Op` fields, not C# consts
+const (
+	OpNoMatch Op = 1 + iota
+	OpEmptyMatch
+	OpLiteral
+	// … through OpAlternate = 19
+)
+
+// parse_test.go — sorts BEFORE regexp.go in the compile set
+var opNames = []string{
+	OpNoMatch:    "no",
+	OpEmptyMatch: "emp",
+	OpLiteral:    "lit",
+	// … 19 index-keyed entries
+}
+```
+
+Read as their zero value, all nineteen keys collapse into slot 0, so the emitted `SparseArray` projection has **length 1** — and `regexp/syntax`'s `dumpRegexp`, whose first line is `if int(re.Op) >= len(opNames) …`, took the numeric fallback for *every* operator: `Parse("a").Dump()` printed `op3{a}` where Go prints `lit{a}`, failing six of the package's twelve tests. `collectRefs` now records package-scope `*types.Const` references whose emission is a field (`constEmittedAsStaticReadonly`, deliberately erring toward *field* — a false positive costs one ordered relocation, a false negative reinstates the zero-value read), resolved transitively through function bodies on the same memoized graph the var closure uses, and a const dependency forces the move under the same two rules a var dependency does: declared in a different file, or later in the same file. A const is of course never itself *relocatable*, so only its declaration site matters.
+
+The emission side needed the matching half. Relocation lived only in the **non-constant** initializer arm (`tv.Value == nil`), yet a Go-**constant**-valued initializer is just as order-sensitive in C#: Go folds the value at compile time, but the conversion deliberately keeps the *source expression* for readability, and that expression still reads the field:
+
+```go
+// registry.go
+type label string
+const labelPipe label = "pipe"
+```
+```go
+// entries.go — compiled first; the initializer folds to the constant "pipe!" in Go
+var pipeLabel = string(labelPipe) + "!"
+```
+```csharp
+// entries.cs — relocated, because the rendered expression READS the labelPipe field
+internal static @string pipeLabel;
+internal static void initᴛpipeLabel() { pipeLabel = ((@string)labelPipe) + "!"u8; }
+```
+
+Corpus footprint: nine packages gained a `package_init.cs` from this edge (`compress/flate`, `crypto/tls`, `debug/dwarf`, `encoding/asn1`, `image/jpeg`, `index/suffixarray`, `internal/cpu`, `runtime/metrics`, `vendor/golang.org/x/text/unicode/bidi`) — each a latent zero-value const read that compiled cleanly. (Guarded by the `PackageVarInitOrder` behavioral test: an index-keyed table whose keys are a named-type const declared cross-file, plus a named-string const reached through a constant-folded initializer. The pre-fix converter compiles both and then panics with an index-out-of-range on the collapsed table.)
+
 ## Compiled Library versus Source Code
 
 One big difference between Go and many other languages is the notion of _source availability_. Traditionally programming languages have depended on using a pre-compiled library — both to avoid recompiling the library and to protect source as intellectual property. Go was born in an era of faster computing and prolific open source; it relies on having access to all source at compile time, including library code. Go takes advantage of this to make interesting optimizations, especially around when a structure escapes the stack to the heap. Keeping structures off the heap means they do not need to be tracked for garbage collection, and the Go compiler manages this automatically. The interesting consequence is that, for a given use of a library as source, an application structure may or may not escape to the heap depending on how it flows through the code — an optimization only possible when all source is compiled together.
@@ -1464,6 +1507,25 @@ var (ᴛ1, ᴛ2) = Ꮡsd.dialTCP(ctx, laΔ1, raΔ1);
 ```
 
 The arm fires only for a statement-position deconstruction (one call RHS, several LHS) where some non-empty-interface target's tuple component is a non-identical, non-interface type; all other deconstructions keep the direct form. (Guarded by the `InterfaceCasting` extension `makeCounter` — a `(*Counter, error)` call deconstructed into an `Incrementer` — runtime-verified against Go.)
+
+### A SELECTOR left-hand side counts as a reassignment — a field swap must stay simultaneous
+
+The paren-deref fix above closed the *index* form of the target-classification gap; the **selector** form (`x.f, y.g = …`) had the same hole. The classifier deliberately drops a selector LHS's root identifier (`getIdentifier` would return the *base* — a package name, or a struct local — which, not itself being reassigned, would wrongly be counted as a new declaration and take a `var` prefix), and then counted it as **neither** reassigned nor declared. A parallel assignment whose targets are *all* selectors therefore satisfied no tuple-path gate — not `lhsLen == reassignedCount`, not `lhsLen == declaredCount`, and (with no single-call RHS) not `tupleResult` — and shattered into sequential stores, losing the swap's implicit temporary:
+
+```go
+// regexp/onepass.go — makeOnePass: put the empty-match leg in inst.Out
+inst.Out, inst.Arg = inst.Arg, inst.Out
+```
+```csharp
+// before — both fields end up holding the ORIGINAL Arg
+inst.Value.Out = inst.Value.Arg;
+inst.Value.Arg = inst.Value.Out;
+
+// after — the simultaneous deconstruction C# gives for free
+(inst.Value.Out, inst.Value.Arg) = (inst.Value.Arg, inst.Value.Out);
+```
+
+Note the tell in the "before": the very next statement of the same Go function swaps two plain *locals* (`matchOut, matchArg = matchArg, matchOut`) and was already emitted correctly as `(matchOut, matchArg) = (matchArg, matchOut);` — the divergence was purely the target *shape*. The consequence was silent: every `InstAlt` whose empty-match leg needed swapping got a corrupted dispatch, so `regexp` quietly lost its one-pass engine for `^[a-c]*$`, `^(?:a*)$`, `^.bc(d|e)*$` and friends, and `^[a-c]+$` stopped matching `"abc"` at all. A field write is a write to existing storage exactly as the index and star-deref forms are, so it is now counted as reassigned like them — which also aligns single-selector assignments (`h.flags &= ^writing`) with the narrowing-cast rendering a plain-ident target already got. (Guarded by the `ParallelAssignmentHazard` extension — a pointer-receiver field swap, a cross-struct rotate reading pre-assignment values, and a package-var swap; and by the `RangeVarReassign` / `AndNotAssignNarrow` goldens, whose re-baselines are this routing change.)
 
 ### An address-taken reference-typed local heap-boxes too — `Ꮡ(value)` copies are only for reads
 An INHERENTLY heap-allocated local (interface/pointer/slice/map/chan/func) is already a
@@ -4903,6 +4965,28 @@ A function that neither directly nor indirectly (through a deferred lambda) uses
 
 * **Heterogeneous typed returns also need the explicit wrapper type argument.** The same `func<T>` inference fails when a value-returning defer/recover function `return`s expressions of two *unrelated concrete types* that share only the declared interface — go/parser's `parseTypeName` returns `&ast.SelectorExpr{…}` beside a plain `*ast.Ident`, both only `ast.Expr`. Every return is fully typed (so the all-typeless test above does not fire), but C#'s best-common-type of `{ast_SelectorExprжExpr, ast_IdentжExpr}` has no single member the others convert to, so `T` cannot be inferred and overload resolution again binds the void `GoAction` wrapper (CS8030 — 13× in go/parser: parseTypeName, tryIdentOrType, parseSimpleStmt, parseGoStmt, …). `execWrapperReturnsLackCommonType` walks the top-level returns and, at each result position, tests whether *some* return type is identical-to-or-assignable-to by every other; when none is (genuine heterogeneity), the explicit result type is emitted — `=> func<ast.Expr>((defer, recover) => …)`. A single return, or returns that DO share a best-common-type (a concrete beside its own interface — C# infers the interface), keep the inferred form, so the full-stdlib A/B touches only the genuinely-heterogeneous funcs (go/parser, plus one `context.WithDeadlineCause`) and the behavioral corpus stays byte-identical. (Guarded by `DeferInterfaceReturn` — a defer/recover func returning `Shape` via `Circle` vs `Square`, plus a `(Shape, bool)` heterogeneous tuple return, values vs Go.)
 
+### A BLANK result mixed with a named one still needs the named-return-defer handling
+
+Go permits mixing the blank identifier and real names in one result list — `func parse(s string, flags Flags) (_ *Regexp, err error)` (regexp/syntax) — and deferred code can still mutate `err`. The detection required **every** result to be named and non-blank, so the first `_` rejected the whole signature and the function fell back to the plain value-returning wrapper. On a recovered panic that wrapper returns `default(T)`: the deferred handler assigned `err`, the wrapper discarded it, and the function reported **(nil, nil)** — a *successful* parse of an expression that must fail. Every "expression too large" / "nesting depth exceeded" input (`a{100000}`, `strings.Repeat("(", 1000)+…`) came back as a valid parse, and the caller's `dump(re)` on the nil pointer then panicked.
+
+A blank result is a real result **slot** — only a `return` statement can write it, the body cannot name it — so it needs a declaration alongside the named ones. C#'s `_` is the **discard**: declaring it would capture every later `_ = expr` in scope, and two blank results would collide outright, so `namedResultName` mints a generated slot name (interned per result object, so the declaration, each return's assignment and the post-defer read all agree):
+
+```csharp
+internal static (ж<Regexp>, error err) parse(@string s, Flags flags) {
+    ж<Regexp> _ᴛ1 = default!;          // the BLANK slot
+    error err = default!;
+    func((defer, recover) => {
+        defer(() => { … err = new ΔErrorжerror(…); … });   // recover assigns the named result
+        …
+        (_ᴛ1, err) = (literalRegexp(s, flags), default!);   // `return literalRegexp(s, flags), nil`
+        return;
+    });
+    return (_ᴛ1, err);                  // reads BOTH slots after the defers ran
+}
+```
+
+A result list that is entirely **unnamed** (`func f() (int, error)`) or entirely blank keeps the plain wrapper: there is nothing deferred code could mutate, and Go likewise returns the zero results after a recover. Go forbids mixing named and unnamed results, so seeing one truly unnamed result settles the whole signature. (Guarded by the `NamedReturnDefer` extension — a `(_ *box, err error)` function whose recover sets `err`; the pre-fix converter compiles it and returns `(nil, nil)`.)
+
 ### Function-literal named results
 
 A func **literal** with named results declares them at the top of its emitted block, zero-initialized — Go's semantics for `next = func() (v1 V, ok1 bool) { …; return }` (the `iter.Pull` shape): a bare `return` yields the named results as currently assigned, so the lambda emits `() => { V v1 = default!; bool ok1 = default!; …; return (v1, ok1); }`. Without the declarations the emitted tuple referenced undeclared names (CS0103 — the `iter` package's last wave-1 errors). Two interactions: a named-results literal whose *first* statement is a bare `return` must NOT collapse to an expression-bodied lambda (the names exist only as block declarations), and the `namedReturnDefer` path (named results that deferred code mutates) keeps its own arrangement — declarations *outside* the `func((defer, recover) => …)` wrapper, returned after it. Declarations reuse the shadow-aware naming, so a literal result shadowing an outer local renames consistently in both the declaration and the return (`nΔ1`). (Guarded by the `FuncLitArgCapture` extension — bare returns with assigned and zero named results, plus the first-statement-bare-return shape, values vs Go.)
@@ -7348,6 +7432,32 @@ The box-read accessor follows the box-ref rule above: `.ValueSlot` for an inhere
 
 **A PARAMETER routed to shared storage declares its box too** — the third position of the same family (plain locals, named results, parameters). A parameter can be escape-marked without any capture-mode method call: a body-top-level mixed `:=` REDECLARES the parameter object (the spec's redeclaration rule includes the parameter lists when the block is the function body), so the define walker escape-analyzes it — and an interface-typed one is blanket-marked. When such a parameter is also captured by a closure and written after the capture point, the routing above sends it by-box (`Ꮡctx.ValueSlot` inside the lambda) — but the parameter prologue only boxed for the capture-mode (direct-ж) trigger, leaving the box undeclared (CS0103): database/sql `beginDC`'s `ctx` (redeclared by `ctx, cancel := context.WithCancel(ctx)` after `withLock`'s closure captured it) and go/types `nify`'s `x, y` (swapped by `x, y = y, x` and redeclared by `xorig, x := x, Unalias(x)` after the trace defer captured them). `paramNeedsHeapBox` (and its func-literal analogue `funcLitHeapBoxParamIdents`) now also fires for a box-ref-routed parameter, emitting the exact capture-mode form — the signature takes the incoming value as `ctxʗp` and the preamble declares `ref var ctx = ref heap(ctxʗp, out var Ꮡctx);` (inside the `func((defer, recover) => …)` wrapper when the function has one, where the box is an ordinary capturable local). Body statements keep reading/writing the plain ref alias — the redeclare emits `(ctx, var cancel) = …` against it — so both sides hit the ONE box, and a deferred observer sees Go's FINAL values. The check rides the declaring-ident lookups, so a box-ref'd value RECEIVER (never `ʗp`-renamed by the signature paths) can never take the param form. (Guarded by the `WrittenCaptureParam` behavioral test — the beginDC redeclare shape, the nify deferred-observer shape (named result + defer wrapper), a closure-write read back by the body, the func-literal sibling, and an inherently-heap slice param; all output-compared vs Go. Stdlib footprint: exactly `database/sql/sql.cs` + `go/types/unify.cs`.)
 
+### A write that ENCLOSES the literal counts as written-after-capture — the self-recursive closure
+
+The write scan above compares *positions*: a body write counts when it sits after a referencing literal, or shares a loop with one. Go's standard recursive-closure idiom defeats a pure position test, because the write **starts before** the literal it contains:
+
+```go
+var check func(uint32, []bool) bool
+check = func(pc uint32, m []bool) (ok bool) {
+	…
+	ok = check(inst.Out, m) && check(inst.Arg, m)   // recurses through the variable
+	…
+}
+```
+
+The assignment statement's position is that of `check` on its left, which precedes the literal on its right — yet the RHS is evaluated *first*, so the store to `check` unambiguously happens after the literal exists. Scored as read-only-after-capture, the capture took the snapshot path (`var checkʗ1 = check;` hoisted **above** the assignment) and every recursive call invoked the still-**null** delegate: a `NullReferenceException` on the first recursion. In regexp's `makeOnePass` that is the entire ambiguity check, so `^.$` — and most of the package — became uncompilable. The scan now also counts a write whose syntactic extent *contains* a referencing literal (`w.pos < lit.pos < w.end`), which routes the capture to shared storage; `check` escapes, so it takes the by-box form and the recursion resolves against the box the assignment fills:
+
+```csharp
+ref var check = ref heap<Func<uint32, slice<bool>, bool>>(out var Ꮡcheck);
+check = (uint32 pc, slice<bool> mΔ1) => {
+    …
+    ok = Ꮡcheck.ValueSlot((~inst).Out, mΔ1) && Ꮡcheck.ValueSlot((~inst).Arg, mΔ1);
+    …
+};
+```
+
+The same edge covers **mutually** recursive closures (`even`/`odd`, each literal enclosed by the write to its own name while reading the other), and it generalizes beyond closures: any write that evaluates a referencing literal as part of itself — `t.mutate(func(){ use(t) })` — now counts. (Guarded by the `ClosureWriteVisibility` probes Q1/Q2 — a self-recursive sum and a mutually recursive parity pair; the pre-fix converter compiles both and nil-derefs at the first recursive call.)
+
 ### A nested closure's capture snapshot reads the enclosing closure's snapshot
 When a heap-boxed **ref-local is used by VALUE** (its address is not taken) and captured by NESTED closures, it is not box-ref'd — it is snapshot-copied: the converter declares `var mʗ1 = m;` before the closure and the closure uses `mʗ1`, so the uncapturable `ref`-local `m` is never referenced inside the lambda. The snapshot chain must be threaded through each level. A capture generated for an **inner** closure that lands inside an **outer** closure's body must read the outer closure's snapshot, not the enclosing method's ref-local — testing/fuzz.go's `run` closure captures `fn := reflect.ValueOf(ff)` (a heap-boxed `reflect.Value`), and run's inner `go tRunner(t, func(t){ … fn.Call(args) })` snapshots run's `fnʗ1`, not the method-level `fn` (a ref-local uncapturable inside a closure → CS8175):
 
@@ -7394,6 +7504,25 @@ if (ᏑsigChecks == nil) {
 Every in-lambda and post-lambda dereference of a repointed captured pointer routes through the box `Ꮡp.Value`, so the now-stale value alias is never read — an accepted modeling gap (like the nil-terminated walk's), not a miscompile. The suppression is sound because no LEGITIMATE re-alias ever occurs inside a lambda: a lambda's OWN pointer parameter is passed as the box `ж<T>` (never deref-aliased), and a heap-boxed value local is written THROUGH its box (`Ꮡb.Value = …`, never box-repointed). Guarded by `ClosureReassignsPtrParam` (a closure that reassigns a captured `*int` parameter; a non-nil runtime argument keeps the reassignment branch unreached so output stays deterministic).
 
 The same repoint-and-re-alias applies when the parameter is reassigned **from a tuple** — `(left, x, idx) = binarySearchTree(x, idx, n/2)` (runtime `mgcstack.go`) or `pp, _ = pidleget(0)` (`proc.go`). The box-reassignment triggers matched the RHS **element-wise**, so a tuple *deconstruction* (one call RHS, several LHS) never fired them — the ж<T> tuple component was assigned into the deref'd value alias (CS0029) — and element 0's raw expression type is the whole `*types.Tuple` (never a pointer), so even a first-position pointer element missed. The per-element RHS type now comes from the call's result tuple, and the emitted form is the single-assign form verbatim: `(left, Ꮡx, idx) = binarySearchTree(Ꮡx, idx, n / 2); x = ref Ꮡx.Value;` — with the nil-safe accessor when the parameter is nil-compared (`(Ꮡpp, _) = pidleget(0); pp = ref Ꮡpp.DerefOrNil();`). The triggers are gated to a **reassigned** element: a `:=`-declared pointer element binds the tuple's ж<T> component into a fresh pointer local — which *is* the box — directly, and an inner `:=` local shadowing a parameter's name must not repoint the parameter's box (crypto/x509's `c, _, err := …cert(i)`). (Guarded by the `PointerParamNilWalk` extension — a nil-compared tuple-reassign walk plus a reassign-then-mutate-through probe, values vs Go.)
+
+**Assigning `nil` to the parameter itself is a box repoint, not a write to the pointee.** Both triggers above gate on the RHS being *pointer-typed*, and the untyped `nil` literal has no type of its own — so `p = nil` missed them, rendered against the deref'd **value** alias, and emitted `p = default!`, which **zeroes the pointed-to struct** while leaving the box `Ꮡp` non-nil. The caller's `!= nil` then still passed and it walked a wiped-out object. This is regexp's `makeOnePass`, whose `p = nil` (the "not one-pass after all" bail-out) handed `compileOnePass` an `onePassProg` with an **emptied `Inst` slice** instead of a nil pointer — an index-out-of-range in `cleanupOnePass` on every pattern the one-pass analysis rejected, which is most of them. A nil RHS is now treated as pointer-valued whenever the corresponding target is pointer-typed, so it takes the ordinary repoint-and-re-alias form (nil-safe here, because the parameter is nil-compared):
+
+```go
+// regexp/onepass.go — makeOnePass
+if !check(pc, m) { p = nil; break }
+…
+if p != nil { for i := range p.Inst { p.Inst[i].Rune = onePassRunes[i] } }
+```
+```csharp
+if (!check(pc, m)) {
+    Ꮡp = default!; p = ref Ꮡp.DerefOrNil();   // the POINTER goes nil; the pointee is untouched
+    break;
+}
+…
+if (Ꮡp != nil) { foreach (var (i, _) in p.Inst) { p.Inst[i].Rune = onePassRunes[i]; } }
+```
+
+A pointer **local** assigned nil is unaffected — a local already *is* the box, so `p = default!` is correct there. (Guarded by the `PointerParamNilWalk` extension `dropIfShort` — nils the parameter, returns it, and the caller then proves the original node's value survived; the pre-fix converter compiles it and reports a non-nil result with a zeroed pointee.)
 
 **Nil-terminated walk.** A pointer-parameter walk that stops at a nil terminator — `func sumList(p *node) int { for p != nil { total += p.val; p = p.next } }` — needs two extra pieces, *modeled together*:
 

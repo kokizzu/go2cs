@@ -39,3 +39,18 @@ type table struct {
 func newTable(n int) *table {
 	return &table{codes: make([]byte, n)}
 }
+
+// kind is a NAMED integer type, so its constants have no C# `const` form (a [GoType] wrapper
+// struct cannot be declared const, CS0283) and are emitted as `static readonly` FIELDS.
+type kind uint8
+
+const (
+	kindNone kind = iota
+	kindFile
+	kindPipe
+)
+
+// A named-STRING const is the same shape (@string is a struct).
+type label string
+
+const labelPipe label = "pipe"

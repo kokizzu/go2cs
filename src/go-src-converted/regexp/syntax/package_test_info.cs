@@ -10,10 +10,11 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+using strings = go.strings_package;
 // </ImportedTypeAliases>
 
 using go;
-using static go.main_package;
+using static go.regexp.syntax_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -27,6 +28,7 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoTypeAlias("Error", "ΔError")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -38,16 +40,21 @@ using static go.main_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<ranges, sort_package.Interface>]
+[assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
+[assembly: GoImplement<ΔError, error>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
+[assembly: GoImplicitConv<Inst, ж<Inst>>(Indirect = true)]
+[assembly: GoImplicitConv<Prog, ж<Prog>>(Indirect = true)]
+[assembly: GoImplicitConv<Regexp, ж<Regexp>>(Indirect = true)]
 // </ImplicitConversions>
 
-namespace go;
+namespace go.regexp;
 
-[GoPackage("main")]
-[GoTestMatchingConsoleOutput]
-public static partial class main_package
+[GoPackage("syntax")]
+public static partial class syntax_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -56,10 +63,25 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct holder {}
-    internal partial struct kind {}
-    internal partial struct label {}
-    internal partial struct reg {}
-    internal partial struct table {}
+    internal partial struct charGroup {}
+    internal partial struct compileTestsᴛ1 {}
+    internal partial struct compiler {}
+    internal partial struct frag {}
+    internal partial struct parseTest {}
+    internal partial struct parser {}
+    internal partial struct patchList {}
+    internal partial struct printFlags {}
+    internal partial struct ranges {}
+    internal partial struct simplifyTestsᴛ1 {}
+    internal partial struct stringTestsᴛ1 {}
+    public partial struct EmptyOp {}
+    public partial struct ErrorCode {}
+    public partial struct Flags {}
+    public partial struct Inst {}
+    public partial struct InstOp {}
+    public partial struct Op {}
+    public partial struct Prog {}
+    public partial struct Regexp {}
+    public partial struct ΔError {}
     // </TypeAccessibility>
 }
