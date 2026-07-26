@@ -8,8 +8,6 @@ namespace go;
 
 partial class main_package {
     static main_package() {
-        initᴛsizedTable();
-        initᴛkindNames();
         initᴛpipeLabel();
         initᴛcomputed();
         initᴛfirst();

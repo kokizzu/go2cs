@@ -16,17 +16,15 @@ internal static void initᴛcomputed() { computed = ((Func<nint>)(() => {
     return @base * 2;
 }))(); }
 
-internal static ж<table> sizedTable;
-internal static void initᴛsizedTable() { sizedTable = newTable(tableSize); }
+internal static ж<table> sizedTable = newTable(tableSize);
 
 internal static holder chunkHolder = new();
 
-internal static slice<@string> kindNames;
-internal static void initᴛkindNames() { kindNames = new golib.SparseArray<@string>{
+internal static slice<@string> kindNames = new golib.SparseArray<@string>{
     [kindNone] = "none"u8,
     [kindFile] = "file"u8,
     [kindPipe] = "pipe"u8
-}.slice(); }
+}.slice();
 
 internal static @string pipeLabel;
 internal static void initᴛpipeLabel() { pipeLabel = ((@string)labelPipe) + "!"u8; }
