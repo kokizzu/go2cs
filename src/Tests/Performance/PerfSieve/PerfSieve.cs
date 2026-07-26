@@ -21,6 +21,10 @@ internal static (nint, nint) sieve(nint n) {
     return (count, sum);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object checksumˢ = (@string)"checksum:"u8;
+private static readonly object elapsedNsˢ = (@string)"elapsed_ns:"u8;
+
 internal static void Main() {
     var start = time.Now().UnixNano();
     nint count = 0;
@@ -31,8 +35,8 @@ internal static void Main() {
         sum += s;
     }
     var elapsed = time.Now().UnixNano() - start;
-    fmt.Println((@string)"checksum:"u8, count, sum);
-    fmt.Println((@string)"elapsed_ns:"u8, elapsed);
+    fmt.Println(checksumˢ, count, sum);
+    fmt.Println(elapsedNsˢ, elapsed);
 }
 
 } // end main_package

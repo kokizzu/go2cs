@@ -6,8 +6,9 @@
 > preceded by the §4.8 quiet-machine baseline (`2cde35fac`). The Tier C session then landed the
 > queued §3 opener (`e88443b23` — typed composite string-literal elements and any-ELEMENT composites
 > render `u8`) followed by **Tier C itself**: the whole-package hoisting pre-pass, per §4.1–§4.6, with
-> the as-built record in §4.9. Measured: `PerfStringMatch` **11.75× → 9.87×** through Tier B (Tier A
-> −13.4%; Tier B flat on this benchmark as predicted); Tier C's number is recorded in §4.9.
+> the as-built record in §4.9 (`08680a751`, plus `7f485f167` for the `-tests` init-order arm the
+> operational sweep exposed). Measured end to end: `PerfStringMatch` **11.75× → 9.19× JIT** and
+> **12.18× → 8.76× Native AOT**, with StringView flat and String/Map non-regressing (§4.9).
 > Underlying approval unchanged: rev 2 accepted by the user with **all five §6 decisions as
 > recommended**, implementation order A → A′ → B → C, each independently revertible (§4.7).
 > History: rev 1 went through a three-lens adversarial panel (semantics / converter mechanics /
@@ -368,6 +369,19 @@ anticipate, all found by the gates rather than by reading:
    is untouched, proven by CNR byte-identity across 495 behavioral projects *and* a full corpus
    reconvert A/B with zero production `.cs`/`.csproj` differences. Note what this says about the
    gate stack: the corpus **compiled clean** with the bug present. Only running the tests found it.
+
+**`PerfStringMatch`, the arc's instrument (§4.8 protocol, quiet machine).** Full progression:
+baseline **1,699.5 ms (11.75×)** → Tier A **1,471.9 (9.93×)** → Tier B **1,488.3 (9.87×)** →
+**Tier C 1,386.1 (9.19×)** JIT, and **1,762.5 (12.18×) → 1,321.4 (8.76×)** Native AOT. Whole arc:
+**−18.4% JIT / −25.0% AOT** wall time against Go, i.e. 11.75× → 9.19× and 12.18× → 8.76×. Tier C's
+own share is the −6.9% JIT / −6.8% AOT step, from exactly the three shapes it targets in that
+benchmark — the `HasPrefix` prefix argument, `kindName`'s four literal returns, and the two literal
+map keys (its `switch` chains were already free after Tier A, and `"// "` slugs to nothing and stays
+inline by the degenerate rule). Oracles held: **StringView flat** (3.05×→3.05× JIT, 1.97×→1.95× AOT
+— its sstring paths are untouched) and **String/Map non-regressing** (String 10.79×→10.75× JIT and
+11.11×→10.72× AOT against the PRE-ARC baseline; its only Tier C change is the two closing `Println`s
+outside the timed loop, and the intermediate post-Tier-B reading of 9.68× was a fast outlier, not a
+level. Map 0.86×→0.86× JIT, 0.31×→0.34× AOT).
 
 **Measured (Go 1.23.1, 302 packages):** 3,253 hoisted fields across 467 files, 62 pre-boxed.
 Per-function blocks: 1,634 blocks, median **1**, p90 **4**, p99 **11**, max **61** —

@@ -30,12 +30,16 @@ internal static nint run(nint n) {
     return total;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object checksumˢ = (@string)"checksum:"u8;
+private static readonly object elapsedNsˢ = (@string)"elapsed_ns:"u8;
+
 internal static void Main() {
     var start = time.Now().UnixNano();
     nint total = run(10000000);
     var elapsed = time.Now().UnixNano() - start;
-    fmt.Println((@string)"checksum:"u8, total);
-    fmt.Println((@string)"elapsed_ns:"u8, elapsed);
+    fmt.Println(checksumˢ, total);
+    fmt.Println(elapsedNsˢ, elapsed);
 }
 
 } // end main_package

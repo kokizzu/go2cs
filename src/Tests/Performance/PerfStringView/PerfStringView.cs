@@ -23,8 +23,11 @@ internal static nint run(nint n) {
     return total;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string nullˢ = "null"u8;
+
 internal static slice<byte> keyword() {
-    @string src = "null"u8;
+    @string src = nullˢ;
     var b = new slice<byte>(len(src));
     for (nint i = 0; i < len(src); i++) {
         b[i] = src[i];
@@ -32,12 +35,16 @@ internal static slice<byte> keyword() {
     return b;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object checksumˢ = (@string)"checksum:"u8;
+private static readonly object elapsedNsˢ = (@string)"elapsed_ns:"u8;
+
 internal static void Main() {
     var start = time.Now().UnixNano();
     nint total = run(20000000);
     var elapsed = time.Now().UnixNano() - start;
-    fmt.Println((@string)"checksum:"u8, total);
-    fmt.Println((@string)"elapsed_ns:"u8, elapsed);
+    fmt.Println(checksumˢ, total);
+    fmt.Println(elapsedNsˢ, elapsed);
 }
 
 } // end main_package
