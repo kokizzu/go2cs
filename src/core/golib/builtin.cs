@@ -64,7 +64,26 @@ public static class builtin
             // Match Go: an unrecovered panic in any goroutine reports on stderr and terminates the
             // process with exit code 2 — never stdout / exit 0, which polluted compared output and
             // signaled false success to callers (shells, CI, the Phase-4 differential oracle).
-            Console.Error.WriteLine($"{(ex is PanicException ? "panic: " : "")}{ex?.Message ?? $"unhandled exception: {e.ExceptionObject}"}");
+            if (ex is PanicException)
+            {
+                // A Go panic reports Go's way: the panic VALUE, nothing else (Go follows it with a
+                // goroutine dump, which is machine-specific and deliberately not reproduced).
+                Console.Error.WriteLine($"panic: {ex.Message}");
+            }
+            else if (ex is not null)
+            {
+                // NOT a Go panic — a managed failure escaping converted code, i.e. a defect to
+                // diagnose rather than a program behavior to report. Message alone throws away the
+                // evidence: a TypeInitializationException's own Message merely names the type and
+                // says "see inner exception", so the actual fault and its stack were LOST (a whole
+                // gob run's real cause was invisible this way). ToString() carries the full chain.
+                Console.Error.WriteLine(ex);
+            }
+            else
+            {
+                Console.Error.WriteLine($"unhandled exception: {e.ExceptionObject}");
+            }
+
             Environment.Exit(2);
         }
     }
