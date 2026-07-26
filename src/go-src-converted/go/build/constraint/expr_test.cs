@@ -410,7 +410,7 @@ public static void TestSizeLimits(ж<testing.T> Ꮡt) {
         Ꮡt.Run(tc.name, (ж<testing.T> tΔ1) => {
             var (_, err) = Parse(tcʗ1.expr);
             if (err == default!){
-                tΔ1.Error((@string)"expression did not trigger limit");
+                tΔ1.Error((@string)"expression did not trigger limit"u8);
             } else 
             {
                 var (syntaxErr, ok) = err._<ж<SyntaxError>>(ᐧ); if (!ok || (~syntaxErr).Err != "build expression too large"u8) {
@@ -449,7 +449,7 @@ public static void TestPlusSizeLimits(ж<testing.T> Ꮡt) {
         Ꮡt.Run(tc.name, (ж<testing.T> tΔ1) => {
             var (_, err) = Parse(tcʗ1.expr);
             if (err == default!){
-                tΔ1.Error((@string)"expression did not trigger limit");
+                tΔ1.Error((@string)"expression did not trigger limit"u8);
             } else 
             if (!AreEqual(err, errComplex)) {
                 tΔ1.Errorf("unexpected error: got %q, want %q"u8, err, errComplex);

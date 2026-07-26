@@ -318,7 +318,7 @@ public static void TestPosition(ж<testing.T> Ꮡt) {
     var s = @new<Scanner>().Init(new bytes_BufferжReader(src));
     s.Value.Mode = (nuint)((nuint)GoTokens & ~(nuint)(nuint)SkipComments);
     s.Scan();
-    var pos = new Position("", 4, 1, 5);
+    var pos = new Position(""u8, 4, 1, 5);
     foreach (var (_, k) in tokenList) {
         if ((~s).Offset != pos.Offset) {
             Ꮡt.Errorf("offset = %d, want %d for %q"u8, (~s).Offset, pos.Offset, k.text);
@@ -680,11 +680,11 @@ public static void TestNextEOFHandling(ж<testing.T> Ꮡt) {
     var s = @new<Scanner>().Init(new countReaderжReader(Ꮡr));
     var tok = s.Next();
     if (tok != EOF) {
-        Ꮡt.Error((@string)"1) EOF not reported");
+        Ꮡt.Error((@string)"1) EOF not reported"u8);
     }
     tok = s.Peek();
     if (tok != EOF) {
-        Ꮡt.Error((@string)"2) EOF not reported");
+        Ꮡt.Error((@string)"2) EOF not reported"u8);
     }
     if (r != 1) {
         Ꮡt.Errorf("scanner called Read %d times, not once"u8, r);
@@ -697,11 +697,11 @@ public static void TestScanEOFHandling(ж<testing.T> Ꮡt) {
     var s = @new<Scanner>().Init(new countReaderжReader(Ꮡr));
     var tok = s.Scan();
     if (tok != EOF) {
-        Ꮡt.Error((@string)"1) EOF not reported");
+        Ꮡt.Error((@string)"1) EOF not reported"u8);
     }
     tok = s.Peek();
     if (tok != EOF) {
-        Ꮡt.Error((@string)"2) EOF not reported");
+        Ꮡt.Error((@string)"2) EOF not reported"u8);
     }
     if (r != 1) {
         Ꮡt.Errorf("scanner called Read %d times, not once"u8, r);

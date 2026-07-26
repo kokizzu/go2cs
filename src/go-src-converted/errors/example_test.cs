@@ -25,7 +25,7 @@ public static @string Error(this MyError e) {
 internal static error oops() {
     return new MyError(
         time.Date(1989, 3, 15, 22, 30, 0, 0, time.ΔUTC),
-        "the file system has gone away"
+        "the file system has gone away"u8
     );
 }
 
@@ -65,10 +65,10 @@ public static void ExampleJoin() {
     var err = errors.Join(err1, err2);
     fmt.Println(err);
     if (errors.Is(err, err1)) {
-        fmt.Println((@string)"err is err1");
+        fmt.Println((@string)"err is err1"u8);
     }
     if (errors.Is(err, err2)) {
-        fmt.Println((@string)"err is err2");
+        fmt.Println((@string)"err is err2"u8);
     }
 }
 
@@ -81,7 +81,7 @@ public static void ExampleIs() {
     {
         var (_, err) = os.Open("non-existing"u8); if (err != default!) {
             if (errors.Is(err, fs.ErrNotExist)){
-                fmt.Println((@string)"file does not exist");
+                fmt.Println((@string)"file does not exist"u8);
             } else {
                 fmt.Println(err);
             }
@@ -96,7 +96,7 @@ public static void ExampleAs() {
         var (_, err) = os.Open("non-existing"u8); if (err != default!) {
             ref var pathError = ref heap<ж<fs.PathError>>(out var ᏑpathError);
             if (errors.As(err, ᏑpathError)){
-                fmt.Println((@string)"Failed at path:", (~pathError).Path);
+                fmt.Println((@string)"Failed at path:"u8, (~pathError).Path);
             } else {
                 fmt.Println(err);
             }

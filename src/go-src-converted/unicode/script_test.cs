@@ -101,7 +101,7 @@ public static void TestCategories(ж<testing.T> Ꮡt) {
     foreach (var (_, test) in inCategoryTest) {
         {
             var (_, ok) = Categories[test.script, ꟷ]; if (!ok) {
-                Ꮡt.Fatal(test.script, (@string)"not a known category");
+                Ꮡt.Fatal(test.script, (@string)"not a known category"u8);
             }
         }
         if (!Is(Categories[test.script], test.rune)) {
@@ -110,7 +110,7 @@ public static void TestCategories(ж<testing.T> Ꮡt) {
         delete(notTested, test.script);
     }
     foreach (var (k, _) in notTested) {
-        Ꮡt.Error((@string)"category not tested:", k);
+        Ꮡt.Error((@string)"category not tested:"u8, k);
     }
 }
 
@@ -122,7 +122,7 @@ public static void TestProperties(ж<testing.T> Ꮡt) {
     foreach (var (_, test) in inPropTest) {
         {
             var (_, ok) = Properties[test.script, ꟷ]; if (!ok) {
-                Ꮡt.Fatal(test.script, (@string)"not a known prop");
+                Ꮡt.Fatal(test.script, (@string)"not a known prop"u8);
             }
         }
         if (!Is(Properties[test.script], test.rune)) {
@@ -131,7 +131,7 @@ public static void TestProperties(ж<testing.T> Ꮡt) {
         delete(notTested, test.script);
     }
     foreach (var (k, _) in notTested) {
-        Ꮡt.Error((@string)"property not tested:", k);
+        Ꮡt.Error((@string)"property not tested:"u8, k);
     }
 }
 

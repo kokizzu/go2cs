@@ -45,19 +45,19 @@ public static void TestParse(ж<testing.T> Ꮡt) {
 }
 
 internal static slice<testCase1<@string, Version>> parseTests = new testCase1<@string, Version>[]{
-    new("1"u8, new Version("1", "0", "0", "", "")),
-    new("1.2"u8, new Version("1", "2", "0", "", "")),
-    new("1.2.3"u8, new Version("1", "2", "3", "", "")),
-    new("1.2rc3"u8, new Version("1", "2", "", "rc", "3")),
-    new("1.20"u8, new Version("1", "20", "0", "", "")),
-    new("1.21"u8, new Version("1", "21", "", "", "")),
-    new("1.21rc3"u8, new Version("1", "21", "", "rc", "3")),
-    new("1.21.0"u8, new Version("1", "21", "0", "", "")),
-    new("1.24"u8, new Version("1", "24", "", "", "")),
-    new("1.24rc3"u8, new Version("1", "24", "", "rc", "3")),
-    new("1.24.0"u8, new Version("1", "24", "0", "", "")),
-    new("1.999testmod"u8, new Version("1", "999", "", "testmod", "")),
-    new("1.99999999999999999"u8, new Version("1", "99999999999999999", "", "", ""))
+    new("1"u8, new Version("1"u8, "0"u8, "0"u8, ""u8, ""u8)),
+    new("1.2"u8, new Version("1"u8, "2"u8, "0"u8, ""u8, ""u8)),
+    new("1.2.3"u8, new Version("1"u8, "2"u8, "3"u8, ""u8, ""u8)),
+    new("1.2rc3"u8, new Version("1"u8, "2"u8, ""u8, "rc"u8, "3"u8)),
+    new("1.20"u8, new Version("1"u8, "20"u8, "0"u8, ""u8, ""u8)),
+    new("1.21"u8, new Version("1"u8, "21"u8, ""u8, ""u8, ""u8)),
+    new("1.21rc3"u8, new Version("1"u8, "21"u8, ""u8, "rc"u8, "3"u8)),
+    new("1.21.0"u8, new Version("1"u8, "21"u8, "0"u8, ""u8, ""u8)),
+    new("1.24"u8, new Version("1"u8, "24"u8, ""u8, ""u8, ""u8)),
+    new("1.24rc3"u8, new Version("1"u8, "24"u8, ""u8, "rc"u8, "3"u8)),
+    new("1.24.0"u8, new Version("1"u8, "24"u8, "0"u8, ""u8, ""u8)),
+    new("1.999testmod"u8, new Version("1"u8, "999"u8, ""u8, "testmod"u8, ""u8)),
+    new("1.99999999999999999"u8, new Version("1"u8, "99999999999999999"u8, ""u8, ""u8, ""u8))
 }.slice();
 
 public static void TestLang(ж<testing.T> Ꮡt) {

@@ -329,7 +329,7 @@ public static void TestReadFromNegativeReader(ж<testing.T> Ꮡt) => func((defer
         var switchᴛ1 = recover();
         switch (switchᴛ1.type()) {
         case null: {
-            Ꮡt.Fatal((@string)"bytes.Buffer.ReadFrom didn't panic");
+            Ꮡt.Fatal((@string)"bytes.Buffer.ReadFrom didn't panic"u8);
             break;
         }
         case {} Δerr when Δerr._<error>(out var err): {
@@ -421,17 +421,17 @@ public static void TestRuneIO(ж<testing.T> Ꮡt) {
     // check at EOF
     {
         var err = buf.UnreadRune(); if (err == default!) {
-            Ꮡt.Fatal((@string)"UnreadRune at EOF: got no error");
+            Ꮡt.Fatal((@string)"UnreadRune at EOF: got no error"u8);
         }
     }
     {
         var (_, _, err) = buf.ReadRune(); if (err == default!) {
-            Ꮡt.Fatal((@string)"ReadRune at EOF: got no error");
+            Ꮡt.Fatal((@string)"ReadRune at EOF: got no error"u8);
         }
     }
     {
         var err = buf.UnreadRune(); if (err == default!) {
-            Ꮡt.Fatal((@string)"UnreadRune after ReadRune at EOF: got no error");
+            Ꮡt.Fatal((@string)"UnreadRune after ReadRune at EOF: got no error"u8);
         }
     }
     // check not at EOF
@@ -629,17 +629,17 @@ public static void TestUnreadByte(ж<testing.T> Ꮡt) {
     // check at EOF
     {
         var errΔ1 = b.UnreadByte(); if (errΔ1 == default!) {
-            Ꮡt.Fatal((@string)"UnreadByte at EOF: got no error");
+            Ꮡt.Fatal((@string)"UnreadByte at EOF: got no error"u8);
         }
     }
     {
         var (_, errΔ2) = b.ReadByte(); if (errΔ2 == default!) {
-            Ꮡt.Fatal((@string)"ReadByte at EOF: got no error");
+            Ꮡt.Fatal((@string)"ReadByte at EOF: got no error"u8);
         }
     }
     {
         var errΔ3 = b.UnreadByte(); if (errΔ3 == default!) {
-            Ꮡt.Fatal((@string)"UnreadByte after ReadByte at EOF: got no error");
+            Ꮡt.Fatal((@string)"UnreadByte after ReadByte at EOF: got no error"u8);
         }
     }
     // check not at EOF
@@ -652,7 +652,7 @@ public static void TestUnreadByte(ж<testing.T> Ꮡt) {
     }
     {
         var errΔ5 = b.UnreadByte(); if (errΔ5 == default!) {
-            Ꮡt.Fatal((@string)"UnreadByte after Read(nil): got no error");
+            Ꮡt.Fatal((@string)"UnreadByte after Read(nil): got no error"u8);
         }
     }
     // after successful read

@@ -97,8 +97,8 @@ internal static slice<encodingTest> encodingTests = new encodingTest[]{
 }.slice();
 
 internal static testpair bigtest = new testpair(
-    "Twas brillig, and the slithy toves",
-    "VHdhcyBicmlsbGlnLCBhbmQgdGhlIHNsaXRoeSB0b3Zlcw=="
+    "Twas brillig, and the slithy toves"u8,
+    "VHdhcyBicmlsbGlnLCBhbmQgdGhlIHNsaXRoeSB0b3Zlcw=="u8
 );
 
 internal static bool testEqual(ж<testing.T> Ꮡt, @string msg, params ꓸꓸꓸany argsʗp) {
@@ -184,7 +184,7 @@ public static void TestDecoder(ж<testing.T> Ꮡt) {
         var dbuf = new slice<byte>(StdEncoding.DecodedLen(len(p.encoded)));
         var (count, err) = decoder.Read(dbuf);
         if (err != default! && !AreEqual(err, io.EOF)) {
-            Ꮡt.Fatal((@string)"Read failed", err);
+            Ꮡt.Fatal((@string)"Read failed"u8, err);
         }
         testEqual(Ꮡt, "Read from %q = length %v, want %v"u8, p.encoded, count, len(p.decoded));
         testEqual(Ꮡt, "Decoding of %q = %q, want %q"u8, p.encoded, ((@string)(dbuf[0..(int)(count)])), p.decoded);
@@ -250,7 +250,7 @@ public static void TestDecodeCorrupt(ж<testing.T> Ꮡt) {
         var (_, err) = StdEncoding.Decode(dbuf, slice<byte>(tc.input));
         if (tc.offset == -1) {
             if (err != default!) {
-                Ꮡt.Error((@string)"Decoder wrongly detected corruption in", tc.input);
+                Ꮡt.Error((@string)"Decoder wrongly detected corruption in"u8, tc.input);
             }
             continue;
         }
@@ -261,7 +261,7 @@ public static void TestDecodeCorrupt(ж<testing.T> Ꮡt) {
         }
         default: {
             var errΔ1 = err;
-            Ꮡt.Error((@string)"Decoder failed to detect corruption in", tc);
+            Ꮡt.Error((@string)"Decoder failed to detect corruption in"u8, tc);
             break;
         }}
     }
@@ -510,7 +510,7 @@ bqbPb06551Y4
         Ꮡt.Errorf("ReadAll failed: %v"u8, err);
     }
     if (!bytes.Equal(res1, res2)) {
-        Ꮡt.Error((@string)"Decoded results not equal");
+        Ꮡt.Error((@string)"Decoded results not equal"u8);
     }
 }
 

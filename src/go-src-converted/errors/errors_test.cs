@@ -26,7 +26,7 @@ public static void TestNewEqual(ж<testing.T> Ꮡt) {
 public static void TestErrorMethod(ж<testing.T> Ꮡt) {
     var err = errors.New("abc"u8);
     if (err.Error() != "abc"u8) {
-        Ꮡt.Errorf(@"New(""abc"").Error() = %q, want %q"u8, err.Error(), (@string)"abc");
+        Ꮡt.Errorf(@"New(""abc"").Error() = %q, want %q"u8, err.Error(), (@string)"abc"u8);
     }
 }
 

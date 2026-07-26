@@ -47,10 +47,10 @@ public static void TestCompare(ж<testing.T> Ꮡt) {
 public static void TestCompareIdenticalString(ж<testing.T> Ꮡt) {
     @string s = "Hello Gophers!"u8;
     if (Compare(s, s) != 0) {
-        Ꮡt.Error((@string)"s != s");
+        Ꮡt.Error((@string)"s != s"u8);
     }
     if (Compare(s, s[..1]) != 1) {
-        Ꮡt.Error((@string)"s > s[:1] failed");
+        Ꮡt.Error((@string)"s > s[:1] failed"u8);
     }
 }
 

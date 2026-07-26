@@ -105,16 +105,16 @@ public static void Example_sortMultiKeys() {
     // Note: > orders downwards.
     // Simple use: Sort by user.
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(user)).ΔSort(changes);
-    fmt.Println((@string)"By user:", changes);
+    fmt.Println((@string)"By user:"u8, changes);
     // More examples.
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(user), increasingLines).ΔSort(changes);
-    fmt.Println((@string)"By user,<lines:", changes);
+    fmt.Println((@string)"By user,<lines:"u8, changes);
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(user), decreasingLines).ΔSort(changes);
-    fmt.Println((@string)"By user,>lines:", changes);
+    fmt.Println((@string)"By user,>lines:"u8, changes);
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(language), increasingLines).ΔSort(changes);
-    fmt.Println((@string)"By language,<lines:", changes);
+    fmt.Println((@string)"By language,<lines:"u8, changes);
     OrderedBy(new Func<ж<Change>, ж<Change>, bool>(language), increasingLines, user).ΔSort(changes);
-    fmt.Println((@string)"By language,<lines,user:", changes);
+    fmt.Println((@string)"By language,<lines,user:"u8, changes);
 }
 
 // Output:

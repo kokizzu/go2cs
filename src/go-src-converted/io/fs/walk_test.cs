@@ -24,7 +24,7 @@ partial class fs_test_package {
 }
 
 internal static ж<Node> tree = Ꮡ(new Node(
-    "testdata",
+    "testdata"u8,
     new ж<Node>[]{
         Ꮡ(new Node("a"u8, default!, 0)),
         Ꮡ(new Node("b"u8, new ж<Node>[]{}.slice(), 0)),
@@ -95,11 +95,11 @@ public static void TestWalkDir(ж<testing.T> Ꮡt) => func((defer, recover) => {
     @string tmpDir = Ꮡt.TempDir();
     var (origDir, err) = os.Getwd();
     if (err != default!) {
-        Ꮡt.Fatal((@string)"finding working dir:", err);
+        Ꮡt.Fatal((@string)"finding working dir:"u8, err);
     }
     {
         err = os.Chdir(tmpDir); if (err != default!) {
-            Ꮡt.Fatal((@string)"entering temp dir:", err);
+            Ꮡt.Fatal((@string)"entering temp dir:"u8, err);
         }
     }
     deferǃ(os.Chdir, origDir, defer);

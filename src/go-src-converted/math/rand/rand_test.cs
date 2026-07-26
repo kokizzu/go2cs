@@ -374,7 +374,7 @@ public static void TestFloat32(ж<testing.T> Ꮡt) {
     for (nint ct = 0; ct < num; ct++) {
         var f = r.Float32();
         if (f >= 1F) {
-            Ꮡt.Fatal((@string)"Float32() should be in range [0,1). ct:", ct, (@string)"f:", f);
+            Ꮡt.Fatal((@string)"Float32() should be in range [0,1). ct:"u8, ct, (@string)"f:"u8, f);
         }
     }
 }

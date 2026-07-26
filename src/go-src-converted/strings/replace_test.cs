@@ -59,13 +59,13 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
     var inc = NewReplacer(s.ꓸꓸꓸ);
     // Test cases with 1-byte old strings, 1-byte new strings.
     testCases = append(testCases,
-        new TestReplacer_testCase(capitalLetters, "brad", "BrAd"),
+        new TestReplacer_testCase(capitalLetters, "brad"u8, "BrAd"u8),
         new TestReplacer_testCase(capitalLetters, Repeat("a"u8, ((32 << (int)(10))) + 123), Repeat("A"u8, ((32 << (int)(10))) + 123)),
-        new TestReplacer_testCase(capitalLetters, "", ""),
-        new TestReplacer_testCase(inc, "brad", "csbe"),
-        new TestReplacer_testCase(inc, ((@string)(new byte[]{0x00, 0xff})), "\x01\x00"),
-        new TestReplacer_testCase(inc, "", ""),
-        new TestReplacer_testCase(NewReplacer("a"u8, "1", "a", "2"), "brad", "br1d"));
+        new TestReplacer_testCase(capitalLetters, ""u8, ""u8),
+        new TestReplacer_testCase(inc, "brad"u8, "csbe"u8),
+        new TestReplacer_testCase(inc, ((@string)(new byte[]{0x00, 0xff})), "\x01\x00"u8),
+        new TestReplacer_testCase(inc, ""u8, ""u8),
+        new TestReplacer_testCase(NewReplacer("a"u8, "1", "a", "2"), "brad"u8, "br1d"u8));
     // repeat maps "a"->"a", "b"->"bb", "c"->"ccc", ...
     s = default!;
     for (nint i = 0; i < 256; i++) {
@@ -78,22 +78,22 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
     var repeat = NewReplacer(s.ꓸꓸꓸ);
     // Test cases with 1-byte old strings, variable length new strings.
     testCases = append(testCases,
-        new TestReplacer_testCase(htmlEscaper, "No changes", "No changes"),
-        new TestReplacer_testCase(htmlEscaper, "I <3 escaping & stuff", "I &lt;3 escaping &amp; stuff"),
-        new TestReplacer_testCase(htmlEscaper, "&&&", "&amp;&amp;&amp;"),
-        new TestReplacer_testCase(htmlEscaper, "", ""),
-        new TestReplacer_testCase(repeat, "brad", "bbrrrrrrrrrrrrrrrrrradddd"),
-        new TestReplacer_testCase(repeat, "abba", "abbbba"),
-        new TestReplacer_testCase(repeat, "", ""),
-        new TestReplacer_testCase(NewReplacer("a"u8, "11", "a", "22"), "brad", "br11d"));
+        new TestReplacer_testCase(htmlEscaper, "No changes"u8, "No changes"u8),
+        new TestReplacer_testCase(htmlEscaper, "I <3 escaping & stuff"u8, "I &lt;3 escaping &amp; stuff"u8),
+        new TestReplacer_testCase(htmlEscaper, "&&&"u8, "&amp;&amp;&amp;"u8),
+        new TestReplacer_testCase(htmlEscaper, ""u8, ""u8),
+        new TestReplacer_testCase(repeat, "brad"u8, "bbrrrrrrrrrrrrrrrrrradddd"u8),
+        new TestReplacer_testCase(repeat, "abba"u8, "abbbba"u8),
+        new TestReplacer_testCase(repeat, ""u8, ""u8),
+        new TestReplacer_testCase(NewReplacer("a"u8, "11", "a", "22"), "brad"u8, "br11d"u8));
     // The remaining test cases have variable length old strings.
     testCases = append(testCases,
-        new TestReplacer_testCase(htmlUnescaper, "&amp;amp;", "&amp;"),
-        new TestReplacer_testCase(htmlUnescaper, "&lt;b&gt;HTML&apos;s neat&lt;/b&gt;", "<b>HTML's neat</b>"),
-        new TestReplacer_testCase(htmlUnescaper, "", ""),
-        new TestReplacer_testCase(NewReplacer("a"u8, "1", "a", "2", "xxx", "xxx"), "brad", "br1d"),
-        new TestReplacer_testCase(NewReplacer("a"u8, "1", "aa", "2", "aaa", "3"), "aaaa", "1111"),
-        new TestReplacer_testCase(NewReplacer("aaa"u8, "3", "aa", "2", "a", "1"), "aaaa", "31"));
+        new TestReplacer_testCase(htmlUnescaper, "&amp;amp;"u8, "&amp;"u8),
+        new TestReplacer_testCase(htmlUnescaper, "&lt;b&gt;HTML&apos;s neat&lt;/b&gt;"u8, "<b>HTML's neat</b>"u8),
+        new TestReplacer_testCase(htmlUnescaper, ""u8, ""u8),
+        new TestReplacer_testCase(NewReplacer("a"u8, "1", "a", "2", "xxx", "xxx"), "brad"u8, "br1d"u8),
+        new TestReplacer_testCase(NewReplacer("a"u8, "1", "aa", "2", "aaa", "3"), "aaaa"u8, "1111"u8),
+        new TestReplacer_testCase(NewReplacer("aaa"u8, "3", "aa", "2", "a", "1"), "aaaa"u8, "31"u8));
     // gen1 has multiple old strings of variable length. There is no
     // overall non-empty common prefix, but some pairwise common prefixes.
     var gen1 = NewReplacer(
@@ -109,19 +109,19 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         "X", "Y",
         "Y", "Z");
     testCases = append(testCases,
-        new TestReplacer_testCase(gen1, "fooaaabar", "foo3[aaa]b1[a]r"),
-        new TestReplacer_testCase(gen1, "long, longerst, longer", "short, most long, medium"),
-        new TestReplacer_testCase(gen1, "xxxxx", "xxxxX"),
-        new TestReplacer_testCase(gen1, "XiX", "YiY"),
-        new TestReplacer_testCase(gen1, "", ""));
+        new TestReplacer_testCase(gen1, "fooaaabar"u8, "foo3[aaa]b1[a]r"u8),
+        new TestReplacer_testCase(gen1, "long, longerst, longer"u8, "short, most long, medium"u8),
+        new TestReplacer_testCase(gen1, "xxxxx"u8, "xxxxX"u8),
+        new TestReplacer_testCase(gen1, "XiX"u8, "YiY"u8),
+        new TestReplacer_testCase(gen1, ""u8, ""u8));
     // gen2 has multiple old strings with no pairwise common prefix.
     var gen2 = NewReplacer(
         "roses"u8, "red",
         "violets", "blue",
         "sugar", "sweet");
     testCases = append(testCases,
-        new TestReplacer_testCase(gen2, "roses are red, violets are blue...", "red are red, blue are blue..."),
-        new TestReplacer_testCase(gen2, "", ""));
+        new TestReplacer_testCase(gen2, "roses are red, violets are blue..."u8, "red are red, blue are blue..."u8),
+        new TestReplacer_testCase(gen2, ""u8, ""u8));
     // gen3 has multiple old strings with an overall common prefix.
     var gen3 = NewReplacer(
         "abracadabra"u8, "poof",
@@ -130,10 +130,10 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         "abrasion", "scrape",
         "abraham", "isaac");
     testCases = append(testCases,
-        new TestReplacer_testCase(gen3, "abracadabrakazam abraham", "poofkazam lincoln"),
-        new TestReplacer_testCase(gen3, "abrasion abracad", "scrape abracad"),
-        new TestReplacer_testCase(gen3, "abba abram abrasive", "abba abram abrasive"),
-        new TestReplacer_testCase(gen3, "", ""));
+        new TestReplacer_testCase(gen3, "abracadabrakazam abraham"u8, "poofkazam lincoln"u8),
+        new TestReplacer_testCase(gen3, "abrasion abracad"u8, "scrape abracad"u8),
+        new TestReplacer_testCase(gen3, "abba abram abrasive"u8, "abba abram abrasive"u8),
+        new TestReplacer_testCase(gen3, ""u8, ""u8));
     // foo{1,2,3,4} have multiple old strings with an overall common prefix
     // and 1- or 2- byte extensions from the common prefix.
     var foo1 = NewReplacer(
@@ -154,14 +154,14 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         "foo12"u8, "B",
         "foo32", "D");
     testCases = append(testCases,
-        new TestReplacer_testCase(foo1, "fofoofoo12foo32oo", "fofooA2C2oo"),
-        new TestReplacer_testCase(foo1, "", ""),
-        new TestReplacer_testCase(foo2, "fofoofoo12foo32oo", "fofooA2Doo"),
-        new TestReplacer_testCase(foo2, "", ""),
-        new TestReplacer_testCase(foo3, "fofoofoo12foo32oo", "fofooBDoo"),
-        new TestReplacer_testCase(foo3, "", ""),
-        new TestReplacer_testCase(foo4, "fofoofoo12foo32oo", "fofooBDoo"),
-        new TestReplacer_testCase(foo4, "", ""));
+        new TestReplacer_testCase(foo1, "fofoofoo12foo32oo"u8, "fofooA2C2oo"u8),
+        new TestReplacer_testCase(foo1, ""u8, ""u8),
+        new TestReplacer_testCase(foo2, "fofoofoo12foo32oo"u8, "fofooA2Doo"u8),
+        new TestReplacer_testCase(foo2, ""u8, ""u8),
+        new TestReplacer_testCase(foo3, "fofoofoo12foo32oo"u8, "fofooBDoo"u8),
+        new TestReplacer_testCase(foo3, ""u8, ""u8),
+        new TestReplacer_testCase(foo4, "fofoofoo12foo32oo"u8, "fofooBDoo"u8),
+        new TestReplacer_testCase(foo4, ""u8, ""u8));
     // genAll maps "\x00\x01\x02...\xfe\xff" to "[all]", amongst other things.
     var allBytes = new slice<byte>(256);
     foreach (var (i, _) in allBytes) {
@@ -173,9 +173,9 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         ((@string)(new byte[]{0xff})), "[ff]",
         "\x00", "[00]");
     testCases = append(testCases,
-        new TestReplacer_testCase(genAll, allString, "[all]"),
-        new TestReplacer_testCase(genAll, ((@string)(new byte[]{0x61, 0xff})) + allString + "\x00", "a[ff][all][00]"),
-        new TestReplacer_testCase(genAll, "", ""));
+        new TestReplacer_testCase(genAll, allString, "[all]"u8),
+        new TestReplacer_testCase(genAll, ((@string)(new byte[]{0x61, 0xff})) + allString + "\x00", "a[ff][all][00]"u8),
+        new TestReplacer_testCase(genAll, ""u8, ""u8));
     // Test cases with empty old strings.
     var blankToX1 = NewReplacer(""u8, "X");
     var blankToX2 = NewReplacer(""u8, "X", "", "");
@@ -185,47 +185,47 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
     var blankNoOp2 = NewReplacer(""u8, "", "", "A");
     var blankFoo = NewReplacer(""u8, "X", "foobar", "R", "foobaz", "Z");
     testCases = append(testCases,
-        new TestReplacer_testCase(blankToX1, "foo", "XfXoXoX"),
-        new TestReplacer_testCase(blankToX1, "", "X"),
-        new TestReplacer_testCase(blankToX2, "foo", "XfXoXoX"),
-        new TestReplacer_testCase(blankToX2, "", "X"),
-        new TestReplacer_testCase(blankHighPriority, "oo", "XOXOX"),
-        new TestReplacer_testCase(blankHighPriority, "ii", "XiXiX"),
-        new TestReplacer_testCase(blankHighPriority, "oiio", "XOXiXiXOX"),
-        new TestReplacer_testCase(blankHighPriority, "iooi", "XiXOXOXiX"),
-        new TestReplacer_testCase(blankHighPriority, "", "X"),
-        new TestReplacer_testCase(blankLowPriority, "oo", "OOX"),
-        new TestReplacer_testCase(blankLowPriority, "ii", "XiXiX"),
-        new TestReplacer_testCase(blankLowPriority, "oiio", "OXiXiOX"),
-        new TestReplacer_testCase(blankLowPriority, "iooi", "XiOOXiX"),
-        new TestReplacer_testCase(blankLowPriority, "", "X"),
-        new TestReplacer_testCase(blankNoOp1, "foo", "foo"),
-        new TestReplacer_testCase(blankNoOp1, "", ""),
-        new TestReplacer_testCase(blankNoOp2, "foo", "foo"),
-        new TestReplacer_testCase(blankNoOp2, "", ""),
-        new TestReplacer_testCase(blankFoo, "foobarfoobaz", "XRXZX"),
-        new TestReplacer_testCase(blankFoo, "foobar-foobaz", "XRX-XZX"),
-        new TestReplacer_testCase(blankFoo, "", "X"));
+        new TestReplacer_testCase(blankToX1, "foo"u8, "XfXoXoX"u8),
+        new TestReplacer_testCase(blankToX1, ""u8, "X"u8),
+        new TestReplacer_testCase(blankToX2, "foo"u8, "XfXoXoX"u8),
+        new TestReplacer_testCase(blankToX2, ""u8, "X"u8),
+        new TestReplacer_testCase(blankHighPriority, "oo"u8, "XOXOX"u8),
+        new TestReplacer_testCase(blankHighPriority, "ii"u8, "XiXiX"u8),
+        new TestReplacer_testCase(blankHighPriority, "oiio"u8, "XOXiXiXOX"u8),
+        new TestReplacer_testCase(blankHighPriority, "iooi"u8, "XiXOXOXiX"u8),
+        new TestReplacer_testCase(blankHighPriority, ""u8, "X"u8),
+        new TestReplacer_testCase(blankLowPriority, "oo"u8, "OOX"u8),
+        new TestReplacer_testCase(blankLowPriority, "ii"u8, "XiXiX"u8),
+        new TestReplacer_testCase(blankLowPriority, "oiio"u8, "OXiXiOX"u8),
+        new TestReplacer_testCase(blankLowPriority, "iooi"u8, "XiOOXiX"u8),
+        new TestReplacer_testCase(blankLowPriority, ""u8, "X"u8),
+        new TestReplacer_testCase(blankNoOp1, "foo"u8, "foo"u8),
+        new TestReplacer_testCase(blankNoOp1, ""u8, ""u8),
+        new TestReplacer_testCase(blankNoOp2, "foo"u8, "foo"u8),
+        new TestReplacer_testCase(blankNoOp2, ""u8, ""u8),
+        new TestReplacer_testCase(blankFoo, "foobarfoobaz"u8, "XRXZX"u8),
+        new TestReplacer_testCase(blankFoo, "foobar-foobaz"u8, "XRX-XZX"u8),
+        new TestReplacer_testCase(blankFoo, ""u8, "X"u8));
     // single string replacer
     var abcMatcher = NewReplacer("abc"u8, "[match]");
     testCases = append(testCases,
-        new TestReplacer_testCase(abcMatcher, "", ""),
-        new TestReplacer_testCase(abcMatcher, "ab", "ab"),
-        new TestReplacer_testCase(abcMatcher, "abc", "[match]"),
-        new TestReplacer_testCase(abcMatcher, "abcd", "[match]d"),
-        new TestReplacer_testCase(abcMatcher, "cabcabcdabca", "c[match][match]d[match]a"));
+        new TestReplacer_testCase(abcMatcher, ""u8, ""u8),
+        new TestReplacer_testCase(abcMatcher, "ab"u8, "ab"u8),
+        new TestReplacer_testCase(abcMatcher, "abc"u8, "[match]"u8),
+        new TestReplacer_testCase(abcMatcher, "abcd"u8, "[match]d"u8),
+        new TestReplacer_testCase(abcMatcher, "cabcabcdabca"u8, "c[match][match]d[match]a"u8));
     // Issue 6659 cases (more single string replacer)
     var noHello = NewReplacer("Hello"u8, "");
     testCases = append(testCases,
-        new TestReplacer_testCase(noHello, "Hello", ""),
-        new TestReplacer_testCase(noHello, "Hellox", "x"),
-        new TestReplacer_testCase(noHello, "xHello", "x"),
-        new TestReplacer_testCase(noHello, "xHellox", "xx"));
+        new TestReplacer_testCase(noHello, "Hello"u8, ""u8),
+        new TestReplacer_testCase(noHello, "Hellox"u8, "x"u8),
+        new TestReplacer_testCase(noHello, "xHello"u8, "x"u8),
+        new TestReplacer_testCase(noHello, "xHellox"u8, "xx"u8));
     // No-arg test cases.
     var nop = NewReplacer();
     testCases = append(testCases,
-        new TestReplacer_testCase(nop, "abc", "abc"),
-        new TestReplacer_testCase(nop, "", ""));
+        new TestReplacer_testCase(nop, "abc"u8, "abc"u8),
+        new TestReplacer_testCase(nop, ""u8, ""u8));
     // Run the test cases.
     foreach (var (i, tc) in testCases) {
         {

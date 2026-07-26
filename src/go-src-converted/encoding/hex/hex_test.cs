@@ -47,7 +47,7 @@ public static void TestEncode(ж<testing.T> Ꮡt) {
 public static void TestDecode(ж<testing.T> Ꮡt) {
     // Case for decoding uppercase hex characters, since
     // Encode always uses lowercase.
-    var decTests = append(encDecTests, new encDecTest("F8F9FAFBFCFDFEFF", new byte[]{0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff}.slice()));
+    var decTests = append(encDecTests, new encDecTest("F8F9FAFBFCFDFEFF"u8, new byte[]{0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff}.slice()));
     foreach (var (i, test) in decTests) {
         var dst = new slice<byte>(DecodedLen(len(test.enc)));
         var (n, err) = Decode(dst, slice<byte>(test.enc));

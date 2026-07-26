@@ -75,7 +75,7 @@ public static void TestList(ж<testing.T> Ꮡt) {
     var l = New();
     checkListPointers(Ꮡt, l, new ж<Element>[]{}.slice());
     // Single element list
-    var e = l.PushFront((@string)"a");
+    var e = l.PushFront((@string)"a"u8);
     checkListPointers(Ꮡt, l, new ж<Element>[]{e}.slice());
     l.MoveToFront(e);
     checkListPointers(Ꮡt, l, new ж<Element>[]{e}.slice());
@@ -87,7 +87,7 @@ public static void TestList(ж<testing.T> Ꮡt) {
     var e2 = l.PushFront((nint)(2));
     var e1 = l.PushFront((nint)(1));
     var e3 = l.PushBack((nint)(3));
-    var e4 = l.PushBack((@string)"banana");
+    var e4 = l.PushBack((@string)"banana"u8);
     checkListPointers(Ꮡt, l, new ж<Element>[]{e1, e2, e3, e4}.slice());
     l.Remove(e2);
     checkListPointers(Ꮡt, l, new ж<Element>[]{e1, e3, e4}.slice());

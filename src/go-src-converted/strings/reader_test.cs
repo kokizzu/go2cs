@@ -91,7 +91,7 @@ public static void TestReaderAt(ж<testing.T> Ꮡt) {
         new(1, 9, "123456789"u8, default!),
         new(11, 10, ""u8, Δio.EOF),
         new(0, 0, ""u8, default!),
-        new(-1, 0, ""u8, (@string)"strings.Reader.ReadAt: negative offset")
+        new(-1, 0, ""u8, (@string)"strings.Reader.ReadAt: negative offset"u8)
     }.slice();
     foreach (var (i, tt) in tests) {
         var b = new slice<byte>(tt.n);

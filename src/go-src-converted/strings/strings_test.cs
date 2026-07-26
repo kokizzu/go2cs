@@ -712,7 +712,7 @@ public static void TestMap(ж<testing.T> Ꮡt) {
     @string orig = "Input string that we expect not to be copied."u8;
     m = Map(identity, orig);
     if (@unsafe.StringData(orig) != @unsafe.StringData(m)) {
-        Ꮡt.Error((@string)"unexpected copy during identity map");
+        Ꮡt.Error((@string)"unexpected copy during identity map"u8);
     }
     // 7. Handle invalid UTF-8 sequence
     var replaceNotLatin = rune (rune rΔ3) => {
@@ -721,7 +721,7 @@ public static void TestMap(ж<testing.T> Ꮡt) {
         }
         return utf8.RuneError;
     };
-    m = Map(replaceNotLatin, "Hello\u00adWorld"u8);
+    m = Map(replaceNotLatin, ((@string)(new byte[]{0x48, 0x65, 0x6c, 0x6c, 0x6f, 0xad, 0x57, 0x6f, 0x72, 0x6c, 0x64})));
     expect = "Hello\uFFFDWorld"u8;
     if (m != expect) {
         Ꮡt.Errorf("replace invalid sequence: expected %q got %q"u8, expect, m);
@@ -1009,15 +1009,15 @@ public static void BenchmarkToValidUTF8(ж<testing.B> Ꮡb) {
     internal @string name;
 }
 
-internal static predicate isSpace = new predicate(Δunicode.IsSpace, "IsSpace");
+internal static predicate isSpace = new predicate(Δunicode.IsSpace, "IsSpace"u8);
 
-internal static predicate isDigit = new predicate(Δunicode.IsDigit, "IsDigit");
+internal static predicate isDigit = new predicate(Δunicode.IsDigit, "IsDigit"u8);
 
-internal static predicate isUpper = new predicate(Δunicode.IsUpper, "IsUpper");
+internal static predicate isUpper = new predicate(Δunicode.IsUpper, "IsUpper"u8);
 
 internal static predicate isValidRune = new predicate(
     (rune r) => r != utf8.RuneError,
-    "IsValidRune"
+    "IsValidRune"u8
 );
 
 internal static predicate not(predicate p) {
@@ -1174,19 +1174,19 @@ public static void TestCaseConsistency(ж<testing.T> Ꮡt) {
     // Consistency checks
     {
         nint n = utf8.RuneCountInString(upper); if (n != numRunes) {
-            Ꮡt.Error((@string)"rune count wrong in upper:", n);
+            Ꮡt.Error((@string)"rune count wrong in upper:"u8, n);
         }
     }
     {
         nint n = utf8.RuneCountInString(lower); if (n != numRunes) {
-            Ꮡt.Error((@string)"rune count wrong in lower:", n);
+            Ꮡt.Error((@string)"rune count wrong in lower:"u8, n);
         }
     }
     if (!equal("ToUpper(upper)"u8, ToUpper(upper), upper, Ꮡt)) {
-        Ꮡt.Error((@string)"ToUpper(upper) consistency fail");
+        Ꮡt.Error((@string)"ToUpper(upper) consistency fail"u8);
     }
     if (!equal("ToLower(lower)"u8, ToLower(lower), lower, Ꮡt)) {
-        Ꮡt.Error((@string)"ToLower(lower) consistency fail");
+        Ꮡt.Error((@string)"ToLower(lower) consistency fail"u8);
     }
 }
 
@@ -1763,7 +1763,7 @@ public static void BenchmarkEqualFold(ж<testing.B> Ꮡb) {
 
                 {
                     var @out = EqualFold(tt.s, tt.t); if (@out != tt.@out) {
-                        bΔ1.Fatal((@string)"wrong result");
+                        bΔ1.Fatal((@string)"wrong result"u8);
                     }
                 }
             }

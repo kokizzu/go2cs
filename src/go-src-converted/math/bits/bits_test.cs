@@ -1115,7 +1115,7 @@ public static void TestDivPanicOverflow(ж<testing.T> Ꮡt) => func((defer, reco
     defer(() => {
         {
             var err = recover(); if (err == default!){
-                Ꮡt.Error((@string)"Div should have panicked when y<=hi");
+                Ꮡt.Error((@string)"Div should have panicked when y<=hi"u8);
             } else 
             {
                 var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != overflowError) {
@@ -1133,7 +1133,7 @@ public static void TestDiv32PanicOverflow(ж<testing.T> Ꮡt) => func((defer, re
     defer(() => {
         {
             var err = recover(); if (err == default!){
-                Ꮡt.Error((@string)"Div32 should have panicked when y<=hi");
+                Ꮡt.Error((@string)"Div32 should have panicked when y<=hi"u8);
             } else 
             {
                 var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != overflowError) {
@@ -1151,7 +1151,7 @@ public static void TestDiv64PanicOverflow(ж<testing.T> Ꮡt) => func((defer, re
     defer(() => {
         {
             var err = recover(); if (err == default!){
-                Ꮡt.Error((@string)"Div64 should have panicked when y<=hi");
+                Ꮡt.Error((@string)"Div64 should have panicked when y<=hi"u8);
             } else 
             {
                 var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != overflowError) {
@@ -1169,7 +1169,7 @@ public static void TestDivPanicZero(ж<testing.T> Ꮡt) => func((defer, recover)
     defer(() => {
         {
             var err = recover(); if (err == default!){
-                Ꮡt.Error((@string)"Div should have panicked when y==0");
+                Ꮡt.Error((@string)"Div should have panicked when y==0"u8);
             } else 
             {
                 var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != divZeroError) {
@@ -1187,7 +1187,7 @@ public static void TestDiv32PanicZero(ж<testing.T> Ꮡt) => func((defer, recove
     defer(() => {
         {
             var err = recover(); if (err == default!){
-                Ꮡt.Error((@string)"Div32 should have panicked when y==0");
+                Ꮡt.Error((@string)"Div32 should have panicked when y==0"u8);
             } else 
             {
                 var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != divZeroError) {
@@ -1205,7 +1205,7 @@ public static void TestDiv64PanicZero(ж<testing.T> Ꮡt) => func((defer, recove
     defer(() => {
         {
             var err = recover(); if (err == default!){
-                Ꮡt.Error((@string)"Div64 should have panicked when y==0");
+                Ꮡt.Error((@string)"Div64 should have panicked when y==0"u8);
             } else 
             {
                 var (e, ok) = err._<runtimeꓸError>(ᐧ); if (!ok || e.Error() != divZeroError) {

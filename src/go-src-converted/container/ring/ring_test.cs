@@ -11,7 +11,7 @@ partial class ring_package {
 // For debugging - keep around.
 internal static void dump(ж<Ring> Ꮡr) {
     if (Ꮡr == nil) {
-        fmt.Println((@string)"empty");
+        fmt.Println((@string)"empty"u8);
         return;
     }
     nint i = 0;

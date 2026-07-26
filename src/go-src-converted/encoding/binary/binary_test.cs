@@ -571,7 +571,7 @@ public static void TestUnexportedRead(ж<testing.T> Ꮡt) {
         Ꮡt.Run(dec.name, (ж<testing.T> tΔ1) => func((defer, recover) => {
             defer(() => {
                 if (recover() == default!) {
-                    tΔ1.Fatal((@string)"did not panic");
+                    tΔ1.Fatal((@string)"did not panic"u8);
                 }
             });
             ref var u2 = ref heap(new Unexported(), out var Ꮡu2);
@@ -823,7 +823,7 @@ public static void TestAppendAllocs(ж<testing.T> Ꮡt) {
         (_, Ꮡerr.ValueSlot) = Append(bufʗ1, LittleEndian, Ꮡs);
     });
     if (err != default!) {
-        Ꮡt.Fatal((@string)"Append failed:", err);
+        Ꮡt.Fatal((@string)"Append failed:"u8, err);
     }
     if (allocs != 0D) {
         Ꮡt.Fatalf("Append allocated %v times instead of not allocating at all"u8, allocs);

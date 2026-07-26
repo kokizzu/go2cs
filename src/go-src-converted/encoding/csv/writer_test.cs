@@ -91,7 +91,7 @@ public static void TestError(ж<testing.T> Ꮡt) {
     f.Flush();
     err = f.Error();
     if (err == default!) {
-        Ꮡt.Error((@string)"Error should not be nil");
+        Ꮡt.Error((@string)"Error should not be nil"u8);
     }
 }
 

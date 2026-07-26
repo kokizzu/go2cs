@@ -21,12 +21,12 @@ partial class errors_test_package {
 
 public static void TestIs(ж<testing.T> Ꮡt) {
     var err1 = errors.New("1"u8);
-    var erra = new wrapped("wrap 2", err1);
-    var errb = new wrapped("wrap 3", erra);
+    var erra = new wrapped("wrap 2"u8, err1);
+    var errb = new wrapped("wrap 3"u8, erra);
     var err3 = errors.New("3"u8);
     var err1ʗ1 = err1;
     var err3ʗ1 = err3;
-    var poser = Ꮡ(new poser("either 1 or 3", (error err) => AreEqual(err, err1ʗ1) || AreEqual(err, err3ʗ1)
+    var poser = Ꮡ(new poser("either 1 or 3"u8, (error err) => AreEqual(err, err1ʗ1) || AreEqual(err, err3ʗ1)
     ));
     var testCases = new TestIs_testCases[]{
         new(default!, default!, true),
@@ -97,7 +97,7 @@ internal static bool As(this ж<poser> Ꮡp, any err) {
         break;
     }
     case ж<errorT> x: {
-        x.Value = new errorT("poser");
+        x.Value = new errorT("poser"u8);
         break;
     }
     case ж<ж<fs.PathError>> x: {
@@ -128,17 +128,17 @@ public static void TestAs(ж<testing.T> Ꮡt) {
     ref var timeout = ref heap<TestAs_timeout>(out var Ꮡtimeout);
     ref var p = ref heap<ж<poser>>(out var Ꮡp);
     var (_, errF) = os.Open("non-existing"u8);
-    var poserErr = Ꮡ(new poser("oh no", default!));
+    var poserErr = Ꮡ(new poser("oh no"u8, default!));
     var testCases = new TestAs_testCases[]{new(
         default!,
         ᏑerrP,
         false,
         default!
     ), new(
-        new wrapped("pitied the fool", new errorT("T")),
+        new wrapped("pitied the fool"u8, new errorT("T"u8)),
         ᏑerrT,
         true,
-        new errorT("T")
+        new errorT("T"u8)
     ), new(
         errF,
         ᏑerrP,
@@ -150,17 +150,17 @@ public static void TestAs(ж<testing.T> Ꮡt) {
         false,
         default!
     ), new(
-        new wrapped("wrapped", default!),
+        new wrapped("wrapped"u8, default!),
         ᏑerrT,
         false,
         default!
     ), new(
-        new poserжerror(Ꮡ(new poser("error", default!))),
+        new poserжerror(Ꮡ(new poser("error"u8, default!))),
         ᏑerrT,
         true,
-        new errorT("poser")
+        new errorT("poser"u8)
     ), new(
-        new poserжerror(Ꮡ(new poser("path", default!))),
+        new poserжerror(Ꮡ(new poser("path"u8, default!))),
         ᏑerrP,
         true,
         poserPathErr
@@ -180,7 +180,7 @@ public static void TestAs(ж<testing.T> Ꮡt) {
         true,
         errF
     ), new(
-        new wrapped("path error", errF),
+        new wrapped("path error"u8, errF),
         Ꮡtimeout,
         true,
         errF
@@ -190,27 +190,27 @@ public static void TestAs(ж<testing.T> Ꮡt) {
         false,
         default!
     ), new(
-        new multiErr(new error[]{errors.New("a"u8), new errorT("T")}.slice()),
+        new multiErr(new error[]{errors.New("a"u8), new errorT("T"u8)}.slice()),
         ᏑerrT,
         true,
-        new errorT("T")
+        new errorT("T"u8)
     ), new(
-        new multiErr(new error[]{new errorT("T"), errors.New("a"u8)}.slice()),
+        new multiErr(new error[]{new errorT("T"u8), errors.New("a"u8)}.slice()),
         ᏑerrT,
         true,
-        new errorT("T")
+        new errorT("T"u8)
     ), new(
-        new multiErr(new error[]{new errorT("a"), new errorT("b")}.slice()),
+        new multiErr(new error[]{new errorT("a"u8), new errorT("b"u8)}.slice()),
         ᏑerrT,
         true,
-        new errorT("a")
+        new errorT("a"u8)
     ), new(
-        new multiErr(new error[]{new multiErr(new error[]{errors.New("a"u8), new errorT("a")}.slice()), new errorT("b")}.slice()),
+        new multiErr(new error[]{new multiErr(new error[]{errors.New("a"u8), new errorT("a"u8)}.slice()), new errorT("b"u8)}.slice()),
         ᏑerrT,
         true,
-        new errorT("a")
+        new errorT("a"u8)
     ), new(
-        new multiErr(new error[]{new wrapped("path error", errF)}.slice()),
+        new multiErr(new error[]{new wrapped("path error"u8, errF)}.slice()),
         Ꮡtimeout,
         true,
         errF
@@ -278,10 +278,10 @@ public static void BenchmarkIs(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
     var err1 = errors.New("1"u8);
-    var err2 = new multiErr(new error[]{new multiErr(new error[]{new multiErr(new error[]{err1, new errorT("a")}.slice()), new errorT("b")}.slice())}.slice());
+    var err2 = new multiErr(new error[]{new multiErr(new error[]{new multiErr(new error[]{err1, new errorT("a"u8)}.slice()), new errorT("b"u8)}.slice())}.slice());
     for (nint i = 0; i < b.N; i++) {
         if (!errors.Is(err2, err1)) {
-            Ꮡb.Fatal((@string)"Is failed");
+            Ꮡb.Fatal((@string)"Is failed"u8);
         }
     }
 }
@@ -289,11 +289,11 @@ public static void BenchmarkIs(ж<testing.B> Ꮡb) {
 public static void BenchmarkAs(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    var err = new multiErr(new error[]{new multiErr(new error[]{new multiErr(new error[]{errors.New("a"u8), new errorT("a")}.slice()), new errorT("b")}.slice())}.slice());
+    var err = new multiErr(new error[]{new multiErr(new error[]{new multiErr(new error[]{errors.New("a"u8), new errorT("a"u8)}.slice()), new errorT("b"u8)}.slice())}.slice());
     for (nint i = 0; i < b.N; i++) {
         ref var target = ref heap(new errorT(), out var Ꮡtarget);
         if (!errors.As(err, Ꮡtarget)) {
-            Ꮡb.Fatal((@string)"As failed");
+            Ꮡb.Fatal((@string)"As failed"u8);
         }
     }
 }
@@ -305,13 +305,13 @@ public static void BenchmarkAs(ж<testing.B> Ꮡb) {
 
 public static void TestUnwrap(ж<testing.T> Ꮡt) {
     var err1 = errors.New("1"u8);
-    var erra = new wrapped("wrap 2", err1);
+    var erra = new wrapped("wrap 2"u8, err1);
     var testCases = new TestUnwrap_testCases[]{
         new(default!, default!),
-        new(new wrapped("wrapped", default!), default!),
+        new(new wrapped("wrapped"u8, default!), default!),
         new(err1, default!),
         new(erra, err1),
-        new(new wrapped("wrap 3", erra), erra)
+        new(new wrapped("wrap 3"u8, erra), erra)
     }.slice();
     foreach (var (_, tc) in testCases) {
         {

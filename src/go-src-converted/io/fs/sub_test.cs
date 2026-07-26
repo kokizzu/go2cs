@@ -28,7 +28,7 @@ public static void TestSub(ж<testing.T> Ꮡt) {
         }
         (var data, errΔ1) = ReadFile(subΔ1, "goodbye.txt"u8);
         if (((sstring)data) != "goodbye, world"u8 || errΔ1 != default!) {
-            Ꮡt.Errorf(@"ReadFile(%s, ""goodbye.txt"" = %q, %v, want %q, nil"u8, desc, ((@string)data), errΔ1, (@string)"goodbye, world");
+            Ꮡt.Errorf(@"ReadFile(%s, ""goodbye.txt"" = %q, %v, want %q, nil"u8, desc, ((@string)data), errΔ1, (@string)"goodbye, world"u8);
         }
         (var dirs, errΔ1) = ReadDir(subΔ1, "."u8);
         if (errΔ1 != default! || len(dirs) != 1 || dirs[0].Name() != "goodbye.txt"u8) {
@@ -47,14 +47,14 @@ public static void TestSub(ж<testing.T> Ꮡt) {
     check("openOnly"u8, sub, err);
     (_, err) = sub.Open("nonexist"u8);
     if (err == default!) {
-        Ꮡt.Fatal((@string)"Open(nonexist): succeeded");
+        Ꮡt.Fatal((@string)"Open(nonexist): succeeded"u8);
     }
     var (pe, ok) = err._<ж<fs.PathError>>(ᐧ);
     if (!ok) {
         Ꮡt.Fatalf("Open(nonexist): error is %T, want *PathError"u8, err);
     }
     if ((~pe).Path != "nonexist"u8) {
-        Ꮡt.Fatalf("Open(nonexist): err.Path = %q, want %q"u8, (~pe).Path, (@string)"nonexist");
+        Ꮡt.Fatalf("Open(nonexist): err.Path = %q, want %q"u8, (~pe).Path, (@string)"nonexist"u8);
     }
     (_, err) = sub.Open("./"u8);
     if (!errors.Is(err, ErrInvalid)) {

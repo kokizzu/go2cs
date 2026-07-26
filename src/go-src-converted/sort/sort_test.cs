@@ -758,7 +758,7 @@ internal static void countOps(ж<testing.T> Ꮡt, Action<sort.Interface> algo, @
         sizes = sizes[..5];
     }
     if (!testing.Verbose()) {
-        Ꮡt.Skip((@string)"Counting skipped as non-verbose mode.");
+        Ꮡt.Skip((@string)"Counting skipped as non-verbose mode."u8);
     }
     foreach (var (_, n) in sizes) {
         ref var td = ref heap<testingData>(out var Ꮡtd);
@@ -788,7 +788,7 @@ internal static void bench(ж<testing.B> Ꮡb, nint size, Action<sort.Interface>
     ref var b = ref Ꮡb.Value;
 
     if (strings.HasSuffix(testenv.Builder(), "-race"u8) && size > 10000) {
-        Ꮡb.Skip((@string)"skipping slow benchmark on race builder");
+        Ꮡb.Skip((@string)"skipping slow benchmark on race builder"u8);
     }
     b.StopTimer();
     var data = new intPairs(size);

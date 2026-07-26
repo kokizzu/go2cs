@@ -204,10 +204,10 @@ internal static void runSearchWrappers() {
 
 public static void TestSearchWrappersDontAlloc(ж<testing.T> Ꮡt) {
     if (testing.Short()) {
-        Ꮡt.Skip((@string)"skipping malloc count in short mode");
+        Ꮡt.Skip((@string)"skipping malloc count in short mode"u8);
     }
     if (Δruntime.GOMAXPROCS(0) > 1) {
-        Ꮡt.Skip((@string)"skipping; GOMAXPROCS>1");
+        Ꮡt.Skip((@string)"skipping; GOMAXPROCS>1"u8);
     }
     var allocs = testing.AllocsPerRun(100, runSearchWrappers);
     if (allocs != 0D) {

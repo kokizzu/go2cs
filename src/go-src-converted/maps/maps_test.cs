@@ -24,7 +24,7 @@ public static void TestEqual(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("Equal(nil, %v) = true, want false"u8, m1);
     }
     if (!Equal<map<nint, nint>, map<nint, nint>, nint, nint>(default!, default!)) {
-        Ꮡt.Error((@string)"Equal(nil, nil) = false, want true");
+        Ꮡt.Error((@string)"Equal(nil, nil) = false, want true"u8);
     }
     {
         var ms = new map<nint, nint>{[1] = 2}; if (Equal<map<nint, nint>, map<nint, nint>, nint, nint>(m1, ms)) {
@@ -69,7 +69,7 @@ public static void TestEqualFunc(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("EqualFunc(nil, %v, equal) = true, want false"u8, m1);
     }
     if (!EqualFunc<map<nint, nint>, map<nint, nint>, nint, nint, nint>(default!, default!, equal<nint>)) {
-        Ꮡt.Error((@string)"EqualFunc(nil, nil, equal) = false, want true");
+        Ꮡt.Error((@string)"EqualFunc(nil, nil, equal) = false, want true"u8);
     }
     {
         var ms = new map<nint, nint>{[1] = 2}; if (EqualFunc<map<nint, nint>, map<nint, nint>, nint, nint, nint>(m1, ms, equal<nint>)) {

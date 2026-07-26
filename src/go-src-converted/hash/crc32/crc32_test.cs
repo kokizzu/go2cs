@@ -218,7 +218,7 @@ public static void TestSlicing(ж<testing.T> Ꮡt) {
 
 public static void TestArchIEEE(ж<testing.T> Ꮡt) {
     if (!archAvailableIEEE()) {
-        Ꮡt.Skip((@string)"Arch-specific IEEE not available.");
+        Ꮡt.Skip((@string)"Arch-specific IEEE not available."u8);
     }
     archInitIEEE();
     var slicingTable = slicingMakeTable(IEEE);
@@ -228,7 +228,7 @@ public static void TestArchIEEE(ж<testing.T> Ꮡt) {
 
 public static void TestArchCastagnoli(ж<testing.T> Ꮡt) {
     if (!archAvailableCastagnoli()) {
-        Ꮡt.Skip((@string)"Arch-specific Castagnoli not available.");
+        Ꮡt.Skip((@string)"Arch-specific Castagnoli not available."u8);
     }
     archInitCastagnoli();
     var slicingTable = slicingMakeTable(Castagnoli);

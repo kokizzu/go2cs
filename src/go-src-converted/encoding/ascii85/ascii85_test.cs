@@ -114,7 +114,7 @@ public static void TestDecoder(ж<testing.T> Ꮡt) {
         var decoder = NewDecoder(new strings_ReaderжReader(strings.NewReader(p.encoded)));
         var (dbuf, err) = io.ReadAll(decoder);
         if (err != default!) {
-            Ꮡt.Fatal((@string)"Read failed", err);
+            Ꮡt.Fatal((@string)"Read failed"u8, err);
         }
         testEqual(Ꮡt, "Read from %q = length %v, want %v"u8, p.encoded, len(dbuf), len(p.decoded));
         testEqual(Ꮡt, "Decoding of %q = %q, want %q"u8, p.encoded, ((@string)dbuf), p.decoded);
@@ -162,7 +162,7 @@ public static void TestDecodeCorrupt(ж<testing.T> Ꮡt) {
         }
         default: {
             var errΔ1 = err;
-            Ꮡt.Error((@string)"Decoder failed to detect corruption in", e);
+            Ꮡt.Error((@string)"Decoder failed to detect corruption in"u8, e);
             break;
         }}
     }

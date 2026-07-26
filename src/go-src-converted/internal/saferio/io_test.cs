@@ -26,14 +26,14 @@ public static void TestReadData(ж<testing.T> Ꮡt) {
     Ꮡt.Run("large"u8, (ж<testing.T> tΔ2) => {
         var (_, err) = ReadData(new bytes_ReaderжReader(bytes.NewReader(inputʗ3)), ((uint64)10 << (int)(30)));
         if (err == default!) {
-            tΔ2.Error((@string)"large read succeeded unexpectedly");
+            tΔ2.Error((@string)"large read succeeded unexpectedly"u8);
         }
     });
     var inputʗ5 = input;
     Ꮡt.Run("maxint"u8, (ж<testing.T> tΔ3) => {
         var (_, err) = ReadData(new bytes_ReaderжReader(bytes.NewReader(inputʗ5)), ((uint64)1 << (int)(62)));
         if (err == default!) {
-            tΔ3.Error((@string)"large read succeeded unexpectedly");
+            tΔ3.Error((@string)"large read succeeded unexpectedly"u8);
         }
     });
     Ꮡt.Run("small-EOF"u8, (ж<testing.T> tΔ4) => {
@@ -73,14 +73,14 @@ public static void TestReadDataAt(ж<testing.T> Ꮡt) {
     Ꮡt.Run("large"u8, (ж<testing.T> tΔ2) => {
         var (_, err) = ReadDataAt(new bytes_ReaderжReaderAt(bytes.NewReader(inputʗ3)), ((uint64)10 << (int)(30)), 0);
         if (err == default!) {
-            tΔ2.Error((@string)"large read succeeded unexpectedly");
+            tΔ2.Error((@string)"large read succeeded unexpectedly"u8);
         }
     });
     var inputʗ5 = input;
     Ꮡt.Run("maxint"u8, (ж<testing.T> tΔ3) => {
         var (_, err) = ReadDataAt(new bytes_ReaderжReaderAt(bytes.NewReader(inputʗ5)), ((uint64)1 << (int)(62)), 0);
         if (err == default!) {
-            tΔ3.Error((@string)"large read succeeded unexpectedly");
+            tΔ3.Error((@string)"large read succeeded unexpectedly"u8);
         }
     });
     var inputʗ7 = input;
@@ -109,7 +109,7 @@ public static void TestSliceCap(ж<testing.T> Ꮡt) {
     Ꮡt.Run("large"u8, (ж<testing.T> tΔ2) => {
         nint c = SliceCap<byte>(((uint64)1 << (int)(30)));
         if (c < 0){
-            tΔ2.Error((@string)"SliceCap failed unexpectedly");
+            tΔ2.Error((@string)"SliceCap failed unexpectedly"u8);
         } else 
         if (c == (1 << (int)(30))) {
             tΔ2.Errorf("got capacity %d which is too high"u8, c);

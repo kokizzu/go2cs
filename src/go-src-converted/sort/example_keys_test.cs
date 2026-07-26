@@ -70,13 +70,13 @@ public static void Example_sortKeys() {
     var decreasingDistance = (ж<Planet> p1, ж<Planet> p2) => distanceʗ1(p2, p1);
     // Sort the planets by the various criteria.
     new By(name).ΔSort(planets);
-    fmt.Println((@string)"By name:", planets);
+    fmt.Println((@string)"By name:"u8, planets);
     new By(mass).ΔSort(planets);
-    fmt.Println((@string)"By mass:", planets);
+    fmt.Println((@string)"By mass:"u8, planets);
     new By(distance).ΔSort(planets);
-    fmt.Println((@string)"By distance:", planets);
+    fmt.Println((@string)"By distance:"u8, planets);
     new By(decreasingDistance).ΔSort(planets);
-    fmt.Println((@string)"By decreasing distance:", planets);
+    fmt.Println((@string)"By decreasing distance:"u8, planets);
 }
 
 // Output: By name: [{Earth 1 1} {Mars 0.107 1.5} {Mercury 0.055 0.4} {Venus 0.815 0.7}]
