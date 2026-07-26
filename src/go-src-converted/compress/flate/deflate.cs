@@ -10,27 +10,27 @@ using math = math_package;
 
 partial class flate_package {
 
-public static readonly UntypedInt NoCompression = 0;
-public static readonly UntypedInt BestSpeed = 1;
-public static readonly UntypedInt BestCompression = 9;
-public static readonly UntypedInt DefaultCompression = -1;
-public static readonly UntypedInt HuffmanOnly = -2;
+public static UntypedInt NoCompression => 0;
+public static UntypedInt BestSpeed => 1;
+public static UntypedInt BestCompression => 9;
+public static UntypedInt DefaultCompression => -1;
+public static UntypedInt HuffmanOnly => -2;
 
-internal static readonly UntypedInt logWindowSize = 15;
-internal static readonly UntypedInt windowSize = /* 1 << logWindowSize */ 32768;
-internal static readonly UntypedInt windowMask = /* windowSize - 1 */ 32767;
-internal static readonly UntypedInt baseMatchLength = 3; // The smallest match length per the RFC section 3.2.5
-internal static readonly UntypedInt minMatchLength = 4; // The smallest match length that the compressor actually emits
-internal static readonly UntypedInt maxMatchLength = 258; // The largest match length
-internal static readonly UntypedInt baseMatchOffset = 1; // The smallest match offset
-internal static readonly UntypedInt maxMatchOffset = /* 1 << 15 */ 32768; // The largest match offset
-internal static readonly UntypedInt maxFlateBlockTokens = /* 1 << 14 */ 16384;
-internal static readonly UntypedInt maxStoreBlockSize = 65535;
-internal static readonly UntypedInt hashBits = 17; // After 17 performance degrades
-internal static readonly UntypedInt hashSize = /* 1 << hashBits */ 131072;
-internal static readonly UntypedInt hashMask = /* (1 << hashBits) - 1 */ 131071;
-internal static readonly UntypedInt maxHashOffset = /* 1 << 24 */ 16777216;
-internal static readonly UntypedInt skipNever = /* math.MaxInt32 */ 2147483647;
+internal static UntypedInt logWindowSize => 15;
+internal static UntypedInt windowSize => /* 1 << logWindowSize */ 32768;
+internal static UntypedInt windowMask => /* windowSize - 1 */ 32767;
+internal static UntypedInt baseMatchLength => 3; // The smallest match length per the RFC section 3.2.5
+internal static UntypedInt minMatchLength => 4; // The smallest match length that the compressor actually emits
+internal static UntypedInt maxMatchLength => 258; // The largest match length
+internal static UntypedInt baseMatchOffset => 1; // The smallest match offset
+internal static UntypedInt maxMatchOffset => /* 1 << 15 */ 32768; // The largest match offset
+internal static UntypedInt maxFlateBlockTokens => /* 1 << 14 */ 16384;
+internal static UntypedInt maxStoreBlockSize => 65535;
+internal static UntypedInt hashBits => 17; // After 17 performance degrades
+internal static UntypedInt hashSize => /* 1 << hashBits */ 131072;
+internal static UntypedInt hashMask => /* (1 << hashBits) - 1 */ 131071;
+internal static UntypedInt maxHashOffset => /* 1 << 24 */ 16777216;
+internal static UntypedInt skipNever => /* math.MaxInt32 */ 2147483647;
 
 [GoType] partial struct compressionLevel {
     internal nint level, good, lazy, nice, chain, fastSkipHashing;
@@ -251,7 +251,7 @@ internal static slice<compressionLevel> levels = new compressionLevel[]{
     return (~d.w).err;
 }
 
-internal static readonly UntypedInt hashmul = 0x1e35a7bd;
+internal static UntypedInt hashmul => 0x1e35a7bd;
 
 // hash4 returns a hash representation of the first 4 bytes
 // of the supplied slice.

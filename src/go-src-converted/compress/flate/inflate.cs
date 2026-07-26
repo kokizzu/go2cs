@@ -16,10 +16,10 @@ using go.math;
 
 partial class flate_package {
 
-internal static readonly UntypedInt maxCodeLen = 16; // max length of Huffman code
-internal static readonly UntypedInt maxNumLit = 286;
-internal static readonly UntypedInt maxNumDist = 30;
-internal static readonly UntypedInt numCodes = 19; // number of codes in Huffman meta-code
+internal static UntypedInt maxCodeLen => 16; // max length of Huffman code
+internal static UntypedInt maxNumLit => 286;
+internal static UntypedInt maxNumDist => 30;
+internal static UntypedInt numCodes => 19; // number of codes in Huffman meta-code
 
 // Initialize the fixedHuffmanDecoder only once upon first use.
 internal static ж<sync.Once> ᏑfixedOnce = new(default(sync.Once));
@@ -91,10 +91,10 @@ public static @string Error(this InternalError e) {
 //	https://github.com/madler/zlib/raw/master/doc/algorithm.txt
 // chunk & 15 is number of bits
 // chunk >> 4 is value, including table link
-internal static readonly UntypedInt huffmanChunkBits = 9;
-internal static readonly UntypedInt huffmanNumChunks = /* 1 << huffmanChunkBits */ 512;
-internal static readonly UntypedInt huffmanCountMask = 15;
-internal static readonly UntypedInt huffmanValueShift = 4;
+internal static UntypedInt huffmanChunkBits => 9;
+internal static UntypedInt huffmanNumChunks => /* 1 << huffmanChunkBits */ 512;
+internal static UntypedInt huffmanCountMask => 15;
+internal static UntypedInt huffmanValueShift => 4;
 
 [GoType] partial struct huffmanDecoder {
     internal nint min;                     // the minimum code length
@@ -843,8 +843,8 @@ public static io.ReadCloser NewReader(io.Reader r) {
     fixedHuffmanDecoderInit();
     ref var f = ref heap(new decompressor(), out var Ꮡf);
     f.makeReader(r);
-    f.bits = @new<array<nint>>();
-    f.codebits = @new<array<nint>>();
+    f.bits = Ꮡ(new array<nint>(316));
+    f.codebits = Ꮡ(new array<nint>(19));
     f.step = (Action<ж<decompressor>>)(nextBlock);
     f.dict.init(maxMatchOffset, default!);
     return new decompressorжReadCloser(Ꮡf);
@@ -861,8 +861,8 @@ public static io.ReadCloser NewReaderDict(io.Reader r, slice<byte> dict) {
     fixedHuffmanDecoderInit();
     ref var f = ref heap(new decompressor(), out var Ꮡf);
     f.makeReader(r);
-    f.bits = @new<array<nint>>();
-    f.codebits = @new<array<nint>>();
+    f.bits = Ꮡ(new array<nint>(316));
+    f.codebits = Ꮡ(new array<nint>(19));
     f.step = (Action<ж<decompressor>>)(nextBlock);
     f.dict.init(maxMatchOffset, dict);
     return new decompressorжReadCloser(Ꮡf);

@@ -9,11 +9,11 @@ partial class flate_package {
 
 // This encoding algorithm, which prioritizes speed over output size, is
 // based on Snappy's LZ77-style encoder: github.com/golang/snappy
-internal static readonly UntypedInt tableBits = 14; // Bits used in the table.
-internal static readonly UntypedInt tableSize = /* 1 << tableBits */ 16384; // Size of the table.
-internal static readonly UntypedInt tableMask = /* tableSize - 1 */ 16383; // Mask for table indices. Redundant, but can eliminate bounds checks.
-internal static readonly UntypedInt tableShift = /* 32 - tableBits */ 18; // Right-shift to get the tableBits most significant bits of a uint32.
-internal static readonly UntypedInt bufferReset = /* math.MaxInt32 - maxStoreBlockSize*2 */ 2147352577;
+internal static UntypedInt tableBits => 14; // Bits used in the table.
+internal static UntypedInt tableSize => /* 1 << tableBits */ 16384; // Size of the table.
+internal static UntypedInt tableMask => /* tableSize - 1 */ 16383; // Mask for table indices. Redundant, but can eliminate bounds checks.
+internal static UntypedInt tableShift => /* 32 - tableBits */ 18; // Right-shift to get the tableBits most significant bits of a uint32.
+internal static UntypedInt bufferReset => /* math.MaxInt32 - maxStoreBlockSize*2 */ 2147352577;
 
 internal static uint32 load32(slice<byte> b, int32 i) {
     b = b.slice(i, i + 4, len(b));
@@ -35,9 +35,9 @@ internal static uint32 hash(uint32 u) {
 // assembly implementation can fast-path some 16-bytes-at-a-time copies. They
 // aren't necessary in the pure Go implementation, as we don't use those same
 // optimizations, but using the same thresholds doesn't really hurt.
-internal static readonly UntypedInt inputMargin = /* 16 - 1 */ 15;
+internal static UntypedInt inputMargin => /* 16 - 1 */ 15;
 
-internal static readonly UntypedInt minNonLiteralBlockSize = /* 1 + 1 + inputMargin */ 17;
+internal static UntypedInt minNonLiteralBlockSize => /* 1 + 1 + inputMargin */ 17;
 
 [GoType] partial struct tableEntry {
     internal uint32 val; // Value at destination

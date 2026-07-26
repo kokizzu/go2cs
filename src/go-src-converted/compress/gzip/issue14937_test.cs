@@ -1,0 +1,95 @@
+// Copyright 2016 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+namespace go.compress;
+
+using testenv = @internal.testenv_package;
+using fs = go.io.fs_package;
+using os = os_package;
+using filepath = path.filepath_package;
+using runtime = runtime_package;
+using strings = strings_package;
+using testing = testing_package;
+using @internal;
+using go.io;
+using io = io_package;
+using path;
+using time = time_package;
+
+partial class gzip_package {
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object skippingTestOnNonBuilderˢ = (@string)"skipping test on non-builder"u8;
+private static readonly object skippingNoGorootˢ = (@string)"skipping; no GOROOT available"u8;
+private static readonly object errorEvaluatingGorootˢ = (@string)"error evaluating GOROOT: "u8;
+private static readonly object errorCollectingListOfGzˢ = (@string)"error collecting list of .gz files in GOROOT: "u8;
+private static readonly object expectedToFindSomeGzˢ = (@string)"expected to find some .gz files under GOROOT"u8;
+
+// TestGZIPFilesHaveZeroMTimes checks that every .gz file in the tree
+// has a zero MTIME. This is a requirement for the Debian maintainers
+// to be able to have deterministic packages.
+//
+// To patch a .gz file, use the following command:
+//
+//	$ dd if=/dev/zero bs=1 seek=4 count=4 conv=notrunc of=filename.gz
+//
+// See https://golang.org/issue/14937.
+public static void TestGZIPFilesHaveZeroMTimes(ж<testing.T> Ꮡt) {
+    // To avoid spurious false positives due to untracked GZIP files that
+    // may be in the user's GOROOT (Issue 18604), we only run this test on
+    // the builders, which should have a clean checkout of the tree.
+    if (testenv.Builder() == ""u8) {
+        Ꮡt.Skip(skippingTestOnNonBuilderˢ);
+    }
+    if (!testenv.HasSrc()) {
+        Ꮡt.Skip(skippingNoGorootˢ);
+    }
+    var (goroot, err) = filepath.EvalSymlinks(runtime.GOROOT());
+    if (err != default!) {
+        Ꮡt.Fatal(errorEvaluatingGorootˢ, err);
+    }
+    ref var files = ref heap<slice<@string>>(out var Ꮡfiles);
+    err = filepath.WalkDir(goroot, error (@string path, fs.DirEntry info, error errΔ1) => {
+        if (errΔ1 != default!) {
+            return errΔ1;
+        }
+        if (!info.IsDir() && strings.HasSuffix(path, ".gz"u8)) {
+            Ꮡfiles.ValueSlot = append(Ꮡfiles.ValueSlot, path);
+        }
+        return default!;
+    });
+    if (err != default!) {
+        if (os.IsNotExist(err)) {
+            Ꮡt.Skipf("skipping: GOROOT directory not found: %s"u8, runtime.GOROOT());
+        }
+        Ꮡt.Fatal(errorCollectingListOfGzˢ, err);
+    }
+    if (len(files) == 0) {
+        Ꮡt.Fatal(expectedToFindSomeGzˢ);
+    }
+    foreach (var (_, path) in files) {
+        checkZeroMTime(Ꮡt, path);
+    }
+}
+
+internal static void checkZeroMTime(ж<testing.T> Ꮡt, @string path) => func((defer, recover) => {
+    var (f, err) = os.Open(path);
+    if (err != default!) {
+        Ꮡt.Error(err);
+        return;
+    }
+    var fʗ1 = f;
+    defer(() => fʗ1.Close());
+    (var gz, err) = NewReader(new os_FileжReader(f));
+    if (err != default!) {
+        Ꮡt.Errorf("cannot read gzip file %s: %s"u8, path, err);
+        return;
+    }
+    var gzʗ1 = gz;
+    defer(() => gzʗ1.Close());
+    if (!(~gz).ModTime.IsZero()) {
+        Ꮡt.Errorf("gzip file %s has non-zero mtime (%s)"u8, path, (~gz).ModTime);
+    }
+});
+
+} // end gzip_package

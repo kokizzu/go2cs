@@ -19,14 +19,14 @@ using hash;
 
 partial class gzip_package {
 
-internal static readonly UntypedInt gzipID1 = 0x1f;
-internal static readonly UntypedInt gzipID2 = 0x8b;
-internal static readonly UntypedInt gzipDeflate = 8;
-internal static readonly UntypedInt flagText = /* 1 << 0 */ 1;
-internal static readonly UntypedInt flagHdrCrc = /* 1 << 1 */ 2;
-internal static readonly UntypedInt flagExtra = /* 1 << 2 */ 4;
-internal static readonly UntypedInt flagName = /* 1 << 3 */ 8;
-internal static readonly UntypedInt flagComment = /* 1 << 4 */ 16;
+internal static UntypedInt gzipID1 => 0x1f;
+internal static UntypedInt gzipID2 => 0x8b;
+internal static UntypedInt gzipDeflate => 8;
+internal static UntypedInt flagText => /* 1 << 0 */ 1;
+internal static UntypedInt flagHdrCrc => /* 1 << 1 */ 2;
+internal static UntypedInt flagExtra => /* 1 << 2 */ 4;
+internal static UntypedInt flagName => /* 1 << 3 */ 8;
+internal static UntypedInt flagComment => /* 1 << 4 */ 16;
 
 public static error ErrChecksum = errors.New("gzip: invalid checksum"u8);
 public static error ErrHeader = errors.New("gzip: invalid header"u8);
