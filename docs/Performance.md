@@ -26,6 +26,7 @@ where the two runtimes should be close. Results below give the "common expected"
 | **Map** | 2M inserts + 2M comma-ok lookups + 1M deletes on `map[int]int` (`map<K,V>` emulation). |
 | **Sort** | `sort.Ints` on 2M deterministic pseudo-random ints (`sort.Interface` dispatch through the runtime's reflection-bound `Interface<T>`). |
 | **Channel** | 1M ints producer→consumer through a buffered channel with one goroutine (`channel<T>` + goroutine scheduling emulation). |
+| **Iface** | 20M iterations of the **common** interface cases: method dispatch through interface values of statically-known types, concrete comma-ok assertions, and a type switch over a closed set — all resolved by the compile-time (nominal) machinery: generated adapters and cast-shaped asserts. The row that shows what ordinary Go interface code costs; IfaceShell below is the exception, not the rule. |
 | **IfaceShell** | 5M iterations × 2 duck-typed interface asserts + forwarded calls — one on a value-typed dynamic value (the reflective **object shell**), one on a pointer-sourced one (the delegate-bound **generic shell**). The one path with no compile-time answer, and the only shared mechanism whose Native AOT behavior is otherwise unexercised. |
 
 Every benchmark prints a deterministic **checksum** (verified byte-identical across Go, C# JIT, and
@@ -148,6 +149,10 @@ What the numbers above actually show, and why:
 - **Channel (~1.9×):** `channel<T>` + goroutine emulation over managed threading vs Go's runtime
   scheduler. Down from ~2.7–3.4× in the 2026-07-12 table (see *History*) — the channels redesign
   (real unbuffered rendezvous, single-fire select, operand-once hoisting) landed in between.
+- **Iface:** the *default* interface story — dispatch, known-type assertion, and type switching all
+  go through generated nominal adapters and ordinary casts, never the runtime shell machinery. If
+  you read one pair of rows together, read this one and the next: this is the rule, IfaceShell is
+  the exception.
 - **IfaceShell — read this row differently from every other row.** It measures the one operation
   C# has *no* native answer for: satisfying an interface **structurally at run time**. Go resolves
   an interface assertion with a cached itab lookup — a hash probe into a global
