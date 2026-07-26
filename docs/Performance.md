@@ -78,35 +78,35 @@ C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 15.4 | 41.4 (2.69×) | 16.7 (1.09×) |
-| Fib | 80.3 | 99.1 (1.23×) | 82.6 (1.03×) |
-| Sieve | 73.3 | 94.4 (1.29×) | 138.3 (1.89×) |
-| MatMul | 55.2 | 133.8 (2.42×) | 196.3 (3.55×) |
-| String | 69.7 | 748.8 (10.75×) | 754.7 (10.83×) |
-| Map | 309.5 | 268.6 (0.87×) | 97.0 (0.31×) |
-| Sort | 114.1 | 423.7 (3.71×) | 422.3 (3.70×) |
-| Channel | 45.4 | 89.6 (1.97×) | 94.4 (2.08×) |
-| StringView | 7.2 | 21.2 (2.93×) | 14.2 (1.97×) |
-| StringMatch | 147.8 | 1,417.4 (9.59×) | 1,352.2 (9.15×) |
-| Iface | 63.9 | 10,117.8 (158.24×) | 42,228.2 (660.42×) |
-| IfaceShell | 12.9 | 575.4 (44.58×) | 624.2 (48.36×) |
+| Startup | 13.2 | 38.6 (2.92×) | 16.9 (1.28×) |
+| Fib | 78.9 | 97.5 (1.24×) | 82.5 (1.05×) |
+| Sieve | 72.4 | 93.1 (1.28×) | 139.1 (1.92×) |
+| MatMul | 53.1 | 128.2 (2.41×) | 192.7 (3.63×) |
+| String | 69.0 | 738.4 (10.70×) | 764.8 (11.08×) |
+| Map | 302.6 | 259.9 (0.86×) | 92.8 (0.31×) |
+| Sort | 112.0 | 393.0 (3.51×) | 414.7 (3.70×) |
+| Channel | 42.2 | 83.2 (1.97×) | 80.6 (1.91×) |
+| StringView | 7.3 | 20.9 (2.85×) | 14.0 (1.92×) |
+| StringMatch | 147.6 | 1,352.4 (9.17×) | 1,289.3 (8.74×) |
+| Iface | 63.2 | 370.1 (5.86×) | 262.3 (4.15×) |
+| IfaceShell | 13.0 | 526.5 (40.58×) | 617.5 (47.59×) |
 
 **Peak memory** (working set, MB -- lower is better):
 
 | Benchmark | Go | C# (JIT) | C# (Native AOT) |
 |---|---:|---:|---:|
-| Startup | 2.5 | 19.2 | 2.6 |
-| Fib | 5.4 | 21.9 | 10.7 |
-| Sieve | 35.3 | 39.2 | 30.1 |
-| MatMul | 10.3 | 26.5 | 17.0 |
-| String | 5.3 | 39.5 | 29.2 |
-| Map | 158.9 | 140.0 | 128.5 |
-| Sort | 21.6 | 42.3 | 29.2 |
-| Channel | 5.3 | 29.6 | 17.3 |
-| StringView | 5.3 | 20.5 | 10.8 |
-| StringMatch | 5.4 | 44.2 | 29.1 |
-| Iface | 5.4 | 41.3 | 29.6 |
-| IfaceShell | 5.3 | 44.0 | 31.6 |
+| Startup | 2.6 | 17.7 | 3.7 |
+| Fib | 5.4 | 20.0 | 10.8 |
+| Sieve | 34.8 | 38.9 | 30.1 |
+| MatMul | 10.1 | 26.1 | 17.0 |
+| String | 5.4 | 39.5 | 29.2 |
+| Map | 158.3 | 139.1 | 128.5 |
+| Sort | 21.7 | 42.7 | 29.2 |
+| Channel | 5.4 | 25.8 | 15.4 |
+| StringView | 5.4 | 21.1 | 10.8 |
+| StringMatch | 5.4 | 41.6 | 29.0 |
+| Iface | 5.4 | 23.1 | 11.1 |
+| IfaceShell | 5.3 | 43.9 | 31.3 |
 
 <!-- PERF-RESULTS:END -->
 
@@ -151,17 +151,52 @@ What the numbers above actually show, and why:
 - **Channel (~1.9×):** `channel<T>` + goroutine emulation over managed threading vs Go's runtime
   scheduler. Down from ~2.7–3.4× in the 2026-07-12 table (see *History*) — the channels redesign
   (real unbuffered rendezvous, single-fire select, operand-once hoisting) landed in between.
-- **Iface (~158× — OPEN, unexplained):** the *default* interface story — dispatch, known-type
-  assertion, and type switching, all resolved by generated nominal adapters and ordinary casts,
-  never the runtime shell machinery (verified in the emitted code: `Rect`/`Circle`/`Tri` each carry
-  a generated explicit `Shape` implementation, and the comma-ok assert to a concrete struct is a
-  plain type test). **This row was published without a prior measurement**, on the expectation that
-  the nominal path would land in the low single digits; it did not, and it is currently the *worst*
-  row in the table — 3.6× worse than the structural-shell row below it, which has no compile-time
-  answer at all. The number is reproducible and is **not** a regression: an A/B of this exact
-  benchmark across the r18 integration measured 161.3× before and 160.2× after. Until it is
-  root-caused, read this row as an open question about the common interface path, not as the
-  baseline that ordinary Go interface code costs in go2cs.
+- **Iface (JIT ~5.9×, AOT ~4.2×) — root-caused; this row was published at 158×/660× and marked OPEN.**
+  The *default* interface story: dispatch through interface values of statically-known types, a
+  known-type comma-ok assertion, and a type switch over a closed set — all resolved by the
+  compile-time (nominal) machinery, generated adapters and ordinary casts, never the runtime shell
+  machinery of the row below. The published figure was real, reproducible and **not** a regression,
+  but it measured two `golib` defects rather than the cost of the construct. Both are now fixed, and
+  both were on paths every converted program uses:
+
+  1. **An uncached attribute lookup on every *failed* assertion.** golib's type-assert ladder ends,
+     below its matching arms, in a tier answering Go's rule that only *anonymous* struct types
+     convert to each other — and it asked that question with `GetCustomAttribute`, which materializes
+     a fresh attribute instance on every call. Measured against live golib: **785.92 ns and 368 bytes
+     per call on the JIT; 3,826.27 ns and 2,017 bytes under Native AOT.** An assertion that
+     *succeeds* returns before reaching that tier, which is why no earlier benchmark saw it — this
+     one asserts `s.(Circle)` against six shapes of which four are not `Circle`, so two thirds of its
+     iterations took the miss path. At that rate the call alone predicts ~524 ns and ~2,552 ns per
+     iteration against the measured 506 ns and 2,111 ns: **it accounts for essentially the whole of
+     both columns.** It is also the entire explanation of the AOT column, whose 4.17× penalty over
+     the JIT was simply that one call's own AOT/JIT ratio (4.87×) — ILC parses the attribute blob out
+     of image metadata per call and has no equivalent of the JIT's caching. Nothing to do with
+     generics, shared-generic dictionaries or ILC codegen. Fixed by memoizing the answer per type and
+     hoisting it to a per-closed-generic constant, so the ordinary named-struct miss short-circuits
+     ahead of it: **10,117.8 ms (158.24×) → 458.1 ms (7.20×)** on the JIT, with peak working set
+     dropping 41.3 → 20.9 MB as ~4.9 GB of per-run attribute garbage stopped being allocated.
+  2. **Four failing interface type-tests per iteration.** An interface value that came from a Go
+     pointer, or from another interface, is carried by a generated wrapper the runtime must unwrap
+     before matching — so the type switch probed two marker interfaces and the assertion probed the
+     same two. A *failing* **interface** type test costs ~2.9 ns on the JIT (the runtime walks the
+     type's interface map) where a failing sealed-**class** test is too small to measure. The two
+     markers now share one empty base, probed once to gate both tiers: **458.1 → 379.7 ms (5.95×)**.
+
+  What remains is the honest cost model. Per iteration Go does the whole body in **3.2 ns**, the
+  transpiled C# in **18.5 ns** (JIT) and **13.1 ns** (AOT). A decomposition micro-benchmark against
+  live golib attributes the JIT figure: slice-of-interface element read **1.8 ns**, two interface
+  dispatches **3.9 ns**, the comma-ok assertion **8.1 ns**, the type switch **4.4 ns**. For scale, a
+  plain C# `s is Circle c` over the same values costs 1.2 ns and a bare C# pattern ladder 1.4 ns —
+  both indistinguishable from the slice read alone, so nearly all of the residual is the call into
+  `golib` and the one surviving adapter probe inside it. That is the price of a real semantic
+  obligation: Go's interface value is two words and an assertion is a compare against a cached itab,
+  while C#'s is a single object reference, so the same question must first ask whether the value is a
+  wrapper standing in for another one. Removing that last probe needs the marker to be a base
+  *class* rather than an interface — a `go2cs-gen` change, recorded as the next candidate in
+  [`docs/Phase4/DESIGN-iface-shell-caching.md`](../../../docs/Phase4/DESIGN-iface-shell-caching.md) §11.
+  **Note this is one of the few rows where Native AOT beats the JIT**, and for the same reason: ILC's
+  failing interface type tests are markedly cheaper (measured 3.7 ns for two, against 9.2 ns on the
+  JIT), so the residual that remains is the residual AOT is best at.
 - **IfaceShell — read this row differently from every other row.** It measures the one operation
   C# has *no* native answer for: satisfying an interface **structurally at run time**. Go resolves
   an interface assertion with a cached itab lookup — a hash probe into a global
@@ -176,9 +211,9 @@ What the numbers above actually show, and why:
   shell object per assertion, and, on the value-typed tier, a reflective forwarded call with a boxed
   return. The ratio is the price of the *capability*, not a regression. An assertion the converter
   can resolve nominally goes through a generated adapter (an ordinary cast) and never reaches this
-  path — mechanically true, and it used to be stated here as though it also made the nominal path
-  cheaper; the Iface row above measures that claim for the first time and does **not** support it,
-  so treat the two rows as independent measurements until Iface is root-caused. A shell obtained
+  path. The Iface row above is the measurement of that claim: once its own two defects were fixed it
+  **does** support it — the nominal path costs single-digit nanoseconds per operation against this
+  row's hundreds, a ~7× separation between the two rows. A shell obtained
   once and called repeatedly pays only the per-call forwarding cost: a delegate hop for
   pointer-sourced values, a reflective invoke for value-typed ones. Remaining optimization directions are itemized
   in [`docs/Phase4/DESIGN-iface-shell-caching.md`](../../../docs/Phase4/DESIGN-iface-shell-caching.md).
@@ -196,6 +231,52 @@ What the numbers above actually show, and why:
 > **Note:** when the toolchain moves (e.g. .NET 9 → .NET 10), copy the current results block into
 > this section with its environment line before re-running `--update-readme`, so
 > version-over-version comparisons accumulate here.
+
+**Captured 2026-07-26 -- the PRE-FIX baseline for the `Iface` root-cause arc.** Same toolchain as the
+current table; preserved because the `Iface` row moved by more than two orders of magnitude and the
+numbers it was published with are the measurement being explained. `Iface` at **158.24× (JIT) /
+660.42× (AOT)** is the row that was marked OPEN; both figures are dominated by a single uncached
+`GetCustomAttribute` call on golib's type-assert miss path (see *Reading the results* above). Every
+other row here is within run-to-run variance of the current table, which is what attributes the
+change to the fix rather than to machine state:
+
+**Environment:** 13th Gen Intel(R) Core(TM) i9-13900K · Microsoft Windows 10.0.26200 · go1.23.1 · .NET SDK 9.0.316 · 2026-07-26
+
+C# builds: JIT = framework-dependent `Release`; Native AOT = `-p:PublishAot=true` self-contained, partial trim. Median of 5 runs (1 discarded warmup). Workload time is measured in-program and excludes process startup; the Startup row is pure process wall time. Ratios are relative to Go.
+
+**Execution time** (milliseconds -- lower is better):
+
+| Benchmark | Go | C# (JIT) | C# (Native AOT) |
+|---|---:|---:|---:|
+| Startup | 15.4 | 41.4 (2.69×) | 16.7 (1.09×) |
+| Fib | 80.3 | 99.1 (1.23×) | 82.6 (1.03×) |
+| Sieve | 73.3 | 94.4 (1.29×) | 138.3 (1.89×) |
+| MatMul | 55.2 | 133.8 (2.42×) | 196.3 (3.55×) |
+| String | 69.7 | 748.8 (10.75×) | 754.7 (10.83×) |
+| Map | 309.5 | 268.6 (0.87×) | 97.0 (0.31×) |
+| Sort | 114.1 | 423.7 (3.71×) | 422.3 (3.70×) |
+| Channel | 45.4 | 89.6 (1.97×) | 94.4 (2.08×) |
+| StringView | 7.2 | 21.2 (2.93×) | 14.2 (1.97×) |
+| StringMatch | 147.8 | 1,417.4 (9.59×) | 1,352.2 (9.15×) |
+| Iface | 63.9 | 10,117.8 (158.24×) | 42,228.2 (660.42×) |
+| IfaceShell | 12.9 | 575.4 (44.58×) | 624.2 (48.36×) |
+
+**Peak memory** (working set, MB -- lower is better):
+
+| Benchmark | Go | C# (JIT) | C# (Native AOT) |
+|---|---:|---:|---:|
+| Startup | 2.5 | 19.2 | 2.6 |
+| Fib | 5.4 | 21.9 | 10.7 |
+| Sieve | 35.3 | 39.2 | 30.1 |
+| MatMul | 10.3 | 26.5 | 17.0 |
+| String | 5.3 | 39.5 | 29.2 |
+| Map | 158.9 | 140.0 | 128.5 |
+| Sort | 21.6 | 42.3 | 29.2 |
+| Channel | 5.3 | 29.6 | 17.3 |
+| StringView | 5.3 | 20.5 | 10.8 |
+| StringMatch | 5.4 | 44.2 | 29.1 |
+| Iface | 5.4 | 41.3 | 29.6 |
+| IfaceShell | 5.3 | 44.0 | 31.6 |
 
 **Captured 2026-07-25 on .NET SDK 9.0.316 -- the PRE-ARC baseline for the `@string` literal-allocation
 arc** (Tiers A / A′ / B / C, [`docs/Phase4/DESIGN-string-literal-allocation.md`](../../../docs/Phase4/DESIGN-string-literal-allocation.md)).

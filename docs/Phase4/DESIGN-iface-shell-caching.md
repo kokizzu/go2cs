@@ -820,3 +820,100 @@ instance cache) now attacks the largest remaining line, so it is the one worth t
 - P1/P2/P6's expected gains were sized against the residual *within* 86.2 ns. Against a 150.9 ns
   iteration the same absolute savings are a smaller fraction — they are still worth taking, and
   Stage 2's gate remains the measurement rather than the projection.
+
+---
+
+## 11. The `Iface` row — root-caused 2026-07-26 (measured)
+
+This arc's sibling row, `PerfIface`, was published at **158.24× Go on the JIT and 660.42× under
+Native AOT** and marked OPEN in the performance README, which pointed here. It is now explained and
+fixed. **It was never about the shells** — the nominal path this document contrasts itself against
+was carrying two defects of its own.
+
+**Why no measurement in this arc caught it.** Everything above measures assertions that **resolve**.
+The defect lived exclusively on the **MISS** path: golib's ladder ends, below the matching arms, in a
+tier answering Go's rule that only *anonymous* struct types convert to each other, so an assertion
+that succeeds returns before ever reaching it. §9's `nominal assert+call today` row (8.3–8.9 ns per
+assert) is a resolving assert and is unaffected. `PerfIface` asserts `s.(Circle)` against six shapes
+of which four are not `Circle`, so two thirds of its assertions took the path nothing else exercised.
+
+**Defect 1 — an uncached custom-attribute read per failed assertion.** That tier asked its question
+with `Type.IsDynamicType()`, whose body was a bare `GetCustomAttribute<GoTypeAttribute>()`; attribute
+retrieval materializes a fresh attribute instance on every call. Measured against live golib:
+
+| | per call | allocated |
+|---|---:|---:|
+| JIT | **785.92 ns** | 368 B |
+| Native AOT | **3,826.27 ns** | 2,017 B |
+
+At 4 misses per 6 iterations that predicts ~524 ns and ~2,552 ns per benchmark iteration against
+measured 505.9 ns (JIT) and 2,111 ns (AOT) — i.e. **it accounts for essentially the whole of both
+columns**, to within the difference between an isolated call and the same call inside the loop. The
+**AOT column's ~4× penalty over the JIT is that one call's own AOT/JIT ratio (4.87×)** and nothing to
+do with generics, shared-generic dictionaries or ILC codegen: ILC parses the attribute blob out of
+image metadata per call with no equivalent of the JIT's caching. Fixed by memoizing `IsDynamicType`
+per type and hoisting the answer to an `AssertFacts<T>.IsDynamic` per-closed-generic constant, so the
+ordinary named-struct miss short-circuits ahead of it.
+
+**Defect 2 — four failing interface type tests per iteration.** `builtin.type()` probed
+`IInterfaceAdapter` then `IжAdapter`; `TryTypeAssert` probed the same two. A *failing* interface
+`isinst` costs ~2.9 ns on the JIT (the runtime walks the type's interface map) against a failing
+sealed-class test too small to measure. Both consumers ask the same question first, so the two
+markers now share an empty base, `IGoAdapter`, probed once to gate both tiers. Generated adapters
+implement it transitively — `go2cs-gen` is unchanged and no emitted C# moves.
+
+| stage | `PerfIface` JIT | × Go | source |
+|---|---:|---:|---|
+| published (OPEN) | 10,117.8 ms | 158.24 | full table |
+| + defect 1 fixed | 458.1 ms | 7.20 | `--filter PerfIface` A/B |
+| + defect 2 fixed | 379.7 ms | 5.95 | `--filter PerfIface` A/B |
+| **published (final)** | **370.1 ms** | **5.86** | **full table, quiet machine** |
+
+The Native AOT column moved further: **42,228.2 ms (660.42×) → 262.3 ms (4.15×)**, a 161× improvement,
+and **AOT now beats the JIT on this row** — reversing the pre-fix order, because ILC's failing
+interface type tests are markedly cheaper than the JIT's (3.73 ns for two, against 9.20 ns) so the
+residual that remains is the residual AOT is best at. Peak working set fell 41.3 → 23.1 MB (JIT) and
+29.6 → 11.1 MB (AOT), ~4.9 GB of per-assert attribute garbage per run that Go never allocates.
+`PerfIfaceShell` held at 44.58× → 44.13× across defect 1 — it is the flatness oracle, and it does not
+touch the miss tier — then improved to 40.58× on defect 2, which it shares. `StringMatch`
+(9.59× → 9.17×) and `StringView` (2.93× → 2.85×) stayed within run-to-run variance, as did every
+other row, which is what attributes the change to the fix rather than to machine state.
+
+### 11.1 The remaining candidate — a base CLASS marker (not taken here)
+
+The largest single component of what remains is the one surviving `IGoAdapter` probe in each of
+`builtin.type()` and `TryTypeAssert` — ~2.9 ns apiece on the JIT, ~5.8 ns of a ~19 ns iteration.
+Removing it entirely means making the marker something a *failing* test can answer for free, i.e. an
+abstract base **class** that every generated adapter derives from rather than an interface it
+implements. That is a `go2cs-gen` change (the adapter templates in
+`Templates/InterfaceImpl/*` and `Templates/InterfaceType/InterfaceShellEmitter.cs` would gain a base
+type), so its gate is the full behavioral suite **and** the 302-package corpus build rather than the
+suite alone. It is recorded here as the next candidate, deliberately **not** taken in the same change
+as the golib-only fixes above, whose gate is narrower and whose measurement is already banked.
+
+Note also that under Native AOT the interface probes are markedly cheaper than on the JIT (measured:
+two failing tests 3.73 ns AOT vs 9.20 ns JIT), so this candidate is a JIT-weighted win.
+
+### 11.2 The same defect class survives in `GoReflect.cs` — NOT fixed here (ownership lock)
+
+An audit of every custom-attribute read in golib (`GetCustomAttribute`, `GetCustomAttributes`,
+`IsDefined`; positive control: the `IsDynamicType` site above) found **three more uncached per-value
+reads**, all in `GoReflect.cs`, all on the reflection bridge's hot surface rather than the
+type-assert path:
+
+| site | enclosing | reached uncached from |
+|---|---|---|
+| `GoReflect.cs:1458` | `TryGoTypeDefinitionKind` → `KindOf` | every `reflect.ValueOf`, `Value.Field`, `Value.Elem`, `MakeSlice`, `MakeMapWithSize`, `rtype.FieldByName`, and `abi.TypeOf` (the outer `KindOf` there is *outside* `s_descriptors`) |
+| `GoReflect.cs:349` | `GoQualifiedName` → `GoTypeName` | every `%T` format verb and every `reflect.Type.String()`/`Name()` |
+| `GoReflect.cs:870` / `:890` | `wrapperConstructorOf` / `TryUnwrapWrapperValue` | `Value.Set`, `SetMapIndex`, `Call`, `Convert`, the `SetBool/Int/Uint/Float/Complex` family, and `Value.Bool/Complex/String` |
+
+`KindOf` has no cache at all, and its attribute fallback fires for every converted Go struct or named
+type — so at the measured 785.92 ns (JIT) / 3,826.27 ns (AOT) per attribute read this is the same
+defect on a *more* central surface, and it lands on exactly the packages Phase 4 is working through
+(`encoding/json`, `encoding/gob`, `text/template`, plus any program that formats `%T`). By contrast
+the two reads inside `collectGoFields` (`:1240`, `:1256`) are properly cached behind
+`s_goFields.GetOrAdd`, and `runtime/TypeExtensions.cs:115` is a one-time appdomain scan — both fine.
+
+**Deliberately not fixed in this change:** `golib/GoReflect.cs` is on the reflection chip's
+ownership-lock list (Phase-4 charter §6.1), so it belongs to that arc, not this one. Recorded here so
+the fix is taken once, by its owner, rather than raced.
