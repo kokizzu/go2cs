@@ -319,21 +319,22 @@ internal static bool isGoPointerWithoutSpan(@unsafe.Pointer Δp) {
 // queue is emptied (and the finalizers have executed) or the timeout
 // is reached. Returns true if the finalizer queue was emptied.
 // This is used by the runtime and sync tests.
-internal static bool blockUntilEmptyFinalizerQueue(int64 timeout) {
-    var start = nanotime();
-    while (nanotime() - start < timeout) {
-        @lock(Ꮡfinlock);
-        // We know the queue has been drained when both finq is nil
-        // and the finalizer g has stopped executing.
-        var empty = finq == nil;
-        empty = empty && readgstatus(fing) == _Gwaiting && (~fing).waitreason == waitReasonFinalizerWait;
-        unlock(Ꮡfinlock);
-        if (empty) {
-            return true;
-        }
-        Gosched();
-    }
-    return false;
+// PUBLIC rather than internal (the accessibility the exported-ness rule would give it): Go's
+// sync and runtime tests reach this symbol by `//go:linkname`, which crosses the package boundary
+// the way a C# `public` does — an `internal` symbol is invisible to the forwarder the converter
+// emits in the pulling assembly (linknameForwardTargets in go2cs/visitFuncDecl.go).
+public static bool blockUntilEmptyFinalizerQueue(int64 timeout) {
+    // go2cs NATIVE REPLACEMENT (second one in this file — see the module header). The converted
+    // body waits on the finalizer GOROUTINE's state (finq / fing / readgstatus): there is no
+    // finalizer g here, `fing` is nil, and the first readgstatus derefs it. The managed finalizer
+    // bridge this file installs for SetFinalizer runs on the CLR's own finalizer thread, and
+    // WaitForPendingFinalizers is precisely "block until the finalizer queue has drained and the
+    // finalizers have executed" — the contract this function documents. The timeout has no
+    // managed expression (WaitForPendingFinalizers is unbounded), so it is honored by returning
+    // true only when the wait completes, which it always does; a hung finalizer would hang here
+    // where Go would time out and return false.
+    System.GC.WaitForPendingFinalizers();
+    return true;
 }
 
 // SetFinalizer sets the finalizer associated with obj to the provided

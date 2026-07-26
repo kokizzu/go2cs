@@ -310,23 +310,9 @@ internal static ref mstats memstats => ref Ꮡmemstats.Value;
     }
 }
 
-// ReadMemStats populates m with memory allocator statistics.
-//
-// The returned memory allocator statistics are up to date as of the
-// call to ReadMemStats. This is in contrast with a heap profile,
-// which is a snapshot as of the most recently completed garbage
-// collection cycle.
-public static void ReadMemStats(ж<MemStats> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
+// go2cs generated this placeholder — func ReadMemStats is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    _ = m.Alloc;
-    // nil check test before we switch stacks, see issue 61158
-    var stw = stopTheWorld(stwReadMemStats);
-    systemstack(() => {
-        readmemstats_m(Ꮡm);
-    });
-    startTheWorld(stw);
-}
+// nil check test before we switch stacks, see issue 61158
 
 // doubleCheckReadMemStats controls a double-check mode for ReadMemStats that
 // ensures consistency between the values that ReadMemStats is using and the

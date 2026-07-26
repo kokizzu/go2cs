@@ -1749,43 +1749,10 @@ internal static void saveg(uintptr pc, uintptr sp, ж<g> Ꮡgp, ж<profilerecord
     copy(r.Stack, pcbuf);
 }
 
-// Stack formats a stack trace of the calling goroutine into buf
-// and returns the number of bytes written to buf.
-// If all is true, Stack formats stack traces of all other goroutines
-// into buf after the trace for the current goroutine.
-public static nint Stack(slice<byte> buf, bool all) {
-    worldStop stw = default!;
-    if (all) {
-        stw = stopTheWorld(stwAllGoroutinesStack);
-    }
-    nint n = 0;
-    if (len(buf) > 0) {
-        var gp = getg();
-        var sp = getcallersp();
-        var pc = getcallerpc();
-        var bufʗ1 = buf;
-        var gpʗ1 = gp;
-        systemstack(() => {
-            var g0 = getg();
-            // Force traceback=1 to override GOTRACEBACK setting,
-            // so that Stack's results are consistent.
-            // GOTRACEBACK is only about crash dumps.
-            g0.Value.m.Value.traceback = 1;
-            g0.Value.writebuf = bufʗ1.slice(0, 0, len(bufʗ1));
-            goroutineheader(gpʗ1);
-            traceback(pc, sp, 0, gpʗ1);
-            if (all) {
-                tracebackothers(gpʗ1);
-            }
-            g0.Value.m.Value.traceback = 0;
-            n = len((~g0).writebuf);
-            g0.Value.writebuf = default!;
-        });
-    }
-    if (all) {
-        startTheWorld(stw);
-    }
-    return n;
-}
+// go2cs generated this placeholder — func Stack is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// Force traceback=1 to override GOTRACEBACK setting,
+// so that Stack's results are consistent.
+// GOTRACEBACK is only about crash dumps.
 
 } // end runtime_package

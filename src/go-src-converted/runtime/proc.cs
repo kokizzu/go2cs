@@ -336,14 +336,7 @@ internal static void forcegchelper() {
     }
 }
 
-// Gosched yields the processor, allowing other goroutines to run. It does not
-// suspend the current goroutine, so execution resumes automatically.
-//
-//go:nosplit
-public static void Gosched() {
-    checkTimeouts();
-    mcall(gosched_m);
-}
+// go2cs generated this placeholder — func Gosched is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // goschedguarded yields the processor like gosched, but also checks
 // for forbidden states and opts out of the yield in those cases.
@@ -5334,43 +5327,13 @@ internal static void dolockOSThread() {
     gp.of(g.Ꮡlockedm).set((~gp).m);
 }
 
-// LockOSThread wires the calling goroutine to its current operating system thread.
-// The calling goroutine will always execute in that thread,
-// and no other goroutine will execute in it,
-// until the calling goroutine has made as many calls to
-// [UnlockOSThread] as to LockOSThread.
-// If the calling goroutine exits without unlocking the thread,
-// the thread will be terminated.
-//
-// All init functions are run on the startup thread. Calling LockOSThread
-// from an init function will cause the main function to be invoked on
-// that thread.
-//
-// A goroutine should call LockOSThread before calling OS services or
-// non-Go library functions that depend on per-thread state.
-//
-//go:nosplit
-public static void LockOSThread() {
-    if (atomic.Load(ᏑnewmHandoff.of(newmHandoffᴛ1.ᏑhaveTemplateThread)) == 0 && GOOS != "plan9"u8) {
-        // If we need to start a new thread from the locked
-        // thread, we need the template thread. Start it now
-        // while we're in a known-good state.
-        startTemplateThread();
-    }
-    var gp = getg();
-    gp.Value.m.Value.lockedExt++;
-    if ((~(~gp).m).lockedExt == 0) {
-        gp.Value.m.Value.lockedExt--;
-        throw panic("LockOSThread nesting overflow");
-    }
-    dolockOSThread();
-}
+// go2cs generated this placeholder — func LockOSThread is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-//go:nosplit
-internal static void lockOSThread() {
-    getg().Value.m.Value.lockedInt++;
-    dolockOSThread();
-}
+// go2cs generated this placeholder — func lockOSThread is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// If we need to start a new thread from the locked
+// thread, we need the template thread. Start it now
+// while we're in a known-good state.
 
 // dounlockOSThread is called by UnlockOSThread and unlockOSThread below
 // after they update m->locked. Do not allow preemption during this call,
@@ -5390,38 +5353,9 @@ internal static void dounlockOSThread() {
     gp.Value.lockedm = 0;
 }
 
-// UnlockOSThread undoes an earlier call to LockOSThread.
-// If this drops the number of active LockOSThread calls on the
-// calling goroutine to zero, it unwires the calling goroutine from
-// its fixed operating system thread.
-// If there are no active LockOSThread calls, this is a no-op.
-//
-// Before calling UnlockOSThread, the caller must ensure that the OS
-// thread is suitable for running other goroutines. If the caller made
-// any permanent changes to the state of the thread that would affect
-// other goroutines, it should not call this function and thus leave
-// the goroutine locked to the OS thread until the goroutine (and
-// hence the thread) exits.
-//
-//go:nosplit
-public static void UnlockOSThread() {
-    var gp = getg();
-    if ((~(~gp).m).lockedExt == 0) {
-        return;
-    }
-    gp.Value.m.Value.lockedExt--;
-    dounlockOSThread();
-}
+// go2cs generated this placeholder — func UnlockOSThread is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-//go:nosplit
-internal static void unlockOSThread() {
-    var gp = getg();
-    if ((~(~gp).m).lockedInt == 0) {
-        systemstack(badunlockosthread);
-    }
-    gp.Value.m.Value.lockedInt--;
-    dounlockOSThread();
-}
+// go2cs generated this placeholder — func unlockOSThread is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string runtimeInternalErrorˢ2 = "runtime: internal error: misuse of lockOSThread/unlockOSThread"u8;

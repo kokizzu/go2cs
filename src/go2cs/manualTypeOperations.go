@@ -56,6 +56,25 @@ var manualConversionFuncs = map[string]map[string]bool{
 		"notewakeup":          true,
 		"notesleep":           true,
 		"notetsleep_internal": true,
+		// The PROCESS-CONTROL surface (managed_impl.cs). Each of these is a public runtime API
+		// whose converted body drives Go's own scheduler / GC pacer — stopTheWorld, gcStart,
+		// mcall(gosched_m), the g/m/p stack walk — machinery that has no managed counterpart and
+		// dies on the first getg()/mcall() assembly stub. The CLR does, however, answer every one
+		// of these API CONTRACTS natively, so they are reimplemented at the API boundary the same
+		// way sync's Mutex/notifyList were: honor the observable contract, never emulate the
+		// mechanism. Everything BELOW them (the scheduler, the pacer, the mark/sweep engine) stays
+		// auto-converted and simply becomes unreachable.
+		"GC":             true,
+		"GOMAXPROCS":     true,
+		"Gosched":        true,
+		"Stack":          true,
+		"ReadMemStats":   true,
+		"LockOSThread":   true,
+		"UnlockOSThread": true,
+		// The lower-case pair is the runtime-internal variant of the same contract (syscall and
+		// mime's registry reader reach it through startTemplateThread); it takes the same body.
+		"lockOSThread":   true,
+		"unlockOSThread": true,
 	},
 	// internal/abi.TypeOf reads an interface's type-word via unsafe.Pointer to reach a Go runtime
 	// type descriptor that has no managed form (the reflection bridge — Phase 4). type_impl.cs
