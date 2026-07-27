@@ -65,9 +65,11 @@ public static partial class testing_package
     /// Benchmark receiver surface. Top-level BenchmarkXxx DECLARATIONS remain disclosed-unsupported
     /// in the manifest (execution is deferred to Phase 4D) and are never registered with the host,
     /// but their converted BODIES still compile into the test assembly, so the members they
-    /// reference must exist. Those receiver members (Run and the timer/allocation/failure reporters)
-    /// stay safe non-throwing no-ops — a disclosed declaration is never invoked, so there is no run
-    /// to time or fail. N is the exception: it is set by <see cref="Benchmark"/>, which DOES drive a
+    /// reference must exist. Go's B embeds `common`, so that surface is Run, the timer/allocation
+    /// reporters, AND the whole TB member set below; every one stays a safe non-throwing no-op
+    /// answering the "nothing went wrong" value — a disclosed declaration is never invoked, so
+    /// there is no run to time, fail, skip, name or clean up. N is the exception: it is set by
+    /// <see cref="Benchmark"/>, which DOES drive a
     /// closure in-process (a converted Test can legitimately call testing.Benchmark itself —
     /// unicode's TestCalibrate does), so a b.N loop inside such a closure iterates the measured
     /// count rather than zero times.
@@ -310,16 +312,51 @@ public static partial class testing_package
 
     [GoRecv] public static bool Next(this ref PB pb) => false;
 
+    // Go's testing.B embeds `common`, so a benchmark body may call ANY of the TB members — not
+    // just the timer/allocation reporters above. The whole embedded surface is declared here for
+    // the same compile-only reason (internal/zstd's benchmarks call Cleanup/Error/Log/…), and
+    // every member is a safe non-throwing no-op answering the "nothing went wrong" value: a
+    // benchmark is never registered or run, so there is nothing to fail, skip, name or clean up.
+    [GoRecv] public static void Cleanup(this ref B b, Action cleanup) { }
+
+    [GoRecv] public static void Fail(this ref B b) { }
+
+    [GoRecv] public static void FailNow(this ref B b) { }
+
+    [GoRecv] public static bool Failed(this ref B b) => false;
+
+    [GoRecv] public static void Helper(this ref B b) { }
+
+    [GoRecv] public static @string Name(this ref B b) => ""u8;
+
+    [GoRecv] public static void Setenv(this ref B b, @string key, @string value) { }
+
+    [GoRecv] public static void SkipNow(this ref B b) { }
+
+    [GoRecv] public static bool Skipped(this ref B b) => false;
+
+    [GoRecv] public static @string TempDir(this ref B b) => ""u8;
+
     // Params-taking B members need the same explicit ж<B> overloads as T's above (params
     // collections are ref-like Spans the RecvGenerator does not synthesize overloads for).
     // Failure reporting is a no-op: benchmark bodies never execute, so there is no run to fail.
+    public static void Error(this ref B b, params ꓸꓸꓸany args) { }
+
     public static void Errorf(this ref B b, @string format, params ꓸꓸꓸany args) { }
 
     public static void Fatal(this ref B b, params ꓸꓸꓸany args) { }
 
     public static void Fatalf(this ref B b, @string format, params ꓸꓸꓸany args) { }
 
+    public static void Log(this ref B b, params ꓸꓸꓸany args) { }
+
+    public static void Logf(this ref B b, @string format, params ꓸꓸꓸany args) { }
+
     public static void Skip(this ref B b, params ꓸꓸꓸany args) { }
+
+    public static void Skipf(this ref B b, @string format, params ꓸꓸꓸany args) { }
+
+    public static void Error(this ж<B> b, params ꓸꓸꓸany args) => Error(ref b.Value, args);
 
     public static void Errorf(this ж<B> b, @string format, params ꓸꓸꓸany args) => Errorf(ref b.Value, format, args);
 
@@ -327,7 +364,13 @@ public static partial class testing_package
 
     public static void Fatalf(this ж<B> b, @string format, params ꓸꓸꓸany args) => Fatalf(ref b.Value, format, args);
 
+    public static void Log(this ж<B> b, params ꓸꓸꓸany args) => Log(ref b.Value, args);
+
+    public static void Logf(this ж<B> b, @string format, params ꓸꓸꓸany args) => Logf(ref b.Value, format, args);
+
     public static void Skip(this ж<B> b, params ꓸꓸꓸany args) => Skip(ref b.Value, args);
+
+    public static void Skipf(this ж<B> b, @string format, params ꓸꓸꓸany args) => Skipf(ref b.Value, format, args);
 
     // Compile-only F surface (see struct F above) — never executed, never throwing. Fuzz takes a
     // System.Delegate because a Go fuzz target's signature is arbitrary (*testing.T followed by

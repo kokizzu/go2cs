@@ -1,0 +1,88 @@
+// go2cs code converter defines `global using` statements here for imported type
+// aliases as package references are encountered via `import' statements. Exported
+// type aliases that need a `global using` declaration will be loaded from the
+// referenced package by parsing its 'package_info.cs' source file and reading its
+// defined `GoTypeAlias` attributes.
+
+// Package name separator "dot" used in imported type aliases is extended Unicode
+// character '\uA4F8' which is a valid character in a C# identifier name. This is
+// used to simulate Go's package level type aliases since C# does not yet support
+// importing type aliases at a namespace level.
+
+// <ImportedTypeAliases>
+global using execꓸError = go.os.exec_package.ΔError;
+global using osꓸDirEntry = go.io.fs_package.DirEntry;
+global using osꓸFileInfo = go.io.fs_package.FileInfo;
+global using osꓸFileMode = go.io.fs_package.FileMode;
+global using osꓸPathError = go.io.fs_package.PathError;
+global using osꓸSignal = go.os_package.ΔSignal;
+// </ImportedTypeAliases>
+
+using go;
+using static go.@internal.zstd_package;
+
+// For encountered type alias declarations, e.g., `type Table = map[string]int`,
+// go2cs code converter will generate a `global using` statement for the alias in
+// the converted source, e.g.: `global using Table = go.map<go.@string, nint>;`.
+// Although scope of `global using` is available to all files in the project, all
+// converted Go code for the project targets the same package, so `global using`
+// statements will effectively have package level scope.
+
+// Additionally, `GoTypeAlias` attributes will be generated here for exported type
+// aliases. This allows the type alias to be imported and used from other packages
+// when referenced.
+
+// <ExportedTypeAliases>
+// </ExportedTypeAliases>
+
+// As types are cast to interfaces in Go source code, the go2cs code converter
+// will generate an assembly level `GoImplement` attribute for each unique cast.
+// This allows the interface to be implemented in the C# source code using source
+// code generation (see go2cs-gen). An alternate interface implementation exists
+// that can resolve duck-typed interfaces at run-time, but handling interface
+// implementations at compile-time results in faster startup times, avoiding
+// reflection-based interface resolution.
+
+// <InterfaceImplementations>
+[assembly: GoImplement<Reader, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
+[assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<os_package.File, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<strings_package.Reader, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<testing_package.B, testing_package.TB>(Pointer = true)]
+[assembly: GoImplement<testing_package.F, testing_package.TB>(Pointer = true)]
+[assembly: GoImplement<testing_package.T, testing_package.TB>(Pointer = true)]
+[assembly: GoImplement<zstdError, error>(Pointer = true)]
+// </InterfaceImplementations>
+
+// <ImplicitConversions>
+// </ImplicitConversions>
+
+namespace go.@internal;
+
+[GoPackage("zstd")]
+public static partial class zstd_package
+{
+    // C# nested types declared with no access modifier are always private, and the
+    // `[GoType]` declarations in this package's converted sources are deliberately
+    // bare so they read more like the original Go code. The real accessibility for
+    // the types - public for a Go-exported name, internal otherwise - are defined
+    // via declarations below.
+
+    // <TypeAccessibility>
+    internal partial struct bitReader {}
+    internal partial struct block {}
+    internal partial struct fseBaselineEntry {}
+    internal partial struct fseEntry {}
+    internal partial struct reverseBitReader {}
+    internal partial struct seqCode {}
+    internal partial struct seqCodeInfoData {}
+    internal partial struct testsᴛ1 {}
+    internal partial struct window {}
+    internal partial struct xxHashTestsᴛ1 {}
+    internal partial struct xxhash64 {}
+    internal partial struct zstdError {}
+    public partial struct Reader {}
+    public partial struct TestPredefinedTables_tests {}
+    // </TypeAccessibility>
+}
