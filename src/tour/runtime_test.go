@@ -39,7 +39,28 @@ func TestResolveRuntimeUsesConfiguredDefault(t *testing.T) {
 	}
 }
 
+func TestResolvePipelineOptionsPrefersNuGetDefault(t *testing.T) {
+	t.Setenv("GO2CS_NUGET_SOURCE", "")
+	t.Setenv("GO2CS_NUGET_VERSION", "")
+	repoRoot := t.TempDir()
+	writeVersionProps(t, repoRoot)
+	deployedRoot := t.TempDir()
+	writeRuntimeRoot(t, deployedRoot)
+
+	options := resolvePipelineOptions(repoRoot, pipelineOptions{deployedRoot: deployedRoot})
+	if options.defaultRuntime != runtimeNuGet {
+		t.Fatalf("default runtime = %q, want %q even beside a deployed stdlib", options.defaultRuntime, runtimeNuGet)
+	}
+	if options.nugetVersion != "1.23.1.2" {
+		t.Fatalf("NuGet version = %q, want the version.props value", options.nugetVersion)
+	}
+	if options.nugetSource != "https://api.nuget.org/v3/index.json" {
+		t.Fatalf("NuGet source = %q, want the public feed", options.nugetSource)
+	}
+}
+
 func TestResolvePipelineOptionsSelectsAvailableDeployedDefault(t *testing.T) {
+	t.Setenv("GO2CS_NUGET_VERSION", "")
 	deployedRoot := t.TempDir()
 	writeRuntimeRoot(t, deployedRoot)
 
@@ -50,6 +71,7 @@ func TestResolvePipelineOptionsSelectsAvailableDeployedDefault(t *testing.T) {
 }
 
 func TestResolvePipelineOptionsFallsBackToCore(t *testing.T) {
+	t.Setenv("GO2CS_NUGET_VERSION", "")
 	options := resolvePipelineOptions(t.TempDir(), pipelineOptions{deployedRoot: t.TempDir()})
 	if options.defaultRuntime != runtimeCore {
 		t.Fatalf("default runtime = %q, want %q", options.defaultRuntime, runtimeCore)
@@ -57,15 +79,37 @@ func TestResolvePipelineOptionsFallsBackToCore(t *testing.T) {
 }
 
 func TestResolvePipelineOptionsHonorsExplicitCore(t *testing.T) {
+	repoRoot := t.TempDir()
+	writeVersionProps(t, repoRoot)
 	deployedRoot := t.TempDir()
 	writeRuntimeRoot(t, deployedRoot)
 
-	options := resolvePipelineOptions(t.TempDir(), pipelineOptions{
+	options := resolvePipelineOptions(repoRoot, pipelineOptions{
 		defaultRuntime: runtimeCore,
 		deployedRoot:   deployedRoot,
 	})
 	if options.defaultRuntime != runtimeCore {
 		t.Fatalf("default runtime = %q, want explicit %q", options.defaultRuntime, runtimeCore)
+	}
+}
+
+func TestResolveRuntimeAcceptsEveryOption(t *testing.T) {
+	repoRoot := t.TempDir()
+	writeVersionProps(t, repoRoot)
+	deployedRoot := t.TempDir()
+	writeRuntimeRoot(t, deployedRoot)
+
+	runner := newPipelineRunner(repoRoot, pipelineOptions{deployedRoot: deployedRoot})
+	defer runner.close()
+
+	for _, mode := range []string{runtimeCore, runtimeDeployed, runtimeNuGet} {
+		resolved, err := runner.resolveRuntime(mode)
+		if err != nil {
+			t.Fatalf("resolveRuntime(%q): %v", mode, err)
+		}
+		if resolved.mode != mode {
+			t.Fatalf("resolveRuntime(%q) = %q", mode, resolved.mode)
+		}
 	}
 }
 
@@ -166,6 +210,23 @@ func TestRuntimeMSBuildArgs(t *testing.T) {
 	nugetArgs := runtimeMSBuildArgs(nuget)
 	if len(nugetArgs) != 1 || nugetArgs[0] != "-p:GoStdLibVersion=1.23.1.7" {
 		t.Fatalf("NuGet runtime args = %v", nugetArgs)
+	}
+}
+
+func writeVersionProps(t *testing.T, repoRoot string) {
+	t.Helper()
+	path := filepath.Join(repoRoot, "src", "version.props")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := `<Project>
+  <PropertyGroup>
+    <GoStdLibVersion>1.23.1</GoStdLibVersion>
+    <GoBuildNumber>2</GoBuildNumber>
+  </PropertyGroup>
+</Project>`
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
 	}
 }
 

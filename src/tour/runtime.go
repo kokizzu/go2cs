@@ -55,13 +55,6 @@ func resolvePipelineOptions(repoRoot string, supplied pipelineOptions) pipelineO
 			supplied.deployedRoot = filepath.Join(strings.TrimSpace(string(output)), "src", "go2cs")
 		}
 	}
-	if supplied.defaultRuntime == "" {
-		if validRuntimeRoot(supplied.deployedRoot) {
-			supplied.defaultRuntime = runtimeDeployed
-		} else {
-			supplied.defaultRuntime = runtimeCore
-		}
-	}
 
 	if supplied.nugetSource == "" {
 		supplied.nugetSource = strings.TrimSpace(os.Getenv("GO2CS_NUGET_SOURCE"))
@@ -85,6 +78,19 @@ func resolvePipelineOptions(repoRoot string, supplied pipelineOptions) pipelineO
 			if len(base) == 2 && len(build) == 2 {
 				supplied.nugetVersion = string(base[1]) + "." + string(build[1])
 			}
+		}
+	}
+
+	// Published packages come first so a fresh clone converts and builds lessons without staging
+	// a standard library. The local trees remain the fallback when no package version is known.
+	if supplied.defaultRuntime == "" {
+		switch {
+		case supplied.nugetSource != "" && supplied.nugetVersion != "":
+			supplied.defaultRuntime = runtimeNuGet
+		case validRuntimeRoot(supplied.deployedRoot):
+			supplied.defaultRuntime = runtimeDeployed
+		default:
+			supplied.defaultRuntime = runtimeCore
 		}
 	}
 	return supplied

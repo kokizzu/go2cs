@@ -72,8 +72,8 @@ Useful options:
 - `-addr=127.0.0.1:4000`: address for Tour of go2cs
 - `-tour-addr=127.0.0.1:3999`: private address for the upstream Tour
 - `-repo=/path/to/go2cs`: explicit repository root
-- `-runtime=core|deployed|nuget`: initial .NET runtime source; when omitted, a
-  detected deployed stdlib is selected, otherwise core source
+- `-runtime=core|deployed|nuget`: initial .NET runtime source; when omitted,
+  NuGet packages are selected, then a detected deployed stdlib, then core source
 - `-deployed-root=/path/to/go2cs`: root created by `deploy-core.ps1 stdlib`
 - `-nuget-source=/path/or/feed`: folder or feed containing go2cs packages
 - `-nuget-version=1.23.1.2`: package version to restore
@@ -93,7 +93,8 @@ against the published converted standard library with nothing staged locally.
 The server prefers the local `src/artifacts/nupkg` feed when packages exist,
 then falls back to nuget.org. The version comes from `src/version.props`.
 Override either value with `-nuget-source` / `GO2CS_NUGET_SOURCE` and
-`-nuget-version` / `GO2CS_NUGET_VERSION`.
+`-nuget-version` / `GO2CS_NUGET_VERSION`. This is the default runtime whenever
+a package source and version resolve, which is the case in a plain checkout.
 
 **Deployed stdlib** (`-runtime=deployed`) uses the compiled/full
 standard-library tree produced by:
@@ -105,15 +106,15 @@ standard-library tree produced by:
 The server discovers this at `$GOPATH/src/go2cs`. Override it with
 `-deployed-root` or `GO2CS_DEPLOYED_ROOT`. Choose it when lessons should build
 against your own checkout's converted standard library as source, so you can
-step into it or pick up a local change immediately. A valid deployed tree
-becomes the default runtime when `-runtime` is omitted.
+step into it or pick up a local change immediately. It becomes the default
+runtime when no package version resolves and a valid deployed tree is detected.
 
 **Core source** (`-runtime=core`) converts and builds against the current
 checkout's `src/core`, `src/gen`, and converted package projects, which is the
 best mode while developing go2cs itself. `src/core` is the smaller baseline
 subset of the standard library, so a lesson importing beyond it is better served
-by either source above. It is the automatic fallback when no valid deployed
-stdlib is detected.
+by either source above. It is the last fallback, chosen when neither a package
+version nor a valid deployed stdlib is available.
 
 ## Keyboard controls
 
