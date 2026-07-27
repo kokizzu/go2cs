@@ -33,7 +33,7 @@ only interfaces — is the single highest-yield item on this board.
 |:--|:--|:--|
 | `image/jpeg` | `CS0111: Type 'jpeg_package' already defines a member called 'init'` | two `init` functions merged into one class |
 | `index/suffixarray` | `CS0206: A non ref-returning property or indexer may not be used as an out or ref value` | an indexer passed by `ref`/`out` |
-| `internal/zstd` | `CS1929: 'testing_package.B' does not contain a definition for 'Cleanup'` | `B` lacks a member `T` has — the compile-only benchmark surface again |
+| `internal/zstd` | `CS1929: 'testing_package.B' does not contain a definition for 'Cleanup'` | **Measured: this one is worth 534 verdicts, and the obvious fix backfires — read below.** |
 | `crypto/md5` | `CS0030: Cannot convert type 'System.Type' to 'uint'` | uninvestigated |
 | `path/filepath` | `CS0103: The name 'ßÅælstat' does not exist` | a mangled identifier — encoding of a non-ASCII or symbol-marked name |
 | `net` | `CS1031: Type expected` | a hard syntax error in emission |
@@ -56,3 +56,33 @@ only interfaces — is the single highest-yield item on this board.
   centralizing zero-value construction instead of patching sites.
 - **Untyped constants in a typed slot.** The int-literal case is fixed; the constant-**ident** case
   (`maphash` above) is not.
+
+## Measured trap — `internal/zstd`, `testing.B`, and the reference closure
+
+`internal/zstd` is worth **534 verdicts**, the largest unbanked package measured here, and the fix
+looks trivial: Go's `B` and `T` both embed `common`, so a benchmark may call `Cleanup`, `Error`,
+`Log`, `Name`, `TempDir` and the rest, while `core/testing`'s compile-only `B` surface declares
+almost none of them. Adding them **does** make `internal/zstd` validate at 534/534 — measured, not
+predicted.
+
+**It also breaks `crypto/hmac`, and the mechanism is worth understanding before anyone tries
+again.** `core/testing` declares a `TB` interface holding exactly that member set. Completing `B`'s
+surface makes `B` structurally implement `TB`, which changes the set of interface types the
+compilation names — and the `-tests` reference closure is computed from precisely that set. The
+`io` project reference `crypto/hmac` needs then disappears from its generated `.tests.csproj`, and
+the package stops building.
+
+Verified both directions: with the `B` members added, a regenerated `crypto/hmac` loses
+`<ProjectReference … io.csproj />` and fails `CS0012`; with them reverted, the reference survives
+and the package validates. So the two are coupled, and the ordering is fixed:
+
+**Generalize the reference closure first** (the top item on this board — it must cover packages
+named by *any* referenced type, not only by interfaces, which is also what `io` and `image/draw`
+need). Once the closure no longer depends on which interfaces happen to be implemented, completing
+`B`'s `common` surface is a safe, one-file change worth 534 verdicts.
+
+A second, smaller lesson from the same experiment: the fix to `crypto/hmac`'s closure is **not
+reproducible from a standalone regeneration** — re-running its pipeline alone drops the reference
+even on unmodified sources. The committed artifacts are correct and the package validates as
+banked, but a future whole-corpus regeneration would lose it. That fragility is a symptom of the
+same root: the closure depends on state that a single-package run does not reconstruct.
