@@ -400,6 +400,7 @@
     <Project Path="Tests/Behavioral/PackageVarInitOrder/PackageVarInitOrder.csproj" />
     <Project Path="Tests/Behavioral/PanicRecover/PanicRecover.csproj" />
     <Project Path="Tests/Behavioral/ParallelAssignmentHazard/ParallelAssignmentHazard.csproj" />
+    <Project Path="Tests/Behavioral/ParenthesizedConcatContext/ParenthesizedConcatContext.csproj" />
     <Project Path="Tests/Behavioral/PartialRedeclaration/PartialRedeclaration.csproj" />
     <Project Path="Tests/Behavioral/PkgLevelFuncLitLocals/PkgLevelFuncLitLocals.csproj" />
     <Project Path="Tests/Behavioral/PointerArraySlice/PointerArraySlice.csproj" />

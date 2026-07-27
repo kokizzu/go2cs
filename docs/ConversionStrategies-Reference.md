@@ -3047,9 +3047,11 @@ var allowed = new @string[]{prefix + "-a"u8, prefix + "-b"u8}.slice(); // after
 The suppression itself is correct where it was born — an `object[]` vararg slot cannot box a
 `ReadOnlySpan<byte>`, so `fmt.Println(allowed[0] + ":" + msg)` must keep plain operands (CS1503) —
 but a string element slot is not span-hostile, which the sibling spellings already proved: the same
-concat rendered `u8` when parenthesized (`convParenExpr` drops the incoming literal context) and when
-the composite's type was elided (nil element context). Marking every positional element makes the
-three agree. The span operand then binds golib's `operator +(@string, ReadOnlySpan<byte>)`, which
+concat rendered `u8` when parenthesized (at the time, because `convParenExpr` dropped the incoming
+literal context — a defect in its own right, fixed in the next section) and when the composite's type
+was elided (nil element context). Marking every positional element makes the three agree, and it is
+what keeps the parenthesized spelling on the span form now that parentheses inherit their slot's
+context instead of discarding it. The span operand then binds golib's `operator +(@string, ReadOnlySpan<byte>)`, which
 block-copies the literal's ROM bytes straight into the single result buffer — no
 `Encoding.UTF8.GetBytes` transcode, no throwaway intermediate `@string`. Two literal operands need no
 operator at all: C# folds `"x"u8 + "y"u8` into one UTF-8 literal at compile time.
@@ -3079,6 +3081,66 @@ gates now mark every positional element. KEYED elements still skip — index *i*
 them, and `convKeyValueExpr` resolves their slot itself. (Guarded by the behavioral tests
 `CompositeElementStringConcat`, which also pins the vararg suppression that must NOT change, and
 `NamedStringConcat`; `ReturnTupleFuncLitArg`'s golden carries the slice-element form.)
+
+### Parentheses inherit their slot's literal context
+Parentheses are transparent in Go: `(x)` lands in the enclosing slot exactly as `x` does. But
+`convParenExpr` rendered its operand with a **fresh** context list — it built the `StarExprContext`
+the pointer-cast path needs and passed only that — so the incoming `BasicLitContext` never reached the
+operand. The slot's span-tolerance signal (`spanTargetUnsupported`, above) was silently reset to the
+default *tolerant*, and a pair of parentheses could re-enable the `u8` span form inside a span-**hostile**
+slot:
+
+```go
+panic("a" + "b")     // suppressed correctly
+panic(("a" + "b"))   // parenthesized — the same slot, the opposite rendering
+```
+```csharp
+throw panic("a" + "b");         // before and after
+throw panic(("a"u8 + "b"u8));   // before — CS1503
+throw panic(("a" + "b"));       // after
+```
+
+C# folds two adjacent utf8 literal constants into a single `ReadOnlySpan<byte>`, and a span has no
+boxing conversion to `object`, so the parenthesized spelling did not merely differ — it did not
+compile. `panic` is where this surfaces because it is the one span-hostile slot with no second line of
+defence: the others pick up an outer `(@string)` box cast whose helper (`constExprIsStringLiteralConcat`)
+already unwraps `ParenExpr`, while `panic` short-circuits in `convCallExpr` before `convExprList` ever
+runs. With a **non**-constant operand the drop was invisible rather than fatal — `(a + "-y"u8)` binds
+golib's `operator +(@string, ReadOnlySpan<byte>)` and yields an `@string`, which boxes fine — but it
+still rendered the parenthesized and unparenthesized spellings of one expression differently.
+
+The fix threads the incoming literal context *through* the paren arm instead of replacing it; the
+`StarExprContext` is passed alongside it, so the pointer-cast path is unchanged. Every span-hostile
+slot — `panic`, a vararg `any`, an interface-typed assignment, return, or `ValueTuple` element — now
+renders both spellings alike.
+
+The **inverse** must hold too: a composite literal's string element slot *is* span-tolerant, and its
+parenthesized concat has to keep the span form. It does, through that composite's own per-element gate
+(previous section) rather than through the dropped context — which is exactly why the two changes
+belong together:
+
+```go
+elems := []string{a + "-g", (a + "-h")}
+```
+```csharp
+var elems = new @string[]{a + "-g"u8, (a + "-h"u8)}.slice();
+```
+
+Re-transpiling the behavioral corpus and reconverting the full standard library both produce
+byte-identical output, so this is latent-defect hardening rather than a rendering change: no site in
+either corpus spells a concat this way today. (Guarded by the behavioral test
+`ParenthesizedConcatContext`, which spells every affected slot **both** ways so the pair must agree.)
+
+One related gap is deliberately left open. The decisions that mark a string literal boxable —
+`u8StringArgOK` / `useGoStringArg` in `convCallExpr`, and the same test in `visitSendStmt`,
+`convKeyValueExpr`, `convCompositeLit`, `markAnyFieldLits`, and `convFuncLit` — all gate on
+`isStringBasicLit`, a bare `*ast.BasicLit` type assertion that does **not** unwrap parentheses (unlike
+`constExprIsStringLiteralConcat`, which does). So a parenthesized *standalone* literal in an `any` slot
+(`fmt.Println(("lit"))`) is not
+recognized as one, and now renders `(@string)(("lit"))` rather than the constant-span
+`(@string)(("lit"u8))` it got by accident from the dropped context — correct, and one
+`Encoding.UTF8.GetBytes` per evaluation slower. Making those gates paren-aware is the general fix for
+that family; it is a distinct change with its own footprint and is not folded in here.
 
 ### Converting a string literal to a named `[]byte` / `[]rune` type
 The byte/rune-slice sibling of the named-string rule above: a string **literal** converting to a named type whose underlying is `[]byte` or `[]rune` — `htmlSig("<!DOCTYPE HTML")` where `type htmlSig []byte` (net/http `sniff.go`'s signature table) — cannot cast directly either. The `u8` span converts to neither the `[GoType]` wrapper (whose implicit operator takes exactly its underlying `slice<byte>`/`slice<rune>`) nor through `@string` in one hop (C# chains at most one user-defined conversion — CS0030). The converter materializes the underlying slice exactly the way the plain `[]byte("…")` conversion does (the `slice<T>(T[])` builtin over the literal's `@string`), and the wrapper's own operator then applies:

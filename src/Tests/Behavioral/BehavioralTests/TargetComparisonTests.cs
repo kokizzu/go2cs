@@ -1003,6 +1003,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckParallelAssignmentHazard() => CheckTarget("ParallelAssignmentHazard");
 
     [TestMethod]
+    public void CheckParenthesizedConcatContext() => CheckTarget("ParenthesizedConcatContext");
+
+    [TestMethod]
     public void CheckPartialRedeclaration() => CheckTarget("PartialRedeclaration");
 
     [TestMethod]

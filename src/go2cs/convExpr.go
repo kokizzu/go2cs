@@ -439,7 +439,8 @@ func (v *Visitor) convExpr(expr ast.Expr, contexts []ExprContext) string {
 		return v.convMapType(exprType)
 	case *ast.ParenExpr:
 		context := getExprContext[LambdaContext](contexts)
-		return v.convParenExpr(exprType, context)
+		litContext := getExprContext[BasicLitContext](contexts)
+		return v.convParenExpr(exprType, context, litContext)
 	case *ast.SelectorExpr:
 		context := getExprContext[LambdaContext](contexts)
 		rendered := v.convSelectorExpr(exprType, context)

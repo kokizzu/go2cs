@@ -210,7 +210,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 	case *ast.MapType:
 		v.visitMapType(typeSpecType, identType, name)
 	case *ast.ParenExpr:
-		v.targetFile.WriteString(v.convParenExpr(typeSpecType, DefaultLambdaContext()))
+		v.targetFile.WriteString(v.convParenExpr(typeSpecType, DefaultLambdaContext(), DefaultBasicLitContext()))
 	case *ast.SelectorExpr:
 		// A DEFINED type over a cross-package named type (`type stdFunction unsafe.Pointer`,
 		// `type goroutineProfileStateHolder atomic.Uint32`). Emit an inherited `[GoType]` wrapper of

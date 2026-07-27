@@ -11,10 +11,22 @@ import (
 	"go/ast"
 )
 
-func (v *Visitor) convParenExpr(parenExpr *ast.ParenExpr, context LambdaContext) string {
+// convParenExpr renders a parenthesized expression. The incoming literal context is passed
+// THROUGH to the operand rather than replaced: parentheses are transparent in Go, so `(x)`
+// lands in the enclosing slot exactly as `x` does, and the slot's span-tolerance signal
+// (BasicLitContext.spanTargetUnsupported) must reach the operand either way. Starting the
+// operand from a fresh default instead silently re-enabled the `"…"u8` ReadOnlySpan<byte>
+// form inside a span-HOSTILE slot — `panic(("a" + "b"))` folded its two utf8 literal
+// constants into one span with no boxing conversion to panic's object parameter (CS1503),
+// where the unparenthesized `panic("a" + "b")` correctly kept plain operands.
+//
+// A composite literal's string ELEMENT slot is span-TOLERANT and must keep the u8 form; it
+// now says so through its own per-element gate in convCompositeLit rather than by relying on
+// this context being dropped.
+func (v *Visitor) convParenExpr(parenExpr *ast.ParenExpr, context LambdaContext, litContext BasicLitContext) string {
 	starContext := DefaultStarExprContext()
 	starContext.inParenExpr = true
-	expr := v.convExpr(parenExpr.X, []ExprContext{starContext})
+	expr := v.convExpr(parenExpr.X, []ExprContext{starContext, litContext})
 
 	// In a pointer cast, we need to intermediately cast the target expression to an uintptr.
 	// This is required since unsafe.Pointer is in its own library and no implicit cast can
