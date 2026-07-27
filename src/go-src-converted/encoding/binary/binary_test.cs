@@ -509,7 +509,7 @@ public static void TestSizeStructCache(ж<testing.T> Ꮡt) {
         new(@new<TestSizeStructCache_type>(), 1),
         new(@new<TestSizeStructCache_type>(), 0),
         new(Ꮡ(new array<TestSizeStructCache_type>(1, () => new())), 0),
-        new(new slice<TestSizeStructCache_type>(1), 0)
+        new(new slice<TestSizeStructCache_type>(1, () => new()), 0)
     }.slice();
     foreach (var (_, tc) in testcases) {
         if (Size(tc.val) == -1) {
@@ -953,7 +953,7 @@ public static void BenchmarkAppendStruct(ж<testing.B> Ꮡb) {
 public static void BenchmarkWriteSlice1000Structs(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    var Δslice = new slice<Struct>(1000);
+    var Δslice = new slice<Struct>(1000, () => new());
     var buf = @new<bytes.Buffer>();
     io.Writer w = new bytes_BufferжWriter(buf);
     b.SetBytes((int64)Size(Δslice));
@@ -968,7 +968,7 @@ public static void BenchmarkWriteSlice1000Structs(ж<testing.B> Ꮡb) {
 public static void BenchmarkAppendSlice1000Structs(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    var Δslice = new slice<Struct>(1000);
+    var Δslice = new slice<Struct>(1000, () => new());
     var buf = new slice<byte>(0, Size(Δslice));
     b.SetBytes((int64)cap(buf));
     b.ResetTimer();
@@ -982,7 +982,7 @@ public static void BenchmarkReadSlice1000Structs(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
     var bsr = Ꮡ(new byteSliceReader(nil));
-    var Δslice = new slice<Struct>(1000);
+    var Δslice = new slice<Struct>(1000, () => new());
     var buf = new slice<byte>(Size(Δslice));
     b.SetBytes((int64)len(buf));
     b.ResetTimer();
