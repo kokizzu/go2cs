@@ -723,13 +723,14 @@ func TestReferenceModelSeedAnchorsTestClassOnly(t *testing.T) {
 	}
 }
 
-// Reference closure: the test project's reference set must be CLOSED under the C# interface-
-// INHERITANCE edges the converter emits. Binding an interface in C# requires its base interfaces'
-// assemblies, and that base edge belongs to the DECLARING package's import graph — it appears in
-// no test import and no alias `using`, so only this closure can surface it (CS0012 otherwise).
-// It must surface those packages and ONLY those, never a package's whole import graph, which would
-// contribute child namespaces that break the CS0576 alias machinery.
-func TestInterfaceBaseClosureImportsSurfacesForeignInterfaceBases(t *testing.T) {
+// Reference closure: the test project's reference set must be CLOSED under the C# DECLARATION
+// edges the converter emits — an interface's base interfaces and a struct's field types. Binding
+// such a type in C# requires those assemblies, and the edge belongs to the DECLARING package's
+// import graph, so it appears in no test import and no alias `using` and only this closure can
+// surface it (CS0012 otherwise). It must surface those packages and ONLY those, never a package's
+// whole import graph, which would contribute child namespaces that break the CS0576 alias
+// machinery — every positive case below is paired with the negative that pins the boundary.
+func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) {
 	// FOREIGN-package shape (hash/maphash, crypto/hmac): the emitted
 	// `GoImplement<Hash, hash_package.Hash64>` record binds `hash`, which IS referenced — but
 	// hash's `Hash` embeds io.Writer, and neither package's import closure reaches io.
@@ -742,7 +743,7 @@ func TestInterfaceBaseClosureImportsSurfacesForeignInterfaceBases(t *testing.T) 
 	})
 
 	foreign := loadProductionForDir(t, foreignDir)
-	if got := interfaceBaseClosureImports([]*packages.Package{foreign}, []string{"hash"}); len(got) != 1 || got[0] != "io" {
+	if got := declarationClosureImports([]*packages.Package{foreign}, nil, []string{"hash"}); len(got) != 1 || got[0] != "io" {
 		t.Fatalf("hash.Hash embeds io.Writer, so referencing hash must surface io; got %v", got)
 	}
 
@@ -765,7 +766,7 @@ func TestInterfaceBaseClosureImportsSurfacesForeignInterfaceBases(t *testing.T) 
 	})
 
 	fsys := loadProductionForDir(t, fsysDir)
-	if got := interfaceBaseClosureImports([]*packages.Package{fsys}, []string{fsys.PkgPath}); len(got) != 1 || got[0] != "io" {
+	if got := declarationClosureImports([]*packages.Package{fsys}, nil, []string{fsys.PkgPath}); len(got) != 1 || got[0] != "io" {
 		t.Fatalf("File structurally implements io.ReadCloser, so the io assembly must be surfaced; got %v", got)
 	}
 
@@ -781,7 +782,7 @@ func TestInterfaceBaseClosureImportsSurfacesForeignInterfaceBases(t *testing.T) 
 	})
 
 	chain := loadProductionForDir(t, chainDir)
-	got := interfaceBaseClosureImports([]*packages.Package{chain}, []string{"example/chain/b"})
+	got := declarationClosureImports([]*packages.Package{chain}, nil, []string{"example/chain/b"})
 
 	if len(got) != 2 || got[0] != "example/chain/a" || got[1] != "io" {
 		t.Fatalf("the closure must follow b -> a -> io, got %v", got)
@@ -801,7 +802,7 @@ func TestInterfaceBaseClosureImportsSurfacesForeignInterfaceBases(t *testing.T) 
 	})
 
 	unnamed := loadProductionForDir(t, unnamedDir)
-	if got := interfaceBaseClosureImports([]*packages.Package{unnamed}, []string{"fmt", unnamed.PkgPath}); len(got) != 0 {
+	if got := declarationClosureImports([]*packages.Package{unnamed}, nil, []string{"fmt", unnamed.PkgPath}); len(got) != 0 {
 		t.Fatalf("fmt is referenced but fmt.State is never named, so nothing must be surfaced; got %v", got)
 	}
 
@@ -815,7 +816,7 @@ func TestInterfaceBaseClosureImportsSurfacesForeignInterfaceBases(t *testing.T) 
 	})
 
 	namedPkg := loadProductionForDir(t, namedDir)
-	if got := interfaceBaseClosureImports([]*packages.Package{namedPkg}, []string{"fmt", namedPkg.PkgPath}); len(got) != 1 || got[0] != "io" {
+	if got := declarationClosureImports([]*packages.Package{namedPkg}, nil, []string{"fmt", namedPkg.PkgPath}); len(got) != 1 || got[0] != "io" {
 		t.Fatalf("naming fmt.State binds an interface whose base is io.Writer; got %v", got)
 	}
 
@@ -832,8 +833,176 @@ func TestInterfaceBaseClosureImportsSurfacesForeignInterfaceBases(t *testing.T) 
 	})
 
 	plain := loadProductionForDir(t, plainDir)
-	if got := interfaceBaseClosureImports([]*packages.Package{plain}, []string{plain.PkgPath}); len(got) != 0 {
+	if got := declarationClosureImports([]*packages.Package{plain}, nil, []string{plain.PkgPath}); len(got) != 0 {
 		t.Fatalf("no exported interface matches an imported interface, so the closure must be empty; got %v", got)
+	}
+
+	// STRUCT FIELDS AT A COMPOSITE LITERAL (image/draw): the compilation CONSTRUCTS testing/quick's
+	// `Config`, and the converter renders that as `new Config(…)` — go2cs-gen's fieldwise
+	// constructor, whose parameter list names every field type, including `Rand *rand.Rand`. Rand is
+	// a STRUCT, so no interface closure can ever reach it, and math/rand is in no import list.
+	// Paired below with the negative that pins the boundary at CONSTRUCTION, not at value use.
+	fieldDir := t.TempDir()
+	fieldFiles := map[string]string{
+		"go.mod": "module example/field\n\ngo 1.23\n",
+		"cfg/cfg.go": "package cfg\n" +
+			"import \"math/rand\"\n" +
+			"type Config struct {\n" +
+			"\tMaxCount int\n" +
+			"\tRand     *rand.Rand\n" +
+			"\tValues   func(rand *rand.Rand)\n" +
+			"}\n" +
+			"func Default() Config { return Config{} }\n",
+		// CONSTRUCTS the foreign struct.
+		"build/main.go": "package build\nimport \"example/field/cfg\"\nfunc Use() int { return cfg.Config{MaxCount: 3}.MaxCount }\n",
+		// Only USES it by value — binds one from a constructor function and reads a field, never
+		// writing a literal. This is the shape eleven banked packages take with
+		// sync.Once/reflect.Value/sync.Map, and they compile clean today with no reference to
+		// those field types' assemblies.
+		"use/main.go": "package use\nimport \"example/field/cfg\"\nfunc Use() int {\n\tc := cfg.Default()\n\treturn c.MaxCount\n}\n",
+		// Constructs it with the EMPTY (zero-value) literal, which converts to go2cs-gen's nil
+		// constructor — `new Config(nil)` — naming no field. mime's `once = sync.Once{}` and
+		// testing/quick's `return reflect.Value{}, false` are the corpus instances.
+		"zero/main.go": "package zero\nimport \"example/field/cfg\"\nfunc Use() cfg.Config { return cfg.Config{} }\n",
+	}
+	writeModuleFiles(t, fieldDir, fieldFiles)
+
+	built := loadProductionForDir(t, filepath.Join(fieldDir, "build"))
+	if got := declarationClosureImports([]*packages.Package{built}, nil, []string{"example/field/cfg"}); len(got) != 1 || got[0] != "math/rand" {
+		t.Fatalf("constructing Config must surface its *rand.Rand field's math/rand; got %v", got)
+	}
+
+	used := loadProductionForDir(t, filepath.Join(fieldDir, "use"))
+	if got := declarationClosureImports([]*packages.Package{used}, nil, []string{"example/field/cfg"}); len(got) != 0 {
+		t.Fatalf("holding a Config VALUE demands no field assembly — only the constructor does; got %v", got)
+	}
+
+	zero := loadProductionForDir(t, filepath.Join(fieldDir, "zero"))
+	if got := declarationClosureImports([]*packages.Package{zero}, nil, []string{"example/field/cfg"}); len(got) != 0 {
+		t.Fatalf("the EMPTY literal converts to the nil constructor and names no field; got %v", got)
+	}
+
+	// A field's FUNC signature names types just as a plain field does: the fieldwise constructor's
+	// parameter for it is a delegate spelling every parameter and result type out. Pinned by
+	// dropping the pointer field, so math/rand can only come through `Values`.
+	funcFieldDir := t.TempDir()
+	writeModuleFiles(t, funcFieldDir, map[string]string{
+		"go.mod": "module example/funcfield\n\ngo 1.23\n",
+		"cfg/cfg.go": "package cfg\n" +
+			"import \"math/rand\"\n" +
+			"type Config struct{ Values func(rand *rand.Rand) }\n",
+		"main.go": "package funcfield\nimport \"example/funcfield/cfg\"\nfunc Use() cfg.Config { return cfg.Config{Values: nil} }\n",
+	})
+
+	funcField := loadProductionForDir(t, funcFieldDir)
+	if got := declarationClosureImports([]*packages.Package{funcField}, nil, []string{"example/funcfield/cfg"}); len(got) != 1 || got[0] != "math/rand" {
+		t.Fatalf("a func-typed field's signature must surface math/rand; got %v", got)
+	}
+
+	// ONE LEVEL, and no layout recursion. Constructing mid.Outer needs deep.Deep's ASSEMBLY (the
+	// constructor names the parameter type) but NOT deep.Deep's own field types: the parameter
+	// defaults rather than being constructed, and a nested literal would be its own seed. Without
+	// this boundary `os.File`'s single `*file` field would drag internal/poll, syscall and the rest
+	// of os's private graph into every project that constructs one.
+	layoutDir := t.TempDir()
+	writeModuleFiles(t, layoutDir, map[string]string{
+		"go.mod":       "module example/layout\n\ngo 1.23\n",
+		"deep/deep.go": "package deep\nimport \"math/rand\"\ntype Deep struct{ R *rand.Rand }\n",
+		"mid/mid.go":   "package mid\nimport \"example/layout/deep\"\ntype Outer struct {\n\tN int\n\tD deep.Deep\n}\n",
+		"main.go":      "package layout\nimport \"example/layout/mid\"\nfunc Use() mid.Outer { return mid.Outer{N: 1} }\n",
+	})
+
+	layout := loadProductionForDir(t, layoutDir)
+	got = declarationClosureImports([]*packages.Package{layout}, nil, []string{"example/layout/mid"})
+
+	if len(got) != 1 || got[0] != "example/layout/deep" {
+		t.Fatalf("the field edge is one level — deep's assembly, not deep's own field types; got %v", got)
+	}
+
+	// COMPILE-EXCLUDED FILES SEED NOTHING (compress/gzip): a Phase-4D Example-only file is analyzed
+	// but never emitted, so the types it names are not in the compilation. Seeding from one handed
+	// gzip five references reached through `http.Request`'s fields. The positive control is the same
+	// file with the exclusion NOT applied.
+	excludedDir := t.TempDir()
+	writeModuleFiles(t, excludedDir, map[string]string{
+		"go.mod": "module example/excluded\n\ngo 1.23\n",
+		"cfg/cfg.go": "package cfg\n" +
+			"import \"math/rand\"\n" +
+			"type Config struct{ Rand *rand.Rand }\n",
+		"real.go": "package excluded\nfunc Real() int { return 1 }\n",
+		"example_test.go": "package excluded_test\n" +
+			"import \"example/excluded/cfg\"\n" +
+			"func ExampleWired() { _ = cfg.Config{Rand: nil} }\n",
+	})
+
+	excludedProduction := loadProductionForDir(t, excludedDir)
+	_, excludedExternal := loadTestVariantsForDir(t, excludedDir)
+
+	if excludedExternal == nil {
+		t.Fatal("the external Example-only variant was not loaded")
+	}
+
+	roots := []*packages.Package{excludedProduction, excludedExternal}
+	control := declarationClosureImports(roots, nil, []string{"example/excluded/cfg"})
+
+	if len(control) != 1 || control[0] != "math/rand" {
+		t.Fatalf("control: with the file compiled, its literal must surface math/rand; got %v", control)
+	}
+
+	excluded := selectCompileExcludedTestFiles(nil, excludedExternal)
+	if len(excluded) != 1 {
+		t.Fatalf("the Example-only file must be compile-excluded; got %v", excluded)
+	}
+
+	if got := declarationClosureImports(roots, excluded, []string{"example/excluded/cfg"}); len(got) != 0 {
+		t.Fatalf("a compile-excluded file names nothing in the compilation; got %v", got)
+	}
+
+	// A ROOT's own package is never an addition: its types compile into the test assembly (or bind
+	// through the production project reference the template already carries). For the EXTERNAL
+	// variant this is load-bearing rather than theoretical — go/packages names it `<pkg>_test`,
+	// which resolves to no importable package, so an external-test struct literal whose field type
+	// is declared beside it would fail the whole conversion with "package bytes_test is not in std".
+	selfDir := t.TempDir()
+	writeModuleFiles(t, selfDir, map[string]string{
+		"go.mod":  "module example/self\n\ngo 1.23\n",
+		"self.go": "package self\nfunc Value() int { return 1 }\n",
+		"self_test.go": "package self_test\n" +
+			"import (\n\t\"testing\"\n\n\t\"example/self\"\n)\n" +
+			"type inner struct{ v int }\n" +
+			"type harness struct{ i inner }\n" +
+			"func TestValue(t *testing.T) {\n" +
+			"\th := harness{i: inner{v: self.Value()}}\n" +
+			"\tif h.i.v != 1 {\n\t\tt.Fatal(\"bad\")\n\t}\n}\n",
+	})
+
+	selfProduction := loadProductionForDir(t, selfDir)
+	_, selfExternal := loadTestVariantsForDir(t, selfDir)
+
+	if selfExternal == nil {
+		t.Fatal("the external test variant was not loaded")
+	}
+
+	if got := declarationClosureImports([]*packages.Package{selfProduction, selfExternal}, nil, []string{selfProduction.PkgPath}); len(got) != 0 {
+		t.Fatalf("a root's own package is never a project reference; got %v", got)
+	}
+
+	// `testing` is never a walk SOURCE: it binds to the hand-owned core/testing shim, whose C#
+	// declarations share only names with Go's. Go's testing.T embeds a `common` holding io.Writer,
+	// time.Time, sync.RWMutex and more — walking it would hand those to EVERY test project, none of
+	// which the shim's two-field T names. Every -tests compilation names testing.T, so this is the
+	// widest over-inclusion the struct rule could possibly cause.
+	testingDir := t.TempDir()
+	writeModuleFiles(t, testingDir, map[string]string{
+		"go.mod": "module example/testingsource\n\ngo 1.23\n",
+		"src.go": "package testingsource\n" +
+			"import \"testing\"\n" +
+			"func Helper(t *testing.T) { t.Helper(); _ = testing.T{} }\n",
+	})
+
+	testingSource := loadProductionForDir(t, testingDir)
+	if got := declarationClosureImports([]*packages.Package{testingSource}, nil, []string{"testing", testingSource.PkgPath}); len(got) != 0 {
+		t.Fatalf("testing binds to the hand-owned shim and must never be walked; got %v", got)
 	}
 }
 

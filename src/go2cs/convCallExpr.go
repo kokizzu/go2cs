@@ -1608,6 +1608,18 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 							}
 
 							remainingArgs = strings.Join(parts, ", ")
+
+							// A DEFINED slice type (`type SortedMap []KeyValue`) is not `slice<E>`: its
+							// go2cs-gen wrapper declares `T(nint length, nint capacity = -1, nint low = 0)`
+							// and NO element-factory overload, so the lambda binds to `nint`
+							// (CS1660 at internal/fmtsort's `make(SortedMap, 0, n)` — which breaks that
+							// package AND, once its regenerated `.cs` is on disk, every banked package
+							// downstream of fmt). Build the factory-filled backing as the underlying
+							// slice<E> — the same value the unnamed form produces — and hand it to the
+							// wrapper's `T(slice<E> value)` ctor, which the generator always emits.
+							if _, isNamed := typeParam.(*types.Named); isNamed {
+								remainingArgs = fmt.Sprintf("new %s(%s)", v.getCSTypeName(sliceType), remainingArgs)
+							}
 						}
 					}
 				}

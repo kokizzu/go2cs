@@ -399,15 +399,16 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	referenceImports := append(append([]string{}, dependencies...), aliasReferenceImports(
 		aliasScanFiles, production.PkgPath, dependencies)...)
 
-	// Close the reference set under the C# interface-INHERITANCE edges the converter emits
-	// (interfaceBaseClosureImports): binding an interface the compilation NAMES needs its base
-	// interfaces' assemblies, and those edges — hash's `Hash : io.Writer` reached by every
-	// `GoImplement<…, hash_package.Hash64>` record, io/fs's `File : io.ReadCloser` — belong to the
-	// DECLARING package's import graph, so no test import and no alias `using` names them (CS0012).
-	// Both models feed the same walk; the already-referenced set it subtracts carries the production
-	// package's own path so a base declared there never becomes a self-reference.
-	referenceImports = append(referenceImports, interfaceBaseClosureImports(
-		[]*packages.Package{production, internal, external},
+	// Close the reference set under the C# DECLARATION edges the converter emits
+	// (declarationClosureImports): binding a type the compilation NAMES needs the assemblies its
+	// own declaration names — an interface's base interfaces (hash's `Hash : io.Writer` reached by
+	// every `GoImplement<…, hash_package.Hash64>` record, io/fs's `File : io.ReadCloser`) and a
+	// struct's field types (testing/quick's `Config` holds a `*rand.Rand`) — and those edges belong
+	// to the DECLARING package's import graph, so no test import and no alias `using` names them
+	// (CS0012). Both models feed the same walk; the already-referenced set it subtracts carries the
+	// production package's own path so an edge landing there never becomes a self-reference.
+	referenceImports = append(referenceImports, declarationClosureImports(
+		[]*packages.Package{production, internal, external}, compileExcluded,
 		append([]string{production.PkgPath}, referenceImports...))...)
 
 	testProjectName := projectName + ".tests.csproj"
@@ -2311,37 +2312,67 @@ func referenceScanTargets(line string) []string {
 	return targets
 }
 
-// interfaceBaseClosureImports returns the import paths a test project must reference IN ADDITION
-// to its computed direct set so that set is CLOSED under the C# interface-INHERITANCE edges the
-// converter emits — a class of dependency neither the import lists nor the B2c alias scan can see.
+// declarationClosureImports returns the import paths a test project must reference IN ADDITION to
+// its computed direct set so that set is CLOSED under the type-reference edges of the C#
+// DECLARATIONS of the types the compilation NAMES — a class of dependency neither the import lists
+// nor the B2c alias scan can see.
 //
-// Go interfaces satisfy structurally and compose by embedding; C# interfaces are nominal, so the
-// converter carries both shapes as C# inheritance at the interface declaration site
-// (getStructuralInterfaceBases): hash's `Hash` embeds io.Writer, io/fs's `File` merely lists
-// Read/Close, and both emit a converted declaration that NAMES an io base. Binding such an
-// interface in C# requires its base interfaces' assemblies to be referenced too — and that base
-// edge belongs to the DECLARING package's import graph, so it appears in NO test-file import and
-// NO alias `using`. The import-derived + alias-scan set (B2c) therefore misses it,
-// `DisableTransitiveProjectReferences` (B2b) hides the declaring package's own reference, and the
-// test compile fails CS0012 at every site that names the interface:
+// One rule: binding a converted type in C# requires the assemblies of the types that type's OWN
+// declaration names, and those names belong to the DECLARING package's import graph, so they appear
+// in NO test-file import and NO alias `using`. The import-derived + alias-scan set (B2c) misses
+// them, `DisableTransitiveProjectReferences` (B2b) hides the declaring package's own reference, and
+// the test compile fails CS0012. Two declaration edges carry it:
 //
-//   - the emitted conversion record — `[assembly: GoImplement<Hash, hash_package.Hash64>]`
-//     ('io_package.Writer' is defined in an assembly that is not referenced: hash/maphash,
-//     crypto/hmac, whose closures reach `hash` but never `io`),
-//   - the go2cs-gen adapter realizing that record (its class declaration lists the interface), and
-//   - every converted production/test source that names the interface in a signature.
+//   - INTERFACE BASES. Go interfaces satisfy structurally and compose by embedding; C# interfaces
+//     are nominal, so the converter carries both shapes as C# inheritance at the declaration site
+//     (getStructuralInterfaceBases): hash's `Hash` embeds io.Writer, io/fs's `File` merely lists
+//     Read/Close, and both emit a declaration that NAMES an io base. The failure shows up at the
+//     emitted conversion record (`[assembly: GoImplement<Hash, hash_package.Hash64>]` —
+//     'io_package.Writer' is defined in an unreferenced assembly: hash/maphash, crypto/hmac, whose
+//     closures reach `hash` but never `io`), at the go2cs-gen adapter realizing it, and at every
+//     converted source naming the interface in a signature.
 //
-// The alias scan cannot cover this because the recorded interface DOES bind by name — its
-// package IS referenced; what is missing is a package named inside the interface's own C#
-// declaration.
+//   - STRUCT FIELDS AT AN ELEMENT-BEARING COMPOSITE LITERAL. The converter renders such a literal
+//     as `new T(Field: …)` — a call to the FIELDWISE CONSTRUCTOR go2cs-gen generates for a
+//     `[GoType]` struct, whose parameter list spells out EVERY field's type, supplied or not.
+//     Binding that call therefore needs every field type's assembly. testing/quick's `Config` holds
+//     a `Rand *rand.Rand`, so image/draw's `quick.CheckEqual(…, &quick.Config{MaxCountScale: 10})`
+//     fails `CS0012 … 'rand_package.Rand' … assembly that is not referenced` at the
+//     `new quick.Config(MaxCountScale: 10D)` expression, with math/rand in no import list on either
+//     side. No interface closure can reach it — `Rand` is a STRUCT.
 //
-// The closure starts from the interface types the loaded compilation units actually NAME (both test
-// variants and the production package), never from whole packages: C# only needs a base interface's
-// assembly when the derived interface is BOUND, and walking every exported interface of every
-// referenced package would add io to almost the whole corpus through `fmt.State`'s structural
-// io.Writer base — a reference no project that never names `fmt.State` requires. From each named
-// interface the walk follows its base candidates TRANSITIVELY (`b.B : a.A : io.Writer` needs both a
-// and io), since a base's own declaration must bind in turn.
+// Neither scan covers these because the named type itself DOES bind: its package IS referenced.
+// What is missing is a package named inside that type's own C# declaration.
+//
+// MINIMALITY — three gates, because over-including is its own defect (every extra reference is
+// churn across the banked corpus and a chance at a duplicate-type conflict):
+//
+//   - Seeds come from the files the test assembly actually COMPILES. A Phase-4D-excluded
+//     Example/Benchmark-only file (selectCompileExcludedTestFiles) is analyzed but never emitted, so
+//     it names nothing in the compilation: seeding from it handed compress/gzip the context,
+//     crypto/tls, mime/multipart, net/http and net/url references reached through
+//     `http.Request`'s fields — from an example_test.go that is not compiled at all.
+//   - The interface walk starts from the types those files NAME, never from whole packages. C#
+//     needs a base interface's assembly only when the derived interface is BOUND, and walking every
+//     exported interface of every referenced package would hand io to almost the whole corpus
+//     through `fmt.State`'s structural io.Writer base — a reference no project that never names
+//     `fmt.State` requires.
+//   - The struct-field edge fires only where an ELEMENT-BEARING composite literal constructs the
+//     struct, because only that emission names the field types. Measured against the corpus in two
+//     steps: eleven banked packages hold `sync.Once`/`sync.Map`/`reflect.Value` VALUES (strconv's
+//     package-level `atofOnce`, encoding/binary's `reflect.ValueOf`) and compile clean today with
+//     no sync/atomic or internal/abi reference, so mere value use demands nothing; three more
+//     (encoding/binary, mime, testing/quick) construct those same types with an EMPTY literal —
+//     `once = sync.Once{}`, `return reflect.Value{}, false` — which converts to
+//     `new Δsync.Once(nil)`, go2cs-gen's dedicated nil constructor, naming no field either. A
+//     one-level edge suffices for the same reason: the fieldwise constructor's parameters are
+//     `default` unless supplied, and a NESTED literal is itself a seed.
+//
+// `testing` is skipped as a walk SOURCE (closureWalkable): it binds to the hand-owned core/testing
+// shim per F15b, whose C# declarations are authored by hand and share only NAMES with Go's — Go's
+// `testing.T` embeds a `common` holding io.Writer, time.Time, sync.RWMutex and a dozen more, none
+// of which the shim's two-field `T` names, so inferring C# edges from the Go declaration there is
+// simply invalid. Nothing is lost: the shim's reference is fixed in the project template.
 //
 // The per-interface match reproduces the CANDIDATE gates the converter runs at each declaration
 // site (the same Exported / non-alias / non-generic / method-set / strictly-fewer-methods /
@@ -2351,7 +2382,7 @@ func referenceScanTargets(line string) []string {
 // Only the declaring package's own IMPORTS are scanned, so a same-package base contributes nothing
 // new and needs no separate visit: an interface implements its base's bases too, so those candidates
 // are found directly. Output is a sorted set, so the map-ordered walk stays deterministic.
-func interfaceBaseClosureImports(roots []*packages.Package, referenced []string) []string {
+func declarationClosureImports(roots []*packages.Package, compileExcluded map[string]bool, referenced []string) []string {
 	found := HashSet[string]{}
 	seen := NewHashSet(referenced)
 	visited := map[*types.Named]bool{}
@@ -2359,7 +2390,7 @@ func interfaceBaseClosureImports(roots []*packages.Package, referenced []string)
 	var queue []*types.Named
 
 	enqueue := func(named *types.Named) {
-		if named == nil || visited[named] {
+		if named == nil || visited[named] || !closureWalkable(named) {
 			return
 		}
 
@@ -2371,9 +2402,61 @@ func interfaceBaseClosureImports(roots []*packages.Package, referenced []string)
 		queue = append(queue, named)
 	}
 
+	// reach records the assembly a named type the compilation must BIND lives in. Seeds never go
+	// through it — their packages are already referenced by construction; only a package named by
+	// a walked DECLARATION is an addition.
+	reach := func(named *types.Named) {
+		object := named.Obj()
+
+		if object == nil || object.Pkg() == nil {
+			return
+		}
+
+		path := object.Pkg().Path()
+
+		if seen.Contains(path) {
+			return
+		}
+
+		seen.Add(path)
+		found.Add(path)
+	}
+
+	// A ROOT's own types are compiled into the test assembly (or, for the production package under
+	// the reference model, bound through the colocated project reference the template already
+	// carries), so an edge landing back on one is never a project reference. The EXTERNAL variant
+	// makes this load-bearing rather than theoretical: its go/packages PkgPath is the synthetic
+	// `<pkg>_test`, which resolves to no importable package at all — a `bytes_test` struct literal
+	// whose field type is declared beside it would fail the conversion outright ("package
+	// bytes_test is not in std"), by design (F14b: a dependency that cannot resolve is loud).
 	for _, root := range roots {
-		for _, named := range namedTypesReferenced(root) {
+		if root != nil {
+			seen.Add(root.PkgPath)
+		}
+	}
+
+	for _, root := range roots {
+		seeds := referencedTypeSeeds(root, compileExcluded)
+
+		for _, named := range seeds.named {
 			enqueue(named)
+		}
+
+		// The fieldwise-constructor edge. One level, and never recursive on its own account: an
+		// interface field still joins the base walk, and a nested literal is its own seed.
+		for _, named := range seeds.constructed {
+			structType, isStruct := named.Underlying().(*types.Struct)
+
+			if !isStruct || !closureWalkable(named) {
+				continue
+			}
+
+			for i := range structType.NumFields() {
+				for _, mentioned := range namedTypesIn(structType.Field(i).Type()) {
+					reach(mentioned)
+					enqueue(mentioned)
+				}
+			}
 		}
 	}
 
@@ -2382,16 +2465,8 @@ func interfaceBaseClosureImports(roots []*packages.Package, referenced []string)
 		queue = queue[1:]
 
 		for _, base := range interfaceBaseCandidates(named) {
+			reach(base)
 			enqueue(base)
-
-			path := base.Obj().Pkg().Path()
-
-			if seen.Contains(path) {
-				continue
-			}
-
-			seen.Add(path)
-			found.Add(path)
 		}
 	}
 
@@ -2401,14 +2476,99 @@ func interfaceBaseClosureImports(roots []*packages.Package, referenced []string)
 	return result
 }
 
-// namedTypesReferenced returns every NAMED type the loaded package's type information mentions —
-// the types its converted C# can name, which is what decides whether a base assembly is needed.
-func namedTypesReferenced(pkg *packages.Package) []*types.Named {
-	if pkg == nil || pkg.TypesInfo == nil {
-		return nil
+// closureWalkable reports whether declarationClosureImports may read named's Go DECLARATION for
+// reference edges. `testing` is excluded: it binds to the hand-owned core/testing shim, whose C#
+// declarations are authored by hand rather than converted from the Go declaration this walk would
+// read (see declarationClosureImports).
+func closureWalkable(named *types.Named) bool {
+	object := named.Obj()
+
+	return object != nil && object.Pkg() != nil && object.Pkg().Path() != "testing"
+}
+
+// namedTypesIn returns every NAMED type a type expression mentions — what the C# rendering of that
+// expression spells out, and therefore what must bind. It descends through the composite forms the
+// converter renders as generic instantiations or delegates (ж<T>, slice<T>, array<T>, map<K,V>,
+// channel<T>, Func/Action<…>) and through a generic type's ARGUMENTS, but deliberately NOT through
+// a named type's own underlying: whether that declaration is walked in turn is the caller's
+// recursion decision (see declarationClosureImports' minimality note).
+func namedTypesIn(typ types.Type) []*types.Named {
+	var result []*types.Named
+
+	visited := map[types.Type]bool{}
+
+	var walk func(types.Type)
+
+	walk = func(current types.Type) {
+		if current == nil || visited[current] {
+			return
+		}
+
+		visited[current] = true
+
+		switch typed := types.Unalias(current).(type) {
+		case *types.Named:
+			result = append(result, typed)
+
+			for i := range typed.TypeArgs().Len() {
+				walk(typed.TypeArgs().At(i))
+			}
+		case *types.Pointer:
+			walk(typed.Elem())
+		case *types.Slice:
+			walk(typed.Elem())
+		case *types.Array:
+			walk(typed.Elem())
+		case *types.Chan:
+			walk(typed.Elem())
+		case *types.Map:
+			walk(typed.Key())
+			walk(typed.Elem())
+		case *types.Signature:
+			for i := range typed.Params().Len() {
+				walk(typed.Params().At(i).Type())
+			}
+
+			for i := range typed.Results().Len() {
+				walk(typed.Results().At(i).Type())
+			}
+		case *types.Struct: // an ANONYMOUS struct field type renders its own field types inline
+			for i := range typed.NumFields() {
+				walk(typed.Field(i).Type())
+			}
+		case *types.Interface: // likewise an anonymous interface: its method signatures
+			for i := range typed.NumMethods() {
+				walk(typed.Method(i).Type())
+			}
+		}
 	}
 
-	var result []*types.Named
+	walk(typ)
+
+	return result
+}
+
+// typeSeeds carries the two seed sets declarationClosureImports takes from one compilation unit:
+// every named type its compiled files MENTION (what an interface base edge starts from) and the
+// named types a composite literal CONSTRUCTS (what the fieldwise-constructor edge starts from).
+type typeSeeds struct {
+	named       []*types.Named
+	constructed []*types.Named
+}
+
+// referencedTypeSeeds collects those seeds from the files the test assembly actually COMPILES.
+// Phase-4D compile-excluded files (selectCompileExcludedTestFiles) are skipped: they are analyzed
+// so their declarations still reach the manifest, but no C# is emitted for them, so they name
+// nothing the compilation must bind — seeding from one handed compress/gzip five references its
+// example_test.go reached through `http.Request` (see declarationClosureImports' minimality note).
+// Walking the syntax tree rather than iterating the TypesInfo maps is what makes the file scoping
+// possible at all, and it makes the seed ORDER deterministic as a side effect.
+func referencedTypeSeeds(pkg *packages.Package, compileExcluded map[string]bool) typeSeeds {
+	var seeds typeSeeds
+
+	if pkg == nil || pkg.TypesInfo == nil {
+		return seeds
+	}
 
 	add := func(typ types.Type) {
 		if typ == nil {
@@ -2416,27 +2576,55 @@ func namedTypesReferenced(pkg *packages.Package) []*types.Named {
 		}
 
 		if named, ok := types.Unalias(typ).(*types.Named); ok {
-			result = append(result, named)
+			seeds.named = append(seeds.named, named)
 		}
 	}
 
-	for _, typeAndValue := range pkg.TypesInfo.Types {
-		add(typeAndValue.Type)
-	}
-
-	for _, object := range pkg.TypesInfo.Uses {
-		if object != nil {
-			add(object.Type())
+	for i, file := range pkg.Syntax {
+		if i < len(pkg.CompiledGoFiles) && compileExcluded[filepath.Clean(pkg.CompiledGoFiles[i])] {
+			continue
 		}
+
+		ast.Inspect(file, func(node ast.Node) bool {
+			switch typed := node.(type) {
+			case *ast.Ident:
+				if object := pkg.TypesInfo.Uses[typed]; object != nil {
+					add(object.Type())
+				}
+
+				if object := pkg.TypesInfo.Defs[typed]; object != nil {
+					add(object.Type())
+				}
+			case *ast.CompositeLit:
+				// An IMPLICIT element literal ([]T{{…}}) carries no Type expression of its own;
+				// go/types still records the composite's type, which is the one being constructed.
+				literalType := pkg.TypesInfo.Types[typed].Type
+
+				add(literalType)
+
+				// Only an ELEMENT-BEARING literal calls the fieldwise constructor. The EMPTY
+				// literal — Go's zero value — converts to `new Δsync.Once(nil)`, go2cs-gen's
+				// dedicated nil constructor, whose signature names no field at all; that is why
+				// mime's `once = sync.Once{}` and testing/quick's `return reflect.Value{}, false`
+				// compile clean today with no reference to sync/atomic or internal/abi.
+				if len(typed.Elts) == 0 {
+					break
+				}
+
+				if named, ok := types.Unalias(literalType).(*types.Named); ok {
+					seeds.constructed = append(seeds.constructed, named)
+				}
+			}
+
+			if expression, ok := node.(ast.Expr); ok {
+				add(pkg.TypesInfo.Types[expression].Type)
+			}
+
+			return true
+		})
 	}
 
-	for _, object := range pkg.TypesInfo.Defs {
-		if object != nil {
-			add(object.Type())
-		}
-	}
-
-	return result
+	return seeds
 }
 
 // interfaceBaseCandidates returns the exported interfaces from the DECLARING package's imports that
