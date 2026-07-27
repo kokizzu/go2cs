@@ -503,6 +503,13 @@ button {
   overflow-wrap: anywhere;
 }
 
+/* A picture keeps its natural size and stays inline, so the surrounding
+   program output flows around it exactly as the text it replaces did. */
+#output-view img {
+  max-width: 100%;
+  vertical-align: top;
+}
+
 .output-system {
   color: var(--output-system);
 }

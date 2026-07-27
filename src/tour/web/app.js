@@ -375,17 +375,50 @@
 
   function renderOutputText(stage) {
     const text = stage.output ?? "(no output)";
-    const systemStart = stage.id === "run" ? text.lastIndexOf("Program exited") : -1;
     outputView.replaceChildren();
-    if (systemStart < 0) {
+    if (stage.id !== "run") {
       outputView.textContent = text;
       return;
     }
-    outputView.append(document.createTextNode(text.slice(0, systemStart)));
+    const systemStart = text.lastIndexOf("Program exited");
+    appendProgramOutput(systemStart < 0 ? text : text.slice(0, systemStart));
+    if (systemStart < 0) return;
     const system = document.createElement("span");
     system.className = "output-system";
     system.textContent = text.slice(systemStart);
     outputView.append(system);
+  }
+
+  // golang.org/x/tour/pic writes a picture as a single base64 PNG line prefixed
+  // with IMAGE:, which the Tour renders as a picture rather than as text.
+  // Everything the program prints around such a line stays ordinary output.
+  function appendProgramOutput(text) {
+    const imageLine = /^IMAGE:([A-Za-z0-9+/]+={0,2})[^\S\n]*$/gm;
+    let index = 0;
+    for (const match of text.matchAll(imageLine)) {
+      const image = programImage(match[1]);
+      if (!image) continue;
+      outputView.append(document.createTextNode(text.slice(index, match.index)), image);
+      index = match.index + match[0].length;
+    }
+    outputView.append(document.createTextNode(text.slice(index)));
+  }
+
+  function programImage(payload) {
+    let decoded;
+    try {
+      decoded = atob(payload);
+    } catch {
+      // A line the program wrote itself, not a picture. Leave it readable.
+      return null;
+    }
+    // Only a complete PNG becomes a picture, so an unrelated or partial payload
+    // stays readable as text rather than rendering as a broken image.
+    if (!decoded.startsWith("\x89PNG\r\n\x1a\n") || !decoded.endsWith("IEND\xae\x42\x60\x82")) return null;
+    const image = document.createElement("img");
+    image.src = `data:image/png;base64,${payload}`;
+    image.alt = "Picture written by the program";
+    return image;
   }
 
   function highlightCSharp(source) {

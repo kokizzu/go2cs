@@ -13,6 +13,8 @@ The interface is deliberately parallel:
 - The **Runtime** selector chooses NuGet packages, a deployed stdlib, or live
   checkout source without changing the Go lesson.
 - **Transpile**, **Build**, and **.NET Run** keep their output separate.
+- A picture written by `golang.org/x/tour/pic` appears in **.NET Run** as an
+  image, as it does in the Tour.
 - Navigating to a Tour page converts it automatically.
 - Editing Go marks the C# stale until **Convert** is selected.
 - **Run with Go** optionally converts, builds, and runs .NET whenever the Go
