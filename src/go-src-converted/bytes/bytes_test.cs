@@ -1614,7 +1614,7 @@ internal static predicate not(predicate p) {
         var pʗ1 = p;
     return new predicate(
         (rune r) => !pʗ1.f(r),
-        "not " + p.name
+        "not "u8 + p.name
     );
 }
 

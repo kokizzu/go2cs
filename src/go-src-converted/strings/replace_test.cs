@@ -216,7 +216,7 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
         "\x00", "[00]");
     testCases = append(testCases,
         new TestReplacer_testCase(genAll, allString, "[all]"u8),
-        new TestReplacer_testCase(genAll, ((@string)(new byte[]{0x61, 0xff})) + allString + "\x00", "a[ff][all][00]"u8),
+        new TestReplacer_testCase(genAll, ((@string)(new byte[]{0x61, 0xff})) + allString + "\x00"u8, "a[ff][all][00]"u8),
         new TestReplacer_testCase(genAll, ""u8, ""u8));
     // Test cases with empty old strings.
     var blankToX1 = NewReplacer(""u8, "X");

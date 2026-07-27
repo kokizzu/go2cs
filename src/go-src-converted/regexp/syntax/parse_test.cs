@@ -504,7 +504,7 @@ internal static slice<@string> invalidRegexps = new @string[]{
     "((((((((((x{2}){2}){2}){2}){2}){2}){2}){2}){2}){2})"u8,
     strings.Repeat("("u8, 1000) + strings.Repeat(")"u8, 1000),
     strings.Repeat("(?:"u8, 1000) + strings.Repeat(")*"u8, 1000),
-    "(" + strings.Repeat("(xx?)"u8, 1000) + "){1000}",
+    "("u8 + strings.Repeat("(xx?)"u8, 1000) + "){1000}"u8,
     strings.Repeat("(xx?){1000}"u8, 1000),
     strings.Repeat(@"\pL"u8, 27000)
 }.slice();
