@@ -84,6 +84,37 @@ function Write-Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 if (-not (Test-Path $slnx)) { throw "Solution not found: $slnx" }
 if (-not (Test-Path $versionProps)) { throw "version.props not found: $versionProps" }
 
+# --- Embedded stdlib-metadata staleness gate ------------------------------------------------------
+# go2cs/stdlib-metadata.txt is the converter's embedded record of what every converted stdlib package
+# EXPORTS across assemblies (its GoTypeAlias aliases and GoImplement records). Under -recurse=nuget the
+# converter reads it INSTEAD of the package_info.cs it can no longer find on disk, so it must describe
+# the very tree this script is about to pack. If go-src-converted's exported surface changed and the
+# asset was not regenerated, the published packages and the converter disagree -- and the damage lands
+# in END USERS' builds (missing `global using` aliases, or a duplicate/absent interface adapter), not
+# here. Verify BEFORE anything is built, so the run fails at second zero rather than after a full
+# Release build. Regenerate with `go generate .` from src\go2cs and commit the result.
+$converterDir = Join-Path $src 'go2cs'
+
+if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
+    throw "The Go toolchain is required to verify go2cs\stdlib-metadata.txt is in sync with go-src-converted before publishing."
+}
+
+Write-Step "Verifying stdlib-metadata.txt matches go-src-converted"
+Push-Location $converterDir
+
+try {
+    & go test -count=1 -run TestStdLibMetadataInSync . | Out-Host
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "STALE EMBEDDED METADATA: go2cs\stdlib-metadata.txt does not match src\go-src-converted. " +
+              "Run ``go generate .`` from src\go2cs, commit the regenerated asset, then re-run this script. " +
+              "Publishing now would ship packages the converter's -recurse=nuget mode describes incorrectly."
+    }
+}
+finally {
+    Pop-Location
+}
+
 # --- Build-number bump (raw-text edit preserves comments/formatting) -----------------------------
 # Each publish should be a NEW version, so the build number is bumped by default when -Push is given
 # and left alone for a pack-only run. An explicit -BumpBuild / -BumpBuild:$false always wins -- use

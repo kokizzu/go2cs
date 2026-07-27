@@ -175,6 +175,86 @@ The same collision detection must see GOROOT-VENDORED namespaces. `visitImportSp
 
 **A DOTTED build tag (`goexperiment.X`, `amd64.vN`) is matched against the host toolchain's tool tags.** The converter re-checks each file's `//go:build` constraint after `go/packages` has already loaded it (to drop files for the wrong GOOS/GOARCH when converting cross-platform). Its evaluator only handled bare identifiers (`linux`, `amd64`), so a *dotted* tag parsed as a selector and fell through to `false`. That is wrong for an experiment enabled BY DEFAULT: `coverageredesign`, `regabiwrappers`, and `regabiargs` are in the host's `go/build` `ToolTags`, so `go/packages` loaded their `//go:build goexperiment.X` `_on.go` files — but the re-check then re-EXCLUDED them (the selector → `false`), dropping the package-level consts (`testing`'s `goexperiment.CoverageRedesign`, CS0117 ×4). The evaluator now resolves a `*ast.SelectorExpr` tag by membership in `build.Default.ToolTags` — so an enabled experiment's `_on.go` survives and a disabled one's `!goexperiment.X` `_off.go` survives, exactly the one `go/packages` chose. Blast radius is only `internal/goexperiment` (the sole stdlib package whose file selection flipped). **Guard owed** — the fix depends on the host toolchain's active tool tags, which the `go2cs/*` behavioral harness cannot express portably; validated by the reconvert A/B (only `internal/goexperiment` changes) and the [census](Glossary.md#census) (the consts appear, `testing`'s CS0117 clear).
 
+### A NuGet-referenced standard library carries its exported metadata IN THE CONVERTER
+
+Everything above — the imported-type-alias `global using` round-trip, and the foreign `GoImplement`
+records that tell a consumer its dependency's own assembly already implements an interface — is learned
+by **opening the referenced package's `package_info.cs` and scraping the `[assembly: …]` lines out of it**
+(`loadImportedTypeAliases` / `loadPackageImplements`, `importOperations.go`). That file is converted
+*source*, found at `$(go2csPath)core\<pkg>`, i.e. wherever `deploy-core` staged the standard library.
+
+`-recurse=nuget` removes exactly that file. In NuGet mode the standard library is consumed as
+pre-compiled `go.<pkg>` assemblies, so there is no converted-source tree on disk — and there never will
+be, since skipping the source deployment is the whole point of the mode. The scrape then finds nothing
+and the converter falls through to `foreignDerivedTypeAliases`, which recovers *some* aliases from the
+dependency's own Go declarations and **no implement records at all**. Two things go wrong, both in the
+CONSUMING package:
+
+* its `<ImportedTypeAliases>` block loses the dependency's exported aliases
+  (`global using syscallꓸHandle = go.syscall_package.ΔHandle`, `netꓸAddr`, `timeꓸLocation`, …); and
+* not knowing that `syscall`'s assembly already implements `error` on `syscall.Errno`, it **re-declares
+  the pair locally** — `[assembly: GoImplement<syscall_package.Errno, error>]` — and wraps the value at
+  the cast site in a locally-generated adapter (`new syscall_Errnoᴠerror(e)`) instead of converting
+  implicitly.
+
+`golang.org/x/sys/windows` shows both at once: it Go-aliases `type Errno = syscall.Errno`, so the two
+spellings `Errno` and `syscall_package.Errno` were each recorded, resolved to the same type, and made
+`ImplementGenerator` emit the `syscall_Errnoᴠerror` adapter **twice** — CS0102 / CS0111 ×5 / CS8646.
+That single duplicated adapter is what made the README's `fatih/color` walkthrough unbuildable under
+`-recurse=nuget`, and it is why that step documented a source deployment as required.
+
+**Note what is NOT the cause.** The `go2cs-gen` generators are not reference-kind sensitive: a real
+MSBuild build hands a `<ProjectReference>` to the compiler as a `PortableExecutableReference` exactly
+like a `<PackageReference>`, and the generators read foreign *type shape* from symbols either way (see
+`FindTypeSymbol`). Both modes ran the same generator over the same kind of reference; the emitted C#
+they were given differed, because the **converter's** cross-package knowledge differed.
+
+**The conversion.** The exported metadata is a static, per-package property of the *published* assemblies,
+so it travels with the converter. `internal/genstdlibmeta` captures the `<ExportedTypeAliases>` section and
+every `GoImplement` record of all 302 `src/go-src-converted/**/package_info.cs` into
+`src/go2cs/stdlib-metadata.txt` (~128 KB), which `stdlibMetadata.go` embeds via `//go:embed`. When a
+stdlib dependency's `package_info.cs` is absent, the converter reads its recorded lines through the very
+same parsers (`parseExportedTypeAliasLines` / `parseExportedPointerImplementLines` /
+`parseExportedValueImplementLines`, refactored off the file read for this) and proceeds identically. The
+asset is generated from the same tree `push-nuget.ps1` packs, so the embedded record and the published
+assemblies are always one commit's output.
+
+Reading the record is gated on `PackageInfo.PublishedStdLib` — `isStdLib && nugetRefs && !convertStdLib` —
+and this gate is a **soundness precondition, not conservatism**. The record describes
+`go-src-converted`; substituting it is only correct when `go-src-converted` is what the build actually
+references. Under `-recurse=nuget` that is guaranteed. A `$(go2csPath)` deploy root may hold the baseline
+`core` stub instead (`deploy-core stub`), whose exported surface genuinely differs, and the stdlib
+self-conversion is *building* the assemblies being published. Both keep the derive-from-declarations
+fallback. Because `-recurse=nuget` is off by default, no other conversion path changes — CNR is
+byte-identical across the behavioral corpus.
+
+The result is exact rather than approximate: converting the README's `colordemo` with `-recurse=nuget`
+against an empty `$(go2csPath)` now emits **byte-identical** C# to the same app converted with
+`-recurse` against a full `deploy-core stdlib` root, and the NuGet-referencing solution builds with 0
+errors and runs with output matching `go run`. `syscall.Errno` is not a special case — a probe returning
+six foreign concrete types as foreign interfaces recovered 14 imported aliases and dropped three spurious
+re-declarations spanning both record forms (`io/fs`'s `PathError`→`error` **pointer** adapter, `sort`'s
+`IntSlice`→`Interface` **value** implement, and `syscall.Errno`), leaving only the one record the
+consumer legitimately owns (`os.File` → `io.Reader`), exactly as the source-referencing conversion does.
+
+Five guards (`stdlibMetadata_test.go`). `TestStdLibMetadataAssetFileName` pins the generator's output name
+against the `//go:embed` target (and its `package_info.cs` constant against the converter's), so the two
+halves can never write and read different files. `TestStdLibMetadataInSync` regenerates the asset in-process from
+`src/go-src-converted` and fails on drift — a stale asset would hand `-recurse=nuget` the *previous*
+standard library's records while the published assemblies carry the current ones, surfacing only as
+downstream C# errors. `TestStdLibExportedMetadataReadsThroughPackageInfoParsers` pins that the embedded
+lines feed the shared parsers (and that a `Pointer`-form record does not leak into the value implements).
+`TestPublishedStdLibScope` pins the three-way gate above. `TestRecurseNuGetResolvesForeignImplements`
+converts a module returning a `syscall.Errno` as an `error` with no converted stdlib on disk and asserts
+the consumer records nothing and emits no local adapter — it fails on both assertions with the record
+disabled.
+
+**Residual limitation.** The asset is regenerated by `go generate .` from `src/go2cs`, so a change to the
+converted standard library must be re-banked into `src/go-src-converted` before it reaches
+`-recurse=nuget` consumers. `TestStdLibMetadataInSync` makes that a test failure rather than a silent
+mismatch, but it can only compare against the *committed* tree — it cannot detect that the committed tree
+is itself older than the published packages.
+
 ### Standard-library solution file (`.slnx`)
 
 A whole-standard-library run (`go2cs -stdlib`) also emits a Visual Studio solution — **`go-src-converted.slnx`** — at the output root (`-go2cspath`), so the freshly converted stdlib is openable / buildable as **one unit** immediately after a run, rather than depending on a hand-maintained solution that drifts. It is the auto-generated counterpart of the committed `src/go-src-converted.slnx`, and its XML mirrors the format of `src/go2cs.slnx` (a `<Configurations>` block plus `<Folder>`/`<Project>` entries, CRLF line endings, no BOM). It references:

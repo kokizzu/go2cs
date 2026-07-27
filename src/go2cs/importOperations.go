@@ -20,7 +20,16 @@ import (
 
 // PackageInfo represents information about a package
 type PackageInfo struct {
-	IsStdLib         bool
+	IsStdLib bool
+	// PublishedStdLib marks a standard-library import that this conversion references as a
+	// PUBLISHED go.<pkg> NuGet assembly rather than as converted source (-recurse=nuget). Such a
+	// dependency has no package_info.cs on disk to read its exported aliases and GoImplement
+	// records from, so those come from the converter's embedded record of the tree those packages
+	// are built from (stdlibMetadata.go). The flag is what makes that substitution SOUND: the
+	// record describes src/go-src-converted, which under this mode is exactly what is referenced.
+	// It is deliberately NOT set for a $(go2csPath) source deployment, whose staged tree may be
+	// the baseline core stub instead.
+	PublishedStdLib  bool
 	PackageName      string
 	RootPackageName  string
 	SourceDir        string
@@ -279,7 +288,11 @@ func getImportPackageInfo(importPaths []string, options Options) map[string]Pack
 		targetDir = strings.ReplaceAll(targetDir, "$(go2csPath)", options.go2csPath+string(os.PathSeparator))
 
 		result[importPath] = PackageInfo{
-			IsStdLib:         isStdLib,
+			IsStdLib: isStdLib,
+			// Mirrors the emitNuGet gate in writeProjectFile: -recurse=nuget turns stdlib imports
+			// into go.<pkg> PackageReferences, EXCEPT during the stdlib self-conversion, whose
+			// packages must reference each other as source to build the assemblies being published.
+			PublishedStdLib:  isStdLib && options.nugetRefs && !options.convertStdLib,
 			PackageName:      packageName,
 			RootPackageName:  rootPackageNameFromPathParts(importPathParts),
 			SourceDir:        sourceDir,
@@ -513,14 +526,34 @@ func loadImportedTypeAliases(info PackageInfo) {
 	packageLock.Unlock()
 
 	// The dependency has not been converted into this output root, so there is no package_info.cs
-	// carrying its exported type aliases. Most of them are still knowable — they are a function of
-	// the dependency's OWN declarations — so derive and apply those, giving a single-package
-	// conversion the same foreign spelling a whole-stdlib run produces: its name-collision renames
-	// (an unrenamed `time.Second` binds the `Second(this Time)` method group and does not compile)
-	// and its re-exported type aliases (`os.FileMode` is a using alias to `go.io.fs_package.FileMode`,
-	// not a member of `os_package` — CS0426). See foreignNameCollisions.go and foreignTypeAliases.go
-	// for the invariant and for what deliberately stays underivable.
+	// carrying its exported type aliases.
 	if _, err := os.Stat(packageInfoFile); os.IsNotExist(err) {
+		// A PUBLISHED standard-library dependency (-recurse=nuget: the assembly referenced is the
+		// go.<pkg> package built from src/go-src-converted) has no converted source anywhere on
+		// disk, and never will — but the metadata that source would have carried is recorded in
+		// the converter itself, captured from that same tree. Read it, so a NuGet-referencing
+		// conversion resolves foreign aliases and foreign GoImplement records exactly as a
+		// source-referencing one does. Without it the converter cannot see that the dependency's
+		// OWN assembly already implements an interface on one of its types, and re-declares the
+		// pair locally in this package — go2cs-gen then emits a second, duplicate adapter class
+		// (syscall.Errno → error, consumed by golang.org/x/sys/windows: CS0102/CS0111/CS8646).
+		if info.PublishedStdLib {
+			if lines, ok := stdLibExportedMetadata(info.PackageName); ok {
+				if results, parseErr := parseExportedTypeAliasLines(lines); parseErr == nil {
+					applyExportedTypeAliases(results, info, false)
+					loadPackageImplementLines(lines, info.RootPackageName)
+					return
+				}
+			}
+		}
+
+		// Most exported aliases are still knowable — they are a function of the dependency's OWN
+		// declarations — so derive and apply those, giving a single-package conversion the same
+		// foreign spelling a whole-stdlib run produces: its name-collision renames (an unrenamed
+		// `time.Second` binds the `Second(this Time)` method group and does not compile) and its
+		// re-exported type aliases (`os.FileMode` is a using alias to `go.io.fs_package.FileMode`,
+		// not a member of `os_package` — CS0426). See foreignNameCollisions.go and
+		// foreignTypeAliases.go for the invariant and for what deliberately stays underivable.
 		applyExportedTypeAliases(foreignDerivedTypeAliases(importedPackageSources[filepath.Clean(info.SourceDir)]), info, true)
 		return
 	}
@@ -636,11 +669,24 @@ func applyExportedTypeAliases(results [][2]string, info PackageInfo, derived boo
 // locally): an EXTERNAL test file's cast of a production type must reference the seeded
 // adapter through the aliased qualifier instead of re-recording the pair (B4/B5).
 func loadPackageImplements(packageInfoFile string, rootPackageName string) {
+	lines, err := readPackageInfoLines(packageInfoFile)
+
+	if err != nil {
+		return
+	}
+
+	loadPackageImplementLines(lines, rootPackageName)
+}
+
+// loadPackageImplementLines is loadPackageImplements over an already-read line set, so the
+// embedded standard-library metadata record can seed the same sets as a package_info.cs read
+// from disk (see stdlibMetadata.go).
+func loadPackageImplementLines(lines []string, rootPackageName string) {
 	// Record the package's POINTER-sourced GoImplement pairs: their generated adapter
 	// classes (TжIface) are public members of the foreign package class, so a cross-package
 	// pointer-to-interface conversion here can reference them by qualified name (io/fs's
 	// PathErrorжerror consumed by os - CS0029 x38).
-	if pairs, err := parseExportedPointerImplements(packageInfoFile); err == nil {
+	if pairs, err := parseExportedPointerImplementLines(lines); err == nil {
 		sanitizedRootName := getSanitizedIdentifier(rootPackageName)
 
 		packageLock.Lock()
@@ -656,7 +702,7 @@ func loadPackageImplements(packageInfoFile string, rootPackageName string) {
 	// struct's own assembly implements the interface, so a value cast here converts
 	// implicitly and needs no local adapter (see the both-foreign value arm in
 	// convertToInterfaceType).
-	if pairs, err := parseExportedValueImplements(packageInfoFile); err == nil {
+	if pairs, err := parseExportedValueImplementLines(lines); err == nil {
 		sanitizedRootName := getSanitizedIdentifier(rootPackageName)
 
 		packageLock.Lock()
@@ -707,9 +753,11 @@ func preloadImportedTypeAliases(files []FileEntry, options Options) {
 	}
 }
 
-// parseExportedTypeAliases parses a package info file and extracts the GoTypeAlias
-// entries as tuples of (source, destination) strings
-func parseExportedTypeAliases(packageInfoFile string) ([][2]string, error) {
+// readPackageInfoLines reads a package info file into its lines. Splitting the file read out
+// of the three parsers below lets them run over an in-memory line set too — the embedded
+// standard-library metadata record (stdlibMetadata.go), which carries the very same lines for
+// a dependency whose converted source is not on disk (-recurse=nuget).
+func readPackageInfoLines(packageInfoFile string) ([]string, error) {
 	file, err := os.Open(packageInfoFile)
 
 	if err != nil {
@@ -718,8 +766,35 @@ func parseExportedTypeAliases(packageInfoFile string) ([][2]string, error) {
 
 	defer file.Close()
 
+	var lines []string
+
 	scanner := bufio.NewScanner(file)
 
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return lines, nil
+}
+
+// parseExportedTypeAliases parses a package info file and extracts the GoTypeAlias
+// entries as tuples of (source, destination) strings
+func parseExportedTypeAliases(packageInfoFile string) ([][2]string, error) {
+	lines, err := readPackageInfoLines(packageInfoFile)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return parseExportedTypeAliasLines(lines)
+}
+
+// parseExportedTypeAliasLines extracts the GoTypeAlias entries from package-info lines.
+func parseExportedTypeAliasLines(lines []string) ([][2]string, error) {
 	// Look for the start of the ExportedTypeAliases section
 	inSection := false
 	var aliases [][2]string
@@ -727,9 +802,7 @@ func parseExportedTypeAliases(packageInfoFile string) ([][2]string, error) {
 	// Pattern to match: [assembly: GoTypeAlias("Source", "Destination")]
 	pattern := regexp.MustCompile(`\[assembly: GoTypeAlias\("([^"]+)", "([^"]+)"\)\]`)
 
-	for scanner.Scan() {
-		line := scanner.Text()
-
+	for _, line := range lines {
 		if strings.TrimSpace(line) == "// <ExportedTypeAliases>" {
 			inSection = true
 			continue
@@ -748,10 +821,6 @@ func parseExportedTypeAliases(packageInfoFile string) ([][2]string, error) {
 				aliases = append(aliases, alias)
 			}
 		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
 	}
 
 	if !inSection && len(aliases) == 0 {
@@ -790,26 +859,16 @@ func canonicalRecordIfaceName(ifaceName string, rootPackageName string) string {
 	return ifaceName
 }
 
-// parseExportedPointerImplements parses a package info file for `GoImplement<T, Iface>(Pointer
+// parseExportedPointerImplementLines parses package-info lines for `GoImplement<T, Iface>(Pointer
 // = true)` assembly attributes, returning (T-simple, Iface-qualified) pairs - the adapter-class
 // existence records for cross-package pointer-to-interface conversions.
-func parseExportedPointerImplements(packageInfoFile string) ([][2]string, error) {
-	file, err := os.Open(packageInfoFile)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-
+func parseExportedPointerImplementLines(lines []string) ([][2]string, error) {
 	var pairs [][2]string
 
 	pattern := regexp.MustCompile(`\[assembly: GoImplement<(.+), (.+)>\(Pointer = true\)\]`)
 
-	for scanner.Scan() {
-		matches := pattern.FindStringSubmatch(scanner.Text())
+	for _, line := range lines {
+		matches := pattern.FindStringSubmatch(line)
 
 		if matches == nil {
 			continue
@@ -827,36 +886,26 @@ func parseExportedPointerImplements(packageInfoFile string) ([][2]string, error)
 		pairs = append(pairs, [2]string{tName, matches[2]})
 	}
 
-	return pairs, scanner.Err()
+	return pairs, nil
 }
 
-// parseExportedValueImplements parses a package info file for VALUE-form `GoImplement<T, Iface>`
+// parseExportedValueImplementLines parses package-info lines for VALUE-form `GoImplement<T, Iface>`
 // assembly attributes (plain or `(Promoted = true)`), returning (T-simple, Iface-simple) pairs -
 // records that the defining assembly itself implements the interface on the value type.
-func parseExportedValueImplements(packageInfoFile string) ([][2]string, error) {
-	file, err := os.Open(packageInfoFile)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-
+func parseExportedValueImplementLines(lines []string) ([][2]string, error) {
 	var pairs [][2]string
 
 	pattern := regexp.MustCompile(`\[assembly: GoImplement<(.+), (.+)>(?:\(Promoted = true\))?\]`)
 
-	for scanner.Scan() {
-		matches := pattern.FindStringSubmatch(scanner.Text())
+	for _, line := range lines {
+		matches := pattern.FindStringSubmatch(line)
 
 		if matches == nil {
 			continue
 		}
 
 		// A Pointer-form record is the ADAPTER existence signal, not a value implementation.
-		if strings.Contains(scanner.Text(), "(Pointer = true)") {
+		if strings.Contains(line, "(Pointer = true)") {
 			continue
 		}
 
@@ -872,5 +921,5 @@ func parseExportedValueImplements(packageInfoFile string) ([][2]string, error) {
 		pairs = append(pairs, [2]string{tName, matches[2]})
 	}
 
-	return pairs, scanner.Err()
+	return pairs, nil
 }
