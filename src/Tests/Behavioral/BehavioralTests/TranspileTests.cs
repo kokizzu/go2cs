@@ -1435,6 +1435,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckUnexportedEmbeddedMarker() => CheckTarget("UnexportedEmbeddedMarker");
 
     [TestMethod]
+    public void CheckUnicodeConsoleOutput() => CheckTarget("UnicodeConsoleOutput");
+
+    [TestMethod]
     public void CheckUnnamedParams() => CheckTarget("UnnamedParams");
 
     [TestMethod]

@@ -546,6 +546,7 @@
     <Project Path="Tests/Behavioral/TypedNilInterface/TypedNilInterface.csproj" />
     <Project Path="Tests/Behavioral/TypedPointerCastDeref/TypedPointerCastDeref.csproj" />
     <Project Path="Tests/Behavioral/UnexportedEmbeddedMarker/UnexportedEmbeddedMarker.csproj" />
+    <Project Path="Tests/Behavioral/UnicodeConsoleOutput/UnicodeConsoleOutput.csproj" />
     <Project Path="Tests/Behavioral/UntypedIntInterfaceBox/UntypedIntInterfaceBox.csproj" />
     <Project Path="Tests/Behavioral/UntypedNestedSliceComposite/UntypedNestedSliceComposite.csproj" />
     <Project Path="Tests/Behavioral/UnnamedParams/UnnamedParams.csproj" />

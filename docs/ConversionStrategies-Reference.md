@@ -8851,6 +8851,38 @@ are under test, and the `other` it re-exports from — carrying one declaration 
 every declined one, asserting the derivation, its independence from run-accumulated state, and the end-to-end
 render with no `package_info.cs` present.)
 
+### Converted programs write UTF-8 stdout — the ambient console code page never reaches the bytes
+Go writes stdout as raw UTF-8, unconditionally: `fmt.Println("Hello, 世界")` emits the same bytes to a
+terminal, a pipe, or a file. .NET does not. `Console.Out` is constructed with `Console.OutputEncoding`,
+which on Windows defaults to the **console output code page** (`GetConsoleOutputCP()` — the OEM page, 437
+on a stock US install), and to the ANSI default (1252) when the process has no console at all — the case for a
+program launched by the behavioral runner (`CreateNoWindow = true`) or by the tour's `.NET Run` pane
+(`src/tour/pipeline.go` `runStage`, whose `command.Stdout` is a `bytes.Buffer`). Encoding a rune that code
+page cannot represent is not an error in .NET; the encoder substitutes `?`, so the Tour of Go's first
+lesson would render `Hello, ??` with no diagnostic anywhere.
+
+golib forecloses this in its `[ModuleInitializer]` (`src/core/golib/builtin.cs`), which runs before any
+converted code: `Console.OutputEncoding = Console.InputEncoding = Encoding.UTF8`. The setter also discards
+any already-created `Console.Out`, so the writer is rebuilt on the UTF-8 encoding, and .NET strips the
+encoding's preamble for console writers — no BOM is prepended. A failing `SetConsoleOutputCP` (no console
+attached) is tolerated, so the redirected case is covered as fully as the interactive one. The **full**
+conversion reaches the same place by a different route and needs nothing added: real `fmt` writes through
+`os.Stdout` → `internal/poll` → `syscall.WriteFile`, which hands the `[]byte` to Win32 verbatim and is
+byte-transparent by construction. Only the baseline `core/fmt` stub — a proxy over
+`Console.Write`/`Console.WriteLine` — depends on the encoding above.
+
+Guarded by the `UnicodeConsoleOutput` behavioral test, which prints CJK, Greek, Cyrillic, a math symbol and
+an astral-plane emoji, and is stdout-compared against the Go binary. The guard is differential, so it holds
+even under a lossy capture: the runner decodes both children's bytes with the same encoding, and mojibake
+never equals `?`. Neutering the golib line and running under `chcp 437` fails it with
+`stdout mismatch C# vs Go`; restoring the line passes in the same console.
+
+One divergence remains, and it is stub-only: `Console.WriteLine` terminates with `Environment.NewLine`
+(CRLF on Windows) where Go always writes `\n`, so baseline-stub output is mixed CRLF/LF — a `\n` inside a
+`Printf` format string stays LF. The behavioral comparison reads both children line-by-line and so
+normalizes this away; the full conversion does not have it at all, since `WriteFile` passes Go's `\n`
+through unchanged.
+
 ## Source Generators
 Several Go semantics cannot be written directly in C#, so the converter emits compact, attributed partial declarations and lets a set of Roslyn source generators (`src/gen/go2cs-gen/`, referenced as an analyzer by every converted project) synthesize the rest at compile time. This keeps the visible converted code close to the Go original. The principal generators and attributes:
 
