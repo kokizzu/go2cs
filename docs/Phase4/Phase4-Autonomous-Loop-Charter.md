@@ -160,6 +160,15 @@ capability, record the blocker in the memory ledger and move on — don't spin.
    for a notable cross-section (`[[go2cs-doc-update-cadence]]`).
 7. Move to the next package.
 
+**Milestone tags — the remaining cadence (user ruling, 2026-07-26).** Validation milestones are
+tagged sparingly from here. The 25% crossing is tagged `stdlib-tests-25pct-2026-07-26`
+(`c253370d1`); the next tags are **50%**, then **75% only if it coincides with something genuinely
+hard landing** (`log/slog` is the named example — its four-root conversion is on record), and
+**100% unconditionally**. Everything between them is banked by the table's own progress line, which
+is per-package and needs no ceremony. Tags are annotated and gpg-signed, named
+`stdlib-tests-<pct>pct-<date>`, and their annotation carries the figures, what was banked in the
+arc, and the correctness classes the arc flushed out — the record a future reader wants.
+
 ---
 
 ## 5. Prove it — the mandatory gates (ALL SHIPS RISE)
