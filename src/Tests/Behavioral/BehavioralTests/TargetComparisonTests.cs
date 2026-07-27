@@ -232,6 +232,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckComplexImaginaryShadow() => CheckTarget("ComplexImaginaryShadow");
 
     [TestMethod]
+    public void CheckCompositeElementStringConcat() => CheckTarget("CompositeElementStringConcat");
+
+    [TestMethod]
     public void CheckConstrainedSliceParamInPlace() => CheckTarget("ConstrainedSliceParamInPlace");
 
     [TestMethod]
@@ -881,6 +884,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckNamedSlicePointerReinterpret() => CheckTarget("NamedSlicePointerReinterpret");
+
+    [TestMethod]
+    public void CheckNamedStringConcat() => CheckTarget("NamedStringConcat");
 
     [TestMethod]
     public void CheckNamedStringConsts() => CheckTarget("NamedStringConsts");

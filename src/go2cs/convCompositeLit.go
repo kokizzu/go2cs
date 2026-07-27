@@ -590,11 +590,24 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 		// nil element context defaults u8StringOK on); this closes the typed half.
 		// KeyValueExpr elements (maps, sparse arrays) are not BasicLits and route through
 		// convKeyValueExpr instead.
+		//
+		// The flag is set for EVERY element, not just the BasicLits, because it doubles as the
+		// slot's span-tolerance signal: convExprList derives spanTargetUnsupported from it, and a
+		// false there makes convBinaryExpr suppress u8 on a string CONCAT element's literal
+		// operand (`[]string{prefix + "-a"}` rendered `prefix + "-a"`, paying a GetBytes transcode
+		// plus a throwaway intermediate @string on every evaluation, where `+ "-a"u8` binds
+		// golib's `operator +(@string, ReadOnlySpan<byte>)` and block-copies ROM bytes straight
+		// into the single result buffer). That suppression is meant for span-HOSTILE slots — an
+		// `object[]` vararg cannot box a ReadOnlySpan<byte> — but a string element slot is not one,
+		// which the sibling spellings already proved: the same concat rendered u8 when
+		// parenthesized (convParenExpr drops the incoming literal context) or when the composite's
+		// type was ELIDED (nil element context). Setting it unconditionally makes the three agree.
+		// Harmless for the other element shapes: u8StringOK only reaches BasicLit rendering, and
+		// castToGoString consults the flag only on the deferred-call path (callArgs != nil), which
+		// no composite literal takes.
 		if basic, ok := elementType.Underlying().(*types.Basic); ok && basic.Kind() == types.String {
-			for i, elt := range compositeLit.Elts {
-				if isStringBasicLit(elt) {
-					callContext.u8StringArgOK[i] = true
-				}
+			for i := range compositeLit.Elts {
+				callContext.u8StringArgOK[i] = true
 			}
 		}
 
@@ -1035,13 +1048,26 @@ func sparseArrayCompositeContext(compositeType types.Type, elts []ast.Expr) *Cal
 	return context
 }
 
-// markStringFieldLits enables the `u8` span rendering for POSITIONAL string-literal elements whose
-// struct field slot is a Go `string` (or a named type over one). Go requires a positional literal
-// to list every field in order, so element index i is field i; KEYED elements are
-// ast.KeyValueExpr, never a BasicLit, and already render `u8` through convKeyValueExpr.
+// markStringFieldLits enables the `u8` span rendering for POSITIONAL elements whose struct field
+// slot is a Go `string` (or a named type over one). Go requires a positional literal to list every
+// field in order, so element index i is field i; KEYED elements are ast.KeyValueExpr — index i is
+// then NOT field i — and already render `u8` through convKeyValueExpr, so they are skipped.
+//
+// Every positional element in a string field slot is marked, not just the BasicLits, for the same
+// reason the slice/array element twin above marks all of its own: the flag doubles as the slot's
+// span-tolerance signal, and a false there makes convBinaryExpr suppress u8 on a string CONCAT
+// element's literal operand. For an `@string` field that only cost a transcode
+// (`rec{p + "-f"}` rendered `new rec(p + "-f")`, an Encoding.UTF8.GetBytes plus a throwaway
+// intermediate on every evaluation); for a field of a NAMED string type it did not compile at all,
+// because the plain form binds C#'s `string.Concat` and yields a `string` where the ctor wants the
+// wrapper (`rec{base + "-s"}` over a `version` field, CS1503).
 func (v *Visitor) markStringFieldLits(structType *types.Struct, elts []ast.Expr, context *CallExprContext) {
 	for i, elt := range elts {
-		if i >= structType.NumFields() || !isStringBasicLit(elt) {
+		if i >= structType.NumFields() {
+			continue
+		}
+
+		if _, isKeyed := elt.(*ast.KeyValueExpr); isKeyed {
 			continue
 		}
 

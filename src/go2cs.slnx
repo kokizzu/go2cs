@@ -130,6 +130,7 @@
     <Project Path="Tests/Behavioral/ComplexFormat/ComplexFormat.csproj" />
     <Project Path="Tests/Behavioral/ComplexImaginaryShadow/ComplexImaginaryShadow.csproj" />
     <Project Path="Tests/Behavioral/CombinedStructFields/CombinedStructFields.csproj" />
+    <Project Path="Tests/Behavioral/CompositeElementStringConcat/CompositeElementStringConcat.csproj" />
     <Project Path="Tests/Behavioral/ConstShadowsParam/ConstShadowsParam.csproj" />
     <Project Path="Tests/Behavioral/ConstSubexprOverflow/ConstSubexprOverflow.csproj" />
     <Project Path="Tests/Behavioral/ConstrainedSliceParamInPlace/ConstrainedSliceParamInPlace.csproj" />
@@ -348,6 +349,7 @@
     <Project Path="Tests/Behavioral/NamedSliceNilVsEmpty/NamedSliceNilVsEmpty.csproj" />
     <Project Path="Tests/Behavioral/NamedSlicePointerReinterpret/NamedSlicePointerReinterpret.csproj" />
     <Project Path="Tests/Behavioral/NamedSlicePointerElements/NamedSlicePointerElements.csproj" />
+    <Project Path="Tests/Behavioral/NamedStringConcat/NamedStringConcat.csproj" />
     <Project Path="Tests/Behavioral/NamedStringConversion/NamedStringConversion.csproj" />
     <Project Path="Tests/Behavioral/NamedStringConsts/NamedStringConsts.csproj" />
     <Project Path="Tests/Behavioral/NamedStringDefine/NamedStringDefine.csproj" />

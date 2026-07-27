@@ -272,6 +272,21 @@ internal class InheritedTypeTemplate : TemplateBase
 
                 public static bool operator >=(global::System.ReadOnlySpan<byte> left, {{ObjectName}} right) => left >= right.{{Value}};
 
+                // CONCATENATION, the twin of the comparison set above. Without these the wrapper had no
+                // `+` candidate at all, so C# fell back to converting both operands to a C# `string` and
+                // using string.Concat — which yields a `string`, not the named type, so every use site
+                // that needed the wrapper back failed (`[]S{q + "-e"}`, CS0029), and a `u8` operand had
+                // no candidate to reach at all (`S b = q + "-b"u8`, CS0019). Go keeps the named type
+                // across a concat (`type S string; s + "x"` is an S), so the same-type overload returns
+                // {{ObjectName}}. The span overload forwards to @string's own, whose bytes block-copy
+                // straight into the result buffer — no intermediate @string, no UTF-16 transcode; exact
+                // match beats the user-defined span conversion, so it binds ahead of the same-type form.
+                public static {{ObjectName}} operator +({{ObjectName}} left, {{ObjectName}} right) => new {{ObjectName}}(left.{{Value}} + right.{{Value}});
+
+                public static {{ObjectName}} operator +({{ObjectName}} left, global::System.ReadOnlySpan<byte> right) => new {{ObjectName}}(left.{{Value}} + right);
+
+                public static {{ObjectName}} operator +(global::System.ReadOnlySpan<byte> left, {{ObjectName}} right) => new {{ObjectName}}(left + right.{{Value}});
+
         """;
 
     private string ToStringImplementation => TypeClass switch

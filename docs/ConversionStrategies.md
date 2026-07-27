@@ -671,18 +671,23 @@ those sites allocate nothing at all. See the reference for the full inclusion/ex
 rules, and the initialization-order guarantee.
 
 Named string types are real wrapper structs (`type relationship string`), so the generated type keeps the
-string surface: indexing, sub-slicing, `len`, comparisons, constants, and method calls stay on the named
-type instead of collapsing back to plain `@string`.
+string surface: indexing, sub-slicing, `len`, comparisons, concatenation, constants, and method calls stay
+on the named type instead of collapsing back to plain `@string`. Concatenation matters twice over: Go keeps
+the named type across a `+`, so the wrapper carries its own `+` overloads (including against a `u8` span) —
+without them C# falls back to `string.Concat` and hands back a `System.String` that no longer has the
+type's methods.
 
 ```go
 type Token string
 func (t Token) First() byte { return t[0] }
 const done Token = "done"
+next := done + "-next"    // still a Token
 ```
 ```csharp
 [GoType("@string")] partial struct Token;
 internal static readonly Token done = "done"u8;
 public static byte First(this Token t) => t[0];
+Token next = done + "-next"u8;
 ```
 
 Most `string([]byte)` conversions must copy into `@string` — the price of Go's immutable-string guarantee.

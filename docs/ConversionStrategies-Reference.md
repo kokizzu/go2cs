@@ -3029,6 +3029,57 @@ through `convKeyValueExpr`, which already emitted `u8`. (Guarded by the behavior
 `AnyStringLitComposite`, `DeepEqual`, `GenericCompositeLiterals`, and 15 others whose goldens carry
 the form.)
 
+### A string CONCAT element of a composite literal keeps the `u8` span form
+The two rules above mark a composite's string-typed element slots as span-tolerant, but they marked
+only the elements that were `BasicLit`s. That flag does double duty: `convExprList` derives
+`spanTargetUnsupported` from it, and `convBinaryExpr` reads *that* to suppress `u8` on a string
+**concat**'s literal operand. A concat element is an `ast.BinaryExpr`, never a `BasicLit`, so it left
+its own slot looking span-hostile and the literal fell back to bare UTF-16:
+
+```go
+allowed := []string{prefix + "-a", prefix + "-b"}
+```
+```csharp
+var allowed = new @string[]{prefix + "-a", prefix + "-b"}.slice();     // before
+var allowed = new @string[]{prefix + "-a"u8, prefix + "-b"u8}.slice(); // after
+```
+
+The suppression itself is correct where it was born — an `object[]` vararg slot cannot box a
+`ReadOnlySpan<byte>`, so `fmt.Println(allowed[0] + ":" + msg)` must keep plain operands (CS1503) —
+but a string element slot is not span-hostile, which the sibling spellings already proved: the same
+concat rendered `u8` when parenthesized (`convParenExpr` drops the incoming literal context) and when
+the composite's type was elided (nil element context). Marking every positional element makes the
+three agree. The span operand then binds golib's `operator +(@string, ReadOnlySpan<byte>)`, which
+block-copies the literal's ROM bytes straight into the single result buffer — no
+`Encoding.UTF8.GetBytes` transcode, no throwaway intermediate `@string`. Two literal operands need no
+operator at all: C# folds `"x"u8 + "y"u8` into one UTF-8 literal at compile time.
+
+For a slot of a **named** string type the old form did not merely cost a transcode — it did not
+compile. The generated `[GoType("@string")]` wrapper carried the span *comparison* operators but no
+`+` at all, so C# fell back to converting both operands to a C# `string` and calling `string.Concat`:
+the result was a `string` where the wrapper was wanted (CS0029 in an element slot, CS1503 in a
+generated constructor), and a `u8` operand had no candidate to reach at all (CS0019).
+`InheritedTypeTemplate` now mirrors `@string`'s concat set — `+(T, T)`,
+`+(T, ReadOnlySpan<byte>)`, `+(ReadOnlySpan<byte>, T)` — so a named string type survives a concat
+exactly as Go says it does, keeping its method set:
+
+```go
+type version string
+func (v version) tag() string { return string(v) + "!" }
+
+short := base + "-rc"   // still a version, so short.tag() stays callable
+```
+```csharp
+version @short = @base + "-rc"u8;
+```
+
+The same `BasicLit`-only gate applied to `markStringFieldLits`, so a positional STRUCT element in a
+string field had the identical defect (`rec{base + "-s"}` over a `version` field was CS1503); both
+gates now mark every positional element. KEYED elements still skip — index *i* is not field *i* for
+them, and `convKeyValueExpr` resolves their slot itself. (Guarded by the behavioral tests
+`CompositeElementStringConcat`, which also pins the vararg suppression that must NOT change, and
+`NamedStringConcat`; `ReturnTupleFuncLitArg`'s golden carries the slice-element form.)
+
 ### Converting a string literal to a named `[]byte` / `[]rune` type
 The byte/rune-slice sibling of the named-string rule above: a string **literal** converting to a named type whose underlying is `[]byte` or `[]rune` — `htmlSig("<!DOCTYPE HTML")` where `type htmlSig []byte` (net/http `sniff.go`'s signature table) — cannot cast directly either. The `u8` span converts to neither the `[GoType]` wrapper (whose implicit operator takes exactly its underlying `slice<byte>`/`slice<rune>`) nor through `@string` in one hop (C# chains at most one user-defined conversion — CS0030). The converter materializes the underlying slice exactly the way the plain `[]byte("…")` conversion does (the `slice<T>(T[])` builtin over the literal's `@string`), and the wrapper's own operator then applies:
 

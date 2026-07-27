@@ -18,7 +18,7 @@ internal static handler wrap(handler h) {
 private static readonly @string labelˢ = "label"u8;
 
 internal static (handler, @string, error) makeHandlers(@string prefix) {
-    var allowed = new @string[]{prefix + "-a", prefix + "-b"}.slice();
+    var allowed = new @string[]{prefix + "-a"u8, prefix + "-b"u8}.slice();
     var allowedʗ1 = allowed;
     return (new handler((@string msg) => {
         fmt.Println(allowedʗ1[0] + ":" + msg, len(allowedʗ1));
