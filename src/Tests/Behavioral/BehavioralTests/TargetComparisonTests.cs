@@ -22,6 +22,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     // <TestMethods>
 
     [TestMethod]
+    public void CheckAdapterNameInterfaceCollision() => CheckTarget("AdapterNameInterfaceCollision");
+
+    [TestMethod]
     public void CheckAliasStructComposite() => CheckTarget("AliasStructComposite");
 
     [TestMethod]

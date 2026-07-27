@@ -1411,6 +1411,12 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 
 		writePackageInfoFile(packageInfoFileName, !isDir)
 
+		// Resolve the deferred pointer-adapter names now that the GoImplement records are FINAL —
+		// after the interface-inheritance prune and the alias-covered skip, both of which decide
+		// which pairs survive to own an adapter class. Must follow writePackageInfoFile, unlike
+		// the dynamic-type barrier above, which only needs the file-visit registry.
+		resolveAdapterNameMarkers(outputFileNames)
+
 		// Emit the ordered package-var initialization file (no-op unless any initializer was
 		// relocated for init-order correctness). Package (directory) conversions only. Under
 		// -tests, the ctor carries the erasable test hook so the internal test variant can
@@ -1787,6 +1793,14 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 		// Sort lines
 		sortedLines := lines.Keys()
 		sort.Strings(sortedLines)
+
+		// These lines ARE the adapter-naming authority: go2cs-gen composes each pointer-adapter
+		// class from exactly this pair set, and resolveAdapterNameMarkers resolves the cast sites
+		// from the same set, so the two cannot disagree. Captured from the FINAL lines rather than
+		// the emission loop above so the MERGED records count too — the -tests variant seeds
+		// package_test_info.cs from the production package_info.cs, and those merged pairs own
+		// adapter names just as the freshly recorded ones do.
+		recordEmittedPointerAdapterPairs(sortedLines)
 
 		// Insert interface implementations into package info file
 		packageInfoLines = append(packageInfoLines[:startLineIndex+1],
@@ -3752,7 +3766,18 @@ func adapterTypeRef(structTypeName string, interfaceTypeName string) string {
 		structBase = stripSanitizationMarkers(structBase)
 	}
 
-	return structBase + PointerPrefix + ifaceSimple + typeArgs
+	// Whether the interface side needs a package qualifier depends on the package's FINAL
+	// GoImplement record set — which is not known until every file has been visited and
+	// writePackageInfoFile has applied its skips and prunes. Defer the name (see
+	// adapterNameCollisions.go); resolveAdapterNameMarkers rewrites it in place afterwards.
+	// An anonymous lifted interface keeps the inline composition: its DYNTYPE payload must
+	// reach the earlier dynamic-type barrier intact, and a lifted name is unique by
+	// construction, so it can never be the colliding member of a group.
+	if strings.Contains(ifaceSimple, dynamicTypeMarkerPrefix) {
+		return structBase + PointerPrefix + ifaceSimple + typeArgs
+	}
+
+	return adapterNameMarker(structBase, interfaceTypeName) + typeArgs
 }
 
 func isDynamicStruct(t types.Type) bool {

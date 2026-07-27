@@ -100,6 +100,41 @@ public class ImplementGenerator : ISourceGenerator
                 promotedPairs.Add($"{structType.ToDisplayString()}|{interfaceType.ToDisplayString()}");
         }
 
+        // A pointer adapter is named "[<pkg>_]<structSimple>ж<ifaceSimple>". The STRUCT side is
+        // package-qualified when foreign, but the INTERFACE side composes from its bare simple
+        // name — ambiguous as soon as one struct adapts to two interfaces sharing a simple name.
+        // compress/flate does: its own `Reader` and `io.Reader`, both reached from *bufio.Reader
+        // and *bytes.Reader in its tests, composed one class TWICE (CS0102 + CS0111 + CS8646).
+        // Collect the names more than one interface maps to, so the composition below can qualify
+        // just those. COLLISION-CONDITIONAL by design: unconditional qualification would rename
+        // 644 adapters across 3,688 construction sites, and the production corpus has no
+        // collisions at all. Keep the rule in sync with the converter's adapterNameCollisions.go,
+        // which resolves the matching cast-site references from these same records.
+        Dictionary<string, HashSet<string>> adapterNameGroups = new(StringComparer.Ordinal);
+
+        foreach ((AttributeSyntax attributeSyntax, GeneratorSyntaxContext syntaxContext, CompilationUnitSyntax compilationUnit, _) in attributeFinder.TargetAttributes)
+        {
+            (string name, string value)[] arguments = attributeSyntax.GetArgumentValues();
+
+            if (!bool.Parse(arguments.FirstOrDefault(arg => arg.name.Equals("Pointer")).value?.Trim() ?? "false"))
+                continue;
+
+            (ITypeSymbol? structType, ITypeSymbol? interfaceType) = attributeSyntax.Get2GenericTypeArguments(syntaxContext);
+
+            if (structType is null || interfaceType is null)
+                continue;
+
+            string packageClass = GetFirstClassName(compilationUnit) ?? string.Empty;
+            string unqualified = $"{AdapterStructKey(structType, packageClass)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceType.ToDisplayString()))}";
+
+            if (!adapterNameGroups.TryGetValue(unqualified, out HashSet<string>? interfaces))
+                adapterNameGroups[unqualified] = interfaces = new HashSet<string>(StringComparer.Ordinal);
+
+            interfaces.Add(interfaceType.ToDisplayString());
+        }
+
+        HashSet<string> collidingAdapterNames = new(adapterNameGroups.Where(entry => entry.Value.Count > 1).Select(entry => entry.Key), StringComparer.Ordinal);
+
         foreach ((AttributeSyntax attributeSyntax, GeneratorSyntaxContext syntaxContext, CompilationUnitSyntax compilationUnit, FileScopedNamespaceDeclarationSyntax? namespaceSyntax) in attributeFinder.TargetAttributes)
         {
             SyntaxTree syntaxTree = attributeSyntax.SyntaxTree;
@@ -729,7 +764,10 @@ public class ImplementGenerator : ISourceGenerator
                     // "@"-escaped from its display string, and an interior marker (`fixedж@lock`)
                     // lexes as two tokens; the composed name is never a keyword. Keep in sync
                     // with the converter's adapterTypeRef composition.
-                    AdapterName = $"{(foreignStruct ? $"{ForeignPackagePrefix(structType)}{GetSimpleName(structName)}" : adapterBaseName)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}",
+                    // The interface side takes a package qualifier ONLY when this name is one the
+                    // pre-pass found more than one interface composing (see adapterNameGroups) —
+                    // flate's own `Reader` vs `io.Reader`, both reached from *bufio.Reader.
+                    AdapterName = $"{(foreignStruct ? $"{ForeignPackagePrefix(structType)}{GetSimpleName(structName)}" : adapterBaseName)}{PointerPrefix}{(collidingAdapterNames.Contains($"{AdapterStructKey(structType, packageClassName)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}") ? AdapterInterfacePrefix(interfaceType, packageClassName) : "")}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}",
                     TypeParameters = adapterTypeParameters,
                     ConstraintClause = adapterConstraintClause,
                     AdapterScope = adapterScope,
@@ -844,6 +882,40 @@ public class ImplementGenerator : ISourceGenerator
     /// class name, derived from its containing package class ("bytes_package") — matching the
     /// converter's <c>getSanitizedIdentifier(pkg.Name()) + "_"</c> composition at the cast site.
     /// </summary>
+    /// <summary>
+    /// Gets the adapter-name key for the STRUCT side: the package-prefixed simple name for a
+    /// foreign struct ("bufio_Reader"), the bare simple name for one declared by this package.
+    /// Locality is decided by the containing package class, matching the converter's rule that a
+    /// LOCAL type reference is written bare in the GoImplement record while a foreign one is
+    /// qualified — the two must agree or the collision groups diverge.
+    /// </summary>
+    private static string AdapterStructKey(ITypeSymbol structType, string packageClassName)
+    {
+        string simpleName = GetUnsanitizedIdentifier(GetSimpleName(structType.ToDisplayString()));
+        string? container = structType.ContainingType?.Name;
+
+        if (container is null || !container.EndsWith(PackageSuffix) || container == packageClassName)
+            return simpleName;
+
+        return $"{ForeignPackagePrefix(structType)}{simpleName}";
+    }
+
+    /// <summary>
+    /// Gets the disambiguating package prefix for the INTERFACE side of a COLLIDING adapter name
+    /// ("io_" in "bufio_Readerжio_Reader"). Empty for an interface this package declares: at most
+    /// one member of a colliding group can be local, so leaving it bare stays unambiguous and
+    /// keeps the Go-like short form for the package's own interface.
+    /// </summary>
+    private static string AdapterInterfacePrefix(ITypeSymbol interfaceType, string packageClassName)
+    {
+        string? container = interfaceType.ContainingType?.Name;
+
+        if (container is null || !container.EndsWith(PackageSuffix) || container == packageClassName)
+            return string.Empty;
+
+        return $"{container.Substring(0, container.Length - PackageSuffix.Length)}_";
+    }
+
     private static string ForeignPackagePrefix(ITypeSymbol structType)
     {
         string? packageClassName = structType.ContainingType?.Name;

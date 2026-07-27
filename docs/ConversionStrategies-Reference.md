@@ -7426,6 +7426,44 @@ The same `(int)` narrowing (the shared `castWideIntegerToInt` helper) applies to
 
 The RECEIVER's own array field is the one case that does **not** take this route: a Go pointer receiver renders as `this ref T recv`, which has no box companion, so `of(...)` would name a box that does not exist (`Ꮡr.of(RegArgs.ᏑInts)`, CS0103). It uses the element-aliasing two-arg `Ꮡ(recv.field, (int)(i))` instead — correct because copying an `array<T>` wrapper shares its backing `T[]`. See *Element address of an ARRAY FIELD of the receiver* under Slices and Arrays for the write-dropping bug this replaced (`compress/flate` losing all LZ77 matching).
 
+### A colliding pointer-adapter name qualifies its FOREIGN interface side
+
+A pointer-interface adapter class is named `[<pkg>_]<structSimple>ж<ifaceSimple>`. The STRUCT side is
+package-qualified when foreign (`bytes_ReaderжReader`), which keeps two same-named foreign structs
+adapting to one interface apart. The INTERFACE side had no such treatment — it composed from its bare
+last-dot segment — so the mirror-image case collided: ONE struct cast to TWO interfaces whose simple
+names match composes one class name twice (`CS0102`, `CS0111` per member, `CS8646`).
+
+`compress/flate` is the case that surfaced it. It declares its own `Reader` (`io.Reader` +
+`io.ByteReader`), and its tests hand a `*bufio.Reader` and a `*bytes.Reader` to `NewReader`, which
+casts to both that and `io.Reader` — so `bufio_ReaderжReader` and `bytes_ReaderжReader` were each
+emitted twice and the package could not build its test host at all. The rule is
+**collision-conditional**: only within a group of records composing the same name does the interface
+side take a package qualifier (`bufio_Readerжio_Reader`), and the LOCAL member of a group keeps the
+bare name (at most one member can be local, so that stays unambiguous and preserves the Go-like short
+form). Qualifying unconditionally was measured and rejected — 644 distinct adapter names across 3,688
+construction sites would churn. The entire 302-package production corpus contains **no** collisions,
+so the rule is byte-neutral there by construction; it takes a test closure's extra casts to make one.
+
+Grouping keys on the whole composed name, struct side included. `compress/gzip` records both
+`<Reader, io.Reader>` and `<bufio.Reader, flate.Reader>` — two records whose interfaces share a simple
+name but whose struct sides differ, composing `ReaderжReader` and `bufio_ReaderжReader`. Keying on the
+interface name alone would call that a collision and rename a validated package's adapters for nothing.
+
+The converter and the generator must agree on every name, and neither may guess, so both read the same
+authority: the final `[assembly: GoImplement<…>(Pointer = true)]` lines. That set is not known while
+cast sites are being rendered — it is settled only after the whole package is visited and
+`writePackageInfoFile` has applied its alias-covered skip and its interface-inheritance prune — so a
+cast emits a deferred marker (mirroring the DYNTYPE marker of the anonymous-struct barrier) that
+`resolveAdapterNameMarkers` rewrites once the records are final. The marker's payload is hex-encoded
+for the same reason DYNTYPE's is: a rendered type name passes through string transformation passes
+before reaching the file. Only the INTERFACE side is ever rewritten — the struct side is emitted
+verbatim, because it is the reference's *path*, not just a name fragment: rewriting it turned
+`new os.FileжWriter(f)` (namespace `os`, adapter class `FileжWriter`, generated in os's own assembly)
+into a bare `FileжWriter` that resolves nowhere. (Guarded by `AdapterNameInterfaceCollision` — a local
+`Reader` and `io.Reader` reached from one `*src`, verified by reverting the fix: `CS0102` + `CS8646`
+on `srcжReader`. Unblocked `compress/flate`'s Phase-4 test host.)
+
 The same `Value`-not-`m_val` rule applies to the **dereference operator** `~`. A value read through a pointer — `(~c).field`, the form the converter emits for `c.field` where `c` is a `*T` — must resolve through `Value`. For a *field-reference* pointer (`c := &b.w` → `Ꮡb.of(box.Ꮡw)`) or an array-element pointer, the real storage lives behind `Value` and `m_val` is an empty default, so `operator ~` returning `m_val` would read a **zero-valued copy** (`(~c).a` → `0`) — it compiles but is silently wrong. `ж<T>.operator ~` therefore returns `value.Value` (which resolves struct-field / array-element references and, for a standard pointer, is exactly `m_val`), matching the `IPointer<T>.operator ~` that already did. This surfaced when a defined-type-over-struct's forwarded fields were read back through a `*wrapper`, but it is general to any `*x.field` value read. (Guarded by the `NamedTypeOverStruct` behavioral test's read-back path.)
 
 The `at<E>(i)` **element type `E` is rendered fully-qualified** — `at<sync.atomic_package.Int32>`, not the file-local alias `at<atomic.Int32>`. A namespace-rooted type resolves inside `namespace go;` without any `using <pkg>` alias, whereas the alias form needs the file to import that package. A file can index a cross-package-typed array field of a struct without ever naming the element type (so Go requires no import, and the converter emits no `using atomic`), which would leave the alias unresolved (CS0246, e.g. runtime's `tracecpu.go` indexing `trace.cpuLogWrite`). A current-package or basic element renders identically either way, so this is churn-free. (Guarded by the `ArrayOfCrossPackageType` behavioral test's `&x.c[i]` element-address case.)

@@ -476,6 +476,11 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		includedSources:      HashSet[string]{},
 	}
 
+	// Collected across BOTH variants (result.outputFiles carries csproj <Compile> names, not
+	// paths) so the deferred adapter names can be resolved once, after the merged metadata file
+	// makes the record set final.
+	testAdapterResolveNames = nil
+
 	if model == testProjectReference {
 		// The production package binds as an ORDINARY imported package: its exported metadata
 		// (type aliases, implements) loads from the colocated package_info.cs like any other
@@ -658,6 +663,15 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			return result, err
 		}
 	}
+
+	// Resolve the deferred pointer-adapter names for the test outputs against the FINISHED
+	// metadata file — read back rather than taken from the last writePackageInfoFile capture,
+	// because the variants reach it by different paths (the recompile model's external variant
+	// goes through writeExternalVariantMetadata instead) and only the file on disk is what
+	// go2cs-gen will actually read. The test closure is where collisions surface at all: its
+	// extra casts are what let one struct reach two same-simple-named interfaces.
+	captureAdapterPairsFromInfoFile(testInfoPath)
+	resolveAdapterNameMarkers(testAdapterResolveNames)
 
 	return result, nil
 }
@@ -1289,6 +1303,11 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	}
 
 	resolveDynamicTypeMarkers(resolveNames)
+
+	// Adapter names cannot resolve here: this variant's GoImplement records are not merged into
+	// package_test_info.cs until the caller writes it, and a name depends on the FINAL set. Hand
+	// the emission PATHS up (compileNames are csproj-relative) for the caller's single pass.
+	testAdapterResolveNames = append(testAdapterResolveNames, resolveNames...)
 
 	return compileNames, NewHashSet(projectImports.Keys()), nil
 }
