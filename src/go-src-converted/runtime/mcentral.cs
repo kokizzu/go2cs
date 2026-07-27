@@ -55,25 +55,25 @@ partial class runtime_package {
 // partialUnswept returns the spanSet which holds partially-filled
 // unswept spans for this sweepgen.
 [GoRecv] internal static ж<spanSet> partialUnswept(this ref mcentral c, uint32 sweepgen) {
-    return Ꮡ(c.partial[1 - sweepgen / 2 % 2]);
+    return Ꮡ(c.partial, (int)(1 - sweepgen / 2 % 2));
 }
 
 // partialSwept returns the spanSet which holds partially-filled
 // swept spans for this sweepgen.
 [GoRecv] internal static ж<spanSet> partialSwept(this ref mcentral c, uint32 sweepgen) {
-    return Ꮡ(c.partial[sweepgen / 2 % 2]);
+    return Ꮡ(c.partial, (int)(sweepgen / 2 % 2));
 }
 
 // fullUnswept returns the spanSet which holds unswept spans without any
 // free slots for this sweepgen.
 [GoRecv] internal static ж<spanSet> fullUnswept(this ref mcentral c, uint32 sweepgen) {
-    return Ꮡ(c.full[1 - sweepgen / 2 % 2]);
+    return Ꮡ(c.full, (int)(1 - sweepgen / 2 % 2));
 }
 
 // fullSwept returns the spanSet which holds swept spans without any
 // free slots for this sweepgen.
 [GoRecv] internal static ж<spanSet> fullSwept(this ref mcentral c, uint32 sweepgen) {
-    return Ꮡ(c.full[sweepgen / 2 % 2]);
+    return Ꮡ(c.full, (int)(sweepgen / 2 % 2));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

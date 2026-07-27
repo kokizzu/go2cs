@@ -377,7 +377,7 @@ internal static ж<Δindirect<K, V>> newIndirectNode<K, V>(ж<Δindirect<K, V>> 
 {
     nint nc = 0;
     foreach (var (j, _) in i.children) {
-        if (Ꮡ(i.children[j]).Load() != nil) {
+        if (Ꮡ(i.children, j).Load() != nil) {
             nc++;
         }
     }

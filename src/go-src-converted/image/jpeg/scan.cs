@@ -250,7 +250,7 @@ private static readonly @string excessiveDcComponentˢ = "excessive DC component
                     }
                     if (ah != 0){
                         {
-                            var err = d.refine(Ꮡb, Ꮡ(d.huff[acTable][scan[i].ta]), zigStart, zigEnd, ((int32)1).Lsh((uint64)(al))); if (err != default!) {
+                            var err = d.refine(Ꮡb, Ꮡ(d.huff[acTable], scan[i].ta), zigStart, zigEnd, ((int32)1).Lsh((uint64)(al))); if (err != default!) {
                                 return err;
                             }
                         }
@@ -259,7 +259,7 @@ private static readonly @string excessiveDcComponentˢ = "excessive DC component
                         if (zig == 0) {
                             zig++;
                             // Decode the DC coefficient, as specified in section F.2.2.1.
-                            var (value, err) = d.decodeHuffman(Ꮡ(d.huff[dcTable][scan[i].td]));
+                            var (value, err) = d.decodeHuffman(Ꮡ(d.huff[dcTable], scan[i].td));
                             if (err != default!) {
                                 return err;
                             }
@@ -277,7 +277,7 @@ private static readonly @string excessiveDcComponentˢ = "excessive DC component
                             d.eobRun--;
                         } else {
                             // Decode the AC coefficients, as specified in section F.2.2.2.
-                            var huff = Ꮡ(d.huff[acTable][scan[i].ta]);
+                            var huff = Ꮡ(d.huff[acTable], scan[i].ta);
                             for (; zig <= zigEnd; zig++) {
                                 var (value, err) = d.decodeHuffman(huff);
                                 if (err != default!) {
@@ -522,7 +522,7 @@ private static readonly @string tooManyComponentsˢ = "too many components"u8;
 [GoRecv] internal static error reconstructBlock(this ref decoder d, ж<block> Ꮡb, nint bx, nint by, nint compIndex) {
     ref var b = ref Ꮡb.Value;
 
-    var qt = Ꮡ(d.quant[d.comp[compIndex].tq]);
+    var qt = Ꮡ(d.quant, d.comp[compIndex].tq);
     for (nint zig = 0; zig < blockSize; zig++) {
         b[unzig[zig]] *= qt.Value[zig];
     }

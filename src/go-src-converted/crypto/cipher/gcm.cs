@@ -292,7 +292,7 @@ internal static slice<uint16> gcmReductionTable = new uint16[]{
             // the values in |table| are ordered for
             // little-endian bit positions. See the comment
             // in NewGCMWithNonceSize.
-            var t = Ꮡ(g.productTable[(uint64)(word & 0xf)]);
+            var t = Ꮡ(g.productTable, (int)((uint64)(word & 0xf)));
             z.low ^= (uint64)(t.Value.low);
             z.high ^= (uint64)(t.Value.high);
             word >>= (int)(4);

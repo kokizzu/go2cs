@@ -176,7 +176,7 @@ internal static slice<compressionLevel> levels = new compressionLevel[]{
         d.bulkHasher(toCheck, dst);
         foreach (var (i, val) in dst) {
             nint di = i + index;
-            var hh = Ꮡ(d.hashHead[(uint32)(val & (uint32)hashMask)]);
+            var hh = Ꮡ(d.hashHead, (int)((uint32)(val & (uint32)hashMask)));
             // Get previous value with the same hash.
             // Our chain should point to the previous value.
             d.hashPrev[(nint)(di & (nint)windowMask)] = hh.Value;
@@ -382,7 +382,7 @@ Loop:
         if (d.index < d.maxInsertIndex) {
             // Update the hash
             var hash = hash4(d.window[(int)(d.index)..(int)(d.index + (nint)minMatchLength)]);
-            var hh = Ꮡ(d.hashHead[(uint32)(hash & (uint32)hashMask)]);
+            var hh = Ꮡ(d.hashHead, (int)((uint32)(hash & (uint32)hashMask)));
             d.chainHead = (nint)(hh.Value);
             d.hashPrev[(nint)(d.index & (nint)windowMask)] = (uint32)d.chainHead;
             hh.Value = (uint32)(d.index + d.hashOffset);
@@ -428,7 +428,7 @@ Loop:
                         var hash = hash4(d.window[(int)(index)..(int)(index + (nint)minMatchLength)]);
                         // Get previous value with the same hash.
                         // Our chain should point to the previous value.
-                        var hh = Ꮡ(d.hashHead[(uint32)(hash & (uint32)hashMask)]);
+                        var hh = Ꮡ(d.hashHead, (int)((uint32)(hash & (uint32)hashMask)));
                         d.hashPrev[(nint)(index & (nint)windowMask)] = hh.Value;
                         // Set the head of the hash chain to us.
                         hh.Value = (uint32)(index + d.hashOffset);

@@ -63,13 +63,13 @@ private static readonly @string badWriteBarrierBufferˢ = "bad write barrier buf
 
 // reset empties b by resetting its next and end pointers.
 [GoRecv] internal static void reset(this ref wbBuf b) {
-    var start = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf[0])).Value);
+    var start = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf, 0)).Value);
     b.next = start;
     if (testSmallBuf){
         // For testing, make the buffer smaller but more than
         // 1 write barrier's worth, so it tests both the
         // immediate flush and delayed flush cases.
-        b.end = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf[wbMaxEntriesPerCall + 1])).Value);
+        b.end = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf, wbMaxEntriesPerCall + 1)).Value);
     } else {
         b.end = start + (uintptr)len(b.buf) * @unsafe.Sizeof(b.buf[0]);
     }
@@ -84,12 +84,12 @@ private static readonly @string badWriteBarrierBufferˢ = "bad write barrier buf
 //
 //go:nosplit
 [GoRecv] internal static void discard(this ref wbBuf b) {
-    b.next = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf[0])).Value);
+    b.next = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf, 0)).Value);
 }
 
 // empty reports whether b contains no pointers.
 [GoRecv] internal static bool empty(this ref wbBuf b) {
-    return b.next == (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf[0])).Value);
+    return b.next == (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf, 0)).Value);
 }
 
 // getX returns space in the write barrier buffer to store X pointers.

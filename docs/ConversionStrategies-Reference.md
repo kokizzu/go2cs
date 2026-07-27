@@ -2431,10 +2431,41 @@ restricts the copy form to the case the receiver is *directly* the slice (`index
 receiver identifier); any slice base that is a field, call result, or other non-identifier expression
 uses the element-aliasing `Ꮡ(x, i)` form — which is correct for a slice in all cases, since a slice value
 always shares its backing array. This also corrected a benign read-only site (`NamedFuncTypeStructuralField`'s
-`s.by(&s.items[j], &s.items[i])` comparison) from copy to alias. Only the SLICE branch is narrowed; the
-array branch's `refRecv` (and its own box-routing machinery, above) is unchanged. (Guarded by
+`s.by(&s.items[j], &s.items[i])` comparison) from copy to alias. (Guarded by
 `SliceFieldElementAddress` — append-through-pointer into a `[][]int` field of a pointer receiver plus an
-in-place element mutate, value vs Go; validated end-to-end by `text/tabwriter`'s test suite.)
+in-place element mutate, value vs Go; validated end-to-end by `text/tabwriter`'s test suite.) The ARRAY
+branch carried the identical defect and is narrowed the same way — next.
+
+**Element address of an ARRAY FIELD of the receiver — `&d.hashHead[h]`.** The array branch had its own
+`refRecv` fast-path with the same root-identifier detection, and so the same bug: an array *field* of the
+receiver roots at the receiver and took the copy-boxing `Ꮡ(d.hashHead[h])`, whose `Ꮡ(in T)` overload
+heap-boxes a copy of the **element**. `compress/flate`'s `deflate()` is the canonical victim — it does
+`hh := &d.hashHead[hash&hashMask]; … *hh = uint32(d.index + d.hashOffset)` to maintain the chained hash
+table. Every head write landed in a throwaway box, so `hashHead` stayed all-zero, `d.chainHead` was always
+`0`, and the `d.chainHead-d.hashOffset >= minIndex` guard (`0-1 >= 0`) meant **`findMatch` was never
+called at all**. Levels 2–9 therefore emitted LITERALS ONLY: still-valid deflate streams roughly the size
+of `HuffmanOnly` output. Since `png.BestCompression` maps to flate level 9, a 256×256 PNG encoded to
+**134,644 bytes instead of Go's 36,760** — pixel-identical on decode, ~3.7× weaker compression, with
+`NoCompression`, `HuffmanOnly` and `BestSpeed` (whose `deflatefast.go` encoder writes `e.table[…]`
+directly and never takes an element address) all byte-exact, which is what localized it. The fix mirrors
+the slice branch: the copy form is kept only when the receiver is *directly* the array (`indexExpr.X` is
+the bare receiver identifier); an array field of the receiver uses the element-aliasing two-arg
+`Ꮡ(d.hashHead, (int)(…))`.
+
+Note the array field deliberately does **not** route through the `.of(field)`/`.at<T>(i)` box machinery
+described above, even though that machinery exists for array fields. Its trigger is `baseIsPointer` — the
+*Go* receiver type is `*T` — but a Go pointer receiver renders as `this ref T recv`, which has **no** box
+companion, so it emitted `Ꮡr.of(RegArgs.ᏑInts)` for `internal/abi`'s `&r.Ints[reg]` → CS0103. The two-arg
+form needs no box and aliases correctly regardless: `array<T>` is a readonly struct wrapping an eagerly
+allocated `T[]`, so evaluating the field copies only the wrapper while the copy shares element storage —
+the same reasoning the array-*parameter* case above relies on. Seventeen corpus files corrected, several
+of them silently broken in the same write-dropping way: `runtime`'s `&r.statusTraced[gen%3]`,
+`&h.counts[…]` and `&m.stats[gen]` performed `.CompareAndSwap`/`.Store`/`.Add` **on a copy**;
+`crypto/internal/edwards25519` built its lookup tables via `(&v.points[i]).FromP3(…)` into copies;
+`image/jpeg` wrote Huffman/quantization tables through `&d.huff[tc][th]` and `&d.quant[…]`. (Guarded by
+`RecvArrayFieldElementAddress` — chained-hash write-through with an unsigned index, plus a nested
+`&h.pairs[i][j]`, value vs Go; the flate ratio itself is verified by deflating fixed buffers at every
+level and byte-comparing the sizes against `go run`.)
 
 ### Array ASSIGNMENT copies the whole array (`.Clone()` on the RHS)
 
@@ -7392,6 +7423,8 @@ The `Ꮡ(slice, index)` form applies to **any slice-typed base expression**, not
 The same `(int)` narrowing (the shared `castWideIntegerToInt` helper) applies to the bounds of a **3-index (full) slice** `s[low:high:max]`, which lowers to the golib `.slice(nint low, nint high, nint max)` method: a `uintptr`/`uint`/`uint32`/`uint64`/`int64` bound is cast — `stk[:b.nstk:b.nstk]` (b.nstk a `uintptr`) → `stk.slice(-1, (int)(b.nstk), (int)(b.nstk))`. Go's own slice bounds are `int`, so the narrowing matches Go. A plain `int`/small-int bound is left uncast. (The 2-index range forms `s[lo:hi]` narrow through `getRangeIndexer` for the C# `[..]` range operator; only the 3-index `.slice()` form needed this.) (Guarded by the `Slice3IndexWideBound` behavioral test — `uintptr`/`uint`/`uint64` full-slice bounds on an array and a slice + an int control, values verified vs Go; runtime hits this in `mprof`'s `stk[:b.nstk:b.nstk]`.)
 
 **Address of an element of an array *field* reached through a pointer or boxed struct.** When the array being indexed is a field of a heap-boxed value — `&mp.future[i]` where `mp` is a `*memRecord`, or `&g.future[i]` where `g` is an address-taken global — the *array field's* address goes through the box-field accessor first, then the element index: `Ꮡmp.of(memRecord.Ꮡfuture).at<cycle>(i)` (pointer parameter), `mp.of(...)` (pointer local), `Ꮡg.of(rec.Ꮡfuture).at<cycle>(i)` (boxed global). A naive `Ꮡ` prefix on the field read (`Ꮡ(~mp).future`) instead binds `.future` to the box value `Ꮡ(~mp)` (a `ж<memRecord>`, which has no `future` member) → CS1061. This requires a matching golib detail: `ж<T>.at<TElem>(index)` resolves the array through the `Value` property, **not** the raw `m_val` field — for a field-reference pointer produced by `of(...)`, `m_val` is an empty default and the real array lives behind `Value` (the same resolution `of(...)` itself uses). Reading `m_val` would miss the array → null-deref at runtime even though the C# compiled. (`array<T>` is a readonly struct over a shared backing `T[]`, so the value `Value` yields still aliases the real elements; writes through the returned element pointer land.) (Guarded by the `PointerFieldArrayElementAddress` behavioral test — pointer parameter and pointer local both taking `&p.future[i]` and mutating through it.)
+
+The RECEIVER's own array field is the one case that does **not** take this route: a Go pointer receiver renders as `this ref T recv`, which has no box companion, so `of(...)` would name a box that does not exist (`Ꮡr.of(RegArgs.ᏑInts)`, CS0103). It uses the element-aliasing two-arg `Ꮡ(recv.field, (int)(i))` instead — correct because copying an `array<T>` wrapper shares its backing `T[]`. See *Element address of an ARRAY FIELD of the receiver* under Slices and Arrays for the write-dropping bug this replaced (`compress/flate` losing all LZ77 matching).
 
 The same `Value`-not-`m_val` rule applies to the **dereference operator** `~`. A value read through a pointer — `(~c).field`, the form the converter emits for `c.field` where `c` is a `*T` — must resolve through `Value`. For a *field-reference* pointer (`c := &b.w` → `Ꮡb.of(box.Ꮡw)`) or an array-element pointer, the real storage lives behind `Value` and `m_val` is an empty default, so `operator ~` returning `m_val` would read a **zero-valued copy** (`(~c).a` → `0`) — it compiles but is silently wrong. `ж<T>.operator ~` therefore returns `value.Value` (which resolves struct-field / array-element references and, for a standard pointer, is exactly `m_val`), matching the `IPointer<T>.operator ~` that already did. This surfaced when a defined-type-over-struct's forwarded fields were read back through a `*wrapper`, but it is general to any `*x.field` value read. (Guarded by the `NamedTypeOverStruct` behavioral test's read-back path.)
 

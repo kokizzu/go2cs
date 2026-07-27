@@ -539,9 +539,38 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 			typeName := v.getTypeName(exprType, false)
 
 			if strings.HasPrefix(typeName, "[") {
+				// Same object-identity rule the slice branch above applies, for the same reason:
+				// refRecv is computed from the ROOT identifier, so an array FIELD of the receiver —
+				// `&d.hashHead[h]`, rooting at the receiver `d` — matched it too and took the copy-
+				// form. `Ꮡ(d.hashHead[h])` binds the one-arg `Ꮡ(in T)` overload, which boxes a COPY
+				// of the ELEMENT, so every write through the pointer is silently dropped: flate's
+				// deflate() does `hh := &d.hashHead[hash&hashMask]; … *hh = uint32(d.index +
+				// d.hashOffset)`, the hash heads stayed all-zero, findMatch was never reached (its
+				// `d.chainHead-d.hashOffset >= minIndex` guard fails at 0-1), and levels 2-9 emitted
+				// LITERALS ONLY — valid deflate streams ~2.3x larger than Go's (a 256x256 PNG went
+				// 36,760 -> 134,644 bytes). The copy-form is valid ONLY when the receiver is DIRECTLY
+				// the array (`indexExpr.X` is the bare receiver ident); any other array base must take
+				// an element-aliasing form that shares the backing storage. Mirrors the pointer-to-
+				// array case at the top of this branch (crc32's all-zero slicing tables) and the slice
+				// case (tabwriter's empty lines).
+				_, indexBaseIsRecvIdent := indexExpr.X.(*ast.Ident)
+
 				if refRecv {
-					// For a receiver reference to an array, we use the "Ꮡ(array[index])" syntax
-					return fmt.Sprintf("%s(%s[%s])", AddressPrefix, v.convExpr(indexExpr.X, nil), v.convExpr(indexExpr.Index, nil))
+					if indexBaseIsRecvIdent {
+						// For a receiver reference to an array, we use the "Ꮡ(array[index])" syntax
+						return fmt.Sprintf("%s(%s[%s])", AddressPrefix, v.convExpr(indexExpr.X, nil), v.convExpr(indexExpr.Index, nil))
+					}
+
+					// An array FIELD of the receiver takes the same element-aliasing two-arg form the
+					// slice branch uses, NOT the `.of(field)`/`.at<T>(i)` box machinery below: that route
+					// fires on `baseIsPointer` (the Go receiver type IS `*T`), but a Go pointer receiver
+					// renders as `this ref T recv`, which has NO box companion — so it emitted `Ꮡr.of(…)`
+					// for `&r.Ints[reg]` (internal/abi) and every other ref-receiver field, CS0103. The
+					// two-arg overload needs no box and aliases correctly regardless: `array<T>` is a
+					// readonly struct wrapping an eagerly-allocated `T[]`, so evaluating the field copies
+					// only the wrapper and the copy SHARES element storage (same reasoning as the
+					// array-PARAMETER case below).
+					return fmt.Sprintf("%s(%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.castWideIntegerToInt(indexExpr.Index))
 				} else {
 					// For an indexed reference into an array, we use the "ж.at<T>(index)" syntax.
 					// Prefer the readable file-local package alias for the element type

@@ -77,7 +77,7 @@ partial class abi_package {
     if (goarch.BigEndian) {
         offset = (uintptr)goarch.PtrSize - argSize;
     }
-    return (@unsafe.Pointer)((uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(r.Ints[reg])).Value) + offset);
+    return (@unsafe.Pointer)((uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(r.Ints, reg)).Value) + offset);
 }
 
 [GoType("[2]uint8")] /* [(IntArgRegs + 7) / 8]uint8 */

@@ -836,7 +836,7 @@ internal static bool seen(this ж<dedup> Ꮡd, uint64 h) {
 // If h does not appear in any of them, then it is inserted into a random slot,
 // overwriting whatever was there before.
 [GoRecv] internal static bool seenLossy(this ref dedup d, uint64 h) {
-    var cache = Ꮡ(d.recent[(nuint)h % (nuint)len(d.recent)]);
+    var cache = Ꮡ(d.recent, (int)((nuint)h % (nuint)len(d.recent)));
     for (nint i = 0; i < len(cache); i++) {
         if (atomic.LoadUint64(cache.at<uint64>(i)) == h) {
             return true;

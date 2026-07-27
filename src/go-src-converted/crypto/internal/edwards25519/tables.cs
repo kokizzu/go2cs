@@ -34,7 +34,7 @@ partial class edwards25519_package {
 [GoRecv] internal static void FromP3(this ref projLookupTable v, ж<Point> Ꮡq) {
     // Goal: v.points[i] = (i+1)*Q, i.e., Q, 2Q, ..., 8Q
     // This allows lookup of -8Q, ..., -Q, 0, Q, ..., 8Q
-    Ꮡ(v.points[0]).FromP3(Ꮡq);
+    Ꮡ(v.points, 0).FromP3(Ꮡq);
     ref var tmpP3 = ref heap<Point>(out var ᏑtmpP3);
     tmpP3 = new Point(nil);
     ref var tmpP1xP1 = ref heap<projP1xP1>(out var ᏑtmpP1xP1);
@@ -43,7 +43,7 @@ partial class edwards25519_package {
         // Compute (i+1)*Q as Q + i*Q and convert to a projCached
         // This is needlessly complicated because the API has explicit
         // receivers instead of creating stack objects and relying on RVO
-        Ꮡ(v.points[i + 1]).FromP3(ᏑtmpP3.fromP1xP1(ᏑtmpP1xP1.Add(Ꮡq, Ꮡ(v.points[i]))));
+        Ꮡ(v.points, i + 1).FromP3(ᏑtmpP3.fromP1xP1(ᏑtmpP1xP1.Add(Ꮡq, Ꮡ(v.points, i))));
     }
 }
 
@@ -51,14 +51,14 @@ partial class edwards25519_package {
 [GoRecv] internal static void FromP3(this ref affineLookupTable v, ж<Point> Ꮡq) {
     // Goal: v.points[i] = (i+1)*Q, i.e., Q, 2Q, ..., 8Q
     // This allows lookup of -8Q, ..., -Q, 0, Q, ..., 8Q
-    Ꮡ(v.points[0]).FromP3(Ꮡq);
+    Ꮡ(v.points, 0).FromP3(Ꮡq);
     ref var tmpP3 = ref heap<Point>(out var ᏑtmpP3);
     tmpP3 = new Point(nil);
     ref var tmpP1xP1 = ref heap<projP1xP1>(out var ᏑtmpP1xP1);
     tmpP1xP1 = new projP1xP1(nil);
     for (nint i = 0; i < 7; i++) {
         // Compute (i+1)*Q as Q + i*Q and convert to affineCached
-        Ꮡ(v.points[i + 1]).FromP3(ᏑtmpP3.fromP1xP1(ᏑtmpP1xP1.AddAffine(Ꮡq, Ꮡ(v.points[i]))));
+        Ꮡ(v.points, i + 1).FromP3(ᏑtmpP3.fromP1xP1(ᏑtmpP1xP1.AddAffine(Ꮡq, Ꮡ(v.points, i))));
     }
 }
 
@@ -66,7 +66,7 @@ partial class edwards25519_package {
 [GoRecv] internal static void FromP3(this ref nafLookupTable5 v, ж<Point> Ꮡq) {
     // Goal: v.points[i] = (2*i+1)*Q, i.e., Q, 3Q, 5Q, ..., 15Q
     // This allows lookup of -15Q, ..., -3Q, -Q, 0, Q, 3Q, ..., 15Q
-    Ꮡ(v.points[0]).FromP3(Ꮡq);
+    Ꮡ(v.points, 0).FromP3(Ꮡq);
     ref var q2 = ref heap<Point>(out var Ꮡq2);
     q2 = new Point(nil);
     Ꮡq2.Add(Ꮡq, Ꮡq);
@@ -75,13 +75,13 @@ partial class edwards25519_package {
     ref var tmpP1xP1 = ref heap<projP1xP1>(out var ᏑtmpP1xP1);
     tmpP1xP1 = new projP1xP1(nil);
     for (nint i = 0; i < 7; i++) {
-        Ꮡ(v.points[i + 1]).FromP3(ᏑtmpP3.fromP1xP1(ᏑtmpP1xP1.Add(Ꮡq2, Ꮡ(v.points[i]))));
+        Ꮡ(v.points, i + 1).FromP3(ᏑtmpP3.fromP1xP1(ᏑtmpP1xP1.Add(Ꮡq2, Ꮡ(v.points, i))));
     }
 }
 
 // This is not optimised for speed; fixed-base tables should be precomputed.
 [GoRecv] internal static void FromP3(this ref nafLookupTable8 v, ж<Point> Ꮡq) {
-    Ꮡ(v.points[0]).FromP3(Ꮡq);
+    Ꮡ(v.points, 0).FromP3(Ꮡq);
     ref var q2 = ref heap<Point>(out var Ꮡq2);
     q2 = new Point(nil);
     Ꮡq2.Add(Ꮡq, Ꮡq);
@@ -90,7 +90,7 @@ partial class edwards25519_package {
     ref var tmpP1xP1 = ref heap<projP1xP1>(out var ᏑtmpP1xP1);
     tmpP1xP1 = new projP1xP1(nil);
     for (nint i = 0; i < 63; i++) {
-        Ꮡ(v.points[i + 1]).FromP3(ᏑtmpP3.fromP1xP1(ᏑtmpP1xP1.AddAffine(Ꮡq2, Ꮡ(v.points[i]))));
+        Ꮡ(v.points, i + 1).FromP3(ᏑtmpP3.fromP1xP1(ᏑtmpP1xP1.AddAffine(Ꮡq2, Ꮡ(v.points, i))));
     }
 }
 
@@ -107,7 +107,7 @@ partial class edwards25519_package {
     for (nint j = 1; j <= 8; j++) {
         // Set dest = j*Q if |x| = j
         nint cond = subtle.ConstantTimeByteEq(xabs, (uint8)j);
-        Ꮡdest.Select(Ꮡ(v.points[j - 1]), Ꮡdest, cond);
+        Ꮡdest.Select(Ꮡ(v.points, j - 1), Ꮡdest, cond);
     }
     // Now dest = |x|*Q, conditionally negate to get x*Q
     Ꮡdest.CondNeg((nint)((int8)(xmask & 1)));
@@ -124,7 +124,7 @@ partial class edwards25519_package {
     for (nint j = 1; j <= 8; j++) {
         // Set dest = j*Q if |x| = j
         nint cond = subtle.ConstantTimeByteEq(xabs, (uint8)j);
-        Ꮡdest.Select(Ꮡ(v.points[j - 1]), Ꮡdest, cond);
+        Ꮡdest.Select(Ꮡ(v.points, j - 1), Ꮡdest, cond);
     }
     // Now dest = |x|*Q, conditionally negate to get x*Q
     Ꮡdest.CondNeg((nint)((int8)(xmask & 1)));

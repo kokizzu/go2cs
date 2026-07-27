@@ -1076,6 +1076,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReceiverPointerValue() => CheckTarget("ReceiverPointerValue");
 
     [TestMethod]
+    public void CheckRecvArrayFieldElementAddress() => CheckTarget("RecvArrayFieldElementAddress");
+
+    [TestMethod]
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]

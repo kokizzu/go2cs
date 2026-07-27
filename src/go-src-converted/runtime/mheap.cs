@@ -2270,7 +2270,7 @@ internal static ж<gcBits> tryAlloc(this ж<gcBitsArena> Ꮡb, uintptr bytes) {
     }
     // There was enough room.
     var start = end - bytes;
-    return Ꮡ(b.bits[start]);
+    return Ꮡ(b.bits, (int)(start));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

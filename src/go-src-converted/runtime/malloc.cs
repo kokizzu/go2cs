@@ -593,7 +593,7 @@ mapped:
             } else {
                 sysNoHugePage(new @unsafe.Pointer(l2), @unsafe.Sizeof(l2.Value));
             }
-            atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (Ꮡ(h.arenas[ri.l1()])).Value), new @unsafe.Pointer(l2));
+            atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (Ꮡ(h.arenas, (int)(ri.l1()))).Value), new @unsafe.Pointer(l2));
         }
         if (l2.Value[ri.l2()] != nil) {
             @throw(arenaAlreadyInitializedˢ);
@@ -730,7 +730,7 @@ internal static void enableMetadataHugePages(this ж<mheap> Ꮡh) {
     // N.B. The arenas L1 map is quite small on all platforms, so it's fine to
     // just iterate over the whole thing.
     foreach (var (i, _) in h.arenas) {
-        var l2 = (ж<array<ж<heapArena>>>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡ(h.arenas[i])).Value)));
+        var l2 = (ж<array<ж<heapArena>>>)(uintptr)(atomic.Loadp(@unsafe.Pointer.FromRef(ref (Ꮡ(h.arenas, i)).Value)));
         if (l2 == nil) {
             continue;
         }

@@ -1147,6 +1147,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckReceiverPointerValue() => CheckTarget("ReceiverPointerValue");
 
     [TestMethod]
+    public void CheckRecvArrayFieldElementAddress() => CheckTarget("RecvArrayFieldElementAddress");
+
+    [TestMethod]
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]

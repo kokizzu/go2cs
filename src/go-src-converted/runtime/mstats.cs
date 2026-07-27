@@ -739,7 +739,7 @@ internal static ж<heapStatsDelta> acquire(this ж<consistentHeapStats> Ꮡm) {
         }
     }
     var gen = Ꮡm.of(consistentHeapStats.Ꮡgen).Load() % 3;
-    return Ꮡ(m.stats[gen]);
+    return Ꮡ(m.stats, (int)(gen));
 }
 
 // release indicates that the writer is done modifying
@@ -782,7 +782,7 @@ internal static void release(this ж<consistentHeapStats> Ꮡm) {
 
     assertWorldStopped();
     foreach (var (i, _) in m.stats) {
-        @out.merge(Ꮡ(m.stats[i]));
+        @out.merge(Ꮡ(m.stats, i));
     }
 }
 
@@ -844,7 +844,7 @@ internal static void read(this ж<consistentHeapStats> Ꮡm, ж<heapStatsDelta> 
     // Perform our responsibilities and free up
     // stats[prevGen] for the next time we want to take
     // a snapshot.
-    m.stats[(nint)(currGen)].merge(Ꮡ(m.stats[prevGen]));
+    m.stats[(nint)(currGen)].merge(Ꮡ(m.stats, (int)(prevGen)));
     m.stats[(nint)(prevGen)] = new heapStatsDelta(nil);
     // Finally, copy out the complete delta.
     @out = m.stats[(nint)(currGen)].ΔClone();

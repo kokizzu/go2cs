@@ -115,7 +115,7 @@ private static readonly @string huffmanTableHasExcessiveˢ = "Huffman table has 
         if (th > maxTh || (d.baseline && th > 1)) {
             return ((FormatError)(@string)badThValueˢ);
         }
-        var h = Ꮡ(d.huff[tc][th]);
+        var h = Ꮡ(d.huff[tc], th);
         // Read nCodes and h.vals (and derive h.nCodes).
         // nCodes[i] is the number of codes with code length i.
         // h.nCodes is the total number of codes.
