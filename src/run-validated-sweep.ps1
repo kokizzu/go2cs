@@ -72,6 +72,12 @@ if (-not (Test-Path $exe)) { throw "Converter not built: $exe" }
 $env:MSBUILDDISABLENODEREUSE = '1'
 $pass = 0; $fail = 0; $failed = @(); $started = Get-Date
 
+# 'Continue' for the sweep itself: merging a native command's stderr with 2>&1 wraps each line in
+# an ErrorRecord in PS 5.1, so under 'Stop' one benign converter warning (e.g. the unsafe.Sizeof
+# notice from crypto/subtle) aborts the whole run. The verdict is judged from the output below,
+# not from $?, so a non-terminating preference is the correct setting here.
+$ErrorActionPreference = 'Continue'
+
 foreach ($row in $rows) {
     $pkg = $row.Package
     $outDir = Join-Path $src ('go-src-converted\' + ($pkg -replace '/', '\'))
