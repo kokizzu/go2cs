@@ -151,8 +151,9 @@ and the `PackageVarInitOrder` behavioral guard.
 Go compiles all source together (including the stdlib), which lets its compiler do whole-program escape
 analysis. For now, the go2cs converter **assumes values can escape to the heap** except in the
 simplest-to-detect cases (see [Pointers](#pointers)) — a safe default that can cost an unnecessary heap
-box. A longer-term direction is publishing already-converted packages as compiled libraries (e.g. NuGet),
-which fits how C# developers usually consume dependencies.
+box, and the one that holds when converted packages are consumed as compiled libraries: the standard
+library is published on NuGet as `go.<pkg>` / `go.lib` / `go.gen`, which fits how C# developers usually
+consume dependencies, and a `-recurse=nuget` conversion references those packages directly.
 
 **Full detail:** [Reference → Compiled Library versus Source Code](ConversionStrategies-Reference.md#compiled-library-versus-source-code).
 

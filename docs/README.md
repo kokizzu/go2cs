@@ -185,9 +185,9 @@ go2cs package_dir                      # convert a package
 go2cs -indent 2 -var=false example.go conv/example.cs
 go2cs -stdlib                          # convert the entire Go standard library
 go2cs -stdlib fmt strings io           # convert specific standard library packages
-go2cs -recurse module_dir              # convert a module + its third-party deps (references stdlib)
-go2cs -recurse module_dir output_root  # isolate generated app/deps from the runtime root
-go2cs -recurse=nuget module_dir        # same, but reference the go2cs stdlib from NuGet
+go2cs -recurse=nuget module_dir out    # convert a module + its third-party deps, stdlib from NuGet
+go2cs -recurse module_dir              # same, referencing a locally-staged standard library
+go2cs -recurse module_dir output_root  # ...with the generated app/dep trees under output_root
 go2cs -tests package_dir               # convert a package plus its Go test suite
 go2cs -tests -test-action all goroot_pkg_dir converted_pkg_dir   # ...and build, run, and diff vs go test
 ```
@@ -197,7 +197,7 @@ go2cs -tests -test-action all goroot_pkg_dir converted_pkg_dir   # ...and build,
 | Option | Description |
 |:--|:--|
 | `-stdlib` | Convert the Go standard library (optionally followed by specific package names). |
-| `-recurse` | Recursively convert a downloaded module **and its third-party dependencies** in dependency order, referencing the pre-converted standard library. Pass an optional second positional output root to isolate generated `src\` app and `pkg\` dependency trees from `-go2cspath`; references inside that converted graph are relative. Use `-recurse=nuget` to reference the published [`go.<pkg>`](https://www.nuget.org/packages?q=go2cs%20ritchiecarroll) stdlib + [`go.lib`](https://www.nuget.org/packages/go.lib) runtime + [`go.gen`](https://www.nuget.org/packages/go.gen) analyzer instead of a locally-staged deploy root. See [Converting a real-world module](#converting-a-real-world-module). |
+| `-recurse` | Recursively convert a downloaded module **and its third-party dependencies** in dependency order, referencing (not reconverting) the pre-converted standard library. `-recurse=nuget` takes that standard library, the `golib` runtime and the analyzer from NuGet — [`go.<pkg>`](https://www.nuget.org/packages?q=go2cs%20ritchiecarroll) + [`go.lib`](https://www.nuget.org/packages/go.lib) + [`go.gen`](https://www.nuget.org/packages/go.gen) — so the generated projects restore the whole go2cs stack with nothing staged locally; plain `-recurse` references a locally-staged deploy root through `$(go2csPath)` instead. Either way the app's own and third-party converted packages stay project references. Pass an optional second positional output root to isolate the generated `src\` app and `pkg\` dependency trees from `-go2cspath`; references inside that converted graph are relative. See [Converting a real-world module](#converting-a-real-world-module). |
 | `-tests` | Also convert the package's eligible `_test.go` suite and emit a runnable C# test-host project alongside the converted package (default off; cannot be combined with `-recurse`). Defaults to `-comments` on, resolves the output path to absolute, and self-locates `$(go2csPath)` by walking up from the output directory to the first root containing `core\golib` — so the canonical two-argument form `go2cs -tests -test-action all <goroot-package-dir> <converted-package-dir>` works from a bare clone with no flags or environment setup. See [Try it yourself — validate a converted test suite](#try-it-yourself--validate-a-converted-test-suite) for a worked example. |
 | `-test-action <action>` | With `-tests`: one of `convert` (default), `build`, `run`, `compare`, or `all`. `convert` and `all` convert the package and its tests; `build` / `run` / `compare` act on the **existing** converted artifacts — validated against the test manifest's recorded input digest — without reconverting. `compare` (and `all`, after converting) runs both `go test -json -count=1` and the converted C# test host and diffs the terminal results by test name. |
 | `-test-timeout <duration>` | Timeout for each converted-test child process (build / run / compare), in Go duration syntax (default `2m`; must be positive). |
@@ -213,8 +213,9 @@ go2cs -tests -test-action all goroot_pkg_dir converted_pkg_dir   # ...and build,
 | `-debug` | Debug mode: disables the converter's per-file panic recovery, so a conversion failure crashes with a full stack trace instead of being reported as a warning. |
 | ~~`-cgo`~~ | ~~Also convert cgo-targeted files.~~ |
 
-All converted C# code will reference a hand-written runtime library (`golib`, published as the [`go.lib`](https://www.nuget.org/packages/go.lib)
-NuGet package) plus a set of Roslyn source generators that supply Go semantics at compile time.
+All converted C# code references a hand-written runtime library (`golib`, published as the [`go.lib`](https://www.nuget.org/packages/go.lib)
+NuGet package) plus a set of Roslyn source generators that supply Go semantics at compile time (published as
+[`go.gen`](https://www.nuget.org/packages/go.gen)). A `-recurse=nuget` conversion wires both up for you.
 
 ### Converting a real-world module
 
@@ -223,27 +224,19 @@ every third-party dependency package** in its transitive import closure — in d
 (least-dependencies-first) — while **referencing** (not reconverting) the pre-converted standard library.
 The result is a C# solution you can open and build.
 
+With `-recurse=nuget` that standard library, the `golib` runtime and the `go2cs-gen` analyzer come from
+[nuget.org](https://www.nuget.org/packages?q=go2cs%20ritchiecarroll) as the `go.<pkg>` / `go.lib` / `go.gen`
+packages, so nothing has to be staged on the machine beforehand — the generated projects pull in the go2cs
+stack the way any other .NET dependency arrives. (Prefer the standard library as local C# source? See
+[building against a local standard library](#optional-build-against-a-local-standard-library) below.)
+
 Here is the full round-trip for a small CLI that uses [`github.com/fatih/color`](https://github.com/fatih/color),
 which itself pulls in `github.com/mattn/go-colorable`, `github.com/mattn/go-isatty`, and `golang.org/x/sys` —
 a genuine dependency graph:
 
 > **NOTE:** _to date, the following steps have only been tested on Windows — instructions assume `cmd.exe` type shell._
 
-**1 — Prerequisite: Stage the standard library (one-time).** `deploy-core` is a build script in the go2cs repo's **`src/`**
-folder (it is *not* on your `PATH`), so run it from there. It stages the pre-converted stdlib + runtime +
-analyzer at `%GOPATH%\src\go2cs` (the "deploy root") that every converted project references. This is a
-**one-time, per-machine** setup, unrelated to any particular app — **redo it only when you pull a new go2cs
-version**, to refresh the staged runtime/analyzer/stdlib:
-
-```bat
-cd path\to\go2cs\src
-deploy-core stdlib    & :: the full compilable standard library
-```
-> **NOTE 1:** _you can use the `deploy-core stub` instead to deploy the smaller, more runnable baseline subset of the Go Standard Library, i.e., the one currently used with behavioral tests. However, this will only work for the most simple of Go applications._
-
->  **NOTE 2:** _although you can use `-recurse=nuget` option to reference needed Go Standard Library assemblies and the go2cs source generation analyzer as pre-compiled binaries, thus skipping the need for this source code deployment step entirely, using the analyzer with referenced assemblies instead of source code is still a work in progress. This example **requires source code deployment** to run._
-
-**2 — Go: get the app and confirm it builds as Go.**
+**1 — Go: get the app and confirm it builds as Go.**
 
 ```bat
 mkdir colordemo && cd colordemo
@@ -265,7 +258,7 @@ func main() {
 
 Next, pin the app to a **Go 1.23-compatible** dependency set and confirm it builds as Go. 
 
-> **NOTE:** _this pin is needed because go2cs is currently built with **Go 1.23** (see [status](#status)), so its type-checker can only read modules whose `go` directive — and their dependencies' — is **≤ 1.23**; the latest `fatih/color` (v1.19+) and `golang.org/x/sys` releases now require **Go 1.25**, which would make the conversion in step 3 fail with_ `package requires newer Go version go1.25`_. Future go2cs builds will work against newer Go toolchains and lift this constraint, letting an unpinned `go mod tidy` "just work"; until then, pin third-party dependencies as shown:_:
+> **NOTE:** _this pin is needed because go2cs is currently built with **Go 1.23** (see [status](#status)), so its type-checker can only read modules whose `go` directive — and their dependencies' — is **≤ 1.23**; the latest `fatih/color` (v1.19+) and `golang.org/x/sys` releases now require **Go 1.25**, which would make the conversion in step 2 fail with_ `package requires newer Go version go1.25`_. Future go2cs builds will work against newer Go toolchains and lift this constraint, letting an unpinned `go mod tidy` "just work"; until then, pin third-party dependencies as shown:_:
 
 ```bat
 set GOTOOLCHAIN=local
@@ -274,24 +267,25 @@ go mod tidy                               & :: download color + its (Go 1.23-era
 go build ./...                            & :: baseline: confirm it compiles as Go first
 ```
 
-**3 — go2cs: recurse-convert the app.** `go2cs` is the converter you put on your `PATH` in *Installing the
-converter* above, so it runs from anywhere. Point it at the **app** directory and at the deploy root from
-step 1 (the standard library staged there is referenced, not re-converted):
+**2 — go2cs: recurse-convert the app.** `go2cs` is the converter you put on your `PATH` in *Installing the
+converter* above, so it runs from anywhere. Point it at the **app** directory, and give it an output root
+to write the generated C# into:
 
 ```bat
 cd path\to\colordemo
-go2cs -recurse . -go2cspath %GOPATH%\src\go2cs
+go2cs -recurse=nuget . csharp
 ```
 
 `go2cs` discovers the imports and converts each package, least-dependencies-first
-(`go-isatty` and `x/sys` → `go-colorable` → `color` → the app), into a parallel tree under the deploy
-root, leaving your original Go source untouched. The converted app itself lands under
-`%GOPATH%\src\go2cs\src\<import-path>`, every third-party library are converted under
-`%GOPATH%\src\go2cs\pkg\<import-path>`. The existing standard library is referenced at
-`%GOPATH%\src\go2cs\core\`. 
+(`go-isatty` and `x/sys` → `go-colorable` → `color` → the app), into a parallel tree under `csharp\`,
+leaving your original Go source untouched. The converted app itself lands under
+`csharp\src\<import-path>`, and every third-party library is converted under
+`csharp\pkg\<import-path>`. The standard library is referenced as `go.<pkg>` packages, and the generated
+`csharp\Directory.Build.props` supplies the version they resolve — so the projects restore and build with
+no further configuration.
 
 Additionally, a per-project `.slnx` exists next to every generated `.csproj` — each with that project
-plus its converted dependencies, golib, and the analyzer (no stdlib).
+plus its converted dependencies.
 
 _Code converted from `main.go` should look like the following in `main.cs`:_
 ```c#
@@ -309,15 +303,16 @@ internal static void Main() {
 } // end main_package
 ```
 
-**4 — C#: build the generated solution.** The app's per-project `.slnx` builds the app and its whole
-converted dependency tree; opening it in Visual Studio makes the app the startup project (F5 runs it):
+**3 — C#: build the generated solution.** The app's per-project `.slnx` builds the app and its whole
+converted dependency tree, restoring the go2cs packages on the way; opening it in Visual Studio makes the
+app the startup project (F5 runs it):
 
 ```bat
-cd "%GOPATH%\src\go2cs\src\example.com\colordemo\"
+cd "csharp\src\example.com\colordemo\"
 dotnet build example.com.colordemo.slnx -c Debug
 ```
 
-**5 — C#: run the converted app.** Navigate into the default .NET 9.0 debug build folder, and run demo:
+**4 — C#: run the converted app.** Navigate into the default .NET 9.0 debug build folder, and run demo:
 ```bat
 cd "bin\Debug\net9.0\"
 colordemo.exe
@@ -326,7 +321,35 @@ _Expected output:_
 
 ![colorapp-output](images/colorapp-output.png)
 
-> **NOTE:** these conversion and build steps will produce a **buildable** — and increasingly **runnable** — .NET-based solution handling common real-world Go module shapes. This simple `fatih/color` example **compiles clean** (app + all four dependency projects, against a current deploy) **and runs**. Running more complex projects to completion is a deeper milestone: the referenced standard library **compiles** but is not yet fully **operational**. *Running* is the **Phase-4** goal, see [`roadmap`](Roadmap.md#phase-4--convert-and-run-go-package-tests).
+> **NOTE:** these conversion and build steps produce a **buildable** — and increasingly **runnable** — .NET-based solution handling common real-world Go module shapes. This simple `fatih/color` example **compiles clean** (app + all four dependency projects) **and runs**. Running more complex projects to completion is a deeper milestone: the referenced standard library **compiles** in full, and is being made **operational** package by package — [Validated Test Packages](ValidatedTestPackages.md) tracks which of Go's own test suites already pass in C#. *Running* is the **Phase-4** goal, see [`roadmap`](Roadmap.md#phase-4--convert-and-run-go-package-tests).
+
+#### Optional: build against a local standard library
+
+Some work wants the standard library on disk as C# source instead — to step into it in the debugger, or to
+change it and rebuild. `deploy-core` is a build script in the go2cs repo's **`src/`** folder (it is *not* on
+your `PATH`), so run it from there. It stages the pre-converted stdlib + runtime + analyzer at
+`%GOPATH%\src\go2cs` — the "deploy root" a converted project resolves through `$(go2csPath)`:
+
+```bat
+cd path\to\go2cs\src
+deploy-core stdlib    & :: the full compilable standard library
+```
+
+Staging is **per-machine**, not per-app; redo it when you pull a new go2cs version to refresh the staged
+runtime, analyzer and standard library. `deploy-core stub` stages the smaller baseline subset used by the
+behavioral tests instead — enough for only the simplest Go applications.
+
+Then convert with plain `-recurse`, pointing at the deploy root:
+
+```bat
+cd path\to\colordemo
+go2cs -recurse . -go2cspath %GOPATH%\src\go2cs
+```
+
+The converted app lands under `%GOPATH%\src\go2cs\src\<import-path>` and its converted third-party
+dependencies under `%GOPATH%\src\go2cs\pkg\<import-path>`, with the standard library referenced at
+`%GOPATH%\src\go2cs\core\`; build and run it exactly as in steps 3 and 4 from there. The converted C# is
+the same either way — only the reference style in the generated projects differs.
 
 ## Project layout
 
@@ -371,7 +394,7 @@ production code under [`src/go-src-converted`](https://github.com/ritchiecarroll
 (for example, [`unicode/utf8/utf8_test.cs`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/unicode/utf8/utf8_test.cs)) —
 so you can read the exact C# that runs. You can also re-run the validation yourself. You need
 **[Go 1.23.1](https://go.dev/dl/)** (for the reference `go test` run) and the **[.NET 9 SDK](https://dotnet.microsoft.com/download)**
-(to build and run the converted test host). This example assumes `go2cs` is installed, see step 2 from [converting a real-world module](#converting-a-real-world-module):
+(to build and run the converted test host). This example assumes `go2cs` is installed, see [installing the converter](#installing-the-converter):
 
 ```sh
 # 1. Convert unicode/utf8's test suite, build + run the C# host, and diff it against `go test`.

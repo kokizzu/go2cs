@@ -10,8 +10,8 @@ The interface is deliberately parallel:
 - The original Tour occupies the left two-thirds of the window.
 - Generated C# occupies the right third, with a draggable divider.
 - **Code** and **Project** tabs show the matching `.cs` and `.csproj`.
-- The **Runtime** selector chooses live source, a deployed stdlib, or NuGet
-  packages without changing the Go lesson.
+- The **Runtime** selector chooses NuGet packages, a deployed stdlib, or live
+  checkout source without changing the Go lesson.
 - **Transpile**, **Build**, and **.NET Run** keep their output separate.
 - Navigating to a Tour page converts it automatically.
 - Editing Go marks the C# stale until **Convert** is selected.
@@ -25,8 +25,8 @@ The interface is deliberately parallel:
 - Go 1.23.1 or later
 - .NET SDK 9.0 or later
 - A local clone of this `go2cs` repository
-- Network access on the first start to install the official offline Tour, and when an exercise first
-  imports a Go module that is not already in the local module cache
+- Network access on the first start to install the official offline Tour and restore the go2cs NuGet
+  packages, and when an exercise first imports a Go module that is not already in the local module cache
 
 The app binds to loopback by default. It executes editor content as local code,
 so it should not be exposed to an untrusted network.
@@ -36,29 +36,26 @@ so it should not be exposed to an untrusted network.
 From the repository root:
 
 ```powershell
-.\src\tour\scripts\start.ps1
+.\src\tour\scripts\start.ps1 -Runtime nuget
 ```
 
 The bootstrap script verifies Go and .NET, installs
 `golang.org/x/website/tour@latest` when needed, and opens
-<http://127.0.0.1:4000>.
+<http://127.0.0.1:4000>. `-Runtime nuget` builds converted lessons against the
+published go2cs packages, so no standard library has to be staged first; the
+alternatives are described under *.NET runtime sources* below, and the
+**Runtime** selector switches between them without a restart.
 
 To leave the browser closed or use another loopback port:
 
 ```powershell
-.\src\tour\scripts\start.ps1 -NoOpen -ListenAddress 127.0.0.1:4100
-```
-
-To force a specific .NET runtime source:
-
-```powershell
-.\src\tour\scripts\start.ps1 -Runtime core
+.\src\tour\scripts\start.ps1 -Runtime nuget -NoOpen -ListenAddress 127.0.0.1:4100
 ```
 
 ## Start on macOS or Linux
 
 ```sh
-./src/tour/scripts/start.sh
+./src/tour/scripts/start.sh -runtime=nuget
 ```
 
 ## Direct server options
@@ -75,11 +72,11 @@ Useful options:
 - `-addr=127.0.0.1:4000`: address for Tour of go2cs
 - `-tour-addr=127.0.0.1:3999`: private address for the upstream Tour
 - `-repo=/path/to/go2cs`: explicit repository root
-- `-runtime=core|deployed|nuget`: initial .NET runtime source; when omitted,
-  deployed stdlib is selected if detected, otherwise core source
+- `-runtime=core|deployed|nuget`: initial .NET runtime source; when omitted, a
+  detected deployed stdlib is selected, otherwise core source
 - `-deployed-root=/path/to/go2cs`: root created by `deploy-core.ps1 stdlib`
 - `-nuget-source=/path/or/feed`: folder or feed containing go2cs packages
-- `-nuget-version=1.23.1.1`: package version to restore
+- `-nuget-version=1.23.1.2`: package version to restore
 - `-no-tour`: do not launch the upstream Tour process
 - `-no-open`: do not open a browser
 
@@ -90,10 +87,13 @@ prevents a converter cached by an older checkout from being used with a newer To
 
 ## .NET runtime sources
 
-**Core source** (`-runtime=core`) converts and builds against the current
-checkout's `src/core`, `src/gen`, and converted package projects, which is the
-best mode while developing go2cs itself. It is the automatic fallback when no
-valid deployed stdlib is detected.
+**NuGet packages** (`-runtime=nuget`) rewrites the generated project references
+to `go.gen`, `go.lib`, and the required `go.*` packages, so lessons build
+against the published converted standard library with nothing staged locally.
+The server prefers the local `src/artifacts/nupkg` feed when packages exist,
+then falls back to nuget.org. The version comes from `src/version.props`.
+Override either value with `-nuget-source` / `GO2CS_NUGET_SOURCE` and
+`-nuget-version` / `GO2CS_NUGET_VERSION`.
 
 **Deployed stdlib** (`-runtime=deployed`) uses the compiled/full
 standard-library tree produced by:
@@ -103,18 +103,17 @@ standard-library tree produced by:
 ```
 
 The server discovers this at `$GOPATH/src/go2cs`. Override it with
-`-deployed-root` or `GO2CS_DEPLOYED_ROOT`. A valid deployed tree becomes the
-default runtime when `-runtime` is omitted.
+`-deployed-root` or `GO2CS_DEPLOYED_ROOT`. Choose it when lessons should build
+against your own checkout's converted standard library as source, so you can
+step into it or pick up a local change immediately. A valid deployed tree
+becomes the default runtime when `-runtime` is omitted.
 
-> **NOTE:** This option will produce the best runtime results for converted tour code. 
-
-**NuGet packages** (`-runtime=nuget`) rewrites the generated project
-references to `go.gen`,
-`go.lib`, and the required `go.*` packages. The server prefers the local
-`src/artifacts/nupkg` feed when packages exist, then falls back to nuget.org.
-The version comes from `src/version.props`. Override either value with
-`-nuget-source` / `GO2CS_NUGET_SOURCE` and
-`-nuget-version` / `GO2CS_NUGET_VERSION`.
+**Core source** (`-runtime=core`) converts and builds against the current
+checkout's `src/core`, `src/gen`, and converted package projects, which is the
+best mode while developing go2cs itself. `src/core` is the smaller baseline
+subset of the standard library, so a lesson importing beyond it is better served
+by either source above. It is the automatic fallback when no valid deployed
+stdlib is detected.
 
 ## Keyboard controls
 

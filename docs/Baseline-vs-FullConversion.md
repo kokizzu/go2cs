@@ -112,9 +112,9 @@ passing the Go unit tests). Getting there, for `runtime`:
 So the loop no longer *stops* at the S1/CS0030 "architectural wall" — it **sorts**: convert the native-type
 ops, apply the managed-referent model, and stub the genuine raw-metal dragons with `GoManualConversion`.
 
-Once the whole stdlib compiles and the converted **Go tests** pass, a versioned build can ship to **NuGet**;
-at that point the chicken-and-egg is gone and `core` can be dropped (behavioral tests reference NuGet) or
-replaced with prior operational `go-src-converted` source — TBD.
+Versioned builds of the full conversion ship to **NuGet** as `go.<pkg>` / `go.lib` / `go.gen`. Once the
+converted **Go tests** pass broadly enough, the chicken-and-egg is gone and `core` can be dropped
+(behavioral tests reference NuGet) or replaced with prior operational `go-src-converted` source — TBD.
 
 ## Hand-owning a package to make it OPERATIONAL (Phase 4) — two patterns + the marker
 

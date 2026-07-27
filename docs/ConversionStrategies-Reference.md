@@ -201,7 +201,7 @@ CONSUMING package:
 spellings `Errno` and `syscall_package.Errno` were each recorded, resolved to the same type, and made
 `ImplementGenerator` emit the `syscall_Errnoᴠerror` adapter **twice** — CS0102 / CS0111 ×5 / CS8646.
 That single duplicated adapter is what made the README's `fatih/color` walkthrough unbuildable under
-`-recurse=nuget`, and it is why that step documented a source deployment as required.
+`-recurse=nuget`.
 
 **Note what is NOT the cause.** The `go2cs-gen` generators are not reference-kind sensitive: a real
 MSBuild build hands a `<ProjectReference>` to the compiler as a `PortableExecutableReference` exactly
@@ -362,7 +362,7 @@ Guarded by the `PackageVarInitOrder` behavioral test, which carries both halves:
 
 One big difference between Go and many other languages is the notion of _source availability_. Traditionally programming languages have depended on using a pre-compiled library — both to avoid recompiling the library and to protect source as intellectual property. Go was born in an era of faster computing and prolific open source; it relies on having access to all source at compile time, including library code. Go takes advantage of this to make interesting optimizations, especially around when a structure escapes the stack to the heap. Keeping structures off the heap means they do not need to be tracked for garbage collection, and the Go compiler manages this automatically. The interesting consequence is that, for a given use of a library as source, an application structure may or may not escape to the heap depending on how it flows through the code — an optimization only possible when all source is compiled together.
 
-Because this is a complex optimization, the converter currently assumes structures can escape to the heap except in the simplest-to-detect cases (see [Pointers](#pointers)). A future option could distinguish optimizations targeted at a compiled library (very safe escape analysis) versus a standalone application (more aggressive). A longer-term plan is to allow already-converted packages to be referenced as compiled libraries (e.g., from NuGet), which fits the consumption model most C# developers are accustomed to; this requires a mapping from original Go package to published package reference plus an embedded manifest of each package's exported type aliases.
+Because this is a complex optimization, the converter currently assumes structures can escape to the heap except in the simplest-to-detect cases (see [Pointers](#pointers)). A future option could distinguish optimizations targeted at a compiled library (very safe escape analysis) versus a standalone application (more aggressive). Already-converted packages **are** referenced as compiled libraries — the consumption model most C# developers are accustomed to — which takes two pieces, both in place: `-recurse=nuget` maps each imported Go package to its published `go.<pkg>` package reference, and the exported metadata a consumer would otherwise scrape out of the dependency's converted source travels with the converter (see [A NuGet-referenced standard library carries its exported metadata IN THE CONVERTER](#a-nuget-referenced-standard-library-carries-its-exported-metadata-in-the-converter)).
 
 ## Constant Values
 Go constants hold arbitrary-precision literals with expression support, and assignment of a constant to a variable happens at compile time. The converter preserves the constant value (and, in a comment, the original expression). A *typed* Go constant is emitted with its concrete C# type, e.g.:
