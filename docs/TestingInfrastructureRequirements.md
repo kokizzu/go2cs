@@ -165,6 +165,32 @@ preserve the relative layout expected by Go tests, including `testdata`, fixture
 that the test intentionally reads. The original GOROOT or repository shall not be used as a writable
 test directory.
 
+**Shared (ancestor) fixtures.** "Relative layout" is not limited to the package's own `testdata/`. Go
+shares large fixtures between sibling packages rather than duplicating them: `compress/{flate,zlib,lzw}`
+all read `../testdata/{e,pi,gettysburg}.txt`, and `flate` also reads
+`../../testdata/Isaac.Newton-Opticks.txt`. Eleven converted packages depend on such a path —
+`compress/{flate,lzw,zlib}`, `image/{draw,gif,jpeg,png}`, `index/suffixarray`, `internal/zstd`, `net`.
+Three parts make it work, and all three are required:
+
+1. **Discovery** — the converter scans each package's `_test.go` sources for `"../"`-prefixed literals
+   with a `testdata` path segment whose target exists, and stages them like any other fixture. They join
+   the same list that feeds the input digest, so editing a shared fixture invalidates staleness normally.
+2. **Build output** — such a path cannot keep its shape under the build output (MSBuild links a
+   `..`-relative item by its BARE FILE NAME, which both flattens the two `testdata` trees together and
+   loses the relative shape), so the emitted `csproj` gives it an explicit `Link` under a staging root,
+   keyed by how many levels it ascends. Two ancestors may hold a same-named file, so the level count is
+   part of the key.
+3. **Sandbox shape** — the isolated working directory mirrors the package's WHOLE import path
+   (`<runRoot>/compress/flate`), not just its last segment. That is what makes `../testdata/e.txt`
+   resolve to a real location *inside* the sandbox, and it is Go's own layout, so the depth is always
+   sufficient rather than guessed. The containment check is therefore against the run root, not the
+   working directory — a shared fixture legitimately lands beside the package directory. Mirroring also
+   preserves the property the flat form was chosen for (the working directory's parent holds nothing but
+   the package, which `io/fs`'s `TestGlob` relies on) because each mirrored level holds only the next.
+
+Staging only the package's own `testdata/` left these opens failing, which is what held `compress/flate`
+at 61 of 64 tests and blocked `compress/zlib` and `compress/lzw` from validating at all.
+
 The orchestrator shall pass a controlled environment and record relevant values in the result manifest:
 GOOS, GOARCH, Go version, .NET runtime, culture, timezone, test seed, package source revision, and
 converter revision. Default culture shall be invariant unless the matched Go test explicitly requires

@@ -279,13 +279,13 @@ public static class TestHost
         // TestGlob globs `*/glob.go` against os.DirFS("..") and expects `fs/glob.go` — which a bare
         // GUID directory answers with the GUID (and, worse, with every SIBLING run still on disk).
         string runRoot = Path.Combine(Path.GetTempPath(), "go2cs-tests", SanitizePath(registry.Package), Guid.NewGuid().ToString("N"));
-        string workingDirectory = Path.Combine(runRoot, PackageDirectoryName(registry.Package));
+        string workingDirectory = Path.Combine(runRoot, PackageDirectoryPath(registry.Package));
         options.ResolveOutputPaths(previousDirectory);
 
         try
         {
             Directory.CreateDirectory(workingDirectory);
-            CopyFixtures(registry.Fixtures, workingDirectory);
+            CopyFixtures(registry.Fixtures, workingDirectory, runRoot);
             Environment.CurrentDirectory = workingDirectory;
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
             CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
@@ -351,21 +351,55 @@ public static class TestHost
         return runner.HasRun ? runner.ExitCode : 0;
     }
 
-    private static void CopyFixtures(IReadOnlyList<string> fixtures, string workingDirectory)
+    // Output-directory folder holding fixtures that reach ABOVE the package. MUST match the
+    // converter's SharedFixtureStagingRoot, which emits the matching csproj <Link>.
+    private const string SharedFixtureStagingRoot = "go2cs_shared_fixtures";
+
+    private static void CopyFixtures(IReadOnlyList<string> fixtures, string workingDirectory, string runRoot)
     {
         foreach (string relativePath in fixtures)
         {
             string normalized = relativePath.Replace('/', Path.DirectorySeparatorChar);
-            string source = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, normalized));
+
+            // Go shares large fixtures between sibling packages rather than duplicating them:
+            // compress/{flate,zlib,lzw} all read ../testdata/{e,pi,gettysburg}.txt, and flate also
+            // reads ../../testdata/Isaac.Newton-Opticks.txt. Such a path cannot keep its shape under
+            // the build output, so the csproj links it to <root>/up<N>/<tail>; restore the true
+            // relative path here. The TARGET lands inside runRoot rather than the working directory
+            // — which is exactly why the working directory mirrors the whole import path.
+            string source = SharedFixtureStagingParts(relativePath) is var (up, tail) && up > 0
+                ? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, SharedFixtureStagingRoot, $"up{up}", tail.Replace('/', Path.DirectorySeparatorChar)))
+                : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, normalized));
+
             string target = Path.GetFullPath(Path.Combine(workingDirectory, normalized));
 
+            // The run root is the containment boundary, not the working directory: a shared fixture
+            // legitimately resolves to a SIBLING of the package directory inside the sandbox.
             if (!source.StartsWith(AppContext.BaseDirectory, StringComparison.OrdinalIgnoreCase) ||
-                !target.StartsWith(workingDirectory, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException($"fixture escapes package root: {relativePath}");
+                !target.StartsWith(runRoot, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"fixture escapes run root: {relativePath}");
 
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             File.Copy(source, target, true);
         }
+    }
+
+    // Splits a fixture path that reaches above the package into the levels it ascends and the
+    // remainder ("../testdata/e.txt" -> (1, "testdata/e.txt")); (0, path) for anything at or below
+    // the package. The level count is part of the staging key because two different ancestors can
+    // hold a same-named file. Mirrors the converter's sharedFixtureStagingParts.
+    private static (int Up, string Tail) SharedFixtureStagingParts(string fixture)
+    {
+        int up = 0;
+        string tail = fixture;
+
+        while (tail.StartsWith("../", StringComparison.Ordinal))
+        {
+            up++;
+            tail = tail["../".Length..];
+        }
+
+        return (up, tail);
     }
 
     private static void WriteResults(string? path, string package, TestOptions options, IReadOnlyList<TestEvent> events)
@@ -466,15 +500,24 @@ public static class TestHost
         return sanitized?.ToString() ?? value;
     }
 
-    // The package's own directory name — the last element of its Go import path ("io/fs" -> "fs"),
-    // which is what `go test` makes the working directory's base name.
-    private static string PackageDirectoryName(string importPath)
+    // The package's directory path under the run root, mirroring its whole Go import path
+    // ("compress/flate" -> "compress\flate"). The last element is what `go test` makes the working
+    // directory's base name; the ANCESTORS matter too, because a package that reads a shared
+    // fixture ("../testdata/e.txt", "../../testdata/Isaac.Newton-Opticks.txt") needs those levels to
+    // exist INSIDE the sandbox for the relative open() to resolve. Mirroring the import path gives
+    // exactly Go's own layout, so the depth is always sufficient and never guessed. It also
+    // preserves the property the flat form was chosen for — the parent of the working directory
+    // holds nothing but the package (io/fs's TestGlob globs `*/glob.go` against os.DirFS("..") and
+    // expects `fs/glob.go`) — since each mirrored level holds only the next.
+    private static string PackageDirectoryPath(string importPath)
     {
-        string trimmed = importPath.TrimEnd('/');
-        int separator = trimmed.LastIndexOf('/');
-        string name = separator < 0 ? trimmed : trimmed[(separator + 1)..];
+        string[] segments = importPath.TrimEnd('/')
+            .Split('/', StringSplitOptions.RemoveEmptyEntries)
+            .Select(SanitizePath)
+            .Where(segment => !string.IsNullOrEmpty(segment))
+            .ToArray();
 
-        return string.IsNullOrEmpty(name) ? "pkg" : SanitizePath(name);
+        return segments.Length == 0 ? "pkg" : Path.Combine(segments);
     }
 
     private static string SanitizePath(string value) =>

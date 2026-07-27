@@ -2067,7 +2067,21 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 
 	var fixtureItems strings.Builder
 	for _, fixture := range fixtures {
-		fixtureItems.WriteString(fmt.Sprintf("\r\n    <None Include=\"%s\" CopyToOutputDirectory=\"PreserveNewest\" />", xmlEscape(filepath.ToSlash(fixture))))
+		slashed := filepath.ToSlash(fixture)
+
+		// A fixture ABOVE the package ("../testdata/e.txt") needs an explicit <Link>: MSBuild's
+		// default link for a `..`-relative item is its BARE FILE NAME, which both flattens the two
+		// `testdata` trees into one and drops the relative shape the test's own open() needs. Link
+		// it into a staging root under the output directory, keyed by how far up it reaches, and
+		// TestHost.CopyFixtures maps it back to the true relative path inside the run sandbox
+		// (SharedFixtureStagingRoot there — keep the two in sync).
+		if up, tail, isShared := sharedFixtureStagingParts(slashed); isShared {
+			fixtureItems.WriteString(fmt.Sprintf("\r\n    <None Include=\"%s\" Link=\"%s/up%d/%s\" CopyToOutputDirectory=\"PreserveNewest\" />",
+				xmlEscape(slashed), SharedFixtureStagingRoot, up, xmlEscape(tail)))
+			continue
+		}
+
+		fixtureItems.WriteString(fmt.Sprintf("\r\n    <None Include=\"%s\" CopyToOutputDirectory=\"PreserveNewest\" />", xmlEscape(slashed)))
 	}
 
 	var referenceItems strings.Builder
@@ -2467,8 +2481,134 @@ func testFixturePaths(inputPath string) ([]string, error) {
 		}
 	}
 
+	shared, err := parentRelativeFixturePaths(inputPath)
+	if err != nil {
+		return nil, err
+	}
+	paths = append(paths, shared...)
+
 	sort.Strings(paths)
 	return paths, nil
+}
+
+// sharedFixtureRef matches a Go double-quoted literal naming a fixture ABOVE the package —
+// "../testdata/e.txt", "../../testdata/Isaac.Newton-Opticks.txt". Go's stdlib spells these as
+// plain literals everywhere they occur, so a source scan is exact; nothing builds them with
+// filepath.Join.
+var sharedFixtureRef = regexp.MustCompile(`"((?:\.\./)+[^"]*)"`)
+
+// parentRelativeFixturePaths finds the fixtures a package's tests read from ABOVE their own
+// directory and returns them as "../"-prefixed slash paths — the same shape testFixturePaths
+// returns for the package's own testdata, so copyTestFixtures stages them and testInputDigest
+// covers them for staleness with no further work (filepath.Join cleans the "../" on both the read
+// and the write, landing each file at the mirrored ancestor location under the output root, which
+// is what makes the test's own relative open() resolve).
+//
+// Go shares large fixtures between sibling packages rather than duplicating them: compress/flate,
+// compress/zlib and compress/lzw all read ../testdata/{e,pi,gettysburg}.txt, and flate also reads
+// ../../testdata/Isaac.Newton-Opticks.txt. Staging only the package's OWN testdata/ left those
+// opens failing, which is what kept compress/flate at 61 of 64 tests (and gates image/{draw,gif,
+// jpeg,png}, index/suffixarray, internal/zstd and net the same way).
+//
+// Two constraints keep this bounded. The path must have a "testdata" segment — the universal
+// convention for every occurrence in the stdlib — and the resolved source must exist. Together
+// they stop an unrelated "../" literal (a URL, a comment fragment, a relative import in a string)
+// from being treated as a fixture and reaching outside the tree.
+func parentRelativeFixturePaths(inputPath string) ([]string, error) {
+	testSources, err := filepath.Glob(filepath.Join(inputPath, "*_test.go"))
+	if err != nil {
+		return nil, err
+	}
+
+	seen := HashSet[string]{}
+	paths := make([]string, 0)
+
+	for _, testSource := range testSources {
+		contents, err := os.ReadFile(testSource)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, match := range sharedFixtureRef.FindAllStringSubmatch(string(contents), -1) {
+			reference := filepath.ToSlash(filepath.Clean(match[1]))
+
+			if !hasPathSegment(reference, "testdata") || seen.Contains(reference) {
+				continue
+			}
+
+			resolved := filepath.Join(inputPath, filepath.FromSlash(reference))
+			info, err := os.Stat(resolved)
+
+			if err != nil {
+				// A referenced-but-absent fixture is not this pass's business: the test that reads
+				// it fails identically under `go test`, so the differential comparison still agrees.
+				continue
+			}
+
+			seen.Add(reference)
+
+			if !info.IsDir() {
+				paths = append(paths, reference)
+				continue
+			}
+
+			err = filepath.WalkDir(resolved, func(path string, entry fs.DirEntry, walkErr error) error {
+				if walkErr != nil {
+					return walkErr
+				}
+				if entry.IsDir() {
+					return nil
+				}
+				rel, err := filepath.Rel(inputPath, path)
+				if err != nil {
+					return err
+				}
+				paths = append(paths, filepath.ToSlash(rel))
+				return nil
+			})
+
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return paths, nil
+}
+
+// SharedFixtureStagingRoot is the output-directory folder that holds fixtures reaching ABOVE the
+// package. They cannot keep their `../` shape under the build output, so each is staged at
+// "<root>/up<N>/<tail>" and the test host restores the true relative path inside its run sandbox.
+// MUST match TestHost.SharedFixtureStagingRoot.
+const SharedFixtureStagingRoot = "go2cs_shared_fixtures"
+
+// sharedFixtureStagingParts splits a fixture path that reaches above the package into the number of
+// levels it ascends and the remainder, so it can be staged at a flat, collision-free location:
+// "../testdata/e.txt" -> (1, "testdata/e.txt"). The level count is part of the key because two
+// different ancestors can hold a same-named file ("../testdata/e.txt" vs "../../testdata/e.txt").
+// Reports false for a fixture at or below the package, which needs no staging.
+func sharedFixtureStagingParts(fixture string) (int, string, bool) {
+	up := 0
+	tail := fixture
+
+	for strings.HasPrefix(tail, "../") {
+		up++
+		tail = tail[len("../"):]
+	}
+
+	return up, tail, up > 0 && tail != ""
+}
+
+// hasPathSegment reports whether a slash path contains the given segment whole — "testdata/e.txt"
+// and "../testdata" match "testdata", "mytestdata.txt" does not.
+func hasPathSegment(path, segment string) bool {
+	for _, part := range strings.Split(path, "/") {
+		if part == segment {
+			return true
+		}
+	}
+
+	return false
 }
 
 func copyTestFixtures(inputPath, outputPath string) ([]string, error) {

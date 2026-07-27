@@ -18,9 +18,9 @@ a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **57 / 215 testable packages validated — 26.5%**
+> ### Phase 4 progress: **59 / 215 testable packages validated — 27.4%**
 >
-> **1,459 matching test verdicts · 47 disclosed** *(updated 2026-07-26 — maintained as part of the
+> **1,484 matching test verdicts · 47 disclosed** *(updated 2026-07-27 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -31,6 +31,8 @@ any other failure is still a hard mismatch.
 | [`cmp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/cmp) | 4 | | Generics with an ordered-type constraint. |
 | [`compress/bzip2`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/compress/bzip2) | 4 | | Bzip2 decompression — bit readers, Huffman trees, the move-to-front decoder. |
 | [`compress/gzip`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/compress/gzip) | 15 | | Gzip round-trips over the real DEFLATE coder — flate's Huffman encoder/decoder tables, multistream framing, CRC/ISIZE trailers. |
+| [`compress/lzw`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/compress/lzw) | 18 | | LZW coder in both bit orders (GIF's LSB, TIFF/PDF's MSB) — code-width growth, dictionary reset, and the reader/writer `Reset` matrix over the shared `../testdata` corpus. |
+| [`compress/zlib`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/compress/zlib) | 7 | | zlib framing over the real DEFLATE coder — Adler-32 trailer, preset dictionaries, and every compression level across the shared `../testdata` corpus. |
 | [`container/heap`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/heap) | 7 | | Heap interface over a slice. |
 | [`container/list`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/list) | 10 | | Doubly-linked list — pointers and receiver methods. |
 | [`container/ring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/ring) | 8 | | Circular linked list — a pointer graph. |
