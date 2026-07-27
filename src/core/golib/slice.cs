@@ -255,6 +255,23 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         m_capacity = capacity - low;
     }
 
+    // A `make([]T, len[, cap])` whose ELEMENT zero value must itself be constructed, because
+    // default(T) is not usable storage: a fixed-size array element (`[][hashSize]int` ->
+    // slice<array<int>>, whose inner length exists only in the Go type, never in array<T>) or a
+    // struct whose own zero value needs construction. The converter supplies the factory since
+    // only it knows the element's shape; every other element type keeps the plain length ctor's
+    // fill of default(T). Mirrors array<T>'s element-factory constructor.
+    //
+    // The WHOLE backing is filled, not just the first 'length' elements: Go zeroes the full
+    // allocation, so the capacity beyond the length is already valid storage once a re-slice or
+    // append exposes it.
+    public slice(nint length, Func<T> elementFactory, nint capacity = -1, nint low = 0)
+        : this(length, capacity, low)
+    {
+        for (int i = 0; i < m_array.Length; i++)
+            m_array[i] = elementFactory();
+    }
+
     public T[] Source => ToSpan().ToArray();
 
     public Span<T> ꓸꓸꓸ => ToSpan(); // Spread operator

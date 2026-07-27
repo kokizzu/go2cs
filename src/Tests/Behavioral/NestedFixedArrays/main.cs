@@ -80,6 +80,21 @@ internal static void Main() {
     var nr2 = @new<row>();
     nr2.Value[3] = 17;
     fmt.Println(len(nr2.Value), nr2.Value[3], nr2.Value[0]);
+    var grid = new slice<array<int32>>(3, () => new(4));
+    fmt.Println(len(grid), len(grid[0]), len(grid[2]));
+    grid[1][2] = 18;
+    grid[2][3] = 19;
+    fmt.Println(grid[1][2], grid[2][3], grid[0][2]);
+    var capped = new slice<array<nint>>(1, () => new(2), 3);
+    capped = capped[..3];
+    capped[2][1] = 20;
+    fmt.Println(len(capped), cap(capped), len(capped[2]), capped[2][1], capped[0][1]);
+    var ms = new slice<inner>(2, () => new());
+    ms[1].b[2] = 21;
+    fmt.Println(len(ms), len(ms[1].b), ms[1].b[2], ms[0].b[2]);
+    var mr = new slice<row>(2);
+    mr[1][3] = 22;
+    fmt.Println(len(mr), len(mr[1]), mr[1][3], mr[0][3]);
 }
 
 } // end main_package

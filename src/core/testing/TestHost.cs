@@ -221,21 +221,37 @@ internal sealed class TestOptions
         return args[index];
     }
 
+    // Go's duration syntax is a SEQUENCE of decimal-and-unit pairs ("30m0s", "1h30m", "1.5s") — which
+    // is exactly what time.Duration.String() emits and what `go test -timeout` accepts. A single-pair
+    // parser rejected the pipeline's own `-test-timeout` value the moment it was threaded through
+    // (`-timeout 30m0s` -> "invalid Go-style duration", exit 2 before a single test ran), so parse the
+    // real grammar. Units are Go's: ns, us (µs / μs), ms, s, m, h.
+    private const string DurationUnits = "ns|us|\u00B5s|\u03BCs|ms|s|m|h";
+
     private static TimeSpan ParseDuration(string value)
     {
-        Match match = Regex.Match(value, @"^(?<number>\d+(?:\.\d+)?)(?<unit>ms|s|m|h)$", RegexOptions.CultureInvariant);
-        if (!match.Success)
+        if (!Regex.IsMatch(value, $@"^(?:\d+(?:\.\d+)?(?:{DurationUnits}))+$", RegexOptions.CultureInvariant))
             throw new ArgumentException($"invalid Go-style duration: {value}");
 
-        double number = double.Parse(match.Groups["number"].Value, CultureInfo.InvariantCulture);
-        return match.Groups["unit"].Value switch
+        TimeSpan total = TimeSpan.Zero;
+
+        foreach (Match match in Regex.Matches(value, $@"(?<number>\d+(?:\.\d+)?)(?<unit>{DurationUnits})", RegexOptions.CultureInvariant))
         {
-            "ms" => TimeSpan.FromMilliseconds(number),
-            "s" => TimeSpan.FromSeconds(number),
-            "m" => TimeSpan.FromMinutes(number),
-            "h" => TimeSpan.FromHours(number),
-            _ => throw new ArgumentException($"invalid duration unit: {value}")
-        };
+            double number = double.Parse(match.Groups["number"].Value, CultureInfo.InvariantCulture);
+
+            total += match.Groups["unit"].Value switch
+            {
+                "ns" => TimeSpan.FromTicks((long)(number / 100.0D)),
+                "us" or "\u00B5s" or "\u03BCs" => TimeSpan.FromMilliseconds(number / 1000.0D),
+                "ms" => TimeSpan.FromMilliseconds(number),
+                "s" => TimeSpan.FromSeconds(number),
+                "m" => TimeSpan.FromMinutes(number),
+                "h" => TimeSpan.FromHours(number),
+                _ => throw new ArgumentException($"invalid duration unit: {value}")
+            };
+        }
+
+        return total;
     }
 }
 

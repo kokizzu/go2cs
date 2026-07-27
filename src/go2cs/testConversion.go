@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/parser"
 	"go/token"
 	"go/types"
 	"io/fs"
@@ -264,6 +265,13 @@ type testManifest struct {
 }
 
 func processTestConversion(inputPath, outputPath string, options Options) error {
+	// The sibling declarator names steer the PRODUCTION pass only (see siblingTestFuncMethodNames);
+	// that pass is complete by the time this runs. Each variant's own analysis then computes the
+	// shadow set from its own universe — the in-package variant already contains these names, and
+	// the external variant's declarations live in a different C# class, so leaving them set would
+	// only over-qualify the external half's package idents.
+	siblingTestFuncMethodNames = nil
+
 	inputPath, err := filepath.Abs(inputPath)
 	if err != nil {
 		return err
@@ -391,15 +399,16 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	referenceImports := append(append([]string{}, dependencies...), aliasReferenceImports(
 		aliasScanFiles, production.PkgPath, dependencies)...)
 
-	// REFERENCE model only: add the foreign assemblies the production package's exported
-	// interfaces inherit STRUCTURALLY (productionStructuralBaseImports). These converter-
-	// introduced base edges (io/fs's `File : io.ReadCloser`) appear in no test import or alias, so
-	// the import-derived + alias-scan set above misses them and binding the referenced production
-	// interfaces fails CS0012. The recompile model compiles the production sources locally with
-	// their own io reference, so its reference set is unchanged (kept byte-identical).
-	if model == testProjectReference {
-		referenceImports = append(referenceImports, productionStructuralBaseImports(production)...)
-	}
+	// Close the reference set under the C# interface-INHERITANCE edges the converter emits
+	// (interfaceBaseClosureImports): binding an interface the compilation NAMES needs its base
+	// interfaces' assemblies, and those edges — hash's `Hash : io.Writer` reached by every
+	// `GoImplement<…, hash_package.Hash64>` record, io/fs's `File : io.ReadCloser` — belong to the
+	// DECLARING package's import graph, so no test import and no alias `using` names them (CS0012).
+	// Both models feed the same walk; the already-referenced set it subtracts carries the production
+	// package's own path so a base declared there never becomes a self-reference.
+	referenceImports = append(referenceImports, interfaceBaseClosureImports(
+		[]*packages.Package{production, internal, external},
+		append([]string{production.PkgPath}, referenceImports...))...)
 
 	testProjectName := projectName + ".tests.csproj"
 	if err := writeTestProject(filepath.Join(outputPath, testProjectName), projectName, projectNamespace, model, productionFiles, outputFiles, fixtures, referenceImports, options); err != nil {
@@ -761,14 +770,16 @@ func referenceModelTestPackageInfoSeed(projectNamespace, testClassName, external
 }
 
 // collectSiblingTestClosure populates siblingClosureImportPaths with the transitive import closure
-// of the package's _test.go variants, so the PRODUCTION conversion pass — whose emitted C# is
-// recompiled into the test assembly — qualifies its usings against that assembly's real reference
-// closure rather than the production half alone (see siblingClosureImportPaths). Metadata-only
-// load (no syntax/types), so it costs a fraction of the LoadAllSyntax pass processTestConversion
-// does later. Best-effort: a load failure leaves the set empty and the production conversion
-// behaves exactly as before — processTestConversion reports the real error moments later.
+// of the package's _test.go variants — and siblingTestFuncMethodNames with those variants'
+// package-level declarator names — so the PRODUCTION conversion pass, whose emitted C# is
+// recompiled into the test assembly, describes that ASSEMBLY rather than the production half alone
+// (see both globals). Metadata + file-list load (no syntax/types for dependencies), so it costs a
+// fraction of the LoadAllSyntax pass processTestConversion does later. Best-effort: a load failure
+// leaves both sets empty and the production conversion behaves exactly as before —
+// processTestConversion reports the real error moments later.
 func collectSiblingTestClosure(inputPath string, options Options) {
 	siblingClosureImportPaths = nil
+	siblingTestFuncMethodNames = nil
 
 	targetParts := strings.Split(options.targetPlatform, "/")
 	if len(targetParts) != 2 {
@@ -781,7 +792,7 @@ func collectSiblingTestClosure(inputPath string, options Options) {
 	}
 
 	loaded, err := packages.Load(&packages.Config{
-		Mode:       packages.NeedName | packages.NeedImports | packages.NeedDeps,
+		Mode:       packages.NeedName | packages.NeedImports | packages.NeedDeps | packages.NeedCompiledGoFiles,
 		Dir:        absolute,
 		Tests:      true,
 		BuildFlags: options.loaderBuildFlags(),
@@ -809,17 +820,49 @@ func collectSiblingTestClosure(inputPath string, options Options) {
 		}
 	}
 
+	declarators := HashSet[string]{}
+
 	// Only the TEST variants contribute: the production package's own closure is already walked by
 	// computeImportAliasRenames from the loaded types, and the synthetic `<pkg>.test` main package
 	// is not part of the emitted assembly.
 	for _, pkg := range loaded {
-		if strings.Contains(pkg.ID, "[") {
-			walk(pkg)
+		if !strings.Contains(pkg.ID, "[") {
+			continue
+		}
+
+		walk(pkg)
+
+		// Declarator names come from the IN-PACKAGE variant only: an external `<pkg>_test` file's
+		// declarations land in their own C# package class and shadow nothing inside the production
+		// one. The loader's CompiledGoFiles are already build-constraint resolved, so an excluded
+		// _test.go never contributes.
+		if strings.HasSuffix(pkg.Name, "_test") {
+			continue
+		}
+
+		for _, file := range pkg.CompiledGoFiles {
+			if !strings.HasSuffix(strings.ToLower(filepath.Base(file)), "_test.go") {
+				continue
+			}
+
+			parsed, parseErr := parser.ParseFile(token.NewFileSet(), file, nil, parser.SkipObjectResolution)
+			if parseErr != nil {
+				continue
+			}
+
+			for _, decl := range parsed.Decls {
+				if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+					declarators.Add(funcDecl.Name.Name)
+				}
+			}
 		}
 	}
 
 	siblingClosureImportPaths = closure.Keys()
 	sort.Strings(siblingClosureImportPaths)
+
+	siblingTestFuncMethodNames = declarators.Keys()
+	sort.Strings(siblingTestFuncMethodNames)
 }
 
 func findProductionPackage(pkgs []*packages.Package, inputPath string) *packages.Package {
@@ -2268,99 +2311,179 @@ func referenceScanTargets(line string) []string {
 	return targets
 }
 
-// productionStructuralBaseImports returns the import paths of foreign packages whose exported
-// interface types the converter emits as STRUCTURAL C# interface bases of the production
-// package's own exported interfaces — the reference-model analogue of the B2c alias scan for a
-// class of dependency that scan cannot see.
+// interfaceBaseClosureImports returns the import paths a test project must reference IN ADDITION
+// to its computed direct set so that set is CLOSED under the C# interface-INHERITANCE edges the
+// converter emits — a class of dependency neither the import lists nor the B2c alias scan can see.
 //
-// Go interfaces satisfy structurally, but C# interfaces are nominal, so the converter carries
-// the implicit satisfaction as C# inheritance at the interface declaration site
-// (getStructuralInterfaceBases): io/fs's `fs.File` lists `Read`/`Close` explicitly in Go, but
-// the converted `[GoType] partial interface File : io.ReadCloser` names an io base. Under the
-// reference model the test project NAMES the production types (`(fs.File, error) Open(...)` in a
-// converted test source, and every ImplementGenerator adapter for a test type implementing
-// `fs.FS`) but compiles them from the REFERENCED production assembly; binding an interface type
-// in C# requires its base interfaces' assemblies to be referenced too. That io base edge is
-// CONVERTER-INTRODUCED, so it appears in NO test-file import and NO alias `using` — the
-// import-derived + alias-scan reference set (B2c) misses it, `DisableTransitiveProjectReferences`
-// (B2b) hides the production assembly's own io reference, and the test compile fails CS0012
-// ('io_package.Reader'/'Closer'/'ReadCloser' not referenced — io/fs's whole suite).
+// Go interfaces satisfy structurally and compose by embedding; C# interfaces are nominal, so the
+// converter carries both shapes as C# inheritance at the interface declaration site
+// (getStructuralInterfaceBases): hash's `Hash` embeds io.Writer, io/fs's `File` merely lists
+// Read/Close, and both emit a converted declaration that NAMES an io base. Binding such an
+// interface in C# requires its base interfaces' assemblies to be referenced too — and that base
+// edge belongs to the DECLARING package's import graph, so it appears in NO test-file import and
+// NO alias `using`. The import-derived + alias-scan set (B2c) therefore misses it,
+// `DisableTransitiveProjectReferences` (B2b) hides the declaring package's own reference, and the
+// test compile fails CS0012 at every site that names the interface:
 //
-// This reproduces exactly the structural-base match the converter runs at each interface
-// declaration site (the same Exported / non-alias / non-generic / method-set /
-// strictly-fewer-methods / types.Implements gates as getStructuralInterfaceBases), so it adds
-// precisely the assemblies that binding the production interfaces forces — never the production
-// package's whole import graph, which would contribute child namespaces that break the alias
-// machinery (CS0576). The recompile model compiles the production sources locally (with their own
-// io reference), so it needs no addition; the caller invokes this for the reference model only.
-func productionStructuralBaseImports(production *packages.Package) []string {
-	if production == nil || production.Types == nil {
-		return nil
-	}
-
-	imports := production.Types.Imports()
-	if len(imports) == 0 {
-		return nil
-	}
-
+//   - the emitted conversion record — `[assembly: GoImplement<Hash, hash_package.Hash64>]`
+//     ('io_package.Writer' is defined in an assembly that is not referenced: hash/maphash,
+//     crypto/hmac, whose closures reach `hash` but never `io`),
+//   - the go2cs-gen adapter realizing that record (its class declaration lists the interface), and
+//   - every converted production/test source that names the interface in a signature.
+//
+// The alias scan cannot cover this because the recorded interface DOES bind by name — its
+// package IS referenced; what is missing is a package named inside the interface's own C#
+// declaration.
+//
+// The closure starts from the interface types the loaded compilation units actually NAME (both test
+// variants and the production package), never from whole packages: C# only needs a base interface's
+// assembly when the derived interface is BOUND, and walking every exported interface of every
+// referenced package would add io to almost the whole corpus through `fmt.State`'s structural
+// io.Writer base — a reference no project that never names `fmt.State` requires. From each named
+// interface the walk follows its base candidates TRANSITIVELY (`b.B : a.A : io.Writer` needs both a
+// and io), since a base's own declaration must bind in turn.
+//
+// The per-interface match reproduces the CANDIDATE gates the converter runs at each declaration
+// site (the same Exported / non-alias / non-generic / method-set / strictly-fewer-methods /
+// types.Implements tests as getStructuralInterfaceBases). It is deliberately taken before that
+// function's covered-by-embed skip and minimal-covering-set prune, so the result is a superset of
+// the emitted base list — the guarantee that matters is that no emitted base's assembly is missing.
+// Only the declaring package's own IMPORTS are scanned, so a same-package base contributes nothing
+// new and needs no separate visit: an interface implements its base's bases too, so those candidates
+// are found directly. Output is a sorted set, so the map-ordered walk stays deterministic.
+func interfaceBaseClosureImports(roots []*packages.Package, referenced []string) []string {
 	found := HashSet[string]{}
-	scope := production.Types.Scope()
+	seen := NewHashSet(referenced)
+	visited := map[*types.Named]bool{}
 
-	for _, name := range scope.Names() {
-		typeName, ok := scope.Lookup(name).(*types.TypeName)
+	var queue []*types.Named
 
-		if !ok || !typeName.Exported() || typeName.IsAlias() {
-			continue
+	enqueue := func(named *types.Named) {
+		if named == nil || visited[named] {
+			return
 		}
 
-		named, ok := typeName.Type().(*types.Named)
-
-		if !ok {
-			continue
+		if _, isInterface := named.Underlying().(*types.Interface); !isInterface {
+			return
 		}
 
-		iface, ok := named.Underlying().(*types.Interface)
+		visited[named] = true
+		queue = append(queue, named)
+	}
 
-		if !ok || iface.NumMethods() == 0 {
-			continue
+	for _, root := range roots {
+		for _, named := range namedTypesReferenced(root) {
+			enqueue(named)
 		}
+	}
 
-		for _, imported := range imports {
-			if found.Contains(imported.Path()) {
+	for len(queue) > 0 {
+		named := queue[0]
+		queue = queue[1:]
+
+		for _, base := range interfaceBaseCandidates(named) {
+			enqueue(base)
+
+			path := base.Obj().Pkg().Path()
+
+			if seen.Contains(path) {
 				continue
 			}
 
-			importedScope := imported.Scope()
-
-			for _, candidateName := range importedScope.Names() {
-				candidateTypeName, ok := importedScope.Lookup(candidateName).(*types.TypeName)
-
-				if !ok || !candidateTypeName.Exported() || candidateTypeName.IsAlias() {
-					continue
-				}
-
-				candidate, ok := candidateTypeName.Type().(*types.Named)
-
-				if !ok || candidate.TypeParams().Len() > 0 {
-					continue
-				}
-
-				candidateIface, ok := candidate.Underlying().(*types.Interface)
-
-				if !ok || candidateIface.NumMethods() == 0 || candidateIface.NumMethods() >= iface.NumMethods() || !candidateIface.IsMethodSet() {
-					continue
-				}
-
-				if types.Implements(named, candidateIface) {
-					found.Add(imported.Path())
-					break
-				}
-			}
+			seen.Add(path)
+			found.Add(path)
 		}
 	}
 
 	result := found.Keys()
 	sort.Strings(result)
+
+	return result
+}
+
+// namedTypesReferenced returns every NAMED type the loaded package's type information mentions —
+// the types its converted C# can name, which is what decides whether a base assembly is needed.
+func namedTypesReferenced(pkg *packages.Package) []*types.Named {
+	if pkg == nil || pkg.TypesInfo == nil {
+		return nil
+	}
+
+	var result []*types.Named
+
+	add := func(typ types.Type) {
+		if typ == nil {
+			return
+		}
+
+		if named, ok := types.Unalias(typ).(*types.Named); ok {
+			result = append(result, named)
+		}
+	}
+
+	for _, typeAndValue := range pkg.TypesInfo.Types {
+		add(typeAndValue.Type)
+	}
+
+	for _, object := range pkg.TypesInfo.Uses {
+		if object != nil {
+			add(object.Type())
+		}
+	}
+
+	for _, object := range pkg.TypesInfo.Defs {
+		if object != nil {
+			add(object.Type())
+		}
+	}
+
+	return result
+}
+
+// interfaceBaseCandidates returns the exported interfaces from the DECLARING package's imports that
+// the converter can name as C# bases of named — the same candidate match getStructuralInterfaceBases
+// makes at the declaration site. See interfaceBaseClosureImports.
+func interfaceBaseCandidates(named *types.Named) []*types.Named {
+	pkg := named.Obj().Pkg()
+
+	if pkg == nil {
+		return nil
+	}
+
+	iface, ok := named.Underlying().(*types.Interface)
+
+	if !ok || iface.NumMethods() == 0 {
+		return nil
+	}
+
+	var result []*types.Named
+
+	for _, imported := range pkg.Imports() {
+		scope := imported.Scope()
+
+		for _, name := range scope.Names() {
+			typeName, ok := scope.Lookup(name).(*types.TypeName)
+
+			if !ok || !typeName.Exported() || typeName.IsAlias() {
+				continue
+			}
+
+			candidate, ok := typeName.Type().(*types.Named)
+
+			if !ok || candidate.TypeParams().Len() > 0 {
+				continue
+			}
+
+			candidateInterface, ok := candidate.Underlying().(*types.Interface)
+
+			if !ok || candidateInterface.NumMethods() == 0 || candidateInterface.NumMethods() >= iface.NumMethods() || !candidateInterface.IsMethodSet() {
+				continue
+			}
+
+			if types.Implements(named, candidateInterface) {
+				result = append(result, candidate)
+			}
+		}
+	}
 
 	return result
 }
@@ -2905,7 +3028,8 @@ func executeTestAction(inputPath, outputPath string, options Options) error {
 		_, err := runCommandWithTimeout(options.testTimeout, outputPath, options, "dotnet", "build", testProject)
 		return err
 	case "run":
-		output, err := runCommandWithTimeout(options.testTimeout, outputPath, options, "dotnet", "run", "--project", testProject, "--", "--json")
+		output, err := runCommandWithTimeout(testChildTimeout(options), outputPath, options, "dotnet", "run", "--project", testProject, "--",
+			"--json", "-timeout", options.testTimeout.String())
 		fmt.Print(output)
 		return err
 	case "compare", "all":
@@ -3264,9 +3388,29 @@ func excludedDeclarations(manifest testManifest) []string {
 	return excluded
 }
 
+// testChildTimeoutGrace is how much longer a test child PROCESS is allowed to live than the package
+// deadline it was given. The deadline is enforced IN-process by `go test` and by the converted host,
+// both of which write their results on expiry; the outer kill is only a safety net for a child that
+// ignores it, so it must fire strictly later or it destroys the very results the deadline produced.
+const testChildTimeoutGrace = time.Minute
+
+// testChildTimeout is the outer kill for a test child process — the package deadline plus the grace
+// margin above.
+func testChildTimeout(options Options) time.Duration {
+	return options.testTimeout + testChildTimeoutGrace
+}
+
 func compareGoAndConvertedTests(inputPath, outputPath, testProject string, options Options) error {
-	goOutput, goErr := runCommandWithTimeout(options.testTimeout, inputPath, options, "go", "test", "-json", "-count=1", ".")
-	csOutput, csErr := runCommandWithTimeout(options.testTimeout, outputPath, options, "dotnet", "run", "--project", testProject, "--", "--json",
+	// -test-timeout is the PACKAGE deadline, handed to BOTH sides so they agree: `go test -timeout`
+	// and the converted host's own `--timeout`. Without it each side silently used its OWN 10-minute
+	// default — `go test`'s and TestHost's — so no value of the flag could let a slow suite finish:
+	// hash/maphash's C# run self-terminated at exactly 600 s under `-test-timeout 40m`, reporting its
+	// still-running TestSmhasherAvalanche as an empty verdict that reads exactly like a real failure
+	// (the C# suite needs ~15 min where Go's needs 7.6 s — a performance gap, not a correctness one).
+	goOutput, goErr := runCommandWithTimeout(testChildTimeout(options), inputPath, options, "go", "test", "-json", "-count=1",
+		"-timeout", options.testTimeout.String(), ".")
+	csOutput, csErr := runCommandWithTimeout(testChildTimeout(options), outputPath, options, "dotnet", "run", "--project", testProject, "--", "--json",
+		"-timeout", options.testTimeout.String(),
 		"--result", filepath.Join(outputPath, "go2cs_test_results.json"), "--junit", filepath.Join(outputPath, "go2cs_test_results.xml"))
 
 	goResults := terminalTestResults(goOutput)

@@ -175,6 +175,16 @@ func performNameCollisionAnalysis(pkg *packages.Package) {
 		packageFuncMethodNames[name] = true
 	}
 
+	// Under -tests the production sources are RECOMPILED into the test assembly, so a name the
+	// package's own `_test.go` half declares lands in the SAME package class and shadows a
+	// production file's using-alias there just as a production declarator would — and the
+	// production pass, running against the production package alone, cannot see it. Fold the
+	// sibling half's declarator names in (see siblingTestFuncMethodNames); empty otherwise, and
+	// already a subset of methodNames during the in-package variant's own pass.
+	for _, name := range siblingTestFuncMethodNames {
+		packageFuncMethodNames[name] = true
+	}
+
 	// Find collisions (names that appear in both sets)
 	for name, isType := range namedElementNames {
 		if methodNames[name] {

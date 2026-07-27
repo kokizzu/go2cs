@@ -1587,6 +1587,31 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					}
 				}
 
+				// `make([]E, len[, cap])` whose ELEMENT zero value must itself be constructed: golib's
+				// slice ctor fills its backing with `default(T)`, which is not usable storage for an
+				// unnamed nested array — whose length lives only in the Go type, never in `array<T>` —
+				// or for a struct whose own zero value needs construction. `make([][hashSize]int, n)`
+				// therefore produced n zero-LENGTH arrays, and the first `grid[i][j] +=` panicked with
+				// index-out-of-range (hash/maphash's avalancheTest1; image/draw's Floyd-Steinberg
+				// quantError rows and x/text/transform's chain buffers carry the same latent defect).
+				// Thread the SAME element factory the fixed-array paths already build
+				// (arrayZeroValueArgs/arrayElemFactory, mirroring go2cs-gen's field initializers), which
+				// golib's `slice<T>(nint, Func<T>, nint)` fills the backing with. Every other element
+				// type keeps the plain length ctor, so only genuinely nested shapes change.
+				if !isTypeParam && len(callExpr.Args) > 1 {
+					if sliceType, isSlice := typeParam.Underlying().(*types.Slice); isSlice {
+						if factory := v.arrayElemFactory(sliceType.Elem()); factory != "" {
+							parts := []string{v.makeLenArgs(callExpr.Args[1:2]), "() => " + factory}
+
+							if len(callExpr.Args) > 2 {
+								parts = append(parts, v.makeLenArgs(callExpr.Args[2:3]))
+							}
+
+							remainingArgs = strings.Join(parts, ", ")
+						}
+					}
+				}
+
 				if isTypeParam {
 					return fmt.Sprintf("make<%s>(%s)", typeName, remainingArgs)
 				}
@@ -1925,6 +1950,31 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				u8Context.u8StringOK = true
 				return fmt.Sprintf("slice<byte>(%s)", v.convExpr(basicLit, []ExprContext{u8Context}))
 			}
+		}
+	}
+
+	// A `[]byte`/`[]rune` conversion over Go's line-SPLITTING literal idiom — `[]byte("first " +
+	// "second")`, crypto/hmac's long-key vectors — renders as a C# `string` concatenation, and C#
+	// refuses the two user-defined conversions string → @string → byte[] that golib's
+	// `slice<T>(T[])` needs (CS1503 "cannot convert from 'string' to 'byte[]'"). The literal route
+	// above sees no BasicLit to take, and the `(@string)` cast convBasicLit applies under
+	// sourceIsRuneArray reaches only a TOP-LEVEL literal argument, never one nested in a binary
+	// expression. Cast the rendered operand AS A WHOLE: the source's split survives verbatim (C#
+	// constant-folds the concatenation itself, so there is no runtime cost to preserving it), and
+	// one explicit step to @string leaves a single implicit step to the parameter.
+	//
+	// Gated to a `+` chain whose every leaf is a PLAINLY-rendered string literal, which is exactly
+	// the shape that produces a bare C# string — see isConstantStringConcat for what that excludes
+	// and why each exclusion already carries an @string of its own.
+	if funcTypeName == "[]byte" || funcTypeName == "[]rune" {
+		if len(callExpr.Args) == 1 && v.isConstantStringConcat(callExpr.Args[0]) {
+			elementName := "byte"
+
+			if funcTypeName == "[]rune" {
+				elementName = "rune"
+			}
+
+			return fmt.Sprintf("slice<%s>((@string)(%s))", elementName, v.convExpr(callExpr.Args[0], nil))
 		}
 	}
 
@@ -4058,4 +4108,56 @@ func typeLiteralPointerTarget(fun ast.Expr) *ast.StarExpr {
 	}
 
 	return starExpr
+}
+
+// isConstantStringConcat reports whether expr is Go's line-SPLITTING string idiom — a `+` chain of
+// plain string LITERALS that go/types folds to one constant value. That is exactly the shape whose
+// rendering is a concatenation of bare C# string literals (a `string`, not an `@string`), which the
+// `[]byte`/`[]rune` conversion above must cast; parentheses are transparent.
+//
+// Every leaf must be a literal that renders plainly: a `\xHH` raw-byte literal takes convBasicLit's
+// byte-ARRAY route, which already yields an `@string` and carries the whole concatenation with it
+// (`"" + ((@string)(new byte[]{0xff, 0x80}))` — the ByteTableStringVar behavioral case), so such a
+// chain needs no cast and keeps its emission byte-identical. A non-literal constant leaf (an
+// ident/selector naming a string const) emits its declared symbol rather than a bare C# string and
+// is likewise left alone.
+func (v *Visitor) isConstantStringConcat(expr ast.Expr) bool {
+	inner := unparenthesize(expr)
+
+	if _, ok := inner.(*ast.BinaryExpr); !ok {
+		return false
+	}
+
+	if value := v.info.Types[inner].Value; value == nil || value.Kind() != constant.String {
+		return false
+	}
+
+	return plainStringLiteralLeaves(inner)
+}
+
+// plainStringLiteralLeaves reports whether every leaf of a `+` chain is a string literal that
+// convBasicLit renders as a plain C# string literal. See isConstantStringConcat.
+func plainStringLiteralLeaves(expr ast.Expr) bool {
+	switch node := unparenthesize(expr).(type) {
+	case *ast.BinaryExpr:
+		return node.Op == token.ADD && plainStringLiteralLeaves(node.X) && plainStringLiteralLeaves(node.Y)
+	case *ast.BasicLit:
+		return node.Kind == token.STRING &&
+			(strings.HasPrefix(node.Value, "`") || !stringLiteralNeedsByteArray(node.Value))
+	}
+
+	return false
+}
+
+// unparenthesize strips any parenthesization from an expression.
+func unparenthesize(expr ast.Expr) ast.Expr {
+	for {
+		parenExpr, ok := expr.(*ast.ParenExpr)
+
+		if !ok {
+			return expr
+		}
+
+		expr = parenExpr.X
+	}
 }

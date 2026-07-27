@@ -1981,7 +1981,13 @@ The original `-tests` model — recompile the production `.cs` into the test ass
 
 The model is **abstract, not a unicode patch**: a 2026-07-24 GOROOT scan counts **44 black-box-only stdlib packages** (unicode, unicode/utf8, path, cmp, errors, slices, io/fs, iter, embed, sync/atomic, text/tabwriter, runtime/metrics, internal/itoa, internal/testenv, …), each of which selects the reference model automatically. Already-validated black-box packages (unicode/utf8, path, cmp, internal/itoa) switch models on their next pipeline run and re-validate identically.
 
-**Reference closure (the structural-interface-base rule).** The test project's references are the direct-import set, plus the alias scan (B2c), plus — because binding a referenced production *interface* in C# requires the assemblies of its base interfaces — the **structural-interface-base closure** of the production package's exported interfaces (`productionStructuralBaseImports`, reference model only). Go interfaces satisfy structurally, so the converter carries the implicit satisfaction as C# inheritance at each interface declaration (`getStructuralInterfaceBases`): io/fs's `fs.File` lists `Read`/`Close` explicitly in Go and does *not* embed io, but the converted `[GoType] partial interface File : io.ReadCloser` names an io base. That base edge is **converter-introduced**, so it appears in no test import and no alias `using`; `DisableTransitiveProjectReferences` (B2b) then hides the production assembly's own io reference, and every site that names a production interface — the converted test sources (`(fs.File, error) Open(...)`) *and* every ImplementGenerator adapter for a test type implementing `fs.FS` — failed CS0012 (`io_package.Reader`/`Closer`/`ReadCloser`; hash/maphash shows the same class through `hash.Hash : io.Writer`). The closure runs the same `types.Implements` match the converter uses at the declaration site (identical exported / non-alias / non-generic / method-set / strictly-fewer-methods gates), so it adds **precisely** the assemblies binding the production interfaces forces — never the production package's whole import graph, which *would* contribute child namespaces that break the alias machinery (CS0576) and is exactly what this rule avoids. It is a pure project-reference concern (the manifest dependency list stays import-derived), empty for a package whose exported interfaces match no imported interface (unicode/utf8/path/cmp/itoa → unchanged), and `{io}` for io/fs. Guarded by the `TestSelectTestProjectModelGatesOnBlackBoxOnly`, `TestRecordsRequireProductionAnchorGatesReferenceModel`, `TestWriteTestProjectReferenceModelBindsProductionProject`, `TestReferenceModelSeedAnchorsTestClassOnly`, and `TestProductionStructuralBaseImportsSurfacesForeignInterfaceBases` converter unit tests; unicode (28 tests, incl. `TestSpecialCaseNoMapping` and the `testing.Benchmark`-driven `TestCalibrate`) is the first package it validates. (io/fs compiles clean under this closure but does not yet *validate*: its `TestCVE202230630` globs a 10 001-separator pattern whose faithful `globWithLimit` recursion overflows .NET's fixed thread stack before Go's `depth > 10000` guard fires — a Go-growable-stack vs .NET-fixed-stack divergence in the test host, orthogonal to the reference closure.)
+**Reference closure (the interface-base rule).** The test project's references are the direct-import set, plus the alias scan (B2c), plus — because binding *any* referenced interface in C# requires the assemblies of its base interfaces — the **interface-base closure** of that set (`interfaceBaseClosureImports`, both project models). Go interfaces satisfy structurally *and* compose by embedding; C# interfaces are nominal, so the converter carries both shapes as C# inheritance at each interface declaration (`getStructuralInterfaceBases`): `hash.Hash` **embeds** io.Writer, io/fs's `fs.File` lists `Read`/`Close` explicitly and does *not* embed io, and both emit a converted declaration that NAMES an io base. Such a base edge belongs to the **declaring package's** import graph, so it appears in no test import and no alias `using`; `DisableTransitiveProjectReferences` (B2b) then hides the declaring assembly's own io reference, and every site that names the interface fails CS0012:
+
+- the emitted **conversion record** — hash/maphash's `[assembly: GoImplement<Hash, hash_package.Hash64>(Pointer = true)]` and crypto/hmac's `GoImplement<hmac, hash_package.Hash>`, whose closures reach `hash` but never `io` (`'io_package.Writer' is defined in an assembly that is not referenced`);
+- the **go2cs-gen adapter** realizing that record, whose class declaration lists the interface; and
+- every converted production/test **source** that names it (`(fs.File, error) Open(...)`, hmac's `justHash`).
+
+The alias scan cannot reach this class: the recorded interface *does* bind by name — its own package **is** referenced — and what is missing is a package named inside the interface's own C# declaration. The closure starts from the interface types the loaded compilation units actually **name** (the production package and both test variants, via `go/types`), and follows each one's base candidates **transitively** (`b.B : a.A : io.Writer` needs both `a` and `io`, because a base's own declaration must bind in turn). Starting from *named types* rather than from whole packages is what keeps it minimal: C# needs a base's assembly only when the derived interface is BOUND, and walking every exported interface of every referenced package would hand `io` to nearly the whole corpus through `fmt.State`'s structural io.Writer base — a reference no project that merely calls `fmt.Sprintf` requires. Each step runs the same `types.Implements` candidate match the converter uses at the declaration site (identical exported / non-alias / non-generic / method-set / strictly-fewer-methods gates) — deliberately taken *before* that function's covered-by-embed skip and minimal-covering-set prune, so the result is a superset of the emitted base list and no emitted base's assembly can be missing. Only the declaring package's own imports are scanned, so a same-package base needs no separate visit (an interface implements its base's bases too, so those candidates are found directly), and the output is a sorted set, so the map-ordered walk stays deterministic. It is a pure project-reference concern (the manifest dependency list stays import-derived), empty for a package that names no such interface (unicode/utf8/path/cmp/itoa → unchanged), and `{io}` for io/fs, hash/maphash and crypto/hmac. Guarded by the `TestSelectTestProjectModelGatesOnBlackBoxOnly`, `TestRecordsRequireProductionAnchorGatesReferenceModel`, `TestWriteTestProjectReferenceModelBindsProductionProject`, `TestReferenceModelSeedAnchorsTestClassOnly`, and `TestInterfaceBaseClosureImportsSurfacesForeignInterfaceBases` (foreign-package, own-package, transitive `b → a → io`, the `fmt.State` narrowing with its positive control, and the empty-closure case) converter unit tests; unicode (28 tests, incl. `TestSpecialCaseNoMapping` and the `testing.Benchmark`-driven `TestCalibrate`) is the first package it validated under the reference model, and crypto/hmac (172 tests) the first the generalized foreign-package rule unblocked. (io/fs compiles clean under this closure but does not yet *validate*: its `TestCVE202230630` globs a 10 001-separator pattern whose faithful `globWithLimit` recursion overflows .NET's fixed thread stack before Go's `depth > 10000` guard fires — a Go-growable-stack vs .NET-fixed-stack divergence in the test host, orthogonal to the reference closure.)
 
 ### An Example/Benchmark-ONLY test file is dropped from the compile set (Phase-4D file exclusion)
 
@@ -2800,8 +2806,9 @@ Separately, golib `array<T>` reads are now **null-safe**: a bare `default(array<
 no constructor ever touched) enumerates/compares/prints as an EMPTY array and panics Go-style on
 any index, instead of throwing NRE — mirroring `@string`'s null-safe zero value. The empty view is
 a disclosed approximation: the declared length only exists where a constructor or initializer ran,
-so a `holder z = default!;` zero-var local or a `make([]S, n)` element still reads its array field
-at length 0, not N (a known converter gap, chipped separately). (Guarded by the
+so a `holder z = default!;` zero-var local still reads its array field at length 0, not N (a known
+converter gap, chipped separately; the `make([]S, n)` half of it is now closed — see *`make([]E, n)`
+constructs its ELEMENTS by the same rule* below). (Guarded by the
 `ZeroValueArrayField` behavioral test — the literal-omission shape ranged/indexed/printed vs Go,
 plus an explicit-argument control.)
 
@@ -2909,11 +2916,41 @@ a wrapper that allocates its backing lazily from its own known size (go2cs-gen's
 `new(N)`, which keeps the A/B footprint to genuinely nested shapes.
 
 This mirrors go2cs-gen's `AppendZeroValueInitializers`/`NeedsConstruction`, which does the same for
-struct FIELDS, and narrows the zero-value gap disclosed above — a `default!` zero-var local and a
-`make([]S, n)` element still read an array field at length 0. (Guarded by the `NestedFixedArrays`
-behavioral test: inner `len`, writes read back through inner arrays, per-element storage
-independence, three-level nesting, struct/named-array elements, and the global paths, all compared
-against `go run`.)
+struct FIELDS, and narrows the zero-value gap disclosed above — a `default!` zero-var local still
+reads an array field at length 0. (Guarded by the `NestedFixedArrays` behavioral test: inner `len`,
+writes read back through inner arrays, per-element storage independence, three-level nesting,
+struct/named-array elements, and the global paths, all compared against `go run`.)
+
+### `make([]E, n)` constructs its ELEMENTS by the same rule
+
+`slice<T>`'s length constructor fills its backing with `default(T)` exactly as `array<T>`'s does, so
+the identical silent-correctness defect reached `make`. `make([][hashSize]int, n)` emitted
+`new slice<array<nint>>(n)` and produced n **zero-length** arrays, because the inner length lives
+only in the Go type — so hash/maphash's `avalancheTest1` panicked on its first `g[j] += …`
+(`index out of range [0] with length 0`), and `image/draw`'s Floyd-Steinberg `quantErrorCurr`/`Next`
+rows and `x/text/transform`'s chain buffers carried the same latent defect unexercised.
+
+`make` now threads the **same** `arrayElemFactory` the fixed-array zero-value sites use into a golib
+`slice(nint length, Func<T> elementFactory, nint capacity = -1, nint low = 0)` constructor — one
+rule, one predicate, both containers:
+
+```go
+grid := make([][hashSize]int, n)          // hash/maphash smhasher_test.go
+q := make([][4]int32, r.Dx()+2, cap)      // image/draw
+```
+```csharp
+var grid = new slice<array<nint>>(n, () => new(64));
+var q = new slice<array<int32>>(r.Dx() + 2, () => new(4), cap);
+```
+
+The factory fills the **whole backing**, not just the first `length` elements: Go zeroes the entire
+allocation, so the capacity beyond the length is already valid storage once a re-slice or `append`
+exposes it. As with `array<T>`, a NAMED array element (`type row [4]byte`) and every element whose
+`default(T)` is a valid zero value keep the plain length constructor, so the A/B footprint stays on
+genuinely nested shapes. The composite-literal path (`[][4]int{{…}}`) is still open, chipped
+separately with the array-literal case above. (Guarded by `NestedFixedArrays`, extended with the
+`make` length and length+capacity forms, a struct element needing construction, and a named-array
+element control, output-compared vs `go run`.)
 
 ## Strings (`@string` and `sstring`)
 Go's `string` is represented by golib [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs), not `System.String`. That is a semantic decision, not just a naming one: Go strings are immutable byte sequences, so `len`, indexing, ranging, concatenation, conversion to `[]byte`/`[]rune`, equality, and type assertions must all observe Go's UTF-8/byte model rather than C#'s UTF-16 string model. A zero-value `@string` is also null-safe and reads as `""`, which lets `default!` stand in for Go's zero value without sprinkling null checks through converted code.
@@ -2951,6 +2988,19 @@ var rs = slice<rune>((@string)"héllo");
 ```
 
 The `@string` cast fires only on a string-literal argument; a string-variable conversion (`[]byte(s)`) needs no cast. (Guarded by the behavioral test `StringLiteralSliceConversion`.)
+
+The cast reaches a *top-level* literal argument only, which left Go's line-**splitting** literal idiom — one constant string written as several `+`-joined pieces so it fits the source width — rendering as a bare C# `string` concatenation. C# will not chain the two user-defined conversions `string` → `@string` → `byte[]` that golib's `slice<T>(T[])` would need, so `crypto/hmac`'s long-key vectors failed `CS1503: cannot convert from 'string' to 'byte[]'`. A `[]byte`/`[]rune` conversion whose argument is a **constant-valued binary expression** therefore casts the rendered operand as a whole, which keeps the source's split verbatim (C# constant-folds the concatenation itself, so preserving it costs nothing at run time):
+
+```go
+key := []byte("This is a test using a larger than block-size key " +
+    "and a larger than block-size data. The key needs to " +
+    "be hashed before being used by the HMAC algorithm.")
+```
+```csharp
+var key = slice<byte>((@string)("This is a test using a larger than block-size key " + "and a larger than block-size data. The key needs to " + "be hashed before being used by the HMAC algorithm."));
+```
+
+The gate is deliberately narrow — a `+` chain whose every leaf is a string literal that renders *plainly* — so it fires on exactly the shape that produces a bare C# `string` and nothing else. A non-constant concatenation (`s + "x"`) already yields an `@string` through its variable operand; an ident or selector naming a string constant emits its declared symbol; and a raw-byte (`\xHH`) leaf takes convBasicLit's byte-ARRAY route, which yields an `@string` that carries the whole chain with it (`slice<byte>("" + ((@string)(new byte[]{0xff, 0x80})))` — the `ByteTableStringVar` case, byte-identical across this change). (Guarded by `StringLiteralSliceConversion`, which now also covers the split `[]byte`/`[]rune` idiom and a raw-literal piece in the chain.)
 
 ### `string([]rune)` encodes an INVALID rune as U+FFFD, never fails
 
@@ -8016,6 +8066,23 @@ Nine coupled rules from the shallow-stack campaign:
 - **Package aliases shadowed by method names** qualify through the `_package` class
   (`sort_package.Sort(…)` — flate's `byLiteral.sort` bound the method group, CS0119).
   Guarded by `SortArrayType` (`PeopleByAge.sort`).
+  Under **`-tests`** the shadow set must describe the ASSEMBLY, not the package: the
+  production sources are recompiled into the test assembly, so a name the package's own
+  in-package `_test.go` half declares lands in the SAME C# package class and shadows a
+  PRODUCTION file's alias there just as a production declarator would — yet the production
+  pass runs against the production package alone and cannot see it. hash/maphash's
+  `smhasher_test.go` declares `func (k *bytesKey) bits() int` while `maphash_purego.go`
+  imports `math/bits`, so the recompiled `bits.Mul64(a, b)` bound the method group (CS0119,
+  plus CS8130 on both deconstructed results — invisible until the reference closure above
+  cleared the package's declaration errors, since Roslyn skips method-body binding while any
+  remain). `collectSiblingTestClosure` now collects those declarator names alongside the
+  sibling import closure and `performNameCollisionAnalysis` folds them into the shadow set,
+  emitting `math.bits_package.Mul64(a, b)`. It is a REFERENCE-spelling change only — never a
+  symbol rename, so production names stay pinned (see `testMethodRenames`) — and it is scoped
+  to the production pass (cleared on entry to `processTestConversion`), so the external test
+  half, whose declarations live in a different C# class, is untouched. Only the in-package
+  variant contributes, and the loader's build-constraint-resolved file list means an excluded
+  `_test.go` never does. Guarded by `TestSiblingTestDeclaratorsContributeAliasShadow`.
   A **Δ-renamed foreign CONST reached through that fallback** must still substitute the
   renamed member: the composed lookup key (`time_package.Second`) misses the alias map
   (keyed on the plain package name, `time.Second`), so `getAliasedTypeName` retries with
@@ -9454,6 +9521,20 @@ positive control so an empty list cannot masquerade as a working lookup. Add an 
 something *provably* unavailable, never merely unimplemented, and scan every validated package for the
 symbol first: gating one **removes** tests from a banked package's run set, the mirror of the widening
 trap.
+
+**`-test-timeout` is the PACKAGE deadline, and it reaches both sides.** The flag used to bound only the
+child *process*, leaving `go test` and the converted host each on its own **10-minute** default — so no
+value of it could let a slower-than-Go suite finish. `hash/maphash` self-terminated at exactly 600 s
+under `-test-timeout 40m`, reporting its still-running `TestSmhasherAvalanche` as an empty verdict that
+reads exactly like a real failure (the very "slow ≠ hung" trap, one layer below where it was known).
+The compare/run actions now pass the flag through as `go test -timeout` **and** the host's own
+`-timeout`, and kill the child one minute later (`testChildTimeoutGrace`) purely as a safety net — the
+in-process deadline must fire first, because it is the side that writes results. Threading it also
+exposed that the host's duration parser accepted only a *single* unit, rejecting `time.Duration`'s own
+`String()` output (`30m0s` → "invalid Go-style duration", exit 2 before a test ran); it now parses Go's
+real grammar, a sequence of decimal-and-unit pairs over ns/us/µs/ms/s/m/h, so `1h30m` works as it does
+for `go test`. maphash's C# suite needs ~15 min where Go's needs 7.6 s — a performance gap, recorded as
+such, not a correctness one.
 
 **The test host treats an escaping `GoexitException` as Go's `tRunner` does**, and each test's
 dedicated thread is marked a goroutine (`Goroutine.Enter`) because in Go a test body IS one. Go's

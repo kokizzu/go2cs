@@ -102,8 +102,15 @@ Full details: [`docs/Baseline-vs-FullConversion.md`](docs/Baseline-vs-FullConver
   - `-test-action convert|build|run|compare|all` (default `convert`) — `convert`/`all` convert-and-hook
     (production sources then tests); `build`/`run`/`compare` act on EXISTING digest-validated artifacts
     without reconverting; `compare` (and `all`) diffs the C# host's terminal results vs `go test -json -count=1`.
-  - `-test-timeout <dur>` — per converted-test child process (build/run/compare); Go duration syntax,
-    default `2m`, must be > 0.
+  - `-test-timeout <dur>` — the **package deadline** for a converted-test action (build/run/compare);
+    Go duration syntax, default `2m`, must be > 0. For `run`/`compare` it is handed to **both** sides
+    (`go test -timeout` and the converted host's own `-timeout`) so they agree, and the child process
+    is killed one minute later purely as a safety net. Before that threading each side fell back to
+    its OWN 10-minute default, so **no** value of the flag could let a slower-than-Go suite finish —
+    `hash/maphash` self-terminated at exactly 600 s under `-test-timeout 40m` and reported its
+    still-running `TestSmhasherAvalanche` as an empty verdict that reads like a real failure. A suite
+    whose C# run legitimately exceeds 10 min needs an explicit value (maphash: `-test-timeout 30m`,
+    ~15 min in C# vs 7.6 s in Go — a performance gap, not a correctness one).
   - `-go2cspath <dir>` — runtime/stdlib root and default output root for converted code (default `~/go2cs`;
     env `GO2CSPATH`). `go2cs -recurse <input> <output>` keeps generated code under the explicit output root
     while `$(go2csPath)` references continue to resolve against this runtime root.

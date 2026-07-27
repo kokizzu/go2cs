@@ -723,16 +723,33 @@ func TestReferenceModelSeedAnchorsTestClassOnly(t *testing.T) {
 	}
 }
 
-// Change C reference closure: under the reference model the test project binds the production
-// types from the REFERENCED production assembly, so C# requires the assemblies of every
-// CONVERTER-INTRODUCED structural interface base the production interfaces carry (io/fs's
-// `File : io.ReadCloser`). Those base edges live in no test import and no alias `using`, so
-// productionStructuralBaseImports must surface them — and ONLY them, never the whole import
-// graph, which would contribute child namespaces that break the CS0576 alias machinery.
-func TestProductionStructuralBaseImportsSurfacesForeignInterfaceBases(t *testing.T) {
-	// io/fs shape: File STRUCTURALLY satisfies io.ReadCloser (Read + Close) even though Go's
-	// fs.File lists the methods explicitly rather than embedding io — the converter emits
-	// `File : io.ReadCloser`, and binding File in the test compile then needs the io assembly.
+// Reference closure: the test project's reference set must be CLOSED under the C# interface-
+// INHERITANCE edges the converter emits. Binding an interface in C# requires its base interfaces'
+// assemblies, and that base edge belongs to the DECLARING package's import graph — it appears in
+// no test import and no alias `using`, so only this closure can surface it (CS0012 otherwise).
+// It must surface those packages and ONLY those, never a package's whole import graph, which would
+// contribute child namespaces that break the CS0576 alias machinery.
+func TestInterfaceBaseClosureImportsSurfacesForeignInterfaceBases(t *testing.T) {
+	// FOREIGN-package shape (hash/maphash, crypto/hmac): the emitted
+	// `GoImplement<Hash, hash_package.Hash64>` record binds `hash`, which IS referenced — but
+	// hash's `Hash` embeds io.Writer, and neither package's import closure reaches io.
+	foreignDir := t.TempDir()
+	writeModuleFiles(t, foreignDir, map[string]string{
+		"go.mod": "module example/foreign\n\ngo 1.23\n",
+		"foreign.go": "package foreign\n" +
+			"import \"hash\"\n" +
+			"func Size(h hash.Hash64) int { return h.Size() }\n",
+	})
+
+	foreign := loadProductionForDir(t, foreignDir)
+	if got := interfaceBaseClosureImports([]*packages.Package{foreign}, []string{"hash"}); len(got) != 1 || got[0] != "io" {
+		t.Fatalf("hash.Hash embeds io.Writer, so referencing hash must surface io; got %v", got)
+	}
+
+	// io/fs shape, seeded through the package under test: File STRUCTURALLY satisfies
+	// io.ReadCloser (Read + Close) even though Go's fs.File lists the methods explicitly rather
+	// than embedding io — the converter emits `File : io.ReadCloser`, and binding File from the
+	// REFERENCED production assembly then needs the io assembly.
 	fsysDir := t.TempDir()
 	writeModuleFiles(t, fsysDir, map[string]string{
 		"go.mod": "module example/closure\n\ngo 1.23\n",
@@ -747,13 +764,64 @@ func TestProductionStructuralBaseImportsSurfacesForeignInterfaceBases(t *testing
 			"func ReadAll(f File) ([]byte, error) { return io.ReadAll(f) }\n",
 	})
 
-	if got := productionStructuralBaseImports(loadProductionForDir(t, fsysDir)); len(got) != 1 || got[0] != "io" {
+	fsys := loadProductionForDir(t, fsysDir)
+	if got := interfaceBaseClosureImports([]*packages.Package{fsys}, []string{fsys.PkgPath}); len(got) != 1 || got[0] != "io" {
 		t.Fatalf("File structurally implements io.ReadCloser, so the io assembly must be surfaced; got %v", got)
+	}
+
+	// TRANSITIVE: a referenced package's base is itself declared in a package with a base of its
+	// own (b.B : a.A : io.Writer). A single-step scan surfaces only `a` and the compile still
+	// fails CS0012 on io_package.Writer, so the walk must follow every added package in turn.
+	chainDir := t.TempDir()
+	writeModuleFiles(t, chainDir, map[string]string{
+		"go.mod":  "module example/chain\n\ngo 1.23\n",
+		"a/a.go":  "package a\nimport \"io\"\ntype A interface {\n\tio.Writer\n\tExtra() int\n}\n",
+		"b/b.go":  "package b\nimport \"example/chain/a\"\ntype B interface {\n\ta.A\n\tMore() int\n}\n",
+		"main.go": "package chain\nimport \"example/chain/b\"\nfunc Use(x b.B) int { return x.More() }\n",
+	})
+
+	chain := loadProductionForDir(t, chainDir)
+	got := interfaceBaseClosureImports([]*packages.Package{chain}, []string{"example/chain/b"})
+
+	if len(got) != 2 || got[0] != "example/chain/a" || got[1] != "io" {
+		t.Fatalf("the closure must follow b -> a -> io, got %v", got)
+	}
+
+	// NARROWING (with its own positive control): the closure follows interfaces the sources
+	// actually NAME, never every exported interface of every referenced package. `fmt.State`
+	// structurally implements io.Writer, so a package-level walk would hand io to nearly the whole
+	// corpus — but a project that merely calls `fmt.Sprintf` never binds `fmt.State` and needs no
+	// io reference.
+	unnamedDir := t.TempDir()
+	writeModuleFiles(t, unnamedDir, map[string]string{
+		"go.mod": "module example/unnamed\n\ngo 1.23\n",
+		"unnamed.go": "package unnamed\n" +
+			"import \"fmt\"\n" +
+			"func Greet(name string) string { return fmt.Sprintf(\"hi %s\", name) }\n",
+	})
+
+	unnamed := loadProductionForDir(t, unnamedDir)
+	if got := interfaceBaseClosureImports([]*packages.Package{unnamed}, []string{"fmt", unnamed.PkgPath}); len(got) != 0 {
+		t.Fatalf("fmt is referenced but fmt.State is never named, so nothing must be surfaced; got %v", got)
+	}
+
+	// The control: naming fmt.State DOES bind an interface whose base is io.Writer.
+	namedDir := t.TempDir()
+	writeModuleFiles(t, namedDir, map[string]string{
+		"go.mod": "module example/named\n\ngo 1.23\n",
+		"named.go": "package named\n" +
+			"import \"fmt\"\n" +
+			"func Width(s fmt.State) int { w, _ := s.Width(); return w }\n",
+	})
+
+	namedPkg := loadProductionForDir(t, namedDir)
+	if got := interfaceBaseClosureImports([]*packages.Package{namedPkg}, []string{"fmt", namedPkg.PkgPath}); len(got) != 1 || got[0] != "io" {
+		t.Fatalf("naming fmt.State binds an interface whose base is io.Writer; got %v", got)
 	}
 
 	// Negative: an exported interface matching no imported interface, alongside an imported
 	// package used only inside a function body, surfaces NOTHING — the closure must stay minimal
-	// and never widen to the production package's plain import graph.
+	// and never widen to the seeded packages' plain import graphs.
 	plainDir := t.TempDir()
 	writeModuleFiles(t, plainDir, map[string]string{
 		"go.mod": "module example/plain\n\ngo 1.23\n",
@@ -763,7 +831,8 @@ func TestProductionStructuralBaseImportsSurfacesForeignInterfaceBases(t *testing
 			"func Upper(s string) string { return strings.ToUpper(s) }\n",
 	})
 
-	if got := productionStructuralBaseImports(loadProductionForDir(t, plainDir)); len(got) != 0 {
+	plain := loadProductionForDir(t, plainDir)
+	if got := interfaceBaseClosureImports([]*packages.Package{plain}, []string{plain.PkgPath}); len(got) != 0 {
 		t.Fatalf("no exported interface matches an imported interface, so the closure must be empty; got %v", got)
 	}
 }
@@ -890,7 +959,13 @@ func writeModuleFiles(t *testing.T, dir string, files map[string]string) {
 	t.Helper()
 
 	for name, contents := range files {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(contents), 0644); err != nil {
+		path := filepath.Join(dir, name)
+
+		// A sub-PACKAGE fixture ("a/a.go") needs its directory created first.
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(contents), 0644); err != nil {
 			t.Fatal(err)
 		}
 	}

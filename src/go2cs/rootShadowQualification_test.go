@@ -206,3 +206,54 @@ func TestStripLocalTypeQualifierIgnoresForeignPrefixesOutsideTests(t *testing.T)
 		t.Errorf("stripLocalTypeQualifier stripped a foreign prefix outside -tests: %q", got)
 	}
 }
+
+// The sibling-half fold applies to DECLARATOR names too, for the same assembly-not-package reason:
+// the in-package `_test.go` declarations compile into the production package's own C# class, so one
+// of them shadows a production file's import using-alias there (hash/maphash's
+// `func (k *bytesKey) bits() int` over maphash_purego.go's `import "math/bits"` — `bits.Mul64(a, b)`
+// bound the method group, CS0119). The production pass cannot see the test half, so
+// performNameCollisionAnalysis folds siblingTestFuncMethodNames into the shadow set.
+func TestSiblingTestDeclaratorsContributeAliasShadow(t *testing.T) {
+	previousSiblings := siblingTestFuncMethodNames
+	previousShadows := packageFuncMethodNames
+	previousCollisions := nameCollisions
+
+	t.Cleanup(func() {
+		siblingTestFuncMethodNames = previousSiblings
+		packageFuncMethodNames = previousShadows
+		nameCollisions = previousCollisions
+	})
+
+	nameCollisions = map[string]bool{}
+
+	// A production-only universe: no _test.go files, so nothing shadows the `bits` alias.
+	dir := t.TempDir()
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod":       "module example/shadow\n\ngo 1.23\n",
+		"shadow.go":    "package shadow\nimport \"math/bits\"\nfunc Mix(a, b uint64) uint64 {\n\thi, lo := bits.Mul64(a, b)\n\treturn hi ^ lo\n}\n",
+		"key_test.go":  "package shadow\ntype bytesKey struct{ b []byte }\nfunc (k *bytesKey) bits() int { return len(k.b) * 8 }\n",
+		"more_test.go": "package shadow\nimport \"testing\"\nfunc TestBits(t *testing.T) {\n\tk := &bytesKey{b: []byte{1}}\n\tif k.bits() != 8 {\n\t\tt.Fatal(\"bad\")\n\t}\n}\n",
+	})
+
+	production := loadProductionForDir(t, dir)
+
+	siblingTestFuncMethodNames = nil
+	performNameCollisionAnalysis(production)
+
+	if packageFuncMethodNames["bits"] {
+		t.Fatal("the production-only universe declares no `bits`, so it must not shadow the alias")
+	}
+
+	// The same production pass, now told what the sibling _test.go half declares.
+	siblingTestFuncMethodNames = []string{"bits"}
+	performNameCollisionAnalysis(production)
+
+	if !packageFuncMethodNames["bits"] {
+		t.Fatal("a sibling test declarator named after an imported package must shadow its alias")
+	}
+
+	// The fold is a REFERENCE-spelling concern only: it must never register a symbol rename.
+	if nameCollisions["bits"] {
+		t.Fatal("the sibling fold must not turn a test declarator into a package-scoped rename")
+	}
+}
