@@ -18,9 +18,9 @@ a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **59 / 215 testable packages validated — 27.4%**
+> ### Phase 4 progress: **60 / 215 testable packages validated — 27.9%**
 >
-> **1,482 matching test verdicts · 47 disclosed** *(updated 2026-07-27 — maintained as part of the
+> **1,654 matching test verdicts · 47 disclosed** *(updated 2026-07-27 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -36,6 +36,7 @@ any other failure is still a hard mismatch.
 | [`container/heap`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/heap) | 7 | | Heap interface over a slice. |
 | [`container/list`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/list) | 10 | | Doubly-linked list — pointers and receiver methods. |
 | [`container/ring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/ring) | 8 | | Circular linked list — a pointer graph. |
+| [`crypto/hmac`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/hmac) | 172 | | HMAC over the real MD5/SHA-1/SHA-224/256/384/512 digests — block-size key folding, constant-time `Equal`, and `cryptotest.TestHash`'s stateful-write matrix per hash. |
 | [`crypto/sha1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/sha1) | 12 | 1 | SHA-1 — the struct-carrying-arrays value copy `Sum` depends on; binary marshal round-trips. |
 | [`crypto/sha256`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/sha256) | 23 | 1 | SHA-224/256 golden vectors and `cryptotest.TestHash`'s stateful-write matrix. |
 | [`crypto/sha512`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/sha512) | 36 | 1 | SHA-384/512/512-224/512-256 — the four-variant digest state machine. |
