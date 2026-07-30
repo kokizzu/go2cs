@@ -57,6 +57,16 @@ func tightenGuards() {
 	const derived = feeder * 2 // its own use below is single-type -> tightens
 	fmt.Println(derived)
 
+	// A mixed-context local const stays wrapped. When a computed float constant made only
+	// from a float literal and that UntypedInt wrapper initializes a typed slot, the WHOLE
+	// expression must materialize at the slot's float width. Otherwise C# selects the
+	// wrapper's integer operator and truncates .5/.25 to zero (hash/maphash avalanche).
+	const repetitions = 100000
+	var loopBound int = repetitions
+	mean := .5 * repetitions
+	var quarterMean float64 = .25 * repetitions
+	fmt.Println(loopBound, mean, quarterMean)
+
 	const big = 1 << 62 // wide value, single int64 use -> tightens to the exact literal
 	var n int64 = 1
 	fmt.Println(n + big)

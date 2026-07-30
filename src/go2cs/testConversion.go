@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
-	"go/parser"
 	"go/token"
 	"go/types"
 	"io/fs"
@@ -771,17 +770,16 @@ func referenceModelTestPackageInfoSeed(projectNamespace, testClassName, external
 }
 
 // collectSiblingTestClosure populates siblingClosureImportPaths with the transitive import closure
-// of the package's _test.go variants — and siblingTestFuncMethodNames with those variants'
-// package-level declarator names — so the PRODUCTION conversion pass, whose emitted C# is
-// recompiled into the test assembly, describes that ASSEMBLY rather than the production half alone
-// (see both globals). Metadata + file-list load (no syntax/types for dependencies), so it costs a
-// fraction of the LoadAllSyntax pass processTestConversion does later. Best-effort: a load failure
-// leaves both sets empty and the production conversion behaves exactly as before —
+// of the package's _test.go variants so the PRODUCTION conversion pass, whose emitted C# is
+// recompiled into the test assembly, describes that ASSEMBLY rather than the production half alone.
+// Declarator names are collected separately and cheaply per package by
+// collectSiblingTestFuncMethodNames, including for ordinary conversion, so reference spelling does
+// not depend on whether -tests was requested. Metadata load only (no syntax/types for dependencies),
+// so it costs a fraction of the LoadAllSyntax pass processTestConversion does later. Best-effort: a
+// load failure leaves the closure empty and the production conversion behaves exactly as before —
 // processTestConversion reports the real error moments later.
 func collectSiblingTestClosure(inputPath string, options Options) {
 	siblingClosureImportPaths = nil
-	siblingTestFuncMethodNames = nil
-
 	targetParts := strings.Split(options.targetPlatform, "/")
 	if len(targetParts) != 2 {
 		return
@@ -821,8 +819,6 @@ func collectSiblingTestClosure(inputPath string, options Options) {
 		}
 	}
 
-	declarators := HashSet[string]{}
-
 	// Only the TEST variants contribute: the production package's own closure is already walked by
 	// computeImportAliasRenames from the loaded types, and the synthetic `<pkg>.test` main package
 	// is not part of the emitted assembly.
@@ -832,38 +828,10 @@ func collectSiblingTestClosure(inputPath string, options Options) {
 		}
 
 		walk(pkg)
-
-		// Declarator names come from the IN-PACKAGE variant only: an external `<pkg>_test` file's
-		// declarations land in their own C# package class and shadow nothing inside the production
-		// one. The loader's CompiledGoFiles are already build-constraint resolved, so an excluded
-		// _test.go never contributes.
-		if strings.HasSuffix(pkg.Name, "_test") {
-			continue
-		}
-
-		for _, file := range pkg.CompiledGoFiles {
-			if !strings.HasSuffix(strings.ToLower(filepath.Base(file)), "_test.go") {
-				continue
-			}
-
-			parsed, parseErr := parser.ParseFile(token.NewFileSet(), file, nil, parser.SkipObjectResolution)
-			if parseErr != nil {
-				continue
-			}
-
-			for _, decl := range parsed.Decls {
-				if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-					declarators.Add(funcDecl.Name.Name)
-				}
-			}
-		}
 	}
 
 	siblingClosureImportPaths = closure.Keys()
 	sort.Strings(siblingClosureImportPaths)
-
-	siblingTestFuncMethodNames = declarators.Keys()
-	sort.Strings(siblingTestFuncMethodNames)
 }
 
 func findProductionPackage(pkgs []*packages.Package, inputPath string) *packages.Package {

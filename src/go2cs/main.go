@@ -607,21 +607,25 @@ var packageBuiltinShadows map[string]bool
 // qualifies through the _package class instead.
 var packageFuncMethodNames map[string]bool
 
-// siblingTestFuncMethodNames holds the package-level declarator names contributed by the IN-PACKAGE
-// `_test.go` half under -tests. Those declarations compile into the very same C# package class as
+// siblingTestFuncMethodNames holds the build-selected package-level declarator names contributed by
+// the IN-PACKAGE `_test.go` half. Those declarations compile into the very same C# package class as
 // the production sources (TestingInfrastructureRequirements §2.1/§4.2), so one of them shadows a
 // PRODUCTION file's import using-alias exactly as a production declarator would — but the
-// production conversion pass runs against the production package alone and cannot see it:
+// production package loaded by go/packages does not include test files and cannot see it:
 // hash/maphash's smhasher_test.go declares `func (k *bytesKey) bits() int` while maphash_purego.go
-// imports "math/bits", so the recompiled `bits.Mul64(a, b)` bound the method group (CS0119, plus
-// CS8130 on both deconstructed results). Folded into packageFuncMethodNames by
-// performNameCollisionAnalysis, which qualifies such a package ident through its _package class —
-// the same assembly-not-package reasoning as siblingClosureImportPaths, and likewise a REFERENCE
-// spelling only, never a symbol rename (production names stay pinned; see testMethodRenames).
-// Populated once per -tests run before the production conversion (collectSiblingTestClosure) and
-// cleared by processTestConversion, so it steers the production pass only; empty for every
-// non--tests conversion, so no other output moves.
+// imports "math/bits", so `bits.Mul64(a, b)` would bind the method group (CS0119, plus CS8130 on
+// both deconstructed results). Folded into packageFuncMethodNames by performNameCollisionAnalysis,
+// which qualifies such a package ident through its _package class — a REFERENCE spelling only,
+// never a symbol rename (production names stay pinned; see testMethodRenames). Populated
+// independently for every production package immediately before its collision analysis, in
+// ordinary and -tests conversion alike, so production source spelling is mode-stable.
 var siblingTestFuncMethodNames []string
+
+// packageTestAliasShadows is the subset of packageFuncMethodNames contributed ONLY by the
+// same-package test half. It does not affect qualification itself; statement emission uses it to
+// explain an otherwise surprising fully-qualified production reference when the reader is not
+// looking at the package's tests.
+var packageTestAliasShadows map[string]bool
 
 // goBuiltinNames is the set of Go universe built-in function names that golib implements as static
 // methods on `go.builtin`. Used to detect a package method/function that shadows one of them.
@@ -1193,6 +1197,12 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 	}
 
 	for _, pkg := range pkgs {
+		// Keep production reference spelling stable between ordinary and -tests conversion:
+		// go/packages omits `_test.go` from this production package, so cheaply scan the
+		// build-selected in-package test files for declarator names before collision analysis.
+		// This is package-local (important for ./... loads) and reads no test dependencies.
+		siblingTestFuncMethodNames = collectSiblingTestFuncMethodNames(pkg.Dir, pkg.Name, options)
+
 		// Reset package level variables and capture the per-package inputs (packageDoc,
 		// importPackageDirs) — shared with the test-conversion path, see packageStateOperations.go
 		resetPackageState(pkg)

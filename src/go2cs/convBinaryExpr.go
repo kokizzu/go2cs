@@ -60,6 +60,36 @@ func (v *Visitor) containsUntypedNamedConstRef(expr ast.Expr) bool {
 	return found
 }
 
+// containsUntypedNamedIntegerConstRef reports whether any subexpression is a named untyped
+// INTEGER constant that will be emitted as an UntypedInt wrapper. It is narrower than
+// containsUntypedNamedConstRef because an UntypedFloat wrapper preserves fractional operands;
+// UntypedInt is the wrapper whose arithmetic overload can truncate a float literal before the
+// destination's float type is applied.
+func (v *Visitor) containsUntypedNamedIntegerConstRef(expr ast.Expr) bool {
+	found := false
+
+	ast.Inspect(expr, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		if callExpr, ok := n.(*ast.CallExpr); ok {
+			if isConversion, _ := v.isTypeConversion(callExpr); isConversion {
+				return false
+			}
+		}
+
+		if e, ok := n.(ast.Expr); ok && v.isUntypedNamedIntegerConstRef(e) {
+			found = true
+			return false
+		}
+
+		return true
+	})
+
+	return found
+}
+
 // foldedNamedFloatConstLiteral returns the single-rounded folded literal — with a `/* <gofmt> */`
 // comment, like the package-level const fold in visitValueSpec — for a COMPUTED float-kind constant
 // operand that references a NAMED untyped-float const (`100000 * Pi`, `1 / Ln10`), rendered at the
@@ -126,6 +156,32 @@ func (v *Visitor) isUntypedNamedConstRef(expr ast.Expr) bool {
 
 		if basic, ok := constObj.Type().(*types.Basic); ok {
 			return basic.Info()&types.IsUntyped != 0 && basic.Info()&types.IsNumeric != 0
+		}
+	}
+
+	return false
+}
+
+// isUntypedNamedIntegerConstRef is the integer-kind subset of isUntypedNamedConstRef.
+func (v *Visitor) isUntypedNamedIntegerConstRef(expr ast.Expr) bool {
+	if !v.isUntypedNamedConstRef(expr) {
+		return false
+	}
+
+	var sel *ast.Ident
+
+	switch e := expr.(type) {
+	case *ast.Ident:
+		sel = e
+	case *ast.SelectorExpr:
+		sel = e.Sel
+	default:
+		return false
+	}
+
+	if constObj, ok := v.info.ObjectOf(sel).(*types.Const); ok {
+		if basic, ok := constObj.Type().(*types.Basic); ok {
+			return basic.Info()&types.IsInteger != 0
 		}
 	}
 
@@ -812,6 +868,22 @@ func constExprIsIntLiteralArithmetic(expr ast.Expr) bool {
 }
 
 func (v *Visitor) convBinaryExpr(binaryExpr *ast.BinaryExpr, context PatternMatchExprContext, litContext BasicLitContext) string {
+	// A TYPED float constant expression containing a named untyped constant must materialize
+	// the whole expression at the resolved width. C# overload resolution otherwise prefers the
+	// Untyped* wrapper's arithmetic when both operands are still constants: `.5 * REP`, with
+	// REP emitted as UntypedInt, converts .5 TO UntypedInt and truncates it to zero before the
+	// surrounding float64 slot can observe the result. Folding the exact Go constant once at
+	// the target width also avoids the double-rounding hazard documented by the shared helper.
+	if v.containsUntypedNamedIntegerConstRef(binaryExpr) {
+		if tv, ok := v.info.Types[binaryExpr]; ok {
+			if targetCSType := v.concreteNumericCSType(tv.Type); targetCSType != "" {
+				if lit := v.foldedNamedFloatConstLiteral(binaryExpr, targetCSType); lit != "" {
+					return lit
+				}
+			}
+		}
+	}
+
 	// A constant operator expression whose value overflows int32 must emit as the folded 64-bit
 	// literal — C# would compute the operators in int32 and overflow at compile time (CS0220).
 	if lit := v.overflowingConstLiteral(binaryExpr); lit != "" {

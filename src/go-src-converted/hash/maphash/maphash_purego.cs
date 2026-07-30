@@ -92,7 +92,8 @@ internal static uint64 r8(slice<byte> p) {
 }
 
 internal static uint64 mix(uint64 a, uint64 b) {
-    var (hi, lo) = bits.Mul64(a, b);
+    // Fully qualified to avoid alias shadowing by the same-package test declaration "bits".
+    var (hi, lo) = math.bits_package.Mul64(a, b);
     return (uint64)(hi ^ lo);
 }
 

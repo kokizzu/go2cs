@@ -180,6 +180,44 @@ func (v *Visitor) untypedConstDeclTypeName(ident *ast.Ident, rhs ast.Expr) strin
 	return convertToCSTypeName(v.getExprTypeName(ident, false))
 }
 
+// materializeDefaultTypedConstDeclValue folds a computed untyped-float constant at the DEFAULT
+// type inferred for a newly `:=`-declared local when the expression contains a named untyped
+// constant. Unlike an explicitly typed slot, go/types leaves the RHS itself untyped and records
+// float64 only on the new variable, so convBinaryExpr cannot see the target width. Without this
+// declaration-edge materialization, C# binds `.5 * REP` to UntypedInt.operator*, truncates .5 to
+// zero, and only then assigns the zero result to the float64 local. The shared fold is exact and
+// single-rounded, and returns "" for literals, bare constant references, non-float constants, and
+// expressions without a wrapper-emitted named constant.
+func (v *Visitor) materializeDefaultTypedConstDeclValue(ident *ast.Ident, rhs ast.Expr, rendered string) string {
+	if ident == nil {
+		return rendered
+	}
+
+	tv, ok := v.info.Types[rhs]
+
+	if !ok || tv.Value == nil || tv.Type == nil {
+		return rendered
+	}
+
+	basic, ok := tv.Type.Underlying().(*types.Basic)
+
+	if !ok || basic.Info()&types.IsUntyped == 0 {
+		return rendered
+	}
+
+	if !v.containsUntypedNamedIntegerConstRef(rhs) {
+		return rendered
+	}
+
+	targetCSType := convertToCSTypeName(v.getExprTypeName(ident, false))
+
+	if folded := v.foldedNamedFloatConstLiteral(rhs, targetCSType); folded != "" {
+		return folded
+	}
+
+	return rendered
+}
+
 // narrowArithmeticCastType returns the C# narrow-integer type a binary/unary arithmetic assignment
 // RHS must be cast to when its Go type matches a narrow-integer LHS (int8/uint8/int16/uint16), or
 // "" when no cast applies. Go evaluates such arithmetic at the operand's own width (wrapping); C#
@@ -1204,6 +1242,10 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 
 			rhsExpr := v.convExpr(rhs, contexts)
 
+			if assignStmt.Tok == token.DEFINE && ident != nil && !v.isReassignment(ident) {
+				rhsExpr = v.materializeDefaultTypedConstDeclValue(ident, rhs, rhsExpr)
+			}
+
 			// Box an untyped CONSTANT assigned to an EMPTY-interface LHS at Go's default type for its
 			// kind (the numeric twin of the castToGoString @string boxing above), so a later `x.(int)` /
 			// `case int:` matches Go's boxed dynamic type. emptyIfaceTarget already reports the
@@ -1704,6 +1746,10 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 					rhsExpr := v.convExpr(rhs, v.appendRhsPtrContext(contexts, rhs))
 
 					v.emitStringConvAsSString = false
+
+					if assignStmt.Tok == token.DEFINE && !v.isReassignment(ident) {
+						rhsExpr = v.materializeDefaultTypedConstDeclValue(ident, rhs, rhsExpr)
+					}
 
 					// A `:=`-declared local initialized from an existing array value takes golib's
 					// `.Clone()` for independent backing storage (see cloneValueCopy).

@@ -170,18 +170,22 @@ func performNameCollisionAnalysis(pkg *packages.Package) {
 	// bound the method group, CS0119, compress/flate). Record every method/function name;
 	// the package-ident emission qualifies through the _package class when shadowed.
 	packageFuncMethodNames = make(map[string]bool)
+	packageTestAliasShadows = make(map[string]bool)
 
 	for name := range methodNames {
 		packageFuncMethodNames[name] = true
 	}
 
-	// Under -tests the production sources are RECOMPILED into the test assembly, so a name the
-	// package's own `_test.go` half declares lands in the SAME package class and shadows a
-	// production file's using-alias there just as a production declarator would — and the
-	// production pass, running against the production package alone, cannot see it. Fold the
-	// sibling half's declarator names in (see siblingTestFuncMethodNames); empty otherwise, and
-	// already a subset of methodNames during the in-package variant's own pass.
+	// A name the package's own `_test.go` half declares lands in the SAME package class when tests
+	// are compiled and shadows a production file's using-alias there just as a production
+	// declarator would. Fold the sibling half's declarator names into every production analysis so
+	// ordinary and -tests conversion emit the same source spelling. Track names contributed ONLY by
+	// tests separately so statement emission can explain the otherwise surprising qualification.
 	for _, name := range siblingTestFuncMethodNames {
+		if !methodNames[name] {
+			packageTestAliasShadows[name] = true
+		}
+
 		packageFuncMethodNames[name] = true
 	}
 

@@ -38,6 +38,11 @@ internal static void tightenGuards() => func((defer, recover) => {
     UntypedFloat feeder = 3.5;
     const float64 derived = /* feeder * 2 */ 7;
     fmt.Println((float64)(derived));
+    UntypedInt repetitions = 100000;
+    nint loopBound = repetitions;
+    var mean = /* .5 * repetitions */ 50000D;
+    float64 quarterMean = /* .25 * repetitions */ 25000D;
+    fmt.Println(loopBound, mean, quarterMean);
     const int64 big = /* 1 << 62 */ 4611686018427387904;
     int64 n = 1;
     fmt.Println(n + big);

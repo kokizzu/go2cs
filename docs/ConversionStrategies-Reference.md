@@ -3711,6 +3711,25 @@ constant expressions render as plain C# literals and keep `var`. Applies in both
 and the mixed-statement paths. (Guarded by the `UntypedConstDefine` behavioral test — untyped rune and
 float package constants `:=`-bound then converted/multiplied, output-compared vs Go.)
 
+### A computed untyped float constant materializes at its destination's float width
+A named untyped constant can still need its `Untyped*` wrapper because another use demands a different
+type. When that name participates in a computed float constant, C# must not evaluate the expression
+through the wrapper's arithmetic operators:
+```go
+const repetitions = 100000
+var loopBound int = repetitions
+mean := .5 * repetitions
+var quarterMean float64 = .25 * repetitions
+```
+The wrapper form makes C# overload resolution prefer `UntypedInt.operator*`, converting `.5` or `.25`
+to an integer and truncating it to zero before the result reaches the float local. The converter instead
+folds the exact Go constant expression once at the destination's resolved `float32` or `float64` width.
+An explicitly typed destination is visible on the expression itself; for a new `:=` local, go/types keeps
+the RHS untyped and records the default type on the declared identifier, so the declaration edge supplies
+that width. Both paths reuse the same named-constant fold and leave bare references, non-float constants,
+and expressions without a wrapper-emitted named constant unchanged. Guarded by `UntypedConstDefine`;
+`hash/maphash`'s 100,000-sample SMHasher avalanche bounds are the corpus witness.
+
 ### A non-escaping `string([]byte)` local emits the stack-string `sstring`
 Go elides the copy in `s := string(buf)` when `s` does not escape and `buf` is not observed to change,
 letting `s` alias `buf`. `@string` (a heap `byte[]` wrapper) cannot do this — every `string([]byte)` is an
@@ -8100,23 +8119,32 @@ Nine coupled rules from the shallow-stack campaign:
 - **Package aliases shadowed by method names** qualify through the `_package` class
   (`sort_package.Sort(…)` — flate's `byLiteral.sort` bound the method group, CS0119).
   Guarded by `SortArrayType` (`PeopleByAge.sort`).
-  Under **`-tests`** the shadow set must describe the ASSEMBLY, not the package: the
-  production sources are recompiled into the test assembly, so a name the package's own
-  in-package `_test.go` half declares lands in the SAME C# package class and shadows a
-  PRODUCTION file's alias there just as a production declarator would — yet the production
-  pass runs against the production package alone and cannot see it. hash/maphash's
-  `smhasher_test.go` declares `func (k *bytesKey) bits() int` while `maphash_purego.go`
-  imports `math/bits`, so the recompiled `bits.Mul64(a, b)` bound the method group (CS0119,
-  plus CS8130 on both deconstructed results — invisible until the reference closure above
-  cleared the package's declaration errors, since Roslyn skips method-body binding while any
-  remain). `collectSiblingTestClosure` now collects those declarator names alongside the
-  sibling import closure and `performNameCollisionAnalysis` folds them into the shadow set,
-  emitting `math.bits_package.Mul64(a, b)`. It is a REFERENCE-spelling change only — never a
-  symbol rename, so production names stay pinned (see `testMethodRenames`) — and it is scoped
-  to the production pass (cleared on entry to `processTestConversion`), so the external test
-  half, whose declarations live in a different C# class, is untouched. Only the in-package
-  variant contributes, and the loader's build-constraint-resolved file list means an excluded
-  `_test.go` never does. Guarded by `TestSiblingTestDeclaratorsContributeAliasShadow`.
+  Same-package tests also participate in that shadow set even during an **ordinary production
+  conversion**. The production source is later recompiled into the test assembly, where an
+  in-package `_test.go` declaration lands in the SAME C# package class and can shadow a production
+  alias — yet go/packages' production package omits test files. hash/maphash's `smhasher_test.go`
+  declares `func (k *bytesKey) bits() int` while `maphash_purego.go` imports `math/bits`, so
+  `bits.Mul64(a, b)` binds the method group in the test assembly (CS0119, plus CS8130 on both
+  deconstructed results). Every production package conversion therefore performs a cheap,
+  build-constraint-aware directory scan of its in-package `_test.go` function/method names and
+  folds them into `packageFuncMethodNames`; it loads and type-checks no test dependency graph.
+  External-package tests are excluded because they emit into another C# package class. This makes
+  production output mode-stable: ordinary and `-tests` conversion both emit
+  `math.bits_package.Mul64(a, b)`. When a test-only declaration is specifically responsible, the
+  statement also explains the otherwise surprising spelling:
+
+  ```csharp
+  // Fully qualified to avoid alias shadowing by the same-package test declaration "bits".
+  var (hi, lo) = math.bits_package.Mul64(a, b);
+  ```
+
+  This remains a REFERENCE-spelling change only — never a symbol rename, so production names stay
+  pinned (see `testMethodRenames`). On entry to `processTestConversion` the sibling list is cleared:
+  the in-package variant sees the declaration in its own typed universe, while the external
+  variant's declarations live in a different C# class. Guarded by
+  `TestSiblingTestDeclaratorsContributeAliasShadow`, including build-excluded and external-test
+  negatives plus the exact explanatory comment; hash/maphash's normal-vs-`-tests` production file
+  is also byte-identical.
   A **Δ-renamed foreign CONST reached through that fallback** must still substitute the
   renamed member: the composed lookup key (`time_package.Second`) misses the alias map
   (keyed on the plain package name, `time.Second`), so `getAliasedTypeName` retries with

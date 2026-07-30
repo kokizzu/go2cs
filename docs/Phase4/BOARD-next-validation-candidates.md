@@ -6,7 +6,7 @@
 > root cause rather than an exploration. **Revised 2026-07-27 (later)** by the reference-closure
 > arc: the closure family is closed, `internal/zstd` is banked, and two claims in the original
 > revision are retracted as measurement errors — see the sections below. Corpus state after that
-> arc: **61 validated / 215 (28.4%)**.
+> arc, plus the 2026-07-29 `hash/maphash` bank: **62 validated / 215 (28.8%)**.
 >
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
@@ -87,7 +87,7 @@ whitebox suite whose dependencies name the package under test.
 
 | Package | State |
 |:--|:--|
-| `hash/maphash` | **21 of 22.** `TestSmhasherAvalanche` fails on a real defect: `const REP = 100000` emits as `UntypedInt`, so `mean := .5 * REP` evaluates as INTEGER arithmetic — `0.5` truncates and `mean` is 0 instead of 50000, collapsing the test's tolerance window. The hash itself is perfect (every avalanche count ~50000/100000). This is the constant-**ident** analogue of the already-fixed int-literal-in-float-slot class, and its blast radius is corpus-wide. |
+| ~~`hash/maphash`~~ | **DONE 2026-07-29 — 22/22, banked.** Computed float constants that directly use a named untyped integer wrapper now materialize once at the destination's float width; `TestSmhasherAvalanche`'s mean is 50000 and the full SMHasher matrix matches Go. |
 | `compress/flate` | **63 of 64.** Only `TestWriterReset`, a whole-`Writer` `reflect.DeepEqual` after `Reset`. Uninvestigated. |
 | `image/gif` | package-level failure, no per-test verdict — needs a first look |
 | `image/png` | probed previously; does not validate |
@@ -105,8 +105,9 @@ whitebox suite whose dependencies name the package under test.
   `sort.cs` broke every later package downstream of `fmt` in the same tree. Residue: a `default!`
   zero-var local. Every *new* emission path re-opens this class, which argues for centralizing
   zero-value construction instead of patching sites — this is now the fourth data point for that.
-- **Untyped constants in a typed slot.** The int-literal case is fixed; the constant-**ident** case
-  (`maphash` above) is not.
+- **Untyped constants in a typed slot — CLOSED 2026-07-29.** The int-literal case was already fixed;
+  a computed float constant that directly uses a named untyped integer wrapper now folds once at the
+  resolved float width. `hash/maphash` validates 22/22; `UntypedConstDefine` guards both `:=` and typed slots.
 
 ## RETRACTED — the `internal/zstd` / `testing.B` "trap" was a false alarm
 

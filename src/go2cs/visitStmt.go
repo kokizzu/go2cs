@@ -94,6 +94,7 @@ func getStmtContext[TContext StmtContext](contexts []StmtContext) TContext {
 
 func (v *Visitor) visitStmt(stmt ast.Stmt, contexts []StmtContext) {
 	v.lastStatementWasReturn = false
+	v.writeTestAliasShadowComment(stmt, contexts)
 
 	switch stmtType := stmt.(type) {
 	case *ast.AssignStmt:
