@@ -162,12 +162,12 @@ public static @string Error(this UnsupportedError e) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badIhdrLengthˢ = "bad IHDR length"u8;
-private static readonly @string compressionMethodˢ = "compression method"u8;
-private static readonly @string filterMethodˢ = "filter method"u8;
-private static readonly @string invalidInterlaceMethodˢ = "invalid interlace method"u8;
-private static readonly @string nonPositiveDimensionˢ = "non-positive dimension"u8;
-private static readonly @string dimensionOverflowˢ = "dimension overflow"u8;
+internal static readonly @string badIhdrLengthˢ = "bad IHDR length"u8;
+internal static readonly @string compressionMethodˢ = "compression method"u8;
+internal static readonly @string filterMethodˢ = "filter method"u8;
+internal static readonly @string invalidInterlaceMethodˢ = "invalid interlace method"u8;
+internal static readonly @string nonPositiveDimensionˢ = "non-positive dimension"u8;
+internal static readonly @string dimensionOverflowˢ = "dimension overflow"u8;
 
 [GoRecv] internal static error parseIHDR(this ref decoder d, uint32 length) {
     if (length != 13) {
@@ -285,8 +285,8 @@ private static readonly @string dimensionOverflowˢ = "dimension overflow"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badPlteLengthˢ = "bad PLTE length"u8;
-private static readonly @string plteColorTypeMismatchˢ = "PLTE, color type mismatch"u8;
+internal static readonly @string badPlteLengthˢ = "bad PLTE length"u8;
+internal static readonly @string plteColorTypeMismatchˢ = "PLTE, color type mismatch"u8;
 
 [GoRecv] internal static error parsePLTE(this ref decoder d, uint32 length) {
     nint np = (nint)(length / 3);
@@ -327,8 +327,8 @@ private static readonly @string plteColorTypeMismatchˢ = "PLTE, color type mism
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badTRNSLengthˢ = "bad tRNS length"u8;
-private static readonly @string tRNSColorTypeMismatchˢ = "tRNS, color type mismatch"u8;
+internal static readonly @string badTRNSLengthˢ = "bad tRNS length"u8;
+internal static readonly @string tRNSColorTypeMismatchˢ = "tRNS, color type mismatch"u8;
 
 [GoRecv] internal static error parsetRNS(this ref decoder d, uint32 length) {
     var exprᴛ1 = d.cb;
@@ -392,8 +392,8 @@ private static readonly @string tRNSColorTypeMismatchˢ = "tRNS, color type mism
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string notEnoughPixelDataˢ = "not enough pixel data"u8;
-private static readonly @string idatChunkLengthOverflowˢ = "IDAT chunk length overflow"u8;
+internal static readonly @string notEnoughPixelDataˢ = "not enough pixel data"u8;
+internal static readonly @string idatChunkLengthOverflowˢ = "IDAT chunk length overflow"u8;
 
 // Read presents one or more IDAT chunks as one continuous stream (minus the
 // intermediate chunk headers and footers). If the PNG data looked like:
@@ -439,7 +439,7 @@ private static readonly @string idatChunkLengthOverflowˢ = "IDAT chunk length o
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tooMuchPixelDataˢ = "too much pixel data"u8;
+internal static readonly @string tooMuchPixelDataˢ = "too much pixel data"u8;
 
 // decode decodes the IDAT data into an image.
 internal static (image.Image, error) decode(this ж<decoder> Ꮡd) => func<(image.Image, error)>((defer, recover) => {
@@ -492,7 +492,7 @@ internal static (image.Image, error) decode(this ж<decoder> Ꮡd) => func<(imag
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badFilterTypeˢ = "bad filter type"u8;
+internal static readonly @string badFilterTypeˢ = "bad filter type"u8;
 
 // readImagePass reads a single image pass, sized according to the pass number.
 [GoRecv] internal static (image.Image, error) readImagePass(this ref decoder d, io.Reader r, nint pass, bool allocateOnly) {
@@ -994,7 +994,7 @@ internal static error /*err*/ parseIDAT(this ж<decoder> Ꮡd, uint32 length) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badIendLengthˢ = "bad IEND length"u8;
+internal static readonly @string badIendLengthˢ = "bad IEND length"u8;
 
 [GoRecv] internal static error parseIEND(this ref decoder d, uint32 length) {
     if (length != 0) {
@@ -1093,7 +1093,7 @@ internal static error parseChunk(this ж<decoder> Ꮡd, bool configOnly) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidChecksumˢ = "invalid checksum"u8;
+internal static readonly @string invalidChecksumˢ = "invalid checksum"u8;
 
 [GoRecv] internal static error verifyChecksum(this ref decoder d) {
     {
@@ -1108,7 +1108,7 @@ private static readonly @string invalidChecksumˢ = "invalid checksum"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string notAPngFileˢ = "not a PNG file"u8;
+internal static readonly @string notAPngFileˢ = "not a PNG file"u8;
 
 [GoRecv] internal static error checkHeader(this ref decoder d) {
     var (_, err) = io.ReadFull(d.r, d.tmp[..(int)(len(pngHeader))]);

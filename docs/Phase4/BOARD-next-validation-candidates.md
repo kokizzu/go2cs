@@ -7,8 +7,8 @@
 > arc: the closure family is closed, `internal/zstd` is banked, and two claims in the original
 > revision are retracted as measurement errors — see the sections below. Corpus state after that
 > arc, plus the 2026-07-29 `hash/maphash` bank and the 2026-07-31 `image/draw`, `image/gif`,
-> `crypto/md5`, `compress/flate`, `image/jpeg` and `index/suffixarray` banks:
-> **68 validated / 215 (31.6%)**.
+> `crypto/md5`, `compress/flate`, `image/jpeg`, `image/png` and `index/suffixarray` banks:
+> **69 validated / 215 (32.1%)**.
 >
 > **Revised again 2026-07-31** by the build-blocker arc: `path/filepath` and `net` — the last two
 > unrooted build blockers — are both fixed at the converter, and both rows moved down into their own
@@ -162,7 +162,7 @@ compiling is the realistic near-term goal, not validating.
 | ~~`hash/maphash`~~ | **DONE 2026-07-29 — 22/22, banked.** Computed float constants that directly use a named untyped integer wrapper now materialize once at the destination's float width; `TestSmhasherAvalanche`'s mean is 50000 and the full SMHasher matrix matches Go. |
 | ~~`compress/flate`~~ | **DONE 2026-07-31 — 64/64, banked.** `TestWriterReset` was NOT a state difference: `deepValueEqual`'s `Func` arm returned false unconditionally, on the reasoning that two nil funcs would already have matched the `invalid == invalid` rule at the top. That holds only for a nil func boxed as `any`; a nil func reached as a struct FIELD is typed by its static func type and is a VALID nil Value, so the arm declared every pair of nil func fields unequal — and the test nils `fill`/`step`/`bulkHasher`/`bestSpeed` precisely so `DeepEqual` can compare the rest. Go's rule is "equal iff both nil"; the arm now asks it. The tell was that every field compared equal individually while the enclosing struct did not. |
 | ~~`image/gif`~~ | **DONE 2026-07-31 — 28/28, banked.** `TestWriter` was the blank-import module-initializer gap and nothing else: with `_ "image/png"`'s `init()` forced, the PNG decoder registers and `image.Decode` reads `../testdata/video-001.png`. No `image/gif` defect existed. |
-| `image/png` | probed previously; does not validate |
+| ~~`image/png`~~ | **DONE 2026-07-31 — 28/28, banked.** The old "does not validate" probe was stale by weeks: a fresh run split **15 of 17** top-level tests passing, and the remainder was ONE defect with a second stacked on top of it. The real root is that Go's slice-to-array-**pointer** conversion `(*[N]T)(s)` was emitted as a **copy**. png's `cbTCA8` row loop writes every un-premultiplied pixel through `d := (*[4]byte)(dst)`, so a non-opaque RGBA source encoded as an all-zero image — and the two `TestWriteRGBA` subtests that did pass passed by luck (the opaque one takes `cbTC8` entirely; the fully-transparent one wants all-zero output, which is also what a lost write produces). `array<T>` now carries a `(low, length)` window and the pointer form takes `array<T>.Alias`; the value form `[N]T(s)` still copies, because Go's does. Above it sat a redundant value adapter — see the row below — which only ever surfaced on `diff`'s failure path, so fixing the aliasing greened the package on its own. |
 | ~~`image/draw`~~ | **DONE 2026-07-31 — 9/9, banked.** All four failures were two defects, both fixed at the root. `TestDraw` was the address-taken *value parameter* box-copy: `DrawMask`'s `clip(dst, &r, src, &sp, mask, &mp)` narrows all three in place, and `Ꮡ(r)` boxed a COPY, so the draw loop ran on the unclipped rectangle. (The empty-`Pix` panic above was that same unclipped geometry, not an assertion defect — the guess in this row was wrong.) The other three were value adapters carrying no Go dynamic type, so `image.Image` type switches took the wrong arm. |
 
 ## Open — mode-unstable production emission (`encoding/base64`, found 2026-07-31)
@@ -197,7 +197,48 @@ it). The first is the durable answer and matches what this arc already did for g
 
 Until then: this drift is **expected sweep output, and must be restored, never banked**. `encoding/base32`
 (`WithPadding`) is the other site the receiver-box footprint named and is a candidate for the same
-divergence.
+divergence. *(Confirmed 2026-07-31 by the r27 sweep: both `encoding/base32/base32.cs` (3/3) and
+`encoding/base64/base64.cs` (6/6) drift, and both restore clean.)*
+
+## Open — a REDUNDANT value adapter, rooted but not fixed (filed 2026-07-31)
+
+Converting a foreign package's value into an interface that package **itself declares** emits a
+local `<pkg>_<T>ᴠ<Iface>` adapter class even though the declaring assembly already implements the
+pair. The converter already knows not to (`convCallExpr`'s both-foreign value arm consults
+`importedValueImplements`, recorded from the dependency's `package_info.cs` `[assembly:
+GoImplement<T, Iface>]` lines) — **the lookup simply never matches for a multi-segment import
+path**, because the two sides compose the interface key differently. Measured, not reasoned
+(`canonicalRecordIfaceName` called directly):
+
+| import path | load side (from the package NAME) | use side (the rendered C# name) | |
+|:--|:--|:--|:--|
+| `bufio` | `bufio_package.Reader` | `bufio_package.Reader` | match |
+| `image/color` | `color_package.Color` | `image.color_package.Color` | **miss** |
+| `encoding/binary` | `binary_package.ByteOrder` | `encoding.binary_package.ByteOrder` | **miss** |
+
+Corpus footprint of the redundant constructions: **478** `color_ΔRGBAᴠColor`, 79
+`binary_{big,little}Endianᴠ ByteOrder`, plus the rest of `image/color`'s models — every same-package
+value-form foreign record in the corpus is a nested path, and not one is single-segment.
+
+It is not merely dead machinery. The adapter is a **second identity for one Go value**: `reflect`
+and `fmt` see the adapter object where the Value's own type says the wrapped struct, which is how
+it surfaced — `image/png`'s `diff` printing `%v` of a `color.Color` died with
+`System.ArgumentException: Field 'R' … is not a field on the target object which is of type
+'go.image_package+color_NRGBAᴠColor'`. (It masked the aliasing defect above: fixing the aliasing
+removed the failure that reached the print.) A direct-boxed `NRGBA` and an adapter-wrapped one also
+compare unequal in one direction.
+
+**Any fix must clear one hazard first.** The record says nothing about how the DECLARING assembly
+realized the pair, and a named FUNC type cannot be realized as a partial struct — `net/http`'s
+`[assembly: GoImplement<HandlerFunc, ΔHandler>]` is realized as an adapter class there, so trusting
+the record for it would emit a bare delegate into an interface slot (CS0029) in `expvar`,
+`net/http/cgi` and three more. The usable gate is the target's Go underlying: trust the record only
+when it is not a `*types.Signature`.
+
+Two live consumers are named by the reflection arc (§6.1's adapter-type `Kind`/`Elem` follow-up),
+and they do NOT overlap: this row removes adapters that were never needed, while the reflection
+chip must still unwrap the ones that genuinely are (`color_PaletteᴠModel`, `syscall_ΔSignalᴠΔSignal`,
+`net_Connᴠ*`). Both are real; neither subsumes the other.
 
 ## Open — intermittent, on an already-banked package
 
@@ -282,6 +323,16 @@ The other consumers this unblocks are all registration-by-blank-import: `databas
 - **Untyped constants in a typed slot — CLOSED 2026-07-29.** The int-literal case was already fixed;
   a computed float constant that directly uses a named untyped integer wrapper now folds once at the
   resolved float width. `hash/maphash` validates 22/22; `UntypedConstDefine` guards both `:=` and typed slots.
+- **A conversion that must ALIAS, implemented as a copy — the same silent-wrong-answer shape as
+  the address-of family, at a different seam (fixed 2026-07-31).** Go's slice-to-array **pointer**
+  conversion `(*[N]T)(s)` shares the slice's storage; go2cs boxed a copy of it, so every write
+  through the pointer was discarded. It had been *recorded* as a known divergence ("aliasing stays
+  faithful for reads back through the same pointer, and the corpus sites are read-only inputs") —
+  true when written, false the moment a write site appeared, and `image/png` was that site. The
+  lesson generalizes past this one construct: a documented "faithful for reads" divergence is a
+  latent wrong answer with a timer on it, and the write case arrives without announcing itself.
+  Two more sites the fix silently corrected: `net/http`'s data-chunk pools now return buffers that
+  really are the pooled storage. Guarded by `SliceToArrayPointerAlias`.
 - **The address-of box-copy family — CLOSED at all six paths (2026-07-31).** The sixth, the value
   RECEIVER, is fixed: `markAddressTakenBoxedReceiver` gives an address-taken value receiver the same
   entry-time `ref var b = ref heap(bʗp, out var Ꮡb)` preamble the value *parameter* takes, gated on

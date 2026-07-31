@@ -123,7 +123,7 @@ internal static nint abs8(uint8 d) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ihdrˢ = "IHDR"u8;
+internal static readonly @string ihdrˢ = "IHDR"u8;
 
 [GoRecv] internal static void writeIHDR(this ref encoder e) {
     var b = e.m.Bounds();
@@ -182,8 +182,8 @@ private static readonly @string ihdrˢ = "IHDR"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string plteˢ = "PLTE"u8;
-private static readonly @string tRNSˢ = "tRNS"u8;
+internal static readonly @string plteˢ = "PLTE"u8;
+internal static readonly @string tRNSˢ = "tRNS"u8;
 
 [GoRecv] internal static void writePLTEAndTRNS(this ref encoder e, color.Palette p) {
     if (len(p) < 1 || len(p) > 256) {
@@ -208,7 +208,7 @@ private static readonly @string tRNSˢ = "tRNS"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string idatˢ = "IDAT"u8;
+internal static readonly @string idatˢ = "IDAT"u8;
 
 // An encoder is an io.Writer that satisfies writes by writing PNG IDAT chunks,
 // including an 8-byte header and 4-byte CRC checksum per Write call. Such calls
@@ -478,8 +478,8 @@ internal static error writeImage(this ж<encoder> Ꮡe, io.Writer w, image.Image
                 var dst = cr[0][1..];
                 var src = (~rgba).Pix[(int)(rgba.PixOffset(b.Min.X, y))..(int)(rgba.PixOffset(b.Max.X, y))];
                 for (; len(src) >= 4; (dst, src) = (dst[4..], src[4..])) {
-                    var d = Ꮡ(new array<byte>(dst, 4));
-                    var s = Ꮡ(new array<byte>(src, 4));
+                    var d = Ꮡ(array<byte>.Alias(dst, 4));
+                    var s = Ꮡ(array<byte>.Alias(src, 4));
                     if (s.Value[3] == 0x00){
                         d.Value[0] = 0;
                         d.Value[1] = 0;
@@ -619,7 +619,7 @@ internal static nint levelToZlib(CompressionLevel l) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string iendˢ = "IEND"u8;
+internal static readonly @string iendˢ = "IEND"u8;
 
 [GoRecv] internal static void writeIEND(this ref encoder e) {
     e.writeChunk(default!, iendˢ);
