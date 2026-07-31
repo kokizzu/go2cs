@@ -69,8 +69,11 @@ public static Drawer FloydSteinberg = new floydSteinberg(nil);
 [GoType] partial struct floydSteinberg {
 }
 
-internal static void Draw(this floydSteinberg _, Image dst, image.Rectangle r, image.Image src, image.Point sp) {
-    clip(dst, Ꮡ(r), src, Ꮡ(sp), default!, nil);
+internal static void Draw(this floydSteinberg _, Image dst, image.Rectangle rʗp, image.Image src, image.Point spʗp) {
+    ref var r = ref heap(rʗp, out var Ꮡr);
+    ref var sp = ref heap(spʗp, out var Ꮡsp);
+
+    clip(dst, Ꮡr, src, Ꮡsp, default!, nil);
     if (r.Empty()) {
         return;
     }
@@ -115,8 +118,12 @@ public static void Draw(Image dst, image.Rectangle r, image.Image src, image.Poi
 
 // DrawMask aligns r.Min in dst with sp in src and mp in mask and then replaces the rectangle r
 // in dst with the result of a Porter-Duff composition. A nil mask is treated as opaque.
-public static void DrawMask(Image dst, image.Rectangle r, image.Image src, image.Point sp, image.Image mask, image.Point mp, Op op) {
-    clip(dst, Ꮡ(r), src, Ꮡ(sp), mask, Ꮡ(mp));
+public static void DrawMask(Image dst, image.Rectangle rʗp, image.Image src, image.Point spʗp, image.Image mask, image.Point mpʗp, Op op) {
+    ref var r = ref heap(rʗp, out var Ꮡr);
+    ref var sp = ref heap(spʗp, out var Ꮡsp);
+    ref var mp = ref heap(mpʗp, out var Ꮡmp);
+
+    clip(dst, Ꮡr, src, Ꮡsp, mask, Ꮡmp);
     if (r.Empty()) {
         return;
     }
@@ -1053,7 +1060,7 @@ internal static void drawPaletted(Image dst, image.Rectangle r, image.Image src,
     nint stride = 0;
     {
         var (p, ok) = dst._<ж<image.Paletted>>(ᐧ); if (ok) {
-            palette = new slice<array<int32>>(len((~p).Palette));
+            palette = new slice<array<int32>>(len((~p).Palette), () => new(4));
             foreach (var (i, col) in (~p).Palette) {
                 var (rΔ1, g, b, a) = col.RGBA();
                 palette[i][0] = (int32)rΔ1;
@@ -1070,8 +1077,8 @@ internal static void drawPaletted(Image dst, image.Rectangle r, image.Image src,
     slice<array<int32>> quantErrorCurr = default!;
     slice<array<int32>> quantErrorNext = default!;
     if (floydSteinberg) {
-        quantErrorCurr = new slice<array<int32>>(r.Dx() + 2);
-        quantErrorNext = new slice<array<int32>>(r.Dx() + 2);
+        quantErrorCurr = new slice<array<int32>>(r.Dx() + 2, () => new(4));
+        quantErrorNext = new slice<array<int32>>(r.Dx() + 2, () => new(4));
     }
     var pxRGBA = (nint x, nint y) => {
         uint32 rΔ2 = default!;
