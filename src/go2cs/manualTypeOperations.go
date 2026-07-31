@@ -87,6 +87,19 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// internal/fmtsort's test init is the demonstrated consumer.
 		"Pinner.Pin":   true,
 		"Pinner.Unpin": true,
+		// The traceback surface (managed_impl.cs). Callers' auto body enters the raw-metal
+		// unwinder on its first step (callers → getcallersp, an assembly stub), and Frames.Next
+		// reads linker funcInfo tables (findfunc) that have no managed form. Both API contracts —
+		// "record the calling goroutine's frames as opaque PCs" / "expand PCs to function/file/
+		// line" — the CLR answers natively via System.Diagnostics.StackTrace, projected to
+		// GO-LOGICAL frames (converted-source frames only; go2cs-gen shells and forwarders are
+		// invisible, exactly as Go's interface dispatch adds no frame). getcallersp itself stays
+		// an honest stub — a caller's stack pointer has no managed answer; the chain is severed
+		// here, at the semantic boundary that does (the reflection bridge's methodName pattern).
+		// io's TestMultiReaderFlatten / TestMultiWriterSingleChainFlatten (relative stack-depth
+		// asserts over runtime.Callers) are the demonstrated consumers.
+		"Callers":     true,
+		"Frames.Next": true,
 	},
 	// internal/abi.TypeOf reads an interface's type-word via unsafe.Pointer to reach a Go runtime
 	// type descriptor that has no managed form (the reflection bridge — Phase 4). type_impl.cs

@@ -91,6 +91,26 @@
 > nil in `fd_windows`), `TestIgnoreDepthLimit` on `reflect.ArrayOf` (the same `typelinks` stub),
 > and the rest are gob wire/nil-pointer behaviours listed in the r18 report.
 >
+> **Phase-3 increment 4 (SHIPPED 2026-07-31) — the `getcallersp` chain: `runtime.Callers` +
+> `Frames.Next` managed.** The chip's io increment. The failing surface was never the flatten
+> OPTIMIZATION (pure Go, converts fine) but the tests' MEASUREMENT of it: `runtime.Callers` →
+> `callers()` opens with `getcallersp()` (assembly) and `Frames.Next` reads linker `funcInfo`
+> tables. Both contracts are answered natively in `runtime/managed_impl.cs` over
+> `System.Diagnostics.StackTrace` with a GO-LOGICAL frame projection — only source-declared Go
+> functions count; adapter shells (`IGoAdapter`) and go2cs-gen forwarders (`[GeneratedCode]`) are
+> invisible, exactly as Go's interface dispatch adds no frame — so relative depths match Go's
+> logical model (io's `readDepth == myDepth+2` holds bit-exactly); PCs are opaque interned
+> process-lifetime tokens. **`getcallersp` itself stays an honest stub** — the chain is severed at
+> the API boundary where a managed answer exists, the `methodName` rule. io: 45/54 → **47/54**;
+> the remaining seven verdicts keep their non-reflection owners (os arc, StringCheckCall, two
+> alloc-profile disclosure rulings). Full design:
+> ConversionStrategies-Reference `runtime.Callers / Frames.Next walk the managed stack projected
+> to GO-LOGICAL frames`. (Same landing repairs the whitebox adapter-pair resolver — a bare cast
+> of a variant-local type resolved to the first same-simple-name FOREIGN record
+> (`bytes_BufferжReader` for io_test's own `Buffer`, CS1503 ×20), which had silently re-walled
+> the io build the board records as closed; anchor-local records now win, guarded by
+> `TestBareCastPrefersAnchorLocalRecordOverForeignSimpleNameMatch`.)
+>
 > **NOT implemented — remaining Phase-3 surface:** `MakeFunc`; variadic `Call`/`CallSlice`
 > (text/template); `SetMapIndex` delete-on-invalid + `MapKeys` (encoding/json); the Go
 > unnamed↔named `directlyAssignable` refinement beyond identity+wrapper (binary named-slice cases

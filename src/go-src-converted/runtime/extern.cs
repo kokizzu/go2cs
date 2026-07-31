@@ -314,33 +314,15 @@ public static (uintptr pc, @string @file, nint line, bool ok) Caller(nint skip) 
     return (frame.PC, frame.File, frame.Line, frame.PC != 0);
 }
 
-// Callers fills the slice pc with the return program counters of function invocations
-// on the calling goroutine's stack. The argument skip is the number of stack frames
-// to skip before recording in pc, with 0 identifying the frame for Callers itself and
-// 1 identifying the caller of Callers.
-// It returns the number of entries written to pc.
-//
-// To translate these PCs into symbolic information such as function
-// names and line numbers, use [CallersFrames]. CallersFrames accounts
-// for inlined functions and adjusts the return program counters into
-// call program counters. Iterating over the returned slice of PCs
-// directly is discouraged, as is using [FuncForPC] on any of the
-// returned PCs, since these cannot account for inlining or return
-// program counter adjustment.
-public static nint Callers(nint skip, slice<uintptr> pc) {
-    // runtime.callers uses pc.array==nil as a signal
-    // to print a stack trace. Pick off 0-length pc here
-    // so that we don't let a nil pc slice get to it.
-    if (len(pc) == 0) {
-        return 0;
-    }
-    return callers(skip, pc);
-}
+// go2cs generated this placeholder — func Callers is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// runtime.callers uses pc.array==nil as a signal
+// to print a stack trace. Pick off 0-length pc here
+// so that we don't let a nil pc slice get to it.
 internal static @string defaultGOROOT; // set by cmd/link
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gorootˢ = "GOROOT"u8;
+internal static readonly @string gorootˢ = "GOROOT"u8;
 
 // GOROOT returns the root of the Go tree. It uses the
 // GOROOT environment variable, if set at process start,

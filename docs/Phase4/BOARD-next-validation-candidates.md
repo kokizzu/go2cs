@@ -66,15 +66,32 @@ in std` — silently, until the validated sweep failed on `bytes` at the second 
 
 The diagnosis was correct: recompiling `io` into its mixed internal/external test assembly created a second `io_package.Writer`, distinct from the one named by `hash.Hash`, `bytes`, `fmt`, and the rest of the referenced closure. The general fix is the new **`whitebox-reference`** test-project model. A production package with build-selected same-package tests conditionally grants friend access to `<assembly>.tests`; internal `_test.go` declarations emit into `<name>_internal_test_package`; external references to those declarations route to the bridge by `go/types.Object` identity; and test-contributed adapters live in the test metadata anchor. Production remains the only identity for its types. Records that truly require a production-type mutation still fall back to `recompile`.
 
-Fresh `io` conversion now emits `testProjectModel: whitebox-reference`, references `io.csproj`, compiles no production `.cs` into `io.tests`, and builds with **0 errors**. The host runs all **54** included test functions: **45 pass**, proving the former CS0012/CS1503 wall is gone. `io` is not banked or counted as validated yet; the remaining nine top-level verdicts are separate runtime/semantic roots:
+Fresh `io` conversion now emits `testProjectModel: whitebox-reference`, references `io.csproj`, compiles no production `.cs` into `io.tests`, and builds with **0 errors**. The host runs all **54** included test functions.
 
-- `TestMultiReaderFlatten` and `TestMultiWriterSingleChainFlatten`: `runtime.getcallersp` is unimplemented — owned by the charter's reflection Phase-3 chip.
+⚠ **2026-07-31 (reflection chip): the 0-errors claim had silently regressed on landed master** — a
+fresh conversion produced CS1503 ×20: `emittedAdapterPair`'s bare-cast fallback resolved io_test's
+own `Buffer` to the first same-simple-name record in order, the FOREIGN `bytes_package.Buffer`
+(`bytes_BufferжReader(rb)`), while the generator names the anchor-local record's adapter bare
+(`BufferжReader`). Both A/B binaries (`8d55344cc` landing, `f73d62d71`) emit the same broken
+pairing, so the recorded 45/54 was measured with an intermediate, not the final, binary — the §9
+mixed-vintage lesson in the wild. Fixed in the chip's landing (anchor-local records win the
+dotless fallback; exact-key matching is a full first pass; `anchoredAdapterMemberName` composes
+bare for anchor-local records — guard `TestBareCastPrefersAnchorLocalRecordOverForeignSimpleNameMatch`).
+
+With that repaired and the chip's `runtime.Callers`/`Frames.Next` managed traceback landed, the
+host reaches **47 pass / 54**; the remaining seven top-level verdicts are separate runtime/semantic
+roots:
+
+- ~~`TestMultiReaderFlatten` and `TestMultiWriterSingleChainFlatten`: `runtime.getcallersp`~~ —
+  **CLOSED 2026-07-31 by the reflection Phase-3 chip (increment 4)**: `runtime.Callers` +
+  `Frames.Next` hand-owned over a Go-logical managed stack projection; `getcallersp` stays an
+  honest stub (see DESIGN-reflection-bridge.md and the ConversionStrategies-Reference section).
 - `TestOffsetWriter_Seek`, `TestOffsetWriter_WriteAt`, `TestWriteAt_PositionPriorToBase`, plus `TestOffsetWriter_Write` subtests: `os.runtime_rand` is unimplemented in the tempfile path — owned by the `os` operational arc.
 - `TestMultiWriter_StringCheckCall`: `WriteString` forwarding behavior mismatch (separate runtime/conversion investigation).
 - `TestMultiWriter_WriteStringSingleAlloc` and `TestPipeAllocations`: exact allocation-profile assertions; no disclosure ruling has been made.
 
-This board item is complete at its stated architectural boundary — the **45 / 54** split above is
-the whole of what remains, and every one of the nine has a named owner. They must be handled by
+This board item is complete at its stated architectural boundary — the **47 / 54** split above is
+the whole of what remains, and every one of the seven has a named owner. They must be handled by
 those arcs rather than folded into the test-project-model change.
 
 ## Build-blocked, each its own root

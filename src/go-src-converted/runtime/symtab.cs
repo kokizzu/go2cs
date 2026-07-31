@@ -76,126 +76,43 @@ public static ж<Frames> CallersFrames(slice<uintptr> callers) {
     return f;
 }
 
-// Next returns a [Frame] representing the next call frame in the slice
-// of PC values. If it has already returned all call frames, Next
-// returns a zero [Frame].
-//
-// The more result indicates whether the next call to Next will return
-// a valid [Frame]. It does not necessarily indicate whether this call
-// returned one.
-//
-// See the [Frames] example for idiomatic usage.
-[GoRecv] public static (Frame frame, bool more) Next(this ref Frames ci) {
-    Frame frame = default!;
-    bool more = default!;
+// go2cs generated this placeholder — func Next is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    while (len(ci.frames) < 2) {
-        // Find the next frame.
-        // We need to look for 2 frames so we know what
-        // to return for the "more" result.
-        if (len(ci.callers) == 0) {
-            break;
-        }
-        uintptr pc = default!;
-        if (ci.nextPC != 0){
-            (pc, ci.nextPC) = (ci.nextPC, 0);
-        } else {
-            (pc, ci.callers) = (ci.callers[0], ci.callers[1..]);
-        }
-        var ΔfuncInfo = findfunc(pc);
-        if (!ΔfuncInfo.valid()) {
-            if (cgoSymbolizer != nil) {
-                // Pre-expand cgo frames. We could do this
-                // incrementally, too, but there's no way to
-                // avoid allocation in this case anyway.
-                ci.frames = append(ci.frames, expandCgoFrames(pc).ꓸꓸꓸ);
-            }
-            continue;
-        }
-        var f = ΔfuncInfo._Func();
-        var entry = f.Entry();
-        if (pc > entry) {
-            // We store the pc of the start of the instruction following
-            // the instruction in question (the call or the inline mark).
-            // This is done for historical reasons, and to make FuncForPC
-            // work correctly for entries in the result of runtime.Callers.
-            pc--;
-        }
-        // It's important that interpret pc non-strictly as cgoTraceback may
-        // have added bogus PCs with a valid funcInfo but invalid PCDATA.
-        var (u, uf) = newInlineUnwinder(ΔfuncInfo, pc);
-        var sf = u.srcFunc(uf);
-        if (u.isInlined(uf)) {
-            // Note: entry is not modified. It always refers to a real frame, not an inlined one.
-            // File/line from funcline1 below are already correct.
-            f = default!;
-            // When CallersFrame is invoked using the PC list returned by Callers,
-            // the PC list includes virtual PCs corresponding to each outer frame
-            // around an innermost real inlined PC.
-            // We also want to support code passing in a PC list extracted from a
-            // stack trace, and there only the real PCs are printed, not the virtual ones.
-            // So check to see if the implied virtual PC for this PC (obtained from the
-            // unwinder itself) is the next PC in ci.callers. If not, insert it.
-            // The +1 here correspond to the pc-- above: the output of Callers
-            // and therefore the input to CallersFrames is return PCs from the stack;
-            // The pc-- backs up into the CALL instruction (not the first byte of the CALL
-            // instruction, but good enough to find it nonetheless).
-            // There are no cycles in implied virtual PCs (some number of frames were
-            // inlined, but that number is finite), so this unpacking cannot cause an infinite loop.
-            for (var unext = u.next(uf); unext.valid() && len(ci.callers) > 0 && ci.callers[0] != unext.pc + 1; unext = u.next(unext)) {
-                var snext = u.srcFunc(unext);
-                if (snext.funcID == abi.FuncIDWrapper && elideWrapperCalling(sf.funcID)) {
-                    // Skip, because tracebackPCs (inside runtime.Callers) would too.
-                    continue;
-                }
-                ci.nextPC = unext.pc + 1;
-                break;
-            }
-        }
-        ci.frames = append(ci.frames, new Frame(
-            PC: pc,
-            Func: f,
-            Function: funcNameForPrint(sf.name()),
-            Entry: entry,
-            startLine: (nint)sf.startLine,
-            funcInfo: ΔfuncInfo
-        ));
-    }
-    // Note: File,Line set below
-    // Pop one frame from the frame list. Keep the rest.
-    // Avoid allocation in the common case, which is 1 or 2 frames.
-    switch (len(ci.frames)) {
-    case 0: {
-        return (frame, more);
-    }
-    case 1: {
-        frame = ci.frames[0];
-        ci.frames = ci.frameStore[..0];
-        break;
-    }
-    case 2: {
-        frame = ci.frames[0];
-        ci.frameStore[0] = ci.frames[1];
-        ci.frames = ci.frameStore[..1];
-        break;
-    }
-    default: {
-        frame = ci.frames[0];
-        ci.frames = ci.frames[1..];
-        break;
-    }}
-
-    // In the rare case when there are no frames at all, we return Frame{}.
-    more = len(ci.frames) > 0;
-    if (frame.funcInfo.valid()) {
-        // Compute file/line just before we need to return it,
-        // as it can be expensive. This avoids computing file/line
-        // for the Frame we find but don't return. See issue 32093.
-        var (@file, line) = funcline1(frame.funcInfo, frame.PC, false);
-        (frame.File, frame.Line) = (@file, (nint)line);
-    }
-    return (frame, more);
-}
+// Find the next frame.
+// We need to look for 2 frames so we know what
+// to return for the "more" result.
+// Pre-expand cgo frames. We could do this
+// incrementally, too, but there's no way to
+// avoid allocation in this case anyway.
+// We store the pc of the start of the instruction following
+// the instruction in question (the call or the inline mark).
+// This is done for historical reasons, and to make FuncForPC
+// work correctly for entries in the result of runtime.Callers.
+// It's important that interpret pc non-strictly as cgoTraceback may
+// have added bogus PCs with a valid funcInfo but invalid PCDATA.
+// Note: entry is not modified. It always refers to a real frame, not an inlined one.
+// File/line from funcline1 below are already correct.
+// When CallersFrame is invoked using the PC list returned by Callers,
+// the PC list includes virtual PCs corresponding to each outer frame
+// around an innermost real inlined PC.
+// We also want to support code passing in a PC list extracted from a
+// stack trace, and there only the real PCs are printed, not the virtual ones.
+// So check to see if the implied virtual PC for this PC (obtained from the
+// unwinder itself) is the next PC in ci.callers. If not, insert it.
+// The +1 here correspond to the pc-- above: the output of Callers
+// and therefore the input to CallersFrames is return PCs from the stack;
+// The pc-- backs up into the CALL instruction (not the first byte of the CALL
+// instruction, but good enough to find it nonetheless).
+// There are no cycles in implied virtual PCs (some number of frames were
+// inlined, but that number is finite), so this unpacking cannot cause an infinite loop.
+// Skip, because tracebackPCs (inside runtime.Callers) would too.
+// Note: File,Line set below
+// Pop one frame from the frame list. Keep the rest.
+// Avoid allocation in the common case, which is 1 or 2 frames.
+// In the rare case when there are no frames at all, we return Frame{}.
+// Compute file/line just before we need to return it,
+// as it can be expensive. This avoids computing file/line
+// for the Frame we find but don't return. See issue 32093.
 
 // runtime_FrameStartLine returns the start line of the function in a Frame.
 //
@@ -576,11 +493,11 @@ internal static void moduledataverify() {
 internal const bool debugPcln = false;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidFunctionSymbolˢ = "invalid function symbol table"u8;
-private static readonly @string endˢ = "end"u8;
-private static readonly @string invalidRuntimeSymbolˢ = "invalid runtime symbol table"u8;
-private static readonly @string minpcOrMaxpcInvalidˢ = "minpc or maxpc invalid"u8;
-private static readonly @string abiMismatchˢ = "abi mismatch"u8;
+internal static readonly @string invalidFunctionSymbolˢ = "invalid function symbol table"u8;
+internal static readonly @string endˢ = "end"u8;
+internal static readonly @string invalidRuntimeSymbolˢ = "invalid runtime symbol table"u8;
+internal static readonly @string minpcOrMaxpcInvalidˢ = "minpc or maxpc invalid"u8;
+internal static readonly @string abiMismatchˢ = "abi mismatch"u8;
 
 // moduledataverify1 should be an internal detail,
 // but widely used packages access it using linkname.
@@ -638,7 +555,7 @@ internal static void moduledataverify1(ж<moduledata> Ꮡdatap) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeTextOffsetOutOfˢ = "runtime: text offset out of range"u8;
+internal static readonly @string runtimeTextOffsetOutOfˢ = "runtime: text offset out of range"u8;
 
 // textAddr returns md.text + off, with special handling for multiple text sections.
 // off is a (virtual) offset computed at internal linking time,
@@ -963,9 +880,9 @@ internal static uintptr pcvalueCacheKey(uintptr targetpc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cacheInUseOutOfRangeˢ = "cache.inUse out of range"u8;
-private static readonly @string noModuleDataˢ = "no module data"u8;
-private static readonly @string badPcvalueCacheˢ = "bad pcvalue cache"u8;
+internal static readonly @string cacheInUseOutOfRangeˢ = "cache.inUse out of range"u8;
+internal static readonly @string noModuleDataˢ = "no module data"u8;
+internal static readonly @string badPcvalueCacheˢ = "bad pcvalue cache"u8;
 
 // Returns the PCData value, and the PC where this value starts.
 internal static (int32, uintptr) pcvalue(ΔfuncInfo f, uint32 off, uintptr targetpc, bool strict) {
@@ -1166,7 +1083,7 @@ internal static (@string @file, int32 line) funcline(ΔfuncInfo f, uintptr targe
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badSpdeltaˢ = "bad spdelta"u8;
+internal static readonly @string badSpdeltaˢ = "bad spdelta"u8;
 
 internal static int32 funcspdelta(ΔfuncInfo f, uintptr targetpc) {
     var (x, _) = pcvalue(f, f.pcsp, targetpc, true);
@@ -1321,7 +1238,7 @@ internal static (uint32 read, uint32 val) readvarint(slice<byte> Δp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stackmapdataIndexOutOfˢ = "stackmapdata: index out of range"u8;
+internal static readonly @string stackmapdataIndexOutOfˢ = "stackmapdata: index out of range"u8;
 
 // stackmapdata should be an internal detail,
 // but widely used packages access it using linkname.

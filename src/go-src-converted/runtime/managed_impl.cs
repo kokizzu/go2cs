@@ -47,11 +47,24 @@
 //   - LockOSThread/UnlockOSThread are no-ops BY CONSTRUCTION, not by omission: go2cs runs each
 //     goroutine on its own managed thread, so the guarantee they exist to provide — "this
 //     goroutine will not be migrated to another OS thread" — already holds unconditionally.
+//   - Callers()/Frames.Next() walk the MANAGED stack projected to GO-LOGICAL frames: only
+//     converted Go declarations and function literals count — adapter shells (IGoAdapter) and
+//     go2cs-gen forwarders are dispatch plumbing Go has no frame for, and golib/the BCL/the test
+//     host are not Go code. RELATIVE depths between two Callers calls on one goroutine therefore
+//     match Go's logical model (io's multiReader flatten tests assert exactly this); ABSOLUTE
+//     depth reflects the managed host's own frames below main. PC values are opaque
+//     process-lifetime tokens, never addresses; Frame.Function is the Go spelling (goFrameName);
+//     Frame.File/Line name the CONVERTED .cs source, the source that honestly exists. FuncForPC
+//     and Frame.Func stay unimplemented/nil — a *Func has no managed referent. getcallersp
+//     itself remains an honest stub: a caller's stack pointer has no managed answer, so the
+//     chain is severed HERE, at the API boundary that does (the methodName precedent).
 //
 // Hand-owned: there is no managed_impl.go, so a -stdlib reconvert never regenerates this file.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using go.golib;
@@ -302,5 +315,190 @@ partial class runtime_package
     // Pinner.Unpin unpins all pinned objects of the Pinner (no-op: nothing was pinned).
     [GoRecv] public static void Unpin(this ref Pinner Δp)
     {
+    }
+
+    // ---------------- The traceback surface: Callers / Frames.Next ----------------
+
+    // One converted-Go call site observed on the managed stack, resolved at intern time so a
+    // later Frames walk needs no live StackFrame. Tokens are process-lifetime, like Go's program
+    // counters, so a pc slice recorded by Callers stays resolvable by any later CallersFrames.
+    private sealed class CallerFrameRecord
+    {
+        public string Function = string.Empty;
+        public string File = string.Empty;
+        public nint Line;
+    }
+
+    private static readonly object s_callerTableLock = new();
+    private static readonly Dictionary<string, nuint> s_callerTokens = new();
+    private static readonly List<CallerFrameRecord> s_callerRecords = new();
+
+    // Callers fills pc with the return PCs of function invocations on the calling goroutine's
+    // stack, skipping `skip` frames (0 identifies the frame for Callers itself, 1 its caller).
+    // The auto body enters the raw-metal unwinder on its first step (callers → getcallersp, an
+    // assembly stub); the CLR answers the API CONTRACT natively — walk the managed stack and
+    // project it to GO-LOGICAL frames. What counts as a frame is what Go's unwinder reports:
+    // functions the GO SOURCE declares. Converted declarations count — free functions and
+    // [GoRecv] receivers on the package class, methods on the structs nested in it, and function
+    // literals (compiler display classes nested in the same scope). go2cs dispatch machinery does
+    // not: an interface adapter shell or a generated forwarder has no Go frame, exactly as Go's
+    // interface dispatch adds none. Depth DELTAS between two Callers calls on one goroutine
+    // therefore match Go's logical model — the property io's flatten tests assert
+    // (readDepth == myDepth+2) — while ABSOLUTE depth reflects the managed host (see the header).
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static nint Callers(nint skip, slice<uintptr> pc)
+    {
+        // Go picks off a 0-length pc before touching the walker (a nil pc array is the
+        // print-a-traceback signal there); preserve the observable short-circuit.
+        if (len(pc) == 0)
+            return 0;
+
+        StackTrace stack = new(skipFrames: 0, fNeedFileInfo: true);
+        nint remainingSkip = skip;
+        nint count = 0;
+
+        foreach (StackFrame frame in stack.GetFrames())
+        {
+            System.Reflection.MethodBase? method = frame.GetMethod();
+
+            if (method is null || !isGoSourceFrame(method))
+                continue;
+
+            if (remainingSkip > 0)
+            {
+                remainingSkip--;
+                continue;
+            }
+
+            if (count >= len(pc))
+                break;
+
+            pc[count] = internCallerFrame(method, frame);
+            count++;
+        }
+
+        return count;
+    }
+
+    // Frames.Next expands the next recorded PC into a Frame. The auto body resolves PCs through
+    // findfunc's linker-built funcInfo tables, which have no managed form; the records minted by
+    // Callers carry the same answers (Function in Go's spelling, File, Line). A PC this runtime
+    // never minted resolves like Go's !funcInfo.valid() — skipped, not fatal. Frame.Func stays
+    // nil (allowed by contract: "may be nil for non-Go code"), and Entry mirrors PC — entry
+    // points are not distinct from call sites in the token model.
+    [GoRecv] public static (Frame frame, bool more) Next(this ref Frames ci)
+    {
+        while (len(ci.callers) > 0)
+        {
+            uintptr pcToken = ci.callers[0];
+            ci.callers = ci.callers[1..];
+
+            CallerFrameRecord? record = callerFrameRecord(pcToken);
+
+            if (record is null)
+                continue;
+
+            Frame frame = new()
+            {
+                PC = pcToken,
+                Function = record.Function,
+                File = record.File,
+                Line = record.Line,
+                Entry = pcToken
+            };
+
+            return (frame, moreCallerFrames(ci.callers));
+        }
+
+        return (default!, false);
+    }
+
+    // True when another Callers-minted PC remains — the precise "more" Go's two-frame prefetch
+    // computes (a trailing foreign PC does not promise a Frame that will never come).
+    private static bool moreCallerFrames(slice<uintptr> callers)
+    {
+        for (nint i = 0; i < len(callers); i++)
+        {
+            if (callerFrameRecord(callers[i]) is not null)
+                return true;
+        }
+
+        return false;
+    }
+
+    // The Go-frame test (see Callers). The frame's TOP-LEVEL declaring scope must be a
+    // `<pkg>_package` class in namespace `go` — covering the package class itself, the struct
+    // types nested in it, and a function literal's display class — and the method must not be
+    // go2cs machinery: a generated adapter (IGoAdapter, dispatch plumbing) or a go2cs-gen
+    // synthesized member (RecvGenerator's ж-forwarders carry [GeneratedCode("go2cs-gen", …)]).
+    // Everything outside a package class — golib, the BCL, the test-host runtime — is not Go
+    // code and never counts.
+    private static bool isGoSourceFrame(System.Reflection.MethodBase method)
+    {
+        Type? declaring = method.DeclaringType;
+
+        if (declaring is null)
+            return false;
+
+        if (typeof(IGoAdapter).IsAssignableFrom(declaring))
+            return false;
+
+        foreach (object attribute in method.GetCustomAttributes(typeof(System.CodeDom.Compiler.GeneratedCodeAttribute), inherit: false))
+        {
+            if (attribute is System.CodeDom.Compiler.GeneratedCodeAttribute generated && generated.Tool == "go2cs-gen")
+                return false;
+        }
+
+        Type topLevel = declaring;
+
+        while (topLevel.DeclaringType is not null)
+            topLevel = topLevel.DeclaringType;
+
+        string? ns = topLevel.Namespace;
+
+        if (ns is null || (ns != "go" && !ns.StartsWith("go.", StringComparison.Ordinal)))
+            return false;
+
+        return topLevel.Name.EndsWith("_package", StringComparison.Ordinal);
+    }
+
+    // Interns one observed call site to its process-lifetime token. Keyed by (module version id,
+    // method metadata token, IL offset) — the managed spelling of "a PC": stable for the process
+    // lifetime, distinct per call site, equal on every recurrence, so pc-equality comparisons
+    // behave as they do in Go. Token 0 stays invalid, matching Go's zero-pc sentinel.
+    private static uintptr internCallerFrame(System.Reflection.MethodBase method, StackFrame frame)
+    {
+        string key = $"{method.Module.ModuleVersionId}:{method.MetadataToken}:{frame.GetILOffset()}";
+
+        lock (s_callerTableLock)
+        {
+            if (s_callerTokens.TryGetValue(key, out nuint token))
+                return token;
+
+            CallerFrameRecord record = new()
+            {
+                Function = goFrameName(method),
+                File = frame.GetFileName() ?? string.Empty,
+                Line = frame.GetFileLineNumber()
+            };
+
+            s_callerRecords.Add(record);
+            token = (nuint)s_callerRecords.Count; // index + 1 — 0 stays the invalid sentinel
+            s_callerTokens[key] = token;
+            return token;
+        }
+    }
+
+    private static CallerFrameRecord? callerFrameRecord(uintptr token)
+    {
+        nuint value = token;
+
+        lock (s_callerTableLock)
+        {
+            if (value == 0 || value > (nuint)s_callerRecords.Count)
+                return null;
+
+            return s_callerRecords[(int)(value - 1)];
+        }
     }
 }
