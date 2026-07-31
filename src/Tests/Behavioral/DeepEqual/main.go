@@ -23,6 +23,12 @@ type namedSlices map[string][]int
 
 type wrap struct{ m named }
 
+type hooks struct {
+	name string
+	fill func(int) int
+	step func()
+}
+
 func main() {
 	// Slices: elementwise equality, content mismatch, and the []byte fast path.
 	fmt.Println(reflect.DeepEqual([]string{"a", "bc"}, []string{"a", "bc"}))
@@ -133,4 +139,24 @@ func main() {
 	fmt.Println(reflect.DeepEqual(j1, j2))
 	fmt.Println(reflect.DeepEqual(j1, j3))
 	fmt.Println(reflect.DeepEqual(j1, j4))
+
+	// FUNC-typed values: "deeply equal if both are nil; otherwise not deeply equal" — including a
+	// struct that is compared to ITSELF, which is NOT deeply equal once a func field is non-nil.
+	// Nil-ness has to be asked of the value: a nil func reached as a struct FIELD (or a slice
+	// element) is typed by its static func type and so is a VALID nil Value, unlike the invalid
+	// Value a top-level nil `any` produces. Assuming the latter reported every pair of nil func
+	// fields unequal, which failed all ten levels of compress/flate's TestWriterReset.
+	h1 := hooks{name: "a"}
+	h2 := hooks{name: "a"}
+	h3 := hooks{name: "a", step: func() {}}
+	fmt.Println(reflect.DeepEqual(h1, h2))
+	fmt.Println(reflect.DeepEqual(h1, h3))
+	fmt.Println(reflect.DeepEqual(h3, h3))
+	fmt.Println(reflect.DeepEqual(hooks{name: "a"}, hooks{name: "b"}))
+	fmt.Println(reflect.DeepEqual([]func(){nil, nil}, []func(){nil, nil}))
+	fmt.Println(reflect.DeepEqual([]func(){nil}, []func(){func() {}}))
+	fmt.Println(reflect.DeepEqual(map[string]func(){"k": nil}, map[string]func(){"k": nil}))
+	var nilFn func()
+	fmt.Println(reflect.DeepEqual(nilFn, nilFn))
+	fmt.Println(reflect.DeepEqual(nilFn, func() {}))
 }

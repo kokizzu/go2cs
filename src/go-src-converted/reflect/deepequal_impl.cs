@@ -166,10 +166,15 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
         return true;
     }
     if (kind == Func) {
-        // Func values are deeply equal only if both are nil — a nil func boxed as `any` is the null
-        // object, so two nils already matched through the invalid==invalid rule above; two non-nil
-        // funcs are never deeply equal (even the same func).
-        return false;
+        // Go: "Func values are deeply equal if both are nil; otherwise they are not deeply equal."
+        // This must be asked of the values, NOT inferred from the invalid==invalid rule above: that
+        // rule only fires for a nil func boxed as `any` (the null object). A nil func reached as a
+        // STRUCT FIELD — or as a slice/array element, or a map value — is typed by its static func
+        // type and is therefore a VALID nil Value (see Value.Field), so an unconditional false
+        // declared two nil func fields unequal. compress/flate's TestWriterReset nils out the
+        // compressor's fill/step/bulkHasher precisely so DeepEqual can compare the rest, and every
+        // one of its ten levels failed on that.
+        return v1.IsNil() && v2.IsNil();
     }
     if (kind == ΔInt || kind == Int8 || kind == Int16 || kind == Int32 || kind == Int64) {
         return v1.Int() == v2.Int();

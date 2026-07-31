@@ -61,6 +61,7 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct hooks {}
     internal partial struct named {}
     internal partial struct namedAny {}
     internal partial struct namedSlices {}

@@ -322,9 +322,11 @@ public static uintptr Sizeof<T>(T x) {
 // The return value of Offsetof is a Go constant if the type of the argument x
 // does not have variable size.
 // (See the description of [Sizeof] for a definition of variable sized types.)
-// go2cs conversion converts:
+// go2cs conversion resolves the operand through go/types and converts:
 // `unsafe.Offsetof(structValue.field)` to
-// `@unsafe.Offsetof(structValue.GetType(), "field")`
+// `@unsafe.Offsetof(typeof(StructType), "field")`
+// A promoted field is measured against the struct that DECLARES it, per Go's
+// rule that the offset is relative to the immediately enclosing struct.
 public static uintptr Offsetof(Type structType, string fieldName) {
     return (uintptr)Marshal.OffsetOf(structType, fieldName);
 }
@@ -340,11 +342,11 @@ public static uintptr Offsetof(Type structType, string fieldName) {
 // The return value of Alignof is a Go constant if the type of the argument
 // does not have variable size.
 // (See the description of [Sizeof] for a definition of variable sized types.)
-// go2cs conversion converts:
-// `unsafe.Alignof(x)` to
-// `@unsafe.Alignof(x.GetType())` and
-// `unsafe.Alignof(s.f)` to
-// `@unsafe.Alignof(s.GetType(), "f")`
+// go2cs conversion resolves the operand's STATIC type through go/types and converts
+// `unsafe.Alignof(x)` to `@unsafe.Alignof(typeof(T))` for every operand shape —
+// including `unsafe.Alignof(s.f)`, whose answer is the alignment of the field's own
+// type, which is exactly what the fieldName overload below resolves to. That overload
+// is retained for hand-written callers.
 public static uintptr Alignof(Type type, string? fieldName = null) {
     // Handle the special case for struct fields
     if (fieldName is not null && type is { IsValueType: true, IsPrimitive: false })

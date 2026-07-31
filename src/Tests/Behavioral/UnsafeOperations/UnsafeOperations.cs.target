@@ -13,6 +13,19 @@ partial class main_package {
     internal int32 a;
 }
 
+[GoType] partial struct Inner {
+    internal int32 p;
+    internal int64 q;
+}
+
+[GoType] partial struct Outer {
+    internal byte head;
+    internal Inner @in;
+}
+
+internal static ж<Outer> ᏑgOuter = new(default(Outer));
+internal static ref Outer gOuter => ref ᏑgOuter.Value;
+
 public static uint64 Float64bits(float64 fʗp) {
     ref var f = ref heap(fʗp, out var Ꮡf);
 
@@ -63,12 +76,19 @@ internal static void Main() {
     uintptr M = /* unsafe.Sizeof(x.c) */ 16;
     uintptr N = /* unsafe.Sizeof(x) */ 32;
     fmt.Println(M, N);
-    fmt.Println(@unsafe.Alignof(x.GetType(), "a"));
-    fmt.Println(@unsafe.Alignof(x.GetType(), "b"));
-    fmt.Println(@unsafe.Alignof(x.GetType(), "c"));
-    fmt.Println(@unsafe.Offsetof(x.GetType(), "a"));
-    fmt.Println(@unsafe.Offsetof(x.GetType(), "b"));
-    fmt.Println(@unsafe.Offsetof(x.GetType(), "c"));
+    fmt.Println(@unsafe.Alignof(typeof(int64)));
+    fmt.Println(@unsafe.Alignof(typeof(bool)));
+    fmt.Println(@unsafe.Alignof(typeof(@string)));
+    fmt.Println(@unsafe.Offsetof(typeof(main_x), "a"));
+    fmt.Println(@unsafe.Offsetof(typeof(main_x), "b"));
+    fmt.Println(@unsafe.Offsetof(typeof(main_x), "c"));
+    fmt.Println(@unsafe.Alignof(typeof(uint32)));
+    fmt.Println(@unsafe.Alignof(typeof(float64)));
+    fmt.Println(@unsafe.Alignof(typeof(nint)));
+    var op = ᏑgOuter;
+    fmt.Println(@unsafe.Alignof(typeof(int64)));
+    fmt.Println(@unsafe.Offsetof(typeof(Inner), "q"));
+    fmt.Println(@unsafe.Offsetof(typeof(Outer), "in"));
     var i2 = Float64bits(9.5D);
     var f2 = Float64frombits(i2);
     fmt.Println(i2);

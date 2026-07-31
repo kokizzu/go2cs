@@ -224,6 +224,41 @@ func (v *Visitor) whiteboxProductionNameShadowed(obj types.Object) bool {
 	return false
 }
 
+// packageScopeClassName names the static class that DECLARES a package-level object of the package
+// currently being emitted — the qualifier to use when a bare reference would bind to something
+// else (a same-named C# local, which is function-scoped).
+//
+// Normally that is `<pkg>_package`. Under the white-box test model the emission unit is the bridge
+// class instead, and a declaration contributed by an internal `_test.go` lives THERE, not in the
+// production class: crypto/md5's `buf := buf` reads a package-level `buf` declared in md5_test.go,
+// and qualifying it as `md5_package.buf` names nothing (CS0117). Production members referenced
+// from the same bridge keep the production class, so both halves stay addressable.
+func (v *Visitor) packageScopeClassName(obj types.Object) string {
+	if v.options.testClassNameOverride != "" && v.declaredInTestFile(obj) {
+		return v.options.testClassNameOverride
+	}
+
+	return getSanitizedImport(packageName + PackageSuffix)
+}
+
+// declaredInTestFile reports whether an object's declaration site is a `_test.go` file — the
+// signal that it emits into the test variant's class rather than the production one.
+func (v *Visitor) declaredInTestFile(obj types.Object) bool {
+	if obj == nil {
+		return false
+	}
+
+	if whiteboxInternalTestObjects[obj] {
+		return true
+	}
+
+	if v.fset == nil {
+		return false
+	}
+
+	return strings.HasSuffix(strings.ToLower(v.fset.Position(obj.Pos()).Filename), "_test.go")
+}
+
 // whiteboxBridgeObject reports an internal-test object referenced from the external variant.
 func (v *Visitor) whiteboxBridgeObject(obj types.Object) bool {
 	if !v.options.testWhiteboxReference || !v.options.testExternalVariant || obj == nil ||

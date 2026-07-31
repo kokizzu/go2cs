@@ -18,9 +18,9 @@ a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **64 / 215 testable packages validated — 29.8%**
+> ### Phase 4 progress: **66 / 215 testable packages validated — 30.7%**
 >
-> **2,247 matching test verdicts · 47 disclosed** *(updated 2026-07-31 — maintained as part of the
+> **2,322 matching test verdicts · 48 disclosed** *(updated 2026-07-31 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -30,6 +30,7 @@ any other failure is still a hard mismatch.
 | [`bytes`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/bytes) | 81 | 7 | Byte-slice algorithms; alloc-profile disclosures. |
 | [`cmp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/cmp) | 4 | | Generics with an ordered-type constraint. |
 | [`compress/bzip2`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/compress/bzip2) | 4 | | Bzip2 decompression — bit readers, Huffman trees, the move-to-front decoder. |
+| [`compress/flate`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/compress/flate) | 64 | | DEFLATE itself — all ten compression levels, the Huffman bit-writer's stored/fixed/dynamic block selection against golden bit streams, the LZ77 match chains and dictionaries, and a whole-`Writer` `reflect.DeepEqual` after `Reset`. |
 | [`compress/gzip`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/compress/gzip) | 15 | | Gzip round-trips over the real DEFLATE coder — flate's Huffman encoder/decoder tables, multistream framing, CRC/ISIZE trailers. |
 | [`compress/lzw`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/compress/lzw) | 17 | | LZW coder in both bit orders (GIF's LSB, TIFF/PDF's MSB) — code-width growth, dictionary reset, and the reader/writer `Reset` matrix over the shared `../testdata` corpus. |
 | [`compress/zlib`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/compress/zlib) | 6 | | zlib framing over the real DEFLATE coder — Adler-32 trailer, preset dictionaries, and every compression level across the shared `../testdata` corpus. |
@@ -37,6 +38,7 @@ any other failure is still a hard mismatch.
 | [`container/list`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/list) | 10 | | Doubly-linked list — pointers and receiver methods. |
 | [`container/ring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/container/ring) | 8 | | Circular linked list — a pointer graph. |
 | [`crypto/hmac`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/hmac) | 172 | | HMAC over the real MD5/SHA-1/SHA-224/256/384/512 digests — block-size key folding, constant-time `Equal`, and `cryptotest.TestHash`'s stateful-write matrix per hash. |
+| [`crypto/md5`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/md5) | 11 | 1 | MD5 — the golden digest matrix, binary marshal/unmarshal of a half-written state, large-input block handling, and `cryptotest.TestHash`'s stateful-write matrix; alloc-profile disclosure. |
 | [`crypto/sha1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/sha1) | 12 | 1 | SHA-1 — the struct-carrying-arrays value copy `Sum` depends on; binary marshal round-trips. |
 | [`crypto/sha256`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/sha256) | 23 | 1 | SHA-224/256 golden vectors and `cryptotest.TestHash`'s stateful-write matrix. |
 | [`crypto/sha512`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/crypto/sha512) | 36 | 1 | SHA-384/512/512-224/512-256 — the four-variant digest state machine. |

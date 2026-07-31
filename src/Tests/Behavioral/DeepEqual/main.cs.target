@@ -25,6 +25,12 @@ partial class main_package {
     internal named m;
 }
 
+[GoType] partial struct hooks {
+    internal @string name;
+    internal Func<nint, nint> fill;
+    internal Action step;
+}
+
 internal static void Main() {
     fmt.Println(reflect.DeepEqual(new @string[]{"a"u8, "bc"u8}.slice(), new @string[]{"a"u8, "bc"u8}.slice()));
     fmt.Println(reflect.DeepEqual(new @string[]{"a"u8}.slice(), new @string[]{"b"u8}.slice()));
@@ -110,6 +116,22 @@ internal static void Main() {
     fmt.Println(reflect.DeepEqual(j1, j2));
     fmt.Println(reflect.DeepEqual(j1, j3));
     fmt.Println(reflect.DeepEqual(j1, j4));
+    var h1 = new hooks(name: "a"u8);
+    var h2 = new hooks(name: "a"u8);
+    var h3 = new hooks(name: "a"u8, step: () => {
+    });
+    fmt.Println(reflect.DeepEqual(h1, h2));
+    fmt.Println(reflect.DeepEqual(h1, h3));
+    fmt.Println(reflect.DeepEqual(h3, h3));
+    fmt.Println(reflect.DeepEqual(new hooks(name: "a"u8), new hooks(name: "b"u8)));
+    fmt.Println(reflect.DeepEqual(new Action[]{default!, default!}.slice(), new Action[]{default!, default!}.slice()));
+    fmt.Println(reflect.DeepEqual(new Action[]{default!}.slice(), new Action[]{() => {
+    }}.slice()));
+    fmt.Println(reflect.DeepEqual(new map<@string, Action>{["k"u8] = default!}, new map<@string, Action>{["k"u8] = default!}));
+    Action nilFn = default!;
+    fmt.Println(reflect.DeepEqual(nilFn, nilFn));
+    fmt.Println(reflect.DeepEqual(nilFn, () => {
+    }));
 }
 
 } // end main_package

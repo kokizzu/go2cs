@@ -12,8 +12,8 @@ namespace go.crypto;
 using crypto = crypto_package;
 using errors = errors_package;
 using hash = hash_package;
-using byteorder = @internal.byteorder_package;
-using @internal;
+using byteorder = go.@internal.byteorder_package;
+using go.@internal;
 
 partial class md5_package {
 
@@ -67,8 +67,8 @@ internal const nint marshaledSize = /* len(magic) + 4*4 + BlockSize + 8 */ 92;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoMd5InvalidHashˢ = "crypto/md5: invalid hash state identifier"u8;
-private static readonly @string cryptoMd5InvalidHashˢ2 = "crypto/md5: invalid hash state size"u8;
+internal static readonly @string cryptoMd5InvalidHashˢ = "crypto/md5: invalid hash state identifier"u8;
+internal static readonly @string cryptoMd5InvalidHashˢ2 = "crypto/md5: invalid hash state size"u8;
 
 [GoRecv] internal static error UnmarshalBinary(this ref digest d, slice<byte> b) {
     if (len(b) < len(magic) || ((sstring)(b[..(int)(len(magic))])) != magic) {

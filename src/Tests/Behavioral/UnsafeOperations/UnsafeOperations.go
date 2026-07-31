@@ -13,6 +13,18 @@ type T2 struct {
 	a int32
 }
 
+type Inner struct {
+	p int32
+	q int64
+}
+
+type Outer struct {
+	head byte
+	in   Inner
+}
+
+var gOuter Outer
+
 func Float64bits(f float64) uint64 {
 	return *(*uint64)(unsafe.Pointer(&f))
 }
@@ -69,6 +81,29 @@ func main() {
 	fmt.Println(unsafe.Offsetof(x.a))
 	fmt.Println(unsafe.Offsetof(x.b))
 	fmt.Println(unsafe.Offsetof(x.c))
+
+	// Operand shapes that are not a bare identifier or a one-level `ident.field`. Sizeof/Alignof/
+	// Offsetof are defined against the operand's STATIC type, so each must resolve through the type
+	// system rather than through the text of the converted expression.
+	//
+	// A CONVERSION operand renders with a leading cast, which a text-derived reshape turns into
+	// `(uint32)0.GetType()` — parsed by C# as `(uint32)(0.GetType())`, CS0030. This is crypto/md5's
+	// benchmarkSize alignment probe.
+	fmt.Println(unsafe.Alignof(uint32(0)))
+	fmt.Println(unsafe.Alignof(float64(0)))
+
+	// An INDEX operand, and a selector reached THROUGH A POINTER.
+	fmt.Println(unsafe.Alignof(arr[0]))
+	op := &gOuter
+	fmt.Println(unsafe.Alignof(op.in.q))
+
+	// A TWO-level selector: Offsetof is relative to the immediately enclosing struct, so `q`'s
+	// offset is measured within Inner, not within Outer.
+	fmt.Println(unsafe.Offsetof(gOuter.in.q))
+
+	// A field whose name is a C# keyword: the emitted identifier escapes to `@in`, but reflection
+	// names it `in`.
+	fmt.Println(unsafe.Offsetof(op.in))
 
 	i2 := Float64bits(9.5)
 	f2 := Float64frombits(i2)

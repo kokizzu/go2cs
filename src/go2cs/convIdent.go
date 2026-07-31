@@ -217,7 +217,7 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 	if v.funcLevelDecls != nil {
 		if _, shadowed := v.funcLevelDecls[ident.Name]; shadowed && v.pkg != nil {
 			if vr, ok := v.info.ObjectOf(ident).(*types.Var); ok && vr.Parent() == v.pkg.Scope() {
-				return getSanitizedImport(packageName+PackageSuffix) + "." + getSanitizedIdentifier(v.getIdentName(ident))
+				return v.packageScopeClassName(vr) + "." + getSanitizedIdentifier(v.getIdentName(ident))
 			}
 		}
 	}

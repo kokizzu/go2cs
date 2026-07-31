@@ -2119,42 +2119,47 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		}
 	}
 
-	// Handle unsafe.Offsetof and unsafe.AlignOf as a special cases. Gate on funcName before
-	// converting the argument: this re-converts the single arg purely to reshape it for the
-	// unsafe.* helpers, and doing it unconditionally would re-run a func-literal argument's capture
-	// generation (a side effect), duplicating its hoisted decls for an ordinary single-arg call.
+	// unsafe.Offsetof / unsafe.Alignof reshape for the golib helpers, which take a System.Type
+	// rather than a value. Both are defined by Go against the STATIC type of the operand — an
+	// operand Go never evaluates — so the shape is derived from go/types.
+	//
+	// It was previously derived by splitting the CONVERTED C# text on '.' and reading the pieces
+	// as a Go field selector, which corrupts every rendering that is not literally `ident` or
+	// `ident.field`: `unsafe.Alignof(uint32(0))` became `(uint32)0.GetType()`, which C# parses as
+	// `(uint32)(0.GetType())` — CS0030, crypto/md5's benchmarkSize; a `ж` deref `Ꮡx.Value` read as
+	// struct `Ꮡx` with field `Value`; and a two-level `cpu.X86.HasAVX` was rejected outright.
+	// `.GetType()` was also wrong on its own terms — it reports the DYNAMIC type of a boxed or
+	// interface-typed operand where Go uses the static one, and it evaluates the operand.
 	if len(constructType) == 0 && len(callExpr.Args) == 1 &&
-		(funcName == "@unsafe.Offsetof" || funcName == "@unsafe.Alignof" || funcName == "@unsafe.Sizeof") {
-		argExpr := v.convExpr(callExpr.Args[0], nil)
-		argParts := strings.Split(argExpr, ".")
+		(funcName == "@unsafe.Offsetof" || funcName == "@unsafe.Alignof") {
+		arg := callExpr.Args[0]
 
 		if funcName == "@unsafe.Offsetof" {
 			v.showWarning("Go code converted to C# using 'unsafe.Offsetof' may not produce same value as Go - verify usage: %s", v.getPrintedNode(callExpr))
 
-			if len(argParts) == 2 {
+			if structType, fieldName, ok := v.unsafeFieldOperand(arg); ok {
 				// `unsafe.Offsetof(structValue.field)` to
-				// `@unsafe.Offsetof(structValue.GetType(), "field")`
-				return fmt.Sprintf("%s(%s.GetType(), \"%s\")", funcName, argParts[0], argParts[1])
-			} else {
-				v.showWarning("Unexpected 'unsafe.Offsetof' argument format: %s", argExpr)
+				// `@unsafe.Offsetof(typeof(StructType), "field")`
+				return fmt.Sprintf("%s(typeof(%s), \"%s\")", funcName, v.getCSTypeName(structType), fieldName)
 			}
-		} else if funcName == "@unsafe.Alignof" {
+
+			v.showWarning("Unexpected 'unsafe.Offsetof' argument format: %s", v.getPrintedNode(arg))
+		} else {
 			v.showWarning("Go code converted to C# using 'unsafe.Alignof' may not produce same value as Go - verify usage: %s", v.getPrintedNode(callExpr))
 
-			if len(argParts) == 1 {
-				// `unsafe.Alignof(x)` to
-				// `@unsafe.Alignof(x.GetType())`
-				return fmt.Sprintf("%s(%s.GetType())", funcName, argParts[0])
-			} else if len(argParts) == 2 {
-				// `unsafe.Alignof(s.f)` to
-				// `@unsafe.Alignof(s.GetType(), "f")`
-				return fmt.Sprintf("%s(%s.GetType(), \"%s\")", funcName, argParts[0], argParts[1])
-			} else {
-				v.showWarning("Unexpected 'unsafe.Alignof' argument format: %s", argExpr)
+			// `unsafe.Alignof(x)` to `@unsafe.Alignof(typeof(T))`, for EVERY operand shape: Go's
+			// `Alignof(s.f)` is the required alignment of the FIELD's own type, which is what
+			// golib's `(type, fieldName)` overload resolves to anyway, so one rule covers both.
+			if operandType := v.info.TypeOf(arg); operandType != nil {
+				return fmt.Sprintf("%s(typeof(%s))", funcName, v.getCSTypeName(operandType))
 			}
-		} else if funcName == "@unsafe.Sizeof" {
-			v.showWarning("Go code converted to C# using 'unsafe.Sizeof' may not produce same value as Go - verify usage: %s", v.getPrintedNode(callExpr))
+
+			v.showWarning("Unexpected 'unsafe.Alignof' argument format: %s", v.getPrintedNode(arg))
 		}
+	}
+
+	if len(constructType) == 0 && len(callExpr.Args) == 1 && funcName == "@unsafe.Sizeof" {
+		v.showWarning("Go code converted to C# using 'unsafe.Sizeof' may not produce same value as Go - verify usage: %s", v.getPrintedNode(callExpr))
 	}
 
 	// sync/atomic.LoadPointer/StorePointer on a MANAGED pointer field — the lock-free
@@ -3954,6 +3959,59 @@ func (v *Visitor) instantiatedParamType(callExpr *ast.CallExpr, i int) types.Typ
 	}
 
 	return nil
+}
+
+// unsafeFieldOperand resolves an `unsafe.Offsetof` operand — Go requires the form
+// `structValue.field`, possibly reached through pointers and embedded fields — to the struct type
+// that DECLARES the field, plus the field's emitted C# name. Offsetof is relative to the
+// immediately enclosing struct, so a PROMOTED field is walked down its embedding chain and the
+// type returned is the one the field is actually declared in. The name is the emitted identifier
+// with any keyword escape removed, because reflection sees `@out` as `out`.
+func (v *Visitor) unsafeFieldOperand(arg ast.Expr) (types.Type, string, bool) {
+	selectorExpr, isSelector := arg.(*ast.SelectorExpr)
+
+	if !isSelector {
+		return nil, "", false
+	}
+
+	selection := v.info.Selections[selectorExpr]
+
+	if selection == nil || selection.Kind() != types.FieldVal {
+		return nil, "", false
+	}
+
+	structType := unsafeOperandStructType(selection.Recv())
+	index := selection.Index()
+
+	for _, embedded := range index[:len(index)-1] {
+		structUnder, isStruct := structType.Underlying().(*types.Struct)
+
+		if !isStruct || embedded >= structUnder.NumFields() {
+			return nil, "", false
+		}
+
+		structType = unsafeOperandStructType(structUnder.Field(embedded).Type())
+	}
+
+	if _, isStruct := structType.Underlying().(*types.Struct); !isStruct {
+		return nil, "", false
+	}
+
+	return structType, strings.TrimPrefix(getSanitizedIdentifier(selection.Obj().Name()), "@"), true
+}
+
+// unsafeOperandStructType strips the implicit dereference a Go field selection performs through a
+// pointer, so the reported type is the struct itself.
+func unsafeOperandStructType(t types.Type) types.Type {
+	if t == nil {
+		return nil
+	}
+
+	if pointer, isPointer := t.Underlying().(*types.Pointer); isPointer {
+		return pointer.Elem()
+	}
+
+	return t
 }
 
 // managedAtomicPointerIdiom recognizes Go's lock-free managed-pointer-field atomics —

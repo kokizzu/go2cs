@@ -149,7 +149,7 @@ internal static ж<huffmanBitWriter> newHuffmanBitWriter(io.Writer w) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with unfinished bits"u8;
+internal static readonly @string writeBytesWithUnfinishedˢ = "writeBytes with unfinished bits"u8;
 
 [GoRecv] internal static void writeBytes(this ref huffmanBitWriter w, slice<byte> bytes) {
     if (w.err != default!) {

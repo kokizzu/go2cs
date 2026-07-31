@@ -362,7 +362,7 @@ internal static (nint, error) Read(this ж<decompressor> Ꮡf, slice<byte> b) {
 internal static array<nint> codeOrder = new nint[]{16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15}.array();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedLengthCodeˢ = "unexpected length code"u8;
+internal static readonly @string unexpectedLengthCodeˢ = "unexpected length code"u8;
 
 internal static error readHuffman(this ж<decompressor> Ꮡf) {
     ref var f = ref Ꮡf.Value;
