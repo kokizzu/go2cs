@@ -60,17 +60,17 @@ partial class jpeg_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sosHasWrongLengthˢ = "SOS has wrong length"u8;
-private static readonly @string sosLengthInconsistentˢ = "SOS length inconsistent with number of components"u8;
-private static readonly @string unknownComponentSelectorˢ = "unknown component selector"u8;
-private static readonly @string repeatedComponentˢ2 = "repeated component selector"u8;
-private static readonly @string badTdValueˢ = "bad Td value"u8;
-private static readonly @string badTaValueˢ = "bad Ta value"u8;
-private static readonly @string totalSamplingFactorsTooˢ = "total sampling factors too large"u8;
-private static readonly @string badSpectralSelectionˢ = "bad spectral selection bounds"u8;
-private static readonly @string progressiveAcˢ = "progressive AC coefficients for more than one component"u8;
-private static readonly @string badSuccessiveˢ = "bad successive approximation values"u8;
-private static readonly @string excessiveDcComponentˢ = "excessive DC component"u8;
+internal static readonly @string sosHasWrongLengthˢ = "SOS has wrong length"u8;
+internal static readonly @string sosLengthInconsistentˢ = "SOS length inconsistent with number of components"u8;
+internal static readonly @string unknownComponentSelectorˢ = "unknown component selector"u8;
+internal static readonly @string repeatedComponentˢ2 = "repeated component selector"u8;
+internal static readonly @string badTdValueˢ = "bad Td value"u8;
+internal static readonly @string badTaValueˢ = "bad Ta value"u8;
+internal static readonly @string totalSamplingFactorsTooˢ = "total sampling factors too large"u8;
+internal static readonly @string badSpectralSelectionˢ = "bad spectral selection bounds"u8;
+internal static readonly @string progressiveAcˢ = "progressive AC coefficients for more than one component"u8;
+internal static readonly @string badSuccessiveˢ = "bad successive approximation values"u8;
+internal static readonly @string excessiveDcComponentˢ = "excessive DC component"u8;
 
 [GoType("dyn")] partial struct processSOS_scan {
     internal uint8 compIndex;
@@ -370,8 +370,8 @@ private static readonly @string excessiveDcComponentˢ = "excessive DC component
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedHuffmanCodeˢ = "unexpected Huffman code"u8;
-private static readonly @string tooManyCoefficientsˢ = "too many coefficients"u8;
+internal static readonly @string unexpectedHuffmanCodeˢ = "unexpected Huffman code"u8;
+internal static readonly @string tooManyCoefficientsˢ = "too many coefficients"u8;
 
 // refine decodes a successive approximation refinement block, as specified in
 // section G.1.2.
@@ -515,7 +515,7 @@ break_loop:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tooManyComponentsˢ = "too many components"u8;
+internal static readonly @string tooManyComponentsˢ = "too many components"u8;
 
 // reconstructBlock dequantizes, performs the inverse DCT and stores the block
 // to the image.
@@ -575,7 +575,7 @@ private static readonly @string tooManyComponentsˢ = "too many components"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badRstMarkerˢ = "bad RST marker"u8;
+internal static readonly @string badRstMarkerˢ = "bad RST marker"u8;
 
 // findRST advances past the next RST restart marker that matches expectedRST.
 // Other than I/O errors, it is also an error if we encounter an {0xFF, M}

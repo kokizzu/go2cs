@@ -299,13 +299,13 @@ internal static FormatError errMissingFF00 = ((FormatError)(@string)"missing 0xf
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string multipleSofMarkersˢ = "multiple SOF markers"u8;
-private static readonly @string numberOfComponentsˢ = "number of components"u8;
-private static readonly @string precisionˢ = "precision"u8;
-private static readonly @string sofHasWrongLengthˢ = "SOF has wrong length"u8;
-private static readonly @string repeatedComponentˢ = "repeated component identifier"u8;
-private static readonly @string badTqValueˢ = "bad Tq value"u8;
-private static readonly @string lumaChromaSubsamplingˢ = "luma/chroma subsampling ratio"u8;
+internal static readonly @string multipleSofMarkersˢ = "multiple SOF markers"u8;
+internal static readonly @string numberOfComponentsˢ = "number of components"u8;
+internal static readonly @string precisionˢ = "precision"u8;
+internal static readonly @string sofHasWrongLengthˢ = "SOF has wrong length"u8;
+internal static readonly @string repeatedComponentˢ = "repeated component identifier"u8;
+internal static readonly @string badTqValueˢ = "bad Tq value"u8;
+internal static readonly @string lumaChromaSubsamplingˢ = "luma/chroma subsampling ratio"u8;
 
 // Specified in section B.2.2.
 [GoRecv] internal static error processSOF(this ref decoder d, nint n) {
@@ -457,8 +457,8 @@ private static readonly @string lumaChromaSubsamplingˢ = "luma/chroma subsampli
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badPqValueˢ = "bad Pq value"u8;
-private static readonly @string dqtHasWrongLengthˢ = "DQT has wrong length"u8;
+internal static readonly @string badPqValueˢ = "bad Pq value"u8;
+internal static readonly @string dqtHasWrongLengthˢ = "DQT has wrong length"u8;
 
 // Specified in section B.2.4.1.
 [GoRecv] internal static error processDQT(this ref decoder d, nint n) {
@@ -518,7 +518,7 @@ break_loop:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string driHasWrongLengthˢ = "DRI has wrong length"u8;
+internal static readonly @string driHasWrongLengthˢ = "DRI has wrong length"u8;
 
 // Specified in section B.2.4.4.
 [GoRecv] internal static error processDRI(this ref decoder d, nint n) {
@@ -572,10 +572,10 @@ private static readonly @string driHasWrongLengthˢ = "DRI has wrong length"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingSoiMarkerˢ = "missing SOI marker"u8;
-private static readonly @string shortSegmentLengthˢ = "short segment length"u8;
-private static readonly @string unknownMarkerˢ = "unknown marker"u8;
-private static readonly @string missingSosMarkerˢ = "missing SOS marker"u8;
+internal static readonly @string missingSoiMarkerˢ = "missing SOI marker"u8;
+internal static readonly @string shortSegmentLengthˢ = "short segment length"u8;
+internal static readonly @string unknownMarkerˢ = "unknown marker"u8;
+internal static readonly @string missingSosMarkerˢ = "missing SOS marker"u8;
 
 // decode reads a JPEG image from r and returns it as an image.Image.
 [GoRecv] internal static (image.Image, error) decode(this ref decoder d, io.Reader r, bool configOnly) {
@@ -740,7 +740,7 @@ private static readonly @string missingSosMarkerˢ = "missing SOS marker"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownColorModel4ˢ = "unknown color model: 4-component JPEG doesn't have Adobe APP14 metadata"u8;
+internal static readonly @string unknownColorModel4ˢ = "unknown color model: 4-component JPEG doesn't have Adobe APP14 metadata"u8;
 
 [GoType("dyn")] partial struct applyBlack_translations {
     internal slice<byte> src;
@@ -850,7 +850,7 @@ public static (image.Image, error) Decode(io.Reader r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingSofMarkerˢ = "missing SOF marker"u8;
+internal static readonly @string missingSofMarkerˢ = "missing SOF marker"u8;
 
 // DecodeConfig returns the color model and dimensions of a JPEG image without
 // decoding the entire image.

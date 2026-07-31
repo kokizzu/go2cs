@@ -88,11 +88,11 @@ internal static FormatError errShortHuffmanData = ((FormatError)(@string)"short 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dhtHasWrongLengthˢ = "DHT has wrong length"u8;
-private static readonly @string badTcValueˢ = "bad Tc value"u8;
-private static readonly @string badThValueˢ = "bad Th value"u8;
-private static readonly @string huffmanTableHasZeroˢ = "Huffman table has zero length"u8;
-private static readonly @string huffmanTableHasExcessiveˢ = "Huffman table has excessive length"u8;
+internal static readonly @string dhtHasWrongLengthˢ = "DHT has wrong length"u8;
+internal static readonly @string badTcValueˢ = "bad Tc value"u8;
+internal static readonly @string badThValueˢ = "bad Th value"u8;
+internal static readonly @string huffmanTableHasZeroˢ = "Huffman table has zero length"u8;
+internal static readonly @string huffmanTableHasExcessiveˢ = "Huffman table has excessive length"u8;
 
 // processDHT processes a Define Huffman Table marker, and initializes a huffman
 // struct from its contents. Specified in section B.2.4.2.
@@ -183,8 +183,8 @@ private static readonly @string huffmanTableHasExcessiveˢ = "Huffman table has 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string uninitializedHuffmanˢ = "uninitialized Huffman table"u8;
-private static readonly @string badHuffmanCodeˢ = "bad Huffman code"u8;
+internal static readonly @string uninitializedHuffmanˢ = "uninitialized Huffman table"u8;
+internal static readonly @string badHuffmanCodeˢ = "bad Huffman code"u8;
 
 // decodeHuffman returns the next Huffman-coded value from the bit-stream,
 // decoded according to h.

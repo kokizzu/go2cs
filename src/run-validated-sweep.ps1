@@ -81,8 +81,11 @@ $ErrorActionPreference = 'Continue'
 # Packages whose C# suite legitimately exceeds the default package deadline. hash/maphash's
 # SMHasher matrix runs ~15 minutes in C# (7.6 s in Go — a performance gap, not a correctness one)
 # and was BANKED under 30m; at the default it reports a timeout with every test up to the cut
-# PASSING, which reads as a failure and costs an investigation every time.
-$longTimeouts = @{ 'hash/maphash' = '30m' }
+# PASSING, which reads as a failure and costs an investigation every time. index/suffixarray is
+# the same shape and worse: `TestNew{32,64}/exhaustive3` brute-forces every string up to length 8
+# over a 3-letter alphabet, 12.4 s in Go and ~35 min in C#; under 10m it reports exactly the
+# TestNew64/exhaustive3 tail as empty verdicts.
+$longTimeouts = @{ 'hash/maphash' = '30m'; 'index/suffixarray' = '60m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package

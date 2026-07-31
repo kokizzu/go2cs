@@ -18,9 +18,9 @@ a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/go-src-converted/bytes/go2cs_test_disclosures.json) —
 any other failure is still a hard mismatch.
 
-> ### Phase 4 progress: **66 / 215 testable packages validated — 30.7%**
+> ### Phase 4 progress: **68 / 215 testable packages validated — 31.6%**
 >
-> **2,322 matching test verdicts · 48 disclosed** *(updated 2026-07-31 — maintained as part of the
+> **2,348 matching test verdicts · 48 disclosed** *(updated 2026-07-31 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
 
@@ -61,6 +61,8 @@ any other failure is still a hard mismatch.
 | [`hash/maphash`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/hash/maphash) | 22 | | Seeded and unseeded hash streams plus SMHasher avalanche/BIC quality checks; the 100,000-sample bounds exercise a computed float constant derived from a named untyped integer constant. |
 | [`image/draw`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/image/draw) | 9 | | Porter-Duff compositing over every image model — clip narrowing through address-taken value parameters, Floyd-Steinberg dithering, and paletted quantization. |
 | [`image/gif`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/image/gif) | 28 | | GIF encode/decode over the real LZW coder — interlacing, transparency and palette edge cases, animation loop counts and per-frame disposal, and `image.Decode` reading a PNG through a **blank import**'s registration. |
+| [`image/jpeg`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/image/jpeg) | 14 | | Baseline and progressive JPEG decode/encode — forward and inverse DCT against a reference implementation, zig-zag tables, restart markers, truncated and extraneous scan data, grayscale and CMYK, and a full encode/decode round trip over the shared `image/testdata` fixtures. |
+| [`index/suffixarray`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/index/suffixarray) | 12 | | SAIS suffix-array construction in both 32- and 64-bit index widths, verified exhaustively over every string up to length 8 on 2- and 3-letter alphabets, plus lookup, regexp `FindAllIndex`, and gob save/restore round trips. |
 | [`internal/abi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/abi) | 2 | | Runtime ABI helpers (`FuncPC`). |
 | [`internal/coverage/slicereader`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/coverage/slicereader) | 1 | | Coverage slice reader. |
 | [`internal/coverage/slicewriter`](https://github.com/ritchiecarroll/go2cs/tree/master/src/go-src-converted/internal/coverage/slicewriter) | 1 | | Coverage slice writer. |

@@ -595,7 +595,7 @@ public static UntypedInt DefaultQuality => 75;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string jpegImageIsTooLargeToˢ = "jpeg: image is too large to encode"u8;
+internal static readonly @string jpegImageIsTooLargeToˢ = "jpeg: image is too large to encode"u8;
 
 // Encode writes the Image m to w in JPEG 4:2:0 baseline format with the given
 // options. Default parameters are used if a nil *[Options] is passed.
