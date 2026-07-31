@@ -1,6 +1,7 @@
 # DESIGN — fold `unsafe.Sizeof` / `Alignof` / `Offsetof` at EXPRESSION sites
 
-> Status: **OPEN — awaiting user ruling.** Surfaced 2026-07-31 by the crypto/md5 arc (the
+> Status: **ACCEPTED — user ruling 2026-07-31: fold, per the recommendation.** Runs as its own
+> gated arc. Surfaced 2026-07-31 by the crypto/md5 arc (the
 > `Alignof`/`Offsetof` operand-resolution fix, commit `816563b6e`); analysis is that arc's,
 > re-recorded here for review. Related landed work: the operand is now resolved through
 > `go/types` (`docs/ConversionStrategies-Reference.md`, *"`unsafe.Alignof` / `unsafe.Offsetof`
