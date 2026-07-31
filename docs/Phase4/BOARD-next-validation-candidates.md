@@ -131,26 +131,25 @@ reference already exists; only the *load* does not happen.
 - **Untyped constants in a typed slot — CLOSED 2026-07-29.** The int-literal case was already fixed;
   a computed float constant that directly uses a named untyped integer wrapper now folds once at the
   resolved float width. `hash/maphash` validates 22/22; `UntypedConstDefine` guards both `:=` and typed slots.
-- **The address-of box-copy family — a SIXTH path is open: the value RECEIVER.** Five paths are
-  closed (a pointer-to-array base, a slice field, an array field of the receiver, a named result,
-  and 2026-07-31's address-taken value *parameter*). The receiver is the one signature-declared
-  category left, and it fails exactly like the parameter did — with no compile error and a silently
-  wrong answer. Measured on a minimal repro (`go run` vs the transpiled program, same source):
-
-  | Go source | Emitted C# | Go | C# |
-  |:--|:--|:--|:--|
-  | `func (h Holder) Narrowed() … { clip(&h.R) … }` | `clip(Ꮡ(h).of(Holder.ᏑR));` | `0 0` | `5 5` |
-  | `func (b Box) Bumped() int { bump(&b); return b.N }` | `bump(Ꮡ(b));` | `16` | `6` |
-
-  `Ꮡ(h)` is the `Ꮡ<T>(in T)` copy-box overload, so the callee writes into a throwaway. A value
-  receiver is declared in the signature like a parameter and a named result, so the escape
-  analysis' define-walk never reaches it — the same root the parameter fix named. It is **not**
-  covered by that fix: `markCaptureModeBoxedParams` / `paramBoxReasonHolds` walk `funcType.Params`,
-  and the receiver arrives on `funcDecl.Recv` under no `ʗp` convention. Closing it means giving the
-  receiver the same entry-time `ref var h = ref heap(hʗp, out var Ꮡh)` preamble, with the same
-  inherently-heap restriction (`paramAddressTakenNeedsBox`) so a `&recv[i]` on a slice receiver does
-  not allocate for nothing. No banked package is known to depend on it yet, which is precisely the
-  argument for closing the family at its root rather than waiting for a sixth victim.
+- **The address-of box-copy family — CLOSED at all six paths (2026-07-31).** The sixth, the value
+  RECEIVER, is fixed: `markAddressTakenBoxedReceiver` gives an address-taken value receiver the same
+  entry-time `ref var b = ref heap(bʗp, out var Ꮡb)` preamble the value *parameter* takes, gated on
+  emission by `recvBoxReasonHolds` (which `paramNeedsHeapBox` consults via `funcDecl.Recv`, since the
+  params walk cannot see a receiver). Both silent-wrong-answer symptoms this row predicted are gone,
+  plus one it did not: an **array** receiver's `&a[i]` was not silent but a hard **CS0103** — the
+  emission already spelled `Ꮡa` (convUnaryExpr's array copy-box fallback is keyed on
+  `identIsParameter`, which excludes the receiver), naming a box nothing declared. Corpus footprint,
+  from a two-seeded-root A/B over all 305 projects: **3 receiver sites in 2 files**
+  (`encoding/base64` `WithPadding`/`Strict`, `encoding/base32` `WithPadding`), every one a
+  `return &enc` after the last mutation — correct-by-luck before, one storage identity now, no live
+  victim. Closing the family at its root rather than after a sixth broken package is exactly what
+  this row argued for. Full rule, the public-surface argument (the receiver's C# *type* never moves,
+  so `RecvGenerator`/`[GoRecv]`, pointer calls and interface satisfaction are untouched), and the
+  measured note that the inherently-heap restriction rejects **zero** receiver sites today — unlike
+  the parameter arm's 48 of 149, whose over-boxing came from *also* recording
+  `packageCaptureModeBoxIdents`, which the receiver arm never does: see
+  `docs/ConversionStrategies-Reference.md`, *An address-taken VALUE PARAMETER heap-boxes too*.
+  Guarded by `AddressOfParamWrite`, extended with the receiver arm and its four controls.
 
 ## RETRACTED — the `internal/zstd` / `testing.B` "trap" was a false alarm
 

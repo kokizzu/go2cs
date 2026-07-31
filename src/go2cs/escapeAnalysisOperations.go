@@ -70,6 +70,12 @@ func performEscapeAnalysis(files []FileEntry, fset *token.FileSet, pkg *types.Pa
 					visitor.markCaptureModeBoxedParams(node.Type.Params, node.Body)
 					visitor.markVariadicSSliceEligible(node.Type.Params, node.Body)
 
+					// A method's VALUE RECEIVER whose own address is taken (`&r`, `&r.field…`,
+					// `&r[i]`) is the THIRD signature-declared category — declared on Recv, not
+					// by any body statement, so neither the define-walk below nor the parameter
+					// scan above ever reaches it. Same defect, same remedy as the parameter arm.
+					visitor.markAddressTakenBoxedReceiver(node.Recv, node.Body)
+
 					visitor.analyzeBodyDeclaredVars(node.Body)
 
 					// A named RESULT whose address is taken (`&err` / passed as `*T` /
@@ -451,8 +457,65 @@ func (v *Visitor) analyzeNamedResults(results *ast.FieldList, body *ast.BlockStm
 	}
 }
 
+// markAddressTakenBoxedReceiver marks a method's VALUE RECEIVER whose own address is taken in the
+// body — `&r`, `&r.field…` or `&r[i]` — so the receiver is heap-boxed AT ENTRY. This is the third
+// and last SIGNATURE-declared category, after named results (analyzeNamedResults) and value
+// parameters (the address-taken arm of markCaptureModeBoxedParams): the receiver is declared on
+// `funcDecl.Recv`, not by any body statement, so the define-walk never reaches it and the parameter
+// scan never sees it (it walks `funcType.Params`). Without a box the address-of falls back to the
+// call-site `Ꮡ(r)` COPY box, which compiles and silently drops every write the callee makes through
+// the pointer — `func (b Box) Bumped() int { bumpBox(&b); return b.N }` returns the UNBUMPED value —
+// and an ARRAY receiver's `&a[i]` is worse than silent: the emission already spells the identity box
+// `Ꮡa` (the array-parameter copy-box fallback in convUnaryExpr is keyed on identIsParameter, which
+// deliberately excludes the receiver), naming a box that was never declared (CS0103).
+//
+// The trigger is the SAME restricted predicate the parameter arm uses (paramAddressTakenNeedsBox),
+// so an inherently-heap receiver — a named slice/map/chan/func/interface type — boxes only for the
+// bare `&r`: `&r[i]` on a slice receiver addresses the shared backing array, which the emitted
+// `Ꮡ(r, i)` element form already aliases. Emission re-verifies through recvBoxReasonHolds; the two
+// must stay identical for the same reason the parameter pair must (CS0103 one way, a box nothing
+// references the other).
+//
+// Deliberately NARROWER than the parameter trigger: a capture-mode (direct-ж) method called on a
+// receiver is already served by packageDirectBoxReceiverMethods, and a receiver the capture analysis
+// routed to box-ref storage must NOT take the `ʗp` form (see paramNeedsHeapBox).
+func (v *Visitor) markAddressTakenBoxedReceiver(recv *ast.FieldList, body *ast.BlockStmt) {
+	if recv == nil || body == nil {
+		return
+	}
+
+	for _, field := range recv.List {
+		for _, ident := range field.Names {
+			if isDiscardedVar(ident.Name) {
+				continue
+			}
+
+			obj := v.info.ObjectOf(ident)
+
+			if obj == nil {
+				continue
+			}
+
+			// A pointer receiver already carries its box (`Ꮡr` IS the emitted receiver).
+			if _, isPointer := obj.Type().(*types.Pointer); isPointer {
+				continue
+			}
+
+			if _, found := v.identEscapesHeap[obj]; found {
+				continue
+			}
+
+			if v.paramAddressTakenNeedsBox(obj, body) {
+				v.identEscapesHeap[obj] = true
+			}
+		}
+	}
+}
+
 // paramAddressTakenNeedsBox reports whether the VALUE PARAMETER obj has its address taken in body
-// in a form that requires obj's OWN storage to be heap-boxed at entry.
+// in a form that requires obj's OWN storage to be heap-boxed at entry. A method's value RECEIVER is
+// parameter 0 in this model — the converter itself concatenates it as such (getParameters) — and
+// takes the identical rule (see markAddressTakenBoxedReceiver).
 //
 // For an ordinary value type (struct, array, basic, named struct) every address form qualifies:
 // `&p`, `&p.field…` and `&p[i]` all hand out a pointer INTO the parameter's storage, so the box,

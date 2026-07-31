@@ -1068,6 +1068,23 @@ func (v *Visitor) paramBoxReasonHolds(ident *ast.Ident, param types.Object, body
 		v.isLambdaBoxRefVar(param)
 }
 
+// recvBoxReasonHolds reports whether the entry-time heap box a method's VALUE RECEIVER was marked
+// for is warranted against the given body: an EXPLICIT address-of on the receiver's own storage
+// (`&r`, `&r.field…`, `&r[i]` — paramAddressTakenNeedsBox). It is the emission-side twin of
+// markAddressTakenBoxedReceiver and must stay identical to it, exactly as paramBoxReasonHolds must
+// to markCaptureModeBoxedParams: a reason recorded by analysis but missing here leaves body uses
+// referencing a box (`Ꮡr`) that was never declared (CS0103), and the reverse declares a box nothing
+// references. paramNeedsHeapBox reads it for the receiver, which drives the `ʗp` signature rename
+// and the entry-time preamble.
+//
+// The receiver set is deliberately NARROWER than the parameter set: a capture-mode (direct-ж)
+// receiver is served by packageDirectBoxReceiverMethods (which emits the box AS the receiver rather
+// than renaming it), and a receiver the capture analysis routed to box-ref storage must not take the
+// `ʗp` form at all — so neither bodyCallsCaptureModeMethodOn nor isLambdaBoxRefVar joins here.
+func (v *Visitor) recvBoxReasonHolds(recv types.Object, body ast.Node) bool {
+	return v.paramAddressTakenNeedsBox(recv, body)
+}
+
 // bodyCallsCaptureModeMethodOn reports whether the body calls a capture-mode method with
 // the given identifier as the (value) receiver — meaning that identifier must be boxed.
 func (v *Visitor) bodyCallsCaptureModeMethodOn(ident *ast.Ident, body ast.Node) bool {

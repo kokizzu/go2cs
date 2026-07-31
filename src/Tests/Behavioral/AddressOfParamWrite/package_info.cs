@@ -38,6 +38,7 @@ using static go.main_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<Box, Bumper>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -56,7 +57,10 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    public partial interface Bumper {}
     public partial struct Box {}
+    public partial struct Nums {}
     public partial struct Rect {}
+    public partial struct Trio {}
     // </TypeAccessibility>
 }

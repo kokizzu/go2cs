@@ -874,6 +874,15 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 							} else {
 								recvParamName = "_"
 							}
+						} else if v.paramNeedsHeapBox(param) {
+							// A heap-boxed VALUE receiver arrives under the `ʗp` name; the
+							// preamble re-declares the analyzed name as the boxed ref alias
+							// (see markAddressTakenBoxedReceiver). The receiver's C# TYPE is
+							// unchanged, so the extension method's public surface — the
+							// value-receiver form Go's method set requires — is preserved;
+							// the box is an implementation detail of the body.
+							updatedSignature.WriteString(getHeapBoxParamName(param))
+							continue
 						}
 
 						updatedSignature.WriteString(getSanitizedIdentifier(recvParamName))
@@ -1505,6 +1514,15 @@ func (v *Visitor) generateParametersSignature(signature *types.Signature, addRec
 				} else {
 					paramName = "_"
 				}
+			} else if v.paramNeedsHeapBox(param) {
+				// A heap-boxed VALUE receiver arrives under the `ʗp` name, exactly like a
+				// heap-boxed value parameter below; the entry-time preamble re-declares the
+				// analyzed name as the boxed ref alias. In practice the box also makes
+				// visitFuncDecl rebuild this signature (paramHeapBoxes is non-empty), which
+				// applies the same rename — keeping both paths in agreement is what makes a
+				// future non-rebuilt path safe. getHeapBoxParamName already sanitizes.
+				result.WriteString(getHeapBoxParamName(param))
+				continue
 			}
 
 			result.WriteString(getSanitizedIdentifier(paramName))
@@ -1649,7 +1667,8 @@ func getHeapBoxLitParamName(renderedName string) string {
 	return fmt.Sprintf("%s%sp", getSanitizedIdentifier(renderedName), CapturedVarMarker)
 }
 
-// paramNeedsHeapBox reports whether the value parameter needs an entry-time heap box: its own
+// paramNeedsHeapBox reports whether the value parameter — or a method's value RECEIVER, parameter 0
+// in getParameters' model — needs an entry-time heap box: its own
 // address is taken (`&r` / `&r.field` / `&r[i]` — image/draw's `DrawMask(…, r image.Rectangle, …)`
 // calling `clip(dst, &r, …)`), or the body calls a capture-mode (direct-ж) method on it, whose
 // only emitted receiver form is the box `ж<T>` — go/format's `cfg printer.Config` +
@@ -1687,7 +1706,24 @@ func (v *Visitor) paramNeedsHeapBox(param *types.Var) bool {
 
 	funcDecl := v.currentFuncDecl
 
-	if funcDecl == nil || funcDecl.Body == nil || funcDecl.Type.Params == nil {
+	if funcDecl == nil || funcDecl.Body == nil {
+		return false
+	}
+
+	// The method's VALUE RECEIVER is parameter 0 (getParameters concatenates it), but it is
+	// declared on Recv — the params walk below never finds it. Its box reason set is narrower
+	// than a parameter's (see recvBoxReasonHolds), so it takes its own gate.
+	if funcDecl.Recv != nil {
+		for _, field := range funcDecl.Recv.List {
+			for _, ident := range field.Names {
+				if v.info.ObjectOf(ident) == param {
+					return v.recvBoxReasonHolds(param, funcDecl.Body)
+				}
+			}
+		}
+	}
+
+	if funcDecl.Type.Params == nil {
 		return false
 	}
 

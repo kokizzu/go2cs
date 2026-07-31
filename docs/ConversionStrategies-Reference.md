@@ -1756,8 +1756,9 @@ than snapshot-copied (see *CaptureModeParamClosure* below), so the closure, the 
 all share the one parameter variable Go gives them.
 
 This was the **fifth** path in the `Ꮡ(value)` copy-box family, after the pointer-to-array element,
-the slice/array field of a receiver, the field-addressed value local, and the named result. The
-corpus consumers it corrects are all silent-wrong-answer bugs, not compile errors:
+the slice/array field of a receiver, the field-addressed value local, and the named result — and the
+**value RECEIVER**, below, is the sixth and last. The corpus consumers the parameter arm corrects are
+all silent-wrong-answer bugs, not compile errors:
 
 | Package | Site | Before → after |
 |---|---|---|
@@ -1773,6 +1774,85 @@ three controls that must not change: a read-only `&param`, an address-taken *loc
 whose address is never taken; the caller's own argument is printed after the call to prove it stayed
 untouched. Output-compared vs `go run` — under the pre-fix emission the three write cases all printed
 the unmodified input.)
+
+**The value RECEIVER is the same category — and it closes the family.** A method's receiver is the
+*third* thing declared in a signature rather than by a body statement, so it failed for exactly the
+reason the named result and the value parameter did: it arrives on `funcDecl.Recv`, which neither the
+define-walk nor `markCaptureModeBoxedParams` (which walks `funcType.Params`) ever reaches. Two
+distinct symptoms, both closed by **`markAddressTakenBoxedReceiver`**:
+
+| Go (receiver starts `Box{Rect{0,16}, 6}` / `Trio{7,8,9}`) | Pre-fix C# | Go says | Pre-fix C# said |
+|---|---|---|---|
+| `func (b Box) Bumped() int { bumpBox(&b); return b.Tag }` | `bumpBox(Ꮡ(b));` | `16` | `6` |
+| `func (b Box) Clipped() … { clip(&b.R, 5, 5) … }` | `clip(Ꮡ(b).of(Box.ᏑR), 5, 5);` | `5 5` | `0 16` |
+| `func (a Trio) Elem() … { bump(&a[1]) … }` (array receiver) | `bump(Ꮡa.at<nint>(1));` | `7 18 9` | **CS0103** — `Ꮡa` never declared |
+
+The array-receiver row is not a silent wrong answer but a **hard compile error**: `convUnaryExpr`'s
+array-base copy-box fallback (`Ꮡ(value).at<E>(i)`, kept for an array base that owns no box) is keyed on
+`identIsParameter`, and the receiver is deliberately *not* a parameter in that model — so the naive
+identity-box form was emitted for a box nothing declared. Giving the receiver a real box fixes both
+symptoms with one mechanism.
+
+The convention is the parameter's, reused verbatim rather than invented: the incoming value takes the
+`ʗp` name and the entry preamble re-declares the Go name as the boxed ref alias, with an ARRAY
+receiver folding its Go by-value clone into the box init exactly as an array parameter does.
+
+```go
+func (b Box) Bumped() int { bumpBox(&b); return b.Tag }
+func (a Trio) Elem() int  { bump(&a[1]); return a[1] }
+```
+```csharp
+public static nint Bumped(this Box bʗp) {
+    ref var b = ref heap(bʗp, out var Ꮡb);
+    bumpBox(Ꮡb);
+    return b.Tag;
+}
+public static nint Elem(this Trio aʗp) {
+    ref var a = ref heap(aʗp.Clone(), out var Ꮡa);   // the by-value clone folds into the box init
+    bump(Ꮡa.at<nint>(1));
+    return a[1];
+}
+```
+
+**The public surface is unchanged**, which is what makes the rename safe: only the receiver's *name*
+moves, never its C# type, so the method stays the value-receiver extension Go's method set requires —
+still callable on a value, still callable through a pointer (which copies into the receiver, so the
+caller's own variable is untouched, matching Go), and still satisfying an interface it implements by
+value. `RecvGenerator` is unaffected because it is gated on `IsRefRecv` (`this ref T`), and a value
+receiver never carries `ref`; `[GoRecv]` is likewise emitted only for a `this ref ` signature. The box
+is an implementation detail of the body, exactly as the parameter `ʗp` + heap preamble is.
+
+Analysis and emission move together here too — `markAddressTakenBoxedReceiver` records and
+**`recvBoxReasonHolds`** (read by `paramNeedsHeapBox`, which now consults `funcDecl.Recv` before the
+params walk) re-verifies. The receiver's reason set is deliberately **narrower** than a parameter's:
+just the address-taken predicate. A capture-mode (direct-ж) receiver is already served by
+`packageDirectBoxReceiverMethods`, which emits the box *as* the receiver instead of renaming it, and a
+receiver the capture analysis routed to box-ref storage must never take the `ʗp` form at all — so
+neither `bodyCallsCaptureModeMethodOn` nor `isLambdaBoxRefVar` joins the receiver gate.
+
+The receiver reuses `paramAddressTakenNeedsBox`, so an inherently-heap receiver still boxes only for
+the bare `&r`. **Measured, that restriction rejects zero corpus sites today** — unlike the parameter
+arm's 48 of 149 — and the reason is worth recording: the parameter over-boxings came from the first
+cut *also* recording `packageCaptureModeBoxIdents`, which forces `identHasHeapBox` to grant a box. The
+receiver arm never records it, so for a `&r[i]`-only slice receiver `identHasHeapBox`'s own gate
+refuses the box independently and the emission is byte-identical either way. The restriction is kept
+because it keeps the analysis verdict and that gate in **agreement**: marking a verdict the gate then
+refuses leaves `identEscapesHeap` set with no box, and that map is read raw by the capture analysis and
+several emitters.
+
+Corpus footprint of the fix, from a two-seeded-root A/B (master converter vs fixed, both reconverting
+all 305 projects into their own temp root): **3 receiver sites across 2 files** — `encoding/base64`'s
+`WithPadding` and `Strict` and `encoding/base32`'s `WithPadding`, each `func (enc Encoding) … *Encoding`
+returning `&enc`. All three are *correct-by-luck* under the old emission: `&enc` is the last operation,
+after every mutation, so the `Ꮡ(enc)` copy carried the mutated value out. They are now one storage
+identity rather than two, at the same single allocation. That there is no live victim is the point —
+this path was closed at its root rather than after a sixth package was found broken by it.
+
+(Guarded by the same `AddressOfParamWrite` behavioral test, extended: a value receiver bumped in place
+through `&b`, a `&recv.field` clip, a `&recv[i]` bump on an ARRAY receiver, and four controls that must
+not change — a `&recv[i]` on an inherently-heap **slice** receiver, a read-only `&recv`, a pointer
+receiver, and a receiver whose address is never taken — plus the two public-surface cases, the boxed
+value-receiver method called through a pointer and through an interface. Output-compared vs `go run`.)
 
 ### A field-addressed value local heap-boxes — `Ꮡ(x).of(…)` copy-boxes orphan writes
 Escape analysis's address-of walk marked `&x` (direct) and `&x[k]` (element) but had **no
