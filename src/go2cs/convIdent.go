@@ -14,6 +14,13 @@ import (
 )
 
 func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
+	// A selected method remains an extension-method member name. External white-box files import
+	// the bridge statically; inserting the class between receiver and method would form
+	// `recv.bridge.Method`, which is not a C# extension invocation.
+	if !context.isMethod && v.whiteboxBridgeUse(ident) {
+		return v.whiteboxBridgeMember(ident)
+	}
+
 	// A package qualifier (`runtime.Goexit()`) renders its using alias, which is
 	// collision-renamed when a same-named child namespace is visible from the import
 	// closure (CS0576 — see importAliasOperations.go).

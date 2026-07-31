@@ -929,7 +929,7 @@ func funcReadsHoistedLiteral(fn *types.Func) bool {
 // writeHoistedLiteralDecls emits the `static readonly` field declarations funcDecl OWNS into the
 // function-prefix builder, which visitFuncDecl back-patches immediately above the function's doc
 // comment — the same declaration-injection path a lifted anonymous struct/interface rides. Fields
-// are `private` to the package class, so the C# beforefieldinit question never becomes cross-type.
+// are normally `private`; a package with same-package tests widens them to `internal` so its friend-assembly bridge can reuse the single production allocation.
 func (v *Visitor) writeHoistedLiteralDecls(funcDecl *ast.FuncDecl) {
 	decls := packageHoistedDecls[funcDecl]
 
@@ -958,7 +958,12 @@ func (v *Visitor) writeHoistedLiteralDecls(funcDecl *ast.FuncDecl) {
 			fieldType = "object"
 		}
 
-		v.currentFuncPrefix.WriteString(fmt.Sprintf("private static readonly %s %s = %s;", fieldType, hl.name, v.convBasicLit(hl.node, litContext)))
+		access := "private"
+		if v.options.testFriendAssembly {
+			access = "internal"
+		}
+
+		v.currentFuncPrefix.WriteString(fmt.Sprintf("%s static readonly %s %s = %s;", access, fieldType, hl.name, v.convBasicLit(hl.node, litContext)))
 		v.currentFuncPrefix.WriteString(v.newline)
 	}
 }

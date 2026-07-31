@@ -74,6 +74,14 @@ func (v *Visitor) visitFile(file *ast.File) {
 	v.targetFile.WriteString(v.newline)
 
 	packageClassName := getSanitizedImport(fmt.Sprintf("%s%s", packageName, PackageSuffix))
+	if v.options.testClassNameOverride != "" {
+		packageClassName = v.options.testClassNameOverride
+		productionClassName := getSanitizedImport(v.options.testProductionName + PackageSuffix)
+		v.addRequiredUsing(fmt.Sprintf("static %s", globalQualifyRooted(packageNamespace+"."+productionClassName)))
+	}
+	if v.options.testWhiteboxReference && v.options.testExternalVariant {
+		v.addRequiredUsing(fmt.Sprintf("static %s", globalQualifyRooted(packageNamespace+"."+v.options.testInternalBridgeName)))
+	}
 
 	v.writeOutput(UsingsMarker)
 	v.writeOutputLn("partial class %s {", packageClassName)

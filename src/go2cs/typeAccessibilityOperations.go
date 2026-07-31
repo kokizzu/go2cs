@@ -197,7 +197,7 @@ func generatedTypeScope(identifier string) string {
 // the author's to choose, and a generated section entry could contradict them (CS0261/CS0262) or
 // conjure a phantom empty type the hand-written file never declares.
 func (v *Visitor) recordTypeAccessibility(kind string, identifier string, typeParams string, access string) {
-	if v.manualConversion || identifier == "" {
+	if v.manualConversion || v.options.testInlineTypeAccess || identifier == "" {
 		return
 	}
 

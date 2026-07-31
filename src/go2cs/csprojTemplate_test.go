@@ -41,6 +41,31 @@ func TestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
 	}
 }
 
+// The friend-assembly grant is inserted AFTER template rendering — never as a template verb, so a
+// user-supplied `-csproj` template (which cannot know about the slot) keeps rendering correctly —
+// and this guard validates the INSERTED document, the shape that actually reaches disk for every
+// package with build-selected in-package tests.
+func TestCsprojTemplateWithFriendAssemblyAccessEmitsWellFormedXml(t *testing.T) {
+	contents := fmt.Sprintf(string(csprojTemplate),
+		"Exe",
+		"go",
+		"TestProject",
+		time.Now().Year(),
+		"false",
+		`    <ProjectReference Include="$(go2csPath)core\fmt\fmt.csproj" />`,
+	)
+
+	contents = insertFriendAssemblyAccess(contents)
+
+	if !strings.Contains(contents, `<InternalsVisibleTo Include="$(AssemblyName).tests" />`) {
+		t.Fatal("the friend-assembly ItemGroup was not inserted")
+	}
+
+	if err := assertWellFormedXml(contents); err != nil {
+		t.Fatalf("csproj template with friend-assembly access does not emit well-formed XML: %v", err)
+	}
+}
+
 func TestTestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
 	// Same substitution as writeTestProject (testConversion.go), which replaces each marker.
 	contents := string(testCsprojTemplate)

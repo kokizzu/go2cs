@@ -57,11 +57,20 @@ type Options struct {
 
 	// -tests conversion options (dispatch is wired in a later stage; until then these are set only
 	// by the test-conversion entry points and unit tests — the flag surface stays default-off)
-	convertTests    bool          // convert the package's _test.go variants into a runnable test project
-	testAction      string        // convert | build | run | compare | all
-	testTimeout     time.Duration // per-child-command timeout for test build/run/compare actions
-	testPackagePath string        // import path of the package under test (self-import binding, IP-3)
-	testPackageName string        // package name of the package under test (self-import binding, IP-3)
+	convertTests           bool          // convert the package's _test.go variants into a runnable test project
+	testAction             string        // convert | build | run | compare | all
+	testTimeout            time.Duration // per-child-command timeout for test build/run/compare actions
+	testPackagePath        string        // import path of the package under test (self-import binding, IP-3)
+	testPackageName        string        // package name of the package under test (self-import binding, IP-3)
+	testWhiteboxReference  bool          // internal _test.go files emit into a bridge while production is referenced
+	testInternalBridgeName string        // C# class that owns internal-test declarations under whitebox reference
+	testClassNameOverride  string        // per-variant emitted package class override for internal test files
+	testMetadataAnchorName string        // C# class that owns test-generated adapters under reference models
+	testProductionPath     string        // original package path retained after reference-mode self-binding is cleared
+	testProductionName     string        // original package name retained for white-box object routing
+	testExternalVariant    bool          // current variant is the external <name>_test package
+	testInlineTypeAccess   bool          // internal bridge types carry accessibility on their source declaration
+	testFriendAssembly     bool          // production internals may be consumed by the separate test assembly
 }
 
 type FileEntry struct {
@@ -620,6 +629,7 @@ var packageFuncMethodNames map[string]bool
 // independently for every production package immediately before its collision analysis, in
 // ordinary and -tests conversion alike, so production source spelling is mode-stable.
 var siblingTestFuncMethodNames []string
+var hasSiblingInternalTestFiles bool
 
 // packageTestAliasShadows is the subset of packageFuncMethodNames contributed ONLY by the
 // same-package test half. It does not affect qualification itself; statement emission uses it to
@@ -688,6 +698,17 @@ var productionLiftedTypeNames HashSet[string]
 // either is converted) and, like testMethodRenames, deliberately NOT cleared by resetPackageState;
 // nil for every other conversion, so no other emission changes.
 var testAmbiguousLocalTypeNames HashSet[string]
+
+// whiteboxInternalTestObjects is the object-identity set contributed by the internal `_test.go`
+// half of the one go/packages load. External-variant selector and type rendering consult it when
+// export data carries no usable declaration position.
+var whiteboxInternalTestObjects map[types.Object]bool
+
+// metadataAnchorLocalTypes reports whether the anchored metadata file being written treats its
+// anchor class as the LOCAL type scope — true for the reference test models (the production class
+// is a referenced assembly there), false for the recompile model's anchored writes (the production
+// class is compiled into the same assembly and keeps the historical local qualification).
+var metadataAnchorLocalTypes bool
 
 // metadataAnchorClassPrefix is the fully-qualified class the metadata file currently being WRITTEN
 // anchors to — `go.encoding.gob_package` for package_test_info.cs, `go.encoding.gob_test_package`
@@ -1201,7 +1222,8 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		// go/packages omits `_test.go` from this production package, so cheaply scan the
 		// build-selected in-package test files for declarator names before collision analysis.
 		// This is package-local (important for ./... loads) and reads no test dependencies.
-		siblingTestFuncMethodNames = collectSiblingTestFuncMethodNames(pkg.Dir, pkg.Name, options)
+		siblingTestFuncMethodNames, hasSiblingInternalTestFiles = collectSiblingTestFuncMethodNames(pkg.Dir, pkg.Name, options)
+		options.testFriendAssembly = hasSiblingInternalTestFiles
 
 		// Reset package level variables and capture the per-package inputs (packageDoc,
 		// importPackageDirs) — shared with the test-conversion path, see packageStateOperations.go
@@ -1651,6 +1673,14 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 
 	if metadataAnchorClassPrefix != "" {
 		anchorTypePrefix = metadataAnchorClassPrefix
+		// A REFERENCE-model metadata file treats its anchoring test class as local: the Go
+		// package's production class is referenced, not compiled locally, so stripping its
+		// qualifier would turn a valid production type into a phantom test type. The RECOMPILE
+		// model's anchored writes keep the historical production-local qualification — there the
+		// production class genuinely is local to the assembly.
+		if metadataAnchorLocalTypes {
+			localTypePrefix = metadataAnchorClassPrefix
+		}
 	}
 
 	qualifyLocalTypeRef := func(name string) string {
@@ -2122,9 +2152,32 @@ func prepareProjectFiles(projectName string, packageNamespace string, projectPat
 		ProjectReferenceMarker,
 	)
 
+	if hasSiblingInternalTestFiles {
+		projectFileContents = insertFriendAssemblyAccess(projectFileContents)
+	}
+
 	projectFileName := projectPath + projectName + ".csproj"
 
 	return projectFileName, projectFileContents, nil
+}
+
+// insertFriendAssemblyAccess grants the package's colocated test assembly access to its internal
+// members. Inserted AFTER template rendering — never as a template verb — so the template keeps its
+// historical verb count and a user-supplied `-csproj` template (which cannot know about the slot)
+// renders exactly as before; Sprintf would otherwise append a `%!s(EXTRA …)` diagnostic into every
+// generated project. Anchored on the first closing PropertyGroup, which every usable template has.
+func insertFriendAssemblyAccess(projectFileContents string) string {
+	const anchor = "</PropertyGroup>"
+	const friendItemGroup = "\r\n\r\n  <!-- Same-package Go tests run in a separate assembly but retain package-private access. -->\r\n  <ItemGroup>\r\n    <InternalsVisibleTo Include=\"$(AssemblyName).tests\" />\r\n  </ItemGroup>"
+
+	idx := strings.Index(projectFileContents, anchor)
+
+	if idx < 0 {
+		return projectFileContents
+	}
+
+	insertAt := idx + len(anchor)
+	return projectFileContents[:insertAt] + friendItemGroup + projectFileContents[insertAt:]
 }
 
 func writeProjectFile(projectFileName string, projectFileContents string, outputFilePath string, pkg *types.Package, options Options) error {
@@ -3561,7 +3614,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 			}
 		}
 
-		return fmt.Sprintf("new %s(%s)", valueAdapterTypeRef(adapterSource, interfaceTypeName), exprResult)
+		return fmt.Sprintf("new %s(%s)", v.testOwnedAdapterRef(valueAdapterTypeRef(adapterSource, interfaceTypeName)), exprResult)
 	}
 
 	// A POINTER-sourced cast to a locally-implemented interface routes through the generated
@@ -3590,7 +3643,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 			}
 		}
 
-		return fmt.Sprintf("new %s(%s)", valueAdapterTypeRef(qualifiedTarget, interfaceTypeName), exprResult)
+		return fmt.Sprintf("new %s(%s)", v.testOwnedAdapterRef(valueAdapterTypeRef(qualifiedTarget, interfaceTypeName)), exprResult)
 	}
 
 	// A LOCAL NAMED FUNC type with methods (flag's funcValue implementing Value): a C#
@@ -3599,7 +3652,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 	if recordable && !pointerTarget && exprResult != "" {
 		if named, ok := types.Unalias(targetType).(*types.Named); ok {
 			if _, isSig := named.Underlying().(*types.Signature); isSig {
-				return fmt.Sprintf("new %s(%s)", valueAdapterTypeRef(targetTypeName, interfaceTypeName), exprResult)
+				return fmt.Sprintf("new %s(%s)", v.testOwnedAdapterRef(valueAdapterTypeRef(targetTypeName, interfaceTypeName)), exprResult)
 			}
 		}
 	}
@@ -3723,6 +3776,16 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 // the struct itself, so a same-package reference is the bare name. The interface side uses its
 // SIMPLE name — the generator derives the same identifier via GetSimpleName, so both sides must
 // agree on last-dot-segment naming.
+// testOwnedAdapterRef qualifies an adapter class generated from reference-test metadata through
+// that metadata file's first class. Production conversion and recompile tests keep the historical
+// bare member name because their generated adapter already shares the current package class.
+func (v *Visitor) testOwnedAdapterRef(adapterName string) string {
+	if v.options.testWhiteboxReference && v.options.testMetadataAnchorName != "" {
+		return v.options.testMetadataAnchorName + "." + adapterName
+	}
+	return adapterName
+}
+
 // valueAdapterTypeRef renders the reference to the generated VALUE-form foreign adapter
 // class: `<structSimple>ᴠ<ifaceSimple>` (ValueAdapterInfix), emitted in the INTERFACE's
 // package (the converting package), so the reference is the bare composed name.
@@ -4954,6 +5017,18 @@ func (v *Visitor) getTypeName(t types.Type, isUnderlying bool) string {
 		return v.signatureTypeName(composite, isUnderlying)
 	}
 
+	// The internal white-box variant contains production and test declarations in one Go package,
+	// but emits them into separate C# classes. Qualify a production-declared type through the
+	// referenced production class before the ordinary same-package branch can erase its owner.
+	if named, ok := t.(*types.Named); ok {
+		if bridgeName, isBridge := v.whiteboxBridgeNamedType(named); isBridge {
+			return bridgeName
+		}
+		if productionName, isProduction := v.whiteboxProductionNamedType(named); isProduction {
+			return productionName
+		}
+	}
+
 	// A cross-package INSTANTIATED generic (e.g. `internal/runtime/atomic.Pointer[func(string,
 	// string)]`) must be rendered structurally — `pkg.Name() + "." + Name[args…]` with each arg
 	// recursively named — rather than from t.String(). The string form keeps the full import path,
@@ -5133,6 +5208,13 @@ func (v *Visitor) getFullTypeName(t types.Type, isUnderlying bool) string {
 	}
 
 	if named, ok := t.(*types.Named); ok {
+		if bridgeName, isBridge := v.whiteboxBridgeNamedType(named); isBridge {
+			return bridgeName
+		}
+		if productionName, isProduction := v.whiteboxProductionNamedType(named); isProduction {
+			return productionName
+		}
+
 		obj := named.Obj()
 		pkg := obj.Pkg()
 

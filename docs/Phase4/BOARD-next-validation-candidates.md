@@ -50,28 +50,18 @@ measurement rounds: a struct literal declared in the EXTERNAL test variant reach
 package died with F14b's `resolve test project dependency "bytes_test": package bytes_test is not
 in std` — silently, until the validated sweep failed on `bytes` at the second package.
 
-## `io` — a duplicate-type defect of the RECOMPILE model, not a missing reference
+## `io` — duplicate-type build blocker CLOSED (2026-07-30); runtime blockers remain
 
-`io`'s `export_test.go` is an in-package variant, so the suite takes the recompile model and io's
-production `.cs` compile *into* the test assembly. Every referenced assembly (bytes, fmt, strings,
-hash, …) already references `io.dll` and names `io_package.Reader`/`Writer` in its own API, so the
-test assembly ends up with **two** distinct `io_package.Writer` types. The first diagnostic is
-CS0012, which reads like a missing reference — but the reference cannot fix it, and the proof is
-already in the same build: `multi_test.cs(179,26): error CS1503: cannot convert from
-'go.hash_package.Hash' to 'go.io_package.Writer'`. `hash.Hash` derives from **io.dll's** `Writer`;
-the parameter is the **recompiled** one. Referencing io.dll turns the CS0012s into CS0436 warnings
-and leaves that conversion just as impossible.
+The diagnosis was correct: recompiling `io` into its mixed internal/external test assembly created a second `io_package.Writer`, distinct from the one named by `hash.Hash`, `bytes`, `fmt`, and the rest of the referenced closure. The general fix is the new **`whitebox-reference`** test-project model. A production package with build-selected same-package tests conditionally grants friend access to `<assembly>.tests`; internal `_test.go` declarations emit into `<name>_internal_test_package`; external references to those declarations route to the bridge by `go/types.Object` identity; and test-contributed adapters live in the test metadata anchor. Production remains the only identity for its types. Records that truly require a production-type mutation still fall back to `recompile`.
 
-The real fix is to stop recompiling — i.e. extend the reference model ("Change C") to suites that
-have an internal variant. The obvious mechanism is `[assembly: InternalsVisibleTo("<pkg>.tests")]`
-on the converted production project: Go-unexported identifiers already emit as C# `internal`, so an
-in-package test variant could bind them **across** the assembly boundary and the production assembly
-would stay the single identity for its types. That is a design decision with corpus-wide blast
-radius (private-emitted members, and production-anchored `GoImplement`/`GoImplicitConv` records that
-cannot merge across assemblies — today's `recordsRequireProductionAnchor` fallback), so it wants
-design-WITH-user before implementation. It would also close the same class for every other
-whitebox suite whose dependencies name the package under test.
+Fresh `io` conversion now emits `testProjectModel: whitebox-reference`, references `io.csproj`, compiles no production `.cs` into `io.tests`, and builds with **0 errors**. The host runs all **54** included test functions: **45 pass**, proving the former CS0012/CS1503 wall is gone. `io` is not banked or counted as validated yet; the remaining nine top-level verdicts are separate runtime/semantic roots:
 
+- `TestMultiReaderFlatten` and `TestMultiWriterSingleChainFlatten`: `runtime.getcallersp` is unimplemented — owned by the charter's reflection Phase-3 chip.
+- `TestOffsetWriter_Seek`, `TestOffsetWriter_WriteAt`, `TestWriteAt_PositionPriorToBase`, plus `TestOffsetWriter_Write` subtests: `os.runtime_rand` is unimplemented in the tempfile path — owned by the `os` operational arc.
+- `TestMultiWriter_StringCheckCall`: `WriteString` forwarding behavior mismatch (separate runtime/conversion investigation).
+- `TestMultiWriter_WriteStringSingleAlloc` and `TestPipeAllocations`: exact allocation-profile assertions; no disclosure ruling has been made.
+
+This board item is complete at its stated architectural boundary. The remaining rows must be handled by their owning arcs rather than folded into the test-project-model change.
 ## Build-blocked, each its own root
 
 | Package | First diagnostic | Note |

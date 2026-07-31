@@ -29,9 +29,10 @@ src/go2cs/bin/go2cs.exe -tests -test-action all -test-timeout 10m "<GOROOT>/src/
 (converts → builds the .NET test host → runs it → diffs vs `go test -json`), until every viable
 package's **Test functions** pass in C#.
 
-**State (2026-07-21): 32 packages validate** (`origin/master c9a1cf0a5`, public). The current list is
-whatever has a committed `*.tests.csproj` under `src/go-src-converted` — derive it fresh, don't trust
-a remembered count.
+**State (2026-07-31): 62 packages validate — 28.8%** (see
+[`docs/ValidatedTestPackages.md`](../ValidatedTestPackages.md), which maintains its own progress line
+per §4.6). The authoritative roster is that table; `./src/run-validated-sweep.ps1` re-validates it
+end to end and fails on any count drift — derive state from those two, never a remembered count.
 
 **Completion shape.** A package is DONE when its `func Test*` set matches `go test`. `Example` and
 `Benchmark` declarations are **uniformly Phase-4D-deferred** (excluded corpus-wide) — never chase
@@ -74,9 +75,10 @@ times in the slog. **Verify branch/blocker state fresh each session** — rememb
 1. **Channels / goroutine rendezvous** *(golib, possibly runtime).* FOUR known gaps: no real
    *unbuffered* rendezvous; `make(chan T)` is conflated with `make(chan T,1)` (wrong cap/len);
    a blocking `select` fires *every* case rather than only a ready one; `select` first-match is not
-   randomized. **Blocks: encoding/base32, encoding/base64, bufio, os/signal, sync, net/*, and every
-   goroutine/select/timer test** — the single highest-leverage frog. A partial select-send fix may
-   exist on a branch; assess it (git-cherry + content) or redo it right. This is a delicate concurrency
+   randomized. *(2026-07-31: base32/base64/bufio/os/signal/sync have since validated AROUND these
+   gaps — their suites don't hit the unbuffered/select semantics hard enough. The gaps are still
+   real.)* **Blocks: net/\*, time, context, and every goroutine/select/timer test that exercises
+   real rendezvous** — still the highest-leverage frog. This is a delicate concurrency
    redesign → **use adversarial review (§7) and design WITH the user (§10).**
 
 2. **Reflection completeness — Phase 3 of the bridge** *(golib `GoReflect` + the hand-owned
@@ -105,27 +107,15 @@ times in the slog. **Verify branch/blocker state fresh each session** — rememb
    tests." Treat as its own campaign; per the operating model it may warrant a **chip (user-owned)**
    rather than a sub-agent. Depends on Tier-0 #2 (reflect) landing first.
 
-### Tier 1 — high-value single-blocker unblockers (each nearly validating)
+### Tier 1 — high-value single-blocker unblockers *(2026-07-31: this tier is CLEARED)*
 
-Each is one named blocker from validating. Fix the blocker at the right layer, then validate + bank.
-
-- **errors** — `getcallersp` stub (Tier-0 #2) + a `multiError` interface-equality case (the csv fix
-  already greened most `TestIs`).
-- **unicode** (+ rebanks utf8/path) — **"Change C": black-box-only REFERENCE-model test-project
-  generation** — emit a `ProjectReference` to the production `csproj` instead of recompiling the
-  production `.cs` into the test assembly, resolving cross-assembly type identity (`SpecialCase`
-  CS0012). Detailed, proven plan on branch **`claude/wf-unicode`** (host `testing.Benchmark` API +
-  capability recognition already committed there). This is **abstract** — it helps *every* black-box-only
-  external-test package, not just unicode. Gate strictly on `internal==nil`; fall back to the recompile
-  model when the external test contributes production-anchored `GoImplement` records.
-- **text/tabwriter** — bug 3 (empty formatted output); its other two bugs are fixed on master.
-- **encoding/base32, encoding/base64** — the channel / `io.Pipe` gaps (Tier-0 #1).
-- **mime** — a disclosed-alloc candidate (`TestLookupMallocs`); confirm it is provably-unsatisfiable
-  before disclosing (§ gates).
-- **hash/crc32** — a separate host-startup crash (`internal/cpu`/race).
-- **compile-blocked cluster** — go/token, internal/fmtsort, crypto/subtle, internal/abi,
-  go/doc/comment (CS0012/CS1503/CS0246 missing-type / accessibility). Worth a single batched look —
-  likely one or two shared converter/gen root causes.
+Every package originally listed here — errors, unicode (whose "Change C" grew into today's
+three-model test-project family: `reference`, `whitebox-reference`, `recompile`-as-fallback),
+text/tabwriter, encoding/base32/base64, mime, hash/crc32, and the whole compile-blocked cluster —
+**validated and banked**. The current per-package board with rooted diagnostics is
+[`BOARD-next-validation-candidates.md`](BOARD-next-validation-candidates.md); treat that file as
+this tier's living replacement and keep it rooted (a first diagnostic is a starting point, not a
+diagnosis — its own header says why).
 
 ### Tier 2 — the campaign slog (the long tail, ~170 packages)
 
@@ -183,7 +173,7 @@ class, the gate is non-negotiable:
 | **Converter** (`src/go2cs/*.go`) | `check-no-regression.ps1` **byte-identical** (except intended, individually-justified golden re-baselines) — the authoritative drift instrument; it re-transpiles unconditionally. Then reconvert + build the **302-package corpus** (`.Value`→`.ValueSlot`-style type-safe swaps aside, a converter change *can* break corpus compile). |
 | **golib** (`src/core/golib`) | full behavioral suite (compile + run, `run-behavioral.ps1`) — golib is linked by everything. |
 | **go2cs-gen** | full behavioral suite **and** the 302-corpus build. |
-| **Any of the above** | **Operational re-validation of every already-validated package** on the post-change tree — the real all-ships-rise proof. Use the **isolation-reconvert-diff** to skip byte-identical packages (see §9). |
+| **Any of the above** | **Operational re-validation of every already-validated package** on the post-change tree — the real all-ships-rise proof. The instrument is **`./src/run-validated-sweep.ps1`**: it parses the roster and expected counts from `ValidatedTestPackages.md`, fails on any count drift, and reports post-sweep corpus CONTENT drift — the only gate that sees banked *test-source* staleness (CNR covers behavioral projects; the isolation-reconvert-diff covers production `.cs`; neither sees test emission). The isolation-reconvert-diff remains the cheap pre-filter to *predict* which packages a change touches; the sweep is the proof. |
 
 Disclosed-divergence is **only** for asserts the managed CLR *provably cannot* satisfy (alloc counts),
 signature-pinned per test. A real bug or an unimplemented feature is **never** a disclosure candidate.
@@ -237,12 +227,12 @@ design-WITH-the-user (§10) and adversarial design review (§7) before a line is
 (`spawn_task`) — **spawned by the coordinator at the right moment**, not inline, not in a worktree
 sub-agent, and not up front.
 
-**The chip-class list (as of 2026-07-22):**
+**The chip-class list (updated 2026-07-31):**
 
-| Arc | Scope | Spawn trigger |
+| Arc | Scope | Spawn trigger / state |
 |---|---|---|
-| **Reflection bridge — Phase 3** (Tier-0 #2) | `Value.Set*`/addressability, `Value.Call`/`MakeFunc`, `MakeSlice`/`MakeMap`, `getcallersp`, adapter-type `Kind`/`Elem`. Design doc: `docs/Phase4/DESIGN-reflection-bridge.md` (Phases 1–2 shipped; Phase 3 is the whole chip). | When a Tier-1/Tier-2 package's differential **actually lands on the Phase-3 surface** (errors' `getcallersp`, a `Value.Set*`/`Call` NRE, encoding/binary·gob, testing/quick) — i.e. a *demonstrated* consumer, not a predicted one. Design it against that concrete consumer, exactly as the doc's Phase-3 note directs. |
-| **math/big** (Tier-0 #4) | 189 Test funcs; its own campaign. | After the reflection chip lands (math/big depends on it through gob/json/xml + testing/quick). |
+| **Reflection bridge — Phase 3** (Tier-0 #2) | Design doc: `docs/Phase4/DESIGN-reflection-bridge.md`. **Substantially landed via chip increments**: `Value.Set*`, `Value.Convert`, type-relation mirrors, `MakeSlice`/`MakeMap` round-trips, canonical `reflect.Type` — enough that errors, encoding/binary, testing/quick and go/token all validate, and gob's engines RUN. **Remaining surface**: `getcallersp` (io's TestMultiReader*Flatten), `MakeFunc`, the adapter-type `Kind`/`Elem` unwrap, and gob's residues. Same chip owns the remainder; spawn its next increment on the next demonstrated consumer (io or encoding/gob). |
+| **math/big** (Tier-0 #4) | 189 Test funcs; its own campaign. | After the reflection remainder lands (depends on it through gob/json/xml + testing/quick). |
 
 **Coordinator protocol for spawning one:**
 
@@ -314,6 +304,14 @@ case that greens today's package but not the next ten like it is the wrong altit
 Hard-won during this campaign. Read these before touching the relevant area.
 
 **Converter / gating**
+- **Bank only artifacts the FINAL binary emitted — regenerate the whole roster before any bank.**
+  A development session's working tree accumulates artifacts from every intermediate converter build
+  along the way; the 2026-07-31 whitebox review found a staged corpus emitted by **four different
+  binaries** (only one package matched the final source), carrying uncompilable fingerprints of
+  superseded emission strategies. mtime forensics (artifact vs converter-source vs exe) is the cheap
+  detector; the remedy is always the same — discard ALL of it, `go build -o bin/go2cs.exe`, and let
+  one full sweep regenerate every banked artifact from the single final binary. Never classify or
+  hand-repair mixed-vintage output.
 - **Wire new analysis passes into ALL THREE conversion drivers.** The analysis phase runs in three
   places — normal (`main.go` ~1151), `-tests` (`testConversion.go` ~584), and hand-owned-sibling
   (`autoSiblingOperations.go`). A collector wired into only one **silently no-ops** for the others

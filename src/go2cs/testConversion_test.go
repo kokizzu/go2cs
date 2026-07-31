@@ -461,21 +461,20 @@ func TestAppendExternalTestPackageClassAddsTestUsingAndAnchor(t *testing.T) {
 	}
 }
 
-// Change C guard: the REFERENCE model is gated STRICTLY on the suite being black-box only —
-// an internal (in-package) variant forces the recompile model, because its files reach
-// unexported production symbols only a same-assembly compile can bind.
-func TestSelectTestProjectModelGatesOnBlackBoxOnly(t *testing.T) {
+// Change C guard: black-box suites reference production directly; suites with an internal
+// variant use the white-box reference model.
+func TestSelectTestProjectModel(t *testing.T) {
 	internal := &packages.Package{Name: "value"}
 	external := &packages.Package{Name: "value_test"}
 
 	if got := selectTestProjectModel(nil, external); got != testProjectReference {
-		t.Fatalf("black-box-only suite (internal==nil) must select the reference model, got %v", got)
+		t.Fatalf("black-box-only model = %v, want reference", got)
 	}
-	if got := selectTestProjectModel(internal, external); got != testProjectRecompile {
-		t.Fatalf("a suite with an internal variant must select the recompile model, got %v", got)
+	if got := selectTestProjectModel(internal, external); got != testProjectWhiteboxReference {
+		t.Fatalf("mixed-suite model = %v, want whitebox-reference", got)
 	}
-	if got := selectTestProjectModel(internal, nil); got != testProjectRecompile {
-		t.Fatalf("an internal-only suite must select the recompile model, got %v", got)
+	if got := selectTestProjectModel(internal, nil); got != testProjectWhiteboxReference {
+		t.Fatalf("internal-only model = %v, want whitebox-reference", got)
 	}
 }
 
@@ -654,6 +653,130 @@ func TestRecordsRequireProductionAnchorGatesReferenceModel(t *testing.T) {
 	}
 }
 
+// White-box reference fallback: pointer/value adapters can live in the test metadata anchor, but
+// conversion operators that would have to extend a referenced production type cannot.
+func TestRecordsRequireProductionMutationGatesWhiteboxModel(t *testing.T) {
+	resetPackageState(&packages.Package{})
+	packageNamespace = "go"
+
+	interfaceImplementations["io_package.Writer"] = NewHashSet([]string{PointerPrefix + "<value_package.Buffer>"})
+	indirectSource := ShadowVarMarker + "value.Source"
+	indirectImplicitConversions[indirectSource] = NewHashSet([]string{PointerPrefix + "<" + indirectSource + ">"})
+	if recordsRequireProductionMutation("value_package", "value") {
+		t.Fatal("production adapters and the shared T-to-pointer-box route are relocatable")
+	}
+
+	implicitConversions["value_package.Source"] = NewHashSet([]string{"LocalTarget"})
+	if !recordsRequireProductionMutation("value_package", "value") {
+		t.Fatal("a structural conversion involving a closed production type must fall back")
+	}
+
+	resetPackageState(&packages.Package{})
+	packageNamespace = "go"
+	numericConversions["value_package.Source"] = map[string]string{"LocalTarget": "int64"}
+	if recordsRequireProductionMutation("value_package", "value") {
+		t.Fatal("a numeric conversion can relocate to its test-local operand")
+	}
+	numericConversions["value_package.Source"]["value_package.Target"] = "int64"
+	if !recordsRequireProductionMutation("value_package", "value") {
+		t.Fatal("a numeric conversion between two closed production types must fall back")
+	}
+}
+
+// Internal test declarations keep their Go package name in the manifest, while the generated host
+// targets the separate friend-assembly bridge class that actually owns their converted methods.
+func TestWriteTestHostUsesCSharpClassOverride(t *testing.T) {
+	dir := t.TempDir()
+	declarations := []testDeclaration{{
+		Name: "TestInternal", Kind: "test", PackageName: "value", CSharpClassName: "value_internal_test_package",
+		Source: "value_test.go", Line: 12, Status: "included",
+	}}
+	if err := writeTestHost(dir, "go", "example/value", declarations, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, testHostFileName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contents := string(data)
+	if !strings.Contains(contents, `registry.Add("TestInternal", value_internal_test_package.TestInternal`) {
+		t.Fatalf("host must target the white-box bridge class:\n%s", contents)
+	}
+	if strings.Contains(contents, `value_package.TestInternal`) {
+		t.Fatalf("host must not target the referenced production class:\n%s", contents)
+	}
+}
+
+func TestWhiteboxAdapterAnchoringOnlyRelocatesEmittedPairs(t *testing.T) {
+	pairs := [][2]string{{"io_package.PipeWriter", "io_package.Writer"}}
+	pair, ok := emittedAdapterPair(pairs, "io_PipeWriter", "io_package.Writer")
+	if !ok {
+		t.Fatal("the test-owned PipeWriter adapter pair must be recognized across record/cast spellings")
+	}
+	// The anchored member composes from the RECORD's spelling — the generator's foreign
+	// `<pkg>_<Simple>` form — never from the cast site's, whose bare spelling would compose a
+	// class name go2cs-gen does not generate (the encoding/csv `ParseErrorжerror` defect).
+	if got := anchoredAdapterMemberName(pair, map[string]bool{}); got != "io_PipeWriter"+PointerPrefix+"Writer" {
+		t.Fatalf("anchored member = %q, want the generator's io_PipeWriter%sWriter", got, PointerPrefix)
+	}
+	if _, ok := emittedAdapterPair(pairs, "Δio.LimitedReader", "io_package.Reader"); ok {
+		t.Fatal("an imported production adapter must not be redirected into the test metadata anchor")
+	}
+	// A BARE cast spelling of a recorded qualified pair still matches — and still composes the
+	// generator's qualified name from the record side.
+	pair, ok = emittedAdapterPair(pairs, "PipeWriter", "io_package.Writer")
+	if !ok {
+		t.Fatal("a bare cast spelling of a recorded pair must match on the simple name")
+	}
+	if got := anchoredAdapterMemberName(pair, map[string]bool{}); got != "io_PipeWriter"+PointerPrefix+"Writer" {
+		t.Fatalf("bare-spelling anchored member = %q, want io_PipeWriter%sWriter", got, PointerPrefix)
+	}
+}
+
+// The white-box record split: a BARE record name declared by an internal _test.go file anchors to
+// the bridge (its generated partial must merge with the bridge-declared type); production-qualified
+// and external-declared bare names anchor to the test class.
+func TestSplitWhiteboxVariantRecordsPartitionsByBridgeDeclaredNames(t *testing.T) {
+	resetPackageState(&packages.Package{})
+	packageNamespace = "go"
+
+	bridgeNames := NewHashSet([]string{"errReader"})
+
+	interfaceImplementations["io_package.Reader"] = NewHashSet([]string{"errReader", "externalHelper", PointerPrefix + "<scanner_package.Scanner>"})
+
+	bridgeAnchored, testAnchored := splitWhiteboxVariantRecords(bridgeNames)
+
+	if !bridgeAnchored.interfaceImplements["io_package.Reader"].Contains("errReader") {
+		t.Fatal("a bridge-declared implementer must anchor to the bridge unit")
+	}
+	if bridgeAnchored.interfaceImplements["io_package.Reader"].Contains("externalHelper") {
+		t.Fatal("an external-declared bare implementer must stay with the test anchor")
+	}
+	if !testAnchored.interfaceImplements["io_package.Reader"].Contains("externalHelper") ||
+		!testAnchored.interfaceImplements["io_package.Reader"].Contains(PointerPrefix+"<scanner_package.Scanner>") {
+		t.Fatal("non-bridge records must anchor to the test class")
+	}
+
+	resetPackageState(&packages.Package{})
+}
+
+// The bridge anchor seed is the bridge's single `static` declaration and single [GoPackage]
+// carrier; its first — and only — class is the bridge, so go2cs-gen hosts bridge-anchored
+// generated code inside the class the real declarations merge into.
+func TestInternalTestPackageInfoSeedAnchorsBridgeClass(t *testing.T) {
+	seed := internalTestPackageInfoSeed("go", "value_package", "value_internal_test_package", "value")
+
+	if !strings.Contains(seed, "[GoPackage(\"value\")]\r\npublic static partial class value_internal_test_package\r\n{\r\n}\r\n") {
+		t.Fatalf("seed must declare the attributed static bridge class:\n%s", seed)
+	}
+	if strings.Contains(seed, "class value_package") {
+		t.Fatalf("seed must not declare the production class:\n%s", seed)
+	}
+	if firstClass := strings.Index(seed, "class "); firstClass < 0 || !strings.Contains(seed[firstClass:], "value_internal_test_package") {
+		t.Fatalf("the bridge must be the seed's first class:\n%s", seed)
+	}
+}
+
 // Change C project shape: a REFERENCE-model test project binds the production package through a
 // colocated ProjectReference and carries NO production compile items; the recompile model keeps
 // the original recompiled shape and no production reference.
@@ -708,7 +831,7 @@ func TestWriteTestProjectReferenceModelBindsProductionProject(t *testing.T) {
 // directly, and must not declare the production package class (the referenced production
 // assembly is the single identity for those types).
 func TestReferenceModelSeedAnchorsTestClassOnly(t *testing.T) {
-	seed := referenceModelTestPackageInfoSeed("go", "value_test_package", "value_test")
+	seed := referenceModelTestPackageInfoSeed("go", "value_test_package", "value_test", "value_package")
 
 	if !strings.Contains(seed, "[GoPackage(\"value_test\")]\r\npublic static partial class value_test_package\r\n{\r\n}\r\n") {
 		t.Fatalf("seed must declare the attributed external test package class:\n%s", seed)
@@ -2058,7 +2181,7 @@ func TestTestVariantPinsProductionLiftedTypeNames(t *testing.T) {
 func TestAmbiguousVariantTypeNamesAreClassQualified(t *testing.T) {
 	dir := t.TempDir()
 	files := map[string]string{
-		"go.mod": "module example/ambig\n\ngo 1.23\n",
+		"go.mod":   "module example/ambig\n\ngo 1.23\n",
 		"value.go": "package ambig\n\ntype Squarer interface{ Square() int }\n\nfunc Probe(s Squarer) int { return s.Square() }\n",
 		// The package's own Point is declared by an INTERNAL test file, exactly as gob's is
 		// (codec_test.go) — it lands in the production package class all the same.

@@ -98,10 +98,18 @@ func recordEmittedPointerAdapterPairs(lines []string) {
 	packageLock.Unlock()
 }
 
+// emittedAdapterPairAnchors maps a pair's collision-group key to the metadata anchor CLASS the
+// pair's record file is anchored to — the class go2cs-gen generates that pair's adapter into.
+// Populated per capture under the reference test models, where a test compilation can carry TWO
+// anchor files (the test class and the white-box bridge); empty everywhere else.
+var emittedAdapterPairAnchors map[string]string
+
 // captureAdapterPairsFromInfoFile re-reads a written package-info file and captures its pointer
 // records as the authoritative pair set. Used by the -tests flow, whose variants reach the metadata
-// file through more than one writer.
-func captureAdapterPairsFromInfoFile(packageInfoFileName string) {
+// file through more than one writer. A non-empty anchorClass additionally records, per pair, the
+// class the file anchors generated adapters to; successive captures ACCUMULATE pairs so a
+// two-anchor test layout captures both files.
+func captureAdapterPairsFromInfoFile(packageInfoFileName string, anchorClass ...string) {
 	contentBytes, err := os.ReadFile(packageInfoFileName)
 
 	if err != nil {
@@ -109,7 +117,36 @@ func captureAdapterPairsFromInfoFile(packageInfoFileName string) {
 		return
 	}
 
+	previous := emittedPointerAdapterPairs
 	recordEmittedPointerAdapterPairs(strings.Split(string(contentBytes), "\n"))
+
+	if len(anchorClass) > 0 && anchorClass[0] != "" {
+		if emittedAdapterPairAnchors == nil {
+			emittedAdapterPairAnchors = map[string]string{}
+		}
+		packageLock.Lock()
+		for _, pair := range emittedPointerAdapterPairs {
+			emittedAdapterPairAnchors[adapterGroupKey(pair[0], pair[1])] = anchorClass[0]
+		}
+		packageLock.Unlock()
+	}
+
+	// recordEmittedPointerAdapterPairs REPLACES the pair set with this file's records; a
+	// two-anchor capture needs the union, so fold the earlier capture back in.
+	if len(previous) > 0 {
+		packageLock.Lock()
+		merged := make([][2]string, 0, len(previous)+len(emittedPointerAdapterPairs))
+		seen := map[string]bool{}
+		for _, pair := range append(append([][2]string{}, emittedPointerAdapterPairs...), previous...) {
+			key := pair[0] + "|" + pair[1]
+			if !seen[key] {
+				seen[key] = true
+				merged = append(merged, pair)
+			}
+		}
+		emittedPointerAdapterPairs = merged
+		packageLock.Unlock()
+	}
 }
 
 // adapterNameMarker returns the deferred marker for a pointer-adapter reference. The payload is
@@ -248,6 +285,56 @@ func adapterStructKey(structBase string) string {
 	return strings.TrimSuffix(qualifier, PackageSuffix) + "_" + stripSanitizationMarkers(base[idx+1:])
 }
 
+// emittedAdapterPair finds the RECORD pair a cast's (structBase, interfaceTypeName) spelling
+// belongs to, or ok=false when the pair was never recorded in a test metadata anchor — imported
+// adapters have markers too, but must keep pointing at their defining production assembly rather
+// than being redirected into a test anchor. The record's spelling — not the cast's — is what the
+// generator derives the emitted adapter class name from, so the caller composes the anchored
+// reference from the returned pair. A dot-less cast spelling additionally matches on the bare
+// simple name, because a cast in the record's own declaring scope legitimately spells the struct
+// unqualified while the record carries the qualified form.
+func emittedAdapterPair(pairs [][2]string, structBase, interfaceTypeName string) ([2]string, bool) {
+	structKey := strings.TrimPrefix(adapterStructKey(structBase), ShadowVarMarker)
+	interfaceKey := strings.TrimPrefix(adapterInterfacePackagePrefix(interfaceTypeName), ShadowVarMarker) + adapterInterfaceSimpleName(interfaceTypeName)
+
+	for _, pair := range pairs {
+		pairStructKey := strings.TrimPrefix(adapterStructKey(pair[0]), ShadowVarMarker)
+		pairInterfaceKey := strings.TrimPrefix(adapterInterfacePackagePrefix(pair[1]), ShadowVarMarker) + adapterInterfaceSimpleName(pair[1])
+		if pairInterfaceKey != interfaceKey {
+			continue
+		}
+		if pairStructKey == structKey {
+			return pair, true
+		}
+		if !strings.Contains(structBase, ".") {
+			pairSimple := pair[0]
+			if dot := strings.LastIndex(pairSimple, "."); dot >= 0 {
+				pairSimple = pairSimple[dot+1:]
+			}
+			if stripSanitizationMarkers(pairSimple) == stripSanitizationMarkers(structBase) {
+				return pair, true
+			}
+		}
+	}
+	return [2]string{}, false
+}
+
+// anchoredAdapterMemberName composes the adapter class name go2cs-gen will emit for a
+// test-anchored pair, from the RECORD's spellings: adapterStructKey normalizes a qualified
+// production struct to the generator's foreign `<pkg>_<Simple>` form and leaves a variant-local
+// bare name bare — exactly the generator's local-vs-foreign naming split. The interface side
+// mirrors adapterResolvedName's collision handling on the same record spellings.
+func anchoredAdapterMemberName(pair [2]string, colliding map[string]bool) string {
+	structPart := strings.TrimPrefix(adapterStructKey(pair[0]), ShadowVarMarker)
+	ifaceSimple := adapterInterfaceSimpleName(pair[1])
+
+	if !colliding[adapterGroupKey(pair[0], pair[1])] {
+		return structPart + PointerPrefix + ifaceSimple
+	}
+
+	return structPart + PointerPrefix + adapterInterfacePackagePrefix(pair[1]) + ifaceSimple
+}
+
 // adapterResolvedName renders the final adapter class REFERENCE for a pair. The struct side is
 // emitted VERBATIM — it is not merely a name fragment but the reference's path, and rewriting it
 // broke `new os.FileжWriter(f)` (namespace `os`, adapter class `FileжWriter`, generated in os's own
@@ -270,13 +357,17 @@ func adapterResolvedName(structBase string, interfaceTypeName string, colliding 
 // resolveDynamicTypeMarkers' post-barrier text pass. A marker whose pair never reached a record —
 // possible when a cast is emitted for a pair the prune later drops — still resolves, to the
 // unqualified name it would have had, so no marker can survive into the output.
-func resolveAdapterNameMarkers(outputFileNames []string) {
+func resolveAdapterNameMarkers(outputFileNames []string, metadataAnchor ...string) {
 	packageLock.Lock()
 	pairs := make([][2]string, len(emittedPointerAdapterPairs))
 	copy(pairs, emittedPointerAdapterPairs)
 	packageLock.Unlock()
 
 	colliding := adapterNameCollisionSet(pairs)
+	defaultAnchor := ""
+	if len(metadataAnchor) > 0 {
+		defaultAnchor = metadataAnchor[0]
+	}
 
 	for _, fileName := range outputFileNames {
 		contentBytes, err := os.ReadFile(fileName)
@@ -314,7 +405,17 @@ func resolveAdapterNameMarkers(outputFileNames []string) {
 				continue
 			}
 
-			content = strings.ReplaceAll(content, marker, adapterResolvedName(structBase, interfaceTypeName, colliding))
+			resolvedName := adapterResolvedName(structBase, interfaceTypeName, colliding)
+			if defaultAnchor != "" {
+				if pair, ok := emittedAdapterPair(pairs, structBase, interfaceTypeName); ok {
+					anchorClass := emittedAdapterPairAnchors[adapterGroupKey(pair[0], pair[1])]
+					if anchorClass == "" {
+						anchorClass = defaultAnchor
+					}
+					resolvedName = anchorClass + "." + anchoredAdapterMemberName(pair, colliding)
+				}
+			}
+			content = strings.ReplaceAll(content, marker, resolvedName)
 		}
 
 		if err := os.WriteFile(fileName, []byte(content), 0644); err != nil {

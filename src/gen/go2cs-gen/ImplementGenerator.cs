@@ -364,6 +364,18 @@ public class ImplementGenerator : ISourceGenerator
                 foreach (string boxReceiverName in structDecl?.GetBoxReceiverMethodNames(compilation!) ?? [])
                     forwardReceivers[boxReceiverName] = "m_box"; // direct-ж primary form binds the box itself
 
+                // A referenced production struct can gain pointer-receiver methods from the current
+                // test compilation's friend bridge. Those extensions are syntax-local even though the
+                // struct declaration is metadata-only — which is exactly when the discovery above
+                // hands back (null, null), so this scan must use the CURRENT compilation, and must
+                // key on the SIMPLE name: the bridge spells its box parameter through the imported
+                // alias (`this ж<Replacer>`), never the fully-qualified symbol display.
+                if (structDecl is null)
+                {
+                    foreach (string boxReceiverName in StructDeclarationSyntaxExtensions.GetBoxReceiverMethodNames(structType.Name, syntaxContext.SemanticModel.Compilation))
+                        forwardReceivers[boxReceiverName] = "m_box";
+                }
+
                 // A FOREIGN struct (no local declaration — the pair is recorded locally because
                 // the defining package never converts it: os never casts *File to io.Reader, so
                 // fmt's Fscan(os.Stdin, …) has no exported adapter to reference — CS1503). Bind

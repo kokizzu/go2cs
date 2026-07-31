@@ -190,7 +190,11 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 
 	// An unexported type used as an exported struct field must be emitted as public (CS0051/
 	// CS0052). Set the access modifier for the type-kind emitter below to consume.
-	if v.isPublicizedType(typeSpec.Name) {
+	if v.options.testInlineTypeAccess {
+		// Bridge-owned named types carry accessibility inline. Their metadata anchor can be a
+		// different test class, where an accessibility-only partial would declare a second type.
+		v.pendingTypeAccess = generatedTypeScope(getSanitizedIdentifier(name)) + " "
+	} else if v.isPublicizedType(typeSpec.Name) {
 		v.pendingTypeAccess = "public "
 	}
 

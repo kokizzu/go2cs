@@ -632,6 +632,12 @@ func (v *Visitor) isPointerReceiverMethodCall(selectorExpr *ast.SelectorExpr) bo
 }
 
 func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context LambdaContext) string {
+	if base, ok := selectorExpr.X.(*ast.Ident); ok {
+		if _, isPackage := v.info.ObjectOf(base).(*types.PkgName); isPackage && v.whiteboxBridgeUse(selectorExpr.Sel) {
+			return v.whiteboxBridgeMember(selectorExpr.Sel)
+		}
+	}
+
 	// A Go method becomes a C# extension method on the receiver box (`Method(this ж<T>, …)`) emitted in
 	// its DEFINING package's class. C# only finds an extension method when that class's NAMESPACE is in
 	// scope. For a method whose receiver type lives in a sub-namespace package (e.g. `internal/runtime/
@@ -668,11 +674,17 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 		// qualifies the receiver type inside the delegate (`bufio.Reader`) — rather than peeling the
 		// Go source spelling: a dot-imported type is a BARE ident (`Reader`), not a `pkg.Type`
 		// selector, so the source-peel misses it and drops the qualifier.
-		if obj := sel.Obj(); obj != nil && obj.Pkg() != nil && obj.Pkg() != v.pkg {
+		if obj := sel.Obj(); obj != nil && obj.Pkg() != nil && (obj.Pkg() != v.pkg || v.whiteboxProductionObject(obj)) {
 			pkg := obj.Pkg()
 			aliasQualifier := importQualifier(pkg.Name())
 
-			if fileAlias, ok := v.importPathAliases[pkg.Path()]; ok && fileAlias != "" {
+			if v.whiteboxProductionObject(obj) {
+				aliasQualifier = "global::" + packageNamespace + "." + getSanitizedImport(v.options.testProductionName+PackageSuffix)
+			} else if v.whiteboxBridgeObject(obj) {
+				// A method VALUE bound to a bridge-declared method lives in the bridge class,
+				// not in the production package the object's Pkg() reports.
+				aliasQualifier = "global::" + packageNamespace + "." + v.options.testInternalBridgeName
+			} else if fileAlias, ok := v.importPathAliases[pkg.Path()]; ok && fileAlias != "" {
 				aliasQualifier = fileAlias
 			}
 

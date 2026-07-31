@@ -78,13 +78,20 @@ $pass = 0; $fail = 0; $failed = @(); $started = Get-Date
 # not from $?, so a non-terminating preference is the correct setting here.
 $ErrorActionPreference = 'Continue'
 
+# Packages whose C# suite legitimately exceeds the default package deadline. hash/maphash's
+# SMHasher matrix runs ~15 minutes in C# (7.6 s in Go — a performance gap, not a correctness one)
+# and was BANKED under 30m; at the default it reports a timeout with every test up to the cut
+# PASSING, which reads as a failure and costs an investigation every time.
+$longTimeouts = @{ 'hash/maphash' = '30m' }
+
 foreach ($row in $rows) {
     $pkg = $row.Package
     $outDir = Join-Path $src ('go-src-converted\' + ($pkg -replace '/', '\'))
     $goDir = Join-Path $goroot ('src\' + ($pkg -replace '/', '\'))
     $label = '{0,-34}' -f $pkg
+    $pkgTimeout = if ($longTimeouts.ContainsKey($pkg)) { $longTimeouts[$pkg] } else { $TestTimeout }
 
-    $out = & $exe -tests -test-action all -test-timeout $TestTimeout $goDir $outDir 2>&1
+    $out = & $exe -tests -test-action all -test-timeout $pkgTimeout $goDir $outDir 2>&1
     $verdict = ($out | Select-String 'Validated (\d+) tests against go test' | Select-Object -First 1)
 
     if ($verdict) {

@@ -249,7 +249,7 @@ public static class StructDeclarationSyntaxExtensions
             if (lastDot >= 0)
                 simpleTypeName = simpleTypeName.Substring(lastDot + 1);
 
-            if (simpleTypeName == property.Identifier.Text)
+            if (simpleTypeName == property.Identifier.Text || ShadowVarMarker + simpleTypeName == property.Identifier.Text)
                 hops.Add((property.Identifier.Text, typeText));
         }
 

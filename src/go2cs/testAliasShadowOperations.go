@@ -13,6 +13,7 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"golang.org/x/tools/go/packages"
 	"os"
 	"path/filepath"
 	"sort"
@@ -23,14 +24,14 @@ import (
 // in-package `_test.go` files. A direct directory scan keeps ordinary single-package retranspiles
 // fast: no test dependency graph or second go/packages type-check is needed. External-package tests
 // are deliberately excluded because their declarations emit into a different C# package class.
-func collectSiblingTestFuncMethodNames(packageDir, packageName string, options Options) []string {
+func collectSiblingTestFuncMethodNames(packageDir, packageName string, options Options) ([]string, bool) {
 	if packageDir == "" {
-		return nil
+		return nil, false
 	}
 
 	targetParts := strings.Split(options.targetPlatform, "/")
 	if len(targetParts) != 2 {
-		return nil
+		return nil, false
 	}
 
 	buildContext := build.Default
@@ -40,10 +41,11 @@ func collectSiblingTestFuncMethodNames(packageDir, packageName string, options O
 
 	entries, err := os.ReadDir(packageDir)
 	if err != nil {
-		return nil
+		return nil, false
 	}
 
 	names := HashSet[string]{}
+	hasInternal := false
 
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), "_test.go") {
@@ -61,6 +63,8 @@ func collectSiblingTestFuncMethodNames(packageDir, packageName string, options O
 			continue
 		}
 
+		hasInternal = true
+
 		for _, decl := range file.Decls {
 			if funcDecl, ok := decl.(*ast.FuncDecl); ok {
 				names.Add(funcDecl.Name.Name)
@@ -70,7 +74,7 @@ func collectSiblingTestFuncMethodNames(packageDir, packageName string, options O
 
 	result := names.Keys()
 	sort.Strings(result)
-	return result
+	return result, hasInternal
 }
 
 // testAliasShadowName reports the first imported-package alias in this statement whose
@@ -136,4 +140,131 @@ func (v *Visitor) writeTestAliasShadowComment(stmt ast.Stmt, contexts []StmtCont
 	v.targetFile.WriteString(fmt.Sprintf(
 		"// Fully qualified to avoid alias shadowing by the same-package test declaration %q.",
 		alias))
+}
+
+// collectWhiteboxInternalTestObjects captures every go/types object declared by an internal test
+// file. The internal and external variants share one go/packages load, so the external half can
+// recognize an export-test declaration by object identity even when imported export data has no Pos.
+func collectWhiteboxInternalTestObjects(pkg *packages.Package) map[types.Object]bool {
+	objects := map[types.Object]bool{}
+	if pkg == nil || pkg.TypesInfo == nil || pkg.Fset == nil {
+		return objects
+	}
+	for _, obj := range pkg.TypesInfo.Defs {
+		if obj == nil {
+			continue
+		}
+		fileName := pkg.Fset.Position(obj.Pos()).Filename
+		if strings.HasSuffix(strings.ToLower(fileName), "_test.go") {
+			objects[obj] = true
+		}
+	}
+	return objects
+}
+
+// whiteboxBridgeObject reports an internal-test object referenced from the external variant.
+func (v *Visitor) whiteboxBridgeObject(obj types.Object) bool {
+	if !v.options.testWhiteboxReference || !v.options.testExternalVariant || obj == nil ||
+		obj.Pkg() == nil || obj.Pkg().Path() != v.options.testProductionPath {
+		return false
+	}
+	if whiteboxInternalTestObjects[obj] {
+		return true
+	}
+	fileName := v.fset.Position(obj.Pos()).Filename
+	return strings.HasSuffix(strings.ToLower(fileName), "_test.go")
+}
+
+// whiteboxBridgeNamedType qualifies an internal-test type referenced by the external variant.
+// Type arguments render through the same constraint-proxy substitution the production twin
+// applies, so a generic bridge type instantiated over a proxied constraint spells both halves
+// consistently.
+func (v *Visitor) whiteboxBridgeNamedType(named *types.Named) (string, bool) {
+	if named == nil || !v.whiteboxBridgeObject(named.Obj()) {
+		return "", false
+	}
+	name := getSanitizedIdentifier(named.Obj().Name())
+	if typeArgs := named.TypeArgs(); typeArgs != nil && typeArgs.Len() > 0 {
+		args := make([]string, typeArgs.Len())
+		for i := 0; i < typeArgs.Len(); i++ {
+			if proxyName, ok := v.constraintProxyArg(named, i); ok {
+				args[i] = proxyName
+			} else {
+				args[i] = v.getTypeName(typeArgs.At(i), false)
+			}
+		}
+		name += "[" + strings.Join(args, ", ") + "]"
+	}
+	return "global::" + packageNamespace + "." + v.options.testInternalBridgeName + "." + name, true
+}
+
+// whiteboxProductionObject reports a production declaration while converting the internal
+// white-box bridge. go/packages presents production and internal-test declarations as one Go
+// package, but declaration position restores their different C# owners.
+func (v *Visitor) whiteboxProductionObject(obj types.Object) bool {
+	if !v.options.testWhiteboxReference || !v.options.testInlineTypeAccess || obj == nil ||
+		obj.Pkg() == nil || obj.Pkg().Path() != v.options.testProductionPath {
+		return false
+	}
+
+	fileName := v.fset.Position(obj.Pos()).Filename
+	return fileName != "" && !strings.HasSuffix(strings.ToLower(fileName), "_test.go")
+}
+
+// whiteboxProductionNamedType qualifies a production-declared type through its referenced class
+// before ordinary same-Go-package rendering can erase that owner.
+func (v *Visitor) whiteboxProductionNamedType(named *types.Named) (string, bool) {
+	if named == nil || !v.whiteboxProductionObject(named.Obj()) {
+		return "", false
+	}
+
+	obj := named.Obj()
+
+	name := getSanitizedIdentifier(obj.Name())
+	if typeArgs := named.TypeArgs(); typeArgs != nil && typeArgs.Len() > 0 {
+		args := make([]string, typeArgs.Len())
+		for i := 0; i < typeArgs.Len(); i++ {
+			if proxyName, ok := v.constraintProxyArg(named, i); ok {
+				args[i] = proxyName
+			} else {
+				args[i] = v.getTypeName(typeArgs.At(i), false)
+			}
+		}
+		name += "[" + strings.Join(args, ", ") + "]"
+	}
+
+	return "global::" + packageNamespace + "." + getSanitizedImport(v.options.testProductionName+PackageSuffix) + "." + name, true
+}
+
+// whiteboxBridgeUse reports an external test reference to an object contributed by the
+// package-under-test's internal _test.go files. Object identity and declaration position keep
+// production members and same-spelled unrelated declarations on their existing paths. A struct
+// FIELD is never bridge-qualified: its ident renders inside member-access and named-argument
+// positions (`new T(Field: v)`), where a class-qualified spelling is not legal C#.
+func (v *Visitor) whiteboxBridgeUse(ident *ast.Ident) bool {
+	if !v.options.testWhiteboxReference || !v.options.testExternalVariant || v.options.testInternalBridgeName == "" || v.info.Defs[ident] != nil {
+		return false
+	}
+
+	obj := v.info.ObjectOf(ident)
+
+	if varObj, ok := obj.(*types.Var); ok && varObj.IsField() {
+		return false
+	}
+
+	return v.whiteboxBridgeObject(obj)
+}
+
+func (v *Visitor) whiteboxBridgeMember(ident *ast.Ident) string {
+	name := getSanitizedIdentifier(v.getIdentName(ident))
+	switch v.info.ObjectOf(ident).(type) {
+	case *types.Func:
+		name = getSanitizedFunctionName(v.getIdentName(ident))
+		if testMethodRenames[v.info.ObjectOf(ident)] {
+			name = ShadowVarMarker + name
+		}
+	case *types.TypeName:
+		name = convertToCSTypeName(v.getIdentName(ident))
+	}
+	return v.options.testInternalBridgeName + "." + name
 }
