@@ -2731,15 +2731,20 @@ func referenceScanTargets(line string) []string {
 //     exported interface of every referenced package would hand io to almost the whole corpus
 //     through `fmt.State`'s structural io.Writer base — a reference no project that never names
 //     `fmt.State` requires.
-//   - The struct-field edge fires only where an ELEMENT-BEARING composite literal constructs the
-//     struct, because only that emission names the field types. Measured against the corpus in two
-//     steps: eleven banked packages hold `sync.Once`/`sync.Map`/`reflect.Value` VALUES (strconv's
-//     package-level `atofOnce`, encoding/binary's `reflect.ValueOf`) and compile clean today with
-//     no sync/atomic or internal/abi reference, so mere value use demands nothing; three more
-//     (encoding/binary, mime, testing/quick) construct those same types with an EMPTY literal —
-//     `once = sync.Once{}`, `return reflect.Value{}, false` — which converts to
-//     `new Δsync.Once(nil)`, go2cs-gen's dedicated nil constructor, naming no field either. A
-//     one-level edge suffices for the same reason: the fieldwise constructor's parameters are
+//   - The struct-field edge fires where a composite literal constructs the struct, and an EMPTY
+//     literal only when the struct is declared in a ROOT package. Measured against the corpus in
+//     three steps: eleven banked packages hold `sync.Once`/`sync.Map`/`reflect.Value` VALUES
+//     (strconv's package-level `atofOnce`, encoding/binary's `reflect.ValueOf`) and compile clean
+//     today with no sync/atomic or internal/abi reference, so mere value use demands nothing;
+//     three more (encoding/binary, mime, testing/quick) construct those same FOREIGN types with an
+//     EMPTY literal — `once = sync.Once{}`, `return reflect.Value{}, false` — and also compile
+//     clean, because the fieldwise constructor is `internal` for any struct with an unexported
+//     field and so is not even a resolution candidate outside its assembly and friends; but a ROOT
+//     package's struct IS visible that way (recompiled into the test assembly, or reached through
+//     the white-box `InternalsVisibleTo` grant), so its empty literal must carry the edge —
+//     math/rand/v2's `*p = ChaCha8{}` renders `new ChaCha8(nil)` and still fails
+//     `CS0012 … 'chacha8rand_package.State'` while resolving against the internal fieldwise
+//     overload. A one-level edge suffices throughout: the fieldwise constructor's parameters are
 //     `default` unless supplied, and a NESTED literal is itself a seed.
 //
 // `testing` is skipped as a walk SOURCE (closureWalkable): it binds to the hand-owned core/testing
@@ -2803,9 +2808,29 @@ func declarationClosureImports(roots []*packages.Package, compileExcluded map[st
 	// `<pkg>_test`, which resolves to no importable package at all — a `bytes_test` struct literal
 	// whose field type is declared beside it would fail the conversion outright ("package
 	// bytes_test is not in std"), by design (F14b: a dependency that cannot resolve is loud).
+	rootPaths := HashSet[string]{}
+
 	for _, root := range roots {
 		if root != nil {
 			seen.Add(root.PkgPath)
+			rootPaths.Add(root.PkgPath)
+		}
+	}
+
+	// The fieldwise-constructor edge. One level, and never recursive on its own account: an
+	// interface field still joins the base walk, and a nested literal is its own seed.
+	fieldEdge := func(named *types.Named) {
+		structType, isStruct := named.Underlying().(*types.Struct)
+
+		if !isStruct || !closureWalkable(named) {
+			return
+		}
+
+		for i := range structType.NumFields() {
+			for _, mentioned := range namedTypesIn(structType.Field(i).Type()) {
+				reach(mentioned)
+				enqueue(mentioned)
+			}
 		}
 	}
 
@@ -2816,21 +2841,32 @@ func declarationClosureImports(roots []*packages.Package, compileExcluded map[st
 			enqueue(named)
 		}
 
-		// The fieldwise-constructor edge. One level, and never recursive on its own account: an
-		// interface field still joins the base walk, and a nested literal is its own seed.
 		for _, named := range seeds.constructed {
-			structType, isStruct := named.Underlying().(*types.Struct)
+			fieldEdge(named)
+		}
 
-			if !isStruct || !closureWalkable(named) {
+		// The EMPTY-literal form of the same edge, scoped to the ROOT packages. `T{}` converts to
+		// `new T(nil)` — go2cs-gen's dedicated nil constructor, which names no field — but the
+		// FIELDWISE overload remains a resolution candidate whenever it is ACCESSIBLE, and
+		// binding a candidate's signature is what demands its parameter assemblies. That
+		// constructor is `internal` for any struct with an unexported field, so it is a candidate
+		// exactly in the declaring assembly and its FRIENDS: a root package's types either
+		// recompile into the test assembly or are reached through the white-box
+		// `InternalsVisibleTo` grant, so both make it visible. math/rand/v2's `*p = ChaCha8{}`
+		// failed `CS0012 … 'chacha8rand_package.State' … assembly that is not referenced` at the
+		// `new ChaCha8(nil)` expression for exactly that reason, with internal/chacha8rand in no
+		// import list on either side. A FOREIGN struct's internal constructor is invisible here,
+		// which is the measured negative that keeps this edge root-scoped: mime's
+		// `once = sync.Once{}` and testing/quick's `return reflect.Value{}, false` compile clean
+		// today with no sync/atomic or internal/abi reference, and must stay that way.
+		for _, named := range seeds.constructedEmpty {
+			object := named.Obj()
+
+			if object == nil || object.Pkg() == nil || !rootPaths.Contains(object.Pkg().Path()) {
 				continue
 			}
 
-			for i := range structType.NumFields() {
-				for _, mentioned := range namedTypesIn(structType.Field(i).Type()) {
-					reach(mentioned)
-					enqueue(mentioned)
-				}
-			}
+			fieldEdge(named)
 		}
 	}
 
@@ -2922,12 +2958,15 @@ func namedTypesIn(typ types.Type) []*types.Named {
 	return result
 }
 
-// typeSeeds carries the two seed sets declarationClosureImports takes from one compilation unit:
+// typeSeeds carries the seed sets declarationClosureImports takes from one compilation unit:
 // every named type its compiled files MENTION (what an interface base edge starts from) and the
 // named types a composite literal CONSTRUCTS (what the fieldwise-constructor edge starts from).
+// The constructed set is split by whether the literal bears elements, because only the EMPTY form
+// depends on the fieldwise constructor's ACCESSIBILITY (see declarationClosureImports).
 type typeSeeds struct {
-	named       []*types.Named
-	constructed []*types.Named
+	named            []*types.Named
+	constructed      []*types.Named
+	constructedEmpty []*types.Named
 }
 
 // referencedTypeSeeds collects those seeds from the files the test assembly actually COMPILES.
@@ -2976,17 +3015,17 @@ func referencedTypeSeeds(pkg *packages.Package, compileExcluded map[string]bool)
 
 				add(literalType)
 
-				// Only an ELEMENT-BEARING literal calls the fieldwise constructor. The EMPTY
+				// An ELEMENT-BEARING literal calls the fieldwise constructor outright. The EMPTY
 				// literal — Go's zero value — converts to `new Δsync.Once(nil)`, go2cs-gen's
-				// dedicated nil constructor, whose signature names no field at all; that is why
-				// mime's `once = sync.Once{}` and testing/quick's `return reflect.Value{}, false`
-				// compile clean today with no reference to sync/atomic or internal/abi.
-				if len(typed.Elts) == 0 {
-					break
-				}
-
+				// dedicated nil constructor, but the fieldwise overload is still a RESOLUTION
+				// CANDIDATE wherever it is accessible; that distinction is the caller's
+				// (declarationClosureImports' root-scoped empty-literal edge).
 				if named, ok := types.Unalias(literalType).(*types.Named); ok {
-					seeds.constructed = append(seeds.constructed, named)
+					if len(typed.Elts) == 0 {
+						seeds.constructedEmpty = append(seeds.constructedEmpty, named)
+					} else {
+						seeds.constructed = append(seeds.constructed, named)
+					}
 				}
 			}
 

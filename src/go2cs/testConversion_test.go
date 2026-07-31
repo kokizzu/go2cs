@@ -984,9 +984,19 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 		// those field types' assemblies.
 		"use/main.go": "package use\nimport \"example/field/cfg\"\nfunc Use() int {\n\tc := cfg.Default()\n\treturn c.MaxCount\n}\n",
 		// Constructs it with the EMPTY (zero-value) literal, which converts to go2cs-gen's nil
-		// constructor — `new Config(nil)` — naming no field. mime's `once = sync.Once{}` and
-		// testing/quick's `return reflect.Value{}, false` are the corpus instances.
+		// constructor — `new Config(nil)` — naming no field. The FIELDWISE overload is `internal`
+		// (Config's package is not this assembly nor its friend), so it is not even a resolution
+		// candidate here. mime's `once = sync.Once{}` and testing/quick's
+		// `return reflect.Value{}, false` are the corpus instances.
 		"zero/main.go": "package zero\nimport \"example/field/cfg\"\nfunc Use() cfg.Config { return cfg.Config{} }\n",
+		// The ROOT-package counterpart: the struct is declared in the package under conversion, so
+		// its `internal` fieldwise constructor IS a candidate (same assembly under recompile, a
+		// friend assembly under white-box) and resolving `new Holder(nil)` binds every parameter
+		// type. math/rand/v2's `*p = ChaCha8{}` is the corpus instance.
+		"root/root.go": "package root\n" +
+			"import \"math/rand\"\n" +
+			"type Holder struct{ R *rand.Rand }\n" +
+			"func Zero() Holder { return Holder{} }\n",
 	}
 	writeModuleFiles(t, fieldDir, fieldFiles)
 
@@ -1002,7 +1012,12 @@ func TestDeclarationClosureImportsSurfacesForeignDeclarationEdges(t *testing.T) 
 
 	zero := loadProductionForDir(t, filepath.Join(fieldDir, "zero"))
 	if got := declarationClosureImports([]*packages.Package{zero}, nil, []string{"example/field/cfg"}); len(got) != 0 {
-		t.Fatalf("the EMPTY literal converts to the nil constructor and names no field; got %v", got)
+		t.Fatalf("a FOREIGN struct's EMPTY literal resolves against no accessible fieldwise constructor; got %v", got)
+	}
+
+	rootZero := loadProductionForDir(t, filepath.Join(fieldDir, "root"))
+	if got := declarationClosureImports([]*packages.Package{rootZero}, nil, nil); len(got) != 1 || got[0] != "math/rand" {
+		t.Fatalf("a ROOT struct's EMPTY literal still resolves against its accessible fieldwise constructor; got %v", got)
 	}
 
 	// A field's FUNC signature names types just as a plain field does: the fieldwise constructor's
