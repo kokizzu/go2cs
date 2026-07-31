@@ -763,6 +763,19 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			return result, err
 		}
 
+		// A FUNCTION-LOCAL type declared by an internal _test.go emits under its LIFTED
+		// package-level name (`TestEncoderDecoder_r`), which the go/types declared-name scan above
+		// cannot know: it sees the Go-source name (`r`). The record split keys on the EMITTED
+		// name, so union the internal variant's live lift claims in before the split runs — they
+		// are still standing here, the next variant's resetPackageState is what clears them.
+		// Without this the record anchors in the EXTERNAL test class and the generator declares a
+		// PHANTOM empty type there instead of merging with the bridge's real declaration
+		// (encoding/hex: CS0103 on the phantom's missing embed, CS0034 from the phantom's missing
+		// TypeGenerator `==`, and CS1503 at the cast site — see splitWhiteboxVariantRecords).
+		if model == testProjectWhiteboxReference && variant == internal {
+			whiteboxBridgeTypeNames.UnionWithSet(packageLiftedTypeNames)
+		}
+
 		// Merge this variant's collected metadata globals while they are still live (the next
 		// variant's conversion resets them). Under the RECOMPILE model the EXTERNAL variant's
 		// records are split across TWO anchor files (B4/B5): records whose generated code must
