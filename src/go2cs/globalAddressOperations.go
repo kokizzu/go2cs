@@ -31,6 +31,17 @@ var packageAddressedGlobals map[types.Object]bool
 // explicitly address-taken global. Runs after collectCaptureModeMethods, so the capture-mode
 // set is populated.
 func collectAddressedGlobals(files []FileEntry, pkg *types.Package, info *types.Info) {
+	// Seed with the globals the package's own in-package `_test.go` half addresses. Those files are
+	// absent from a production go/packages load, but their `&g` still has to alias g's real storage,
+	// and only the production emission can declare the box (siblingTestAddressedGlobalNames). The
+	// scan is name-based and type-check-free, so resolve each candidate here — anything that is not
+	// a package-level var in the real scope is dropped.
+	for _, name := range siblingTestAddressedGlobalNames {
+		if varObj, ok := pkg.Scope().Lookup(name).(*types.Var); ok {
+			packageAddressedGlobals[varObj] = true
+		}
+	}
+
 	for _, fileEntry := range files {
 		ast.Inspect(fileEntry.file, func(n ast.Node) bool {
 			switch node := n.(type) {

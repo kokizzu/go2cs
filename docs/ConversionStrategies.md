@@ -1113,12 +1113,14 @@ type List struct {                    // container/list/list.go
 ```
 
 Inline/anonymous types are "lifted" out (a local `type x struct{…}` in `main` → `main_x`; an anonymous
-struct → `settingsᴛ1`). The empty `struct{}` maps to the shared golib `EmptyStruct`, and an empty
-`interface{}` field to `any` — neither is lifted.
+struct → `settingsᴛ1`) from **any depth** of the declared type — `[]*struct{…}` and `map[K]*struct{…}`
+lift exactly as a bare `struct{…}` does. The empty `struct{}` maps to the shared golib `EmptyStruct`,
+and an empty `interface{}` field to `any` — neither is lifted.
 
 **Full detail:** [Reference → Struct Types](ConversionStrategies-Reference.md#struct-types) — field-name
-collisions in generated equality, combined field lines, local/anonymous-type lifting (including map-value
-and slice-element structs), and recorded implicit conversions between structurally-identical anon structs.
+collisions in generated equality, combined field lines, local/anonymous-type lifting (and the recursive
+descent that reaches an anonymous type through pointer/slice/map/channel composition), and recorded
+implicit conversions between structurally-identical anon structs.
 
 ---
 

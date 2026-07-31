@@ -20,18 +20,38 @@ import (
 	"strings"
 )
 
-// collectSiblingTestFuncMethodNames returns the function/method names declared by build-selected
-// in-package `_test.go` files. A direct directory scan keeps ordinary single-package retranspiles
-// fast: no test dependency graph or second go/packages type-check is needed. External-package tests
-// are deliberately excluded because their declarations emit into a different C# package class.
-func collectSiblingTestFuncMethodNames(packageDir, packageName string, options Options) ([]string, bool) {
+// siblingTestSignals carries what a PRODUCTION conversion must know about the package's build-
+// selected in-package `_test.go` half. Those files compile into the same C# package class (or, under
+// the white-box model, into a friend bridge over it), so they can shadow a production import alias
+// and can take the address of a production package-level var — neither of which the production
+// package go/packages loads can see, because it excludes `_test.go` entirely.
+type siblingTestSignals struct {
+	// funcMethodNames are the package-level function/method declarator names (see
+	// siblingTestFuncMethodNames).
+	funcMethodNames []string
+
+	// addressedGlobalNames are the identifiers whose address the test half takes and that the test
+	// file itself does not declare — candidate production package-level vars (see
+	// siblingTestAddressedGlobalNames).
+	addressedGlobalNames []string
+
+	// hasInternalTests reports whether any build-selected in-package `_test.go` file exists.
+	hasInternalTests bool
+}
+
+// collectSiblingTestSignals scans the build-selected in-package `_test.go` files for the signals a
+// production conversion needs (see siblingTestSignals). A direct directory scan keeps ordinary
+// single-package retranspiles fast: no test dependency graph or second go/packages type-check is
+// needed. External-package tests are deliberately excluded — their declarations emit into a
+// different C# package class, and they can only reach the package through its exported surface.
+func collectSiblingTestSignals(packageDir, packageName string, options Options) siblingTestSignals {
 	if packageDir == "" {
-		return nil, false
+		return siblingTestSignals{}
 	}
 
 	targetParts := strings.Split(options.targetPlatform, "/")
 	if len(targetParts) != 2 {
-		return nil, false
+		return siblingTestSignals{}
 	}
 
 	buildContext := build.Default
@@ -41,10 +61,11 @@ func collectSiblingTestFuncMethodNames(packageDir, packageName string, options O
 
 	entries, err := os.ReadDir(packageDir)
 	if err != nil {
-		return nil, false
+		return siblingTestSignals{}
 	}
 
 	names := HashSet[string]{}
+	addressed := HashSet[string]{}
 	hasInternal := false
 
 	for _, entry := range entries {
@@ -70,11 +91,148 @@ func collectSiblingTestFuncMethodNames(packageDir, packageName string, options O
 				names.Add(funcDecl.Name.Name)
 			}
 		}
+
+		collectSiblingAddressedNames(file, addressed)
 	}
 
-	result := names.Keys()
-	sort.Strings(result)
-	return result, hasInternal
+	signals := siblingTestSignals{
+		funcMethodNames:      names.Keys(),
+		addressedGlobalNames: addressed.Keys(),
+		hasInternalTests:     hasInternal,
+	}
+
+	sort.Strings(signals.funcMethodNames)
+	sort.Strings(signals.addressedGlobalNames)
+	return signals
+}
+
+// collectSiblingAddressedNames records every identifier an in-package test file takes the address of
+// (`&g`, `&g.field`, `&g[i]`) that the file does not itself bind. Deliberately name-based and
+// type-check-free: the production pass resolves each candidate against the real package scope, so a
+// name that is not a package-level var there is simply dropped. Names bound anywhere inside the
+// enclosing top-level declaration — receiver, parameters, results, `:=`, `var`/`const`/`type`, range
+// and type-switch bindings, at any nesting depth — are excluded, which errs toward recording nothing
+// rather than boxing a global a test never addressed.
+func collectSiblingAddressedNames(file *ast.File, into HashSet[string]) {
+	declared := HashSet[string]{}
+
+	for _, decl := range file.Decls {
+		switch typed := decl.(type) {
+		case *ast.FuncDecl:
+			declared.Add(typed.Name.Name)
+		case *ast.GenDecl:
+			for _, spec := range typed.Specs {
+				switch specTyped := spec.(type) {
+				case *ast.ValueSpec:
+					for _, ident := range specTyped.Names {
+						declared.Add(ident.Name)
+					}
+				case *ast.TypeSpec:
+					declared.Add(specTyped.Name.Name)
+				}
+			}
+		}
+	}
+
+	for _, decl := range file.Decls {
+		// A package-level `var LstatP = &lstat` (path/filepath's export_test.go) binds nothing, so
+		// the file's own declarators are the whole exclusion set for it.
+		local := siblingBoundNames(decl)
+		local.UnionWithSet(declared)
+
+		ast.Inspect(decl, func(node ast.Node) bool {
+			unary, ok := node.(*ast.UnaryExpr)
+
+			if !ok || unary.Op != token.AND {
+				return true
+			}
+
+			// Peel field selectors and index expressions down to the root operand, exactly as
+			// collectAddressedGlobals does: &G.X and &G[i] both make G escape.
+			root := unary.X
+
+			for {
+				switch expr := root.(type) {
+				case *ast.SelectorExpr:
+					root = expr.X
+					continue
+				case *ast.IndexExpr:
+					root = expr.X
+					continue
+				case *ast.ParenExpr:
+					root = expr.X
+					continue
+				}
+
+				break
+			}
+
+			if ident, isIdent := root.(*ast.Ident); isIdent && !local.Contains(ident.Name) {
+				into.Add(ident.Name)
+			}
+
+			return true
+		})
+	}
+}
+
+// siblingBoundNames returns every identifier bound by a declaration or statement anywhere inside the
+// given node — the conservative "this is a local, not a package-level var" filter of
+// collectSiblingAddressedNames.
+func siblingBoundNames(node ast.Node) HashSet[string] {
+	bound := HashSet[string]{}
+
+	addField := func(fields *ast.FieldList) {
+		if fields == nil {
+			return
+		}
+
+		for _, field := range fields.List {
+			for _, ident := range field.Names {
+				bound.Add(ident.Name)
+			}
+		}
+	}
+
+	ast.Inspect(node, func(inner ast.Node) bool {
+		switch typed := inner.(type) {
+		case *ast.FuncDecl:
+			addField(typed.Recv)
+		case *ast.FuncType:
+			addField(typed.Params)
+			addField(typed.Results)
+		case *ast.ValueSpec:
+			for _, ident := range typed.Names {
+				bound.Add(ident.Name)
+			}
+		case *ast.TypeSpec:
+			bound.Add(typed.Name.Name)
+		case *ast.AssignStmt:
+			if typed.Tok != token.DEFINE {
+				return true
+			}
+
+			for _, lhs := range typed.Lhs {
+				if ident, ok := lhs.(*ast.Ident); ok {
+					bound.Add(ident.Name)
+				}
+			}
+		case *ast.RangeStmt:
+			if typed.Tok != token.DEFINE {
+				return true
+			}
+
+			for _, expr := range []ast.Expr{typed.Key, typed.Value} {
+				if ident, ok := expr.(*ast.Ident); ok {
+					bound.Add(ident.Name)
+				}
+			}
+		}
+
+		return true
+	})
+
+	return bound
 }
 
 // testAliasShadowName reports the first imported-package alias in this statement whose

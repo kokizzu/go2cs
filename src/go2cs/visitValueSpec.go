@@ -390,17 +390,15 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					// the explicit-type path used for uninitialized vars.
 					if !v.inFunction && valueSpec.Type == nil {
 						if compositeLit, ok := valueSpec.Values[i].(*ast.CompositeLit); ok {
+							// The literal's type is composed, so the struct can sit at any depth inside it: a
+							// slice/array ELEMENT, a map VALUE (crypto/internal/hpke's `var SupportedKEMs =
+							// map[uint16]struct{…}{…}`), or either of those through a pointer (net's `var
+							// ipStringTests = []*struct{…}{…}`). Lifting it up front under the var's name is
+							// what lets both the declaration type (getCSTypeName → getTypeName) and the literal
+							// type (convMapType/getExprTypeName) resolve through liftedTypeMap to the lifted
+							// name; without it the raw Go `struct{…}` syntax lands in the C# type and does not
+							// parse. Keyed element literals stay the target-typed `new(…)` ctor form.
 							if subStructType, exprType := v.extractStructType(compositeLit.Type); subStructType != nil && !v.liftedTypeExists(subStructType) {
-								v.visitStructType(subStructType, exprType, csIDName, valueSpec.Comment, true, nil)
-							} else if subStructType, exprType := v.extractMapValueStructType(compositeLit.Type); subStructType != nil && !v.liftedTypeExists(subStructType) {
-								// A map literal whose VALUE type is an anonymous struct (crypto/internal/hpke's
-								// `var SupportedKEMs = map[uint16]struct{…}{…}`): lift the value struct up front so
-								// both the declaration type (getCSTypeName → getTypeName's Map arm) and the literal
-								// type (convMapType → getExprTypeName) resolve it through liftedTypeMap to the lifted
-								// name (`map<uint16, SupportedKEMsᴛ1>`), instead of emitting the value's raw Go
-								// `struct{…}` syntax into the C# map signature — which does not parse (a
-								// CS1519/CS1003 cascade). Mirrors the slice/array element-struct lift above; the
-								// keyed element literals stay the target-typed `new(…)` ctor form.
 								v.visitStructType(subStructType, exprType, csIDName, valueSpec.Comment, true, nil)
 							}
 						} else if callExpr, ok := valueSpec.Values[i].(*ast.CallExpr); ok && len(callExpr.Args) == 1 {

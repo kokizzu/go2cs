@@ -10,6 +10,11 @@
 > `crypto/md5`, `compress/flate`, `image/jpeg` and `index/suffixarray` banks:
 > **68 validated / 215 (31.6%)**.
 >
+> **Revised again 2026-07-31** by the build-blocker arc: `path/filepath` and `net` — the last two
+> unrooted build blockers — are both fixed at the converter, and both rows moved down into their own
+> sections with what stood behind them. Neither package banks, and the roster is unchanged at 66; a
+> build blocker closing is worth recording precisely because the *next* wall is now measurable.
+>
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
 > that were stated as "measured" did not survive re-measurement on a freshly built converter.
@@ -80,8 +85,75 @@ those arcs rather than folded into the test-project-model change.
 | ~~`index/suffixarray`~~ | ~~`CS0206: A non ref-returning property or indexer may not be used as an out or ref value`~~ | **DONE 2026-07-31 — 12/12, banked.** TWO go2cs-gen defects, stacked, both general. `suffixarray_test.go` declares `type index Index` — a defined type over the production struct — and Go gives it `Index`'s field set. (1) `GetStructDeclaration` resolves an underlying struct only from SOURCE, and a real MSBuild `<ProjectReference>` arrives as compiled METADATA, so under the white-box model NO members were forwarded and every `x.sa`/`x.data` was CS1061; a symbol-based fallback now resolves it, forwarding what `IsSymbolAccessibleWithin` permits — Go's exported/unexported rule projected into C#. (2) The forward was a get/set property, i.e. a VALUE, so `x.sa.len()` (a `this ref` receiver) and `&x.sa` could not bind — this row's original CS0206. It is now an `[UnscopedRef]` REF-returning property, a strict superset. Fixing (1) alone collapsed the CS1061 wall onto exactly the CS0206 recorded here: root-cause layering, the first diagnostic moving rather than clearing. Full rule: `docs/ConversionStrategies-Reference.md`, *The forwarded member must be a VARIABLE, and the underlying may be METADATA-ONLY*; guarded by the `DefinedTypeOverForeignStruct` behavioral test (whose A/B reproduces CS1061 and CS0206 separately). ⚠ `TestNew{32,64}/exhaustive3` run ~35 min in C# vs 12.4 s in Go — a performance gap, not a correctness one; `run-validated-sweep.ps1` gives the package a 60m deadline. |
 | ~~`internal/zstd`~~ | ~~`CS1929: 'testing_package.B' … 'Cleanup'`~~ | **DONE 2026-07-27 — 534/534, banked.** The `common` members are on `core/testing`'s `B`; see the retraction below. |
 | ~~`crypto/md5`~~ | ~~`CS0030: Cannot convert type 'System.Type' to 'uint'`~~ | **DONE 2026-07-31 — 11/11 (1 alloc-profile disclosure), banked.** TWO defects, both general. `unsafe.Alignof`/`Offsetof` built their `System.Type` argument by splitting the CONVERTED C# text on `.` as though it were a Go field selector, so `unsafe.Alignof(uint32(0))` emitted `(uint32)0.GetType()` — which C# parses as `(uint32)(0.GetType())`. Both now resolve the operand through `go/types` and emit `typeof(T)`. Behind it stood a second: `buf := buf` in `benchmarkSize` reads a package-level `buf` declared in `md5_test.go`, and the shadowed-global qualifier named the PRODUCTION class (`md5_package.buf`, CS0117) rather than the white-box bridge class that actually declares it. |
-| `path/filepath` | `CS0103: The name 'ßÅælstat' does not exist` | a mangled identifier — encoding of a non-ASCII or symbol-marked name |
-| `net` | `CS1031: Type expected` | a hard syntax error in emission |
+| ~~`path/filepath`~~ | ~~`CS0103: The name 'ßÅælstat' does not exist`~~ | **Build blocker CLOSED 2026-07-31 — see below. NOT banked: splits 34 / 55.** |
+| ~~`net`~~ | ~~`CS1031: Type expected`~~ | **Syntax cascade CLOSED 2026-07-31 — see below. Still does not compile: 94 SEMANTIC errors stood behind it.** |
+
+### `path/filepath` — build blocker closed; 34 of 55 pass; three runtime roots remain
+
+The name was never mangled. `ßÅæ` is the bytes `E1 8F 91` rendered in **cp437** — the UTF-8 encoding
+of `U+13D1 Ꮡ`, the `AddressPrefix` marker. The missing symbol is `Ꮡlstat`, the heap box for
+`path.go`'s `var lstat = os.Lstat // for testing`, whose address `export_test.go` takes
+(`var LstatP = &lstat`, the hook that lets a test swap the implementation `Walk` calls).
+`go/packages` excludes `_test.go` from a production package, so the production emission never saw the
+address-taking and left `lstat` a plain field, while the test variant emitted `Ꮡlstat`. Fixed
+generally: the converter now scans the build-selected in-package `_test.go` half for addressed
+globals and folds them into `packageAddressedGlobals` — in ordinary and `-tests` conversion alike, so
+production storage shape stays mode-stable. Rule, the three properties that keep it safe, and the
+`SiblingTestAddressedGlobal` guard: [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md),
+*A global addressed only by the package's own `_test.go` is still heap-boxed*.
+
+Its reach is wider than filepath. A whole-stdlib A/B put the footprint at **13 globals in 13 files,
+every one a Go "for testing" hook** and no false positives: `os`'s `lstat` /
+`testingForceReadDirLstat` / `allowReadDirFileID`, `runtime`'s `readRandomFailed` / `useAeshash` /
+`doubleCheckReadMemStats` / `casgstatusAlwaysTrack` / `forcegcperiod` / `timeBeginPeriodRetValue`,
+`reflect`'s `callGC`, `internal/poll`'s `logInitFD`, `net/http`'s `maxWriteWaitBeforeConnReuse` and
+`testHookEnterRoundTrip`, and `time`'s `usPacific`. Those are exactly the hooks `os`, `runtime`,
+`reflect`, `net/http`, `internal/poll` and `time` need aliasing real storage before their own suites
+can pass — so this is prerequisite work already banked for six future arcs, not filepath-local cost.
+
+filepath now **builds with 0 errors and the host runs**. Measured per test in isolation (a single
+suite run under-reports — see the warning below): **34 pass, 21 fail**. The failures reach two entry
+points plus one standalone:
+
+| Root | Reached via | Note |
+|:--|:--|:--|
+| `os.runtime_rand` unimplemented | `os.MkdirTemp` → `nextRandom` → `testenv.MustHaveSymlink` / `initWinHasSymlink` | The **same root the `io` row names** — owned by the `os` operational arc. Go *skips* these tests for want of symlink privilege; C# infrastructure-errors before `testenv` can decide, so clearing this likely converts most of them to matching **skips** rather than passes. |
+| Win32 `FindFirstFile` struct marshalling | `EvalSymlinks` → `toNorm` → `normBase` → `syscall.FindFirstFile` | `findFirstFile1` hands `(uintptr)new @unsafe.Pointer(Ꮡdata)` to the raw `Syscall`, and the kernel writes a 592-byte `WIN32_FIND_DATAW` over a C# struct whose `[MAX_PATH]uint16` field is an `array<uint16>` — an 8-byte **managed reference**, not inline storage. The write clobbers that reference, so the next read is an `IndexOutOfRangeException` in `PinnedBuffer` or a hard **AccessViolation (0xC0000005)** that kills the host. A marshalling layer for syscall structs (or a hand-owned `FindFirstFile`) is the general fix. **New root, no owner yet.** |
+| `runtime.gogetenv` — `fatal error: getenv before env init` | `testenv.GOROOT` → `runtime.GOROOT` | `runtime.envs` is never populated (Go fills it in `goenvs` during scheduler init); `throw` then re-faults on the unimplemented `getcallerpc`. Only `TestBug3486` here, but it gates every `testenv.GOROOT` consumer. |
+
+⚠ Because of root 2's AccessViolation, **one full-suite run under-reports badly**: the host dies
+mid-`TestDriveLetterInEvalSymlinks` and every later verdict reads `C#=""`, which presents as a mass
+infrastructure wall rather than one crash. Bucket filepath per test until that root is fixed.
+
+### `net` — syntax cascade closed; 94 semantic errors remain
+
+`CS1031` was one defect with a ~90-error blast radius, and it was not about `net` at all: the
+anonymous-struct lift probe descended exactly **one** level of the declared type, so `[]struct{…}`
+lifted and `[]*struct{…}` did not. `ip_test.go`'s `var ipStringTests = []*struct{ in IP; str string;
+byt []byte; error }{…}` therefore emitted raw Go type text into the C# declaration. (The shape had
+stayed hidden because a composed occurrence still resolves when some *other* declaration registered
+the identical signature first; the embedded `error` makes this signature unique.) The probe is now a
+recursive descent over the type-composing syntax — pointer, array/slice element, `...T`, parens, map
+value then key, channel element — shared by the struct and interface extractors, and the separate
+one-off map-value probe it subsumes was deleted. Rule + the `AnonStructComposedTypes` guard:
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *An anonymous struct
+lifts from ANY depth of its declared type*. **Zero syntax errors remain in `net`** — no
+CS1031/CS1003/CS1519/CS1002/CS1513.
+
+`net` still does not compile. What the cascade was hiding, bucketed — charter §9's layering lesson in
+its purest form, since Roslyn skips method-body binding while declaration errors stand:
+
+| Count | Code | Root |
+|--:|:--|:--|
+| 52 | CS0426 | `The type name 'ConnᴠReader' does not exist in the type 'net_test_package'`. The ᴠ value-adapter for a **production↔production** pair (`net.Conn` → `io.Reader`) is generated into the PRODUCTION class, but an external-test use site qualifies it with the TEST class. One root, in test-project-model record anchoring (`splitExternalVariantRecords`); 55% of all remaining errors. |
+| 14 | CS1929 | Two shapes: `core/testing`'s `T` declares no `Deadline` (so a same-named `contextWithNonZeroDeadline` extension is offered instead), and `socktest.Switch` methods want a `ж<Switch>` receiver where a value is supplied. |
+| 6 | CS8130 | deconstruction of a result whose type did not bind |
+| 4 each | CS1061 / CS8183 / CS8917 | member lookup, `var`-in-deconstruction inference, delegate-type inference |
+| 2 each | CS1501 / CS1503 / CS0029 / CS8934 | arity; `ж<AddrError>` → `error`; a `(ctx, cancel)` tuple assigned to `Context`; lambda return type |
+
+Rooting those is the next `net` increment. Note `net`'s own init gap (the `sync.OnceFunc` nil panic at
+`fd_windows.cs:27`) sits behind all of it, and the Tier-0 channel/rendezvous frog behind that — so
+compiling is the realistic near-term goal, not validating.
 
 ## Runtime failures
 
@@ -92,6 +164,40 @@ those arcs rather than folded into the test-project-model change.
 | ~~`image/gif`~~ | **DONE 2026-07-31 — 28/28, banked.** `TestWriter` was the blank-import module-initializer gap and nothing else: with `_ "image/png"`'s `init()` forced, the PNG decoder registers and `image.Decode` reads `../testdata/video-001.png`. No `image/gif` defect existed. |
 | `image/png` | probed previously; does not validate |
 | ~~`image/draw`~~ | **DONE 2026-07-31 — 9/9, banked.** All four failures were two defects, both fixed at the root. `TestDraw` was the address-taken *value parameter* box-copy: `DrawMask`'s `clip(dst, &r, src, &sp, mask, &mp)` narrows all three in place, and `Ꮡ(r)` boxed a COPY, so the draw loop ran on the unclipped rectangle. (The empty-`Pix` panic above was that same unclipped geometry, not an assertion defect — the guess in this row was wrong.) The other three were value adapters carrying no Go dynamic type, so `image.Image` type switches took the wrong arm. |
+
+## Open — mode-unstable production emission (`encoding/base64`, found 2026-07-31)
+
+A validated sweep reports CONTENT drift on `src/go-src-converted/encoding/base64/base64.cs`, 6 lines
+each way, and it is **not** a regression — it is a *mode* disagreement, attributed by A/B and left
+open deliberately:
+
+```
+- public static ж<Encoding> WithPadding(this Encoding enc, rune padding) {
+-     enc = enc.ΔClone();                     …     return Ꮡ(enc);
++ public static ж<Encoding> WithPadding(this Encoding encʗp, rune padding) {
++     ref var enc = ref heap(encʗp.ΔClone(), out var Ꮡenc);   …     return Ꮡenc;
+```
+
+That is the address-taken value-**receiver** heap box (`markAddressTakenBoxedReceiver`, landed
+2026-07-31). The attribution is three measurements, not a guess: a whole-stdlib `-stdlib` reconvert
+with the r27 converter and one with a converter built from the previous commit emit this file
+**identically**, and both equal the **committed** file — so no recent converter change moves it under
+`-stdlib`. Running the `-tests` pipeline on `encoding/base64` from a clean **master** worktree
+reproduces the same 6/6 diff exactly. The receiver-box decision therefore depends on whether
+`_test.go` is in the analysis universe, so `-stdlib` and `-tests` disagree about this file.
+
+It is the same *shape* of problem the sibling-addressed-global fix above solves for package-level
+vars — an analysis whose answer changes when test files enter the universe, making production
+emission mode-**unstable** — except that fix deliberately chose stability (it runs in ordinary
+conversion too) and the receiver path has not. Two ways to close it: make the receiver analysis
+mode-stable the same way, or accept the divergence and record base64 alongside the six known
+`-tests`-closure production files in
+[`DESIGN-named-interface-wrappers.md`](DESIGN-named-interface-wrappers.md) §7 (which does not list
+it). The first is the durable answer and matches what this arc already did for globals.
+
+Until then: this drift is **expected sweep output, and must be restored, never banked**. `encoding/base32`
+(`WithPadding`) is the other site the receiver-box footprint named and is a candidate for the same
+divergence.
 
 ## Open — intermittent, on an already-banked package
 
@@ -152,6 +258,27 @@ The other consumers this unblocks are all registration-by-blank-import: `databas
   `sort.cs` broke every later package downstream of `fmt` in the same tree. Residue: a `default!`
   zero-var local. Every *new* emission path re-opens this class, which argues for centralizing
   zero-value construction instead of patching sites — this is now the fourth data point for that.
+- **A one-level probe of a COMPOSED type — closed for anonymous-type lifting (2026-07-31), and worth
+  looking for elsewhere.** The extractor that finds an anonymous `struct{…}`/`interface{…}` in a
+  declaration inspected the immediate child of each container kind, so it saw `*T`, `[]T` and (after a
+  separate one-off patch) `map[K]V`, but no *composition* of them — `[]*struct{…}` fell straight
+  through to raw Go text and a CS1031 cascade. The tell that this is a class rather than a bug: the map
+  arm had already been added as its own function rather than as a rule, which is the shape a
+  point-repair leaves behind. The fix replaced both extractors' dispatch with one recursive descent
+  over the type-composing operands. Any other analysis that peels a type expression by hand — rather
+  than through `go/types` or the shared walk — is a candidate for the same defect, and **one more is
+  already identified**: `visitStructType.go`'s struct-FIELD arm (`else if arrayType, ok :=
+  field.Type.(*ast.ArrayType)`, then `arrayType.Elt.(*ast.StructType)`) lifts `[N]struct{…}` but not
+  `[N]*struct{…}`, `[]*struct{…}`, `map[K]struct{…}` or a bare `*struct{…}` field. Routing it through
+  `extractStructType` is a three-line change that strictly widens coverage — deliberately NOT taken
+  in the same commit as the fix above, because it has no demonstrated consumer and would re-open a
+  completed gate run (full suite + whole-stdlib A/B + corpus build + 66-package sweep) for an
+  unguarded change. It wants its own increment with its own guard. ⚠ And scope it with an **A/B
+  reconvert, not a source scan**: a grep for the shape reported zero production hits and would have
+  called the corpus untouched, but the A/B found `encoding/gob/type.cs`, whose
+  `(*struct{ r7 int })(nil)` reaches its literal through a parenthesized pointer conversion the
+  pattern never looked for. Charter §9's rule earning its keep in the opposite direction — the scan
+  had a positive control for `[]*struct{…}` and none for `(*struct{…})`.
 - **Untyped constants in a typed slot — CLOSED 2026-07-29.** The int-literal case was already fixed;
   a computed float constant that directly uses a named untyped integer wrapper now folds once at the
   resolved float width. `hash/maphash` validates 22/22; `UntypedConstDefine` guards both `:=` and typed slots.

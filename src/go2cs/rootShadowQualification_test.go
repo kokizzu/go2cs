@@ -245,9 +245,10 @@ func TestSiblingTestDeclaratorsContributeAliasShadow(t *testing.T) {
 
 	production := loadProductionForDir(t, dir)
 
-	collected, hasInternal := collectSiblingTestFuncMethodNames(dir, "shadow", Options{
+	signals := collectSiblingTestSignals(dir, "shadow", Options{
 		targetPlatform: runtime.GOOS + "/" + runtime.GOARCH,
 	})
+	collected, hasInternal := signals.funcMethodNames, signals.hasInternalTests
 	if want := []string{"TestBits", "bits"}; !slices.Equal(collected, want) {
 		t.Fatalf("collected sibling test declarators = %v, want %v", collected, want)
 	}

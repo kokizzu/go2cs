@@ -90,9 +90,14 @@ if (args.Length > 0 && args[0] == "--createTargetFiles")
     {
         string projPath = Path.GetFullPath($"{RootPath}Tests\\Behavioral\\{targetTest}");
 
-        // Iterate over each .go file in project path
+        // Iterate over each PRODUCTION .go file in project path. `_test.go` is excluded from a
+        // production transpile by go/packages, so an in-package test file legitimately has no .cs and
+        // needs no golden -- warning about it would be noise, not signal.
         foreach (string goSrcFile in Directory.GetFiles(projPath, "*.go"))
         {
+            if (goSrcFile.EndsWith("_test.go", StringComparison.OrdinalIgnoreCase))
+                continue;
+
             string transpiledFile = $@"{projPath}\{Path.GetFileNameWithoutExtension(goSrcFile)}.cs";
             string targetFile = $"{transpiledFile}.target";
 

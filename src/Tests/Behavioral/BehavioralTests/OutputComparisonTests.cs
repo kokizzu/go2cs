@@ -50,6 +50,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckAnonStructArrayElement() => CheckTarget("AnonStructArrayElement");
 
     [TestMethod]
+    public void CheckAnonStructComposedTypes() => CheckTarget("AnonStructComposedTypes");
+
+    [TestMethod]
     public void CheckAnonStructCrossFile() => CheckTarget("AnonStructCrossFile");
 
     [TestMethod]
@@ -1194,6 +1197,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckShiftPrecedenceUnsigned() => CheckTarget("ShiftPrecedenceUnsigned");
+
+    [TestMethod]
+    public void CheckSiblingTestAddressedGlobal() => CheckTarget("SiblingTestAddressedGlobal");
 
     [TestMethod]
     public void CheckSlice3IndexWideBound() => CheckTarget("Slice3IndexWideBound");

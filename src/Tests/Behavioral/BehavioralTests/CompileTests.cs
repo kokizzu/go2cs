@@ -46,6 +46,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckAnonStructArrayElement() => CheckTarget("AnonStructArrayElement");
 
     [TestMethod]
+    public void CheckAnonStructComposedTypes() => CheckTarget("AnonStructComposedTypes");
+
+    [TestMethod]
     public void CheckAnonStructCrossFile() => CheckTarget("AnonStructCrossFile");
 
     [TestMethod]
@@ -1271,6 +1274,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckShiftPrecedenceUnsigned() => CheckTarget("ShiftPrecedenceUnsigned");
+
+    [TestMethod]
+    public void CheckSiblingTestAddressedGlobal() => CheckTarget("SiblingTestAddressedGlobal");
 
     [TestMethod]
     public void CheckSlice3IndexWideBound() => CheckTarget("Slice3IndexWideBound");

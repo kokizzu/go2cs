@@ -636,6 +636,19 @@ var packageFuncMethodNames map[string]bool
 var siblingTestFuncMethodNames []string
 var hasSiblingInternalTestFiles bool
 
+// siblingTestAddressedGlobalNames holds the identifier names the build-selected IN-PACKAGE
+// `_test.go` half takes the address of. A Go pointer to a package-level var must alias the var's
+// real storage, which in C# requires the global to be backed by a heap box (see
+// packageAddressedGlobals) — and the box is declared by the PRODUCTION emission, which go/packages
+// cannot see the need for because it excludes `_test.go`: path/filepath's export_test.go declares
+// `var LstatP = &lstat` over path.go's `var lstat = os.Lstat`, and the test variant's `Ꮡlstat`
+// named a box the production class never declared (CS0103). Folded into packageAddressedGlobals by
+// collectAddressedGlobals, which resolves each name against the real package scope and drops any
+// that is not a package-level var. Populated for every production package immediately before its
+// analysis, in ordinary and -tests conversion alike, so production storage shape is mode-stable —
+// exactly as siblingTestFuncMethodNames pins reference spelling.
+var siblingTestAddressedGlobalNames []string
+
 // packageTestAliasShadows is the subset of packageFuncMethodNames contributed ONLY by the
 // same-package test half. It does not affect qualification itself; statement emission uses it to
 // explain an otherwise surprising fully-qualified production reference when the reader is not
@@ -1256,7 +1269,10 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		// go/packages omits `_test.go` from this production package, so cheaply scan the
 		// build-selected in-package test files for declarator names before collision analysis.
 		// This is package-local (important for ./... loads) and reads no test dependencies.
-		siblingTestFuncMethodNames, hasSiblingInternalTestFiles = collectSiblingTestFuncMethodNames(pkg.Dir, pkg.Name, options)
+		siblingSignals := collectSiblingTestSignals(pkg.Dir, pkg.Name, options)
+		siblingTestFuncMethodNames = siblingSignals.funcMethodNames
+		siblingTestAddressedGlobalNames = siblingSignals.addressedGlobalNames
+		hasSiblingInternalTestFiles = siblingSignals.hasInternalTests
 		options.testFriendAssembly = hasSiblingInternalTestFiles
 
 		// Reset package level variables and capture the per-package inputs (packageDoc,
@@ -3016,38 +3032,20 @@ func isDynamicInterface(t types.Type) bool {
 	return ok
 }
 
+// extractInterfaceType is extractStructType's twin for a non-empty anonymous INTERFACE literal
+// reached through the same type composition. The resolved type is the LITERAL's, not the outer
+// expression's — the lift names the interface itself.
 func (v *Visitor) extractInterfaceType(expr ast.Expr) (*ast.InterfaceType, types.Type) {
-	var interfaceType *ast.InterfaceType
+	found := firstAnonymousTypeLiteral(typeSyntaxOf(expr), func(candidate ast.Expr) bool {
+		interfaceType, isInterface := candidate.(*ast.InterfaceType)
+		return isInterface && !isEmptyInterface(interfaceType)
+	})
 
-	if starExpr, ok := expr.(*ast.StarExpr); ok {
-		interfaceType, _ = starExpr.X.(*ast.InterfaceType)
-	} else if compositeLit, ok := expr.(*ast.CompositeLit); ok {
-		interfaceType, _ = compositeLit.Type.(*ast.InterfaceType)
-	} else if arrayType, ok := expr.(*ast.ArrayType); ok {
-		interfaceType, _ = arrayType.Elt.(*ast.InterfaceType)
-	} else if indexExpr, ok := expr.(*ast.IndexExpr); ok {
-		interfaceType, _ = indexExpr.X.(*ast.InterfaceType)
-	} else if sliceExpr, ok := expr.(*ast.SliceExpr); ok {
-		interfaceType, _ = sliceExpr.X.(*ast.InterfaceType)
-	} else if callExpr, ok := expr.(*ast.CallExpr); ok {
-		interfaceType, _ = callExpr.Fun.(*ast.InterfaceType)
-	} else if typeAssertExpr, ok := expr.(*ast.TypeAssertExpr); ok {
-		interfaceType, _ = typeAssertExpr.Type.(*ast.InterfaceType)
-	} else if selectorExpr, ok := expr.(*ast.SelectorExpr); ok {
-		interfaceType, _ = selectorExpr.X.(*ast.InterfaceType)
-	} else if interfaceType, ok = expr.(*ast.InterfaceType); !ok {
+	if found == nil {
 		return nil, nil
 	}
 
-	if interfaceType == nil {
-		return nil, nil
-	}
-
-	if isEmptyInterface(interfaceType) {
-		return nil, nil
-	}
-
-	return interfaceType, v.getType(expr, false)
+	return found.(*ast.InterfaceType), v.getType(found, false)
 }
 
 func (v *Visitor) isPointer(ident *ast.Ident) bool {
@@ -4211,62 +4209,90 @@ func isEmptyStructType(structType *types.Struct) bool {
 	return structType.NumFields() == 0
 }
 
+// extractStructType returns the anonymous struct literal an expression's TYPE syntax reaches,
+// together with its resolved types.Type, so the caller can lift it to a named C# type. Empty
+// structs are excluded — they map to golib's EmptyStruct and are never lifted.
 func (v *Visitor) extractStructType(expr ast.Expr) (*ast.StructType, types.Type) {
-	if starExpr, ok := expr.(*ast.StarExpr); ok {
-		if structType, ok := starExpr.X.(*ast.StructType); ok && !isEmptyStruct(structType) {
-			return structType, v.getType(starExpr.X, false)
-		}
-	} else if compositeLit, ok := expr.(*ast.CompositeLit); ok {
-		if structType, ok := compositeLit.Type.(*ast.StructType); ok && !isEmptyStruct(structType) {
-			return structType, v.getType(compositeLit.Type, false)
-		}
-	} else if arrayType, ok := expr.(*ast.ArrayType); ok {
-		if structType, ok := arrayType.Elt.(*ast.StructType); ok && !isEmptyStruct(structType) {
-			return structType, v.getType(arrayType.Elt, false)
-		}
-	} else if indexExpr, ok := expr.(*ast.IndexExpr); ok {
-		if structType, ok := indexExpr.X.(*ast.StructType); ok && !isEmptyStruct(structType) {
-			return structType, v.getType(indexExpr.X, false)
-		}
-	} else if sliceExpr, ok := expr.(*ast.SliceExpr); ok {
-		if structType, ok := sliceExpr.X.(*ast.StructType); ok && !isEmptyStruct(structType) {
-			return structType, v.getType(sliceExpr.X, false)
-		}
-	} else if callExpr, ok := expr.(*ast.CallExpr); ok {
-		if structType, ok := callExpr.Fun.(*ast.StructType); ok && !isEmptyStruct(structType) {
-			return structType, v.getType(callExpr.Fun, false)
-		}
-	} else if typeAssertExpr, ok := expr.(*ast.TypeAssertExpr); ok {
-		if structType, ok := typeAssertExpr.Type.(*ast.StructType); ok && !isEmptyStruct(structType) {
-			return structType, v.getType(typeAssertExpr.Type, false)
-		}
-	} else if selectorExpr, ok := expr.(*ast.SelectorExpr); ok {
-		if structType, ok := selectorExpr.X.(*ast.StructType); ok && !isEmptyStruct(structType) {
-			return structType, v.getType(selectorExpr.X, false)
-		}
-	} else if structType, ok := expr.(*ast.StructType); ok && !isEmptyStruct(structType) {
-		return structType, v.getType(expr, false)
+	found := firstAnonymousTypeLiteral(typeSyntaxOf(expr), func(candidate ast.Expr) bool {
+		structType, isStruct := candidate.(*ast.StructType)
+		return isStruct && !isEmptyStruct(structType)
+	})
+
+	if found == nil {
+		return nil, nil
 	}
 
-	return nil, nil
+	return found.(*ast.StructType), v.getType(found, false)
 }
 
-// extractMapValueStructType returns the anonymous VALUE struct of a map type expression
-// (`map[K]struct{…}`) together with its resolved types.Type, or (nil, nil) when the expression is
-// not a map whose value is a non-empty anonymous struct. extractStructType lifts a slice/array
-// ELEMENT struct (its ArrayType arm) but has no map arm; this mirrors that for a map value so a
-// var declared over a map-of-anonymous-struct lifts the value type (see visitValueSpec). Without
-// the lift, getTypeName's Map arm emits the value's raw Go `struct{…}` syntax straight into the C#
-// map signature, which does not parse. Empty structs are excluded — they map to golib EmptyStruct
-// and are never lifted — matching extractStructType.
-func (v *Visitor) extractMapValueStructType(expr ast.Expr) (*ast.StructType, types.Type) {
-	if mapType, ok := expr.(*ast.MapType); ok {
-		if structType, ok := mapType.Value.(*ast.StructType); ok && !isEmptyStruct(structType) {
-			return structType, v.getType(mapType.Value, false)
+// typeSyntaxOf narrows an expression to the sub-node that carries its written TYPE syntax, for the
+// call sites that hand an arbitrary expression to the extractors (a call argument, most of all).
+// Every other form is already type syntax and passes through.
+func typeSyntaxOf(expr ast.Expr) ast.Expr {
+	switch typed := expr.(type) {
+	case *ast.CompositeLit:
+		return typed.Type
+	case *ast.IndexExpr:
+		return typed.X
+	case *ast.SliceExpr:
+		return typed.X
+	case *ast.CallExpr:
+		return typed.Fun
+	case *ast.TypeAssertExpr:
+		return typed.Type
+	case *ast.SelectorExpr:
+		return typed.X
+	}
+
+	return expr
+}
+
+// composedTypeOperands returns the sub-expressions a TYPE-COMPOSING expression is built from: the
+// pointee of `*T`, the element of `[]T`/`[N]T`/`...T`, a map's value then key, a channel's element,
+// and the inside of a parenthesization. Composition is what puts an anonymous struct at a depth a
+// one-level probe cannot see — net's `var ipStringTests = []*struct{…}{…}` is a pointer inside a
+// slice, and before this the declaration emitted the raw Go `struct{…}` text into the C# type
+// (CS1031 and a whole-file syntax cascade).
+func composedTypeOperands(expr ast.Expr) []ast.Expr {
+	switch typed := expr.(type) {
+	case *ast.StarExpr:
+		return []ast.Expr{typed.X}
+	case *ast.ArrayType:
+		return []ast.Expr{typed.Elt}
+	case *ast.Ellipsis:
+		return []ast.Expr{typed.Elt}
+	case *ast.ParenExpr:
+		return []ast.Expr{typed.X}
+	case *ast.MapType:
+		return []ast.Expr{typed.Value, typed.Key}
+	case *ast.ChanType:
+		return []ast.Expr{typed.Value}
+	}
+
+	return nil
+}
+
+// firstAnonymousTypeLiteral walks a type expression's composition operands depth-first and returns
+// the first node the predicate accepts, or nil. Deliberately FIRST-match: the lifting callers can
+// name one anonymous type per declaration, so a type expression carrying two distinct anonymous
+// literals (`map[struct{…}]struct{…}`) lifts the value's and leaves the key's — the residual the
+// one-level probe had for every composed shape, now narrowed to that one.
+func firstAnonymousTypeLiteral(expr ast.Expr, match func(ast.Expr) bool) ast.Expr {
+	if expr == nil {
+		return nil
+	}
+
+	if match(expr) {
+		return expr
+	}
+
+	for _, operand := range composedTypeOperands(expr) {
+		if found := firstAnonymousTypeLiteral(operand, match); found != nil {
+			return found
 		}
 	}
 
-	return nil, nil
+	return nil
 }
 
 func (v *Visitor) getUnderlyingType(expr ast.Expr) types.Type {

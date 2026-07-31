@@ -216,8 +216,12 @@ public abstract class BehavioralTestBase
                 // the normal case where the .go files DON'T change, so a .go-only check would leave every
                 // project "up to date" and let the Target/Output phases validate the PREVIOUS converter's
                 // output against goldens that same converter generated -- a false green.
+                // PRODUCTION sources only: a production transpile excludes `_test.go`, so an in-package
+                // test file has no matching .cs and would pin this check permanently out of date.
                 DateTime go2csTime = File.GetLastWriteTimeUtc(go2cs);
-                FileInfo[] goFiles = Directory.GetFiles(projPath, "*.go").Select(fileName => new FileInfo(fileName)).ToArray();
+                FileInfo[] goFiles = Directory.GetFiles(projPath, "*.go")
+                    .Where(fileName => !fileName.EndsWith("_test.go", StringComparison.OrdinalIgnoreCase))
+                    .Select(fileName => new FileInfo(fileName)).ToArray();
                 bool allUpToDate = true;
 
                 foreach (FileInfo goFile in goFiles)

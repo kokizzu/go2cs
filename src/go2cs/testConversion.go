@@ -342,6 +342,11 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	// only over-qualify the external half's package idents.
 	siblingTestFuncMethodNames = nil
 
+	// Likewise for the addressed-global seed: each variant's universe already CONTAINS the
+	// `_test.go` files, so its own collectAddressedGlobals sees `&g` directly. The seed exists only
+	// for the production pass, which cannot.
+	siblingTestAddressedGlobalNames = nil
+
 	inputPath, err := filepath.Abs(inputPath)
 	if err != nil {
 		return err

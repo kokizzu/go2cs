@@ -6105,6 +6105,129 @@ path → `main_type`), so no caller can produce an unnamed type declaration. (Gu
 interface through the lifted type's pointer adapter, the embedded field filled and called through
 the promotion, plus the function-local form — output-compared vs Go.)
 
+### An anonymous struct lifts from ANY depth of its declared type
+The lift only happens if the converter can *find* the `struct{…}` literal in the declaration it is
+converting, and the probe that found it used to look exactly one level down: through a pointer, or
+through a slice/array element, or (a later addition) a map value — never through a composition of
+those. So `[]struct{…}` lifted and `[]*struct{…}` did not, and net's
+
+```go
+var ipStringTests = []*struct {
+	in  IP     // see RFC 791 and RFC 4291
+	str string // see RFC 791, RFC 4291 and RFC 5952
+	byt []byte
+	error
+}{ … }
+```
+
+emitted the *raw Go type text* into the C# declaration — `slice<ж<struct{in net.IP; str string; byt
+[]byte; error}>>` — which is not C# at all: **CS1031 `Type expected`**, followed by a 90-error
+syntax cascade that hid every real diagnostic in the file behind it. The shape had been invisible
+because a composed occurrence still resolved *if some other declaration in the package happened to
+register the identical signature first*; `error` embedded here makes the signature unique, so
+nothing did.
+
+The probe is now a recursive descent over the type-composing syntax — pointer, array/slice element,
+`...T`, parenthesization, map value then key, channel element — so an anonymous struct (and, by the
+same helper, an anonymous interface) is found wherever it sits. The `AnonStructComposedTypes` golden
+shows the same shape lifting and its elements constructing normally:
+
+```csharp
+[GoType("dyn")] partial struct ptrElemsᴛ1 {
+    internal nint @in;
+    internal @string str;
+    internal error error;
+}
+internal static slice<ж<ptrElemsᴛ1>> ptrElems = new ж<ptrElemsᴛ1>[]{
+    Ꮡ(new ptrElemsᴛ1(1, "one"u8, default!)),
+    Ꮡ(new ptrElemsᴛ1(2, "two"u8, default!))
+}.slice();
+```
+
+This strictly widens what lifts: anything that lifted before still lifts, under the same name. The
+walk is deliberately **first-match**, because each lifting caller can name only one anonymous type
+per declaration — a type expression carrying two *distinct* anonymous literals (`map[struct{…}]struct{…}`)
+lifts the value's and leaves the key's. That residual used to apply to every composed shape; it is
+now confined to that one. The map-value case had its own one-off probe, which the recursion subsumes
+and which was deleted with it.
+
+Scope, measured by a whole-standard-library A/B reconvert against a converter built from the previous
+commit — **not** by a source scan, which got this wrong. A grep for the shape found it only in
+`_test.go` files and would have concluded the production corpus was untouched; the A/B found
+`encoding/gob/type.cs`, because `bootstrapType("_reserved1", (*struct{ r7 int })(nil))` reaches its
+anonymous struct through a *parenthesized pointer conversion* — `(…)` then `*` then the literal — a
+composition the scan's pattern never looked for. (Charter §9's false-alarm rule, from the other
+direction: a zero-hit scan is only as good as its positive controls, and this one had a control for
+`[]*struct{…}` and none for `(*struct{…})`.) The corpus footprint is exactly those seven `tReservedN`
+declarations, and the change there is a **naming improvement, not a behavior change**: the lift now
+happens at the call argument, where it takes the parameter's name (`eᴛ1`…`eᴛ7`), instead of arriving
+late from `convStarExpr`'s fallback as the generic `Δtype`/`Δtypeᴛ1`…. Declarations, uses and the
+`package_info.cs` accessibility block all move together. (Guarded by the
+`AnonStructComposedTypes` behavioral test: a slice of
+pointer-to-anonymous-struct with an embedded `error`, a map to pointer-to-anonymous-struct, and a
+slice of slice of anonymous struct, read and written through and output-compared vs Go.)
+
+### A global addressed only by the package's own `_test.go` is still heap-boxed
+A Go pointer to a package-level var aliases that var's real storage, which in C# means the global
+must be backed by a heap box (see [Pointers](#pointers)); `packageAddressedGlobals` decides that by
+scanning the package for `&g`. But `go/packages` excludes `_test.go` from a production package, so
+an address taken *only* by the package's own in-package test half is invisible at the declaration.
+path/filepath is the canonical case — `path.go` declares `var lstat = os.Lstat // for testing` and
+`export_test.go` declares `var LstatP = &lstat`, the whole point being that a test can swap the
+implementation the production `Walk` calls. The production emission left `lstat` a plain field, and
+the test variant's `Ꮡlstat` named a box nothing declared: **CS0103**.
+
+The converter now scans the build-selected in-package `_test.go` files for the identifiers they take
+the address of and folds them into the addressed-global set, so the production declaration carries
+the box:
+
+```csharp
+internal static ж<Func<@string, (fs.FileInfo, error)>> Ꮡlstat = new(os.Lstat);
+internal static ref Func<@string, (fs.FileInfo, error)> lstat => ref Ꮡlstat.ValueSlot;  // for testing
+```
+
+Three properties make this the right shape rather than a `-tests`-only patch:
+
+- **It runs in ordinary conversion too**, exactly as `siblingTestFuncMethodNames` does for reference
+  spelling, so a package's production storage shape is **mode-stable** — an `-stdlib` reconvert and a
+  `-tests` run emit the same bytes. Conditioning it on `-tests` would make the banked corpus flip
+  between the two.
+- **The scan is a cheap direct directory read, not a second type-check** — no test dependency graph is
+  loaded. It is therefore name-based, and the production pass resolves each candidate against the real
+  package scope, dropping anything that is not a package-level var (a type, a func, an import
+  qualifier, a name that exists only in the test file).
+- **It errs toward recording nothing.** Names bound anywhere inside the enclosing top-level
+  declaration — receiver, parameters, results, `:=`, `var`/`const`/`type`, range and type-switch
+  bindings — are excluded, so `&counter` on a local that shadows a global does not box the global.
+  Under-recording restores today's loud CS0103; over-recording would silently box a global no pointer
+  aliases.
+
+Only **build-selected** test files are scanned (`go/build`'s `MatchFile`, with the run's `GOOS`/
+`GOARCH` and `-tags`), so the boxed set is a property of the build configuration exactly as the
+converted production sources themselves are: `path_windows_test.go` contributes on Windows and
+`path_unix_test.go` does not. That is the same rule `siblingTestFuncMethodNames` already follows, and
+it is the correct answer — a global no *selected* file addresses needs no box in that configuration.
+
+Measured across the whole standard library by an A/B reconvert: **13 globals in 13 files**, and every
+single one is a Go *"for testing"* hook — `path/filepath` and `os`'s `lstat`, `os`'s
+`testingForceReadDirLstat` and `allowReadDirFileID`, `runtime`'s `readRandomFailed`, `useAeshash`,
+`doubleCheckReadMemStats`, `casgstatusAlwaysTrack`, `forcegcperiod` and `timeBeginPeriodRetValue`,
+`reflect`'s `callGC` (whose own comment reads *"for testing; see TestCallMethodJump and
+TestCallArgLive"*), `internal/poll`'s `logInitFD`, `net/http`'s `maxWriteWaitBeforeConnReuse` and
+`testHookEnterRoundTrip`, and `time`'s `usPacific`. No false positives, which is what the
+bind-aware exclusion buys — and the same set is forward work, since `os`, `runtime`, `reflect`,
+`net/http`, `internal/poll` and `time` all need those hooks to alias real storage before their own
+suites can pass.
+
+External (`package foo_test`) test files are deliberately not scanned: they reach the package only
+through its exported surface, and `&otherpkg.Var` from *any* other package is a separate, still-open
+gap — `collectAddressedGlobals` only ever scans the package under conversion. (Guarded by the
+`SiblingTestAddressedGlobal` behavioral test, whose `export_test.go` addresses a bare global, a
+global through a field selector, and a global from a function body, against negatives for a
+test-file-local declarator and a shadowing local. It is the first behavioral project to carry a
+`_test.go`; the corpus harness skips `_test.go` when pairing sources with `.cs` goldens, since a
+production transpile never emits one.)
+
 ### Astral rune literals
 A quoted rune literal beyond the BMP (`'\U0001D504'`) cannot be a C# char literal — it emits
 the code point (`(rune)0x1D504`); BMP literals keep their source text verbatim (html's entity

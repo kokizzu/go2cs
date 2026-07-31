@@ -49,6 +49,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckAnonStructArrayElement() => CheckTarget("AnonStructArrayElement");
 
     [TestMethod]
+    public void CheckAnonStructComposedTypes() => CheckTarget("AnonStructComposedTypes");
+
+    [TestMethod]
     public void CheckAnonStructCrossFile() => CheckTarget("AnonStructCrossFile");
 
     [TestMethod]
@@ -1276,6 +1279,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckShiftPrecedenceUnsigned() => CheckTarget("ShiftPrecedenceUnsigned");
 
     [TestMethod]
+    public void CheckSiblingTestAddressedGlobal() => CheckTarget("SiblingTestAddressedGlobal");
+
+    [TestMethod]
     public void CheckSlice3IndexWideBound() => CheckTarget("Slice3IndexWideBound");
 
     [TestMethod]
@@ -1572,12 +1578,19 @@ public class C3_TargetComparisonTests : BehavioralTestBase
         // Transpile project, if needed
         TranspileProject(targetProject);
 
-        // Iterate over each .go file in project path
+        // Iterate over each PRODUCTION .go file in project path. A production transpile converts
+        // production sources only -- go/packages excludes `_test.go` -- so an in-package test file has no
+        // .cs and no golden, by design. It is still a real conversion input: the converter scans the
+        // sibling test half for declarator names and for globals whose address it takes (see the
+        // SiblingTestAddressedGlobal project), which is why one exists in this corpus at all.
         foreach (string goSrcFile in Directory.GetFiles(projPath, "*.go"))
         {
+            if (goSrcFile.EndsWith("_test.go", StringComparison.OrdinalIgnoreCase))
+                continue;
+
             string transpiledFile = $@"{projPath}\{Path.GetFileNameWithoutExtension(goSrcFile)}.cs";
             string targetFile = $"{transpiledFile}.target";
-            
+
             Assert.IsTrue(FileMatch(transpiledFile, targetFile), $"Go source file converted to C# \"{transpiledFile}\" does not match target \"{targetFile}\"");
         }
     }

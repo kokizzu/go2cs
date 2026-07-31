@@ -235,11 +235,21 @@ namespace BehavioralRunner
         // project "up to date", skips transpilation entirely, and lets the Target/Output phases validate
         // the PREVIOUS converter's output against goldens that same converter generated -- a false green
         // that guards nothing. (check-no-regression.ps1 re-transpiles unconditionally and is immune.)
+        // A production transpile converts the package's PRODUCTION sources only -- go/packages excludes
+        // `_test.go` -- so an in-package test file has no `.cs` and no golden, by design. It is still a
+        // real input: the converter scans the sibling test half for declarator names and for globals whose
+        // address it takes (SiblingTestAddressedGlobal guards the latter), which is why such a file exists
+        // in this corpus at all. Every per-.go loop here therefore walks production sources.
+        private static string[] ProductionGoFiles(string projPath) =>
+            Directory.GetFiles(projPath, "*.go")
+                .Where(go => !go.EndsWith("_test.go", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
         private static bool UpToDate(string projPath)
         {
             DateTime exe = File.GetLastWriteTimeUtc(s_go2csExe);
 
-            foreach (string go in Directory.GetFiles(projPath, "*.go"))
+            foreach (string go in ProductionGoFiles(projPath))
             {
                 string cs = Path.ChangeExtension(go, ".cs");
 
@@ -271,7 +281,7 @@ namespace BehavioralRunner
                 string projPath = Path.Combine(s_behavioralDir, p);
                 bool ok = true;
 
-                foreach (string go in Directory.GetFiles(projPath, "*.go"))
+                foreach (string go in ProductionGoFiles(projPath))
                 {
                     string cs = Path.ChangeExtension(go, ".cs");
                     string target = cs + ".target";
@@ -565,7 +575,7 @@ namespace BehavioralRunner
             {
                 string projPath = Path.Combine(s_behavioralDir, p);
 
-                foreach (string go in Directory.GetFiles(projPath, "*.go"))
+                foreach (string go in ProductionGoFiles(projPath))
                 {
                     string cs = Path.ChangeExtension(go, ".cs");
 
