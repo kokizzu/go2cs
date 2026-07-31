@@ -315,6 +315,46 @@ public static class StructDeclarationSyntaxExtensions
     }
 
     /// <summary>
+    /// SIMPLE-NAME form of <see cref="GetBoxReceiverMethodNames(string, Compilation)"/>, for a struct
+    /// whose declaration is METADATA-ONLY here yet which gains direct-ж primaries from THIS
+    /// compilation — the `-tests` white-box friend bridge, whose internal <c>_test.go</c> methods on a
+    /// referenced PRODUCTION receiver emit into the test assembly. The exact-text match cannot serve
+    /// it: the bridge spells the box parameter through whatever qualification its own file needs
+    /// (<c>this ж&lt;Replacer&gt;</c> via an imported alias, but <c>this
+    /// ж&lt;global::go.sync_package.poolChain&gt;</c> once a <c>go/*</c> package in the closure
+    /// shadows the root namespace), so the receiver is matched on the LAST dotted segment of the ж
+    /// type argument instead. Narrow by construction — it is consulted only where the struct has no
+    /// local declaration, so a same-simple-named local type cannot be the one found.
+    /// </summary>
+    public static HashSet<string> GetBoxReceiverMethodNamesBySimpleName(string simpleTypeName, Compilation compilation)
+    {
+        return new HashSet<string>(compilation.SyntaxTrees
+            .SelectMany(tree => tree.GetRoot()
+                .DescendantNodes()
+                .OfType<MethodDeclarationSyntax>()
+                .Where(method =>
+                    method.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) &&
+                    method.ParameterList.Parameters.Count > 0))
+            .Where(method =>
+            {
+                ParameterSyntax? firstParam = method.ParameterList.Parameters.FirstOrDefault();
+
+                if (firstParam is null || !firstParam.Modifiers.Any(m => m.IsKind(SyntaxKind.ThisKeyword)))
+                    return false;
+
+                string paramType = firstParam.Type?.ToString() ?? "";
+
+                if (!paramType.StartsWith($"{PointerPrefix}<", StringComparison.Ordinal) || !paramType.EndsWith(">", StringComparison.Ordinal))
+                    return false;
+
+                string argument = paramType.Substring(PointerPrefix.Length + 1, paramType.Length - PointerPrefix.Length - 2);
+
+                return Common.GetSimpleName(argument) == simpleTypeName;
+            })
+            .Select(method => method.Identifier.Text), StringComparer.Ordinal);
+    }
+
+    /// <summary>
     /// METADATA counterpart to <see cref="GetBoxReceiverMethodNames(string, Compilation)"/>: gets the
     /// names of PUBLIC direct-ж extension methods (<c>static M(this ж&lt;T&gt;)</c>) declared on a
     /// FOREIGN type's containing package class, visible only through compiled metadata — a syntax-tree

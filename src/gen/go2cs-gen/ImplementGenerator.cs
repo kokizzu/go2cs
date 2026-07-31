@@ -368,11 +368,17 @@ public class ImplementGenerator : ISourceGenerator
                 // test compilation's friend bridge. Those extensions are syntax-local even though the
                 // struct declaration is metadata-only — which is exactly when the discovery above
                 // hands back (null, null), so this scan must use the CURRENT compilation, and must
-                // key on the SIMPLE name: the bridge spells its box parameter through the imported
-                // alias (`this ж<Replacer>`), never the fully-qualified symbol display.
+                // key on the SIMPLE name: the bridge spells its box parameter through whatever
+                // qualification its own file needs (`this ж<Replacer>` via an imported alias, but
+                // `this ж<global::go.sync_package.poolChain>` once a `go/*` package in the closure
+                // shadows the root namespace), never one fixed display form.
+                HashSet<string> bridgeBoxMethods = [];
+
                 if (structDecl is null)
                 {
-                    foreach (string boxReceiverName in StructDeclarationSyntaxExtensions.GetBoxReceiverMethodNames(structType.Name, syntaxContext.SemanticModel.Compilation))
+                    bridgeBoxMethods = StructDeclarationSyntaxExtensions.GetBoxReceiverMethodNamesBySimpleName(structType.Name, syntaxContext.SemanticModel.Compilation);
+
+                    foreach (string boxReceiverName in bridgeBoxMethods)
                         forwardReceivers[boxReceiverName] = "m_box";
                 }
 
@@ -431,6 +437,16 @@ public class ImplementGenerator : ISourceGenerator
                     foreach (MethodInfo method in methods)
                     {
                         string simpleName = GetSimpleName(method.Name);
+
+                        // A method the FRIEND BRIDGE contributes is not in the referenced assembly's
+                        // metadata at all, so the METADATA scan above cannot see it and would fall
+                        // this member back to `m_box.Value` — stranding the direct-ж extension
+                        // receiver (CS1929). The bridge scan already bound it to the box; keep that.
+                        // sync's export_test.go declares PushHead/PopTail on the production
+                        // `*poolDequeue`/`*poolChain`, which is exactly this shape.
+                        if (bridgeBoxMethods.Contains(simpleName))
+                            continue;
+
                         bool viaBox = boxBound.Contains(simpleName);
 
                         // Only forward through a package-class STATIC when one actually binds this
