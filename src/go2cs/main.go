@@ -704,6 +704,14 @@ var testAmbiguousLocalTypeNames HashSet[string]
 // export data carries no usable declaration position.
 var whiteboxInternalTestObjects map[types.Object]bool
 
+// whiteboxBridgeTypeNames holds the simple TYPE names the white-box bridge declares — the
+// declared-name set splitWhiteboxVariantRecords partitions records by. Session-scoped to one
+// `-tests` conversion and consulted during emission too, so a generated adapter's reference names
+// the anchor class its record will actually land in (whiteboxBridgeDeclaredType); the LIFTED half
+// of the set is only claimed as the bridge converts, so that predicate folds in the live lift
+// claims while the bridge is the variant under conversion.
+var whiteboxBridgeTypeNames HashSet[string]
+
 // whiteboxBridgeDeclaredNames holds the GO names the white-box bridge class itself declares — its
 // internal `_test.go` package-level funcs/vars/consts/types plus its methods, which emit as static
 // extension members of the same class. The bridge binds production through
@@ -3376,7 +3384,15 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 	targetIsForeignNamed := false
 	targetIsSameAssemblyForeign := false
 
+	// The WHITE-BOX bridge's own PRODUCTION-declared target: the same GO package (so every
+	// pkg != v.pkg gate below reads it as local) but a CLOSED referenced C# assembly, which the
+	// generator cannot partial — it emits a per-interface ᴠ VALUE ADAPTER for it, exactly as for
+	// any other foreign struct.
+	whiteboxProductionTarget := false
+
 	if named, ok := types.Unalias(targetType).(*types.Named); ok {
+		whiteboxProductionTarget = v.whiteboxProductionObject(named.Obj())
+
 		if pkg := named.Obj().Pkg(); pkg != nil && pkg != v.pkg {
 			if v.isSameAssemblyPkg(pkg) {
 				targetIsSameAssemblyForeign = true
@@ -3387,6 +3403,42 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 	}
 
 	recordableValueForeign := recordableBase && !pointerTarget && targetIsForeignNamed && !v.isLocalImplType(targetType) && v.isLocalImplType(interfaceType)
+
+	// The white-box production target takes that same route. Both consequences matter and only
+	// the pair together is correct: the cast site must CONSTRUCT the adapter, and the record must
+	// be EXEMPT from the interface-inheritance prune — which is sound only for the partial-struct
+	// shape of one type carrying one interface list. encoding/binary is the corpus instance.
+	// `TestByteOrder` casts `BigEndian`/`LittleEndian` to its function-local `byteOrder`, which
+	// EMBEDS the production `ByteOrder`, so `bigEndian → ByteOrder` was recorded and then pruned
+	// as covered — true while the recompile model merged a `bigEndian : TestByteOrder_byteOrder`
+	// partial into the local declaration, false once production is a referenced assembly. Every
+	// `Read(r, BigEndian, data)` in the suite then failed CS1503 (~30 sites).
+	if recordableBase && !pointerTarget && whiteboxProductionTarget {
+		if named, ok := types.Unalias(targetType).(*types.Named); ok {
+			if pkg := named.Obj().Pkg(); pkg != nil {
+				ifacePkgName := pkg.Name()
+
+				if ifaceNamed, ok := types.Unalias(interfaceType).(*types.Named); ok {
+					if ifacePkg := ifaceNamed.Obj().Pkg(); ifacePkg != nil {
+						ifacePkgName = ifacePkg.Name()
+					}
+				}
+
+				key := fmt.Sprintf("%s|%s|%s", getSanitizedIdentifier(pkg.Name()),
+					removeSanitizationMarker(getCoreSanitizedIdentifier(named.Obj().Name())),
+					canonicalRecordIfaceName(interfaceTypeName, ifacePkgName))
+
+				// The PRODUCTION assembly already implements the pair (its package_info.cs carries
+				// the value record, loaded when the reference model bound it as an ordinary import),
+				// so the bare value converts implicitly and a second adapter is dead machinery.
+				packageLock.Lock()
+				productionImplements := importedValueImplements.Contains(key)
+				packageLock.Unlock()
+
+				recordableValueForeign = !productionImplements
+			}
+		}
+	}
 
 	// A LOCAL NAMED FUNC type's VALUE record also generates a per-interface adapter CLASS — a C#
 	// delegate cannot be a partial struct, so the generator takes the `<src>ᴠ<iface>` route (see the
@@ -3627,7 +3679,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 			}
 		}
 
-		return fmt.Sprintf("new %s(%s)", v.testOwnedAdapterRef(valueAdapterTypeRef(adapterSource, interfaceTypeName)), exprResult)
+		return fmt.Sprintf("new %s(%s)", v.testOwnedAdapterRef(valueAdapterTypeRef(adapterSource, interfaceTypeName), targetTypeName, interfaceTypeName), exprResult)
 	}
 
 	// A POINTER-sourced cast to a locally-implemented interface routes through the generated
@@ -3645,7 +3697,10 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 		qualifiedTarget := targetTypeName
 
 		if named, ok := types.Unalias(targetType).(*types.Named); ok {
-			if pkg := named.Obj().Pkg(); pkg != nil && pkg != v.pkg {
+			// The white-box production target composes the same `<pkg>_<Simple>` form: the
+			// generator's foreign check is by CONTAINING ASSEMBLY, so it prefixes the class name
+			// there too, and the two sides must agree (see ForeignPackagePrefix).
+			if pkg := named.Obj().Pkg(); pkg != nil && (pkg != v.pkg || whiteboxProductionTarget) {
 				simpleTarget := targetTypeName
 
 				if idx := strings.LastIndex(simpleTarget, "."); idx >= 0 {
@@ -3656,7 +3711,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 			}
 		}
 
-		return fmt.Sprintf("new %s(%s)", v.testOwnedAdapterRef(valueAdapterTypeRef(qualifiedTarget, interfaceTypeName)), exprResult)
+		return fmt.Sprintf("new %s(%s)", v.testOwnedAdapterRef(valueAdapterTypeRef(qualifiedTarget, interfaceTypeName), targetTypeName, interfaceTypeName), exprResult)
 	}
 
 	// A LOCAL NAMED FUNC type with methods (flag's funcValue implementing Value): a C#
@@ -3665,7 +3720,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 	if recordable && !pointerTarget && exprResult != "" {
 		if named, ok := types.Unalias(targetType).(*types.Named); ok {
 			if _, isSig := named.Underlying().(*types.Signature); isSig {
-				return fmt.Sprintf("new %s(%s)", v.testOwnedAdapterRef(valueAdapterTypeRef(targetTypeName, interfaceTypeName)), exprResult)
+				return fmt.Sprintf("new %s(%s)", v.testOwnedAdapterRef(valueAdapterTypeRef(targetTypeName, interfaceTypeName), targetTypeName, interfaceTypeName), exprResult)
 			}
 		}
 	}
@@ -3792,11 +3847,48 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 // testOwnedAdapterRef qualifies an adapter class generated from reference-test metadata through
 // that metadata file's first class. Production conversion and recompile tests keep the historical
 // bare member name because their generated adapter already shares the current package class.
-func (v *Visitor) testOwnedAdapterRef(adapterName string) string {
-	if v.options.testWhiteboxReference && v.options.testMetadataAnchorName != "" {
-		return v.options.testMetadataAnchorName + "." + adapterName
+//
+// A MIXED white-box suite has TWO anchors, so the reference must name the one the pair's record
+// will land in — the participants are the record's own two spellings, matched against the same
+// bridge-declared-name predicate splitWhiteboxVariantRecords applies. (The POINTER form reaches the
+// same answer through the deferred marker's emittedAdapterPairAnchors; a VALUE adapter's name is
+// composed inline and has no marker to resolve, so it decides here.)
+func (v *Visitor) testOwnedAdapterRef(adapterName string, participants ...string) string {
+	if !v.options.testWhiteboxReference || v.options.testMetadataAnchorName == "" {
+		return adapterName
 	}
-	return adapterName
+
+	anchor := v.options.testMetadataAnchorName
+
+	if v.options.testInternalBridgeName != "" {
+		for _, participant := range participants {
+			if v.whiteboxBridgeDeclaredType(participant) {
+				anchor = v.options.testInternalBridgeName
+				break
+			}
+		}
+	}
+
+	return anchor + "." + adapterName
+}
+
+// whiteboxBridgeDeclaredType mirrors splitWhiteboxVariantRecords' isBridgeName: a BARE name in the
+// bridge's declared-type set. The go/types half of that set is known before either variant
+// converts; the LIFTED half (a function-local type promoted to package level) is claimed as the
+// bridge itself converts, so it is read from the live claim set while the bridge is the variant
+// under conversion — encoding/binary's `TestByteOrder_byteOrder` is exactly that shape.
+func (v *Visitor) whiteboxBridgeDeclaredType(name string) bool {
+	if name == "" || strings.Contains(name, ".") {
+		return false
+	}
+
+	name = strings.TrimPrefix(name, ShadowVarMarker)
+
+	if whiteboxBridgeTypeNames.Contains(name) {
+		return true
+	}
+
+	return v.options.testInlineTypeAccess && packageLiftedTypeNames.Contains(name)
 }
 
 // valueAdapterTypeRef renders the reference to the generated VALUE-form foreign adapter

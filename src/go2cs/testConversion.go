@@ -584,7 +584,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 
 	// The bridge's declared-name set drives the white-box record split: a BARE record name in
 	// this set is a bridge-declared type whose generated partial must merge inside the bridge.
-	whiteboxBridgeTypeNames := HashSet[string]{}
+	whiteboxBridgeTypeNames = HashSet[string]{}
 	if model == testProjectWhiteboxReference && internal != nil && internal.TypesInfo != nil {
 		for _, obj := range internal.TypesInfo.Defs {
 			typeName, ok := obj.(*types.TypeName)
