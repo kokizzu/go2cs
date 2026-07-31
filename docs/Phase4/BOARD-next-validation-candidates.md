@@ -6,7 +6,8 @@
 > root cause rather than an exploration. **Revised 2026-07-27 (later)** by the reference-closure
 > arc: the closure family is closed, `internal/zstd` is banked, and two claims in the original
 > revision are retracted as measurement errors — see the sections below. Corpus state after that
-> arc, plus the 2026-07-29 `hash/maphash` bank: **62 validated / 215 (28.8%)**.
+> arc, plus the 2026-07-29 `hash/maphash` bank and the 2026-07-31 `image/draw` bank:
+> **63 validated / 215 (29.3%)**.
 >
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
@@ -50,7 +51,7 @@ measurement rounds: a struct literal declared in the EXTERNAL test variant reach
 package died with F14b's `resolve test project dependency "bytes_test": package bytes_test is not
 in std` — silently, until the validated sweep failed on `bytes` at the second package.
 
-## `io` — duplicate-type build blocker CLOSED (2026-07-30); runtime blockers remain
+## `io` — duplicate-type build blocker CLOSED (landed on master 2026-07-31); runtime blockers remain
 
 The diagnosis was correct: recompiling `io` into its mixed internal/external test assembly created a second `io_package.Writer`, distinct from the one named by `hash.Hash`, `bytes`, `fmt`, and the rest of the referenced closure. The general fix is the new **`whitebox-reference`** test-project model. A production package with build-selected same-package tests conditionally grants friend access to `<assembly>.tests`; internal `_test.go` declarations emit into `<name>_internal_test_package`; external references to those declarations route to the bridge by `go/types.Object` identity; and test-contributed adapters live in the test metadata anchor. Production remains the only identity for its types. Records that truly require a production-type mutation still fall back to `recompile`.
 
@@ -61,7 +62,10 @@ Fresh `io` conversion now emits `testProjectModel: whitebox-reference`, referenc
 - `TestMultiWriter_StringCheckCall`: `WriteString` forwarding behavior mismatch (separate runtime/conversion investigation).
 - `TestMultiWriter_WriteStringSingleAlloc` and `TestPipeAllocations`: exact allocation-profile assertions; no disclosure ruling has been made.
 
-This board item is complete at its stated architectural boundary. The remaining rows must be handled by their owning arcs rather than folded into the test-project-model change.
+This board item is complete at its stated architectural boundary — the **45 / 54** split above is
+the whole of what remains, and every one of the nine has a named owner. They must be handled by
+those arcs rather than folded into the test-project-model change.
+
 ## Build-blocked, each its own root
 
 | Package | First diagnostic | Note |
@@ -83,6 +87,30 @@ This board item is complete at its stated architectural boundary. The remaining 
 | `image/png` | probed previously; does not validate |
 | ~~`image/draw`~~ | **DONE 2026-07-31 — 9/9, banked.** All four failures were two defects, both fixed at the root. `TestDraw` was the address-taken *value parameter* box-copy: `DrawMask`'s `clip(dst, &r, src, &sp, mask, &mp)` narrows all three in place, and `Ꮡ(r)` boxed a COPY, so the draw loop ran on the unclipped rectangle. (The empty-`Pix` panic above was that same unclipped geometry, not an assertion defect — the guess in this row was wrong.) The other three were value adapters carrying no Go dynamic type, so `image.Image` type switches took the wrong arm. |
 
+## The blank-import module-initializer gap — a Go guarantee .NET does not make
+
+Go's `_ "image/png"` imports a package **purely** for the side effect of its `init()`, and the
+language guarantees that initializer runs before `main`. The converter maps a Go `init()` onto
+`[GoInit]`, which `csproj-template.xml` aliases to .NET's `[ModuleInitializer]` — the right shape,
+and a **weaker guarantee**: a module initializer fires at first access to something in its module,
+so an assembly nothing in the program ever *names* is never loaded and its initializer never runs.
+A blank import is by definition the case that names nothing.
+
+The observable form is a registry that stays empty. `image/gif`'s `writer_test.go` blank-imports
+`_ "image/png"` so that `png`'s `init()` calls `image.RegisterFormat("png", …)`
+(`image/png/reader.cs:1223`); it never runs, `image.Decode` has no PNG entry, and `TestWriter`
+fails with `../testdata/video-001.png image: unknown format` — the package's only failure, at
+**27 of 28**.
+
+This gates more than one package, and every consumer is a registration-by-blank-import:
+`database/sql` drivers (`_ "github.com/…/mysql"` → `sql.Register`), `net/http/pprof` (its `init()`
+installs the `/debug/pprof` handlers), `image/png`/`image/jpeg` as decoders for anything that calls
+`image.Decode`, and `time/tzdata`. The remedy is a converter/runtime concern, not a per-package one:
+the referencing project must *force* each blank-imported package's initializer to run — Go's
+own ordering (dependencies first, then the importer) is the specification to match. Note that a
+blank import is not invisible to the build: it is in `go/packages`' import list, so the project
+reference already exists; only the *load* does not happen.
+
 ## Recurring classes worth a general fix rather than another point repair
 
 - **Zero-value construction for a type that needs one.** Fixed **four** times now in four different
@@ -98,6 +126,26 @@ This board item is complete at its stated architectural boundary. The remaining 
 - **Untyped constants in a typed slot — CLOSED 2026-07-29.** The int-literal case was already fixed;
   a computed float constant that directly uses a named untyped integer wrapper now folds once at the
   resolved float width. `hash/maphash` validates 22/22; `UntypedConstDefine` guards both `:=` and typed slots.
+- **The address-of box-copy family — a SIXTH path is open: the value RECEIVER.** Five paths are
+  closed (a pointer-to-array base, a slice field, an array field of the receiver, a named result,
+  and 2026-07-31's address-taken value *parameter*). The receiver is the one signature-declared
+  category left, and it fails exactly like the parameter did — with no compile error and a silently
+  wrong answer. Measured on a minimal repro (`go run` vs the transpiled program, same source):
+
+  | Go source | Emitted C# | Go | C# |
+  |:--|:--|:--|:--|
+  | `func (h Holder) Narrowed() … { clip(&h.R) … }` | `clip(Ꮡ(h).of(Holder.ᏑR));` | `0 0` | `5 5` |
+  | `func (b Box) Bumped() int { bump(&b); return b.N }` | `bump(Ꮡ(b));` | `16` | `6` |
+
+  `Ꮡ(h)` is the `Ꮡ<T>(in T)` copy-box overload, so the callee writes into a throwaway. A value
+  receiver is declared in the signature like a parameter and a named result, so the escape
+  analysis' define-walk never reaches it — the same root the parameter fix named. It is **not**
+  covered by that fix: `markCaptureModeBoxedParams` / `paramBoxReasonHolds` walk `funcType.Params`,
+  and the receiver arrives on `funcDecl.Recv` under no `ʗp` convention. Closing it means giving the
+  receiver the same entry-time `ref var h = ref heap(hʗp, out var Ꮡh)` preamble, with the same
+  inherently-heap restriction (`paramAddressTakenNeedsBox`) so a `&recv[i]` on a slice receiver does
+  not allocate for nothing. No banked package is known to depend on it yet, which is precisely the
+  argument for closing the family at its root rather than waiting for a sixth victim.
 
 ## RETRACTED — the `internal/zstd` / `testing.B` "trap" was a false alarm
 
