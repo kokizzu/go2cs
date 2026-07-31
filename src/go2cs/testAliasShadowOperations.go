@@ -162,6 +162,68 @@ func collectWhiteboxInternalTestObjects(pkg *packages.Package) map[types.Object]
 	return objects
 }
 
+// collectWhiteboxBridgeDeclaredNames captures the GO names the bridge class declares: every
+// package-level object an internal `_test.go` contributes, plus its METHODS — those emit as static
+// extension members of the same class and hide a same-named production member just as a function
+// does. See whiteboxBridgeDeclaredNames.
+func collectWhiteboxBridgeDeclaredNames(pkg *packages.Package) HashSet[string] {
+	names := HashSet[string]{}
+
+	if pkg == nil || pkg.TypesInfo == nil || pkg.Fset == nil {
+		return names
+	}
+
+	for ident, obj := range pkg.TypesInfo.Defs {
+		if obj == nil || ident == nil || obj.Name() == "" || obj.Name() == "_" {
+			continue
+		}
+
+		fileName := pkg.Fset.Position(obj.Pos()).Filename
+
+		if !strings.HasSuffix(strings.ToLower(fileName), "_test.go") {
+			continue
+		}
+
+		switch typed := obj.(type) {
+		case *types.Func:
+			// A package-level func, or a method (whose Parent is nil) — both land in the class.
+			if signature, ok := typed.Type().(*types.Signature); ok && signature.Recv() != nil {
+				names.Add(obj.Name())
+				continue
+			}
+
+			if obj.Parent() == pkg.Types.Scope() {
+				names.Add(obj.Name())
+			}
+		case *types.Var, *types.Const, *types.TypeName:
+			if obj.Parent() == pkg.Types.Scope() {
+				names.Add(obj.Name())
+			}
+		}
+	}
+
+	return names
+}
+
+// whiteboxProductionNameShadowed reports a BARE reference, from inside the bridge, to a
+// package-level production member the bridge itself declares a same-named member for.
+func (v *Visitor) whiteboxProductionNameShadowed(obj types.Object) bool {
+	if !v.whiteboxProductionObject(obj) || !whiteboxBridgeDeclaredNames.Contains(obj.Name()) {
+		return false
+	}
+
+	if v.pkg == nil {
+		return false
+	}
+
+	switch obj.(type) {
+	case *types.Func, *types.Var, *types.Const:
+		return obj.Parent() == v.pkg.Scope()
+	}
+
+	return false
+}
+
 // whiteboxBridgeObject reports an internal-test object referenced from the external variant.
 func (v *Visitor) whiteboxBridgeObject(obj types.Object) bool {
 	if !v.options.testWhiteboxReference || !v.options.testExternalVariant || obj == nil ||

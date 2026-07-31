@@ -2425,3 +2425,57 @@ func TestGeneratedTypeScopeMirrorsGeneratorRule(t *testing.T) {
 		}
 	}
 }
+
+// The bridge class HIDES a same-named production member from the `using static <pkg>_package` it
+// binds production through — C# member lookup stops at the first enclosing type carrying the name.
+// container/heap is the corpus instance: heap_test.go declares `func (h *myHeap) Pop() any`, which
+// hid `heap_package.Pop(Interface)` so every `Pop(h)` in the suite bound the extension by value
+// (CS1620 x8). The collection must therefore reach METHODS (they emit as static extension members
+// of the same class), not just package-level declarations, and must not reach production names or
+// function-LOCAL declarations, which shadow nothing at class scope.
+func TestWhiteboxBridgeDeclaredNamesCoverMethodsAndPackageDecls(t *testing.T) {
+	dir := t.TempDir()
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod": "module example/bridgenames\n\ngo 1.23\n",
+		"heapish.go": "package bridgenames\n" +
+			"type Iface interface{ Len() int }\n" +
+			"func Pop(h Iface) int { return h.Len() }\n" +
+			"func Production() int { return 1 }\n",
+		"heapish_test.go": "package bridgenames\n" +
+			"import \"testing\"\n" +
+			"type myHeap []int\n" +
+			"func (h *myHeap) Len() int { return len(*h) }\n" +
+			"func (h *myHeap) Pop() int { return 0 }\n" +
+			"var seed = 3\n" +
+			"const limit = 4\n" +
+			"func TestUse(t *testing.T) {\n" +
+			"\tlocalOnly := 1\n" +
+			"\t_ = localOnly\n" +
+			"\th := &myHeap{}\n" +
+			"\t_ = Pop(h)\n" +
+			"\t_ = Production()\n" +
+			"\t_ = seed + limit\n" +
+			"}\n",
+	})
+
+	internal, _ := loadTestVariantsForDir(t, dir)
+	if internal == nil {
+		t.Fatal("the internal test variant was not loaded")
+	}
+
+	names := collectWhiteboxBridgeDeclaredNames(internal)
+
+	for _, want := range []string{"Pop", "Len", "myHeap", "seed", "limit", "TestUse"} {
+		if !names.Contains(want) {
+			t.Errorf("the bridge declares %q, so it hides a same-named production member; got %v", want, names.Keys())
+		}
+	}
+
+	// Production declarations are not bridge members, and a function-local name shadows nothing
+	// at class scope — either would qualify a reference that needs no qualification.
+	for _, unwanted := range []string{"Production", "Iface", "localOnly"} {
+		if names.Contains(unwanted) {
+			t.Errorf("%q is not a bridge-class member; got %v", unwanted, names.Keys())
+		}
+	}
+}

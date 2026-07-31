@@ -625,6 +625,11 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 	testMethodRenames = make(map[types.Object]bool)
 	whiteboxInternalTestObjects = collectWhiteboxInternalTestObjects(internal)
 
+	whiteboxBridgeDeclaredNames = HashSet[string]{}
+	if model == testProjectWhiteboxReference {
+		whiteboxBridgeDeclaredNames = collectWhiteboxBridgeDeclaredNames(internal)
+	}
+
 	// The lifted type names the PRODUCTION conversion of this package claimed. It ran in this same
 	// process moments ago (processConversion converts the production sources, then calls
 	// processTestConversion), so its live claim set is still standing here — captured BEFORE the

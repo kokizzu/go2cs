@@ -704,6 +704,19 @@ var testAmbiguousLocalTypeNames HashSet[string]
 // export data carries no usable declaration position.
 var whiteboxInternalTestObjects map[types.Object]bool
 
+// whiteboxBridgeDeclaredNames holds the GO names the white-box bridge class itself declares — its
+// internal `_test.go` package-level funcs/vars/consts/types plus its methods, which emit as static
+// extension members of the same class. The bridge binds production through
+// `using static <pkg>_package`, and C# member lookup stops at the first enclosing type that has
+// the name: a bridge member HIDES every same-named production member, `using static` included.
+// container/heap's `[GoRecv] Pop(this ref myHeap)` hid `heap_package.Pop(Interface)` outright, so
+// the test's own `Pop(h)` bound the extension and failed CS1620 (ref argument). A production
+// reference whose name is in this set is emitted production-class-qualified instead — the same
+// remedy packageBuiltinShadows applies to a shadowed `using static go.builtin`. Raw Go names,
+// because both sides pass through the same sanitizers; session-scoped like testMethodRenames and
+// nil for every other conversion.
+var whiteboxBridgeDeclaredNames HashSet[string]
+
 // metadataAnchorLocalTypes reports whether the anchored metadata file being written treats its
 // anchor class as the LOCAL type scope — true for the reference test models (the production class
 // is a referenced assembly there), false for the recompile model's anchored writes (the production

@@ -240,5 +240,17 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 		return ShadowVarMarker + getSanitizedIdentifier(v.getIdentName(ident))
 	}
 
+	// A production package-level member the WHITE-BOX BRIDGE declares a same-named member for.
+	// The bridge is the same GO package, so the reference is bare, and it binds production
+	// through `using static <pkg>_package` — but a `using static` import loses to any member of
+	// the enclosing class, so the bridge's own declaration HIDES it (container/heap's
+	// `[GoRecv] Pop(this ref myHeap)` hid `heap_package.Pop(Interface)`; every `Pop(h)`/`Push(h,
+	// x)` in heap_test then bound the extension by value — CS1620 ×8). Qualify through the
+	// production class, which nothing declared in the bridge can shadow.
+	if obj := v.info.ObjectOf(ident); v.whiteboxProductionNameShadowed(obj) {
+		return globalQualifyRooted(packageNamespace+"."+getSanitizedImport(v.options.testProductionName+PackageSuffix)) +
+			"." + getSanitizedIdentifier(v.getIdentName(ident))
+	}
+
 	return getSanitizedIdentifier(v.getIdentName(ident))
 }
