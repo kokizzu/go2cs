@@ -85,6 +85,10 @@
     <Project Path="Tests/Behavioral/BigUntypedConstComparison/BigUntypedConstComparison.csproj" />
     <Project Path="Tests/Behavioral/BitwiseUntypedConst/BitwiseUntypedConst.csproj" />
     <Project Path="Tests/Behavioral/BlankIdentifierCollision/BlankIdentifierCollision.csproj" />
+    <Project Path="Tests/Behavioral/BlankImportSideEffects/BlankImportSideEffects.csproj" />
+    <Project Path="Tests/Behavioral/BlankImportSideEffects/jpeglike/BlankImportSideEffects.jpeglike.csproj" />
+    <Project Path="Tests/Behavioral/BlankImportSideEffects/pnglike/BlankImportSideEffects.pnglike.csproj" />
+    <Project Path="Tests/Behavioral/BlankImportSideEffects/registry/BlankImportSideEffects.registry.csproj" />
     <Project Path="Tests/Behavioral/BlankMultiResult/BlankMultiResult.csproj" />
     <Project Path="Tests/Behavioral/BlankNamedReturn/BlankNamedReturn.csproj" />
     <Project Path="Tests/Behavioral/BoxedMapFieldWrite/BoxedMapFieldWrite.csproj" />

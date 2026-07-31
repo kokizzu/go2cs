@@ -125,6 +125,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckBlankIdentifierCollision() => CheckTarget("BlankIdentifierCollision");
 
     [TestMethod]
+    public void CheckBlankImportSideEffects() => CheckTarget("BlankImportSideEffects");
+
+    [TestMethod]
     public void CheckBlankMultiResult() => CheckTarget("BlankMultiResult");
 
     [TestMethod]

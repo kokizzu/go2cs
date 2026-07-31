@@ -222,6 +222,11 @@ type Visitor struct {
 	importQueue           HashSet[string]
 	requiredUsings        HashSet[string]
 	typeAliasDeclarations *strings.Builder
+	// blankImportInits collects this FILE's blank-import module-initializer hooks — the
+	// `[GoInit] … builtin.initPackage(typeof(<pkg>_package));` methods that force a
+	// side-effects-only import's `init` to run (see visitImportSpec's blank-alias branch).
+	// Spliced into the top of the file's class body at BlankImportInitMarker.
+	blankImportInits *strings.Builder
 	// A cross-package type reference emits a short-alias form (`pkg.Type`, `@unsafe.Pointer`) that
 	// resolves only through a file-local alias `using <alias> = <namespace>;`. That alias is emitted
 	// when the file imports the package under its canonical (unaliased) name; a file can reference the
@@ -648,6 +653,14 @@ var goBuiltinNames = map[string]bool{
 var globalTempVarCount map[string]int
 var initFuncCounter int
 var usesUnsafeCode bool
+
+// packageBlankImportForces holds the import paths this package (this ASSEMBLY, i.e. the current
+// conversion pass) has already emitted a blank-import force hook for. Go initializes an imported
+// package exactly once per program regardless of how many files import it, and a .NET module
+// constructor likewise runs once per assembly — so a package blank-imported from several files
+// needs exactly ONE hook, and it belongs to the first file that names it. Reset per package/variant
+// by resetPackageState; written under packageLock.
+var packageBlankImportForces HashSet[string]
 
 // packageDoc holds the current package's Go doc comment rendered to Markdown, for the NuGet README.
 var packageDoc string

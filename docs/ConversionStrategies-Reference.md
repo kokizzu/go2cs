@@ -175,6 +175,110 @@ The same collision detection must see GOROOT-VENDORED namespaces. `visitImportSp
 
 **A DOTTED build tag (`goexperiment.X`, `amd64.vN`) is matched against the host toolchain's tool tags.** The converter re-checks each file's `//go:build` constraint after `go/packages` has already loaded it (to drop files for the wrong GOOS/GOARCH when converting cross-platform). Its evaluator only handled bare identifiers (`linux`, `amd64`), so a *dotted* tag parsed as a selector and fell through to `false`. That is wrong for an experiment enabled BY DEFAULT: `coverageredesign`, `regabiwrappers`, and `regabiargs` are in the host's `go/build` `ToolTags`, so `go/packages` loaded their `//go:build goexperiment.X` `_on.go` files — but the re-check then re-EXCLUDED them (the selector → `false`), dropping the package-level consts (`testing`'s `goexperiment.CoverageRedesign`, CS0117 ×4). The evaluator now resolves a `*ast.SelectorExpr` tag by membership in `build.Default.ToolTags` — so an enabled experiment's `_on.go` survives and a disabled one's `!goexperiment.X` `_off.go` survives, exactly the one `go/packages` chose. Blast radius is only `internal/goexperiment` (the sole stdlib package whose file selection flipped). **Guard owed** — the fix depends on the host toolchain's active tool tags, which the `go2cs/*` behavioral harness cannot express portably; validated by the reconvert A/B (only `internal/goexperiment` changes) and the [census](Glossary.md#census) (the consts appear, `testing`'s CS0117 clear).
 
+### A blank import forces the imported package's `init` to run
+
+Go's `import _ "image/png"` imports a package **purely** for the side effects of its `init`, and the
+language guarantees that initializer runs before the importing package's own. A converted Go `init`
+becomes `[GoInit]`, which `csproj-template.xml` aliases to .NET's `[ModuleInitializer]` — the right
+shape and a **weaker guarantee**: a module constructor runs at first access to something in its
+module, so an assembly nothing in the program ever *names* is never loaded and never initializes. A
+blank import is by definition the case that names nothing, and the observable form is a registry that
+stays empty. `image/gif`'s `writer_test.go` blank-imports `image/png` so that png's `init` calls
+`image.RegisterFormat` (`image/png/reader.cs`); with the import emitted as a comment alone that never
+ran, `image.Decode` had no PNG entry, and `TestWriter` failed with
+`../testdata/video-001.png image: unknown format` — the package's only failure, at 27 of 28. The same
+shape gates every registration-by-blank-import consumer: `database/sql` drivers (`sql.Register`),
+`net/http/pprof` (its `init` installs the `/debug/pprof` handlers), `image/png` and `image/jpeg` as
+decoders for anything calling `image.Decode`, and `time/tzdata`.
+
+The blank import still emits **no `using`** — `using _ = <ns>;` would hijack C#'s `_` discard for the
+whole file (CS0118 + CS0029 on any deconstruction discard) — so it stays a comment, and the
+initialization is forced by a generated module-initializer hook at the top of the importing file's
+class body:
+
+```go
+import (
+    _ "BlankImportSideEffects/jpeglike"
+    _ "BlankImportSideEffects/pnglike"
+    "BlankImportSideEffects/registry"
+)
+```
+```csharp
+// blank import: BlankImportSideEffects.jpeglike_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
+// blank import: BlankImportSideEffects.pnglike_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
+using registry = BlankImportSideEffects.registry_package;
+
+partial class main_package {
+
+// Go runs a blank-imported package's `init` before this package's own; .NET would never
+// load an assembly nothing references, so the side effects the import exists for are forced.
+[GoInit] internal static void initᴛᴛblankImportꓸBlankImportSideEffectsꓸjpeglike() {
+    builtin.initPackage(typeof(BlankImportSideEffects.jpeglike_package));
+}
+```
+
+Four decisions make that emission what it is.
+
+**The mechanism is `RuntimeHelpers.RunModuleConstructor`**, wrapped as golib's `builtin.initPackage(Type)`
+so the emitted line stays readable and the mechanism lives in exactly one place. It is the explicit,
+spec-defined way to run a module constructor, and the runtime guarantees a module constructor runs **at
+most once** — so several blank importers of one package, or a package forced after it has already
+loaded, are no-ops rather than repeated `init` calls. Measured under **Native AOT** as well as the JIT:
+the call is AOT-safe, and under AOT the gap does not even arise (a single native image has no lazy
+assembly load, so every linked module's initializers run at startup regardless) — the forced call is
+simply redundant there. `typeof` also roots the package class for the trimmer, so a trimmed publish
+keeps the assembly the program otherwise never names.
+
+**The hook leads the class body**, ahead of the file's own `init` functions, because Go orders an
+imported package's initialization before the importer's. Roslyn emits an assembly's module-initializer
+calls in compilation file order and then declaration order within a file, so leading the file's
+declarations is what that ordering buys — within one file it is exact. Across files of one package the
+order is Roslyn's, which is the same latitude the conversion already lives with for every *non*-blank
+import (whose initializer the CLR runs lazily at first use, not in Go's order); no converted package
+depends on the difference. Reproducing Go's ordering in full would mean forcing **every** import
+eagerly, in dependency order, from a single per-assembly driver — a strictly larger change that trades
+startup cost (loading the whole transitive assembly closure at module init) for fidelity nothing
+currently needs. Deliberately deferred, not overlooked.
+
+**Exactly one hook per (assembly, imported package).** Go initializes a package once per program
+however many files import it, and a .NET module constructor likewise runs once per assembly, so the
+hook belongs to the first file that names the import; later files' blank imports of the same package
+emit nothing. The hook's name is derived from the import path (`image/png` →
+`initᴛᴛblankImportꓸimageꓸpng`), which makes it unique by construction — two blank imports in one file
+are two methods, and a shared generated name would be CS0111 — and stable across runs without a
+counter or a file-name mangle. Path segments are reduced to C# identifier characters, so a module
+path's dots and hyphens (`github.com/mattn/go-isatty`) cannot break the identifier. The doubled temp
+marker keeps the name clear of the relocated-package-var method space (`initᴛ<varname>`, see
+[Package-Level Variable Initialization Order](#package-level-variable-initialization-order)) and the
+`blankImport` word clear of the `-tests` package-init hook (`initᴛᴛtests`).
+
+**Go's pseudo-packages are skipped.** `unsafe` and `builtin` are compiler-provided and have no
+initialization at all, and `C` is cgo. `import _ "unsafe"` is the `//go:linkname` ritual — 67 files of
+the converted standard library — so forcing it would be a guaranteed no-op emitted 67 times. Only real
+packages get a hook, which is why the converted corpus's blast radius is three files
+(`crypto/x509` → sha1/sha256/sha512, `runtime/metrics` → runtime, `runtime/race` → its amd64v1 variant)
+rather than seventy.
+
+**Only the module constructor is forced — that is exactly the package's `init` functions.** A package's
+own package-level variable initializers are C# static field initializers on the package class, which
+the CLR still runs lazily at first access to that class, unchanged from every other import (and the
+package's own `init` touching them is what triggers them). The residual case is a package whose
+registration is a package-level `var _ = pkg.Register(…)` rather than an `init`; closing it means
+additionally forcing the package class's type initializer, which is deliberately *not* done here
+because it would eagerly run `runtime`'s 291 package-level initializers on behalf of
+`runtime/metrics`'s linkname-only blank import for no measured benefit. No blank import in the
+converted standard library registers that way.
+
+The `-tests` emission carries all of this unchanged — the hook is written by the same import visitor,
+so a blank import in a `_test.go` file (which is where `image/gif`'s is) forces from the test assembly.
+Guarded by the `BlankImportSideEffects` behavioral test — a `registry` package that two blank-imported
+sibling packages fill from their `init`s, read back by an importer that never names either registrant,
+with the importer's own `init` recording the count to prove the ordering and an unregistered name as
+the negative control (without the hooks the program prints `count at init: 0` and three `missing:`
+lines; with them it matches `go run` exactly) — plus the `TestBlankImportInitName` and
+`TestNoInitPseudoPackages` converter unit tests, which lock the generated name's uniqueness and the
+pseudo-package skip.
+
 ### A NuGet-referenced standard library carries its exported metadata IN THE CONVERTER
 
 Everything above — the imported-type-alias `global using` round-trip, and the foreign `GoImplement`

@@ -91,6 +91,7 @@ func resetPackageState(pkg *packages.Package) {
 	packageDirectBoxReceiverMethods = make(map[*types.Func]bool)
 	initFuncCounter = 0
 	usesUnsafeCode = false
+	packageBlankImportForces = HashSet[string]{}
 
 	// Capture the package-level Go doc (rendered to Markdown) for the NuGet README
 	packageDoc = extractPackageDoc(pkg.Syntax)
@@ -150,6 +151,7 @@ func newFileVisitor(fset *token.FileSet, packageTypes *types.Package, info *type
 		liftedAnonStructNames:     map[string]string{},
 		subStructTypes:            map[types.Type][]types.Type{},
 		packageImports:            &strings.Builder{},
+		blankImportInits:          &strings.Builder{},
 		requiredUsings:            HashSet[string]{},
 		importQueue:               HashSet[string]{},
 		referencedForeignPackages: HashSet[string]{},

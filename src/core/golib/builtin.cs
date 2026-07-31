@@ -177,6 +177,31 @@ public static class builtin
     }
 
     /// <summary>
+    /// Runs the converted Go package that declares <paramref name="packageType"/> through its
+    /// package initialization, if it has not already run.
+    /// </summary>
+    /// <param name="packageType">The package's <c>&lt;name&gt;_package</c> class.</param>
+    /// <remarks>
+    /// Go initializes every imported package before the importing package, whether or not anything
+    /// in it is ever referenced — which is the entire point of a BLANK import (<c>import _ "image/png"</c>),
+    /// whose only purpose is the imported package's <c>init</c> side effects. A converted Go <c>init</c>
+    /// becomes a <c>[GoInit]</c> (i.e. <see cref="ModuleInitializerAttribute"/>) method, and .NET makes
+    /// the WEAKER guarantee: a referenced assembly's module constructor runs at first access to
+    /// something in that module, so an assembly the program never names is never loaded and its
+    /// <c>init</c> never runs. This forces it, and the runtime guarantees a module constructor runs at
+    /// most once, so repeated calls (several blank importers of one package) are no-ops.
+    /// <para>
+    /// Only the module constructor is forced. That is exactly the package's <c>init</c> functions; the
+    /// package's own package-level variable initializers are C# static field initializers, which the
+    /// CLR still runs lazily at first access to the package class — unchanged from every other import.
+    /// </para>
+    /// </remarks>
+    public static void initPackage(Type packageType)
+    {
+        RuntimeHelpers.RunModuleConstructor(packageType.Module.ModuleHandle);
+    }
+
+    /// <summary>
     /// Returns a new <see cref="PanicException"/> with the specified <paramref name="state"/>.
     /// </summary>
     /// <param name="state">State of panic exception.</param>

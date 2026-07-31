@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 // packageQualifiedNameRegex matches a dotted qualified identifier. Segments may contain Unicode
@@ -262,6 +263,9 @@ func (v *Visitor) visitImportSpec(importSpec *ast.ImportSpec, doc *ast.CommentGr
 			// exported aliases still load (loadImportedTypeAliases above) and a genuine type
 			// reference gets its canonical `using` from visitFile's collectTypePackages machinery.
 			v.packageImports.WriteString(fmt.Sprintf("// blank import: %s (side effects only; no using emitted — a `using _` alias hijacks C# discards)", importPath))
+
+			// …and the side effects are the whole point, so force them: see writeBlankImportInit.
+			v.writeBlankImportInit(importPath)
 		} else {
 			if getSanitizedImport(alias) == canonicalAlias {
 				v.canonicalAliasImported.Add(v.currentImportPath)
@@ -298,6 +302,95 @@ func (v *Visitor) visitImportSpec(importSpec *ast.ImportSpec, doc *ast.CommentGr
 
 	v.writeCommentString(v.packageImports, importSpec.Comment, importSpec.End())
 	v.packageImports.WriteString(v.newline)
+}
+
+// noInitPseudoPackages are the Go pseudo-packages the language gives no initialization at all:
+// `unsafe` and `builtin` are compiler-provided and have no source to run, and `C` is cgo. A blank
+// import of one (`import _ "unsafe"`, required by every `//go:linkname` file — 67 files of the
+// converted standard library) exists to satisfy the Go compiler, never to run an `init`, so forcing
+// its converted assembly's module constructor would be a guaranteed no-op. See writeBlankImportInit.
+var noInitPseudoPackages = NewHashSet([]string{"unsafe", "builtin", "C"})
+
+// writeBlankImportInit records the module-initializer hook that forces a BLANK-imported package's
+// `init` functions to run.
+//
+// Go initializes an imported package before the importing package whether or not anything in it is
+// ever referenced; a blank import is by definition the case that references nothing, and exists
+// SOLELY for that initialization (`image/png`'s `init` calls `image.RegisterFormat`, a `database/sql`
+// driver's calls `sql.Register`, `net/http/pprof`'s installs its handlers). A converted Go `init`
+// becomes `[GoInit]`, which csproj-template.xml aliases to .NET's [ModuleInitializer] — the right
+// shape and a WEAKER guarantee: a module constructor runs at first access to something in its
+// module, so an assembly nothing in the program names is never loaded and never initializes. The
+// registry then stays empty (image/gif's TestWriter: "../testdata/video-001.png image: unknown
+// format"). golib's `initPackage` closes the gap with RuntimeHelpers.RunModuleConstructor, which the
+// runtime guarantees runs a module constructor at most once.
+//
+// The hook is emitted at the TOP of the importing file's class body, so it precedes that file's own
+// `init` functions — Go's "imported package first" ordering, to the extent one assembly's module
+// initializers are ordered at all (Roslyn emits them in compilation file order, then declaration
+// order within a file). Exactly ONE hook is emitted per (assembly, imported package): Go initializes
+// a package once per program however many files import it, and a .NET module constructor likewise
+// runs once per assembly.
+//
+// csNamespace is the already-root-qualified C# package class the import resolved to — the same
+// target an unaliased import's `using` binds — so the emitted `typeof` needs no alias of its own
+// (Go forbids a blank import from having a usable one).
+func (v *Visitor) writeBlankImportInit(csNamespace string) {
+	if noInitPseudoPackages.Contains(v.currentImportPath) {
+		return
+	}
+
+	// A hand-owned file's emission lands in the non-compiled `.cs.auto` review sibling, so it still
+	// SHOWS the hook (the sibling is a faithful record of what the converter would emit) but must
+	// never CLAIM the package-wide slot — a claim from a file that compiles nothing would suppress
+	// the hook in the real sibling that needs it, and the import would go unforced. Same fence as
+	// claimLiftedTypeName / the hoist collector's.
+	if !v.manualConversion {
+		packageLock.Lock()
+		alreadyForced := packageBlankImportForces.Contains(v.currentImportPath)
+
+		if !alreadyForced {
+			packageBlankImportForces.Add(v.currentImportPath)
+		}
+
+		packageLock.Unlock()
+
+		if alreadyForced {
+			return
+		}
+	}
+
+	v.blankImportInits.WriteString(fmt.Sprintf("%s// Go runs a blank-imported package's `init` before this package's own; .NET would never%s", v.newline, v.newline))
+	v.blankImportInits.WriteString(fmt.Sprintf("// load an assembly nothing references, so the side effects the import exists for are forced.%s", v.newline))
+	v.blankImportInits.WriteString(fmt.Sprintf("[GoInit] internal static void %s() {%s", blankImportInitName(v.currentImportPath), v.newline))
+	v.blankImportInits.WriteString(fmt.Sprintf("%sbuiltin.initPackage(typeof(%s));%s", v.indent(1), csNamespace, v.newline))
+	v.blankImportInits.WriteString(fmt.Sprintf("}%s", v.newline))
+}
+
+// blankImportInitName builds the generated hook method's name from the Go IMPORT PATH — unique by
+// construction within the class (one hook per imported package), stable across runs, and readable
+// as what it is: `image/png` -> `initᴛᴛblankImportꓸimageꓸpng`. The doubled temp marker keeps the
+// name clear of the relocated-package-var method space (`init<ᴛ><varname>`, initOrderOperations.go)
+// and the `blankImport` word clear of PackageTestInitHookMethod (`initᴛᴛtests`). Path segments are
+// reduced to C# identifier characters, so a module path's dots and hyphens
+// (`github.com/mattn/go-isatty`) cannot break the identifier.
+func blankImportInitName(importPath string) string {
+	name := strings.Builder{}
+	name.WriteString("init" + TempVarMarker + TempVarMarker + "blankImport")
+
+	for _, segment := range strings.Split(importPath, "/") {
+		name.WriteString(TypeAliasDot)
+
+		for _, r := range segment {
+			if r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r) {
+				name.WriteRune(r)
+			} else {
+				name.WriteRune('_')
+			}
+		}
+	}
+
+	return name.String()
 }
 
 // rootQualified prefixes ns with the root namespace, using `global::go.` instead of a bare `go.`

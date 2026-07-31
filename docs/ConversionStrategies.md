@@ -108,9 +108,24 @@ import "unicode/utf8"
 using utf8 = go.unicode.utf8_package;    // one alias; per-file `package_info.cs` carries the global usings
 ```
 
+A **blank** import — `import _ "image/png"`, imported purely so its `init` runs — emits no `using` (a
+`using _` alias would hijack C#'s discard) but must still initialize. A converted `init` is a .NET
+`[ModuleInitializer]`, which fires only at first use of something in its assembly, and a blank import
+names nothing — so the converter emits a hook that forces it, once per assembly, ahead of the file's
+own `init`s.
+
+```go
+import _ "image/png"    // registers the PNG decoder with image.Decode
+```
+```csharp
+// blank import: go.image.png_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
+[GoInit] internal static void initᴛᴛblankImportꓸimageꓸpng() { builtin.initPackage(typeof(go.image.png_package)); }
+```
+
 **Full detail:** [Reference → Package Conversion](ConversionStrategies-Reference.md#package-conversion) —
 cross-package imports & assembly references, module-aware resolution, exported type aliases crossing
 packages (the `ꓸ`-qualified `global using` round-trip), cross-package interface-satisfaction witnesses,
+[blank-import initialization](ConversionStrategies-Reference.md#a-blank-import-forces-the-imported-packages-init-to-run),
 build-tag/`GOOS`/`GOARCH` file selection, and the auto-generated `.slnx` solutions (the stdlib solution, and
 the `-recurse` per-project solutions grouped into `src`/`pkg`/`core` folders).
 

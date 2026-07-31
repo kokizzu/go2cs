@@ -121,6 +121,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckBlankIdentifierCollision() => CheckTarget("BlankIdentifierCollision");
 
     [TestMethod]
+    public void CheckBlankImportSideEffects() => CheckTarget("BlankImportSideEffects");
+
+    [TestMethod]
     public void CheckBlankMultiResult() => CheckTarget("BlankMultiResult");
 
     [TestMethod]
