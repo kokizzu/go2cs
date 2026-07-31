@@ -68,9 +68,8 @@
        can leak in because it is never listed. -->
   <ItemGroup>
     <Compile Include="go2cs_test_host.cs" />
-    <Compile Include="maphash.cs" />
-    <Compile Include="maphash_purego.cs" />
     <Compile Include="maphash_test.cs" />
+    <Compile Include="package_info_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
     <Compile Include="smhasher_test.cs" />
   </ItemGroup>
@@ -88,13 +87,10 @@
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\bytes\bytes.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\crypto\rand\crypto.rand.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\fmt\fmt.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\hash\hash.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\internal\byteorder\internal.byteorder.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\testenv\internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\math\bits\math.bits.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\math.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\rand\math.rand.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\runtime\internal\math\runtime.internal.math.csproj" />
@@ -102,6 +98,7 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\slices\slices.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strings\strings.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\unsafe\unsafe.csproj" />
+    <ProjectReference Include="hash.maphash.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

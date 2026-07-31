@@ -5,15 +5,16 @@ namespace go;
 
 // Exported for testing only.
 using utf8 = unicode.utf8_package;
+using static go.bufio_package;
 using unicode;
 
-partial class bufio_package {
+partial class bufio_internal_test_package {
 
 public static Func<rune, bool> IsSpace = isSpace;
 
 public static UntypedInt DefaultBufSize => /* defaultBufSize */ 4096;
 
-[GoRecv] public static void MaxTokenSize(this ref Scanner s, nint n) {
+[GoRecv] internal static void MaxTokenSize(this ref global::go.bufio_package.Scanner s, nint n) {
     if (n < utf8.UTFMax || n > 1000000000) {
         throw panic("bad max token size");
     }
@@ -24,8 +25,8 @@ public static UntypedInt DefaultBufSize => /* defaultBufSize */ 4096;
 }
 
 // ErrOrEOF is like Err, but returns EOF. Used to test a corner case.
-[GoRecv] public static error ErrOrEOF(this ref Scanner s) {
+[GoRecv] internal static error ErrOrEOF(this ref global::go.bufio_package.Scanner s) {
     return s.err;
 }
 
-} // end bufio_package
+} // end bufio_internal_test_package

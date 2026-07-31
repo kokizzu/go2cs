@@ -9,14 +9,15 @@ using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using io = io_package;
+using static go.encoding.csv_package;
 
-partial class csv_package {
+partial class csv_internal_test_package {
 
 public static void FuzzRoundtrip(ж<testing.F> Ꮡf) {
     Ꮡf.Fuzz((ж<testing.T> t, slice<byte> @in) => {
         var buf = @new<bytes.Buffer>();
         t.Logf("input = %q"u8, @in);
-        foreach (var (_, vᴛ1) in new Reader[]{
+        foreach (var (_, vᴛ1) in new global::go.encoding.csv_package.Reader[]{
             new(Comma: (rune)','),
             new(Comma: (rune)';'),
             new(Comma: (rune)'\t'),
@@ -25,7 +26,7 @@ public static void FuzzRoundtrip(ж<testing.F> Ꮡf) {
             new(Comma: (rune)',', Comment: (rune)'#'),
             new(Comma: (rune)',', Comment: (rune)';')
         }.slice()) {
-            ref var tt = ref heap(new Reader(), out var Ꮡtt);
+            ref var tt = ref heap(new global::go.encoding.csv_package.Reader(), out var Ꮡtt);
             tt = vᴛ1;
 
             t.Logf("With options:"u8);
@@ -33,7 +34,7 @@ public static void FuzzRoundtrip(ж<testing.F> Ꮡf) {
             t.Logf("  LazyQuotes       = %t"u8, tt.LazyQuotes);
             t.Logf("  TrimLeadingSpace = %t"u8, tt.TrimLeadingSpace);
             t.Logf("  Comment          = %q"u8, tt.Comment);
-            var r = NewReader(new bytes_ReaderжReader(bytes.NewReader(@in)));
+            var r = NewReader(new csv_test_package.bytes_ReaderжReader(bytes.NewReader(@in)));
             r.Value.Comma = tt.Comma;
             r.Value.Comment = tt.Comment;
             r.Value.LazyQuotes = tt.LazyQuotes;
@@ -44,7 +45,7 @@ public static void FuzzRoundtrip(ж<testing.F> Ꮡf) {
             }
             t.Logf("first records = %#v"u8, records);
             buf.Reset();
-            var w = NewWriter(new bytes_BufferжWriter(buf));
+            var w = NewWriter(new csv_test_package.bytes_BufferжWriter(buf));
             w.Value.Comma = tt.Comma;
             err = w.WriteAll(records);
             if (err != default!) {
@@ -58,7 +59,7 @@ public static void FuzzRoundtrip(ж<testing.F> Ꮡf) {
                 continue;
             }
             t.Logf("second input = %q"u8, buf.Bytes());
-            r = NewReader(new bytes_BufferжReader(buf));
+            r = NewReader(new csv_test_package.bytes_BufferжReader(buf));
             r.Value.Comma = tt.Comma;
             r.Value.Comment = tt.Comment;
             r.Value.LazyQuotes = tt.LazyQuotes;
@@ -90,4 +91,4 @@ public static void FuzzRoundtrip(ж<testing.F> Ꮡf) {
     });
 }
 
-} // end csv_package
+} // end csv_internal_test_package

@@ -3,8 +3,9 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.strconv_package;
+using static strconv_package;
 using testing = testing_package;
+using static go.strconv_internal_test_package;
 
 partial class strconv_test_package {
 
@@ -55,7 +56,7 @@ internal static slice<itob64Test> itob64tests = new itob64Test[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object abcˢ = (@string)"abc"u8;
+internal static readonly object abcˢ = (@string)"abc"u8;
 
 public static void TestItoa(ж<testing.T> Ꮡt) => func((defer, recover) => {
     foreach (var (_, test) in itob64tests) {

@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.bufio_package;
+using static bufio_package;
 using bytes = bytes_package;
 using errors = errors_package;
 using Δio = io_package;
@@ -13,6 +13,7 @@ using Δunicode = unicode_package;
 using utf8 = go.unicode.utf8_package;
 using bufio = bufio_package;
 using go.unicode;
+using static go.bufio_internal_test_package;
 
 partial class bufio_test_package {
 
@@ -23,7 +24,7 @@ public static void TestSpace(ж<Δtesting.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     for (var r = (rune)0; r <= utf8.MaxRune; r++) {
-        if (IsSpace(r) != Δunicode.IsSpace(r)) {
+        if (bufio_internal_test_package.IsSpace(r) != Δunicode.IsSpace(r)) {
             Ꮡt.Fatalf("white space property disagrees: %#U should be %t"u8, r, Δunicode.IsSpace(r));
         }
     }
@@ -46,7 +47,7 @@ internal static slice<@string> scanTests = new @string[]{
 public static void TestScanByte(ж<Δtesting.T> Ꮡt) {
     foreach (var (n, test) in scanTests) {
         var buf = strings.NewReader(test);
-        var s = NewScanner(new strings_ReaderжReader(buf));
+        var s = NewScanner(new bufio_test_package.strings_ReaderжReader(buf));
         s.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(ScanBytes));
         nint i = default!;
         for (i = 0; s.Scan(); i++) {
@@ -70,7 +71,7 @@ public static void TestScanByte(ж<Δtesting.T> Ꮡt) {
 public static void TestScanRune(ж<Δtesting.T> Ꮡt) {
     foreach (var (n, test) in scanTests) {
         var buf = strings.NewReader(test);
-        var s = NewScanner(new strings_ReaderжReader(buf));
+        var s = NewScanner(new bufio_test_package.strings_ReaderжReader(buf));
         s.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(ScanRunes));
         nint i = default!;
         nint runeCount = default!;
@@ -118,7 +119,7 @@ internal static slice<@string> wordScanTests = new @string[]{
 public static void TestScanWords(ж<Δtesting.T> Ꮡt) {
     foreach (var (n, test) in wordScanTests) {
         var buf = strings.NewReader(test);
-        var s = NewScanner(new strings_ReaderжReader(buf));
+        var s = NewScanner(new bufio_test_package.strings_ReaderжReader(buf));
         s.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(ScanWords));
         var words = strings.Fields(test);
         nint wordCount = default!;
@@ -206,7 +207,7 @@ public static void TestScanLongLines(ж<Δtesting.T> Ꮡt) {
         buf.Write(tmp.Bytes());
         lineNum++;
     }
-    var s = NewScanner(new slowReaderжReader(Ꮡ(new slowReader(1, new bytes_BufferжReader(buf)))));
+    var s = NewScanner(new bufio_test_package.slowReaderжReader(Ꮡ(new slowReader(1, new bufio_test_package.bytes_BufferжReader(buf)))));
     s.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(ScanLines));
     s.MaxTokenSize(smallMaxTokenSize);
     j = 0;
@@ -243,7 +244,7 @@ public static void TestScanLineTooLong(ж<Δtesting.T> Ꮡt) {
         buf.Write(tmp.Bytes());
         lineNum++;
     }
-    var s = NewScanner(new slowReaderжReader(Ꮡ(new slowReader(3, new bytes_BufferжReader(buf)))));
+    var s = NewScanner(new bufio_test_package.slowReaderжReader(Ꮡ(new slowReader(3, new bufio_test_package.bytes_BufferжReader(buf)))));
     s.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(ScanLines));
     s.MaxTokenSize(smallMaxTokenSize);
     j = 0;
@@ -268,7 +269,7 @@ public static void TestScanLineTooLong(ж<Δtesting.T> Ꮡt) {
 // Test that the line splitter handles a final line without a newline.
 internal static void testNoNewline(@string text, slice<@string> lines, ж<Δtesting.T> Ꮡt) {
     var buf = strings.NewReader(text);
-    var s = NewScanner(new slowReaderжReader(Ꮡ(new slowReader(7, new strings_ReaderжReader(buf)))));
+    var s = NewScanner(new bufio_test_package.slowReaderжReader(Ꮡ(new slowReader(7, new bufio_test_package.strings_ReaderжReader(buf)))));
     s.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(ScanLines));
     for (nint lineNum = 0; s.Scan(); lineNum++) {
         @string line = lines[lineNum];
@@ -349,7 +350,7 @@ public static void TestSplitError(ж<Δtesting.T> Ꮡt) {
     // Read the data.
     @string text = "abcdefghijklmnopqrstuvwxyz"u8;
     var buf = strings.NewReader(text);
-    var s = NewScanner(new slowReaderжReader(Ꮡ(new slowReader(1, new strings_ReaderжReader(buf)))));
+    var s = NewScanner(new bufio_test_package.slowReaderжReader(Ꮡ(new slowReader(1, new bufio_test_package.strings_ReaderжReader(buf)))));
     s.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(errorSplit));
     nint i = default!;
     for (i = 0; s.Scan(); i++) {
@@ -368,12 +369,12 @@ public static void TestSplitError(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object notTestingEofˢ = (@string)"not testing EOF"u8;
-private static readonly object wrongErrorˢ = (@string)"wrong error:"u8;
+internal static readonly object notTestingEofˢ = (@string)"not testing EOF"u8;
+internal static readonly object wrongErrorˢ = (@string)"wrong error:"u8;
 
 // Test that an EOF is overridden by a user-generated scan error.
 public static void TestErrAtEOF(ж<Δtesting.T> Ꮡt) {
-    var s = NewScanner(new strings_ReaderжReader(strings.NewReader("1 2 33"u8)));
+    var s = NewScanner(new bufio_test_package.strings_ReaderжReader(strings.NewReader("1 2 33"u8)));
     // This splitter will fail on last entry, after s.err==EOF.
     var sʗ1 = s;
     var split = (slice<byte> data, bool atEOF) => {
@@ -406,7 +407,7 @@ internal static (nint, error) Read(this alwaysError _, slice<byte> p) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object readShouldFailˢ = (@string)"read should fail"u8;
+internal static readonly object readShouldFailˢ = (@string)"read should fail"u8;
 
 public static void TestNonEOFWithEmptyRead(ж<Δtesting.T> Ꮡt) {
     var scanner = NewScanner(new alwaysError(nil));
@@ -441,7 +442,7 @@ public static void TestBadReader(ж<Δtesting.T> Ꮡt) {
 public static void TestScanWordsExcessiveWhiteSpace(ж<Δtesting.T> Ꮡt) {
     @string word = "ipsum"u8;
     @string s = strings.Repeat(" "u8, 4 * smallMaxTokenSize) + word;
-    var scanner = NewScanner(new strings_ReaderжReader(strings.NewReader(s)));
+    var scanner = NewScanner(new bufio_test_package.strings_ReaderжReader(strings.NewReader(s)));
     scanner.MaxTokenSize(smallMaxTokenSize);
     scanner.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(ScanWords));
     if (!scanner.Scan()) {
@@ -470,7 +471,7 @@ internal static (nint advance, slice<byte> token, error err) commaSplit(slice<by
 }
 
 internal static void testEmptyTokens(ж<Δtesting.T> Ꮡt, @string text, slice<@string> values) {
-    var s = NewScanner(new strings_ReaderжReader(strings.NewReader(text)));
+    var s = NewScanner(new bufio_test_package.strings_ReaderжReader(strings.NewReader(text)));
     s.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(commaSplit));
     nint i = default!;
     for (i = 0; s.Scan(); i++) {
@@ -511,13 +512,13 @@ internal static (nint advance, slice<byte> token, error err) loopAtEOFSplit(slic
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object shouldHavePanickedˢ = (@string)"should have panicked"u8;
-private static readonly @string emptyTokensˢ = "empty tokens"u8;
-private static readonly object loopingˢ = (@string)"looping"u8;
-private static readonly object afterScanˢ = (@string)"after scan:"u8;
+internal static readonly object shouldHavePanickedˢ = (@string)"should have panicked"u8;
+internal static readonly @string emptyTokensˢ = "empty tokens"u8;
+internal static readonly object loopingˢ = (@string)"looping"u8;
+internal static readonly object afterScanˢ = (@string)"after scan:"u8;
 
 public static void TestDontLoopForever(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
-    var s = NewScanner(new strings_ReaderжReader(strings.NewReader(abcˢ)));
+    var s = NewScanner(new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcˢ)));
     s.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(loopAtEOFSplit));
     // Expect a panic
     defer(() => {
@@ -542,7 +543,7 @@ public static void TestDontLoopForever(ж<Δtesting.T> Ꮡt) => func((defer, rec
 });
 
 public static void TestBlankLines(ж<Δtesting.T> Ꮡt) {
-    var s = NewScanner(new strings_ReaderжReader(strings.NewReader(strings.Repeat("\n"u8, 1000))));
+    var s = NewScanner(new bufio_test_package.strings_ReaderжReader(strings.NewReader(strings.Repeat("\n"u8, 1000))));
     for (nint count = 0; s.Scan(); count++) {
         if (count > 2000) {
             Ꮡt.Fatal(loopingˢ);
@@ -571,7 +572,7 @@ public static void TestBlankLines(ж<Δtesting.T> Ꮡt) {
 public static void TestEmptyLinesOK(ж<Δtesting.T> Ꮡt) {
     ref var c = ref heap<countdown>(out var Ꮡc);
     c = ((countdown)10000);
-    var s = NewScanner(new strings_ReaderжReader(strings.NewReader(strings.Repeat("\n"u8, 10000))));
+    var s = NewScanner(new bufio_test_package.strings_ReaderжReader(strings.NewReader(strings.Repeat("\n"u8, 10000))));
     s.Split(new Func<slice<byte>, bool, (nint, slice<byte>, error)>(Ꮡc.split));
     while (s.Scan()) {
     }
@@ -586,7 +587,7 @@ public static void TestEmptyLinesOK(ж<Δtesting.T> Ꮡt) {
 // Make sure we can read a huge token if a big enough buffer is provided.
 public static void TestHugeBuffer(ж<Δtesting.T> Ꮡt) {
     @string text = strings.Repeat("x"u8, 2 * MaxScanTokenSize);
-    var s = NewScanner(new strings_ReaderжReader(strings.NewReader(text + "\n"u8)));
+    var s = NewScanner(new bufio_test_package.strings_ReaderжReader(strings.NewReader(text + "\n"u8)));
     s.Buffer(new slice<byte>(100), 3 * MaxScanTokenSize);
     while (s.Scan()) {
         @string token = s.Text();
@@ -618,14 +619,14 @@ public static void TestHugeBuffer(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object readTooManyLinesˢ = (@string)"read too many lines"u8;
+internal static readonly object readTooManyLinesˢ = (@string)"read too many lines"u8;
 
 // Test that the scanner doesn't panic and returns ErrBadReadCount
 // on a reader that returns a negative count of bytes read (issue 38053).
 public static void TestNegativeEOFReader(ж<Δtesting.T> Ꮡt) {
     ref var r = ref heap<negativeEOFReader>(out var Ꮡr);
     r = ((negativeEOFReader)10);
-    var scanner = NewScanner(new negativeEOFReaderжReader(Ꮡr));
+    var scanner = NewScanner(new bufio_test_package.negativeEOFReaderжReader(Ꮡr));
     nint c = 0;
     while (scanner.Scan()) {
         c++;

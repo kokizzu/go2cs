@@ -13,24 +13,24 @@ internal static class Go2CsTestHost
             "scanner.go",
             "scanner_test.go",
         });
-        registry.Add("TestError", scanner_package.TestError, "scanner_test.go", 482);
-        registry.Add("TestIOError", scanner_package.TestIOError, "scanner_test.go", 527);
-        registry.Add("TestInvalidExponent", scanner_package.TestInvalidExponent, "scanner_test.go", 293);
-        registry.Add("TestIssue29723", scanner_package.TestIssue29723, "scanner_test.go", 702);
-        registry.Add("TestIssue30320", scanner_package.TestIssue30320, "scanner_test.go", 881);
-        registry.Add("TestIssue50909", scanner_package.TestIssue50909, "scanner_test.go", 917);
-        registry.Add("TestNext", scanner_package.TestNext, "scanner_test.go", 60);
-        registry.Add("TestNextEOFHandling", scanner_package.TestNextEOFHandling, "scanner_test.go", 660);
-        registry.Add("TestNumbers", scanner_package.TestNumbers, "scanner_test.go", 715);
-        registry.Add("TestPos", scanner_package.TestPos, "scanner_test.go", 574);
-        registry.Add("TestPosition", scanner_package.TestPosition, "scanner_test.go", 314);
-        registry.Add("TestScan", scanner_package.TestScan, "scanner_test.go", 288);
-        registry.Add("TestScanCustomIdent", scanner_package.TestScanCustomIdent, "scanner_test.go", 389);
-        registry.Add("TestScanEOFHandling", scanner_package.TestScanEOFHandling, "scanner_test.go", 681);
-        registry.Add("TestScanNext", scanner_package.TestScanNext, "scanner_test.go", 411);
-        registry.Add("TestScanSelectedMask", scanner_package.TestScanSelectedMask, "scanner_test.go", 377);
-        registry.Add("TestScanWhitespace", scanner_package.TestScanWhitespace, "scanner_test.go", 435);
-        registry.Add("TestScanZeroMode", scanner_package.TestScanZeroMode, "scanner_test.go", 340);
+        registry.Add("TestError", scanner_internal_test_package.TestError, "scanner_test.go", 482);
+        registry.Add("TestIOError", scanner_internal_test_package.TestIOError, "scanner_test.go", 527);
+        registry.Add("TestInvalidExponent", scanner_internal_test_package.TestInvalidExponent, "scanner_test.go", 293);
+        registry.Add("TestIssue29723", scanner_internal_test_package.TestIssue29723, "scanner_test.go", 702);
+        registry.Add("TestIssue30320", scanner_internal_test_package.TestIssue30320, "scanner_test.go", 881);
+        registry.Add("TestIssue50909", scanner_internal_test_package.TestIssue50909, "scanner_test.go", 917);
+        registry.Add("TestNext", scanner_internal_test_package.TestNext, "scanner_test.go", 60);
+        registry.Add("TestNextEOFHandling", scanner_internal_test_package.TestNextEOFHandling, "scanner_test.go", 660);
+        registry.Add("TestNumbers", scanner_internal_test_package.TestNumbers, "scanner_test.go", 715);
+        registry.Add("TestPos", scanner_internal_test_package.TestPos, "scanner_test.go", 574);
+        registry.Add("TestPosition", scanner_internal_test_package.TestPosition, "scanner_test.go", 314);
+        registry.Add("TestScan", scanner_internal_test_package.TestScan, "scanner_test.go", 288);
+        registry.Add("TestScanCustomIdent", scanner_internal_test_package.TestScanCustomIdent, "scanner_test.go", 389);
+        registry.Add("TestScanEOFHandling", scanner_internal_test_package.TestScanEOFHandling, "scanner_test.go", 681);
+        registry.Add("TestScanNext", scanner_internal_test_package.TestScanNext, "scanner_test.go", 411);
+        registry.Add("TestScanSelectedMask", scanner_internal_test_package.TestScanSelectedMask, "scanner_test.go", 377);
+        registry.Add("TestScanWhitespace", scanner_internal_test_package.TestScanWhitespace, "scanner_test.go", 435);
+        registry.Add("TestScanZeroMode", scanner_internal_test_package.TestScanZeroMode, "scanner_test.go", 340);
         return TestHost.Run(registry, args);
     }
 }

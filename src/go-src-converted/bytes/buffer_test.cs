@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.bytes_package;
+using static bytes_package;
 using fmt = fmt_package;
 using testenv = @internal.testenv_package;
 using Δio = io_package;
@@ -15,6 +15,7 @@ using @internal;
 using bytes = bytes_package;
 using go.math;
 using go.unicode;
+using static go.bytes_internal_test_package;
 
 partial class bytes_test_package {
 
@@ -102,7 +103,7 @@ internal static @string fillBytes(ж<testing.T> Ꮡt, @string testname, ж<bytes
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string newBufferˢ = "NewBuffer"u8;
+internal static readonly @string newBufferˢ = "NewBuffer"u8;
 
 public static void TestNewBuffer(ж<testing.T> Ꮡt) {
     var buf = NewBuffer(testBytes);
@@ -116,7 +117,7 @@ internal static ref bytes.Buffer buf => ref Ꮡbuf.Value;
 // should not result in any allocations.
 // This can be used to reset the underlying []byte of an existing Buffer.
 public static void TestNewBufferShallow(ж<testing.T> Ꮡt) {
-    testenv.SkipIfOptimizationOff(new testing_TжTB(Ꮡt));
+    testenv.SkipIfOptimizationOff(new bytes_test_package.testing_TжTB(Ꮡt));
     var n = testing.AllocsPerRun(1000, () => {
         buf = NewBuffer(testBytes).Value;
     });
@@ -127,7 +128,7 @@ public static void TestNewBufferShallow(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string newBufferStringˢ = "NewBufferString"u8;
+internal static readonly @string newBufferStringˢ = "NewBufferString"u8;
 
 public static void TestNewBufferString(ж<testing.T> Ꮡt) {
     var buf = NewBufferString(testString);
@@ -155,16 +156,16 @@ internal static void empty(ж<testing.T> Ꮡt, @string testname, ж<bytes.Buffer
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testBasicOperations1ˢ = "TestBasicOperations (1)"u8;
-private static readonly @string testBasicOperations2ˢ = "TestBasicOperations (2)"u8;
-private static readonly @string testBasicOperations3ˢ = "TestBasicOperations (3)"u8;
-private static readonly @string testBasicOperations4ˢ = "TestBasicOperations (4)"u8;
-private static readonly @string testBasicOperations5ˢ = "TestBasicOperations (5)"u8;
-private static readonly @string testBasicOperations6ˢ = "TestBasicOperations (6)"u8;
-private static readonly @string testBasicOperations7ˢ = "TestBasicOperations (7)"u8;
-private static readonly @string testBasicOperations8ˢ = "TestBasicOperations (8)"u8;
-private static readonly @string testBasicOperations9ˢ = "TestBasicOperations (9)"u8;
-private static readonly @string testBasicOperations10ˢ = "TestBasicOperations (10)"u8;
+internal static readonly @string testBasicOperations1ˢ = "TestBasicOperations (1)"u8;
+internal static readonly @string testBasicOperations2ˢ = "TestBasicOperations (2)"u8;
+internal static readonly @string testBasicOperations3ˢ = "TestBasicOperations (3)"u8;
+internal static readonly @string testBasicOperations4ˢ = "TestBasicOperations (4)"u8;
+internal static readonly @string testBasicOperations5ˢ = "TestBasicOperations (5)"u8;
+internal static readonly @string testBasicOperations6ˢ = "TestBasicOperations (6)"u8;
+internal static readonly @string testBasicOperations7ˢ = "TestBasicOperations (7)"u8;
+internal static readonly @string testBasicOperations8ˢ = "TestBasicOperations (8)"u8;
+internal static readonly @string testBasicOperations9ˢ = "TestBasicOperations (9)"u8;
+internal static readonly @string testBasicOperations10ˢ = "TestBasicOperations (10)"u8;
 
 public static void TestBasicOperations(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
@@ -211,9 +212,9 @@ public static void TestBasicOperations(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testLargeWrites1ˢ = "TestLargeWrites (1)"u8;
-private static readonly @string testLargeStringWrites2ˢ = "TestLargeStringWrites (2)"u8;
-private static readonly @string testLargeStringWrites3ˢ = "TestLargeStringWrites (3)"u8;
+internal static readonly @string testLargeWrites1ˢ = "TestLargeWrites (1)"u8;
+internal static readonly @string testLargeStringWrites2ˢ = "TestLargeStringWrites (2)"u8;
+internal static readonly @string testLargeStringWrites3ˢ = "TestLargeStringWrites (3)"u8;
 
 public static void TestLargeStringWrites(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
@@ -229,8 +230,8 @@ public static void TestLargeStringWrites(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testLargeByteWrites2ˢ = "TestLargeByteWrites (2)"u8;
-private static readonly @string testLargeByteWrites3ˢ = "TestLargeByteWrites (3)"u8;
+internal static readonly @string testLargeByteWrites2ˢ = "TestLargeByteWrites (2)"u8;
+internal static readonly @string testLargeByteWrites3ˢ = "TestLargeByteWrites (3)"u8;
 
 public static void TestLargeByteWrites(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
@@ -246,9 +247,9 @@ public static void TestLargeByteWrites(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testLargeReads1ˢ = "TestLargeReads (1)"u8;
-private static readonly @string testLargeReads2ˢ = "TestLargeReads (2)"u8;
-private static readonly @string testLargeStringReads3ˢ = "TestLargeStringReads (3)"u8;
+internal static readonly @string testLargeReads1ˢ = "TestLargeReads (1)"u8;
+internal static readonly @string testLargeReads2ˢ = "TestLargeReads (2)"u8;
+internal static readonly @string testLargeStringReads3ˢ = "TestLargeStringReads (3)"u8;
 
 public static void TestLargeStringReads(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
@@ -260,7 +261,7 @@ public static void TestLargeStringReads(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testLargeByteReads3ˢ = "TestLargeByteReads (3)"u8;
+internal static readonly @string testLargeByteReads3ˢ = "TestLargeByteReads (3)"u8;
 
 public static void TestLargeByteReads(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
@@ -272,8 +273,8 @@ public static void TestLargeByteReads(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testMixedReadsAndWrites1ˢ = "TestMixedReadsAndWrites (1)"u8;
-private static readonly @string testMixedReadsAndWrites2ˢ = "TestMixedReadsAndWrites (2)"u8;
+internal static readonly @string testMixedReadsAndWrites1ˢ = "TestMixedReadsAndWrites (1)"u8;
+internal static readonly @string testMixedReadsAndWrites2ˢ = "TestMixedReadsAndWrites (2)"u8;
 
 public static void TestMixedReadsAndWrites(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
@@ -318,15 +319,15 @@ public static void TestNil(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testReadFrom1ˢ = "TestReadFrom (1)"u8;
-private static readonly @string testReadFrom2ˢ = "TestReadFrom (2)"u8;
+internal static readonly @string testReadFrom1ˢ = "TestReadFrom (1)"u8;
+internal static readonly @string testReadFrom2ˢ = "TestReadFrom (2)"u8;
 
 public static void TestReadFrom(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     for (nint i = 3; i < 30; i += 3) {
         @string s = fillBytes(Ꮡt, testReadFrom1ˢ, Ꮡbuf, ""u8, 5, testBytes[0..(int)(len(testBytes) / i)]);
         ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
-        b.ReadFrom(new bytes.BufferжReader(Ꮡbuf));
+        b.ReadFrom(new bytes_test_package.bytes_BufferжReader(Ꮡbuf));
         empty(Ꮡt, testReadFrom2ˢ, Ꮡb, s, new slice<byte>(len(testString)));
     }
 }
@@ -343,8 +344,8 @@ internal static (nint, error) Read(this panicReader r, slice<byte> p) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testReadFromPanicReader1ˢ = "TestReadFromPanicReader (1)"u8;
-private static readonly @string testReadFromPanicReader2ˢ = "TestReadFromPanicReader (2)"u8;
+internal static readonly @string testReadFromPanicReader1ˢ = "TestReadFromPanicReader (1)"u8;
+internal static readonly @string testReadFromPanicReader2ˢ = "TestReadFromPanicReader (2)"u8;
 
 // Make sure that an empty Buffer remains empty when
 // it is "grown" before a Read that panics
@@ -369,8 +370,8 @@ public static void TestReadFromPanicReader(ж<testing.T> Ꮡt) => func((defer, r
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object bytesBufferReadFromDidnTˢ = (@string)"bytes.Buffer.ReadFrom didn't panic"u8;
-private static readonly @string bytesBufferReaderˢ = "bytes.Buffer: reader returned negative count from Read"u8;
+internal static readonly object bytesBufferReadFromDidnTˢ = (@string)"bytes.Buffer.ReadFrom didn't panic"u8;
+internal static readonly @string bytesBufferReaderˢ = "bytes.Buffer: reader returned negative count from Read"u8;
 
 public static void TestReadFromNegativeReader(ж<testing.T> Ꮡt) => func((defer, recover) => {
     bytes.Buffer b = default!;
@@ -395,19 +396,19 @@ public static void TestReadFromNegativeReader(ж<testing.T> Ꮡt) => func((defer
             break;
         }}
     });
-    b.ReadFrom(new negativeReaderжReader(@new<negativeReader>()));
+    b.ReadFrom(new bytes_test_package.negativeReaderжReader(@new<negativeReader>()));
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testWriteTo1ˢ = "TestWriteTo (1)"u8;
-private static readonly @string testWriteTo2ˢ = "TestWriteTo (2)"u8;
+internal static readonly @string testWriteTo1ˢ = "TestWriteTo (1)"u8;
+internal static readonly @string testWriteTo2ˢ = "TestWriteTo (2)"u8;
 
 public static void TestWriteTo(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     for (nint i = 3; i < 30; i += 3) {
         @string s = fillBytes(Ꮡt, testWriteTo1ˢ, Ꮡbuf, ""u8, 5, testBytes[0..(int)(len(testBytes) / i)]);
         ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
-        buf.WriteTo(new bytes.BufferжWriter(Ꮡb));
+        buf.WriteTo(new bytes_test_package.bytes_BufferжWriter(Ꮡb));
         empty(Ꮡt, testWriteTo2ˢ, Ꮡb, s, new slice<byte>(len(testString)));
     }
 }
@@ -439,9 +440,9 @@ public static void TestWriteAppend(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unreadRuneAtEofGotNoˢ = (@string)"UnreadRune at EOF: got no error"u8;
-private static readonly object readRuneAtEofGotNoErrorˢ = (@string)"ReadRune at EOF: got no error"u8;
-private static readonly object unreadRuneAfterReadRuneˢ = (@string)"UnreadRune after ReadRune at EOF: got no error"u8;
+internal static readonly object unreadRuneAtEofGotNoˢ = (@string)"UnreadRune at EOF: got no error"u8;
+internal static readonly object readRuneAtEofGotNoErrorˢ = (@string)"ReadRune at EOF: got no error"u8;
+internal static readonly object unreadRuneAfterReadRuneˢ = (@string)"UnreadRune after ReadRune at EOF: got no error"u8;
 
 public static void TestRuneIO(ж<testing.T> Ꮡt) {
     UntypedInt NRune = 1000;
@@ -683,11 +684,11 @@ public static void TestReadEmptyAtEOF(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unreadByteAtEofGotNoˢ = (@string)"UnreadByte at EOF: got no error"u8;
-private static readonly object readByteAtEofGotNoErrorˢ = (@string)"ReadByte at EOF: got no error"u8;
-private static readonly object unreadByteAfterReadByteˢ = (@string)"UnreadByte after ReadByte at EOF: got no error"u8;
-private static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
-private static readonly object unreadByteAfterReadNilˢ = (@string)"UnreadByte after Read(nil): got no error"u8;
+internal static readonly object unreadByteAtEofGotNoˢ = (@string)"UnreadByte at EOF: got no error"u8;
+internal static readonly object readByteAtEofGotNoErrorˢ = (@string)"ReadByte at EOF: got no error"u8;
+internal static readonly object unreadByteAfterReadByteˢ = (@string)"UnreadByte after ReadByte at EOF: got no error"u8;
+internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
+internal static readonly object unreadByteAfterReadNilˢ = (@string)"UnreadByte after Read(nil): got no error"u8;
 
 public static void TestUnreadByte(ж<testing.T> Ꮡt) {
     var b = @new<bytes.Buffer>();

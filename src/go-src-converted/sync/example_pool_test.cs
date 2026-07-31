@@ -6,9 +6,9 @@ namespace go;
 using bytes = bytes_package;
 using Δio = io_package;
 using Δos = os_package;
-using Δsync = go.sync_package;
+using Δsync = sync_package;
 using time = time_package;
-using go;
+using static go.sync_internal_test_package;
 
 partial class sync_test_package {
 
@@ -39,8 +39,8 @@ public static void Log(Δio.Writer w, @string key, @string val) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pathˢ = "path"u8;
-private static readonly @string searchQFlowersˢ = "/search?q=flowers"u8;
+internal static readonly @string pathˢ = "path"u8;
+internal static readonly @string searchQFlowersˢ = "/search?q=flowers"u8;
 
 public static void ExamplePool() {
     Log(new Δos.FileжWriter(Δos.Stdout), pathˢ, searchQFlowersˢ);

@@ -19,15 +19,15 @@ internal static class Go2CsTestHost
             "sha512block_generic.go",
             "sha512block_s390x.go",
         });
-        registry.Add("TestAllocations", sha512_package.TestAllocations, "sha512_test.go", 896);
-        registry.Add("TestBlockGeneric", sha512_package.TestBlockGeneric, "sha512_test.go", 826);
-        registry.Add("TestBlockSize", sha512_package.TestBlockSize, "sha512_test.go", 818);
-        registry.Add("TestGolden", sha512_package.TestGolden, "sha512_test.go", 682);
-        registry.Add("TestGoldenMarshal", sha512_package.TestGoldenMarshal, "sha512_test.go", 722);
-        registry.Add("TestLargeHashes", sha512_package.TestLargeHashes, "sha512_test.go", 875);
-        registry.Add("TestMarshalMismatch", sha512_package.TestMarshalMismatch, "sha512_test.go", 769);
-        registry.Add("TestSHA512Hash", sha512_package.TestSHA512Hash, "sha512_test.go", 913);
-        registry.Add("TestSize", sha512_package.TestSize, "sha512_test.go", 799);
+        registry.Add("TestAllocations", sha512_internal_test_package.TestAllocations, "sha512_test.go", 896);
+        registry.Add("TestBlockGeneric", sha512_internal_test_package.TestBlockGeneric, "sha512_test.go", 826);
+        registry.Add("TestBlockSize", sha512_internal_test_package.TestBlockSize, "sha512_test.go", 818);
+        registry.Add("TestGolden", sha512_internal_test_package.TestGolden, "sha512_test.go", 682);
+        registry.Add("TestGoldenMarshal", sha512_internal_test_package.TestGoldenMarshal, "sha512_test.go", 722);
+        registry.Add("TestLargeHashes", sha512_internal_test_package.TestLargeHashes, "sha512_test.go", 875);
+        registry.Add("TestMarshalMismatch", sha512_internal_test_package.TestMarshalMismatch, "sha512_test.go", 769);
+        registry.Add("TestSHA512Hash", sha512_internal_test_package.TestSHA512Hash, "sha512_test.go", 913);
+        registry.Add("TestSize", sha512_internal_test_package.TestSize, "sha512_test.go", 799);
         return TestHost.Run(registry, args);
     }
 }

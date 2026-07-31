@@ -5,12 +5,13 @@
 namespace go;
 
 using testing = testing_package;
+using static go.regexp_package;
 
-partial class regexp_package {
+partial class regexp_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object skippingˢ = (@string)"skipping TestRE2Exhaustive during short test"u8;
-private static readonly @string testdataRe2ExhaustiveTxtˢ = "testdata/re2-exhaustive.txt.bz2"u8;
+internal static readonly object skippingˢ = (@string)"skipping TestRE2Exhaustive during short test"u8;
+internal static readonly @string testdataRe2ExhaustiveTxtˢ = "testdata/re2-exhaustive.txt.bz2"u8;
 
 // This test is excluded when running under the race detector because
 // it is a very expensive test and takes too long.
@@ -21,4 +22,4 @@ public static void TestRE2Exhaustive(ж<testing.T> Ꮡt) {
     testRE2(Ꮡt, testdataRe2ExhaustiveTxtˢ);
 }
 
-} // end regexp_package
+} // end regexp_internal_test_package

@@ -5,11 +5,11 @@ namespace go;
 
 using fmt = fmt_package;
 using reflect = reflect_package;
-using Δsync = go.sync_package;
+using Δsync = sync_package;
 using atomic = go.sync.atomic_package;
 using Δtesting = testing_package;
-using go;
 using go.sync;
+using static go.sync_internal_test_package;
 
 partial class sync_test_package {
 
@@ -19,7 +19,7 @@ partial class sync_test_package {
 }
 
 internal static void benchMap(ж<Δtesting.B> Ꮡb, bench bench) {
-    foreach (var (_, vᴛ1) in new mapInterface[]{new DeepCopyMapжmapInterface(Ꮡ(new DeepCopyMap(nil))), new RWMutexMapжmapInterface(Ꮡ(new RWMutexMap(nil))), new Δsync.MapжmapInterface(Ꮡ(new Δsync.Map(nil)))}.array()) {
+    foreach (var (_, vᴛ1) in new mapInterface[]{new sync_test_package.DeepCopyMapжmapInterface(Ꮡ(new DeepCopyMap(nil))), new sync_test_package.RWMutexMapжmapInterface(Ꮡ(new RWMutexMap(nil))), new sync_test_package.sync_MapжmapInterface(Ꮡ(new Δsync.Map(nil)))}.array()) {
         var m = vᴛ1;
 
         var benchʗ1 = bench;
@@ -84,7 +84,7 @@ public static void BenchmarkLoadMostlyMisses(ж<Δtesting.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object deepCopyMapHasQuadraticˢ = (@string)"DeepCopyMap has quadratic running time."u8;
+internal static readonly object deepCopyMapHasQuadraticˢ = (@string)"DeepCopyMap has quadratic running time."u8;
 
 public static void BenchmarkLoadOrStoreBalanced(ж<Δtesting.B> Ꮡb) {
     UntypedInt hits = 128;

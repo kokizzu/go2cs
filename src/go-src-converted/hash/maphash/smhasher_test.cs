@@ -15,15 +15,16 @@ using testing = testing_package;
 using @unsafe = unsafe_package;
 using @internal;
 using go.math;
+using static go.hash.maphash_package;
 
-partial class maphash_package {
+partial class maphash_internal_test_package {
 
 // Smhasher is a torture test for hash functions.
 // https://code.google.com/p/smhasher/
 // This code is a port of some of the Smhasher tests to Go.
 // Note: due to the long running time of these tests, they are
 // currently disabled in -race mode.
-internal static ΔSeed fixedSeed = MakeSeed();
+internal static global::go.hash.maphash_package.ΔSeed fixedSeed = MakeSeed();
 
 // Sanity checks.
 // hash should not depend on values outside key.
@@ -52,14 +53,14 @@ public static void TestSmhasherSanity(ж<testing.T> Ꮡt) {
 }
 
 internal static uint64 bytesHash(slice<byte> b) {
-    Hash h = new();
+    global::go.hash.maphash_package.Hash h = new();
     h.SetSeed(fixedSeed);
     h.Write(b);
     return h.Sum64();
 }
 
 internal static uint64 stringHash(@string s) {
-    Hash h = new();
+    global::go.hash.maphash_package.Hash h = new();
     h.SetSeed(fixedSeed);
     h.WriteString(s);
     return h.Sum64();
@@ -74,7 +75,7 @@ internal static void randBytes(ж<rand.Rand> Ꮡr, slice<byte> b) {
 // can't fail
 
 // A hashSet measures the frequency of hash collisions.
-[GoType] partial struct hashSet {
+[GoType] internal partial struct hashSet {
     internal slice<uint64> list; // list of hashes added
 }
 
@@ -94,8 +95,8 @@ internal static ж<hashSet> newHashSet() {
     s.add(bytesHash(x));
 }
 
-[GoRecv] internal static void addS_seed(this ref hashSet s, @string x, ΔSeed seed) {
-    Hash h = new();
+[GoRecv] internal static void addS_seed(this ref hashSet s, @string x, global::go.hash.maphash_package.ΔSeed seed) {
+    global::go.hash.maphash_package.Hash h = new();
     h.SetSeed(seed);
     h.WriteString(x);
     s.add(h.Sum64());
@@ -171,8 +172,8 @@ public static void TestSmhasherZeros(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object tooSlowOnWasmˢ = (@string)"Too slow on wasm"u8;
-private static readonly object skippingInShortModeˢ = (@string)"Skipping in short mode"u8;
+internal static readonly object tooSlowOnWasmˢ = (@string)"Too slow on wasm"u8;
+internal static readonly object skippingInShortModeˢ = (@string)"Skipping in short mode"u8;
 
 // Strings with up to two nonzero bytes all have distinct hashes.
 public static void TestSmhasherTwoNonzero(ж<testing.T> Ꮡt) {
@@ -332,7 +333,7 @@ internal static void genPerm(ж<hashSet> Ꮡh, slice<byte> b, slice<uint32> s, n
     }
 }
 
-[GoType] partial interface key {
+[GoType] internal partial interface key {
     void clear();          // set bits all to 0
     void random(ж<rand.Rand> r); // set key to something random
     nint bits();          // how many bits key has
@@ -341,7 +342,7 @@ internal static void genPerm(ж<hashSet> Ꮡh, slice<byte> b, slice<uint32> s, n
     @string name();       // for error reporting
 }
 
-[GoType] partial struct bytesKey {
+[GoType] internal partial struct bytesKey {
     internal slice<byte> b;
 }
 
@@ -378,12 +379,12 @@ public static void TestSmhasherAvalanche(ж<testing.T> Ꮡt) {
         Ꮡt.Skip(skippingInShortModeˢ);
     }
     Ꮡt.Parallel();
-    avalancheTest1(Ꮡt, new bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(2)))));
-    avalancheTest1(Ꮡt, new bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(4)))));
-    avalancheTest1(Ꮡt, new bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(8)))));
-    avalancheTest1(Ꮡt, new bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(16)))));
-    avalancheTest1(Ꮡt, new bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(32)))));
-    avalancheTest1(Ꮡt, new bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(200)))));
+    avalancheTest1(Ꮡt, new maphash_internal_test_package.bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(2)))));
+    avalancheTest1(Ꮡt, new maphash_internal_test_package.bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(4)))));
+    avalancheTest1(Ꮡt, new maphash_internal_test_package.bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(8)))));
+    avalancheTest1(Ꮡt, new maphash_internal_test_package.bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(16)))));
+    avalancheTest1(Ꮡt, new maphash_internal_test_package.bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(32)))));
+    avalancheTest1(Ꮡt, new maphash_internal_test_package.bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(200)))));
 }
 
 internal static void avalancheTest1(ж<testing.T> Ꮡt, key k) {
@@ -441,7 +442,7 @@ internal static void avalancheTest1(ж<testing.T> Ꮡt, key k) {
 // All bit rotations of a set of distinct keys
 public static void TestSmhasherWindowed(ж<testing.T> Ꮡt) {
     Ꮡt.Parallel();
-    windowed(Ꮡt, new bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(128)))));
+    windowed(Ꮡt, new maphash_internal_test_package.bytesKeyжkey(Ꮡ(new bytesKey(new slice<byte>(128)))));
 }
 
 internal static void windowed(ж<testing.T> Ꮡt, key k) {
@@ -468,9 +469,9 @@ internal static void windowed(ж<testing.T> Ꮡt, key k) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fooˢ2 = "Foo"u8;
-private static readonly @string barˢ = "Bar"u8;
-private static readonly @string fooBarˢ = "FooBar"u8;
+internal static readonly @string fooˢ2 = "Foo"u8;
+internal static readonly @string barˢ = "Bar"u8;
+internal static readonly @string fooBarˢ = "FooBar"u8;
 
 // All keys of the form prefix + [A-Za-z0-9]*N + suffix.
 public static void TestSmhasherText(ж<testing.T> Ꮡt) {
@@ -511,8 +512,8 @@ internal static void text(ж<testing.T> Ꮡt, ж<hashSet> Ꮡh, @string prefix, 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object bitPlatformsDonTHaveˢ = (@string)"32-bit platforms don't have ideal seed-input distributions (see issue 33988)"u8;
-private static readonly @string helloˢ = "hello"u8;
+internal static readonly object bitPlatformsDonTHaveˢ = (@string)"32-bit platforms don't have ideal seed-input distributions (see issue 33988)"u8;
+internal static readonly @string helloˢ = "hello"u8;
 
 // Make sure different seed values generate different hashes.
 public static void TestSmhasherSeed(ж<testing.T> Ꮡt) {
@@ -531,4 +532,4 @@ public static void TestSmhasherSeed(ж<testing.T> Ꮡt) {
     h.check(Ꮡt);
 }
 
-} // end maphash_package
+} // end maphash_internal_test_package

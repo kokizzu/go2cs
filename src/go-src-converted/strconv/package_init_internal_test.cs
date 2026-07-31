@@ -4,9 +4,9 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go;
 
-partial class strconv_package {
-    static strconv_package() {
+partial class strconv_internal_test_package {
+    static strconv_internal_test_package() {
         initᴛBitSizeError();
         initᴛBaseError();
     }
-} // end strconv_package
+} // end strconv_internal_test_package

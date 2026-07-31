@@ -12,10 +12,11 @@ using runtime = runtime_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using testing = testing_package;
+using static go.compress.lzw_package;
 
-partial class lzw_package {
+partial class lzw_internal_test_package {
 
-[GoType] partial struct lzwTest {
+[GoType] internal partial struct lzwTest {
     internal @string desc;
     internal @string raw;
     internal @string compressed;
@@ -85,7 +86,7 @@ public static void TestReader(ж<testing.T> Ꮡt) => func((defer, recover) => {
     ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
     foreach (var (_, tt) in lzwTests) {
         var d = strings.Split(tt.desc, ";"u8);
-        Order order = default!;
+        global::go.compress.lzw_package.Order order = default!;
         var exprᴛ1 = d[1];
         if (exprᴛ1 == "LSB"u8) {
             order = LSB;
@@ -98,11 +99,11 @@ public static void TestReader(ж<testing.T> Ꮡt) => func((defer, recover) => {
         }
 
         var (litWidth, _) = strconv.Atoi(d[2]);
-        var rc = NewReader(new strings_ReaderжReader(strings.NewReader(tt.compressed)), order, litWidth);
+        var rc = NewReader(new lzw_internal_test_package.strings_ReaderжReader(strings.NewReader(tt.compressed)), order, litWidth);
         var rcʗ1 = rc;
         defer(() => rcʗ1.Close());
         b.Reset();
-        var (n, err) = io.Copy(new bytes_BufferжWriter(Ꮡb), rc);
+        var (n, err) = io.Copy(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡb), rc);
         @string s = Ꮡb.String();
         if (err != default!) {
             if (!AreEqual(err, tt.err)) {
@@ -127,7 +128,7 @@ public static void TestReaderReset(ж<testing.T> Ꮡt) => func((defer, recover) 
     ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
     foreach (var (_, tt) in lzwTests) {
         var d = strings.Split(tt.desc, ";"u8);
-        Order order = default!;
+        global::go.compress.lzw_package.Order order = default!;
         var exprᴛ1 = d[1];
         if (exprᴛ1 == "LSB"u8) {
             order = LSB;
@@ -140,11 +141,11 @@ public static void TestReaderReset(ж<testing.T> Ꮡt) => func((defer, recover) 
         }
 
         var (litWidth, _) = strconv.Atoi(d[2]);
-        var rc = NewReader(new strings_ReaderжReader(strings.NewReader(tt.compressed)), order, litWidth);
+        var rc = NewReader(new lzw_internal_test_package.strings_ReaderжReader(strings.NewReader(tt.compressed)), order, litWidth);
         var rcʗ1 = rc;
         defer(() => rcʗ1.Close());
         b.Reset();
-        var (n, err) = io.Copy(new bytes_BufferжWriter(Ꮡb), rc);
+        var (n, err) = io.Copy(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡb), rc);
         var b1 = b.Bytes();
         if (err != default!) {
             if (!AreEqual(err, tt.err)) {
@@ -160,8 +161,8 @@ public static void TestReaderReset(ж<testing.T> Ꮡt) => func((defer, recover) 
             continue;
         }
         b.Reset();
-        rc._<ж<Reader>>().Reset(new strings_ReaderжReader(strings.NewReader(tt.compressed)), order, litWidth);
-        (n, err) = io.Copy(new bytes_BufferжWriter(Ꮡb), rc);
+        rc._<ж<global::go.compress.lzw_package.Reader>>().Reset(new lzw_internal_test_package.strings_ReaderжReader(strings.NewReader(tt.compressed)), order, litWidth);
+        (n, err) = io.Copy(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡb), rc);
         var b2 = b.Bytes();
         if (err != default!) {
             Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, default!);
@@ -173,7 +174,7 @@ public static void TestReaderReset(ж<testing.T> Ꮡt) => func((defer, recover) 
     }
 });
 
-[GoType] partial struct devZero {
+[GoType] internal partial struct devZero {
 }
 
 internal static (nint, error) Read(this devZero _, slice<byte> p) {
@@ -183,7 +184,7 @@ internal static (nint, error) Read(this devZero _, slice<byte> p) {
 
 public static void TestHiCodeDoesNotOverflow(ж<testing.T> Ꮡt) {
     var r = NewReader(new devZero(nil), LSB, 8);
-    var d = r._<ж<Reader>>();
+    var d = r._<ж<global::go.compress.lzw_package.Reader>>();
     var buf = new slice<byte>(1024);
     var oldHi = (uint16)0;
     for (nint i = 0; i < 100; i++) {
@@ -260,7 +261,7 @@ public static void TestNoLongerSavingPriorExpansions(ж<testing.T> Ꮡt) {
     // The 'z' bit is unused.
     var @in = new slice<byte>(5406);
     @in = append(@in, (byte)(0x80), (byte)(0xff), (byte)(0x0f), (byte)(0x08));
-    var r = NewReader(new bytes_ReaderжReader(bytes.NewReader(@in)), LSB, 8);
+    var r = NewReader(new lzw_internal_test_package.bytes_ReaderжReader(bytes.NewReader(@in)), LSB, 8);
     var (nDecoded, err) = io.Copy(io.Discard, r);
     if (err != default!) {
         Ꮡt.Fatalf("Copy: %v"u8, err);
@@ -273,8 +274,8 @@ public static void TestNoLongerSavingPriorExpansions(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testdataETxtˢ = "../testdata/e.txt"u8;
-private static readonly object reuseˢ = (@string)"1e-Reuse"u8;
+internal static readonly @string testdataETxtˢ = "../testdata/e.txt"u8;
+internal static readonly object reuseˢ = (@string)"1e-Reuse"u8;
 
 public static void BenchmarkDecoder(ж<testing.B> Ꮡb) {
     var (buf, err) = os.ReadFile(testdataETxtˢ);
@@ -286,7 +287,7 @@ public static void BenchmarkDecoder(ж<testing.B> Ꮡb) {
     }
     var getInputBuf = (slice<byte> bufΔ1, nint n) => {
         var compressed = @new<bytes.Buffer>();
-        var w = NewWriter(new bytes_BufferжWriter(compressed), LSB, 8);
+        var w = NewWriter(new lzw_internal_test_package.bytes_BufferжWriter(compressed), LSB, 8);
         for (nint i = 0; i < n; i += len(bufΔ1)) {
             if (len(bufΔ1) > n - i) {
                 bufΔ1 = bufΔ1[..(int)(n - i)];
@@ -307,7 +308,7 @@ public static void BenchmarkDecoder(ж<testing.B> Ꮡb) {
             runtime.GC();
             bΔ1.StartTimer();
             for (nint i = 0; i < (~bΔ1).N; i++) {
-                io.Copy(io.Discard, NewReader(new bytes_ReaderжReader(bytes.NewReader(buf1)), LSB, 8));
+                io.Copy(io.Discard, NewReader(new lzw_internal_test_package.bytes_ReaderжReader(bytes.NewReader(buf1)), LSB, 8));
             }
         });
         var bufʗ3 = buf;
@@ -318,14 +319,14 @@ public static void BenchmarkDecoder(ж<testing.B> Ꮡb) {
             var buf1 = getInputBufʗ3(bufʗ3, n);
             runtime.GC();
             bΔ2.StartTimer();
-            var r = NewReader(new bytes_ReaderжReader(bytes.NewReader(buf1)), LSB, 8);
+            var r = NewReader(new lzw_internal_test_package.bytes_ReaderжReader(bytes.NewReader(buf1)), LSB, 8);
             for (nint i = 0; i < (~bΔ2).N; i++) {
                 io.Copy(io.Discard, r);
                 r.Close();
-                r._<ж<Reader>>().Reset(new bytes_ReaderжReader(bytes.NewReader(buf1)), LSB, 8);
+                r._<ж<global::go.compress.lzw_package.Reader>>().Reset(new lzw_internal_test_package.bytes_ReaderжReader(bytes.NewReader(buf1)), LSB, 8);
             }
         });
     }
 }
 
-} // end lzw_package
+} // end lzw_internal_test_package

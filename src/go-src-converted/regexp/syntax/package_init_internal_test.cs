@@ -4,8 +4,8 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go.regexp;
 
-partial class syntax_package {
-    static syntax_package() {
+partial class syntax_internal_test_package {
+    static syntax_internal_test_package() {
         initᴛparseTests();
     }
-} // end syntax_package
+} // end syntax_internal_test_package

@@ -12,8 +12,9 @@ using os = os_package;
 using runtime = runtime_package;
 using testing = testing_package;
 using @internal;
+using static go.compress.lzw_package;
 
-partial class lzw_package {
+partial class lzw_internal_test_package {
 
 internal static slice<@string> filenames = new @string[]{
     "../testdata/gettysburg.txt"u8,
@@ -23,7 +24,7 @@ internal static slice<@string> filenames = new @string[]{
 
 // testFile tests that compressing and then decompressing the given file with
 // the given options yields equivalent bytes to the original file.
-internal static void testFile(ж<testing.T> Ꮡt, @string fn, Order order, nint litWidth) => func((defer, recover) => {
+internal static void testFile(ж<testing.T> Ꮡt, @string fn, global::go.compress.lzw_package.Order order, nint litWidth) => func((defer, recover) => {
     // Read the file, as golden output.
     var (golden, err) = os.Open(fn);
     if (err != default!) {
@@ -48,7 +49,7 @@ internal static void testFile(ж<testing.T> Ꮡt, @string fn, Order order, nint 
         defer(() => rawʗ2.Close());
         var pipewʗ2 = pipewʗ1;
         defer(() => pipewʗ2.Close());
-        var lzww = NewWriter(new io_PipeWriterжWriter(pipewʗ1), order, litWidth);
+        var lzww = NewWriter(new lzw_internal_test_package.io_PipeWriterжWriter(pipewʗ1), order, litWidth);
         var lzwwʗ1 = lzww;
         defer(() => lzwwʗ1.Close());
         ref var b = ref heap(new array<byte>(4096), out var Ꮡb);
@@ -68,11 +69,11 @@ internal static void testFile(ж<testing.T> Ꮡt, @string fn, Order order, nint 
             }
         }
     }));
-    var lzwr = NewReader(new io_PipeReaderжReader(piper), order, litWidth);
+    var lzwr = NewReader(new lzw_internal_test_package.io_PipeReaderжReader(piper), order, litWidth);
     var lzwrʗ1 = lzwr;
     defer(() => lzwrʗ1.Close());
     // Compare the two.
-    var (b0, err0) = io.ReadAll(new os_FileжReader(golden));
+    var (b0, err0) = io.ReadAll(new lzw_internal_test_package.os_FileжReader(golden));
     var (b1, err1) = io.ReadAll(lzwr);
     if (err0 != default!) {
         Ꮡt.Errorf("%s (order=%d litWidth=%d): %v"u8, fn, order, litWidth, err0);
@@ -96,7 +97,7 @@ internal static void testFile(ж<testing.T> Ꮡt, @string fn, Order order, nint 
 
 public static void TestWriter(ж<testing.T> Ꮡt) {
     foreach (var (_, filename) in filenames) {
-        foreach (var (_, order) in new Order[]{LSB, MSB}.array()) {
+        foreach (var (_, order) in new global::go.compress.lzw_package.Order[]{LSB, MSB}.array()) {
             // The test data "2.71828 etcetera" is ASCII text requiring at least 6 bits.
             for (nint litWidth = 6; litWidth <= 8; litWidth++) {
                 if (filename == "../testdata/gettysburg.txt"u8 && litWidth == 6) {
@@ -112,7 +113,7 @@ public static void TestWriter(ж<testing.T> Ꮡt) {
 }
 
 public static void TestWriterReset(ж<testing.T> Ꮡt) {
-    foreach (var (_, order) in new Order[]{LSB, MSB}.array()) {
+    foreach (var (_, order) in new global::go.compress.lzw_package.Order[]{LSB, MSB}.array()) {
         Ꮡt.Run(fmt.Sprintf("Order %d"u8, order), (ж<testing.T> tΔ1) => {
             for (nint litWidthᴛ1 = 6; litWidthᴛ1 <= 8; litWidthᴛ1++) {
                 var litWidth = litWidthᴛ1;
@@ -124,7 +125,7 @@ public static void TestWriterReset(ж<testing.T> Ꮡt) {
                         data = slice<byte>(@"lorem ipsum dolor sit amet"u8);
                     }
                     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-                    var w = NewWriter(new bytes_BufferжWriter(Ꮡbuf), order, litWidth);
+                    var w = NewWriter(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡbuf), order, litWidth);
                     {
                         var (_, err) = w.Write(data); if (err != default!) {
                             tΔ2.Errorf("write: %v: %v"u8, ((@string)data), err);
@@ -137,7 +138,7 @@ public static void TestWriterReset(ж<testing.T> Ꮡt) {
                     }
                     var b1 = buf.Bytes();
                     buf.Reset();
-                    w._<ж<Writer>>().Reset(new bytes_BufferжWriter(Ꮡbuf), order, litWidth);
+                    w._<ж<global::go.compress.lzw_package.Writer>>().Reset(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡbuf), order, litWidth);
                     {
                         var (_, err) = w.Write(data); if (err != default!) {
                             tΔ2.Errorf("write: %v: %v"u8, ((@string)data), err);
@@ -167,7 +168,7 @@ public static void TestWriterReturnValues(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object writeAByte12GotNilErrorˢ = (@string)"write a byte >= 1<<2: got nil error, want non-nil"u8;
+internal static readonly object writeAByte12GotNilErrorˢ = (@string)"write a byte >= 1<<2: got nil error, want non-nil"u8;
 
 public static void TestSmallLitWidth(ж<testing.T> Ꮡt) {
     var w = NewWriter(io.Discard, LSB, 2);
@@ -195,7 +196,7 @@ public static void TestStartsWithClearCode(ж<testing.T> Ꮡt) {
     //  - 0x82 and above are copy codes (unused in this test case).
     foreach (var (_, empty) in new bool[]{false, true}.slice()) {
         ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-        var w = NewWriter(new bytes_BufferжWriter(Ꮡbuf), LSB, 7);
+        var w = NewWriter(new lzw_internal_test_package.bytes_BufferжWriter(Ꮡbuf), LSB, 7);
         if (!empty) {
             w.Write(slice<byte>("Hi"u8));
         }
@@ -247,10 +248,10 @@ public static void BenchmarkEncoder(ж<testing.B> Ꮡb) {
             for (nint i = 0; i < (~bΔ2).N; i++) {
                 w.Write(buf1ʗ3);
                 w.Close();
-                w._<ж<Writer>>().Reset(io.Discard, LSB, 8);
+                w._<ж<global::go.compress.lzw_package.Writer>>().Reset(io.Discard, LSB, 8);
             }
         });
     }
 }
 
-} // end lzw_package
+} // end lzw_internal_test_package

@@ -7,13 +7,14 @@ using bytes = bytes_package;
 using fmt = fmt_package;
 using hash = hash_package;
 using testing = testing_package;
+using static go.hash.maphash_package;
 
-partial class maphash_package {
+partial class maphash_internal_test_package {
 
 public static void TestUnseededHash(ж<testing.T> Ꮡt) {
     var m = new map<uint64, EmptyStruct>{};
     for (nint i = 0; i < 1000; i++) {
-        var h = @new<Hash>();
+        var h = @new<global::go.hash.maphash_package.Hash>();
         m[h.Sum64()] = new EmptyStruct();
     }
     if (len(m) < 900) {
@@ -25,7 +26,7 @@ public static void TestSeededHash(ж<testing.T> Ꮡt) {
     var s = MakeSeed();
     var m = new map<uint64, EmptyStruct>{};
     for (nint i = 0; i < 1000; i++) {
-        var h = @new<Hash>();
+        var h = @new<global::go.hash.maphash_package.Hash>();
         h.SetSeed(s);
         m[h.Sum64()] = new EmptyStruct();
     }
@@ -36,28 +37,28 @@ public static void TestSeededHash(ж<testing.T> Ꮡt) {
 
 public static void TestHashGrouping(ж<testing.T> Ꮡt) {
     var b = bytes.Repeat(slice<byte>("foo"u8), 100);
-    var hh = new slice<ж<Hash>>(7);
+    var hh = new slice<ж<global::go.hash.maphash_package.Hash>>(7);
     foreach (var (i, _) in hh) {
-        hh[i] = @new<Hash>();
+        hh[i] = @new<global::go.hash.maphash_package.Hash>();
     }
     foreach (var (_, h) in hh[1..]) {
         h.SetSeed(hh[0].Seed());
     }
     hh[0].Write(b);
     hh[1].WriteString(((@string)b));
-    var writeByte = (ж<Hash> h, byte bΔ1) => {
+    var writeByte = (ж<global::go.hash.maphash_package.Hash> h, byte bΔ1) => {
         var err = h.WriteByte(bΔ1);
         if (err != default!) {
             Ꮡt.Fatalf("WriteByte: %v"u8, err);
         }
     };
-    var writeSingleByte = (ж<Hash> h, byte bΔ2) => {
+    var writeSingleByte = (ж<global::go.hash.maphash_package.Hash> h, byte bΔ2) => {
         var (_, err) = h.Write(new byte[]{bΔ2}.slice());
         if (err != default!) {
             Ꮡt.Fatalf("Write single byte: %v"u8, err);
         }
     };
-    var writeStringSingleByte = (ж<Hash> h, byte bΔ3) => {
+    var writeStringSingleByte = (ж<global::go.hash.maphash_package.Hash> h, byte bΔ3) => {
         var (_, err) = h.WriteString(((@string)new byte[]{bΔ3}.slice()));
         if (err != default!) {
             Ꮡt.Fatalf("WriteString single byte: %v"u8, err);
@@ -97,13 +98,13 @@ public static void TestHashGrouping(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fooˢ = "foo"u8;
+internal static readonly @string fooˢ = "foo"u8;
 
 public static void TestHashBytesVsString(ж<testing.T> Ꮡt) {
     @string s = fooˢ;
     var b = slice<byte>(s);
-    var h1 = @new<Hash>();
-    var h2 = @new<Hash>();
+    var h1 = @new<global::go.hash.maphash_package.Hash>();
+    var h2 = @new<global::go.hash.maphash_package.Hash>();
     h2.SetSeed(h1.Seed());
     var (n1, err1) = h1.WriteString(s);
     if (n1 != len(s) || err1 != default!) {
@@ -123,7 +124,7 @@ public static void TestHashHighBytes(ж<testing.T> Ꮡt) {
     UntypedInt N = 10;
     var m = new map<uint64, EmptyStruct>{};
     for (nint i = 0; i < N; i++) {
-        var h = @new<Hash>();
+        var h = @new<global::go.hash.maphash_package.Hash>();
         h.WriteString(fooˢ);
         m[(h.Sum64() >> (int)(32))] = new EmptyStruct();
     }
@@ -133,10 +134,10 @@ public static void TestHashHighBytes(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testingˢ = "testing"u8;
+internal static readonly @string testingˢ = "testing"u8;
 
 public static void TestRepeat(ж<testing.T> Ꮡt) {
-    var h1 = @new<Hash>();
+    var h1 = @new<global::go.hash.maphash_package.Hash>();
     h1.WriteString(testingˢ);
     var sum1 = h1.Sum64();
     h1.Reset();
@@ -145,7 +146,7 @@ public static void TestRepeat(ж<testing.T> Ꮡt) {
     if (sum1 != sum2) {
         Ꮡt.Errorf("different sum after resetting: %#x != %#x"u8, sum1, sum2);
     }
-    var h2 = @new<Hash>();
+    var h2 = @new<global::go.hash.maphash_package.Hash>();
     h2.SetSeed(h1.Seed());
     h2.WriteString(testingˢ);
     var sum3 = h2.Sum64();
@@ -157,11 +158,11 @@ public static void TestRepeat(ж<testing.T> Ꮡt) {
 public static void TestSeedFromSum64(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
-    var h1 = @new<Hash>();
+    var h1 = @new<global::go.hash.maphash_package.Hash>();
     h1.WriteString(fooˢ);
     var x = h1.Sum64();
     // seed generated here
-    var h2 = @new<Hash>();
+    var h2 = @new<global::go.hash.maphash_package.Hash>();
     h2.SetSeed(h1.Seed());
     h2.WriteString(fooˢ);
     var y = h2.Sum64();
@@ -173,12 +174,12 @@ public static void TestSeedFromSum64(ж<testing.T> Ꮡt) {
 public static void TestSeedFromSeed(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
-    var h1 = @new<Hash>();
+    var h1 = @new<global::go.hash.maphash_package.Hash>();
     h1.WriteString(fooˢ);
     _ = h1.Seed();
     // seed generated here
     var x = h1.Sum64();
-    var h2 = @new<Hash>();
+    var h2 = @new<global::go.hash.maphash_package.Hash>();
     h2.SetSeed(h1.Seed());
     h2.WriteString(fooˢ);
     var y = h2.Sum64();
@@ -191,11 +192,11 @@ public static void TestSeedFromFlush(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     var b = new slice<byte>(65);
-    var h1 = @new<Hash>();
+    var h1 = @new<global::go.hash.maphash_package.Hash>();
     h1.Write(b);
     // seed generated here
     var x = h1.Sum64();
-    var h2 = @new<Hash>();
+    var h2 = @new<global::go.hash.maphash_package.Hash>();
     h2.SetSeed(h1.Seed());
     h2.Write(b);
     var y = h2.Sum64();
@@ -207,13 +208,13 @@ public static void TestSeedFromFlush(ж<testing.T> Ꮡt) {
 public static void TestSeedFromReset(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
-    var h1 = @new<Hash>();
+    var h1 = @new<global::go.hash.maphash_package.Hash>();
     h1.WriteString(fooˢ);
     h1.Reset();
     // seed generated here
     h1.WriteString(fooˢ);
     var x = h1.Sum64();
-    var h2 = @new<Hash>();
+    var h2 = @new<global::go.hash.maphash_package.Hash>();
     h2.SetSeed(h1.Seed());
     h2.WriteString(fooˢ);
     var y = h2.Sum64();
@@ -223,14 +224,14 @@ public static void TestSeedFromReset(ж<testing.T> Ꮡt) {
 }
 
 // Make sure a Hash implements the hash.Hash and hash.Hash64 interfaces.
-internal static hash.Hash _ᴛ1ʗ = new HashжHash(Ꮡ(new Hash(nil)));
+internal static hash.Hash _ᴛ1ʗ = new maphash_test_package.maphash_HashжHash(Ꮡ(new Hash(nil)));
 
-internal static hash.Hash64 _ᴛ2ʗ = new HashжHash64(Ꮡ(new Hash(nil)));
+internal static hash.Hash64 _ᴛ2ʗ = new maphash_test_package.maphash_HashжHash64(Ꮡ(new Hash(nil)));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string writeˢ = "Write"u8;
-private static readonly @string bytesˢ = "Bytes"u8;
-private static readonly @string stringˢ = "String"u8;
+internal static readonly @string writeˢ = "Write"u8;
+internal static readonly @string bytesˢ = "Bytes"u8;
+internal static readonly @string stringˢ = "String"u8;
 
 internal static void benchmarkSize(ж<testing.B> Ꮡb, nint size) {
     var h = Ꮡ(new Hash(nil));
@@ -250,7 +251,7 @@ internal static void benchmarkSize(ж<testing.B> Ꮡb, nint size) {
     var hʗ3 = h;
     Ꮡb.Run(bytesˢ, (ж<testing.B> bΔ2) => {
         bΔ2.SetBytes((int64)size);
-        ref var seed = ref heap<ΔSeed>(out var Ꮡseed);
+        ref var seed = ref heap<global::go.hash.maphash_package.ΔSeed>(out var Ꮡseed);
         seed = hʗ3.Seed();
         for (nint i = 0; i < (~bΔ2).N; i++) {
             Bytes(seed, bufʗ3);
@@ -259,7 +260,7 @@ internal static void benchmarkSize(ж<testing.B> Ꮡb, nint size) {
     var hʗ5 = h;
     Ꮡb.Run(stringˢ, (ж<testing.B> bΔ3) => {
         bΔ3.SetBytes((int64)size);
-        ref var seed = ref heap<ΔSeed>(out var Ꮡseed);
+        ref var seed = ref heap<global::go.hash.maphash_package.ΔSeed>(out var Ꮡseed);
         seed = hʗ5.Seed();
         for (nint i = 0; i < (~bΔ3).N; i++) {
             String(seed, s);
@@ -276,4 +277,4 @@ public static void BenchmarkHash(ж<testing.B> Ꮡb) {
     }
 }
 
-} // end maphash_package
+} // end maphash_internal_test_package

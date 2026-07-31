@@ -10,19 +10,20 @@ using Δos = os_package;
 using exec = go.os.exec_package;
 using Δruntime = runtime_package;
 using strings = strings_package;
-using static go.sync_package;
+using static sync_package;
 using Δtesting = testing_package;
 using time = time_package;
 using @internal;
 using go.os;
+using static go.sync_internal_test_package;
 using Δsync = sync_package;
 
 partial class sync_test_package {
 
 public static void HammerSemaphore(ж<uint32> Ꮡs, nint loops, channel<bool> cdone) {
     for (nint i = 0; i < loops; i++) {
-        Runtime_Semacquire(Ꮡs);
-        Runtime_Semrelease(Ꮡs, false, 0);
+        sync_internal_test_package.Runtime_Semacquire(Ꮡs);
+        sync_internal_test_package.Runtime_Semrelease(Ꮡs, false, 0);
     }
     cdone.ᐸꟷ(true);
 }
@@ -198,11 +199,11 @@ internal static slice<misuseTestsᴛ1> misuseTests = new misuseTestsᴛ1[]{
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testmisuseˢ = "TESTMISUSE"u8;
-private static readonly @string unlockedˢ = "unlocked"u8;
+internal static readonly @string testmisuseˢ = "TESTMISUSE"u8;
+internal static readonly @string unlockedˢ = "unlocked"u8;
 
 public static void TestMutexMisuse(ж<Δtesting.T> Ꮡt) {
-    testenv.MustHaveExec(new testing_TжTB(Ꮡt));
+    testenv.MustHaveExec(new sync_test_package.testing_TжTB(Ꮡt));
     foreach (var (_, test) in misuseTests) {
         var (@out, err) = exec.Command(Δos.Args[0], testmisuseˢ, test.name).CombinedOutput();
         if (err == default! || !strings.Contains(((@string)@out), unlockedˢ)) {

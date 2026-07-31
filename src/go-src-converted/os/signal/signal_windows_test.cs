@@ -14,12 +14,13 @@ using @internal;
 using exec = go.os.exec_package;
 using go.os;
 using path;
+using static go.os.signal_package;
 
-partial class signal_package {
+partial class signal_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string kernel32Dllˢ = "kernel32.dll"u8;
-private static readonly @string generateConsoleCtrlEventˢ = "GenerateConsoleCtrlEvent"u8;
+internal static readonly @string kernel32Dllˢ = "kernel32.dll"u8;
+internal static readonly @string generateConsoleCtrlEventˢ = "GenerateConsoleCtrlEvent"u8;
 
 internal static void sendCtrlBreak(ж<testing.T> Ꮡt, nint pid) {
     var (d, e) = syscall.LoadDLL(kernel32Dllˢ);
@@ -37,8 +38,8 @@ internal static void sendCtrlBreak(ж<testing.T> Ꮡt, nint pid) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ctlbreakˢ = "ctlbreak"u8;
-private static readonly @string buildˢ = "build"u8;
+internal static readonly @string ctlbreakˢ = "ctlbreak"u8;
+internal static readonly @string buildˢ = "build"u8;
 
 public static void TestCtrlBreak(ж<testing.T> Ꮡt) => func((defer, recover) => {
     // create source file
@@ -82,15 +83,15 @@ func main() {
     // compile it
     @string exe = name + ".exe"u8;
     deferǃ(os.Remove, exe, defer);
-    (var o, err) = testenv.Command(new testing_TжTB(Ꮡt), testenv.GoToolPath(new testing_TжTB(Ꮡt)), buildˢ, "-o", exe, src).CombinedOutput();
+    (var o, err) = testenv.Command(new signal_test_package.testing_TжTB(Ꮡt), testenv.GoToolPath(new signal_test_package.testing_TжTB(Ꮡt)), buildˢ, "-o", exe, src).CombinedOutput();
     if (err != default!) {
         Ꮡt.Fatalf("Failed to compile: %v\n%v"u8, err, ((@string)o));
     }
     // run it
-    var cmd = testenv.Command(new testing_TжTB(Ꮡt), exe);
+    var cmd = testenv.Command(new signal_test_package.testing_TжTB(Ꮡt), exe);
     ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-    cmd.Value.Stdout = new strings_BuilderжWriter(Ꮡbuf);
-    cmd.Value.Stderr = new strings_BuilderжWriter(Ꮡbuf);
+    cmd.Value.Stdout = new signal_test_package.strings_BuilderжWriter(Ꮡbuf);
+    cmd.Value.Stderr = new signal_test_package.strings_BuilderжWriter(Ꮡbuf);
     cmd.Value.SysProcAttr = Ꮡ(new syscall.SysProcAttr(
         CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP
     ));
@@ -109,4 +110,4 @@ func main() {
     }
 });
 
-} // end signal_package
+} // end signal_internal_test_package

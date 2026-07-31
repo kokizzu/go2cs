@@ -3,11 +3,13 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-partial class strconv_package {
+using static go.strconv_package;
 
-public static Func<@string, @string, nint, ж<NumError>> BitSizeError;
+partial class strconv_internal_test_package {
+
+public static Func<@string, @string, nint, ж<global::go.strconv_package.NumError>> BitSizeError;
 internal static void initᴛBitSizeError() { BitSizeError = bitSizeError; }
-public static Func<@string, @string, nint, ж<NumError>> BaseError;
+public static Func<@string, @string, nint, ж<global::go.strconv_package.NumError>> BaseError;
 internal static void initᴛBaseError() { BaseError = baseError; }
 
-} // end strconv_package
+} // end strconv_internal_test_package

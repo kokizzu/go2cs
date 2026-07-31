@@ -21,18 +21,18 @@ internal static class Go2CsTestHost
             "simplify.go",
             "simplify_test.go",
         });
-        registry.Add("TestAppendRangeCollapse", syntax_package.TestAppendRangeCollapse, "parse_test.go", 442);
-        registry.Add("TestCompile", syntax_package.TestCompile, "prog_test.go", 109);
-        registry.Add("TestFoldConstants", syntax_package.TestFoldConstants, "parse_test.go", 426);
-        registry.Add("TestParseFoldCase", syntax_package.TestParseFoldCase, "parse_test.go", 236);
-        registry.Add("TestParseInvalidRegexps", syntax_package.TestParseInvalidRegexps, "parse_test.go", 525);
-        registry.Add("TestParseLiteral", syntax_package.TestParseLiteral, "parse_test.go", 244);
-        registry.Add("TestParseMatchNL", syntax_package.TestParseMatchNL, "parse_test.go", 255);
-        registry.Add("TestParseNoMatchNL", syntax_package.TestParseNoMatchNL, "parse_test.go", 266);
-        registry.Add("TestParseSimple", syntax_package.TestParseSimple, "parse_test.go", 220);
-        registry.Add("TestSimplify", syntax_package.TestSimplify, "simplify_test.go", 141);
-        registry.Add("TestString", syntax_package.TestString, "parse_test.go", 616);
-        registry.Add("TestToStringEquivalentParse", syntax_package.TestToStringEquivalentParse, "parse_test.go", 552);
+        registry.Add("TestAppendRangeCollapse", syntax_internal_test_package.TestAppendRangeCollapse, "parse_test.go", 442);
+        registry.Add("TestCompile", syntax_internal_test_package.TestCompile, "prog_test.go", 109);
+        registry.Add("TestFoldConstants", syntax_internal_test_package.TestFoldConstants, "parse_test.go", 426);
+        registry.Add("TestParseFoldCase", syntax_internal_test_package.TestParseFoldCase, "parse_test.go", 236);
+        registry.Add("TestParseInvalidRegexps", syntax_internal_test_package.TestParseInvalidRegexps, "parse_test.go", 525);
+        registry.Add("TestParseLiteral", syntax_internal_test_package.TestParseLiteral, "parse_test.go", 244);
+        registry.Add("TestParseMatchNL", syntax_internal_test_package.TestParseMatchNL, "parse_test.go", 255);
+        registry.Add("TestParseNoMatchNL", syntax_internal_test_package.TestParseNoMatchNL, "parse_test.go", 266);
+        registry.Add("TestParseSimple", syntax_internal_test_package.TestParseSimple, "parse_test.go", 220);
+        registry.Add("TestSimplify", syntax_internal_test_package.TestSimplify, "simplify_test.go", 141);
+        registry.Add("TestString", syntax_internal_test_package.TestString, "parse_test.go", 616);
+        registry.Add("TestToStringEquivalentParse", syntax_internal_test_package.TestToStringEquivalentParse, "parse_test.go", 552);
         return TestHost.Run(registry, args);
     }
 }

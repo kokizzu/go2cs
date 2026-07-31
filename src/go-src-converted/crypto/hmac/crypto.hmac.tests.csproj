@@ -68,7 +68,6 @@
        can leak in because it is never listed. -->
   <ItemGroup>
     <Compile Include="go2cs_test_host.cs" />
-    <Compile Include="hmac.cs" />
     <Compile Include="hmac_test.cs" />
     <Compile Include="package_test_info.cs" />
   </ItemGroup>
@@ -87,10 +86,10 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\crypto\sha1\crypto.sha1.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\crypto\sha256\crypto.sha256.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\crypto\sha512\crypto.sha512.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\crypto\subtle\crypto.subtle.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\fmt\fmt.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\hash\hash.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
+    <ProjectReference Include="crypto.hmac.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

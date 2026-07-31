@@ -4,9 +4,10 @@
 namespace go;
 
 using fmt = fmt_package;
-using static go.math_package;
+using static math_package;
 using testing = testing_package;
 using @unsafe = unsafe_package;
+using static go.math_internal_test_package;
 
 partial class math_test_package {
 
@@ -2749,12 +2750,12 @@ public static void TestErfcinv(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string expˢ = "Exp"u8;
-private static readonly @string expGoˢ = "ExpGo"u8;
+internal static readonly @string expˢ = "Exp"u8;
+internal static readonly @string expGoˢ = "ExpGo"u8;
 
 public static void TestExp(ж<testing.T> Ꮡt) {
     testExp(Ꮡt, Exp, expˢ);
-    testExp(Ꮡt, ExpGo, expGoˢ);
+    testExp(Ꮡt, math_internal_test_package.ExpGo, expGoˢ);
 }
 
 internal static void testExp(ж<testing.T> Ꮡt, Func<float64, float64> Exp, @string name) {
@@ -2801,12 +2802,12 @@ public static void TestExpm1(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string exp2ˢ = "Exp2"u8;
-private static readonly @string exp2Goˢ = "Exp2Go"u8;
+internal static readonly @string exp2ˢ = "Exp2"u8;
+internal static readonly @string exp2Goˢ = "Exp2Go"u8;
 
 public static void TestExp2(ж<testing.T> Ꮡt) {
     testExp2(Ꮡt, Exp2, exp2ˢ);
-    testExp2(Ꮡt, Exp2Go, exp2Goˢ);
+    testExp2(Ꮡt, math_internal_test_package.Exp2Go, exp2Goˢ);
 }
 
 internal static void testExp2(ж<testing.T> Ꮡt, Func<float64, float64> Exp2, @string name) {
@@ -3035,14 +3036,14 @@ public static void TestHypotGo(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < len(vf); i++) {
         var a = Abs(1e200D * tanh[i] * Sqrt(2D));
         {
-            var f = HypotGo(1e200D * tanh[i], 1e200D * tanh[i]); if (!veryclose(a, f)) {
+            var f = math_internal_test_package.HypotGo(1e200D * tanh[i], 1e200D * tanh[i]); if (!veryclose(a, f)) {
                 Ꮡt.Errorf("HypotGo(%g, %g) = %g, want %g"u8, 1e200D * tanh[i], 1e200D * tanh[i], f, a);
             }
         }
     }
     for (nint i = 0; i < len(vfhypotSC); i++) {
         {
-            var f = HypotGo(vfhypotSC[i][0], vfhypotSC[i][1]); if (!alike(hypotSC[i], f)) {
+            var f = math_internal_test_package.HypotGo(vfhypotSC[i][0], vfhypotSC[i][1]); if (!alike(hypotSC[i], f)) {
                 Ꮡt.Errorf("HypotGo(%g, %g) = %g, want %g"u8, vfhypotSC[i][0], vfhypotSC[i][1], f, hypotSC[i]);
             }
         }
@@ -3534,7 +3535,7 @@ public static void TestSqrt(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < len(vf); i++) {
         var a = Abs(vf[i]);
         {
-            var f = SqrtGo(a); if (sqrt[i] != f) {
+            var f = math_internal_test_package.SqrtGo(a); if (sqrt[i] != f) {
                 Ꮡt.Errorf("SqrtGo(%g) = %g, want %g"u8, a, f, sqrt[i]);
             }
         }
@@ -3547,7 +3548,7 @@ public static void TestSqrt(ж<testing.T> Ꮡt) {
     }
     for (nint i = 0; i < len(vfsqrtSC); i++) {
         {
-            var f = SqrtGo(vfsqrtSC[i]); if (!alike(sqrtSC[i], f)) {
+            var f = math_internal_test_package.SqrtGo(vfsqrtSC[i]); if (!alike(sqrtSC[i], f)) {
                 Ꮡt.Errorf("SqrtGo(%g) = %g, want %g"u8, vfsqrtSC[i], f, sqrtSC[i]);
             }
         }
@@ -3794,10 +3795,10 @@ public static void TestTrigReduce(ж<testing.T> Ꮡt) {
         inputs = append(inputs, v + large);
     }
     // Also test some special inputs, Pi and right below the reduceThreshold
-    inputs = append(inputs, (float64)(Pi), Nextafter(ReduceThreshold, 0D));
+    inputs = append(inputs, (float64)(Pi), Nextafter(math_internal_test_package.ReduceThreshold, 0D));
     foreach (var (_, x) in inputs) {
         // reduce the value to compare
-        var (j, z) = TrigReduce(x);
+        var (j, z) = math_internal_test_package.TrigReduce(x);
         var xred = (float64)j * /* (Pi / 4) */ 0.7853981633974483D + z;
         {
             var (fΔ1, fredΔ1) = (Sin(x), Sin(xred)); if (!close(fΔ1, fredΔ1)) {
@@ -4068,7 +4069,7 @@ public static void BenchmarkExpGo(ж<testing.B> Ꮡb) {
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
-        x = ExpGo(.5D);
+        x = math_internal_test_package.ExpGo(.5D);
     }
     GlobalF = x;
 }
@@ -4098,7 +4099,7 @@ public static void BenchmarkExp2Go(ж<testing.B> Ꮡb) {
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
-        x = Exp2Go(.5D);
+        x = math_internal_test_package.Exp2Go(.5D);
     }
     GlobalF = x;
 }
@@ -4202,7 +4203,7 @@ public static void BenchmarkHypotGo(ж<testing.B> Ꮡb) {
 
     var x = 0.0D;
     for (nint i = 0; i < b.N; i++) {
-        x = HypotGo(3D, 4D);
+        x = math_internal_test_package.HypotGo(3D, 4D);
     }
     GlobalF = x;
 }
@@ -4508,7 +4509,7 @@ public static void BenchmarkSqrtGoLatency(ж<testing.B> Ꮡb) {
 
     var x = 10.0D;
     for (nint i = 0; i < b.N; i++) {
-        x = SqrtGo(x);
+        x = math_internal_test_package.SqrtGo(x);
     }
     GlobalF = x;
 }

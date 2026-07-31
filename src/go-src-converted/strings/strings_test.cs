@@ -10,13 +10,14 @@ using Δmath = math_package;
 using rand = go.math.rand_package;
 using reflect = reflect_package;
 using strconv = strconv_package;
-using static go.strings_package;
+using static strings_package;
 using testing = testing_package;
 using Δunicode = unicode_package;
 using utf8 = go.unicode.utf8_package;
 using @unsafe = unsafe_package;
 using go.math;
 using go.unicode;
+using static go.strings_internal_test_package;
 using strings = strings_package;
 
 partial class strings_test_package {
@@ -210,28 +211,28 @@ internal static void runIndexTests(ж<testing.T> Ꮡt, Func<@string, @string, ni
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string indexˢ = "Index"u8;
+internal static readonly @string indexˢ = "Index"u8;
 
 public static void TestIndex(ж<testing.T> Ꮡt) {
     runIndexTests(Ꮡt, Index, indexˢ, indexTests);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lastIndexˢ = "LastIndex"u8;
+internal static readonly @string lastIndexˢ = "LastIndex"u8;
 
 public static void TestLastIndex(ж<testing.T> Ꮡt) {
     runIndexTests(Ꮡt, LastIndex, lastIndexˢ, lastIndexTests);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string indexAnyˢ = "IndexAny"u8;
+internal static readonly @string indexAnyˢ = "IndexAny"u8;
 
 public static void TestIndexAny(ж<testing.T> Ꮡt) {
     runIndexTests(Ꮡt, IndexAny, indexAnyˢ, indexAnyTests);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lastIndexAnyˢ = "LastIndexAny"u8;
+internal static readonly @string lastIndexAnyˢ = "LastIndexAny"u8;
 
 public static void TestLastIndexAny(ж<testing.T> Ꮡt) {
     runIndexTests(Ꮡt, LastIndexAny, lastIndexAnyˢ, lastIndexAnyTests);
@@ -309,7 +310,7 @@ public static void TestIndexRandom(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testˢ = "test世界"u8;
+internal static readonly @string testˢ = "test世界"u8;
 
 [GoType("dyn")] partial struct TestIndexRune_tests {
     internal @string @in;
@@ -682,14 +683,14 @@ internal static rune rot13(rune r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string aToZedˢ = "a to zed"u8;
-private static readonly @string nGbMrqˢ = "n gb mrq"u8;
-private static readonly @string helloˢ4 = "Hello, 세계"u8;
-private static readonly @string inputStringThatWeExpectˢ = "Input string that we expect not to be copied."u8;
-private static readonly object unexpectedCopyDuringˢ = (@string)"unexpected copy during identity map"u8;
-private static readonly @string helloWorldˢ2 = "Hello\uFFFDWorld"u8;
-private static readonly @string abc123ˢ = "   abc    123   "u8;
-private static readonly @string abc123ˢ2 = "abc123"u8;
+internal static readonly @string aToZedˢ = "a to zed"u8;
+internal static readonly @string nGbMrqˢ = "n gb mrq"u8;
+internal static readonly @string helloˢ4 = "Hello, 세계"u8;
+internal static readonly @string inputStringThatWeExpectˢ = "Input string that we expect not to be copied."u8;
+internal static readonly object unexpectedCopyDuringˢ = (@string)"unexpected copy during identity map"u8;
+internal static readonly @string helloWorldˢ2 = "Hello\uFFFDWorld"u8;
+internal static readonly @string abc123ˢ = "   abc    123   "u8;
+internal static readonly @string abc123ˢ2 = "abc123"u8;
 
 public static void TestMap(ж<testing.T> Ꮡt) {
     // Run a couple of awful growth/shrinkage tests
@@ -789,14 +790,14 @@ public static void TestMap(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string toUpperˢ = "ToUpper"u8;
+internal static readonly @string toUpperˢ = "ToUpper"u8;
 
 public static void TestToUpper(ж<testing.T> Ꮡt) {
     runStringTests(Ꮡt, ToUpper, toUpperˢ, upperTests);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string toLowerˢ = "ToLower"u8;
+internal static readonly @string toLowerˢ = "ToLower"u8;
 
 public static void TestToLower(ж<testing.T> Ꮡt) {
     runStringTests(Ꮡt, ToLower, toLowerˢ, lowerTests);
@@ -869,7 +870,7 @@ public static void BenchmarkToLower(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string someStringThatWonTBeˢ = "Some string that won't be modified."u8;
+internal static readonly @string someStringThatWonTBeˢ = "Some string that won't be modified."u8;
 
 public static void BenchmarkMapNoChanges(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -881,8 +882,8 @@ public static void BenchmarkMapNoChanges(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcDefgHIjklmnoPrsTuVyzˢ = "abcçdefgğhıijklmnoöprsştuüvyz"u8;
-private static readonly @string abcDefgHiJklmnoPrsTuVyzˢ = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ"u8;
+internal static readonly @string abcDefgHIjklmnoPrsTuVyzˢ = "abcçdefgğhıijklmnoöprsştuüvyz"u8;
+internal static readonly @string abcDefgHiJklmnoPrsTuVyzˢ = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ"u8;
 
 public static void TestSpecialCase(ж<testing.T> Ꮡt) {
     @string lower = abcDefgHIjklmnoPrsTuVyzˢ;
@@ -906,7 +907,7 @@ public static void TestSpecialCase(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string trimSpaceˢ = "TrimSpace"u8;
+internal static readonly @string trimSpaceˢ = "TrimSpace"u8;
 
 public static void TestTrimSpace(ж<testing.T> Ꮡt) {
     runStringTests(Ꮡt, TrimSpace, trimSpaceˢ, trimSpaceTests);
@@ -1199,12 +1200,12 @@ internal static bool equal(@string m, @string s1, @string s2, ж<testing.T> Ꮡt
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object runeCountWrongInUpperˢ = (@string)"rune count wrong in upper:"u8;
-private static readonly object runeCountWrongInLowerˢ = (@string)"rune count wrong in lower:"u8;
-private static readonly @string toUpperUpperˢ = "ToUpper(upper)"u8;
-private static readonly object toUpperUpperConsistencyˢ = (@string)"ToUpper(upper) consistency fail"u8;
-private static readonly @string toLowerLowerˢ = "ToLower(lower)"u8;
-private static readonly object toLowerLowerConsistencyˢ = (@string)"ToLower(lower) consistency fail"u8;
+internal static readonly object runeCountWrongInUpperˢ = (@string)"rune count wrong in upper:"u8;
+internal static readonly object runeCountWrongInLowerˢ = (@string)"rune count wrong in lower:"u8;
+internal static readonly @string toUpperUpperˢ = "ToUpper(upper)"u8;
+internal static readonly object toUpperUpperConsistencyˢ = (@string)"ToUpper(upper) consistency fail"u8;
+internal static readonly @string toLowerLowerˢ = "ToLower(lower)"u8;
+internal static readonly object toLowerLowerConsistencyˢ = (@string)"ToLower(lower) consistency fail"u8;
 
 public static void TestCaseConsistency(ж<testing.T> Ꮡt) {
     // Make a string of all the runes.
@@ -1288,7 +1289,7 @@ public static slice<RepeatTestsᴛ1> RepeatTests = new RepeatTestsᴛ1[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string repeatSˢ = "Repeat(s)"u8;
+internal static readonly @string repeatSˢ = "Repeat(s)"u8;
 
 public static void TestRepeat(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in RepeatTests) {
@@ -1325,7 +1326,7 @@ internal static error /*err*/ repeat(@string s, nint count) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bitˢ = "64-bit"u8;
+internal static readonly @string bitˢ = "64-bit"u8;
 
 [GoLocalName("testCase")] [GoType("dyn")] partial struct TestRepeatCatchesOverflow_testCase {
     internal @string s;
@@ -1525,7 +1526,7 @@ public static slice<UnreadRuneErrorTestsᴛ1> UnreadRuneErrorTests = new UnreadR
         r.Seek(0, Δio.SeekCurrent);
     }),
     new("WriteTo"u8, (ж<strings.Reader> r) => {
-        r.WriteTo(new bytes_BufferжWriter(Ꮡ(new bytes.Buffer(nil))));
+        r.WriteTo(new strings_test_package.bytes_BufferжWriter(Ꮡ(new bytes.Buffer(nil))));
     })
 }.slice();
 
@@ -1810,11 +1811,11 @@ public static void TestEqualFold(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testsˢ = "Tests"u8;
-private static readonly object wrongResultˢ = (@string)"wrong result"u8;
-private static readonly @string asciiˢ = "ASCII"u8;
-private static readonly @string unicodePrefixˢ = "UnicodePrefix"u8;
-private static readonly @string unicodeSuffixˢ = "UnicodeSuffix"u8;
+internal static readonly @string testsˢ = "Tests"u8;
+internal static readonly object wrongResultˢ = (@string)"wrong result"u8;
+internal static readonly @string asciiˢ = "ASCII"u8;
+internal static readonly @string unicodePrefixˢ = "UnicodePrefix"u8;
+internal static readonly @string unicodeSuffixˢ = "UnicodeSuffix"u8;
 
 public static void BenchmarkEqualFold(ж<testing.B> Ꮡb) {
     Ꮡb.Run(testsˢ, (ж<testing.B> bΔ1) => {
@@ -2003,21 +2004,21 @@ public static void BenchmarkIndexHard1(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string preˢ = "</pre>"u8;
+internal static readonly @string preˢ = "</pre>"u8;
 
 public static void BenchmarkIndexHard2(ж<testing.B> Ꮡb) {
     benchmarkIndexHard(Ꮡb, preˢ);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bHelloWorldBˢ = "<b>hello world</b>"u8;
+internal static readonly @string bHelloWorldBˢ = "<b>hello world</b>"u8;
 
 public static void BenchmarkIndexHard3(ж<testing.B> Ꮡb) {
     benchmarkIndexHard(Ꮡb, bHelloWorldBˢ);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string preBHelloBStrongWorldˢ = "<pre><b>hello</b><strong>world</strong></pre>"u8;
+internal static readonly @string preBHelloBStrongWorldˢ = "<pre><b>hello</b><strong>world</strong></pre>"u8;
 
 public static void BenchmarkIndexHard4(ж<testing.B> Ꮡb) {
     benchmarkIndexHard(Ꮡb, preBHelloBStrongWorldˢ);
@@ -2068,7 +2069,7 @@ public static void BenchmarkCountTorture(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcˢ2 = "ABC"u8;
+internal static readonly @string abcˢ2 = "ABC"u8;
 
 public static void BenchmarkCountTortureOverlapping(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -2291,7 +2292,7 @@ public static void BenchmarkIndexAnyASCII(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string helloWorldHelloWorldˢ = "你好世界, hello world. 你好世界, hello world. 你好世界, hello world."u8;
+internal static readonly @string helloWorldHelloWorldˢ = "你好世界, hello world. 你好世界, hello world. 你好世界, hello world."u8;
 
 public static void BenchmarkIndexAnyUTF8(ж<testing.B> Ꮡb) {
     @string x = Repeat("#"u8, 2048);
@@ -2362,7 +2363,7 @@ public static void BenchmarkTrimASCII(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string theQuickBrownFoxˢ = "  the quick brown fox   "u8;
+internal static readonly @string theQuickBrownFoxˢ = "  the quick brown fox   "u8;
 
 public static void BenchmarkTrimByte(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -2386,7 +2387,7 @@ public static void BenchmarkIndexPeriodic(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string andˢ = " and "u8;
+internal static readonly @string andˢ = " and "u8;
 
 public static void BenchmarkJoin(ж<testing.B> Ꮡb) {
     var vals = new @string[]{"red"u8, "yellow"u8, "pink"u8, "green"u8, "purple"u8, "orange"u8, "blue"u8}.slice();
@@ -2430,7 +2431,7 @@ public static void BenchmarkTrimSpace(ж<testing.B> Ꮡb) {
 internal static @string stringSink;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bananaˢ = "banana"u8;
+internal static readonly @string bananaˢ = "banana"u8;
 
 public static void BenchmarkReplaceAll(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;

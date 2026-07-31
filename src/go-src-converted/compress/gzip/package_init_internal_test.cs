@@ -4,8 +4,8 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go.compress;
 
-partial class gzip_package {
-    static gzip_package() {
+partial class gzip_internal_test_package {
+    static gzip_internal_test_package() {
         initᴛgunzipTests();
     }
-} // end gzip_package
+} // end gzip_internal_test_package

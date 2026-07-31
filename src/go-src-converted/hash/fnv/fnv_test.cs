@@ -10,10 +10,11 @@ using hash = hash_package;
 using io = io_package;
 using testing = testing_package;
 using go.encoding;
+using static go.hash.fnv_package;
 
-partial class fnv_package {
+partial class fnv_internal_test_package {
 
-[GoType] partial struct golden {
+[GoType] internal partial struct golden {
     internal slice<byte> @out;
     internal @string @in;
     internal @string halfState; // marshaled hash state after first half of in written, used by TestGoldenMarshal
@@ -62,19 +63,19 @@ internal static slice<golden> golden128a = new golden[]{
 }.slice();
 
 public static void TestGolden32(ж<testing.T> Ꮡt) {
-    testGolden(Ꮡt, new hash_Hash32ᴠHash(New32()), golden32);
+    testGolden(Ꮡt, new fnv_internal_test_package.hash_Hash32ᴠHash(New32()), golden32);
 }
 
 public static void TestGolden32a(ж<testing.T> Ꮡt) {
-    testGolden(Ꮡt, new hash_Hash32ᴠHash(New32a()), golden32a);
+    testGolden(Ꮡt, new fnv_internal_test_package.hash_Hash32ᴠHash(New32a()), golden32a);
 }
 
 public static void TestGolden64(ж<testing.T> Ꮡt) {
-    testGolden(Ꮡt, new hash_Hash64ᴠHash(New64()), golden64);
+    testGolden(Ꮡt, new fnv_internal_test_package.hash_Hash64ᴠHash(New64()), golden64);
 }
 
 public static void TestGolden64a(ж<testing.T> Ꮡt) {
-    testGolden(Ꮡt, new hash_Hash64ᴠHash(New64a()), golden64a);
+    testGolden(Ꮡt, new fnv_internal_test_package.hash_Hash64ᴠHash(New64a()), golden64a);
 }
 
 public static void TestGolden128(ж<testing.T> Ꮡt) {
@@ -111,10 +112,10 @@ internal static void testGolden(ж<testing.T> Ꮡt, hash.Hash hashΔ1, slice<gol
 
 public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
     var tests = new TestGoldenMarshal_tests[]{
-        new("32"u8, () => new hash_Hash32ᴠHash(New32()), golden32),
-        new("32a"u8, () => new hash_Hash32ᴠHash(New32a()), golden32a),
-        new("64"u8, () => new hash_Hash64ᴠHash(New64()), golden64),
-        new("64a"u8, () => new hash_Hash64ᴠHash(New64a()), golden64a),
+        new("32"u8, () => new fnv_internal_test_package.hash_Hash32ᴠHash(New32()), golden32),
+        new("32a"u8, () => new fnv_internal_test_package.hash_Hash32ᴠHash(New32a()), golden32a),
+        new("64"u8, () => new fnv_internal_test_package.hash_Hash64ᴠHash(New64()), golden64),
+        new("64a"u8, () => new fnv_internal_test_package.hash_Hash64ᴠHash(New64a()), golden64a),
         new("128"u8, () => New128(), golden128),
         new("128a"u8, () => New128a(), golden128a)
     }.slice();
@@ -159,19 +160,19 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
 }
 
 public static void TestIntegrity32(ж<testing.T> Ꮡt) {
-    testIntegrity(Ꮡt, new hash_Hash32ᴠHash(New32()));
+    testIntegrity(Ꮡt, new fnv_internal_test_package.hash_Hash32ᴠHash(New32()));
 }
 
 public static void TestIntegrity32a(ж<testing.T> Ꮡt) {
-    testIntegrity(Ꮡt, new hash_Hash32ᴠHash(New32a()));
+    testIntegrity(Ꮡt, new fnv_internal_test_package.hash_Hash32ᴠHash(New32a()));
 }
 
 public static void TestIntegrity64(ж<testing.T> Ꮡt) {
-    testIntegrity(Ꮡt, new hash_Hash64ᴠHash(New64()));
+    testIntegrity(Ꮡt, new fnv_internal_test_package.hash_Hash64ᴠHash(New64()));
 }
 
 public static void TestIntegrity64a(ж<testing.T> Ꮡt) {
-    testIntegrity(Ꮡt, new hash_Hash64ᴠHash(New64a()));
+    testIntegrity(Ꮡt, new fnv_internal_test_package.hash_Hash64ᴠHash(New64a()));
 }
 
 public static void TestIntegrity128(ж<testing.T> Ꮡt) {
@@ -234,19 +235,19 @@ internal static void testIntegrity(ж<testing.T> Ꮡt, hash.Hash h) {
 
 // There's no Sum128 function, so we don't need to test anything here.
 public static void BenchmarkFnv32KB(ж<testing.B> Ꮡb) {
-    benchmarkKB(Ꮡb, new hash_Hash32ᴠHash(New32()));
+    benchmarkKB(Ꮡb, new fnv_internal_test_package.hash_Hash32ᴠHash(New32()));
 }
 
 public static void BenchmarkFnv32aKB(ж<testing.B> Ꮡb) {
-    benchmarkKB(Ꮡb, new hash_Hash32ᴠHash(New32a()));
+    benchmarkKB(Ꮡb, new fnv_internal_test_package.hash_Hash32ᴠHash(New32a()));
 }
 
 public static void BenchmarkFnv64KB(ж<testing.B> Ꮡb) {
-    benchmarkKB(Ꮡb, new hash_Hash64ᴠHash(New64()));
+    benchmarkKB(Ꮡb, new fnv_internal_test_package.hash_Hash64ᴠHash(New64()));
 }
 
 public static void BenchmarkFnv64aKB(ж<testing.B> Ꮡb) {
-    benchmarkKB(Ꮡb, new hash_Hash64ᴠHash(New64a()));
+    benchmarkKB(Ꮡb, new fnv_internal_test_package.hash_Hash64ᴠHash(New64a()));
 }
 
 public static void BenchmarkFnv128KB(ж<testing.B> Ꮡb) {
@@ -274,4 +275,4 @@ internal static void benchmarkKB(ж<testing.B> Ꮡb, hash.Hash h) {
     }
 }
 
-} // end fnv_package
+} // end fnv_internal_test_package

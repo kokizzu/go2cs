@@ -4,10 +4,11 @@
 namespace go;
 
 using bytes = bytes_package;
-using static go.strings_package;
+using static strings_package;
 using testing = testing_package;
 using utf8 = go.unicode.utf8_package;
 using go.unicode;
+using static go.strings_internal_test_package;
 using strings = strings_package;
 
 partial class strings_test_package {
@@ -34,10 +35,10 @@ internal static void check(ж<testing.T> Ꮡt, ж<strings.Builder> Ꮡb, @string
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string helloˢ = "hello"u8;
-private static readonly @string helloˢ2 = "hello "u8;
-private static readonly @string worldˢ = "world"u8;
-private static readonly @string helloWorldˢ = "hello world"u8;
+internal static readonly @string helloˢ = "hello"u8;
+internal static readonly @string helloˢ2 = "hello "u8;
+internal static readonly @string worldˢ = "world"u8;
+internal static readonly @string helloWorldˢ = "hello world"u8;
 
 public static void TestBuilder(ж<testing.T> Ꮡt) {
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
@@ -61,11 +62,11 @@ public static void TestBuilder(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string alphaˢ = "alpha"u8;
-private static readonly @string betaˢ = "beta"u8;
-private static readonly @string alphabetaˢ = "alphabeta"u8;
-private static readonly @string gammaˢ = "gamma"u8;
-private static readonly @string alphabetagammaˢ = "alphabetagamma"u8;
+internal static readonly @string alphaˢ = "alpha"u8;
+internal static readonly @string betaˢ = "beta"u8;
+internal static readonly @string alphabetaˢ = "alphabeta"u8;
+internal static readonly @string gammaˢ = "gamma"u8;
+internal static readonly @string alphabetagammaˢ = "alphabetagamma"u8;
 
 public static void TestBuilderString(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -99,8 +100,8 @@ public static void TestBuilderString(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string aaaˢ = "aaa"u8;
-private static readonly @string bbbˢ = "bbb"u8;
+internal static readonly @string aaaˢ = "aaa"u8;
+internal static readonly @string bbbˢ = "bbb"u8;
 
 public static void TestBuilderReset(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -240,7 +241,7 @@ public static void TestBuilderWriteByte(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcdeˢ = "abcde"u8;
+internal static readonly @string abcdeˢ = "abcde"u8;
 
 public static void TestBuilderAllocs(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -405,9 +406,9 @@ internal static slice<byte> someBytes = slice<byte>("some bytes sdljlk jsklj3lkj
 internal static @string sinkS;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noGrowˢ = "1Write_NoGrow"u8;
-private static readonly @string noGrowˢ2 = "3Write_NoGrow"u8;
-private static readonly @string growˢ = "3Write_Grow"u8;
+internal static readonly @string noGrowˢ = "1Write_NoGrow"u8;
+internal static readonly @string noGrowˢ2 = "3Write_NoGrow"u8;
+internal static readonly @string growˢ = "3Write_Grow"u8;
 
 internal static void benchmarkBuilder(ж<testing.B> Ꮡb, Action<ж<testing.B>, nint, bool> f) {
     Ꮡb.Run(noGrowˢ, (ж<testing.B> bΔ1) => {

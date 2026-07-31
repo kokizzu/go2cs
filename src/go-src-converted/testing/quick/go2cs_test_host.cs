@@ -12,14 +12,14 @@ internal static class Go2CsTestHost
             "quick.go",
             "quick_test.go",
         });
-        registry.Add("TestCheckEqual", quick_package.TestCheckEqual, "quick_test.go", 162);
-        registry.Add("TestCheckProperty", quick_package.TestCheckProperty, "quick_test.go", 223);
-        registry.Add("TestEmptyStruct", quick_package.TestEmptyStruct, "quick_test.go", 279);
-        registry.Add("TestFailure", quick_package.TestFailure, "quick_test.go", 227);
-        registry.Add("TestInt64", quick_package.TestInt64, "quick_test.go", 311);
-        registry.Add("TestMutuallyRecursive", quick_package.TestMutuallyRecursive, "quick_test.go", 289);
-        registry.Add("TestNonZeroSliceAndMap", quick_package.TestNonZeroSliceAndMap, "quick_test.go", 297);
-        registry.Add("TestRecursive", quick_package.TestRecursive, "quick_test.go", 264);
+        registry.Add("TestCheckEqual", quick_internal_test_package.TestCheckEqual, "quick_test.go", 162);
+        registry.Add("TestCheckProperty", quick_internal_test_package.TestCheckProperty, "quick_test.go", 223);
+        registry.Add("TestEmptyStruct", quick_internal_test_package.TestEmptyStruct, "quick_test.go", 279);
+        registry.Add("TestFailure", quick_internal_test_package.TestFailure, "quick_test.go", 227);
+        registry.Add("TestInt64", quick_internal_test_package.TestInt64, "quick_test.go", 311);
+        registry.Add("TestMutuallyRecursive", quick_internal_test_package.TestMutuallyRecursive, "quick_test.go", 289);
+        registry.Add("TestNonZeroSliceAndMap", quick_internal_test_package.TestNonZeroSliceAndMap, "quick_test.go", 297);
+        registry.Add("TestRecursive", quick_internal_test_package.TestRecursive, "quick_test.go", 264);
         return TestHost.Run(registry, args);
     }
 }

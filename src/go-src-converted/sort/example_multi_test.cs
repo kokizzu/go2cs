@@ -4,8 +4,8 @@
 namespace go;
 
 using fmt = fmt_package;
-using sort = go.sort_package;
-using go;
+using sort = sort_package;
+using static go.sort_internal_test_package;
 
 partial class sort_test_package {
 
@@ -29,7 +29,7 @@ public static void ΔSort(this ж<multiSorter> Ꮡms, slice<Change> changes) {
     ref var ms = ref Ꮡms.Value;
 
     ms.changes = changes;
-    sort.Sort(new multiSorterжInterface(Ꮡms));
+    sort.Sort(new sort_test_package.multiSorterжInterface(Ꮡms));
 }
 
 // OrderedBy returns a Sorter that sorts using the less functions, in order.
@@ -94,11 +94,11 @@ internal static slice<Change> changes = new Change[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object byUserˢ = (@string)"By user:"u8;
-private static readonly object byUserLinesˢ = (@string)"By user,<lines:"u8;
-private static readonly object byUserLinesˢ2 = (@string)"By user,>lines:"u8;
-private static readonly object byLanguageLinesˢ = (@string)"By language,<lines:"u8;
-private static readonly object byLanguageLinesUserˢ = (@string)"By language,<lines,user:"u8;
+internal static readonly object byUserˢ = (@string)"By user:"u8;
+internal static readonly object byUserLinesˢ = (@string)"By user,<lines:"u8;
+internal static readonly object byUserLinesˢ2 = (@string)"By user,>lines:"u8;
+internal static readonly object byLanguageLinesˢ = (@string)"By language,<lines:"u8;
+internal static readonly object byLanguageLinesUserˢ = (@string)"By language,<lines,user:"u8;
 
 // ExampleMultiKeys demonstrates a technique for sorting a struct type using different
 // sets of multiple fields in the comparison. We chain together "Less" functions, each of

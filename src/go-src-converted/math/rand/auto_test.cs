@@ -5,6 +5,7 @@ namespace go.math;
 
 using static go.math.rand_package;
 using testing = testing_package;
+using static go.math.rand_internal_test_package;
 
 partial class rand_test_package {
 

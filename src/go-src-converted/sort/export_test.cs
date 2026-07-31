@@ -3,14 +3,16 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-partial class sort_package {
+using static go.sort_package;
 
-public static void Heapsort(Interface data) {
+partial class sort_internal_test_package {
+
+public static void Heapsort(global::go.sort_package.Interface data) {
     heapSort(data, 0, data.Len());
 }
 
-public static void ReverseRange(Interface data, nint a, nint b) {
+public static void ReverseRange(global::go.sort_package.Interface data, nint a, nint b) {
     reverseRange(data, a, b);
 }
 
-} // end sort_package
+} // end sort_internal_test_package

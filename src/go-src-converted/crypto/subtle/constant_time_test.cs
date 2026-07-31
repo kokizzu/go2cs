@@ -6,10 +6,11 @@ namespace go.crypto;
 using testing = testing_package;
 using quick = go.testing.quick_package;
 using go.testing;
+using static go.crypto.subtle_package;
 
-partial class subtle_package {
+partial class subtle_internal_test_package {
 
-[GoType] partial struct TestConstantTimeCompareStruct {
+[GoType] public partial struct TestConstantTimeCompareStruct {
     internal slice<byte> a, b;
     internal nint @out;
 }
@@ -32,7 +33,7 @@ public static void TestConstantTimeCompare(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] partial struct TestConstantTimeByteEqStruct {
+[GoType] public partial struct TestConstantTimeByteEqStruct {
     internal uint8 a, b;
     internal nint @out;
 }
@@ -167,4 +168,4 @@ public static void BenchmarkConstantTimeLessOrEq(ж<testing.B> Ꮡb) {
     benchmarkGlobal = (uint8)x;
 }
 
-} // end subtle_package
+} // end subtle_internal_test_package

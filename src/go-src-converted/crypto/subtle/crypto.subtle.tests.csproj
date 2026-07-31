@@ -67,12 +67,9 @@
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
        can leak in because it is never listed. -->
   <ItemGroup>
-    <Compile Include="constant_time.cs" />
     <Compile Include="constant_time_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="xor.cs" />
-    <Compile Include="xor_generic.cs" />
     <Compile Include="xor_test.cs" />
   </ItemGroup>
 
@@ -96,7 +93,7 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\runtime\runtime.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\testing\quick\testing.quick.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\unsafe\unsafe.csproj" />
+    <ProjectReference Include="crypto.subtle.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

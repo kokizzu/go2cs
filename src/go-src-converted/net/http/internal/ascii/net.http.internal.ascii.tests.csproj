@@ -69,7 +69,6 @@
   <ItemGroup>
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="print.cs" />
     <Compile Include="print_test.cs" />
   </ItemGroup>
 
@@ -81,8 +80,7 @@
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\strings\strings.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\unicode\unicode.csproj" />
+    <ProjectReference Include="net.http.internal.ascii.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

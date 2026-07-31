@@ -5,10 +5,11 @@ namespace go.image;
 
 using image = image_package;
 using testing = testing_package;
+using static go.image.draw_package;
 
-partial class draw_package {
+partial class draw_internal_test_package {
 
-[GoType] partial struct clipTest {
+[GoType] internal partial struct clipTest {
     internal @string desc;
     internal image.Rectangle r, dr, sr, mr;
     internal image.Point sp, mp;
@@ -166,9 +167,9 @@ public static void TestClip(ж<testing.T> Ꮡt) {
         ref var mp = ref heap<image.Point>(out var Ꮡmp);
         mp = c.mp;
         if (c.nilMask){
-            clip(new image_ΔRGBAжImage(dst), Ꮡr, new image_ΔRGBAжimage_Image(src), Ꮡsp, default!, nil);
+            clip(new draw_test_package.image_ΔRGBAжdraw_Image(dst), Ꮡr, new draw_test_package.image_ΔRGBAжimage_Image(src), Ꮡsp, default!, nil);
         } else {
-            clip(new image_ΔRGBAжImage(dst), Ꮡr, new image_ΔRGBAжimage_Image(src), Ꮡsp, mask0.SubImage(c.mr), Ꮡmp);
+            clip(new draw_test_package.image_ΔRGBAжdraw_Image(dst), Ꮡr, new draw_test_package.image_ΔRGBAжimage_Image(src), Ꮡsp, mask0.SubImage(c.mr), Ꮡmp);
         }
         // Check that the actual results equal the expected results.
         if (!c.r0.Eq(r)) {
@@ -205,4 +206,4 @@ public static void TestClip(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end draw_package
+} // end draw_internal_test_package

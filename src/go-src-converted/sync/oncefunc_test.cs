@@ -7,13 +7,13 @@ using bytes = bytes_package;
 using Δmath = math_package;
 using Δruntime = runtime_package;
 using debug = go.runtime.debug_package;
-using Δsync = go.sync_package;
+using Δsync = sync_package;
 using atomic = go.sync.atomic_package;
 using Δtesting = testing_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
-using go;
 using go.runtime;
 using go.sync;
+using static go.sync_internal_test_package;
 
 partial class sync_test_package {
 
@@ -192,7 +192,7 @@ public static void TestOnceFuncGoexit(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string syncTestOnceFuncPanicˢ = "sync_test.onceFuncPanic"u8;
+internal static readonly @string syncTestOnceFuncPanicˢ = "sync_test.onceFuncPanic"u8;
 
 public static void TestOnceFuncPanicTraceback(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
     // Test that on the first invocation of a OnceFunc, the stack trace goes all
@@ -218,8 +218,8 @@ internal static void onceFuncPanic() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object wrappedFunctionGarbageˢ = (@string)"wrapped function garbage collected too early"u8;
-private static readonly object wrappedFunctionShouldBeˢ = (@string)"wrapped function should be garbage collected, but still live"u8;
+internal static readonly object wrappedFunctionGarbageˢ = (@string)"wrapped function garbage collected too early"u8;
+internal static readonly object wrappedFunctionShouldBeˢ = (@string)"wrapped function should be garbage collected, but still live"u8;
 
 public static void TestOnceXGC(ж<Δtesting.T> Ꮡt) {
 
@@ -300,9 +300,9 @@ internal static void doOnceFunc() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string vOnceˢ = "v=Once"u8;
-private static readonly @string vGlobalˢ = "v=Global"u8;
-private static readonly @string vLocalˢ = "v=Local"u8;
+internal static readonly @string vOnceˢ = "v=Once"u8;
+internal static readonly @string vGlobalˢ = "v=Global"u8;
+internal static readonly @string vLocalˢ = "v=Local"u8;
 
 public static void BenchmarkOnceFunc(ж<Δtesting.B> Ꮡb) {
     Ꮡb.Run(vOnceˢ, (ж<Δtesting.B> bΔ1) => {

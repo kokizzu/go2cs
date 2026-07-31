@@ -4,9 +4,9 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go.encoding;
 
-partial class binary_package {
-    static binary_package() {
+partial class binary_internal_test_package {
+    static binary_internal_test_package() {
         initᴛencoders();
         initᴛdecoders();
     }
-} // end binary_package
+} // end binary_internal_test_package

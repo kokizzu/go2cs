@@ -1,13 +1,11 @@
-// go2cs code converter defines `global using` statements here for imported type
-// aliases as package references are encountered via `import' statements. Exported
-// type aliases that need a `global using` declaration will be loaded from the
-// referenced package by parsing its 'package_info.cs' source file and reading its
-// defined `GoTypeAlias` attributes.
-
-// Package name separator "dot" used in imported type aliases is extended Unicode
-// character '\uA4F8' which is a valid character in a C# identifier name. This is
-// used to simulate Go's package level type aliases since C# does not yet support
-// importing type aliases at a namespace level.
+// go2cs metadata anchor for a production-reference test project: the test assembly
+// REFERENCES the colocated production project instead of
+// recompiling its sources, so the production assembly is the single identity for the
+// production types and no production class partial may be declared here. The first —
+// and only — class is the test metadata class the go2cs-gen generators anchor
+// generated adapters and partials to.
+global using static global::go.strings_package;
+global using static global::go.strings_internal_test_package;
 
 // <ImportedTypeAliases>
 global using abiꓸArrayType = go.@internal.abi_package.ΔArrayType;
@@ -28,38 +26,14 @@ using testing = go.testing_package;
 // </ImportedTypeAliases>
 
 using go;
-using static go.strings_package;
-using static go.strings_test_package;
-
-// For encountered type alias declarations, e.g., `type Table = map[string]int`,
-// go2cs code converter will generate a `global using` statement for the alias in
-// the converted source, e.g.: `global using Table = go.map<go.@string, nint>;`.
-// Although scope of `global using` is available to all files in the project, all
-// converted Go code for the project targets the same package, so `global using`
-// statements will effectively have package level scope.
-
-// Additionally, `GoTypeAlias` attributes will be generated here for exported type
-// aliases. This allows the type alias to be imported and used from other packages
-// when referenced.
+using static global::go.strings_test_package;
 
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
-// As types are cast to interfaces in Go source code, the go2cs code converter
-// will generate an assembly level `GoImplement` attribute for each unique cast.
-// This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
-
 // <InterfaceImplementations>
-[assembly: GoImplement<appendSliceWriter, io_package.Writer>(Pointer = true)]
-[assembly: GoImplement<byteReplacer, replacer>(Pointer = true)]
-[assembly: GoImplement<byteStringReplacer, replacer>(Pointer = true)]
-[assembly: GoImplement<genericReplacer, replacer>(Pointer = true)]
-[assembly: GoImplement<singleStringReplacer, replacer>(Pointer = true)]
-[assembly: GoImplement<stringWriter, io_package.StringWriter>]
+[assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
+[assembly: GoImplement<errWriter, io_package.Writer>]
 [assembly: GoImplement<strings_package.Reader, io_package.Reader>(Pointer = true)]
 // </InterfaceImplementations>
 
@@ -69,8 +43,8 @@ using static go.strings_test_package;
 
 namespace go;
 
-[GoPackage("strings")]
-public static partial class strings_package
+[GoPackage("strings_test")]
+public static partial class strings_test_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -79,24 +53,45 @@ public static partial class strings_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface replacer {}
-    internal partial struct appendSliceWriter {}
-    internal partial struct asciiSet {}
-    internal partial struct byteReplacer {}
-    internal partial struct byteStringReplacer {}
-    internal partial struct genericReplacer {}
-    internal partial struct singleStringReplacer {}
-    internal partial struct stringFinder {}
-    internal partial struct stringWriter {}
-    internal partial struct trieNode {}
-    public partial struct Builder {}
-    public partial struct FieldsFunc_span {}
-    public partial struct Reader {}
-    public partial struct Replacer {}
+    internal partial struct algorithmTestCasesᴛ1 {}
+    internal partial struct compareTestsᴛ1 {}
+    internal partial struct cutPrefixTestsᴛ1 {}
+    internal partial struct cutSuffixTestsᴛ1 {}
+    internal partial struct cutTestsᴛ1 {}
+    internal partial struct errWriter {}
+    internal partial struct indexFuncTestsᴛ1 {}
+    internal partial struct mapdataᴛ1 {}
+    internal partial struct predicate {}
+    internal partial struct stringdataᴛ1 {}
+    internal partial struct toValidUTF8Testsᴛ1 {}
+    internal partial struct trimFuncTestsᴛ1 {}
+    internal partial struct trimTestsᴛ1 {}
+    public partial struct BenchmarkToValidUTF8_tests {}
+    public partial struct BenchmarkTrimSpace_tests {}
+    public partial struct ContainsAnyTestsᴛ1 {}
+    public partial struct ContainsRuneTestsᴛ1 {}
+    public partial struct ContainsTestsᴛ1 {}
+    public partial struct CountTestsᴛ1 {}
+    public partial struct EqualFoldTestsᴛ1 {}
+    public partial struct FieldsTest {}
+    public partial struct IndexTest {}
+    public partial struct RepeatTestsᴛ1 {}
+    public partial struct ReplaceTestsᴛ1 {}
+    public partial struct RunesTestsᴛ1 {}
+    public partial struct SplitTest {}
+    public partial struct StringTest {}
+    public partial struct TestBuilderCopyPanic_tests {}
+    public partial struct TestBuilderWrite2_type {}
+    public partial struct TestFinderCreation_testCases {}
+    public partial struct TestFinderNext_testCases {}
+    public partial struct TestGenericTrieBuilding_testCases {}
+    public partial struct TestIndexRune_tests {}
+    public partial struct TestReaderAt_tests {}
+    public partial struct TestReader_tests {}
+    public partial struct TestRepeatCatchesOverflow_testCase {}
+    public partial struct TestReplacer_testCase {}
+    public partial struct TestTrimFunc_trimmers {}
+    public partial struct TitleTestsᴛ1 {}
+    public partial struct UnreadRuneErrorTestsᴛ1 {}
     // </TypeAccessibility>
-}
-
-[GoPackage("strings_test")]
-public static partial class strings_test_package
-{
 }

@@ -6,10 +6,11 @@ namespace go.compress;
 using bytes = bytes_package;
 using io = io_package;
 using testing = testing_package;
+using static go.compress.zlib_package;
 
-partial class zlib_package {
+partial class zlib_internal_test_package {
 
-[GoType] partial struct zlibTest {
+[GoType] internal partial struct zlibTest {
     internal @string desc;
     internal @string raw;
     internal slice<byte> compressed;
@@ -151,7 +152,7 @@ public static void TestDecompressor(ж<testing.T> Ꮡt) => func((defer, recover)
     var b = @new<bytes.Buffer>();
     foreach (var (_, tt) in zlibTests) {
         var @in = bytes.NewReader(tt.compressed);
-        var (zr, err) = NewReaderDict(new bytes_ReaderжReader(@in), tt.dict);
+        var (zr, err) = NewReaderDict(new zlib_test_package.bytes_ReaderжReader(@in), tt.dict);
         if (err != default!) {
             if (!AreEqual(err, tt.err)) {
                 Ꮡt.Errorf("%s: NewReader: %s"u8, tt.desc, err);
@@ -162,7 +163,7 @@ public static void TestDecompressor(ж<testing.T> Ꮡt) => func((defer, recover)
         defer(() => zrʗ1.Close());
         // Read and verify correctness of data.
         b.Reset();
-        (var n, err) = io.Copy(new bytes_BufferжWriter(b), zr);
+        (var n, err) = io.Copy(new zlib_test_package.bytes_BufferжWriter(b), zr);
         if (err != default!) {
             if (!AreEqual(err, tt.err)) {
                 Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
@@ -187,4 +188,4 @@ public static void TestDecompressor(ж<testing.T> Ꮡt) => func((defer, recover)
     }
 });
 
-} // end zlib_package
+} // end zlib_internal_test_package

@@ -6,8 +6,9 @@ namespace go.@internal;
 using bytes = bytes_package;
 using fmt = fmt_package;
 using testing = testing_package;
+using static go.@internal.zstd_package;
 
-partial class zstd_package {
+partial class zstd_internal_test_package {
 
 internal static slice<byte> /*seq*/ makeSequence(nint start, nint n) {
     slice<byte> seq = default!;
@@ -42,7 +43,7 @@ public static void TestWindow(ж<testing.T> Ꮡt) {
 // testWindow tests window by saving three sequences of bytes to it.
 // Third sequence tests read offset that can become non-zero only after second save.
 internal static void testWindow(ж<testing.T> Ꮡt, nint size, slice<byte> a, slice<byte> b, slice<byte> c) {
-    window w = default!;
+    global::go.@internal.zstd_package.window w = default!;
     w.reset(size);
     w.save(a);
     w.save(b);
@@ -70,4 +71,4 @@ internal static void testWindow(ж<testing.T> Ꮡt, nint size, slice<byte> a, sl
     }
 }
 
-} // end zstd_package
+} // end zstd_internal_test_package

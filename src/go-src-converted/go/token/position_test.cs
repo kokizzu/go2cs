@@ -9,10 +9,11 @@ using reflect = reflect_package;
 using sync = sync_package;
 using testing = testing_package;
 using math;
+using static global::go.go.token_package;
 
-partial class token_package {
+partial class token_internal_test_package {
 
-internal static void checkPos(ж<testing.T> Ꮡt, @string msg, ΔPosition got, ΔPosition want) {
+internal static void checkPos(ж<testing.T> Ꮡt, @string msg, global::go.go.token_package.ΔPosition got, global::go.go.token_package.ΔPosition want) {
     if (got.Filename != want.Filename) {
         Ꮡt.Errorf("%s: got filename = %q; want %q"u8, msg, got.Filename, want.Filename);
     }
@@ -28,14 +29,14 @@ internal static void checkPos(ж<testing.T> Ꮡt, @string msg, ΔPosition got, �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilNoPosˢ = "nil NoPos"u8;
-private static readonly @string fsetNoPosˢ = "fset NoPos"u8;
+internal static readonly @string nilNoPosˢ = "nil NoPos"u8;
+internal static readonly @string fsetNoPosˢ = "fset NoPos"u8;
 
 public static void TestNoPos(ж<testing.T> Ꮡt) {
     if (NoPos.IsValid()) {
         Ꮡt.Errorf("NoPos should not be valid"u8);
     }
-    ж<FileSet> fset = default!;
+    ж<global::go.go.token_package.FileSet> fset = default!;
     checkPos(Ꮡt, nilNoPosˢ, fset.Position(NoPos), new ΔPosition(nil));
     fset = NewFileSet();
     checkPos(Ꮡt, fsetNoPosˢ, fset.Position(NoPos), new ΔPosition(nil));
@@ -70,11 +71,11 @@ internal static (nint, nint) linecol(slice<nint> lines, nint offs) {
     return (len(lines), offs - prevLineOffs + 1);
 }
 
-internal static void verifyPositions(ж<testing.T> Ꮡt, ж<FileSet> Ꮡfset, ж<ΔFile> Ꮡf, slice<nint> lines) {
+internal static void verifyPositions(ж<testing.T> Ꮡt, ж<global::go.go.token_package.FileSet> Ꮡfset, ж<global::go.go.token_package.ΔFile> Ꮡf, slice<nint> lines) {
     ref var f = ref Ꮡf.Value;
 
     for (nint offs = 0; offs < f.Size(); offs++) {
-        ΔPos p = f.Pos(offs);
+        global::go.go.token_package.ΔPos p = f.Pos(offs);
         nint offs2 = f.Offset(p);
         if (offs2 != offs) {
             Ꮡt.Errorf("%s, Offset: got offset %d; want %d"u8, f.Name(), offs2, offs);
@@ -156,8 +157,8 @@ public static void TestPositions(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fooˢ = "foo"u8;
-private static readonly @string barˢ = "bar"u8;
+internal static readonly @string fooˢ = "foo"u8;
+internal static readonly @string barˢ = "bar"u8;
 
 public static void TestLineInfo(ж<testing.T> Ꮡt) {
     var fset = NewFileSet();
@@ -170,7 +171,7 @@ public static void TestLineInfo(ж<testing.T> Ꮡt) {
     }
     // verify positions for all offsets
     for (nint offs = 0; offs <= f.Size(); offs++) {
-        ΔPos p = f.Pos(offs);
+        global::go.go.token_package.ΔPos p = f.Pos(offs);
         var (_, col) = linecol(lines, offs);
         @string msg = fmt.Sprintf("%s (offs = %d, p = %d)"u8, f.Name(), offs, p);
         checkPos(Ꮡt, msg, f.Position(f.Pos(offs)), new ΔPosition("bar"u8, offs, 42, col));
@@ -189,7 +190,7 @@ public static void TestFiles(ж<testing.T> Ꮡt) {
         }
         fset.AddFile(test.filename, @base, test.size);
         nint j = 0;
-        fset.Iterate((ж<ΔFile> f) => {
+        fset.Iterate((ж<global::go.go.token_package.ΔFile> f) => {
             if (f.Name() != tests[j].filename) {
                 Ꮡt.Errorf("got filename = %s; want %s"u8, f.Name(), tests[j].filename);
             }
@@ -209,7 +210,7 @@ public static void TestFileSetPastEnd(ж<testing.T> Ꮡt) {
         fset.AddFile(test.filename, fset.Base(), test.size);
     }
     {
-        var f = fset.File(((ΔPos)fset.Base())); if (f != nil) {
+        var f = fset.File(((global::go.go.token_package.ΔPos)fset.Base())); if (f != nil) {
             Ꮡt.Errorf("got %v, want nil"u8, f);
         }
     }
@@ -223,7 +224,7 @@ public static void TestFileSetCacheUnlikely(ж<testing.T> Ꮡt) {
         fset.AddFile(test.filename, fset.Base(), test.size);
     }
     foreach (var (@file, pos) in offsets) {
-        var f = fset.File(((ΔPos)pos));
+        var f = fset.File(((global::go.go.token_package.ΔPos)pos));
         if (f.Name() != @file) {
             Ꮡt.Errorf("got %q at position %d, want %q"u8, f.Name(), pos, @file);
         }
@@ -247,7 +248,7 @@ public static void TestFileSetRace(ж<testing.T> Ꮡt) {
         var rʗ1 = rΔ1;
         goǃ(() => {
             for (nint iΔ1 = 0; iΔ1 < 1000; iΔ1++) {
-                fsetʗ1.Position(((ΔPos)(nint)rʗ1.Int31n(max)));
+                fsetʗ1.Position(((global::go.go.token_package.ΔPos)(nint)rʗ1.Int31n(max)));
             }
             Ꮡstop.Done();
         });
@@ -259,8 +260,8 @@ public static void TestFileSetRace(ж<testing.T> Ꮡt) {
 // does not trigger a race in the FileSet position cache.
 public static void TestFileSetRace2(ж<testing.T> Ꮡt) {
     const nint N = 1000;
-    ж<FileSet> fset = NewFileSet();
-    ж<ΔFile> @file = fset.AddFile(""u8, -1, N);
+    ж<global::go.go.token_package.FileSet> fset = NewFileSet();
+    ж<global::go.go.token_package.ΔFile> @file = fset.AddFile(""u8, -1, N);
     channel<nint> ch = new channel<nint>(2);
     var chʗ1 = ch;
     var fileʗ1 = @file;
@@ -274,7 +275,7 @@ public static void TestFileSetRace2(ж<testing.T> Ꮡt) {
     var fileʗ2 = @file;
     var fsetʗ1 = fset;
     goǃ(() => {
-        ΔPos pos = fileʗ2.Pos(0);
+        global::go.go.token_package.ΔPos pos = fileʗ2.Pos(0);
         for (nint i = 0; i < N; i++) {
             fsetʗ1.PositionFor(pos, false);
         }
@@ -285,12 +286,12 @@ public static void TestFileSetRace2(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string positionForUnadjustedˢ = "1. PositionFor unadjusted"u8;
-private static readonly @string positionForAdjustedˢ = "1. PositionFor adjusted"u8;
-private static readonly @string positionˢ = "1. Position"u8;
-private static readonly @string positionForUnadjustedˢ2 = "2. PositionFor unadjusted"u8;
-private static readonly @string positionForAdjustedˢ2 = "3. PositionFor adjusted"u8;
-private static readonly @string positionˢ2 = "3. Position"u8;
+internal static readonly @string positionForUnadjustedˢ = "1. PositionFor unadjusted"u8;
+internal static readonly @string positionForAdjustedˢ = "1. PositionFor adjusted"u8;
+internal static readonly @string positionˢ = "1. Position"u8;
+internal static readonly @string positionForUnadjustedˢ2 = "2. PositionFor unadjusted"u8;
+internal static readonly @string positionForAdjustedˢ2 = "3. PositionFor adjusted"u8;
+internal static readonly @string positionˢ2 = "3. Position"u8;
 
 public static void TestPositionFor(ж<testing.T> Ꮡt) {
     var src = slice<byte>("""
@@ -350,7 +351,7 @@ done
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string inputˢ = "input"u8;
+internal static readonly @string inputˢ = "input"u8;
 
 public static void TestLineStart(ж<testing.T> Ꮡt) {
     @string src = "one\ntwo\nthree\n"u8;
@@ -358,7 +359,7 @@ public static void TestLineStart(ж<testing.T> Ꮡt) {
     var f = fset.AddFile(inputˢ, -1, len(src));
     f.SetLinesForContent(slice<byte>(src));
     for (nint line = 1; line <= 3; line++) {
-        ΔPos pos = f.LineStart(line);
+        global::go.go.token_package.ΔPos pos = f.LineStart(line);
         var position = fset.Position(pos);
         if (position.Line != line || position.Column != 1) {
             Ꮡt.Errorf("LineStart(%d) returned wrong pos %d: %s"u8, line, pos, position);
@@ -367,10 +368,10 @@ public static void TestLineStart(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fileAˢ = "fileA"u8;
-private static readonly @string fileBˢ = "fileB"u8;
-private static readonly @string fileA14ˢ = "fileA:1:4"u8;
-private static readonly @string fileB14ˢ = "fileB:1:4"u8;
+internal static readonly @string fileAˢ = "fileA"u8;
+internal static readonly @string fileBˢ = "fileB"u8;
+internal static readonly @string fileA14ˢ = "fileA:1:4"u8;
+internal static readonly @string fileB14ˢ = "fileB:1:4"u8;
 
 public static void TestRemoveFile(ж<testing.T> Ꮡt) {
     var contentA = slice<byte>("this\nis\nfileA"u8);
@@ -381,7 +382,7 @@ public static void TestRemoveFile(ж<testing.T> Ꮡt) {
     var b = fset.AddFile(fileBˢ, -1, len(contentB));
     b.SetLinesForContent(contentB);
     var fsetʗ1 = fset;
-    var checkPos = (ΔPos pos, @string want) => {
+    var checkPos = (global::go.go.token_package.ΔPos pos, @string want) => {
         {
             @string got = fsetʗ1.Position(pos).String(); if (got != want) {
                 Ꮡt.Errorf("Position(%d) = %s, want %s"u8, pos, got, want);
@@ -391,7 +392,7 @@ public static void TestRemoveFile(ж<testing.T> Ꮡt) {
     var fsetʗ2 = fset;
     var checkNumFiles = (nint want) => {
         nint got = 0;
-        fsetʗ2.Iterate((ж<ΔFile> _) => {
+        fsetʗ2.Iterate((ж<global::go.go.token_package.ΔFile> _) => {
             got++;
             return true;
         });
@@ -399,8 +400,8 @@ public static void TestRemoveFile(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("Iterate called %d times, want %d"u8, got, want);
         }
     };
-    ΔPos apos3 = a.Pos(3);
-    ΔPos bpos3 = b.Pos(3);
+    global::go.go.token_package.ΔPos apos3 = a.Pos(3);
+    global::go.go.token_package.ΔPos bpos3 = b.Pos(3);
     checkPos(apos3, fileA14ˢ);
     checkPos(bpos3, fileB14ˢ);
     checkNumFiles(2);
@@ -418,8 +419,8 @@ public static void TestRemoveFile(ж<testing.T> Ꮡt) {
 
 [GoType("dyn")] partial struct TestFileAddLineColumnInfo_tests {
     internal @string name;
-    internal slice<lineInfo> infos;
-    internal slice<lineInfo> want;
+    internal slice<global::go.go.token_package.lineInfo> infos;
+    internal slice<global::go.go.token_package.lineInfo> want;
 }
 
 public static void TestFileAddLineColumnInfo(ж<testing.T> Ꮡt) {
@@ -428,12 +429,12 @@ public static void TestFileAddLineColumnInfo(ж<testing.T> Ꮡt) {
     var tests = new TestFileAddLineColumnInfo_tests[]{
         new(
             name: "normal"u8,
-            infos: new lineInfo[]{
+            infos: new global::go.go.token_package.lineInfo[]{
                 new(Offset: 10, Filename: filename, Line: 2, Column: 1),
                 new(Offset: 50, Filename: filename, Line: 3, Column: 1),
                 new(Offset: 80, Filename: filename, Line: 4, Column: 2)
             }.slice(),
-            want: new lineInfo[]{
+            want: new global::go.go.token_package.lineInfo[]{
                 new(Offset: 10, Filename: filename, Line: 2, Column: 1),
                 new(Offset: 50, Filename: filename, Line: 3, Column: 1),
                 new(Offset: 80, Filename: filename, Line: 4, Column: 2)
@@ -441,55 +442,55 @@ public static void TestFileAddLineColumnInfo(ж<testing.T> Ꮡt) {
         ),
         new(
             name: "offset1 == file size"u8,
-            infos: new lineInfo[]{
+            infos: new global::go.go.token_package.lineInfo[]{
                 new(Offset: filesize, Filename: filename, Line: 2, Column: 1)
             }.slice(),
             want: default!
         ),
         new(
             name: "offset1 > file size"u8,
-            infos: new lineInfo[]{
+            infos: new global::go.go.token_package.lineInfo[]{
                 new(Offset: filesize + 1, Filename: filename, Line: 2, Column: 1)
             }.slice(),
             want: default!
         ),
         new(
             name: "offset2 == file size"u8,
-            infos: new lineInfo[]{
+            infos: new global::go.go.token_package.lineInfo[]{
                 new(Offset: 10, Filename: filename, Line: 2, Column: 1),
                 new(Offset: filesize, Filename: filename, Line: 3, Column: 1)
             }.slice(),
-            want: new lineInfo[]{
+            want: new global::go.go.token_package.lineInfo[]{
                 new(Offset: 10, Filename: filename, Line: 2, Column: 1)
             }.slice()
         ),
         new(
             name: "offset2 > file size"u8,
-            infos: new lineInfo[]{
+            infos: new global::go.go.token_package.lineInfo[]{
                 new(Offset: 10, Filename: filename, Line: 2, Column: 1),
                 new(Offset: filesize + 1, Filename: filename, Line: 3, Column: 1)
             }.slice(),
-            want: new lineInfo[]{
+            want: new global::go.go.token_package.lineInfo[]{
                 new(Offset: 10, Filename: filename, Line: 2, Column: 1)
             }.slice()
         ),
         new(
             name: "offset2 == offset1"u8,
-            infos: new lineInfo[]{
+            infos: new global::go.go.token_package.lineInfo[]{
                 new(Offset: 10, Filename: filename, Line: 2, Column: 1),
                 new(Offset: 10, Filename: filename, Line: 3, Column: 1)
             }.slice(),
-            want: new lineInfo[]{
+            want: new global::go.go.token_package.lineInfo[]{
                 new(Offset: 10, Filename: filename, Line: 2, Column: 1)
             }.slice()
         ),
         new(
             name: "offset2 < offset1"u8,
-            infos: new lineInfo[]{
+            infos: new global::go.go.token_package.lineInfo[]{
                 new(Offset: 10, Filename: filename, Line: 2, Column: 1),
                 new(Offset: 9, Filename: filename, Line: 3, Column: 1)
             }.slice(),
-            want: new lineInfo[]{
+            want: new global::go.go.token_package.lineInfo[]{
                 new(Offset: 10, Filename: filename, Line: 2, Column: 1)
             }.slice()
         )
@@ -503,7 +504,7 @@ public static void TestFileAddLineColumnInfo(ж<testing.T> Ꮡt) {
             var fs = NewFileSet();
             var f = fs.AddFile(filename, -1, filesize);
             foreach (var (_, vᴛ2) in testʗ1.infos) {
-                ref var info = ref heap(new lineInfo(), out var Ꮡinfo);
+                ref var info = ref heap(new global::go.go.token_package.lineInfo(), out var Ꮡinfo);
                 info = vᴛ2;
 
                 f.AddLineColumnInfo(info.Offset, info.Filename, info.Line, info.Column);
@@ -535,55 +536,55 @@ public static void TestIssue57490(ж<testing.T> Ꮡt) => func((defer, recover) =
         }
     }
     {
-        nint got = f.Offset(((ΔPos)(-1))); if (got != 0) {
+        nint got = f.Offset(((global::go.go.token_package.ΔPos)(-1))); if (got != 0) {
             Ꮡt.Errorf("offset = %d, want %d"u8, got, (nint)(0));
         }
     }
     {
-        nint got = f.Offset(((ΔPos)(@base + (nint)fsize + 1))); if (got != fsize) {
+        nint got = f.Offset(((global::go.go.token_package.ΔPos)(@base + (nint)fsize + 1))); if (got != fsize) {
             Ꮡt.Errorf("offset = %d, want %d"u8, got, (nint)(fsize));
         }
     }
     // out-of-bounds offsets must not lead to a panic when calling f.Pos
     {
-        ΔPos got = f.Pos(-1); if (got != ((ΔPos)@base)) {
+        global::go.go.token_package.ΔPos got = f.Pos(-1); if (got != ((global::go.go.token_package.ΔPos)@base)) {
             Ꮡt.Errorf("pos = %d, want %d"u8, got, @base);
         }
     }
     {
-        ΔPos got = f.Pos(fsize + 1); if (got != ((ΔPos)(@base + (nint)fsize))) {
+        global::go.go.token_package.ΔPos got = f.Pos(fsize + 1); if (got != ((global::go.go.token_package.ΔPos)(@base + (nint)fsize))) {
             Ꮡt.Errorf("pos = %d, want %d"u8, got, @base + (nint)fsize);
         }
     }
     // out-of-bounds Pos values must not lead to a panic when calling f.Position
     @string want = fmt.Sprintf("%s:1:1"u8, f.Name());
     {
-        @string got = f.Position(((ΔPos)(-1))).String(); if (got != want) {
+        @string got = f.Position(((global::go.go.token_package.ΔPos)(-1))).String(); if (got != want) {
             Ꮡt.Errorf("position = %s, want %s"u8, got, want);
         }
     }
     want = fmt.Sprintf("%s:1:%d"u8, f.Name(), (nint)(fsize + 1));
     {
-        @string got = f.Position(((ΔPos)fsize + 1)).String(); if (got != want) {
+        @string got = f.Position(((global::go.go.token_package.ΔPos)fsize + 1)).String(); if (got != want) {
             Ꮡt.Errorf("position = %s, want %s"u8, got, want);
         }
     }
     // check invariants
     UntypedInt xsize = /* fsize + 5 */ 10;
     for (nint offset = -xsize; offset < xsize; offset++) {
-        nint want1 = f.Offset(((ΔPos)((~f).@base + offset)));
+        nint want1 = f.Offset(((global::go.go.token_package.ΔPos)((~f).@base + offset)));
         {
             nint got = f.Offset(f.Pos(offset)); if (got != want1) {
                 Ꮡt.Errorf("offset = %d, want %d"u8, got, want1);
             }
         }
-        ΔPos want2 = f.Pos(offset);
+        global::go.go.token_package.ΔPos want2 = f.Pos(offset);
         {
-            ΔPos got = f.Pos(f.Offset(want2)); if (got != want2) {
+            global::go.go.token_package.ΔPos got = f.Pos(f.Offset(want2)); if (got != want2) {
                 Ꮡt.Errorf("pos = %d, want %d"u8, got, want2);
             }
         }
     }
 });
 
-} // end token_package
+} // end token_internal_test_package

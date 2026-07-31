@@ -16,6 +16,7 @@ using global::go.math.rand;
 using global::go.testing;
 using hash = hash_package;
 using rand = global::go.math.rand.rand_package;
+using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 
@@ -60,7 +61,7 @@ public static void TestChaCha8Read(ж<testing.T> Ꮡt) {
     h.Reset();
     buf = new slice<byte>(chacha8outlen);
     {
-        var (_, err) = io.ReadFull(iotest.OneByteReader(new rand.ChaCha8жReader(p)), buf); if (err != default!) {
+        var (_, err) = io.ReadFull(iotest.OneByteReader(new rand_test_package.rand_ChaCha8жReader(p)), buf); if (err != default!) {
             Ꮡt.Errorf("one byte reads: %v"u8, err);
         }
     }

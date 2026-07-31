@@ -5,8 +5,9 @@ namespace go.@internal.coverage;
 
 using io = io_package;
 using testing = testing_package;
+using static go.@internal.coverage.slicewriter_package;
 
-partial class slicewriter_package {
+partial class slicewriter_internal_test_package {
 
 public static void TestSliceWriter(ж<testing.T> Ꮡt) {
     var sleq = (ж<testing.T> tΔ1, slice<byte> got, slice<byte> want) => {
@@ -20,7 +21,7 @@ public static void TestSliceWriter(ж<testing.T> Ꮡt) {
             }
         }
     };
-    var wf = (ж<testing.T> tΔ2, ж<WriteSeeker> wsΔ1, slice<byte> p) => {
+    var wf = (ж<testing.T> tΔ2, ж<global::go.@internal.coverage.slicewriter_package.WriteSeeker> wsΔ1, slice<byte> p) => {
         tΔ2.Helper();
         var (nw, werr) = wsΔ1.Write(p);
         if (werr != default!) {
@@ -31,7 +32,7 @@ public static void TestSliceWriter(ж<testing.T> Ꮡt) {
         }
     };
     var sleqʗ1 = sleq;
-    var rf = (ж<testing.T> tΔ3, ж<WriteSeeker> wsΔ2, slice<byte> p) => {
+    var rf = (ж<testing.T> tΔ3, ж<global::go.@internal.coverage.slicewriter_package.WriteSeeker> wsΔ2, slice<byte> p) => {
         tΔ3.Helper();
         var b = new slice<byte>(len(p));
         var (nr, rerr) = wsΔ2.Read(b);
@@ -43,7 +44,7 @@ public static void TestSliceWriter(ж<testing.T> Ꮡt) {
         }
         sleqʗ1(tΔ3, b, p);
     };
-    var sk = (ж<testing.T> tΔ4, ж<WriteSeeker> wsΔ3, int64 offset, nint whence) => {
+    var sk = (ж<testing.T> tΔ4, ж<global::go.@internal.coverage.slicewriter_package.WriteSeeker> wsΔ3, int64 offset, nint whence) => {
         tΔ4.Helper();
         var (offΔ1, errΔ1) = wsΔ3.Seek(offset, whence);
         if (errΔ1 != default!) {
@@ -119,4 +120,4 @@ public static void TestSliceWriter(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end slicewriter_package
+} // end slicewriter_internal_test_package

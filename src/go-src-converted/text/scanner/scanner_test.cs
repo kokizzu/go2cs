@@ -10,11 +10,12 @@ using strings = strings_package;
 using testing = testing_package;
 using utf8 = go.unicode.utf8_package;
 using go.unicode;
+using static go.text.scanner_package;
 
-partial class scanner_package {
+partial class scanner_internal_test_package {
 
 // A StringReader delivers its data one string segment at a time via Read.
-[GoType] partial struct StringReader {
+[GoType] public partial struct StringReader {
     internal slice<@string> data;
     internal nint step;
 }
@@ -36,7 +37,7 @@ partial class scanner_package {
 internal static void readRuneSegments(ж<testing.T> Ꮡt, slice<@string> segments) {
     @string got = ""u8;
     @string want = strings.Join(segments, ""u8);
-    var s = @new<Scanner>().Init(new StringReaderжReader(Ꮡ(new StringReader(data: segments))));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_internal_test_package.StringReaderжReader(Ꮡ(new StringReader(data: segments))));
     while (ᐧ) {
         var ch = s.Next();
         if (ch == EOF) {
@@ -66,7 +67,7 @@ public static void TestNext(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] partial struct token {
+[GoType] internal partial struct token {
     internal rune tok;
     internal @string text;
 }
@@ -221,12 +222,12 @@ internal static slice<token> tokenList = new token[]{
 internal static ж<bytes.Buffer> makeSource(@string pattern) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     foreach (var (_, k) in tokenList) {
-        fmt.Fprintf(new bytes_BufferжWriter(Ꮡbuf), pattern, k.text);
+        fmt.Fprintf(new scanner_test_package.bytes_BufferжWriter(Ꮡbuf), pattern, k.text);
     }
     return Ꮡbuf;
 }
 
-internal static void checkTok(ж<testing.T> Ꮡt, ж<Scanner> Ꮡs, nint line, rune got, rune want, @string text) {
+internal static void checkTok(ж<testing.T> Ꮡt, ж<global::go.text.scanner_package.Scanner> Ꮡs, nint line, rune got, rune want, @string text) {
     ref var s = ref Ꮡs.Value;
 
     if (got != want) {
@@ -247,7 +248,7 @@ internal static void checkTok(ж<testing.T> Ꮡt, ж<Scanner> Ꮡs, nint line, r
     }
 }
 
-internal static void checkTokErr(ж<testing.T> Ꮡt, ж<Scanner> Ꮡs, nint line, rune want, @string text) {
+internal static void checkTokErr(ж<testing.T> Ꮡt, ж<global::go.text.scanner_package.Scanner> Ꮡs, nint line, rune want, @string text) {
     ref var s = ref Ꮡs.Value;
 
     nint prevCount = s.ErrorCount;
@@ -270,7 +271,7 @@ internal static nint countNewlines(@string s) {
 internal static void testScan(ж<testing.T> Ꮡt, nuint mode) {
     ref var t = ref Ꮡt.Value;
 
-    var s = @new<Scanner>().Init(new bytes_BufferжReader(makeSource(" \t%s\n"u8)));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.bytes_BufferжReader(makeSource(" \t%s\n"u8)));
     s.Value.Mode = mode;
     var tok = s.Scan();
     nint line = 1;
@@ -292,8 +293,8 @@ public static void TestScan(ж<testing.T> Ꮡt) {
 
 public static void TestInvalidExponent(ж<testing.T> Ꮡt) {
     @string src = "1.5e 1.5E 1e+ 1e- 1.5z"u8;
-    var s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader(src)));
-    s.Value.Error = (ж<Scanner> sΔ1, @string msg) => {
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(src)));
+    s.Value.Error = (ж<global::go.text.scanner_package.Scanner> sΔ1, @string msg) => {
         @string want = "exponent has no digits"u8;
         if (msg != want) {
             Ꮡt.Errorf("%s: got error %q; want %q"u8, sΔ1.TokenText(), msg, want);
@@ -315,7 +316,7 @@ public static void TestPosition(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     var src = makeSource("\t\t\t\t%s\n"u8);
-    var s = @new<Scanner>().Init(new bytes_BufferжReader(src));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.bytes_BufferжReader(src));
     s.Value.Mode = (nuint)((nuint)GoTokens & ~(nuint)(nuint)SkipComments);
     s.Scan();
     var pos = new Position(""u8, 4, 1, 5);
@@ -346,7 +347,7 @@ public static void TestScanZeroMode(ж<testing.T> Ꮡt) {
 
     var src = makeSource("%s\n"u8);
     @string str = src.String();
-    var s = @new<Scanner>().Init(new bytes_BufferжReader(src));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.bytes_BufferжReader(src));
     s.Value.Mode = 0;
     // don't recognize any token classes
     s.Value.Whitespace = 0;
@@ -368,7 +369,7 @@ public static void TestScanZeroMode(ж<testing.T> Ꮡt) {
 
 internal static void testScanSelectedMode(ж<testing.T> Ꮡt, nuint mode, rune @class) {
     var src = makeSource("%s\n"u8);
-    var s = @new<Scanner>().Init(new bytes_BufferжReader(src));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.bytes_BufferжReader(src));
     s.Value.Mode = mode;
     var tok = s.Scan();
     while (tok != EOF) {
@@ -397,12 +398,12 @@ public static void TestScanSelectedMask(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string b123ˢ = "b123"u8;
-private static readonly @string a12ˢ = "a12"u8;
+internal static readonly @string b123ˢ = "b123"u8;
+internal static readonly @string a12ˢ = "a12"u8;
 
 public static void TestScanCustomIdent(ж<testing.T> Ꮡt) {
     @string src = "faab12345 a12b123 a12 3b"u8;
-    var s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader(src)));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(src)));
     // ident = ( 'a' | 'b' ) { digit } .
     // digit = '0' .. '3' .
     // with a maximum length of 4
@@ -423,7 +424,7 @@ public static void TestScanCustomIdent(ж<testing.T> Ꮡt) {
 public static void TestScanNext(ж<testing.T> Ꮡt) {
     UntypedInt BOM = /* '\uFEFF' */ 65279;
     @string BOMs = ((@string)(rune)BOM);
-    var s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader(BOMs + "if a == bcd /* com"u8 + BOMs + "ment */ {\n\ta += c\n}"u8 + BOMs + "// line comment ending in eof"u8)));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(BOMs + "if a == bcd /* com"u8 + BOMs + "ment */ {\n\ta += c\n}"u8 + BOMs + "// line comment ending in eof"u8)));
     checkTok(Ꮡt, s, 1, s.Scan(), Ident, "if"u8);
     // the first BOM is ignored
     checkTok(Ꮡt, s, 1, s.Scan(), Ident, "a"u8);
@@ -455,7 +456,7 @@ public static void TestScanWhitespace(ж<testing.T> Ꮡt) {
     }
     UntypedInt orig = /* 'x' */ 120;
     buf.WriteByte(orig);
-    var s = @new<Scanner>().Init(new bytes_BufferжReader(Ꮡbuf));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.bytes_BufferжReader(Ꮡbuf));
     s.Value.Mode = 0;
     s.Value.Whitespace = ws;
     var tok = s.Scan();
@@ -465,9 +466,9 @@ public static void TestScanWhitespace(ж<testing.T> Ꮡt) {
 }
 
 internal static void testError(ж<testing.T> Ꮡt, @string src, @string pos, @string msg, rune tok) {
-    var s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader(src)));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(src)));
     var errorCalled = false;
-    s.Value.Error = (ж<Scanner> sΔ1, @string m) => {
+    s.Value.Error = (ж<global::go.text.scanner_package.Scanner> sΔ1, @string m) => {
         if (!errorCalled) {
             // only look at first error
             {
@@ -494,18 +495,18 @@ internal static void testError(ж<testing.T> Ꮡt, @string src, @string pos, @st
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string input11ˢ = "<input>:1:1"u8;
-private static readonly @string input12ˢ = "<input>:1:2"u8;
-private static readonly @string input13ˢ = "<input>:1:3"u8;
-private static readonly @string input14ˢ = "<input>:1:4"u8;
-private static readonly @string input15ˢ = "<input>:1:5"u8;
-private static readonly @string input16ˢ = "<input>:1:6"u8;
-private static readonly @string invalidDigit8InOctalˢ = "invalid digit '8' in octal literal"u8;
-private static readonly @string input19ˢ = "<input>:1:9"u8;
-private static readonly @string hexadecimalLiteralHasNoˢ = "hexadecimal literal has no digits"u8;
-private static readonly @string abcˢ = @"""abc"u8;
-private static readonly @string abcˢ2 = "`abc\n"u8;
-private static readonly @string input21ˢ = "<input>:2:1"u8;
+internal static readonly @string input11ˢ = "<input>:1:1"u8;
+internal static readonly @string input12ˢ = "<input>:1:2"u8;
+internal static readonly @string input13ˢ = "<input>:1:3"u8;
+internal static readonly @string input14ˢ = "<input>:1:4"u8;
+internal static readonly @string input15ˢ = "<input>:1:5"u8;
+internal static readonly @string input16ˢ = "<input>:1:6"u8;
+internal static readonly @string invalidDigit8InOctalˢ = "invalid digit '8' in octal literal"u8;
+internal static readonly @string input19ˢ = "<input>:1:9"u8;
+internal static readonly @string hexadecimalLiteralHasNoˢ = "hexadecimal literal has no digits"u8;
+internal static readonly @string abcˢ = @"""abc"u8;
+internal static readonly @string abcˢ2 = "`abc\n"u8;
+internal static readonly @string input21ˢ = "<input>:2:1"u8;
 
 public static void TestError(ж<testing.T> Ꮡt) {
     testError(Ꮡt, "\x00"u8, input11ˢ, invalidCharacterNulˢ, 0);
@@ -540,7 +541,7 @@ public static void TestError(ж<testing.T> Ꮡt) {
 }
 
 // An errReader returns (0, err) where err is not io.EOF.
-[GoType] partial struct errReader {
+[GoType] internal partial struct errReader {
 }
 
 internal static (nint, error) Read(this errReader _, slice<byte> b) {
@@ -549,9 +550,9 @@ internal static (nint, error) Read(this errReader _, slice<byte> b) {
 
 // some error that is not io.EOF
 public static void TestIOError(ж<testing.T> Ꮡt) {
-    var s = @new<Scanner>().Init(new errReader(nil));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new errReader(nil));
     var errorCalled = false;
-    s.Value.Error = (ж<Scanner> sΔ1, @string msg) => {
+    s.Value.Error = (ж<global::go.text.scanner_package.Scanner> sΔ1, @string msg) => {
         if (!errorCalled) {
             {
                 @string want = io.ErrNoProgress.Error(); if (msg != want) {
@@ -570,14 +571,14 @@ public static void TestIOError(ж<testing.T> Ꮡt) {
     }
 }
 
-internal static void checkPos(ж<testing.T> Ꮡt, Position got, Position want) {
+internal static void checkPos(ж<testing.T> Ꮡt, global::go.text.scanner_package.Position got, global::go.text.scanner_package.Position want) {
     if (got.Offset != want.Offset || got.Line != want.Line || got.Column != want.Column) {
         Ꮡt.Errorf("got offset, line, column = %d, %d, %d; want %d, %d, %d"u8,
             got.Offset, got.Line, got.Column, want.Offset, want.Line, want.Column);
     }
 }
 
-internal static void checkNextPos(ж<testing.T> Ꮡt, ж<Scanner> Ꮡs, nint offset, nint line, nint column, rune @char) {
+internal static void checkNextPos(ж<testing.T> Ꮡt, ж<global::go.text.scanner_package.Scanner> Ꮡs, nint offset, nint line, nint column, rune @char) {
     ref var s = ref Ꮡs.Value;
 
     {
@@ -589,7 +590,7 @@ internal static void checkNextPos(ж<testing.T> Ꮡt, ж<Scanner> Ꮡs, nint off
     checkPos(Ꮡt, s.Pos(), want);
 }
 
-internal static void checkScanPos(ж<testing.T> Ꮡt, ж<Scanner> Ꮡs, nint offset, nint line, nint column, rune @char) {
+internal static void checkScanPos(ж<testing.T> Ꮡt, ж<global::go.text.scanner_package.Scanner> Ꮡs, nint offset, nint line, nint column, rune @char) {
     ref var s = ref Ꮡs.Value;
 
     var want = new Position(Offset: offset, Line: line, Column: column);
@@ -606,20 +607,20 @@ internal static void checkScanPos(ж<testing.T> Ꮡt, ж<Scanner> Ꮡs, nint off
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fooˢ = "  foo६४  \n\n本語\n"u8;
-private static readonly @string abcXˢ = "abc\n本語\n\nx"u8;
+internal static readonly @string fooˢ = "  foo६४  \n\n本語\n"u8;
+internal static readonly @string abcXˢ = "abc\n本語\n\nx"u8;
 
 public static void TestPos(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     // corner case: empty source
-    var s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader(""u8)));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(""u8)));
     checkPos(Ꮡt, s.Pos(), new Position(Offset: 0, Line: 1, Column: 1));
     s.Peek();
     // peek doesn't affect the position
     checkPos(Ꮡt, s.Pos(), new Position(Offset: 0, Line: 1, Column: 1));
     // corner case: source with only a newline
-    s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader("\n"u8)));
+    s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader("\n"u8)));
     checkPos(Ꮡt, s.Pos(), new Position(Offset: 0, Line: 1, Column: 1));
     checkNextPos(Ꮡt, s, 1, 2, 1, (rune)'\n');
     // after EOF position doesn't change
@@ -630,7 +631,7 @@ public static void TestPos(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("%d errors"u8, (~s).ErrorCount);
     }
     // corner case: source with only a single character
-    s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader("本"u8)));
+    s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader("本"u8)));
     checkPos(Ꮡt, s.Pos(), new Position(Offset: 0, Line: 1, Column: 1));
     checkNextPos(Ꮡt, s, 3, 1, 2, (rune)'本');
     // after EOF position doesn't change
@@ -641,7 +642,7 @@ public static void TestPos(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("%d errors"u8, (~s).ErrorCount);
     }
     // positions after calling Next
-    s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader(fooˢ)));
+    s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(fooˢ)));
     checkNextPos(Ꮡt, s, 1, 1, 2, (rune)' ');
     s.Peek();
     // peek doesn't affect the position
@@ -666,7 +667,7 @@ public static void TestPos(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("%d errors"u8, (~s).ErrorCount);
     }
     // positions after calling Scan
-    s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader(abcXˢ)));
+    s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(abcXˢ)));
     s.Value.Mode = 0;
     s.Value.Whitespace = 0;
     checkScanPos(Ꮡt, s, 0, 1, 1, (rune)'a');
@@ -689,7 +690,7 @@ public static void TestPos(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("num:nint")] partial struct countReader;
+[GoType("num:nint")] internal partial struct countReader;
 
 [GoRecv] internal static (nint, error) Read(this ref countReader r, slice<byte> _) {
     r++;
@@ -697,13 +698,13 @@ public static void TestPos(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object eofNotReportedˢ = (@string)"1) EOF not reported"u8;
-private static readonly object eofNotReportedˢ2 = (@string)"2) EOF not reported"u8;
+internal static readonly object eofNotReportedˢ = (@string)"1) EOF not reported"u8;
+internal static readonly object eofNotReportedˢ2 = (@string)"2) EOF not reported"u8;
 
 public static void TestNextEOFHandling(ж<testing.T> Ꮡt) {
     ref var r = ref heap(new countReader(), out var Ꮡr);
     // corner case: empty source
-    var s = @new<Scanner>().Init(new countReaderжReader(Ꮡr));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_internal_test_package.countReaderжReader(Ꮡr));
     var tok = s.Next();
     if (tok != EOF) {
         Ꮡt.Error(eofNotReportedˢ);
@@ -720,7 +721,7 @@ public static void TestNextEOFHandling(ж<testing.T> Ꮡt) {
 public static void TestScanEOFHandling(ж<testing.T> Ꮡt) {
     ref var r = ref heap(new countReader(), out var Ꮡr);
     // corner case: empty source
-    var s = @new<Scanner>().Init(new countReaderжReader(Ꮡr));
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_internal_test_package.countReaderжReader(Ꮡr));
     var tok = s.Scan();
     if (tok != EOF) {
         Ꮡt.Error(eofNotReportedˢ);
@@ -737,8 +738,8 @@ public static void TestScanEOFHandling(ж<testing.T> Ꮡt) {
 public static void TestIssue29723(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
-    var s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader(@"x """u8)));
-    s.Value.Error = (ж<Scanner> sΔ1, @string _) => {
+    var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(@"x """u8)));
+    s.Value.Error = (ж<global::go.text.scanner_package.Scanner> sΔ1, @string _) => {
         @string got = sΔ1.TokenText();
         // this call shouldn't panic
         @string want = @""""u8;
@@ -867,9 +868,9 @@ public static void TestNumbers(ж<testing.T> Ꮡt) {
         new(Int, "0x___0"u8, "0x___0"u8, "'_' must separate successive digits"u8),
         new(Float, "0x1.0_p0"u8, "0x1.0_p0"u8, "'_' must separate successive digits"u8)
     }.slice()) {
-        var s = @new<Scanner>().Init(new strings_ReaderжReader(strings.NewReader(test.src)));
+        var s = @new<global::go.text.scanner_package.Scanner>().Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(test.src)));
         @string err = default!;
-        s.Value.Error = (ж<Scanner> sΔ1, @string msg) => {
+        s.Value.Error = (ж<global::go.text.scanner_package.Scanner> sΔ1, @string msg) => {
             if (err == ""u8) {
                 err = msg;
             }
@@ -923,8 +924,8 @@ public static void TestIssue30320(ж<testing.T> Ꮡt) {
 internal static @string /*res*/ extractInts(@string t, nuint mode) {
     @string res = default!;
 
-    ref var s = ref heap(new Scanner(), out var Ꮡs);
-    Ꮡs.Init(new strings_ReaderжReader(strings.NewReader(t)));
+    ref var s = ref heap(new global::go.text.scanner_package.Scanner(), out var Ꮡs);
+    Ꮡs.Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(t)));
     s.Mode = mode;
     while (ᐧ) {
         {
@@ -945,11 +946,11 @@ internal static @string /*res*/ extractInts(@string t, nuint mode) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string helloWorldˢ = "hello \n\nworld\n!\n"u8;
+internal static readonly @string helloWorldˢ = "hello \n\nworld\n!\n"u8;
 
 public static void TestIssue50909(ж<testing.T> Ꮡt) {
-    ref var s = ref heap(new Scanner(), out var Ꮡs);
-    Ꮡs.Init(new strings_ReaderжReader(strings.NewReader(helloWorldˢ)));
+    ref var s = ref heap(new global::go.text.scanner_package.Scanner(), out var Ꮡs);
+    Ꮡs.Init(new scanner_test_package.strings_ReaderжReader(strings.NewReader(helloWorldˢ)));
     s.IsIdentRune = (rune ch, nint _) => ch != (rune)'\n';
     @string r = ""u8;
     nint n = 0;
@@ -964,4 +965,4 @@ public static void TestIssue50909(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end scanner_package
+} // end scanner_internal_test_package

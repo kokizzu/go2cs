@@ -16,15 +16,15 @@ internal static class Go2CsTestHost
             "draw_test.go",
             "example_test.go",
         });
-        registry.Add("TestClip", draw_package.TestClip, "clip_test.go", 157);
-        registry.Add("TestDraw", draw_package.TestDraw, "draw_test.go", 459);
-        registry.Add("TestDrawOverlap", draw_package.TestDrawOverlap, "draw_test.go", 520);
-        registry.Add("TestDrawSrcNonpremultiplied", draw_package.TestDrawSrcNonpremultiplied, "draw_test.go", 625);
-        registry.Add("TestFill", draw_package.TestFill, "draw_test.go", 565);
-        registry.Add("TestFloydSteinbergCheckerboard", draw_package.TestFloydSteinbergCheckerboard, "draw_test.go", 692);
-        registry.Add("TestNonZeroSrcPt", draw_package.TestNonZeroSrcPt, "draw_test.go", 552);
-        registry.Add("TestPaletted", draw_package.TestPaletted, "draw_test.go", 721);
-        registry.Add("TestSqDiff", draw_package.TestSqDiff, "draw_test.go", 768);
+        registry.Add("TestClip", draw_internal_test_package.TestClip, "clip_test.go", 157);
+        registry.Add("TestDraw", draw_internal_test_package.TestDraw, "draw_test.go", 459);
+        registry.Add("TestDrawOverlap", draw_internal_test_package.TestDrawOverlap, "draw_test.go", 520);
+        registry.Add("TestDrawSrcNonpremultiplied", draw_internal_test_package.TestDrawSrcNonpremultiplied, "draw_test.go", 625);
+        registry.Add("TestFill", draw_internal_test_package.TestFill, "draw_test.go", 565);
+        registry.Add("TestFloydSteinbergCheckerboard", draw_internal_test_package.TestFloydSteinbergCheckerboard, "draw_test.go", 692);
+        registry.Add("TestNonZeroSrcPt", draw_internal_test_package.TestNonZeroSrcPt, "draw_test.go", 552);
+        registry.Add("TestPaletted", draw_internal_test_package.TestPaletted, "draw_test.go", 721);
+        registry.Add("TestSqDiff", draw_internal_test_package.TestSqDiff, "draw_test.go", 768);
         return TestHost.Run(registry, args);
     }
 }

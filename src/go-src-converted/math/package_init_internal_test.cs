@@ -4,8 +4,8 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go;
 
-partial class math_package {
-    static math_package() {
+partial class math_internal_test_package {
+    static math_internal_test_package() {
         initᴛTrigReduce();
     }
-} // end math_package
+} // end math_internal_test_package

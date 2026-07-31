@@ -10,11 +10,12 @@ using math = math_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using testing = testing_package;
+using static go.encoding.base32_package;
 using ꓸꓸꓸany = Span<any>;
 
-partial class base32_package {
+partial class base32_internal_test_package {
 
-[GoType] partial struct testpair {
+[GoType] internal partial struct testpair {
     internal @string decoded, encoded;
 }
 
@@ -55,8 +56,8 @@ internal static bool testEqual(ж<testing.T> Ꮡt, @string msg, params ꓸꓸꓸ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string encodeQQWantQˢ = "Encode(%q) = %q, want %q"u8;
-private static readonly @string appendEncodeLeadQQWantQˢ = @"AppendEncode(""lead"", %q) = %q, want %q"u8;
+internal static readonly @string encodeQQWantQˢ = "Encode(%q) = %q, want %q"u8;
+internal static readonly @string appendEncodeLeadQQWantQˢ = @"AppendEncode(""lead"", %q) = %q, want %q"u8;
 
 public static void TestEncode(ж<testing.T> Ꮡt) {
     foreach (var (_, p) in pairs) {
@@ -70,7 +71,7 @@ public static void TestEncode(ж<testing.T> Ꮡt) {
 public static void TestEncoder(ж<testing.T> Ꮡt) {
     foreach (var (_, p) in pairs) {
         var bb = Ꮡ(new strings.Builder(nil));
-        var encoder = NewEncoder(StdEncoding, new strings_BuilderжWriter(bb));
+        var encoder = NewEncoder(StdEncoding, new base32_test_package.strings_BuilderжWriter(bb));
         encoder.Write(slice<byte>(p.decoded));
         encoder.Close();
         testEqual(Ꮡt, encodeQQWantQˢ, p.decoded, bb.String(), p.encoded);
@@ -78,16 +79,16 @@ public static void TestEncoder(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string writeQGaveErrorVWantVˢ = "Write(%q) gave error %v, want %v"u8;
-private static readonly @string writeQGaveLengthVWantVˢ = "Write(%q) gave length %v, want %v"u8;
-private static readonly @string closeGaveErrorVWantVˢ = "Close gave error %v, want %v"u8;
-private static readonly @string encodingDOfQQWantQˢ = "Encoding/%d of %q = %q, want %q"u8;
+internal static readonly @string writeQGaveErrorVWantVˢ = "Write(%q) gave error %v, want %v"u8;
+internal static readonly @string writeQGaveLengthVWantVˢ = "Write(%q) gave length %v, want %v"u8;
+internal static readonly @string closeGaveErrorVWantVˢ = "Close gave error %v, want %v"u8;
+internal static readonly @string encodingDOfQQWantQˢ = "Encoding/%d of %q = %q, want %q"u8;
 
 public static void TestEncoderBuffering(ж<testing.T> Ꮡt) {
     var input = slice<byte>(bigtest.decoded);
     for (nint bs = 1; bs <= 12; bs++) {
         var bb = Ꮡ(new strings.Builder(nil));
-        var encoder = NewEncoder(StdEncoding, new strings_BuilderжWriter(bb));
+        var encoder = NewEncoder(StdEncoding, new base32_test_package.strings_BuilderжWriter(bb));
         for (nint pos = 0; pos < len(input); pos += bs) {
             nint end = pos + bs;
             if (end > len(input)) {
@@ -104,12 +105,12 @@ public static void TestEncoderBuffering(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string decodingDOfQQWantQˢ = "Decoding/%d of %q = %q, want %q\n"u8;
+internal static readonly @string decodingDOfQQWantQˢ = "Decoding/%d of %q = %q, want %q\n"u8;
 
 public static void TestDecoderBufferingWithPadding(ж<testing.T> Ꮡt) {
     for (nint bs = 0; bs <= 12; bs++) {
         foreach (var (_, s) in pairs) {
-            var decoder = NewDecoder(StdEncoding, new strings_ReaderжReader(strings.NewReader(s.encoded)));
+            var decoder = NewDecoder(StdEncoding, new base32_test_package.strings_ReaderжReader(strings.NewReader(s.encoded)));
             var buf = new slice<byte>(len(s.decoded) + bs);
             nint n = default!;
             error err = default!;
@@ -126,7 +127,7 @@ public static void TestDecoderBufferingWithoutPadding(ж<testing.T> Ꮡt) {
     for (nint bs = 0; bs <= 12; bs++) {
         foreach (var (_, s) in pairs) {
             @string encoded = strings.TrimRight(s.encoded, "="u8);
-            var decoder = NewDecoder((~StdEncoding).WithPadding(NoPadding), new strings_ReaderжReader(strings.NewReader(encoded)));
+            var decoder = NewDecoder((~StdEncoding).WithPadding(NoPadding), new base32_test_package.strings_ReaderжReader(strings.NewReader(encoded)));
             var buf = new slice<byte>(len(s.decoded) + bs);
             nint n = default!;
             error err = default!;
@@ -140,15 +141,15 @@ public static void TestDecoderBufferingWithoutPadding(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string decodeQErrorVWantVˢ = "Decode(%q) = error %v, want %v"u8;
-private static readonly @string decodeQLengthVWantVˢ = "Decode(%q) = length %v, want %v"u8;
-private static readonly @string decodeQEndVWantVˢ = "Decode(%q) = end %v, want %v"u8;
-private static readonly @string decodeQQWantQˢ = "Decode(%q) = %q, want %q"u8;
-private static readonly @string decodeStringQErrorVWantVˢ = "DecodeString(%q) = error %v, want %v"u8;
-private static readonly @string decodeStringQQWantQˢ = "DecodeString(%q) = %q, want %q"u8;
-private static readonly @string appendDecodeQErrorVWantVˢ = "AppendDecode(%q) = error %v, want %v"u8;
-private static readonly @string appendDecodeLeadQQWantQˢ = @"AppendDecode(""lead"", %q) = %q, want %q"u8;
-private static readonly @string appendDecodeQQWantQˢ = @"AppendDecode("""", %q) = %q, want %q"u8;
+internal static readonly @string decodeQErrorVWantVˢ = "Decode(%q) = error %v, want %v"u8;
+internal static readonly @string decodeQLengthVWantVˢ = "Decode(%q) = length %v, want %v"u8;
+internal static readonly @string decodeQEndVWantVˢ = "Decode(%q) = end %v, want %v"u8;
+internal static readonly @string decodeQQWantQˢ = "Decode(%q) = %q, want %q"u8;
+internal static readonly @string decodeStringQErrorVWantVˢ = "DecodeString(%q) = error %v, want %v"u8;
+internal static readonly @string decodeStringQQWantQˢ = "DecodeString(%q) = %q, want %q"u8;
+internal static readonly @string appendDecodeQErrorVWantVˢ = "AppendDecode(%q) = error %v, want %v"u8;
+internal static readonly @string appendDecodeLeadQQWantQˢ = @"AppendDecode(""lead"", %q) = %q, want %q"u8;
+internal static readonly @string appendDecodeQQWantQˢ = @"AppendDecode("""", %q) = %q, want %q"u8;
 
 public static void TestDecode(ж<testing.T> Ꮡt) {
     foreach (var (_, p) in pairs) {
@@ -176,14 +177,14 @@ public static void TestDecode(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object readFailedˢ = (@string)"Read failed"u8;
-private static readonly @string readFromQLengthVWantVˢ = "Read from %q = length %v, want %v"u8;
-private static readonly @string decodingOfQQWantQˢ = "Decoding of %q = %q, want %q"u8;
-private static readonly @string readFromQVWantVˢ = "Read from %q = %v, want %v"u8;
+internal static readonly object readFailedˢ = (@string)"Read failed"u8;
+internal static readonly @string readFromQLengthVWantVˢ = "Read from %q = length %v, want %v"u8;
+internal static readonly @string decodingOfQQWantQˢ = "Decoding of %q = %q, want %q"u8;
+internal static readonly @string readFromQVWantVˢ = "Read from %q = %v, want %v"u8;
 
 public static void TestDecoder(ж<testing.T> Ꮡt) {
     foreach (var (_, p) in pairs) {
-        var decoder = NewDecoder(StdEncoding, new strings_ReaderжReader(strings.NewReader(p.encoded)));
+        var decoder = NewDecoder(StdEncoding, new base32_test_package.strings_ReaderжReader(strings.NewReader(p.encoded)));
         var dbuf = new slice<byte>(StdEncoding.DecodedLen(len(p.encoded)));
         var (count, err) = decoder.Read(dbuf);
         if (err != default! && !AreEqual(err, io.EOF)) {
@@ -198,7 +199,7 @@ public static void TestDecoder(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] partial struct badReader {
+[GoType] internal partial struct badReader {
     internal slice<byte> data;
     internal slice<error> errs;
     internal nint called;
@@ -233,8 +234,8 @@ public static void TestDecoder(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badReaderErrorˢ = "bad reader error"u8;
-private static readonly @string decodingOfQErrVExpectedVˢ = "Decoding of %q err = %v, expected %v"u8;
+internal static readonly @string badReaderErrorˢ = "bad reader error"u8;
+internal static readonly @string decodingOfQErrVExpectedVˢ = "Decoding of %q err = %v, expected %v"u8;
 
 [GoType("dyn")] partial struct TestIssue20044_testCases {
     internal badReader r;
@@ -302,7 +303,7 @@ public static void TestIssue20044(ж<testing.T> Ꮡt) {
         tc = vᴛ1;
 
         var input = tc.r.data;
-        var decoder = NewDecoder(StdEncoding, new badReaderжReader(Ꮡtc.of(TestIssue20044_testCases.Ꮡr)));
+        var decoder = NewDecoder(StdEncoding, new base32_internal_test_package.badReaderжReader(Ꮡtc.of(TestIssue20044_testCases.Ꮡr)));
         nint dbuflen = default!;
         if (tc.dbuflen > 0){
             dbuflen = tc.dbuflen;
@@ -325,8 +326,8 @@ public static void TestIssue20044(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mzxw6YTbˢ = "MZXW6YTb"u8;
-private static readonly @string readAfterEofNDExpectedDˢ = "Read after EOF, n = %d, expected %d"u8;
+internal static readonly @string mzxw6YTbˢ = "MZXW6YTb"u8;
+internal static readonly @string readAfterEofNDExpectedDˢ = "Read after EOF, n = %d, expected %d"u8;
 
 // TestDecoderError verifies decode errors are propagated when there are no read
 // errors.
@@ -336,7 +337,7 @@ public static void TestDecoderError(ж<testing.T> Ꮡt) {
         var dbuf = new slice<byte>(StdEncoding.DecodedLen(len(input)));
         ref var br = ref heap<badReader>(out var Ꮡbr);
         br = new badReader(data: slice<byte>(input), errs: new error[]{readErr}.slice());
-        var decoder = NewDecoder(StdEncoding, new badReaderжReader(Ꮡbr));
+        var decoder = NewDecoder(StdEncoding, new base32_internal_test_package.badReaderжReader(Ꮡbr));
         var (n, err) = decoder.Read(dbuf);
         testEqual(Ꮡt, readAfterEofNDExpectedDˢ, n, (nint)(0));
         {
@@ -348,8 +349,8 @@ public static void TestDecoderError(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mzxw6ytbˢ = "MZXW6YTB"u8;
-private static readonly @string readAfterEofErrVExpectedˢ = "Read after EOF, err = %v, expected %v"u8;
+internal static readonly @string mzxw6ytbˢ = "MZXW6YTB"u8;
+internal static readonly @string readAfterEofErrVExpectedˢ = "Read after EOF, err = %v, expected %v"u8;
 
 // TestReaderEOF ensures decoder.Read behaves correctly when input data is
 // exhausted.
@@ -358,7 +359,7 @@ public static void TestReaderEOF(ж<testing.T> Ꮡt) {
         @string input = mzxw6ytbˢ;
         ref var br = ref heap<badReader>(out var Ꮡbr);
         br = new badReader(data: slice<byte>(input), errs: new error[]{default!, readErr}.slice());
-        var decoder = NewDecoder(StdEncoding, new badReaderжReader(Ꮡbr));
+        var decoder = NewDecoder(StdEncoding, new base32_internal_test_package.badReaderжReader(Ꮡbr));
         var dbuf = new slice<byte>(StdEncoding.DecodedLen(len(input)));
         var (n, err) = decoder.Read(dbuf);
         testEqual(Ꮡt, decodingOfQErrVExpectedVˢ, input, err, ((error)default!));
@@ -372,11 +373,11 @@ public static void TestReaderEOF(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string decodingDOfQQWantQˢ2 = "Decoding/%d of %q = %q, want %q"u8;
+internal static readonly @string decodingDOfQQWantQˢ2 = "Decoding/%d of %q = %q, want %q"u8;
 
 public static void TestDecoderBuffering(ж<testing.T> Ꮡt) {
     for (nint bs = 1; bs <= 12; bs++) {
-        var decoder = NewDecoder(StdEncoding, new strings_ReaderжReader(strings.NewReader(bigtest.encoded)));
+        var decoder = NewDecoder(StdEncoding, new base32_test_package.strings_ReaderжReader(strings.NewReader(bigtest.encoded)));
         var buf = new slice<byte>(len(bigtest.decoded) + 12);
         nint total = default!;
         nint n = default!;
@@ -393,9 +394,9 @@ public static void TestDecoderBuffering(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object decoderWronglyDetectedˢ = (@string)"Decoder wrongly detected corruption in"u8;
-private static readonly @string corruptionInQAtOffsetVˢ = "Corruption in %q at offset %v, want %v"u8;
-private static readonly object decoderFailedToDetectˢ = (@string)"Decoder failed to detect corruption in"u8;
+internal static readonly object decoderWronglyDetectedˢ = (@string)"Decoder wrongly detected corruption in"u8;
+internal static readonly @string corruptionInQAtOffsetVˢ = "Corruption in %q at offset %v, want %v"u8;
+internal static readonly object decoderFailedToDetectˢ = (@string)"Decoder failed to detect corruption in"u8;
 
 [GoType("dyn")] partial struct TestDecodeCorrupt_testCases {
     internal @string input;
@@ -458,7 +459,7 @@ public static void TestBig(ж<testing.T> Ꮡt) {
         raw[i] = alpha[i % len(alpha)];
     }
     var encoded = @new<bytes.Buffer>();
-    var w = NewEncoder(StdEncoding, new bytes_BufferжWriter(encoded));
+    var w = NewEncoder(StdEncoding, new base32_test_package.bytes_BufferжWriter(encoded));
     var (nn, err) = w.Write(raw);
     if (nn != n || err != default!) {
         Ꮡt.Fatalf("Encoder.Write(raw) = %d, %v want %d, nil"u8, nn, err, n);
@@ -467,7 +468,7 @@ public static void TestBig(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatalf("Encoder.Close() = %v want nil"u8, err);
     }
-    (var decoded, err) = io.ReadAll(NewDecoder(StdEncoding, new bytes_BufferжReader(encoded)));
+    (var decoded, err) = io.ReadAll(NewDecoder(StdEncoding, new base32_test_package.bytes_BufferжReader(encoded)));
     if (err != default!) {
         Ꮡt.Fatalf("io.ReadAll(NewDecoder(...)): %v"u8, err);
     }
@@ -498,8 +499,8 @@ internal static void testStringEncoding(ж<testing.T> Ꮡt, @string expected, sl
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sureˢ = "sure"u8;
-private static readonly @string foobarˢ = "foobar"u8;
+internal static readonly @string sureˢ = "sure"u8;
+internal static readonly @string foobarˢ = "foobar"u8;
 
 public static void TestNewLineCharacters(ж<testing.T> Ꮡt) {
     // Each of these should decode to the string "sure", without errors.
@@ -524,7 +525,7 @@ public static void TestNewLineCharacters(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string jrxxezlnebuxa43vnuqgi33mn5zca43joqqgc3lfoqwcay3pnzzwky3umv2hk4ˢ = """
+internal static readonly @string jrxxezlnebuxa43vnuqgi33mn5zca43joqqgc3lfoqwcay3pnzzwky3umv2hk4ˢ = """
 JRXXEZLNEBUXA43VNUQGI33MN5ZCA43JOQQGC3LFOQWCAY3PNZZWKY3UMV2HK4
 RAMFSGS4DJONUWG2LOM4QGK3DJOQWCA43FMQQGI3YKMVUXK43NN5SCA5DFNVYG64RANFXGG2LENFSH
 K3TUEB2XIIDMMFRG64TFEBSXIIDEN5WG64TFEBWWCZ3OMEQGC3DJOF2WCLRAKV2CAZLONFWQUYLEEB
@@ -537,17 +538,17 @@ NZ2CYIDTOVXHIIDJNYFGG5LMOBQSA4LVNEQG6ZTGNFRWSYJAMRSXGZLSOVXHIIDNN5WGY2LUEBQW42
 LNEBUWIIDFON2CA3DBMJXXE5LNFY==
 ====
 """u8;
-private static readonly object decodedResultsNotEqualˢ = (@string)"Decoded results not equal"u8;
+internal static readonly object decodedResultsNotEqualˢ = (@string)"Decoded results not equal"u8;
 
 public static void TestDecoderIssue4779(ж<testing.T> Ꮡt) {
     @string encoded = jrxxezlnebuxa43vnuqgi33mn5zca43joqqgc3lfoqwcay3pnzzwky3umv2hk4ˢ;
     @string encodedShort = strings.ReplaceAll(encoded, "\n"u8, ""u8);
-    var dec = NewDecoder(StdEncoding, new strings_ReaderжReader(strings.NewReader(encoded)));
+    var dec = NewDecoder(StdEncoding, new base32_test_package.strings_ReaderжReader(strings.NewReader(encoded)));
     var (res1, err) = io.ReadAll(dec);
     if (err != default!) {
         Ꮡt.Errorf("ReadAll failed: %v"u8, err);
     }
-    dec = NewDecoder(StdEncoding, new strings_ReaderжReader(strings.NewReader(encodedShort)));
+    dec = NewDecoder(StdEncoding, new base32_test_package.strings_ReaderжReader(strings.NewReader(encodedShort)));
     slice<byte> res2 = default!;
     (res2, err) = io.ReadAll(dec);
     if (err != default!) {
@@ -630,7 +631,7 @@ public static void TestWithoutPadding(ж<testing.T> Ꮡt) {
 }
 
 public static void TestDecodeWithPadding(ж<testing.T> Ꮡt) {
-    var encodings = new ж<Encoding>[]{
+    var encodings = new ж<global::go.encoding.base32_package.Encoding>[]{
         StdEncoding,
         (~StdEncoding).WithPadding((rune)'-'),
         (~StdEncoding).WithPadding(NoPadding)
@@ -651,7 +652,7 @@ public static void TestDecodeWithPadding(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object expectedErrorˢ = (@string)"expected error"u8;
+internal static readonly object expectedErrorˢ = (@string)"expected error"u8;
 
 public static void TestDecodeWithWrongPadding(ж<testing.T> Ꮡt) {
     @string encoded = StdEncoding.EncodeToString(slice<byte>("foobar"u8));
@@ -732,7 +733,7 @@ public static void TestBufferedDecodingSameError(ж<testing.T> Ꮡt) {
                 }
                 pwʗ1.Close();
             });
-            var decoder = NewDecoder(StdEncoding, new io_PipeReaderжReader(pr));
+            var decoder = NewDecoder(StdEncoding, new base32_test_package.io_PipeReaderжReader(pr));
             var (_, err) = io.ReadAll(decoder);
             if (!AreEqual(err, testcase.expected)) {
                 Ꮡt.Errorf("Expected %v, got %v; case %s %+v"u8, testcase.expected, err, testcase.prefix, chunks);
@@ -781,7 +782,7 @@ public static void TestBufferedDecodingPadding(ж<testing.T> Ꮡt) {
             }
             _ = pwʗ1.Close();
         });
-        var decoder = NewDecoder(StdEncoding, new io_PipeReaderжReader(pr));
+        var decoder = NewDecoder(StdEncoding, new base32_test_package.io_PipeReaderжReader(pr));
         var (_, err) = io.ReadAll(decoder);
         if (err == default! && len(testcaseΔ1.expectedError) != 0){
             Ꮡt.Errorf("case %q: got nil error, want %v"u8, testcaseΔ1.chunks, testcaseΔ1.expectedError);
@@ -792,14 +793,14 @@ public static void TestBufferedDecodingPadding(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoLocalName("test")] [GoType("dyn")] partial struct TestEncodedLen_test {
-    internal ж<Encoding> enc;
+[GoLocalName("test")] [GoType("dyn")] internal partial struct TestEncodedLen_test {
+    internal ж<global::go.encoding.base32_package.Encoding> enc;
     internal nint n;
     internal int64 want;
 }
 
 public static void TestEncodedLen(ж<testing.T> Ꮡt) {
-    ж<Encoding> rawStdEncoding = (~StdEncoding).WithPadding(NoPadding);
+    ж<global::go.encoding.base32_package.Encoding> rawStdEncoding = (~StdEncoding).WithPadding(NoPadding);
     var tests = new TestEncodedLen_test[]{
         new(StdEncoding, 0, 0),
         new(StdEncoding, 1, 8),
@@ -841,14 +842,14 @@ public static void TestEncodedLen(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoLocalName("test")] [GoType("dyn")] partial struct TestDecodedLen_test {
-    internal ж<Encoding> enc;
+[GoLocalName("test")] [GoType("dyn")] internal partial struct TestDecodedLen_test {
+    internal ж<global::go.encoding.base32_package.Encoding> enc;
     internal nint n;
     internal int64 want;
 }
 
 public static void TestDecodedLen(ж<testing.T> Ꮡt) {
-    ж<Encoding> rawStdEncoding = (~StdEncoding).WithPadding(NoPadding);
+    ж<global::go.encoding.base32_package.Encoding> rawStdEncoding = (~StdEncoding).WithPadding(NoPadding);
     var tests = new TestDecodedLen_test[]{
         new(StdEncoding, 0, 0),
         new(StdEncoding, 8, 5),
@@ -886,14 +887,14 @@ public static void TestDecodedLen(ж<testing.T> Ꮡt) {
 }
 
 public static void TestWithoutPaddingClose(ж<testing.T> Ꮡt) {
-    var encodings = new ж<Encoding>[]{
+    var encodings = new ж<global::go.encoding.base32_package.Encoding>[]{
         StdEncoding,
         (~StdEncoding).WithPadding(NoPadding)
     }.slice();
     foreach (var (_, encoding) in encodings) {
         foreach (var (_, testpair) in pairs) {
             ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-            var encoder = NewEncoder(encoding, new strings_BuilderжWriter(Ꮡbuf));
+            var encoder = NewEncoder(encoding, new base32_test_package.strings_BuilderжWriter(Ꮡbuf));
             encoder.Write(slice<byte>(testpair.decoded));
             encoder.Close();
             @string expected = testpair.encoded;
@@ -909,7 +910,7 @@ public static void TestWithoutPaddingClose(ж<testing.T> Ꮡt) {
 }
 
 public static void TestDecodeReadAll(ж<testing.T> Ꮡt) {
-    var encodings = new ж<Encoding>[]{
+    var encodings = new ж<global::go.encoding.base32_package.Encoding>[]{
         StdEncoding,
         (~StdEncoding).WithPadding(NoPadding)
     }.slice();
@@ -919,7 +920,7 @@ public static void TestDecodeReadAll(ж<testing.T> Ꮡt) {
             if ((~encoding).padChar == NoPadding) {
                 encoded = strings.ReplaceAll(encoded, "="u8, ""u8);
             }
-            var (decReader, err) = io.ReadAll(NewDecoder(encoding, new strings_ReaderжReader(strings.NewReader(encoded))));
+            var (decReader, err) = io.ReadAll(NewDecoder(encoding, new base32_test_package.strings_ReaderжReader(strings.NewReader(encoded))));
             if (err != default!) {
                 Ꮡt.Errorf("NewDecoder error: %v"u8, err);
             }
@@ -931,7 +932,7 @@ public static void TestDecodeReadAll(ж<testing.T> Ꮡt) {
 }
 
 public static void TestDecodeSmallBuffer(ж<testing.T> Ꮡt) {
-    var encodings = new ж<Encoding>[]{
+    var encodings = new ж<global::go.encoding.base32_package.Encoding>[]{
         StdEncoding,
         (~StdEncoding).WithPadding(NoPadding)
     }.slice();
@@ -942,7 +943,7 @@ public static void TestDecodeSmallBuffer(ж<testing.T> Ꮡt) {
                 if ((~encoding).padChar == NoPadding) {
                     encoded = strings.ReplaceAll(encoded, "="u8, ""u8);
                 }
-                var decoder = NewDecoder(encoding, new strings_ReaderжReader(strings.NewReader(encoded)));
+                var decoder = NewDecoder(encoding, new base32_test_package.strings_ReaderжReader(strings.NewReader(encoded)));
                 slice<byte> allRead = default!;
                 while (ᐧ) {
                     var buf = new slice<byte>(bufferSize);
@@ -963,4 +964,4 @@ public static void TestDecodeSmallBuffer(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end base32_package
+} // end base32_internal_test_package

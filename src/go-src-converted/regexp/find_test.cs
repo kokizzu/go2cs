@@ -6,17 +6,18 @@ namespace go;
 using fmt = fmt_package;
 using strings = strings_package;
 using testing = testing_package;
+using static go.regexp_package;
 using Δio = io_package;
 using ꓸꓸꓸnint = Span<nint>;
 
-partial class regexp_package {
+partial class regexp_internal_test_package {
 
 // For each pattern/text pair, what is the expected output of each function?
 // We can derive the textual results from the indexed results, the non-submatch
 // results from the submatched results, the single results from the 'all' results,
 // and the byte results from the string results. Therefore the table includes
 // only the FindAllStringSubmatchIndex result.
-[GoType] partial struct FindTest {
+[GoType] public partial struct FindTest {
     internal @string pat;
     internal @string text;
     internal slice<slice<nint>> matches;
@@ -261,7 +262,7 @@ public static void TestFindReaderIndex(ж<testing.T> Ꮡt) {
         ref var test = ref heap(new FindTest(), out var Ꮡtest);
         test = vᴛ1;
 
-        testFindIndex(Ꮡtest, MustCompile(test.pat).FindReaderIndex(new strings_ReaderжRuneReader(strings.NewReader(test.text))), Ꮡt);
+        testFindIndex(Ꮡtest, MustCompile(test.pat).FindReaderIndex(new regexp_test_package.strings_ReaderжRuneReader(strings.NewReader(test.text))), Ꮡt);
     }
 }
 
@@ -547,7 +548,7 @@ public static void TestFindReaderSubmatchIndex(ж<testing.T> Ꮡt) {
         ref var test = ref heap(new FindTest(), out var Ꮡtest);
         test = vᴛ1;
 
-        testFindSubmatchIndex(Ꮡtest, MustCompile(test.pat).FindReaderSubmatchIndex(new strings_ReaderжRuneReader(strings.NewReader(test.text))), Ꮡt);
+        testFindSubmatchIndex(Ꮡtest, MustCompile(test.pat).FindReaderSubmatchIndex(new regexp_test_package.strings_ReaderжRuneReader(strings.NewReader(test.text))), Ꮡt);
     }
 }
 
@@ -665,4 +666,4 @@ public static void TestFindAllStringSubmatchIndex(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end regexp_package
+} // end regexp_internal_test_package

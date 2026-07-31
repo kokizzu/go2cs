@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.bufio_package;
+using static bufio_package;
 using bytes = bytes_package;
 using errors = errors_package;
 using fmt = fmt_package;
@@ -19,6 +19,7 @@ using bufio = bufio_package;
 using go.testing;
 using go.unicode;
 using math;
+using static go.bufio_internal_test_package;
 
 partial class bufio_test_package {
 
@@ -71,17 +72,17 @@ internal static @string readBytes(ж<bufio.Reader> Ꮡbuf) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string helloWorldˢ = "hello world"u8;
+internal static readonly @string helloWorldˢ = "hello world"u8;
 
 public static void TestReaderSimple(ж<Δtesting.T> Ꮡt) {
     @string data = helloWorldˢ;
-    var b = NewReader(new strings_ReaderжReader(strings.NewReader(data)));
+    var b = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(data)));
     {
         @string s = readBytes(b); if (s != "hello world"u8) {
             Ꮡt.Errorf("simple hello world test failed: got %q"u8, s);
         }
     }
-    b = NewReader(new rot13ReaderжReader(newRot13Reader(new strings_ReaderжReader(strings.NewReader(data)))));
+    b = NewReader(new bufio_test_package.rot13ReaderжReader(newRot13Reader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(data)))));
     {
         @string s = readBytes(b); if (s != "uryyb jbeyq"u8) {
             Ꮡt.Errorf("rot13 hello world test failed: got %q"u8, s);
@@ -177,7 +178,7 @@ public static void TestReader(ж<Δtesting.T> Ꮡt) {
                     var readmaker = readMakers[i];
                     var bufreader = bufreaders[j];
                     nint bufsize = bufsizes[k];
-                    var read = readmaker.fn(new strings_ReaderжReader(strings.NewReader(text)));
+                    var read = readmaker.fn(new bufio_test_package.strings_ReaderжReader(strings.NewReader(text)));
                     var buf = NewReaderSize(read, bufsize);
                     @string s = bufreader.fn(buf);
                     if (s != text) {
@@ -198,9 +199,9 @@ internal static (nint, error) Read(this zeroReader _, slice<byte> p) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object errorExpectedˢ = (@string)"error expected"u8;
-private static readonly object unexpectedErrorˢ = (@string)"unexpected error:"u8;
-private static readonly object testTimedOutEndlessLoopˢ = (@string)"test timed out (endless loop in ReadByte?)"u8;
+internal static readonly object errorExpectedˢ = (@string)"error expected"u8;
+internal static readonly object unexpectedErrorˢ = (@string)"unexpected error:"u8;
+internal static readonly object testTimedOutEndlessLoopˢ = (@string)"test timed out (endless loop in ReadByte?)"u8;
 
 public static void TestZeroReader(ж<Δtesting.T> Ꮡt) {
     zeroReader z = default!;
@@ -253,7 +254,7 @@ public static void TestZeroReader(ж<Δtesting.T> Ꮡt) {
 internal static void readRuneSegments(ж<Δtesting.T> Ꮡt, slice<@string> segments) {
     @string got = ""u8;
     @string want = strings.Join(segments, ""u8);
-    var r = NewReader(new StringReaderжReader(Ꮡ(new StringReader(data: segments))));
+    var r = NewReader(new bufio_test_package.StringReaderжReader(Ꮡ(new StringReader(data: segments))));
     while (ᐧ) {
         var (rΔ1, _, err) = r.ReadRune();
         if (err != default!) {
@@ -287,13 +288,13 @@ public static void TestReadRune(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unexpectedErrorOnˢ = (@string)"unexpected error on ReadRune:"u8;
-private static readonly object unexpectedErrorOnˢ2 = (@string)"unexpected error on UnreadRune:"u8;
-private static readonly object unexpectedErrorReadingˢ = (@string)"unexpected error reading after unreading:"u8;
+internal static readonly object unexpectedErrorOnˢ = (@string)"unexpected error on ReadRune:"u8;
+internal static readonly object unexpectedErrorOnˢ2 = (@string)"unexpected error on UnreadRune:"u8;
+internal static readonly object unexpectedErrorReadingˢ = (@string)"unexpected error reading after unreading:"u8;
 
 public static void TestUnreadRune(ж<Δtesting.T> Ꮡt) {
     var segments = new @string[]{"Hello, world:"u8, "日本語"u8}.slice();
-    var r = NewReader(new StringReaderжReader(Ꮡ(new StringReader(data: segments))));
+    var r = NewReader(new bufio_test_package.StringReaderжReader(Ꮡ(new StringReader(data: segments))));
     @string got = ""u8;
     @string want = strings.Join(segments, ""u8);
     // Normal execution.
@@ -326,11 +327,11 @@ public static void TestUnreadRune(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string exampleˢ = "example"u8;
-private static readonly object unreadRuneDidnTFailAfterˢ = (@string)"UnreadRune didn't fail after Peek"u8;
+internal static readonly @string exampleˢ = "example"u8;
+internal static readonly object unreadRuneDidnTFailAfterˢ = (@string)"UnreadRune didn't fail after Peek"u8;
 
 public static void TestNoUnreadRuneAfterPeek(ж<Δtesting.T> Ꮡt) {
-    var br = NewReader(new strings_ReaderжReader(strings.NewReader(exampleˢ)));
+    var br = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(exampleˢ)));
     br.ReadRune();
     br.Peek(1);
     {
@@ -341,10 +342,10 @@ public static void TestNoUnreadRuneAfterPeek(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unreadByteDidnTFailAfterˢ = (@string)"UnreadByte didn't fail after Peek"u8;
+internal static readonly object unreadByteDidnTFailAfterˢ = (@string)"UnreadByte didn't fail after Peek"u8;
 
 public static void TestNoUnreadByteAfterPeek(ж<Δtesting.T> Ꮡt) {
-    var br = NewReader(new strings_ReaderжReader(strings.NewReader(exampleˢ)));
+    var br = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(exampleˢ)));
     br.ReadByte();
     br.Peek(1);
     {
@@ -355,10 +356,10 @@ public static void TestNoUnreadByteAfterPeek(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unreadRuneDidnTFailAfterˢ2 = (@string)"UnreadRune didn't fail after Discard"u8;
+internal static readonly object unreadRuneDidnTFailAfterˢ2 = (@string)"UnreadRune didn't fail after Discard"u8;
 
 public static void TestNoUnreadRuneAfterDiscard(ж<Δtesting.T> Ꮡt) {
-    var br = NewReader(new strings_ReaderжReader(strings.NewReader(exampleˢ)));
+    var br = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(exampleˢ)));
     br.ReadRune();
     br.Discard(1);
     {
@@ -369,10 +370,10 @@ public static void TestNoUnreadRuneAfterDiscard(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unreadByteDidnTFailAfterˢ2 = (@string)"UnreadByte didn't fail after Discard"u8;
+internal static readonly object unreadByteDidnTFailAfterˢ2 = (@string)"UnreadByte didn't fail after Discard"u8;
 
 public static void TestNoUnreadByteAfterDiscard(ж<Δtesting.T> Ꮡt) {
-    var br = NewReader(new strings_ReaderжReader(strings.NewReader(exampleˢ)));
+    var br = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(exampleˢ)));
     br.ReadByte();
     br.Discard(1);
     {
@@ -383,10 +384,10 @@ public static void TestNoUnreadByteAfterDiscard(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unreadRuneDidnTFailAfterˢ3 = (@string)"UnreadRune didn't fail after WriteTo"u8;
+internal static readonly object unreadRuneDidnTFailAfterˢ3 = (@string)"UnreadRune didn't fail after WriteTo"u8;
 
 public static void TestNoUnreadRuneAfterWriteTo(ж<Δtesting.T> Ꮡt) {
-    var br = NewReader(new strings_ReaderжReader(strings.NewReader(exampleˢ)));
+    var br = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(exampleˢ)));
     br.WriteTo(Δio.Discard);
     {
         var err = br.UnreadRune(); if (err == default!) {
@@ -396,10 +397,10 @@ public static void TestNoUnreadRuneAfterWriteTo(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unreadByteDidnTFailAfterˢ3 = (@string)"UnreadByte didn't fail after WriteTo"u8;
+internal static readonly object unreadByteDidnTFailAfterˢ3 = (@string)"UnreadByte didn't fail after WriteTo"u8;
 
 public static void TestNoUnreadByteAfterWriteTo(ж<Δtesting.T> Ꮡt) {
-    var br = NewReader(new strings_ReaderжReader(strings.NewReader(exampleˢ)));
+    var br = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(exampleˢ)));
     br.WriteTo(Δio.Discard);
     {
         var err = br.UnreadByte(); if (err == default!) {
@@ -409,12 +410,12 @@ public static void TestNoUnreadByteAfterWriteTo(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unexpectedErrorOnˢ3 = (@string)"unexpected error on ReadByte:"u8;
-private static readonly object unexpectedErrorOnˢ4 = (@string)"unexpected error on UnreadByte:"u8;
+internal static readonly object unexpectedErrorOnˢ3 = (@string)"unexpected error on ReadByte:"u8;
+internal static readonly object unexpectedErrorOnˢ4 = (@string)"unexpected error on UnreadByte:"u8;
 
 public static void TestUnreadByte(ж<Δtesting.T> Ꮡt) {
     var segments = new @string[]{"Hello, "u8, "world"u8}.slice();
-    var r = NewReader(new StringReaderжReader(Ꮡ(new StringReader(data: segments))));
+    var r = NewReader(new bufio_test_package.StringReaderжReader(Ꮡ(new StringReader(data: segments))));
     @string got = ""u8;
     @string want = strings.Join(segments, ""u8);
     // Normal execution.
@@ -450,7 +451,7 @@ public static void TestUnreadByteMultiple(ж<Δtesting.T> Ꮡt) {
     var segments = new @string[]{"Hello, "u8, "world"u8}.slice();
     @string data = strings.Join(segments, ""u8);
     for (nint n = 0; n <= len(data); n++) {
-        var r = NewReader(new StringReaderжReader(Ꮡ(new StringReader(data: segments))));
+        var r = NewReader(new bufio_test_package.StringReaderжReader(Ꮡ(new StringReader(data: segments))));
         // Read n bytes.
         for (nint i = 0; i < n; i++) {
             var (b, err) = r.ReadByte();
@@ -479,9 +480,9 @@ public static void TestUnreadByteMultiple(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcdefgˢ = "abcdefg"u8;
-private static readonly @string abcdˢ = "abcd"u8;
-private static readonly @string efgˢ = "efg"u8;
+internal static readonly @string abcdefgˢ = "abcdefg"u8;
+internal static readonly @string abcdˢ = "abcd"u8;
+internal static readonly @string efgˢ = "efg"u8;
 
 public static void TestUnreadByteOthers(ж<Δtesting.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -508,7 +509,7 @@ public static void TestUnreadByteOthers(ж<Δtesting.T> Ꮡt) {
         for (nint i = 0; i < n; i++) {
             buf.WriteString(abcdefgˢ);
         }
-        var r = NewReaderSize(new bytes_BufferжReader(Ꮡbuf), minReadBufferSize);
+        var r = NewReaderSize(new bufio_test_package.bytes_BufferжReader(Ꮡbuf), minReadBufferSize);
         var rʗ1 = r;
         var readʗ1 = read;
         var readTo = (byte delim, @string want) => {
@@ -544,28 +545,28 @@ public static void TestUnreadByteOthers(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object expectedErrorOnˢ = (@string)"expected error on UnreadRune from fresh buffer"u8;
-private static readonly object unexpectedErrorOnˢ5 = (@string)"unexpected error on ReadRune (1):"u8;
-private static readonly object unexpectedErrorOnˢ6 = (@string)"unexpected error on UnreadRune (1):"u8;
-private static readonly object expectedErrorAfterˢ = (@string)"expected error after UnreadRune (1)"u8;
-private static readonly object unexpectedErrorOnˢ7 = (@string)"unexpected error on ReadRune (2):"u8;
-private static readonly object unexpectedErrorOnRead2ˢ = (@string)"unexpected error on Read (2):"u8;
-private static readonly object expectedErrorAfterRead2ˢ = (@string)"expected error after Read (2)"u8;
-private static readonly object unexpectedErrorOnˢ8 = (@string)"unexpected error on ReadByte (2):"u8;
-private static readonly object expectedErrorAfterˢ2 = (@string)"expected error after ReadByte"u8;
-private static readonly object unexpectedErrorOnˢ9 = (@string)"unexpected error on ReadRune (3):"u8;
-private static readonly object unexpectedErrorOnˢ10 = (@string)"unexpected error on ReadByte (3):"u8;
-private static readonly object unexpectedErrorOnˢ11 = (@string)"unexpected error on UnreadByte (3):"u8;
-private static readonly object expectedErrorAfterˢ3 = (@string)"expected error after UnreadByte (3)"u8;
-private static readonly object unexpectedErrorOnˢ12 = (@string)"unexpected error on ReadRune (4):"u8;
-private static readonly object unexpectedErrorOnˢ13 = (@string)"unexpected error on ReadSlice (4):"u8;
-private static readonly object expectedErrorAfterˢ4 = (@string)"expected error after ReadSlice (4)"u8;
+internal static readonly object expectedErrorOnˢ = (@string)"expected error on UnreadRune from fresh buffer"u8;
+internal static readonly object unexpectedErrorOnˢ5 = (@string)"unexpected error on ReadRune (1):"u8;
+internal static readonly object unexpectedErrorOnˢ6 = (@string)"unexpected error on UnreadRune (1):"u8;
+internal static readonly object expectedErrorAfterˢ = (@string)"expected error after UnreadRune (1)"u8;
+internal static readonly object unexpectedErrorOnˢ7 = (@string)"unexpected error on ReadRune (2):"u8;
+internal static readonly object unexpectedErrorOnRead2ˢ = (@string)"unexpected error on Read (2):"u8;
+internal static readonly object expectedErrorAfterRead2ˢ = (@string)"expected error after Read (2)"u8;
+internal static readonly object unexpectedErrorOnˢ8 = (@string)"unexpected error on ReadByte (2):"u8;
+internal static readonly object expectedErrorAfterˢ2 = (@string)"expected error after ReadByte"u8;
+internal static readonly object unexpectedErrorOnˢ9 = (@string)"unexpected error on ReadRune (3):"u8;
+internal static readonly object unexpectedErrorOnˢ10 = (@string)"unexpected error on ReadByte (3):"u8;
+internal static readonly object unexpectedErrorOnˢ11 = (@string)"unexpected error on UnreadByte (3):"u8;
+internal static readonly object expectedErrorAfterˢ3 = (@string)"expected error after UnreadByte (3)"u8;
+internal static readonly object unexpectedErrorOnˢ12 = (@string)"unexpected error on ReadRune (4):"u8;
+internal static readonly object unexpectedErrorOnˢ13 = (@string)"unexpected error on ReadSlice (4):"u8;
+internal static readonly object expectedErrorAfterˢ4 = (@string)"expected error after ReadSlice (4)"u8;
 
 // Test that UnreadRune fails if the preceding operation was not a ReadRune.
 public static void TestUnreadRuneError(ж<Δtesting.T> Ꮡt) {
     var buf = new slice<byte>(3);
     // All runes in this test are 3 bytes long
-    var r = NewReader(new StringReaderжReader(Ꮡ(new StringReader(data: new @string[]{"日本語日本語日本語"u8}.slice()))));
+    var r = NewReader(new bufio_test_package.StringReaderжReader(Ꮡ(new StringReader(data: new @string[]{"日本語日本語日本語"u8}.slice()))));
     if (r.UnreadRune() == default!) {
         Ꮡt.Error(expectedErrorOnˢ);
     }
@@ -642,12 +643,12 @@ public static void TestUnreadRuneError(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object expectedErrorAtEofˢ = (@string)"expected error at EOF"u8;
-private static readonly object expectedEofGotˢ = (@string)"expected EOF; got"u8;
+internal static readonly object expectedErrorAtEofˢ = (@string)"expected error at EOF"u8;
+internal static readonly object expectedEofGotˢ = (@string)"expected EOF; got"u8;
 
 public static void TestUnreadRuneAtEOF(ж<Δtesting.T> Ꮡt) {
     // UnreadRune/ReadRune should error at EOF (was a bug; used to panic)
-    var r = NewReader(new strings_ReaderжReader(strings.NewReader("x"u8)));
+    var r = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader("x"u8)));
     r.ReadRune();
     r.ReadRune();
     r.UnreadRune();
@@ -663,7 +664,7 @@ public static void TestUnreadRuneAtEOF(ж<Δtesting.T> Ꮡt) {
 public static void TestReadWriteRune(ж<Δtesting.T> Ꮡt) {
     const rune NRune = 1000;
     var byteBuf = @new<bytes.Buffer>();
-    var w = NewWriter(new bytes_BufferжWriter(byteBuf));
+    var w = NewWriter(new bufio_test_package.bytes_BufferжWriter(byteBuf));
     // Write the runes out using WriteRune
     var buf = new slice<byte>(utf8.UTFMax);
     for (var rΔ1 = (rune)0; rΔ1 < NRune; rΔ1++) {
@@ -677,7 +678,7 @@ public static void TestReadWriteRune(ж<Δtesting.T> Ꮡt) {
         }
     }
     w.Flush();
-    var r = NewReader(new bytes_BufferжReader(byteBuf));
+    var r = NewReader(new bufio_test_package.bytes_BufferжReader(byteBuf));
     // Read them back with ReadRune
     for (var r1 = (rune)0; r1 < NRune; r1++) {
         nint size = utf8.EncodeRune(buf, r1);
@@ -693,7 +694,7 @@ public static void TestWriteInvalidRune(ж<Δtesting.T> Ꮡt) {
     // replacement character.
     foreach (var (_, r) in new rune[]{-1, utf8.MaxRune + 1}.slice()) {
         ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
-        var w = NewWriter(new strings_BuilderжWriter(Ꮡbuf));
+        var w = NewWriter(new bufio_test_package.strings_BuilderжWriter(Ꮡbuf));
         w.WriteRune(r);
         w.Flush();
         {
@@ -705,16 +706,16 @@ public static void TestWriteInvalidRune(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fooFoo424242424242424242ˢ = "       foo       foo        42        42        42        42        42        42        42        42       4.2       4.2       4.2       4.2\n"u8;
+internal static readonly @string fooFoo424242424242424242ˢ = "       foo       foo        42        42        42        42        42        42        42        42       4.2       4.2       4.2       4.2\n"u8;
 
 public static void TestReadStringAllocs(ж<Δtesting.T> Ꮡt) {
     var r = strings.NewReader(fooFoo424242424242424242ˢ);
-    var buf = NewReader(new strings_ReaderжReader(r));
+    var buf = NewReader(new bufio_test_package.strings_ReaderжReader(r));
     var bufʗ1 = buf;
     var rʗ1 = r;
     var allocs = Δtesting.AllocsPerRun(100, () => {
         rʗ1.Seek(0, Δio.SeekStart);
-        bufʗ1.Reset(new strings_ReaderжReader(rʗ1));
+        bufʗ1.Reset(new bufio_test_package.strings_ReaderжReader(rʗ1));
         var (_, err) = bufʗ1.ReadString((rune)'\n');
         if (err != default!) {
             Ꮡt.Fatal(err);
@@ -739,7 +740,7 @@ public static void TestWriter(ж<Δtesting.T> Ꮡt) {
             // Check that the right amount makes it out
             // and that the data is correct.
             w.Reset();
-            var buf = NewWriterSize(new bytes_BufferжWriter(w), bs);
+            var buf = NewWriterSize(new bufio_test_package.bytes_BufferжWriter(w), bs);
             @string context = fmt.Sprintf("nwrite=%d bufsize=%d"u8, nwrite, bs);
             var (n, e1) = buf.Write(data[0..(int)(nwrite)]);
             if (e1 != default! || n != nwrite) {
@@ -770,7 +771,7 @@ public static void TestWriterAppend(ж<Δtesting.T> Ꮡt) {
     var got = @new<bytes.Buffer>();
     slice<byte> want = default!;
     var rn = rand.New(rand.NewSource(0));
-    var w = NewWriterSize(new bytes_BufferжWriter(got), 64);
+    var w = NewWriterSize(new bufio_test_package.bytes_BufferжWriter(got), 64);
     for (nint i = 0; i < 100; i++) {
         // Obtain a buffer to append to.
         var b = w.AvailableBuffer();
@@ -833,51 +834,51 @@ public static void TestWriteErrors(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object newReaderSizeDidNotˢ = (@string)"NewReaderSize did not detect underlying Reader"u8;
-private static readonly object newReaderSizeDidNotˢ2 = (@string)"NewReaderSize did not enlarge buffer"u8;
+internal static readonly object newReaderSizeDidNotˢ = (@string)"NewReaderSize did not detect underlying Reader"u8;
+internal static readonly object newReaderSizeDidNotˢ2 = (@string)"NewReaderSize did not enlarge buffer"u8;
 
 public static void TestNewReaderSizeIdempotent(ж<Δtesting.T> Ꮡt) {
     UntypedInt BufSize = 1000;
-    var b = NewReaderSize(new strings_ReaderжReader(strings.NewReader(helloWorldˢ)), BufSize);
+    var b = NewReaderSize(new bufio_test_package.strings_ReaderжReader(strings.NewReader(helloWorldˢ)), BufSize);
     // Does it recognize itself?
-    var b1 = NewReaderSize(new bufio.ReaderжReader(b), BufSize);
+    var b1 = NewReaderSize(new bufio_test_package.bufio_ReaderжReader(b), BufSize);
     if (b1 != b) {
         Ꮡt.Error(newReaderSizeDidNotˢ);
     }
     // Does it wrap if existing buffer is too small?
-    var b2 = NewReaderSize(new bufio.ReaderжReader(b), 2 * BufSize);
+    var b2 = NewReaderSize(new bufio_test_package.bufio_ReaderжReader(b), 2 * BufSize);
     if (b2 == b) {
         Ꮡt.Error(newReaderSizeDidNotˢ2);
     }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object newWriterSizeDidNotˢ = (@string)"NewWriterSize did not detect underlying Writer"u8;
-private static readonly object newWriterSizeDidNotˢ2 = (@string)"NewWriterSize did not enlarge buffer"u8;
+internal static readonly object newWriterSizeDidNotˢ = (@string)"NewWriterSize did not detect underlying Writer"u8;
+internal static readonly object newWriterSizeDidNotˢ2 = (@string)"NewWriterSize did not enlarge buffer"u8;
 
 public static void TestNewWriterSizeIdempotent(ж<Δtesting.T> Ꮡt) {
     UntypedInt BufSize = 1000;
-    var b = NewWriterSize(new bytes_BufferжWriter(@new<bytes.Buffer>()), BufSize);
+    var b = NewWriterSize(new bufio_test_package.bytes_BufferжWriter(@new<bytes.Buffer>()), BufSize);
     // Does it recognize itself?
-    var b1 = NewWriterSize(new bufio.WriterжWriter(b), BufSize);
+    var b1 = NewWriterSize(new bufio_test_package.bufio_WriterжWriter(b), BufSize);
     if (b1 != b) {
         Ꮡt.Error(newWriterSizeDidNotˢ);
     }
     // Does it wrap if existing buffer is too small?
-    var b2 = NewWriterSize(new bufio.WriterжWriter(b), 2 * BufSize);
+    var b2 = NewWriterSize(new bufio_test_package.bufio_WriterжWriter(b), 2 * BufSize);
     if (b2 == b) {
         Ꮡt.Error(newWriterSizeDidNotˢ2);
     }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcdefghijklmnopqrstuvwxyˢ = "abcdefghijklmnopqrstuvwxy"u8;
-private static readonly object writeStringˢ = (@string)"WriteString"u8;
+internal static readonly @string abcdefghijklmnopqrstuvwxyˢ = "abcdefghijklmnopqrstuvwxy"u8;
+internal static readonly object writeStringˢ = (@string)"WriteString"u8;
 
 public static void TestWriteString(ж<Δtesting.T> Ꮡt) {
     const nint BufSize = 8;
     var buf = @new<strings.Builder>();
-    var b = NewWriterSize(new strings_BuilderжWriter(buf), BufSize);
+    var b = NewWriterSize(new bufio_test_package.strings_BuilderжWriter(buf), BufSize);
     b.WriteString("0"u8);
     // easy
     b.WriteString("123456"u8);
@@ -899,14 +900,14 @@ public static void TestWriteString(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcˢ = "abc"u8;
-private static readonly @string abc12345ˢ = "abc12345"u8;
+internal static readonly @string abcˢ = "abc"u8;
+internal static readonly @string abc12345ˢ = "abc12345"u8;
 
 public static void TestWriteStringStringWriter(ж<Δtesting.T> Ꮡt) {
     const nint BufSize = 8;
     {
         var tw = Ꮡ(new teststringwriter(nil));
-        var b = NewWriterSize(new teststringwriterжWriter(tw), BufSize);
+        var b = NewWriterSize(new bufio_test_package.teststringwriterжWriter(tw), BufSize);
         b.WriteString("1234"u8);
         tw.check(Ꮡt, ""u8, ""u8);
         b.WriteString("56789012"u8);
@@ -918,7 +919,7 @@ public static void TestWriteStringStringWriter(ж<Δtesting.T> Ꮡt) {
     }
     {
         var tw = Ꮡ(new teststringwriter(nil));
-        var b = NewWriterSize(new teststringwriterжWriter(tw), BufSize);
+        var b = NewWriterSize(new bufio_test_package.teststringwriterжWriter(tw), BufSize);
         b.WriteString("123456789"u8);
         // long string, empty buffer:
         tw.check(Ꮡt, ""u8, "123456789"u8);
@@ -926,7 +927,7 @@ public static void TestWriteStringStringWriter(ж<Δtesting.T> Ꮡt) {
     // use WriteString
     {
         var tw = Ꮡ(new teststringwriter(nil));
-        var b = NewWriterSize(new teststringwriterжWriter(tw), BufSize);
+        var b = NewWriterSize(new bufio_test_package.teststringwriterжWriter(tw), BufSize);
         b.WriteString(abcˢ);
         tw.check(Ꮡt, ""u8, ""u8);
         b.WriteString("123456789012345"u8);
@@ -936,7 +937,7 @@ public static void TestWriteStringStringWriter(ж<Δtesting.T> Ꮡt) {
     // use Write and then WriteString since the remaining part is still longer than BufSize
     {
         var tw = Ꮡ(new teststringwriter(nil));
-        var b = NewWriterSize(new teststringwriterжWriter(tw), BufSize);
+        var b = NewWriterSize(new bufio_test_package.teststringwriterжWriter(tw), BufSize);
         b.Write(slice<byte>("abc"u8));
         // same as above, but use Write instead of WriteString
         tw.check(Ꮡt, ""u8, ""u8);
@@ -973,7 +974,7 @@ public static void TestWriteStringStringWriter(ж<Δtesting.T> Ꮡt) {
 
 public static void TestBufferFull(ж<Δtesting.T> Ꮡt) {
     @string longString = "And now, hello, world! It is the time for all good men to come to the aid of their party"u8;
-    var buf = NewReaderSize(new strings_ReaderжReader(strings.NewReader(longString)), minReadBufferSize);
+    var buf = NewReaderSize(new bufio_test_package.strings_ReaderжReader(strings.NewReader(longString)), minReadBufferSize);
     var (line, err) = buf.ReadSlice((rune)'!');
     if (((sstring)line) != "And now, hello, "u8 || !AreEqual(err, ErrBufferFull)) {
         Ꮡt.Errorf("first ReadSlice(,) = %q, %v"u8, line, err);
@@ -985,15 +986,15 @@ public static void TestBufferFull(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcdefghijklmnopˢ = "abcdefghijklmnop"u8;
-private static readonly @string defˢ = "def"u8;
-private static readonly object ghijˢ = (@string)"ghij"u8;
-private static readonly object ghijklmnopˢ = (@string)"ghijklmnop"u8;
+internal static readonly @string abcdefghijklmnopˢ = "abcdefghijklmnop"u8;
+internal static readonly @string defˢ = "def"u8;
+internal static readonly object ghijˢ = (@string)"ghij"u8;
+internal static readonly object ghijklmnopˢ = (@string)"ghijklmnop"u8;
 
 public static void TestPeek(ж<Δtesting.T> Ꮡt) {
     var p = new slice<byte>(10);
     // string is 16 (minReadBufferSize) long.
-    var buf = NewReaderSize(new strings_ReaderжReader(strings.NewReader(abcdefghijklmnopˢ)), minReadBufferSize);
+    var buf = NewReaderSize(new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcdefghijklmnopˢ)), minReadBufferSize);
     {
         var (s, err) = buf.Peek(1); if (((sstring)s) != "a"u8 || err != default!) {
             Ꮡt.Fatalf("want %q got %q, err=%v"u8, (@string)"a"u8, ((@string)s), err);
@@ -1086,7 +1087,7 @@ internal static (nint, error) Read(this dataAndEOFReader r, slice<byte> p) {
 
 public static void TestPeekThenUnreadRune(ж<Δtesting.T> Ꮡt) {
     // This sequence used to cause a crash.
-    var r = NewReader(new strings_ReaderжReader(strings.NewReader("x"u8)));
+    var r = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader("x"u8)));
     r.ReadRune();
     r.Peek(1);
     r.UnreadRune();
@@ -1133,7 +1134,7 @@ internal static void testReadLine(ж<Δtesting.T> Ꮡt, slice<byte> input) {
         nint done = 0;
         ref var reader = ref heap<testReader>(out var Ꮡreader);
         reader = new testReader(input, stride);
-        var l = NewReaderSize(new testReaderжReader(Ꮡreader), len(input) + 1);
+        var l = NewReaderSize(new bufio_test_package.testReaderжReader(Ꮡreader), len(input) + 1);
         while (ᐧ) {
             var (line, isPrefix, err) = l.ReadLine();
             if (len(line) > 0 && err != default!) {
@@ -1172,7 +1173,7 @@ public static void TestLineTooLong(ж<Δtesting.T> Ꮡt) {
         data = append(data, (byte)((rune)'0' + (byte)(i % 10)));
     }
     var buf = bytes.NewReader(data);
-    var l = NewReaderSize(new bytes_ReaderжReader(buf), minReadBufferSize);
+    var l = NewReaderSize(new bufio_test_package.bytes_ReaderжReader(buf), minReadBufferSize);
     var (line, isPrefix, err) = l.ReadLine();
     if (!isPrefix || !bytes.Equal(line, data[..(int)(minReadBufferSize)]) || err != default!) {
         Ꮡt.Errorf("bad result for first line: got %q want %q %v"u8, line, data[..(int)(minReadBufferSize)], err);
@@ -1194,8 +1195,8 @@ public static void TestLineTooLong(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string thisIsLine1ˢ = "this is line1"u8;
-private static readonly @string thisIsLine2ThisIsLine3ˢ = "this is line2\nthis is line 3\n"u8;
+internal static readonly @string thisIsLine1ˢ = "this is line1"u8;
+internal static readonly @string thisIsLine2ThisIsLine3ˢ = "this is line2\nthis is line 3\n"u8;
 
 public static void TestReadAfterLines(ж<Δtesting.T> Ꮡt) {
     @string line1 = thisIsLine1ˢ;
@@ -1203,12 +1204,12 @@ public static void TestReadAfterLines(ж<Δtesting.T> Ꮡt) {
     var inbuf = bytes.NewReader(slice<byte>(line1 + "\n" + restData));
     var outbuf = @new<strings.Builder>();
     nint maxLineLength = len(line1) + len(restData) / 2;
-    var l = NewReaderSize(new bytes_ReaderжReader(inbuf), maxLineLength);
+    var l = NewReaderSize(new bufio_test_package.bytes_ReaderжReader(inbuf), maxLineLength);
     var (line, isPrefix, err) = l.ReadLine();
     if (isPrefix || err != default! || ((sstring)line) != line1) {
         Ꮡt.Errorf("bad result for first line: isPrefix=%v err=%v line=%q"u8, isPrefix, err, ((@string)line));
     }
-    (var n, err) = Δio.Copy(new strings_BuilderжWriter(outbuf), new bufio.ReaderжReader(l));
+    (var n, err) = Δio.Copy(new bufio_test_package.strings_BuilderжWriter(outbuf), new bufio_test_package.bufio_ReaderжReader(l));
     if ((nint)n != len(restData) || err != default!) {
         Ꮡt.Errorf("bad result for Read: n=%d err=%v"u8, n, err);
     }
@@ -1220,7 +1221,7 @@ public static void TestReadAfterLines(ж<Δtesting.T> Ꮡt) {
 public static void TestReadEmptyBuffer(ж<Δtesting.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
-    var l = NewReaderSize(new bytes_BufferжReader(@new<bytes.Buffer>()), minReadBufferSize);
+    var l = NewReaderSize(new bufio_test_package.bytes_BufferжReader(@new<bytes.Buffer>()), minReadBufferSize);
     var (line, isPrefix, err) = l.ReadLine();
     if (!AreEqual(err, Δio.EOF)) {
         Ꮡt.Errorf("expected EOF from ReadLine, got '%s' %t %s"u8, line, isPrefix, err);
@@ -1230,8 +1231,8 @@ public static void TestReadEmptyBuffer(ж<Δtesting.T> Ꮡt) {
 public static void TestLinesAfterRead(ж<Δtesting.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
-    var l = NewReaderSize(new bytes_ReaderжReader(bytes.NewReader(slice<byte>("foo"u8))), minReadBufferSize);
-    var (_, err) = Δio.ReadAll(new bufio.ReaderжReader(l));
+    var l = NewReaderSize(new bufio_test_package.bytes_ReaderжReader(bytes.NewReader(slice<byte>("foo"u8))), minReadBufferSize);
+    var (_, err) = Δio.ReadAll(new bufio_test_package.bufio_ReaderжReader(l));
     if (err != default!) {
         Ꮡt.Error(err);
         return;
@@ -1243,10 +1244,10 @@ public static void TestLinesAfterRead(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string line1ˢ = "line 1\n"u8;
+internal static readonly @string line1ˢ = "line 1\n"u8;
 
 public static void TestReadLineNonNilLineOrError(ж<Δtesting.T> Ꮡt) {
-    var r = NewReader(new strings_ReaderжReader(strings.NewReader(line1ˢ)));
+    var r = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(line1ˢ)));
     for (nint i = 0; i < 2; i++) {
         var (l, _, err) = r.ReadLine();
         if (l != default! && err != default!) {
@@ -1290,7 +1291,7 @@ public static void TestReadLineNewlines(ж<Δtesting.T> Ꮡt) {
 }
 
 internal static void testReadLineNewlines(ж<Δtesting.T> Ꮡt, @string input, slice<readLineResult> expect) {
-    var b = NewReaderSize(new strings_ReaderжReader(strings.NewReader(input)), minReadBufferSize);
+    var b = NewReaderSize(new bufio_test_package.strings_ReaderжReader(strings.NewReader(input)), minReadBufferSize);
     foreach (var (i, e) in expect) {
         var (line, isPrefix, err) = b.ReadLine();
         if (!bytes.Equal(line, e.line)) {
@@ -1324,10 +1325,10 @@ internal static slice<byte> createTestInput(nint n) {
 
 public static void TestReaderWriteTo(ж<Δtesting.T> Ꮡt) {
     var input = createTestInput(8192);
-    var r = NewReader(new onlyReader(new bytes_ReaderжReader(bytes.NewReader(input))));
+    var r = NewReader(new onlyReader(new bufio_test_package.bytes_ReaderжReader(bytes.NewReader(input))));
     var w = @new<bytes.Buffer>();
     {
-        var (n, err) = r.WriteTo(new bytes_BufferжWriter(w)); if (err != default! || n != (int64)len(input)) {
+        var (n, err) = r.WriteTo(new bufio_test_package.bytes_BufferжWriter(w)); if (err != default! || n != (int64)len(input)) {
             Ꮡt.Fatalf("r.WriteTo(w) = %d, %v, want %d, nil"u8, n, err, len(input));
         }
     }
@@ -1383,8 +1384,8 @@ public static void TestWriterReadFrom(ж<Δtesting.T> Ꮡt) {
         foreach (var (wi, wfunc) in ws) {
             var input = createTestInput(8192);
             var b = @new<strings.Builder>();
-            var w = NewWriter(wfunc(new strings_BuilderжWriter(b)));
-            var r = rfunc(new bytes_ReaderжReader(bytes.NewReader(input)));
+            var w = NewWriter(wfunc(new bufio_test_package.strings_BuilderжWriter(b)));
+            var r = rfunc(new bufio_test_package.bytes_ReaderжReader(bytes.NewReader(input)));
             {
                 var (n, err) = w.ReadFrom(r); if (err != default! || n != (int64)len(input)) {
                     Ꮡt.Errorf("ws[%d],rs[%d]: w.ReadFrom(r) = %d, %v, want %d, nil"u8, wi, ri, n, err, len(input));
@@ -1446,7 +1447,7 @@ public static void TestWriterReadFromErrors(ж<Δtesting.T> Ꮡt) {
 // avoided.
 public static void TestWriterReadFromCounts(ж<Δtesting.T> Ꮡt) {
     ref var w0 = ref heap(new writeCountingDiscard(), out var Ꮡw0);
-    var b0 = NewWriterSize(new writeCountingDiscardжWriter(Ꮡw0), 1234);
+    var b0 = NewWriterSize(new bufio_test_package.writeCountingDiscardжWriter(Ꮡw0), 1234);
     b0.WriteString(strings.Repeat("x"u8, 1000));
     if (w0 != 0) {
         Ꮡt.Fatalf("write 1000 'x's: got %d writes, want 0"u8, w0);
@@ -1455,16 +1456,16 @@ public static void TestWriterReadFromCounts(ж<Δtesting.T> Ꮡt) {
     if (w0 != 0) {
         Ꮡt.Fatalf("write 1200 'x's: got %d writes, want 0"u8, w0);
     }
-    Δio.Copy(new bufio.WriterжWriter(b0), new onlyReader(new strings_ReaderжReader(strings.NewReader(strings.Repeat("x"u8, 30)))));
+    Δio.Copy(new bufio_test_package.bufio_WriterжWriter(b0), new onlyReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(strings.Repeat("x"u8, 30)))));
     if (w0 != 0) {
         Ꮡt.Fatalf("write 1230 'x's: got %d writes, want 0"u8, w0);
     }
-    Δio.Copy(new bufio.WriterжWriter(b0), new onlyReader(new strings_ReaderжReader(strings.NewReader(strings.Repeat("x"u8, 9)))));
+    Δio.Copy(new bufio_test_package.bufio_WriterжWriter(b0), new onlyReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(strings.Repeat("x"u8, 9)))));
     if (w0 != 1) {
         Ꮡt.Fatalf("write 1239 'x's: got %d writes, want 1"u8, w0);
     }
     ref var w1 = ref heap(new writeCountingDiscard(), out var Ꮡw1);
-    var b1 = NewWriterSize(new writeCountingDiscardжWriter(Ꮡw1), 1234);
+    var b1 = NewWriterSize(new bufio_test_package.writeCountingDiscardжWriter(Ꮡw1), 1234);
     b1.WriteString(strings.Repeat("x"u8, 1200));
     b1.Flush();
     if (w1 != 1) {
@@ -1474,11 +1475,11 @@ public static void TestWriterReadFromCounts(ж<Δtesting.T> Ꮡt) {
     if (w1 != 1) {
         Ꮡt.Fatalf("write 1200 + 89 'x's: got %d writes, want 1"u8, w1);
     }
-    Δio.Copy(new bufio.WriterжWriter(b1), new onlyReader(new strings_ReaderжReader(strings.NewReader(strings.Repeat("x"u8, 700)))));
+    Δio.Copy(new bufio_test_package.bufio_WriterжWriter(b1), new onlyReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(strings.Repeat("x"u8, 700)))));
     if (w1 != 1) {
         Ꮡt.Fatalf("write 1200 + 789 'x's: got %d writes, want 1"u8, w1);
     }
-    Δio.Copy(new bufio.WriterжWriter(b1), new onlyReader(new strings_ReaderжReader(strings.NewReader(strings.Repeat("x"u8, 600)))));
+    Δio.Copy(new bufio_test_package.bufio_WriterжWriter(b1), new onlyReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(strings.Repeat("x"u8, 600)))));
     if (w1 != 2) {
         Ꮡt.Fatalf("write 1200 + 1389 'x's: got %d writes, want 2"u8, w1);
     }
@@ -1502,13 +1503,13 @@ public static void TestWriterReadFromCounts(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object readDidNotPanicˢ = (@string)"read did not panic"u8;
-private static readonly @string readerReturnedNegativeˢ = "reader returned negative count from Read"u8;
+internal static readonly object readDidNotPanicˢ = (@string)"read did not panic"u8;
+internal static readonly @string readerReturnedNegativeˢ = "reader returned negative count from Read"u8;
 
 public static void TestNegativeRead(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
     // should panic with a description pointing at the reader, not at itself.
     // (should NOT panic with slice index error, for example.)
-    var b = NewReader(new negativeReaderжReader(@new<negativeReader>()));
+    var b = NewReader(new bufio_test_package.negativeReaderжReader(@new<negativeReader>()));
     defer(() => {
         var switchᴛ1 = recover();
         switch (switchᴛ1.type()) {
@@ -1549,7 +1550,7 @@ internal static error errFake = errors.New("fake error"u8);
 
 public static void TestReaderClearError(ж<Δtesting.T> Ꮡt) {
     var r = Ꮡ(new errorThenGoodReader(nil));
-    var b = NewReader(new errorThenGoodReaderжReader(r));
+    var b = NewReader(new bufio_test_package.errorThenGoodReaderжReader(r));
     var buf = new slice<byte>(1);
     {
         var (_, err) = b.Read(default!); if (err != default!) {
@@ -1577,19 +1578,19 @@ public static void TestReaderClearError(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcdefˢ = "abcdef"u8;
+internal static readonly @string abcdefˢ = "abcdef"u8;
 
 // Test for golang.org/issue/5947
 public static void TestWriterReadFromWhileFull(ж<Δtesting.T> Ꮡt) {
     var buf = @new<bytes.Buffer>();
-    var w = NewWriterSize(new bytes_BufferжWriter(buf), 10);
+    var w = NewWriterSize(new bufio_test_package.bytes_BufferжWriter(buf), 10);
     // Fill buffer exactly.
     var (n, err) = w.Write(slice<byte>("0123456789"u8));
     if (n != 10 || err != default!) {
         Ꮡt.Fatalf("Write returned (%v, %v), want (10, nil)"u8, n, err);
     }
     // Use ReadFrom to read in some data.
-    (var n2, err) = w.ReadFrom(new strings_ReaderжReader(strings.NewReader(abcdefˢ)));
+    (var n2, err) = w.ReadFrom(new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcdefˢ)));
     if (n2 != 6 || err != default!) {
         Ꮡt.Fatalf("ReadFrom returned (%v, %v), want (6, nil)"u8, n2, err);
     }
@@ -1611,15 +1612,15 @@ public static void TestWriterReadFromWhileFull(ж<Δtesting.T> Ꮡt) {
 // Test for golang.org/issue/7611
 public static void TestWriterReadFromUntilEOF(ж<Δtesting.T> Ꮡt) {
     var buf = @new<bytes.Buffer>();
-    var w = NewWriterSize(new bytes_BufferжWriter(buf), 5);
+    var w = NewWriterSize(new bufio_test_package.bytes_BufferжWriter(buf), 5);
     // Partially fill buffer
     var (n, err) = w.Write(slice<byte>("0123"u8));
     if (n != 4 || err != default!) {
         Ꮡt.Fatalf("Write returned (%v, %v), want (4, nil)"u8, n, err);
     }
     // Use ReadFrom to read in some data.
-    var r = Ꮡ(new emptyThenNonEmptyReader(r: new strings_ReaderжReader(strings.NewReader(abcdˢ)), n: 3));
-    (var n2, err) = w.ReadFrom(new emptyThenNonEmptyReaderжReader(r));
+    var r = Ꮡ(new emptyThenNonEmptyReader(r: new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcdˢ)), n: 3));
+    (var n2, err) = w.ReadFrom(new bufio_test_package.emptyThenNonEmptyReaderжReader(r));
     if (n2 != 4 || err != default!) {
         Ꮡt.Fatalf("ReadFrom returned (%v, %v), want (4, nil)"u8, n2, err);
     }
@@ -1634,15 +1635,15 @@ public static void TestWriterReadFromUntilEOF(ж<Δtesting.T> Ꮡt) {
 
 public static void TestWriterReadFromErrNoProgress(ж<Δtesting.T> Ꮡt) {
     var buf = @new<bytes.Buffer>();
-    var w = NewWriterSize(new bytes_BufferжWriter(buf), 5);
+    var w = NewWriterSize(new bufio_test_package.bytes_BufferжWriter(buf), 5);
     // Partially fill buffer
     var (n, err) = w.Write(slice<byte>("0123"u8));
     if (n != 4 || err != default!) {
         Ꮡt.Fatalf("Write returned (%v, %v), want (4, nil)"u8, n, err);
     }
     // Use ReadFrom to read in some data.
-    var r = Ꮡ(new emptyThenNonEmptyReader(r: new strings_ReaderжReader(strings.NewReader(abcdˢ)), n: 100));
-    (var n2, err) = w.ReadFrom(new emptyThenNonEmptyReaderжReader(r));
+    var r = Ꮡ(new emptyThenNonEmptyReader(r: new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcdˢ)), n: 100));
+    (var n2, err) = w.ReadFrom(new bufio_test_package.emptyThenNonEmptyReaderжReader(r));
     if (n2 != 0 || !AreEqual(err, Δio.ErrNoProgress)) {
         Ꮡt.Fatalf("buf.Bytes() returned (%v, %v), want (0, io.ErrNoProgress)"u8, n2, err);
     }
@@ -1673,14 +1674,14 @@ public static void TestWriterReadFromWithBufferedData(ж<Δtesting.T> Ꮡt) {
     const nint bufsize = 16;
     var input = createTestInput(64);
     var rfw = Ꮡ(new readFromWriter(nil));
-    var w = NewWriterSize(new readFromWriterжWriter(rfw), bufsize);
+    var w = NewWriterSize(new bufio_test_package.readFromWriterжWriter(rfw), bufsize);
     const nint writeSize = 8;
     {
         var (nΔ1, errΔ1) = w.Write(input[..(int)(writeSize)]); if (nΔ1 != writeSize || errΔ1 != default!) {
             Ꮡt.Errorf("w.Write(%v bytes) = %v, %v; want %v, nil"u8, (nint)(writeSize), nΔ1, errΔ1, (nint)(writeSize));
         }
     }
-    var (n, err) = w.ReadFrom(new bytes_ReaderжReader(bytes.NewReader(input[(int)(writeSize)..])));
+    var (n, err) = w.ReadFrom(new bufio_test_package.bytes_ReaderжReader(bytes.NewReader(input[(int)(writeSize)..])));
     {
         nint wantn = len(input[(int)(writeSize)..]); if ((nint)n != wantn || err != default!) {
             Ꮡt.Errorf("io.Copy(w, %v bytes) = %v, %v; want %v, nil"u8, wantn, n, err, wantn);
@@ -1708,7 +1709,7 @@ public static void TestWriterReadFromWithBufferedData(ж<Δtesting.T> Ꮡt) {
 public static void TestReadZero(ж<Δtesting.T> Ꮡt) {
     foreach (var (_, size) in new nint[]{100, 2}.slice()) {
         Ꮡt.Run(fmt.Sprintf("bufsize=%d"u8, size), (ж<Δtesting.T> tΔ1) => {
-            var r = Δio.MultiReader(new strings_ReaderжReader(strings.NewReader(abcˢ)), new emptyThenNonEmptyReaderжReader(Ꮡ(new emptyThenNonEmptyReader(r: new strings_ReaderжReader(strings.NewReader(defˢ)), n: 1))));
+            var r = Δio.MultiReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcˢ)), new bufio_test_package.emptyThenNonEmptyReaderжReader(Ꮡ(new emptyThenNonEmptyReader(r: new bufio_test_package.strings_ReaderжReader(strings.NewReader(defˢ)), n: 1))));
             var br = NewReaderSize(r, size);
             var brʗ1 = br;
             var want = (@string s, error wantErr) => {
@@ -1728,15 +1729,15 @@ public static void TestReadZero(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fooFooˢ = "foo foo"u8;
-private static readonly @string barBarˢ = "bar bar"u8;
-private static readonly @string recurˢ = "recur"u8;
-private static readonly @string recur2ˢ = "recur2"u8;
+internal static readonly @string fooFooˢ = "foo foo"u8;
+internal static readonly @string barBarˢ = "bar bar"u8;
+internal static readonly @string recurˢ = "recur"u8;
+internal static readonly @string recur2ˢ = "recur2"u8;
 
 public static void TestReaderReset(ж<Δtesting.T> Ꮡt) {
     var checkAll = (ж<bufio.Reader> rΔ1, @string want) => {
         Ꮡt.Helper();
-        var (all, err) = Δio.ReadAll(new bufio.ReaderжReader(rΔ1));
+        var (all, err) = Δio.ReadAll(new bufio_test_package.bufio_ReaderжReader(rΔ1));
         if (err != default!) {
             Ꮡt.Fatal(err);
         }
@@ -1744,30 +1745,30 @@ public static void TestReaderReset(ж<Δtesting.T> Ꮡt) {
             Ꮡt.Errorf("ReadAll returned %q, want %q"u8, all, want);
         }
     };
-    var r = NewReader(new strings_ReaderжReader(strings.NewReader(fooFooˢ)));
+    var r = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(fooFooˢ)));
     var buf = new slice<byte>(3);
     r.Read(buf);
     if (((sstring)buf) != "foo"u8) {
         Ꮡt.Errorf("buf = %q; want foo"u8, buf);
     }
-    r.Reset(new strings_ReaderжReader(strings.NewReader(barBarˢ)));
+    r.Reset(new bufio_test_package.strings_ReaderжReader(strings.NewReader(barBarˢ)));
     checkAll(r, barBarˢ);
     r.Value = new Reader(nil);
     // zero out the Reader
-    r.Reset(new strings_ReaderжReader(strings.NewReader(barBarˢ)));
+    r.Reset(new bufio_test_package.strings_ReaderжReader(strings.NewReader(barBarˢ)));
     checkAll(r, barBarˢ);
     // Wrap a reader and then Reset to that reader.
-    r.Reset(new strings_ReaderжReader(strings.NewReader(recurˢ)));
-    var r2 = NewReader(new bufio.ReaderжReader(r));
+    r.Reset(new bufio_test_package.strings_ReaderжReader(strings.NewReader(recurˢ)));
+    var r2 = NewReader(new bufio_test_package.bufio_ReaderжReader(r));
     checkAll(r2, recurˢ);
-    r.Reset(new strings_ReaderжReader(strings.NewReader(recur2ˢ)));
-    r2.Reset(new bufio.ReaderжReader(r));
+    r.Reset(new bufio_test_package.strings_ReaderжReader(strings.NewReader(recur2ˢ)));
+    r2.Reset(new bufio_test_package.bufio_ReaderжReader(r));
     checkAll(r2, recur2ˢ);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fooˢ = "foo"u8;
-private static readonly @string barˢ = "bar"u8;
+internal static readonly @string fooˢ = "foo"u8;
+internal static readonly @string barˢ = "bar"u8;
 
 public static void TestWriterReset(ж<Δtesting.T> Ꮡt) {
     ref var buf1 = ref heap(new strings.Builder(), out var Ꮡbuf1);
@@ -1775,9 +1776,9 @@ public static void TestWriterReset(ж<Δtesting.T> Ꮡt) {
     ref var buf3 = ref heap(new strings.Builder(), out var Ꮡbuf3);
     ref var buf4 = ref heap(new strings.Builder(), out var Ꮡbuf4);
     ref var buf5 = ref heap(new strings.Builder(), out var Ꮡbuf5);
-    var w = NewWriter(new strings_BuilderжWriter(Ꮡbuf1));
+    var w = NewWriter(new bufio_test_package.strings_BuilderжWriter(Ꮡbuf1));
     w.WriteString(fooˢ);
-    w.Reset(new strings_BuilderжWriter(Ꮡbuf2));
+    w.Reset(new bufio_test_package.strings_BuilderжWriter(Ꮡbuf2));
     // and not flushed
     w.WriteString(barˢ);
     w.Flush();
@@ -1789,7 +1790,7 @@ public static void TestWriterReset(ж<Δtesting.T> Ꮡt) {
     }
     w.Value = new Writer(nil);
     // zero out the Writer
-    w.Reset(new strings_BuilderжWriter(Ꮡbuf3));
+    w.Reset(new bufio_test_package.strings_BuilderжWriter(Ꮡbuf3));
     // and not flushed
     w.WriteString(barˢ);
     w.Flush();
@@ -1800,15 +1801,15 @@ public static void TestWriterReset(ж<Δtesting.T> Ꮡt) {
         Ꮡt.Errorf("buf3 = %q; want bar"u8, buf3.String());
     }
     // Wrap a writer and then Reset to that writer.
-    w.Reset(new strings_BuilderжWriter(Ꮡbuf4));
-    var w2 = NewWriter(new bufio.WriterжWriter(w));
+    w.Reset(new bufio_test_package.strings_BuilderжWriter(Ꮡbuf4));
+    var w2 = NewWriter(new bufio_test_package.bufio_WriterжWriter(w));
     w2.WriteString(recurˢ);
     w2.Flush();
     if (buf4.String() != "recur"u8) {
         Ꮡt.Errorf("buf4 = %q, want %q"u8, buf4.String(), recurˢ);
     }
-    w.Reset(new strings_BuilderжWriter(Ꮡbuf5));
-    w2.Reset(new bufio.WriterжWriter(w));
+    w.Reset(new bufio_test_package.strings_BuilderжWriter(Ꮡbuf5));
+    w2.Reset(new bufio_test_package.bufio_WriterжWriter(w));
     w2.WriteString(recur2ˢ);
     w2.Flush();
     if (buf5.String() != "recur2"u8) {
@@ -1817,8 +1818,8 @@ public static void TestWriterReset(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
-private static readonly @string thenErrorˢ = "5-then-error"u8;
+internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
+internal static readonly @string thenErrorˢ = "5-then-error"u8;
 
 [GoType("dyn")] partial struct TestReaderDiscard_tests {
     internal @string name;
@@ -1837,7 +1838,7 @@ public static void TestReaderDiscard(ж<Δtesting.T> Ꮡt) {
     var tests = new TestReaderDiscard_tests[]{
         new(
             name: "normal case"u8,
-            r: new strings_ReaderжReader(strings.NewReader(abcdefghijklmnopqrstuvwxyzˢ)),
+            r: new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcdefghijklmnopqrstuvwxyzˢ)),
             peekSize: 16,
             n: 6,
             want: 6,
@@ -1845,21 +1846,21 @@ public static void TestReaderDiscard(ж<Δtesting.T> Ꮡt) {
         ),
         new(
             name: "discard causing read"u8,
-            r: new strings_ReaderжReader(strings.NewReader(abcdefghijklmnopqrstuvwxyzˢ)),
+            r: new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcdefghijklmnopqrstuvwxyzˢ)),
             n: 6,
             want: 6,
             wantBuffered: 10
         ),
         new(
             name: "discard all without peek"u8,
-            r: new strings_ReaderжReader(strings.NewReader(abcdefghijklmnopqrstuvwxyzˢ)),
+            r: new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcdefghijklmnopqrstuvwxyzˢ)),
             n: 26,
             want: 26,
             wantBuffered: 0
         ),
         new(
             name: "discard more than end"u8,
-            r: new strings_ReaderжReader(strings.NewReader(abcdefghijklmnopqrstuvwxyzˢ)),
+            r: new bufio_test_package.strings_ReaderжReader(strings.NewReader(abcdefghijklmnopqrstuvwxyzˢ)),
             n: 27,
             want: 26,
             wantErr: Δio.EOF,
@@ -1965,7 +1966,7 @@ public static void TestReaderDiscard(ж<Δtesting.T> Ꮡt) {
 public static void TestReaderSize(ж<Δtesting.T> Ꮡt) {
     {
         nint got = NewReader(default!).Size();
-        nint want = DefaultBufSize; if (got != want) {
+        nint want = bufio_internal_test_package.DefaultBufSize; if (got != want) {
             Ꮡt.Errorf("NewReader's Reader.Size = %d; want %d"u8, got, want);
         }
     }
@@ -1980,7 +1981,7 @@ public static void TestReaderSize(ж<Δtesting.T> Ꮡt) {
 public static void TestWriterSize(ж<Δtesting.T> Ꮡt) {
     {
         nint got = NewWriter(default!).Size();
-        nint want = DefaultBufSize; if (got != want) {
+        nint want = bufio_internal_test_package.DefaultBufSize; if (got != want) {
             Ꮡt.Errorf("NewWriter's Writer.Size = %d; want %d"u8, got, want);
         }
     }
@@ -2021,7 +2022,7 @@ internal static Δio.Reader newScriptedReader(params Span<Func<slice<byte>, (nin
 
     ref var sr = ref heap<scriptedReader>(out var Ꮡsr);
     sr = ((scriptedReader)steps);
-    return new scriptedReaderжReader(Ꮡsr);
+    return new bufio_test_package.scriptedReaderжReader(Ꮡsr);
 }
 
 // eofReader returns the number of bytes read and io.EOF for the read that consumes the last of the content.
@@ -2046,7 +2047,7 @@ internal static Δio.Reader newScriptedReader(params Span<Func<slice<byte>, (nin
 public static void TestPartialReadEOF(ж<Δtesting.T> Ꮡt) {
     var src = new slice<byte>(10);
     var eofR = Ꮡ(new eofReader(buf: src));
-    var r = NewReader(new eofReaderжReader(eofR));
+    var r = NewReader(new bufio_test_package.eofReaderжReader(eofR));
     // Start by reading 5 of the 10 available bytes.
     var dest = new slice<byte>(5);
     var (read, err) = r.Read(dest);
@@ -2084,7 +2085,7 @@ public static void TestPartialReadEOF(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string writerWithReadFromErrorˢ = "writerWithReadFromError error"u8;
+internal static readonly @string writerWithReadFromErrorˢ = "writerWithReadFromError error"u8;
 
 internal static (int64, error) ReadFrom(this writerWithReadFromError w, Δio.Reader r) {
     return (0, errors.New(writerWithReadFromErrorˢ));
@@ -2098,14 +2099,14 @@ internal static (nint n, error err) Write(this writerWithReadFromError w, slice<
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string test2ˢ = "test2"u8;
-private static readonly object expectedReadFromReturnsˢ = (@string)"expected ReadFrom returns error, got nil"u8;
-private static readonly object expectedWriteReturnsˢ = (@string)"expected Write returns error, got nil"u8;
+internal static readonly @string test2ˢ = "test2"u8;
+internal static readonly object expectedReadFromReturnsˢ = (@string)"expected ReadFrom returns error, got nil"u8;
+internal static readonly object expectedWriteReturnsˢ = (@string)"expected Write returns error, got nil"u8;
 
 public static void TestWriterReadFromMustSetUnderlyingError(ж<Δtesting.T> Ꮡt) {
     ж<bufio.Writer> wr = NewWriter(new writerWithReadFromError(nil));
     {
-        var (_, err) = wr.ReadFrom(new strings_ReaderжReader(strings.NewReader(test2ˢ))); if (err == default!) {
+        var (_, err) = wr.ReadFrom(new bufio_test_package.strings_ReaderжReader(strings.NewReader(test2ˢ))); if (err == default!) {
             Ꮡt.Fatal(expectedReadFromReturnsˢ);
         }
     }
@@ -2120,7 +2121,7 @@ public static void TestWriterReadFromMustSetUnderlyingError(ж<Δtesting.T> Ꮡt
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string writeErrorOnlyWriterˢ = "writeErrorOnlyWriter error"u8;
+internal static readonly @string writeErrorOnlyWriterˢ = "writeErrorOnlyWriter error"u8;
 
 internal static (nint n, error err) Write(this writeErrorOnlyWriter w, slice<byte> p) {
     nint n = default!;
@@ -2130,9 +2131,9 @@ internal static (nint n, error err) Write(this writeErrorOnlyWriter w, slice<byt
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string test1ˢ = "test1"u8;
-private static readonly object expectedFlushErrorGotNilˢ = (@string)"expected flush error, got nil"u8;
-private static readonly object expectedErrorGotNilˢ = (@string)"expected error, got nil"u8;
+internal static readonly @string test1ˢ = "test1"u8;
+internal static readonly object expectedFlushErrorGotNilˢ = (@string)"expected flush error, got nil"u8;
+internal static readonly object expectedErrorGotNilˢ = (@string)"expected error, got nil"u8;
 
 // Ensure that previous Write errors are immediately returned
 // on any ReadFrom. See golang.org/issue/35194.
@@ -2151,7 +2152,7 @@ public static void TestWriterReadFromMustReturnUnderlyingError(ж<Δtesting.T> �
         }
     }
     {
-        var (_, err) = wr.ReadFrom(new strings_ReaderжReader(strings.NewReader(test2ˢ))); if (err == default!) {
+        var (_, err) = wr.ReadFrom(new bufio_test_package.strings_ReaderжReader(strings.NewReader(test2ˢ))); if (err == default!) {
             Ꮡt.Fatal(expectedErrorGotNilˢ);
         }
     }
@@ -2167,14 +2168,14 @@ public static void BenchmarkReaderCopyOptimal(ж<Δtesting.B> Ꮡb) {
 
     // Optimal case is where the underlying reader implements io.WriterTo
     var srcBuf = bytes.NewBuffer(new slice<byte>(8192));
-    var src = NewReader(new bytes_BufferжReader(srcBuf));
+    var src = NewReader(new bufio_test_package.bytes_BufferжReader(srcBuf));
     var dstBuf = @new<bytes.Buffer>();
-    var dst = new onlyWriter(new bytes_BufferжWriter(dstBuf));
+    var dst = new onlyWriter(new bufio_test_package.bytes_BufferжWriter(dstBuf));
     for (nint i = 0; i < b.N; i++) {
         srcBuf.Reset();
-        src.Reset(new bytes_BufferжReader(srcBuf));
+        src.Reset(new bufio_test_package.bytes_BufferжReader(srcBuf));
         dstBuf.Reset();
-        Δio.Copy(dst, new bufio.ReaderжReader(src));
+        Δio.Copy(dst, new bufio_test_package.bufio_ReaderжReader(src));
     }
 }
 
@@ -2183,14 +2184,14 @@ public static void BenchmarkReaderCopyUnoptimal(ж<Δtesting.B> Ꮡb) {
 
     // Unoptimal case is where the underlying reader doesn't implement io.WriterTo
     var srcBuf = bytes.NewBuffer(new slice<byte>(8192));
-    var src = NewReader(new onlyReader(new bytes_BufferжReader(srcBuf)));
+    var src = NewReader(new onlyReader(new bufio_test_package.bytes_BufferжReader(srcBuf)));
     var dstBuf = @new<bytes.Buffer>();
-    var dst = new onlyWriter(new bytes_BufferжWriter(dstBuf));
+    var dst = new onlyWriter(new bufio_test_package.bytes_BufferжWriter(dstBuf));
     for (nint i = 0; i < b.N; i++) {
         srcBuf.Reset();
-        src.Reset(new onlyReader(new bytes_BufferжReader(srcBuf)));
+        src.Reset(new onlyReader(new bufio_test_package.bytes_BufferжReader(srcBuf)));
         dstBuf.Reset();
-        Δio.Copy(dst, new bufio.ReaderжReader(src));
+        Δio.Copy(dst, new bufio_test_package.bufio_ReaderжReader(src));
     }
 }
 
@@ -2198,20 +2199,20 @@ public static void BenchmarkReaderCopyNoWriteTo(ж<Δtesting.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
     var srcBuf = bytes.NewBuffer(new slice<byte>(8192));
-    var srcReader = NewReader(new bytes_BufferжReader(srcBuf));
-    var src = new onlyReader(new bufio.ReaderжReader(srcReader));
+    var srcReader = NewReader(new bufio_test_package.bytes_BufferжReader(srcBuf));
+    var src = new onlyReader(new bufio_test_package.bufio_ReaderжReader(srcReader));
     var dstBuf = @new<bytes.Buffer>();
-    var dst = new onlyWriter(new bytes_BufferжWriter(dstBuf));
+    var dst = new onlyWriter(new bufio_test_package.bytes_BufferжWriter(dstBuf));
     for (nint i = 0; i < b.N; i++) {
         srcBuf.Reset();
-        srcReader.Reset(new bytes_BufferжReader(srcBuf));
+        srcReader.Reset(new bufio_test_package.bytes_BufferжReader(srcBuf));
         dstBuf.Reset();
         Δio.Copy(dst, src);
     }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object ioDiscardDoesnTSupportˢ = (@string)"io.Discard doesn't support ReaderFrom"u8;
+internal static readonly object ioDiscardDoesnTSupportˢ = (@string)"io.Discard doesn't support ReaderFrom"u8;
 
 public static void BenchmarkReaderWriteToOptimal(ж<Δtesting.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -2219,7 +2220,7 @@ public static void BenchmarkReaderWriteToOptimal(ж<Δtesting.B> Ꮡb) {
     UntypedInt bufSize = /* 16 << 10 */ 16384;
     var buf = new slice<byte>(bufSize);
     var r = bytes.NewReader(buf);
-    var srcReader = NewReaderSize(new onlyReader(new bytes_ReaderжReader(r)), (1 << (int)(10)));
+    var srcReader = NewReaderSize(new onlyReader(new bufio_test_package.bytes_ReaderжReader(r)), (1 << (int)(10)));
     {
         var (_, ok) = Δio.Discard._<Δio.ReaderFrom>(ᐧ); if (!ok) {
             Ꮡb.Fatal(ioDiscardDoesnTSupportˢ);
@@ -2227,7 +2228,7 @@ public static void BenchmarkReaderWriteToOptimal(ж<Δtesting.B> Ꮡb) {
     }
     for (nint i = 0; i < b.N; i++) {
         r.Seek(0, Δio.SeekStart);
-        srcReader.Reset(new onlyReader(new bytes_ReaderжReader(r)));
+        srcReader.Reset(new onlyReader(new bufio_test_package.bytes_ReaderжReader(r)));
         var (n, err) = srcReader.WriteTo(Δio.Discard);
         if (err != default!) {
             Ꮡb.Fatal(err);
@@ -2242,11 +2243,11 @@ public static void BenchmarkReaderReadString(ж<Δtesting.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
     var r = strings.NewReader(fooFoo424242424242424242ˢ);
-    var buf = NewReader(new strings_ReaderжReader(r));
+    var buf = NewReader(new bufio_test_package.strings_ReaderжReader(r));
     b.ReportAllocs();
     for (nint i = 0; i < b.N; i++) {
         r.Seek(0, Δio.SeekStart);
-        buf.Reset(new strings_ReaderжReader(r));
+        buf.Reset(new bufio_test_package.strings_ReaderжReader(r));
         var (_, err) = buf.ReadString((rune)'\n');
         if (err != default!) {
             Ꮡb.Fatal(err);
@@ -2259,14 +2260,14 @@ public static void BenchmarkWriterCopyOptimal(ж<Δtesting.B> Ꮡb) {
 
     // Optimal case is where the underlying writer implements io.ReaderFrom
     var srcBuf = bytes.NewBuffer(new slice<byte>(8192));
-    var src = new onlyReader(new bytes_BufferжReader(srcBuf));
+    var src = new onlyReader(new bufio_test_package.bytes_BufferжReader(srcBuf));
     var dstBuf = @new<bytes.Buffer>();
-    var dst = NewWriter(new bytes_BufferжWriter(dstBuf));
+    var dst = NewWriter(new bufio_test_package.bytes_BufferжWriter(dstBuf));
     for (nint i = 0; i < b.N; i++) {
         srcBuf.Reset();
         dstBuf.Reset();
-        dst.Reset(new bytes_BufferжWriter(dstBuf));
-        Δio.Copy(new bufio.WriterжWriter(dst), src);
+        dst.Reset(new bufio_test_package.bytes_BufferжWriter(dstBuf));
+        Δio.Copy(new bufio_test_package.bufio_WriterжWriter(dst), src);
     }
 }
 
@@ -2274,14 +2275,14 @@ public static void BenchmarkWriterCopyUnoptimal(ж<Δtesting.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
     var srcBuf = bytes.NewBuffer(new slice<byte>(8192));
-    var src = new onlyReader(new bytes_BufferжReader(srcBuf));
+    var src = new onlyReader(new bufio_test_package.bytes_BufferжReader(srcBuf));
     var dstBuf = @new<bytes.Buffer>();
-    var dst = NewWriter(new onlyWriter(new bytes_BufferжWriter(dstBuf)));
+    var dst = NewWriter(new onlyWriter(new bufio_test_package.bytes_BufferжWriter(dstBuf)));
     for (nint i = 0; i < b.N; i++) {
         srcBuf.Reset();
         dstBuf.Reset();
-        dst.Reset(new onlyWriter(new bytes_BufferжWriter(dstBuf)));
-        Δio.Copy(new bufio.WriterжWriter(dst), src);
+        dst.Reset(new onlyWriter(new bufio_test_package.bytes_BufferжWriter(dstBuf)));
+        Δio.Copy(new bufio_test_package.bufio_WriterжWriter(dst), src);
     }
 }
 
@@ -2289,20 +2290,20 @@ public static void BenchmarkWriterCopyNoReadFrom(ж<Δtesting.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
     var srcBuf = bytes.NewBuffer(new slice<byte>(8192));
-    var src = new onlyReader(new bytes_BufferжReader(srcBuf));
+    var src = new onlyReader(new bufio_test_package.bytes_BufferжReader(srcBuf));
     var dstBuf = @new<bytes.Buffer>();
-    var dstWriter = NewWriter(new bytes_BufferжWriter(dstBuf));
-    var dst = new onlyWriter(new bufio.WriterжWriter(dstWriter));
+    var dstWriter = NewWriter(new bufio_test_package.bytes_BufferжWriter(dstBuf));
+    var dst = new onlyWriter(new bufio_test_package.bufio_WriterжWriter(dstWriter));
     for (nint i = 0; i < b.N; i++) {
         srcBuf.Reset();
         dstBuf.Reset();
-        dstWriter.Reset(new bytes_BufferжWriter(dstBuf));
+        dstWriter.Reset(new bufio_test_package.bytes_BufferжWriter(dstBuf));
         Δio.Copy(dst, src);
     }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object wrongLengthˢ = (@string)"wrong length"u8;
+internal static readonly object wrongLengthˢ = (@string)"wrong length"u8;
 
 public static void BenchmarkReaderEmpty(ж<Δtesting.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -2310,8 +2311,8 @@ public static void BenchmarkReaderEmpty(ж<Δtesting.B> Ꮡb) {
     b.ReportAllocs();
     @string str = strings.Repeat("x"u8, (16 << (int)(10)));
     for (nint i = 0; i < b.N; i++) {
-        var br = NewReader(new strings_ReaderжReader(strings.NewReader(str)));
-        var (n, err) = Δio.Copy(Δio.Discard, new bufio.ReaderжReader(br));
+        var br = NewReader(new bufio_test_package.strings_ReaderжReader(strings.NewReader(str)));
+        var (n, err) = Δio.Copy(Δio.Discard, new bufio_test_package.bufio_ReaderжReader(br));
         if (err != default!) {
             Ꮡb.Fatal(err);
         }

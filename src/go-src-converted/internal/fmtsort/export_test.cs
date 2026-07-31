@@ -4,11 +4,12 @@
 namespace go.@internal;
 
 using reflect = reflect_package;
+using static go.@internal.fmtsort_package;
 
-partial class fmtsort_package {
+partial class fmtsort_internal_test_package {
 
 public static nint Compare(reflectꓸValue a, reflectꓸValue b) {
     return compare(a, b);
 }
 
-} // end fmtsort_package
+} // end fmtsort_internal_test_package

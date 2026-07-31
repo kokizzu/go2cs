@@ -27,30 +27,30 @@ internal static class Go2CsTestHost
             "sqrt.go",
             "tan.go",
         });
-        registry.Add("TestAbs", cmplx_package.TestAbs, "cmath_test.go", 944);
-        registry.Add("TestAcos", cmplx_package.TestAcos, "cmath_test.go", 956);
-        registry.Add("TestAcosh", cmplx_package.TestAcosh, "cmath_test.go", 981);
-        registry.Add("TestAsin", cmplx_package.TestAsin, "cmath_test.go", 1007);
-        registry.Add("TestAsinh", cmplx_package.TestAsinh, "cmath_test.go", 1040);
-        registry.Add("TestAtan", cmplx_package.TestAtan, "cmath_test.go", 1073);
-        registry.Add("TestAtanh", cmplx_package.TestAtanh, "cmath_test.go", 1106);
-        registry.Add("TestConj", cmplx_package.TestConj, "cmath_test.go", 1139);
-        registry.Add("TestCos", cmplx_package.TestCos, "cmath_test.go", 1151);
-        registry.Add("TestCosh", cmplx_package.TestCosh, "cmath_test.go", 1179);
-        registry.Add("TestExp", cmplx_package.TestExp, "cmath_test.go", 1207);
-        registry.Add("TestInfiniteLoopIntanSeries", cmplx_package.TestInfiniteLoopIntanSeries, "cmath_test.go", 1473);
-        registry.Add("TestIsNaN", cmplx_package.TestIsNaN, "cmath_test.go", 1227);
-        registry.Add("TestLog", cmplx_package.TestLog, "cmath_test.go", 1234);
-        registry.Add("TestLog10", cmplx_package.TestLog10, "cmath_test.go", 1259);
-        registry.Add("TestPolar", cmplx_package.TestPolar, "cmath_test.go", 1279);
-        registry.Add("TestPow", cmplx_package.TestPow, "cmath_test.go", 1291);
-        registry.Add("TestRect", cmplx_package.TestRect, "cmath_test.go", 1322);
-        registry.Add("TestSin", cmplx_package.TestSin, "cmath_test.go", 1334);
-        registry.Add("TestSinh", cmplx_package.TestSinh, "cmath_test.go", 1362);
-        registry.Add("TestSqrt", cmplx_package.TestSqrt, "cmath_test.go", 1390);
-        registry.Add("TestTan", cmplx_package.TestTan, "cmath_test.go", 1415);
-        registry.Add("TestTanHuge", cmplx_package.TestTanHuge, "huge_test.go", 16);
-        registry.Add("TestTanh", cmplx_package.TestTanh, "cmath_test.go", 1443);
+        registry.Add("TestAbs", cmplx_internal_test_package.TestAbs, "cmath_test.go", 944);
+        registry.Add("TestAcos", cmplx_internal_test_package.TestAcos, "cmath_test.go", 956);
+        registry.Add("TestAcosh", cmplx_internal_test_package.TestAcosh, "cmath_test.go", 981);
+        registry.Add("TestAsin", cmplx_internal_test_package.TestAsin, "cmath_test.go", 1007);
+        registry.Add("TestAsinh", cmplx_internal_test_package.TestAsinh, "cmath_test.go", 1040);
+        registry.Add("TestAtan", cmplx_internal_test_package.TestAtan, "cmath_test.go", 1073);
+        registry.Add("TestAtanh", cmplx_internal_test_package.TestAtanh, "cmath_test.go", 1106);
+        registry.Add("TestConj", cmplx_internal_test_package.TestConj, "cmath_test.go", 1139);
+        registry.Add("TestCos", cmplx_internal_test_package.TestCos, "cmath_test.go", 1151);
+        registry.Add("TestCosh", cmplx_internal_test_package.TestCosh, "cmath_test.go", 1179);
+        registry.Add("TestExp", cmplx_internal_test_package.TestExp, "cmath_test.go", 1207);
+        registry.Add("TestInfiniteLoopIntanSeries", cmplx_internal_test_package.TestInfiniteLoopIntanSeries, "cmath_test.go", 1473);
+        registry.Add("TestIsNaN", cmplx_internal_test_package.TestIsNaN, "cmath_test.go", 1227);
+        registry.Add("TestLog", cmplx_internal_test_package.TestLog, "cmath_test.go", 1234);
+        registry.Add("TestLog10", cmplx_internal_test_package.TestLog10, "cmath_test.go", 1259);
+        registry.Add("TestPolar", cmplx_internal_test_package.TestPolar, "cmath_test.go", 1279);
+        registry.Add("TestPow", cmplx_internal_test_package.TestPow, "cmath_test.go", 1291);
+        registry.Add("TestRect", cmplx_internal_test_package.TestRect, "cmath_test.go", 1322);
+        registry.Add("TestSin", cmplx_internal_test_package.TestSin, "cmath_test.go", 1334);
+        registry.Add("TestSinh", cmplx_internal_test_package.TestSinh, "cmath_test.go", 1362);
+        registry.Add("TestSqrt", cmplx_internal_test_package.TestSqrt, "cmath_test.go", 1390);
+        registry.Add("TestTan", cmplx_internal_test_package.TestTan, "cmath_test.go", 1415);
+        registry.Add("TestTanHuge", cmplx_internal_test_package.TestTanHuge, "huge_test.go", 16);
+        registry.Add("TestTanh", cmplx_internal_test_package.TestTanh, "cmath_test.go", 1443);
         return TestHost.Run(registry, args);
     }
 }

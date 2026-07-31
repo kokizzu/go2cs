@@ -6,11 +6,12 @@ namespace go;
 using Δmath = math_package;
 using rand = go.math.rand_package;
 using reflect = reflect_package;
-using static go.strconv_package;
+using static strconv_package;
 using strings = strings_package;
 using Δsync = sync_package;
 using testing = testing_package;
 using go.math;
+using static go.strconv_internal_test_package;
 using strconv = strconv_package;
 
 partial class strconv_test_package {
@@ -510,7 +511,7 @@ public static void TestParseFloatPrefix(ж<testing.T> Ꮡt) {
         // correctly as "inf" with suffix.
         foreach (var (_, suffix) in new @string[]{" "u8, "q"u8, "+"u8, "-"u8, "<"u8, "="u8, ">"u8, "("u8, ")"u8, "i"u8, "init"u8}.slice()) {
             @string @in = (~test).@in + suffix;
-            var (_, n, err) = ParseFloatPrefix(@in, 64);
+            var (_, n, err) = strconv_internal_test_package.ParseFloatPrefix(@in, 64);
             if (err != default!) {
                 Ꮡt.Errorf("ParseFloatPrefix(%q, 64): err = %v; want no error"u8, @in, err);
             }
@@ -523,7 +524,7 @@ public static void TestParseFloatPrefix(ж<testing.T> Ꮡt) {
 
 internal static void testAtof(ж<testing.T> Ꮡt, bool opt) {
     initAtof();
-    var oldopt = SetOptimize(opt);
+    var oldopt = strconv_internal_test_package.SetOptimize(opt);
     for (nint i = 0; i < len(atoftests); i++) {
         var test = Ꮡ(atoftests, i);
         var (@out, err) = ParseFloat((~test).@in, 64);
@@ -559,7 +560,7 @@ internal static void testAtof(ж<testing.T> Ꮡt, bool opt) {
                 test.@in, out32, err, test.@out, test.err, @out);
         }
     }
-    SetOptimize(oldopt);
+    strconv_internal_test_package.SetOptimize(oldopt);
 }
 
 public static void TestAtof(ж<testing.T> Ꮡt) {
@@ -608,7 +609,7 @@ internal static slice<roundTripCasesᴛ1> roundTripCases = new roundTripCasesᴛ
 
 public static void TestRoundTrip(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in roundTripCases) {
-        var old = SetOptimize(false);
+        var old = strconv_internal_test_package.SetOptimize(false);
         @string s = FormatFloat(tt.f, (rune)'g', -1, 64);
         if (s != tt.s) {
             Ꮡt.Errorf("no-opt FormatFloat(%b) = %s, want %s"u8, tt.f, s, tt.s);
@@ -617,7 +618,7 @@ public static void TestRoundTrip(ж<testing.T> Ꮡt) {
         if (f != tt.f || err != default!) {
             Ꮡt.Errorf("no-opt ParseFloat(%s) = %b, %v want %b, nil"u8, tt.s, f, err, tt.f);
         }
-        SetOptimize(true);
+        strconv_internal_test_package.SetOptimize(true);
         s = FormatFloat(tt.f, (rune)'g', -1, 64);
         if (s != tt.s) {
             Ꮡt.Errorf("opt FormatFloat(%b) = %s, want %s"u8, tt.f, s, tt.s);
@@ -626,7 +627,7 @@ public static void TestRoundTrip(ж<testing.T> Ꮡt) {
         if (f != tt.f || err != default!) {
             Ꮡt.Errorf("opt ParseFloat(%s) = %b, %v want %b, nil"u8, tt.s, f, err, tt.f);
         }
-        SetOptimize(old);
+        strconv_internal_test_package.SetOptimize(old);
     }
 }
 

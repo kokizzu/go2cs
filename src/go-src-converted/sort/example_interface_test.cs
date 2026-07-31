@@ -4,8 +4,8 @@
 namespace go;
 
 using fmt = fmt_package;
-using sort = go.sort_package;
-using go;
+using sort = sort_package;
+using static go.sort_internal_test_package;
 
 partial class sort_test_package {
 

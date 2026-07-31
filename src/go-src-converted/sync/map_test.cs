@@ -7,15 +7,15 @@ using testenv = @internal.testenv_package;
 using rand = go.math.rand_package;
 using reflect = reflect_package;
 using Δruntime = runtime_package;
-using Δsync = go.sync_package;
+using Δsync = sync_package;
 using atomic = go.sync.atomic_package;
 using Δtesting = testing_package;
 using quick = go.testing.quick_package;
 using @internal;
-using go;
 using go.math;
 using go.sync;
 using go.testing;
+using static go.sync_internal_test_package;
 
 partial class sync_test_package {
 
@@ -141,15 +141,15 @@ internal static (slice<mapResult> results, map<any, any> final) applyCalls(mapIn
 }
 
 internal static (slice<mapResult>, map<any, any>) applyMap(slice<mapCall> calls) {
-    return applyCalls(new Δsync.MapжmapInterface(@new<Δsync.Map>()), calls);
+    return applyCalls(new sync_test_package.sync_MapжmapInterface(@new<Δsync.Map>()), calls);
 }
 
 internal static (slice<mapResult>, map<any, any>) applyRWMutexMap(slice<mapCall> calls) {
-    return applyCalls(new RWMutexMapжmapInterface(@new<RWMutexMap>()), calls);
+    return applyCalls(new sync_test_package.RWMutexMapжmapInterface(@new<RWMutexMap>()), calls);
 }
 
 internal static (slice<mapResult>, map<any, any>) applyDeepCopyMap(slice<mapCall> calls) {
-    return applyCalls(new DeepCopyMapжmapInterface(@new<DeepCopyMap>()), calls);
+    return applyCalls(new sync_test_package.DeepCopyMapжmapInterface(@new<DeepCopyMap>()), calls);
 }
 
 public static void TestMapMatchesRWMutex(ж<Δtesting.T> Ꮡt) {
@@ -253,8 +253,8 @@ public static void TestIssue40999(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object dummyˢ = (@string)"dummy"u8;
-private static readonly @string syncMapˢ = "sync.Map"u8;
+internal static readonly object dummyˢ = (@string)"dummy"u8;
+internal static readonly @string syncMapˢ = "sync.Map"u8;
 
 public static void TestMapRangeNestedCall(ж<Δtesting.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -320,7 +320,7 @@ public static void TestCompareAndSwap_NonExistingKey(ж<Δtesting.T> Ꮡt) {
 
 public static void TestMapRangeNoAllocations(ж<Δtesting.T> Ꮡt) {
     // Issue 62404
-    testenv.SkipIfOptimizationOff(new testing_TжTB(Ꮡt));
+    testenv.SkipIfOptimizationOff(new sync_test_package.testing_TжTB(Ꮡt));
     ref var m = ref heap(new Δsync.Map(), out var Ꮡm);
     var allocs = Δtesting.AllocsPerRun(10, () => {
         Ꮡm.Range((any key, any value) => true);
@@ -374,7 +374,7 @@ public static void TestConcurrentClear(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void TestMapClearNoAllocations(ж<Δtesting.T> Ꮡt) {
-    testenv.SkipIfOptimizationOff(new testing_TжTB(Ꮡt));
+    testenv.SkipIfOptimizationOff(new sync_test_package.testing_TжTB(Ꮡt));
     ref var m = ref heap(new Δsync.Map(), out var Ꮡm);
     var allocs = Δtesting.AllocsPerRun(10, () => {
         Ꮡm.Clear();

@@ -9,18 +9,19 @@ namespace go;
 using Δruntime = runtime_package;
 using debug = go.runtime.debug_package;
 using slices = slices_package;
-using static go.sync_package;
+using static sync_package;
 using atomic = go.sync.atomic_package;
 using Δtesting = testing_package;
 using time = time_package;
 using go.runtime;
 using go.sync;
+using static go.sync_internal_test_package;
 using Δsync = sync_package;
 
 partial class sync_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object expectedEmptyˢ = (@string)"expected empty"u8;
+internal static readonly object expectedEmptyˢ = (@string)"expected empty"u8;
 
 public static void TestPool(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
     ref var t = ref Ꮡt.Value;
@@ -33,7 +34,7 @@ public static void TestPool(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
     }
     // Make sure that the goroutine doesn't migrate to another P
     // between Put and Get calls.
-    Runtime_procPin();
+    sync_internal_test_package.Runtime_procPin();
     Ꮡp.Put((@string)"a"u8);
     Ꮡp.Put((@string)"b"u8);
     {
@@ -51,7 +52,7 @@ public static void TestPool(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
             Ꮡt.Fatalf("got %#v; want nil"u8, g);
         }
     }
-    Runtime_procUnpin();
+    sync_internal_test_package.Runtime_procUnpin();
     // Put in a large number of objects so they spill into
     // stealable space.
     for (nint i = 0; i < 100; i++) {
@@ -98,14 +99,14 @@ public static void TestPoolNew(ж<Δtesting.T> Ꮡt) => func((defer, recover) =>
     }
     // Make sure that the goroutine doesn't migrate to another P
     // between Put and Get calls.
-    Runtime_procPin();
+    sync_internal_test_package.Runtime_procPin();
     Ꮡp.Put((nint)(42));
     {
         var v = Ꮡp.Get(); if (!AreEqual(v, (nint)(42))) {
             Ꮡt.Fatalf("got %v; want 42"u8, v);
         }
     }
-    Runtime_procUnpin();
+    sync_internal_test_package.Runtime_procUnpin();
     {
         var v = Ꮡp.Get(); if (!AreEqual(v, (nint)(3))) {
             Ꮡt.Fatalf("got %v; want 3"u8, v);
@@ -193,14 +194,14 @@ public static void TestPoolStress(ж<Δtesting.T> Ꮡt) {
 }
 
 public static void TestPoolDequeue(ж<Δtesting.T> Ꮡt) {
-    testPoolDequeue(Ꮡt, NewPoolDequeue(16));
+    testPoolDequeue(Ꮡt, sync_internal_test_package.NewPoolDequeue(16));
 }
 
 public static void TestPoolChain(ж<Δtesting.T> Ꮡt) {
-    testPoolDequeue(Ꮡt, NewPoolChain());
+    testPoolDequeue(Ꮡt, sync_internal_test_package.NewPoolChain());
 }
 
-internal static void testPoolDequeue(ж<Δtesting.T> Ꮡt, Δsync.PoolDequeue d) {
+internal static void testPoolDequeue(ж<Δtesting.T> Ꮡt, global::go.sync_internal_test_package.PoolDequeue d) {
     const nint P = 10;
     nint N = 2000000;
     if (Δtesting.Short()) {
@@ -278,10 +279,10 @@ internal static void testPoolDequeue(ж<Δtesting.T> Ꮡt, Δsync.PoolDequeue d)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object expectedPanicˢ = (@string)"expected panic"u8;
-private static readonly @string getˢ = "Get"u8;
-private static readonly object shouldHavePanickedˢ = (@string)"should have panicked already"u8;
-private static readonly @string putˢ = "Put"u8;
+internal static readonly object expectedPanicˢ = (@string)"expected panic"u8;
+internal static readonly @string getˢ = "Get"u8;
+internal static readonly object shouldHavePanickedˢ = (@string)"should have panicked already"u8;
+internal static readonly @string putˢ = "Put"u8;
 
 public static void TestNilPool(ж<Δtesting.T> Ꮡt) {
     var @catch = () => func((defer, recover) => {
@@ -357,9 +358,9 @@ public static void BenchmarkPoolStarvation(ж<Δtesting.B> Ꮡb) {
 internal static any globalSink;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nsOpˢ = "ns/op"u8;
-private static readonly @string p95NsStwˢ = "p95-ns/STW"u8;
-private static readonly @string p50NsStwˢ = "p50-ns/STW"u8;
+internal static readonly @string nsOpˢ = "ns/op"u8;
+internal static readonly @string p95NsStwˢ = "p95-ns/STW"u8;
+internal static readonly @string p50NsStwˢ = "p50-ns/STW"u8;
 
 public static void BenchmarkPoolSTW(ж<Δtesting.B> Ꮡb) => func((defer, recover) => {
     ref var b = ref Ꮡb.Value;
@@ -395,8 +396,8 @@ public static void BenchmarkPoolSTW(ж<Δtesting.B> Ꮡb) => func((defer, recove
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gCsOpˢ = "GCs/op"u8;
-private static readonly @string newOpˢ = "New/op"u8;
+internal static readonly @string gCsOpˢ = "GCs/op"u8;
+internal static readonly @string newOpˢ = "New/op"u8;
 
 public static void BenchmarkPoolExpensiveNew(ж<Δtesting.B> Ꮡb) => func((defer, recover) => {
     ref var b = ref Ꮡb.Value;

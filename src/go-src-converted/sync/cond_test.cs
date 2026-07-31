@@ -5,19 +5,20 @@ namespace go;
 
 using reflect = reflect_package;
 using Δruntime = runtime_package;
-using static go.sync_package;
+using static sync_package;
 using Δtesting = testing_package;
+using static go.sync_internal_test_package;
 using Δsync = sync_package;
 
 partial class sync_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object goroutineNotAsleepˢ = (@string)"goroutine not asleep"u8;
-private static readonly object tooManyGoroutinesAwakeˢ = (@string)"too many goroutines awake"u8;
+internal static readonly object goroutineNotAsleepˢ = (@string)"goroutine not asleep"u8;
+internal static readonly object tooManyGoroutinesAwakeˢ = (@string)"too many goroutines awake"u8;
 
 public static void TestCondSignal(ж<Δtesting.T> Ꮡt) {
     ref var m = ref heap(new Δsync.Mutex(), out var Ꮡm);
-    var c = NewCond(new Δsync.MutexжLocker(Ꮡm));
+    var c = NewCond(new sync_test_package.sync_MutexжLocker(Ꮡm));
     nint n = 2;
     var running = new channel<bool>(n);
     var awake = new channel<bool>(n);
@@ -68,7 +69,7 @@ public static void TestCondSignal(ж<Δtesting.T> Ꮡt) {
 
 public static void TestCondSignalGenerations(ж<Δtesting.T> Ꮡt) {
     ref var m = ref heap(new Δsync.Mutex(), out var Ꮡm);
-    var c = NewCond(new Δsync.MutexжLocker(Ꮡm));
+    var c = NewCond(new sync_test_package.sync_MutexжLocker(Ꮡm));
     nint n = 100;
     var running = new channel<bool>(n);
     var awake = new channel<nint>(n);
@@ -97,12 +98,12 @@ public static void TestCondSignalGenerations(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object goroutineWokeUpTwiceˢ = (@string)"goroutine woke up twice"u8;
-private static readonly object goroutineDidNotExitˢ = (@string)"goroutine did not exit"u8;
+internal static readonly object goroutineWokeUpTwiceˢ = (@string)"goroutine woke up twice"u8;
+internal static readonly object goroutineDidNotExitˢ = (@string)"goroutine did not exit"u8;
 
 public static void TestCondBroadcast(ж<Δtesting.T> Ꮡt) {
     ref var m = ref heap(new Δsync.Mutex(), out var Ꮡm);
-    var c = NewCond(new Δsync.MutexжLocker(Ꮡm));
+    var c = NewCond(new sync_test_package.sync_MutexжLocker(Ꮡm));
     nint n = 200;
     var running = new channel<nint>(n);
     var awake = new channel<nint>(n);
@@ -165,12 +166,12 @@ public static void TestCondBroadcast(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object want2ˢ = (@string)"want 2"u8;
-private static readonly object want3ˢ = (@string)"want 3"u8;
+internal static readonly object want2ˢ = (@string)"want 2"u8;
+internal static readonly object want3ˢ = (@string)"want 3"u8;
 
 public static void TestRace(ж<Δtesting.T> Ꮡt) {
     nint x = 0;
-    var c = NewCond(new Δsync.MutexжLocker(Ꮡ(new Mutex(nil))));
+    var c = NewCond(new sync_test_package.sync_MutexжLocker(Ꮡ(new Mutex(nil))));
     var done = new channel<bool>(0);
     var cʗ1 = c;
     var doneʗ1 = done;
@@ -235,7 +236,7 @@ public static void TestCondSignalStealing(ж<Δtesting.T> Ꮡt) {
 
     for (nint iters = 0; iters < 1000; iters++) {
         ref var m = ref heap(new Δsync.Mutex(), out var Ꮡm);
-        var cond = NewCond(new Δsync.MutexжLocker(Ꮡm));
+        var cond = NewCond(new sync_test_package.sync_MutexжLocker(Ꮡm));
         // Start a waiter.
         var ch = new channel<EmptyStruct>(0);
         var chʗ1 = ch;
@@ -291,7 +292,7 @@ public static void TestCondCopy(ж<Δtesting.T> Ꮡt) => func((defer, recover) =
         }
     });
     ref var c = ref heap<Δsync.Cond>(out var Ꮡc);
-    c = new Cond(L: new Δsync.MutexжLocker(Ꮡ(new Mutex(nil))));
+    c = new Cond(L: new sync_test_package.sync_MutexжLocker(Ꮡ(new Mutex(nil))));
     Ꮡc.Signal();
     ref var c2 = ref heap(new Δsync.Cond(), out var Ꮡc2);
     reflect.ValueOf(Ꮡc2).Elem().Set(reflect.ValueOf(Ꮡc).Elem());
@@ -324,7 +325,7 @@ public static void BenchmarkCond32(ж<Δtesting.B> Ꮡb) {
 }
 
 internal static void benchmarkCond(ж<Δtesting.B> Ꮡb, nint waiters) {
-    var c = NewCond(new Δsync.MutexжLocker(Ꮡ(new Mutex(nil))));
+    var c = NewCond(new sync_test_package.sync_MutexжLocker(Ꮡ(new Mutex(nil))));
     var done = new channel<bool>(0);
     nint id = 0;
     for (nint routine = 0; routine < waiters + 1; routine++) {

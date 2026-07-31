@@ -67,23 +67,15 @@
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
        can leak in because it is never listed. -->
   <ItemGroup>
-    <Compile Include="builder.cs" />
     <Compile Include="builder_test.cs" />
-    <Compile Include="clone.cs" />
     <Compile Include="clone_test.cs" />
-    <Compile Include="compare.cs" />
     <Compile Include="compare_test.cs" />
     <Compile Include="export_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
-    <Compile Include="package_info_external_test.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="reader.cs" />
     <Compile Include="reader_test.cs" />
-    <Compile Include="replace.cs" />
     <Compile Include="replace_test.cs" />
-    <Compile Include="search.cs" />
     <Compile Include="search_test.cs" />
-    <Compile Include="strings.cs" />
     <Compile Include="strings_test.cs" />
   </ItemGroup>
 
@@ -110,11 +102,8 @@
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\bytes\bytes.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\errors\errors.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\fmt\fmt.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\abi\internal.abi.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\internal\bytealg\internal.bytealg.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\internal\stringslite\internal.stringslite.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\testenv\internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\math.csproj" />
@@ -126,6 +115,7 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\unicode\unicode.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\unicode\utf8\unicode.utf8.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\unsafe\unsafe.csproj" />
+    <ProjectReference Include="strings.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

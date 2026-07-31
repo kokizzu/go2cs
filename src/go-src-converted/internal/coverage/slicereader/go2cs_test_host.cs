@@ -12,7 +12,7 @@ internal static class Go2CsTestHost
             "slicereader.go",
             "slr_test.go",
         });
-        registry.Add("TestSliceReader", slicereader_package.TestSliceReader, "slr_test.go", 13);
+        registry.Add("TestSliceReader", slicereader_internal_test_package.TestSliceReader, "slr_test.go", 13);
         return TestHost.Run(registry, args);
     }
 }

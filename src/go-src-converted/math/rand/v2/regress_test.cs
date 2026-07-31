@@ -23,14 +23,15 @@ using fs = global::go.io.fs_package;
 using global::go.go;
 using global::go.math.rand;
 using rand = global::go.math.rand.rand_package;
+using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 
 internal static ж<bool> update = flag.Bool("update"u8, false, "update golden results for regression test"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string truncatedˢ = "truncated"u8;
-private static readonly @string regressTestGoˢ = "regress_test.go"u8;
+internal static readonly @string truncatedˢ = "truncated"u8;
+internal static readonly @string regressTestGoˢ = "regress_test.go"u8;
 
 public static void TestRegress(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -40,17 +41,17 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
     slice<int64> int64s = new int64[]{1, 10, 32, ((int64)1 << (int)(20)), (1 << (int)(20)) + 1, 1000000000, ((int64)1 << (int)(30)), 2147483648L - 2, 2147483648L - 1, (nint)1000000000000000000L, 1152921504606846976L, 9223372036854775806L, 9223372036854775807L}.slice();
     slice<uint64> uint64s = new uint64[]{1, 10, 32, ((uint64)1 << (int)(20)), (1 << (int)(20)) + 1, 1000000000, ((uint64)1 << (int)(30)), (uint64)(2147483648L - 2), (uint64)(2147483648L - 1), 1000000000000000000UL, ((uint64)1 << (int)(60)), 9223372036854775806UL, 9223372036854775807UL, 18446744073709551614UL, 18446744073709551615UL}.slice();
     slice<nint> permSizes = new nint[]{0, 1, 5, 8, 9, 10, 16}.slice();
-    nint n = reflect.TypeOf(New(new rand.PCGжSource(NewPCG(1, 2)))).NumMethod();
+    nint n = reflect.TypeOf(New(new rand_test_package.rand_PCGжSource(NewPCG(1, 2)))).NumMethod();
     nint p = 0;
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     if (update.Value) {
-        fmt.Fprintf(new bytes_BufferжWriter(Ꮡbuf), "var regressGolden = []any{\n"u8);
+        fmt.Fprintf(new rand_test_package.bytes_BufferжWriter(Ꮡbuf), "var regressGolden = []any{\n"u8);
     }
     for (nint i = 0; i < n; i++) {
         if (update.Value && i > 0) {
-            fmt.Fprintf(new bytes_BufferжWriter(Ꮡbuf), "\n"u8);
+            fmt.Fprintf(new rand_test_package.bytes_BufferжWriter(Ꮡbuf), "\n"u8);
         }
-        var r = New(new rand.PCGжSource(NewPCG(1, 2)));
+        var r = New(new rand_test_package.rand_PCGжSource(NewPCG(1, 2)));
         var rv = reflect.ValueOf(r);
         var m = rv.Type().Method(i);
         var mv = rv.Method(i);
@@ -140,7 +141,7 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
                 } else {
                     val = fmt.Sprintf("%T(%v)"u8, @out, @out);
                 }
-                fmt.Fprintf(new bytes_BufferжWriter(Ꮡbuf), "\t%s, // %s(%s)\n"u8, val, m.Name, argstr);
+                fmt.Fprintf(new rand_test_package.bytes_BufferжWriter(Ꮡbuf), "\t%s, // %s(%s)\n"u8, val, m.Name, argstr);
             } else 
             if (p >= len(regressGolden)){
                 Ꮡt.Errorf("r.%s(%s) = %v, missing golden value"u8, m.Name, argstr, @out);
@@ -165,8 +166,8 @@ public static void TestRegress(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object updateNotGivenˢ = (@string)"-update not given"u8;
-private static readonly @string exampleTestGoˢ = "example_test.go"u8;
+internal static readonly object updateNotGivenˢ = (@string)"-update not given"u8;
+internal static readonly @string exampleTestGoˢ = "example_test.go"u8;
 
 public static void TestUpdateExample(ж<testing.T> Ꮡt) => func((defer, recover) => {
     ref var t = ref Ꮡt.Value;
@@ -195,15 +196,15 @@ public static void TestUpdateExample(ж<testing.T> Ꮡt) => func((defer, recover
         os.Stdout = oldStdoutʗ2;
         wʗ2.Close();
     });
-    (var @out, err) = io.ReadAll(new os_FileжReader(r));
+    (var @out, err) = io.ReadAll(new rand_test_package.os_FileжReader(r));
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-    fmt.Fprintf(new bytes_BufferжWriter(Ꮡbuf), "\t// Output:\n"u8);
+    fmt.Fprintf(new rand_test_package.bytes_BufferжWriter(Ꮡbuf), "\t// Output:\n"u8);
     foreach (var (_, line) in strings.Split(((@string)@out), "\n"u8)) {
         if (line != ""u8) {
-            fmt.Fprintf(new bytes_BufferжWriter(Ꮡbuf), "\t// %s\n"u8, line);
+            fmt.Fprintf(new rand_test_package.bytes_BufferжWriter(Ꮡbuf), "\t// %s\n"u8, line);
         }
     }
     replace(Ꮡt, exampleTestGoˢ, buf.Bytes());

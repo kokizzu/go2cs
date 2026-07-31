@@ -3,8 +3,10 @@
 // license that can be found in the LICENSE file.
 namespace go.math;
 
-partial class bits_package {
+using static go.math.bits_package;
+
+partial class bits_internal_test_package {
 
 public static UntypedInt DeBruijn64 => /* deBruijn64 */ 285870213051353865;
 
-} // end bits_package
+} // end bits_internal_test_package

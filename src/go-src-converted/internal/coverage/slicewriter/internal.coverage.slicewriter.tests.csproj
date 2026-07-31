@@ -69,7 +69,6 @@
   <ItemGroup>
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="slicewriter.cs" />
     <Compile Include="slw_test.cs" />
   </ItemGroup>
 
@@ -81,8 +80,8 @@
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\fmt\fmt.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
+    <ProjectReference Include="internal.coverage.slicewriter.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

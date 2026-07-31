@@ -3,9 +3,10 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.bytes_package;
+using static bytes_package;
 using fmt = fmt_package;
 using testing = testing_package;
+using static go.bytes_internal_test_package;
 
 partial class bytes_test_package {
 
@@ -57,7 +58,7 @@ public static void TestCompare(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object bB1Failedˢ = (@string)"b > b[:1] failed"u8;
+internal static readonly object bB1Failedˢ = (@string)"b > b[:1] failed"u8;
 
 public static void TestCompareIdenticalSlice(ж<testing.T> Ꮡt) {
     slice<byte> b = slice<byte>("Hello Gophers!"u8);
@@ -157,7 +158,7 @@ public static void TestEndianBaseCompare(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object b1B2ˢ = (@string)"b1 != b2"u8;
+internal static readonly object b1B2ˢ = (@string)"b1 != b2"u8;
 
 public static void BenchmarkCompareBytesEqual(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -172,7 +173,7 @@ public static void BenchmarkCompareBytesEqual(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object b1B2Failedˢ = (@string)"b1 > b2 failed"u8;
+internal static readonly object b1B2Failedˢ = (@string)"b1 > b2 failed"u8;
 
 public static void BenchmarkCompareBytesToNil(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -211,7 +212,7 @@ public static void BenchmarkCompareBytesIdentical(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object b1B2Failedˢ2 = (@string)"b1 < b2 failed"u8;
+internal static readonly object b1B2Failedˢ2 = (@string)"b1 < b2 failed"u8;
 
 public static void BenchmarkCompareBytesSameLength(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;

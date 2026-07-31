@@ -9,8 +9,9 @@ using os = os_package;
 using exec = go.os.exec_package;
 using testing = testing_package;
 using go.os;
+using static go.@internal.zstd_package;
 
-partial class zstd_package {
+partial class zstd_internal_test_package {
 
 // badStrings is some inputs that FuzzReader failed on earlier.
 internal static slice<@string> badStrings = new @string[]{
@@ -39,8 +40,8 @@ public static void FuzzReader(ж<testing.F> Ꮡf) {
         f.Add(slice<byte>(s));
     }
     Ꮡf.Fuzz((ж<testing.T> t, slice<byte> b) => {
-        var r = NewReader(new bytes_ReaderжReader(bytes.NewReader(b)));
-        io.Copy(io.Discard, new ReaderжReader(r));
+        var r = NewReader(new zstd_internal_test_package.bytes_ReaderжReader(bytes.NewReader(b)));
+        io.Copy(io.Discard, new zstd_internal_test_package.zstd_ReaderжReader(r));
     });
 }
 
@@ -51,7 +52,7 @@ public static void FuzzReader(ж<testing.F> Ꮡf) {
 public static void FuzzDecompressor(ж<testing.F> Ꮡf) {
     ref var f = ref Ꮡf.Value;
 
-    @string zstd = findZstd(new testing_FжTB(Ꮡf));
+    @string zstd = findZstd(new zstd_internal_test_package.testing_FжTB(Ꮡf));
     foreach (var (_, test) in tests) {
         f.Add(slice<byte>(test.uncompressed));
     }
@@ -62,20 +63,20 @@ public static void FuzzDecompressor(ж<testing.F> Ꮡf) {
         buf.WriteByte((byte)i);
     }
     f.Add(bytes.Repeat(buf.Bytes(), 64));
-    f.Add(bigData(new testing_FжTB(Ꮡf)));
+    f.Add(bigData(new zstd_internal_test_package.testing_FжTB(Ꮡf)));
     Ꮡf.Fuzz((ж<testing.T> t, slice<byte> b) => {
         var cmd = exec.Command(zstd, "-z"u8);
-        cmd.Value.Stdin = new bytes_ReaderжReader(bytes.NewReader(b));
+        cmd.Value.Stdin = new zstd_internal_test_package.bytes_ReaderжReader(bytes.NewReader(b));
         ref var compressed = ref heap(new bytes.Buffer(), out var Ꮡcompressed);
-        cmd.Value.Stdout = new bytes_BufferжWriter(Ꮡcompressed);
+        cmd.Value.Stdout = new zstd_internal_test_package.bytes_BufferжWriter(Ꮡcompressed);
         cmd.Value.Stderr = new os.FileжWriter(os.Stderr);
         {
             var errΔ1 = cmd.Run(); if (errΔ1 != default!) {
                 t.Errorf("running zstd failed: %v"u8, errΔ1);
             }
         }
-        var r = NewReader(new bytes_ReaderжReader(bytes.NewReader(compressed.Bytes())));
-        var (got, err) = io.ReadAll(new ReaderжReader(r));
+        var r = NewReader(new zstd_internal_test_package.bytes_ReaderжReader(bytes.NewReader(compressed.Bytes())));
+        var (got, err) = io.ReadAll(new zstd_internal_test_package.zstd_ReaderжReader(r));
         if (err != default!) {
             t.Fatal(err);
         }
@@ -86,14 +87,14 @@ public static void FuzzDecompressor(ж<testing.F> Ꮡf) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object byteMismatchAfterErrorˢ = (@string)"byte mismatch after error"u8;
+internal static readonly object byteMismatchAfterErrorˢ = (@string)"byte mismatch after error"u8;
 
 // Fuzz test to check that if we can decompress some data,
 // so can zstd, and that we get the same result.
 public static void FuzzReverse(ж<testing.F> Ꮡf) => func((defer, recover) => {
     ref var f = ref Ꮡf.Value;
 
-    @string zstd = findZstd(new testing_FжTB(Ꮡf));
+    @string zstd = findZstd(new zstd_internal_test_package.testing_FжTB(Ꮡf));
     foreach (var (_, test) in tests) {
         f.Add(slice<byte>(test.compressed));
     }
@@ -103,12 +104,12 @@ public static void FuzzReverse(ж<testing.F> Ꮡf) => func((defer, recover) => {
         fuzzing = false;
     });
     Ꮡf.Fuzz((ж<testing.T> t, slice<byte> b) => {
-        var r = NewReader(new bytes_ReaderжReader(bytes.NewReader(b)));
-        var (goExp, goErr) = io.ReadAll(new ReaderжReader(r));
+        var r = NewReader(new zstd_internal_test_package.bytes_ReaderжReader(bytes.NewReader(b)));
+        var (goExp, goErr) = io.ReadAll(new zstd_internal_test_package.zstd_ReaderжReader(r));
         var cmd = exec.Command(zstd, "-d"u8);
-        cmd.Value.Stdin = new bytes_ReaderжReader(bytes.NewReader(b));
+        cmd.Value.Stdin = new zstd_internal_test_package.bytes_ReaderжReader(bytes.NewReader(b));
         ref var uncompressed = ref heap(new bytes.Buffer(), out var Ꮡuncompressed);
-        cmd.Value.Stdout = new bytes_BufferжWriter(Ꮡuncompressed);
+        cmd.Value.Stdout = new zstd_internal_test_package.bytes_BufferжWriter(Ꮡuncompressed);
         cmd.Value.Stderr = new os.FileжWriter(os.Stderr);
         var zstdErr = cmd.Run();
         var zstdExp = uncompressed.Bytes();
@@ -142,4 +143,4 @@ public static void FuzzReverse(ж<testing.F> Ꮡf) => func((defer, recover) => {
     });
 });
 
-} // end zstd_package
+} // end zstd_internal_test_package

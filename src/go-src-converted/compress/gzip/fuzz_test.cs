@@ -14,12 +14,13 @@ using encoding;
 using fs = go.io.fs_package;
 using go.io;
 using path;
+using static go.compress.gzip_package;
 
-partial class gzip_package {
+partial class gzip_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testdataˢ = "testdata"u8;
-private static readonly @string base64ˢ = ".base64"u8;
+internal static readonly @string testdataˢ = "testdata"u8;
+internal static readonly @string base64ˢ = ".base64"u8;
 
 public static void FuzzReader(ж<testing.F> Ꮡf) {
     ref var f = ref Ꮡf.Value;
@@ -27,7 +28,7 @@ public static void FuzzReader(ж<testing.F> Ꮡf) {
     var inp = slice<byte>("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."u8);
     foreach (var (_, level) in new nint[]{BestSpeed, BestCompression, DefaultCompression, HuffmanOnly}.slice()) {
         var b = bytes.NewBuffer(default!);
-        var (w, errΔ1) = NewWriterLevel(new bytes_BufferжWriter(b), level);
+        var (w, errΔ1) = NewWriterLevel(new gzip_test_package.bytes_BufferжWriter(b), level);
         if (errΔ1 != default!) {
             Ꮡf.Fatalf("failed to construct writer: %s"u8, errΔ1);
         }
@@ -60,14 +61,14 @@ public static void FuzzReader(ж<testing.F> Ꮡf) {
     }
     Ꮡf.Fuzz((ж<testing.T> t, slice<byte> b) => {
         foreach (var (_, multistream) in new bool[]{true, false}.slice()) {
-            var (r, errΔ3) = NewReader(new bytes_BufferжReader(bytes.NewBuffer(b)));
+            var (r, errΔ3) = NewReader(new gzip_test_package.bytes_BufferжReader(bytes.NewBuffer(b)));
             if (errΔ3 != default!) {
                 continue;
             }
             r.Multistream(multistream);
             var decompressed = bytes.NewBuffer(default!);
             {
-                var (_, errΔ4) = io.Copy(new bytes_BufferжWriter(decompressed), new ReaderжReader(r)); if (errΔ4 != default!) {
+                var (_, errΔ4) = io.Copy(new gzip_test_package.bytes_BufferжWriter(decompressed), new gzip_test_package.gzip_ReaderжReader(r)); if (errΔ4 != default!) {
                     continue;
                 }
             }
@@ -100,4 +101,4 @@ public static void FuzzReader(ж<testing.F> Ꮡf) {
     });
 }
 
-} // end gzip_package
+} // end gzip_internal_test_package

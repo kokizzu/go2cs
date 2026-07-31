@@ -12,14 +12,15 @@ using quick = go.testing.quick_package;
 using go.image;
 using go.testing;
 using io = io_package;
+using static go.image.draw_package;
 
-partial class draw_package {
+partial class draw_internal_test_package {
 
 // slowestRGBA is a draw.Image like image.RGBA, but it is a different type and
 // therefore does not trigger the draw.go fastest code paths.
 //
 // Unlike slowerRGBA, it does not implement the draw.RGBA64Image interface.
-[GoType] partial struct slowestRGBA {
+[GoType] internal partial struct slowestRGBA {
     public slice<uint8> Pix;
     public nint Stride;
     public image.Rectangle Rect;
@@ -34,7 +35,7 @@ partial class draw_package {
 }
 
 [GoRecv] internal static color.Color At(this ref slowestRGBA p, nint x, nint y) {
-    return new color_RGBA64ᴠColor(p.RGBA64At(x, y));
+    return new draw_test_package.color_RGBA64ᴠColor(p.RGBA64At(x, y));
 }
 
 [GoRecv] internal static color.RGBA64 RGBA64At(this ref slowestRGBA p, nint x, nint y) {
@@ -85,7 +86,7 @@ internal static ж<slowestRGBA> convertToSlowestRGBA(image.Image m) {
         }
     }
     var rgba = image.NewRGBA(m.Bounds());
-    Draw(new image_ΔRGBAжImage(rgba), rgba.Bounds(), m, m.Bounds().Min, Src);
+    Draw(new draw_test_package.image_ΔRGBAжdraw_Image(rgba), rgba.Bounds(), m, m.Bounds().Min, Src);
     return Ꮡ(new slowestRGBA(
         Pix: (~rgba).Pix,
         Stride: (~rgba).Stride,
@@ -106,7 +107,7 @@ internal static ж<slowestRGBA> convertToSlowestRGBA(image.Image m) {
 // therefore does not trigger the draw.go fastest code paths.
 //
 // Unlike slowestRGBA, it still implements the draw.RGBA64Image interface.
-[GoType] partial struct slowerRGBA {
+[GoType] internal partial struct slowerRGBA {
     public slice<uint8> Pix;
     public nint Stride;
     public image.Rectangle Rect;
@@ -121,7 +122,7 @@ internal static ж<slowestRGBA> convertToSlowestRGBA(image.Image m) {
 }
 
 [GoRecv] internal static color.Color At(this ref slowerRGBA p, nint x, nint y) {
-    return new color_RGBA64ᴠColor(p.RGBA64At(x, y));
+    return new draw_test_package.color_RGBA64ᴠColor(p.RGBA64At(x, y));
 }
 
 [GoRecv] internal static color.RGBA64 RGBA64At(this ref slowerRGBA p, nint x, nint y) {
@@ -185,7 +186,7 @@ internal static ж<slowerRGBA> convertToSlowerRGBA(image.Image m) {
         }
     }
     var rgba = image.NewRGBA(m.Bounds());
-    Draw(new image_ΔRGBAжImage(rgba), rgba.Bounds(), m, m.Bounds().Min, Src);
+    Draw(new draw_test_package.image_ΔRGBAжdraw_Image(rgba), rgba.Bounds(), m, m.Bounds().Min, Src);
     return Ꮡ(new slowerRGBA(
         Pix: (~rgba).Pix,
         Stride: (~rgba).Stride,
@@ -209,28 +210,28 @@ internal static bool eq(color.Color c0, color.Color c1) {
 }
 
 internal static image.Image fillBlue(nint alpha) {
-    return new image_UniformжImage(image.NewUniform(new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, (uint8)alpha, (uint8)alpha))));
+    return new draw_test_package.image_UniformжImage(image.NewUniform(new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, (uint8)alpha, (uint8)alpha))));
 }
 
 internal static image.Image fillAlpha(nint alpha) {
-    return new image_UniformжImage(image.NewUniform(new color_AlphaᴠColor(new color.Alpha((uint8)alpha))));
+    return new draw_test_package.image_UniformжImage(image.NewUniform(new draw_test_package.color_AlphaᴠColor(new color.Alpha((uint8)alpha))));
 }
 
 internal static image.Image vgradGreen(nint alpha) {
     var m = image.NewRGBA(image.Rect(0, 0, 16, 16));
     for (nint y = 0; y < 16; y++) {
         for (nint x = 0; x < 16; x++) {
-            m.Set(x, y, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, (uint8)(y * alpha / 15), 0, (uint8)alpha)));
+            m.Set(x, y, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, (uint8)(y * alpha / 15), 0, (uint8)alpha)));
         }
     }
-    return new image_ΔRGBAжimage_Image(m);
+    return new draw_test_package.image_ΔRGBAжimage_Image(m);
 }
 
 internal static image.Image vgradAlpha(nint alpha) {
     var m = image.NewAlpha(image.Rect(0, 0, 16, 16));
     for (nint y = 0; y < 16; y++) {
         for (nint x = 0; x < 16; x++) {
-            m.Set(x, y, new color_AlphaᴠColor(new color.Alpha((uint8)(y * alpha / 15))));
+            m.Set(x, y, new draw_test_package.color_AlphaᴠColor(new color.Alpha((uint8)(y * alpha / 15))));
         }
     }
     return new image.AlphaжImage(m);
@@ -240,7 +241,7 @@ internal static image.Image vgradGreenNRGBA(nint alpha) {
     var m = image.NewNRGBA(image.Rect(0, 0, 16, 16));
     for (nint y = 0; y < 16; y++) {
         for (nint x = 0; x < 16; x++) {
-            m.Set(x, y, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, (uint8)(y * 0x11), 0, (uint8)alpha)));
+            m.Set(x, y, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, (uint8)(y * 0x11), 0, (uint8)alpha)));
         }
     }
     return new image.NRGBAжImage(m);
@@ -268,7 +269,7 @@ internal static image.Image vgradGray() {
     var m = image.NewGray(image.Rect(0, 0, 16, 16));
     for (nint y = 0; y < 16; y++) {
         for (nint x = 0; x < 16; x++) {
-            m.Set(x, y, new color_GrayᴠColor(new color.Gray((uint8)(y * 0x11))));
+            m.Set(x, y, new draw_test_package.color_GrayᴠColor(new color.Gray((uint8)(y * 0x11))));
         }
     }
     return new image.GrayжImage(m);
@@ -278,37 +279,37 @@ internal static image.Image vgradMagenta() {
     var m = image.NewCMYK(image.Rect(0, 0, 16, 16));
     for (nint y = 0; y < 16; y++) {
         for (nint x = 0; x < 16; x++) {
-            m.Set(x, y, new color_CMYKᴠColor(new color.CMYK(0, (uint8)(y * 0x11), 0, 0x3f)));
+            m.Set(x, y, new draw_test_package.color_CMYKᴠColor(new color.CMYK(0, (uint8)(y * 0x11), 0, 0x3f)));
         }
     }
     return new image.CMYKжImage(m);
 }
 
-internal static Image hgradRed(nint alpha) {
+internal static global::go.image.draw_package.Image hgradRed(nint alpha) {
     var m = image.NewRGBA(image.Rect(0, 0, 16, 16));
     for (nint y = 0; y < 16; y++) {
         for (nint x = 0; x < 16; x++) {
-            m.Set(x, y, new color_ΔRGBAᴠColor(new colorꓸRGBA((uint8)(x * alpha / 15), 0, 0, (uint8)alpha)));
+            m.Set(x, y, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA((uint8)(x * alpha / 15), 0, 0, (uint8)alpha)));
         }
     }
-    return new image_ΔRGBAжImage(m);
+    return new draw_test_package.image_ΔRGBAжdraw_Image(m);
 }
 
-internal static Image gradYellow(nint alpha) {
+internal static global::go.image.draw_package.Image gradYellow(nint alpha) {
     var m = image.NewRGBA(image.Rect(0, 0, 16, 16));
     for (nint y = 0; y < 16; y++) {
         for (nint x = 0; x < 16; x++) {
-            m.Set(x, y, new color_ΔRGBAᴠColor(new colorꓸRGBA((uint8)(x * alpha / 15), (uint8)(y * alpha / 15), 0, (uint8)alpha)));
+            m.Set(x, y, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA((uint8)(x * alpha / 15), (uint8)(y * alpha / 15), 0, (uint8)alpha)));
         }
     }
-    return new image_ΔRGBAжImage(m);
+    return new draw_test_package.image_ΔRGBAжdraw_Image(m);
 }
 
-[GoType] partial struct drawTest {
+[GoType] internal partial struct drawTest {
     internal @string desc;
     internal image.Image src;
     internal image.Image mask;
-    internal Op op;
+    internal global::go.image.draw_package.Op op;
     internal color.Color expected;
 }
 
@@ -355,83 +356,83 @@ internal static Image gradYellow(nint alpha) {
 //   - {136} in Gray-space, which is {136, 136, 136, 255} in RGBA-space.
 // The mask pixel's alpha is 102, or 40%.
 internal static slice<drawTest> drawTests = new drawTest[]{
-    new("nop"u8, vgradGreen(255), fillAlpha(0), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 0, 0, 255))),
-    new("clear"u8, vgradGreen(255), fillAlpha(0), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 0, 0))),
-    new("fill"u8, fillBlue(90), fillAlpha(255), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(88, 0, 90, 255))),
-    new("fillSrc"u8, fillBlue(90), fillAlpha(255), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 90, 90))),
-    new("fillAlpha"u8, fillBlue(90), fillAlpha(192), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(100, 0, 68, 255))),
-    new("fillAlphaSrc"u8, fillBlue(90), fillAlpha(192), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 68, 68))),
-    new("fillNil"u8, fillBlue(90), default!, Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(88, 0, 90, 255))),
-    new("fillNilSrc"u8, fillBlue(90), default!, Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 90, 90))),
-    new("copy"u8, vgradGreen(90), fillAlpha(255), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(88, 48, 0, 255))),
-    new("copySrc"u8, vgradGreen(90), fillAlpha(255), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 48, 0, 90))),
-    new("copyAlpha"u8, vgradGreen(90), fillAlpha(192), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(100, 36, 0, 255))),
-    new("copyAlphaSrc"u8, vgradGreen(90), fillAlpha(192), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 36, 0, 68))),
-    new("copyNil"u8, vgradGreen(90), default!, Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(88, 48, 0, 255))),
-    new("copyNilSrc"u8, vgradGreen(90), default!, Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 48, 0, 90))),
-    new("nrgba"u8, vgradGreenNRGBA(90), fillAlpha(255), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(88, 46, 0, 255))),
-    new("nrgbaSrc"u8, vgradGreenNRGBA(90), fillAlpha(255), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 46, 0, 90))),
-    new("nrgbaAlpha"u8, vgradGreenNRGBA(90), fillAlpha(192), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(100, 34, 0, 255))),
-    new("nrgbaAlphaSrc"u8, vgradGreenNRGBA(90), fillAlpha(192), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 34, 0, 68))),
-    new("nrgbaNil"u8, vgradGreenNRGBA(90), default!, Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(88, 46, 0, 255))),
-    new("nrgbaNilSrc"u8, vgradGreenNRGBA(90), default!, Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 46, 0, 90))),
-    new("ycbcr"u8, vgradCr(), fillAlpha(255), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(11, 38, 0, 255))),
-    new("ycbcrSrc"u8, vgradCr(), fillAlpha(255), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(11, 38, 0, 255))),
-    new("ycbcrAlpha"u8, vgradCr(), fillAlpha(192), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(42, 28, 0, 255))),
-    new("ycbcrAlphaSrc"u8, vgradCr(), fillAlpha(192), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(8, 28, 0, 192))),
-    new("ycbcrNil"u8, vgradCr(), default!, Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(11, 38, 0, 255))),
-    new("ycbcrNilSrc"u8, vgradCr(), default!, Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(11, 38, 0, 255))),
-    new("gray"u8, vgradGray(), fillAlpha(255), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
-    new("graySrc"u8, vgradGray(), fillAlpha(255), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
-    new("grayAlpha"u8, vgradGray(), fillAlpha(192), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 102, 102, 255))),
-    new("grayAlphaSrc"u8, vgradGray(), fillAlpha(192), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(102, 102, 102, 192))),
-    new("grayNil"u8, vgradGray(), default!, Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
-    new("grayNilSrc"u8, vgradGray(), default!, Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
-    new("graySlower"u8, new slowerRGBAжimage_Image(convertToSlowerRGBA(vgradGray())), fillAlpha(255),
-        Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
-    new("graySrcSlower"u8, new slowerRGBAжimage_Image(convertToSlowerRGBA(vgradGray())), fillAlpha(255),
-        Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
-    new("grayAlphaSlower"u8, new slowerRGBAжimage_Image(convertToSlowerRGBA(vgradGray())), fillAlpha(192),
-        Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 102, 102, 255))),
-    new("grayAlphaSrcSlower"u8, new slowerRGBAжimage_Image(convertToSlowerRGBA(vgradGray())), fillAlpha(192),
-        Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(102, 102, 102, 192))),
-    new("grayNilSlower"u8, new slowerRGBAжimage_Image(convertToSlowerRGBA(vgradGray())), default!,
-        Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
-    new("grayNilSrcSlower"u8, new slowerRGBAжimage_Image(convertToSlowerRGBA(vgradGray())), default!,
-        Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
-    new("graySlowest"u8, new slowestRGBAжimage_Image(convertToSlowestRGBA(vgradGray())), fillAlpha(255),
-        Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
-    new("graySrcSlowest"u8, new slowestRGBAжimage_Image(convertToSlowestRGBA(vgradGray())), fillAlpha(255),
-        Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
-    new("grayAlphaSlowest"u8, new slowestRGBAжimage_Image(convertToSlowestRGBA(vgradGray())), fillAlpha(192),
-        Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 102, 102, 255))),
-    new("grayAlphaSrcSlowest"u8, new slowestRGBAжimage_Image(convertToSlowestRGBA(vgradGray())), fillAlpha(192),
-        Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(102, 102, 102, 192))),
-    new("grayNilSlowest"u8, new slowestRGBAжimage_Image(convertToSlowestRGBA(vgradGray())), default!,
-        Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
-    new("grayNilSrcSlowest"u8, new slowestRGBAжimage_Image(convertToSlowestRGBA(vgradGray())), default!,
-        Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
-    new("cmyk"u8, vgradMagenta(), fillAlpha(255), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(192, 89, 192, 255))),
-    new("cmykSrc"u8, vgradMagenta(), fillAlpha(255), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(192, 89, 192, 255))),
-    new("cmykAlpha"u8, vgradMagenta(), fillAlpha(192), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(178, 67, 145, 255))),
-    new("cmykAlphaSrc"u8, vgradMagenta(), fillAlpha(192), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(145, 67, 145, 192))),
-    new("cmykNil"u8, vgradMagenta(), default!, Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(192, 89, 192, 255))),
-    new("cmykNilSrc"u8, vgradMagenta(), default!, Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(192, 89, 192, 255))),
-    new("generic"u8, fillBlue(255), vgradAlpha(192), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(81, 0, 102, 255))),
-    new("genericSrc"u8, fillBlue(255), vgradAlpha(192), Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 102, 102))),
-    new("genericSlower"u8, fillBlue(255), new slowerRGBAжimage_Image(convertToSlowerRGBA(vgradAlpha(192))),
-        Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(81, 0, 102, 255))),
-    new("genericSrcSlower"u8, fillBlue(255), new slowerRGBAжimage_Image(convertToSlowerRGBA(vgradAlpha(192))),
-        Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 102, 102))),
-    new("genericSlowest"u8, fillBlue(255), new slowestRGBAжimage_Image(convertToSlowestRGBA(vgradAlpha(192))),
-        Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(81, 0, 102, 255))),
-    new("genericSrcSlowest"u8, fillBlue(255), new slowestRGBAжimage_Image(convertToSlowestRGBA(vgradAlpha(192))),
-        Src, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 102, 102))),
-    new("rgbaVariableMaskOver"u8, vgradGreen(90), vgradAlpha(192), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(117, 19, 0, 255))),
-    new("grayVariableMaskOver"u8, vgradGray(), vgradAlpha(192), Over, new color_ΔRGBAᴠColor(new colorꓸRGBA(136, 54, 54, 255)))
+    new("nop"u8, vgradGreen(255), fillAlpha(0), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 0, 0, 255))),
+    new("clear"u8, vgradGreen(255), fillAlpha(0), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 0, 0))),
+    new("fill"u8, fillBlue(90), fillAlpha(255), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(88, 0, 90, 255))),
+    new("fillSrc"u8, fillBlue(90), fillAlpha(255), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 90, 90))),
+    new("fillAlpha"u8, fillBlue(90), fillAlpha(192), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(100, 0, 68, 255))),
+    new("fillAlphaSrc"u8, fillBlue(90), fillAlpha(192), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 68, 68))),
+    new("fillNil"u8, fillBlue(90), default!, Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(88, 0, 90, 255))),
+    new("fillNilSrc"u8, fillBlue(90), default!, Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 90, 90))),
+    new("copy"u8, vgradGreen(90), fillAlpha(255), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(88, 48, 0, 255))),
+    new("copySrc"u8, vgradGreen(90), fillAlpha(255), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 48, 0, 90))),
+    new("copyAlpha"u8, vgradGreen(90), fillAlpha(192), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(100, 36, 0, 255))),
+    new("copyAlphaSrc"u8, vgradGreen(90), fillAlpha(192), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 36, 0, 68))),
+    new("copyNil"u8, vgradGreen(90), default!, Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(88, 48, 0, 255))),
+    new("copyNilSrc"u8, vgradGreen(90), default!, Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 48, 0, 90))),
+    new("nrgba"u8, vgradGreenNRGBA(90), fillAlpha(255), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(88, 46, 0, 255))),
+    new("nrgbaSrc"u8, vgradGreenNRGBA(90), fillAlpha(255), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 46, 0, 90))),
+    new("nrgbaAlpha"u8, vgradGreenNRGBA(90), fillAlpha(192), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(100, 34, 0, 255))),
+    new("nrgbaAlphaSrc"u8, vgradGreenNRGBA(90), fillAlpha(192), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 34, 0, 68))),
+    new("nrgbaNil"u8, vgradGreenNRGBA(90), default!, Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(88, 46, 0, 255))),
+    new("nrgbaNilSrc"u8, vgradGreenNRGBA(90), default!, Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 46, 0, 90))),
+    new("ycbcr"u8, vgradCr(), fillAlpha(255), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(11, 38, 0, 255))),
+    new("ycbcrSrc"u8, vgradCr(), fillAlpha(255), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(11, 38, 0, 255))),
+    new("ycbcrAlpha"u8, vgradCr(), fillAlpha(192), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(42, 28, 0, 255))),
+    new("ycbcrAlphaSrc"u8, vgradCr(), fillAlpha(192), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(8, 28, 0, 192))),
+    new("ycbcrNil"u8, vgradCr(), default!, Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(11, 38, 0, 255))),
+    new("ycbcrNilSrc"u8, vgradCr(), default!, Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(11, 38, 0, 255))),
+    new("gray"u8, vgradGray(), fillAlpha(255), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
+    new("graySrc"u8, vgradGray(), fillAlpha(255), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
+    new("grayAlpha"u8, vgradGray(), fillAlpha(192), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 102, 102, 255))),
+    new("grayAlphaSrc"u8, vgradGray(), fillAlpha(192), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(102, 102, 102, 192))),
+    new("grayNil"u8, vgradGray(), default!, Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
+    new("grayNilSrc"u8, vgradGray(), default!, Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
+    new("graySlower"u8, new draw_internal_test_package.slowerRGBAжimage_Image(convertToSlowerRGBA(vgradGray())), fillAlpha(255),
+        Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
+    new("graySrcSlower"u8, new draw_internal_test_package.slowerRGBAжimage_Image(convertToSlowerRGBA(vgradGray())), fillAlpha(255),
+        Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
+    new("grayAlphaSlower"u8, new draw_internal_test_package.slowerRGBAжimage_Image(convertToSlowerRGBA(vgradGray())), fillAlpha(192),
+        Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 102, 102, 255))),
+    new("grayAlphaSrcSlower"u8, new draw_internal_test_package.slowerRGBAжimage_Image(convertToSlowerRGBA(vgradGray())), fillAlpha(192),
+        Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(102, 102, 102, 192))),
+    new("grayNilSlower"u8, new draw_internal_test_package.slowerRGBAжimage_Image(convertToSlowerRGBA(vgradGray())), default!,
+        Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
+    new("grayNilSrcSlower"u8, new draw_internal_test_package.slowerRGBAжimage_Image(convertToSlowerRGBA(vgradGray())), default!,
+        Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
+    new("graySlowest"u8, new draw_internal_test_package.slowestRGBAжimage_Image(convertToSlowestRGBA(vgradGray())), fillAlpha(255),
+        Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
+    new("graySrcSlowest"u8, new draw_internal_test_package.slowestRGBAжimage_Image(convertToSlowestRGBA(vgradGray())), fillAlpha(255),
+        Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
+    new("grayAlphaSlowest"u8, new draw_internal_test_package.slowestRGBAжimage_Image(convertToSlowestRGBA(vgradGray())), fillAlpha(192),
+        Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 102, 102, 255))),
+    new("grayAlphaSrcSlowest"u8, new draw_internal_test_package.slowestRGBAжimage_Image(convertToSlowestRGBA(vgradGray())), fillAlpha(192),
+        Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(102, 102, 102, 192))),
+    new("grayNilSlowest"u8, new draw_internal_test_package.slowestRGBAжimage_Image(convertToSlowestRGBA(vgradGray())), default!,
+        Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
+    new("grayNilSrcSlowest"u8, new draw_internal_test_package.slowestRGBAжimage_Image(convertToSlowestRGBA(vgradGray())), default!,
+        Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 136, 136, 255))),
+    new("cmyk"u8, vgradMagenta(), fillAlpha(255), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(192, 89, 192, 255))),
+    new("cmykSrc"u8, vgradMagenta(), fillAlpha(255), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(192, 89, 192, 255))),
+    new("cmykAlpha"u8, vgradMagenta(), fillAlpha(192), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(178, 67, 145, 255))),
+    new("cmykAlphaSrc"u8, vgradMagenta(), fillAlpha(192), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(145, 67, 145, 192))),
+    new("cmykNil"u8, vgradMagenta(), default!, Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(192, 89, 192, 255))),
+    new("cmykNilSrc"u8, vgradMagenta(), default!, Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(192, 89, 192, 255))),
+    new("generic"u8, fillBlue(255), vgradAlpha(192), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(81, 0, 102, 255))),
+    new("genericSrc"u8, fillBlue(255), vgradAlpha(192), Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 102, 102))),
+    new("genericSlower"u8, fillBlue(255), new draw_internal_test_package.slowerRGBAжimage_Image(convertToSlowerRGBA(vgradAlpha(192))),
+        Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(81, 0, 102, 255))),
+    new("genericSrcSlower"u8, fillBlue(255), new draw_internal_test_package.slowerRGBAжimage_Image(convertToSlowerRGBA(vgradAlpha(192))),
+        Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 102, 102))),
+    new("genericSlowest"u8, fillBlue(255), new draw_internal_test_package.slowestRGBAжimage_Image(convertToSlowestRGBA(vgradAlpha(192))),
+        Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(81, 0, 102, 255))),
+    new("genericSrcSlowest"u8, fillBlue(255), new draw_internal_test_package.slowestRGBAжimage_Image(convertToSlowestRGBA(vgradAlpha(192))),
+        Src, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 102, 102))),
+    new("rgbaVariableMaskOver"u8, vgradGreen(90), vgradAlpha(192), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(117, 19, 0, 255))),
+    new("grayVariableMaskOver"u8, vgradGray(), vgradAlpha(192), Over, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(136, 54, 54, 255)))
 }.slice();
 
-internal static image.Image makeGolden(image.Image dst, image.Rectangle r, image.Image src, image.Point sp, image.Image mask, image.Point mp, Op op) {
+internal static image.Image makeGolden(image.Image dst, image.Rectangle r, image.Image src, image.Point sp, image.Image mask, image.Point mp, global::go.image.draw_package.Op op) {
     // Since golden is a newly allocated image, we don't have to check if the
     // input source and mask images and the output golden image overlap.
     var b = dst.Bounds();
@@ -470,7 +471,7 @@ internal static image.Image makeGolden(image.Image dst, image.Rectangle r, image
                 (_, _, _, ma) = mask.At(mx, my).RGBA();
             }
             var a = (uint32)M - (sa * ma / (uint32)M);
-            golden.Set(x, y, new color_RGBA64ᴠColor(new color.RGBA64(
+            golden.Set(x, y, new draw_test_package.color_RGBA64ᴠColor(new color.RGBA64(
                 (uint16)((dr * a + sr * ma) / (uint32)M),
                 (uint16)((dg * a + sg * ma) / (uint32)M),
                 (uint16)((db * a + sbΔ1 * ma) / (uint32)M),
@@ -503,11 +504,11 @@ loop:
                 // result, in terms of final pixel RGBA values.
                 switch (i) {
                 case 1: {
-                    dst = new slowerRGBAжImage(convertToSlowerRGBA(dst));
+                    dst = new draw_internal_test_package.slowerRGBAжdraw_Image(convertToSlowerRGBA(dst));
                     break;
                 }
                 case 2: {
-                    dst = new slowestRGBAжImage(convertToSlowestRGBA(dst));
+                    dst = new draw_internal_test_package.slowestRGBAжdraw_Image(convertToSlowestRGBA(dst));
                     break;
                 }}
 
@@ -548,7 +549,7 @@ break_loop:;
 }
 
 public static void TestDrawOverlap(ж<testing.T> Ꮡt) {
-    foreach (var (_, op) in new Op[]{Over, Src}.slice()) {
+    foreach (var (_, op) in new global::go.image.draw_package.Op[]{Over, Src}.slice()) {
         for (nint yoff = -2; yoff <= 2; yoff++) {
 loop:
             for (nint xoff = -2; xoff <= 2; xoff++) {
@@ -557,13 +558,13 @@ loop:
                 var src = m.SubImage(image.Rect(5 + xoff, 5 + yoff, 10 + xoff, 10 + yoff))._<ж<imageꓸRGBA>>();
                 var b = dst.Bounds();
                 // Draw the (src, mask, op) onto a copy of dst using a slow but obviously correct implementation.
-                var golden = makeGolden(new image_ΔRGBAжimage_Image(dst), b, new image_ΔRGBAжimage_Image(src), src.Bounds().Min, default!, new image.Point(nil), op);
+                var golden = makeGolden(new draw_test_package.image_ΔRGBAжimage_Image(dst), b, new draw_test_package.image_ΔRGBAжimage_Image(src), src.Bounds().Min, default!, new image.Point(nil), op);
                 if (!b.Eq(golden.Bounds())) {
                     Ꮡt.Errorf("drawOverlap xoff=%d,yoff=%d: bounds %v versus %v"u8, xoff, yoff, dst.Bounds(), golden.Bounds());
                     continue;
                 }
                 // Draw the same combination onto the actual dst using the optimized DrawMask implementation.
-                DrawMask(new image_ΔRGBAжImage(dst), b, new image_ΔRGBAжimage_Image(src), src.Bounds().Min, default!, new image.Point(nil), op);
+                DrawMask(new draw_test_package.image_ΔRGBAжdraw_Image(dst), b, new draw_test_package.image_ΔRGBAжimage_Image(src), src.Bounds().Min, default!, new image.Point(nil), op);
                 // Check that the resultant dst image matches the golden output.
                 for (nint y = b.Min.Y; y < b.Max.Y; y++) {
                     for (nint x = b.Min.X; x < b.Max.X; x++) {
@@ -584,21 +585,21 @@ break_loop:;
 public static void TestNonZeroSrcPt(ж<testing.T> Ꮡt) {
     var a = image.NewRGBA(image.Rect(0, 0, 1, 1));
     var b = image.NewRGBA(image.Rect(0, 0, 2, 2));
-    b.Set(0, 0, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 0, 5)));
-    b.Set(1, 0, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 5, 5)));
-    b.Set(0, 1, new color_ΔRGBAᴠColor(new colorꓸRGBA(0, 5, 0, 5)));
-    b.Set(1, 1, new color_ΔRGBAᴠColor(new colorꓸRGBA(5, 0, 0, 5)));
-    Draw(new image_ΔRGBAжImage(a), image.Rect(0, 0, 1, 1), new image_ΔRGBAжimage_Image(b), image.Pt(1, 1), Over);
-    if (!eq(new color_ΔRGBAᴠColor(new colorꓸRGBA(5, 0, 0, 5)), a.At(0, 0))) {
+    b.Set(0, 0, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 0, 5)));
+    b.Set(1, 0, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 5, 5)));
+    b.Set(0, 1, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 5, 0, 5)));
+    b.Set(1, 1, new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(5, 0, 0, 5)));
+    Draw(new draw_test_package.image_ΔRGBAжdraw_Image(a), image.Rect(0, 0, 1, 1), new draw_test_package.image_ΔRGBAжimage_Image(b), image.Pt(1, 1), Over);
+    if (!eq(new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(5, 0, 0, 5)), a.At(0, 0))) {
         Ꮡt.Errorf("non-zero src pt: want %v got %v"u8, new colorꓸRGBA(5, 0, 0, 5), a.At(0, 0));
     }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pixelˢ = "pixel"u8;
-private static readonly @string rowˢ = "row"u8;
-private static readonly @string columnˢ = "column"u8;
-private static readonly @string wholeˢ = "whole"u8;
+internal static readonly @string pixelˢ = "pixel"u8;
+internal static readonly @string rowˢ = "row"u8;
+internal static readonly @string columnˢ = "column"u8;
+internal static readonly @string wholeˢ = "whole"u8;
 
 public static void TestFill(ж<testing.T> Ꮡt) {
     var rr = new image.Rectangle[]{
@@ -625,14 +626,14 @@ public static void TestFill(ж<testing.T> Ꮡt) {
         b = m.Bounds();
         ref var c = ref heap<colorꓸRGBA>(out var Ꮡc);
         c = new colorꓸRGBA(11, 0, 0, 255);
-        var src = Ꮡ(new image.Uniform(C: new color_ΔRGBAᴠColor(c)));
+        var src = Ꮡ(new image.Uniform(C: new draw_test_package.color_ΔRGBAᴠColor(c)));
         var bʗ1 = b;
         var mʗ1 = m;
         var rʗ1 = r;
         var check = (@string desc) => {
             for (nint y = bʗ1.Min.Y; y < bʗ1.Max.Y; y++) {
                 for (nint x = bʗ1.Min.X; x < bʗ1.Max.X; x++) {
-                    if (!eq(new color_ΔRGBAᴠColor(Ꮡc.Value), mʗ1.At(x, y))) {
+                    if (!eq(new draw_test_package.color_ΔRGBAᴠColor(Ꮡc.Value), mʗ1.At(x, y))) {
                         Ꮡt.Errorf("%s fill: at (%d, %d), sub-image bounds=%v: want %v got %v"u8, desc, x, y, rʗ1, Ꮡc.Value, mʗ1.At(x, y));
                         return;
                     }
@@ -642,28 +643,28 @@ public static void TestFill(ж<testing.T> Ꮡt) {
         // Draw 1 pixel at a time.
         for (nint y = b.Min.Y; y < b.Max.Y; y++) {
             for (nint x = b.Min.X; x < b.Max.X; x++) {
-                DrawMask(new image_ΔRGBAжImage(m), image.Rect(x, y, x + 1, y + 1), new image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
+                DrawMask(new draw_test_package.image_ΔRGBAжdraw_Image(m), image.Rect(x, y, x + 1, y + 1), new draw_test_package.image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
             }
         }
         check(pixelˢ);
         // Draw 1 row at a time.
         c = new colorꓸRGBA(0, 22, 0, 255);
-        src = Ꮡ(new image.Uniform(C: new color_ΔRGBAᴠColor(c)));
+        src = Ꮡ(new image.Uniform(C: new draw_test_package.color_ΔRGBAᴠColor(c)));
         for (nint y = b.Min.Y; y < b.Max.Y; y++) {
-            DrawMask(new image_ΔRGBAжImage(m), image.Rect(b.Min.X, y, b.Max.X, y + 1), new image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
+            DrawMask(new draw_test_package.image_ΔRGBAжdraw_Image(m), image.Rect(b.Min.X, y, b.Max.X, y + 1), new draw_test_package.image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
         }
         check(rowˢ);
         // Draw 1 column at a time.
         c = new colorꓸRGBA(0, 0, 33, 255);
-        src = Ꮡ(new image.Uniform(C: new color_ΔRGBAᴠColor(c)));
+        src = Ꮡ(new image.Uniform(C: new draw_test_package.color_ΔRGBAᴠColor(c)));
         for (nint x = b.Min.X; x < b.Max.X; x++) {
-            DrawMask(new image_ΔRGBAжImage(m), image.Rect(x, b.Min.Y, x + 1, b.Max.Y), new image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
+            DrawMask(new draw_test_package.image_ΔRGBAжdraw_Image(m), image.Rect(x, b.Min.Y, x + 1, b.Max.Y), new draw_test_package.image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
         }
         check(columnˢ);
         // Draw the whole image at once.
         c = new colorꓸRGBA(44, 55, 66, 77);
-        src = Ꮡ(new image.Uniform(C: new color_ΔRGBAᴠColor(c)));
-        DrawMask(new image_ΔRGBAжImage(m), b, new image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
+        src = Ꮡ(new image.Uniform(C: new draw_test_package.color_ΔRGBAᴠColor(c)));
+        DrawMask(new draw_test_package.image_ΔRGBAжdraw_Image(m), b, new draw_test_package.image_UniformжImage(src), new image.Point(nil), default!, new image.Point(nil), Src);
         check(wholeˢ);
     }
 }
@@ -701,7 +702,7 @@ public static void TestDrawSrcNonpremultiplied(ж<testing.T> Ꮡt) {
         src.SetNRGBA(2, 20, transparentGreen);
         src.SetNRGBA(3, 20, transparentRed);
         var dr = image.Rect(1, 10, 3, 11);
-        Draw(new image_NRGBAжImage(dst), dr, new image.NRGBAжImage(src), new image.Point(1, 20), Src);
+        Draw(new draw_test_package.image_NRGBAжImage(dst), dr, new image.NRGBAжImage(src), new image.Point(1, 20), Src);
         {
             var (got, want) = (dst.At(0, 10), opaqueGray); if (!AreEqual(got, want)) {
                 Ꮡt.Errorf("At(0, 10):\ngot  %#v\nwant %#v"u8, got, want);
@@ -724,7 +725,7 @@ public static void TestDrawSrcNonpremultiplied(ж<testing.T> Ꮡt) {
         dst.SetNRGBA64(0, 0, opaqueGray64);
         var src = image.NewNRGBA64(image.Rect(0, 0, 1, 1));
         src.SetNRGBA64(0, 0, transparentPurple64);
-        Draw(new image_NRGBA64жImage(dst), dst.Bounds(), new image.NRGBA64жImage(src), new image.Point(0, 0), Src);
+        Draw(new draw_test_package.image_NRGBA64жImage(dst), dst.Bounds(), new image.NRGBA64жImage(src), new image.Point(0, 0), Src);
         {
             var (got, want) = (dst.At(0, 0), transparentPurple64); if (!AreEqual(got, want)) {
                 Ꮡt.Errorf("At(0, 0):\ngot  %#v\nwant %#v"u8, got, want);
@@ -734,7 +735,7 @@ public static void TestDrawSrcNonpremultiplied(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object thereMayBeMoreErrorsˢ = (@string)"there may be more errors"u8;
+internal static readonly object thereMayBeMoreErrorsˢ = (@string)"there may be more errors"u8;
 
 // TestFloydSteinbergCheckerboard tests that the result of Floyd-Steinberg
 // error diffusion of a uniform 50% gray source image with a black-and-white
@@ -744,9 +745,9 @@ public static void TestFloydSteinbergCheckerboard(ж<testing.T> Ꮡt) {
 
     var b = image.Rect(0, 0, 640, 480);
     // We can't represent 50% exactly, but 0x7fff / 0xffff is close enough.
-    var src = Ꮡ(new image.Uniform(new color_Gray16ᴠColor(new color.Gray16(0x7fff))));
-    var dst = image.NewPaletted(b, new color.Palette(new color.Color[]{new color_Gray16ᴠColor(color.Black), new color_Gray16ᴠColor(color.White)}.slice()));
-    FloydSteinberg.Draw(new image_PalettedжImage(dst), b, new image_UniformжImage(src), new image.Point(nil));
+    var src = Ꮡ(new image.Uniform(new draw_test_package.color_Gray16ᴠColor(new color.Gray16(0x7fff))));
+    var dst = image.NewPaletted(b, new color.Palette(new color.Color[]{new draw_test_package.color_Gray16ᴠColor(color.Black), new draw_test_package.color_Gray16ᴠColor(color.White)}.slice()));
+    FloydSteinberg.Draw(new draw_test_package.image_PalettedжImage(dst), b, new draw_test_package.image_UniformжImage(src), new image.Point(nil));
     nint nErr = 0;
     for (nint y = b.Min.Y; y < b.Max.Y; y++) {
         for (nint x = b.Min.X; x < b.Max.X; x++) {
@@ -766,12 +767,12 @@ public static void TestFloydSteinbergCheckerboard(ж<testing.T> Ꮡt) {
 
 // embeddedPaletted is an Image that behaves like an *image.Paletted but whose
 // type is not *image.Paletted.
-[GoType] partial struct embeddedPaletted {
+[GoType] internal partial struct embeddedPaletted {
     public partial ref ж<image_package.Paletted> Paletted { get; }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testdataVideo001Pngˢ = "../testdata/video-001.png"u8;
+internal static readonly @string testdataVideo001Pngˢ = "../testdata/video-001.png"u8;
 
 // TestPaletted tests that the drawPaletted function behaves the same
 // regardless of whether dst is an *image.Paletted.
@@ -782,23 +783,23 @@ public static void TestPaletted(ж<testing.T> Ꮡt) => func((defer, recover) => 
     }
     var fʗ1 = f;
     defer(() => fʗ1.Close());
-    (var video001, err) = png.Decode(new os_FileжReader(f));
+    (var video001, err) = png.Decode(new draw_test_package.os_FileжReader(f));
     if (err != default!) {
         Ꮡt.Fatalf("decode: %v"u8, err);
     }
     var b = video001.Bounds();
-    var cgaPalette = new color.Palette(new color.Color[]{new color_ΔRGBAᴠColor(new colorꓸRGBA(0x00, 0x00, 0x00, 0xff)), new color_ΔRGBAᴠColor(new colorꓸRGBA(0x55, 0xff, 0xff, 0xff)), new color_ΔRGBAᴠColor(new colorꓸRGBA(0xff, 0x55, 0xff, 0xff)), new color_ΔRGBAᴠColor(new colorꓸRGBA(0xff, 0xff, 0xff, 0xff))
+    var cgaPalette = new color.Palette(new color.Color[]{new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0x00, 0x00, 0x00, 0xff)), new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0x55, 0xff, 0xff, 0xff)), new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0xff, 0x55, 0xff, 0xff)), new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0xff, 0xff, 0xff, 0xff))
     }.slice());
-    var drawers = new map<@string, Drawer>{["src"u8] = Src, ["floyd-steinberg"u8] = FloydSteinberg
+    var drawers = new map<@string, global::go.image.draw_package.Drawer>{["src"u8] = new draw_test_package.draw_OpᴠDrawer(Src), ["floyd-steinberg"u8] = FloydSteinberg
     };
-    var sources = new map<@string, image.Image>{["uniform"u8] = new image_UniformжImage(Ꮡ(new image.Uniform(new color_ΔRGBAᴠColor(new colorꓸRGBA(0xff, 0x7f, 0xff, 0xff))))), ["video001"u8] = video001
+    var sources = new map<@string, image.Image>{["uniform"u8] = new draw_test_package.image_UniformжImage(Ꮡ(new image.Uniform(new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0xff, 0x7f, 0xff, 0xff))))), ["video001"u8] = video001
     };
     foreach (var (dName, d) in drawers) {
 loop:
         foreach (var (sName, src) in sources) {
             var dst0 = image.NewPaletted(b, cgaPalette);
             var dst1 = image.NewPaletted(b, cgaPalette);
-            d.Draw(new image_PalettedжImage(dst0), b, src, new image.Point(nil));
+            d.Draw(new draw_test_package.image_PalettedжImage(dst0), b, src, new image.Point(nil));
             d.Draw(new embeddedPaletted(dst1), b, src, new image.Point(nil));
             for (nint y = b.Min.Y; y < b.Max.Y; y++) {
                 for (nint x = b.Min.X; x < b.Max.X; x++) {
@@ -862,4 +863,4 @@ public static void TestSqDiff(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end draw_package
+} // end draw_internal_test_package

@@ -5,14 +5,15 @@ namespace go.container;
 
 using fmt = fmt_package;
 using testing = testing_package;
+using static go.container.ring_package;
 
-partial class ring_package {
+partial class ring_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object emptyˢ = (@string)"empty"u8;
+internal static readonly object emptyˢ = (@string)"empty"u8;
 
 // For debugging - keep around.
-internal static void dump(ж<Ring> Ꮡr) {
+internal static void dump(ж<global::go.container.ring_package.Ring> Ꮡr) {
     if (Ꮡr == nil) {
         fmt.Println(emptyˢ);
         return;
@@ -26,7 +27,7 @@ internal static void dump(ж<Ring> Ꮡr) {
     fmt.Println();
 }
 
-internal static void verify(ж<testing.T> Ꮡt, ж<Ring> Ꮡr, nint N, nint sum) {
+internal static void verify(ж<testing.T> Ꮡt, ж<global::go.container.ring_package.Ring> Ꮡr, nint N, nint sum) {
     ref var r = ref Ꮡr.DerefOrNil();
 
     // Len
@@ -54,7 +55,7 @@ internal static void verify(ж<testing.T> Ꮡt, ж<Ring> Ꮡr, nint N, nint sum)
     }
     // connections
     if (r.next != nil) {
-        ж<Ring> p = default!;           // previous element
+        ж<global::go.container.ring_package.Ring> p = default!;                                             // previous element
         for (var q = Ꮡr; p == nil || q != Ꮡr; q = q.Value.next) {
             if (p != nil && p != (~q).prev) {
                 Ꮡt.Errorf("prev = %p, expected q.prev = %p\n"u8, p, (~q).prev);
@@ -95,8 +96,8 @@ internal static void verify(ж<testing.T> Ꮡt, ж<Ring> Ꮡr, nint N, nint sum)
 }
 
 public static void TestCornerCases(ж<testing.T> Ꮡt) {
-    ж<Ring> r0 = default!;
-    ref var r1 = ref heap(new Ring(), out var Ꮡr1);
+    ж<global::go.container.ring_package.Ring> r0 = default!;
+    ref var r1 = ref heap(new global::go.container.ring_package.Ring(), out var Ꮡr1);
     // Basics
     verify(Ꮡt, r0, 0, 0);
     verify(Ꮡt, Ꮡr1, 1, 0);
@@ -113,7 +114,7 @@ public static void TestCornerCases(ж<testing.T> Ꮡt) {
     verify(Ꮡt, Ꮡr1, 1, 0);
 }
 
-internal static ж<Ring> makeN(nint n) {
+internal static ж<global::go.container.ring_package.Ring> makeN(nint n) {
     var r = New(n);
     for (nint i = 1; i <= n; i++) {
         r.Value.Value = i;
@@ -139,7 +140,7 @@ public static void TestNew(ж<testing.T> Ꮡt) {
 
 public static void TestLink1(ж<testing.T> Ꮡt) {
     var r1a = makeN(1);
-    ref var r1b = ref heap(new Ring(), out var Ꮡr1b);
+    ref var r1b = ref heap(new global::go.container.ring_package.Ring(), out var Ꮡr1b);
     var r2a = r1a.Link(Ꮡr1b);
     verify(Ꮡt, r2a, 2, 1);
     if (r2a != r1a) {
@@ -156,7 +157,7 @@ public static void TestLink1(ж<testing.T> Ꮡt) {
 }
 
 public static void TestLink2(ж<testing.T> Ꮡt) {
-    ж<Ring> r0 = default!;
+    ж<global::go.container.ring_package.Ring> r0 = default!;
     var r1a = Ꮡ(new Ring(Value: (nint)(42)));
     var r1b = Ꮡ(new Ring(Value: (nint)(77)));
     var r10 = makeN(10);
@@ -171,7 +172,7 @@ public static void TestLink2(ж<testing.T> Ꮡt) {
 }
 
 public static void TestLink3(ж<testing.T> Ꮡt) {
-    ref var r = ref heap(new Ring(), out var Ꮡr);
+    ref var r = ref heap(new global::go.container.ring_package.Ring(), out var Ꮡr);
     nint n = 1;
     for (nint i = 1; i < 10; i++) {
         n += i;
@@ -210,9 +211,9 @@ public static void TestLinkUnlink(ж<testing.T> Ꮡt) {
 
 // Test that calling Move() on an empty Ring initializes it.
 public static void TestMoveEmptyRing(ж<testing.T> Ꮡt) {
-    ref var r = ref heap(new Ring(), out var Ꮡr);
+    ref var r = ref heap(new global::go.container.ring_package.Ring(), out var Ꮡr);
     Ꮡr.Move(1);
     verify(Ꮡt, Ꮡr, 1, 0);
 }
 
-} // end ring_package
+} // end ring_internal_test_package

@@ -16,13 +16,14 @@ using reflect = reflect_package;
 using testing = testing_package;
 using go.math;
 using rand = go.math.rand_package;
+using static go.math.rand_internal_test_package;
 
 partial class rand_test_package {
 
 internal static ж<bool> printgolden = flag.Bool("printgolden"u8, false, "print golden results for regression test"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string truncatedˢ = "truncated"u8;
+internal static readonly @string truncatedˢ = "truncated"u8;
 
 public static void TestRegress(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;

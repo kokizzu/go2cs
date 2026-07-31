@@ -4,8 +4,9 @@
 namespace go.regexp;
 
 using testing = testing_package;
+using static go.regexp.syntax_package;
 
-partial class syntax_package {
+partial class syntax_internal_test_package {
 
 // Already-simple constructs
 // Posix character classes
@@ -140,7 +141,7 @@ internal static slice<simplifyTestsᴛ1> simplifyTests = new simplifyTestsᴛ1[]
 
 public static void TestSimplify(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in simplifyTests) {
-        var (re, err) = Parse(tt.Regexp, (Flags)(MatchNL | (Flags)(Perl & ~OneLine)));
+        var (re, err) = Parse(tt.Regexp, (global::go.regexp.syntax_package.Flags)(MatchNL | (global::go.regexp.syntax_package.Flags)(Perl & ~OneLine)));
         if (err != default!) {
             Ꮡt.Errorf("Parse(%#q) = error %v"u8, tt.Regexp, err);
             continue;
@@ -152,4 +153,4 @@ public static void TestSimplify(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end syntax_package
+} // end syntax_internal_test_package

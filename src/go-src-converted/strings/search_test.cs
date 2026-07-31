@@ -4,8 +4,9 @@
 namespace go;
 
 using reflect = reflect_package;
-using static go.strings_package;
+using static strings_package;
 using testing = testing_package;
+using static go.strings_internal_test_package;
 
 partial class strings_test_package {
 
@@ -33,7 +34,7 @@ public static void TestFinderNext(ж<testing.T> Ꮡt) {
         new("at that"u8, "which finally halts.  at that point"u8, 22)
     }.slice();
     foreach (var (_, tc) in testCases) {
-        nint got = StringFind(tc.pat, tc.text);
+        nint got = strings_internal_test_package.StringFind(tc.pat, tc.text);
         nint want = tc.index;
         if (got != want) {
             Ꮡt.Errorf("stringFind(%q, %q) got %d, want %d\n"u8, tc.pat, tc.text, got, want);
@@ -74,7 +75,7 @@ public static void TestFinderCreation(ж<testing.T> Ꮡt) {
     foreach (var (_, vᴛ1) in testCases) {
         var tc = vᴛ1.ΔClone();
 
-        var (bad, good) = DumpTables(tc.pattern);
+        var (bad, good) = strings_internal_test_package.DumpTables(tc.pattern);
         foreach (var (i, got) in bad) {
             nint want = tc.bad[i];
             if (want == 0) {

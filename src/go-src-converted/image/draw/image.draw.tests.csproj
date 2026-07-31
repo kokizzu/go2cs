@@ -69,9 +69,9 @@
   <ItemGroup>
     <Compile Include="bench_test.cs" />
     <Compile Include="clip_test.cs" />
-    <Compile Include="draw.cs" />
     <Compile Include="draw_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
+    <Compile Include="package_info_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
   </ItemGroup>
 
@@ -89,7 +89,6 @@
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\image\color\image.color.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\image\image.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\image\internal\imageutil\image.internal.imageutil.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\image\png\image.png.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\fs\io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
@@ -97,6 +96,7 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\os\os.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\reflect\reflect.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\testing\quick\testing.quick.csproj" />
+    <ProjectReference Include="image.draw.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

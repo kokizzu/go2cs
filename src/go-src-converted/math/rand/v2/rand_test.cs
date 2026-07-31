@@ -17,18 +17,19 @@ using @internal;
 using global::go.math.rand;
 using global::go.sync;
 using rand = global::go.math.rand.rand_package;
+using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 
 internal static UntypedInt numTestSamples => 10000;
 
-internal static (float64, array<uint32>, array<float32>, array<float32>) tupleᴛ1ʗ = GetNormalDistributionParameters();
+internal static (float64, array<uint32>, array<float32>, array<float32>) tupleᴛ1ʗ = rand_internal_test_package.GetNormalDistributionParameters();
 internal static float64 rn = tupleᴛ1ʗ.Item1;
 internal static array<uint32> kn = tupleᴛ1ʗ.Item2;
 internal static array<float32> wn = tupleᴛ1ʗ.Item3;
 internal static array<float32> fn = tupleᴛ1ʗ.Item4;
 
-internal static (float64, array<uint32>, array<float32>, array<float32>) tupleᴛ2ʗ = GetExponentialDistributionParameters();
+internal static (float64, array<uint32>, array<float32>, array<float32>) tupleᴛ2ʗ = rand_internal_test_package.GetExponentialDistributionParameters();
 internal static float64 re = tupleᴛ2ʗ.Item1;
 internal static array<uint32> ke = tupleᴛ2ʗ.Item2;
 internal static array<float32> we = tupleᴛ2ʗ.Item3;
@@ -111,7 +112,7 @@ internal static void checkSampleSliceDistributions(ж<testing.T> Ꮡt, slice<flo
 // Normal distribution tests
 //
 internal static slice<float64> generateNormalSamples(nint nsamples, float64 mean, float64 stddev, uint64 seed) {
-    var r = New(new rand.PCGжSource(NewPCG(seed, seed)));
+    var r = New(new rand_test_package.rand_PCGжSource(NewPCG(seed, seed)));
     var samples = new slice<float64>(nsamples);
     foreach (var (i, _) in samples) {
         samples[i] = r.NormFloat64() * stddev + mean;
@@ -163,7 +164,7 @@ public static void TestNonStandardNormalValues(ж<testing.T> Ꮡt) {
 // Exponential distribution tests
 //
 internal static slice<float64> generateExponentialSamples(nint nsamples, float64 rate, uint64 seed) {
-    var r = New(new rand.PCGжSource(NewPCG(seed, seed)));
+    var r = New(new rand_test_package.rand_PCGжSource(NewPCG(seed, seed)));
     var samples = new slice<float64>(nsamples);
     foreach (var (i, _) in samples) {
         samples[i] = r.ExpFloat64() / rate;
@@ -343,7 +344,7 @@ public static void TestExpTables(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goarmˢ = "GOARM"u8;
+internal static readonly @string goarmˢ = "GOARM"u8;
 
 internal static bool hasSlowFloatingPoint() {
     var exprᴛ1 = runtime.GOARCH;
@@ -361,7 +362,7 @@ internal static bool hasSlowFloatingPoint() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object float32ShouldBeInRange01ˢ = (@string)"Float32() should be in range [0,1). ct:"u8;
+internal static readonly object float32ShouldBeInRange01ˢ = (@string)"Float32() should be in range [0,1). ct:"u8;
 
 public static void TestFloat32(ж<testing.T> Ꮡt) {
     // For issue 6721, the problem came after 7533753 calls, so check 10e6.
@@ -423,7 +424,7 @@ internal static nint encodePerm(slice<nint> s) {
 
 // TestUniformFactorial tests several ways of generating a uniform value in [0, n!).
 public static void TestUniformFactorial(ж<testing.T> Ꮡt) {
-    var r = New(new rand.PCGжSource(NewPCG(1, 2)));
+    var r = New(new rand_test_package.rand_PCGжSource(NewPCG(1, 2)));
     nint top = 6;
     if (testing.Short()) {
         top = 3;
@@ -514,7 +515,7 @@ public static ж<uint64> ᏑSink = new(default(uint64));
 public static ref uint64 Sink => ref ᏑSink.Value;
 
 internal static ж<rand.Rand> testRand() {
-    return New(new rand.PCGжSource(NewPCG(1, 2)));
+    return New(new rand_test_package.rand_PCGжSource(NewPCG(1, 2)));
 }
 
 public static void BenchmarkSourceUint64(ж<testing.B> Ꮡb) {

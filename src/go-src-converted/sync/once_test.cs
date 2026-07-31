@@ -3,8 +3,9 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.sync_package;
+using static sync_package;
 using Δtesting = testing_package;
+using static go.sync_internal_test_package;
 using Δsync = sync_package;
 
 partial class sync_test_package {

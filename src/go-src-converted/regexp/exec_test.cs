@@ -21,11 +21,12 @@ using compress;
 using go.unicode;
 using path;
 using regexp;
+using static go.regexp_package;
 
-partial class regexp_package {
+partial class regexp_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testdataRe2SearchTxtˢ = "testdata/re2-search.txt"u8;
+internal static readonly @string testdataRe2SearchTxtˢ = "testdata/re2-search.txt"u8;
 
 // TestRE2 tests this package's regexp API against test cases
 // considered during RE2's exhaustive tests, which run all possible
@@ -75,7 +76,7 @@ public static void TestRE2Search(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bz2ˢ = ".bz2"u8;
+internal static readonly @string bz2ˢ = ".bz2"u8;
 
 internal static void testRE2(ж<testing.T> Ꮡt, @string @file) => func((defer, recover) => {
     ref var t = ref Ꮡt.Value;
@@ -88,20 +89,20 @@ internal static void testRE2(ж<testing.T> Ꮡt, @string @file) => func((defer, 
     defer(() => fʗ1.Close());
     Δio.Reader txt = default!;
     if (strings.HasSuffix(@file, bz2ˢ)){
-        var z = bzip2.NewReader(new os_FileжReader(f));
+        var z = bzip2.NewReader(new regexp_test_package.os_FileжReader(f));
         txt = z;
         @file = @file[..(int)(len(@file) - len(".bz2"))];
     } else {
         // for error messages
-        txt = new os_FileжReader(f);
+        txt = new regexp_test_package.os_FileжReader(f);
     }
     nint lineno = 0;
     var scanner = bufio.NewScanner(txt);
     slice<@string> str = default!;
     slice<@string> input = default!;
     bool inStrings = default!;
-    ж<Regexp> re = default!;
-    ж<Regexp> refull = default!;
+    ж<global::go.regexp_package.Regexp> re = default!;
+    ж<global::go.regexp_package.Regexp> refull = default!;
     nint nfail = default!;
     nint ncase = default!;
     for (nint linenoΔ1 = 1; scanner.Scan(); linenoΔ1++) {
@@ -233,72 +234,72 @@ internal static void testRE2(ж<testing.T> Ꮡt, @string @file) => func((defer, 
     Ꮡt.Logf("%d cases tested"u8, ncase);
 });
 
-internal static slice<Func<ж<Regexp>, ж<Regexp>, @string, (slice<nint>, @string)>> run;
-internal static void initᴛrun() { run = new Func<ж<Regexp>, ж<Regexp>, @string, (slice<nint>, @string)>[]{
+internal static slice<Func<ж<global::go.regexp_package.Regexp>, ж<global::go.regexp_package.Regexp>, @string, (slice<nint>, @string)>> run;
+internal static void initᴛrun() { run = new Func<ж<global::go.regexp_package.Regexp>, ж<global::go.regexp_package.Regexp>, @string, (slice<nint>, @string)>[]{
     runFull,
     runPartial,
     runFullLongest,
     runPartialLongest
 }.slice(); }
 
-internal static (slice<nint>, @string) runFull(ж<Regexp> Ꮡre, ж<Regexp> Ꮡrefull, @string text) {
+internal static (slice<nint>, @string) runFull(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
     ref var refull = ref Ꮡrefull.Value;
 
     refull.longest = false;
     return (Ꮡrefull.FindStringSubmatchIndex(text), "[full]");
 }
 
-internal static (slice<nint>, @string) runPartial(ж<Regexp> Ꮡre, ж<Regexp> Ꮡrefull, @string text) {
+internal static (slice<nint>, @string) runPartial(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
     ref var re = ref Ꮡre.Value;
 
     re.longest = false;
     return (Ꮡre.FindStringSubmatchIndex(text), "");
 }
 
-internal static (slice<nint>, @string) runFullLongest(ж<Regexp> Ꮡre, ж<Regexp> Ꮡrefull, @string text) {
+internal static (slice<nint>, @string) runFullLongest(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
     ref var refull = ref Ꮡrefull.Value;
 
     refull.longest = true;
     return (Ꮡrefull.FindStringSubmatchIndex(text), "[full,longest]");
 }
 
-internal static (slice<nint>, @string) runPartialLongest(ж<Regexp> Ꮡre, ж<Regexp> Ꮡrefull, @string text) {
+internal static (slice<nint>, @string) runPartialLongest(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
     ref var re = ref Ꮡre.Value;
 
     re.longest = true;
     return (Ꮡre.FindStringSubmatchIndex(text), "[longest]");
 }
 
-internal static slice<Func<ж<Regexp>, ж<Regexp>, @string, (bool, @string)>> Δmatch;
-internal static void initᴛΔmatch() { Δmatch = new Func<ж<Regexp>, ж<Regexp>, @string, (bool, @string)>[]{
+internal static slice<Func<ж<global::go.regexp_package.Regexp>, ж<global::go.regexp_package.Regexp>, @string, (bool, @string)>> Δmatch;
+internal static void initᴛΔmatch() { Δmatch = new Func<ж<global::go.regexp_package.Regexp>, ж<global::go.regexp_package.Regexp>, @string, (bool, @string)>[]{
     matchFull,
     matchPartial,
     matchFullLongest,
     matchPartialLongest
 }.slice(); }
 
-internal static (bool, @string) matchFull(ж<Regexp> Ꮡre, ж<Regexp> Ꮡrefull, @string text) {
+internal static (bool, @string) matchFull(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
     ref var refull = ref Ꮡrefull.Value;
 
     refull.longest = false;
     return (Ꮡrefull.MatchString(text), "[full]");
 }
 
-internal static (bool, @string) matchPartial(ж<Regexp> Ꮡre, ж<Regexp> Ꮡrefull, @string text) {
+internal static (bool, @string) matchPartial(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
     ref var re = ref Ꮡre.Value;
 
     re.longest = false;
     return (Ꮡre.MatchString(text), "");
 }
 
-internal static (bool, @string) matchFullLongest(ж<Regexp> Ꮡre, ж<Regexp> Ꮡrefull, @string text) {
+internal static (bool, @string) matchFullLongest(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
     ref var refull = ref Ꮡrefull.Value;
 
     refull.longest = true;
     return (Ꮡrefull.MatchString(text), "[full,longest]");
 }
 
-internal static (bool, @string) matchPartialLongest(ж<Regexp> Ꮡre, ж<Regexp> Ꮡrefull, @string text) {
+internal static (bool, @string) matchPartialLongest(ж<global::go.regexp_package.Regexp> Ꮡre, ж<global::go.regexp_package.Regexp> Ꮡrefull, @string text) {
     ref var re = ref Ꮡre.Value;
 
     re.longest = true;
@@ -314,8 +315,8 @@ internal static bool isSingleBytes(@string s) {
     return true;
 }
 
-internal static (ж<Regexp> re, error err) tryCompile(@string s) {
-    ж<Regexp> re = default!;
+internal static (ж<global::go.regexp_package.Regexp> re, error err) tryCompile(@string s) {
+    ж<global::go.regexp_package.Regexp> re = default!;
     error err = default!;
     func((defer, recover) => {
         // Protect against panic during Compile.
@@ -371,7 +372,7 @@ internal static slice<nint> parseResult(ж<testing.T> Ꮡt, @string @file, nint 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testdataDatˢ = "testdata/*.dat"u8;
+internal static readonly @string testdataDatˢ = "testdata/*.dat"u8;
 
 // TestFowler runs this package's regexp API against the
 // POSIX regular expression tests collected by Glenn Fowler
@@ -387,7 +388,7 @@ public static void TestFowler(ж<testing.T> Ꮡt) {
     }
 }
 
-internal static ж<Regexp> notab;
+internal static ж<global::go.regexp_package.Regexp> notab;
 internal static void initᴛnotab() { notab = MustCompilePOSIX(@"[^\t]+"u8); }
 
 internal static void testFowler(ж<testing.T> Ꮡt, @string @file) => func((defer, recover) => {
@@ -400,7 +401,7 @@ internal static void testFowler(ж<testing.T> Ꮡt, @string @file) => func((defe
     }
     var fʗ1 = f;
     defer(() => fʗ1.Close());
-    var b = bufio.NewReader(new os_FileжReader(f));
+    var b = bufio.NewReader(new regexp_test_package.os_FileжReader(f));
     nint lineno = 0;
     @string lastRegexp = ""u8;
 Reading:
@@ -731,8 +732,8 @@ internal static slice<byte> makeText(nint n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string raceˢ = "-race"u8;
-private static readonly object matchˢ = (@string)"match!"u8;
+internal static readonly @string raceˢ = "-race"u8;
+internal static readonly object matchˢ = (@string)"match!"u8;
 
 public static void BenchmarkMatch(ж<testing.B> Ꮡb) {
     var isRaceBuilder = strings.HasSuffix(testenv.Builder(), raceˢ);
@@ -762,8 +763,8 @@ public static void BenchmarkMatch(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sAZˢ = @"(?s)\A.*\z"u8;
-private static readonly object notMatchˢ = (@string)"not match!"u8;
+internal static readonly @string sAZˢ = @"(?s)\A.*\z"u8;
+internal static readonly object notMatchˢ = (@string)"not match!"u8;
 
 public static void BenchmarkMatch_onepass_regex(ж<testing.B> Ꮡb) {
     var isRaceBuilder = strings.HasSuffix(testenv.Builder(), raceˢ);
@@ -842,9 +843,9 @@ public static void TestLongest(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string oneTwoThreeFourFiveSixˢ = @"(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|twentyone|twentytwo|twentythree|twentyfour|twentyfive|twentysix|twentyseven|twentyeight|twentynine|thirty|thirtyone|thirtytwo|thirtythree|thirtyfour|thirtyfive|thirtysix|thirtyseven|thirtyeight|thirtynine|forty|fortyone|fortytwo|fortythree|fortyfour|fortyfive|fortysix|fortyseven|fortyeight|fortynine|fifty|fiftyone|fiftytwo|fiftythree|fiftyfour|fiftyfive|fiftysix|fiftyseven|fiftyeight|fiftynine|sixty|sixtyone|sixtytwo|sixtythree|sixtyfour|sixtyfive|sixtysix|sixtyseven|sixtyeight|sixtynine|seventy|seventyone|seventytwo|seventythree|seventyfour|seventyfive|seventysix|seventyseven|seventyeight|seventynine|eighty|eightyone|eightytwo|eightythree|eightyfour|eightyfive|eightysix|eightyseven|eightyeight|eightynine|ninety|ninetyone|ninetytwo|ninetythree|ninetyfour|ninetyfive|ninetysix|ninetyseven|ninetyeight|ninetynine|onehundred)"u8;
-private static readonly @string twoˢ = "two"u8;
-private static readonly @string xxxˢ = "xxx"u8;
+internal static readonly @string oneTwoThreeFourFiveSixˢ = @"(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|twentyone|twentytwo|twentythree|twentyfour|twentyfive|twentysix|twentyseven|twentyeight|twentynine|thirty|thirtyone|thirtytwo|thirtythree|thirtyfour|thirtyfive|thirtysix|thirtyseven|thirtyeight|thirtynine|forty|fortyone|fortytwo|fortythree|fortyfour|fortyfive|fortysix|fortyseven|fortyeight|fortynine|fifty|fiftyone|fiftytwo|fiftythree|fiftyfour|fiftyfive|fiftysix|fiftyseven|fiftyeight|fiftynine|sixty|sixtyone|sixtytwo|sixtythree|sixtyfour|sixtyfive|sixtysix|sixtyseven|sixtyeight|sixtynine|seventy|seventyone|seventytwo|seventythree|seventyfour|seventyfive|seventysix|seventyseven|seventyeight|seventynine|eighty|eightyone|eightytwo|eightythree|eightyfour|eightyfive|eightysix|eightyseven|eightyeight|eightynine|ninety|ninetyone|ninetytwo|ninetythree|ninetyfour|ninetyfive|ninetysix|ninetyseven|ninetyeight|ninetynine|onehundred)"u8;
+internal static readonly @string twoˢ = "two"u8;
+internal static readonly @string xxxˢ = "xxx"u8;
 
 // TestProgramTooLongForBacktrack tests that a regex which is too long
 // for the backtracker still executes properly.
@@ -858,4 +859,4 @@ public static void TestProgramTooLongForBacktrack(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end regexp_package
+} // end regexp_internal_test_package

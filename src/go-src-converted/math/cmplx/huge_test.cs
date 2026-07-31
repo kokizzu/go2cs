@@ -7,8 +7,9 @@
 namespace go.math;
 
 using testing = testing_package;
+using static go.math.cmplx_package;
 
-partial class cmplx_package {
+partial class cmplx_internal_test_package {
 
 public static void TestTanHuge(ж<testing.T> Ꮡt) {
     foreach (var (i, x) in hugeIn) {
@@ -20,4 +21,4 @@ public static void TestTanHuge(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end cmplx_package
+} // end cmplx_internal_test_package

@@ -16,9 +16,9 @@ internal static class Go2CsTestHost
             "writer.go",
             "writer_test.go",
         });
-        registry.Add("TestError", csv_package.TestError, "writer_test.go", 77);
-        registry.Add("TestRead", csv_package.TestRead, "reader_test.go", 406);
-        registry.Add("TestWrite", csv_package.TestWrite, "writer_test.go", 52);
+        registry.Add("TestError", csv_internal_test_package.TestError, "writer_test.go", 77);
+        registry.Add("TestRead", csv_internal_test_package.TestRead, "reader_test.go", 406);
+        registry.Add("TestWrite", csv_internal_test_package.TestWrite, "writer_test.go", 52);
         return TestHost.Run(registry, args);
     }
 }

@@ -68,23 +68,15 @@
        can leak in because it is never listed. -->
   <ItemGroup>
     <Compile Include="auto_test.cs" />
-    <Compile Include="chacha8.cs" />
     <Compile Include="chacha8_test.cs" />
     <Compile Include="example_test.cs" />
-    <Compile Include="exp.cs" />
     <Compile Include="export_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
-    <Compile Include="normal.cs" />
-    <Compile Include="package_info_external_test.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="pcg.cs" />
     <Compile Include="pcg_test.cs" />
     <Compile Include="race_test.cs" />
-    <Compile Include="rand.cs" />
-    <Compile Include="rand_impl.cs" />
     <Compile Include="rand_test.cs" />
     <Compile Include="regress_test.cs" />
-    <Compile Include="zipf.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -115,12 +107,10 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\fmt\fmt.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\go\format\go.format.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\hash\hash.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\internal\byteorder\internal.byteorder.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\chacha8rand\internal.chacha8rand.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\testenv\internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\fs\io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\math\bits\math.bits.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\math.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\os\os.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\reflect\reflect.csproj" />
@@ -132,7 +122,7 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\testing\iotest\testing.iotest.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\text\tabwriter\text.tabwriter.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\time\time.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\unsafe\unsafe.csproj" />
+    <ProjectReference Include="math.rand.v2.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

@@ -6,8 +6,9 @@ namespace go;
 using slices = slices_package;
 using testing = testing_package;
 using iter = iter_package;
+using static go.maps_package;
 
-partial class maps_package {
+partial class maps_internal_test_package {
 
 public static void TestAll(ж<testing.T> Ꮡt) {
     for (nint size = 0; size < 10; size++) {
@@ -111,4 +112,4 @@ public static void TestCollect(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end maps_package
+} // end maps_internal_test_package

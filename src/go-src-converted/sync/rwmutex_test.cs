@@ -6,10 +6,11 @@ namespace go;
 
 using fmt = fmt_package;
 using Δruntime = runtime_package;
-using static go.sync_package;
+using static sync_package;
 using atomic = go.sync.atomic_package;
 using Δtesting = testing_package;
 using go.sync;
+using static go.sync_internal_test_package;
 using Δsync = sync_package;
 
 partial class sync_test_package {
@@ -149,8 +150,8 @@ public static void TestRWMutex(ж<Δtesting.T> Ꮡt) => func((defer, recover) =>
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object rLockerDidnTReadLockItˢ = (@string)"RLocker() didn't read-lock it"u8;
-private static readonly object rLockerDidnTRespectTheˢ = (@string)"RLocker() didn't respect the write lock"u8;
+internal static readonly object rLockerDidnTReadLockItˢ = (@string)"RLocker() didn't read-lock it"u8;
+internal static readonly object rLockerDidnTRespectTheˢ = (@string)"RLocker() didn't respect the write lock"u8;
 
 public static void TestRLocker(ж<Δtesting.T> Ꮡt) {
     ref var wl = ref heap(new Δsync.RWMutex(), out var Ꮡwl);

@@ -12,7 +12,7 @@ internal static class Go2CsTestHost
             "slicewriter.go",
             "slw_test.go",
         });
-        registry.Add("TestSliceWriter", slicewriter_package.TestSliceWriter, "slw_test.go", 12);
+        registry.Add("TestSliceWriter", slicewriter_internal_test_package.TestSliceWriter, "slw_test.go", 12);
         return TestHost.Run(registry, args);
     }
 }

@@ -24,10 +24,10 @@ internal static class Go2CsTestHost
             "testdata/pass-sawtooth.bz2",
             "testdata/random.data.bz2",
         });
-        registry.Add("TestBitReader", bzip2_package.TestBitReader, "bzip2_test.go", 151);
-        registry.Add("TestMTF", bzip2_package.TestMTF, "bzip2_test.go", 185);
-        registry.Add("TestReader", bzip2_package.TestReader, "bzip2_test.go", 40);
-        registry.Add("TestZeroRead", bzip2_package.TestZeroRead, "bzip2_test.go", 207);
+        registry.Add("TestBitReader", bzip2_internal_test_package.TestBitReader, "bzip2_test.go", 151);
+        registry.Add("TestMTF", bzip2_internal_test_package.TestMTF, "bzip2_test.go", 185);
+        registry.Add("TestReader", bzip2_internal_test_package.TestReader, "bzip2_test.go", 40);
+        registry.Add("TestZeroRead", bzip2_internal_test_package.TestZeroRead, "bzip2_test.go", 207);
         return TestHost.Run(registry, args);
     }
 }

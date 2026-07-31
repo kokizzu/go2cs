@@ -4,8 +4,8 @@
 namespace go;
 
 using fmt = fmt_package;
-using sort = go.sort_package;
-using go;
+using sort = sort_package;
+using static go.sort_internal_test_package;
 
 partial class sort_test_package {
 
@@ -51,8 +51,8 @@ public static bool Less(this ByWeight s, nint i, nint j) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object organsByWeightˢ = (@string)"Organs by weight:"u8;
-private static readonly object organsByNameˢ = (@string)"Organs by name:"u8;
+internal static readonly object organsByWeightˢ = (@string)"Organs by weight:"u8;
+internal static readonly object organsByNameˢ = (@string)"Organs by name:"u8;
 
 public static void Example_sortWrapper() {
     var s = new ж<Organ>[]{

@@ -9,13 +9,14 @@ using testenv = @internal.testenv_package;
 using Δmath = math_package;
 using rand = go.math.rand.rand_package;
 using slices = slices_package;
-using static go.sort_package;
+using static sort_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using testing = testing_package;
 using @internal;
 using go.math.rand;
 using sort = sort_package;
+using static go.sort_internal_test_package;
 
 partial class sort_test_package {
 
@@ -161,7 +162,7 @@ public static void TestReverseRange(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
     var data = new nint[]{1, 2, 3, 4, 5, 6, 7}.slice();
-    ReverseRange(((sort.IntSlice)data), 0, len(data));
+    sort_internal_test_package.ReverseRange(((sort.IntSlice)data), 0, len(data));
     for (nint i = len(data) - 1; i > 0; i--) {
         if (data[i] > data[i - 1]) {
             Ꮡt.Fatalf("reverseRange didn't work"u8);
@@ -169,7 +170,7 @@ public static void TestReverseRange(ж<testing.T> Ꮡt) {
     }
     var data1 = new nint[]{1, 2, 3, 4, 5, 6, 7}.slice();
     var data2 = new nint[]{1, 2, 5, 4, 3, 6, 7}.slice();
-    ReverseRange(((sort.IntSlice)data1), 2, 5);
+    sort_internal_test_package.ReverseRange(((sort.IntSlice)data1), 2, 5);
     foreach (var (i, v) in data1) {
         if (v != data2[i]) {
             Ꮡt.Fatalf("reverseRange didn't work"u8);
@@ -209,10 +210,10 @@ public static void TestNonDeterministicComparison(ж<testing.T> Ꮡt) => func((d
         }
     });
     var td = Ꮡ(new nonDeterministicTestingData(
-        r: rand.New(new rand_PCGжSource(rand.NewPCG(0, 0)))
+        r: rand.New(new sort_test_package.rand_PCGжSource(rand.NewPCG(0, 0)))
     ));
     for (nint i = 0; i < 10; i++) {
-        Sort(new nonDeterministicTestingDataжInterface(td));
+        Sort(new sort_test_package.nonDeterministicTestingDataжInterface(td));
     }
 });
 
@@ -545,7 +546,7 @@ internal static void testBentleyMcIlroy(ж<testing.T> Ꮡt, Action<sort.Interfac
                     ref var desc = ref heap<@string>(out var Ꮡdesc);
                     desc = fmt.Sprintf("n=%d m=%d dist=%s mode=%s"u8, n, m, dists[dist], modes[mode]);
                     var d = Ꮡ(new testingData(desc: desc, t: Ꮡt, data: mdata[0..(int)(n)], maxswap: maxswap(n)));
-                    sort(new testingDataжInterface(d));
+                    sort(new sort_test_package.testingDataжInterface(d));
                     // Uncomment if you are trying to improve the number of compares/swaps.
                     //t.Logf("%s: ncmp=%d, nswp=%d", desc, d.ncmp, d.nswap)
                     // If we were testing C qsort, we'd have to make a copy
@@ -570,7 +571,7 @@ public static void TestSortBM(ж<testing.T> Ꮡt) {
 }
 
 public static void TestHeapsortBM(ж<testing.T> Ꮡt) {
-    testBentleyMcIlroy(Ꮡt, Heapsort, (nint n) => n * lg(n) * 12 / 10);
+    testBentleyMcIlroy(Ꮡt, sort_internal_test_package.Heapsort, (nint n) => n * lg(n) * 12 / 10);
 }
 
 public static void TestStableBM(ж<testing.T> Ꮡt) {
@@ -639,7 +640,7 @@ public static void TestAdversary(ж<testing.T> Ꮡt) {
     nint maxcmp = size * lg(size) * 4;
     // the factor 4 was found by trial and error
     var d = newAdversaryTestingData(Ꮡt, size, maxcmp);
-    Sort(new adversaryTestingDataжInterface(d));
+    Sort(new sort_test_package.adversaryTestingDataжInterface(d));
     // This should degenerate to heapsort.
     // Check data is fully populated and sorted.
     foreach (var (i, v) in (~d).data) {
@@ -751,7 +752,7 @@ public static void TestStability(ж<testing.T> Ꮡt) {
 internal static slice<nint> countOpsSizes = new nint[]{100, 300, 1000, 3000, 10000, 30000, 100000, 300000, 1000000}.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object countingSkippedAsNonˢ = (@string)"Counting skipped as non-verbose mode."u8;
+internal static readonly object countingSkippedAsNonˢ = (@string)"Counting skipped as non-verbose mode."u8;
 
 internal static void countOps(ж<testing.T> Ꮡt, Action<sort.Interface> algo, @string name) {
     ref var t = ref Ꮡt.Value;
@@ -774,28 +775,28 @@ internal static void countOps(ж<testing.T> Ꮡt, Action<sort.Interface> algo, @
         for (nint i = 0; i < n; i++) {
             td.data[i] = rand.IntN(n / 5);
         }
-        algo(new testingDataжInterface(Ꮡtd));
+        algo(new sort_test_package.testingDataжInterface(Ꮡtd));
         Ꮡt.Logf("%s %8d elements: %11d Swap, %10d Less"u8, name, n, td.nswap, td.ncmp);
     }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stableˢ = "Stable"u8;
+internal static readonly @string stableˢ = "Stable"u8;
 
 public static void TestCountStableOps(ж<testing.T> Ꮡt) {
     countOps(Ꮡt, Stable, stableˢ);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sortˢ = "Sort  "u8;
+internal static readonly @string sortˢ = "Sort  "u8;
 
 public static void TestCountSortOps(ж<testing.T> Ꮡt) {
     countOps(Ꮡt, Sort, sortˢ);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string raceˢ = "-race"u8;
-private static readonly object skippingSlowBenchmarkOnˢ = (@string)"skipping slow benchmark on race builder"u8;
+internal static readonly @string raceˢ = "-race"u8;
+internal static readonly object skippingSlowBenchmarkOnˢ = (@string)"skipping slow benchmark on race builder"u8;
 
 internal static void bench(ж<testing.B> Ꮡb, nint size, Action<sort.Interface> algo, @string name) {
     ref var b = ref Ꮡb.Value;
@@ -831,7 +832,7 @@ internal static void bench(ж<testing.B> Ꮡb, nint size, Action<sort.Interface>
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sortˢ2 = "Sort"u8;
+internal static readonly @string sortˢ2 = "Sort"u8;
 
 public static void BenchmarkSort1e2(ж<testing.B> Ꮡb) {
     bench(Ꮡb, 100, Sort, sortˢ2);

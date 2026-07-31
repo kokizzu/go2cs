@@ -68,17 +68,14 @@
        can leak in because it is never listed. -->
   <ItemGroup>
     <Compile Include="all_test.cs" />
-    <Compile Include="backtrack.cs" />
-    <Compile Include="exec.cs" />
     <Compile Include="exec2_test.cs" />
     <Compile Include="exec_test.cs" />
     <Compile Include="find_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
-    <Compile Include="onepass.cs" />
     <Compile Include="onepass_test.cs" />
+    <Compile Include="package_info_internal_test.cs" />
     <Compile Include="package_init_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="regexp.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -105,7 +102,6 @@
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\bufio\bufio.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\bytes\bytes.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\compress\bzip2\compress.bzip2.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\fmt\fmt.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\testenv\internal.testenv.csproj" />
@@ -118,9 +114,8 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\slices\slices.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strconv\strconv.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strings\strings.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\sync\sync.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\unicode\unicode.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\unicode\utf8\unicode.utf8.csproj" />
+    <ProjectReference Include="regexp.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

@@ -4,10 +4,11 @@
 namespace go;
 
 using Δruntime = runtime_package;
-using static go.sort_package;
+using static sort_package;
 using stringspkg = strings_package;
 using testing = testing_package;
 using sort = sort_package;
+using static go.sort_internal_test_package;
 
 partial class sort_test_package {
 
@@ -203,8 +204,8 @@ internal static void runSearchWrappers() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object skippingMallocCountInˢ = (@string)"skipping malloc count in short mode"u8;
-private static readonly object skippingGomaxprocs1ˢ = (@string)"skipping; GOMAXPROCS>1"u8;
+internal static readonly object skippingMallocCountInˢ = (@string)"skipping malloc count in short mode"u8;
+internal static readonly object skippingGomaxprocs1ˢ = (@string)"skipping; GOMAXPROCS>1"u8;
 
 public static void TestSearchWrappersDontAlloc(ж<testing.T> Ꮡt) {
     if (testing.Short()) {

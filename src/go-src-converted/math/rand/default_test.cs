@@ -15,12 +15,13 @@ using testing = testing_package;
 using @internal;
 using exec = go.os.exec_package;
 using go.os;
+using static go.math.rand_internal_test_package;
 
 partial class rand_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object skippingStartingAnotherˢ = (@string)"skipping starting another executable in short mode"u8;
-private static readonly @string testRunTestDefaultRaceˢ = "-test.run=TestDefaultRace"u8;
+internal static readonly object skippingStartingAnotherˢ = (@string)"skipping starting another executable in short mode"u8;
+internal static readonly @string testRunTestDefaultRaceˢ = "-test.run=TestDefaultRace"u8;
 
 // Test that racy access to the default functions behaves reasonably.
 public static void TestDefaultRace(ж<testing.T> Ꮡt) {
@@ -46,7 +47,7 @@ public static void TestDefaultRace(ж<testing.T> Ꮡt) {
             if (err != default!) {
                 exe = os.Args[0];
             }
-            var cmd = testenv.Command(new testing_TжTB(tΔ1), exe, testRunTestDefaultRaceˢ);
+            var cmd = testenv.Command(new rand_test_package.testing_TжTB(tΔ1), exe, testRunTestDefaultRaceˢ);
             cmd = testenv.CleanCmdEnv(cmd);
             cmd.Value.Env = append((~cmd).Env, fmt.Sprintf("GO_RAND_TEST_HELPER_CODE=%d"u8, iΔ1 / 2));
             if (iΔ1 % 2 != 0) {

@@ -3,7 +3,9 @@
 // license that can be found in the LICENSE file.
 namespace go.unicode;
 
-partial class utf16_package {
+using static go.unicode.utf16_package;
+
+partial class utf16_internal_test_package {
 
 // Extra names for constants so we can validate them during testing.
 public static UntypedInt Surr1 => /* surr1 */ 55296;
@@ -16,4 +18,4 @@ public static UntypedInt MaxRune => /* maxRune */ 1114111;
 
 public static UntypedInt ReplacementChar => /* replacementChar */ 65533;
 
-} // end utf16_package
+} // end utf16_internal_test_package

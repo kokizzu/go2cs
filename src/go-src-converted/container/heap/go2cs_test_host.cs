@@ -14,13 +14,13 @@ internal static class Go2CsTestHost
             "heap.go",
             "heap_test.go",
         });
-        registry.Add("Test", heap_package.Test, "heap_test.go", 90);
-        registry.Add("TestFix", heap_package.TestFix, "heap_test.go", 188);
-        registry.Add("TestInit0", heap_package.TestInit0, "heap_test.go", 56);
-        registry.Add("TestInit1", heap_package.TestInit1, "heap_test.go", 73);
-        registry.Add("TestRemove0", heap_package.TestRemove0, "heap_test.go", 117);
-        registry.Add("TestRemove1", heap_package.TestRemove1, "heap_test.go", 134);
-        registry.Add("TestRemove2", heap_package.TestRemove2, "heap_test.go", 150);
+        registry.Add("Test", heap_internal_test_package.Test, "heap_test.go", 90);
+        registry.Add("TestFix", heap_internal_test_package.TestFix, "heap_test.go", 188);
+        registry.Add("TestInit0", heap_internal_test_package.TestInit0, "heap_test.go", 56);
+        registry.Add("TestInit1", heap_internal_test_package.TestInit1, "heap_test.go", 73);
+        registry.Add("TestRemove0", heap_internal_test_package.TestRemove0, "heap_test.go", 117);
+        registry.Add("TestRemove1", heap_internal_test_package.TestRemove1, "heap_test.go", 134);
+        registry.Add("TestRemove2", heap_internal_test_package.TestRemove2, "heap_test.go", 150);
         return TestHost.Run(registry, args);
     }
 }

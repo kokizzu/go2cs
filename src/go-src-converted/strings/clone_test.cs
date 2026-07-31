@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using strings = go.strings_package;
+using strings = strings_package;
 using testing = testing_package;
 using @unsafe = unsafe_package;
-using go;
+using static go.strings_internal_test_package;
 
 partial class strings_test_package {
 

@@ -7,8 +7,9 @@ using reflect = reflect_package;
 using strings = strings_package;
 using Δsync = sync_package;
 using testing = testing_package;
+using static go.mime_package;
 
-partial class mime_package {
+partial class mime_internal_test_package {
 
 internal static Action /*cleanup*/ setMimeInit(Action fn) {
     Action cleanup = default!;
@@ -54,12 +55,12 @@ public static void TestTypeByExtension(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fooˢ2 = ".foo"u8;
-private static readonly @string xFooˢ = "x/foo"u8;
-private static readonly @string barˢ2 = ".bar"u8;
-private static readonly @string xBarˢ = "x/bar"u8;
-private static readonly @string barˢ3 = ".Bar"u8;
-private static readonly @string xBarCapital1ˢ = "x/bar; capital=1"u8;
+internal static readonly @string fooˢ2 = ".foo"u8;
+internal static readonly @string xFooˢ = "x/foo"u8;
+internal static readonly @string barˢ2 = ".bar"u8;
+internal static readonly @string xBarˢ = "x/bar"u8;
+internal static readonly @string barˢ3 = ".Bar"u8;
+internal static readonly @string xBarCapital1ˢ = "x/bar; capital=1"u8;
 
 public static void TestTypeByExtension_LocalData(ж<testing.T> Ꮡt) => func((defer, recover) => {
     ref var t = ref Ꮡt.Value;
@@ -89,9 +90,9 @@ public static void TestTypeByExtension_LocalData(ж<testing.T> Ꮡt) => func((de
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testˢ = ".TEST"u8;
-private static readonly @string tesTˢ = ".tesT"u8;
-private static readonly @string tesTˢ2 = ".TesT"u8;
+internal static readonly @string testˢ = ".TEST"u8;
+internal static readonly @string tesTˢ = ".tesT"u8;
+internal static readonly @string tesTˢ2 = ".TesT"u8;
 
 public static void TestTypeByExtensionCase(ж<testing.T> Ꮡt) => func((defer, recover) => {
     @string custom = "test/test; charset=iso-8859-1"u8;
@@ -123,11 +124,11 @@ public static void TestTypeByExtensionCase(ж<testing.T> Ꮡt) => func((defer, r
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gifˢ = ".gif"u8;
-private static readonly @string imageGifˢ = "image/gif"u8;
-private static readonly @string fooLetterˢ = "foo/letter"u8;
-private static readonly @string pngˢ = ".PNG"u8;
-private static readonly @string imagePngˢ = "image/png"u8;
+internal static readonly @string gifˢ = ".gif"u8;
+internal static readonly @string imageGifˢ = "image/gif"u8;
+internal static readonly @string fooLetterˢ = "foo/letter"u8;
+internal static readonly @string pngˢ = ".PNG"u8;
+internal static readonly @string imagePngˢ = "image/png"u8;
 
 [GoType("dyn")] partial struct TestExtensionsByType_tests {
     internal @string typ;
@@ -173,8 +174,8 @@ public static void TestExtensionsByType(ж<testing.T> Ꮡt) => func((defer, reco
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string htmlˢ3 = ".html"u8;
-private static readonly @string htMLˢ = ".HtML"u8;
+internal static readonly @string htmlˢ3 = ".html"u8;
+internal static readonly @string htMLˢ = ".HtML"u8;
 
 public static void TestLookupMallocs(ж<testing.T> Ꮡt) {
     var n = testing.AllocsPerRun(10000, () => {
@@ -258,4 +259,4 @@ public static void TestExtensionsByType2(ж<testing.T> Ꮡt) => func((defer, rec
     }
 });
 
-} // end mime_package
+} // end mime_internal_test_package

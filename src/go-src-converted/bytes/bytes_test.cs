@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.bytes_package;
+using static bytes_package;
 using fmt = fmt_package;
 using testenv = @internal.testenv_package;
 using Δmath = math_package;
@@ -18,6 +18,7 @@ using @internal;
 using bytes = bytes_package;
 using go.math;
 using go.unicode;
+using static go.bytes_internal_test_package;
 
 partial class bytes_test_package {
 
@@ -293,28 +294,28 @@ internal static void runIndexAnyTests(ж<testing.T> Ꮡt, Func<slice<byte>, @str
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string indexˢ = "Index"u8;
+internal static readonly @string indexˢ = "Index"u8;
 
 public static void TestIndex(ж<testing.T> Ꮡt) {
     runIndexTests(Ꮡt, Index, indexˢ, indexTests);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lastIndexˢ = "LastIndex"u8;
+internal static readonly @string lastIndexˢ = "LastIndex"u8;
 
 public static void TestLastIndex(ж<testing.T> Ꮡt) {
     runIndexTests(Ꮡt, LastIndex, lastIndexˢ, lastIndexTests);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string indexAnyˢ = "IndexAny"u8;
+internal static readonly @string indexAnyˢ = "IndexAny"u8;
 
 public static void TestIndexAny(ж<testing.T> Ꮡt) {
     runIndexAnyTests(Ꮡt, IndexAny, indexAnyˢ, indexAnyTests);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lastIndexAnyˢ = "LastIndexAny"u8;
+internal static readonly @string lastIndexAnyˢ = "LastIndexAny"u8;
 
 public static void TestLastIndexAny(ж<testing.T> Ꮡt) {
     runIndexAnyTests(Ꮡt, LastIndexAny, lastIndexAnyˢ, lastIndexAnyTests);
@@ -331,7 +332,7 @@ public static void TestIndexByte(ж<testing.T> Ꮡt) {
         if (pos != tt.i) {
             Ꮡt.Errorf(@"IndexByte(%q, '%c') = %v"u8, tt.a, b, pos);
         }
-        nint posp = IndexBytePortable(a, b);
+        nint posp = bytes_internal_test_package.IndexBytePortable(a, b);
         if (posp != tt.i) {
             Ꮡt.Errorf(@"indexBytePortable(%q, '%c') = %v"u8, tt.a, b, posp);
         }
@@ -618,11 +619,11 @@ public static void BenchmarkIndexByte(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkIndexBytePortable(ж<testing.B> Ꮡb) {
-    benchBytes(Ꮡb, indexSizes, bmIndexByte(IndexBytePortable));
+    benchBytes(Ꮡb, indexSizes, bmIndexByte(bytes_internal_test_package.IndexBytePortable));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object badIndexˢ = (@string)"bad index"u8;
+internal static readonly object badIndexˢ = (@string)"bad index"u8;
 
 internal static Action<ж<testing.B>, nint> bmIndexByte(Func<slice<byte>, byte, nint> index) {
     return (ж<testing.B> b, nint n) => {
@@ -677,8 +678,8 @@ internal static Action<ж<testing.B>, nint> bmIndexRune(Func<slice<byte>, rune, 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object badEqualˢ = (@string)"bad equal"u8;
-private static readonly @string sameˢ = "same"u8;
+internal static readonly object badEqualˢ = (@string)"bad equal"u8;
+internal static readonly @string sameˢ = "same"u8;
 
 public static void BenchmarkEqual(ж<testing.B> Ꮡb) {
     Ꮡb.Run("0"u8, (ж<testing.B> bΔ1) => {
@@ -784,7 +785,7 @@ public static void BenchmarkIndexEasy(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object badCountˢ = (@string)"bad count"u8;
+internal static readonly object badCountˢ = (@string)"bad count"u8;
 
 public static void BenchmarkCount(ж<testing.B> Ꮡb) {
     benchBytes(Ꮡb, indexSizes, (ж<testing.B> bΔ1, nint n) => {
@@ -1137,9 +1138,9 @@ internal static rune rot13(rune r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nGbMrqˢ = "n gb mrq"u8;
-private static readonly @string aToZedˢ = "a to zed"u8;
-private static readonly @string helloˢ = "Hello"u8;
+internal static readonly @string nGbMrqˢ = "n gb mrq"u8;
+internal static readonly @string aToZedˢ = "a to zed"u8;
+internal static readonly @string helloˢ = "Hello"u8;
 
 public static void TestMap(ж<testing.T> Ꮡt) {
     // Run a couple of awful growth/shrinkage tests
@@ -1192,14 +1193,14 @@ public static void TestMap(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string toUpperˢ = "ToUpper"u8;
+internal static readonly @string toUpperˢ = "ToUpper"u8;
 
 public static void TestToUpper(ж<testing.T> Ꮡt) {
     runStringTests(Ꮡt, ToUpper, toUpperˢ, upperTests);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string toLowerˢ = "ToLower"u8;
+internal static readonly @string toLowerˢ = "ToLower"u8;
 
 public static void TestToLower(ж<testing.T> Ꮡt) {
     runStringTests(Ꮡt, ToLower, toLowerˢ, lowerTests);
@@ -1276,7 +1277,7 @@ public static void TestToValidUTF8(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string trimSpaceˢ = "TrimSpace"u8;
+internal static readonly @string trimSpaceˢ = "TrimSpace"u8;
 
 public static void TestTrimSpace(ж<testing.T> Ꮡt) {
     runStringTests(Ꮡt, TrimSpace, trimSpaceˢ, trimSpaceTests);
@@ -1339,7 +1340,7 @@ internal static error /*err*/ repeat(slice<byte> b, nint count) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bitˢ = "64-bit"u8;
+internal static readonly @string bitˢ = "64-bit"u8;
 
 [GoLocalName("testCase")] [GoType("dyn")] partial struct TestRepeatCatchesOverflow_testCase {
     internal @string s;
@@ -1511,7 +1512,7 @@ internal static slice<TrimNilTest> trimNilTests = new TrimNilTest[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "nil"u8;
+internal static readonly @string nilˢ = "nil"u8;
 
 public static void TestTrim(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -1942,7 +1943,7 @@ public static void TestCutSuffix(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object grow1ShouldHavePanickedˢ = (@string)"Grow(-1) should have panicked"u8;
+internal static readonly object grow1ShouldHavePanickedˢ = (@string)"Grow(-1) should have panicked"u8;
 
 public static void TestBufferGrowNegative(ж<testing.T> Ꮡt) => func((defer, recover) => {
     defer(() => {
@@ -1957,7 +1958,7 @@ public static void TestBufferGrowNegative(ж<testing.T> Ꮡt) => func((defer, re
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object truncate1ShouldHaveˢ = (@string)"Truncate(-1) should have panicked"u8;
+internal static readonly object truncate1ShouldHaveˢ = (@string)"Truncate(-1) should have panicked"u8;
 
 public static void TestBufferTruncateNegative(ж<testing.T> Ꮡt) => func((defer, recover) => {
     defer(() => {
@@ -1972,7 +1973,7 @@ public static void TestBufferTruncateNegative(ж<testing.T> Ꮡt) => func((defer
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object truncate20ShouldHaveˢ = (@string)"Truncate(20) should have panicked"u8;
+internal static readonly object truncate20ShouldHaveˢ = (@string)"Truncate(20) should have panicked"u8;
 
 public static void TestBufferTruncateOutOfRange(ж<testing.T> Ꮡt) => func((defer, recover) => {
     defer(() => {
@@ -2428,7 +2429,7 @@ public static void BenchmarkIndexAnyASCII(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string helloWorldHelloWorldˢ = "你好世界, hello world. 你好世界, hello world. 你好世界, hello world."u8;
+internal static readonly @string helloWorldHelloWorldˢ = "你好世界, hello world. 你好世界, hello world. 你好世界, hello world."u8;
 
 public static void BenchmarkIndexAnyUTF8(ж<testing.B> Ꮡb) {
     var x = Repeat(new byte[]{(rune)'#'}.slice(), 2048);

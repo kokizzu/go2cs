@@ -4,8 +4,9 @@
 namespace go.go;
 
 using testing = testing_package;
+using static global::go.go.token_package;
 
-partial class token_package {
+partial class token_internal_test_package {
 
 [GoType("dyn")] partial struct TestIsIdentifier_tests {
     internal @string name;
@@ -42,4 +43,4 @@ public static void TestIsIdentifier(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end token_package
+} // end token_internal_test_package

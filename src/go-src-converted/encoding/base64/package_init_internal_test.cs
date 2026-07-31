@@ -4,9 +4,9 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go.encoding;
 
-partial class base64_package {
-    static base64_package() {
+partial class base64_internal_test_package {
+    static base64_internal_test_package() {
         initᴛfunnyEncoding();
         initᴛencodingTests();
     }
-} // end base64_package
+} // end base64_internal_test_package

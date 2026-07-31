@@ -4,8 +4,8 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go.math;
 
-partial class cmplx_package {
-    static cmplx_package() {
+partial class cmplx_internal_test_package {
+    static cmplx_internal_test_package() {
         initᴛacosSC();
         initᴛacoshSC();
         initᴛasinSC();
@@ -23,4 +23,4 @@ partial class cmplx_package {
         initᴛtanSC();
         initᴛtanhSC();
     }
-} // end cmplx_package
+} // end cmplx_internal_test_package

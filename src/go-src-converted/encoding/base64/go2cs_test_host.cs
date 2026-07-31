@@ -13,23 +13,23 @@ internal static class Go2CsTestHost
             "base64_test.go",
             "example_test.go",
         });
-        registry.Add("TestBig", base64_package.TestBig, "base64_test.go", 347);
-        registry.Add("TestDecode", base64_package.TestDecode, "base64_test.go", 155);
-        registry.Add("TestDecodeBounds", base64_package.TestDecodeBounds, "base64_test.go", 266);
-        registry.Add("TestDecodeCorrupt", base64_package.TestDecodeCorrupt, "base64_test.go", 218);
-        registry.Add("TestDecodedLen", base64_package.TestDecodedLen, "base64_test.go", 315);
-        registry.Add("TestDecoder", base64_package.TestDecoder, "base64_test.go", 183);
-        registry.Add("TestDecoderBuffering", base64_package.TestDecoderBuffering, "base64_test.go", 200);
-        registry.Add("TestDecoderIssue15656", base64_package.TestDecoderIssue15656, "base64_test.go", 504);
-        registry.Add("TestDecoderIssue3577", base64_package.TestDecoderIssue3577, "base64_test.go", 431);
-        registry.Add("TestDecoderIssue4779", base64_package.TestDecoderIssue4779, "base64_test.go", 456);
-        registry.Add("TestDecoderIssue7733", base64_package.TestDecoderIssue7733, "base64_test.go", 493);
-        registry.Add("TestDecoderRaw", base64_package.TestDecoderRaw, "base64_test.go", 555);
-        registry.Add("TestEncode", base64_package.TestEncode, "base64_test.go", 114);
-        registry.Add("TestEncodedLen", base64_package.TestEncodedLen, "base64_test.go", 280);
-        registry.Add("TestEncoder", base64_package.TestEncoder, "base64_test.go", 125);
-        registry.Add("TestEncoderBuffering", base64_package.TestEncoderBuffering, "base64_test.go", 135);
-        registry.Add("TestNewLineCharacters", base64_package.TestNewLineCharacters, "base64_test.go", 380);
+        registry.Add("TestBig", base64_internal_test_package.TestBig, "base64_test.go", 347);
+        registry.Add("TestDecode", base64_internal_test_package.TestDecode, "base64_test.go", 155);
+        registry.Add("TestDecodeBounds", base64_internal_test_package.TestDecodeBounds, "base64_test.go", 266);
+        registry.Add("TestDecodeCorrupt", base64_internal_test_package.TestDecodeCorrupt, "base64_test.go", 218);
+        registry.Add("TestDecodedLen", base64_internal_test_package.TestDecodedLen, "base64_test.go", 315);
+        registry.Add("TestDecoder", base64_internal_test_package.TestDecoder, "base64_test.go", 183);
+        registry.Add("TestDecoderBuffering", base64_internal_test_package.TestDecoderBuffering, "base64_test.go", 200);
+        registry.Add("TestDecoderIssue15656", base64_internal_test_package.TestDecoderIssue15656, "base64_test.go", 504);
+        registry.Add("TestDecoderIssue3577", base64_internal_test_package.TestDecoderIssue3577, "base64_test.go", 431);
+        registry.Add("TestDecoderIssue4779", base64_internal_test_package.TestDecoderIssue4779, "base64_test.go", 456);
+        registry.Add("TestDecoderIssue7733", base64_internal_test_package.TestDecoderIssue7733, "base64_test.go", 493);
+        registry.Add("TestDecoderRaw", base64_internal_test_package.TestDecoderRaw, "base64_test.go", 555);
+        registry.Add("TestEncode", base64_internal_test_package.TestEncode, "base64_test.go", 114);
+        registry.Add("TestEncodedLen", base64_internal_test_package.TestEncodedLen, "base64_test.go", 280);
+        registry.Add("TestEncoder", base64_internal_test_package.TestEncoder, "base64_test.go", 125);
+        registry.Add("TestEncoderBuffering", base64_internal_test_package.TestEncoderBuffering, "base64_test.go", 135);
+        registry.Add("TestNewLineCharacters", base64_internal_test_package.TestNewLineCharacters, "base64_test.go", 380);
         return TestHost.Run(registry, args);
     }
 }

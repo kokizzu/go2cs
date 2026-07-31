@@ -6,9 +6,10 @@ namespace go;
 using reflect = reflect_package;
 using strings = strings_package;
 using testing = testing_package;
+using static go.mime_package;
 using ꓸꓸꓸstring = Span<@string>;
 
-partial class mime_package {
+partial class mime_internal_test_package {
 
 public static void TestConsumeToken(ж<testing.T> Ꮡt) {
     var tests = new array<@string>[]{
@@ -100,57 +101,57 @@ public static void TestConsumeMediaParam(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] partial struct mediaTypeTest {
+[GoType] internal partial struct mediaTypeTest {
     internal @string @in;
     internal @string t;
     internal map<@string, @string> p;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string keyˢ = "key"u8;
-private static readonly @string valueˢ = "value"u8;
-private static readonly @string blahˢ = "blah"u8;
-private static readonly @string nameˢ = "name"u8;
-private static readonly @string fooˢ = "foo"u8;
-private static readonly @string titleˢ = "title"u8;
-private static readonly @string thisIsFunˢ = "This is ***fun***"u8;
-private static readonly @string accessTypeˢ = "access-type"u8;
-private static readonly @string urlˢ = "URL"u8;
-private static readonly @string urlˢ2 = "url"u8;
-private static readonly @string ftpCsUtkEduPubMooreBulkˢ = "ftp://cs.utk.edu/pub/moore/bulk-mailer/bulk-mailer.tar"u8;
-private static readonly @string thisIsEvenMoreFunIsnTItˢ = "This is even more ***fun*** isn't it!"u8;
-private static readonly @string filenameˢ = "filename"u8;
-private static readonly @string fooHtmlˢ = "foo.html"u8;
-private static readonly @string fOoHtmlˢ = "f\\oo.html"u8;
-private static readonly @string quotingTestedHtmlˢ = @"""quoting"" tested.html"u8;
-private static readonly @string hereSASemicolonHtmlˢ = "Here's a semicolon;.html"u8;
-private static readonly @string barˢ = "bar"u8;
-private static readonly @string fooHtmlˢ2 = "'foo.html'"u8;
-private static readonly @string fooHtmlˢ3 = "foo-ä.html"u8;
-private static readonly @string fooHtmlˢ4 = "foo-Ã¤.html"u8;
-private static readonly @string foo41Htmlˢ = "foo-%41.html"u8;
-private static readonly @string htmlˢ = "50%.html"u8;
-private static readonly @string foo41Htmlˢ2 = "foo-%\\41.html"u8;
-private static readonly @string htmlˢ2 = "ä-%41.html"u8;
-private static readonly @string fooC3A4E282AcHtmlˢ = "foo-%c3%a4-%e2%82%ac.html"u8;
-private static readonly @string xfilenameˢ = "xfilename"u8;
-private static readonly @string creationDateˢ = "creation-date"u8;
-private static readonly @string wed12Feb19971629510500ˢ = "Wed, 12 Feb 1997 16:29:51 -0500"u8;
-private static readonly @string modificationDateˢ = "modification-date"u8;
-private static readonly @string exampleˢ = "example"u8;
-private static readonly @string filenameExampleTxtˢ = "filename=example.txt"u8;
-private static readonly @string fooHtmlˢ5 = "foo-ä-€.html"u8;
-private static readonly @string fooAHtmlˢ = "foo-ä.html"u8;
-private static readonly @string a41Htmlˢ = "A-%41.html"u8;
-private static readonly @string foobarˢ = "foobar"u8;
-private static readonly @string firstnameˢ = "firstname"u8;
-private static readonly @string lastnameˢ = "lastname"u8;
-private static readonly @string fileˢ = "file"u8;
-private static readonly @string cDevGoRobotsTxtˢ = @"C:\dev\go\robots.txt"u8;
-private static readonly @string cMp4ˢ = @"C:\新建文件夹\中文第二次测试.mp4"u8;
-private static readonly @string formatˢ = "format"u8;
-private static readonly @string fixedˢ = "fixed"u8;
-private static readonly @string flowedˢ = "flowed"u8;
+internal static readonly @string keyˢ = "key"u8;
+internal static readonly @string valueˢ = "value"u8;
+internal static readonly @string blahˢ = "blah"u8;
+internal static readonly @string nameˢ = "name"u8;
+internal static readonly @string fooˢ = "foo"u8;
+internal static readonly @string titleˢ = "title"u8;
+internal static readonly @string thisIsFunˢ = "This is ***fun***"u8;
+internal static readonly @string accessTypeˢ = "access-type"u8;
+internal static readonly @string urlˢ = "URL"u8;
+internal static readonly @string urlˢ2 = "url"u8;
+internal static readonly @string ftpCsUtkEduPubMooreBulkˢ = "ftp://cs.utk.edu/pub/moore/bulk-mailer/bulk-mailer.tar"u8;
+internal static readonly @string thisIsEvenMoreFunIsnTItˢ = "This is even more ***fun*** isn't it!"u8;
+internal static readonly @string filenameˢ = "filename"u8;
+internal static readonly @string fooHtmlˢ = "foo.html"u8;
+internal static readonly @string fOoHtmlˢ = "f\\oo.html"u8;
+internal static readonly @string quotingTestedHtmlˢ = @"""quoting"" tested.html"u8;
+internal static readonly @string hereSASemicolonHtmlˢ = "Here's a semicolon;.html"u8;
+internal static readonly @string barˢ = "bar"u8;
+internal static readonly @string fooHtmlˢ2 = "'foo.html'"u8;
+internal static readonly @string fooHtmlˢ3 = "foo-ä.html"u8;
+internal static readonly @string fooHtmlˢ4 = "foo-Ã¤.html"u8;
+internal static readonly @string foo41Htmlˢ = "foo-%41.html"u8;
+internal static readonly @string htmlˢ = "50%.html"u8;
+internal static readonly @string foo41Htmlˢ2 = "foo-%\\41.html"u8;
+internal static readonly @string htmlˢ2 = "ä-%41.html"u8;
+internal static readonly @string fooC3A4E282AcHtmlˢ = "foo-%c3%a4-%e2%82%ac.html"u8;
+internal static readonly @string xfilenameˢ = "xfilename"u8;
+internal static readonly @string creationDateˢ = "creation-date"u8;
+internal static readonly @string wed12Feb19971629510500ˢ = "Wed, 12 Feb 1997 16:29:51 -0500"u8;
+internal static readonly @string modificationDateˢ = "modification-date"u8;
+internal static readonly @string exampleˢ = "example"u8;
+internal static readonly @string filenameExampleTxtˢ = "filename=example.txt"u8;
+internal static readonly @string fooHtmlˢ5 = "foo-ä-€.html"u8;
+internal static readonly @string fooAHtmlˢ = "foo-ä.html"u8;
+internal static readonly @string a41Htmlˢ = "A-%41.html"u8;
+internal static readonly @string foobarˢ = "foobar"u8;
+internal static readonly @string firstnameˢ = "firstname"u8;
+internal static readonly @string lastnameˢ = "lastname"u8;
+internal static readonly @string fileˢ = "file"u8;
+internal static readonly @string cDevGoRobotsTxtˢ = @"C:\dev\go\robots.txt"u8;
+internal static readonly @string cMp4ˢ = @"C:\新建文件夹\中文第二次测试.mp4"u8;
+internal static readonly @string formatˢ = "format"u8;
+internal static readonly @string fixedˢ = "fixed"u8;
+internal static readonly @string flowedˢ = "flowed"u8;
 
 public static void TestParseMediaType(ж<testing.T> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -483,7 +484,7 @@ message/external-body; access-type=URL;
     }
 }
 
-[GoType] partial struct badMediaTypeTest {
+[GoType] internal partial struct badMediaTypeTest {
     internal @string @in;
     internal @string mt;
     internal @string err;
@@ -531,7 +532,7 @@ public static void TestParseMediaTypeBogus(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] partial struct formatTest {
+[GoType] internal partial struct formatTest {
     internal @string typ;
     internal map<@string, @string> @params;
     internal @string want;
@@ -587,4 +588,4 @@ public static void TestFormatMediaType(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end mime_package
+} // end mime_internal_test_package

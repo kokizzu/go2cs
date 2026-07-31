@@ -3,8 +3,9 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.strconv_package;
+using static strconv_package;
 using testing = testing_package;
+using static go.strconv_internal_test_package;
 using strconv = strconv_package;
 
 partial class strconv_test_package {
@@ -32,7 +33,7 @@ internal static ref slice<shiftTest> shifttests => ref Ꮡshifttests.ValueSlot;
 public static void TestDecimalShift(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < len(shifttests); i++) {
         var test = Ꮡ(shifttests, i);
-        var d = NewDecimal((~test).i);
+        var d = strconv_internal_test_package.NewDecimal((~test).i);
         d.Shift((~test).shift);
         @string s = d.String();
         if (s != (~test).@out) {
@@ -69,21 +70,21 @@ internal static ref slice<roundTest> roundtests => ref Ꮡroundtests.ValueSlot;
 public static void TestDecimalRound(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < len(roundtests); i++) {
         var test = Ꮡ(roundtests, i);
-        var d = NewDecimal((~test).i);
+        var d = strconv_internal_test_package.NewDecimal((~test).i);
         d.RoundDown((~test).nd);
         @string s = d.String();
         if (s != (~test).down) {
             Ꮡt.Errorf("Decimal %v RoundDown %d = %v, want %v"u8,
                 (~test).i, (~test).nd, s, (~test).down);
         }
-        d = NewDecimal((~test).i);
+        d = strconv_internal_test_package.NewDecimal((~test).i);
         d.Round((~test).nd);
         s = d.String();
         if (s != (~test).round) {
             Ꮡt.Errorf("Decimal %v Round %d = %v, want %v"u8,
                 (~test).i, (~test).nd, s, (~test).down);
         }
-        d = NewDecimal((~test).i);
+        d = strconv_internal_test_package.NewDecimal((~test).i);
         d.RoundUp((~test).nd);
         s = d.String();
         if (s != (~test).up) {
@@ -115,7 +116,7 @@ internal static slice<roundIntTest> roundinttests = new roundIntTest[]{
 public static void TestDecimalRoundedInteger(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < len(roundinttests); i++) {
         var test = roundinttests[i];
-        var d = NewDecimal(test.i);
+        var d = strconv_internal_test_package.NewDecimal(test.i);
         d.Shift(test.shift);
         var @int = d.RoundedInteger();
         if (@int != test.@int) {

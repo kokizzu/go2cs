@@ -15,10 +15,11 @@ using io = io_package;
 using testing = testing_package;
 using go.crypto;
 using go.crypto.@internal;
+using static go.crypto.sha256_package;
 
-partial class sha256_package {
+partial class sha256_internal_test_package {
 
-[GoType] partial struct sha256Test {
+[GoType] internal partial struct sha256Test {
     internal @string @out;
     internal @string @in;
     internal @string halfState; // marshaled hash state after first half of in written, used by TestGoldenMarshal
@@ -229,15 +230,15 @@ public static void TestBlockSize(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object boringCryptoDoesnTExposeˢ = (@string)"BoringCrypto doesn't expose digest"u8;
-private static readonly object blockAndBlockGenericˢ = (@string)"block and blockGeneric resulted in different states"u8;
+internal static readonly object boringCryptoDoesnTExposeˢ = (@string)"BoringCrypto doesn't expose digest"u8;
+internal static readonly object blockAndBlockGenericˢ = (@string)"block and blockGeneric resulted in different states"u8;
 
 // Tests that blockGeneric (pure Go) and block (in assembly for some architectures) match.
 public static void TestBlockGeneric(ж<testing.T> Ꮡt) {
     if (boring.Enabled) {
         Ꮡt.Skip(boringCryptoDoesnTExposeˢ);
     }
-    var (gen, asm) = (New()._<ж<digest>>(), New()._<ж<digest>>());
+    var (gen, asm) = (New()._<ж<global::go.crypto.sha256_package.digest>>(), New()._<ж<global::go.crypto.sha256_package.digest>>());
     var buf = new slice<byte>(ΔBlockSize * 20);
     // arbitrary factor
     rand.Read(buf);
@@ -256,7 +257,7 @@ public static void TestBlockGeneric(ж<testing.T> Ꮡt) {
 // the data length has a 1 in the 32nd bit. When casted to int, this changes
 // the sign of the value, and causes the modulus operation to return a
 // different result.
-[GoType] partial struct unmarshalTest {
+[GoType] internal partial struct unmarshalTest {
     internal @string state;
     internal @string sum;
 }
@@ -316,7 +317,7 @@ public static void TestLargeHashes(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object boringCryptoDoesnTˢ = (@string)"BoringCrypto doesn't allocate the same way as stdlib"u8;
+internal static readonly object boringCryptoDoesnTˢ = (@string)"BoringCrypto doesn't allocate the same way as stdlib"u8;
 
 public static void TestAllocations(ж<testing.T> Ꮡt) {
     if (boring.Enabled) {
@@ -338,7 +339,7 @@ public static void TestAllocations(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] [GoValueClone("Data")] public partial struct cgoData {
+[GoType] [GoValueClone("Data")] internal partial struct cgoData {
     public array<byte> Data = new(16);
     public ж<cgoData> Ptr;
 }
@@ -354,8 +355,8 @@ public static void TestCgo(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sha224ˢ = "SHA-224"u8;
-private static readonly @string sha256ˢ = "SHA-256"u8;
+internal static readonly @string sha224ˢ = "SHA-224"u8;
+internal static readonly @string sha256ˢ = "SHA-256"u8;
 
 public static void TestSHA256Hash(ж<testing.T> Ꮡt) {
     Ꮡt.Run(sha224ˢ, (ж<testing.T> tΔ1) => {
@@ -371,9 +372,9 @@ internal static hash.Hash bench = New();
 internal static slice<byte> buf = new slice<byte>(8192);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string newˢ = "New"u8;
-private static readonly @string sum224ˢ = "Sum224"u8;
-private static readonly @string sum256ˢ = "Sum256"u8;
+internal static readonly @string newˢ = "New"u8;
+internal static readonly @string sum224ˢ = "Sum224"u8;
+internal static readonly @string sum256ˢ = "Sum256"u8;
 
 internal static void benchmarkSize(ж<testing.B> Ꮡb, nint size) {
     var sum = new slice<byte>(bench.Size());
@@ -415,4 +416,4 @@ public static void BenchmarkHash8K(ж<testing.B> Ꮡb) {
     benchmarkSize(Ꮡb, 8192);
 }
 
-} // end sha256_package
+} // end sha256_internal_test_package

@@ -67,16 +67,12 @@
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
        can leak in because it is never listed. -->
   <ItemGroup>
-    <Compile Include="buffer.cs" />
     <Compile Include="buffer_test.cs" />
-    <Compile Include="bytes.cs" />
     <Compile Include="bytes_test.cs" />
     <Compile Include="compare_test.cs" />
     <Compile Include="export_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
-    <Compile Include="package_info_external_test.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="reader.cs" />
     <Compile Include="reader_test.cs" />
   </ItemGroup>
 
@@ -97,9 +93,7 @@
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\errors\errors.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\fmt\fmt.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\internal\bytealg\internal.bytealg.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\testenv\internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\fs\io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
@@ -114,6 +108,7 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\unicode\unicode.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\unicode\utf8\unicode.utf8.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\unsafe\unsafe.csproj" />
+    <ProjectReference Include="bytes.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

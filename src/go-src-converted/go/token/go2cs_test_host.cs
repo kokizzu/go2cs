@@ -18,21 +18,21 @@ internal static class Go2CsTestHost
             "token.go",
             "token_test.go",
         });
-        registry.Add("TestFileAddLineColumnInfo", token_package.TestFileAddLineColumnInfo, "position_test.go", 388);
-        registry.Add("TestFileSetCacheUnlikely", token_package.TestFileSetCacheUnlikely, "position_test.go", 206);
-        registry.Add("TestFileSetPastEnd", token_package.TestFileSetPastEnd, "position_test.go", 196);
-        registry.Add("TestFileSetRace", token_package.TestFileSetRace, "position_test.go", 223);
-        registry.Add("TestFileSetRace2", token_package.TestFileSetRace2, "position_test.go", 246);
-        registry.Add("TestFiles", token_package.TestFiles, "position_test.go", 171);
-        registry.Add("TestIsIdentifier", token_package.TestIsIdentifier, "token_test.go", 9);
-        registry.Add("TestIssue57490", token_package.TestIssue57490, "position_test.go", 482);
-        registry.Add("TestLineInfo", token_package.TestLineInfo, "position_test.go", 152);
-        registry.Add("TestLineStart", token_package.TestLineStart, "position_test.go", 332);
-        registry.Add("TestNoPos", token_package.TestNoPos, "position_test.go", 30);
-        registry.Add("TestPositionFor", token_package.TestPositionFor, "position_test.go", 273);
-        registry.Add("TestPositions", token_package.TestPositions, "position_test.go", 91);
-        registry.Add("TestRemoveFile", token_package.TestRemoveFile, "position_test.go", 347);
-        registry.Add("TestSerialization", token_package.TestSerialization, "serialize_test.go", 87);
+        registry.Add("TestFileAddLineColumnInfo", token_internal_test_package.TestFileAddLineColumnInfo, "position_test.go", 388);
+        registry.Add("TestFileSetCacheUnlikely", token_internal_test_package.TestFileSetCacheUnlikely, "position_test.go", 206);
+        registry.Add("TestFileSetPastEnd", token_internal_test_package.TestFileSetPastEnd, "position_test.go", 196);
+        registry.Add("TestFileSetRace", token_internal_test_package.TestFileSetRace, "position_test.go", 223);
+        registry.Add("TestFileSetRace2", token_internal_test_package.TestFileSetRace2, "position_test.go", 246);
+        registry.Add("TestFiles", token_internal_test_package.TestFiles, "position_test.go", 171);
+        registry.Add("TestIsIdentifier", token_internal_test_package.TestIsIdentifier, "token_test.go", 9);
+        registry.Add("TestIssue57490", token_internal_test_package.TestIssue57490, "position_test.go", 482);
+        registry.Add("TestLineInfo", token_internal_test_package.TestLineInfo, "position_test.go", 152);
+        registry.Add("TestLineStart", token_internal_test_package.TestLineStart, "position_test.go", 332);
+        registry.Add("TestNoPos", token_internal_test_package.TestNoPos, "position_test.go", 30);
+        registry.Add("TestPositionFor", token_internal_test_package.TestPositionFor, "position_test.go", 273);
+        registry.Add("TestPositions", token_internal_test_package.TestPositions, "position_test.go", 91);
+        registry.Add("TestRemoveFile", token_internal_test_package.TestRemoveFile, "position_test.go", 347);
+        registry.Add("TestSerialization", token_internal_test_package.TestSerialization, "serialize_test.go", 87);
         return TestHost.Run(registry, args);
     }
 }

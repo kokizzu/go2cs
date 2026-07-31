@@ -13,16 +13,16 @@ internal static class Go2CsTestHost
             "list.go",
             "list_test.go",
         });
-        registry.Add("TestExtending", list_package.TestExtending, "list_test.go", 159);
-        registry.Add("TestInsertAfterUnknownMark", list_package.TestInsertAfterUnknownMark, "list_test.go", 318);
-        registry.Add("TestInsertBeforeUnknownMark", list_package.TestInsertBeforeUnknownMark, "list_test.go", 308);
-        registry.Add("TestIssue4103", list_package.TestIssue4103, "list_test.go", 216);
-        registry.Add("TestIssue6349", list_package.TestIssue6349, "list_test.go", 237);
-        registry.Add("TestList", list_package.TestList, "list_test.go", 63);
-        registry.Add("TestMove", list_package.TestMove, "list_test.go", 255);
-        registry.Add("TestMoveUnknownMark", list_package.TestMoveUnknownMark, "list_test.go", 328);
-        registry.Add("TestRemove", list_package.TestRemove, "list_test.go", 204);
-        registry.Add("TestZeroList", list_package.TestZeroList, "list_test.go", 289);
+        registry.Add("TestExtending", list_internal_test_package.TestExtending, "list_test.go", 159);
+        registry.Add("TestInsertAfterUnknownMark", list_internal_test_package.TestInsertAfterUnknownMark, "list_test.go", 318);
+        registry.Add("TestInsertBeforeUnknownMark", list_internal_test_package.TestInsertBeforeUnknownMark, "list_test.go", 308);
+        registry.Add("TestIssue4103", list_internal_test_package.TestIssue4103, "list_test.go", 216);
+        registry.Add("TestIssue6349", list_internal_test_package.TestIssue6349, "list_test.go", 237);
+        registry.Add("TestList", list_internal_test_package.TestList, "list_test.go", 63);
+        registry.Add("TestMove", list_internal_test_package.TestMove, "list_test.go", 255);
+        registry.Add("TestMoveUnknownMark", list_internal_test_package.TestMoveUnknownMark, "list_test.go", 328);
+        registry.Add("TestRemove", list_internal_test_package.TestRemove, "list_test.go", 204);
+        registry.Add("TestZeroList", list_internal_test_package.TestZeroList, "list_test.go", 289);
         return TestHost.Run(registry, args);
     }
 }

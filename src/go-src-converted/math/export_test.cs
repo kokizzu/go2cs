@@ -3,7 +3,9 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-partial class math_package {
+using static go.math_package;
+
+partial class math_internal_test_package {
 
 // Export internal functions for testing.
 public static Func<float64, float64> ExpGo = exp;
@@ -19,4 +21,4 @@ internal static void initᴛTrigReduce() { TrigReduce = trigReduce; }
 
 public static UntypedInt ReduceThreshold => /* reduceThreshold */ 536870912;
 
-} // end math_package
+} // end math_internal_test_package

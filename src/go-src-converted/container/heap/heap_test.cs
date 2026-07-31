@@ -6,10 +6,11 @@ namespace go.container;
 using rand = math.rand_package;
 using testing = testing_package;
 using math;
+using static go.container.heap_package;
 
-partial class heap_package {
+partial class heap_internal_test_package {
 
-[GoType("[]nint")] partial struct myHeap;
+[GoType("[]nint")] internal partial struct myHeap;
 
 [GoRecv] internal static bool Less(this ref myHeap h, nint i, nint j) {
     return (h)[i] < (h)[j];
@@ -61,10 +62,10 @@ public static void TestInit0(ж<testing.T> Ꮡt) {
         h.Push((nint)(0));
     }
     // all elements are the same
-    Init(new myHeapжInterface(h));
+    Init(new heap_internal_test_package.myHeapжInterface(h));
     (~h).verify(Ꮡt, 0);
     for (nint i = 1; h.Len() > 0; i++) {
-        nint x = Pop(new myHeapжInterface(h))._<nint>();
+        nint x = go.container.heap_package.Pop(new heap_internal_test_package.myHeapжInterface(h))._<nint>();
         (~h).verify(Ꮡt, 0);
         if (x != 0) {
             Ꮡt.Errorf("%d.th pop got %d; want %d"u8, i, x, (nint)(0));
@@ -78,10 +79,10 @@ public static void TestInit1(ж<testing.T> Ꮡt) {
         h.Push(i);
     }
     // all elements are different
-    Init(new myHeapжInterface(h));
+    Init(new heap_internal_test_package.myHeapжInterface(h));
     (~h).verify(Ꮡt, 0);
     for (nint i = 1; h.Len() > 0; i++) {
-        nint x = Pop(new myHeapжInterface(h))._<nint>();
+        nint x = go.container.heap_package.Pop(new heap_internal_test_package.myHeapжInterface(h))._<nint>();
         (~h).verify(Ꮡt, 0);
         if (x != i) {
             Ꮡt.Errorf("%d.th pop got %d; want %d"u8, i, x, i);
@@ -95,16 +96,16 @@ public static void Test(ж<testing.T> Ꮡt) {
     for (nint i = 20; i > 10; i--) {
         h.Push(i);
     }
-    Init(new myHeapжInterface(h));
+    Init(new heap_internal_test_package.myHeapжInterface(h));
     (~h).verify(Ꮡt, 0);
     for (nint i = 10; i > 0; i--) {
-        Push(new myHeapжInterface(h), i);
+        go.container.heap_package.Push(new heap_internal_test_package.myHeapжInterface(h), i);
         (~h).verify(Ꮡt, 0);
     }
     for (nint i = 1; h.Len() > 0; i++) {
-        nint x = Pop(new myHeapжInterface(h))._<nint>();
+        nint x = go.container.heap_package.Pop(new heap_internal_test_package.myHeapжInterface(h))._<nint>();
         if (i < 20) {
-            Push(new myHeapжInterface(h), 20 + i);
+            go.container.heap_package.Push(new heap_internal_test_package.myHeapжInterface(h), 20 + i);
         }
         (~h).verify(Ꮡt, 0);
         if (x != i) {
@@ -121,7 +122,7 @@ public static void TestRemove0(ж<testing.T> Ꮡt) {
     (~h).verify(Ꮡt, 0);
     while (h.Len() > 0) {
         nint i = h.Len() - 1;
-        nint x = Remove(new myHeapжInterface(h), i)._<nint>();
+        nint x = Remove(new heap_internal_test_package.myHeapжInterface(h), i)._<nint>();
         if (x != i) {
             Ꮡt.Errorf("Remove(%d) got %d; want %d"u8, i, x, i);
         }
@@ -136,7 +137,7 @@ public static void TestRemove1(ж<testing.T> Ꮡt) {
     }
     (~h).verify(Ꮡt, 0);
     for (nint i = 0; h.Len() > 0; i++) {
-        nint x = Remove(new myHeapжInterface(h), 0)._<nint>();
+        nint x = Remove(new heap_internal_test_package.myHeapжInterface(h), 0)._<nint>();
         if (x != i) {
             Ꮡt.Errorf("Remove(0) got %d; want %d"u8, x, i);
         }
@@ -155,7 +156,7 @@ public static void TestRemove2(ж<testing.T> Ꮡt) {
     (~h).verify(Ꮡt, 0);
     var m = new map<nint, bool>();
     while (h.Len() > 0) {
-        m[Remove(new myHeapжInterface(h), (h.Len() - 1) / 2)._<nint>()] = true;
+        m[Remove(new heap_internal_test_package.myHeapжInterface(h), (h.Len() - 1) / 2)._<nint>()] = true;
         (~h).verify(Ꮡt, 0);
     }
     if (len(m) != N) {
@@ -176,11 +177,11 @@ public static void BenchmarkDup(ж<testing.B> Ꮡb) {
     h = new myHeap(0, n);
     for (nint i = 0; i < b.N; i++) {
         for (nint j = 0; j < n; j++) {
-            Push(new myHeapжInterface(Ꮡh), (nint)(0));
+            go.container.heap_package.Push(new heap_internal_test_package.myHeapжInterface(Ꮡh), (nint)(0));
         }
         // all elements are the same
         while (h.Len() > 0) {
-            Pop(new myHeapжInterface(Ꮡh));
+            go.container.heap_package.Pop(new heap_internal_test_package.myHeapжInterface(Ꮡh));
         }
     }
 }
@@ -189,14 +190,14 @@ public static void TestFix(ж<testing.T> Ꮡt) {
     var h = @new<myHeap>();
     (~h).verify(Ꮡt, 0);
     for (nint i = 200; i > 0; i -= 10) {
-        Push(new myHeapжInterface(h), i);
+        go.container.heap_package.Push(new heap_internal_test_package.myHeapжInterface(h), i);
     }
     (~h).verify(Ꮡt, 0);
     if ((h.ValueSlot)[0] != 10) {
         Ꮡt.Fatalf("Expected head to be 10, was %d"u8, (h.ValueSlot)[0]);
     }
     (h.ValueSlot)[0] = 210;
-    Fix(new myHeapжInterface(h), 0);
+    Fix(new heap_internal_test_package.myHeapжInterface(h), 0);
     (~h).verify(Ꮡt, 0);
     for (nint i = 100; i > 0; i--) {
         nint elem = rand.Intn(h.Len());
@@ -205,9 +206,9 @@ public static void TestFix(ж<testing.T> Ꮡt) {
         } else {
             (h.ValueSlot)[elem] /= 2;
         }
-        Fix(new myHeapжInterface(h), elem);
+        Fix(new heap_internal_test_package.myHeapжInterface(h), elem);
         (~h).verify(Ꮡt, 0);
     }
 }
 
-} // end heap_package
+} // end heap_internal_test_package

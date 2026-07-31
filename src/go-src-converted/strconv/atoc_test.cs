@@ -6,9 +6,10 @@ namespace go;
 using Δmath = math_package;
 using cmplx = go.math.cmplx_package;
 using reflect = reflect_package;
-using static go.strconv_package;
+using static strconv_package;
 using testing = testing_package;
 using go.math;
+using static go.strconv_internal_test_package;
 using strconv = strconv_package;
 
 partial class strconv_test_package {

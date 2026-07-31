@@ -11,12 +11,13 @@ using tabwriter = text.tabwriter_package;
 using time = time_package;
 using global::go.math.rand;
 using io = io_package;
+using static global::go.math.rand.rand_internal_test_package;
 using text;
 
 partial class rand_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object magic8BallSaysˢ = (@string)"Magic 8-Ball says:"u8;
+internal static readonly object magic8BallSaysˢ = (@string)"Magic 8-Ball says:"u8;
 
 // These tests serve as an example but also make sure we don't change
 // the output of the random number generator when given a fixed seed.
@@ -47,17 +48,17 @@ public static void Example() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string float32ˢ = "Float32"u8;
-private static readonly @string float64ˢ = "Float64"u8;
-private static readonly @string expFloat64ˢ = "ExpFloat64"u8;
-private static readonly @string normFloat64ˢ = "NormFloat64"u8;
-private static readonly @string int32ˢ = "Int32"u8;
-private static readonly @string int64ˢ = "Int64"u8;
-private static readonly @string uint32ˢ = "Uint32"u8;
-private static readonly @string intN10ˢ = "IntN(10)"u8;
-private static readonly @string int32N10ˢ = "Int32N(10)"u8;
-private static readonly @string int64N10ˢ = "Int64N(10)"u8;
-private static readonly @string permˢ = "Perm"u8;
+internal static readonly @string float32ˢ = "Float32"u8;
+internal static readonly @string float64ˢ = "Float64"u8;
+internal static readonly @string expFloat64ˢ = "ExpFloat64"u8;
+internal static readonly @string normFloat64ˢ = "NormFloat64"u8;
+internal static readonly @string int32ˢ = "Int32"u8;
+internal static readonly @string int64ˢ = "Int64"u8;
+internal static readonly @string uint32ˢ = "Uint32"u8;
+internal static readonly @string intN10ˢ = "IntN(10)"u8;
+internal static readonly @string int32N10ˢ = "Int32N(10)"u8;
+internal static readonly @string int64N10ˢ = "Int64N(10)"u8;
+internal static readonly @string permˢ = "Perm"u8;
 
 // This example shows the use of each of the methods on a *Rand.
 // The use of the global functions is the same, without the receiver.
@@ -65,14 +66,14 @@ public static void Example_rand() => func((defer, recover) => {
     // Create and seed the generator.
     // Typically a non-fixed seed should be used, such as Uint64(), Uint64().
     // Using a fixed seed will produce the same output on every run.
-    var r = rand.New(new rand.PCGжSource(rand.NewPCG(1, 2)));
+    var r = rand.New(new rand_test_package.rand_PCGжSource(rand.NewPCG(1, 2)));
     // The tabwriter here helps us generate aligned output.
     var w = tabwriter.NewWriter(new os.FileжWriter(os.Stdout), 1, 1, 1, (rune)' ', 0);
     var wʗ1 = w;
     defer(() => wʗ1.Flush());
     var wʗ2 = w;
     var show = (@string name, any v1, any v2, any v3) => {
-        fmt.Fprintf(new tabwriter_WriterжWriter(wʗ2), "%s\t%v\t%v\t%v\n"u8, name, v1, v2, v3);
+        fmt.Fprintf(new rand_test_package.tabwriter_WriterжWriter(wʗ2), "%s\t%v\t%v\t%v\n"u8, name, v1, v2, v3);
     };
     // Float32 and Float64 values are in [0, 1).
     show(float32ˢ, r.Float32(), r.Float32(), r.Float32());
@@ -125,7 +126,7 @@ public static void ExampleN() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string inkRunsFromTheCornersOfˢ = "ink runs from the corners of my mouth"u8;
+internal static readonly @string inkRunsFromTheCornersOfˢ = "ink runs from the corners of my mouth"u8;
 
 public static void ExampleShuffle() {
     var words = strings.Fields(inkRunsFromTheCornersOfˢ);

@@ -3,12 +3,13 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.bytes_package;
+using static bytes_package;
 using fmt = fmt_package;
 using Δio = io_package;
 using Δsync = sync_package;
 using testing = testing_package;
 using bytes = bytes_package;
+using static go.bytes_internal_test_package;
 
 partial class bytes_test_package {
 
@@ -158,7 +159,7 @@ public static void TestReaderWriteTo(ж<testing.T> Ꮡt) {
         @string s = testString[..(int)(l)];
         var r = NewReader(testBytes[..(int)(l)]);
         ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
-        var (n, err) = r.WriteTo(new bytes.BufferжWriter(Ꮡb));
+        var (n, err) = r.WriteTo(new bytes_test_package.bytes_BufferжWriter(Ꮡb));
         {
             var expect = (int64)len(s); if (n != expect) {
                 Ꮡt.Errorf("got %v; want %v"u8, n, expect);
@@ -228,7 +229,7 @@ public static slice<UnreadRuneErrorTestsᴛ1> UnreadRuneErrorTests = new UnreadR
         r.Seek(0, Δio.SeekCurrent);
     }),
     new("WriteTo"u8, (ж<bytes.Reader> r) => {
-        r.WriteTo(new bytes.BufferжWriter(Ꮡ(new Buffer(nil))));
+        r.WriteTo(new bytes_test_package.bytes_BufferжWriter(Ꮡ(new Buffer(nil))));
     })
 }.slice();
 
@@ -250,7 +251,7 @@ public static void TestUnreadRuneError(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unreadByteExpectedErrorˢ = (@string)"UnreadByte: expected error, got nil"u8;
+internal static readonly object unreadByteExpectedErrorˢ = (@string)"UnreadByte: expected error, got nil"u8;
 
 public static void TestReaderDoubleUnreadRune(ж<testing.T> Ꮡt) {
     var buf = NewBuffer(slice<byte>("groucho"u8));
@@ -293,8 +294,8 @@ public static void TestReaderCopyNothing(ж<testing.T> Ꮡt) {
     // hide ReadFrom
     TestReaderCopyNothing_nErr with = default!;
     TestReaderCopyNothing_nErr withOut = default!;
-    (with.n, with.err) = Δio.Copy(discard, new bytes.ReaderжReader(NewReader(default!)));
-    (withOut.n, withOut.err) = Δio.Copy(discard, new TestReaderCopyNothing_justReader(new bytes.ReaderжReader(NewReader(default!))));
+    (with.n, with.err) = Δio.Copy(discard, new bytes_test_package.bytes_ReaderжReader(NewReader(default!)));
+    (withOut.n, withOut.err) = Δio.Copy(discard, new TestReaderCopyNothing_justReader(new bytes_test_package.bytes_ReaderжReader(NewReader(default!))));
     if (with != withOut) {
         Ꮡt.Errorf("behavior differs: with = %#v; without: %#v"u8, with, withOut);
     }
@@ -303,7 +304,7 @@ public static void TestReaderCopyNothing(ж<testing.T> Ꮡt) {
 // tests that Len is affected by reads, but Size is not.
 public static void TestReaderLenSize(ж<testing.T> Ꮡt) {
     var r = NewReader(slice<byte>("abc"u8));
-    Δio.CopyN(Δio.Discard, new bytes.ReaderжReader(r), 1);
+    Δio.CopyN(Δio.Discard, new bytes_test_package.bytes_ReaderжReader(r), 1);
     if (r.Len() != 2) {
         Ꮡt.Errorf("Len = %d; want 2"u8, r.Len());
     }
@@ -326,7 +327,7 @@ public static void TestReaderReset(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("UnreadRune: expected error, got nil"u8);
         }
     }
-    var (buf, err) = Δio.ReadAll(new bytes.ReaderжReader(r));
+    var (buf, err) = Δio.ReadAll(new bytes_test_package.bytes_ReaderжReader(r));
     if (err != default!) {
         Ꮡt.Errorf("ReadAll: unexpected error: %v"u8, err);
     }

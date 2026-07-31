@@ -13,18 +13,18 @@ internal static class Go2CsTestHost
             "hex.go",
             "hex_test.go",
         });
-        registry.Add("TestDecode", hex_package.TestDecode, "hex_test.go", 48);
-        registry.Add("TestDecodeErr", hex_package.TestDecodeErr, "hex_test.go", 108);
-        registry.Add("TestDecodeString", hex_package.TestDecodeString, "hex_test.go", 79);
-        registry.Add("TestDecodeStringErr", hex_package.TestDecodeStringErr, "hex_test.go", 118);
-        registry.Add("TestDecoderErr", hex_package.TestDecoderErr, "hex_test.go", 161);
-        registry.Add("TestDump", hex_package.TestDump, "hex_test.go", 231);
-        registry.Add("TestDumper", hex_package.TestDumper, "hex_test.go", 176);
-        registry.Add("TestDumper_doubleclose", hex_package.TestDumper_doubleclose, "hex_test.go", 202);
-        registry.Add("TestDumper_earlyclose", hex_package.TestDumper_earlyclose, "hex_test.go", 218);
-        registry.Add("TestEncode", hex_package.TestEncode, "hex_test.go", 30);
-        registry.Add("TestEncodeToString", hex_package.TestEncodeToString, "hex_test.go", 70);
-        registry.Add("TestEncoderDecoder", hex_package.TestEncoderDecoder, "hex_test.go", 127);
+        registry.Add("TestDecode", hex_internal_test_package.TestDecode, "hex_test.go", 48);
+        registry.Add("TestDecodeErr", hex_internal_test_package.TestDecodeErr, "hex_test.go", 108);
+        registry.Add("TestDecodeString", hex_internal_test_package.TestDecodeString, "hex_test.go", 79);
+        registry.Add("TestDecodeStringErr", hex_internal_test_package.TestDecodeStringErr, "hex_test.go", 118);
+        registry.Add("TestDecoderErr", hex_internal_test_package.TestDecoderErr, "hex_test.go", 161);
+        registry.Add("TestDump", hex_internal_test_package.TestDump, "hex_test.go", 231);
+        registry.Add("TestDumper", hex_internal_test_package.TestDumper, "hex_test.go", 176);
+        registry.Add("TestDumper_doubleclose", hex_internal_test_package.TestDumper_doubleclose, "hex_test.go", 202);
+        registry.Add("TestDumper_earlyclose", hex_internal_test_package.TestDumper_earlyclose, "hex_test.go", 218);
+        registry.Add("TestEncode", hex_internal_test_package.TestEncode, "hex_test.go", 30);
+        registry.Add("TestEncodeToString", hex_internal_test_package.TestEncodeToString, "hex_test.go", 70);
+        registry.Add("TestEncoderDecoder", hex_internal_test_package.TestEncoderDecoder, "hex_test.go", 127);
         return TestHost.Run(registry, args);
     }
 }

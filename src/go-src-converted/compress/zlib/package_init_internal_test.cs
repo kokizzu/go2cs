@@ -4,8 +4,8 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go.compress;
 
-partial class zlib_package {
-    static zlib_package() {
+partial class zlib_internal_test_package {
+    static zlib_internal_test_package() {
         initᴛzlibTests();
     }
-} // end zlib_package
+} // end zlib_internal_test_package

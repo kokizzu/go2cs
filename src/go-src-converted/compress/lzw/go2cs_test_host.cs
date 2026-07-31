@@ -17,15 +17,15 @@ internal static class Go2CsTestHost
             "writer.go",
             "writer_test.go",
         });
-        registry.Add("TestHiCodeDoesNotOverflow", lzw_package.TestHiCodeDoesNotOverflow, "reader_test.go", 177);
-        registry.Add("TestNoLongerSavingPriorExpansions", lzw_package.TestNoLongerSavingPriorExpansions, "reader_test.go", 198);
-        registry.Add("TestReader", lzw_package.TestReader, "reader_test.go", 85);
-        registry.Add("TestReaderReset", lzw_package.TestReaderReset, "reader_test.go", 123);
-        registry.Add("TestSmallLitWidth", lzw_package.TestSmallLitWidth, "writer_test.go", 161);
-        registry.Add("TestStartsWithClearCode", lzw_package.TestStartsWithClearCode, "writer_test.go", 171);
-        registry.Add("TestWriter", lzw_package.TestWriter, "writer_test.go", 92);
-        registry.Add("TestWriterReset", lzw_package.TestWriterReset, "writer_test.go", 109);
-        registry.Add("TestWriterReturnValues", lzw_package.TestWriterReturnValues, "writer_test.go", 153);
+        registry.Add("TestHiCodeDoesNotOverflow", lzw_internal_test_package.TestHiCodeDoesNotOverflow, "reader_test.go", 177);
+        registry.Add("TestNoLongerSavingPriorExpansions", lzw_internal_test_package.TestNoLongerSavingPriorExpansions, "reader_test.go", 198);
+        registry.Add("TestReader", lzw_internal_test_package.TestReader, "reader_test.go", 85);
+        registry.Add("TestReaderReset", lzw_internal_test_package.TestReaderReset, "reader_test.go", 123);
+        registry.Add("TestSmallLitWidth", lzw_internal_test_package.TestSmallLitWidth, "writer_test.go", 161);
+        registry.Add("TestStartsWithClearCode", lzw_internal_test_package.TestStartsWithClearCode, "writer_test.go", 171);
+        registry.Add("TestWriter", lzw_internal_test_package.TestWriter, "writer_test.go", 92);
+        registry.Add("TestWriterReset", lzw_internal_test_package.TestWriterReset, "writer_test.go", 109);
+        registry.Add("TestWriterReturnValues", lzw_internal_test_package.TestWriterReturnValues, "writer_test.go", 153);
         return TestHost.Run(registry, args);
     }
 }

@@ -7,11 +7,12 @@ using bytes = bytes_package;
 using io = io_package;
 using strings = strings_package;
 using testing = testing_package;
+using static go.encoding.ascii85_package;
 using ꓸꓸꓸany = Span<any>;
 
-partial class ascii85_package {
+partial class ascii85_internal_test_package {
 
-[GoType] partial struct testpair {
+[GoType] internal partial struct testpair {
     internal @string decoded, encoded;
 }
 
@@ -60,7 +61,7 @@ internal static @string strip85(@string s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string encodeQQWantQˢ = "Encode(%q) = %q, want %q"u8;
+internal static readonly @string encodeQQWantQˢ = "Encode(%q) = %q, want %q"u8;
 
 public static void TestEncode(ж<testing.T> Ꮡt) {
     foreach (var (_, p) in pairs) {
@@ -74,7 +75,7 @@ public static void TestEncode(ж<testing.T> Ꮡt) {
 public static void TestEncoder(ж<testing.T> Ꮡt) {
     foreach (var (_, p) in pairs) {
         var bb = Ꮡ(new strings.Builder(nil));
-        var encoder = NewEncoder(new strings_BuilderжWriter(bb));
+        var encoder = NewEncoder(new ascii85_internal_test_package.strings_BuilderжWriter(bb));
         encoder.Write(slice<byte>(p.decoded));
         encoder.Close();
         testEqual(Ꮡt, encodeQQWantQˢ, p.decoded, strip85(bb.String()), strip85(p.encoded));
@@ -82,16 +83,16 @@ public static void TestEncoder(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string writeQGaveErrorVWantVˢ = "Write(%q) gave error %v, want %v"u8;
-private static readonly @string writeQGaveLengthVWantVˢ = "Write(%q) gave length %v, want %v"u8;
-private static readonly @string closeGaveErrorVWantVˢ = "Close gave error %v, want %v"u8;
-private static readonly @string encodingDOfQQWantQˢ = "Encoding/%d of %q = %q, want %q"u8;
+internal static readonly @string writeQGaveErrorVWantVˢ = "Write(%q) gave error %v, want %v"u8;
+internal static readonly @string writeQGaveLengthVWantVˢ = "Write(%q) gave length %v, want %v"u8;
+internal static readonly @string closeGaveErrorVWantVˢ = "Close gave error %v, want %v"u8;
+internal static readonly @string encodingDOfQQWantQˢ = "Encoding/%d of %q = %q, want %q"u8;
 
 public static void TestEncoderBuffering(ж<testing.T> Ꮡt) {
     var input = slice<byte>(bigtest.decoded);
     for (nint bs = 1; bs <= 12; bs++) {
         var bb = Ꮡ(new strings.Builder(nil));
-        var encoder = NewEncoder(new strings_BuilderжWriter(bb));
+        var encoder = NewEncoder(new ascii85_internal_test_package.strings_BuilderжWriter(bb));
         for (nint pos = 0; pos < len(input); pos += bs) {
             nint end = pos + bs;
             if (end > len(input)) {
@@ -108,10 +109,10 @@ public static void TestEncoderBuffering(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string decodeQErrorVWantVˢ = "Decode(%q) = error %v, want %v"u8;
-private static readonly @string decodeQNsrcVWantVˢ = "Decode(%q) = nsrc %v, want %v"u8;
-private static readonly @string decodeQNdstVWantVˢ = "Decode(%q) = ndst %v, want %v"u8;
-private static readonly @string decodeQQWantQˢ = "Decode(%q) = %q, want %q"u8;
+internal static readonly @string decodeQErrorVWantVˢ = "Decode(%q) = error %v, want %v"u8;
+internal static readonly @string decodeQNsrcVWantVˢ = "Decode(%q) = nsrc %v, want %v"u8;
+internal static readonly @string decodeQNdstVWantVˢ = "Decode(%q) = ndst %v, want %v"u8;
+internal static readonly @string decodeQQWantQˢ = "Decode(%q) = %q, want %q"u8;
 
 public static void TestDecode(ж<testing.T> Ꮡt) {
     foreach (var (_, p) in pairs) {
@@ -125,14 +126,14 @@ public static void TestDecode(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object readFailedˢ = (@string)"Read failed"u8;
-private static readonly @string readFromQLengthVWantVˢ = "Read from %q = length %v, want %v"u8;
-private static readonly @string decodingOfQQWantQˢ = "Decoding of %q = %q, want %q"u8;
-private static readonly @string readFromQVWantVˢ = "Read from %q = %v, want %v"u8;
+internal static readonly object readFailedˢ = (@string)"Read failed"u8;
+internal static readonly @string readFromQLengthVWantVˢ = "Read from %q = length %v, want %v"u8;
+internal static readonly @string decodingOfQQWantQˢ = "Decoding of %q = %q, want %q"u8;
+internal static readonly @string readFromQVWantVˢ = "Read from %q = %v, want %v"u8;
 
 public static void TestDecoder(ж<testing.T> Ꮡt) {
     foreach (var (_, p) in pairs) {
-        var decoder = NewDecoder(new strings_ReaderжReader(strings.NewReader(p.encoded)));
+        var decoder = NewDecoder(new ascii85_internal_test_package.strings_ReaderжReader(strings.NewReader(p.encoded)));
         var (dbuf, err) = io.ReadAll(decoder);
         if (err != default!) {
             Ꮡt.Fatal(readFailedˢ, err);
@@ -146,11 +147,11 @@ public static void TestDecoder(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string decodingDOfQQWantQˢ = "Decoding/%d of %q = %q, want %q"u8;
+internal static readonly @string decodingDOfQQWantQˢ = "Decoding/%d of %q = %q, want %q"u8;
 
 public static void TestDecoderBuffering(ж<testing.T> Ꮡt) {
     for (nint bs = 1; bs <= 12; bs++) {
-        var decoder = NewDecoder(new strings_ReaderжReader(strings.NewReader(bigtest.encoded)));
+        var decoder = NewDecoder(new ascii85_internal_test_package.strings_ReaderжReader(strings.NewReader(bigtest.encoded)));
         var buf = new slice<byte>(len(bigtest.decoded) + 12);
         nint total = default!;
         nint n = default!;
@@ -167,10 +168,10 @@ public static void TestDecoderBuffering(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string corruptionInQAtOffsetVˢ = "Corruption in %q at offset %v, want %v"u8;
-private static readonly object decoderFailedToDetectˢ = (@string)"Decoder failed to detect corruption in"u8;
+internal static readonly @string corruptionInQAtOffsetVˢ = "Corruption in %q at offset %v, want %v"u8;
+internal static readonly object decoderFailedToDetectˢ = (@string)"Decoder failed to detect corruption in"u8;
 
-[GoLocalName("corrupt")] [GoType("dyn")] partial struct TestDecodeCorrupt_corrupt {
+[GoLocalName("corrupt")] [GoType("dyn")] internal partial struct TestDecodeCorrupt_corrupt {
     internal @string e;
     internal nint p;
 }
@@ -204,7 +205,7 @@ public static void TestBig(ж<testing.T> Ꮡt) {
         raw[i] = alpha[i % len(alpha)];
     }
     var encoded = @new<bytes.Buffer>();
-    var w = NewEncoder(new bytes_BufferжWriter(encoded));
+    var w = NewEncoder(new ascii85_internal_test_package.bytes_BufferжWriter(encoded));
     var (nn, err) = w.Write(raw);
     if (nn != n || err != default!) {
         Ꮡt.Fatalf("Encoder.Write(raw) = %d, %v want %d, nil"u8, nn, err, n);
@@ -213,7 +214,7 @@ public static void TestBig(ж<testing.T> Ꮡt) {
     if (err != default!) {
         Ꮡt.Fatalf("Encoder.Close() = %v want nil"u8, err);
     }
-    (var decoded, err) = io.ReadAll(NewDecoder(new bytes_BufferжReader(encoded)));
+    (var decoded, err) = io.ReadAll(NewDecoder(new ascii85_internal_test_package.bytes_BufferжReader(encoded)));
     if (err != default!) {
         Ꮡt.Fatalf("io.ReadAll(NewDecoder(...)): %v"u8, err);
     }
@@ -230,7 +231,7 @@ public static void TestBig(ж<testing.T> Ꮡt) {
 
 public static void TestDecoderInternalWhitespace(ж<testing.T> Ꮡt) {
     @string s = strings.Repeat(" "u8, 2048) + "z"u8;
-    var (decoded, err) = io.ReadAll(NewDecoder(new strings_ReaderжReader(strings.NewReader(s))));
+    var (decoded, err) = io.ReadAll(NewDecoder(new ascii85_internal_test_package.strings_ReaderжReader(strings.NewReader(s))));
     if (err != default!) {
         Ꮡt.Errorf("Decode gave error %v"u8, err);
     }
@@ -241,4 +242,4 @@ public static void TestDecoderInternalWhitespace(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end ascii85_package
+} // end ascii85_internal_test_package

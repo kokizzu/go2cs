@@ -8,6 +8,7 @@ namespace go.container;
 using heap = go.container.heap_package;
 using fmt = fmt_package;
 using go.container;
+using static go.container.heap_internal_test_package;
 
 partial class heap_test_package {
 
@@ -43,11 +44,11 @@ public static void Swap(this IntHeap h, nint i, nint j) {
 // and removes them in order of priority.
 public static void Example_intHeap() {
     var h = Ꮡ(new IntHeap(new nint[]{2, 1, 5}.slice()));
-    heap.Init(new IntHeapжInterface(h));
-    heap.Push(new IntHeapжInterface(h), (nint)(3));
+    heap.Init(new heap_test_package.IntHeapжInterface(h));
+    heap.Push(new heap_test_package.IntHeapжInterface(h), (nint)(3));
     fmt.Printf("minimum: %d\n"u8, (h.ValueSlot)[0]);
     while ((~h).Len() > 0) {
-        fmt.Printf("%d "u8, heap.Pop(new IntHeapжInterface(h)));
+        fmt.Printf("%d "u8, heap.Pop(new heap_test_package.IntHeapжInterface(h)));
     }
 }
 

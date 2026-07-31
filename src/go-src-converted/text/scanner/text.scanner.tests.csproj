@@ -68,8 +68,8 @@
        can leak in because it is never listed. -->
   <ItemGroup>
     <Compile Include="go2cs_test_host.cs" />
+    <Compile Include="package_info_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="scanner.cs" />
     <Compile Include="scanner_test.cs" />
   </ItemGroup>
 
@@ -88,8 +88,8 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\os\os.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strings\strings.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\unicode\unicode.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\unicode\utf8\unicode.utf8.csproj" />
+    <ProjectReference Include="text.scanner.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

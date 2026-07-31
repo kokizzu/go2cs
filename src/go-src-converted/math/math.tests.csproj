@@ -67,69 +67,13 @@
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
        can leak in because it is never listed. -->
   <ItemGroup>
-    <Compile Include="abs.cs" />
-    <Compile Include="acosh.cs" />
     <Compile Include="all_test.cs" />
-    <Compile Include="asin.cs" />
-    <Compile Include="asinh.cs" />
-    <Compile Include="atan.cs" />
-    <Compile Include="atan2.cs" />
-    <Compile Include="atanh.cs" />
-    <Compile Include="bits.cs" />
-    <Compile Include="cbrt.cs" />
-    <Compile Include="const.cs" />
     <Compile Include="const_test.cs" />
-    <Compile Include="copysign.cs" />
-    <Compile Include="dim.cs" />
-    <Compile Include="dim_asm.cs" />
-    <Compile Include="erf.cs" />
-    <Compile Include="erfinv.cs" />
-    <Compile Include="exp.cs" />
-    <Compile Include="exp2_noasm.cs" />
-    <Compile Include="exp_amd64.cs" />
-    <Compile Include="exp_asm.cs" />
-    <Compile Include="expm1.cs" />
     <Compile Include="export_test.cs" />
-    <Compile Include="floor.cs" />
-    <Compile Include="floor_asm.cs" />
-    <Compile Include="fma.cs" />
-    <Compile Include="frexp.cs" />
-    <Compile Include="gamma.cs" />
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="huge_test.cs" />
-    <Compile Include="hypot.cs" />
-    <Compile Include="hypot_asm.cs" />
-    <Compile Include="j0.cs" />
-    <Compile Include="j1.cs" />
-    <Compile Include="jn.cs" />
-    <Compile Include="ldexp.cs" />
-    <Compile Include="lgamma.cs" />
-    <Compile Include="log.cs" />
-    <Compile Include="log10.cs" />
-    <Compile Include="log1p.cs" />
-    <Compile Include="log_asm.cs" />
-    <Compile Include="logb.cs" />
-    <Compile Include="math_impl.cs" />
-    <Compile Include="mod.cs" />
-    <Compile Include="modf.cs" />
-    <Compile Include="modf_noasm.cs" />
-    <Compile Include="nextafter.cs" />
-    <Compile Include="package_info_external_test.cs" />
     <Compile Include="package_init_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="pow.cs" />
-    <Compile Include="pow10.cs" />
-    <Compile Include="remainder.cs" />
-    <Compile Include="signbit.cs" />
-    <Compile Include="sin.cs" />
-    <Compile Include="sincos.cs" />
-    <Compile Include="sinh.cs" />
-    <Compile Include="sqrt.cs" />
-    <Compile Include="stubs.cs" />
-    <Compile Include="tan.cs" />
-    <Compile Include="tanh.cs" />
-    <Compile Include="trig_reduce.cs" />
-    <Compile Include="unsafe.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -208,9 +152,8 @@
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\fmt\fmt.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\internal\cpu\internal.cpu.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\math\bits\math.bits.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\unsafe\unsafe.csproj" />
+    <ProjectReference Include="math.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

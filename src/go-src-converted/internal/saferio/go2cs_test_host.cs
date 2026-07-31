@@ -12,9 +12,9 @@ internal static class Go2CsTestHost
             "io.go",
             "io_test.go",
         });
-        registry.Add("TestReadData", saferio_package.TestReadData, "io_test.go", 13);
-        registry.Add("TestReadDataAt", saferio_package.TestReadDataAt, "io_test.go", 63);
-        registry.Add("TestSliceCap", saferio_package.TestSliceCap, "io_test.go", 106);
+        registry.Add("TestReadData", saferio_internal_test_package.TestReadData, "io_test.go", 13);
+        registry.Add("TestReadDataAt", saferio_internal_test_package.TestReadDataAt, "io_test.go", 63);
+        registry.Add("TestSliceCap", saferio_internal_test_package.TestSliceCap, "io_test.go", 106);
         return TestHost.Run(registry, args);
     }
 }

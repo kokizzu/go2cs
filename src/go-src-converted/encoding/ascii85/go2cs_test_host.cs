@@ -12,15 +12,15 @@ internal static class Go2CsTestHost
             "ascii85.go",
             "ascii85_test.go",
         });
-        registry.Add("TestBig", ascii85_package.TestBig, "ascii85_test.go", 172);
-        registry.Add("TestDecode", ascii85_package.TestDecode, "ascii85_test.go", 106);
-        registry.Add("TestDecodeCorrupt", ascii85_package.TestDecodeCorrupt, "ascii85_test.go", 150);
-        registry.Add("TestDecoder", ascii85_package.TestDecoder, "ascii85_test.go", 117);
-        registry.Add("TestDecoderBuffering", ascii85_package.TestDecoderBuffering, "ascii85_test.go", 132);
-        registry.Add("TestDecoderInternalWhitespace", ascii85_package.TestDecoderInternalWhitespace, "ascii85_test.go", 205);
-        registry.Add("TestEncode", ascii85_package.TestEncode, "ascii85_test.go", 67);
-        registry.Add("TestEncoder", ascii85_package.TestEncoder, "ascii85_test.go", 76);
-        registry.Add("TestEncoderBuffering", ascii85_package.TestEncoderBuffering, "ascii85_test.go", 86);
+        registry.Add("TestBig", ascii85_internal_test_package.TestBig, "ascii85_test.go", 172);
+        registry.Add("TestDecode", ascii85_internal_test_package.TestDecode, "ascii85_test.go", 106);
+        registry.Add("TestDecodeCorrupt", ascii85_internal_test_package.TestDecodeCorrupt, "ascii85_test.go", 150);
+        registry.Add("TestDecoder", ascii85_internal_test_package.TestDecoder, "ascii85_test.go", 117);
+        registry.Add("TestDecoderBuffering", ascii85_internal_test_package.TestDecoderBuffering, "ascii85_test.go", 132);
+        registry.Add("TestDecoderInternalWhitespace", ascii85_internal_test_package.TestDecoderInternalWhitespace, "ascii85_test.go", 205);
+        registry.Add("TestEncode", ascii85_internal_test_package.TestEncode, "ascii85_test.go", 67);
+        registry.Add("TestEncoder", ascii85_internal_test_package.TestEncoder, "ascii85_test.go", 76);
+        registry.Add("TestEncoderBuffering", ascii85_internal_test_package.TestEncoderBuffering, "ascii85_test.go", 86);
         return TestHost.Run(registry, args);
     }
 }

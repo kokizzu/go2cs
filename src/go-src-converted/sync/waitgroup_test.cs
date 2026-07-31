@@ -3,16 +3,17 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.sync_package;
+using static sync_package;
 using atomic = go.sync.atomic_package;
 using Δtesting = testing_package;
 using go.sync;
+using static go.sync_internal_test_package;
 using Δsync = sync_package;
 
 partial class sync_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object waitGroupReleasedGroupˢ = (@string)"WaitGroup released group too soon"u8;
+internal static readonly object waitGroupReleasedGroupˢ = (@string)"WaitGroup released group too soon"u8;
 
 internal static void testWaitGroup(ж<Δtesting.T> Ꮡt, ж<Δsync.WaitGroup> Ꮡwg1, ж<Δsync.WaitGroup> Ꮡwg2) {
     nint n = 16;
@@ -56,7 +57,7 @@ public static void TestWaitGroup(ж<Δtesting.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object shouldPanicˢ = (@string)"Should panic"u8;
+internal static readonly object shouldPanicˢ = (@string)"Should panic"u8;
 
 public static void TestWaitGroupMisuse(ж<Δtesting.T> Ꮡt) => func((defer, recover) => {
     defer(() => {
@@ -73,7 +74,7 @@ public static void TestWaitGroupMisuse(ж<Δtesting.T> Ꮡt) => func((defer, rec
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object spuriousWakeupFromWaitˢ = (@string)"Spurious wakeup from Wait"u8;
+internal static readonly object spuriousWakeupFromWaitˢ = (@string)"Spurious wakeup from Wait"u8;
 
 public static void TestWaitGroupRace(ж<Δtesting.T> Ꮡt) {
     // Run this test for about 1ms.

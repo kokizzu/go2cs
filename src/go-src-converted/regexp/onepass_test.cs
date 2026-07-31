@@ -8,8 +8,9 @@ using slices = slices_package;
 using strings = strings_package;
 using testing = testing_package;
 using regexp;
+using static go.regexp_package;
 
-partial class regexp_package {
+partial class regexp_internal_test_package {
 
 // empty rhs
 // identical runes, identical targets
@@ -236,4 +237,4 @@ public static void TestRunOnePass(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end regexp_package
+} // end regexp_internal_test_package

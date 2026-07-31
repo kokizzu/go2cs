@@ -15,20 +15,20 @@ internal static class Go2CsTestHost
             "maps.go",
             "maps_test.go",
         });
-        registry.Add("TestAll", maps_package.TestAll, "iter_test.go", 12);
-        registry.Add("TestClone", maps_package.TestClone, "maps_test.go", 88);
-        registry.Add("TestCloneLarge", maps_package.TestCloneLarge, "maps_test.go", 186);
-        registry.Add("TestCloneNil", maps_package.TestCloneNil, "maps_test.go", 99);
-        registry.Add("TestCloneWithDelete", maps_package.TestCloneWithDelete, "maps_test.go", 150);
-        registry.Add("TestCloneWithMapAssign", maps_package.TestCloneWithMapAssign, "maps_test.go", 169);
-        registry.Add("TestCollect", maps_package.TestCollect, "iter_test.go", 104);
-        registry.Add("TestCopy", maps_package.TestCopy, "maps_test.go", 107);
-        registry.Add("TestDeleteFunc", maps_package.TestDeleteFunc, "maps_test.go", 124);
-        registry.Add("TestEqual", maps_package.TestEqual, "maps_test.go", 16);
-        registry.Add("TestEqualFunc", maps_package.TestEqualFunc, "maps_test.go", 56);
-        registry.Add("TestInsert", maps_package.TestInsert, "iter_test.go", 72);
-        registry.Add("TestKeys", maps_package.TestKeys, "iter_test.go", 32);
-        registry.Add("TestValues", maps_package.TestValues, "iter_test.go", 52);
+        registry.Add("TestAll", maps_internal_test_package.TestAll, "iter_test.go", 12);
+        registry.Add("TestClone", maps_internal_test_package.TestClone, "maps_test.go", 88);
+        registry.Add("TestCloneLarge", maps_internal_test_package.TestCloneLarge, "maps_test.go", 186);
+        registry.Add("TestCloneNil", maps_internal_test_package.TestCloneNil, "maps_test.go", 99);
+        registry.Add("TestCloneWithDelete", maps_internal_test_package.TestCloneWithDelete, "maps_test.go", 150);
+        registry.Add("TestCloneWithMapAssign", maps_internal_test_package.TestCloneWithMapAssign, "maps_test.go", 169);
+        registry.Add("TestCollect", maps_internal_test_package.TestCollect, "iter_test.go", 104);
+        registry.Add("TestCopy", maps_internal_test_package.TestCopy, "maps_test.go", 107);
+        registry.Add("TestDeleteFunc", maps_internal_test_package.TestDeleteFunc, "maps_test.go", 124);
+        registry.Add("TestEqual", maps_internal_test_package.TestEqual, "maps_test.go", 16);
+        registry.Add("TestEqualFunc", maps_internal_test_package.TestEqualFunc, "maps_test.go", 56);
+        registry.Add("TestInsert", maps_internal_test_package.TestInsert, "iter_test.go", 72);
+        registry.Add("TestKeys", maps_internal_test_package.TestKeys, "iter_test.go", 32);
+        registry.Add("TestValues", maps_internal_test_package.TestValues, "iter_test.go", 52);
         return TestHost.Run(registry, args);
     }
 }

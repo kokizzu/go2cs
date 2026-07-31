@@ -3,7 +3,9 @@
 // license that can be found in the LICENSE file.
 namespace go.@internal;
 
-partial class abi_package {
+using static go.@internal.abi_package;
+
+partial class abi_internal_test_package {
 
 public static partial void FuncPCTestFn();
 
@@ -14,4 +16,4 @@ public static uintptr FuncPCTest() {
     return FuncPCABI0(FuncPCTestFn);
 }
 
-} // end abi_package
+} // end abi_internal_test_package

@@ -6,24 +6,25 @@ namespace go.@internal;
 using bytes = bytes_package;
 using io = io_package;
 using testing = testing_package;
+using static go.@internal.saferio_package;
 
-partial class saferio_package {
+partial class saferio_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string smallˢ = "small"u8;
-private static readonly @string largeˢ = "large"u8;
-private static readonly object largeReadSucceededˢ = (@string)"large read succeeded unexpectedly"u8;
-private static readonly @string maxintˢ = "maxint"u8;
-private static readonly @string smallEofˢ = "small-EOF"u8;
-private static readonly @string largeEofˢ = "large-EOF"u8;
-private static readonly @string largeUnexpectedEOFˢ = "large-UnexpectedEOF"u8;
+internal static readonly @string smallˢ = "small"u8;
+internal static readonly @string largeˢ = "large"u8;
+internal static readonly object largeReadSucceededˢ = (@string)"large read succeeded unexpectedly"u8;
+internal static readonly @string maxintˢ = "maxint"u8;
+internal static readonly @string smallEofˢ = "small-EOF"u8;
+internal static readonly @string largeEofˢ = "large-EOF"u8;
+internal static readonly @string largeUnexpectedEOFˢ = "large-UnexpectedEOF"u8;
 
 public static void TestReadData(ж<testing.T> Ꮡt) {
     UntypedInt count = 100;
     var input = bytes.Repeat(new byte[]{(rune)'a'}.slice(), count);
     var inputʗ1 = input;
     Ꮡt.Run(smallˢ, (ж<testing.T> tΔ1) => {
-        var (got, err) = ReadData(new bytes_ReaderжReader(bytes.NewReader(inputʗ1)), count);
+        var (got, err) = ReadData(new saferio_internal_test_package.bytes_ReaderжReader(bytes.NewReader(inputʗ1)), count);
         if (err != default!) {
             tΔ1.Fatal(err);
         }
@@ -33,32 +34,32 @@ public static void TestReadData(ж<testing.T> Ꮡt) {
     });
     var inputʗ3 = input;
     Ꮡt.Run(largeˢ, (ж<testing.T> tΔ2) => {
-        var (_, err) = ReadData(new bytes_ReaderжReader(bytes.NewReader(inputʗ3)), ((uint64)10 << (int)(30)));
+        var (_, err) = ReadData(new saferio_internal_test_package.bytes_ReaderжReader(bytes.NewReader(inputʗ3)), ((uint64)10 << (int)(30)));
         if (err == default!) {
             tΔ2.Error(largeReadSucceededˢ);
         }
     });
     var inputʗ5 = input;
     Ꮡt.Run(maxintˢ, (ж<testing.T> tΔ3) => {
-        var (_, err) = ReadData(new bytes_ReaderжReader(bytes.NewReader(inputʗ5)), ((uint64)1 << (int)(62)));
+        var (_, err) = ReadData(new saferio_internal_test_package.bytes_ReaderжReader(bytes.NewReader(inputʗ5)), ((uint64)1 << (int)(62)));
         if (err == default!) {
             tΔ3.Error(largeReadSucceededˢ);
         }
     });
     Ꮡt.Run(smallEofˢ, (ж<testing.T> tΔ4) => {
-        var (_, err) = ReadData(new bytes_ReaderжReader(bytes.NewReader(default!)), chunk - 1);
+        var (_, err) = ReadData(new saferio_internal_test_package.bytes_ReaderжReader(bytes.NewReader(default!)), chunk - 1);
         if (!AreEqual(err, io.EOF)) {
             tΔ4.Errorf("ReadData = %v, want io.EOF"u8, err);
         }
     });
     Ꮡt.Run(largeEofˢ, (ж<testing.T> tΔ5) => {
-        var (_, err) = ReadData(new bytes_ReaderжReader(bytes.NewReader(default!)), chunk + 1);
+        var (_, err) = ReadData(new saferio_internal_test_package.bytes_ReaderжReader(bytes.NewReader(default!)), chunk + 1);
         if (!AreEqual(err, io.EOF)) {
             tΔ5.Errorf("ReadData = %v, want io.EOF"u8, err);
         }
     });
     Ꮡt.Run(largeUnexpectedEOFˢ, (ж<testing.T> tΔ6) => {
-        var (_, err) = ReadData(new bytes_ReaderжReader(bytes.NewReader(new slice<byte>(chunk))), chunk + 1);
+        var (_, err) = ReadData(new saferio_internal_test_package.bytes_ReaderжReader(bytes.NewReader(new slice<byte>(chunk))), chunk + 1);
         if (!AreEqual(err, io.ErrUnexpectedEOF)) {
             tΔ6.Errorf("ReadData = %v, want io.ErrUnexpectedEOF"u8, err);
         }
@@ -66,14 +67,14 @@ public static void TestReadData(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sectionReaderˢ = "SectionReader"u8;
+internal static readonly @string sectionReaderˢ = "SectionReader"u8;
 
 public static void TestReadDataAt(ж<testing.T> Ꮡt) {
     UntypedInt count = 100;
     var input = bytes.Repeat(new byte[]{(rune)'a'}.slice(), count);
     var inputʗ1 = input;
     Ꮡt.Run(smallˢ, (ж<testing.T> tΔ1) => {
-        var (got, err) = ReadDataAt(new bytes_ReaderжReaderAt(bytes.NewReader(inputʗ1)), count, 0);
+        var (got, err) = ReadDataAt(new saferio_internal_test_package.bytes_ReaderжReaderAt(bytes.NewReader(inputʗ1)), count, 0);
         if (err != default!) {
             tΔ1.Fatal(err);
         }
@@ -83,14 +84,14 @@ public static void TestReadDataAt(ж<testing.T> Ꮡt) {
     });
     var inputʗ3 = input;
     Ꮡt.Run(largeˢ, (ж<testing.T> tΔ2) => {
-        var (_, err) = ReadDataAt(new bytes_ReaderжReaderAt(bytes.NewReader(inputʗ3)), ((uint64)10 << (int)(30)), 0);
+        var (_, err) = ReadDataAt(new saferio_internal_test_package.bytes_ReaderжReaderAt(bytes.NewReader(inputʗ3)), ((uint64)10 << (int)(30)), 0);
         if (err == default!) {
             tΔ2.Error(largeReadSucceededˢ);
         }
     });
     var inputʗ5 = input;
     Ꮡt.Run(maxintˢ, (ж<testing.T> tΔ3) => {
-        var (_, err) = ReadDataAt(new bytes_ReaderжReaderAt(bytes.NewReader(inputʗ5)), ((uint64)1 << (int)(62)), 0);
+        var (_, err) = ReadDataAt(new saferio_internal_test_package.bytes_ReaderжReaderAt(bytes.NewReader(inputʗ5)), ((uint64)1 << (int)(62)), 0);
         if (err == default!) {
             tΔ3.Error(largeReadSucceededˢ);
         }
@@ -100,8 +101,8 @@ public static void TestReadDataAt(ж<testing.T> Ꮡt) {
         // Reading 0 bytes from an io.SectionReader at the end
         // of the section will return EOF, but ReadDataAt
         // should succeed and return 0 bytes.
-        var sr = io.NewSectionReader(new bytes_ReaderжReaderAt(bytes.NewReader(inputʗ7)), 0, 0);
-        var (got, err) = ReadDataAt(new io_SectionReaderжReaderAt(sr), 0, 0);
+        var sr = io.NewSectionReader(new saferio_internal_test_package.bytes_ReaderжReaderAt(bytes.NewReader(inputʗ7)), 0, 0);
+        var (got, err) = ReadDataAt(new saferio_internal_test_package.io_SectionReaderжReaderAt(sr), 0, 0);
         if (err != default!) {
             tΔ4.Fatal(err);
         }
@@ -112,8 +113,8 @@ public static void TestReadDataAt(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object sliceCapFailedˢ = (@string)"SliceCap failed unexpectedly"u8;
-private static readonly @string overflowˢ = "overflow"u8;
+internal static readonly object sliceCapFailedˢ = (@string)"SliceCap failed unexpectedly"u8;
+internal static readonly @string overflowˢ = "overflow"u8;
 
 public static void TestSliceCap(ж<testing.T> Ꮡt) {
     Ꮡt.Run(smallˢ, (ж<testing.T> tΔ1) => {
@@ -145,4 +146,4 @@ public static void TestSliceCap(ж<testing.T> Ꮡt) {
     });
 }
 
-} // end saferio_package
+} // end saferio_internal_test_package

@@ -6,10 +6,11 @@ namespace go;
 // Derived from bytes/compare_test.go.
 // Benchmarks omitted since the underlying implementation is identical.
 using testenv = @internal.testenv_package;
-using static go.strings_package;
+using static strings_package;
 using testing = testing_package;
 using @unsafe = unsafe_package;
 using @internal;
+using static go.strings_internal_test_package;
 
 partial class strings_test_package {
 
@@ -45,8 +46,8 @@ public static void TestCompare(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string helloGophersˢ = "Hello Gophers!"u8;
-private static readonly object sS1Failedˢ = (@string)"s > s[:1] failed"u8;
+internal static readonly @string helloGophersˢ = "Hello Gophers!"u8;
+internal static readonly object sS1Failedˢ = (@string)"s > s[:1] failed"u8;
 
 public static void TestCompareIdenticalString(ж<testing.T> Ꮡt) {
     @string s = helloGophersˢ;

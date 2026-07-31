@@ -11,8 +11,9 @@ using testing = testing_package;
 using utf8 = go.unicode.utf8_package;
 using go.unicode;
 using regexp;
+using static go.regexp_package;
 
-partial class regexp_package {
+partial class regexp_internal_test_package {
 
 internal static slice<@string> goodRe = new @string[]{
     @""u8,
@@ -34,7 +35,7 @@ internal static slice<@string> goodRe = new @string[]{
     @"\!\\"u8
 }.slice();
 
-[GoType] partial struct stringError {
+[GoType] internal partial struct stringError {
     internal @string re;
     internal @string err;
 }
@@ -55,13 +56,13 @@ internal static slice<stringError> badRe = new stringError[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object compilingˢ = (@string)"compiling `"u8;
-private static readonly object unexpectedErrorˢ = (@string)"`; unexpected error: "u8;
-private static readonly object missingErrorˢ = (@string)"`; missing error"u8;
-private static readonly object wrongErrorˢ = (@string)"`; wrong error: "u8;
-private static readonly object wantˢ = (@string)"; want "u8;
+internal static readonly object compilingˢ = (@string)"compiling `"u8;
+internal static readonly object unexpectedErrorˢ = (@string)"`; unexpected error: "u8;
+internal static readonly object missingErrorˢ = (@string)"`; missing error"u8;
+internal static readonly object wrongErrorˢ = (@string)"`; wrong error: "u8;
+internal static readonly object wantˢ = (@string)"; want "u8;
 
-internal static ж<Regexp> compileTest(ж<testing.T> Ꮡt, @string expr, @string error) {
+internal static ж<global::go.regexp_package.Regexp> compileTest(ж<testing.T> Ꮡt, @string expr, @string error) {
     var (re, err) = Compile(expr);
     if (error == ""u8 && err != default!) {
         Ꮡt.Error(compilingˢ, expr, unexpectedErrorˢ, err.Error());
@@ -162,7 +163,7 @@ public static void TestCopyMatch(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] partial struct ReplaceTest {
+[GoType] public partial struct ReplaceTest {
     internal @string pattern, replacement, input, output;
 }
 
@@ -269,7 +270,7 @@ internal static slice<ReplaceTest> replaceLiteralTests = new ReplaceTest[]{
     new("a+"u8, "$"u8, "aaa"u8, "$"u8)
 }.slice();
 
-[GoType] partial struct ReplaceFuncTest {
+[GoType] public partial struct ReplaceFuncTest {
     internal @string pattern;
     internal Func<@string, @string> replacement;
     internal @string input, output;
@@ -371,7 +372,7 @@ public static void TestReplaceAllFunc(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] partial struct MetaTest {
+[GoType] public partial struct MetaTest {
     internal @string pattern, output, literal;
     internal bool isLiteral;
 }
@@ -404,8 +405,8 @@ internal static slice<MetaTest> literalPrefixTests = new MetaTest[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string xyzˢ = "xyz"u8;
-private static readonly @string abcxyzdefˢ = "abcxyzdef"u8;
+internal static readonly @string xyzˢ = "xyz"u8;
+internal static readonly @string abcxyzdefˢ = "abcxyzdef"u8;
 
 public static void TestQuoteMeta(ж<testing.T> Ꮡt) {
     foreach (var (_, tc) in metaTests) {
@@ -452,12 +453,12 @@ public static void TestLiteralPrefix(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] partial struct subexpIndex {
+[GoType] internal partial struct subexpIndex {
     internal @string name;
     internal nint index;
 }
 
-[GoType] partial struct subexpCase {
+[GoType] internal partial struct subexpCase {
     internal @string input;
     internal nint num;
     internal slice<@string> names;
@@ -594,7 +595,7 @@ public static void TestParseAndCompile(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x11000Y11000ˢ = @"^x{1,1000}y{1,1000}$"u8;
+internal static readonly @string x11000Y11000ˢ = @"^x{1,1000}y{1,1000}$"u8;
 
 // Check that one-pass cutoff does trigger.
 public static void TestOnePassCutoff(ж<testing.T> Ꮡt) {
@@ -623,7 +624,7 @@ public static void TestSwitchBacktrack(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string aaabbˢ = "aaabb"u8;
+internal static readonly @string aaabbˢ = "aaabb"u8;
 
 // triggers backtracker
 public static void BenchmarkFind(ж<testing.B> Ꮡb) {
@@ -676,8 +677,8 @@ public static void BenchmarkFindString(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string aABBˢ = "a(a+b+)b"u8;
-private static readonly object aabˢ = (@string)"aab"u8;
+internal static readonly @string aABBˢ = "a(a+b+)b"u8;
+internal static readonly object aabˢ = (@string)"aab"u8;
 
 public static void BenchmarkFindSubmatch(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -748,8 +749,8 @@ public static void BenchmarkNotLiteral(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string xxxxˢ = "xxxx"u8;
-private static readonly @string abcdwˢ = "[abcdw]"u8;
+internal static readonly @string xxxxˢ = "xxxx"u8;
+internal static readonly @string abcdwˢ = "[abcdw]"u8;
 
 public static void BenchmarkMatchClass(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -766,7 +767,7 @@ public static void BenchmarkMatchClass(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bbbbˢ = "bbbb"u8;
+internal static readonly @string bbbbˢ = "bbbb"u8;
 
 public static void BenchmarkMatchClass_InRange(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -785,8 +786,8 @@ public static void BenchmarkMatchClass_InRange(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
-private static readonly @string cjrwˢ = "[cjrw]"u8;
+internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
+internal static readonly @string cjrwˢ = "[cjrw]"u8;
 
 public static void BenchmarkReplaceAll(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -801,7 +802,7 @@ public static void BenchmarkReplaceAll(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string zbcDEˢ = "^zbc(d|e)"u8;
+internal static readonly @string zbcDEˢ = "^zbc(d|e)"u8;
 
 public static void BenchmarkAnchoredLiteralShortNonMatch(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -831,7 +832,7 @@ public static void BenchmarkAnchoredLiteralLongNonMatch(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bcDEˢ = "^.bc(d|e)"u8;
+internal static readonly @string bcDEˢ = "^.bc(d|e)"u8;
 
 public static void BenchmarkAnchoredShortMatch(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -861,7 +862,7 @@ public static void BenchmarkAnchoredLongMatch(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bcDEˢ2 = "^.bc(d|e)*$"u8;
+internal static readonly @string bcDEˢ2 = "^.bc(d|e)*$"u8;
 
 public static void BenchmarkOnePassShortA(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -876,7 +877,7 @@ public static void BenchmarkOnePassShortA(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bcDEˢ3 = ".bc(d|e)*$"u8;
+internal static readonly @string bcDEˢ3 = ".bc(d|e)*$"u8;
 
 public static void BenchmarkNotOnePassShortA(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -891,7 +892,7 @@ public static void BenchmarkNotOnePassShortA(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bcDEˢ4 = "^.bc(?:d|e)*$"u8;
+internal static readonly @string bcDEˢ4 = "^.bc(?:d|e)*$"u8;
 
 public static void BenchmarkOnePassShortB(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -906,7 +907,7 @@ public static void BenchmarkOnePassShortB(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bcDEˢ5 = ".bc(?:d|e)*$"u8;
+internal static readonly @string bcDEˢ5 = ".bc(?:d|e)*$"u8;
 
 public static void BenchmarkNotOnePassShortB(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -921,7 +922,7 @@ public static void BenchmarkNotOnePassShortB(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcdefghijklmnopqrstuvwxyzˢ2 = "^abcdefghijklmnopqrstuvwxyz.*$"u8;
+internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ2 = "^abcdefghijklmnopqrstuvwxyz.*$"u8;
 
 public static void BenchmarkOnePassLongPrefix(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -936,7 +937,7 @@ public static void BenchmarkOnePassLongPrefix(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bcdefghijklmnopqrstuvwxyzˢ = "^.bcdefghijklmnopqrstuvwxyz.*$"u8;
+internal static readonly @string bcdefghijklmnopqrstuvwxyzˢ = "^.bcdefghijklmnopqrstuvwxyz.*$"u8;
 
 public static void BenchmarkOnePassLongNotPrefix(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -951,7 +952,7 @@ public static void BenchmarkOnePassLongNotPrefix(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fooBaRBazˢ = "foo (ba+r)? baz"u8;
+internal static readonly @string fooBaRBazˢ = "foo (ba+r)? baz"u8;
 
 public static void BenchmarkMatchParallelShared(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -1044,8 +1045,8 @@ public static void BenchmarkCompile(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string aBCDˢ = "a.*b.*c.*d"u8;
-private static readonly @string abcdefghijklmnˢ = "abcdefghijklmn"u8;
+internal static readonly @string aBCDˢ = "a.*b.*c.*d"u8;
+internal static readonly @string abcdefghijklmnˢ = "abcdefghijklmn"u8;
 
 public static void TestDeepEqual(ж<testing.T> Ꮡt) {
     var re1 = MustCompile(aBCDˢ);
@@ -1099,11 +1100,11 @@ public static void TestMinInputLen(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidPatternˢ = "invalid pattern"u8;
-private static readonly object unexpectedSuccessˢ = (@string)"unexpected success"u8;
+internal static readonly @string invalidPatternˢ = "invalid pattern"u8;
+internal static readonly object unexpectedSuccessˢ = (@string)"unexpected success"u8;
 
 public static void TestUnmarshalText(ж<testing.T> Ꮡt) {
-    var unmarshaled = @new<Regexp>();
+    var unmarshaled = @new<global::go.regexp_package.Regexp>();
     foreach (var (i, _) in goodRe) {
         var re = compileTest(Ꮡt, goodRe[i], ""u8);
         var (marshaled, err) = re.MarshalText();
@@ -1122,7 +1123,7 @@ public static void TestUnmarshalText(ж<testing.T> Ꮡt) {
         }
     }
     Ꮡt.Run(invalidPatternˢ, (ж<testing.T> tΔ1) => {
-        var re = @new<Regexp>();
+        var re = @new<global::go.regexp_package.Regexp>();
         var err = re.UnmarshalText(slice<byte>(@"\"u8));
         if (err == default!) {
             tΔ1.Error(unexpectedSuccessˢ);
@@ -1130,4 +1131,4 @@ public static void TestUnmarshalText(ж<testing.T> Ꮡt) {
     });
 }
 
-} // end regexp_package
+} // end regexp_internal_test_package

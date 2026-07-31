@@ -10,8 +10,9 @@ using io = io_package;
 using rand = math.rand_package;
 using testing = testing_package;
 using math;
+using static go.hash.crc32_package;
 
-partial class crc32_package {
+partial class crc32_internal_test_package {
 
 // First test, so that it can be the one to initialize castagnoliTable.
 public static void TestCastagnoliRace(ж<testing.T> Ꮡt) {
@@ -23,7 +24,7 @@ public static void TestCastagnoliRace(ж<testing.T> Ꮡt) {
     ieee.Write(slice<byte>("hello"u8));
 }
 
-[GoType] partial struct test {
+[GoType] internal partial struct test {
     internal uint32 ieee, castagnoli;
     internal @string @in;
     internal @string halfStateIEEE; // IEEE marshaled hash state after first half of in written, used by TestGoldenMarshal
@@ -112,7 +113,7 @@ internal static void testCrossCheck(ж<testing.T> Ꮡt, Func<uint32, slice<byte>
 
 // TestSimple tests the simple generic algorithm.
 public static void TestSimple(ж<testing.T> Ꮡt) {
-    ref var tab = ref heap<ж<Table>>(out var Ꮡtab);
+    ref var tab = ref heap<ж<global::go.hash.crc32_package.Table>>(out var Ꮡtab);
     tab = simpleMakeTable(IEEE);
     testGoldenIEEE(Ꮡt, (slice<byte> b) => simpleUpdate(0, Ꮡtab.ValueSlot, b));
     tab = simpleMakeTable(Castagnoli);
@@ -120,8 +121,8 @@ public static void TestSimple(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ieeeˢ = "IEEE"u8;
-private static readonly @string castagnoliˢ = "Castagnoli"u8;
+internal static readonly @string ieeeˢ = "IEEE"u8;
+internal static readonly @string castagnoliˢ = "Castagnoli"u8;
 
 public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
     Ꮡt.Run(ieeeˢ, (ж<testing.T> tΔ1) => {
@@ -131,7 +132,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
 
             var h = New(IEEETable);
             var h2 = New(IEEETable);
-            io.WriteString(new hash_Hash32ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
+            io.WriteString(new crc32_test_package.hash_Hash32ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
             var (state, err) = h._<encoding.BinaryMarshaler>().MarshalBinary();
             if (err != default!) {
                 tΔ1.Errorf("could not marshal: %v"u8, err);
@@ -147,8 +148,8 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
                     continue;
                 }
             }
-            io.WriteString(new hash_Hash32ᴠWriter(h), g.@in[(int)(len(g.@in) / 2)..]);
-            io.WriteString(new hash_Hash32ᴠWriter(h2), g.@in[(int)(len(g.@in) / 2)..]);
+            io.WriteString(new crc32_test_package.hash_Hash32ᴠWriter(h), g.@in[(int)(len(g.@in) / 2)..]);
+            io.WriteString(new crc32_test_package.hash_Hash32ᴠWriter(h2), g.@in[(int)(len(g.@in) / 2)..]);
             if (h.Sum32() != h2.Sum32()) {
                 tΔ1.Errorf("IEEE(%s) = 0x%x != marshaled 0x%x"u8, g.@in, h.Sum32(), h2.Sum32());
             }
@@ -162,7 +163,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
 
             var h = New(table);
             var h2 = New(table);
-            io.WriteString(new hash_Hash32ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
+            io.WriteString(new crc32_test_package.hash_Hash32ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
             var (state, err) = h._<encoding.BinaryMarshaler>().MarshalBinary();
             if (err != default!) {
                 tΔ2.Errorf("could not marshal: %v"u8, err);
@@ -178,8 +179,8 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
                     continue;
                 }
             }
-            io.WriteString(new hash_Hash32ᴠWriter(h), g.@in[(int)(len(g.@in) / 2)..]);
-            io.WriteString(new hash_Hash32ᴠWriter(h2), g.@in[(int)(len(g.@in) / 2)..]);
+            io.WriteString(new crc32_test_package.hash_Hash32ᴠWriter(h), g.@in[(int)(len(g.@in) / 2)..]);
+            io.WriteString(new crc32_test_package.hash_Hash32ᴠWriter(h2), g.@in[(int)(len(g.@in) / 2)..]);
             if (h.Sum32() != h2.Sum32()) {
                 tΔ2.Errorf("Castagnoli(%s) = 0x%x != marshaled 0x%x"u8, g.@in, h.Sum32(), h2.Sum32());
             }
@@ -203,7 +204,7 @@ public static void TestMarshalTableMismatch(ж<testing.T> Ꮡt) {
 
 // TestSlicing tests the slicing-by-8 algorithm.
 public static void TestSlicing(ж<testing.T> Ꮡt) {
-    ref var tab = ref heap<ж<slicing8Table>>(out var Ꮡtab);
+    ref var tab = ref heap<ж<global::go.hash.crc32_package.slicing8Table>>(out var Ꮡtab);
     tab = slicingMakeTable(IEEE);
     testGoldenIEEE(Ꮡt, (slice<byte> b) => slicingUpdate(0, Ꮡtab.ValueSlot, b));
     tab = slicingMakeTable(Castagnoli);
@@ -221,7 +222,7 @@ public static void TestSlicing(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object archSpecificIeeeNotˢ = (@string)"Arch-specific IEEE not available."u8;
+internal static readonly object archSpecificIeeeNotˢ = (@string)"Arch-specific IEEE not available."u8;
 
 public static void TestArchIEEE(ж<testing.T> Ꮡt) {
     if (!archAvailableIEEE()) {
@@ -234,7 +235,7 @@ public static void TestArchIEEE(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object archSpecificCastagnoliˢ = (@string)"Arch-specific Castagnoli not available."u8;
+internal static readonly object archSpecificCastagnoliˢ = (@string)"Arch-specific Castagnoli not available."u8;
 
 public static void TestArchCastagnoli(ж<testing.T> Ꮡt) {
     if (!archAvailableCastagnoli()) {
@@ -292,9 +293,9 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string polyIeeeˢ = "poly=IEEE"u8;
-private static readonly @string polyCastagnoliˢ = "poly=Castagnoli"u8;
-private static readonly @string polyKoopmanˢ = "poly=Koopman"u8;
+internal static readonly @string polyIeeeˢ = "poly=IEEE"u8;
+internal static readonly @string polyCastagnoliˢ = "poly=Castagnoli"u8;
+internal static readonly @string polyKoopmanˢ = "poly=Koopman"u8;
 
 public static void BenchmarkCRC32(ж<testing.B> Ꮡb) {
     Ꮡb.Run(polyIeeeˢ, benchmarkAll(NewIEEE()));
@@ -346,4 +347,4 @@ internal static void benchmark(ж<testing.B> Ꮡb, hash.Hash32 h, int64 n, int64
     }
 }
 
-} // end crc32_package
+} // end crc32_internal_test_package

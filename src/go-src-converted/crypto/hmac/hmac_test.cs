@@ -14,10 +14,11 @@ using hash = hash_package;
 using testing = testing_package;
 using go.crypto;
 using go.crypto.@internal;
+using static go.crypto.hmac_package;
 
-partial class hmac_package {
+partial class hmac_internal_test_package {
 
-[GoType] partial struct hmacTest {
+[GoType] internal partial struct hmacTest {
     internal Func<hash.Hash> hash;
     internal slice<byte> key;
     internal slice<byte> @in;
@@ -579,8 +580,8 @@ public static void TestHMAC(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object hashHashProvidedByˢ = (@string)"hash.Hash provided by boringcrypto are not comparable"u8;
-private static readonly object expectedPanicWhenCallingˢ = (@string)"expected panic when calling New with a non-unique hash generation function"u8;
+internal static readonly object hashHashProvidedByˢ = (@string)"hash.Hash provided by boringcrypto are not comparable"u8;
+internal static readonly object expectedPanicWhenCallingˢ = (@string)"expected panic when calling New with a non-unique hash generation function"u8;
 
 public static void TestNonUniqueHash(ж<testing.T> Ꮡt) => func((defer, recover) => {
     if (boring.Enabled) {
@@ -598,15 +599,15 @@ public static void TestNonUniqueHash(ж<testing.T> Ꮡt) => func((defer, recover
 });
 
 // justHash implements just the hash.Hash methods and nothing else
-[GoType] partial struct justHash {
+[GoType] internal partial struct justHash {
     public hash_package.Hash Hash;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object equalFailedWithEqualˢ = (@string)"Equal failed with equal arguments"u8;
-private static readonly object equalAcceptedAPrefixOfˢ = (@string)"Equal accepted a prefix of the second argument"u8;
-private static readonly object equalAcceptedAPrefixOfˢ2 = (@string)"Equal accepted a prefix of the first argument"u8;
-private static readonly object equalAcceptedUnequalˢ = (@string)"Equal accepted unequal slices"u8;
+internal static readonly object equalFailedWithEqualˢ = (@string)"Equal failed with equal arguments"u8;
+internal static readonly object equalAcceptedAPrefixOfˢ = (@string)"Equal accepted a prefix of the second argument"u8;
+internal static readonly object equalAcceptedAPrefixOfˢ2 = (@string)"Equal accepted a prefix of the first argument"u8;
+internal static readonly object equalAcceptedUnequalˢ = (@string)"Equal accepted unequal slices"u8;
 
 public static void TestEqual(ж<testing.T> Ꮡt) {
     var a = slice<byte>("test"u8);
@@ -683,4 +684,4 @@ public static void BenchmarkNewWriteSum(ж<testing.B> Ꮡb) {
     }
 }
 
-} // end hmac_package
+} // end hmac_internal_test_package

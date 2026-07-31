@@ -67,21 +67,12 @@
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
        can leak in because it is never listed. -->
   <ItemGroup>
-    <Compile Include="bits.cs" />
-    <Compile Include="block.cs" />
-    <Compile Include="fse.cs" />
     <Compile Include="fse_test.cs" />
     <Compile Include="fuzz_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
-    <Compile Include="huff.cs" />
-    <Compile Include="literals.cs" />
-    <Compile Include="package_init.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="window.cs" />
     <Compile Include="window_test.cs" />
-    <Compile Include="xxhash.cs" />
     <Compile Include="xxhash_test.cs" />
-    <Compile Include="zstd.cs" />
     <Compile Include="zstd_test.cs" />
   </ItemGroup>
 
@@ -111,15 +102,12 @@
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\bytes\bytes.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\crypto\sha256\crypto.sha256.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\encoding\binary\encoding.binary.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\errors\errors.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\fmt\fmt.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\hash\hash.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\race\internal.race.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\testenv\internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\fs\io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\math\bits\math.bits.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\os\exec\os.exec.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\os\os.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\path\filepath\path.filepath.csproj" />
@@ -127,6 +115,7 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\strconv\strconv.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strings\strings.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\sync\sync.csproj" />
+    <ProjectReference Include="internal.zstd.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

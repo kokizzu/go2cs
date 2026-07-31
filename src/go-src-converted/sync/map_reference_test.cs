@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using Δsync = go.sync_package;
+using Δsync = sync_package;
 using atomic = go.sync.atomic_package;
-using go;
 using go.sync;
+using static go.sync_internal_test_package;
 
 partial class sync_test_package {
 
@@ -26,8 +26,8 @@ partial class sync_test_package {
     void Clear();
 }
 
-internal static mapInterface _ᴛ1ʗ = new RWMutexMapжmapInterface(Ꮡ(new RWMutexMap(nil)));
-internal static mapInterface _ᴛ2ʗ = new DeepCopyMapжmapInterface(Ꮡ(new DeepCopyMap(nil)));
+internal static mapInterface _ᴛ1ʗ = new sync_test_package.RWMutexMapжmapInterface(Ꮡ(new RWMutexMap(nil)));
+internal static mapInterface _ᴛ2ʗ = new sync_test_package.DeepCopyMapжmapInterface(Ꮡ(new DeepCopyMap(nil)));
 
 // RWMutexMap is an implementation of mapInterface using a sync.RWMutex.
 [GoType] partial struct RWMutexMap {

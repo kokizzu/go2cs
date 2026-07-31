@@ -22,8 +22,9 @@ using go.io;
 using go.os;
 using hash = hash_package;
 using path;
+using static go.@internal.zstd_package;
 
-partial class zstd_package {
+partial class zstd_internal_test_package {
 
 // a small compressed .debug_ranges section.
 // tests holds some simple test cases, including some found by fuzzing.
@@ -70,8 +71,8 @@ public static void TestSamples(ж<testing.T> Ꮡt) {
         testΔ1 = test;
         var testʗ1 = testΔ1;
         Ꮡt.Run(testΔ1.name, (ж<testing.T> tΔ1) => {
-            var r = NewReader(new strings_ReaderжReader(strings.NewReader(testʗ1.compressed)));
-            var (got, err) = io.ReadAll(new ReaderжReader(r));
+            var r = NewReader(new zstd_internal_test_package.strings_ReaderжReader(strings.NewReader(testʗ1.compressed)));
+            var (got, err) = io.ReadAll(new zstd_internal_test_package.zstd_ReaderжReader(r));
             if (err != default!) {
                 tΔ1.Fatal(err);
             }
@@ -85,7 +86,7 @@ public static void TestSamples(ж<testing.T> Ꮡt) {
 
 public static void TestReset(ж<testing.T> Ꮡt) {
     var input = strings.NewReader(""u8);
-    var r = NewReader(new strings_ReaderжReader(input));
+    var r = NewReader(new zstd_internal_test_package.strings_ReaderжReader(input));
     foreach (var (_, test) in tests) {
         ref var testΔ1 = ref heap<testsᴛ1>(out var ᏑtestΔ1);
         testΔ1 = test;
@@ -94,8 +95,8 @@ public static void TestReset(ж<testing.T> Ꮡt) {
         var testʗ1 = testΔ1;
         Ꮡt.Run(testΔ1.name, (ж<testing.T> tΔ1) => {
             inputʗ1.Reset(testʗ1.compressed);
-            rʗ1.Reset(new strings_ReaderжReader(inputʗ1));
-            var (got, err) = io.ReadAll(new ReaderжReader(rʗ1));
+            rʗ1.Reset(new zstd_internal_test_package.strings_ReaderжReader(inputʗ1));
+            var (got, err) = io.ReadAll(new zstd_internal_test_package.zstd_ReaderжReader(rʗ1));
             if (err != default!) {
                 tΔ1.Fatal(err);
             }
@@ -127,8 +128,8 @@ internal static slice<byte> bigData(testing.TB t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string zstdˢ = "zstd"u8;
-private static readonly object skippingBecauseZstdNotˢ = (@string)"skipping because zstd not found"u8;
+internal static readonly @string zstdˢ = "zstd"u8;
+internal static readonly object skippingBecauseZstdNotˢ = (@string)"skipping because zstd not found"u8;
 
 internal static @string findZstd(testing.TB t) {
     var (zstd, err) = exec.LookPath(zstdˢ);
@@ -152,9 +153,9 @@ internal static slice<byte> zstdBigData(testing.TB t) {
     var inputʗ1 = input;
     ᏑzstdBigOnce.Do(() => {
         var cmd = exec.Command(zstd, "-z"u8);
-        cmd.Value.Stdin = new bytes_ReaderжReader(bytes.NewReader(inputʗ1));
+        cmd.Value.Stdin = new zstd_internal_test_package.bytes_ReaderжReader(bytes.NewReader(inputʗ1));
         ref var compressed = ref heap(new bytes.Buffer(), out var Ꮡcompressed);
-        cmd.Value.Stdout = new bytes_BufferжWriter(Ꮡcompressed);
+        cmd.Value.Stdout = new zstd_internal_test_package.bytes_BufferжWriter(Ꮡcompressed);
         cmd.Value.Stderr = new os.FileжWriter(os.Stderr);
         {
             var err = cmd.Run(); if (err != default!) {
@@ -176,11 +177,11 @@ public static void TestLarge(ж<testing.T> Ꮡt) {
     if (testing.Short()) {
         Ꮡt.Skip(skippingExpensiveTestInˢ);
     }
-    var data = bigData(new testing_TжTB(Ꮡt));
-    var compressed = zstdBigData(new testing_TжTB(Ꮡt));
+    var data = bigData(new zstd_internal_test_package.testing_TжTB(Ꮡt));
+    var compressed = zstdBigData(new zstd_internal_test_package.testing_TжTB(Ꮡt));
     Ꮡt.Logf("zstd compressed %d bytes to %d"u8, builtin.len(data), builtin.len(compressed));
-    var r = NewReader(new bytes_ReaderжReader(bytes.NewReader(compressed)));
-    var (got, err) = io.ReadAll(new ReaderжReader(r));
+    var r = NewReader(new zstd_internal_test_package.bytes_ReaderжReader(bytes.NewReader(compressed)));
+    var (got, err) = io.ReadAll(new zstd_internal_test_package.zstd_ReaderжReader(r));
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
@@ -190,7 +191,7 @@ public static void TestLarge(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object dataMismatchˢ = (@string)"data mismatch"u8;
+internal static readonly object dataMismatchˢ = (@string)"data mismatch"u8;
 
 // showDiffs reports the first few differences in two []byte.
 internal static void showDiffs(ж<testing.T> Ꮡt, slice<byte> got, slice<byte> want) {
@@ -214,23 +215,23 @@ internal static void showDiffs(ж<testing.T> Ꮡt, slice<byte> got, slice<byte> 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object skippingAllocationTestˢ = (@string)"skipping allocation test under race detector"u8;
+internal static readonly object skippingAllocationTestˢ = (@string)"skipping allocation test under race detector"u8;
 
 public static void TestAlloc(ж<testing.T> Ꮡt) {
-    testenv.SkipIfOptimizationOff(new testing_TжTB(Ꮡt));
+    testenv.SkipIfOptimizationOff(new zstd_internal_test_package.testing_TжTB(Ꮡt));
     if (race.Enabled) {
         Ꮡt.Skip(skippingAllocationTestˢ);
     }
-    var compressed = zstdBigData(new testing_TжTB(Ꮡt));
+    var compressed = zstdBigData(new zstd_internal_test_package.testing_TжTB(Ꮡt));
     var input = bytes.NewReader(compressed);
-    var r = NewReader(new bytes_ReaderжReader(input));
+    var r = NewReader(new zstd_internal_test_package.bytes_ReaderжReader(input));
     var compressedʗ1 = compressed;
     var inputʗ1 = input;
     var rʗ1 = r;
     var c = testing.AllocsPerRun(10, () => {
         inputʗ1.Reset(compressedʗ1);
-        rʗ1.Reset(new bytes_ReaderжReader(inputʗ1));
-        io.Copy(io.Discard, new ReaderжReader(rʗ1));
+        rʗ1.Reset(new zstd_internal_test_package.bytes_ReaderжReader(inputʗ1));
+        io.Copy(io.Discard, new zstd_internal_test_package.zstd_ReaderжReader(rʗ1));
     });
     if (c != 0D) {
         Ꮡt.Errorf("got %v allocs, want 0"u8, c);
@@ -238,8 +239,8 @@ public static void TestAlloc(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testdataˢ = "testdata"u8;
-private static readonly @string zstˢ = ".zst"u8;
+internal static readonly @string testdataˢ = "testdata"u8;
+internal static readonly @string zstˢ = ".zst"u8;
 
 public static void TestFileSamples(ж<testing.T> Ꮡt) {
     var (samples, err) = os.ReadDir(testdataˢ);
@@ -256,10 +257,10 @@ public static void TestFileSamples(ж<testing.T> Ꮡt) {
             if (errΔ1 != default!) {
                 tΔ1.Fatal(errΔ1);
             }
-            var r = NewReader(new os_FileжReader(f));
+            var r = NewReader(new zstd_internal_test_package.os_FileжReader(f));
             var h = sha256.New();
             {
-                var (_, errΔ2) = io.Copy(h, new ReaderжReader(r)); if (errΔ2 != default!) {
+                var (_, errΔ2) = io.Copy(h, new zstd_internal_test_package.zstd_ReaderжReader(r)); if (errΔ2 != default!) {
                     tΔ1.Fatal(errΔ2);
                 }
             }
@@ -273,12 +274,12 @@ public static void TestFileSamples(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object expectedErrorˢ = (@string)"expected error"u8;
+internal static readonly object expectedErrorˢ = (@string)"expected error"u8;
 
 public static void TestReaderBad(ж<testing.T> Ꮡt) {
     foreach (var (i, s) in badStrings) {
         Ꮡt.Run(fmt.Sprintf("badStrings#%d"u8, i), (ж<testing.T> tΔ1) => {
-            var (_, err) = io.Copy(io.Discard, new ReaderжReader(NewReader(new strings_ReaderжReader(strings.NewReader(s)))));
+            var (_, err) = io.Copy(io.Discard, new zstd_internal_test_package.zstd_ReaderжReader(NewReader(new zstd_internal_test_package.strings_ReaderжReader(strings.NewReader(s)))));
             if (err == default!) {
                 tΔ1.Error(expectedErrorˢ);
             }
@@ -291,16 +292,16 @@ public static void BenchmarkLarge(ж<testing.B> Ꮡb) {
 
     b.StopTimer();
     b.ReportAllocs();
-    var compressed = zstdBigData(new testing_BжTB(Ꮡb));
+    var compressed = zstdBigData(new zstd_internal_test_package.testing_BжTB(Ꮡb));
     b.SetBytes((int64)builtin.len(compressed));
     var input = bytes.NewReader(compressed);
-    var r = NewReader(new bytes_ReaderжReader(input));
+    var r = NewReader(new zstd_internal_test_package.bytes_ReaderжReader(input));
     b.StartTimer();
     for (nint i = 0; i < b.N; i++) {
         input.Reset(compressed);
-        r.Reset(new bytes_ReaderжReader(input));
-        io.Copy(io.Discard, new ReaderжReader(r));
+        r.Reset(new zstd_internal_test_package.bytes_ReaderжReader(input));
+        io.Copy(io.Discard, new zstd_internal_test_package.zstd_ReaderжReader(r));
     }
 }
 
-} // end zstd_package
+} // end zstd_internal_test_package

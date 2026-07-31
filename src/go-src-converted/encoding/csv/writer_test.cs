@@ -8,8 +8,9 @@ using errors = errors_package;
 using strings = strings_package;
 using testing = testing_package;
 using io = io_package;
+using static go.encoding.csv_package;
 
-partial class csv_package {
+partial class csv_internal_test_package {
 
 
 [GoType("dyn")] partial struct writeTestsᴛ1 {
@@ -55,7 +56,7 @@ internal static void initᴛwriteTests() { writeTests = new writeTestsᴛ1[]{
 public static void TestWrite(ж<testing.T> Ꮡt) {
     foreach (var (n, tt) in writeTests) {
         var b = Ꮡ(new strings.Builder(nil));
-        var f = NewWriter(new strings_BuilderжWriter(b));
+        var f = NewWriter(new csv_test_package.strings_BuilderжWriter(b));
         f.Value.UseCRLF = tt.UseCRLF;
         if (tt.Comma != 0) {
             f.Value.Comma = tt.Comma;
@@ -71,22 +72,22 @@ public static void TestWrite(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] partial struct errorWriter {
+[GoType] internal partial struct errorWriter {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testˢ = "Test"u8;
+internal static readonly @string testˢ = "Test"u8;
 
 internal static (nint, error) Write(this errorWriter e, slice<byte> b) {
     return (0, errors.New(testˢ));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object errorShouldNotBeNilˢ = (@string)"Error should not be nil"u8;
+internal static readonly object errorShouldNotBeNilˢ = (@string)"Error should not be nil"u8;
 
 public static void TestError(ж<testing.T> Ꮡt) {
     var b = Ꮡ(new bytes.Buffer(nil));
-    var f = NewWriter(new bytes_BufferжWriter(b));
+    var f = NewWriter(new csv_test_package.bytes_BufferжWriter(b));
     f.Write(new @string[]{"abc"u8}.slice());
     f.Flush();
     var err = f.Error();
@@ -112,7 +113,7 @@ public static void BenchmarkWrite(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
     for (nint i = 0; i < b.N; i++) {
-        var w = NewWriter(new bytes_BufferжWriter(Ꮡ(new bytes.Buffer(nil))));
+        var w = NewWriter(new csv_test_package.bytes_BufferжWriter(Ꮡ(new bytes.Buffer(nil))));
         var err = w.WriteAll(benchmarkWriteData);
         if (err != default!) {
             Ꮡb.Fatal(err);
@@ -121,4 +122,4 @@ public static void BenchmarkWrite(ж<testing.B> Ꮡb) {
     }
 }
 
-} // end csv_package
+} // end csv_internal_test_package

@@ -5,8 +5,9 @@ namespace go.math;
 
 using math = math_package;
 using testing = testing_package;
+using static go.math.cmplx_package;
 
-partial class cmplx_package {
+partial class cmplx_internal_test_package {
 
 // The higher-precision values in vc26 were used to derive the
 // input arguments vc (see also comment below). For reference
@@ -211,7 +212,7 @@ internal static slice<complex128> log10 = new complex128[]{
     (1.0005115362454417135973429e+00D + 1.1383255270407412817250921e+00D.i())
 }.slice();
 
-[GoType] partial struct ff {
+[GoType] internal partial struct ff {
     internal float64 r, theta;
 }
 
@@ -1966,4 +1967,4 @@ public static void BenchmarkTanh(ж<testing.B> Ꮡb) {
     }
 }
 
-} // end cmplx_package
+} // end cmplx_internal_test_package

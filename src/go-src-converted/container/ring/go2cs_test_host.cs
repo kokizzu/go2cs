@@ -13,14 +13,14 @@ internal static class Go2CsTestHost
             "ring.go",
             "ring_test.go",
         });
-        registry.Add("TestCornerCases", ring_package.TestCornerCases, "ring_test.go", 97);
-        registry.Add("TestLink1", ring_package.TestLink1, "ring_test.go", 140);
-        registry.Add("TestLink2", ring_package.TestLink2, "ring_test.go", 160);
-        registry.Add("TestLink3", ring_package.TestLink3, "ring_test.go", 179);
-        registry.Add("TestLinkUnlink", ring_package.TestLinkUnlink, "ring_test.go", 209);
-        registry.Add("TestMoveEmptyRing", ring_package.TestMoveEmptyRing, "ring_test.go", 223);
-        registry.Add("TestNew", ring_package.TestNew, "ring_test.go", 129);
-        registry.Add("TestUnlink", ring_package.TestUnlink, "ring_test.go", 188);
+        registry.Add("TestCornerCases", ring_internal_test_package.TestCornerCases, "ring_test.go", 97);
+        registry.Add("TestLink1", ring_internal_test_package.TestLink1, "ring_test.go", 140);
+        registry.Add("TestLink2", ring_internal_test_package.TestLink2, "ring_test.go", 160);
+        registry.Add("TestLink3", ring_internal_test_package.TestLink3, "ring_test.go", 179);
+        registry.Add("TestLinkUnlink", ring_internal_test_package.TestLinkUnlink, "ring_test.go", 209);
+        registry.Add("TestMoveEmptyRing", ring_internal_test_package.TestMoveEmptyRing, "ring_test.go", 223);
+        registry.Add("TestNew", ring_internal_test_package.TestNew, "ring_test.go", 129);
+        registry.Add("TestUnlink", ring_internal_test_package.TestUnlink, "ring_test.go", 188);
         return TestHost.Run(registry, args);
     }
 }

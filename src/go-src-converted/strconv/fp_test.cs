@@ -6,11 +6,11 @@ namespace go;
 using bufio = bufio_package;
 using fmt = fmt_package;
 using os = os_package;
-using strconv = go.strconv_package;
+using strconv = strconv_package;
 using strings = strings_package;
 using testing = testing_package;
-using go;
 using io = io_package;
+using static go.strconv_internal_test_package;
 
 partial class strconv_test_package {
 
@@ -107,15 +107,15 @@ internal static (float32 f, bool ok) myatof32(@string s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testdataTestfpTxtˢ = "testdata/testfp.txt"u8;
-private static readonly object testfpOpenTestdataTestfpˢ = (@string)"testfp: open testdata/testfp.txt:"u8;
-private static readonly object testdataTestfpTxtˢ2 = (@string)"testdata/testfp.txt:"u8;
-private static readonly object wrongFieldCountˢ = (@string)": wrong field count"u8;
-private static readonly object cannotAtof64ˢ = (@string)": cannot atof64 "u8;
-private static readonly object cannotAtof32ˢ = (@string)": cannot atof32 "u8;
-private static readonly object wantˢ = (@string)"want "u8;
-private static readonly object gotˢ = (@string)" got "u8;
-private static readonly object testfpReadTestdataTestfpˢ = (@string)"testfp: read testdata/testfp.txt: "u8;
+internal static readonly @string testdataTestfpTxtˢ = "testdata/testfp.txt"u8;
+internal static readonly object testfpOpenTestdataTestfpˢ = (@string)"testfp: open testdata/testfp.txt:"u8;
+internal static readonly object testdataTestfpTxtˢ2 = (@string)"testdata/testfp.txt:"u8;
+internal static readonly object wrongFieldCountˢ = (@string)": wrong field count"u8;
+internal static readonly object cannotAtof64ˢ = (@string)": cannot atof64 "u8;
+internal static readonly object cannotAtof32ˢ = (@string)": cannot atof32 "u8;
+internal static readonly object wantˢ = (@string)"want "u8;
+internal static readonly object gotˢ = (@string)" got "u8;
+internal static readonly object testfpReadTestdataTestfpˢ = (@string)"testfp: read testdata/testfp.txt: "u8;
 
 public static void TestFp(ж<testing.T> Ꮡt) => func((defer, recover) => {
     var (f, err) = os.Open(testdataTestfpTxtˢ);
@@ -124,7 +124,7 @@ public static void TestFp(ж<testing.T> Ꮡt) => func((defer, recover) => {
     }
     var fʗ1 = f;
     defer(() => fʗ1.Close());
-    var s = bufio.NewScanner(new os_FileжReader(f));
+    var s = bufio.NewScanner(new strconv_test_package.os_FileжReader(f));
     for (nint lineno = 1; s.Scan(); lineno++) {
         @string line = s.Text();
         if (len(line) == 0 || line[0] == (rune)'#') {

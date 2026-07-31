@@ -7,6 +7,7 @@ using static global::go.math.rand.rand_package;
 using testing = testing_package;
 using global::go.math.rand;
 using rand = global::go.math.rand.rand_package;
+using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 

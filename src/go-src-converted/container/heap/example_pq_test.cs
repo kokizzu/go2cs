@@ -8,6 +8,7 @@ namespace go.container;
 using heap = go.container.heap_package;
 using fmt = fmt_package;
 using go.container;
+using static go.container.heap_internal_test_package;
 
 partial class heap_test_package {
 
@@ -61,7 +62,7 @@ internal static void update(this ж<PriorityQueue> Ꮡpq, ж<Item> Ꮡitem, @str
 
     item.value = value;
     item.priority = priority;
-    heap.Fix(new PriorityQueueжInterface(Ꮡpq), item.index);
+    heap.Fix(new heap_test_package.PriorityQueueжInterface(Ꮡpq), item.index);
 }
 
 // This example creates a PriorityQueue with some items, adds and manipulates an item,
@@ -90,17 +91,17 @@ public static void Example_priorityQueue() {
         ));
         i++;
     }
-    heap.Init(new PriorityQueueжInterface(Ꮡpq));
+    heap.Init(new heap_test_package.PriorityQueueжInterface(Ꮡpq));
     // Insert a new item and then modify its priority.
     var item = Ꮡ(new Item(
         value: "orange"u8,
         priority: 1
     ));
-    heap.Push(new PriorityQueueжInterface(Ꮡpq), item);
+    heap.Push(new heap_test_package.PriorityQueueжInterface(Ꮡpq), item);
     Ꮡpq.update(item, (~item).value, 5);
     // Take the items out; they arrive in decreasing priority order.
     while (pq.Len() > 0) {
-        var itemΔ1 = heap.Pop(new PriorityQueueжInterface(Ꮡpq))._<ж<Item>>();
+        var itemΔ1 = heap.Pop(new heap_test_package.PriorityQueueжInterface(Ꮡpq))._<ж<Item>>();
         fmt.Printf("%.2d:%s "u8, (~itemΔ1).priority, (~itemΔ1).value);
     }
 }

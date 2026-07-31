@@ -4,9 +4,9 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go.encoding;
 
-partial class csv_package {
-    static csv_package() {
+partial class csv_internal_test_package {
+    static csv_internal_test_package() {
         initᴛreadTests();
         initᴛwriteTests();
     }
-} // end csv_package
+} // end csv_internal_test_package

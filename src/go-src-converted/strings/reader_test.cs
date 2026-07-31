@@ -6,10 +6,10 @@ namespace go;
 using bytes = bytes_package;
 using fmt = fmt_package;
 using Δio = io_package;
-using strings = go.strings_package;
+using strings = strings_package;
 using Δsync = sync_package;
 using testing = testing_package;
-using go;
+using static go.strings_internal_test_package;
 
 partial class strings_test_package {
 
@@ -156,7 +156,7 @@ public static void TestWriteTo(ж<testing.T> Ꮡt) {
         @string s = str[(int)(i)..];
         var r = strings.NewReader(s);
         ref var b = ref heap(new bytes.Buffer(), out var Ꮡb);
-        var (n, err) = r.WriteTo(new bytes_BufferжWriter(Ꮡb));
+        var (n, err) = r.WriteTo(new strings_test_package.bytes_BufferжWriter(Ꮡb));
         {
             var expect = (int64)len(s); if (n != expect) {
                 Ꮡt.Errorf("got %v; want %v"u8, n, expect);
@@ -175,12 +175,12 @@ public static void TestWriteTo(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcˢ = "abc"u8;
+internal static readonly @string abcˢ = "abc"u8;
 
 // tests that Len is affected by reads, but Size is not.
 public static void TestReaderLenSize(ж<testing.T> Ꮡt) {
     var r = strings.NewReader(abcˢ);
-    Δio.CopyN(Δio.Discard, new strings.ReaderжReader(r), 1);
+    Δio.CopyN(Δio.Discard, new strings_test_package.strings_ReaderжReader(r), 1);
     if (r.Len() != 2) {
         Ꮡt.Errorf("Len = %d; want 2"u8, r.Len());
     }
@@ -203,7 +203,7 @@ public static void TestReaderReset(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("UnreadRune: expected error, got nil"u8);
         }
     }
-    var (buf, err) = Δio.ReadAll(new strings.ReaderжReader(r));
+    var (buf, err) = Δio.ReadAll(new strings_test_package.strings_ReaderжReader(r));
     if (err != default!) {
         Ꮡt.Errorf("ReadAll: unexpected error: %v"u8, err);
     }

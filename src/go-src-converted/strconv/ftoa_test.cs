@@ -5,9 +5,10 @@ namespace go;
 
 using Δmath = math_package;
 using rand = go.math.rand_package;
-using static go.strconv_package;
+using static strconv_package;
 using testing = testing_package;
 using go.math;
+using static go.strconv_internal_test_package;
 
 partial class strconv_test_package {
 
@@ -156,12 +157,12 @@ internal static ж<slice<ftoaTest>> Ꮡftoatests = new(new ftoaTest[]{
 internal static ref slice<ftoaTest> ftoatests => ref Ꮡftoatests.ValueSlot;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object testN64ˢ = (@string)"testN=64"u8;
-private static readonly object wantˢ2 = (@string)"want"u8;
-private static readonly object gotˢ2 = (@string)"got"u8;
-private static readonly object appendFloatTestN64ˢ = (@string)"AppendFloat testN=64"u8;
-private static readonly object testN32ˢ = (@string)"testN=32"u8;
-private static readonly object appendFloatTestN32ˢ = (@string)"AppendFloat testN=32"u8;
+internal static readonly object testN64ˢ = (@string)"testN=64"u8;
+internal static readonly object wantˢ2 = (@string)"want"u8;
+internal static readonly object gotˢ2 = (@string)"got"u8;
+internal static readonly object appendFloatTestN64ˢ = (@string)"AppendFloat testN=64"u8;
+internal static readonly object testN32ˢ = (@string)"testN=32"u8;
+internal static readonly object appendFloatTestN32ˢ = (@string)"AppendFloat testN=32"u8;
 
 public static void TestFtoa(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < len(ftoatests); i++) {
@@ -220,17 +221,17 @@ public static void TestFtoaRandom(ж<testing.T> Ꮡt) {
         var bits = (uint64)(((uint64)rand.Uint32() << (int)(32)) | (uint64)rand.Uint32());
         var x = Δmath.Float64frombits(bits);
         @string shortFast = FormatFloat(x, (rune)'g', -1, 64);
-        SetOptimize(false);
+        strconv_internal_test_package.SetOptimize(false);
         @string shortSlow = FormatFloat(x, (rune)'g', -1, 64);
-        SetOptimize(true);
+        strconv_internal_test_package.SetOptimize(true);
         if (shortSlow != shortFast) {
             Ꮡt.Errorf("%b printed as %s, want %s"u8, x, shortFast, shortSlow);
         }
         nint prec = rand.Intn(12) + 5;
         shortFast = FormatFloat(x, (rune)'e', prec, 64);
-        SetOptimize(false);
+        strconv_internal_test_package.SetOptimize(false);
         shortSlow = FormatFloat(x, (rune)'e', prec, 64);
-        SetOptimize(true);
+        strconv_internal_test_package.SetOptimize(true);
         if (shortSlow != shortFast) {
             Ꮡt.Errorf("%b printed as %s, want %s"u8, x, shortFast, shortSlow);
         }

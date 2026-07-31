@@ -7,10 +7,11 @@ using encoding = encoding_package;
 using io = io_package;
 using testing = testing_package;
 using hash = hash_package;
+using static go.hash.crc64_package;
 
-partial class crc64_package {
+partial class crc64_internal_test_package {
 
-[GoType] partial struct test {
+[GoType] internal partial struct test {
     internal uint64 outISO;
     internal uint64 outECMA;
     internal @string @in;
@@ -59,13 +60,13 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
     for (nint i = 0; i < len(golden); i++) {
         var g = golden[i];
         var c = New(tabISO);
-        io.WriteString(new hash_Hash64ᴠWriter(c), g.@in);
+        io.WriteString(new crc64_internal_test_package.hash_Hash64ᴠWriter(c), g.@in);
         var s = c.Sum64();
         if (s != g.outISO) {
             Ꮡt.Fatalf("ISO crc64(%s) = 0x%x want 0x%x"u8, g.@in, s, g.outISO);
         }
         c = New(tabECMA);
-        io.WriteString(new hash_Hash64ᴠWriter(c), g.@in);
+        io.WriteString(new crc64_internal_test_package.hash_Hash64ᴠWriter(c), g.@in);
         s = c.Sum64();
         if (s != g.outECMA) {
             Ꮡt.Fatalf("ECMA crc64(%s) = 0x%x want 0x%x"u8, g.@in, s, g.outECMA);
@@ -74,8 +75,8 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string isoˢ = "ISO"u8;
-private static readonly @string ecmaˢ = "ECMA"u8;
+internal static readonly @string isoˢ = "ISO"u8;
+internal static readonly @string ecmaˢ = "ECMA"u8;
 
 public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
     Ꮡt.Run(isoˢ, (ж<testing.T> tΔ1) => {
@@ -86,7 +87,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
 
             var h = New(table);
             var h2 = New(table);
-            io.WriteString(new hash_Hash64ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
+            io.WriteString(new crc64_internal_test_package.hash_Hash64ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
             var (state, err) = h._<encoding.BinaryMarshaler>().MarshalBinary();
             if (err != default!) {
                 tΔ1.Errorf("could not marshal: %v"u8, err);
@@ -102,8 +103,8 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
                     continue;
                 }
             }
-            io.WriteString(new hash_Hash64ᴠWriter(h), g.@in[(int)(len(g.@in) / 2)..]);
-            io.WriteString(new hash_Hash64ᴠWriter(h2), g.@in[(int)(len(g.@in) / 2)..]);
+            io.WriteString(new crc64_internal_test_package.hash_Hash64ᴠWriter(h), g.@in[(int)(len(g.@in) / 2)..]);
+            io.WriteString(new crc64_internal_test_package.hash_Hash64ᴠWriter(h2), g.@in[(int)(len(g.@in) / 2)..]);
             if (h.Sum64() != h2.Sum64()) {
                 tΔ1.Errorf("ISO crc64(%s) = 0x%x != marshaled (0x%x)"u8, g.@in, h.Sum64(), h2.Sum64());
             }
@@ -117,7 +118,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
 
             var h = New(table);
             var h2 = New(table);
-            io.WriteString(new hash_Hash64ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
+            io.WriteString(new crc64_internal_test_package.hash_Hash64ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
             var (state, err) = h._<encoding.BinaryMarshaler>().MarshalBinary();
             if (err != default!) {
                 tΔ2.Errorf("could not marshal: %v"u8, err);
@@ -133,8 +134,8 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
                     continue;
                 }
             }
-            io.WriteString(new hash_Hash64ᴠWriter(h), g.@in[(int)(len(g.@in) / 2)..]);
-            io.WriteString(new hash_Hash64ᴠWriter(h2), g.@in[(int)(len(g.@in) / 2)..]);
+            io.WriteString(new crc64_internal_test_package.hash_Hash64ᴠWriter(h), g.@in[(int)(len(g.@in) / 2)..]);
+            io.WriteString(new crc64_internal_test_package.hash_Hash64ᴠWriter(h2), g.@in[(int)(len(g.@in) / 2)..]);
             if (h.Sum64() != h2.Sum64()) {
                 tΔ2.Errorf("ECMA crc64(%s) = 0x%x != marshaled (0x%x)"u8, g.@in, h.Sum64(), h2.Sum64());
             }
@@ -175,12 +176,12 @@ internal static void bench(ж<testing.B> Ꮡb, uint64 poly, int64 size) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string iso64kbˢ = "ISO64KB"u8;
-private static readonly @string iso4kbˢ = "ISO4KB"u8;
-private static readonly @string iso1kbˢ = "ISO1KB"u8;
-private static readonly @string ecma64kbˢ = "ECMA64KB"u8;
-private static readonly @string random64KBˢ = "Random64KB"u8;
-private static readonly @string random16KBˢ = "Random16KB"u8;
+internal static readonly @string iso64kbˢ = "ISO64KB"u8;
+internal static readonly @string iso4kbˢ = "ISO4KB"u8;
+internal static readonly @string iso1kbˢ = "ISO1KB"u8;
+internal static readonly @string ecma64kbˢ = "ECMA64KB"u8;
+internal static readonly @string random64KBˢ = "Random64KB"u8;
+internal static readonly @string random16KBˢ = "Random16KB"u8;
 
 public static void BenchmarkCrc64(ж<testing.B> Ꮡb) {
     Ꮡb.Run(iso64kbˢ, (ж<testing.B> bΔ1) => {
@@ -203,4 +204,4 @@ public static void BenchmarkCrc64(ж<testing.B> Ꮡb) {
     });
 }
 
-} // end crc64_package
+} // end crc64_internal_test_package

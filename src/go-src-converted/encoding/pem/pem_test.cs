@@ -10,10 +10,11 @@ using strings = strings_package;
 using testing = testing_package;
 using quick = go.testing.quick_package;
 using go.testing;
+using static go.encoding.pem_package;
 
-partial class pem_package {
+partial class pem_internal_test_package {
 
-[GoType] partial struct GetLineTest {
+[GoType] public partial struct GetLineTest {
     internal @string @in, out1, out2;
 }
 
@@ -50,7 +51,7 @@ public static void TestDecode(ж<testing.T> Ꮡt) {
     if (!reflect.DeepEqual(result, privateKey)) {
         Ꮡt.Errorf("#1 got:%#v want:%#v"u8, result, privateKey);
     }
-    var isEmpty = (ж<Block> block) => block != nil && (~block).Type == "EMPTY"u8 && len((~block).Headers) == 0 && len((~block).Bytes) == 0;
+    var isEmpty = (ж<global::go.encoding.pem_package.Block> block) => block != nil && (~block).Type == "EMPTY"u8 && len((~block).Headers) == 0 && len((~block).Bytes) == 0;
     (result, remainder) = Decode(remainder);
     if (!isEmpty(result)) {
         Ꮡt.Errorf("#2 should be empty but got:%#v"u8, result);
@@ -168,7 +169,7 @@ public static void TestBadDecode(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string beginˢ = "-----BEGIN \n"u8;
+internal static readonly @string beginˢ = "-----BEGIN \n"u8;
 
 public static void TestCVE202224675(ж<testing.T> Ꮡt) {
     // Prior to CVE-2022-24675, this input would cause a stack overflow.
@@ -186,7 +187,7 @@ public static void TestEncode(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] partial struct lineBreakerTest {
+[GoType] internal partial struct lineBreakerTest {
     internal @string @in, @out;
 }
 
@@ -204,8 +205,8 @@ internal static slice<lineBreakerTest> lineBreakerTests = new lineBreakerTest[]{
 public static void TestLineBreaker(ж<testing.T> Ꮡt) {
     foreach (var (i, test) in lineBreakerTests) {
         var buf = @new<strings.Builder>();
-        lineBreaker breaker = new();
-        breaker.@out = new strings_BuilderжWriter(buf);
+        global::go.encoding.pem_package.lineBreaker breaker = new();
+        breaker.@out = new pem_test_package.strings_BuilderжWriter(buf);
         var (_, err) = breaker.Write(slice<byte>(test.@in));
         if (err != default!) {
             Ꮡt.Errorf("#%d: error from Write: %s"u8, i, err);
@@ -224,8 +225,8 @@ public static void TestLineBreaker(ж<testing.T> Ꮡt) {
     }
     foreach (var (i, test) in lineBreakerTests) {
         var buf = @new<strings.Builder>();
-        lineBreaker breaker = new();
-        breaker.@out = new strings_BuilderжWriter(buf);
+        global::go.encoding.pem_package.lineBreaker breaker = new();
+        breaker.@out = new pem_test_package.strings_BuilderжWriter(buf);
         for (nint iΔ1 = 0; iΔ1 < len(test.@in); iΔ1++) {
             var (_, errΔ1) = breaker.Write(slice<byte>(test.@in[(int)(iΔ1)..(int)(iΔ1 + 1)]));
             if (errΔ1 != default!) {
@@ -253,7 +254,8 @@ public static void TestFuzz(ж<testing.T> Ꮡt) {
     // or embedded newlines will not round trip correctly and don't need to be tested.
     var isBad = (@string s) => strings.ContainsAny(s, "\r\n"u8) || strings.TrimSpace(s) != s;
     var isBadʗ1 = isBad;
-    var testRoundtrip = (Block block) => {
+    var testRoundtrip = (global::go.encoding.pem_package.Block blockʗp) => {
+        ref var block = ref heap(blockʗp, out var Ꮡblock);
         // Reject bad Type
         // Type with colons will proceed as key/val pair and cause an error.
         if (isBadʗ1(block.Type) || strings.Contains(block.Type, ":"u8)) {
@@ -268,8 +270,8 @@ public static void TestFuzz(ж<testing.T> Ꮡt) {
         }
         ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
         {
-            var err = Encode(new bytes_BufferжWriter(Ꮡbuf), Ꮡ(block)); if (err != default!) {
-                Ꮡt.Errorf("Encode of %#v resulted in error: %s"u8, Ꮡ(block), err);
+            var err = Encode(new pem_test_package.bytes_BufferжWriter(Ꮡbuf), Ꮡblock); if (err != default!) {
+                Ꮡt.Errorf("Encode of %#v resulted in error: %s"u8, Ꮡblock, err);
                 return false;
             }
         }
@@ -282,8 +284,8 @@ public static void TestFuzz(ж<testing.T> Ꮡt) {
             // Encoder supports nil Bytes but decoder returns initialized.
             block.Bytes = new slice<byte>(0);
         }
-        if (!reflect.DeepEqual(decoded, Ꮡ(block))) {
-            Ꮡt.Errorf("Encode of %#v decoded as %#v"u8, Ꮡ(block), decoded);
+        if (!reflect.DeepEqual(decoded, Ꮡblock)) {
+            Ꮡt.Errorf("Encode of %#v decoded as %#v"u8, Ꮡblock, decoded);
             return false;
         }
         if (len(rest) != 0) {
@@ -407,7 +409,7 @@ Header: 1
 -----END HEADERS-----
 """u8);
 
-internal static ж<Block> certificate = Ꮡ(new Block(Type: "CERTIFICATE"u8,
+internal static ж<global::go.encoding.pem_package.Block> certificate = Ꮡ(new Block(Type: "CERTIFICATE"u8,
     Headers: new map<@string, @string>{},
     Bytes: new uint8[]{0x30, 0x82, 0x3, 0xe9, 0x30, 0x82, 0x3, 0x52, 0x2, 0x1,
         0x1, 0x30, 0xd, 0x6, 0x9, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0xd,
@@ -510,7 +512,7 @@ internal static ж<Block> certificate = Ꮡ(new Block(Type: "CERTIFICATE"u8,
     }.slice()
 ));
 
-internal static ж<Block> privateKey = Ꮡ(new Block(Type: "RSA PRIVATE KEY"u8,
+internal static ж<global::go.encoding.pem_package.Block> privateKey = Ꮡ(new Block(Type: "RSA PRIVATE KEY"u8,
     Headers: new map<@string, @string>{["DEK-Info"u8] = "DES-EDE3-CBC,80C7C7A09690757A"u8, ["Proc-Type"u8] = "4,ENCRYPTED"u8},
     Bytes: new uint8[]{0x79, 0xa, 0x79, 0x66, 0x41, 0xfa, 0xb,
         0x21, 0xc1, 0xcf, 0xb0, 0x59, 0x7d, 0x43, 0xf1, 0xc8, 0xb0,
@@ -577,7 +579,7 @@ internal static ж<Block> privateKey = Ꮡ(new Block(Type: "RSA PRIVATE KEY"u8,
     }.slice()
 ));
 
-internal static ж<Block> privateKey2 = Ꮡ(new Block(
+internal static ж<global::go.encoding.pem_package.Block> privateKey2 = Ꮡ(new Block(
     Type: "RSA PRIVATE KEY"u8,
     Headers: new map<@string, @string>{
         ["Proc-Type"u8] = "4,ENCRYPTED"u8,
@@ -645,7 +647,7 @@ public static void TestBadEncode(ж<testing.T> Ꮡt) {
     var b = Ꮡ(new Block(Type: "BAD"u8, Headers: new map<@string, @string>{["X:Y"u8] = "Z"u8}));
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
     {
-        var err = Encode(new bytes_BufferжWriter(Ꮡbuf), b); if (err == default!) {
+        var err = Encode(new pem_test_package.bytes_BufferжWriter(Ꮡbuf), b); if (err == default!) {
             Ꮡt.Fatalf("Encode did not report invalid header"u8);
         }
     }
@@ -663,4 +665,4 @@ internal static @string testingKey(@string s) {
     return strings.ReplaceAll(s, "TESTING KEY"u8, "PRIVATE KEY"u8);
 }
 
-} // end pem_package
+} // end pem_internal_test_package

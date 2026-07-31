@@ -67,25 +67,11 @@
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
        can leak in because it is never listed. -->
   <ItemGroup>
-    <Compile Include="abs.cs" />
-    <Compile Include="asin.cs" />
     <Compile Include="cmath_test.cs" />
-    <Compile Include="conj.cs" />
-    <Compile Include="exp.cs" />
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="huge_test.cs" />
-    <Compile Include="isinf.cs" />
-    <Compile Include="isnan.cs" />
-    <Compile Include="log.cs" />
     <Compile Include="package_init_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="phase.cs" />
-    <Compile Include="polar.cs" />
-    <Compile Include="pow.cs" />
-    <Compile Include="rect.cs" />
-    <Compile Include="sin.cs" />
-    <Compile Include="sqrt.cs" />
-    <Compile Include="tan.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -111,9 +97,9 @@
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\math\bits\math.bits.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\math.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\runtime\internal\math\runtime.internal.math.csproj" />
+    <ProjectReference Include="math.cmplx.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

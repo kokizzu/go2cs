@@ -5,8 +5,8 @@ namespace go;
 
 using fmt = fmt_package;
 using Δos = os_package;
-using Δsync = go.sync_package;
-using go;
+using Δsync = sync_package;
+using static go.sync_internal_test_package;
 
 partial class sync_test_package {
 
@@ -41,7 +41,7 @@ public static void ExampleWaitGroup() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object onlyOnceˢ = (@string)"Only once"u8;
+internal static readonly object onlyOnceˢ = (@string)"Only once"u8;
 
 public static void ExampleOnce() {
     ref var once = ref heap(new Δsync.Once(), out var Ꮡonce);
@@ -63,9 +63,9 @@ public static void ExampleOnce() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object computedOnceˢ = (@string)"Computed once:"u8;
-private static readonly object wantˢ = (@string)"want"u8;
-private static readonly object gotˢ = (@string)"got"u8;
+internal static readonly object computedOnceˢ = (@string)"Computed once:"u8;
+internal static readonly object wantˢ = (@string)"want"u8;
+internal static readonly object gotˢ = (@string)"got"u8;
 
 // Output:
 // Only once
@@ -100,9 +100,9 @@ public static void ExampleOnceValue() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object readingFileOnceˢ = (@string)"Reading file once"u8;
-private static readonly @string exampleTestGoˢ = "example_test.go"u8;
-private static readonly object errorˢ = (@string)"error:"u8;
+internal static readonly object readingFileOnceˢ = (@string)"Reading file once"u8;
+internal static readonly @string exampleTestGoˢ = "example_test.go"u8;
+internal static readonly object errorˢ = (@string)"error:"u8;
 
 // Output:
 // Computed once: 499500

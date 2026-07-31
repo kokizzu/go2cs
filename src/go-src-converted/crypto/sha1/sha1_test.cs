@@ -15,10 +15,11 @@ using io = io_package;
 using testing = testing_package;
 using go.crypto;
 using go.crypto.@internal;
+using static go.crypto.sha1_package;
 
-partial class sha1_package {
+partial class sha1_internal_test_package {
 
-[GoType] partial struct sha1Test {
+[GoType] internal partial struct sha1Test {
     internal @string @out;
     internal @string @in;
     internal @string halfState; // marshaled hash state after first half of in written, used by TestGoldenMarshal
@@ -87,9 +88,9 @@ public static void TestGolden(ж<testing.T> Ꮡt) {
                     continue;
                 }
                 io.WriteString(c, g.@in[0..(int)(len(g.@in) / 2)]);
-                c._<ж<digest>>().ConstantTimeSum(default!);
+                c._<ж<global::go.crypto.sha1_package.digest>>().ConstantTimeSum(default!);
                 io.WriteString(c, g.@in[(int)(len(g.@in) / 2)..]);
-                sum = c._<ж<digest>>().ConstantTimeSum(default!);
+                sum = c._<ж<global::go.crypto.sha1_package.digest>>().ConstantTimeSum(default!);
                 break;
             }}
 
@@ -153,7 +154,7 @@ public static void TestBlockSize(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object boringCryptoDoesnTExposeˢ = (@string)"BoringCrypto doesn't expose digest"u8;
+internal static readonly object boringCryptoDoesnTExposeˢ = (@string)"BoringCrypto doesn't expose digest"u8;
 
 // Tests that blockGeneric (pure Go) and block (in assembly for some architectures) match.
 public static void TestBlockGeneric(ж<testing.T> Ꮡt) {
@@ -162,7 +163,7 @@ public static void TestBlockGeneric(ж<testing.T> Ꮡt) {
     }
     for (nint i = 1; i < 30; i++) {
         // arbitrary factor
-        var (gen, asm) = (New()._<ж<digest>>(), New()._<ж<digest>>());
+        var (gen, asm) = (New()._<ж<global::go.crypto.sha1_package.digest>>(), New()._<ж<global::go.crypto.sha1_package.digest>>());
         var buf = new slice<byte>((nint)ΔBlockSize * i);
         rand.Read(buf);
         blockGeneric(gen, buf);
@@ -181,7 +182,7 @@ public static void TestBlockGeneric(ж<testing.T> Ꮡt) {
 // the data length has a 1 in the 32nd bit. When casted to int, this changes
 // the sign of the value, and causes the modulus operation to return a
 // different result.
-[GoType] partial struct unmarshalTest {
+[GoType] internal partial struct unmarshalTest {
     internal @string state;
     internal @string sum;
 }
@@ -236,7 +237,7 @@ public static void TestLargeHashes(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object boringCryptoDoesnTˢ = (@string)"BoringCrypto doesn't allocate the same way as stdlib"u8;
+internal static readonly object boringCryptoDoesnTˢ = (@string)"BoringCrypto doesn't allocate the same way as stdlib"u8;
 
 public static void TestAllocations(ж<testing.T> Ꮡt) {
     if (boring.Enabled) {
@@ -267,8 +268,8 @@ internal static hash.Hash bench = New();
 internal static slice<byte> buf = new slice<byte>(8192);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string newˢ = "New"u8;
-private static readonly @string sumˢ = "Sum"u8;
+internal static readonly @string newˢ = "New"u8;
+internal static readonly @string sumˢ = "Sum"u8;
 
 internal static void benchmarkSize(ж<testing.B> Ꮡb, nint size) {
     var sum = new slice<byte>(bench.Size());
@@ -307,4 +308,4 @@ public static void BenchmarkHash8K(ж<testing.B> Ꮡb) {
     benchmarkSize(Ꮡb, 8192);
 }
 
-} // end sha1_package
+} // end sha1_internal_test_package

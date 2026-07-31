@@ -4,9 +4,10 @@
 namespace go;
 
 using Δruntime = runtime_package;
-using static go.strconv_package;
+using static strconv_package;
 using strings = strings_package;
 using testing = testing_package;
+using static go.strconv_internal_test_package;
 using strconv = strconv_package;
 
 partial class strconv_test_package {
@@ -57,8 +58,8 @@ internal static void initᴛmallocTest() { mallocTest = new mallocTestᴛ1[]{
 internal static slice<byte> oneMB; // Will be allocated to 1MB of random data by TestCountMallocs.
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object skippingMallocCountInˢ = (@string)"skipping malloc count in short mode"u8;
-private static readonly object skippingGomaxprocs1ˢ = (@string)"skipping; GOMAXPROCS>1"u8;
+internal static readonly object skippingMallocCountInˢ = (@string)"skipping malloc count in short mode"u8;
+internal static readonly object skippingGomaxprocs1ˢ = (@string)"skipping; GOMAXPROCS>1"u8;
 
 public static void TestCountMallocs(ж<testing.T> Ꮡt) {
     if (testing.Short()) {
@@ -97,14 +98,14 @@ public static void TestCountMallocs(ж<testing.T> Ꮡt) {
 public static Sinkᴛ1 Sink;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string atoiˢ = "Atoi"u8;
-private static readonly @string parseBoolˢ = "ParseBool"u8;
-private static readonly @string parseFloatˢ = "ParseFloat"u8;
-private static readonly @string parseComplexˢ = "ParseComplex"u8;
-private static readonly @string canBackquoteˢ = "CanBackquote"u8;
-private static readonly @string appendQuoteˢ = "AppendQuote"u8;
-private static readonly @string appendQuoteToASCIIˢ = "AppendQuoteToASCII"u8;
-private static readonly @string appendQuoteToGraphicˢ = "AppendQuoteToGraphic"u8;
+internal static readonly @string atoiˢ = "Atoi"u8;
+internal static readonly @string parseBoolˢ = "ParseBool"u8;
+internal static readonly @string parseFloatˢ = "ParseFloat"u8;
+internal static readonly @string parseComplexˢ = "ParseComplex"u8;
+internal static readonly @string canBackquoteˢ = "CanBackquote"u8;
+internal static readonly @string appendQuoteˢ = "AppendQuote"u8;
+internal static readonly @string appendQuoteToASCIIˢ = "AppendQuoteToASCII"u8;
+internal static readonly @string appendQuoteToGraphicˢ = "AppendQuoteToGraphic"u8;
 
 [GoType("dyn")] partial struct TestAllocationsFromBytes_bytes {
     public slice<byte> Bool, Number, String, Buffer;
@@ -170,7 +171,7 @@ public static void TestAllocationsFromBytes(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidˢ = "INVALID"u8;
+internal static readonly @string invalidˢ = "INVALID"u8;
 
 [GoType("dyn")] partial struct TestErrorPrefixes_vectors {
     internal error err;  // Input error

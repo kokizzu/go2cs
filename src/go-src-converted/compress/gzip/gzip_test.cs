@@ -9,18 +9,19 @@ using io = io_package;
 using reflect = reflect_package;
 using testing = testing_package;
 using time = time_package;
+using static go.compress.gzip_package;
 
-partial class gzip_package {
+partial class gzip_internal_test_package {
 
 // TestEmpty tests that an empty payload still forms a valid GZIP stream.
 public static void TestEmpty(ж<testing.T> Ꮡt) {
     var buf = @new<bytes.Buffer>();
     {
-        var errΔ1 = NewWriter(new bytes_BufferжWriter(buf)).Close(); if (errΔ1 != default!) {
+        var errΔ1 = NewWriter(new gzip_test_package.bytes_BufferжWriter(buf)).Close(); if (errΔ1 != default!) {
             Ꮡt.Fatalf("Writer.Close: %v"u8, errΔ1);
         }
     }
-    var (r, err) = NewReader(new bytes_BufferжReader(buf));
+    var (r, err) = NewReader(new gzip_test_package.bytes_BufferжReader(buf));
     if (err != default!) {
         Ꮡt.Fatalf("NewReader: %v"u8, err);
     }
@@ -29,7 +30,7 @@ public static void TestEmpty(ж<testing.T> Ꮡt) {
             Ꮡt.Errorf("Header mismatch:\ngot  %#v\nwant %#v"u8, (~r).Header, want);
         }
     }
-    (var b, err) = io.ReadAll(new ReaderжReader(r));
+    (var b, err) = io.ReadAll(new gzip_test_package.gzip_ReaderжReader(r));
     if (err != default!) {
         Ꮡt.Fatalf("ReadAll: %v"u8, err);
     }
@@ -44,16 +45,16 @@ public static void TestEmpty(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string commentˢ = "comment"u8;
-private static readonly @string nameˢ = "name"u8;
-private static readonly object payloadˢ = (@string)"payload"u8;
-private static readonly object extraˢ = (@string)"extra"u8;
+internal static readonly @string commentˢ = "comment"u8;
+internal static readonly @string nameˢ = "name"u8;
+internal static readonly object payloadˢ = (@string)"payload"u8;
+internal static readonly object extraˢ = (@string)"extra"u8;
 
 // TestRoundTrip tests that gzipping and then gunzipping is the identity
 // function.
 public static void TestRoundTrip(ж<testing.T> Ꮡt) {
     var buf = @new<bytes.Buffer>();
-    var w = NewWriter(new bytes_BufferжWriter(buf));
+    var w = NewWriter(new gzip_test_package.bytes_BufferжWriter(buf));
     w.Value.Comment = commentˢ;
     w.Value.Extra = slice<byte>("extra"u8);
     w.Value.ModTime = time.Unix(100000000, 0);
@@ -68,11 +69,11 @@ public static void TestRoundTrip(ж<testing.T> Ꮡt) {
             Ꮡt.Fatalf("Writer.Close: %v"u8, errΔ2);
         }
     }
-    var (r, err) = NewReader(new bytes_BufferжReader(buf));
+    var (r, err) = NewReader(new gzip_test_package.bytes_BufferжReader(buf));
     if (err != default!) {
         Ꮡt.Fatalf("NewReader: %v"u8, err);
     }
-    (var b, err) = io.ReadAll(new ReaderжReader(r));
+    (var b, err) = io.ReadAll(new gzip_test_package.gzip_ReaderжReader(r));
     if (err != default!) {
         Ꮡt.Fatalf("ReadAll: %v"u8, err);
     }
@@ -99,13 +100,13 @@ public static void TestRoundTrip(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string uErungˢ = "Äußerung"u8;
+internal static readonly @string uErungˢ = "Äußerung"u8;
 
 // TestLatin1 tests the internal functions for converting to and from Latin-1.
 public static void TestLatin1(ж<testing.T> Ꮡt) {
     var latin1 = new byte[]{0xc4, (rune)'u', 0xdf, (rune)'e', (rune)'r', (rune)'u', (rune)'n', (rune)'g', 0}.slice();
     @string utf8 = uErungˢ;
-    var z = new Reader(r: new bufio_ReaderжReader(bufio.NewReader(new bytes_ReaderжReader(bytes.NewReader(latin1)))));
+    var z = new Reader(r: new gzip_test_package.bufio_ReaderжReader(bufio.NewReader(new gzip_test_package.bytes_ReaderжReader(bytes.NewReader(latin1)))));
     var (s, err) = z.readString();
     if (err != default!) {
         Ꮡt.Fatalf("readString: %v"u8, err);
@@ -114,7 +115,7 @@ public static void TestLatin1(ж<testing.T> Ꮡt) {
         Ꮡt.Fatalf("read latin-1: got %q, want %q"u8, s, utf8);
     }
     var buf = bytes.NewBuffer(new slice<byte>(0, len(latin1)));
-    var c = new Writer(w: new bytes_BufferжWriter(buf));
+    var c = new Writer(w: new gzip_test_package.bytes_BufferжWriter(buf));
     {
         err = c.writeString(utf8); if (err != default!) {
             Ꮡt.Fatalf("writeString: %v"u8, err);
@@ -148,7 +149,7 @@ public static void TestLatin1RoundTrip(ж<testing.T> Ꮡt) {
     }.slice();
     foreach (var (_, tc) in testCases) {
         var buf = @new<bytes.Buffer>();
-        var w = NewWriter(new bytes_BufferжWriter(buf));
+        var w = NewWriter(new gzip_test_package.bytes_BufferжWriter(buf));
         w.Value.Name = tc.name;
         var err = w.Close();
         if ((err == default!) != tc.ok) {
@@ -158,12 +159,12 @@ public static void TestLatin1RoundTrip(ж<testing.T> Ꮡt) {
         if (!tc.ok) {
             continue;
         }
-        (var r, err) = NewReader(new bytes_BufferжReader(buf));
+        (var r, err) = NewReader(new gzip_test_package.bytes_BufferжReader(buf));
         if (err != default!) {
             Ꮡt.Errorf("NewReader: %v"u8, err);
             continue;
         }
-        (_, err) = io.ReadAll(new ReaderжReader(r));
+        (_, err) = io.ReadAll(new gzip_test_package.gzip_ReaderжReader(r));
         if (err != default!) {
             Ꮡt.Errorf("ReadAll: %v"u8, err);
             continue;
@@ -182,12 +183,12 @@ public static void TestLatin1RoundTrip(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object noDataAfterFirstFlushˢ = (@string)"no data after first flush"u8;
-private static readonly object flushDidnTFlushAnyDataˢ = (@string)"Flush didn't flush any data"u8;
+internal static readonly object noDataAfterFirstFlushˢ = (@string)"no data after first flush"u8;
+internal static readonly object flushDidnTFlushAnyDataˢ = (@string)"Flush didn't flush any data"u8;
 
 public static void TestWriterFlush(ж<testing.T> Ꮡt) {
     var buf = @new<bytes.Buffer>();
-    var w = NewWriter(new bytes_BufferжWriter(buf));
+    var w = NewWriter(new gzip_test_package.bytes_BufferжWriter(buf));
     w.Value.Comment = commentˢ;
     w.Value.Extra = slice<byte>("extra"u8);
     w.Value.ModTime = time.Unix(100000000, 0);
@@ -227,22 +228,22 @@ public static void TestWriterFlush(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object helloWorldˢ = (@string)"hello world"u8;
+internal static readonly object helloWorldˢ = (@string)"hello world"u8;
 
 // Multiple gzip files concatenated form a valid gzip file.
 public static void TestConcat(ж<testing.T> Ꮡt) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-    var w = NewWriter(new bytes_BufferжWriter(Ꮡbuf));
+    var w = NewWriter(new gzip_test_package.bytes_BufferжWriter(Ꮡbuf));
     w.Write(slice<byte>("hello "u8));
     w.Close();
-    w = NewWriter(new bytes_BufferжWriter(Ꮡbuf));
+    w = NewWriter(new gzip_test_package.bytes_BufferжWriter(Ꮡbuf));
     w.Write(slice<byte>("world\n"u8));
     w.Close();
-    var (r, err) = NewReader(new bytes_BufferжReader(Ꮡbuf));
+    var (r, err) = NewReader(new gzip_test_package.bytes_BufferжReader(Ꮡbuf));
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
-    (var data, err) = io.ReadAll(new ReaderжReader(r));
+    (var data, err) = io.ReadAll(new gzip_test_package.gzip_ReaderжReader(r));
     if (((sstring)data) != "hello world\n"u8 || err != default!) {
         Ꮡt.Fatalf("ReadAll = %q, %v, want %q, nil"u8, data, err, helloWorldˢ);
     }
@@ -251,11 +252,11 @@ public static void TestConcat(ж<testing.T> Ꮡt) {
 public static void TestWriterReset(ж<testing.T> Ꮡt) {
     var buf = @new<bytes.Buffer>();
     var buf2 = @new<bytes.Buffer>();
-    var z = NewWriter(new bytes_BufferжWriter(buf));
+    var z = NewWriter(new gzip_test_package.bytes_BufferжWriter(buf));
     var msg = slice<byte>("hello world"u8);
     z.Write(msg);
     z.Close();
-    z.Reset(new bytes_BufferжWriter(buf2));
+    z.Reset(new gzip_test_package.bytes_BufferжWriter(buf2));
     z.Write(msg);
     z.Close();
     if (buf.String() != buf2.String()) {
@@ -263,7 +264,7 @@ public static void TestWriterReset(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType] partial struct limitedWriter {
+[GoType] internal partial struct limitedWriter {
     public nint N;
 }
 
@@ -287,13 +288,13 @@ public static void TestLimitedWrite(ж<testing.T> Ꮡt) {
     for (nint limᴛ1 = 2; limᴛ1 < 20; limᴛ1++) {
         ref var lim = ref heap<nint>(out var Ꮡlim);
         lim = limᴛ1;
-        var z = NewWriter(new limitedWriterжWriter(Ꮡ(new limitedWriter(lim))));
+        var z = NewWriter(new gzip_internal_test_package.limitedWriterжWriter(Ꮡ(new limitedWriter(lim))));
         {
             var (n, _) = z.Write(msg); if (n > len(msg)) {
                 Ꮡt.Errorf("Write() = %d, want %d or less"u8, n, len(msg));
             }
         }
-        z.Reset(new limitedWriterжWriter(Ꮡ(new limitedWriter(lim))));
+        z.Reset(new gzip_internal_test_package.limitedWriterжWriter(Ꮡ(new limitedWriter(lim))));
         z.Value.Header = new Header(
             Comment: "comment"u8,
             Extra: slice<byte>("extra"u8),
@@ -310,4 +311,4 @@ public static void TestLimitedWrite(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end gzip_package
+} // end gzip_internal_test_package

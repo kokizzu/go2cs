@@ -12,9 +12,9 @@ internal static class Go2CsTestHost
             "version.go",
             "version_test.go",
         });
-        registry.Add("TestCompare", version_package.TestCompare, "version_test.go", 12);
-        registry.Add("TestIsValid", version_package.TestIsValid, "version_test.go", 58);
-        registry.Add("TestLang", version_package.TestLang, "version_test.go", 46);
+        registry.Add("TestCompare", version_internal_test_package.TestCompare, "version_test.go", 12);
+        registry.Add("TestIsValid", version_internal_test_package.TestIsValid, "version_test.go", 58);
+        registry.Add("TestLang", version_internal_test_package.TestLang, "version_test.go", 46);
         return TestHost.Run(registry, args);
     }
 }

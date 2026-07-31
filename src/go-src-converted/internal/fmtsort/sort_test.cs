@@ -15,6 +15,7 @@ using testing = testing_package;
 using @unsafe = unsafe_package;
 using go.@internal;
 using io = io_package;
+using static go.@internal.fmtsort_internal_test_package;
 using ꓸꓸꓸany = Span<any>;
 
 partial class fmtsort_test_package {
@@ -51,7 +52,7 @@ internal static any iFace;
 internal static slice<reflectꓸValue> ct(reflectꓸType typ, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.sslice();
 
-    var value = new slice<reflectꓸValue>(len(args));
+    var value = new slice<reflectꓸValue>(len(args), () => new(nil));
     foreach (var (i, v) in args) {
         var x = reflect.ValueOf(v);
         if (!x.IsValid()){
@@ -69,7 +70,7 @@ public static void TestCompare(ж<testing.T> Ꮡt) {
     foreach (var (_, test) in compareTests) {
         foreach (var (i, v0) in test) {
             foreach (var (j, v1) in test) {
-                nint c = fmtsort.Compare(v0, v1);
+                nint c = fmtsort_internal_test_package.Compare(v0, v1);
                 nint expect = default!;
                 switch (ᐧ) {
                 case {} when i == j: {
@@ -147,7 +148,7 @@ internal static void initᴛsortTests() { sortTests = new sortTest[]{
 }.slice(); }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "nil"u8;
+internal static readonly @string nilˢ = "nil"u8;
 
 internal static @string sprint(any data) {
     var om = fmtsort.Sort(reflect.ValueOf(data));
@@ -161,15 +162,15 @@ internal static @string sprint(any data) {
         }
         b.WriteString(sprintKey(m.Key));
         b.WriteRune((rune)':');
-        fmt.Fprint(new strings_BuilderжWriter(b), m.Value);
+        fmt.Fprint(new fmtsort_test_package.strings_BuilderжWriter(b), m.Value);
     }
     return b.String();
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ptrˢ = "PTR???"u8;
-private static readonly @string unsafeptrˢ = "UNSAFEPTR???"u8;
-private static readonly @string chanˢ = "CHAN???"u8;
+internal static readonly @string ptrˢ = "PTR???"u8;
+internal static readonly @string unsafeptrˢ = "UNSAFEPTR???"u8;
+internal static readonly @string chanˢ = "CHAN???"u8;
 
 // sprintKey formats a reflect.Value but gives reproducible values for some
 // problematic types such as pointers. Note that it only does special handling

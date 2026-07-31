@@ -10,6 +10,7 @@ using fmt = fmt_package;
 using io = io_package;
 using testing = testing_package;
 using go.crypto;
+using static go.crypto.subtle_internal_test_package;
 
 partial class subtle_test_package {
 
@@ -59,7 +60,7 @@ public static void TestXORBytes(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string subtleXORBytesDstTooˢ = "subtle.XORBytes: dst too short"u8;
+internal static readonly @string subtleXORBytesDstTooˢ = "subtle.XORBytes: dst too short"u8;
 
 public static void TestXorBytesPanic(ж<testing.T> Ꮡt) {
     mustPanic(Ꮡt, subtleXORBytesDstTooˢ, () => {

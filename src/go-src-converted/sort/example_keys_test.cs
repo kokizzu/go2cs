@@ -4,8 +4,8 @@
 namespace go;
 
 using fmt = fmt_package;
-using sort = go.sort_package;
-using go;
+using sort = sort_package;
+using static go.sort_internal_test_package;
 
 partial class sort_test_package {
 
@@ -29,7 +29,7 @@ public static void ΔSort(this By by, slice<Planet> planets) {
         by: new Func<ж<Planet>, ж<Planet>, bool>(by)
     ));
     // The Sort method's receiver is the function (closure) that defines the sort order.
-    sort.Sort(new planetSorterжInterface(ps));
+    sort.Sort(new sort_test_package.planetSorterжInterface(ps));
 }
 
 // planetSorter joins a By function and a slice of Planets to be sorted.
@@ -61,10 +61,10 @@ internal static slice<Planet> planets = new Planet[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object byNameˢ = (@string)"By name:"u8;
-private static readonly object byMassˢ = (@string)"By mass:"u8;
-private static readonly object byDistanceˢ = (@string)"By distance:"u8;
-private static readonly object byDecreasingDistanceˢ = (@string)"By decreasing distance:"u8;
+internal static readonly object byNameˢ = (@string)"By name:"u8;
+internal static readonly object byMassˢ = (@string)"By mass:"u8;
+internal static readonly object byDistanceˢ = (@string)"By distance:"u8;
+internal static readonly object byDecreasingDistanceˢ = (@string)"By decreasing distance:"u8;
 
 // ExampleSortKeys demonstrates a technique for sorting a struct type using programmable sort criteria.
 public static void Example_sortKeys() {

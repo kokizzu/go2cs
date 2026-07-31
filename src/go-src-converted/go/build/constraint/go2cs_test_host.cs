@@ -14,17 +14,17 @@ internal static class Go2CsTestHost
             "vers.go",
             "vers_test.go",
         });
-        registry.Add("TestExprEval", constraint_package.TestExprEval, "expr_test.go", 180);
-        registry.Add("TestExprString", constraint_package.TestExprString, "expr_test.go", 40);
-        registry.Add("TestGoVersion", constraint_package.TestGoVersion, "vers_test.go", 28);
-        registry.Add("TestLex", constraint_package.TestLex, "expr_test.go", 71);
-        registry.Add("TestParse", constraint_package.TestParse, "expr_test.go", 254);
-        registry.Add("TestParseError", constraint_package.TestParseError, "expr_test.go", 154);
-        registry.Add("TestParseExpr", constraint_package.TestParseExpr, "expr_test.go", 127);
-        registry.Add("TestParsePlusBuildExpr", constraint_package.TestParsePlusBuildExpr, "expr_test.go", 222);
-        registry.Add("TestPlusBuildLines", constraint_package.TestPlusBuildLines, "expr_test.go", 292);
-        registry.Add("TestPlusSizeLimits", constraint_package.TestPlusSizeLimits, "expr_test.go", 360);
-        registry.Add("TestSizeLimits", constraint_package.TestSizeLimits, "expr_test.go", 323);
+        registry.Add("TestExprEval", constraint_internal_test_package.TestExprEval, "expr_test.go", 180);
+        registry.Add("TestExprString", constraint_internal_test_package.TestExprString, "expr_test.go", 40);
+        registry.Add("TestGoVersion", constraint_internal_test_package.TestGoVersion, "vers_test.go", 28);
+        registry.Add("TestLex", constraint_internal_test_package.TestLex, "expr_test.go", 71);
+        registry.Add("TestParse", constraint_internal_test_package.TestParse, "expr_test.go", 254);
+        registry.Add("TestParseError", constraint_internal_test_package.TestParseError, "expr_test.go", 154);
+        registry.Add("TestParseExpr", constraint_internal_test_package.TestParseExpr, "expr_test.go", 127);
+        registry.Add("TestParsePlusBuildExpr", constraint_internal_test_package.TestParsePlusBuildExpr, "expr_test.go", 222);
+        registry.Add("TestPlusBuildLines", constraint_internal_test_package.TestPlusBuildLines, "expr_test.go", 292);
+        registry.Add("TestPlusSizeLimits", constraint_internal_test_package.TestPlusSizeLimits, "expr_test.go", 360);
+        registry.Add("TestSizeLimits", constraint_internal_test_package.TestSizeLimits, "expr_test.go", 323);
         return TestHost.Run(registry, args);
     }
 }

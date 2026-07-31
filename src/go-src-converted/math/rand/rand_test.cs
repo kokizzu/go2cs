@@ -20,18 +20,19 @@ using @internal;
 using go.math;
 using go.testing;
 using rand = go.math.rand_package;
+using static go.math.rand_internal_test_package;
 
 partial class rand_test_package {
 
 internal static UntypedInt numTestSamples => 10000;
 
-internal static (float64, array<uint32>, array<float32>, array<float32>) tupleᴛ1ʗ = GetNormalDistributionParameters();
+internal static (float64, array<uint32>, array<float32>, array<float32>) tupleᴛ1ʗ = rand_internal_test_package.GetNormalDistributionParameters();
 internal static float64 rn = tupleᴛ1ʗ.Item1;
 internal static array<uint32> kn = tupleᴛ1ʗ.Item2;
 internal static array<float32> wn = tupleᴛ1ʗ.Item3;
 internal static array<float32> fn = tupleᴛ1ʗ.Item4;
 
-internal static (float64, array<uint32>, array<float32>, array<float32>) tupleᴛ2ʗ = GetExponentialDistributionParameters();
+internal static (float64, array<uint32>, array<float32>, array<float32>) tupleᴛ2ʗ = rand_internal_test_package.GetExponentialDistributionParameters();
 internal static float64 re = tupleᴛ2ʗ.Item1;
 internal static array<uint32> ke = tupleᴛ2ʗ.Item2;
 internal static array<float32> we = tupleᴛ2ʗ.Item3;
@@ -346,8 +347,8 @@ public static void TestExpTables(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goarmˢ = "GOARM"u8;
-private static readonly @string softfloatˢ = ",softfloat"u8;
+internal static readonly @string goarmˢ = "GOARM"u8;
+internal static readonly @string softfloatˢ = ",softfloat"u8;
 
 internal static bool hasSlowFloatingPoint() {
     var exprᴛ1 = runtime.GOARCH;
@@ -365,7 +366,7 @@ internal static bool hasSlowFloatingPoint() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object float32ShouldBeInRange01ˢ = (@string)"Float32() should be in range [0,1). ct:"u8;
+internal static readonly object float32ShouldBeInRange01ˢ = (@string)"Float32() should be in range [0,1). ct:"u8;
 
 public static void TestFloat32(ж<testing.T> Ꮡt) {
     // For issue 6721, the problem came after 7533753 calls, so check 10e6.
@@ -441,7 +442,7 @@ public static void TestReadEmpty(ж<testing.T> Ꮡt) {
 public static void TestReadByOneByte(ж<testing.T> Ꮡt) {
     var r = New(NewSource(1));
     var b1 = new slice<byte>(100);
-    var (_, err) = io.ReadFull(iotest.OneByteReader(new rand.RandжReader(r)), b1);
+    var (_, err) = io.ReadFull(iotest.OneByteReader(new rand_test_package.rand_RandжReader(r)), b1);
     if (err != default!) {
         Ꮡt.Errorf("read by one byte: %v"u8, err);
     }
@@ -543,7 +544,7 @@ public static void TestUniformFactorial(ж<testing.T> Ꮡt) {
             ref var tests = ref heap<array<TestUniformFactorial_tests>>(out var Ꮡtests);
             tests = new TestUniformFactorial_tests[]{
                 new(name: "Int31n"u8, fn: () => (nint)rʗ2.Int31n((int32)nfact)),
-                new(name: "int31n"u8, fn: () => (nint)Int31nForTest(rʗ3, (int32)nfact)),
+                new(name: "int31n"u8, fn: () => (nint)rand_internal_test_package.Int31nForTest(rʗ3, (int32)nfact)),
                 new(name: "Perm"u8, fn: () => encodePerm(rʗ4.Perm(n))),
                 new(name: "Shuffle"u8, fn: () => {
                     // Generate permutation using Shuffle.

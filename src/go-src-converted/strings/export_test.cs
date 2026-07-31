@@ -3,24 +3,26 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-partial class strings_package {
+using static go.strings_package;
 
-public static any ΔReplacer(this ж<Replacer> Ꮡr) {
+partial class strings_internal_test_package {
+
+internal static any ΔReplacer(this ж<global::go.strings_package.Replacer> Ꮡr) {
     ref var r = ref Ꮡr.Value;
 
-    Ꮡr.of(Replacer.Ꮡonce).Do(Ꮡr.buildOnce);
+    Ꮡr.of(global::go.strings_package.Replacer.Ꮡonce).Do(Ꮡr.buildOnce);
     return r.r;
 }
 
-public static @string PrintTrie(this ж<Replacer> Ꮡr) {
+internal static @string PrintTrie(this ж<global::go.strings_package.Replacer> Ꮡr) {
     ref var r = ref Ꮡr.Value;
 
-    Ꮡr.of(Replacer.Ꮡonce).Do(Ꮡr.buildOnce);
-    var gen = r.r._<ж<genericReplacer>>();
-    return gen.printNode(gen.of(genericReplacer.Ꮡroot), 0);
+    Ꮡr.of(global::go.strings_package.Replacer.Ꮡonce).Do(Ꮡr.buildOnce);
+    var gen = r.r._<ж<global::go.strings_package.genericReplacer>>();
+    return gen.printNode(gen.of(global::go.strings_package.genericReplacer.Ꮡroot), 0);
 }
 
-[GoRecv] internal static @string /*s*/ printNode(this ref genericReplacer r, ж<trieNode> Ꮡt, nint depth) {
+[GoRecv] internal static @string /*s*/ printNode(this ref global::go.strings_package.genericReplacer r, ж<global::go.strings_package.trieNode> Ꮡt, nint depth) {
     @string s = default!;
 
     ref var t = ref Ꮡt.Value;
@@ -54,4 +56,4 @@ public static (slice<nint>, slice<nint>) DumpTables(@string pattern) {
     return ((~finder).badCharSkip[..], (~finder).goodSuffixSkip);
 }
 
-} // end strings_package
+} // end strings_internal_test_package

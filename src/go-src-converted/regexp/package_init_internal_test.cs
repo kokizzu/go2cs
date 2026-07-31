@@ -4,10 +4,10 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go;
 
-partial class regexp_package {
-    static regexp_package() {
+partial class regexp_internal_test_package {
+    static regexp_internal_test_package() {
         initᴛrun();
         initᴛΔmatch();
         initᴛnotab();
     }
-} // end regexp_package
+} // end regexp_internal_test_package

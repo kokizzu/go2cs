@@ -4,8 +4,9 @@
 namespace go.regexp;
 
 using testing = testing_package;
+using static go.regexp.syntax_package;
 
-partial class syntax_package {
+partial class syntax_internal_test_package {
 
 
 [GoType("dyn")] partial struct compileTestsᴛ1 {
@@ -168,7 +169,7 @@ public static void BenchmarkEmptyOpContext(ж<testing.B> Ꮡb) {
 internal static any sink;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object benchmarkDidNotRunˢ = (@string)"Benchmark did not run"u8;
+internal static readonly object benchmarkDidNotRunˢ = (@string)"Benchmark did not run"u8;
 
 public static void BenchmarkIsWordChar(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -185,4 +186,4 @@ public static void BenchmarkIsWordChar(ж<testing.B> Ꮡb) {
     sink = default!;
 }
 
-} // end syntax_package
+} // end syntax_internal_test_package

@@ -3,8 +3,9 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.math_package;
+using static math_package;
 using testing = testing_package;
+using static go.math_internal_test_package;
 
 partial class math_test_package {
 

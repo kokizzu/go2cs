@@ -7,8 +7,9 @@ using bytes = bytes_package;
 using io = io_package;
 using math = math_package;
 using testing = testing_package;
+using static go.encoding.binary_package;
 
-partial class binary_package {
+partial class binary_internal_test_package {
 
 internal static void testConstant(ж<testing.T> Ꮡt, nuint w, nint max) {
     var buf = new slice<byte>(MaxVarintLen64);
@@ -39,7 +40,7 @@ internal static void testVarint(ж<testing.T> Ꮡt, int64 x) {
     if (((@string)buf2) != "prefix"u8 + ((sstring)(buf[..(int)(n)]))) {
         Ꮡt.Errorf("AppendVarint(%d): got %q, want %q"u8, x, buf2, "prefix" + ((sstring)(buf[..(int)(n)])));
     }
-    (y, var err) = ReadVarint(new bytes_ReaderжByteReader(bytes.NewReader(buf)));
+    (y, var err) = ReadVarint(new binary_test_package.bytes_ReaderжByteReader(bytes.NewReader(buf)));
     if (err != default!) {
         Ꮡt.Errorf("ReadVarint(%d): %s"u8, x, err);
     }
@@ -63,7 +64,7 @@ internal static void testUvarint(ж<testing.T> Ꮡt, uint64 x) {
     if (((@string)buf2) != "prefix"u8 + ((sstring)(buf[..(int)(n)]))) {
         Ꮡt.Errorf("AppendUvarint(%d): got %q, want %q"u8, x, buf2, "prefix" + ((sstring)(buf[..(int)(n)])));
     }
-    (y, var err) = ReadUvarint(new bytes_ReaderжByteReader(bytes.NewReader(buf)));
+    (y, var err) = ReadUvarint(new binary_test_package.bytes_ReaderжByteReader(bytes.NewReader(buf)));
     if (err != default!) {
         Ꮡt.Errorf("ReadUvarint(%d): %s"u8, x, err);
     }
@@ -121,7 +122,7 @@ public static void TestBufferTooSmall(ж<testing.T> Ꮡt) {
         if (x != 0 || n != 0) {
             Ꮡt.Errorf("Uvarint(%v): got x = %d, n = %d"u8, bufΔ1, x, n);
         }
-        (x, var err) = ReadUvarint(new bytes_ReaderжByteReader(bytes.NewReader(bufΔ1)));
+        (x, var err) = ReadUvarint(new binary_test_package.bytes_ReaderжByteReader(bytes.NewReader(bufΔ1)));
         var wantErr = io.EOF;
         if (i > 0) {
             wantErr = io.ErrUnexpectedEOF;
@@ -203,7 +204,7 @@ internal static void testOverflow(ж<testing.T> Ꮡt, slice<byte> buf, uint64 x0
     }
     var r = bytes.NewReader(buf);
     nint len = r.Len();
-    (x, var err) = ReadUvarint(new bytes_ReaderжByteReader(r));
+    (x, var err) = ReadUvarint(new binary_test_package.bytes_ReaderжByteReader(r));
     if (x != x0 || !AreEqual(err, err0)) {
         Ꮡt.Errorf("ReadUvarint(%v): got x = %d, err = %s; want %d, %s"u8, buf, x, err, x0, err0);
     }
@@ -253,4 +254,4 @@ public static void BenchmarkPutUvarint64(ж<testing.B> Ꮡb) {
     }
 }
 
-} // end binary_package
+} // end binary_internal_test_package

@@ -6,15 +6,16 @@ namespace go;
 using Δmath = math_package;
 using strconv = strconv_package;
 using testing = testing_package;
+using static go.maps_package;
 
-partial class maps_package {
+partial class maps_internal_test_package {
 
 internal static map<nint, nint> m1 = new map<nint, nint>{[1] = 2, [2] = 4, [4] = 8, [8] = 16};
 
 internal static map<nint, @string> m2 = new map<nint, @string>{[1] = "2"u8, [2] = "4"u8, [4] = "8"u8, [8] = "16"u8};
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object equalNilNilFalseWantTrueˢ = (@string)"Equal(nil, nil) = false, want true"u8;
+internal static readonly object equalNilNilFalseWantTrueˢ = (@string)"Equal(nil, nil) = false, want true"u8;
 
 public static void TestEqual(ж<testing.T> Ꮡt) {
     if (!Equal<map<nint, nint>, map<nint, nint>, nint, nint>(m1, m1)) {
@@ -62,7 +63,7 @@ internal static bool equalIntStr(nint v1, @string v2) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object equalFuncNilNilEqualˢ = (@string)"EqualFunc(nil, nil, equal) = false, want true"u8;
+internal static readonly object equalFuncNilNilEqualˢ = (@string)"EqualFunc(nil, nil, equal) = false, want true"u8;
 
 public static void TestEqualFunc(ж<testing.T> Ꮡt) {
     if (!EqualFunc<map<nint, nint>, map<nint, nint>, nint, nint, nint>(m1, m1, equal<nint>)) {
@@ -115,9 +116,9 @@ public static void TestCloneNil(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("map[nint, bool]")] partial struct TestCopy_M1;
+[GoType("map[nint, bool]")] public partial struct TestCopy_M1;
 
-[GoType("map[nint, bool]")] partial struct TestCopy_M2;
+[GoType("map[nint, bool]")] public partial struct TestCopy_M2;
 
 public static void TestCopy(ж<testing.T> Ꮡt) {
     var mc = Clone<map<nint, nint>, nint, nint>(m1);
@@ -197,9 +198,9 @@ public static void TestCloneWithMapAssign(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoType("[17]float64")] partial struct TestCloneLarge_K; // > 128 bytes
+[GoType("[17]float64")] public partial struct TestCloneLarge_K; // > 128 bytes
 
-[GoType("[17]float64")] partial struct TestCloneLarge_V;
+[GoType("[17]float64")] public partial struct TestCloneLarge_V;
 
 public static void TestCloneLarge(ж<testing.T> Ꮡt) {
     float64 zero = default!;
@@ -260,4 +261,4 @@ public static void TestCloneLarge(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end maps_package
+} // end maps_internal_test_package

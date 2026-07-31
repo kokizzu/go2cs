@@ -14,16 +14,17 @@ using @internal;
 using go.io;
 using io = io_package;
 using path;
+using static go.compress.gzip_package;
 using time = time_package;
 
-partial class gzip_package {
+partial class gzip_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object skippingTestOnNonBuilderˢ = (@string)"skipping test on non-builder"u8;
-private static readonly object skippingNoGorootˢ = (@string)"skipping; no GOROOT available"u8;
-private static readonly object errorEvaluatingGorootˢ = (@string)"error evaluating GOROOT: "u8;
-private static readonly object errorCollectingListOfGzˢ = (@string)"error collecting list of .gz files in GOROOT: "u8;
-private static readonly object expectedToFindSomeGzˢ = (@string)"expected to find some .gz files under GOROOT"u8;
+internal static readonly object skippingTestOnNonBuilderˢ = (@string)"skipping test on non-builder"u8;
+internal static readonly object skippingNoGorootˢ = (@string)"skipping; no GOROOT available"u8;
+internal static readonly object errorEvaluatingGorootˢ = (@string)"error evaluating GOROOT: "u8;
+internal static readonly object errorCollectingListOfGzˢ = (@string)"error collecting list of .gz files in GOROOT: "u8;
+internal static readonly object expectedToFindSomeGzˢ = (@string)"expected to find some .gz files under GOROOT"u8;
 
 // TestGZIPFilesHaveZeroMTimes checks that every .gz file in the tree
 // has a zero MTIME. This is a requirement for the Debian maintainers
@@ -80,7 +81,7 @@ internal static void checkZeroMTime(ж<testing.T> Ꮡt, @string path) => func((d
     }
     var fʗ1 = f;
     defer(() => fʗ1.Close());
-    (var gz, err) = NewReader(new os_FileжReader(f));
+    (var gz, err) = NewReader(new gzip_test_package.os_FileжReader(f));
     if (err != default!) {
         Ꮡt.Errorf("cannot read gzip file %s: %s"u8, path, err);
         return;
@@ -92,4 +93,4 @@ internal static void checkZeroMTime(ж<testing.T> Ꮡt, @string path) => func((d
     }
 });
 
-} // end gzip_package
+} // end gzip_internal_test_package

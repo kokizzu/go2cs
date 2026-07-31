@@ -9,12 +9,13 @@ using fmt = fmt_package;
 using testing = testing_package;
 using encoding;
 using io = io_package;
+using static global::go.go.token_package;
 
-partial class token_package {
+partial class token_internal_test_package {
 
 // equal returns nil if p and q describe the same file set;
 // otherwise it returns an error describing the discrepancy.
-internal static error equal(ж<FileSet> Ꮡp, ж<FileSet> Ꮡq) => func<error>((defer, recover) => {
+internal static error equal(ж<global::go.go.token_package.FileSet> Ꮡp, ж<global::go.go.token_package.FileSet> Ꮡq) => func<error>((defer, recover) => {
     ref var p = ref Ꮡp.DerefOrNil();
     ref var q = ref Ꮡq.DerefOrNil();
 
@@ -23,10 +24,10 @@ internal static error equal(ж<FileSet> Ꮡp, ж<FileSet> Ꮡq) => func<error>((
         return default!;
     }
     // not strictly needed for the test
-    Ꮡp.of(FileSet.Ꮡmutex).Lock();
-    Ꮡq.of(FileSet.Ꮡmutex).Lock();
-    defer(Ꮡq.of(FileSet.Ꮡmutex).Unlock);
-    defer(Ꮡp.of(FileSet.Ꮡmutex).Unlock);
+    Ꮡp.of(global::go.go.token_package.FileSet.Ꮡmutex).Lock();
+    Ꮡq.of(global::go.go.token_package.FileSet.Ꮡmutex).Lock();
+    defer(Ꮡq.of(global::go.go.token_package.FileSet.Ꮡmutex).Unlock);
+    defer(Ꮡp.of(global::go.go.token_package.FileSet.Ꮡmutex).Unlock);
     if (p.@base != q.@base) {
         return fmt.Errorf("different bases: %d != %d"u8, p.@base, q.@base);
     }
@@ -61,9 +62,9 @@ internal static error equal(ж<FileSet> Ꮡp, ж<FileSet> Ꮡq) => func<error>((
     return default!;
 });
 
-internal static void checkSerialize(ж<testing.T> Ꮡt, ж<FileSet> Ꮡp) {
+internal static void checkSerialize(ж<testing.T> Ꮡt, ж<global::go.go.token_package.FileSet> Ꮡp) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-    var encode = (any x) => gob.NewEncoder(new bytes_BufferжWriter(Ꮡbuf)).Encode(x);
+    var encode = (any x) => gob.NewEncoder(new token_test_package.bytes_BufferжWriter(Ꮡbuf)).Encode(x);
     {
         var err = Ꮡp.Write(encode); if (err != default!) {
             Ꮡt.Errorf("writing fileset failed: %s"u8, err);
@@ -71,7 +72,7 @@ internal static void checkSerialize(ж<testing.T> Ꮡt, ж<FileSet> Ꮡp) {
         }
     }
     var q = NewFileSet();
-    var decode = (any x) => gob.NewDecoder(new bytes_BufferжReader(Ꮡbuf)).Decode(x);
+    var decode = (any x) => gob.NewDecoder(new token_test_package.bytes_BufferжReader(Ꮡbuf)).Decode(x);
     {
         var err = q.Read(decode); if (err != default!) {
             Ꮡt.Errorf("reading fileset failed: %s"u8, err);
@@ -105,4 +106,4 @@ public static void TestSerialization(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end token_package
+} // end token_internal_test_package

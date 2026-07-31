@@ -18,11 +18,11 @@ internal static class Go2CsTestHost
             "xor_ppc64x.go",
             "xor_test.go",
         });
-        registry.Add("TestConstantTimeByteEq", subtle_package.TestConstantTimeByteEq, "constant_time_test.go", 53);
-        registry.Add("TestConstantTimeCompare", subtle_package.TestConstantTimeCompare, "constant_time_test.go", 25);
-        registry.Add("TestConstantTimeCopy", subtle_package.TestConstantTimeCopy, "constant_time_test.go", 102);
-        registry.Add("TestConstantTimeEq", subtle_package.TestConstantTimeEq, "constant_time_test.go", 72);
-        registry.Add("TestConstantTimeLessOrEq", subtle_package.TestConstantTimeLessOrEq, "constant_time_test.go", 120);
+        registry.Add("TestConstantTimeByteEq", subtle_internal_test_package.TestConstantTimeByteEq, "constant_time_test.go", 53);
+        registry.Add("TestConstantTimeCompare", subtle_internal_test_package.TestConstantTimeCompare, "constant_time_test.go", 25);
+        registry.Add("TestConstantTimeCopy", subtle_internal_test_package.TestConstantTimeCopy, "constant_time_test.go", 102);
+        registry.Add("TestConstantTimeEq", subtle_internal_test_package.TestConstantTimeEq, "constant_time_test.go", 72);
+        registry.Add("TestConstantTimeLessOrEq", subtle_internal_test_package.TestConstantTimeLessOrEq, "constant_time_test.go", 120);
         registry.Add("TestXORBytes", subtle_test_package.TestXORBytes, "xor_test.go", 16);
         registry.Add("TestXorBytesPanic", subtle_test_package.TestXorBytesPanic, "xor_test.go", 57);
         return TestHost.Run(registry, args);

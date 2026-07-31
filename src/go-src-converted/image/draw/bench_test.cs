@@ -8,30 +8,31 @@ using color = go.image.color_package;
 using reflect = reflect_package;
 using testing = testing_package;
 using go.image;
+using static go.image.draw_package;
 
-partial class draw_package {
+partial class draw_internal_test_package {
 
 internal static UntypedInt dstw => 640;
 internal static UntypedInt dsth => 480;
 internal static UntypedInt srcw => 400;
 internal static UntypedInt srch => 300;
 
-internal static color.Palette palette = new color.Palette(new color.Color[]{new color_Gray16ᴠColor(color.Black), new color_Gray16ᴠColor(color.White)
+internal static color.Palette palette = new color.Palette(new color.Color[]{new draw_test_package.color_Gray16ᴠColor(color.Black), new draw_test_package.color_Gray16ᴠColor(color.White)
 }.slice());
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unknownDestinationColorˢ = (@string)"unknown destination color model"u8;
-private static readonly object unknownSourceColorModelˢ = (@string)"unknown source color model"u8;
-private static readonly object unknownMaskColorModelˢ = (@string)"unknown mask color model"u8;
+internal static readonly object unknownDestinationColorˢ = (@string)"unknown destination color model"u8;
+internal static readonly object unknownSourceColorModelˢ = (@string)"unknown source color model"u8;
+internal static readonly object unknownMaskColorModelˢ = (@string)"unknown mask color model"u8;
 
 // bench benchmarks drawing src and mask images onto a dst image with the
 // given op and the color models to create those images from.
 // The created images' pixels are initialized to non-zero values.
-internal static void bench(ж<testing.B> Ꮡb, color.Model dcm, color.Model scm, color.Model mcm, Op op) {
+internal static void bench(ж<testing.B> Ꮡb, color.Model dcm, color.Model scm, color.Model mcm, global::go.image.draw_package.Op op) {
     ref var b = ref Ꮡb.Value;
 
     b.StopTimer();
-    Image dst = default!;
+    global::go.image.draw_package.Image dst = default!;
     var exprᴛ1 = dcm;
     if (AreEqual(exprᴛ1, color.RGBAModel)) {
         var dst1 = image.NewRGBA(image.Rect(0, 0, dstw, dsth));
@@ -45,7 +46,7 @@ internal static void bench(ж<testing.B> Ꮡb, color.Model dcm, color.Model scm,
                 ));
             }
         }
-        dst = new image_ΔRGBAжImage(dst1);
+        dst = new draw_test_package.image_ΔRGBAжdraw_Image(dst1);
     }
     else if (AreEqual(exprᴛ1, color.RGBA64Model)) {
         var dst1 = image.NewRGBA64(image.Rect(0, 0, dstw, dsth));
@@ -59,7 +60,7 @@ internal static void bench(ж<testing.B> Ꮡb, color.Model dcm, color.Model scm,
                 ));
             }
         }
-        dst = new image_RGBA64жImage(dst1);
+        dst = new draw_test_package.image_RGBA64жImage(dst1);
     }
     else { /* default: */
         if (reflect.DeepEqual(dcm, // The == operator isn't defined on a color.Palette (a slice), so we
@@ -71,7 +72,7 @@ internal static void bench(ж<testing.B> Ꮡb, color.Model dcm, color.Model scm,
                     dst1.SetColorIndex(x, y, (uint8)((uint8)((nint)(x ^ y)) & 1));
                 }
             }
-            dst = new image_PalettedжImage(dst1);
+            dst = new draw_test_package.image_PalettedжImage(dst1);
         } else {
             Ꮡb.Fatal(unknownDestinationColorˢ, dcm);
         }
@@ -80,7 +81,7 @@ internal static void bench(ж<testing.B> Ꮡb, color.Model dcm, color.Model scm,
     image.Image src = default!;
     var exprᴛ2 = scm;
     if (AreEqual(exprᴛ2, default!)) {
-        src = new image_UniformжImage(Ꮡ(new image.Uniform(C: new color_ΔRGBAᴠColor(new colorꓸRGBA(0x11, 0x22, 0x33, 0x44)))));
+        src = new draw_test_package.image_UniformжImage(Ꮡ(new image.Uniform(C: new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0x11, 0x22, 0x33, 0x44)))));
     }
     else if (AreEqual(exprᴛ2, color.CMYKModel)) {
         var src1 = image.NewCMYK(image.Rect(0, 0, srcw, srch));
@@ -119,7 +120,7 @@ internal static void bench(ж<testing.B> Ꮡb, color.Model dcm, color.Model scm,
                 ));
             }
         }
-        src = new image_ΔRGBAжimage_Image(src1);
+        src = new draw_test_package.image_ΔRGBAжimage_Image(src1);
     }
     else if (AreEqual(exprᴛ2, color.RGBA64Model)) {
         var src1 = image.NewRGBA64(image.Rect(0, 0, srcw, srch));
@@ -262,11 +263,11 @@ public static void BenchmarkRGBA(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkPalettedFill(ж<testing.B> Ꮡb) {
-    bench(Ꮡb, new color_PaletteᴠModel(palette), default!, default!, Src);
+    bench(Ꮡb, new draw_test_package.color_PaletteᴠModel(palette), default!, default!, Src);
 }
 
 public static void BenchmarkPalettedRGBA(ж<testing.B> Ꮡb) {
-    bench(Ꮡb, new color_PaletteᴠModel(palette), color.RGBAModel, default!, Src);
+    bench(Ꮡb, new draw_test_package.color_PaletteᴠModel(palette), color.RGBAModel, default!, Src);
 }
 
 // The BenchmarkGenericFoo functions exercise the generic, slow-path code.
@@ -286,4 +287,4 @@ public static void BenchmarkGenericMaskSrc(ж<testing.B> Ꮡb) {
     bench(Ꮡb, color.RGBA64Model, color.RGBA64Model, color.AlphaModel, Src);
 }
 
-} // end draw_package
+} // end draw_internal_test_package

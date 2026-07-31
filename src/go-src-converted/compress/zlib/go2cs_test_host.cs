@@ -18,12 +18,12 @@ internal static class Go2CsTestHost
             "writer.go",
             "writer_test.go",
         });
-        registry.Add("TestDecompressor", zlib_package.TestDecompressor, "reader_test.go", 151);
-        registry.Add("TestWriter", zlib_package.TestWriter, "writer_test.go", 143);
-        registry.Add("TestWriterBig", zlib_package.TestWriterBig, "writer_test.go", 156);
-        registry.Add("TestWriterDict", zlib_package.TestWriterDict, "writer_test.go", 173);
-        registry.Add("TestWriterDictIsUsed", zlib_package.TestWriterDictIsUsed, "writer_test.go", 209);
-        registry.Add("TestWriterReset", zlib_package.TestWriterReset, "writer_test.go", 191);
+        registry.Add("TestDecompressor", zlib_internal_test_package.TestDecompressor, "reader_test.go", 151);
+        registry.Add("TestWriter", zlib_internal_test_package.TestWriter, "writer_test.go", 143);
+        registry.Add("TestWriterBig", zlib_internal_test_package.TestWriterBig, "writer_test.go", 156);
+        registry.Add("TestWriterDict", zlib_internal_test_package.TestWriterDict, "writer_test.go", 173);
+        registry.Add("TestWriterDictIsUsed", zlib_internal_test_package.TestWriterDictIsUsed, "writer_test.go", 209);
+        registry.Add("TestWriterReset", zlib_internal_test_package.TestWriterReset, "writer_test.go", 191);
         return TestHost.Run(registry, args);
     }
 }

@@ -8,10 +8,11 @@ using fmt = fmt_package;
 using io = io_package;
 using strings = strings_package;
 using testing = testing_package;
+using static go.encoding.hex_package;
 
-partial class hex_package {
+partial class hex_internal_test_package {
 
-[GoType] partial struct encDecTest {
+[GoType] internal partial struct encDecTest {
     internal @string enc;
     internal slice<byte> dec;
 }
@@ -100,12 +101,12 @@ internal static slice<errTestsᴛ1> errTests;
 internal static void initᴛerrTests() { errTests = new errTestsᴛ1[]{
     new(""u8, ""u8, default!),
     new("0"u8, ""u8, ErrLength),
-    new("zd4aa"u8, ""u8, ((InvalidByteError)(rune)'z')),
-    new("d4aaz"u8, ((@string)(new byte[]{0xd4, 0xaa})), ((InvalidByteError)(rune)'z')),
+    new("zd4aa"u8, ""u8, ((global::go.encoding.hex_package.InvalidByteError)(rune)'z')),
+    new("d4aaz"u8, ((@string)(new byte[]{0xd4, 0xaa})), ((global::go.encoding.hex_package.InvalidByteError)(rune)'z')),
     new("30313"u8, "01"u8, ErrLength),
-    new("0g"u8, ""u8, ((InvalidByteError)(rune)'g')),
-    new("00gg"u8, "\x00"u8, ((InvalidByteError)(rune)'g')),
-    new("0\x01"u8, ""u8, ((InvalidByteError)(rune)'\x01')),
+    new("0g"u8, ""u8, ((global::go.encoding.hex_package.InvalidByteError)(rune)'g')),
+    new("00gg"u8, "\x00"u8, ((global::go.encoding.hex_package.InvalidByteError)(rune)'g')),
+    new("0\x01"u8, ""u8, ((global::go.encoding.hex_package.InvalidByteError)(rune)'\x01')),
     new("ffeed"u8, ((@string)(new byte[]{0xff, 0xee})), ErrLength)
 }.slice(); }
 
@@ -142,8 +143,8 @@ public static void TestEncoderDecoder(ж<testing.T> Ꮡt) {
             var input = bytes.Repeat(test.dec, multiplier);
             @string output = strings.Repeat(test.enc, multiplier);
             ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-            var enc = NewEncoder(new bytes_BufferжWriter(Ꮡbuf));
-            var r = new TestEncoderDecoder_r(new bytes_ReaderжReader(bytes.NewReader(input)));
+            var enc = NewEncoder(new hex_test_package.bytes_BufferжWriter(Ꮡbuf));
+            var r = new TestEncoderDecoder_r(new hex_test_package.bytes_ReaderжReader(bytes.NewReader(input)));
             // io.Reader only; not io.WriterTo
             {
                 var (n, err) = io.CopyBuffer(enc, r, new slice<byte>(7)); if (n != (int64)len(input) || err != default!) {
@@ -157,9 +158,9 @@ public static void TestEncoderDecoder(ж<testing.T> Ꮡt) {
                     continue;
                 }
             }
-            var dec = NewDecoder(new bytes_BufferжReader(Ꮡbuf));
+            var dec = NewDecoder(new hex_test_package.bytes_BufferжReader(Ꮡbuf));
             ref var decBuf = ref heap(new bytes.Buffer(), out var ᏑdecBuf);
-            var w = new TestEncoderDecoder_w(new bytes_BufferжWriter(ᏑdecBuf));
+            var w = new TestEncoderDecoder_w(new hex_test_package.bytes_BufferжWriter(ᏑdecBuf));
             // io.Writer only; not io.ReaderFrom
             {
                 var (_, err) = io.CopyBuffer(w, dec, new slice<byte>(7)); if (err != default! || decBuf.Len() != len(input)) {
@@ -176,7 +177,7 @@ public static void TestEncoderDecoder(ж<testing.T> Ꮡt) {
 
 public static void TestDecoderErr(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in errTests) {
-        var dec = NewDecoder(new strings_ReaderжReader(strings.NewReader(tt.@in)));
+        var dec = NewDecoder(new hex_test_package.strings_ReaderжReader(strings.NewReader(tt.@in)));
         var (@out, err) = io.ReadAll(dec);
         var wantErr = tt.err;
         // Decoder is reading from stream, so it reports io.ErrUnexpectedEOF instead of ErrLength.
@@ -196,7 +197,7 @@ public static void TestDumper(ж<testing.T> Ꮡt) {
     }
     for (nint stride = 1; stride < len(@in); stride++) {
         ref var @out = ref heap(new bytes.Buffer(), out var Ꮡout);
-        var dumper = Dumper(new bytes_BufferжWriter(Ꮡout));
+        var dumper = Dumper(new hex_test_package.bytes_BufferжWriter(Ꮡout));
         nint done = 0;
         while (done < len(@in)) {
             nint todo = done + stride;
@@ -214,11 +215,11 @@ public static void TestDumper(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gopherˢ = "00000000  67 6f 70 68 65 72                                 |gopher|\n"u8;
+internal static readonly @string gopherˢ = "00000000  67 6f 70 68 65 72                                 |gopher|\n"u8;
 
 public static void TestDumper_doubleclose(ж<testing.T> Ꮡt) {
     ref var @out = ref heap(new strings.Builder(), out var Ꮡout);
-    var dumper = Dumper(new strings_BuilderжWriter(Ꮡout));
+    var dumper = Dumper(new hex_test_package.strings_BuilderжWriter(Ꮡout));
     dumper.Write(slice<byte>(@"gopher"u8));
     dumper.Close();
     dumper.Close();
@@ -232,7 +233,7 @@ public static void TestDumper_doubleclose(ж<testing.T> Ꮡt) {
 
 public static void TestDumper_earlyclose(ж<testing.T> Ꮡt) {
     ref var @out = ref heap(new strings.Builder(), out var Ꮡout);
-    var dumper = Dumper(new strings_BuilderжWriter(Ꮡout));
+    var dumper = Dumper(new hex_test_package.strings_BuilderжWriter(Ꮡout));
     dumper.Close();
     dumper.Write(slice<byte>(@"gopher"u8));
     @string expected = ""u8;
@@ -316,4 +317,4 @@ public static void BenchmarkDump(ж<testing.B> Ꮡb) {
     }
 }
 
-} // end hex_package
+} // end hex_internal_test_package

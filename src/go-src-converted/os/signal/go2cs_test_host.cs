@@ -21,7 +21,7 @@ internal static class Go2CsTestHost
             "signal_unix.go",
             "signal_windows_test.go",
         });
-        registry.Add("TestCtrlBreak", signal_package.TestCtrlBreak, "signal_windows_test.go", 32);
+        registry.Add("TestCtrlBreak", signal_internal_test_package.TestCtrlBreak, "signal_windows_test.go", 32);
         return TestHost.Run(registry, args);
     }
 }

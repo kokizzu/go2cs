@@ -7,12 +7,13 @@ using binary = encoding.binary_package;
 using io = io_package;
 using testing = testing_package;
 using encoding;
+using static go.@internal.coverage.slicereader_package;
 
-partial class slicereader_package {
+partial class slicereader_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string foobarˢ = "foobar"u8;
-private static readonly @string bazbasherˢ = "bazbasher"u8;
+internal static readonly @string foobarˢ = "foobar"u8;
+internal static readonly @string bazbasherˢ = "bazbasher"u8;
 
 public static void TestSliceReader(ж<testing.T> Ꮡt) {
     var b = new byte[]{}.slice();
@@ -34,7 +35,7 @@ public static void TestSliceReader(ж<testing.T> Ꮡt) {
     @string s2 = bazbasherˢ;
     var s2b = slice<byte>(s2);
     b = append(b, s2b.ꓸꓸꓸ);
-    var readStr = @string (ж<Reader> slr) => {
+    var readStr = @string (ж<global::go.@internal.coverage.slicereader_package.Reader> slr) => {
         var len = slr.ReadULEB128();
         return slr.ReadString((int64)len);
     };
@@ -95,4 +96,4 @@ internal static slice<byte> appendUleb128(slice<byte> b, nuint v) {
     return b;
 }
 
-} // end slicereader_package
+} // end slicereader_internal_test_package

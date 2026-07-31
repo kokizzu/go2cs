@@ -13,10 +13,11 @@ using testing = testing_package;
 using time = time_package;
 using encoding;
 using go.compress;
+using static go.compress.gzip_package;
 
-partial class gzip_package {
+partial class gzip_internal_test_package {
 
-[GoType] partial struct gunzipTest {
+[GoType] internal partial struct gunzipTest {
     internal @string name;
     internal @string desc;
     internal @string raw;
@@ -379,12 +380,12 @@ public static void TestDecompressor(ж<testing.T> Ꮡt) => func((defer, recover)
     // Keep resetting this reader.
     // It is intended behavior that Reader.Reset can be called on a zero-value
     // Reader and be the equivalent as if NewReader was used instead.
-    var r1 = @new<Reader>();
+    var r1 = @new<global::go.compress.gzip_package.Reader>();
     var b = @new<bytes.Buffer>();
     foreach (var (_, tt) in gunzipTests) {
         // Test NewReader.
         var @in = bytes.NewReader(tt.gzip);
-        var (r2, err) = NewReader(new bytes_ReaderжReader(@in));
+        var (r2, err) = NewReader(new gzip_test_package.bytes_ReaderжReader(@in));
         if (err != default!) {
             Ꮡt.Errorf("%s: NewReader: %s"u8, tt.desc, err);
             continue;
@@ -395,7 +396,7 @@ public static void TestDecompressor(ж<testing.T> Ꮡt) => func((defer, recover)
             Ꮡt.Errorf("%s: got name %s"u8, tt.desc, (~r2).Name);
         }
         b.Reset();
-        (var n, err) = io.Copy(new bytes_BufferжWriter(b), new ReaderжReader(r2));
+        (var n, err) = io.Copy(new gzip_test_package.bytes_BufferжWriter(b), new gzip_test_package.gzip_ReaderжReader(r2));
         if (!AreEqual(err, tt.err)) {
             Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
         }
@@ -405,7 +406,7 @@ public static void TestDecompressor(ж<testing.T> Ꮡt) => func((defer, recover)
         }
         // Test Reader.Reset.
         @in = bytes.NewReader(tt.gzip);
-        err = r1.Reset(new bytes_ReaderжReader(@in));
+        err = r1.Reset(new gzip_test_package.bytes_ReaderжReader(@in));
         if (err != default!) {
             Ꮡt.Errorf("%s: Reset: %s"u8, tt.desc, err);
             continue;
@@ -414,7 +415,7 @@ public static void TestDecompressor(ж<testing.T> Ꮡt) => func((defer, recover)
             Ꮡt.Errorf("%s: got name %s"u8, tt.desc, (~r1).Name);
         }
         b.Reset();
-        (n, err) = io.Copy(new bytes_BufferжWriter(b), new ReaderжReader(r1));
+        (n, err) = io.Copy(new gzip_test_package.bytes_BufferжWriter(b), new gzip_test_package.gzip_ReaderжReader(r1));
         if (!AreEqual(err, tt.err)) {
             Ꮡt.Errorf("%s: io.Copy: %v want %v"u8, tt.desc, err, tt.err);
         }
@@ -426,7 +427,7 @@ public static void TestDecompressor(ж<testing.T> Ꮡt) => func((defer, recover)
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testdataIssue6550Gzˢ = "testdata/issue6550.gz.base64"u8;
+internal static readonly @string testdataIssue6550Gzˢ = "testdata/issue6550.gz.base64"u8;
 
 public static void TestIssue6550(ж<testing.T> Ꮡt) => func((defer, recover) => {
     // Apple’s notarization service will recursively attempt to decompress
@@ -438,7 +439,7 @@ public static void TestIssue6550(ж<testing.T> Ꮡt) => func((defer, recover) =>
     if (err != default!) {
         Ꮡt.Fatal(err);
     }
-    (var gzip, err) = NewReader(base64.NewDecoder(base64.StdEncoding, new os_FileжReader(f)));
+    (var gzip, err) = NewReader(base64.NewDecoder(base64.StdEncoding, new gzip_test_package.os_FileжReader(f)));
     if (err != default!) {
         Ꮡt.Fatalf("NewReader(testdata/issue6550.gz): %v"u8, err);
     }
@@ -448,7 +449,7 @@ public static void TestIssue6550(ж<testing.T> Ꮡt) => func((defer, recover) =>
     var doneʗ1 = done;
     var gzipʗ2 = gzip;
     goǃ(() => {
-        var (_, errΔ1) = io.Copy(io.Discard, new ReaderжReader(gzipʗ2));
+        var (_, errΔ1) = io.Copy(io.Discard, new gzip_test_package.gzip_ReaderжReader(gzipʗ2));
         if (errΔ1 == default!){
             Ꮡt.Errorf("Copy succeeded"u8);
         } else {
@@ -469,7 +470,7 @@ public static void TestIssue6550(ж<testing.T> Ꮡt) => func((defer, recover) =>
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object cannotFindHelloTxtX2Inˢ = (@string)"cannot find hello.txt x2 in gunzip tests"u8;
+internal static readonly object cannotFindHelloTxtX2Inˢ = (@string)"cannot find hello.txt x2 in gunzip tests"u8;
 
 // ok
 public static void TestMultistreamFalse(ж<testing.T> Ꮡt) {
@@ -485,31 +486,31 @@ public static void TestMultistreamFalse(ж<testing.T> Ꮡt) {
     Ꮡt.Fatal(cannotFindHelloTxtX2Inˢ);
 Found:
     var br = bytes.NewReader(tt.gzip);
-    ref var r = ref heap(new Reader(), out var Ꮡr);
+    ref var r = ref heap(new global::go.compress.gzip_package.Reader(), out var Ꮡr);
     {
-        var errΔ1 = r.Reset(new bytes_ReaderжReader(br)); if (errΔ1 != default!) {
+        var errΔ1 = r.Reset(new gzip_test_package.bytes_ReaderжReader(br)); if (errΔ1 != default!) {
             Ꮡt.Fatalf("first reset: %v"u8, errΔ1);
         }
     }
     // Expect two streams with "hello world\n", then real EOF.
     @string hello = "hello world\n"u8;
     r.Multistream(false);
-    var (data, err) = io.ReadAll(new ReaderжReader(Ꮡr));
+    var (data, err) = io.ReadAll(new gzip_test_package.gzip_ReaderжReader(Ꮡr));
     if (((sstring)data) != hello || err != default!) {
         Ꮡt.Fatalf("first stream = %q, %v, want %q, %v"u8, ((@string)data), err, hello, default!);
     }
     {
-        var errΔ2 = r.Reset(new bytes_ReaderжReader(br)); if (errΔ2 != default!) {
+        var errΔ2 = r.Reset(new gzip_test_package.bytes_ReaderжReader(br)); if (errΔ2 != default!) {
             Ꮡt.Fatalf("second reset: %v"u8, errΔ2);
         }
     }
     r.Multistream(false);
-    (data, err) = io.ReadAll(new ReaderжReader(Ꮡr));
+    (data, err) = io.ReadAll(new gzip_test_package.gzip_ReaderжReader(Ꮡr));
     if (((sstring)data) != hello || err != default!) {
         Ꮡt.Fatalf("second stream = %q, %v, want %q, %v"u8, ((@string)data), err, hello, default!);
     }
     {
-        var errΔ3 = r.Reset(new bytes_ReaderжReader(br)); if (!AreEqual(errΔ3, io.EOF)) {
+        var errΔ3 = r.Reset(new gzip_test_package.bytes_ReaderжReader(br)); if (!AreEqual(errΔ3, io.EOF)) {
             Ꮡt.Fatalf("third reset: err=%v, want io.EOF"u8, errΔ3);
         }
     }
@@ -518,7 +519,7 @@ Found:
 public static void TestNilStream(ж<testing.T> Ꮡt) {
     // Go liberally interprets RFC 1952 section 2.2 to mean that a gzip file
     // consist of zero or more members. Thus, we test that a nil stream is okay.
-    var (_, err) = NewReader(new bytes_ReaderжReader(bytes.NewReader(default!)));
+    var (_, err) = NewReader(new gzip_test_package.bytes_ReaderжReader(bytes.NewReader(default!)));
     if (!AreEqual(err, io.EOF)) {
         Ꮡt.Fatalf("NewReader(nil) on empty stream: got %v, want io.EOF"u8, err);
     }
@@ -551,14 +552,14 @@ public static void TestTruncatedStreams(ж<testing.T> Ꮡt) {
     // Intentionally iterate starting with at least one byte in the stream.
     foreach (var (_, tc) in cases) {
         for (nint i = 1; i < len(tc.data); i++) {
-            var (r, err) = NewReader(new strings_ReaderжReader(strings.NewReader(((@string)(tc.data[..(int)(i)])))));
+            var (r, err) = NewReader(new gzip_test_package.strings_ReaderжReader(strings.NewReader(((@string)(tc.data[..(int)(i)])))));
             if (err != default!) {
                 if (!AreEqual(err, io.ErrUnexpectedEOF)) {
                     Ꮡt.Errorf("NewReader(%s-%d) on truncated stream: got %v, want %v"u8, tc.name, i, err, io.ErrUnexpectedEOF);
                 }
                 continue;
             }
-            (_, err) = io.Copy(io.Discard, new ReaderжReader(r));
+            (_, err) = io.Copy(io.Discard, new gzip_test_package.gzip_ReaderжReader(r));
             {
                 var (ferr, ok) = err._<ж<flate.ReadError>>(ᐧ); if (ok) {
                     err = ferr.Value.Err;
@@ -575,7 +576,7 @@ public static void TestCVE202230631(ж<testing.T> Ꮡt) {
     slice<byte> empty = new byte[]{0x1f, 0x8b, 0x08, 0x00, 0xa7, 0x8f, 0x43, 0x62, 0x00,
         0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}.slice();
     var r = bytes.NewReader(bytes.Repeat(empty, 4000000));
-    var (z, err) = NewReader(new bytes_ReaderжReader(r));
+    var (z, err) = NewReader(new gzip_test_package.bytes_ReaderжReader(r));
     if (err != default!) {
         Ꮡt.Fatalf("NewReader: got %v, want nil"u8, err);
     }
@@ -587,4 +588,4 @@ public static void TestCVE202230631(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end gzip_package
+} // end gzip_internal_test_package

@@ -6,8 +6,9 @@ namespace go;
 using errors = errors_package;
 using fmt = fmt_package;
 using reflect = reflect_package;
-using static go.strconv_package;
+using static strconv_package;
 using testing = testing_package;
+using static go.strconv_internal_test_package;
 using strconv = strconv_package;
 
 partial class strconv_test_package {
@@ -512,11 +513,11 @@ public static void TestAtoi(ж<testing.T> Ꮡt) {
 }
 
 internal static error bitSizeErrStub(@string name, nint bitSize) {
-    return new strconv.NumErrorжerror(BitSizeError(name, "0"u8, bitSize));
+    return new strconv.NumErrorжerror(strconv_internal_test_package.BitSizeError(name, "0"u8, bitSize));
 }
 
 internal static error baseErrStub(@string name, nint @base) {
-    return new strconv.NumErrorжerror(BaseError(name, "0"u8, @base));
+    return new strconv.NumErrorжerror(strconv_internal_test_package.BaseError(name, "0"u8, @base));
 }
 
 internal static error noErrStub(@string name, nint arg) {
@@ -557,7 +558,7 @@ internal static bool equalError(error a, error b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string parseIntˢ = "ParseInt"u8;
+internal static readonly @string parseIntˢ = "ParseInt"u8;
 
 public static void TestParseIntBitSize(ж<testing.T> Ꮡt) {
     foreach (var (i, _) in parseBitSizeTests) {
@@ -572,7 +573,7 @@ public static void TestParseIntBitSize(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string parseUintˢ = "ParseUint"u8;
+internal static readonly @string parseUintˢ = "ParseUint"u8;
 
 public static void TestParseUintBitSize(ж<testing.T> Ꮡt) {
     foreach (var (i, _) in parseBitSizeTests) {
@@ -611,7 +612,7 @@ public static void TestParseUintBase(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string failedˢ = "failed"u8;
+internal static readonly @string failedˢ = "failed"u8;
 
 public static void TestNumError(ж<testing.T> Ꮡt) {
     foreach (var (_, test) in numErrorTests) {
@@ -629,7 +630,7 @@ public static void TestNumError(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object errorsIsFailedWantedˢ = (@string)"errors.Is failed, wanted success"u8;
+internal static readonly object errorsIsFailedWantedˢ = (@string)"errors.Is failed, wanted success"u8;
 
 public static void TestNumErrorUnwrap(ж<testing.T> Ꮡt) {
     var err = Ꮡ(new NumError(Err: ErrSyntax));
@@ -639,8 +640,8 @@ public static void TestNumErrorUnwrap(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string posˢ = "Pos"u8;
-private static readonly @string negˢ = "Neg"u8;
+internal static readonly @string posˢ = "Pos"u8;
+internal static readonly @string negˢ = "Neg"u8;
 
 public static void BenchmarkParseInt(ж<testing.B> Ꮡb) {
     Ꮡb.Run(posˢ, (ж<testing.B> bΔ1) => {

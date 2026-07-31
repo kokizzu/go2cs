@@ -7,15 +7,16 @@ using errors = errors_package;
 using Δio = io_package;
 using strings = strings_package;
 using testing = testing_package;
+using static go.mime_package;
 
-partial class mime_package {
+partial class mime_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string c3A9ˢ = "=C3=A9"u8;
-private static readonly @string gICAˢ = "gICA"u8;
+internal static readonly @string c3A9ˢ = "=C3=A9"u8;
+internal static readonly @string gICAˢ = "gICA"u8;
 
 [GoType("dyn")] partial struct TestEncodeWord_tests {
-    internal WordEncoder enc;
+    internal global::go.mime_package.WordEncoder enc;
     internal @string charset;
     internal @string src, exp;
 }
@@ -51,7 +52,7 @@ public static void TestEncodeWord(ж<testing.T> Ꮡt) {
 }
 
 [GoType("dyn")] partial struct TestEncodedWordLength_tests {
-    internal WordEncoder enc;
+    internal global::go.mime_package.WordEncoder enc;
     internal @string src;
 }
 
@@ -103,7 +104,7 @@ public static void TestDecodeWord(ж<testing.T> Ꮡt) {
         new("=?UTF-8?Q??="u8, ""u8, false)
     }.slice();
     foreach (var (_, test) in tests) {
-        var dec = @new<WordDecoder>();
+        var dec = @new<global::go.mime_package.WordDecoder>();
         var (s, err) = dec.Decode(test.src);
         if (test.hasErr && err == default!) {
             Ꮡt.Errorf("Decode(%q) should return an error"u8, test.src);
@@ -156,7 +157,7 @@ public static void TestDecodeHeader(ж<testing.T> Ꮡt) {
         new("=?ISO-8859-1?Q?a_b?="u8, "a b"u8)
     }.slice();
     foreach (var (_, test) in tests) {
-        var dec = @new<WordDecoder>();
+        var dec = @new<global::go.mime_package.WordDecoder>();
         var (s, err) = dec.DecodeHeader(test.src);
         if (err != default!) {
             Ꮡt.Errorf("DecodeHeader(%q): %v"u8, test.src, err);
@@ -208,7 +209,7 @@ public static void TestCharsetDecoder(ж<testing.T> Ꮡt) {
                     Ꮡt.Errorf("DecodeHeader(%q), got content %q, want %q"u8, testʗ1.src, gotΔ1, testʗ1.content[i]);
                 }
                 i++;
-                return (new strings_ReaderжReader(strings.NewReader(gotΔ1)), default!);
+                return (new mime_test_package.strings_ReaderжReader(strings.NewReader(gotΔ1)), default!);
             }
         ));
         var (got, err) = dec.DecodeHeader(test.src);
@@ -222,9 +223,9 @@ public static void TestCharsetDecoder(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testErrorˢ = "Test error"u8;
-private static readonly @string charsetQFooˢ = "=?charset?Q?foo?="u8;
-private static readonly object decodeHeaderShouldReturnˢ = (@string)"DecodeHeader should return an error"u8;
+internal static readonly @string testErrorˢ = "Test error"u8;
+internal static readonly @string charsetQFooˢ = "=?charset?Q?foo?="u8;
+internal static readonly object decodeHeaderShouldReturnˢ = (@string)"DecodeHeader should return an error"u8;
 
 public static void TestCharsetDecoderError(ж<testing.T> Ꮡt) {
     var dec = Ꮡ(new WordDecoder(
@@ -238,7 +239,7 @@ public static void TestCharsetDecoderError(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string holaSeOrˢ = "¡Hola, señor!"u8;
+internal static readonly @string holaSeOrˢ = "¡Hola, señor!"u8;
 
 public static void BenchmarkQEncodeWord(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -249,12 +250,12 @@ public static void BenchmarkQEncodeWord(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string utf8QC2A1HolaSeC3B1orˢ = "=?utf-8?q?=C2=A1Hola,_se=C3=B1or!?="u8;
+internal static readonly @string utf8QC2A1HolaSeC3B1orˢ = "=?utf-8?q?=C2=A1Hola,_se=C3=B1or!?="u8;
 
 public static void BenchmarkQDecodeWord(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    var dec = @new<WordDecoder>();
+    var dec = @new<global::go.mime_package.WordDecoder>();
     for (nint i = 0; i < b.N; i++) {
         dec.Decode(utf8QC2A1HolaSeC3B1orˢ);
     }
@@ -263,10 +264,10 @@ public static void BenchmarkQDecodeWord(ж<testing.B> Ꮡb) {
 public static void BenchmarkQDecodeHeader(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    var dec = @new<WordDecoder>();
+    var dec = @new<global::go.mime_package.WordDecoder>();
     for (nint i = 0; i < b.N; i++) {
         dec.DecodeHeader(utf8QC2A1HolaSeC3B1orˢ);
     }
 }
 
-} // end mime_package
+} // end mime_internal_test_package

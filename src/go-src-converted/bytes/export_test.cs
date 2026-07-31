@@ -3,9 +3,11 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-partial class bytes_package {
+using static go.bytes_package;
+
+partial class bytes_internal_test_package {
 
 // Export func for testing
 public static Func<slice<byte>, byte, nint> IndexBytePortable = indexBytePortable;
 
-} // end bytes_package
+} // end bytes_internal_test_package

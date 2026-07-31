@@ -5,8 +5,9 @@ namespace go;
 
 using bytes = bytes_package;
 using fmt = fmt_package;
-using static go.strings_package;
+using static strings_package;
 using testing = testing_package;
+using static go.strings_internal_test_package;
 using strings = strings_package;
 using Δio = io_package;
 
@@ -27,9 +28,9 @@ internal static ж<strings.Replacer> htmlUnescaper = NewReplacer(
     "&apos;", "'");
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ampˢ = "&amp;"u8;
-private static readonly @string quotˢ = "&quot;"u8;
-private static readonly @string aposˢ = "&apos;"u8;
+internal static readonly @string ampˢ = "&amp;"u8;
+internal static readonly @string quotˢ = "&quot;"u8;
+internal static readonly @string aposˢ = "&apos;"u8;
 
 // The http package's old HTML escaping function.
 internal static @string oldHTMLEscape(@string s) {
@@ -44,41 +45,41 @@ internal static @string oldHTMLEscape(@string s) {
 internal static ж<strings.Replacer> capitalLetters = NewReplacer("a"u8, "A", "b", "B");
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string xxxˢ = "xxx"u8;
-private static readonly @string aaaˢ2 = "3[aaa]"u8;
-private static readonly @string longerstˢ = "longerst"u8;
-private static readonly @string mostLongˢ = "most long"u8;
-private static readonly @string longerˢ = "longer"u8;
-private static readonly @string mediumˢ = "medium"u8;
-private static readonly @string longˢ = "long"u8;
-private static readonly @string shortˢ = "short"u8;
-private static readonly @string rosesˢ = "roses"u8;
-private static readonly @string redˢ = "red"u8;
-private static readonly @string violetsˢ = "violets"u8;
-private static readonly @string blueˢ = "blue"u8;
-private static readonly @string sugarˢ = "sugar"u8;
-private static readonly @string sweetˢ = "sweet"u8;
-private static readonly @string abracadabraˢ = "abracadabra"u8;
-private static readonly @string poofˢ = "poof"u8;
-private static readonly @string abracadabrakazamˢ = "abracadabrakazam"u8;
-private static readonly @string splatˢ = "splat"u8;
-private static readonly @string abrahamˢ = "abraham"u8;
-private static readonly @string lincolnˢ = "lincoln"u8;
-private static readonly @string abrasionˢ = "abrasion"u8;
-private static readonly @string scrapeˢ = "scrape"u8;
-private static readonly @string isaacˢ = "isaac"u8;
-private static readonly @string foo1ˢ = "foo1"u8;
-private static readonly @string foo2ˢ = "foo2"u8;
-private static readonly @string foo3ˢ = "foo3"u8;
-private static readonly @string foo31ˢ = "foo31"u8;
-private static readonly @string foo32ˢ = "foo32"u8;
-private static readonly @string foo11ˢ = "foo11"u8;
-private static readonly @string foo12ˢ = "foo12"u8;
-private static readonly @string allˢ = "[all]"u8;
-private static readonly @string foobarˢ = "foobar"u8;
-private static readonly @string foobazˢ = "foobaz"u8;
-private static readonly @string matchˢ = "[match]"u8;
-private static readonly @string helloˢ3 = "Hello"u8;
+internal static readonly @string xxxˢ = "xxx"u8;
+internal static readonly @string aaaˢ2 = "3[aaa]"u8;
+internal static readonly @string longerstˢ = "longerst"u8;
+internal static readonly @string mostLongˢ = "most long"u8;
+internal static readonly @string longerˢ = "longer"u8;
+internal static readonly @string mediumˢ = "medium"u8;
+internal static readonly @string longˢ = "long"u8;
+internal static readonly @string shortˢ = "short"u8;
+internal static readonly @string rosesˢ = "roses"u8;
+internal static readonly @string redˢ = "red"u8;
+internal static readonly @string violetsˢ = "violets"u8;
+internal static readonly @string blueˢ = "blue"u8;
+internal static readonly @string sugarˢ = "sugar"u8;
+internal static readonly @string sweetˢ = "sweet"u8;
+internal static readonly @string abracadabraˢ = "abracadabra"u8;
+internal static readonly @string poofˢ = "poof"u8;
+internal static readonly @string abracadabrakazamˢ = "abracadabrakazam"u8;
+internal static readonly @string splatˢ = "splat"u8;
+internal static readonly @string abrahamˢ = "abraham"u8;
+internal static readonly @string lincolnˢ = "lincoln"u8;
+internal static readonly @string abrasionˢ = "abrasion"u8;
+internal static readonly @string scrapeˢ = "scrape"u8;
+internal static readonly @string isaacˢ = "isaac"u8;
+internal static readonly @string foo1ˢ = "foo1"u8;
+internal static readonly @string foo2ˢ = "foo2"u8;
+internal static readonly @string foo3ˢ = "foo3"u8;
+internal static readonly @string foo31ˢ = "foo31"u8;
+internal static readonly @string foo32ˢ = "foo32"u8;
+internal static readonly @string foo11ˢ = "foo11"u8;
+internal static readonly @string foo12ˢ = "foo12"u8;
+internal static readonly @string allˢ = "[all]"u8;
+internal static readonly @string foobarˢ = "foobar"u8;
+internal static readonly @string foobazˢ = "foobaz"u8;
+internal static readonly @string matchˢ = "[match]"u8;
+internal static readonly @string helloˢ3 = "Hello"u8;
 
 [GoLocalName("testCase")] [GoType("dyn")] partial struct TestReplacer_testCase {
     internal ж<strings.Replacer> r;
@@ -276,7 +277,7 @@ public static void TestReplacer(ж<testing.T> Ꮡt) {
             }
         }
         ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-        var (n, err) = tc.r.WriteString(new bytes_BufferжWriter(Ꮡbuf), tc.@in);
+        var (n, err) = tc.r.WriteString(new strings_test_package.bytes_BufferжWriter(Ꮡbuf), tc.@in);
         if (err != default!) {
             Ꮡt.Errorf("%d. WriteString: %v"u8, i, err);
             continue;
@@ -443,7 +444,7 @@ public static void BenchmarkGenericMatch1(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string itAposSLtBGtHtmlLtBGtˢ = "It&apos;s &lt;b&gt;HTML&lt;/b&gt;!"u8;
+internal static readonly @string itAposSLtBGtHtmlLtBGtˢ = "It&apos;s &lt;b&gt;HTML&lt;/b&gt;!"u8;
 
 public static void BenchmarkGenericMatch2(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -478,8 +479,8 @@ public static void BenchmarkSingleLongSuffixFail(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcdefˢ = "abcdef"u8;
-private static readonly @string abcdefghijklmnoˢ = "abcdefghijklmno"u8;
+internal static readonly @string abcdefˢ = "abcdef"u8;
+internal static readonly @string abcdefghijklmnoˢ = "abcdefghijklmno"u8;
 
 public static void BenchmarkSingleMatch(ж<testing.B> Ꮡb) {
     benchmarkSingleString(Ꮡb, abcdefˢ, Repeat(abcdefghijklmnoˢ, 1000));
@@ -513,7 +514,7 @@ public static void BenchmarkByteStringMatch(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string i3ToEscapeHtmlOtherTextˢ = "I <3 to escape HTML & other text too."u8;
+internal static readonly @string i3ToEscapeHtmlOtherTextˢ = "I <3 to escape HTML & other text too."u8;
 
 public static void BenchmarkHTMLEscapeNew(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -539,13 +540,13 @@ public static void BenchmarkByteStringReplacerWriteString(ж<testing.B> Ꮡb) {
     @string str = Repeat(i3ToEscapeHtmlOtherTextˢ, 100);
     var buf = @new<bytes.Buffer>();
     for (nint i = 0; i < b.N; i++) {
-        htmlEscaper.WriteString(new bytes_BufferжWriter(buf), str);
+        htmlEscaper.WriteString(new strings_test_package.bytes_BufferжWriter(buf), str);
         buf.Reset();
     }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
+internal static readonly @string abcdefghijklmnopqrstuvwxyzˢ = "abcdefghijklmnopqrstuvwxyz"u8;
 
 public static void BenchmarkByteReplacerWriteString(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -553,7 +554,7 @@ public static void BenchmarkByteReplacerWriteString(ж<testing.B> Ꮡb) {
     @string str = Repeat(abcdefghijklmnopqrstuvwxyzˢ, 100);
     var buf = @new<bytes.Buffer>();
     for (nint i = 0; i < b.N; i++) {
-        capitalLetters.WriteString(new bytes_BufferжWriter(buf), str);
+        capitalLetters.WriteString(new strings_test_package.bytes_BufferжWriter(buf), str);
         buf.Reset();
     }
 }
@@ -599,8 +600,8 @@ internal static slice<mapdataᴛ1> mapdata = new mapdataᴛ1[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string identityˢ = "identity"u8;
-private static readonly @string changeˢ = "change"u8;
+internal static readonly @string identityˢ = "identity"u8;
+internal static readonly @string changeˢ = "change"u8;
 
 public static void BenchmarkMap(ж<testing.B> Ꮡb) {
     var mapidentity = (rune r) => r;

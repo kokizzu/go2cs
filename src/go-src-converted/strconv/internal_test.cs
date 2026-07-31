@@ -4,10 +4,12 @@
 // export access to strconv internals for tests
 namespace go;
 
-partial class strconv_package {
+using static go.strconv_package;
 
-internal static ж<@decimal> NewDecimal(uint64 i) {
-    var d = @new<@decimal>();
+partial class strconv_internal_test_package {
+
+internal static ж<global::go.strconv_package.@decimal> NewDecimal(uint64 i) {
+    var d = @new<global::go.strconv_package.@decimal>();
     d.Assign(i);
     return d;
 }
@@ -30,4 +32,4 @@ public static nint MulByLog10Log2(nint x) {
     return mulByLog10Log2(x);
 }
 
-} // end strconv_package
+} // end strconv_internal_test_package

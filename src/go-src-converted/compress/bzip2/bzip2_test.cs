@@ -10,8 +10,9 @@ using io = io_package;
 using os = os_package;
 using testing = testing_package;
 using encoding;
+using static go.compress.bzip2_package;
 
-partial class bzip2_package {
+partial class bzip2_internal_test_package {
 
 internal static slice<byte> mustDecodeHex(@string s) {
     var (b, err) = hex.DecodeString(s);
@@ -38,12 +39,12 @@ internal static @string trim(slice<byte> b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testdataPassRandom1Bz2ˢ = "testdata/pass-random1.bz2"u8;
-private static readonly @string testdataPassRandom1Binˢ = "testdata/pass-random1.bin"u8;
-private static readonly @string testdataPassRandom2Bz2ˢ = "testdata/pass-random2.bz2"u8;
-private static readonly @string testdataPassRandom2Binˢ = "testdata/pass-random2.bin"u8;
-private static readonly @string testdataPassSawtoothBz2ˢ = "testdata/pass-sawtooth.bz2"u8;
-private static readonly @string testdataFailIssue5747Bz2ˢ = "testdata/fail-issue5747.bz2"u8;
+internal static readonly @string testdataPassRandom1Bz2ˢ = "testdata/pass-random1.bz2"u8;
+internal static readonly @string testdataPassRandom1Binˢ = "testdata/pass-random1.bin"u8;
+internal static readonly @string testdataPassRandom2Bz2ˢ = "testdata/pass-random2.bz2"u8;
+internal static readonly @string testdataPassRandom2Binˢ = "testdata/pass-random2.bin"u8;
+internal static readonly @string testdataPassSawtoothBz2ˢ = "testdata/pass-sawtooth.bz2"u8;
+internal static readonly @string testdataFailIssue5747Bz2ˢ = "testdata/fail-issue5747.bz2"u8;
 
 [GoType("dyn")] partial struct TestReader_type {
     internal @string desc;
@@ -110,7 +111,7 @@ public static void TestReader(ж<testing.T> Ꮡt) {
     )
     }.slice();
     foreach (var (i, v) in vectors) {
-        var rd = NewReader(new bytes_ReaderжReader(bytes.NewReader(v.input)));
+        var rd = NewReader(new bzip2_internal_test_package.bytes_ReaderжReader(bytes.NewReader(v.input)));
         var (buf, err) = io.ReadAll(rd);
         {
             var fail = (bool)(err != default!); if (fail != v.fail) {
@@ -146,7 +147,7 @@ public static void TestBitReader(ж<testing.T> Ꮡt) {
         new(nbits: 1, fail: true)
     }.slice();
     var rd = bytes.NewReader(new byte[]{0xab, 0x12, 0x34, 0x56, 0x78, 0x71, 0x3f, 0x8d}.slice());
-    var br = newBitReader(new bytes_ReaderжReader(rd));
+    var br = newBitReader(new bzip2_internal_test_package.bytes_ReaderжReader(rd));
     foreach (var (i, v) in vectors) {
         nint val = br.ReadBits(v.nbits);
         {
@@ -194,7 +195,7 @@ public static void TestMTF(ж<testing.T> Ꮡt) {
 
 public static void TestZeroRead(ж<testing.T> Ꮡt) {
     var b = mustDecodeHex("425a6839314159265359b5aa5098000000600040000004200021008283177245385090b5aa5098"u8);
-    var r = NewReader(new bytes_ReaderжReader(bytes.NewReader(b)));
+    var r = NewReader(new bzip2_internal_test_package.bytes_ReaderжReader(bytes.NewReader(b)));
     {
         var (n, err) = r.Read(default!); if (n != 0 || err != default!) {
             Ꮡt.Errorf("Read(nil) = (%d, %v), want (0, nil)"u8, n, err);
@@ -210,7 +211,7 @@ internal static void benchmarkDecode(ж<testing.B> Ꮡb, slice<byte> compressed)
     ref var b = ref Ꮡb.Value;
 
     // Determine the uncompressed size of testfile.
-    var (uncompressedSize, err) = io.Copy(io.Discard, NewReader(new bytes_ReaderжReader(bytes.NewReader(compressed))));
+    var (uncompressedSize, err) = io.Copy(io.Discard, NewReader(new bzip2_internal_test_package.bytes_ReaderжReader(bytes.NewReader(compressed))));
     if (err != default!) {
         Ꮡb.Fatal(err);
     }
@@ -219,7 +220,7 @@ internal static void benchmarkDecode(ж<testing.B> Ꮡb, slice<byte> compressed)
     b.ResetTimer();
     for (nint i = 0; i < b.N; i++) {
         var r = bytes.NewReader(compressed);
-        io.Copy(io.Discard, NewReader(new bytes_ReaderжReader(r)));
+        io.Copy(io.Discard, NewReader(new bzip2_internal_test_package.bytes_ReaderжReader(r)));
     }
 }
 
@@ -235,4 +236,4 @@ public static void BenchmarkDecodeRand(ж<testing.B> Ꮡb) {
     benchmarkDecode(Ꮡb, random);
 }
 
-} // end bzip2_package
+} // end bzip2_internal_test_package

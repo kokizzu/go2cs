@@ -67,35 +67,22 @@
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
        can leak in because it is never listed. -->
   <ItemGroup>
-    <Compile Include="cond.cs" />
-    <Compile Include="cond_impl.cs" />
     <Compile Include="cond_test.cs" />
     <Compile Include="example_pool_test.cs" />
     <Compile Include="example_test.cs" />
     <Compile Include="export_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
-    <Compile Include="map.cs" />
     <Compile Include="map_bench_test.cs" />
     <Compile Include="map_reference_test.cs" />
     <Compile Include="map_test.cs" />
-    <Compile Include="mutex.cs" />
     <Compile Include="mutex_test.cs" />
-    <Compile Include="once.cs" />
     <Compile Include="once_test.cs" />
-    <Compile Include="oncefunc.cs" />
     <Compile Include="oncefunc_test.cs" />
-    <Compile Include="package_info_external_test.cs" />
+    <Compile Include="package_info_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="pool.cs" />
     <Compile Include="pool_test.cs" />
-    <Compile Include="poolqueue.cs" />
-    <Compile Include="runtime.cs" />
-    <Compile Include="runtime2.cs" />
-    <Compile Include="runtime_impl.cs" />
     <Compile Include="runtime_sema_test.cs" />
-    <Compile Include="rwmutex.cs" />
     <Compile Include="rwmutex_test.cs" />
-    <Compile Include="waitgroup.cs" />
     <Compile Include="waitgroup_test.cs" />
   </ItemGroup>
 
@@ -133,7 +120,6 @@
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\bytes\bytes.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\fmt\fmt.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\internal\race\internal.race.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\testenv\internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\fs\io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
@@ -151,6 +137,7 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\testing\quick\testing.quick.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\time\time.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\unsafe\unsafe.csproj" />
+    <ProjectReference Include="sync.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

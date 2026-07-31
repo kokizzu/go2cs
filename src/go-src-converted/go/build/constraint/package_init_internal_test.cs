@@ -4,8 +4,8 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go.go.build;
 
-partial class constraint_package {
-    static constraint_package() {
+partial class constraint_internal_test_package {
+    static constraint_internal_test_package() {
         initᴛplusBuildLinesTests();
     }
-} // end constraint_package
+} // end constraint_internal_test_package

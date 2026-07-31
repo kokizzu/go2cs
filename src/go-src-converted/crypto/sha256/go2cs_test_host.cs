@@ -20,16 +20,16 @@ internal static class Go2CsTestHost
             "sha256block_generic.go",
             "sha256block_s390x.go",
         });
-        registry.Add("TestAllocations", sha256_package.TestAllocations, "sha256_test.go", 297);
-        registry.Add("TestBlockGeneric", sha256_package.TestBlockGeneric, "sha256_test.go", 220);
-        registry.Add("TestBlockSize", sha256_package.TestBlockSize, "sha256_test.go", 212);
-        registry.Add("TestCgo", sha256_package.TestCgo, "sha256_test.go", 319);
-        registry.Add("TestGolden", sha256_package.TestGolden, "sha256_test.go", 95);
-        registry.Add("TestGoldenMarshal", sha256_package.TestGoldenMarshal, "sha256_test.go", 142);
-        registry.Add("TestLargeHashes", sha256_package.TestLargeHashes, "sha256_test.go", 276);
-        registry.Add("TestMarshalTypeMismatch", sha256_package.TestMarshalTypeMismatch, "sha256_test.go", 187);
-        registry.Add("TestSHA256Hash", sha256_package.TestSHA256Hash, "sha256_test.go", 329);
-        registry.Add("TestSize", sha256_package.TestSize, "sha256_test.go", 201);
+        registry.Add("TestAllocations", sha256_internal_test_package.TestAllocations, "sha256_test.go", 297);
+        registry.Add("TestBlockGeneric", sha256_internal_test_package.TestBlockGeneric, "sha256_test.go", 220);
+        registry.Add("TestBlockSize", sha256_internal_test_package.TestBlockSize, "sha256_test.go", 212);
+        registry.Add("TestCgo", sha256_internal_test_package.TestCgo, "sha256_test.go", 319);
+        registry.Add("TestGolden", sha256_internal_test_package.TestGolden, "sha256_test.go", 95);
+        registry.Add("TestGoldenMarshal", sha256_internal_test_package.TestGoldenMarshal, "sha256_test.go", 142);
+        registry.Add("TestLargeHashes", sha256_internal_test_package.TestLargeHashes, "sha256_test.go", 276);
+        registry.Add("TestMarshalTypeMismatch", sha256_internal_test_package.TestMarshalTypeMismatch, "sha256_test.go", 187);
+        registry.Add("TestSHA256Hash", sha256_internal_test_package.TestSHA256Hash, "sha256_test.go", 329);
+        registry.Add("TestSize", sha256_internal_test_package.TestSize, "sha256_test.go", 201);
         return TestHost.Run(registry, args);
     }
 }

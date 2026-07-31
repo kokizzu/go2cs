@@ -5,12 +5,13 @@ namespace go;
 
 using rand = go.math.rand.rand_package;
 using slices = slices_package;
-using static go.sort_package;
+using static sort_package;
 using strconv = strconv_package;
 using stringspkg = strings_package;
 using testing = testing_package;
 using go.math.rand;
 using sort = sort_package;
+using static go.sort_internal_test_package;
 using strings = strings_package;
 
 partial class sort_test_package {
@@ -19,7 +20,7 @@ partial class sort_test_package {
 // the sort package (avoiding functions that are just forwarding to the slices
 // package).
 internal static slice<nint> makeRandomInts(nint n) {
-    var r = rand.New(new rand_PCGжSource(rand.NewPCG(42, 0)));
+    var r = rand.New(new sort_test_package.rand_PCGжSource(rand.NewPCG(42, 0)));
     var ints = new slice<nint>(n);
     for (nint i = 0; i < n; i++) {
         ints[i] = r.IntN(n);
@@ -101,7 +102,7 @@ public static void BenchmarkSlicesIsSorted(ж<testing.B> Ꮡb) {
 // makeRandomStrings generates n random strings with alphabetic runes of
 // varying lengths.
 internal static slice<@string> makeRandomStrings(nint n) {
-    var r = rand.New(new rand_PCGжSource(rand.NewPCG(42, 0)));
+    var r = rand.New(new sort_test_package.rand_PCGжSource(rand.NewPCG(42, 0)));
     slice<rune> letters = slice<rune>((@string)"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
     var ss = new slice<@string>(n);
     for (nint i = 0; i < n; i++) {
@@ -179,7 +180,7 @@ internal static void Swap(this myStructs s, nint i, nint j) {
 }
 
 internal static myStructs makeRandomStructs(nint n) {
-    var r = rand.New(new rand_PCGжSource(rand.NewPCG(42, 0)));
+    var r = rand.New(new sort_test_package.rand_PCGжSource(rand.NewPCG(42, 0)));
     var structs = new slice<ж<myStruct>>(n);
     for (nint i = 0; i < n; i++) {
         structs[i] = Ꮡ(new myStruct(n: r.IntN(n)));

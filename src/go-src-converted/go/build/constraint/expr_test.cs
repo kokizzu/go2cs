@@ -7,12 +7,13 @@ using fmt = fmt_package;
 using reflect = reflect_package;
 using strings = strings_package;
 using testing = testing_package;
+using static global::go.go.build.constraint_package;
 
-partial class constraint_package {
+partial class constraint_internal_test_package {
 
 
 [GoType("dyn")] partial struct exprStringTestsᴛ1 {
-    internal Expr x;
+    internal global::go.go.build.constraint_package.Expr x;
     internal @string @out;
 }
 internal static slice<exprStringTestsᴛ1> exprStringTests = new exprStringTestsᴛ1[]{
@@ -105,7 +106,7 @@ public static void TestLex(ж<testing.T> Ꮡt) {
     }
 }
 
-internal static (@string tok, error err) lexHelp(ж<exprParser> Ꮡp) {
+internal static (@string tok, error err) lexHelp(ж<global::go.go.build.constraint_package.exprParser> Ꮡp) {
     @string tok = default!;
     error err = default!;
     func((defer, recover) => {
@@ -115,8 +116,8 @@ internal static (@string tok, error err) lexHelp(ж<exprParser> Ꮡp) {
             {
                 var e = recover(); if (e != default!) {
                     {
-                        var (eΔ1, ok) = e._<ж<SyntaxError>>(ᐧ); if (ok) {
-                            err = new SyntaxErrorжerror(eΔ1);
+                        var (eΔ1, ok) = e._<ж<global::go.go.build.constraint_package.SyntaxError>>(ᐧ); if (ok) {
+                            err = new constraint_internal_test_package.constraint_SyntaxErrorжerror(eΔ1);
                             return;
                         }
                     }
@@ -133,7 +134,7 @@ internal static (@string tok, error err) lexHelp(ж<exprParser> Ꮡp) {
 
 [GoType("dyn")] partial struct parseExprTestsᴛ1 {
     internal @string @in;
-    internal Expr x;
+    internal global::go.go.build.constraint_package.Expr x;
 }
 internal static slice<parseExprTestsᴛ1> parseExprTests = new parseExprTestsᴛ1[]{
     new("x"u8, tag("x"u8)),
@@ -171,13 +172,13 @@ public static void TestParseExpr(ж<testing.T> Ꮡt) {
     internal error err;
 }
 internal static slice<parseExprErrorTestsᴛ1> parseExprErrorTests = new parseExprErrorTestsᴛ1[]{
-    new("x && "u8, new SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 5, Err: "unexpected end of expression"u8)))),
-    new("x && ("u8, new SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 6, Err: "missing close paren"u8)))),
-    new("x && ||"u8, new SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 5, Err: "unexpected token ||"u8)))),
-    new("x && !"u8, new SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 6, Err: "unexpected end of expression"u8)))),
-    new("x && !!"u8, new SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 6, Err: "double negation not allowed"u8)))),
-    new("x !"u8, new SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 2, Err: "unexpected token !"u8)))),
-    new("x && (y"u8, new SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 5, Err: "missing close paren"u8))))
+    new("x && "u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 5, Err: "unexpected end of expression"u8)))),
+    new("x && ("u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 6, Err: "missing close paren"u8)))),
+    new("x && ||"u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 5, Err: "unexpected token ||"u8)))),
+    new("x && !"u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 6, Err: "unexpected end of expression"u8)))),
+    new("x && !!"u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 6, Err: "double negation not allowed"u8)))),
+    new("x !"u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 2, Err: "unexpected token !"u8)))),
+    new("x && (y"u8, new constraint_internal_test_package.constraint_SyntaxErrorжerror(Ꮡ(new SyntaxError(Offset: 5, Err: "missing close paren"u8))))
 }.slice();
 
 public static void TestParseError(ж<testing.T> Ꮡt) {
@@ -245,7 +246,7 @@ public static void TestExprEval(ж<testing.T> Ꮡt) {
 
 [GoType("dyn")] partial struct parsePlusBuildExprTestsᴛ1 {
     internal @string @in;
-    internal Expr x;
+    internal global::go.go.build.constraint_package.Expr x;
 }
 internal static slice<parsePlusBuildExprTestsᴛ1> parsePlusBuildExprTests = new parsePlusBuildExprTestsᴛ1[]{
     new("x"u8, tag("x"u8)),
@@ -279,7 +280,7 @@ public static void TestParsePlusBuildExpr(ж<testing.T> Ꮡt) {
 
 [GoType("dyn")] partial struct constraintTestsᴛ1 {
     internal @string @in;
-    internal Expr x;
+    internal global::go.go.build.constraint_package.Expr x;
     internal @string err;
 }
 internal static slice<constraintTestsᴛ1> constraintTests = new constraintTestsᴛ1[]{
@@ -381,7 +382,7 @@ public static void TestPlusBuildLines(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object expressionDidNotTriggerˢ = (@string)"expression did not trigger limit"u8;
+internal static readonly object expressionDidNotTriggerˢ = (@string)"expression did not trigger limit"u8;
 
 [GoType("dyn")] partial struct TestSizeLimits_type {
     internal @string name;
@@ -417,7 +418,7 @@ public static void TestSizeLimits(ж<testing.T> Ꮡt) {
                 tΔ1.Error(expressionDidNotTriggerˢ);
             } else 
             {
-                var (syntaxErr, ok) = err._<ж<SyntaxError>>(ᐧ); if (!ok || (~syntaxErr).Err != "build expression too large"u8) {
+                var (syntaxErr, ok) = err._<ж<global::go.go.build.constraint_package.SyntaxError>>(ᐧ); if (!ok || (~syntaxErr).Err != "build expression too large"u8) {
                     if (!ok){
                         tΔ1.Errorf("unexpected error: %v"u8, err);
                     } else {
@@ -462,4 +463,4 @@ public static void TestPlusSizeLimits(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end constraint_package
+} // end constraint_internal_test_package

@@ -1,13 +1,10 @@
-// go2cs code converter defines `global using` statements here for imported type
-// aliases as package references are encountered via `import' statements. Exported
-// type aliases that need a `global using` declaration will be loaded from the
-// referenced package by parsing its 'package_info.cs' source file and reading its
-// defined `GoTypeAlias` attributes.
-
-// Package name separator "dot" used in imported type aliases is extended Unicode
-// character '\uA4F8' which is a valid character in a C# identifier name. This is
-// used to simulate Go's package level type aliases since C# does not yet support
-// importing type aliases at a namespace level.
+// go2cs metadata anchor for a production-reference test project: the test assembly
+// REFERENCES the colocated production project instead of
+// recompiling its sources, so the production assembly is the single identity for the
+// production types and no production class partial may be declared here. The first —
+// and only — class is the test metadata class the go2cs-gen generators anchor
+// generated adapters and partials to.
+global using static global::go.testing.quick_package;
 
 // <ImportedTypeAliases>
 global using flagꓸErrorHandling = go.flag_package.ΔErrorHandling;
@@ -22,34 +19,12 @@ global using timeꓸWeekday = go.time_package.ΔWeekday;
 // </ImportedTypeAliases>
 
 using go;
-using static go.testing.quick_package;
-
-// For encountered type alias declarations, e.g., `type Table = map[string]int`,
-// go2cs code converter will generate a `global using` statement for the alias in
-// the converted source, e.g.: `global using Table = go.map<go.@string, nint>;`.
-// Although scope of `global using` is available to all files in the project, all
-// converted Go code for the project targets the same package, so `global using`
-// statements will effectively have package level scope.
-
-// Additionally, `GoTypeAlias` attributes will be generated here for exported type
-// aliases. This allows the type alias to be imported and used from other packages
-// when referenced.
+using static global::go.testing.quick_internal_test_package;
 
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
-// As types are cast to interfaces in Go source code, the go2cs code converter
-// will generate an assembly level `GoImplement` attribute for each unique cast.
-// This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
-
 // <InterfaceImplementations>
-[assembly: GoImplement<CheckEqualError, error>(Pointer = true)]
-[assembly: GoImplement<CheckError, error>(Pointer = true)]
-[assembly: GoImplement<SetupError, error>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -58,7 +33,7 @@ using static go.testing.quick_package;
 namespace go.testing;
 
 [GoPackage("quick")]
-public static partial class quick_package
+public static partial class quick_internal_test_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -67,38 +42,5 @@ public static partial class quick_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct myStruct {}
-    public partial class TestPtrAlias {}
-    public partial interface Generator {}
-    public partial struct A {}
-    public partial struct B {}
-    public partial struct CheckEqualError {}
-    public partial struct CheckError {}
-    public partial struct Config {}
-    public partial struct SetupError {}
-    public partial struct TestArrayAlias {}
-    public partial struct TestBoolAlias {}
-    public partial struct TestComplex128Alias {}
-    public partial struct TestComplex64Alias {}
-    public partial struct TestFloat32Alias {}
-    public partial struct TestFloat64Alias {}
-    public partial struct TestInt16Alias {}
-    public partial struct TestInt32Alias {}
-    public partial struct TestInt64Alias {}
-    public partial struct TestInt8Alias {}
-    public partial struct TestIntAlias {}
-    public partial struct TestMapAlias {}
-    public partial struct TestNonZeroSliceAndMap_Q {}
-    public partial struct TestRecursive_R {}
-    public partial struct TestSliceAlias {}
-    public partial struct TestStringAlias {}
-    public partial struct TestStruct {}
-    public partial struct TestStructAlias {}
-    public partial struct TestUint16Alias {}
-    public partial struct TestUint32Alias {}
-    public partial struct TestUint64Alias {}
-    public partial struct TestUint8Alias {}
-    public partial struct TestUintAlias {}
-    public partial struct TestUintptrAlias {}
     // </TypeAccessibility>
 }

@@ -4,8 +4,9 @@
 namespace go.net.http.@internal;
 
 using testing = testing_package;
+using static go.net.http.@internal.ascii_package;
 
-partial class ascii_package {
+partial class ascii_internal_test_package {
 
 [GoType("dyn")] partial struct TestEqualFold_type {
     internal @string name;
@@ -113,4 +114,4 @@ public static void TestIsPrint(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end ascii_package
+} // end ascii_internal_test_package

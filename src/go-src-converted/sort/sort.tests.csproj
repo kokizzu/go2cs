@@ -73,17 +73,10 @@
     <Compile Include="example_wrapper_test.cs" />
     <Compile Include="export_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
-    <Compile Include="package_info_external_test.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="search.cs" />
     <Compile Include="search_test.cs" />
-    <Compile Include="slice.cs" />
-    <Compile Include="sort.cs" />
-    <Compile Include="sort_impl_go121.cs" />
     <Compile Include="sort_slices_benchmark_test.cs" />
     <Compile Include="sort_test.cs" />
-    <Compile Include="zsortfunc.cs" />
-    <Compile Include="zsortinterface.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -115,7 +108,6 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\abi\internal.abi.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\reflectlite\internal.reflectlite.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\testenv\internal.testenv.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\math\bits\math.bits.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\math.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\rand\v2\math.rand.v2.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\runtime\internal\math\runtime.internal.math.csproj" />
@@ -123,6 +115,7 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\slices\slices.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strconv\strconv.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strings\strings.csproj" />
+    <ProjectReference Include="sort.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

@@ -67,26 +67,10 @@
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
        can leak in because it is never listed. -->
   <ItemGroup>
-    <Compile Include="abi.cs" />
-    <Compile Include="abi_amd64.cs" />
     <Compile Include="abi_test.cs" />
-    <Compile Include="compiletype.cs" />
-    <Compile Include="escape.cs" />
     <Compile Include="export_test.cs" />
-    <Compile Include="funcpc.cs" />
-    <Compile Include="funcpc_impl.cs" />
     <Compile Include="go2cs_test_host.cs" />
-    <Compile Include="iface.cs" />
-    <Compile Include="map.cs" />
-    <Compile Include="package_info_external_test.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="rangefuncconsts.cs" />
-    <Compile Include="runtime.cs" />
-    <Compile Include="stack.cs" />
-    <Compile Include="switch.cs" />
-    <Compile Include="symtab.cs" />
-    <Compile Include="type.cs" />
-    <Compile Include="type_impl.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -118,12 +102,11 @@
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\internal\goarch\internal.goarch.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\internal\testenv\internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\os\exec\os.exec.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\path\filepath\path.filepath.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\strings\strings.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\unsafe\unsafe.csproj" />
+    <ProjectReference Include="internal.abi.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

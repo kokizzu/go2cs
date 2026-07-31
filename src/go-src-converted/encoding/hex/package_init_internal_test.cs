@@ -4,8 +4,8 @@
 // method lives beside its variable's declaration in the converted test file.
 namespace go.encoding;
 
-partial class hex_package {
-    static hex_package() {
+partial class hex_internal_test_package {
+    static hex_internal_test_package() {
         initᴛerrTests();
     }
-} // end hex_package
+} // end hex_internal_test_package

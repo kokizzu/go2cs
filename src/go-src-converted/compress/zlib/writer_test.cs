@@ -10,8 +10,9 @@ using io = io_package;
 using os = os_package;
 using testing = testing_package;
 using @internal;
+using static go.compress.zlib_package;
 
-partial class zlib_package {
+partial class zlib_internal_test_package {
 
 internal static slice<@string> filenames = new @string[]{
     "../testdata/gettysburg.txt"u8,
@@ -34,7 +35,7 @@ internal static void testFileLevelDict(ж<testing.T> Ꮡt, @string fn, nint leve
     }
     var goldenʗ1 = golden;
     defer(() => goldenʗ1.Close());
-    var (b0, err0) = io.ReadAll(new os_FileжReader(golden));
+    var (b0, err0) = io.ReadAll(new zlib_test_package.os_FileжReader(golden));
     if (err0 != default!) {
         Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, err0);
         return;
@@ -58,7 +59,7 @@ internal static void testLevelDict(ж<testing.T> Ꮡt, @string fn, slice<byte> b
     goǃ(() => func((defer, recover) => {
         var pipewʗ2 = pipewʗ1;
         defer(() => pipewʗ2.Close());
-        var (zlibw, errΔ1) = NewWriterLevelDict(new io_PipeWriterжWriter(pipewʗ1), level, dictʗ1);
+        var (zlibw, errΔ1) = NewWriterLevelDict(new zlib_test_package.io_PipeWriterжWriter(pipewʗ1), level, dictʗ1);
         if (errΔ1 != default!) {
             Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, errΔ1);
             return;
@@ -71,7 +72,7 @@ internal static void testLevelDict(ж<testing.T> Ꮡt, @string fn, slice<byte> b
             return;
         }
     }));
-    var (zlibr, err) = NewReaderDict(new io_PipeReaderжReader(piper), dict);
+    var (zlibr, err) = NewReaderDict(new zlib_test_package.io_PipeReaderжReader(piper), dict);
     if (err != default!) {
         Ꮡt.Errorf("%s (level=%d, dict=%q): %v"u8, fn, level, d, err);
         return;
@@ -108,11 +109,11 @@ internal static void testFileLevelDictReset(ж<testing.T> Ꮡt, @string fn, nint
     }
     // Compress once.
     var buf = @new<bytes.Buffer>();
-    ж<Writer> zlibw = default!;
+    ж<global::go.compress.zlib_package.Writer> zlibw = default!;
     if (dict == default!){
-        (zlibw, err) = NewWriterLevel(new bytes_BufferжWriter(buf), level);
+        (zlibw, err) = NewWriterLevel(new zlib_test_package.bytes_BufferжWriter(buf), level);
     } else {
-        (zlibw, err) = NewWriterLevelDict(new bytes_BufferжWriter(buf), level, dict);
+        (zlibw, err) = NewWriterLevelDict(new zlib_test_package.bytes_BufferжWriter(buf), level, dict);
     }
     if (err == default!) {
         (_, err) = zlibw.Write(b0);
@@ -127,7 +128,7 @@ internal static void testFileLevelDictReset(ж<testing.T> Ꮡt, @string fn, nint
     @string @out = buf.String();
     // Reset and compress again.
     var buf2 = @new<bytes.Buffer>();
-    zlibw.Reset(new bytes_BufferжWriter(buf2));
+    zlibw.Reset(new zlib_test_package.bytes_BufferжWriter(buf2));
     (_, err) = zlibw.Write(b0);
     if (err == default!) {
         err = zlibw.Close();
@@ -212,7 +213,7 @@ public static void TestWriterReset(ж<testing.T> Ꮡt) {
 public static void TestWriterDictIsUsed(ж<testing.T> Ꮡt) {
     slice<byte> input = slice<byte>("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."u8);
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
-    var (compressor, err) = NewWriterLevelDict(new bytes_BufferжWriter(Ꮡbuf), BestCompression, input);
+    var (compressor, err) = NewWriterLevelDict(new zlib_test_package.bytes_BufferжWriter(Ꮡbuf), BestCompression, input);
     if (err != default!) {
         Ꮡt.Errorf("error in NewWriterLevelDict: %s"u8, err);
         return;
@@ -226,4 +227,4 @@ public static void TestWriterDictIsUsed(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end zlib_package
+} // end zlib_internal_test_package

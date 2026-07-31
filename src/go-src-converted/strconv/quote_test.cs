@@ -3,10 +3,11 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.strconv_package;
+using static strconv_package;
 using strings = strings_package;
 using testing = testing_package;
 using Δunicode = unicode_package;
+using static go.strconv_internal_test_package;
 
 partial class strconv_test_package {
 
@@ -414,7 +415,7 @@ internal static void testUnquote(ж<testing.T> Ꮡt, @string @in, @string want, 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string giveMeARockPaperAndˢ = @"""Give me a rock, paper and scissors and I will move the world."""u8;
+internal static readonly @string giveMeARockPaperAndˢ = @"""Give me a rock, paper and scissors and I will move the world."""u8;
 
 public static void BenchmarkUnquoteEasy(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
@@ -425,7 +426,7 @@ public static void BenchmarkUnquoteEasy(ж<testing.B> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x47iveMeAX72ockX70aperˢ = @"""\x47ive me a \x72ock, \x70aper and \x73cissors and \x49 will move the world."""u8;
+internal static readonly @string x47iveMeAX72ockX70aperˢ = @"""\x47ive me a \x72ock, \x70aper and \x73cissors and \x49 will move the world."""u8;
 
 public static void BenchmarkUnquoteHard(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;

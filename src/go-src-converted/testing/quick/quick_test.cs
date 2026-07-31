@@ -7,8 +7,9 @@ using rand = go.math.rand_package;
 using reflect = reflect_package;
 using testing = testing_package;
 using go.math;
+using static go.testing.quick_package;
 
-partial class quick_package {
+partial class quick_internal_test_package {
 
 internal static array<byte> fArray(array<byte> a) {
     a = a.Clone();
@@ -16,7 +17,7 @@ internal static array<byte> fArray(array<byte> a) {
     return a.Clone();
 }
 
-[GoType("[4]byte")] partial struct TestArrayAlias;
+[GoType("[4]byte")] public partial struct TestArrayAlias;
 
 internal static TestArrayAlias fArrayAlias(TestArrayAlias a) {
     a = a.Clone();
@@ -28,7 +29,7 @@ internal static bool fBool(bool a) {
     return a;
 }
 
-[GoType("bool")] partial struct TestBoolAlias;
+[GoType("bool")] public partial struct TestBoolAlias;
 
 internal static TestBoolAlias fBoolAlias(TestBoolAlias a) {
     return a;
@@ -38,7 +39,7 @@ internal static float32 fFloat32(float32 a) {
     return a;
 }
 
-[GoType("num:float32")] partial struct TestFloat32Alias;
+[GoType("num:float32")] public partial struct TestFloat32Alias;
 
 internal static TestFloat32Alias fFloat32Alias(TestFloat32Alias a) {
     return a;
@@ -48,7 +49,7 @@ internal static float64 fFloat64(float64 a) {
     return a;
 }
 
-[GoType("num:float64")] partial struct TestFloat64Alias;
+[GoType("num:float64")] public partial struct TestFloat64Alias;
 
 internal static TestFloat64Alias fFloat64Alias(TestFloat64Alias a) {
     return a;
@@ -58,7 +59,7 @@ internal static complex64 fComplex64(complex64 a) {
     return a;
 }
 
-[GoType("num:complex64")] partial struct TestComplex64Alias;
+[GoType("num:complex64")] public partial struct TestComplex64Alias;
 
 internal static TestComplex64Alias fComplex64Alias(TestComplex64Alias a) {
     return a;
@@ -68,7 +69,7 @@ internal static complex128 fComplex128(complex128 a) {
     return a;
 }
 
-[GoType("num:complex128")] partial struct TestComplex128Alias;
+[GoType("num:complex128")] public partial struct TestComplex128Alias;
 
 internal static TestComplex128Alias fComplex128Alias(TestComplex128Alias a) {
     return a;
@@ -78,7 +79,7 @@ internal static int16 fInt16(int16 a) {
     return a;
 }
 
-[GoType("num:int16")] partial struct TestInt16Alias;
+[GoType("num:int16")] public partial struct TestInt16Alias;
 
 internal static TestInt16Alias fInt16Alias(TestInt16Alias a) {
     return a;
@@ -88,7 +89,7 @@ internal static int32 fInt32(int32 a) {
     return a;
 }
 
-[GoType("num:int32")] partial struct TestInt32Alias;
+[GoType("num:int32")] public partial struct TestInt32Alias;
 
 internal static TestInt32Alias fInt32Alias(TestInt32Alias a) {
     return a;
@@ -98,7 +99,7 @@ internal static int64 fInt64(int64 a) {
     return a;
 }
 
-[GoType("num:int64")] partial struct TestInt64Alias;
+[GoType("num:int64")] public partial struct TestInt64Alias;
 
 internal static TestInt64Alias fInt64Alias(TestInt64Alias a) {
     return a;
@@ -108,7 +109,7 @@ internal static int8 fInt8(int8 a) {
     return a;
 }
 
-[GoType("num:int8")] partial struct TestInt8Alias;
+[GoType("num:int8")] public partial struct TestInt8Alias;
 
 internal static TestInt8Alias fInt8Alias(TestInt8Alias a) {
     return a;
@@ -118,7 +119,7 @@ internal static nint fInt(nint a) {
     return a;
 }
 
-[GoType("num:nint")] partial struct TestIntAlias;
+[GoType("num:nint")] public partial struct TestIntAlias;
 
 internal static TestIntAlias fIntAlias(TestIntAlias a) {
     return a;
@@ -128,7 +129,7 @@ internal static map<nint, nint> fMap(map<nint, nint> a) {
     return a;
 }
 
-[GoType("map[nint, nint]")] partial struct TestMapAlias;
+[GoType("map[nint, nint]")] public partial struct TestMapAlias;
 
 internal static TestMapAlias fMapAlias(TestMapAlias a) {
     return a;
@@ -145,7 +146,7 @@ internal static ж<nint> fPtr(ж<nint> Ꮡa) {
     return Ꮡb;
 }
 
-[GoType("ж<nint>")] partial class TestPtrAlias;
+[GoType("ж<nint>")] public partial class TestPtrAlias;
 
 internal static TestPtrAlias fPtrAlias(TestPtrAlias a) {
     return a;
@@ -155,7 +156,7 @@ internal static slice<byte> fSlice(slice<byte> a) {
     return a;
 }
 
-[GoType("[]byte")] partial struct TestSliceAlias;
+[GoType("[]byte")] public partial struct TestSliceAlias;
 
 internal static TestSliceAlias fSliceAlias(TestSliceAlias a) {
     return a;
@@ -165,13 +166,13 @@ internal static @string fString(@string a) {
     return a;
 }
 
-[GoType("@string")] partial struct TestStringAlias;
+[GoType("@string")] public partial struct TestStringAlias;
 
 internal static TestStringAlias fStringAlias(TestStringAlias a) {
     return a;
 }
 
-[GoType] partial struct TestStruct {
+[GoType] public partial struct TestStruct {
     public nint A;
     public @string B;
 }
@@ -180,7 +181,7 @@ internal static TestStruct fStruct(TestStruct a) {
     return a;
 }
 
-[GoType("TestStruct")] partial struct TestStructAlias;
+[GoType("TestStruct")] public partial struct TestStructAlias;
 
 internal static TestStructAlias fStructAlias(TestStructAlias a) {
     return a;
@@ -190,7 +191,7 @@ internal static uint16 fUint16(uint16 a) {
     return a;
 }
 
-[GoType("num:uint16")] partial struct TestUint16Alias;
+[GoType("num:uint16")] public partial struct TestUint16Alias;
 
 internal static TestUint16Alias fUint16Alias(TestUint16Alias a) {
     return a;
@@ -200,7 +201,7 @@ internal static uint32 fUint32(uint32 a) {
     return a;
 }
 
-[GoType("num:uint32")] partial struct TestUint32Alias;
+[GoType("num:uint32")] public partial struct TestUint32Alias;
 
 internal static TestUint32Alias fUint32Alias(TestUint32Alias a) {
     return a;
@@ -210,7 +211,7 @@ internal static uint64 fUint64(uint64 a) {
     return a;
 }
 
-[GoType("num:uint64")] partial struct TestUint64Alias;
+[GoType("num:uint64")] public partial struct TestUint64Alias;
 
 internal static TestUint64Alias fUint64Alias(TestUint64Alias a) {
     return a;
@@ -220,7 +221,7 @@ internal static uint8 fUint8(uint8 a) {
     return a;
 }
 
-[GoType("num:uint8")] partial struct TestUint8Alias;
+[GoType("num:uint8")] public partial struct TestUint8Alias;
 
 internal static TestUint8Alias fUint8Alias(TestUint8Alias a) {
     return a;
@@ -230,7 +231,7 @@ internal static nuint fUint(nuint a) {
     return a;
 }
 
-[GoType("num:nuint")] partial struct TestUintAlias;
+[GoType("num:nuint")] public partial struct TestUintAlias;
 
 internal static TestUintAlias fUintAlias(TestUintAlias a) {
     return a;
@@ -240,7 +241,7 @@ internal static uintptr fUintptr(uintptr a) {
     return a;
 }
 
-[GoType("num:uintptr")] partial struct TestUintptrAlias;
+[GoType("num:uintptr")] public partial struct TestUintptrAlias;
 
 internal static TestUintptrAlias fUintptrAlias(TestUintptrAlias a) {
     return a;
@@ -253,50 +254,50 @@ internal static void reportError(@string property, error err, ж<testing.T> Ꮡt
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fArrayˢ = "fArray"u8;
-private static readonly @string fArrayAliasˢ = "fArrayAlias"u8;
-private static readonly @string fBoolˢ = "fBool"u8;
-private static readonly @string fBoolAliasˢ = "fBoolAlias"u8;
-private static readonly @string fFloat32ˢ = "fFloat32"u8;
-private static readonly @string fFloat32Aliasˢ = "fFloat32Alias"u8;
-private static readonly @string fFloat64ˢ = "fFloat64"u8;
-private static readonly @string fFloat64Aliasˢ = "fFloat64Alias"u8;
-private static readonly @string fComplex64ˢ = "fComplex64"u8;
-private static readonly @string fComplex64Aliasˢ = "fComplex64Alias"u8;
-private static readonly @string fComplex128ˢ = "fComplex128"u8;
-private static readonly @string fComplex128Aliasˢ = "fComplex128Alias"u8;
-private static readonly @string fInt16ˢ = "fInt16"u8;
-private static readonly @string fInt16Aliasˢ = "fInt16Alias"u8;
-private static readonly @string fInt32ˢ = "fInt32"u8;
-private static readonly @string fInt32Aliasˢ = "fInt32Alias"u8;
-private static readonly @string fInt64ˢ = "fInt64"u8;
-private static readonly @string fInt64Aliasˢ = "fInt64Alias"u8;
-private static readonly @string fInt8ˢ = "fInt8"u8;
-private static readonly @string fInt8Aliasˢ = "fInt8Alias"u8;
-private static readonly @string fIntˢ = "fInt"u8;
-private static readonly @string fIntAliasˢ = "fIntAlias"u8;
-private static readonly @string fMapˢ = "fMap"u8;
-private static readonly @string fMapAliasˢ = "fMapAlias"u8;
-private static readonly @string fPtrˢ = "fPtr"u8;
-private static readonly @string fPtrAliasˢ = "fPtrAlias"u8;
-private static readonly @string fSliceˢ = "fSlice"u8;
-private static readonly @string fSliceAliasˢ = "fSliceAlias"u8;
-private static readonly @string fStringˢ = "fString"u8;
-private static readonly @string fStringAliasˢ = "fStringAlias"u8;
-private static readonly @string fStructˢ = "fStruct"u8;
-private static readonly @string fStructAliasˢ = "fStructAlias"u8;
-private static readonly @string fUint16ˢ = "fUint16"u8;
-private static readonly @string fUint16Aliasˢ = "fUint16Alias"u8;
-private static readonly @string fUint32ˢ = "fUint32"u8;
-private static readonly @string fUint32Aliasˢ = "fUint32Alias"u8;
-private static readonly @string fUint64ˢ = "fUint64"u8;
-private static readonly @string fUint64Aliasˢ = "fUint64Alias"u8;
-private static readonly @string fUint8ˢ = "fUint8"u8;
-private static readonly @string fUint8Aliasˢ = "fUint8Alias"u8;
-private static readonly @string fUintˢ = "fUint"u8;
-private static readonly @string fUintAliasˢ = "fUintAlias"u8;
-private static readonly @string fUintptrˢ = "fUintptr"u8;
-private static readonly @string fUintptrAliasˢ = "fUintptrAlias"u8;
+internal static readonly @string fArrayˢ = "fArray"u8;
+internal static readonly @string fArrayAliasˢ = "fArrayAlias"u8;
+internal static readonly @string fBoolˢ = "fBool"u8;
+internal static readonly @string fBoolAliasˢ = "fBoolAlias"u8;
+internal static readonly @string fFloat32ˢ = "fFloat32"u8;
+internal static readonly @string fFloat32Aliasˢ = "fFloat32Alias"u8;
+internal static readonly @string fFloat64ˢ = "fFloat64"u8;
+internal static readonly @string fFloat64Aliasˢ = "fFloat64Alias"u8;
+internal static readonly @string fComplex64ˢ = "fComplex64"u8;
+internal static readonly @string fComplex64Aliasˢ = "fComplex64Alias"u8;
+internal static readonly @string fComplex128ˢ = "fComplex128"u8;
+internal static readonly @string fComplex128Aliasˢ = "fComplex128Alias"u8;
+internal static readonly @string fInt16ˢ = "fInt16"u8;
+internal static readonly @string fInt16Aliasˢ = "fInt16Alias"u8;
+internal static readonly @string fInt32ˢ = "fInt32"u8;
+internal static readonly @string fInt32Aliasˢ = "fInt32Alias"u8;
+internal static readonly @string fInt64ˢ = "fInt64"u8;
+internal static readonly @string fInt64Aliasˢ = "fInt64Alias"u8;
+internal static readonly @string fInt8ˢ = "fInt8"u8;
+internal static readonly @string fInt8Aliasˢ = "fInt8Alias"u8;
+internal static readonly @string fIntˢ = "fInt"u8;
+internal static readonly @string fIntAliasˢ = "fIntAlias"u8;
+internal static readonly @string fMapˢ = "fMap"u8;
+internal static readonly @string fMapAliasˢ = "fMapAlias"u8;
+internal static readonly @string fPtrˢ = "fPtr"u8;
+internal static readonly @string fPtrAliasˢ = "fPtrAlias"u8;
+internal static readonly @string fSliceˢ = "fSlice"u8;
+internal static readonly @string fSliceAliasˢ = "fSliceAlias"u8;
+internal static readonly @string fStringˢ = "fString"u8;
+internal static readonly @string fStringAliasˢ = "fStringAlias"u8;
+internal static readonly @string fStructˢ = "fStruct"u8;
+internal static readonly @string fStructAliasˢ = "fStructAlias"u8;
+internal static readonly @string fUint16ˢ = "fUint16"u8;
+internal static readonly @string fUint16Aliasˢ = "fUint16Alias"u8;
+internal static readonly @string fUint32ˢ = "fUint32"u8;
+internal static readonly @string fUint32Aliasˢ = "fUint32Alias"u8;
+internal static readonly @string fUint64ˢ = "fUint64"u8;
+internal static readonly @string fUint64Aliasˢ = "fUint64Alias"u8;
+internal static readonly @string fUint8ˢ = "fUint8"u8;
+internal static readonly @string fUint8Aliasˢ = "fUint8Alias"u8;
+internal static readonly @string fUintˢ = "fUint"u8;
+internal static readonly @string fUintAliasˢ = "fUintAlias"u8;
+internal static readonly @string fUintptrˢ = "fUintptr"u8;
+internal static readonly @string fUintptrAliasˢ = "fUintptrAlias"u8;
 
 public static void TestCheckEqual(ж<testing.T> Ꮡt) {
     reportError(fArrayˢ, CheckEqual(fArray, fArray, nil), Ꮡt);
@@ -349,7 +350,7 @@ public static void TestCheckEqual(ж<testing.T> Ꮡt) {
 
 // This tests that ArbitraryValue is working by checking that all the arbitrary
 // values of type MyStruct have x = 42.
-[GoType] partial struct myStruct {
+[GoType] internal partial struct myStruct {
     internal nint x;
 }
 
@@ -362,7 +363,7 @@ internal static bool myStructProperty(myStruct @in) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string myStructPropertyˢ = "myStructProperty"u8;
+internal static readonly @string myStructPropertyˢ = "myStructProperty"u8;
 
 public static void TestCheckProperty(ж<testing.T> Ꮡt) {
     reportError(myStructPropertyˢ, Check(myStructProperty, nil), Ꮡt);
@@ -377,7 +378,7 @@ public static void TestFailure(ж<testing.T> Ꮡt) {
         Ꮡt.Errorf("Check didn't return an error"u8);
     }
     {
-        var (_, ok) = err._<ж<CheckError>>(ᐧ); if (!ok) {
+        var (_, ok) = err._<ж<global::go.testing.quick_package.CheckError>>(ᐧ); if (!ok) {
             Ꮡt.Errorf("Error was not a CheckError: %s"u8, err);
         }
     }
@@ -412,7 +413,7 @@ public static void TestFailure(ж<testing.T> Ꮡt) {
     }
 }
 
-[GoLocalName("R")] [GoType("dyn")] partial struct TestRecursive_R {
+[GoLocalName("R")] [GoType("dyn")] public partial struct TestRecursive_R {
     public ж<TestRecursive_R> Ptr;
     public slice<ж<TestRecursive_R>> SliceP;
     public slice<TestRecursive_R> Slice;
@@ -434,11 +435,11 @@ public static void TestEmptyStruct(ж<testing.T> Ꮡt) {
     Check(f, nil);
 }
 
-[GoType] partial struct A {
+[GoType] public partial struct A {
     public ж<B> B;
 }
 
-[GoType] partial struct B {
+[GoType] public partial struct B {
     public ж<A> A;
 }
 
@@ -447,7 +448,7 @@ public static void TestMutuallyRecursive(ж<testing.T> Ꮡt) {
     Check(f, nil);
 }
 
-[GoLocalName("Q")] [GoType("dyn")] partial struct TestNonZeroSliceAndMap_Q {
+[GoLocalName("Q")] [GoType("dyn")] public partial struct TestNonZeroSliceAndMap_Q {
     public map<nint, nint> M;
     public slice<nint> S;
 }
@@ -482,4 +483,4 @@ public static void TestInt64(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end quick_package
+} // end quick_internal_test_package

@@ -8,10 +8,11 @@ using strings = strings_package;
 using testing = testing_package;
 using unicode = unicode_package;
 using io = io_package;
+using static go.regexp.syntax_package;
 
-partial class syntax_package {
+partial class syntax_internal_test_package {
 
-[GoType] partial struct parseTest {
+[GoType] internal partial struct parseTest {
     public @string Regexp;
     public @string Dump;
 }
@@ -202,7 +203,7 @@ internal static void initᴛparseTests() { parseTests = new parseTest[]{
     new("("u8 + strings.Repeat("|"u8, 12345) + ")"u8, @""u8)
 }.slice(); }
 
-internal static Flags testFlags => /* MatchNL | PerlX | UnicodeGroups */ 204;
+internal static global::go.regexp.syntax_package.Flags testFlags => /* MatchNL | PerlX | UnicodeGroups */ 204;
 
 public static void TestParseSimple(ж<testing.T> Ꮡt) {
     testParseDump(Ꮡt, parseTests, testFlags);
@@ -255,7 +256,7 @@ public static void TestParseNoMatchNL(ж<testing.T> Ꮡt) {
 }
 
 // Test Parse -> Dump.
-internal static void testParseDump(ж<testing.T> Ꮡt, slice<parseTest> tests, Flags flags) {
+internal static void testParseDump(ж<testing.T> Ꮡt, slice<parseTest> tests, global::go.regexp.syntax_package.Flags flags) {
     foreach (var (_, tt) in tests) {
         var (re, err) = Parse(tt.Regexp, flags);
         if (err != default!) {
@@ -275,7 +276,7 @@ internal static void testParseDump(ж<testing.T> Ꮡt, slice<parseTest> tests, F
 
 // dump prints a string representation of the regexp showing
 // the structure explicitly.
-internal static @string dump(ж<Regexp> Ꮡre) {
+internal static @string dump(ж<global::go.regexp.syntax_package.Regexp> Ꮡre) {
     ref var b = ref heap(new strings.Builder(), out var Ꮡb);
     dumpRegexp(Ꮡb, Ꮡre);
     return b.String();
@@ -306,15 +307,15 @@ internal static slice<@string> opNames = new golib.SparseArray<@string>{
 // dumpRegexp writes an encoding of the syntax tree for the regexp re to b.
 // It is used during testing to distinguish between parses that might print
 // the same using re's String method.
-internal static void dumpRegexp(ж<strings.Builder> Ꮡb, ж<Regexp> Ꮡre) {
+internal static void dumpRegexp(ж<strings.Builder> Ꮡb, ж<global::go.regexp.syntax_package.Regexp> Ꮡre) {
     ref var re = ref Ꮡre.Value;
 
     if ((nint)(uint8)re.Op >= len(opNames) || opNames[re.Op] == ""){
-        fmt.Fprintf(new strings_BuilderжWriter(Ꮡb), "op%d"u8, re.Op);
+        fmt.Fprintf(new syntax_internal_test_package.strings_BuilderжWriter(Ꮡb), "op%d"u8, re.Op);
     } else {
         var exprᴛ1 = re.Op;
         if (exprᴛ1 == OpStar || exprᴛ1 == OpPlus || exprᴛ1 == OpQuest || exprᴛ1 == OpRepeat) {
-            if ((Flags)(re.Flags & NonGreedy) != 0) {
+            if ((global::go.regexp.syntax_package.Flags)(re.Flags & NonGreedy) != 0) {
                 Ꮡb.WriteByte((rune)'n');
             }
             Ꮡb.WriteString(opNames[re.Op]);
@@ -325,7 +326,7 @@ internal static void dumpRegexp(ж<strings.Builder> Ꮡb, ж<Regexp> Ꮡre) {
             } else {
                 Ꮡb.WriteString("lit"u8);
             }
-            if ((Flags)(re.Flags & FoldCase) != 0) {
+            if ((global::go.regexp.syntax_package.Flags)(re.Flags & FoldCase) != 0) {
                 foreach (var (_, r) in re.Rune) {
                     if (unicode.SimpleFold(r) != r) {
                         Ꮡb.WriteString("fold"u8);
@@ -342,7 +343,7 @@ internal static void dumpRegexp(ж<strings.Builder> Ꮡb, ж<Regexp> Ꮡre) {
     Ꮡb.WriteByte((rune)'{');
     var exprᴛ2 = re.Op;
     if (exprᴛ2 == OpEndText) {
-        if ((Flags)(re.Flags & WasDollar) == 0) {
+        if ((global::go.regexp.syntax_package.Flags)(re.Flags & WasDollar) == 0) {
             Ꮡb.WriteString(@"\z"u8);
         }
     }
@@ -360,7 +361,7 @@ internal static void dumpRegexp(ж<strings.Builder> Ꮡb, ж<Regexp> Ꮡre) {
         dumpRegexp(Ꮡb, re.Sub[0]);
     }
     else if (exprᴛ2 == OpRepeat) {
-        fmt.Fprintf(new strings_BuilderжWriter(Ꮡb), "%d,%d "u8, re.Min, re.Max);
+        fmt.Fprintf(new syntax_internal_test_package.strings_BuilderжWriter(Ꮡb), "%d,%d "u8, re.Min, re.Max);
         dumpRegexp(Ꮡb, re.Sub[0]);
     }
     else if (exprᴛ2 == OpCapture) {
@@ -377,9 +378,9 @@ internal static void dumpRegexp(ж<strings.Builder> Ꮡb, ж<Regexp> Ꮡre) {
             sep = " "u8;
             var (lo, hi) = (re.Rune[i], re.Rune[i + 1]);
             if (lo == hi){
-                fmt.Fprintf(new strings_BuilderжWriter(Ꮡb), "%#x"u8, lo);
+                fmt.Fprintf(new syntax_internal_test_package.strings_BuilderжWriter(Ꮡb), "%#x"u8, lo);
             } else {
-                fmt.Fprintf(new strings_BuilderжWriter(Ꮡb), "%#x-%#x"u8, lo, hi);
+                fmt.Fprintf(new syntax_internal_test_package.strings_BuilderжWriter(Ꮡb), "%#x-%#x"u8, lo, hi);
             }
         }
     }
@@ -649,4 +650,4 @@ public static void TestString(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end syntax_package
+} // end syntax_internal_test_package

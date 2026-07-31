@@ -9,16 +9,17 @@ using testing = testing_package;
 using unicode = unicode_package;
 using static go.unicode.utf16_package;
 using @internal;
+using static go.unicode.utf16_internal_test_package;
 
 partial class utf16_test_package {
 
 // Validate the constants redefined from unicode.
 public static void TestConstants(ж<testing.T> Ꮡt) {
-    if (MaxRune != unicode.MaxRune) {
-        Ꮡt.Errorf("utf16.maxRune is wrong: %x should be %x"u8, (int32)(MaxRune), (int32)(unicode.MaxRune));
+    if (utf16_internal_test_package.MaxRune != unicode.MaxRune) {
+        Ꮡt.Errorf("utf16.maxRune is wrong: %x should be %x"u8, (int32)(utf16_internal_test_package.MaxRune), (int32)(unicode.MaxRune));
     }
-    if (ReplacementChar != unicode.ReplacementChar) {
-        Ꮡt.Errorf("utf16.replacementChar is wrong: %x should be %x"u8, (int32)(ReplacementChar), (int32)(unicode.ReplacementChar));
+    if (utf16_internal_test_package.ReplacementChar != unicode.ReplacementChar) {
+        Ꮡt.Errorf("utf16.replacementChar is wrong: %x should be %x"u8, (int32)(utf16_internal_test_package.ReplacementChar), (int32)(unicode.ReplacementChar));
     }
 }
 
@@ -30,12 +31,12 @@ public static void TestConstants(ж<testing.T> Ꮡt) {
 public static void TestRuneLen(ж<testing.T> Ꮡt) {
     foreach (var (_, tt) in new TestRuneLen_type[]{
         new(0, 1),
-        new(Surr1 - 1, 1),
-        new(Surr3, 1),
-        new(SurrSelf - 1, 1),
-        new(SurrSelf, 2),
-        new(MaxRune, 2),
-        new(MaxRune + 1, -1),
+        new(utf16_internal_test_package.Surr1 - 1, 1),
+        new(utf16_internal_test_package.Surr3, 1),
+        new(utf16_internal_test_package.SurrSelf - 1, 1),
+        new(utf16_internal_test_package.SurrSelf, 2),
+        new(utf16_internal_test_package.MaxRune, 2),
+        new(utf16_internal_test_package.MaxRune + 1, -1),
         new(-1, -1)
     }.slice()) {
         {
@@ -131,7 +132,7 @@ internal static slice<decodeTest> decodeTests = new decodeTest[]{
 }.slice();
 
 public static void TestAllocationsDecode(ж<testing.T> Ꮡt) {
-    testenv.SkipIfOptimizationOff(new testing_TжTB(Ꮡt));
+    testenv.SkipIfOptimizationOff(new utf16_test_package.testing_TжTB(Ꮡt));
     foreach (var (_, vᴛ1) in decodeTests) {
         ref var tt = ref heap(new decodeTest(), out var Ꮡtt);
         tt = vᴛ1;

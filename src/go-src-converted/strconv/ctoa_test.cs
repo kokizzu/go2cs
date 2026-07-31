@@ -3,8 +3,9 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using static go.strconv_package;
+using static strconv_package;
 using testing = testing_package;
+using static go.strconv_internal_test_package;
 
 partial class strconv_test_package {
 

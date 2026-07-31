@@ -6,6 +6,7 @@ namespace go.math.rand;
 using static global::go.math.rand.rand_package;
 using sync = sync_package;
 using testing = testing_package;
+using static global::go.math.rand.rand_internal_test_package;
 
 partial class rand_test_package {
 

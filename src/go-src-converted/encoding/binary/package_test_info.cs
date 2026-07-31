@@ -1,13 +1,11 @@
-// go2cs code converter defines `global using` statements here for imported type
-// aliases as package references are encountered via `import' statements. Exported
-// type aliases that need a `global using` declaration will be loaded from the
-// referenced package by parsing its 'package_info.cs' source file and reading its
-// defined `GoTypeAlias` attributes.
-
-// Package name separator "dot" used in imported type aliases is extended Unicode
-// character '\uA4F8' which is a valid character in a C# identifier name. This is
-// used to simulate Go's package level type aliases since C# does not yet support
-// importing type aliases at a namespace level.
+// go2cs metadata anchor for a production-reference test project: the test assembly
+// REFERENCES the colocated production project instead of
+// recompiling its sources, so the production assembly is the single identity for the
+// production types and no production class partial may be declared here. The first —
+// and only — class is the test metadata class the go2cs-gen generators anchor
+// generated adapters and partials to.
+global using static global::go.encoding.binary_package;
+global using static global::go.encoding.binary_internal_test_package;
 
 // <ImportedTypeAliases>
 global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
@@ -19,49 +17,27 @@ using testing = go.testing_package;
 // </ImportedTypeAliases>
 
 using go;
-using static go.encoding.binary_package;
-using static go.encoding.binary_test_package;
-
-// For encountered type alias declarations, e.g., `type Table = map[string]int`,
-// go2cs code converter will generate a `global using` statement for the alias in
-// the converted source, e.g.: `global using Table = go.map<go.@string, nint>;`.
-// Although scope of `global using` is available to all files in the project, all
-// converted Go code for the project targets the same package, so `global using`
-// statements will effectively have package level scope.
-
-// Additionally, `GoTypeAlias` attributes will be generated here for exported type
-// aliases. This allows the type alias to be imported and used from other packages
-// when referenced.
+using static global::go.encoding.binary_test_package;
 
 // <ExportedTypeAliases>
 // </ExportedTypeAliases>
 
-// As types are cast to interfaces in Go source code, the go2cs code converter
-// will generate an assembly level `GoImplement` attribute for each unique cast.
-// This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
-
 // <InterfaceImplementations>
-[assembly: GoImplement<bigEndian, TestByteOrder_byteOrder>]
-[assembly: GoImplement<byteSliceReader, io_package.Reader>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Reader, io_package.ByteReader>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Reader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<littleEndian, TestByteOrder_byteOrder>]
+[assembly: GoImplement<global::go.encoding.binary_package.bigEndian, global::go.encoding.binary_package.ByteOrder>]
+[assembly: GoImplement<global::go.encoding.binary_package.littleEndian, global::go.encoding.binary_package.ByteOrder>]
 [assembly: GoImplement<strings_package.Reader, io_package.Reader>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<Struct, ж<Struct>>(Indirect = true)]
 // </ImplicitConversions>
 
 namespace go.encoding;
 
-[GoPackage("binary")]
-public static partial class binary_package
+[GoPackage("binary_test")]
+public static partial class binary_test_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -70,36 +46,5 @@ public static partial class binary_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct byteSliceReader {}
-    internal partial struct coder {}
-    internal partial struct decoder {}
-    internal partial struct decodersᴛ1 {}
-    internal partial struct encoder {}
-    internal partial struct encodersᴛ1 {}
-    public partial interface AppendByteOrder {}
-    public partial interface ByteOrder {}
-    public partial interface TestByteOrder_byteOrder {}
-    public partial struct BlankFields {}
-    public partial struct BlankFieldsProbe {}
-    public partial struct BlankFieldsProbe_P3 {}
-    public partial struct BlankFields__ {}
-    public partial struct Struct {}
-    public partial struct T {}
-    public partial struct TestBufferTooBigWithOverflow_tests {}
-    public partial struct TestNoFixedSize_Person {}
-    public partial struct TestReadTruncated_b2 {}
-    public partial struct TestSizeStructCache_bar {}
-    public partial struct TestSizeStructCache_foo {}
-    public partial struct TestSizeStructCache_testcases {}
-    public partial struct TestSizeStructCache_type {}
-    public partial struct Unexported {}
-    public partial struct bigEndian {}
-    public partial struct littleEndian {}
-    public partial struct nativeEndian {}
     // </TypeAccessibility>
-}
-
-[GoPackage("binary_test")]
-public static partial class binary_test_package
-{
 }

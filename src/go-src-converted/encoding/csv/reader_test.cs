@@ -11,10 +11,11 @@ using strings = strings_package;
 using testing = testing_package;
 using utf8 = go.unicode.utf8_package;
 using go.unicode;
+using static go.encoding.csv_package;
 
-partial class csv_package {
+partial class csv_internal_test_package {
 
-[GoType] partial struct readTest {
+[GoType] internal partial struct readTest {
     public @string Name;
     public @string Input;
     public slice<slice<@string>> Output;
@@ -142,7 +143,7 @@ field"
 ), new(
     Name: "BadDoubleQuotes"u8,
     Input: @"§a∑""""b,c"u8,
-    Errors: new error[]{new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrBareQuote)))}.slice()
+    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrBareQuote)))}.slice()
 ), new(
     Name: "TrimQuote"u8,
     Input: @" §""a"",§"" b"",§c"u8,
@@ -151,33 +152,33 @@ field"
 ), new(
     Name: "BadBareQuote"u8,
     Input: @"§a ∑""word"",""b"""u8,
-    Errors: new error[]{new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrBareQuote)))}.slice()
+    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrBareQuote)))}.slice()
 ), new(
     Name: "BadTrailingQuote"u8,
     Input: @"§""a word"",b∑"""u8,
-    Errors: new error[]{new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrBareQuote)))}.slice()
+    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrBareQuote)))}.slice()
 ), new(
     Name: "ExtraneousQuote"u8,
     Input: @"§""a ∑""word"",""b"""u8,
-    Errors: new error[]{new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
+    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
 ), new(
     Name: "BadFieldCount"u8,
     Input: "§a,§b,§c\n¶∑§d,§e"u8,
-    Errors: new error[]{default!, new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount)))}.slice(),
+    Errors: new error[]{default!, new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount)))}.slice(),
     Output: new slice<@string>[]{new @string[]{"a"u8, "b"u8, "c"u8}.slice(), new @string[]{"d"u8, "e"u8}.slice()}.slice(),
     UseFieldsPerRecord: true,
     FieldsPerRecord: 0
 ), new(
     Name: "BadFieldCountMultiple"u8,
     Input: "§a,§b,§c\n¶∑§d,§e\n¶∑§f"u8,
-    Errors: new error[]{default!, new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount))), new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount)))}.slice(),
+    Errors: new error[]{default!, new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount))), new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount)))}.slice(),
     Output: new slice<@string>[]{new @string[]{"a"u8, "b"u8, "c"u8}.slice(), new @string[]{"d"u8, "e"u8}.slice(), new @string[]{"f"u8}.slice()}.slice(),
     UseFieldsPerRecord: true,
     FieldsPerRecord: 0
 ), new(
     Name: "BadFieldCount1"u8,
     Input: @"§∑a,§b,§c"u8,
-    Errors: new error[]{new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount)))}.slice(),
+    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrFieldCount)))}.slice(),
     Output: new slice<@string>[]{new @string[]{"a"u8, "b"u8, "c"u8}.slice()}.slice(),
     UseFieldsPerRecord: true,
     FieldsPerRecord: 2
@@ -258,11 +259,11 @@ field"
 ), new(
     Name: "StartLine1"u8,
     Input: "§a,\"b\nc∑\"d,e"u8,
-    Errors: new error[]{new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
+    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
 ), new(
     Name: "StartLine2"u8,
     Input: "§a,§b\n¶§\"d\n\n,e∑"u8,
-    Errors: new error[]{default!, new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice(),
+    Errors: new error[]{default!, new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice(),
     Output: new slice<@string>[]{new @string[]{"a"u8, "b"u8}.slice()}.slice()
 ), new(
     Name: "CRLFInQuotedField"u8,
@@ -285,7 +286,7 @@ field"
 ), new(
     Name: "QuotedTrailingCRCR"u8,
     Input: "§\"field∑\"\r\r"u8,
-    Errors: new error[]{new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
+    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
 ), new(
     Name: "FieldCR"u8,
     Input: "§field\rfield\r"u8,
@@ -353,7 +354,7 @@ field"
 ), new(
     Name: "QuoteWithTrailingCRLF"u8,
     Input: "§\"foo∑\"bar\"\r\n"u8,
-    Errors: new error[]{new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
+    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
 ), new(
     Name: "LazyQuoteWithTrailingCRLF"u8,
     Input: "§\"foo\"bar\"\r\n"u8,
@@ -370,7 +371,7 @@ field"
 ), new(
     Name: "OddQuotes"u8,
     Input: @"§""""""""""""""∑"u8,
-    Errors: new error[]{new ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
+    Errors: new error[]{new csv_test_package.csv_ParseErrorжerror(Ꮡ(new ParseError(Err: ErrQuote)))}.slice()
 ), new(
     Name: "LazyOddQuotes"u8,
     Input: @"§"""""""""""""""u8,
@@ -415,7 +416,7 @@ field"
 public static void TestRead(ж<testing.T> Ꮡt) {
     var newReader = (readTest tt) => {
         var (positions, errPositions, input) = makePositions(tt.Input);
-        var r = NewReader(new strings_ReaderжReader(strings.NewReader(input)));
+        var r = NewReader(new csv_test_package.strings_ReaderжReader(strings.NewReader(input)));
         if (tt.Comma != 0) {
             r.Value.Comma = tt.Comma;
         }
@@ -521,7 +522,7 @@ internal static error firstError(slice<error> errs, slice<slice<array<nint>>> po
 }
 
 internal static error errorWithPosition(error err, nint recNum, slice<slice<array<nint>>> positions, map<nint, array<nint>> errPositions) {
-    var (parseErr, ok) = err._<ж<ParseError>>(ᐧ);
+    var (parseErr, ok) = err._<ж<global::go.encoding.csv_package.ParseError>>(ᐧ);
     if (!ok) {
         return err;
     }
@@ -532,12 +533,12 @@ internal static error errorWithPosition(error err, nint recNum, slice<slice<arra
     if (!ok) {
         throw panic(fmt.Errorf("no error position found for error at record %d"u8, recNum));
     }
-    ref var parseErr1 = ref heap<ParseError>(out var ᏑparseErr1);
+    ref var parseErr1 = ref heap<global::go.encoding.csv_package.ParseError>(out var ᏑparseErr1);
     parseErr1 = parseErr.Value;
     parseErr1.StartLine = positions[recNum][0][0];
     parseErr1.Line = errPos[0];
     parseErr1.Column = errPos[1];
-    return new ParseErrorжerror(ᏑparseErr1);
+    return new csv_test_package.csv_ParseErrorжerror(ᏑparseErr1);
 }
 
 // makePositions returns the expected field positions of all
@@ -591,7 +592,7 @@ internal static (slice<slice<array<nint>>>, map<nint, array<nint>>, @string) mak
 }
 
 // nTimes is an io.Reader which yields the string s n times.
-[GoType] partial struct nTimes {
+[GoType] internal partial struct nTimes {
     internal @string s;
     internal nint n;
     internal nint off;
@@ -621,11 +622,11 @@ internal static (slice<slice<array<nint>>>, map<nint, array<nint>>, @string) mak
 
 // benchmarkRead measures reading the provided CSV rows data.
 // initReader, if non-nil, modifies the Reader before it's used.
-internal static void benchmarkRead(ж<testing.B> Ꮡb, Action<ж<Reader>> initReader, @string rows) {
+internal static void benchmarkRead(ж<testing.B> Ꮡb, Action<ж<global::go.encoding.csv_package.Reader>> initReader, @string rows) {
     ref var b = ref Ꮡb.Value;
 
     b.ReportAllocs();
-    var r = NewReader(new nTimesжReader(Ꮡ(new nTimes(s: rows, n: b.N))));
+    var r = NewReader(new csv_internal_test_package.nTimesжReader(Ꮡ(new nTimes(s: rows, n: b.N))));
     if (initReader != default!) {
         initReader(r);
     }
@@ -659,19 +660,19 @@ public static void BenchmarkRead(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkReadWithFieldsPerRecord(ж<testing.B> Ꮡb) {
-    benchmarkRead(Ꮡb, (ж<Reader> r) => {
+    benchmarkRead(Ꮡb, (ж<global::go.encoding.csv_package.Reader> r) => {
         r.Value.FieldsPerRecord = 4;
     }, benchmarkCSVData);
 }
 
 public static void BenchmarkReadWithoutFieldsPerRecord(ж<testing.B> Ꮡb) {
-    benchmarkRead(Ꮡb, (ж<Reader> r) => {
+    benchmarkRead(Ꮡb, (ж<global::go.encoding.csv_package.Reader> r) => {
         r.Value.FieldsPerRecord = -1;
     }, benchmarkCSVData);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string xxxxxxxxxxxxxxxxˢ = """
+internal static readonly @string xxxxxxxxxxxxxxxxˢ = """
 xxxxxxxxxxxxxxxx,yyyyyyyyyyyyyyyy,zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz,wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww,vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 xxxxxxxxxxxxxxxxxxxxxxxx,yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy,zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz,wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww,vvvv
 ,,zzzz,wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww,vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -684,29 +685,29 @@ public static void BenchmarkReadLargeFields(ж<testing.B> Ꮡb) {
 }
 
 public static void BenchmarkReadReuseRecord(ж<testing.B> Ꮡb) {
-    benchmarkRead(Ꮡb, (ж<Reader> r) => {
+    benchmarkRead(Ꮡb, (ж<global::go.encoding.csv_package.Reader> r) => {
         r.Value.ReuseRecord = true;
     }, benchmarkCSVData);
 }
 
 public static void BenchmarkReadReuseRecordWithFieldsPerRecord(ж<testing.B> Ꮡb) {
-    benchmarkRead(Ꮡb, (ж<Reader> r) => {
+    benchmarkRead(Ꮡb, (ж<global::go.encoding.csv_package.Reader> r) => {
         r.Value.ReuseRecord = true;
         r.Value.FieldsPerRecord = 4;
     }, benchmarkCSVData);
 }
 
 public static void BenchmarkReadReuseRecordWithoutFieldsPerRecord(ж<testing.B> Ꮡb) {
-    benchmarkRead(Ꮡb, (ж<Reader> r) => {
+    benchmarkRead(Ꮡb, (ж<global::go.encoding.csv_package.Reader> r) => {
         r.Value.ReuseRecord = true;
         r.Value.FieldsPerRecord = -1;
     }, benchmarkCSVData);
 }
 
 public static void BenchmarkReadReuseRecordLargeFields(ж<testing.B> Ꮡb) {
-    benchmarkRead(Ꮡb, (ж<Reader> r) => {
+    benchmarkRead(Ꮡb, (ж<global::go.encoding.csv_package.Reader> r) => {
         r.Value.ReuseRecord = true;
     }, strings.Repeat(xxxxxxxxxxxxxxxxˢ, 3));
 }
 
-} // end csv_package
+} // end csv_internal_test_package

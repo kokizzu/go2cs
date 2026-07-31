@@ -17,10 +17,11 @@ using testing = testing_package;
 using go.crypto;
 using go.crypto.@internal;
 using go.encoding;
+using static go.crypto.sha512_package;
 
-partial class sha512_package {
+partial class sha512_internal_test_package {
 
-[GoType] partial struct sha512Test {
+[GoType] internal partial struct sha512Test {
     internal @string @out;
     internal @string @in;
     internal @string halfState; // marshaled hash state after first half of in written, used by TestGoldenMarshal
@@ -667,11 +668,11 @@ internal static void testHash(ж<testing.T> Ꮡt, @string name, @string @in, @st
     }
     for (nint pass = 0; pass < 3; pass++) {
         if (pass < 2){
-            io.WriteString(new hash_HashᴠWriter(digestFunc), @in);
+            io.WriteString(new sha512_internal_test_package.hash_HashᴠWriter(digestFunc), @in);
         } else {
-            io.WriteString(new hash_HashᴠWriter(digestFunc), @in[..(int)(len(@in) / 2)]);
+            io.WriteString(new sha512_internal_test_package.hash_HashᴠWriter(digestFunc), @in[..(int)(len(@in) / 2)]);
             digestFunc.Sum(default!);
-            io.WriteString(new hash_HashᴠWriter(digestFunc), @in[(int)(len(@in) / 2)..]);
+            io.WriteString(new sha512_internal_test_package.hash_HashᴠWriter(digestFunc), @in[(int)(len(@in) / 2)..]);
         }
         {
             @string calculated = hex.EncodeToString(digestFunc.Sum(default!)); if (calculated != outHex) {
@@ -858,15 +859,15 @@ public static void TestBlockSize(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object boringCryptoDoesnTExposeˢ = (@string)"BoringCrypto doesn't expose digest"u8;
-private static readonly object blockAndBlockGenericˢ = (@string)"block and blockGeneric resulted in different states"u8;
+internal static readonly object boringCryptoDoesnTExposeˢ = (@string)"BoringCrypto doesn't expose digest"u8;
+internal static readonly object blockAndBlockGenericˢ = (@string)"block and blockGeneric resulted in different states"u8;
 
 // Tests that blockGeneric (pure Go) and block (in assembly for some architectures) match.
 public static void TestBlockGeneric(ж<testing.T> Ꮡt) {
     if (boring.Enabled) {
         Ꮡt.Skip(boringCryptoDoesnTExposeˢ);
     }
-    var (gen, asm) = (New()._<ж<digest>>(), New()._<ж<digest>>());
+    var (gen, asm) = (New()._<ж<global::go.crypto.sha512_package.digest>>(), New()._<ж<global::go.crypto.sha512_package.digest>>());
     var buf = new slice<byte>(ΔBlockSize * 20);
     // arbitrary factor
     rand.Read(buf);
@@ -885,7 +886,7 @@ public static void TestBlockGeneric(ж<testing.T> Ꮡt) {
 // the data length has a 1 in the 32nd bit. When casted to int, this changes
 // the sign of the value, and causes the modulus operation to return a
 // different result.
-[GoType] partial struct unmarshalTest {
+[GoType] internal partial struct unmarshalTest {
     internal @string state;
     internal @string sum;
 }
@@ -939,7 +940,7 @@ public static void TestLargeHashes(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object boringCryptoDoesnTˢ = (@string)"BoringCrypto doesn't allocate the same way as stdlib"u8;
+internal static readonly object boringCryptoDoesnTˢ = (@string)"BoringCrypto doesn't allocate the same way as stdlib"u8;
 
 public static void TestAllocations(ж<testing.T> Ꮡt) {
     if (boring.Enabled) {
@@ -962,10 +963,10 @@ public static void TestAllocations(ж<testing.T> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sha384ˢ = "SHA-384"u8;
-private static readonly @string sha512224ˢ = "SHA-512/224"u8;
-private static readonly @string sha512256ˢ = "SHA-512/256"u8;
-private static readonly @string sha512ˢ = "SHA-512"u8;
+internal static readonly @string sha384ˢ = "SHA-384"u8;
+internal static readonly @string sha512224ˢ = "SHA-512/224"u8;
+internal static readonly @string sha512256ˢ = "SHA-512/256"u8;
+internal static readonly @string sha512ˢ = "SHA-512"u8;
 
 public static void TestSHA512Hash(ж<testing.T> Ꮡt) {
     Ꮡt.Run(sha384ˢ, (ж<testing.T> tΔ1) => {
@@ -987,9 +988,9 @@ internal static hash.Hash bench = New();
 internal static slice<byte> buf = new slice<byte>(8192);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string newˢ = "New"u8;
-private static readonly @string sum384ˢ = "Sum384"u8;
-private static readonly @string sum512ˢ = "Sum512"u8;
+internal static readonly @string newˢ = "New"u8;
+internal static readonly @string sum384ˢ = "Sum384"u8;
+internal static readonly @string sum512ˢ = "Sum512"u8;
 
 internal static void benchmarkSize(ж<testing.B> Ꮡb, nint size) {
     var sum = new slice<byte>(bench.Size());
@@ -1031,4 +1032,4 @@ public static void BenchmarkHash8K(ж<testing.B> Ꮡb) {
     benchmarkSize(Ꮡb, 8192);
 }
 
-} // end sha512_package
+} // end sha512_internal_test_package

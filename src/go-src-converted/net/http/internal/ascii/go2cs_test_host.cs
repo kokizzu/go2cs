@@ -12,8 +12,8 @@ internal static class Go2CsTestHost
             "print.go",
             "print_test.go",
         });
-        registry.Add("TestEqualFold", ascii_package.TestEqualFold, "print_test.go", 9);
-        registry.Add("TestIsPrint", ascii_package.TestIsPrint, "print_test.go", 47);
+        registry.Add("TestEqualFold", ascii_internal_test_package.TestEqualFold, "print_test.go", 9);
+        registry.Add("TestIsPrint", ascii_internal_test_package.TestIsPrint, "print_test.go", 47);
         return TestHost.Run(registry, args);
     }
 }

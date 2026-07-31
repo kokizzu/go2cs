@@ -5,11 +5,12 @@ namespace go.go;
 
 using reflect = reflect_package;
 using testing = testing_package;
+using static global::go.go.version_package;
 
-partial class version_package {
+partial class version_internal_test_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string compareˢ = "Compare"u8;
+internal static readonly @string compareˢ = "Compare"u8;
 
 public static void TestCompare(ж<testing.T> Ꮡt) {
     test2<@string, @string, nint>(Ꮡt, compareTests, compareˢ, Compare);
@@ -48,7 +49,7 @@ internal static slice<testCase2<@string, @string, nint>> compareTests = new test
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string langˢ = "Lang"u8;
+internal static readonly @string langˢ = "Lang"u8;
 
 public static void TestLang(ж<testing.T> Ꮡt) {
     test1<@string, @string>(Ꮡt, langTests, langˢ, Lang);
@@ -65,7 +66,7 @@ internal static slice<testCase1<@string, @string>> langTests = new testCase1<@st
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string isValidˢ = "IsValid"u8;
+internal static readonly @string isValidˢ = "IsValid"u8;
 
 public static void TestIsValid(ж<testing.T> Ꮡt) {
     test1<@string, bool>(Ꮡt, isValidTests, isValidˢ, IsValid);
@@ -90,12 +91,12 @@ internal static slice<testCase1<@string, bool>> isValidTests = new testCase1<@st
     new("go1"u8, true)
 }.slice();
 
-[GoType] partial struct testCase1<In, Out> {
+[GoType] internal partial struct testCase1<In, Out> {
     internal In @in;
     internal Out @out;
 }
 
-[GoType] partial struct testCase2<In1, In2, Out> {
+[GoType] internal partial struct testCase2<In1, In2, Out> {
     internal In1 in1;
     internal In2 in2;
     internal Out @out;
@@ -123,4 +124,4 @@ internal static void test2<In1, In2, Out>(ж<testing.T> Ꮡt, slice<testCase2<In
     }
 }
 
-} // end version_package
+} // end version_internal_test_package

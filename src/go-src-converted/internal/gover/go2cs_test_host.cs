@@ -12,11 +12,11 @@ internal static class Go2CsTestHost
             "gover.go",
             "gover_test.go",
         });
-        registry.Add("TestCompare", gover_package.TestCompare, "gover_test.go", 12);
-        registry.Add("TestIsLang", gover_package.TestIsLang, "gover_test.go", 70);
-        registry.Add("TestIsValid", gover_package.TestIsValid, "gover_test.go", 85);
-        registry.Add("TestLang", gover_package.TestLang, "gover_test.go", 60);
-        registry.Add("TestParse", gover_package.TestParse, "gover_test.go", 42);
+        registry.Add("TestCompare", gover_internal_test_package.TestCompare, "gover_test.go", 12);
+        registry.Add("TestIsLang", gover_internal_test_package.TestIsLang, "gover_test.go", 70);
+        registry.Add("TestIsValid", gover_internal_test_package.TestIsValid, "gover_test.go", 85);
+        registry.Add("TestLang", gover_internal_test_package.TestLang, "gover_test.go", 60);
+        registry.Add("TestParse", gover_internal_test_package.TestParse, "gover_test.go", 42);
         return TestHost.Run(registry, args);
     }
 }

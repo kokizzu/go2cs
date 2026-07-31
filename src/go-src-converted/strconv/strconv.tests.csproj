@@ -67,37 +67,22 @@
        shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
        can leak in because it is never listed. -->
   <ItemGroup>
-    <Compile Include="atob.cs" />
     <Compile Include="atob_test.cs" />
-    <Compile Include="atoc.cs" />
     <Compile Include="atoc_test.cs" />
-    <Compile Include="atof.cs" />
     <Compile Include="atof_test.cs" />
-    <Compile Include="atoi.cs" />
     <Compile Include="atoi_test.cs" />
-    <Compile Include="bytealg.cs" />
-    <Compile Include="ctoa.cs" />
     <Compile Include="ctoa_test.cs" />
-    <Compile Include="decimal.cs" />
     <Compile Include="decimal_test.cs" />
-    <Compile Include="doc.cs" />
-    <Compile Include="eisel_lemire.cs" />
     <Compile Include="export_test.cs" />
     <Compile Include="fp_test.cs" />
-    <Compile Include="ftoa.cs" />
     <Compile Include="ftoa_test.cs" />
-    <Compile Include="ftoaryu.cs" />
     <Compile Include="ftoaryu_test.cs" />
     <Compile Include="go2cs_test_host.cs" />
     <Compile Include="internal_test.cs" />
-    <Compile Include="isprint.cs" />
-    <Compile Include="itoa.cs" />
     <Compile Include="itoa_test.cs" />
-    <Compile Include="package_info_external_test.cs" />
     <Compile Include="package_init_external_test.cs" />
     <Compile Include="package_init_internal_test.cs" />
     <Compile Include="package_test_info.cs" />
-    <Compile Include="quote.cs" />
     <Compile Include="quote_test.cs" />
     <Compile Include="strconv_test.cs" />
   </ItemGroup>
@@ -144,11 +129,8 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\bytes\bytes.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\errors\errors.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\fmt\fmt.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\internal\bytealg\internal.bytealg.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\internal\stringslite\internal.stringslite.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\fs\io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\io\io.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\math\bits\math.bits.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\cmplx\math.cmplx.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\math.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\math\rand\math.rand.csproj" />
@@ -159,7 +141,7 @@
     <ProjectReference Include="$(go2csPath)go-src-converted\strings\strings.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\sync\sync.csproj" />
     <ProjectReference Include="$(go2csPath)go-src-converted\unicode\unicode.csproj" />
-    <ProjectReference Include="$(go2csPath)go-src-converted\unicode\utf8\unicode.utf8.csproj" />
+    <ProjectReference Include="strconv.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

@@ -8,8 +8,9 @@ using io = io_package;
 using strings = strings_package;
 using testing = testing_package;
 using hash = hash_package;
+using static go.hash.adler32_package;
 
-partial class adler32_package {
+partial class adler32_internal_test_package {
 
 
 [GoType("dyn")] partial struct goldenᴛ1 {
@@ -100,7 +101,7 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
     foreach (var (_, g) in golden) {
         var h = New();
         var h2 = New();
-        io.WriteString(new hash_Hash32ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
+        io.WriteString(new adler32_internal_test_package.hash_Hash32ᴠWriter(h), g.@in[..(int)(len(g.@in) / 2)]);
         var (state, err) = h._<encoding.BinaryMarshaler>().MarshalBinary();
         if (err != default!) {
             Ꮡt.Errorf("could not marshal: %v"u8, err);
@@ -116,8 +117,8 @@ public static void TestGoldenMarshal(ж<testing.T> Ꮡt) {
                 continue;
             }
         }
-        io.WriteString(new hash_Hash32ᴠWriter(h), g.@in[(int)(len(g.@in) / 2)..]);
-        io.WriteString(new hash_Hash32ᴠWriter(h2), g.@in[(int)(len(g.@in) / 2)..]);
+        io.WriteString(new adler32_internal_test_package.hash_Hash32ᴠWriter(h), g.@in[(int)(len(g.@in) / 2)..]);
+        io.WriteString(new adler32_internal_test_package.hash_Hash32ᴠWriter(h2), g.@in[(int)(len(g.@in) / 2)..]);
         if (h.Sum32() != h2.Sum32()) {
             Ꮡt.Errorf("checksum(%q) = 0x%x != marshaled (0x%x)"u8, g.@in, h.Sum32(), h2.Sum32());
         }
@@ -142,4 +143,4 @@ public static void BenchmarkAdler32KB(ж<testing.B> Ꮡb) {
     }
 }
 
-} // end adler32_package
+} // end adler32_internal_test_package

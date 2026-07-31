@@ -21,14 +21,14 @@ internal static class Go2CsTestHost
             "sha1block_generic.go",
             "sha1block_s390x.go",
         });
-        registry.Add("TestAllocations", sha1_package.TestAllocations, "sha1_test.go", 221);
-        registry.Add("TestBlockGeneric", sha1_package.TestBlockGeneric, "sha1_test.go", 148);
-        registry.Add("TestBlockSize", sha1_package.TestBlockSize, "sha1_test.go", 140);
-        registry.Add("TestGolden", sha1_package.TestGolden, "sha1_test.go", 62);
-        registry.Add("TestGoldenMarshal", sha1_package.TestGoldenMarshal, "sha1_test.go", 99);
-        registry.Add("TestLargeHashes", sha1_package.TestLargeHashes, "sha1_test.go", 200);
-        registry.Add("TestSHA1Hash", sha1_package.TestSHA1Hash, "sha1_test.go", 238);
-        registry.Add("TestSize", sha1_package.TestSize, "sha1_test.go", 133);
+        registry.Add("TestAllocations", sha1_internal_test_package.TestAllocations, "sha1_test.go", 221);
+        registry.Add("TestBlockGeneric", sha1_internal_test_package.TestBlockGeneric, "sha1_test.go", 148);
+        registry.Add("TestBlockSize", sha1_internal_test_package.TestBlockSize, "sha1_test.go", 140);
+        registry.Add("TestGolden", sha1_internal_test_package.TestGolden, "sha1_test.go", 62);
+        registry.Add("TestGoldenMarshal", sha1_internal_test_package.TestGoldenMarshal, "sha1_test.go", 99);
+        registry.Add("TestLargeHashes", sha1_internal_test_package.TestLargeHashes, "sha1_test.go", 200);
+        registry.Add("TestSHA1Hash", sha1_internal_test_package.TestSHA1Hash, "sha1_test.go", 238);
+        registry.Add("TestSize", sha1_internal_test_package.TestSize, "sha1_test.go", 133);
         return TestHost.Run(registry, args);
     }
 }

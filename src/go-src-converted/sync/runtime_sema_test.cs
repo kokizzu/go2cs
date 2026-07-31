@@ -4,8 +4,9 @@
 namespace go;
 
 using Δruntime = runtime_package;
-using static go.sync_package;
+using static sync_package;
 using Δtesting = testing_package;
+using static go.sync_internal_test_package;
 
 partial class sync_test_package {
 
@@ -18,8 +19,8 @@ public static void BenchmarkSemaUncontended(ж<Δtesting.B> Ꮡb) {
     Ꮡb.RunParallel((ж<Δtesting.PB> pb) => {
         var sem = @new<BenchmarkSemaUncontended_PaddedSem>();
         while (pb.Next()) {
-            Runtime_Semrelease(sem.of(BenchmarkSemaUncontended_PaddedSem.Ꮡsem), false, 0);
-            Runtime_Semacquire(sem.of(BenchmarkSemaUncontended_PaddedSem.Ꮡsem));
+            sync_internal_test_package.Runtime_Semrelease(sem.of(BenchmarkSemaUncontended_PaddedSem.Ꮡsem), false, 0);
+            sync_internal_test_package.Runtime_Semacquire(sem.of(BenchmarkSemaUncontended_PaddedSem.Ꮡsem));
         }
     });
 }
@@ -37,7 +38,7 @@ internal static void benchmarkSema(ж<Δtesting.B> Ꮡb, bool block, bool work) 
         var doneʗ1 = done;
         goǃ(() => {
             for (nint p = 0; p < Δruntime.GOMAXPROCS(0) / 2; p++) {
-                Runtime_Semacquire(Ꮡsem);
+                sync_internal_test_package.Runtime_Semacquire(Ꮡsem);
             }
             doneʗ1.ᐸꟷ(true);
         });
@@ -49,17 +50,17 @@ internal static void benchmarkSema(ж<Δtesting.B> Ꮡb, bool block, bool work) 
     Ꮡb.RunParallel((ж<Δtesting.PB> pb) => {
         nint foo = 0;
         while (pb.Next()) {
-            Runtime_Semrelease(Ꮡsem, false, 0);
+            sync_internal_test_package.Runtime_Semrelease(Ꮡsem, false, 0);
             if (work) {
                 for (nint i = 0; i < 100; i++) {
                     foo *= 2;
                     foo /= 2;
                 }
             }
-            Runtime_Semacquire(Ꮡsem);
+            sync_internal_test_package.Runtime_Semacquire(Ꮡsem);
         }
         _ = foo;
-        Runtime_Semrelease(Ꮡsem, false, 0);
+        sync_internal_test_package.Runtime_Semrelease(Ꮡsem, false, 0);
     });
 });
 

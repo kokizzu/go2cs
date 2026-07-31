@@ -5,8 +5,9 @@ namespace go.go.build;
 
 using fmt = fmt_package;
 using testing = testing_package;
+using static global::go.go.build.constraint_package;
 
-partial class constraint_package {
+partial class constraint_internal_test_package {
 
 
 [GoType("dyn")] partial struct testsᴛ1 {
@@ -46,4 +47,4 @@ public static void TestGoVersion(ж<testing.T> Ꮡt) {
     }
 }
 
-} // end constraint_package
+} // end constraint_internal_test_package
