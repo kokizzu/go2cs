@@ -389,7 +389,7 @@ internal static error decode(this ж<decoder> Ꮡd, io.Reader r, bool configOnly
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gifNoColorTableˢ = "gif: no color table"u8;
+internal static readonly @string gifNoColorTableˢ = "gif: no color table"u8;
 
 internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFrames) => func<error>((defer, recover) => {
     ref var d = ref Ꮡd.Value;
@@ -507,7 +507,7 @@ internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFra
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gifFrameBoundsLargerThanˢ = "gif: frame bounds larger than image bounds"u8;
+internal static readonly @string gifFrameBoundsLargerThanˢ = "gif: frame bounds larger than image bounds"u8;
 
 [GoRecv] internal static (ж<image.Paletted>, error) newImageFromDescriptor(this ref decoder d) {
     {

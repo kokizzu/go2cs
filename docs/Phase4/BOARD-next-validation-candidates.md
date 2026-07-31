@@ -6,8 +6,8 @@
 > root cause rather than an exploration. **Revised 2026-07-27 (later)** by the reference-closure
 > arc: the closure family is closed, `internal/zstd` is banked, and two claims in the original
 > revision are retracted as measurement errors — see the sections below. Corpus state after that
-> arc, plus the 2026-07-29 `hash/maphash` bank and the 2026-07-31 `image/draw` bank:
-> **63 validated / 215 (29.3%)**.
+> arc, plus the 2026-07-29 `hash/maphash` bank and the 2026-07-31 `image/draw` and `image/gif` banks:
+> **64 validated / 215 (29.8%)**.
 >
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
@@ -88,33 +88,50 @@ those arcs rather than folded into the test-project-model change.
 |:--|:--|
 | ~~`hash/maphash`~~ | **DONE 2026-07-29 — 22/22, banked.** Computed float constants that directly use a named untyped integer wrapper now materialize once at the destination's float width; `TestSmhasherAvalanche`'s mean is 50000 and the full SMHasher matrix matches Go. |
 | `compress/flate` | **63 of 64.** Only `TestWriterReset`, a whole-`Writer` `reflect.DeepEqual` after `Reset`. Uninvestigated. |
-| `image/gif` | **27 of 28** (2026-07-31). Only `TestWriter`, and its message names the cause: `../testdata/video-001.png image: unknown format`. `writer_test.go` blank-imports `_ "image/png"` purely for the side effect of its `init()` registering the PNG decoder with `image.Decode`; that module initializer never runs, so the format registry is empty. This is the blank-import module-initializer gap — its own board item, not an `image/gif` defect. |
+| ~~`image/gif`~~ | **DONE 2026-07-31 — 28/28, banked.** `TestWriter` was the blank-import module-initializer gap and nothing else: with `_ "image/png"`'s `init()` forced, the PNG decoder registers and `image.Decode` reads `../testdata/video-001.png`. No `image/gif` defect existed. |
 | `image/png` | probed previously; does not validate |
 | ~~`image/draw`~~ | **DONE 2026-07-31 — 9/9, banked.** All four failures were two defects, both fixed at the root. `TestDraw` was the address-taken *value parameter* box-copy: `DrawMask`'s `clip(dst, &r, src, &sp, mask, &mp)` narrows all three in place, and `Ꮡ(r)` boxed a COPY, so the draw loop ran on the unclipped rectangle. (The empty-`Pix` panic above was that same unclipped geometry, not an assertion defect — the guess in this row was wrong.) The other three were value adapters carrying no Go dynamic type, so `image.Image` type switches took the wrong arm. |
 
-## The blank-import module-initializer gap — a Go guarantee .NET does not make
+## The blank-import module-initializer gap — CLOSED (2026-07-31)
 
 Go's `_ "image/png"` imports a package **purely** for the side effect of its `init()`, and the
 language guarantees that initializer runs before `main`. The converter maps a Go `init()` onto
 `[GoInit]`, which `csproj-template.xml` aliases to .NET's `[ModuleInitializer]` — the right shape,
 and a **weaker guarantee**: a module initializer fires at first access to something in its module,
 so an assembly nothing in the program ever *names* is never loaded and its initializer never runs.
-A blank import is by definition the case that names nothing.
+A blank import is by definition the case that names nothing, and the observable form was a registry
+that stays empty: `image/gif`'s `writer_test.go` blank-imports `_ "image/png"` so png's `init()`
+calls `image.RegisterFormat` (`image/png/reader.cs`), it never ran, and `TestWriter` failed with
+`../testdata/video-001.png image: unknown format` at **27 of 28**.
 
-The observable form is a registry that stays empty. `image/gif`'s `writer_test.go` blank-imports
-`_ "image/png"` so that `png`'s `init()` calls `image.RegisterFormat("png", …)`
-(`image/png/reader.cs:1223`); it never runs, `image.Decode` has no PNG entry, and `TestWriter`
-fails with `../testdata/video-001.png image: unknown format` — the package's only failure, at
-**27 of 28**.
+The converter now emits, at the top of the importing file's class body, a hook that forces it:
 
-This gates more than one package, and every consumer is a registration-by-blank-import:
-`database/sql` drivers (`_ "github.com/…/mysql"` → `sql.Register`), `net/http/pprof` (its `init()`
-installs the `/debug/pprof` handlers), `image/png`/`image/jpeg` as decoders for anything that calls
-`image.Decode`, and `time/tzdata`. The remedy is a converter/runtime concern, not a per-package one:
-the referencing project must *force* each blank-imported package's initializer to run — Go's
-own ordering (dependencies first, then the importer) is the specification to match. Note that a
-blank import is not invisible to the build: it is in `go/packages`' import list, so the project
-reference already exists; only the *load* does not happen.
+```csharp
+// blank import: go.image.png_package (side effects only; no using emitted — a `using _` alias hijacks C# discards)
+[GoInit] internal static void initᴛᴛblankImportꓸimageꓸpng() { builtin.initPackage(typeof(go.image.png_package)); }
+```
+
+`builtin.initPackage` is `RuntimeHelpers.RunModuleConstructor`, which the runtime guarantees runs a
+module constructor **at most once** (so several blank importers of one package are no-ops) and which
+is measured AOT-safe — under Native AOT the gap does not arise at all, since a single native image
+has no lazy assembly load. One hook per (assembly, imported package), named from the import path so
+two blank imports in one file cannot collide; Go's pseudo-packages (`unsafe`, `builtin`, `C`) are
+skipped because the language gives them no initialization, which holds the corpus blast radius to
+**three files** — `crypto/x509` (sha1/sha256/sha512), `runtime/metrics` (runtime), `runtime/race`
+(amd64v1) — rather than the seventy that carry `import _ "unsafe"` for `//go:linkname`. Full rule,
+the ordering reasoning, and the deliberately-deferred alternative (forcing *every* import eagerly in
+dependency order — the only way to reproduce Go's init ordering in full, at the cost of loading the
+whole transitive assembly closure at startup): `docs/ConversionStrategies-Reference.md`, *A blank
+import forces the imported package's `init` to run*. Guarded by the `BlankImportSideEffects`
+behavioral test (a registry two blank-imported siblings fill from their `init`s, read back by an
+importer that never names either) plus the `TestBlankImportInitName` / `TestNoInitPseudoPackages`
+converter unit tests.
+
+The other consumers this unblocks are all registration-by-blank-import: `database/sql` drivers
+(`_ "github.com/…/mysql"` → `sql.Register`), `net/http/pprof` (its `init()` installs the
+`/debug/pprof` handlers), `image/png`/`image/jpeg` as decoders for anything that calls
+`image.Decode`, and `time/tzdata`. A blank import was never invisible to the build — it is in
+`go/packages`' import list, so the project reference already existed; only the *load* did not happen.
 
 ## Recurring classes worth a general fix rather than another point repair
 

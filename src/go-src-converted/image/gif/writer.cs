@@ -140,8 +140,8 @@ internal static void close(this blockWriter b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gif89aˢ = "GIF89a"u8;
-private static readonly @string netscape20ˢ = "NETSCAPE2.0"u8;
+internal static readonly @string gif89aˢ = "GIF89a"u8;
+internal static readonly @string netscape20ˢ = "NETSCAPE2.0"u8;
 
 [GoRecv] internal static void writeHeader(this ref encoder e) {
     if (e.err != default!) {
@@ -209,8 +209,8 @@ private static readonly @string netscape20ˢ = "NETSCAPE2.0"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gifCannotEncodeColorˢ = "gif: cannot encode color table with more than 256 entries"u8;
-private static readonly @string gifCannotEncodeColorˢ2 = "gif: cannot encode color table with nil entries"u8;
+internal static readonly @string gifCannotEncodeColorˢ = "gif: cannot encode color table with more than 256 entries"u8;
+internal static readonly @string gifCannotEncodeColorˢ2 = "gif: cannot encode color table with nil entries"u8;
 
 internal static (nint, error) encodeColorTable(slice<byte> dst, Δcolor.Palette p, nint size) {
     if ((nuint)size >= (nuint)len(log2Lookup)) {
@@ -255,9 +255,9 @@ internal static (nint, error) encodeColorTable(slice<byte> dst, Δcolor.Palette 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gifCannotEncodeImageˢ = "gif: cannot encode image block with empty palette"u8;
-private static readonly @string gifImageBlockIsTooLargeˢ = "gif: image block is too large to encode"u8;
-private static readonly @string gifImageBlockIsOutOfˢ = "gif: image block is out of bounds"u8;
+internal static readonly @string gifCannotEncodeImageˢ = "gif: cannot encode image block with empty palette"u8;
+internal static readonly @string gifImageBlockIsTooLargeˢ = "gif: image block is too large to encode"u8;
+internal static readonly @string gifImageBlockIsOutOfˢ = "gif: image block is out of bounds"u8;
 
 internal static void writeImageBlock(this ж<encoder> Ꮡe, ж<image.Paletted> Ꮡpm, nint delay, byte disposal) {
     ref var e = ref Ꮡe.Value;
@@ -400,10 +400,10 @@ internal static void writeImageBlock(this ж<encoder> Ꮡe, ж<image.Paletted> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gifMustProvideAtLeastOneˢ = "gif: must provide at least one image"u8;
-private static readonly @string gifMismatchedImageAndˢ = "gif: mismatched image and delay lengths"u8;
-private static readonly @string gifMismatchedImageAndˢ2 = "gif: mismatched image and disposal lengths"u8;
-private static readonly @string gifGifColorModelMustBeAˢ = "gif: GIF color model must be a color.Palette"u8;
+internal static readonly @string gifMustProvideAtLeastOneˢ = "gif: must provide at least one image"u8;
+internal static readonly @string gifMismatchedImageAndˢ = "gif: mismatched image and delay lengths"u8;
+internal static readonly @string gifMismatchedImageAndˢ2 = "gif: mismatched image and disposal lengths"u8;
+internal static readonly @string gifGifColorModelMustBeAˢ = "gif: GIF color model must be a color.Palette"u8;
 
 // EncodeAll writes the images in g to w in GIF format with the
 // given loop count and delay between frames.
@@ -457,7 +457,7 @@ public static error EncodeAll(io.Writer w, ж<GIF> Ꮡg) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gifImageIsTooLargeToˢ = "gif: image is too large to encode"u8;
+internal static readonly @string gifImageIsTooLargeToˢ = "gif: image is too large to encode"u8;
 
 // Encode writes the Image m to w in GIF format.
 public static error Encode(io.Writer w, image.Image m, ж<Options> Ꮡo) {
