@@ -41,10 +41,10 @@ internal static error closeIt(ж<nint> Ꮡp, nint tag) {
     return default!;
 }
 
-internal static byte first(array<byte> value) {
-    value = value.Clone();
+internal static byte first(array<byte> valueʗp) {
+    ref var value = ref heap(valueʗp.Clone(), out var Ꮡvalue);
 
-    var p = Ꮡ(value).at<byte>(0);
+    var p = Ꮡvalue.at<byte>(0);
     return p.Value;
 }
 

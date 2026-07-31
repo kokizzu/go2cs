@@ -103,8 +103,10 @@ internal static slice<@string> kindNames = new golib.SparseArray<@string>{
     [UnsafePointer] = "unsafe.Pointer"u8
 }.slice();
 
-public static ж<Type> TypeOf(any a) {
-    var eface = ~Ꮡ(a).Reinterpret<any, EmptyInterface>();
+public static ж<Type> TypeOf(any aʗp) {
+    ref var a = ref heap(aʗp, out var Ꮡa);
+
+    var eface = ~Ꮡa.Reinterpret<any, EmptyInterface>();
     return eface.Type;
 }
 

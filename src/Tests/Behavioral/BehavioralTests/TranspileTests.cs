@@ -22,6 +22,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckAdapterNameInterfaceCollision() => CheckTarget("AdapterNameInterfaceCollision");
 
     [TestMethod]
+    public void CheckAddressOfParamWrite() => CheckTarget("AddressOfParamWrite");
+
+    [TestMethod]
     public void CheckAliasStructComposite() => CheckTarget("AliasStructComposite");
 
     [TestMethod]

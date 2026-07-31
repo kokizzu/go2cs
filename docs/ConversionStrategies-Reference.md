@@ -1690,6 +1690,90 @@ take the same treatment. (Guarded by `NamedResultAddressEscape` — an error res
 `PointerToInterfaceParamDeref` re-baselined to the box form, its output unchanged since its handler
 only *reads* `*err`.)
 
+### An address-taken VALUE PARAMETER heap-boxes too
+A value parameter, like a named result, is declared in the **signature** — not by any body statement —
+so the escape analysis' define-walk never reached it either. Parameters were additionally kept out of
+the full escape analysis on purpose, which left exactly **one** parameter trigger in the pass: the
+capture-mode-method check (`markCaptureModeBoxedParams`, *A capture-mode method called on a value
+PARAMETER* below). A plain `&param` was not a trigger, so `&r` fell back to the call-site `Ꮡ(r)`
+**copy** box — it compiles, and silently drops every write the callee makes through the pointer:
+
+```go
+func DrawMask(dst Image, r image.Rectangle, src Image, sp image.Point, …) {   // image/draw
+	clip(dst, &r, src, &sp, mask, &mp)   // clip narrows r (and sp/mp) IN PLACE
+	if r.Empty() { return }              // …but the narrowed r was never seen
+```
+
+The escape pass now marks a value parameter whose address is genuinely taken — `&r`, `&r.field…`
+(a value-field chain rooted at the parameter), or `&r[i]` — via **`objectAddressTaken`**, the same
+generic per-object scan the named-result arm above uses (renamed from `namedResultAddressTaken` now
+that it serves both signature-declared categories). The existing entry-time box machinery then boxes
+the parameter at entry, exactly as the capture-mode trigger does:
+
+```go
+func clipParam(r Rect) Rect { clip(&r, 5, 5); return r }
+```
+```csharp
+internal static Rect clipParam(Rect rʗp) {
+    ref var r = ref heap(rʗp, out var Ꮡr);   // ENTRY-time box, never a call-site copy
+    clip(Ꮡr, 5, 5);                          // the callee writes THIS storage…
+    return r;                                // …and the body reads it back
+}
+```
+
+Entry-time boxing is what preserves Go's semantics on both sides: the callee's writes are visible to
+the rest of the body, and the **caller's** argument stays untouched (the parameter is still by-value —
+the box is initialized from the incoming `ʗp` copy). The `&param.field` form renders through the box
+accessor (`Ꮡb.of(Box.ᏑR).of(Rect.ᏑMin)`) and `&param[i]` through `Ꮡa.at<E>(i)` — the latter now
+superseding, at its parameter sites, the array-parameter fallback that copy-boxed the `array<T>`
+*wrapper* (`Ꮡ(value).at<byte>(0)`, kept for any array base that still owns no box) and was correct
+only because the wrapper shares its `T[]`. An ARRAY param folds its Go by-value clone into the box
+init: `ref var a = ref heap(aʗp.Clone(), out var Ꮡa);`.
+
+**An INHERENTLY-HEAP parameter takes only the BARE `&p` form** (`paramAddressTakenNeedsBox`). A
+slice/map/chan/interface/func — and a type parameter, whose underlying is its constraint interface —
+is already a reference, so only the address of the reference *variable itself* needs a box; `&p[i]`
+addresses the **shared backing array**, which the emitted element form `Ꮡ(p, i)` already aliases
+correctly, and Go likewise does not heap-promote a slice header for an element address. This mirrors
+`identHasHeapBox`'s own box gate, which is what makes the restriction load-bearing rather than an
+optimization: marking a verdict that gate then refuses would leave `identEscapesHeap` set with **no**
+box, and that map is read raw by the capture analysis and several emitters. Measured on the first cut
+(which did not restrict), 48 of 149 newly-boxed parameters were `&s[i]`-only slices — including
+`unicode.is16`/`is32`, `slices.Equal`/`Index`, `subtle.XORBytes`, `crypto/internal/alias`, and the
+Windows syscall buffer paths — every one allocating a box per call for no semantic gain.
+
+**The analysis trigger and the emission gate must move together.** `markCaptureModeBoxedParams`
+records the reason and `paramBoxReasonHolds` (read by visitFuncDecl's parameter preamble, its
+`processPotentialCapture` box-ref arm, and convFuncLit's literal prologue) re-verifies it against the
+declaring ident; a reason recorded by analysis but missing from the gate leaves body uses referencing
+a box that was never declared (CS0103), and the reverse declares a box nothing references. Both gained
+the address-taken trigger in the same change. The gate stays *narrow* in the other direction: a param
+that leaks into `identEscapesHeap` some other way — a mixed `data, pc, line := …` define re-uses the
+param object, so the define walker escape-analyzes it (debug/gosym's `slice`) — still keeps its
+historical unboxed emission. Function-literal params take the identical treatment
+(`funcLitHeapBoxParamIdents`), and a boxed param referenced from a nested closure is box-ref'd rather
+than snapshot-copied (see *CaptureModeParamClosure* below), so the closure, the body, and the callee
+all share the one parameter variable Go gives them.
+
+This was the **fifth** path in the `Ꮡ(value)` copy-box family, after the pointer-to-array element,
+the slice/array field of a receiver, the field-addressed value local, and the named result. The
+corpus consumers it corrects are all silent-wrong-answer bugs, not compile errors:
+
+| Package | Site | Before → after |
+|---|---|---|
+| `crypto/x509` `parser.cs` | `parseValidity(der cryptobyte.String)` calls `parseTime(&der)` **twice** | two independent `Ꮡ(der)` copies → one `Ꮡder`: the DER cursor now advances, so `notAfter` is parsed from the bytes after `notBefore` instead of re-parsing the same ones. `parseName`, `forEachSAN`, `parseBasicConstraintsExtension`, `parseExtKeyUsageExtension` and `parseCertificatePoliciesExtension` have the same non-advancing-cursor shape (`der.ReadASN1(&der, …)`). |
+| `crypto/x509` `verify.cs` | `Verify(opts VerifyOptions)` → `systemVerify(&opts)`, `isValid(…, &opts)`, `buildChains(…, &opts)` | three separate copies → one shared `Ꮡopts`. |
+| `net/http` `server.cs` | `Serve(l net.Listener)` registers `trackListener(&l, true)` and defers `trackListener(&l, false)` | the register and deregister boxed **different** copies, so the deregister's `delete(srv.listeners, ln)` could never match the registered key — every served listener leaked. Now both pass `Ꮡl`. |
+| `database/sql` `sql.cs` | `(*Rows).close(err error)` → `fn(rs, &err)` plus a `withLock` closure that assigns `err` | the hook's `*err = …` wrote a copy while `return err` read the original. Now the closure (`Ꮡerr.ValueSlot = …`), the hook, and the return share one slot. |
+| `testing/slogtest` `slogtest.cs` | `wrapper.Handle(…, r slog.Record)` → `h.mod(&r)` then `h.Handler.Handle(ctx, r)` | `mod` mutated a copy, so the wrapped handler received the **unmodified** record — the whole wrapper mechanism was a no-op. |
+
+(Guarded by the `AddressOfParamWrite` behavioral test — a value parameter clipped in place through
+`&r` by a callee that writes, a `&param.field` bump, an `&param[i]` bump on an array parameter, and
+three controls that must not change: a read-only `&param`, an address-taken *local*, and a parameter
+whose address is never taken; the caller's own argument is printed after the call to prove it stayed
+untouched. Output-compared vs `go run` — under the pre-fix emission the three write cases all printed
+the unmodified input.)
+
 ### A field-addressed value local heap-boxes — `Ꮡ(x).of(…)` copy-boxes orphan writes
 Escape analysis's address-of walk marked `&x` (direct) and `&x[k]` (element) but had **no
 selector arm**, so a value-struct local whose FIELD address was taken in plain assignment
@@ -8044,7 +8128,7 @@ It also applies when the receiver is an **indexed element** of such a field — 
 
 A capture-mode method called on a **value local of an inherently-heap type** — a named *slice*/*map*/*chan* — also forces the box, which `identHasHeapBox` otherwise refuses. An inherently-heap type is already a reference, so a var of it is normally *not* boxed even when it "escapes" (the escape pass marks every inherently-heap local escaping and returns early). But a capture-mode pointer-receiver method — internal/trace/internal/oldtrace's `orderEventList` (a named `[]orderEvent`) with heap.Interface `Push`/`Pop` that forward the receiver to `heapUp(h, …)`/`heapDown(h, …)` — is emitted with a `ж<orderEventList>` receiver, so a plain value cannot bind it (CS1929 — `var frontier orderEventList; frontier.Push(…)`). The escape pass therefore records the capture-mode reason **in that inherently-heap early-return branch** (the only place these vars are seen, before the general address-of scan), and `identHasHeapBox` honors it — emitting `ref var frontier = ref heap<orderEventList>(out var Ꮡfrontier)` so the calls route `Ꮡfrontier.Push(…)`/`Ꮡfrontier.Pop()` through the box. A named slice/map/chan with no capture-mode method called on it stays unboxed (already a reference — no churn). (Guarded by the `NamedSliceCaptureMethod` behavioral test — a named-slice value local with `*stack` `push`/`pop` that forward the receiver to helpers, mutated and read through the same box, output-compared vs Go.)
 
-A capture-mode method called on a **value PARAMETER** boxes the parameter **at entry** — go/format's `format(…, cfg printer.Config)` calling `cfg.Fprint(&buf, fset, file)`, where `(*printer.Config).Fprint` is transitively direct-ж (its body calls the defer/recover-wrapped `fprint` on its own receiver), so its only emitted receiver form is the box `ж<Config>` and the raw value parameter cannot bind it (CS1929 ×2). Parameters are deliberately **never** fed through the full escape analysis (their `&param` forms use the `Ꮡ(value)` copy-box), so the escape pass runs exactly one narrow parameter check per function — `bodyCallsCaptureModeMethodOn`, the same predicate the local-var arms use (`markCaptureModeBoxedParams`) — and marks only the params it fires for. For a marked param the **signature renames the incoming value to the `ʗp` form** (the variadic-prologue rename convention) and the parameter preamble declares the boxed alias:
+A capture-mode method called on a **value PARAMETER** boxes the parameter **at entry** — go/format's `format(…, cfg printer.Config)` calling `cfg.Fprint(&buf, fset, file)`, where `(*printer.Config).Fprint` is transitively direct-ж (its body calls the defer/recover-wrapped `fprint` on its own receiver), so its only emitted receiver form is the box `ж<Config>` and the raw value parameter cannot bind it (CS1929 ×2). Parameters are deliberately **never** fed through the full escape analysis, so the escape pass runs only narrow, named parameter checks (`markCaptureModeBoxedParams`) rather than the general escape walk — this one being `bodyCallsCaptureModeMethodOn`, the same predicate the local-var arms use. (The companion check, `objectAddressTaken`, was added later — see *An address-taken VALUE PARAMETER heap-boxes too* above; before it, a plain `&param` did use the `Ꮡ(value)` copy-box.) For a marked param the **signature renames the incoming value to the `ʗp` form** (the variadic-prologue rename convention) and the parameter preamble declares the boxed alias:
 
 ```csharp
 internal static (slice<byte>, error) format(…, printer.Config cfgʗp) {
@@ -8054,7 +8138,7 @@ internal static (slice<byte>, error) format(…, printer.Config cfgʗp) {
     var err = Ꮡcfg.Fprint(…);               // …the same storage the callee mutates through the receiver
 ```
 
-Entry-time boxing is the load-bearing choice: Go auto-addresses the parameter (`cfg.Fprint(…)` ≡ `(&cfg).Fprint(…)`), so a body write **before** the call (`cfg.Indent = …`) must be seen by the callee, and the callee's writes through the receiver pointer must be seen by the rest of the body — while the **caller's** argument stays untouched (by-value parameter). A call-site `Ꮡ(cfg)` copy-box compiles but silently drops the callee's writes for the rest of the function. An ARRAY param folds its Go by-value clone into the box init (`ref var b = ref heap(bʗp.Clone(), out var Ꮡb);` — the plain `b = b.Clone();` preamble line is skipped), and an inherently-heap-typed param records the capture-mode box reason exactly like the value-local arm above. The trigger is strictly the capture-mode call: a param that leaks into `identEscapesHeap` some other way — a mixed `data, pc, line := …` define re-uses the param object, so the define walker escape-analyzes it (debug/gosym's `slice`) — keeps its historical unboxed emission (`paramNeedsHeapBox` re-verifies the predicate against the declaring ident). Whole-stdlib reconvert diff: exactly go/format's `internal.cs` changed, nothing else. (Guarded by the `CaptureModeValueParam` behavioral test — a defer-promoted direct-ж method plus a transitively-promoted one called on a value parameter, with a pre-call write observed by the callee, callee writes read back after, and the caller's copy proven untouched, output-compared vs Go — and by the `CaptureModeValueParamLib`/`CaptureModeValueParamUser` cross-package pair mirroring the format→printer shape: a foreign `Config` value param, `Fprint` → defer/recover `fprint` transitive promotion, trace accumulation across two calls proving write-visibility through the foreign `ж<Config>` extension.)
+Entry-time boxing is the load-bearing choice: Go auto-addresses the parameter (`cfg.Fprint(…)` ≡ `(&cfg).Fprint(…)`), so a body write **before** the call (`cfg.Indent = …`) must be seen by the callee, and the callee's writes through the receiver pointer must be seen by the rest of the body — while the **caller's** argument stays untouched (by-value parameter). A call-site `Ꮡ(cfg)` copy-box compiles but silently drops the callee's writes for the rest of the function. An ARRAY param folds its Go by-value clone into the box init (`ref var b = ref heap(bʗp.Clone(), out var Ꮡb);` — the plain `b = b.Clone();` preamble line is skipped), and an inherently-heap-typed param records the capture-mode box reason exactly like the value-local arm above. Beyond this trigger and the address-taken one, a param that leaks into `identEscapesHeap` some other way — a mixed `data, pc, line := …` define re-uses the param object, so the define walker escape-analyzes it (debug/gosym's `slice`) — keeps its historical unboxed emission (`paramNeedsHeapBox` re-verifies the predicate against the declaring ident). Whole-stdlib reconvert diff: exactly go/format's `internal.cs` changed, nothing else. (Guarded by the `CaptureModeValueParam` behavioral test — a defer-promoted direct-ж method plus a transitively-promoted one called on a value parameter, with a pre-call write observed by the callee, callee writes read back after, and the caller's copy proven untouched, output-compared vs Go — and by the `CaptureModeValueParamLib`/`CaptureModeValueParamUser` cross-package pair mirroring the format→printer shape: a foreign `Config` value param, `Fprint` → defer/recover `fprint` transitive promotion, trace accumulation across two calls proving write-visibility through the foreign `ж<Config>` extension.)
 
 When the same function **also contains a func literal or defer that references the boxed parameter**, the in-lambda references must route **through the box** — the capture analysis marks such a param box-ref (the same arm family as a deref'd pointer parameter, whose `ref var p = ref Ꮡp.Value` alias shares the exact shape). The boxed param's Go name is a `ref`-local alias, which a C# lambda cannot capture (CS8175), and the general capture-snapshot fallback (`var tʗ1 = t;` before the lambda) compiles but **divorces the closure from the boxed storage** Go shares between the closure and the direct-ж callee: a closure read misses the callee's writes through the receiver pointer, a closure write is invisible to the callee, and a deferred closure observes entry-time values instead of return-time state. With the box-ref mark, a closure read emits `var get = () => Ꮡt.Value.total;`, a closure write `Ꮡt.Value.total += 100;`, and a deferred observer `defer(() => { (result, log) = (Ꮡt.Value.total, Ꮡt.Value.log); });` — the box `Ꮡt` is a plain `ж<T>` local, captured by reference, so every reference (body, closure, callee) hits the one boxed storage, matching Go's one-parameter-variable semantics. A **deferred direct-ж method value on the param itself** (`defer t.Add(n)`) needed no change — it already routes through the box (`deferǃ(Ꮡt.Add, n, defer)`), binding the receiver address at defer time exactly like Go. Whole-stdlib reconvert diff: **zero files** — no stdlib function composes a capture-mode-boxed param with a closure today, so the composition is user-code-facing and was guard-discovered. (Guarded by the `CaptureModeParamClosure` behavioral test — four compositions with write-visibility checks in both directions: a closure read that must see the callee's later write, a closure write the callee must observe (and vice versa), a deferred closure reading return-time state, and a deferred method value whose writes a sibling deferred observer reads; each output-compared vs Go, with the caller's copy proven untouched. Under the pre-fix snapshot emission all four compiled and produced wrong values.)
 

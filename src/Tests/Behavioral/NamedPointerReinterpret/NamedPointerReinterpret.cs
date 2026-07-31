@@ -27,7 +27,9 @@ internal static ж<@base> makeBase() {
     return b;
 }
 
-internal static @string consume(@string s) {
+internal static @string consume(@string sʗp) {
+    ref var s = ref heap(sʗp, out var Ꮡs);
+
     var t = Ꮡ((tail)(s));
     var b1 = t.chop();
     var b2 = t.chop();

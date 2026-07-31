@@ -26,6 +26,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckAdapterNameInterfaceCollision() => CheckTarget("AdapterNameInterfaceCollision");
 
     [TestMethod]
+    public void CheckAddressOfParamWrite() => CheckTarget("AddressOfParamWrite");
+
+    [TestMethod]
     public void CheckAliasStructComposite() => CheckTarget("AliasStructComposite");
 
     [TestMethod]

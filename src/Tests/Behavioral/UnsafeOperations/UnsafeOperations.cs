@@ -13,12 +13,16 @@ partial class main_package {
     internal int32 a;
 }
 
-public static uint64 Float64bits(float64 f) {
-    return ~Ꮡ(f).Reinterpret<float64, uint64>();
+public static uint64 Float64bits(float64 fʗp) {
+    ref var f = ref heap(fʗp, out var Ꮡf);
+
+    return ~Ꮡf.Reinterpret<float64, uint64>();
 }
 
-public static float64 Float64frombits(uint64 b) {
-    return ~Ꮡ(b).Reinterpret<uint64, float64>();
+public static float64 Float64frombits(uint64 bʗp) {
+    ref var b = ref heap(bʗp, out var Ꮡb);
+
+    return ~Ꮡb.Reinterpret<uint64, float64>();
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

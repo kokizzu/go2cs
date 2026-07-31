@@ -114,8 +114,10 @@ public static @unsafe.Pointer NoEscape(@unsafe.Pointer p) {
     public @unsafe.Pointer Data;
 }
 
-public static ж<Type> TypeOf(any a) {
-    var eface = ~Ꮡ(a).Reinterpret<any, EmptyInterface>();
+public static ж<Type> TypeOf(any aʗp) {
+    ref var a = ref heap(aʗp, out var Ꮡa);
+
+    var eface = ~Ꮡa.Reinterpret<any, EmptyInterface>();
     return eface.Type;
 }
 

@@ -327,19 +327,32 @@ func (v *Visitor) ssliceUsesAreSafe(obj types.Object, body *ast.BlockStmt) bool 
 	return allSafe
 }
 
-// markCaptureModeBoxedParams marks the function's VALUE parameters on which the body calls a
-// capture-mode (direct-ж) method — go/format's `format(…, cfg printer.Config)` calling
-// `cfg.Fprint(…)`, where (*Config).Fprint is emitted with only the `this ж<Config>` receiver
-// (CS1929 on the raw value). Parameters are deliberately NOT fed through the full escape
-// analysis (their address-of forms use the Ꮡ(value) copy-box; see convUnaryExpr), so this is
-// the ONLY writer of a parameter into identEscapesHeap — visitFuncDecl reads such an entry as
-// the entry-time-box trigger (see paramNeedsHeapBox): the incoming value arrives under the
-// `ʗp` name and the parameter preamble declares `ref var cfg = ref heap(cfgʗp, out var Ꮡcfg);`,
-// so body uses hit the boxed alias and convSelectorExpr routes the call through `Ꮡcfg`.
-// Entry-time boxing (never a call-site copy-box, which compiles but silently drops the
-// callee's writes through the receiver pointer) preserves Go's by-value parameter +
-// auto-address semantics exactly. Serves both function DECLARATIONS and function LITERALS
-// (whose prologue/rename convFuncLit emits — see funcLitHeapBoxParamIdents).
+// markCaptureModeBoxedParams marks the function's VALUE parameters that need an entry-time heap
+// box. Two triggers:
+//
+//   - The body calls a capture-mode (direct-ж) method on the parameter — go/format's
+//     `format(…, cfg printer.Config)` calling `cfg.Fprint(…)`, where (*Config).Fprint is emitted
+//     with only the `this ж<Config>` receiver (CS1929 on the raw value).
+//   - The parameter's own storage has its ADDRESS TAKEN (`&r`, `&r.field…`, `&r[i]` — see
+//     paramAddressTakenNeedsBox), the form that hands other code a pointer INTO it. Without a
+//     box this emits the call-site `Ꮡ(r)` copy-box, which compiles but silently drops every write
+//     the callee makes through the pointer: image/draw's `DrawMask(…, r image.Rectangle, …)` calls
+//     `clip(dst, &r, …)`, so the clipped rectangle never reaches the drawing loop. Go promotes such
+//     a parameter to the heap; this is the parameter-side analogue of analyzeNamedResults, which
+//     closed the identical gap for the other signature-declared category.
+//
+// Parameters are otherwise deliberately NOT fed through the full escape analysis, so this is the
+// primary writer of a parameter into identEscapesHeap — visitFuncDecl reads such an entry as the
+// entry-time-box trigger (see paramNeedsHeapBox): the incoming value arrives under the `ʗp` name
+// and the parameter preamble declares `ref var cfg = ref heap(cfgʗp, out var Ꮡcfg);`, so body uses
+// hit the boxed alias, `&cfg` renders as the identity box `Ꮡcfg`, and convSelectorExpr routes
+// capture-mode calls through it. Entry-time boxing (never a call-site copy-box) preserves Go's
+// by-value parameter + auto-address semantics exactly. Serves both function DECLARATIONS and
+// function LITERALS (whose prologue/rename convFuncLit emits — see funcLitHeapBoxParamIdents).
+//
+// The trigger set here and paramBoxReasonHolds's (the emission-side re-verification) must stay
+// IDENTICAL: a reason recorded by analysis but missing there leaves body uses referencing a box
+// that was never declared (CS0103), and the reverse declares a box nothing references.
 func (v *Visitor) markCaptureModeBoxedParams(params *ast.FieldList, body *ast.BlockStmt) {
 	if params == nil {
 		return
@@ -375,13 +388,18 @@ func (v *Visitor) markCaptureModeBoxedParams(params *ast.FieldList, body *ast.Bl
 			// A METHOD VALUE of a pointer-receiver method (`cfg.Fprint` handed to a func
 			// parameter, never called here) implicitly takes `&cfg` exactly like the call
 			// form does — see pointerMethodValueAddressTaken.
-			if v.bodyCallsCaptureModeMethodOn(ident, body) || v.pointerMethodValueAddressTaken(obj, body) {
+			captureMode := v.bodyCallsCaptureModeMethodOn(ident, body) || v.pointerMethodValueAddressTaken(obj, body)
+
+			if captureMode || v.paramAddressTakenNeedsBox(obj, body) {
 				v.identEscapesHeap[obj] = true
 
 				// An inherently-heap value (named slice/map/chan) is already a reference, so
 				// identHasHeapBox boxes it only for a recorded capture-mode reason — same rule
-				// as the local-var arm in performEscapeAnalysis.
-				if packageCaptureModeBoxIdents != nil && isInherentlyHeapAllocatedType(obj.Type()) {
+				// as the local-var arm in performEscapeAnalysis. The ADDRESS-TAKEN reason
+				// deliberately records none: identHasHeapBox's own `identAddressTaken` gate
+				// already answers that case, and answers it correctly (see
+				// paramAddressTakenNeedsBox).
+				if captureMode && packageCaptureModeBoxIdents != nil && isInherentlyHeapAllocatedType(obj.Type()) {
 					packageCaptureModeBoxIdents[obj] = true
 				}
 			}
@@ -426,19 +444,52 @@ func (v *Visitor) analyzeNamedResults(results *ast.FieldList, body *ast.BlockStm
 				continue
 			}
 
-			if v.namedResultAddressTaken(obj, body) || v.pointerMethodValueAddressTaken(obj, body) {
+			if v.objectAddressTaken(obj, body, false) || v.pointerMethodValueAddressTaken(obj, body) {
 				v.identEscapesHeap[obj] = true
 			}
 		}
 	}
 }
 
-// namedResultAddressTaken reports whether the storage of the named result obj has its address
-// taken anywhere in body (including nested function literals): `&result`, `&result.field…` (a
-// value-field selector chain rooted at the result), or `&result[i]`. Only such a form hands other
-// code a pointer INTO the result's own storage — the case that needs the result heap-boxed. This
-// is the result-side analogue of performEscapeAnalysis's UnaryExpr address-of arm.
-func (v *Visitor) namedResultAddressTaken(obj types.Object, body *ast.BlockStmt) bool {
+// paramAddressTakenNeedsBox reports whether the VALUE PARAMETER obj has its address taken in body
+// in a form that requires obj's OWN storage to be heap-boxed at entry.
+//
+// For an ordinary value type (struct, array, basic, named struct) every address form qualifies:
+// `&p`, `&p.field…` and `&p[i]` all hand out a pointer INTO the parameter's storage, so the box,
+// the callee's write through the pointer, and every later body read must share one slot.
+//
+// An INHERENTLY-HEAP type (slice/map/chan/interface/func — and a type parameter, whose underlying
+// is its constraint interface) is already a reference: only the address of the reference VARIABLE
+// ITSELF (`&p`) needs a box. `&p[i]` addresses the SHARED BACKING ARRAY, which aliases correctly
+// with no box — Go likewise does not heap-promote a slice header for an element address, and the
+// emitted element form (`Ꮡ(p, i)`) already shares storage. Mirroring identHasHeapBox's own box gate
+// here keeps the analysis verdict, that gate, and every emitter in agreement (a verdict the gate
+// then refuses would leave `identEscapesHeap` set with no box — read raw by the capture analysis and
+// several emitters), and keeps hot slice-parameter helpers allocation-free: without the restriction
+// unicode's `is16`/`is32`, `slices.Equal`, `subtle.XORBytes` and 40-odd other `&s[i]` sites boxed
+// their slice header on every call for no semantic gain.
+func (v *Visitor) paramAddressTakenNeedsBox(obj types.Object, body ast.Node) bool {
+	if obj == nil {
+		return false
+	}
+
+	return v.objectAddressTaken(obj, body, isInherentlyHeapAllocatedType(obj.Type()))
+}
+
+// objectAddressTaken reports whether the storage of obj has its address taken anywhere in body
+// (including nested function literals): `&obj`, `&obj.field…` (a value-field selector chain rooted
+// at obj), or `&obj[i]`. When directOnly is set, only the bare `&obj` form counts — the address of
+// obj's own reference variable — which is what an inherently-heap parameter needs (see
+// paramAddressTakenNeedsBox). Only such a form hands other code a pointer INTO obj's own storage —
+// the case that needs obj heap-boxed, so the box, the pointee write, and every later read share one
+// slot. This is the analogue of performEscapeAnalysis's UnaryExpr address-of arm for the two
+// SIGNATURE-declared categories the body's define-walk never reaches: named results
+// (analyzeNamedResults) and value parameters (paramAddressTakenNeedsBox).
+func (v *Visitor) objectAddressTaken(obj types.Object, body ast.Node, directOnly bool) bool {
+	if obj == nil || body == nil {
+		return false
+	}
+
 	found := false
 
 	ast.Inspect(body, func(n ast.Node) bool {
@@ -458,11 +509,11 @@ func (v *Visitor) namedResultAddressTaken(obj types.Object, body *ast.BlockStmt)
 				found = true
 			}
 		case *ast.IndexExpr:
-			if id, ok := x.X.(*ast.Ident); ok && v.info.ObjectOf(id) == obj {
+			if id, ok := x.X.(*ast.Ident); !directOnly && ok && v.info.ObjectOf(id) == obj {
 				found = true
 			}
 		case *ast.SelectorExpr:
-			if selectorChainRootsAtIdent(x, obj, v.info) {
+			if !directOnly && selectorChainRootsAtIdent(x, obj, v.info) {
 				found = true
 			}
 		}

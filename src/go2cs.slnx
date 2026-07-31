@@ -60,6 +60,7 @@
     <Project Path="Tests/Behavioral/BehavioralTests/BehavioralTests.csproj" />
   </Folder>
   <Folder Name="/tests/behavioral/target-projects/">
+    <Project Path="Tests/Behavioral/AddressOfParamWrite/AddressOfParamWrite.csproj" />
     <Project Path="Tests/Behavioral/AliasStructComposite/AliasStructComposite.csproj" />
     <Project Path="Tests/Behavioral/AndNotAssignNarrow/AndNotAssignNarrow.csproj" />
     <Project Path="Tests/Behavioral/AnonIfaceMethodSetWidening/AnonIfaceMethodSetWidening.csproj" />

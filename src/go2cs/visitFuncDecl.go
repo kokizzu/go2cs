@@ -1649,9 +1649,11 @@ func getHeapBoxLitParamName(renderedName string) string {
 	return fmt.Sprintf("%s%sp", getSanitizedIdentifier(renderedName), CapturedVarMarker)
 }
 
-// paramNeedsHeapBox reports whether the value parameter needs an entry-time heap box: the
-// body calls a capture-mode (direct-ж) method on it, whose only emitted receiver form is the
-// box `ж<T>` — go/format's `cfg printer.Config` + `cfg.Fprint(…)`, CS1929 ×2 without it.
+// paramNeedsHeapBox reports whether the value parameter needs an entry-time heap box: its own
+// address is taken (`&r` / `&r.field` / `&r[i]` — image/draw's `DrawMask(…, r image.Rectangle, …)`
+// calling `clip(dst, &r, …)`), or the body calls a capture-mode (direct-ж) method on it, whose
+// only emitted receiver form is the box `ж<T>` — go/format's `cfg printer.Config` +
+// `cfg.Fprint(…)`, CS1929 ×2 without it.
 // The signature takes the incoming value under the `ʗp` name and the parameter preamble
 // declares `ref var cfg = ref heap(cfgʗp, out var Ꮡcfg);` — ENTRY-TIME boxing, never a
 // call-site Ꮡ(value) copy-box: the copy form compiles but silently drops the callee's writes
