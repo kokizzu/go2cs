@@ -1297,6 +1297,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckSlicePointerIdentity() => CheckTarget("SlicePointerIdentity");
 
     [TestMethod]
+    public void CheckSliceToArrayPointerAlias() => CheckTarget("SliceToArrayPointerAlias");
+
+    [TestMethod]
     public void CheckSolitaire() => CheckTarget("Solitaire");
 
     [TestMethod]

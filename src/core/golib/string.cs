@@ -76,7 +76,9 @@ public readonly struct @string :
 
     public @string(in slice<rune> value) : this(value.ToSpan()) { }
 
-    public @string(in IArray<byte> value) : this(value.Source) { }
+    // ToSpan(), not Source: Source is the RAW backing, which for an array<T> ALIAS window
+    // (`(*[N]T)(s)`) is wider than the array it stands for.
+    public @string(in IArray<byte> value) : this((ReadOnlySpan<byte>)value.ToSpan()) { }
 
     // From a `string | []byte`-constrained byte sequence (IByteSeq<byte>): a generic body slices
     // such a value and wraps the result in @string (e.g. `string(s[a:b])` in bytealg's Rabin-Karp).

@@ -729,6 +729,13 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
             case ISlice<T> view when view.Slice((nint)0, view.Length) is slice<T> shared && shared.m_array is not null:
                 return (shared.m_array, shared.Low + index);
 
+            // An array<T> is a struct over a shared T[] — normally the WHOLE of it, but Go's
+            // slice-to-array-POINTER conversion (`(*[N]T)(s)`, array<T>.Alias) makes it a WINDOW,
+            // and an element pointer taken through that window must name the same absolute element
+            // as one taken through the slice it aliases (Go: `&(*[4]byte)(s)[0] == &s[0]`).
+            case array<T> arr when arr.Source is not null:
+                return (arr.Source, arr.Low + index);
+
             default:
                 return (array.Source ?? (object)array, index);
         }

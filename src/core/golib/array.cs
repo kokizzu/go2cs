@@ -46,24 +46,36 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 {
     internal readonly T[] m_array;
 
+    // The WINDOW this array occupies inside m_array. Every ordinary construction spans the whole
+    // backing (m_low = 0, m_length = m_array.Length) — the window exists ONLY so that Go's
+    // slice-to-array-POINTER conversion, `(*[N]T)(s)`, can ALIAS the slice's storage instead of
+    // snapshotting it (see Alias below). Reads and writes therefore go through m_low/m_length,
+    // never through m_array's own bounds.
+    private readonly int m_low;
+    private readonly int m_length;
+
     public array()
     {
         m_array = [];
+        m_length = 0;
     }
 
     public array(int length)
     {
         m_array = new T[length];
+        m_length = length;
     }
 
     public array(nint length)
     {
         m_array = new T[length];
+        m_length = (int)length;
     }
 
     public array(ulong length)
     {
         m_array = new T[length];
+        m_length = (int)length;
     }
 
     // Fixed-size array whose ELEMENT zero value must itself be constructed, because default(T)
@@ -78,6 +90,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
     public array(nint length, Func<T> elementFactory)
     {
         m_array = new T[length];
+        m_length = (int)length;
 
         for (nint i = 0; i < length; i++)
             m_array[i] = elementFactory();
@@ -94,44 +107,107 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
     public array(T[]? array)
     {
         m_array = array ?? [];
+        m_length = m_array.Length;
     }
 
-    // Go 1.20 slice-to-array conversion (`[4]byte(s)`): copies exactly 'length' elements,
-    // panicking like Go when the slice is too short. The pointer form (`(*[4]byte)(s)`,
-    // Go 1.17) boxes this copy - aliasing stays faithful for reads back through the same
-    // pointer (see ConversionStrategies).
+    // Go 1.20 slice-to-array VALUE conversion (`[4]byte(s)`): copies exactly 'length' elements,
+    // panicking like Go when the slice is too short. The POINTER form (`(*[4]byte)(s)`, Go 1.17)
+    // is a different conversion with different semantics and takes Alias below.
     public array(slice<T> source, nint length)
     {
-        if (source.Length < length)
-            throw new IndexOutOfRangeException($"runtime error: cannot convert slice with length {source.Length} to array or pointer to array with length {length}");
+        checkArrayConversionLength(source.Length, length);
 
         m_array = source.ToSpan()[..(int)length].ToArray();
+        m_length = (int)length;
+    }
+
+    // Private window constructor — see m_low/m_length and Alias.
+    private array(T[] backing, int low, int length)
+    {
+        m_array = backing;
+        m_low = low;
+        m_length = length;
+    }
+
+    /// <summary>
+    /// Go's slice-to-array-POINTER conversion, <c>(*[N]T)(s)</c> (Go 1.17): an array that ALIASES
+    /// the slice's own backing storage rather than a snapshot of it.
+    /// </summary>
+    /// <param name="source">Slice whose storage the array addresses.</param>
+    /// <param name="length">Go array length <c>N</c>; the slice must be at least this long.</param>
+    /// <returns>An <c>array&lt;T&gt;</c> window over <paramref name="source"/>'s first
+    /// <paramref name="length"/> elements.</returns>
+    /// <remarks>
+    /// <para>
+    /// The distinction from the <c>array(slice&lt;T&gt;, nint)</c> constructor is Go's, not an
+    /// implementation detail: <c>[N]T(s)</c> yields a VALUE (a copy) while <c>(*[N]T)(s)</c> yields
+    /// a POINTER INTO <c>s</c> — "the slice and array share their underlying array" (Go spec,
+    /// Conversions from slice to array or array pointer). A copy behind the pointer form is not a
+    /// performance detail but a silent wrong answer: every write through the pointer is discarded.
+    /// image/png's encoder is the corpus witness — its <c>cbTCA8</c> row loop converts each 4-byte
+    /// destination window with <c>d := (*[4]byte)(dst)</c> and writes the un-premultiplied pixel
+    /// through <c>d</c>, so against a copy it emitted an all-zero image for every non-opaque RGBA
+    /// source (TestWriteRGBA).
+    /// </para>
+    /// <para>
+    /// A window never escapes into an ordinary array: <see cref="Clone"/> (Go's by-value array copy)
+    /// materializes the window's own storage, so the copy is a full, offset-free array again.
+    /// </para>
+    /// </remarks>
+    public static array<T> Alias(slice<T> source, nint length)
+    {
+        checkArrayConversionLength(source.Length, length);
+
+        // A nil/zero slice with length 0 has no backing to window — the empty array is the whole
+        // of what the conversion can address, and its (absent) storage is shared vacuously.
+        return source.m_array is null
+            ? new array<T>([], 0, 0)
+            : new array<T>(source.m_array, (int)source.Low, (int)length);
+    }
+
+    private static void checkArrayConversionLength(nint sourceLength, nint length)
+    {
+        if (sourceLength < length)
+            throw new IndexOutOfRangeException($"runtime error: cannot convert slice with length {sourceLength} to array or pointer to array with length {length}");
     }
 
     public array(Span<T> source)
     {
         m_array = source.ToArray();
+        m_length = m_array.Length;
     }
 
     public array(ReadOnlySpan<T> source)
     {
         m_array = source.ToArray();
+        m_length = m_array.Length;
     }
 
     public array(Memory<T> source)
     {
         m_array = source.ToArray();
+        m_length = m_array.Length;
     }
 
     public array(ReadOnlyMemory<T> source)
     {
         m_array = source.ToArray();
+        m_length = m_array.Length;
     }
 
     // Source intentionally stays the RAW backing reference: a null result is the discriminator
     // for a never-constructed zero value (see the generated struct constructors, which use it to
     // keep an array field's `= new(N)` initializer when the incoming argument is a zero value).
+    // For an ALIAS window it is likewise the raw storage — the identity every address question is
+    // asked about — so a consumer walking elements through it must add Low (ж<T>.CanonicalElement
+    // does; everything else in the corpus holds a full-window array, where Low is 0).
     public T[] Source => m_array;
+
+    /// <summary>
+    /// Gets the offset of this array's first element inside <see cref="Source"/> — nonzero only for
+    /// an <see cref="Alias"/> window over a slice's storage.
+    /// </summary>
+    public nint Low => m_low;
 
     // Null-safe view of the backing store: `default(array<T>)` runs no constructor, so m_array is
     // null; treat that zero value as an EMPTY array for all reads (length, index, enumerate,
@@ -143,7 +219,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public Span<T> ꓸꓸꓸ => ToSpan(); // Spread operator
 
-    public nint Length => Backing.Length;
+    public nint Length => m_length;
 
     // Returning by-ref value allows array to be a struct instead of a class and still allow read and write
     // Allows for implicit index support: https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-8.0/ranges#implicit-index-support
@@ -151,12 +227,10 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
     {
         get
         {
-            T[] backing = Backing;
+            if (index < 0 || index >= m_length)
+                throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
 
-            if (index < 0 || index >= backing.Length)
-                throw RuntimeErrorPanic.IndexOutOfRange(index, backing.Length);
-
-            return ref backing[index];
+            return ref Backing[m_low + index];
         }
     }
 
@@ -164,22 +238,24 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
     {
         get
         {
-            T[] backing = Backing;
+            if (index < 0 || index >= m_length)
+                throw RuntimeErrorPanic.IndexOutOfRange(index, m_length);
 
-            if (index < 0 || index >= backing.Length)
-                throw RuntimeErrorPanic.IndexOutOfRange(index, backing.Length);
-
-            return ref backing[index];
+            return ref Backing[m_low + (int)index];
         }
     }
 
     public ref T this[ulong index] => ref this[(nint)index];
 
-    public slice<T> this[Range range] => new(Backing, range.Start.GetOffset(Backing.Length), range.End.GetOffset(Backing.Length));
+    public slice<T> this[Range range] => Slice(range.Start.GetOffset(m_length), range.End.GetOffset(m_length) - range.Start.GetOffset(m_length));
 
     public slice<T> Slice(int start, int length)
     {
-        return new slice<T>(Backing, start, start + length);
+        // Capacity stops at the ARRAY's end, never the backing store's: Go's `a[:]` on a `[4]byte`
+        // has cap 4. Identical to the previous unbounded form for every full-window array (there
+        // the array IS the backing); it is an Alias window that would otherwise report the rest of
+        // the slice it aliases as spare capacity.
+        return new slice<T>(Backing, m_low + start, m_low + start + length, m_low + m_length);
     }
 
     public slice<T> Slice(nint start, nint length)
@@ -189,20 +265,30 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public int IndexOf(in T item)
     {
-        T[] backing = Backing;
-        int index = Array.IndexOf(backing, item, 0, backing.Length);
-        return index >= 0 ? index : -1;
+        int index = Array.IndexOf(Backing, item, m_low, m_length);
+        return index >= 0 ? index - m_low : -1;
     }
 
     public bool Contains(in T item)
     {
-        T[] backing = Backing;
-        return Array.IndexOf(backing, item, 0, backing.Length) >= 0;
+        return IndexOf(item) >= 0;
+    }
+
+    // The window's own storage — the RAW backing whenever this array spans all of it, which every
+    // ordinary construction does (so the structural paths below keep their exact previous behavior
+    // and allocate nothing); only an Alias window materializes its elements.
+    private T[] WindowArray
+    {
+        get
+        {
+            T[] backing = Backing;
+            return m_low == 0 && m_length == backing.Length ? backing : backing.AsSpan(m_low, m_length).ToArray();
+        }
     }
 
     public void CopyTo(T[] array, int arrayIndex)
     {
-        Backing.CopyTo(array, arrayIndex);
+        ToSpan().CopyTo(array.AsSpan(arrayIndex));
     }
 
     public T[] ToArray()
@@ -212,12 +298,15 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public Span<T> ToSpan()
     {
-        return new Span<T>(m_array);
+        return new Span<T>(Backing, m_low, m_length);
     }
 
     public array<T> Clone()
     {
-        T[] copy = (T[])Backing.Clone();
+        // ToSpan().ToArray() rather than Backing.Clone(): a Go array copy is of the ARRAY, and an
+        // Alias window's array is its window, not the slice storage behind it — so the copy is a
+        // full, offset-free array again.
+        T[] copy = ToSpan().ToArray();
 
         // Go array copy semantics are DEEP for nested arrays: assigning a [2][3]int copies the
         // inner arrays too. An element that is itself an array wrapper (array<T> or a generated
@@ -269,12 +358,12 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
     /// </remarks>
     object IGoZeroShaped.GoZeroLike()
     {
-        array<T> zero = new(Backing.Length);
+        array<T> zero = new((nint)m_length);
 
         if (!builtin.ZeroIsDefault<T>())
         {
-            for (int i = 0; i < zero.m_array.Length; i++)
-                zero.m_array[i] = builtin.GoZero(m_array![i]);
+            for (int i = 0; i < m_length; i++)
+                zero.m_array[i] = builtin.GoZero(Backing[m_low + i]);
         }
 
         return zero;
@@ -282,10 +371,10 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public IEnumerator<(nint, T)> GetEnumerator()
     {
-        nint index = 0;
+        T[] backing = Backing;
 
-        foreach (T item in Backing)
-            yield return (index++, item);
+        for (nint index = 0; index < m_length; index++)
+            yield return (index, backing[m_low + index]);
     }
 
     public override string ToString()
@@ -300,7 +389,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
         // different backing storage (e.g. the defensive `.Clone()` a stored key takes). The
         // previous `m_array.GetHashCode()` hashed the backing REFERENCE, so every structural-
         // equal key missed.
-        IStructuralEquatable equatable = Backing;
+        IStructuralEquatable equatable = WindowArray;
         return equatable.GetHashCode(EqualityComparer<T>.Default);
     }
 
@@ -327,20 +416,32 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
     // arrays compare by content Go-style.
     public bool Equals(IArray? other)
     {
-        IStructuralEquatable equatable = Backing;
-        return equatable.Equals(other?.Source, EqualityComparer<object>.Default);
+        IStructuralEquatable equatable = WindowArray;
+        return equatable.Equals(otherWindow(other), EqualityComparer<object>.Default);
     }
 
     public bool Equals(IArray<T>? other)
     {
-        IStructuralEquatable equatable = Backing;
-        return equatable.Equals(other?.Source, EqualityComparer<T>.Default);
+        IStructuralEquatable equatable = WindowArray;
+        return equatable.Equals(otherWindow(other), EqualityComparer<T>.Default);
     }
 
     public bool Equals(array<T> other)
     {
-        IStructuralEquatable equatable = Backing;
-        return equatable.Equals(other.Backing, EqualityComparer<T>.Default);
+        IStructuralEquatable equatable = WindowArray;
+        return equatable.Equals(other.WindowArray, EqualityComparer<T>.Default);
+    }
+
+    // The comparand's own elements: Source is the RAW backing, which for an Alias window is wider
+    // than the array it stands for (see Low).
+    private static Array? otherWindow(IArray? other)
+    {
+        return other switch
+        {
+            null => null,
+            array<T> arr => arr.WindowArray,
+            _ => other.Source
+        };
     }
 
     #region [ Operators ]
@@ -373,7 +474,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     public static implicit operator T[](array<T> value)
     {
-        return value.Backing;
+        return value.WindowArray;
     }
 
     // array<T> to array<T> comparisons
@@ -463,7 +564,7 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
             if (index < 0 || index >= Length)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            m_array[index] = value;
+            this[index] = value;
         }
     }
 
@@ -512,12 +613,12 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
 
     IEnumerator<T> IEnumerable<T>.GetEnumerator()
     {
-        return Backing.AsEnumerable().GetEnumerator();
+        return WindowArray.AsEnumerable().GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return Backing.GetEnumerator();
+        return WindowArray.GetEnumerator();
     }
 
     #endregion

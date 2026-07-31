@@ -1217,6 +1217,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckSlicePointerIdentity() => CheckTarget("SlicePointerIdentity");
 
     [TestMethod]
+    public void CheckSliceToArrayPointerAlias() => CheckTarget("SliceToArrayPointerAlias");
+
+    [TestMethod]
     public void CheckSolitaire() => CheckTarget("Solitaire");
 
     [TestMethod]

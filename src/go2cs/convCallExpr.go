@@ -327,12 +327,19 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			}
 		}
 
-		// Go's slice-to-ARRAY conversions route through golib's array<T>(slice<T>, nint)
-		// COPY ctor (which panics Go-style on a short slice): the 1.20 VALUE form
-		// `[4]byte(slice)` copies exactly as Go does (netip AddrFromSlice, CS1955 ×5); the
-		// 1.17 POINTER form `(*[32]byte)(slice)` boxes the same copy (edwards25519
-		// fiatScalarFromBytes' input, CS0030) — reads back through the pointer stay
-		// faithful. A NAMED-over-array target falls through unchanged (none in the corpus).
+		// Go's two slice-to-array conversions are DIFFERENT conversions, and each gets its own
+		// golib entry — both panic Go-style on a short slice:
+		//
+		//   - the 1.20 VALUE form `[4]byte(slice)` yields a COPY (netip AddrFromSlice, CS1955 ×5)
+		//     → array<T>(slice<T>, nint);
+		//   - the 1.17 POINTER form `(*[4]byte)(slice)` yields a pointer INTO the slice — "the
+		//     slice and array share their underlying array" (Go spec) → array<T>.Alias, an
+		//     ALIASING window. It boxed the copy ctor until 2026-07-31, which silently discarded
+		//     every write through the pointer: image/png's cbTCA8 row loop writes each pixel
+		//     through `d := (*[4]byte)(dst)`, so a non-opaque RGBA source encoded as an all-zero
+		//     image (TestWriteRGBA).
+		//
+		// A NAMED-over-array target falls through unchanged (none in the corpus).
 		if _, argIsSlice := v.getType(arg, false).Underlying().(*types.Slice); argIsSlice {
 			if resultArr, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Array); ok {
 				elemName := convertToCSTypeName(v.getTypeName(resultArr.Elem(), false))
@@ -342,7 +349,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if resultPtr, ok := v.info.TypeOf(callExpr).(*types.Pointer); ok {
 				if resultArr, ok := types.Unalias(resultPtr.Elem()).(*types.Array); ok {
 					elemName := convertToCSTypeName(v.getTypeName(resultArr.Elem(), false))
-					return fmt.Sprintf("%s(new array<%s>(%s, %d))", AddressPrefix, elemName, v.convExpr(arg, nil), resultArr.Len())
+					return fmt.Sprintf("%s(array<%s>.Alias(%s, %d))", AddressPrefix, elemName, v.convExpr(arg, nil), resultArr.Len())
 				}
 			}
 		}

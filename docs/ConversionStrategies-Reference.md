@@ -8725,16 +8725,48 @@ Nine coupled rules from the shallow-stack campaign:
   `((printFlags)0)`, CS1503) and **empty-interface switch tags compare via AreEqual**
   (`switch err := recover(); err { case ErrLarge: }`, CS0019).
 
-### Slice-to-array conversions route golib's copy constructor
-Go's slice-to-array conversions both route through `array<T>(slice<T> source, nint length)` —
-a COPY constructor that panics Go-style on a short slice:
-- the Go 1.20 **value** form `[4]byte(slice)` emits `new array<byte>(s, 4)` (netip
-  `AddrFromSlice`, CS1955) — Go's conversion copies, so this is exactly faithful;
-- the Go 1.17 **pointer** form `(*[32]byte)(slice)` emits `Ꮡ(new array<byte>(x, 32))`
-  (edwards25519 `fiatScalarFromBytes`'s input, CS0030) — Go aliases the slice's backing here,
-  the boxed copy does not; reads back through the same pointer stay faithful, and the corpus
-  sites are read-only inputs. A NAMED-over-array target falls through unchanged (banked).
-Guarded by `NamedPointerReinterpret` (`sliceToArray`).
+### Slice-to-array: the VALUE form copies, the POINTER form ALIASES
+Go has two slice-to-array conversions and they are different conversions, so each gets its own
+golib entry. Both panic Go-style on a short slice.
+- The Go 1.20 **value** form `[4]byte(slice)` emits `new array<byte>(s, 4)` — the COPY
+  constructor `array<T>(slice<T>, nint)`. Go's conversion copies, so this is exactly faithful
+  (netip `AddrFromSlice`, CS1955).
+- The Go 1.17 **pointer** form `(*[4]byte)(slice)` emits `Ꮡ(array<byte>.Alias(s, 4))` — an
+  ALIASING window over the slice's own backing store. The Go spec is explicit that here "the
+  slice and array share their underlying array", so the array is a *view*, and `array<T>` carries
+  a `(low, length)` window for exactly this one construction; every other construction spans its
+  whole backing, where the window is inert.
+
+**This was a copy until 2026-07-31, and the copy was a silent wrong answer, not a performance
+detail** — every write through the pointer was discarded. `image/png`'s encoder is the corpus
+witness: its `cbTCA8` row loop converts each four-byte destination window and writes the
+un-premultiplied pixel through it,
+
+```go
+d := (*[4]byte)(dst)
+s := (*[4]byte)(src)
+…
+d[0] = uint8((uint32(s[0]) * m / a) >> 8)
+```
+
+so against a copy *every* pixel write went nowhere and any RGBA image that was not fully opaque
+encoded as an all-zero image. It surfaced as `TestWriteRGBA`'s "50/50 Transparent/Opaque RGBA"
+and "RGBA with variable alpha" subtests, and the two subtests that did pass passed by luck: the
+opaque one takes the `cbTC8` path entirely, and the fully-transparent one wants all-zero output,
+which is what a lost write also produces.
+
+The window is where the aliasing is, not merely the sharing: the png loop converts `cr[0][1:]`
+and re-slices it forward, so the array's element 0 is not element 0 of the backing store. Three
+consequences follow and all three are Go's:
+- `array<T>.Clone()` — Go's by-value array copy — materializes the *window*, so a copy is a full,
+  offset-free array again;
+- `p[:]` bounds its capacity at the array's end (`cap` 4, not the rest of the slice);
+- `&(*[4]byte)(s)[0] == &s[0]`: `ж<T>.CanonicalElement` resolves an element pointer taken through
+  a window to the same absolute element as one taken through the slice.
+
+Guarded by `SliceToArrayPointerAlias` (offset write-through, read-back through the pointer,
+value-conversion copy, deref copy, `p[:]` aliasing and `len`/`cap`, element identity, and the
+png-shaped windowed loop) and by `NamedPointerReinterpret` (`sliceToArray`).
 
 ### A direct-ж method on a value field-chain boxes through the &-machinery
 A direct-ж (box-receiver) method called on a field of a plain VALUE param — netip's

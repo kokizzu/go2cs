@@ -38,7 +38,7 @@ internal static @string consume(@string sʗp) {
 
 internal static nint sliceToArray(slice<byte> s) {
     var a = new array<byte>(s, 4);
-    var p = Ꮡ(new array<byte>(s, 2));
+    var p = Ꮡ(array<byte>.Alias(s, 2));
     return (nint)a[3] + (nint)p.Value[1];
 }
 

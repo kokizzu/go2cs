@@ -505,6 +505,7 @@
     <Project Path="Tests/Behavioral/SliceFieldElementAddress/SliceFieldElementAddress.csproj" />
     <Project Path="Tests/Behavioral/SliceNilVsEmpty/SliceNilVsEmpty.csproj" />
     <Project Path="Tests/Behavioral/SlicePointerIdentity/SlicePointerIdentity.csproj" />
+    <Project Path="Tests/Behavioral/SliceToArrayPointerAlias/SliceToArrayPointerAlias.csproj" />
     <Project Path="Tests/Behavioral/Solitaire/Solitaire.csproj" />
     <Project Path="Tests/Behavioral/SortArrayType/SortArrayType.csproj" />
     <Project Path="Tests/Behavioral/SpreadOperator/SpreadOperator.csproj" />
