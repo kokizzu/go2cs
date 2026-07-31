@@ -1313,8 +1313,23 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	// types bind locally — which also skipped these sets, so an EXTERNAL test file's cast of a
 	// production type could not see the seeded adapters and re-recorded the pair. Must run per
 	// variant: resetPackageState above just cleared the sets.
-	if options.testPackagePath != "" {
-		loadPackageImplements(filepath.Join(outputPath, PackageInfoFileName), options.testPackageName)
+	//
+	// A REFERENCE model clears testPackageName/Path (that is what makes production bind as an
+	// ordinary import), so the name comes from testProductionName there. The INTERNAL white-box
+	// bridge is why this cannot be left to visitImportSpec: it is the SAME Go package, so it never
+	// imports production, yet production is a referenced assembly whose own partials already
+	// realize its records. Without them the bridge re-records every production value cast and
+	// constructs a redundant ᴠ adapter — a DIFFERENT identity than the value production's own code
+	// returns, which encoding/hex catches at `err != tt.err`. The external variant loads these
+	// through its import too; the sets are idempotent.
+	productionName := options.testPackageName
+
+	if productionName == "" {
+		productionName = options.testProductionName
+	}
+
+	if productionName != "" {
+		loadPackageImplements(filepath.Join(outputPath, PackageInfoFileName), productionName)
 	}
 
 	allEntries := make([]FileEntry, 0, len(pkg.Syntax))
