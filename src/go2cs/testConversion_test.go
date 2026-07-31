@@ -733,6 +733,53 @@ func TestWhiteboxAdapterAnchoringOnlyRelocatesEmittedPairs(t *testing.T) {
 	}
 }
 
+// A bare cast spelling is ambiguous the way a bare C# name is: io's tests declare their own
+// `Buffer` under `using static io_package` while the record set also carries
+// `bytes_package.Buffer`. C# binds the bare name to the variant's own nested type before any
+// import, and the generator names that record's adapter BARE (its struct's package class IS the
+// anchor class it generates into) — so the resolver must prefer the anchor-local record over the
+// first same-simple-name foreign one, and compose the bare member name from it. Taking record
+// order instead handed every `*Buffer` cast to `bytes_BufferжReader` (CS1503 ×20 — the io
+// build wall's reappearance, 2026-07-31).
+func TestBareCastPrefersAnchorLocalRecordOverForeignSimpleNameMatch(t *testing.T) {
+	savedAnchors := emittedAdapterPairAnchors
+	defer func() { emittedAdapterPairAnchors = savedAnchors }()
+
+	pairs := [][2]string{
+		{"bytes_package.Buffer", "io_package.Reader"},      // foreign record, FIRST in record order
+		{"go.io_test_package.Buffer", "io_package.Reader"}, // the variant's own type, anchor-qualified
+	}
+	emittedAdapterPairAnchors = map[string]string{
+		adapterGroupKey("bytes_package.Buffer", "io_package.Reader"):      "io_test_package",
+		adapterGroupKey("go.io_test_package.Buffer", "io_package.Reader"): "io_test_package",
+	}
+
+	pair, ok := emittedAdapterPair(pairs, "Buffer", "io_package.Reader")
+	if !ok {
+		t.Fatal("a bare cast of the variant's own type must match its anchor-local record")
+	}
+	if pair[0] != "go.io_test_package.Buffer" {
+		t.Fatalf("bare cast resolved to %q, want the anchor-local go.io_test_package.Buffer record", pair[0])
+	}
+	// The generator's AdapterStructKey sees container == packageClassName for this record and
+	// composes the bare name — the converter's member composition must agree.
+	if got := anchoredAdapterMemberName(pair, map[string]bool{}); got != "Buffer"+PointerPrefix+"Reader" {
+		t.Fatalf("anchored member = %q, want the generator's bare Buffer%sReader", got, PointerPrefix)
+	}
+	// A QUALIFIED cast of the foreign same-simple-name record still resolves to it.
+	pair, ok = emittedAdapterPair(pairs, "bytes_Buffer", "io_package.Reader")
+	if !ok || pair[0] != "bytes_package.Buffer" {
+		t.Fatalf("qualified foreign cast resolved to %v, want the bytes_package.Buffer record", pair)
+	}
+	// With NO anchor recorded for the local pair (a production-only resolve), the fallback still
+	// returns the first simple-name match — the pre-existing PipeWriter behavior is unchanged.
+	emittedAdapterPairAnchors = nil
+	pair, ok = emittedAdapterPair(pairs, "Buffer", "io_package.Reader")
+	if !ok || pair[0] != "bytes_package.Buffer" {
+		t.Fatalf("unanchored bare cast resolved to %v, want first-match bytes_package.Buffer", pair)
+	}
+}
+
 // The white-box record split: a BARE record name declared by an internal _test.go file anchors to
 // the bridge (its generated partial must merge with the bridge-declared type); production-qualified
 // and external-declared bare names anchor to the test class.

@@ -293,40 +293,121 @@ func adapterStructKey(structBase string) string {
 // reference from the returned pair. A dot-less cast spelling additionally matches on the bare
 // simple name, because a cast in the record's own declaring scope legitimately spells the struct
 // unqualified while the record carries the qualified form.
+//
+// The simple-name fallback is TWO-tiered, because a bare cast spelling is ambiguous the same way
+// a bare C# name is: io's tests declare their own `Buffer` while `using static io_package` (and
+// the record set also carries `bytes_package.Buffer`), and C# binds the bare name to the
+// VARIANT'S OWN nested type before any import. So among simple-name candidates, a record the
+// generator will treat as LOCAL to its anchor (struct's package class == the anchor class it
+// generates into — the exact AdapterStructKey locality test) wins over a foreign record; taking
+// the first candidate in record order instead handed every `*Buffer` cast to bytes_BufferжReader
+// (CS1503 ×20, the io wall's reappearance). Exact-key matches run as a full pass FIRST so a
+// fallback match on an early pair can never shadow an exact match on a later one.
 func emittedAdapterPair(pairs [][2]string, structBase, interfaceTypeName string) ([2]string, bool) {
 	structKey := strings.TrimPrefix(adapterStructKey(structBase), ShadowVarMarker)
 	interfaceKey := strings.TrimPrefix(adapterInterfacePackagePrefix(interfaceTypeName), ShadowVarMarker) + adapterInterfaceSimpleName(interfaceTypeName)
 
+	matchesInterface := func(pair [2]string) bool {
+		return strings.TrimPrefix(adapterInterfacePackagePrefix(pair[1]), ShadowVarMarker)+adapterInterfaceSimpleName(pair[1]) == interfaceKey
+	}
+
 	for _, pair := range pairs {
-		pairStructKey := strings.TrimPrefix(adapterStructKey(pair[0]), ShadowVarMarker)
-		pairInterfaceKey := strings.TrimPrefix(adapterInterfacePackagePrefix(pair[1]), ShadowVarMarker) + adapterInterfaceSimpleName(pair[1])
-		if pairInterfaceKey != interfaceKey {
-			continue
-		}
-		if pairStructKey == structKey {
+		if matchesInterface(pair) && strings.TrimPrefix(adapterStructKey(pair[0]), ShadowVarMarker) == structKey {
 			return pair, true
 		}
-		if !strings.Contains(structBase, ".") {
-			pairSimple := pair[0]
-			if dot := strings.LastIndex(pairSimple, "."); dot >= 0 {
-				pairSimple = pairSimple[dot+1:]
-			}
-			if stripSanitizationMarkers(pairSimple) == stripSanitizationMarkers(structBase) {
-				return pair, true
-			}
+	}
+
+	if strings.Contains(structBase, ".") {
+		return [2]string{}, false
+	}
+
+	fallback := [2]string{}
+	haveFallback := false
+
+	for _, pair := range pairs {
+		if !matchesInterface(pair) {
+			continue
+		}
+
+		pairSimple := pair[0]
+
+		if dot := strings.LastIndex(pairSimple, "."); dot >= 0 {
+			pairSimple = pairSimple[dot+1:]
+		}
+
+		if stripSanitizationMarkers(pairSimple) != stripSanitizationMarkers(structBase) {
+			continue
+		}
+
+		if qualifier := adapterStructQualifierClass(pair[0]); qualifier != "" && qualifier == emittedAdapterPairAnchors[adapterGroupKey(pair[0], pair[1])] {
+			return pair, true
+		}
+
+		if !haveFallback {
+			fallback, haveFallback = pair, true
 		}
 	}
-	return [2]string{}, false
+
+	return fallback, haveFallback
+}
+
+// adapterStructQualifierClass returns the package CLASS that qualifies a record's struct spelling
+// ("go.io_test_package.Buffer" → "io_test_package", "bytes_package.Buffer" → "bytes_package"),
+// or "" for a bare spelling or a non-package qualifier. This is the converter-side spelling of
+// the generator's `structType.ContainingType.Name`, which AdapterStructKey compares against its
+// anchor class to decide local (bare) vs foreign (`<pkg>_`-prefixed) naming.
+func adapterStructQualifierClass(structBase string) string {
+	base := structBase
+
+	if idx := strings.Index(base, "<"); idx >= 0 {
+		base = base[:idx]
+	}
+
+	idx := strings.LastIndex(base, ".")
+
+	if idx < 0 {
+		return ""
+	}
+
+	qualifier := base[:idx]
+
+	if dot := strings.LastIndex(qualifier, "."); dot >= 0 {
+		qualifier = qualifier[dot+1:]
+	}
+
+	if !strings.HasSuffix(qualifier, PackageSuffix) {
+		return ""
+	}
+
+	return qualifier
 }
 
 // anchoredAdapterMemberName composes the adapter class name go2cs-gen will emit for a
 // test-anchored pair, from the RECORD's spellings: adapterStructKey normalizes a qualified
 // production struct to the generator's foreign `<pkg>_<Simple>` form and leaves a variant-local
-// bare name bare — exactly the generator's local-vs-foreign naming split. The interface side
-// mirrors adapterResolvedName's collision handling on the same record spellings.
+// bare name bare — exactly the generator's local-vs-foreign naming split. A record whose struct
+// is QUALIFIED by the very anchor class it generates into (`go.io_test_package.Buffer` anchored
+// at `io_test_package` — the record writer qualifies past bridge/using-static hiding) is LOCAL
+// to the generator (`container == packageClassName` in its AdapterStructKey), so it composes the
+// bare simple name, never `io_test_Buffer`. The interface side mirrors adapterResolvedName's
+// collision handling on the same record spellings.
 func anchoredAdapterMemberName(pair [2]string, colliding map[string]bool) string {
 	structPart := strings.TrimPrefix(adapterStructKey(pair[0]), ShadowVarMarker)
 	ifaceSimple := adapterInterfaceSimpleName(pair[1])
+
+	if qualifier := adapterStructQualifierClass(pair[0]); qualifier != "" && qualifier == emittedAdapterPairAnchors[adapterGroupKey(pair[0], pair[1])] {
+		base := pair[0]
+
+		if idx := strings.Index(base, "<"); idx >= 0 {
+			base = base[:idx]
+		}
+
+		if dot := strings.LastIndex(base, "."); dot >= 0 {
+			base = base[dot+1:]
+		}
+
+		structPart = strings.TrimPrefix(stripSanitizationMarkers(base), ShadowVarMarker)
+	}
 
 	if !colliding[adapterGroupKey(pair[0], pair[1])] {
 		return structPart + PointerPrefix + ifaceSimple
