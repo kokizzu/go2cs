@@ -57,6 +57,7 @@ public static partial class main_package
 
     // <TypeAccessibility>
     internal partial struct box {}
+    internal partial struct cell {}
     internal partial struct guard {}
     internal partial struct header {}
     // </TypeAccessibility>

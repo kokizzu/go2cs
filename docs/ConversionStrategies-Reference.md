@@ -2986,6 +2986,57 @@ read as 41 pass / 20 fail from this single root. It is the fourth instance of th
 construction class in a fourth emission path, which is the standing argument for centralizing that
 construction rather than patching sites.
 
+### `clear` rebuilds each element through golib's `GoZero` — the RUN-TIME half of zero-value construction
+
+The fifth instance of that class landed in golib rather than the converter, and it is the one that
+made the centralization real. `builtin.clear(slice<T>)` assigned `default!` to every element, so
+`clear(q)` over a `[][4]int32` replaced each element with a **length-zero** array — Go's
+`clear` leaves four zeroed `int32`s. `image/draw`'s Floyd–Steinberg dither calls
+`clear(quantErrorNext)` once per scan line, and the next row's `quantErrorNext[x][0]` panicked with
+`index out of range [0] with length 0`. The same held one level in for a struct element carrying a
+fixed-array field: `default!` skips the generated parameterless constructor that runs its field
+initializers.
+
+The converter cannot help here — a `clear` call site has no Go type shape to thread a factory
+through, and the C# type `array<E>` is the same for every N. Patching the site would have been the
+fifth per-site repair of one defect, so the shape recovery moved into golib and became a single
+entry point:
+
+```csharp
+public static T GoZero<T>(T template)   // builtin.cs
+```
+
+`GoZero` returns the Go zero value of `T`, consulting `template` **only for run-time shape**, and
+resolves one of three answers from a per-closed-`T` static (`ZeroFacts<T>`, the same JIT-folding
+shape as `AssertFacts<T>`), so the overwhelmingly common case compiles to a constant `default`:
+
+| `T` | zero |
+|:--|:--|
+| any reference type, or a value type golib owns (`@string`, `slice<T>`, `map<K,V>`, the numerics) | `default` |
+| `array<E>` — implements the new golib marker `IGoZeroShaped` | `GoZeroLike()`: a new array of the template's LENGTH, elements zeroed recursively so `[2][3]int32` keeps its inner lengths |
+| a converted Go struct (`[GoType]` + a generated parameterless constructor) | that constructor — exactly what the converter emits for `var x T`, and `default` for a plain struct |
+
+All three slice-shaped `clear` overloads (`slice<T>`, `Span<T>`, and the constrained `ISlice<T>`)
+route through one `Span<T>` body that keeps the vectorized `Span.Clear()` whenever
+`default(T)` is already the Go zero value:
+
+```go
+q := make([][4]int32, 3)
+q[1][2] = 7
+clear(q)
+len(q[1]) // 4, not 0
+```
+
+The `[GoType]`-plus-constructor rule is deliberately broad rather than a per-shape enumeration
+(fixed-array field, promoted embed, …): calling a converted struct's own zero-value constructor is
+always correct, so a FUTURE field shape that needs construction is covered without re-opening the
+class a sixth time. That generality is the whole point — this is the run-time counterpart of the
+converter's `arrayZeroValueArgs` and go2cs-gen's `AppendZeroValueInitializers`, which build a zero
+value where the shape is known statically; `GoZero` recovers it from a value that already carries
+it, which is what a built-in is handed. (Guarded by the `ClearBuiltinShadow` behavioral test,
+extended with `clear` over an array-element slice, a struct-with-array-field slice, and an
+array-of-arrays element, each written to after the clear and output-compared vs `go run`.)
+
 ## Strings (`@string` and `sstring`)
 Go's `string` is represented by golib [`@string`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/string.cs), not `System.String`. That is a semantic decision, not just a naming one: Go strings are immutable byte sequences, so `len`, indexing, ranging, concatenation, conversion to `[]byte`/`[]rune`, equality, and type assertions must all observe Go's UTF-8/byte model rather than C#'s UTF-16 string model. A zero-value `@string` is also null-safe and reads as `""`, which lets `default!` stand in for Go's zero value without sprinkling null checks through converted code.
 

@@ -42,7 +42,7 @@ public interface IArray<T> : IArray, IEnumerable<(nint, T)>
 }
 
 [Serializable]
-public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquatable<IArray>
+public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquatable<IArray>, IGoZeroShaped
 {
     internal readonly T[] m_array;
 
@@ -254,6 +254,30 @@ public readonly struct array<T> : IArray<T>, IList<T>, IReadOnlyList<T>, IEquata
     public array<T> ΔClone()
     {
         return Clone();
+    }
+
+    /// <summary>
+    /// Gets a NEW array of this one's Go LENGTH whose elements are all the Go zero value — the
+    /// shaped zero <see cref="builtin.GoZero{T}"/> hands back for a built-in like <c>clear</c>.
+    /// </summary>
+    /// <remarks>
+    /// The Go length of a fixed-size array lives only in the instance ([4]int32 and [8]int32 are
+    /// both <c>array&lt;int32&gt;</c>), so <c>default</c> would leave a LENGTH-ZERO array behind.
+    /// The fill recurses through <see cref="builtin.GoZero{T}"/> so a NESTED shape
+    /// (<c>[2][3]int32</c>) keeps its inner lengths too; the check is a per-T constant, so a plain
+    /// element type allocates the zeroed backing and stops.
+    /// </remarks>
+    object IGoZeroShaped.GoZeroLike()
+    {
+        array<T> zero = new(Backing.Length);
+
+        if (!builtin.ZeroIsDefault<T>())
+        {
+            for (int i = 0; i < zero.m_array.Length; i++)
+                zero.m_array[i] = builtin.GoZero(m_array![i]);
+        }
+
+        return zero;
     }
 
     public IEnumerator<(nint, T)> GetEnumerator()

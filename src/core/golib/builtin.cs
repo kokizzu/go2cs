@@ -880,9 +880,9 @@ public static class builtin
     /// (<c>S ~[]E</c> boxed to its <see cref="ISlice{T}"/> constraint) — the boxed view
     /// aliases the caller's backing array.
     /// </summary>
-    public static void clear<T>(ISlice<T> slice)
+    public static void clear<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>(ISlice<T> slice)
     {
-        slice.ToSpan().Clear();
+        clear(slice.ToSpan());
     }
 
     /// <summary>
@@ -944,10 +944,9 @@ public static class builtin
         return S.Wrap(result);
     }
 
-    public static void clear<T>(slice<T> slice)
+    public static void clear<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>(slice<T> slice)
     {
-        for (nint i = 0; i < slice.Length; i++)
-            slice[i] = default!;
+        clear(slice.ToSpan());
     }
 
     /// <summary>
@@ -955,9 +954,91 @@ public static class builtin
     /// span (e.g. a <c>(*[N]T)(ptr)[:n]</c> unsafe array view).
     /// </summary>
     /// <param name="span">Target span.</param>
-    public static void clear<T>(Span<T> span)
+    public static void clear<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>(Span<T> span)
     {
-        span.Clear();
+        // An element whose Go zero value must be BUILT cannot be zeroed by Span.Clear (which fills
+        // `default`) — see GoZero. The check is a per-T constant, so every ordinary element type
+        // keeps the vectorized clear.
+        if (ZeroFacts<T>.IsDefault)
+        {
+            span.Clear();
+            return;
+        }
+
+        for (int i = 0; i < span.Length; i++)
+            span[i] = GoZero(span[i]);
+    }
+
+    /// <summary>
+    /// Gets the Go ZERO VALUE for <typeparamref name="T"/>, shaped like <paramref name="template"/>.
+    /// </summary>
+    /// <typeparam name="T">Type whose Go zero value is wanted.</typeparam>
+    /// <param name="template">An existing value of that type, consulted ONLY for run-time shape.</param>
+    /// <returns>The Go zero value of <typeparamref name="T"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// <c>default(T)</c> is the Go zero value for almost everything, but NOT for the two emitted
+    /// shapes whose zero value has to be built:
+    /// </para>
+    /// <list type="bullet">
+    /// <item>a fixed-size <see cref="array{T}"/> (<see cref="IGoZeroShaped"/>) — its Go length lives
+    /// only in the instance, so <c>default</c> yields a LENGTH-ZERO array; and</item>
+    /// <item>a converted Go struct, whose generated parameterless constructor is what runs the field
+    /// initializers allocating its fixed-array fields and promoted-embed boxes — <c>default</c> skips
+    /// it. Calling that constructor is always correct: it is exactly what the converter emits for
+    /// <c>var x T</c>, and for a plain struct it is <c>default</c>.</item>
+    /// </list>
+    /// <para>
+    /// This is the RUN-TIME half of zero-value construction. The converter's <c>arrayZeroValueArgs</c>
+    /// and go2cs-gen's <c>AppendZeroValueInitializers</c> build a zero value where the shape is known
+    /// statically from the Go type; this one recovers the shape from a value that already carries it,
+    /// which is what a built-in like <see cref="clear{T}(slice{T})"/> is handed. Centralizing it here
+    /// is what keeps each NEW consumer from re-opening the zero-value-construction defect class.
+    /// </para>
+    /// </remarks>
+    public static T GoZero<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>(T template)
+    {
+        // Hoisted per closed T, so the overwhelmingly common case folds to a constant `default`.
+        if (ZeroFacts<T>.IsDefault)
+            return default!;
+
+        return template is IGoZeroShaped shaped ? (T)shaped.GoZeroLike() : (T)Activator.CreateInstance(typeof(T))!;
+    }
+
+    /// <summary>
+    /// Determines whether <c>default(T)</c> is already the Go zero value for <typeparamref name="T"/>
+    /// — the per-T fact behind <see cref="GoZero{T}"/>, exposed for containers that fill their own
+    /// backing (see <see cref="array{T}"/>).
+    /// </summary>
+    internal static bool ZeroIsDefault<T>()
+    {
+        return ZeroFacts<T>.IsDefault;
+    }
+
+    // Per-closed-generic classification of how T's Go zero value is produced. Same shape (and same
+    // reasoning) as AssertFacts<T> below: the answer is an immutable fact about the type, and reading
+    // it as a static field lets the JIT fold the test to a constant for the closed instantiation.
+    private static class ZeroFacts<T>
+    {
+        internal static readonly bool IsDefault = Classify();
+
+        private static bool Classify()
+        {
+            Type type = typeof(T);
+
+            // Every reference type's Go zero value is nil.
+            if (!type.IsValueType)
+                return true;
+
+            // A fixed-size array's Go length is INSTANCE state, never type state.
+            if (typeof(IGoZeroShaped).IsAssignableFrom(type))
+                return false;
+
+            // A converted Go struct is zeroed by calling its generated parameterless constructor;
+            // anything else golib carries (@string, slice<T>, map<K,V>, the numeric primitives) is
+            // already correctly zeroed by `default`.
+            return !type.IsDefined(typeof(GoTypeAttribute), false) || type.GetConstructor(Type.EmptyTypes) is null;
+        }
     }
 
     /// <summary>

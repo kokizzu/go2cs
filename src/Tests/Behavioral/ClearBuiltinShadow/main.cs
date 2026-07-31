@@ -6,6 +6,11 @@ partial class main_package {
 
 [GoType("map[@string, slice<@string>]")] partial struct header;
 
+[GoType] [GoValueClone("v")] partial struct cell {
+    internal array<int32> v = new(4);
+    internal map<@string, nint> m;
+}
+
 [GoType] partial struct box {
     internal slice<nint> data;
 }
@@ -53,6 +58,24 @@ internal static void Main() {
     header hn = default!;
     builtin.clear(hn);
     fmt.Println(len(hn));
+    var q = new slice<array<int32>>(3, () => new(4));
+    q[1][2] = 7;
+    builtin.clear(q);
+    fmt.Println(len(q[1]), q[1][2]);
+    q[2][3] = 9;
+    fmt.Println(q[2]);
+    var c = new slice<cell>(2, () => new());
+    c[0].v[1] = 3;
+    c[0].m = new map<@string, nint>{["x"u8] = 1};
+    builtin.clear(c);
+    fmt.Println(len(c[0].v), c[0].v[1], c[0].m == default!);
+    c[0].v[1] += 4;
+    fmt.Println(c[0].v);
+    var n = new slice<array<array<int32>>>(2, () => new(2, () => new(3)));
+    n[0][1][2] = 5;
+    builtin.clear(n);
+    n[0][1][2] = 8;
+    fmt.Println(n);
 }
 
 } // end main_package
