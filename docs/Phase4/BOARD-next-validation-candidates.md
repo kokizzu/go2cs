@@ -33,15 +33,20 @@ declaration-edge rule)*.
 | `image/draw` | `rand_package.Rand` | **build unblocked** — a `struct` field of `quick.Config` reached at an element-bearing composite literal. Now **validated 9/9** (2026-07-31), once the two runtime defects below were fixed. |
 | `io` | `io_package.Writer` | **NOT a closure defect** — see the next section. Adding the reference cannot fix it. |
 
-**Minimality is the hard part, and it is measured, not asserted.** Regenerating all 60 banked
-packages' `.tests.csproj` and diffing is the instrument, and it rejected three looser rules before
+**Minimality is the hard part, and it is measured, not asserted.** Regenerating every banked
+package's `.tests.csproj` and diffing is the instrument, and it rejected three looser rules before
 the landed one. Seeding from *every* file rather than the compiled ones drifted `compress/gzip`
 (context, crypto/tls, mime/multipart, net/http, net/url — reached through `http.Request`'s fields,
 from a Phase-4D-excluded `example_test.go` that is never compiled) and `go/token` (go/ast); firing
 the struct edge on any *value use* drifted eleven more (`sync.Once`, `sync.Map`, `reflect.Value`);
-firing it on an *empty* literal still drifted three, because an empty Go literal converts to
-`new Δsync.Once(nil)` — go2cs-gen's nil constructor, which names no field. The landed rule drifts
-**zero** of the 60.
+firing it on an *unscoped empty* literal still drifted three (mime, testing/quick,
+encoding/binary), because an empty Go literal converts to `new Δsync.Once(nil)` — go2cs-gen's nil
+constructor, which names no field, and whose FIELDWISE overload is `internal` and so not even a
+candidate outside the declaring assembly. Each of those gates drifts **zero** banked packages. The
+one edge that is deliberately not zero is the **root-scoped** empty literal, re-measured at the
+63-package roster on 2026-07-31: it changes exactly one project by exactly one line
+(`math/rand/v2` gains `internal.chacha8rand.csproj`) — the root set itself, with all three
+foreign-struct negatives byte-identical.
 
 ⚠ **Run that probe with the converter's exit status checked.** A conversion that *fails* writes no
 csproj, so an ignored failure reads exactly like "no drift" — a false-clean of the same family as
