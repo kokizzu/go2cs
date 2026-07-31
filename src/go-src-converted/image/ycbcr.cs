@@ -81,7 +81,7 @@ public static @string String(this YCbCrSubsampleRatio s) {
 }
 
 [GoRecv] public static color.Color At(this ref YCbCr p, nint x, nint y) {
-    return new color_YCbCrᴠColor(p.YCbCrAt(x, y));
+    return p.YCbCrAt(x, y);
 }
 
 [GoRecv] public static color.RGBA64 RGBA64At(this ref YCbCr p, nint x, nint y) {
@@ -240,7 +240,7 @@ public static ж<YCbCr> NewYCbCr(Rectangle r, YCbCrSubsampleRatio subsampleRatio
 }
 
 [GoRecv] public static color.Color At(this ref NYCbCrA p, nint x, nint y) {
-    return new color_NYCbCrAᴠColor(p.NYCbCrAAt(x, y));
+    return p.NYCbCrAAt(x, y);
 }
 
 [GoRecv] public static color.RGBA64 RGBA64At(this ref NYCbCrA p, nint x, nint y) {

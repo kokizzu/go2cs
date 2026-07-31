@@ -239,9 +239,9 @@ public static Rectangle Canon(this Rectangle r) {
 // At implements the [Image] interface.
 public static color.Color At(this Rectangle r, nint x, nint y) {
     if ((new Point(x, y)).In(r)) {
-        return new color_Alpha16ᴠColor(color.Opaque);
+        return color.Opaque;
     }
-    return new color_Alpha16ᴠColor(color.Transparent);
+    return color.Transparent;
 }
 
 // RGBA64At implements the [RGBA64Image] interface.

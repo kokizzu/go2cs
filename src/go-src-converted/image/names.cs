@@ -8,10 +8,10 @@ using image;
 
 partial class image_package {
 
-public static ж<Uniform> Black = NewUniform(new color_Gray16ᴠColor(color.Black));
-public static ж<Uniform> White = NewUniform(new color_Gray16ᴠColor(color.White));
-public static ж<Uniform> Transparent = NewUniform(new color_Alpha16ᴠColor(color.Transparent));
-public static ж<Uniform> ΔOpaque = NewUniform(new color_Alpha16ᴠColor(color.Opaque));
+public static ж<Uniform> Black = NewUniform(color.Black);
+public static ж<Uniform> White = NewUniform(color.White);
+public static ж<Uniform> Transparent = NewUniform(color.Transparent);
+public static ж<Uniform> ΔOpaque = NewUniform(color.Opaque);
 
 // Uniform is an infinite-sized [Image] of uniform color.
 // It implements the [color.Color], [color.Model], and [Image] interfaces.

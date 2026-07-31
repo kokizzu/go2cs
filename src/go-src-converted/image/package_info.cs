@@ -54,18 +54,7 @@ using static go.image_package;
 [assembly: GoImplement<Uniform, go.image.color_package.Model>(Pointer = true)]
 [assembly: GoImplement<YCbCr, Image>(Pointer = true)]
 [assembly: GoImplement<bufio_package.Reader, reader>(Pointer = true)]
-[assembly: GoImplement<go.image.color_package.Alpha, go.image.color_package.Color>]
-[assembly: GoImplement<go.image.color_package.Alpha16, go.image.color_package.Color>]
-[assembly: GoImplement<go.image.color_package.CMYK, go.image.color_package.Color>]
-[assembly: GoImplement<go.image.color_package.Gray, go.image.color_package.Color>]
-[assembly: GoImplement<go.image.color_package.Gray16, go.image.color_package.Color>]
-[assembly: GoImplement<go.image.color_package.NRGBA, go.image.color_package.Color>]
-[assembly: GoImplement<go.image.color_package.NRGBA64, go.image.color_package.Color>]
-[assembly: GoImplement<go.image.color_package.NYCbCrA, go.image.color_package.Color>]
 [assembly: GoImplement<go.image.color_package.Palette, go.image.color_package.Model>]
-[assembly: GoImplement<go.image.color_package.RGBA64, go.image.color_package.Color>]
-[assembly: GoImplement<go.image.color_package.YCbCr, go.image.color_package.Color>]
-[assembly: GoImplement<go.image.color_package.ΔRGBA, go.image.color_package.Color>]
 [assembly: GoImplement<ΔRGBA, Image>(Pointer = true)]
 // </InterfaceImplementations>
 

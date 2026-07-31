@@ -303,7 +303,7 @@ internal static readonly @string plteColorTypeMismatchˢ = "PLTE, color type mis
     if (exprᴛ1 == cbP1 || exprᴛ1 == cbP2 || exprᴛ1 == cbP4 || exprᴛ1 == cbP8) {
         d.palette = new color.Palette(256);
         for (nint i = 0; i < np; i++) {
-            d.palette[i] = new color_ΔRGBAᴠColor(new colorꓸRGBA(d.tmp[3 * i + 0], d.tmp[3 * i + 1], d.tmp[3 * i + 2], 0xff));
+            d.palette[i] = new colorꓸRGBA(d.tmp[3 * i + 0], d.tmp[3 * i + 1], d.tmp[3 * i + 2], 0xff);
         }
         for (nint i = np; i < 256; i++) {
             // Initialize the rest of the palette to opaque black. The spec (section
@@ -311,7 +311,7 @@ internal static readonly @string plteColorTypeMismatchˢ = "PLTE, color type mis
             // is an error", but some real-world PNG files have out-of-range pixel
             // values. We fall back to opaque black, the same as libpng 1.5.13;
             // ImageMagick 6.5.7 returns an error.
-            d.palette[i] = new color_ΔRGBAᴠColor(new colorꓸRGBA(0x00, 0x00, 0x00, 0xff));
+            d.palette[i] = new colorꓸRGBA(0x00, 0x00, 0x00, 0xff);
         }
         d.palette = d.palette[..(int)(np)];
     }
@@ -381,7 +381,7 @@ internal static readonly @string tRNSColorTypeMismatchˢ = "tRNS, color type mis
         }
         for (nint i = 0; i < n; i++) {
             var rgba = d.palette[i]._<colorꓸRGBA>();
-            d.palette[i] = new color_NRGBAᴠColor(new color.NRGBA(rgba.R, rgba.G, rgba.B, d.tmp[i]));
+            d.palette[i] = new color.NRGBA(rgba.R, rgba.G, rgba.B, d.tmp[i]);
         }
     }
     else { /* default: */

@@ -407,7 +407,7 @@ public static void DrawMask(Image dst, image.Rectangle rʗp, image.Image src, im
                 if (op == Over){
                 } else {
                     // No-op.
-                    dst.Set(x, y, new color_Alpha16ᴠColor(color.Transparent));
+                    dst.Set(x, y, color.Transparent);
                 }
                 break;
             }

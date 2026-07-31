@@ -121,7 +121,7 @@ internal static nint pixelBufferLength(nint bytesPerPixel, Rectangle r, @string 
 }
 
 [GoRecv] public static color.Color At(this ref ΔRGBA p, nint x, nint y) {
-    return new color_ΔRGBAᴠColor(p.RGBAAt(x, y));
+    return p.RGBAAt(x, y);
 }
 
 [GoRecv] public static color.RGBA64 RGBA64At(this ref ΔRGBA p, nint x, nint y) {
@@ -268,7 +268,7 @@ public static ж<ΔRGBA> NewRGBA(Rectangle r) {
 }
 
 [GoRecv] public static color.Color At(this ref RGBA64 p, nint x, nint y) {
-    return new color_RGBA64ᴠColor(p.RGBA64At(x, y));
+    return p.RGBA64At(x, y);
 }
 
 [GoRecv] public static color.RGBA64 RGBA64At(this ref RGBA64 p, nint x, nint y) {
@@ -396,7 +396,7 @@ public static ж<RGBA64> NewRGBA64(Rectangle r) {
 }
 
 [GoRecv] public static color.Color At(this ref NRGBA p, nint x, nint y) {
-    return new color_NRGBAᴠColor(p.NRGBAAt(x, y));
+    return p.NRGBAAt(x, y);
 }
 
 [GoRecv] public static color.RGBA64 RGBA64At(this ref NRGBA p, nint x, nint y) {
@@ -535,7 +535,7 @@ public static ж<NRGBA> NewNRGBA(Rectangle r) {
 }
 
 [GoRecv] public static color.Color At(this ref NRGBA64 p, nint x, nint y) {
-    return new color_NRGBA64ᴠColor(p.NRGBA64At(x, y));
+    return p.NRGBA64At(x, y);
 }
 
 [GoRecv] public static color.RGBA64 RGBA64At(this ref NRGBA64 p, nint x, nint y) {
@@ -691,7 +691,7 @@ public static ж<NRGBA64> NewNRGBA64(Rectangle r) {
 }
 
 [GoRecv] public static color.Color At(this ref Alpha p, nint x, nint y) {
-    return new color_AlphaᴠColor(p.AlphaAt(x, y));
+    return p.AlphaAt(x, y);
 }
 
 [GoRecv] public static color.RGBA64 RGBA64At(this ref Alpha p, nint x, nint y) {
@@ -807,7 +807,7 @@ public static ж<Alpha> NewAlpha(Rectangle r) {
 }
 
 [GoRecv] public static color.Color At(this ref Alpha16 p, nint x, nint y) {
-    return new color_Alpha16ᴠColor(p.Alpha16At(x, y));
+    return p.Alpha16At(x, y);
 }
 
 [GoRecv] public static color.RGBA64 RGBA64At(this ref Alpha16 p, nint x, nint y) {
@@ -926,7 +926,7 @@ public static ж<Alpha16> NewAlpha16(Rectangle r) {
 }
 
 [GoRecv] public static color.Color At(this ref Gray p, nint x, nint y) {
-    return new color_GrayᴠColor(p.GrayAt(x, y));
+    return p.GrayAt(x, y);
 }
 
 [GoRecv] public static color.RGBA64 RGBA64At(this ref Gray p, nint x, nint y) {
@@ -1030,7 +1030,7 @@ public static ж<Gray> NewGray(Rectangle r) {
 }
 
 [GoRecv] public static color.Color At(this ref Gray16 p, nint x, nint y) {
-    return new color_Gray16ᴠColor(p.Gray16At(x, y));
+    return p.Gray16At(x, y);
 }
 
 [GoRecv] public static color.RGBA64 RGBA64At(this ref Gray16 p, nint x, nint y) {
@@ -1137,7 +1137,7 @@ public static ж<Gray16> NewGray16(Rectangle r) {
 }
 
 [GoRecv] public static color.Color At(this ref CMYK p, nint x, nint y) {
-    return new color_CMYKᴠColor(p.CMYKAt(x, y));
+    return p.CMYKAt(x, y);
 }
 
 [GoRecv] public static color.RGBA64 RGBA64At(this ref CMYK p, nint x, nint y) {
@@ -1308,7 +1308,7 @@ public static ж<CMYK> NewCMYK(Rectangle r) {
         return;
     }
     nint i = p.PixOffset(x, y);
-    p.Pix[i] = (uint8)p.Palette.Index(new color_RGBA64ᴠColor(c));
+    p.Pix[i] = (uint8)p.Palette.Index(c);
 }
 
 [GoRecv] public static uint8 ColorIndexAt(this ref Paletted p, nint x, nint y) {

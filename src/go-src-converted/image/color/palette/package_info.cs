@@ -39,7 +39,6 @@ using static go.image.color.palette_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<go.image.color_package.ΔRGBA, go.image.color_package.Color>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

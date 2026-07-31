@@ -300,7 +300,7 @@ internal static error decode(this ж<decoder> Ꮡd, io.Reader r, bool configOnly
     nint j = 0;
     var p = new Δcolor.Palette(n);
     foreach (var (i, _) in p) {
-        p[i] = new color_ΔRGBAᴠColor(new colorꓸRGBA(d.tmp[j + 0], d.tmp[j + 1], d.tmp[j + 2], 0xFF));
+        p[i] = new colorꓸRGBA(d.tmp[j + 0], d.tmp[j + 1], d.tmp[j + 2], 0xFF);
         j += 3;
     }
     return (p, default!);
@@ -417,7 +417,7 @@ internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFra
         }
         {
             nint ti = (nint)d.transparentIndex; if (ti < len((~m).Palette)){
-                m.Value.Palette[ti] = new color_ΔRGBAᴠColor(new colorꓸRGBA(nil));
+                m.Value.Palette[ti] = new colorꓸRGBA(nil);
             } else {
                 // The transparentIndex is out of range, which is an error
                 // according to the spec, but Firefox and Google Chrome
@@ -426,7 +426,7 @@ internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFra
                 var p = new Δcolor.Palette(ti + 1);
                 copy(p, (~m).Palette);
                 for (nint i = len((~m).Palette); i < len(p); i++) {
-                    p[i] = new color_ΔRGBAᴠColor(new colorꓸRGBA(nil));
+                    p[i] = new colorꓸRGBA(nil);
                 }
                 m.Value.Palette = p;
             }

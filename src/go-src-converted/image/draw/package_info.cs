@@ -42,7 +42,6 @@ using static go.image.draw_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<floydSteinberg, Drawer>]
-[assembly: GoImplement<go.image.color_package.Alpha16, go.image.color_package.Color>]
 [assembly: GoImplement<go.image.color_package.RGBA64, go.image.color_package.Color>(Pointer = true)]
 [assembly: GoImplement<image_package.Paletted, Image>(Pointer = true)]
 [assembly: GoImplement<image_package.ΔRGBA, image_package.Image>(Pointer = true)]
