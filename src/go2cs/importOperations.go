@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"go/build"
+	"go/types"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -703,12 +704,10 @@ func loadPackageImplementLines(lines []string, rootPackageName string) {
 	// implicitly and needs no local adapter (see the both-foreign value arm in
 	// convertToInterfaceType).
 	if pairs, err := parseExportedValueImplementLines(lines); err == nil {
-		sanitizedRootName := getSanitizedIdentifier(rootPackageName)
-
 		packageLock.Lock()
 
 		for _, pair := range pairs {
-			importedValueImplements.Add(fmt.Sprintf("%s|%s|%s", sanitizedRootName, pair[0], canonicalRecordIfaceName(pair[1], rootPackageName)))
+			importedValueImplements.Add(valueImplementKey(rootPackageName, pair[0], pair[1], rootPackageName))
 		}
 
 		packageLock.Unlock()
@@ -857,6 +856,110 @@ func canonicalRecordIfaceName(ifaceName string, rootPackageName string) string {
 	}
 
 	return ifaceName
+}
+
+// valueImplementKey composes the ONE spelling of a VALUE-form GoImplement pair that BOTH sides of
+// the lookup can compute — the LOAD side, reading a dependency's package_info.cs, and the USE side,
+// converting a cast. Before this existed the two sides composed from different alphabets and the
+// suppression could only ever fire for a single-segment import path:
+//
+//	image/color   load `color|ΔRGBA|color_package.Color`   use `color|RGBA|image.color_package.Color`
+//	encoding/bin. load `binary|bigEndian|binary_package.ByteOrder`
+//	                                     use `binary|bigEndian|encoding.binary_package.ByteOrder`
+//	io            load `io|noBody|io_package.ReadCloser`   use `io|noBody|io_package.ReadCloser`  (match)
+//
+// Two divergences, both closed here. (1) The TYPE side: the record carries the emitted C# name
+// (image/color's `RGBA` is collision-renamed to `ΔRGBA`) while the use side named the GO type — so
+// every collision-renamed type missed on top of the path miss. Both sides now reduce the C# name.
+// (2) The INTERFACE side: see canonicalValueRecordIfaceName.
+//
+// The DECLARING-package component is what keeps a record trustworthy: a package may record a value
+// pair for a type declared in a THIRD assembly (image re-declares image/color's models), and
+// go2cs-gen realizes THAT as a local adapter class, not as the type implementing the interface. The
+// use side names the TARGET's package, so such a record can never satisfy a cast — `image|Alpha|…`
+// against `color|Alpha|…`.
+func valueImplementKey(declaringPackageName string, csTypeName string, ifaceName string, ifacePackageName string) string {
+	return fmt.Sprintf("%s|%s|%s", getSanitizedIdentifier(declaringPackageName),
+		removeSanitizationMarker(simpleCSTypeName(csTypeName)),
+		canonicalValueRecordIfaceName(ifaceName, ifacePackageName))
+}
+
+// simpleCSTypeName reduces a rendered C# type name to its last dot-segment — the form both a
+// package_info record's type argument and a cast site's rendered target agree on.
+func simpleCSTypeName(name string) string {
+	if idx := strings.LastIndex(name, "."); idx >= 0 {
+		return name[idx+1:]
+	}
+
+	return name
+}
+
+// canonicalValueRecordIfaceName reduces a VALUE record's INTERFACE side to the class-relative
+// spelling. A record PARSED from a package_info file names an interface the recording package
+// declares BARE (`Color`) and a foreign one whole (`go.image.color_package.Color`), while a CAST
+// SITE always renders the whole namespace chain — so the two spellings of one pair only ever agreed
+// when the chain was a single segment. Dropping everything ahead of the `<pkg>_package` segment
+// makes them one spelling.
+//
+// The SIMPLE name alone is NOT enough — image's Paletted→image.Image record must not satisfy a
+// Paletted→draw.Image cast (both reduce to "Image") — so the package class stays. A member path
+// under the class (`y_package.Outer.Inner`) survives intact, which is why this keeps the tail rather
+// than taking the last two segments.
+//
+// This deliberately reverses the earlier non-collapse ruling, which kept the mismatch because a
+// FOREIGN pair matching the declaring package's own record suppresses the LOCAL record the consumer
+// needs (expvar / net/http/cgi: `HandlerFunc` → `ΔHandler`, CS0029). That hazard is real but it is
+// not about the KEY: it is about HOW the declaring assembly realized the pair, and it is now gated
+// precisely, at the use site, by valueRecordRealizesAsPartialStruct.
+//
+// The POINTER set keeps canonicalRecordIfaceName: its records are ADAPTER-CLASS existence signals
+// with a different trust rule, and widening them is a separate change with its own footprint.
+func canonicalValueRecordIfaceName(ifaceName string, ifacePackageName string) string {
+	ifaceName = strings.TrimPrefix(ifaceName, RootNamespace+".")
+
+	if !strings.Contains(ifaceName, ".") {
+		// The universe `error` is not a package member.
+		if ifaceName == "error" {
+			return ifaceName
+		}
+
+		return getSanitizedIdentifier(ifacePackageName) + PackageSuffix + "." + ifaceName
+	}
+
+	parts := strings.Split(ifaceName, ".")
+
+	for i, part := range parts {
+		if strings.HasSuffix(part, PackageSuffix) {
+			return strings.Join(parts[i:], ".")
+		}
+	}
+
+	return ifaceName
+}
+
+// valueRecordRealizesAsPartialStruct reports whether a dependency's VALUE-form GoImplement record
+// can be trusted to mean "the declaring assembly's own type implements the interface" — which is
+// what lets a cast site drop its local ᴠ value adapter and hand over the bare value.
+//
+// go2cs-gen realizes a value pair as `partial struct T : Iface` for EVERY named Go type — struct,
+// slice (`[GoType("[]Color")] partial struct Palette`), map, channel, numeric
+// (`[GoType("num:nint")] partial struct ΔSignal`) — with exactly ONE exception: a named FUNC type
+// arrives as a C# DELEGATE, which cannot be a partial struct, so ImplementGenerator's
+// TypeKind.Delegate arm emits an adapter CLASS in the declaring assembly instead. The record itself
+// says nothing about which route was taken, so the target's Go underlying is the gate: trusting a
+// *types.Signature record drops the adapter and emits a bare delegate into an interface slot —
+// CS0029 for net/http's `HandlerFunc` → `ΔHandler` in expvar, net/http/cgi and three more.
+// (An interface-underlying target never reaches a value arm; recordableBase excludes it.)
+func valueRecordRealizesAsPartialStruct(targetType types.Type) bool {
+	named, ok := types.Unalias(targetType).(*types.Named)
+
+	if !ok {
+		return false
+	}
+
+	_, isSignature := named.Underlying().(*types.Signature)
+
+	return !isSignature
 }
 
 // parseExportedPointerImplementLines parses package-info lines for `GoImplement<T, Iface>(Pointer

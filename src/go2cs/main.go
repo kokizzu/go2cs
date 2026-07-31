@@ -3435,18 +3435,18 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 					}
 				}
 
-				key := fmt.Sprintf("%s|%s|%s", getSanitizedIdentifier(pkg.Name()),
-					removeSanitizationMarker(getCoreSanitizedIdentifier(named.Obj().Name())),
-					canonicalRecordIfaceName(interfaceTypeName, ifacePkgName))
+				key := valueImplementKey(pkg.Name(), targetTypeName, interfaceTypeName, ifacePkgName)
 
 				// The PRODUCTION assembly already implements the pair (its package_info.cs carries
 				// the value record, loaded when the reference model bound it as an ordinary import),
 				// so the bare value converts implicitly and a second adapter is dead machinery.
+				// Trustworthy only if the production assembly realized the pair as a partial struct
+				// (valueRecordRealizesAsPartialStruct).
 				packageLock.Lock()
 				productionImplements := importedValueImplements.Contains(key)
 				packageLock.Unlock()
 
-				recordableValueForeign = !productionImplements
+				recordableValueForeign = !(productionImplements && valueRecordRealizesAsPartialStruct(targetType))
 			}
 		}
 	}
@@ -3479,11 +3479,11 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 	if recordableBase && !pointerTarget && targetIsForeignNamed && !v.isLocalImplType(interfaceType) {
 		if named, ok := types.Unalias(targetType).(*types.Named); ok {
 			if pkg := named.Obj().Pkg(); pkg != nil && pkg != v.pkg {
-				// The interface side of the key is the CANONICAL QUALIFIED name — the simple
-				// name collides across same-named interfaces (image's Paletted→image.Image
-				// record must not satisfy a Paletted→draw.Image cast; see
-				// canonicalRecordIfaceName). A dotless render qualifies with the INTERFACE's
-				// own package (not the target struct's).
+				// The interface side of the key is the CANONICAL class-relative name — the
+				// simple name collides across same-named interfaces (image's
+				// Paletted→image.Image record must not satisfy a Paletted→draw.Image cast; see
+				// canonicalValueRecordIfaceName). A dotless render qualifies with the
+				// INTERFACE's own package (not the target struct's).
 				ifacePkgName := pkg.Name()
 
 				if ifaceNamed, ok := types.Unalias(interfaceType).(*types.Named); ok {
@@ -3492,15 +3492,16 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 					}
 				}
 
-				key := fmt.Sprintf("%s|%s|%s", getSanitizedIdentifier(pkg.Name()),
-					removeSanitizationMarker(getCoreSanitizedIdentifier(named.Obj().Name())),
-					canonicalRecordIfaceName(interfaceTypeName, ifacePkgName))
+				key := valueImplementKey(pkg.Name(), targetTypeName, interfaceTypeName, ifacePkgName)
 
 				packageLock.Lock()
 				foreignValueImplExists := importedValueImplements.Contains(key)
 				packageLock.Unlock()
 
-				if !foreignValueImplExists {
+				// A record the declaring assembly realized as an adapter CLASS rather than as a
+				// partial struct (a named FUNC type) gives the consumer nothing to convert
+				// through — keep the LOCAL record, and the local adapter with it.
+				if !foreignValueImplExists || !valueRecordRealizesAsPartialStruct(targetType) {
 					recordableValueForeign = true
 				}
 			}
@@ -3527,12 +3528,10 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 					}
 				}
 
-				key := fmt.Sprintf("%s|%s|%s", getSanitizedIdentifier(pkg.Name()),
-					removeSanitizationMarker(getCoreSanitizedIdentifier(named.Obj().Name())),
-					canonicalRecordIfaceName(interfaceTypeName, ifacePkgName))
+				key := valueImplementKey(pkg.Name(), targetTypeName, interfaceTypeName, ifacePkgName)
 
 				packageLock.Lock()
-				recordableValueSameAssembly = !importedValueImplements.Contains(key)
+				recordableValueSameAssembly = !(importedValueImplements.Contains(key) && valueRecordRealizesAsPartialStruct(targetType))
 				packageLock.Unlock()
 			}
 		}
