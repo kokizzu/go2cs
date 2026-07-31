@@ -182,40 +182,38 @@ compiling is the realistic near-term goal, not validating.
 | ~~`image/png`~~ | **DONE 2026-07-31 — 28/28, banked.** The old "does not validate" probe was stale by weeks: a fresh run split **15 of 17** top-level tests passing, and the remainder was ONE defect with a second stacked on top of it. The real root is that Go's slice-to-array-**pointer** conversion `(*[N]T)(s)` was emitted as a **copy**. png's `cbTCA8` row loop writes every un-premultiplied pixel through `d := (*[4]byte)(dst)`, so a non-opaque RGBA source encoded as an all-zero image — and the two `TestWriteRGBA` subtests that did pass passed by luck (the opaque one takes `cbTC8` entirely; the fully-transparent one wants all-zero output, which is also what a lost write produces). `array<T>` now carries a `(low, length)` window and the pointer form takes `array<T>.Alias`; the value form `[N]T(s)` still copies, because Go's does. Above it sat a redundant value adapter — see the row below — which only ever surfaced on `diff`'s failure path, so fixing the aliasing greened the package on its own. |
 | ~~`image/draw`~~ | **DONE 2026-07-31 — 9/9, banked.** All four failures were two defects, both fixed at the root. `TestDraw` was the address-taken *value parameter* box-copy: `DrawMask`'s `clip(dst, &r, src, &sp, mask, &mp)` narrows all three in place, and `Ꮡ(r)` boxed a COPY, so the draw loop ran on the unclipped rectangle. (The empty-`Pix` panic above was that same unclipped geometry, not an assertion defect — the guess in this row was wrong.) The other three were value adapters carrying no Go dynamic type, so `image.Image` type switches took the wrong arm. |
 
-## Open — mode-unstable production emission (`encoding/base64`, found 2026-07-31)
+## RETRACTED — the `encoding/base32`/`base64` "mode-unstable production emission" was STALE BANKED OUTPUT
 
-A validated sweep reports CONTENT drift on `src/go-src-converted/encoding/base64/base64.cs`, 6 lines
-each way, and it is **not** a regression — it is a *mode* disagreement, attributed by A/B and left
-open deliberately:
+This section previously recorded the receiver-box drift on `encoding/base32/base32.cs` (3/3 lines) and
+`encoding/base64/base64.cs` (6/6) as a **mode** disagreement — the receiver-box analysis reaching a
+different answer under `-tests` than under `-stdlib` — and ruled the drift "expected sweep output, and
+must be restored, never banked". **Both halves of that are wrong.** Re-measured 2026-07-31 on master:
 
-```
-- public static ж<Encoding> WithPadding(this Encoding enc, rune padding) {
--     enc = enc.ΔClone();                     …     return Ꮡ(enc);
-+ public static ж<Encoding> WithPadding(this Encoding encʗp, rune padding) {
-+     ref var enc = ref heap(encʗp.ΔClone(), out var Ꮡenc);   …     return Ꮡenc;
-```
+| Emission | `base32.cs` / `base64.cs` |
+|:--|:--|
+| whole-stdlib `-stdlib -comments` reconvert, master converter | boxed (`encʗp` + `ref var enc = ref heap(…)` + `return Ꮡenc`) |
+| the `-tests` pipeline's regenerated production `.cs` | **byte-identical** to the above |
+| the **committed** files | unboxed — the *pre-`c23caf4f9`* form |
 
-That is the address-taken value-**receiver** heap box (`markAddressTakenBoxedReceiver`, landed
-2026-07-31). The attribution is three measurements, not a guess: a whole-stdlib `-stdlib` reconvert
-with the r27 converter and one with a converter built from the previous commit emit this file
-**identically**, and both equal the **committed** file — so no recent converter change moves it under
-`-stdlib`. Running the `-tests` pipeline on `encoding/base64` from a clean **master** worktree
-reproduces the same 6/6 diff exactly. The receiver-box decision therefore depends on whether
-`_test.go` is in the analysis universe, so `-stdlib` and `-tests` disagree about this file.
+The two modes agree exactly. What actually drifted is the **corpus**: `c23caf4f9` (*an address-taken
+value RECEIVER heap-boxes*) landed before this row was written and moved these two files, and they were
+never rebanked — so every sweep since compared a current emission against a stale bank and restored it
+again, three times over. The prior "three measurements" attribution is charter §9's false-alarm trap (a)
+in its textbook form: a `bin/go2cs.exe` built before `c23caf4f9` reproduces the reported result exactly,
+including the claim that `-stdlib` "equals the committed file". Same origin as the `internal/zstd` /
+`crypto/hmac` retraction above — **force `go build -o bin/go2cs.exe` before recording a coupling.**
 
-It is the same *shape* of problem the sibling-addressed-global fix above solves for package-level
-vars — an analysis whose answer changes when test files enter the universe, making production
-emission mode-**unstable** — except that fix deliberately chose stability (it runs in ordinary
-conversion too) and the receiver path has not. Two ways to close it: make the receiver analysis
-mode-stable the same way, or accept the divergence and record base64 alongside the six known
-`-tests`-closure production files in
-[`DESIGN-named-interface-wrappers.md`](DESIGN-named-interface-wrappers.md) §7 (which does not list
-it). The first is the durable answer and matches what this arc already did for globals.
+**There is no mode-instability to close here, and there cannot be**: a method's receiver is
+function-scoped, so its address can only be taken inside its own method body. A production method's body
+is production source; a `_test.go` file cannot add a statement to it. The receiver-box analysis therefore
+reads an input `-tests` mode cannot widen — structurally unlike the package-level-var case the
+sibling-scan fix above exists for, where a `_test.go` `&g` genuinely does address production storage.
+Recorded as a property of the rule in
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *An address-taken VALUE
+PARAMETER heap-boxes too*.
 
-Until then: this drift is **expected sweep output, and must be restored, never banked**. `encoding/base32`
-(`WithPadding`) is the other site the receiver-box footprint named and is a candidate for the same
-divergence. *(Confirmed 2026-07-31 by the r27 sweep: both `encoding/base32/base32.cs` (3/3) and
-`encoding/base64/base64.cs` (6/6) drift, and both restore clean.)*
+Both files are **banked** (2026-07-31) at the boxed emission, and both packages re-validate at their
+exact counts (base32 26, base64 17). The standing sweep drift is closed.
 
 ## ~~Open~~ CLOSED — the REDUNDANT value adapter was a key mismatch (fixed 2026-07-31)
 

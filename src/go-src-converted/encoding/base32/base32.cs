@@ -79,8 +79,8 @@ public static ж<Encoding> HexEncoding = NewEncoding("0123456789ABCDEFGHIJKLMNOP
 // must not be negative, and must be a rune equal or below '\xff'.
 // Padding characters above '\x7f' are encoded as their exact byte value
 // rather than using the UTF-8 representation of the codepoint.
-public static ж<Encoding> WithPadding(this Encoding enc, rune padding) {
-    enc = enc.ΔClone();
+public static ж<Encoding> WithPadding(this Encoding encʗp, rune padding) {
+    ref var enc = ref heap(encʗp.ΔClone(), out var Ꮡenc);
 
     switch (ᐧ) {
     case {} when padding < NoPadding || padding == (rune)'\r' || padding == (rune)'\n' || padding > 0xff: {
@@ -93,7 +93,7 @@ public static ж<Encoding> WithPadding(this Encoding enc, rune padding) {
     }}
 
     enc.padChar = padding;
-    return Ꮡ(enc);
+    return Ꮡenc;
 }
 
 /*

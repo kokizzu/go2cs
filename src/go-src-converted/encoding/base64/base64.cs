@@ -76,8 +76,8 @@ public static ж<Encoding> NewEncoding(@string encoder) {
 // must not be negative, and must be a rune equal or below '\xff'.
 // Padding characters above '\x7f' are encoded as their exact byte value
 // rather than using the UTF-8 representation of the codepoint.
-public static ж<Encoding> WithPadding(this Encoding enc, rune padding) {
-    enc = enc.ΔClone();
+public static ж<Encoding> WithPadding(this Encoding encʗp, rune padding) {
+    ref var enc = ref heap(encʗp.ΔClone(), out var Ꮡenc);
 
     switch (ᐧ) {
     case {} when padding < NoPadding || padding == (rune)'\r' || padding == (rune)'\n' || padding > 0xff: {
@@ -90,7 +90,7 @@ public static ж<Encoding> WithPadding(this Encoding enc, rune padding) {
     }}
 
     enc.padChar = padding;
-    return Ꮡ(enc);
+    return Ꮡenc;
 }
 
 // Strict creates a new encoding identical to enc except with
@@ -99,11 +99,11 @@ public static ж<Encoding> WithPadding(this Encoding enc, rune padding) {
 //
 // Note that the input is still malleable, as new line characters
 // (CR and LF) are still ignored.
-public static ж<Encoding> Strict(this Encoding enc) {
-    enc = enc.ΔClone();
+public static ж<Encoding> Strict(this Encoding encʗp) {
+    ref var enc = ref heap(encʗp.ΔClone(), out var Ꮡenc);
 
     enc.strict = true;
-    return Ꮡ(enc);
+    return Ꮡenc;
 }
 
 // StdEncoding is the standard base64 encoding, as defined in RFC 4648.

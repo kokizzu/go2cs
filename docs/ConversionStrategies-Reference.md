@@ -2031,6 +2031,20 @@ after every mutation, so the `Ꮡ(enc)` copy carried the mutated value out. They
 identity rather than two, at the same single allocation. That there is no live victim is the point —
 this path was closed at its root rather than after a sixth package was found broken by it.
 
+**The receiver decision is MODE-STABLE, structurally** — `-stdlib` and `-tests` cannot disagree about
+it, and that is worth stating because the sibling category *can*. A package-level var's address may be
+taken by the package's own `_test.go`, which a production `go/packages` load never sees, so the storage
+shape has to be reconciled deliberately (*A global addressed only by the package's own `_test.go` is
+still heap-boxed*, below). A **receiver is function-scoped**: its address can only be taken inside its
+own method body, and a production method's body is production source that no `_test.go` can add a
+statement to. `markAddressTakenBoxedReceiver` reads `funcDecl.Recv` against `funcDecl.Body` and nothing
+else, so admitting test files to the analysis universe cannot change its answer. Measured against the
+claim rather than assumed: a whole-stdlib `-stdlib` reconvert and the `-tests` pipeline's regenerated
+production `.cs` for `encoding/base32` and `encoding/base64` are byte-identical. (A board row read the
+opposite from a `go2cs.exe` built *before* this fix, and filed the resulting sweep drift as an open
+mode-instability that must never be banked; the retraction — and the bank — are in
+[`Phase4/BOARD-next-validation-candidates.md`](Phase4/BOARD-next-validation-candidates.md).)
+
 (Guarded by the same `AddressOfParamWrite` behavioral test, extended: a value receiver bumped in place
 through `&b`, a `&recv.field` clip, a `&recv[i]` bump on an ARRAY receiver, and four controls that must
 not change — a `&recv[i]` on an inherently-heap **slice** receiver, a read-only `&recv`, a pointer
