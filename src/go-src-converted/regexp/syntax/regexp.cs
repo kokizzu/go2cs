@@ -232,9 +232,9 @@ internal static (printFlags must, printFlags cant) calcFlags(ж<Regexp> Ꮡre, �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x00X10ffffˢ = @"[^\x00-\x{10FFFF}]"u8;
-private static readonly @string invalidCharClassˢ = @"[invalid char class]"u8;
-private static readonly @string x00X10ffffˢ2 = @"^\x00-\x{10FFFF}"u8;
+internal static readonly @string x00X10ffffˢ = @"[^\x00-\x{10FFFF}]"u8;
+internal static readonly @string invalidCharClassˢ = @"[invalid char class]"u8;
+internal static readonly @string x00X10ffffˢ2 = @"^\x00-\x{10FFFF}"u8;
 
 // writeRegexp writes the Perl syntax for the regular expression re to b.
 internal static void writeRegexp(ж<strings.Builder> Ꮡb, ж<Regexp> Ꮡre, printFlags f, map<ж<Regexp>, printFlags> flags) => func((defer, recover) => {

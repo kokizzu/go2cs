@@ -186,7 +186,7 @@ public static bool IsGoBuild(@string line) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goBuildˢ = "//go:build"u8;
+internal static readonly @string goBuildˢ = "//go:build"u8;
 
 // splitGoBuild splits apart the leading //go:build prefix in line from the build expression itself.
 // It returns "", false if the input is not a //go:build line or if the input contains multiple lines.
@@ -304,7 +304,7 @@ internal static Expr not(this ж<exprParser> Ꮡp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingCloseParenˢ = "missing close paren"u8;
+internal static readonly @string missingCloseParenˢ = "missing close paren"u8;
 
 // atom parses a tag or a parenthesized expression.
 // On entry, the next input token HAS been lexed.
@@ -404,7 +404,7 @@ public static bool IsPlusBuild(@string line) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string buildˢ = "+build"u8;
+internal static readonly @string buildˢ = "+build"u8;
 
 // splitPlusBuild splits apart the leading // +build prefix in line from the build expression itself.
 // It returns "", false if the input is not a // +build line or if the input contains multiple lines.
@@ -441,7 +441,7 @@ internal static (@string expr, bool ok) splitPlusBuild(@string line) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ignoreˢ = "ignore"u8;
+internal static readonly @string ignoreˢ = "ignore"u8;
 
 // parsePlusBuildExpr parses a legacy build tag expression (as used with “// +build”).
 internal static (Expr, error) parsePlusBuildExpr(@string text) {
@@ -520,7 +520,7 @@ internal static bool isValidTag(@string word) {
 internal static error errComplex = errors.New("expression too complex for // +build lines"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string buildˢ2 = "// +build"u8;
+internal static readonly @string buildˢ2 = "// +build"u8;
 
 // PlusBuildLines returns a sequence of “// +build” lines that evaluate to the build expression x.
 // If the expression is too complex to convert directly to “// +build” lines, PlusBuildLines returns an error.

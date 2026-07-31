@@ -28,9 +28,9 @@ internal static (nint, slice<byte>, error) readLiterals(this ж<Reader> Ꮡr, bl
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string literalSizeTooLargeˢ = "literal size too large"u8;
-private static readonly @string rawLiteralSizeTooLargeˢ = "raw literal size too large"u8;
-private static readonly @string rleLiteralMissingˢ = "RLE literal missing"u8;
+internal static readonly @string literalSizeTooLargeˢ = "literal size too large"u8;
+internal static readonly @string rawLiteralSizeTooLargeˢ = "raw literal size too large"u8;
+internal static readonly @string rleLiteralMissingˢ = "RLE literal missing"u8;
 
 // readRawRLELiterals reads and decompresses a Raw_Literals_Block or
 // a RLE_Literals_Block. RFC 3.1.1.3.1.1.
@@ -87,8 +87,8 @@ private static readonly @string rleLiteralMissingˢ = "RLE literal missing"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string huffmanTableTooBigˢ = "Huffman table too big"u8;
-private static readonly @string missingLiteralsHuffmanˢ = "missing literals Huffman tree"u8;
+internal static readonly @string huffmanTableTooBigˢ = "Huffman table too big"u8;
+internal static readonly @string missingLiteralsHuffmanˢ = "missing literals Huffman tree"u8;
 
 // readHuffLiterals reads and decompresses a Compressed_Literals_Block or
 // a Treeless_Literals_Block. RFC 3.1.1.3.1.4.
@@ -183,7 +183,7 @@ internal static (nint, slice<byte>, error) readHuffLiterals(this ж<Reader> Ꮡr
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string literalsHuffmanStreamOutˢ = "literals Huffman stream out of bits"u8;
+internal static readonly @string literalsHuffmanStreamOutˢ = "literals Huffman stream out of bits"u8;
 
 // readLiteralsOneStream reads a single stream of compressed literals.
 internal static (slice<byte>, error) readLiteralsOneStream(this ж<Reader> Ꮡr, block data, nint off, nint compressedSize, nint regeneratedSize, slice<byte> outbuf) {
@@ -212,8 +212,8 @@ internal static (slice<byte>, error) readLiteralsOneStream(this ж<Reader> Ꮡr,
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string totalStreamsSizeTooSmallˢ = "total streams size too small for jump table"u8;
-private static readonly @string regeneratedSizeTooSmallˢ = "regenerated size too small to decode streams"u8;
+internal static readonly @string totalStreamsSizeTooSmallˢ = "total streams size too small for jump table"u8;
+internal static readonly @string regeneratedSizeTooSmallˢ = "regenerated size too small to decode streams"u8;
 
 // readLiteralsFourStreams reads four interleaved streams of
 // compressed literals.

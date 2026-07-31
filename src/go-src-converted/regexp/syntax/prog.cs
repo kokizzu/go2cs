@@ -341,18 +341,18 @@ internal static @string u32(uint32 i) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string altˢ = "alt -> "u8;
-private static readonly @string altmatchˢ = "altmatch -> "u8;
-private static readonly @string capˢ = "cap "u8;
-private static readonly @string emptyˢ = "empty "u8;
-private static readonly @string matchˢ = "match"u8;
-private static readonly @string failˢ = "fail"u8;
-private static readonly @string nopˢ = "nop -> "u8;
-private static readonly @string runeNilˢ = "rune <nil>"u8;
-private static readonly @string runeˢ = "rune "u8;
-private static readonly @string rune1ˢ = "rune1 "u8;
-private static readonly @string anyˢ = "any -> "u8;
-private static readonly @string anynotnlˢ = "anynotnl -> "u8;
+internal static readonly @string altˢ = "alt -> "u8;
+internal static readonly @string altmatchˢ = "altmatch -> "u8;
+internal static readonly @string capˢ = "cap "u8;
+internal static readonly @string emptyˢ = "empty "u8;
+internal static readonly @string matchˢ = "match"u8;
+internal static readonly @string failˢ = "fail"u8;
+internal static readonly @string nopˢ = "nop -> "u8;
+internal static readonly @string runeNilˢ = "rune <nil>"u8;
+internal static readonly @string runeˢ = "rune "u8;
+internal static readonly @string rune1ˢ = "rune1 "u8;
+internal static readonly @string anyˢ = "any -> "u8;
+internal static readonly @string anynotnlˢ = "anynotnl -> "u8;
 
 internal static void dumpInst(ж<strings.Builder> Ꮡb, ж<Inst> Ꮡi) {
     ref var i = ref Ꮡi.Value;

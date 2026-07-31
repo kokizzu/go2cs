@@ -9,7 +9,7 @@ using strings = strings_package;
 partial class constraint_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string go1ˢ = "go1"u8;
+internal static readonly @string go1ˢ = "go1"u8;
 
 // GoVersion returns the minimum Go version implied by a given build expression.
 // If the expression can be satisfied without any Go version tags, GoVersion returns an empty string.
@@ -41,7 +41,7 @@ public static @string GoVersion(Expr x) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string go1ˢ2 = "go1."u8;
+internal static readonly @string go1ˢ2 = "go1."u8;
 
 // minVersion returns the minimum Go major version (9 for go1.9)
 // implied by expression z, or if sign < 0, by expression !z.

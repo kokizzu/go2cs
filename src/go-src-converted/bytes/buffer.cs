@@ -63,7 +63,7 @@ internal static nint maxInt => /* int(^uint(0) >> 1) */ unchecked((nint)92233720
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "<nil>"u8;
+internal static readonly @string nilˢ = "<nil>"u8;
 
 // String returns the contents of the unread portion of the buffer
 // as a string. If the [Buffer] is a nil pointer, it returns "<nil>".
@@ -435,7 +435,7 @@ internal static slice<byte> growSlice(slice<byte> b, nint n) => func((defer, rec
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bytesBufferUnreadRuneˢ = "bytes.Buffer: UnreadRune: previous operation was not a successful ReadRune"u8;
+internal static readonly @string bytesBufferUnreadRuneˢ = "bytes.Buffer: UnreadRune: previous operation was not a successful ReadRune"u8;
 
 // UnreadRune unreads the last rune returned by [Buffer.ReadRune].
 // If the most recent read or write operation on the buffer was

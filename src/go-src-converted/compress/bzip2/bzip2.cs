@@ -54,9 +54,9 @@ internal static UntypedInt bzip2BlockMagic => 0x314159265359;
 internal static UntypedInt bzip2FinalMagic => 0x177245385090;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badMagicValueˢ = "bad magic value"u8;
-private static readonly @string nonHuffmanEntropyˢ = "non-Huffman entropy encoding"u8;
-private static readonly @string invalidCompressionLevelˢ = "invalid compression level"u8;
+internal static readonly @string badMagicValueˢ = "bad magic value"u8;
+internal static readonly @string nonHuffmanEntropyˢ = "non-Huffman entropy encoding"u8;
+internal static readonly @string invalidCompressionLevelˢ = "invalid compression level"u8;
 
 // setup parses the bzip2 header.
 internal static error setup(this ж<reader> Ꮡbz2, bool needMagic) {
@@ -159,10 +159,10 @@ internal static (nint n, error err) Read(this ж<reader> Ꮡbz2, slice<byte> buf
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string blockChecksumMismatchˢ = "block checksum mismatch"u8;
-private static readonly @string badMagicValueFoundˢ = "bad magic value found"u8;
-private static readonly @string fileChecksumMismatchˢ = "file checksum mismatch"u8;
-private static readonly @string badMagicValueInˢ = "bad magic value in continuation file"u8;
+internal static readonly @string blockChecksumMismatchˢ = "block checksum mismatch"u8;
+internal static readonly @string badMagicValueFoundˢ = "bad magic value found"u8;
+internal static readonly @string fileChecksumMismatchˢ = "file checksum mismatch"u8;
+internal static readonly @string badMagicValueInˢ = "bad magic value in continuation file"u8;
 
 internal static (nint, error) read(this ж<reader> Ꮡbz2, slice<byte> buf) {
     ref var bz2 = ref Ꮡbz2.Value;
@@ -239,18 +239,18 @@ internal static (nint, error) read(this ж<reader> Ꮡbz2, slice<byte> buf) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string deprecatedRandomizedˢ = "deprecated randomized files"u8;
-private static readonly @string noSymbolsInInputˢ = "no symbols in input"u8;
-private static readonly @string invalidNumberOfHuffmanˢ = "invalid number of Huffman trees"u8;
-private static readonly @string treeIndexTooLargeˢ = "tree index too large"u8;
-private static readonly @string huffmanLengthOutOfRangeˢ = "Huffman length out of range"u8;
-private static readonly @string noTreeSelectorsGivenˢ = "no tree selectors given"u8;
-private static readonly @string treeSelectorOutOfRangeˢ = "tree selector out of range"u8;
-private static readonly @string insufficientSelectorˢ = "insufficient selector indices for number of symbols"u8;
-private static readonly @string repeatCountTooLargeˢ = "repeat count too large"u8;
-private static readonly @string repeatsPastEndOfBlockˢ = "repeats past end of block"u8;
-private static readonly @string dataExceedsBlockSizeˢ = "data exceeds block size"u8;
-private static readonly @string origPtrOutOfBoundsˢ = "origPtr out of bounds"u8;
+internal static readonly @string deprecatedRandomizedˢ = "deprecated randomized files"u8;
+internal static readonly @string noSymbolsInInputˢ = "no symbols in input"u8;
+internal static readonly @string invalidNumberOfHuffmanˢ = "invalid number of Huffman trees"u8;
+internal static readonly @string treeIndexTooLargeˢ = "tree index too large"u8;
+internal static readonly @string huffmanLengthOutOfRangeˢ = "Huffman length out of range"u8;
+internal static readonly @string noTreeSelectorsGivenˢ = "no tree selectors given"u8;
+internal static readonly @string treeSelectorOutOfRangeˢ = "tree selector out of range"u8;
+internal static readonly @string insufficientSelectorˢ = "insufficient selector indices for number of symbols"u8;
+internal static readonly @string repeatCountTooLargeˢ = "repeat count too large"u8;
+internal static readonly @string repeatsPastEndOfBlockˢ = "repeats past end of block"u8;
+internal static readonly @string dataExceedsBlockSizeˢ = "data exceeds block size"u8;
+internal static readonly @string origPtrOutOfBoundsˢ = "origPtr out of bounds"u8;
 
 // readBlock reads a bzip2 block. The magic number should already have been consumed.
 internal static error /*err*/ readBlock(this ж<reader> Ꮡbz2) {

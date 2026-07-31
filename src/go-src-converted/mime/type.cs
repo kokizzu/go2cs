@@ -168,8 +168,8 @@ public static error AddExtensionType(@string ext, @string typ) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string textˢ = "text/"u8;
-private static readonly @string charsetˢ = "charset"u8;
+internal static readonly @string textˢ = "text/"u8;
+internal static readonly @string charsetˢ = "charset"u8;
 
 internal static error setExtensionType(@string extension, @string mimeType) => func<error>((defer, recover) => {
     var (justType, param, err) = ParseMediaType(mimeType);

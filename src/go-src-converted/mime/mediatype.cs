@@ -12,7 +12,7 @@ using Δunicode = unicode_package;
 partial class mime_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string utf8ˢ3 = "utf-8''"u8;
+internal static readonly @string utf8ˢ3 = "utf-8''"u8;
 
 // FormatMediaType serializes mediatype t and the parameters
 // param as a media type conforming to RFC 2045 and RFC 2616.
@@ -94,10 +94,10 @@ public static @string FormatMediaType(@string t, map<@string, @string> param) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mimeNoMediaTypeˢ = "mime: no media type"u8;
-private static readonly @string mimeExpectedSlashAfterˢ = "mime: expected slash after first token"u8;
-private static readonly @string mimeExpectedTokenAfterˢ = "mime: expected token after slash"u8;
-private static readonly @string mimeUnexpectedContentˢ = "mime: unexpected content after media subtype"u8;
+internal static readonly @string mimeNoMediaTypeˢ = "mime: no media type"u8;
+internal static readonly @string mimeExpectedSlashAfterˢ = "mime: expected slash after first token"u8;
+internal static readonly @string mimeExpectedTokenAfterˢ = "mime: expected token after slash"u8;
+internal static readonly @string mimeUnexpectedContentˢ = "mime: unexpected content after media subtype"u8;
 
 internal static error checkMediaTypeDisposition(@string s) {
     var (typ, rest) = consumeToken(s);
@@ -126,7 +126,7 @@ internal static error checkMediaTypeDisposition(@string s) {
 public static error ErrInvalidMediaParameter = errors.New("mime: invalid media parameter"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mimeDuplicateParameterˢ = "mime: duplicate parameter name"u8;
+internal static readonly @string mimeDuplicateParameterˢ = "mime: duplicate parameter name"u8;
 
 // ParseMediaType parses a media type value and any optional
 // parameters, per RFC 1521.  Media types are the values in

@@ -50,7 +50,7 @@ public static SortedMap Sort(reflectꓸValue mapValue) {
     // of a concurrent map update. The runtime is responsible for
     // yelling loudly if that happens. See issue 33275.
     nint n = mapValue.Len();
-    var sorted = new SortedMap(0, n);
+    var sorted = new SortedMap(new slice<KeyValue>(0, () => new(), n));
     var iter = mapValue.MapRange();
     while (iter.Next()) {
         sorted = append(sorted, new KeyValue(iter.Key(), iter.Value()));

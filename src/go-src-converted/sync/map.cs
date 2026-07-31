@@ -101,9 +101,11 @@ internal static ж<any> expunged = @new<any>();
     internal atomic.Pointer<any> p;
 }
 
-internal static ж<entry> newEntry(any i) {
+internal static ж<entry> newEntry(any iʗp) {
+    ref var i = ref heap(iʗp, out var Ꮡi);
+
     var e = Ꮡ(new entry(nil));
-    e.of(entry.Ꮡp).Store(Ꮡ(i));
+    e.of(entry.Ꮡp).Store(Ꮡi);
     return e;
 }
 
@@ -378,16 +380,17 @@ internal static (ж<any>, bool) trySwap(this ж<entry> Ꮡe, ж<any> Ꮡi) {
 
 // Swap swaps the value for a key and returns the previous value if any.
 // The loaded result reports whether the key was present.
-public static (any previous, bool loaded) Swap(this ж<Map> Ꮡm, any key, any value) {
+public static (any previous, bool loaded) Swap(this ж<Map> Ꮡm, any key, any valueʗp) {
     any previous = default!;
     bool loaded = default!;
 
     ref var m = ref Ꮡm.Value;
+    ref var value = ref heap(valueʗp, out var Ꮡvalue);
     var read = Ꮡm.loadReadOnly();
     {
         var (e, ok) = read.m[key, ꟷ]; if (ok) {
             {
-                var (v, okΔ1) = e.trySwap(Ꮡ(value)); if (okΔ1) {
+                var (v, okΔ1) = e.trySwap(Ꮡvalue); if (okΔ1) {
                     if (v == nil) {
                         return (default!, false);
                     }
@@ -406,7 +409,7 @@ public static (any previous, bool loaded) Swap(this ж<Map> Ꮡm, any key, any v
                 m.dirty[key] = e;
             }
             {
-                var v = e.swapLocked(Ꮡ(value)); if (v != nil) {
+                var v = e.swapLocked(Ꮡvalue); if (v != nil) {
                     loaded = true;
                     previous = v.ValueSlot;
                 }
@@ -415,7 +418,7 @@ public static (any previous, bool loaded) Swap(this ж<Map> Ꮡm, any key, any v
         {
             var (eΔ1, okΔ1) = m.dirty[key, ꟷ]; if (okΔ1){
                 {
-                    var v = eΔ1.swapLocked(Ꮡ(value)); if (v != nil) {
+                    var v = eΔ1.swapLocked(Ꮡvalue); if (v != nil) {
                         loaded = true;
                         previous = v.ValueSlot;
                     }

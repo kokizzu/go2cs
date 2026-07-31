@@ -95,7 +95,7 @@ public static (ж<Writer>, error) NewWriterLevel(io.Writer w, nint level) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gzipWriteExtraDataIsTooˢ = "gzip.Write: Extra data is too large"u8;
+internal static readonly @string gzipWriteExtraDataIsTooˢ = "gzip.Write: Extra data is too large"u8;
 
 // writeBytes writes a length-prefixed byte slice to z.w.
 [GoRecv] internal static error writeBytes(this ref Writer z, slice<byte> b) {
@@ -112,7 +112,7 @@ private static readonly @string gzipWriteExtraDataIsTooˢ = "gzip.Write: Extra d
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gzipWriteNonLatin1Headerˢ = "gzip.Write: non-Latin-1 header string"u8;
+internal static readonly @string gzipWriteNonLatin1Headerˢ = "gzip.Write: non-Latin-1 header string"u8;
 
 // writeString writes a UTF-8 string s in GZIP's format to z.w.
 // GZIP (RFC 1952) specifies that strings are NUL-terminated ISO 8859-1 (Latin-1).

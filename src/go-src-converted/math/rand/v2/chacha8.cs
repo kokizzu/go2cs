@@ -81,7 +81,7 @@ public static (nint n, error err) Read(this ж<ChaCha8> Ꮡc, slice<byte> p) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidChaCha8ReadBufferˢ = "invalid ChaCha8 Read buffer encoding"u8;
+internal static readonly @string invalidChaCha8ReadBufferˢ = "invalid ChaCha8 Read buffer encoding"u8;
 
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
 public static error UnmarshalBinary(this ж<ChaCha8> Ꮡc, slice<byte> data) {

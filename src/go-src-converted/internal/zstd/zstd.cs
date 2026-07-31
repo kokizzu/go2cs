@@ -163,10 +163,10 @@ internal static error refill(this ж<Reader> Ꮡr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidMagicNumberˢ = "invalid magic number"u8;
-private static readonly @string reservedBitSetInFrameˢ = "reserved bit set in frame header descriptor"u8;
-private static readonly @string windowSizeTooLargeˢ = "windowSize too large"u8;
-private static readonly @string dictionariesAreNotˢ = "dictionaries are not supported"u8;
+internal static readonly @string invalidMagicNumberˢ = "invalid magic number"u8;
+internal static readonly @string reservedBitSetInFrameˢ = "reserved bit set in frame header descriptor"u8;
+internal static readonly @string windowSizeTooLargeˢ = "windowSize too large"u8;
+internal static readonly @string dictionariesAreNotˢ = "dictionaries are not supported"u8;
 
 // readFrameHeader reads the frame header and prepares to read a block.
 [GoRecv] internal static error readFrameHeader(this ref Reader r) {
@@ -392,10 +392,10 @@ retry:
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string blockSizeTooLargeˢ = "block size too large"u8;
-private static readonly @string invalidBlockTypeˢ = "invalid block type"u8;
-private static readonly @string tooManyUncompressedBytesˢ = "too many uncompressed bytes in frame"u8;
-private static readonly @string notEnoughUncompressedˢ = "not enough uncompressed bytes for frame"u8;
+internal static readonly @string blockSizeTooLargeˢ = "block size too large"u8;
+internal static readonly @string invalidBlockTypeˢ = "invalid block type"u8;
+internal static readonly @string tooManyUncompressedBytesˢ = "too many uncompressed bytes in frame"u8;
+internal static readonly @string notEnoughUncompressedˢ = "not enough uncompressed bytes for frame"u8;
 
 // readBlock reads the next block from a frame.
 internal static error readBlock(this ж<Reader> Ꮡr) {

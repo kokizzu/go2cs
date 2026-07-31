@@ -251,7 +251,7 @@ internal static ж<onePassProg> onePassCopy(ж<syntax.Prog> Ꮡprog) {
     var p = Ꮡ(new onePassProg(
         Start: prog.Start,
         NumCap: prog.NumCap,
-        Inst: new slice<onePassInst>(len(prog.Inst))
+        Inst: new slice<onePassInst>(len(prog.Inst), () => new(nil))
     ));
     foreach (var (i, inst) in prog.Inst) {
         p.Value.Inst[i] = new onePassInst(Inst: inst);

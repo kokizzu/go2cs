@@ -172,7 +172,7 @@ internal static void splitWord(this WordEncoder e, ж<strings.Builder> Ꮡbuf, @
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string utf8ˢ = "UTF-8"u8;
+internal static readonly @string utf8ˢ = "UTF-8"u8;
 
 internal static bool isUTF8(@string charset) {
     return strings.EqualFold(charset, utf8ˢ);
@@ -301,9 +301,9 @@ internal static (slice<byte>, error) decode(byte encoding, @string text) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string utf8ˢ2 = "utf-8"u8;
-private static readonly @string iso88591ˢ = "iso-8859-1"u8;
-private static readonly @string usAsciiˢ = "us-ascii"u8;
+internal static readonly @string utf8ˢ2 = "utf-8"u8;
+internal static readonly @string iso88591ˢ = "iso-8859-1"u8;
+internal static readonly @string usAsciiˢ = "us-ascii"u8;
 
 [GoRecv] internal static error convert(this ref WordDecoder d, ж<strings.Builder> Ꮡbuf, @string charset, slice<byte> content) {
     switch (ᐧ) {

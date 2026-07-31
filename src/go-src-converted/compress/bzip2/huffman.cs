@@ -145,8 +145,8 @@ internal static (huffmanTree, error) newHuffmanTree(slice<uint8> lengths) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string emptyHuffmanTreeˢ = "empty Huffman tree"u8;
-private static readonly @string equalSymbolsInHuffmanˢ = "equal symbols in Huffman tree"u8;
+internal static readonly @string emptyHuffmanTreeˢ = "empty Huffman tree"u8;
+internal static readonly @string equalSymbolsInHuffmanˢ = "equal symbols in Huffman tree"u8;
 
 // buildHuffmanNode takes a slice of sorted huffmanCodes and builds a node in
 // the Huffman tree at the given level. It returns the index of the newly

@@ -130,7 +130,7 @@ internal static readonly @string magic512 = "sha\x07"u8;
 internal const nint marshaledSize = /* len(magic512) + 8*8 + chunk + 8 */ 204;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoSha512InvalidHashˢ = "crypto/sha512: invalid hash function"u8;
+internal static readonly @string cryptoSha512InvalidHashˢ = "crypto/sha512: invalid hash function"u8;
 
 [GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref digest d) {
     var b = new slice<byte>(0, marshaledSize);
@@ -167,8 +167,8 @@ private static readonly @string cryptoSha512InvalidHashˢ = "crypto/sha512: inva
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoSha512InvalidHashˢ2 = "crypto/sha512: invalid hash state identifier"u8;
-private static readonly @string cryptoSha512InvalidHashˢ3 = "crypto/sha512: invalid hash state size"u8;
+internal static readonly @string cryptoSha512InvalidHashˢ2 = "crypto/sha512: invalid hash state identifier"u8;
+internal static readonly @string cryptoSha512InvalidHashˢ3 = "crypto/sha512: invalid hash state size"u8;
 
 [GoRecv] internal static error UnmarshalBinary(this ref digest d, slice<byte> b) {
     if (len(b) < len(magic512)) {

@@ -84,8 +84,8 @@ internal const nint marshaledSize = /* len(magic256) + 8*4 + chunk + 8 */ 108;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoSha256InvalidHashˢ = "crypto/sha256: invalid hash state identifier"u8;
-private static readonly @string cryptoSha256InvalidHashˢ2 = "crypto/sha256: invalid hash state size"u8;
+internal static readonly @string cryptoSha256InvalidHashˢ = "crypto/sha256: invalid hash state identifier"u8;
+internal static readonly @string cryptoSha256InvalidHashˢ2 = "crypto/sha256: invalid hash state size"u8;
 
 [GoRecv] internal static error UnmarshalBinary(this ref digest d, slice<byte> b) {
     if (len(b) < len(magic224) || (d.is224 && ((sstring)(b[..(int)(len(magic224))])) != magic224) || (!d.is224 && ((sstring)(b[..(int)(len(magic256))])) != magic256)) {

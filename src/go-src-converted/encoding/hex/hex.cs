@@ -253,7 +253,7 @@ internal static byte toChar(byte b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string encodingHexDumperClosedˢ = "encoding/hex: dumper closed"u8;
+internal static readonly @string encodingHexDumperClosedˢ = "encoding/hex: dumper closed"u8;
 
 [GoRecv] internal static (nint n, error err) Write(this ref dumper h, slice<byte> data) {
     nint n = default!;

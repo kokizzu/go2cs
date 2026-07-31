@@ -237,7 +237,7 @@ internal static error writeHeader(io.Writer @out, @string k, @string v) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pemCannotEncodeAHeaderˢ = "pem: cannot encode a header key that contains a colon"u8;
+internal static readonly @string pemCannotEncodeAHeaderˢ = "pem: cannot encode a header key that contains a colon"u8;
 
 // Encode writes the PEM encoding of b to out.
 public static error Encode(io.Writer @out, ж<Block> Ꮡb) {

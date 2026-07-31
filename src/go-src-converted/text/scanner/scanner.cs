@@ -40,7 +40,7 @@ partial class scanner_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string inputˢ = "<input>"u8;
+internal static readonly @string inputˢ = "<input>"u8;
 
 public static @string String(this Position pos) {
     @string s = pos.Filename;
@@ -220,8 +220,8 @@ public static ж<Scanner> Init(this ж<Scanner> Ꮡs, io.Reader src) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidUtf8Encodingˢ = "invalid UTF-8 encoding"u8;
-private static readonly @string invalidCharacterNulˢ = "invalid character NUL"u8;
+internal static readonly @string invalidUtf8Encodingˢ = "invalid UTF-8 encoding"u8;
+internal static readonly @string invalidCharacterNulˢ = "invalid character NUL"u8;
 
 // next reads and returns the next Unicode character. It is designed such
 // that only a minimal amount of work needs to be done in the common ASCII
@@ -441,9 +441,9 @@ internal static (rune ch, nint digsep) digits(this ж<Scanner> Ꮡs, rune ch0, n
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string exponentHasNoDigitsˢ = "exponent has no digits"u8;
-private static readonly @string hexadecimalMantissaˢ = "hexadecimal mantissa requires a 'p' exponent"u8;
-private static readonly @string mustSeparateSuccessiveˢ = "'_' must separate successive digits"u8;
+internal static readonly @string exponentHasNoDigitsˢ = "exponent has no digits"u8;
+internal static readonly @string hexadecimalMantissaˢ = "hexadecimal mantissa requires a 'p' exponent"u8;
+internal static readonly @string mustSeparateSuccessiveˢ = "'_' must separate successive digits"u8;
 
 internal static (rune, rune) scanNumber(this ж<Scanner> Ꮡs, rune ch, bool seenDot) {
     ref var s = ref Ꮡs.Value;
@@ -551,10 +551,10 @@ internal static (rune, rune) scanNumber(this ж<Scanner> Ꮡs, rune ch, bool see
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string decimalLiteralˢ = "decimal literal"u8;
-private static readonly @string hexadecimalLiteralˢ = "hexadecimal literal"u8;
-private static readonly @string octalLiteralˢ = "octal literal"u8;
-private static readonly @string binaryLiteralˢ = "binary literal"u8;
+internal static readonly @string decimalLiteralˢ = "decimal literal"u8;
+internal static readonly @string hexadecimalLiteralˢ = "hexadecimal literal"u8;
+internal static readonly @string octalLiteralˢ = "octal literal"u8;
+internal static readonly @string binaryLiteralˢ = "binary literal"u8;
 
 internal static @string litname(rune prefix) {
     switch (prefix) {
@@ -632,7 +632,7 @@ internal static nint digitVal(rune ch) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidCharEscapeˢ = "invalid char escape"u8;
+internal static readonly @string invalidCharEscapeˢ = "invalid char escape"u8;
 
 // larger than any legal digit val
 internal static rune scanDigits(this ж<Scanner> Ꮡs, rune ch, nint @base, nint n) {
@@ -674,7 +674,7 @@ internal static rune scanEscape(this ж<Scanner> Ꮡs, rune quote) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string literalNotTerminatedˢ = "literal not terminated"u8;
+internal static readonly @string literalNotTerminatedˢ = "literal not terminated"u8;
 
 internal static nint /*n*/ scanString(this ж<Scanner> Ꮡs, rune quote) {
     nint n = default!;
@@ -709,7 +709,7 @@ internal static void scanRawString(this ж<Scanner> Ꮡs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidCharLiteralˢ = "invalid char literal"u8;
+internal static readonly @string invalidCharLiteralˢ = "invalid char literal"u8;
 
 internal static void scanChar(this ж<Scanner> Ꮡs) {
     if (Ꮡs.scanString((rune)'\'') != 1) {
@@ -718,7 +718,7 @@ internal static void scanChar(this ж<Scanner> Ꮡs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string commentNotTerminatedˢ = "comment not terminated"u8;
+internal static readonly @string commentNotTerminatedˢ = "comment not terminated"u8;
 
 internal static rune scanComment(this ж<Scanner> Ꮡs, rune ch) {
     // ch == '/' || ch == '*'

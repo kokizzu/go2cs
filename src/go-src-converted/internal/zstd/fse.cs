@@ -16,10 +16,10 @@ partial class zstd_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fseAccuracyLogTooLargeˢ = "FSE accuracy log too large"u8;
-private static readonly @string fseSymbolIndexOverflowˢ = "FSE symbol index overflow"u8;
-private static readonly @string fseSymOverflowˢ = "FSE sym overflow"u8;
-private static readonly @string tooManySymbolsInFseTableˢ = "too many symbols in FSE table"u8;
+internal static readonly @string fseAccuracyLogTooLargeˢ = "FSE accuracy log too large"u8;
+internal static readonly @string fseSymbolIndexOverflowˢ = "FSE symbol index overflow"u8;
+internal static readonly @string fseSymOverflowˢ = "FSE sym overflow"u8;
+internal static readonly @string tooManySymbolsInFseTableˢ = "too many symbols in FSE table"u8;
 
 // readFSE reads an FSE table from data starting at off.
 // maxSym is the maximum symbol value.
@@ -149,8 +149,8 @@ internal static (nint tableBits, nint roff, error err) readFSE(this ж<Reader> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fseCountErrorˢ = "FSE count error"u8;
-private static readonly @string fseStateErrorˢ = "FSE state error"u8;
+internal static readonly @string fseCountErrorˢ = "FSE count error"u8;
+internal static readonly @string fseStateErrorˢ = "FSE state error"u8;
 
 // buildFSE builds an FSE decoding table from a list of probabilities.
 // The probabilities are in norm. next is scratch space. The number of bits
@@ -240,7 +240,7 @@ internal static slice<uint32> literalLengthBase = new uint32[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fseBaselineSymbolˢ = "FSE baseline symbol overflow"u8;
+internal static readonly @string fseBaselineSymbolˢ = "FSE baseline symbol overflow"u8;
 
 // makeLiteralBaselineFSE converts the literal length fseTable to baselineTable.
 [GoRecv] internal static error makeLiteralBaselineFSE(this ref Reader r, nint off, slice<fseEntry> fseTable, slice<fseBaselineEntry> baselineTable) {
@@ -267,7 +267,7 @@ private static readonly @string fseBaselineSymbolˢ = "FSE baseline symbol overf
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fseOffsetSymbolOverflowˢ = "FSE offset symbol overflow"u8;
+internal static readonly @string fseOffsetSymbolOverflowˢ = "FSE offset symbol overflow"u8;
 
 // makeOffsetBaselineFSE converts the offset length fseTable to baselineTable.
 [GoRecv] internal static error makeOffsetBaselineFSE(this ref Reader r, nint off, slice<fseEntry> fseTable, slice<fseBaselineEntry> baselineTable) {

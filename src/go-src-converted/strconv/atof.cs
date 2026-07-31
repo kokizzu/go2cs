@@ -35,8 +35,8 @@ internal static nint commonPrefixLenIgnoreCase(@string s, @string prefix) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string infinityˢ = "infinity"u8;
-private static readonly @string nanˢ = "nan"u8;
+internal static readonly @string infinityˢ = "infinity"u8;
+internal static readonly @string nanˢ = "nan"u8;
 
 // special returns the floating-point value for the special,
 // possibly signed floating-point representations inf, infinity,

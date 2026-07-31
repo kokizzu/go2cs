@@ -62,8 +62,8 @@ internal const nint marshaledSize = /* len(magic) + 4 */ 8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string hashAdler32InvalidHashˢ = "hash/adler32: invalid hash state identifier"u8;
-private static readonly @string hashAdler32InvalidHashˢ2 = "hash/adler32: invalid hash state size"u8;
+internal static readonly @string hashAdler32InvalidHashˢ = "hash/adler32: invalid hash state identifier"u8;
+internal static readonly @string hashAdler32InvalidHashˢ2 = "hash/adler32: invalid hash state size"u8;
 
 [GoRecv] internal static error UnmarshalBinary(this ref digest d, slice<byte> b) {
     if (len(b) < len(magic) || ((sstring)(b[..(int)(len(magic))])) != magic) {

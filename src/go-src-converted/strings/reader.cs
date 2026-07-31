@@ -52,7 +52,7 @@ partial class strings_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stringsReaderReadAtˢ = "strings.Reader.ReadAt: negative offset"u8;
+internal static readonly @string stringsReaderReadAtˢ = "strings.Reader.ReadAt: negative offset"u8;
 
 // ReadAt implements the [io.ReaderAt] interface.
 [GoRecv] public static (nint n, error err) ReadAt(this ref Reader r, slice<byte> b, int64 off) {
@@ -85,7 +85,7 @@ private static readonly @string stringsReaderReadAtˢ = "strings.Reader.ReadAt: 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stringsReaderUnreadByteˢ = "strings.Reader.UnreadByte: at beginning of string"u8;
+internal static readonly @string stringsReaderUnreadByteˢ = "strings.Reader.UnreadByte: at beginning of string"u8;
 
 // UnreadByte implements the [io.ByteScanner] interface.
 [GoRecv] public static error UnreadByte(this ref Reader r) {
@@ -120,8 +120,8 @@ private static readonly @string stringsReaderUnreadByteˢ = "strings.Reader.Unre
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stringsReaderUnreadRuneˢ = "strings.Reader.UnreadRune: at beginning of string"u8;
-private static readonly @string stringsReaderUnreadRuneˢ2 = "strings.Reader.UnreadRune: previous operation was not ReadRune"u8;
+internal static readonly @string stringsReaderUnreadRuneˢ = "strings.Reader.UnreadRune: at beginning of string"u8;
+internal static readonly @string stringsReaderUnreadRuneˢ2 = "strings.Reader.UnreadRune: previous operation was not ReadRune"u8;
 
 // UnreadRune implements the [io.RuneScanner] interface.
 [GoRecv] public static error UnreadRune(this ref Reader r) {
@@ -137,8 +137,8 @@ private static readonly @string stringsReaderUnreadRuneˢ2 = "strings.Reader.Unr
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stringsReaderSeekInvalidˢ = "strings.Reader.Seek: invalid whence"u8;
-private static readonly @string stringsReaderSeekˢ = "strings.Reader.Seek: negative position"u8;
+internal static readonly @string stringsReaderSeekInvalidˢ = "strings.Reader.Seek: invalid whence"u8;
+internal static readonly @string stringsReaderSeekˢ = "strings.Reader.Seek: negative position"u8;
 
 // Seek implements the [io.Seeker] interface.
 [GoRecv] public static (int64, error) Seek(this ref Reader r, int64 offset, nint whence) {

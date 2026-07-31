@@ -290,9 +290,9 @@ public static @string Error(this SetupError s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string argumentIsNotAFunctionˢ = "argument is not a function"u8;
-private static readonly @string functionDoesNotReturnOneˢ = "function does not return one value"u8;
-private static readonly @string functionDoesNotReturnAˢ = "function does not return a bool"u8;
+internal static readonly @string argumentIsNotAFunctionˢ = "argument is not a function"u8;
+internal static readonly @string functionDoesNotReturnOneˢ = "function does not return one value"u8;
+internal static readonly @string functionDoesNotReturnAˢ = "function does not return a bool"u8;
 
 // Check looks for an input to f, any function that returns bool,
 // such that f returns false. It calls f repeatedly, with arbitrary
@@ -325,7 +325,7 @@ public static error Check(any f, ж<Config> Ꮡconfig) {
     if (fType.Out(0).Kind() != reflect.ΔBool) {
         return ((SetupError)(@string)functionDoesNotReturnAˢ);
     }
-    var arguments = new slice<reflectꓸValue>(fType.NumIn());
+    var arguments = new slice<reflectꓸValue>(fType.NumIn(), () => new(nil));
     var rand = config.getRand();
     nint maxCount = config.getMaxCount();
     for (nint i = 0; i < maxCount; i++) {
@@ -341,9 +341,9 @@ public static error Check(any f, ж<Config> Ꮡconfig) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fIsNotAFunctionˢ = "f is not a function"u8;
-private static readonly @string gIsNotAFunctionˢ = "g is not a function"u8;
-private static readonly @string functionsHaveDifferentˢ = "functions have different types"u8;
+internal static readonly @string fIsNotAFunctionˢ = "f is not a function"u8;
+internal static readonly @string gIsNotAFunctionˢ = "g is not a function"u8;
+internal static readonly @string functionsHaveDifferentˢ = "functions have different types"u8;
 
 // CheckEqual looks for an input on which f and g return different results.
 // It calls f and g repeatedly with arbitrary values for each argument.
@@ -366,7 +366,7 @@ public static error CheckEqual(any f, any g, ж<Config> Ꮡconfig) {
     if (!AreEqual(xType, yType)) {
         return ((SetupError)(@string)functionsHaveDifferentˢ);
     }
-    var arguments = new slice<reflectꓸValue>(xType.NumIn());
+    var arguments = new slice<reflectꓸValue>(xType.NumIn(), () => new(nil));
     var rand = config.getRand();
     nint maxCount = config.getMaxCount();
     for (nint i = 0; i < maxCount; i++) {

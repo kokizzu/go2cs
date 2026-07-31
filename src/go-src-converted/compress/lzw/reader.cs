@@ -124,7 +124,7 @@ public static (nint, error) Read(this ж<Reader> Ꮡr, slice<byte> b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lzwInvalidCodeˢ = "lzw: invalid code"u8;
+internal static readonly @string lzwInvalidCodeˢ = "lzw: invalid code"u8;
 
 // decode decompresses bytes from r and leaves them in d.toRead.
 // read specifies how to decode bytes into codes.
@@ -271,7 +271,7 @@ internal static ж<Reader> newReader(io.Reader src, Order order, nint litWidth) 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lzwUnknownOrderˢ = "lzw: unknown order"u8;
+internal static readonly @string lzwUnknownOrderˢ = "lzw: unknown order"u8;
 
 [GoRecv] internal static void init(this ref Reader r, io.Reader src, Order order, nint litWidth) {
     var exprᴛ1 = order;

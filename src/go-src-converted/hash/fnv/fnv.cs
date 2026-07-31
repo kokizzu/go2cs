@@ -333,8 +333,8 @@ internal const nint marshaledSize128 = /* len(magic128) + 8*2 */ 20;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string hashFnvInvalidHashStateˢ = "hash/fnv: invalid hash state identifier"u8;
-private static readonly @string hashFnvInvalidHashStateˢ2 = "hash/fnv: invalid hash state size"u8;
+internal static readonly @string hashFnvInvalidHashStateˢ = "hash/fnv: invalid hash state identifier"u8;
+internal static readonly @string hashFnvInvalidHashStateˢ2 = "hash/fnv: invalid hash state size"u8;
 
 [GoRecv] internal static error UnmarshalBinary(this ref sum32 s, slice<byte> b) {
     if (len(b) < len(magic32) || ((sstring)(b[..(int)(len(magic32))])) != magic32) {

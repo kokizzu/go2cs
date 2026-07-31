@@ -119,7 +119,7 @@ internal static error incHi(this ж<Writer> Ꮡw) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lzwInputByteTooLargeForˢ = "lzw: input byte too large for the litWidth"u8;
+internal static readonly @string lzwInputByteTooLargeForˢ = "lzw: input byte too large for the litWidth"u8;
 
 // Write writes a compressed representation of p to w's underlying writer.
 public static (nint n, error err) Write(this ж<Writer> Ꮡw, slice<byte> p) {

@@ -190,7 +190,7 @@ public static ж<Type> TypeFor<T>() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tMcount0ˢ = "t.mcount > 0"u8;
+internal static readonly @string tMcount0ˢ = "t.mcount > 0"u8;
 
 public static unsafe slice<Method> Methods(this ж<UncommonType> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -202,7 +202,7 @@ public static unsafe slice<Method> Methods(this ж<UncommonType> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tXcount0ˢ = "t.xcount > 0"u8;
+internal static readonly @string tXcount0ˢ = "t.xcount > 0"u8;
 
 public static unsafe slice<Method> ExportedMethods(this ж<UncommonType> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -570,7 +570,7 @@ public static ж<Type> Out(this ж<ΔFuncType> Ꮡt, nint i) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tInCount0ˢ = "t.inCount > 0"u8;
+internal static readonly @string tInCount0ˢ = "t.inCount > 0"u8;
 
 public static unsafe slice<ж<Type>> InSlice(this ж<ΔFuncType> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -586,7 +586,7 @@ public static unsafe slice<ж<Type>> InSlice(this ж<ΔFuncType> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string outCount0ˢ = "outCount > 0"u8;
+internal static readonly @string outCount0ˢ = "outCount > 0"u8;
 
 public static unsafe slice<ж<Type>> OutSlice(this ж<ΔFuncType> Ꮡt) {
     ref var t = ref Ꮡt.Value;
@@ -663,7 +663,7 @@ public static ж<byte> DataChecked(this ΔName n, nint off, @string whySafe) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string theRuntimeDoesnTNeedToˢ = "the runtime doesn't need to give you a reason"u8;
+internal static readonly @string theRuntimeDoesnTNeedToˢ = "the runtime doesn't need to give you a reason"u8;
 
 // Data does pointer arithmetic on n's Bytes, and that arithmetic is asserted to
 // be safe because the runtime made the call (other packages use DataChecked)
@@ -687,7 +687,7 @@ public static bool IsEmbedded(this ΔName n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string readVarintˢ = "read varint"u8;
+internal static readonly @string readVarintˢ = "read varint"u8;
 
 // ReadVarint parses a varint as encoded by encoding/binary.
 // It returns the number of encoded bytes and the encoded value.
@@ -727,7 +727,7 @@ internal static nint writeVarint(slice<byte> buf, nint n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nonEmptyStringˢ = "non-empty string"u8;
+internal static readonly @string nonEmptyStringˢ = "non-empty string"u8;
 
 // Name returns the tag string for n, or empty if there is none.
 public static @string Name(this ΔName n) {

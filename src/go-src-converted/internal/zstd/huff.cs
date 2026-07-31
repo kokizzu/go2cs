@@ -13,10 +13,10 @@ partial class zstd_package {
 internal static UntypedInt maxHuffmanBits => 11;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string huffmanCountOverflowˢ = "Huffman count overflow"u8;
-private static readonly @string huffmanWeightOverflowˢ = "Huffman weight overflow"u8;
-private static readonly @string badHuffmanWeightsˢ = "bad Huffman weights"u8;
-private static readonly @string huffmanTableTooSmallˢ = "Huffman table too small"u8;
+internal static readonly @string huffmanCountOverflowˢ = "Huffman count overflow"u8;
+internal static readonly @string huffmanWeightOverflowˢ = "Huffman weight overflow"u8;
+internal static readonly @string badHuffmanWeightsˢ = "bad Huffman weights"u8;
+internal static readonly @string huffmanTableTooSmallˢ = "Huffman table too small"u8;
 
 // readHuff reads Huffman table from data starting at off into table.
 // Each entry in a Huffman table is a pair of bytes.

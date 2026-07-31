@@ -140,14 +140,14 @@ public static slice<byte> AppendUint64(this littleEndian _, slice<byte> b, uint6
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string littleEndianˢ = "LittleEndian"u8;
+internal static readonly @string littleEndianˢ = "LittleEndian"u8;
 
 public static @string String(this littleEndian _) {
     return littleEndianˢ;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string binaryLittleEndianˢ = "binary.LittleEndian"u8;
+internal static readonly @string binaryLittleEndianˢ = "binary.LittleEndian"u8;
 
 public static @string GoString(this littleEndian _) {
     return binaryLittleEndianˢ;
@@ -230,28 +230,28 @@ public static slice<byte> AppendUint64(this bigEndian _, slice<byte> b, uint64 v
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bigEndianˢ = "BigEndian"u8;
+internal static readonly @string bigEndianˢ = "BigEndian"u8;
 
 public static @string String(this bigEndian _) {
     return bigEndianˢ;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string binaryBigEndianˢ = "binary.BigEndian"u8;
+internal static readonly @string binaryBigEndianˢ = "binary.BigEndian"u8;
 
 public static @string GoString(this bigEndian _) {
     return binaryBigEndianˢ;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nativeEndianˢ = "NativeEndian"u8;
+internal static readonly @string nativeEndianˢ = "NativeEndian"u8;
 
 public static @string String(this nativeEndian _) {
     return nativeEndianˢ;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string binaryNativeEndianˢ = "binary.NativeEndian"u8;
+internal static readonly @string binaryNativeEndianˢ = "binary.NativeEndian"u8;
 
 public static @string GoString(this nativeEndian _) {
     return binaryNativeEndianˢ;
