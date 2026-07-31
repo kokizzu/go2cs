@@ -7185,6 +7185,54 @@ locally and the conversion site wraps in the locally generated value adapter
 (`new binary_bigEndianᴠByteOrder(binary.BigEndian)`) — the value sibling of the both-foreign pointer
 adapter above.
 
+**A value adapter declares `IValueAdapter`, so the runtime sees the Go DYNAMIC TYPE through it.**
+The adapter is a C# wrapper class, but Go's dynamic type of the interface value it carries is the
+wrapped struct. golib settles that question at three places — `AreEqual` (Go `==`), `TryTypeAssert`
+(`x.(T)` and every type-switch case guard), and `type()` (the type-switch operand) — and each one
+unwraps the OTHER two adapter kinds through their marker (`IжAdapter.Box`, `IInterfaceAdapter.Value`)
+while the value adapter carried no marker at all. So all three answered against the **wrapper class**:
+
+```go
+got := dst.At(0, 10)                 // image: color.Color carrying a color.NRGBA
+got == color.NRGBA{…}                // Go true  -> C# false (AreEqual: type mismatch, bails
+                                     //            before the adapter's own Equals ever runs)
+v, ok := got.(color.NRGBA)           // Go ok=true -> C# ok=false
+switch got.(type) { case color.NRGBA: … }   // Go matches -> C# fell to default
+```
+
+The panic text made the shape unmistakable: `interface conversion: interface {} is
+colorlike.NRGBA, not colorlike.NRGBA` — `%T` already unwrapped (through `TryAdapterWrappedType`)
+while the assert did not. The fix is the missing third marker, mirroring the other two exactly:
+
+```csharp
+public interface IValueAdapter : IGoAdapter { object? Value { get; } }
+```
+
+`ImplementGenerator`'s `ValueAdapterImplTemplate` now emits it on every `ᴠ` adapter —
+**explicitly** implemented, so it can never collide with a forwarded Go method named `Value` (a
+promoted adapter binds its members by bare name) — and the three sites unwrap it beside the pointer
+kind through one shared `UnwrapAdapter` helper, still behind the single `IGoAdapter` probe that
+keeps an ordinary Go value at one failing interface test. `GetGoTypeName`, `GoDynamicTypeOf` and the
+reflect-bridge assignability check gained the same arm, and `GoReflect.TryAdapterWrappedType`
+switched from a NAME probe for the `ᴠ` infix plus a package-class nesting check to the exact marker
+test. One marker fixes equality, both assert forms, the type switch and `%T` together — an
+`Equals`-only fallback would have fixed equality alone and left the dynamic-type rule weaker.
+
+Unwrapping in the assert's **interface** tier matters independently: the adapter class carries only
+the ONE interface it was generated for, so probing it can never resolve the wrapped struct's other
+interfaces — `image/gif`'s `m.ColorModel().(color.Palette)` and `c.(color.RGBA)` are exactly that
+shape.
+
+Only the CROSS-ASSEMBLY shape reproduces any of this: a same-package value conversion implements the
+interface on the struct directly (the value-boxing partial-struct implementation), so there is no
+wrapper and never was a problem — which is why the defect stayed invisible until packages like
+`image`/`image/draw` converted a foreign struct to a foreign interface. (Guarded by the
+`ValueAdapterDynamicType` behavioral test: a sibling `colorlike` package declares the interface and
+two value-receiver implementers, `main` does the conversion, and the test exercises `==` both
+operand orders, interface-vs-interface equality, both type-assert forms plus a miss, a type switch
+over both implementers, `%T`, method dispatch and an interface-keyed map — output-compared vs
+`go run`.)
+
 ### An exported func type publicizes the unexported types in its signature
 An EXPORTED named func type becomes a `public` C# delegate; an unexported type in its signature —
 x/text/unicode/bidi's `type Option func(*options)`, where `options` is package-private — is then

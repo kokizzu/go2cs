@@ -1507,6 +1507,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckUntypedNestedSliceComposite() => CheckTarget("UntypedNestedSliceComposite");
 
     [TestMethod]
+    public void CheckValueAdapterDynamicType() => CheckTarget("ValueAdapterDynamicType");
+
+    [TestMethod]
     public void CheckVariableCapture() => CheckTarget("VariableCapture");
 
     [TestMethod]

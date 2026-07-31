@@ -73,6 +73,11 @@ public static class GoReflect
         if (value is IжAdapter { Box: not null } pointerAdapter)
             return pointerAdapter.Box.GetType();
 
+        // A value-sourced adapter (IValueAdapter) wraps a COPY of a struct this assembly cannot
+        // partial — Go's dynamic type is that struct, never the adapter class.
+        if (value is IValueAdapter { Value: not null } valueAdapter)
+            return valueAdapter.Value.GetType();
+
         return value.GetType();
     }
 
@@ -315,12 +320,11 @@ public static class GoReflect
             return false;
         }
 
-        // A value-sourced adapter carries the ᴠ infix in its class name, nests in its consuming
-        // package class, and its only constructor takes the wrapped struct by value.
-        if (!t.Name.Contains(ValueAdapterInfix, StringComparison.Ordinal))
-            return false;
-
-        if (t.DeclaringType?.Name.EndsWith(PackageSuffix, StringComparison.Ordinal) != true)
+        // A value-sourced adapter declares IValueAdapter; its only constructor takes the wrapped
+        // struct by value. (This was a NAME probe for the ᴠ infix plus a package-class nesting
+        // check until the marker existed — the marker is exact where the name was a heuristic, and
+        // it is the same signal the equality / type-assert / type-switch paths now gate on.)
+        if (!typeof(IValueAdapter).IsAssignableFrom(t))
             return false;
 
         foreach (ConstructorInfo ctor in t.GetConstructors())
@@ -674,6 +678,8 @@ public static class GoReflect
 
         if (dynamicSrc is IжAdapter { Box: not null } pointerAdapter)
             dynamicSrc = pointerAdapter.Box;
+        else if (dynamicSrc is IValueAdapter { Value: not null } valueAdapter)
+            dynamicSrc = valueAdapter.Value;
 
         if (dynamicSrc.GetType() == dstType)
         {

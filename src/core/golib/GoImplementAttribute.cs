@@ -100,3 +100,26 @@ public interface IInterfaceAdapter : IGoAdapter
     /// </summary>
     object? Value { get; }
 }
+
+/// <summary>
+/// Implemented by generated VALUE-sourced interface-implementation adapters that wrap a COPY of a
+/// struct (or a named-func delegate) which this assembly cannot make <c>partial</c> — because the
+/// struct is declared in ANOTHER assembly, or is a delegate.
+/// </summary>
+/// <remarks>
+/// The interface value's Go DYNAMIC TYPE is the wrapped struct, never the adapter class, so Go
+/// <c>==</c>, a type assert back to the struct type, a type switch and <c>%T</c> all unwrap through
+/// <see cref="Value"/> — exactly as the other two kinds do through their own accessor.
+/// (image's <c>func (p *NRGBA) At(x, y int) color.Color</c> hands back one of these: the
+/// conversion sits in <c>image</c>, where both <c>color.NRGBA</c> and <c>color.Color</c> are
+/// foreign.) Without the marker every one of those questions answered against the wrapper class and
+/// silently diverged; the value-boxing partial-struct implementation used for a LOCAL struct has no
+/// wrapper and never had the problem, which is why only the cross-assembly shape reproduces it.
+/// </remarks>
+public interface IValueAdapter : IGoAdapter
+{
+    /// <summary>
+    /// Gets the wrapped value copy — the Go dynamic value this adapter stands in for.
+    /// </summary>
+    object? Value { get; }
+}

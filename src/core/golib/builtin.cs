@@ -1693,6 +1693,17 @@ public static class builtin
             return true;
         }
 
+        // An interface value created from a VALUE of a struct this assembly cannot partial (one
+        // declared in ANOTHER assembly, or a named-func delegate) is a generated IValueAdapter
+        // wrapping a copy; a type assert back to the struct type (`s.(T)`) unwraps to that copy,
+        // which is the interface value's Go dynamic value. Same placement and reasoning as the
+        // pointer tier above.
+        if (isAdapter && target is IValueAdapter { Value: T wrapped })
+        {
+            value = wrapped;
+            return true;
+        }
+
         if (AssertFacts<T>.IsInterface)
         {
             // The Go DYNAMIC VALUE, never the wrapper. A pointer-sourced interface value is a
@@ -1703,9 +1714,13 @@ public static class builtin
             // to the receiver box so every tier below sees the box's (= *T's) method set.
             // Null-guarded: an adapter holding a nil *T keeps the adapter view, since no
             // dispatchable receiver exists to build an implementation over.
-            // Gated on the same probe as the tiers above — only an IGoAdapter can be an IжAdapter,
-            // so this is equivalent and costs an ordinary interface assert one less failing test.
-            object subject = isAdapter && target is IжAdapter { Box: not null } boxAdapter ? boxAdapter.Box : target;
+            // Gated on the same probe as the tiers above — only an IGoAdapter can be an IжAdapter
+            // or an IValueAdapter, so this is equivalent and costs an ordinary interface assert one
+            // less failing test. A VALUE adapter unwraps for the same reason: the adapter class
+            // carries only the ONE interface it was generated for, so probing it can never resolve
+            // the wrapped struct's other interfaces (image's color.Color value could not assert to
+            // any dyn interface, and `ColorModel().(color.Palette)` failed for image/gif).
+            object subject = isAdapter ? UnwrapAdapter(target) : target;
             Type subjectType = subject.GetType();
             int epoch = AdapterRegistry.Epoch;
 
@@ -1964,16 +1979,37 @@ public static class builtin
 
             // An interface value created from a Go POINTER (`var s Iface = &t`) is a generated
             // IжAdapter wrapping the receiver box — its Go dynamic type is the pointer itself,
-            // so a `case *T:` label (emitted `case ж<T> t:`) must match the box. A null Box
-            // (interface holding a nil *T) stays wrapped: Go would still match `case *T:` there,
-            // but no C# type pattern can bind null — the adapter at least keeps `case null:`
-            // (Go `case nil:`) a non-match, since such an interface value is NOT nil.
-            if (target is IжAdapter { Box: not null } adapter)
-                return adapter.Box;
+            // so a `case *T:` label (emitted `case ж<T> t:`) must match the box. One created from
+            // a VALUE this assembly cannot partial is a generated IValueAdapter wrapping a copy,
+            // whose Go dynamic type is the struct — so `case color.NRGBA:` must match that copy.
+            // A null Box (interface holding a nil *T) stays wrapped: Go would still match
+            // `case *T:` there, but no C# type pattern can bind null — the adapter at least keeps
+            // `case null:` (Go `case nil:`) a non-match, since such an interface value is NOT nil.
+            target = UnwrapAdapter(target);
         }
 
         // Infer common go type as needed
         return target is string str ? new @string(str) : target;
+    }
+
+    /// <summary>
+    /// Gets the Go DYNAMIC VALUE a generated interface-implementation adapter stands in for: the
+    /// receiver box of a POINTER-sourced adapter, or the wrapped copy of a VALUE-sourced one.
+    /// </summary>
+    /// <remarks>
+    /// Returns <paramref name="target"/> unchanged when it carries neither — an adapter holding a
+    /// nil <c>*T</c> keeps the adapter view, since no dispatchable receiver exists to stand in for
+    /// it. Callers gate this behind one <see cref="IGoAdapter"/> probe, so an ordinary Go value
+    /// never reaches it (see <see cref="IGoAdapter"/> for why that gate matters).
+    /// </remarks>
+    private static object UnwrapAdapter(object target)
+    {
+        return target switch
+        {
+            IжAdapter { Box: not null } pointerAdapter => pointerAdapter.Box,
+            IValueAdapter { Value: not null } valueAdapter => valueAdapter.Value,
+            _ => target
+        };
     }
 
     // ** Conversion Functions **
@@ -2721,6 +2757,21 @@ public static class builtin
         if (right is IжAdapter rightAdapter)
             right = rightAdapter.Box;
 
+        // An interface value created from a VALUE this assembly cannot partial is a generated
+        // IValueAdapter wrapping a copy; Go compares it by the DYNAMIC TYPE and value it carries.
+        // Unwrap both sides BEFORE the type check below — an adapter compared against the raw
+        // struct (image/draw's `got != want` over color.NRGBA) is a type MISMATCH as long as one
+        // side is still the wrapper class, so it answered false without ever reaching an Equals.
+        // Null-guarded, unlike the pointer tier (whose Box is never null — a generated pointer
+        // adapter substitutes ж<T>.NilBox): an adapter over a NIL named-func delegate keeps its
+        // wrapper view, so `v == nil` stays FALSE for it exactly as in Go, where an interface
+        // holding a nil func value is not a nil interface.
+        if (left is IValueAdapter { Value: not null } leftValueAdapter)
+            left = leftValueAdapter.Value;
+
+        if (right is IValueAdapter { Value: not null } rightValueAdapter)
+            right = rightValueAdapter.Value;
+
         // Check if both are null
         if (left is null && right is null)
             return true;
@@ -2805,6 +2856,8 @@ public static class builtin
             // A generated pointer-sourced interface adapter stands in for the *T it wraps —
             // Go's dynamic type is the pointer, never the adapter class.
             IжAdapter adapter => GetGoTypeName(adapter.Box),
+            // A value-sourced adapter stands in for the struct copy it wraps.
+            IValueAdapter adapter => GetGoTypeName(adapter.Value),
             // An interface-to-interface adapter preserves the original dynamic value.
             IInterfaceAdapter adapter => GetGoTypeName(adapter.Value),
             _ => GetGoTypeName(value?.GetType())

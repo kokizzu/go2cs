@@ -42,11 +42,17 @@ internal class ValueAdapterImplTemplate : TemplateBase
              /// Value-sourced '{{GetSimpleName(InterfaceName)}}' implementation adapter for the foreign
              /// '{{StructName}}' — wraps a COPY, exactly as Go's interface holds a value.
              /// </summary>
-             {{AdapterScope}} sealed class {{AdapterName}} : {{InterfaceName}}
+             {{AdapterScope}} sealed class {{AdapterName}} : {{InterfaceName}}, IValueAdapter
              {
                  private readonly {{StructName}} m_value;
 
                  public {{AdapterName}}({{StructName}} value) => m_value = value;
+
+                 // The Go DYNAMIC TYPE of this interface value is the wrapped struct, never this
+                 // class: the golib runtime unwraps here for `==`, type asserts, type switches and
+                 // %T. Implemented EXPLICITLY so it can never collide with a forwarded Go method
+                 // named Value (a promoted adapter binds its members by bare name).
+                 object? IValueAdapter.Value => m_value;
 
                  {{MethodsImplementation}}
 
