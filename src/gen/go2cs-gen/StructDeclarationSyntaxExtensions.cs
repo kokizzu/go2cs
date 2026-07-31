@@ -123,6 +123,61 @@ public static class StructDeclarationSyntaxExtensions
         return members;
     }
 
+    /// <summary>
+    /// METADATA counterpart to <see cref="GetStructMembers"/>: the members of a struct whose SOURCE
+    /// this compilation cannot see, read from its type SYMBOL. Same tuple shape, so a caller can use
+    /// either resolution interchangeably.
+    /// </summary>
+    /// <remarks>
+    /// A real MSBuild build hands a <c>&lt;ProjectReference&gt;</c> to the compiler as compiled
+    /// metadata, so the syntax walk resolves NOTHING cross-assembly — which is why a defined type over
+    /// a foreign struct (<c>type index Index</c> in a white-box <c>_test.go</c>, or a plain
+    /// <c>type P otherpkg.Point</c>) forwarded no members and every field selection on it was CS1061.
+    /// Membership mirrors <c>StructTypeTemplate.getMetadataStructFields</c>: instance FIELDS plus the
+    /// REF-RETURNING properties a referenced assembly's generated wrapper exposes for its embedded and
+    /// promoted members. Visibility is decided by <see cref="Compilation.IsSymbolAccessibleWithin"/>
+    /// rather than a public-only test, which is exactly Go's own rule projected into C#: an exported
+    /// field is public and always forwards, while an unexported one is internal and forwards only where
+    /// C# can reach it — i.e. the friend (<c>InternalsVisibleTo</c>) test assembly, which is precisely
+    /// the same-Go-package case where Go permits the selection.
+    /// </remarks>
+    public static List<(string typeName, string memberName, bool isReferenceType, bool isProperty)> GetForeignStructMembers(
+        INamedTypeSymbol structType,
+        Compilation compilation)
+    {
+        List<(string typeName, string memberName, bool isReferenceType, bool isProperty)> members = [];
+
+        foreach (ISymbol member in structType.GetMembers())
+        {
+            if (member.IsStatic || member.IsImplicitlyDeclared || Common.GetSimpleName(member.Name) == "_")
+                continue;
+
+            if (!compilation.IsSymbolAccessibleWithin(member, compilation.Assembly))
+                continue;
+
+            ITypeSymbol? memberType = member switch
+            {
+                IFieldSymbol field => field.Type,
+                // Only a REF-RETURNING, non-indexer property is a converted struct's member surface
+                // (the embed accessor and its promoted field accessors); a by-value property is
+                // generator scaffolding (`Value` on a wrapper) and must not be forwarded.
+                IPropertySymbol { ReturnsByRef: true, IsIndexer: false } property => property.Type,
+                _ => null
+            };
+
+            if (memberType is null)
+                continue;
+
+            members.Add((
+                memberType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                member.Name,
+                IsReferenceTypeOrUnconstrainedGeneric(memberType),
+                member is IPropertySymbol));
+        }
+
+        return members;
+    }
+
     // Determine if type is a reference type or unconstrained generic type parameter
     private static bool IsReferenceTypeOrUnconstrainedGeneric(ITypeSymbol? typeSymbol)
     {

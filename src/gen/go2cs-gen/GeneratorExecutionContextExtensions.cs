@@ -289,4 +289,28 @@ public static class GeneratorExecutionContextExtensions
 
         return (null, null);
     }
+
+    /// <summary>
+    /// Resolves a <c>[GoType("…")]</c> definition string to the STRUCT symbol it names, for the case
+    /// <see cref="GetStructDeclaration"/> cannot serve — a struct reached only as compiled metadata.
+    /// Returns null when the name resolves to something other than a struct (a named type over an
+    /// interface, a delegate, …), which keeps the plain wrapper.
+    /// </summary>
+    /// <remarks>
+    /// The definition arrives in whichever qualification the converter's own file needed: fully
+    /// rooted (<c>global::go.index.suffixarray_package.Index</c>) under the <c>-tests</c> white-box
+    /// bridge, or package-alias-qualified (<c>time_package.Duration</c>) in ordinary cross-package
+    /// emission. The latter is not a CLR name at all — every converted package class lives under the
+    /// <c>go</c> namespace — so a failed lookup is retried <c>go.</c>-rooted, the same normalization
+    /// <c>StructTypeTemplate</c>'s metadata field scan performs.
+    /// </remarks>
+    public static INamedTypeSymbol? FindUnderlyingStructSymbol(this GeneratorExecutionContext context, string typeName)
+    {
+        INamedTypeSymbol? symbol = context.Compilation.FindTypeSymbol(typeName);
+
+        if (symbol is null && !GetUnderlyingTypeName(typeName).Replace("global::", "").StartsWith("go.", StringComparison.Ordinal))
+            symbol = context.Compilation.FindTypeSymbol($"go.{GetUnderlyingTypeName(typeName).Replace("global::", "")}");
+
+        return symbol is { TypeKind: TypeKind.Struct } ? symbol : null;
+    }
 }

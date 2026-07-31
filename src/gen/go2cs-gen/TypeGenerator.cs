@@ -279,6 +279,24 @@ public class TypeGenerator : ISourceGenerator
                                 }
                             }
                         }
+                        else if (context.FindUnderlyingStructSymbol(typeDefinition) is { } underlyingSymbol)
+                        {
+                            // The underlying struct's SOURCE is not in this compilation — the normal
+                            // shape in a real MSBuild build, where a <ProjectReference> arrives as
+                            // compiled METADATA and the referenced-compilations walk above finds
+                            // nothing. Resolve it by SYMBOL instead: a defined type over a FOREIGN
+                            // struct exposes that struct's fields in Go exactly as a same-package one
+                            // does (`type index Index` in a white-box _test.go reading `x.sa`;
+                            // `type P otherpkg.Point` reading `p.X`), so it needs the same forwarding.
+                            List<(string typeName, string memberName, bool isReferenceType, bool isProperty)> members =
+                                StructDeclarationSyntaxExtensions.GetForeignStructMembers(underlyingSymbol, context.Compilation);
+
+                            if (members.Count > 0)
+                            {
+                                forwardedMembers = members;
+                                mutableValue = true;
+                            }
+                        }
 
                         generatedSource = new InheritedTypeTemplate
                         {

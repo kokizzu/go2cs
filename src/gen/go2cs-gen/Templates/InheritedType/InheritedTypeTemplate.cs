@@ -304,8 +304,22 @@ internal class InheritedTypeTemplate : TemplateBase
 
     // Forwarding properties for a defined-type-over-struct, exposing the underlying struct's fields on
     // the wrapper. `m_value` is mutable (ReadOnlyValue=false) so a write through a ж<T>.Value ref —
-    // `box.Value.fn = x`, where `box.Value` is `ref winlibcall` — invokes the setter on the real storage
-    // and persists. A blank `_` field is unaddressable/unselectable in Go and would collide.
+    // `box.Value.fn = x`, where `box.Value` is `ref winlibcall` — reaches the real storage and persists.
+    // A blank `_` field is unaddressable/unselectable in Go and would collide.
+    //
+    // REF-RETURNING, not get/set: in Go the selection IS the underlying field, so it is a variable —
+    // addressable, and usable as the receiver of a method whose receiver the converter emits `this ref`
+    // (every value-receiver method). A get/set property yields a VALUE, so `x.sa.len()` and
+    // `x.sa.get(i)` — index/suffixarray's `type index Index`, whose `sa` is an `ints` with `len`/`get`
+    // methods — were CS0206 ("a non ref-returning property may not be used as a ref value"). The ref
+    // property keeps every use the setter form supported (`w.fn = v` assigns through the ref) and adds
+    // the variable-requiring ones, so it is a strict superset.
+    //
+    // [UnscopedRef] is what makes it legal at all: a struct member returning a ref to instance state is
+    // CS8170 by default, because the receiver could be a temporary. The attribute states the ref's
+    // lifetime is the RECEIVER's, which is exactly the guarantee Go gives — the selection aliases the
+    // wrapper's own storage — and it moves the burden to the call site, where C#'s ref-safety rules
+    // then reject precisely the cases Go also rejects (taking the address of a non-variable).
     private string ForwardedMembers
     {
         get
@@ -315,7 +329,7 @@ internal class InheritedTypeTemplate : TemplateBase
 
             IEnumerable<string> props = ForwardedStructMembers
                 .Where(member => GetSimpleName(member.memberName) != "_")
-                .Select(member => $"\r\n        public {member.typeName} {member.memberName} {{ get => m_value.{member.memberName}; set => m_value.{member.memberName} = value; }}");
+                .Select(member => $"\r\n        [global::System.Diagnostics.CodeAnalysis.UnscopedRef] public ref {member.typeName} {member.memberName} => ref m_value.{member.memberName};");
 
             // The field-box accessors (`Ꮡfield`) that a plain struct's partial generates (used by the
             // converter's `receiver.of(Type.Ꮡfield)` field-address form — `&p.x` on a *pinnerBits, where
