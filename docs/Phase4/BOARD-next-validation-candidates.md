@@ -29,7 +29,7 @@ declaration-edge rule)*.
 
 | Package | Missing type | Outcome |
 |:--|:--|:--|
-| `image/draw` | `rand_package.Rand` | **build unblocked** — a `struct` field of `quick.Config` reached at an element-bearing composite literal. Does not yet validate: 4 of its tests fail on a separate runtime defect, below. |
+| `image/draw` | `rand_package.Rand` | **build unblocked** — a `struct` field of `quick.Config` reached at an element-bearing composite literal. Now **validated 9/9** (2026-07-31), once the two runtime defects below were fixed. |
 | `io` | `io_package.Writer` | **NOT a closure defect** — see the next section. Adding the reference cannot fix it. |
 
 **Minimality is the hard part, and it is measured, not asserted.** Regenerating all 60 banked
@@ -89,9 +89,9 @@ whitebox suite whose dependencies name the package under test.
 |:--|:--|
 | ~~`hash/maphash`~~ | **DONE 2026-07-29 — 22/22, banked.** Computed float constants that directly use a named untyped integer wrapper now materialize once at the destination's float width; `TestSmhasherAvalanche`'s mean is 50000 and the full SMHasher matrix matches Go. |
 | `compress/flate` | **63 of 64.** Only `TestWriterReset`, a whole-`Writer` `reflect.DeepEqual` after `Reset`. Uninvestigated. |
-| `image/gif` | package-level failure, no per-test verdict — needs a first look |
+| `image/gif` | **27 of 28** (2026-07-31). Only `TestWriter`, and its message names the cause: `../testdata/video-001.png image: unknown format`. `writer_test.go` blank-imports `_ "image/png"` purely for the side effect of its `init()` registering the PNG decoder with `image.Decode`; that module initializer never runs, so the format registry is empty. This is the blank-import module-initializer gap — its own board item, not an `image/gif` defect. |
 | `image/png` | probed previously; does not validate |
-| `image/draw` | **builds now** (closure fix). 4 of its tests fail — `TestDraw`, `TestDrawSrcNonpremultiplied`, `TestFloydSteinbergCheckerboard`, `TestPaletted`. `TestDraw`: `panic: runtime error: slice bounds out of range [::4] with capacity 0` at `draw.cs`'s `dst.Pix.slice(i, i+4, i+4)` inside the `mask.(image.RGBA64Image)` branch of `drawRGBA` — the `*image.RGBA` reached through `ᏑDst.Value` has an EMPTY `Pix`, while the sibling branches (`TestDrawOverlap`, `TestFill`) work. Smells like the interface type-assertion/box-copy class, not a draw bug. |
+| ~~`image/draw`~~ | **DONE 2026-07-31 — 9/9, banked.** All four failures were two defects, both fixed at the root. `TestDraw` was the address-taken *value parameter* box-copy: `DrawMask`'s `clip(dst, &r, src, &sp, mask, &mp)` narrows all three in place, and `Ꮡ(r)` boxed a COPY, so the draw loop ran on the unclipped rectangle. (The empty-`Pix` panic above was that same unclipped geometry, not an assertion defect — the guess in this row was wrong.) The other three were value adapters carrying no Go dynamic type, so `image.Image` type switches took the wrong arm. |
 
 ## Recurring classes worth a general fix rather than another point repair
 
