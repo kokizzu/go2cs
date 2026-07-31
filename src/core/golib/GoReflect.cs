@@ -372,6 +372,42 @@ public static class GoReflect
             type.GetCustomAttributes(typeof(GoLocalNameAttribute), false) is [GoLocalNameAttribute localName] ? localName : null);
     }
 
+    private static readonly ConcurrentDictionary<Type, string> s_goPackageNames = new();
+
+    /// <summary>
+    /// The GO package name a converted type's declaring class stands for, or <c>""</c> when the
+    /// class is not a package class at all.
+    /// </summary>
+    /// <remarks>
+    /// The class's own <c>[GoPackage]</c> stamp is the authority; trimming <c>_package</c> off the
+    /// class NAME is only a fallback for a hand-written class that carries no stamp. The two agree
+    /// for every ordinary converted package, and where they disagree the stamp is right: a `-tests`
+    /// white-box bridge is class <c>binary_internal_test_package</c> yet stamped
+    /// <c>[GoPackage("binary")]</c>, because the internal <c>_test.go</c> declarations it hosts are
+    /// Go-declared in <c>package binary</c> — which is what <c>reflect</c> must report
+    /// (<c>binary.Person</c>, not <c>binary_internal_test.Person</c>: encoding/binary's
+    /// TestNoFixedSize asserts the type name inside an error string, and TestSizeAllocs names its
+    /// subtests from it). Memoized per declaring type for the reason given on
+    /// <see cref="goTypeMarkerOf"/> — this sits under every <c>GoTypeName</c>/<c>PkgPath</c> read.
+    /// </remarks>
+    private static string goPackageNameOf(Type? decl)
+    {
+        if (decl is null)
+            return "";
+
+        return s_goPackageNames.GetOrAdd(decl, static type =>
+        {
+            if (!type.Name.EndsWith(PackageSuffix, StringComparison.Ordinal))
+                return "";
+
+            if (type.GetCustomAttributes(typeof(GoPackageAttribute), false) is [GoPackageAttribute marker] &&
+                marker.PackageName.Length > 0)
+                return marker.PackageName;
+
+            return type.Name[..^PackageSuffix.Length];
+        });
+    }
+
     // The package-qualified Go name of a converted named type: a converted type is nested in a
     // `<pkg>_package` class, so `go.main_package.Point` → `main.Point`. A lifted function-local
     // type prefers its stamped original Go name ([GoLocalName] — `binary.Person`, never the
@@ -387,10 +423,8 @@ public static class GoReflect
         if (name.StartsWith(ShadowVarMarker, StringComparison.Ordinal))
             name = name[ShadowVarMarker.Length..];
 
-        Type? decl = t.DeclaringType;
-
-        if (decl is not null && decl.Name.EndsWith(PackageSuffix, StringComparison.Ordinal))
-            return decl.Name[..^PackageSuffix.Length] + "." + name;
+        if (goPackageNameOf(t.DeclaringType) is { Length: > 0 } packageName)
+            return packageName + "." + name;
 
         return name;
     }
@@ -416,10 +450,9 @@ public static class GoReflect
         if (t is null)
             return "";
 
-        if (t.DeclaringType is not { } decl || !decl.Name.EndsWith(PackageSuffix, StringComparison.Ordinal))
+        if (goPackageNameOf(t.DeclaringType) is not { Length: > 0 } pkg)
             return "";
 
-        string pkg = decl.Name[..^PackageSuffix.Length];
         string ns = t.Namespace ?? "";
 
         if (ns.Length > EmissionRootNamespace.Length + 1 && ns.StartsWith(EmissionRootNamespace + ".", StringComparison.Ordinal))
