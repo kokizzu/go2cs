@@ -124,11 +124,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
-    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\bytes\bytes.csproj" />
     <ProjectReference Include="$(go2csPath)core\compress\lzw\compress.lzw.csproj" />
     <ProjectReference Include="$(go2csPath)core\encoding\hex\encoding.hex.csproj" />
+    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\image\color\image.color.csproj" />
     <ProjectReference Include="$(go2csPath)core\image\color\palette\image.color.palette.csproj" />
     <ProjectReference Include="$(go2csPath)core\image\draw\image.draw.csproj" />
@@ -143,6 +142,7 @@
     <ProjectReference Include="$(go2csPath)core\runtime\debug\runtime.debug.csproj" />
     <ProjectReference Include="$(go2csPath)core\runtime\runtime.csproj" />
     <ProjectReference Include="$(go2csPath)core\strings\strings.csproj" />
+    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="image.gif.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>

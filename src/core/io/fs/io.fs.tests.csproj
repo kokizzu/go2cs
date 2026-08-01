@@ -101,10 +101,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
-    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\errors\errors.csproj" />
     <ProjectReference Include="$(go2csPath)core\fmt\fmt.csproj" />
+    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\io\io.csproj" />
     <ProjectReference Include="$(go2csPath)core\os\os.csproj" />
     <ProjectReference Include="$(go2csPath)core\path\filepath\path.filepath.csproj" />
@@ -113,6 +112,7 @@
     <ProjectReference Include="$(go2csPath)core\slices\slices.csproj" />
     <ProjectReference Include="$(go2csPath)core\strings\strings.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\fstest\testing.fstest.csproj" />
+    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\time\time.csproj" />
     <ProjectReference Include="io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />

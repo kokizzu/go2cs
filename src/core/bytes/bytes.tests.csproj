@@ -91,9 +91,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
-    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\fmt\fmt.csproj" />
+    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\internal\testenv\internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core\io\fs\io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)core\io\io.csproj" />
@@ -105,6 +104,7 @@
     <ProjectReference Include="$(go2csPath)core\strconv\strconv.csproj" />
     <ProjectReference Include="$(go2csPath)core\strings\strings.csproj" />
     <ProjectReference Include="$(go2csPath)core\sync\sync.csproj" />
+    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\unicode\unicode.csproj" />
     <ProjectReference Include="$(go2csPath)core\unicode\utf8\unicode.utf8.csproj" />
     <ProjectReference Include="$(go2csPath)core\unsafe\unsafe.csproj" />

@@ -87,9 +87,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
-    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\context\context.csproj" />
+    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\internal\testenv\internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core\io\fs\io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)core\io\io.csproj" />
@@ -98,6 +97,7 @@
     <ProjectReference Include="$(go2csPath)core\path\filepath\path.filepath.csproj" />
     <ProjectReference Include="$(go2csPath)core\strings\strings.csproj" />
     <ProjectReference Include="$(go2csPath)core\syscall\syscall.csproj" />
+    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\time\time.csproj" />
     <ProjectReference Include="os.signal.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />

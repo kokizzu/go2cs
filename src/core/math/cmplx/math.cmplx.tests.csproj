@@ -96,9 +96,9 @@
 
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
-    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\math\math.csproj" />
     <ProjectReference Include="$(go2csPath)core\runtime\internal\math\runtime.internal.math.csproj" />
+    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="math.cmplx.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>

@@ -97,8 +97,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
-    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\bytes\bytes.csproj" />
     <ProjectReference Include="$(go2csPath)core\crypto\sha256\crypto.sha256.csproj" />
     <ProjectReference Include="$(go2csPath)core\encoding\hex\encoding.hex.csproj" />
@@ -106,6 +104,7 @@
     <ProjectReference Include="$(go2csPath)core\flag\flag.csproj" />
     <ProjectReference Include="$(go2csPath)core\fmt\fmt.csproj" />
     <ProjectReference Include="$(go2csPath)core\go\format\go.format.csproj" />
+    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\hash\hash.csproj" />
     <ProjectReference Include="$(go2csPath)core\internal\chacha8rand\internal.chacha8rand.csproj" />
     <ProjectReference Include="$(go2csPath)core\internal\testenv\internal.testenv.csproj" />
@@ -120,6 +119,7 @@
     <ProjectReference Include="$(go2csPath)core\sync\atomic\sync.atomic.csproj" />
     <ProjectReference Include="$(go2csPath)core\sync\sync.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\iotest\testing.iotest.csproj" />
+    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\text\tabwriter\text.tabwriter.csproj" />
     <ProjectReference Include="$(go2csPath)core\time\time.csproj" />
     <ProjectReference Include="math.rand.v2.csproj" />

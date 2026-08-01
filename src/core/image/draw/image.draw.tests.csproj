@@ -86,7 +86,6 @@
 
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
-    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\image\color\image.color.csproj" />
     <ProjectReference Include="$(go2csPath)core\image\image.csproj" />
     <ProjectReference Include="$(go2csPath)core\image\png\image.png.csproj" />
@@ -96,6 +95,7 @@
     <ProjectReference Include="$(go2csPath)core\os\os.csproj" />
     <ProjectReference Include="$(go2csPath)core\reflect\reflect.csproj" />
     <ProjectReference Include="$(go2csPath)core\testing\quick\testing.quick.csproj" />
+    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="image.draw.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>

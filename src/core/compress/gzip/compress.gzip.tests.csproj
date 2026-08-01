@@ -89,12 +89,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
-    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\bufio\bufio.csproj" />
     <ProjectReference Include="$(go2csPath)core\bytes\bytes.csproj" />
     <ProjectReference Include="$(go2csPath)core\compress\flate\compress.flate.csproj" />
     <ProjectReference Include="$(go2csPath)core\encoding\base64\encoding.base64.csproj" />
+    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\internal\testenv\internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core\io\fs\io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)core\io\io.csproj" />
@@ -103,6 +102,7 @@
     <ProjectReference Include="$(go2csPath)core\reflect\reflect.csproj" />
     <ProjectReference Include="$(go2csPath)core\runtime\runtime.csproj" />
     <ProjectReference Include="$(go2csPath)core\strings\strings.csproj" />
+    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\time\time.csproj" />
     <ProjectReference Include="compress.gzip.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />

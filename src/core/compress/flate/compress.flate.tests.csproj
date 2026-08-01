@@ -152,14 +152,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
-    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="$(go2csPath)core\bufio\bufio.csproj" />
     <ProjectReference Include="$(go2csPath)core\bytes\bytes.csproj" />
     <ProjectReference Include="$(go2csPath)core\encoding\hex\encoding.hex.csproj" />
     <ProjectReference Include="$(go2csPath)core\errors\errors.csproj" />
     <ProjectReference Include="$(go2csPath)core\flag\flag.csproj" />
     <ProjectReference Include="$(go2csPath)core\fmt\fmt.csproj" />
+    <ProjectReference Include="$(go2csPath)core\golib\golib.csproj" />
     <ProjectReference Include="$(go2csPath)core\internal\testenv\internal.testenv.csproj" />
     <ProjectReference Include="$(go2csPath)core\io\fs\io.fs.csproj" />
     <ProjectReference Include="$(go2csPath)core\io\io.csproj" />
@@ -171,6 +170,7 @@
     <ProjectReference Include="$(go2csPath)core\runtime\runtime.csproj" />
     <ProjectReference Include="$(go2csPath)core\strings\strings.csproj" />
     <ProjectReference Include="$(go2csPath)core\sync\sync.csproj" />
+    <ProjectReference Include="$(go2csPath)core\testing\testing.csproj" />
     <ProjectReference Include="compress.flate.csproj" />
     <ProjectReference Include="$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
