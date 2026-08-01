@@ -19,6 +19,7 @@
 //
 // What lives here is only the file-walking scaffold those two share. Each pass keeps its own marker
 // spelling, payload encoding and resolution rules, because those are what actually differ.
+
 package main
 
 import (

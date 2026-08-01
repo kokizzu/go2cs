@@ -988,3 +988,379 @@ func (v *Visitor) getArrayConstraintElem(iface *types.Interface) (types.Type, bo
 
 	return elem, true
 }
+
+// ---- Generic definitions and constraint proxies ----
+//
+// getGenericDefinition renders a Go generic type's C# definition — its type parameter list plus
+// the `where` clauses the constraints translate into. constraintProxyArg and its predicate handle
+// the case C# cannot express directly: a Go constraint that admits a POINTER type, which the
+// converter routes through a generated proxy rather than a `where` clause.
+
+func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
+	var named *types.Named
+	var signature *types.Signature
+	var ok bool
+
+	if named, ok = srcType.(*types.Named); !ok {
+		if signature, ok = srcType.(*types.Signature); !ok {
+			return "", ""
+		}
+	}
+
+	var typeParams *types.TypeParamList
+
+	if named != nil {
+		typeParams = named.TypeParams()
+	} else {
+		typeParams = signature.TypeParams()
+
+		if typeParams == nil {
+			typeParams = signature.RecvTypeParams()
+		}
+	}
+
+	if typeParams == nil || typeParams.Len() == 0 {
+		return "", ""
+	}
+
+	typeParamNames := make([]string, typeParams.Len())
+	erasedParams := make([]bool, typeParams.Len())
+	constraintNames := []string{}
+
+	// Pointer-core ERASURE applies to FUNCTION type parameters only (`func clone[P *T, T any]`):
+	// erasing a generic NAMED type's parameter would change the type's emitted arity at every
+	// instantiation site — a surface with zero stdlib occurrences, declined with a warning until
+	// a real case exists. Receiver type parameters (a generic type's method) belong to the named
+	// type and are equally excluded, as is a named generic FUNC TYPE's list (not the function
+	// declaration being emitted — the renderer's identity set wouldn't cover it).
+	eraseAllowed := named == nil && signature == v.currentFuncSignature && typeParams == signature.TypeParams()
+
+	for i := range typeParams.Len() {
+		typeParam := typeParams.At(i)
+		typeParamNames[i] = typeParam.Obj().Name()
+
+		// A single non-tilde pointer term (`[P *T]`) has a singleton type set — P is
+		// definitionally *T — so P is erased: dropped from the emitted `<...>` list and `where`
+		// clauses, rendering inline as `ж<T>` everywhere it appears (see the getTypeName arm and
+		// pointerCoreConstraint). A breadcrumb comment keeps the Go constraint visible. Declined
+		// pointer-core shapes (approximate `~*T`, unions, generic named types) warn instead of
+		// silently mis-emitting the operator-lift fallback.
+		if pointer, ok := pointerCoreConstraint(typeParam); ok {
+			if eraseAllowed {
+				erasedParams[i] = true
+				csForm := fmt.Sprintf("%s<%s>", PointerPrefix, convertToCSTypeName(v.getTypeName(pointer.Elem(), false)))
+				constraintNames = append(constraintNames, fmt.Sprintf("%s%s    /* where %s : %s (erased: %s renders as %s) */",
+					v.newline, v.indent(v.indentLevel), typeParamNames[i], v.getTypeName(pointer, false), typeParamNames[i], csForm))
+				continue
+			}
+
+			v.showWarning("@getGenericDefinition - pointer-core constraint `%s` on generic type `%s` is not erased (no stdlib precedent); emission may not compile", v.getTypeName(pointer, false), srcType.String())
+		} else if constraintHasPointerTerm(typeParam) {
+			v.showWarning("@getGenericDefinition - approximate/union/method-carrying pointer constraint `%s` on `%s` is not erased; emission may not compile", typeParam.Constraint().String(), srcType.String())
+		}
+
+		constraint := typeParam.Constraint()
+		var constraintName string
+
+		// Check if the constraint type is an anonymous interface
+		if _, ok := constraint.(*types.Interface); ok {
+			constraintName = constraint.String()
+		} else {
+			constraintName = v.getTypeName(constraint, false)
+		}
+
+		if len(constraintName) == 0 || constraintName == "any" || constraintName == "interface{}" {
+			// An unconstrained (`any`) type parameter gets NO C# constraint. Previously `new()` was
+			// added (so `@new<T>`/`make` could construct it, and to force `@string` over `System.String`
+			// for generic string args). But `new()` rejects a delegate/func type argument — Go's
+			// `atomic.Pointer[func()]` is valid yet `Pointer<Action>` failed CS0310 — and it is no
+			// longer required: golib `@new<T>` constructs via the runtime (no new() bound), and string
+			// literals are cast to `@string` at generic call sites. Leave it unconstrained.
+			constraintName = ""
+		} else {
+			var iface *types.Interface
+
+			switch typ := constraint.(type) {
+			case *types.Interface:
+				iface = typ
+			case *types.Named:
+				iface = typ.Underlying().(*types.Interface)
+			case *types.Signature:
+				iface = typ.Recv().Type().Underlying().(*types.Interface)
+			default:
+				iface = nil
+			}
+
+			if iface != nil {
+				originalConstraint := fmt.Sprintf("/* %s */", constraintName)
+				constraintName = strings.TrimPrefix(strings.TrimSpace(constraintName), "~")
+				constraintExpr := strings.ReplaceAll(constraintName, " ", "")
+				var typeConstraint string
+				// `string | []byte` union members share no operators, so suppress the spurious lifted
+				// operator constraints (IAddition/IComparison/...) for it; set in the union branch below.
+				suppressLiftedConstraints := false
+
+				// Check for common Go types, e.g., slice, map, channel, etc. The `string | []byte`
+				// UNION is checked FIRST: its `[]byte | string` ordering starts with "[]" and would
+				// otherwise take the ISlice branch with the raw union as the element type
+				// (`ISlice<byte | string>` — CS1003 cascade, time/format.go's appendNano family).
+				if constraintExpr == "string|[]byte" || constraintExpr == "[]byte|string" {
+					// Go's `string | []byte` union — emit the read-only byte-sequence interface
+					// both @string and slice<byte> implement (IByteSeq<byte>); C# cannot express
+					// the "or" directly. See golib IByteSeq.
+					typeConstraint = "IByteSeq<byte>"
+					suppressLiftedConstraints = true
+				} else if strings.HasPrefix(constraintExpr, "[]") {
+					// Handle slice via ISlice interface. ISliceWrap supplies the S-preserving factory:
+					// a sub-slice or append of a constrained S must yield S again (Go's named-slice
+					// semantics), which golib's subslice<S, T>/append<S, T> realize through S.Wrap.
+					elemType := convertToCSTypeName(constraintName[2:])
+					typeConstraint = fmt.Sprintf("ISlice<%s>, ISupportMake<%s>, ISliceWrap<%s, %s>", elemType, typeParamNames[i], typeParamNames[i], elemType)
+				} else if arrayElem, isArrayCore := v.getArrayConstraintElem(iface); isArrayCore {
+					// Handle an array-core constraint `~[N]E` (ML-KEM's `~[256]fieldElement`) via the
+					// IArray interface. The named-array [GoType] wrapper (ringElement, nttElement)
+					// implements IArray<E>, so this exposes the array surface — indexing, length,
+					// `(nint, E)` ranging/deconstruction — that the generic body binds against, and
+					// the wrapper type arguments satisfy the constraint. The Array member of the
+					// comparable operator set would otherwise lift IEqualityOperators<T, T, bool>,
+					// which the wrapper cannot satisfy and which exposes no array surface (CS0315,
+					// plus CS0021/CS1579/CS8130 on the body's `t[i]`/`range t`/deconstruction).
+					elemType := convertToCSTypeName(v.getTypeName(arrayElem, false))
+					typeConstraint = fmt.Sprintf("IArray<%s>", elemType)
+					suppressLiftedConstraints = true
+				} else if strings.HasPrefix(constraintExpr, "map[") {
+					// Handle map via IMap interface
+					keyValue := strings.Split(constraintName[4:], "]")
+					typeConstraint = fmt.Sprintf("IMap<%s, %s>, ISupportMake<%s>", convertToCSTypeName(keyValue[0]), convertToCSTypeName(keyValue[1]), typeParamNames[i])
+				} else if strings.HasPrefix(constraintExpr, "chan ") {
+					// Handle channel via IChannel interface
+					typeConstraint = fmt.Sprintf("IChannel<%s>, ISupportMake<%s>", convertToCSTypeName(constraintName[5:]), typeParamNames[i])
+				} else if strings.HasPrefix(constraintExpr, "chan<- ") {
+					// Handle send-only channel via IChannel interface
+					typeConstraint = fmt.Sprintf("IChannel<%s>, ISupportMake<%s>", convertToCSTypeName(constraintName[7:]), typeParamNames[i])
+				} else if strings.HasPrefix(constraintExpr, "<-chan ") {
+					// Handle receive-only channel via IChannel interface
+					typeConstraint = fmt.Sprintf("IChannel<%s>, ISupportMake<%s>", convertToCSTypeName(constraintName[7:]), typeParamNames[i])
+				} else if strings.HasPrefix(constraintExpr, "func") {
+					// TODO: Handle function
+					v.showWarning("@getGenericDefinition - unhandled function constraint `%s` on `%s`", constraintName, srcType.String())
+					typeConstraint = originalConstraint
+				} else if strings.HasPrefix(constraintExpr, "struct") {
+					// TODO: Handle struct - will need to lift struct type defintion
+					v.showWarning("@getGenericDefinition - unhandled struct constraint `%s` on `%s`", constraintName, srcType.String())
+					typeConstraint = originalConstraint
+				} else {
+					// Handle special case for string and []byte types (the union form is hoisted
+					// to the head of this chain - see above)
+					if constraintExpr == "string" || constraintExpr == "[]byte" {
+						typeConstraint = "ISlice<byte>"
+					} else if constraintExpr == "comparable" {
+						// Go's built-in `comparable` admits every ==-able Go type — numerics,
+						// strings, pointers, channels, comparable structs/arrays/interfaces. No C#
+						// constraint can express that set: golib's comparable<T> CRTP is
+						// implemented by NOTHING (every real instantiation failed — blocking
+						// maps.Keys), and lifting IEqualityOperators would reject structs, which
+						// Go admits. Emit NO C# constraint beyond new(): Go's checker already
+						// validated every instantiation, and emitted equality on type parameters
+						// routes through AreEqual (object equality), not operator ==.
+						constraintNames = append(constraintNames, fmt.Sprintf("%s%s    where %s : %s new()", v.newline, v.indent(v.indentLevel), typeParamNames[i], originalConstraint))
+						continue
+					}
+				}
+
+				if iface.NumMethods() == 0 {
+					// For type-constraint only interfaces, C# native types cannot directly implement
+					// interface, so all base-type operator constraints must be lifted to generic type
+					// constraint defintion. This can get very noisy and C# does not have a mechanism
+					// to hide these constraints in partial method declarations in generated code like
+					// it does for structs. For partial methods, all constraint defintions are forced
+					// to match, so there is no current benefit to declaring a partial method here.
+					liftedConstraints := v.getLiftedConstraints(constraint, typeParamNames[i])
+
+					// The `string | []byte` union has no common operators; drop the spurious lifted set.
+					if suppressLiftedConstraints {
+						liftedConstraints = ""
+					}
+
+					if len(liftedConstraints) > 0 {
+						if len(typeConstraint) == 0 {
+							constraintName = fmt.Sprintf("%s %s", originalConstraint, liftedConstraints)
+						} else {
+							constraintName = fmt.Sprintf("%s %s, %s", originalConstraint, typeConstraint, liftedConstraints)
+						}
+					} else {
+						if len(typeConstraint) == 0 {
+							constraintName = fmt.Sprintf("%s %s", originalConstraint, constraintName)
+						} else {
+							constraintName = fmt.Sprintf("%s %s", originalConstraint, typeConstraint)
+						}
+					}
+				} else if iface.IsMethodSet() {
+					// A REGULAR method-set interface (a pure method set, no type-term unions —
+					// go/ast's `Node` in `walkList[N Node]`) is emitted arity-0 by
+					// visitInterfaceType, NOT as the generic CRTP form that union+method
+					// constraint interfaces take below (`ConstraintTest1<ΔT>`), so the type
+					// parameter constrains against the interface itself (`where N : Node` —
+					// the phantom `Node<N>` was CS0308). NO `new()` either: the instantiation
+					// may itself be an INTERFACE (walkList takes N=Stmt/Expr/Spec/Decl), which
+					// cannot satisfy a constructor constraint.
+					constraintNames = append(constraintNames, fmt.Sprintf("%s%s    where %s : %s", v.newline, v.indent(v.indentLevel), typeParamNames[i], convertToCSTypeName(constraintName)))
+					continue
+				} else {
+					// If interface has methods, can safely assume generic type must implement it directly
+					constraintName = fmt.Sprintf("%s<%s>", constraintName, typeParamNames[i])
+				}
+
+				constraintName = fmt.Sprintf("%s, new()", constraintName)
+			} else {
+				v.showWarning("@getGenericDefinition - constraint `%s` on `%s` is not an interface", constraintName, srcType.String())
+			}
+		}
+
+		// An unconstrained type parameter emits no `where` clause at all (the type-param name still
+		// appears in the `<…>` list above).
+		if len(constraintName) == 0 {
+			continue
+		}
+
+		constraintNames = append(constraintNames, fmt.Sprintf("%s%s    where %s : %s", v.newline, v.indent(v.indentLevel), typeParamNames[i], constraintName))
+	}
+
+	// Erased (pointer-core) parameters leave the emitted list; a list that erases to empty emits
+	// no `<...>` at all (the function is no longer generic in C# terms — its breadcrumb where-
+	// comment still rides the constraints string).
+	emittedNames := make([]string, 0, len(typeParamNames))
+
+	for i, name := range typeParamNames {
+		if !erasedParams[i] {
+			emittedNames = append(emittedNames, name)
+		}
+	}
+
+	if len(emittedNames) == 0 {
+		return "", strings.Join(constraintNames, "")
+	}
+
+	return fmt.Sprintf("<%s>", strings.Join(emittedNames, ", ")), strings.Join(constraintNames, "")
+}
+
+// constraintProxyArg reports the C# constraint-proxy type name to render for type argument i of an
+// instantiated generic `named`, when that argument is a POINTER to a named type AND the matching
+// type parameter carries a SELF-REFERENTIAL generic method-set interface constraint — Go's
+// `nistCurve[Point nistPoint[Point]]` instantiated with `*P224Point`. The golib box ж<P224Point>
+// cannot NOMINALLY implement nistPoint<…> (it is a sealed golib type in another assembly, and Go's
+// structural satisfaction has no C# analog), and the interface is self-referential so the value
+// can't widen to the interface either. So the argument renders as the generated proxy
+// `P224PointжnistPoint : nistPoint<itself>` (ImplementGenerator's EmitConstraintProxy), and this
+// also registers the (element, interface) pair so package_info emits its ConstraintProxy record.
+// Returns ("", false) for every other argument, leaving normal rendering untouched.
+func (v *Visitor) constraintProxyArg(named *types.Named, i int) (string, bool) {
+	origin := named.Origin()
+
+	if origin == nil {
+		return "", false
+	}
+
+	typeParams := origin.TypeParams()
+
+	if typeParams == nil || i >= typeParams.Len() {
+		return "", false
+	}
+
+	typeParam := typeParams.At(i)
+
+	// The argument must be a pointer to a named type — a value type arg satisfies its constraint
+	// nominally (or widens), only the boxed pointer needs the proxy.
+	ptr, ok := named.TypeArgs().At(i).(*types.Pointer)
+
+	if !ok {
+		return "", false
+	}
+
+	elemNamed, ok := types.Unalias(ptr.Elem()).(*types.Named)
+
+	if !ok {
+		return "", false
+	}
+
+	// The constraint must be an INSTANTIATED generic method-set interface (nistPoint[Point]);
+	// a plain non-generic method-set interface (go/ast's Node) widens to itself instead.
+	constraintNamed, ok := typeParam.Constraint().(*types.Named)
+
+	if !ok || constraintNamed.TypeArgs() == nil || constraintNamed.TypeArgs().Len() == 0 {
+		return "", false
+	}
+
+	iface, ok := constraintNamed.Underlying().(*types.Interface)
+
+	if !ok || iface.NumMethods() == 0 || !iface.IsMethodSet() {
+		return "", false
+	}
+
+	// Self-referential: one of the constraint's type arguments IS the type parameter itself.
+	selfReferential := false
+
+	for j := 0; j < constraintNamed.TypeArgs().Len(); j++ {
+		if tp, ok := constraintNamed.TypeArgs().At(j).(*types.TypeParam); ok && tp == typeParam {
+			selfReferential = true
+			break
+		}
+	}
+
+	if !selfReferential {
+		return "", false
+	}
+
+	interfaceOrigin := constraintNamed.Origin()
+
+	// Proxy name element-simple + PointerPrefix + interface-simple — MUST match
+	// ImplementGenerator's `elementType.Name + PointerPrefix + interfaceDef.Name`.
+	proxyName := elemNamed.Obj().Name() + PointerPrefix + interfaceOrigin.Obj().Name()
+
+	// Register the (element, interface) pair so package_info emits the ConstraintProxy record.
+	// The interface name drops its type-parameter DECLARATION (`point[T any]` → `point`): the
+	// record's `GoImplement<element, point<element>>` closes it over the element placeholder.
+	// A CROSS-PACKAGE element renders to its C# full type name (nistec.P224Point →
+	// `crypto.@internal.nistec_package.P224Point`, resolving the slash path); a SAME-PACKAGE
+	// element stays BARE (convertToCSFullTypeName would root-qualify it to the wrong `go.p224`,
+	// exactly as it would the local interface name below).
+	elementFullName := v.getFullTypeName(elemNamed, false)
+
+	if elemNamed.Obj().Pkg() != v.pkg {
+		elementFullName = convertToCSFullTypeName(elementFullName)
+	}
+
+	interfaceFullName := v.getFullTypeName(interfaceOrigin, false)
+
+	// Strip the type-parameter DECLARATION only — getFullTypeName already yields the interface's
+	// C# reference form (bare `nistPoint` for a local interface, `pkg_package.Iface` cross-package),
+	// so it must NOT go through convertToCSFullTypeName (which would root-qualify the bare local name
+	// to the wrong `go.nistPoint`). qualifyLocalTypeRef handles final qualification at emission.
+	if idx := strings.Index(interfaceFullName, "["); idx >= 0 {
+		interfaceFullName = interfaceFullName[:idx]
+	}
+
+	packageLock.Lock()
+	constraintProxies[elementFullName+"|"+interfaceFullName] = [2]string{elementFullName, interfaceFullName}
+	packageLock.Unlock()
+
+	return proxyName, true
+}
+
+// namedHasConstraintProxy reports whether any type argument of the instantiated generic `named`
+// resolves to a self-referential constraint proxy (see constraintProxyArg) — used to re-render a
+// composite-literal type through the resolved type so its type arguments match the proxy the
+// pointer adapter wraps, rather than the box that convExpr's AST walk would emit.
+func (v *Visitor) namedHasConstraintProxy(named *types.Named) bool {
+	if named == nil || named.TypeArgs() == nil {
+		return false
+	}
+
+	for i := 0; i < named.TypeArgs().Len(); i++ {
+		if _, ok := v.constraintProxyArg(named, i); ok {
+			return true
+		}
+	}
+
+	return false
+}

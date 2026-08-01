@@ -1,0 +1,372 @@
+// conversionDriver.go - Gbtc
+// Copyright © 2026 The go2cs Authors. All rights reserved.
+//
+// Use of this source code is governed by an MIT-style license
+// that can be found in the LICENSE file.
+
+// This file owns the per-conversion DRIVER: given one resolved input (a single .go file or a
+// package directory) and the options that describe what to do with it, processConversion runs the
+// whole pipeline — load types, run the analysis passes, visit each file, then write the package
+// metadata and project scaffolding.
+//
+// It is the layer between main() (which decides WHAT to convert, possibly hundreds of times) and
+// the visit*/conv* files (which decide how one syntax node becomes C#). Read this first to see the
+// order the passes run in and why.
+
+package main
+
+import (
+	"fmt"
+	"go/ast"
+	"go/types"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"golang.org/x/tools/go/packages"
+)
+
+func processConversion(inputFilePath string, isDir bool, outputFilePath string, options Options) {
+	var err error
+
+	cfg := &packages.Config{
+		Mode:       packages.LoadAllSyntax,
+		Dir:        inputFilePath,
+		BuildFlags: options.loaderBuildFlags(),
+	}
+
+	targetParts := strings.Split(options.targetPlatform, "/")
+
+	if len(targetParts) != 2 {
+		log.Fatalf("Invalid target platform format: %s\n", options.targetPlatform)
+	}
+
+	// Two separate KEY=VALUE entries — matching stdLibConverter/moduleConverter. The old
+	// single-token form (`"GOOS=%s", "GOARCH=%s"` through ONE Sprintf) set an env var
+	// literally named `"GOOS` that the go command ignored, so -platforms never reached
+	// the loader here: it loaded host-platform files while the converter's filename
+	// filter used the requested platform, silently dropping BOTH platforms' constrained
+	// files from a cross-platform conversion.
+	cfg.Env = append(os.Environ(), fmt.Sprintf("GOOS=%s", targetParts[0]), fmt.Sprintf("GOARCH=%s", targetParts[1]))
+
+	var pkgs []*packages.Package
+
+	// Under -recurse, ModuleConverter drives conversion one package at a time and passes the exact
+	// package dir; load only THAT package (never "./...", which would additionally pull in and
+	// re-convert sibling sub-packages — each is already its own convert-set entry, including
+	// read-only module-cache packages that must route to the recurse-output pkg tree individually). Outside
+	// recurse, a GOPATH input keeps the "./..." subtree behavior unchanged.
+	if !options.recurse && strings.HasPrefix(strings.ToLower(inputFilePath), strings.ToLower(options.goPath)) {
+		pkgs, err = packages.Load(cfg, "./...")
+	} else {
+		pkgs, err = packages.Load(cfg, inputFilePath)
+	}
+
+	for _, pkg := range pkgs {
+		if len(pkg.Errors) > 0 {
+			log.Printf("Errors: %v", pkg.Errors)
+		}
+	}
+
+	if err != nil {
+		log.Fatalf("Failed to parse files in directory \"%s\": %s\n", inputFilePath, err)
+	}
+
+	for _, pkg := range pkgs {
+		// Keep production reference spelling stable between ordinary and -tests conversion:
+		// go/packages omits `_test.go` from this production package, so cheaply scan the
+		// build-selected in-package test files for declarator names before collision analysis.
+		// This is package-local (important for ./... loads) and reads no test dependencies.
+		siblingSignals := collectSiblingTestSignals(pkg.Dir, pkg.Name, options)
+		siblingTestFuncMethodNames = siblingSignals.funcMethodNames
+		siblingTestAddressedGlobalNames = siblingSignals.addressedGlobalNames
+		hasSiblingInternalTestFiles = siblingSignals.hasInternalTests
+		options.testFriendAssembly = hasSiblingInternalTestFiles
+
+		// Reset package level variables and capture the per-package inputs (packageDoc,
+		// importPackageDirs) — shared with the test-conversion path, see packageStateOperations.go
+		resetPackageState(pkg)
+
+		files := []FileEntry{}
+		unmarkedFileCount := 0
+		fset := pkg.Fset
+		packageTypes := pkg.Types
+		info := pkg.TypesInfo
+
+		packageInputPath := inputFilePath
+		packageOutputPath := outputFilePath
+
+		if len(pkg.Dir) > 0 && pkg.Dir != packageInputPath {
+			// Adjust output path if the input is a subdirectory of the package directory
+			subPath := strings.Replace(pkg.Dir, packageInputPath, "", 1)
+			packageOutputPath = filepath.Join(packageOutputPath, subPath)
+			packageInputPath = pkg.Dir
+		}
+
+		var projectName, projectFileName, projectFileContents string
+		projectName, packageNamespace = getProjectName(packageInputPath, options)
+
+		if projectFileName, projectFileContents, err = prepareProjectFiles(projectName, packageNamespace, packageOutputPath); err != nil {
+			log.Fatalf("Failed to write project files for directory \"%s\": %s\n", packageOutputPath, err)
+		} else {
+			for i, file := range pkg.Syntax {
+				path := pkg.GoFiles[i]
+
+				if match, err := CheckBuildConstraints(path, options.targetPlatform, options.buildTags); err != nil {
+					showWarning("Failed to evaluate build constraints for file \"%s\": %s", path, err)
+				} else if !match {
+					// Skipping file due to non-matching build constraints
+					continue
+				}
+
+				// See if output already exists and has been marked as manually converted
+				outputFileName := filepath.Join(packageOutputPath, strings.TrimSuffix(filepath.Base(path), ".go")+".cs")
+				manualConv, err := containsManualConversionMarker(outputFileName)
+
+				if err != nil {
+					log.Fatalf("Failed to check for manual conversion in file \"%s\": %s\n", outputFileName, err)
+				}
+
+				if !manualConv {
+					files = append(files, newFileEntry(file, path, false))
+					unmarkedFileCount++
+				} else if isDir {
+					// Manually-converted destination: the hand-owned `.cs` is never overwritten,
+					// but the source .go MUST stay in the convert set, in pkg.Syntax order — its
+					// analysis and visit feed package-wide emission state that sibling files depend
+					// on (anonymous-struct lifts, package-var registrations, escape/addressed-global
+					// analysis, imports, init/temp-var numbering). Only the file's EMISSION is
+					// redirected, to the non-compiled `<name>.cs.auto` review sibling (see the
+					// file-visit loop below). Dropping the visit entirely corrupted every sibling
+					// file of a seeded reconvert: raw Go `struct{...}` text where a lifted type
+					// name belongs, and package-var assignments re-declared as shadowing locals.
+					files = append(files, newFileEntry(file, path, true))
+				}
+			}
+		}
+
+		if unmarkedFileCount == 0 {
+			if len(files) > 0 {
+				// FULLY hand-owned package: nothing to (re)convert normally — the .csproj,
+				// package_info.cs and package_init.cs stay hand-owned too — but still emit the
+				// `.cs.auto` review siblings. Run the whole-package analyses the sibling
+				// conversion depends on first — safe, since every package-level global they and
+				// the sibling visits mutate is reset at the top of the next package iteration.
+				performNameCollisionAnalysis(pkg)
+				collectCaptureModeMethods(pkg)
+				collectTypeSpecRHS(pkg)
+				collectHoistedLiterals(files, packageTypes, info, nil, true)
+				collectMovedInitVars(fset, packageTypes, info, pkg.Syntax)
+				collectPublicizedTypes(packageTypes)
+				emitAutoConversionSiblings(files, fset, packageTypes, info, map[*ast.Ident]string{}, map[string]*types.Var{}, packageOutputPath, options)
+			} else {
+				showMessage("Skipping conversion: no target Go source files found for conversion in input path \"%s\"", packageInputPath)
+			}
+
+			continue
+		}
+
+		globalIdentNames := make(map[*ast.Ident]string)
+		globalScope := map[string]*types.Var{}
+
+		// Perform name collision analysis
+		performNameCollisionAnalysis(pkg)
+
+		// Pre-process all global variables in package
+		for _, fileEntry := range files {
+			performGlobalVariableAnalysis(fileEntry.file.Decls, info, globalIdentNames, globalScope)
+
+			if options.showParseTree {
+				ast.Fprint(os.Stdout, fset, fileEntry.file, nil)
+			}
+		}
+
+		// Perform escape analysis for each file
+		// Identify capture-mode methods (those taking &recv.field) — across the package
+		// and its imports — before escape analysis, so a value var on which one is
+		// called can be marked as escaping (and the call routed through the ж overload).
+		collectCaptureModeMethods(pkg)
+
+		// Record each defined type's WRITTEN right-hand side (lost by Named.Underlying()'s
+		// full resolution) — the array-reinterpret emission in convCallExpr consults it.
+		collectTypeSpecRHS(pkg)
+
+		performEscapeAnalysis(files, fset, packageTypes, info)
+
+		// Find package-level vars whose address is taken (cross-file) so their
+		// declarations can be emitted as heap boxes that &global references directly.
+		collectAddressedGlobals(files, packageTypes, info)
+
+		// Record pointer parameters passed the untyped nil at a call site (cross-file) so their
+		// entry deref alias takes the nil-safe accessor (see packageNilArgPtrParams).
+		collectNilArgPtrParams(files, info)
+
+		// Decide which string literals are hoisted to package-scoped `static readonly` fields
+		// (Tier C — see hoistedLiteralOperations.go). A whole-package PRE-pass: pre-boxing needs
+		// every use of a literal before any file emits, and collectMovedInitVars below consults
+		// the reader set this produces, so it must run first.
+		collectHoistedLiterals(files, packageTypes, info, nil, true)
+
+		// Find package-level var initializers whose Go dependency order cannot be reproduced by
+		// C#'s static-field-initializer order (cross-file / same-file forward reference /
+		// dependency on a relocated var — resolved transitively through package function bodies,
+		// mirroring Go's own analysis), so their initialization can be relocated into an ordered
+		// static constructor (package_init.cs).
+		collectMovedInitVars(fset, packageTypes, info, pkg.Syntax)
+
+		// Find import aliases whose name collides with a child namespace visible from the
+		// transitive import closure (CS0576) so alias emission and every package-qualifier
+		// render Δ-renames them consistently.
+		computeImportAliasRenames(files, packageTypes, packageNamespace)
+
+		// Find unexported types used as exported struct fields so they can be emitted as public
+		// (an exported field's type must be at least as accessible — CS0051/CS0052).
+		collectPublicizedTypes(packageTypes)
+
+		// Find this package's definition-side one-arg //go:linkname handles (Go 1.23's opt-in that
+		// authorizes cross-package linkname pulls) so the handled vars emit `public` — letting a
+		// puller in another assembly reach them through its forwarding property (see linknameOperations).
+		collectLinknameHandles(pkg.Syntax)
+
+		// Preload the imported type aliases of every package these files import, BEFORE converting any
+		// file, so a foreign renamed type reached transitively (through a value whose package this file
+		// does not itself import) resolves through its recorded alias regardless of file order (see
+		// preloadImportedTypeAliases — go/printer comment.go's `slash` token.Pos heap box, CS0426).
+		preloadImportedTypeAliases(files, options)
+
+		var outputFileNames []string
+
+		// Convert files SEQUENTIALLY, in the deterministic pkg.Syntax (sorted filename) order. Files
+		// were previously converted in concurrent goroutines, but the per-file visitors share package-
+		// level state claimed at visit time — initFuncCounter (initΔN indices), getGlobalTempVarName
+		// (blank `_` func/var numbering, an unsynchronized map), and the loadImportedTypeAliases
+		// check-then-act (a file marked an imported package_info "parsed" BEFORE the parse finished, so
+		// a concurrently-converting file saw the marker, skipped the wait, and emitted an imported
+		// const collision-rename bare — e.g. `abi.String` instead of `abi.ΔString`, a compile error
+		// that came and went with goroutine scheduling). Claim order = schedule order made the emitted
+		// bytes nondeterministic across otherwise-identical runs. Per-file emission is a small fraction
+		// of conversion cost (dominated by go/packages type-graph loading), so sequential conversion
+		// buys byte-reproducible output for free: a full-stdlib conversion (305 packages) measured
+		// 3m42s with the concurrent per-file goroutines and 3m39s sequential — within noise.
+		for _, fileEntry := range files {
+			func(fileEntry FileEntry) {
+				defer func() {
+					if !options.debugMode {
+						if r := recover(); r != nil {
+							if fileEntry.manualConversion {
+								showWarning("visit file error: %v in \"%s\" (auto-conversion sibling skipped)", r, filepath.Base(fileEntry.filePath))
+							} else {
+								showWarning("visit file error: %v in \"%s\"", r, filepath.Base(fileEntry.filePath))
+							}
+						}
+					}
+				}()
+
+				visitor := newFileVisitor(fset, packageTypes, info, options, globalIdentNames, globalScope, fileEntry)
+
+				visitor.visitFile(fileEntry.file)
+
+				var outputFileName string
+				baseName := strings.TrimSuffix(filepath.Base(fileEntry.filePath), ".go")
+
+				if !isDir {
+					outputFileName = strings.TrimSuffix(packageOutputPath, ".go") + ".cs"
+				} else if fileEntry.manualConversion {
+					outputFileName = filepath.Join(packageOutputPath, baseName+".cs.auto")
+				} else {
+					outputFileName = filepath.Join(packageOutputPath, baseName+".cs")
+				}
+
+				if fileEntry.manualConversion {
+					// Hand-owned destination: the visit above already fed this file's package-wide
+					// state (the part its sibling files depend on); emit the auto conversion to the
+					// non-compiled `<name>.cs.auto` review sibling, leaving the marked `.cs` untouched.
+					if err := writeAutoConversionSibling(outputFileName, baseName, visitor.targetFile.String()); err != nil {
+						showWarning("%s", err)
+					}
+				} else if err := visitor.writeOutputFile(outputFileName); err != nil {
+					log.Printf("%s\n", err)
+				}
+
+				packageLock.Lock()
+				projectImports.UnionWithSet(visitor.importQueue)
+				outputFileNames = append(outputFileNames, outputFileName)
+				packageLock.Unlock()
+			}(fileEntry)
+		}
+
+		// Resolve any deferred cross-file dynamic (anonymous struct) type references
+		// now that every file's lifted names are registered in the shared registry.
+		resolveDynamicTypeMarkers(outputFileNames)
+
+		// Write project file with correct output type and unsafe code settings
+		err = writeProjectFile(projectFileName, projectFileContents, packageOutputPath, packageTypes, options)
+
+		if err != nil {
+			log.Fatalf("Error while writing project file \"%s\": %s\n", projectFileName, err)
+		}
+
+		var packageInfoFileName string
+
+		// Handle package information file
+		if isDir {
+			packageInfoFileName = filepath.Join(packageOutputPath, PackageInfoFileName)
+		} else {
+			packageInfoFileName = filepath.Join(filepath.Dir(packageOutputPath), PackageInfoFileName)
+		}
+
+		writePackageInfoFile(packageInfoFileName, !isDir)
+
+		// Resolve the deferred pointer-adapter names now that the GoImplement records are FINAL —
+		// after the interface-inheritance prune and the alias-covered skip, both of which decide
+		// which pairs survive to own an adapter class. Must follow writePackageInfoFile, unlike
+		// the dynamic-type barrier above, which only needs the file-visit registry.
+		resolveAdapterNameMarkers(outputFileNames)
+
+		// Emit the ordered package-var initialization file (no-op unless any initializer was
+		// relocated for init-order correctness). Package (directory) conversions only. Under
+		// -tests, the ctor carries the erasable test hook so the internal test variant can
+		// append its own relocations (writeTestVariantInitFile) — like the IP-4 csproj
+		// exclusions, this production-file difference is intended -tests output, not drift.
+		if isDir {
+			if err := writePackageInitFile(packageOutputPath, packageNamespace, packageName, options.convertTests); err != nil {
+				log.Fatalf("Failed to write package init file for \"%s\": %s\n", packageOutputPath, err)
+			}
+		}
+
+		// NOTE: `.cs.auto` review siblings for manually-converted files were emitted inline by the
+		// file-visit loop above — marked files convert WITH the package (same order, same analyses)
+		// so their package-wide state reaches sibling files, and only their write target differs.
+	}
+
+	// -tests: with the production conversion complete (its package_info.cs is the seed for the
+	// test metadata), convert the package's _test.go variants into the colocated test project.
+	if options.convertTests {
+		if err := processTestConversion(inputFilePath, outputFilePath, options); err != nil {
+			log.Fatalf("Failed to convert package tests in %q: %v\n", inputFilePath, err)
+		}
+	}
+}
+
+// aliasCoveredImplementationKeys returns the "canonicalIface|impl" keys of every GoImplement pair
+// that is ALREADY carried by a record under a package type ALIAS of the same interface (os converts
+// dirEntry to fs.DirEntry through its own `type DirEntry = fs.DirEntry` AND through the io/fs name).
+// The aliased record wins and the qualified duplicate is skipped — this set drives that skip in
+// writePackageInfoFile's emission loop, and its adapter-name collision prune consults the same set
+// so a duplicate that will be skipped never owns an adapter name. Callers hold packageLock.
+func aliasCoveredImplementationKeys() HashSet[string] {
+	covered := HashSet[string]{}
+
+	for alias, typeName := range exportedTypeAliases {
+		if implementations, ok := interfaceImplementations[alias]; ok {
+			canonIface := strings.TrimPrefix(typeName, RootNamespace+".")
+
+			for implementation := range implementations {
+				covered.Add(canonIface + "|" + implementation)
+			}
+		}
+	}
+
+	return covered
+}
