@@ -1546,10 +1546,16 @@ public static class GoReflect
         kind = token switch
         {
             "bool" => Bool,
-            // The converter renders Go int/uint in their C# spellings (nint/nuint) inside the
-            // def token, so both spellings must map (num:nint is what `type X int` emits).
-            "int" or "nint" => Int, "int8" => Int8, "int16" => Int16, "int32" => Int32, "int64" => Int64,
-            "uint" or "nuint" => Uint, "uint8" => Uint8, "uint16" => Uint16, "uint32" => Uint32, "uint64" => Uint64,
+            // The converter renders the def token in the C# SPELLING of the underlying type, which
+            // is not always the Go one, so every spelling that reaches here must map:
+            //   * Go int/uint  -> nint/nuint   (num:nint is what `type X int` emits)
+            //   * Go byte/rune -> byte/rune    (the predeclared aliases keep their own spelling,
+            //     matching the `uint8`/`int32` aliases the generated csprojs declare)
+            // A missing spelling is silent and broad: the wrapper falls through to Struct, so the
+            // whole reflection bridge — fmt's %v, DeepEqual, encoding/* — sees a one-field struct.
+            // `type nb byte` printed "{144}" instead of "144" (NarrowShiftVarCount).
+            "int" or "nint" => Int, "int8" => Int8, "int16" => Int16, "int32" or "rune" => Int32, "int64" => Int64,
+            "uint" or "nuint" => Uint, "uint8" or "byte" => Uint8, "uint16" => Uint16, "uint32" => Uint32, "uint64" => Uint64,
             "uintptr" => Uintptr,
             "float32" => Float32, "float64" => Float64,
             "complex64" => Complex64, "complex128" => Complex128,
