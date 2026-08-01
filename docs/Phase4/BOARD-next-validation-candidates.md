@@ -234,11 +234,24 @@ every generated `.tests.csproj`); (b) promote `time` to a position both trees sh
 already is; (c) rule that `testing`'s time-typed surface is out of scope and accept that packages using
 it cannot compile their suites. **Owed to a ruling, not to this arc.**
 
-Footprint, so the ruling is sized rather than guessed: a `.Deadline()` scan over GOROOT `_test.go`
-files hits 15 files, of which the testing-typed receivers are in `net`, `net/http`, `net/http/httputil`,
-`os/exec`, `os/signal`, `database/sql`, `runtime`, `runtime/pprof` and `cmd/go` (the `context` and
-`internal/poll` hits are `context.Context.Deadline` / `SetDeadline`, false positives for this purpose).
-So it gates roughly eight future arcs, several of them large.
+Footprint, so the ruling is sized rather than guessed. Scanning GOROOT `_test.go` for a *testing*
+receiver (`\b(t|b|tb)\.Deadline\(\)`, positive control `net/net_test.go:78`) and dropping what this
+platform and this campaign never build:
+
+| Package | Note |
+|:--|:--|
+| `net` | this row |
+| `net/http`, `net/http/httputil` | 4 sites |
+| `os/exec` | 1 site |
+| `runtime/pprof` | 1 site |
+| `context` (`x_test.go`) | 1 site |
+| ~~`os/signal`~~ | 7 sites, all in `//go:build unix` files — **never built on Windows**, which is how `os/signal` banks at 1 today while carrying the call |
+| ~~`internal/poll`~~ | `splice_linux_test.go` only |
+| ~~`cmd/go`, `cmd/cgo/...`~~ | not stdlib validation targets |
+
+So **six** packages, not the wider set a naive `.Deadline()` grep suggests (that one also catches
+`context.Context.Deadline`). The `os/signal` row is worth keeping visible: it is exactly the shape of
+counterexample that would look like it disproves this blocker, and does not.
 
 **`net` state: 2 errors, one root, no converter work left in it.** Everything the r27 lane bucketed is
 closed. When the ruling lands, `net` should compile on the next run — and the init gap (`sync.OnceFunc`
