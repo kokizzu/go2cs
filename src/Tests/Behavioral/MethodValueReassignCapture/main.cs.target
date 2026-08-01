@@ -12,6 +12,15 @@ internal static nint check(this validator v, nint n) {
     return v.@base + n;
 }
 
+[GoType] partial struct counter {
+    internal nint n;
+}
+
+[GoRecv] internal static nint bump(this ref counter c, nint by) {
+    c.n += by;
+    return c.n;
+}
+
 internal static void Main() {
     Func<nint, nint> fn = default!;
     var v = new validator(@base: 100);
@@ -31,6 +40,13 @@ internal static void Main() {
     var xʗ1 = x;
         fn = (nint p1) => xʗ1.check(p1);
     fmt.Println(fn(7));
+    Func<nint, nint> add = default!;
+    ref var c = ref heap<counter>(out var Ꮡc);
+    c = new counter(n: 5);
+    add = Ꮡc.bump;
+    fmt.Println(add(3));
+    fmt.Println(add(4));
+    fmt.Println(c.n);
 }
 
 } // end main_package

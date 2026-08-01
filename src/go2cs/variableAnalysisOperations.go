@@ -2605,6 +2605,42 @@ func (v *Visitor) requiresLambdaConversion(expr ast.Expr) bool {
 	return false
 }
 
+// methodValueBindsReceiverAddress reports a method VALUE whose method has a POINTER receiver while
+// the receiver expression is a VALUE — Go's implicit `(&x).M`. Such a value binds x's own storage,
+// never a copy, so the receiver-capture SNAPSHOT the assignment path takes for an ordinary method
+// value (`var cʗ1 = c;`, which preserves a VALUE receiver's bind-a-COPY semantics) is both wrong and
+// unrenderable here: the escape analysis has already heap-boxed the local, and the emission wants
+// that box (`Ꮡc.bump`) — the snapshot rename turned it into the undeclared `Ꮡcʗ1` (CS0103). A
+// receiver expression that is ALREADY a pointer keeps its snapshot: Go copies the pointer there,
+// which is exactly what the snapshot models.
+func (v *Visitor) methodValueBindsReceiverAddress(sel *ast.SelectorExpr) bool {
+	funcObj, ok := v.info.ObjectOf(sel.Sel).(*types.Func)
+
+	if !ok {
+		return false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.Recv() == nil {
+		return false
+	}
+
+	if _, isPtrRecv := sig.Recv().Type().(*types.Pointer); !isPtrRecv {
+		return false
+	}
+
+	recvType := v.getType(sel.X, false)
+
+	if recvType == nil {
+		return false
+	}
+
+	_, alreadyPtr := recvType.(*types.Pointer)
+
+	return !alreadyPtr
+}
+
 func (v *Visitor) isMethodValue(sel *ast.SelectorExpr, isCallExpr bool) bool {
 	if sel.Sel == nil {
 		return false

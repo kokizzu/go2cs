@@ -35,4 +35,22 @@ func main() {
 	for _, c := range cases {
 		fmt.Printf("%s | %s\n", c.err.Error(), c.want)
 	}
+
+	// The ELIDED POINTER element composite `[]*struct{...}{{...}}` — Go implies the `&` —
+	// takes a THIRD arm in convCompositeLit, reached before the elided-struct arm above and
+	// emitting `Ꮡ(new T(...))`. That arm marked `any` field literals but never routed
+	// interface fields, so the concrete again reached the generated ctor bare (CS1503).
+	// The interface here is EMBEDDED rather than named, which is net ip_test's exact shape
+	// (`[]*struct{ in IP; str string; byt []byte; error }`).
+	ptrCases := []*struct {
+		want string
+		error
+	}{
+		{"embedded-pointer", &pointerErr{"embedded-pointer"}},
+		{"embedded-value", valueErr{"embedded-value"}},
+	}
+
+	for _, c := range ptrCases {
+		fmt.Printf("%s | %s\n", c.error.Error(), c.want)
+	}
 }

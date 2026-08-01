@@ -32,4 +32,22 @@ func main() {
 	// (CS0029) - must emit `var (ln, ls) = pair();`.
 	var ln, ls = pair()
 	fmt.Println(ln, ls, calls) // 42 hello 2
+
+	// A tuple whose results are an INTERFACE and a FUNC: the escape analysis blanket-marks
+	// both as "escaping" (they are already references), so a gate reading that raw flag -
+	// rather than asking whether the name actually gets a heap box - rejected the
+	// deconstruction, and the per-name fallback assigned the WHOLE tuple to the first name
+	// and defaulted the rest (CS0029). net's `var ctx, cancel = context.WithCancel(...)`.
+	var si, fi = ifaceAndFunc()
+	fmt.Println(si.String(), fi()) // iface 9
+}
+
+type stringer interface{ String() string }
+
+type sval struct{ s string }
+
+func (v sval) String() string { return v.s }
+
+func ifaceAndFunc() (stringer, func() int) {
+	return sval{s: "iface"}, func() int { return 9 }
 }

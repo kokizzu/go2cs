@@ -38,6 +38,7 @@ using static go.main_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<sval, stringer>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -56,6 +57,8 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface stringer {}
     internal partial struct box {}
+    internal partial struct sval {}
     // </TypeAccessibility>
 }

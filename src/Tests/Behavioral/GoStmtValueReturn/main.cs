@@ -32,6 +32,8 @@ private static readonly object pairˢ = (@string)"pair:"u8;
 private static readonly object nibˢ = (@string)"nib:"u8;
 private static readonly object litˢ = (@string)"lit:"u8;
 private static readonly object emitˢ = (@string)"emit:"u8;
+private static readonly object litvalˢ = (@string)"litval:"u8;
+private static readonly object litmultiˢ = (@string)"litmulti:"u8;
 
 internal static void Main() {
     var @out = new channel<nint>(0);
@@ -48,6 +50,26 @@ internal static void Main() {
     fmt.Println(litˢ, ᐸꟷ(@out));
     goǃ(emit, @out);
     fmt.Println(emitˢ, ᐸꟷ(@out));
+    goǃ((channel<nint> o) => {
+        error retErr = default!;
+        func((defer, recover) => {
+            var oʗ2 = o;
+            defer(() => {
+                oʗ2.ᐸꟷ(11);
+            });
+            retErr = default!; return;
+        });
+        return retErr;
+    }, @out);
+    fmt.Println(litvalˢ, ᐸꟷ(@out));
+    goǃ(error (channel<nint> o, nint n) => {
+        o.ᐸꟷ(n * 2);
+        if (n < 0) {
+            return fmt.Errorf("negative %d"u8, n);
+        }
+        return default!;
+    }, @out, (nint)(6));
+    fmt.Println(litmultiˢ, ᐸꟷ(@out));
 }
 
 } // end main_package

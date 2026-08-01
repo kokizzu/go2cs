@@ -89,6 +89,22 @@ internal static void Main() {
     fmt.Println(s1 == ""u8, err1 != default!);
     var (s2, err2) = sget(true);
     fmt.Println(s2, err2 == default!);
+    var quiet = error (nint n) => {
+        if (n > 0) {
+            return default!;
+        }
+        return default!;
+    };
+    fmt.Println(quiet(1) == default!, quiet(0) == default!);
+    Func<nint, error> hush = (nint n) => default!;
+    fmt.Println(hush(3) == default!);
+    var mixed = error (nint n) => {
+        if (n < 0) {
+            return fmt.Errorf("neg %d"u8, n);
+        }
+        return default!;
+    };
+    fmt.Println(mixed(-1) != default!, mixed(1) == default!);
 }
 
 } // end main_package

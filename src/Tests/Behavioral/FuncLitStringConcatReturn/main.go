@@ -103,4 +103,31 @@ func main() {
 	fmt.Println(s1 == "", err1 != nil)
 	s2, err2 := sget(true)
 	fmt.Println(s2, err2 == nil)
+
+	// The OPPOSITE end of the same inference gap, single-result: EVERY arm is untyped nil,
+	// so every arm renders `default!` and NONE carries a natural type — where the interface
+	// rule above has too many candidate types, this has none, and it is the same CS8917.
+	// net_test's `client := func(*TCPConn) error { <-serverDone; return nil }`.
+	quiet := func(n int) error {
+		if n > 0 {
+			return nil
+		}
+		return nil
+	}
+
+	fmt.Println(quiet(1) == nil, quiet(0) == nil)
+
+	// The `var` declaration form of the same shape (a different conversion path), and the
+	// control: one arm typed, which must KEEP the inferred form.
+	var hush = func(n int) error { return nil }
+	fmt.Println(hush(3) == nil)
+
+	mixed := func(n int) error {
+		if n < 0 {
+			return fmt.Errorf("neg %d", n)
+		}
+		return nil
+	}
+
+	fmt.Println(mixed(-1) != nil, mixed(1) == nil)
 }

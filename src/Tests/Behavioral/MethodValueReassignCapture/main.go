@@ -19,6 +19,13 @@ func (v validator) check(n int) int {
 	return v.base + n
 }
 
+type counter struct{ n int }
+
+func (c *counter) bump(by int) int {
+	c.n += by
+	return c.n
+}
+
 func main() {
 	var fn func(int) int
 
@@ -37,4 +44,16 @@ func main() {
 	x := validator{base: 1}
 	fn = x.check
 	fmt.Println(fn(7))
+
+	// A POINTER-receiver method value. Go's `c.bump` IS `(&c).bump`: the value binds c's own
+	// storage, so its writes must be visible in c afterwards. The ARGUMENT-context arm already
+	// synthesized that `&`; the ASSIGNMENT arm rendered the receiver plainly, so the forwarding
+	// lambda called the box-receiver extension with a struct VALUE receiver (CS1929 - net's
+	// `poll.CloseFunc = sw.Closesocket`). Reading c.n back proves the box, not just the build.
+	var add func(int) int
+	c := counter{n: 5}
+	add = c.bump
+	fmt.Println(add(3)) // 8
+	fmt.Println(add(4)) // 12
+	fmt.Println(c.n)    // 12 - wrote through to c, not to a copy
 }

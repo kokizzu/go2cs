@@ -751,6 +751,10 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 
 	// Check if this is a method value being used in an assignment
 	if v.isMethodValue(selectorExpr, context.isCallExpr) && context.isAssignment {
+		// A POINTER-receiver method value over a VALUE receiver expression binds the ADDRESS,
+		// so it takes the method-group-over-the-box emission below and needs no receiver
+		// snapshot — see methodValueBindsReceiverAddress, which visitAssignStmt consults to
+		// suppress the snapshot this arm would otherwise render through.
 		// Check if selector expression needs to be converted to a lambda function for assignment
 		if ident, ok := selectorExpr.X.(*ast.Ident); ok {
 			if v.isPackageIdentifier(ident) {
@@ -791,13 +795,20 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 							}
 						} else {
 							// A VALUE receiver expression under a POINTER-receiver method value is
-							// Go's implicit address-of: `sw.Closesocket` IS `(&sw).Closesocket`,
-							// bound once. Synthesize that `&` — the same binding the VALUE-context
-							// arm below already makes — or the lambda body calls the [GoRecv] ж<T>
-							// extension with a struct VALUE receiver (CS1929/CS1501; net's
-							// `poll.CloseFunc = sw.Closesocket`, six hook installs in
-							// main_windows_test.go).
-							recvExpr = v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
+							// Go's implicit address-of: `sw.Closesocket` IS `(&sw).Closesocket`. The
+							// address binds ONCE and aliases the receiver's own storage — so this
+							// arm takes the VALUE-context arm's emission wholesale: a method GROUP
+							// over the box, with no receiver snapshot and no forwarding lambda.
+							// Both of those are wrong here. The snapshot exists to preserve a VALUE
+							// receiver's bind-a-COPY semantics, which a pointer receiver does not
+							// have — the escape analysis already ruled the other way by heap-boxing
+							// the local (see "A pointer-receiver METHOD VALUE heap-boxes its
+							// receiver"), so snapshotting it produced `Ꮡcʗ1`, a box nothing
+							// declares (CS0103). The lambda, in turn, called the [GoRecv] ж<T>
+							// extension with a struct VALUE receiver (CS1929 / CS1501 — net's
+							// `poll.CloseFunc = sw.Closesocket`, six hook installs).
+							boundRecv := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
+							return fmt.Sprintf("%s.%s", boundRecv, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr)))
 						}
 					}
 				}

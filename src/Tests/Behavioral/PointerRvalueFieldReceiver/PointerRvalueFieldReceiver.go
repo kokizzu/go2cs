@@ -43,4 +43,14 @@ func main() {
 	q := &queue{last: a}
 	q.tail().s.set(100)
 	fmt.Println(a.s.v) // 100 — overwritten via the queue path
+
+	// 4. TYPE-ASSERTION root: `iface.(*node).s` is a value field of an asserted pointer. The
+	// shape list that admits a base into this routing enumerated ident/selector/call/index/star,
+	// and an assertion is none of them, so it fell to the `Ꮡ(value)` copy-box fallback — which
+	// named a `.s` member the box does not have (CS1061) and, had it bound, would have written
+	// into a copy. The assertion renders as a postfix box, so `.of(…)` chains off it exactly as
+	// off a returning call. net udpsock_test's `c.(*UDPConn).conn.Write(b)`.
+	var iface any = b
+	iface.(*node).s.set(55)
+	fmt.Println(b.s.v) // 55 — the write must reach b, not a copy
 }

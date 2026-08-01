@@ -42,6 +42,9 @@ internal static void Main() {
     var q = Ꮡ(new queue(last: a));
     q.tail().of(node.Ꮡs).set(100);
     fmt.Println((~a).s.v);
+    any iface = b;
+    iface._<ж<node>>().of(node.Ꮡs).set(55);
+    fmt.Println((~b).s.v);
 }
 
 } // end main_package

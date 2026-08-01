@@ -38,6 +38,7 @@ using static go.main_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<main_ptrCases, error>(Promoted = true)]
 [assembly: GoImplement<pointerErr, error>(Pointer = true)]
 [assembly: GoImplement<valueErr, error>]
 // </InterfaceImplementations>
@@ -59,6 +60,7 @@ public static partial class main_package
 
     // <TypeAccessibility>
     internal partial struct main_cases {}
+    internal partial struct main_ptrCases {}
     internal partial struct pointerErr {}
     internal partial struct valueErr {}
     // </TypeAccessibility>

@@ -36,6 +36,25 @@ internal static void Main() {
 
     var (ln, ls) = pair();
     fmt.Println(ln, ls, calls);
+
+    var (si, fi) = ifaceAndFunc();
+    fmt.Println(si.String(), fi());
+}
+
+[GoType] partial interface stringer {
+    @string String();
+}
+
+[GoType] partial struct sval {
+    internal @string s;
+}
+
+internal static @string String(this sval v) {
+    return v.s;
+}
+
+internal static (stringer, Func<nint>) ifaceAndFunc() {
+    return (new sval(s: "iface"u8), () => 9);
 }
 
 } // end main_package

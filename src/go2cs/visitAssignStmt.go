@@ -1193,7 +1193,11 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 			}
 
 			if selectorExpr, ok := rhs.(*ast.SelectorExpr); ok {
-				if v.isMethodValue(selectorExpr, false) {
+				// A POINTER-receiver method value over a VALUE receiver binds the receiver's
+				// ADDRESS (Go's implicit `(&x).M`), so there is no copy to snapshot — see
+				// methodValueBindsReceiverAddress. convSelectorExpr emits the method group over
+				// the box for it, and a snapshot rename would make that box undeclared (CS0103).
+				if v.isMethodValue(selectorExpr, false) && !v.methodValueBindsReceiverAddress(selectorExpr) {
 					v.enterLambdaConversion(selectorExpr)
 					defer v.exitLambdaConversion()
 
@@ -1533,7 +1537,11 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 			}
 
 			if selectorExpr, ok := rhs.(*ast.SelectorExpr); ok {
-				if v.isMethodValue(selectorExpr, false) {
+				// A POINTER-receiver method value over a VALUE receiver binds the receiver's
+				// ADDRESS (Go's implicit `(&x).M`), so there is no copy to snapshot — see
+				// methodValueBindsReceiverAddress. convSelectorExpr emits the method group over
+				// the box for it, and a snapshot rename would make that box undeclared (CS0103).
+				if v.isMethodValue(selectorExpr, false) && !v.methodValueBindsReceiverAddress(selectorExpr) {
 					v.enterLambdaConversion(selectorExpr)
 					defer v.exitLambdaConversion()
 
