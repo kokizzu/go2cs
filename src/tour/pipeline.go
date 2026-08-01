@@ -21,6 +21,11 @@ const (
 	maxSourceBytes    = 256 << 10
 	maxRequestBytes   = maxSourceBytes + (16 << 10)
 	commandTimeout    = 20 * time.Second
+	// buildTimeout covers the dotnet build stages, which under the "core" and
+	// "deployed" runtimes compile the lesson's full converted-stdlib project
+	// closure on a cold cache (dozens of projects for an fmt import) -- minutes,
+	// not seconds. This is a hang guard, not a pacing device.
+	buildTimeout      = 5 * time.Minute
 	dependencyTimeout = 2 * time.Minute
 	conversionMaxAge  = 30 * time.Minute
 	maxSavedArtifacts = 20
@@ -257,7 +262,7 @@ func (p *pipelineRunner) run(ctx context.Context, request runRequest) (runResult
 
 	buildArgs := []string{"build", artifact.project, "--nologo", "--verbosity:minimal"}
 	buildArgs = append(buildArgs, runtimeMSBuildArgs(artifact.runtime)...)
-	build := p.runStage(ctx, "build", "Build", artifact.outputDir, commandTimeout, "dotnet", buildArgs...)
+	build := p.runStage(ctx, "build", "Build", artifact.outputDir, buildTimeout, "dotnet", buildArgs...)
 	result := runResult{Stages: []stageResult{build}}
 	if build.Status != "passed" {
 		result.Stages = append(result.Stages, skippedStage("run", ".NET Run"))

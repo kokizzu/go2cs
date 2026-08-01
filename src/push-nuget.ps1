@@ -145,7 +145,8 @@ Get-ChildItem $OutDir -Filter *.nupkg -ErrorAction SilentlyContinue | Remove-Ite
 
 # Fresh Release build first (default) so a compile error fails the run BEFORE anything is packed or
 # pushed. -SkipBuild packs whatever is already built on disk (e.g. a Release build from Visual Studio).
-# GeneratePackageOnBuild=false keeps the build from also scattering .nupkg into every project's bin\.
+# The explicit GeneratePackageOnBuild=false is a guard: csprojs default it off, and this keeps a
+# future regression from scattering .nupkg into every project's bin\ during the release build.
 if ($SkipBuild) {
     Write-Step "Skipping build (-SkipBuild): packing existing $Configuration output"
 } else {

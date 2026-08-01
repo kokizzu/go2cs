@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Shared NuGet version: go.lib carries the same stamp as the converted stdlib (src\version.props) -->
-  <Import Project="..\..\version.props" />
+  <!-- The shared NuGet version stamp (src\version.props) arrives via src\core\Directory.Build.props;
+       a direct import here would double-import it (MSB4011). Deployed trees exclude that props file
+       and never pack, so golib needs no version stamp there. -->
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -18,7 +19,7 @@
     <RepositoryType>git</RepositoryType>
     <ApplicationIcon>..\go2cs.ico</ApplicationIcon>
     <Title>go2cs core library</Title>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageId>go.lib</PackageId>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageDescription>$(Description)</PackageDescription>

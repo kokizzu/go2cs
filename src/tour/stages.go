@@ -14,7 +14,7 @@ func (p *pipelineRunner) build(ctx context.Context, request runRequest) (stageRe
 
 	args := []string{"build", artifact.project, "--nologo", "--verbosity:minimal"}
 	args = append(args, runtimeMSBuildArgs(artifact.runtime)...)
-	return p.runStage(ctx, "build", "Build", artifact.outputDir, commandTimeout, "dotnet", args...), nil
+	return p.runStage(ctx, "build", "Build", artifact.outputDir, buildTimeout, "dotnet", args...), nil
 }
 
 func (p *pipelineRunner) execute(ctx context.Context, request runRequest) (stageResult, error) {

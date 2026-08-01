@@ -111,10 +111,11 @@ Write-Host "  deploying standard library -> core" -ForegroundColor Yellow
 Invoke-Robocopy (Join-Path $srcRoot 'core') $coreDst @('/XF', 'Directory.Build.props', '*.tests.csproj')
 
 # ---- Stage the shared version.props at the deploy root -----------------------------------
-# golib.csproj and go2cs-gen.csproj each <Import ..\..\version.props /> (the single-source
-# NuGet version stamp, src\version.props). Deployed to <root>\core\golib and <root>\gen\go2cs-gen,
-# that relative import resolves to <root>\version.props, so the file must sit at the deploy root
-# or every project transitively referencing golib/the analyzer fails with MSB4019.
+# go2cs-gen.csproj does <Import ..\..\version.props /> (the single-source NuGet version stamp,
+# src\version.props; golib gets it via core's Directory.Build.props instead, which this deploy
+# excludes). Deployed to <root>\gen\go2cs-gen, that relative import resolves to
+# <root>\version.props, so the file must sit at the deploy root or every project transitively
+# referencing the analyzer fails with MSB4019.
 Copy-Item (Join-Path $srcRoot 'version.props') (Join-Path $Target 'version.props') -Force
 
 # ---- Write the root Directory.Build.props ------------------------------------------------
@@ -163,8 +164,8 @@ if ($NoBuild) {
 }
 
 Write-Host "Building $slnxPath ($Configuration)..." -ForegroundColor Cyan
-# GeneratePackageOnBuild is on per-project (library packaging) -- suppress it for the verify
-# build so we do not emit hundreds of .nupkg files just to confirm the tree compiles.
+# csprojs default GeneratePackageOnBuild off; the explicit false is a guard so a future
+# regression cannot emit hundreds of .nupkg files just to confirm the tree compiles.
 & dotnet build $slnxPath -c $Configuration -p:GeneratePackageOnBuild=false -v m
 if ($LASTEXITCODE -ne 0) {
     throw "Verify build FAILED ($LASTEXITCODE)."
