@@ -222,10 +222,16 @@ There are **two** ways a package carries hand-owned C#, and they are NOT interch
    `runtime2_impl.cs`, sync `runtime_impl.cs`, internal/poll `runtime_sema_impl.cs`, syscall
    `syscall_impl.cs` (2026-07-19) and `zsyscall_windows_impl.cs` (2026-08-01 —
    `GetTimeZoneInformation` only; the struct-passing seam, see *Child-process creation* below),
-   and math/rand + math/rand/v2 `rand_impl.cs` (2026-07-17,
+   math/rand + math/rand/v2 `rand_impl.cs` (2026-07-17,
    blocker R3 — `runtime.rand` linkname bodies on `Random.Shared`: OS-entropy seeded, thread-safe,
-   non-deterministic run to run exactly like Go's runtime generator; the os / net / hash/maphash
-   `runtime_rand` declarations still carry throwing stubs).
+   non-deterministic run to run exactly like Go's runtime generator), os `tempfile_impl.cs`
+   (2026-08-01 — the same `runtime.rand` linkname, reached by `nextRandom`, so `CreateTemp`/`MkdirTemp`
+   can pick a name; `net` and `hash/maphash` still carry throwing `runtime_rand` stubs), and runtime
+   `goenvs_impl.cs` (2026-08-01 — a `[ModuleInitializer]` snapshot of the process environment into
+   `runtime.envs`, standing in for the `goenvs()` call in the `schedinit` go2cs never runs, without
+   which `gogetenv` — and therefore `runtime.GOROOT()` — threw *"getenv before env init"*). Rule and
+   measured reach for the last two: [`ConversionStrategies-Reference.md`](ConversionStrategies-Reference.md),
+   *The process ROOTS a converted program never gets from a Go bootstrap*.
 
 Marker mechanics: `[AttributeTargets.Module, AllowMultiple = true]` (golib `GoManualConversionAttribute`), so
 one per file across a package is fine. The scanner wants it **before the first class**, so place it after the

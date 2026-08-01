@@ -10860,6 +10860,77 @@ call — so the disclosure covers the CLR's frame conservatism, not a retention 
 the investigation *did* find (SetFinalizer keying on the pointer box; `Ꮡ`'s `in` parameter pinning the
 array) were fixed at their layers first; only what remained was disclosed.
 
+### The process ROOTS a converted program never gets from a Go bootstrap: `runtime.envs`, `os.runtime_rand`
+
+Two of Go's cheapest facts about a running process arrive through machinery conversion cannot carry:
+the environment is copied into `runtime.envs` by `goenvs()` during `schedinit`, and the temp-file name
+source is `runtime.rand`, a per-M chacha8 PRNG the `os` package reaches by `//go:linkname`. Neither
+producer survives — `schedinit` is Go's scheduler bootstrap and go2cs never runs it (every converted
+runtime `init` carries the emitted comment *"not run; .NET is the runtime"*), and `runtime.rand` is
+one more bodyless assembly declaration the [`PartialStubGenerator`](#source-generators) fills with a
+throw. Both are supplied by hand-owned `*_impl.cs` companions with no `.go` counterpart, so a
+reconvert never touches them.
+
+**`runtime.envs` — `core/runtime/goenvs_impl.cs`.** `gogetenv`'s first act is to reject a nil
+`environ()` with `throw("getenv before env init")`, so an unpopulated `envs` did not degrade the
+lookup, it *killed the caller* — and then re-faulted inside its own traceback on the unimplemented
+`getcallerpc`, presenting as a crash rather than as a missing value. The reach is not niche:
+`runtime.GOROOT()` **is** `gogetenv("GOROOT")`, which is what `internal/testenv.GOROOT` calls, which
+is what any Go test needing the toolchain calls (`path/filepath`'s `TestBug3486` is the first
+operational hit). A `[ModuleInitializer]` is the faithful stand-in for `schedinit`'s slot — it runs
+when the runtime assembly is first touched, before any converted Go code in it, exactly once — and
+fills `envs` from `Environment.GetEnvironmentVariables()` in Go's own `"key=value"` wire form, which
+is what `gogetenv` scans (`'='` at exactly `len(key)`) and what `syscall.Environ` hands back. The
+SNAPSHOT semantics are Go's, not a simplification: `GOROOT`'s doc says *"the GOROOT environment
+variable, if set at process start"*, so a later `os.Setenv` neither does nor should appear here.
+Note this is the only *read* path that was broken — on Windows `syscall.Environ`/`Getenv` go straight
+to `GetEnvironmentStringsW` and never consulted `envs`.
+
+⚠ **`defaultGOROOT` is a LINK-TIME constant and stays empty — a separate, open root.** `runtime.GOROOT()`
+falls back to `defaultGOROOT` when the environment does not set `GOROOT`, and Go's is written by
+`cmd/link` at build time (measured: with `GOROOT` unset, a real Go binary still answers
+`runtime.GOROOT() == "C:\\Program Files\\Go"`). A converted assembly has no linker to write it, so it
+answers `""` — exactly Go's own `-trimpath` case, which `testenv.findGOROOT` handles by walking up
+from the working directory for `GOROOT/src/go.mod` and, failing that, **skipping** the test. So
+`TestBug3486` now reaches its own decision instead of infrastructure-erroring, but skips where Go
+passes. Fabricating a value at runtime (probing `PATH` for the Go installation) would invent behavior
+Go does not have; the honest remedies are all at build time — e.g. having the converter carry its
+`-goroot` into assembly metadata — and that is a ruling, not a lane fix. Left empty and named.
+
+**`os.runtime_rand` — `core/os/tempfile_impl.cs`.** The throwing stub took out every `os.CreateTemp`
+and `os.MkdirTemp` before either could pick a name, which is what made `io`'s `OffsetWriter` tests
+infrastructure-error and what stopped `path/filepath`'s symlink tests from reaching `testenv`'s own
+decision to skip them. What Go asks of `runtime.rand` *here* is stated by `tempfile.go` itself —
+"a good chance the file doesn't exist yet - keeps the number of tries in TempFile to a minimum" — so
+only two properties matter, and statistical quality is not one: the sequence must differ **across
+processes** (a fixed seed reintroduces exactly the predictability Go moved away from) and it must be
+callable from any goroutine (`CreateTemp` takes no lock). `Random.Shared` answers both — OS-seeded at
+first use, every member documented thread-safe — and `NextBytes` fills the full 64 bits rather than
+`NextInt64`'s 63, so the value is a faithful `uint64` even though `nextRandom` keeps only the low 32.
+It is deliberately **not** a cryptographic source: security against a local attacker comes from
+`O_EXCL`/`Mkdir` failing, exactly as in Go.
+
+**Reach, measured** — an A/B over the two `*_impl.cs` files against one binary, with `path/filepath`
+bucketed **per test** because its unrelated `FindFirstFile` root kills the host mid-suite and makes
+every later verdict read `C#=""`:
+
+| Package | Before | After | What moved |
+|:--|:--|:--|:--|
+| `io` | 47 / 54 | **51 / 54** | `TestOffsetWriter_Seek`, `TestOffsetWriter_WriteAt` and `TestWriteAt_PositionPriorToBase` (all three `infrastructure-error`: *"runtime_rand: … is not implemented"*), plus `TestOffsetWriter_Write` and its subtests (`fail`) |
+| `path/filepath` | 34 / 55 | **47 / 55** | 13 tests, every one of them the same shape: `skip` ↔ `skip` |
+
+`path/filepath`'s entire gain is `testenv.MustHaveSymlink`'s bucket turning into **skips that match
+Go's skips** — `runtime_rand` sat under `MustHaveSymlink`'s `os.MkdirTemp` probe, so C# could not
+reach the point where Go decides it lacks the symlink privilege. What remains there is two roots,
+neither of them this one: **seven** tests reach the `FindFirstFile` struct-marshalling defect (one
+hard `AccessViolation`, six `IndexOutOfRangeException` in `PinnedBuffer` — the same clobbered
+`WIN32_FIND_DATAW`), and **one** is `TestBug3486` on `defaultGOROOT` above.
+
+The `envs` half has its own **positive control**: export `GOROOT` into the host's environment and
+`TestBug3486` *passes*, nothing else changed. That is what isolates the residual to the empty
+link-time constant rather than to the snapshot — and it is the same probe to re-run if a future
+build-time `GOROOT` remedy is tried.
+
 ## Deterministic Output
 
 Converter output is **byte-reproducible**: converting the same Go source with the same converter build produces byte-identical C# every run. This is a hard guarantee the goldens, the full-conversion error measurements, and any future release tag all rest on. Three mechanisms enforce it (all landed 2026-07-01, proven by two consecutive full-stdlib conversions diffing to zero across 305 packages):
