@@ -58,24 +58,26 @@
     </main>
 
     <script>
-      // Let table cells wrap long package paths at "/" boundaries: insert a <wbr>
-      // (word-break opportunity) after each slash in code spans inside tables. Done
-      // here in the browser deliberately -- the markdown source stays clean for
-      // GitHub's renderer, for the sweep script that machine-parses package names
-      // from the validated table, and for copy-paste (<wbr> is an element, not a
-      // character, so copied text is exactly the original path).
+      // Table code spans wrap ONLY at "/" boundaries. Each slash-delimited segment
+      // is wrapped in a nowrap span (suppressing the browser's native break points
+      // inside it -- notably after hyphens, which split `-gopath` into `-`+`gopath`
+      // and `go2cs-gen` at its dash), with a <wbr> between segments as the one
+      // permitted break. Done in the browser deliberately: the markdown source
+      // stays clean for GitHub's renderer and for the sweep script that
+      // machine-parses package names, and copied text is exactly the original
+      // (spans and <wbr> contribute no characters).
       document.querySelectorAll('td code, th code').forEach(function (code) {
-        if (code.childElementCount === 0 && code.textContent.indexOf('/') !== -1) {
-          var parts = code.textContent.split('/');
-          code.textContent = '';
-          parts.forEach(function (part, i) {
-            if (i > 0) {
-              code.appendChild(document.createTextNode('/'));
-              code.appendChild(document.createElement('wbr'));
-            }
-            code.appendChild(document.createTextNode(part));
-          });
-        }
+        if (code.childElementCount !== 0) return;
+        var parts = code.textContent.split('/');
+        code.textContent = '';
+        parts.forEach(function (part, i) {
+          var last = i === parts.length - 1;
+          var span = document.createElement('span');
+          span.style.whiteSpace = 'nowrap';
+          span.textContent = last ? part : part + '/';
+          code.appendChild(span);
+          if (!last) code.appendChild(document.createElement('wbr'));
+        });
       });
     </script>
   </body>
