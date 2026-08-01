@@ -9,9 +9,7 @@
 // ReSharper disable UnusedParameter.Local
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using go.golib;
@@ -20,171 +18,6 @@ using go.golib;
 [assembly:InternalsVisibleTo("GolibTests")]
 
 namespace go;
-
-/// <summary>
-/// Delegate that returns a <c>ref</c> to a field value within a struct <see cref="ж{T}"/> reference.
-/// </summary>
-/// <typeparam name="TElem">Field type.</typeparam>
-/// <param name="structPtr"><see cref="ж{T}"/> heap reference of struct.</param>
-/// <returns>A <c>ref</c> to the field value within the struct <see cref="ж{T}"/> reference.</returns>
-public delegate ref TElem FieldRefFunc<TElem>(object structPtr);
-
-/// <summary>
-/// Delegate that returns a <c>ref</c> to a field value within a struct <see cref="ж{T}"/> reference.
-/// </summary>
-/// <typeparam name="T">Struct type.</typeparam>
-/// <typeparam name="TElem">Field type.</typeparam>
-/// <param name="structRef">Reference to struct.</param>
-/// <returns>A <c>ref</c> to the field value within the struct <see cref="ж{T}"/> reference.</returns>
-public delegate ref TElem FieldRefFunc<T, TElem>(ref T structRef);
-
-/// <summary>
-/// Helper class for creating a <see cref="FieldRefFunc{TElem}"/> delegate for a struct field.
-/// </summary>
-/// <typeparam name="T">Type of struct.</typeparam>
-public static class FieldRef<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)] T> where T : struct
-{
-    /// <summary>
-    /// Creates a <see cref="FieldRefFunc{TElem}"/> delegate for a struct field.
-    /// </summary>
-    /// <param name="fieldName">Field name.</param>
-    /// <returns> A <see cref="FieldRefFunc{TElem}"/> delegate for a struct field. </returns>
-    /// <typeparam name="TElem">Type of field.</typeparam>
-    /// <exception cref="InvalidOperationException">
-    /// Field <paramref name="fieldName"/> not found in type <typeparamref name="T"/>.
-    /// </exception>
-    public static FieldRefFunc<TElem> Create<TElem>(string fieldName)
-    {
-        // Get the FieldInfo for fieldName in struct T referenced by ж<T>
-        FieldInfo structField = typeof(T).GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                             ?? throw new InvalidOperationException($"Field '{fieldName}' not found in type {typeof(T).FullName}");
-
-        // Create a dynamic method that matches the delegate signature
-        DynamicMethod method = new(
-            name: $"ref_{fieldName}",
-            returnType: typeof(TElem).MakeByRefType(),
-            parameterTypes: [typeof(object)],
-            m: typeof(FieldRef<>).Module, // Use the module where this code is running
-            skipVisibility: true);
-
-        ILGenerator il = method.GetILGenerator();
-
-        // Emit IL code to load the field address: ((ж<T>)obj).m_val.fieldName
-        il.Emit(OpCodes.Ldarg_0);               // Load the object argument
-        il.Emit(OpCodes.Castclass, s_ptrType);  // Cast to ж<T>
-        il.Emit(OpCodes.Ldflda, s_ptrValField); // Load address of ж<T>.m_val struct, type &T
-        il.Emit(OpCodes.Ldflda, structField);   // Load address of m_val struct field, type &TElem
-        il.Emit(OpCodes.Ret);                   // Return
-
-        // Create the delegate
-        return (FieldRefFunc<TElem>)method.CreateDelegate(typeof(FieldRefFunc<TElem>));
-    }
-
-    // Type of ж<T>
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
-    private static readonly Type s_ptrType = typeof(ж<T>);
-
-    // FieldInfo for m_val in ж<T>
-    private static readonly FieldInfo s_ptrValField = s_ptrType.GetField("m_val", BindingFlags.Instance | BindingFlags.NonPublic)!;
-}
-
-/// <summary>
-/// Non-generic pointer-nilness surface: implemented by <see cref="ж{T}"/> and the generated
-/// named-pointer wrapper classes, so runtime machinery holding a pointer only as <see cref="object"/>
-/// (equality tails, the reflection bridge's <c>IsNil</c>/<c>Elem</c> probes) can ask the STRUCTURAL
-/// nil question without reflection. See <see cref="ж{T}.IsNilPointer"/> for the structural-vs-
-/// value-peeking distinction.
-/// </summary>
-public interface INilPointer
-{
-    /// <summary>
-    /// Gets a flag indicating whether this box IS the nil pointer (structural — the
-    /// nil-constructed / canonical typed-nil form).
-    /// </summary>
-    bool IsNilPointer { get; }
-
-    /// <summary>
-    /// Gets a stable, order-consistent address token for the pointer — the value the reflection
-    /// bridge reports from <c>reflect.Value.Pointer()</c>/<c>UnsafePointer()</c>. Equal Go
-    /// pointers yield equal tokens, and pointers into the SAME backing storage order by element
-    /// position (Go programs order same-object addresses arithmetically — internal/fmtsort's
-    /// map-key ordering of <c>*T</c>/<c>unsafe.Pointer</c> keys). The default is per-instance
-    /// identity; <see cref="ж{T}"/> supplies the canonical referent-based form (a generated
-    /// named-pointer wrapper keeps the default — a recorded fidelity residual, no consumer
-    /// orders wrapped pointers).
-    /// </summary>
-    nuint PointerOrderToken => (nuint)(uint)RuntimeHelpers.GetHashCode(this);
-
-    /// <summary>
-    /// Gets the managed object whose LIFETIME is the Go allocation this pointer references — the
-    /// referent, not the pointer box. Go attaches a finalizer to the *object* a pointer points at
-    /// (<c>runtime.SetFinalizer(&amp;buf[0], f)</c> finalizes <c>buf</c>'s allocation), so anything
-    /// keyed on a Go pointer's lifetime must key on this, never on the <see cref="ж{T}"/> instance:
-    /// a pointer box is routinely a per-expression TEMPORARY (<c>Ꮡ(target, index)</c> allocates a
-    /// fresh box per call), whose lifetime has nothing to do with the storage it names. The default
-    /// is the box itself — correct for a standard heap box, which IS its own allocation;
-    /// <see cref="ж{T}"/> supplies the canonical form for element and field referents (a generated
-    /// named-pointer wrapper keeps the default, the same recorded residual noted for
-    /// <see cref="PointerOrderToken"/>).
-    /// </summary>
-    /// <remarks>
-    /// It resolves to the ROOT allocation, not the immediate parent: a nested field reference
-    /// (<c>Ꮡouter.of(Outer.Ꮡinner).of(Inner.Ꮡfield)</c>) hangs off a per-call intermediate box, so
-    /// stopping at the immediate source would hand back a different object on every access. The
-    /// root is what Go allocates and what Go's identity questions — "is this the same object?",
-    /// "when does this object die?" — are asked about.
-    /// </remarks>
-    object ReferentObject => this;
-}
-
-/// <summary>
-/// Defines an interface that represents a pointer <see cref="ж{T}"/> type.
-/// </summary>
-/// <typeparam name="T">Type for heap based reference.</typeparam>
-public interface IPointer<T>
-{
-    /// <summary>
-    /// Gets a reference to the value of type <typeparamref name="T"/>.
-    /// </summary>
-    /// <exception cref="PanicException">runtime error: invalid memory address or nil pointer dereference</exception>
-    ref T Value { get; }
-
-    /// <summary>
-    /// Gets flag indicating if the pointer is null.
-    /// </summary>
-    bool IsNull { get; }
-
-    /// <summary>
-    /// Gets a pointer to the field of a struct.
-    /// </summary>
-    /// <typeparam name="TElem">Type of field.</typeparam>
-    /// <param name="fieldRefFunc">Struct field reference delegate.</param>
-    /// <returns>Pointer to field of struct.</returns>
-    ж<TElem> of<TElem>(FieldRefFunc<TElem> fieldRefFunc);
-
-    /// <summary>
-    /// Gets a pointer to the field of a struct.
-    /// </summary>
-    /// <typeparam name="TElem">Type of field.</typeparam>
-    /// <param name="fieldRefFunc">Struct field reference delegate.</param>
-    /// <returns>Pointer to field of struct.</returns>
-    ж<TElem> of<TElem>(FieldRefFunc<T, TElem> fieldRefFunc);
-
-    /// <summary>
-    /// Gets a pointer to element at the specified index for <see cref="array{T}"/> or <see cref="slice{T}"/> types.
-    /// </summary>
-    /// <typeparam name="TElem">Element type of array or slice.</typeparam>
-    /// <param name="index">Index of element to get pointer for.</param>
-    /// <returns>Pointer to element at specified index.</returns>
-    ж<TElem> at<TElem>(nint index);
-
-    /// <summary>
-    /// Dereferences the heap allocated reference to the value of type <typeparamref name="T"/>.
-    /// </summary>
-    /// <param name="value">Pointer value to dereference.</param>
-    /// <returns>Dereferenced pointer value.</returns>
-    static abstract T operator ~(IPointer<T> value);
-}
 
 /// <summary>
 /// Represents a pointer to a heap allocated instance of type <typeparamref name="T"/>.
@@ -206,6 +39,14 @@ public interface IPointer<T>
 /// </para>
 /// <para>
 /// So long as a reference to this class exists, so will the value of type <typeparamref name="T"/>.
+/// </para>
+/// <para>
+/// This is the STANDARD implementation of the pointer contracts, not the only one: a Go named
+/// pointer type (<c>type P *T</c>) is emitted as a generated wrapper class implementing the same
+/// <see cref="IPointer{T}"/> and <see cref="INilPointer"/>. Those interfaces, the field-reference
+/// delegates and the <see cref="FieldRef{T}"/> accessor factory live in <c>ж.Contracts.cs</c>,
+/// whose banner covers what belongs on a contract versus on this box — and the structural-versus-
+/// value-peeking nil distinction that everything about pointer identity turns on.
 /// </para>
 /// <para>
 /// Operations ON a pointer that do not need this box's private state live in
