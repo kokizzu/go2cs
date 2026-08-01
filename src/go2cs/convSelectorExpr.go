@@ -789,6 +789,15 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 								ptrContext.isPointer = true
 								recvExpr = v.convIdent(identX, ptrContext)
 							}
+						} else {
+							// A VALUE receiver expression under a POINTER-receiver method value is
+							// Go's implicit address-of: `sw.Closesocket` IS `(&sw).Closesocket`,
+							// bound once. Synthesize that `&` — the same binding the VALUE-context
+							// arm below already makes — or the lambda body calls the [GoRecv] ж<T>
+							// extension with a struct VALUE receiver (CS1929/CS1501; net's
+							// `poll.CloseFunc = sw.Closesocket`, six hook installs in
+							// main_windows_test.go).
+							recvExpr = v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
 						}
 					}
 				}
