@@ -4192,6 +4192,13 @@ func runCommandWithTimeout(timeout time.Duration, workingDir string, options Opt
 	if len(target) == 2 {
 		cmd.Env = append(cmd.Env, "GOOS="+target[0], "GOARCH="+target[1])
 	}
+	if len(options.goRoot) > 0 {
+		// Hand both sides the same GOROOT explicitly. `go test` resolves it on its own, but the
+		// converted C# host has no linker-baked defaultGOROOT to fall back on — runtime.GOROOT()
+		// reads the environment — so testenv.GOROOT consumers agree with Go only when the pipeline
+		// exports the root it converted from. Duplicate keys are fine: os/exec takes the last value.
+		cmd.Env = append(cmd.Env, "GOROOT="+options.goRoot)
+	}
 	output, err := cmd.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {
 		return string(output), fmt.Errorf("%s timed out after %s", name, timeout)
