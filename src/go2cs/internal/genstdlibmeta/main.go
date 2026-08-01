@@ -15,12 +15,12 @@
 // package_info.cs out of the converted-source tree on disk. Under -recurse=nuget there is
 // no such tree: the standard library arrives as pre-compiled go.<pkg> NuGet packages, so the
 // facts have to travel with the converter instead. This generator captures them from the
-// canonical source of those packages — src/go-src-converted, the very tree push-nuget.ps1
+// canonical source of those packages — src/core, the very tree push-nuget.ps1
 // packs — so the embedded record and the published assemblies are produced from one commit.
 //
 // Run from src/go2cs via `go generate .` (the //go:generate directive lives in
 // stdlibMetadata.go). TestStdLibMetadataInSync re-runs this generation in-process and fails
-// if the committed asset has drifted from src/go-src-converted.
+// if the committed asset has drifted from src/core.
 //
 // The generator is DETERMINISTIC: sections emit in sorted package order, each carrying the
 // matched lines verbatim in file order, with no timestamps. Output is written as BOM-less
@@ -39,7 +39,7 @@ import (
 func main() {
 	// The generator runs from src/go2cs (go generate's working directory is the directory
 	// of the file carrying the directive), so both roots are resolved from there.
-	convertedRoot := filepath.Join("..", "go-src-converted")
+	convertedRoot := filepath.Join("..", "core")
 	outputFile := stdlibmeta.AssetFileName
 
 	if len(os.Args) > 1 {

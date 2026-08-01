@@ -2452,10 +2452,20 @@ func writeTestHost(outputPath, namespace, importPath string, declarations []test
 // compile items via EnableDefaultCompileItems=false, generated-files exposure, the go2csPath
 // fallback chain with the $(HOME) non-Windows fallback, the Go type-alias usings); the markers
 // carry the per-project values.
+// testProjectFixedReferences are the references EVERY converted test project carries regardless of
+// what the package under test imports: the shared runtime, and the hand-owned `testing` package
+// that hosts the run. Both are rooted in the one converted-standard-library tree at
+// $(go2csPath)core — the same root every resolved dependency reference uses.
+var testProjectFixedReferences = []string{
+	`$(go2csPath)core\golib\golib.csproj`,
+	`$(go2csPath)core\testing\testing.csproj`,
+}
+
 func writeTestProject(projectFile, projectName, namespace string, model testProjectModel, productionFiles, testFiles, fixtures, dependencies []string, options Options) error {
-	references := HashSet[string]{
-		`$(go2csPath)core\golib\golib.csproj`:     {},
-		`$(go2csPath)core\testing\testing.csproj`: {},
+	references := HashSet[string]{}
+
+	for _, fixed := range testProjectFixedReferences {
+		references.Add(fixed)
 	}
 
 	// REFERENCE model: the production package compiles ONLY in its own project; reference it so
@@ -2474,7 +2484,7 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 				return fmt.Errorf("resolve test project dependency %q: %w", dependency, info.Err)
 			}
 
-			reference := resolveTestProjectReference(info)
+			reference := info.ProjectReference
 			if reference != "" && !isSelfProjectReference(reference, projectName) {
 				references.Add(reference)
 			}
@@ -3114,65 +3124,19 @@ func interfaceBaseCandidates(named *types.Named) []*types.Named {
 	return result
 }
 
-// resolveTestProjectReference maps a test dependency's project reference per the mixed-tree
-// ruling (F15): ALL standard-library dependencies of a test project resolve from the overlaid
-// go-src-converted tree — never the baseline core stub — because one build containing both
-// trees' "namespace go" partial classes is the collision CLAUDE.md forbids. golib (and the
-// hand-owned core/testing shim, added as fixed references by the template) are the only core
-// references. The mapping is deterministic — no filesystem probing — so a missing converted
-// project surfaces as a loud MSBuild resolve error naming the exact expected path.
+// The F15 mixed-tree remap that used to live here is GONE (2026-08-01): the converted standard
+// library now lives at src/core, which is exactly where every resolver already emits its
+// `$(go2csPath)core\<pkg>` reference, so a test project's stdlib dependencies need no mapping at
+// all. F15b's "ONE testing package, period" is now enforced structurally instead: `testing` is
+// hand-owned like `unsafe` (the converter never queues it — see stdLibConverter.go), so
+// core/testing IS the only testing package and there is nothing left to collide with.
 //
-// KNOWN ITEM (F15b, deferred): a TEST-ONLY dependency that itself imports "testing" (e.g.
-// internal/testenv, used by the strings/sort/bytes suites) resolves here to the auto-converted
-// go-src-converted/testing — colliding with the hand-owned shim's [GoPackage("testing")] classes
-// in the same build. Needs a ruling before such a package converts: exclude go-src-converted/
-// testing in favor of the shim, or hand-own a testenv mini-shim (see the first-proof plan).
 // isSelfProjectReference reports whether reference points at the package-under-test's own
 // production csproj. The comparison must be on the path's BASE NAME: a raw suffix test drops
 // any dependency whose project file name merely ENDS with the target's ("runtime.csproj" ends
 // with "time.csproj", so converting time silently lost its runtime reference — 5x CS0234).
 func isSelfProjectReference(reference, projectName string) bool {
 	return strings.EqualFold(filepath.Base(reference), projectName+".csproj")
-}
-
-func resolveTestProjectReference(info PackageInfo) string {
-	if info.Err != nil || info.ProjectReference == "" || !info.IsStdLib {
-		return info.ProjectReference
-	}
-
-	// F15b ruling: `testing` ALWAYS resolves to the hand-owned shim — go-src-converted/testing
-	// is excluded from test graphs (ONE testing package, period). Two testing assemblies in one
-	// build make every `testing_package` type ambiguous (CS0433, sort via internal/testenv).
-	// The direct dependency is normally stripped upstream (the template carries the fixed shim
-	// reference), so this is the backstop for any resolver path that still sees it.
-	if info.PackageName == "testing" {
-		return `$(go2csPath)core\testing\testing.csproj`
-	}
-
-	normalized := strings.ReplaceAll(info.ProjectReference, "/", `\`)
-
-	relative, ok := strings.CutPrefix(normalized, `$(go2csPath)core\`)
-	if !ok || strings.HasPrefix(relative, `golib\`) {
-		return info.ProjectReference
-	}
-
-	return `$(go2csPath)go-src-converted\` + relative
-}
-
-// resolveProductionProjectReference maps a PRODUCTION csproj project reference. Under -tests the
-// production project is regenerated as part of the test conversion, and its stdlib references
-// must agree with the colocated test project's (the F15 mixed-tree ruling above): stdlib
-// dependencies resolve from the overlaid go-src-converted tree, `testing` to the hand-owned
-// core/testing shim, golib and non-stdlib references untouched. Raw `$(go2csPath)core\<pkg>`
-// refs here clobbered the committed go-src-converted production csprojs and pulled the baseline
-// stub tree into the one test build graph (B1 — the src/core/errors CS0246 storm). Outside
-// -tests the reference passes through unchanged.
-func resolveProductionProjectReference(info PackageInfo, options Options) string {
-	if options.convertTests {
-		return resolveTestProjectReference(info)
-	}
-
-	return info.ProjectReference
 }
 
 func productionCSFiles(outputPath string) ([]string, error) {

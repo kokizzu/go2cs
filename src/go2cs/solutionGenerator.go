@@ -23,9 +23,12 @@ import (
 
 const (
 	// generatedSolutionFileName is the .slnx solution emitted at the output root
-	// (-go2cspath) after a -stdlib conversion. It is the auto-generated counterpart to the
-	// committed src/go-src-converted.slnx (adopted 2026-07-10, replacing the hand-maintained .sln).
-	generatedSolutionFileName = "go-src-converted.slnx"
+	// (-go2cspath) after a -stdlib conversion. Since the converted standard library moved home
+	// to src/core (2026-08-01) its project paths match the repository's layout exactly, so the
+	// committed src/go2cs-stdlib.slnx is adopted from this output VERBATIM — no path rewriting.
+	// (It replaced the hand-maintained .sln on 2026-07-10, and the misnamed
+	// go-src-converted.slnx on 2026-08-01.)
+	generatedSolutionFileName = "go2cs-stdlib.slnx"
 
 	// golibProjectReference / genProjectReference are the solution-relative paths to the
 	// shared runtime and the source-generator/analyzer project. They mirror the
@@ -37,13 +40,14 @@ const (
 )
 
 // GenerateSolutionFile writes a Visual Studio .slnx solution at the output root that
-// references every converted stdlib project, any per-package test projects, the shared
-// golib runtime, and the go2cs-gen analyzer. All references are relative to the solution
-// file so the generated solution is portable.
+// references every converted stdlib project, the shared golib runtime, and the go2cs-gen
+// analyzer. All references are relative to the solution file so the generated solution is
+// portable. Per-package converted TEST projects are deliberately excluded — see
+// collectConvertedProjects.
 func (c *StdLibConverter) GenerateSolutionFile() error {
 	fmt.Println("Generating solution file...")
 
-	coreProjects, testProjects, err := c.collectConvertedProjects()
+	coreProjects, err := c.collectConvertedProjects()
 
 	if err != nil {
 		return err
@@ -56,9 +60,8 @@ func (c *StdLibConverter) GenerateSolutionFile() error {
 
 	// Sort for deterministic, stable output regardless of filesystem walk order.
 	sort.Strings(coreProjects)
-	sort.Strings(testProjects)
 
-	contents := buildSolutionXML(coreProjects, testProjects)
+	contents := buildSolutionXML(coreProjects)
 	solutionFile := filepath.Join(c.go2csPath, generatedSolutionFileName)
 
 	// Only rewrite when the content actually changed so repeated runs stay a no-op.
@@ -68,8 +71,8 @@ func (c *StdLibConverter) GenerateSolutionFile() error {
 		}
 	}
 
-	// Project count: converted core packages + golib (in coreProjects) + tests + the analyzer.
-	fmt.Printf("Solution file generated: %s (%d projects)\n", solutionFile, len(coreProjects)+len(testProjects)+1)
+	// Project count: converted core packages + golib (in coreProjects) + the analyzer.
+	fmt.Printf("Solution file generated: %s (%d projects)\n", solutionFile, len(coreProjects)+1)
 
 	return nil
 }
@@ -103,11 +106,10 @@ func importPathOf(coreProject string) string {
 	return strings.TrimPrefix(path.Dir(coreProject), "core/")
 }
 
-// collectConvertedProjects walks the emitted core/ output tree and returns the
-// solution-relative (forward-slash) paths of every package .csproj, split into regular
-// package projects and *_test.csproj test projects. golib is excluded here — the caller
-// adds it explicitly so its reference is emitted even on a filtered run that produced no
-// core output.
+// collectConvertedProjects walks the emitted core/ output tree and returns the solution-relative
+// (forward-slash) paths of every package .csproj. golib is excluded here — the caller adds it
+// explicitly so its reference is emitted even on a filtered run that produced no core output —
+// and so are the converted per-package test projects (see the walk).
 //
 // It also recovers any ENTIRELY HAND-OWNED package: one every converted dependent references but
 // that the converter never emits into the fresh output because its C# is 100% [module:
@@ -118,13 +120,13 @@ func importPathOf(coreProject string) string {
 // `$(go2csPath)core\...` ProjectReference to it, so the missing package is discovered from those
 // references and appended in its normal import-path position. This generalizes the explicit golib
 // append to any such package with no hardcoded names.
-func (c *StdLibConverter) collectConvertedProjects() (coreProjects []string, testProjects []string, err error) {
+func (c *StdLibConverter) collectConvertedProjects() (coreProjects []string, err error) {
 	coreDir := filepath.Join(c.go2csPath, "core")
 
 	if info, statErr := os.Stat(coreDir); statErr != nil || !info.IsDir() {
 		// Nothing converted (or a filtered run produced no core output). The solution still
 		// lists golib + the analyzer, which is harmless and keeps the output deterministic.
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	// converted: solution-relative path of every package .csproj the walk actually found.
@@ -163,20 +165,26 @@ func (c *StdLibConverter) collectConvertedProjects() (coreProjects []string, tes
 			}
 		}
 
-		// Per-package test projects (a Phase 4 artifact) are grouped separately. Nothing
-		// emits them today, so this branch is inert until the convention lands.
-		if strings.HasSuffix(d.Name(), "_test.csproj") {
-			testProjects = append(testProjects, rel)
-		} else {
-			converted[rel] = true
-			coreProjects = append(coreProjects, rel)
+		// A converted per-package TEST project (`<pkg>.tests.csproj`, the Phase-4 artifact a
+		// `-tests` run emits and a validated package commits beside its production code) is
+		// deliberately left OUT of the solution. Its inputs are pipeline-staged — the `*.go`
+		// differential-baseline copies are git-ignored, and it compiles against production `.cs`
+		// the `-tests` run regenerates — so it cannot build from a clean tree, and a solution
+		// containing one fails `dotnet build`, which is also how the standard library is packed
+		// for NuGet. The pipeline builds these by path; the solution stays the buildable,
+		// packable standard library.
+		if strings.HasSuffix(d.Name(), ".tests.csproj") || strings.HasSuffix(d.Name(), "_test.csproj") {
+			return nil
 		}
+
+		converted[rel] = true
+		coreProjects = append(coreProjects, rel)
 
 		return nil
 	})
 
 	if walkErr != nil {
-		return nil, nil, fmt.Errorf("failed to scan converted projects under \"%s\": %w", coreDir, walkErr)
+		return nil, fmt.Errorf("failed to scan converted projects under \"%s\": %w", coreDir, walkErr)
 	}
 
 	// Append every referenced-but-unconverted hand-owned package (see the doc comment): one whose
@@ -204,7 +212,7 @@ func (c *StdLibConverter) collectConvertedProjects() (coreProjects []string, tes
 	sort.Strings(missing)
 	coreProjects = append(coreProjects, missing...)
 
-	return coreProjects, testProjects, nil
+	return coreProjects, nil
 }
 
 // buildSolutionXML renders the .slnx document. golib (the shared runtime) and go2cs-gen (the
@@ -214,7 +222,7 @@ func (c *StdLibConverter) collectConvertedProjects() (coreProjects []string, tes
 // Projects are emitted in the order given (callers sort them for determinism), with
 // solution-relative forward-slash paths that match the on-disk output layout. Output uses CRLF
 // line endings and no BOM, matching the existing src/go2cs.slnx.
-func buildSolutionXML(coreProjects []string, testProjects []string) string {
+func buildSolutionXML(coreProjects []string) string {
 	var sb strings.Builder
 
 	writeLine := func(indent int, text string) {
@@ -342,16 +350,6 @@ func buildSolutionXML(coreProjects []string, testProjects []string) string {
 			writeProject(2, project)
 		}
 
-		writeLine(1, "</Folder>")
-	}
-
-	// Converted per-package test projects — rendered only once Phase 4 emits them, so an
-	// empty /tests/ folder is never written.
-	if len(testProjects) > 0 {
-		writeFolderOpen("/tests/")
-		for _, project := range testProjects {
-			writeProject(2, project)
-		}
 		writeLine(1, "</Folder>")
 	}
 

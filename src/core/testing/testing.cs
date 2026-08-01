@@ -498,10 +498,9 @@ public static partial class testing_package
     /// </summary>
     public static bool Verbose() => TestHost.VerboseMode;
 
-    // Formatting is intentionally NOT the fmt package's: the shim stays fmt-free so converted test
-    // projects can resolve fmt (like every other stdlib dependency) from the overlaid
-    // go-src-converted tree without this baseline-built runtime dragging in a second tree's
-    // "namespace go" classes. See TestFormat's remarks for the full mixed-tree rationale.
+    // Formatting is intentionally NOT the fmt package's: the test host stays fmt-free so it never
+    // sits underneath the very package a converted fmt test suite is exercising. See TestFormat's
+    // remarks for the full rationale.
     private static string Sprint(ReadOnlySpan<any> args) => TestFormat.Sprint(args);
 
     private static string Sprintf(@string format, ReadOnlySpan<any> args) => TestFormat.Sprintf(format, args);

@@ -18,6 +18,8 @@ global using abiꓸKind = go.@internal.abi_package.ΔKind;
 global using abiꓸMapType = go.@internal.abi_package.ΔMapType;
 global using abiꓸName = go.@internal.abi_package.ΔName;
 global using abiꓸStructType = go.@internal.abi_package.ΔStructType;
+global using runtimeꓸError = go.runtime_package.ΔError;
+using abi = go.@internal.abi_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -49,12 +51,11 @@ using static go.@internal.reflectlite_package;
 // reflection-based interface resolution.
 
 // <InterfaceImplementations>
-//[assembly: GoImplement<rtype, ΔType>]
+[assembly: GoImplement<rtype, ΔType>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-//[assembly: GoImplicitConv<flag, Kind>(Inverted = true, ValueType = "uintptr")]
-//[assembly: GoImplicitConv<flag, abiꓸKind>(Inverted = false, ValueType = "uint8")]
+[assembly: GoImplicitConv<flag, abiꓸKind>(Inverted = false, ValueType = "abiꓸKind")]
 // </ImplicitConversions>
 
 namespace go.@internal;
@@ -62,4 +63,20 @@ namespace go.@internal;
 [GoPackage("reflectlite")]
 public static partial class reflectlite_package
 {
+    // C# nested types declared with no access modifier are always private, and the
+    // `[GoType]` declarations in this package's converted sources are deliberately
+    // bare so they read more like the original Go code. The real accessibility for
+    // the types - public for a Go-exported name, internal otherwise - are defined
+    // via declarations below.
+
+    // <TypeAccessibility>
+    internal partial interface valueInterface_type {}
+    internal partial struct dummyᴛ1 {}
+    internal partial struct flag {}
+    internal partial struct rtype {}
+    public partial interface ΔType {}
+    public partial struct Value {}
+    public partial struct ValueError {}
+    public partial struct Δname {}
+    // </TypeAccessibility>
 }

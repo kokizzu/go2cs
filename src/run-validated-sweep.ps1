@@ -89,7 +89,7 @@ $longTimeouts = @{ 'hash/maphash' = '30m'; 'index/suffixarray' = '60m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package
-    $outDir = Join-Path $src ('go-src-converted\' + ($pkg -replace '/', '\'))
+    $outDir = Join-Path $src ('core\' + ($pkg -replace '/', '\'))
     $goDir = Join-Path $goroot ('src\' + ($pkg -replace '/', '\'))
     $label = '{0,-34}' -f $pkg
     $pkgTimeout = if ($longTimeouts.ContainsKey($pkg)) { $longTimeouts[$pkg] } else { $TestTimeout }
@@ -129,7 +129,7 @@ Write-Host "sweep: $pass pass / $fail fail  (${elapsed}s)" -ForegroundColor $(if
 # autocrlf notice at its source instead, and relax the preference across the call.
 $prevEap = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
-$drift = & git -C $repo -c core.safecrlf=false diff --numstat --ignore-cr-at-eol -- src/go-src-converted
+$drift = & git -C $repo -c core.safecrlf=false diff --numstat --ignore-cr-at-eol -- src/core
 $ErrorActionPreference = $prevEap
 if ($drift) {
     Write-Host ''

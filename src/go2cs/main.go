@@ -936,7 +936,7 @@ func main() {
 	//
 	// `-tests` gets the SAME purego default: a `-tests` run reconverts the package's PRODUCTION
 	// sources and recompiles them into the test assembly, so it must select the exact same source
-	// files the committed go-src-converted tree was built from (that tree is defined as Go built with
+	// files the committed converted stdlib tree was built from (that tree is defined as Go built with
 	// -tags purego). Without this, a stdlib package whose asm variant and pure-Go variant are gated
 	// `!purego`/`purego` (crypto/subtle's xor_amd64.go declares a bodyless `func xorBytes` the .s
 	// provides, while xor_generic.go declares the same func WITH a body) has BOTH files converted and
@@ -1119,7 +1119,7 @@ Examples:
 				// Resolve the output to an ABSOLUTE path up front so every downstream path is
 				// absolute: the test .tests.csproj passed to `dotnet build`/`run` (executeTestAction
 				// joins it onto this outputPath and runs from it), and the $(go2csPath) root walk
-				// below. A relative output argument — the README's `src/go-src-converted/...` — left
+				// below. A relative output argument — the README's `src/core/...` — left
 				// `dotnet run --project <relative>` resolving against the wrong working directory
 				// (MSB1009), and left the located root relative so the emitted csproj's relative
 				// go2csPath (via filepath.Rel, which needs matching absoluteness) came out broken and
@@ -1180,7 +1180,7 @@ var defaultStdLibBuildTags = []string{"purego"}
 // `-tests` run both apply the purego default (unless `-tags` was passed explicitly, even `-tags=` to
 // clear it — a deliberate override honored verbatim). `-tests` needs the SAME default as `-stdlib`
 // because it reconverts the package's PRODUCTION sources and recompiles them into the test assembly:
-// it must select the exact same source files the committed go-src-converted tree was built from (that
+// it must select the exact same source files the committed converted stdlib tree was built from (that
 // tree is Go built with `-tags purego`). Without this, a package whose asm and pure-Go variants are
 // gated `!purego`/`purego` (crypto/subtle's xor_amd64.go vs xor_generic.go, both declaring xorBytes)
 // gets BOTH files converted and collides (CS0111), and the regenerated production .cs diverges from
@@ -2318,8 +2318,6 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 			packageIds = append(packageIds, "go."+strings.TrimSuffix(filepath.Base(reference), ".csproj"))
 			continue
 		}
-
-		reference = resolveProductionProjectReference(info, options)
 
 		if filepath.IsAbs(reference) {
 			if rel, relErr := filepath.Rel(projectDir, reference); relErr == nil {

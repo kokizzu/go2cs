@@ -9,10 +9,10 @@ import (
 
 func TestPackageIDForProjectReference(t *testing.T) {
 	tests := map[string]string{
-		`$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj`:            "go.gen",
-		`$(go2csPath)core\golib\golib.csproj`:                   "go.lib",
-		`$(go2csPath)core\fmt\fmt.csproj`:                       "go.fmt",
-		`$(go2csPath)go-src-converted\unicode\utf8\utf8.csproj`: "go.unicode.utf8",
+		`$(go2csPath)gen\go2cs-gen\go2cs-gen.csproj`: "go.gen",
+		`$(go2csPath)core\golib\golib.csproj`:        "go.lib",
+		`$(go2csPath)core\fmt\fmt.csproj`:            "go.fmt",
+		`$(go2csPath)core\unicode\utf8\utf8.csproj`:  "go.unicode.utf8",
 	}
 	for reference, want := range tests {
 		got, ok := packageIDForProjectReference(reference)

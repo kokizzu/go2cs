@@ -5,6 +5,7 @@ namespace go;
 
 using reflectlite = @internal.reflectlite_package;
 using @internal;
+using abi = @internal.abi_package;
 
 partial class errors_package {
 
@@ -90,7 +91,7 @@ internal static bool @is(error err, error target, bool targetComparable) {
             return false;
         }
         default: {
-            var x = err.type();
+            var x = err;
             return false;
         }}
     }
@@ -175,12 +176,12 @@ internal static bool @as(error err, any target, reflectlite.Value targetVal, ref
             return false;
         }
         default: {
-            var x = err.type();
+            var x = err;
             return false;
         }}
     }
 }
 
-internal static reflectliteꓸType errorType = reflectlite.TypeOf(((ж<error>)default!)).Elem();
+internal static reflectliteꓸType errorType = reflectlite.TypeOf(((ж<error>)nil)).Elem();
 
 } // end errors_package

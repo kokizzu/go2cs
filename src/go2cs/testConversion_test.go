@@ -321,89 +321,38 @@ func TestManifestCensusDetectsUndeclaredTests(t *testing.T) {
 	}
 }
 
-// F15 guard: stdlib dependencies ALWAYS resolve to the overlaid go-src-converted tree (the
-// mixed-tree ruling) — deterministically, with no filesystem probing; golib and non-stdlib
-// references pass through untouched.
-func TestResolveTestProjectReferenceRewritesStdLibToConvertedTree(t *testing.T) {
-	stdlib := PackageInfo{IsStdLib: true, ProjectReference: `$(go2csPath)core\bytes\bytes.csproj`}
-	if got, want := resolveTestProjectReference(stdlib), `$(go2csPath)go-src-converted\bytes\bytes.csproj`; got != want {
-		t.Fatalf("stdlib reference = %q, want %q", got, want)
+// ONE-TREE guard (2026-08-01, replacing the F15/F15b mixed-tree remap guards). The converted
+// standard library lives at src/core — the exact path every resolver already emits — so a test
+// project's stdlib dependencies are used VERBATIM, with no tree mapping in between. What still
+// needs guarding is the invariant that made the remap unnecessary: `testing` must never be
+// queued for conversion, or a second [GoPackage("testing")] `testing_package` lands beside the
+// hand-owned host and every testing type goes ambiguous (CS0433, reached via internal/testenv).
+func TestStdLibConversionSkipsHandOwnedAndToolchainPackages(t *testing.T) {
+	for _, skipped := range []string{"unsafe", "builtin", "testing", "cmd", "cmd/compile", "cmd/go/internal/work"} {
+		if !isNonConvertedStdLibPackage(skipped) {
+			t.Errorf("%q must be excluded from the stdlib conversion queue", skipped)
+		}
 	}
 
-	nested := PackageInfo{IsStdLib: true, ProjectReference: `$(go2csPath)core\sync\atomic\sync.atomic.csproj`}
-	if got, want := resolveTestProjectReference(nested), `$(go2csPath)go-src-converted\sync\atomic\sync.atomic.csproj`; got != want {
-		t.Fatalf("nested stdlib reference = %q, want %q", got, want)
-	}
-
-	golib := PackageInfo{IsStdLib: true, ProjectReference: `$(go2csPath)core\golib\golib.csproj`}
-	if got := resolveTestProjectReference(golib); got != golib.ProjectReference {
-		t.Fatalf("golib reference must pass through, got %q", got)
-	}
-
-	local := PackageInfo{IsStdLib: false, ProjectReference: `..\sibling\sibling.csproj`}
-	if got := resolveTestProjectReference(local); got != local.ProjectReference {
-		t.Fatalf("non-stdlib reference must pass through, got %q", got)
-	}
-
-	// F15b ruling: `testing` ALWAYS resolves to the hand-owned shim — the auto-converted
-	// go-src-converted/testing is excluded from test graphs (one testing package, period).
-	shimmed := PackageInfo{IsStdLib: true, PackageName: "testing", ProjectReference: `$(go2csPath)core\testing\testing.csproj`}
-	if got, want := resolveTestProjectReference(shimmed), `$(go2csPath)core\testing\testing.csproj`; got != want {
-		t.Fatalf("testing reference = %q, want the shim %q", got, want)
+	// Only `testing` itself is hand-owned — its subpackages are ordinary converted packages,
+	// and a prefix test instead of an exact match would silently drop all five of them.
+	for _, converted := range []string{
+		"bytes", "testing/quick", "testing/fstest", "testing/iotest", "testing/slogtest",
+		"testing/internal/testdeps", "internal/testenv", "unsafeptr",
+	} {
+		if isNonConvertedStdLibPackage(converted) {
+			t.Errorf("%q must be converted, not skipped", converted)
+		}
 	}
 }
 
-// F15 alias-load guard: under -tests a stdlib import's exported-type-alias metadata (package_info.cs)
-// must load from the SAME overlaid go-src-converted tree the test compiles against, not the baseline
-// core stub — which for most packages (runtime = impl-stubs only) has no package_info.cs, so the alias
-// map was empty and `err.(runtime.Error)` rendered the raw, undefined `runtime.Error` (CS0426) instead
-// of `runtimeꓸError` => `runtime_package.ΔError`. `testing` stays on the core shim; non-test and
-// non-stdlib pass through. This keeps the alias-load tree consistent with resolveTestProjectReference.
-func TestResolveAliasLoadTargetDirTracksConvertedTree(t *testing.T) {
-	// -tests stdlib: the alias load follows the project ref onto the overlaid go-src-converted tree.
-	const runtimeDir, runtimeRef = `$(go2csPath)core\runtime`, `$(go2csPath)core\runtime\runtime.csproj`
+// Every converted test project carries the shared runtime and the hand-owned testing package as
+// fixed references, both rooted in the one converted-standard-library tree.
+func TestTestProjectFixedReferencesRootedInCore(t *testing.T) {
+	want := []string{`$(go2csPath)core\golib\golib.csproj`, `$(go2csPath)core\testing\testing.csproj`}
 
-	if got, want := resolveAliasLoadTargetDir(runtimeDir, runtimeRef, "runtime", true, Options{convertTests: true}), `$(go2csPath)go-src-converted\runtime`; got != want {
-		t.Fatalf("-tests stdlib alias-load dir = %q, want %q", got, want)
-	}
-
-	// Non-test: pass through — a normal -stdlib build's stdlib IS the baseline tree.
-	if got := resolveAliasLoadTargetDir(runtimeDir, runtimeRef, "runtime", true, Options{}); got != runtimeDir {
-		t.Fatalf("non-test alias-load dir must pass through, got %q", got)
-	}
-
-	// `testing` stays on the hand-owned core shim (mirrors resolveTestProjectReference's sole exception).
-	const shimDir, shimRef = `$(go2csPath)core\testing`, `$(go2csPath)core\testing\testing.csproj`
-
-	if got := resolveAliasLoadTargetDir(shimDir, shimRef, "testing", true, Options{convertTests: true}); got != shimDir {
-		t.Fatalf("testing alias-load dir must stay on the core shim, got %q", got)
-	}
-
-	// Non-stdlib passes through untouched.
-	const thirdPartyDir = `$(go2csPath)pkg\example.com\mod`
-
-	if got := resolveAliasLoadTargetDir(thirdPartyDir, thirdPartyDir+`\example.com.mod.csproj`, "example.com.mod", false, Options{convertTests: true}); got != thirdPartyDir {
-		t.Fatalf("non-stdlib alias-load dir must pass through, got %q", got)
-	}
-}
-
-// B1 guard: under -tests the regenerated PRODUCTION csproj resolves its stdlib references
-// through the same F15 mapping as the colocated test project — raw `$(go2csPath)core\<pkg>`
-// refs clobbered the committed go-src-converted production csprojs and pulled the baseline
-// stub tree into the test build graph. Outside -tests the reference passes through unchanged.
-func TestResolveProductionProjectReferenceAppliesF15UnderTests(t *testing.T) {
-	stdlib := PackageInfo{IsStdLib: true, ProjectReference: `$(go2csPath)core\internal\reflectlite\internal.reflectlite.csproj`}
-
-	if got, want := resolveProductionProjectReference(stdlib, Options{convertTests: true}), `$(go2csPath)go-src-converted\internal\reflectlite\internal.reflectlite.csproj`; got != want {
-		t.Fatalf("-tests production stdlib reference = %q, want %q", got, want)
-	}
-	if got := resolveProductionProjectReference(stdlib, Options{}); got != stdlib.ProjectReference {
-		t.Fatalf("non-tests production reference must pass through, got %q", got)
-	}
-
-	shimmed := PackageInfo{IsStdLib: true, PackageName: "testing", ProjectReference: `$(go2csPath)core\testing\testing.csproj`}
-	if got, want := resolveProductionProjectReference(shimmed, Options{convertTests: true}), `$(go2csPath)core\testing\testing.csproj`; got != want {
-		t.Fatalf("-tests production testing reference = %q, want the shim %q", got, want)
+	if !reflect.DeepEqual(testProjectFixedReferences, want) {
+		t.Fatalf("test project fixed references = %v, want %v", testProjectFixedReferences, want)
 	}
 }
 
@@ -2320,11 +2269,11 @@ func TestIsSelfProjectReference(t *testing.T) {
 		projectName string
 		want        bool
 	}{
-		{`$(go2csPath)go-src-converted\time\time.csproj`, "time", true},
-		{`$(go2csPath)go-src-converted\runtime\runtime.csproj`, "time", false},
-		{`$(go2csPath)go-src-converted\runtime\internal\math\runtime.internal.math.csproj`, "math", false},
-		{`$(go2csPath)go-src-converted\math\math.csproj`, "math", true},
-		{`$(go2csPath)go-src-converted\time\TIME.CSPROJ`, "time", true},
+		{`$(go2csPath)core\time\time.csproj`, "time", true},
+		{`$(go2csPath)core\runtime\runtime.csproj`, "time", false},
+		{`$(go2csPath)core\runtime\internal\math\runtime.internal.math.csproj`, "math", false},
+		{`$(go2csPath)core\math\math.csproj`, "math", true},
+		{`$(go2csPath)core\time\TIME.CSPROJ`, "time", true},
 	}
 
 	for _, c := range cases {

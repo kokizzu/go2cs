@@ -422,7 +422,7 @@ namespace BehavioralRunner
             HashSet<string> suspects = new(StringComparer.OrdinalIgnoreCase);
 
             // MSBuild appends the owning project to each diagnostic: "... error CS1002: ; expected
-            // [C:\path\Foo.csproj]". Errors from a referenced package (e.g. a go-src-converted
+            // [C:\path\Foo.csproj]". Errors from a referenced package (e.g. a converted stdlib
             // dependency) name that project instead, which matches nothing here -- leaving the suspect
             // set empty and falling back to attributing everything.
             foreach (string line in buildOutput.Split('\n'))
@@ -596,16 +596,14 @@ namespace BehavioralRunner
                 string csprojDir = Path.Combine(s_behavioralDir, p);
 
                 // Read the csproj AND the project-local Directory.Build.props/.targets, honouring both
-                // Include and Remove. A test whose converter-generated csproj names a reference that does
-                // not exist in the stub baseline redirects it from a Directory.Build.targets -- the csproj
-                // itself is template output the converter rewrites on every re-transpile, so the redirect
-                // cannot live there. DeepEqual does exactly this: it declares core\reflect (baseline has
-                // no reflect) and swaps in go-src-converted\reflect. Reading the csproj alone therefore
-                // both chased a phantom path (MSB1009 "Project file does not exist") and stayed blind to
-                // the 34-project closure the test really pulls in -- leaving that closure unbuilt during
-                // the parallel fan-out, which is precisely the race this pre-build exists to prevent.
-                // Same order MSBuild imports them: props, then the project body, then targets -- so a
-                // Remove in targets cancels an Include from the csproj, exactly as it does in a real build.
+                // Include and Remove, in the same order MSBuild imports them: props, then the project
+                // body, then targets -- so a Remove in targets cancels an Include from the csproj,
+                // exactly as it does in a real build. A test can legitimately redirect a
+                // converter-generated reference from a Directory.Build.targets, because the csproj
+                // itself is template output the converter rewrites on every re-transpile. Reading the
+                // csproj alone therefore both chased a phantom path (MSB1009 "Project file does not
+                // exist") and stayed blind to the real closure the test pulls in -- leaving that closure
+                // unbuilt during the parallel fan-out, precisely the race this pre-build prevents.
                 foreach (string file in new[] { "Directory.Build.props", $"{p}.csproj", "Directory.Build.targets" })
                 {
                     string path = Path.Combine(csprojDir, file);

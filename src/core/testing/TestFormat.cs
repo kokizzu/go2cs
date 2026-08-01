@@ -15,11 +15,11 @@ namespace go.testing_runtime;
 /// Diagnostic-grade Go-style formatting for the bootstrap testing shim.
 /// </summary>
 /// <remarks>
-/// The testing runtime must stay fmt-free: converted test projects resolve every standard-library
-/// dependency, including fmt, from the overlaid go-src-converted tree, while this shim builds in the
-/// baseline solution — a baseline core/fmt reference here would let one test build transitively
-/// contain both trees' "namespace go" partial classes (the mixed-tree collision CLAUDE.md forbids).
-/// The shim therefore carries this small self-contained formatter instead. Its output feeds
+/// The testing runtime must stay fmt-free. It is a FIXED reference of every converted test project,
+/// so a core/fmt reference here would put fmt underneath every suite — including fmt's own, where
+/// the host would then be reporting on a package it is itself running on, and any other suite that
+/// hand-owns or stubs part of the fmt closure would drag a second copy into one build.
+/// The host therefore carries this small self-contained formatter instead. Its output feeds
 /// t.Log/t.Error diagnostics only — the differential oracle never byte-compares log text
 /// (TestingInfrastructureRequirements §7) — so coverage of the common verbs is sufficient, and the
 /// converted Go testing package replaces the whole shim at Phase 4D.

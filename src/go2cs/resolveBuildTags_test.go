@@ -11,7 +11,7 @@ import (
 
 // TestResolveBuildTags guards the purego default decision. The regression it locks in: a `-tests`
 // run must apply the same purego default as `-stdlib`, so the reconverted PRODUCTION sources select
-// the same files the committed go-src-converted tree was built from. Before the fix, `-tests` left
+// the same files the committed converted stdlib tree was built from. Before the fix, `-tests` left
 // build tags empty and converted asm variants (crypto/subtle's xor_amd64.go) alongside the pure-Go
 // ones, producing a CS0111 duplicate-member collision and a production .cs that diverged from the
 // committed purego emission.

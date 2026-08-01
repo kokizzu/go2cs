@@ -11,9 +11,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- golib is the ONLY runtime reference: the shim must stay fmt-free so converted test projects
-         resolve fmt (and every other stdlib package) from the overlaid go-src-converted tree without
-         this runtime pulling the baseline tree's "namespace go" classes into the same build. -->
+    <!-- `testing` is a HAND-OWNED package (like `unsafe`): the converter never queues it, so this
+         project compiles only the files in THIS folder. The subdirectories are ordinary converted
+         stdlib packages (testing/fstest, testing/iotest, testing/quick, testing/slogtest,
+         testing/internal/testdeps) with their own projects — the SDK's default `**/*.cs` glob would
+         otherwise swallow them. -->
+    <Compile Remove="**/*.cs" />
+    <Compile Include="*.cs" />
+    <None Remove="*/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- golib is the ONLY runtime reference: the shim must stay lean so converted test projects
+         resolve fmt (and every other stdlib package) as ordinary project references without this
+         runtime pulling extra "namespace go" classes into the same build. -->
     <ProjectReference Include="..\golib\golib.csproj" />
     <ProjectReference Include="..\..\gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>

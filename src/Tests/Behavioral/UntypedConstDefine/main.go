@@ -20,7 +20,7 @@ const folded = 19.0 / 35.0                // folded expression: no single litera
 // fsize stays an UntypedInt wrapper (only ever used inside a variadic interface{} call
 // below), so `fsize+1` renders as UntypedInt arithmetic. Passed BARE into fmt.Sprintf's
 // `...any` slot it boxes the STRUCT, not a CLR integer -- go/token's TestIssue57490 hit
-// this exact shape against the go-src-converted fmt (fmt.Sprintf("%d", fsize+1) printed
+// this exact shape against the converted stdlib fmt (fmt.Sprintf("%d", fsize+1) printed
 // "{6 %!d(bool=false)}" instead of "6"). The nint box cast must fire even though the
 // argument sits in a variadic slot (see exprInvolvesUntypedIntConst in convCallExpr.go).
 const fsize = 5

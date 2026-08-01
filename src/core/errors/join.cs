@@ -17,7 +17,7 @@ partial class errors_package {
 //
 // A non-nil error returned by Join implements the Unwrap() []error method.
 public static error Join(params ꓸꓸꓸerror errsʗp) {
-    var errs = errsʗp.slice();
+    var errs = errsʗp.sslice();
 
     nint n = 0;
     foreach (var (_, err) in errs) {
@@ -36,7 +36,7 @@ public static error Join(params ꓸꓸꓸerror errsʗp) {
             e.Value.errs = append((~e).errs, err);
         }
     }
-    return ~e;
+    return new joinErrorжerror(e);
 }
 
 [GoType] partial struct joinError {
@@ -51,7 +51,7 @@ public static error Join(params ꓸꓸꓸerror errsʗp) {
     }
     var b = slice<byte>(e.errs[0].Error());
     foreach (var (_, err) in e.errs[1..]) {
-        b = append(b, (rune)'\n');
+        b = append(b, (byte)((rune)'\n'));
         b = append(b, err.Error().ꓸꓸꓸ);
     }
     // At this point, b has at least one byte '\n'.

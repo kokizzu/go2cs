@@ -17,7 +17,7 @@ import (
 	"go2cs/internal/stdlibmeta"
 )
 
-const convertedStdLibRoot = "../go-src-converted"
+const convertedStdLibRoot = "../core"
 
 // TestStdLibMetadataAssetFileName pins the generated asset's name against the //go:embed
 // directive's target, so the generator and the converter can never write/read different files.
@@ -33,7 +33,7 @@ func TestStdLibMetadataAssetFileName(t *testing.T) {
 }
 
 // TestStdLibMetadataInSync is the drift guard for the committed stdlib-metadata.txt: it
-// regenerates the asset in-process from src/go-src-converted and fails if the committed copy
+// regenerates the asset in-process from src/core and fails if the committed copy
 // differs. A stale asset would silently give -recurse=nuget conversions the PREVIOUS standard
 // library's exported aliases and GoImplement records while the published go.<pkg> assemblies
 // carry the current ones — a mismatch that surfaces only as downstream C# compile errors.
@@ -130,7 +130,7 @@ func TestStdLibExportedMetadataReadsThroughPackageInfoParsers(t *testing.T) {
 }
 
 // TestPublishedStdLibScope pins the gate that makes reading the embedded record SOUND. It
-// describes src/go-src-converted, so it may stand in for a missing package_info.cs only when
+// describes src/core, so it may stand in for a missing package_info.cs only when
 // that tree is what the conversion references: -recurse=nuget's published go.<pkg> assemblies.
 // A $(go2csPath) source deployment may be the baseline core stub instead, and the stdlib
 // self-conversion builds the very assemblies being published.

@@ -5,28 +5,17 @@
     same root) can lean on relative $(go2csPath) project references.
 
 .DESCRIPTION
-    Two modes, deploying to the SAME root (they are alternatives, never mixed):
+    Stages src\core -- the converted Go standard library, the shared golib runtime and the
+    hand-owned packages -- at <root>\core\<pkg>, and the source-generator/analyzer at
+    <root>\gen\go2cs-gen, then writes a Directory.Build.props at <root> pinning $(go2csPath) to
+    that root. Because every generated .csproj references its dependencies as
+    $(go2csPath)core\<pkg> / $(go2csPath)gen\go2cs-gen, that single props file makes the whole
+    deployed tree -- and anything a recursive conversion later drops under the same root --
+    resolve without any per-build -p:go2csPath flag.
 
-      stub    Deploy the hand-finished baseline core (src\core) -- a small, *runnable*
-              standard-library subset. Best for simple conversions / behavioral-style apps.
-
-      stdlib  Deploy the full auto-converted standard library (src\go-src-converted) -- the
-              *compilable* 302-package tree. Best for real apps that import arbitrary stdlib
-              packages.
-
-    Both modes land the stdlib at <root>\core\<pkg>, the shared runtime at <root>\core\golib,
-    and the source-generator/analyzer at <root>\gen\go2cs-gen, then write a Directory.Build.props
-    at <root> pinning $(go2csPath) to that root. Because every generated .csproj references its
-    dependencies as $(go2csPath)core\<pkg> / $(go2csPath)gen\go2cs-gen, that single props file
-    makes the whole deployed tree -- and anything a recursive conversion later drops under the
-    same root -- resolve without any per-build -p:go2csPath flag.
-
-    The full stdlib's inter-package references are written as $(go2csPath)go-src-converted\<pkg>
-    (a historical relocation); stdlib mode rewrites them to $(go2csPath)core\<pkg> on deploy so
-    both modes present the standard library uniformly at core\<pkg>.
-
-.PARAMETER Mode
-    'stub' or 'stdlib' (see above).
+    The deployed layout is IDENTICAL to the repository layout: since the converted standard
+    library moved home to src\core (2026-08-01) there is one tree and one path scheme, so this
+    script no longer has stub/stdlib modes and no longer rewrites any project reference.
 
 .PARAMETER Target
     Deploy root. Defaults to <GOPATH>\src\go2cs (GOPATH from `go env GOPATH`).
@@ -38,17 +27,13 @@
     Copy + wire up only; skip the verify build.
 
 .EXAMPLE
-    .\deploy-core.ps1 stub
+    .\deploy-core.ps1
 .EXAMPLE
-    .\deploy-core.ps1 stdlib
+    .\deploy-core.ps1 -NoBuild
 #>
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet('stub', 'stdlib')]
-    [string]$Mode,
-
     [string]$Target,
     [string]$Configuration = 'Debug',
     [switch]$NoBuild
@@ -101,7 +86,7 @@ $coreDst = Join-Path $Target 'core'
 $genRoot = Join-Path $Target 'gen'
 $genDst  = Join-Path $genRoot 'go2cs-gen'
 
-Write-Host "deploy-core: mode=$Mode -> $Target" -ForegroundColor Cyan
+Write-Host "deploy-core: src\core -> $Target" -ForegroundColor Cyan
 
 # ---- Clean the pieces this script owns (leave sibling app dirs untouched) ----------------
 foreach ($dir in @($coreDst, $genRoot)) {
@@ -111,48 +96,19 @@ foreach ($dir in @($coreDst, $genRoot)) {
     }
 }
 
-# ---- Deploy the analyzer (both modes) ----------------------------------------------------
+# ---- Deploy the analyzer -----------------------------------------------------------------
 Write-Host "  deploying analyzer  -> gen\go2cs-gen" -ForegroundColor Yellow
 Invoke-Robocopy (Join-Path $srcRoot 'gen\go2cs-gen') $genDst
 
-# ---- Deploy the core per mode ------------------------------------------------------------
-if ($Mode -eq 'stub') {
-    Write-Host "  deploying baseline stub -> core" -ForegroundColor Yellow
-    Invoke-Robocopy (Join-Path $srcRoot 'core') $coreDst
-}
-else {
-    Write-Host "  deploying full stdlib   -> core" -ForegroundColor Yellow
-    # Exclude go-src-converted's own Directory.Build.props: the root props written below is
-    # the authoritative one; a nested copy would shadow it for everything under core\.
-    # Also exclude the committed Phase-4 test projects: a `<pkg>.tests.csproj` builds against the
-    # hand-owned go.testing host (not part of a deployment) and belongs to go2cs's own test
-    # infrastructure, not the deployable standard library -- staging it makes the verify build fail.
-    Invoke-Robocopy (Join-Path $srcRoot 'go-src-converted') $coreDst @('/XF', 'Directory.Build.props', '*.tests.csproj')
-
-    # go-src-converted references the shared runtime + shared project it does not itself carry.
-    # Overlay ONLY those (golib, the go2cs shared projitems dir, and the core-root icons) -- NOT
-    # the baseline package dirs, which would shadow the full-stdlib packages of the same name.
-    Write-Host "  overlaying golib + shared project + icons" -ForegroundColor Yellow
-    Invoke-Robocopy (Join-Path $srcRoot 'core\golib') (Join-Path $coreDst 'golib')
-    Invoke-Robocopy (Join-Path $srcRoot 'core\go2cs') (Join-Path $coreDst 'go2cs')
-    Copy-Item (Join-Path $srcRoot 'core\go2cs.ico') (Join-Path $coreDst 'go2cs.ico') -Force
-    Copy-Item (Join-Path $srcRoot 'core\go2cs.png') (Join-Path $coreDst 'go2cs.png') -Force
-
-    # Rewrite inter-package references go-src-converted\ -> core\ so the deployed stdlib presents
-    # uniformly at core\<pkg> (matching the stub layout and what fresh conversions reference).
-    Write-Host "  rewriting go-src-converted\ -> core\ references" -ForegroundColor Yellow
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-    $rewritten = 0
-    Get-ChildItem -Path $coreDst -Recurse -Filter *.csproj | ForEach-Object {
-        $text = [System.IO.File]::ReadAllText($_.FullName)
-        if ($text.Contains('$(go2csPath)go-src-converted\')) {
-            $text = $text.Replace('$(go2csPath)go-src-converted\', '$(go2csPath)core\')
-            [System.IO.File]::WriteAllText($_.FullName, $text, $utf8NoBom)
-            $rewritten++
-        }
-    }
-    Write-Host "    rewrote $rewritten project file(s)" -ForegroundColor DarkGray
-}
+# ---- Deploy the standard library ----------------------------------------------------------
+# A straight copy: src\core already IS the deployed layout. Two exclusions:
+#   * core's own Directory.Build.props -- the root props written below is the authoritative
+#     one; a nested copy would shadow it for everything under core\.
+#   * the committed Phase-4 test projects -- a `<pkg>.tests.csproj` builds against the
+#     hand-owned go.testing host and belongs to go2cs's own test infrastructure, not to the
+#     deployable standard library; staging it makes the verify build fail.
+Write-Host "  deploying standard library -> core" -ForegroundColor Yellow
+Invoke-Robocopy (Join-Path $srcRoot 'core') $coreDst @('/XF', 'Directory.Build.props', '*.tests.csproj')
 
 # ---- Stage the shared version.props at the deploy root -----------------------------------
 # golib.csproj and go2cs-gen.csproj each <Import ..\..\version.props /> (the single-source
@@ -214,6 +170,5 @@ if ($LASTEXITCODE -ne 0) {
     throw "Verify build FAILED ($LASTEXITCODE)."
 }
 
-$state = if ($Mode -eq 'stub') { 'runnable' } else { 'compilable' }
-Write-Host "deploy-core: $Mode deployment verified ($state) at $Target" -ForegroundColor Green
+Write-Host "deploy-core: deployment verified at $Target" -ForegroundColor Green
 exit 0

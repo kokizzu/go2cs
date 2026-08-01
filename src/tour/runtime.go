@@ -236,11 +236,11 @@ func packageIDForProjectReference(reference string) (string, bool) {
 		return "go.lib", true
 	}
 
-	for _, marker := range []string{"go-src-converted/", "core/"} {
-		index := strings.Index(normalized, marker)
-		if index < 0 {
-			continue
-		}
+	// The converted standard library has one home — core/ — so one marker covers every
+	// stdlib project reference (the historical go-src-converted/ spelling retired 2026-08-01).
+	const marker = "core/"
+
+	if index := strings.Index(normalized, marker); index >= 0 {
 		relative := strings.TrimSuffix(normalized[index+len(marker):], ".csproj")
 		directory := filepath.ToSlash(filepath.Dir(relative))
 		if directory == "." || directory == "" {
@@ -248,5 +248,6 @@ func packageIDForProjectReference(reference string) (string, bool) {
 		}
 		return "go." + strings.ReplaceAll(directory, "/", "."), true
 	}
+
 	return "", false
 }

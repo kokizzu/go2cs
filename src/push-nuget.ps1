@@ -4,10 +4,10 @@
     generator) as NuGet packages from a fresh Release build, and optionally pushes them to a feed.
 
 .DESCRIPTION
-    Targets ONLY src\go-src-converted.slnx -- the full-conversion solution, which contains the ~301
-    converted stdlib libraries AND the two shared infrastructure projects core\golib (go.lib) and
-    gen\go2cs-gen (go.gen). It deliberately never packs src\go2cs.slnx or the src\core baseline stub
-    packages: those reuse the same go.<pkg> PackageIds (e.g. go.fmt) and would collide on the feed.
+    Targets ONLY src\go2cs-stdlib.slnx -- the generated standard-library solution, which contains
+    the ~301 converted stdlib libraries, the hand-owned ones (unsafe, testing) AND the two shared
+    infrastructure projects core\golib (go.lib) and gen\go2cs-gen (go.gen). It deliberately never
+    packs src\go2cs.slnx, whose behavioral-test and example projects are not publishable.
 
     All packages share one version, sourced from src\version.props: <GoStdLibVersion>.<GoBuildNumber>
     (base tracks the converted Go release, e.g. 1.23.1; the 4th part is the build/publish counter).
@@ -73,7 +73,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $src = $PSScriptRoot
-$slnx = Join-Path $src 'go-src-converted.slnx'
+$slnx = Join-Path $src 'go2cs-stdlib.slnx'
 $versionProps = Join-Path $src 'version.props'
 if (-not $OutDir) { $OutDir = Join-Path $src 'artifacts\nupkg' }
 
@@ -88,7 +88,7 @@ if (-not (Test-Path $versionProps)) { throw "version.props not found: $versionPr
 # go2cs/stdlib-metadata.txt is the converter's embedded record of what every converted stdlib package
 # EXPORTS across assemblies (its GoTypeAlias aliases and GoImplement records). Under -recurse=nuget the
 # converter reads it INSTEAD of the package_info.cs it can no longer find on disk, so it must describe
-# the very tree this script is about to pack. If go-src-converted's exported surface changed and the
+# the very tree this script is about to pack. If the converted stdlib's exported surface changed and the
 # asset was not regenerated, the published packages and the converter disagree -- and the damage lands
 # in END USERS' builds (missing `global using` aliases, or a duplicate/absent interface adapter), not
 # here. Verify BEFORE anything is built, so the run fails at second zero rather than after a full
@@ -96,17 +96,17 @@ if (-not (Test-Path $versionProps)) { throw "version.props not found: $versionPr
 $converterDir = Join-Path $src 'go2cs'
 
 if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
-    throw "The Go toolchain is required to verify go2cs\stdlib-metadata.txt is in sync with go-src-converted before publishing."
+    throw "The Go toolchain is required to verify go2cs\stdlib-metadata.txt is in sync with src\core before publishing."
 }
 
-Write-Step "Verifying stdlib-metadata.txt matches go-src-converted"
+Write-Step "Verifying stdlib-metadata.txt matches src\core"
 Push-Location $converterDir
 
 try {
     & go test -count=1 -run TestStdLibMetadataInSync . | Out-Host
 
     if ($LASTEXITCODE -ne 0) {
-        throw "STALE EMBEDDED METADATA: go2cs\stdlib-metadata.txt does not match src\go-src-converted. " +
+        throw "STALE EMBEDDED METADATA: go2cs\stdlib-metadata.txt does not match src\core. " +
               "Run ``go generate .`` from src\go2cs, commit the regenerated asset, then re-run this script. " +
               "Publishing now would ship packages the converter's -recurse=nuget mode describes incorrectly."
     }
@@ -137,7 +137,7 @@ if ($doBump) {
 
 if ($propsText -match '<GoStdLibVersion>([^<]+)</GoStdLibVersion>') { $baseVersion = $Matches[1] } else { $baseVersion = '?' }
 $fullVersion = "$baseVersion.$build"
-Write-Step "Package version: $fullVersion   (solution: go-src-converted.slnx)"
+Write-Step "Package version: $fullVersion   (solution: go2cs-stdlib.slnx)"
 
 # --- Fresh Release pack -------------------------------------------------------------------------
 New-Item -ItemType Directory -Force $OutDir | Out-Null

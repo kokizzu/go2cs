@@ -164,9 +164,9 @@ var rootAttributionFiles = []string{
 }
 
 // copyRootAttributionFiles copies each rootAttributionFiles entry from the Go source root into the
-// converted-output "core" directory (the same root the converted packages sit under — after the
-// milestone core→go-src-converted relocation these land at go-src-converted/VERSION etc.). Missing
-// or unreadable files are reported and skipped rather than failing the whole conversion.
+// converted-output "core" directory — the same root the converted packages sit under, so these land
+// at core/VERSION, core/LICENSE and so on. Missing or unreadable files are reported and skipped
+// rather than failing the whole conversion.
 func (c *StdLibConverter) copyRootAttributionFiles() error {
 	destDir := filepath.Join(c.go2csPath, "core")
 	if err := os.MkdirAll(destDir, 0755); err != nil {
@@ -195,6 +195,31 @@ func (c *StdLibConverter) copyRootAttributionFiles() error {
 
 	fmt.Printf("Copied %d of %d root attribution files into %s\n", copied, len(rootAttributionFiles), destDir)
 	return nil
+}
+
+// isNonConvertedStdLibPackage reports whether a standard-library import path is deliberately kept
+// OUT of the conversion queue.
+//
+//   - `unsafe` and `builtin` are compiler intrinsics with no convertible source.
+//   - `testing` is ENTIRELY HAND-OWNED (src/core/testing). Go's implementation is a state machine
+//     over the runtime's goroutine scheduler, and the converted-test host that stands in for it is
+//     go2cs machinery, not a transcription. Converting it would write a second
+//     [GoPackage("testing")] `testing_package` into the very tree the host lives in — the F15b
+//     "ONE testing package, period" collision (CS0433 on every testing type, reached via
+//     internal/testenv). Its SUBPACKAGES (testing/fstest, testing/iotest, testing/quick,
+//     testing/slogtest, testing/internal/testdeps) convert normally.
+//   - `cmd` and everything under it is the Go toolchain, not the library.
+//
+// A skipped package is still recovered for the generated solution (and therefore for NuGet): its
+// converted dependents emit a `$(go2csPath)core\<pkg>` ProjectReference to it, which
+// collectConvertedProjects picks up — see solutionGenerator.go.
+func isNonConvertedStdLibPackage(importPath string) bool {
+	switch importPath {
+	case "unsafe", "builtin", "testing", "cmd":
+		return true
+	}
+
+	return strings.HasPrefix(importPath, "cmd/")
 }
 
 // scanStdLib scans all standard library packages
@@ -244,8 +269,7 @@ func (c *StdLibConverter) scanStdLib() error {
 		}
 
 		// Skip certain special packages that don't need conversion
-		if pkg.PkgPath == "unsafe" || pkg.PkgPath == "builtin" ||
-			pkg.PkgPath == "cmd" || strings.HasPrefix(pkg.PkgPath, "cmd/") {
+		if isNonConvertedStdLibPackage(pkg.PkgPath) {
 			continue
 		}
 

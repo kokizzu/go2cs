@@ -24,11 +24,7 @@ func TestBuildSolutionXML(t *testing.T) {
 		"core/golib/golib.csproj",
 		"core/internal/abi/internal.abi.csproj",
 	}
-	testProjects := []string{
-		"core/fmt/fmt_test.csproj",
-	}
-
-	xml := buildSolutionXML(coreProjects, testProjects)
+	xml := buildSolutionXML(coreProjects)
 
 	wantContains := []string{
 		"<Solution>",
@@ -50,8 +46,6 @@ func TestBuildSolutionXML(t *testing.T) {
 		// The `internal` namespace is not itself a package, so its folder is an explicit
 		// self-closing intermediate with NO Id — matching how Visual Studio serializes it.
 		"<Folder Name=\"/internal/\" />",
-		"<Folder Name=\"/tests/\" Id=\"",
-		"<Project Path=\"core/fmt/fmt_test.csproj\" />",
 		"</Solution>",
 	}
 
@@ -147,7 +141,7 @@ func TestBuildRecurseSolutionXML(t *testing.T) {
 
 // TestBuildRecurseSolutionXMLSkipsEmptyFolders verifies a dependency package's own solution — which has no
 // main-module (src) project — omits the /src/ folder entirely while keeping /pkg/ and /core/ in enforced
-// order (mirroring how the /tests/ folder is omitted from the stdlib solution when empty).
+// order.
 func TestBuildRecurseSolutionXMLSkipsEmptyFolders(t *testing.T) {
 	folders := []solutionFolder{
 		{name: "/src/", projects: nil},
@@ -171,26 +165,18 @@ func TestBuildRecurseSolutionXMLSkipsEmptyFolders(t *testing.T) {
 	}
 }
 
-// TestBuildSolutionXMLNoTestsFolderWhenEmpty verifies the /tests/ folder is omitted
-// entirely when there are no converted test projects (the current state — Phase 4 has not
-// emitted any yet).
-func TestBuildSolutionXMLNoTestsFolderWhenEmpty(t *testing.T) {
-	xml := buildSolutionXML([]string{"core/golib/golib.csproj"}, nil)
-
-	if strings.Contains(xml, "/tests/") {
-		t.Errorf("expected no /tests/ folder when there are no test projects\n%s", xml)
-	}
-}
-
-// TestCollectConvertedProjects builds a fake output tree and confirms the walk collects
-// package projects, splits out *_test.csproj into the test bucket, skips a stray copy of
-// golib, and returns forward-slash solution-relative paths.
+// TestCollectConvertedProjects builds a fake output tree and confirms the walk collects package
+// projects, EXCLUDES the converted per-package test projects (whose inputs are pipeline-staged, so
+// a solution containing one cannot build — and the standard library is packed for NuGet by
+// building this solution), skips a stray copy of golib, and returns forward-slash
+// solution-relative paths.
 func TestCollectConvertedProjects(t *testing.T) {
 	root := t.TempDir()
 
 	files := []string{
 		"core/fmt/fmt.csproj",
-		"core/fmt/fmt_test.csproj",
+		"core/fmt/fmt.tests.csproj", // Phase-4 test project — must be excluded
+		"core/fmt/fmt_test.csproj",  // the older spelling — excluded too
 		"core/internal/abi/internal.abi.csproj",
 		"core/golib/golib.csproj", // stray copy — must be skipped (added explicitly elsewhere)
 		"core/fmt/fmt.cs",         // not a csproj — ignored
@@ -208,7 +194,7 @@ func TestCollectConvertedProjects(t *testing.T) {
 
 	converter := &StdLibConverter{go2csPath: root}
 
-	coreProjects, testProjects, err := converter.collectConvertedProjects()
+	coreProjects, err := converter.collectConvertedProjects()
 
 	if err != nil {
 		t.Fatalf("collectConvertedProjects: %v", err)
@@ -228,9 +214,8 @@ func TestCollectConvertedProjects(t *testing.T) {
 	if strings.Contains(coreSet, ".cs\n") || strings.HasSuffix(coreSet, ".cs") {
 		t.Errorf("non-csproj file should be ignored, got %v", coreProjects)
 	}
-
-	if len(testProjects) != 1 || testProjects[0] != "core/fmt/fmt_test.csproj" {
-		t.Errorf("expected exactly [core/fmt/fmt_test.csproj] in test projects, got %v", testProjects)
+	if strings.Contains(coreSet, "tests.csproj") || strings.Contains(coreSet, "_test.csproj") {
+		t.Errorf("converted test projects must stay out of the solution, got %v", coreProjects)
 	}
 }
 
@@ -303,7 +288,7 @@ func TestCollectConvertedProjectsRecoversReferencedManualPackage(t *testing.T) {
 
 	converter := &StdLibConverter{go2csPath: root}
 
-	coreProjects, _, err := converter.collectConvertedProjects()
+	coreProjects, err := converter.collectConvertedProjects()
 
 	if err != nil {
 		t.Fatalf("collectConvertedProjects: %v", err)
@@ -375,7 +360,7 @@ func TestCollectConvertedProjectsFilteredRunSkipsOutOfFilterRefs(t *testing.T) {
 
 	converter := &StdLibConverter{go2csPath: root, graph: graph}
 
-	coreProjects, _, err := converter.collectConvertedProjects()
+	coreProjects, err := converter.collectConvertedProjects()
 
 	if err != nil {
 		t.Fatalf("collectConvertedProjects: %v", err)
@@ -397,8 +382,8 @@ func TestCollectConvertedProjectsFilteredRunSkipsOutOfFilterRefs(t *testing.T) {
 
 // TestBuildSolutionXMLPlacesRecoveredUnsafeCanonically confirms a recovered unsafe project lands in
 // its normal import-path folder with the deterministic folder Id and in canonical order (between the
-// sibling top-level packages /unique/ and /vendor/), matching the hand-added stopgap in the committed
-// go-src-converted.slnx so a regenerated + adopted solution is byte-identical for unsafe.
+// sibling top-level packages /unique/ and /vendor/), so a regenerated solution is adoptable
+// verbatim as the committed go2cs-stdlib.slnx. `testing` is recovered by the same path.
 func TestBuildSolutionXMLPlacesRecoveredUnsafeCanonically(t *testing.T) {
 	coreProjects := []string{
 		"core/unique/unique.csproj",
@@ -407,7 +392,7 @@ func TestBuildSolutionXMLPlacesRecoveredUnsafeCanonically(t *testing.T) {
 		"core/golib/golib.csproj",
 	}
 
-	xml := buildSolutionXML(coreProjects, nil)
+	xml := buildSolutionXML(coreProjects)
 
 	// The stopgap's committed folder Id for /unsafe/ (sha1 of "go2cs-slnx-folder:/unsafe/", v5 bits).
 	const unsafeFolder = "<Folder Name=\"/unsafe/\" Id=\"98f74097-975f-5e7b-8b80-18bf722660d9\">"

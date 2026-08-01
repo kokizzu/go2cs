@@ -1,0 +1,34 @@
+<Project>
+
+  <!--
+    Pins $(go2csPath) for every project in the converted standard library (src\core\) to the
+    repository's src root — this file's parent directory.
+
+    Why this is needed:
+      The shared runtime (core\golib) lives inside this tree, but the source generators
+      (gen\go2cs-gen) live under src\, NOT under core\. Each converted .csproj references them
+      via $(go2csPath)core\golib\... and $(go2csPath)gen\go2cs-gen\... (an Analyzer reference),
+      where $(go2csPath) otherwise defaults to $(SolutionDir) — correct only when the build is
+      driven from a solution rooted at src\. Building a package directly (dotnet build
+      <pkg>.csproj) has no SolutionDir at all, so the references dangle and the build fails with
+      a flood of "type 'slice<>' / 'GoType' could not be found" errors that look like real
+      defects but are pure reference-resolution noise.
+
+      Setting go2csPath here (computed relative to this file, so it is machine-independent) makes
+      golib and the analyzers always resolve to LIVE SOURCE: a full-stdlib build picks up the
+      latest runtime and generator changes with no per-invocation -p:go2csPath flag, and with no
+      risk of binding to a stale DLL or NuGet package.
+
+    Notes:
+      * An explicit command-line -p:go2csPath=... still wins (a global property overrides
+        Directory.Build.props), so existing documented build commands keep working unchanged.
+      * This only fixes PATH RESOLUTION — it does not change WHAT is referenced.
+  -->
+  <PropertyGroup Condition="'$(go2csPath)' == ''">
+    <go2csPath>$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))))</go2csPath>
+  </PropertyGroup>
+
+  <!-- Shared NuGet version for every converted stdlib package (single source: src\version.props) -->
+  <Import Project="$(MSBuildThisFileDirectory)..\version.props" />
+
+</Project>
