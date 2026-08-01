@@ -238,7 +238,7 @@ ONE stdlib in a build; there is now only one on disk.
   | Command | Measured (warm) | Set timeout | Notes |
   |---|---|---|---|
   | `run-behavioral.ps1` (full, 4 phases) | **~370–990s (6–16.5 min)** | 1200s | 518/518 Transpile+Compile+Target; 488 Output-compared, 30 skipped (no `package main`); the 990s top was measured under concurrent-session load — budget for it |
-  | `check-no-regression.ps1` (full) | **~285–330s (5–5.5 min)** | 480–600s | transpile-only, no compile/run; re-transpiles unconditionally |
+  | `check-no-regression.ps1` (full) | **~350–475s (6–8 min; re-measured 2026-08-01 at 519 projects, top of range under concurrent-lane load)** | 700s | transpile-only, no compile/run; re-transpiles unconditionally |
   | `run-behavioral.ps1 --filter <Name>` | **~10–20s** (8 projects) | default | the iteration loop — use this, not the full suite |
   | `go2cs -stdlib -comments` (full reconvert) | **~195s (3m 14s)** | 600s | 304 projects; per-file work is sub-second, the cost is `go/packages` |
   | single `core` pkg build | **~6s** (log/slog) – **~60s** cold (go/types) | 180–400s | cold includes the dependency chain |
