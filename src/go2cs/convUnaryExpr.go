@@ -348,6 +348,13 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 				baseIsCall = !v.callExprIsTypeConversion(call)
 			}
 
+			// A TYPE-ASSERTION base — `&c.(*UDPConn).conn` (net's udpsock_test, reaching the
+			// promoted `conn.Write`): the assert renders as the postfix `c._<ж<UDPConn>>()`, which
+			// IS the box, so `.of(…)` chains off it exactly as off a pointer-returning call.
+			// Without it the `Ꮡ(value)` fallback named a `.conn` member `ж<UDPConn>` does not have
+			// (CS1061) — and, had it bound, would have boxed a COPY.
+			_, baseIsTypeAssert := base.(*ast.TypeAssertExpr)
+
 			// A DEREF base — `&(*pprev).alllink` where pprev is `**m` (runtime proc.go's allm
 			// walk): the star of a double pointer renders `pprev.Value`, itself the ж<m> box, and
 			// field-refs through `.of(…)` cleanly (postfix on postfix).
@@ -367,7 +374,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 				_, baseIsStar = unwrapped.(*ast.StarExpr)
 			}
 
-			if baseIsIdent || baseIsSelector || baseIsCall || baseIsIndex || baseIsStar {
+			if baseIsIdent || baseIsSelector || baseIsCall || baseIsIndex || baseIsStar || baseIsTypeAssert {
 				if ptrType, ok := v.getType(base, false).(*types.Pointer); ok {
 					if _, ok := ptrType.Elem().Underlying().(*types.Struct); ok {
 						structExpr := v.convExpr(base, nil)
