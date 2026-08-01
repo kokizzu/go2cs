@@ -211,7 +211,21 @@ differ for exactly one set of types. The board's guess named the right file and 
 diagnostic (`does not exist in the type 'net_test_package'`) reads like an anchor problem and is not
 one.
 
-##### The remaining blocker: `testing.T.Deadline` needs a type `core/testing` cannot name
+##### ~~The remaining blocker: `testing.T.Deadline` needs a type `core/testing` cannot name~~ — CLOSED 2026-08-01, option (d)
+
+> **CLOSED.** The blocker was never about `Deadline`; it was about there being two `go.time_package`
+> declarations on disk. On 2026-08-01 the stub baseline retired and the converted standard library moved
+> into `src/core` (commit `2e8066da6`), so `core/testing` simply references `core\time` like any other
+> consumer — the answer none of (a), (b) or (c) below could be, because it removes the *premise* rather
+> than working around it. Call it **option (d): there is one `time`.**
+>
+> `testing.T.Deadline()` now returns a real `(time.Time, bool)`, reporting the instant the package
+> deadline (`-timeout`) expires — see `src/core/testing/testing.cs` and `TestHost.PackageDeadlineUtc`.
+> `DisableTransitiveProjectReferences` is not a problem here after all: the host is a FIXED reference of
+> every generated test project, so `time` arrives through it directly.
+>
+> Everything below is the record of the blocker as it stood. The footprint table still says which
+> packages the member unblocks.
 
 Both remaining errors are `t.Deadline()` (`net_test.go:78`, `dial_test.go:391`). Go's signature is
 `func (t *T) Deadline() (deadline time.Time, ok bool)`, and net uses the result as a real `time.Time`
@@ -240,6 +254,10 @@ every generated `.tests.csproj`); (b) promote `time` to a position both trees sh
 already is; (c) rule that `testing`'s time-typed surface is out of scope and accept that packages using
 it cannot compile their suites. **Owed to a ruling, not to this arc.**
 
+*The ruling came as **(d)**: retire the second tree entirely (2026-08-01). (b) was the closest guess —
+it just turned out the position `time` needed to share was the one `golib` already had, and moving ONE
+package there would have left the same seam for the next member that needed a converted type.*
+
 Footprint, so the ruling is sized rather than guessed. Scanning GOROOT `_test.go` for a *testing*
 receiver (`\b(t|b|tb)\.Deadline\(\)`, positive control `net/net_test.go:78`) and dropping what this
 platform and this campaign never build:
@@ -263,6 +281,9 @@ counterexample that would look like it disproves this blocker, and does not.
 closed. When the ruling lands, `net` should compile on the next run — and the init gap (`sync.OnceFunc`
 nil panic at `fd_windows.cs:27`) plus the Tier-0 channel frog are what stand between compiling and
 validating, exactly as this section said.
+
+*Updated 2026-08-01: the ruling landed (option (d) above) and `net` builds — see the Deadline banner.
+The init gap and the channel frog are what remain, exactly as predicted.*
 
 ## Runtime failures
 

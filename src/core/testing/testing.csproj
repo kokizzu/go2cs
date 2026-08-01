@@ -22,10 +22,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- golib is the ONLY runtime reference: the shim must stay lean so converted test projects
-         resolve fmt (and every other stdlib package) as ordinary project references without this
-         runtime pulling extra "namespace go" classes into the same build. -->
+    <!-- The host stays deliberately LEAN — it is a FIXED reference of every converted test project,
+         so whatever it pulls in sits underneath every suite, that package's own included. golib is
+         the runtime; `time` is here for exactly one member, testing.T.Deadline, whose Go signature
+         returns a real time.Time and which no primitive or golib stand-in can satisfy (see
+         testing.cs). Notably ABSENT: fmt — the host formats with its own TestFormat instead. -->
     <ProjectReference Include="..\golib\golib.csproj" />
+    <ProjectReference Include="..\time\time.csproj" />
     <ProjectReference Include="..\..\gen\go2cs-gen\go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

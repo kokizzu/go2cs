@@ -268,6 +268,13 @@ public static class TestHost
     /// </summary>
     public static bool VerboseMode { get; private set; }
 
+    /// <summary>
+    /// Gets the UTC instant at which the package deadline (-timeout) expires, or null when no
+    /// deadline is in effect. This is what testing.T.Deadline() reports, so it is measured from the
+    /// same moment the host starts counting against options.Timeout — not from process start.
+    /// </summary>
+    public static DateTime? PackageDeadlineUtc { get; private set; }
+
     public static int Run(TestRegistry registry, string[] args)
     {
         TestOptions options;
@@ -314,6 +321,11 @@ public static class TestHost
             // test instead of the whole run. See TestRunner.ContainGoroutineException — a converted
             // program keeps Go's process-death fidelity, which is golib's default.
             Goroutine.ContainUnhandledExceptions(runner.ContainGoroutineException);
+
+            // Set immediately before the clock starts, so testing.T.Deadline() and the Wait below
+            // are answering about the same instant.
+            PackageDeadlineUtc = options.Timeout > TimeSpan.Zero ? DateTime.UtcNow + options.Timeout : null;
+
             Task<nint> run = Task.Run(() => RunTests(registry, runner));
 
             if (!run.Wait(options.Timeout))

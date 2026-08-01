@@ -1,15 +1,24 @@
-# Baseline vs. Full Conversion — the separation contract
+# Baseline vs. Full Conversion — the separation contract *(SUPERSEDED 2026-08-01)*
 
-Companion to [`/CLAUDE.md`](../CLAUDE.md). Defines what lives where, why, and the rules that keep the
-converter-improvement loop and the full-stdlib goal from colliding again.
+> **⚠ The separation this document names is OVER.** On **2026-08-01** the stub baseline retired and the
+> converted standard library moved home to **`src/core`** (commit `2e8066da6`). There is now ONE tree and
+> ONE path scheme — `$(go2csPath)core\<pkg>`, the reference the converter always emitted — and none of the
+> rewrite / overlay / remap machinery described below survives. See [`/CLAUDE.md`](../CLAUDE.md) *One tree*.
+>
+> This file is kept because parts of it are still **live doctrine**, not history: *Hand-owning a package to
+> make it OPERATIONAL* (the `[module: GoManualConversion]` marker, the `*_impl.cs` companion, the
+> `.cs.auto` review sibling) and *Child-process creation*. Read the separation-era sections as the record
+> of how the project got here — and, for §5's overlay rules and *Regenerating the full conversion*'s
+> two-root warning, as machinery that no longer exists. Wherever a path below reads
+> `src/go-src-converted/…`, it is now `src/core/…`.
 
-## The three things
+## How it used to be laid out
 
 1. **Baseline stdlib — `src/core/<pkg>`**
    Small, **hand-finished, compiling** subset of the Go standard library. This is what the behavioral
-   tests and converter-improvement loop build against. It must always stay green.
+   tests and converter-improvement loop built against; it had to stay green.
 
-2. **Full auto-conversion — `src/go-src-converted/`** *(target location)*
+2. **Full auto-conversion — `src/go-src-converted/`**
    The entire Go standard library (302 packages, Go 1.23.1) auto-converted by `go2cs -stdlib`. The
    **ultimate goal — and as of 2026-07-10 all 302 packages compile clean** (commit `51ba5d9cf`, tag
    `stdlib-green-2026-07-10`; the Phase-3 milestone). Compiling, not yet operational — running Go's own
@@ -18,13 +27,17 @@ converter-improvement loop and the full-stdlib goal from colliding again.
 3. **Runtime — `src/core/golib/`**
    Hand-written C# runtime (`slice`, `map`, `channel`, `@string`, `builtin`, `ж<T>`, type aliases).
    **Shared by both** baseline and full conversion. **Never auto-overwritten** — some of it (`builtin`,
-   `unsafe` helpers, assembly-backed routines) can never be produced by transpilation.
+   `unsafe` helpers, assembly-backed routines) can never be produced by transpilation. *(Still true, and
+   still at the same path.)*
 
-### Why they must stay separate
+### Why they had to stay separate
 
 Both baseline and full emit into `namespace go` with `<pkg>_package` static partial classes. Referencing
-both from one C# project produces duplicate-type collisions. So they are kept in **separate directories**
-and **never referenced together** by a single project.
+both from one C# project produces duplicate-type collisions. So they were kept in **separate directories**
+and **never referenced together** by a single project. *(The collision rule itself is permanent; what
+changed is that there is no second tree left to collide with. The one place it still bites is `testing` —
+which is why the hand-owned test host is skip-listed from conversion instead of living beside an
+auto-converted twin.)*
 
 ## How the collision happened (history)
 
@@ -58,7 +71,14 @@ full auto-output), so restoring it realigns with the original design.
   projects.
 - Result: `go2cs.sln` builds 79/79; behavioral suite green (216 tests).
 
-## The contract (rules going forward)
+## The contract (rules while the two trees existed — RETIRED 2026-08-01)
+
+*Rules 1–3 and 5 below described the two-tree world. What replaced them: `src/core/<pkg>` is converter
+output and is regenerated wholesale; hand-owned files simply live there and are protected by the
+`[module: GoManualConversion]` marker (rule 4's promotion question was answered by moving the whole tree
+at once); `golib` is unchanged; and there is no overlay step, because a reconvert writes exactly the
+repository's own paths.*
+
 
 1. **`src/core/<pkg>` is curated and must compile.** Treat it as hand-owned source. Do not bulk-overwrite
    it with `-stdlib` output.
@@ -298,16 +318,17 @@ byte-identical to `go run` on the same program.
 `EWINDOWS`, as in Go. Signals and process groups are unaddressed; `Process.Kill`/`Signal` route through
 the ordinary converted `os` code and were not exercised here.
 
-## Regenerating the full conversion
+## Regenerating the standard library
 
 Current Go converter (authoritative flags in `src/go2cs/main.go`):
 
 ```
-# Whole stdlib into the separate target:
-go2cs -stdlib -comments -go2cspath <repo>/src/go-src-converted
+# Whole stdlib. The converter writes to <go2cspath>/core/<pkg>, so pointing -go2cspath at src/
+# regenerates the repository tree in place.
+go2cs -stdlib -comments -go2cspath <repo>/src
 
 # Specific packages only (used when greening a closure bottom-up):
-go2cs -stdlib -comments -go2cspath <repo>/src/go-src-converted fmt strings io sort time
+go2cs -stdlib -comments -go2cspath <repo>/src fmt strings io sort time
 ```
 
 > **Always pass `-comments` for stdlib conversion.** It defaults off, but the converted C# is a derivative
@@ -316,18 +337,19 @@ go2cs -stdlib -comments -go2cspath <repo>/src/go-src-converted fmt strings io so
 
 Package conversion is sequential (it relies on package-level converter state); output `.csproj` references are generated from detected imports.
 
-> **Note on the `<go2cspath>/core` subdir:** the stdlib converter writes packages to `<go2cspath>/core/<pkg>`
-> (a hardcoded `core` subdir). To regenerate cleanly into `src/go-src-converted` you must either point
-> `-go2cspath` so that subdir lands there, or convert to a temp dir and move. Don't let it overwrite the
-> baseline `src/core` packages.
+> **Prefer a temp root when MEASURING.** `-go2cspath <tmp>` (seeded with a copy of `src/core`, so the
+> `[module: GoManualConversion]` gate can see the marked files — see §5) keeps the repository clean and
+> lets you diff the fresh output against the committed tree. A seeded whole-stdlib reconvert is
+> byte-identical to the committed tree, so any difference is a real converter change.
 
-## The old stub as a fallback / reference
+## The old stub as a reference
 
-The last clean stub (`3426298eb`) is the source of today's baseline. To inspect or recover individual files:
+The stub baseline is gone from the working tree. To inspect or recover individual files:
 
 ```
-git worktree add ../go2cs-stub-ref 3426298eb      # browse the last clean baseline
-git show 3426298eb:src/core/fmt/print.cs          # or per file
+git show 3426298eb:src/core/fmt/print.cs          # the last clean stub (2025-05-05)
+git show 2e8066da6~1:src/core/fmt/print.cs        # the stub as it stood the day it retired
+git show 2e8066da6~1:src/go-src-converted/testing/testing.cs   # the auto-converted testing package
 ```
 
 ## Stale tooling

@@ -47,7 +47,7 @@ those act at compile/run time where CNR is blind. A gen change additionally requ
 `dotnet build-server shutdown`, otherwise MSBuild serves the cached analyzer and the suite
 silently tests the *old* generator.
 
-<a id="census"></a>**Census** (`dotnet build src/go-src-converted.slnx` + an own-DLL count script).
+<a id="census"></a>**Census** (`dotnet build src/go2cs-stdlib.slnx` + an own-DLL count script).
 The Phase-3 progress metric: how many of the ~302 auto-converted stdlib projects **emit their own
 assembly** (`bin/Debug/net9.0/<AssemblyName>.dll` exists after a full solution build). Reported as
 `N / 302`. The metric is **packages-compiling, not error count** — clearing an error family can
@@ -65,13 +65,14 @@ a csproj on disk that was never registered in the `.sln`, so it was counted but 
 
 <a id="overlay"></a>**Overlay.**
 The ritual that makes a census measure the *current* converter rather than the stale committed
-tree: full reconvert to a scratch dir → copy the fresh `.cs` **and** `.csproj` over
-`src/go-src-converted/` (rewriting project references `core\` → `go-src-converted\`, **except**
-`core\golib`, which is the shared runtime) → restore the hand-owned manual files from `src/core`
-(`*_impl.cs`, `unsafe`, `sync/atomic`, …) that auto-conversion must not clobber → clear
-`bin/obj/Generated` → build. Skipping the manual-file restore craters the census (the `unsafe` →
-`runtime` cascade). The overlay is *regenerable scaffolding*: it is never committed, and the tree
-is restored afterward (`git checkout HEAD -- src/go-src-converted` + `git clean`).
+tree: full reconvert to a scratch dir **seeded with a copy of `src/core`** (so the
+`[module: GoManualConversion]` gate can see the hand-owned files and emit `.cs.auto` review siblings
+instead of clobbering them) → copy the fresh `.cs` **and** `.csproj` over `src/core/` → clear
+`bin/obj/Generated` → build. Since the trees unified (2026-08-01) the copy is **straight**: the
+reconvert writes the repository's own paths, so there is no reference rewriting and no exception
+list. Skipping the SEED still craters the census (the `unsafe` → `runtime` cascade). The overlay is
+*regenerable scaffolding*: it is never committed, and the tree is restored afterward
+(`git checkout HEAD -- src/core` + `git clean`).
 
 ## Fleet coordination (multi-session development)
 
@@ -137,7 +138,7 @@ frontier's leaf failures wave by wave.
    without re-diagnosis.
 2. *(a package is banked)* — the Phase-4 sense. A package whose Go test suite **validates**
    verdict-for-verdict against `go test -json` has its converted test artifacts **committed** into
-   `src/go-src-converted/<pkg>` (test sources, host, `package_test_info.cs`, `<pkg>.tests.csproj`,
+   `src/core/<pkg>` (test sources, host, `package_test_info.cs`, `<pkg>.tests.csproj`,
    any disclosures manifest) **in the same commit as** its row and the header totals in
    [`ValidatedTestPackages.md`](ValidatedTestPackages.md) (charter §4.6). The committed artifacts
    are the package's own regression guard from then on.

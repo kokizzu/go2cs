@@ -13,7 +13,7 @@ supplying `slice<T>`, `map<K,V>`, `channel<T>`, `@string`, `ж<T>`, `nil`, the b
 of **[Roslyn](Glossary.md#roslyn) source generators** (`src/gen/go2cs-gen/`) that synthesize the Go semantics C# cannot spell
 directly (interface satisfaction, receiver overloads, struct-embedding promotion, named-type operators).
 
-> The C# snippets below are drawn from the actual converted standard library (`src/go-src-converted/`,
+> The C# snippets below are drawn from the actual converted standard library (`src/core/`,
 > Go 1.23.1) wherever possible, paired with their original Go source. A few use small illustrative
 > programs where that reads more clearly. Glyphs you will see throughout: **`ж<T>`** a heap "box"
 > (pointer, read "zhe"), **`Ꮡ`** address-of, **`Δ`** a disambiguation rename (read "delta"),

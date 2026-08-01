@@ -201,6 +201,44 @@ public static partial class testing_package
         execution.Fail();
     }
 
+    /// <summary>
+    /// Reports the time at which the test binary will have exceeded its package deadline
+    /// (<c>-timeout</c>), matching Go's <c>func (t *T) Deadline() (deadline time.Time, ok bool)</c>.
+    /// <c>ok</c> is false when no deadline is in effect.
+    /// </summary>
+    /// <remarks>
+    /// The FIRST member of this host's surface that needs a converted standard-library type. Go's
+    /// callers use the result as a real <c>time.Time</c> — <c>net</c>'s
+    /// <c>deadline.Add(-time.Until(deadline)/10)</c> — so no primitive or golib stand-in satisfies it,
+    /// and while the converted stdlib lived in a second tree there was no <c>time</c> this host could
+    /// name without dragging two <c>go.time_package</c> declarations into one build (BOARD:
+    /// "testing.T.Deadline needs a type core/testing cannot name"). One tree, one <c>time</c>, and the
+    /// blocker is simply gone: testing.csproj references core\time like any other consumer.
+    ///
+    /// Note this deliberately does NOT join <see cref="TB"/> — Go's testing.TB has no Deadline either.
+    /// </remarks>
+    [GoRecv] public static (time_package.Time deadline, bool ok) Deadline(this ref T t)
+    {
+        // Touch the execution so an unattached T fails the same way every other member does.
+        _ = t.RequiredExecution;
+
+        if (TestHost.PackageDeadlineUtc is not { } deadline)
+            return (default!, false);
+
+        // Whole seconds + nanosecond remainder, the shape time.Unix takes. DateTime ticks are
+        // 100 ns, so the remainder scales by 100 exactly — no precision is invented.
+        long ticks = (deadline - DateTime.UnixEpoch).Ticks;
+        long seconds = Math.DivRem(ticks, TimeSpan.TicksPerSecond, out long remainder);
+
+        if (remainder < 0)
+        {
+            seconds--;
+            remainder += TimeSpan.TicksPerSecond;
+        }
+
+        return (time_package.Unix(seconds, remainder * 100L), true);
+    }
+
     [GoRecv] public static void Fail(this ref T t) => t.RequiredExecution.Fail();
 
     [GoRecv] public static void FailNow(this ref T t) => t.RequiredExecution.FailNow();

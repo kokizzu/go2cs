@@ -20,10 +20,10 @@
 ## 1. Mission
 
 Advance Phase 4: convert and **RUN** Go's own `_test.go` suites for the standard-library packages in
-`src/go-src-converted`, validating each against `go test -json` through the pipeline
+`src/core`, validating each against `go test -json` through the pipeline
 
 ```
-src/go2cs/bin/go2cs.exe -tests -test-action all -test-timeout 10m "<GOROOT>/src/<pkg>" src/go-src-converted/<pkg>
+src/go2cs/bin/go2cs.exe -tests -test-action all -test-timeout 10m "<GOROOT>/src/<pkg>" src/core/<pkg>
 ```
 
 (converts → builds the .NET test host → runs it → diffs vs `go test -json`), until every viable
@@ -140,7 +140,7 @@ capability, record the blocker in the memory ledger and move on — don't spin.
 5. **GATE before landing (§5).** Then RE-VALIDATE the target on the post-change tree, and confirm
    **every already-validated package still validates.**
 6. On a clean validation, follow the validated-package commit policy: commit the converted C# test
-   sources into `src/go-src-converted/<pkg>` (Go headers intact), **and add the package's row to
+   sources into `src/core/<pkg>` (Go headers intact), **and add the package's row to
    [`docs/ValidatedTestPackages.md`](../ValidatedTestPackages.md) in the same banking commit**
    (alphabetical order; update the header's progress line — validated count, the /215 percentage,
    verdict and disclosed totals — user ruling 2026-07-25: this table maintains its own progress,
@@ -316,7 +316,7 @@ Hard-won during this campaign. Read these before touching the relevant area.
   places — normal (`main.go` ~1151), `-tests` (`testConversion.go` ~584), and hand-owned-sibling
   (`autoSiblingOperations.go`). A collector wired into only one **silently no-ops** for the others
   (the nil-arg fix didn't fire on `-tests` until wired everywhere). Follow `collectAddressedGlobals`.
-- **Reconvert to measure a converter change.** The committed `go-src-converted` is stale (predates
+- **Reconvert to measure a converter change.** The committed corpus can be stale (predates
   recent fixes); building it measures *old* output. To see a change's corpus impact, reconvert.
 - **Isolation-reconvert-diff** narrows which validated packages a converter change actually touched:
   reconvert the candidate set to a **C:\ temp**, CRLF-normalize, diff vs committed; re-validate only

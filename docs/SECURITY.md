@@ -4,7 +4,7 @@ go2cs is a transpiler: it reads Go source and emits C#. The security surface tha
 *generated* code — a conversion defect that silently produces C# with different memory, bounds, or
 concurrency behavior than the Go it came from is treated as a security issue, not merely a correctness bug.
 Reports against the converter, the `golib` runtime, the `go2cs-gen` source generators, and the converted
-standard library under `src/go-src-converted` are all in scope.
+standard library under `src/core` are all in scope.
 
 ## Reporting Security Issues
 

@@ -6,10 +6,19 @@ assembly-backed declarations. Sequenced **green the loop first**, then compile, 
 the full conversion.
 
 > **Status (2026-07-10): Phases 0–3 done — the full standard library compiles.** All **302** packages of
-> the `src/go-src-converted` auto-conversion (Go 1.23.1) build clean as .NET assemblies (commit `51ba5d9cf`,
+> the auto-conversion (Go 1.23.1) build clean as .NET assemblies (commit `51ba5d9cf`,
 > tag `stdlib-green-2026-07-10`) — the Phase-3 milestone. **Compiling, not yet operational:** Phase 4 will
 > convert and run Go's own package tests; Phase 5 will use those tests to prove the C# implementations that
 > replace assembly/cgo stubs.
+>
+> **⚠ Path note (2026-08-01):** Phase 1's separation was **undone deliberately** once Phase 3 plus 69
+> operationally-validated packages made it unnecessary. The converted standard library now lives at
+> **`src/core`** and the hand-finished stub baseline is retired (commit `2e8066da6`). Everything below
+> that spells `src/go-src-converted` is a period-accurate record of where the tree stood at the time —
+> read it as history, not as instructions. See [`/CLAUDE.md`](../CLAUDE.md) *One tree*.
+
+*Phase 2's 57-package `fmt` closure, considered and rejected as a bootstrap in 2026-06, is now simply
+what the behavioral suite builds: cold ~48 s, warm ~4 s.*
 
 ## Phase 0 — Documentation ✅ done
 

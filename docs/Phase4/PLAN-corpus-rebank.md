@@ -34,15 +34,15 @@
    an earlier converter reintroduces the fault. Re-capture Stage 1 accordingly, and expect the
    `AllowUnsafeBlocks` flip to be absent from registry / internal/syscall/windows / os/user / net (it
    legitimately remains gone for `reflect`, whose loss had a different, benign cause).
-1. **Capture the regen — SEEDED.** `cp -r src/go-src-converted <tmp>/core` FIRST, then
+1. **Capture the regen — SEEDED.** `cp -r src/core <tmp>/core` FIRST, then
    `go2cs -stdlib -comments -go2cspath <tmp>`. **Hard gate:** `.cs.auto` count in the temp root
    must equal the committed tree's `[module: GoManualConversion]` count (14 as of 2026-07-25);
    0 means unseeded — abort. Every marked file's fresh `.cs` must be identical to the committed one.
-2. **Overlay.** `*.cs` excluding `*.cs.auto`; `*.csproj` excluding `*.tests.csproj` with the
-   `core\` → `go-src-converted\` rewrite, excepting `core\golib` and the exact
-   `core\testing\testing.csproj`. Refresh the tracked `.cs.auto` review siblings (13 → 14;
-   `syscall/exec_windows.cs.auto` is new).
-3. **Compile gate.** Full `go-src-converted.slnx` build, 0 non-lock errors, skipped-dependents
+2. **Overlay.** `*.cs` excluding `*.cs.auto`; `*.csproj` excluding `*.tests.csproj`. **No reference
+   rewriting and no exception list** since the trees unified (2026-08-01) — the reconvert writes the
+   repository's own paths, so this is a straight copy. Refresh the tracked `.cs.auto` review siblings
+   (13 → 14; `syscall/exec_windows.cs.auto` is new).
+3. **Compile gate.** Full `go2cs-stdlib.slnx` build, 0 non-lock errors, skipped-dependents
    checked.
 4. **Operational gate.** All banked packages via the `-tests` pipeline, SERIALLY (~45 min measured
    at 43). This regenerates each banked package's test artifacts in place — paired with the exact

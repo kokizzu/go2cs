@@ -203,7 +203,7 @@ full run.
 
 Phase 4 shall add a hand-owned compatibility implementation for imports of `testing` from converted test
 projects. Test projects shall reference this implementation instead of the full auto-converted
-`go-src-converted/testing` project. Production projects are unaffected. Testing the Go `testing` package
+`core/testing` project. Production projects are unaffected. Testing the Go `testing` package
 itself is deferred until the bootstrap dependency is resolved.
 
 ### 6.1 Required first-tier API
