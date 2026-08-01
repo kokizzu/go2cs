@@ -30,13 +30,19 @@ namespace go;
 //   the enclosing function's variables — including named results, which `defer` exists to modify.
 //   So each variable the body must mutate BY REFERENCE is threaded through as an explicit
 //   `ref TRefN` parameter rather than captured, and `GoFunc.Execute(ref …)` hands it back to the
-//   body. Sixteen rungs cover the observed corpus. Every rung is generic and `allows ref struct`,
-//   so nothing is boxed and a `Span`-shaped local can still take part.
+//   body. Sixteen rungs cover the observed corpus. Every rung is generic, so nothing is boxed on
+//   the way through.
+//
+//   Only the ONE-ref rung carries `allows ref struct`, so a `Span`-shaped local can be threaded
+//   through a function that ref-threads exactly one variable and not through one that threads two.
+//   Read that as a real limit rather than an accident to quietly widen: adding the anti-constraint
+//   means adding it to the `func` overload AND to its `GoFunc<…>` rung, never to one of the pair.
 //
 // EXTENDING IT
 //   Add a rung only when a corpus function needs that many ref-threaded variables, and add both
 //   the void (`GoRefAction`) and value-returning (`GoRefFunction`) forms. A matching `GoFunc<…>`
-//   type must exist in GoFunc.cs first — that file is the ladder's other half.
+//   type must exist first — that is the ladder's other half, and it lives in GoFunc.cs for the
+//   zero- and one-ref rungs and in GoFunc.RefParameterArities.cs for rungs 2 through 16.
 // ---------------------------------------------------------------------------------------------
 public static partial class builtin
 {
