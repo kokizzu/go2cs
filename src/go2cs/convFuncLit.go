@@ -557,7 +557,19 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 				// UDPAddrжΔAddr / IPAddrжΔAddr adapter classes — has no best common type
 				// either (CS8917); each arm converts implicitly once the return type is
 				// explicit. Single-typed literals keep the inferred form (zero churn).
+				//
+				// The OPPOSITE end of the same inference failure: EVERY arm is untyped `nil`
+				// (`client := func(*TCPConn) error { <-serverDone; return nil }`, net_test).
+				// Each renders `default!`, which carries no natural type at all, so NO arm
+				// contributes and the delegate is again uninferable (CS8917). This is the
+				// single-result twin of the multi-result `!hasFullyTypedArm` rule below, and it
+				// is drift-free by construction: an all-`default!` arm set never had an inferable
+				// natural type to begin with. Assignment position only - an argument/return
+				// literal is target-typed by its delegate, where an explicit return type could
+				// only add an identity-match constraint against the target's own result type.
 				var armTypes []types.Type
+				hasSingleReturn := false
+				allArmsUntypedNil := true
 
 				ast.Inspect(funcLit.Body, func(n ast.Node) bool {
 					if _, isLit := n.(*ast.FuncLit); isLit && n != funcLit.Body {
@@ -565,6 +577,12 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 					}
 
 					if ret, ok := n.(*ast.ReturnStmt); ok && len(ret.Results) == 1 {
+						hasSingleReturn = true
+
+						if basic, isBasic := v.getType(ret.Results[0], false).(*types.Basic); !isBasic || basic.Kind() != types.UntypedNil {
+							allArmsUntypedNil = false
+						}
+
 						if retType := v.getType(ret.Results[0], false); retType != nil {
 							known := false
 
@@ -584,7 +602,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 					return true
 				})
 
-				if len(armTypes) > 1 {
+				if len(armTypes) > 1 || (context.isAssignment && hasSingleReturn && allArmsUntypedNil) {
 					returnTypePrefix = convertToCSTypeName(v.getTypeName(results.At(0).Type(), false)) + " "
 				}
 			} else if context.isAssignment {
