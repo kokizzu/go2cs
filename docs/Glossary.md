@@ -1,3 +1,4 @@
+<!-- {% raw %} — Jekyll/Liquid guard: this doc contains Go composite-literal and template syntax ({{ … }}) that Liquid would otherwise parse; the HTML comment hides the tag on GitHub. -->
 # Glossary — process terms used in commit messages, memory logs, and reviews
 
 > Definitions as **actually used** in this repository's development process — especially the
@@ -304,3 +305,4 @@ converter in two places: cross-package references arrive at the source generator
 references (not source syntax), which changes how embeds/interfaces must be resolved; and the converter
 emits MSBuild `.csproj` project files (carrying the `$(go2csPath)` property) plus `.slnx` solutions for the
 converted output.
+<!-- {% endraw %} -->
