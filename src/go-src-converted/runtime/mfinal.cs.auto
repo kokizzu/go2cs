@@ -33,7 +33,7 @@ partial class runtime_package {
     internal ж<finblock> next;
     internal uint32 cnt;
     internal int32 __;
-    internal array<finalizer> fin = new((uintptr)(_FinBlockSize - 2 * goarch.PtrSize - 2 * 4) / @unsafe.Sizeof(new finalizer(nil)));
+    internal array<finalizer> fin = new((uintptr)(_FinBlockSize - 2 * goarch.PtrSize - 2 * 4) / /* unsafe.Sizeof(finalizer{}) */ (uintptr)40);
 }
 
 internal static ж<atomic.Uint32> ᏑfingStatus = new(default(atomic.Uint32));
@@ -131,7 +131,7 @@ internal static void queuefinalizer(@unsafe.Pointer Δp, ж<funcval> Ꮡfn, uint
             if (finptrmask[0] == 0) {
                 // Build pointer mask for Finalizer array in block.
                 // Check assumptions made in finalizer1 array above.
-                if ((@unsafe.Sizeof(new finalizer(nil)) != 5 * goarch.PtrSize || @unsafe.Offsetof(new finalizer(nil).GetType(), "fn") != 0 || @unsafe.Offsetof(new finalizer(nil).GetType(), "arg") != goarch.PtrSize || @unsafe.Offsetof(new finalizer(nil).GetType(), "nret") != 2 * goarch.PtrSize || @unsafe.Offsetof(new finalizer(nil).GetType(), "fint") != 3 * goarch.PtrSize || @unsafe.Offsetof(new finalizer(nil).GetType(), "ot") != 4 * goarch.PtrSize)) {
+                if ((/* unsafe.Sizeof(finalizer{}) */ (uintptr)40 != 5 * goarch.PtrSize || /* unsafe.Offsetof(finalizer{}.fn) */ (uintptr)0 != 0 || /* unsafe.Offsetof(finalizer{}.arg) */ (uintptr)8 != goarch.PtrSize || /* unsafe.Offsetof(finalizer{}.nret) */ (uintptr)16 != 2 * goarch.PtrSize || /* unsafe.Offsetof(finalizer{}.fint) */ (uintptr)24 != 3 * goarch.PtrSize || /* unsafe.Offsetof(finalizer{}.ot) */ (uintptr)32 != 4 * goarch.PtrSize)) {
                     @throw("finalizer out of sync"u8);
                 }
                 foreach (var (i, _) in finptrmask) {
@@ -224,7 +224,7 @@ internal static void runfinq() {
                 // amount of returns and it would be complex to try and
                 // figure out how many of those can get passed in registers,
                 // just conservatively assume none of them do.
-                var framesz = @unsafe.Sizeof(((any)default!)) + (~f).nret;
+                var framesz = /* unsafe.Sizeof((any)(nil)) */ (uintptr)16 + (~f).nret;
                 if (framecap < framesz) {
                     // The frame does not contain pointers interesting for GC,
                     // all not yet finalized objects are stored in finq.
@@ -418,13 +418,16 @@ internal static bool blockUntilEmptyFinalizerQueue(int64 timeout) {
 // The modifications in the main program and the inspection in the finalizer
 // need to use appropriate synchronization, such as mutexes or atomic updates,
 // to avoid read-write races.
-public static void SetFinalizer(any obj, any finalizer) {
+public static void SetFinalizer(any objʗp, any finalizerʗp) {
+    ref var obj = ref heap(objʗp, out var Ꮡobj);
+    ref var finalizer = ref heap(finalizerʗp, out var Ꮡfinalizer);
+
     if (debug.sbrk != 0) {
         // debug.sbrk never frees memory, so no finalizers run
         // (and we don't have the data structures to record them).
         return;
     }
-    var e = efaceOf(Ꮡ(obj));
+    var e = efaceOf(Ꮡobj);
     var etyp = e.Value._type;
     if (etyp == nil) {
         @throw("runtime.SetFinalizer: first argument is nil"u8);
@@ -459,7 +462,7 @@ public static void SetFinalizer(any obj, any finalizer) {
             @throw("runtime.SetFinalizer: pointer not at beginning of allocated block"u8);
         }
     }
-    var f = efaceOf(Ꮡ(finalizer));
+    var f = efaceOf(Ꮡfinalizer);
     var ftyp = f.Value._type;
     if (ftyp == nil) {
         // switch to system stack and remove finalizer
@@ -501,7 +504,7 @@ public static void SetFinalizer(any obj, any finalizer) {
             goto okarg;
         }
         {
-            var itab = assertE2I2(ityp, (~efaceOf(Ꮡ(obj)))._type); if (itab != nil) {
+            var itab = assertE2I2(ityp, (~efaceOf(Ꮡobj))._type); if (itab != nil) {
                 goto okarg;
             }
         }

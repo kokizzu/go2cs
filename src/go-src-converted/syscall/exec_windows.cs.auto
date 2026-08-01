@@ -363,14 +363,14 @@ public static (nint pid, uintptr handle, error err) StartProcess(@string argv0, 
             (pid, handle, err) = (0, 0, err); return;
         }
         deferǃ(deleteProcThreadAttributeList, (~si).ProcThreadAttributeList, defer);
-        si.Value.Cb = (uint32)@unsafe.Sizeof(si.Value);
+        si.Value.Cb = (uint32)/* unsafe.Sizeof(*si) */ (uintptr)112;
         si.Value.Flags = STARTF_USESTDHANDLES;
         if ((~sys).HideWindow) {
             si.Value.Flags |= (uint32)(STARTF_USESHOWWINDOW);
             si.Value.ShowWindow = SW_HIDE;
         }
         if ((~sys).ParentProcess != 0) {
-            err = updateProcThreadAttribute((~si).ProcThreadAttributeList, 0, _PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, @unsafe.Pointer.FromRef(ref (sys.of(SysProcAttr.ᏑParentProcess)).Value), @unsafe.Sizeof((~sys).ParentProcess), nil, nil);
+            err = updateProcThreadAttribute((~si).ProcThreadAttributeList, 0, _PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, @unsafe.Pointer.FromRef(ref (sys.of(SysProcAttr.ᏑParentProcess)).Value), /* unsafe.Sizeof(sys.ParentProcess) */ (uintptr)8, nil, nil);
             if (err != default!) {
                 (pid, handle, err) = (0, 0, err); return;
             }
@@ -392,7 +392,7 @@ public static (nint pid, uintptr handle, error err) StartProcess(@string argv0, 
         var willInheritHandles = len(fd) > 0 && !(~sys).NoInheritHandles;
         // Do not accidentally inherit more than these handles.
         if (willInheritHandles) {
-            err = updateProcThreadAttribute((~si).ProcThreadAttributeList, 0, _PROC_THREAD_ATTRIBUTE_HANDLE_LIST, @unsafe.Pointer.FromRef(ref (Ꮡ(fd, 0)).Value), (uintptr)len(fd) * @unsafe.Sizeof(fd[0]), nil, nil);
+            err = updateProcThreadAttribute((~si).ProcThreadAttributeList, 0, _PROC_THREAD_ATTRIBUTE_HANDLE_LIST, @unsafe.Pointer.FromRef(ref (Ꮡ(fd, 0)).Value), (uintptr)len(fd) * /* unsafe.Sizeof(fd[0]) */ (uintptr)8, nil, nil);
             if (err != default!) {
                 (pid, handle, err) = (0, 0, err); return;
             }

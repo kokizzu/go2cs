@@ -77,7 +77,7 @@ partial class sync_package {
     internal partial ref poolLocalInternal poolLocalInternal { get; }
     // Prevents false sharing on widespread platforms with
     // 128 mod (cache line size) = 0 .
-    internal array<byte> pad = new(128 - @unsafe.Sizeof(new poolLocalInternal(nil)) % 128);
+    internal array<byte> pad = new(128 - /* unsafe.Sizeof(poolLocalInternal{}) */ (uintptr)32 % 128);
 }
 
 // from runtime
@@ -308,7 +308,7 @@ internal static slice<ж<Pool>> oldPools;
 }
 
 internal static ж<poolLocal> indexLocal(@unsafe.Pointer l, nint i) {
-    @unsafe.Pointer lp = (@unsafe.Pointer)((uintptr)l + (uintptr)i * @unsafe.Sizeof(new poolLocal(nil)));
+    @unsafe.Pointer lp = (@unsafe.Pointer)((uintptr)l + (uintptr)i * /* unsafe.Sizeof(poolLocal{}) */ (uintptr)128);
     return (ж<poolLocal>)(uintptr)(lp);
 }
 

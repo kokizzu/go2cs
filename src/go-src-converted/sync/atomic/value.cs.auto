@@ -52,12 +52,14 @@ internal static ref byte firstStoreInProgress => ref ᏑfirstStoreInProgress.Val
 // Store sets the value of the [Value] v to val.
 // All calls to Store for a given Value must use values of the same concrete type.
 // Store of an inconsistent type panics, as does Store(nil).
-public static void Store(this ж<Value> Ꮡv, any val) {
+public static void Store(this ж<Value> Ꮡv, any valʗp) {
+    ref var val = ref heap(valʗp, out var Ꮡval);
+
     if (val == default!) {
         throw panic("sync/atomic: store of nil value into Value");
     }
     var vp = Ꮡv.Reinterpret<Value, efaceWords>();
-    var vlp = Ꮡ(val).Reinterpret<any, efaceWords>();
+    var vlp = Ꮡval.Reinterpret<any, efaceWords>();
     while (ᐧ) {
         @unsafe.Pointer typ = (uintptr)LoadPointer(vp.of(efaceWords.Ꮡtyp));
         if (typ == nil) {
@@ -95,14 +97,15 @@ public static void Store(this ж<Value> Ꮡv, any val) {
 //
 // All calls to Swap for a given Value must use values of the same concrete
 // type. Swap of an inconsistent type panics, as does Swap(nil).
-public static any /*old*/ Swap(this ж<Value> Ꮡv, any @new) {
+public static any /*old*/ Swap(this ж<Value> Ꮡv, any @newʗp) {
     ref var old = ref heap<any>(out var Ꮡold);
 
+    ref var @new = ref heap(@newʗp, out var Ꮡnew);
     if (@new == default!) {
         throw panic("sync/atomic: swap of nil value into Value");
     }
     var vp = Ꮡv.Reinterpret<Value, efaceWords>();
-    var np = Ꮡ(@new).Reinterpret<any, efaceWords>();
+    var np = Ꮡnew.Reinterpret<any, efaceWords>();
     while (ᐧ) {
         @unsafe.Pointer typ = (uintptr)LoadPointer(vp.of(efaceWords.Ꮡtyp));
         if (typ == nil) {
@@ -142,15 +145,17 @@ public static any /*old*/ Swap(this ж<Value> Ꮡv, any @new) {
 // All calls to CompareAndSwap for a given Value must use values of the same
 // concrete type. CompareAndSwap of an inconsistent type panics, as does
 // CompareAndSwap(old, nil).
-public static bool /*swapped*/ CompareAndSwap(this ж<Value> Ꮡv, any old, any @new) {
+public static bool /*swapped*/ CompareAndSwap(this ж<Value> Ꮡv, any oldʗp, any @newʗp) {
     bool swapped = default!;
 
+    ref var old = ref heap(oldʗp, out var Ꮡold);
+    ref var @new = ref heap(@newʗp, out var Ꮡnew);
     if (@new == default!) {
         throw panic("sync/atomic: compare and swap of nil value into Value");
     }
     var vp = Ꮡv.Reinterpret<Value, efaceWords>();
-    var np = Ꮡ(@new).Reinterpret<any, efaceWords>();
-    var op = Ꮡ(old).Reinterpret<any, efaceWords>();
+    var np = Ꮡnew.Reinterpret<any, efaceWords>();
+    var op = Ꮡold.Reinterpret<any, efaceWords>();
     if ((~op).typ != nil && (~np).typ != (~op).typ) {
         throw panic("sync/atomic: compare and swap of inconsistently typed values");
     }
