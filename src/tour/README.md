@@ -22,6 +22,8 @@ The interface is deliberately parallel:
 - **Run** builds and executes the current conversion; it becomes **Kill** while
   the process is active.
 
+![Tour of go2cs showing Go and generated C# side by side](https://go2cs.net/images/tour-of-go2cs.png)
+
 ## Requirements
 
 - Go 1.23.1 or later
