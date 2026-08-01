@@ -380,6 +380,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckForeignPtrEmbedIfaceUser() => CheckTarget("ForeignPtrEmbedIfaceUser");
 
     [TestMethod]
+    public void CheckForeignValueImplementSuppression() => CheckTarget("ForeignValueImplementSuppression");
+
+    [TestMethod]
     public void CheckForInitMixedTypes() => CheckTarget("ForInitMixedTypes");
 
     [TestMethod]

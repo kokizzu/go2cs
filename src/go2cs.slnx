@@ -207,6 +207,8 @@
     <Project Path="Tests/Behavioral/FuncFieldNestedTupleParam/FuncFieldNestedTupleParam.csproj" />
     <Project Path="Tests/Behavioral/ForeignPtrEmbedIfaceLib/ForeignPtrEmbedIfaceLib.csproj" />
     <Project Path="Tests/Behavioral/ForeignPtrEmbedIfaceUser/ForeignPtrEmbedIfaceUser.csproj" />
+    <Project Path="Tests/Behavioral/ForeignValueImplementSuppression/ForeignValueImplementSuppression.csproj" />
+    <Project Path="Tests/Behavioral/ForeignValueImplementSuppression/hue/ForeignValueImplementSuppression.hue.csproj" />
     <Project Path="Tests/Behavioral/FuncFieldUnexportedType/FuncFieldUnexportedType.csproj" />
     <Project Path="Tests/Behavioral/FuncLitArgCapture/FuncLitArgCapture.csproj" />
     <Project Path="Tests/Behavioral/FuncLitCaptureInCondition/FuncLitCaptureInCondition.csproj" />
