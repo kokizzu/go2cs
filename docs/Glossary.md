@@ -129,11 +129,40 @@ A **wave** is a coordinated group of chips spawned from one diagnosis round. The
 **red set**) is the current list of red census packages; the campaign advances by collapsing the
 frontier's leaf failures wave by wave.
 
-<a id="banked"></a>**Banked / bank.**
-A verified-but-not-fixed item recorded durably (memory log + a banked-follow-ups note) instead of
-fixed now — typically a latent sibling with zero occurrences in the current corpus, or a concern
-from review. Banking is legitimate *only* with a written diagnosis; several banked items later
-materialized in new packages and were fixed from the bank without re-diagnosis.
+<a id="banked"></a>**Banked / bank.** Two senses, disambiguated by object:
+1. *(a finding is banked)* A verified-but-not-fixed item recorded durably (memory log + a
+   banked-follow-ups note) instead of fixed now — typically a latent sibling with zero occurrences
+   in the current corpus, or a concern from review. Banking is legitimate *only* with a written
+   diagnosis; several banked items later materialized in new packages and were fixed from the bank
+   without re-diagnosis.
+2. *(a package is banked)* — the Phase-4 sense. A package whose Go test suite **validates**
+   verdict-for-verdict against `go test -json` has its converted test artifacts **committed** into
+   `src/go-src-converted/<pkg>` (test sources, host, `package_test_info.cs`, `<pkg>.tests.csproj`,
+   any disclosures manifest) **in the same commit as** its row and the header totals in
+   [`ValidatedTestPackages.md`](ValidatedTestPackages.md) (charter §4.6). The committed artifacts
+   are the package's own regression guard from then on.
+
+<a id="banked-roster"></a>**Banked roster.**
+The set of packages currently banked in sense 2 — operationally, **whatever
+`ValidatedTestPackages.md`'s table lists**, each row carrying the package's exact matching-verdict
+and disclosed counts. The table is the single source of truth; scripts parse it rather than
+hardcoding a list, so the roster can never drift from what a banking commit just recorded.
+
+<a id="validated-sweep"></a>**Validated sweep (full).**
+The charter §5 *operational re-validation* gate, run by **`src/run-validated-sweep.ps1`**: for
+**every** package on the banked roster (parsed live from the table), re-run the complete `-tests`
+pipeline — reconvert the suite with the current converter, rebuild the test host, run it, and diff
+the verdicts against `go test -json` — and require each package to land on its **exact banked
+counts**. A package that "passes" with a *different* count fails the sweep (the table and reality
+must agree; one of them is now wrong). "Full" distinguishes it from a `-Filter` run of a few
+packages. Properties that make it the campaign's decisive instrument: it is the only gate that
+exercises banked **test-source** emission (CNR covers behavioral projects; the
+isolation-reconvert-diff covers production `.cs`); it re-generates every banked artifact from the
+current binary (so mixed-vintage output cannot hide); and its post-run **content-drift report**
+(`--ignore-cr-at-eol`, CRLF phantoms excluded) is what tells the coordinator whether a converter
+change silently moved any banked artifact. Serial by design (concurrent runs collide on shared
+dependency DLLs, CS2012), with per-package timeout overrides for legitimately slow suites
+(`hash/maphash` 30m, `index/suffixarray` 60m) so a slow tail is never misread as a failure.
 
 <a id="mvp"></a>**MVP — minimum viable [increment].**
 The smallest *correct and fully-gated* first cut of a converter/runtime feature: the narrowest
