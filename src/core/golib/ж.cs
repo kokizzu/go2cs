@@ -913,13 +913,24 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         return value is ж<T> box ? box.ValueSlot : value.Value;
     }
 
-    // I posted a suggestion for at least the "ref" operator:
+    // C# has no user-defined ref-returning operator, so `~p` hands back a COPY of the pointed-at
+    // value rather than an alias to it. Callers that must WRITE through the pointer use the `Value`
+    // ref-property instead. Suggestion filed upstream:
     // https://github.com/dotnet/roslyn/issues/45881
 
-    // Also, the following unsafe return option is possible when T is unmanaged:
+    // A `where T : unmanaged` box could return a real machine pointer instead —
     //     public static T* operator ~(ж<T> value) => value.m_value;
-    // However, going down the fully unmanaged path creates a cascading set of
-    // issues, see header comments for the ж<T> "experimental" implementation
+    // — but that fully unmanaged path cascades, which is why ж<T> stays a managed box:
+    //   1. `unmanaged` excludes every T that contains a reference, i.e. most Go structs, so an
+    //      unmanaged box can only ever be a SECOND, parallel pointer type — never a replacement.
+    //   2. Holding the pointee at a stable address needs a pinning GCHandle, and a GCHandle needs a
+    //      finalizer to release it or it leaks — so the box has to be a class, not a struct.
+    //   3. A class is non-blittable, so any struct with a pointer FIELD becomes non-blittable too,
+    //      and taking a pointer to THAT struct is then impossible — the case Go code hits constantly
+    //      (`type node struct { next *node }`).
+    // An earlier `ptr<T>`/`ptr2<T>` prototype under `golib/experimental/` worked this path to its
+    // dead end and was removed once ж<T> settled; `git log --diff-filter=D -- src/core/golib/experimental`
+    // recovers it.
 
     public static bool operator ==(ж<T>? value1, ж<T>? value2)
     {

@@ -49,12 +49,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="experimental\**" />
-    <EmbeddedResource Remove="experimental\**" />
-    <None Remove="experimental\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="..\go2cs.ico" Pack="true" PackagePath="" Visible="false" />
     <None Include="..\go2cs.png" Pack="true" PackagePath="" Visible="false" />
     <None Include="README.md" Pack="true" PackagePath="" />
