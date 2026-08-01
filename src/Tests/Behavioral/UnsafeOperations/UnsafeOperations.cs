@@ -26,6 +26,27 @@ partial class main_package {
 internal static ж<Outer> ᏑgOuter = new(default(Outer));
 internal static ref Outer gOuter => ref ᏑgOuter.Value;
 
+[GoType] partial struct Padded {
+    internal bool flag;
+    internal int64 count;
+    internal byte tag;
+    internal @string name;
+    internal slice<byte> data;
+    internal int32 code;
+}
+
+[GoType] partial struct Embedded {
+    internal byte lead;
+    public partial ref Padded Padded { get; }
+    internal int16 trail;
+}
+
+[GoType] [GoValueClone("cells")] partial struct Arrays {
+    internal int16 head;
+    internal array<int32> cells = new(5);
+    internal byte tail;
+}
+
 public static uint64 Float64bits(float64 fʗp) {
     ref var f = ref heap(fʗp, out var Ꮡf);
 
@@ -60,7 +81,7 @@ internal static void Main() {
     ref var arr = ref heap<array<nint>>(out var Ꮡarr);
     arr = new nint[]{1, 2, 3, 4}.array();
     var arrptr = Ꮡarr.at<nint>(0);
-    @unsafe.Pointer nextPtr = (@unsafe.Pointer)((uintptr)new @unsafe.Pointer(arrptr) + @unsafe.Sizeof(arr[0]));
+    @unsafe.Pointer nextPtr = (@unsafe.Pointer)((uintptr)new @unsafe.Pointer(arrptr) + /* unsafe.Sizeof(arr[0]) */ (uintptr)8);
     fmt.Println(valueOfTheNextElementˢ, ~(ж<nint>)(uintptr)(nextPtr));
     ref var t1 = ref heap(new T1(), out var Ꮡt1);
     t1.a = 42;
@@ -76,19 +97,34 @@ internal static void Main() {
     uintptr M = /* unsafe.Sizeof(x.c) */ 16;
     uintptr N = /* unsafe.Sizeof(x) */ 32;
     fmt.Println(M, N);
-    fmt.Println(@unsafe.Alignof(typeof(int64)));
-    fmt.Println(@unsafe.Alignof(typeof(bool)));
-    fmt.Println(@unsafe.Alignof(typeof(@string)));
-    fmt.Println(@unsafe.Offsetof(typeof(main_x), "a"));
-    fmt.Println(@unsafe.Offsetof(typeof(main_x), "b"));
-    fmt.Println(@unsafe.Offsetof(typeof(main_x), "c"));
-    fmt.Println(@unsafe.Alignof(typeof(uint32)));
-    fmt.Println(@unsafe.Alignof(typeof(float64)));
-    fmt.Println(@unsafe.Alignof(typeof(nint)));
+    fmt.Println(/* unsafe.Alignof(x.a) */ (uintptr)8);
+    fmt.Println(/* unsafe.Alignof(x.b) */ (uintptr)1);
+    fmt.Println(/* unsafe.Alignof(x.c) */ (uintptr)8);
+    fmt.Println(/* unsafe.Offsetof(x.a) */ (uintptr)0);
+    fmt.Println(/* unsafe.Offsetof(x.b) */ (uintptr)8);
+    fmt.Println(/* unsafe.Offsetof(x.c) */ (uintptr)16);
+    fmt.Println(/* unsafe.Alignof(uint32(0)) */ (uintptr)4);
+    fmt.Println(/* unsafe.Alignof(float64(0)) */ (uintptr)8);
+    fmt.Println(/* unsafe.Alignof(arr[0]) */ (uintptr)8);
     var op = ᏑgOuter;
-    fmt.Println(@unsafe.Alignof(typeof(int64)));
-    fmt.Println(@unsafe.Offsetof(typeof(Inner), "q"));
-    fmt.Println(@unsafe.Offsetof(typeof(Outer), "in"));
+    fmt.Println(/* unsafe.Alignof(op.in.q) */ (uintptr)8);
+    fmt.Println(/* unsafe.Offsetof(gOuter.in.q) */ (uintptr)8);
+    fmt.Println(/* unsafe.Offsetof(op.in) */ (uintptr)8);
+    Padded p = default!;
+    Embedded e = new(nil);
+    Arrays a = new();
+    fmt.Println(/* unsafe.Sizeof(p) */ (uintptr)72, /* unsafe.Alignof(p) */ (uintptr)8, /* unsafe.Offsetof(p.name) */ (uintptr)24);
+    fmt.Println(/* unsafe.Sizeof(p) */ (uintptr)72 + /* unsafe.Sizeof(a) */ (uintptr)28, /* unsafe.Offsetof(p.code) */ (uintptr)64 - /* unsafe.Offsetof(p.count) */ (uintptr)8);
+    fmt.Println(/* unsafe.Sizeof(a.cells) */ (uintptr)20 / /* unsafe.Sizeof(a.cells[0]) */ (uintptr)4);
+    fmt.Println(/* unsafe.Sizeof(p.name) */ (uintptr)16 * 2 + /* unsafe.Alignof(p.count) */ (uintptr)8);
+    fmt.Println(/* unsafe.Sizeof(p) */ (uintptr)72 > /* unsafe.Sizeof(a) */ (uintptr)28, /* unsafe.Alignof(p.flag) */ (uintptr)1 == /* unsafe.Alignof(p.tag) */ (uintptr)1);
+    var sz = /* unsafe.Sizeof(e) */ (uintptr)88;
+    sz += /* unsafe.Offsetof(e.trail) */ (uintptr)80;
+    fmt.Println(sz);
+    var buf = new slice<byte>((nint)(/* unsafe.Sizeof(p) */ (uintptr)72));
+    fmt.Println(len(buf), cap(buf));
+    fmt.Println(/* unsafe.Sizeof(e) */ (uintptr)88, /* unsafe.Offsetof(e.Padded) */ (uintptr)8, /* unsafe.Offsetof(e.trail) */ (uintptr)80, /* unsafe.Offsetof(e.count) */ (uintptr)16);
+    fmt.Println(/* unsafe.Sizeof(a) */ (uintptr)28, /* unsafe.Alignof(a.cells) */ (uintptr)4, /* unsafe.Offsetof(a.cells) */ (uintptr)4, /* unsafe.Offsetof(a.tail) */ (uintptr)24);
     var i2 = Float64bits(9.5D);
     var f2 = Float64frombits(i2);
     fmt.Println(i2);

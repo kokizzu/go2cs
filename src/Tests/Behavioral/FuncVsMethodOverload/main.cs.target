@@ -23,7 +23,7 @@ internal static ж<nih> add(this ж<nih> Ꮡp, uintptr bytes) {
 }
 
 internal static uint32 step(ж<uint32> Ꮡv) {
-    var q = (ж<uint32>)(uintptr)(add(new @unsafe.Pointer(Ꮡv), @unsafe.Sizeof((uint32)0)));
+    var q = (ж<uint32>)(uintptr)(add(new @unsafe.Pointer(Ꮡv), /* unsafe.Sizeof(uint32(0)) */ (uintptr)4));
     return q.Value;
 }
 
@@ -34,7 +34,7 @@ internal static uint32 step(ж<uint32> Ꮡv) {
 internal static uint32 second(this ж<holder> Ꮡh) {
     ref var h = ref Ꮡh.Value;
 
-    return ~(ж<uint32>)(uintptr)(add((uintptr)@unsafe.Pointer.FromRef(ref h), @unsafe.Sizeof((uint32)0)));
+    return ~(ж<uint32>)(uintptr)(add((uintptr)@unsafe.Pointer.FromRef(ref h), /* unsafe.Sizeof(uint32(0)) */ (uintptr)4));
 }
 
 internal static void Main() {

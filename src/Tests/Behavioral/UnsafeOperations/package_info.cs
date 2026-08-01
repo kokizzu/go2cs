@@ -57,8 +57,11 @@ public static partial class main_package
 
     // <TypeAccessibility>
     internal partial struct main_x {}
+    public partial struct Arrays {}
+    public partial struct Embedded {}
     public partial struct Inner {}
     public partial struct Outer {}
+    public partial struct Padded {}
     public partial struct T1 {}
     public partial struct T2 {}
     // </TypeAccessibility>

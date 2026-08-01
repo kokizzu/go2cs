@@ -504,9 +504,9 @@ private static readonly @string tInCount0ˢ = "t.inCount > 0"u8;
 public static unsafe slice<ж<Type>> InSlice(this ж<ΔFuncType> Ꮡt) {
     ref var t = ref Ꮡt.Value;
 
-    var uadd = @unsafe.Sizeof(t);
+    var uadd = /* unsafe.Sizeof(*t) */ (uintptr)56;
     if ((TFlag)(t.TFlag & TFlagUncommon) != 0) {
-        uadd += @unsafe.Sizeof(new UncommonType(nil));
+        uadd += /* unsafe.Sizeof(UncommonType{}) */ (uintptr)16;
     }
     if (t.InCount == 0) {
         return default!;
@@ -524,9 +524,9 @@ public static unsafe slice<ж<Type>> OutSlice(this ж<ΔFuncType> Ꮡt) {
     if (outCount == 0) {
         return default!;
     }
-    var uadd = @unsafe.Sizeof(t);
+    var uadd = /* unsafe.Sizeof(*t) */ (uintptr)56;
     if ((TFlag)(t.TFlag & TFlagUncommon) != 0) {
-        uadd += @unsafe.Sizeof(new UncommonType(nil));
+        uadd += /* unsafe.Sizeof(UncommonType{}) */ (uintptr)16;
     }
     return new slice<ж<Type>>(new ReadOnlySpan<ж<Type>>((Type**)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), uadd, outCount0ˢ)) + (int)(t.InCount), (int)(t.InCount + outCount) - (int)(t.InCount)));
 }

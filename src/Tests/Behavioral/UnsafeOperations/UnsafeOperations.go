@@ -25,6 +25,35 @@ type Outer struct {
 
 var gOuter Outer
 
+// Padded is shaped so that GO's layout rules — and only Go's — produce the numbers below: a
+// leading bool forces 7 bytes of padding before the int64, a byte forces another 7 before the
+// string, and a trailing int32 forces tail padding up to the struct's 8-byte alignment. It also
+// holds a string and a slice, so the CONVERTED C# struct is non-blittable: this is exactly the
+// shape a reflection-based `Sizeof` (Marshal.SizeOf<T>) throws on rather than answering.
+type Padded struct {
+	flag  bool
+	count int64
+	tag   byte
+	name  string
+	data  []byte
+	code  int32
+}
+
+// Embedded promotes Padded's fields. Go measures Offsetof against the IMMEDIATELY enclosing
+// struct, so `e.count` is its offset within Padded, not within Embedded.
+type Embedded struct {
+	lead byte
+	Padded
+	trail int16
+}
+
+// Arrays exercises array element/whole-array operands, whose alignment is the element's.
+type Arrays struct {
+	head  int16
+	cells [5]int32
+	tail  byte
+}
+
 func Float64bits(f float64) uint64 {
 	return *(*uint64)(unsafe.Pointer(&f))
 }
@@ -104,6 +133,42 @@ func main() {
 	// A field whose name is a C# keyword: the emitted identifier escapes to `@in`, but reflection
 	// names it `in`.
 	fmt.Println(unsafe.Offsetof(op.in))
+
+	// Sizeof/Alignof/Offsetof at EXPRESSION sites. Go computes all three at COMPILE TIME from the
+	// operand's static type under Go's layout rules, so every number here is Go's — not a
+	// measurement of the converted C# struct. The operand is never evaluated.
+	var p Padded
+	var e Embedded
+	var a Arrays
+
+	// Call-argument position.
+	fmt.Println(unsafe.Sizeof(p), unsafe.Alignof(p), unsafe.Offsetof(p.name))
+
+	// Arithmetic position: sums, differences and the classic element-count division.
+	fmt.Println(unsafe.Sizeof(p)+unsafe.Sizeof(a), unsafe.Offsetof(p.code)-unsafe.Offsetof(p.count))
+	fmt.Println(unsafe.Sizeof(a.cells) / unsafe.Sizeof(a.cells[0]))
+	fmt.Println(unsafe.Sizeof(p.name)*2 + unsafe.Alignof(p.count))
+
+	// Comparison position.
+	fmt.Println(unsafe.Sizeof(p) > unsafe.Sizeof(a), unsafe.Alignof(p.flag) == unsafe.Alignof(p.tag))
+
+	// Assignment position, including compound assignment against a uintptr variable.
+	sz := unsafe.Sizeof(e)
+	sz += unsafe.Offsetof(e.trail)
+	fmt.Println(sz)
+
+	// Sizing a make() — the `debug/elf` idiom of reading a fixed-layout header.
+	buf := make([]byte, unsafe.Sizeof(p))
+	fmt.Println(len(buf), cap(buf))
+
+	// Embedded struct: a PROMOTED field reached through an embedded VALUE is measured relative to
+	// the operand struct — `e.count` is 16 (8 for `lead` + its 8 inside Padded), not the 8 it sits
+	// at within Padded. Only an explicit selector (`gOuter.in.q` above) measures inside the inner
+	// struct. go/types folds the whole path; the reflection form could only see one hop.
+	fmt.Println(unsafe.Sizeof(e), unsafe.Offsetof(e.Padded), unsafe.Offsetof(e.trail), unsafe.Offsetof(e.count))
+
+	// Array element, whole array, and the field that follows one.
+	fmt.Println(unsafe.Sizeof(a), unsafe.Alignof(a.cells), unsafe.Offsetof(a.cells), unsafe.Offsetof(a.tail))
 
 	i2 := Float64bits(9.5)
 	f2 := Float64frombits(i2)

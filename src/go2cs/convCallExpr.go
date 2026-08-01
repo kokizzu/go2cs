@@ -2126,6 +2126,31 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		}
 	}
 
+	// Go defines `unsafe.Sizeof` / `unsafe.Alignof` / `unsafe.Offsetof` as COMPILE-TIME CONSTANTS
+	// computed from the operand's STATIC type — the operand is never evaluated — so the converter
+	// FOLDS them to the value go/types already holds, keeping the Go expression as a comment. That
+	// is the emission declaration sites have always used (`/* unsafe.Offsetof(cpu.X86.HasAVX) */
+	// 66`); it now covers expression sites too, so one Go construct has one behavior.
+	//
+	// The golib run-time forms below are what expression sites used to emit. They answer with the
+	// CLR's MARSHALLED layout, which is a different number whenever golib's field representation
+	// differs from Go's (`string` is 16 bytes in Go/amd64; `@string` is a managed struct) — and
+	// golib's `Sizeof` rides `Marshal.SizeOf<T>`, which THROWS outright for a non-blittable `T`,
+	// i.e. for any converted struct holding a slice, string, interface or `ж<T>` field. `debug/elf`
+	// reads its on-disk ELF header offsets through `Offsetof`: those must be Go's numbers.
+	//
+	// A non-constant result exists only for a VARIABLE-SIZE operand (a type parameter). If go/types
+	// has no constant, the run-time form is still emitted and the site is reported rather than lost.
+	if len(constructType) == 0 && len(callExpr.Args) == 1 {
+		if builtinName := v.unsafeConstBuiltinName(callExpr); len(builtinName) > 0 {
+			if folded, ok := v.foldUnsafeConstBuiltin(callExpr); ok {
+				return folded
+			}
+
+			v.showWarning("Go 'unsafe.%s' did not resolve to a constant - emitting run-time form: %s", builtinName, v.getPrintedNode(callExpr))
+		}
+	}
+
 	// unsafe.Offsetof / unsafe.Alignof reshape for the golib helpers, which take a System.Type
 	// rather than a value. Both are defined by Go against the STATIC type of the operand — an
 	// operand Go never evaluates — so the shape is derived from go/types.
@@ -3966,6 +3991,67 @@ func (v *Visitor) instantiatedParamType(callExpr *ast.CallExpr, i int) types.Typ
 	}
 
 	return nil
+}
+
+// unsafeConstBuiltinName reports which of Go's constant-valued `unsafe` builtins a call names —
+// `Sizeof`, `Alignof` or `Offsetof` — or "" for anything else. It resolves through go/types rather
+// than through the converted call text, so a renamed `unsafe` import (`import u "unsafe"`) resolves
+// identically; go/types models all three as `*types.Builtin` objects owned by package `unsafe`.
+func (v *Visitor) unsafeConstBuiltinName(callExpr *ast.CallExpr) string {
+	selectorExpr, isSelector := callExpr.Fun.(*ast.SelectorExpr)
+
+	if !isSelector {
+		return ""
+	}
+
+	builtin, isBuiltin := v.info.Uses[selectorExpr.Sel].(*types.Builtin)
+
+	if !isBuiltin || builtin.Pkg() != types.Unsafe {
+		return ""
+	}
+
+	switch builtin.Name() {
+	case "Sizeof", "Alignof", "Offsetof":
+		return builtin.Name()
+	}
+
+	return ""
+}
+
+// foldUnsafeConstBuiltin renders the constant go/types computed for an `unsafe.Sizeof` /
+// `unsafe.Alignof` / `unsafe.Offsetof` call as the emitted literal, with the Go expression kept as
+// a comment — the declaration-site convention. The value is GO's: go/types folds these against the
+// `types.Sizes` for the loaded target GOARCH, the same layout rules the Go compiler applies, so the
+// emitted number matches what the Go program would compute rather than what the CLR would measure.
+// Reports false when go/types has no integer constant for the call (a variable-size operand), which
+// leaves the caller on the run-time form.
+//
+// The literal carries the call's own type (`uintptr` — Go fixes the result type of all three). Go's
+// constant is TYPED, and a bare C# number is not: `uadd := unsafe.Sizeof(*t)` declares a `uintptr`
+// in Go but would infer `int` from `var uadd = 56`, and an `int` VARIABLE has no implicit conversion
+// back to `nuint` — `addChecked(ptr, uadd, …)` is then CS1503 (internal/abi's `FuncType.InSlice`).
+// Elsewhere the cast is inert: C#'s constant-expression conversion would have bound a bare literal
+// to `nuint` anyway, and a cast binds tighter than every binary operator, so no site needs parens.
+func (v *Visitor) foldUnsafeConstBuiltin(callExpr *ast.CallExpr) (string, bool) {
+	tv, ok := v.info.Types[callExpr]
+
+	if !ok || tv.Value == nil || tv.Value.Kind() != constant.Int {
+		return "", false
+	}
+
+	value, exact := constant.Uint64Val(tv.Value)
+
+	if !exact {
+		return "", false
+	}
+
+	csTypeName := v.getCSTypeName(tv.Type)
+
+	if len(csTypeName) == 0 {
+		csTypeName = "uintptr"
+	}
+
+	return fmt.Sprintf("/* %s */ (%s)%d", strings.TrimSpace(v.getPrintedNode(callExpr)), csTypeName, value), true
 }
 
 // unsafeFieldOperand resolves an `unsafe.Offsetof` operand — Go requires the form

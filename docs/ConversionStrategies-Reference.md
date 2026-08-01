@@ -8670,13 +8670,76 @@ sole build blocker on `crypto/md5` (its `benchmarkSize` alignment probe); a `ж`
 read as struct `Ꮡx` with field `Value`; and a two-level `cpu.X86.HasAVX` was rejected outright.
 `.GetType()` was also the wrong instrument on its own terms — it reports the **dynamic** type of a boxed
 or interface-typed operand where Go uses the static one, and it evaluates the operand, which Go does
-not. (`unsafe.Sizeof` is unaffected: it emits the generic `@unsafe.Sizeof(x)`, whose type argument C#
-infers, and at a *declaration* site go/types has already folded it to a constant — `internal static
-uintptr offsetX86HasAVX => /* unsafe.Offsetof(cpu.X86.HasAVX) */ 66;` in `runtime/cpuflags.cs`. Folding
-these at **expression** sites too — Go's own answer, no reflection, no operand evaluation — is a
-separate and larger change, deliberately not taken here.) Guarded by the `UnsafeOperations` behavioral
+not. (`unsafe.Sizeof` was unaffected: it emitted the generic `@unsafe.Sizeof(x)`, whose type argument C#
+infers.) Guarded by the `UnsafeOperations` behavioral
 test, extended with a conversion operand, an index operand, a selector through a pointer, a two-level
 selector, and a field whose name is a C# keyword; all output-compared vs `go run`.
+
+**This shape is now the FALLBACK, not the normal path** — expression sites fold to the constant (next
+section), and only a variable-size operand still reaches the `typeof(T)` emission. The promoted-field
+rule stated above is also *wrong about Go*, and the fold supersedes it: Go measures a promoted field
+against the **operand** struct, not against the struct that declares it.
+
+### `unsafe.Sizeof` / `Alignof` / `Offsetof` FOLD to a constant at expression sites
+Go computes all three at compile time from the operand's **static type**, never evaluates the operand,
+and yields a **typed `uintptr` constant** for any operand type of non-variable size. *Declaration*
+sites have always emitted that constant — `internal static uintptr offsetX86HasAVX => /*
+unsafe.Offsetof(cpu.X86.HasAVX) */ 66;` in `runtime/cpuflags.cs`. **Expression sites now emit the same
+form**, so one Go construct has one behavior:
+
+```go
+var hdr Header32
+data := make([]byte, unsafe.Sizeof(hdr))
+// …
+f.Type = Type(bo.Uint16(data[unsafe.Offsetof(hdr.Type):]))
+```
+```csharp
+var data = new slice<byte>((nint)(/* unsafe.Sizeof(hdr) */ (uintptr)52));
+// …
+f.Value.Type = ((Type)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Type) */ (uintptr)16)..]));
+```
+
+The value comes from `go/types`, which folds against the `types.Sizes` for the **loaded target
+`GOARCH`** — the Go compiler's own layout rules — so the emitted number is what the *Go* program
+computes, not a measurement of the emitted C#. The literal keeps its `uintptr` type because Go's
+constant is typed: a bare number would let `uadd := unsafe.Sizeof(*t)` infer C# `int`, and an `int`
+*variable* has no implicit conversion back to `nuint` (`internal/abi`'s `FuncType.InSlice` hands it to
+a `uintptr` parameter — CS1503). The cast is inert everywhere else: C#'s constant-expression conversion
+would have bound a bare literal anyway, and a cast binds tighter than every binary operator, so no site
+needs extra parentheses.
+
+Three things this fixes, beyond removing a reflection call from a construct Go settles at compile time:
+
+- **A latent throw.** golib's `Sizeof` rides `Marshal.SizeOf<T>`, which **throws** for a non-blittable
+  `T` — and a converted Go struct is non-blittable as soon as it holds a `slice<T>`, `@string`,
+  interface, or `ж<T>` field. `debug/elf`'s `Header32` holds an `array<byte>` (a `byte[]` inside), so
+  its `unsafe.Sizeof(hdr)` answered **56** where Go says 52 (a 4-byte-too-long header read), and the
+  reader's own `Section`/`Prog` — embedded struct + `io.ReaderAt` + `ж<SectionReader>` —
+  **throw** `ArgumentException: … cannot be marshaled as an unmanaged structure`. `runtime.mapiterinit`'s
+  `unsafe.Sizeof(hiter{})/goarch.PtrSize != 12` guard sits in front of every map range, and `hiter`
+  holds four `ж<…>` fields.
+- **Semantic fidelity.** A reflection answer measures the *CLR-marshalled* layout, which differs from
+  Go's whenever golib's field representation differs — `string` is 16 bytes in Go/amd64, `@string` is a
+  managed struct. `debug/elf` uses these values as **on-disk format offsets**; they must be Go's.
+- **Promoted fields.** Go measures `unsafe.Offsetof(e.count)` against the **operand** struct: with
+  `count` at 8 inside an embedded `Padded` that itself sits at 8, the answer is **16**. The reflection
+  form could see only one hop of the embedding chain; `go/types` folds the whole path.
+
+A **variable-size** operand still emits the run-time form (with a converter warning naming the site),
+because Go itself does not fold it: since Go 1.18 the operand may be **type-parameter-typed**, and the
+call is then not a constant. Four such sites exist in the stdlib — `slices.Compact`
+(`unsafe.Sizeof(a[0])` on `S ~[]E`), `internal/saferio` (`unsafe.Sizeof(v)` on `E`), and
+`runtime/minmax` (×2) — and they are why golib's `@unsafe` run-time forms are retained rather than
+deleted.
+
+Measured over the full stdlib (seeded A/B reconvert, Go 1.23.1, `windows/amd64`): **262 expression
+sites folded across 61 files in 16 packages** — `runtime` 129, `debug/elf` 70, `syscall` 17,
+`internal/poll` 13, then a long tail; declaration sites byte-identical. Design record:
+[`docs/Phase4/DESIGN-unsafe-constant-folding.md`](Phase4/DESIGN-unsafe-constant-folding.md). Guarded by
+`UnsafeOperations`, extended with all three builtins in call-argument, arithmetic, comparison,
+assignment and compound-assignment, and `make`-size positions, over structs whose Go layout is
+padding-, embedding- and array-sensitive (and non-blittable once converted); output-compared vs
+`go run`.
 
 ### Converting a Go pointer to `unsafe.Pointer`
 `unsafe.Pointer` is the golib class `unsafe_package.Pointer : ж<uintptr>` (a numeric address wrapper). A `uintptr`/`unsafe.Pointer` argument converts through the implicit `uintptr ↔ Pointer` operators, but a **Go pointer** argument (`*T`, emitted as the managed box `ж<T>`) has no such conversion — a plain cast `(@unsafe.Pointer)(ж<T>)` is `CS0030` (when `T` is unrelated to `uintptr`) or a runtime `InvalidCastException` (the base→derived downcast `(@unsafe.Pointer)(ж<uintptr>)` compiles but the object is a plain `ж<uintptr>`, not a `Pointer`). So `unsafe.Pointer(ptr)` for a pointer `ptr` is emitted through the golib helper that pins the pointed-to storage:
