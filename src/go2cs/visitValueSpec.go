@@ -93,10 +93,20 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 		if v.inFunction && valueSpec.Type == nil && len(valueSpec.Names) > 1 && len(valueSpec.Values) == 1 {
 			if _, isCall := valueSpec.Values[0].(*ast.CallExpr); isCall {
 				if _, isTuple := v.info.TypeOf(valueSpec.Values[0]).(*types.Tuple); isTuple {
+					// The gate is "does this name get a `Ꮡname` BOX", which is identHasHeapBox —
+					// NOT the raw identEscapesHeap flag, which the escape analysis blanket-sets for
+					// every INHERENTLY heap-allocated local (pointer/slice/map/chan/interface/func:
+					// already a reference, so no box is emitted unless its address is really taken).
+					// Reading the raw flag rejected every tuple whose results include an interface or
+					// a func — `var ctx, cancel = context.WithCancel(ctx)` (net sendfile_test) — and
+					// the per-name fallback then assigned the WHOLE ValueTuple to the first name with
+					// the rest `default!` (CS0029), the very defect this branch exists to prevent.
+					// It is the trap paramAddressTakenNeedsBox documents: a verdict the box gate then
+					// refuses leaves identEscapesHeap set with no box behind it.
 					allPlain := true
 
 					for _, ident := range valueSpec.Names {
-						if obj := v.info.Defs[ident]; obj != nil && v.identEscapesHeap[obj] {
+						if obj := v.info.Defs[ident]; obj != nil && v.identHasHeapBox(obj, obj.Type()) {
 							allPlain = false
 							break
 						}
