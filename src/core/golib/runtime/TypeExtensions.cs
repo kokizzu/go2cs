@@ -7,18 +7,11 @@
 // ReSharper disable CheckNamespace
 // ReSharper disable UnusedMember.Global
 // ReSharper disable InconsistentNaming
-// ReSharper disable InconsistentlySynchronizedField
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Threading;
 
 #pragma warning disable IL2075
 #pragma warning disable IL2067
@@ -31,207 +24,58 @@ using System.Threading;
 namespace go.golib;
 
 /// <summary>
-/// Defines type related helper functions.
+/// Runtime answers to questions asked of a <see cref="Type"/> that the C# type system settles at
+/// compile time but converted Go code has to settle at run time.
 /// </summary>
-public static class TypeExtensions
+/// <remarks>
+/// <para>
+/// This primary file holds the questions a single <see cref="Type"/> can answer ALONE: which
+/// operators it declares, whether it nominally implements an interface, and whether it is a
+/// converted <c>dyn</c> type. Everything here is memoized per type, because each answer is an
+/// immutable fact about the type while READING it is a reflection lookup that allocates.
+/// </para>
+/// <para>
+/// The class is <c>partial</c> because the rest of it is three concerns that share nothing but the
+/// name of this class, and burying any one inside the others is what made the single file hard to
+/// read. Each sibling carries a banner explaining itself:
+/// </para>
+/// <list type="bullet">
+/// <item><c>TypeExtensions.ExtensionMethodRegistry.cs</c> — the process-wide scan that discovers
+/// converted Go methods (emitted as C# extension methods) and makes them callable.</item>
+/// <item><c>TypeExtensions.GoMethodSets.cs</c> — Go's value-vs-pointer receiver rule and the
+/// structural interface-satisfaction probe built on it.</item>
+/// <item><c>TypeExtensions.NumericConversions.cs</c> — boxed scalar to Go scalar conversions.</item>
+/// </list>
+/// <para>
+/// The one cross-file coupling to know about: the registry's assembly-load hook clears caches
+/// declared in the method-sets file, because both are derived from the same scan. Its banner
+/// spells out the rule for adding another.
+/// </para>
+/// <para>
+/// <see cref="ImplementsInterface"/> stays HERE, next to the operator lookups, rather than with the
+/// method sets — and the contrast is worth keeping in view. It is the NOMINAL test: does this CLR
+/// type declare that interface, directly or through a base. Go's test is structural, and that one
+/// lives in the method-sets file. A type can pass one and fail the other in both directions.
+/// </para>
+/// </remarks>
+public static partial class TypeExtensions
 {
-    private static (MethodInfo, Type)[]? s_extensionMethods;
-    private static readonly Lock s_loadLock = new();
-    private static readonly ConcurrentDictionary<Type, MethodInfo[]> s_typeExtensionMethods = [];
-    private static readonly ConcurrentDictionary<Type, ImmutableHashSet<string>> s_typeExtensionMethodNames = [];
-    private static readonly ConcurrentDictionary<Type, ImmutableHashSet<string>> s_interfaceMethodNames = [];
-    private static readonly ConcurrentDictionary<(Type element, bool isPointer), List<MethodInfo>> s_goMethodSetCandidates = [];
-    private static readonly ConcurrentDictionary<Type, ImmutableHashSet<string>> s_structFieldNames = [];
     private static readonly ConcurrentDictionary<Type, bool> s_dynamicTypes = [];
     private static readonly ConcurrentDictionary<Type, MethodInfo?> s_typeEqualityOperators = [];
     private static readonly ConcurrentDictionary<Type, MethodInfo?> s_onesComplementOperators = [];
-    private static int s_registeredAssemblyLoadEvent;
-
-    private static (MethodInfo, Type)[] GetExtensionMethods()
-    {
-        if (Interlocked.CompareExchange(ref s_extensionMethods, null, null) is not null)
-            return s_extensionMethods!;
-
-        // Register assembly load event only once, used to clear extension method caches
-        if (Interlocked.CompareExchange(ref s_registeredAssemblyLoadEvent, 1, 0) == 0)
-            AppDomain.CurrentDomain.AssemblyLoad += ClearTypeCaches;
-
-        lock (s_loadLock)
-        {
-            // Check if another thread already loaded the extension methods
-            if (Volatile.Read(ref s_extensionMethods) is not null)
-                return s_extensionMethods!;
-
-            List<(MethodInfo, Type)> extensionMethods = [];
-
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-                LoadAssemblyExtensionMethods(assembly, extensionMethods);
-
-            s_extensionMethods = extensionMethods.ToArray();
-        }
-
-        return s_extensionMethods;
-    }
-
-    private static void ClearTypeCaches(object? sender, EventArgs e)
-    {
-        // Since not all assemblies may be loaded when initial type caches
-        // are created, we need to clear caches when any new assemblies are
-        // loaded so that caches can be recreated
-        lock (s_loadLock)
-            Volatile.Write(ref s_extensionMethods, null);
-
-        s_typeExtensionMethods.Clear();
-        s_typeExtensionMethodNames.Clear();
-        s_interfaceMethodNames.Clear();
-        s_goMethodSetCandidates.Clear();
-    }
-
-    private static void LoadAssemblyExtensionMethods(Assembly assembly, List<(MethodInfo, Type)> extensionMethods)
-    {
-        string? name = assembly.FullName;
-
-        if (string.IsNullOrEmpty(name))
-            return;
-
-        // Ignore extensions methods from the .NET framework
-        if (name.StartsWith("System.") || name.StartsWith("netstandard") || name.StartsWith("Microsoft.") || name.StartsWith("WindowsBase") || name.StartsWith("go.golib."))
-            return;
-
-        Debug.WriteLine($"Scanning extensions for assembly \"{assembly.FullName}\"...");
-
-        foreach (Type type in assembly.GetTypes())
-        foreach (MethodInfo extensionMethod in getExtensionMethods(type))
-            extensionMethods.Add((extensionMethod, extensionMethod.GetExtensionTargetType()));
-        
-        return;
-
-        static IEnumerable<MethodInfo> getExtensionMethods(Type type)
-        {
-            if (!type.IsSealed || type.IsNested || type.IsGenericType)
-                return [];
-
-            return type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(methodInfo => methodInfo.IsDefined(typeof(ExtensionAttribute), false));
-        }
-    }
-
-    private sealed class TypePrecedenceComparer : Comparer<Type>
-    {
-        private readonly Type m_targetType;
-
-        public TypePrecedenceComparer(Type targetType)
-        {
-            m_targetType = targetType;
-        }
-
-        public override int Compare(Type? x, Type? y)
-        {
-            return Comparer<int>.Default.Compare(RelationDistance(x), RelationDistance(y));
-        }
-
-        private int RelationDistance(Type? type)
-        {
-            if (type is null)
-                return int.MaxValue;
-
-            int distance = 0;
-
-            while (!IsDirectEquivalent(type))
-            {
-                type = type.BaseType;
-                distance++;
-
-                if (type is null || type == typeof(object))
-                {
-                    // No direct relation exists
-                    distance = int.MaxValue;
-                    break;
-                }
-            }
-
-            return distance;
-        }
-
-        private bool IsDirectEquivalent(Type type)
-        {
-            if (m_targetType.IsInterface)
-            {
-                if (type.IsInterface)
-                    return type.ImplementsInterface(m_targetType) || m_targetType.ImplementsInterface(type);
-
-                foreach (Type interfaceType in type.GetInterfaces())
-                {
-                    if (interfaceType == m_targetType || interfaceType.ImplementsInterface(m_targetType))
-                        return true;
-                }
-
-                return false;
-            }
-
-            if (!type.IsInterface)
-                return type == m_targetType;
-
-            foreach (Type interfaceType in m_targetType.GetInterfaces())
-            {
-                if (interfaceType == type || interfaceType.ImplementsInterface(type))
-                    return true;
-            }
-
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Gets an object's pointer value, for display purposes, in hexadecimal format.
-    /// </summary>
-    /// <param name="ptr"></param>
-    /// <returns>Object pointer value as string in hexadecimal format.</returns>
-    public static string PrintPointer<T>(this ж<T> ptr)
-    {
-        if (ptr == nil)
-            return "<nil>";
-
-        // An array/slice-element reference can sit outside its backing store's valid range —
-        // e.g. a pointer at the zero index of an EMPTY backing (unsafe.StringData semantics) —
-        // where reading Value would throw. Display only needs an address-like token, so print
-        // the backing store's identity instead of dereferencing the element.
-        if (ptr.ArrayRef is var (array, index) && !array.IndexIsValid(index))
-            return array.PrintPointer();
-
-        return ptr.Value.PrintPointer();
-    }
-
-    /// <summary>
-    /// Gets an object's pointer value, for display purposes, in hexadecimal format.
-    /// </summary>
-    /// <param name="instance"></param>
-    /// <returns>Object pointer value as string in hexadecimal format.</returns>
-    public static unsafe string PrintPointer(this object? instance)
-    {
-        if (instance is null)
-            return "<nil>";
-
-        try
-        {
-            // Do not attempt to use this pointer, its address is unfixed
-            // and being accessed for display purposes only. The GC will
-            // move this pointer location at will.
-            TypedReference reference = __makeref(instance);
-            nint ptr = **(nint**)&reference;
-            return $"0x{ptr:x}";
-        }
-        catch
-        {
-            return "<nil>";
-        }
-    }
 
     /// <summary>
     /// Get the "==" equality operator for the specified <paramref name="type"/>.
     /// </summary>
     /// <param name="type">Type to search for equality operator.</param>
     /// <returns>Equality operator for <paramref name="type"/> if found; otherwise, <c>null</c>.</returns>
+    /// <remarks>
+    /// Go's <c>==</c> on two interface values compares their DYNAMIC values, whose type is not known
+    /// until run time, so the equality tail in <c>builtin</c> has to find the right <c>op_Equality</c>
+    /// by reflection and invoke it. Only the exact <c>(type, type)</c> overload counts: a converted
+    /// type routinely declares comparisons against <c>NilType</c> and against its underlying type as
+    /// well, and picking one of those would compare the wrong pair.
+    /// </remarks>
     public static MethodInfo? GetEqualityOperator(this Type type)
     {
         return s_typeEqualityOperators.GetOrAdd(type, _ => type.GetMethod("op_Equality", BindingFlags.Static | BindingFlags.Public, [type, type]));
@@ -240,7 +84,7 @@ public static class TypeExtensions
     /// <summary>
     /// Get the "~" ones complement operator for the specified <paramref name="type"/>.
     /// </summary>
-    /// <param name="type">Type to search for equality operator.</param>
+    /// <param name="type">Type to search for the ones complement operator.</param>
     /// <returns>Ones complement operator for <paramref name="type"/> if found; otherwise, <c>null</c>.</returns>
     /// <remarks>
     /// For go2cs pointers, <see cref="go.ж{T}"/>, the ones complement operator is used to dereference
@@ -262,6 +106,15 @@ public static class TypeExtensions
     /// <c>true</c> if <paramref name="targetType"/> implements specified <paramref name="interfaceType"/>;
     /// otherwise, <c>false</c>.
     /// </returns>
+    /// <remarks>
+    /// The NOMINAL test — the CLR's own "does this type declare that interface", walked up the base
+    /// chain and through inherited interfaces. It is NOT the Go question, and the two disagree in
+    /// both directions: a converted type satisfies a Go interface it has never heard of merely by
+    /// having the methods, and golib's own core interfaces carry static members no Go method set
+    /// contains. <c>StructurallyImplements</c> (TypeExtensions.GoMethodSets.cs) is the Go answer.
+    /// This one is used where CLR assignability really is the question — ranking extension-method
+    /// candidates by how closely their receiver relates to a target type.
+    /// </remarks>
     public static bool ImplementsInterface(this Type? targetType, Type interfaceType)
     {
         if (!interfaceType.IsInterface)
@@ -276,429 +129,6 @@ public static class TypeExtensions
         }
 
         return false;
-    }
-
-    /// <summary>
-    /// Gets the type of the extension target.
-    /// </summary>
-    /// <param name="methodInfo">Method info.</param>
-    /// <returns>
-    /// Type of the extension target, i.e., type of the first parameter.
-    /// </returns>
-    /// <exception cref="InvalidOperationException">Method has no parameters and cannot be an extension method.</exception>
-    public static Type GetExtensionTargetType(this MethodInfo methodInfo)
-    {
-        ParameterInfo[] parameters = methodInfo.GetParameters();
-
-        if (parameters.Length == 0)
-            throw new InvalidOperationException("Method has no parameters and cannot be an extension method.");
-
-        return parameters[0].ParameterType;
-    }
-
-    /// <summary>
-    /// Finds all the extensions methods for <paramref name="targetType"/>.
-    /// </summary>
-    /// <param name="targetType">Target <see cref="Type"/> to search.</param>
-    /// <returns>Enumeration of reflected method metadata of <paramref name="targetType"/> extension methods.</returns>
-    public static MethodInfo[] GetExtensionMethods(this Type targetType)
-    {
-        return s_typeExtensionMethods.GetOrAdd(targetType, _ =>
-        {
-            (MethodInfo method, Type type)[] extensionMethods = GetExtensionMethods();
-
-            bool isGenericType = (targetType == typeof(ж<>) ? targetType.GetGenericArguments()[0] : targetType).IsGenericType;
-
-            if (isGenericType)
-                targetType = targetType.GetGenericTypeDefinition();
-
-            IEnumerable<MethodInfo> methods = isGenericType ?
-                extensionMethods.Where(value => isGenericMatch(value.type)).Select(value => value.method) :
-                extensionMethods.Where(value => value.type.IsAssignableFrom(targetType)).Select(value => value.method);
-
-            return methods.ToArray();
-
-            bool isGenericMatch(Type methodType)
-            {
-                if (methodType.IsGenericType)
-                    return methodType.GetGenericTypeDefinition() == targetType;
-
-                return methodType == targetType;
-            }
-        });
-    }
-
-    /// <summary>
-    /// Gets all the extension method names for <paramref name="targetType"/>.
-    /// </summary>
-    /// <param name="targetType">Target <see cref="Type"/> to search.</param>
-    /// <returns>A collection of extension method names for <paramref name="targetType"/>.</returns>
-    public static ImmutableHashSet<string> GetExtensionMethodNames(this Type targetType)
-    {
-        return s_typeExtensionMethodNames.GetOrAdd(targetType, _ => [.. targetType.GetExtensionMethods().Select(info => info.Name)]);
-    }
-
-    /// <summary>
-    /// Determines, by Go DUCK-TYPING (structural) rules, whether the method set of
-    /// <paramref name="valueType"/> satisfies every method of <paramref name="interfaceType"/> —
-    /// matching each interface method by NAME <em>and</em> full SIGNATURE (parameter and return types).
-    /// </summary>
-    /// <param name="valueType">
-    /// Concrete runtime type of the value being asserted. A pointer value is the box <c>ж&lt;X&gt;</c>.
-    /// </param>
-    /// <param name="interfaceType">Anonymous or named interface the value is asserted against.</param>
-    /// <returns>
-    /// <c>true</c> if <paramref name="valueType"/> structurally implements <paramref name="interfaceType"/>;
-    /// otherwise, <c>false</c>.
-    /// </returns>
-    /// <remarks>
-    /// This is the runtime gate for duck-typed type assertions (<c>x.(interface{ … })</c>). It replaces a
-    /// prior NAME-ONLY test that had two defects:
-    /// <list type="number">
-    /// <item>It conflated same-named methods whose signatures differ — <c>Unwrap() error</c> versus
-    /// <c>Unwrap() []error</c> — so a value implementing one matched the interface for the other and the
-    /// generated duck-typed adapter then failed to bind a delegate (a <see cref="NotImplementedException"/>).</item>
-    /// <item>For a pointer value <c>ж&lt;X&gt;</c> it admitted the pointer-receiver methods of <em>every</em>
-    /// type, because <see cref="GetExtensionMethodNames"/> collapses a closed <c>ж&lt;X&gt;</c> to the open
-    /// <c>ж&lt;&gt;</c> generic definition (correct for MinBy-precedence single dispatch, wrong for a
-    /// name-set membership test).</item>
-    /// </list>
-    /// Both are corrected here: candidates are restricted to the extension methods whose receiver actually
-    /// belongs to <paramref name="valueType"/>'s Go method set (a pointer box <c>ж&lt;X&gt;</c> exposes the
-    /// value- and pointer-receiver methods of <c>X</c>; a plain value <c>X</c> exposes only its
-    /// value-receiver methods), and each candidate is compared by full signature. Open-generic receiver
-    /// methods keep the prior name-only match, since their signatures carry type parameters that cannot be
-    /// compared structurally against the interface's concrete signature (the defects being fixed are all on
-    /// closed types).
-    /// </remarks>
-    public static bool StructurallyImplements(this Type valueType, Type interfaceType)
-    {
-        MethodInfo[] interfaceMethods = [.. interfaceType.GetInterfaceMethods()];
-
-        // All types implement an empty interface.
-        if (interfaceMethods.Length == 0)
-            return true;
-
-        // Resolve the value's Go method-set receiver element: a pointer box ж<X> exposes BOTH the value-
-        // and pointer-receiver methods of X; a plain value X exposes only its value-receiver methods.
-        ResolveReceiverElement(valueType, out Type valueElement, out bool valueIsPointer);
-
-        // Collect the extension methods whose receiver belongs to this value's method set.
-        List<MethodInfo> candidates = GetGoMethodSetCandidates(valueElement, valueIsPointer);
-
-        // Every interface method must be satisfied by a candidate with the same name AND signature.
-        foreach (MethodInfo interfaceMethod in interfaceMethods)
-        {
-            bool satisfied = false;
-
-            foreach (MethodInfo candidate in candidates)
-            {
-                if (candidate.Name != interfaceMethod.Name)
-                    continue;
-
-                // An open-generic receiver method (a method generic over its receiver's type parameter)
-                // carries type parameters in its signature that cannot be compared structurally against the
-                // interface's concrete signature — keep the prior name-only match for those.
-                if (candidate.IsGenericMethodDefinition || candidate.GetParameters()[0].ParameterType.ContainsGenericParameters)
-                {
-                    satisfied = true;
-                    break;
-                }
-
-                if (SignaturesMatch(interfaceMethod, candidate))
-                {
-                    satisfied = true;
-                    break;
-                }
-            }
-
-            if (!satisfied)
-                return false;
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Collects the extension methods whose receiver belongs to the Go METHOD SET of element type
-    /// <paramref name="valueElement"/>, viewed as a pointer (<c>*X</c>) or as a value (<c>X</c>).
-    /// </summary>
-    /// <param name="valueElement">Go element type, i.e. the pointee of a receiver box or the value's own type.</param>
-    /// <param name="valueIsPointer"><c>true</c> for the <c>*X</c> method set (value AND pointer receivers); <c>false</c> for <c>X</c>'s (value receivers only).</param>
-    /// <returns>Candidate receiver methods, in no particular order.</returns>
-    /// <remarks>
-    /// This is the ONE place Go's value-vs-pointer receiver rule is applied at run time. Both the
-    /// structural probe (<see cref="StructurallyImplements"/>) and the duck-typing shell binder
-    /// (<see cref="AdapterBinder"/>) resolve through it, so a shell can never bind a method the probe
-    /// would not have counted — the two would otherwise be free to disagree about a method set, and a
-    /// value-sourced shell that picked up a pointer-receiver method would make an assertion Go REJECTS
-    /// succeed. Deliberately keyed on the element + pointer-ness rather than on the concrete value type
-    /// so no caller has to construct a <c>ж&lt;X&gt;</c> <see cref="Type"/> just to ask the question.
-    /// </remarks>
-    internal static List<MethodInfo> GetGoMethodSetCandidates(Type valueElement, bool valueIsPointer)
-    {
-        return s_goMethodSetCandidates.GetOrAdd((valueElement, valueIsPointer), static key =>
-        {
-            (Type valueElement, bool valueIsPointer) = key;
-            (MethodInfo method, Type receiver)[] allExtensionMethods = GetExtensionMethods();
-            List<MethodInfo> candidates = [];
-
-            foreach ((MethodInfo method, Type receiver) in allExtensionMethods)
-            {
-                Type receiverType = receiver.IsByRef ? receiver.GetElementType()! : receiver;
-                ResolveReceiverElement(receiverType, out Type receiverElement, out bool receiverIsPointer);
-
-                // Pointer-receiver methods are NOT part of a plain value's method set (Go semantics).
-                // A pointer receiver appears in TWO emitted shapes: the RecvGenerator's ж<X> overload
-                // (receiverIsPointer above) and the original [GoRecv] `this ref X` extension — the
-                // byref strip on the line above erases the latter's pointer-ness, so ask the marker
-                // attribute directly (a `this ref` receiver without [GoRecv] does not exist in
-                // emitted code; value receivers are always by-value `this X`).
-                if (!valueIsPointer && (receiverIsPointer || method.GetCustomAttribute<GoRecvAttribute>() is not null))
-                    continue;
-
-                if (ReceiverElementMatches(receiverElement, valueElement))
-                    candidates.Add(method);
-            }
-
-            return candidates;
-        });
-    }
-
-    // Splits a receiver type into its concrete element type and whether it is a pointer box ж<X>.
-    internal static void ResolveReceiverElement(Type type, out Type element, out bool isPointer)
-    {
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ж<>))
-        {
-            element = type.GetGenericArguments()[0];
-            isPointer = true;
-        }
-        else
-        {
-            element = type;
-            isPointer = false;
-        }
-    }
-
-    // Determines whether an extension method's receiver element belongs to the asserted value's method set.
-    private static bool ReceiverElementMatches(Type receiverElement, Type valueElement)
-    {
-        if (receiverElement == valueElement)
-            return true;
-
-        // An open-generic receiver (a method on a Go generic type, receiver e.g. List<T>) matches a
-        // constructed value of the same generic definition (List<int>).
-        if (receiverElement.ContainsGenericParameters && receiverElement.IsGenericType &&
-            valueElement.IsGenericType &&
-            receiverElement.GetGenericTypeDefinition() == valueElement.GetGenericTypeDefinition())
-            return true;
-
-        // Safety net for promotion/embedding and base relationships — mirrors the assignability rule the
-        // legacy value-type extension lookup used.
-        return receiverElement.IsAssignableFrom(valueElement);
-    }
-
-    // Compares a duck-typed interface method against a candidate extension method by full signature.
-    // The candidate's first parameter is the extension receiver; the interface method has none.
-    private static bool SignaturesMatch(MethodInfo interfaceMethod, MethodInfo candidate)
-    {
-        if (!TypesEquivalent(interfaceMethod.ReturnType, candidate.ReturnType))
-            return false;
-
-        ParameterInfo[] interfaceParameters = interfaceMethod.GetParameters();
-        ParameterInfo[] candidateParameters = candidate.GetParameters();
-
-        if (interfaceParameters.Length != candidateParameters.Length - 1)
-            return false;
-
-        for (int i = 0; i < interfaceParameters.Length; i++)
-        {
-            if (!TypesEquivalent(interfaceParameters[i].ParameterType, candidateParameters[i + 1].ParameterType))
-                return false;
-        }
-
-        return true;
-    }
-
-    // Type identity for signature comparison, disregarding by-ref decoration (ref/in/out parameters).
-    private static bool TypesEquivalent(Type left, Type right)
-    {
-        if (left.IsByRef)
-            left = left.GetElementType()!;
-
-        if (right.IsByRef)
-            right = right.GetElementType()!;
-
-        return left == right;
-    }
-
-    /// <summary>
-    /// Determines if an extension method with the specified <paramref name="methodName"/> exists for the <paramref name="targetType"/>.
-    /// </summary>
-    /// <param name="targetType">Target <see cref="Type"/> to search.</param>
-    /// <param name="methodName">Name of extension method to find.</param>
-    /// <returns><c>true</c> if extension method exists; otherwise, <c>false</c>.</returns>
-    public static bool ExtensionMethodExists(this Type targetType, string methodName)
-    {
-        // Note that match by function name alone is sufficient as Go does not currently support function overloading by adjusting signature:
-        // https://golang.org/doc/faq#overloading
-        return targetType.GetExtensionMethods().Any(methodInfo => methodInfo.Name == methodName);
-    }
-
-    /// <summary>
-    /// Attempts to find the best precedence-wise matching extension method called <paramref name="methodName"/> for the <paramref name="targetType"/>.
-    /// </summary>
-    /// <param name="targetType">Target <see cref="Type"/> to search.</param>
-    /// <param name="methodName">Name of extension method to find.</param>
-    /// <returns>Method metadata of extension method, <paramref name="methodName"/>, for <paramref name="targetType"/> if found; otherwise, <c>null</c>.</returns>
-    public static MethodInfo? GetExtensionMethod(this Type targetType, string methodName)
-    {
-        // Note that match by function name alone is sufficient as Go does not currently support function overloading by adjusting signature:
-        // https://golang.org/doc/faq#overloading
-        return targetType.GetExtensionMethods().Where(methodInfo => methodInfo.Name == methodName).MinBy(GetExtensionTargetType, new TypePrecedenceComparer(targetType));
-    }
-
-    /// <summary>
-    /// Returns all method names defined in an interface type, including those inherited from other interfaces.
-    /// </summary>
-    /// <param name="interfaceType">The interface type to examine. Must be an interface.</param>
-    /// <returns>A collection of method names defined in the interface and its base interfaces.</returns>
-    /// <exception cref="ArgumentException">Thrown when the provided type is not an interface.</exception>
-    public static ImmutableHashSet<string> GetInterfaceMethodNames(this Type interfaceType)
-    {
-        return s_interfaceMethodNames.GetOrAdd(interfaceType, _ => [..interfaceType.GetInterfaceMethods().Select(info => info.Name)]);
-    }
-
-    /// <summary>
-    /// Returns detailed information about methods defined in an interface type, including those inherited from other interfaces.
-    /// </summary>
-    /// <param name="interfaceType">The interface type to examine. Must be an interface.</param>
-    /// <returns>A collection of MethodInfo objects for methods defined in the interface and its base interfaces.</returns>
-    /// <exception cref="ArgumentException">Thrown when the provided type is not an interface.</exception>
-    public static IEnumerable<MethodInfo> GetInterfaceMethods(this Type interfaceType)
-    {
-        // Verify the type is an interface
-        if (!interfaceType.IsInterface)
-            throw new ArgumentException($"The type '{interfaceType.FullName}' is not an interface.", nameof(interfaceType));
-
-        // Get all methods directly defined on this interface
-        MethodInfo[] methods = interfaceType.GetMethods(BindingFlags.Public | BindingFlags.Instance);
-
-        // Get all base interfaces
-        Type[] baseInterfaces = interfaceType.GetInterfaces();
-
-        // If there are no base interfaces, return just the direct methods
-        if (baseInterfaces.Length == 0)
-            return methods;
-
-        // Otherwise, combine the direct methods with inherited methods
-        HashSet<MethodInfo> allMethods = [..methods];
-
-        // Add methods from all base interfaces. The explicit BindingFlags MUST match the direct-member
-        // call above, and the reason is that reflection's DEFAULT flags include STATICS: golib's
-        // hand-written core interfaces expose static duck-typing conversion helpers (`error.As<T>`,
-        // `fmt.Stringer.As<T>`), which are not part of any Go method set. Collect those and
-        // StructurallyImplements demands a static `As` from the dynamic value's Go METHOD SET — which
-        // no Go type can ever satisfy — so every interface that EMBEDS such a base probes FALSE.
-        // Measured when that happened: an anonymous `interface{ error; Temporary() bool }` (net.Error's
-        // shape) asserted against a *tempErr that plainly has both methods answered MISS.
-        foreach (Type baseInterface in baseInterfaces)
-        {
-            MethodInfo[] baseMethods = baseInterface.GetMethods(BindingFlags.Public | BindingFlags.Instance);
-
-            foreach (MethodInfo method in baseMethods)
-                allMethods.Add(method);
-        }
-
-        return allMethods;
-    }
-
-    /// <summary>
-    /// Gets the names of all fields in a struct type.
-    /// </summary>
-    /// <param name="valueType">Struct type to search.</param>
-    /// <returns>Names of all fields in the struct type.</returns>
-    /// <exception cref="ArgumentException">Thrown when the provided type is not a value type.</exception>
-    public static ImmutableHashSet<string> GetStructFieldNames(this Type valueType)
-    {
-        return s_structFieldNames.GetOrAdd(valueType, _ =>
-        {
-            if (!valueType.IsValueType)
-                throw new ArgumentException($"Type '{valueType.FullName}' is not a value type.", nameof(valueType));
-
-            FieldInfo[] fields = valueType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-
-            return [..fields.Select(field => field.Name)];
-        });
-    }
-
-    /// <summary>
-    /// Creates a delegate for the given static method metadata.
-    /// </summary>
-    /// <param name="methodInfo">Method metadata of extension method.</param>
-    /// <param name="delegateType">Specific delegate type to apply; otherwise, defaults to an auto-derived Func or Action delegate.</param>
-    /// <returns>Callable delegate referencing extension method in <paramref name="methodInfo"/> or <c>null</c> if specified delegate signature does not match.</returns>
-    public static Delegate? CreateStaticDelegate(this MethodInfo methodInfo, Type? delegateType = null)
-    {
-        if (delegateType is null)
-            return methodInfo.CreateStaticDelegate(null!, out bool _);
-
-        try
-        {
-            if (!delegateType.IsGenericType || !methodInfo.IsGenericMethod)
-                return Delegate.CreateDelegate(delegateType, methodInfo);
-
-            Type extensionTarget = delegateType.GetGenericArguments()[0];
-
-            return Delegate.CreateDelegate(delegateType, extensionTarget.IsGenericType ?
-                methodInfo.MakeGenericMethod(extensionTarget.GetGenericArguments()[0]) :
-                methodInfo.MakeGenericMethod(extensionTarget));
-        }
-        catch (ArgumentException)
-        {
-            return null!;
-        }
-    }
-
-    /// <summary>
-    /// Creates a delegate for the given static method metadata.
-    /// </summary>
-    /// <param name="methodInfo">Method metadata of extension method.</param>
-    /// <param name="delegateType">Specific delegate type to apply; set to <c>null</c> to use an auto-derived Func or Action delegate.</param>
-    /// <param name="isByRef">Determines if extension target is accessed by reference.</param>
-    /// <returns>Callable delegate referencing extension method in <paramref name="methodInfo"/> or <c>null</c> if specified delegate signature does not match.</returns>
-    public static Delegate? CreateStaticDelegate(this MethodInfo methodInfo, Type? delegateType, out bool isByRef)
-    {
-        Func<Type[], Type> getMethodType;
-        List<Type> types = methodInfo.GetParameters().Select(paramInfo => paramInfo.ParameterType).ToList();
-
-        if (delegateType is null)
-        {
-            if (methodInfo.ReturnType == typeof(void))
-            {
-                getMethodType = Expression.GetActionType;
-            }
-            else
-            {
-                getMethodType = Expression.GetFuncType;
-                types.Add(methodInfo.ReturnType);
-            }
-        }
-        else
-        {
-            getMethodType = _ => delegateType;
-        }
-
-        isByRef = types[0].IsByRef;
-
-        try
-        {
-            return Delegate.CreateDelegate(getMethodType(types.ToArray()), methodInfo);
-        }
-        catch (ArgumentException)
-        {
-            return null;
-        }
     }
 
     /// <summary>
@@ -736,131 +166,6 @@ public static class TypeExtensions
             GoTypeAttribute? goType = type.GetCustomAttribute<GoTypeAttribute>();
             return goType is not null && goType.Definition == "dyn";
         });
-    }
-
-    /// <summary>
-    /// Returns a Go type equivalent to the specified value.
-    /// </summary>
-    /// <param name="value">An object that implements the <see cref="IConvertible" /> interface.</param>
-    /// <returns>A Go type whose value is equivalent to <paramref name="value"/>.</returns>
-    public static object ConvertToType<T>(in T? value) where T : IConvertible
-    {
-        if (value is null)
-            return nil;
-
-        return value.GetTypeCode() switch
-        {
-            TypeCode.Boolean => value.ToBoolean(null),
-            TypeCode.Char => (rune)value.ToChar(null),
-            TypeCode.SByte => value.ToSByte(null),
-            TypeCode.Byte => value.ToByte(null),
-            TypeCode.Int16 => value.ToInt16(null),
-            TypeCode.UInt16 => value.ToUInt16(null),
-            TypeCode.Int32 => value.ToInt32(null),
-            TypeCode.UInt32 => value.ToUInt32(null),
-            TypeCode.Int64 => value.ToInt64(null),
-            TypeCode.UInt64 => value.ToUInt64(null),
-            TypeCode.Single => value.ToSingle(null),
-            TypeCode.Double => value.ToDouble(null),
-            _ => (@string)value.ToString(null)
-        };
-    }
-
-    /// <summary>
-    /// Tries to cast input value as an integer.
-    /// </summary>
-    /// <param name="value">Value to try to cast.</param>
-    /// <param name="integer">Casted value.</param>
-    /// <returns><c>true</c> if cast succeeded; otherwise, <c>false</c>.</returns>
-    public static bool TryCastAsInteger(this object value, out ulong integer)
-    {
-        switch (value)
-        {
-            case char charVal:
-                integer = charVal;
-                return true;
-            case bool boolVal:
-                integer = boolVal ? 1UL : 0UL;
-                return true;
-            case sbyte sbyteVal:
-                integer = (ulong)sbyteVal;
-                return true;
-            case byte byteVal:
-                integer = byteVal;
-                return true;
-            case short shortVal:
-                integer = (ulong)shortVal;
-                return true;
-            case ushort ushortVal:
-                integer = ushortVal;
-                return true;
-            case int intVal:
-                integer = (ulong)intVal;
-                return true;
-            case uint uintVal:
-                integer = uintVal;
-                return true;
-            case long longVal:
-                integer = (ulong)longVal;
-                return true;
-            case ulong ulongVal:
-                integer = ulongVal;
-                return true;
-        }
-
-        integer = 0;
-        return false;
-    }
-
-    /// <summary>
-    /// Tries to cast input value as an integer.
-    /// </summary>
-    /// <typeparam name="T">Type of value.</typeparam>
-    /// <param name="value">Value to try to cast.</param>
-    /// <param name="integer">Casted value.</param>
-    /// <returns><c>true</c> if cast succeeded; otherwise, <c>false</c>.</returns>
-    public static bool TryCastAsInteger<T>(this T value, out ulong integer) where T : unmanaged, IConvertible
-    {
-        return ((object)value).TryCastAsInteger(out integer);
-    }
-
-    /// <summary>
-    /// Determines if <see cref="IConvertible"/> <paramref name="value"/> is a numeric type.
-    /// </summary>
-    /// <param name="value">Value to check.</param>
-    /// <returns><c>true</c> is <paramref name="value"/> is a numeric type; otherwise, <c>false</c>.</returns>
-    public static bool IsNumeric(this IConvertible? value)
-    {
-        return value is not null && value.GetTypeCode().IsNumericType();
-    }
-
-    /// <summary>
-    /// Determines if <paramref name="typeCode"/> is a numeric type, i.e., one of:
-    /// <see cref="TypeCode.Boolean"/>, <see cref="TypeCode.SByte"/>, <see cref="TypeCode.Byte"/>,
-    /// <see cref="TypeCode.Int16"/>, <see cref="TypeCode.UInt16"/>, <see cref="TypeCode.Int32"/>,
-    /// <see cref="TypeCode.UInt32"/>, <see cref="TypeCode.Int64"/>, <see cref="TypeCode.UInt64"/>
-    /// <see cref="TypeCode.Single"/>, <see cref="TypeCode.Double"/> or <see cref="TypeCode.Decimal"/>.
-    /// </summary>
-    /// <param name="typeCode"><see cref="TypeCode"/> value to check.</param>
-    /// <returns><c>true</c> if <paramref name="typeCode"/> is a numeric type; otherwise, <c>false</c>.</returns>
-    public static bool IsNumericType(this TypeCode typeCode)
-    {
-        return typeCode switch
-        {
-            TypeCode.Boolean => true,
-            TypeCode.SByte => true,
-            TypeCode.Byte => true,
-            TypeCode.Int16 => true,
-            TypeCode.UInt16 => true,
-            TypeCode.Int32 => true,
-            TypeCode.UInt32 => true,
-            TypeCode.Int64 => true,
-            TypeCode.UInt64 => true,
-            TypeCode.Single => true,
-            TypeCode.Double => true,
-            TypeCode.Decimal => true,
-            _ => false
-        };
     }
 
     private static bool IsConversionOperator(MethodInfo method, Type genericOfType, Type targetType)
