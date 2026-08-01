@@ -2,7 +2,7 @@
 
 > "I've been programming in C# for many years, even so, I try to keep an eye on new tech being developed, regardless of language -- one common choice for new applications these days is Go. Often the easiest way for me to experiment with new technology is to integrate it with some of my existing C# code, hence the desire for this project -- besides, I figured I might learn something about building apps in Go in the process."
 
-That was [2018](README.md#milestones), and it was a personal itch: learn Go by writing it into something I already knew. The reasons to build it are better than curiosity, and most are things I can *show* you rather than argue about. So -- why a Go to C# transpiler?
+That was [2018](README.md#milestones), and it was a personal itch: learn Go by writing it into something I already knew. Eight years and two full converter architectures later, the desire is still here -- but the reasons for having a project like this have gotten a lot better than "I was curious". More to the point, most of them are now things I can *show* you instead of argue about, so here is the longer answer to *why a Go to C# transpiler?*
 
 ## Why convert Go to C#?
 
@@ -25,7 +25,10 @@ For long-running services the JIT is the better bet -- it wins the tight-loop ro
 
 **Readability, so conversion isn't a one-way door.** The output is meant to be *read*. Receiver methods become extension methods, multiple returns become tuples, embedded structs become promoted fields, and the machinery supplying Go's semantics -- the `golib` runtime and a set of Roslyn source generators -- stays out of sight in partial and generated files. [Conversion Strategies](ConversionStrategies.md) maps this construct by construct; the README's [side-by-side table](README.md#real-standard-library-conversions-side-by-side) puts real converted standard-library files next to their Go originals so you can judge it yourself.
 
-That matters practically as much as aesthetically: if converted code is legible, a team can adopt it and *maintain* it -- fix a bug in the C# on a Tuesday afternoon -- instead of being locked into re-running a transpiler forever, or owning machine output nobody can review. The transpile step is fast and cheap besides, so you can simply *code in Go, run in .NET*.
+That matters practically as much as aesthetically: if converted code is legible, a team can adopt it and *maintain* it -- fix a bug in the C# on a Tuesday afternoon -- instead of being locked into re-running a transpiler forever, or owning machine output nobody can review. 
+
+
+That said, the tranpile step is fast and cheap -- technically this code allows one to "_code in Go, run in .NET_", unto here unheard of -- this is the truest validation of providing another place where existing Go code can run.
 
 **Learning and reference.** Because the two languages are mapped construct for construct, the output doubles as a translation dictionary for developers crossing between them. [Tour of go2cs](https://github.com/ritchiecarroll/go2cs/blob/master/src/tour/README.md) puts the official Tour of Go on one side of the window and the generated C# on the other, live, with buttons to transpile, build and run the .NET side. That's the tool I wanted for myself in 2018.
 
