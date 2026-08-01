@@ -3491,6 +3491,114 @@ public static class builtin
         Goroutine.Start(() => action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16));
     }
 
+
+    /// <summary>
+    /// Starts a goroutine on a VALUE-RETURNING function, discarding the result - Go discards the
+    /// return values of `go f(...)` exactly as it does a deferred call's. Without these Func twins a
+    /// value-returning literal or method group cannot bind the Action overloads above (CS8934 /
+    /// CS0407; net's `go func(ln Listener) (retErr error) {…}(ln)`). Mirrors the deferǃ Func twins.
+    /// </summary>
+    public static void goǃ<TResult>(Func<TResult> action)
+    {
+        Goroutine.Start(() => { action(); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T, TResult>(Func<T, TResult> action, T arg)
+    {
+        Goroutine.Start(() => { action(arg); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, TResult>(Func<T1, T2, TResult> action, T1 arg1, T2 arg2)
+    {
+        Goroutine.Start(() => { action(arg1, arg2); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> action, T1 arg1, T2 arg2, T3 arg3)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, TResult>(Func<T1, T2, T3, T4, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, T5, TResult>(Func<T1, T2, T3, T4, T5, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4, arg5); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, T5, T6, TResult>(Func<T1, T2, T3, T4, T5, T6, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4, arg5, arg6); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, T5, T6, T7, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15); });
+    }
+
+    /// <summary>Starts a goroutine on a value-returning function, discarding the result.</summary>
+    public static void goǃ<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, TResult>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, TResult> action, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16)
+    {
+        Goroutine.Start(() => { action(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16); });
+    }
+
     #endregion
 
     // ** Go defer Handlers with Parameters **
