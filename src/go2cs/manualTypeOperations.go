@@ -306,6 +306,19 @@ var manualConversionFuncs = map[string]map[string]bool{
 	// a non-Windows -platforms conversion never sees this declaration and the entry is inert there.
 	"syscall": {
 		"GetTimeZoneInformation": true,
+		// The same seam over a bigger record, and the first member of the class an actual suite
+		// reached: the kernel writes a 592-byte WIN32_FIND_DATAW, whose cFileName[260] and
+		// cAlternateFileName[14] are 520 and 28 bytes of INLINE storage where the converted
+		// win32finddata1 has two one-word `array<uint16>` references. path/filepath's EvalSymlinks
+		// → toNorm → normBase asks FindFirstFile for the on-disk spelling of every path element,
+		// and the clobbered reference took the test host down BOTH ways — IndexOutOfRangeException
+		// inside PinnedBuffer where it still resolved to something, ACCESS_VIOLATION in
+		// slice<ushort>..ctor where it did not. Only the two *1 wrappers are hand-owned: Go itself
+		// puts the native-layout boundary at win32finddata1 (syscall_windows.go's FindFirstFile
+		// allocates one, calls the wrapper, then copies out), so the public FindFirstFile /
+		// FindNextFile and copyFindData above them are pure Go logic and convert faithfully.
+		"findFirstFile1": true,
+		"findNextFile1":  true,
 	},
 }
 

@@ -4,7 +4,7 @@
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
 
-// Hand-written implementation of the one generated syscall wrapper whose STRUCT cannot cross the
+// Hand-written implementations of the generated syscall wrappers whose STRUCT cannot cross the
 // managed/native boundary by address.
 //
 // Go's GetTimeZoneInformation is a plain mksyscall wrapper:
@@ -20,6 +20,14 @@
 // in Go's own zoneinfo_windows.go, `syscall.UTF16ToString(z.StandardName[:])`, then dies with an
 // ACCESS_VIOLATION inside slice<ushort>..ctor. Because time.initLocal is what reaches this, EVERY
 // converted program that calls Weekday / Location / Local on Windows crashed.
+//
+// findFirstFile1 / findNextFile1 are the same defect over a bigger record: the kernel writes a
+// 592-byte WIN32_FIND_DATAW, whose cFileName[260] and cAlternateFileName[14] are 520 and 28 bytes
+// of INLINE storage where the converted win32finddata1 has two one-word `array<uint16>` references.
+// Both manifestations of the corruption were observed from path/filepath alone —
+// `IndexOutOfRangeException` inside PinnedBuffer when the clobbered reference still resolved to
+// something (normBase's `UTF16ToString(data.FileName[:])`), and an outright ACCESS_VIOLATION in
+// `slice<ushort>..ctor` when it did not (copyFindData's `src.FileName[..]`).
 //
 // This is the same seam as exec_windows.go's StartProcess (_STARTUPINFOEXW) and takes the same
 // remedy, described in docs/Baseline-vs-FullConversion.md "Child-process creation": a blittable
@@ -96,8 +104,8 @@ partial class syscall_package
         // `UTF16ToString(z.StandardName[:])`, which stops at the first NUL, and Windows pads the
         // remainder with NULs. Copying only up to the terminator would leave stale runes behind it
         // when a Timezoneinformation is reused.
-        copyNativeName(native.StandardName, ref tzi.StandardName);
-        copyNativeName(native.DaylightName, ref tzi.DaylightName);
+        copyNativeName(native.StandardName, ref tzi.StandardName, 32);
+        copyNativeName(native.DaylightName, ref tzi.DaylightName, 32);
 
         return (rc, default!);
     }
@@ -115,19 +123,130 @@ partial class syscall_package
         };
     }
 
-    // Copies a native WCHAR[32] buffer into the converted struct's `array<uint16>` field. The
-    // destination is (re)allocated when it is not already 32 elements, so a Timezoneinformation
-    // that reached here as `default` — its field initializer never having run — is filled rather
-    // than dereferenced through a null backing.
-    private static unsafe void copyNativeName(uint16* source, ref array<uint16> destination) {
-        const nint nameLength = 32;
-
-        if (destination.Length != nameLength) {
-            destination = new array<uint16>(nameLength);
+    // Copies a native WCHAR[length] buffer into the converted struct's `array<uint16>` field. The
+    // destination is (re)allocated when it is not already that long, so a struct that reached here
+    // as `default` — its field initializer never having run — is filled rather than dereferenced
+    // through a null backing.
+    private static unsafe void copyNativeName(uint16* source, ref array<uint16> destination, nint length) {
+        if (destination.Length != length) {
+            destination = new array<uint16>(length);
         }
 
-        for (nint i = 0; i < nameLength; i++) {
+        for (nint i = 0; i < length; i++) {
             destination[i] = source[i];
         }
+    }
+
+    // MAX_PATH as the WIN32_FIND_DATAW layout uses it. syscall's own MAX_PATH is an UntypedInt
+    // property, not a compile-time constant, and a `fixed` buffer needs one.
+    private const int maxPath = 260;
+
+    // WIN32_FIND_DATAW exactly as Windows lays it out: 592 bytes, both name buffers inline as
+    // WCHAR[260] and WCHAR[14]. `fixed` is what keeps them inline — a C# array field would be
+    // another managed reference, which is the whole bug — so the struct is blittable and needs no
+    // marshalling layer. Field names and order follow the converted win32finddata1, which is the
+    // struct the copy below fills.
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct NativeWin32FindDataW
+    {
+        public uint32 FileAttributes;
+        public NativeFiletime CreationTime;
+        public NativeFiletime LastAccessTime;
+        public NativeFiletime LastWriteTime;
+        public uint32 FileSizeHigh;
+        public uint32 FileSizeLow;
+        public uint32 Reserved0;
+        public uint32 Reserved1;
+        public fixed uint16 FileName[maxPath];
+        public fixed uint16 AlternateFileName[14];
+    }
+
+    // FILETIME. Blittable already — the converted Filetime has the same two uint32 fields in the
+    // same order — but mirrored here so the enclosing layout is stated in one place.
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeFiletime
+    {
+        public uint32 LowDateTime;
+        public uint32 HighDateTime;
+    }
+
+    [DllImport("kernel32.dll", EntryPoint = "FindFirstFileW", SetLastError = true)]
+    private static extern unsafe nint win32FindFirstFileW(uint16* name, NativeWin32FindDataW* data);
+
+    [DllImport("kernel32.dll", EntryPoint = "FindNextFileW", SetLastError = true)]
+    private static extern unsafe int32 win32FindNextFileW(nint handle, NativeWin32FindDataW* data);
+
+    // findFirstFile1 is the native transcription of the generated wrapper — see the file header for
+    // why it cannot be a literal conversion. Results follow the Go original exactly: the raw HANDLE
+    // is returned whatever it is, and only InvalidHandle produces an error. `data` is left untouched
+    // on failure, as it is in Go, because the kernel did not write it.
+    internal static unsafe (ΔHandle handle, error err) findFirstFile1(ж<uint16> Ꮡname, ж<win32finddata1> Ꮡdata) {
+        NativeWin32FindDataW native;
+        nint raw;
+
+        // The name is the caller's NUL-terminated UTF-16 buffer, reached through a golib pointer box
+        // whose uintptr conversion can only hand back a TRANSIENT pinned address (see the note in
+        // dll_windows.cs). Pinning it HERE keeps it fixed for the whole call instead — `Value` on an
+        // element box resolves to a ref INTO the caller's backing array, so `fixed` pins that array
+        // and every rune of the name stays contiguous behind the pointer for the whole call.
+        fixed (uint16* name = &Ꮡname.Value) {
+            raw = win32FindFirstFileW(name, &native);
+        }
+
+        ΔHandle handle = (ΔHandle)(uintptr)raw;
+
+        if (handle == InvalidHandle) {
+            return (handle, errnoErr((Errno)(uint32)Marshal.GetLastSystemError()));
+        }
+
+        copyNativeFindData(&native, Ꮡdata);
+
+        return (handle, default!);
+    }
+
+    // findNextFile1 is the native transcription of the generated wrapper — see findFirstFile1. The
+    // ordinary end of an enumeration arrives here as ERROR_NO_MORE_FILES, which callers compare
+    // against, so the last error has to be reported faithfully rather than flattened.
+    internal static unsafe error /*err*/ findNextFile1(ΔHandle handle, ж<win32finddata1> Ꮡdata) {
+        NativeWin32FindDataW native;
+
+        if (win32FindNextFileW((nint)(nuint)(uintptr)handle, &native) == 0) {
+            return errnoErr((Errno)(uint32)Marshal.GetLastSystemError());
+        }
+
+        copyNativeFindData(&native, Ꮡdata);
+
+        return default!;
+    }
+
+    // Copies the native record the kernel just wrote into the converted win32finddata1. Both name
+    // buffers are copied WHOLE, NULs included: Go reads them as `UTF16ToString(data.FileName[:])`,
+    // which stops at the first NUL, and Windows pads the remainder — copying only up to the
+    // terminator would leave the previous entry's runes behind it, and the same win32finddata1 is
+    // reused across every FindNextFile of an enumeration.
+    private static unsafe void copyNativeFindData(NativeWin32FindDataW* native, ж<win32finddata1> Ꮡdata) {
+        ref var data = ref Ꮡdata.Value;
+
+        data.FileAttributes = native->FileAttributes;
+        data.CreationTime = toFiletime(native->CreationTime);
+        data.LastAccessTime = toFiletime(native->LastAccessTime);
+        data.LastWriteTime = toFiletime(native->LastWriteTime);
+        data.FileSizeHigh = native->FileSizeHigh;
+        data.FileSizeLow = native->FileSizeLow;
+        // Reserved0 carries the reparse-point tag when FileAttributes has FILE_ATTRIBUTE_REPARSE_POINT
+        // — path/filepath's EvalSymlinks reads it to tell IO_REPARSE_TAG_SYMLINK from a mount point —
+        // and is documented UNDEFINED otherwise, so it is copied verbatim rather than normalized.
+        data.Reserved0 = native->Reserved0;
+        data.Reserved1 = native->Reserved1;
+
+        copyNativeName(native->FileName, ref data.FileName, maxPath);
+        copyNativeName(native->AlternateFileName, ref data.AlternateFileName, 14);
+    }
+
+    private static Filetime toFiletime(NativeFiletime value) {
+        return new Filetime{
+            LowDateTime = value.LowDateTime,
+            HighDateTime = value.HighDateTime
+        };
     }
 }

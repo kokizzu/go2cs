@@ -707,27 +707,9 @@ public static error /*err*/ FindClose(ΔHandle handle) {
     return err;
 }
 
-internal static (ΔHandle handle, error err) findFirstFile1(ж<uint16> Ꮡname, ж<win32finddata1> Ꮡdata) {
-    ΔHandle handle = default!;
-    error err = default!;
+// go2cs generated this placeholder — func findFirstFile1 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    var (r0, _, e1) = Syscall(procFindFirstFileW.Addr(), 2, (uintptr)new @unsafe.Pointer(Ꮡname), (uintptr)new @unsafe.Pointer(Ꮡdata), 0);
-    handle = ((ΔHandle)r0);
-    if (handle == InvalidHandle) {
-        err = errnoErr(e1);
-    }
-    return (handle, err);
-}
-
-internal static error /*err*/ findNextFile1(ΔHandle handle, ж<win32finddata1> Ꮡdata) {
-    error err = default!;
-
-    var (r1, _, e1) = Syscall(procFindNextFileW.Addr(), 2, (uintptr)handle, (uintptr)new @unsafe.Pointer(Ꮡdata), 0);
-    if (r1 == 0) {
-        err = errnoErr(e1);
-    }
-    return err;
-}
+// go2cs generated this placeholder — func findNextFile1 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ FlushFileBuffers(ΔHandle handle) {
     error err = default!;

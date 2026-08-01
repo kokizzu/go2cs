@@ -391,6 +391,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckFileNameBuildConstraints() => CheckTarget("FileNameBuildConstraints");
 
     [TestMethod]
+    public void CheckFindFirstFileData() => CheckTarget("FindFirstFileData");
+
+    [TestMethod]
     public void CheckFirstClassFunctions() => CheckTarget("FirstClassFunctions");
 
     [TestMethod]

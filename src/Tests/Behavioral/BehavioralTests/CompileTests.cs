@@ -391,6 +391,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckFileNameBuildConstraints() => CheckTarget("FileNameBuildConstraints");
 
     [TestMethod]
+    public void CheckFindFirstFileData() => CheckTarget("FindFirstFileData");
+
+    [TestMethod]
     public void CheckFirstClassFunctions() => CheckTarget("FirstClassFunctions");
 
     [TestMethod]

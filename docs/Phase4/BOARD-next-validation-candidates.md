@@ -134,10 +134,10 @@ has a named owner and must be handled by that arc rather than folded into this i
 | ~~`index/suffixarray`~~ | ~~`CS0206: A non ref-returning property or indexer may not be used as an out or ref value`~~ | **DONE 2026-07-31 — 12/12, banked.** TWO go2cs-gen defects, stacked, both general. `suffixarray_test.go` declares `type index Index` — a defined type over the production struct — and Go gives it `Index`'s field set. (1) `GetStructDeclaration` resolves an underlying struct only from SOURCE, and a real MSBuild `<ProjectReference>` arrives as compiled METADATA, so under the white-box model NO members were forwarded and every `x.sa`/`x.data` was CS1061; a symbol-based fallback now resolves it, forwarding what `IsSymbolAccessibleWithin` permits — Go's exported/unexported rule projected into C#. (2) The forward was a get/set property, i.e. a VALUE, so `x.sa.len()` (a `this ref` receiver) and `&x.sa` could not bind — this row's original CS0206. It is now an `[UnscopedRef]` REF-returning property, a strict superset. Fixing (1) alone collapsed the CS1061 wall onto exactly the CS0206 recorded here: root-cause layering, the first diagnostic moving rather than clearing. Full rule: `docs/ConversionStrategies-Reference.md`, *The forwarded member must be a VARIABLE, and the underlying may be METADATA-ONLY*; guarded by the `DefinedTypeOverForeignStruct` behavioral test (whose A/B reproduces CS1061 and CS0206 separately). ⚠ `TestNew{32,64}/exhaustive3` run ~35 min in C# vs 12.4 s in Go — a performance gap, not a correctness one; `run-validated-sweep.ps1` gives the package a 60m deadline. |
 | ~~`internal/zstd`~~ | ~~`CS1929: 'testing_package.B' … 'Cleanup'`~~ | **DONE 2026-07-27 — 534/534, banked.** The `common` members are on `core/testing`'s `B`; see the retraction below. |
 | ~~`crypto/md5`~~ | ~~`CS0030: Cannot convert type 'System.Type' to 'uint'`~~ | **DONE 2026-07-31 — 11/11 (1 alloc-profile disclosure), banked.** TWO defects, both general. `unsafe.Alignof`/`Offsetof` built their `System.Type` argument by splitting the CONVERTED C# text on `.` as though it were a Go field selector, so `unsafe.Alignof(uint32(0))` emitted `(uint32)0.GetType()` — which C# parses as `(uint32)(0.GetType())`. Both now resolve the operand through `go/types` and emit `typeof(T)`. Behind it stood a second: `buf := buf` in `benchmarkSize` reads a package-level `buf` declared in `md5_test.go`, and the shadowed-global qualifier named the PRODUCTION class (`md5_package.buf`, CS0117) rather than the white-box bridge class that actually declares it. |
-| ~~`path/filepath`~~ | ~~`CS0103: The name 'ßÅælstat' does not exist`~~ | **Build blocker CLOSED 2026-07-31 — see below. NOT banked: splits 34 / 55.** |
+| ~~`path/filepath`~~ | ~~`CS0103: The name 'ßÅælstat' does not exist`~~ | **Build blocker CLOSED 2026-07-31; `FindFirstFile` host-killer CLOSED 2026-08-01 — see below. NOT banked: splits 46 / 61, all 15 remaining on the `os`/`runtime` roots.** |
 | ~~`net`~~ | ~~`CS1031: Type expected`~~ | **Syntax cascade CLOSED 2026-07-31 — see below. Still does not compile: 94 SEMANTIC errors stood behind it.** |
 
-### `path/filepath` — build blocker closed; 34 of 55 pass; three runtime roots remain
+### `path/filepath` — build blocker closed; the FindFirstFile root closed; 46 of 61 match; two runtime roots remain
 
 The name was never mangled. `ßÅæ` is the bytes `E1 8F 91` rendered in **cp437** — the UTF-8 encoding
 of `U+13D1 Ꮡ`, the `AddressPrefix` marker. The missing symbol is `Ꮡlstat`, the heap box for
@@ -160,19 +160,39 @@ every one a Go "for testing" hook** and no false positives: `os`'s `lstat` /
 `reflect`, `net/http`, `internal/poll` and `time` need aliasing real storage before their own suites
 can pass — so this is prerequisite work already banked for six future arcs, not filepath-local cost.
 
-filepath now **builds with 0 errors and the host runs**. Measured per test in isolation (a single
-suite run under-reports — see the warning below): **34 pass, 21 fail**. The failures reach two entry
-points plus one standalone:
+filepath now **builds with 0 errors and the host runs**. Root 2 below is **closed (2026-08-01)**, and
+closing it is what lets the host survive a whole-suite run — so the numbers no longer have to be
+gathered per test. Measured in ONE `-tests -test-action all -test-timeout 10m` run: **46 of 61
+match** (C# 40 `pass` + 6 `skip` against Go's 41 `pass` + 20 `skip`), with **zero empty verdicts**.
+Every one of the 15 remaining mismatches reaches one of the two roots that are left — 14 the
+symlink-privilege one, 1 the `gogetenv` one — and none is a marshalling failure:
 
 | Root | Reached via | Note |
 |:--|:--|:--|
 | `os.runtime_rand` unimplemented | `os.MkdirTemp` → `nextRandom` → `testenv.MustHaveSymlink` / `initWinHasSymlink` | The **same root the `io` row names** — owned by the `os` operational arc. Go *skips* these tests for want of symlink privilege; C# infrastructure-errors before `testenv` can decide, so clearing this likely converts most of them to matching **skips** rather than passes. |
-| Win32 `FindFirstFile` struct marshalling | `EvalSymlinks` → `toNorm` → `normBase` → `syscall.FindFirstFile` | `findFirstFile1` hands `(uintptr)new @unsafe.Pointer(Ꮡdata)` to the raw `Syscall`, and the kernel writes a 592-byte `WIN32_FIND_DATAW` over a C# struct whose `[MAX_PATH]uint16` field is an `array<uint16>` — an 8-byte **managed reference**, not inline storage. The write clobbers that reference, so the next read is an `IndexOutOfRangeException` in `PinnedBuffer` or a hard **AccessViolation (0xC0000005)** that kills the host. A marshalling layer for syscall structs (or a hand-owned `FindFirstFile`) is the general fix. **New root, no owner yet.** |
+| ~~Win32 `FindFirstFile` struct marshalling~~ | `EvalSymlinks` → `toNorm` → `normBase` → `syscall.FindFirstFile` | **CLOSED 2026-08-01.** `findFirstFile1` handed `(uintptr)new @unsafe.Pointer(Ꮡdata)` to the raw `Syscall`, and the kernel wrote a 592-byte `WIN32_FIND_DATAW` over a C# struct whose `[MAX_PATH]uint16` field is an `array<uint16>` — an 8-byte **managed reference**, not inline storage. The write clobbered that reference, so the next read was an `IndexOutOfRangeException` in `PinnedBuffer` or a hard **AccessViolation (0xC0000005)** that killed the host. Fixed as the third member of the struct-passing class below: `findFirstFile1`/`findNextFile1` are hand-owned against a blittable mirror in `syscall/zsyscall_windows_impl.cs`, guarded value-level by the `FindFirstFileData` behavioral output test. `TestDriveLetterInEvalSymlinks` — the crash site — and `TestEvalSymlinksCanonicalNames`, `TestToNorm`, `TestGlob`/`TestWindowsGlob`/`TestGlobUNC`, `TestWalk`/`TestWalkDir` all now match Go. |
 | `runtime.gogetenv` — `fatal error: getenv before env init` | `testenv.GOROOT` → `runtime.GOROOT` | `runtime.envs` is never populated (Go fills it in `goenvs` during scheduler init); `throw` then re-faults on the unimplemented `getcallerpc`. Only `TestBug3486` here, but it gates every `testenv.GOROOT` consumer. |
 
-⚠ Because of root 2's AccessViolation, **one full-suite run under-reports badly**: the host dies
-mid-`TestDriveLetterInEvalSymlinks` and every later verdict reads `C#=""`, which presents as a mass
-infrastructure wall rather than one crash. Bucket filepath per test until that root is fixed.
+⚠ **Resolved with root 2, and worth remembering as a shape.** While that AccessViolation stood, one
+full-suite run **under-reported badly**: the host died mid-`TestDriveLetterInEvalSymlinks` and every
+later verdict read `C#=""`, which presents as a mass infrastructure wall rather than as one crash —
+so the package had to be bucketed per test. A single host-killing defect will do this to any package;
+the tell is a run whose empty verdicts all fall AFTER one particular test. `filepath`'s whole-suite
+run now has zero empty verdicts, so per-test bucketing is no longer needed here.
+
+The remaining 15 split cleanly by root. Fourteen are the symlink-privilege family — Go's
+`testenv.MustHaveSymlink` **skips** them for want of `SeCreateSymbolicLinkPrivilege`, while C# never
+reaches that decision: 3 die in `os.MkdirTemp` → `runtime_rand` first, 9 go on to attempt the symlink
+and `fail` on the privilege, and 2 infrastructure-error on the consequences of having attempted it
+(`TestNTNamespaceSymlink`'s `mklink`, `TestWalkDirectoryJunction`'s cleanup `UnauthorizedAccessException`
+over the junction it created): `TestEvalSymlinks`, `TestEvalSymlinksAboveRoot`,
+`TestEvalSymlinksAboveRootChdir`, `TestEvalSymlinksIsNotExist`, `TestEvalSymlinksTooManyLinks`,
+`TestGlobSymlink`, `TestIssue13582`, `TestNTNamespaceSymlink`, `TestRelativeSymlinkToAbsolute`,
+`TestWalkDirectoryJunction`, `TestWalkDirectorySymlink`, `TestWalkSymlink`, `TestWalkSymlinkRoot`,
+`TestWindowsEvalSymlinks`. The fifteenth is `TestBug3486` (`getcallerpc` after the `gogetenv`
+`throw`). Clearing root 1 should convert most of the fourteen to matching **skips**, exactly as
+predicted — so filepath's remaining distance is entirely `os`/`runtime` work, with nothing
+filepath-local left.
 
 ### `net` — syntax cascade closed; 94 semantic errors remain
 
@@ -486,10 +506,13 @@ The other consumers this unblocks are all registration-by-blank-import: `databas
 `image.Decode`, and `time/tzdata`. A blank import was never invisible to the build — it is in
 `go/packages`' import list, so the project reference already existed; only the *load* did not happen.
 
-## Open — the syscall STRUCT-PASSING seam: 9 wrappers still hand a non-blittable struct to the kernel
+## Open — the syscall STRUCT-PASSING seam: 8 wrappers still hand a non-blittable struct to the kernel
 
 Named as a class 2026-08-01, after `syscall.GetTimeZoneInformation` became the second member of it
-to be hand-owned (the first was `StartProcess`/`_STARTUPINFOEXW`, 2026-07-19).
+to be hand-owned (the first was `StartProcess`/`_STARTUPINFOEXW`, 2026-07-19). `findFirstFile1` /
+`findNextFile1` followed the same day — the first members a real Go test suite *reached* rather than
+a census predicted, and the reason `path/filepath`'s `EvalSymlinks` family took the C# test host down
+mid-run.
 
 **The class.** A generated wrapper passes `uintptr(unsafe.Pointer(&s))` for a converted struct whose
 C# layout is not the native one — any struct holding a golib `array<T>` (Go's inline `[N]T`) or a
@@ -499,13 +522,14 @@ fabricated object references in the reference-typed fields. It does not fail at 
 the next read of one of those fields, usually as an `ACCESS_VIOLATION` deep inside golib. That is why
 `time.Now().Weekday()` died in `slice<ushort>..ctor` and not in `GetTimeZoneInformation`.
 
-**Census (`src/core/syscall`, positive control = `Timezoneinformation`): 32 non-blittable structs, 10
-wrappers passing one by address.** One is fixed; the other **nine** are latent — nothing in the
-behavioral suite (519/519) or the 69-package sweep exercises them today:
+**Census (`src/core/syscall`, positive control = `Timezoneinformation`): 32 non-blittable structs, 11
+wrappers passing one by address** (the earlier count of ten collapsed the
+`findFirstFile1`/`findNextFile1` pair into a single row). Three are fixed; the other **eight** are
+latent — nothing in the behavioral suite or the 69-package sweep exercises them today:
 
 | Wrapper | Struct | Reached by |
 |:--|:--|:--|
-| `findFirstFile1` / `findNextFile1` | `win32finddata1` (`FileName`, `AlternateFileName`) | `os.ReadDir`/`Glob` on the FindFirstFile path |
+| ~~`findFirstFile1` / `findNextFile1`~~ | `win32finddata1` (`FileName`, `AlternateFileName`) | **FIXED 2026-08-01** — `path/filepath.EvalSymlinks` → `toNorm` → `normBase`; guarded by the `FindFirstFileData` behavioral output test |
 | `Process32First` / `Process32Next` | `ProcessEntry32` (`ExeFile`) | process enumeration |
 | `GetIfEntry` | `MibIfRow` (`Name`, `PhysAddr`, `Descr`) | `net.Interfaces` |
 | `getStartupInfo` | `StartupInfo` (`Desktop`, `Title`) | `os` startup |
@@ -519,8 +543,19 @@ becomes a placeholder. Worked example: `src/core/syscall/zsyscall_windows_impl.c
 
 **Do them when a suite reaches them, not speculatively** — each needs its own value-level
 verification (a mirror with wrong offsets returns garbage *without* faulting, so "it no longer
-crashes" proves nothing; `LocalTimeZone` compares real zone abbreviations and offsets against Go).
+crashes" proves nothing; `LocalTimeZone` compares real zone abbreviations and offsets against Go, and
+`FindFirstFileData` compares real directory entries — long names ASCII and non-ASCII, 8.3 alternate
+names, the directory bit, byte sizes, and a distinct per-entry `LastWriteTime`).
 `net` and `crypto/x509` are the two packages that will surface most of the rest.
+
+Two details of the `findFirstFile1` implementation generalize and are worth cribbing for the next
+member: the caller's UTF-16 name buffer is pinned with a `fixed` block wrapped **around the call**
+rather than handed golib's TRANSIENT `ж`→`uintptr` address, and an inline `WCHAR[N]` buffer is copied
+back **whole**, NULs included — Go reads it as `UTF16ToString(buf[:])`, which stops at the first NUL,
+and the struct is reused across an enumeration, so a copy that stopped at the terminator would leave
+the previous entry's runes behind it. Full write-up:
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *A STRUCT handed to the
+kernel by address must be blittable*.
 
 ## Recurring classes worth a general fix rather than another point repair
 

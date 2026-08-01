@@ -365,6 +365,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckFileNameBuildConstraints() => CheckTarget("FileNameBuildConstraints");
 
     [TestMethod]
+    public void CheckFindFirstFileData() => CheckTarget("FindFirstFileData");
+
+    [TestMethod]
     public void CheckFixedArrayBufferPointer() => CheckTarget("FixedArrayBufferPointer");
 
     [TestMethod]
