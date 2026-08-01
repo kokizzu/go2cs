@@ -77,7 +77,7 @@ func (v *Visitor) visitFile(file *ast.File) {
 
 	v.writeOutput(TypeAliasMarker)
 	v.writeOutputLn("namespace %s;", packageNamespace)
-	v.targetFile.WriteString(v.newline)
+	v.outputBuilder.WriteString(v.newline)
 
 	packageClassName := getSanitizedImport(fmt.Sprintf("%s%s", packageName, PackageSuffix))
 	if v.options.testClassNameOverride != "" {
@@ -109,24 +109,27 @@ func (v *Visitor) visitFile(file *ast.File) {
 		// Add any remaining standalone comments
 		postCodeComments := strings.Builder{}
 		v.writeDocString(&postCodeComments, nil, file.FileEnd)
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 
 		if postCodeComments.Len() > 0 {
 			v.writeOutputLn(postCodeComments.String())
 		} else {
-			if v.needsNewLine(v.targetFile.String()) {
-				v.targetFile.WriteString(v.newline)
+			if v.needsNewLine(v.outputBuilder.String()) {
+				v.outputBuilder.WriteString(v.newline)
 			}
 		}
 	} else {
-		if v.needsNewLine(v.targetFile.String()) {
-			v.targetFile.WriteString(v.newline)
+		if v.needsNewLine(v.outputBuilder.String()) {
+			v.outputBuilder.WriteString(v.newline)
 		}
 	}
 
 	v.writeOutputLn("} // end %s", packageClassName)
 
-	targetFile := v.targetFile.String()
+	// Take the completed body as text so the deferred markers below can be substituted. The using
+	// directives and type aliases are only KNOWN once the whole file has been visited, so they are
+	// emitted as markers during the walk and resolved here.
+	fileText := v.outputBuilder.String()
 
 	// Supply the file-local `using <alias> = <namespace>;` for any foreign package whose type this file
 	// referenced in short-alias form (`pkg.Type`, `@unsafe.Pointer`) but did not import under its
@@ -181,17 +184,17 @@ func (v *Visitor) visitFile(file *ast.File) {
 		v.packageImports.WriteString(v.newline)
 	}
 
-	targetFile = strings.ReplaceAll(targetFile, UsingsMarker, v.packageImports.String())
+	fileText = strings.ReplaceAll(fileText, UsingsMarker, v.packageImports.String())
 
 	if v.typeAliasDeclarations.Len() > 0 {
 		v.typeAliasDeclarations.WriteString(v.newline)
-		targetFile = strings.ReplaceAll(targetFile, TypeAliasMarker, v.typeAliasDeclarations.String())
+		fileText = strings.ReplaceAll(fileText, TypeAliasMarker, v.typeAliasDeclarations.String())
 	} else {
-		targetFile = strings.ReplaceAll(targetFile, TypeAliasMarker, "")
+		fileText = strings.ReplaceAll(fileText, TypeAliasMarker, "")
 	}
 
-	v.targetFile.Reset()
-	v.targetFile.WriteString(targetFile)
+	v.outputBuilder.Reset()
+	v.outputBuilder.WriteString(fileText)
 }
 
 func (v *Visitor) needsNewLine(text string) bool {

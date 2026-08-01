@@ -859,7 +859,7 @@ func canonicalRecordIfaceName(ifaceName string, rootPackageName string) string {
 // against `color|Alpha|…`.
 func valueImplementKey(declaringPackageName string, csTypeName string, ifaceName string, ifacePackageName string) string {
 	return fmt.Sprintf("%s|%s|%s", getSanitizedIdentifier(declaringPackageName),
-		removeSanitizationMarker(simpleCSTypeName(csTypeName)),
+		removeLeadingSanitizationMarker(simpleCSTypeName(csTypeName)),
 		canonicalValueRecordIfaceName(ifaceName, ifacePackageName))
 }
 

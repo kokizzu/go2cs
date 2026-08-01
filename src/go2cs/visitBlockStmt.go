@@ -15,19 +15,19 @@ func (v *Visitor) visitBlockStmt(blockStmt *ast.BlockStmt, context BlockStmtCont
 	v.pushBlock()
 
 	if len(context.outerPrefix) > 0 {
-		v.targetFile.WriteString(context.outerPrefix)
+		v.outputBuilder.WriteString(context.outerPrefix)
 	}
 
 	if context.format.useNewLine {
-		v.targetFile.WriteString(v.newline)
-		v.targetFile.WriteString(v.indent(v.indentLevel))
-		v.targetFile.WriteRune('{')
+		v.outputBuilder.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.indent(v.indentLevel))
+		v.outputBuilder.WriteRune('{')
 	} else {
-		v.targetFile.WriteString(" {")
+		v.outputBuilder.WriteString(" {")
 	}
 
 	if len(context.innerPrefix) > 0 {
-		v.targetFile.WriteString(context.innerPrefix)
+		v.outputBuilder.WriteString(context.innerPrefix)
 	}
 
 	v.firstStatementIsReturn = false
@@ -40,7 +40,7 @@ func (v *Visitor) visitBlockStmt(blockStmt *ast.BlockStmt, context BlockStmtCont
 	prefix := v.newline + v.indent(v.indentLevel)
 
 	if len(blockStmt.List) > 0 && v.options.includeComments {
-		v.writeStandAloneCommentString(v.targetFile, blockStmt.List[0].Pos(), nil, prefix)
+		v.writeStandAloneCommentString(v.outputBuilder, blockStmt.List[0].Pos(), nil, prefix)
 	}
 
 	for _, stmt := range blockStmt.List {
@@ -61,11 +61,11 @@ func (v *Visitor) visitBlockStmt(blockStmt *ast.BlockStmt, context BlockStmtCont
 				}
 
 				if wrote && currentLine-lastLine > 1 {
-					v.targetFile.WriteString(strings.Repeat(v.newline, currentLine-lastLine-1))
+					v.outputBuilder.WriteString(strings.Repeat(v.newline, currentLine-lastLine-1))
 				}
 
 				if comments.Len() > 0 {
-					v.targetFile.WriteString(comments.String())
+					v.outputBuilder.WriteString(comments.String())
 				}
 			}
 		}
@@ -96,40 +96,53 @@ func (v *Visitor) visitBlockStmt(blockStmt *ast.BlockStmt, context BlockStmtCont
 	}
 
 	if len(context.innerSuffix) > 0 {
-		v.targetFile.WriteString(context.innerSuffix)
+		v.outputBuilder.WriteString(context.innerSuffix)
 	}
 
-	v.targetFile.WriteString(v.newline)
+	v.outputBuilder.WriteString(v.newline)
 	v.writeOutput("}")
 
 	if len(context.outerSuffix) > 0 {
-		v.targetFile.WriteString(context.outerSuffix)
+		v.outputBuilder.WriteString(context.outerSuffix)
 	}
-
-	// if (!m_firstTopLevelDeclaration && IndentLevel > 2)
-	// 	m_targetFile.Append(CheckForCommentsRight(context));
 
 	v.popBlock()
 }
 
+// pushBlock redirects emission into a FRESH output builder, so whatever is written next accumulates
+// on its own instead of landing in the enclosing block's text. The displaced builder is remembered
+// on the block stack and restored by popBlock.
+//
+// This is what lets the converter emit a nested block, then decide what to do with it — keep it,
+// indent it, wrap it, or discard it — after seeing all of it.
 func (v *Visitor) pushBlock() {
-	v.blocks.Push(v.targetFile)
-	v.targetFile = &strings.Builder{}
+	v.blocks.Push(v.outputBuilder)
+	v.outputBuilder = &strings.Builder{}
 }
 
+// popBlock restores the enclosing output builder and APPENDS the block just emitted to it — the
+// normal case, where a nested block simply becomes part of its parent. It returns the block's text
+// as well, for a caller that also wants to inspect it.
 func (v *Visitor) popBlock() string {
 	return v.popBlockAppend(true)
 }
 
+// popBlockAppend restores the enclosing output builder and returns the text emitted since the
+// matching pushBlock.
+//
+// Pass appendToPrevious=false to CAPTURE the block instead of emitting it: the enclosing builder is
+// left untouched and the caller receives the text to place itself. That is how a block gets
+// rewritten before it lands — hoisted into a lambda, wrapped in `do { … } while (false)`, or
+// reordered — rather than having to be un-emitted afterwards.
 func (v *Visitor) popBlockAppend(appendToPrevious bool) string {
-	lastTarget := v.blocks.Pop()
-	block := v.targetFile.String()
+	enclosing := v.blocks.Pop()
+	block := v.outputBuilder.String()
 
 	if appendToPrevious {
-		lastTarget.WriteString(block)
+		enclosing.WriteString(block)
 	}
 
-	v.targetFile = lastTarget
+	v.outputBuilder = enclosing
 
 	return block
 }

@@ -93,7 +93,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 	}
 
 	if target == nil {
-		target = v.targetFile
+		target = v.outputBuilder
 
 		if !v.inFunction {
 			target.WriteString(v.newline)

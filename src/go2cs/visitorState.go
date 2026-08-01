@@ -132,7 +132,7 @@ type Visitor struct {
 	pkg                *types.Package
 	info               *types.Info
 	file               *token.File
-	targetFile         *strings.Builder
+	outputBuilder      *strings.Builder
 	standAloneComments map[token.Pos]string
 	sortedCommentPos   []token.Pos
 	processedComments  HashSet[token.Pos]

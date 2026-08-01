@@ -35,20 +35,20 @@ func (v *Visitor) visitExprStmt(exprStmt *ast.ExprStmt, format FormattingContext
 
 	if hoistBuf != nil && hoistBuf.Len() > 0 {
 		// The hoisted decls carry their own leading newline + per-line indentation.
-		v.targetFile.WriteString(hoistBuf.String())
+		v.outputBuilder.WriteString(hoistBuf.String())
 	} else if format.useNewLine {
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 	}
 
 	if format.useIndent {
-		v.targetFile.WriteString(v.indent(v.indentLevel))
+		v.outputBuilder.WriteString(v.indent(v.indentLevel))
 	}
 
-	v.targetFile.WriteString(expr)
+	v.outputBuilder.WriteString(expr)
 
 	// A for-loop init/post clause is `;`-free (the for-syntax supplies the separators); a standalone
 	// expression statement is terminated with a semicolon.
 	if format.includeSemiColon {
-		v.targetFile.WriteString(";")
+		v.outputBuilder.WriteString(";")
 	}
 }

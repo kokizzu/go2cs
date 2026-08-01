@@ -1486,7 +1486,7 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 			// emit the auto conversion to the `.cs.auto` review sibling, leaving the marked `.cs`
 			// untouched. The HAND-OWNED `.cs` is the compile item; the `.cs.auto` sibling never is.
 			outputName := filepath.Join(outputPath, baseName+".cs.auto")
-			if writeErr := writeAutoConversionSibling(outputName, baseName, visitor.targetFile.String()); writeErr != nil {
+			if writeErr := writeAutoConversionSibling(outputName, baseName, visitor.outputBuilder.String()); writeErr != nil {
 				showWarning("%s", writeErr)
 			}
 

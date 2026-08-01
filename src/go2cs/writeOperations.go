@@ -174,22 +174,39 @@ func (v *Visitor) replaceMarkerString(builder *strings.Builder, marker string, r
 	builder.WriteString(builderString)
 }
 
+// The five functions below are the ones nearly every visit*/conv* file calls. Each is the
+// "current destination" form of a *String sibling above: it writes to v.outputBuilder, the
+// in-memory buffer holding the C# emitted for the file so far.
+//
+// Which builder that IS changes during a walk — visitBlockStmt swaps in a fresh one so a nested
+// block accumulates separately (see pushBlock) — so these deliberately read the field at call
+// time rather than capturing it.
+//
+// Note the one name that does NOT belong to this family: writeOutputFile (projectFileWriter.go)
+// is the function that actually touches disk, writing the finished builder contents out.
+
+// writeOutput appends formatted text to the current output builder.
 func (v *Visitor) writeOutput(format string, a ...interface{}) {
-	v.writeString(v.targetFile, format, a...)
+	v.writeString(v.outputBuilder, format, a...)
 }
 
+// writeOutputLn appends formatted text plus a newline to the current output builder.
 func (v *Visitor) writeOutputLn(format string, a ...interface{}) {
-	v.writeStringLn(v.targetFile, format, a...)
+	v.writeStringLn(v.outputBuilder, format, a...)
 }
 
+// writeDoc appends a Go doc comment to the current output builder, converted to C# doc form.
 func (v *Visitor) writeDoc(doc *ast.CommentGroup, targetPos token.Pos) {
-	v.writeDocString(v.targetFile, doc, targetPos)
+	v.writeDocString(v.outputBuilder, doc, targetPos)
 }
 
+// writeComment appends an ordinary Go comment to the current output builder.
 func (v *Visitor) writeComment(comment *ast.CommentGroup, targetPos token.Pos) {
-	v.writeCommentString(v.targetFile, comment, targetPos)
+	v.writeCommentString(v.outputBuilder, comment, targetPos)
 }
 
+// replaceMarker substitutes a deferred placeholder already written into the current output
+// builder — used when the final text only becomes known after more of the file has been visited.
 func (v *Visitor) replaceMarker(marker string, replacement string) {
-	v.replaceMarkerString(v.targetFile, marker, replacement)
+	v.replaceMarkerString(v.outputBuilder, marker, replacement)
 }

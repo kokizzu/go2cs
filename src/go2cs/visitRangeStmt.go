@@ -169,7 +169,7 @@ func (v *Visitor) rangeVarNeedsMutableCopy(expr ast.Expr, body *ast.BlockStmt) b
 }
 
 func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtContext) {
-	v.targetFile.WriteString(v.newline)
+	v.outputBuilder.WriteString(v.newline)
 	var ptrDeref string
 
 	rangeExpr := v.convExpr(rangeStmt.X, nil)
@@ -321,7 +321,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 						keyHeapDecl = heapTypeDecl
 					} else {
 						v.writeOutput(heapTypeDecl)
-						v.targetFile.WriteString(v.newline)
+						v.outputBuilder.WriteString(v.newline)
 						wroteHeapTypeDecl = true
 					}
 				} else if !v.options.preferVarDecl {
@@ -340,7 +340,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 						valHeapDecl = heapTypeDecl
 					} else {
 						v.writeOutput(heapTypeDecl)
-						v.targetFile.WriteString(v.newline)
+						v.outputBuilder.WriteString(v.newline)
 						wroteHeapTypeDecl = true
 					}
 				} else if !v.options.preferVarDecl {
@@ -350,7 +350,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 		}
 
 		if wroteHeapTypeDecl {
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 		}
 	}
 

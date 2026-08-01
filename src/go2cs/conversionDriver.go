@@ -282,7 +282,7 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 					// Hand-owned destination: the visit above already fed this file's package-wide
 					// state (the part its sibling files depend on); emit the auto conversion to the
 					// non-compiled `<name>.cs.auto` review sibling, leaving the marked `.cs` untouched.
-					if err := writeAutoConversionSibling(outputFileName, baseName, visitor.targetFile.String()); err != nil {
+					if err := writeAutoConversionSibling(outputFileName, baseName, visitor.outputBuilder.String()); err != nil {
 						showWarning("%s", err)
 					}
 				} else if err := visitor.writeOutputFile(outputFileName); err != nil {

@@ -30,15 +30,15 @@ func (v *Visitor) visitIfStmt(ifStmt *ast.IfStmt) {
 		if hoistBuf.Len() > 0 {
 			// The buffer carries its own leading newline+indent per decl and a trailing newline (the
 			// per-decl trailing indent is trimmed by convFuncLit); the `if`'s own indent follows.
-			v.targetFile.WriteString(hoistBuf.String())
+			v.outputBuilder.WriteString(hoistBuf.String())
 		} else {
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 		}
 
 		v.writeOutput("")
 	} else {
 		// Any declared variable will be scoped to if statement, so create a sub-block for it
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		v.writeOutput("{")
 		v.indentLevel++
 
@@ -51,33 +51,33 @@ func (v *Visitor) visitIfStmt(ifStmt *ast.IfStmt) {
 		v.hoistedDecls = savedHoist
 
 		if hoistBuf.Len() > 0 {
-			v.targetFile.WriteString(hoistBuf.String())
+			v.outputBuilder.WriteString(hoistBuf.String())
 			v.writeOutput("")
 		} else {
-			v.targetFile.WriteRune(' ')
+			v.outputBuilder.WriteRune(' ')
 		}
 	}
 
 	context := DefaultBlockStmtContext()
 	context.format.useNewLine = false
 
-	v.targetFile.WriteString("if (")
-	v.targetFile.WriteString(cond)
-	v.targetFile.WriteRune(')')
+	v.outputBuilder.WriteString("if (")
+	v.outputBuilder.WriteString(cond)
+	v.outputBuilder.WriteRune(')')
 
 	v.pushBlock()
 	v.visitBlockStmt(ifStmt.Body, context)
 	body := v.popBlockAppend(false)
 
 	if ifStmt.Else == nil {
-		v.targetFile.WriteString(body)
+		v.outputBuilder.WriteString(body)
 	} else {
-		v.targetFile.WriteString(strings.TrimSpace(body))
-		v.targetFile.WriteString(" else")
+		v.outputBuilder.WriteString(strings.TrimSpace(body))
+		v.outputBuilder.WriteString(" else")
 
 		switch elseStmt := ifStmt.Else.(type) {
 		case *ast.IfStmt:
-			v.targetFile.WriteRune(' ')
+			v.outputBuilder.WriteRune(' ')
 			v.visitIfStmt(elseStmt)
 		case *ast.BlockStmt:
 			v.visitBlockStmt(elseStmt, context)
@@ -88,7 +88,7 @@ func (v *Visitor) visitIfStmt(ifStmt *ast.IfStmt) {
 
 	if ifStmt.Init != nil {
 		v.indentLevel--
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		v.writeOutput("}")
 	}
 }

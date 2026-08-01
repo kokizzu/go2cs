@@ -24,7 +24,7 @@ func (v *Visitor) visitMapType(mapType *ast.MapType, identType types.Type, name 
 
 	// A map type declared inside a function body (`type M map[int]bool`, maps_test.go) cannot be a
 	// method-body statement in C#; hoist it to member level (see liftLocalTypeDecl). A package-level
-	// declaration is unaffected — target is v.targetFile and finish() is a no-op.
+	// declaration is unaffected — target is v.outputBuilder and finish() is a no-op.
 	preLiftName := name
 	name, target, finish := v.liftLocalTypeDecl(name, identType)
 

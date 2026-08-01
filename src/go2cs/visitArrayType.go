@@ -79,7 +79,7 @@ func (v *Visitor) visitArrayType(arrayType *ast.ArrayType, identType types.Type,
 
 	// A slice/array type declared inside a function body (`type People []Person`, example_test.go)
 	// cannot be a method-body statement in C#; hoist it to member level (see liftLocalTypeDecl). A
-	// package-level declaration is unaffected — target is v.targetFile and finish() is a no-op.
+	// package-level declaration is unaffected — target is v.outputBuilder and finish() is a no-op.
 	preLiftName := name
 	name, target, finish := v.liftLocalTypeDecl(name, identType)
 

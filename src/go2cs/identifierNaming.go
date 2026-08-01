@@ -188,7 +188,16 @@ func getCoreSanitizedIdentifier(identifier string) string {
 	return identifier
 }
 
-func removeSanitizationMarker(identifier string) string {
+// removeLeadingSanitizationMarker strips ONE leading "@" keyword-escape marker, recovering the
+// original Go name from its C#-legal spelling ("@string" -> "string").
+//
+// Reach for this when a whole identifier is being compared against, or re-derived from, a Go name:
+// the marker is a C# artifact with no place in that comparison. Everything else is left as-is.
+//
+// Contrast stripSanitizationMarkers below, which removes EVERY marker anywhere in the string. The
+// singular/plural in these two names is the only thing distinguishing them, so read it carefully —
+// this one for a whole identifier, that one for a name being COMPOSED from parts.
+func removeLeadingSanitizationMarker(identifier string) string {
 	if strings.HasPrefix(identifier, "@") {
 		return identifier[1:] // Remove "@" prefix
 	}

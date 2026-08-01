@@ -180,11 +180,11 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 		packageLock.Unlock()
 
 		if !v.inFunction {
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 		}
 
 		v.writeOutput("// go2cs generated this placeholder — type %s is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])", name)
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		return
 	}
 
@@ -214,7 +214,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 	case *ast.MapType:
 		v.visitMapType(typeSpecType, identType, name)
 	case *ast.ParenExpr:
-		v.targetFile.WriteString(v.convParenExpr(typeSpecType, DefaultLambdaContext(), DefaultBasicLitContext()))
+		v.outputBuilder.WriteString(v.convParenExpr(typeSpecType, DefaultLambdaContext(), DefaultBasicLitContext()))
 	case *ast.SelectorExpr:
 		// A DEFINED type over a cross-package named type (`type stdFunction unsafe.Pointer`,
 		// `type goroutineProfileStateHolder atomic.Uint32`). Emit an inherited `[GoType]` wrapper of
@@ -236,16 +236,16 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			v.pendingTypeAccess = ""
 
 			if !v.inFunction {
-				v.targetFile.WriteString(v.newline)
+				v.outputBuilder.WriteString(v.newline)
 			}
 
 			v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access)
 			// Cross-package twin of visitIdent's stamp: a defined type over a struct carrying
 			// fixed-size ARRAY fields needs the forwarded `Clone()` (see wrapperValueCloneAttr).
 			v.writeOutput("[GoType(\"%s\")] %s%spartial struct %s;", csName, wrapperValueCloneAttr(rhsType), access, getSanitizedIdentifier(name))
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 		} else {
-			v.targetFile.WriteString(v.convSelectorExpr(typeSpecType, DefaultLambdaContext()))
+			v.outputBuilder.WriteString(v.convSelectorExpr(typeSpecType, DefaultLambdaContext()))
 		}
 	case *ast.StarExpr:
 		{
@@ -261,7 +261,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			// codec_test.go) cannot be a method-body statement in C#; hoist it to member level
 			// (see liftLocalTypeDecl). The lift is taken BEFORE the pointer text is rendered so a
 			// SELF-referential declaration resolves its own name through liftedTypeMap to the
-			// lifted name. A package-level declaration is unaffected — target is v.targetFile and
+			// lifted name. A package-level declaration is unaffected — target is v.outputBuilder and
 			// finish() is a no-op.
 			name, target, finish := v.liftLocalTypeDecl(name, identType)
 
@@ -290,11 +290,11 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 // to the lifted name), redirected to a member-level builder, and emitted at indent 0. The returned
 // finish closure flushes that builder into currentFuncPrefix — which the function's prefix marker
 // emits ahead of the method — and restores the indent level. At package scope it is a no-op: the
-// returned target is v.targetFile and finish() does nothing, so the emitted bytes are unchanged.
+// returned target is v.outputBuilder and finish() does nothing, so the emitted bytes are unchanged.
 // Mirrors the identical in-function hoisting inlined by visitIdent/visitStructType/visitInterfaceType.
 func (v *Visitor) liftLocalTypeDecl(name string, identType types.Type) (liftedName string, target *strings.Builder, finish func()) {
 	if !v.inFunction {
-		return name, v.targetFile, func() {}
+		return name, v.outputBuilder, func() {}
 	}
 
 	target = &strings.Builder{}

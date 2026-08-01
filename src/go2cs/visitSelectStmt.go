@@ -109,11 +109,11 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 		tempName := getGlobalTempVarName("sel")
 		caseTemps[i] = tempName
 
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		v.writeOutput("var %s = %s;", tempName, hoisted)
 	}
 
-	v.targetFile.WriteString(v.newline)
+	v.outputBuilder.WriteString(v.newline)
 
 	v.writeOutput("switch (")
 
@@ -125,9 +125,9 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 	// receive cases keep their `when ch.ꟷᐳ(out v):` guard, which consumes the committed value
 	// from the runtime's per-thread pending slot.
 	if hasDefault {
-		v.targetFile.WriteString("trySelect(")
+		v.outputBuilder.WriteString("trySelect(")
 	} else {
-		v.targetFile.WriteString("select(")
+		v.outputBuilder.WriteString("select(")
 	}
 
 	{
@@ -140,7 +140,7 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 			}
 
 			if regIndex > 0 {
-				v.targetFile.WriteString(", ")
+				v.outputBuilder.WriteString(", ")
 			}
 
 			regIndex++
@@ -157,19 +157,19 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 						if unaryExpr.Op == token.ARROW {
 
 							if v.options.useChannelOperators {
-								v.targetFile.WriteString(ChannelLeftOp)
+								v.outputBuilder.WriteString(ChannelLeftOp)
 								// A NAMED channel operand names the element type explicitly —
 								// generic inference cannot see through the wrapper
 								// (see namedChanElemTypeArg).
-								v.targetFile.WriteString(v.namedChanElemTypeArg(unaryExpr.X))
-								v.targetFile.WriteRune('(')
-								v.targetFile.WriteString(caseTemps[i])
-								v.targetFile.WriteString(", ")
-								v.targetFile.WriteString(EllipsisOperator)
-								v.targetFile.WriteRune(')')
+								v.outputBuilder.WriteString(v.namedChanElemTypeArg(unaryExpr.X))
+								v.outputBuilder.WriteRune('(')
+								v.outputBuilder.WriteString(caseTemps[i])
+								v.outputBuilder.WriteString(", ")
+								v.outputBuilder.WriteString(EllipsisOperator)
+								v.outputBuilder.WriteRune(')')
 							} else {
-								v.targetFile.WriteString(caseTemps[i])
-								v.targetFile.WriteString(".Receiving")
+								v.outputBuilder.WriteString(caseTemps[i])
+								v.outputBuilder.WriteString(".Receiving")
 							}
 							handled = true
 						}
@@ -177,30 +177,30 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 				} else {
 					assignment := v.getPrintedNode(assignStmt)
 					v.showWarning("@visitSelectStmt - Failed to resolve expected 'AssignStmt' arguments: %s", assignment)
-					v.targetFile.WriteString(fmt.Sprintf("/* %s */", assignment))
+					v.outputBuilder.WriteString(fmt.Sprintf("/* %s */", assignment))
 				}
 			} else if _, ok := comClause.Comm.(*ast.SendStmt); ok {
 				// The whole registration call was hoisted above (source-order operand
 				// evaluation); the list names only the temp holding its SelectOp.
-				v.targetFile.WriteString(caseTemps[i])
+				v.outputBuilder.WriteString(caseTemps[i])
 				handled = true
 			} else if exprStmt, ok := comClause.Comm.(*ast.ExprStmt); ok {
 				if unaryExpr, ok := exprStmt.X.(*ast.UnaryExpr); ok {
 					if unaryExpr.Op == token.ARROW {
 						if v.options.useChannelOperators {
-							v.targetFile.WriteString(ChannelLeftOp)
+							v.outputBuilder.WriteString(ChannelLeftOp)
 							// A NAMED channel operand names the element type explicitly —
 							// generic inference cannot see through the wrapper
 							// (see namedChanElemTypeArg).
-							v.targetFile.WriteString(v.namedChanElemTypeArg(unaryExpr.X))
-							v.targetFile.WriteRune('(')
-							v.targetFile.WriteString(caseTemps[i])
-							v.targetFile.WriteString(", ")
-							v.targetFile.WriteString(EllipsisOperator)
-							v.targetFile.WriteRune(')')
+							v.outputBuilder.WriteString(v.namedChanElemTypeArg(unaryExpr.X))
+							v.outputBuilder.WriteRune('(')
+							v.outputBuilder.WriteString(caseTemps[i])
+							v.outputBuilder.WriteString(", ")
+							v.outputBuilder.WriteString(EllipsisOperator)
+							v.outputBuilder.WriteRune(')')
 						} else {
-							v.targetFile.WriteString(caseTemps[i])
-							v.targetFile.WriteString(".Receiving")
+							v.outputBuilder.WriteString(caseTemps[i])
+							v.outputBuilder.WriteString(".Receiving")
 						}
 						handled = true
 					}
@@ -213,14 +213,14 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 		}
 	}
 
-	v.targetFile.WriteRune(')')
+	v.outputBuilder.WriteRune(')')
 
-	v.targetFile.WriteString(") {")
-	v.targetFile.WriteString(v.newline)
+	v.outputBuilder.WriteString(") {")
+	v.outputBuilder.WriteString(v.newline)
 
 	for i, comClause := range comClauses {
 		if i > 0 {
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 		}
 
 		// visitStmt resets this per statement, but an EMPTY clause body (a bare `default:` — io
@@ -237,7 +237,7 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 			v.writeOutput("default: {")
 		} else {
 			v.writeOutput("case ")
-			v.targetFile.WriteString(strconv.Itoa(i))
+			v.outputBuilder.WriteString(strconv.Itoa(i))
 
 			if comClause.Comm != nil {
 				// Check if CommClause.Comm is an AssignStmt
@@ -250,55 +250,55 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 
 						if unaryExpr, ok := rhs.(*ast.UnaryExpr); ok {
 							if unaryExpr.Op == token.ARROW {
-								v.targetFile.WriteString(" when ")
-								v.targetFile.WriteString(caseTemps[i])
-								v.targetFile.WriteRune('.')
+								v.outputBuilder.WriteString(" when ")
+								v.outputBuilder.WriteString(caseTemps[i])
+								v.outputBuilder.WriteRune('.')
 
 								if v.options.useChannelOperators {
-									v.targetFile.WriteString(ChannelRightOp)
+									v.outputBuilder.WriteString(ChannelRightOp)
 								} else {
-									v.targetFile.WriteString("Received")
+									v.outputBuilder.WriteString("Received")
 								}
 
-								v.targetFile.WriteString("(out ")
+								v.outputBuilder.WriteString("(out ")
 
 								if assignStmt.Tok == token.DEFINE {
 									if v.options.preferVarDecl {
-										v.targetFile.WriteString("var ")
+										v.outputBuilder.WriteString("var ")
 									} else {
 										exprType := convertToCSTypeName(v.getExprTypeName(lhs, false))
-										v.targetFile.WriteString(exprType)
-										v.targetFile.WriteRune(' ')
+										v.outputBuilder.WriteString(exprType)
+										v.outputBuilder.WriteRune(' ')
 									}
 								}
 
 								boundName, boxDecl := v.selectCommBinding(lhs, assignStmt.Tok == token.DEFINE)
-								v.targetFile.WriteString(boundName)
+								v.outputBuilder.WriteString(boundName)
 
 								if boxDecl != "" {
 									commBoxDecls = append(commBoxDecls, boxDecl)
 								}
 
 								if lhsCount == 2 {
-									v.targetFile.WriteString(", out ")
+									v.outputBuilder.WriteString(", out ")
 
 									if assignStmt.Tok == token.DEFINE {
 										if v.options.preferVarDecl {
-											v.targetFile.WriteString("var ")
+											v.outputBuilder.WriteString("var ")
 										} else {
-											v.targetFile.WriteString("bool ")
+											v.outputBuilder.WriteString("bool ")
 										}
 									}
 
 									boundName, boxDecl = v.selectCommBinding(assignStmt.Lhs[1], assignStmt.Tok == token.DEFINE)
-									v.targetFile.WriteString(boundName)
+									v.outputBuilder.WriteString(boundName)
 
 									if boxDecl != "" {
 										commBoxDecls = append(commBoxDecls, boxDecl)
 									}
 								}
 
-								v.targetFile.WriteRune(')')
+								v.outputBuilder.WriteRune(')')
 							}
 						}
 					}
@@ -312,29 +312,29 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 					// rather than falling to the default.)
 					if unaryExpr, ok := exprStmt.X.(*ast.UnaryExpr); ok {
 						if unaryExpr.Op == token.ARROW {
-							v.targetFile.WriteString(" when ")
-							v.targetFile.WriteString(caseTemps[i])
-							v.targetFile.WriteRune('.')
+							v.outputBuilder.WriteString(" when ")
+							v.outputBuilder.WriteString(caseTemps[i])
+							v.outputBuilder.WriteRune('.')
 
 							if v.options.useChannelOperators {
-								v.targetFile.WriteString(ChannelRightOp)
+								v.outputBuilder.WriteString(ChannelRightOp)
 							} else {
-								v.targetFile.WriteString("Received")
+								v.outputBuilder.WriteString("Received")
 							}
 
-							v.targetFile.WriteString("(out _)")
+							v.outputBuilder.WriteString("(out _)")
 						}
 					}
 				}
 			}
 
-			v.targetFile.WriteString(": {")
+			v.outputBuilder.WriteString(": {")
 		}
 
 		v.indentLevel++
 
 		for _, boxDecl := range commBoxDecls {
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 			v.writeOutput("%s", boxDecl)
 		}
 
@@ -342,7 +342,7 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 			v.visitStmt(stmt, []StmtContext{})
 		}
 
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 
 		if !v.lastStatementWasReturn || v.lastReturnIndentLevel != v.indentLevel {
 			v.writeOutputLn("break;")
@@ -352,7 +352,7 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 		v.writeOutput("}")
 	}
 
-	v.targetFile.WriteRune('}')
+	v.outputBuilder.WriteRune('}')
 
 	// A blocking select (no `default:`) lowers to `switch (select(…))` whose sections are guarded
 	// `case N when <recv>:` labels — C# cannot prove the switch exhaustive, so a value-returning
@@ -373,7 +373,7 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 		}
 
 		if allClausesTerminal {
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 			v.writeOutput("return default!;")
 		}
 	}

@@ -79,7 +79,34 @@ func (v *Visitor) callFunIsUniverseBuiltin(callExpr *ast.CallExpr) bool {
 	return ok && v.identIsUniverseBuiltin(ident)
 }
 
+// convCallExpr converts any Go call expression to C#. Every function call, method call, built-in
+// call and type conversion in the corpus routes through here, which is why it is the largest
+// function in the converter.
+//
+// It reads as one long body, but it is a PIPELINE — each phase narrows what the next has to
+// handle, and the `// ---- Phase N ----` banners below mark the boundaries:
+//
+//	1a  shapes intercepted whole (IIFE, identity pointer reinterpret)
+//	1b  type conversions — `T(x)` is a call in Go's grammar but a conversion in meaning
+//	1c  constructor calls
+//	2   build the argument-conversion context
+//	3   classify each argument against the callee signature   <- the bulk
+//	4   Go universe built-ins (append/len/cap/make/copy/panic/recover/print/…)
+//	5   function-literal and lambda arguments
+//	6   conversions whose source is a string or slice
+//	7   targeted fixes: name shadowing, min/max, unsafe constants, atomic managed pointers
+//	8   generic instantiation type arguments
+//	9   render the call
+//
+// Phases 1a-1c and 4 RETURN directly; the rest fall through and contribute to the final rendering.
+// Splitting this along those seams is planned work — the banners exist so that starts from a map.
 func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) string {
+	// ---- Phase 1a: shapes intercepted before the general call path ----
+	//
+	// Each of these is a Go idiom whose faithful rendering the general path below gets wrong, so
+	// it is recognized and emitted directly. They are narrow by design: every one is gated on an
+	// exact shape so no ordinary call can fall into them.
+
 	// Immediately-invoked, no-argument function literal (IIFE): `func(){ … }()`. A bare C#
 	// lambda cannot be invoked directly (CS0149), and the literal may use defer/recover that
 	// must be scoped to itself. Emit it as a `func((defer, recover) => body)` execution-context
@@ -123,6 +150,10 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	}
 
 	funcType := v.getType(callExpr.Fun, false)
+	// ---- Phase 1b: type conversions ----
+	//
+	// T(x) is a CALL in Go's grammar but a conversion in meaning, so it forks off here before
+	// any of the call machinery below runs.
 
 	// Check if the call is a type conversion
 	if ok, targetTypeName := v.isTypeConversion(callExpr); ok {
@@ -977,12 +1008,15 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 
 		return fmt.Sprintf("((%s)%s)", targetTypeName, expr)
 	}
+	// ---- Phase 1c: constructor calls ----
 
 	constructType := ""
 
 	if v.isConstructorCall(callExpr) {
 		constructType = "new "
 	}
+
+	// ---- Phase 2: build the argument-conversion context ----
 
 	// u8 readonly spans cannot be used as arguments to functions that take interface parameters
 	callExprContext := DefaultCallExprContext()
@@ -997,6 +1031,12 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	if callExpr.Ellipsis.IsValid() {
 		callExprContext.hasSpreadOperator = true
 	}
+
+	// ---- Phase 3: classify each argument against the callee signature ----
+	//
+	// The longest phase. For every parameter position it decides what the argument must become:
+	// an interface conversion, a ef/box form, a cast, a clone, a lambda re-wrap. The answers
+	// are recorded in callExprContext for convExprList to apply.
 
 	var replacementArgs []string
 	funcSignature := v.getFunctionSignature(callExpr)
@@ -1500,6 +1540,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	}
 
 	callExprContext.replacementArgs = replacementArgs
+	// ---- Phase 4: Go universe built-ins ----
 
 	// Every arm below is keyed on a built-in's NAME; a shadowing declaration of that name makes the
 	// call an ordinary one, so the whole group is gated on the identifier actually resolving to the
@@ -1794,6 +1835,8 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		}
 	}
 
+	// ---- Phase 5: function-literal and lambda arguments ----
+
 	lambdaContext := DefaultLambdaContext()
 	lambdaContext.isCallExpr = true
 	lambdaContext.isPointerCast = context.isPointerCast
@@ -1933,6 +1976,11 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	}
 
 	funcTypeName := v.getTypeName(funcType, true)
+	// ---- Phase 6: conversions whose SOURCE is a string or slice ----
+	//
+	// []byte(s), []rune(s) and their literal forms. These need golib's @string in the middle
+	// because C# will not chain two user-defined conversions on its own.
+
 	// A string-source element-decoding conversion — `[]rune("lit")` or `[]byte("lit")` — must cast
 	// the literal to golib's `@string` so the existing `@string`→`slice<rune>`/`slice<byte>`
 	// conversion applies. A bare string literal is a System.String, which has no such conversion
@@ -2052,6 +2100,8 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		funcName = v.convExpr(callExpr.Fun, []ExprContext{lambdaContext})
 	}
 
+	// ---- Phase 7a: built-in name shadowing, and min/max argument typing ----
+
 	// A Go built-in call (`clear(s)`, `len(s)`, …) whose name the package ALSO declares as a method
 	// shadows the using-static `go.builtin.<name>` (C# member lookup binds the package's own
 	// `<name>(this ref T)` extension first → CS1620/CS1503). Qualify it as `builtin.<name>` so it
@@ -2126,6 +2176,8 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		}
 	}
 
+	// ---- Phase 7b: unsafe.Sizeof / Alignof / Offsetof constant folding ----
+
 	// Go defines `unsafe.Sizeof` / `unsafe.Alignof` / `unsafe.Offsetof` as COMPILE-TIME CONSTANTS
 	// computed from the operand's STATIC type — the operand is never evaluated — so the converter
 	// FOLDS them to the value go/types already holds, keeping the Go expression as a comment. That
@@ -2194,6 +2246,8 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		v.showWarning("Go code converted to C# using 'unsafe.Sizeof' may not produce same value as Go - verify usage: %s", v.getPrintedNode(callExpr))
 	}
 
+	// ---- Phase 7c: sync/atomic on managed pointers ----
+
 	// sync/atomic.LoadPointer/StorePointer on a MANAGED pointer field — the lock-free
 	// `atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&x.field)))` / `StorePointer(…,
 	// unsafe.Pointer(v))` idiom where `x.field` is a `*T` (a `ж<T>` reference). The literal
@@ -2213,6 +2267,8 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		return fmt.Sprintf("%s(%s, %s)", funcName, box, v.convExpr(storeVal, nil))
 	}
 
+	// ---- Phase 8: generic instantiation type arguments ----
+
 	if len(typeParamExpr) > 0 && !strings.HasSuffix(funcName, typeParamExpr) {
 		// A PARTIAL Go instantiation (`Grow[S](nil, size)` — only S written, E inferred through
 		// core types) already rendered its explicit arguments into funcName; the RESOLVED full
@@ -2220,6 +2276,11 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// would emit `Grow<S><S, E>`).
 		funcName = stripTrailingTypeArgs(funcName) + typeParamExpr
 	}
+
+	// ---- Phase 9: render the call ----
+	//
+	// Everything above decided HOW each piece renders; this assembles the final text and then
+	// re-walks the arguments purely to record implicit conversions as a side effect.
 
 	var result string
 

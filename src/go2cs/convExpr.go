@@ -140,12 +140,15 @@ type BasicLitContext struct {
 	// object parameter. It is the signal convBinaryExpr uses to suppress the `u8` form inside a
 	// string CONCATENATION, whose RESULT lands in that slot: two u8 literal operands fold to a
 	// single span (C# folds utf8 literal constants), which then has no boxing conversion to
-	// object — `print("\n" + "\t")` in runtime's newstack diagnostics is CS1503. It was formerly
-	// derived from `!u8StringOK`, which coupled the two: flipping a site's literal rendering to
-	// the combined `(@string)"…"u8` form (which those slots DO accept, since the cast makes it an
-	// @string) would silently re-enable u8 inside its concats and break the build. The two are now
-	// independent — the literal flags say how a STANDALONE literal renders, this says whether the
-	// slot tolerates a span — and every site that renders a literal for a span-hostile slot sets it.
+	// object — `print("\n" + "\t")` in runtime's newstack diagnostics is CS1503.
+	//
+	// It is deliberately INDEPENDENT of u8StringOK rather than derived from it, and every site
+	// that renders a literal into a span-hostile slot must set it explicitly. The two answer
+	// different questions — the literal flags say how a STANDALONE literal renders, this says
+	// whether the slot tolerates a span — and deriving one from the other couples them wrongly:
+	// flipping a site's literal rendering to the combined `(@string)"…"u8` form (which those slots
+	// DO accept, since the cast makes it an @string) would silently re-enable u8 inside that site's
+	// concatenations and break the build.
 	spanTargetUnsupported bool
 }
 
@@ -441,8 +444,9 @@ func (v *Visitor) convExpr(expr ast.Expr, contexts []ExprContext) string {
 		rendered := v.convIdent(exprType, context)
 
 		// A BigInteger-backed untyped const reference carries no implicit conversion to a
-		// built-in numeric type, so a concrete numeric context must cast it — everywhere, not
-		// just in the comparison arm that used to be its only casting consumer.
+		// built-in numeric type, so EVERY concrete numeric context must cast it. The cast belongs
+		// here, at the shared ident rendering, rather than in the comparison arm alone: any other
+		// arm that reaches such a const needs exactly the same cast.
 		if cast := v.bigIntegerConstMaterialization(exprType, rendered); cast != "" {
 			return cast
 		}

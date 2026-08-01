@@ -494,7 +494,7 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 		hoisted = v.newline
 	}
 
-	v.targetFile.WriteString(strings.ReplaceAll(result.String(), DeferredDeclsMarker, hoisted))
+	v.outputBuilder.WriteString(strings.ReplaceAll(result.String(), DeferredDeclsMarker, hoisted))
 }
 
 // crossBaseConstCastFor returns the two-step cast chain for an untyped-CONSTANT result whose

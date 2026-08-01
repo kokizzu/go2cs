@@ -15,7 +15,7 @@ func (v *Visitor) visitBranchStmt(branchStmt *ast.BranchStmt) {
 	// FALLTHROUGH is handled in visitSwitchStmt.go
 	switch branchStmt.Tok {
 	case token.BREAK:
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		if branchStmt.Label == nil {
 			v.writeOutput("break;")
 		} else {
@@ -29,19 +29,19 @@ func (v *Visitor) visitBranchStmt(branchStmt *ast.BranchStmt) {
 			// `continue_<label>:` target, which the copy-backs already follow.
 			if len(v.loopCopyBackStack) > 0 {
 				for _, copyBack := range v.loopCopyBackStack[len(v.loopCopyBackStack)-1] {
-					v.targetFile.WriteString(v.newline)
+					v.outputBuilder.WriteString(v.newline)
 					v.writeOutput(copyBack)
 				}
 			}
 
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 			v.writeOutput("continue;")
 		} else {
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 			v.writeOutput("goto %s;", getContinueLabelName(branchStmt.Label.Name))
 		}
 	case token.GOTO:
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		v.writeOutput("goto %s;", getSanitizedIdentifier(branchStmt.Label.Name))
 	}
 }

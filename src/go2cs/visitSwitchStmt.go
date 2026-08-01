@@ -105,7 +105,7 @@ func (v *Visitor) visitSwitchStmt(switchStmt *ast.SwitchStmt, target LabeledStmt
 	v.visitSwitchStmtCore(switchStmt)
 
 	if len(target.label) > 0 {
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		v.writeOutput("%s:;", getBreakLabelName(target.label))
 	}
 }
@@ -318,14 +318,14 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 
 	if switchStmt.Init != nil {
 		// Any declared variable will be scoped to switch statement, so create a sub-block for it
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		v.writeOutput("{")
 		v.indentLevel++
 
 		v.visitStmt(switchStmt.Init, []StmtContext{})
 	}
 
-	v.targetFile.WriteString(v.newline)
+	v.outputBuilder.WriteString(v.newline)
 
 	if hasFallthroughs || (!allConst && tag != nil) {
 		// Most complex scenario with standalone if's, and fallthrough
@@ -462,14 +462,14 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 				v.writeOutput("var ")
 			} else {
 				exprType := convertToCSTypeName(v.getExprTypeName(tag, false))
-				v.targetFile.WriteString(exprType)
-				v.targetFile.WriteRune(' ')
+				v.outputBuilder.WriteString(exprType)
+				v.outputBuilder.WriteRune(' ')
 			}
 
-			v.targetFile.WriteString(exprVarName)
-			v.targetFile.WriteString(" = ")
-			v.targetFile.WriteString(v.convExpr(tag, nil))
-			v.targetFile.WriteString(";" + v.newline)
+			v.outputBuilder.WriteString(exprVarName)
+			v.outputBuilder.WriteString(" = ")
+			v.outputBuilder.WriteString(v.convExpr(tag, nil))
+			v.outputBuilder.WriteString(";" + v.newline)
 		}
 
 		if hasFallthroughs {
@@ -479,8 +479,8 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 				v.writeOutput("bool ")
 			}
 
-			v.targetFile.WriteString(matchVarName)
-			v.targetFile.WriteString(" = false;" + v.newline)
+			v.outputBuilder.WriteString(matchVarName)
+			v.outputBuilder.WriteString(" = false;" + v.newline)
 
 			if nonTrailingDefaultFallsThrough {
 				// Precomputed any-case-match (see above). Note this evaluates every case
@@ -508,10 +508,10 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 					v.writeOutput("bool ")
 				}
 
-				v.targetFile.WriteString(anyMatchVarName)
-				v.targetFile.WriteString(" = ")
-				v.targetFile.WriteString(strings.Join(parts, " || "))
-				v.targetFile.WriteString(";" + v.newline)
+				v.outputBuilder.WriteString(anyMatchVarName)
+				v.outputBuilder.WriteString(" = ")
+				v.outputBuilder.WriteString(strings.Join(parts, " || "))
+				v.outputBuilder.WriteString(";" + v.newline)
 			}
 		}
 
@@ -562,13 +562,13 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 			// one — so no already-correct emission changes. A preceding BARE-BLOCK default takes no
 			// `else` at all (see prevClauseIsBareBlock).
 			if i > 0 && !caseFallsThrough && !prevClauseIsBareBlock && (!v.lastStatementWasReturn || !allCasesTerminal) {
-				v.targetFile.WriteString("else ")
+				v.outputBuilder.WriteString("else ")
 			}
 
 			// Handle default case
 			if caseClause.List == nil {
 				if caseFallsThrough {
-					v.targetFile.WriteString(fmt.Sprintf("if (fallthrough || !%s) { /* default: */", matchVarName))
+					v.outputBuilder.WriteString(fmt.Sprintf("if (fallthrough || !%s) { /* default: */", matchVarName))
 
 					// A trailing default emitted in the guarded form leaves C# unable to prove the switch
 					// is exhaustive (see guardedTerminalDefault above).
@@ -578,7 +578,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 				} else if nonTrailingDefaultFallsThrough && i < len(caseClauses)-1 {
 					// A leading/middle default runs only when NO case matches (anyMatch is
 					// precomputed above); its own `fallthrough` chains into the next case.
-					v.targetFile.WriteString(fmt.Sprintf("if (!%s) { /* default: */", anyMatchVarName))
+					v.outputBuilder.WriteString(fmt.Sprintf("if (!%s) { /* default: */", anyMatchVarName))
 				} else if i == len(caseClauses)-1 && hasFallthroughs {
 					// A TRAILING default in a switch WITH fallthroughs must be guarded on !match. The
 					// else-if chain is broken by the fallthrough-TARGET if-blocks (a case rendered
@@ -588,47 +588,47 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 					// element. Guarding on !match makes the default run only when nothing matched
 					// (equivalent to the bare else in a pure else-if chain, correct in the broken chain).
 					// Like the fallthrough-reached default, this leaves C# unable to prove exhaustiveness.
-					v.targetFile.WriteString(fmt.Sprintf("if (!%s) { /* default: */", matchVarName))
+					v.outputBuilder.WriteString(fmt.Sprintf("if (!%s) { /* default: */", matchVarName))
 					guardedTerminalDefault = true
 				} else {
-					v.targetFile.WriteString("{ /* default: */")
+					v.outputBuilder.WriteString("{ /* default: */")
 					thisClauseIsBareBlock = true
 				}
 			} else {
 				caseClauseCount := len(caseClause.List)
 
-				v.targetFile.WriteString("if (")
+				v.outputBuilder.WriteString("if (")
 
 				usePattenMatch := caseUsesPattern[i]
 
 				if caseFallsThrough {
-					v.targetFile.WriteString(fmt.Sprintf("fallthrough || !%s && ", matchVarName))
+					v.outputBuilder.WriteString(fmt.Sprintf("fallthrough || !%s && ", matchVarName))
 
 					if caseClauseCount > 1 || !usePattenMatch && tag == nil {
-						v.targetFile.WriteRune('(')
+						v.outputBuilder.WriteRune('(')
 					}
 				}
 
 				// Condition pre-rendered above (single convExpr per label).
-				v.targetFile.WriteString(caseConds[i])
+				v.outputBuilder.WriteString(caseConds[i])
 
 				if hasFallthroughs {
 					// Only close the wrapping paren when it was actually opened above
 					// (same guard as the matching '(' write). Otherwise a fallthrough
 					// case with a single pattern-matched value emits an unbalanced ')'.
 					if caseFallsThrough && (caseClauseCount > 1 || !usePattenMatch && tag == nil) {
-						v.targetFile.WriteRune(')')
+						v.outputBuilder.WriteRune(')')
 					}
 
-					v.targetFile.WriteString(") {")
+					v.outputBuilder.WriteString(") {")
 
 					if !nextClauseIsDefault || defaultCaseFallsThrough {
-						v.targetFile.WriteRune(' ')
-						v.targetFile.WriteString(matchVarName)
-						v.targetFile.WriteString(" = true;")
+						v.outputBuilder.WriteRune(' ')
+						v.outputBuilder.WriteString(matchVarName)
+						v.outputBuilder.WriteString(" = true;")
 					}
 				} else {
-					v.targetFile.WriteString(") {")
+					v.outputBuilder.WriteString(") {")
 				}
 			}
 
@@ -643,7 +643,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 				// Emit `do {` on its own properly-indented line. writeOutput prepends the indent then
 				// the text, so the leading newline must be written raw first — otherwise `do {` glues
 				// onto the preceding `) {` with the indent spaces between them (`) {        do {`).
-				v.targetFile.WriteString(v.newline)
+				v.outputBuilder.WriteString(v.newline)
 				v.writeOutput("do {")
 				v.indentLevel++
 			}
@@ -668,11 +668,11 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 				// Likewise close on its own indented line. A `"%s} while…"` format would emit the
 				// indent BEFORE the newline (trailing whitespace on the prior line) and drop the
 				// `} while (false);` to column 0; write the newline raw, then the indented text.
-				v.targetFile.WriteString(v.newline)
+				v.outputBuilder.WriteString(v.newline)
 				v.writeOutput("} while (false);")
 			}
 
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 
 			if caseHasFallthroughStmt[i] {
 				v.writeOutputLn("fallthrough = true;")
@@ -697,13 +697,13 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 	} else if allConst && tag != nil {
 		// Most simple scenario when all case values are constant, a common C# switch will suffice
 		v.writeOutput("switch (")
-		v.targetFile.WriteString(v.convExpr(tag, nil))
-		v.targetFile.WriteString(") {")
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.convExpr(tag, nil))
+		v.outputBuilder.WriteString(") {")
+		v.outputBuilder.WriteString(v.newline)
 
 		for i, caseClause := range caseClauses {
 			if i > 0 {
-				v.targetFile.WriteString(v.newline)
+				v.outputBuilder.WriteString(v.newline)
 			}
 
 			if caseClause.List == nil {
@@ -713,13 +713,13 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 					if i == 0 {
 						v.writeOutput("case ")
 					} else {
-						v.targetFile.WriteString(" or ")
+						v.outputBuilder.WriteString(" or ")
 					}
 
-					v.targetFile.WriteString(v.convExpr(expr, nil))
+					v.outputBuilder.WriteString(v.convExpr(expr, nil))
 
 					if i == len(caseClause.List)-1 {
-						v.targetFile.WriteString(": {")
+						v.outputBuilder.WriteString(": {")
 					}
 				}
 			}
@@ -736,7 +736,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 				v.visitStmt(stmt, []StmtContext{})
 			}
 
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 
 			if !v.lastStatementWasReturn || v.lastReturnIndentLevel != v.indentLevel {
 				v.writeOutputLn("break;")
@@ -746,15 +746,15 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 			v.writeOutput("}")
 		}
 
-		v.targetFile.WriteRune('}')
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteRune('}')
+		v.outputBuilder.WriteString(v.newline)
 	} else {
 		// Most common scenario with expression switches
 		v.writeOutput("switch (%s) {%s", TrueMarker, v.newline)
 
 		for clauseIndex, caseClause := range caseClauses {
 			if clauseIndex > 0 {
-				v.targetFile.WriteString(v.newline)
+				v.outputBuilder.WriteString(v.newline)
 			}
 
 			if caseClause.List == nil {
@@ -770,9 +770,9 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 						v.writeOutput("case {} when ")
 					} else {
 						if usePattenMatch {
-							v.targetFile.WriteString(" or ")
+							v.outputBuilder.WriteString(" or ")
 						} else {
-							v.targetFile.WriteString(" || ")
+							v.outputBuilder.WriteString(" || ")
 						}
 					}
 
@@ -782,7 +782,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 						context.usePattenMatch = true
 						context.declareIsExpr = i == 0
 					} else if caseClauseCount > 1 {
-						v.targetFile.WriteRune('(')
+						v.outputBuilder.WriteRune('(')
 					}
 
 					// A constant-TRUE case condition ahead of other clauses (`switch {
@@ -801,17 +801,17 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 					}
 
 					if caseIsFoldableTrue {
-						v.targetFile.WriteString(OpaqueTrueMarker)
+						v.outputBuilder.WriteString(OpaqueTrueMarker)
 					} else {
-						v.targetFile.WriteString(v.convExpr(expr, []ExprContext{context}))
+						v.outputBuilder.WriteString(v.convExpr(expr, []ExprContext{context}))
 					}
 
 					if !usePattenMatch && caseClauseCount > 1 {
-						v.targetFile.WriteRune(')')
+						v.outputBuilder.WriteRune(')')
 					}
 
 					if i == caseClauseCount-1 {
-						v.targetFile.WriteString(": {")
+						v.outputBuilder.WriteString(": {")
 					}
 				}
 			}
@@ -828,7 +828,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 				v.visitStmt(stmt, []StmtContext{})
 			}
 
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 
 			if !v.lastStatementWasReturn || v.lastReturnIndentLevel != v.indentLevel {
 				v.writeOutputLn("break;")
@@ -838,8 +838,8 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 			v.writeOutput("}")
 		}
 
-		v.targetFile.WriteRune('}')
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteRune('}')
+		v.outputBuilder.WriteString(v.newline)
 	}
 
 	// Close any locally scoped declared variable sub-block

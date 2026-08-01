@@ -417,6 +417,18 @@ func (v *Visitor) nativeIntConstCastType(lhs, rhs ast.Expr, alreadyCast string) 
 	return castType
 }
 
+// visitAssignStmt emits a Go assignment statement as C#.
+//
+// The size is earned: `=` and `:=` in Go cover far more ground than C# assignment does, and each
+// shape needs its own rendering. One statement here may be a declaration or a plain assignment;
+// may assign one value or destructure a MULTI-VALUE call; may be the comma-ok form of a map read,
+// type assertion or channel receive; may swap several variables at once (Go evaluates every
+// right-hand side before assigning any, so `a, b = b, a` needs temporaries); may write through a
+// pointer, a heap box, a promoted embedded field or an interface slot; and may need a conversion,
+// a cast or a defensive clone on the way in.
+//
+// Roughly three quarters of this file is this one function. It is planned for decomposition, and
+// the natural seams are those shapes — the branches on assignStmt.Tok and on the arity of Lhs/Rhs.
 func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingContext) {
 	result := &strings.Builder{}
 
@@ -456,16 +468,16 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 						result.WriteString(fmt.Sprintf("%s.Set(%s, %s);", outerExpr, keyExpr, valExpr))
 
 						if hoistBuf != nil && hoistBuf.Len() > 0 {
-							v.targetFile.WriteString(hoistBuf.String())
+							v.outputBuilder.WriteString(hoistBuf.String())
 						} else if format.useNewLine {
-							v.targetFile.WriteString(v.newline)
+							v.outputBuilder.WriteString(v.newline)
 						}
 
 						if format.useIndent {
-							v.targetFile.WriteString(v.indent(v.indentLevel))
+							v.outputBuilder.WriteString(v.indent(v.indentLevel))
 						}
 
-						v.targetFile.WriteString(result.String())
+						v.outputBuilder.WriteString(result.String())
 						return
 					}
 				}
@@ -1781,16 +1793,16 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 
 	if hoistBuf != nil && hoistBuf.Len() > 0 {
 		// The hoisted decls carry their own leading newline + per-line indentation.
-		v.targetFile.WriteString(hoistBuf.String())
+		v.outputBuilder.WriteString(hoistBuf.String())
 	} else if format.useNewLine {
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 	}
 
 	if format.useIndent {
-		v.targetFile.WriteString(v.indent(v.indentLevel))
+		v.outputBuilder.WriteString(v.indent(v.indentLevel))
 	}
 
-	v.targetFile.WriteString(result.String())
+	v.outputBuilder.WriteString(result.String())
 }
 
 // lhsReusedInLaterRhs reports whether a WRITTEN left-hand identifier of a parallel assignment appears in

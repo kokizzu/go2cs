@@ -140,7 +140,7 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 	}
 
 	if target == nil {
-		target = v.targetFile
+		target = v.outputBuilder
 
 		if !v.inFunction {
 			target.WriteString(v.newline)
@@ -260,7 +260,7 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 				if isDynamicInterface {
 					v.indentLevel--
 					v.removeLastLineFeed(result)
-					v.removeLastLineFeed(v.targetFile)
+					v.removeLastLineFeed(v.outputBuilder)
 				}
 
 				inheritedInterfaces = append(inheritedInterfaces, v.convExpr(method.Type, nil))
@@ -281,7 +281,7 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 
 				if isDynamicInterface {
 					v.indentLevel++
-					v.targetFile.WriteString(v.newline)
+					v.outputBuilder.WriteString(v.newline)
 				}
 			}
 		} else {

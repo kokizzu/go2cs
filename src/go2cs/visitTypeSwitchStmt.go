@@ -20,7 +20,7 @@ func (v *Visitor) visitTypeSwitchStmt(typeSwitchStmt *ast.TypeSwitchStmt, target
 	v.visitTypeSwitchStmtCore(typeSwitchStmt)
 
 	if len(target.label) > 0 {
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		v.writeOutput("%s:;", getBreakLabelName(target.label))
 	}
 }
@@ -38,7 +38,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 
 	if typeSwitchStmt.Init != nil {
 		// Any declared variable will be scoped to switch statement, so create a sub-block for it
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		v.writeOutput("{")
 		v.indentLevel++
 
@@ -71,7 +71,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 			if tagHasSideEffects(typeAssert.X) && typeSwitchHasRebindArm(caseClauses, targetIdent) {
 				hoistVar := getGlobalTempVarName("switch")
 
-				v.targetFile.WriteString(v.newline)
+				v.outputBuilder.WriteString(v.newline)
 				v.writeOutput("var %s = %s;", hoistVar, guardExpr)
 
 				typeVar = fmt.Sprintf("%s.type()", hoistVar)
@@ -82,12 +82,12 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 		operandExpr = typeVar
 	}
 
-	v.targetFile.WriteString(v.newline)
+	v.outputBuilder.WriteString(v.newline)
 
 	v.writeOutput("switch (")
-	v.targetFile.WriteString(operandExpr)
-	v.targetFile.WriteString(") {")
-	v.targetFile.WriteString(v.newline)
+	v.outputBuilder.WriteString(operandExpr)
+	v.outputBuilder.WriteString(") {")
+	v.outputBuilder.WriteString(v.newline)
 
 	identContext := DefaultIdentContext()
 	identContext.isType = true
@@ -113,15 +113,18 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 		}
 	}
 
-	// Go type distinctions can VANISH in the C# type map — historically `case uint:` and
-	// `case uintptr:` both resolved to System.UIntPtr, making the later case unreachable (CS8120;
-	// runtime error.go's printpanicval). A duplicate-mapped case is merged (skipped, with a marker
-	// comment) ONLY when its Go body is byte-identical to the first occurrence's — then the earlier
-	// label already routes it exactly; DIFFERING bodies keep both labels, preferring the compile
-	// error over silently routing one Go case into another's body. Keyed by the RESOLVED C# type;
-	// values are the printed Go bodies. (uintptr is now a DISTINCT golib struct — golib/uintptr.cs
-	// — so the uint/uintptr pair no longer collides and both original labels emit; the merge
-	// machinery remains for the alias pairs that DO share a C# type.)
+	// Go type distinctions can VANISH in the C# type map: two Go types that are distinct case
+	// labels may resolve to ONE C# type, which makes the later case unreachable (CS8120). A
+	// duplicate-mapped case is therefore merged — skipped, with a marker comment — but ONLY when
+	// its Go body is byte-identical to the first occurrence's, since the earlier label then routes
+	// it exactly. DIFFERING bodies keep both labels, preferring the compile error over silently
+	// routing one Go case into another's body. Keyed by the RESOLVED C# type; values are the
+	// printed Go bodies.
+	//
+	// This covers the Go type ALIAS pairs that genuinely share one C# type. `uint`/`uintptr` is
+	// the pair that motivated it — runtime error.go's printpanicval, where both resolved to
+	// System.UIntPtr — but is not one of them today: uintptr is a distinct golib struct
+	// (golib/uintptr.cs), so it does not collide with uint and both labels emit.
 	emittedCaseTypes := map[string]string{}
 
 	resolveCaseType := func(caseExpr string) string {
@@ -139,7 +142,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 
 	for i, caseClause := range caseClauses {
 		if i > 0 {
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 		}
 
 		if caseClause.List == nil {
@@ -150,7 +153,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 			v.indentLevel++
 
 			if len(targetIdent) > 0 {
-				v.targetFile.WriteString(v.newline)
+				v.outputBuilder.WriteString(v.newline)
 
 				boundExpr := typeVar
 
@@ -164,14 +167,14 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 					v.writeOutput("object")
 				}
 
-				v.targetFile.WriteString(fmt.Sprintf(" %s = %s;", targetIdent, boundExpr))
+				v.outputBuilder.WriteString(fmt.Sprintf(" %s = %s;", targetIdent, boundExpr))
 			}
 
 			for _, stmt := range caseClause.Body {
 				v.visitStmt(stmt, []StmtContext{})
 			}
 
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 
 			if !v.lastStatementWasReturn || v.lastReturnIndentLevel != v.indentLevel {
 				v.writeOutputLn("break;")
@@ -270,7 +273,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 
 						if priorBody, seen := emittedCaseTypes[resolved]; seen && priorBody == bodyKey {
 							if outputs > 0 {
-								v.targetFile.WriteString(v.newline)
+								v.outputBuilder.WriteString(v.newline)
 							}
 
 							outputs++
@@ -290,7 +293,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 				if len(labels) > 0 {
 					for li, label := range labels {
 						if outputs > 0 {
-							v.targetFile.WriteString(v.newline)
+							v.outputBuilder.WriteString(v.newline)
 						}
 
 						outputs++
@@ -308,7 +311,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 					// same re-bind the default arm uses. Bound at body entry, before any body
 					// statement can mutate the guard, so the value matches the dispatched one.
 					if len(targetIdent) > 0 && targetIdent != "_" {
-						v.targetFile.WriteString(v.newline)
+						v.outputBuilder.WriteString(v.newline)
 
 						boundExpr := typeVar
 
@@ -322,7 +325,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 							v.writeOutput("object")
 						}
 
-						v.targetFile.WriteString(fmt.Sprintf(" %s = %s;", targetIdent, boundExpr))
+						v.outputBuilder.WriteString(fmt.Sprintf(" %s = %s;", targetIdent, boundExpr))
 					}
 
 					// Reset (see the single-type arm below): an EMPTY Go case body must not
@@ -333,7 +336,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 						v.visitStmt(stmt, []StmtContext{})
 					}
 
-					v.targetFile.WriteString(v.newline)
+					v.outputBuilder.WriteString(v.newline)
 
 					if !v.lastStatementWasReturn || v.lastReturnIndentLevel != v.indentLevel {
 						v.writeOutputLn("break;")
@@ -351,7 +354,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 
 						if priorBody, seen := emittedCaseTypes[resolved]; seen && priorBody == bodyKey {
 							if outputs > 0 {
-								v.targetFile.WriteString(v.newline)
+								v.outputBuilder.WriteString(v.newline)
 							}
 
 							outputs++
@@ -366,7 +369,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 					}
 
 					if outputs > 0 {
-						v.targetFile.WriteString(v.newline)
+						v.outputBuilder.WriteString(v.newline)
 					}
 
 					outputs++
@@ -376,8 +379,8 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 					// (`fmt.Sprintf("%s %s", typeName, "")` → `"uint32 "`), so the label reads `case uint32:`
 					// not `case uint32 :`. Trimmed only at emission — the stored caseExpr keeps the space the
 					// nint/nuint synthetic-case prefix detection above relies on.
-					v.targetFile.WriteString(strings.TrimRight(caseExpr, " "))
-					v.targetFile.WriteString(": {")
+					v.outputBuilder.WriteString(strings.TrimRight(caseExpr, " "))
+					v.outputBuilder.WriteString(": {")
 					v.indentLevel++
 
 					// Reset per case: an EMPTY Go case body (`case *ActionNode:` with no statements,
@@ -390,7 +393,7 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 						v.visitStmt(stmt, []StmtContext{})
 					}
 
-					v.targetFile.WriteString(v.newline)
+					v.outputBuilder.WriteString(v.newline)
 
 					if !v.lastStatementWasReturn || v.lastReturnIndentLevel != v.indentLevel {
 						v.writeOutputLn("break;")
@@ -403,16 +406,16 @@ func (v *Visitor) visitTypeSwitchStmtCore(typeSwitchStmt *ast.TypeSwitchStmt) {
 		}
 	}
 
-	v.targetFile.WriteRune('}')
+	v.outputBuilder.WriteRune('}')
 
 	if len(targetIdent) == 0 {
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 	}
 
 	// Close any locally scoped declared variable sub-block
 	if typeSwitchStmt.Init != nil {
 		v.indentLevel--
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		v.writeOutput("}")
 	}
 }

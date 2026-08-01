@@ -14,11 +14,11 @@ import (
 
 func (v *Visitor) visitSendStmt(sendStmt *ast.SendStmt, format FormattingContext) {
 	if format.useNewLine {
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 	}
 
 	if format.useIndent {
-		v.targetFile.WriteString(v.indent(v.indentLevel))
+		v.outputBuilder.WriteString(v.indent(v.indentLevel))
 	}
 
 	var channelOperation string
@@ -29,10 +29,10 @@ func (v *Visitor) visitSendStmt(sendStmt *ast.SendStmt, format FormattingContext
 		channelOperation = "Send"
 	}
 
-	v.targetFile.WriteString(fmt.Sprintf("%s.%s(%s)", v.convExpr(sendStmt.Chan, nil), channelOperation, v.convSendValueExpr(sendStmt)))
+	v.outputBuilder.WriteString(fmt.Sprintf("%s.%s(%s)", v.convExpr(sendStmt.Chan, nil), channelOperation, v.convSendValueExpr(sendStmt)))
 
 	if format.includeSemiColon {
-		v.targetFile.WriteRune(';')
+		v.outputBuilder.WriteRune(';')
 	}
 }
 

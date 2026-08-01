@@ -48,17 +48,17 @@ func (v *Visitor) visitForStmt(forStmt *ast.ForStmt, target LabeledStmtContext) 
 		if hoistBuf.Len() > 0 {
 			// The buffer carries its own leading newline+indent per decl and a trailing newline (the
 			// per-decl trailing indent is trimmed by convFuncLit); writeOutput supplies `while`'s indent.
-			v.targetFile.WriteString(hoistBuf.String())
+			v.outputBuilder.WriteString(hoistBuf.String())
 		} else {
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 		}
 
 		v.writeOutput("while (")
 
 		if forStmt.Cond == nil {
-			v.targetFile.WriteString(TrueMarker)
+			v.outputBuilder.WriteString(TrueMarker)
 		} else {
-			v.targetFile.WriteString(cond)
+			v.outputBuilder.WriteString(cond)
 		}
 	} else {
 		// Register the per-iteration clause vars BEFORE emitting the clause: every ident in the
@@ -104,10 +104,10 @@ func (v *Visitor) visitForStmt(forStmt *ast.ForStmt, target LabeledStmtContext) 
 			}
 		}
 
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 
 		// Handle traditional for loops
-		v.targetFile.WriteString(ForVarInitMarker)
+		v.outputBuilder.WriteString(ForVarInitMarker)
 		v.writeOutput("for (")
 
 		// Escape analysis should be performed on the for loop body for
@@ -167,16 +167,16 @@ func (v *Visitor) visitForStmt(forStmt *ast.ForStmt, target LabeledStmtContext) 
 
 		v.replaceMarker(ForVarInitMarker, markerReplacement.String())
 
-		v.targetFile.WriteString("; ")
+		v.outputBuilder.WriteString("; ")
 
 		if forStmt.Cond == nil {
-			v.targetFile.WriteString(TrueMarker)
-			v.targetFile.WriteRune(' ')
+			v.outputBuilder.WriteString(TrueMarker)
+			v.outputBuilder.WriteRune(' ')
 		} else {
-			v.targetFile.WriteString(cond)
+			v.outputBuilder.WriteString(cond)
 		}
 
-		v.targetFile.WriteString("; ")
+		v.outputBuilder.WriteString("; ")
 
 		if forStmt.Post != nil {
 			// Allowed statements in the post part of a for loop:
@@ -190,7 +190,7 @@ func (v *Visitor) visitForStmt(forStmt *ast.ForStmt, target LabeledStmtContext) 
 		}
 	}
 
-	v.targetFile.WriteRune(')')
+	v.outputBuilder.WriteRune(')')
 
 	blockContext := DefaultBlockStmtContext()
 	blockContext.format.useNewLine = false

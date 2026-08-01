@@ -615,7 +615,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 				}
 
 				key := fmt.Sprintf("%s|%s|%s", getSanitizedIdentifier(pkg.Name()),
-					removeSanitizationMarker(getCoreSanitizedIdentifier(named.Obj().Name())),
+					removeLeadingSanitizationMarker(getCoreSanitizedIdentifier(named.Obj().Name())),
 					canonicalRecordIfaceName(interfaceTypeName, ifacePkgName))
 
 				packageLock.Lock()

@@ -293,9 +293,9 @@ func (v *Visitor) writeTestAliasShadowComment(stmt ast.Stmt, contexts []StmtCont
 		return
 	}
 
-	v.targetFile.WriteString(v.newline)
-	v.targetFile.WriteString(v.indent(v.indentLevel))
-	v.targetFile.WriteString(fmt.Sprintf(
+	v.outputBuilder.WriteString(v.newline)
+	v.outputBuilder.WriteString(v.indent(v.indentLevel))
+	v.outputBuilder.WriteString(fmt.Sprintf(
 		"// Fully qualified to avoid alias shadowing by the same-package test declaration %q.",
 		alias))
 }

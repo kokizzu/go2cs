@@ -160,18 +160,18 @@ func (v *Visitor) planSStringHoists(funcDecl *ast.FuncDecl) {
 // emits the real `((sstring)x)` view (the same form the eligible decl / comparison operand would emit)
 // rather than short-circuiting to the temp name.
 func (v *Visitor) emitSStringHoist(hoist sstringHoist) {
-	v.targetFile.WriteString(v.newline)
-	v.targetFile.WriteString(v.indent(v.indentLevel))
-	v.targetFile.WriteString("sstring ")
-	v.targetFile.WriteString(hoist.tempName)
-	v.targetFile.WriteString(" = ")
+	v.outputBuilder.WriteString(v.newline)
+	v.outputBuilder.WriteString(v.indent(v.indentLevel))
+	v.outputBuilder.WriteString("sstring ")
+	v.outputBuilder.WriteString(hoist.tempName)
+	v.outputBuilder.WriteString(" = ")
 
 	saved := v.suppressSStringHoist
 	v.suppressSStringHoist = true
-	v.targetFile.WriteString(v.convExpr(hoist.convExpr, nil))
+	v.outputBuilder.WriteString(v.convExpr(hoist.convExpr, nil))
 	v.suppressSStringHoist = saved
 
-	v.targetFile.WriteString(";")
+	v.outputBuilder.WriteString(";")
 }
 
 // topLevelStmt returns the top-level function-body statement for the node whose ancestor chain is

@@ -413,7 +413,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 
 				if refRecv {
 					// For a receiver reference to a structure field, we use the "Ꮡ(StructType.Field)" syntax
-					return fmt.Sprintf("%s(%s.%s)", AddressPrefix, v.convExpr(selectorExpr.X, nil), removeSanitizationMarker(v.convExpr(selectorExpr.Sel, nil)))
+					return fmt.Sprintf("%s(%s.%s)", AddressPrefix, v.convExpr(selectorExpr.X, nil), removeLeadingSanitizationMarker(v.convExpr(selectorExpr.Sel, nil)))
 				} else {
 					// For a structure field, we use the "ж.of(StructType.ᏑField)" syntax.
 					// dynamicStructTypeName resolves anonymous struct types lifted in

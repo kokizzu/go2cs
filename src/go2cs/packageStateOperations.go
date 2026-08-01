@@ -145,7 +145,7 @@ func newFileVisitor(fset *token.FileSet, packageTypes *types.Package, info *type
 		fset:                      fset,
 		pkg:                       packageTypes,
 		info:                      info,
-		targetFile:                &strings.Builder{},
+		outputBuilder:             &strings.Builder{},
 		liftedTypeNames:           HashSet[string]{},
 		liftedTypeMap:             map[types.Type]string{},
 		liftedAnonStructNames:     map[string]string{},

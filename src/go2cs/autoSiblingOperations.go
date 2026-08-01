@@ -84,7 +84,7 @@ func emitAutoConversionSiblings(markedFiles []FileEntry, fset *token.FileSet, pa
 				fset:                      fset,
 				pkg:                       packageTypes,
 				info:                      info,
-				targetFile:                &strings.Builder{},
+				outputBuilder:             &strings.Builder{},
 				liftedTypeNames:           HashSet[string]{},
 				liftedTypeMap:             map[types.Type]string{},
 				liftedAnonStructNames:     map[string]string{},
@@ -117,7 +117,7 @@ func emitAutoConversionSiblings(markedFiles []FileEntry, fset *token.FileSet, pa
 			baseName := strings.TrimSuffix(filepath.Base(fileEntry.filePath), ".go")
 			autoFileName := filepath.Join(packageOutputPath, baseName+".cs.auto")
 
-			if err := writeAutoConversionSibling(autoFileName, baseName, visitor.targetFile.String()); err != nil {
+			if err := writeAutoConversionSibling(autoFileName, baseName, visitor.outputBuilder.String()); err != nil {
 				showWarning("%s", err)
 				return
 			}

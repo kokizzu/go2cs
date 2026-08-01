@@ -28,11 +28,11 @@ func (v *Visitor) visitFuncType(funcType *ast.FuncType, identType types.Type, na
 		packageLock.Unlock()
 
 		if !v.inFunction {
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 		}
 
 		v.writeOutput("// type %s is a methodless func type — rendered inline as its base delegate", name)
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		return
 	}
 
@@ -51,6 +51,6 @@ func (v *Visitor) visitFuncType(funcType *ast.FuncType, identType types.Type, na
 		constraints = fmt.Sprintf("%s%s%s", constraints, v.newline, v.indent(v.indentLevel))
 	}
 
-	v.targetFile.WriteString(v.newline)
+	v.outputBuilder.WriteString(v.newline)
 	v.writeOutputLn("%s delegate %s %s%s(%s)%s;", getAccess(name), resultsSignature, name, typeParams, parameterSignature, constraints)
 }

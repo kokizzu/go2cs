@@ -182,7 +182,7 @@ func (v *Visitor) structFieldBoxName(sel *ast.Ident, structExpr ast.Expr) string
 		name = typeCollidingFieldName(name)
 	}
 
-	return removeSanitizationMarker(name)
+	return removeLeadingSanitizationMarker(name)
 }
 
 // structFieldReachable reports whether a field named `name` is reachable on the struct — either

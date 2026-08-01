@@ -54,7 +54,7 @@ func (v *Visitor) visitIdent(ident *ast.Ident, identType types.Type, name string
 	}
 
 	if target == nil {
-		target = v.targetFile
+		target = v.outputBuilder
 	}
 
 	if !v.inFunction {

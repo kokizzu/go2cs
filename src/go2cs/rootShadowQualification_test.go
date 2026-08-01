@@ -301,16 +301,16 @@ func TestSiblingTestDeclaratorsContributeAliasShadow(t *testing.T) {
 	}
 
 	visitor := Visitor{
-		info:        production.TypesInfo,
-		targetFile:  &strings.Builder{},
-		newline:     "\n",
-		indentLevel: 1,
-		options:     Options{indentSpaces: 4},
+		info:          production.TypesInfo,
+		outputBuilder: &strings.Builder{},
+		newline:       "\n",
+		indentLevel:   1,
+		options:       Options{indentSpaces: 4},
 	}
 	visitor.writeTestAliasShadowComment(aliasStmt, nil)
 
 	const wantComment = "\n    // Fully qualified to avoid alias shadowing by the same-package test declaration \"bits\"."
-	if got := visitor.targetFile.String(); got != wantComment {
+	if got := visitor.outputBuilder.String(); got != wantComment {
 		t.Fatalf("generated alias-shadow comment = %q, want %q", got, wantComment)
 	}
 

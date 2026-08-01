@@ -253,9 +253,9 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	// A declaration owned by a manual conversion (see manualTypeOperations.go) emits only a
 	// marker comment — the package's *_impl.cs supplies the implementation.
 	if v.isManualFuncDecl(funcDecl) {
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		v.writeOutput("// go2cs generated this placeholder — func %s is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])", funcDecl.Name.Name)
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 		return
 	}
 
@@ -430,8 +430,8 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	functionExecContextMarker := fmt.Sprintf(FunctionExecContextMarker, goFunctionName)
 	functionBlockPrefixMarker := fmt.Sprintf(FunctionBlockPrefixMarker, goFunctionName)
 
-	v.targetFile.WriteString(v.newline)
-	v.targetFile.WriteString(functionPrefixMarker)
+	v.outputBuilder.WriteString(v.newline)
+	v.outputBuilder.WriteString(functionPrefixMarker)
 	v.writeDoc(funcDecl.Doc, funcDecl.Pos())
 
 	functionAccess := getAccess(goFunctionName)
@@ -481,7 +481,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 
 	// The CONVERTED body text (for detecting whether a pointer parameter's deref VALUE alias is
 	// actually referenced — a param used only through its box gets no alias; see below). Captured
-	// from targetFile across the body visit; the signature written above is excluded.
+	// from the output builder across the body visit; the signature written above is excluded.
 	bodyText := ""
 
 	if funcDecl.Body != nil {
@@ -496,9 +496,9 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 			v.indentLevel++
 		}
 
-		bodyStart := v.targetFile.Len()
+		bodyStart := v.outputBuilder.Len()
 		v.visitBlockStmt(funcDecl.Body, blockContext)
-		bodyText = v.targetFile.String()[bodyStart:]
+		bodyText = v.outputBuilder.String()[bodyStart:]
 
 		if bodyInBlockForm {
 			v.indentLevel--
@@ -1107,7 +1107,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 			v.writeOutputLn(";")
 		}
 	} else {
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 	}
 
 	v.inFunction = false

@@ -29,6 +29,6 @@ func (v *Visitor) visitGenDecl(genDecl *ast.GenDecl) {
 	}
 
 	if !v.inFunction && hasValueSpec {
-		v.targetFile.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.newline)
 	}
 }

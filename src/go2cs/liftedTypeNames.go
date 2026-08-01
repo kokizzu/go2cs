@@ -59,7 +59,7 @@ func (v *Visitor) getUniqueLiftedTypeName(typeName string) string {
 	// Recover the original Go name by stripping BOTH sanitization markers ('@' and the Δ collision
 	// rename) so the typeExists check below hits the real package scope (which holds the unsanitized
 	// name). The lift is often called with the already-sanitized name (e.g. `Δtrace`).
-	originalName := strings.TrimPrefix(removeSanitizationMarker(typeName), ShadowVarMarker)
+	originalName := strings.TrimPrefix(removeLeadingSanitizationMarker(typeName), ShadowVarMarker)
 	typeName = getSanitizedIdentifier(originalName)
 	uniqueTypeName := typeName
 	count := 0

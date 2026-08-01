@@ -26,7 +26,7 @@ func (v *Visitor) visitChanType(chanType *ast.ChanType, identType types.Type, na
 
 	// A channel type declared inside a function body cannot be a method-body statement in C#; hoist
 	// it to member level (see liftLocalTypeDecl). A package-level declaration is unaffected — target
-	// is v.targetFile and finish() is a no-op.
+	// is v.outputBuilder and finish() is a no-op.
 	preLiftName := name
 	name, target, finish := v.liftLocalTypeDecl(name, identType)
 

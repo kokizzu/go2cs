@@ -250,7 +250,21 @@ func (v *Visitor) exitLambdaConversion() {
 	v.lambdaCapture.currentLambdaVarObjs = nil
 }
 
-// Perform variable analysis on the specified function block, handling shadowing and scope
+// performVariableAnalysis walks one function body BEFORE any C# is emitted for it, and records
+// everything the emitters will need to know about its variables.
+//
+// It exists because Go and C# disagree about names and lifetimes in ways a single forward pass
+// cannot reconcile. Go lets an inner block redeclare a name that is still live outside it; C# does
+// not, so the inner one must be renamed — and the rename has to be decided before the OUTER uses
+// are emitted. Go closures capture variables by reference; C# lambdas do too, but Go's loop-scoped
+// variables and the converter's snapshot copies make "which binding does this name mean here"
+// answerable only with the whole body in view.
+//
+// The results land on the Visitor (identNames, lambdaCapture, scopeStack facts and friends) and are
+// consulted from convIdent outward. Nothing here emits anything.
+//
+// At ~1,600 lines this is one of the converter's three giant functions and is planned for
+// decomposition; it is a sequence of walks over the same body, which is where the seams are.
 func (v *Visitor) performVariableAnalysis(funcDecl *ast.FuncDecl, signature *types.Signature) {
 	v.identNames = make(map[*ast.Ident]string)
 	v.isReassigned = make(map[*ast.Ident]bool)
@@ -1280,11 +1294,12 @@ func (v *Visitor) performVariableAnalysis(funcDecl *ast.FuncDecl, signature *typ
 			tracker.processing = false
 
 			if node.Init != nil {
-				// Visit ALL of the init statement's RHS expressions — shadow renames must reach
-				// idents inside them (a comma-ok type assert on a renamed variable:
-				// `if e, ok := err.(*strconv.NumError); ok` left `err` unrenamed — fmt
-				// convertFloat, CS0841/CS8130 x6), and the recover-detection walk needs any
-				// call expression (previously the ONLY visited RHS shape).
+				// Visit ALL of the init statement's RHS expressions, not just call expressions.
+				// Two things depend on the full sweep: shadow renames must reach idents inside
+				// any shape (a comma-ok type assert on a renamed variable,
+				// `if e, ok := err.(*strconv.NumError); ok`, leaves `err` unrenamed if the
+				// assert is skipped — fmt convertFloat, CS0841/CS8130 x6), and the
+				// recover-detection walk needs the call expressions among them.
 				if assign, ok := node.Init.(*ast.AssignStmt); ok {
 					for _, rhs := range assign.Rhs {
 						visitNode(rhs)
@@ -2341,6 +2356,32 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 		recorded bool
 	}
 
+	// The single walk below maintains four parallel stacks. They are what turn a flat traversal
+	// back into the NESTING information the ordering decision needs, so each one's invariant is
+	// worth stating exactly:
+	//
+	//	nodeStack  every node currently open, innermost last. This exists only because
+	//	           ast.Inspect's exit callback is a bare nil and does not say WHICH node just
+	//	           closed — so the walk records what it entered in order to know what it is
+	//	           leaving. It is the bookkeeping that makes the other two stacks poppable.
+	//	loopStack  the for/range statements enclosing the current node, outermost first. Two sites
+	//	           that share a loop can execute in either order across iterations, which is the
+	//	           whole reason loop membership is tracked rather than just source position.
+	//	litStack   the func literals enclosing the current node. Non-empty means "we are inside a
+	//	           closure", where a write may run at ANY time after the closure is created — so
+	//	           position stops being informative and the write is promoted to anytimeWrite.
+	//	           Its recorded flag makes a literal count ONCE no matter how many times it
+	//	           mentions the variable.
+	//
+	// Every push has exactly one matching pop keyed off nodeStack, and the three must stay in
+	// lockstep. A missed push or pop silently corrupts the loop/closure context of everything
+	// walked afterwards, and the failure is quiet in the worst way: the analysis simply concludes
+	// the wrong thing about whether a capture needs a snapshot. Under-reporting is what broke
+	// regexp's makeOnePass (a self-recursive closure captured a still-nil delegate and every
+	// recursive call panicked); over-reporting merely emits needless snapshot copies.
+	//
+	// litRefs / bodyWrites are the walk's OUTPUT: where referencing literals are created, and
+	// where the variable is written, each tagged with the loops enclosing it.
 	var (
 		litRefs    []site
 		bodyWrites []site
@@ -2349,7 +2390,16 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 		nodeStack  []ast.Node
 	)
 
+	// anytimeWrite short-circuits the whole position comparison: it means a write exists whose
+	// timing cannot be pinned down syntactically at all (it is inside a closure, or it happens
+	// through an alias created by `&t`). Nothing can prove such a write precedes every capture,
+	// so the variable is treated as written-after-capture outright.
 	anytimeWrite := false
+
+	// calledSelectors remembers which selectors appeared as the FUNCTION of a call, so the
+	// SelectorExpr arm can tell an invoked pointer-receiver method (`t.Push(x)`, already counted
+	// by the CallExpr arm) from an uncalled METHOD VALUE (`f := t.Push`), which hands out a
+	// durable alias to the receiver and therefore counts as a write at any time.
 	calledSelectors := make(map[*ast.SelectorExpr]bool)
 
 	snapshotLoops := func() []ast.Node {
@@ -2361,6 +2411,8 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 		return root != nil && v.info.ObjectOf(root) == varObj && v.info.Defs[root] == nil
 	}
 
+	// recordWrite files a write at its source position — unless it is inside a closure, where
+	// position says nothing about when it runs, so it becomes an anytime write instead.
 	recordWrite := func(node ast.Node) {
 		if len(litStack) > 0 {
 			anytimeWrite = true
@@ -2370,7 +2422,14 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 		bodyWrites = append(bodyWrites, site{node.Pos(), node.End(), snapshotLoops()})
 	}
 
+	// The walk is a hand-rolled ast.Inspect rather than an ast.Visitor because it needs the EXIT
+	// event: ast.Inspect calls this function once with the node on the way in and once with nil on
+	// the way out, which is exactly the push/pop protocol the stacks require. (An ast.Visitor's
+	// Visit returns a visitor rather than signalling descent completion, so unwinding would have
+	// to be reconstructed some other way.)
 	ast.Inspect(decl.Body, func(n ast.Node) bool {
+		// Leaving a node: pop it, and pop any stack it had pushed. This is the ONLY place the
+		// loop and literal stacks shrink, which is what keeps them matched to the entry pushes.
 		if n == nil {
 			top := nodeStack[len(nodeStack)-1]
 			nodeStack = nodeStack[:len(nodeStack)-1]
@@ -2385,6 +2444,7 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 			return true
 		}
 
+		// Entering a node: record it so the matching exit above knows what it is popping.
 		nodeStack = append(nodeStack, n)
 
 		switch node := n.(type) {
@@ -2419,9 +2479,18 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 			}
 
 		case *ast.FuncLit:
+			// Enter a closure. It is recorded as REFERENCING the variable only if an Ident arm
+			// below actually finds a mention inside it, so a closure that ignores the variable
+			// never constrains anything.
 			litStack = append(litStack, litEntry{node, snapshotLoops(), false})
 
 		case *ast.Ident:
+			// A USE of the variable (Defs[node] == nil excludes the declaration itself). Every
+			// enclosing literal captures it, not just the innermost — a mention three closures
+			// deep is captured by all three — so the whole stack is marked. The recorded flag
+			// keeps each literal to a single entry however many times it mentions the variable,
+			// and the position filed is the LITERAL's, since what matters is when the closure
+			// came into existence, not where inside it the variable appears.
 			if v.info.ObjectOf(node) == varObj && v.info.Defs[node] == nil {
 				for i := range litStack {
 					if !litStack[i].recorded {
@@ -2444,20 +2513,31 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 			}
 
 		case *ast.UnaryExpr:
+			// `&t` hands out a pointer. Every write through that pointer from here on is
+			// syntactically invisible to this walk, so the address-taking itself is treated as a
+			// write that can happen at any time.
 			if node.Op == token.AND && rootsAtVar(node.X) {
 				anytimeWrite = true
 			}
 
 		case *ast.CallExpr:
+			// Note the selector is marked BEFORE the walk descends into it, so the SelectorExpr
+			// arm below sees the mark when it is reached and does not mistake this invocation for
+			// a bare method value.
 			if sel, ok := node.Fun.(*ast.SelectorExpr); ok {
 				calledSelectors[sel] = true
 			}
 
+			// Calling a pointer-receiver method on a value is Go's implicit `&t`, and the callee
+			// may write through it — but only for the duration of the call, so unlike a bare `&t`
+			// this is an ordinary positioned write.
 			if v.callImpliesReceiverAddr(node, varObj) {
 				recordWrite(node)
 			}
 
 		case *ast.SelectorExpr:
+			// An UNCALLED pointer-receiver method value (`f := t.Push`) binds the receiver
+			// address into the resulting func value, which can be invoked later from anywhere.
 			if !calledSelectors[node] && v.selectorImpliesReceiverAddr(node, varObj) {
 				anytimeWrite = true
 			}
@@ -2466,15 +2546,19 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 		return true
 	})
 
+	// No closure references the variable, so there is no capture for a write to race with.
 	if len(litRefs) == 0 {
 		return facts
 	}
 
+	// A write with unpinnable timing exists, so no ordering argument can clear it.
 	if anytimeWrite {
 		facts.writtenAfterCapture = true
 		return facts
 	}
 
+	// sharesLoop reports whether two sites sit inside a common loop. Loop nodes are compared by
+	// IDENTITY (the same *ast.ForStmt pointer), so this asks "the same loop", not "a similar one".
 	sharesLoop := func(a, b []ast.Node) bool {
 		for _, x := range a {
 			for _, y := range b {
@@ -2487,6 +2571,14 @@ func (v *Visitor) computeCaptureShareFacts(varObj types.Object) captureShareFact
 		return false
 	}
 
+	// Every remaining write has a definite position, so ask pairwise whether any of them can run
+	// after any capture. Three ways that happens:
+	//
+	//	w.pos > lit.pos                    the write simply comes later in the source
+	//	lit.pos inside [w.pos, w.end)      the literal is created BY the write, evaluated as part
+	//	                                   of its right-hand side, so the write lands afterwards
+	//	they share a loop                  a later iteration's write follows an earlier
+	//	                                   iteration's capture
 	for _, w := range bodyWrites {
 		for _, lit := range litRefs {
 			// `w.pos < lit.pos < w.end` — the literal sits INSIDE the write, so the write lands

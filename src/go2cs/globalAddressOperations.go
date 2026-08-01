@@ -188,7 +188,7 @@ func (v *Visitor) writeAddressedGlobalDecl(access, csTypeName, csIDName, initExp
 	}
 
 	v.writeOutput("%s static %s<%s> %s = new(%s);", access, PointerPrefix, csTypeName, box, initExpr)
-	v.targetFile.WriteString(v.newline)
+	v.outputBuilder.WriteString(v.newline)
 	v.writeOutput("%s static ref %s %s => ref %s.%s;", access, csTypeName, csIDName, box, accessor)
 }
 

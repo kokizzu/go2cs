@@ -204,7 +204,7 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 
 		if keyIdent, ok := keyValueExpr.Key.(*ast.Ident); ok {
 			if nameCollisions[keyIdent.Name] {
-				key = removeSanitizationMarker(getCoreSanitizedIdentifier(keyIdent.Name))
+				key = removeLeadingSanitizationMarker(getCoreSanitizedIdentifier(keyIdent.Name))
 			}
 
 			// A field named like its OWN struct type (`Description.Description`, runtime/metrics)
@@ -225,7 +225,7 @@ func (v *Visitor) convKeyValueExpr(keyValueExpr *ast.KeyValueExpr, context KeyVa
 				obj := named.Obj()
 
 				if obj.Pkg() != nil && obj.Parent() == obj.Pkg().Scope() && getSanitizedIdentifier(keyIdent.Name) == getSanitizedIdentifier(obj.Name()) {
-					key = removeSanitizationMarker(typeCollidingFieldName(getCoreSanitizedIdentifier(keyIdent.Name)))
+					key = removeLeadingSanitizationMarker(typeCollidingFieldName(getCoreSanitizedIdentifier(keyIdent.Name)))
 				}
 			}
 		}

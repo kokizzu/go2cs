@@ -364,7 +364,7 @@ func (v *Visitor) writeOutputFile(outputFileName string) error {
 
 	defer outputFile.Close()
 
-	_, err = outputFile.WriteString(v.targetFile.String())
+	_, err = outputFile.WriteString(v.outputBuilder.String())
 
 	if err != nil {
 		return fmt.Errorf("failed to write to output source file \"%s\": %s", outputFileName, err)

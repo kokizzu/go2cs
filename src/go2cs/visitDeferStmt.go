@@ -176,7 +176,7 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		result.WriteString(", defer);")
 	}
 
-	v.targetFile.WriteString(result.String())
+	v.outputBuilder.WriteString(result.String())
 }
 
 func (v *Visitor) getFunctionParamCount(expr ast.Expr) int {

@@ -18,7 +18,7 @@ import (
 )
 
 func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup, tok token.Token) {
-	v.targetFile.WriteString(v.newline)
+	v.outputBuilder.WriteString(v.newline)
 	v.writeDoc(doc, valueSpec.End())
 
 	if tok == token.VAR {
@@ -119,7 +119,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 							names[i] = getSanitizedIdentifier(v.getIdentName(ident))
 						}
 
-						v.targetFile.WriteString(v.newline)
+						v.outputBuilder.WriteString(v.newline)
 						v.writeOutput("var (%s) = %s;", strings.Join(names, ", "), v.convExpr(valueSpec.Values[0], nil))
 						return
 					}
@@ -203,7 +203,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					// global emission — the pre-feature behavior, which compiles.
 					if ref, pkgPath, ok := varLinknamePull(goIDName, doc, valueSpec.Doc); ok && !v.inFunction && !v.isAddressedGlobal(ident) {
 						if i > 0 {
-							v.targetFile.WriteString(v.newline)
+							v.outputBuilder.WriteString(v.newline)
 						}
 
 						v.importQueue.Add(pkgPath)
@@ -213,7 +213,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					}
 
 					if i > 0 {
-						v.targetFile.WriteString(v.newline)
+						v.outputBuilder.WriteString(v.newline)
 					}
 
 					// Check if value spec type is a struct or a pointer to a struct
@@ -390,7 +390,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 
 				if def != nil {
 					if i > 0 {
-						v.targetFile.WriteString(v.newline)
+						v.outputBuilder.WriteString(v.newline)
 					}
 
 					// A package-global var whose type is inferred from an anonymous-struct
@@ -460,14 +460,14 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						if hoistBuf.Len() > 0 {
 							// The decls carry their own leading newline + per-line indentation;
 							// writeOutput below re-indents the declaration line that follows.
-							v.targetFile.WriteString(strings.TrimRight(hoistBuf.String(), " \t"))
+							v.outputBuilder.WriteString(strings.TrimRight(hoistBuf.String(), " \t"))
 						}
 
 						heapTypeDecl := v.convertToHeapTypeDecl(ident, true)
 
 						if len(heapTypeDecl) > 0 {
 							v.writeOutputLn(heapTypeDecl)
-							v.targetFile.WriteString(v.newline)
+							v.outputBuilder.WriteString(v.newline)
 							v.writeOutput("%s = %s;", csIDName, valExpr)
 						} else {
 							// Following declarations must use explicit type, do not use `v.options.preferVarDecl` for these:
@@ -516,12 +516,12 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 							}
 
 							methodName := packageInitMethodName(csIDName)
-							v.targetFile.WriteString(v.newline)
+							v.outputBuilder.WriteString(v.newline)
 							v.writeOutput("internal static void %s() { %s = %s; }", methodName, csIDName, valExpr)
 							recordMovedInitMethod(ordinal, methodName)
 						} else {
 							if globalHoist.Len() > 0 {
-								v.targetFile.WriteString(globalHoist.String())
+								v.outputBuilder.WriteString(globalHoist.String())
 							}
 
 							if v.isAddressedGlobal(ident) {
@@ -538,7 +538,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 			}
 
 			if i > 0 {
-				v.targetFile.WriteString(v.newline)
+				v.outputBuilder.WriteString(v.newline)
 			}
 
 			var csTypeName string
@@ -600,7 +600,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					v.writeOutput(headTypeDecl)
 
 					if len(csValue) > 0 {
-						v.targetFile.WriteString(v.newline)
+						v.outputBuilder.WriteString(v.newline)
 						v.writeOutput("%s = %s;", csIDName, csValue)
 					}
 				} else {
@@ -631,7 +631,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					}
 
 					methodName := packageInitMethodName(csIDName)
-					v.targetFile.WriteString(v.newline)
+					v.outputBuilder.WriteString(v.newline)
 					v.writeOutput("internal static void %s() { %s = %s; }", methodName, csIDName, csValue)
 					recordMovedInitMethod(ordinal, methodName)
 				} else if v.isAddressedGlobal(ident) {
@@ -787,7 +787,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 
 			writeUntypedConst := func() {
 				if i > 0 {
-					v.targetFile.WriteString(v.newline)
+					v.outputBuilder.WriteString(v.newline)
 				}
 
 				if v.inFunction {
@@ -797,12 +797,12 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				}
 
 				if len(valueSpec.Values) >= i+1 {
-					v.targetFile.WriteString(v.getPrintedNode(valueSpec.Values[i]))
+					v.outputBuilder.WriteString(v.getPrintedNode(valueSpec.Values[i]))
 				}
 
-				v.targetFile.WriteString(" */")
+				v.outputBuilder.WriteString(" */")
 				v.writeComment(valueSpec.Comment, tokEnd+token.Pos(len(access)-5))
-				v.targetFile.WriteString(v.newline)
+				v.outputBuilder.WriteString(v.newline)
 
 				v.writeOutput("%sGoUntyped.Parse(\"%s\");", v.indent(v.indentLevel+1), constVal)
 				constHandled = true
@@ -839,7 +839,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 
 			if c.Val().Kind() == constant.String {
 				if i > 0 {
-					v.targetFile.WriteString(v.newline)
+					v.outputBuilder.WriteString(v.newline)
 				}
 
 				// A typed const of a NAMED string type keeps that type: materializing it as
@@ -919,7 +919,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 
 			if !constHandled {
 				if i > 0 {
-					v.targetFile.WriteString(v.newline)
+					v.outputBuilder.WriteString(v.newline)
 				}
 
 				// golib's builtin declares `const nint iota = 0`, so a const initialized by
@@ -1144,7 +1144,7 @@ func (v *Visitor) visitPackageTupleVarSpec(valueSpec *ast.ValueSpec, tuple *type
 		}
 
 		if !firstLine {
-			v.targetFile.WriteString(v.newline)
+			v.outputBuilder.WriteString(v.newline)
 		}
 
 		firstLine = false

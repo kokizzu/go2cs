@@ -193,5 +193,5 @@ func (v *Visitor) visitGoStmt(goStmt *ast.GoStmt) {
 
 	result.WriteString(");")
 
-	v.targetFile.WriteString(result.String())
+	v.outputBuilder.WriteString(result.String())
 }
