@@ -239,7 +239,14 @@ Two corrections to the row as filed below, both measured rather than reasoned:
   match and the consumer's local adapter is the only realization. `color.Palette`→`color.Model` (5)
   survives for the same reason. **A pair a package satisfies but never records is its own root** —
   the one place where "the declaring assembly implements it" is true in Go and false in the emitted
-  C#, and a candidate for a future increment.
+  C#, and a candidate for a future increment. Its whole corpus footprint, measured on the post-fix
+  census by classifying every remaining `<pkg>_<T>ᴠ<Iface>` construction (is `<Iface>` declared in
+  `<T>`'s own package, and is `<T>` a `partial struct` rather than an interface or a delegate?), is
+  **89 constructions in 3 packages**: `encoding/binary` `bigEndian`/`littleEndian`→`ByteOrder` (79),
+  `image/color` `Palette`→`Model` (5), `crypto` `Hash`→`SignerOpts` (5). Everything else remaining is
+  either interface-sourced (`io.ReadWriteCloser`, `flate.Reader`, `net.Conn`, `ast.Expr` — a
+  different adapter kind entirely) or genuinely cross-package (`syscall.Signal`→`os.Signal`), or is
+  the deliberately-excluded delegate (`net/http` `HandlerFunc`→`ΔHandler`, 8+4).
 
 Also found, not fixed: the **POINTER** set (`importedPointerImplements`) carries the same two
 divergences through `canonicalRecordIfaceName`. Its records are adapter-class *existence* signals with
