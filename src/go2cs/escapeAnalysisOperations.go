@@ -549,6 +549,9 @@ func (v *Visitor) paramAddressTakenNeedsBox(obj types.Object, body ast.Node) boo
 // slot. This is the analogue of performEscapeAnalysis's UnaryExpr address-of arm for the two
 // SIGNATURE-declared categories the body's define-walk never reaches: named results
 // (analyzeNamedResults) and value parameters (paramAddressTakenNeedsBox).
+//
+// This is the single implementation of the walk. identAddressTaken is its memoized
+// current-function, directOnly specialization, used at emission time rather than during analysis.
 func (v *Visitor) objectAddressTaken(obj types.Object, body ast.Node, directOnly bool) bool {
 	if obj == nil || body == nil {
 		return false
@@ -1586,12 +1589,14 @@ func isComparisonOp(op token.Token) bool {
 // decision at emission time — asking whether a given identifier got one, and writing the C#
 // declaration that creates it.
 //
-// Note identAddressTaken deliberately sits beside objectAddressTaken without being merged into
-// it. They look like the same ast.Inspect walk, and are not: identAddressTaken is scoped to the
-// CURRENT function declaration rather than an arbitrary body, memoizes its answer, and does NOT
-// handle the IndexExpr/SelectorExpr cases objectAddressTaken does. Whether that omission is
-// deliberate or a bug is an open question, and answering it needs a behavioral test rather than
-// an assumption — so they stay separate and honest for now.
+// identAddressTaken sits here beside objectAddressTaken, and now DELEGATES to it. The two once
+// carried separate copies of the same ast.Inspect walk, and the copy here left out the
+// IndexExpr/SelectorExpr cases — which read like an oversight but is the deliberate directOnly
+// sense, for a reason already written down at paramAddressTakenNeedsBox: identAddressTaken is
+// consulted only from identHasHeapBox's INHERENTLY-HEAP branch, where `&s[i]` addresses the shared
+// backing array and needs no box, and boxing it would cost 40-odd hot stdlib helpers a per-call
+// slice-header allocation. Sharing one walk means that policy is now expressed once, as an
+// argument, instead of twice as a presence and an absence.
 
 // identHasHeapBox reports whether the local behind obj is backed by a `Ꮡname` heap box.
 // An escaping VALUE-type local always boxes. An INHERENTLY heap-allocated local (pointer/
@@ -1617,14 +1622,23 @@ func (v *Visitor) identHasHeapBox(obj types.Object, identType types.Type) bool {
 	return v.isLambdaBoxRefVar(obj) || v.identAddressTaken(obj) || packageCaptureModeBoxIdents[obj]
 }
 
-// identAddressTaken reports whether `&ident` occurs for obj anywhere in the current
-// function (including nested function literals).
+// identAddressTaken reports whether the bare form `&ident` occurs for obj anywhere in the current
+// function, including nested function literals. Only the bare form: this is objectAddressTaken's
+// directOnly sense, scoped to the current function declaration and memoized, and it is the sense
+// its one caller wants — see the section note above for why `&ident[i]` must not count here.
 //
-// The answer is memoized in Visitor.identAddressTakenCache, which is safe across functions
-// WITHOUT being reset: the key is the *types.Object, and a given object belongs to exactly one
-// declaration, so an entry left over from an earlier function can never be consulted while
-// converting a later one. That is why the cache is only lazily created and never cleared.
+// The memo is what earns the wrapper. This runs per identifier OCCURRENCE during emission, while
+// objectAddressTaken walks a whole function body per call, so calling straight through would turn
+// a cached lookup into a repeated full-body walk for every mention of every inherently-heap local.
+//
+// Visitor.identAddressTakenCache is safe across functions WITHOUT being reset: the key is the
+// *types.Object, and a given object belongs to exactly one declaration, so an entry left over from
+// an earlier function can never be consulted while converting a later one. That is why the cache is
+// only lazily created and never cleared.
 func (v *Visitor) identAddressTaken(obj types.Object) bool {
+	// Also the guard that keeps the delegation safe: a nil *ast.FuncDecl passed as an ast.Node
+	// would arrive as a non-nil interface holding a nil pointer, which objectAddressTaken's own
+	// `body == nil` check cannot see.
 	if v.currentFuncDecl == nil || obj == nil {
 		return false
 	}
@@ -1633,22 +1647,7 @@ func (v *Visitor) identAddressTaken(obj types.Object) bool {
 		return taken
 	}
 
-	taken := false
-
-	ast.Inspect(v.currentFuncDecl, func(n ast.Node) bool {
-		if taken {
-			return false
-		}
-
-		if unaryExpr, ok := n.(*ast.UnaryExpr); ok && unaryExpr.Op == token.AND {
-			if id, ok := unaryExpr.X.(*ast.Ident); ok && v.info.ObjectOf(id) == obj {
-				taken = true
-				return false
-			}
-		}
-
-		return true
-	})
+	taken := v.objectAddressTaken(obj, v.currentFuncDecl, true)
 
 	if v.identAddressTakenCache == nil {
 		v.identAddressTakenCache = make(map[types.Object]bool)
