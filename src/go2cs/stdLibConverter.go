@@ -68,7 +68,9 @@ func (c *StdLibConverter) ScanAndConvertFiltered(packageFilter []string) error {
 
 	// Step 2: Build dependency graph and sort
 	fmt.Println("Building dependency graph...")
-	c.buildDependencyGraph()
+	if err := c.buildDependencyGraph(); err != nil {
+		return fmt.Errorf("failed to build dependency graph: %w", err)
+	}
 
 	// Generate dependency graph visualization
 	if err := c.GenerateDependencyGraph(); err != nil {
@@ -277,16 +279,36 @@ func (c *StdLibConverter) scanStdLib() error {
 // dependency edges in the shared graph (which filters to the convert-set and resolves
 // GOROOT-vendored keys), then sorts adjacency for deterministic ordering.
 //
-// A package that fails to load is reported and SKIPPED rather than aborting the run — see the
-// packages.Load handling below. That is why this returns nothing: there is no failure that reaches
-// the caller. Whether a failed load SHOULD abort a 300-package conversion is a genuine open design
-// question, deliberately left as-is here.
-func (c *StdLibConverter) buildDependencyGraph() {
+// A package that fails to load ABORTS the run, and every such package is reported before the abort
+// so one run names them all rather than surfacing them one at a time.
+//
+// Skipping a failed load instead — what this did until the question was settled — is a false-green
+// generator, not a tolerance. The skip drops only the package's dependency EDGES; the package
+// itself stays in the convert set, so the topological sort treats it as having no prerequisites and
+// converts it BEFORE the packages it imports. Their package_info.cs does not exist yet, so its
+// imported type aliases resolve to nothing and it emits raw type names — output that may well
+// compile — while the summary still prints "Successfully converted: 304 (100.0%)". A load failure
+// means the converter does not know what this package imports, and there is no correct order to
+// convert it in.
+//
+// Worse, the shape a load failure ACTUALLY takes was not caught at all: only the two rare shapes
+// (a loader error, no packages matched) were reported, while the ordinary one — a package returned
+// with Errors and no imports — fell straight through to the edge recording, so the mis-ordering
+// happened without even a warning. See the third check below.
+//
+// This costs nothing on a healthy corpus: a full `-stdlib` run produces zero load failures, and so
+// does a cross-platform one (`-platforms linux/amd64`, 302 packages). If a future target does
+// trigger it, the failure is real information about that target, and the message says which
+// packages and which platform.
+func (c *StdLibConverter) buildDependencyGraph() error {
 	fmt.Println("Building dependency graph for all packages...")
 
 	// Count to track progress
 	total := len(c.graph.packages)
 	count := 0
+
+	// Every package that could not be loaded, so the abort below can name all of them at once.
+	var loadFailures []string
 
 	// For each package, find all dependencies
 	for pkgPath, pkg := range c.graph.packages {
@@ -314,16 +336,28 @@ func (c *StdLibConverter) buildDependencyGraph() {
 
 		pkgs, err := packages.Load(loadConfig, pkgPath)
 		if err != nil {
-			// Some packages might fail to load due to build constraints
-			// Just log the error and continue
-			log.Printf("WARNING: Failed to load package %s: %v", pkgPath, err)
+			log.Printf("ERROR: Failed to load package %s: %v", pkgPath, err)
+			loadFailures = append(loadFailures, fmt.Sprintf("%s (%v)", pkgPath, err))
 			continue
 		}
 
 		if len(pkgs) == 0 {
-			// Some packages might not be found due to build constraints
-			// Just log the warning and continue
-			log.Printf("WARNING: Failed to find package %s", pkgPath)
+			// packages.Load matched nothing for this import path — the directory scan found it, so
+			// this means the loader and the scanner disagree about what exists.
+			log.Printf("ERROR: Failed to find package %s", pkgPath)
+			loadFailures = append(loadFailures, pkgPath+" (not found by the package loader)")
+			continue
+		}
+
+		// The two checks above are the RARE shapes. An ordinary failure — the package cannot be
+		// found, or its files do not build under these tags — comes back as err == nil and exactly
+		// one package carrying Errors and an EMPTY Imports map. Without this check that package is
+		// indistinguishable from one that genuinely imports nothing, so it is recorded as a
+		// dependency-free root and converted first: the silent mis-ordering described above, with
+		// not even a warning to go on.
+		if errs := pkgs[0].Errors; len(errs) > 0 {
+			log.Printf("ERROR: Package %s did not load cleanly: %v", pkgPath, errs[0])
+			loadFailures = append(loadFailures, fmt.Sprintf("%s (%v)", pkgPath, errs[0]))
 			continue
 		}
 
@@ -339,17 +373,28 @@ func (c *StdLibConverter) buildDependencyGraph() {
 		c.graph.addImportEdges(pkgPath, imports)
 	}
 
+	if len(loadFailures) > 0 {
+		sort.Strings(loadFailures)
+
+		return fmt.Errorf("could not load %d of %d packages for the dependency graph, so there is no "+
+			"correct order to convert them in (target platform %s):\n  %s",
+			len(loadFailures), total, c.options.targetPlatform, strings.Join(loadFailures, "\n  "))
+	}
+
 	fmt.Println("\nDependency analysis complete!")
 
 	// Sort dependencies and dependents for deterministic behavior
 	c.graph.sortAdjacency()
+
+	return nil
 }
 
 // topologicalSort orders the standard-library convert-set least dependencies first by delegating
 // to the shared graph, then reports the resulting order.
 //
-// The underlying graph sort tolerates an import cycle with a warning rather than failing, so this
-// has no failure to report either.
+// This one genuinely has nothing to report, unlike its buildDependencyGraph neighbour: the
+// underlying graph sort tolerates an import cycle with a warning rather than failing, and by this
+// point every package's edges are known, so the order it produces is always a usable one.
 func (c *StdLibConverter) topologicalSort() {
 	fmt.Println("Sorting packages in dependency order...")
 

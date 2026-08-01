@@ -90,6 +90,44 @@ func TestTestCsprojTemplateEmitsWellFormedXml(t *testing.T) {
 	}
 }
 
+// A reference path is the one part of a rendered csproj built from user-controlled text rather than
+// from the template or from a Go import path. Under `-recurse` it starts as an absolute path beneath
+// the user's output root and is only made relative when filepath.Rel succeeds, which it cannot do
+// across Windows volumes — so an output root like `D:\R&D\out` reaches the emitter with its `&`
+// intact. writeProjectFile escapes it; this guard is that escape, with its own negative control, so
+// a future edit cannot quietly drop the call and still pass.
+func TestProjectReferenceWithXmlSpecialsStaysWellFormed(t *testing.T) {
+	reference := `..\..\pkg\R&D\"lib"\<lib>.csproj`
+
+	escaped := fmt.Sprintf(string(csprojTemplate),
+		"Library",
+		"go",
+		"TestProject",
+		time.Now().Year(),
+		"false",
+		fmt.Sprintf(`    <ProjectReference Include="%s" />`, escapeXMLAttributeValue(reference)),
+	)
+
+	if err := assertWellFormedXml(escaped); err != nil {
+		t.Fatalf("an escaped reference path does not emit well-formed XML: %v", err)
+	}
+
+	// Negative control: the same path unescaped must NOT parse. Without this the test would pass
+	// even if escapeXMLAttributeValue became the identity function.
+	unescaped := fmt.Sprintf(string(csprojTemplate),
+		"Library",
+		"go",
+		"TestProject",
+		time.Now().Year(),
+		"false",
+		fmt.Sprintf(`    <ProjectReference Include="%s" />`, reference),
+	)
+
+	if err := assertWellFormedXml(unescaped); err == nil {
+		t.Fatal("an unescaped reference path parsed as well-formed XML, so this guard proves nothing")
+	}
+}
+
 // assertWellFormedXml streams the document through encoding/xml, which enforces the comment rules
 // MSBuild's loader enforces (no `--` in a comment body, no trailing `-`).
 func assertWellFormedXml(contents string) error {

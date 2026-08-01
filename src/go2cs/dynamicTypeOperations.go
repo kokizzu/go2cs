@@ -34,7 +34,15 @@ func dynamicTypeMarker(signature string) string {
 	return dynamicTypeMarkerPrefix + hex.EncodeToString([]byte(signature)) + dynamicTypeMarkerSuffix
 }
 
-// dynamicTypeMarkerSignature decodes a marker payload back to the structural signature.
+// dynamicTypeMarkerSignature decodes a marker payload back to the structural signature. ok is false
+// when the payload is not valid hex.
+//
+// Hex is chosen precisely so the payload survives every string transform between emission and
+// resolution (see dynamicTypeMarker), so ok=false does not mean "unknown type" — it means the text
+// between the sentinels was never produced by dynamicTypeMarker: a transform corrupted it, or a Go
+// string literal in the source happens to spell the sentinels. Both callers must distinguish that
+// from an ordinary unresolved type, because on failure there is no signature to name and the ""
+// this returns would be reported as if it were one.
 func dynamicTypeMarkerSignature(payload string) (string, bool) {
 	signature, err := hex.DecodeString(payload)
 
@@ -140,7 +148,19 @@ func (v *Visitor) dynamicStructTypeName(expr ast.Expr) string {
 func resolveDynamicTypeMarkers(outputFileNames []string) {
 	rewriteDeferredMarkers(outputFileNames, "dynamic type", dynamicTypeMarkerPrefix, dynamicTypeMarkerSuffix,
 		func(fileName, payload string) (string, bool) {
-			signature, _ := dynamicTypeMarkerSignature(payload)
+			signature, decoded := dynamicTypeMarkerSignature(payload)
+
+			if !decoded {
+				// No signature to look up or to name, so report the raw payload instead — it is the
+				// only evidence of what the corrupted text was. The payload also becomes the
+				// replacement: something must replace the marker (leaving it would re-match on the
+				// next pass of the rewrite loop), and this keeps the evidence in the file where a
+				// human or a grep will find it. Substituting only this occurrence, so a second
+				// corrupted marker gets its own report rather than being collapsed into this one.
+				showWarning("Undecodable dynamic-type marker payload \"%s\" in \"%s\"", payload, fileName)
+				return payload, false
+			}
+
 			replacement := lookupDynamicTypeName(signature)
 
 			if replacement == "" {

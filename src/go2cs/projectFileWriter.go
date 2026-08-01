@@ -218,12 +218,21 @@ func writeProjectFile(projectFileName string, projectFileContents string, output
 	// Build reference XML — NuGet PackageReferences first (stdlib/runtime/analyzer under -recurse=nuget),
 	// then local ProjectReferences; both share the one ItemGroup ProjectReferenceMarker. When not in NuGet
 	// mode packageIds is empty and this is byte-identical to the prior ProjectReference-only output.
+	// Both values land in an XML attribute, so both are escaped — the same treatment the test
+	// project writer has always given its identical reference loop (testConversion.go).
+	//
+	// A stdlib reference (`$(go2csPath)core\net\http\net.http.csproj`) and a NuGet package id are
+	// built from Go import paths, whose character set excludes everything XML cares about, so for
+	// them this is a no-op. A `-recurse` reference is not: it starts as an absolute path under the
+	// user's output root and is only made relative when filepath.Rel succeeds, which it cannot do
+	// across Windows volumes — so an output root like `D:\R&D\out` reaches here with its `&`
+	// intact and emits a .csproj MSBuild refuses to parse.
 	for _, packageID := range packageIds {
-		projectReferences.WriteString(fmt.Sprintf("\r\n    <PackageReference Include=\"%s\" Version=\"$(GoStdLibVersion)\" />", packageID))
+		projectReferences.WriteString(fmt.Sprintf("\r\n    <PackageReference Include=\"%s\" Version=\"$(GoStdLibVersion)\" />", escapeXMLAttributeValue(packageID)))
 	}
 
 	for _, reference := range references {
-		projectReferences.WriteString(fmt.Sprintf("\r\n    <ProjectReference Include=\"%s\" />", reference))
+		projectReferences.WriteString(fmt.Sprintf("\r\n    <ProjectReference Include=\"%s\" />", escapeXMLAttributeValue(reference)))
 	}
 
 	// Replace the project reference marker with the actual project references

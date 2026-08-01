@@ -1273,7 +1273,17 @@ func (v *Visitor) implicitConvStructTypeName(t types.Type) string {
 // its record is dropped.
 func resolveImplicitConvTypeName(name string) (string, bool) {
 	if strings.HasPrefix(name, dynamicTypeMarkerPrefix) && strings.HasSuffix(name, dynamicTypeMarkerSuffix) {
-		signature, _ := dynamicTypeMarkerSignature(name[len(dynamicTypeMarkerPrefix) : len(name)-len(dynamicTypeMarkerSuffix)])
+		payload := name[len(dynamicTypeMarkerPrefix) : len(name)-len(dynamicTypeMarkerSuffix)]
+		signature, decoded := dynamicTypeMarkerSignature(payload)
+
+		if !decoded {
+			// Dropping the record stays the right outcome — there is still no attribute-safe name
+			// — but this is a corrupted marker rather than the ordinary "never lifted" case, and
+			// the two want opposite responses: one is a converter bug, the other is expected. Only
+			// a report tells them apart, since the drop itself looks identical.
+			showWarning("Undecodable dynamic-type marker payload \"%s\" in an implicit-conversion record", payload)
+			return "", false
+		}
 
 		if resolved := lookupDynamicTypeName(signature); resolved != "" {
 			return resolved, true

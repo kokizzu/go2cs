@@ -8,8 +8,34 @@ package main
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
+
+// TestBuildDependencyGraphAbortsOnUnloadablePackage pins the abort, because the alternative is
+// invisible by construction. Skipping an unloadable package drops only its dependency EDGES: it
+// stays in the convert set, sorts as if it had no prerequisites, and converts BEFORE the packages
+// it imports — reading type-alias metadata that has not been written yet. The output can still
+// compile and the summary still reads "100.0%", so nothing but this abort distinguishes that run
+// from a good one.
+//
+// A healthy corpus never reaches it: a full `-stdlib` run reports zero load failures, as does a
+// cross-platform one. The error must NAME the package, since a run that aborts without saying which
+// package failed is barely better than the warning it replaced.
+func TestBuildDependencyGraphAbortsOnUnloadablePackage(t *testing.T) {
+	converter := NewStdLibConverter(Options{targetPlatform: "windows/amd64"})
+	converter.graph.AddPackage("go2cs.test/no/such/package", t.TempDir())
+
+	err := converter.buildDependencyGraph()
+
+	if err == nil {
+		t.Fatal("a package that cannot be loaded was skipped instead of aborting the run")
+	}
+
+	if !strings.Contains(err.Error(), "go2cs.test/no/such/package") {
+		t.Fatalf("the abort does not name the failed package: %v", err)
+	}
+}
 
 // buildTestGraph constructs a DependencyGraph from a node set and an import map, mirroring the
 // real driver flow (AddPackage for every node, addImportEdges per package, sortAdjacency), so the
