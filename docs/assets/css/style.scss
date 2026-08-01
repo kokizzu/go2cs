@@ -1,0 +1,23 @@
+---
+---
+
+@import 'jekyll-theme-cayman';
+
+/* Long unbroken tokens in table cells -- package paths like
+   `vendor/golang.org/x/text/unicode/bidi` -- have no natural break points, so the
+   validated-packages table forces a horizontal scrollbar. Let inline code inside
+   table cells wrap at any point instead. Scoped to tables so code elsewhere
+   (commands, snippets) keeps its normal no-surprise behavior. */
+table td code,
+table th code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word; /* fallback for engines without overflow-wrap:anywhere */
+}
+
+/* The table itself may still exceed the container on narrow screens; prefer
+   fitting the content area over overflowing the page. */
+table {
+  table-layout: auto;
+  max-width: 100%;
+}
