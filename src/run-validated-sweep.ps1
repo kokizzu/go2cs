@@ -130,12 +130,101 @@ Write-Host "sweep: $pass pass / $fail fail  (${elapsed}s)" -ForegroundColor $(if
 $prevEap = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 $drift = & git -C $repo -c core.safecrlf=false diff --numstat --ignore-cr-at-eol -- src/core
-$ErrorActionPreference = $prevEap
+
 if ($drift) {
-    Write-Host ''
-    Write-Host 'CONTENT drift in the corpus after the sweep -- inspect before banking or restoring:' -ForegroundColor Yellow
-    $drift | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+    # Fifteen production files drift on EVERY sweep, and none of them is a problem. A `-tests` run
+    # converts the package in its TEST closure, which imports more than the production closure, and
+    # a wider closure legitimately changes three things in the production emission:
+    #
+    #   Delta-io alias      `using io = io_package;` becomes a shadow-renamed alias, because the
+    #                       test closure pulls in a `go.io` CHILD namespace that `io` would collide
+    #                       with (bufio, bytes, strings, regexp).
+    #   root qualification  `@internal.x` / `go.math` become root-qualified, because the test
+    #                       closure imports a package whose own namespace shadows the root
+    #                       (crypto/md5's byteorder; math/rand/v2's `go/format` via regress_test.go).
+    #   init-tests hook     production `package_init.cs` gains the partial-method hook the test
+    #                       variant's relocated initializers implement (unicode, internal/zstd).
+    #
+    # Both emissions are correct for their own closure -- only the pipeline pairs them -- so this is
+    # owed to whoever owns the next whole-corpus rebank, not to the person running a sweep today.
+    # See the charter's `math/rand/v2` worked example and DESIGN-named-interface-wrappers.md section 7.
+    #
+    # Listing them under the same warning as real drift trains the reader to skip the warning, which
+    # is how a genuine regression gets waved through. They get their own section instead -- and only
+    # if their content still MATCHES the class, so a stale entry cannot hide a real change.
+    $closureFiles = @(
+        'src/core/bufio/bufio.cs'
+        'src/core/bufio/scan.cs'
+        'src/core/bytes/buffer.cs'
+        'src/core/bytes/reader.cs'
+        'src/core/crypto/md5/md5.cs'
+        'src/core/crypto/md5/md5block.cs'
+        'src/core/internal/zstd/package_init.cs'
+        'src/core/math/rand/v2/pcg.cs'
+        'src/core/math/rand/v2/rand.cs'
+        'src/core/regexp/backtrack.cs'
+        'src/core/regexp/exec.cs'
+        'src/core/regexp/regexp.cs'
+        'src/core/strings/reader.cs'
+        'src/core/strings/replace.cs'
+        'src/core/unicode/package_init.cs'
+    )
+
+    # Marker glyphs come from the canonical symbol table, never spelled here -- the standing rule
+    # for every consumer of the converter's naming constants.
+    $symbols = (Get-Content (Join-Path $src 'core\go2cs\symbols.json') -Raw | ConvertFrom-Json).symbols
+    $symbolValue = { param($name) ($symbols | Where-Object { $_.name -eq $name }).value }
+    $shadow = & $symbolValue 'ShadowVarMarker'
+    $temp = & $symbolValue 'TempVarMarker'
+    $root = & $symbolValue 'RootNamespace'
+
+    # What an ADDED line in a closure-class diff may look like. Anything else means the file changed
+    # for some OTHER reason as well, and it goes back to the warning block where it belongs.
+    $closureShapes = @(
+        [regex]::Escape("$shadow" + 'io')                     # the shadow-renamed io alias
+        [regex]::Escape('global::' + $root + '.')             # root-qualified reference
+        [regex]::Escape($root + '.@internal')                 # root-qualified internal package
+        [regex]::Escape('init' + $temp + $temp + 'tests')     # the -tests init hook
+        '^\s*//'                                              # the hook's explanatory comment
+        '^\s*$'                                               # blank separator
+    )
+
+    function Test-ClosureClassDrift([string] $path) {
+        $added = & git -C $repo -c core.safecrlf=false diff --ignore-cr-at-eol -U0 -- $path |
+            Where-Object { $_ -match '^\+' -and $_ -notmatch '^\+\+\+' } |
+            ForEach-Object { $_.Substring(1) }
+
+        foreach ($line in $added) {
+            if (-not ($closureShapes | Where-Object { $line -match $_ })) { return $false }
+        }
+
+        return $true
+    }
+
+    $known = @()
+    $real = @()
+
+    foreach ($entry in $drift) {
+        # numstat row: added <tab> removed <tab> path
+        $path = ($entry -split "`t")[-1]
+
+        if ($closureFiles -contains $path -and (Test-ClosureClassDrift $path)) { $known += $entry } else { $real += $entry }
+    }
+
+    if ($known) {
+        Write-Host ''
+        Write-Host "known -tests-closure emission class ($($known.Count) files, documented, not drift):" -ForegroundColor DarkGray
+        $known | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+    }
+
+    if ($real) {
+        Write-Host ''
+        Write-Host 'CONTENT drift in the corpus after the sweep -- inspect before banking or restoring:' -ForegroundColor Yellow
+        $real | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+    }
 }
+
+$ErrorActionPreference = $prevEap
 
 if ($fail) {
     Write-Host ''

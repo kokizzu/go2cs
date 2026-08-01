@@ -1589,14 +1589,15 @@ func isComparisonOp(op token.Token) bool {
 // decision at emission time — asking whether a given identifier got one, and writing the C#
 // declaration that creates it.
 //
-// identAddressTaken sits here beside objectAddressTaken, and now DELEGATES to it. The two once
-// carried separate copies of the same ast.Inspect walk, and the copy here left out the
-// IndexExpr/SelectorExpr cases — which read like an oversight but is the deliberate directOnly
-// sense, for a reason already written down at paramAddressTakenNeedsBox: identAddressTaken is
-// consulted only from identHasHeapBox's INHERENTLY-HEAP branch, where `&s[i]` addresses the shared
-// backing array and needs no box, and boxing it would cost 40-odd hot stdlib helpers a per-call
-// slice-header allocation. Sharing one walk means that policy is now expressed once, as an
-// argument, instead of twice as a presence and an absence.
+// identAddressTaken sits here beside objectAddressTaken and DELEGATES to it, so there is exactly
+// one implementation of the walk and the two cannot drift apart.
+//
+// It asks for the directOnly sense — bare `&ident` only, never `&ident[i]` or `&ident.f` — and that
+// narrowness is the point, not an omission. Its single caller is identHasHeapBox's INHERENTLY-HEAP
+// branch, where `&s[i]` addresses the shared backing array and aliases correctly with no box;
+// counting it would cost 40-odd hot stdlib helpers a per-call slice-header allocation for nothing.
+// paramAddressTakenNeedsBox states the same policy for parameters, and says it mirrors this gate.
+// Expressed as an argument, that agreement is visible; expressed as a missing case, it was not.
 
 // identHasHeapBox reports whether the local behind obj is backed by a `Ꮡname` heap box.
 // An escaping VALUE-type local always boxes. An INHERENTLY heap-allocated local (pointer/

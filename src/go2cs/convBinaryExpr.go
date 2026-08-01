@@ -105,6 +105,7 @@ func (v *Visitor) containsUntypedNamedIntegerConstRef(expr ast.Expr) bool {
 //     reference into a magic number.
 //   - an int-valued or complex constant, and a pure-literal float const (`1.5 * 2.0`, no named ref)
 //     — the latter computes exactly in C# double, so its readable operator form is kept.
+//
 // `targetCSType` is the resolved float C# type name ("float64"/"float32"); any other value is "".
 func (v *Visitor) foldedNamedFloatConstLiteral(operand ast.Expr, targetCSType string) string {
 	isFloat32 := targetCSType == "float32"

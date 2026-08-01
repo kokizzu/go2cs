@@ -64,9 +64,9 @@ var manualConversionFuncs = map[string]map[string]bool{
 		// way sync's Mutex/notifyList were: honor the observable contract, never emulate the
 		// mechanism. Everything BELOW them (the scheduler, the pacer, the mark/sweep engine) stays
 		// auto-converted and simply becomes unreachable.
-		"GC":             true,
-		"GOMAXPROCS":     true,
-		"Gosched":        true,
+		"GC":         true,
+		"GOMAXPROCS": true,
+		"Gosched":    true,
 		// Goexit belongs to the same surface for the same reason: its converted body drives Go's
 		// own _panic record and stack unwinder (p.start(getcallerpc(), getcallersp()) → nextDefer →
 		// goexit1), all of it assembly. The managed shape unwinds the calling goroutine with a
@@ -139,8 +139,8 @@ var manualConversionFuncs = map[string]map[string]bool{
 		"MapIter.Key":         true,
 		"MapIter.Value":       true,
 		// Type side: reflect.rtype's ΔType methods over the abi.Type's System.Type (%T, %+v names).
-		"rtype.String":   true,
-		"rtype.Name":     true,
+		"rtype.String": true,
+		"rtype.Name":   true,
 		// rtype.PkgPath reads the descriptor's TFlagNamed bit and uncommon().PkgPath name-offset —
 		// sub-records a synthesized abi.Type never populates, so it answered "" for every type and
 		// gob's Register keyed its registry on the bare "N2" instead of "encoding/gob.N2"
@@ -195,14 +195,14 @@ var manualConversionFuncs = map[string]map[string]bool{
 		"MakeMap":           true,
 		"MakeMapWithSize":   true,
 		// valueMethodName is runtime.Callers-based (getcallersp) — managed stack walk instead.
-		"valueMethodName": true,
-		"rtype.Key":       true,
-		"rtype.Len":       true,
-		"rtype.NumIn":       true,
-		"rtype.In":          true,
-		"rtype.NumOut":      true,
-		"rtype.Out":         true,
-		"rtype.IsVariadic":  true,
+		"valueMethodName":  true,
+		"rtype.Key":        true,
+		"rtype.Len":        true,
+		"rtype.NumIn":      true,
+		"rtype.In":         true,
+		"rtype.NumOut":     true,
+		"rtype.Out":        true,
+		"rtype.IsVariadic": true,
 		// Phase-3 continuation: the type-relation mirrors + conversion. The auto forms walk
 		// descriptor sub-records that only exist in Go's runtime layout: implements() does
 		// Reinterpret<abi.Type, interfaceType> and reads .Methods off a promoted-embed box that

@@ -35,10 +35,10 @@ type ExprContext interface {
 }
 
 type CallExprContext struct {
-	u8StringArgOK     map[int]bool
-	useGoStringArg    map[int]bool
-	argTypeIsPtr      map[int]bool
-	interfaceTypes    map[int]types.Type
+	u8StringArgOK  map[int]bool
+	useGoStringArg map[int]bool
+	argTypeIsPtr   map[int]bool
+	interfaceTypes map[int]types.Type
 	// emptyInterfaceArgs marks arguments whose PARAMETER is a real empty interface (`any`):
 	// a func-LITERAL argument there is natural-typed by C# (no delegate target), so its Go
 	// result type must be stated explicitly or inference picks the arms' literal type
@@ -55,9 +55,9 @@ type CallExprContext struct {
 	// appears only in the PARAMETER list (slices.SortFunc's `cmp func(a, b E) int`) is inferred
 	// from the lambda's own typed parameters and is deliberately not marked (no churn).
 	genericResultInferredFuncArgs map[int]bool
-	hasSpreadOperator bool
-	keyValueSource    KeyValueSource
-	keyValueIdent     *ast.Ident
+	hasSpreadOperator             bool
+	keyValueSource                KeyValueSource
+	keyValueIdent                 *ast.Ident
 	// keyValueArrayBacked marks a keyed composite that is backed by a C# array/SparseArray (an
 	// indexed slice/array literal, `[]T{i: v}`), not a real map. Its indexer takes a Go `int`
 	// (nint), so a key whose Go type is a defined integer type must be cast to int (a `num:nint`
@@ -195,8 +195,8 @@ type LambdaContext struct {
 	// genericResultInferenceTarget marks a func literal whose result type a generic callee's
 	// type argument is inferred FROM (see CallExprContext.genericResultInferredFuncArgs).
 	genericResultInferenceTarget bool
-	deferredDecls *strings.Builder
-	callArgs      []string
+	deferredDecls                *strings.Builder
+	callArgs                     []string
 	// isIIFE marks an immediately-invoked, no-argument function literal — emitted as a
 	// `func((defer, recover) => body)` execution-context call so it runs with its OWN
 	// defer/recover scope (a bare C# lambda cannot be invoked directly, and an inner defer
