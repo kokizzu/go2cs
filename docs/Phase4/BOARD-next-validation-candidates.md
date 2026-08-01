@@ -482,6 +482,21 @@ The other consumers this unblocks are all registration-by-blank-import: `databas
   *container* of it — `slice<ж<A>>` to `slice<ж<B>>` — has nothing to bridge it (CS1503). That is
   why the new guard reads its composed fields at their zero values, and why the pre-existing
   one-level guard never indexes `Stats.BySize` either. It predates this arm and is unaffected by it.
+
+  **Two more instances of the class landed 2026-07-31, both in `net`, and both confirm the diagnosis.**
+  (i) `convUnaryExpr`'s `&base.field` routing admits a base by an enumerated shape list (ident /
+  selector / call / index / star) that a **type assertion** is not in, so `&c.(*UDPConn).conn`
+  copy-boxed. (ii) `convCompositeLit` has *three* composite paths, and the elided **pointer** arm
+  (`[]*struct{…}{{…}}`) never called the interface-field router its two siblings call. The shared tell
+  is now unmistakable: **whenever an analysis enumerates shapes it has SEEN rather than stating the
+  property it needs, the sibling composition is the one missing.** Both fixes state the property
+  instead (a postfix rendering chains `.of(…)`; every composite path records its interface fields).
+  ⚠ A related asymmetry is deliberately left standing and is worth a look with its own guard: that
+  elided-pointer arm still does not call `markStringFieldLits`, relying on a blanket per-element
+  `u8StringArgOK` instead of the typed path's per-field precision. It emits correctly for every
+  corpus site today (net's `"?0123456789abcdef"u8` among them) and CNR is byte-identical, so there is
+  no demonstrated consumer — the same reason the `visitStructType` item above was held back from the
+  commit that predicted it, and then landed as its own guarded increment.
 - **Untyped constants in a typed slot — CLOSED 2026-07-29.** The int-literal case was already fixed;
   a computed float constant that directly uses a named untyped integer wrapper now folds once at the
   resolved float width. `hash/maphash` validates 22/22; `UntypedConstDefine` guards both `:=` and typed slots.
