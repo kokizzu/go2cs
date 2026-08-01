@@ -56,5 +56,27 @@
         <span class="site-footer-credits"><a href="SECURITY">security policy</a>&nbsp;&nbsp;&bull;&nbsp;&nbsp;<a href="coding-style">coding style</a></span>
       </footer>
     </main>
+
+    <script>
+      // Let table cells wrap long package paths at "/" boundaries: insert a <wbr>
+      // (word-break opportunity) after each slash in code spans inside tables. Done
+      // here in the browser deliberately -- the markdown source stays clean for
+      // GitHub's renderer, for the sweep script that machine-parses package names
+      // from the validated table, and for copy-paste (<wbr> is an element, not a
+      // character, so copied text is exactly the original path).
+      document.querySelectorAll('td code, th code').forEach(function (code) {
+        if (code.childElementCount === 0 && code.textContent.indexOf('/') !== -1) {
+          var parts = code.textContent.split('/');
+          code.textContent = '';
+          parts.forEach(function (part, i) {
+            if (i > 0) {
+              code.appendChild(document.createTextNode('/'));
+              code.appendChild(document.createElement('wbr'));
+            }
+            code.appendChild(document.createTextNode(part));
+          });
+        }
+      });
+    </script>
   </body>
 </html>

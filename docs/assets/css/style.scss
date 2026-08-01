@@ -3,22 +3,21 @@
 
 @import 'jekyll-theme-cayman';
 
-/* Tables with long package paths (`vendor/golang.org/x/text/unicode/bidi`) must not
-   force the PAGE to scroll, and the paths must not break mid-word. `overflow-wrap:
-   anywhere` is the wrong tool here: it lets auto-layout squeeze the code column to a
-   one-character sliver and break `utf8` as `utf`+`8`. Instead, GitHub's own table
-   recipe: the table sizes to its content, prose columns wrap naturally at spaces,
-   and if the whole still exceeds the container the TABLE gets the scrollbar --
-   confined to itself, never the page. */
-table {
-  display: block;
-  width: max-content;
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-/* A package path is one token: never break it. The prose column is the flex point. */
+/* Long package paths in tables (`vendor/golang.org/x/text/unicode/bidi`) wrap at
+   SLASH boundaries: the layout's script inserts a <wbr> after each "/" in table code
+   spans, and this rule lets those break points take effect. No `overflow-wrap:
+   anywhere` (it breaks mid-word: utf+8) and no `nowrap` (it forces page-wide
+   scrolling on tall tables) -- the <wbr> points are the only extra breaks. */
 table td code,
 table th code {
-  white-space: nowrap;
+  white-space: normal;
+}
+
+/* No-JS safety net only: if the <wbr> script did not run and a table still exceeds
+   the container, the TABLE scrolls rather than the page. With the script active,
+   tables fit and this never engages. */
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
 }
