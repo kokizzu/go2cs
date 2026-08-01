@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using static go2cs.Symbols;
 
 #pragma warning disable IL2075
 #pragma warning disable IL2067
@@ -71,6 +72,23 @@ namespace go.golib;
 //   The one place a name-only match survives is an open-generic receiver method, whose signature
 //   carries type parameters that cannot be compared against the interface's concrete one. Both
 //   defects above were on closed types, so the narrow exemption keeps them fixed.
+//
+// THE CANDIDATE'S EMITTED NAME IS NOT ALWAYS THE GO METHOD NAME
+//   A Go method set is a GO-level fact reconstructed here from EMITTED C#, and the emitted name can
+//   carry the converter's collision-avoidance marker instead of the Go name. A `-tests` variant
+//   Δ-renames a test-file method declarator whose bare name would hijack a same-named dot-imported
+//   function at every unqualified call site (io's `func (c *writeStringChecker) WriteString` against
+//   the dot-imported `io.WriteString`, B9 in the converter's name-collision analysis) — so the
+//   candidate carrying the Go method `WriteString` is emitted `ΔWriteString`, while the interface
+//   member it must satisfy keeps the bare name. Comparing the emitted names answered MISS, and the
+//   miss is SILENT: `io.MultiWriter`'s `w.(StringWriter)` fell through to `Write`, which returns the
+//   same (n, err), so only Go's own assertion that WriteString was CALLED could see it.
+//
+//   GoMethodNameMatches projects a candidate's leading marker away, the same way GoReflect's type
+//   naming and struct-field projection recover a Go name from an emitted one. It runs as a SECOND
+//   pass, after an exact-name pass finds nothing, so a Δ-renamed candidate can never displace a
+//   plainly-named one; both this file's probe and AdapterBinder's shell binder resolve through it,
+//   for the same reason they share GetGoMethodSetCandidates.
 //
 // THE BindingFlags ARE LOAD-BEARING, NOT DECORATION
 //   GetInterfaceMethods passes `BindingFlags.Public | BindingFlags.Instance` explicitly, and the
@@ -144,36 +162,66 @@ public static partial class TypeExtensions
         List<MethodInfo> candidates = GetGoMethodSetCandidates(valueElement, valueIsPointer);
 
         // Every interface method must be satisfied by a candidate with the same name AND signature.
+        // The EXACT emitted name is a full first pass; only when it satisfies nothing does the Go-name
+        // projection run, so a Δ-renamed candidate can never displace a plainly-named one.
         foreach (MethodInfo interfaceMethod in interfaceMethods)
         {
-            bool satisfied = false;
-
-            foreach (MethodInfo candidate in candidates)
-            {
-                if (candidate.Name != interfaceMethod.Name)
-                    continue;
-
-                // An open-generic receiver method (a method generic over its receiver's type parameter)
-                // carries type parameters in its signature that cannot be compared structurally against the
-                // interface's concrete signature — keep the prior name-only match for those.
-                if (candidate.IsGenericMethodDefinition || candidate.GetParameters()[0].ParameterType.ContainsGenericParameters)
-                {
-                    satisfied = true;
-                    break;
-                }
-
-                if (SignaturesMatch(interfaceMethod, candidate))
-                {
-                    satisfied = true;
-                    break;
-                }
-            }
-
-            if (!satisfied)
+            if (!Satisfies(interfaceMethod, candidates, false) && !Satisfies(interfaceMethod, candidates, true))
                 return false;
         }
 
         return true;
+    }
+
+    // Determines whether any candidate satisfies one interface method, comparing names either exactly
+    // or against the candidate's Go-name projection (see GoMethodNameMatches).
+    private static bool Satisfies(MethodInfo interfaceMethod, List<MethodInfo> candidates, bool projectGoName)
+    {
+        foreach (MethodInfo candidate in candidates)
+        {
+            if (!GoMethodNameMatches(candidate, interfaceMethod.Name, projectGoName))
+                continue;
+
+            // An open-generic receiver method (a method generic over its receiver's type parameter)
+            // carries type parameters in its signature that cannot be compared structurally against the
+            // interface's concrete signature — keep the prior name-only match for those.
+            if (candidate.IsGenericMethodDefinition || candidate.GetParameters()[0].ParameterType.ContainsGenericParameters)
+                return true;
+
+            if (SignaturesMatch(interfaceMethod, candidate))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Matches an emitted extension method's name against the Go method name
+    /// <paramref name="goMethodName"/> an interface asks for.
+    /// </summary>
+    /// <param name="candidate">Candidate receiver method from a Go method set.</param>
+    /// <param name="goMethodName">Go method name the interface member carries.</param>
+    /// <param name="projectGoName">
+    /// <c>false</c> to compare the emitted name as-is; <c>true</c> to compare the candidate's Go-name
+    /// PROJECTION — its emitted name with a leading collision-avoidance marker removed.
+    /// </param>
+    /// <returns><c>true</c> when the candidate carries that Go method; otherwise, <c>false</c>.</returns>
+    /// <remarks>
+    /// The projection exists because a `-tests` variant Δ-renames a test-file method declarator whose
+    /// bare emitted name would hijack a same-named dot-imported function (see this file's header), and
+    /// a Go method set must be read in GO names. Callers run it as a SECOND pass so the exact name
+    /// always wins; the marker strip mirrors <c>GoReflect</c>'s type-name and struct-field projections.
+    /// </remarks>
+    internal static bool GoMethodNameMatches(MethodInfo candidate, string goMethodName, bool projectGoName)
+    {
+        string name = candidate.Name;
+
+        if (!projectGoName)
+            return string.Equals(name, goMethodName, StringComparison.Ordinal);
+
+        return name.Length > ShadowVarMarker.Length &&
+               name.StartsWith(ShadowVarMarker, StringComparison.Ordinal) &&
+               string.Equals(name[ShadowVarMarker.Length..], goMethodName, StringComparison.Ordinal);
     }
 
     /// <summary>

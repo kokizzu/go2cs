@@ -151,8 +151,23 @@ public static class AdapterBinder
     /// <c>[GoRecv] this ref X</c> primary form is skipped: it is a POINTER-receiver method whose
     /// by-ref receiver no delegate or reflective invoker can carry, and the RecvGenerator always
     /// emits its <c>ж&lt;X&gt;</c> twin, which is the form bound here.
+    /// <para>
+    /// The EXACT emitted name is a full first pass; only when it resolves NEITHER receiver form does
+    /// the Go-name projection run, matching the two-pass rule the structural probe applies (see
+    /// <see cref="go.golib.TypeExtensions.GoMethodNameMatches"/>). The two must agree — a shell that
+    /// bound a method the probe would not have counted is exactly the disagreement
+    /// <see cref="go.golib.TypeExtensions.GetGoMethodSetCandidates"/> exists to prevent.
+    /// </para>
     /// </remarks>
     public static void ResolveReceiverMethods(Type element, string name, out MethodInfo? byPtr, out MethodInfo? byVal)
+    {
+        ResolveReceiverMethods(element, name, false, out byPtr, out byVal);
+
+        if (byPtr is null && byVal is null)
+            ResolveReceiverMethods(element, name, true, out byPtr, out byVal);
+    }
+
+    private static void ResolveReceiverMethods(Type element, string name, bool projectGoName, out MethodInfo? byPtr, out MethodInfo? byVal)
     {
         byPtr = null;
         byVal = null;
@@ -162,7 +177,7 @@ public static class AdapterBinder
         // delegate shell's dispatch), which is exactly Go's rule.
         foreach (MethodInfo candidate in GoTypeExtensions.GetGoMethodSetCandidates(element, true))
         {
-            if (candidate.Name != name)
+            if (!GoTypeExtensions.GoMethodNameMatches(candidate, name, projectGoName))
                 continue;
 
             Type receiver = candidate.GetParameters()[0].ParameterType;

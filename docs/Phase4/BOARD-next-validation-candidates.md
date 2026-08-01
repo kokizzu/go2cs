@@ -85,20 +85,46 @@ dotless fallback; exact-key matching is a full first pass; `anchoredAdapterMembe
 bare for anchor-local records — guard `TestBareCastPrefersAnchorLocalRecordOverForeignSimpleNameMatch`).
 
 With that repaired and the chip's `runtime.Callers`/`Frames.Next` managed traceback landed, the
-host reaches **47 pass / 54**; the remaining seven top-level verdicts are separate runtime/semantic
-roots:
+host reached **47 pass / 54** (superseded 2026-08-01 — see the closing paragraph of this section);
+the remaining seven top-level verdicts were separate runtime/semantic roots:
 
 - ~~`TestMultiReaderFlatten` and `TestMultiWriterSingleChainFlatten`: `runtime.getcallersp`~~ —
   **CLOSED 2026-07-31 by the reflection Phase-3 chip (increment 4)**: `runtime.Callers` +
   `Frames.Next` hand-owned over a Go-logical managed stack projection; `getcallersp` stays an
   honest stub (see DESIGN-reflection-bridge.md and the ConversionStrategies-Reference section).
 - `TestOffsetWriter_Seek`, `TestOffsetWriter_WriteAt`, `TestWriteAt_PositionPriorToBase`, plus `TestOffsetWriter_Write` subtests: `os.runtime_rand` is unimplemented in the tempfile path — owned by the `os` operational arc.
-- `TestMultiWriter_StringCheckCall`: `WriteString` forwarding behavior mismatch (separate runtime/conversion investigation).
-- `TestMultiWriter_WriteStringSingleAlloc` and `TestPipeAllocations`: exact allocation-profile assertions; no disclosure ruling has been made.
+- ~~`TestMultiWriter_StringCheckCall`: `WriteString` forwarding behavior mismatch~~ — **CLOSED
+  2026-08-01, and it was NOT a forwarding bug**: the emitted `multiWriter.WriteString` performs
+  `w._<StringWriter>(ᐧ)` exactly as Go does. The assertion MISSED because golib's Go-method-set
+  probe compares EMITTED C# names, and `-tests` B9 Δ-renames the test-file declarator
+  `func (c *writeStringChecker) WriteString` to `ΔWriteString` (the bare name would hijack the
+  dot-imported `io.WriteString` at every unqualified call site — C# resolves the enclosing class's
+  method group ahead of `using static`). No `GoImplement` record exists for the pair either, by
+  design since the structural recorders were retired, so the runtime shell tier was the only
+  resolver and its gate said MISS. Fixed in `golib` — `TypeExtensions.GoMethodNameMatches` projects
+  a leading `ShadowVarMarker` away as a SECOND pass, after an exact-name pass finds nothing, and
+  `AdapterBinder.ResolveReceiverMethods` applies the same rule so binder and probe cannot disagree.
+  Proven by A/B before the fix: renaming only the emitted method (and qualifying the three call
+  sites the bare name would hijack) turns the test green with no other change. Full rule:
+  `docs/ConversionStrategies-Reference.md`, *A candidate's EMITTED name is not always its GO name*.
+  ⚠ The CLASS is open, not just this instance: any `-tests` Δ-renamed method that is also an
+  interface member asserted at run time failed the same silent way, and the failure mode is
+  valid-but-degraded (`MultiWriter` fell through to `Write`, which returns the same `(n, err)`).
+- ~~`TestMultiWriter_WriteStringSingleAlloc` and `TestPipeAllocations`: exact allocation-profile
+  assertions; no disclosure ruling has been made~~ — **RULED 2026-08-01: both are
+  `alloc-count-semantics` disclosures** in io's hand-owned `go2cs_test_disclosures.json`, the class
+  `strings` already established. Neither is an allocation-profile divergence; both are the UNIT
+  mismatch the shim discloses by design — `testing.AllocsPerRun` counts mallocs in Go and allocated
+  BYTES on the CLR, so a nonzero-count assert can never agree whatever the allocation behavior.
+  Measured before disclosing, which is the point of the order: `num allocations = 406-407; want 1`
+  and `too many allocations for io.Pipe() call: 1184.000000` (want ≤ 4) — bytes in both cases.
+  Signature-pinned on `"num allocations = "` and
+  `"too many allocations for io.Pipe() call: "`, so any OTHER failure of either test stays a strict
+  mismatch.
 
-This board item is complete at its stated architectural boundary — the **47 / 54** split above is
-the whole of what remains, and every one of the seven has a named owner. They must be handled by
-those arcs rather than folded into the test-project-model change.
+With the two above settled, the host reaches **48 pass / 54 · 2 disclosed · 4 os-blocked**, and the
+`os` `runtime_rand` row is the whole of what stands between `io` and a bank. Every remaining verdict
+has a named owner and must be handled by that arc rather than folded into this item.
 
 ## Build-blocked, each its own root
 

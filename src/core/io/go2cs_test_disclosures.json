@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestMultiWriter_WriteStringSingleAlloc",
+      "class": "alloc-count-semantics",
+      "signature": "num allocations = ",
+      "reason": "exact-count AllocsPerRun assert (want 1): the managed shim is deliberately byte-derived (no CLR malloc counter), so a nonzero count assert can never agree - measured 406-407, which is BYTES allocated per WriteString across the two WriteString-hiding sinks, not a malloc count; see the AllocsPerRun entry in docs/ConversionStrategies-Reference.md"
+    },
+    {
+      "name": "TestPipeAllocations",
+      "class": "alloc-count-semantics",
+      "signature": "too many allocations for io.Pipe() call: ",
+      "reason": "count-bound AllocsPerRun assert (want <= 4): the byte-derived shim reports allocated bytes, so Pipe() - measured 1184 bytes per call, for the two heap-boxed ends plus the pipe struct's three channels and its Mutex/Once/onceError members - can never satisfy a four-MALLOC bound whatever its allocation behavior"
+    }
+  ]
+}
