@@ -44,12 +44,9 @@ func NewStdLibConverter(options Options) *StdLibConverter {
 	}
 }
 
-// ScanAndConvert scans all standard library packages and converts them
-func (c *StdLibConverter) ScanAndConvert() error {
-	return c.ScanAndConvertFiltered(nil)
-}
-
-// ScanAndConvertFiltered scans and converts only specific packages if a filter is provided
+// ScanAndConvertFiltered converts the Go standard library, optionally narrowed to the named
+// packages. A nil or empty packageFilter converts everything (`go2cs -stdlib`); a non-empty one
+// converts just those import paths and their prerequisites (`go2cs -stdlib fmt strings io`).
 func (c *StdLibConverter) ScanAndConvertFiltered(packageFilter []string) error {
 	// Announce the effective build tags so the purego default is visible, not magic. A bare
 	// `-stdlib` run reports `purego (default)`; an explicit `-tags` reports exactly what was passed.

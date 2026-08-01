@@ -581,27 +581,6 @@ func readGeneratedFile(root, name string) (string, error) {
 	return string(content), nil
 }
 
-func findProject(root string) (string, error) {
-	var projects []string
-	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".csproj") {
-			projects = append(projects, path)
-		}
-		return nil
-	})
-	if err != nil {
-		return "", err
-	}
-	sort.Strings(projects)
-	if len(projects) == 0 {
-		return "", errors.New("no generated project")
-	}
-	return projects[0], nil
-}
-
 type conversionNotFoundError string
 
 func (e conversionNotFoundError) Error() string { return string(e) }

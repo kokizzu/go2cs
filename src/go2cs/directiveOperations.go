@@ -202,14 +202,14 @@ func NewBuildConstraintEvaluator(platforms []string) *BuildConstraintEvaluator {
 	}
 }
 
-// SetTag manually sets a build tag to a specific value
+// SetTag marks a build tag as satisfied, so a file guarded by `//go:build <tag>` is included.
+//
+// This is how the -tags flag reaches the evaluator: every requested tag (purego by default under
+// -stdlib) is turned on here before any file is scanned. Tags are stored alongside the GOOS/GOARCH
+// values in the same map because a build constraint treats them identically — `linux`, `amd64` and
+// `purego` are all just names that are either satisfied or not.
 func (e *BuildConstraintEvaluator) SetTag(tag string, value bool) {
 	e.allowedPlatforms[tag] = value
-}
-
-// SetCgo sets whether cgo is available
-func (e *BuildConstraintEvaluator) SetCgo(enabled bool) {
-	e.allowedPlatforms["cgo"] = enabled
 }
 
 // EvaluateConstraint evaluates if a build constraint matches allowed platforms

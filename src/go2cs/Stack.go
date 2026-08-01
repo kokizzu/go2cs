@@ -6,34 +6,44 @@
 
 package main
 
-// Stack represents a stack data structure
+// Stack is a minimal last-in/first-out container built on a slice.
+//
+// The converter reaches for it wherever emission has to suspend what it is doing, work on
+// something nested, and then resume exactly where it left off. The one live use today is
+// Visitor.blocks (a Stack[*strings.Builder]): visitBlockStmt pushes the current output builder
+// before it descends into a nested block and pops it back afterwards, so the inner block writes
+// into its own builder without disturbing the outer one.
+//
+// The zero value is ready to use — `Stack[T]{}` needs no constructor, which is how every caller
+// creates one (see packageStateOperations.resetPackageState).
 type Stack[T any] struct {
+	// items holds the stack contents with the TOP at the END of the slice, so Push/Pop are an
+	// append and a re-slice rather than a shift of every element.
 	items []T
 }
 
-func NewStack[T any](items ...T) *Stack[T] {
-	return &Stack[T]{items: items}
-}
-
+// Len reports how many items the stack currently holds.
 func (s *Stack[T]) Len() int {
 	return len(s.items)
 }
 
+// IsEmpty reports whether the stack holds nothing, so callers can ask the question without
+// comparing Len against a magic zero.
 func (s *Stack[T]) IsEmpty() bool {
 	return s.Len() == 0
 }
 
-func (s *Stack[T]) At(index int) T {
-	return s.items[index]
-}
-
-// Push adds an item to the to the top of the stack
+// Push adds an item to the top of the stack.
 func (s *Stack[T]) Push(item T) {
-	// For simplicity in implementation, the bottom is the first element
+	// The top lives at the end of the slice, so a push is a plain append.
 	s.items = append(s.items, item)
 }
 
-// Pop removes and returns the item from the top of the stack
+// Pop removes and returns the item from the top of the stack, and panics when the stack is empty.
+//
+// Use this when an empty stack means the converter's own bookkeeping is broken and there is no
+// sensible way to continue — visitBlockStmt pops exactly once per push, so an empty stack there
+// is a converter bug, not a data condition. Use TryPop when emptiness is an expected outcome.
 func (s *Stack[T]) Pop() T {
 	item, ok := s.TryPop()
 
@@ -44,7 +54,8 @@ func (s *Stack[T]) Pop() T {
 	return item
 }
 
-// TryPop attempts to remove and return the item from the top of the stack
+// TryPop removes and returns the item from the top of the stack, reporting false (and the zero
+// value of T) when the stack is empty instead of panicking.
 func (s *Stack[T]) TryPop() (T, bool) {
 	if s.IsEmpty() {
 		var zero T
@@ -56,14 +67,4 @@ func (s *Stack[T]) TryPop() (T, bool) {
 	s.items = s.items[:index]
 
 	return item, true
-}
-
-// Peek returns the item from the top of the stack without removing it
-func (s *Stack[T]) Peek() (T, bool) {
-	if s.IsEmpty() {
-		var zero T
-		return zero, false
-	}
-
-	return s.items[len(s.items)-1], true
 }

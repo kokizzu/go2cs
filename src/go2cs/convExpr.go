@@ -21,6 +21,15 @@ const (
 	ArraySource
 )
 
+// ExprContext is the common shape of every per-expression conversion context (BasicLitContext,
+// LambdaContext, CallExprContext, …). Callers hand convExpr a heterogeneous []ExprContext and the
+// generic getExprContext picks out the one entry of the type a given expression kind cares about,
+// so an expression deep in a tree can see the intent of the slot it is being emitted into.
+//
+// getDefault exists so getExprContext can produce a fully-initialized context when the caller
+// supplied none of that type. It is declared on the interface — rather than looked up in a table —
+// because Go can then call it on a ZERO value of the type parameter, which is the only handle
+// getExprContext has before any real context exists.
 type ExprContext interface {
 	getDefault() StmtContext
 }
@@ -105,6 +114,18 @@ func DefaultCallExprContext() *CallExprContext {
 	}
 }
 
+// getDefault is what makes *CallExprContext satisfy ExprContext, and that conformance is
+// load-bearing even though nothing calls this method: convExprList builds
+// `[]ExprContext{basicLitContext, identContext, keyValueContext, lambdaContext, callContext}`, and
+// the call context could not go into that slice without it. Dead-code analyzers cannot see
+// interface satisfaction as a use, so they flag this — keep it.
+//
+// Unlike its ten siblings it is never reached THROUGH the dispatcher: no code instantiates
+// getExprContext[CallExprContext], because callers that want the call context already hold it as a
+// typed *CallExprContext parameter. (It could not work that way either — getExprContext calls
+// getDefault on a zero value, and the zero *CallExprContext is nil, which this value receiver
+// would dereference.) The body still returns a real default so the method is honest rather than a
+// panic waiting to happen.
 func (c CallExprContext) getDefault() StmtContext {
 	return DefaultCallExprContext()
 }

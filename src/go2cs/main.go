@@ -2573,21 +2573,22 @@ func (v *Visitor) getPrintedNode(node ast.Node) string {
 	return result.String()
 }
 
+// showMessage reports informational progress on stdout, where it stays out of the way of a caller
+// that is piping warnings elsewhere.
 func showMessage(format string, a ...interface{}) {
 	message := fmt.Sprintf(format, a...)
 	os.Stdout.WriteString(fmt.Sprintf("INFO: %s\n", message))
 }
 
-func (v *Visitor) showMessage(format string, a ...interface{}) {
-	message := fmt.Sprintf(format, a...)
-	showMessage("%s in \"%s\"", message, getShortFileName(v.file))
-}
-
+// showWarning reports a conversion problem on stderr — something the converter worked around or
+// could not express, which a reader of the emitted C# needs to know about.
 func showWarning(format string, a ...interface{}) {
 	message := fmt.Sprintf(format, a...)
 	os.Stderr.WriteString(fmt.Sprintf("WARNING: %s\n", message))
 }
 
+// showWarning is the Visitor-scoped form: it appends the Go file currently being converted, so a
+// warning raised deep in expression conversion still says which source it came from.
 func (v *Visitor) showWarning(format string, a ...interface{}) {
 	message := fmt.Sprintf(format, a...)
 	showWarning("%s in \"%s\"", message, getShortFileName(v.file))
@@ -2935,19 +2936,16 @@ func getAccess(name string) string {
 	return "public"
 }
 
+// isDiscardedVar reports whether a name is Go's blank identifier, i.e. a value the source
+// deliberately throws away. An empty name counts too: an unnamed result parameter is discarded in
+// exactly the same sense.
 func isDiscardedVar(varName string) bool {
 	return len(varName) == 0 || varName == "_"
 }
 
-func isLogicalOperator(op token.Token) bool {
-	switch op {
-	case token.LAND, token.LOR:
-		return true
-	default:
-		return false
-	}
-}
-
+// isComparisonOperator reports whether op is one of Go's six relational operators. Callers use it
+// to decide whether an expression can become a C# relational PATTERN (`x is > 3`) rather than a
+// `when` guard — see visitSwitchStmt's pattern-match eligibility check.
 func isComparisonOperator(op token.Token) bool {
 	switch op {
 	case token.EQL, token.NEQ, token.LSS, token.LEQ, token.GTR, token.GEQ:

@@ -1040,7 +1040,12 @@ func (v *Visitor) canUsePatternMatch(caseClauseCount int, caseClause *ast.CaseCl
 	return usePattenMatch
 }
 
-// Helper function to check if an expression contains bitwise operations
+// containsBitwiseOperation reports whether expr performs a bitwise operation anywhere inside it,
+// looking through parentheses.
+//
+// A C# relational pattern (`x is > 3`) accepts only a simple subject, so `case x&mask == 0` cannot
+// become one — the `x&mask` subject would have to be evaluated first. The switch emitter uses this
+// to fall back to a `when` guard for those arms.
 func containsBitwiseOperation(expr ast.Expr) bool {
 	switch e := expr.(type) {
 	case *ast.BinaryExpr:
@@ -1054,18 +1059,9 @@ func containsBitwiseOperation(expr ast.Expr) bool {
 	}
 }
 
-// Helper function to check if an operator is a bitwise operator
+// isBitwiseOperator reports whether op is one of Go's bit-manipulation operators, including the
+// shifts and Go's `&^` (AND NOT), which C# spells as `& ~`.
 func isBitwiseOperator(op token.Token) bool {
 	return op == token.AND || op == token.OR || op == token.XOR ||
 		op == token.SHL || op == token.SHR || op == token.AND_NOT
-}
-
-// Helper function to check if expression is bitwise operation followed by comparison
-func isBitwiseFollowedByComparison(expr *ast.BinaryExpr) bool {
-	// Check if this is a comparison expression
-	if isComparisonOperator(expr.Op) {
-		// Check if left side contains bitwise operations
-		return containsBitwiseOperation(expr.X)
-	}
-	return false
 }

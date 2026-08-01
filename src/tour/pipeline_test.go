@@ -1,11 +1,43 @@
 package main
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
+
+// findProject returns the lexicographically first .csproj under root.
+//
+// This lives in the test file because only the test needs it: the pipeline itself already knows
+// the project path it just generated, so a search would be answering a question production code
+// never asks. It is kept as a helper (rather than inlined into TestFindProject) so the test reads
+// as "generate a tree, then find the project in it".
+func findProject(root string) (string, error) {
+	var projects []string
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".csproj") {
+			projects = append(projects, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	// Sort so a tree with several projects yields a stable answer rather than whatever order the
+	// filesystem happened to hand back.
+	sort.Strings(projects)
+	if len(projects) == 0 {
+		return "", errors.New("no generated project")
+	}
+	return projects[0], nil
+}
 
 func TestCollectCSharp(t *testing.T) {
 	root := t.TempDir()
