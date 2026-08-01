@@ -13,11 +13,12 @@ namespace go;
 /// Represents the Go <c>uintptr</c> type: an unsigned integer wide enough to hold a pointer's bits.
 /// </summary>
 /// <remarks>
-/// Historically <c>uintptr</c> was a compile-time alias of <see cref="UIntPtr"/> (<c>nuint</c>), which
-/// erased Go's type distinction between <c>uint</c> and <c>uintptr</c> — the two are DISTINCT types in
-/// Go (both may appear in one type switch; <c>%T</c> reports them differently; conversion between them
-/// is explicit). This struct restores that identity: a boxed <c>uintptr</c> has its own dynamic type,
-/// type-switch <c>case uintptr:</c> labels match exactly, and overloads can distinguish the two.
+/// It is a distinct STRUCT rather than a compile-time alias of <see cref="UIntPtr"/> (<c>nuint</c>),
+/// because an alias erases Go's type distinction between <c>uint</c> and <c>uintptr</c> — and the two
+/// are DISTINCT types in Go: both may appear in one type switch, <c>%T</c> reports them differently,
+/// and conversion between them is explicit. As a struct it keeps that identity: a boxed
+/// <c>uintptr</c> has its own dynamic type, type-switch <c>case uintptr:</c> labels match exactly,
+/// and overloads can distinguish the two.
 /// <para>
 /// The value is a pure NUMBER (single <c>nuint</c> field, no managed-reference slot): the
 /// pointer-carrying job belongs to <c>unsafe.Pointer</c> and the managed-referent manual types.

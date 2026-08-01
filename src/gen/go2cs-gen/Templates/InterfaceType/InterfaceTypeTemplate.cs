@@ -20,9 +20,9 @@ internal class InterfaceTypeTemplate : TemplateBase
 
     // Set for a non-generic, non-constraint, non-empty interface — NAMED or anonymous ("dyn") alike:
     // the two runtime duck-typing shells are emitted beside it and discovered through a
-    // [GoInterfaceShell] stamp (see InterfaceShellEmitter). This is the ONLY duck-typing surface a
-    // converted interface has; the marker-named ᴛAs conversion methods a dyn interface used to carry
-    // were retired with the second renderer they drove.
+    // [GoInterfaceShell] stamp (see InterfaceShellEmitter). The shells are the ONLY duck-typing
+    // surface a converted interface has — the marker-named ᴛAs conversion methods a dyn interface
+    // once carried are retired, along with the second renderer that drove them.
     public bool EmitShells;
 
     private InterfaceShellEmitter? m_shells;

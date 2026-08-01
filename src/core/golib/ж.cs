@@ -211,13 +211,13 @@ public interface IPointer<T>
 public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
 {
     // Item3 is the field's IDENTITY token for pointer equality: the ORIGINAL (typically static,
-    // compiler-cached) field accessor delegate when the field ref was created through the typed
-    // `of(FieldRefFunc<T, TElem>)` overload — that overload WRAPS the accessor in a per-call
-    // closure (getFieldRef), so comparing the wrapper delegates made every distinct `&x.field`
-    // box unequal (`&x.f == &x.f` was FALSE, violating Go pointer identity; it also broke the
-    // address-keyed runtime semaphores in the hand-owned sync/internal-poll implementations).
-    // Delegate.Equals compares method+target, so two conversions of the same accessor method
-    // group compare equal across call sites.
+    // compiler-cached) field accessor delegate, carried separately because the typed
+    // `of(FieldRefFunc<T, TElem>)` overload WRAPS the accessor in a per-call closure (getFieldRef).
+    // Equality must compare the ORIGINAL, not the wrapper: comparing wrappers makes every distinct
+    // `&x.field` box unequal — `&x.f == &x.f` evaluates FALSE, violating Go pointer identity and
+    // breaking the address-keyed runtime semaphores in the hand-owned sync/internal-poll
+    // implementations. Delegate.Equals compares method+target, so two conversions of the same
+    // accessor method group compare equal across call sites, which is what makes the token work.
     private readonly (object, FieldRefFunc<T>, Delegate)? m_structFieldRef;
     private readonly (IArray, int)? m_arrayIndexRef;
     private readonly bool m_isNull;
@@ -229,11 +229,12 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     //
     // It exists because a Win32 API can RETURN a pointer into native memory that the caller must
     // walk and then hand BACK to the OS — GetEnvironmentStringsW/FreeEnvironmentStringsW being the
-    // canonical pair. Reinterpreting such an address by copying the pointed-at value into a managed
-    // box (what the uintptr operator used to do) loses the address: the walk then scans the GC heap,
-    // and returning the box's address to the OS asks it to free GC memory — observed as an outright
-    // STATUS_HEAP_CORRUPTION (0xC0000374) process kill. A native-backed box instead aliases the real
-    // address, so `.Value` reads the real memory and the uintptr/void* round-trip is EXACT.
+    // canonical pair. Such an address must be ALIASED, never copied: reinterpreting it by copying the
+    // pointed-at value into a managed box loses the address, so the walk scans the GC heap instead,
+    // and returning the box's address to the OS asks it to free GC memory — which shows up as an
+    // outright STATUS_HEAP_CORRUPTION (0xC0000374) process kill. A native-backed box aliases the real
+    // address, so `.Value` reads the real memory and the uintptr/void* round-trip is EXACT. The
+    // uintptr conversion operator below is the one that has to honor this.
     private readonly nuint m_nativeAddr;
 
     // Lazily-created pin of this box's fixed-array backing store, kept alive for the box's lifetime so a
@@ -681,12 +682,12 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
         // Two standard heap pointers, each a distinct allocation: distinct addresses, never equal
         // (the ReferenceEquals(this, other) check above already handled the same-box case, and a Go
         // variable whose address is taken is heap-boxed ONCE, so `&x == &x` is that same-box case).
-        // A pointer's identity is its STORAGE and nothing else: it was formerly derived from the
-        // held value for a reference-typed T — two distinct boxes wrapping one referent compared
-        // equal — which reported `&c == &d` true for distinct `*int` variables holding the same
-        // pointer, collapsed `map[**int]V{&c: …, &d: …}` to a single entry, and made the hash of a
-        // box MUTATE when its pointee was assigned (a key inserted while the pointee was nil could
-        // never be found again).
+        // A pointer's identity is its STORAGE and nothing else — never the value it holds. Deriving
+        // identity from the held value for a reference-typed T makes two distinct boxes wrapping one
+        // referent compare equal, and all three of these follow: `&c == &d` reports true for distinct
+        // `*int` variables that happen to hold the same pointer; `map[**int]V{&c: …, &d: …}` collapses
+        // to a single entry; and a box's hash MUTATES when its pointee is assigned, so a key inserted
+        // while the pointee was nil can never be found again.
         return false;
     }
 
@@ -1000,10 +1001,10 @@ public class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer
     // ambiguous between an unsafe.Pointer overload and a ж<T> overload (CS0121 — runtime's free
     // `add(p, x)` vs the `(*notInHeap).add` static companion).
     //
-    // The result ALIASES the address (see m_nativeAddr). It formerly boxed a COPY of the pointed-at
-    // value, which silently discarded the address: pointer arithmetic then walked the GC heap and
-    // handing the pointer back to a native API freed GC memory (STATUS_HEAP_CORRUPTION). Aliasing
-    // keeps `uintptr(unsafe.Pointer(p))` an exact round-trip, as Go requires.
+    // The result ALIASES the address (see m_nativeAddr) — it must never box a COPY of the pointed-at
+    // value, because a copy silently discards the address: pointer arithmetic then walks the GC heap,
+    // and handing the pointer back to a native API frees GC memory (STATUS_HEAP_CORRUPTION).
+    // Aliasing keeps `uintptr(unsafe.Pointer(p))` an exact round-trip, as Go requires.
     public static unsafe explicit operator ж<T>(uintptr value)
     {
         return new ж<T>((nuint)value.Value);

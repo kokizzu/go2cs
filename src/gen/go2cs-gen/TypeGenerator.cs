@@ -344,11 +344,11 @@ public class TypeGenerator : ISourceGenerator
                         // with no methods is satisfied by every value nominally already.
                         //
                         // The "dyn" key is NOT read here: an anonymous interface takes exactly the same
-                        // shells a named one does. It once selected a second renderer (the ᴛAs
-                        // conversion methods and their Δ wrapper); that renderer was retired when dyn
-                        // moved onto the shells, so the only remaining reader of "dyn" is the runtime's
-                        // Type.IsDynamicType (struct-to-struct dynamic conversion), which reads the
-                        // [GoType] attribute directly.
+                        // shells a named one does. The key once selected a second renderer — the ᴛAs
+                        // conversion methods and their Δ wrapper — which is retired now that dyn rides
+                        // on the shells, so the ONLY remaining reader of "dyn" is the runtime's
+                        // Type.IsDynamicType (struct-to-struct dynamic conversion), and it reads the
+                        // [GoType] attribute directly rather than going through here.
                         bool shellEligible = operatorConstraints is null &&
                             interfaceDeclaration.TypeParameterList is null or { Parameters.Count: 0 };
 

@@ -594,14 +594,14 @@ public static class TypeExtensions
         // Otherwise, combine the direct methods with inherited methods
         HashSet<MethodInfo> allMethods = [..methods];
 
-        // Add methods from all base interfaces. The filter MUST match the direct-member call above:
-        // reflection's DEFAULT BindingFlags include STATICS, and golib's hand-written core interfaces
-        // expose static duck-typing conversion helpers (error.As<T> at error.cs:31/36/41, fmt.Stringer's
-        // As<T>), while TypeGenerator stamps ᴛAs onto every dyn interface. Collecting those made
-        // StructurallyImplements demand a static `As` from the dynamic value's Go METHOD SET — which no
-        // Go type can ever satisfy — so every interface that EMBEDS such a base probed FALSE. Measured:
-        // an anonymous `interface{ error; Temporary() bool }` (net.Error's shape) asserted against a
-        // *tempErr that plainly has both methods answered MISS.
+        // Add methods from all base interfaces. The explicit BindingFlags MUST match the direct-member
+        // call above, and the reason is that reflection's DEFAULT flags include STATICS: golib's
+        // hand-written core interfaces expose static duck-typing conversion helpers (`error.As<T>`,
+        // `fmt.Stringer.As<T>`), which are not part of any Go method set. Collect those and
+        // StructurallyImplements demands a static `As` from the dynamic value's Go METHOD SET — which
+        // no Go type can ever satisfy — so every interface that EMBEDS such a base probes FALSE.
+        // Measured when that happened: an anonymous `interface{ error; Temporary() bool }` (net.Error's
+        // shape) asserted against a *tempErr that plainly has both methods answered MISS.
         foreach (Type baseInterface in baseInterfaces)
         {
             MethodInfo[] baseMethods = baseInterface.GetMethods(BindingFlags.Public | BindingFlags.Instance);

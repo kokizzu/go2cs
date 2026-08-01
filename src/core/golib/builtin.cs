@@ -1595,8 +1595,8 @@ public static partial class builtin
     /// <returns>Pointer to heap allocated zero value of provided type.</returns>
     public static ж<T> @new<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>()
     {
-        // No `where T : new()` bound: an unconstrained Go type parameter no longer carries one (so a
-        // delegate/func type arg like `atomic.Pointer[func()]` is legal). Construct the zero value the
+        // No `where T : new()` bound: an unconstrained Go type parameter does not carry one, so that a
+        // delegate/func type argument like `atomic.Pointer[func()]` stays legal. Construct the zero value the
         // way Go's `new(T)` does: a value type is zero-initialized via its parameterless ctor (running
         // any field initializers, e.g. fixed-size array fields); a reference/delegate type is null.
         T value = typeof(T).IsValueType ? Activator.CreateInstance<T>() : default!;
@@ -2869,11 +2869,20 @@ public static partial class builtin
         };
     }
 
-    // Per-interface structural-implementation cache. Keying on the closed generic type Cache<TInterface>
-    // lets the JIT specialize a distinct static dictionary for each interface, so the run-time check is a
-    // single value-Type-keyed lookup with no composite-key hashing and no cross-interface contention
-    // (this replaced a shared ConcurrentDictionary<(Type, Type), bool>). The value-type dimension stays a
-    // dictionary because one Implements<TInterface> instantiation is exercised against many runtime types.
+    // Per-interface structural-implementation cache, reached from the `_ =>` arm of Implements above.
+    //
+    // KEEP — a dead-code scan will flag this and be wrong. The only call site names the type through a
+    // type parameter (`Cache<TInterface>.Implements(...)`), so a search for the literal text
+    // "Cache<" finds the definition and one use that reads like part of the same declaration.
+    // It is live on the structural duck-typing path every dynamic type assert takes, and the
+    // AnonInterfaceSignatureAssert behavioral test exercises it by name.
+    //
+    // Keying on the CLOSED generic type is the optimization: the JIT specializes a distinct static
+    // dictionary per interface, so the run-time check is a single value-Type-keyed lookup with no
+    // composite-key hashing and no cross-interface contention — where a shared
+    // ConcurrentDictionary<(Type, Type), bool> made every interface share one lock-striped table and
+    // hash a tuple on each probe. The value-type dimension stays a dictionary because one
+    // Implements<TInterface> instantiation is exercised against many runtime types.
     private static class Cache<TInterface>
     {
         private static readonly ConcurrentDictionary<Type, bool> s_results = [];

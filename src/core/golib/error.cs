@@ -24,10 +24,10 @@ namespace go;
 /// <remarks>
 /// The <see cref="GoInterfaceShellAttribute"/> stamp joins <c>error</c> to the ONE runtime
 /// duck-typing mechanism every converted interface uses (see <see cref="AdapterBinder"/>):
-/// <see cref="error{T}"/> IS the delegate-bound generic shell — it always was, it simply used to be
-/// reached by reflecting for the static <c>As&lt;T&gt;</c> helpers below and closing them with
-/// <c>MakeGenericMethod</c>. The attribute replaces that lookup, which is what allows the reflective
-/// closure to be deleted from <c>builtin.TryTypeAssert</c>. No object shell is declared: the
+/// <see cref="error{T}"/> IS the delegate-bound generic shell, and the attribute is how the binder
+/// finds it — a direct stamp rather than reflection over the static <c>As&lt;T&gt;</c> helpers below
+/// closed with <c>MakeGenericMethod</c>, which is what that lookup cost before and why
+/// <c>builtin.TryTypeAssert</c> no longer needs a reflective closure at all. No object shell is declared: the
 /// reflective tier would have to reproduce <see cref="error{T}"/>'s <c>%v</c>/<c>%T</c> formatting
 /// contract, so a VALUE-typed error still binds through the generic shell (AOT-graceful, exactly as
 /// before).
@@ -195,9 +195,10 @@ public static class errorExtensions
         DynamicallyAccessedMemberTypes.PublicFields
     )] T>(this error target)
     {
-        // The `error<T>` carrier is golib's own reflective error box (built by `error.As`): it does
-        // NOT hold its Go dynamic value the way every other interface value does, so unwrapping it
-        // is the ONLY error-specific part of a typed-error assert.
+        // The `error<T>` carrier is golib's own error box — built by AdapterBinder from the
+        // [GoInterfaceShell] stamp on `error`, and by the `error.As` factories. It does NOT hold its
+        // Go dynamic value the way every other interface value does, so unwrapping it is the ONLY
+        // error-specific part of a typed-error assert.
         if (target is error<T> carrier)
             return carrier.Target;
 
@@ -207,12 +208,12 @@ public static class errorExtensions
         // the ONE type-assertion machinery so an assert made on a statically-`error` operand can
         // never disagree with the same assert made on an `any`-typed one.
         //
-        // Casting the carrier to `error<T>` directly (what this did before) only ever matched the
-        // legacy carrier: `err.(*fs.PathError)` against a pointer-sourced error threw
-        // InvalidCastException ("PathErrorжerror to error<ж<PathError>>"), which is not even a
-        // recoverable Go panic — os's dirFS.Open path-fixup died on it (io/fs TestGlob,
+        // Do NOT shortcut this by casting the carrier to `error<T>` directly: that only matches the
+        // carrier shape, so `err.(*fs.PathError)` against a pointer-sourced error throws
+        // InvalidCastException ("PathErrorжerror to error<ж<PathError>>") — which is not even a
+        // recoverable Go panic, and killed os's dirFS.Open path-fixup (io/fs TestGlob,
         // TestReadDirPath, TestReadFilePath). Commit cb0f58078 closed the INTERFACE half of this
-        // same defect; this closes the CONCRETE-type half.
+        // same defect; the dispatch above closes the CONCRETE-type half.
         return ((object)target)._<T>();
     }
 

@@ -601,11 +601,12 @@ public static class GoReflect
 
         // STRUCTURAL nil first: there is no storage to read, so the pointee reads as the zero value.
         // Every other box resolves its REAL storage through Value — including a struct-field or
-        // array-element reference, which the value-peeking IsNull used to report as nil whenever the
-        // referenced field's type was a reference type (its m_val is an unused default), handing back
-        // default(T) in place of the field's actual value. IsNull is now structural for those kinds
-        // (see ж<T>.IsNull), and what remains of it — a standard box whose reference-typed pointee is
-        // legitimately null — has default(T) as the correct answer anyway.
+        // array-element reference, whose own `m_val` is an unused default. That default is the trap:
+        // a nil test that PEEKS AT THE VALUE calls such a box nil whenever the referenced field's
+        // type is a reference type, and hands back default(T) in place of the field's actual value.
+        // So ж<T>.IsNull is STRUCTURAL for those kinds, and the case it still answers by value — a
+        // standard box whose reference-typed pointee is legitimately null — has default(T) as the
+        // correct answer anyway, which is why the fallback on the last line is safe.
         if (box is INilPointer { IsNilPointer: true })
             return default(T);
 
