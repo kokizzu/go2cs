@@ -13,11 +13,12 @@ table th code {
   white-space: normal;
 }
 
-/* No-JS safety net only: if the <wbr> script did not run and a table still exceeds
-   the container, the TABLE scrolls rather than the page. With the script active,
-   tables fit and this never engages. */
+/* The table must stay a real table (no display:block) -- a block-wrapped table's
+   inner layout escapes the container's width constraint, so columns feel no
+   pressure and the <wbr> break points never engage. As a real table constrained
+   by the content column, auto-layout squeezes the prose column at spaces and the
+   path column at its <wbr> slashes, and everything fits. */
 table {
-  display: block;
-  max-width: 100%;
-  overflow-x: auto;
+  width: 100%;
+  table-layout: auto;
 }
