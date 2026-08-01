@@ -11,6 +11,12 @@
 table td code,
 table th code {
   white-space: normal;
+  /* When a path wraps, give EACH line fragment its own pill padding/background
+     (default `slice` pads only the first fragment, so continuation lines started
+     a few pixels left of the first). `clone` aligns every wrapped line's text
+     start and closes the pill around each fragment. */
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 /* The CAYMAN THEME block-wraps tables (.main-content table { display:block;
