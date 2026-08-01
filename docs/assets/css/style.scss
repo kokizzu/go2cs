@@ -13,12 +13,16 @@ table th code {
   white-space: normal;
 }
 
-/* The table must stay a real table (no display:block) -- a block-wrapped table's
-   inner layout escapes the container's width constraint, so columns feel no
-   pressure and the <wbr> break points never engage. As a real table constrained
-   by the content column, auto-layout squeezes the prose column at spaces and the
-   path column at its <wbr> slashes, and everything fits. */
-table {
+/* The CAYMAN THEME block-wraps tables (.main-content table { display:block;
+   overflow:auto }) -- that is the source of the bottom-of-table scrollbar: a
+   block-wrapped table's inner layout escapes the container's width constraint, so
+   columns feel no pressure and nothing wraps. Restore real table display at the
+   theme's own specificity (this file loads after the theme import, so the later
+   rule wins): the container squeezes the columns, prose breaks at spaces, and the
+   path column breaks at its injected <wbr> slashes. */
+.main-content table {
+  display: table;
   width: 100%;
   table-layout: auto;
+  overflow: visible;
 }
