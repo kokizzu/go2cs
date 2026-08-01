@@ -6252,6 +6252,65 @@ late from `convStarExpr`'s fallback as the generic `Δtype`/`Δtypeᴛ1`…. Dec
 pointer-to-anonymous-struct with an embedded `error`, a map to pointer-to-anonymous-struct, and a
 slice of slice of anonymous struct, read and written through and output-compared vs Go.)
 
+**The struct-FIELD arm was the same probe, and it now shares the same descent.** `visitStructType`
+kept its *own* hand-written peel — a chain of `field.Type.(*ast.StarExpr)` / `.(*ast.StructType)` /
+`.(*ast.InterfaceType)` / `.(*ast.ArrayType)` arms, each looking exactly one level down — so a struct
+field declared `[N]struct{…}` lifted while `[N]*struct{…}`, `[]*struct{…}`, `map[K]struct{…}` and
+`chan struct{…}` fell through to the same raw-Go-text emission. That the map case had already been
+patched in as its own arm rather than as a rule is the shape a point-repair leaves behind, and it is
+what marked this as the next site. The arm now calls `extractStructType` / `extractInterfaceType`,
+the identical helpers every other lift site uses:
+
+```go
+type Composed struct {
+	Ptrs  [2]*struct{ Size uint32 }
+	ByKey map[string]struct{ Count int }
+}
+```
+```csharp
+[GoType("dyn")] partial struct Composed_Ptrs  { public uint32 Size; }
+[GoType("dyn")] partial struct Composed_ByKey { public nint Count; }
+
+[GoType] [GoValueClone("Ptrs")] partial struct Composed {
+    public array<ж<Composed_Ptrs>> Ptrs = new(2);
+    public map<@string, Composed_ByKey> ByKey;          // was: map<@string, struct{Count int}>
+}
+```
+
+Two properties keep the shared helper faithful to what the arm did before. The lift name stays
+`<struct>_<field>`, which is well-defined for every shape because a field type carrying an anonymous
+literal always *names* the field — the Go spec makes an embedded field a type name, never a literal.
+And **sub-struct tracking** (`subStructTypes`, which feeds `addImplicitSubStructConversions`) still
+records only the two shapes it ever recorded — the field *is* the anonymous struct, or a pointer
+straight to it — because that map describes the field's own declared type; a struct reached through a
+slice/array/map/channel element is not the field's type and never was tracked.
+
+Measured by the same whole-standard-library A/B, the widening has **no corpus consumer today**: no
+converted package declares a composed anonymous-struct field. What the A/B *did* change is four files
+in two packages, all one incidental canonicalization — the shared helpers exclude the **empty**
+`struct{}`/`interface{}`, and the old field arm did not:
+
+```csharp
+- [GoType("dyn")] partial struct Func_opaque { }          // …and NamedArg__NamedFieldsRequired, Out__…
+- [GoType] partial struct Func { internal Func_opaque opaque; }
++ [GoType] partial struct Func { internal EmptyStruct opaque; // unexported field to disallow conversions
+```
+
+Go's `opaque struct{}` is `struct{}`, and golib's `EmptyStruct` is what every other site already maps
+it to — so `runtime.Func`, `database/sql`'s `NamedArg` and `Out` stop minting a private empty type
+apiece, three `[GoType("dyn")]` declarations and their `package_info.cs` entries disappear, and the Go
+trailing comment lands back where Go writes it. Nothing referenced the removed names (verified across
+the whole reconverted corpus, with the baseline emission as the positive control), and the 302-package
+corpus builds with 0 errors. (Guarded by the `AnonStructArrayElement` behavioral test, extended: a
+`[2]*struct{…}` field, a `[]*struct{…}` field, a `map[K]struct{…}` field and a `map[K]interface{…}`
+field, each read back through its lifted type, alongside the pre-existing one-level `[N]struct{…}`
+control and the parenthesized `(*struct{ r7 int })(nil)` conversion. Its A/B reproduces the defect
+directly: against the previous binary the three struct fields emit raw `struct{…}` text. The composed
+fields are read at their ZERO values on purpose — *constructing* a value of an anonymous struct type
+lifts a second, function-scoped name for the same Go type, and a container of it has no implicit
+conversion to bridge the two. That is the recorded cross-context anonymous-lift identity split, which
+applies equally to the one-level shape and is a separate increment.)
+
 ### A global addressed only by the package's own `_test.go` is still heap-boxed
 A Go pointer to a package-level var aliases that var's real storage, which in C# means the global
 must be backed by a heap box (see [Pointers](#pointers)); `packageAddressedGlobals` decides that by

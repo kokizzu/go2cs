@@ -190,10 +190,23 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 			indentOffset = -1
 		}
 
-		// Check if field is a struct or a pointer to a struct
-		if ptrType, ok := field.Type.(*ast.StarExpr); ok {
-			if subStructType, ok := ptrType.X.(*ast.StructType); ok && !v.liftedTypeExists(subStructType) {
-				subStructIdentType := v.getExprType(ptrType.X)
+		// Lift the anonymous struct/interface the FIELD's declared type reaches, at ANY depth of its
+		// composition — `struct{…}`, `*struct{…}` and `[N]struct{…}`, and equally the composed
+		// `[N]*struct{…}`, `[]*struct{…}`, `map[K]struct{…}` and `chan struct{…}` — so the field
+		// declaration resolves to a named type (`array<Composed_Ptrs>`) instead of the raw,
+		// un-compilable Go `struct{…}` text. This arm used to peel the field type BY HAND, one
+		// container level per kind, which is the same one-level shallowness that produced net's
+		// CS1031 cascade at the declaration sites; it now shares those sites' recursive descent
+		// (extractStructType / extractInterfaceType, both of which already exclude the empty
+		// struct/interface — an empty `interface{}` field must map to `any`, never to a marker
+		// interface nothing implements). getTypeName resolves each composed element through
+		// liftedTypeMap. Struct is probed first, matching the previous arm order.
+		//
+		// A field type carrying an anonymous literal always NAMES the field (an embedded field is a
+		// type name by the Go spec, never a literal), so the name guard only skips cases that cannot
+		// arise — it is what lets the lift name stay `<struct>_<field>` for every shape.
+		if len(field.Names) > 0 {
+			if subStructType, subStructIdentType := v.extractStructType(field.Type); subStructType != nil && !v.liftedTypeExists(subStructType) {
 				v.indentLevel += indentOffset
 				v.visitStructType(subStructType, subStructIdentType, fmt.Sprintf("%s_%s", structTypeName, field.Names[0].Name), field.Comment, true, structPrefix)
 				v.indentLevel -= indentOffset
@@ -202,75 +215,22 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 					structPrefix.WriteString(v.newline)
 				}
 
-				// Track sub-struct types
-				subStructTypes := v.subStructTypes[identType]
+				// Sub-struct tracking (addImplicitSubStructConversions) describes the field's OWN
+				// declared type, so it records the two DIRECT shapes it has always recorded: the
+				// field IS the anonymous struct, or a pointer straight to it. A struct reached
+				// through a slice/array/map/chan element is not the field's type and is not tracked.
+				var trackedType types.Type
 
-				if subStructTypes == nil {
-					subStructTypes = make([]types.Type, 0)
+				if _, isDirect := field.Type.(*ast.StructType); isDirect {
+					trackedType = subStructIdentType
+				} else if ptrType, isPointer := field.Type.(*ast.StarExpr); isPointer && ptrType.X == ast.Expr(subStructType) {
+					trackedType = v.getExprType(ptrType)
 				}
 
-				subStructTypes = append(subStructTypes, v.getExprType(ptrType))
-				v.subStructTypes[identType] = subStructTypes
-			} else if interfaceType, ok := ptrType.X.(*ast.InterfaceType); ok && !isEmptyInterface(interfaceType) && !v.liftedTypeExists(interfaceType) {
-				interfaceIdentType := v.getExprType(ptrType.X)
-				v.indentLevel += indentOffset
-				v.visitInterfaceType(interfaceType, interfaceIdentType, fmt.Sprintf("%s_%s", structTypeName, field.Names[0].Name), field.Comment, true, structPrefix)
-				v.indentLevel -= indentOffset
-
-				if structPrefix != nil {
-					structPrefix.WriteString(v.newline)
+				if trackedType != nil {
+					v.subStructTypes[identType] = append(v.subStructTypes[identType], trackedType)
 				}
-			}
-		} else if subStructType, ok := field.Type.(*ast.StructType); ok {
-			subStructIdentType := v.getExprType(field.Type)
-			v.indentLevel += indentOffset
-			v.visitStructType(subStructType, subStructIdentType, fmt.Sprintf("%s_%s", structTypeName, field.Names[0].Name), field.Comment, true, structPrefix)
-			v.indentLevel -= indentOffset
-
-			if structPrefix != nil {
-				structPrefix.WriteString(v.newline)
-			}
-
-			// Track sub-struct types
-			subStructTypes := v.subStructTypes[identType]
-
-			if subStructTypes == nil {
-				subStructTypes = make([]types.Type, 0)
-			}
-
-			subStructTypes = append(subStructTypes, subStructIdentType)
-			v.subStructTypes[identType] = subStructTypes
-		} else if interfaceType, ok := field.Type.(*ast.InterfaceType); ok && !isEmptyInterface(interfaceType) {
-			// An EMPTY interface field (`ptr interface{}`, e.g. encoding/json's slice-cycle memo
-			// struct) is NOT lifted to a named `[GoType("dyn")]` marker interface — that empty
-			// marker is implemented by nothing, so a concrete value assigned to the field (a
-			// boxed `uintptr` from `v.UnsafePointer()`) fails to convert (CS1503). It maps to
-			// `any` via the field-type conversion below, matching how extractInterfaceType (the
-			// canonical lift gate) already excludes empty interfaces everywhere else.
-			interfaceIdentType := v.getExprType(field.Type)
-			v.indentLevel += indentOffset
-			v.visitInterfaceType(interfaceType, interfaceIdentType, fmt.Sprintf("%s_%s", structTypeName, field.Names[0].Name), field.Comment, true, structPrefix)
-			v.indentLevel -= indentOffset
-
-			if structPrefix != nil {
-				structPrefix.WriteString(v.newline)
-			}
-		} else if arrayType, ok := field.Type.(*ast.ArrayType); ok && len(field.Names) > 0 {
-			// An array/slice field whose element is an anonymous struct/interface (e.g. runtime's
-			// `MemStats.BySize [61]struct{…}`): lift the element type so the field declaration
-			// resolves to a named type (`array<BySizeᴛ1>`) instead of a raw, un-compilable
-			// `struct{…}`. getTypeName resolves the array element through liftedTypeMap.
-			if subStructType, ok := arrayType.Elt.(*ast.StructType); ok && !v.liftedTypeExists(subStructType) {
-				subStructIdentType := v.getExprType(arrayType.Elt)
-				v.indentLevel += indentOffset
-				v.visitStructType(subStructType, subStructIdentType, fmt.Sprintf("%s_%s", structTypeName, field.Names[0].Name), field.Comment, true, structPrefix)
-				v.indentLevel -= indentOffset
-
-				if structPrefix != nil {
-					structPrefix.WriteString(v.newline)
-				}
-			} else if interfaceType, ok := arrayType.Elt.(*ast.InterfaceType); ok && !isEmptyInterface(interfaceType) && !v.liftedTypeExists(interfaceType) {
-				interfaceIdentType := v.getExprType(arrayType.Elt)
+			} else if interfaceType, interfaceIdentType := v.extractInterfaceType(field.Type); interfaceType != nil && !v.liftedTypeExists(interfaceType) {
 				v.indentLevel += indentOffset
 				v.visitInterfaceType(interfaceType, interfaceIdentType, fmt.Sprintf("%s_%s", structTypeName, field.Names[0].Name), field.Comment, true, structPrefix)
 				v.indentLevel -= indentOffset

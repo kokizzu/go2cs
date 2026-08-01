@@ -26,6 +26,46 @@ internal static array<nint> nums = new(3);
 internal static ж<array<nint>> Ꮡaddr = new(new array<nint>(2));
 internal static ref array<nint> addr => ref Ꮡaddr.Value;
 
+[GoType("dyn")] partial struct Composed_Ptrs {
+    public uint32 Size;
+}
+
+[GoType("dyn")] partial struct Composed_Slice {
+    public @string Name;
+}
+
+[GoType("dyn")] partial struct Composed_ByKey {
+    public nint Count;
+}
+
+[GoType("dyn")] partial interface Composed_Tagged {
+    @string Tag();
+}
+
+[GoType] [GoValueClone("Ptrs")] partial struct Composed {
+    public array<ж<Composed_Ptrs>> Ptrs = new(2);
+    public slice<ж<Composed_Slice>> Slice;
+    public map<@string, Composed_ByKey> ByKey;
+    public map<@string, Composed_Tagged> Tagged;
+}
+
+internal static Composed composed = new();
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string absentˢ = "absent"u8;
+
+internal static (bool, nint, nint, bool) composedReads() {
+    return (composed.Ptrs[0] == nil, len(composed.Slice), composed.ByKey[absentˢ].Count, composed.Tagged[absentˢ] == default!);
+}
+
+[GoType("dyn")] partial struct reservedIsNil_type {
+    internal nint r7;
+}
+
+internal static bool reservedIsNil() {
+    return ((ж<reservedIsNil_type>)nil) == nil;
+}
+
 internal static nint statsTotal() {
     var s = new Stats(Total: 42);
     return s.Total;
@@ -58,6 +98,9 @@ internal static void Main() {
     fmt.Println(nums[0], nums[2], addr[0], addr[1]);
     fmt.Println(statsTotal());
     fmt.Println(localHeapAnon());
+    var (noPtr, sliceLen, count, noTag) = composedReads();
+    fmt.Println(noPtr, sliceLen, count, noTag);
+    fmt.Println(reservedIsNil());
 }
 
 } // end main_package

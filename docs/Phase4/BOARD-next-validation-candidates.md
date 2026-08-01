@@ -367,19 +367,35 @@ The other consumers this unblocks are all registration-by-blank-import: `databas
   arm had already been added as its own function rather than as a rule, which is the shape a
   point-repair leaves behind. The fix replaced both extractors' dispatch with one recursive descent
   over the type-composing operands. Any other analysis that peels a type expression by hand — rather
-  than through `go/types` or the shared walk — is a candidate for the same defect, and **one more is
-  already identified**: `visitStructType.go`'s struct-FIELD arm (`else if arrayType, ok :=
-  field.Type.(*ast.ArrayType)`, then `arrayType.Elt.(*ast.StructType)`) lifts `[N]struct{…}` but not
-  `[N]*struct{…}`, `[]*struct{…}`, `map[K]struct{…}` or a bare `*struct{…}` field. Routing it through
-  `extractStructType` is a three-line change that strictly widens coverage — deliberately NOT taken
-  in the same commit as the fix above, because it has no demonstrated consumer and would re-open a
-  completed gate run (full suite + whole-stdlib A/B + corpus build + 66-package sweep) for an
-  unguarded change. It wants its own increment with its own guard. ⚠ And scope it with an **A/B
-  reconvert, not a source scan**: a grep for the shape reported zero production hits and would have
-  called the corpus untouched, but the A/B found `encoding/gob/type.cs`, whose
-  `(*struct{ r7 int })(nil)` reaches its literal through a parenthesized pointer conversion the
-  pattern never looked for. Charter §9's rule earning its keep in the opposite direction — the scan
-  had a positive control for `[]*struct{…}` and none for `(*struct{…})`.
+  than through `go/types` or the shared walk — is a candidate for the same defect. ⚠ And scope any
+  such site with an **A/B reconvert, not a source scan**: a grep for the shape reported zero
+  production hits and would have called the corpus untouched, but the A/B found
+  `encoding/gob/type.cs`, whose `(*struct{ r7 int })(nil)` reaches its literal through a
+  parenthesized pointer conversion the pattern never looked for. Charter §9's rule earning its keep
+  in the opposite direction — the scan had a positive control for `[]*struct{…}` and none for
+  `(*struct{…})`.
+
+  **The one site this bullet named is now closed too (2026-07-31).** `visitStructType.go`'s
+  struct-FIELD arm kept its own hand-written peel and lifted `[N]struct{…}` but not `[N]*struct{…}`,
+  `[]*struct{…}`, `map[K]struct{…}` or `chan struct{…}`; it now calls `extractStructType` /
+  `extractInterfaceType` like every other lift site. (The bullet's list was one entry too generous —
+  a *bare* `*struct{…}` field always had its own arm and always lifted.) A/B'd over all 305 projects:
+  the widening itself has **no corpus consumer**, exactly as predicted, and the only change is one
+  incidental canonicalization in 4 files / 2 packages — the shared helpers exclude the **empty**
+  `struct{}` and the old arm did not, so `runtime.Func`'s `opaque` and `database/sql`'s two
+  `_NamedFieldsRequired` fields now take golib's `EmptyStruct` instead of minting a private empty
+  `[GoType("dyn")]` type apiece. Corpus builds 302/302 with 0 errors; nothing referenced the removed
+  names. Full rule + the two properties that keep the shared helper faithful (lift naming, sub-struct
+  tracking): [`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *An
+  anonymous struct lifts from ANY depth of its declared type*; guarded by `AnonStructArrayElement`.
+
+  What it did **not** close, and is the honest next increment here: the **cross-context
+  anonymous-lift identity split**. Constructing a value of an anonymous struct type lifts a second,
+  function- or file-scoped name for the same Go type (`fill_s` beside the field's `S_One`), so a
+  direct struct assignment survives only on go2cs-gen's dyn-struct implicit conversion and a
+  *container* of it — `slice<ж<A>>` to `slice<ж<B>>` — has nothing to bridge it (CS1503). That is
+  why the new guard reads its composed fields at their zero values, and why the pre-existing
+  one-level guard never indexes `Stats.BySize` either. It predates this arm and is unaffected by it.
 - **Untyped constants in a typed slot — CLOSED 2026-07-29.** The int-literal case was already fixed;
   a computed float constant that directly uses a named untyped integer wrapper now folds once at the
   resolved float width. `hash/maphash` validates 22/22; `UntypedConstDefine` guards both `:=` and typed slots.

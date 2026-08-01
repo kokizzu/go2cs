@@ -28,6 +28,45 @@ var pool [2]struct {
 var nums [3]int
 var addr [2]int
 
+// The SAME struct-field arm, one composition level deeper. The arm peeled a field's declared type by
+// hand, one container level per kind, so `[N]struct{…}` lifted while `[N]*struct{…}`, `[]*struct{…}`
+// and `map[K]struct{…}` fell straight through and the field declaration carried the raw, un-compilable
+// Go `struct{…}` text into C#. Every field below is a shape that arm could not see; `Stats.BySize`
+// above is the one-level control that must stay byte-identical.
+type Composed struct {
+	Ptrs  [2]*struct{ Size uint32 }
+	Slice []*struct{ Name string }
+	ByKey map[string]struct{ Count int }
+
+	// The interface side of the same arm: a map VALUE is not a container kind it peeled either.
+	Tagged map[string]interface{ Tag() string }
+}
+
+var composed Composed
+
+// Reads every composed field back THROUGH its lifted type, so a lift that produced no named type
+// (or the wrong one) cannot pass by compiling alone: `composed.ByKey[…].Count` only binds if
+// `Composed_ByKey` is a real C# struct carrying the field.
+//
+// Deliberately reads the ZERO values rather than populating the fields. Constructing a value of an
+// anonymous struct type lifts a SECOND, function- or file-scoped name for the same Go type (the
+// recorded cross-context anonymous-lift identity split, unchanged by this arm and present for the
+// one-level `[N]struct{…}` shape too), and a container of it — `slice<ж<A>>` to `slice<ж<B>>` — has
+// no implicit conversion to bridge them. That residual is its own increment; the field arm's job,
+// and all this guards, is that the field DECLARATION resolves to a named type at all.
+func composedReads() (bool, int, int, bool) {
+	return composed.Ptrs[0] == nil,
+		len(composed.Slice),
+		composed.ByKey["absent"].Count,
+		composed.Tagged["absent"] == nil
+}
+
+// The PARENTHESIZED pointer conversion of an anonymous struct — encoding/gob's
+// `bootstrapType("_reserved1", (*struct{ r7 int })(nil))`. It reaches its literal through a paren
+// hop that no hand-written one-level peel looked for; it is a positive control for the shared
+// descent, held here so the whole class has one guard.
+func reservedIsNil() bool { return (*struct{ r7 int })(nil) == nil }
+
 // Reference Stats so it (and its lifted Stats_BySize element type) must compile; reads only the
 // scalar field, independent of the (separate) zero-value array-element allocation.
 func statsTotal() int { s := Stats{Total: 42}; return s.Total }
@@ -65,4 +104,8 @@ func main() {
 	fmt.Println(nums[0], nums[2], addr[0], addr[1])
 	fmt.Println(statsTotal())
 	fmt.Println(localHeapAnon())
+
+	noPtr, sliceLen, count, noTag := composedReads()
+	fmt.Println(noPtr, sliceLen, count, noTag)
+	fmt.Println(reservedIsNil())
 }

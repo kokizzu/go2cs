@@ -58,6 +58,12 @@ public static partial class main_package
     // <TypeAccessibility>
     internal partial struct localHeapAnon_firstFree {}
     internal partial struct poolᴛ1 {}
+    internal partial struct reservedIsNil_type {}
+    public partial interface Composed_Tagged {}
+    public partial struct Composed {}
+    public partial struct Composed_ByKey {}
+    public partial struct Composed_Ptrs {}
+    public partial struct Composed_Slice {}
     public partial struct Stats {}
     public partial struct Stats_BySize {}
     // </TypeAccessibility>
