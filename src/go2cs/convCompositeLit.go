@@ -182,6 +182,15 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 					// parameter (CS1503).
 					if st, ok := u.Elem().Underlying().(*types.Struct); ok {
 						v.markAnyFieldLits(st, compositeLit.Elts, ptrElidedContext)
+
+						// Record + route an INTERFACE struct field, exactly as the sibling composite
+						// paths do (the typed checkStructFields and the elided STRUCT arm below).
+						// This arm marked `any` fields but never interface ones, so a concrete
+						// element in an interface slot reached the generated ctor bare — net
+						// ip_test's `[]*struct{ in IP; str string; byt []byte; error }` handed a
+						// `ж<AddrError>` to the embedded `error` parameter with no `AddrErrorжerror`
+						// wrap (CS1503). The `[]struct{…}` sibling shape routed correctly all along.
+						v.recordStructFieldInterfaceCasts(compositeLit, st, ptrElidedContext)
 					}
 
 					v.withValueCloneArgs(compositeLit.Elts, ptrElidedContext)
