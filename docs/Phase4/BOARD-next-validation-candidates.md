@@ -172,6 +172,79 @@ Rooting those is the next `net` increment. Note `net`'s own init gap (the `sync.
 `fd_windows.cs:27`) sits behind all of it, and the Tier-0 channel/rendezvous frog behind that — so
 compiling is the realistic near-term goal, not validating.
 
+#### Revised 2026-07-31 — six of those seven roots are fixed; ONE architectural blocker remains
+
+Re-measured on a converter carrying the r27 adapter-resolver chip: **46 unique errors** (the "94" above
+counts each twice — MSBuild reports every error once per pass). Six roots landed, each a general fix
+at its own layer; the count after each, in order:
+
+| # | Root | Layer | Errors after |
+|--:|:--|:--|--:|
+| — | *(start)* | | 46 |
+| 1 | A white-box **production** type is FOREIGN to go2cs-gen, so the interface-sourced adapter name must carry the package prefix — the carve-out the *value* arm already had (`whiteboxProductionTarget`) | converter | 17 |
+| 2 | A pointer-receiver **method value** binds the address in **assignment** context too (`poll.CloseFunc = sw.Closesocket`) — the value-context arm already did | converter | 11 |
+| 3 | `&x.(*T).field` — a **type-assertion** base is a pointer rvalue, so it field-refs the box instead of copy-boxing | converter | 11 |
+| 4 | A literal whose **every** return arm is untyped `nil` states its return type (the single-result twin of the multi-result rule) | converter | 11 |
+| 5 | `goǃ` gains the `Func<…, TResult>` twins `deferǃ` always had — `go f(…)` discards results for **any** `f`, including a func literal with a named result | golib | 11 |
+| 6 | `var a, b = f()` gates on `identHasHeapBox`, not the blanket `identEscapesHeap` flag — every tuple with an interface or func result was falling back to the broken per-name path | converter | 3 |
+| 7 | The elided **pointer** element composite (`[]*struct{…}{{…}}`) routes its interface fields, like both sibling composite paths | converter | **2** |
+
+Rows 3–5 cleared together on the same measurement (2–4 were independent roots whose sites overlapped
+in the same three files). Every one is documented in
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md); behavioral CNR is
+byte-identical across all 517 projects for the whole set, which is the expected shape — five of the six
+converter roots are reachable only from Go that the behavioral corpus does not contain, and two only
+under `-tests`.
+
+The original bucketing held up well with one correction worth recording: row 1's mechanism was **not**
+`splitExternalVariantRecords` and not an anchor split. Both sides agreed on the anchor all along — the
+record lands in `package_test_info.cs` and the class is generated into the test metadata class — and
+only the *simple name* disagreed, because the converter asks "is the source type in another **Go
+package**?" where the generator asks "is it in another **assembly**?" Under the white-box model those
+differ for exactly one set of types. The board's guess named the right file and the wrong seam; the
+diagnostic (`does not exist in the type 'net_test_package'`) reads like an anchor problem and is not
+one.
+
+##### The remaining blocker: `testing.T.Deadline` needs a type `core/testing` cannot name
+
+Both remaining errors are `t.Deadline()` (`net_test.go:78`, `dial_test.go:391`). Go's signature is
+`func (t *T) Deadline() (deadline time.Time, ok bool)`, and net uses the result as a real `time.Time`
+(`deadline.Add(-time.Until(deadline)/10)`, `td.Add(-arbitraryCleanupMargin)`) — so no primitive or
+golib stand-in can satisfy it.
+
+`core/testing` is hand-owned and, per the F15b one-testing-package ruling, is bound by **every** test
+host by path (`$(go2csPath)core\testing\testing.csproj`). It references only `golib` and the analyzer
+today, and that is not an oversight — its whole public surface (`TB`, `T`, `B`, `F`) is expressible in
+primitives and golib types. `Deadline` is the first member that needs a converted stdlib type, and
+neither candidate works:
+
+- **`core/time`** — collides. Every `.tests.csproj` already references `go-src-converted\time`, and
+  both assemblies declare `go.time_package`, so a project seeing both gets CS0433 on every use.
+- **`go-src-converted/time`** — inverts the layering `core` ↔ `go-src-converted` is built on, and
+  drags the converted tree into `go2cs.slnx` (which registers `core/testing`).
+
+Note `DisableTransitiveProjectReferences=true` on the test projects makes this worse, not better: the
+reference would not flow, and a `core/testing` API mentioning `time.Time` would then be **CS0012** at
+every consumer — the reference-closure family again.
+
+Three ways out, none of them a converter fix, all of them a decision above a single package's arc:
+(a) parameterize `core/testing`'s `time` reference per consumer (MSBuild `AdditionalProperties` on the
+ProjectReference — works, but makes the one testing package polymorphic in its dependency and touches
+every generated `.tests.csproj`); (b) promote `time` to a position both trees share, the way `golib`
+already is; (c) rule that `testing`'s time-typed surface is out of scope and accept that packages using
+it cannot compile their suites. **Owed to a ruling, not to this arc.**
+
+Footprint, so the ruling is sized rather than guessed: a `.Deadline()` scan over GOROOT `_test.go`
+files hits 15 files, of which the testing-typed receivers are in `net`, `net/http`, `net/http/httputil`,
+`os/exec`, `os/signal`, `database/sql`, `runtime`, `runtime/pprof` and `cmd/go` (the `context` and
+`internal/poll` hits are `context.Context.Deadline` / `SetDeadline`, false positives for this purpose).
+So it gates roughly eight future arcs, several of them large.
+
+**`net` state: 2 errors, one root, no converter work left in it.** Everything the r27 lane bucketed is
+closed. When the ruling lands, `net` should compile on the next run — and the init gap (`sync.OnceFunc`
+nil panic at `fd_windows.cs:27`) plus the Tier-0 channel frog are what stand between compiling and
+validating, exactly as this section said.
+
 ## Runtime failures
 
 | Package | State |

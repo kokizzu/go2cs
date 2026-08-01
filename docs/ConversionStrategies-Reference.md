@@ -4050,6 +4050,26 @@ literals. (Guarded by the `ElidedStructInterfaceField` behavioral test — a poi
 and a value-receiver `valueErr`, each used *only* in an elided `[]struct{ err error; … }{…}`, output-compared
 vs Go; the pre-fix converter emits the bare box / bare value and fails CS1503 on both.)
 
+**And on the elided POINTER element composite (2026-07-31).** There are *three* composite paths, not
+two: `[]*struct{…}{{…}, …}` — Go's shorthand where the `&` is implied — has its own arm in
+`convCompositeLit`, reached before the elided-struct arm above and emitting `Ꮡ(new T(…))` rather than
+the target-typed `new(…)`. That arm marked `any` field literals but never called
+`recordStructFieldInterfaceCasts`, so a concrete element in an interface slot again reached the
+generated constructor bare. net `ip_test`'s `[]*struct{ in IP; str string; byt []byte; error }` — an
+**embedded** `error` field — handed a `ж<AddrError>` to the `error` parameter with no
+`AddrErrorжerror` wrap (CS1503). The arm now makes the same record+route call its two siblings do:
+
+```csharp
+Ꮡ(new ipStringTestsᴛ1(new IP(…), "?0123456789abcdef"u8, default!,
+    new net_test_package.net_AddrErrorжerror(Ꮡ(new AddrError(Err: …, Addr: …)))))
+```
+
+The tell is worth carrying forward: each of the three paths grew its own field-marking sequence
+(`markStringFieldLits` / `markAnyFieldLits` / `recordStructFieldInterfaceCasts`) independently, and the
+one that fell behind is the one nobody had a failing case for — the same shape-versus-its-pointer-
+composition asymmetry as *An anonymous struct lifts from ANY depth of its declared type*. Behavioral
+CNR is byte-identical across the whole corpus: like its sibling, this is a test-code shape.
+
 ### Named-string wrapper surface (indexing, sub-slicing, span bridge)
 A named type over `string` is indexed and sub-sliced in Go (`tag[i]`, `tag[i:j]` -- reflect `StructTag.Get`), but C# indexing never applies user-defined conversions. The `InheritedType` template therefore forwards the `@string` surface on every named-string wrapper: `byte this[int]` / `byte this[nint]` indexers, a `Range` indexer returning the WRAPPER (a Go sub-slice of a named string keeps the named type), `nint Length` for `len()`, and an implicit `ReadOnlySpan<byte>` operator so `u8`-literal comparisons and assignments bind. Guarded by `NamedStringConversion`.
 
@@ -4122,6 +4142,25 @@ A grouped `var (name, offset, abs = t.locabs() ...)` spec is not a `:=`, so the 
 var (ln, ls) = pair();
 ```
 Guarded by `GlobalTupleVarDecl` (both levels, with a call-count check proving single evaluation).
+
+**The function-local gate asks whether a name has a BOX, not whether it "escapes" (2026-07-31).**
+That branch is gated to specs no name of which needs a `ref heap<T>` box declaration, and it read the
+raw `identEscapesHeap` flag — which the escape analysis **blanket-sets** for every *inherently*
+heap-allocated local (pointer, slice, map, chan, **interface**, **func**), because those are already
+references and get no box unless their address is genuinely taken. So the gate rejected specs that are
+entirely plain, and every tuple with an interface or func result fell back to the very per-name path
+this branch exists to replace:
+
+```csharp
+context.Context ctx = context.WithCancel(context.Background());   // the WHOLE tuple  (CS0029)
+Action cancel = default!;                                          // silently defaulted
+```
+
+`identHasHeapBox` is the predicate that answers the gate's actual question, and it is what the branch
+now calls. This is the trap `paramAddressTakenNeedsBox` already documents from the other side — *a
+verdict the box gate then refuses leaves `identEscapesHeap` set with no box behind it* — and it stayed
+hidden because `(int, string)`-shaped tuples, the ones anyone reaches for when probing, work fine.
+net's `var ctx, cancel = context.WithCancel(context.Background())` is the corpus site.
 
 ### `string()` of an untyped constant reference hops through the default type
 `string(utf8.RuneError)` renders the argument as its cross-package `static readonly` Untyped* wrapper, from which `@string` has no conversion (CS0030). The conversion hops through the constant's DEFAULT Go type first -- exactly Go's conversion semantics; a plain literal is already a C# constant and keeps its direct form:
@@ -5394,6 +5433,30 @@ checker = nvcʗ1.CheckNamedValue;
 
 This matches the `:=`-define path (which already hoists) and also covers a reassignment inside a tagless `switch` case. (Guarded by the `MethodValueReassignCapture` behavioral test.) `CheckNamedValue` here is an *interface* method, so the assignment binds a plain method group over the hoisted snapshot (see the interface-receiver rule above); a concrete-receiver method value keeps the param-carrying lambda form, referencing the snapshot the same way.
 
+### A POINTER-receiver method value binds the ADDRESS in assignment context too
+Go's `sw.Closesocket`, where `Closesocket` has a `*Switch` receiver and `sw` is addressable, **is**
+`(&sw).Closesocket` — the address is taken once, at method-value creation (the same spec rule the
+heap-box arm above rests on). The VALUE-context arm — a method value passed as a call *argument* —
+already synthesized that `&` and bound the method group over the box. The **assignment**-context arm
+did not: it rendered the receiver expression plainly and forwarded through the param-carrying lambda,
+so the lambda body called the `[GoRecv]` `ж<T>` extension with a struct **value** receiver. net's six
+socket-hook installs in `main_windows_test.go` were five CS1929 plus one CS1501, the latter because
+the value receiver made a *different*, differently-arity'd overload the compiler's best candidate:
+
+```go
+poll.CloseFunc = sw.Closesocket      // sw is a package-level socktest.Switch
+listenFunc     = sw.Listen
+```
+```csharp
+poll.CloseFunc = (syscallꓸHandle p1) => Ꮡsw.Closesocket(p1);   // was sw.Closesocket(p1)
+listenFunc     = (syscallꓸHandle p1, nint p2) => Ꮡsw.Listen(p1, p2);
+```
+
+Both contexts now apply one rule rather than differing by which side of an `=` the method value sits
+on. Only the receiver expression moves to the box — the lambda forwarding, its explicit parameter
+types, and the documented per-call receiver re-evaluation are unchanged. A receiver expression that is
+*already* a pointer keeps its existing pointer-context rendering.
+
 ### A bare function value in `:=` takes its named delegate type, not `var`
 Go's short-declaration from a bare function value whose type is a **named** func type — text/template/parse's `state := lexText`, where `lexText` is `func(*lexer) stateFn` and `type stateFn func(*lexer) stateFn` (the classic self-referential state machine) — infers the local as the *unnamed* signature. The converter cannot emit `var state = lexText;` (a C# method group has no `var`-inferable delegate type — CS8917), and typing the local structurally as `Func<ж<lexer>, stateFn>` makes it a **distinct** C# delegate from the `stateFn` the method group produces and that each `state = state(l)` reassignment yields (CS0029). It declares the local with the matching package named delegate instead:
 
@@ -5554,6 +5617,19 @@ the goroutine arm needs the discarding wrap for *both* its nullary and param cas
 Func-literal callees and `void`-returning method groups are untouched (`goǃ(() => { … })`,
 `goǃ(emit, out)`). (Guarded by the `GoStmtValueReturn` behavioral test — value-returning nullary,
 single-, multi-param and multi-result goroutine callees, output-compared vs Go.)
+
+**That asymmetry is now closed at the runtime (2026-07-31): `goǃ` carries the `Func<…, TResult>`
+twins too.** The wrap above cannot reach the one shape it left out — a func-literal callee that
+*returns a value*. `go func(ln Listener) (retErr error) { … }(ln)` (net `sendfile_test`) emits its
+literal with an explicit `error` return type, because a named result set by a `defer` needs one, and
+no `Action<Listener>` overload accepts it (CS8934). Wrapping it in the converter would mean
+suppressing the literal's own return type and rewriting its trailing `return retErr;` — rewriting a
+correct emission to fit a runtime gap. Adding the seventeen `Func` siblings `deferǃ` has carried all
+along fixes that shape, and every other one, at the seam where Go's rule actually lives: `go f(…)`
+discards results, for **any** `f`. Existing call sites are unaffected — a void lambda or method group
+cannot bind `Func<TResult>` at all — and the converter's discarding wraps stay: they are still
+required for the CS1113 value-receiver-extension case below, whose reason is delegate *creation*, not
+the callee's result. (Guarded by `GoStmtValueReturn`'s value-returning func-literal arm.)
 
 A **VALUE-receiver method callee** forces the same lambda forms even when void and
 arity-matching: every Go named type emits a C# struct and the method an extension on it, and C#
@@ -7799,6 +7875,30 @@ operand orders, interface-vs-interface equality, both type-assert forms plus a m
 over both implementers, `%T`, method dispatch and an interface-keyed map — output-compared vs
 `go run`.)
 
+### Under `-tests`, a white-box PRODUCTION type is FOREIGN to the generator — so the name carries the prefix
+The two sides of an adapter name must compose it identically, and they answer *"is the source type
+foreign?"* by different means: the generator tests the **containing assembly**, the converter tests the
+**Go package**. Under the white-box reference model those two disagree about exactly one set of types —
+the package under test's own. `go/packages` merges the production files into the INTERNAL test variant's
+Go package, so `pkg == v.pkg` reads `net.Conn` as local; its C# lives in the *referenced* production
+assembly, which the generator reads as foreign and therefore prefixes.
+
+The value arm already carried that carve-out (`whiteboxProductionTarget`, added for `encoding/binary`).
+The **interface**-sourced arm did not, so every cast site named a type that does not exist — 26 CS0426
+across seven of net's internal test files, 55% of everything left after the r27 syntax cascade closed:
+
+```csharp
+new net_test_package.ConnᴠReader(c)        // referenced (arm composed the name unprefixed)
+public sealed class net_ConnᴠReader : …     // generated (prefixed, in the SAME anchor class)
+```
+
+The anchor was never in doubt — the record lands in `package_test_info.cs` and the class is generated
+into the test metadata class both sides name. Only the *simple name* disagreed. `isSameAssemblyPkg`
+is deliberately left alone: it already answers correctly (both reference models clear
+`testPackagePath`), and it remains the RECOMPILE fallback's answer, where production sources really do
+compile into the test assembly. Behavioral CNR is byte-identical — the shape exists only under
+`-tests`.
+
 ### An exported func type publicizes the unexported types in its signature
 An EXPORTED named func type becomes a `public` C# delegate; an unexported type in its signature —
 x/text/unicode/bidi's `type Option func(*options)`, where `options` is package-private — is then
@@ -8641,6 +8741,20 @@ Finally, the same rvalue problem occurs when the field belongs to a pointer reac
 
 The base may also be a pointer **rvalue** — a pointer-returning **call** (`getg().schedlink.set(…)`, `q.tail.ptr().schedlink.set(…)`, `Δp.chunkOf(ci).scavenged.setRange(…)`, `getg().m.p.ptr().wbBuf.get2()`) or a pointer **element index** (`batch[i].schedlink.set(…)`). Go auto-derefs the pointer to reach the value field, so the converter renders the read as `(~rvalue).field`; the `~` deref is an rvalue, so a pointer-receiver method on it cannot bind (`CS1510` on the generated `ref`). Unlike a deref-aliased *parameter* (whose box is `Ꮡp`) or a *field* deref (handled above), the call/index value **already is** the `ж<T>` box, so the receiver is materialized straight through it via the box-field accessor — `getg().of(g.Ꮡschedlink).set(…)`, `batch[i].of(g.Ꮡschedlink).set(…)` — never a `Ꮡ(value)` copy (which would lose the write). The routing is scoped to a base that is **not** an ident and **not** a field selector (those are the param/receiver/local/field cases above) and is **not a type conversion**: a conversion `(*T)(p)` renders as a C# *cast* (`(ж<T>)(uintptr)(…)`), a low-precedence form on which a trailing `.of(…)` would mis-bind to the inner operand, so a pointer-reinterpret keeps its existing `Ꮡ(…)` form (the runtime-unsafe S1 territory). (Guarded by the `PointerRvalueFieldReceiver` behavioral test — a pointer-receiver method on a value field reached through a returning call, a method-call chain, and a pointer-element index, each with write-through verified; runtime exercises this for `guintptr.set` via `getg()`/`batch[i]`/`q.tail.ptr()`, `pallocData.setRange` via `chunkOf`, and `wbBuf.get2`/`discard` via `getg().m.p.ptr()`.)
 
+**A TYPE-ASSERTION base is a pointer rvalue too (2026-07-31).** The shape list that admits a base into
+that box-field routing enumerates ident / selector / call / index / star, and a type assertion is none
+of them — so `&c.(*UDPConn).conn` (net `udpsock_test`, reaching the promoted `conn.Write` through an
+asserted `PacketConn`) dropped to the `Ꮡ(value)` copy-box fallback and named a `.conn` member that
+`ж<UDPConn>` does not have (**CS1061**; had it bound, it would have written into a copy). The list is
+about C# **precedence**, not about which node kinds have happened to come up: a base whose rendering is
+postfix chains `.of(…)` cleanly, and a type assertion always renders as the postfix `c._<ж<UDPConn>>()`,
+which *is* the box. Only the type-CONVERSION `CallExpr` stays excluded, for the cast-precedence reason
+stated above. `exprIsValueFieldOfPointerRvalue`, the sibling predicate that decides the *routing*,
+already accepted a type assertion through its default arm — so the two now agree rather than one
+routing a shape the other could not render. This is the address-of copy-boxing family's next uncovered
+**base** shape; the pattern of that family is that each fix covers one base shape, so the next
+uncovered one is worth looking for rather than waiting for.
+
 The bare-ident-base exclusion above holds **only for `[GoRecv] ref` methods** (which bind on the addressable value alias directly). A **direct-ж** (box-receiver) method — `func (s *scavengeIndex) find(…)` and the like, emitted with a `ж<T>` receiver — needs the *box*, so calling it on a value field-chain rooted at a deref-aliased pointer **parameter or (direct-ж) receiver** is `CS1929`: `Δp.scav.index.find(force)` (root `p`, a `*pageAlloc` receiver), `mp.trace.seqlock.Load()` (root `mp`, a `*m` parameter), `h.userArena.readyList.remove(s)`. These are routed through the box-field accessor too — `Ꮡp.of(pageAlloc.Ꮡscav).of(pageAlloc_scav.Ꮡindex).find(force)` — never a `Ꮡ(value)` copy (which would lose an atomic write). The `&`-machinery recurses through the value field-chain to the param/receiver box: `&Δp.scav.index` builds `Ꮡp.of(…).of(…)`, where the box base is the **raw** parameter name (`Ꮡp`, not the shadow-renamed `ᏑΔp` — a deref param `p`→`Δp` is `ref var Δp = ref Ꮡp.Value`, box `Ꮡp`). The routing is gated to direct-ж so a `[GoRecv] ref` method on the same chain keeps binding directly (no churn); a receiver root additionally requires the *enclosing* method to be direct-ж (only then does its receiver box `Ꮡrecv` exist). (Guarded by the `FieldChainBoxReceiver` behavioral test — a direct-ж method on a value field-chain rooted at a pointer parameter and at a direct-ж receiver, both with write-through verified; runtime exercises this pervasively for `scavengeIndex`/`mSpanList`/`timers` methods and `m.trace` atomic fields.)
 
 For the **receiver-root** case, the enclosing method only *becomes* direct-ж through the capture-mode pre-pass's transitive fixpoint: a pointer-receiver method that calls a direct-ж method on a value field-chain of its own receiver — `func (p *pageAlloc) free(…) { … p.scav.index.free(…) }` — is promoted to direct-ж so its receiver box `Ꮡp` exists for the routing above. This detection walks the **full** value field-chain `recvName.f1.…fn.method` (every hop a value, non-pointer field), not just one level: `p.scav.index.free(…)` roots `free` at the receiver `p` through two value fields (`scav`→`index`). A one-level chain (`b.u.Load()` on an embedded atomic) was already detected; the multi-level walk generalizes it. A pointer field anywhere in the chain stops the walk — that subexpression is already a box and roots the call elsewhere (the pointer-field paths above), so it must not trigger promotion. The promotion is transitive: once `pageAlloc.free` is direct-ж, its caller `func (h *mheap) freeSpanLocked(…) { … h.pages.free(…) }` is in turn promoted (now calling a direct-ж method on `h.pages`), and so on up the call graph until a root holding the value through a real box/pointer. (The multi-level receiver-root promotion is covered by the `FieldChainBoxReceiver` test's `deep.bumpDeep` case — `d.mid.c.inc()`, a direct-ж `inc` on a two-level value field-chain of a receiver with no other direct-ж trigger, write-through verified; runtime exercises it on `pageAlloc.free`/`freeSpanLocked`.)
@@ -9016,6 +9130,16 @@ Guarded by `PointerCastSliceRange` (compile-shape).
 
 ### Interface-returning literals with distinct arm types state their return type too
 The same inference gap hits an interface result whose arms return DIFFERENT concrete types — net ipsock.go's `inetaddr := func(ip IPAddr) Addr` returns three pointer-adapter classes (`TCPAddrжΔAddr` / `UDPAddrжΔAddr` / `IPAddrжΔAddr`), which share only the interface (CS8917). When a single non-empty-interface result's return arms carry two or more distinct types, the lambda states the return type explicitly (`Addr (IPAddr ip) => …`); each arm then converts implicitly. Single-typed literals keep the inferred form (zero churn). (Guarded by the `InterfaceCasting` extension `makeAnimal` — an adapter arm plus a value arm, runtime-verified.)
+
+**And the opposite end of the same gap: arms that are ALL untyped `nil`.** `client := func(*TCPConn)
+error { <-serverDone; return nil }` (net `net_test`) renders its only arm as `default!`, which carries
+no natural type at all — so where the rule above has too many candidate types, this has none, and it
+is the same CS8917. The interface arm now also states the return type when the literal is in
+assignment position, has a return, and **every** single-result arm is untyped nil. Drift-free by
+construction: an all-`default!` arm set never had an inferable natural type, so every site the rule
+touches is a site that did not compile. It is the single-result twin of the multi-result
+`!hasFullyTypedArm` rule immediately below, and it stays out of argument/return position for the same
+reason that one does — those literals are target-typed by their delegate, so nothing is inferred.
 
 ### Multi-value literals with no fully-typed arm state their return type — named results included
 The single-result inference gaps above generalize to any MULTI-result literal where EVERY return arm carries a typeless element — `return nil, nil, nil, nil, err` on the error arms and `return dnsNames, ips, emails, uriDomains, nil` on the success arm (crypto/x509 `parseNameConstraintsExtension`'s `getValues := func(subtrees) (dnsNames []string, ips []*net.IPNet, emails, uriDomains []string, err error)`). A C# tuple literal with any untyped element has no natural type, so no arm fixes the lambda's return type and delegate-type inference fails (CS8917). The lambda states its tuple return type explicitly, and each `nil` then takes its target element type:
