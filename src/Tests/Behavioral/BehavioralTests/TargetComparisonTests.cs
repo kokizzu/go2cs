@@ -715,6 +715,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckLocalStructFieldAddr() => CheckTarget("LocalStructFieldAddr");
 
     [TestMethod]
+    public void CheckLocalTimeZone() => CheckTarget("LocalTimeZone");
+
+    [TestMethod]
     public void CheckLocalTypeSliceElement() => CheckTarget("LocalTypeSliceElement");
 
     [TestMethod]

@@ -1059,17 +1059,7 @@ public static (uint32 n, error err) GetTempPath(uint32 buflen, ж<uint16> Ꮡbuf
     return (n, err);
 }
 
-public static (uint32 rc, error err) GetTimeZoneInformation(ж<Timezoneinformation> Ꮡtzi) {
-    uint32 rc = default!;
-    error err = default!;
-
-    var (r0, _, e1) = Syscall(procGetTimeZoneInformation.Addr(), 1, (uintptr)new @unsafe.Pointer(Ꮡtzi), 0, 0);
-    rc = (uint32)r0;
-    if (rc == 0xffffffffU) {
-        err = errnoErr(e1);
-    }
-    return (rc, err);
-}
+// go2cs generated this placeholder — func GetTimeZoneInformation is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static (uint32 ver, error err) GetVersion() {
     uint32 ver = default!;

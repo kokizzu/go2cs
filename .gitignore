@@ -378,6 +378,14 @@ src/core/log/**/[Oo]bj/
 /src/go2cs/go2cs.exe
 /src/go2cs/go2cs
 
+# Per-run reports a `-stdlib` conversion writes at its output root. Since the converted stdlib
+# moved home to src/core, a regen "in place" (-go2cspath <repo>/src) drops these into src/ —
+# they are regenerable run output, not source. go2cs.slnx lists them as <File> entries so they
+# are browsable when present.
+/src/graphs/
+/src/reports/
+/src/stdlib_conversion_progress.txt
+
 # GitHub Copilot custom instructions file (may be auto-created by Visual Studio)
 .github/copilot-instructions.md
 src/.github/copilot-instructions.md

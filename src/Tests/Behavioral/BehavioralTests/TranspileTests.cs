@@ -712,6 +712,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckLocalStructFieldAddr() => CheckTarget("LocalStructFieldAddr");
 
     [TestMethod]
+    public void CheckLocalTimeZone() => CheckTarget("LocalTimeZone");
+
+    [TestMethod]
     public void CheckLocalTypeSliceElement() => CheckTarget("LocalTypeSliceElement");
 
     [TestMethod]

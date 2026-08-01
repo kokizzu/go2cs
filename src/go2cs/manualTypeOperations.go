@@ -287,6 +287,26 @@ var manualConversionFuncs = map[string]map[string]bool{
 	"sync": {
 		"copyChecker.check": true,
 	},
+	// syscall's generated GetTimeZoneInformation wrapper hands the native call the ADDRESS of the
+	// managed Timezoneinformation box — `Syscall(…, uintptr(unsafe.Pointer(tzi)), …)`. Go's struct
+	// is 172 bytes with two INLINE [32]uint16 name buffers; the converted one is ~64 bytes with two
+	// `array<uint16>` MANAGED REFERENCES in their place, so the kernel writes 172 bytes of native
+	// TIME_ZONE_INFORMATION over a smaller managed object and fabricates object references in the
+	// name fields. The next `z.StandardName[:]` then faults (ACCESS_VIOLATION inside
+	// slice<ushort>..ctor), which takes down every converted program that reaches
+	// time.initLocal — i.e. any Weekday()/Location()/Local use on Windows.
+	//
+	// This is the same struct-passing seam as exec_windows.go's StartProcess and takes the same
+	// remedy: a blittable [StructLayout(LayoutKind.Sequential)] mirror with `fixed` name buffers and
+	// a direct P/Invoke, copying field-for-field into the converted struct at the boundary
+	// (zsyscall_windows_impl.cs). ONLY this one wrapper is hand-owned; every other declaration in
+	// the generated file stays auto — they pass scalars and handles, which convert faithfully.
+	//
+	// ⚠ Name-keyed like the entries above: `zsyscall_windows.go` is the Windows generated file, so
+	// a non-Windows -platforms conversion never sees this declaration and the entry is inert there.
+	"syscall": {
+		"GetTimeZoneInformation": true,
+	},
 }
 
 // isManualType reports whether the named type (raw Go name) is hand-converted in this package.

@@ -220,7 +220,9 @@ There are **two** ways a package carries hand-owned C#, and they are NOT interch
    behavioral test). Several `*_impl.cs` companions also carry the marker (documentation only, per
    pattern 1): internal/abi `type_impl.cs`, reflect `value_impl.cs`, runtime `lock_sema_impl.cs` /
    `runtime2_impl.cs`, sync `runtime_impl.cs`, internal/poll `runtime_sema_impl.cs`, syscall
-   `syscall_impl.cs` (2026-07-19), and math/rand + math/rand/v2 `rand_impl.cs` (2026-07-17,
+   `syscall_impl.cs` (2026-07-19) and `zsyscall_windows_impl.cs` (2026-08-01 —
+   `GetTimeZoneInformation` only; the struct-passing seam, see *Child-process creation* below),
+   and math/rand + math/rand/v2 `rand_impl.cs` (2026-07-17,
    blocker R3 — `runtime.rand` linkname bodies on `Random.Shared`: OS-entropy seeded, thread-safe,
    non-deterministic run to run exactly like Go's runtime generator; the os / net / hash/maphash
    `runtime_rand` declarations still carry throwing stubs).
@@ -299,6 +301,21 @@ layers were broken; only one of them warranted hand-owning.
 Note what did **not** need hand-owning: `SecurityAttributes` is fully blittable (two `uint32`s and a
 `uintptr`), so `CreatePipe` — and therefore `os.Pipe`, which `CombinedOutput` relies on — works through the
 ordinary converted wrapper. The struct-passing seam only breaks for structs holding `ж<T>` fields.
+
+**The seam has a SECOND member, and it is a CLASS (2026-08-01).** `syscall.GetTimeZoneInformation` is the
+same shape one field-kind over: a golib `array<T>` where Go has an inline `[N]T`. `TIME_ZONE_INFORMATION`
+is 172 bytes with two inline `WCHAR[32]` name buffers; the converted `Timezoneinformation` is ~64 bytes
+with two managed references in their place, so the kernel wrote the native record over a smaller managed
+object and `zoneinfo_windows.go`'s next `UTF16ToString(z.StandardName[:])` died in `slice<ushort>..ctor`.
+Every converted program calling `time.Now().Weekday()` / `Location()` / `Local` on Windows crashed —
+*diagnosed* in `time`, *caused* in `syscall`. It is hand-owned the same way, in `zsyscall_windows_impl.cs`,
+with the generated wrapper reduced to a `manualConversionFuncs` placeholder. Two lessons generalize:
+(1) the seam is **any** field that is a managed reference where the native layout has inline data or a raw
+address — `array<T>` counts, not only `ж<T>`, so the sentence above is now too narrow; (2) verify a mirror
+at **value** level, because wrong offsets return garbage *without* faulting — the `LocalTimeZone`
+behavioral test compares zone abbreviations and offsets against `go run`. A census of `src/core/syscall`
+finds **32** non-blittable structs and **10** wrappers passing one by address; the other nine are latent
+and board-rowed rather than fixed speculatively.
 
 The hand-owned implementation also copies every buffer handed to `CreateProcessW` (application name,
 command line, environment block, working directory, handle list, attribute list) into **unmanaged** memory

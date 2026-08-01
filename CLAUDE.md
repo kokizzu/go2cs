@@ -388,19 +388,19 @@ construct; otherwise add a new one (example: `Tests/Behavioral/GlobalStructField
 ## Current state & known issues
 
 - **One tree since 2026-08-01:** the stub baseline retired and the converted standard library moved into
-  `src/core`. `src/go2cs.slnx` builds clean; the behavioral suite runs against the CONVERTED packages
-  (518/518 transpile+compile+golden, 487/488 stdout comparisons — the one red is
-  `ExprSwitch`, below). All rewrite machinery is gone: one path scheme, `$(go2csPath)core\<pkg>`, everywhere.
-- **⚠ Known red — `ExprSwitch` (behavioral, found 2026-08-01):** `time.Now().Weekday()` →
-  `time.initLocal()` → `syscall.GetTimeZoneInformation` **access-violates**. The converted wrapper hands the
-  native call the address of the managed `Timezoneinformation` box, whose C# layout is not the native one
-  (`array<uint16>` is a managed reference where Go has an inline `[32]uint16`), so `GetTimeZoneInformation`
-  scribbles 172 native bytes over a ~64-byte managed object and the next `z.StandardName[:]` faults. This is
-  the documented struct-passing seam — the same class as `StartProcess`/`_STARTUPINFOEXW` — and the fix has
-  the same shape: hand-own `GetTimeZoneInformation` (a `manualConversionFuncs` entry + a blittable
-  `[StructLayout(Sequential)]` mirror and P/Invoke in a `syscall` `*_impl.cs`). It is a PRE-EXISTING defect
-  the consolidation merely exposed: the stub `time` never touched the Windows TZ path, and `time` is not a
-  banked package. **Any converted program calling `Weekday`/`Location`/`Local` on Windows hits it.**
+  `src/core`. `src/go2cs.slnx` builds clean and the behavioral suite is GREEN against the CONVERTED
+  packages — 519/519 transpile+compile+golden, **489/489** stdout comparisons vs `go run`. All rewrite
+  machinery is gone: one path scheme, `$(go2csPath)core\<pkg>`, everywhere.
+- **Windows local time works (fixed 2026-08-01).** Binding the converted `time` exposed a pre-existing
+  crash the stub had hidden: `time.Now().Weekday()` → `initLocal()` → `syscall.GetTimeZoneInformation`
+  access-violated, because the wrapper hands the kernel the address of a managed `Timezoneinformation`
+  whose `array<uint16>` name fields are managed references where Windows expects inline `WCHAR[32]`. That
+  wrapper is now hand-owned against a blittable mirror (`core/syscall/zsyscall_windows_impl.cs`), guarded
+  by the `LocalTimeZone` behavioral test — which compares real zone abbreviations and offsets against
+  `go run`, not merely the absence of a fault. **The CLASS is still open:** 9 more syscall wrappers pass a
+  non-blittable struct by address (census, per-member remedy and why they are deliberately NOT fixed
+  speculatively: [`docs/Phase4/BOARD-next-validation-candidates.md`](docs/Phase4/BOARD-next-validation-candidates.md)).
+  Nothing exercises them today; `net` and `crypto/x509` will.
 - **Phase 3 complete (2026-07-10 — commit `51ba5d9cf`, tag `stdlib-green-2026-07-10`):** all **302**
   packages of the full conversion (Go 1.23.1) compile clean — zero errors, zero
   exclusions (`runtime`, `reflect`, `net/http`, `go/types`, `crypto/tls`, `database/sql`, … all included).

@@ -460,6 +460,42 @@ The other consumers this unblocks are all registration-by-blank-import: `databas
 `image.Decode`, and `time/tzdata`. A blank import was never invisible to the build — it is in
 `go/packages`' import list, so the project reference already existed; only the *load* did not happen.
 
+## Open — the syscall STRUCT-PASSING seam: 9 wrappers still hand a non-blittable struct to the kernel
+
+Named as a class 2026-08-01, after `syscall.GetTimeZoneInformation` became the second member of it
+to be hand-owned (the first was `StartProcess`/`_STARTUPINFOEXW`, 2026-07-19).
+
+**The class.** A generated wrapper passes `uintptr(unsafe.Pointer(&s))` for a converted struct whose
+C# layout is not the native one — any struct holding a golib `array<T>` (Go's inline `[N]T`) or a
+`ж<T>` (Go's pointer field) where Windows expects inline bytes or a raw address. The kernel then
+writes the NATIVE-sized record over a smaller managed object: heap corruption past its end, and
+fabricated object references in the reference-typed fields. It does not fail at the call; it fails at
+the next read of one of those fields, usually as an `ACCESS_VIOLATION` deep inside golib. That is why
+`time.Now().Weekday()` died in `slice<ushort>..ctor` and not in `GetTimeZoneInformation`.
+
+**Census (`src/core/syscall`, positive control = `Timezoneinformation`): 32 non-blittable structs, 10
+wrappers passing one by address.** One is fixed; the other **nine** are latent — nothing in the
+behavioral suite (519/519) or the 69-package sweep exercises them today:
+
+| Wrapper | Struct | Reached by |
+|:--|:--|:--|
+| `findFirstFile1` / `findNextFile1` | `win32finddata1` (`FileName`, `AlternateFileName`) | `os.ReadDir`/`Glob` on the FindFirstFile path |
+| `Process32First` / `Process32Next` | `ProcessEntry32` (`ExeFile`) | process enumeration |
+| `GetIfEntry` | `MibIfRow` (`Name`, `PhysAddr`, `Descr`) | `net.Interfaces` |
+| `getStartupInfo` | `StartupInfo` (`Desktop`, `Title`) | `os` startup |
+| `FreeAddrInfoW` | `AddrinfoW` (`Canonname`, `Next`) | `net` DNS |
+| `CertEnumCertificatesInStore`, `CertFreeCertificateChain`, `CertFreeCertificateContext` | `CertContext`, `CertChainContext` | `crypto/x509` on Windows |
+
+**Remedy, per member:** the established one — a blittable `[StructLayout(LayoutKind.Sequential)]`
+mirror with `fixed` buffers for the inline arrays, a direct `[DllImport]`, and an explicit
+field-for-field copy at the boundary, declared in `manualConversionFuncs` so the generated wrapper
+becomes a placeholder. Worked example: `src/core/syscall/zsyscall_windows_impl.cs`.
+
+**Do them when a suite reaches them, not speculatively** — each needs its own value-level
+verification (a mirror with wrong offsets returns garbage *without* faulting, so "it no longer
+crashes" proves nothing; `LocalTimeZone` compares real zone abbreviations and offsets against Go).
+`net` and `crypto/x509` are the two packages that will surface most of the rest.
+
 ## Recurring classes worth a general fix rather than another point repair
 
 - **Zero-value construction for a type that needs one.** Fixed **four** times now in four different
