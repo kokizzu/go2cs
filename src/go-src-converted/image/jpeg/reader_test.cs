@@ -435,7 +435,7 @@ Sqm7JH//2Q==
 public static void TestExtraneousData(ж<testing.T> Ꮡt) {
     // Encode a 1x1 red image.
     var src = image.NewRGBA(image.Rect(0, 0, 1, 1));
-    src.Set(0, 0, new jpeg_internal_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0xff, 0x00, 0x00, 0xff)));
+    src.Set(0, 0, new colorꓸRGBA(0xff, 0x00, 0x00, 0xff));
     var buf = @new<bytes.Buffer>();
     {
         var err = Encode(new jpeg_internal_test_package.bytes_BufferжWriter(buf), new jpeg_internal_test_package.image_ΔRGBAжImage(src), nil); if (err != default!) {

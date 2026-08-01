@@ -17,7 +17,7 @@ internal static UntypedInt dsth => 480;
 internal static UntypedInt srcw => 400;
 internal static UntypedInt srch => 300;
 
-internal static color.Palette palette = new color.Palette(new color.Color[]{new draw_test_package.color_Gray16ᴠColor(color.Black), new draw_test_package.color_Gray16ᴠColor(color.White)
+internal static color.Palette palette = new color.Palette(new color.Color[]{color.Black, color.White
 }.slice());
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -81,7 +81,7 @@ internal static void bench(ж<testing.B> Ꮡb, color.Model dcm, color.Model scm,
     image.Image src = default!;
     var exprᴛ2 = scm;
     if (AreEqual(exprᴛ2, default!)) {
-        src = new draw_test_package.image_UniformжImage(Ꮡ(new image.Uniform(C: new draw_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0x11, 0x22, 0x33, 0x44)))));
+        src = new draw_test_package.image_UniformжImage(Ꮡ(new image.Uniform(C: new colorꓸRGBA(0x11, 0x22, 0x33, 0x44))));
     }
     else if (AreEqual(exprᴛ2, color.CMYKModel)) {
         var src1 = image.NewCMYK(image.Rect(0, 0, srcw, srch));

@@ -558,7 +558,7 @@ public static void TestEncodeBadPalettes(ж<testing.T> Ꮡt) {
             var pal = new Δcolor.Palette(n);
             if (!nilColors) {
                 foreach (var (i, _) in pal) {
-                    pal[i] = new gif_internal_test_package.color_Gray16ᴠColor(Δcolor.Black);
+                    pal[i] = Δcolor.Black;
                 }
             }
             var err = EncodeAll(io.Discard, Ꮡ(new GIF(
@@ -597,7 +597,7 @@ public static void TestColorTablesMatch(ж<testing.T> Ꮡt) {
     // Make a copy of the palette, substituting trIdx's slot with transparent,
     // just like decoder.decode.
     var local = append(((Δcolor.Palette)default!), global.ꓸꓸꓸ);
-    local[trIdx] = new gif_internal_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(nil));
+    local[trIdx] = new colorꓸRGBA(nil);
     const nint testLen = /* 3 * 256 */ 768;
     const nint padded = 7;
     var e = @new<global::go.image.gif_package.encoder>();

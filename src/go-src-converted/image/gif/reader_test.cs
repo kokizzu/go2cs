@@ -132,7 +132,7 @@ public static void TestDecode(ж<testing.T> Ꮡt) {
             Pix: new uint8[]{0, 0}.slice(),
             Stride: 2,
             Rect: image.Rect(0, 0, 2, 1),
-            Palette: new Δcolor.Palette(new Δcolor.Color[]{new gif_internal_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0x10, 0x20, 0x30, 0xff)), new gif_internal_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0x40, 0x50, 0x60, 0xff))
+            Palette: new Δcolor.Palette(new Δcolor.Color[]{new colorꓸRGBA(0x10, 0x20, 0x30, 0xff), new colorꓸRGBA(0x40, 0x50, 0x60, 0xff)
             }.slice())
         ));
         if (!reflect.DeepEqual(got, want)) {

@@ -639,7 +639,7 @@ public static void TestMultipletRNSChunks(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("%d tRNS chunks: %v"u8, i, err);
                 continue;
             }
-            want = new png_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0xff, 0x00, 0x00, 0xff));
+            want = new colorꓸRGBA(0xff, 0x00, 0x00, 0xff);
             break;
         }
         case 1: {
@@ -647,7 +647,7 @@ public static void TestMultipletRNSChunks(ж<testing.T> Ꮡt) {
                 Ꮡt.Errorf("%d tRNS chunks: %v"u8, i, err);
                 continue;
             }
-            want = new png_test_package.color_NRGBAᴠColor(new color.NRGBA(0xff, 0x00, 0x00, 0x7f));
+            want = new color.NRGBA(0xff, 0x00, 0x00, 0x7f);
             break;
         }
         default: {

@@ -135,12 +135,12 @@ public static void TestWriterPaletted(ж<testing.T> Ꮡt) {
             // Create a paletted image with the correct palette length
             var palette = new color.Palette(tcʗ1.plen);
             foreach (var (iΔ1, _) in palette) {
-                palette[iΔ1] = new png_test_package.color_NRGBAᴠColor(new color.NRGBA(
+                palette[iΔ1] = new color.NRGBA(
                     R: (uint8)iΔ1,
                     G: (uint8)iΔ1,
                     B: (uint8)iΔ1,
                     A: 255
-                ));
+                );
             }
             var m0 = image.NewPaletted(image.Rect(0, 0, width, height), palette);
             nint i = 0;
@@ -232,7 +232,7 @@ public static void TestSubImage(ж<testing.T> Ꮡt) {
     var m0 = image.NewRGBA(image.Rect(0, 0, 256, 256));
     for (nint y = 0; y < 256; y++) {
         for (nint x = 0; x < 256; x++) {
-            m0.Set(x, y, new png_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA((uint8)x, (uint8)y, 0, 255)));
+            m0.Set(x, y, new colorꓸRGBA((uint8)x, (uint8)y, 0, 255));
         }
     }
     m0 = m0.SubImage(image.Rect(50, 30, 250, 130))._<ж<imageꓸRGBA>>();
@@ -264,10 +264,10 @@ public static void TestWriteRGBA(ж<testing.T> Ꮡt) {
         for (nint x = 0; x < width; x++) {
             var opaqueColor = new colorꓸRGBA((uint8)x, (uint8)y, (uint8)(y + x), 255);
             var translucentColor = new colorꓸRGBA((uint8)((uint8)x % 128), (uint8)((uint8)y % 128), (uint8)((uint8)(y + x) % 128), 128);
-            opaqueImg.Set(x, y, new png_test_package.color_ΔRGBAᴠColor(opaqueColor));
-            translucentImg.Set(x, y, new png_test_package.color_ΔRGBAᴠColor(translucentColor));
+            opaqueImg.Set(x, y, opaqueColor);
+            translucentImg.Set(x, y, translucentColor);
             if (y % 2 == 0) {
-                mixedImg.Set(x, y, new png_test_package.color_ΔRGBAᴠColor(opaqueColor));
+                mixedImg.Set(x, y, opaqueColor);
             }
         }
     }
@@ -349,7 +349,7 @@ public static void BenchmarkEncodeNRGBOpaque(ж<testing.B> Ꮡb) {
     var bo = img.Bounds();
     for (nint y = bo.Min.Y; y < bo.Max.Y; y++) {
         for (nint x = bo.Min.X; x < bo.Max.X; x++) {
-            img.Set(x, y, new png_test_package.color_NRGBAᴠColor(new color.NRGBA(0, 0, 0, 255)));
+            img.Set(x, y, new color.NRGBA(0, 0, 0, 255));
         }
     }
     if (!img.Opaque()) {
@@ -384,7 +384,7 @@ public static void BenchmarkEncodeNRGBA(ж<testing.B> Ꮡb) {
 public static void BenchmarkEncodePaletted(ж<testing.B> Ꮡb) {
     ref var b = ref Ꮡb.Value;
 
-    var img = image.NewPaletted(image.Rect(0, 0, 640, 480), new color.Palette(new color.Color[]{new png_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 0, 255)), new png_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(255, 255, 255, 255))
+    var img = image.NewPaletted(image.Rect(0, 0, 640, 480), new color.Palette(new color.Color[]{new colorꓸRGBA(0, 0, 0, 255), new colorꓸRGBA(255, 255, 255, 255)
     }.slice()));
     b.SetBytes(640 * 480 * 1);
     b.ReportAllocs();
@@ -402,7 +402,7 @@ public static void BenchmarkEncodeRGBOpaque(ж<testing.B> Ꮡb) {
     var bo = img.Bounds();
     for (nint y = bo.Min.Y; y < bo.Max.Y; y++) {
         for (nint x = bo.Min.X; x < bo.Max.X; x++) {
-            img.Set(x, y, new png_test_package.color_ΔRGBAᴠColor(new colorꓸRGBA(0, 0, 0, 255)));
+            img.Set(x, y, new colorꓸRGBA(0, 0, 0, 255));
         }
     }
     if (!img.Opaque()) {
@@ -428,17 +428,17 @@ public static void BenchmarkEncodeRGBA(ж<testing.B> Ꮡb) {
             switch (ᐧ) {
             case {} when percent is < 10: {
                 img.Set(x, // 10% of pixels are translucent (have alpha >0 and <255)
- y, new png_test_package.color_NRGBAᴠColor(new color.NRGBA((uint8)x, (uint8)y, (uint8)(x * y), (uint8)percent)));
+ y, new color.NRGBA((uint8)x, (uint8)y, (uint8)(x * y), (uint8)percent));
                 break;
             }
             case {} when percent is < 40: {
                 img.Set(x, // 30% of pixels are transparent (have alpha == 0)
- y, new png_test_package.color_NRGBAᴠColor(new color.NRGBA((uint8)x, (uint8)y, (uint8)(x * y), 0)));
+ y, new color.NRGBA((uint8)x, (uint8)y, (uint8)(x * y), 0));
                 break;
             }
             default: {
                 img.Set(x, // 60% of pixels are opaque (have alpha == 255)
- y, new png_test_package.color_NRGBAᴠColor(new color.NRGBA((uint8)x, (uint8)y, (uint8)(x * y), 255)));
+ y, new color.NRGBA((uint8)x, (uint8)y, (uint8)(x * y), 255));
                 break;
             }}
 

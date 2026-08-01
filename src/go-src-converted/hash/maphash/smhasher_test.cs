@@ -517,7 +517,7 @@ internal static readonly @string helloˢ = "hello"u8;
 
 // Make sure different seed values generate different hashes.
 public static void TestSmhasherSeed(ж<testing.T> Ꮡt) {
-    if (@unsafe.Sizeof((uintptr)0) == 4) {
+    if (/* unsafe.Sizeof(uintptr(0)) */ (uintptr)8 == 4) {
         Ꮡt.Skip(bitPlatformsDonTHaveˢ);
     }
     Ꮡt.Parallel();

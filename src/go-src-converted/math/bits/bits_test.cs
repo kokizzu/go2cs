@@ -16,7 +16,7 @@ partial class bits_test_package {
 public static void TestUintSize(ж<testing.T> Ꮡt) {
     nuint x = default!;
     {
-        var want = @unsafe.Sizeof(x) * 8; if (UintSize != want) {
+        var want = /* unsafe.Sizeof(x) */ (uintptr)8 * 8; if (UintSize != want) {
             Ꮡt.Fatalf("UintSize = %d; want %d"u8, (nint)(UintSize), want);
         }
     }

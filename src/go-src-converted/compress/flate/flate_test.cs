@@ -301,7 +301,7 @@ public static void TestReaderEarlyEOF(ж<testing.T> Ꮡt) {
                     // previous Read returned because the write buffer was full
                     // and it just so happened that the stream had no more data.
                     // This situation is rare, but unavoidable.
-                    if (Ꮡ((~r._<ж<global::go.compress.flate_package.decompressor>>()).dict).availWrite() == windowSize) {
+                    if (r._<ж<global::go.compress.flate_package.decompressor>>().of(global::go.compress.flate_package.decompressor.Ꮡdict).availWrite() == windowSize) {
                         earlyEOF = false;
                     }
                     if (n == 0 && earlyEOF) {

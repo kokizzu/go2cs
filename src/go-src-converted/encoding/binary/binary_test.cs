@@ -1332,7 +1332,7 @@ public static void TestNativeEndian(ж<testing.T> Ꮡt) {
     UntypedInt val = 0x12345678;
     ref var i = ref heap<uint32>(out var Ꮡi);
     i = (uint32)val;
-    var s = @unsafe.Slice(Ꮡi.Reinterpret<uint32, byte>(), @unsafe.Sizeof(i));
+    var s = @unsafe.Slice(Ꮡi.Reinterpret<uint32, byte>(), /* unsafe.Sizeof(i) */ (uintptr)4);
     {
         var v = NativeEndian.Uint32(s); if (v != val) {
             Ꮡt.Errorf("NativeEndian.Uint32 returned %#x, expected %#x"u8, v, (nint)(val));
