@@ -1,0 +1,79 @@
+﻿// TestRegistry.cs - Gbtc
+// Copyright © 2026 The go2cs Authors. All rights reserved.
+//
+// Use of this source code is governed by an MIT-style license
+// that can be found in the LICENSE file.
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Xml.Linq;
+using go.golib;
+
+namespace go.testing_runtime;
+/// <summary>
+/// One converted Go test function, as the generated host registered it.
+/// </summary>
+/// <param name="Name">Go test-function name (<c>TestFoo</c>), which is also what <c>-run</c> filters on.</param>
+/// <param name="Action">The converted body, taking the <c>*testing.T</c> it runs against.</param>
+/// <param name="Source">Source file the Go test was declared in.</param>
+/// <param name="Line">Line the Go test was declared on.</param>
+/// <remarks>
+/// <see cref="Source"/> and <see cref="Line"/> are carried purely so a reported failure names the GO
+/// declaration site rather than a C# one — the differential oracle compares this host's output
+/// against <c>go test -json</c>, and a location naming generated C# has nothing to compare against.
+/// </remarks>
+public sealed record RegisteredTest(
+    string Name,
+    Action<ж<testing_package.T>> Action,
+    string Source,
+    int Line);
+
+/// <summary>
+/// The manifest of one converted package's test suite: its tests, the fixture files the run must
+/// stage, and its <c>TestMain</c> if it declares one.
+/// </summary>
+/// <param name="package">Go import path of the package under test, as it appears in reported events.</param>
+/// <param name="fixtures">
+/// Paths, relative to the package directory, of the <c>testdata</c> files the suite reads.
+/// </param>
+/// <remarks>
+/// <para>
+/// This is filled in by the converter-emitted test host at startup — one <see cref="Add"/> call per
+/// discovered <c>_test.go</c> function — and then handed to <see cref="TestHost.Run"/>. Discovery
+/// happens at CONVERSION time rather than by reflecting over the assembly, which is what keeps the
+/// registered order and the Go declaration sites exact.
+/// </para>
+/// <para>
+/// <see cref="Fixtures"/> exists because a Go test runs with its package directory as the working
+/// directory and reads <c>testdata</c> by relative path. The host stages these into an isolated run
+/// directory rather than pointing the process at the source tree, so a test that WRITES to testdata
+/// cannot corrupt the repository and two packages cannot collide.
+/// </para>
+/// </remarks>
+public sealed class TestRegistry(string package, IReadOnlyList<string> fixtures)
+{
+    private readonly List<RegisteredTest> m_tests = [];
+
+    public string Package { get; } = package;
+
+    public IReadOnlyList<string> Fixtures { get; } = fixtures;
+
+    public IReadOnlyList<RegisteredTest> Tests => m_tests;
+
+    public Action<ж<testing_package.M>>? TestMain { get; private set; }
+
+    public void Add(string name, Action<ж<testing_package.T>> action, string source, int line) =>
+        m_tests.Add(new RegisteredTest(name, action, source, line));
+
+    public void SetTestMain(Action<ж<testing_package.M>> testMain) => TestMain = testMain;
+}
