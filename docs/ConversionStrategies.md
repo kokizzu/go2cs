@@ -923,6 +923,9 @@ c = new counter(n: 100);
 applyInt(Ꮡc.dec, 5, 7);      // Ꮡc aliases c
 ```
 
+That holds in **argument and assignment position alike** (`f = c.dec` emits the same `Ꮡc.dec` group), and in
+assignment position it also means *no* receiver snapshot is taken — there is no copy to snapshot.
+
 A direct call `c.dec()` is *not* a method value — it binds C#'s `this ref` extension receiver against the
 variable and needs no box.
 
