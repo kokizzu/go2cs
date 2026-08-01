@@ -359,6 +359,77 @@ converted standard library must be re-banked into `src/go-src-converted` before 
 mismatch, but it can only compare against the *committed* tree — it cannot detect that the committed tree
 is itself older than the published packages.
 
+### A foreign VALUE implement is keyed in ONE spelling, and trusted only for a partial struct
+
+The record scraped above answers one question at a cast site: *does the dependency's own assembly
+already implement this pair?* If it does, the bare value converts implicitly and a local
+`<pkg>_<T>ᴠ<Iface>` value adapter is dead machinery. Getting the answer wrong in either direction is
+expensive, so both halves — the KEY and the TRUST — are stated precisely here.
+
+**The key.** `valueImplementKey` composes `<declaring package>|<C# simple type>|<pkg>_package.<Iface>`
+and is called by BOTH sides: `loadPackageImplementLines`, over records parsed from a dependency's
+`package_info.cs`, and all three value arms of `convertToInterfaceType`, over a cast being converted.
+That it is one function is the whole point — the two sides used to compose it independently, over
+different alphabets, and agreed only when the dependency's import path was a single segment:
+
+| dependency | load side | use side | |
+|:--|:--|:--|:--|
+| `io` | `io\|noBody\|io_package.ReadCloser` | `io\|noBody\|io_package.ReadCloser` | match |
+| `encoding/binary` | `binary\|bigEndian\|binary_package.ByteOrder` | `binary\|bigEndian\|encoding.binary_package.ByteOrder` | **miss** |
+| `image/color` | `color\|ΔRGBA\|color_package.Color` | `color\|RGBA\|image.color_package.Color` | **miss** |
+
+Two divergences, and the second is easy to miss because it only shows on a collision-renamed type.
+(1) The INTERFACE side: a parsed record names the recording package's own interface BARE and a foreign
+one whole (`go.image.color_package.Color`), while a cast site always renders the full namespace chain.
+`canonicalValueRecordIfaceName` drops everything ahead of the `<pkg>_package` segment, so both reduce to
+`color_package.Color`; a member path under the class (`y_package.Outer.Inner`) survives intact. The
+package CLASS must stay — the simple name alone collides, and image's `Paletted`→`image.Image` record
+must not satisfy a `Paletted`→`draw.Image` cast. (2) The TYPE side: a record carries the EMITTED C#
+name, so image/color's `RGBA` (collision-renamed against its own `RGBA()` method) is `ΔRGBA` there,
+while the use side was naming the GO type. Both sides now reduce the emitted name.
+
+The DECLARING-package component is what keeps a record honest. A package may record a value pair for a
+type declared in a THIRD assembly — `image` re-declared all of image/color's models — and go2cs-gen
+realizes that as a local adapter class, not as the type implementing the interface. The use side names
+the TARGET's package, so such a record can never satisfy a cast (`image|Alpha|…` against
+`color|Alpha|…`).
+
+**The trust.** A record says the declaring assembly implements the pair; it does not say HOW.
+`ImplementGenerator` makes every named Go type a `partial struct T : Iface` that really does implement
+it — struct, slice (`[GoType("[]Color")] partial struct Palette`), map, channel, numeric
+(`[GoType("num:nint")] partial struct ΔSignal`) — with exactly one exception: a named FUNC type arrives
+as a C# **delegate**, which cannot be a partial struct, so its `TypeKind.Delegate` arm emits an adapter
+CLASS in the declaring assembly instead. `valueRecordRealizesAsPartialStruct` gates on the target's Go
+underlying being a non-`*types.Signature`, at the use site where `go/types` can still see it. Without
+that gate the fix hands a bare delegate to an interface slot — CS0029 for net/http's
+`HandlerFunc` → `ΔHandler` in `expvar`, `net/http/cgi` and three more.
+
+**The POINTER set keeps `canonicalRecordIfaceName` un-collapsed.** Its records are adapter-class
+*existence* signals with a different trust rule and no partial-struct fallback, so matching a foreign
+package's own record there suppresses the LOCAL record the consumer needs. It carries the same two
+divergences and is worth its own increment with its own measured footprint.
+
+**Footprint,** from a whole-stdlib A/B with both roots seeded (302/302 converted per side): 13 files,
+every changed line the same edit — `new <pkg>_<T>ᴠ<Iface>(x)` becomes `x` — plus the 16
+`[assembly: GoImplement]` records that existed only to generate those adapters. **497 constructions**
+go away (472 of them in `image/color/palette`'s two palette literals); the rest of the corpus adapter
+census is identical count for count, `HandlerFuncᴠΔHandler` included. Two survivors are instructive
+because they are NOT this defect: `color.Palette`→`color.Model` (5) and `encoding/binary`'s
+`bigEndian`/`littleEndian`→`ByteOrder` (79) have no record to match at all — neither package ever
+converts that pair itself, so nothing writes the record and the local adapter is the only realization.
+A pair a package satisfies but never records is a separate root.
+
+This is not merely a wasted allocation. The adapter is a **second identity** for one Go value: `reflect`
+and `fmt` see the wrapper where the Value's own type says the wrapped struct, which is how it surfaced —
+`image/png`'s `diff` printing `%v` of a `color.Color` died with `System.ArgumentException: Field 'R' … is
+not a field on the target object which is of type 'go.image_package+color_NRGBAᴠColor'`. (Guarded by the
+`ForeignValueImplementSuppression` behavioral test — a sibling package at a multi-segment path that
+converts its own values, a collision-renamed implementer, a second implementer, and a named FUNC type as
+the live negative; the pre-fix converter emits five adapters where the fixed one emits the func's alone.
+`ValueAdapterDynamicType` is its complement and stays byte-identical: its sibling never converts, so its
+four adapters are real. Unit-guarded by `TestValueImplementKeyBothCompositionsAgree`,
+`TestValueImplementKeyKeepsPackageClassDiscrimination` and `TestValueRecordRealizesAsPartialStruct`.)
+
 ### Standard-library solution file (`.slnx`)
 
 A whole-standard-library run (`go2cs -stdlib`) also emits a Visual Studio solution — **`go-src-converted.slnx`** — at the output root (`-go2cspath`), so the freshly converted stdlib is openable / buildable as **one unit** immediately after a run, rather than depending on a hand-maintained solution that drifts. It is the auto-generated counterpart of the committed `src/go-src-converted.slnx`, and its XML mirrors the format of `src/go2cs.slnx` (a `<Configurations>` block plus `<Folder>`/`<Project>` entries, CRLF line endings, no BOM). It references:

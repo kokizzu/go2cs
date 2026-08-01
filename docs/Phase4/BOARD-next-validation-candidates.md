@@ -217,7 +217,45 @@ Until then: this drift is **expected sweep output, and must be restored, never b
 divergence. *(Confirmed 2026-07-31 by the r27 sweep: both `encoding/base32/base32.cs` (3/3) and
 `encoding/base64/base64.cs` (6/6) drift, and both restore clean.)*
 
-## Open — a REDUNDANT value adapter, rooted but not fixed (filed 2026-07-31)
+## ~~Open~~ CLOSED — the REDUNDANT value adapter was a key mismatch (fixed 2026-07-31)
+
+**DONE.** Both halves landed at the converter: ONE key spelling shared by the record loader and the
+cast site (`valueImplementKey` / `canonicalValueRecordIfaceName`), and the func-type exclusion this
+row demanded (`valueRecordRealizesAsPartialStruct`, gating on the target's Go underlying being a
+non-`*types.Signature`). Whole-stdlib A/B, both roots seeded, 302/302 converted per side: **13 files,
+497 constructions removed**, every changed line the same edit, plus the 16 records that existed only
+to generate those adapters; the rest of the corpus adapter census is identical count for count,
+`HandlerFuncᴠΔHandler` included.
+
+Two corrections to the row as filed below, both measured rather than reasoned:
+
+- **A SECOND divergence sat underneath the reported one.** Besides the interface side, the record
+  carries the EMITTED C# type name while the use side named the GO type — image/color's `RGBA` is
+  `ΔRGBA` in its own metadata (collision-renamed against its `RGBA()` method). That divergence alone
+  gates the 478-site group; fixing the interface side by itself would have recovered only 19.
+- **The 79 `binary_*ᴠByteOrder` are NOT this defect.** `encoding/binary/package_info.cs` holds **no
+  `GoImplement` lines at all** — the package never converts one of its own values to `ByteOrder`
+  (Go's `var BigEndian bigEndian` carries no `var _ ByteOrder = …` witness), so there is no record to
+  match and the consumer's local adapter is the only realization. `color.Palette`→`color.Model` (5)
+  survives for the same reason. **A pair a package satisfies but never records is its own root** —
+  the one place where "the declaring assembly implements it" is true in Go and false in the emitted
+  C#, and a candidate for a future increment.
+
+Also found, not fixed: the **POINTER** set (`importedPointerImplements`) carries the same two
+divergences through `canonicalRecordIfaceName`. Its records are adapter-class *existence* signals with
+a different trust rule and no partial-struct fallback, so widening them is a separate increment with
+its own measured footprint — deliberately not folded in, on the same reasoning that deferred
+`visitStructType.go`'s field arm above.
+
+Rule, both compositions, and the trust gate:
+[`ConversionStrategies-Reference.md`](../ConversionStrategies-Reference.md), *A foreign VALUE implement
+is keyed in ONE spelling, and trusted only for a partial struct*. Guarded by the
+`ForeignValueImplementSuppression` behavioral test (a multi-segment sibling that DOES convert its own
+values, a collision-renamed implementer, and a named FUNC type as the live negative — the pre-fix
+converter emits five adapters where the fixed one emits the func's alone), with
+`ValueAdapterDynamicType` as its byte-identical complement.
+
+*The row as originally filed follows.*
 
 Converting a foreign package's value into an interface that package **itself declares** emits a
 local `<pkg>_<T>ᴠ<Iface>` adapter class even though the declaring assembly already implements the

@@ -1186,6 +1186,14 @@ generator to consume. The well-known built-ins (`error`, `fmt.Stringer`, …) ar
 implemented the same duck-typed way. A cross-package satisfaction is witnessed by the idiomatic
 `var _ I = T{}` assertion in the type's own package.
 
+A record is **exported**, so an importer reads it back and skips work it does not need. `image/png` writing
+`d.palette[i] = color.RGBA{…}` emits exactly that — the bare struct into the `color.Color` slot — because
+image/color's assembly already carries `ΔRGBA : Color`. Only when the declaring assembly *cannot* realize the
+pair as a partial struct (a named FUNC type, which is a C# delegate — `net/http`'s `HandlerFunc`) does the
+importer wrap the value in its own `<pkg>_<T>ᴠ<Iface>` adapter class. Both halves of that decision — the one
+key spelling the record and the cast site must share, and the partial-struct trust rule — are in
+[Reference → A foreign VALUE implement is keyed in ONE spelling](ConversionStrategies-Reference.md#a-foreign-value-implement-is-keyed-in-one-spelling-and-trusted-only-for-a-partial-struct).
+
 A record is only ever written for a conversion the source **declares** — an assignment, a call argument, a
 `var _ I = T{}` witness. It is never inferred, because a compile-time inference cannot be complete: a dynamic
 type may live in a package converted **after** the interface's own (io/fs is converted before os, so nothing in
