@@ -177,7 +177,7 @@ func (v *Visitor) untypedConstDeclTypeName(ident *ast.Ident, rhs ast.Expr) strin
 		return ""
 	}
 
-	return convertToCSTypeName(v.getExprTypeName(ident, false))
+	return convertToCSTypeName(v.getExpressionTypeName(ident, false))
 }
 
 // materializeDefaultTypedConstDeclValue folds a computed untyped-float constant at the DEFAULT
@@ -209,7 +209,7 @@ func (v *Visitor) materializeDefaultTypedConstDeclValue(ident *ast.Ident, rhs as
 		return rendered
 	}
 
-	targetCSType := convertToCSTypeName(v.getExprTypeName(ident, false))
+	targetCSType := convertToCSTypeName(v.getExpressionTypeName(ident, false))
 
 	if folded := v.foldedNamedFloatConstLiteral(rhs, targetCSType); folded != "" {
 		return folded
@@ -252,7 +252,7 @@ func (v *Visitor) narrowArithmeticCastTypeFor(targetType types.Type, rhs ast.Exp
 		return ""
 	}
 
-	castType := convertToCSTypeName(v.getTypeName(targetType, false))
+	castType := convertToCSTypeName(v.getAliasQualifiedTypeName(targetType, false))
 
 	// Skip ONLY when the WHOLE converted RHS is already `(castType)(…)` — another path narrowed the
 	// entire binary result (`(byte)(b | 128)`). A leading `(castType)(` that closes BEFORE the end is
@@ -408,7 +408,7 @@ func (v *Visitor) nativeIntConstCastType(lhs, rhs ast.Expr, alreadyCast string) 
 		return ""
 	}
 
-	castType := convertToCSTypeName(v.getTypeName(basic, false))
+	castType := convertToCSTypeName(v.getAliasQualifiedTypeName(basic, false))
 
 	if len(alreadyCast) > 0 && wholeExprIsCastOfType(alreadyCast, castType) {
 		return ""
@@ -584,7 +584,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 
 				isInterface, isEmpty := v.isInterface(ident)
 				lhsTypeIsInterface[i] = isInterface && !isEmpty
-				typeName := v.getExprTypeName(ident, true)
+				typeName := v.getExpressionTypeName(ident, true)
 
 				lhsTypeIsString[i] = typeName == "string"
 
@@ -664,7 +664,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 				lhsTypeIsInterface[i] = lhsIsIface && !isEmpty
 			}
 
-			typeName := v.getExprTypeName(ident, true)
+			typeName := v.getExpressionTypeName(ident, true)
 
 			lhsTypeIsString[i] = typeName == "string"
 
@@ -800,7 +800,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 					case types.Int, types.Int32, types.Int64:
 						// int widens to these implicitly; no cast needed
 					default:
-						operator = fmt.Sprintf(" &= unchecked((%s)~", convertToCSTypeName(v.getTypeName(lhsType, false)))
+						operator = fmt.Sprintf(" &= unchecked((%s)~", convertToCSTypeName(v.getAliasQualifiedTypeName(lhsType, false)))
 						andNotUncheckedClose = true
 					}
 				}
@@ -926,7 +926,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 				}
 			} else {
 				ident := getIdentifier(lhsExprs[0])
-				lhsType := convertToCSTypeName(v.getExprTypeName(ident, false))
+				lhsType := convertToCSTypeName(v.getExpressionTypeName(ident, false))
 				result.WriteString(lhsType)
 				result.WriteRune(' ')
 			}
@@ -1050,7 +1050,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 				// anyTypeIsInt note above), so `(a, b, nint c) = (b, a, a + b)` types c correctly. Scoped
 				// to the hazard path so existing call-deconstruction mixed tuples keep their `var`.
 				if parallelHazard && lhsTypeIsInt[i] {
-					result.WriteString(convertToCSTypeName(v.getExprTypeName(ident, false)))
+					result.WriteString(convertToCSTypeName(v.getExpressionTypeName(ident, false)))
 					result.WriteRune(' ')
 				} else {
 					result.WriteString("var ")
@@ -1280,7 +1280,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 						if isConv, _ := v.isTypeConversion(callExpr); isConv {
 							if named, ok := types.Unalias(tv.Type).(*types.Named); ok {
 								if _, isBasic := named.Underlying().(*types.Basic); isBasic {
-									namedCS := v.getCSTypeName(named)
+									namedCS := v.getCSharpTypeName(named)
 
 									if !strings.HasPrefix(rhsExpr, "(("+namedCS+")") && !strings.HasPrefix(rhsExpr, "("+namedCS+")") && !strings.HasPrefix(rhsExpr, "new ") {
 										rhsExpr = fmt.Sprintf("((%s)%s)", namedCS, rhsExpr)
@@ -1326,7 +1326,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 					binaryType := v.info.Types[rhs].Type
 
 					if binaryType != nil {
-						binaryTypeName = convertToCSTypeName(v.getTypeName(binaryType, false))
+						binaryTypeName = convertToCSTypeName(v.getAliasQualifiedTypeName(binaryType, false))
 					}
 				}
 			}
@@ -1442,7 +1442,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 			if v.options.preferVarDecl && !(lhsTypeIsString[i] || lhsTypeIsInt[i] || lhsTypeIsUnsafePointer[i]) {
 				result.WriteString("var ")
 			} else {
-				lhsType := convertToCSTypeName(v.getExprTypeName(ident, false))
+				lhsType := convertToCSTypeName(v.getExpressionTypeName(ident, false))
 				result.WriteString(lhsType)
 				result.WriteRune(' ')
 			}
@@ -1747,7 +1747,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 						} else if elemIsSString {
 							result.WriteString("sstring ")
 						} else {
-							lhsType := convertToCSTypeName(v.getExprTypeName(ident, false))
+							lhsType := convertToCSTypeName(v.getExpressionTypeName(ident, false))
 							result.WriteString(lhsType)
 							result.WriteRune(' ')
 						}

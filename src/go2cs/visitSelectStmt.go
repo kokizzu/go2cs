@@ -266,7 +266,7 @@ func (v *Visitor) visitSelectStmt(selectStmt *ast.SelectStmt) {
 									if v.options.preferVarDecl {
 										v.outputBuilder.WriteString("var ")
 									} else {
-										exprType := convertToCSTypeName(v.getExprTypeName(lhs, false))
+										exprType := convertToCSTypeName(v.getExpressionTypeName(lhs, false))
 										v.outputBuilder.WriteString(exprType)
 										v.outputBuilder.WriteRune(' ')
 									}

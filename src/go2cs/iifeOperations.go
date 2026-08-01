@@ -144,7 +144,7 @@ func (v *Visitor) iifeParamName(param *types.Var) string {
 
 // iifeDelegateType builds the C# delegate type for casting an IIFE's lambda so it can be invoked
 // directly: `Action`/`Action<…>` for a void literal, `Func<…, TResult>` for a value-returning
-// one (a tuple result type for multiple returns). Because getCSTypeName routes every anonymous
+// one (a tuple result type for multiple returns). Because getCSharpTypeName routes every anonymous
 // (and collapsed methodless named) func type here, this is THE lowering of a Go func type used
 // as a value.
 //
@@ -215,7 +215,7 @@ func (v *Visitor) iifeDelegateType(sig *types.Signature) string {
 }
 
 // signatureTypeName renders a func type structurally in GO syntax — `func(name type, …)
-// results` — with every parameter/result type resolved recursively through getTypeName, so a
+// results` — with every parameter/result type resolved recursively through getAliasQualifiedTypeName, so a
 // cross-package element carries the short import-alias qualification the surrounding file uses
 // (`types.Package`, `tls.Conn`), exactly like the map/slice/chan structural renders. The
 // t.String() fall-through this replaces embeds slash-qualified import paths
@@ -252,12 +252,12 @@ func (v *Visitor) signatureTypeName(sig *types.Signature, isUnderlying bool) str
 		if sig.Variadic() && i == params.Len()-1 {
 			if sliceType, ok := param.Type().Underlying().(*types.Slice); ok {
 				result.WriteString("...")
-				result.WriteString(v.getTypeName(sliceType.Elem(), isUnderlying))
+				result.WriteString(v.getAliasQualifiedTypeName(sliceType.Elem(), isUnderlying))
 				continue
 			}
 		}
 
-		result.WriteString(v.getTypeName(param.Type(), isUnderlying))
+		result.WriteString(v.getAliasQualifiedTypeName(param.Type(), isUnderlying))
 	}
 
 	result.WriteByte(')')
@@ -266,7 +266,7 @@ func (v *Visitor) signatureTypeName(sig *types.Signature, isUnderlying bool) str
 
 	if results.Len() == 1 && results.At(0).Name() == "" {
 		result.WriteByte(' ')
-		result.WriteString(v.getTypeName(results.At(0).Type(), isUnderlying))
+		result.WriteString(v.getAliasQualifiedTypeName(results.At(0).Type(), isUnderlying))
 	} else if results.Len() > 0 {
 		result.WriteString(" (")
 
@@ -282,7 +282,7 @@ func (v *Visitor) signatureTypeName(sig *types.Signature, isUnderlying bool) str
 				result.WriteByte(' ')
 			}
 
-			result.WriteString(v.getTypeName(resultVar.Type(), isUnderlying))
+			result.WriteString(v.getAliasQualifiedTypeName(resultVar.Type(), isUnderlying))
 		}
 
 		result.WriteByte(')')
@@ -300,7 +300,7 @@ func (v *Visitor) signatureTypeName(sig *types.Signature, isUnderlying bool) str
 // globals). The imported-type-alias registry already records the foreign rename
 // (`global using syscallꓸHandle = go.syscall_package.ΔHandle`); a type without a
 // registered alias, a generic instantiation, and every non-named element keep the plain
-// getCSTypeName render (no churn). Pointer elements recurse so `*syscall.Overlapped`
+// getCSharpTypeName render (no churn). Pointer elements recurse so `*syscall.Overlapped`
 // becomes `ж<syscallꓸOverlapped>`.
 func (v *Visitor) aliasedElementTypeName(t types.Type) string {
 	if ptr, ok := types.Unalias(t).(*types.Pointer); ok {
@@ -339,7 +339,7 @@ func (v *Visitor) aliasedElementTypeName(t types.Type) string {
 		}
 	}
 
-	return v.getCSTypeName(t)
+	return v.getCSharpTypeName(t)
 }
 
 func (v *Visitor) namedResultName(param *types.Var) string {
@@ -546,7 +546,7 @@ func (v *Visitor) namedReturnDeclLines(sig *types.Signature, indentLevel int, de
 		if ident := v.namedResultHeapBoxIdent(param); ident != nil {
 			if declsOutsideWrapper {
 				decls.WriteString(fmt.Sprintf("%s%sheap<%s>(out var %s%s);", v.newline, v.indent(indentLevel),
-					v.getCSTypeName(param.Type()), AddressPrefix, v.boxBaseName(ident)))
+					v.getCSharpTypeName(param.Type()), AddressPrefix, v.boxBaseName(ident)))
 			} else {
 				decls.WriteString(fmt.Sprintf("%s%s%s", v.newline, v.indent(indentLevel), v.convertToHeapTypeDecl(ident, true)))
 			}
@@ -562,7 +562,7 @@ func (v *Visitor) namedReturnDeclLines(sig *types.Signature, indentLevel int, de
 			zeroValue = "new(nil)"
 		}
 
-		decls.WriteString(fmt.Sprintf("%s%s%s %s = %s;", v.newline, v.indent(indentLevel), v.getCSTypeName(param.Type()), v.namedResultName(param), zeroValue))
+		decls.WriteString(fmt.Sprintf("%s%s%s %s = %s;", v.newline, v.indent(indentLevel), v.getCSharpTypeName(param.Type()), v.namedResultName(param), zeroValue))
 	}
 
 	return decls.String()

@@ -400,7 +400,7 @@ func (v *Visitor) emitGuardedShift(binaryExpr *ast.BinaryExpr, leftOperand, rawC
 	var receiver string
 
 	if v.isUntypedNumericConstArg(binaryExpr.X) || v.tightenedNarrowConstRef(binaryExpr.X) {
-		underlyingCS := v.getCSTypeName(basic)
+		underlyingCS := v.getCSharpTypeName(basic)
 
 		if v.needsParentheses(binaryExpr.X) {
 			receiver = fmt.Sprintf("((%s)(%s))", underlyingCS, leftOperand)
@@ -441,12 +441,12 @@ func (v *Visitor) shiftCountUint64Operand(expr ast.Expr, converted string) strin
 
 	if named, ok := v.getType(expr, false).(*types.Named); ok {
 		if basic, ok := named.Underlying().(*types.Basic); ok && basic.Info()&types.IsNumeric != 0 {
-			return fmt.Sprintf("(uint64)(%s)(%s)", v.getCSTypeName(basic), converted)
+			return fmt.Sprintf("(uint64)(%s)(%s)", v.getCSharpTypeName(basic), converted)
 		}
 	}
 
 	if tp, ok := types.Unalias(v.getType(expr, false)).(*types.TypeParam); ok && typeParamIsInteger(tp) {
-		return fmt.Sprintf("ConvertToUInt64<%s>(%s)", v.getCSTypeName(tp), converted)
+		return fmt.Sprintf("ConvertToUInt64<%s>(%s)", v.getCSharpTypeName(tp), converted)
 	}
 
 	return fmt.Sprintf("(uint64)(%s)", converted)
@@ -492,10 +492,10 @@ func (v *Visitor) concreteNumericCSType(t types.Type) string {
 			// single predefined-type conversion (nuint) then binds unambiguously. Non-uintptr
 			// named types keep the underlying cast (`(Tag)c` would be CS0030 — see above).
 			if _, isNamed := t.(*types.Named); isNamed && basic.Kind() == types.Uintptr {
-				return convertToCSTypeName(v.getTypeName(t, false))
+				return convertToCSTypeName(v.getAliasQualifiedTypeName(t, false))
 			}
 
-			return convertToCSTypeName(v.getTypeName(t.Underlying(), false))
+			return convertToCSTypeName(v.getAliasQualifiedTypeName(t.Underlying(), false))
 		}
 	}
 
@@ -551,7 +551,7 @@ func (v *Visitor) overflowingConstLiteral(expr ast.Expr) string {
 		// target (uint/uintptr → nuint).
 		// `uintptr` is a golib STRUCT distinct from `nuint` (golib/uintptr.cs), so Go uintptr and
 		// Go uint render under different names for the same native width; both are in scope.
-		csType := v.getCSTypeName(basic)
+		csType := v.getCSharpTypeName(basic)
 
 		if csType != "uint64" && csType != "nuint" && csType != "uintptr" {
 			return ""
@@ -982,7 +982,7 @@ func (v *Visitor) widenedConstExprCastType(expr ast.Expr) string {
 		return ""
 	}
 
-	return convertToCSTypeName(v.getTypeName(basic, false))
+	return convertToCSTypeName(v.getAliasQualifiedTypeName(basic, false))
 }
 
 // operandRendersWidenedFold reports whether an operand's emission is a folded 64-bit `long`
@@ -1153,7 +1153,7 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 		if tv, ok := v.info.Types[other]; ok && tv.Value != nil {
 			if otherType := v.info.TypeOf(other); otherType != nil {
 				if basic, isBasic := otherType.(*types.Basic); types.Identical(otherType, tp) || (isBasic && basic.Info()&types.IsUntyped != 0) {
-					return fmt.Sprintf("ConvertToType<%s>(%s)", v.getCSTypeName(tp), otherOperand)
+					return fmt.Sprintf("ConvertToType<%s>(%s)", v.getCSharpTypeName(tp), otherOperand)
 				}
 			}
 		}
@@ -1261,8 +1261,8 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 						// *through* its underlying — `(arenaIdx)((nuint)1 << k)` — because the
 						// `[GoType]` conversion only accepts its exact underlying, never C# `int`
 						// (a bare `(arenaIdx)(1 << k)` is CS0030).
-						underlyingCS := v.getCSTypeName(basic)
-						resolvedCS := convertToCSTypeName(v.getTypeName(shiftType, false))
+						underlyingCS := v.getCSharpTypeName(basic)
+						resolvedCS := convertToCSTypeName(v.getAliasQualifiedTypeName(shiftType, false))
 						isNamed := resolvedCS != underlyingCS
 
 						if isWideShiftType(underlyingCS) {
@@ -1317,8 +1317,8 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 				// evaluation (CS0221).
 				if tv, ok := v.info.Types[binaryExpr]; ok && tv.Value == nil && tv.Type != nil {
 					if basic, ok := tv.Type.Underlying().(*types.Basic); ok && isNarrowIntegerKind(basic.Kind()) {
-						underlyingCS := v.getCSTypeName(basic)
-						resolvedCS := convertToCSTypeName(v.getTypeName(tv.Type, false))
+						underlyingCS := v.getCSharpTypeName(basic)
+						resolvedCS := convertToCSTypeName(v.getAliasQualifiedTypeName(tv.Type, false))
 
 						shiftExpr = fmt.Sprintf("(%s)%s", underlyingCS, shiftExpr)
 
@@ -1348,7 +1348,7 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 			var binaryTypeName string
 
 			if binaryType != nil {
-				binaryTypeName = convertToCSTypeName(v.getTypeName(binaryType, false))
+				binaryTypeName = convertToCSTypeName(v.getAliasQualifiedTypeName(binaryType, false))
 			}
 
 			// A named untyped-const operand (UntypedInt wrapper) resolves to `int` under a
@@ -1534,7 +1534,7 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 		// keeps satisfying the interface. Mirrors the unary `!` handling in convUnaryExpr; a
 		// predeclared-`bool` result keeps the bare form below (no golden churn).
 		if (binaryExpr.Op == token.LAND || binaryExpr.Op == token.LOR) && v.isNamedBooleanType(binaryExpr) {
-			typeName := convertToCSTypeName(v.getTypeName(v.getType(binaryExpr, false), false))
+			typeName := convertToCSTypeName(v.getAliasQualifiedTypeName(v.getType(binaryExpr, false), false))
 			return fmt.Sprintf("((%s)((bool)%s %s (bool)%s))", typeName, leftOperand, binaryOp, rightOperand)
 		}
 

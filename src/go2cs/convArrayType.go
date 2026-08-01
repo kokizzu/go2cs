@@ -13,7 +13,7 @@ import (
 )
 
 func (v *Visitor) convArrayType(arrayType *ast.ArrayType, context ArrayTypeContext) string {
-	typeName := v.getExprTypeName(arrayType, false)
+	typeName := v.getExpressionTypeName(arrayType, false)
 
 	if context.compositeInitializer && strings.Contains(typeName, "[") {
 		// Remove array brackets for composite literal initialization

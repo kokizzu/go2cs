@@ -220,7 +220,7 @@ func (v *Visitor) visitForStmt(forStmt *ast.ForStmt, target LabeledStmtContext) 
 		} else if v.options.preferVarDecl {
 			blockContext.innerPrefix += fmt.Sprintf("%s%svar %s = %s;", v.newline, bodyIndent, name, perIterVar.carrier)
 		} else {
-			blockContext.innerPrefix += fmt.Sprintf("%s%s%s %s = %s;", v.newline, bodyIndent, v.getCSTypeName(v.getIdentType(perIterVar.ident)), name, perIterVar.carrier)
+			blockContext.innerPrefix += fmt.Sprintf("%s%s%s %s = %s;", v.newline, bodyIndent, v.getCSharpTypeName(v.getIdentType(perIterVar.ident)), name, perIterVar.carrier)
 		}
 
 		if perIterVar.copyBack {

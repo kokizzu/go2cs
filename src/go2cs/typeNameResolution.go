@@ -7,24 +7,33 @@
 // This file owns TYPE-NAME RENDERING: given a Go type, produce the string to write into C#.
 //
 // There are six of these and choosing the wrong one is a silent correctness bug the compiler
-// cannot catch, so here is the taxonomy — WHO CONSUMES the output decides which to reach for:
+// cannot catch, so each name states WHO CONSUMES its output — which is the whole taxonomy:
 //
-//	getTypeName            the workhorse. The name as written in a converted BODY, using whatever
-//	                       file-local package alias is in scope (`atomic.Int32`). Most-called by far.
-//	getFullTypeName        the fully-qualified, alias-free form (`sync.atomic_package.Int32`).
-//	                       REQUIRED for anything a GENERATOR consumes — GoType attribute strings and
-//	                       package_info records live in files that have no `using` directives, so an
-//	                       alias there resolves to nothing.
-//	getDisplayTypeName     prefers the readable alias but falls back to the full form when the alias
-//	                       is not actually imported in this file. For emission into a BODY only —
-//	                       never for generator-consumed strings.
-//	getCSTypeName          the C# rendering of a type used as a C# type (element types, type
-//	                       arguments), i.e. after Go->C# name mapping.
-//	getExprTypeName        convenience: resolve an EXPRESSION to its type, then name it.
-//	getRefParamTypeName    the spelling a `ref` parameter position needs.
+//	getAliasQualifiedTypeName   the workhorse. Go-shaped name (`[]atomic.Int32`, `*Reader`) qualified
+//	                            with whatever file-local package alias is in scope. Emitted into a
+//	                            converted BODY, where visitFile has supplied the matching `using`.
+//	                            Most-called by far, and the base every renderer below builds on.
+//	getFullyQualifiedTypeName   the same Go-shaped name in its alias-free form
+//	                            (`sync.atomic_package.Int32`). REQUIRED for anything a GENERATOR
+//	                            consumes — GoType attribute strings and package_info records live in
+//	                            files that carry no `using` directives, so an alias resolves to
+//	                            nothing there.
+//	getScopeCheckedTypeName     the alias-qualified form when every package it names is actually
+//	                            imported by this file, and the fully-qualified form when one is not.
+//	                            That check is the difference: it is the only renderer that GUARANTEES
+//	                            its output resolves in the file receiving it. Body emission only —
+//	                            never generator-consumed strings.
+//	getCSharpTypeName           C#-shaped rather than Go-shaped: the Go->C# name mapping applied on
+//	                            top of the alias-qualified form (`slice<byte>`, not `[]byte`). Reach
+//	                            for it wherever the string lands in a C# TYPE position — a
+//	                            declaration, an element type, a generic argument.
+//	getExpressionTypeName       convenience over the workhorse: resolve an EXPRESSION to its type,
+//	                            then name it.
+//	getRefParameterTypeName     the C#-shaped spelling a `ref` parameter position needs — a pointer
+//	                            renders as `ref T` rather than as a box.
 //
-// The rule of thumb: if the string lands in generated C# that a human reads, prefer the aliased
-// forms; if it lands in metadata a tool parses, use getFullTypeName.
+// The rule of thumb: if the string lands in generated C# that a human reads, prefer the alias-
+// qualified forms; if it lands in metadata a tool parses, use getFullyQualifiedTypeName.
 //
 // The alias plumbing (getAliasedTypeName, foreignAliasedTypeName, markDerivedTypeAliasUsed) lives
 // here too, since it is what makes the short forms legal.
@@ -38,7 +47,13 @@ import (
 	"strings"
 )
 
-func (v *Visitor) getExprTypeName(expr ast.Expr, underlying bool) string {
+// getExpressionTypeName resolves expr to its type and names it with getAliasQualifiedTypeName —
+// the convenience spelling for the common "I have an expression, I need its type name" caller.
+//
+// It carries one side effect the bare renderer cannot: a channel whose ELEMENT is an anonymous
+// struct or interface must have that element lifted to a named declaration before anything can
+// refer to it, so the lift happens here, once, the first time such a channel type is named.
+func (v *Visitor) getExpressionTypeName(expr ast.Expr, underlying bool) string {
 
 	if chanType, ok := expr.(*ast.ChanType); ok {
 		// Check if the channel value is an anonymous struct
@@ -56,7 +71,7 @@ func (v *Visitor) getExprTypeName(expr ast.Expr, underlying bool) string {
 		}
 	}
 
-	return v.getTypeName(v.getType(expr, underlying), underlying)
+	return v.getAliasQualifiedTypeName(v.getType(expr, underlying), underlying)
 }
 
 // collectTypePackages records the import paths of every foreign (non-current-package) named type
@@ -214,7 +229,19 @@ func signatureReferencesNamedFuncType(sig *types.Signature) bool {
 	return false
 }
 
-func (v *Visitor) getTypeName(t types.Type, isUnderlying bool) string {
+// getAliasQualifiedTypeName renders t as the Go-shaped type name to write into a converted body,
+// qualifying foreign types with the file-local package alias (`atomic.Int32`, `[]time.Duration`).
+// It is the base every other renderer in this file builds on, and the most-called of the six.
+//
+// "Alias-qualified" is a promise about the FORM, not about scope: the alias is emitted whether or
+// not this file imports the package, because collectTypePackages records every foreign package
+// touched here and visitFile then supplies the matching `using <alias> = <namespace>;`. A caller
+// that cannot rely on that plumbing — because it is emitting into a generated file with no usings —
+// wants getFullyQualifiedTypeName; a caller that wants the short form only when it is provably
+// legal wants getScopeCheckedTypeName.
+//
+// isUnderlying asks for a named type's underlying representation instead of its own name.
+func (v *Visitor) getAliasQualifiedTypeName(t types.Type, isUnderlying bool) string {
 	if t == nil {
 		return ""
 	}
@@ -224,7 +251,7 @@ func (v *Visitor) getTypeName(t types.Type, isUnderlying bool) string {
 	// methodlessNamedFuncSignature). Guarded so a pointer/composite wrapper still recurses here.
 	if sig, ok := methodlessNamedFuncSignature(t); ok {
 		v.collectTypePackages(t, nil)
-		return v.getTypeName(sig, isUnderlying)
+		return v.getAliasQualifiedTypeName(sig, isUnderlying)
 	}
 
 	// Register any foreign package whose type is emitted here so visitFile can supply the file-local
@@ -232,11 +259,11 @@ func (v *Visitor) getTypeName(t types.Type, isUnderlying bool) string {
 	// name (inferred type, blank/non-canonical alias import) — see the field comment. Walks composites
 	// and generics so an element/argument type (`[]time.Duration`, `map[K]abi.Kind`, unsafe.Pointer
 	// inside a slice) registers too, since those are emitted through the string path below without
-	// recursing into getTypeName.
+	// recursing into getAliasQualifiedTypeName.
 	v.collectTypePackages(t, nil)
 
 	if pointer, ok := t.(*types.Pointer); ok {
-		return "*" + v.getTypeName(pointer.Elem(), isUnderlying)
+		return "*" + v.getAliasQualifiedTypeName(pointer.Elem(), isUnderlying)
 	}
 
 	// A type parameter whose constraint type-set is a single non-tilde pointer term (`[P *T]`)
@@ -248,7 +275,7 @@ func (v *Visitor) getTypeName(t types.Type, isUnderlying bool) string {
 	// than half-erasing. Non-erased type parameters keep the t.String() fallthrough.
 	if typeParam, ok := t.(*types.TypeParam); ok {
 		if pointer, ok := v.typeParamErased(typeParam); ok {
-			return "*" + v.getTypeName(pointer.Elem(), isUnderlying)
+			return "*" + v.getAliasQualifiedTypeName(pointer.Elem(), isUnderlying)
 		}
 	}
 
@@ -263,7 +290,7 @@ func (v *Visitor) getTypeName(t types.Type, isUnderlying bool) string {
 		if aliasObj := alias.Obj(); aliasObj != nil && aliasObj.Pkg() != nil && aliasObj.Pkg() != v.pkg {
 			if targetNamed, ok := types.Unalias(t).(*types.Named); ok {
 				if targetObj := targetNamed.Obj(); targetObj != nil && targetObj.Pkg() != nil && targetObj.Pkg() != aliasObj.Pkg() {
-					return v.getTypeName(targetNamed, isUnderlying)
+					return v.getAliasQualifiedTypeName(targetNamed, isUnderlying)
 				}
 			}
 		}
@@ -274,7 +301,7 @@ func (v *Visitor) getTypeName(t types.Type, isUnderlying bool) string {
 	}
 
 	// An array/slice type is rendered structurally — the `[N]`/`[]` marker plus the recursively
-	// resolved element — rather than via t.String() below (mirrors getFullTypeName). t.String()
+	// resolved element — rather than via t.String() below (mirrors getFullyQualifiedTypeName). t.String()
 	// yields a path-qualified string (`[]*internal/abi.Type`) whose cross-package last-segment
 	// slash-strip eats everything before the slash INCLUDING a pointer marker, so the element's
 	// `*` is silently dropped (`slice<abi.Type>` instead of `slice<ж<abi.Type>>` — reflect
@@ -282,14 +309,14 @@ func (v *Visitor) getTypeName(t types.Type, isUnderlying bool) string {
 	// resolves a lifted element and a cross-package generic element through their own arms.
 	switch composite := t.(type) {
 	case *types.Array:
-		return fmt.Sprintf("[%d]%s", composite.Len(), v.getTypeName(composite.Elem(), isUnderlying))
+		return fmt.Sprintf("[%d]%s", composite.Len(), v.getAliasQualifiedTypeName(composite.Elem(), isUnderlying))
 	case *types.Slice:
-		return "[]" + v.getTypeName(composite.Elem(), isUnderlying)
+		return "[]" + v.getAliasQualifiedTypeName(composite.Elem(), isUnderlying)
 	case *types.Chan:
 		// Structural like slices/arrays so a LIFTED element resolves - `make(chan dialResult)`
 		// where dialResult is a FUNCTION-LOCAL type (net dialParallel) rendered
 		// `channel<dialResult>` while every composite used the lifted name (CS0246).
-		elem := v.getTypeName(composite.Elem(), isUnderlying)
+		elem := v.getAliasQualifiedTypeName(composite.Elem(), isUnderlying)
 
 		switch composite.Dir() {
 		case types.RecvOnly:
@@ -304,7 +331,7 @@ func (v *Visitor) getTypeName(t types.Type, isUnderlying bool) string {
 		// type path-qualified (`map[chan<- os.Signal]*os/signal.handler`), whose cross-package
 		// slash-strip eats everything before the slash including the map header (os/signal's
 		// handlers.m emitted `map<channel/*<-*/<os.Signal>*handler>, >` — CS1003 cascade ×8).
-		return fmt.Sprintf("map[%s]%s", v.getTypeName(composite.Key(), isUnderlying), v.getTypeName(composite.Elem(), isUnderlying))
+		return fmt.Sprintf("map[%s]%s", v.getAliasQualifiedTypeName(composite.Key(), isUnderlying), v.getAliasQualifiedTypeName(composite.Elem(), isUnderlying))
 	case *types.Signature:
 		// Structural like the composites above: t.String() embeds slash-qualified import paths
 		// for cross-package elements (`func(...*go/types.Package...)`), which the string-path
@@ -342,7 +369,7 @@ func (v *Visitor) getTypeName(t types.Type, isUnderlying bool) string {
 				if proxyName, ok := v.constraintProxyArg(named, i); ok {
 					args[i] = proxyName
 				} else {
-					args[i] = v.getTypeName(typeArgs.At(i), false)
+					args[i] = v.getAliasQualifiedTypeName(typeArgs.At(i), false)
 				}
 			}
 
@@ -355,7 +382,7 @@ func (v *Visitor) getTypeName(t types.Type, isUnderlying bool) string {
 			// is itself cross-package, t.String() path-qualifies it (`curve[*repro/sub.Item]`), and the
 			// cross-package slash-strip then eats everything before the slash INCLUDING the `curve[`
 			// header, dropping the wrapper (crypto/elliptic's `*nistCurve[*nistec.P224Point]` →
-			// `ж<nistec.P224Point>>`, a CS1519 cascade). Rendering args via getTypeName yields their
+			// `ж<nistec.P224Point>>`, a CS1519 cascade). Rendering args via getAliasQualifiedTypeName yields their
 			// short, slash-free package-qualified names, so the header survives.
 			return fmt.Sprintf("%s[%s]", obj.Name(), strings.Join(args, ", "))
 		}
@@ -451,28 +478,38 @@ func (v *Visitor) getTypeName(t types.Type, isUnderlying bool) string {
 	return typeName
 }
 
-func (v *Visitor) getFullTypeName(t types.Type, isUnderlying bool) string {
+// getFullyQualifiedTypeName renders t as the Go-shaped type name in its alias-free form
+// (`sync.atomic_package.Int32`), so the string resolves inside `namespace go;` with no `using` in
+// scope. That is what generator-consumed metadata needs — GoType attribute strings and
+// package_info records land in files the converter emits without any import aliases, where an
+// alias-qualified name names nothing.
+//
+// It mirrors getAliasQualifiedTypeName arm for arm (pointers, erased pointer-core type params,
+// methodless named func types, lifted anonymous types, array/slice/chan composites); the two must
+// flip together, since a shape one renders and the other does not is a name that exists in only
+// half the emission.
+func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) string {
 	if t == nil {
 		return ""
 	}
 
 	if pointer, ok := t.(*types.Pointer); ok {
-		return "*" + v.getFullTypeName(pointer.Elem(), isUnderlying)
+		return "*" + v.getFullyQualifiedTypeName(pointer.Elem(), isUnderlying)
 	}
 
 	// An ERASED pointer-core type parameter renders as its pointer type here too, keeping this
-	// renderer in lockstep with getTypeName (the flip-together invariant: a `P` that no longer
+	// renderer in lockstep with getAliasQualifiedTypeName (the flip-together invariant: a `P` that no longer
 	// exists in the emitted generic parameter list must never leak as a bare dangling name).
 	if typeParam, ok := t.(*types.TypeParam); ok {
 		if pointer, ok := v.typeParamErased(typeParam); ok {
-			return "*" + v.getFullTypeName(pointer.Elem(), isUnderlying)
+			return "*" + v.getFullyQualifiedTypeName(pointer.Elem(), isUnderlying)
 		}
 	}
 
 	// A non-generic methodless named func type renders as its base C# delegate (see
-	// methodlessNamedFuncSignature / the getTypeName twin).
+	// methodlessNamedFuncSignature / the getAliasQualifiedTypeName twin).
 	if sig, ok := methodlessNamedFuncSignature(t); ok {
-		return v.getFullTypeName(sig, isUnderlying)
+		return v.getFullyQualifiedTypeName(sig, isUnderlying)
 	}
 
 	if name, ok := v.liftedTypeMap[t]; ok {
@@ -487,12 +524,12 @@ func (v *Visitor) getFullTypeName(t types.Type, isUnderlying bool) string {
 	// struct/interface element (liftedTypeMap is keyed by the element) and a cross-package generic.
 	switch composite := t.(type) {
 	case *types.Array:
-		return fmt.Sprintf("[%d]%s", composite.Len(), v.getFullTypeName(composite.Elem(), isUnderlying))
+		return fmt.Sprintf("[%d]%s", composite.Len(), v.getFullyQualifiedTypeName(composite.Elem(), isUnderlying))
 	case *types.Slice:
-		return "[]" + v.getFullTypeName(composite.Elem(), isUnderlying)
+		return "[]" + v.getFullyQualifiedTypeName(composite.Elem(), isUnderlying)
 	case *types.Chan:
-		// Mirrors getTypeName's Chan arm (lifted channel elements; net dialParallel).
-		elem := v.getFullTypeName(composite.Elem(), isUnderlying)
+		// Mirrors getAliasQualifiedTypeName's Chan arm (lifted channel elements; net dialParallel).
+		elem := v.getFullyQualifiedTypeName(composite.Elem(), isUnderlying)
 
 		switch composite.Dir() {
 		case types.RecvOnly:
@@ -521,7 +558,7 @@ func (v *Visitor) getFullTypeName(t types.Type, isUnderlying bool) string {
 		// as same-package — falling through to the t.String() path whose cross-package slash-strip drops
 		// both the path segment and the `_package` class (html/template's `type FuncMap = template.FuncMap`
 		// emitted a `global using FuncMap = go.template.FuncMap;`, CS0234, instead of
-		// `go.text.template_package.FuncMap`). getTypeName and collectCrossPackagePaths already key on
+		// `go.text.template_package.FuncMap`). getAliasQualifiedTypeName and collectCrossPackagePaths already key on
 		// identity (`pkg != v.pkg`); align this path with them.
 		if pkg != nil && pkg != v.pkg {
 			baseName := getSanitizedImport(packageClassPath(pkg.Path(), pkg.Name())+PackageSuffix) + "." + getSanitizedImport(obj.Name())
@@ -537,7 +574,7 @@ func (v *Visitor) getFullTypeName(t types.Type, isUnderlying bool) string {
 					if proxyName, ok := v.constraintProxyArg(named, i); ok {
 						args[i] = proxyName
 					} else {
-						args[i] = v.getFullTypeName(typeArgs.At(i), isUnderlying)
+						args[i] = v.getFullyQualifiedTypeName(typeArgs.At(i), isUnderlying)
 					}
 				}
 
@@ -558,7 +595,7 @@ func (v *Visitor) getFullTypeName(t types.Type, isUnderlying bool) string {
 				if proxyName, ok := v.constraintProxyArg(named, i); ok {
 					args[i] = proxyName
 				} else {
-					args[i] = v.getFullTypeName(typeArgs.At(i), isUnderlying)
+					args[i] = v.getFullyQualifiedTypeName(typeArgs.At(i), isUnderlying)
 				}
 			}
 
@@ -567,7 +604,7 @@ func (v *Visitor) getFullTypeName(t types.Type, isUnderlying bool) string {
 	}
 
 	// Cross-file/forward reference to a lifted anonymous struct/interface: shared-registry
-	// name or a deferred marker, never raw Go type text (see the getTypeName twin).
+	// name or a deferred marker, never raw Go type text (see the getAliasQualifiedTypeName twin).
 	if !isUnderlying {
 		if name := deferredDynamicTypeName(t); name != "" {
 			return name
@@ -578,7 +615,7 @@ func (v *Visitor) getFullTypeName(t types.Type, isUnderlying bool) string {
 	packagePathPrefix := v.pkg.Path() + "."
 
 	// Remove the current package's path prefix from the type name (ReplaceAll so a composite
-	// type naming two current-package types doesn't keep a self-qualified one — see getTypeName).
+	// type naming two current-package types doesn't keep a self-qualified one — see getAliasQualifiedTypeName).
 	typeName = strings.ReplaceAll(typeName, packagePathPrefix, "")
 
 	// Skip the cross-package last-segment strip for composite/func type strings whose slashes are
@@ -596,7 +633,7 @@ func (v *Visitor) getFullTypeName(t types.Type, isUnderlying bool) string {
 
 // collectCrossPackagePaths gathers the import paths of every cross-package named type referenced
 // (recursively) by t — through pointers, arrays/slices, maps, channels and generic type arguments.
-// Used by getDisplayTypeName to decide whether the file-local package aliases for those packages
+// Used by getScopeCheckedTypeName to decide whether the file-local package aliases for those packages
 // are all in scope.
 func (v *Visitor) collectCrossPackagePaths(t types.Type, paths HashSet[string]) {
 	switch tt := t.(type) {
@@ -624,23 +661,27 @@ func (v *Visitor) collectCrossPackagePaths(t types.Type, paths HashSet[string]) 
 	}
 }
 
-// getDisplayTypeName resolves a type name for emission into the CURRENT source file's body, preferring
-// the readable file-local package alias (`atomic.Int32`, via getTypeName) over the fully-qualified
-// form (`sync.atomic_package.Int32`, via getFullTypeName) — but ONLY when every cross-package type it
-// references is imported in this file, so the alias is guaranteed in scope. When a referenced package
-// is not imported here (e.g. a file indexing an atomic-typed array field without ever naming the
-// element type → no `using atomic`), it falls back to the fully-qualified form, which resolves inside
-// `namespace go;` without an alias. This keeps the converted C# visually close to the Go source while
-// staying compilable. NOT for GoType attribute strings or other generator-consumed strings, which live
-// in alias-less generated files and must always use getFullTypeName.
+// getScopeCheckedTypeName resolves a type name for emission into the CURRENT source file's body,
+// preferring the readable file-local package alias (`atomic.Int32`, via getAliasQualifiedTypeName)
+// over the fully-qualified form (`sync.atomic_package.Int32`, via getFullyQualifiedTypeName) — but
+// ONLY when every cross-package type it references is imported in this file, so the alias is
+// guaranteed in scope. That check is the "scope-checked" in the name, and it is what separates this
+// renderer from its two siblings: it is the one that guarantees its output resolves where it lands.
 //
-// Unlike its getTypeName/getFullTypeName siblings this takes no isUnderlying flag. Every caller
-// wants the type AS DECLARED — the name a reader of the Go source would recognize — which is what
-// makes the result "display"; asking for a named type's underlying representation here would
-// defeat the whole point of the function.
-func (v *Visitor) getDisplayTypeName(t types.Type) string {
-	// Foreign renamed types display as the recorded imported-type alias (see
-	// foreignAliasedTypeName) - the display layer, so promoted-member naming is untouched.
+// When a referenced package is not imported here (e.g. a file indexing an atomic-typed array field
+// without ever naming the element type → no `using atomic`), it falls back to the fully-qualified
+// form, which resolves inside `namespace go;` without an alias. This keeps the converted C#
+// visually close to the Go source while staying compilable. NOT for GoType attribute strings or
+// other generator-consumed strings, which live in alias-less generated files and must always use
+// getFullyQualifiedTypeName.
+//
+// Unlike its two siblings this takes no isUnderlying flag. Every caller wants the type AS DECLARED
+// — the name a reader of the Go source would recognize; asking for a named type's underlying
+// representation here would defeat the whole point of the function.
+func (v *Visitor) getScopeCheckedTypeName(t types.Type) string {
+	// A foreign renamed type resolves to the recorded imported-type alias (see
+	// foreignAliasedTypeName). Doing it at this layer and not in getAliasQualifiedTypeName leaves
+	// promoted-member naming, which reads the Go-shaped name, untouched.
 	if aliased, ok := v.foreignAliasedTypeName(t); ok {
 		return aliased
 	}
@@ -650,11 +691,11 @@ func (v *Visitor) getDisplayTypeName(t types.Type) string {
 
 	for _, path := range paths.Keys() {
 		if !v.importQueue.Contains(path) {
-			return v.getFullTypeName(t, false)
+			return v.getFullyQualifiedTypeName(t, false)
 		}
 	}
 
-	return v.getTypeName(t, false)
+	return v.getAliasQualifiedTypeName(t, false)
 }
 
 // markDerivedTypeAliasUsed records that an emitted reference resolved through a DERIVED imported
@@ -752,8 +793,12 @@ func getAliasedTypeName(typeName string) string {
 	return typeName
 }
 
-func (v *Visitor) getRefParamTypeName(t types.Type) string {
-	typeName := v.getTypeName(t, false)
+// getRefParameterTypeName renders t as the C#-shaped spelling a `ref` parameter position needs.
+// A Go pointer parameter that the converter passes by reference is `ref T`, not the `ж<T>` box the
+// ordinary C# rendering would produce — the box is the heap-allocated form, while a `ref` param is
+// the caller's own storage.
+func (v *Visitor) getRefParameterTypeName(t types.Type) string {
+	typeName := v.getAliasQualifiedTypeName(t, false)
 
 	if strings.HasPrefix(typeName, "*") {
 		return fmt.Sprintf("ref %s", convertToCSTypeName(typeName[1:]))
@@ -762,11 +807,18 @@ func (v *Visitor) getRefParamTypeName(t types.Type) string {
 	return convertToCSTypeName(typeName)
 }
 
-func (v *Visitor) getCSTypeName(t types.Type) string {
+// getCSharpTypeName renders t C#-shaped rather than Go-shaped: the alias-qualified Go name mapped
+// through convertToCSTypeName, so `[]byte` arrives as `slice<byte>` and `*T` as `ж<T>`. Reach for
+// it wherever the string lands in a C# TYPE position — a declaration, an element type, a generic
+// argument — and for its siblings above wherever the string is Go-shaped text or tool-read metadata.
+//
+// Func types do NOT take the string path; they are built structurally from the signature, for the
+// reasons the two guards below give.
+func (v *Visitor) getCSharpTypeName(t types.Type) string {
 	// Render a func type structurally as an Action/Func delegate. The string-based path mangles
 	// func types whose parameter/result types carry slash-bearing package paths (the slash-strip in
-	// getTypeName chops `func(*math/rand.Rand)` to `*math/rand.Rand)`), and emits Go field order for
-	// a named multi-result tuple. iifeDelegateType builds it from the signature using getCSTypeName
+	// getAliasQualifiedTypeName chops `func(*math/rand.Rand)` to `*math/rand.Rand)`), and emits Go field order for
+	// a named multi-result tuple. iifeDelegateType builds it from the signature using getCSharpTypeName
 	// per element (correct qualification; nameless tuple results). Simple func types render
 	// identically to the old path, so this is zero-churn for them.
 	// An ANONYMOUS func type (t itself is the signature) is expanded here; a NAMED func type WITH
@@ -777,8 +829,8 @@ func (v *Visitor) getCSTypeName(t types.Type) string {
 
 	// A methodless named func type collapses to its base delegate (methodlessNamedFuncSignature);
 	// render it structurally via iifeDelegateType — the same correct-qualification path the
-	// anonymous signature above takes — rather than through convertToCSTypeName(getTypeName(t)).
-	// getTypeName collapses it to its signature and emits the STRING form
+	// anonymous signature above takes — rather than through convertToCSTypeName(getAliasQualifiedTypeName(t)).
+	// getAliasQualifiedTypeName collapses it to its signature and emits the STRING form
 	// (`func(map[string]*go/ast.Object) …`), whose string-path package-path conversion mangles a
 	// slash-bearing cross-package element to a naive namespace form (`go.ast.Object` — no
 	// `_package` class, no file alias): CS0234, and the resulting error-typed delegate then fails
@@ -793,7 +845,7 @@ func (v *Visitor) getCSTypeName(t types.Type) string {
 		return aliased
 	}
 
-	return convertToCSTypeName(v.getTypeName(t, false))
+	return convertToCSTypeName(v.getAliasQualifiedTypeName(t, false))
 }
 
 // foreignAliasedTypeName resolves a cross-package type that is RENAMED (or Go-aliased) inside
@@ -801,8 +853,8 @@ func (v *Visitor) getCSTypeName(t types.Type) string {
 // the recorded imported-type alias (`syscallꓸHandle` = `go.syscall_package.ΔHandle`): the raw
 // qualified render (`Δsyscall.Handle`) names a type that does not exist (CS0426 ×21,
 // internal/poll's signatures, fields, conversion targets, and local declarations). This lives
-// at the C#-NAME layers ONLY (getCSTypeName / getDisplayTypeName / conversion targets), never
-// in getTypeName: the Go-shaped name also feeds promoted-embed MEMBER naming, where the alias
+// at the C#-NAME layers ONLY (getCSharpTypeName / getScopeCheckedTypeName / conversion targets), never
+// in getAliasQualifiedTypeName: the Go-shaped name also feeds promoted-embed MEMBER naming, where the alias
 // substitution renamed and rescoped the generated accessors (reflect CS8799 ×3 regression on
 // the first cut). A type without a registered alias, and every generic instantiation, keeps
 // the plain render (no churn).
@@ -1196,7 +1248,7 @@ func convertToCSFullTypeName(typeName string) string {
 // lines are emitted (raw Go `struct{…}` text is never attribute-safe C#).
 func (v *Visitor) implicitConvStructTypeName(t types.Type) string {
 	if named, ok := types.Unalias(t).(*types.Named); ok {
-		return v.getCSTypeName(named)
+		return v.getCSharpTypeName(named)
 	}
 
 	// This visitor's lifted name is type-identity-keyed — precise even when two anonymous

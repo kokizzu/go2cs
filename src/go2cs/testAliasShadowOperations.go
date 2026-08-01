@@ -445,7 +445,7 @@ func (v *Visitor) whiteboxBridgeNamedType(named *types.Named) (string, bool) {
 			if proxyName, ok := v.constraintProxyArg(named, i); ok {
 				args[i] = proxyName
 			} else {
-				args[i] = v.getTypeName(typeArgs.At(i), false)
+				args[i] = v.getAliasQualifiedTypeName(typeArgs.At(i), false)
 			}
 		}
 		name += "[" + strings.Join(args, ", ") + "]"
@@ -482,7 +482,7 @@ func (v *Visitor) whiteboxProductionNamedType(named *types.Named) (string, bool)
 			if proxyName, ok := v.constraintProxyArg(named, i); ok {
 				args[i] = proxyName
 			} else {
-				args[i] = v.getTypeName(typeArgs.At(i), false)
+				args[i] = v.getAliasQualifiedTypeName(typeArgs.At(i), false)
 			}
 		}
 		name += "[" + strings.Join(args, ", ") + "]"

@@ -127,7 +127,7 @@ func (v *Visitor) dynamicStructTypeName(expr ast.Expr) string {
 	}
 
 	// Concrete/named or otherwise resolvable type: use the normal path.
-	return v.getExprTypeName(expr, false)
+	return v.getExpressionTypeName(expr, false)
 }
 
 // resolveDynamicTypeMarkers rewrites any deferred dynamic-type markers in the

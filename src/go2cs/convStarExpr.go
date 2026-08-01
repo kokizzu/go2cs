@@ -125,7 +125,7 @@ func (v *Visitor) convStarExpr(starExpr *ast.StarExpr, context StarExprContext) 
 		}
 
 		starType := v.getType(starExpr.X, false)
-		pointerType := convertToCSTypeName(v.getTypeName(starType, false))
+		pointerType := convertToCSTypeName(v.getAliasQualifiedTypeName(starType, false))
 		return fmt.Sprintf("%s<%s>", PointerPrefix, pointerType)
 	}
 

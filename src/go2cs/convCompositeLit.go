@@ -128,7 +128,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 		if inferred := v.info.TypeOf(compositeLit); inferred != nil {
 			switch u := inferred.Underlying().(type) {
 			case *types.Slice:
-				csElem := convertToCSTypeName(v.getTypeName(u.Elem(), false))
+				csElem := convertToCSTypeName(v.getAliasQualifiedTypeName(u.Elem(), false))
 				// A KEYED elided slice literal (`{5: "x"}` inside a `[]map[…][]T{…}`) renders as a
 				// golib SparseArray with `[index] = value` elements; the plain `new T[]{…}` array
 				// initializer below cannot take the Go `key: value` keyed syntax (CS1003 cascade).
@@ -138,7 +138,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 				}
 				return fmt.Sprintf("new %s[]{%s}.slice()", csElem, v.convExprList(compositeLit.Elts, compositeLit.Lbrace, v.withValueCloneArgs(compositeLit.Elts, v.elidedPointerElemContext(u.Elem(), compositeLit.Elts))))
 			case *types.Array:
-				csElem := convertToCSTypeName(v.getTypeName(u.Elem(), false))
+				csElem := convertToCSTypeName(v.getAliasQualifiedTypeName(u.Elem(), false))
 				// An ELIDED array literal is still `[N]T` long, so its projection carries the
 				// declared length whenever the literal writes fewer elements — the same zero-fill
 				// rule the typed path applies below (see the padding comment there). A KEYED
@@ -163,7 +163,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 				// boxed struct constructor `Ꮡ(new T(field: val, …))`; a bare `new(…)` targets the box
 				// `ж<T>`, whose constructor has no such field params (CS1739).
 				if _, ok := u.Elem().Underlying().(*types.Struct); ok {
-					structName := v.getCSTypeName(u.Elem())
+					structName := v.getCSharpTypeName(u.Elem())
 
 					// Thread the pointed-to struct type so a keyed field named like its OWN struct type
 					// takes the CS0542 type-colliding rename in the generated ctor (net/mail's
@@ -211,8 +211,8 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 					mapContext.u8StringArgOK[i] = true
 				}
 
-				keyCS := convertToCSTypeName(v.getTypeName(u.Key(), false))
-				valCS := convertToCSTypeName(v.getTypeName(u.Elem(), false))
+				keyCS := convertToCSTypeName(v.getAliasQualifiedTypeName(u.Key(), false))
+				valCS := convertToCSTypeName(v.getAliasQualifiedTypeName(u.Elem(), false))
 
 				return fmt.Sprintf("new map<%s, %s>{%s}", keyCS, valCS, v.convExprList(compositeLit.Elts, compositeLit.Lbrace, mapContext))
 			}
@@ -472,7 +472,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 				callContext.wrapArgWithNew = make(map[int]string)
 			}
 
-			callContext.wrapArgWithNew[i] = v.getCSTypeName(fieldVar.Type())
+			callContext.wrapArgWithNew[i] = v.getCSharpTypeName(fieldVar.Type())
 		}
 	}
 
@@ -517,7 +517,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 			if rhs, okRHS := packageTypeSpecRHS[t.Obj()]; okRHS && rhs != nil {
 				if rhsNamed, ok := types.Unalias(rhs).(*types.Named); ok {
 					if _, isStruct := rhsNamed.Underlying().(*types.Struct); isStruct {
-						namedStructWrapRender = convertToCSTypeName(v.getTypeName(rhsNamed, false))
+						namedStructWrapRender = convertToCSTypeName(v.getAliasQualifiedTypeName(rhsNamed, false))
 					}
 				}
 			}
@@ -558,7 +558,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 			// `[(@string)"b"u8]`.
 			callContext.keyValueCompositeType = mapType
 			namedMapComposite = true
-			namedMapRender = fmt.Sprintf("map<%s, %s>", convertToCSTypeName(v.getTypeName(mapType.Key(), false)), convertToCSTypeName(v.getTypeName(mapType.Elem(), false)))
+			namedMapRender = fmt.Sprintf("map<%s, %s>", convertToCSTypeName(v.getAliasQualifiedTypeName(mapType.Key(), false)), convertToCSTypeName(v.getAliasQualifiedTypeName(mapType.Elem(), false)))
 		}
 	case *types.Struct:
 		checkStructFields(t)
@@ -660,7 +660,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 	// so they never match.
 	if elementType != nil && callContext.keyValueSource == ArraySource {
 		if elemBasic, ok := elementType.Underlying().(*types.Basic); ok && isNarrowIntegerKind(elemBasic.Kind()) {
-			csElemType := convertToCSTypeName(v.getTypeName(elementType, false))
+			csElemType := convertToCSTypeName(v.getAliasQualifiedTypeName(elementType, false))
 
 			for i, elt := range compositeLit.Elts {
 				switch elt.(type) {
@@ -722,7 +722,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 						callContext.castArgToType = make(map[int]string)
 					}
 
-					callContext.castArgToType[i] = convertToCSTypeName(v.getTypeName(fieldVar.Type(), false))
+					callContext.castArgToType[i] = convertToCSTypeName(v.getAliasQualifiedTypeName(fieldVar.Type(), false))
 				}
 			}
 		}
@@ -854,9 +854,9 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 	// (`nistCurve<P224PointжnistPoint>`) — convExpr walked the AST literal `nistCurve[*P224Point]`
 	// and rendered the box `ж<P224Point>`, which mismatches the pointer adapter that wraps
 	// `ж<nistCurve<P224PointжnistPoint>>` (CS0311/type mismatch). Re-render from the RESOLVED type,
-	// whose getTypeName substitutes the proxy. Gated to the proxy case, so no churn elsewhere.
+	// whose getAliasQualifiedTypeName substitutes the proxy. Gated to the proxy case, so no churn elsewhere.
 	if named, ok := types.Unalias(exprType).(*types.Named); ok && v.namedHasConstraintProxy(named) {
-		typeRender = convertToCSTypeName(v.getTypeName(named, false))
+		typeRender = convertToCSTypeName(v.getAliasQualifiedTypeName(named, false))
 	}
 
 	if aliasArrayComposite {
@@ -866,7 +866,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 		// (`new uint64[]{…}` + `.array()`/`.slice()`), SparseArray for non-constant indexed
 		// keys, and the alias's int-length ctor for constant-indexed sparse literals
 		// (`new words(4){[2] = 30}` — the alias IS array<T>, which has that ctor).
-		csElementType := convertToCSTypeName(v.getTypeName(elementType, false))
+		csElementType := convertToCSTypeName(v.getAliasQualifiedTypeName(elementType, false))
 
 		if arrayTypeContext.indexedInitializer {
 			typeRender = fmt.Sprintf("golib.SparseArray<%s>", csElementType)
@@ -878,7 +878,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 	}
 
 	if namedArrayComposite {
-		csElementType := convertToCSTypeName(v.getTypeName(elementType, false))
+		csElementType := convertToCSTypeName(v.getAliasQualifiedTypeName(elementType, false))
 
 		// An EMPTY composite of a named-over-array/slice (`tmpBuf{}` where `type tmpBuf [32]byte`
 		// — runtime string.go's `*buf = tmpBuf{}` — or `pm{}` over a named slice) is the type's

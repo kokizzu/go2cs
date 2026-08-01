@@ -244,7 +244,7 @@ func (v *Visitor) visitImportSpec(importSpec *ast.ImportSpec, doc *ast.CommentGr
 		importPath = globalQualifyRooted(fmt.Sprintf("%s.%s", packageNamespace, getSanitizedImport(v.options.testPackageName+PackageSuffix)))
 	}
 
-	// The canonical C# alias for this package — what an unaliased import emits and what getTypeName's
+	// The canonical C# alias for this package — what an unaliased import emits and what getAliasQualifiedTypeName's
 	// short-form type references (`pkg.Type`) resolve through. Record the import path when THIS import
 	// actually emits that canonical alias (an unaliased import, or one explicitly aliased to the same
 	// name), so visitFile does not re-emit (and duplicate) it; a blank/dot/renamed import does not emit

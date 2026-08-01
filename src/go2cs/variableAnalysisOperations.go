@@ -2893,7 +2893,7 @@ func (v *Visitor) generateCaptureDeclarations() string {
 		if v.options.preferVarDecl {
 			decls.WriteString("var ")
 		} else {
-			decls.WriteString(v.getCSTypeName(info.varType))
+			decls.WriteString(v.getCSharpTypeName(info.varType))
 			decls.WriteRune(' ')
 		}
 

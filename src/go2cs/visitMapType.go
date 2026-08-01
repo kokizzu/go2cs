@@ -17,8 +17,8 @@ func (v *Visitor) visitMapType(mapType *ast.MapType, identType types.Type, name 
 	// partial struct` forward declaration whose Map template go2cs-gen implements (the
 	// generator's attribute format is comma-separated `map[K, V]`, not Go's `map[K]V`). The
 	// old stub emitted only a comment, leaving the type undeclared (CS0246).
-	keyType := convertToCSTypeName(v.getTypeName(v.info.TypeOf(mapType.Key), false))
-	valueType := convertToCSTypeName(v.getTypeName(v.info.TypeOf(mapType.Value), false))
+	keyType := convertToCSTypeName(v.getAliasQualifiedTypeName(v.info.TypeOf(mapType.Key), false))
+	valueType := convertToCSTypeName(v.getAliasQualifiedTypeName(v.info.TypeOf(mapType.Value), false))
 	access := v.pendingTypeAccess
 	v.pendingTypeAccess = ""
 

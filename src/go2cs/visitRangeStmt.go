@@ -325,7 +325,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 						wroteHeapTypeDecl = true
 					}
 				} else if !v.options.preferVarDecl {
-					keyType = v.getCSTypeName(v.getExprType(rangeStmt.Key)) + " "
+					keyType = v.getCSharpTypeName(v.getExprType(rangeStmt.Key)) + " "
 				}
 			}
 		}
@@ -344,7 +344,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 						wroteHeapTypeDecl = true
 					}
 				} else if !v.options.preferVarDecl {
-					valType = v.getCSTypeName(v.getExprType(rangeStmt.Value)) + " "
+					valType = v.getCSharpTypeName(v.getExprType(rangeStmt.Value)) + " "
 				}
 			}
 		}
@@ -420,7 +420,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 				decl := ""
 
 				if !v.options.preferVarDecl {
-					keyType = v.getCSTypeName(v.getExprType(rangeStmt.Key)) + " "
+					keyType = v.getCSharpTypeName(v.getExprType(rangeStmt.Key)) + " "
 				} else if !assignVars {
 					decl = "var "
 				}
@@ -435,7 +435,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 				decl := ""
 
 				if !v.options.preferVarDecl {
-					valType = v.getCSTypeName(v.getExprType(rangeStmt.Value)) + " "
+					valType = v.getCSharpTypeName(v.getExprType(rangeStmt.Value)) + " "
 				} else if !assignVars {
 					decl = "var "
 				}
@@ -486,7 +486,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 					var elems []string
 
 					for i := range yieldSig.Params().Len() {
-						elems = append(elems, v.getCSTypeName(yieldSig.Params().At(i).Type()))
+						elems = append(elems, v.getCSharpTypeName(yieldSig.Params().At(i).Type()))
 					}
 
 					rangeTypeArgs = fmt.Sprintf("<%s>", strings.Join(elems, ", "))
@@ -528,7 +528,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 				tempKeyExpr = v.getTempVarName(keyName)
 
 				if !v.options.preferVarDecl {
-					keyType = v.getCSTypeName(v.getExprType(rangeStmt.Key)) + " "
+					keyType = v.getCSharpTypeName(v.getExprType(rangeStmt.Key)) + " "
 				}
 
 				innerPrefix += fmt.Sprintf("%s%s%s = %s%s;", v.newline, v.indent(v.indentLevel+1), keyExpr, tempKeyExpr, keyCloneSuffix)
@@ -540,7 +540,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 				tempValExpr = v.getTempVarName("v")
 
 				if !v.options.preferVarDecl {
-					valType = v.getCSTypeName(v.getExprType(rangeStmt.Value)) + " "
+					valType = v.getCSharpTypeName(v.getExprType(rangeStmt.Value)) + " "
 				}
 
 				innerPrefix += fmt.Sprintf("%s%s%s = %s%s;", v.newline, v.indent(v.indentLevel+1), valExpr, tempValExpr, valCloneSuffix)
@@ -579,7 +579,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 				decl := "var "
 
 				if !v.options.preferVarDecl {
-					keyType = v.getCSTypeName(v.getExprType(rangeStmt.Key)) + " "
+					keyType = v.getCSharpTypeName(v.getExprType(rangeStmt.Key)) + " "
 					decl = ""
 				}
 
@@ -599,7 +599,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 				decl := "var "
 
 				if !v.options.preferVarDecl {
-					valType = v.getCSTypeName(v.getExprType(rangeStmt.Value)) + " "
+					valType = v.getCSharpTypeName(v.getExprType(rangeStmt.Value)) + " "
 					decl = ""
 				}
 
@@ -636,7 +636,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 					decl := "var "
 
 					if !v.options.preferVarDecl {
-						keyType = v.getCSTypeName(v.getExprType(rangeStmt.Key)) + " "
+						keyType = v.getCSharpTypeName(v.getExprType(rangeStmt.Key)) + " "
 						decl = ""
 					}
 
@@ -650,7 +650,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 					decl := "var "
 
 					if !v.options.preferVarDecl {
-						valType = v.getCSTypeName(v.getExprType(rangeStmt.Value)) + " "
+						valType = v.getCSharpTypeName(v.getExprType(rangeStmt.Value)) + " "
 						decl = ""
 					}
 

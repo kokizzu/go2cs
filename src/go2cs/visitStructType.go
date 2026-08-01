@@ -199,7 +199,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// CS1031 cascade at the declaration sites; it now shares those sites' recursive descent
 		// (extractStructType / extractInterfaceType, both of which already exclude the empty
 		// struct/interface — an empty `interface{}` field must map to `any`, never to a marker
-		// interface nothing implements). getTypeName resolves each composed element through
+		// interface nothing implements). getAliasQualifiedTypeName resolves each composed element through
 		// liftedTypeMap. Struct is probed first, matching the previous arm order.
 		//
 		// A field type carrying an anonymous literal always NAMES the field (an embedded field is a
@@ -242,8 +242,8 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		}
 
 		fieldType := v.getType(field.Type, false)
-		goTypeName := v.getTypeName(fieldType, false)
-		goFullTypeName := v.getFullTypeName(fieldType, false)
+		goTypeName := v.getAliasQualifiedTypeName(fieldType, false)
+		goFullTypeName := v.getFullyQualifiedTypeName(fieldType, false)
 		csFullTypeName := convertToCSTypeName(goFullTypeName)
 
 		// The fully-qualified form for emission INTO this source file's body. csFullTypeName is a
@@ -262,21 +262,21 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// csFullTypeName is retained for promotion/interface registration below, which feeds
 		// generator-consumed strings that live in alias-less files. (Embedded fields keep the full
 		// form for their promoted accessors; only the named-field branch uses the display name.)
-		goDisplayTypeName := v.getDisplayTypeName(fieldType)
+		goDisplayTypeName := v.getScopeCheckedTypeName(fieldType)
 		csDisplayTypeName := convertToCSTypeName(goDisplayTypeName)
 
 		// A func-typed field whose signature names a type from a MULTI-SEGMENT import path
 		// (`Values func([]reflect.Value, *rand.Rand)`, where `rand` is `math/rand`) must be
-		// rendered structurally as an Action/Func delegate via getCSTypeName. The string-based
-		// getTypeName/convertToCSTypeName path stringifies the signature as
+		// rendered structurally as an Action/Func delegate via getCSharpTypeName. The string-based
+		// getAliasQualifiedTypeName/convertToCSTypeName path stringifies the signature as
 		// `func([]reflect.Value, *math/rand.Rand)` and then feeds the slash-bearing import path to
 		// convertImportPathToNamespace, which splits on '/' and emits the dotted `math.rand.Rand` —
 		// but `math` aliases to `math_package`, so `math.rand` resolves to the non-existent
-		// `math_package.rand` (CS0426). getCSTypeName recurses through the signature per element,
+		// `math_package.rand` (CS0426). getCSharpTypeName recurses through the signature per element,
 		// qualifying each named type by its package NAME (`rand.Rand`), the alias the file imports.
 		//
 		// A VARIADIC func-typed field reroutes too: the string path cannot render a variadic
-		// signature at all — getTypeName's '..' strip reduces the ellipsis of
+		// signature at all — getAliasQualifiedTypeName's '..' strip reduces the ellipsis of
 		// `JoinPath func(elem ...string) string` (go/build's Context) to `.string`, emitting the
 		// unparseable `Func<.@string, @string>` (CS1031 + CS1003 ×2), and even unstripped it has
 		// no variadic lowering. Structurally the field renders the golib variadic delegate family
@@ -288,7 +288,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// (structural rendering drops them). Compiling correctness for the broken cases is worth
 		// the lost tuple names in the rare rerouted field.
 		if sig, isSignature := fieldType.(*types.Signature); isSignature && (sig.Variadic() || strings.Contains(goDisplayTypeName, "/")) {
-			csDisplayTypeName = v.getCSTypeName(fieldType)
+			csDisplayTypeName = v.getCSharpTypeName(fieldType)
 		}
 
 		displayLenDeviation := token.Pos(len(csDisplayTypeName) - len(goDisplayTypeName))
@@ -365,7 +365,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 			// An embedded field's NAME is the UNQUALIFIED type name (Go spec), so strip any package
 			// qualifier. A selector embed (`io.Writer`) carries it explicitly; a DOT-IMPORTED ident
 			// embed does too once resolved — io_test's `import . "io"` + embedded `ReaderFrom` reaches
-			// here as a bare *ast.Ident whose getTypeName still renders the (collision-renamed)
+			// here as a bare *ast.Ident whose getAliasQualifiedTypeName still renders the (collision-renamed)
 			// package qualifier `Δio.ReaderFrom`. Gating the strip on selectorType left that qualifier
 			// in the field name (`Δio.ReaderFrom`), whose dot is a C# syntax error (CS1003/CS1026).
 			// Strip whenever a qualifier survives, covering both forms; a same-package embed has no

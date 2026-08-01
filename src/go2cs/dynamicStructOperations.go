@@ -71,12 +71,12 @@ func (v *Visitor) checkForDynamicStructs(argType types.Type, targetType types.Ty
 
 		if _, ok := argType.(*types.Struct); ok {
 			// Argument is a dynamic struct and target is a dynamic struct, track implicit conversions
-			argTypeName = v.getCSTypeName(argType)
-			targetTypeName = v.getCSTypeName(targetType)
+			argTypeName = v.getCSharpTypeName(argType)
+			targetTypeName = v.getCSharpTypeName(targetType)
 		} else if _, ok := argType.(*types.Named); ok {
 			// Argument is a named type and target is a dynamic struct, track implicit conversions
-			argTypeName = v.getCSTypeName(argType)
-			targetTypeName = v.getCSTypeName(targetType)
+			argTypeName = v.getCSharpTypeName(argType)
+			targetTypeName = v.getCSharpTypeName(targetType)
 		}
 
 		if len(argTypeName) > 0 && len(targetTypeName) > 0 {

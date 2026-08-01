@@ -271,7 +271,7 @@ func foreignAliasTargetName(pkg *packages.Package, target types.Type) (string, b
 		name = getCollisionAvoidanceIdentifier(obj.Name())
 	}
 
-	// Matches getFullTypeName's cross-package arm run through convertToCSFullTypeName: the package
+	// Matches getFullyQualifiedTypeName's cross-package arm run through convertToCSFullTypeName: the package
 	// CLASS path (path with the final segment replaced by the package NAME, for a major-version
 	// tail) converted to the rooted namespace, then the member.
 	namespace := convertImportPathToNamespace(packageClassPath(targetPkg.Path(), targetPkg.Name()), PackageSuffix)

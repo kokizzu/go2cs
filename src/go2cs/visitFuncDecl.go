@@ -100,7 +100,7 @@ func (v *Visitor) variadicElementType(elem types.Type) (typeName string, aliasNa
 // variadicElementParts is variadicElementType's recursive core, returning the alias identifier BODY
 // (no ellipsis prefix) so a pointer element can compose its pointee's.
 func (v *Visitor) variadicElementParts(elem types.Type) (typeName string, identBody string, inline bool) {
-	typeName = v.getCSTypeName(elem)
+	typeName = v.getCSharpTypeName(elem)
 
 	// A type parameter is not in scope at namespace scope, so it can be neither an alias referent nor
 	// an alias name — `First<T>(params Span<T> valsʗp)` has no readable form.
@@ -116,8 +116,8 @@ func (v *Visitor) variadicElementParts(elem types.Type) (typeName string, identB
 	// sits inside the package class. A pointee with no alias form of its own (a type parameter, a
 	// constructed pointee such as `*[]byte`) takes the whole element inline with it.
 	if pointer, ok := elem.(*types.Pointer); ok {
-		if typeName != fmt.Sprintf("%s<%s>", PointerPrefix, v.getCSTypeName(pointer.Elem())) {
-			// getCSTypeName rendered this pointer some other way (an erased pointer-core type
+		if typeName != fmt.Sprintf("%s<%s>", PointerPrefix, v.getCSharpTypeName(pointer.Elem())) {
+			// getCSharpTypeName rendered this pointer some other way (an erased pointer-core type
 			// parameter, a lifted type) — do not guess at its structure.
 			return typeName, "", true
 		}
@@ -145,7 +145,7 @@ func (v *Visitor) variadicElementParts(elem types.Type) (typeName string, identB
 
 	if named, ok := elem.(*types.Named); ok {
 		// A methodless named func type has already been rendered AS its base delegate
-		// (`Action<…>`/`Func<…>`) by getCSTypeName — it is not a package-class member, so the
+		// (`Action<…>`/`Func<…>`) by getCSharpTypeName — it is not a package-class member, so the
 		// `<pkg>_package.` qualifier below would mangle it (`main_package.Action`, CS0426).
 		if _, isCollapsed := methodlessNamedFuncSignature(elem); !isCollapsed {
 			if obj := named.Obj(); obj != nil && obj.Pkg() == v.pkg && !strings.Contains(typeName, ".") {
@@ -582,7 +582,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 								}
 
 								resultDeclTarget.WriteString(v.newline)
-								v.writeString(resultDeclTarget, "%s%s %s = %s;", v.indent(v.indentLevel+1), v.getCSTypeName(blankParam.Type()), v.namedResultName(blankParam), blankZeroValue)
+								v.writeString(resultDeclTarget, "%s%s %s = %s;", v.indent(v.indentLevel+1), v.getCSharpTypeName(blankParam.Type()), v.namedResultName(blankParam), blankZeroValue)
 							}
 
 							paramIndex++
@@ -606,7 +606,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 								// wrapper re-aliases the value name inside (namedResultAliases),
 								// and the final post-defer return reads through the box (see the
 								// namedReturnDeferMode close-out below).
-								v.writeString(resultDeclTarget, "%sheap<%s>(out var %s%s);", v.indent(v.indentLevel+1), v.getCSTypeName(param.Type()), AddressPrefix, v.boxBaseName(ident))
+								v.writeString(resultDeclTarget, "%sheap<%s>(out var %s%s);", v.indent(v.indentLevel+1), v.getCSharpTypeName(param.Type()), AddressPrefix, v.boxBaseName(ident))
 								v.writeString(namedResultAliases, "%s%sref var %s = ref %s%s%s;", v.newline, v.indent(v.indentLevel+1), paramName, AddressPrefix, v.boxBaseName(ident), namedResultBoxAccessor(param.Type()))
 							} else {
 								v.writeString(resultDeclTarget, "%s%s", v.indent(v.indentLevel+1), v.convertToHeapTypeDecl(ident, true))
@@ -625,7 +625,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 							zeroValue = "new(nil)"
 						}
 
-						v.writeString(resultDeclTarget, "%s%s %s = %s;", v.indent(v.indentLevel+1), v.getCSTypeName(param.Type()), paramName, zeroValue)
+						v.writeString(resultDeclTarget, "%s%s %s = %s;", v.indent(v.indentLevel+1), v.getCSharpTypeName(param.Type()), paramName, zeroValue)
 
 						paramIndex++
 					}
@@ -757,7 +757,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 				if v.options.preferVarDecl {
 					v.writeString(paramHeapBoxes, "%s%sref var %s = ref heap(%s, out var %s%s);", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(analyzedName), incomingName, AddressPrefix, analyzedName)
 				} else {
-					csTypeName := v.getCSTypeName(param.Type())
+					csTypeName := v.getCSharpTypeName(param.Type())
 					v.writeString(paramHeapBoxes, "%s%sref %s %s = ref heap(%s, out %s<%s> %s%s);", v.newline, v.indent(v.indentLevel+1), csTypeName, getSanitizedIdentifier(analyzedName), incomingName, PointerPrefix, csTypeName, AddressPrefix, analyzedName)
 				}
 			}
@@ -776,7 +776,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 				if v.options.preferVarDecl {
 					v.writeString(resultParameters, "%s%svar %s = %s.%s();", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
 				} else {
-					v.writeString(resultParameters, "%s%s%s<%s> %s = %s.%s();", v.newline, v.indent(v.indentLevel+1), sliceType, v.getCSTypeName(param.Type().(*types.Slice).Elem()), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
+					v.writeString(resultParameters, "%s%s%s<%s> %s = %s.%s();", v.newline, v.indent(v.indentLevel+1), sliceType, v.getCSharpTypeName(param.Type().(*types.Slice).Elem()), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
 				}
 
 			}
@@ -839,7 +839,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 					updatedSignature.WriteString("this ")
 
 					// Get receiver parameter type
-					recvTypeName := v.getRefParamTypeName(param.Type())
+					recvTypeName := v.getRefParameterTypeName(param.Type())
 
 					// Method accessibility is the more restrictive of the receiver type and the method's
 					// own (Go) name: an unexported method on an exported type stays package-private
@@ -856,7 +856,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 						// Direct-ж: emit the box itself (`ж<Box<T>> Ꮡb`) as the receiver. The
 						// deref `ref var b = ref Ꮡb.Value;` is emitted above so the body's value
 						// references still read as `b`, while `&b.field` uses the box `Ꮡb`.
-						updatedSignature.WriteString(v.getCSTypeName(param.Type()))
+						updatedSignature.WriteString(v.getCSharpTypeName(param.Type()))
 						updatedSignature.WriteRune(' ')
 						updatedSignature.WriteString(AddressPrefix + param.Name())
 					} else {
@@ -910,7 +910,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 					updatedSignature.WriteRune(' ')
 					updatedSignature.WriteString(getVariadicParamName(param))
 				} else {
-					updatedSignature.WriteString(v.getCSTypeName(param.Type()))
+					updatedSignature.WriteString(v.getCSharpTypeName(param.Type()))
 					updatedSignature.WriteRune(' ')
 
 					if _, ok := v.paramPointerType(param.Type()); ok {
@@ -1493,7 +1493,7 @@ func (v *Visitor) generateParametersSignature(signature *types.Signature, addRec
 			result.WriteString("this ")
 
 			// Get receiver parameter type
-			recvTypeName := v.getRefParamTypeName(param.Type())
+			recvTypeName := v.getRefParameterTypeName(param.Type())
 
 			// Update function access to match receiver type. A PUBLICIZED unexported receiver
 			// type is emitted `public`, so it does not restrict the method's access.
@@ -1503,7 +1503,7 @@ func (v *Visitor) generateParametersSignature(signature *types.Signature, addRec
 				receiverAccess = "public"
 			}
 
-			result.WriteString(v.getRefParamTypeName(param.Type()))
+			result.WriteString(v.getRefParameterTypeName(param.Type()))
 			result.WriteRune(' ')
 
 			paramName := param.Name()
@@ -1548,7 +1548,7 @@ func (v *Visitor) generateParametersSignature(signature *types.Signature, addRec
 			result.WriteRune(' ')
 			result.WriteString(getVariadicParamName(param))
 		} else {
-			paramTypeName := v.getCSTypeName(param.Type())
+			paramTypeName := v.getCSharpTypeName(param.Type())
 
 			// A FUNC-LITERAL parameter typed as a `string | []byte`-union TYPE PARAMETER
 			// renders as the type parameter itself (`(T part) => ...`): the enclosing
@@ -1611,7 +1611,7 @@ func (v *Visitor) generateResultSignature(signature *types.Signature) string {
 	if results.Len() == 1 {
 		param := results.At(0)
 
-		result.WriteString(v.getCSTypeName(param.Type()))
+		result.WriteString(v.getCSharpTypeName(param.Type()))
 
 		if param.Name() != "" {
 			result.WriteString(" /*")
@@ -1631,7 +1631,7 @@ func (v *Visitor) generateResultSignature(signature *types.Signature) string {
 
 		param := results.At(i)
 
-		result.WriteString(v.getCSTypeName(param.Type()))
+		result.WriteString(v.getCSharpTypeName(param.Type()))
 
 		// A BLANK Go result name (`func match(x, y Value) (_, _ Value)`, go/constant) must NOT
 		// become a C# tuple element name — two `_` elements collide (CS8127). Emit the type
@@ -1976,7 +1976,7 @@ func (v *Visitor) writeLinknameForwarder(signature *types.Signature, alias strin
 // same golib type on both sides and passes through unchanged.
 func (v *Visitor) bridgeLinknameResult(expr string, localType types.Type) string {
 	if v.isUintptrBridgeable(localType) {
-		return fmt.Sprintf("(%s)(uintptr)%s", v.getCSTypeName(localType), expr)
+		return fmt.Sprintf("(%s)(uintptr)%s", v.getCSharpTypeName(localType), expr)
 	}
 
 	return expr

@@ -228,7 +228,7 @@ func (v *Visitor) convIndexExpr(indexExpr *ast.IndexExpr, context IndexExprConte
 				// indexing `d.dense[id]` — has no C# cast to nint (a constrained type parameter is
 				// not directly convertible). Route through golib's ConvertToUInt64<T> bridge (the
 				// integer-type-param conversion family, cf. rand.N's E(x)), then narrow to nint.
-				index = fmt.Sprintf("(nint)(ConvertToUInt64<%s>(%s))", v.getCSTypeName(tp), index)
+				index = fmt.Sprintf("(nint)(ConvertToUInt64<%s>(%s))", v.getCSharpTypeName(tp), index)
 			}
 		}
 	}

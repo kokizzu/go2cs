@@ -59,13 +59,13 @@ func (v *Visitor) visitArrayType(arrayType *ast.ArrayType, identType types.Type,
 		goTypeName = ident.Name
 		csTypeName = convertToCSTypeName(goTypeName)
 	} else if eltType := v.info.TypeOf(arrayType.Elt); eltType != nil {
-		// Use the fully-qualified name (getFullTypeName) rather than the package-aliased form: the
+		// Use the fully-qualified name (getFullyQualifiedTypeName) rather than the package-aliased form: the
 		// GoType attribute is consumed by the generated array-backed partial, which lives in a file
 		// without this file's package-relative `using` aliases (e.g. `using atomic = ...`), so an
 		// aliased element type would be unresolvable there (CS0246). The leading namespace segment
 		// must be the CANONICAL qualifier, never a file-local Δ collision-rename (same rule as the
 		// visitTypeSpec global-using target).
-		csTypeName = canonicalizeQualifierRename(convertToCSTypeName(v.getFullTypeName(eltType, false)))
+		csTypeName = canonicalizeQualifierRename(convertToCSTypeName(v.getFullyQualifiedTypeName(eltType, false)))
 		goTypeName = csTypeName
 	} else {
 		typeName := v.getPrintedNode(arrayType.Elt)

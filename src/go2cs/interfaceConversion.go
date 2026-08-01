@@ -86,10 +86,10 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 			interfaceTypeName = dynamicTypeMarker(interfaceType.String())
 		}
 	} else {
-		interfaceTypeName = convertToCSTypeName(v.getFullTypeName(interfaceType, false))
+		interfaceTypeName = convertToCSTypeName(v.getFullyQualifiedTypeName(interfaceType, false))
 	}
 
-	targetTypeName := convertToCSTypeName(v.getFullTypeName(targetType, false))
+	targetTypeName := convertToCSTypeName(v.getFullyQualifiedTypeName(targetType, false))
 
 	// Register the interface's DECLARED embeds so the inheritance PRUNE sees CROSS-ASSEMBLY
 	// relations too — elf's errorReader records both io.ReadSeeker and io.Reader; C#'s
@@ -104,7 +104,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 			for ei := range iface.NumEmbeddeds() {
 				if embNamed, ok := types.Unalias(iface.EmbeddedType(ei)).(*types.Named); ok {
 					if _, isIface := embNamed.Underlying().(*types.Interface); isIface {
-						embeds = append(embeds, convertToCSTypeName(v.getFullTypeName(embNamed, false)))
+						embeds = append(embeds, convertToCSTypeName(v.getFullyQualifiedTypeName(embNamed, false)))
 					}
 				}
 			}
@@ -625,9 +625,9 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 				if foreignAdapterExists {
 					// Reference through the file-local package ALIAS (`CrossPkgLib.Meter` +
 					// adapter suffix), not the raw package-class qualifier
-					// (`CrossPkgLib_package.…`) - user-ruled style; getTypeName both yields
+					// (`CrossPkgLib_package.…`) - user-ruled style; getAliasQualifiedTypeName both yields
 					// the aliased form and registers the file-local using for it.
-					adapterBase := convertToCSTypeName(v.getTypeName(named, false))
+					adapterBase := convertToCSTypeName(v.getAliasQualifiedTypeName(named, false))
 
 					return fmt.Sprintf("new %s(%s)", adapterTypeRef(adapterBase, interfaceTypeName), exprResult)
 				}
@@ -663,7 +663,7 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 					// class the generator never emits in a same-assembly build (strings_test's
 					// `strings_BuilderжWriter` CS0246).
 					if v.isSameAssemblyPkg(pkg) {
-						adapterBase := convertToCSTypeName(v.getTypeName(named, false))
+						adapterBase := convertToCSTypeName(v.getAliasQualifiedTypeName(named, false))
 
 						return fmt.Sprintf("new %s(%s)", adapterTypeRef(adapterBase, interfaceTypeName), exprResult)
 					}

@@ -123,7 +123,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			}
 		}
 
-		typeName := convertToCSFullTypeName(typeNamePrefix + v.getFullTypeName(typeSpecType, false))
+		typeName := convertToCSFullTypeName(typeNamePrefix + v.getFullyQualifiedTypeName(typeSpecType, false))
 
 		// The empty interface target (`type X any` / `type X = any` / `type X interface{}`) renders
 		// as `go.any`, which does not resolve in a using-alias RHS (any is a csproj-level alias, and
@@ -222,7 +222,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 		// writing the bare selector text alone is an orphan type reference (CS1585). Use the named
 		// type, not its underlying (which may expose unexported cross-package fields → CS0246).
 		if rhsType := v.info.TypeOf(typeSpecType); rhsType != nil {
-			csName := convertToCSTypeName(v.getFullTypeName(rhsType, false))
+			csName := convertToCSTypeName(v.getFullyQualifiedTypeName(rhsType, false))
 
 			// The GoType attribute is consumed by the generated `<X>.g.cs`, which has no file-local
 			// `using` aliases. unsafe.Pointer (a *types.Basic, a C# keyword) renders via the

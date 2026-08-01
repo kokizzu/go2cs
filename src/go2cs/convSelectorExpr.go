@@ -661,7 +661,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 	// method the RecvGenerator's ж-overload matches the delegate exactly, and a direct-ж method's
 	// primary form does. FuncPCABIInternal-style `any` parameters then take a real delegate.
 	if sel, ok := v.info.Selections[selectorExpr]; ok && sel.Kind() == types.MethodExpr {
-		delegateType := convertToCSTypeName(v.getCSTypeName(v.info.TypeOf(selectorExpr)))
+		delegateType := convertToCSTypeName(v.getCSharpTypeName(v.info.TypeOf(selectorExpr)))
 		methodName := v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))
 
 		// A FOREIGN-package type's method expression — `(*http.Request).Write` (net/http/httputil
@@ -670,7 +670,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 		// (and its RecvGenerator ж-overload) lives in the DEFINING package's class, so the bare name
 		// is CS0103 (a `using static` exposes an extension method only for `recv.M()` invocation, not
 		// as a bare method group; a same-named local method would instead mis-bind, CS0123). Derive
-		// the qualifier from the method's OWN package via go/types — identical to how getTypeName
+		// the qualifier from the method's OWN package via go/types — identical to how getAliasQualifiedTypeName
 		// qualifies the receiver type inside the delegate (`bufio.Reader`) — rather than peeling the
 		// Go source spelling: a dot-imported type is a BARE ident (`Reader`), not a `pkg.Type`
 		// selector, so the source-peel misses it and drops the qualifier.
@@ -721,7 +721,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 						if ptr, ok := v.info.TypeOf(indexExpr.X).(*types.Pointer); ok {
 							if named, ok := types.Unalias(ptr.Elem()).(*types.Named); ok {
 								if arrayType, ok := named.Underlying().(*types.Array); ok {
-									elemTypeName := convertToCSTypeName(v.getDisplayTypeName(arrayType.Elem()))
+									elemTypeName := convertToCSTypeName(v.getScopeCheckedTypeName(arrayType.Elem()))
 
 									return fmt.Sprintf("%s.at<%s>(%s).%s",
 										v.convExpr(indexExpr.X, nil), elemTypeName,
@@ -838,7 +838,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 					}
 
 					name := fmt.Sprintf("p%d", i+1)
-					paramDecls.WriteString(fmt.Sprintf("%s %s", convertToCSTypeName(v.getTypeName(sig.Params().At(i).Type(), false)), name))
+					paramDecls.WriteString(fmt.Sprintf("%s %s", convertToCSTypeName(v.getAliasQualifiedTypeName(sig.Params().At(i).Type(), false)), name))
 					paramUses.WriteString(name)
 				}
 
@@ -897,7 +897,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 						}
 
 						name := fmt.Sprintf("p%d", i+1)
-						paramDecls.WriteString(fmt.Sprintf("%s %s", convertToCSTypeName(v.getTypeName(sig.Params().At(i).Type(), false)), name))
+						paramDecls.WriteString(fmt.Sprintf("%s %s", convertToCSTypeName(v.getAliasQualifiedTypeName(sig.Params().At(i).Type(), false)), name))
 						paramUses.WriteString(name)
 					}
 
@@ -1321,7 +1321,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 							}
 
 							for k := 1; k < len(hopFields); k++ {
-								ownerTypeName := convertToCSTypeName(v.getTypeName(hopFields[k-1].Type(), false))
+								ownerTypeName := convertToCSTypeName(v.getAliasQualifiedTypeName(hopFields[k-1].Type(), false))
 								fieldAddr = fmt.Sprintf("%s.of(%s.%s%s)", fieldAddr, v.boxAccessorType(ownerTypeName, ""),
 									AddressPrefix, v.structFieldBoxName(&ast.Ident{Name: hopFields[k].Name()}, selectorExpr.X))
 							}

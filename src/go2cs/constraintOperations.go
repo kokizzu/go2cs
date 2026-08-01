@@ -921,7 +921,7 @@ func (v *Visitor) renderedTypeArgs(funIdent *ast.Ident, typeArgs *types.TypeList
 			}
 		}
 
-		names = append(names, v.getCSTypeName(typeArgs.At(i)))
+		names = append(names, v.getCSharpTypeName(typeArgs.At(i)))
 	}
 
 	return names
@@ -1041,20 +1041,20 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 
 		// A single non-tilde pointer term (`[P *T]`) has a singleton type set — P is
 		// definitionally *T — so P is erased: dropped from the emitted `<...>` list and `where`
-		// clauses, rendering inline as `ж<T>` everywhere it appears (see the getTypeName arm and
+		// clauses, rendering inline as `ж<T>` everywhere it appears (see the getAliasQualifiedTypeName arm and
 		// pointerCoreConstraint). A breadcrumb comment keeps the Go constraint visible. Declined
 		// pointer-core shapes (approximate `~*T`, unions, generic named types) warn instead of
 		// silently mis-emitting the operator-lift fallback.
 		if pointer, ok := pointerCoreConstraint(typeParam); ok {
 			if eraseAllowed {
 				erasedParams[i] = true
-				csForm := fmt.Sprintf("%s<%s>", PointerPrefix, convertToCSTypeName(v.getTypeName(pointer.Elem(), false)))
+				csForm := fmt.Sprintf("%s<%s>", PointerPrefix, convertToCSTypeName(v.getAliasQualifiedTypeName(pointer.Elem(), false)))
 				constraintNames = append(constraintNames, fmt.Sprintf("%s%s    /* where %s : %s (erased: %s renders as %s) */",
-					v.newline, v.indent(v.indentLevel), typeParamNames[i], v.getTypeName(pointer, false), typeParamNames[i], csForm))
+					v.newline, v.indent(v.indentLevel), typeParamNames[i], v.getAliasQualifiedTypeName(pointer, false), typeParamNames[i], csForm))
 				continue
 			}
 
-			v.showWarning("@getGenericDefinition - pointer-core constraint `%s` on generic type `%s` is not erased (no stdlib precedent); emission may not compile", v.getTypeName(pointer, false), srcType.String())
+			v.showWarning("@getGenericDefinition - pointer-core constraint `%s` on generic type `%s` is not erased (no stdlib precedent); emission may not compile", v.getAliasQualifiedTypeName(pointer, false), srcType.String())
 		} else if constraintHasPointerTerm(typeParam) {
 			v.showWarning("@getGenericDefinition - approximate/union/method-carrying pointer constraint `%s` on `%s` is not erased; emission may not compile", typeParam.Constraint().String(), srcType.String())
 		}
@@ -1066,7 +1066,7 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 		if _, ok := constraint.(*types.Interface); ok {
 			constraintName = constraint.String()
 		} else {
-			constraintName = v.getTypeName(constraint, false)
+			constraintName = v.getAliasQualifiedTypeName(constraint, false)
 		}
 
 		if len(constraintName) == 0 || constraintName == "any" || constraintName == "interface{}" {
@@ -1125,7 +1125,7 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 					// comparable operator set would otherwise lift IEqualityOperators<T, T, bool>,
 					// which the wrapper cannot satisfy and which exposes no array surface (CS0315,
 					// plus CS0021/CS1579/CS8130 on the body's `t[i]`/`range t`/deconstruction).
-					elemType := convertToCSTypeName(v.getTypeName(arrayElem, false))
+					elemType := convertToCSTypeName(v.getAliasQualifiedTypeName(arrayElem, false))
 					typeConstraint = fmt.Sprintf("IArray<%s>", elemType)
 					suppressLiftedConstraints = true
 				} else if strings.HasPrefix(constraintExpr, "map[") {
@@ -1324,15 +1324,15 @@ func (v *Visitor) constraintProxyArg(named *types.Named, i int) (string, bool) {
 	// `crypto.@internal.nistec_package.P224Point`, resolving the slash path); a SAME-PACKAGE
 	// element stays BARE (convertToCSFullTypeName would root-qualify it to the wrong `go.p224`,
 	// exactly as it would the local interface name below).
-	elementFullName := v.getFullTypeName(elemNamed, false)
+	elementFullName := v.getFullyQualifiedTypeName(elemNamed, false)
 
 	if elemNamed.Obj().Pkg() != v.pkg {
 		elementFullName = convertToCSFullTypeName(elementFullName)
 	}
 
-	interfaceFullName := v.getFullTypeName(interfaceOrigin, false)
+	interfaceFullName := v.getFullyQualifiedTypeName(interfaceOrigin, false)
 
-	// Strip the type-parameter DECLARATION only — getFullTypeName already yields the interface's
+	// Strip the type-parameter DECLARATION only — getFullyQualifiedTypeName already yields the interface's
 	// C# reference form (bare `nistPoint` for a local interface, `pkg_package.Iface` cross-package),
 	// so it must NOT go through convertToCSFullTypeName (which would root-qualify the bare local name
 	// to the wrong `go.nistPoint`). qualifyLocalTypeRef handles final qualification at emission.

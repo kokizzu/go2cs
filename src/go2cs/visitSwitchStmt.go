@@ -435,10 +435,10 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 					case *ast.Ident, *ast.SelectorExpr, *ast.CallExpr:
 					default:
 						if tv, ok := v.info.Types[expr]; ok && tv.Value != nil {
-							// getCSTypeName resolves lazily HERE — resolving it at switch entry
+							// getCSharpTypeName resolves lazily HERE — resolving it at switch entry
 							// registers a file-local import alias for a cross-package tag type
 							// even when no label ever needs the cast (an unused using).
-							labelExpr = "(" + v.getCSTypeName(tagNamedType) + ")(" + labelExpr + ")"
+							labelExpr = "(" + v.getCSharpTypeName(tagNamedType) + ")(" + labelExpr + ")"
 						}
 					}
 				}
@@ -461,7 +461,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 			if v.options.preferVarDecl {
 				v.writeOutput("var ")
 			} else {
-				exprType := convertToCSTypeName(v.getExprTypeName(tag, false))
+				exprType := convertToCSTypeName(v.getExpressionTypeName(tag, false))
 				v.outputBuilder.WriteString(exprType)
 				v.outputBuilder.WriteRune(' ')
 			}

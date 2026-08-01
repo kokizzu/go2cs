@@ -177,7 +177,7 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 						componentTypes := make([]string, tuple.Len())
 
 						for ti := range tuple.Len() {
-							componentTypes[ti] = v.getCSTypeName(tuple.At(ti).Type())
+							componentTypes[ti] = v.getCSharpTypeName(tuple.At(ti).Type())
 							tempNames[ti] = fmt.Sprintf("%s.Item%d", tempName, ti+1)
 						}
 
@@ -388,7 +388,7 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 						// default (see performUntypedConstAnalysis).
 						if _, tightened := v.tightenedConsts[constObj]; !tightened {
 							if basic, ok := constObj.Type().(*types.Basic); ok && basic.Info()&types.IsUntyped != 0 {
-								wrapped := fmt.Sprintf("(%s)%s", v.getCSTypeName(types.Default(basic).(*types.Basic)), arg.String())
+								wrapped := fmt.Sprintf("(%s)%s", v.getCSharpTypeName(types.Default(basic).(*types.Basic)), arg.String())
 								arg.Reset()
 								arg.WriteString(wrapped)
 							}

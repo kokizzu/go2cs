@@ -27,7 +27,7 @@ func (v *Visitor) visitIdent(ident *ast.Ident, identType types.Type, name string
 
 	if named, ok := resolvedIdentType.(*types.Named); ok {
 		if _, isBasic := underlyingIdentType.(*types.Basic); !isBasic {
-			goTypeName = v.getFullTypeName(named, false)
+			goTypeName = v.getFullyQualifiedTypeName(named, false)
 		}
 	}
 

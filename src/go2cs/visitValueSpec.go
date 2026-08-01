@@ -207,7 +207,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						}
 
 						v.importQueue.Add(pkgPath)
-						csTypeName := convertToCSTypeName(v.getTypeName(def.Type(), false))
+						csTypeName := convertToCSTypeName(v.getAliasQualifiedTypeName(def.Type(), false))
 						v.writeOutput("%s static %s %s { get => %s; set => %s = value; }", getAccess(goIDName), csTypeName, csIDName, ref, ref)
 						continue
 					}
@@ -228,30 +228,30 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						v.visitInterfaceType(subInterfaceType, exprType, csIDName, valueSpec.Comment, true, nil)
 					}
 
-					goTypeName := v.getTypeName(def.Type(), false)
+					goTypeName := v.getAliasQualifiedTypeName(def.Type(), false)
 					csTypeName := convertToCSTypeName(goTypeName)
 
 					// An ANONYMOUS func-typed var — or a methodless NAMED func type, which the
 					// converter collapses to (and renders everywhere as) its base delegate
 					// (methodlessNamedFuncSignature, its own declaration skipped) — renders through
 					// the signature-aware path (Func<…>/Action<…> via iifeDelegateType). The raw
-					// getTypeName text mangles under convertToCSTypeName: an anonymous
+					// getAliasQualifiedTypeName text mangles under convertToCSTypeName: an anonymous
 					// `func(string, string) ([]byte, error)` collapses to `(<>byte, error)` (time
 					// zoneinfo_read's loadTzinfoFromTzdata, CS1003), and a methodless named func type
 					// whose signature carries a slash-bearing cross-package element — go/parser's
 					// `var f parseSpecFunction` (`func(*go/ast.CommentGroup, go/token.Token, int)
 					// ast.Spec`) — mangles those elements to the nonexistent `go.go.ast.CommentGroup`/
 					// `go.go.token.Token` (CS0234), while its matching parameter and assigned-lambda
-					// sites render structurally through getCSTypeName. getCSTypeName routes both forms
+					// sites render structurally through getCSharpTypeName. getCSharpTypeName routes both forms
 					// through iifeDelegateType, whose aliasedElementTypeName keeps each element's
-					// `pkg.Type` alias. This precedence matches getCSTypeName's own (a func render wins
+					// `pkg.Type` alias. This precedence matches getCSharpTypeName's own (a func render wins
 					// over the foreign-alias route below, whose alias would point at the SKIPPED
 					// methodless-func declaration). A NAMED func type WITH methods keeps its delegate name.
 					_, isSig := types.Unalias(def.Type()).(*types.Signature)
 					_, isMethodlessFunc := methodlessNamedFuncSignature(def.Type())
 
 					if isSig || isMethodlessFunc {
-						csTypeName = v.getCSTypeName(def.Type())
+						csTypeName = v.getCSharpTypeName(def.Type())
 					} else if aliased, ok := v.foreignAliasedTypeName(def.Type()); ok {
 						// A local declared as a foreign RENAMED type routes through the recorded
 						// alias (`syscallꓸSockaddr sa`, not the nonexistent `Δsyscall.Sockaddr` —
@@ -404,8 +404,8 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 							// slice/array ELEMENT, a map VALUE (crypto/internal/hpke's `var SupportedKEMs =
 							// map[uint16]struct{…}{…}`), or either of those through a pointer (net's `var
 							// ipStringTests = []*struct{…}{…}`). Lifting it up front under the var's name is
-							// what lets both the declaration type (getCSTypeName → getTypeName) and the literal
-							// type (convMapType/getExprTypeName) resolve through liftedTypeMap to the lifted
+							// what lets both the declaration type (getCSharpTypeName → getAliasQualifiedTypeName) and the literal
+							// type (convMapType/getExpressionTypeName) resolve through liftedTypeMap to the lifted
 							// name; without it the raw Go `struct{…}` syntax lands in the C# type and does not
 							// parse. Keyed element literals stay the target-typed `new(…)` ctor form.
 							if subStructType, exprType := v.extractStructType(compositeLit.Type); subStructType != nil && !v.liftedTypeExists(subStructType) {
@@ -447,7 +447,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						// composite literal over an anonymous struct (`var sects = []struct{…}{…}`)
 						// lifts the struct type during value conversion, so the declaration
 						// resolves to the lifted name instead of raw `struct{…}` Go syntax.
-						csTypeName = v.getCSTypeName(def.Type())
+						csTypeName = v.getCSharpTypeName(def.Type())
 						typeLenDeviation = token.Pos(len(csTypeName) + (len(csIDName) - len(goIDName)))
 
 						// A narrow-integer arithmetic initializer (`var x uint8 = a + b`) needs the
@@ -474,7 +474,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 							v.writeOutput("%s %s = %s;", csTypeName, csIDName, valExpr)
 						}
 					} else {
-						csTypeName = v.getCSTypeName(def.Type())
+						csTypeName = v.getCSharpTypeName(def.Type())
 
 						access := packageVarAccess(goIDName, v.getIdentType(ident))
 						typeLenDeviation = token.Pos(len(csTypeName)+(len(csIDName)-len(goIDName))) - token.Pos(len(access)+9)
@@ -550,9 +550,9 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				// arm otherwise retypes the var from the VALUE (os's `var Kill Signal =
 				// syscall.SIGKILL` emitted syscall's ΔSignal where the os.Signal INTERFACE was
 				// declared — CS1503 at every Signal-typed use).
-				csTypeName = convertToCSTypeName(v.getTypeName(v.info.TypeOf(valueSpec.Type), false))
+				csTypeName = convertToCSTypeName(v.getAliasQualifiedTypeName(v.info.TypeOf(valueSpec.Type), false))
 			} else {
-				csTypeName = convertToCSTypeName(v.getTypeName(tv.Type, false))
+				csTypeName = convertToCSTypeName(v.getAliasQualifiedTypeName(tv.Type, false))
 			}
 
 			goValue := tv.Value.ExactString()
@@ -571,7 +571,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						// UntypedInt -> error CS0029).
 						if named, ok := types.Unalias(tv.Type).(*types.Named); ok {
 							if _, isBasic := named.Underlying().(*types.Basic); isBasic {
-								namedCS := v.getCSTypeName(named)
+								namedCS := v.getCSharpTypeName(named)
 
 								// Skip when the render already leads with its own cast
 								// (`((errorString)(@string)"..."u8)` needs no second wrap).
@@ -675,7 +675,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				declType = tightenedType
 			}
 
-			goTypeName := v.getTypeName(declType, false)
+			goTypeName := v.getAliasQualifiedTypeName(declType, false)
 			csTypeName := convertToCSTypeName(goTypeName)
 			access := getAccess(goIDName)
 			typeLenDeviation := token.Pos(len(csTypeName) + len(access) + (len(csIDName) - len(goIDName)))
@@ -996,7 +996,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						if named, ok := types.Unalias(c.Type()).(*types.Named); ok {
 							if rhs, okRHS := packageTypeSpecRHS[named.Obj()]; okRHS && rhs != nil {
 								if rhsNamed, ok := types.Unalias(rhs).(*types.Named); ok && rhsNamed.Obj().Pkg() != named.Obj().Pkg() {
-									baseHop = fmt.Sprintf("(%s)", v.getCSTypeName(rhsNamed))
+									baseHop = fmt.Sprintf("(%s)", v.getCSharpTypeName(rhsNamed))
 								}
 							}
 						}
@@ -1126,7 +1126,7 @@ func (v *Visitor) visitPackageTupleVarSpec(valueSpec *ast.ValueSpec, tuple *type
 		componentTypes := make([]string, tuple.Len())
 
 		for i := range tuple.Len() {
-			componentTypes[i] = v.getCSTypeName(tuple.At(i).Type())
+			componentTypes[i] = v.getCSharpTypeName(tuple.At(i).Type())
 		}
 
 		v.writeOutput("internal static (%s) %s = %s;", strings.Join(componentTypes, ", "), tempName, callExpr)
@@ -1148,7 +1148,7 @@ func (v *Visitor) visitPackageTupleVarSpec(valueSpec *ast.ValueSpec, tuple *type
 		}
 
 		firstLine = false
-		csTypeName := v.getCSTypeName(tuple.At(i).Type())
+		csTypeName := v.getCSharpTypeName(tuple.At(i).Type())
 		access := getAccess(goIDName)
 
 		// An ALL-BLANK spec (`var _, _ = f()`) must still evaluate the call once for its side

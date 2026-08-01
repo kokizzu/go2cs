@@ -11,5 +11,5 @@ import (
 )
 
 func (v *Visitor) convChanType(chanType *ast.ChanType) string {
-	return convertToCSTypeName(v.getExprTypeName(chanType, false))
+	return convertToCSTypeName(v.getExpressionTypeName(chanType, false))
 }

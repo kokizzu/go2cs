@@ -185,7 +185,7 @@ type Visitor struct {
 	// so the caller need not import it — e.g. `fd := funcdata(...)`, funcdata returns unsafe.Pointer),
 	// a BLANK import (`_ "pkg"`, whose C# alias is `_`), or an alias that differs from the canonical
 	// name — and then the reference fails to resolve (CS0246). referencedForeignPackages collects the
-	// import paths whose types getTypeName emits; canonicalAliasImported records the paths whose
+	// import paths whose types getAliasQualifiedTypeName emits; canonicalAliasImported records the paths whose
 	// canonical alias a file import already emitted. visitFile supplies the alias for the difference.
 	referencedForeignPackages HashSet[string]
 	canonicalAliasImported    HashSet[string]
@@ -206,7 +206,7 @@ type Visitor struct {
 	importAliasTargets map[string]string
 
 	// importPathAliases maps a Go import PATH to the C# alias THIS FILE bound for it, for the
-	// EXPLICITLY-ALIASED imports only. getTypeName consults it so a foreign type renders via the
+	// EXPLICITLY-ALIASED imports only. getAliasQualifiedTypeName consults it so a foreign type renders via the
 	// file's ACTUAL alias, not the canonical package name: cryptobyte's asn1.go imports
 	// `encoding/asn1` under the NON-canonical alias `encoding_asn1` (the vendored
 	// `.../cryptobyte/asn1` subpackage claims the canonical `asn1`), so a `*asn1.BitString` type

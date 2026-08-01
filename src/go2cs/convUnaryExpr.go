@@ -225,7 +225,7 @@ func (v *Visitor) lambdaBoxRefAddressForm(unaryExpr *ast.UnaryExpr) (string, boo
 				return "", false
 			}
 
-			typeName = convertToCSTypeName(v.getTypeName(t.Elem(), false))
+			typeName = convertToCSTypeName(v.getAliasQualifiedTypeName(t.Elem(), false))
 		default:
 			return "", false
 		}
@@ -313,7 +313,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 					}
 
 					if _, ok := recvType.(*types.Named); ok {
-						fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(convertToCSTypeName(v.getTypeName(recvType, false)), ""), AddressPrefix, v.structFieldBoxName(selectorExpr.Sel, selectorExpr.X))
+						fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(convertToCSTypeName(v.getAliasQualifiedTypeName(recvType, false)), ""), AddressPrefix, v.structFieldBoxName(selectorExpr.Sel, selectorExpr.X))
 
 						// Direct-ж: the receiver box is the parameter `Ꮡx` (see
 						// packageDirectBoxReceiverMethods), so field-ref through it directly. No
@@ -389,7 +389,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 							structExpr = AddressPrefix + v.boxBaseName(baseIdent)
 						}
 
-						typeName := convertToCSTypeName(v.getTypeName(ptrType.Elem(), false))
+						typeName := convertToCSTypeName(v.getAliasQualifiedTypeName(ptrType.Elem(), false))
 						fieldRef := fmt.Sprintf("%s.%s%s", v.boxAccessorType(typeName, structExpr), AddressPrefix, v.structFieldBoxName(selectorExpr.Sel, selectorExpr.X))
 						return fmt.Sprintf("%s.of(%s)", structExpr, fieldRef)
 					}
@@ -495,7 +495,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 			// `*[]E` for indexing; it is written `(*t)[i]`, a StarExpr the slice branch handles).
 			if ptr, isPtr := exprType.(*types.Pointer); isPtr {
 				if arrayType, isArray := ptr.Elem().Underlying().(*types.Array); isArray {
-					elemCSType := convertToCSTypeName(v.getDisplayTypeName(arrayType.Elem()))
+					elemCSType := convertToCSTypeName(v.getScopeCheckedTypeName(arrayType.Elem()))
 					// Render the base in POINTER context so it yields the `ж<[N]E>` BOX (`Ꮡtab` for a
 					// deref-aliased pointer PARAMETER, or the box-valued LOCAL `t` from `@new`), not the
 					// deref value alias `tab` (a bare `[N]E` value has no `at`, CS1061).
@@ -543,7 +543,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 				return fmt.Sprintf("%s(%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.castWideIntegerToInt(indexExpr.Index))
 			}
 
-			typeName := v.getTypeName(exprType, false)
+			typeName := v.getAliasQualifiedTypeName(exprType, false)
 
 			if strings.HasPrefix(typeName, "[") {
 				// Same object-identity rule the slice branch above applies, for the same reason:
@@ -586,14 +586,14 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 					// atomic_package.Pointer<…>>` resolves inside `namespace go;` without a `using
 					// <pkg>` alias, which the calling file may not import (a Go file can index an
 					// atomic-typed array field of a struct without ever naming the element type → no
-					// `using atomic` → CS0246). getDisplayTypeName makes that choice per cross-package
+					// `using atomic` → CS0246). getScopeCheckedTypeName makes that choice per cross-package
 					// type. A current-package or basic element renders identically (no churn).
-					goFullTypeName := v.getDisplayTypeName(exprType)
+					goFullTypeName := v.getScopeCheckedTypeName(exprType)
 					csTypeName := convertToCSTypeName(goFullTypeName[strings.Index(goFullTypeName, "]")+1:])
 
 					// An ANONYMOUS-struct element is lifted to a synthesized name keyed by the element
 					// EXPRESSION (e.g. `mheap.central[i]` → `mheap_central`), which neither the
-					// array-type-name string-parse nor getCSTypeName(type) recovers — a complex element
+					// array-type-name string-parse nor getCSharpTypeName(type) recovers — a complex element
 					// (e.g. a `pad [const]byte` field) renders as a raw/malformed `struct{…}` (invalid
 					// C# → masking parse error). Resolve it through dynamicStructTypeName(indexExpr),
 					// the same per-expression registry the `.of(…)` field path uses.
@@ -831,7 +831,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 		if tv, ok := v.info.Types[unaryExpr.X]; ok && tv.Value != nil {
 			if named, ok := types.Unalias(tv.Type).(*types.Named); ok {
 				if _, isBasic := named.Underlying().(*types.Basic); isBasic {
-					return fmt.Sprintf("~((%s)%s)", v.getCSTypeName(named), operand)
+					return fmt.Sprintf("~((%s)%s)", v.getCSharpTypeName(named), operand)
 				}
 			}
 		}
@@ -860,10 +860,10 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 				// A variable operand needs nothing: C#'s default context is already unchecked, and
 				// the extra keyword would only add noise at flate's `^uint16(length)` sites.
 				if tv, ok := v.info.Types[unaryExpr.X]; ok && tv.Value != nil {
-					return fmt.Sprintf("unchecked((%s)(~%s))", convertToCSTypeName(v.getTypeName(basic, false)), operand)
+					return fmt.Sprintf("unchecked((%s)(~%s))", convertToCSTypeName(v.getAliasQualifiedTypeName(basic, false)), operand)
 				}
 
-				return fmt.Sprintf("((%s)(~%s))", convertToCSTypeName(v.getTypeName(basic, false)), operand)
+				return fmt.Sprintf("((%s)(~%s))", convertToCSTypeName(v.getAliasQualifiedTypeName(basic, false)), operand)
 			}
 		}
 
@@ -936,7 +936,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 		// unsigned value is two's-complement negation that wraps mod 2^N (e.g. the
 		// `x & -x` lowest-set-bit idiom in math/bits). `(T)0 - x` has identical
 		// wrap-around semantics and keeps the unsigned type T.
-		typeName := convertToCSTypeName(v.getTypeName(v.getType(unaryExpr.X, false), false))
+		typeName := convertToCSTypeName(v.getAliasQualifiedTypeName(v.getType(unaryExpr.X, false), false))
 		return fmt.Sprintf("((%s)0 - %s)", typeName, v.convExpr(unaryExpr.X, nil))
 	}
 
@@ -948,7 +948,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 		// `Value` interface). Emit `(T)(!(bool)y)` — cast to the underlying `bool`, negate, then
 		// cast back to T — which preserves the named type so the result still satisfies the
 		// interface. A plain `bool` operand keeps the bare `!x` form below (no golden churn).
-		typeName := convertToCSTypeName(v.getTypeName(v.getType(unaryExpr.X, false), false))
+		typeName := convertToCSTypeName(v.getAliasQualifiedTypeName(v.getType(unaryExpr.X, false), false))
 		return fmt.Sprintf("((%s)(!(bool)%s))", typeName, v.convExpr(unaryExpr.X, nil))
 	}
 

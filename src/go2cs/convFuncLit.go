@@ -332,7 +332,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 				if v.options.preferVarDecl {
 					prologue.WriteString(fmt.Sprintf("%s%sref var %s = ref heap(%s, out var %s%s);", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(renderedName), incomingName, AddressPrefix, renderedName))
 				} else {
-					csTypeName := v.getCSTypeName(v.getIdentType(ident))
+					csTypeName := v.getCSharpTypeName(v.getIdentType(ident))
 					prologue.WriteString(fmt.Sprintf("%s%sref %s %s = ref heap(%s, out %s<%s> %s%s);", v.newline, v.indent(v.indentLevel+1), csTypeName, getSanitizedIdentifier(renderedName), incomingName, PointerPrefix, csTypeName, AddressPrefix, renderedName))
 				}
 			}
@@ -402,7 +402,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 			if v.options.preferVarDecl {
 				prologue = fmt.Sprintf("%s%svar %s = %s.%s();", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
 			} else {
-				prologue = fmt.Sprintf("%s%s%s<%s> %s = %s.%s();", v.newline, v.indent(v.indentLevel+1), sliceType, v.getCSTypeName(param.Type().(*types.Slice).Elem()), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
+				prologue = fmt.Sprintf("%s%s%s<%s> %s = %s.%s();", v.newline, v.indent(v.indentLevel+1), sliceType, v.getCSharpTypeName(param.Type().(*types.Slice).Elem()), getSanitizedIdentifier(param.Name()), getVariadicParamName(param), sliceMethod)
 			}
 
 			body = "{" + prologue + strings.TrimPrefix(trimmedBody, "{")
@@ -534,7 +534,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 			// argument to exactly Go's, which is right for every arm shape, so no arm inspection
 			// is needed (unlike the natural-inference cases below).
 			if results.Len() == 1 {
-				returnTypePrefix = convertToCSTypeName(v.getTypeName(results.At(0).Type(), false)) + " "
+				returnTypePrefix = convertToCSTypeName(v.getAliasQualifiedTypeName(results.At(0).Type(), false)) + " "
 			} else {
 				returnTypePrefix = v.generateResultSignature(litSig) + " "
 			}
@@ -548,9 +548,9 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 				// to one Func<nint, int>, so quick.CheckEqual saw equal types where Go's differ
 				// (TestFailure #3). State the declared Go result type explicitly. (Multi-result
 				// literals in `any` slots keep natural tuple typing — no demonstrated consumer.)
-				returnTypePrefix = convertToCSTypeName(v.getTypeName(results.At(0).Type(), false)) + " "
+				returnTypePrefix = convertToCSTypeName(v.getAliasQualifiedTypeName(results.At(0).Type(), false)) + " "
 			} else if basic, ok := results.At(0).Type().(*types.Basic); ok && basic.Kind() == types.UnsafePointer {
-				returnTypePrefix = convertToCSTypeName(v.getTypeName(results.At(0).Type(), false)) + " "
+				returnTypePrefix = convertToCSTypeName(v.getAliasQualifiedTypeName(results.At(0).Type(), false)) + " "
 			} else if declaredIsIface, isEmpty := isInterface(results.At(0).Type()); declaredIsIface && !isEmpty {
 				// An INTERFACE-returning literal whose arms return DISTINCT concrete types —
 				// net ipsock.go's `inetaddr := func(ip IPAddr) Addr` returns TCPAddrжΔAddr /
@@ -603,7 +603,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 				})
 
 				if len(armTypes) > 1 || (context.isAssignment && hasSingleReturn && allArmsUntypedNil) {
-					returnTypePrefix = convertToCSTypeName(v.getTypeName(results.At(0).Type(), false)) + " "
+					returnTypePrefix = convertToCSTypeName(v.getAliasQualifiedTypeName(results.At(0).Type(), false)) + " "
 				}
 			} else if context.isAssignment {
 				// A STRING-returning literal in natural-inference position (`pick := func(v any)
@@ -622,7 +622,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 				// identity-match constraint against stub delegate types.
 				if basic, ok := types.Unalias(results.At(0).Type()).(*types.Basic); ok {
 					if basic.Kind() == types.String {
-						returnTypePrefix = convertToCSTypeName(v.getTypeName(results.At(0).Type(), false)) + " "
+						returnTypePrefix = convertToCSTypeName(v.getAliasQualifiedTypeName(results.At(0).Type(), false)) + " "
 					} else if basic.Info()&types.IsNumeric != 0 && v.funcLitReturnsUntypedNamedConst(funcLit) {
 						// A NUMERIC-result literal in natural-inference position with a NAMED
 						// untyped-constant return arm — `maxRune := func(rune) rune { return
@@ -638,7 +638,7 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 						// lambdaConstReturnCastType's named-type rationale); literal-only arm
 						// sets (`return 'a'`, `return -1`) keep inferred typing — those render at
 						// concrete C# types already (no churn).
-						returnTypePrefix = convertToCSTypeName(v.getTypeName(results.At(0).Type(), false)) + " "
+						returnTypePrefix = convertToCSTypeName(v.getAliasQualifiedTypeName(results.At(0).Type(), false)) + " "
 					}
 				}
 			}

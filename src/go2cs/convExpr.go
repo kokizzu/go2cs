@@ -438,7 +438,7 @@ func (v *Visitor) convExpr(expr ast.Expr, contexts []ExprContext) string {
 	case *ast.FuncType:
 		// A func TYPE in expression position — the target of a conversion like
 		// `(func())(nil)` (reflect FuncOf's prototype) — renders as its C# delegate type name.
-		return convertToCSTypeName(v.getExprTypeName(exprType, false))
+		return convertToCSTypeName(v.getExpressionTypeName(exprType, false))
 	case *ast.Ident:
 		context := getExprContext[IdentContext](contexts)
 		rendered := v.convIdent(exprType, context)

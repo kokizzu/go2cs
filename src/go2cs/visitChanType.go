@@ -20,7 +20,7 @@ func (v *Visitor) visitChanType(chanType *ast.ChanType, identType types.Type, na
 	// select surface). The old stub emitted only a comment, leaving the type undeclared
 	// (CS0246). The descriptor is direction-agnostic: golib's `channel<T>` does not model
 	// `<-chan`/`chan<-` restrictions, so a directional named type wraps the same surface.
-	elemType := convertToCSTypeName(v.getTypeName(v.info.TypeOf(chanType.Value), false))
+	elemType := convertToCSTypeName(v.getAliasQualifiedTypeName(v.info.TypeOf(chanType.Value), false))
 	access := v.pendingTypeAccess
 	v.pendingTypeAccess = ""
 
@@ -71,5 +71,5 @@ func (v *Visitor) namedChanElemTypeArg(expr ast.Expr) string {
 		return ""
 	}
 
-	return fmt.Sprintf("<%s>", convertToCSTypeName(v.getTypeName(chanType.Elem(), false)))
+	return fmt.Sprintf("<%s>", convertToCSTypeName(v.getAliasQualifiedTypeName(chanType.Elem(), false)))
 }

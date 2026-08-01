@@ -338,7 +338,7 @@ func (v *Visitor) sparseArrayKey(key ast.Expr, context KeyValueContext) string {
 					// int narrowing (reflect kindNames' ΔKind keys, num:nuint — CS0030 ×27).
 					switch basic.Kind() {
 					case types.Uintptr, types.Uint, types.Uint32, types.Uint64:
-						return fmt.Sprintf("(int)((%s)%s)", v.getCSTypeName(basic), keyExpr)
+						return fmt.Sprintf("(int)((%s)%s)", v.getCSharpTypeName(basic), keyExpr)
 					}
 
 					return fmt.Sprintf("(int)%s", keyExpr)

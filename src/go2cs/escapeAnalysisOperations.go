@@ -1679,7 +1679,7 @@ func (v *Visitor) convertToHeapTypeDecl(ident *ast.Ident, createNew bool) string
 		return ""
 	}
 
-	goTypeName := v.getDisplayTypeName(identType)
+	goTypeName := v.getScopeCheckedTypeName(identType)
 	csIDName := v.getIdentName(ident)
 
 	// If identifier is discarded, return empty string

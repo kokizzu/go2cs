@@ -199,7 +199,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// complex operands are rejected inside the helper.)
 		if targetBasic, ok := v.info.TypeOf(callExpr).(*types.Basic); ok &&
 			(targetBasic.Kind() == types.Float64 || targetBasic.Kind() == types.Float32) {
-			if folded := v.foldedNamedFloatConstLiteral(arg, v.getCSTypeName(targetBasic)); folded != "" {
+			if folded := v.foldedNamedFloatConstLiteral(arg, v.getCSharpTypeName(targetBasic)); folded != "" {
 				return folded
 			}
 		}
@@ -213,7 +213,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		if targetNamed, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Named); ok {
 			if targetBasic, ok := targetNamed.Underlying().(*types.Basic); ok &&
 				targetBasic.Info()&types.IsFloat != 0 && v.containsUntypedNamedConstRef(arg) {
-				underlyingCS := v.getCSTypeName(targetBasic)
+				underlyingCS := v.getCSharpTypeName(targetBasic)
 				targetCS := convertToCSTypeName(targetTypeName)
 				if aliased, ok := v.foreignAliasedTypeName(v.info.TypeOf(callExpr)); ok {
 					targetCS = aliased
@@ -322,13 +322,13 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 						return fmt.Sprintf("%s(%s.Value)", AddressPrefix, argExpr)
 					}
 
-					baseName := convertToCSTypeName(v.getTypeName(resultElem, false))
+					baseName := convertToCSTypeName(v.getAliasQualifiedTypeName(resultElem, false))
 
 					return fmt.Sprintf("%s((%s)(%s.Value))", AddressPrefix, baseName, argExpr)
 				}
 
 				if namedToNamed || namedToBasic || basicToNamed {
-					baseName := convertToCSTypeName(v.getTypeName(resultElem, false))
+					baseName := convertToCSTypeName(v.getAliasQualifiedTypeName(resultElem, false))
 					var argExpr string
 
 					if unary, ok := arg.(*ast.UnaryExpr); ok && unary.Op == token.AND && basicToNamed {
@@ -373,13 +373,13 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// A NAMED-over-array target falls through unchanged (none in the corpus).
 		if _, argIsSlice := v.getType(arg, false).Underlying().(*types.Slice); argIsSlice {
 			if resultArr, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Array); ok {
-				elemName := convertToCSTypeName(v.getTypeName(resultArr.Elem(), false))
+				elemName := convertToCSTypeName(v.getAliasQualifiedTypeName(resultArr.Elem(), false))
 				return fmt.Sprintf("new array<%s>(%s, %d)", elemName, v.convExpr(arg, nil), resultArr.Len())
 			}
 
 			if resultPtr, ok := v.info.TypeOf(callExpr).(*types.Pointer); ok {
 				if resultArr, ok := types.Unalias(resultPtr.Elem()).(*types.Array); ok {
-					elemName := convertToCSTypeName(v.getTypeName(resultArr.Elem(), false))
+					elemName := convertToCSTypeName(v.getAliasQualifiedTypeName(resultArr.Elem(), false))
 					return fmt.Sprintf("%s(array<%s>.Alias(%s, %d))", AddressPrefix, elemName, v.convExpr(arg, nil), resultArr.Len())
 				}
 			}
@@ -501,7 +501,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if ptrUnder, ok := named.Underlying().(*types.Pointer); ok {
 				if argType := v.info.TypeOf(arg); argType != nil {
 					if basic, ok := argType.Underlying().(*types.Basic); ok && (basic.Kind() == types.UnsafePointer || basic.Kind() == types.Uintptr) {
-						elemCS := convertToCSTypeName(v.getTypeName(ptrUnder.Elem(), false))
+						elemCS := convertToCSTypeName(v.getAliasQualifiedTypeName(ptrUnder.Elem(), false))
 						return fmt.Sprintf("((%s)(%s<%s>)(uintptr)(%s))", targetTypeName, PointerPrefix, elemCS, expr)
 					}
 				}
@@ -587,7 +587,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if argNamed, ok := types.Unalias(v.info.TypeOf(arg)).(*types.Named); ok {
 				if sliceType, ok := argNamed.Underlying().(*types.Slice); ok {
 					if basic, ok := sliceType.Elem().Underlying().(*types.Basic); ok && (basic.Kind() == types.Byte || basic.Kind() == types.Rune) {
-						return fmt.Sprintf("((@string)(%s)%s)", v.getCSTypeName(sliceType), expr)
+						return fmt.Sprintf("((@string)(%s)%s)", v.getCSharpTypeName(sliceType), expr)
 					}
 				}
 			}
@@ -600,7 +600,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// a bare type parameter).
 		if targetTP, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.TypeParam); ok && typeParamIsInteger(targetTP) {
 			if argTP, ok := types.Unalias(v.info.TypeOf(arg)).(*types.TypeParam); ok && typeParamIsInteger(argTP) {
-				return fmt.Sprintf("ConvertToType<%s>(ConvertToUInt64<%s>(%s))", targetTypeName, v.getCSTypeName(argTP), expr)
+				return fmt.Sprintf("ConvertToType<%s>(ConvertToUInt64<%s>(%s))", targetTypeName, v.getCSharpTypeName(argTP), expr)
 			}
 
 			return fmt.Sprintf("ConvertToType<%s>(%s)", targetTypeName, expr)
@@ -612,7 +612,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// numeric cast when the target is not uint64 itself.
 		if targetBasic, ok := v.info.TypeOf(callExpr).(*types.Basic); ok && targetBasic.Info()&types.IsInteger != 0 {
 			if argTP, ok := types.Unalias(v.info.TypeOf(arg)).(*types.TypeParam); ok && typeParamIsInteger(argTP) {
-				inner := fmt.Sprintf("ConvertToUInt64<%s>(%s)", v.getCSTypeName(argTP), expr)
+				inner := fmt.Sprintf("ConvertToUInt64<%s>(%s)", v.getCSharpTypeName(argTP), expr)
 
 				if targetBasic.Kind() == types.Uint64 {
 					return inner
@@ -654,7 +654,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				// wrapper's own operator applies: `((htmlSig)slice<byte>((@string)"…"u8))`.
 				if sliceType, ok := named.Underlying().(*types.Slice); ok {
 					if basic, ok := sliceType.Elem().Underlying().(*types.Basic); ok && (basic.Kind() == types.Byte || basic.Kind() == types.Rune) {
-						return fmt.Sprintf("((%s)%s((@string)%s))", targetTypeName, v.getCSTypeName(sliceType), expr)
+						return fmt.Sprintf("((%s)%s((@string)%s))", targetTypeName, v.getCSharpTypeName(sliceType), expr)
 					}
 				}
 			}
@@ -705,7 +705,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 									ptrExpr = v.convIdent(identArg, ptrContext)
 								}
 
-								namedCS := convertToCSTypeName(v.getTypeName(argNamed, false))
+								namedCS := convertToCSTypeName(v.getAliasQualifiedTypeName(argNamed, false))
 								return fmt.Sprintf("%s.of(%s.Ꮡm_value)", ptrExpr, namedCS)
 							}
 						}
@@ -728,7 +728,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					if argPtr, ok := types.Unalias(v.info.TypeOf(arg)).(*types.Pointer); ok {
 						if _, argElemIsNamed := types.Unalias(argPtr.Elem()).(*types.Named); !argElemIsNamed {
 							if argSlice, ok := argPtr.Elem().Underlying().(*types.Slice); ok && types.Identical(argSlice, targetNamed.Underlying()) {
-								namedCS := convertToCSTypeName(v.getTypeName(targetNamed, false))
+								namedCS := convertToCSTypeName(v.getAliasQualifiedTypeName(targetNamed, false))
 
 								var inner string
 
@@ -760,7 +760,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if sliceUnder, ok := named.Underlying().(*types.Slice); ok {
 				if argNamed, ok := types.Unalias(v.info.TypeOf(arg)).(*types.Named); ok && argNamed != named {
 					if _, argIsSlice := argNamed.Underlying().(*types.Slice); argIsSlice && types.Identical(argNamed.Underlying(), named.Underlying()) {
-						underlyingCS := convertToCSTypeName(v.getTypeName(sliceUnder, false))
+						underlyingCS := convertToCSTypeName(v.getAliasQualifiedTypeName(sliceUnder, false))
 						return fmt.Sprintf("((%s)(%s)(%s))", targetTypeName, underlyingCS, expr)
 					}
 				}
@@ -788,7 +788,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					// the named cast — the := declaration patch in visitAssignStmt covered
 					// only the direct-RHS position.
 					if tv, ok := v.info.Types[callExpr]; ok && tv.Value != nil {
-						namedCS := convertToCSTypeName(v.getTypeName(named, false))
+						namedCS := convertToCSTypeName(v.getAliasQualifiedTypeName(named, false))
 
 						if !strings.HasPrefix(expr, "(("+namedCS+")") && !strings.HasPrefix(expr, "("+namedCS+")") && !strings.HasPrefix(expr, "new ") {
 							if castOperandNeedsParens(namedCS, expr) {
@@ -844,7 +844,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 
 				if argType == nil || argIsDistinctNamedNumeric || !types.Identical(argType.Underlying(), basic) {
-					underlyingCS := v.getCSTypeName(basic)
+					underlyingCS := v.getCSharpTypeName(basic)
 					inner := expr
 
 					// When the arg is ITSELF a named numeric whose underlying differs from the target's
@@ -856,9 +856,9 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					if argNamed, ok := types.Unalias(argType).(*types.Named); ok {
 						if argBasic, ok := argNamed.Underlying().(*types.Basic); ok && argBasic.Info()&types.IsNumeric != 0 && !types.Identical(argBasic, basic) {
 							if v.needsParentheses(arg) {
-								inner = fmt.Sprintf("(%s)(%s)", v.getCSTypeName(argBasic), expr)
+								inner = fmt.Sprintf("(%s)(%s)", v.getCSharpTypeName(argBasic), expr)
 							} else {
-								inner = fmt.Sprintf("(%s)%s", v.getCSTypeName(argBasic), expr)
+								inner = fmt.Sprintf("(%s)%s", v.getCSharpTypeName(argBasic), expr)
 							}
 						}
 					}
@@ -887,7 +887,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if argNamed, ok := types.Unalias(v.info.TypeOf(arg)).(*types.Named); ok {
 				if argBasic, ok := argNamed.Underlying().(*types.Basic); ok && argBasic.Info()&types.IsNumeric != 0 {
 					if !types.Identical(argBasic, targetBasic) {
-						underlyingCS := v.getCSTypeName(argBasic)
+						underlyingCS := v.getCSharpTypeName(argBasic)
 
 						// No outer parentheses: the conversion target is a BASIC C# type, whose result
 						// can never be the receiver of a postfix `.`/`[]`/invocation (basic types expose
@@ -931,7 +931,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		if basicTarget != nil && basicTarget.Kind() == types.String {
 			if tvArg, ok := v.info.Types[arg]; ok && tvArg.Value != nil {
 				if argBasic, ok := tvArg.Type.(*types.Basic); ok && argBasic.Info()&types.IsUntyped != 0 && !v.isCSharpConstantExpr(arg) {
-					expr = fmt.Sprintf("(%s)%s", v.getCSTypeName(types.Default(argBasic).(*types.Basic)), expr)
+					expr = fmt.Sprintf("(%s)%s", v.getCSharpTypeName(types.Default(argBasic).(*types.Basic)), expr)
 				}
 			} else if argType := v.info.TypeOf(arg); argType != nil {
 				// A NAMED integer type (`type Delim rune`, encoding/json's `string(d)`) renders as a
@@ -940,7 +940,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				// implicit operator yields it first, then @string converts the code point.
 				if named, ok := types.Unalias(argType).(*types.Named); ok {
 					if u, ok := named.Underlying().(*types.Basic); ok && u.Info()&types.IsInteger != 0 {
-						expr = fmt.Sprintf("(%s)%s", v.getCSTypeName(u), expr)
+						expr = fmt.Sprintf("(%s)%s", v.getCSharpTypeName(u), expr)
 					}
 				}
 			}
@@ -970,7 +970,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					// so it is excluded.
 					switch targetNamed.Underlying().(type) {
 					case *types.Map, *types.Slice, *types.Array:
-						expr = fmt.Sprintf("(%s)%s", convertToCSTypeName(v.getTypeName(targetNamed.Underlying(), false)), expr)
+						expr = fmt.Sprintf("(%s)%s", convertToCSTypeName(v.getAliasQualifiedTypeName(targetNamed.Underlying(), false)), expr)
 					}
 				}
 			}
@@ -1092,7 +1092,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 								if callExprContext.castArgToType == nil {
 									callExprContext.castArgToType = make(map[int]string)
 								}
-								callExprContext.castArgToType[i] = convertToCSTypeName(v.getTypeName(deferParamType, false))
+								callExprContext.castArgToType[i] = convertToCSTypeName(v.getAliasQualifiedTypeName(deferParamType, false))
 							}
 						}
 					}
@@ -1108,7 +1108,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 							if callExprContext.castArgToType == nil {
 								callExprContext.castArgToType = make(map[int]string)
 							}
-							callExprContext.castArgToType[i] = v.getCSTypeName(deferParamType)
+							callExprContext.castArgToType[i] = v.getCSharpTypeName(deferParamType)
 						}
 					}
 				}
@@ -1170,7 +1170,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 											}
 
 											replacementArgs[i] = fmt.Sprintf("widen<%s, %s>(%s, %s => %s)",
-												v.getCSTypeName(ptrElem), v.getCSTypeName(tp.Constraint()), DynamicCastArgMarker, elemVar, wrapped)
+												v.getCSharpTypeName(ptrElem), v.getCSharpTypeName(tp.Constraint()), DynamicCastArgMarker, elemVar, wrapped)
 										}
 									}
 								}
@@ -1193,7 +1193,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 							callExprContext.wrapArgWithNew = make(map[int]string)
 						}
 
-						callExprContext.wrapArgWithNew[i] = fmt.Sprintf("slice<%s>", convertToCSTypeName(v.getTypeName(paramSlice.Elem(), false)))
+						callExprContext.wrapArgWithNew[i] = fmt.Sprintf("slice<%s>", convertToCSTypeName(v.getAliasQualifiedTypeName(paramSlice.Elem(), false)))
 					}
 				}
 			}
@@ -1237,7 +1237,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 								callExprContext.castArgToType = make(map[int]string)
 							}
 
-							callExprContext.castArgToType[i] = convertToCSTypeName(v.getTypeName(paramType, false))
+							callExprContext.castArgToType[i] = convertToCSTypeName(v.getAliasQualifiedTypeName(paramType, false))
 						}
 					}
 				}
@@ -1330,7 +1330,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 										callExprContext.wrapArgWithNew = make(map[int]string)
 									}
 
-									callExprContext.wrapArgWithNew[i] = v.getCSTypeName(paramType)
+									callExprContext.wrapArgWithNew[i] = v.getCSharpTypeName(paramType)
 								}
 							}
 						}
@@ -1372,7 +1372,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 								callExprContext.wrapArgWithNew = make(map[int]string)
 							}
 
-							callExprContext.wrapArgWithNew[i] = v.getCSTypeName(paramType)
+							callExprContext.wrapArgWithNew[i] = v.getCSharpTypeName(paramType)
 						}
 					}
 				}
@@ -1585,7 +1585,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		if ident.Name == "make" {
 			typeExpr := callExpr.Args[0]
 			typeParam := v.info.TypeOf(typeExpr)
-			typeName := convertToCSTypeName(v.getExprTypeName(typeExpr, false))
+			typeName := convertToCSTypeName(v.getExpressionTypeName(typeExpr, false))
 			remainingArgs := v.convExprList(callExpr.Args[1:], callExpr.Lparen, callExprContext)
 			isTypeParam := false
 
@@ -1666,7 +1666,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 							// slice<E> — the same value the unnamed form produces — and hand it to the
 							// wrapper's `T(slice<E> value)` ctor, which the generator always emits.
 							if _, isNamed := typeParam.(*types.Named); isNamed {
-								remainingArgs = fmt.Sprintf("new %s(%s)", v.getCSTypeName(sliceType), remainingArgs)
+								remainingArgs = fmt.Sprintf("new %s(%s)", v.getCSharpTypeName(sliceType), remainingArgs)
 							}
 						}
 					}
@@ -1690,7 +1690,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		// Handle new call as a special case
 		if ident.Name == "new" {
 			typeExpr := callExpr.Args[0]
-			typeName := convertToCSTypeName(v.getExprTypeName(typeExpr, false))
+			typeName := convertToCSTypeName(v.getExpressionTypeName(typeExpr, false))
 
 			// `new([N]T)` — golib's `@new<T>()` builds the zero value through the parameterless
 			// constructor, and `array<T>()` has NO length (the N lives only in the Go type), so
@@ -1755,14 +1755,14 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 								callExprContext.castArgToType = make(map[int]string)
 							}
 
-							callExprContext.castArgToType[i] = convertToCSTypeName(v.getTypeName(sliceUnder.Elem(), false))
+							callExprContext.castArgToType[i] = convertToCSTypeName(v.getAliasQualifiedTypeName(sliceUnder.Elem(), false))
 						}
 					}
 
 					// Only numeric element types are affected (the wrong-element-type overload
 					// selection is a numeric-conversion artifact); skip otherwise.
 					if elemBasic, ok := sliceUnder.Elem().Underlying().(*types.Basic); ok && elemBasic.Info()&types.IsNumeric != 0 {
-						elemCSType := convertToCSTypeName(v.getTypeName(sliceUnder.Elem(), false))
+						elemCSType := convertToCSTypeName(v.getAliasQualifiedTypeName(sliceUnder.Elem(), false))
 
 						for i := 1; i < len(callExpr.Args); i++ {
 							if v.isUntypedNumericConstArg(callExpr.Args[i]) {
@@ -1786,7 +1786,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					// overload but T=any on the slice<T> overload (testing flushToParent, CS0121) —
 					// cast to `any` so both agree.
 					if needsCast, _ := isInterface(sliceUnder.Elem()); needsCast {
-						elemCSType := convertToCSTypeName(v.getTypeName(sliceUnder.Elem(), false))
+						elemCSType := convertToCSTypeName(v.getAliasQualifiedTypeName(sliceUnder.Elem(), false))
 
 						for i := 1; i < len(callExpr.Args); i++ {
 							if argType := v.info.TypeOf(callExpr.Args[i]); argType != nil && !types.Identical(types.Unalias(argType), types.Unalias(sliceUnder.Elem())) {
@@ -1809,7 +1809,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 						case *types.Basic, *types.Interface:
 							// numeric / interface element casts are handled above
 						default:
-							elemCSType := convertToCSTypeName(v.getTypeName(sliceUnder.Elem(), false))
+							elemCSType := convertToCSTypeName(v.getAliasQualifiedTypeName(sliceUnder.Elem(), false))
 
 							for i := 1; i < len(callExpr.Args); i++ {
 								if argType := v.info.TypeOf(callExpr.Args[i]); argType != nil && !types.Identical(types.Unalias(argType), types.Unalias(sliceUnder.Elem())) {
@@ -1897,7 +1897,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 
 				if typeParams == nil {
 					for i := range typeArgs.Len() {
-						typeParams = append(typeParams, v.getCSTypeName(typeArgs.At(i)))
+						typeParams = append(typeParams, v.getCSharpTypeName(typeArgs.At(i)))
 					}
 				}
 
@@ -1975,7 +1975,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		}
 	}
 
-	funcTypeName := v.getTypeName(funcType, true)
+	funcTypeName := v.getAliasQualifiedTypeName(funcType, true)
 	// ---- Phase 6: conversions whose SOURCE is a string or slice ----
 	//
 	// []byte(s), []rune(s) and their literal forms. These need golib's @string in the middle
@@ -2059,7 +2059,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	if strings.HasPrefix(funcTypeName, "[]") && len(callExpr.Args) == 1 {
 		if tp, ok := types.Unalias(v.getType(callExpr.Args[0], false)).(*types.TypeParam); ok && typeParamSliceCore(tp) != nil {
 			if targetSlice, ok := funcType.(*types.Slice); ok {
-				elemName := convertToCSTypeName(v.getTypeName(targetSlice.Elem(), false))
+				elemName := convertToCSTypeName(v.getAliasQualifiedTypeName(targetSlice.Elem(), false))
 				return fmt.Sprintf("new slice<%s>(%s)", elemName, v.convExpr(callExpr.Args[0], nil))
 			}
 		}
@@ -2074,7 +2074,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			return emission
 		}
 
-		argTypeName := v.getExprTypeName(callExpr.Args[0], true)
+		argTypeName := v.getExpressionTypeName(callExpr.Args[0], true)
 
 		if argTypeName == "unsafe.Pointer" {
 			lambdaContext.isPointerCast = true
@@ -2158,7 +2158,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 						// 500)` — a bare `500` is a C# int) breaks T inference against the cast
 						// type, so every constant-valued argument gets the cast; typed variable
 						// arguments are left as-is.
-						csCallType := convertToCSTypeName(v.getTypeName(callType, false))
+						csCallType := convertToCSTypeName(v.getAliasQualifiedTypeName(callType, false))
 						args := make([]string, len(callExpr.Args))
 
 						for i, arg := range callExpr.Args {
@@ -2224,7 +2224,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if structType, fieldName, ok := v.unsafeFieldOperand(arg); ok {
 				// `unsafe.Offsetof(structValue.field)` to
 				// `@unsafe.Offsetof(typeof(StructType), "field")`
-				return fmt.Sprintf("%s(typeof(%s), \"%s\")", funcName, v.getCSTypeName(structType), fieldName)
+				return fmt.Sprintf("%s(typeof(%s), \"%s\")", funcName, v.getCSharpTypeName(structType), fieldName)
 			}
 
 			v.showWarning("Unexpected 'unsafe.Offsetof' argument format: %s", v.getPrintedNode(arg))
@@ -2235,7 +2235,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			// `Alignof(s.f)` is the required alignment of the FIELD's own type, which is what
 			// golib's `(type, fieldName)` overload resolves to anyway, so one rule covers both.
 			if operandType := v.info.TypeOf(arg); operandType != nil {
-				return fmt.Sprintf("%s(typeof(%s))", funcName, v.getCSTypeName(operandType))
+				return fmt.Sprintf("%s(typeof(%s))", funcName, v.getCSharpTypeName(operandType))
 			}
 
 			v.showWarning("Unexpected 'unsafe.Alignof' argument format: %s", v.getPrintedNode(arg))
@@ -2308,7 +2308,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 
 	for _, arg := range callExpr.Args {
 		argType := v.getType(arg, false)
-		argTypeName := convertToCSTypeName(v.getTypeName(argType, false))
+		argTypeName := convertToCSTypeName(v.getAliasQualifiedTypeName(argType, false))
 
 		v.checkForImplicitConversion(funcType, arg, argTypeName)
 	}
@@ -2395,7 +2395,7 @@ func (v *Visitor) checkForImplicitConversion(funcType types.Type, arg ast.Expr, 
 					expr = fmt.Sprintf("(%s?.Value ?? default!)", expr)
 				}
 
-				argTypeName := v.getCSTypeName(argType)
+				argTypeName := v.getCSharpTypeName(argType)
 
 				// SKIP a conversion the [GoType] wrapper already provides: `type bitStringEncoder
 				// BitString` makes the TypeGenerator emit BOTH bitStringEncoder<->BitString
@@ -2482,7 +2482,7 @@ func (v *Visitor) checkForImplicitConversion(funcType types.Type, arg ast.Expr, 
 
 			// Check if the arg type is an aliased numeric type
 			if ok := isAliasedNumericType(argType); ok {
-				valueTypeName := convertToCSTypeName(v.getTypeName(argType, true))
+				valueTypeName := convertToCSTypeName(v.getAliasQualifiedTypeName(argType, true))
 
 				if targetTypeIsPointer {
 					// Dereference target type when casting to pointer types,
@@ -2491,7 +2491,7 @@ func (v *Visitor) checkForImplicitConversion(funcType types.Type, arg ast.Expr, 
 					expr = fmt.Sprintf("(%s?.Value ?? default!)", expr)
 				}
 
-				argTypeName := v.getCSTypeName(argType)
+				argTypeName := v.getCSharpTypeName(argType)
 
 				if targetTypeName != argTypeName {
 					// The recorded conversion type names use cross-package import aliases (e.g.
@@ -2677,7 +2677,7 @@ func (v *Visitor) untypedIntGenericArgCastType(arg ast.Expr) string {
 		return ""
 	}
 
-	return convertToCSTypeName(v.getTypeName(basic, false))
+	return convertToCSTypeName(v.getAliasQualifiedTypeName(basic, false))
 }
 
 // typeParamIsSliceElementOfSibling reports whether type parameter tp is the ELEMENT type of some
@@ -2971,7 +2971,7 @@ func (v *Visitor) makeLenArgs(args []ast.Expr) string {
 			// numeric so the wrapper's implicit operator applies first: `(nint)(nuint)(maxHash)`.
 			if argType := v.info.TypeOf(arg); argType != nil {
 				if _, isNamed := types.Unalias(argType).(*types.Named); isNamed {
-					underlyingCS := convertToCSTypeName(v.getTypeName(argType.Underlying(), false))
+					underlyingCS := convertToCSTypeName(v.getAliasQualifiedTypeName(argType.Underlying(), false))
 					argStr = fmt.Sprintf("(nint)(%s)(%s)", underlyingCS, argStr)
 				} else {
 					argStr = "(nint)(" + argStr + ")"
@@ -3125,8 +3125,8 @@ func (v *Visitor) pointerReinterpretManagedSource(callExpr *ast.CallExpr, arg as
 	}
 
 	return p,
-		convertToCSTypeName(v.getTypeName(srcPtr.Elem(), false)),
-		convertToCSTypeName(v.getTypeName(targetPtr.Elem(), false))
+		convertToCSTypeName(v.getAliasQualifiedTypeName(srcPtr.Elem(), false)),
+		convertToCSTypeName(v.getAliasQualifiedTypeName(targetPtr.Elem(), false))
 }
 
 // reinterpretManagedEmission renders the golib managed reinterpret for a `(*U)(unsafe.Pointer(p))`
@@ -3288,13 +3288,13 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 				// named-target `(*T)(nil)` arm below already does, so the conversion renderer's
 				// nil interception emits the canonical typed-nil pointer instance.
 				if basic, ok := argType.(*types.Basic); ok && basic.Kind() == types.UntypedNil {
-					return true, "*" + v.getTypeName(elemType, false)
+					return true, "*" + v.getAliasQualifiedTypeName(elemType, false)
 				}
 
 				if argPtr, ok := argType.(*types.Pointer); ok {
 					if named, ok := argPtr.Elem().(*types.Named); ok && writtenRHSIsUnnamedArray(named) &&
 						types.Identical(elemType, named.Underlying()) {
-						return types.ConvertibleTo(argType, types.NewPointer(elemType)), "*" + v.getTypeName(elemType, false)
+						return types.ConvertibleTo(argType, types.NewPointer(elemType)), "*" + v.getAliasQualifiedTypeName(elemType, false)
 					}
 
 					// A pointer reinterpret from a NAMED-SLICE pointer to its underlying-slice
@@ -3306,7 +3306,7 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 						if underSlice, ok := named.Underlying().(*types.Slice); ok {
 							if elemSlice, ok := elemType.Underlying().(*types.Slice); ok && types.Identical(underSlice, elemSlice) {
 								if _, elemIsNamed := types.Unalias(elemType).(*types.Named); !elemIsNamed {
-									return true, "*" + v.getTypeName(elemType, false)
+									return true, "*" + v.getAliasQualifiedTypeName(elemType, false)
 								}
 							}
 						}
@@ -3318,7 +3318,7 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 				// slice-to-array conversion arm boxes the golib copy.
 				if slc, ok := argType.Underlying().(*types.Slice); ok {
 					if arrType, ok := types.Unalias(elemType).(*types.Array); ok && types.Identical(arrType.Elem(), slc.Elem()) {
-						return true, "*" + v.getTypeName(elemType, false)
+						return true, "*" + v.getAliasQualifiedTypeName(elemType, false)
 					}
 				}
 
@@ -3358,7 +3358,7 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 			// the golib copy ctor.
 			if arrType, ok := types.Unalias(targetType).(*types.Array); ok {
 				if slc, ok := argType.Underlying().(*types.Slice); ok && types.Identical(arrType.Elem(), slc.Elem()) {
-					return true, v.getTypeName(targetType, false)
+					return true, v.getAliasQualifiedTypeName(targetType, false)
 				}
 			}
 
@@ -3366,7 +3366,7 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 				return false, ""
 			}
 
-			return types.ConvertibleTo(argType, targetType), v.getTypeName(targetType, false)
+			return types.ConvertibleTo(argType, targetType), v.getAliasQualifiedTypeName(targetType, false)
 		default:
 			return false, ""
 		}
@@ -3413,7 +3413,7 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 		argType = pointer.Elem()
 	}
 
-	typeName := v.getTypeName(targetType, false)
+	typeName := v.getAliasQualifiedTypeName(targetType, false)
 
 	if isPointer {
 		typeName = "*" + typeName
@@ -3520,7 +3520,7 @@ func (v *Visitor) addImplicitSubStructConversions(sourceType types.Type, targetT
 				subStructType = ptrType.Elem()
 			}
 
-			subStructTypeName := v.getCSTypeName(subStructType)
+			subStructTypeName := v.getCSharpTypeName(subStructType)
 			sourceTypeName := getRootSubStructName(subStructTypeName)
 
 			if strings.HasSuffix(targetTypeName, ">") {
@@ -4106,7 +4106,7 @@ func (v *Visitor) foldUnsafeConstBuiltin(callExpr *ast.CallExpr) (string, bool) 
 		return "", false
 	}
 
-	csTypeName := v.getCSTypeName(tv.Type)
+	csTypeName := v.getCSharpTypeName(tv.Type)
 
 	if len(csTypeName) == 0 {
 		csTypeName = "uintptr"

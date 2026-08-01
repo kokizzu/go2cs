@@ -189,7 +189,7 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 	// mention T) — must carry its `<T>` type parameters (and any constraints) in C#, exactly
 	// like a generic struct. Without them the declaration is arity-0 `interface nistPoint`, yet
 	// a type-parameter constraint that references it renders the instantiated arity-1 name
-	// `where Point : nistPoint<Point>` (getGenericDefinition/getTypeName spell it that way) — an
+	// `where Point : nistPoint<Point>` (getGenericDefinition/getAliasQualifiedTypeName spell it that way) — an
 	// arity mismatch (CS0308) — and every bare `T` in a member is undefined (CS0246). Go's
 	// OPERATOR constraint interfaces (`Ordered`) are arity-0 in Go, so getGenericDefinition
 	// yields nothing for them and the separate `<ΔT>` operator machinery below is untouched.
@@ -266,13 +266,13 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 				inheritedInterfaces = append(inheritedInterfaces, v.convExpr(method.Type, nil))
 
 				// Track the CANONICAL (full-name) render too: the duplicate-implementation
-				// prune keys interfaceImplementations by getFullTypeName (a FOREIGN embed
+				// prune keys interfaceImplementations by getFullyQualifiedTypeName (a FOREIGN embed
 				// records `go.io.fs_package.FileInfo`), so the alias render alone
 				// (`fs.FileInfo`) never matches and both the derived and base impls emit
 				// the same explicit members (zip headerFileInfo : fileInfoDirEntry +
 				// fs.FileInfo, CS8646 ×6/CS0111 ×2).
 				if embedType := v.getType(method.Type, false); embedType != nil {
-					canonicalName := convertToCSTypeName(v.getFullTypeName(embedType, false))
+					canonicalName := convertToCSTypeName(v.getFullyQualifiedTypeName(embedType, false))
 
 					if canonicalName != "" {
 						canonicalInheritedInterfaces = append(canonicalInheritedInterfaces, canonicalName)
@@ -519,15 +519,15 @@ func (v *Visitor) getStructuralInterfaceBases(interfaceType *ast.InterfaceType, 
 		}
 
 		// Reference through the file-local package ALIAS (`CrossPkgLib.Labeled`, user-ruled
-		// style, mirroring the foreign-adapter references): getTypeName both yields the
+		// style, mirroring the foreign-adapter references): getAliasQualifiedTypeName both yields the
 		// aliased form and registers the file-local using — needed because the declaring
 		// Go FILE may not import the candidate's package (fs.go declares File without
 		// importing io).
-		baseNames = append(baseNames, convertToCSTypeName(v.getTypeName(candidate, false)))
+		baseNames = append(baseNames, convertToCSTypeName(v.getAliasQualifiedTypeName(candidate, false)))
 
 		// The CANONICAL (full-name) render feeds the duplicate-implementation prune,
-		// which keys interfaceImplementations by getFullTypeName (see visit tracking).
-		canonicalBaseNames = append(canonicalBaseNames, convertToCSTypeName(v.getFullTypeName(candidate, false)))
+		// which keys interfaceImplementations by getFullyQualifiedTypeName (see visit tracking).
+		canonicalBaseNames = append(canonicalBaseNames, convertToCSTypeName(v.getFullyQualifiedTypeName(candidate, false)))
 
 		// The base's FULL method set (embedded members included) is inherited
 		for k := 0; k < candidateIface.NumMethods(); k++ {
@@ -566,7 +566,7 @@ func (v *Visitor) getSourceParameterSignatureLen(signature *types.Signature) int
 			result += 2
 		}
 
-		result += len(v.getTypeName(param.Type(), false))
+		result += len(v.getAliasQualifiedTypeName(param.Type(), false))
 
 		if param.Name() != "" {
 			result += 1 + len(param.Name())
@@ -584,7 +584,7 @@ func (v *Visitor) getSourceResultSignatureLen(signature *types.Signature) int {
 	}
 
 	if results.Len() == 1 {
-		return len(v.getTypeName(results.At(0).Type(), false))
+		return len(v.getAliasQualifiedTypeName(results.At(0).Type(), false))
 	}
 
 	result := 2
@@ -594,7 +594,7 @@ func (v *Visitor) getSourceResultSignatureLen(signature *types.Signature) int {
 			result += 2
 		}
 
-		result += len(v.getTypeName(results.At(i).Type(), false))
+		result += len(v.getAliasQualifiedTypeName(results.At(i).Type(), false))
 	}
 
 	return result

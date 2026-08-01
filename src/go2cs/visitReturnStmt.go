@@ -66,7 +66,7 @@ func (v *Visitor) lambdaConstReturnCastType(targetType types.Type, expr ast.Expr
 		return ""
 	}
 
-	return convertToCSTypeName(v.getTypeName(targetType, false))
+	return convertToCSTypeName(v.getAliasQualifiedTypeName(targetType, false))
 }
 
 func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
@@ -533,5 +533,5 @@ func (v *Visitor) crossBaseConstCastFor(targetType types.Type, expr ast.Expr) st
 		return ""
 	}
 
-	return "(" + v.getCSTypeName(named) + ")(" + v.getCSTypeName(rhsNamed) + ")"
+	return "(" + v.getCSharpTypeName(named) + ")(" + v.getCSharpTypeName(rhsNamed) + ")"
 }

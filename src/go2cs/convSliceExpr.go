@@ -38,7 +38,7 @@ func (v *Visitor) convSliceExpr(sliceExpr *ast.SliceExpr) string {
 				max = v.convExpr(sliceExpr.Max, nil)
 			}
 
-			elemType := convertToCSTypeName(v.getTypeName(sliceType.Elem(), false))
+			elemType := convertToCSTypeName(v.getAliasQualifiedTypeName(sliceType.Elem(), false))
 
 			if sliceExpr.Max != nil {
 				return fmt.Sprintf("subslice3<%s, %s>(%s, %s, %s, %s)", getSanitizedIdentifier(tp.Obj().Name()), elemType, ident, low, high, max)
@@ -258,7 +258,7 @@ func (v *Visitor) castStringLiteralIndexToInt(expr ast.Expr) string {
 func (v *Visitor) intCastOperand(expr ast.Expr, converted string) string {
 	if named, ok := v.getType(expr, false).(*types.Named); ok {
 		if basic, ok := named.Underlying().(*types.Basic); ok && basic.Info()&types.IsNumeric != 0 {
-			return fmt.Sprintf("(int)(%s)(%s)", v.getCSTypeName(basic), converted)
+			return fmt.Sprintf("(int)(%s)(%s)", v.getCSharpTypeName(basic), converted)
 		}
 	}
 
@@ -267,7 +267,7 @@ func (v *Visitor) intCastOperand(expr ast.Expr, converted string) string {
 	// type parameter is not directly convertible). Route through golib's ConvertToUInt64<T> bridge
 	// (the E(100) integer-type-param family), then narrow — the same shape as the slice-index cast.
 	if tp, ok := types.Unalias(v.getType(expr, false)).(*types.TypeParam); ok && typeParamIsInteger(tp) {
-		return fmt.Sprintf("(int)(ConvertToUInt64<%s>(%s))", v.getCSTypeName(tp), converted)
+		return fmt.Sprintf("(int)(ConvertToUInt64<%s>(%s))", v.getCSharpTypeName(tp), converted)
 	}
 
 	return fmt.Sprintf("(int)(%s)", converted)
