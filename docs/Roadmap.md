@@ -114,8 +114,8 @@ auto-conversion) compile clean as .NET assemblies — zero errors, zero exclusio
 `crypto/tls`, `database/sql` and every other package are included. Every fix was root-caused against real
 emitted C#, locked in by a Go-vs-C# behavioral regression test (371 and counting), and verified byte-for-byte
 against the full corpus before landing. **Compiling is the milestone, not operational** — running each
-package's own tests is Phase 4. The narrative of the two-week finishing campaign is in the README's
-[About Standard Library Compile Milestone](README.md#about-standard-library-compile-milestone) section
+package's own tests is Phase 4. The narrative of the two-week finishing campaign is in
+[About Standard Library Compile Milestone](StdLibCompileMilestone.md)
 (the announcement itself is archived in [`NEWS.md`](NEWS.md)); the strategy that got there is below, followed by the early iteration
 log (retained as historical record — its dated "Next:" items are long since done).
 

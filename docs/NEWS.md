@@ -111,7 +111,7 @@ emitted by the converter, transpiled Go to C#, then compiled by Roslyn. NOTE: do
 this is _fully compilable_ not _fully runnable_ — that's the next phase (underway; see the July 17 item
 above)! However, simple apps will run, try
 [converting a real-world module](README.md#converting-a-real-world-module). Read more about this
-[milestone's details](README.md#about-standard-library-compile-milestone) and
+[milestone's details](StdLibCompileMilestone.md) and
 [current status](README.md#status) in the README.
 
 *Tag: [`stdlib-green-2026-07-10`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-green-2026-07-10)

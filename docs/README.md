@@ -444,33 +444,12 @@ High level timeline of the project's major turning points.
 | 2026-06-25 | Baseline ↔ full-conversion separation | `3c8b3a848` | A compiling curated baseline and the WIP full conversion split apart, restoring a green build and the converter-improvement loop. |
 | 2026-06-26 | First full-conversion package promoted | `05a53e8c0` | `sync/atomic` migrated into the baseline (`atomic.Pointer[T]` backed by a managed slot). |
 | 2026-06-27 | [`math` package compiles clean](NEWS.md#june-27-2026--the-math-package-compiles-clean) | [`math-green-2026-06-27`](https://github.com/ritchiecarroll/go2cs/releases/tag/math-green-2026-06-27) (`914d4bd72`) | Nine packages greened via 19 behaviorally-tested converter fixes, including widely-imported `math`. |
-| 2026-07-10 | [**First clean full-standard-library compile**](NEWS.md#july-10-2026--the-entire-go-standard-library-compiles-in-net) | `51ba5d9cf` · [`stdlib-green-2026-07-10`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-green-2026-07-10) | All **302** packages (Go 1.23.1) compile with zero errors — `runtime`, `reflect`, `net/http`, `go/types`, `crypto/tls` included ([details](#about-standard-library-compile-milestone)). |
+| 2026-07-10 | [**First clean full-standard-library compile**](NEWS.md#july-10-2026--the-entire-go-standard-library-compiles-in-net) | `51ba5d9cf` · [`stdlib-green-2026-07-10`](https://github.com/ritchiecarroll/go2cs/releases/tag/stdlib-green-2026-07-10) | All **302** packages (Go 1.23.1) compile with zero errors — `runtime`, `reflect`, `net/http`, `go/types`, `crypto/tls` included ([details](StdLibCompileMilestone.md)). |
 | 2026-07-14 | [Standard library on NuGet + NuGet-referencing conversion](NEWS.md#july-14-2026--the-converted-go-standard-library-is-on-nuget) | `2363af0e6` · `dd821a556` · [`nuget-stdlib-2026-07-14`](https://github.com/ritchiecarroll/go2cs/releases/tag/nuget-stdlib-2026-07-14) | `go.<pkg>` / `go.lib` / `go.gen` published to nuget.org; `-recurse=nuget` emits matching `<PackageReference>` entries, so a converted app needs no local go2cs checkout. |
 | 2026-07-17 | [**First Go standard-library test suite passing in C#**](NEWS.md#july-17-2026--gos-own-tests-now-pass-in-c) | `337a928df` · [`utf8-tests-green-2026-07-17`](https://github.com/ritchiecarroll/go2cs/releases/tag/utf8-tests-green-2026-07-17) | `unicode/utf8` validates **14/14 against `go test -json`** under the hand-owned `go.testing` host; the differential pipeline goes live end to end. |
 | 2026-07-18 | [**Phase-4 test suites expand — disclosed-divergence mechanism**](NEWS.md#july-18-2026--bytes-and-strings-tests-pass-with-disclosed-divergence) | `40f39d2be` · [`bytes-strings-tests-green-2026-07-18`](https://github.com/ritchiecarroll/go2cs/releases/tag/bytes-strings-tests-green-2026-07-18) · [`sort`](https://github.com/ritchiecarroll/go2cs/releases/tag/sort-tests-green-2026-07-18) · [`utf16`](https://github.com/ritchiecarroll/go2cs/releases/tag/utf16-tests-green-2026-07-18) | `bytes` (81), `strings` (68), `sort` (63) and `unicode/utf16` (8) validate, introducing the committed per-package disclosure manifest matched by exact failure signature. |
 | 2026-07-26 | [**More than a quarter of the standard library's test suites pass in C#**](NEWS.md#july-26-2026--more-than-a-quarter-of-the-standard-librarys-test-suites-pass-in-c) | `44fcc4f04` | The validated set moves past leaf packages into `sync`, `regexp`/`regexp/syntax`, `strconv`, `bufio`, `compress/gzip`, the `crypto/sha*` family and the reflection-driven `errors` / `encoding/binary` / `go/token`. |
 | 2026-08-01 | One tree — the converted standard library comes home to `src/core` | `2e8066da6` | Baseline and full conversion consolidate into a single tree with one `$(go2csPath)core\<pkg>` path scheme; no reference rewriting anywhere. |
-
-### _About Standard Library Compile Milestone_
-
-This milestone was eight years in the making, and two weeks in the finishing.
-
-The eight years were the human part: two full converter architectures, a runtime library that models Go's
-semantics (slices that alias, maps, channels, `defer`/`panic`/`recover`, heap-boxed pointers) in managed
-code, the strategy of *behavioral first, visual second*, and the architecture that made the final push
-possible at all — a Go-native converter on `go/ast` + `go/types`, Roslyn source generators for the
-compile-time semantics, and a harness that locks in every fix with an output-compared behavioral test.
-
-The two weeks were an AI campaign: **939 commits, of which 683 are individually-gated converter, runtime
-and source-generator fixes — each root-caused against real emitted code, each locked in by a behavioral
-regression test, each verified byte-for-byte against the full corpus before landing.** The work ran as a
-coordinated fleet with strict file ownership, adversarial review before every merge, and a census loop that
-rebuilt all 302 packages after every wave to prove zero regression. The defects were the ones that compile
-perfectly and behave wrongly: shadowed variables binding the wrong receiver, closures capturing a snapshot
-where Go shares storage, a type switch matching the wrong case at runtime, Go 1.22's loop-variable
-semantics, named results observed by deferred closures, interface method sets C# cannot express directly.
-
-Compiling is the milestone — **operational is the mission.**
 
 ## C# to Go?
 
