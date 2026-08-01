@@ -5482,7 +5482,12 @@ func (v *Visitor) collectCrossPackagePaths(t types.Type, paths HashSet[string]) 
 // `namespace go;` without an alias. This keeps the converted C# visually close to the Go source while
 // staying compilable. NOT for GoType attribute strings or other generator-consumed strings, which live
 // in alias-less generated files and must always use getFullTypeName.
-func (v *Visitor) getDisplayTypeName(t types.Type, isUnderlying bool) string {
+//
+// Unlike its getTypeName/getFullTypeName siblings this takes no isUnderlying flag. Every caller
+// wants the type AS DECLARED — the name a reader of the Go source would recognize — which is what
+// makes the result "display"; asking for a named type's underlying representation here would
+// defeat the whole point of the function.
+func (v *Visitor) getDisplayTypeName(t types.Type) string {
 	// Foreign renamed types display as the recorded imported-type alias (see
 	// foreignAliasedTypeName) - the display layer, so promoted-member naming is untouched.
 	if aliased, ok := v.foreignAliasedTypeName(t); ok {
@@ -5494,11 +5499,11 @@ func (v *Visitor) getDisplayTypeName(t types.Type, isUnderlying bool) string {
 
 	for _, path := range paths.Keys() {
 		if !v.importQueue.Contains(path) {
-			return v.getFullTypeName(t, isUnderlying)
+			return v.getFullTypeName(t, false)
 		}
 	}
 
-	return v.getTypeName(t, isUnderlying)
+	return v.getTypeName(t, false)
 }
 
 // markDerivedTypeAliasUsed records that an emitted reference resolved through a DERIVED imported
@@ -6220,16 +6225,6 @@ func convertToCSResultList(resultType string) string {
 
 	elements = append(elements, strings.TrimSpace(inner[start:]))
 
-	isPlainIdentifier := func(s string) bool {
-		for i, ch := range s {
-			if !(unicode.IsLetter(ch) || ch == '_' || (i > 0 && unicode.IsDigit(ch))) {
-				return false
-			}
-		}
-
-		return len(s) > 0
-	}
-
 	typeLeadingKeywords := map[string]bool{"chan": true, "func": true, "map": true, "struct": true, "interface": true}
 
 	names := make([]string, len(elements))
@@ -6245,7 +6240,10 @@ func convertToCSResultList(resultType string) string {
 
 		name := element[:spaceIndex]
 
-		if !isPlainIdentifier(name) || typeLeadingKeywords[name] {
+		// isSimpleIdentifierName also tolerates a leading `@`, which cannot occur here: this
+		// parses GO source text, and `@` is not legal in a Go identifier. The `@` escaping of C#
+		// keywords happens later, when the TYPE is rendered by convertToCSTypeName.
+		if !isSimpleIdentifierName(name) || typeLeadingKeywords[name] {
 			allNamed = false
 			break
 		}
@@ -6364,7 +6362,7 @@ func (v *Visitor) convertToHeapTypeDecl(ident *ast.Ident, createNew bool) string
 		return ""
 	}
 
-	goTypeName := v.getDisplayTypeName(identType, false)
+	goTypeName := v.getDisplayTypeName(identType)
 	csIDName := v.getIdentName(ident)
 
 	// If identifier is discarded, return empty string

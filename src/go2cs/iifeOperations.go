@@ -27,9 +27,10 @@ func (v *Visitor) funcBodyDeferRecover(body *ast.BlockStmt) (hasDefer bool, hasR
 		return false, false
 	}
 
-	var walk func(n ast.Node) bool
-
-	walk = func(n ast.Node) bool {
+	// Declared and assigned in one step: ast.Inspect drives the descent, so this closure never
+	// needs to name itself and does not require the two-step form a self-recursive one would.
+	walk := func(n ast.Node) bool {
+		// Both answers are already known — stop walking.
 		if hasDefer && hasRecover {
 			return false
 		}

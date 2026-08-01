@@ -262,7 +262,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// csFullTypeName is retained for promotion/interface registration below, which feeds
 		// generator-consumed strings that live in alias-less files. (Embedded fields keep the full
 		// form for their promoted accessors; only the named-field branch uses the display name.)
-		goDisplayTypeName := v.getDisplayTypeName(fieldType, false)
+		goDisplayTypeName := v.getDisplayTypeName(fieldType)
 		csDisplayTypeName := convertToCSTypeName(goDisplayTypeName)
 
 		// A func-typed field whose signature names a type from a MULTI-SEGMENT import path

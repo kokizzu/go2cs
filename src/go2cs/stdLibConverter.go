@@ -68,9 +68,7 @@ func (c *StdLibConverter) ScanAndConvertFiltered(packageFilter []string) error {
 
 	// Step 2: Build dependency graph and sort
 	fmt.Println("Building dependency graph...")
-	if err := c.buildDependencyGraph(); err != nil {
-		return fmt.Errorf("failed to build dependency graph: %w", err)
-	}
+	c.buildDependencyGraph()
 
 	// Generate dependency graph visualization
 	if err := c.GenerateDependencyGraph(); err != nil {
@@ -79,9 +77,7 @@ func (c *StdLibConverter) ScanAndConvertFiltered(packageFilter []string) error {
 
 	// Step 3: Perform topological sort
 	fmt.Println("Sorting packages by dependencies...")
-	if err := c.topologicalSort(); err != nil {
-		return fmt.Errorf("failed to sort packages: %w", err)
-	}
+	c.topologicalSort()
 
 	// Expose the completed convert-set graph so linkname var-pull forwarding can reject a pull whose
 	// project reference would cycle (see linknamePullWouldCycle). Only the -stdlib graph can form
@@ -280,7 +276,12 @@ func (c *StdLibConverter) scanStdLib() error {
 // buildDependencyGraph loads each standard-library package's imports and records the intra-set
 // dependency edges in the shared graph (which filters to the convert-set and resolves
 // GOROOT-vendored keys), then sorts adjacency for deterministic ordering.
-func (c *StdLibConverter) buildDependencyGraph() error {
+//
+// A package that fails to load is reported and SKIPPED rather than aborting the run — see the
+// packages.Load handling below. That is why this returns nothing: there is no failure that reaches
+// the caller. Whether a failed load SHOULD abort a 300-package conversion is a genuine open design
+// question, deliberately left as-is here.
+func (c *StdLibConverter) buildDependencyGraph() {
 	fmt.Println("Building dependency graph for all packages...")
 
 	// Count to track progress
@@ -342,13 +343,14 @@ func (c *StdLibConverter) buildDependencyGraph() error {
 
 	// Sort dependencies and dependents for deterministic behavior
 	c.graph.sortAdjacency()
-
-	return nil
 }
 
 // topologicalSort orders the standard-library convert-set least dependencies first by delegating
 // to the shared graph, then reports the resulting order.
-func (c *StdLibConverter) topologicalSort() error {
+//
+// The underlying graph sort tolerates an import cycle with a warning rather than failing, so this
+// has no failure to report either.
+func (c *StdLibConverter) topologicalSort() {
 	fmt.Println("Sorting packages in dependency order...")
 
 	c.graph.topologicalSort()
@@ -367,8 +369,6 @@ func (c *StdLibConverter) topologicalSort() error {
 			fmt.Printf("  %s\n", c.graph.sortedQueue[i])
 		}
 	}
-
-	return nil
 }
 
 // checkForPreviousConversion checks if a previous conversion attempt was made

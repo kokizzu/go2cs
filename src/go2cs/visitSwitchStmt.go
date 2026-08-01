@@ -216,14 +216,14 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 			// `goarch.PtrSize`), or an address-of expression — is not, so a C# switch is invalid
 			// (CS9135). containsUntypedExpr/the *types.Named check above miss these because the label
 			// is typed to the switch tag's type in context. Force the if-else (==) form for them.
-			switch expr.(type) {
+			switch labelExpr := expr.(type) {
 			case *ast.Ident, *ast.SelectorExpr:
 				if !v.isCSharpConstantExpr(expr) {
 					allConst = false
 				}
 			case *ast.UnaryExpr:
 				// An address-of (`&frame.fp` → `Ꮡframe.Value.fp`) is a runtime value, never a constant.
-				if expr.(*ast.UnaryExpr).Op == token.AND {
+				if labelExpr.Op == token.AND {
 					allConst = false
 				}
 			}

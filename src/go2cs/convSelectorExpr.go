@@ -721,7 +721,7 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 						if ptr, ok := v.info.TypeOf(indexExpr.X).(*types.Pointer); ok {
 							if named, ok := types.Unalias(ptr.Elem()).(*types.Named); ok {
 								if arrayType, ok := named.Underlying().(*types.Array); ok {
-									elemTypeName := convertToCSTypeName(v.getDisplayTypeName(arrayType.Elem(), false))
+									elemTypeName := convertToCSTypeName(v.getDisplayTypeName(arrayType.Elem()))
 
 									return fmt.Sprintf("%s.at<%s>(%s).%s",
 										v.convExpr(indexExpr.X, nil), elemTypeName,

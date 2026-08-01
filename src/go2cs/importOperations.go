@@ -663,7 +663,8 @@ func loadPackageImplementLines(lines []string, rootPackageName string) {
 	// classes (TжIface) are public members of the foreign package class, so a cross-package
 	// pointer-to-interface conversion here can reference them by qualified name (io/fs's
 	// PathErrorжerror consumed by os - CS0029 x38).
-	if pairs, err := parseExportedPointerImplementLines(lines); err == nil {
+	{
+		pairs := parseExportedPointerImplementLines(lines)
 		sanitizedRootName := getSanitizedIdentifier(rootPackageName)
 
 		packageLock.Lock()
@@ -679,7 +680,9 @@ func loadPackageImplementLines(lines []string, rootPackageName string) {
 	// struct's own assembly implements the interface, so a value cast here converts
 	// implicitly and needs no local adapter (see the both-foreign value arm in
 	// convertToInterfaceType).
-	if pairs, err := parseExportedValueImplementLines(lines); err == nil {
+	{
+		pairs := parseExportedValueImplementLines(lines)
+
 		packageLock.Lock()
 
 		for _, pair := range pairs {
@@ -941,7 +944,11 @@ func valueRecordRealizesAsPartialStruct(targetType types.Type) bool {
 // parseExportedPointerImplementLines parses package-info lines for `GoImplement<T, Iface>(Pointer
 // = true)` assembly attributes, returning (T-simple, Iface-qualified) pairs - the adapter-class
 // existence records for cross-package pointer-to-interface conversions.
-func parseExportedPointerImplementLines(lines []string) ([][2]string, error) {
+//
+// Parsing cannot fail: a line that does not match the pattern is simply not a record and is
+// skipped, so an unrecognized or malformed package_info yields an empty result rather than an
+// error. There is no error to return, and none is.
+func parseExportedPointerImplementLines(lines []string) [][2]string {
 	var pairs [][2]string
 
 	pattern := regexp.MustCompile(`\[assembly: GoImplement<(.+), (.+)>\(Pointer = true\)\]`)
@@ -956,22 +963,18 @@ func parseExportedPointerImplementLines(lines []string) ([][2]string, error) {
 		// The struct side reduces to its SIMPLE (last-dot-segment) name - the adapter class
 		// name composes from exactly that (see adapterTypeRef / the ImplementGenerator). The
 		// INTERFACE side keeps its qualifier (canonicalized at the populate site).
-		tName := matches[1]
-
-		if idx := strings.LastIndex(tName, "."); idx >= 0 {
-			tName = tName[idx+1:]
-		}
-
-		pairs = append(pairs, [2]string{tName, matches[2]})
+		pairs = append(pairs, [2]string{simpleCSTypeName(matches[1]), matches[2]})
 	}
 
-	return pairs, nil
+	return pairs
 }
 
 // parseExportedValueImplementLines parses package-info lines for VALUE-form `GoImplement<T, Iface>`
 // assembly attributes (plain or `(Promoted = true)`), returning (T-simple, Iface-simple) pairs -
 // records that the defining assembly itself implements the interface on the value type.
-func parseExportedValueImplementLines(lines []string) ([][2]string, error) {
+//
+// Like its pointer-form sibling this cannot fail — a non-matching line is just not a record.
+func parseExportedValueImplementLines(lines []string) [][2]string {
 	var pairs [][2]string
 
 	pattern := regexp.MustCompile(`\[assembly: GoImplement<(.+), (.+)>(?:\(Promoted = true\))?\]`)
@@ -991,14 +994,8 @@ func parseExportedValueImplementLines(lines []string) ([][2]string, error) {
 		// The struct side reduces to its SIMPLE (last-dot-segment) name; the INTERFACE side
 		// keeps its qualifier (canonicalized at the populate site — the simple name collides
 		// across same-named interfaces, see canonicalRecordIfaceName).
-		tName := matches[1]
-
-		if idx := strings.LastIndex(tName, "."); idx >= 0 {
-			tName = tName[idx+1:]
-		}
-
-		pairs = append(pairs, [2]string{tName, matches[2]})
+		pairs = append(pairs, [2]string{simpleCSTypeName(matches[1]), matches[2]})
 	}
 
-	return pairs, nil
+	return pairs
 }

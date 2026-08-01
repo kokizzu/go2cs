@@ -495,7 +495,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 			// `*[]E` for indexing; it is written `(*t)[i]`, a StarExpr the slice branch handles).
 			if ptr, isPtr := exprType.(*types.Pointer); isPtr {
 				if arrayType, isArray := ptr.Elem().Underlying().(*types.Array); isArray {
-					elemCSType := convertToCSTypeName(v.getDisplayTypeName(arrayType.Elem(), false))
+					elemCSType := convertToCSTypeName(v.getDisplayTypeName(arrayType.Elem()))
 					// Render the base in POINTER context so it yields the `ж<[N]E>` BOX (`Ꮡtab` for a
 					// deref-aliased pointer PARAMETER, or the box-valued LOCAL `t` from `@new`), not the
 					// deref value alias `tab` (a bare `[N]E` value has no `at`, CS1061).
@@ -588,7 +588,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 					// atomic-typed array field of a struct without ever naming the element type → no
 					// `using atomic` → CS0246). getDisplayTypeName makes that choice per cross-package
 					// type. A current-package or basic element renders identically (no churn).
-					goFullTypeName := v.getDisplayTypeName(exprType, false)
+					goFullTypeName := v.getDisplayTypeName(exprType)
 					csTypeName := convertToCSTypeName(goFullTypeName[strings.Index(goFullTypeName, "]")+1:])
 
 					// An ANONYMOUS-struct element is lifted to a synthesized name keyed by the element

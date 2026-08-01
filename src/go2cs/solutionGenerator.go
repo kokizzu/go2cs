@@ -232,7 +232,7 @@ func buildSolutionXML(coreProjects []string) string {
 	}
 
 	writeProject := func(indent int, path string) {
-		writeLine(indent, fmt.Sprintf("<Project Path=\"%s\" />", escapeXMLAttr(path)))
+		writeLine(indent, fmt.Sprintf("<Project Path=\"%s\" />", escapeXMLAttributeValue(path)))
 	}
 
 	// Folders carry an EXPLICIT deterministic Id: Visual Studio's .slnx loader derives a
@@ -242,7 +242,7 @@ func buildSolutionXML(coreProjects []string) string {
 	// already exists"). A UUID hashed from the FULL folder path is unique, stable across
 	// regenerations, and machine-independent.
 	writeFolderOpen := func(folder string) {
-		writeLine(1, fmt.Sprintf("<Folder Name=\"%s\" Id=\"%s\">", escapeXMLAttr(folder), folderID(folder)))
+		writeLine(1, fmt.Sprintf("<Folder Name=\"%s\" Id=\"%s\">", escapeXMLAttributeValue(folder), folderID(folder)))
 	}
 
 	writeLine(0, "<Solution>")
@@ -338,7 +338,7 @@ func buildSolutionXML(coreProjects []string) string {
 			// Pure intermediate folder — self-closing, NO Id, exactly as VS writes it. (VS derives
 			// an Id-less folder's identity from its full path, so duplicate leaves like the many
 			// `internal/` namespaces never collide.)
-			writeLine(1, fmt.Sprintf("<Folder Name=\"%s\" />", escapeXMLAttr(folder)))
+			writeLine(1, fmt.Sprintf("<Folder Name=\"%s\" />", escapeXMLAttributeValue(folder)))
 			continue
 		}
 
@@ -395,9 +395,9 @@ func buildRecurseSolutionXML(folders []solutionFolder, startupProject string) st
 
 	writeProject := func(indent int, project string) {
 		if project == startupProject {
-			writeLine(indent, fmt.Sprintf("<Project Path=\"%s\" DefaultStartup=\"true\" />", escapeXMLAttr(project)))
+			writeLine(indent, fmt.Sprintf("<Project Path=\"%s\" DefaultStartup=\"true\" />", escapeXMLAttributeValue(project)))
 		} else {
-			writeLine(indent, fmt.Sprintf("<Project Path=\"%s\" />", escapeXMLAttr(project)))
+			writeLine(indent, fmt.Sprintf("<Project Path=\"%s\" />", escapeXMLAttributeValue(project)))
 		}
 	}
 
@@ -414,7 +414,7 @@ func buildRecurseSolutionXML(folders []solutionFolder, startupProject string) st
 			continue // skip an empty folder — e.g. a dependency's own solution has no src package
 		}
 
-		writeLine(1, fmt.Sprintf("<Folder Name=\"%s\">", escapeXMLAttr(folder.name)))
+		writeLine(1, fmt.Sprintf("<Folder Name=\"%s\">", escapeXMLAttributeValue(folder.name)))
 
 		for _, project := range folder.projects {
 			writeProject(2, project)
@@ -440,13 +440,26 @@ func folderID(folderPath string) string {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }
 
-// escapeXMLAttr escapes the minimal set of characters that would break an XML attribute.
-// Converted project paths are ASCII with '/' and '.', but this keeps the emitter correct
-// if a path ever carries an XML-special character.
-func escapeXMLAttr(value string) string {
-	value = strings.ReplaceAll(value, "&", "&amp;")
-	value = strings.ReplaceAll(value, "<", "&lt;")
-	value = strings.ReplaceAll(value, ">", "&gt;")
-	value = strings.ReplaceAll(value, "\"", "&quot;")
-	return value
+// xmlAttributeEscapes maps the four characters that would break an XML attribute onto their
+// entities. It is built ONCE at package scope rather than per call: strings.NewReplacer compiles a
+// lookup trie, so constructing one inside the function costs ~1,460 ns and 8 allocations per call
+// against ~29 ns and zero allocations for a shared one — and every emitted project reference,
+// folder and compile item goes through here. A Replacer is safe for concurrent use, so sharing it
+// is free.
+var xmlAttributeEscapes = strings.NewReplacer(
+	"&", "&amp;",
+	"\"", "&quot;",
+	"<", "&lt;",
+	">", "&gt;",
+)
+
+// escapeXMLAttributeValue escapes the minimal set of characters that would break an XML attribute.
+//
+// Every value this emitter puts inside quotes — .slnx project paths and folder names, .csproj
+// Compile/None/ProjectReference includes — goes through it. Converted paths are ASCII with '/' and
+// '.', so in practice nothing is replaced and the call returns the input untouched; the escaping
+// exists so a module path that DOES carry an XML-special character produces a valid project file
+// instead of one the SDK refuses to parse.
+func escapeXMLAttributeValue(value string) string {
+	return xmlAttributeEscapes.Replace(value)
 }

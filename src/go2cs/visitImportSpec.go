@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"unicode"
 )
 
 // packageQualifiedNameRegex matches a dotted qualified identifier. Segments may contain Unicode
@@ -157,14 +156,28 @@ func stripLocalTypeQualifier(name string, localTypePrefix string) string {
 // (foreign `pkg_package.Type`, already-rooted `go.…`) are left untouched: a bare System-colliding name
 // in these attributes can only be a local package type (foreign types are always package-qualified).
 func qualifySystemCollidingLocalTypeRefs(name string, packagePrefix string) string {
+	return qualifyBareTypeReferences(name, systemCollidingTypeNames, packagePrefix)
+}
+
+// qualifyBareTypeReferences roots every BARE (dotless) type reference inside name that appears in
+// ambiguousNames at qualifier, turning `Buffer` into `io_test_package.Buffer`.
+//
+// This is the shared body of the two passes above. Both solve the same C# problem from different
+// directions: a bare name at the file scope where GoImplement/GoImplicitConv attributes are emitted
+// can be ambiguous (CS0104) between the local package type and something a `using` brought in, and
+// the cure is the same either way — say which one you mean. They differ only in WHICH names are
+// ambiguous and WHAT to qualify them with, so those are the parameters.
+//
+// A reference that already contains a dot is left alone: it has said where it comes from, and
+// re-qualifying it would produce a name that resolves nowhere.
+func qualifyBareTypeReferences(name string, ambiguousNames HashSet[string], qualifier string) string {
 	return packageQualifiedNameRegex.ReplaceAllStringFunc(name, func(match string) string {
-		// Only bare (dotless) identifiers can be a local type name; qualified references are foreign.
 		if strings.Contains(match, ".") {
 			return match
 		}
 
-		if systemCollidingTypeNames.Contains(match) {
-			return packagePrefix + "." + match
+		if ambiguousNames.Contains(match) {
+			return qualifier + "." + match
 		}
 
 		return match
@@ -182,23 +195,14 @@ func qualifySystemCollidingLocalTypeRefs(name string, packagePrefix string) stri
 //
 // A no-op outside a `-tests` conversion (the name set is nil), so no other emission changes.
 func qualifyAmbiguousTestTypeRefs(name string, anchorPrefix string) string {
+	// Bail out before scanning when there is nothing this pass could do. The empty-set case is
+	// merely the fast path for every non-`-tests` conversion, but the empty-prefix case is
+	// REQUIRED: qualifying with "" would emit a leading dot (".Point") that resolves nowhere.
 	if len(testAmbiguousLocalTypeNames) == 0 || anchorPrefix == "" {
 		return name
 	}
 
-	return packageQualifiedNameRegex.ReplaceAllStringFunc(name, func(match string) string {
-		// Only bare (dotless) identifiers can be a local type name; qualified references already
-		// name their class.
-		if strings.Contains(match, ".") {
-			return match
-		}
-
-		if testAmbiguousLocalTypeNames.Contains(match) {
-			return anchorPrefix + "." + match
-		}
-
-		return match
-	})
+	return qualifyBareTypeReferences(name, testAmbiguousLocalTypeNames, anchorPrefix)
 }
 
 func (v *Visitor) visitImportSpec(importSpec *ast.ImportSpec, doc *ast.CommentGroup) {
@@ -382,7 +386,9 @@ func blankImportInitName(importPath string) string {
 		name.WriteString(TypeAliasDot)
 
 		for _, r := range segment {
-			if r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r) {
+			// Anything C# will not accept inside an identifier becomes an underscore, so a module
+			// path's dots and hyphens survive as a legal (if lossy) name.
+			if isIdentifierRune(r) {
 				name.WriteRune(r)
 			} else {
 				name.WriteRune('_')

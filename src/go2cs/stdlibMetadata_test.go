@@ -93,21 +93,13 @@ func TestStdLibExportedMetadataReadsThroughPackageInfoParsers(t *testing.T) {
 		}
 	}
 
-	values, err := parseExportedValueImplementLines(lines)
-
-	if err != nil {
-		t.Fatalf("parseExportedValueImplementLines: %v", err)
-	}
+	values := parseExportedValueImplementLines(lines)
 
 	if !containsPair(values, "Errno", "error") {
 		t.Errorf("embedded syscall record missing the VALUE implement (Errno, error); got %v", values)
 	}
 
-	pointers, err := parseExportedPointerImplementLines(lines)
-
-	if err != nil {
-		t.Fatalf("parseExportedPointerImplementLines: %v", err)
-	}
+	pointers := parseExportedPointerImplementLines(lines)
 
 	if !containsPair(pointers, "DLLError", "error") {
 		t.Errorf("embedded syscall record missing the POINTER implement (DLLError, error); got %v", pointers)

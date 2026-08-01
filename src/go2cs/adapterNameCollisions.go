@@ -262,8 +262,23 @@ func adapterGroupKey(structBase string, interfaceTypeName string) string {
 	return adapterStructKey(structBase) + PointerPrefix + adapterInterfaceSimpleName(interfaceTypeName)
 }
 
-// adapterStructKey normalizes any of those struct spellings to "<pkg>_<Simple>".
-func adapterStructKey(structBase string) string {
+// splitAdapterStructReference breaks a struct spelling into its immediate qualifier and its simple
+// name — the one piece of parsing every adapter-naming decision starts from.
+//
+//	"go.io_test_package.Buffer"  -> ("io_test_package", "Buffer")
+//	"bytes_package.Reader<int>"  -> ("bytes_package",   "Reader")
+//	"Buffer"                     -> ("",                "Buffer")
+//
+// Two details are load-bearing. A generic suffix is dropped first, because `Reader<T>` names the
+// same adapter struct as `Reader` and the '<' would otherwise swallow the rest of the scan. And
+// only the LAST qualifier segment is kept: a fully-qualified spelling like "go.io_test_package.X"
+// carries the namespace too, but the generator compares against a package CLASS name, so
+// "io_test_package" is the part that can match.
+//
+// The qualifier is returned as spelled — callers decide what it means. adapterStructKey strips the
+// "_package" suffix to build the generator's "<pkg>_<Simple>" key; adapterStructQualifierClass
+// instead REQUIRES that suffix and returns the class name whole.
+func splitAdapterStructReference(structBase string) (qualifier, simpleName string) {
 	base := structBase
 
 	if idx := strings.Index(base, "<"); idx >= 0 {
@@ -273,16 +288,28 @@ func adapterStructKey(structBase string) string {
 	idx := strings.LastIndex(base, ".")
 
 	if idx < 0 {
-		return stripSanitizationMarkers(base)
+		return "", base
 	}
 
-	qualifier := base[:idx]
+	qualifier = base[:idx]
 
 	if dot := strings.LastIndex(qualifier, "."); dot >= 0 {
 		qualifier = qualifier[dot+1:]
 	}
 
-	return strings.TrimSuffix(qualifier, PackageSuffix) + "_" + stripSanitizationMarkers(base[idx+1:])
+	return qualifier, base[idx+1:]
+}
+
+// adapterStructKey normalizes any of those struct spellings to "<pkg>_<Simple>".
+func adapterStructKey(structBase string) string {
+	qualifier, simpleName := splitAdapterStructReference(structBase)
+
+	// A bare spelling has no package to prefix with — it is already the key.
+	if qualifier == "" {
+		return stripSanitizationMarkers(simpleName)
+	}
+
+	return strings.TrimSuffix(qualifier, PackageSuffix) + "_" + stripSanitizationMarkers(simpleName)
 }
 
 // emittedAdapterPair finds the RECORD pair a cast's (structBase, interfaceTypeName) spelling
@@ -357,25 +384,11 @@ func emittedAdapterPair(pairs [][2]string, structBase, interfaceTypeName string)
 // the generator's `structType.ContainingType.Name`, which AdapterStructKey compares against its
 // anchor class to decide local (bare) vs foreign (`<pkg>_`-prefixed) naming.
 func adapterStructQualifierClass(structBase string) string {
-	base := structBase
+	qualifier, _ := splitAdapterStructReference(structBase)
 
-	if idx := strings.Index(base, "<"); idx >= 0 {
-		base = base[:idx]
-	}
-
-	idx := strings.LastIndex(base, ".")
-
-	if idx < 0 {
-		return ""
-	}
-
-	qualifier := base[:idx]
-
-	if dot := strings.LastIndex(qualifier, "."); dot >= 0 {
-		qualifier = qualifier[dot+1:]
-	}
-
-	if !strings.HasSuffix(qualifier, PackageSuffix) {
+	// A bare spelling has no qualifier, and a qualifier that is not a package class (some other
+	// enclosing type) is not what the generator compares against — report neither.
+	if qualifier == "" || !strings.HasSuffix(qualifier, PackageSuffix) {
 		return ""
 	}
 
@@ -396,17 +409,10 @@ func anchoredAdapterMemberName(pair [2]string, colliding map[string]bool) string
 	ifaceSimple := adapterInterfaceSimpleName(pair[1])
 
 	if qualifier := adapterStructQualifierClass(pair[0]); qualifier != "" && qualifier == emittedAdapterPairAnchors[adapterGroupKey(pair[0], pair[1])] {
-		base := pair[0]
-
-		if idx := strings.Index(base, "<"); idx >= 0 {
-			base = base[:idx]
-		}
-
-		if dot := strings.LastIndex(base, "."); dot >= 0 {
-			base = base[dot+1:]
-		}
-
-		structPart = strings.TrimPrefix(stripSanitizationMarkers(base), ShadowVarMarker)
+		// The struct is qualified by the very anchor class the generator emits into, so it is
+		// LOCAL there and takes the bare simple name — never the foreign "<pkg>_<Simple>" form.
+		_, simpleName := splitAdapterStructReference(pair[0])
+		structPart = strings.TrimPrefix(stripSanitizationMarkers(simpleName), ShadowVarMarker)
 	}
 
 	if !colliding[adapterGroupKey(pair[0], pair[1])] {
@@ -450,40 +456,18 @@ func resolveAdapterNameMarkers(outputFileNames []string, metadataAnchor ...strin
 		defaultAnchor = metadataAnchor[0]
 	}
 
-	for _, fileName := range outputFileNames {
-		contentBytes, err := os.ReadFile(fileName)
-
-		if err != nil {
-			continue
-		}
-
-		content := string(contentBytes)
-
-		if !strings.Contains(content, adapterNameMarkerPrefix) {
-			continue
-		}
-
-		for {
-			start := strings.Index(content, adapterNameMarkerPrefix)
-
-			if start == -1 {
-				break
-			}
-
-			end := strings.Index(content[start:], adapterNameMarkerSuffix)
-
-			if end == -1 {
-				break
-			}
-
-			end += start
-			marker := content[start : end+len(adapterNameMarkerSuffix)]
-			structBase, interfaceTypeName, ok := adapterNameMarkerPair(content[start+len(adapterNameMarkerPrefix) : end])
+	// The file walking is shared with the dynamic-type pass — see rewriteDeferredMarkers
+	// (deferredMarkerOperations.go); only the pair resolution below is specific to adapters.
+	rewriteDeferredMarkers(outputFileNames, "adapter-name", adapterNameMarkerPrefix, adapterNameMarkerSuffix,
+		func(fileName, payload string) (string, bool) {
+			structBase, interfaceTypeName, ok := adapterNameMarkerPair(payload)
 
 			if !ok {
+				// A payload that will not decode names no pair, so there is nothing to resolve to;
+				// drop the marker so it cannot survive into the emitted C#. Substituting only THIS
+				// occurrence means a file carrying several bad markers reports each of them.
 				showWarning("Unresolved adapter-name marker in \"%s\"", fileName)
-				content = strings.Replace(content, marker, "", 1)
-				continue
+				return "", false
 			}
 
 			resolvedName := adapterResolvedName(structBase, interfaceTypeName, colliding)
@@ -496,11 +480,8 @@ func resolveAdapterNameMarkers(outputFileNames []string, metadataAnchor ...strin
 					resolvedName = anchorClass + "." + anchoredAdapterMemberName(pair, colliding)
 				}
 			}
-			content = strings.ReplaceAll(content, marker, resolvedName)
-		}
 
-		if err := os.WriteFile(fileName, []byte(content), 0644); err != nil {
-			showWarning("Failed to resolve adapter-name markers in \"%s\": %s", fileName, err)
-		}
-	}
+			// The pair resolves identically wherever it appears, so substitute every occurrence.
+			return resolvedName, true
+		})
 }

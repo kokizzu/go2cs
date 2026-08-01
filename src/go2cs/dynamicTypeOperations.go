@@ -10,8 +10,6 @@ import (
 	"encoding/hex"
 	"go/ast"
 	"go/types"
-	"os"
-	"strings"
 )
 
 // Sentinels wrapping a deferred dynamic-type-name reference, resolved to the lifted
@@ -135,50 +133,25 @@ func (v *Visitor) dynamicStructTypeName(expr ast.Expr) string {
 // resolveDynamicTypeMarkers rewrites any deferred dynamic-type markers in the
 // given output files using the now-complete package registry. Called once after
 // the concurrent file-visit barrier. Unresolved markers (genuinely unknown types)
-// are replaced with the raw signature and a warning, preserving prior behavior.
+// are replaced with the raw signature and a warning.
+//
+// The file walking is shared with the adapter-name pass — see rewriteDeferredMarkers
+// (deferredMarkerOperations.go); only the lookup below is specific to dynamic types.
 func resolveDynamicTypeMarkers(outputFileNames []string) {
-	for _, fileName := range outputFileNames {
-		contentBytes, err := os.ReadFile(fileName)
-
-		if err != nil {
-			continue
-		}
-
-		content := string(contentBytes)
-
-		if !strings.Contains(content, dynamicTypeMarkerPrefix) {
-			continue
-		}
-
-		for {
-			start := strings.Index(content, dynamicTypeMarkerPrefix)
-
-			if start == -1 {
-				break
-			}
-
-			end := strings.Index(content[start:], dynamicTypeMarkerSuffix)
-
-			if end == -1 {
-				break
-			}
-
-			end += start
-			signature, _ := dynamicTypeMarkerSignature(content[start+len(dynamicTypeMarkerPrefix) : end])
-			marker := content[start : end+len(dynamicTypeMarkerSuffix)]
-
+	rewriteDeferredMarkers(outputFileNames, "dynamic type", dynamicTypeMarkerPrefix, dynamicTypeMarkerSuffix,
+		func(fileName, payload string) (string, bool) {
+			signature, _ := dynamicTypeMarkerSignature(payload)
 			replacement := lookupDynamicTypeName(signature)
 
 			if replacement == "" {
 				showWarning("Unresolved dynamic struct type: %s", signature)
+				// Fall back to the raw Go signature: it will not compile, but it names the exact
+				// type that went unresolved, which is far easier to act on than a leftover marker.
 				replacement = signature
 			}
 
-			content = strings.ReplaceAll(content, marker, replacement)
-		}
-
-		if err := os.WriteFile(fileName, []byte(content), 0644); err != nil {
-			showWarning("Failed to resolve dynamic type markers in \"%s\": %s", fileName, err)
-		}
-	}
+			// Every occurrence of this marker resolves to the same lifted name, so substitute
+			// them all at once and warn about the signature only once.
+			return replacement, true
+		})
 }

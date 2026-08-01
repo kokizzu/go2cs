@@ -2515,7 +2515,7 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 	compileFiles = append(compileFiles, testPackageInfoFileName, testHostFileName)
 	sort.Strings(compileFiles)
 	for _, file := range compileFiles {
-		compileItems.WriteString(fmt.Sprintf("\r\n    <Compile Include=\"%s\" />", xmlEscape(filepath.ToSlash(file))))
+		compileItems.WriteString(fmt.Sprintf("\r\n    <Compile Include=\"%s\" />", escapeXMLAttributeValue(filepath.ToSlash(file))))
 	}
 
 	var fixtureItems strings.Builder
@@ -2530,24 +2530,24 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 		// (SharedFixtureStagingRoot there — keep the two in sync).
 		if up, tail, isShared := sharedFixtureStagingParts(slashed); isShared {
 			fixtureItems.WriteString(fmt.Sprintf("\r\n    <None Include=\"%s\" Link=\"%s/up%d/%s\" CopyToOutputDirectory=\"PreserveNewest\" />",
-				xmlEscape(slashed), SharedFixtureStagingRoot, up, xmlEscape(tail)))
+				escapeXMLAttributeValue(slashed), SharedFixtureStagingRoot, up, escapeXMLAttributeValue(tail)))
 			continue
 		}
 
-		fixtureItems.WriteString(fmt.Sprintf("\r\n    <None Include=\"%s\" CopyToOutputDirectory=\"PreserveNewest\" />", xmlEscape(slashed)))
+		fixtureItems.WriteString(fmt.Sprintf("\r\n    <None Include=\"%s\" CopyToOutputDirectory=\"PreserveNewest\" />", escapeXMLAttributeValue(slashed)))
 	}
 
 	var referenceItems strings.Builder
 	refs := references.Keys()
 	sort.Strings(refs)
 	for _, reference := range refs {
-		referenceItems.WriteString(fmt.Sprintf("\r\n    <ProjectReference Include=\"%s\" />", xmlEscape(reference)))
+		referenceItems.WriteString(fmt.Sprintf("\r\n    <ProjectReference Include=\"%s\" />", escapeXMLAttributeValue(reference)))
 	}
 
 	contents := []byte(strings.NewReplacer(
 		TestRootNamespaceMarker, namespace,
 		TestAssemblyNameMarker, projectName+".tests",
-		TestGo2CSRelativePathMarker, xmlEscape(relativeGo2CSPath),
+		TestGo2CSRelativePathMarker, escapeXMLAttributeValue(relativeGo2CSPath),
 		TestCompileItemsMarker, compileItems.String(),
 		TestFixtureItemsMarker, fixtureItems.String(),
 		TestProjectReferencesMarker, referenceItems.String(),
@@ -4222,11 +4222,11 @@ func samePath(left, right string) bool {
 	return strings.EqualFold(filepath.Clean(leftAbs), filepath.Clean(rightAbs))
 }
 
+// escapeCSharp escapes a value for a C# regular (non-verbatim) string literal, so a Windows path
+// emitted into generated test-host source survives as written rather than turning its separators
+// into escape sequences.
+//
+// XML attribute values use escapeXMLAttributeValue (solutionGenerator.go) instead.
 func escapeCSharp(value string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(value, `\`, `\\`), `"`, `\"`)
-}
-
-func xmlEscape(value string) string {
-	replacer := strings.NewReplacer("&", "&amp;", "\"", "&quot;", "<", "&lt;", ">", "&gt;")
-	return replacer.Replace(value)
 }
