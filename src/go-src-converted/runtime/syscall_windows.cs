@@ -266,7 +266,7 @@ internal static uintptr callbackasmAddr(nint i) {
 internal static UntypedInt callbackMaxFrame => /* 64 * goarch.PtrSize */ 512;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tooManyCallbackFunctionsˢ = "too many callback functions"u8;
+internal static readonly @string tooManyCallbackFunctionsˢ = "too many callback functions"u8;
 
 // compileCallback converts a Go function fn into a C function pointer
 // that can be passed to Windows APIs.

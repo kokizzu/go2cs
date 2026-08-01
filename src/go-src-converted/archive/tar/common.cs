@@ -42,7 +42,7 @@ internal static error errWriteHole = errors.New("archive/tar: write non-NUL byte
 [GoType("[]@string")] partial struct headerError;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string andˢ = "; and "u8;
+internal static readonly @string andˢ = "; and "u8;
 
 internal static @string Error(this headerError he) {
     @string prefix = "archive/tar: cannot encode header"u8;
@@ -318,22 +318,22 @@ internal static slice<sparseEntry> invertSparseEntries(slice<sparseEntry> src, i
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nameˢ = "Name"u8;
-private static readonly @string linknameˢ = "Linkname"u8;
-private static readonly @string unameˢ = "Uname"u8;
-private static readonly @string gnameˢ = "Gname"u8;
-private static readonly @string modeˢ = "Mode"u8;
-private static readonly @string uidˢ = "Uid"u8;
-private static readonly @string gidˢ = "Gid"u8;
-private static readonly @string sizeˢ = "Size"u8;
-private static readonly @string devmajorˢ = "Devmajor"u8;
-private static readonly @string devminorˢ = "Devminor"u8;
-private static readonly @string modTimeˢ = "ModTime"u8;
-private static readonly @string accessTimeˢ = "AccessTime"u8;
-private static readonly @string changeTimeˢ = "ChangeTime"u8;
-private static readonly @string onlyPaxSupportsˢ = "only PAX supports TypeXGlobalHeader"u8;
-private static readonly @string onlyPaxSupportsXattrsˢ = "only PAX supports Xattrs"u8;
-private static readonly @string onlyPaxSupportsˢ2 = "only PAX supports PAXRecords"u8;
+internal static readonly @string nameˢ = "Name"u8;
+internal static readonly @string linknameˢ = "Linkname"u8;
+internal static readonly @string unameˢ = "Uname"u8;
+internal static readonly @string gnameˢ = "Gname"u8;
+internal static readonly @string modeˢ = "Mode"u8;
+internal static readonly @string uidˢ = "Uid"u8;
+internal static readonly @string gidˢ = "Gid"u8;
+internal static readonly @string sizeˢ = "Size"u8;
+internal static readonly @string devmajorˢ = "Devmajor"u8;
+internal static readonly @string devminorˢ = "Devminor"u8;
+internal static readonly @string modTimeˢ = "ModTime"u8;
+internal static readonly @string accessTimeˢ = "AccessTime"u8;
+internal static readonly @string changeTimeˢ = "ChangeTime"u8;
+internal static readonly @string onlyPaxSupportsˢ = "only PAX supports TypeXGlobalHeader"u8;
+internal static readonly @string onlyPaxSupportsXattrsˢ = "only PAX supports Xattrs"u8;
+internal static readonly @string onlyPaxSupportsˢ2 = "only PAX supports PAXRecords"u8;
 
 // allowedFormats determines which formats can be used.
 // The value returned is the logical OR of multiple possible formats.
@@ -693,7 +693,7 @@ internal static UntypedInt c_ISCHR => /* 020000 */ 8192; // Character special fi
 internal static UntypedInt c_ISSOCK => /* 0140000 */ 49152; // Socket
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string archiveTarFileInfoIsNilˢ = "archive/tar: FileInfo is nil"u8;
+internal static readonly @string archiveTarFileInfoIsNilˢ = "archive/tar: FileInfo is nil"u8;
 
 // FileInfoHeader creates a partially-populated [Header] from fi.
 // If fi describes a symlink, FileInfoHeader records link as the link target.

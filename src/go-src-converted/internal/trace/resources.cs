@@ -41,10 +41,10 @@ public static bool Executing(this GoState s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string notExistˢ = "NotExist"u8;
-private static readonly @string runnableˢ = "Runnable"u8;
-private static readonly @string waitingˢ = "Waiting"u8;
-private static readonly @string syscallˢ = "Syscall"u8;
+internal static readonly @string notExistˢ = "NotExist"u8;
+internal static readonly @string runnableˢ = "Runnable"u8;
+internal static readonly @string waitingˢ = "Waiting"u8;
+internal static readonly @string syscallˢ = "Syscall"u8;
 
 // String returns a human-readable representation of a GoState.
 //
@@ -87,7 +87,7 @@ public static bool Executing(this ProcState s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string idleˢ = "Idle"u8;
+internal static readonly @string idleˢ = "Idle"u8;
 
 // String returns a human-readable representation of a ProcState.
 //
@@ -118,10 +118,10 @@ public static ResourceKind ResourceProc => 2;       // Proc.
 public static ResourceKind ResourceThread => 3;     // Thread.
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noneˢ = "None"u8;
-private static readonly @string goroutineˢ = "Goroutine"u8;
-private static readonly @string procˢ = "Proc"u8;
-private static readonly @string threadˢ = "Thread"u8;
+internal static readonly @string noneˢ = "None"u8;
+internal static readonly @string goroutineˢ = "Goroutine"u8;
+internal static readonly @string procˢ = "Proc"u8;
+internal static readonly @string threadˢ = "Thread"u8;
 
 // String returns a human-readable representation of a ResourceKind.
 //

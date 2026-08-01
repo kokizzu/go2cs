@@ -21,7 +21,7 @@ partial class importer_package {
 // type Lookup is a methodless func type — rendered inline as its base delegate
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gccgoˢ = "gccgo"u8;
+internal static readonly @string gccgoˢ = "gccgo"u8;
 
 // ForCompiler returns an Importer for importing from installed packages
 // for the compilers "gc" and "gccgo", or for importing directly

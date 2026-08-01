@@ -237,7 +237,7 @@ public static (slice<byte>, error) MarshalIndent(any v, @string prefix, @string 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string marshalJSONˢ = "MarshalJSON"u8;
+internal static readonly @string marshalJSONˢ = "MarshalJSON"u8;
 
 [GoRecv] public static @string Error(this ref MarshalerError e) {
     @string srcFunc = e.sourceFunc;
@@ -788,7 +788,7 @@ internal static void encode(this mapEncoder me, ж<encodeState> Ꮡe, reflectꓸ
     }
     Ꮡe.of(encodeState.ᏑBuffer).WriteByte((rune)'{');
     // Extract and sort the keys.
-    slice<reflectWithString> sv = new slice<reflectWithString>(v.Len());
+    slice<reflectWithString> sv = new slice<reflectWithString>(v.Len(), () => new());
     
     ж<reflect.MapIter> mi = v.MapRange();
     
@@ -1129,9 +1129,9 @@ internal static slice<byte> appendString<Bytes>(slice<byte> dst, Bytes src, bool
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string jsonˢ = "json"u8;
-private static readonly @string stringˢ = "string"u8;
-private static readonly @string omitemptyˢ = "omitempty"u8;
+internal static readonly @string jsonˢ = "json"u8;
+internal static readonly @string stringˢ = "string"u8;
+internal static readonly @string omitemptyˢ = "omitempty"u8;
 
 // typeFields returns a list of fields that JSON should recognize for the given type.
 // The algorithm is breadth-first search over the set of structs to include - the top struct

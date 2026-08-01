@@ -60,7 +60,7 @@ internal static ж<Δhchan> reflect_makechan(ж<chantype> Ꮡt, nint size) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string makechanSizeOutOfRangeˢ = "makechan: size out of range"u8;
+internal static readonly @string makechanSizeOutOfRangeˢ = "makechan: size out of range"u8;
 
 internal static ж<Δhchan> makechan64(ж<chantype> Ꮡt, int64 size) {
     if ((int64)(nint)size != size) {
@@ -70,8 +70,8 @@ internal static ж<Δhchan> makechan64(ж<chantype> Ꮡt, int64 size) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string makechanInvalidChannelˢ = "makechan: invalid channel element type"u8;
-private static readonly @string makechanBadAlignmentˢ = "makechan: bad alignment"u8;
+internal static readonly @string makechanInvalidChannelˢ = "makechan: invalid channel element type"u8;
+internal static readonly @string makechanBadAlignmentˢ = "makechan: bad alignment"u8;
 
 internal static ж<Δhchan> makechan(ж<chantype> Ꮡt, nint size) {
     ref var t = ref Ꮡt.Value;
@@ -167,10 +167,10 @@ internal static void chansend1(ж<Δhchan> Ꮡc, @unsafe.Pointer elem) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unreachableˢ = "unreachable"u8;
-private static readonly @string sendOnClosedChannelˢ = "send on closed channel"u8;
-private static readonly @string gWaitingListIsCorruptedˢ = "G waiting list is corrupted"u8;
-private static readonly @string chansendSpuriousWakeupˢ = "chansend: spurious wakeup"u8;
+internal static readonly @string unreachableˢ = "unreachable"u8;
+internal static readonly @string sendOnClosedChannelˢ = "send on closed channel"u8;
+internal static readonly @string gWaitingListIsCorruptedˢ = "G waiting list is corrupted"u8;
+internal static readonly @string chansendSpuriousWakeupˢ = "chansend: spurious wakeup"u8;
 
 /*
  * generic single channel send/recv
@@ -416,8 +416,8 @@ internal static void recvDirect(ж<_type> Ꮡt, ж<sudog> Ꮡsg, @unsafe.Pointer
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string closeOfNilChannelˢ = "close of nil channel"u8;
-private static readonly @string closeOfClosedChannelˢ = "close of closed channel"u8;
+internal static readonly @string closeOfNilChannelˢ = "close of nil channel"u8;
+internal static readonly @string closeOfClosedChannelˢ = "close of closed channel"u8;
 
 internal static void closechan(ж<Δhchan> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNil();

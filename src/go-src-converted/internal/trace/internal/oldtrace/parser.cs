@@ -171,7 +171,7 @@ public static (Trace, error) Parse(io.Reader r, version.Version vers) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noEvFrequencyEventˢ = "no EvFrequency event"u8;
+internal static readonly @string noEvFrequencyEventˢ = "no EvFrequency event"u8;
 
 // parse parses, post-processes and verifies the trace.
 internal static (Trace, error) parse(this ж<parser> Ꮡp) => func<(Trace, error)>((defer, recover) => {
@@ -609,8 +609,8 @@ internal static UntypedInt skipStrings => 2;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stringHasInvalidId0ˢ = "string has invalid id 0"u8;
-private static readonly @string stringHasInvalidLength0ˢ = "string has invalid length 0"u8;
+internal static readonly @string stringHasInvalidId0ˢ = "string has invalid id 0"u8;
+internal static readonly @string stringHasInvalidLength0ˢ = "string has invalid length 0"u8;
 
 // readRawEvent reads a raw event into ev. The slices in ev are only valid until
 // the next call to readRawEvent, even when storing to a different location.
@@ -817,7 +817,7 @@ private static readonly @string stringHasInvalidLength0ˢ = "string has invalid 
     p.batchOffsets[pid] = offsets;
     p.off = offset;
     if (cap(events) < n) {
-        events = new slice<Event>(0, n);
+        events = new slice<Event>(0, () => new(), n);
     }
     var gotHeader = false;
     ref var raw = ref heap(new rawEvent(), out var Ꮡraw);

@@ -211,9 +211,9 @@ break_claimLoop:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string attemptToClearNonEmptyˢ = "attempt to clear non-empty span set"u8;
-private static readonly @string spanSetBlockWithUnpoppedˢ = "span set block with unpopped elements found in reset"u8;
-private static readonly @string fullyEmptyUnfreedSpanSetˢ = "fully empty unfreed span set block found in reset"u8;
+internal static readonly @string attemptToClearNonEmptyˢ = "attempt to clear non-empty span set"u8;
+internal static readonly @string spanSetBlockWithUnpoppedˢ = "span set block with unpopped elements found in reset"u8;
+internal static readonly @string fullyEmptyUnfreedSpanSetˢ = "fully empty unfreed span set block found in reset"u8;
 
 // reset resets a spanSet which is empty. It will also clean up
 // any left over blocks.
@@ -309,7 +309,7 @@ internal static ж<spanSetBlock> alloc(this ж<spanSetBlockAlloc> Ꮡp) {
             return s;
         }
     }
-    return (ж<spanSetBlock>)(uintptr)(persistentalloc(@unsafe.Sizeof(new spanSetBlock(nil)), cpu.CacheLineSize, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
+    return (ж<spanSetBlock>)(uintptr)(persistentalloc(/* unsafe.Sizeof(spanSetBlock{}) */ (uintptr)4120, cpu.CacheLineSize, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
 }
 
 // free returns a spanSetBlock back to the pool.
@@ -370,7 +370,7 @@ internal static headTailIndex decHead(this ж<atomicHeadTailIndex> Ꮡh) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string headTailIndexOverflowˢ = "headTailIndex overflow"u8;
+internal static readonly @string headTailIndexOverflowˢ = "headTailIndex overflow"u8;
 
 // incTail atomically increments the tail of a headTailIndex.
 internal static headTailIndex incTail(this ж<atomicHeadTailIndex> Ꮡh) {

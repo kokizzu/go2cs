@@ -108,10 +108,10 @@ partial class pprof_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string xContentTypeOptionsˢ = "X-Content-Type-Options"u8;
-private static readonly @string nosniffˢ = "nosniff"u8;
-private static readonly @string contentTypeˢ = "Content-Type"u8;
-private static readonly @string textPlainCharsetUtf8ˢ = "text/plain; charset=utf-8"u8;
+internal static readonly @string xContentTypeOptionsˢ = "X-Content-Type-Options"u8;
+internal static readonly @string nosniffˢ = "nosniff"u8;
+internal static readonly @string contentTypeˢ = "Content-Type"u8;
+internal static readonly @string textPlainCharsetUtf8ˢ = "text/plain; charset=utf-8"u8;
 
 // Cmdline responds with the running program's
 // command line, with arguments separated by NUL bytes.
@@ -148,8 +148,8 @@ internal static void configureWriteDeadline(http.ResponseWriter w, ж<http.Reque
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string xGoPprofˢ = "X-Go-Pprof"u8;
-private static readonly @string contentDispositionˢ = "Content-Disposition"u8;
+internal static readonly @string xGoPprofˢ = "X-Go-Pprof"u8;
+internal static readonly @string contentDispositionˢ = "Content-Disposition"u8;
 
 internal static void serveError(http.ResponseWriter w, nint status, @string txt) {
     w.Header().Set(contentTypeˢ, textPlainCharsetUtf8ˢ);
@@ -160,9 +160,9 @@ internal static void serveError(http.ResponseWriter w, nint status, @string txt)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string secondsˢ = "seconds"u8;
-private static readonly @string applicationOctetStreamˢ = "application/octet-stream"u8;
-private static readonly @string attachmentFilenameˢ = @"attachment; filename=""profile"""u8;
+internal static readonly @string secondsˢ = "seconds"u8;
+internal static readonly @string applicationOctetStreamˢ = "application/octet-stream"u8;
+internal static readonly @string attachmentFilenameˢ = @"attachment; filename=""profile"""u8;
 
 // Profile responds with the pprof-formatted cpu profile.
 // Profiling lasts for duration specified in seconds GET parameter, or for 30 seconds if not specified.
@@ -191,7 +191,7 @@ public static void Profile(http.ResponseWriter w, ж<http.Request> Ꮡr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string attachmentFilenameTraceˢ = @"attachment; filename=""trace"""u8;
+internal static readonly @string attachmentFilenameTraceˢ = @"attachment; filename=""trace"""u8;
 
 // Trace responds with the execution trace in binary form.
 // Tracing lasts for duration specified in seconds GET parameter, or for 1 second if not specified.
@@ -274,8 +274,8 @@ public static httpꓸHandler Handler(@string name) {
 [GoType("@string")] partial struct handler;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownProfileˢ = "Unknown profile"u8;
-private static readonly @string debugˢ = "debug"u8;
+internal static readonly @string unknownProfileˢ = "Unknown profile"u8;
+internal static readonly @string debugˢ = "debug"u8;
 
 internal static void ServeHTTP(this handler name, http.ResponseWriter w, ж<http.Request> Ꮡr) {
     w.Header().Set(xContentTypeOptionsˢ, nosniffˢ);
@@ -305,11 +305,11 @@ internal static void ServeHTTP(this handler name, http.ResponseWriter w, ж<http
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidValueForSecondsˢ = @"invalid value for ""seconds"" - must be a positive integer"u8;
-private static readonly @string secondsParameterIsNotˢ = @"""seconds"" parameter is not supported for this profile type"u8;
-private static readonly @string secondsAndDebugParamsAreˢ = "seconds and debug params are incompatible"u8;
-private static readonly @string failedToCollectProfileˢ = "failed to collect profile"u8;
-private static readonly @string failedToComputeDeltaˢ = "failed to compute delta"u8;
+internal static readonly @string invalidValueForSecondsˢ = @"invalid value for ""seconds"" - must be a positive integer"u8;
+internal static readonly @string secondsParameterIsNotˢ = @"""seconds"" parameter is not supported for this profile type"u8;
+internal static readonly @string secondsAndDebugParamsAreˢ = "seconds and debug params are incompatible"u8;
+internal static readonly @string failedToCollectProfileˢ = "failed to collect profile"u8;
+internal static readonly @string failedToComputeDeltaˢ = "failed to compute delta"u8;
 
 internal static void serveDeltaProfile(this handler name, http.ResponseWriter w, ж<http.Request> Ꮡr, ж<pprof.Profile> Ꮡp, @string secStr) => func((defer, recover) => {
     ref var r = ref Ꮡr.Value;
@@ -420,8 +420,8 @@ internal static map<@string, @string> profileDescriptions = new map<@string, @st
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string debugPprofˢ = "/debug/pprof/"u8;
-private static readonly @string textHtmlCharsetUtf8ˢ = "text/html; charset=utf-8"u8;
+internal static readonly @string debugPprofˢ = "/debug/pprof/"u8;
+internal static readonly @string textHtmlCharsetUtf8ˢ = "text/html; charset=utf-8"u8;
 
 // Index responds with the pprof-formatted profile named by the request.
 // For example, "/debug/pprof/heap" serves the "heap" profile.
@@ -467,7 +467,7 @@ public static void Index(http.ResponseWriter w, ж<http.Request> Ꮡr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string htmlHeadTitleDebugPprofˢ = """
+internal static readonly @string htmlHeadTitleDebugPprofˢ = """
 <html>
 <head>
 <title>/debug/pprof/</title>
@@ -488,7 +488,7 @@ Types of profiles available:
 <thead><td>Count</td><td>Profile</td></thead>
 
 """u8;
-private static readonly @string tableAHrefGoroutineDebugˢ = """
+internal static readonly @string tableAHrefGoroutineDebugˢ = """
 </table>
 <a href="goroutine?debug=2">full goroutine stack dump</a>
 <br>
@@ -497,7 +497,7 @@ Profile Descriptions:
 <ul>
 
 """u8;
-private static readonly @string ulPBodyHtmlˢ = """
+internal static readonly @string ulPBodyHtmlˢ = """
 </ul>
 </p>
 </body>

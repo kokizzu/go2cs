@@ -117,7 +117,7 @@ public static unsafe (@string val, uint32 valtype, error err) GetStringValue(thi
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string systemRootSystem32ˢ = "%SystemRoot%\\system32\\"u8;
+internal static readonly @string systemRootSystem32ˢ = "%SystemRoot%\\system32\\"u8;
 
 // GetMUIStringValue retrieves the localized string value for
 // the specified value name associated with an open key k.
@@ -229,8 +229,8 @@ public static unsafe (slice<@string> val, uint32 valtype, error err) GetStringsV
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dwordValueIsNot4Bytesˢ = "DWORD value is not 4 bytes long"u8;
-private static readonly @string qwordValueIsNot8Bytesˢ = "QWORD value is not 8 bytes long"u8;
+internal static readonly @string dwordValueIsNot4Bytesˢ = "DWORD value is not 4 bytes long"u8;
+internal static readonly @string qwordValueIsNot8Bytesˢ = "QWORD value is not 8 bytes long"u8;
 
 // GetIntegerValue retrieves the integer value for the specified
 // value name associated with an open key k. It also returns the value's type.
@@ -298,14 +298,18 @@ internal static error setValue(this Key k, @string name, uint32 valtype, slice<b
 
 // SetDWordValue sets the data and type of a name value
 // under key k to value and DWORD.
-public static error SetDWordValue(this Key k, @string name, uint32 value) {
-    return k.setValue(name, DWORD, (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡ(value))))[..]);
+public static error SetDWordValue(this Key k, @string name, uint32 valueʗp) {
+    ref var value = ref heap(valueʗp, out var Ꮡvalue);
+
+    return k.setValue(name, DWORD, (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡvalue)))[..]);
 }
 
 // SetQWordValue sets the data and type of a name value
 // under key k to value and QWORD.
-public static error SetQWordValue(this Key k, @string name, uint64 value) {
-    return k.setValue(name, QWORD, (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡ(value))))[..]);
+public static error SetQWordValue(this Key k, @string name, uint64 valueʗp) {
+    ref var value = ref heap(valueʗp, out var Ꮡvalue);
+
+    return k.setValue(name, QWORD, (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡvalue)))[..]);
 }
 
 internal static unsafe error setStringValue(this Key k, @string name, uint32 valtype, @string value) {
@@ -330,7 +334,7 @@ public static error SetExpandStringValue(this Key k, @string name, @string value
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stringCannotHave0Insideˢ = "string cannot have 0 inside"u8;
+internal static readonly @string stringCannotHave0Insideˢ = "string cannot have 0 inside"u8;
 
 // SetStringsValue sets the data and type of a name value
 // under key k to value and MULTI_SZ. The value strings

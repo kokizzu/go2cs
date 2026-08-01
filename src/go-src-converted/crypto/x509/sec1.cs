@@ -43,7 +43,7 @@ public static (ж<ecdsa.PrivateKey>, error) ParseECPrivateKey(slice<byte> der) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509UnknownEllipticCurveˢ = "x509: unknown elliptic curve"u8;
+internal static readonly @string x509UnknownEllipticCurveˢ = "x509: unknown elliptic curve"u8;
 
 // MarshalECPrivateKey converts an EC private key to SEC 1, ASN.1 DER form.
 //
@@ -61,7 +61,7 @@ public static (slice<byte>, error) MarshalECPrivateKey(ж<ecdsa.PrivateKey> Ꮡk
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidEllipticKeyPublicˢ = "invalid elliptic key public key"u8;
+internal static readonly @string invalidEllipticKeyPublicˢ = "invalid elliptic key public key"u8;
 
 // marshalECPrivateKeyWithOID marshals an EC private key into ASN.1, DER format and
 // sets the curve ID to the given OID, or omits it if OID is nil.
@@ -93,8 +93,8 @@ internal static (slice<byte>, error) marshalECDHPrivateKey(ж<ecdh.PrivateKey> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509InvalidEllipticCurveˢ = "x509: invalid elliptic curve private key value"u8;
-private static readonly @string x509InvalidPrivateKeyˢ = "x509: invalid private key length"u8;
+internal static readonly @string x509InvalidEllipticCurveˢ = "x509: invalid elliptic curve private key value"u8;
+internal static readonly @string x509InvalidPrivateKeyˢ = "x509: invalid private key length"u8;
 
 // parseECPrivateKey parses an ASN.1 Elliptic Curve Private Key Structure.
 // The OID for the named curve may be provided from another source (such as

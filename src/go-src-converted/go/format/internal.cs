@@ -19,8 +19,8 @@ using io = io_package;
 partial class format_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string expectedPackageˢ = "expected 'package'"u8;
-private static readonly @string expectedDeclarationˢ = "expected declaration"u8;
+internal static readonly @string expectedPackageˢ = "expected 'package'"u8;
+internal static readonly @string expectedDeclarationˢ = "expected declaration"u8;
 
 // parse parses src, which was read from the named file,
 // as a Go source file, declaration, or statement list.

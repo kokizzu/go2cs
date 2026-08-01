@@ -94,9 +94,9 @@ internal static void coroswitch(ж<coro> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string coroOsThreadLockingMustˢ = "coro: OS thread locking must match locking at coroutine creation"u8;
-private static readonly @string coroswitchOnExitedCoroˢ = "coroswitch on exited coro"u8;
-private static readonly @string coroswitchOfAGoroutineToˢ = "coroswitch of a goroutine to itself"u8;
+internal static readonly @string coroOsThreadLockingMustˢ = "coro: OS thread locking must match locking at coroutine creation"u8;
+internal static readonly @string coroswitchOnExitedCoroˢ = "coroswitch on exited coro"u8;
+internal static readonly @string coroswitchOfAGoroutineToˢ = "coroswitch of a goroutine to itself"u8;
 
 // coroswitch_m is the implementation of coroswitch
 // that runs on the m stack.

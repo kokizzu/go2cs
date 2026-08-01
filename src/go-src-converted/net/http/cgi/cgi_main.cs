@@ -17,8 +17,8 @@ using url = go.net.url_package;
 partial class cgi_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string scriptNameˢ = "SCRIPT_NAME"u8;
-private static readonly @string pathInfoˢ = "PATH_INFO"u8;
+internal static readonly @string scriptNameˢ = "SCRIPT_NAME"u8;
+internal static readonly @string pathInfoˢ = "PATH_INFO"u8;
 
 internal static void cgiMain() {
     var exprᴛ1 = path.Join(os.Getenv(scriptNameˢ), os.Getenv(pathInfoˢ));
@@ -31,9 +31,9 @@ internal static void cgiMain() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string locˢ = "loc"u8;
-private static readonly @string writestderrˢ = "writestderr"u8;
-private static readonly @string bigresponseˢ = "bigresponse"u8;
+internal static readonly @string locˢ = "loc"u8;
+internal static readonly @string writestderrˢ = "writestderr"u8;
+internal static readonly @string bigresponseˢ = "bigresponse"u8;
 
 // testCGI is a CGI program translated from a Perl program to complete host_test.
 // test cases in host_test should be provided by testCGI.
@@ -101,14 +101,14 @@ internal static (nint n, error err) Read(this neverEnding b, slice<byte> p) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string requestMethodˢ = "REQUEST_METHOD"u8;
-private static readonly @string requestUriˢ = "REQUEST_URI"u8;
-private static readonly @string nilRequestBodyˢ = "nil-request-body"u8;
-private static readonly @string xTestHeaderˢ = "X-Test-Header"u8;
-private static readonly @string xTestValueˢ = "X-Test-Value"u8;
-private static readonly @string noBodyˢ = "no-body"u8;
-private static readonly @string exactBodyˢ = "exact-body"u8;
-private static readonly @string writeForeverˢ = "write-forever"u8;
+internal static readonly @string requestMethodˢ = "REQUEST_METHOD"u8;
+internal static readonly @string requestUriˢ = "REQUEST_URI"u8;
+internal static readonly @string nilRequestBodyˢ = "nil-request-body"u8;
+internal static readonly @string xTestHeaderˢ = "X-Test-Header"u8;
+internal static readonly @string xTestValueˢ = "X-Test-Value"u8;
+internal static readonly @string noBodyˢ = "no-body"u8;
+internal static readonly @string exactBodyˢ = "exact-body"u8;
+internal static readonly @string writeForeverˢ = "write-forever"u8;
 
 // childCGIProcess is used by integration_test to complete unit tests.
 internal static void childCGIProcess() {

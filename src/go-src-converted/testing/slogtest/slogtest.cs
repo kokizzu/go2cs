@@ -371,10 +371,10 @@ internal static Func<map<@string, any>, @string> inGroup(@string name, Func<map<
     internal Action<ж<slog.Record>> mod;
 }
 
-[GoRecv] internal static error Handle(this ref wrapper h, context.Context ctx, slog.Record r) {
-    r = r.ΔClone();
+[GoRecv] internal static error Handle(this ref wrapper h, context.Context ctx, slog.Record rʗp) {
+    ref var r = ref heap(rʗp.ΔClone(), out var Ꮡr);
 
-    h.mod(Ꮡ(r));
+    h.mod(Ꮡr);
     return h.Handler.Handle(ctx, r);
 }
 

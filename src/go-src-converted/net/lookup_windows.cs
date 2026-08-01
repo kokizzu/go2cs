@@ -35,7 +35,7 @@ internal static error winError(@string call, error err) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string getprotobynameˢ = "getprotobyname"u8;
+internal static readonly @string getprotobynameˢ = "getprotobyname"u8;
 
 internal static (nint proto, error err) getprotobyname(@string name) {
     nint proto = default!;
@@ -117,7 +117,7 @@ internal static (slice<@string>, error) lookupHost(this ж<Resolver> Ꮡr, conte
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string getaddrinfowˢ = "getaddrinfow"u8;
+internal static readonly @string getaddrinfowˢ = "getaddrinfow"u8;
 
 [GoLocalName("ret")] [GoType("dyn")] partial struct lookupIP_ret {
     internal slice<IPAddr> addrs;
@@ -308,7 +308,7 @@ Err: "unknown network"u8, Name: network + "/"u8 + service))));
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dnsqueryˢ = "dnsquery"u8;
+internal static readonly @string dnsqueryˢ = "dnsquery"u8;
 
 internal static (@string, error) lookupCNAME(this ж<Resolver> Ꮡr, context.Context ctx, @string name) => func<(@string, error)>((defer, recover) => {
     {

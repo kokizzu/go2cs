@@ -33,7 +33,7 @@ internal static UntypedInt debugLogBytes => /* 16 << 10 */ 16384;
 internal static UntypedInt debugLogStringLimit => /* debugLogBytes / 8 */ 2048;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string failedToAllocateDebugLogˢ = "failed to allocate debug log"u8;
+internal static readonly @string failedToAllocateDebugLogˢ = "failed to allocate debug log"u8;
 
 // dlog returns a debug logger. The caller can use methods on the
 // returned logger to add values, which will be space-separated in the
@@ -76,7 +76,7 @@ internal static ж<dlogger> dlog() {
     if (l == nil) {
         // Use sysAllocOS instead of sysAlloc because we want to interfere
         // with the runtime as little as possible, and sysAlloc updates accounting.
-        l = (ж<dlogger>)(uintptr)(sysAllocOS(@unsafe.Sizeof(new dlogger(nil))));
+        l = (ж<dlogger>)(uintptr)(sysAllocOS(/* unsafe.Sizeof(dlogger{}) */ (uintptr)16480));
         if (l == nil) {
             @throw(failedToAllocateDebugLogˢ);
         }
@@ -135,7 +135,7 @@ internal static ж<ж<dlogger>> ᏑallDloggers = new(default(ж<dlogger>));
 internal static ref ж<dlogger> allDloggers => ref ᏑallDloggers.ValueSlot;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string recordTooLargeˢ = "record too large"u8;
+internal static readonly @string recordTooLargeˢ = "record too large"u8;
 
 //go:nosplit
 internal static void end(this ж<dlogger> Ꮡl) {
@@ -269,12 +269,13 @@ internal static ж<dlogger> hex(this ж<dlogger> Ꮡl, uint64 x) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string notAPointerTypeˢ = "not a pointer type"u8;
+internal static readonly @string notAPointerTypeˢ = "not a pointer type"u8;
 
 //go:nosplit
-internal static ж<dlogger> p(this ж<dlogger> Ꮡl, any x) {
+internal static ж<dlogger> p(this ж<dlogger> Ꮡl, any xʗp) {
     ref var l = ref Ꮡl.Value;
 
+    ref var x = ref heap(xʗp, out var Ꮡx);
     if (!dlogEnabled) {
         return Ꮡl;
     }
@@ -282,7 +283,7 @@ internal static ж<dlogger> p(this ж<dlogger> Ꮡl, any x) {
     if (x == default!){
         l.w.uvarint(0);
     } else {
-        var v = efaceOf(Ꮡ(x));
+        var v = efaceOf(Ꮡx);
         var exprᴛ1 = (abiꓸKind)((~(~v)._type).Kind_ & abi.KindMask);
         if (exprᴛ1 == abi.Chan || exprᴛ1 == abi.Func || exprᴛ1 == abi.Map || exprᴛ1 == abi.Pointer || exprᴛ1 == abi.UnsafePointer) {
             l.w.uvarint((uint64)(uintptr)(~v).data);
@@ -397,7 +398,7 @@ internal static UntypedInt debugLogHeaderSize => 2;
 internal static UntypedInt debugLogSyncSize => /* debugLogHeaderSize + 2*8 */ 18;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string recordWrappedAroundˢ = "record wrapped around"u8;
+internal static readonly @string recordWrappedAroundˢ = "record wrapped around"u8;
 
 //go:nosplit
 [GoRecv] internal static void ensure(this ref debugLogWriter l, uint64 n) {
@@ -735,7 +736,7 @@ internal static unsafe void printDebugLog() {
     }
     // Use sysAllocOS instead of sysAlloc because we want to interfere
     // with the runtime as little as possible, and sysAlloc updates accounting.
-    @unsafe.Pointer state1 = (uintptr)sysAllocOS(@unsafe.Sizeof(new printDebugLog_readState(nil)) * (uintptr)n);
+    @unsafe.Pointer state1 = (uintptr)sysAllocOS(/* unsafe.Sizeof(readState{}) */ (uintptr)64 * (uintptr)n);
     if (state1 == nil) {
         println((@string)"failed to allocate read state for"u8, n, (@string)"logs"u8);
         printunlock();

@@ -390,7 +390,7 @@ internal static map<@string, bool> reqWriteExcludeHeader = new map<@string, bool
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string userAgentˢ2 = "User-Agent"u8;
+internal static readonly @string userAgentˢ2 = "User-Agent"u8;
 
 // UserAgent returns the client's User-Agent, if sent in the request.
 [GoRecv] public static @string UserAgent(this ref Request r) {
@@ -468,8 +468,8 @@ internal static ж<multipart.Form> multipartByReader = Ꮡ(new multipart.Form(
 ));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpMultipartReaderˢ = "http: MultipartReader called twice"u8;
-private static readonly @string httpMultipartHandledByˢ = "http: multipart handled by ParseMultipartForm"u8;
+internal static readonly @string httpMultipartReaderˢ = "http: MultipartReader called twice"u8;
+internal static readonly @string httpMultipartHandledByˢ = "http: multipart handled by ParseMultipartForm"u8;
 
 // MultipartReader returns a MIME multipart reader if this is a
 // multipart/form-data or a multipart/mixed POST request, else returns nil and an error.
@@ -487,8 +487,8 @@ private static readonly @string httpMultipartHandledByˢ = "http: multipart hand
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingFormBodyˢ = "missing form body"u8;
-private static readonly @string boundaryˢ = "boundary"u8;
+internal static readonly @string missingFormBodyˢ = "missing form body"u8;
+internal static readonly @string boundaryˢ = "boundary"u8;
 
 [GoRecv] internal static (ж<multipart.Reader>, error) multipartReader(this ref Request r, bool allowMixed) {
     @string v = r.Header.Get(contentTypeˢ);
@@ -562,8 +562,8 @@ public static error WriteProxy(this ж<Request> Ꮡr, io.Writer w) {
 internal static error errMissingHost = errors.New("http: Request.Write on Request with no Host or URL set"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpInvalidHostHeaderˢ = "http: invalid Host header"u8;
-private static readonly @string netHttpCanTWriteControlˢ = "net/http: can't write control character in Request.URL"u8;
+internal static readonly @string httpInvalidHostHeaderˢ = "http: invalid Host header"u8;
+internal static readonly @string netHttpCanTWriteControlˢ = "net/http: can't write control character in Request.URL"u8;
 
 // extraHeaders may be nil
 // waitForContinue may be nil
@@ -806,7 +806,7 @@ internal static @string removeZone(@string host) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpˢ2 = "HTTP/"u8;
+internal static readonly @string httpˢ2 = "HTTP/"u8;
 
 // ParseHTTPVersion parses an HTTP version string according to RFC 7230, section 2.6.
 // "HTTP/1.0" returns (1, 0, true). Note that strings without
@@ -867,7 +867,7 @@ public static (ж<Request>, error) NewRequest(@string method, @string url, io.Re
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string netHttpNilContextˢ = "net/http: nil Context"u8;
+internal static readonly @string netHttpNilContextˢ = "net/http: nil Context"u8;
 
 // NewRequestWithContext returns a new [Request] given a method, URL, and
 // optional body.
@@ -1103,9 +1103,9 @@ public static (ж<Request>, error) ReadRequest(ж<bufio.Reader> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string malformedHttpRequestˢ = "malformed HTTP request"u8;
-private static readonly @string invalidMethodˢ = "invalid method"u8;
-private static readonly @string malformedHttpVersionˢ = "malformed HTTP version"u8;
+internal static readonly @string malformedHttpRequestˢ = "malformed HTTP request"u8;
+internal static readonly @string invalidMethodˢ = "invalid method"u8;
+internal static readonly @string malformedHttpVersionˢ = "malformed HTTP version"u8;
 
 // readRequest should be an internal detail,
 // but widely used packages access it using linkname.
@@ -1239,7 +1239,7 @@ public static io.ReadCloser MaxBytesReader(ResponseWriter w, io.ReadCloser r, in
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpRequestBodyTooLargeˢ = "http: request body too large"u8;
+internal static readonly @string httpRequestBodyTooLargeˢ = "http: request body too large"u8;
 
 [GoRecv] public static @string Error(this ref MaxBytesError e) {
     // Due to Hyrum's law, this text cannot be changed.
@@ -1310,8 +1310,8 @@ internal static void copyValues(urlpkg.Values dst, urlpkg.Values src) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string applicationOctetStreamˢ = "application/octet-stream"u8;
-private static readonly @string httpPostTooLargeˢ = "http: POST too large"u8;
+internal static readonly @string applicationOctetStreamˢ = "application/octet-stream"u8;
+internal static readonly @string httpPostTooLargeˢ = "http: POST too large"u8;
 
 internal static (urlpkg.Values vs, error err) parsePostForm(ж<Request> Ꮡr) {
     urlpkg.Values vs = default!;
@@ -1426,7 +1426,7 @@ public static error ParseForm(this ж<Request> Ꮡr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpMultipartHandledByˢ2 = "http: multipart handled by MultipartReader"u8;
+internal static readonly @string httpMultipartHandledByˢ2 = "http: multipart handled by MultipartReader"u8;
 
 // ParseMultipartForm parses a request body as multipart/form-data.
 // The whole request body is parsed and up to a total of maxMemory bytes of
@@ -1614,8 +1614,8 @@ public static (multipart.File, ж<multipart.FileHeader>, error) FormFile(this ж
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string idempotencyKeyˢ = "Idempotency-Key"u8;
-private static readonly @string xIdempotencyKeyˢ = "X-Idempotency-Key"u8;
+internal static readonly @string idempotencyKeyˢ = "Idempotency-Key"u8;
+internal static readonly @string xIdempotencyKeyˢ = "X-Idempotency-Key"u8;
 
 [GoRecv] internal static bool isReplayable(this ref Request r) {
     if (r.Body == default! || AreEqual(r.Body, NoBody) || r.GetBody != default!) {
@@ -1663,7 +1663,7 @@ internal static bool requestMethodUsuallyLacksBody(@string method) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string websocketˢ = "websocket"u8;
+internal static readonly @string websocketˢ = "websocket"u8;
 
 // requiresHTTP1 reports whether this request requires being sent on
 // an HTTP/1 connection.

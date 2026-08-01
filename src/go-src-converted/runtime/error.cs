@@ -33,7 +33,7 @@ partial class runtime_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string interfaceˢ = "interface"u8;
+internal static readonly @string interfaceˢ = "interface"u8;
 
 [GoRecv] public static @string Error(this ref TypeAssertionError e) {
     @string inter = interfaceˢ;
@@ -305,8 +305,10 @@ internal static void printpanicval(any v) {
 }
 
 // Invariant: each newline in the string representation is followed by a tab.
-internal static void printanycustomtype(any i) {
-    var eface = efaceOf(Ꮡ(i));
+internal static void printanycustomtype(any iʗp) {
+    ref var i = ref heap(iʗp, out var Ꮡi);
+
+    var eface = efaceOf(Ꮡi);
     @string typestring = toRType((~eface)._type).@string();
     var exprᴛ1 = (~(~eface)._type).Kind_;
     if (exprᴛ1 == abi.ΔString) {

@@ -238,8 +238,8 @@ internal static (nint, error) verify(this ж<Checker> Ꮡcheck, tokenꓸPos pos,
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string implementˢ = "implement"u8;
-private static readonly @string satisfyˢ = "satisfy"u8;
+internal static readonly @string implementˢ = "implement"u8;
+internal static readonly @string satisfyˢ = "satisfy"u8;
 
 // implements checks if V implements T. The receiver may be nil if implements
 // is called through an exported API call such as AssignableTo. If constraint

@@ -100,7 +100,7 @@ internal static @string utf16PtrToString(ж<uint16> Ꮡp) {
     @unsafe.Pointer end = new @unsafe.Pointer(Ꮡp);
     nint n = 0;
     while (~(ж<uint16>)(uintptr)(end) != 0) {
-        end = (@unsafe.Pointer)((uintptr)end + @unsafe.Sizeof(p));
+        end = (@unsafe.Pointer)((uintptr)end + /* unsafe.Sizeof(*p) */ (uintptr)2);
         n++;
     }
     return UTF16ToString(@unsafe.Slice(Ꮡp, n));
@@ -327,7 +327,7 @@ public static uintptr NewCallbackCDecl(any fn) {
 // syscall interface implementation for other packages
 internal static ж<SecurityAttributes> makeInheritSa() {
     ref var sa = ref heap(new SecurityAttributes(), out var Ꮡsa);
-    sa.Length = (uint32)@unsafe.Sizeof(sa);
+    sa.Length = (uint32)/* unsafe.Sizeof(sa) */ (uintptr)24;
     sa.InheritHandle = 1;
     return Ꮡsa;
 }
@@ -505,7 +505,7 @@ internal static uintptr ptrSize => /* unsafe.Sizeof(uintptr(0)) */ 8;
 // See https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfilepointerex
 internal static error setFilePointerEx(ΔHandle handle, int64 distToMove, ж<int64> ᏑnewFilePointer, uint32 whence) {
     Errno e1 = default!;
-    if (@unsafe.Sizeof((uintptr)0) == 8){
+    if (/* unsafe.Sizeof(uintptr(0)) */ (uintptr)8 == 8){
         (_, _, e1) = Syscall6(procSetFilePointerEx.Addr(), 4, (uintptr)handle, (uintptr)distToMove, (uintptr)new @unsafe.Pointer(ᏑnewFilePointer), (uintptr)whence, 0, 0);
     } else {
         // Different 32-bit systems disgaree about whether distToMove starts 8-byte aligned.
@@ -899,7 +899,7 @@ internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrInet4> 
     p.Value[0] = (byte)((sa.Port >> (int)(8)));
     p.Value[1] = (byte)sa.Port;
     sa.raw.Addr = sa.Addr.Clone();
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrInet4.Ꮡraw)), (int32)@unsafe.Sizeof(sa.raw), default!);
+    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrInet4.Ꮡraw)), (int32)/* unsafe.Sizeof(sa.raw) */ (uintptr)16, default!);
 }
 
 [GoType] [GoValueClone("Addr", "raw")] partial struct SockaddrInet6 {
@@ -921,7 +921,7 @@ internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrInet6> 
     p.Value[1] = (byte)sa.Port;
     sa.raw.Scope_id = sa.ZoneId;
     sa.raw.Addr = sa.Addr.Clone();
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrInet6.Ꮡraw)), (int32)@unsafe.Sizeof(sa.raw), default!);
+    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrInet6.Ꮡraw)), (int32)/* unsafe.Sizeof(sa.raw) */ (uintptr)28, default!);
 }
 
 [GoType] [GoValueClone("Path")] partial struct RawSockaddrUnix {
@@ -1026,7 +1026,7 @@ public static error /*err*/ SetsockoptInt(ΔHandle fd, nint level, nint opt, nin
 
     ref var v = ref heap<int32>(out var Ꮡv);
     v = (int32)value;
-    return Setsockopt(fd, (int32)level, (int32)opt, Ꮡv.Reinterpret<int32, byte>(), (int32)@unsafe.Sizeof(v));
+    return Setsockopt(fd, (int32)level, (int32)opt, Ꮡv.Reinterpret<int32, byte>(), (int32)/* unsafe.Sizeof(v) */ (uintptr)4);
 }
 
 public static error /*err*/ Bind(ΔHandle fd, ΔSockaddr sa) {
@@ -1055,7 +1055,7 @@ public static (ΔSockaddr sa, error err) Getsockname(ΔHandle fd) {
 
     ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa);
     ref var l = ref heap<int32>(out var Ꮡl);
-    l = (int32)@unsafe.Sizeof(rsa);
+    l = (int32)/* unsafe.Sizeof(rsa) */ (uintptr)116;
     {
         err = getsockname(fd, Ꮡrsa, Ꮡl); if (err != default!) {
             return (sa, err);
@@ -1070,7 +1070,7 @@ public static (ΔSockaddr sa, error err) Getpeername(ΔHandle fd) {
 
     ref var rsa = ref heap(new RawSockaddrAny(), out var Ꮡrsa);
     ref var l = ref heap<int32>(out var Ꮡl);
-    l = (int32)@unsafe.Sizeof(rsa);
+    l = (int32)/* unsafe.Sizeof(rsa) */ (uintptr)116;
     {
         err = getpeername(fd, Ꮡrsa, Ꮡl); if (err != default!) {
             return (sa, err);
@@ -1174,9 +1174,9 @@ public static error LoadConnectEx() {
         connectExFunc.err = WSAIoctl(s,
             SIO_GET_EXTENSION_FUNCTION_POINTER,
             ᏑWSAID_CONNECTEX.Reinterpret<GUID, byte>(),
-            (uint32)@unsafe.Sizeof(WSAID_CONNECTEX),
+            (uint32)/* unsafe.Sizeof(WSAID_CONNECTEX) */ (uintptr)16,
             ᏑconnectExFunc.of(connectExFuncᴛ1.Ꮡaddr).Reinterpret<uintptr, byte>(),
-            (uint32)@unsafe.Sizeof(connectExFunc.addr),
+            (uint32)/* unsafe.Sizeof(connectExFunc.addr) */ (uintptr)8,
             Ꮡn, nil, 0);
     }));
     return connectExFunc.err;
@@ -1333,7 +1333,7 @@ public static (nint, error) GetsockoptInt(ΔHandle fd, nint level, nint opt) {
     ref var optval = ref heap<int32>(out var Ꮡoptval);
     optval = (int32)0;
     ref var optlen = ref heap<int32>(out var Ꮡoptlen);
-    optlen = (int32)@unsafe.Sizeof(optval);
+    optlen = (int32)/* unsafe.Sizeof(optval) */ (uintptr)4;
     var err = Getsockopt(fd, (int32)level, (int32)opt, Ꮡoptval.Reinterpret<int32, byte>(), Ꮡoptlen);
     return ((nint)optval, err);
 }
@@ -1344,21 +1344,21 @@ public static error /*err*/ SetsockoptLinger(ΔHandle fd, nint level, nint opt, 
     ref var l = ref Ꮡl.Value;
     ref var sys = ref heap<sysLinger>(out var Ꮡsys);
     sys = new sysLinger(Onoff: (uint16)l.Onoff, Linger: (uint16)l.ΔLinger);
-    return Setsockopt(fd, (int32)level, (int32)opt, Ꮡsys.Reinterpret<sysLinger, byte>(), (int32)@unsafe.Sizeof(sys));
+    return Setsockopt(fd, (int32)level, (int32)opt, Ꮡsys.Reinterpret<sysLinger, byte>(), (int32)/* unsafe.Sizeof(sys) */ (uintptr)4);
 }
 
-public static error /*err*/ SetsockoptInet4Addr(ΔHandle fd, nint level, nint opt, array<byte> value) {
+public static error /*err*/ SetsockoptInet4Addr(ΔHandle fd, nint level, nint opt, array<byte> valueʗp) {
     error err = default!;
 
-    value = value.Clone();
-    return Setsockopt(fd, (int32)level, (int32)opt, Ꮡ(value).at<byte>(0), 4);
+    ref var value = ref heap(valueʗp.Clone(), out var Ꮡvalue);
+    return Setsockopt(fd, (int32)level, (int32)opt, Ꮡvalue.at<byte>(0), 4);
 }
 
 public static error /*err*/ SetsockoptIPMreq(ΔHandle fd, nint level, nint opt, ж<IPMreq> Ꮡmreq) {
     error err = default!;
 
     ref var mreq = ref Ꮡmreq.Value;
-    return Setsockopt(fd, (int32)level, (int32)opt, Ꮡmreq.Reinterpret<IPMreq, byte>(), (int32)@unsafe.Sizeof(mreq));
+    return Setsockopt(fd, (int32)level, (int32)opt, Ꮡmreq.Reinterpret<IPMreq, byte>(), (int32)/* unsafe.Sizeof(*mreq) */ (uintptr)8);
 }
 
 public static error /*err*/ SetsockoptIPv6Mreq(ΔHandle fd, nint level, nint opt, ж<IPv6Mreq> Ꮡmreq) {
@@ -1411,7 +1411,7 @@ internal static (ж<ProcessEntry32>, error) getProcessEntry(nint pid) => func<(�
     }
     deferǃ(CloseHandle, snapshot, defer);
     ref var procEntry = ref heap(new ProcessEntry32(), out var ᏑprocEntry);
-    procEntry.Size = (uint32)@unsafe.Sizeof(procEntry);
+    procEntry.Size = (uint32)/* unsafe.Sizeof(procEntry) */ (uintptr)568;
     {
         err = Process32First(snapshot, ᏑprocEntry); if (err != default!) {
             return (default!, err);
@@ -1642,7 +1642,7 @@ public static (ΔHandle, error) CreateIoCompletionPort(ΔHandle filehandle, ΔHa
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string getQueuedCompletionStatusˢ = "GetQueuedCompletionStatus returned key overflow"u8;
+internal static readonly @string getQueuedCompletionStatusˢ = "GetQueuedCompletionStatus returned key overflow"u8;
 
 // Deprecated: GetQueuedCompletionStatus has the wrong function signature. Use x/sys/windows.GetQueuedCompletionStatus.
 public static error GetQueuedCompletionStatus(ΔHandle cphandle, ж<uint32> Ꮡqty, ж<uint32> Ꮡkey, ж<ж<Overlapped>> Ꮡoverlapped, uint32 timeout) {
@@ -1670,7 +1670,7 @@ public static error PostQueuedCompletionStatus(ΔHandle cphandle, uint32 qty, ui
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unableToQueryBufferSizeˢ = "unable to query buffer size from InitializeProcThreadAttributeList"u8;
+internal static readonly @string unableToQueryBufferSizeˢ = "unable to query buffer size from InitializeProcThreadAttributeList"u8;
 
 // newProcThreadAttributeList allocates new PROC_THREAD_ATTRIBUTE_LIST, with
 // the requested maximum number of attributes, which must be cleaned up by

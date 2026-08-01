@@ -16,7 +16,7 @@ using token = global::go.go.token_package;
 partial class types_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mapIndexˢ = "map index"u8;
+internal static readonly @string mapIndexˢ = "map index"u8;
 
 // If e is a valid function instantiation, indexExpr returns true.
 // In that case x represents the uninstantiated function value and
@@ -238,7 +238,7 @@ internal static bool /*isFuncInst*/ indexExpr(this ж<Checker> Ꮡcheck, ж<oper
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string and3rdIndexRequiredIn3ˢ = "2nd and 3rd index required in 3-index slice"u8;
+internal static readonly @string and3rdIndexRequiredIn3ˢ = "2nd and 3rd index required in 3-index slice"u8;
 
 internal static void sliceExpr(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.SliceExpr> Ꮡe) {
     ref var check = ref Ꮡcheck.Value;
@@ -395,7 +395,7 @@ internal static ast.Expr singleIndex(this ж<Checker> Ꮡcheck, ж<typeparams.In
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string indexˢ = "index"u8;
+internal static readonly @string indexˢ = "index"u8;
 
 // index checks an index expression for validity.
 // If max >= 0, it is the upper bound for index.
@@ -460,7 +460,7 @@ internal static bool isValidIndex(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, e
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string arrayOrSliceLiteralˢ = "array or slice literal"u8;
+internal static readonly @string arrayOrSliceLiteralˢ = "array or slice literal"u8;
 
 // indexedElts checks the elements (elts) of an array or slice composite literal
 // against the literal's element type (typ), and the element indices against

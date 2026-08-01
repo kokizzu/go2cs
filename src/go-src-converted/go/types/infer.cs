@@ -22,7 +22,7 @@ partial class types_package {
 internal const bool enableReverseTypeInference = true; // disable for debugging
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string inferSSSˢ = "== infer : %s%s ➞ %s"u8;
+internal static readonly @string inferSSSˢ = "== infer : %s%s ➞ %s"u8;
 
 // infer attempts to infer the complete set of type arguments for generic function instantiation/call
 // based on the given type parameters tparams, type arguments targs, function parameters params, and
@@ -507,7 +507,7 @@ internal static (slice<ж<TypeParam>>, ΔType) renameTParams(this ж<Checker> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string andˢ = ", and "u8;
+internal static readonly @string andˢ = ", and "u8;
 
 // typeParamsString produces a string containing all the type parameter names
 // in list suitable for human consumption.

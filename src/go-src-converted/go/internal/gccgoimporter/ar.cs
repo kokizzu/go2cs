@@ -58,7 +58,7 @@ internal static UntypedInt arHdrSize => /* arFmagOff + arFmagSize */ 60;
 internal static readonly @string arfmag = "`\n"u8;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unsupportedThinArchiveˢ = "unsupported thin archive"u8;
+internal static readonly @string unsupportedThinArchiveˢ = "unsupported thin archive"u8;
 
 // arExportData takes an archive file and returns a ReadSeeker for the
 // export data in that file. This assumes that there is only one
@@ -135,7 +135,7 @@ internal static (io.ReadSeeker, error) standardArExportData(io.ReadSeeker archiv
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goExportˢ = ".go_export"u8;
+internal static readonly @string goExportˢ = ".go_export"u8;
 
 // elfFromAr tries to get export data from an archive member as an ELF file.
 // If there is no export data, this returns nil, nil.

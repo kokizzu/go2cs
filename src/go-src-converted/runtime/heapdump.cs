@@ -90,8 +90,10 @@ internal static unsafe void dwrite(@unsafe.Pointer data, uintptr len) {
     }
 }
 
-internal static void dwritebyte(byte b) {
-    dwrite(new @unsafe.Pointer(Ꮡ(b)), 1);
+internal static void dwritebyte(byte bʗp) {
+    ref var b = ref heap(bʗp, out var Ꮡb);
+
+    dwrite(new @unsafe.Pointer(Ꮡb), 1);
 }
 
 internal static void flush() {
@@ -252,7 +254,7 @@ internal static void dumpbv(ж<bitvector> Ꮡcbv, uintptr offset) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownFunctionˢ = "unknown function"u8;
+internal static readonly @string unknownFunctionˢ = "unknown function"u8;
 
 internal static void dumpframe(ж<stkframe> Ꮡs, ж<childInfo> Ꮡchild) {
     ref var s = ref Ꮡs.Value;
@@ -415,7 +417,7 @@ internal static void dumpgoroutine(ж<g> Ꮡgp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dumpgsInStwBadStatusˢ = "dumpgs in STW - bad status"u8;
+internal static readonly @string dumpgsInStwBadStatusˢ = "dumpgs in STW - bad status"u8;
 
 internal static void dumpgs() {
     assertWorldStopped();
@@ -486,7 +488,7 @@ internal static void dumproots() {
 internal static array<bool> freemark = new(1024);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string freemarkArrayDoesnTHaveˢ = "freemark array doesn't have enough entries"u8;
+internal static readonly @string freemarkArrayDoesnTHaveˢ = "freemark array doesn't have enough entries"u8;
 
 internal static void dumpobjs() {
     // To protect mheap_.allspans.
@@ -695,7 +697,7 @@ internal static void mdump(ж<MemStats> Ꮡm) {
             s.ensureSwept();
         }
     }
-    memclrNoHeapPointers(new @unsafe.Pointer(Ꮡtypecache), @unsafe.Sizeof(typecache));
+    memclrNoHeapPointers(new @unsafe.Pointer(Ꮡtypecache), /* unsafe.Sizeof(typecache) */ (uintptr)8192);
     dwrite(new @unsafe.Pointer(Ꮡ(dumphdr, 0)), (uintptr)len(dumphdr));
     dumpparams();
     dumpitabs();
@@ -729,13 +731,15 @@ internal static void writeheapdump_m(uintptr fd, ж<MemStats> Ꮡm) {
 }
 
 // dumpint() the kind & offset of each field in an object.
-internal static void dumpfields(bitvector bv) {
-    dumpbv(Ꮡ(bv), 0);
+internal static void dumpfields(bitvector bvʗp) {
+    ref var bv = ref heap(bvʗp, out var Ꮡbv);
+
+    dumpbv(Ꮡbv, 0);
     dumpint(fieldKindEol);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string heapdumpOutOfMemoryˢ = "heapdump: out of memory"u8;
+internal static readonly @string heapdumpOutOfMemoryˢ = "heapdump: out of memory"u8;
 
 internal static unsafe bitvector makeheapobjbv(uintptr Δp, uintptr size) {
     // Extend the temp buffer if necessary.

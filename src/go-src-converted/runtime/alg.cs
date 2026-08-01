@@ -33,14 +33,15 @@ internal static uintptr memhash128(@unsafe.Pointer Δp, uintptr h) {
 //go:nosplit
 internal static uintptr memhash_varlen(@unsafe.Pointer Δp, uintptr h) {
     var ptr = getclosureptr();
-    var size = ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)(ptr + @unsafe.Sizeof(h)));
+    var size = ~(ж<uintptr>)(uintptr)((@unsafe.Pointer)(ptr + /* unsafe.Sizeof(h) */ (uintptr)8));
     return memhash(Δp, h, size);
 }
 
 // runtime variable to check if the processor we're running on
 // actually supports the instructions used by the AES-based
 // hash implementation.
-internal static bool useAeshash;
+internal static ж<bool> ᏑuseAeshash = new(default(bool));
+internal static ref bool useAeshash => ref ᏑuseAeshash.Value;
 
 // in asm_*.s
 
@@ -481,33 +482,45 @@ internal static bool ifaceeq(ж<itab> Ꮡtab, @unsafe.Pointer x, @unsafe.Pointer
 // See go.dev/issue/67401.
 //
 //go:linkname stringHash
-internal static uintptr stringHash(@string s, uintptr seed) {
-    return strhash((uintptr)noescape(new @unsafe.Pointer(Ꮡ(s))), seed);
+internal static uintptr stringHash(@string sʗp, uintptr seed) {
+    ref var s = ref heap(sʗp, out var Ꮡs);
+
+    return strhash((uintptr)noescape(new @unsafe.Pointer(Ꮡs)), seed);
 }
 
-internal static uintptr bytesHash(slice<byte> b, uintptr seed) {
-    var s = Ꮡ(b).Reinterpret<slice<byte>, Δsliceᴛ>();
+internal static uintptr bytesHash(slice<byte> bʗp, uintptr seed) {
+    ref var b = ref heap(bʗp, out var Ꮡb);
+
+    var s = Ꮡb.Reinterpret<slice<byte>, Δsliceᴛ>();
     return memhash((~s).Δarray, seed, (uintptr)(~s).len);
 }
 
-internal static uintptr int32Hash(uint32 i, uintptr seed) {
-    return memhash32((uintptr)noescape(new @unsafe.Pointer(Ꮡ(i))), seed);
+internal static uintptr int32Hash(uint32 iʗp, uintptr seed) {
+    ref var i = ref heap(iʗp, out var Ꮡi);
+
+    return memhash32((uintptr)noescape(new @unsafe.Pointer(Ꮡi)), seed);
 }
 
-internal static uintptr int64Hash(uint64 i, uintptr seed) {
-    return memhash64((uintptr)noescape(new @unsafe.Pointer(Ꮡ(i))), seed);
+internal static uintptr int64Hash(uint64 iʗp, uintptr seed) {
+    ref var i = ref heap(iʗp, out var Ꮡi);
+
+    return memhash64((uintptr)noescape(new @unsafe.Pointer(Ꮡi)), seed);
 }
 
-internal static uintptr efaceHash(any i, uintptr seed) {
-    return nilinterhash((uintptr)noescape(new @unsafe.Pointer(Ꮡ(i))), seed);
+internal static uintptr efaceHash(any iʗp, uintptr seed) {
+    ref var i = ref heap(iʗp, out var Ꮡi);
+
+    return nilinterhash((uintptr)noescape(new @unsafe.Pointer(Ꮡi)), seed);
 }
 
 [GoType("dyn")] partial interface ifaceHash_i {
     void F();
 }
 
-internal static uintptr ifaceHash(ifaceHash_i i, uintptr seed) {
-    return interhash((uintptr)noescape(new @unsafe.Pointer(Ꮡ(i))), seed);
+internal static uintptr ifaceHash(ifaceHash_i iʗp, uintptr seed) {
+    ref var i = ref heap(iʗp, out var Ꮡi);
+
+    return interhash((uintptr)noescape(new @unsafe.Pointer(Ꮡi)), seed);
 }
 
 internal static UntypedInt hashRandomBytes => /* goarch.PtrSize / 4 * 64 */ 128;

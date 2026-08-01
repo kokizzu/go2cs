@@ -26,7 +26,7 @@ public static @string UTF16PtrToString(ж<uint16> Ꮡp) {
     @unsafe.Pointer end = new @unsafe.Pointer(Ꮡp);
     nint n = 0;
     while (~(ж<uint16>)(uintptr)(end) != 0) {
-        end = (@unsafe.Pointer)((uintptr)end + @unsafe.Sizeof(p));
+        end = (@unsafe.Pointer)((uintptr)end + /* unsafe.Sizeof(*p) */ (uintptr)2);
         n++;
     }
     return syscall.UTF16ToString(@unsafe.Slice(Ꮡp, n));
@@ -264,9 +264,9 @@ internal static error loadWSASendRecvMsg() {
         sendRecvMsgFunc.err = syscall.WSAIoctl(s,
             syscall.SIO_GET_EXTENSION_FUNCTION_POINTER,
             ᏑWSAID_WSARECVMSG.Reinterpret<syscall.GUID, byte>(),
-            (uint32)@unsafe.Sizeof(WSAID_WSARECVMSG),
+            (uint32)/* unsafe.Sizeof(WSAID_WSARECVMSG) */ (uintptr)16,
             ᏑsendRecvMsgFunc.of(sendRecvMsgFuncᴛ1.ᏑrecvAddr).Reinterpret<uintptr, byte>(),
-            (uint32)@unsafe.Sizeof(sendRecvMsgFunc.recvAddr),
+            (uint32)/* unsafe.Sizeof(sendRecvMsgFunc.recvAddr) */ (uintptr)8,
             Ꮡn, nil, 0);
         if (sendRecvMsgFunc.err != default!) {
             return;
@@ -274,9 +274,9 @@ internal static error loadWSASendRecvMsg() {
         sendRecvMsgFunc.err = syscall.WSAIoctl(s,
             syscall.SIO_GET_EXTENSION_FUNCTION_POINTER,
             ᏑWSAID_WSASENDMSG.Reinterpret<syscall.GUID, byte>(),
-            (uint32)@unsafe.Sizeof(WSAID_WSASENDMSG),
+            (uint32)/* unsafe.Sizeof(WSAID_WSASENDMSG) */ (uintptr)16,
             ᏑsendRecvMsgFunc.of(sendRecvMsgFuncᴛ1.ᏑsendAddr).Reinterpret<uintptr, byte>(),
-            (uint32)@unsafe.Sizeof(sendRecvMsgFunc.sendAddr),
+            (uint32)/* unsafe.Sizeof(sendRecvMsgFunc.sendAddr) */ (uintptr)8,
             Ꮡn, nil, 0);
     }));
     return sendRecvMsgFunc.err;

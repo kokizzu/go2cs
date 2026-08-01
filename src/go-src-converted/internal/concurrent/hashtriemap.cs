@@ -54,14 +54,15 @@ public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>()
 // Load returns the value stored in the map for a key, or nil if no
 // value is present.
 // The ok result indicates whether value was found in the map.
-[GoRecv] public static (V value, bool ok) Load<K, V>(this ref HashTrieMap<K, V> ht, K key)
+[GoRecv] public static (V value, bool ok) Load<K, V>(this ref HashTrieMap<K, V> ht, K keyʗp)
     where K : /* comparable */ new()
     where V : /* comparable */ new()
 {
     V value = default!;
     bool ok = default!;
 
-    var hash = ht.keyHash((uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡ(key))), ht.seed);
+    ref var key = ref heap(keyʗp, out var Ꮡkey);
+    var hash = ht.keyHash((uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey)), ht.seed);
     var i = ht.root;
     nint hashShift = 8 * goarch.PtrSize;
     while (hashShift != 0) {
@@ -81,7 +82,7 @@ public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>()
 // LoadOrStore returns the existing value for the key if present.
 // Otherwise, it stores and returns the given value.
 // The loaded result is true if the value was loaded, false if stored.
-public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K key, V value)
+public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K keyʗp, V value)
     where K : /* comparable */ new()
     where V : /* comparable */ new() {
     V result = default!;
@@ -90,7 +91,8 @@ public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V
     {
     ref var ht = ref Ꮡht.Value;
 
-        var hash = ht.keyHash((uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡ(key))), ht.seed);
+    ref var key = ref heap(keyʗp, out var Ꮡkey);
+        var hash = ht.keyHash((uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey)), ht.seed);
         ж<Δindirect<K, V>> i = default!;
         nuint hashShift = default!;
         ж<atomic.Pointer<node<K, V>>> slot = default!;
@@ -212,13 +214,14 @@ public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V
 //
 // If there is no current value for key in the map, CompareAndDelete returns false
 // (even if the old value is the nil interface value).
-[GoRecv] public static bool /*deleted*/ CompareAndDelete<K, V>(this ref HashTrieMap<K, V> ht, K key, V old)
+[GoRecv] public static bool /*deleted*/ CompareAndDelete<K, V>(this ref HashTrieMap<K, V> ht, K keyʗp, V old)
     where K : /* comparable */ new()
     where V : /* comparable */ new()
 {
     bool deleted = default!;
 
-    var hash = ht.keyHash((uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡ(key))), ht.seed);
+    ref var key = ref heap(keyʗp, out var Ꮡkey);
+    var hash = ht.keyHash((uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey)), ht.seed);
     ж<Δindirect<K, V>> i = default!;
     nuint hashShift = default!;
     ж<atomic.Pointer<node<K, V>>> slot = default!;
@@ -406,14 +409,15 @@ internal static ж<Δentry<K, V>> newEntryNode<K, V>(K key, V value)
     ));
 }
 
-internal static (V, bool) lookup<K, V>(this ж<Δentry<K, V>> Ꮡe, K key, Func<@unsafe.Pointer, @unsafe.Pointer, bool> equal)
+internal static (V, bool) lookup<K, V>(this ж<Δentry<K, V>> Ꮡe, K keyʗp, Func<@unsafe.Pointer, @unsafe.Pointer, bool> equal)
     where K : /* comparable */ new()
     where V : /* comparable */ new()
 {
     ref var e = ref Ꮡe.DerefOrNil();
 
+    ref var key = ref heap(keyʗp, out var Ꮡkey);
     while (Ꮡe != nil) {
-        if (equal(new @unsafe.Pointer(Ꮡe.of(concurrent_package.Δentry<K, V>.Ꮡkey)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡ(key))))) {
+        if (equal(new @unsafe.Pointer(Ꮡe.of(concurrent_package.Δentry<K, V>.Ꮡkey)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey)))) {
             return (e.value, true);
         }
         Ꮡe = Ꮡe.of(concurrent_package.Δentry<K, V>.Ꮡoverflow).Load(); e = ref Ꮡe.DerefOrNil();
@@ -425,20 +429,22 @@ internal static (V, bool) lookup<K, V>(this ж<Δentry<K, V>> Ꮡe, K key, Func<
 // equal. Returns the new entry chain and whether or not anything was deleted.
 //
 // compareAndDelete must be called under the mutex of the indirect node which e is a child of.
-internal static (ж<Δentry<K, V>>, bool) compareAndDelete<K, V>(this ж<Δentry<K, V>> Ꮡhead, K key, V value, Func<@unsafe.Pointer, @unsafe.Pointer, bool> keyEqual, Func<@unsafe.Pointer, @unsafe.Pointer, bool> valEqual)
+internal static (ж<Δentry<K, V>>, bool) compareAndDelete<K, V>(this ж<Δentry<K, V>> Ꮡhead, K keyʗp, V valueʗp, Func<@unsafe.Pointer, @unsafe.Pointer, bool> keyEqual, Func<@unsafe.Pointer, @unsafe.Pointer, bool> valEqual)
     where K : /* comparable */ new()
     where V : /* comparable */ new()
 {
     ref var head = ref Ꮡhead.Value;
 
-    if (keyEqual(new @unsafe.Pointer(Ꮡhead.of(concurrent_package.Δentry<K, V>.Ꮡkey)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡ(key)))) && valEqual(new @unsafe.Pointer(Ꮡhead.of(concurrent_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡ(value))))) {
+    ref var key = ref heap(keyʗp, out var Ꮡkey);
+    ref var value = ref heap(valueʗp, out var Ꮡvalue);
+    if (keyEqual(new @unsafe.Pointer(Ꮡhead.of(concurrent_package.Δentry<K, V>.Ꮡkey)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey))) && valEqual(new @unsafe.Pointer(Ꮡhead.of(concurrent_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡvalue)))) {
         // Drop the head of the list.
         return (Ꮡhead.of(concurrent_package.Δentry<K, V>.Ꮡoverflow).Load(), true);
     }
     var i = Ꮡhead.of(concurrent_package.Δentry<K, V>.Ꮡoverflow);
     var e = i.Load();
     while (e != nil) {
-        if (keyEqual(new @unsafe.Pointer(e.of(concurrent_package.Δentry<K, V>.Ꮡkey)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡ(key)))) && valEqual(new @unsafe.Pointer(e.of(concurrent_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡ(value))))) {
+        if (keyEqual(new @unsafe.Pointer(e.of(concurrent_package.Δentry<K, V>.Ꮡkey)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey))) && valEqual(new @unsafe.Pointer(e.of(concurrent_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡvalue)))) {
             i.Store(e.of(concurrent_package.Δentry<K, V>.Ꮡoverflow).Load());
             return (Ꮡhead, true);
         }

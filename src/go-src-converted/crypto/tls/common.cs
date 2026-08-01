@@ -37,11 +37,11 @@ public static UntypedInt VersionTLS13 => 0x0304;
 public static UntypedInt VersionSSL30 => 0x0300;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ssLv3ˢ = "SSLv3"u8;
-private static readonly @string tls10ˢ = "TLS 1.0"u8;
-private static readonly @string tls11ˢ = "TLS 1.1"u8;
-private static readonly @string tls12ˢ = "TLS 1.2"u8;
-private static readonly @string tls13ˢ = "TLS 1.3"u8;
+internal static readonly @string ssLv3ˢ = "SSLv3"u8;
+internal static readonly @string tls10ˢ = "TLS 1.0"u8;
+internal static readonly @string tls11ˢ = "TLS 1.1"u8;
+internal static readonly @string tls12ˢ = "TLS 1.2"u8;
+internal static readonly @string tls13ˢ = "TLS 1.3"u8;
 
 // VersionName returns the name for the provided TLS version number
 // (e.g. "TLS 1.3"), or a fallback representation of the value if the
@@ -898,7 +898,7 @@ internal static slice<ticketKey> ticketKeys(this ж<Config> Ꮡc, ж<Config> Ꮡ
                 throw panic(fmt.Sprintf("unable to generate random session ticket key: %v"u8, err));
             }
         }
-        var valid = new slice<ticketKey>(0, len(c.autoSessionTicketKeys) + 1);
+        var valid = new slice<ticketKey>(0, () => new(), len(c.autoSessionTicketKeys) + 1);
         valid = append(valid, c.ticketKeyFromBytes(newKey));
         foreach (var (_, vᴛ1) in c.autoSessionTicketKeys) {
             var k = vᴛ1.ΔClone();
@@ -932,7 +932,7 @@ public static void SetSessionTicketKeys(this ж<Config> Ꮡc, slice<array<byte>>
     if (len(keys) == 0) {
         throw panic("tls: keys must have at least one key");
     }
-    var newKeys = new slice<ticketKey>(len(keys));
+    var newKeys = new slice<ticketKey>(len(keys), () => new());
     foreach (var (i, vᴛ1) in keys) {
         var bytes = vᴛ1.Clone();
 
@@ -1143,11 +1143,11 @@ public static error errNoCertificates = errors.New("tls: no certificates configu
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noMutuallySupportedˢ = "no mutually supported protocol versions"u8;
-private static readonly @string clientDoesnTSupportEcdheˢ = "client doesn't support ECDHE, can only use legacy RSA key exchange"u8;
-private static readonly @string clientDoesnTSupportˢ = "client doesn't support certificate curve"u8;
-private static readonly @string connectionDoesnTSupportˢ = "connection doesn't support Ed25519"u8;
-private static readonly @string clientDoesnTSupportAnyˢ = "client doesn't support any cipher suites compatible with the certificate"u8;
+internal static readonly @string noMutuallySupportedˢ = "no mutually supported protocol versions"u8;
+internal static readonly @string clientDoesnTSupportEcdheˢ = "client doesn't support ECDHE, can only use legacy RSA key exchange"u8;
+internal static readonly @string clientDoesnTSupportˢ = "client doesn't support certificate curve"u8;
+internal static readonly @string connectionDoesnTSupportˢ = "connection doesn't support Ed25519"u8;
+internal static readonly @string clientDoesnTSupportAnyˢ = "client doesn't support any cipher suites compatible with the certificate"u8;
 
 // SupportsCertificate returns nil if the provided certificate is supported by
 // the client that sent the ClientHello. Otherwise, it returns an error
@@ -1328,7 +1328,7 @@ public static error SupportsCertificate(this ж<ClientHelloInfo> Ꮡchi, ж<Cert
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string chainIsNotSignedByAnˢ = "chain is not signed by an acceptable CA"u8;
+internal static readonly @string chainIsNotSignedByAnˢ = "chain is not signed by an acceptable CA"u8;
 
 // SupportsCertificate returns nil if the provided certificate is supported by
 // the server that sent the CertificateRequest. Otherwise, it returns an error

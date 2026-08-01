@@ -138,8 +138,8 @@ public static io.Reader ErrReader(error err) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "nil"u8;
-private static readonly @string nilOrEofˢ = "nil or EOF"u8;
+internal static readonly @string nilˢ = "nil"u8;
+internal static readonly @string nilOrEofˢ = "nil or EOF"u8;
 
 // TestReader tests that reading from r returns the expected file content.
 // It does reads of different sizes, until EOF.

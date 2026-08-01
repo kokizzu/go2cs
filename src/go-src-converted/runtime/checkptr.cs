@@ -9,8 +9,8 @@ using @internal;
 partial class runtime_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string checkptrMisalignedˢ = "checkptr: misaligned pointer conversion"u8;
-private static readonly @string checkptrConvertedPointerˢ = "checkptr: converted pointer straddles multiple allocations"u8;
+internal static readonly @string checkptrMisalignedˢ = "checkptr: misaligned pointer conversion"u8;
+internal static readonly @string checkptrConvertedPointerˢ = "checkptr: converted pointer straddles multiple allocations"u8;
 
 internal static void checkptrAlignment(@unsafe.Pointer Δp, ж<_type> Ꮡelem, uintptr n) {
     ref var elem = ref Ꮡelem.Value;
@@ -51,8 +51,8 @@ internal static bool checkptrStraddles(@unsafe.Pointer ptr, uintptr size) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string checkptrPointerˢ = "checkptr: pointer arithmetic computed bad pointer value"u8;
-private static readonly @string checkptrPointerˢ2 = "checkptr: pointer arithmetic result points to invalid allocation"u8;
+internal static readonly @string checkptrPointerˢ = "checkptr: pointer arithmetic computed bad pointer value"u8;
+internal static readonly @string checkptrPointerˢ2 = "checkptr: pointer arithmetic result points to invalid allocation"u8;
 
 internal static void checkptrArithmetic(@unsafe.Pointer Δp, slice<@unsafe.Pointer> originals) {
     if (0 < (uintptr)Δp && (uintptr)Δp < minLegalPointer) {

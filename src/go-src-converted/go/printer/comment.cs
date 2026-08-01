@@ -109,9 +109,9 @@ internal static slice<ж<ast.Comment>> formatDocComment(slice<ж<ast.Comment>> l
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lineˢ = "line "u8;
-private static readonly @string externˢ = "extern "u8;
-private static readonly @string exportˢ = "export "u8;
+internal static readonly @string lineˢ = "line "u8;
+internal static readonly @string externˢ = "extern "u8;
+internal static readonly @string exportˢ = "export "u8;
 
 // isDirective reports whether c is a comment directive.
 // See go.dev/issue/37974.

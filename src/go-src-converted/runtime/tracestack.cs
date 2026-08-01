@@ -17,7 +17,7 @@ internal static UntypedInt traceStackSize => 128;
 internal static uintptr logicalStackSentinel => /* ^uintptr(0) */ unchecked((uintptr)18446744073709551615);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string attemptedToTraceStackOfAˢ = "attempted to trace stack of a goroutine this thread does not own"u8;
+internal static readonly @string attemptedToTraceStackOfAˢ = "attempted to trace stack of a goroutine this thread does not own"u8;
 
 // traceStack captures a stack trace from a goroutine and registers it in the trace
 // stack table. It then returns its unique ID. If gp == nil, then traceStack will
@@ -141,7 +141,7 @@ internal static uint64 put(this ж<traceStackTable> Ꮡt, slice<uintptr> pcs) {
     if (len(pcs) == 0) {
         return 0;
     }
-    var (id, _) = Ꮡt.of(traceStackTable.Ꮡtab).put((uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(pcs, 0)).Value)), (uintptr)len(pcs) * @unsafe.Sizeof((uintptr)0));
+    var (id, _) = Ꮡt.of(traceStackTable.Ꮡtab).put((uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(pcs, 0)).Value)), (uintptr)len(pcs) * /* unsafe.Sizeof(uintptr(0)) */ (uintptr)8);
     return id;
 }
 
@@ -163,7 +163,7 @@ internal static void dump(this ж<traceStackTable> Ꮡt, uintptr gen) {
 internal static traceWriter dumpStacksRec(ж<traceMapNode> Ꮡnode, traceWriter w, slice<uintptr> stackBuf) {
     ref var node = ref Ꮡnode.Value;
 
-    var Δstack = @unsafe.Slice(Ꮡ(node.data, 0).Reinterpret<byte, uintptr>(), (uintptr)len(node.data) / @unsafe.Sizeof((uintptr)0));
+    var Δstack = @unsafe.Slice(Ꮡ(node.data, 0).Reinterpret<byte, uintptr>(), (uintptr)len(node.data) / /* unsafe.Sizeof(uintptr(0)) */ (uintptr)8);
     // N.B. This might allocate, but that's OK because we're not writing to the M's buffer,
     // but one we're about to create (with ensure).
     nint n = fpunwindExpand(stackBuf, Δstack);

@@ -77,7 +77,7 @@ partial class runtime_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string spanHasNoFreeObjectsˢ = "span has no free objects"u8;
+internal static readonly @string spanHasNoFreeObjectsˢ = "span has no free objects"u8;
 
 // Allocate a span to use in an mcache.
 [GoRecv] internal static ж<mspan> cacheSpan(this ref mcentral c) {
@@ -197,7 +197,7 @@ havespan:
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string uncachingSpanButSˢ = "uncaching span but s.allocCount == 0"u8;
+internal static readonly @string uncachingSpanButSˢ = "uncaching span but s.allocCount == 0"u8;
 
 // Return span from an mcache.
 //

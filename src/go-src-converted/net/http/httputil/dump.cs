@@ -102,8 +102,8 @@ internal static int64 outgoingLength(ж<http.Request> Ꮡreq) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpˢ = "http"u8;
-private static readonly @string http11204NoContentˢ = "HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n"u8;
+internal static readonly @string httpˢ = "http"u8;
+internal static readonly @string http11204NoContentˢ = "HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n"u8;
 
 // DumpRequestOut is like [DumpRequest] but for outgoing client requests. It
 // includes any headers that the standard [http.Transport] adds, such as
@@ -245,9 +245,9 @@ internal static map<@string, bool> reqWriteExcludeHeaderDump = new map<@string, 
 };
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string getˢ = "GET"u8;
-private static readonly @string httpˢ2 = "http://"u8;
-private static readonly @string httpsˢ = "https://"u8;
+internal static readonly @string getˢ = "GET"u8;
+internal static readonly @string httpˢ2 = "http://"u8;
+internal static readonly @string httpsˢ = "https://"u8;
 
 // DumpRequest returns the given request in its HTTP/1.x wire
 // representation. It should only be used by servers to debug client

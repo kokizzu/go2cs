@@ -99,8 +99,8 @@ internal static UntypedInt metaDataFile => 2;
 internal static UntypedInt counterDataFile => 4;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gocoverdebugˢ = "GOCOVERDEBUG"u8;
-private static readonly @string gocoverdirˢ = "GOCOVERDIR"u8;
+internal static readonly @string gocoverdebugˢ = "GOCOVERDEBUG"u8;
+internal static readonly @string gocoverdirˢ = "GOCOVERDIR"u8;
 
 // emitMetaData emits the meta-data output file for this coverage run.
 // This entry point is intended to be invoked by the compiler from
@@ -195,7 +195,7 @@ internal static (slice<rtcov.CovMetaBlob>, error) prepareForMetaEmit() {
         }
     }
     var h = md5.New();
-    var tlen = (uint64)@unsafe.Sizeof(new coverage.MetaFileHeader(nil));
+    var tlen = (uint64)/* unsafe.Sizeof(coverage.MetaFileHeader{}) */ (uintptr)56;
     foreach (var (_, vᴛ2) in ml) {
         var entry = vᴛ2.ΔClone();
 
@@ -448,7 +448,7 @@ internal static error emitCounterDataToWriter(this ж<emitState> Ꮡs, io.Writer
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ioWriterˢ = "<io.Writer>"u8;
+internal static readonly @string ioWriterˢ = "<io.Writer>"u8;
 
 internal static error writeMetaData(io.Writer w, slice<rtcov.CovMetaBlob> metalist, coverage.CounterMode cmode, coverage.CounterGranularity gran, array<byte> finalHash) {
     finalHash = finalHash.Clone();
@@ -556,9 +556,9 @@ internal static error writeMetaData(io.Writer w, slice<rtcov.CovMetaBlob> metali
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string argcˢ = "argc"u8;
-private static readonly @string goosˢ = "GOOS"u8;
-private static readonly @string goarchˢ = "GOARCH"u8;
+internal static readonly @string argcˢ = "argc"u8;
+internal static readonly @string goosˢ = "GOOS"u8;
+internal static readonly @string goarchˢ = "GOARCH"u8;
 
 // captureOsArgs converts os.Args() into the format we use to store
 // this info in the counter data file (counter data file "args"

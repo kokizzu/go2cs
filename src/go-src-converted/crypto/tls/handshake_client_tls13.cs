@@ -43,11 +43,11 @@ partial class tls_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsInternalErrorTls13ˢ = "tls: internal error: TLS 1.3 reached in FIPS mode"u8;
-private static readonly @string tlsServerSelectedTls13Inˢ = "tls: server selected TLS 1.3 in a renegotiation"u8;
-private static readonly @string echAcceptConfirmationˢ = "ech accept confirmation"u8;
-private static readonly @string tlsUnexpectedEncryptedˢ = "tls: unexpected encrypted_client_hello extension in server hello despite ECH being accepted"u8;
-private static readonly @string tlsUnexpectedServerNameˢ = "tls: unexpected server_name extension in server hello"u8;
+internal static readonly @string tlsInternalErrorTls13ˢ = "tls: internal error: TLS 1.3 reached in FIPS mode"u8;
+internal static readonly @string tlsServerSelectedTls13Inˢ = "tls: server selected TLS 1.3 in a renegotiation"u8;
+internal static readonly @string echAcceptConfirmationˢ = "ech accept confirmation"u8;
+internal static readonly @string tlsUnexpectedEncryptedˢ = "tls: unexpected encrypted_client_hello extension in server hello despite ECH being accepted"u8;
+internal static readonly @string tlsUnexpectedServerNameˢ = "tls: unexpected server_name extension in server hello"u8;
 
 // handshake requires hs.c, hs.hello, hs.serverHello, hs.keyShareKeys, and,
 // optionally, hs.session, hs.earlySecret and hs.binderKey to be set.
@@ -190,12 +190,12 @@ internal static error handshake(this ж<clientHandshakeStateTLS13> Ꮡhs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsServerSelectedTls13ˢ = "tls: server selected TLS 1.3 using the legacy version field"u8;
-private static readonly @string tlsServerSelectedAnˢ = "tls: server selected an invalid version after a HelloRetryRequest"u8;
-private static readonly @string tlsServerSentAnIncorrectˢ = "tls: server sent an incorrect legacy version"u8;
-private static readonly @string tlsServerSentAˢ = "tls: server sent a ServerHello extension forbidden in TLS 1.3"u8;
-private static readonly @string tlsServerDidNotEchoTheˢ = "tls: server did not echo the legacy session ID"u8;
-private static readonly @string tlsServerChangedCipherˢ = "tls: server changed cipher suite after a HelloRetryRequest"u8;
+internal static readonly @string tlsServerSelectedTls13ˢ = "tls: server selected TLS 1.3 using the legacy version field"u8;
+internal static readonly @string tlsServerSelectedAnˢ = "tls: server selected an invalid version after a HelloRetryRequest"u8;
+internal static readonly @string tlsServerSentAnIncorrectˢ = "tls: server sent an incorrect legacy version"u8;
+internal static readonly @string tlsServerSentAˢ = "tls: server sent a ServerHello extension forbidden in TLS 1.3"u8;
+internal static readonly @string tlsServerDidNotEchoTheˢ = "tls: server did not echo the legacy session ID"u8;
+internal static readonly @string tlsServerChangedCipherˢ = "tls: server changed cipher suite after a HelloRetryRequest"u8;
 
 // checkServerHelloOrHRR does validity checks that apply to both ServerHello and
 // HelloRetryRequest messages. It sets hs.suite.
@@ -253,13 +253,13 @@ private static readonly @string tlsServerChangedCipherˢ = "tls: server changed 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsMalformedEncryptedˢ = "tls: malformed encrypted client hello extension"u8;
-private static readonly @string hrrEchAcceptConfirmationˢ = "hrr ech accept confirmation"u8;
-private static readonly @string tlsUnexpectedEchˢ = "tls: unexpected ECH extension in serverHello"u8;
-private static readonly @string tlsServerSentAnˢ = "tls: server sent an unnecessary HelloRetryRequest message"u8;
-private static readonly @string tlsReceivedMalformedKeyˢ = "tls: received malformed key_share extension"u8;
-private static readonly @string tlsServerSelectedˢ3 = "tls: server selected unsupported group"u8;
-private static readonly @string tlsServerSentAnˢ2 = "tls: server sent an unnecessary HelloRetryRequest key_share"u8;
+internal static readonly @string tlsMalformedEncryptedˢ = "tls: malformed encrypted client hello extension"u8;
+internal static readonly @string hrrEchAcceptConfirmationˢ = "hrr ech accept confirmation"u8;
+internal static readonly @string tlsUnexpectedEchˢ = "tls: unexpected ECH extension in serverHello"u8;
+internal static readonly @string tlsServerSentAnˢ = "tls: server sent an unnecessary HelloRetryRequest message"u8;
+internal static readonly @string tlsReceivedMalformedKeyˢ = "tls: received malformed key_share extension"u8;
+internal static readonly @string tlsServerSelectedˢ3 = "tls: server selected unsupported group"u8;
+internal static readonly @string tlsServerSentAnˢ2 = "tls: server sent an unnecessary HelloRetryRequest key_share"u8;
 
 // processHelloRetryRequest handles the HRR in hs.serverHello, modifies and
 // resends hs.hello, and reads the new ServerHello into hs.serverHello.
@@ -445,12 +445,12 @@ private static readonly @string tlsServerSentAnˢ2 = "tls: server sent an unnece
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsServerSentTwoˢ = "tls: server sent two HelloRetryRequest messages"u8;
-private static readonly @string tlsServerSentACookieInAˢ = "tls: server sent a cookie in a normal ServerHello"u8;
-private static readonly @string tlsMalformedKeyShareˢ = "tls: malformed key_share extension"u8;
-private static readonly @string tlsServerDidNotSendAKeyˢ = "tls: server did not send a key share"u8;
-private static readonly @string tlsServerSelectedAnˢ2 = "tls: server selected an invalid PSK"u8;
-private static readonly @string tlsServerSelectedAnˢ3 = "tls: server selected an invalid PSK and cipher suite pair"u8;
+internal static readonly @string tlsServerSentTwoˢ = "tls: server sent two HelloRetryRequest messages"u8;
+internal static readonly @string tlsServerSentACookieInAˢ = "tls: server sent a cookie in a normal ServerHello"u8;
+internal static readonly @string tlsMalformedKeyShareˢ = "tls: malformed key_share extension"u8;
+internal static readonly @string tlsServerDidNotSendAKeyˢ = "tls: server did not send a key share"u8;
+internal static readonly @string tlsServerSelectedAnˢ2 = "tls: server selected an invalid PSK"u8;
+internal static readonly @string tlsServerSelectedAnˢ3 = "tls: server selected an invalid PSK and cipher suite pair"u8;
 
 internal static error processServerHello(this ж<clientHandshakeStateTLS13> Ꮡhs) {
     ref var hs = ref Ꮡhs.Value;
@@ -505,9 +505,9 @@ internal static error processServerHello(this ж<clientHandshakeStateTLS13> Ꮡh
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsInvalidServerKeyShareˢ = "tls: invalid server key share"u8;
-private static readonly @string tlsInvalidKyberServerKeyˢ = "tls: invalid Kyber server key share"u8;
-private static readonly @string derivedˢ = "derived"u8;
+internal static readonly @string tlsInvalidServerKeyShareˢ = "tls: invalid server key share"u8;
+internal static readonly @string tlsInvalidKyberServerKeyˢ = "tls: invalid Kyber server key share"u8;
+internal static readonly @string derivedˢ = "derived"u8;
 
 [GoRecv] internal static error establishHandshakeKeys(this ref clientHandshakeStateTLS13 hs) {
     var c = hs.c;
@@ -577,12 +577,12 @@ private static readonly @string derivedˢ = "derived"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsServerDidNotSendAQuicˢ = "tls: server did not send a quic_transport_parameters extension"u8;
-private static readonly @string tlsServerSentAnˢ3 = "tls: server sent an unexpected quic_transport_parameters extension"u8;
-private static readonly @string tlsServerSentAnˢ4 = "tls: server sent an unexpected early_data extension"u8;
-private static readonly @string tlsServerAccepted0Rttˢ = "tls: server accepted 0-RTT with the wrong cipher suite"u8;
-private static readonly @string tlsServerAccepted0Rttˢ2 = "tls: server accepted 0-RTT with the wrong ALPN"u8;
-private static readonly @string tlsServerSentEchRetryˢ = "tls: server sent ECH retry configs after accepting ECH"u8;
+internal static readonly @string tlsServerDidNotSendAQuicˢ = "tls: server did not send a quic_transport_parameters extension"u8;
+internal static readonly @string tlsServerSentAnˢ3 = "tls: server sent an unexpected quic_transport_parameters extension"u8;
+internal static readonly @string tlsServerSentAnˢ4 = "tls: server sent an unexpected early_data extension"u8;
+internal static readonly @string tlsServerAccepted0Rttˢ = "tls: server accepted 0-RTT with the wrong cipher suite"u8;
+internal static readonly @string tlsServerAccepted0Rttˢ2 = "tls: server accepted 0-RTT with the wrong ALPN"u8;
+internal static readonly @string tlsServerSentEchRetryˢ = "tls: server sent ECH retry configs after accepting ECH"u8;
 
 [GoRecv] internal static error readServerParameters(this ref clientHandshakeStateTLS13 hs) {
     var c = hs.c;
@@ -644,8 +644,8 @@ private static readonly @string tlsServerSentEchRetryˢ = "tls: server sent ECH 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsReceivedEmptyˢ = "tls: received empty certificates message"u8;
-private static readonly @string tlsCertificateUsedWithˢ = "tls: certificate used with invalid signature algorithm"u8;
+internal static readonly @string tlsReceivedEmptyˢ = "tls: received empty certificates message"u8;
+internal static readonly @string tlsCertificateUsedWithˢ = "tls: certificate used with invalid signature algorithm"u8;
 
 [GoRecv] internal static error readServerCertificate(this ref clientHandshakeStateTLS13 hs) {
     var c = hs.c;
@@ -735,7 +735,7 @@ private static readonly @string tlsCertificateUsedWithˢ = "tls: certificate use
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsInvalidServerFinishedˢ = "tls: invalid server finished hash"u8;
+internal static readonly @string tlsInvalidServerFinishedˢ = "tls: invalid server finished hash"u8;
 
 [GoRecv] internal static error readServerFinished(this ref clientHandshakeStateTLS13 hs) {
     var c = hs.c;
@@ -874,10 +874,10 @@ private static readonly @string tlsInvalidServerFinishedˢ = "tls: invalid serve
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsReceivedNewSessionˢ = "tls: received new session ticket from a client"u8;
-private static readonly @string tlsReceivedASessionˢ = "tls: received a session ticket with invalid lifetime"u8;
-private static readonly @string tlsInvalidEarlyDataForˢ = "tls: invalid early data for QUIC connection"u8;
-private static readonly @string resumptionˢ = "resumption"u8;
+internal static readonly @string tlsReceivedNewSessionˢ = "tls: received new session ticket from a client"u8;
+internal static readonly @string tlsReceivedASessionˢ = "tls: received a session ticket with invalid lifetime"u8;
+internal static readonly @string tlsInvalidEarlyDataForˢ = "tls: invalid early data for QUIC connection"u8;
+internal static readonly @string resumptionˢ = "resumption"u8;
 
 internal static error handleNewSessionTicket(this ж<Conn> Ꮡc, ж<newSessionTicketMsgTLS13> Ꮡmsg) {
     ref var c = ref Ꮡc.Value;

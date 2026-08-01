@@ -29,7 +29,7 @@ internal static UntypedInt sourceBits => 4; // 4 bits can hold 16 different sour
 internal static UntypedInt sourceMasks => /* 1<<sourceBits - 1 */ 15;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeSourceValueIsTooˢ = "runtime: source value is too large"u8;
+internal static readonly @string runtimeSourceValueIsTooˢ = "runtime: source value is too large"u8;
 
 // packNetpollKey creates a key from a source and a tag.
 // Bits that don't fit in the result are discarded.
@@ -102,7 +102,7 @@ internal static ж<atomic.Uint32> ᏑnetpollWakeSig = new(default(atomic.Uint32)
 internal static ref atomic.Uint32 netpollWakeSig => ref ᏑnetpollWakeSig.Value; // used to avoid duplicate calls of netpollBreak
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeNetpollinitFailedˢ = "runtime: netpollinit failed"u8;
+internal static readonly @string runtimeNetpollinitFailedˢ = "runtime: netpollinit failed"u8;
 
 internal static void netpollinit() {
     iocphandle = stdcall4(_CreateIoCompletionPort, _INVALID_HANDLE_VALUE, 0, 0, _DWORD_MAX);
@@ -130,14 +130,14 @@ internal static int32 netpollclose(uintptr fd) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeUnusedˢ = "runtime: unused"u8;
+internal static readonly @string runtimeUnusedˢ = "runtime: unused"u8;
 
 internal static void netpollarm(ж<pollDesc> Ꮡpd, nint mode) {
     @throw(runtimeUnusedˢ);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeNetpollˢ = "runtime: netpoll: PostQueuedCompletionStatus failed"u8;
+internal static readonly @string runtimeNetpollˢ = "runtime: netpoll: PostQueuedCompletionStatus failed"u8;
 
 internal static void netpollBreak() {
     // Failing to cas indicates there is an in-flight wakeup, so we're done here.
@@ -152,7 +152,7 @@ internal static void netpollBreak() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeNetpollFailedˢ = "runtime: netpoll failed"u8;
+internal static readonly @string runtimeNetpollFailedˢ = "runtime: netpoll failed"u8;
 
 // netpoll checks for ready network connections.
 // Returns list of goroutines that become runnable.

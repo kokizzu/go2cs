@@ -23,12 +23,12 @@ using go.sync;
 partial class testing_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testBenchˢ = "test.bench"u8;
-private static readonly @string runOnlyBenchmarksˢ = "run only benchmarks matching `regexp`"u8;
-private static readonly @string testBenchmemˢ = "test.benchmem"u8;
-private static readonly @string printMemoryAllocationsˢ = "print memory allocations for benchmarks"u8;
-private static readonly @string testBenchtimeˢ = "test.benchtime"u8;
-private static readonly @string runEachBenchmarkForˢ = "run each benchmark for duration `d` or N times if `d` is of the form Nx"u8;
+internal static readonly @string testBenchˢ = "test.bench"u8;
+internal static readonly @string runOnlyBenchmarksˢ = "run only benchmarks matching `regexp`"u8;
+internal static readonly @string testBenchmemˢ = "test.benchmem"u8;
+internal static readonly @string printMemoryAllocationsˢ = "print memory allocations for benchmarks"u8;
+internal static readonly @string testBenchtimeˢ = "test.benchtime"u8;
+internal static readonly @string runEachBenchmarkForˢ = "run each benchmark for duration `d` or N times if `d` is of the form Nx"u8;
 
 internal static void initBenchmarkFlags() {
     matchBenchmarks = flag.String(testBenchˢ, ""u8, runOnlyBenchmarksˢ);
@@ -210,8 +210,8 @@ internal static void runN(this ж<B> Ꮡb, nint n) => func((defer, recover) => {
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string benchˢ = "BENCH"u8;
-private static readonly @string skipˢ = "SKIP"u8;
+internal static readonly @string benchˢ = "BENCH"u8;
+internal static readonly @string skipˢ = "SKIP"u8;
 
 // run1 runs the first iteration of benchFunc. It reports whether more
 // iterations of this benchmarks should be run.
@@ -393,7 +393,7 @@ internal static void launch(this ж<B> Ꮡb) => func((defer, recover) => {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nsOpˢ = "ns/op"u8;
+internal static readonly @string nsOpˢ = "ns/op"u8;
 
 // NsPerOp returns the "ns/op" metric.
 public static int64 NsPerOp(this BenchmarkResult r) {
@@ -409,7 +409,7 @@ public static int64 NsPerOp(this BenchmarkResult r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mbSˢ = "MB/s"u8;
+internal static readonly @string mbSˢ = "MB/s"u8;
 
 // mbPerSec returns the "MB/s" metric.
 internal static float64 mbPerSec(this BenchmarkResult r) {
@@ -425,7 +425,7 @@ internal static float64 mbPerSec(this BenchmarkResult r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string allocsOpˢ = "allocs/op"u8;
+internal static readonly @string allocsOpˢ = "allocs/op"u8;
 
 // AllocsPerOp returns the "allocs/op" metric,
 // which is calculated as r.MemAllocs / r.N.
@@ -442,7 +442,7 @@ public static int64 AllocsPerOp(this BenchmarkResult r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bOpˢ = "B/op"u8;
+internal static readonly @string bOpˢ = "B/op"u8;
 
 // AllocedBytesPerOp returns the "B/op" metric,
 // which is calculated as r.MemBytes / r.N.
@@ -575,7 +575,7 @@ public static void RunBenchmarks(Func<@string, @string, (bool, error)> matchStri
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testBenchˢ2 = "-test.bench"u8;
+internal static readonly @string testBenchˢ2 = "-test.bench"u8;
 
 internal static bool runBenchmarks(@string importPath, Func<@string, @string, (bool, error)> matchString, slice<InternalBenchmark> benchmarks) {
     // If no flag was specified, don't run benchmarks.
@@ -838,7 +838,7 @@ internal static void add(this ж<B> Ꮡb, BenchmarkResult other) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object runParallelBodyExitedˢ = (@string)"RunParallel: body exited without pb.Next() == false"u8;
+internal static readonly object runParallelBodyExitedˢ = (@string)"RunParallel: body exited without pb.Next() == false"u8;
 
 // RunParallel runs a benchmark in parallel.
 // It creates multiple goroutines and distributes b.N iterations among them.

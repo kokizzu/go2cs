@@ -339,9 +339,9 @@ public static ΔStack Stack(this ΔEvent e) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string schedGomaxprocsThreadsˢ = "/sched/gomaxprocs:threads"u8;
-private static readonly @string memoryClassesHeapObjectsˢ = "/memory/classes/heap/objects:bytes"u8;
-private static readonly @string gcHeapGoalBytesˢ = "/gc/heap/goal:bytes"u8;
+internal static readonly @string schedGomaxprocsThreadsˢ = "/sched/gomaxprocs:threads"u8;
+internal static readonly @string memoryClassesHeapObjectsˢ = "/memory/classes/heap/objects:bytes"u8;
+internal static readonly @string gcHeapGoalBytesˢ = "/gc/heap/goal:bytes"u8;
 
 // Metric returns details about a Metric event.
 //
@@ -392,9 +392,9 @@ public static ΔLabel Label(this ΔEvent e) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gcConcurrentMarkPhaseˢ = "GC concurrent mark phase"u8;
-private static readonly @string gcIncrementalSweepˢ = "GC incremental sweep"u8;
-private static readonly @string gcMarkAssistˢ = "GC mark assist"u8;
+internal static readonly @string gcConcurrentMarkPhaseˢ = "GC concurrent mark phase"u8;
+internal static readonly @string gcIncrementalSweepˢ = "GC incremental sweep"u8;
+internal static readonly @string gcMarkAssistˢ = "GC mark assist"u8;
 
 // Range returns details about an EventRangeBegin, EventRangeActive, or EventRangeEnd event.
 //
@@ -731,8 +731,8 @@ internal static array<ProcState> go122ProcStatus2ProcState = new golib.SparseArr
 }.array(5);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object transitionStackˢ = (@string)"TransitionStack="u8;
-private static readonly object stackˢ = (@string)"Stack="u8;
+internal static readonly object transitionStackˢ = (@string)"TransitionStack="u8;
+internal static readonly object stackˢ = (@string)"Stack="u8;
 
 // String returns the event as a human-readable string.
 //

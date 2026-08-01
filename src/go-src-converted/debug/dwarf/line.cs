@@ -119,8 +119,8 @@ partial class dwarf_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string attrStmtListValueOutOfˢ = "AttrStmtList value out of range"u8;
-private static readonly @string lineˢ = "line"u8;
+internal static readonly @string attrStmtListValueOutOfˢ = "AttrStmtList value out of range"u8;
+internal static readonly @string lineˢ = "line"u8;
 
 // LineReader returns a new reader for the line table of compilation
 // unit cu, which must be an [Entry] with tag [TagCompileUnit].

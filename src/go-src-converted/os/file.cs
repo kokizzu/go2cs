@@ -126,7 +126,7 @@ public const nint SEEK_END = 2; // seek relative to the end
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string readˢ = "read"u8;
+internal static readonly @string readˢ = "read"u8;
 
 // Read reads up to len(b) bytes from the File and stores them in b.
 // It returns the number of bytes read and any error encountered.
@@ -146,7 +146,7 @@ public static (nint n, error err) Read(this ж<File> Ꮡf, slice<byte> b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string negativeOffsetˢ = "negative offset"u8;
+internal static readonly @string negativeOffsetˢ = "negative offset"u8;
 
 // ReadAt reads len(b) bytes from the File starting at byte offset off.
 // It returns the number of bytes read and the error, if any.
@@ -179,7 +179,7 @@ public static (nint n, error err) ReadAt(this ж<File> Ꮡf, slice<byte> b, int6
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string writeˢ = "write"u8;
+internal static readonly @string writeˢ = "write"u8;
 
 // ReadFrom implements io.ReaderFrom.
 public static (int64 n, error err) ReadFrom(this ж<File> Ꮡf, Δio.Reader r) {
@@ -330,7 +330,7 @@ internal static (int64, error) genericWriteTo(ж<File> Ꮡf, Δio.Writer w) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string seekˢ = "seek"u8;
+internal static readonly @string seekˢ = "seek"u8;
 
 // Seek sets the offset for the next Read or Write on file to offset, interpreted
 // according to whence: 0 means relative to the origin of the file, 1 means
@@ -464,7 +464,8 @@ internal static (ж<File>, error) openDir(@string name) {
 }
 
 // lstat is overridden in tests.
-internal static Func<@string, (FileInfo, error)> lstat;
+internal static ж<Func<@string, (FileInfo, error)>> Ꮡlstat = new(default(Func<@string, (FileInfo, error)>));
+internal static ref Func<@string, (FileInfo, error)> lstat => ref Ꮡlstat.ValueSlot;
 internal static void initᴛlstat() { lstat = Lstat; }
 
 // Rename renames (moves) oldpath to newpath.
@@ -528,14 +529,14 @@ public static @string TempDir() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string localAppDataˢ = "LocalAppData"u8;
-private static readonly @string localAppDataIsNotDefinedˢ = "%LocalAppData% is not defined"u8;
-private static readonly @string homeˢ = "HOME"u8;
-private static readonly @string homeIsNotDefinedˢ = "$HOME is not defined"u8;
-private static readonly @string homeˢ2 = "home"u8;
-private static readonly @string homeIsNotDefinedˢ2 = "$home is not defined"u8;
-private static readonly @string xdgCacheHomeˢ = "XDG_CACHE_HOME"u8;
-private static readonly @string neitherXdgCacheHomeNorˢ = "neither $XDG_CACHE_HOME nor $HOME are defined"u8;
+internal static readonly @string localAppDataˢ = "LocalAppData"u8;
+internal static readonly @string localAppDataIsNotDefinedˢ = "%LocalAppData% is not defined"u8;
+internal static readonly @string homeˢ = "HOME"u8;
+internal static readonly @string homeIsNotDefinedˢ = "$HOME is not defined"u8;
+internal static readonly @string homeˢ2 = "home"u8;
+internal static readonly @string homeIsNotDefinedˢ2 = "$home is not defined"u8;
+internal static readonly @string xdgCacheHomeˢ = "XDG_CACHE_HOME"u8;
+internal static readonly @string neitherXdgCacheHomeNorˢ = "neither $XDG_CACHE_HOME nor $HOME are defined"u8;
 
 // UserCacheDir returns the default root directory to use for user-specific
 // cached data. Users should create their own application-specific subdirectory
@@ -589,10 +590,10 @@ public static (@string, error) UserCacheDir() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string appDataˢ = "AppData"u8;
-private static readonly @string appDataIsNotDefinedˢ = "%AppData% is not defined"u8;
-private static readonly @string xdgConfigHomeˢ = "XDG_CONFIG_HOME"u8;
-private static readonly @string neitherXdgConfigHomeNorˢ = "neither $XDG_CONFIG_HOME nor $HOME are defined"u8;
+internal static readonly @string appDataˢ = "AppData"u8;
+internal static readonly @string appDataIsNotDefinedˢ = "%AppData% is not defined"u8;
+internal static readonly @string xdgConfigHomeˢ = "XDG_CONFIG_HOME"u8;
+internal static readonly @string neitherXdgConfigHomeNorˢ = "neither $XDG_CONFIG_HOME nor $HOME are defined"u8;
 
 // UserConfigDir returns the default root directory to use for user-specific
 // configuration data. Users should create their own application-specific
@@ -646,11 +647,11 @@ public static (@string, error) UserConfigDir() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string homeˢ3 = "$HOME"u8;
-private static readonly @string userprofileˢ = "USERPROFILE"u8;
-private static readonly @string userprofileˢ2 = "%userprofile%"u8;
-private static readonly @string homeˢ4 = "$home"u8;
-private static readonly @string sdcardˢ = "/sdcard"u8;
+internal static readonly @string homeˢ3 = "$HOME"u8;
+internal static readonly @string userprofileˢ = "USERPROFILE"u8;
+internal static readonly @string userprofileˢ2 = "%userprofile%"u8;
+internal static readonly @string homeˢ4 = "$home"u8;
+internal static readonly @string sdcardˢ = "/sdcard"u8;
 
 // UserHomeDir returns the current user's home directory.
 //
@@ -763,7 +764,7 @@ public static error SetWriteDeadline(this ж<File> Ꮡf, time.Time t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string syscallConnˢ = "SyscallConn"u8;
+internal static readonly @string syscallConnˢ = "SyscallConn"u8;
 
 // SyscallConn returns a raw file.
 // This implements the syscall.Conn interface.
@@ -872,7 +873,7 @@ internal static (fs.FileInfo, error) Stat(this dirFS dir, @string name) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string osDirFSWithEmptyRootˢ = "os: DirFS with empty root"u8;
+internal static readonly @string osDirFSWithEmptyRootˢ = "os: DirFS with empty root"u8;
 
 // join returns the path for name in dir.
 internal static (@string, error) join(this dirFS dir, @string name) {

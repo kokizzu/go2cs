@@ -23,10 +23,10 @@ public static ж<http.Request> NewRequest(@string method, @string target, io.Rea
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string getˢ = "GET"u8;
-private static readonly @string http11ˢ = "HTTP/1.1"u8;
-private static readonly @string exampleComˢ = "example.com"u8;
-private static readonly @string httpsˢ = "https://"u8;
+internal static readonly @string getˢ = "GET"u8;
+internal static readonly @string http11ˢ = "HTTP/1.1"u8;
+internal static readonly @string exampleComˢ = "example.com"u8;
+internal static readonly @string httpsˢ = "https://"u8;
 
 // NewRequestWithContext returns a new incoming server Request, suitable
 // for passing to an [http.Handler] for testing.

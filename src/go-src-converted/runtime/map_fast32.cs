@@ -10,10 +10,11 @@ using @internal;
 
 partial class runtime_package {
 
-internal static @unsafe.Pointer mapaccess1_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 key) {
+internal static @unsafe.Pointer mapaccess1_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 keyʗp) {
     ref var t = ref Ꮡt.Value;
     ref var h = ref Ꮡh.DerefOrNil();
 
+    ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
         racereadpc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(mapaccess1_fast32));
@@ -29,7 +30,7 @@ internal static @unsafe.Pointer mapaccess1_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡ
         // One-bucket table. No need to hash.
         b = (ж<bmap>)(uintptr)(h.buckets);
     } else {
-        var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡ(key))), (uintptr)h.hash0);
+        var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡkey)), (uintptr)h.hash0);
         var m = bucketMask(h.B);
         b = (ж<bmap>)(uintptr)(add(h.buckets, ((uintptr)(hash & m)) * (uintptr)t.BucketSize));
         {
@@ -64,10 +65,11 @@ internal static @unsafe.Pointer mapaccess1_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡ
 // See go.dev/issue/67401.
 //
 //go:linkname mapaccess2_fast32
-internal static (@unsafe.Pointer, bool) mapaccess2_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 key) {
+internal static (@unsafe.Pointer, bool) mapaccess2_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 keyʗp) {
     ref var t = ref Ꮡt.Value;
     ref var h = ref Ꮡh.DerefOrNil();
 
+    ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
         racereadpc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(mapaccess2_fast32));
@@ -83,7 +85,7 @@ internal static (@unsafe.Pointer, bool) mapaccess2_fast32(ж<maptype> Ꮡt, ж<h
         // One-bucket table. No need to hash.
         b = (ж<bmap>)(uintptr)(h.buckets);
     } else {
-        var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡ(key))), (uintptr)h.hash0);
+        var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡkey)), (uintptr)h.hash0);
         var m = bucketMask(h.B);
         b = (ж<bmap>)(uintptr)(add(h.buckets, ((uintptr)(hash & m)) * (uintptr)t.BucketSize));
         {
@@ -120,10 +122,11 @@ internal static (@unsafe.Pointer, bool) mapaccess2_fast32(ж<maptype> Ꮡt, ж<h
 // See go.dev/issue/67401.
 //
 //go:linkname mapassign_fast32
-internal static @unsafe.Pointer mapassign_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 key) {
+internal static @unsafe.Pointer mapassign_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 keyʗp) {
     ref var t = ref Ꮡt.Value;
     ref var h = ref Ꮡh.DerefOrNil();
 
+    ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (Ꮡh == nil) {
         throw panic(((plainError)(@string)assignmentToEntryInNilˢ));
     }
@@ -134,7 +137,7 @@ internal static @unsafe.Pointer mapassign_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapWritesˢ);
     }
-    var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡ(key))), (uintptr)h.hash0);
+    var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡkey)), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapassign.
     h.flags ^= (uint8)(hashWriting);
     if (h.buckets == nil) {
@@ -217,10 +220,11 @@ done:
 // See go.dev/issue/67401.
 //
 //go:linkname mapassign_fast32ptr
-internal static @unsafe.Pointer mapassign_fast32ptr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key) {
+internal static @unsafe.Pointer mapassign_fast32ptr(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer keyʗp) {
     ref var t = ref Ꮡt.Value;
     ref var h = ref Ꮡh.DerefOrNil();
 
+    ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (Ꮡh == nil) {
         throw panic(((plainError)(@string)assignmentToEntryInNilˢ));
     }
@@ -231,7 +235,7 @@ internal static @unsafe.Pointer mapassign_fast32ptr(ж<maptype> Ꮡt, ж<hmap> �
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapWritesˢ);
     }
-    var hash = t.Hasher((uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(key)).Value)), (uintptr)h.hash0);
+    var hash = t.Hasher((uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡkey).Value)), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapassign.
     h.flags ^= (uint8)(hashWriting);
     if (h.buckets == nil) {
@@ -305,10 +309,11 @@ done:
     return elem;
 }
 
-internal static void mapdelete_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 key) {
+internal static void mapdelete_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 keyʗp) {
     ref var t = ref Ꮡt.Value;
     ref var h = ref Ꮡh.DerefOrNil();
 
+    ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
         racewritepc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(mapdelete_fast32));
@@ -319,7 +324,7 @@ internal static void mapdelete_fast32(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint32 ke
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapWritesˢ);
     }
-    var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡ(key))), (uintptr)h.hash0);
+    var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡkey)), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapdelete
     h.flags ^= (uint8)(hashWriting);
     var bucket = (uintptr)(hash & bucketMask(h.B));

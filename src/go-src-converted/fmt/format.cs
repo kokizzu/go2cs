@@ -121,8 +121,8 @@ internal const bool unsigned = false;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string trueˢ = "true"u8;
-private static readonly @string falseˢ = "false"u8;
+internal static readonly @string trueˢ = "true"u8;
+internal static readonly @string falseˢ = "false"u8;
 
 // fmtBoolean formats a boolean.
 [GoRecv] internal static void fmtBoolean(this ref fmt f, bool v) {

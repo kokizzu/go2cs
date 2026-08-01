@@ -70,8 +70,8 @@ internal static array<ж<Basic>> basicAliases = new ж<Basic>[]{
 }.array();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string errorˢ = "error"u8;
-private static readonly @string errorˢ2 = "Error"u8;
+internal static readonly @string errorˢ = "error"u8;
+internal static readonly @string errorˢ2 = "Error"u8;
 
 internal static void defPredeclaredTypes() {
     foreach (var (_, t) in Typ) {
@@ -244,7 +244,7 @@ internal static void defPredeclaredFuncs() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string assertˢ = "assert"u8;
+internal static readonly @string assertˢ = "assert"u8;
 
 // DefPredeclaredTestFuncs defines the assert and trace built-ins.
 // These built-ins are intended for debugging and testing of this

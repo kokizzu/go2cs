@@ -393,7 +393,7 @@ internal static ж<resolverConfig> ᏑresolvConf = new(default(resolverConfig));
 internal static ref resolverConfig resolvConf => ref ᏑresolvConf.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string etcResolvConfˢ = "/etc/resolv.conf"u8;
+internal static readonly @string etcResolvConfˢ = "/etc/resolv.conf"u8;
 
 internal static ж<dnsConfig> getSystemDNSConfig() {
     ᏑresolvConf.tryUpdate(etcResolvConfˢ);
@@ -517,7 +517,7 @@ internal static (dnsmessage.Parser, @string, error) lookup(this ж<Resolver> Ꮡ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string onionˢ = ".onion"u8;
+internal static readonly @string onionˢ = ".onion"u8;
 
 // avoidDNS reports whether this is a hostname for which we should not
 // use DNS. Currently this includes only .onion, per RFC 7686. See
@@ -884,7 +884,7 @@ break_loop:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cnameˢ = "CNAME"u8;
+internal static readonly @string cnameˢ = "CNAME"u8;
 
 // goLookupCNAME is the native Go (non-cgo) implementation of LookupCNAME.
 internal static (@string, error) goLookupCNAME(this ж<Resolver> Ꮡr, context.Context ctx, @string host, ΔhostLookupOrder order, ж<dnsConfig> Ꮡconf) {

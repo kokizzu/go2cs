@@ -580,7 +580,7 @@ internal static bool appendAttr(this ж<handleState> Ꮡs, Attr a) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "<nil>"u8;
+internal static readonly @string nilˢ = "<nil>"u8;
 
 internal static void appendValue(this ж<handleState> Ꮡs, Value v) => func((defer, recover) => {
     ref var s = ref Ꮡs.Value;

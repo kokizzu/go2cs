@@ -574,7 +574,7 @@ internal static (int64 n, error err) ReadFrom(this ж<response> Ꮡw, io.Reader 
 internal const bool debugServerConnections = false;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string serverˢ = "server"u8;
+internal static readonly @string serverˢ = "server"u8;
 
 // Create new connection from rwc.
 internal static ж<conn> newConn(this ж<Server> Ꮡsrv, net.Conn rwc) {
@@ -800,7 +800,7 @@ internal static void putCopyBuf(slice<byte> b) {
     if (builtin.len(b) != copyBufPoolSize) {
         throw panic("trying to put back buffer of the wrong size in the copyBufPool");
     }
-    ᏑcopyBufPool.Put(Ꮡ(new array<byte>(b, 32768)));
+    ᏑcopyBufPool.Put(Ꮡ(array<byte>.Alias(b, 32768)));
 }
 
 internal static ж<sync.Pool> bufioWriterPool(nint size) {
@@ -944,7 +944,7 @@ public static UntypedInt DefaultMaxHeaderBytes => /* 1 << 20 */ 1048576; // 1 MB
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string http11100Continueˢ = "HTTP/1.1 100 Continue\r\n\r\n"u8;
+internal static readonly @string http11100Continueˢ = "HTTP/1.1 100 Continue\r\n\r\n"u8;
 
 internal static (nint n, error err) Read(this ж<expectContinueReader> Ꮡecr, slice<byte> p) {
     nint n = default!;
@@ -1009,10 +1009,10 @@ internal static slice<byte> appendTime(slice<byte> b, time.Time t) {
 internal static error errTooLarge = errors.New("http: request too large"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingRequiredHostˢ = "missing required Host header"u8;
-private static readonly @string malformedHostHeaderˢ = "malformed Host header"u8;
-private static readonly @string invalidHeaderNameˢ = "invalid header name"u8;
-private static readonly @string invalidHeaderValueˢ = "invalid header value"u8;
+internal static readonly @string missingRequiredHostˢ = "missing required Host header"u8;
+internal static readonly @string malformedHostHeaderˢ = "malformed Host header"u8;
+internal static readonly @string invalidHeaderNameˢ = "invalid header name"u8;
+internal static readonly @string invalidHeaderValueˢ = "invalid header value"u8;
 
 // Read next request from connection.
 internal static (ж<response> w, error err) readRequest(this ж<conn> Ꮡc, context.Context ctx) {
@@ -1177,7 +1177,7 @@ internal static void checkWriteHeaderCode(nint code) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string netHttpˢ = "net/http."u8;
+internal static readonly @string netHttpˢ = "net/http."u8;
 
 // relevantCaller searches the call stack for the first function outside of net/http.
 // The purpose of this function is to provide more helpful error messages.
@@ -1297,7 +1297,7 @@ internal static void Write(this extraHeader h, ж<bufio.Writer> Ꮡw) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string chunkedˢ = "chunked"u8;
+internal static readonly @string chunkedˢ = "chunked"u8;
 
 // writeHeader finalizes the header sent to the client and writes it
 // to cw.res.conn.bufw.
@@ -1612,8 +1612,8 @@ internal static void foreachHeaderElement(@string v, Action<@string> fn) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string http11ˢ2 = "HTTP/1.1 "u8;
-private static readonly @string http10ˢ = "HTTP/1.0 "u8;
+internal static readonly @string http11ˢ2 = "HTTP/1.1 "u8;
+internal static readonly @string http10ˢ = "HTTP/1.0 "u8;
 
 // writeStatusLine writes an HTTP/1.x Status-Line (RFC 7230 Section 3.1.2)
 // to bw. is11 is whether the HTTP request is HTTP/1.1. false means HTTP/1.0.
@@ -1975,8 +1975,8 @@ internal static bool isCommonNetReadError(error err) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string http10400BadRequestˢ = "HTTP/1.0 400 Bad Request\r\n\r\nClient sent an HTTP request to an HTTPS server.\n"u8;
-private static readonly @string clientSentAnHttpRequestˢ = "client sent an HTTP request to an HTTPS server"u8;
+internal static readonly @string http10400BadRequestˢ = "HTTP/1.0 400 Bad Request\r\n\r\nClient sent an HTTP request to an HTTPS server.\n"u8;
+internal static readonly @string clientSentAnHttpRequestˢ = "client sent an HTTP request to an HTTPS server"u8;
 
 // Serve a new connection.
 internal static void serve(this ж<conn> Ꮡc, context.Context ctx) => func((defer, recover) => {
@@ -2293,9 +2293,9 @@ public static void ServeHTTP(this HandlerFunc f, ResponseWriter w, ж<Request> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string textPlainCharsetUtf8ˢ = "text/plain; charset=utf-8"u8;
-private static readonly @string xContentTypeOptionsˢ = "X-Content-Type-Options"u8;
-private static readonly @string nosniffˢ = "nosniff"u8;
+internal static readonly @string textPlainCharsetUtf8ˢ = "text/plain; charset=utf-8"u8;
+internal static readonly @string xContentTypeOptionsˢ = "X-Content-Type-Options"u8;
+internal static readonly @string nosniffˢ = "nosniff"u8;
 
 // Helper handlers
 
@@ -2663,7 +2663,7 @@ public static (ΔHandler h, @string pattern) Handler(this ж<ServeMux> Ꮡmux, �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string allowˢ = "Allow"u8;
+internal static readonly @string allowˢ = "Allow"u8;
 
 // findHandler finds a handler for a request.
 // If there is a matching handler, it returns it and the pattern that matched.
@@ -2904,9 +2904,9 @@ internal static void register(this ж<ServeMux> Ꮡmux, @string pattern, ΔHandl
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpInvalidPatternˢ = "http: invalid pattern"u8;
-private static readonly @string httpNilHandlerˢ = "http: nil handler"u8;
-private static readonly @string unknownLocationˢ = "unknown location"u8;
+internal static readonly @string httpInvalidPatternˢ = "http: invalid pattern"u8;
+internal static readonly @string httpNilHandlerˢ = "http: nil handler"u8;
+internal static readonly @string unknownLocationˢ = "unknown location"u8;
 
 internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHandler handler) => func<error>((defer, recover) => {
     ref var mux = ref Ꮡmux.Value;
@@ -3314,7 +3314,7 @@ public static ΔHandler AllowQuerySemicolons(ΔHandler h) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpˢ3 = ":http"u8;
+internal static readonly @string httpˢ3 = ":http"u8;
 
 // ListenAndServe listens on the TCP network address srv.Addr and then
 // calls [Serve] to handle requests on incoming connections.
@@ -3379,9 +3379,10 @@ public static error ErrServerClosed = errors.New("http: Server closed"u8);
 //
 // Serve always returns a non-nil error and closes l.
 // After [Server.Shutdown] or [Server.Close], the returned error is [ErrServerClosed].
-public static error Serve(this ж<Server> Ꮡsrv, net.Listener l) => func((defer, recover) => {
+public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) => func((defer, recover) => {
     ref var srv = ref Ꮡsrv.Value;
 
+    ref var l = ref heap(lʗp, out var Ꮡl);
     {
         var fn = testHookServerServe; if (fn != default!) {
             fn(Ꮡsrv, l);
@@ -3390,16 +3391,16 @@ public static error Serve(this ж<Server> Ꮡsrv, net.Listener l) => func((defer
     // call hook with unwrapped listener
     var origListener = l;
     l = new onceCloseListenerжListener(Ꮡ(new onceCloseListener(Listener: l)));
-    defer(() => l.Close());
+    defer(() => Ꮡl.ValueSlot.Close());
     {
         var err = Ꮡsrv.setupHTTP2_Serve(); if (err != default!) {
             return err;
         }
     }
-    if (!Ꮡsrv.trackListener(Ꮡ(l), true)) {
+    if (!Ꮡsrv.trackListener(Ꮡl, true)) {
         return ErrServerClosed;
     }
-    deferǃ(Ꮡsrv.trackListener, Ꮡ(l), (bool)false, defer);
+    deferǃ(Ꮡsrv.trackListener, Ꮡl, (bool)false, defer);
     var baseCtx = context_package.Background();
     if (srv.BaseContext != default!) {
         baseCtx = srv.BaseContext(origListener);
@@ -3624,7 +3625,7 @@ public static error ListenAndServeTLS(@string addr, @string certFile, @string ke
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpsˢ2 = ":https"u8;
+internal static readonly @string httpsˢ2 = ":https"u8;
 
 // ListenAndServeTLS listens on the TCP network address srv.Addr and
 // then calls [ServeTLS] to handle requests on incoming TLS connections.
@@ -3749,7 +3750,7 @@ public static error ErrHandlerTimeout = errors.New("http: Handler timeout"u8);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string htmlHeadTitleTimeoutˢ = "<html><head><title>Timeout</title></head><body><h1>Timeout</h1></body></html>"u8;
+internal static readonly @string htmlHeadTitleTimeoutˢ = "<html><head><title>Timeout</title></head><body><h1>Timeout</h1></body></html>"u8;
 
 [GoRecv] internal static @string errorBody(this ref timeoutHandler h) {
     if (h.body != ""u8) {

@@ -490,7 +490,7 @@ internal static (@string ret, error err) parseT61String(slice<byte> bytes) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string asn1InvalidUtf8Stringˢ = "asn1: invalid UTF-8 string"u8;
+internal static readonly @string asn1InvalidUtf8Stringˢ = "asn1: invalid UTF-8 string"u8;
 
 // UTF8String
 
@@ -507,7 +507,7 @@ internal static (@string ret, error err) parseUTF8String(slice<byte> bytes) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pkcs12OddLengthBmpStringˢ = "pkcs12: odd-length BMP string"u8;
+internal static readonly @string pkcs12OddLengthBmpStringˢ = "pkcs12: odd-length BMP string"u8;
 
 // BMPString
 
@@ -542,7 +542,7 @@ internal static (@string, error) parseBMPString(slice<byte> bmpString) {
 [GoType("[]byte")] partial struct RawContent;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string asn1InternalErrorInˢ = "asn1: internal error in parseTagAndLength"u8;
+internal static readonly @string asn1InternalErrorInˢ = "asn1: internal error in parseTagAndLength"u8;
 
 // Tagging
 
@@ -699,7 +699,7 @@ internal static bool invalidLength(nint offset, nint length, nint sliceLength) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string asn1ˢ = "asn1"u8;
+internal static readonly @string asn1ˢ = "asn1"u8;
 
 // parseField is the main parsing function. Given a byte slice and an offset
 // into the array, it will try to parse a suitable ASN.1 value out and store it
@@ -1040,7 +1040,7 @@ fmt.Sprintf("internal error: unknown string type %d"u8, universalTag));
         }
     }
 
-    err = new StructuralError("unsupported: " + v.Type().String());
+    err = new StructuralError("unsupported: "u8 + v.Type().String());
     return (offset, err);
 }
 
@@ -1157,7 +1157,7 @@ public static (slice<byte> rest, error err) Unmarshal(slice<byte> b, any val) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string asn1UnmarshalRecipientˢ = "asn1: Unmarshal recipient value is nil"u8;
+internal static readonly @string asn1UnmarshalRecipientˢ = "asn1: Unmarshal recipient value is nil"u8;
 
 [GoRecv] internal static @string Error(this ref invalidUnmarshalError e) {
     if (e.Type == default!) {

@@ -69,7 +69,7 @@ internal static slice<@string> kindStrings = new @string[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownSlogKindˢ = "<unknown slog.Kind>"u8;
+internal static readonly @string unknownSlogKindˢ = "<unknown slog.Kind>"u8;
 
 public static @string String(this ΔKind k) {
     if (k >= 0 && (nint)k < len(kindStrings)) {
@@ -603,7 +603,7 @@ public static Value /*rv*/ Resolve(this Value v) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noStackˢ = "(no stack)"u8;
+internal static readonly @string noStackˢ = "(no stack)"u8;
 
 internal static @string stack(nint skip, nint nFrames) {
     var pcs = new slice<uintptr>(nFrames + 1);

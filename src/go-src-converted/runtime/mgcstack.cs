@@ -106,7 +106,7 @@ internal const bool stackTraceDebug = false;
 [GoType] [GoValueClone("obj")] partial struct stackWorkBuf {
     internal sys.NotInHeap _;
     internal partial ref stackWorkBufHdr stackWorkBufHdr { get; }
-    internal array<uintptr> obj = new((uintptr)((uintptr)_WorkbufSize - @unsafe.Sizeof(new stackWorkBufHdr(nil))) / goarch.PtrSize);
+    internal array<uintptr> obj = new((uintptr)((uintptr)_WorkbufSize - /* unsafe.Sizeof(stackWorkBufHdr{}) */ (uintptr)32) / goarch.PtrSize);
 }
 
 // Header declaration must come after the buf declaration above, because of issue #14620.
@@ -125,7 +125,7 @@ internal const bool stackTraceDebug = false;
 [GoType] [GoValueClone("obj")] partial struct stackObjectBuf {
     internal sys.NotInHeap _;
     internal partial ref stackObjectBufHdr stackObjectBufHdr { get; }
-    internal array<stackObject> obj = new((uintptr)((uintptr)_WorkbufSize - @unsafe.Sizeof(new stackObjectBufHdr(nil))) / @unsafe.Sizeof(new stackObject(nil)));
+    internal array<stackObject> obj = new((uintptr)((uintptr)_WorkbufSize - /* unsafe.Sizeof(stackObjectBufHdr{}) */ (uintptr)32) / /* unsafe.Sizeof(stackObject{}) */ (uintptr)32);
 }
 
 [GoType] partial struct stackObjectBufHdr {
@@ -135,10 +135,10 @@ internal const bool stackTraceDebug = false;
 }
 
 /* [GoInit] runtime bootstrap init - not run; .NET is the runtime */ internal static void initΔ2() {
-    if (@unsafe.Sizeof(new stackWorkBuf(nil)) > @unsafe.Sizeof(new workbuf(nil))) {
+    if (/* unsafe.Sizeof(stackWorkBuf{}) */ (uintptr)2048 > /* unsafe.Sizeof(workbuf{}) */ (uintptr)2048) {
         throw panic("stackWorkBuf too big");
     }
-    if (@unsafe.Sizeof(new stackObjectBuf(nil)) > @unsafe.Sizeof(new workbuf(nil))) {
+    if (/* unsafe.Sizeof(stackObjectBuf{}) */ (uintptr)2048 > /* unsafe.Sizeof(workbuf{}) */ (uintptr)2048) {
         throw panic("stackObjectBuf too big");
     }
 }
@@ -193,7 +193,7 @@ internal static void setRecord(this ж<stackObject> Ꮡobj, ж<stackObjectRecord
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string addressNotAStackAddressˢ = "address not a stack address"u8;
+internal static readonly @string addressNotAStackAddressˢ = "address not a stack address"u8;
 
 // Add p as a potential pointer to a stack object.
 // p must be a stack address.
@@ -272,7 +272,7 @@ internal static (uintptr Δp, bool conservative) getPtr(this ж<stackScanState> 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string objectsAddedOutOfOrderOrˢ = "objects added out of order or overlapping"u8;
+internal static readonly @string objectsAddedOutOfOrderOrˢ = "objects added out of order or overlapping"u8;
 
 // addObject adds a stack object at addr of type typ to the set of stack objects.
 [GoRecv] internal static void addObject(this ref stackScanState s, uintptr addr, ж<stackObjectRecord> Ꮡr) {

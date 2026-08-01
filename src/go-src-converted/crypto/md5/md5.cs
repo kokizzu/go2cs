@@ -12,8 +12,8 @@ namespace go.crypto;
 using crypto = crypto_package;
 using errors = errors_package;
 using hash = hash_package;
-using byteorder = go.@internal.byteorder_package;
-using go.@internal;
+using byteorder = @internal.byteorder_package;
+using @internal;
 
 partial class md5_package {
 

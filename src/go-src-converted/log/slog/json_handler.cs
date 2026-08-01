@@ -98,7 +98,7 @@ public static ж<JSONHandler> NewJSONHandler(io.Writer w, ж<HandlerOptions> Ꮡ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string timeTimeYearOutsideOfˢ = "time.Time year outside of range [0,9999]"u8;
+internal static readonly @string timeTimeYearOutsideOfˢ = "time.Time year outside of range [0,9999]"u8;
 
 // Adapted from time.Time.MarshalJSON to avoid allocation.
 internal static void appendJSONTime(ж<handleState> Ꮡs, time.Time t) {
@@ -186,9 +186,9 @@ internal static error appendJSONMarshal(ж<buffer.Buffer> Ꮡbuf, any v) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string u00ˢ = @"u00"u8;
-private static readonly @string ufffdˢ = @"\ufffd"u8;
-private static readonly @string u202ˢ = @"\u202"u8;
+internal static readonly @string u00ˢ = @"u00"u8;
+internal static readonly @string ufffdˢ = @"\ufffd"u8;
+internal static readonly @string u202ˢ = @"\u202"u8;
 
 // appendEscapedJSONString escapes s for JSON and appends it to buf.
 // It does not surround the string in quotation marks.

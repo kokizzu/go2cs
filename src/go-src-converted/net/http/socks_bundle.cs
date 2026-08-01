@@ -21,11 +21,11 @@ internal static time.Time socksnoDeadline = new time.Time(nil);
 internal static time.Time socksaLongTimeAgo = time.Unix(1, 0);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tooManyAuthenticationˢ = "too many authentication methods"u8;
-private static readonly @string noAcceptableˢ = "no acceptable authentication methods"u8;
-private static readonly @string unknownAddressTypeˢ = "unknown address type"u8;
-private static readonly @string fqdnTooLongˢ = "FQDN too long"u8;
-private static readonly @string nonZeroReservedFieldˢ = "non-zero reserved field"u8;
+internal static readonly @string tooManyAuthenticationˢ = "too many authentication methods"u8;
+internal static readonly @string noAcceptableˢ = "no acceptable authentication methods"u8;
+internal static readonly @string unknownAddressTypeˢ = "unknown address type"u8;
+internal static readonly @string fqdnTooLongˢ = "FQDN too long"u8;
+internal static readonly @string nonZeroReservedFieldˢ = "non-zero reserved field"u8;
 
 internal static (netꓸAddr, error ctxErr) connect(this ж<socksDialer> Ꮡd, context.Context ctx, net.Conn c, @string address) {
     netꓸAddr _ᴛ1 = default!;
@@ -221,8 +221,8 @@ internal static (@string, nint, error) sockssplitHostPort(@string address) {
 [GoType("num:nint")] partial struct socksCommand;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string socksConnectˢ = "socks connect"u8;
-private static readonly @string socksBindˢ = "socks bind"u8;
+internal static readonly @string socksConnectˢ = "socks connect"u8;
+internal static readonly @string socksBindˢ = "socks bind"u8;
 
 internal static @string String(this socksCommand cmd) {
     var exprᴛ1 = cmd;
@@ -243,15 +243,15 @@ internal static @string String(this socksCommand cmd) {
 [GoType("num:nint")] partial struct socksReply;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string succeededˢ = "succeeded"u8;
-private static readonly @string generalSocksServerˢ = "general SOCKS server failure"u8;
-private static readonly @string connectionNotAllowedByˢ = "connection not allowed by ruleset"u8;
-private static readonly @string networkUnreachableˢ = "network unreachable"u8;
-private static readonly @string hostUnreachableˢ = "host unreachable"u8;
-private static readonly @string connectionRefusedˢ = "connection refused"u8;
-private static readonly @string ttlExpiredˢ = "TTL expired"u8;
-private static readonly @string commandNotSupportedˢ = "command not supported"u8;
-private static readonly @string addressTypeNotSupportedˢ = "address type not supported"u8;
+internal static readonly @string succeededˢ = "succeeded"u8;
+internal static readonly @string generalSocksServerˢ = "general SOCKS server failure"u8;
+internal static readonly @string connectionNotAllowedByˢ = "connection not allowed by ruleset"u8;
+internal static readonly @string networkUnreachableˢ = "network unreachable"u8;
+internal static readonly @string hostUnreachableˢ = "host unreachable"u8;
+internal static readonly @string connectionRefusedˢ = "connection refused"u8;
+internal static readonly @string ttlExpiredˢ = "TTL expired"u8;
+internal static readonly @string commandNotSupportedˢ = "command not supported"u8;
+internal static readonly @string addressTypeNotSupportedˢ = "address type not supported"u8;
 
 internal static @string String(this socksReply code) {
     var exprᴛ1 = code;
@@ -318,14 +318,14 @@ internal static socksReply socksStatusSucceeded => 0x00;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string socksˢ = "socks"u8;
+internal static readonly @string socksˢ = "socks"u8;
 
 [GoRecv] internal static @string Network(this ref socksAddr a) {
     return socksˢ;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "<nil>"u8;
+internal static readonly @string nilˢ = "<nil>"u8;
 
 internal static @string String(this ж<socksAddr> Ꮡa) {
     ref var a = ref Ꮡa.DerefOrNil();
@@ -376,7 +376,7 @@ internal static netꓸAddr BoundAddr(this ж<socksConn> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilContextˢ = "nil context"u8;
+internal static readonly @string nilContextˢ = "nil context"u8;
 
 // DialContext connects to the provided address on the provided
 // network.
@@ -485,8 +485,8 @@ internal static (net.Conn, error) Dial(this ж<socksDialer> Ꮡd, @string networ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string networkNotImplementedˢ = "network not implemented"u8;
-private static readonly @string commandNotImplementedˢ = "command not implemented"u8;
+internal static readonly @string networkNotImplementedˢ = "network not implemented"u8;
+internal static readonly @string commandNotImplementedˢ = "command not implemented"u8;
 
 [GoRecv] internal static error validateTarget(this ref socksDialer d, @string network, @string address) {
     var exprᴛ1 = network;
@@ -548,9 +548,9 @@ internal static UntypedInt socksauthStatusSucceeded => 0x00;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidUsernamePasswordˢ = "invalid username/password"u8;
-private static readonly @string invalidUsernamePasswordˢ2 = "invalid username/password version"u8;
-private static readonly @string usernamePasswordˢ = "username/password authentication failed"u8;
+internal static readonly @string invalidUsernamePasswordˢ = "invalid username/password"u8;
+internal static readonly @string invalidUsernamePasswordˢ2 = "invalid username/password version"u8;
+internal static readonly @string usernamePasswordˢ = "username/password authentication failed"u8;
 
 // Authenticate authenticates a pair of username and password with the
 // proxy server.

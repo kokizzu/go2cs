@@ -28,9 +28,9 @@ partial class x509_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509FailedToParsePrivateˢ3 = "x509: failed to parse private key (use ParsePKCS1PrivateKey instead for this key format)"u8;
-private static readonly @string x509InvalidEd25519ˢ = "x509: invalid Ed25519 private key parameters"u8;
-private static readonly @string x509InvalidX25519Privateˢ = "x509: invalid X25519 private key parameters"u8;
+internal static readonly @string x509FailedToParsePrivateˢ3 = "x509: failed to parse private key (use ParsePKCS1PrivateKey instead for this key format)"u8;
+internal static readonly @string x509InvalidEd25519ˢ = "x509: invalid Ed25519 private key parameters"u8;
+internal static readonly @string x509InvalidX25519Privateˢ = "x509: invalid X25519 private key parameters"u8;
 
 // optional attributes omitted.
 
@@ -124,7 +124,7 @@ public static (any key, error err) ParsePKCS8PrivateKey(slice<byte> der) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509UnknownCurveWhileˢ = "x509: unknown curve while marshaling to PKCS#8"u8;
+internal static readonly @string x509UnknownCurveWhileˢ = "x509: unknown curve while marshaling to PKCS#8"u8;
 
 // MarshalPKCS8PrivateKey converts a private key to PKCS #8, ASN.1 DER form.
 //

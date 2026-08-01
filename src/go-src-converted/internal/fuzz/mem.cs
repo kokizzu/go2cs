@@ -51,11 +51,11 @@ partial class fuzz_package {
 // contain values of the given size.
 internal static nint sharedMemSize(nint valueSize) {
     // TODO(jayconrod): set a reasonable maximum size per platform.
-    return (nint)@unsafe.Sizeof(new sharedMemHeader(nil)) + valueSize;
+    return (nint)/* unsafe.Sizeof(sharedMemHeader{}) */ (uintptr)40 + valueSize;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fuzzˢ = "fuzz-*"u8;
+internal static readonly @string fuzzˢ = "fuzz-*"u8;
 
 // sharedMemTempFile creates a new temporary file of the given size, then maps
 // it into memory. The file will be removed when the Close method is called.
@@ -99,7 +99,7 @@ internal static (ж<sharedMem> m, error err) sharedMemTempFile(nint size) {
 // slice points to shared memory; it is not a copy.
 [GoRecv] internal static slice<byte> valueRef(this ref sharedMem m) {
     nint length = m.header().Value.valueLen;
-    nint valueOffset = (nint)@unsafe.Sizeof(new sharedMemHeader(nil));
+    nint valueOffset = (nint)/* unsafe.Sizeof(sharedMemHeader{}) */ (uintptr)40;
     return m.region[(int)(valueOffset)..(int)(valueOffset + length)];
 }
 

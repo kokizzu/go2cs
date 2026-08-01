@@ -37,7 +37,7 @@ internal static void sortByRFC6724withSrcs(slice<IPAddr> addrs, slice<netipꓸAd
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string udpˢ = "udp"u8;
+internal static readonly @string udpˢ = "udp"u8;
 
 // srcAddrs tries to UDP-connect to each address to see if it has a
 // route. (This doesn't send any packets). The destination port

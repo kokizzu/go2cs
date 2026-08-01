@@ -104,21 +104,23 @@ public static (nint n, error err) Scanf(@string format, params ꓸꓸꓸany aʗp
 // values into successive arguments. Newlines count as space. It
 // returns the number of items successfully scanned. If that is less
 // than the number of arguments, err will report why.
-public static (nint n, error err) Sscan(@string str, params ꓸꓸꓸany aʗp) {
+public static (nint n, error err) Sscan(@string strʗp, params ꓸꓸꓸany aʗp) {
     nint n = default!;
     error err = default!;
     var a = aʗp.slice();
 
+    ref var str = ref heap(strʗp, out var Ꮡstr);
     return Fscan(new stringReaderжReader(Ꮡ((stringReader)(str))), a.ꓸꓸꓸ);
 }
 
 // Sscanln is similar to [Sscan], but stops scanning at a newline and
 // after the final item there must be a newline or EOF.
-public static (nint n, error err) Sscanln(@string str, params ꓸꓸꓸany aʗp) {
+public static (nint n, error err) Sscanln(@string strʗp, params ꓸꓸꓸany aʗp) {
     nint n = default!;
     error err = default!;
     var a = aʗp.slice();
 
+    ref var str = ref heap(strʗp, out var Ꮡstr);
     return Fscanln(new stringReaderжReader(Ꮡ((stringReader)(str))), a.ꓸꓸꓸ);
 }
 
@@ -126,11 +128,12 @@ public static (nint n, error err) Sscanln(@string str, params ꓸꓸꓸany aʗp)
 // values into successive arguments as determined by the format. It
 // returns the number of items successfully parsed.
 // Newlines in the input must match newlines in the format.
-public static (nint n, error err) Sscanf(@string str, @string format, params ꓸꓸꓸany aʗp) {
+public static (nint n, error err) Sscanf(@string strʗp, @string format, params ꓸꓸꓸany aʗp) {
     nint n = default!;
     error err = default!;
     var a = aʗp.slice();
 
+    ref var str = ref heap(strʗp, out var Ꮡstr);
     return Fscanf(new stringReaderжReader(Ꮡ((stringReader)(str))), format, a.ꓸꓸꓸ);
 }
 
@@ -206,7 +209,7 @@ internal static UntypedInt eof => -1;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string scanStateSReadShouldNotˢ = "ScanState's Read should not be called. Use ReadRune"u8;
+internal static readonly @string scanStateSReadShouldNotˢ = "ScanState's Read should not be called. Use ReadRune"u8;
 
 // The Read method is only in ScanState so that ScanState
 // satisfies io.Reader. It will never be called when used as
@@ -439,7 +442,7 @@ internal static bool notSpace(rune r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fmtScanningCalledˢ = "fmt: scanning called UnreadRune with no rune available"u8;
+internal static readonly @string fmtScanningCalledˢ = "fmt: scanning called UnreadRune with no rune available"u8;
 
 [GoRecv] internal static error UnreadRune(this ref readRune r) {
     if (r.peekRune >= 0) {
@@ -498,7 +501,7 @@ internal static void free(this ж<ss> Ꮡs, ssave old) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedNewlineˢ = "unexpected newline"u8;
+internal static readonly @string unexpectedNewlineˢ = "unexpected newline"u8;
 
 // SkipSpace provides Scan methods the ability to skip space and newline
 // characters in keeping with the current scanning mode set by format strings
@@ -617,7 +620,7 @@ internal static nint indexRune(@string s, rune r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string booleanˢ = "boolean"u8;
+internal static readonly @string booleanˢ = "boolean"u8;
 
 // scanBool returns the value of the boolean represented by the next token.
 [GoRecv] internal static bool scanBool(this ref ss s, rune verb) {
@@ -666,8 +669,8 @@ internal static readonly @string period = "."u8;
 internal static readonly @string exponent = "eEpP"u8;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bdoUxXvˢ = "bdoUxXv"u8;
-private static readonly @string integerˢ = "integer"u8;
+internal static readonly @string bdoUxXvˢ = "bdoUxXv"u8;
+internal static readonly @string integerˢ = "integer"u8;
 
 // getBase returns the numeric base represented by the verb and its digit string.
 [GoRecv] internal static (nint @base, @string digits) getBase(this ref ss s, rune verb) {
@@ -699,7 +702,7 @@ private static readonly @string integerˢ = "integer"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string expectedIntegerˢ = "expected integer"u8;
+internal static readonly @string expectedIntegerˢ = "expected integer"u8;
 
 // scanNumber returns the numerical string with specified digits starting here.
 [GoRecv] internal static @string scanNumber(this ref ss s, @string digits, bool haveDigits) {
@@ -759,7 +762,7 @@ private static readonly @string expectedIntegerˢ = "expected integer"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badUnicodeFormatˢ = "bad unicode format "u8;
+internal static readonly @string badUnicodeFormatˢ = "bad unicode format "u8;
 
 // scanInt returns the value of the integer represented by the next
 // token, checking for overflow. Any error is stored in s.err.
@@ -943,7 +946,7 @@ internal static bool hasX(@string s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string complexˢ = "complex"u8;
+internal static readonly @string complexˢ = "complex"u8;
 
 // scanComplex converts the next token to a complex128 value.
 // The atof argument is a type-specific reader for the underlying type.
@@ -962,8 +965,8 @@ private static readonly @string complexˢ = "complex"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string svqxXˢ = "svqxX"u8;
-private static readonly @string stringˢ2 = "string"u8;
+internal static readonly @string svqxXˢ = "svqxX"u8;
+internal static readonly @string stringˢ2 = "string"u8;
 
 // convertString returns the string represented by the next input characters.
 // The format of the input is determined by the verb.
@@ -994,7 +997,7 @@ private static readonly @string stringˢ2 = "string"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string expectedQuotedStringˢ = "expected quoted string"u8;
+internal static readonly @string expectedQuotedStringˢ = "expected quoted string"u8;
 
 // quotedString returns the double- or back-quoted string represented by the next input characters.
 [GoRecv] internal static @string quotedString(this ref ss s) {
@@ -1060,7 +1063,7 @@ internal static (nint, bool) hexDigit(rune d) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string illegalHexDigitˢ = "illegal hex digit"u8;
+internal static readonly @string illegalHexDigitˢ = "illegal hex digit"u8;
 
 // hexByte returns the next hex-encoded (two-character) byte from the input.
 // It returns ok==false if the next bytes in the input do not encode a hex byte.
@@ -1087,7 +1090,7 @@ private static readonly @string illegalHexDigitˢ = "illegal hex digit"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noHexDataForXStringˢ = "no hex data for %x string"u8;
+internal static readonly @string noHexDataForXStringˢ = "no hex data for %x string"u8;
 
 // hexString returns the space-delimited hexpair-encoded string.
 [GoRecv] internal static @string hexString(this ref ss s) {
@@ -1112,7 +1115,7 @@ internal static UntypedInt intBits => /* 32 << (^uint(0) >> 63) */ 64;
 internal static UntypedInt uintptrBits => /* 32 << (^uintptr(0) >> 63) */ 64;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingLiteralˢ = "missing literal %"u8;
+internal static readonly @string missingLiteralˢ = "missing literal %"u8;
 
 // scanPercent scans a literal percent character.
 [GoRecv] internal static void scanPercent(this ref ss s) {
@@ -1124,8 +1127,8 @@ private static readonly @string missingLiteralˢ = "missing literal %"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string float32ˢ = "float32"u8;
-private static readonly @string float64ˢ = "float64"u8;
+internal static readonly @string float32ˢ = "float32"u8;
+internal static readonly @string float64ˢ = "float64"u8;
 
 // scanOne scans a single value, deriving the scanner from the type of the argument.
 internal static void scanOne(this ж<ss> Ꮡs, rune verb, any arg) {
@@ -1308,7 +1311,7 @@ internal static void errorHandler(ж<error> Ꮡerrp) => func((defer, recover) =>
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string expectedNewlineˢ = "expected newline"u8;
+internal static readonly @string expectedNewlineˢ = "expected newline"u8;
 
 // doScan does the real work for scanning without a format string.
 internal static (nint numProcessed, error err) doScan(this ж<ss> Ꮡs, slice<any> a) {
@@ -1341,10 +1344,10 @@ internal static (nint numProcessed, error err) doScan(this ж<ss> Ꮡs, slice<an
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string newlineInFormatDoesNotˢ = "newline in format does not match input"u8;
-private static readonly @string expectedSpaceInInputToˢ = "expected space in input to match format"u8;
-private static readonly @string newlineInInputDoesNotˢ = "newline in input does not match format"u8;
-private static readonly @string missingVerbAtEndOfFormatˢ = "missing verb: % at end of format string"u8;
+internal static readonly @string newlineInFormatDoesNotˢ = "newline in format does not match input"u8;
+internal static readonly @string expectedSpaceInInputToˢ = "expected space in input to match format"u8;
+internal static readonly @string newlineInInputDoesNotˢ = "newline in input does not match format"u8;
+internal static readonly @string missingVerbAtEndOfFormatˢ = "missing verb: % at end of format string"u8;
 
 // advance determines whether the next characters in the input match
 // those of the format. It returns the number of bytes (sic) consumed
@@ -1435,8 +1438,8 @@ private static readonly @string missingVerbAtEndOfFormatˢ = "missing verb: % at
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string inputDoesNotMatchFormatˢ = "input does not match format"u8;
-private static readonly @string tooManyOperandsˢ = "too many operands"u8;
+internal static readonly @string inputDoesNotMatchFormatˢ = "input does not match format"u8;
+internal static readonly @string tooManyOperandsˢ = "too many operands"u8;
 
 // doScanf does the real work when scanning with a format string.
 // At the moment, it handles only pointers to basic types.

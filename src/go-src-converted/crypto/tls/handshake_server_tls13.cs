@@ -110,17 +110,17 @@ internal static UntypedInt maxClientPSKIdentities => 5;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsClientUsedTheLegacyˢ = "tls: client used the legacy version field to negotiate TLS 1.3"u8;
-private static readonly @string tlsTls13ClientSupportsˢ = "tls: TLS 1.3 client supports illegal compression methods"u8;
-private static readonly @string tlsEarlyDataWithoutPreˢ = "tls: early_data without pre_shared_key"u8;
-private static readonly @string tlsClientSentUnexpectedˢ = "tls: client sent unexpected early data"u8;
-private static readonly @string tlsClientSentKeyShareForˢ = "tls: client sent key share for group it does not support"u8;
-private static readonly @string tlsNoEcdheCurveSupportedˢ = "tls: no ECDHE curve supported by both client and server"u8;
-private static readonly @string tlsInvalidKyberClientKeyˢ = "tls: invalid Kyber client key share"u8;
-private static readonly @string tlsInvalidClientKeyShareˢ = "tls: invalid client key share"u8;
-private static readonly @string tlsClientOfferedTlsˢ = "tls: client offered TLS version older than TLS 1.3"u8;
-private static readonly @string tlsClientDidNotSendAQuicˢ = "tls: client did not send a quic_transport_parameters extension"u8;
-private static readonly @string tlsClientSentAnˢ = "tls: client sent an unexpected quic_transport_parameters extension"u8;
+internal static readonly @string tlsClientUsedTheLegacyˢ = "tls: client used the legacy version field to negotiate TLS 1.3"u8;
+internal static readonly @string tlsTls13ClientSupportsˢ = "tls: TLS 1.3 client supports illegal compression methods"u8;
+internal static readonly @string tlsEarlyDataWithoutPreˢ = "tls: early_data without pre_shared_key"u8;
+internal static readonly @string tlsClientSentUnexpectedˢ = "tls: client sent unexpected early data"u8;
+internal static readonly @string tlsClientSentKeyShareForˢ = "tls: client sent key share for group it does not support"u8;
+internal static readonly @string tlsNoEcdheCurveSupportedˢ = "tls: no ECDHE curve supported by both client and server"u8;
+internal static readonly @string tlsInvalidKyberClientKeyˢ = "tls: invalid Kyber client key share"u8;
+internal static readonly @string tlsInvalidClientKeyShareˢ = "tls: invalid client key share"u8;
+internal static readonly @string tlsClientOfferedTlsˢ = "tls: client offered TLS version older than TLS 1.3"u8;
+internal static readonly @string tlsClientDidNotSendAQuicˢ = "tls: client did not send a quic_transport_parameters extension"u8;
+internal static readonly @string tlsClientSentAnˢ = "tls: client sent an unexpected quic_transport_parameters extension"u8;
 
 [GoRecv] internal static error processClientHello(this ref serverHandshakeStateTLS13 hs) {
     var c = hs.c;
@@ -312,9 +312,9 @@ private static readonly @string tlsClientSentAnˢ = "tls: client sent an unexpec
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsInvalidOrMissingPskˢ = "tls: invalid or missing PSK binders"u8;
-private static readonly @string tlsInternalErrorFailedToˢ = "tls: internal error: failed to clone hash"u8;
-private static readonly @string tlsInvalidPskBinderˢ = "tls: invalid PSK binder"u8;
+internal static readonly @string tlsInvalidOrMissingPskˢ = "tls: invalid or missing PSK binders"u8;
+internal static readonly @string tlsInternalErrorFailedToˢ = "tls: internal error: failed to clone hash"u8;
+internal static readonly @string tlsInvalidPskBinderˢ = "tls: invalid PSK binder"u8;
 
 [GoRecv] internal static error checkForResumption(this ref serverHandshakeStateTLS13 hs) {
     var c = hs.c;
@@ -516,10 +516,10 @@ internal static hash.Hash cloneHash(hash.Hash @in, crypto.Hash h) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsClientDidnTSendOneKeyˢ = "tls: client didn't send one key share in second ClientHello"u8;
-private static readonly @string tlsClientSentUnexpectedˢ2 = "tls: client sent unexpected key share in second ClientHello"u8;
-private static readonly @string tlsClientIndicatedEarlyˢ = "tls: client indicated early data in second ClientHello"u8;
-private static readonly @string tlsClientIllegallyˢ = "tls: client illegally modified second ClientHello"u8;
+internal static readonly @string tlsClientDidnTSendOneKeyˢ = "tls: client didn't send one key share in second ClientHello"u8;
+internal static readonly @string tlsClientSentUnexpectedˢ2 = "tls: client sent unexpected key share in second ClientHello"u8;
+internal static readonly @string tlsClientIndicatedEarlyˢ = "tls: client indicated early data in second ClientHello"u8;
+internal static readonly @string tlsClientIllegallyˢ = "tls: client illegally modified second ClientHello"u8;
 
 [GoRecv] internal static (ж<keyShare>, error) doHelloRetryRequest(this ref serverHandshakeStateTLS13 hs, CurveID selectedGroup) {
     var c = hs.c;
@@ -847,7 +847,7 @@ internal static bool illegalClientHelloChange(ж<clientHelloMsg> Ꮡch, ж<clien
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsInternalErrorUnknownˢ = "tls: internal error: unknown cipher suite"u8;
+internal static readonly @string tlsInternalErrorUnknownˢ = "tls: internal error: unknown cipher suite"u8;
 
 internal static error sendSessionTicket(this ж<Conn> Ꮡc, bool earlyData, slice<slice<byte>> extra) {
     ref var c = ref Ꮡc.Value;
@@ -995,7 +995,7 @@ internal static error sendSessionTicket(this ж<Conn> Ꮡc, bool earlyData, slic
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsInvalidClientFinishedˢ = "tls: invalid client finished hash"u8;
+internal static readonly @string tlsInvalidClientFinishedˢ = "tls: invalid client finished hash"u8;
 
 [GoRecv] internal static error readClientFinished(this ref serverHandshakeStateTLS13 hs) {
     var c = hs.c;

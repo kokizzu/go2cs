@@ -81,7 +81,7 @@ internal static error WriteRequest(this ж<clientCodec> Ꮡc, ж<rpc.Request> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unspecifiedErrorˢ = "unspecified error"u8;
+internal static readonly @string unspecifiedErrorˢ = "unspecified error"u8;
 
 internal static error ReadResponseHeader(this ж<clientCodec> Ꮡc, ж<rpc.Response> Ꮡr) {
     ref var c = ref Ꮡc.Value;

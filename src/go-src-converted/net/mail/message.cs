@@ -151,9 +151,9 @@ internal static void buildDateLayouts() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mailHeaderHasACrWithoutˢ = "mail: header has a CR without LF"u8;
-private static readonly @string mailMisformattedˢ = "mail: misformatted parenthetical comment"u8;
-private static readonly @string mailHeaderCouldNotBeˢ = "mail: header could not be parsed"u8;
+internal static readonly @string mailHeaderHasACrWithoutˢ = "mail: header has a CR without LF"u8;
+internal static readonly @string mailMisformattedˢ = "mail: misformatted parenthetical comment"u8;
+internal static readonly @string mailHeaderCouldNotBeˢ = "mail: header could not be parsed"u8;
 
 // ParseDate parses an RFC 5322 date string.
 public static (time.Time, error) ParseDate(@string date) {
@@ -219,7 +219,7 @@ public static @string Get(this Header h, @string key) {
 public static error ErrHeaderNotPresent = errors.New("mail: header not in message"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dateˢ = "Date"u8;
+internal static readonly @string dateˢ = "Date"u8;
 
 // Date parses the Date header field.
 public static (time.Time, error) Date(this Header h) {
@@ -276,7 +276,7 @@ public static (slice<ж<Address>>, error) ParseAddressList(@string list) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string utf8ˢ = "utf-8"u8;
+internal static readonly @string utf8ˢ = "utf-8"u8;
 
 // String formats the address as a valid RFC 5322 address.
 // If the address's name contains non-ASCII characters
@@ -345,7 +345,7 @@ private static readonly @string utf8ˢ = "utf-8"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mailExpectedCommaˢ = "mail: expected comma"u8;
+internal static readonly @string mailExpectedCommaˢ = "mail: expected comma"u8;
 
 internal static (slice<ж<Address>>, error) parseAddressList(this ж<addrParser> Ꮡp) {
     ref var p = ref Ꮡp.Value;
@@ -383,8 +383,8 @@ internal static (slice<ж<Address>>, error) parseAddressList(this ж<addrParser>
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mailEmptyGroupˢ = "mail: empty group"u8;
-private static readonly @string mailGroupWithMultipleˢ = "mail: group with multiple addresses"u8;
+internal static readonly @string mailEmptyGroupˢ = "mail: empty group"u8;
+internal static readonly @string mailGroupWithMultipleˢ = "mail: group with multiple addresses"u8;
 
 internal static (ж<Address>, error) parseSingleAddress(this ж<addrParser> Ꮡp) {
     ref var p = ref Ꮡp.Value;
@@ -409,10 +409,10 @@ internal static (ж<Address>, error) parseSingleAddress(this ж<addrParser> Ꮡp
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mailNoAddressˢ = "mail: no address"u8;
-private static readonly @string mailMissingOrAngleAddrˢ = "mail: missing '@' or angle-addr"u8;
-private static readonly @string mailNoAngleAddrˢ = "mail: no angle-addr"u8;
-private static readonly @string mailUnclosedAngleAddrˢ = "mail: unclosed angle-addr"u8;
+internal static readonly @string mailNoAddressˢ = "mail: no address"u8;
+internal static readonly @string mailMissingOrAngleAddrˢ = "mail: missing '@' or angle-addr"u8;
+internal static readonly @string mailNoAngleAddrˢ = "mail: no angle-addr"u8;
+internal static readonly @string mailUnclosedAngleAddrˢ = "mail: unclosed angle-addr"u8;
 
 // parseAddress parses a single RFC 5322 address at the start of p.
 internal static (slice<ж<Address>>, error) parseAddress(this ж<addrParser> Ꮡp, bool handleGroup) {
@@ -531,10 +531,10 @@ internal static (slice<ж<Address>>, error) consumeGroupList(this ж<addrParser>
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mailNoAddrSpecˢ = "mail: no addr-spec"u8;
-private static readonly @string mailEmptyQuotedStringInˢ = "mail: empty quoted string in addr-spec"u8;
-private static readonly @string mailMissingInAddrSpecˢ = "mail: missing @ in addr-spec"u8;
-private static readonly @string mailNoDomainInAddrSpecˢ = "mail: no domain in addr-spec"u8;
+internal static readonly @string mailNoAddrSpecˢ = "mail: no addr-spec"u8;
+internal static readonly @string mailEmptyQuotedStringInˢ = "mail: empty quoted string in addr-spec"u8;
+internal static readonly @string mailMissingInAddrSpecˢ = "mail: missing @ in addr-spec"u8;
+internal static readonly @string mailNoDomainInAddrSpecˢ = "mail: no domain in addr-spec"u8;
 
 // consumeAddrSpec parses a single RFC 5322 addr-spec at the start of p.
 internal static (@string spec, error err) consumeAddrSpec(this ж<addrParser> Ꮡp) {
@@ -657,7 +657,7 @@ internal static (@string spec, error err) consumeAddrSpec(this ж<addrParser> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mailUnclosedQuotedStringˢ = "mail: unclosed quoted-string"u8;
+internal static readonly @string mailUnclosedQuotedStringˢ = "mail: unclosed quoted-string"u8;
 
 // consumeQuotedString parses the quoted string at the start of p.
 [GoRecv] internal static (@string qs, error err) consumeQuotedString(this ref addrParser p) {
@@ -714,10 +714,10 @@ break_Loop:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mailInvalidStringˢ = "mail: invalid string"u8;
-private static readonly @string mailLeadingDotInAtomˢ = "mail: leading dot in atom"u8;
-private static readonly @string mailDoubleDotInAtomˢ = "mail: double dot in atom"u8;
-private static readonly @string mailTrailingDotInAtomˢ = "mail: trailing dot in atom"u8;
+internal static readonly @string mailInvalidStringˢ = "mail: invalid string"u8;
+internal static readonly @string mailLeadingDotInAtomˢ = "mail: leading dot in atom"u8;
+internal static readonly @string mailDoubleDotInAtomˢ = "mail: double dot in atom"u8;
+internal static readonly @string mailTrailingDotInAtomˢ = "mail: trailing dot in atom"u8;
 
 // consumeAtom parses an RFC 5322 atom at the start of p.
 // If dot is true, consumeAtom parses an RFC 5322 dot-atom instead.
@@ -766,8 +766,8 @@ break_Loop:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mailMissingInDomainˢ = @"mail: missing ""["" in domain-literal"u8;
-private static readonly @string mailUnclosedDomainˢ = "mail: unclosed domain-literal"u8;
+internal static readonly @string mailMissingInDomainˢ = @"mail: missing ""["" in domain-literal"u8;
+internal static readonly @string mailUnclosedDomainˢ = "mail: unclosed domain-literal"u8;
 
 // consumeDomainLiteral parses an RFC 5322 domain-literal at the start of p.
 [GoRecv] internal static (@string, error) consumeDomainLiteral(this ref addrParser p) {
@@ -806,7 +806,7 @@ private static readonly @string mailUnclosedDomainˢ = "mail: unclosed domain-li
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mailCommentDoesNotStartˢ = "mail: comment does not start with ("u8;
+internal static readonly @string mailCommentDoesNotStartˢ = "mail: comment does not start with ("u8;
 
 [GoRecv] internal static (@string, error) consumeDisplayNameComment(this ref addrParser p) {
     if (!p.consume((rune)'(')) {

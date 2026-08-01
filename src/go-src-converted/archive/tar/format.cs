@@ -47,7 +47,7 @@ internal static map<Format, @string> formatNames = new map<Format, @string>{
 };
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownˢ = "<unknown>"u8;
+internal static readonly @string unknownˢ = "<unknown>"u8;
 
 public static @string String(this Format f) {
     slice<@string> ss = default!;

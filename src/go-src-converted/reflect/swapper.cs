@@ -12,8 +12,8 @@ using @internal;
 partial class reflect_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string iSLenˢ = "i < s.Len"u8;
-private static readonly @string jSLenˢ = "j < s.Len"u8;
+internal static readonly @string iSLenˢ = "i < s.Len"u8;
+internal static readonly @string jSLenˢ = "j < s.Len"u8;
 
 // Swapper returns a function that swaps the elements in the provided
 // slice.

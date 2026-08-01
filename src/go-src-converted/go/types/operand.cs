@@ -73,12 +73,12 @@ internal static array<@string> operandModeString = new golib.SparseArray<@string
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilWithInvalidTypeˢ = "nil (with invalid type)"u8;
-private static readonly @string ofGenericTypeˢ = " of generic type "u8;
-private static readonly @string ofTypeˢ = " of type "u8;
-private static readonly @string constrainedByˢ = " constrained by "u8;
-private static readonly @string withEmptyTypeSetˢ = " with empty type set"u8;
-private static readonly @string withInvalidTypeˢ = " with invalid type"u8;
+internal static readonly @string nilWithInvalidTypeˢ = "nil (with invalid type)"u8;
+internal static readonly @string ofGenericTypeˢ = " of generic type "u8;
+internal static readonly @string ofTypeˢ = " of type "u8;
+internal static readonly @string constrainedByˢ = " constrained by "u8;
+internal static readonly @string withEmptyTypeSetˢ = " with empty type set"u8;
+internal static readonly @string withInvalidTypeˢ = " with invalid type"u8;
 
 // Operand string formats
 // (not all "untyped" cases can appear due to the type system,
@@ -275,7 +275,7 @@ internal static @string String(this ж<operand> Ꮡx) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string needTypeAssertionˢ = "need type assertion"u8;
+internal static readonly @string needTypeAssertionˢ = "need type assertion"u8;
 
 // assignableTo reports whether x is assignable to a variable of type T. If the
 // result is false and a non-nil cause is provided, it may be set to a more

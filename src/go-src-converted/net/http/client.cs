@@ -216,10 +216,10 @@ internal static @string refererForURL(ж<url.URL> ᏑlastReq, ж<url.URL> Ꮡnew
 public static error ErrSchemeMismatch = errors.New("http: server gave HTTP response to HTTPS client"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpNoClientTransportOrˢ = "http: no Client.Transport or DefaultTransport"u8;
-private static readonly @string httpNilRequestUrlˢ = "http: nil Request.URL"u8;
-private static readonly @string httpRequestRequestURICanˢ = "http: Request.RequestURI can't be set in client requests"u8;
-private static readonly @string authorizationˢ = "Authorization"u8;
+internal static readonly @string httpNoClientTransportOrˢ = "http: no Client.Transport or DefaultTransport"u8;
+internal static readonly @string httpNilRequestUrlˢ = "http: nil Request.URL"u8;
+internal static readonly @string httpRequestRequestURICanˢ = "http: Request.RequestURI can't be set in client requests"u8;
+internal static readonly @string authorizationˢ = "Authorization"u8;
 
 // send issues an HTTP request.
 // Caller should close resp.Body when done reading from it.
@@ -503,7 +503,7 @@ public static (ж<Response> resp, error err) Get(@string url) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string getˢ = "GET"u8;
+internal static readonly @string getˢ = "GET"u8;
 
 // Get issues a GET to the specified URL. If the response is one of the
 // following redirect codes, Get follows the redirect after calling the
@@ -600,7 +600,7 @@ internal static (@string redirectMethod, bool shouldRedirect, bool includeBody) 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string getˢ2 = "Get"u8;
+internal static readonly @string getˢ2 = "Get"u8;
 
 // urlErrorOp returns the (*url.Error).Op value to use for the
 // provided (*Request).Method value.
@@ -660,8 +660,8 @@ public static (ж<Response>, error) Do(this ж<Client> Ꮡc, ж<Request> Ꮡreq)
 internal static Action<ж<Response>, error> testHookClientDoResult;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string locationˢ = "Location"u8;
-private static readonly @string refererˢ = "Referer"u8;
+internal static readonly @string locationˢ = "Location"u8;
+internal static readonly @string refererˢ = "Referer"u8;
 
 internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж<Request> Ꮡreq) {
     ж<Response> retres = default!;
@@ -801,7 +801,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                     // c.send() always closes req.Body
                     reqBodyClosed = true;
                     if (!deadline.IsZero() && didTimeout()) {
-                        err = new timeoutErrorжerror(Ꮡ(new timeoutError(err.Error() + " (Client.Timeout exceeded while awaiting headers)")));
+                        err = new timeoutErrorжerror(Ꮡ(new timeoutError(err.Error() + " (Client.Timeout exceeded while awaiting headers)"u8)));
                     }
                     (retres, reterr) = (default!, uerr(err)); return;
                 }
@@ -818,7 +818,7 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cookieˢ = "Cookie"u8;
+internal static readonly @string cookieˢ = "Cookie"u8;
 
 // makeHeadersCopier makes a function that copies headers from the
 // initial Request, ireq. For every redirect, this function must be called
@@ -892,7 +892,7 @@ internal static Action<ж<Request>> makeHeadersCopier(this ж<Client> Ꮡc, ж<R
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stoppedAfter10Redirectsˢ = "stopped after 10 redirects"u8;
+internal static readonly @string stoppedAfter10Redirectsˢ = "stopped after 10 redirects"u8;
 
 // Update previous Request with the current request
 internal static error defaultCheckRedirect(ж<Request> Ꮡreq, slice<ж<Request>> via) {
@@ -926,8 +926,8 @@ public static (ж<Response> resp, error err) Post(@string url, @string contentTy
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string postˢ = "POST"u8;
-private static readonly @string contentTypeˢ = "Content-Type"u8;
+internal static readonly @string postˢ = "POST"u8;
+internal static readonly @string contentTypeˢ = "Content-Type"u8;
 
 // Post issues a POST to the specified URL.
 //
@@ -979,7 +979,7 @@ public static (ж<Response> resp, error err) PostForm(@string urlΔ1, url.Values
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string applicationXWwwFormˢ = "application/x-www-form-urlencoded"u8;
+internal static readonly @string applicationXWwwFormˢ = "application/x-www-form-urlencoded"u8;
 
 // PostForm issues a POST to the specified URL,
 // with data's keys and values URL-encoded as the request body.
@@ -1024,7 +1024,7 @@ public static (ж<Response> resp, error err) Head(@string url) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string headˢ = "HEAD"u8;
+internal static readonly @string headˢ = "HEAD"u8;
 
 // Head issues a HEAD to the specified URL. If the response is one of the
 // following redirect codes, Head follows the redirect after calling the
@@ -1090,7 +1090,7 @@ public static (ж<Response> resp, error err) Head(this ж<Client> Ꮡc, @string 
         return (n, err);
     }
     if (b.reqDidTimeout()) {
-        err = new timeoutErrorжerror(Ꮡ(new timeoutError(err.Error() + " (Client.Timeout or context cancellation while reading body)")));
+        err = new timeoutErrorжerror(Ꮡ(new timeoutError(err.Error() + " (Client.Timeout or context cancellation while reading body)"u8)));
     }
     return (n, err);
 }

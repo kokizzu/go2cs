@@ -67,7 +67,7 @@ internal static void panicCheck2(@string err) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string indexOutOfRangeˢ = "index out of range"u8;
+internal static readonly @string indexOutOfRangeˢ = "index out of range"u8;
 
 // Many of the following panic entry-points turn into throws when they
 // happen in various runtime contexts. These should never happen in
@@ -111,7 +111,7 @@ internal static void goPanicIndexU(nuint x, nint y) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sliceBoundsOutOfRangeˢ = "slice bounds out of range"u8;
+internal static readonly @string sliceBoundsOutOfRangeˢ = "slice bounds out of range"u8;
 
 // failures in the comparisons for s[:x], 0 <= x <= y (y == len(s) or cap(s))
 //
@@ -197,7 +197,7 @@ internal static void goPanicSlice3CU(nuint x, nint y) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sliceLengthTooShortToˢ = "slice length too short to convert to array or pointer to array"u8;
+internal static readonly @string sliceLengthTooShortToˢ = "slice length too short to convert to array or pointer to array"u8;
 
 // failures in the conversion ([x]T)(s) or (*[x]T)(s), 0 <= x <= y, y == len(s)
 internal static void goPanicSliceConvert(nint x, nint y) {
@@ -244,7 +244,7 @@ internal static partial void panicSliceConvert(nint x, nint y);
 internal static error shiftError = ((error)((errorString)(@string)"negative shift amount"u8));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string negativeShiftAmountˢ = "negative shift amount"u8;
+internal static readonly @string negativeShiftAmountˢ = "negative shift amount"u8;
 
 //go:yeswritebarrierrec
 internal static void panicshift() {
@@ -255,7 +255,7 @@ internal static void panicshift() {
 public static error divideError = ((error)((errorString)(@string)"integer divide by zero"u8));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string integerDivideByZeroˢ = "integer divide by zero"u8;
+internal static readonly @string integerDivideByZeroˢ = "integer divide by zero"u8;
 
 //go:yeswritebarrierrec
 internal static void panicdivide() {
@@ -266,7 +266,7 @@ internal static void panicdivide() {
 public static error overflowError = ((error)((errorString)(@string)"integer overflow"u8));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string integerOverflowˢ = "integer overflow"u8;
+internal static readonly @string integerOverflowˢ = "integer overflow"u8;
 
 internal static void panicoverflow() {
     panicCheck2(integerOverflowˢ);
@@ -276,7 +276,7 @@ internal static void panicoverflow() {
 internal static error floatError = ((error)((errorString)(@string)"floating point error"u8));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string floatingPointErrorˢ = "floating point error"u8;
+internal static readonly @string floatingPointErrorˢ = "floating point error"u8;
 
 internal static void panicfloat() {
     panicCheck2(floatingPointErrorˢ);
@@ -286,7 +286,7 @@ internal static void panicfloat() {
 internal static error memoryError = ((error)((errorString)(@string)"invalid memory address or nil pointer dereference"u8));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidMemoryAddressOrˢ = "invalid memory address or nil pointer dereference"u8;
+internal static readonly @string invalidMemoryAddressOrˢ = "invalid memory address or nil pointer dereference"u8;
 
 internal static void panicmem() {
     panicCheck2(invalidMemoryAddressOrˢ);
@@ -299,7 +299,7 @@ internal static void panicmemAddr(uintptr addr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string deferOnSystemStackˢ = "defer on system stack"u8;
+internal static readonly @string deferOnSystemStackˢ = "defer on system stack"u8;
 
 // Create a new deferred function fn, which has no arguments and results.
 // The compiler turns a defer statement into a call to this.
@@ -338,7 +338,7 @@ internal static error rangeExhaustedError = ((error)((errorString)(@string)"rang
 internal static error rangeMissingPanicError = ((error)((errorString)(@string)"range function recovered a loop body panic and did not resume panicking"u8));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedStatePassedToˢ = "unexpected state passed to panicrangestate"u8;
+internal static readonly @string unexpectedStatePassedToˢ = "unexpected state passed to panicrangestate"u8;
 
 //go:noinline
 internal static void panicrangestate(nint state) {
@@ -451,7 +451,7 @@ internal static ж<_defer> badDefer() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string deferAfterRangeFuncˢ = "defer after range func returned"u8;
+internal static readonly @string deferAfterRangeFuncˢ = "defer after range func returned"u8;
 
 // deferprocat is like deferproc but adds to the atomic list represented by frame.
 // See the doc comment for deferrangefunc for details.
@@ -651,7 +651,7 @@ internal static void deferreturn() {
 // go2cs generated this placeholder — func Goexit is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string panicWhilePrintingPanicˢ = "panic while printing panic value"u8;
+internal static readonly @string panicWhilePrintingPanicˢ = "panic while printing panic value"u8;
 
 // Call all Error and String methods before freezing the world.
 // Used when crashing with panicking.
@@ -722,7 +722,7 @@ internal static (uint32, @unsafe.Pointer) readvarintUnsafe(@unsafe.Pointer fd) {
     nint shift = default!;
     while (ᐧ) {
         var b = ~(ж<uint8>)(uintptr)(fd);
-        fd.Value = (uintptr)add(fd, @unsafe.Sizeof(b));
+        fd.Value = (uintptr)add(fd, /* unsafe.Sizeof(b) */ (uintptr)1);
         if (b < 128) {
             return (r + ((uint32)b).Lsh((uint64)(shift)), fd);
         }
@@ -750,7 +750,7 @@ internal static (uint32, @unsafe.Pointer) readvarintUnsafe(@unsafe.Pointer fd) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string panicCalledWithNilˢ = "panic called with nil argument"u8;
+internal static readonly @string panicCalledWithNilˢ = "panic called with nil argument"u8;
 
 [GoRecv] public static @string Error(this ref PanicNilError _) {
     return panicCalledWithNilˢ;
@@ -762,10 +762,10 @@ private static readonly @string panicCalledWithNilˢ = "panic called with nil ar
 internal static ж<godebugInc> panicnil = Ꮡ(new godebugInc(name: "panicnil"u8));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string panicOnSystemStackˢ = "panic on system stack"u8;
-private static readonly @string panicDuringMallocˢ = "panic during malloc"u8;
-private static readonly @string panicDuringPreemptoffˢ = "panic during preemptoff"u8;
-private static readonly @string panicHoldingLocksˢ = "panic holding locks"u8;
+internal static readonly @string panicOnSystemStackˢ = "panic on system stack"u8;
+internal static readonly @string panicDuringMallocˢ = "panic during malloc"u8;
+internal static readonly @string panicDuringPreemptoffˢ = "panic during preemptoff"u8;
+internal static readonly @string panicHoldingLocksˢ = "panic holding locks"u8;
 
 // The implementation of the predeclared function panic.
 // The compiler emits calls to this function.
@@ -889,8 +889,8 @@ internal static void start(this ж<_panic> Ꮡp, uintptr pc, @unsafe.Pointer sp)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badPanicStackˢ = "bad panic stack"u8;
-private static readonly @string recoveryFailedˢ = "recovery failed"u8;
+internal static readonly @string badPanicStackˢ = "bad panic stack"u8;
+internal static readonly @string recoveryFailedˢ = "recovery failed"u8;
 
 // nextDefer returns the next deferred function to invoke, if any.
 //
@@ -1007,7 +1007,7 @@ internal static bool /*ok*/ nextFrame(this ж<_panic> Ꮡp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingDeferreturnˢ = "missing deferreturn"u8;
+internal static readonly @string missingDeferreturnˢ = "missing deferreturn"u8;
 
 [GoRecv] internal static bool initOpenCodedDefers(this ref _panic Δp, ΔfuncInfo fn, @unsafe.Pointer varp) {
     @unsafe.Pointer fd = (uintptr)funcdata(fn, abi.FUNCDATA_OpenCodedDeferInfo);
@@ -1136,8 +1136,8 @@ internal static ж<mutex> Ꮡpaniclk = new(new mutex(nil));
 internal static ref mutex paniclk => ref Ꮡpaniclk.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedGpParamˢ = "unexpected gp.param"u8;
-private static readonly @string badRecoveryˢ = "bad recovery"u8;
+internal static readonly @string unexpectedGpParamˢ = "unexpected gp.param"u8;
+internal static readonly @string badRecoveryˢ = "bad recovery"u8;
 
 // Unwind the stack after a deferred function calls recover
 // after a panic. Then arrange to continue running as though

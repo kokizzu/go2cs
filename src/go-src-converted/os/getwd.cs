@@ -18,8 +18,8 @@ internal static ж<getwdCacheᴛ1> ᏑgetwdCache = new(new getwdCacheᴛ1(nil));
 internal static ref getwdCacheᴛ1 getwdCache => ref ᏑgetwdCache.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pwdˢ = "PWD"u8;
-private static readonly @string getwdˢ = "getwd"u8;
+internal static readonly @string pwdˢ = "PWD"u8;
+internal static readonly @string getwdˢ = "getwd"u8;
 
 // Getwd returns a rooted path name corresponding to the
 // current directory. If the current directory can be

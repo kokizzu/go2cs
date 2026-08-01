@@ -17,7 +17,7 @@ internal static UntypedInt traceAllocFreeTypesBatch => iota; // Contains types. 
 internal static UntypedInt traceAllocFreeInfoBatch => 1; // Contains info for interpreting events. [min heap addr, page size, min heap align, min stack align]
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string traceSnapshotMemoryˢ = "traceSnapshotMemory: tracing is not enabled"u8;
+internal static readonly @string traceSnapshotMemoryˢ = "traceSnapshotMemory: tracing is not enabled"u8;
 
 // traceSnapshotMemory takes a snapshot of all runtime memory that there are events for
 // (heap spans, heap objects, goroutine stacks, etc.) and writes out events for them.
@@ -158,7 +158,7 @@ internal static traceArg traceGoroutineStackID(uintptr @base) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goroutineStackSizeIsNotAˢ = "goroutine stack size is not a power of 2"u8;
+internal static readonly @string goroutineStackSizeIsNotAˢ = "goroutine stack size is not a power of 2"u8;
 
 // traceCompressStackSize assumes size is a power of 2 and returns log2(size).
 internal static traceArg traceCompressStackSize(uintptr size) {

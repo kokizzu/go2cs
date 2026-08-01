@@ -36,9 +36,9 @@ internal static slogꓸHandler newFastTextHandler(io.Writer w) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string timeˢ = "time="u8;
-private static readonly @string levelˢ = "level="u8;
-private static readonly @string msgˢ = "msg="u8;
+internal static readonly @string timeˢ = "time="u8;
+internal static readonly @string levelˢ = "level="u8;
+internal static readonly @string msgˢ = "msg="u8;
 
 internal static error Handle(this ж<fastTextHandler> Ꮡh, context.Context _Δp1, slog.Record r) => func((defer, recover) => {
     r = r.ΔClone();

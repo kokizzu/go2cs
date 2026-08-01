@@ -383,8 +383,8 @@ internal static void validate(this ж<Float> Ꮡx) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nonzeroFiniteNumberWithˢ = "nonzero finite number with empty mantissa"u8;
-private static readonly @string zeroPrecisionFiniteˢ = "zero precision finite number"u8;
+internal static readonly @string nonzeroFiniteNumberWithˢ = "nonzero finite number with empty mantissa"u8;
+internal static readonly @string zeroPrecisionFiniteˢ = "zero precision finite number"u8;
 
 internal static @string validate0(this ж<Float> Ꮡx) {
     ref var x = ref Ꮡx.Value;

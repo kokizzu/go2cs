@@ -50,7 +50,7 @@ internal static ж<bigꓸInt> hashToInt(slice<byte> hash, elliptic.Curve c) {
 internal static error errZeroParam = errors.New("zero parameter"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidAsn1FromSignASN1ˢ = "invalid ASN.1 from SignASN1"u8;
+internal static readonly @string invalidAsn1FromSignASN1ˢ = "invalid ASN.1 from SignASN1"u8;
 
 // Sign signs a hash (which should be the result of hashing a larger message)
 // using the private key, priv. If the hash is longer than the bit-length of the

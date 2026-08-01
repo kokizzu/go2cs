@@ -313,11 +313,11 @@ internal static UntypedInt workbufAlloc => /* 32 << 10 */ 32768;
     internal sys.NotInHeap _;
     internal partial ref workbufhdr workbufhdr { get; }
     // account for the above fields
-    internal array<uintptr> obj = new((uintptr)((uintptr)_WorkbufSize - @unsafe.Sizeof(new workbufhdr(nil))) / goarch.PtrSize);
+    internal array<uintptr> obj = new((uintptr)((uintptr)_WorkbufSize - /* unsafe.Sizeof(workbufhdr{}) */ (uintptr)24) / goarch.PtrSize);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string workbufIsEmptyˢ = "workbuf is empty"u8;
+internal static readonly @string workbufIsEmptyˢ = "workbuf is empty"u8;
 
 // workbuf factory routines. These funcs are used to manage the
 // workbufs.
@@ -330,7 +330,7 @@ private static readonly @string workbufIsEmptyˢ = "workbuf is empty"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string workbufIsNotEmptyˢ = "workbuf is not empty"u8;
+internal static readonly @string workbufIsNotEmptyˢ = "workbuf is not empty"u8;
 
 [GoRecv] internal static void checkempty(this ref workbuf b) {
     if (b.nobj != 0) {
@@ -439,14 +439,14 @@ internal static ж<workbuf> handoff(ж<workbuf> Ꮡb) {
     nint n = b.nobj / 2;
     b.nobj -= n;
     b1.Value.nobj = n;
-    memmove(@unsafe.Pointer.FromRef(ref (b1.at(workbuf.Ꮡobj, 0)).Value), @unsafe.Pointer.FromRef(ref (Ꮡb.at(workbuf.Ꮡobj, b.nobj)).Value), (uintptr)n * @unsafe.Sizeof((~b1).obj[0]));
+    memmove(@unsafe.Pointer.FromRef(ref (b1.at(workbuf.Ꮡobj, 0)).Value), @unsafe.Pointer.FromRef(ref (Ꮡb.at(workbuf.Ꮡobj, b.nobj)).Value), (uintptr)n * /* unsafe.Sizeof(b1.obj[0]) */ (uintptr)8);
     // Put b on full list - let first half of b get stolen.
     putfull(Ꮡb);
     return b1;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cannotFreeWorkbufsWhenˢ = "cannot free workbufs when work.full != 0"u8;
+internal static readonly @string cannotFreeWorkbufsWhenˢ = "cannot free workbufs when work.full != 0"u8;
 
 // prepareFreeWorkbufs moves busy workbuf spans to free list so they
 // can be freed to the heap. This must only be called when all

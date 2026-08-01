@@ -96,7 +96,7 @@ internal static slice<byte> nextTrafficSecret(this ж<cipherSuiteTLS13> Ꮡc, sl
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string keyˢ = "key"u8;
+internal static readonly @string keyˢ = "key"u8;
 
 // trafficKey generates traffic keys according to RFC 8446, Section 7.3.
 internal static (slice<byte> key, slice<byte> iv) trafficKey(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> trafficSecret) {
@@ -110,7 +110,7 @@ internal static (slice<byte> key, slice<byte> iv) trafficKey(this ж<cipherSuite
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string finishedˢ = "finished"u8;
+internal static readonly @string finishedˢ = "finished"u8;
 
 // finishedHash generates the Finished verify_data or PskBinderEntry according
 // to RFC 8446, Section 4.4.4. See sections 4.4 and 4.2.11.2 for the baseKey
@@ -125,7 +125,7 @@ internal static slice<byte> finishedHash(this ж<cipherSuiteTLS13> Ꮡc, slice<b
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string exporterˢ = "exporter"u8;
+internal static readonly @string exporterˢ = "exporter"u8;
 
 // exportKeyingMaterial implements RFC5705 exporters for TLS 1.3 according to
 // RFC 8446, Section 7.5.
@@ -184,7 +184,7 @@ internal static slice<byte> kyberSharedSecret(slice<byte> K, slice<byte> c) {
 internal static UntypedInt x25519PublicKeySize => 32;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsInternalErrorˢ6 = "tls: internal error: unsupported curve"u8;
+internal static readonly @string tlsInternalErrorˢ6 = "tls: internal error: unsupported curve"u8;
 
 // generateECDHEKey returns a PrivateKey that implements Diffie-Hellman
 // according to RFC 8446, Section 4.2.8.2.

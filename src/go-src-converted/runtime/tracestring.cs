@@ -22,14 +22,16 @@ internal static UntypedInt maxTraceStringLen => 1024;
 }
 
 // put adds a string to the table, emits it, and returns a unique ID for it.
-internal static uint64 put(this ж<traceStringTable> Ꮡt, uintptr gen, @string s) {
+internal static uint64 put(this ж<traceStringTable> Ꮡt, uintptr gen, @string sʗp) {
+    ref var s = ref heap(sʗp, out var Ꮡs);
+
     // Put the string in the table.
-    var ss = stringStructOf(Ꮡ(s));
+    var ss = stringStructOf(Ꮡs);
     var (id, added) = Ꮡt.of(traceStringTable.Ꮡtab).put((~ss).str, (uintptr)(~ss).len);
     if (added) {
         // Write the string to the buffer.
         systemstack(() => {
-            Ꮡt.writeString(gen, id, s);
+            Ꮡt.writeString(gen, id, Ꮡs.Value);
         });
     }
     return id;

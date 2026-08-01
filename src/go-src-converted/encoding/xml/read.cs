@@ -141,8 +141,8 @@ public static error Decode(this ж<Decoder> Ꮡd, any v) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nonPointerPassedToˢ = "non-pointer passed to Unmarshal"u8;
-private static readonly @string nilPointerPassedToˢ = "nil pointer passed to Unmarshal"u8;
+internal static readonly @string nonPointerPassedToˢ = "non-pointer passed to Unmarshal"u8;
+internal static readonly @string nilPointerPassedToˢ = "nil pointer passed to Unmarshal"u8;
 
 // DecodeElement works like [Unmarshal] except that it takes
 // a pointer to the start XML element to decode into v.

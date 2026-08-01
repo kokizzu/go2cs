@@ -202,7 +202,7 @@ internal static @unsafe.Pointer asmstdcallAddr;
 [GoType("libcall")] partial struct winlibcall;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string usageˢ = "usage"u8;
+internal static readonly @string usageˢ = "usage"u8;
 
 internal static stdFunction windowsFindfunc(uintptr lib, slice<byte> name) {
     if (name[len(name) - 1] != 0) {
@@ -220,7 +220,7 @@ internal static ref array<byte> sysDirectory => ref ᏑsysDirectory.Value;
 internal static uintptr sysDirectoryLen;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unableToDetermineSystemˢ = "Unable to determine system directory"u8;
+internal static readonly @string unableToDetermineSystemˢ = "Unable to determine system directory"u8;
 
 internal static void initSysDirectory() {
     var l = stdcall2(_GetSystemDirectoryA, (uintptr)new @unsafe.Pointer(ᏑsysDirectory.at<byte>(0)), (uintptr)(len(sysDirectory) - 1));
@@ -255,10 +255,10 @@ internal static int64 windows_QueryPerformanceFrequency() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bcryptprimitivesDllNotˢ = "bcryptprimitives.dll not found"u8;
-private static readonly @string ntdllDllNotFoundˢ = "ntdll.dll not found"u8;
-private static readonly @string ntCreateWaitCompletionPacketˢ = "NtCreateWaitCompletionPacket exists but NtAssociateWaitCompletionPacket does not"u8;
-private static readonly @string ntCreateWaitCompletionPacketˢ2 = "NtCreateWaitCompletionPacket exists but NtCancelWaitCompletionPacket does not"u8;
+internal static readonly @string bcryptprimitivesDllNotˢ = "bcryptprimitives.dll not found"u8;
+internal static readonly @string ntdllDllNotFoundˢ = "ntdll.dll not found"u8;
+internal static readonly @string ntCreateWaitCompletionPacketˢ = "NtCreateWaitCompletionPacket exists but NtAssociateWaitCompletionPacket does not"u8;
+internal static readonly @string ntCreateWaitCompletionPacketˢ2 = "NtCreateWaitCompletionPacket exists but NtCancelWaitCompletionPacket does not"u8;
 
 internal static void loadOptionalSyscalls() {
     var bcryptPrimitives = windowsLoadSystemLib(bcryptprimitivesdll[..]);
@@ -329,7 +329,7 @@ internal static int32 getproccount() {
     var ret = stdcall3(_GetProcessAffinityMask, currentProcess, (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡmask).Value), (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡsysmask).Value));
     if (ret != 0) {
         nint n = 0;
-        nint maskbits = (nint)(@unsafe.Sizeof(mask) * 8);
+        nint maskbits = (nint)(/* unsafe.Sizeof(mask) */ (uintptr)8 * 8);
         for (nint i = 0; i < maskbits; i++) {
             if ((uintptr)(mask & (((uintptr)1).Lsh((nuint)i))) != 0) {
                 n++;
@@ -357,7 +357,8 @@ internal static uintptr currentThread => /* ^uintptr(1) */ unchecked((uintptr)18
 // in sys_windows_386.s and sys_windows_amd64.s:
 internal static partial uint32 getlasterror();
 
-internal static uint32 timeBeginPeriodRetValue;
+internal static ж<uint32> ᏑtimeBeginPeriodRetValue = new(default(uint32));
+internal static ref uint32 timeBeginPeriodRetValue => ref ᏑtimeBeginPeriodRetValue.Value;
 
 // osRelaxMinNS indicates that sysmon shouldn't osRelax if the next
 // timer is less than 60 ms from now. Since osRelaxing may reduce
@@ -415,8 +416,8 @@ internal static uintptr createHighResTimer() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string winmmDllNotFoundˢ = "winmm.dll not found"u8;
-private static readonly @string timeBeginEndPeriodNotˢ = "timeBegin/EndPeriod not found"u8;
+internal static readonly @string winmmDllNotFoundˢ = "winmm.dll not found"u8;
+internal static readonly @string timeBeginEndPeriodNotˢ = "timeBegin/EndPeriod not found"u8;
 
 internal static void initHighResTimer() {
     var h = createHighResTimer();
@@ -452,7 +453,7 @@ internal static void initLongPathSupport() {
     // Check that we're ≥ 10.0.15063.
     ref var info = ref heap<_OSVERSIONINFOW>(out var Ꮡinfo);
     info = new _OSVERSIONINFOW(nil);
-    info.osVersionInfoSize = (uint32)@unsafe.Sizeof(info);
+    info.osVersionInfoSize = (uint32)/* unsafe.Sizeof(info) */ (uintptr)276;
     stdcall1(_RtlGetVersion, (uintptr)new @unsafe.Pointer(Ꮡinfo));
     if (info.majorVersion < 10 || (info.majorVersion == 10 && info.minorVersion == 0 && info.buildNumber < 15063)) {
         return;
@@ -644,9 +645,9 @@ internal static void writeConsoleUTF16(uintptr handle, slice<uint16> b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeSemasleepWaitˢ = "runtime.semasleep wait_abandoned"u8;
-private static readonly @string runtimeSemasleepWaitˢ2 = "runtime.semasleep wait_failed"u8;
-private static readonly @string runtimeSemasleepˢ = "runtime.semasleep unexpected"u8;
+internal static readonly @string runtimeSemasleepWaitˢ = "runtime.semasleep wait_abandoned"u8;
+internal static readonly @string runtimeSemasleepWaitˢ2 = "runtime.semasleep wait_failed"u8;
+internal static readonly @string runtimeSemasleepˢ = "runtime.semasleep unexpected"u8;
 
 //go:nosplit
 internal static int32 semasleep(int64 ns) {
@@ -708,7 +709,7 @@ internal static int32 semasleep(int64 ns) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeSemawakeupˢ = "runtime.semawakeup"u8;
+internal static readonly @string runtimeSemawakeupˢ = "runtime.semawakeup"u8;
 
 // unreachable
 
@@ -725,7 +726,7 @@ internal static void semawakeup(ж<m> Ꮡmp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeSemacreateˢ = "runtime.semacreate"u8;
+internal static readonly @string runtimeSemacreateˢ = "runtime.semacreate"u8;
 
 //go:nosplit
 internal static void semacreate(ж<m> Ꮡmp) {
@@ -753,7 +754,7 @@ internal static void semacreate(ж<m> Ꮡmp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeNewosprocˢ = "runtime.newosproc"u8;
+internal static readonly @string runtimeNewosprocˢ = "runtime.newosproc"u8;
 
 // May run with m.p==nil, so write barriers are not allowed. This
 // function is called by newosproc0, so it is also required to
@@ -783,7 +784,7 @@ internal static void newosproc(ж<m> Ꮡmp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badNewosproc0ˢ = "bad newosproc0"u8;
+internal static readonly @string badNewosproc0ˢ = "bad newosproc0"u8;
 
 // Used by the C library build mode. On Linux this function would allocate a
 // stack, but that's not necessary for Windows. No stack guards are present
@@ -799,7 +800,7 @@ internal static void newosproc0(ж<m> Ꮡmp, @unsafe.Pointer stk) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string exitThreadˢ = "exitThread"u8;
+internal static readonly @string exitThreadˢ = "exitThread"u8;
 
 internal static void exitThread(ж<atomic.Uint32> Ꮡwait) {
     // We should never reach exitThread on Windows because we let
@@ -830,11 +831,11 @@ internal static void sigblock(bool exiting) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeMinitˢ = "runtime.minit: duplicatehandle failed"u8;
-private static readonly @string createWaitableTimerExˢ = "CreateWaitableTimerEx when creating timer failed"u8;
-private static readonly @string ntCreateWaitCompletionPacketˢ3 = "NtCreateWaitCompletionPacket failed"u8;
-private static readonly @string virtualQueryForStackBaseˢ = "VirtualQuery for stack base failed"u8;
-private static readonly @string badG0Stackˢ = "bad g0 stack"u8;
+internal static readonly @string runtimeMinitˢ = "runtime.minit: duplicatehandle failed"u8;
+internal static readonly @string createWaitableTimerExˢ = "CreateWaitableTimerEx when creating timer failed"u8;
+internal static readonly @string ntCreateWaitCompletionPacketˢ3 = "NtCreateWaitCompletionPacket failed"u8;
+internal static readonly @string virtualQueryForStackBaseˢ = "VirtualQuery for stack base failed"u8;
+internal static readonly @string badG0Stackˢ = "bad g0 stack"u8;
 
 // Called to initialize a new m (including the bootstrap m).
 // Called on the new thread, cannot allocate Go memory.
@@ -873,7 +874,7 @@ internal static void minit() {
     // Query the true stack base from the OS. Currently we're
     // running on a small assumed stack.
     ref var mbi = ref heap(new memoryBasicInformation(), out var Ꮡmbi);
-    var res = stdcall3(_VirtualQuery, (uintptr)new @unsafe.Pointer(Ꮡmbi), (uintptr)new @unsafe.Pointer(Ꮡmbi), @unsafe.Sizeof(mbi));
+    var res = stdcall3(_VirtualQuery, (uintptr)new @unsafe.Pointer(Ꮡmbi), (uintptr)new @unsafe.Pointer(Ꮡmbi), /* unsafe.Sizeof(mbi) */ (uintptr)48);
     if (res == 0) {
         print((@string)"runtime: VirtualQuery failed; errno="u8, getlasterror(), (@string)"\n"u8);
         @throw(virtualQueryForStackBaseˢ);
@@ -995,73 +996,89 @@ internal static uintptr stdcall0(stdFunction fn) {
 
 //go:nosplit
 //go:cgo_unsafe_args
-internal static uintptr stdcall1(stdFunction fn, uintptr a0) {
+internal static uintptr stdcall1(stdFunction fn, uintptr a0ʗp) {
+    ref var a0 = ref heap(a0ʗp, out var Ꮡa0);
+
     var mp = getg().Value.m;
     mp.Value.libcall.n = 1;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(a0)).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
     return stdcall(fn);
 }
 
 //go:nosplit
 //go:cgo_unsafe_args
-internal static uintptr stdcall2(stdFunction fn, uintptr a0, uintptr a1) {
+internal static uintptr stdcall2(stdFunction fn, uintptr a0ʗp, uintptr a1) {
+    ref var a0 = ref heap(a0ʗp, out var Ꮡa0);
+
     var mp = getg().Value.m;
     mp.Value.libcall.n = 2;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(a0)).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
     return stdcall(fn);
 }
 
 //go:nosplit
 //go:cgo_unsafe_args
-internal static uintptr stdcall3(stdFunction fn, uintptr a0, uintptr a1, uintptr a2) {
+internal static uintptr stdcall3(stdFunction fn, uintptr a0ʗp, uintptr a1, uintptr a2) {
+    ref var a0 = ref heap(a0ʗp, out var Ꮡa0);
+
     var mp = getg().Value.m;
     mp.Value.libcall.n = 3;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(a0)).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
     return stdcall(fn);
 }
 
 //go:nosplit
 //go:cgo_unsafe_args
-internal static uintptr stdcall4(stdFunction fn, uintptr a0, uintptr a1, uintptr a2, uintptr a3) {
+internal static uintptr stdcall4(stdFunction fn, uintptr a0ʗp, uintptr a1, uintptr a2, uintptr a3) {
+    ref var a0 = ref heap(a0ʗp, out var Ꮡa0);
+
     var mp = getg().Value.m;
     mp.Value.libcall.n = 4;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(a0)).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
     return stdcall(fn);
 }
 
 //go:nosplit
 //go:cgo_unsafe_args
-internal static uintptr stdcall5(stdFunction fn, uintptr a0, uintptr a1, uintptr a2, uintptr a3, uintptr a4) {
+internal static uintptr stdcall5(stdFunction fn, uintptr a0ʗp, uintptr a1, uintptr a2, uintptr a3, uintptr a4) {
+    ref var a0 = ref heap(a0ʗp, out var Ꮡa0);
+
     var mp = getg().Value.m;
     mp.Value.libcall.n = 5;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(a0)).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
     return stdcall(fn);
 }
 
 //go:nosplit
 //go:cgo_unsafe_args
-internal static uintptr stdcall6(stdFunction fn, uintptr a0, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5) {
+internal static uintptr stdcall6(stdFunction fn, uintptr a0ʗp, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5) {
+    ref var a0 = ref heap(a0ʗp, out var Ꮡa0);
+
     var mp = getg().Value.m;
     mp.Value.libcall.n = 6;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(a0)).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
     return stdcall(fn);
 }
 
 //go:nosplit
 //go:cgo_unsafe_args
-internal static uintptr stdcall7(stdFunction fn, uintptr a0, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6) {
+internal static uintptr stdcall7(stdFunction fn, uintptr a0ʗp, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6) {
+    ref var a0 = ref heap(a0ʗp, out var Ꮡa0);
+
     var mp = getg().Value.m;
     mp.Value.libcall.n = 7;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(a0)).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
     return stdcall(fn);
 }
 
 //go:nosplit
 //go:cgo_unsafe_args
-internal static uintptr stdcall8(stdFunction fn, uintptr a0, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6, uintptr a7) {
+internal static uintptr stdcall8(stdFunction fn, uintptr a0ʗp, uintptr a1, uintptr a2, uintptr a3, uintptr a4, uintptr a5, uintptr a6, uintptr a7) {
+    ref var a0 = ref heap(a0ʗp, out var Ꮡa0);
+
     var mp = getg().Value.m;
     mp.Value.libcall.n = 8;
-    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡ(a0)).Value));
+    mp.Value.libcall.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromRef(ref (Ꮡa0).Value));
     return stdcall(fn);
 }
 
@@ -1176,7 +1193,7 @@ internal static ж<g> gFromSP(ж<m> Ꮡmp, uintptr sp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string duplicatehandleFailedˢ = "duplicatehandle failed"u8;
+internal static readonly @string duplicatehandleFailedˢ = "duplicatehandle failed"u8;
 
 internal static void profileLoop() {
     stdcall2(_SetThreadPriority, currentThread, _THREAD_PRIORITY_HIGHEST);
@@ -1259,9 +1276,9 @@ internal static ж<mutex> ᏑsuspendLock = new(new mutex(nil));
 internal static ref mutex suspendLock => ref ᏑsuspendLock.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string selfPreemptˢ = "self-preempt"u8;
-private static readonly @string runtimePreemptMˢ = "runtime.preemptM: duplicatehandle failed"u8;
-private static readonly @string unsupportedArchitectureˢ = "unsupported architecture"u8;
+internal static readonly @string selfPreemptˢ = "self-preempt"u8;
+internal static readonly @string runtimePreemptMˢ = "runtime.preemptM: duplicatehandle failed"u8;
+internal static readonly @string unsupportedArchitectureˢ = "unsupported architecture"u8;
 
 internal static void preemptM(ж<m> Ꮡmp) {
     ref var mp = ref Ꮡmp.DerefOrNil();

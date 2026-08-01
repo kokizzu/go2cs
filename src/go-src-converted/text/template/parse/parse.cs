@@ -202,7 +202,7 @@ public static (@string location, @string context) ErrorContext(this ж<Tree> Ꮡ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string actionˢ = " action"u8;
+internal static readonly @string actionˢ = " action"u8;
 
 // unexpected complains about the token and terminates processing.
 [GoRecv] internal static void unexpected(this ref Tree t, item token, @string context) {
@@ -240,8 +240,8 @@ internal static void recover(this ж<Tree> Ꮡt, ж<error> Ꮡerrp) => func((def
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string breakˢ2 = "break"u8;
-private static readonly @string continueˢ2 = "continue"u8;
+internal static readonly @string breakˢ2 = "break"u8;
+internal static readonly @string continueˢ2 = "continue"u8;
 
 // startParse initializes the parser, using the lexer.
 [GoRecv] internal static void startParse(this ref Tree t, slice<map<@string, any>> funcs, ж<lexer> Ꮡlex, map<@string, ж<Tree>> treeSet) {
@@ -350,7 +350,7 @@ public static bool IsEmptyTree(Node n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string definitionˢ = "definition"u8;
+internal static readonly @string definitionˢ = "definition"u8;
 
 // parse is the top-level parser for a template, essentially the same
 // as itemList except it also parses {{define}} actions.
@@ -436,7 +436,7 @@ internal static (ж<ListNode> list, Node next) itemList(this ж<Tree> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string inputˢ = "input"u8;
+internal static readonly @string inputˢ = "input"u8;
 
 // textOrAction:
 //
@@ -471,7 +471,7 @@ internal static Node textOrAction(this ж<Tree> Ꮡt) => func<Node>((defer, reco
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string commandˢ = "command"u8;
+internal static readonly @string commandˢ = "command"u8;
 
 // Action:
 //
@@ -748,7 +748,7 @@ internal static Node withControl(this ж<Tree> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string endˢ2 = "end"u8;
+internal static readonly @string endˢ2 = "end"u8;
 
 // End:
 //
@@ -762,7 +762,7 @@ internal static Node endControl(this ж<Tree> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string elseˢ2 = "else"u8;
+internal static readonly @string elseˢ2 = "else"u8;
 
 // Else:
 //
@@ -853,7 +853,7 @@ internal static Node templateControl(this ж<Tree> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string operandˢ = "operand"u8;
+internal static readonly @string operandˢ = "operand"u8;
 
 // command:
 //
@@ -940,7 +940,7 @@ internal static Node operand(this ж<Tree> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string parenthesizedPipelineˢ = "parenthesized pipeline"u8;
+internal static readonly @string parenthesizedPipelineˢ = "parenthesized pipeline"u8;
 
 // term:
 //

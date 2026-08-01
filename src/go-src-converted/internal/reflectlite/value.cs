@@ -334,7 +334,7 @@ internal static Value assignTo(this Value v, @string context, ж<abi.Type> Ꮡds
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string iLenˢ = "i < len"u8;
+internal static readonly @string iLenˢ = "i < len"u8;
 
 // arrayAt returns the i-th element of p,
 // an array whose elements are eltSize bytes wide.

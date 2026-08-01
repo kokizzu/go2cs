@@ -109,9 +109,9 @@ public static (AEAD, error) NewGCMWithTagSize(Block cipher, nint tagSize) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cipherIncorrectTagSizeˢ = "cipher: incorrect tag size given to GCM"u8;
-private static readonly @string cipherTheNonceCanTHaveˢ = "cipher: the nonce can't have zero length, or the security of the key will be immediately compromised"u8;
-private static readonly @string cipherNewGCMRequires128ˢ = "cipher: NewGCM requires 128-bit block cipher"u8;
+internal static readonly @string cipherIncorrectTagSizeˢ = "cipher: incorrect tag size given to GCM"u8;
+internal static readonly @string cipherTheNonceCanTHaveˢ = "cipher: the nonce can't have zero length, or the security of the key will be immediately compromised"u8;
+internal static readonly @string cipherNewGCMRequires128ˢ = "cipher: NewGCM requires 128-bit block cipher"u8;
 
 internal static (AEAD, error) newGCMWithNonceAndTagSize(Block cipher, nint nonceSize, nint tagSize) {
     if (tagSize < gcmMinimumTagSize || tagSize > gcmBlockSize) {

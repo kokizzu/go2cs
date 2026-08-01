@@ -60,8 +60,8 @@ internal static void unpin(this ж<pinner> Ꮡp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimePinnerArgumentIsˢ = "runtime.Pinner: argument is nil"u8;
-private static readonly @string runtimePinnerObjectWasˢ = "runtime.Pinner: object was allocated into an arena"u8;
+internal static readonly @string runtimePinnerArgumentIsˢ = "runtime.Pinner: argument is nil"u8;
+internal static readonly @string runtimePinnerObjectWasˢ = "runtime.Pinner: object was allocated into an arena"u8;
 
 internal static @unsafe.Pointer pinnerGetPtr(ж<any> Ꮡi) {
     var e = efaceOf(Ꮡi);
@@ -107,8 +107,8 @@ internal static bool isPinned(@unsafe.Pointer ptr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string triedToUnpinNonGoPointerˢ = "tried to unpin non-Go pointer"u8;
-private static readonly @string runtimePinnerObjectˢ = "runtime.Pinner: object already unpinned"u8;
+internal static readonly @string triedToUnpinNonGoPointerˢ = "tried to unpin non-Go pointer"u8;
+internal static readonly @string runtimePinnerObjectˢ = "runtime.Pinner: object already unpinned"u8;
 
 // setPinned marks or unmarks a Go pointer as pinned, when the ptr is a Go pointer.
 // It will be ignored while try to pin a non-Go pointer,
@@ -311,7 +311,7 @@ internal static void incPinCounter(this ж<mspan> Ꮡspan, uintptr offset) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimePinnerDecreasedˢ = "runtime.Pinner: decreased non-existing pin counter"u8;
+internal static readonly @string runtimePinnerDecreasedˢ = "runtime.Pinner: decreased non-existing pin counter"u8;
 
 // decPinCounter decreases the counter. If the counter reaches 0, the counter
 // special is deleted and false is returned. Otherwise true is returned.

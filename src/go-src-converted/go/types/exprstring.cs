@@ -24,13 +24,13 @@ public static @string ExprString(ast.Expr x) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string literalˢ = " literal)"u8;
-private static readonly @string structˢ2 = "struct{"u8;
-private static readonly @string interfaceˢ2 = "interface{"u8;
-private static readonly @string mapˢ2 = "map["u8;
-private static readonly @string chanˢ2 = "chan<- "u8;
-private static readonly @string chanˢ3 = "<-chan "u8;
-private static readonly @string chanˢ4 = "chan "u8;
+internal static readonly @string literalˢ = " literal)"u8;
+internal static readonly @string structˢ2 = "struct{"u8;
+internal static readonly @string interfaceˢ2 = "interface{"u8;
+internal static readonly @string mapˢ2 = "map["u8;
+internal static readonly @string chanˢ2 = "chan<- "u8;
+internal static readonly @string chanˢ3 = "<-chan "u8;
+internal static readonly @string chanˢ4 = "chan "u8;
 
 // WriteExpr writes the (possibly shortened) string representation for x to buf.
 // Shortened representations are suitable for user interfaces but may not

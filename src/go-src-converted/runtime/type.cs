@@ -126,8 +126,8 @@ internal static void reflectOffsUnlock() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeNameOffsetOutOfˢ = "runtime: name offset out of range"u8;
-private static readonly @string runtimeNameOffsetBaseˢ = "runtime: name offset base pointer out of range"u8;
+internal static readonly @string runtimeNameOffsetOutOfˢ = "runtime: name offset out of range"u8;
+internal static readonly @string runtimeNameOffsetBaseˢ = "runtime: name offset base pointer out of range"u8;
 
 // resolveNameOff should be an internal detail,
 // but widely used packages access it using linkname.
@@ -172,8 +172,8 @@ internal static abiꓸName nameOff(this Δrtype t, nameOff off) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeTypeOffsetBaseˢ = "runtime: type offset base pointer out of range"u8;
-private static readonly @string runtimeTypeOffsetOutOfˢ = "runtime: type offset out of range"u8;
+internal static readonly @string runtimeTypeOffsetBaseˢ = "runtime: type offset base pointer out of range"u8;
+internal static readonly @string runtimeTypeOffsetOutOfˢ = "runtime: type offset out of range"u8;
 
 // resolveTypeOff should be an internal detail,
 // but widely used packages access it using linkname.
@@ -229,7 +229,7 @@ internal static ж<_type> typeOff(this Δrtype t, typeOff off) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeTextOffsetBaseˢ = "runtime: text offset base pointer out of range"u8;
+internal static readonly @string runtimeTextOffsetBaseˢ = "runtime: text offset base pointer out of range"u8;
 
 internal static @unsafe.Pointer textOff(this Δrtype t, textOff off) {
     if (off == -1) {
@@ -341,7 +341,7 @@ internal static Δrtype toRType(ж<abi.Type> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeImpossibleTypeˢ = "runtime: impossible type kind"u8;
+internal static readonly @string runtimeImpossibleTypeˢ = "runtime: impossible type kind"u8;
 
 // typesEqual reports whether two types are equal.
 //

@@ -65,7 +65,7 @@ internal static UntypedInt sigReceiving => 1;
 internal static UntypedInt sigSending => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sigsendInconsistentStateˢ = "sigsend: inconsistent state"u8;
+internal static readonly @string sigsendInconsistentStateˢ = "sigsend: inconsistent state"u8;
 
 // sigsend delivers a signal from sighandler to the internal signal delivery queue.
 // It reports whether the signal was sent. If not, the caller typically crashes the program.
@@ -130,7 +130,7 @@ break_Send:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string signalRecvInconsistentˢ = "signal_recv: inconsistent state"u8;
+internal static readonly @string signalRecvInconsistentˢ = "signal_recv: inconsistent state"u8;
 
 // Called to receive the next queued signal.
 // Must only be called from a single goroutine at a time.

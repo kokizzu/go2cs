@@ -274,7 +274,7 @@ internal static (@string name, nint offset, int64 start, int64 end, bool isDST) 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string m320M1110ˢ = ",M3.2.0,M11.1.0"u8;
+internal static readonly @string m320M1110ˢ = ",M3.2.0,M11.1.0"u8;
 
 // tzset takes a timezone string like the one found in the TZ environment
 // variable, the time of the last time zone transition expressed as seconds
@@ -662,7 +662,7 @@ internal static ж<Δsync.Once> ᏑzoneinfoOnce = new(default(Δsync.Once));
 internal static ref Δsync.Once zoneinfoOnce => ref ᏑzoneinfoOnce.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string zoneinfoˢ = "ZONEINFO"u8;
+internal static readonly @string zoneinfoˢ = "ZONEINFO"u8;
 
 // LoadLocation returns the Location with the given name.
 //

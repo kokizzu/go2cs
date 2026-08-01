@@ -100,7 +100,7 @@ internal static error chmod(@string name, FileMode mode) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string chmodˢ = "chmod"u8;
+internal static readonly @string chmodˢ = "chmod"u8;
 
 // See docs in file.go:(*File).Chmod.
 internal static error chmod(this ж<File> Ꮡf, FileMode mode) {
@@ -149,7 +149,7 @@ public static error Lchown(@string name, nint uid, nint gid) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string chownˢ = "chown"u8;
+internal static readonly @string chownˢ = "chown"u8;
 
 // Chown changes the numeric uid and gid of the named file.
 // If there is an error, it will be of type [*PathError].
@@ -173,7 +173,7 @@ public static error Chown(this ж<File> Ꮡf, nint uid, nint gid) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string truncateˢ = "truncate"u8;
+internal static readonly @string truncateˢ = "truncate"u8;
 
 // Truncate changes the size of the file.
 // It does not change the I/O offset.
@@ -195,7 +195,7 @@ public static error Truncate(this ж<File> Ꮡf, int64 size) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string syncˢ = "sync"u8;
+internal static readonly @string syncˢ = "sync"u8;
 
 // Sync commits the current contents of the file to stable storage.
 // Typically, this means flushing the file system's in-memory copy
@@ -262,7 +262,7 @@ public static error Chdir(this ж<File> Ꮡf) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string setDeadlineˢ = "SetDeadline"u8;
+internal static readonly @string setDeadlineˢ = "SetDeadline"u8;
 
 // setDeadline sets the read and write deadline.
 internal static error setDeadline(this ж<File> Ꮡf, time.Time t) {
@@ -275,7 +275,7 @@ internal static error setDeadline(this ж<File> Ꮡf, time.Time t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string setReadDeadlineˢ = "SetReadDeadline"u8;
+internal static readonly @string setReadDeadlineˢ = "SetReadDeadline"u8;
 
 // setReadDeadline sets the read deadline.
 internal static error setReadDeadline(this ж<File> Ꮡf, time.Time t) {
@@ -288,7 +288,7 @@ internal static error setReadDeadline(this ж<File> Ꮡf, time.Time t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string setWriteDeadlineˢ = "SetWriteDeadline"u8;
+internal static readonly @string setWriteDeadlineˢ = "SetWriteDeadline"u8;
 
 // setWriteDeadline sets the write deadline.
 internal static error setWriteDeadline(this ж<File> Ꮡf, time.Time t) {

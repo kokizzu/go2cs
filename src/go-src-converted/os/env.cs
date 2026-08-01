@@ -120,7 +120,7 @@ public static (@string, bool) LookupEnv(@string key) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string setenvˢ = "setenv"u8;
+internal static readonly @string setenvˢ = "setenv"u8;
 
 // Setenv sets the value of the environment variable named by the key.
 // It returns an error, if any.

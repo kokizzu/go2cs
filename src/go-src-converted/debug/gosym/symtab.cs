@@ -55,8 +55,8 @@ partial class gosym_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeˢ = "type:"u8;
-private static readonly @string typeˢ2 = "type."u8;
+internal static readonly @string typeˢ = "type:"u8;
+internal static readonly @string typeˢ2 = "type."u8;
 
 // PackageName returns the package part of the symbol name,
 // or the empty string if there is none.
@@ -424,7 +424,7 @@ public static (ж<Table>, error) NewTable(slice<byte> symtab, ж<LineTable> Ꮡp
     if (err != default!) {
         return (default!, err);
     }
-    t.Funcs = new slice<Func>(0, nf);
+    t.Funcs = new slice<Func>(0, () => new(nil), nf);
     t.Files = new map<@string, ж<Obj>>();
     ж<Obj> obj = default!;
     if (t.go12line != nil){
@@ -697,7 +697,7 @@ break_countloop:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string malformedSymbolTableˢ = "<malformed symbol table>"u8;
+internal static readonly @string malformedSymbolTableˢ = "<malformed symbol table>"u8;
 
 [GoLocalName("stackEnt")] [GoType("dyn")] partial struct lineFromAline_stackEnt {
     internal @string path;

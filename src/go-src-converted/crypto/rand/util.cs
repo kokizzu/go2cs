@@ -13,7 +13,7 @@ using math;
 partial class rand_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoRandPrimeSizeMustˢ = "crypto/rand: prime size must be at least 2-bit"u8;
+internal static readonly @string cryptoRandPrimeSizeMustˢ = "crypto/rand: prime size must be at least 2-bit"u8;
 
 // Prime returns a number of the given bit length that is prime with high probability.
 // Prime will return error for any error returned by [rand.Read] or if bits < 2.

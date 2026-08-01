@@ -86,8 +86,8 @@ internal static bool limiting(this ж<gcCPULimiterState> Ꮡl) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string failedToAcquireLockToˢ = "failed to acquire lock to start a GC transition"u8;
-private static readonly @string transitioningGcToTheSameˢ = "transitioning GC to the same state as before?"u8;
+internal static readonly @string failedToAcquireLockToˢ = "failed to acquire lock to start a GC transition"u8;
+internal static readonly @string transitioningGcToTheSameˢ = "transitioning GC to the same state as before?"u8;
 
 // startGCTransition notifies the limiter of a GC transition.
 //
@@ -113,7 +113,7 @@ internal static void startGCTransition(this ж<gcCPULimiterState> Ꮡl, bool ena
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string finishGCTransitionCalledˢ = "finishGCTransition called without starting one?"u8;
+internal static readonly @string finishGCTransitionCalledˢ = "finishGCTransition called without starting one?"u8;
 
 // N.B. finishGCTransition releases the lock.
 //
@@ -166,7 +166,7 @@ internal static void addIdleTime(this ж<gcCPULimiterState> Ꮡl, int64 t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string updateDuringTransitionˢ = "update during transition"u8;
+internal static readonly @string updateDuringTransitionˢ = "update during transition"u8;
 
 // update updates the bucket given runtime-specific information. now is the
 // current monotonic time in nanoseconds.
@@ -189,7 +189,7 @@ internal static void update(this ж<gcCPULimiterState> Ꮡl, int64 now) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidLimiterEventTypeˢ = "invalid limiter event type found"u8;
+internal static readonly @string invalidLimiterEventTypeˢ = "invalid limiter event type found"u8;
 
 // updateLocked is the implementation of update. l.lock must be held.
 internal static void updateLocked(this ж<gcCPULimiterState> Ꮡl, int64 now) {
@@ -324,7 +324,7 @@ internal static bool tryLock(this ж<gcCPULimiterState> Ꮡl) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string doubleUnlockˢ = "double unlock"u8;
+internal static readonly @string doubleUnlockˢ = "double unlock"u8;
 
 // unlock releases the lock on l. Must be called if tryLock returns true.
 internal static void unlock(this ж<gcCPULimiterState> Ꮡl) {
@@ -338,7 +338,7 @@ internal static void unlock(this ж<gcCPULimiterState> Ꮡl) {
 internal static UntypedFloat capacityPerProc => 1e9; // 1 second in nanoseconds
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string failedToAcquireLockToˢ2 = "failed to acquire lock to reset capacity"u8;
+internal static readonly @string failedToAcquireLockToˢ2 = "failed to acquire lock to reset capacity"u8;
 
 // resetCapacity updates the capacity based on GOMAXPROCS. Must not be called
 // while the GC is enabled.
@@ -464,8 +464,8 @@ internal static (limiterEventType typ, int64 duration) consume(this ж<limiterEv
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string limiterEventStopFoundˢ = "limiterEvent.stop: found wrong event in p's limiter event slot"u8;
-private static readonly @string limiterEventStopInvalidˢ = "limiterEvent.stop: invalid limiter event type found"u8;
+internal static readonly @string limiterEventStopFoundˢ = "limiterEvent.stop: found wrong event in p's limiter event slot"u8;
+internal static readonly @string limiterEventStopInvalidˢ = "limiterEvent.stop: invalid limiter event type found"u8;
 
 // stop stops the active limiter event. Throws if the
 //

@@ -80,9 +80,9 @@ internal static ΔAddr sockaddrToUnixpacket(syscallꓸSockaddr sa) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unixˢ = "unix"u8;
-private static readonly @string unixgramˢ = "unixgram"u8;
-private static readonly @string unixpacketˢ = "unixpacket"u8;
+internal static readonly @string unixˢ = "unix"u8;
+internal static readonly @string unixgramˢ = "unixgram"u8;
+internal static readonly @string unixpacketˢ = "unixpacket"u8;
 
 internal static @string sotypeToNet(nint sotype) {
     var exprᴛ1 = sotype;

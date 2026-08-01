@@ -67,7 +67,7 @@ internal static UntypedInt statusUnknownRole => 3;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fcgiInvalidBeginRequestˢ = "fcgi: invalid begin request record"u8;
+internal static readonly @string fcgiInvalidBeginRequestˢ = "fcgi: invalid begin request record"u8;
 
 [GoRecv] internal static error read(this ref beginRequest br, slice<byte> content) {
     if (len(content) != 8) {
@@ -124,7 +124,7 @@ internal static error Close(this ж<conn> Ꮡc) => func((defer, recover) => {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fcgiInvalidHeaderVersionˢ = "fcgi: invalid header version"u8;
+internal static readonly @string fcgiInvalidHeaderVersionˢ = "fcgi: invalid header version"u8;
 
 internal static error /*err*/ read(this ж<record> Ꮡrec, io.Reader r) {
     error err = default!;

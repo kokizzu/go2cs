@@ -87,8 +87,8 @@ internal static void init(this ж<unwinder> Ꮡu, ж<g> Ꮡgp, unwindFlags flags
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cannotTraceUserGoroutineˢ = "cannot trace user goroutine on its own stack"u8;
-private static readonly @string unknownPcˢ = "unknown pc"u8;
+internal static readonly @string cannotTraceUserGoroutineˢ = "cannot trace user goroutine on its own stack"u8;
+internal static readonly @string unknownPcˢ = "unknown pc"u8;
 
 internal static void initAt(this ж<unwinder> Ꮡu, uintptr pc0, uintptr sp0, uintptr lr0, ж<g> Ꮡgp, unwindFlags flags) {
     ref var u = ref Ꮡu.Value;
@@ -189,7 +189,7 @@ internal static void initAt(this ж<unwinder> Ꮡu, uintptr pc0, uintptr sp0, ui
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tracebackˢ = "traceback"u8;
+internal static readonly @string tracebackˢ = "traceback"u8;
 
 // resolveInternal fills in u.frame based on u.frame.fn, pc, and sp.
 //
@@ -400,8 +400,8 @@ internal static void resolveInternal(this ж<unwinder> Ꮡu, bool innermost, boo
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownCallerPcˢ = "unknown caller pc"u8;
-private static readonly @string tracebackStuckˢ = "traceback stuck"u8;
+internal static readonly @string unknownCallerPcˢ = "unknown caller pc"u8;
+internal static readonly @string tracebackStuckˢ = "traceback stuck"u8;
 
 internal static void next(this ж<unwinder> Ꮡu) {
     ref var u = ref Ꮡu.Value;
@@ -477,7 +477,7 @@ internal static void next(this ж<unwinder> Ꮡu) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tracebackDidNotUnwindˢ = "traceback did not unwind completely"u8;
+internal static readonly @string tracebackDidNotUnwindˢ = "traceback did not unwind completely"u8;
 
 // finishInternal is an unwinder-internal helper called after the stack has been
 // exhausted. It sets the unwinder to an invalid state and checks that it
@@ -1628,10 +1628,10 @@ internal static void callCgoSymbolizer(ж<cgoSymbolizerArg> Ꮡarg) {
         call = asmcgocall;
     }
     if (msanenabled) {
-        msanwrite(new @unsafe.Pointer(Ꮡarg), @unsafe.Sizeof(new cgoSymbolizerArg(nil)));
+        msanwrite(new @unsafe.Pointer(Ꮡarg), /* unsafe.Sizeof(cgoSymbolizerArg{}) */ (uintptr)56);
     }
     if (asanenabled) {
-        asanwrite(new @unsafe.Pointer(Ꮡarg), @unsafe.Sizeof(new cgoSymbolizerArg(nil)));
+        asanwrite(new @unsafe.Pointer(Ꮡarg), /* unsafe.Sizeof(cgoSymbolizerArg{}) */ (uintptr)56);
     }
     call(cgoSymbolizer, (uintptr)noescape(new @unsafe.Pointer(Ꮡarg)));
 }
@@ -1654,10 +1654,10 @@ internal static void cgoContextPCs(uintptr ctxt, slice<uintptr> buf) {
         max: (uintptr)len(buf)
     );
     if (msanenabled) {
-        msanwrite(new @unsafe.Pointer(Ꮡarg), @unsafe.Sizeof(arg));
+        msanwrite(new @unsafe.Pointer(Ꮡarg), /* unsafe.Sizeof(arg) */ (uintptr)32);
     }
     if (asanenabled) {
-        asanwrite(new @unsafe.Pointer(Ꮡarg), @unsafe.Sizeof(arg));
+        asanwrite(new @unsafe.Pointer(Ꮡarg), /* unsafe.Sizeof(arg) */ (uintptr)32);
     }
     call(cgoTraceback, (uintptr)noescape(new @unsafe.Pointer(Ꮡarg)));
 }

@@ -46,9 +46,9 @@ internal static @string urlFilter(params ꓸꓸꓸany argsʗp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpˢ = "http"u8;
-private static readonly @string httpsˢ = "https"u8;
-private static readonly @string mailtoˢ = "mailto"u8;
+internal static readonly @string httpˢ = "http"u8;
+internal static readonly @string httpsˢ = "https"u8;
+internal static readonly @string mailtoˢ = "mailto"u8;
 
 // isSafeURL is true if s is a relative URL or if URL has a protocol in
 // (http, https, mailto).

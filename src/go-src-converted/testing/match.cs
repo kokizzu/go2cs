@@ -48,7 +48,7 @@ internal static ж<matcher> allMatcher() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testSkipˢ = "-test.skip"u8;
+internal static readonly @string testSkipˢ = "-test.skip"u8;
 
 internal static ж<matcher> newMatcher(Func<@string, @string, (bool, error)> matchString, @string patterns, @string name, @string skips) {
     filterMatch filter = default!;
@@ -148,7 +148,7 @@ internal static (bool ok, bool partial) matches(this simpleMatch m, slice<@strin
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nonEmptyˢ = "non-empty"u8;
+internal static readonly @string nonEmptyˢ = "non-empty"u8;
 
 internal static error verify(this simpleMatch m, @string name, Func<@string, @string, (bool, error)> matchString) {
     foreach (var (i, s) in m) {

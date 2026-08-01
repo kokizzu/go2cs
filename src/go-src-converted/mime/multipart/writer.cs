@@ -38,9 +38,9 @@ public static ж<Writer> NewWriter(io.Writer w) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mimeSetBoundaryCalledˢ = "mime: SetBoundary called after write"u8;
-private static readonly @string mimeInvalidBoundaryˢ = "mime: invalid boundary length"u8;
-private static readonly @string mimeInvalidBoundaryˢ2 = "mime: invalid boundary character"u8;
+internal static readonly @string mimeSetBoundaryCalledˢ = "mime: SetBoundary called after write"u8;
+internal static readonly @string mimeInvalidBoundaryˢ = "mime: invalid boundary length"u8;
+internal static readonly @string mimeInvalidBoundaryˢ2 = "mime: invalid boundary character"u8;
 
 // SetBoundary overrides the [Writer]'s default randomly-generated
 // boundary separator with an explicit value.
@@ -149,8 +149,8 @@ internal static @string escapeQuotes(@string s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string contentTypeˢ = "Content-Type"u8;
-private static readonly @string applicationOctetStreamˢ = "application/octet-stream"u8;
+internal static readonly @string contentTypeˢ = "Content-Type"u8;
+internal static readonly @string applicationOctetStreamˢ = "application/octet-stream"u8;
 
 // CreateFormFile is a convenience wrapper around [Writer.CreatePart]. It creates
 // a new form-data header with the provided field name and file name.
@@ -209,7 +209,7 @@ public static error WriteField(this ж<Writer> Ꮡw, @string fieldname, @string 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string multipartCanTWriteToˢ = "multipart: can't write to finished part"u8;
+internal static readonly @string multipartCanTWriteToˢ = "multipart: can't write to finished part"u8;
 
 [GoRecv] internal static (nint n, error err) Write(this ref part p, slice<byte> d) {
     nint n = default!;

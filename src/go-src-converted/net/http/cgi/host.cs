@@ -127,9 +127,9 @@ internal static slice<@string> /*ret*/ removeLeadingDuplicates(slice<@string> en
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pathˢ = "PATH"u8;
-private static readonly @string binUsrBinUsrUcbUsrBsdUsrˢ = "/bin:/usr/bin:/usr/ucb:/usr/bsd:/usr/local/bin"u8;
-private static readonly @string locationˢ = "Location"u8;
+internal static readonly @string pathˢ = "PATH"u8;
+internal static readonly @string binUsrBinUsrUcbUsrBsdUsrˢ = "/bin:/usr/bin:/usr/ucb:/usr/bsd:/usr/local/bin"u8;
+internal static readonly @string locationˢ = "Location"u8;
 
 public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<http.Request> Ꮡreq) => func((defer, recover) => {
     ref var h = ref Ꮡh.Value;
@@ -154,15 +154,15 @@ public static void ServeHTTP(this ж<Handler> Ꮡh, http.ResponseWriter rw, ж<h
     var env = new @string[]{
         "SERVER_SOFTWARE=go"u8,
         "SERVER_PROTOCOL=HTTP/1.1"u8,
-        "HTTP_HOST=" + req.Host,
+        "HTTP_HOST="u8 + req.Host,
         "GATEWAY_INTERFACE=CGI/1.1"u8,
-        "REQUEST_METHOD=" + req.Method,
-        "QUERY_STRING=" + (~req.URL).RawQuery,
-        "REQUEST_URI=" + req.URL.RequestURI(),
-        "PATH_INFO=" + pathInfo,
-        "SCRIPT_NAME=" + root,
-        "SCRIPT_FILENAME=" + h.Path,
-        "SERVER_PORT=" + port
+        "REQUEST_METHOD="u8 + req.Method,
+        "QUERY_STRING="u8 + (~req.URL).RawQuery,
+        "REQUEST_URI="u8 + req.URL.RequestURI(),
+        "PATH_INFO="u8 + pathInfo,
+        "SCRIPT_NAME="u8 + root,
+        "SCRIPT_FILENAME="u8 + h.Path,
+        "SERVER_PORT="u8 + port
     }.slice();
     {
         var (remoteIP, remotePort, errΔ1) = net.SplitHostPort(req.RemoteAddr); if (errΔ1 == default!){

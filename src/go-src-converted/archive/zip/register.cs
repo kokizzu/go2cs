@@ -34,7 +34,7 @@ internal static io.WriteCloser newFlateWriter(io.Writer w) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string writeAfterCloseˢ = "Write after Close"u8;
+internal static readonly @string writeAfterCloseˢ = "Write after Close"u8;
 
 internal static (nint n, error err) Write(this ж<pooledFlateWriter> Ꮡw, slice<byte> p) {
     nint n = default!;
@@ -85,7 +85,7 @@ internal static io.ReadCloser newFlateReader(io.Reader r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string readAfterCloseˢ = "Read after Close"u8;
+internal static readonly @string readAfterCloseˢ = "Read after Close"u8;
 
 internal static (nint n, error err) Read(this ж<pooledFlateReader> Ꮡr, slice<byte> p) {
     nint n = default!;

@@ -697,7 +697,7 @@ public static map<GoID, EmptyStruct> RelatedGoroutinesV2(slice<ΔEvent> events, 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeˢ = "runtime."u8;
+internal static readonly @string runtimeˢ = "runtime."u8;
 
 public static bool IsSystemGoroutine(@string entryFn) {
     // This mimics runtime.isSystemGoroutine as closely as

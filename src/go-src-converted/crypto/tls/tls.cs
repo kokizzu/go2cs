@@ -96,7 +96,7 @@ public static net.Listener NewListener(net.Listener inner, ж<Config> Ꮡconfig)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsNeitherCertificatesˢ = "tls: neither Certificates, GetCertificate, nor GetConfigForClient set in Config"u8;
+internal static readonly @string tlsNeitherCertificatesˢ = "tls: neither Certificates, GetCertificate, nor GetConfigForClient set in Config"u8;
 
 // Listen creates a TLS listener accepting connections on the
 // given network address using net.Listen.
@@ -120,7 +120,7 @@ public static (net.Listener, error) Listen(@string network, @string laddr, ж<Co
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsDialWithDialerTimedˢ = "tls: DialWithDialer timed out"u8;
+internal static readonly @string tlsDialWithDialerTimedˢ = "tls: DialWithDialer timed out"u8;
 
 internal static @string Error(this timeoutError _) {
     return tlsDialWithDialerTimedˢ;
@@ -277,15 +277,15 @@ public static (Certificate, error) LoadX509KeyPair(@string certFile, @string key
 internal static ж<godebug.Setting> x509keypairleaf = godebug.New("x509keypairleaf"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsFailedToFindAnyPemˢ = "tls: failed to find any PEM data in certificate input"u8;
-private static readonly @string privateKeyˢ = "PRIVATE KEY"u8;
-private static readonly @string tlsFailedToFindˢ = "tls: failed to find certificate PEM data in certificate input, but did find a private key; PEM inputs may have been switched"u8;
-private static readonly @string tlsFailedToFindAnyPemˢ2 = "tls: failed to find any PEM data in key input"u8;
-private static readonly @string tlsFoundACertificateˢ = "tls: found a certificate rather than a key in the PEM for the private key"u8;
-private static readonly @string privateKeyˢ2 = " PRIVATE KEY"u8;
-private static readonly @string tlsPrivateKeyTypeDoesNotˢ = "tls: private key type does not match public key type"u8;
-private static readonly @string tlsPrivateKeyDoesNotˢ = "tls: private key does not match public key"u8;
-private static readonly @string tlsUnknownPublicKeyˢ = "tls: unknown public key algorithm"u8;
+internal static readonly @string tlsFailedToFindAnyPemˢ = "tls: failed to find any PEM data in certificate input"u8;
+internal static readonly @string privateKeyˢ = "PRIVATE KEY"u8;
+internal static readonly @string tlsFailedToFindˢ = "tls: failed to find certificate PEM data in certificate input, but did find a private key; PEM inputs may have been switched"u8;
+internal static readonly @string tlsFailedToFindAnyPemˢ2 = "tls: failed to find any PEM data in key input"u8;
+internal static readonly @string tlsFoundACertificateˢ = "tls: found a certificate rather than a key in the PEM for the private key"u8;
+internal static readonly @string privateKeyˢ2 = " PRIVATE KEY"u8;
+internal static readonly @string tlsPrivateKeyTypeDoesNotˢ = "tls: private key type does not match public key type"u8;
+internal static readonly @string tlsPrivateKeyDoesNotˢ = "tls: private key does not match public key"u8;
+internal static readonly @string tlsUnknownPublicKeyˢ = "tls: unknown public key algorithm"u8;
 
 // X509KeyPair parses a public/private key pair from a pair of
 // PEM encoded data. On successful return, Certificate.Leaf will be populated.
@@ -390,8 +390,8 @@ public static (Certificate, error) X509KeyPair(slice<byte> certPEMBlock, slice<b
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsFoundUnknownPrivateˢ = "tls: found unknown private key type in PKCS#8 wrapping"u8;
-private static readonly @string tlsFailedToParsePrivateˢ = "tls: failed to parse private key"u8;
+internal static readonly @string tlsFoundUnknownPrivateˢ = "tls: found unknown private key type in PKCS#8 wrapping"u8;
+internal static readonly @string tlsFailedToParsePrivateˢ = "tls: failed to parse private key"u8;
 
 // Attempt to parse the given private key DER block. OpenSSL 0.9.8 generates
 // PKCS #1 private keys by default, while OpenSSL 1.0.0 generates PKCS #8 keys.

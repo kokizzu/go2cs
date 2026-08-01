@@ -13,10 +13,10 @@ using @internal.syscall;
 partial class os_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string waitForSingleObjectˢ = "WaitForSingleObject"u8;
-private static readonly @string osUnexpectedResultFromˢ = "os: unexpected result from WaitForSingleObject"u8;
-private static readonly @string getExitCodeProcessˢ = "GetExitCodeProcess"u8;
-private static readonly @string getProcessTimesˢ = "GetProcessTimes"u8;
+internal static readonly @string waitForSingleObjectˢ = "WaitForSingleObject"u8;
+internal static readonly @string osUnexpectedResultFromˢ = "os: unexpected result from WaitForSingleObject"u8;
+internal static readonly @string getExitCodeProcessˢ = "GetExitCodeProcess"u8;
+internal static readonly @string getProcessTimesˢ = "GetProcessTimes"u8;
 
 // Note that Process.mode is always modeHandle because Windows always requires
 // a handle. A manually-created Process literal is not valid.
@@ -67,8 +67,8 @@ internal static (ж<ProcessState> ps, error err) wait(this ж<Process> Ꮡp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string duplicateHandleˢ = "DuplicateHandle"u8;
-private static readonly @string terminateProcessˢ = "TerminateProcess"u8;
+internal static readonly @string duplicateHandleˢ = "DuplicateHandle"u8;
+internal static readonly @string terminateProcessˢ = "TerminateProcess"u8;
 
 internal static error signal(this ж<Process> Ꮡp, ΔSignal sig) => func<error>((defer, recover) => {
     var (handle, status) = Ꮡp.handleTransientAcquire();
@@ -117,7 +117,7 @@ internal static error release(this ж<Process> Ꮡp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string openProcessˢ = "OpenProcess"u8;
+internal static readonly @string openProcessˢ = "OpenProcess"u8;
 
 internal static (ж<Process> p, error err) findProcess(nint pid) {
     ж<Process> p = default!;

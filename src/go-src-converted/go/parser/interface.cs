@@ -20,7 +20,7 @@ using path;
 partial class parser_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidSourceˢ = "invalid source"u8;
+internal static readonly @string invalidSourceˢ = "invalid source"u8;
 
 // If src != nil, readSource converts src to a []byte if possible;
 // otherwise it returns an error. If src == nil, readSource returns

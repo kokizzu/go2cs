@@ -204,7 +204,7 @@ public static (ж<Matcher>, error) New(@string pattern) {
         m.Value.quiet = true;
         p = p[1..];
         if (p == ""u8) {
-            return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: " + pattern))));
+            return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: "u8 + pattern))));
         }
     }
     // Allow multiple v, so that “bisect cmd vPATTERN” can force verbose all the time.
@@ -213,7 +213,7 @@ public static (ж<Matcher>, error) New(@string pattern) {
         m.Value.quiet = false;
         p = p[1..];
         if (p == ""u8) {
-            return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: " + pattern))));
+            return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: "u8 + pattern))));
         }
     }
     // Allow multiple !, each negating the last, so that “bisect cmd !PATTERN” works
@@ -223,7 +223,7 @@ public static (ж<Matcher>, error) New(@string pattern) {
         m.Value.enable = !(~m).enable;
         p = p[1..];
         if (p == ""u8) {
-            return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: " + pattern))));
+            return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: "u8 + pattern))));
         }
     }
     if (p == "n"u8) {
@@ -252,11 +252,11 @@ public static (ж<Matcher>, error) New(@string pattern) {
         var exprᴛ1 = c;
         var matchᴛ1 = false;
         { /* default: */
-            return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: " + pattern))));
+            return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: "u8 + pattern))));
         }
         if (exprᴛ1 is (rune)'2' or (rune)'3' or (rune)'4' or (rune)'5' or (rune)'6' or (rune)'7' or (rune)'8' or (rune)'9') { matchᴛ1 = true;
             if (wid != 4) {
-                return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: " + pattern))));
+                return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: "u8 + pattern))));
             }
             fallthrough = true;
         }
@@ -266,29 +266,29 @@ public static (ж<Matcher>, error) New(@string pattern) {
         }
         else if (exprᴛ1 is (rune)'a' or (rune)'b' or (rune)'c' or (rune)'d' or (rune)'e' or (rune)'f' or (rune)'A' or (rune)'B' or (rune)'C' or (rune)'D' or (rune)'E' or (rune)'F') { matchᴛ1 = true;
             if (wid != 4) {
-                return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: " + pattern))));
+                return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: "u8 + pattern))));
             }
             bits <<= (int)(4);
             bits |= (uint64)((uint64)((byte)(c & ~0x20) - (rune)'A' + 10));
         }
         else if (exprᴛ1 is (rune)'y') {
             if (i + 1 < len(p) && (p[i + 1] == (rune)'0' || p[i + 1] == (rune)'1')) {
-                return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: " + pattern))));
+                return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: "u8 + pattern))));
             }
             bits = 0;
         }
         else if (exprᴛ1 is (rune)'+' or (rune)'-') { matchᴛ1 = true;
             if (c == (rune)'+' && result == false) {
                 // Have already seen a -. Should be - from here on.
-                return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax (+ after -): " + pattern))));
+                return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax (+ after -): "u8 + pattern))));
             }
             if (i > 0){
                 nint n = (i - start) * wid;
                 if (n > 64) {
-                    return (default!, new parseErrorжerror(Ꮡ(new parseError("pattern bits too long: " + pattern))));
+                    return (default!, new parseErrorжerror(Ꮡ(new parseError("pattern bits too long: "u8 + pattern))));
                 }
                 if (n <= 0) {
-                    return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: " + pattern))));
+                    return (default!, new parseErrorжerror(Ꮡ(new parseError("invalid pattern syntax: "u8 + pattern))));
                 }
                 if (p[start] == (rune)'y') {
                     n = 0;

@@ -64,10 +64,10 @@ internal static error init(this ж<netFD> Ꮡfd) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string connectˢ = "connect"u8;
-private static readonly @string bindˢ = "bind"u8;
-private static readonly @string connectexˢ = "connectex"u8;
-private static readonly @string setsockoptˢ = "setsockopt"u8;
+internal static readonly @string connectˢ = "connect"u8;
+internal static readonly @string bindˢ = "bind"u8;
+internal static readonly @string connectexˢ = "connectex"u8;
+internal static readonly @string setsockoptˢ = "setsockopt"u8;
 
 // Always returns nil for connected peer address result.
 internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, context.Context ctx, syscallꓸSockaddr la, syscallꓸSockaddr ra) => func<(syscallꓸSockaddr, error)>((defer, recover) => {
@@ -172,7 +172,7 @@ internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, contex
         ref var @out = ref heap(new uint32(), out var Ꮡout);
         // Don't abort the connection if WSAIoctl fails, as it is only an optimization.
         // If it fails reliably, we expect TestDialClosedPortFailFast to detect it.
-        _ = Ꮡfd.of(netFD.Ꮡpfd).WSAIoctl(windows.SIO_TCP_INITIAL_RTO, Ꮡparams.Reinterpret<windows.TCP_INITIAL_RTO_PARAMETERS, byte>(), (uint32)@unsafe.Sizeof(@params), nil, 0, Ꮡout, nil, 0);
+        _ = Ꮡfd.of(netFD.Ꮡpfd).WSAIoctl(windows.SIO_TCP_INITIAL_RTO, Ꮡparams.Reinterpret<windows.TCP_INITIAL_RTO_PARAMETERS, byte>(), (uint32)/* unsafe.Sizeof(params) */ (uintptr)4, nil, 0, Ꮡout, nil, 0);
     }
     // Call ConnectEx API.
     {
@@ -193,7 +193,7 @@ internal static (syscallꓸSockaddr, error) connect(this ж<netFD> Ꮡfd, contex
         }
     }
     // Refresh socket properties.
-    return (default!, os.NewSyscallError(setsockoptˢ, syscall.Setsockopt(fd.pfd.Sysfd, syscall.SOL_SOCKET, syscall.SO_UPDATE_CONNECT_CONTEXT, Ꮡfd.of(netFD.Ꮡpfd).of(poll.FD.ᏑSysfd).Reinterpret<syscallꓸHandle, byte>(), (int32)@unsafe.Sizeof(fd.pfd.Sysfd))));
+    return (default!, os.NewSyscallError(setsockoptˢ, syscall.Setsockopt(fd.pfd.Sysfd, syscall.SOL_SOCKET, syscall.SO_UPDATE_CONNECT_CONTEXT, Ꮡfd.of(netFD.Ꮡpfd).of(poll.FD.ᏑSysfd).Reinterpret<syscallꓸHandle, byte>(), (int32)/* unsafe.Sizeof(fd.pfd.Sysfd) */ (uintptr)8)));
 });
 
 internal static (int64, error) writeBuffers(this ж<conn> Ꮡc, ж<Buffers> Ꮡv) {
@@ -210,7 +210,7 @@ internal static (int64, error) writeBuffers(this ж<conn> Ꮡc, ж<Buffers> Ꮡv
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string wsasendˢ = "wsasend"u8;
+internal static readonly @string wsasendˢ = "wsasend"u8;
 
 internal static (int64, error) writeBuffers(this ж<netFD> Ꮡfd, ж<Buffers> Ꮡbuf) {
     var (n, err) = Ꮡfd.of(netFD.Ꮡpfd).Writev(Ꮡbuf.of(Buffers.Ꮡm_value));

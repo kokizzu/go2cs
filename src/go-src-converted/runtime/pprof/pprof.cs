@@ -443,8 +443,8 @@ internal static nint expandInlinedFrames(slice<uintptr> dst, slice<uintptr> pcs)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string countˢ = "count"u8;
-private static readonly @string nanosecondsˢ = "nanoseconds"u8;
+internal static readonly @string countˢ = "count"u8;
+internal static readonly @string nanosecondsˢ = "nanoseconds"u8;
 
 // printCountCycleProfile outputs block profile records (for block or mutex profiles)
 // as the pprof-proto format output. Translations from cycle count to time duration
@@ -475,7 +475,7 @@ internal static error printCountCycleProfile(io.Writer w, @string countName, @st
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string labelsˢ = "\n# labels: "u8;
+internal static readonly @string labelsˢ = "\n# labels: "u8;
 
 // printCountProfile prints a countProfile at the specified debug level.
 // The profile will be in compressed proto format unless debug is nonzero.
@@ -571,7 +571,7 @@ internal static error printCountProfile(io.Writer w, nint debug, @string name, c
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeˢ = "runtime."u8;
+internal static readonly @string runtimeˢ = "runtime."u8;
 
 // printStackRecord prints the function + source line information
 // for a single stack trace.
@@ -624,7 +624,7 @@ internal static error writeHeap(io.Writer w, nint debug) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string allocSpaceˢ = "alloc_space"u8;
+internal static readonly @string allocSpaceˢ = "alloc_space"u8;
 
 // writeAlloc writes the current runtime heap profile to w
 // with the total allocation space as the default sample type.
@@ -749,7 +749,7 @@ internal static nint countThreadCreate() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string threadcreateˢ = "threadcreate"u8;
+internal static readonly @string threadcreateˢ = "threadcreate"u8;
 
 // writeThreadCreate writes the current runtime ThreadCreateProfile to w.
 internal static error writeThreadCreate(io.Writer w, nint debug) {
@@ -769,7 +769,7 @@ internal static nint countGoroutine() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goroutineˢ = "goroutine"u8;
+internal static readonly @string goroutineˢ = "goroutine"u8;
 
 // writeGoroutine writes the current runtime GoroutineProfile to w.
 internal static error writeGoroutine(io.Writer w, nint debug) {
@@ -947,7 +947,7 @@ internal static nint countMutex() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string contentionˢ = "contention"u8;
+internal static readonly @string contentionˢ = "contention"u8;
 
 // writeBlock writes the current blocking profile to w.
 internal static error writeBlock(io.Writer w, nint debug) {
@@ -955,7 +955,7 @@ internal static error writeBlock(io.Writer w, nint debug) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mutexˢ = "mutex"u8;
+internal static readonly @string mutexˢ = "mutex"u8;
 
 // writeMutex writes the current mutex profile to w.
 internal static error writeMutex(io.Writer w, nint debug) {
@@ -963,8 +963,8 @@ internal static error writeMutex(io.Writer w, nint debug) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string contentionsˢ = "contentions"u8;
-private static readonly @string delayˢ = "delay"u8;
+internal static readonly @string contentionsˢ = "contentions"u8;
+internal static readonly @string delayˢ = "delay"u8;
 
 // writeProfileInternal writes the current blocking or mutex profile depending on the passed parameters.
 internal static error writeProfileInternal(io.Writer w, nint debug, @string name, Func<slice<profilerecord.BlockProfileRecord>, (nint, bool)> runtimeProfile) {

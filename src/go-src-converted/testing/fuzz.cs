@@ -22,16 +22,16 @@ using ꓸꓸꓸany = Span<any>;
 partial class testing_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testFuzzˢ = "test.fuzz"u8;
-private static readonly @string runTheFuzzTestMatchingˢ = "run the fuzz test matching `regexp`"u8;
-private static readonly @string testFuzztimeˢ = "test.fuzztime"u8;
-private static readonly @string timeToSpendFuzzingˢ = "time to spend fuzzing; default is to run indefinitely"u8;
-private static readonly @string testFuzzminimizetimeˢ = "test.fuzzminimizetime"u8;
-private static readonly @string timeToSpendMinimizingAˢ = "time to spend minimizing a value after finding a failing input"u8;
-private static readonly @string testFuzzcachedirˢ = "test.fuzzcachedir"u8;
-private static readonly @string directoryWhereˢ = "directory where interesting fuzzing inputs are stored (for use only by cmd/go)"u8;
-private static readonly @string testFuzzworkerˢ = "test.fuzzworker"u8;
-private static readonly @string coordinateWithTheParentˢ = "coordinate with the parent process to fuzz random values (for use only by cmd/go)"u8;
+internal static readonly @string testFuzzˢ = "test.fuzz"u8;
+internal static readonly @string runTheFuzzTestMatchingˢ = "run the fuzz test matching `regexp`"u8;
+internal static readonly @string testFuzztimeˢ = "test.fuzztime"u8;
+internal static readonly @string timeToSpendFuzzingˢ = "time to spend fuzzing; default is to run indefinitely"u8;
+internal static readonly @string testFuzzminimizetimeˢ = "test.fuzzminimizetime"u8;
+internal static readonly @string timeToSpendMinimizingAˢ = "time to spend minimizing a value after finding a failing input"u8;
+internal static readonly @string testFuzzcachedirˢ = "test.fuzzcachedir"u8;
+internal static readonly @string directoryWhereˢ = "directory where interesting fuzzing inputs are stored (for use only by cmd/go)"u8;
+internal static readonly @string testFuzzworkerˢ = "test.fuzzworker"u8;
+internal static readonly @string coordinateWithTheParentˢ = "coordinate with the parent process to fuzz random values (for use only by cmd/go)"u8;
 
 internal static void initFuzzFlags() {
     matchFuzz = flag.String(testFuzzˢ, ""u8, runTheFuzzTestMatchingˢ);
@@ -441,9 +441,9 @@ public static void Fuzz(this ж<F> Ꮡf, any ff) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sSSˢ = "--- %s: %s (%s)\n"u8;
-private static readonly object failˢ = (@string)"FAIL"u8;
-private static readonly object passˢ = (@string)"PASS"u8;
+internal static readonly @string sSSˢ = "--- %s: %s (%s)\n"u8;
+internal static readonly object failˢ = (@string)"FAIL"u8;
+internal static readonly object passˢ = (@string)"PASS"u8;
 
 internal static void report(this ж<F> Ꮡf) {
     ref var f = ref Ꮡf.Value;
@@ -507,7 +507,7 @@ internal static fuzzMode fuzzCoordinator => 1;
 internal static fuzzMode fuzzWorker => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testFuzzˢ2 = "-test.fuzz"u8;
+internal static readonly @string testFuzzˢ2 = "-test.fuzz"u8;
 
 // runFuzzTests runs the fuzz tests matching the pattern for -run. This will
 // only run the (*F).Fuzz function for each seed corpus without using the
@@ -595,7 +595,7 @@ internal static (bool ran, bool ok) runFuzzTests(testDeps deps, slice<InternalFu
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object testingWarningNoFuzzˢ = (@string)"testing: warning: no fuzz tests to fuzz"u8;
+internal static readonly object testingWarningNoFuzzˢ = (@string)"testing: warning: no fuzz tests to fuzz"u8;
 
 // runFuzzing runs the fuzz test matching the pattern for -fuzz. Only one such
 // fuzz test must match. This will run the fuzzing engine to generate and
@@ -672,8 +672,8 @@ internal static bool /*ok*/ runFuzzing(testDeps deps, slice<InternalFuzzTarget> 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object returnedWithoutCallingFˢ = (@string)"returned without calling F.Fuzz, F.Fail, or F.Skip"u8;
-private static readonly @string failSSˢ = "--- FAIL: %s (%s)\n"u8;
+internal static readonly object returnedWithoutCallingFˢ = (@string)"returned without calling F.Fuzz, F.Fail, or F.Skip"u8;
+internal static readonly @string failSSˢ = "--- FAIL: %s (%s)\n"u8;
 
 // fRunner wraps a call to a fuzz test and ensures that cleanup functions are
 // called and status flags are set. fRunner should be called in its own

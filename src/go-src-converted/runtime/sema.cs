@@ -51,7 +51,7 @@ internal static UntypedInt semTabSize => 251;
 
 [GoType("dyn")] [GoValueClone("pad")] partial struct semTableᴛ1 {
     internal semaRoot root;
-    internal array<byte> pad = new((uintptr)cpu.CacheLinePadSize - @unsafe.Sizeof(new semaRoot(nil)));
+    internal array<byte> pad = new((uintptr)cpu.CacheLinePadSize - /* unsafe.Sizeof(semaRoot{}) */ (uintptr)24);
 }
 
 [GoType("[251]semTableᴛ1")] /* [semTabSize]semTableᴛ1 */
@@ -134,7 +134,7 @@ internal static void semacquire(ж<uint32> Ꮡaddr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string semacquireNotOnTheGStackˢ = "semacquire not on the G stack"u8;
+internal static readonly @string semacquireNotOnTheGStackˢ = "semacquire not on the G stack"u8;
 
 internal static void semacquire1(ж<uint32> Ꮡaddr, bool lifo, semaProfileFlags profile, nint skipframes, waitReason reason) {
     var gp = getg();
@@ -196,7 +196,7 @@ internal static void semrelease(ж<uint32> Ꮡaddr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string corruptedSemaphoreTicketˢ = "corrupted semaphore ticket"u8;
+internal static readonly @string corruptedSemaphoreTicketˢ = "corrupted semaphore ticket"u8;
 
 internal static void semrelease1(ж<uint32> Ꮡaddr, bool handoff, nint skipframes) {
     var root = semtable.rootFor(Ꮡaddr);
@@ -476,7 +476,7 @@ Found:
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string semaRootRotateLeftˢ = "semaRoot rotateLeft"u8;
+internal static readonly @string semaRootRotateLeftˢ = "semaRoot rotateLeft"u8;
 
 // rotateLeft rotates the tree rooted at node x.
 // turning (x a (y b c)) into (y (x a b) c).
@@ -508,7 +508,7 @@ private static readonly @string semaRootRotateLeftˢ = "semaRoot rotateLeft"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string semaRootRotateRightˢ = "semaRoot rotateRight"u8;
+internal static readonly @string semaRootRotateRightˢ = "semaRoot rotateRight"u8;
 
 // rotateRight rotates the tree rooted at node y.
 // turning (y (x a b) c) into (x a (y b c)).
@@ -699,12 +699,12 @@ internal static void notifyListNotifyOne(ж<notifyList> Ꮡl) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badNotifyListSizeˢ = "bad notifyList size"u8;
+internal static readonly @string badNotifyListSizeˢ = "bad notifyList size"u8;
 
 //go:linkname notifyListCheck sync.runtime_notifyListCheck
 internal static void notifyListCheck(uintptr sz) {
-    if (sz != @unsafe.Sizeof(new notifyList(nil))) {
-        print((@string)"runtime: bad notifyList size - sync="u8, sz, (@string)" runtime="u8, @unsafe.Sizeof(new notifyList(nil)), (@string)"\n"u8);
+    if (sz != /* unsafe.Sizeof(notifyList{}) */ (uintptr)32) {
+        print((@string)"runtime: bad notifyList size - sync="u8, sz, (@string)" runtime="u8, /* unsafe.Sizeof(notifyList{}) */ (uintptr)32, (@string)"\n"u8);
         @throw(badNotifyListSizeˢ);
     }
 }

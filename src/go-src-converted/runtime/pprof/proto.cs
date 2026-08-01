@@ -315,8 +315,8 @@ internal static ж<profileBuilder> newProfileBuilder(io.Writer w) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string samplesˢ = "samples"u8;
-private static readonly @string cpuˢ = "cpu"u8;
+internal static readonly @string samplesˢ = "samples"u8;
+internal static readonly @string cpuˢ = "cpu"u8;
 
 // build completes and returns the constructed profile.
 internal static void build(this ж<profileBuilder> Ꮡb) {
@@ -650,7 +650,7 @@ internal static slice<byte> space = slice<byte>(" "u8);
 internal static slice<byte> newline = slice<byte>("\n"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string deletedˢ = " (deleted)"u8;
+internal static readonly @string deletedˢ = " (deleted)"u8;
 
 internal static void parseProcSelfMaps(slice<byte> data, Action<uint64, uint64, uint64, @string, @string> addMapping) {
     // $ cat /proc/self/maps

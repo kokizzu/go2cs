@@ -158,12 +158,12 @@ internal static any indirectToJSONMarshaler(any a) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string scriptˢ = "</script"u8;
-private static readonly @string x3CScriptˢ = @"\x3C/script"u8;
-private static readonly @string x3Cˢ = @"\x3C!--"u8;
-private static readonly @string nullˢ = " null "u8;
-private static readonly @string u2028ˢ = @"\u2028"u8;
-private static readonly @string u2029ˢ = @"\u2029"u8;
+internal static readonly @string scriptˢ = "</script"u8;
+internal static readonly @string x3CScriptˢ = @"\x3C/script"u8;
+internal static readonly @string x3Cˢ = @"\x3C!--"u8;
+internal static readonly @string nullˢ = " null "u8;
+internal static readonly @string u2028ˢ = @"\u2028"u8;
+internal static readonly @string u2029ˢ = @"\u2029"u8;
 
 // jsValEscaper escapes its inputs to a JS Expression (section 11.14) that has
 // neither side-effects nor free variables outside (NaN, Infinity).

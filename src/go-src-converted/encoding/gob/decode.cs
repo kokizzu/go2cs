@@ -686,7 +686,7 @@ internal static reflectꓸValue decodeIntoValue(ж<decoderState> Ꮡstate, Actio
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noErrorˢ = "no error"u8;
+internal static readonly @string noErrorˢ = "no error"u8;
 
 // ignoreArrayHelper does the work for discarding arrays and slices.
 [GoRecv] internal static void ignoreArrayHelper(this ref Decoder dec, ж<decoderState> Ꮡstate, Action<ж<decInstr>, ж<decoderState>, reflectꓸValue> elemOp, nint length) {
@@ -1040,7 +1040,7 @@ internal static ж<Action<ж<decInstr>, ж<decoderState>, reflectꓸValue>> decO
 internal static nint maxIgnoreNestingDepth = 10000;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidNestingDepthˢ = "invalid nesting depth"u8;
+internal static readonly @string invalidNestingDepthˢ = "invalid nesting depth"u8;
 
 // decIgnoreOpFor returns the decoding op for a field that has no destination.
 internal static ж<Action<ж<decInstr>, ж<decoderState>, reflectꓸValue>> decIgnoreOpFor(this ж<Decoder> Ꮡdec, typeId wireId, map<typeId, ж<Action<ж<decInstr>, ж<decoderState>, reflectꓸValue>>> inProgress) => func((defer, recover) => {

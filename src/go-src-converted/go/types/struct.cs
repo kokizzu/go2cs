@@ -75,10 +75,10 @@ public static @string String(this ж<Struct> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string embeddedFieldTypeCannotˢ = "embedded field type cannot be unsafe.Pointer"u8;
-private static readonly @string embeddedFieldTypeCannotˢ2 = "embedded field type cannot be a pointer"u8;
-private static readonly @string embeddedFieldTypeCannotˢ3 = "embedded field type cannot be a (pointer to a) type parameter"u8;
-private static readonly @string embeddedFieldTypeCannotˢ4 = "embedded field type cannot be a pointer to an interface"u8;
+internal static readonly @string embeddedFieldTypeCannotˢ = "embedded field type cannot be unsafe.Pointer"u8;
+internal static readonly @string embeddedFieldTypeCannotˢ2 = "embedded field type cannot be a pointer"u8;
+internal static readonly @string embeddedFieldTypeCannotˢ3 = "embedded field type cannot be a (pointer to a) type parameter"u8;
+internal static readonly @string embeddedFieldTypeCannotˢ4 = "embedded field type cannot be a pointer to an interface"u8;
 
 internal static void structType(this ж<Checker> Ꮡcheck, ж<Struct> Ꮡstyp, ж<ast.StructType> Ꮡe) {
     ref var check = ref Ꮡcheck.Value;

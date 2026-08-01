@@ -482,7 +482,7 @@ internal static ж<NilNode> newNil(this ж<Tree> Ꮡt, Pos pos) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "nil"u8;
+internal static readonly @string nilˢ = "nil"u8;
 
 [GoRecv] public static @string String(this ref NilNode n) {
     return nilˢ;
@@ -607,8 +607,8 @@ internal static ж<BoolNode> newBool(this ж<Tree> Ꮡt, Pos pos, bool @true) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string trueˢ = "true"u8;
-private static readonly @string falseˢ = "false"u8;
+internal static readonly @string trueˢ = "true"u8;
+internal static readonly @string falseˢ = "false"u8;
 
 [GoRecv] public static @string String(this ref BoolNode b) {
     if (b.True) {
@@ -648,7 +648,7 @@ private static readonly @string falseˢ = "false"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string eEpPˢ = ".eEpP"u8;
+internal static readonly @string eEpPˢ = ".eEpP"u8;
 
 internal static (ж<NumberNode>, error) newNumber(this ж<Tree> Ꮡt, Pos pos, @string text, itemType typ) {
     var n = Ꮡ(new NumberNode(tr: Ꮡt, NodeType: NodeNumber, Pos: pos, Text: text));
@@ -822,7 +822,7 @@ internal static ж<endNode> newEnd(this ж<Tree> Ꮡt, Pos pos) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string endˢ = "{{end}}"u8;
+internal static readonly @string endˢ = "{{end}}"u8;
 
 [GoRecv] internal static @string String(this ref endNode e) {
     return endˢ;
@@ -857,7 +857,7 @@ internal static ж<elseNode> newElse(this ж<Tree> Ꮡt, Pos pos, nint line) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string elseˢ = "{{else}}"u8;
+internal static readonly @string elseˢ = "{{else}}"u8;
 
 [GoRecv] internal static @string String(this ref elseNode e) {
     return elseˢ;
@@ -893,8 +893,8 @@ private static readonly @string elseˢ = "{{else}}"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rangeˢ = "range"u8;
-private static readonly @string withˢ = "with"u8;
+internal static readonly @string rangeˢ = "range"u8;
+internal static readonly @string withˢ = "with"u8;
 
 [GoRecv] internal static void writeTo(this ref BranchNode b, ж<strings.Builder> Ꮡsb) {
     @string name = ""u8;
@@ -976,7 +976,7 @@ internal static ж<BreakNode> newBreak(this ж<Tree> Ꮡt, Pos pos, nint line) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string breakˢ = "{{break}}"u8;
+internal static readonly @string breakˢ = "{{break}}"u8;
 
 [GoRecv] public static @string String(this ref BreakNode b) {
     return breakˢ;
@@ -1007,7 +1007,7 @@ internal static ж<ContinueNode> newContinue(this ж<Tree> Ꮡt, Pos pos, nint l
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string continueˢ = "{{continue}}"u8;
+internal static readonly @string continueˢ = "{{continue}}"u8;
 
 [GoRecv] public static @string String(this ref ContinueNode c) {
     return continueˢ;
@@ -1068,7 +1068,7 @@ internal static ж<TemplateNode> newTemplate(this ж<Tree> Ꮡt, Pos pos, nint l
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string templateˢ = "{{template "u8;
+internal static readonly @string templateˢ = "{{template "u8;
 
 [GoRecv] internal static void writeTo(this ref TemplateNode t, ж<strings.Builder> Ꮡsb) {
     Ꮡsb.WriteString(templateˢ);

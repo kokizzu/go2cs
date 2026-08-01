@@ -19,8 +19,8 @@ partial class types_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string methodSetˢ = "MethodSet {}"u8;
-private static readonly object methodSetˢ2 = (@string)"MethodSet {"u8;
+internal static readonly @string methodSetˢ = "MethodSet {}"u8;
+internal static readonly object methodSetˢ2 = (@string)"MethodSet {"u8;
 
 [GoRecv] public static @string String(this ref MethodSet s) {
     if (s.Len() == 0) {

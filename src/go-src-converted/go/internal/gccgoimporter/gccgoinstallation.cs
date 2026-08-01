@@ -30,7 +30,7 @@ partial class gccgoimporter_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string targetˢ = "Target: "u8;
+internal static readonly @string targetˢ = "Target: "u8;
 
 // Ask the driver at the given path for information for this GccgoInstallation.
 // The given arguments are passed directly to the call of the driver.

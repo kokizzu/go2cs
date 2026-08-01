@@ -96,7 +96,7 @@ public static (ж<ReadCloser>, error) OpenReader(@string name) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string zipSizeCannotBeNegativeˢ = "zip: size cannot be negative"u8;
+internal static readonly @string zipSizeCannotBeNegativeˢ = "zip: size cannot be negative"u8;
 
 // NewReader returns a new [Reader] reading from r, which is assumed to
 // have the given size in bytes.
@@ -616,7 +616,7 @@ internal static error readDataDescriptor(io.Reader r, ж<File> Ꮡf) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string zipInvalidCommentLengthˢ = "zip: invalid comment length"u8;
+internal static readonly @string zipInvalidCommentLengthˢ = "zip: invalid comment length"u8;
 
 internal static (ж<directoryEnd> dir, int64 baseOffset, error err) readDirectoryEnd(io.ReaderAt r, int64 size) {
     ж<directoryEnd> dir = default!;
@@ -1087,7 +1087,7 @@ internal static ж<fileListEntry> dotFile = Ꮡ(new fileListEntry(name: "./"u8, 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string isADirectoryˢ = "is a directory"u8;
+internal static readonly @string isADirectoryˢ = "is a directory"u8;
 
 [GoRecv] internal static (nint, error) Read(this ref openDir d, slice<byte> _) {
     return (0, new fs.PathErrorжerror(Ꮡ(new fs.PathError(Op: "read"u8, Path: (~d.e).name, Err: errors.New(isADirectoryˢ)))));

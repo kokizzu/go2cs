@@ -739,7 +739,7 @@ internal static void writeComment(this ж<printer> Ꮡp, ж<ast.Comment> Ꮡcomm
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object intersperseCommentsˢ = (@string)"intersperseComments called without pending comments"u8;
+internal static readonly object intersperseCommentsˢ = (@string)"intersperseComments called without pending comments"u8;
 
 // intersperseComments consumes all comments that appear before the next token
 // tok and prints it together with the buffered whitespace (i.e., the whitespace
@@ -820,7 +820,7 @@ internal static (bool wroteNewline, bool droppedFF) intersperseComments(this ж<
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object negativeIndentationˢ = (@string)"negative indentation:"u8;
+internal static readonly object negativeIndentationˢ = (@string)"negative indentation:"u8;
 
 // writeWhitespace writes the first n whitespace entries.
 [GoRecv] internal static void writeWhitespace(this ref printer p, nint n) {
@@ -921,7 +921,7 @@ internal static bool /*b*/ mayCombine(token.Token prev, byte next) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object whitespaceBufferNotEmptyˢ = (@string)"whitespace buffer not empty"u8;
+internal static readonly object whitespaceBufferNotEmptyˢ = (@string)"whitespace buffer not empty"u8;
 
 // accurate position of next item
 

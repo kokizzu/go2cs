@@ -500,7 +500,7 @@ public static error ErrRemoveArgument = errors.New("driver: remove argument from
 internal static Result _ᴛ1ʗ = ((ΔRowsAffected)0);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lastInsertIdIsNotˢ = "LastInsertId is not supported by this driver"u8;
+internal static readonly @string lastInsertIdIsNotˢ = "LastInsertId is not supported by this driver"u8;
 
 public static (int64, error) LastInsertId(this ΔRowsAffected _) {
     return (0, errors.New(lastInsertIdIsNotˢ));
@@ -521,14 +521,14 @@ public static noRows ResultNoRows;
 internal static Result _ᴛ2ʗ = new noRows(nil);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noLastInsertIdAvailableˢ = "no LastInsertId available after DDL statement"u8;
+internal static readonly @string noLastInsertIdAvailableˢ = "no LastInsertId available after DDL statement"u8;
 
 public static (int64, error) LastInsertId(this noRows _) {
     return (0, errors.New(noLastInsertIdAvailableˢ));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noRowsAffectedAvailableˢ = "no RowsAffected available after DDL statement"u8;
+internal static readonly @string noRowsAffectedAvailableˢ = "no RowsAffected available after DDL statement"u8;
 
 public static (int64, error) RowsAffected(this noRows _) {
     return (0, errors.New(noRowsAffectedAvailableˢ));

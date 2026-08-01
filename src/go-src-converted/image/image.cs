@@ -237,7 +237,7 @@ internal static nint pixelBufferLength(nint bytesPerPixel, Rectangle r, @string 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rgbaˢ = "RGBA"u8;
+internal static readonly @string rgbaˢ = "RGBA"u8;
 
 // NewRGBA returns a new [RGBA] image with the given bounds.
 public static ж<ΔRGBA> NewRGBA(Rectangle r) {
@@ -365,7 +365,7 @@ public static ж<ΔRGBA> NewRGBA(Rectangle r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rgba64ˢ = "RGBA64"u8;
+internal static readonly @string rgba64ˢ = "RGBA64"u8;
 
 // NewRGBA64 returns a new [RGBA64] image with the given bounds.
 public static ж<RGBA64> NewRGBA64(Rectangle r) {
@@ -504,7 +504,7 @@ public static ж<RGBA64> NewRGBA64(Rectangle r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nrgbaˢ = "NRGBA"u8;
+internal static readonly @string nrgbaˢ = "NRGBA"u8;
 
 // NewNRGBA returns a new [NRGBA] image with the given bounds.
 public static ж<NRGBA> NewNRGBA(Rectangle r) {
@@ -660,7 +660,7 @@ public static ж<NRGBA> NewNRGBA(Rectangle r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nrgba64ˢ = "NRGBA64"u8;
+internal static readonly @string nrgba64ˢ = "NRGBA64"u8;
 
 // NewNRGBA64 returns a new [NRGBA64] image with the given bounds.
 public static ж<NRGBA64> NewNRGBA64(Rectangle r) {
@@ -776,7 +776,7 @@ public static ж<NRGBA64> NewNRGBA64(Rectangle r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string alphaˢ = "Alpha"u8;
+internal static readonly @string alphaˢ = "Alpha"u8;
 
 // NewAlpha returns a new [Alpha] image with the given bounds.
 public static ж<Alpha> NewAlpha(Rectangle r) {
@@ -895,7 +895,7 @@ public static ж<Alpha> NewAlpha(Rectangle r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string alpha16ˢ = "Alpha16"u8;
+internal static readonly @string alpha16ˢ = "Alpha16"u8;
 
 // NewAlpha16 returns a new [Alpha16] image with the given bounds.
 public static ж<Alpha16> NewAlpha16(Rectangle r) {
@@ -999,7 +999,7 @@ public static ж<Alpha16> NewAlpha16(Rectangle r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string grayˢ = "Gray"u8;
+internal static readonly @string grayˢ = "Gray"u8;
 
 // NewGray returns a new [Gray] image with the given bounds.
 public static ж<Gray> NewGray(Rectangle r) {
@@ -1106,7 +1106,7 @@ public static ж<Gray> NewGray(Rectangle r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gray16ˢ = "Gray16"u8;
+internal static readonly @string gray16ˢ = "Gray16"u8;
 
 // NewGray16 returns a new [Gray16] image with the given bounds.
 public static ж<Gray16> NewGray16(Rectangle r) {
@@ -1226,7 +1226,7 @@ public static ж<Gray16> NewGray16(Rectangle r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cmykˢ = "CMYK"u8;
+internal static readonly @string cmykˢ = "CMYK"u8;
 
 // NewCMYK returns a new CMYK image with the given bounds.
 public static ж<CMYK> NewCMYK(Rectangle r) {
@@ -1373,7 +1373,7 @@ public static ж<CMYK> NewCMYK(Rectangle r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string palettedˢ = "Paletted"u8;
+internal static readonly @string palettedˢ = "Paletted"u8;
 
 // NewPaletted returns a new [Paletted] image with the given width, height and
 // palette.

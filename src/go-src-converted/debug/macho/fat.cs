@@ -88,7 +88,7 @@ public static (ж<FatFile>, error) NewFatFile(io.ReaderAt r) {
     if (c < 0) {
         return (default!, new FormatErrorжerror(Ꮡ(new FormatError(offset, "too many images"u8, default!))));
     }
-    ff.Arches = new slice<FatArch>(0, c);
+    ff.Arches = new slice<FatArch>(0, () => new(nil), c);
     for (var i = (uint32)0; i < narch; i++) {
         ref var fa = ref heap(new FatArch(), out var Ꮡfa);
         err = binary.Read(new io_SectionReaderжReader(sr), new binary_bigEndianᴠByteOrder(binary.BigEndian), Ꮡfa.of(FatArch.ᏑFatArchHeader));

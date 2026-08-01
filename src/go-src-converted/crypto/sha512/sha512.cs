@@ -382,7 +382,7 @@ public static array<byte> Sum384(slice<byte> data) {
     d.Reset();
     Ꮡd.Write(data);
     var sum = Ꮡd.checkSum();
-    var ap = Ꮡ(new array<byte>(sum[..], 48));
+    var ap = Ꮡ(array<byte>.Alias(sum[..], 48));
     return ap.Value.Clone();
 }
 
@@ -393,7 +393,7 @@ public static array<byte> Sum512_224(slice<byte> data) {
     d.Reset();
     Ꮡd.Write(data);
     var sum = Ꮡd.checkSum();
-    var ap = Ꮡ(new array<byte>(sum[..], 28));
+    var ap = Ꮡ(array<byte>.Alias(sum[..], 28));
     return ap.Value.Clone();
 }
 
@@ -404,7 +404,7 @@ public static array<byte> Sum512_256(slice<byte> data) {
     d.Reset();
     Ꮡd.Write(data);
     var sum = Ꮡd.checkSum();
-    var ap = Ꮡ(new array<byte>(sum[..], 32));
+    var ap = Ꮡ(array<byte>.Alias(sum[..], 32));
     return ap.Value.Clone();
 }
 

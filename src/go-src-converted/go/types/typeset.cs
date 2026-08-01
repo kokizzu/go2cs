@@ -73,7 +73,7 @@ partial class types_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string comparableˢ = "comparable"u8;
+internal static readonly @string comparableˢ = "comparable"u8;
 
 [GoRecv] internal static @string String(this ref _TypeSet s) {
     switch (ᐧ) {
@@ -173,7 +173,7 @@ internal static ref _TypeSet topTypeSet => ref ᏑtopTypeSet.Value;
 internal static void initᴛtopTypeSet() { topTypeSet = new _TypeSet(terms: allTermlist); }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeSetForSˢ = "-- type set for %s"u8;
+internal static readonly @string typeSetForSˢ = "-- type set for %s"u8;
 
 // computeInterfaceTypeSet may be called with check == nil.
 internal static ж<_TypeSet> computeInterfaceTypeSet(ж<Checker> Ꮡcheck, tokenꓸPos pos, ж<Interface> Ꮡityp) => func((defer, recover) => {

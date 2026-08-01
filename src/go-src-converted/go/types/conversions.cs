@@ -141,8 +141,8 @@ internal static void conversion(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string conversionOfSliceToArrayˢ = "conversion of slice to array requires go1.20 or later"u8;
-private static readonly @string conversionOfSliceToArrayˢ2 = "conversion of slice to array pointer requires go1.17 or later"u8;
+internal static readonly @string conversionOfSliceToArrayˢ = "conversion of slice to array requires go1.20 or later"u8;
+internal static readonly @string conversionOfSliceToArrayˢ2 = "conversion of slice to array pointer requires go1.17 or later"u8;
 
 // TODO(gri) convertibleTo checks if T(x) is valid. It assumes that the type
 // of x is fully known, but that's not the case for say string(1<<s + 1.0):

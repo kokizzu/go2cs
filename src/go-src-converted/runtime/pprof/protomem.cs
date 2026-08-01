@@ -13,11 +13,11 @@ using go.@internal;
 partial class pprof_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string spaceˢ = "space"u8;
-private static readonly @string bytesˢ = "bytes"u8;
-private static readonly @string allocObjectsˢ = "alloc_objects"u8;
-private static readonly @string inuseObjectsˢ = "inuse_objects"u8;
-private static readonly @string inuseSpaceˢ = "inuse_space"u8;
+internal static readonly @string spaceˢ = "space"u8;
+internal static readonly @string bytesˢ = "bytes"u8;
+internal static readonly @string allocObjectsˢ = "alloc_objects"u8;
+internal static readonly @string inuseObjectsˢ = "inuse_objects"u8;
+internal static readonly @string inuseSpaceˢ = "inuse_space"u8;
 
 // writeHeapProto writes the current heap profile in protobuf format to w.
 internal static error writeHeapProto(io.Writer w, slice<profilerecord.MemProfileRecord> p, int64 rate, @string defaultSampleType) {

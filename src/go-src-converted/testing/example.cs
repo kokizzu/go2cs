@@ -27,7 +27,7 @@ public static bool /*ok*/ RunExamples(Func<@string, @string, (bool, error)> matc
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testRunˢ = "-test.run"u8;
+internal static readonly @string testRunˢ = "-test.run"u8;
 
 internal static (bool ran, bool ok) runExamples(Func<@string, @string, (bool, error)> matchString, slice<InternalExample> examples) {
     bool ran = default!;

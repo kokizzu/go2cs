@@ -63,7 +63,7 @@ internal static (ж<syscall.CertContext>, error) createStoreContext(ж<Certifica
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509InvalidSimpleChainˢ = "x509: invalid simple chain"u8;
+internal static readonly @string x509InvalidSimpleChainˢ = "x509: invalid simple chain"u8;
 
 // extractSimpleChain extracts the final certificate chain from a CertSimpleChain.
 internal static (slice<ж<Certificate>> chain, error err) extractSimpleChain(ж<ж<syscall.CertSimpleChain>> ᏑsimpleChain, nint count) {
@@ -127,11 +127,11 @@ internal static error checkChainSSLServerPolicy(ж<Certificate> Ꮡc, ж<syscall
         AuthType: syscall.AUTHTYPE_SERVER,
         ServerName: servernamep
     ));
-    sslPara.Value.Size = (uint32)@unsafe.Sizeof(sslPara.Value);
+    sslPara.Value.Size = (uint32)/* unsafe.Sizeof(*sslPara) */ (uintptr)24;
     var para = Ꮡ(new syscall.CertChainPolicyPara(
         ExtraPolicyPara: ((syscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer(sslPara)))
     ));
-    para.Value.Size = (uint32)@unsafe.Sizeof(para.Value);
+    para.Value.Size = (uint32)/* unsafe.Sizeof(*para) */ (uintptr)16;
     ref var status = ref heap<syscall.CertChainPolicyStatus>(out var Ꮡstatus);
     status = new syscall.CertChainPolicyStatus(nil);
     err = syscall.CertVerifyCertificateChainPolicy(syscall.CERT_CHAIN_POLICY_SSL, ᏑchainCtx, para, Ꮡstatus);
@@ -172,7 +172,7 @@ internal static void initᴛwindowsExtKeyUsageOIDs() { windowsExtKeyUsageOIDs = 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509InternalErrorSystemˢ = "x509: internal error: system verifier returned an empty chain"u8;
+internal static readonly @string x509InternalErrorSystemˢ = "x509: internal error: system verifier returned an empty chain"u8;
 
 internal static (slice<ж<Certificate>> chain, error err) verifyChain(ж<Certificate> Ꮡc, ж<syscall.CertChainContext> ᏑchainCtx, ж<VerifyOptions> Ꮡopts) {
     slice<ж<Certificate>> chain = default!;
@@ -230,7 +230,7 @@ internal static (slice<slice<ж<Certificate>>> chains, error err) systemVerify(t
         }
         deferǃ(syscall.CertFreeCertificateContext, storeCtx, defer);
         var para = @new<syscall.CertChainPara>();
-        para.Value.Size = (uint32)@unsafe.Sizeof(para.Value);
+        para.Value.Size = (uint32)/* unsafe.Sizeof(*para) */ (uintptr)80;
         var keyUsages = opts.KeyUsages;
         if (builtin.len(keyUsages) == 0) {
             keyUsages = new ExtKeyUsage[]{ExtKeyUsageServerAuth}.slice();

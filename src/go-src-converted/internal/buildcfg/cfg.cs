@@ -72,7 +72,7 @@ internal static @string envOr(@string key, @string value) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goamd64ˢ = "GOAMD64"u8;
+internal static readonly @string goamd64ˢ = "GOAMD64"u8;
 
 internal static nint goamd64() {
     {
@@ -112,7 +112,7 @@ public static @string String(this goarmFeatures g) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goarmˢ = "GOARM"u8;
+internal static readonly @string goarmˢ = "GOARM"u8;
 
 internal static goarmFeatures /*g*/ goarm() {
     goarmFeatures g = default!;
@@ -221,7 +221,7 @@ public static (Goarm64Features g, error e) ParseGoarm64(@string v) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goarm64ˢ = "GOARM64"u8;
+internal static readonly @string goarm64ˢ = "GOARM64"u8;
 
 internal static Goarm64Features /*g*/ goarm64() {
     Goarm64Features g = default!;
@@ -257,7 +257,7 @@ public static bool Supports(this Goarm64Features g, @string s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gomipsˢ = "GOMIPS"u8;
+internal static readonly @string gomipsˢ = "GOMIPS"u8;
 
 internal static @string gomips() {
     {
@@ -273,7 +273,7 @@ internal static @string gomips() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gomips64ˢ = "GOMIPS64"u8;
+internal static readonly @string gomips64ˢ = "GOMIPS64"u8;
 
 internal static @string gomips64() {
     {
@@ -289,7 +289,7 @@ internal static @string gomips64() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goppc64ˢ = "GOPPC64"u8;
+internal static readonly @string goppc64ˢ = "GOPPC64"u8;
 
 internal static nint goppc64() {
     {
@@ -311,7 +311,7 @@ internal static nint goppc64() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goriscv64ˢ = "GORISCV64"u8;
+internal static readonly @string goriscv64ˢ = "GORISCV64"u8;
 
 internal static nint goriscv64() {
     {
@@ -349,7 +349,7 @@ public static @string String(this gowasmFeatures f) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gowasmˢ = "GOWASM"u8;
+internal static readonly @string gowasmˢ = "GOWASM"u8;
 
 internal static gowasmFeatures /*f*/ gowasm() {
     gowasmFeatures f = default!;
@@ -374,7 +374,7 @@ internal static gowasmFeatures /*f*/ gowasm() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goExtlinkEnabledˢ = "GO_EXTLINK_ENABLED"u8;
+internal static readonly @string goExtlinkEnabledˢ = "GO_EXTLINK_ENABLED"u8;
 
 public static @string Getgoextlinkenabled() {
     return envOr(goExtlinkEnabledˢ, defaultGO_EXTLINK_ENABLED);
@@ -400,7 +400,7 @@ internal static slice<@string> experimentTags() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string go386ˢ = "GO386"u8;
+internal static readonly @string go386ˢ = "GO386"u8;
 
 // GOGOARCH returns the name and value of the GO$GOARCH setting.
 // For example, if GOARCH is "amd64" it might return "GOAMD64", "v2".
@@ -440,7 +440,7 @@ public static (@string name, @string value) GOGOARCH() {
 internal static slice<@string> gogoarchTags() {
     var exprᴛ1 = GOARCH;
     if (exprᴛ1 == "386"u8) {
-        return new @string[]{GOARCH + "." + GO386}.slice();
+        return new @string[]{GOARCH + "."u8 + GO386}.slice();
     }
     if (exprᴛ1 == "amd64"u8) {
         slice<@string> list = default!;
@@ -472,10 +472,10 @@ internal static slice<@string> gogoarchTags() {
         return list;
     }
     if (exprᴛ1 == "mips"u8 || exprᴛ1 == "mipsle"u8) {
-        return new @string[]{GOARCH + "." + GOMIPS}.slice();
+        return new @string[]{GOARCH + "."u8 + GOMIPS}.slice();
     }
     if (exprᴛ1 == "mips64"u8 || exprᴛ1 == "mips64le"u8) {
-        return new @string[]{GOARCH + "." + GOMIPS64}.slice();
+        return new @string[]{GOARCH + "."u8 + GOMIPS64}.slice();
     }
     if (exprᴛ1 == "ppc64"u8 || exprᴛ1 == "ppc64le"u8) {
         slice<@string> list = default!;
@@ -485,7 +485,7 @@ internal static slice<@string> gogoarchTags() {
         return list;
     }
     if (exprᴛ1 == "riscv64"u8) {
-        var list = new @string[]{GOARCH + "." + "rva20u64"}.slice();
+        var list = new @string[]{GOARCH + "."u8 + "rva20u64"u8}.slice();
         if (GORISCV64 >= 22) {
             list = append(list, GOARCH + "."u8 + "rva22u64"u8);
         }

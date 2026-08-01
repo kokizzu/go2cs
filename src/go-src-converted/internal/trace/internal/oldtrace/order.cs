@@ -111,7 +111,7 @@ internal static bool transitionReady(uint64 g, gState curr, gState init) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string encounteredImpossibleˢ = "encountered impossible goroutine state transition"u8;
+internal static readonly @string encounteredImpossibleˢ = "encountered impossible goroutine state transition"u8;
 
 internal static error transition(map<uint64, gState> gs, uint64 g, gState init, gState next) {
     if (g == unordered) {

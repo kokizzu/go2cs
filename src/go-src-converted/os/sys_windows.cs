@@ -10,7 +10,7 @@ using @internal.syscall;
 partial class os_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string computerNameExˢ = "ComputerNameEx"u8;
+internal static readonly @string computerNameExˢ = "ComputerNameEx"u8;
 
 internal static (@string name, error err) hostname() {
     @string name = default!;

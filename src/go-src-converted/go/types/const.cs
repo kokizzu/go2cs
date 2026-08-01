@@ -17,7 +17,7 @@ using global::go.go;
 partial class types_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string constantResultIsNotˢ = "constant result is not representable"u8;
+internal static readonly @string constantResultIsNotˢ = "constant result is not representable"u8;
 
 // overflow checks that the constant x is representable by its type.
 // For untyped constants, it checks that the value doesn't become
@@ -318,9 +318,9 @@ internal static (constant.Value, errors.Code) representation(this ж<Checker> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cannotConvertSToTypeSˢ = "cannot convert %s to type %s"u8;
-private static readonly @string sTruncatedToSˢ = "%s truncated to %s"u8;
-private static readonly @string sOverflowsSˢ = "%s overflows %s"u8;
+internal static readonly @string cannotConvertSToTypeSˢ = "cannot convert %s to type %s"u8;
+internal static readonly @string sTruncatedToSˢ = "%s truncated to %s"u8;
+internal static readonly @string sOverflowsSˢ = "%s overflows %s"u8;
 
 internal static void invalidConversion(this ж<Checker> Ꮡcheck, errors.Code code, ж<operand> Ꮡx, ΔType target) {
     @string msg = cannotConvertSToTypeSˢ;

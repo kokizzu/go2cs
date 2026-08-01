@@ -110,10 +110,10 @@ internal static ж<response> newResponse(ж<child> Ꮡc, ж<request> Ꮡreq) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string contentTypeˢ = "Content-Type"u8;
-private static readonly @string contentLengthˢ = "Content-Length"u8;
-private static readonly @string transferEncodingˢ = "Transfer-Encoding"u8;
-private static readonly @string dateˢ = "Date"u8;
+internal static readonly @string contentTypeˢ = "Content-Type"u8;
+internal static readonly @string contentLengthˢ = "Content-Length"u8;
+internal static readonly @string transferEncodingˢ = "Transfer-Encoding"u8;
+internal static readonly @string dateˢ = "Date"u8;
 
 [GoRecv] internal static void WriteHeader(this ref response r, nint code) {
     if (r.wroteHeader) {
@@ -211,7 +211,7 @@ public static error ErrRequestAborted = errors.New("fcgi: request aborted by web
 public static error ErrConnClosed = errors.New("fcgi: connection to web server closed"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fcgiReceivedIdThatIsˢ = "fcgi: received ID that is already in-flight"u8;
+internal static readonly @string fcgiReceivedIdThatIsˢ = "fcgi: received ID that is already in-flight"u8;
 
 internal static error handleRecord(this ж<child> Ꮡc, ж<record> Ꮡrec) {
     ref var c = ref Ꮡc.Value;
@@ -407,7 +407,7 @@ public static map<@string, @string> ProcessEnv(ж<http.Request> Ꮡr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpˢ = "HTTP_"u8;
+internal static readonly @string httpˢ = "HTTP_"u8;
 
 // addFastCGIEnvToContext reports whether to include the FastCGI environment variable s
 // in the http.Request.Context, accessible via ProcessEnv.

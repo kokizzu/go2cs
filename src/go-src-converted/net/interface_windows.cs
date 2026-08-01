@@ -12,7 +12,7 @@ using @internal.syscall;
 partial class net_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string getadaptersaddressesˢ = "getadaptersaddresses"u8;
+internal static readonly @string getadaptersaddressesˢ = "getadaptersaddresses"u8;
 
 // adapterAddresses returns a list of IP adapter and address
 // structures. The structure contains an IP adapter and flattened
@@ -109,7 +109,7 @@ internal static (slice<Interface>, error) interfaceTable(nint ifindex) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sockaddrˢ = "sockaddr"u8;
+internal static readonly @string sockaddrˢ = "sockaddr"u8;
 
 // If the ifi is nil, interfaceAddrTable returns addresses for all
 // network interfaces. Otherwise it returns addresses for a specific

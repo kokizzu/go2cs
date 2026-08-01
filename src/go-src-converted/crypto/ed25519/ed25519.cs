@@ -75,7 +75,7 @@ public static slice<byte> Seed(this PrivateKey priv) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ed25519ExpectedOptsˢ = "ed25519: expected opts.HashFunc() zero (unhashed message, for standard Ed25519) or SHA-512 (for Ed25519ph)"u8;
+internal static readonly @string ed25519ExpectedOptsˢ = "ed25519: expected opts.HashFunc() zero (unhashed message, for standard Ed25519) or SHA-512 (for Ed25519ph)"u8;
 
 // Sign signs the given message with priv. rand is ignored and can be nil.
 //
@@ -275,8 +275,8 @@ public static bool Verify(PublicKey publicKey, slice<byte> message, slice<byte> 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ed25519InvalidSignatureˢ = "ed25519: invalid signature"u8;
-private static readonly @string ed25519ExpectedOptsHashˢ = "ed25519: expected opts.Hash zero (unhashed message, for standard Ed25519) or SHA-512 (for Ed25519ph)"u8;
+internal static readonly @string ed25519InvalidSignatureˢ = "ed25519: invalid signature"u8;
+internal static readonly @string ed25519ExpectedOptsHashˢ = "ed25519: expected opts.Hash zero (unhashed message, for standard Ed25519) or SHA-512 (for Ed25519ph)"u8;
 
 // VerifyWithOptions reports whether sig is a valid signature of message by
 // publicKey. A valid signature is indicated by returning a nil error. It will

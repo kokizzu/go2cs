@@ -191,8 +191,8 @@ internal static @string Error(this ΔsyntaxError e) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedEofˢ = "unexpected EOF"u8;
-private static readonly @string missingˢ = "missing <"u8;
+internal static readonly @string unexpectedEofˢ = "unexpected EOF"u8;
+internal static readonly @string missingˢ = "missing <"u8;
 
 // parseRules parses the rules of a DAG.
 internal static (slice<rule> @out, error err) parseRules(@string rules) {
@@ -257,7 +257,7 @@ internal static (slice<rule> @out, error err) parseRules(@string rules) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badListSyntaxˢ = "bad list syntax"u8;
+internal static readonly @string badListSyntaxˢ = "bad list syntax"u8;
 
 // nextList parses and returns a comma-separated list of names.
 [GoRecv] internal static (slice<@string> list, @string token) nextList(this ref rulesParser p) {
@@ -287,7 +287,7 @@ private static readonly @string badListSyntaxˢ = "bad list syntax"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedTokenˢ = "unexpected token !"u8;
+internal static readonly @string unexpectedTokenˢ = "unexpected token !"u8;
 
 // nextToken returns the next token in the deps rules,
 // one of ";" "," "<" "!<" or a name.

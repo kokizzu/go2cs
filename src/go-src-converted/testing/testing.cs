@@ -403,57 +403,57 @@ partial class testing_package {
 internal static bool initRan;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testShortˢ = "test.short"u8;
-private static readonly @string runSmallerTestSuiteToˢ = "run smaller test suite to save time"u8;
-private static readonly @string testFailfastˢ = "test.failfast"u8;
-private static readonly @string doNotStartNewTestsAfterˢ = "do not start new tests after the first test failure"u8;
-private static readonly @string testOutputdirˢ = "test.outputdir"u8;
-private static readonly @string writeProfilesToDirˢ = "write profiles to `dir`"u8;
-private static readonly @string testVˢ = "test.v"u8;
-private static readonly @string verbosePrintAdditionalˢ = "verbose: print additional output"u8;
-private static readonly @string testCountˢ = "test.count"u8;
-private static readonly @string runTestsAndBenchmarksNˢ = "run tests and benchmarks `n` times"u8;
-private static readonly @string testCoverprofileˢ = "test.coverprofile"u8;
-private static readonly @string writeACoverageProfileToˢ = "write a coverage profile to `file`"u8;
-private static readonly @string testGocoverdirˢ = "test.gocoverdir"u8;
-private static readonly @string writeCoverageˢ = "write coverage intermediate files to this directory"u8;
-private static readonly @string testListˢ = "test.list"u8;
-private static readonly @string listTestsExamplesAndˢ = "list tests, examples, and benchmarks matching `regexp` then exit"u8;
-private static readonly @string testRunˢ2 = "test.run"u8;
-private static readonly @string runOnlyTestsAndExamplesˢ = "run only tests and examples matching `regexp`"u8;
-private static readonly @string testSkipˢ2 = "test.skip"u8;
-private static readonly @string doNotListOrRunTestsˢ = "do not list or run tests matching `regexp`"u8;
-private static readonly @string testMemprofileˢ = "test.memprofile"u8;
-private static readonly @string writeAnAllocationProfileˢ = "write an allocation profile to `file`"u8;
-private static readonly @string testMemprofilerateˢ = "test.memprofilerate"u8;
-private static readonly @string setMemoryAllocationˢ = "set memory allocation profiling `rate` (see runtime.MemProfileRate)"u8;
-private static readonly @string testCpuprofileˢ = "test.cpuprofile"u8;
-private static readonly @string writeACpuProfileToFileˢ = "write a cpu profile to `file`"u8;
-private static readonly @string testBlockprofileˢ = "test.blockprofile"u8;
-private static readonly @string writeAGoroutineBlockingˢ = "write a goroutine blocking profile to `file`"u8;
-private static readonly @string testBlockprofilerateˢ = "test.blockprofilerate"u8;
-private static readonly @string setBlockingProfileRateˢ = "set blocking profile `rate` (see runtime.SetBlockProfileRate)"u8;
-private static readonly @string testMutexprofileˢ = "test.mutexprofile"u8;
-private static readonly @string writeAMutexContentionˢ = "write a mutex contention profile to the named file after execution"u8;
-private static readonly @string testMutexprofilefractionˢ = "test.mutexprofilefraction"u8;
-private static readonly @string if0CallsRuntimeˢ = "if >= 0, calls runtime.SetMutexProfileFraction()"u8;
-private static readonly @string testPaniconexit0ˢ = "test.paniconexit0"u8;
-private static readonly @string panicOnCallToOsExit0ˢ = "panic on call to os.Exit(0)"u8;
-private static readonly @string testTraceˢ = "test.trace"u8;
-private static readonly @string writeAnExecutionTraceToˢ = "write an execution trace to `file`"u8;
-private static readonly @string testTimeoutˢ = "test.timeout"u8;
-private static readonly @string panicTestBinaryAfterˢ = "panic test binary after duration `d` (default 0, timeout disabled)"u8;
-private static readonly @string testCpuˢ = "test.cpu"u8;
-private static readonly @string commaSeparatedListOfCpuˢ = "comma-separated `list` of cpu counts to run each test with"u8;
-private static readonly @string testParallelˢ = "test.parallel"u8;
-private static readonly @string runAtMostNTestsInˢ = "run at most `n` tests in parallel"u8;
-private static readonly @string testTestlogfileˢ = "test.testlogfile"u8;
-private static readonly @string writeTestActionLogToFileˢ = "write test action log to `file` (for use only by cmd/go)"u8;
-private static readonly @string testShuffleˢ = "test.shuffle"u8;
-private static readonly @string offˢ = "off"u8;
-private static readonly @string randomizeTheExecutionˢ = "randomize the execution order of tests and benchmarks"u8;
-private static readonly @string testFullpathˢ = "test.fullpath"u8;
-private static readonly @string showFullFileNamesInErrorˢ = "show full file names in error messages"u8;
+internal static readonly @string testShortˢ = "test.short"u8;
+internal static readonly @string runSmallerTestSuiteToˢ = "run smaller test suite to save time"u8;
+internal static readonly @string testFailfastˢ = "test.failfast"u8;
+internal static readonly @string doNotStartNewTestsAfterˢ = "do not start new tests after the first test failure"u8;
+internal static readonly @string testOutputdirˢ = "test.outputdir"u8;
+internal static readonly @string writeProfilesToDirˢ = "write profiles to `dir`"u8;
+internal static readonly @string testVˢ = "test.v"u8;
+internal static readonly @string verbosePrintAdditionalˢ = "verbose: print additional output"u8;
+internal static readonly @string testCountˢ = "test.count"u8;
+internal static readonly @string runTestsAndBenchmarksNˢ = "run tests and benchmarks `n` times"u8;
+internal static readonly @string testCoverprofileˢ = "test.coverprofile"u8;
+internal static readonly @string writeACoverageProfileToˢ = "write a coverage profile to `file`"u8;
+internal static readonly @string testGocoverdirˢ = "test.gocoverdir"u8;
+internal static readonly @string writeCoverageˢ = "write coverage intermediate files to this directory"u8;
+internal static readonly @string testListˢ = "test.list"u8;
+internal static readonly @string listTestsExamplesAndˢ = "list tests, examples, and benchmarks matching `regexp` then exit"u8;
+internal static readonly @string testRunˢ2 = "test.run"u8;
+internal static readonly @string runOnlyTestsAndExamplesˢ = "run only tests and examples matching `regexp`"u8;
+internal static readonly @string testSkipˢ2 = "test.skip"u8;
+internal static readonly @string doNotListOrRunTestsˢ = "do not list or run tests matching `regexp`"u8;
+internal static readonly @string testMemprofileˢ = "test.memprofile"u8;
+internal static readonly @string writeAnAllocationProfileˢ = "write an allocation profile to `file`"u8;
+internal static readonly @string testMemprofilerateˢ = "test.memprofilerate"u8;
+internal static readonly @string setMemoryAllocationˢ = "set memory allocation profiling `rate` (see runtime.MemProfileRate)"u8;
+internal static readonly @string testCpuprofileˢ = "test.cpuprofile"u8;
+internal static readonly @string writeACpuProfileToFileˢ = "write a cpu profile to `file`"u8;
+internal static readonly @string testBlockprofileˢ = "test.blockprofile"u8;
+internal static readonly @string writeAGoroutineBlockingˢ = "write a goroutine blocking profile to `file`"u8;
+internal static readonly @string testBlockprofilerateˢ = "test.blockprofilerate"u8;
+internal static readonly @string setBlockingProfileRateˢ = "set blocking profile `rate` (see runtime.SetBlockProfileRate)"u8;
+internal static readonly @string testMutexprofileˢ = "test.mutexprofile"u8;
+internal static readonly @string writeAMutexContentionˢ = "write a mutex contention profile to the named file after execution"u8;
+internal static readonly @string testMutexprofilefractionˢ = "test.mutexprofilefraction"u8;
+internal static readonly @string if0CallsRuntimeˢ = "if >= 0, calls runtime.SetMutexProfileFraction()"u8;
+internal static readonly @string testPaniconexit0ˢ = "test.paniconexit0"u8;
+internal static readonly @string panicOnCallToOsExit0ˢ = "panic on call to os.Exit(0)"u8;
+internal static readonly @string testTraceˢ = "test.trace"u8;
+internal static readonly @string writeAnExecutionTraceToˢ = "write an execution trace to `file`"u8;
+internal static readonly @string testTimeoutˢ = "test.timeout"u8;
+internal static readonly @string panicTestBinaryAfterˢ = "panic test binary after duration `d` (default 0, timeout disabled)"u8;
+internal static readonly @string testCpuˢ = "test.cpu"u8;
+internal static readonly @string commaSeparatedListOfCpuˢ = "comma-separated `list` of cpu counts to run each test with"u8;
+internal static readonly @string testParallelˢ = "test.parallel"u8;
+internal static readonly @string runAtMostNTestsInˢ = "run at most `n` tests in parallel"u8;
+internal static readonly @string testTestlogfileˢ = "test.testlogfile"u8;
+internal static readonly @string writeTestActionLogToFileˢ = "write test action log to `file` (for use only by cmd/go)"u8;
+internal static readonly @string testShuffleˢ = "test.shuffle"u8;
+internal static readonly @string offˢ = "off"u8;
+internal static readonly @string randomizeTheExecutionˢ = "randomize the execution order of tests and benchmarks"u8;
+internal static readonly @string testFullpathˢ = "test.fullpath"u8;
+internal static readonly @string showFullFileNamesInErrorˢ = "show full file names in error messages"u8;
 
 // Init registers testing flags. These flags are automatically registered by
 // the "go test" command before running test functions, so Init is only needed
@@ -566,9 +566,9 @@ internal static ref Δsync.Map running => ref Ꮡrunning.Value; // map[string]ti
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string test2jsonˢ = "test2json"u8;
-private static readonly @string trueˢ = "true"u8;
-private static readonly @string falseˢ = "false"u8;
+internal static readonly @string test2jsonˢ = "test2json"u8;
+internal static readonly @string trueˢ = "true"u8;
+internal static readonly @string falseˢ = "false"u8;
 
 [GoRecv] internal static @string String(this ref chattyFlag f) {
     if (f.json) {
@@ -1054,7 +1054,7 @@ internal static bool Failed(this ж<common> Ꮡc) => func((defer, recover) => {
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string failNowˢ = "FailNow"u8;
+internal static readonly @string failNowˢ = "FailNow"u8;
 
 // FailNow marks the function as having failed and stops its execution
 // by calling runtime.Goexit (which then runs all deferred calls in the
@@ -1136,7 +1136,7 @@ internal static void logDepth(this ж<common> Ꮡc, @string s, nint depth) => fu
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string logˢ = "Log"u8;
+internal static readonly @string logˢ = "Log"u8;
 
 // Log formats its arguments using default formatting, analogous to Println,
 // and records the text in the error log. For tests, the text will be printed only if
@@ -1151,7 +1151,7 @@ internal static void Log(this ж<common> Ꮡc, params ꓸꓸꓸany argsʗp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string logfˢ = "Logf"u8;
+internal static readonly @string logfˢ = "Logf"u8;
 
 // Logf formats its arguments according to the format, analogous to Printf, and
 // records the text in the error log. A final newline is added if not provided. For
@@ -1167,7 +1167,7 @@ internal static void Logf(this ж<common> Ꮡc, @string format, params ꓸꓸꓸ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string errorˢ = "Error"u8;
+internal static readonly @string errorˢ = "Error"u8;
 
 // Error is equivalent to Log followed by Fail.
 internal static void Error(this ж<common> Ꮡc, params ꓸꓸꓸany argsʗp) {
@@ -1180,7 +1180,7 @@ internal static void Error(this ж<common> Ꮡc, params ꓸꓸꓸany argsʗp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string errorfˢ = "Errorf"u8;
+internal static readonly @string errorfˢ = "Errorf"u8;
 
 // Errorf is equivalent to Logf followed by Fail.
 internal static void Errorf(this ж<common> Ꮡc, @string format, params ꓸꓸꓸany argsʗp) {
@@ -1193,7 +1193,7 @@ internal static void Errorf(this ж<common> Ꮡc, @string format, params ꓸꓸ�
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fatalˢ = "Fatal"u8;
+internal static readonly @string fatalˢ = "Fatal"u8;
 
 // Fatal is equivalent to Log followed by FailNow.
 internal static void Fatal(this ж<common> Ꮡc, params ꓸꓸꓸany argsʗp) {
@@ -1206,7 +1206,7 @@ internal static void Fatal(this ж<common> Ꮡc, params ꓸꓸꓸany argsʗp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fatalfˢ = "Fatalf"u8;
+internal static readonly @string fatalfˢ = "Fatalf"u8;
 
 // Fatalf is equivalent to Logf followed by FailNow.
 internal static void Fatalf(this ж<common> Ꮡc, @string format, params ꓸꓸꓸany argsʗp) {
@@ -1219,7 +1219,7 @@ internal static void Fatalf(this ж<common> Ꮡc, @string format, params ꓸꓸ�
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string skipˢ2 = "Skip"u8;
+internal static readonly @string skipˢ2 = "Skip"u8;
 
 // Skip is equivalent to Log followed by SkipNow.
 internal static void Skip(this ж<common> Ꮡc, params ꓸꓸꓸany argsʗp) {
@@ -1232,7 +1232,7 @@ internal static void Skip(this ж<common> Ꮡc, params ꓸꓸꓸany argsʗp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string skipfˢ = "Skipf"u8;
+internal static readonly @string skipfˢ = "Skipf"u8;
 
 // Skipf is equivalent to Logf followed by SkipNow.
 internal static void Skipf(this ж<common> Ꮡc, @string format, params ꓸꓸꓸany argsʗp) {
@@ -1245,7 +1245,7 @@ internal static void Skipf(this ж<common> Ꮡc, @string format, params ꓸꓸ�
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string skipNowˢ = "SkipNow"u8;
+internal static readonly @string skipNowˢ = "SkipNow"u8;
 
 // SkipNow marks the test as having been skipped and stops its execution
 // by calling [runtime.Goexit].
@@ -1302,7 +1302,7 @@ internal static void Helper(this ж<common> Ꮡc) => func((defer, recover) => {
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cleanupˢ = "Cleanup"u8;
+internal static readonly @string cleanupˢ = "Cleanup"u8;
 
 // map will be recreated next time it is needed
 
@@ -1338,7 +1338,7 @@ internal static void Cleanup(this ж<common> Ꮡc, Action f) => func((defer, rec
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tempDirˢ = "TempDir"u8;
+internal static readonly @string tempDirˢ = "TempDir"u8;
 
 // TempDir returns a temporary directory for the test to use.
 // The directory is automatically removed when the test and
@@ -1444,7 +1444,7 @@ internal static error removeAll(@string path) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string setenvˢ = "Setenv"u8;
+internal static readonly @string setenvˢ = "Setenv"u8;
 
 // Setenv calls os.Setenv(key, value) and uses Cleanup to
 // restore the environment variable to its original value
@@ -1704,7 +1704,7 @@ public static void Setenv(this ж<T> Ꮡt, @string key, @string value) {
 internal static error errNilPanicOrGoexit = errors.New("test executed panic(nil) or runtime.Goexit"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string panicˢ = "panic: "u8;
+internal static readonly @string panicˢ = "panic: "u8;
 
 internal static void tRunner(ж<T> Ꮡt, Action<ж<T>> fn) => func((defer, recover) => {
     ref var t = ref Ꮡt.Value;
@@ -2127,15 +2127,15 @@ internal static bool testingTesting;
 internal static ж<os.File> realStderr;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object testingParallelCanOnlyBeˢ = (@string)"testing: -parallel can only be given a positive integer"u8;
-private static readonly object testingTestFuzzcachedirˢ = (@string)"testing: -test.fuzzcachedir must be set if -test.fuzz is set"u8;
-private static readonly object testingShuffleShouldBeˢ = (@string)@"testing: -shuffle should be ""off"", ""on"", or a valid integer:"u8;
-private static readonly object testShuffleˢ2 = (@string)"-test.shuffle"u8;
-private static readonly object testingWarningNoTestsToˢ = (@string)"testing: warning: no tests to run"u8;
-private static readonly object failPackageTestingMustˢ = (@string)"FAIL: package testing must run tests\n"u8;
-private static readonly object testingRaceDetectedˢ = (@string)"testing: race detected outside of test execution\n"u8;
-private static readonly object failˢ2 = (@string)"FAIL\n"u8;
-private static readonly object passˢ2 = (@string)"PASS\n"u8;
+internal static readonly object testingParallelCanOnlyBeˢ = (@string)"testing: -parallel can only be given a positive integer"u8;
+internal static readonly object testingTestFuzzcachedirˢ = (@string)"testing: -test.fuzzcachedir must be set if -test.fuzz is set"u8;
+internal static readonly object testingShuffleShouldBeˢ = (@string)@"testing: -shuffle should be ""off"", ""on"", or a valid integer:"u8;
+internal static readonly object testShuffleˢ2 = (@string)"-test.shuffle"u8;
+internal static readonly object testingWarningNoTestsToˢ = (@string)"testing: warning: no tests to run"u8;
+internal static readonly object failPackageTestingMustˢ = (@string)"FAIL: package testing must run tests\n"u8;
+internal static readonly object testingRaceDetectedˢ = (@string)"testing: race detected outside of test execution\n"u8;
+internal static readonly object failˢ2 = (@string)"FAIL\n"u8;
+internal static readonly object passˢ2 = (@string)"PASS\n"u8;
 
 // Run runs the tests. It returns an exit code to pass to os.Exit.
 public static nint /*code*/ Run(this ж<M> Ꮡm) {
@@ -2503,9 +2503,9 @@ internal static void after(this ж<M> Ꮡm) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string allocsˢ = "allocs"u8;
-private static readonly @string blockˢ = "block"u8;
-private static readonly @string mutexˢ = "mutex"u8;
+internal static readonly @string allocsˢ = "allocs"u8;
+internal static readonly @string blockˢ = "block"u8;
+internal static readonly @string mutexˢ = "mutex"u8;
 
 [GoRecv] internal static void writeProfiles(this ref M m) {
     if (testlog.Value != ""u8) {
@@ -2606,8 +2606,8 @@ internal static @string toOutputDir(@string path) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string allˢ = "all"u8;
-private static readonly @string runningTestsˢ = "\nrunning tests:"u8;
+internal static readonly @string allˢ = "all"u8;
+internal static readonly @string runningTestsˢ = "\nrunning tests:"u8;
 
 // startAlarm starts an alarm if requested.
 internal static time.Time startAlarm(this ж<M> Ꮡm) {

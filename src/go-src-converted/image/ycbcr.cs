@@ -18,13 +18,13 @@ public static YCbCrSubsampleRatio YCbCrSubsampleRatio411 => 4;
 public static YCbCrSubsampleRatio YCbCrSubsampleRatio410 => 5;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string yCbCrSubsampleRatio444ˢ = "YCbCrSubsampleRatio444"u8;
-private static readonly @string yCbCrSubsampleRatio422ˢ = "YCbCrSubsampleRatio422"u8;
-private static readonly @string yCbCrSubsampleRatio420ˢ = "YCbCrSubsampleRatio420"u8;
-private static readonly @string yCbCrSubsampleRatio440ˢ = "YCbCrSubsampleRatio440"u8;
-private static readonly @string yCbCrSubsampleRatio411ˢ = "YCbCrSubsampleRatio411"u8;
-private static readonly @string yCbCrSubsampleRatio410ˢ = "YCbCrSubsampleRatio410"u8;
-private static readonly @string yCbCrSubsampleRatioUnknownˢ = "YCbCrSubsampleRatioUnknown"u8;
+internal static readonly @string yCbCrSubsampleRatio444ˢ = "YCbCrSubsampleRatio444"u8;
+internal static readonly @string yCbCrSubsampleRatio422ˢ = "YCbCrSubsampleRatio422"u8;
+internal static readonly @string yCbCrSubsampleRatio420ˢ = "YCbCrSubsampleRatio420"u8;
+internal static readonly @string yCbCrSubsampleRatio440ˢ = "YCbCrSubsampleRatio440"u8;
+internal static readonly @string yCbCrSubsampleRatio411ˢ = "YCbCrSubsampleRatio411"u8;
+internal static readonly @string yCbCrSubsampleRatio410ˢ = "YCbCrSubsampleRatio410"u8;
+internal static readonly @string yCbCrSubsampleRatioUnknownˢ = "YCbCrSubsampleRatioUnknown"u8;
 
 public static @string String(this YCbCrSubsampleRatio s) {
     var exprᴛ1 = s;

@@ -244,7 +244,7 @@ public static ж<Decoder> NewTokenDecoder(TokenReader t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedEofˢ = "unexpected EOF"u8;
+internal static readonly @string unexpectedEofˢ = "unexpected EOF"u8;
 
 // Token returns the next XML token in the input stream.
 // At the end of the input stream, Token returns nil, [io.EOF].
@@ -564,18 +564,18 @@ internal static error errRawToken = errors.New("xml: cannot use RawToken from Un
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string expectedElementNameAfterˢ = "expected element name after </"u8;
-private static readonly @string expectedTargetNameAfterˢ = "expected target name after <?"u8;
-private static readonly @string versionˢ = "version"u8;
-private static readonly @string encodingˢ = "encoding"u8;
-private static readonly @string utf8ˢ = "utf-8"u8;
-private static readonly @string invalidSequenceNotPartOfˢ = "invalid sequence <!- not part of <!--"u8;
-private static readonly @string invalidSequenceNotˢ = @"invalid sequence ""--"" not allowed in comments"u8;
-private static readonly @string invalidSequenceˢ = "invalid <![ sequence"u8;
-private static readonly @string expectedElementNameAfterˢ2 = "expected element name after <"u8;
-private static readonly @string expectedInElementˢ = "expected /> in element"u8;
-private static readonly @string expectedAttributeNameInˢ = "expected attribute name in element"u8;
-private static readonly @string attributeNameWithoutInˢ = "attribute name without = in element"u8;
+internal static readonly @string expectedElementNameAfterˢ = "expected element name after </"u8;
+internal static readonly @string expectedTargetNameAfterˢ = "expected target name after <?"u8;
+internal static readonly @string versionˢ = "version"u8;
+internal static readonly @string encodingˢ = "encoding"u8;
+internal static readonly @string utf8ˢ = "utf-8"u8;
+internal static readonly @string invalidSequenceNotPartOfˢ = "invalid sequence <!- not part of <!--"u8;
+internal static readonly @string invalidSequenceNotˢ = @"invalid sequence ""--"" not allowed in comments"u8;
+internal static readonly @string invalidSequenceˢ = "invalid <![ sequence"u8;
+internal static readonly @string expectedElementNameAfterˢ2 = "expected element name after <"u8;
+internal static readonly @string expectedInElementˢ = "expected /> in element"u8;
+internal static readonly @string expectedAttributeNameInˢ = "expected attribute name in element"u8;
+internal static readonly @string attributeNameWithoutInˢ = "attribute name without = in element"u8;
 
 [GoRecv] internal static (ΔToken, error) rawToken(this ref Decoder d) {
     if (d.t != default!) {
@@ -915,7 +915,7 @@ HandleB:
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unquotedOrMissingˢ = "unquoted or missing attribute value in element"u8;
+internal static readonly @string unquotedOrMissingˢ = "unquoted or missing attribute value in element"u8;
 
 [GoRecv] internal static slice<byte> attrval(this ref Decoder d) {
     var (b, ok) = d.mustgetc();
@@ -1063,10 +1063,10 @@ internal static map<@string, rune> entity = new map<@string, rune>{
 };
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedEofInCdataˢ = "unexpected EOF in CDATA section"u8;
-private static readonly @string unescapedNotInCdataˢ = "unescaped ]]> not in CDATA section"u8;
-private static readonly @string unescapedInsideQuotedˢ = "unescaped < inside quoted string"u8;
-private static readonly @string invalidUtf8ˢ = "invalid UTF-8"u8;
+internal static readonly @string unexpectedEofInCdataˢ = "unexpected EOF in CDATA section"u8;
+internal static readonly @string unescapedNotInCdataˢ = "unescaped ]]> not in CDATA section"u8;
+internal static readonly @string unescapedInsideQuotedˢ = "unescaped < inside quoted string"u8;
+internal static readonly @string invalidUtf8ˢ = "invalid UTF-8"u8;
 
 // Read plain text section (XML calls it character data).
 // If quote >= 0, we are in a quoted string and need to find the matching quote.

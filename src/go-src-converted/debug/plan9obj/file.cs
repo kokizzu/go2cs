@@ -327,8 +327,8 @@ internal static (slice<Sym>, error) newTable(slice<byte> symtab, nint ptrsz) {
 public static error ErrNoSymbols = errors.New("no symbol section"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string symsˢ = "syms"u8;
-private static readonly @string cannotLoadSymbolSectionˢ = "cannot load symbol section"u8;
+internal static readonly @string symsˢ = "syms"u8;
+internal static readonly @string cannotLoadSymbolSectionˢ = "cannot load symbol section"u8;
 
 // Symbols returns the symbol table for f.
 [GoRecv] public static (slice<Sym>, error) Symbols(this ref File f) {

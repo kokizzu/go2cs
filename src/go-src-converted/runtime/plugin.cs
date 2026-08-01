@@ -10,10 +10,10 @@ using @internal;
 partial class runtime_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeNoPluginModuleˢ = "runtime: no plugin module data"u8;
-private static readonly @string runtimePluginHasEmptyˢ = "runtime: plugin has empty pluginpath"u8;
-private static readonly @string pluginAlreadyLoadedˢ = "plugin already loaded"u8;
-private static readonly @string pluginNewModuleDataˢ = "plugin: new module data overlaps with previous moduledata"u8;
+internal static readonly @string runtimeNoPluginModuleˢ = "runtime: no plugin module data"u8;
+internal static readonly @string runtimePluginHasEmptyˢ = "runtime: plugin has empty pluginpath"u8;
+internal static readonly @string pluginAlreadyLoadedˢ = "plugin already loaded"u8;
+internal static readonly @string pluginNewModuleDataˢ = "plugin: new module data overlaps with previous moduledata"u8;
 
 //go:linkname plugin_lastmoduleinit plugin.lastmoduleinit
 internal static (@string path, map<@string, any> syms, slice<ж<initTask>> initTasks, @string errstr) plugin_lastmoduleinit() {
@@ -100,8 +100,8 @@ internal static (@string path, map<@string, any> syms, slice<ж<initTask>> initT
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noneˢ = "none"u8;
-private static readonly @string runtimePluginHasBadˢ = "runtime: plugin has bad symbol table"u8;
+internal static readonly @string noneˢ = "none"u8;
+internal static readonly @string runtimePluginHasBadˢ = "runtime: plugin has bad symbol table"u8;
 
 internal static void pluginftabverify(ж<moduledata> Ꮡmd) {
     ref var md = ref Ꮡmd.Value;

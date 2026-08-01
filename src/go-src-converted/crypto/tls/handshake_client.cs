@@ -47,14 +47,14 @@ partial class tls_package {
 internal static slice<SignatureScheme> testingOnlyForceClientHelloSignatureAlgorithms;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsEitherServerNameOrˢ = "tls: either ServerName or InsecureSkipVerify must be specified in the tls.Config"u8;
-private static readonly @string tlsInvalidNextProtosˢ = "tls: invalid NextProtos value"u8;
-private static readonly @string tlsNextProtosValuesTooˢ = "tls: NextProtos values too large"u8;
-private static readonly @string tlsNoSupportedVersionsˢ = "tls: no supported versions satisfy MinVersion and MaxVersion"u8;
-private static readonly @string tlsCurvePreferencesˢ = "tls: CurvePreferences includes unsupported curve"u8;
-private static readonly @string tlsMinVersionMustBeˢ = "tls: MinVersion must be >= VersionTLS13 if EncryptedClientHelloConfigList is populated"u8;
-private static readonly @string tlsMaxVersionMustBeˢ = "tls: MaxVersion must be >= VersionTLS13 if EncryptedClientHelloConfigList is populated"u8;
-private static readonly @string tlsˢ = "tls: EncryptedClientHelloConfigList contains no valid configs"u8;
+internal static readonly @string tlsEitherServerNameOrˢ = "tls: either ServerName or InsecureSkipVerify must be specified in the tls.Config"u8;
+internal static readonly @string tlsInvalidNextProtosˢ = "tls: invalid NextProtos value"u8;
+internal static readonly @string tlsNextProtosValuesTooˢ = "tls: NextProtos values too large"u8;
+internal static readonly @string tlsNoSupportedVersionsˢ = "tls: no supported versions satisfy MinVersion and MaxVersion"u8;
+internal static readonly @string tlsCurvePreferencesˢ = "tls: CurvePreferences includes unsupported curve"u8;
+internal static readonly @string tlsMinVersionMustBeˢ = "tls: MinVersion must be >= VersionTLS13 if EncryptedClientHelloConfigList is populated"u8;
+internal static readonly @string tlsMaxVersionMustBeˢ = "tls: MaxVersion must be >= VersionTLS13 if EncryptedClientHelloConfigList is populated"u8;
+internal static readonly @string tlsˢ = "tls: EncryptedClientHelloConfigList contains no valid configs"u8;
 
 internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, error) makeClientHello(this ж<Conn> Ꮡc) {
     ref var c = ref Ꮡc.Value;
@@ -263,7 +263,7 @@ internal static (ж<clientHelloMsg>, ж<keySharePrivateKeys>, ж<echContext>, er
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsDowngradeAttemptˢ = "tls: downgrade attempt detected, possibly due to a MitM attack or a broken middlebox"u8;
+internal static readonly @string tlsDowngradeAttemptˢ = "tls: downgrade attempt detected, possibly due to a MitM attack or a broken middlebox"u8;
 
 internal static error /*err*/ clientHandshake(this ж<Conn> Ꮡc, context.Context ctx) {
     heap<error>(out var Ꮡerr);
@@ -655,7 +655,7 @@ internal static error handshake(this ж<clientHandshakeState> Ꮡhs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsServerChoseAnˢ = "tls: server chose an unconfigured cipher suite"u8;
+internal static readonly @string tlsServerChoseAnˢ = "tls: server chose an unconfigured cipher suite"u8;
 
 [GoRecv] internal static error pickCipherSuite(this ref clientHandshakeState hs) {
     {
@@ -679,8 +679,8 @@ private static readonly @string tlsServerChoseAnˢ = "tls: server chose an uncon
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsReceivedUnexpectedˢ = "tls: received unexpected CertificateStatus message"u8;
-private static readonly @string tlsServerSIdentityˢ = "tls: server's identity changed during renegotiation"u8;
+internal static readonly @string tlsReceivedUnexpectedˢ = "tls: received unexpected CertificateStatus message"u8;
+internal static readonly @string tlsServerSIdentityˢ = "tls: server's identity changed during renegotiation"u8;
 
 internal static error doFullHandshake(this ж<clientHandshakeState> Ꮡhs) {
     ref var hs = ref Ꮡhs.Value;
@@ -891,12 +891,12 @@ internal static error doFullHandshake(this ж<clientHandshakeState> Ꮡhs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsServerSelectedˢ = "tls: server selected unsupported compression format"u8;
-private static readonly @string tlsInitialHandshakeHadˢ = "tls: initial handshake had non-empty renegotiation extension"u8;
-private static readonly @string tlsIncorrectˢ = "tls: incorrect renegotiation extension contents"u8;
-private static readonly @string tlsServerResumedASessionˢ = "tls: server resumed a session with a different version"u8;
-private static readonly @string tlsServerResumedASessionˢ2 = "tls: server resumed a session with a different cipher suite"u8;
-private static readonly @string tlsServerResumedASessionˢ3 = "tls: server resumed a session with a different EMS extension"u8;
+internal static readonly @string tlsServerSelectedˢ = "tls: server selected unsupported compression format"u8;
+internal static readonly @string tlsInitialHandshakeHadˢ = "tls: initial handshake had non-empty renegotiation extension"u8;
+internal static readonly @string tlsIncorrectˢ = "tls: incorrect renegotiation extension contents"u8;
+internal static readonly @string tlsServerResumedASessionˢ = "tls: server resumed a session with a different version"u8;
+internal static readonly @string tlsServerResumedASessionˢ2 = "tls: server resumed a session with a different cipher suite"u8;
+internal static readonly @string tlsServerResumedASessionˢ3 = "tls: server resumed a session with a different EMS extension"u8;
 
 [GoRecv] internal static (bool, error) processServerHello(this ref clientHandshakeState hs) {
     var c = hs.c;
@@ -965,9 +965,9 @@ private static readonly @string tlsServerResumedASessionˢ3 = "tls: server resum
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsServerDidNotSelectAnˢ = "tls: server did not select an ALPN protocol"u8;
-private static readonly @string tlsServerAdvertisedˢ = "tls: server advertised unrequested ALPN extension"u8;
-private static readonly @string tlsServerSelectedˢ2 = "tls: server selected unadvertised ALPN protocol"u8;
+internal static readonly @string tlsServerDidNotSelectAnˢ = "tls: server did not select an ALPN protocol"u8;
+internal static readonly @string tlsServerAdvertisedˢ = "tls: server advertised unrequested ALPN extension"u8;
+internal static readonly @string tlsServerSelectedˢ2 = "tls: server selected unadvertised ALPN protocol"u8;
 
 // checkALPN ensure that the server's choice of ALPN protocol is compatible with
 // the protocols that we advertised in the Client Hello.
@@ -991,7 +991,7 @@ internal static error checkALPN(slice<@string> clientProtos, @string serverProto
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsServerSFinishedˢ = "tls: server's Finished message was incorrect"u8;
+internal static readonly @string tlsServerSFinishedˢ = "tls: server's Finished message was incorrect"u8;
 
 internal static error readFinished(this ж<clientHandshakeState> Ꮡhs, slice<byte> @out) {
     ref var hs = ref Ꮡhs.Value;
@@ -1029,7 +1029,7 @@ internal static error readFinished(this ж<clientHandshakeState> Ꮡhs, slice<by
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsServerSentUnrequestedˢ = "tls: server sent unrequested session ticket"u8;
+internal static readonly @string tlsServerSentUnrequestedˢ = "tls: server sent unrequested session ticket"u8;
 
 internal static error readSessionTicket(this ж<clientHandshakeState> Ꮡhs) {
     ref var hs = ref Ꮡhs.Value;

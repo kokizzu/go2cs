@@ -95,8 +95,8 @@ public static void Attrs(this Record r, Func<Attr, bool> f) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bugˢ = "!BUG"u8;
-private static readonly @string addAttrsUnsafelyCalledOnˢ = "AddAttrs unsafely called on copy of Record made without using Record.Clone"u8;
+internal static readonly @string bugˢ = "!BUG"u8;
+internal static readonly @string addAttrsUnsafelyCalledOnˢ = "AddAttrs unsafely called on copy of Record made without using Record.Clone"u8;
 
 // AddAttrs appends the given Attrs to the [Record]'s list of Attrs.
 // It omits empty groups.
@@ -210,9 +210,9 @@ internal static (Attr, slice<any>) argsToAttr(slice<any> args) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string functionˢ = "function"u8;
-private static readonly @string fileˢ = "file"u8;
-private static readonly @string lineˢ = "line"u8;
+internal static readonly @string functionˢ = "function"u8;
+internal static readonly @string fileˢ = "file"u8;
+internal static readonly @string lineˢ = "line"u8;
 
 // group returns the non-zero fields of s as a slice of attrs.
 // It is similar to a LogValue method, but we don't want Source

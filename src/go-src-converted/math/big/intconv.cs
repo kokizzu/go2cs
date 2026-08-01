@@ -11,7 +11,7 @@ using io = io_package;
 partial class big_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "<nil>"u8;
+internal static readonly @string nilˢ = "<nil>"u8;
 
 // Text returns the string representation of x in the given base.
 // Base must be between 2 and 62, inclusive. The result uses the
@@ -286,7 +286,7 @@ internal static error UnreadByte(this byteReader r) {
 internal static fmt.Scanner _ᴛ5ʗ = new ΔIntжScanner(intOne); // *Int must implement fmt.Scanner
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string intScanInvalidVerbˢ = "Int.Scan: invalid verb"u8;
+internal static readonly @string intScanInvalidVerbˢ = "Int.Scan: invalid verb"u8;
 
 // Scan is a support routine for [fmt.Scanner]; it sets z to the value of
 // the scanned number. It accepts the formats 'b' (binary), 'o' (octal),

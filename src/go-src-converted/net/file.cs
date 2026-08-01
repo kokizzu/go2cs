@@ -10,7 +10,7 @@ partial class net_package {
 [GoType("@string")] partial struct fileAddr;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fileNetˢ = "file+net"u8;
+internal static readonly @string fileNetˢ = "file+net"u8;
 
 // BUG(mikio): On JS and Windows, the FileConn, FileListener and
 // FilePacketConn functions are not implemented.

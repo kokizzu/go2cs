@@ -40,9 +40,9 @@ partial class runtime_package {
 internal static uintptr traceRegionAllocBlockData => /* 64<<10 - unsafe.Sizeof(traceRegionAllocBlockHeader{}) */ 65520;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string traceRegionAllocTooLargeˢ = "traceRegion: alloc too large"u8;
-private static readonly @string traceRegionAllocWithˢ = "traceRegion: alloc with concurrent drop"u8;
-private static readonly @string traceRegionOutOfMemoryˢ = "traceRegion: out of memory"u8;
+internal static readonly @string traceRegionAllocTooLargeˢ = "traceRegion: alloc too large"u8;
+internal static readonly @string traceRegionAllocWithˢ = "traceRegion: alloc with concurrent drop"u8;
+internal static readonly @string traceRegionOutOfMemoryˢ = "traceRegion: out of memory"u8;
 
 // alloc allocates n-byte block. The block is always aligned to 8 bytes, regardless of platform.
 internal static ж<notInHeap> alloc(this ж<traceRegionAlloc> Ꮡa, uintptr n) {
@@ -79,7 +79,7 @@ internal static ж<notInHeap> alloc(this ж<traceRegionAlloc> Ꮡa, uintptr n) {
         a.full = block;
     }
     // Allocate a new block.
-    block = (ж<traceRegionAllocBlock>)(uintptr)(sysAlloc(@unsafe.Sizeof(new traceRegionAllocBlock(nil)), Ꮡmemstats.of(mstats.Ꮡother_sys)));
+    block = (ж<traceRegionAllocBlock>)(uintptr)(sysAlloc(/* unsafe.Sizeof(traceRegionAllocBlock{}) */ (uintptr)65536, Ꮡmemstats.of(mstats.Ꮡother_sys)));
     if (block == nil) {
         @throw(traceRegionOutOfMemoryˢ);
     }
@@ -104,11 +104,11 @@ internal static void drop(this ж<traceRegionAlloc> Ꮡa) {
     while (a.full != nil) {
         var block = a.full;
         a.full = block.Value.next;
-        sysFree(new @unsafe.Pointer(block), @unsafe.Sizeof(new traceRegionAllocBlock(nil)), Ꮡmemstats.of(mstats.Ꮡother_sys));
+        sysFree(new @unsafe.Pointer(block), /* unsafe.Sizeof(traceRegionAllocBlock{}) */ (uintptr)65536, Ꮡmemstats.of(mstats.Ꮡother_sys));
     }
     {
         @unsafe.Pointer current = (uintptr)Ꮡa.of(traceRegionAlloc.Ꮡcurrent).Load(); if (current != nil) {
-            sysFree(current, @unsafe.Sizeof(new traceRegionAllocBlock(nil)), Ꮡmemstats.of(mstats.Ꮡother_sys));
+            sysFree(current, /* unsafe.Sizeof(traceRegionAllocBlock{}) */ (uintptr)65536, Ꮡmemstats.of(mstats.Ꮡother_sys));
             Ꮡa.of(traceRegionAlloc.Ꮡcurrent).Store(nil);
         }
     }

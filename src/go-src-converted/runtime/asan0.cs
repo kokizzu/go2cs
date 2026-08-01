@@ -12,7 +12,7 @@ partial class runtime_package {
 internal const bool asanenabled = false;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string asanˢ = "asan"u8;
+internal static readonly @string asanˢ = "asan"u8;
 
 // Because asanenabled is false, none of these functions should be called.
 internal static void asanread(@unsafe.Pointer addr, uintptr sz) {

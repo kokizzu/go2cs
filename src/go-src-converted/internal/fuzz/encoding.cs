@@ -162,12 +162,12 @@ internal static (slice<any>, error) unmarshalCorpusFile(slice<byte> b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testˢ = "(test)"u8;
-private static readonly @string infˢ = "-Inf"u8;
-private static readonly @string infˢ2 = "+Inf"u8;
-private static readonly @string naNˢ = "NaN"u8;
-private static readonly @string uint32ˢ = "uint32"u8;
-private static readonly @string uint64ˢ = "uint64"u8;
+internal static readonly @string testˢ = "(test)"u8;
+internal static readonly @string infˢ = "-Inf"u8;
+internal static readonly @string infˢ2 = "+Inf"u8;
+internal static readonly @string naNˢ = "NaN"u8;
+internal static readonly @string uint32ˢ = "uint32"u8;
+internal static readonly @string uint64ˢ = "uint64"u8;
 
 internal static (any, error) parseCorpusValue(slice<byte> line) {
     var fs = token.NewFileSet();

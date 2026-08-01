@@ -47,12 +47,12 @@ public static InvalidReason CANotAuthorizedForExtKeyUsage => 9;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509CertificateIsNotˢ = "x509: certificate is not authorized to sign other certificates"u8;
-private static readonly @string x509TooManyIntermediatesˢ = "x509: too many intermediates for path length constraint"u8;
-private static readonly @string x509CertificateSpecifiesˢ = "x509: certificate specifies an incompatible key usage"u8;
-private static readonly @string x509IssuerNameDoesNotˢ = "x509: issuer name does not match subject from issuing certificate"u8;
-private static readonly @string x509IssuerHasNameˢ = "x509: issuer has name constraints but leaf doesn't have a SAN extension"u8;
-private static readonly @string x509UnknownErrorˢ = "x509: unknown error"u8;
+internal static readonly @string x509CertificateIsNotˢ = "x509: certificate is not authorized to sign other certificates"u8;
+internal static readonly @string x509TooManyIntermediatesˢ = "x509: too many intermediates for path length constraint"u8;
+internal static readonly @string x509CertificateSpecifiesˢ = "x509: certificate specifies an incompatible key usage"u8;
+internal static readonly @string x509IssuerNameDoesNotˢ = "x509: issuer name does not match subject from issuing certificate"u8;
+internal static readonly @string x509IssuerHasNameˢ = "x509: issuer has name constraints but leaf doesn't have a SAN extension"u8;
+internal static readonly @string x509UnknownErrorˢ = "x509: unknown error"u8;
 
 public static @string Error(this CertificateInvalidError e) {
     var exprᴛ1 = e.Reason;
@@ -95,7 +95,7 @@ public static @string Error(this CertificateInvalidError e) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509CertificateReliesOnˢ = "x509: certificate relies on legacy Common Name field, use SANs instead"u8;
+internal static readonly @string x509CertificateReliesOnˢ = "x509: certificate relies on legacy Common Name field, use SANs instead"u8;
 
 public static @string Error(this HostnameError h) {
     var c = h.Certificate;
@@ -137,7 +137,7 @@ public static @string Error(this HostnameError h) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509CertificateSignedByˢ = "x509: certificate signed by unknown authority"u8;
+internal static readonly @string x509CertificateSignedByˢ = "x509: certificate signed by unknown authority"u8;
 
 public static @string Error(this UnknownAuthorityError e) {
     @string s = x509CertificateSignedByˢ;
@@ -161,7 +161,7 @@ public static @string Error(this UnknownAuthorityError e) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509FailedToLoadSystemˢ = "x509: failed to load system roots and no roots provided"u8;
+internal static readonly @string x509FailedToLoadSystemˢ = "x509: failed to load system roots and no roots provided"u8;
 
 public static @string Error(this SystemRootsError se) {
     @string msg = x509FailedToLoadSystemˢ;
@@ -524,11 +524,11 @@ internal static error checkNameConstraints(this ж<Certificate> Ꮡc, ж<nint> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509InternalErrorEmptyˢ = "x509: internal error: empty chain when appending CA cert"u8;
-private static readonly @string emailAddressˢ = "email address"u8;
-private static readonly @string dnsNameˢ = "DNS name"u8;
-private static readonly @string uriˢ = "URI"u8;
-private static readonly @string ipAddressˢ = "IP address"u8;
+internal static readonly @string x509InternalErrorEmptyˢ = "x509: internal error: empty chain when appending CA cert"u8;
+internal static readonly @string emailAddressˢ = "email address"u8;
+internal static readonly @string dnsNameˢ = "DNS name"u8;
+internal static readonly @string uriˢ = "URI"u8;
+internal static readonly @string ipAddressˢ = "IP address"u8;
 
 // isValid performs validity checks on c given that it is a candidate to append
 // to the chain in currentChain.
@@ -716,11 +716,12 @@ internal static error isValid(this ж<Certificate> Ꮡc, nint certType, slice<ж
 // Certificates other than c in the returned chains should not be modified.
 //
 // WARNING: this function doesn't do any revocation checking.
-public static (slice<slice<ж<Certificate>>> chains, error err) Verify(this ж<Certificate> Ꮡc, VerifyOptions opts) {
+public static (slice<slice<ж<Certificate>>> chains, error err) Verify(this ж<Certificate> Ꮡc, VerifyOptions optsʗp) {
     slice<slice<ж<Certificate>>> chains = default!;
     error err = default!;
 
     ref var c = ref Ꮡc.Value;
+    ref var opts = ref heap(optsʗp, out var Ꮡopts);
     // Platform-specific verification needs the ASN.1 contents so
     // this makes the behavior consistent across platforms.
     if (builtin.len(c.Raw) == 0) {
@@ -741,10 +742,10 @@ public static (slice<slice<ж<Certificate>>> chains, error err) Verify(this ж<C
         // i.e. if SetFallbackRoots was called with x509usefallbackroots=1.
         var systemPool = systemRootsPool();
         if (opts.Roots == nil && (systemPool == nil || (~systemPool).systemPool)) {
-            return Ꮡc.systemVerify(Ꮡ(opts));
+            return Ꮡc.systemVerify(Ꮡopts);
         }
         if (opts.Roots != nil && (~opts.Roots).systemPool) {
-            var (platformChains, errΔ2) = Ꮡc.systemVerify(Ꮡ(opts));
+            var (platformChains, errΔ2) = Ꮡc.systemVerify(Ꮡopts);
             // If the platform verifier succeeded, or there are no additional
             // roots, return the platform verifier result. Otherwise, continue
             // with the Go verifier.
@@ -759,7 +760,7 @@ public static (slice<slice<ж<Certificate>>> chains, error err) Verify(this ж<C
             return (default!, new SystemRootsError(systemRootsErr));
         }
     }
-    err = Ꮡc.isValid(leafCertificate, default!, Ꮡ(opts));
+    err = Ꮡc.isValid(leafCertificate, default!, Ꮡopts);
     if (err != default!) {
         return (chains, err);
     }
@@ -773,7 +774,7 @@ public static (slice<slice<ж<Certificate>>> chains, error err) Verify(this ж<C
     if (opts.Roots.contains(Ꮡc)){
         candidateChains = new slice<ж<Certificate>>[]{new ж<Certificate>[]{Ꮡc}.slice()}.slice();
     } else {
-        (candidateChains, err) = Ꮡc.buildChains(new ж<Certificate>[]{Ꮡc}.slice(), nil, Ꮡ(opts));
+        (candidateChains, err) = Ꮡc.buildChains(new ж<Certificate>[]{Ꮡc}.slice(), nil, Ꮡopts);
         if (err != default!) {
             return (default!, err);
         }
@@ -866,7 +867,7 @@ internal static bool alreadyInChain(ж<Certificate> Ꮡcandidate, slice<ж<Certi
 internal static UntypedInt maxChainSignatureChecks => 100;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509SignatureCheckˢ = "x509: signature check attempts limit reached while verifying certificate chain"u8;
+internal static readonly @string x509SignatureCheckˢ = "x509: signature check attempts limit reached while verifying certificate chain"u8;
 
 internal static (slice<slice<ж<Certificate>>> chains, error err) buildChains(this ж<Certificate> Ꮡc, slice<ж<Certificate>> currentChain, ж<nint> ᏑsigChecks, ж<VerifyOptions> Ꮡopts) {
     slice<slice<ж<Certificate>>> chains = default!;

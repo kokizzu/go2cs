@@ -119,7 +119,7 @@ internal static (@string, error) lookExtensions(@string path, @string dir) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pathextˢ = @"PATHEXT"u8;
+internal static readonly @string pathextˢ = @"PATHEXT"u8;
 
 internal static slice<@string> pathExt() {
     slice<@string> exts = default!;
@@ -143,8 +143,8 @@ internal static slice<@string> pathExt() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noDefaultCurrentDirectoryInExePathˢ = "NoDefaultCurrentDirectoryInExePath"u8;
-private static readonly @string pathˢ = "path"u8;
+internal static readonly @string noDefaultCurrentDirectoryInExePathˢ = "NoDefaultCurrentDirectoryInExePath"u8;
+internal static readonly @string pathˢ = "path"u8;
 
 // lookPath implements LookPath for the given PATHEXT list.
 internal static (@string, error) lookPath(@string @file, slice<@string> exts) {

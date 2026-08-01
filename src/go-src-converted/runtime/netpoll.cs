@@ -244,8 +244,8 @@ internal static bool poll_runtime_isPollServerDescriptor(uintptr fd) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeBlockedWriteOnˢ = "runtime: blocked write on free polldesc"u8;
-private static readonly @string runtimeBlockedReadOnFreeˢ = "runtime: blocked read on free polldesc"u8;
+internal static readonly @string runtimeBlockedWriteOnˢ = "runtime: blocked write on free polldesc"u8;
+internal static readonly @string runtimeBlockedReadOnFreeˢ = "runtime: blocked read on free polldesc"u8;
 
 //go:linkname poll_runtime_pollOpen internal/poll.runtime_pollOpen
 internal static (ж<pollDesc>, nint) poll_runtime_pollOpen(uintptr fd) {
@@ -284,9 +284,9 @@ internal static (ж<pollDesc>, nint) poll_runtime_pollOpen(uintptr fd) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeClosePolldescWOˢ = "runtime: close polldesc w/o unblock"u8;
-private static readonly @string runtimeBlockedWriteOnˢ2 = "runtime: blocked write on closing polldesc"u8;
-private static readonly @string runtimeBlockedReadOnˢ = "runtime: blocked read on closing polldesc"u8;
+internal static readonly @string runtimeClosePolldescWOˢ = "runtime: close polldesc w/o unblock"u8;
+internal static readonly @string runtimeBlockedWriteOnˢ2 = "runtime: blocked write on closing polldesc"u8;
+internal static readonly @string runtimeBlockedReadOnˢ = "runtime: blocked read on closing polldesc"u8;
 
 //go:linkname poll_runtime_pollClose internal/poll.runtime_pollClose
 internal static void poll_runtime_pollClose(ж<pollDesc> Ꮡpd) {
@@ -470,7 +470,7 @@ internal static void poll_runtime_pollSetDeadline(ж<pollDesc> Ꮡpd, int64 d, n
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeUnblockOnClosingˢ = "runtime: unblock on closing polldesc"u8;
+internal static readonly @string runtimeUnblockOnClosingˢ = "runtime: unblock on closing polldesc"u8;
 
 //go:linkname poll_runtime_pollUnblock internal/poll.runtime_pollUnblock
 internal static void poll_runtime_pollUnblock(ж<pollDesc> Ꮡpd) {
@@ -574,8 +574,8 @@ internal static void netpollgoready(ж<g> Ꮡgp, nint traceskip) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeDoubleWaitˢ = "runtime: double wait"u8;
-private static readonly @string runtimeCorruptedPolldescˢ = "runtime: corrupted polldesc"u8;
+internal static readonly @string runtimeDoubleWaitˢ = "runtime: double wait"u8;
+internal static readonly @string runtimeCorruptedPolldescˢ = "runtime: corrupted polldesc"u8;
 
 // returns true if IO is ready, or false if timed out or closed
 // waitio - wait only for completed IO, ignore errors
@@ -657,8 +657,8 @@ internal static ж<g> netpollunblock(ж<pollDesc> Ꮡpd, int32 mode, bool ioread
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeInconsistentReadˢ = "runtime: inconsistent read deadline"u8;
-private static readonly @string runtimeInconsistentWriteˢ = "runtime: inconsistent write deadline"u8;
+internal static readonly @string runtimeInconsistentReadˢ = "runtime: inconsistent read deadline"u8;
+internal static readonly @string runtimeInconsistentWriteˢ = "runtime: inconsistent write deadline"u8;
 
 internal static void netpolldeadlineimpl(ж<pollDesc> Ꮡpd, uintptr seq, bool read, bool write) {
     ref var pd = ref Ꮡpd.Value;

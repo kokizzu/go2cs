@@ -87,7 +87,7 @@ internal static bool isClosedChan(/*<-*/channel<EmptyStruct> c) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pipeˢ = "pipe"u8;
+internal static readonly @string pipeˢ = "pipe"u8;
 
 internal static @string Network(this pipeAddr _) {
     return pipeˢ;

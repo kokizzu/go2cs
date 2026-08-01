@@ -125,11 +125,11 @@ public static @string String(this ж<ΔSignature> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeParameterˢ = "type parameter"u8;
-private static readonly @string functionBodyTempScopeˢ = "function body (temp. scope)"u8;
-private static readonly @string methodHasMultipleˢ = "method has multiple receivers"u8;
-private static readonly @string unsafePointerˢ = "unsafe.Pointer"u8;
-private static readonly @string pointerOrInterfaceTypeˢ = "pointer or interface type"u8;
+internal static readonly @string typeParameterˢ = "type parameter"u8;
+internal static readonly @string functionBodyTempScopeˢ = "function body (temp. scope)"u8;
+internal static readonly @string methodHasMultipleˢ = "method has multiple receivers"u8;
+internal static readonly @string unsafePointerˢ = "unsafe.Pointer"u8;
+internal static readonly @string pointerOrInterfaceTypeˢ = "pointer or interface type"u8;
 
 // ----------------------------------------------------------------------------
 // Implementation
@@ -326,8 +326,8 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string anonymousParameterˢ = "anonymous parameter"u8;
-private static readonly @string listContainsBothNamedAndˢ = "list contains both named and anonymous parameters"u8;
+internal static readonly @string anonymousParameterˢ = "anonymous parameter"u8;
+internal static readonly @string listContainsBothNamedAndˢ = "list contains both named and anonymous parameters"u8;
 
 // collectParams declares the parameters of list in scope and returns the corresponding
 // variable list.

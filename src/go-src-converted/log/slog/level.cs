@@ -47,10 +47,10 @@ public static ΔLevel LevelWarn => 4;
 public static ΔLevel LevelError => 8;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string debugˢ = "DEBUG"u8;
-private static readonly @string infoˢ = "INFO"u8;
-private static readonly @string warnˢ = "WARN"u8;
-private static readonly @string errorˢ = "ERROR"u8;
+internal static readonly @string debugˢ = "DEBUG"u8;
+internal static readonly @string infoˢ = "INFO"u8;
+internal static readonly @string warnˢ = "WARN"u8;
+internal static readonly @string errorˢ = "ERROR"u8;
 
 // String returns a name for the level.
 // If the level has a name, then that name
@@ -122,7 +122,7 @@ public static error UnmarshalText(this ж<ΔLevel> Ꮡl, slice<byte> data) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownNameˢ = "unknown name"u8;
+internal static readonly @string unknownNameˢ = "unknown name"u8;
 
 internal static error /*err*/ parse(this ж<ΔLevel> Ꮡl, @string s) {
     error err = default!;

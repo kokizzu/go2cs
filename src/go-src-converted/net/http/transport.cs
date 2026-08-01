@@ -522,9 +522,9 @@ internal static @string validateHeaders(ΔHeader hdrs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpNilRequestHeaderˢ = "http: nil Request.Header"u8;
-private static readonly @string unsupportedProtocolˢ = "unsupported protocol scheme"u8;
-private static readonly @string httpNoHostInRequestUrlˢ = "http: no Host in request URL"u8;
+internal static readonly @string httpNilRequestHeaderˢ = "http: nil Request.Header"u8;
+internal static readonly @string unsupportedProtocolˢ = "unsupported protocol scheme"u8;
+internal static readonly @string httpNoHostInRequestUrlˢ = "http: no Host in request URL"u8;
 
 // roundTrip implements a RoundTripper over HTTP.
 internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<Request> Ꮡreq) {
@@ -1295,8 +1295,8 @@ internal static ж<net.Dialer> ᏑzeroDialer = new(default(net.Dialer));
 internal static ref net.Dialer zeroDialer => ref ᏑzeroDialer.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string netHttpTransportˢ = "net/http: Transport.DialContext hook returned (nil, nil)"u8;
-private static readonly @string netHttpTransportDialHookˢ = "net/http: Transport.Dial hook returned (nil, nil)"u8;
+internal static readonly @string netHttpTransportˢ = "net/http: Transport.DialContext hook returned (nil, nil)"u8;
+internal static readonly @string netHttpTransportDialHookˢ = "net/http: Transport.Dial hook returned (nil, nil)"u8;
 
 [GoRecv] internal static (net.Conn, error) dial(this ref Transport t, context.Context ctx, @string network, @string addr) {
     if (t.DialContext != default!) {
@@ -1496,7 +1496,7 @@ internal static void cancel(this ж<wantConn> Ꮡw, ж<Transport> Ꮡt, error er
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string netHttpTransportDialTLSˢ = "net/http: Transport.DialTLS or DialTLSContext returned (nil, nil)"u8;
+internal static readonly @string netHttpTransportDialTLSˢ = "net/http: Transport.DialTLS or DialTLSContext returned (nil, nil)"u8;
 
 [GoRecv] internal static (net.Conn conn, error err) customDialTLS(this ref Transport t, context.Context ctx, @string network, @string addr) {
     net.Conn conn = default!;
@@ -1800,8 +1800,8 @@ internal static void decConnsPerHost(this ж<Transport> Ꮡt, connectMethodKey k
 internal static Func<context.Context, time.Duration, (context.Context, Action)> testHookProxyConnectTimeout = context_package.WithTimeout;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string proxyAuthorizationˢ = "Proxy-Authorization"u8;
-private static readonly @string unknownStatusCodeˢ = "unknown status code"u8;
+internal static readonly @string proxyAuthorizationˢ = "Proxy-Authorization"u8;
+internal static readonly @string unknownStatusCodeˢ = "unknown status code"u8;
 
 internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> Ꮡt, context.Context ctx, connectMethod cm) {
     ж<persistConn> pconn = default!;
@@ -2573,7 +2573,7 @@ internal static bool is408Message(slice<byte> buf) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string netHttpTooMany1xxˢ = "net/http: too many 1xx informational responses"u8;
+internal static readonly @string netHttpTooMany1xxˢ = "net/http: too many 1xx informational responses"u8;
 
 // readResponse reads an HTTP response (or two, in the case of "Expect:
 // 100-continue") from the server. It returns the final non-100 one.
@@ -2788,7 +2788,8 @@ internal static void writeLoop(this ж<persistConn> Ꮡpc) => func((defer, recov
 //
 // In tests, we set this to a large value to avoid flakiness from inconsistent
 // recycling of connections.
-internal static time.Duration maxWriteWaitBeforeConnReuse = 50 * time.Millisecond;
+internal static ж<time.Duration> ᏑmaxWriteWaitBeforeConnReuse = new(50 * time.Millisecond);
+internal static ref time.Duration maxWriteWaitBeforeConnReuse => ref ᏑmaxWriteWaitBeforeConnReuse.Value;
 
 // wroteRequest is a check before recycling a connection that the previous write
 // (from writeLoop above) happened and was successful.
@@ -2907,11 +2908,13 @@ internal static void nop() {
 }
 
 // testHooks. Always non-nil.
-internal static Action testHookEnterRoundTrip = nop;
+internal static ж<Action> ᏑtestHookEnterRoundTrip = new(nop);
+internal static ref Action testHookEnterRoundTrip => ref ᏑtestHookEnterRoundTrip.ValueSlot;
 
 internal static Action testHookWaitResLoop = nop;
 
-internal static Action testHookRoundTripRetried = nop;
+internal static ж<Action> ᏑtestHookRoundTripRetried = new(nop);
+internal static ref Action testHookRoundTripRetried => ref ᏑtestHookRoundTripRetried.ValueSlot;
 
 internal static Action testHookPrePendingDial = nop;
 
@@ -3286,7 +3289,7 @@ internal static bool Temporary(this tlsHandshakeTimeoutError _) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string netHttpTlsHandshakeˢ = "net/http: TLS handshake timeout"u8;
+internal static readonly @string netHttpTlsHandshakeˢ = "net/http: TLS handshake timeout"u8;
 
 internal static @string Error(this tlsHandshakeTimeoutError _) {
     return netHttpTlsHandshakeˢ;

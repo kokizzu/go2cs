@@ -169,7 +169,7 @@ public static error DeadlineExceeded = new deadlineExceededError(nil);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string contextDeadlineExceededˢ = "context deadline exceeded"u8;
+internal static readonly @string contextDeadlineExceededˢ = "context deadline exceeded"u8;
 
 internal static @string Error(this deadlineExceededError _) {
     return contextDeadlineExceededˢ;
@@ -212,7 +212,7 @@ internal static any Value(this emptyCtx _, any key) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string contextBackgroundˢ = "context.Background"u8;
+internal static readonly @string contextBackgroundˢ = "context.Background"u8;
 
 internal static @string String(this backgroundCtx _) {
     return contextBackgroundˢ;
@@ -223,7 +223,7 @@ internal static @string String(this backgroundCtx _) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string contextTodoˢ = "context.TODO"u8;
+internal static readonly @string contextTodoˢ = "context.TODO"u8;
 
 internal static @string String(this todoCtx _) {
     return contextTodoˢ;
@@ -799,7 +799,7 @@ public static Context WithValue(Context parent, any key, any val) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "<nil>"u8;
+internal static readonly @string nilˢ = "<nil>"u8;
 
 // stringify tries a bit to stringify v, without using fmt, since we don't
 // want context depending on the unicode tables. This is only used by

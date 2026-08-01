@@ -284,7 +284,7 @@ internal static (@string rel, bool ok) hasSubdir(@string root, @string dir) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string srcˢ = "src"u8;
+internal static readonly @string srcˢ = "src"u8;
 
 // SrcDirs returns a list of package source root directories.
 // It draws from the current Go root and Go path but omits directories
@@ -314,9 +314,9 @@ public static ref Context Default => ref ᏑDefault.Value;
 internal static void initᴛDefault() { Default = defaultContext(); }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string homeˢ = "HOME"u8;
-private static readonly @string userprofileˢ = "USERPROFILE"u8;
-private static readonly @string homeˢ2 = "home"u8;
+internal static readonly @string homeˢ = "HOME"u8;
+internal static readonly @string userprofileˢ = "USERPROFILE"u8;
+internal static readonly @string homeˢ2 = "home"u8;
 
 // Keep consistent with cmd/go/internal/cfg.defaultGOPATH.
 internal static @string defaultGOPATH() {
@@ -364,8 +364,8 @@ public static slice<@string> defaultToolTags;
 public static slice<@string> defaultReleaseTags;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gopathˢ = "GOPATH"u8;
-private static readonly @string cgoEnabledˢ = "CGO_ENABLED"u8;
+internal static readonly @string gopathˢ = "GOPATH"u8;
+internal static readonly @string cgoEnabledˢ = "CGO_ENABLED"u8;
 
 internal static Context defaultContext() {
     Context c = default!;
@@ -553,19 +553,19 @@ internal static @string nameExt(@string name) {
 internal static ж<godebug.Setting> installgoroot = godebug.New("installgoroot"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testdataˢ = "/testdata/"u8;
-private static readonly @string testdataˢ2 = "/testdata"u8;
-private static readonly @string testdataˢ3 = "testdata/"u8;
-private static readonly @string srcˢ2 = "src/"u8;
-private static readonly @string vendorˢ = "vendor"u8;
-private static readonly @string vendorˢ2 = "vendor/"u8;
-private static readonly @string sVendorTreeˢ = "\t%s (vendor tree)"u8;
-private static readonly @string sFromGopathˢ = "\t%s (from $GOPATH)"u8;
-private static readonly @string pkgˢ = "pkg"u8;
-private static readonly @string binˢ = "bin"u8;
-private static readonly @string testGoˢ = "_test.go"u8;
-private static readonly @string testˢ = "_test"u8;
-private static readonly @string cgoˢ = "cgo"u8;
+internal static readonly @string testdataˢ = "/testdata/"u8;
+internal static readonly @string testdataˢ2 = "/testdata"u8;
+internal static readonly @string testdataˢ3 = "testdata/"u8;
+internal static readonly @string srcˢ2 = "src/"u8;
+internal static readonly @string vendorˢ = "vendor"u8;
+internal static readonly @string vendorˢ2 = "vendor/"u8;
+internal static readonly @string sVendorTreeˢ = "\t%s (vendor tree)"u8;
+internal static readonly @string sFromGopathˢ = "\t%s (from $GOPATH)"u8;
+internal static readonly @string pkgˢ = "pkg"u8;
+internal static readonly @string binˢ = "bin"u8;
+internal static readonly @string testGoˢ = "_test.go"u8;
+internal static readonly @string testˢ = "_test"u8;
+internal static readonly @string cgoˢ = "cgo"u8;
 
 [GoType("dyn")] partial struct Import_tried {
     internal slice<@string> vendor;
@@ -1159,10 +1159,10 @@ internal static slice<@string> uniq(slice<@string> list) {
 internal static error errNoModules = errors.New("not using modules"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string go111moduleˢ = "GO111MODULE"u8;
-private static readonly @string goModˢ = "go.mod"u8;
-private static readonly @string listˢ = "list"u8;
-private static readonly @string fDirImportPathRootGorootˢ = "-f={{.Dir}}\n{{.ImportPath}}\n{{.Root}}\n{{.Goroot}}\n{{if .Error}}{{.Error}}{{end}}\n"u8;
+internal static readonly @string go111moduleˢ = "GO111MODULE"u8;
+internal static readonly @string goModˢ = "go.mod"u8;
+internal static readonly @string listˢ = "list"u8;
+internal static readonly @string fDirImportPathRootGorootˢ = "-f={{.Dir}}\n{{.ImportPath}}\n{{.Root}}\n{{.Goroot}}\n{{if .Error}}{{.Error}}{{end}}\n"u8;
 
 // importGo checks whether it can use the go command to find the directory for path.
 // If using the go command is not appropriate, importGo returns errNoModules.
@@ -1863,7 +1863,7 @@ internal static error saveCgo(this ж<Context> Ꮡctxt, @string filename, ж<Pac
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string srcdirˢ = "${SRCDIR}"u8;
+internal static readonly @string srcdirˢ = "${SRCDIR}"u8;
 
 // expandSrcDir expands any occurrence of ${SRCDIR}, making sure
 // the result is safe for the shell.
@@ -1941,8 +1941,8 @@ internal static bool safeCgoName(@string s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unclosedQuoteˢ = "unclosed quote"u8;
-private static readonly @string unfinishedEscapingˢ = "unfinished escaping"u8;
+internal static readonly @string unclosedQuoteˢ = "unclosed quote"u8;
+internal static readonly @string unfinishedEscapingˢ = "unfinished escaping"u8;
 
 // splitQuoted splits the string s around each instance of one or more consecutive
 // white space characters while taking into account quotes and escaping, and
@@ -2042,7 +2042,7 @@ internal static bool eval(this ж<Context> Ꮡctxt, constraint.Expr x, map<@stri
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goexperimentBoringcryptoˢ = "goexperiment.boringcrypto"u8;
+internal static readonly @string goexperimentBoringcryptoˢ = "goexperiment.boringcrypto"u8;
 
 // matchTag reports whether the name is one of:
 //
@@ -2164,7 +2164,7 @@ public static bool IsLocalImport(@string path) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string architectureLetterNoˢ = "architecture letter no longer used"u8;
+internal static readonly @string architectureLetterNoˢ = "architecture letter no longer used"u8;
 
 // ArchChar returns "?" and an error.
 // In earlier versions of Go, the returned string was used to derive

@@ -178,16 +178,16 @@ internal static uintptr physHugePageSize;
 internal static nuint physHugePageShift;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badTinySizeClassˢ = "bad TinySizeClass"u8;
-private static readonly @string heapArenaBitmapWordsNotAˢ = "heapArenaBitmapWords not a power of 2"u8;
-private static readonly @string failedToGetSystemPageˢ = "failed to get system page size"u8;
-private static readonly @string badSystemPageSizeˢ = "bad system page size"u8;
-private static readonly @string badSystemHugePageSizeˢ = "bad system huge page size"u8;
-private static readonly @string badPagesPerSpanRootˢ = "bad pagesPerSpanRoot"u8;
-private static readonly @string badˢ = "bad pagesPerReclaimerChunk"u8;
-private static readonly @string minSizeOfMallocHeaderIsˢ = "min size of malloc header is not a size class boundary"u8;
-private static readonly @string maxPointerScanBitmapSizeˢ = "max pointer/scan bitmap size for headerless objects is too large"u8;
-private static readonly @string taggedPointerbitsTooˢ = "taggedPointerbits too small"u8;
+internal static readonly @string badTinySizeClassˢ = "bad TinySizeClass"u8;
+internal static readonly @string heapArenaBitmapWordsNotAˢ = "heapArenaBitmapWords not a power of 2"u8;
+internal static readonly @string failedToGetSystemPageˢ = "failed to get system page size"u8;
+internal static readonly @string badSystemPageSizeˢ = "bad system page size"u8;
+internal static readonly @string badSystemHugePageSizeˢ = "bad system huge page size"u8;
+internal static readonly @string badPagesPerSpanRootˢ = "bad pagesPerSpanRoot"u8;
+internal static readonly @string badˢ = "bad pagesPerReclaimerChunk"u8;
+internal static readonly @string minSizeOfMallocHeaderIsˢ = "min size of malloc header is not a size class boundary"u8;
+internal static readonly @string maxPointerScanBitmapSizeˢ = "max pointer/scan bitmap size for headerless objects is too large"u8;
+internal static readonly @string taggedPointerbitsTooˢ = "taggedPointerbits too small"u8;
 
 internal static void mallocinit() {
     if (class_to_size[_TinySizeClass] != _TinySize) {
@@ -440,16 +440,16 @@ internal static void mallocinit() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tooManyAddressSpaceˢ = "too many address space collisions for -race mode"u8;
-private static readonly @string regionExceedsUintptrˢ = "region exceeds uintptr range"u8;
-private static readonly @string baseOutsideUsableAddressˢ = "base outside usable address space"u8;
-private static readonly @string endOutsideUsableAddressˢ = "end outside usable address space"u8;
-private static readonly @string memoryReservationExceedsˢ = "memory reservation exceeds address space limit"u8;
-private static readonly @string misroundedAllocationInˢ = "misrounded allocation in sysAlloc"u8;
-private static readonly @string outOfMemoryAllocatingˢ = "out of memory allocating heap arena map"u8;
-private static readonly @string arenaAlreadyInitializedˢ = "arena already initialized"u8;
-private static readonly @string outOfMemoryAllocatingˢ2 = "out of memory allocating heap arena metadata"u8;
-private static readonly @string outOfMemoryAllocatingˢ3 = "out of memory allocating allArenas"u8;
+internal static readonly @string tooManyAddressSpaceˢ = "too many address space collisions for -race mode"u8;
+internal static readonly @string regionExceedsUintptrˢ = "region exceeds uintptr range"u8;
+internal static readonly @string baseOutsideUsableAddressˢ = "base outside usable address space"u8;
+internal static readonly @string endOutsideUsableAddressˢ = "end outside usable address space"u8;
+internal static readonly @string memoryReservationExceedsˢ = "memory reservation exceeds address space limit"u8;
+internal static readonly @string misroundedAllocationInˢ = "misrounded allocation in sysAlloc"u8;
+internal static readonly @string outOfMemoryAllocatingˢ = "out of memory allocating heap arena map"u8;
+internal static readonly @string arenaAlreadyInitializedˢ = "arena already initialized"u8;
+internal static readonly @string outOfMemoryAllocatingˢ2 = "out of memory allocating heap arena metadata"u8;
+internal static readonly @string outOfMemoryAllocatingˢ3 = "out of memory allocating allArenas"u8;
 
 // sysAlloc allocates heap arena space for at least n bytes. The
 // returned pointer is always heapArenaBytes-aligned and backed by
@@ -584,14 +584,14 @@ mapped:
             // is paged in is too expensive. Trying to account for the whole region means
             // that it will appear like an enormous memory overhead in statistics, even though
             // it is not.
-            l2 = (ж<array<ж<heapArena>>>)(uintptr)(sysAllocOS(@unsafe.Sizeof(l2.Value)));
+            l2 = (ж<array<ж<heapArena>>>)(uintptr)(sysAllocOS(/* unsafe.Sizeof(*l2) */ (uintptr)8388608));
             if (l2 == nil) {
                 @throw(outOfMemoryAllocatingˢ);
             }
             if (h.arenasHugePages){
-                sysHugePage(new @unsafe.Pointer(l2), @unsafe.Sizeof(l2.Value));
+                sysHugePage(new @unsafe.Pointer(l2), /* unsafe.Sizeof(*l2) */ (uintptr)8388608);
             } else {
-                sysNoHugePage(new @unsafe.Pointer(l2), @unsafe.Sizeof(l2.Value));
+                sysNoHugePage(new @unsafe.Pointer(l2), /* unsafe.Sizeof(*l2) */ (uintptr)8388608);
             }
             atomic.StorepNoWB(@unsafe.Pointer.FromRef(ref (Ꮡ(h.arenas, (int)(ri.l1()))).Value), new @unsafe.Pointer(l2));
         }
@@ -599,9 +599,9 @@ mapped:
             @throw(arenaAlreadyInitializedˢ);
         }
         ж<heapArena> r = default!;
-        r = (ж<heapArena>)(uintptr)(h.heapArenaAlloc.alloc(@unsafe.Sizeof(r.Value), goarch.PtrSize, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
+        r = (ж<heapArena>)(uintptr)(h.heapArenaAlloc.alloc(/* unsafe.Sizeof(*r) */ (uintptr)4304, goarch.PtrSize, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
         if (r == nil) {
-            r = (ж<heapArena>)(uintptr)(persistentalloc(@unsafe.Sizeof(r.Value), goarch.PtrSize, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
+            r = (ж<heapArena>)(uintptr)(persistentalloc(/* unsafe.Sizeof(*r) */ (uintptr)4304, goarch.PtrSize, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
             if (r == nil) {
                 @throw(outOfMemoryAllocatingˢ2);
             }
@@ -644,7 +644,7 @@ break_mapped:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string failedToAllocateAlignedˢ = "failed to allocate aligned heap memory; too many retries"u8;
+internal static readonly @string failedToAllocateAlignedˢ = "failed to allocate aligned heap memory; too many retries"u8;
 
 // sysReserveAligned is like sysReserve, but the returned pointer is
 // aligned to align bytes. It may reserve either n or n+align bytes,
@@ -734,7 +734,7 @@ internal static void enableMetadataHugePages(this ж<mheap> Ꮡh) {
         if (l2 == nil) {
             continue;
         }
-        sysHugePage(new @unsafe.Pointer(l2), @unsafe.Sizeof(l2.Value));
+        sysHugePage(new @unsafe.Pointer(l2), /* unsafe.Sizeof(*l2) */ (uintptr)8388608);
     }
 }
 
@@ -766,9 +766,9 @@ internal static gclinkptr nextFreeFast(ж<mspan> Ꮡs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sAllocCountSNelemsˢ = "s.allocCount != s.nelems && freeIndex == s.nelems"u8;
-private static readonly @string freeIndexIsNotValidˢ = "freeIndex is not valid"u8;
-private static readonly @string sAllocCountSNelemsˢ2 = "s.allocCount > s.nelems"u8;
+internal static readonly @string sAllocCountSNelemsˢ = "s.allocCount != s.nelems && freeIndex == s.nelems"u8;
+internal static readonly @string freeIndexIsNotValidˢ = "freeIndex is not valid"u8;
+internal static readonly @string sAllocCountSNelemsˢ2 = "s.allocCount > s.nelems"u8;
 
 // nextFree returns the next free object from the cached span if one is available.
 // Otherwise it refills the cache with a span with an available object and
@@ -811,7 +811,7 @@ private static readonly @string sAllocCountSNelemsˢ2 = "s.allocCount > s.nelems
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mallocgcCalledWithˢ = "mallocgc called with gcphase == _GCmarktermination"u8;
+internal static readonly @string mallocgcCalledWithˢ = "mallocgc called with gcphase == _GCmarktermination"u8;
 
 // Allocate an object of size bytes.
 // Small objects are allocated from the per-P cache's free lists.
@@ -1298,7 +1298,7 @@ internal static @unsafe.Pointer reflect_unsafe_NewArray(ж<_type> Ꮡtyp, nint n
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string profileallocCalledˢ = "profilealloc called without a P or outside bootstrapping"u8;
+internal static readonly @string profileallocCalledˢ = "profilealloc called without a P or outside bootstrapping"u8;
 
 internal static void profilealloc(ж<m> Ꮡmp, @unsafe.Pointer x, uintptr size) {
     var c = getMCache(Ꮡmp);
@@ -1423,10 +1423,10 @@ internal static @unsafe.Pointer persistentalloc(uintptr size, uintptr align, ж<
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string persistentallocSize0ˢ = "persistentalloc: size == 0"u8;
-private static readonly @string persistentallocAlignIsˢ = "persistentalloc: align is not a power of 2"u8;
-private static readonly @string persistentallocAlignIsˢ2 = "persistentalloc: align is too large"u8;
-private static readonly @string runtimeCannotAllocateˢ = "runtime: cannot allocate memory"u8;
+internal static readonly @string persistentallocSize0ˢ = "persistentalloc: size == 0"u8;
+internal static readonly @string persistentallocAlignIsˢ = "persistentalloc: align is not a power of 2"u8;
+internal static readonly @string persistentallocAlignIsˢ2 = "persistentalloc: align is too large"u8;
+internal static readonly @string runtimeCannotAllocateˢ = "runtime: cannot allocate memory"u8;
 
 // Must run on system stack because stack growth can (re)invoke it.
 // See issue 9174.

@@ -12,7 +12,7 @@ partial class runtime_package {
 //go:linkname coverage_getCovCounterList internal/coverage/cfile.getCovCounterList
 internal static slice<rtcov.CovCounterBlob> coverage_getCovCounterList() {
     var res = new rtcov.CovCounterBlob[]{}.slice();
-    var u32sz = @unsafe.Sizeof((uint32)0);
+    var u32sz = /* unsafe.Sizeof(uint32(0)) */ (uintptr)4;
     for (var datap = Ꮡfirstmoduledata; datap != nil; datap = datap.Value.next) {
         if ((~datap).covctrs == (~datap).ecovctrs) {
             continue;

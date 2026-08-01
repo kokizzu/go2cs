@@ -34,11 +34,13 @@ internal static ref atomic.Value logger => ref Ꮡlogger.Value;
 
 // SetLogger sets the test logger implementation for the current process.
 // It must be called only once, at process startup.
-public static void SetLogger(Interface impl) {
+public static void SetLogger(Interface implʗp) {
+    ref var impl = ref heap(implʗp, out var Ꮡimpl);
+
     if (Ꮡlogger.Load() != default!) {
         throw panic("testlog: SetLogger must be called only once");
     }
-    Ꮡlogger.Store(Ꮡ(impl));
+    Ꮡlogger.Store(Ꮡimpl);
 }
 
 // Logger returns the current test logger implementation.

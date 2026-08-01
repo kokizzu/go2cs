@@ -731,7 +731,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     if (n > 20) {
         n = 20;
     }
-    var @as = new slice<Resource>(0, n);
+    var @as = new slice<Resource>(0, () => new(), n);
     while (ᐧ) {
         var (a, err) = p.Answer();
         if (AreEqual(err, ErrSectionDone)) {
@@ -787,7 +787,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     if (n > 10) {
         n = 10;
     }
-    var @as = new slice<Resource>(0, n);
+    var @as = new slice<Resource>(0, () => new(), n);
     while (ᐧ) {
         var (a, err) = p.Authority();
         if (AreEqual(err, ErrSectionDone)) {
@@ -843,7 +843,7 @@ internal static map<section, @string> sectionNames = new map<section, @string>{
     if (n > 10) {
         n = 10;
     }
-    var @as = new slice<Resource>(0, n);
+    var @as = new slice<Resource>(0, () => new(), n);
     while (ᐧ) {
         var (a, err) = p.Additional();
         if (AreEqual(err, ErrSectionDone)) {
@@ -2419,7 +2419,7 @@ internal static (ResourceBody, nint, error) unpackResourceBody(slice<byte> msg, 
     }
 
     if (err != default!) {
-        return (default!, off, new nestedErrorжerror(Ꮡ(new nestedError(name + " record", err))));
+        return (default!, off, new nestedErrorжerror(Ꮡ(new nestedError(name + " record"u8, err))));
     }
     return (r, off + (nint)hdr.Length, default!);
 }

@@ -143,8 +143,8 @@ internal static slice<byte> bytes(this ж<Point> Ꮡv, ж<array<byte>> Ꮡbuf) {
 internal static ж<field.Element> feOne = @new<field.Element>().One();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string edwards25519InvalidPointˢ = "edwards25519: invalid point encoding length"u8;
-private static readonly @string edwards25519InvalidPointˢ2 = "edwards25519: invalid point encoding"u8;
+internal static readonly @string edwards25519InvalidPointˢ = "edwards25519: invalid point encoding length"u8;
+internal static readonly @string edwards25519InvalidPointˢ2 = "edwards25519: invalid point encoding"u8;
 
 // SetBytes sets v = x, where x is a 32-byte encoding of v. If x does not
 // represent a valid point on the curve, SetBytes returns nil and an error and

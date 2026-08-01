@@ -59,7 +59,7 @@ internal static UntypedInt wbBufEntries => 512;
 internal static UntypedInt wbMaxEntriesPerCall => 8;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badWriteBarrierBufferˢ = "bad write barrier buffer bounds"u8;
+internal static readonly @string badWriteBarrierBufferˢ = "bad write barrier buffer bounds"u8;
 
 // reset empties b by resetting its next and end pointers.
 [GoRecv] internal static void reset(this ref wbBuf b) {
@@ -71,9 +71,9 @@ private static readonly @string badWriteBarrierBufferˢ = "bad write barrier buf
         // immediate flush and delayed flush cases.
         b.end = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(b.buf, wbMaxEntriesPerCall + 1)).Value);
     } else {
-        b.end = start + (uintptr)len(b.buf) * @unsafe.Sizeof(b.buf[0]);
+        b.end = start + (uintptr)len(b.buf) * /* unsafe.Sizeof(b.buf[0]) */ (uintptr)8;
     }
-    if ((b.end - b.next) % @unsafe.Sizeof(b.buf[0]) != 0) {
+    if ((b.end - b.next) % /* unsafe.Sizeof(b.buf[0]) */ (uintptr)8 != 0) {
         @throw(badWriteBarrierBufferˢ);
     }
 }
@@ -181,7 +181,7 @@ internal static void wbBufFlush1(ж<Δp> Ꮡpp) {
 
     // Get the buffered pointers.
     var start = (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡpp.of(runtime_package.Δp.ᏑwbBuf).at(wbBuf.Ꮡbuf, 0)).Value);
-    var n = (pp.wbBuf.next - start) / @unsafe.Sizeof(pp.wbBuf.buf[0]);
+    var n = (pp.wbBuf.next - start) / /* unsafe.Sizeof(pp.wbBuf.buf[0]) */ (uintptr)8;
     var ptrs = pp.wbBuf.buf[..(int)(n)];
     // Poison the buffer to make extra sure nothing is enqueued
     // while we're processing the buffer.

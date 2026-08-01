@@ -756,7 +756,7 @@ internal static void fmtPointer(this ж<pp> Ꮡp, reflectꓸValue value, rune ve
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string methodˢ = " method: "u8;
+internal static readonly @string methodˢ = " method: "u8;
 
 internal static void catchPanic(this ж<pp> Ꮡp, any arg, rune verb, @string method) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -796,10 +796,10 @@ internal static void catchPanic(this ж<pp> Ꮡp, any arg, rune verb, @string me
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string formatˢ = "Format"u8;
-private static readonly @string goStringˢ = "GoString"u8;
-private static readonly @string errorˢ = "Error"u8;
-private static readonly @string stringˢ = "String"u8;
+internal static readonly @string formatˢ = "Format"u8;
+internal static readonly @string goStringˢ = "GoString"u8;
+internal static readonly @string errorˢ = "Error"u8;
+internal static readonly @string stringˢ = "String"u8;
 
 internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
     bool handled = default!;
@@ -868,7 +868,7 @@ internal static bool /*handled*/ handleMethods(this ж<pp> Ꮡp, rune verb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string byteˢ = "[]byte"u8;
+internal static readonly @string byteˢ = "[]byte"u8;
 
 internal static void printArg(this ж<pp> Ꮡp, any arg, rune verb) {
     ref var p = ref Ꮡp.Value;

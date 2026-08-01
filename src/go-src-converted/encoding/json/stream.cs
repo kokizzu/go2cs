@@ -265,7 +265,7 @@ public static (slice<byte>, error) MarshalJSON(this RawMessage m) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string jsonRawMessageˢ = "json.RawMessage: UnmarshalJSON on nil pointer"u8;
+internal static readonly @string jsonRawMessageˢ = "json.RawMessage: UnmarshalJSON on nil pointer"u8;
 
 // UnmarshalJSON sets *m to a copy of data.
 public static error UnmarshalJSON(this ж<RawMessage> Ꮡm, slice<byte> data) {
@@ -462,11 +462,11 @@ public static (ΔToken, error) Token(this ж<Decoder> Ꮡdec) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lookingForBeginningOfˢ3 = " looking for beginning of value"u8;
-private static readonly @string afterArrayElementˢ2 = " after array element"u8;
-private static readonly @string lookingForBeginningOfˢ4 = " looking for beginning of object key string"u8;
-private static readonly @string afterObjectKeyˢ2 = " after object key"u8;
-private static readonly @string afterObjectKeyValuePairˢ2 = " after object key:value pair"u8;
+internal static readonly @string lookingForBeginningOfˢ3 = " looking for beginning of value"u8;
+internal static readonly @string afterArrayElementˢ2 = " after array element"u8;
+internal static readonly @string lookingForBeginningOfˢ4 = " looking for beginning of object key string"u8;
+internal static readonly @string afterObjectKeyˢ2 = " after object key"u8;
+internal static readonly @string afterObjectKeyValuePairˢ2 = " after object key:value pair"u8;
 
 [GoRecv] internal static (ΔToken, error) tokenError(this ref Decoder dec, byte c) {
     @string context = default!;
@@ -490,7 +490,7 @@ private static readonly @string afterObjectKeyValuePairˢ2 = " after object key:
         context = afterObjectKeyValuePairˢ2;
     }
 
-    return (default!, new SyntaxErrorжerror(Ꮡ(new SyntaxError("invalid character " + quoteChar(c) + context, dec.InputOffset()))));
+    return (default!, new SyntaxErrorжerror(Ꮡ(new SyntaxError("invalid character "u8 + quoteChar(c) + context, dec.InputOffset()))));
 }
 
 // More reports whether there is another element in the

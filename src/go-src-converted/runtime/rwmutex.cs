@@ -97,7 +97,7 @@ internal static void rlock(this ж<rwmutex> Ꮡrw) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runlockOfUnlockedRwmutexˢ = "runlock of unlocked rwmutex"u8;
+internal static readonly @string runlockOfUnlockedRwmutexˢ = "runlock of unlocked rwmutex"u8;
 
 // runlock undoes a single rlock call on rw.
 internal static void runlock(this ж<rwmutex> Ꮡrw) {
@@ -147,7 +147,7 @@ internal static void @lock(this ж<rwmutex> Ꮡrw) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unlockOfUnlockedRwmutexˢ = "unlock of unlocked rwmutex"u8;
+internal static readonly @string unlockOfUnlockedRwmutexˢ = "unlock of unlocked rwmutex"u8;
 
 // unlock unlocks rw for writing.
 internal static void unlock(this ж<rwmutex> Ꮡrw) {

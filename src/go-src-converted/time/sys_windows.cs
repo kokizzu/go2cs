@@ -33,7 +33,7 @@ internal static void closefd(uintptr fd) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string shortReadˢ = "short read"u8;
+internal static readonly @string shortReadˢ = "short read"u8;
 
 internal static error preadn(uintptr fd, slice<byte> buf, nint off) {
     nint whence = seekStart;

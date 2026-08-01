@@ -119,7 +119,7 @@ partial class comment_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string hdrˢ = "hdr-"u8;
+internal static readonly @string hdrˢ = "hdr-"u8;
 
 // DefaultID returns the default anchor ID for the heading h.
 //

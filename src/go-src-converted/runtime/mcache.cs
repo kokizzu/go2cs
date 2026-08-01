@@ -136,9 +136,9 @@ internal static ж<mcache> getMCache(ж<m> Ꮡmp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string refillOfSpanWithFreeˢ = "refill of span with free space remaining"u8;
-private static readonly @string badSweepgenInRefillˢ = "bad sweepgen in refill"u8;
-private static readonly @string spanHasNoFreeSpaceˢ = "span has no free space"u8;
+internal static readonly @string refillOfSpanWithFreeˢ = "refill of span with free space remaining"u8;
+internal static readonly @string badSweepgenInRefillˢ = "bad sweepgen in refill"u8;
+internal static readonly @string spanHasNoFreeSpaceˢ = "span has no free space"u8;
 
 // refill acquires a new span of span class spc for c. This span will
 // have at least one free object. The current span in c must be full.
@@ -284,7 +284,7 @@ private static readonly @string spanHasNoFreeSpaceˢ = "span has no free space"u
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badFlushGenˢ = "bad flushGen"u8;
+internal static readonly @string badFlushGenˢ = "bad flushGen"u8;
 
 // prepareForSweep flushes c if the system has entered a new sweep phase
 // since c was populated. This must happen between the sweep phase

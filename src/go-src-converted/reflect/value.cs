@@ -306,15 +306,16 @@ public static bool CanSet(this ΔValue v) {
 
 // go2cs generated this placeholder — func CallSlice is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static bool callGC; // for testing; see TestCallMethodJump and TestCallArgLive
+internal static ж<bool> ᏑcallGC = new(default(bool));
+internal static ref bool callGC => ref ᏑcallGC.Value; // for testing; see TestCallMethodJump and TestCallArgLive
 
 internal const bool debugReflectCall = false;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string reflectValueCallˢ = "reflect.Value.Call"u8;
-private static readonly @string precomputedStackArgˢ = "precomputed stack arg offset"u8;
-private static readonly @string precomputedValueOffsetˢ = "precomputed value offset"u8;
-private static readonly @string tvSize0ˢ = "tv.Size() != 0"u8;
+internal static readonly @string reflectValueCallˢ = "reflect.Value.Call"u8;
+internal static readonly @string precomputedStackArgˢ = "precomputed stack arg offset"u8;
+internal static readonly @string precomputedValueOffsetˢ = "precomputed value offset"u8;
+internal static readonly @string tvSize0ˢ = "tv.Size() != 0"u8;
 
 internal static slice<ΔValue> call(this ΔValue v, @string op, slice<ΔValue> @in) {
     // Get function pointer, type.
@@ -386,7 +387,7 @@ internal static slice<ΔValue> call(this ΔValue v, @string op, slice<ΔValue> @
             Δslice.Index(i).Set(x);
         }
         var origIn = @in;
-        @in = new slice<ΔValue>(n + 1);
+        @in = new slice<ΔValue>(n + 1, () => new(nil));
         copy(@in[..(int)(n)], origIn);
         @in[n] = Δslice;
     }
@@ -538,7 +539,7 @@ break_stepsLoop:;
             typedmemclrpartial(frametype, stackArgs, 0, abid.retOffset);
         }
         // Wrap Values around return values in args.
-        ret = new slice<ΔValue>(nout);
+        ret = new slice<ΔValue>(nout, () => new(nil));
         for (nint i = 0; i < nout; i++) {
             var tv = t.Out(i);
             if (tv.Size() == 0) {
@@ -612,9 +613,9 @@ break_stepsLoop:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typSize0ˢ = "typ.size > 0"u8;
-private static readonly @string ptrˢ = "1-ptr"u8;
-private static readonly @string reflectMakeFuncˢ = "reflect.MakeFunc"u8;
+internal static readonly @string typSize0ˢ = "typ.size > 0"u8;
+internal static readonly @string ptrˢ = "1-ptr"u8;
+internal static readonly @string reflectMakeFuncˢ = "reflect.MakeFunc"u8;
 
 // callReflect is the call implementation used by a function
 // returned by MakeFunc. In many ways it is the opposite of the
@@ -654,7 +655,7 @@ internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame
     var (_, _, abid) = funcLayout(ftyp, nil);
     // Copy arguments into Values.
     @unsafe.Pointer ptr = frame;
-    var @in = new slice<ΔValue>(0, (nint)(~ftyp).InCount);
+    var @in = new slice<ΔValue>(0, () => new(nil), (nint)(~ftyp).InCount);
     foreach (var (i, typ) in ftyp.InSlice()) {
         if (typ.Size() == 0) {
             @in = builtin.append(@in, Zero(new rtypeжΔType(toRType(typ))));
@@ -888,10 +889,10 @@ internal static uintptr align(uintptr x, uintptr n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string callˢ = "call"u8;
-private static readonly @string precomputedStackOffsetˢ = "precomputed stack offset"u8;
-private static readonly @string valueFrameSSizeRetOffsetˢ = "valueFrame's size > retOffset"u8;
-private static readonly @string methodFrameSSizeˢ = "methodFrame's size > retOffset"u8;
+internal static readonly @string callˢ = "call"u8;
+internal static readonly @string precomputedStackOffsetˢ = "precomputed stack offset"u8;
+internal static readonly @string valueFrameSSizeRetOffsetˢ = "valueFrame's size > retOffset"u8;
+internal static readonly @string methodFrameSSizeˢ = "methodFrame's size > retOffset"u8;
 
 // callMethod is the call implementation used by a function returned
 // by makeMethodValue (used by v.Method(i).Interface()).
@@ -1122,11 +1123,13 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string closureˢ = "closure"u8;
+internal static readonly @string closureˢ = "closure"u8;
 
 // funcName returns the name of f, for use in error messages.
-internal static @string funcName(Func<slice<ΔValue>, slice<ΔValue>> f) {
-    var pc = ~Ꮡ(f).Reinterpret<Func<slice<ΔValue>, slice<ΔValue>>, uintptr>();
+internal static @string funcName(Func<slice<ΔValue>, slice<ΔValue>> fʗp) {
+    ref var f = ref heap(fʗp, out var Ꮡf);
+
+    var pc = ~Ꮡf.Reinterpret<Func<slice<ΔValue>, slice<ΔValue>>, uintptr>();
     var rf = Δruntime.FuncForPC(pc);
     if (rf != nil) {
         return rf.Name();
@@ -1541,13 +1544,15 @@ internal static nint lenNonSlice(this ΔValue v) {
 internal static ж<abi.Type> stringType = rtypeOf((@string)""u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string reflectValueMapIndexˢ = "reflect.Value.MapIndex"u8;
+internal static readonly @string reflectValueMapIndexˢ = "reflect.Value.MapIndex"u8;
 
 // MapIndex returns the value associated with key in the map v.
 // It panics if v's Kind is not [Map].
 // It returns the zero Value if key is not found in the map or if v represents a nil map.
 // As in Go, the key's value must be assignable to the map's key type.
-public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
+public static ΔValue MapIndex(this ΔValue v, ΔValue keyʗp) {
+    ref var key = ref heap(keyʗp, out var Ꮡkey);
+
     v.mustBe(Map);
     var tt = v.typ().Reinterpret<abi.Type, mapType>();
     // Do not require key to be exported, so that DeepEqual
@@ -1567,7 +1572,7 @@ public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
         if ((flag)(key.flag & flagIndir) != 0){
             k = key.ptr;
         } else {
-            k = @unsafe.Pointer.FromRef(ref (Ꮡ(key).of(reflect_package.ΔValue.Ꮡptr)).Value);
+            k = @unsafe.Pointer.FromRef(ref (Ꮡkey.of(reflect_package.ΔValue.Ꮡptr)).Value);
         }
         e = (uintptr)mapaccess(v.typ(), (uintptr)v.pointer(), k);
     }
@@ -1596,7 +1601,7 @@ public static slice<ΔValue> MapKeys(this ΔValue v) {
     }
     ref var it = ref heap(new hiter(), out var Ꮡit);
     mapiterinit(v.typ(), m, Ꮡit);
-    var a = new slice<ΔValue>(mlen);
+    var a = new slice<ΔValue>(mlen, () => new(nil));
     nint i = default!;
     for (i = 0; i < len(a); i++) {
         @unsafe.Pointer key = (uintptr)mapiterkey(Ꮡit);
@@ -1648,7 +1653,7 @@ public static slice<ΔValue> MapKeys(this ΔValue v) {
 // go2cs generated this placeholder — func Key is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string reflectMapIterSetKeyˢ = "reflect.MapIter.SetKey"u8;
+internal static readonly @string reflectMapIterSetKeyˢ = "reflect.MapIter.SetKey"u8;
 
 // SetIterKey assigns to v the key of iter's current map entry.
 // It is equivalent to v.Set(iter.Key()), but it avoids allocating a new Value.
@@ -1681,7 +1686,7 @@ public static void SetIterKey(this ΔValue v, ж<MapIter> Ꮡiter) {
 // go2cs generated this placeholder — func Value is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string reflectMapIterSetValueˢ = "reflect.MapIter.SetValue"u8;
+internal static readonly @string reflectMapIterSetValueˢ = "reflect.MapIter.SetValue"u8;
 
 // SetIterValue assigns to v the value of iter's current map entry.
 // It is equivalent to v.Set(iter.Value()), but it avoids allocating a new Value.
@@ -1947,13 +1952,14 @@ public static void Send(this ΔValue v, ΔValue x) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string reflectValueSendˢ = "reflect.Value.Send"u8;
+internal static readonly @string reflectValueSendˢ = "reflect.Value.Send"u8;
 
 // internal send, possibly non-blocking.
 // v is known to be a channel.
-internal static bool /*selected*/ send(this ΔValue v, ΔValue x, bool nb) {
+internal static bool /*selected*/ send(this ΔValue v, ΔValue xʗp, bool nb) {
     bool selected = default!;
 
+    ref var x = ref heap(xʗp, out var Ꮡx);
     var tt = v.typ().Reinterpret<abi.Type, chanType>();
     if ((ΔChanDir)(((ΔChanDir)(nint)(~tt).Dir) & SendDir) == 0) {
         throw panic("reflect: send on recv-only channel");
@@ -1964,7 +1970,7 @@ internal static bool /*selected*/ send(this ΔValue v, ΔValue x, bool nb) {
     if ((flag)(x.flag & flagIndir) != 0){
         p = x.ptr;
     } else {
-        p = @unsafe.Pointer.FromRef(ref (Ꮡ(x).of(reflect_package.ΔValue.Ꮡptr)).Value);
+        p = @unsafe.Pointer.FromRef(ref (Ꮡx.of(reflect_package.ΔValue.Ꮡptr)).Value);
     }
     return chansend((uintptr)v.pointer(), p, nb);
 }
@@ -2036,7 +2042,7 @@ public static void SetPointer(this ΔValue v, @unsafe.Pointer x) {
 // go2cs generated this placeholder — func Slice is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string iKCapˢ = "i < k <= cap"u8;
+internal static readonly @string iKCapˢ = "i < k <= cap"u8;
 
 // Reinterpret as *unsafeheader.Slice to edit.
 // do not advance pointer, to avoid pointing beyond end of slice
@@ -2094,7 +2100,7 @@ public static ΔValue Slice3(this ΔValue v, nint i, nint j, nint k) {
 // go2cs generated this placeholder — func String is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidValueˢ = "<invalid Value>"u8;
+internal static readonly @string invalidValueˢ = "<invalid Value>"u8;
 
 // stringNonString is split out to keep String inlineable for string kinds.
 internal static @string stringNonString(this ΔValue v) {
@@ -2244,7 +2250,7 @@ internal static void typesMustMatch(@string what, ΔType t1, ΔType t2) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string iLenˢ = "i < len"u8;
+internal static readonly @string iLenˢ = "i < len"u8;
 
 // arrayAt returns the i-th element of p,
 // an array whose elements are eltSize bytes wide.
@@ -2345,7 +2351,7 @@ public static ΔValue Append(ΔValue s, params ꓸꓸꓸValue xʗp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string reflectAppendSliceˢ = "reflect.AppendSlice"u8;
+internal static readonly @string reflectAppendSliceˢ = "reflect.AppendSlice"u8;
 
 // AppendSlice appends a slice t to a slice s and returns the resulting slice.
 // The slices s and t must have the same element type.
@@ -2361,7 +2367,7 @@ public static ΔValue AppendSlice(ΔValue s, ΔValue t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string reflectCopyˢ = "reflect.Copy"u8;
+internal static readonly @string reflectCopyˢ = "reflect.Copy"u8;
 
 // Copy copies the contents of src into dst until either
 // dst has been filled or src has been exhausted.
@@ -2473,7 +2479,7 @@ public static SelectDir SelectDefault => 3; // default
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string reflectSelectˢ = "reflect.Select"u8;
+internal static readonly @string reflectSelectˢ = "reflect.Select"u8;
 
 // Select executes a select operation described by the list of cases.
 // Like the Go select statement, it blocks until at least one of the cases
@@ -3273,8 +3279,10 @@ internal static void mapassign(ж<abi.Type> Ꮡt, @unsafe.Pointer m, @unsafe.Poi
 //go:noescape
 internal static partial void mapassign_faststr0(ж<abi.Type> t, @unsafe.Pointer m, @string key, @unsafe.Pointer val);
 
-internal static void mapassign_faststr(ж<abi.Type> Ꮡt, @unsafe.Pointer m, @string key, @unsafe.Pointer val) {
-    contentEscapes((Ꮡ(key).Reinterpret<@string, unsafeheader.String>()).Value.Data);
+internal static void mapassign_faststr(ж<abi.Type> Ꮡt, @unsafe.Pointer m, @string keyʗp, @unsafe.Pointer val) {
+    ref var key = ref heap(keyʗp, out var Ꮡkey);
+
+    contentEscapes((Ꮡkey.Reinterpret<@string, unsafeheader.String>()).Value.Data);
     contentEscapes(val);
     mapassign_faststr0(Ꮡt, m, key, val);
 }

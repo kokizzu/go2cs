@@ -61,8 +61,8 @@ public static (slice<byte>, error) GobEncode(this ж<Float> Ꮡx) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string floatGobDecodeBufferTooˢ = "Float.GobDecode: buffer too small"u8;
-private static readonly @string floatGobDecodeBufferTooˢ2 = "Float.GobDecode: buffer too small for finite form float"u8;
+internal static readonly @string floatGobDecodeBufferTooˢ = "Float.GobDecode: buffer too small"u8;
+internal static readonly @string floatGobDecodeBufferTooˢ2 = "Float.GobDecode: buffer too small for finite form float"u8;
 
 // GobDecode implements the [encoding/gob.GobDecoder] interface.
 // The result is rounded per the precision and rounding mode of

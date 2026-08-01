@@ -54,7 +54,7 @@ internal static partial void runtime_notifyListCheck(uintptr size);
 
 [GoInit] internal static void initΔ1() {
     notifyList n = default!;
-    runtime_notifyListCheck(@unsafe.Sizeof(n));
+    runtime_notifyListCheck(/* unsafe.Sizeof(n) */ (uintptr)32);
 }
 
 // Active spinning runtime support.

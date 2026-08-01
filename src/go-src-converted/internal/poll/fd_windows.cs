@@ -42,7 +42,7 @@ internal static void checkSetFileCompletionNotificationModes() {
     protos = new int32[]{Δsyscall.IPPROTO_TCP, 0}.array();
     ref var buf = ref heap(new array<Δsyscall.WSAProtocolInfo>(32, () => new()), out var Ꮡbuf);
     ref var len = ref heap<uint32>(out var Ꮡlen);
-    len = (uint32)@unsafe.Sizeof(buf);
+    len = (uint32)/* unsafe.Sizeof(buf) */ (uintptr)20096;
     (var n, err) = Δsyscall.WSAEnumProtocols(Ꮡprotos.at<int32>(0), Ꮡbuf.at<Δsyscall.WSAProtocolInfo>(0), Ꮡlen);
     if (err != default!) {
         return;
@@ -147,7 +147,7 @@ internal static void InitMsg(this ж<operation> Ꮡo, slice<byte> p, slice<byte>
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string internalErrorPollingOnˢ = "internal error: polling on unsupported descriptor type"u8;
+internal static readonly @string internalErrorPollingOnˢ = "internal error: polling on unsupported descriptor type"u8;
 
 // execIO executes a single IO operation o. It submits and cancels
 // IO in the current thread for systems where Windows CancelIoEx API
@@ -274,10 +274,11 @@ internal static fileKind kindConsole => 2;
 internal static fileKind kindPipe => 3;
 
 // logInitFD is set by tests to enable file descriptor initialization logging.
-internal static Action<@string, ж<FD>, error> logInitFD;
+internal static ж<Action<@string, ж<FD>, error>> ᏑlogInitFD = new(default(Action<@string, ж<FD>, error>));
+internal static ref Action<@string, ж<FD>, error> logInitFD => ref ᏑlogInitFD.ValueSlot;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string wsaioctlˢ = "wsaioctl"u8;
+internal static readonly @string wsaioctlˢ = "wsaioctl"u8;
 
 // Init initializes the FD. The Sysfd field should already be set.
 // This can be called multiple times on a single FD.
@@ -350,7 +351,7 @@ public static (@string, error) Init(this ж<FD> Ꮡfd, @string net, bool pollabl
         ret = (uint32)0;
         ref var flag = ref heap<uint32>(out var Ꮡflag);
         flag = (uint32)0;
-        var size = (uint32)@unsafe.Sizeof(flag);
+        var size = (uint32)/* unsafe.Sizeof(flag) */ (uintptr)4;
         var errΔ3 = Δsyscall.WSAIoctl(fd.Sysfd, Δsyscall.SIO_UDP_CONNRESET, Ꮡflag.Reinterpret<uint32, byte>(), size, nil, 0, Ꮡret, nil, 0);
         if (errΔ3 != default!) {
             return (wsaioctlˢ, errΔ3);
@@ -603,7 +604,7 @@ public static (nint, syscallꓸSockaddr, error) ReadFrom(this ж<FD> Ꮡfd, slic
         if ((~oΔ1).rsa == nil) {
             oΔ1.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
         }
-        oΔ1.Value.rsan = (int32)@unsafe.Sizeof((~oΔ1).rsa.Value);
+        oΔ1.Value.rsan = (int32)/* unsafe.Sizeof(*o.rsa) */ (uintptr)116;
         return Δsyscall.WSARecvFrom((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡbuf), 1, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡflags), (~oΔ1).rsa, oΔ1.of(operation.Ꮡrsan), oΔ1.of(operation.Ꮡo), nil);
     });
     err = fd.eofError(n, err);
@@ -636,7 +637,7 @@ public static (nint, error) ReadFromInet4(this ж<FD> Ꮡfd, slice<byte> buf, ж
         if ((~oΔ1).rsa == nil) {
             oΔ1.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
         }
-        oΔ1.Value.rsan = (int32)@unsafe.Sizeof((~oΔ1).rsa.Value);
+        oΔ1.Value.rsan = (int32)/* unsafe.Sizeof(*o.rsa) */ (uintptr)116;
         return Δsyscall.WSARecvFrom((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡbuf), 1, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡflags), (~oΔ1).rsa, oΔ1.of(operation.Ꮡrsan), oΔ1.of(operation.Ꮡo), nil);
     });
     err = fd.eofError(n, err);
@@ -669,7 +670,7 @@ public static (nint, error) ReadFromInet6(this ж<FD> Ꮡfd, slice<byte> buf, ж
         if ((~oΔ1).rsa == nil) {
             oΔ1.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
         }
-        oΔ1.Value.rsan = (int32)@unsafe.Sizeof((~oΔ1).rsa.Value);
+        oΔ1.Value.rsan = (int32)/* unsafe.Sizeof(*o.rsa) */ (uintptr)116;
         return Δsyscall.WSARecvFrom((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡbuf), 1, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡflags), (~oΔ1).rsa, oΔ1.of(operation.Ꮡrsan), oΔ1.of(operation.Ꮡo), nil);
     });
     err = fd.eofError(n, err);
@@ -971,8 +972,8 @@ public static error ConnectEx(this ж<FD> Ꮡfd, syscallꓸSockaddr ra) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string acceptexˢ = "acceptex"u8;
-private static readonly @string setsockoptˢ = "setsockopt"u8;
+internal static readonly @string acceptexˢ = "acceptex"u8;
+internal static readonly @string setsockoptˢ = "setsockopt"u8;
 
 internal static (@string, error) acceptOne(this ж<FD> Ꮡfd, syscallꓸHandle s, slice<Δsyscall.RawSockaddrAny> rawsa, ж<operation> Ꮡo) {
     ref var fd = ref Ꮡfd.Value;
@@ -980,7 +981,7 @@ internal static (@string, error) acceptOne(this ж<FD> Ꮡfd, syscallꓸHandle s
 
     // Submit accept request.
     o.handle = s;
-    o.rsan = (int32)@unsafe.Sizeof(rawsa[0]);
+    o.rsan = (int32)/* unsafe.Sizeof(rawsa[0]) */ (uintptr)116;
     var rawsaʗ1 = rawsa;
     var (_, err) = execIO(Ꮡo, (ж<operation> oΔ1) => AcceptFunc((~(~oΔ1).fd).Sysfd, (~oΔ1).handle, Ꮡ(rawsaʗ1, 0).Reinterpret<Δsyscall.RawSockaddrAny, byte>(), 0, (uint32)(~oΔ1).rsan, (uint32)(~oΔ1).rsan, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo)));
     if (err != default!) {
@@ -988,7 +989,7 @@ internal static (@string, error) acceptOne(this ж<FD> Ꮡfd, syscallꓸHandle s
         return (acceptexˢ, err);
     }
     // Inherit properties of the listening socket.
-    err = Δsyscall.Setsockopt(s, Δsyscall.SOL_SOCKET, Δsyscall.SO_UPDATE_ACCEPT_CONTEXT, Ꮡfd.of(FD.ᏑSysfd).Reinterpret<syscallꓸHandle, byte>(), (int32)@unsafe.Sizeof(fd.Sysfd));
+    err = Δsyscall.Setsockopt(s, Δsyscall.SOL_SOCKET, Δsyscall.SO_UPDATE_ACCEPT_CONTEXT, Ꮡfd.of(FD.ᏑSysfd).Reinterpret<syscallꓸHandle, byte>(), (int32)/* unsafe.Sizeof(fd.Sysfd) */ (uintptr)8);
     if (err != default!) {
         CloseFunc(s);
         return (setsockoptˢ, err);
@@ -1082,7 +1083,7 @@ public static error Fchmod(this ж<FD> Ꮡfd, uint32 mode) => func<error>((defer
     }
     ref var du = ref heap(new windows.FILE_BASIC_INFO(), out var Ꮡdu);
     du.FileAttributes = attrs;
-    return windows.SetFileInformationByHandle(fd.Sysfd, windows.FileBasicInfo, new @unsafe.Pointer(Ꮡdu), (uint32)@unsafe.Sizeof(du));
+    return windows.SetFileInformationByHandle(fd.Sysfd, windows.FileBasicInfo, new @unsafe.Pointer(Ꮡdu), (uint32)/* unsafe.Sizeof(du) */ (uintptr)40);
 });
 
 // Fchdir wraps syscall.Fchdir.
@@ -1183,7 +1184,7 @@ internal static int32 sockaddrInet4ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж
     p.Value[0] = (byte)((sa.Port >> (int)(8)));
     p.Value[1] = (byte)sa.Port;
     raw.Value.Addr = sa.Addr.Clone();
-    return (int32)@unsafe.Sizeof(raw.Value);
+    return (int32)/* unsafe.Sizeof(*raw) */ (uintptr)16;
 }
 
 internal static int32 sockaddrInet6ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж<Δsyscall.SockaddrInet6> Ꮡsa) {
@@ -1198,7 +1199,7 @@ internal static int32 sockaddrInet6ToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж
     p.Value[1] = (byte)sa.Port;
     raw.Value.Scope_id = sa.ZoneId;
     raw.Value.Addr = sa.Addr.Clone();
-    return (int32)@unsafe.Sizeof(raw.Value);
+    return (int32)/* unsafe.Sizeof(*raw) */ (uintptr)28;
 }
 
 internal static void rawToSockaddrInet4(ж<Δsyscall.RawSockaddrAny> Ꮡrsa, ж<Δsyscall.SockaddrInet4> Ꮡsa) {
@@ -1255,7 +1256,7 @@ public static (nint, nint, nint, syscallꓸSockaddr, error) ReadMsg(this ж<FD> 
         o.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
     }
     o.Value.msg.Name = ((Δsyscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer((~o).rsa)));
-    o.Value.msg.Namelen = (int32)@unsafe.Sizeof((~o).rsa.Value);
+    o.Value.msg.Namelen = (int32)/* unsafe.Sizeof(*o.rsa) */ (uintptr)116;
     o.Value.msg.Flags = (uint32)flags;
     var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSARecvMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));
     err = fd.eofError(n, err);
@@ -1285,7 +1286,7 @@ public static (nint, nint, nint, error) ReadMsgInet4(this ж<FD> Ꮡfd, slice<by
         o.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
     }
     o.Value.msg.Name = ((Δsyscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer((~o).rsa)));
-    o.Value.msg.Namelen = (int32)@unsafe.Sizeof((~o).rsa.Value);
+    o.Value.msg.Namelen = (int32)/* unsafe.Sizeof(*o.rsa) */ (uintptr)116;
     o.Value.msg.Flags = (uint32)flags;
     var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSARecvMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));
     err = fd.eofError(n, err);
@@ -1314,7 +1315,7 @@ public static (nint, nint, nint, error) ReadMsgInet6(this ж<FD> Ꮡfd, slice<by
         o.Value.rsa = @new<Δsyscall.RawSockaddrAny>();
     }
     o.Value.msg.Name = ((Δsyscall.Pointer)(ж<EmptyStruct>)(uintptr)(new @unsafe.Pointer((~o).rsa)));
-    o.Value.msg.Namelen = (int32)@unsafe.Sizeof((~o).rsa.Value);
+    o.Value.msg.Namelen = (int32)/* unsafe.Sizeof(*o.rsa) */ (uintptr)116;
     o.Value.msg.Flags = (uint32)flags;
     var (n, err) = execIO(o, (ж<operation> oΔ1) => windows.WSARecvMsg((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡmsg), oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡo), nil));
     err = fd.eofError(n, err);
@@ -1325,7 +1326,7 @@ public static (nint, nint, nint, error) ReadMsgInet6(this ж<FD> Ꮡfd, slice<by
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string packetIsTooLargeOnly1gbˢ = "packet is too large (only 1GB is allowed)"u8;
+internal static readonly @string packetIsTooLargeOnly1gbˢ = "packet is too large (only 1GB is allowed)"u8;
 
 // WriteMsg wraps the WSASendMsg network call.
 public static (nint, nint, error) WriteMsg(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, syscallꓸSockaddr sa) => func<(nint, nint, error)>((defer, recover) => {
@@ -1408,8 +1409,8 @@ public static (nint, nint, error) WriteMsgInet6(this ж<FD> Ꮡfd, slice<byte> p
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string getCurrentProcessˢ = "GetCurrentProcess"u8;
-private static readonly @string duplicateHandleˢ = "DuplicateHandle"u8;
+internal static readonly @string getCurrentProcessˢ = "GetCurrentProcess"u8;
+internal static readonly @string duplicateHandleˢ = "DuplicateHandle"u8;
 
 public static (nint, @string, error) DupCloseOnExec(nint fd) {
     var (proc, err) = Δsyscall.GetCurrentProcess();

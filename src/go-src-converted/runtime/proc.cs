@@ -143,14 +143,14 @@ internal static int64 runtimeInitTime;
 internal static sigset initSigmask;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeMainNotOnM0ˢ = "runtime.main not on m0"u8;
-private static readonly @string nanotimeReturningZeroˢ = "nanotime returning zero"u8;
-private static readonly @string cgoPthreadKeyCreatedˢ = "_cgo_pthread_key_created missing"u8;
-private static readonly @string cgoThreadStartMissingˢ = "_cgo_thread_start missing"u8;
-private static readonly @string cgoSetenvMissingˢ = "_cgo_setenv missing"u8;
-private static readonly @string cgoUnsetenvMissingˢ = "_cgo_unsetenv missing"u8;
-private static readonly @string cgoNotifyRuntimeInitDoneˢ = "_cgo_notify_runtime_init_done missing"u8;
-private static readonly @string setCrosscall2Missingˢ = "set_crosscall2 missing"u8;
+internal static readonly @string runtimeMainNotOnM0ˢ = "runtime.main not on m0"u8;
+internal static readonly @string nanotimeReturningZeroˢ = "nanotime returning zero"u8;
+internal static readonly @string cgoPthreadKeyCreatedˢ = "_cgo_pthread_key_created missing"u8;
+internal static readonly @string cgoThreadStartMissingˢ = "_cgo_thread_start missing"u8;
+internal static readonly @string cgoSetenvMissingˢ = "_cgo_setenv missing"u8;
+internal static readonly @string cgoUnsetenvMissingˢ = "_cgo_unsetenv missing"u8;
+internal static readonly @string cgoNotifyRuntimeInitDoneˢ = "_cgo_notify_runtime_init_done missing"u8;
+internal static readonly @string setCrosscall2Missingˢ = "set_crosscall2 missing"u8;
 
 // The main goroutine.
 internal static void Main() => func((defer, recover) => {
@@ -315,7 +315,7 @@ internal static void runExitHooks(nint code) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string forcegcPhaseErrorˢ = "forcegc: phase error"u8;
+internal static readonly @string forcegcPhaseErrorˢ = "forcegc: phase error"u8;
 
 internal static void forcegchelper() {
     forcegc.g = getg();
@@ -362,7 +362,7 @@ internal static void goschedIfBusy() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goparkBadGStatusˢ = "gopark: bad g status"u8;
+internal static readonly @string goparkBadGStatusˢ = "gopark: bad g status"u8;
 
 // Puts the current goroutine into a waiting state and calls unlockf on the
 // system stack.
@@ -436,7 +436,7 @@ internal static void goready(ж<g> Ꮡgp, nint traceskip) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string acquireSudogFoundSElemˢ = "acquireSudog: found s.elem != nil in cache"u8;
+internal static readonly @string acquireSudogFoundSElemˢ = "acquireSudog: found s.elem != nil in cache"u8;
 
 //go:nosplit
 internal static ж<sudog> acquireSudog() {
@@ -477,13 +477,13 @@ internal static ж<sudog> acquireSudog() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeSudogWithNonNilˢ = "runtime: sudog with non-nil elem"u8;
-private static readonly @string runtimeSudogWithNonFalseˢ = "runtime: sudog with non-false isSelect"u8;
-private static readonly @string runtimeSudogWithNonNilˢ2 = "runtime: sudog with non-nil next"u8;
-private static readonly @string runtimeSudogWithNonNilˢ3 = "runtime: sudog with non-nil prev"u8;
-private static readonly @string runtimeSudogWithNonNilˢ4 = "runtime: sudog with non-nil waitlink"u8;
-private static readonly @string runtimeSudogWithNonNilCˢ = "runtime: sudog with non-nil c"u8;
-private static readonly @string runtimeReleaseSudogWithˢ = "runtime: releaseSudog with non-nil gp.param"u8;
+internal static readonly @string runtimeSudogWithNonNilˢ = "runtime: sudog with non-nil elem"u8;
+internal static readonly @string runtimeSudogWithNonFalseˢ = "runtime: sudog with non-false isSelect"u8;
+internal static readonly @string runtimeSudogWithNonNilˢ2 = "runtime: sudog with non-nil next"u8;
+internal static readonly @string runtimeSudogWithNonNilˢ3 = "runtime: sudog with non-nil prev"u8;
+internal static readonly @string runtimeSudogWithNonNilˢ4 = "runtime: sudog with non-nil waitlink"u8;
+internal static readonly @string runtimeSudogWithNonNilCˢ = "runtime: sudog with non-nil c"u8;
+internal static readonly @string runtimeReleaseSudogWithˢ = "runtime: releaseSudog with non-nil gp.param"u8;
 
 //go:nosplit
 internal static void releaseSudog(ж<sudog> Ꮡs) {
@@ -540,7 +540,7 @@ internal static void releaseSudog(ж<sudog> Ꮡs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeMcallCalledOnMG0ˢ = "runtime: mcall called on m->g0 stack"u8;
+internal static readonly @string runtimeMcallCalledOnMG0ˢ = "runtime: mcall called on m->g0 stack"u8;
 
 // called from assembly.
 internal static void badmcall(Action<ж<g>> fn) {
@@ -548,22 +548,22 @@ internal static void badmcall(Action<ж<g>> fn) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeMcallFunctionˢ = "runtime: mcall function returned"u8;
+internal static readonly @string runtimeMcallFunctionˢ = "runtime: mcall function returned"u8;
 
 internal static void badmcall2(Action<ж<g>> fn) {
     @throw(runtimeMcallFunctionˢ);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string argSizeToReflectCallMoreˢ = "arg size to reflect.call more than 1GB"u8;
+internal static readonly @string argSizeToReflectCallMoreˢ = "arg size to reflect.call more than 1GB"u8;
 
 internal static void badreflectcall() {
     throw panic(((plainError)(@string)argSizeToReflectCallMoreˢ));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fatalMorestackOnG0ˢ = "fatal: morestack on g0\n"u8;
-private static readonly @string morestackOnG0ˢ = "morestack on g0"u8;
+internal static readonly @string fatalMorestackOnG0ˢ = "fatal: morestack on g0\n"u8;
+internal static readonly @string morestackOnG0ˢ = "morestack on g0"u8;
 
 //go:nosplit
 //go:nowritebarrierrec
@@ -585,7 +585,7 @@ internal static void badmorestackg0() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fatalMorestackOnGsignalˢ = "fatal: morestack on gsignal\n"u8;
+internal static readonly @string fatalMorestackOnGsignalˢ = "fatal: morestack on gsignal\n"u8;
 
 //go:nosplit
 //go:nowritebarrierrec
@@ -594,7 +594,7 @@ internal static void badmorestackgsignal() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ctxt0ˢ = "ctxt != 0"u8;
+internal static readonly @string ctxt0ˢ = "ctxt != 0"u8;
 
 //go:nosplit
 internal static void badctxt() {
@@ -609,8 +609,8 @@ internal static ж<atomic.Pointer<g>> ᏑcrashingG = new(default(atomic.Pointer<
 internal static ref atomic.Pointer<g> crashingG => ref ᏑcrashingG.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fatalRecursiveˢ = "fatal: recursive switchToCrashStack\n"u8;
-private static readonly @string fatalConcurrentˢ = "fatal: concurrent switchToCrashStack\n"u8;
+internal static readonly @string fatalRecursiveˢ = "fatal: recursive switchToCrashStack\n"u8;
+internal static readonly @string fatalConcurrentˢ = "fatal: concurrent switchToCrashStack\n"u8;
 
 // Switch to crashstack and call fn, with special handling of
 // concurrent and recursive cases.
@@ -662,7 +662,7 @@ internal static ж<ж<ж<g>>> Ꮡallgptr = new(default(ж<ж<g>>));
 internal static ref ж<ж<g>> allgptr => ref Ꮡallgptr.ValueSlot;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string allgaddBadStatusGidleˢ = "allgadd: bad status Gidle"u8;
+internal static readonly @string allgaddBadStatusGidleˢ = "allgadd: bad status Gidle"u8;
 
 internal static void allgadd(ж<g> Ꮡgp) {
     if (readgstatus(Ꮡgp) == _Gidle) {
@@ -783,9 +783,9 @@ internal static @string getGodebugEarly() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gomaxprocsˢ = "GOMAXPROCS"u8;
-private static readonly @string unknownRunnableGoroutineˢ = "unknown runnable goroutine during bootstrap"u8;
-private static readonly @string unknownˢ2 = "unknown"u8;
+internal static readonly @string gomaxprocsˢ = "GOMAXPROCS"u8;
+internal static readonly @string unknownRunnableGoroutineˢ = "unknown runnable goroutine during bootstrap"u8;
+internal static readonly @string unknownˢ2 = "unknown"u8;
 
 // The bootstrap sequence is:
 //
@@ -902,7 +902,7 @@ internal static void dumpgstatus(ж<g> Ꮡgp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string threadExhaustionˢ = "thread exhaustion"u8;
+internal static readonly @string threadExhaustionˢ = "thread exhaustion"u8;
 
 // sched.lock must be held.
 internal static void checkmcount() {
@@ -923,7 +923,7 @@ internal static void checkmcount() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeThreadIdOverflowˢ = "runtime: thread ID overflow"u8;
+internal static readonly @string runtimeThreadIdOverflowˢ = "runtime: thread ID overflow"u8;
 
 // mReserveID returns the next ID to use for a new m. This new m is immediately
 // considered 'running' by checkdead.
@@ -1029,7 +1029,7 @@ internal static UntypedInt osHasLowResClockInt => /* goos.IsWindows */ 1;
 internal const bool osHasLowResClock = /* osHasLowResClockInt > 0 */ true;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badGStatusInReadyˢ = "bad g->status in ready"u8;
+internal static readonly @string badGStatusInReadyˢ = "bad g->status in ready"u8;
 
 // Mark gp ready to run.
 internal static void ready(ж<g> Ꮡgp, nint traceskip, bool next) {
@@ -1124,8 +1124,8 @@ internal static uint32 readgstatus(ж<g> Ꮡgp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string casfromGscanstatusTopGpˢ = "casfrom_Gscanstatus:top gp->status is not in scan state"u8;
-private static readonly @string casfromGscanstatusGpˢ = "casfrom_Gscanstatus: gp->status is not in scan state"u8;
+internal static readonly @string casfromGscanstatusTopGpˢ = "casfrom_Gscanstatus:top gp->status is not in scan state"u8;
+internal static readonly @string casfromGscanstatusGpˢ = "casfrom_Gscanstatus: gp->status is not in scan state"u8;
 
 // The Gscanstatuses are acting like locks and this releases them.
 // If it proves to be a performance hit we should be able to make these
@@ -1157,7 +1157,7 @@ internal static void casfrom_Gscanstatus(ж<g> Ꮡgp, uint32 oldval, uint32 newv
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string castogscanstatusˢ = "castogscanstatus"u8;
+internal static readonly @string castogscanstatusˢ = "castogscanstatus"u8;
 
 // This will return false if the gp is not in the expected status and the cas fails.
 // This acts like a lock acquire while the casfromgstatus acts like a lock release.
@@ -1180,11 +1180,12 @@ internal static bool castogscanstatus(ж<g> Ꮡgp, uint32 oldval, uint32 newval)
 
 // casgstatusAlwaysTrack is a debug flag that causes casgstatus to always track
 // various latencies on every transition instead of sampling them.
-internal static bool casgstatusAlwaysTrack = false;
+internal static ж<bool> ᏑcasgstatusAlwaysTrack = new(false);
+internal static ref bool casgstatusAlwaysTrack => ref ᏑcasgstatusAlwaysTrack.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string casgstatusBadIncomingˢ = "casgstatus: bad incoming values"u8;
-private static readonly @string casgstatusWaitingForˢ = "casgstatus: waiting for Gwaiting but is Grunnable"u8;
+internal static readonly @string casgstatusBadIncomingˢ = "casgstatus: bad incoming values"u8;
+internal static readonly @string casgstatusWaitingForˢ = "casgstatus: waiting for Gwaiting but is Grunnable"u8;
 
 // If asked to move to or from a Gscanstatus this will throw. Use the castogscanstatus
 // and casfrom_Gscanstatus instead.
@@ -1312,7 +1313,7 @@ internal static void casGToWaiting(ж<g> Ꮡgp, uint32 old, waitReason reason) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string casGToWaitingForGCWithˢ = "casGToWaitingForGC with non-isWaitingForGC wait reason"u8;
+internal static readonly @string casGToWaitingForGCWithˢ = "casGToWaitingForGC with non-isWaitingForGC wait reason"u8;
 
 // casGToWaitingForGC transitions gp from old to _Gwaiting, and sets the wait reason.
 // The wait reason must be a valid isWaitingForGC wait reason.
@@ -1326,7 +1327,7 @@ internal static void casGToWaitingForGC(ж<g> Ꮡgp, uint32 old, waitReason reas
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string copystackBadStatusNotˢ = "copystack: bad status, not Gwaiting or Grunnable"u8;
+internal static readonly @string copystackBadStatusNotˢ = "copystack: bad status, not Gwaiting or Grunnable"u8;
 
 // casgstatus(gp, oldstatus, Gcopystack), assuming oldstatus is Gwaiting or Grunnable.
 // Returns old status. Cannot call casgstatus directly, because we are racing with an
@@ -1348,7 +1349,7 @@ internal static uint32 casgcopystack(ж<g> Ꮡgp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badGTransitionˢ = "bad g transition"u8;
+internal static readonly @string badGTransitionˢ = "bad g transition"u8;
 
 // casGToPreemptScan transitions gp from _Grunning to _Gscan|_Gpreempted.
 //
@@ -1564,10 +1565,10 @@ internal static ж<uint32> Ꮡgcsema = new(1);
 internal static ref uint32 gcsema => ref Ꮡgcsema.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stopTheWorldHoldingLocksˢ = "stopTheWorld: holding locks"u8;
-private static readonly @string stopTheWorldNotStoppedˢ = "stopTheWorld: not stopped (stopwait != 0)"u8;
-private static readonly @string stopTheWorldNotStoppedˢ2 = "stopTheWorld: not stopped (status != _Pgcstop)"u8;
-private static readonly @string stopTheWorldBrokenCpuˢ = "stopTheWorld: broken CPU time accounting"u8;
+internal static readonly @string stopTheWorldHoldingLocksˢ = "stopTheWorld: holding locks"u8;
+internal static readonly @string stopTheWorldNotStoppedˢ = "stopTheWorld: not stopped (stopwait != 0)"u8;
+internal static readonly @string stopTheWorldNotStoppedˢ2 = "stopTheWorld: not stopped (status != _Pgcstop)"u8;
+internal static readonly @string stopTheWorldBrokenCpuˢ = "stopTheWorld: broken CPU time accounting"u8;
 
 // stopTheWorldWithSema is the core implementation of stopTheWorld.
 // The caller is responsible for acquiring worldsema and disabling
@@ -1710,7 +1711,7 @@ internal static worldStop stopTheWorldWithSema(stwReason reason) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string startTheWorldˢ = "startTheWorld: inconsistent mp->nextp"u8;
+internal static readonly @string startTheWorldˢ = "startTheWorld: inconsistent mp->nextp"u8;
 
 // reason is the same STW reason passed to stopTheWorld. start is the start
 // time returned by stopTheWorld.
@@ -1861,7 +1862,7 @@ internal static void mstart0() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badRuntimeMstartˢ = "bad runtime·mstart"u8;
+internal static readonly @string badRuntimeMstartˢ = "bad runtime·mstart"u8;
 
 // The go:noinline is to guarantee the getcallerpc/getcallersp below are safe,
 // so that we can set up g0.sched to return to the call of mstart1 above.
@@ -1927,8 +1928,8 @@ internal static void mPark() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lockedM0WokeUpˢ = "locked m0 woke up"u8;
-private static readonly @string mNotFoundInAllmˢ = "m not found in allm"u8;
+internal static readonly @string lockedM0WokeUpˢ = "locked m0 woke up"u8;
+internal static readonly @string mNotFoundInAllmˢ = "m not found in allm"u8;
 
 // mexit tears down and exits the current thread.
 //
@@ -2064,9 +2065,9 @@ internal static void forEachP(waitReason reason, Action<ж<Δp>> fn) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string forEachPSchedˢ = "forEachP: sched.safePointWait != 0"u8;
-private static readonly @string forEachPNotDoneˢ = "forEachP: not done"u8;
-private static readonly @string forEachPPDidNotRunFnˢ = "forEachP: P did not run fn"u8;
+internal static readonly @string forEachPSchedˢ = "forEachP: sched.safePointWait != 0"u8;
+internal static readonly @string forEachPNotDoneˢ = "forEachP: not done"u8;
+internal static readonly @string forEachPPDidNotRunFnˢ = "forEachP: P did not run fn"u8;
 
 // forEachPInternal calls fn(p) for every P p when p reaches a GC safe point.
 // It is the internal implementation of forEachP.
@@ -2278,7 +2279,7 @@ internal static ж<m> allocm(ж<Δp> Ꮡpp, Action fn, int64 id) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fatalErrorCgoCallbackˢ = "fatal error: cgo callback before cgo call\n"u8;
+internal static readonly @string fatalErrorCgoCallbackˢ = "fatal error: cgo callback before cgo call\n"u8;
 
 // needm is called when a cgo callback happens on a
 // thread without an m (a thread not created by Go).
@@ -2572,8 +2573,8 @@ internal static void dropm() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bindmInUnexpectedGoosˢ = "bindm in unexpected GOOS"u8;
-private static readonly @string theCurrentGIsNotG0ˢ = "the current g is not g0"u8;
+internal static readonly @string bindmInUnexpectedGoosˢ = "bindm in unexpected GOOS"u8;
+internal static readonly @string theCurrentGIsNotG0ˢ = "the current g is not g0"u8;
 
 // bindm store the g0 of the current m into a thread-specific value.
 //
@@ -2743,7 +2744,7 @@ internal static ж<newmHandoffᴛ1> ᏑnewmHandoff = new(new newmHandoffᴛ1());
 internal static ref newmHandoffᴛ1 newmHandoff => ref ᏑnewmHandoff.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string onALockedThreadWithNoˢ = "on a locked thread with no template thread"u8;
+internal static readonly @string onALockedThreadWithNoˢ = "on a locked thread with no template thread"u8;
 
 // Create a new m. It will start off with a call to fn, or else the scheduler.
 // fn needs to be static and not a heap allocated closure.
@@ -2814,10 +2815,10 @@ internal static void newm1(ж<m> Ꮡmp) {
         ts.tls = Ꮡmp.at(m.Ꮡtls, 0).Reinterpret<uintptr, uint64>();
         ts.fn = (@unsafe.Pointer)abi.FuncPCABI0(mstart);
         if (msanenabled) {
-            msanwrite(new @unsafe.Pointer(Ꮡts), @unsafe.Sizeof(ts));
+            msanwrite(new @unsafe.Pointer(Ꮡts), /* unsafe.Sizeof(ts) */ (uintptr)24);
         }
         if (asanenabled) {
-            asanwrite(new @unsafe.Pointer(Ꮡts), @unsafe.Sizeof(ts));
+            asanwrite(new @unsafe.Pointer(Ꮡts), /* unsafe.Sizeof(ts) */ (uintptr)24);
         }
         ᏑexecLock.rlock();
         // Prevent process clone.
@@ -2890,9 +2891,9 @@ internal static void templateThread() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stopmHoldingLocksˢ = "stopm holding locks"u8;
-private static readonly @string stopmHoldingPˢ = "stopm holding p"u8;
-private static readonly @string stopmSpinningˢ = "stopm spinning"u8;
+internal static readonly @string stopmHoldingLocksˢ = "stopm holding locks"u8;
+internal static readonly @string stopmHoldingPˢ = "stopm holding p"u8;
+internal static readonly @string stopmSpinningˢ = "stopm spinning"u8;
 
 // Stops execution of the current m until new work is available.
 // Returns with acquired P.
@@ -2921,10 +2922,10 @@ internal static void mspinning() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string startmPRequiredForˢ = "startm: P required for spinning=true"u8;
-private static readonly @string startmMIsSpinningˢ = "startm: m is spinning"u8;
-private static readonly @string startmMHasPˢ = "startm: m has p"u8;
-private static readonly @string startmPHasRunnableGsˢ = "startm: p has runnable gs"u8;
+internal static readonly @string startmPRequiredForˢ = "startm: P required for spinning=true"u8;
+internal static readonly @string startmMIsSpinningˢ = "startm: m is spinning"u8;
+internal static readonly @string startmMHasPˢ = "startm: m has p"u8;
+internal static readonly @string startmPHasRunnableGsˢ = "startm: p has runnable gs"u8;
 
 // Schedules some M to run the p (creates an M if necessary).
 // If p==nil, tries to get an idle P, if no idle P's does nothing.
@@ -3108,7 +3109,7 @@ internal static void handoffp(ж<Δp> Ꮡpp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string wakepNegativeNmspinningˢ = "wakep: negative nmspinning"u8;
+internal static readonly @string wakepNegativeNmspinningˢ = "wakep: negative nmspinning"u8;
 
 // Tries to add one more P to execute G's.
 // Called when a G is made runnable (newproc, ready).
@@ -3156,8 +3157,8 @@ internal static void wakep() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stoplockedmInconsistentˢ = "stoplockedm: inconsistent locking"u8;
-private static readonly @string stoplockedmNotRunnableˢ = "stoplockedm: not runnable"u8;
+internal static readonly @string stoplockedmInconsistentˢ = "stoplockedm: inconsistent locking"u8;
+internal static readonly @string stoplockedmNotRunnableˢ = "stoplockedm: not runnable"u8;
 
 // Stops execution of the current m that is locked to a g until the g is runnable again.
 // Returns with acquired P.
@@ -3185,8 +3186,8 @@ internal static void stoplockedm() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string startlockedmLockedToMeˢ = "startlockedm: locked to me"u8;
-private static readonly @string startlockedmMHasPˢ = "startlockedm: m has p"u8;
+internal static readonly @string startlockedmLockedToMeˢ = "startlockedm: locked to me"u8;
+internal static readonly @string startlockedmMHasPˢ = "startlockedm: m has p"u8;
 
 // Schedules the locked m to run the locked gp.
 // May run during STW, so write barriers are not allowed.
@@ -3211,8 +3212,8 @@ internal static void startlockedm(ж<g> Ꮡgp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gcstopmNotWaitingForGcˢ = "gcstopm: not waiting for gc"u8;
-private static readonly @string gcstopmNegativeˢ = "gcstopm: negative nmspinning"u8;
+internal static readonly @string gcstopmNotWaitingForGcˢ = "gcstopm: not waiting for gc"u8;
+internal static readonly @string gcstopmNegativeˢ = "gcstopm: negative nmspinning"u8;
 
 // Stops the current m for stopTheWorld.
 // Returns when the world is restarted.
@@ -3285,11 +3286,11 @@ internal static void execute(ж<g> Ꮡgp, bool inheritTime) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string findrunnableWrongPˢ = "findrunnable: wrong p"u8;
-private static readonly @string findrunnableNegativeˢ = "findrunnable: negative nmspinning"u8;
-private static readonly @string globalRunqEmptyWithNonˢ = "global runq empty with non-zero runqsize"u8;
-private static readonly @string findrunnableNetpollWithPˢ = "findrunnable: netpoll with p"u8;
-private static readonly @string findrunnableNetpollWithˢ = "findrunnable: netpoll with spinning"u8;
+internal static readonly @string findrunnableWrongPˢ = "findrunnable: wrong p"u8;
+internal static readonly @string findrunnableNegativeˢ = "findrunnable: negative nmspinning"u8;
+internal static readonly @string globalRunqEmptyWithNonˢ = "global runq empty with non-zero runqsize"u8;
+internal static readonly @string findrunnableNetpollWithPˢ = "findrunnable: netpoll with p"u8;
+internal static readonly @string findrunnableNetpollWithˢ = "findrunnable: netpoll with spinning"u8;
 
 // Finds a runnable goroutine to execute.
 // Tries to steal from other P's, get g from local or global queue, poll network.
@@ -3883,7 +3884,7 @@ internal static void wakeNetPoller(int64 when) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string resetspinningNotAˢ = "resetspinning: not a spinning m"u8;
+internal static readonly @string resetspinningNotAˢ = "resetspinning: not a spinning m"u8;
 
 internal static void resetspinning() {
     var gp = getg();
@@ -3995,9 +3996,9 @@ internal static void injectglist(ж<gList> Ꮡglist) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string scheduleHoldingLocksˢ = "schedule: holding locks"u8;
-private static readonly @string scheduleInCgoˢ = "schedule: in cgo"u8;
-private static readonly @string scheduleSpinningWithˢ = "schedule: spinning with local work"u8;
+internal static readonly @string scheduleHoldingLocksˢ = "schedule: holding locks"u8;
+internal static readonly @string scheduleInCgoˢ = "schedule: in cgo"u8;
+internal static readonly @string scheduleSpinningWithˢ = "schedule: spinning with local work"u8;
 
 // One round of scheduler: find a runnable goroutine and execute it.
 // Never returns.
@@ -4130,7 +4131,7 @@ internal static void park_m(ж<g> Ꮡgp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badGStatusˢ = "bad g status"u8;
+internal static readonly @string badGStatusˢ = "bad g status"u8;
 
 internal static void goschedImpl(ж<g> Ꮡgp, bool preempted) {
     var Δtrace = traceAcquire();
@@ -4184,8 +4185,8 @@ internal static void gopreempt_m(ж<g> Ꮡgp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string preemptAtUnknownPcˢ = "preempt at unknown pc"u8;
-private static readonly @string preemptSpwriteˢ = "preempt SPWRITE"u8;
+internal static readonly @string preemptAtUnknownPcˢ = "preempt at unknown pc"u8;
+internal static readonly @string preemptSpwriteˢ = "preempt SPWRITE"u8;
 
 // preemptPark parks gp and puts it in _Gpreempted.
 //
@@ -4304,7 +4305,7 @@ internal static void goexit0(ж<g> Ꮡgp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string exitedAGoroutineˢ = "exited a goroutine internally locked to the OS thread"u8;
+internal static readonly @string exitedAGoroutineˢ = "exited a goroutine internally locked to the OS thread"u8;
 
 internal static void gdestroy(ж<g> Ꮡgp) {
     ref var gp = ref Ꮡgp.Value;
@@ -4369,7 +4370,7 @@ internal static void gdestroy(ж<g> Ꮡgp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string saveOnSystemGNotAllowedˢ = "save on system g not allowed"u8;
+internal static readonly @string saveOnSystemGNotAllowedˢ = "save on system g not allowed"u8;
 
 // save updates getg().sched to refer to pc and sp so that a following
 // gogo will restore pc and sp.
@@ -4403,7 +4404,7 @@ internal static void save(uintptr pc, uintptr sp, uintptr bp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string entersyscallˢ = "entersyscall"u8;
+internal static readonly @string entersyscallˢ = "entersyscall"u8;
 
 // The goroutine g is about to enter a system call.
 // Record that it's not using the cpu anymore.
@@ -4566,7 +4567,7 @@ internal static void entersyscall_gcwait() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string entersyscallblockˢ = "entersyscallblock"u8;
+internal static readonly @string entersyscallblockˢ = "entersyscallblock"u8;
 
 // The same as entersyscall(), but with a hint that the syscall is blocking.
 
@@ -4638,7 +4639,7 @@ internal static void entersyscallblock_handoff() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string exitsyscallSyscallFrameˢ = "exitsyscall: syscall frame is no longer valid"u8;
+internal static readonly @string exitsyscallSyscallFrameˢ = "exitsyscall: syscall frame is no longer valid"u8;
 
 // The goroutine g exited its system call.
 // Arrange for it to run on a cpu again.
@@ -5029,9 +5030,9 @@ internal static void newproc(ж<funcval> Ꮡfn) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goOfNilFuncValueˢ = "go of nil func value"u8;
-private static readonly @string newproc1NewgMissingStackˢ = "newproc1: newg missing stack"u8;
-private static readonly @string newproc1NewGIsNotGdeadˢ = "newproc1: new g is not Gdead"u8;
+internal static readonly @string goOfNilFuncValueˢ = "go of nil func value"u8;
+internal static readonly @string newproc1NewgMissingStackˢ = "newproc1: newg missing stack"u8;
+internal static readonly @string newproc1NewGIsNotGdeadˢ = "newproc1: new g is not Gdead"u8;
 
 // Create a new g in state _Grunnable (or _Gwaiting if parked is true), starting at fn.
 // callerpc is the address of the go statement that created this. The caller is responsible
@@ -5072,7 +5073,7 @@ internal static ж<g> newproc1(ж<funcval> Ꮡfn, ж<g> Ꮡcallergp, uintptr cal
         // caller's FP
         ((ж<uintptr>)(uintptr)((@unsafe.Pointer)(sp - (uintptr)goarch.PtrSize))).Value = 0;
     }
-    memclrNoHeapPointers(new @unsafe.Pointer(newg.of(g.Ꮡsched)), @unsafe.Sizeof((~newg).sched));
+    memclrNoHeapPointers(new @unsafe.Pointer(newg.of(g.Ꮡsched)), /* unsafe.Sizeof(newg.sched) */ (uintptr)56);
     newg.Value.sched.sp = sp;
     newg.Value.stktopsp = sp;
     newg.Value.sched.pc = abi.FuncPCABI0(goexit) + (uintptr)sys.PCQuantum;
@@ -5177,7 +5178,7 @@ internal static ж<slice<ancestorInfo>> saveAncestors(ж<g> Ꮡcallergp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gfputBadStatusNotGdeadˢ = "gfput: bad status (not Gdead)"u8;
+internal static readonly @string gfputBadStatusNotGdeadˢ = "gfput: bad status (not Gdead)"u8;
 
 // Put on gfree list.
 // If local list is too long, transfer a batch to the global list.
@@ -5358,7 +5359,7 @@ internal static void dounlockOSThread() {
 // go2cs generated this placeholder — func unlockOSThread is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeInternalErrorˢ2 = "runtime: internal error: misuse of lockOSThread/unlockOSThread"u8;
+internal static readonly @string runtimeInternalErrorˢ2 = "runtime: internal error: misuse of lockOSThread/unlockOSThread"u8;
 
 internal static void badunlockosthread() {
     @throw(runtimeInternalErrorˢ2);
@@ -5420,7 +5421,7 @@ internal static void _VDSO() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string internalRuntimeAtomicˢ = "internal/runtime/atomic"u8;
+internal static readonly @string internalRuntimeAtomicˢ = "internal/runtime/atomic"u8;
 
 // Called if we receive a SIGPROF signal.
 // Called by the signal handler, may run during STW.
@@ -5577,7 +5578,7 @@ internal static void setcpuprofilerate(int32 hz) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingMcacheˢ = "missing mcache?"u8;
+internal static readonly @string missingMcacheˢ = "missing mcache?"u8;
 
 // init initializes pp, which may be a freshly allocated p or a
 // previously destroyed p, and transitions it to status _Pgcstop.
@@ -5689,7 +5690,7 @@ internal static void destroy(this ж<Δp> Ꮡpp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string procresizeInvalidArgˢ = "procresize: invalid arg"u8;
+internal static readonly @string procresizeInvalidArgˢ = "procresize: invalid arg"u8;
 
 // Change number of processors.
 //
@@ -5853,8 +5854,8 @@ internal static void acquirep(ж<Δp> Ꮡpp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string wirepAlreadyInGoˢ = "wirep: already in go"u8;
-private static readonly @string wirepInvalidPStateˢ = "wirep: invalid p state"u8;
+internal static readonly @string wirepAlreadyInGoˢ = "wirep: already in go"u8;
+internal static readonly @string wirepInvalidPStateˢ = "wirep: invalid p state"u8;
 
 // wirep is the first step of acquirep, which actually associates the
 // current M to pp. This is broken out so we can disallow write
@@ -5901,8 +5902,8 @@ internal static ж<Δp> releasep() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string releasepInvalidArgˢ = "releasep: invalid arg"u8;
-private static readonly @string releasepInvalidPStateˢ = "releasep: invalid p state"u8;
+internal static readonly @string releasepInvalidArgˢ = "releasep: invalid arg"u8;
+internal static readonly @string releasepInvalidPStateˢ = "releasep: invalid p state"u8;
 
 // Disassociate p and the current m without tracing an event.
 internal static ж<Δp> releasepNoTrace() {
@@ -5931,12 +5932,12 @@ internal static void incidlelocked(int32 v) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string checkdeadInconsistentˢ = "checkdead: inconsistent counts"u8;
-private static readonly @string checkdeadRunnableGˢ = "checkdead: runnable g"u8;
-private static readonly @string noGoroutinesMainCalledˢ = "no goroutines (main called runtime.Goexit) - deadlock!"u8;
-private static readonly @string checkdeadNoPForTimerˢ = "checkdead: no p for timer"u8;
-private static readonly @string checkdeadNoMForTimerˢ = "checkdead: no m for timer"u8;
-private static readonly @string allGoroutinesAreAsleepˢ = "all goroutines are asleep - deadlock!"u8;
+internal static readonly @string checkdeadInconsistentˢ = "checkdead: inconsistent counts"u8;
+internal static readonly @string checkdeadRunnableGˢ = "checkdead: runnable g"u8;
+internal static readonly @string noGoroutinesMainCalledˢ = "no goroutines (main called runtime.Goexit) - deadlock!"u8;
+internal static readonly @string checkdeadNoPForTimerˢ = "checkdead: no p for timer"u8;
+internal static readonly @string checkdeadNoMForTimerˢ = "checkdead: no m for timer"u8;
+internal static readonly @string allGoroutinesAreAsleepˢ = "all goroutines are asleep - deadlock!"u8;
 
 // Check for deadlock situation.
 // The check is based on number of running M's, if 0 -> deadlock.
@@ -6043,7 +6044,8 @@ internal static void checkdead() {
 // is forced to run.
 //
 // This is a variable for testing purposes. It normally doesn't change.
-internal static int64 forcegcperiod = 120000000000L;
+internal static ж<int64> Ꮡforcegcperiod = new(120000000000L);
+internal static ref int64 forcegcperiod => ref Ꮡforcegcperiod.Value;
 
 // needSysmonWorkaround is true if the workaround for
 // golang.org/issue/42515 is needed on NetBSD.
@@ -6596,8 +6598,8 @@ internal static void clear(this pMask Δp, int32 id) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pidleputPHasNonEmptyRunˢ = "pidleput: P has non-empty run queue"u8;
-private static readonly @string mustBeAbleToTrackIdleˢ = "must be able to track idle limiter event"u8;
+internal static readonly @string pidleputPHasNonEmptyRunˢ = "pidleput: P has non-empty run queue"u8;
+internal static readonly @string mustBeAbleToTrackIdleˢ = "must be able to track idle limiter event"u8;
 
 // pidleput puts p on the _Pidle list. now must be a relatively recent call
 // to nanotime or zero. Returns now or the current time if now was zero.
@@ -6763,7 +6765,7 @@ retry:
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runqputslowQueueIsNotˢ = "runqputslow: queue is not full"u8;
+internal static readonly @string runqputslowQueueIsNotˢ = "runqputslow: queue is not full"u8;
 
 // Put g and a batch of work from local runnable queue on global queue.
 // Executed only by the owner P.
@@ -6979,7 +6981,7 @@ internal static uint32 runqgrab(ж<Δp> Ꮡpp, ж<array<Δguintptr>> Ꮡbatch, u
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runqstealRunqOverflowˢ = "runqsteal: runq overflow"u8;
+internal static readonly @string runqstealRunqOverflowˢ = "runqsteal: runq overflow"u8;
 
 // Steal half of elements from local runnable queue of p2
 // and put onto local runnable queue of p.
@@ -7322,8 +7324,8 @@ internal static void doInit(slice<ж<initTask>> ts) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string recursiveCallDuringˢ = "recursive call during initialization - linker skew"u8;
-private static readonly @string inittaskWithNoFunctionsˢ = "inittask with no functions"u8;
+internal static readonly @string recursiveCallDuringˢ = "recursive call during initialization - linker skew"u8;
+internal static readonly @string inittaskWithNoFunctionsˢ = "inittask with no functions"u8;
 
 internal static void doInit1(ж<initTask> Ꮡt) {
     ref var t = ref Ꮡt.Value;

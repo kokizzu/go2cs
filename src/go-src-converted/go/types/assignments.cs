@@ -133,7 +133,7 @@ internal static void assignment(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ΔT
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string constantDeclarationˢ = "constant declaration"u8;
+internal static readonly @string constantDeclarationˢ = "constant declaration"u8;
 
 internal static void initConst(this ж<Checker> Ꮡcheck, ж<Const> Ꮡlhs, ж<operand> Ꮡx) {
     ref var lhs = ref Ꮡlhs.Value;
@@ -269,7 +269,7 @@ internal static ΔType lhsVar(this ж<Checker> Ꮡcheck, ast.Expr lhs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string assignmentToIdentifierˢ = "assignment to _ identifier"u8;
+internal static readonly @string assignmentToIdentifierˢ = "assignment to _ identifier"u8;
 
 // assignVar checks the assignment lhs = rhs (if x == nil), or lhs = x (if x != nil).
 // If x != nil, it must be the evaluation of rhs (and rhs will be ignored).
@@ -327,9 +327,9 @@ internal static slice<ΔType> /*res*/ varTypes(slice<ж<Var>> list) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownTypeˢ = "unknown type"u8;
-private static readonly @string numberˢ = "number"u8;
-private static readonly @string untypedˢ = "untyped "u8;
+internal static readonly @string unknownTypeˢ = "unknown type"u8;
+internal static readonly @string numberˢ = "number"u8;
+internal static readonly @string untypedˢ = "untyped "u8;
 
 // typesSummary returns a string of the form "(t1, t2, ...)" where the
 // ti's are user-friendly string representations for the given types.
@@ -380,8 +380,8 @@ internal static @string measure(nint x, @string unit) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string variableˢ = "variable"u8;
-private static readonly @string valueˢ = "value"u8;
+internal static readonly @string variableˢ = "variable"u8;
+internal static readonly @string valueˢ = "value"u8;
 
 internal static void assignError(this ж<Checker> Ꮡcheck, slice<ast.Expr> rhs, nint l, nint r) {
     @string vars = measure(l, variableˢ);
@@ -399,8 +399,8 @@ internal static void assignError(this ж<Checker> Ꮡcheck, slice<ast.Expr> rhs,
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string notEnoughˢ = "not enough"u8;
-private static readonly @string tooManyˢ = "too many"u8;
+internal static readonly @string notEnoughˢ = "not enough"u8;
+internal static readonly @string tooManyˢ = "too many"u8;
 
 internal static void returnError(this ж<Checker> Ꮡcheck, positioner at, slice<ж<Var>> lhs, slice<ж<operand>> rhs) {
     nint l = len(lhs);
@@ -423,9 +423,9 @@ internal static void returnError(this ж<Checker> Ꮡcheck, positioner at, slice
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string assignmentˢ = "assignment"u8;
-private static readonly @string returnStatementˢ = "return statement"u8;
-private static readonly @string resultVariableˢ = "result variable"u8;
+internal static readonly @string assignmentˢ = "assignment"u8;
+internal static readonly @string returnStatementˢ = "return statement"u8;
+internal static readonly @string resultVariableˢ = "result variable"u8;
 
 // initVars type-checks assignments of initialization expressions orig_rhs
 // to variables lhs.

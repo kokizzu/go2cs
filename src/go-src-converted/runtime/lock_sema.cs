@@ -72,7 +72,7 @@ internal static void noteclear(ж<note> Ꮡn) {
 // go2cs generated this placeholder — func notetsleep_internal is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string notetsleepNotOnG0ˢ = "notetsleep not on g0"u8;
+internal static readonly @string notetsleepNotOnG0ˢ = "notetsleep not on g0"u8;
 
 // Successfully set waitm to locked.
 // What was it before?
@@ -110,7 +110,7 @@ internal static bool notetsleep(ж<note> Ꮡn, int64 ns) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string notetsleepgOnG0ˢ = "notetsleepg on g0"u8;
+internal static readonly @string notetsleepgOnG0ˢ = "notetsleepg on g0"u8;
 
 // same as runtime·notetsleep, but called on user g (not g0)
 // calls only nosplit functions between entersyscallblock/exitsyscall.

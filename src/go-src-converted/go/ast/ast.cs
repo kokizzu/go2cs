@@ -177,9 +177,9 @@ public static @string Text(this ж<CommentGroup> Ꮡg) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lineˢ = "line "u8;
-private static readonly @string externˢ = "extern "u8;
-private static readonly @string exportˢ = "export "u8;
+internal static readonly @string lineˢ = "line "u8;
+internal static readonly @string externˢ = "extern "u8;
+internal static readonly @string exportˢ = "export "u8;
 
 // isDirective reports whether c is a comment directive.
 // This code is also in go/printer.
@@ -768,7 +768,7 @@ public static bool IsExported(@string name) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "<nil>"u8;
+internal static readonly @string nilˢ = "<nil>"u8;
 
 public static @string String(this ж<Ident> Ꮡid) {
     ref var id = ref Ꮡid.DerefOrNil();
@@ -1445,7 +1445,7 @@ public static bool IsGenerated(ж<File> Ꮡfile) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string doNotEditˢ = " DO NOT EDIT."u8;
+internal static readonly @string doNotEditˢ = " DO NOT EDIT."u8;
 
 internal static (@string, bool) generator(ж<File> Ꮡfile) {
     ref var @file = ref Ꮡfile.Value;

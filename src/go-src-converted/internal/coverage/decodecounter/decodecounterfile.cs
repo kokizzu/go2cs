@@ -65,7 +65,7 @@ public static (ж<CounterDataReader>, error) NewCounterDataReader(@string fn, io
         }
     }
     // Seek back to just past the file header.
-    var hsz = (int64)@unsafe.Sizeof((~cdr).hdr);
+    var hsz = (int64)/* unsafe.Sizeof(cdr.hdr) */ (uintptr)32;
     {
         var (_, err) = (~cdr).mr.Seek(hsz, io.SeekStart); if (err != default!) {
             return (default!, err);
@@ -90,7 +90,7 @@ internal static bool checkMagic(array<byte> v) {
 internal static error readFooter(this ж<CounterDataReader> Ꮡcdr) {
     ref var cdr = ref Ꮡcdr.Value;
 
-    var ftrSize = (int64)@unsafe.Sizeof(cdr.ftr);
+    var ftrSize = (int64)/* unsafe.Sizeof(cdr.ftr) */ (uintptr)16;
     {
         var (_, err) = cdr.mr.Seek(-ftrSize, io.SeekEnd); if (err != default!) {
             return err;
@@ -294,7 +294,7 @@ public static (bool, error) BeginNextSegment(this ж<CounterDataReader> Ꮡcdr) 
     cdr.segCount++;
     cdr.fcnCount = 0;
     // Seek past footer from last segment.
-    var ftrSize = (int64)@unsafe.Sizeof(cdr.ftr);
+    var ftrSize = (int64)/* unsafe.Sizeof(cdr.ftr) */ (uintptr)16;
     {
         var (_, err) = cdr.mr.Seek(ftrSize, io.SeekCurrent); if (err != default!) {
             return (false, err);

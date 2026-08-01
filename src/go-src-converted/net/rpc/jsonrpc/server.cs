@@ -109,7 +109,7 @@ internal static ж<json.RawMessage> Ꮡnull = new(((json.RawMessage)slice<byte>(
 internal static ref json.RawMessage @null => ref Ꮡnull.ValueSlot;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidSequenceNumberInˢ = "invalid sequence number in response"u8;
+internal static readonly @string invalidSequenceNumberInˢ = "invalid sequence number in response"u8;
 
 internal static error WriteResponse(this ж<serverCodec> Ꮡc, ж<rpc.Response> Ꮡr, any x) {
     ref var c = ref Ꮡc.Value;

@@ -34,7 +34,7 @@ partial class runtime_package {
 internal static bool useCheckmark = false;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string outOfMemoryAllocatingˢ4 = "out of memory allocating checkmarks bitmap"u8;
+internal static readonly @string outOfMemoryAllocatingˢ4 = "out of memory allocating checkmarks bitmap"u8;
 
 // startCheckmarks prepares for the checkmarks phase.
 //
@@ -47,7 +47,7 @@ internal static void startCheckmarks() {
         var bitmap = arena.Value.checkmarks;
         if (bitmap == nil){
             // Allocate bitmap on first use.
-            bitmap = (ж<checkmarksMap>)(uintptr)(persistentalloc(@unsafe.Sizeof(bitmap.Value), 0, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
+            bitmap = (ж<checkmarksMap>)(uintptr)(persistentalloc(/* unsafe.Sizeof(*bitmap) */ (uintptr)65536, 0, Ꮡmemstats.of(mstats.ᏑgcMiscSys)));
             if (bitmap == nil) {
                 @throw(outOfMemoryAllocatingˢ4);
             }
@@ -62,7 +62,7 @@ internal static void startCheckmarks() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gcWorkNotFlushedˢ = "GC work not flushed"u8;
+internal static readonly @string gcWorkNotFlushedˢ = "GC work not flushed"u8;
 
 // endCheckmarks ends the checkmarks phase.
 internal static void endCheckmarks() {
@@ -73,9 +73,9 @@ internal static void endCheckmarks() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string baseˢ = "base"u8;
-private static readonly @string objˢ = "obj"u8;
-private static readonly @string checkmarkFoundUnmarkedˢ = "checkmark found unmarked object"u8;
+internal static readonly @string baseˢ = "base"u8;
+internal static readonly @string objˢ = "obj"u8;
+internal static readonly @string checkmarkFoundUnmarkedˢ = "checkmark found unmarked object"u8;
 
 // setCheckmark throws if marking object is a checkmarks violation,
 // and otherwise sets obj's checkmark. It returns true if obj was

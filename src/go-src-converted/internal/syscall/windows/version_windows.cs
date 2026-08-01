@@ -32,7 +32,7 @@ internal static (uint32 major, uint32 minor, uint32 build) version() {
 
     ref var info = ref heap<_OSVERSIONINFOW>(out var Ꮡinfo);
     info = new _OSVERSIONINFOW(nil);
-    info.osVersionInfoSize = (uint32)@unsafe.Sizeof(info);
+    info.osVersionInfoSize = (uint32)/* unsafe.Sizeof(info) */ (uintptr)276;
     rtlGetVersion(Ꮡinfo);
     return (info.majorVersion, info.minorVersion, info.buildNumber);
 }
@@ -102,8 +102,8 @@ internal static void initᴛSupportTCPInitialRTONoSYNRetransmissions() { Support
 public static Func<bool> SupportUnixSocket = sync.OnceValue(bool () => {
     ref var size = ref heap(new uint32(), out var Ꮡsize);
     (_, _) = syscall.WSAEnumProtocols(nil, nil, Ꮡsize);
-    var n = (int32)size / (int32)@unsafe.Sizeof(new syscall.WSAProtocolInfo(nil));
-    var buf = new slice<syscall.WSAProtocolInfo>(n);
+    var n = (int32)size / (int32)/* unsafe.Sizeof(syscall.WSAProtocolInfo{}) */ (uintptr)628;
+    var buf = new slice<syscall.WSAProtocolInfo>(n, () => new());
     (n, var err) = syscall.WSAEnumProtocols(nil, Ꮡ(buf, 0), Ꮡsize);
     if (err != default!) {
         return false;

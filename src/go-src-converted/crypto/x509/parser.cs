@@ -44,11 +44,11 @@ internal static bool isPrintable(byte b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidPrintableStringˢ = "invalid PrintableString"u8;
-private static readonly @string invalidUtf8Stringˢ = "invalid UTF-8 string"u8;
-private static readonly @string invalidBMPStringˢ = "invalid BMPString"u8;
-private static readonly @string invalidIA5Stringˢ = "invalid IA5String"u8;
-private static readonly @string invalidNumericStringˢ = "invalid NumericString"u8;
+internal static readonly @string invalidPrintableStringˢ = "invalid PrintableString"u8;
+internal static readonly @string invalidUtf8Stringˢ = "invalid UTF-8 string"u8;
+internal static readonly @string invalidBMPStringˢ = "invalid BMPString"u8;
+internal static readonly @string invalidIA5Stringˢ = "invalid IA5String"u8;
+internal static readonly @string invalidNumericStringˢ = "invalid NumericString"u8;
 
 // This is technically not allowed in a PrintableString.
 // However, x509 certificates with wildcard strings don't
@@ -118,15 +118,17 @@ internal static (@string, error) parseASN1String(cryptobyte_asn1.Tag tag, slice<
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509InvalidRDNSequenceˢ = "x509: invalid RDNSequence"u8;
-private static readonly @string x509InvalidRDNSequenceˢ2 = "x509: invalid RDNSequence: invalid attribute"u8;
-private static readonly @string x509InvalidRDNSequenceˢ3 = "x509: invalid RDNSequence: invalid attribute type"u8;
-private static readonly @string x509InvalidRDNSequenceˢ4 = "x509: invalid RDNSequence: invalid attribute value"u8;
+internal static readonly @string x509InvalidRDNSequenceˢ = "x509: invalid RDNSequence"u8;
+internal static readonly @string x509InvalidRDNSequenceˢ2 = "x509: invalid RDNSequence: invalid attribute"u8;
+internal static readonly @string x509InvalidRDNSequenceˢ3 = "x509: invalid RDNSequence: invalid attribute type"u8;
+internal static readonly @string x509InvalidRDNSequenceˢ4 = "x509: invalid RDNSequence: invalid attribute value"u8;
 
 // parseName parses a DER encoded Name as defined in RFC 5280. We may
 // want to export this function in the future for use in crypto/tls.
-internal static (ж<pkix.RDNSequence>, error) parseName(cryptobyte.String raw) {
-    if (!raw.ReadASN1(Ꮡ(raw), cryptobyte_asn1.SEQUENCE)) {
+internal static (ж<pkix.RDNSequence>, error) parseName(cryptobyte.String rawʗp) {
+    ref var raw = ref heap(rawʗp, out var Ꮡraw);
+
+    if (!raw.ReadASN1(Ꮡraw, cryptobyte_asn1.SEQUENCE)) {
         return (default!, errors.New(x509InvalidRDNSequenceˢ));
     }
     ref var rdnSeq = ref heap<pkix.RDNSequence>(out var ᏑrdnSeq);
@@ -163,8 +165,8 @@ internal static (ж<pkix.RDNSequence>, error) parseName(cryptobyte.String raw) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509MalformedOidˢ = "x509: malformed OID"u8;
-private static readonly @string x509MalformedParametersˢ = "x509: malformed parameters"u8;
+internal static readonly @string x509MalformedOidˢ = "x509: malformed OID"u8;
+internal static readonly @string x509MalformedParametersˢ = "x509: malformed parameters"u8;
 
 internal static (pkix.AlgorithmIdentifier, error) parseAI(cryptobyte.String der) {
     ref var ai = ref heap<pkix.AlgorithmIdentifier>(out var Ꮡai);
@@ -186,9 +188,9 @@ internal static (pkix.AlgorithmIdentifier, error) parseAI(cryptobyte.String der)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509MalformedUTCTimeˢ = "x509: malformed UTCTime"u8;
-private static readonly @string x509Malformedˢ = "x509: malformed GeneralizedTime"u8;
-private static readonly @string x509UnsupportedTimeˢ = "x509: unsupported time format"u8;
+internal static readonly @string x509MalformedUTCTimeˢ = "x509: malformed UTCTime"u8;
+internal static readonly @string x509Malformedˢ = "x509: malformed GeneralizedTime"u8;
+internal static readonly @string x509UnsupportedTimeˢ = "x509: unsupported time format"u8;
 
 internal static (time.Time, error) parseTime(ж<cryptobyte.String> Ꮡder) {
     ref var der = ref Ꮡder.ValueSlot;
@@ -214,12 +216,14 @@ internal static (time.Time, error) parseTime(ж<cryptobyte.String> Ꮡder) {
     return (t, default!);
 }
 
-internal static (time.Time, time.Time, error) parseValidity(cryptobyte.String der) {
-    var (notBefore, err) = parseTime(Ꮡ(der));
+internal static (time.Time, time.Time, error) parseValidity(cryptobyte.String derʗp) {
+    ref var der = ref heap(derʗp, out var Ꮡder);
+
+    var (notBefore, err) = parseTime(Ꮡder);
     if (err != default!) {
         return (new time.Time(nil), new time.Time(nil), err);
     }
-    (var notAfter, err) = parseTime(Ꮡ(der));
+    (var notAfter, err) = parseTime(Ꮡder);
     if (err != default!) {
         return (new time.Time(nil), new time.Time(nil), err);
     }
@@ -227,9 +231,9 @@ internal static (time.Time, time.Time, error) parseValidity(cryptobyte.String de
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509MalformedExtensionˢ = "x509: malformed extension OID field"u8;
-private static readonly @string x509MalformedExtensionˢ2 = "x509: malformed extension critical field"u8;
-private static readonly @string x509MalformedExtensionˢ3 = "x509: malformed extension value field"u8;
+internal static readonly @string x509MalformedExtensionˢ = "x509: malformed extension OID field"u8;
+internal static readonly @string x509MalformedExtensionˢ2 = "x509: malformed extension critical field"u8;
+internal static readonly @string x509MalformedExtensionˢ3 = "x509: malformed extension value field"u8;
 
 internal static (pkix.Extension, error) parseExtension(cryptobyte.String der) {
     ref var ext = ref heap(new pkix.Extension(), out var Ꮡext);
@@ -250,22 +254,22 @@ internal static (pkix.Extension, error) parseExtension(cryptobyte.String der) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509RsaKeyMissingNullˢ = "x509: RSA key missing NULL parameters"u8;
-private static readonly @string x509InvalidRsaPublicKeyˢ = "x509: invalid RSA public key"u8;
-private static readonly @string x509InvalidRsaModulusˢ = "x509: invalid RSA modulus"u8;
-private static readonly @string x509InvalidRsaPublicˢ = "x509: invalid RSA public exponent"u8;
-private static readonly @string x509RsaModulusIsNotAˢ = "x509: RSA modulus is not a positive number"u8;
-private static readonly @string x509RsaPublicExponentIsˢ = "x509: RSA public exponent is not a positive number"u8;
-private static readonly @string x509InvalidEcdsaˢ = "x509: invalid ECDSA parameters"u8;
-private static readonly @string x509UnsupportedEllipticˢ = "x509: unsupported elliptic curve"u8;
-private static readonly @string x509FailedToUnmarshalˢ = "x509: failed to unmarshal elliptic curve point"u8;
-private static readonly @string x509Ed25519KeyEncodedˢ = "x509: Ed25519 key encoded with illegal parameters"u8;
-private static readonly @string x509WrongEd25519Publicˢ = "x509: wrong Ed25519 public key size"u8;
-private static readonly @string x509X25519KeyEncodedWithˢ = "x509: X25519 key encoded with illegal parameters"u8;
-private static readonly @string x509InvalidDsaPublicKeyˢ = "x509: invalid DSA public key"u8;
-private static readonly @string x509InvalidDsaParametersˢ = "x509: invalid DSA parameters"u8;
-private static readonly @string x509ZeroOrNegativeDsaˢ = "x509: zero or negative DSA parameter"u8;
-private static readonly @string x509UnknownPublicKeyˢ = "x509: unknown public key algorithm"u8;
+internal static readonly @string x509RsaKeyMissingNullˢ = "x509: RSA key missing NULL parameters"u8;
+internal static readonly @string x509InvalidRsaPublicKeyˢ = "x509: invalid RSA public key"u8;
+internal static readonly @string x509InvalidRsaModulusˢ = "x509: invalid RSA modulus"u8;
+internal static readonly @string x509InvalidRsaPublicˢ = "x509: invalid RSA public exponent"u8;
+internal static readonly @string x509RsaModulusIsNotAˢ = "x509: RSA modulus is not a positive number"u8;
+internal static readonly @string x509RsaPublicExponentIsˢ = "x509: RSA public exponent is not a positive number"u8;
+internal static readonly @string x509InvalidEcdsaˢ = "x509: invalid ECDSA parameters"u8;
+internal static readonly @string x509UnsupportedEllipticˢ = "x509: unsupported elliptic curve"u8;
+internal static readonly @string x509FailedToUnmarshalˢ = "x509: failed to unmarshal elliptic curve point"u8;
+internal static readonly @string x509Ed25519KeyEncodedˢ = "x509: Ed25519 key encoded with illegal parameters"u8;
+internal static readonly @string x509WrongEd25519Publicˢ = "x509: wrong Ed25519 public key size"u8;
+internal static readonly @string x509X25519KeyEncodedWithˢ = "x509: X25519 key encoded with illegal parameters"u8;
+internal static readonly @string x509InvalidDsaPublicKeyˢ = "x509: invalid DSA public key"u8;
+internal static readonly @string x509InvalidDsaParametersˢ = "x509: invalid DSA parameters"u8;
+internal static readonly @string x509ZeroOrNegativeDsaˢ = "x509: zero or negative DSA parameter"u8;
+internal static readonly @string x509UnknownPublicKeyˢ = "x509: unknown public key algorithm"u8;
 
 internal static (any, error) parsePublicKey(ж<publicKeyInfo> ᏑkeyData) {
     ref var keyData = ref ᏑkeyData.Value;
@@ -374,7 +378,7 @@ internal static (any, error) parsePublicKey(ж<publicKeyInfo> ᏑkeyData) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509InvalidKeyUsageˢ = "x509: invalid key usage"u8;
+internal static readonly @string x509InvalidKeyUsageˢ = "x509: invalid key usage"u8;
 
 internal static (KeyUsage, error) parseKeyUsageExtension(cryptobyte.String der) {
     ref var usageBits = ref heap(new asn1.BitString(), out var ᏑusageBits);
@@ -391,11 +395,13 @@ internal static (KeyUsage, error) parseKeyUsageExtension(cryptobyte.String der) 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509InvalidBasicˢ = "x509: invalid basic constraints"u8;
+internal static readonly @string x509InvalidBasicˢ = "x509: invalid basic constraints"u8;
 
-internal static (bool, nint, error) parseBasicConstraintsExtension(cryptobyte.String der) {
+internal static (bool, nint, error) parseBasicConstraintsExtension(cryptobyte.String derʗp) {
+    ref var der = ref heap(derʗp, out var Ꮡder);
+
     ref var isCA = ref heap(new bool(), out var ᏑisCA);
-    if (!der.ReadASN1(Ꮡ(der), cryptobyte_asn1.SEQUENCE)) {
+    if (!der.ReadASN1(Ꮡder, cryptobyte_asn1.SEQUENCE)) {
         return (false, 0, errors.New(x509InvalidBasicˢ));
     }
     if (der.PeekASN1Tag(cryptobyte_asn1.BOOLEAN)) {
@@ -415,11 +421,13 @@ internal static (bool, nint, error) parseBasicConstraintsExtension(cryptobyte.St
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509InvalidSubjectˢ = "x509: invalid subject alternative names"u8;
-private static readonly @string x509InvalidSubjectˢ2 = "x509: invalid subject alternative name"u8;
+internal static readonly @string x509InvalidSubjectˢ = "x509: invalid subject alternative names"u8;
+internal static readonly @string x509InvalidSubjectˢ2 = "x509: invalid subject alternative name"u8;
 
-internal static error forEachSAN(cryptobyte.String der, Func<nint, slice<byte>, error> callback) {
-    if (!der.ReadASN1(Ꮡ(der), cryptobyte_asn1.SEQUENCE)) {
+internal static error forEachSAN(cryptobyte.String derʗp, Func<nint, slice<byte>, error> callback) {
+    ref var der = ref heap(derʗp, out var Ꮡder);
+
+    if (!der.ReadASN1(Ꮡder, cryptobyte_asn1.SEQUENCE)) {
         return errors.New(x509InvalidSubjectˢ);
     }
     while (!der.Empty()) {
@@ -438,9 +446,9 @@ internal static error forEachSAN(cryptobyte.String der, Func<nint, slice<byte>, 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509SanRfc822NameIsˢ = "x509: SAN rfc822Name is malformed"u8;
-private static readonly @string x509SanDNSNameIsˢ = "x509: SAN dNSName is malformed"u8;
-private static readonly @string x509Sanˢ = "x509: SAN uniformResourceIdentifier is malformed"u8;
+internal static readonly @string x509SanRfc822NameIsˢ = "x509: SAN rfc822Name is malformed"u8;
+internal static readonly @string x509SanDNSNameIsˢ = "x509: SAN dNSName is malformed"u8;
+internal static readonly @string x509Sanˢ = "x509: SAN uniformResourceIdentifier is malformed"u8;
 
 internal static (slice<@string> dnsNames, slice<@string> emailAddresses, slice<net.IP> ipAddresses, slice<ж<url.URL>> uris, error err) parseSANExtension(cryptobyte.String der) {
     slice<@string> dnsNames = default!;
@@ -506,8 +514,8 @@ internal static (slice<@string> dnsNames, slice<@string> emailAddresses, slice<n
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509AuthorityKeyˢ = "x509: authority key identifier incorrectly marked critical"u8;
-private static readonly @string x509InvalidAuthorityKeyˢ = "x509: invalid authority key identifier"u8;
+internal static readonly @string x509AuthorityKeyˢ = "x509: authority key identifier incorrectly marked critical"u8;
+internal static readonly @string x509InvalidAuthorityKeyˢ = "x509: invalid authority key identifier"u8;
 
 internal static (slice<byte>, error) parseAuthorityKeyIdentifier(pkix.Extension e) {
     // RFC 5280, Section 4.2.1.1
@@ -530,12 +538,14 @@ internal static (slice<byte>, error) parseAuthorityKeyIdentifier(pkix.Extension 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509InvalidExtendedKeyˢ = "x509: invalid extended key usages"u8;
+internal static readonly @string x509InvalidExtendedKeyˢ = "x509: invalid extended key usages"u8;
 
-internal static (slice<ExtKeyUsage>, slice<asn1.ObjectIdentifier>, error) parseExtKeyUsageExtension(cryptobyte.String der) {
+internal static (slice<ExtKeyUsage>, slice<asn1.ObjectIdentifier>, error) parseExtKeyUsageExtension(cryptobyte.String derʗp) {
+    ref var der = ref heap(derʗp, out var Ꮡder);
+
     slice<ExtKeyUsage> extKeyUsages = default!;
     slice<asn1.ObjectIdentifier> unknownUsages = default!;
-    if (!der.ReadASN1(Ꮡ(der), cryptobyte_asn1.SEQUENCE)) {
+    if (!der.ReadASN1(Ꮡder, cryptobyte_asn1.SEQUENCE)) {
         return (default!, default!, errors.New(x509InvalidExtendedKeyˢ));
     }
     while (!der.Empty()) {
@@ -555,11 +565,13 @@ internal static (slice<ExtKeyUsage>, slice<asn1.ObjectIdentifier>, error) parseE
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509InvalidCertificateˢ = "x509: invalid certificate policies"u8;
+internal static readonly @string x509InvalidCertificateˢ = "x509: invalid certificate policies"u8;
 
-internal static (slice<OID>, error) parseCertificatePoliciesExtension(cryptobyte.String der) {
+internal static (slice<OID>, error) parseCertificatePoliciesExtension(cryptobyte.String derʗp) {
+    ref var der = ref heap(derʗp, out var Ꮡder);
+
     slice<OID> oids = default!;
-    if (!der.ReadASN1(Ꮡ(der), cryptobyte_asn1.SEQUENCE)) {
+    if (!der.ReadASN1(Ꮡder, cryptobyte_asn1.SEQUENCE)) {
         return (default!, errors.New(x509InvalidCertificateˢ));
     }
     while (!der.Empty()) {
@@ -604,8 +616,8 @@ internal static bool isValidIPMask(slice<byte> mask) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509Invalidˢ = "x509: invalid NameConstraints extension"u8;
-private static readonly @string x509EmptyNameConstraintsˢ = "x509: empty name constraints extension"u8;
+internal static readonly @string x509Invalidˢ = "x509: invalid NameConstraints extension"u8;
+internal static readonly @string x509EmptyNameConstraintsˢ = "x509: empty name constraints extension"u8;
 
 internal static (bool unhandled, error err) parseNameConstraintsExtension(ж<Certificate> Ꮡout, pkix.Extension e) {
     bool unhandled = default!;
@@ -781,12 +793,12 @@ internal static (bool unhandled, error err) parseNameConstraintsExtension(ж<Cer
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509InvalidCrlˢ = "x509: invalid CRL distribution points"u8;
-private static readonly @string x509InvalidCrlˢ2 = "x509: invalid CRL distribution point"u8;
-private static readonly @string x509SubjectKeyIdentifierˢ = "x509: subject key identifier incorrectly marked critical"u8;
-private static readonly @string x509InvalidSubjectKeyˢ = "x509: invalid subject key identifier"u8;
-private static readonly @string x509AuthorityInfoAccessˢ = "x509: authority info access incorrectly marked critical"u8;
-private static readonly @string x509InvalidAuthorityInfoˢ = "x509: invalid authority info access"u8;
+internal static readonly @string x509InvalidCrlˢ = "x509: invalid CRL distribution points"u8;
+internal static readonly @string x509InvalidCrlˢ2 = "x509: invalid CRL distribution point"u8;
+internal static readonly @string x509SubjectKeyIdentifierˢ = "x509: subject key identifier incorrectly marked critical"u8;
+internal static readonly @string x509InvalidSubjectKeyˢ = "x509: invalid subject key identifier"u8;
+internal static readonly @string x509AuthorityInfoAccessˢ = "x509: authority info access incorrectly marked critical"u8;
+internal static readonly @string x509InvalidAuthorityInfoˢ = "x509: invalid authority info access"u8;
 
 internal static error processExtensions(ж<Certificate> Ꮡout) {
     ref var @out = ref Ꮡout.Value;
@@ -977,25 +989,25 @@ internal static error processExtensions(ж<Certificate> Ꮡout) {
 internal static ж<godebug.Setting> x509negativeserial = godebug.New("x509negativeserial"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509MalformedCertificateˢ = "x509: malformed certificate"u8;
-private static readonly @string x509MalformedTbsˢ = "x509: malformed tbs certificate"u8;
-private static readonly @string x509MalformedVersionˢ = "x509: malformed version"u8;
-private static readonly @string x509InvalidVersionˢ = "x509: invalid version"u8;
-private static readonly @string x509MalformedSerialˢ = "x509: malformed serial number"u8;
-private static readonly @string x509NegativeSerialNumberˢ = "x509: negative serial number"u8;
-private static readonly @string x509MalformedSignatureˢ = "x509: malformed signature algorithm identifier"u8;
-private static readonly @string x509MalformedAlgorithmˢ = "x509: malformed algorithm identifier"u8;
-private static readonly @string x509InnerAndOuterˢ = "x509: inner and outer signature algorithm identifiers don't match"u8;
-private static readonly @string x509MalformedIssuerˢ = "x509: malformed issuer"u8;
-private static readonly @string x509MalformedValidityˢ = "x509: malformed validity"u8;
-private static readonly @string x509MalformedSpkiˢ = "x509: malformed spki"u8;
-private static readonly @string x509MalformedPublicKeyˢ = "x509: malformed public key algorithm identifier"u8;
-private static readonly @string x509Malformedˢ2 = "x509: malformed subjectPublicKey"u8;
-private static readonly @string x509Malformedˢ3 = "x509: malformed issuerUniqueID"u8;
-private static readonly @string x509Malformedˢ4 = "x509: malformed subjectUniqueID"u8;
-private static readonly @string x509MalformedExtensionsˢ = "x509: malformed extensions"u8;
-private static readonly @string x509MalformedExtensionˢ4 = "x509: malformed extension"u8;
-private static readonly @string x509MalformedSignatureˢ2 = "x509: malformed signature"u8;
+internal static readonly @string x509MalformedCertificateˢ = "x509: malformed certificate"u8;
+internal static readonly @string x509MalformedTbsˢ = "x509: malformed tbs certificate"u8;
+internal static readonly @string x509MalformedVersionˢ = "x509: malformed version"u8;
+internal static readonly @string x509InvalidVersionˢ = "x509: invalid version"u8;
+internal static readonly @string x509MalformedSerialˢ = "x509: malformed serial number"u8;
+internal static readonly @string x509NegativeSerialNumberˢ = "x509: negative serial number"u8;
+internal static readonly @string x509MalformedSignatureˢ = "x509: malformed signature algorithm identifier"u8;
+internal static readonly @string x509MalformedAlgorithmˢ = "x509: malformed algorithm identifier"u8;
+internal static readonly @string x509InnerAndOuterˢ = "x509: inner and outer signature algorithm identifiers don't match"u8;
+internal static readonly @string x509MalformedIssuerˢ = "x509: malformed issuer"u8;
+internal static readonly @string x509MalformedValidityˢ = "x509: malformed validity"u8;
+internal static readonly @string x509MalformedSpkiˢ = "x509: malformed spki"u8;
+internal static readonly @string x509MalformedPublicKeyˢ = "x509: malformed public key algorithm identifier"u8;
+internal static readonly @string x509Malformedˢ2 = "x509: malformed subjectPublicKey"u8;
+internal static readonly @string x509Malformedˢ3 = "x509: malformed issuerUniqueID"u8;
+internal static readonly @string x509Malformedˢ4 = "x509: malformed subjectUniqueID"u8;
+internal static readonly @string x509MalformedExtensionsˢ = "x509: malformed extensions"u8;
+internal static readonly @string x509MalformedExtensionˢ4 = "x509: malformed extension"u8;
+internal static readonly @string x509MalformedSignatureˢ2 = "x509: malformed signature"u8;
 
 internal static (ж<Certificate>, error) parseCertificate(slice<byte> der) {
     var cert = Ꮡ(new Certificate(nil));
@@ -1173,7 +1185,7 @@ internal static (ж<Certificate>, error) parseCertificate(slice<byte> der) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509TrailingDataˢ = "x509: trailing data"u8;
+internal static readonly @string x509TrailingDataˢ = "x509: trailing data"u8;
 
 // ParseCertificate parses a single certificate from the given ASN.1 DER data.
 //
@@ -1211,10 +1223,10 @@ public static (slice<ж<Certificate>>, error) ParseCertificates(slice<byte> der)
 internal static UntypedInt x509v2Version => 1;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509MalformedCrlˢ = "x509: malformed crl"u8;
-private static readonly @string x509MalformedTbsCrlˢ = "x509: malformed tbs crl"u8;
-private static readonly @string x509UnsupportedCrlˢ = "x509: unsupported crl version"u8;
-private static readonly @string x509MalformedCrlNumberˢ = "x509: malformed crl number"u8;
+internal static readonly @string x509MalformedCrlˢ = "x509: malformed crl"u8;
+internal static readonly @string x509MalformedTbsCrlˢ = "x509: malformed tbs crl"u8;
+internal static readonly @string x509UnsupportedCrlˢ = "x509: unsupported crl version"u8;
+internal static readonly @string x509MalformedCrlNumberˢ = "x509: malformed crl number"u8;
 
 // ParseRevocationList parses a X509 v2 [Certificate] Revocation List from the given
 // ASN.1 DER data.

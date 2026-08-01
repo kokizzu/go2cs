@@ -399,9 +399,9 @@ internal static @string defaultPath(@string path) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sameSiteˢ = "SameSite"u8;
-private static readonly @string sameSiteStrictˢ = "SameSite=Strict"u8;
-private static readonly @string sameSiteLaxˢ = "SameSite=Lax"u8;
+internal static readonly @string sameSiteˢ = "SameSite"u8;
+internal static readonly @string sameSiteStrictˢ = "SameSite=Strict"u8;
+internal static readonly @string sameSiteLaxˢ = "SameSite=Lax"u8;
 
 // Path is either of form "/abc/xyz" or "/abc/xyz/".
 

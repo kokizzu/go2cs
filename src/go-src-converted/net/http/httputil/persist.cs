@@ -169,7 +169,7 @@ public static nint Pending(this ж<ServerConn> Ꮡsc) => func((defer, recover) =
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string persistServerPipeCountˢ = "persist server pipe count"u8;
+internal static readonly @string persistServerPipeCountˢ = "persist server pipe count"u8;
 
 // Write writes resp in response to req. To close the connection gracefully, set the
 // Response.Close field to true. Write should be considered operational until

@@ -282,7 +282,7 @@ internal static ref scavengerState scavenger => ref Ꮡscavenger.Value;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string scavengerStateIsAlreadyˢ = "scavenger state is already wired"u8;
+internal static readonly @string scavengerStateIsAlreadyˢ = "scavenger state is already wired"u8;
 
 // init initializes a scavenger state and wires to the current G.
 //
@@ -348,7 +348,7 @@ internal static void init(this ж<scavengerState> Ꮡs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string triedToParkScavengerFromˢ = "tried to park scavenger from another goroutine"u8;
+internal static readonly @string triedToParkScavengerFromˢ = "tried to park scavenger from another goroutine"u8;
 
 // park parks the scavenger goroutine.
 internal static void park(this ж<scavengerState> Ꮡs) {
@@ -393,7 +393,7 @@ internal static void wake(this ж<scavengerState> Ꮡs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string triedToSleepScavengerˢ = "tried to sleep scavenger from another goroutine"u8;
+internal static readonly @string triedToSleepScavengerˢ = "tried to sleep scavenger from another goroutine"u8;
 
 // sleep puts the scavenger to sleep based on the amount of time that it worked
 // in nanoseconds.
@@ -501,8 +501,8 @@ internal static void controllerFailed(this ж<scavengerState> Ꮡs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string triedToRunScavengerFromˢ = "tried to run scavenger from another goroutine"u8;
-private static readonly @string releasedLessThanOneˢ = "released less than one physical page of memory"u8;
+internal static readonly @string triedToRunScavengerFromˢ = "tried to run scavenger from another goroutine"u8;
+internal static readonly @string releasedLessThanOneˢ = "released less than one physical page of memory"u8;
 
 // run is the body of the main scavenging loop.
 //
@@ -736,7 +736,7 @@ internal static void printScavTrace(uintptr releasedBg, uintptr releasedEager, b
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badMValueˢ = "bad m value"u8;
+internal static readonly @string badMValueˢ = "bad m value"u8;
 
 // fillAligned returns x but with all zeroes in m-aligned
 // groups of m bits set to 1 if any bit in the group is non-zero.
@@ -813,8 +813,8 @@ internal static uint64 fillAligned(uint64 x, nuint m) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string minMustBeANonZeroPowerOfˢ = "min must be a non-zero power of 2"u8;
-private static readonly @string minTooLargeˢ = "min too large"u8;
+internal static readonly @string minMustBeANonZeroPowerOfˢ = "min must be a non-zero power of 2"u8;
+internal static readonly @string minTooLargeˢ = "min too large"u8;
 
 // findScavengeCandidate returns a start index and a size for this pallocData
 // segment which represents a contiguous region of free and unscavenged memory.
@@ -1238,7 +1238,7 @@ internal static bool shouldScavenge(this scavChunkData sc, uint32 currGen, bool 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tooManyPagesAllocatedInˢ = "too many pages allocated in chunk?"u8;
+internal static readonly @string tooManyPagesAllocatedInˢ = "too many pages allocated in chunk?"u8;
 
 // alloc updates sc given that npages were allocated in the corresponding chunk.
 [GoRecv] internal static void alloc(this ref scavChunkData sc, nuint npages, uint32 newGen) {
@@ -1258,7 +1258,7 @@ private static readonly @string tooManyPagesAllocatedInˢ = "too many pages allo
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string allocatedPagesBelowZeroˢ = "allocated pages below zero?"u8;
+internal static readonly @string allocatedPagesBelowZeroˢ = "allocated pages below zero?"u8;
 
 // free updates sc given that npages was freed in the corresponding chunk.
 [GoRecv] internal static void free(this ref scavChunkData sc, nuint npages, uint32 newGen) {

@@ -22,8 +22,8 @@ partial class dwarf_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeUnitLengthOverflowˢ = "type unit length overflow"u8;
-private static readonly @string typeUnitTypeOffsetˢ = "type unit type offset overflow"u8;
+internal static readonly @string typeUnitLengthOverflowˢ = "type unit length overflow"u8;
+internal static readonly @string typeUnitTypeOffsetˢ = "type unit type offset overflow"u8;
 
 // Parse a .debug_types section.
 internal static error parseTypes(this ж<Data> Ꮡd, @string name, slice<byte> types) {

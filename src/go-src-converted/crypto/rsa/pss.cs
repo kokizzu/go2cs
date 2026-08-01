@@ -16,7 +16,7 @@ using go.math;
 partial class rsa_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoRsaInputMustBeˢ2 = "crypto/rsa: input must be hashed with given hash"u8;
+internal static readonly @string cryptoRsaInputMustBeˢ2 = "crypto/rsa: input must be hashed with given hash"u8;
 
 // Per RFC 8017, Section 9.1
 //
@@ -88,7 +88,7 @@ internal static (slice<byte>, error) emsaPSSEncode(slice<byte> mHash, nint emBit
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rsaInternalErrorˢ = "rsa: internal error: inconsistent length"u8;
+internal static readonly @string rsaInternalErrorˢ = "rsa: internal error: inconsistent length"u8;
 
 internal static error emsaPSSVerify(slice<byte> mHash, slice<byte> em, nint emBits, nint sLen, hash.Hash hashΔ1) {
     // See RFC 8017, Section 9.1.2.

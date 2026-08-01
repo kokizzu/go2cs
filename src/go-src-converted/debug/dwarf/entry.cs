@@ -33,7 +33,7 @@ partial class dwarf_package {
 [GoType("map[uint32, abbrev]")] partial struct abbrevTable;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abbrevˢ = "abbrev"u8;
+internal static readonly @string abbrevˢ = "abbrev"u8;
 
 // parseAbbrev returns the abbreviation table that starts at byte off
 // in the .debug_abbrev section.
@@ -156,7 +156,7 @@ internal static map<Attr, Class> attrPtrClass = new map<Attr, Class>{
 };
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cannotDetermineClassOfˢ = "cannot determine class of unknown attribute form"u8;
+internal static readonly @string cannotDetermineClassOfˢ = "cannot determine class of unknown attribute form"u8;
 
 // formToClass returns the DWARF 4 Class for the given form. If the
 // DWARF version is less then 4, it will disambiguate some forms
@@ -336,24 +336,24 @@ public static @string GoString(this Class i) {
 [GoType("num:uint32")] partial struct Offset;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownAbbreviationTableˢ = "unknown abbreviation table index"u8;
-private static readonly @string dwFormStrxOffsetOutOfˢ = "DW_FORM_strx offset out of range"u8;
-private static readonly @string strOffsetsˢ = "str_offsets"u8;
-private static readonly @string dwFormStrxIndirectOffsetˢ = "DW_FORM_strx indirect offset out of range"u8;
-private static readonly @string strˢ = "str"u8;
-private static readonly @string dwFormRnglistxOffsetOutˢ = "DW_FORM_rnglistx offset out of range"u8;
-private static readonly @string rnglistsˢ = "rnglists"u8;
-private static readonly @string dwFormRnglistxIndirectˢ = "DW_FORM_rnglistx indirect offset out of range"u8;
-private static readonly @string dwFormAddrxWithNoDebugˢ = "DW_FORM_addrx with no .debug_addr section"u8;
-private static readonly @string unknownVersionForDwFormˢ = "unknown version for DW_FORM_ref_addr"u8;
-private static readonly @string unknownSizeForDwFormRefˢ = "unknown size for DW_FORM_ref_addr"u8;
-private static readonly @string unknownSizeForDwFormStrpˢ = "unknown size for DW_FORM_strp/line_strp"u8;
-private static readonly @string dwFormStrpLineStrpOffsetˢ = "DW_FORM_strp/line_strp offset out of range"u8;
-private static readonly @string dwFormLineStrpWithNoˢ = "DW_FORM_line_strp with no .debug_line_str section"u8;
-private static readonly @string lineStrˢ = "line_str"u8;
-private static readonly @string dwFormStrxWithNoDebugStrˢ = "DW_FORM_strx with no .debug_str_offsets section"u8;
-private static readonly @string unknownOffsetSizeForDwˢ = "unknown offset size for DW_FORM_strx"u8;
-private static readonly @string unknownSizeForDwFormStrpˢ2 = "unknown size for DW_FORM_strp_sup"u8;
+internal static readonly @string unknownAbbreviationTableˢ = "unknown abbreviation table index"u8;
+internal static readonly @string dwFormStrxOffsetOutOfˢ = "DW_FORM_strx offset out of range"u8;
+internal static readonly @string strOffsetsˢ = "str_offsets"u8;
+internal static readonly @string dwFormStrxIndirectOffsetˢ = "DW_FORM_strx indirect offset out of range"u8;
+internal static readonly @string strˢ = "str"u8;
+internal static readonly @string dwFormRnglistxOffsetOutˢ = "DW_FORM_rnglistx offset out of range"u8;
+internal static readonly @string rnglistsˢ = "rnglists"u8;
+internal static readonly @string dwFormRnglistxIndirectˢ = "DW_FORM_rnglistx indirect offset out of range"u8;
+internal static readonly @string dwFormAddrxWithNoDebugˢ = "DW_FORM_addrx with no .debug_addr section"u8;
+internal static readonly @string unknownVersionForDwFormˢ = "unknown version for DW_FORM_ref_addr"u8;
+internal static readonly @string unknownSizeForDwFormRefˢ = "unknown size for DW_FORM_ref_addr"u8;
+internal static readonly @string unknownSizeForDwFormStrpˢ = "unknown size for DW_FORM_strp/line_strp"u8;
+internal static readonly @string dwFormStrpLineStrpOffsetˢ = "DW_FORM_strp/line_strp offset out of range"u8;
+internal static readonly @string dwFormLineStrpWithNoˢ = "DW_FORM_line_strp with no .debug_line_str section"u8;
+internal static readonly @string lineStrˢ = "line_str"u8;
+internal static readonly @string dwFormStrxWithNoDebugStrˢ = "DW_FORM_strx with no .debug_str_offsets section"u8;
+internal static readonly @string unknownOffsetSizeForDwˢ = "unknown offset size for DW_FORM_strx"u8;
+internal static readonly @string unknownSizeForDwFormStrpˢ2 = "unknown size for DW_FORM_strp_sup"u8;
 
 // If we are currently parsing the compilation unit,
 // we can't evaluate Addrx or Strx until we've seen the
@@ -821,8 +821,8 @@ public static ж<ΔReader> Reader(this ж<Data> Ꮡd) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string infoˢ = "info"u8;
-private static readonly @string offsetOutOfRangeˢ = "offset out of range"u8;
+internal static readonly @string infoˢ = "info"u8;
+internal static readonly @string offsetOutOfRangeˢ = "offset out of range"u8;
 
 // Seek positions the [Reader] at offset off in the encoded entry stream.
 // Offset 0 can be used to denote the first entry.
@@ -1079,7 +1079,7 @@ public static (slice<array<uint64>>, error) Ranges(this ж<Data> Ꮡd, ж<Entry>
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noUnitForEntryˢ = "no unit for entry"u8;
+internal static readonly @string noUnitForEntryˢ = "no unit for entry"u8;
 
 // baseAddressForEntry returns the initial base address to be used when
 // looking up the range list of entry e.
@@ -1120,7 +1120,7 @@ internal static (ж<Entry>, uint64, error) baseAddressForEntry(this ж<Data> Ꮡ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rangesˢ = "ranges"u8;
+internal static readonly @string rangesˢ = "ranges"u8;
 
 internal static (slice<array<uint64>>, error) dwarf2Ranges(this ж<Data> Ꮡd, ж<unit> Ꮡu, uint64 @base, int64 ranges, slice<array<uint64>> ret) {
     ref var d = ref Ꮡd.Value;
@@ -1222,7 +1222,7 @@ internal static (slice<array<uint64>>, error) dwarf5Ranges(this ж<Data> Ꮡd, �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string addrˢ = "addr"u8;
+internal static readonly @string addrˢ = "addr"u8;
 
 // debugAddr returns the address at idx in debug_addr
 internal static (uint64, error) debugAddr(this ж<Data> Ꮡd, dataFormat format, uint64 addrBase, uint64 idx) {

@@ -14,7 +14,7 @@ partial class net_package {
 internal const bool supportsSendfile = true;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string transmitfileˢ = "transmitfile"u8;
+internal static readonly @string transmitfileˢ = "transmitfile"u8;
 
 // sendFile copies the contents of r to c using the TransmitFile
 // system call to minimize copies.

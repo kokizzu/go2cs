@@ -55,8 +55,8 @@ internal static slice<byte> appendFormatRFC3339(this Time t, slice<byte> b, bool
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string yearOutsideOfRange09999ˢ = "year outside of range [0,9999]"u8;
-private static readonly @string timezoneHourOutsideOfˢ = "timezone hour outside of range [0,23]"u8;
+internal static readonly @string yearOutsideOfRange09999ˢ = "year outside of range [0,9999]"u8;
+internal static readonly @string timezoneHourOutsideOfˢ = "timezone hour outside of range [0,23]"u8;
 
 internal static (slice<byte>, error) appendStrictRFC3339(this Time t, slice<byte> b) {
     nint n0 = len(b);

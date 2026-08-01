@@ -54,7 +54,7 @@ internal static array<nuint> levelLogPages = new nuint[]{
 }.array();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string failedToReservePageˢ = "failed to reserve page summary memory"u8;
+internal static readonly @string failedToReservePageˢ = "failed to reserve page summary memory"u8;
 
 // sysInit performs architecture-dependent initialization of fields
 // in pageAlloc. pageAlloc should be uninitialized except for sysStat
@@ -78,7 +78,7 @@ private static readonly @string failedToReservePageˢ = "failed to reserve page 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sysGrowBoundsNotAlignedˢ = "sysGrow bounds not aligned to pallocChunkBytes"u8;
+internal static readonly @string sysGrowBoundsNotAlignedˢ = "sysGrow bounds not aligned to pallocChunkBytes"u8;
 
 // sysGrow performs architecture-dependent operations on heap
 // growth for the page allocator, such as mapping in new memory
@@ -182,7 +182,7 @@ internal static uintptr sysGrow(this ж<scavengeIndex> Ꮡs, uintptr @base, uint
         print((@string)"runtime: base = "u8, ((Δhex)(uint64)@base), (@string)", limit = "u8, ((Δhex)(uint64)limit), (@string)"\n"u8);
         @throw(sysGrowBoundsNotAlignedˢ);
     }
-    var scSize = @unsafe.Sizeof(new atomicScavChunkData(nil));
+    var scSize = /* unsafe.Sizeof(atomicScavChunkData{}) */ (uintptr)8;
     // Map and commit the pieces of chunks that we need.
     //
     // We always map the full range of the minimum heap address to the
@@ -232,7 +232,7 @@ internal static uintptr sysGrow(this ж<scavengeIndex> Ꮡs, uintptr @base, uint
 // Returns the amount of memory added to sysStat.
 [GoRecv] internal static uintptr sysInit(this ref scavengeIndex s, bool test, ж<sysMemStat> ᏑsysStat) {
     var n = (uintptr)((uintptr)(1 << (int)(heapAddrBits))) / (uintptr)pallocChunkBytes;
-    var nbytes = n * @unsafe.Sizeof(new atomicScavChunkData(nil));
+    var nbytes = n * /* unsafe.Sizeof(atomicScavChunkData{}) */ (uintptr)8;
     @unsafe.Pointer r = (uintptr)sysReserve(nil, nbytes);
     ref var sl = ref heap<notInHeapSlice>(out var Ꮡsl);
     sl = new notInHeapSlice((ж<notInHeap>)(uintptr)(r), (nint)n, (nint)n);

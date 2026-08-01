@@ -23,7 +23,7 @@ internal static partial void debugCallV2();
 internal static partial void debugCallPanicked(any val);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeˢ = "runtime."u8;
+internal static readonly @string runtimeˢ = "runtime."u8;
 
 // debugCallCheck checks whether it is safe to inject a debugger
 // function call with return PC pc. If not, it returns a string
@@ -87,7 +87,7 @@ internal static @string debugCallCheck(uintptr pc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string inconsistentLockedmˢ = "inconsistent lockedm"u8;
+internal static readonly @string inconsistentLockedmˢ = "inconsistent lockedm"u8;
 
 // debugCallWrap starts a new goroutine to run a debug call and blocks
 // the calling goroutine. On the goroutine, it prepares to recover

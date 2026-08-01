@@ -236,7 +236,7 @@ public static ж<Element> Set(this ж<Element> Ꮡv, ж<Element> Ꮡa) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string edwards25519InvalidFieldˢ = "edwards25519: invalid field element input size"u8;
+internal static readonly @string edwards25519InvalidFieldˢ = "edwards25519: invalid field element input size"u8;
 
 // SetBytes sets v to x, where x is a 32-byte little-endian encoding. If x is
 // not of the right length, SetBytes returns nil and an error, and the

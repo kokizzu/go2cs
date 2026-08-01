@@ -78,7 +78,7 @@ partial class runtime_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string reflectMismatchˢ = "reflect mismatch"u8;
+internal static readonly @string reflectMismatchˢ = "reflect mismatch"u8;
 
 // argMapInternal is used internally by stkframe to fetch special
 // argument maps.
@@ -158,8 +158,8 @@ private static readonly @string reflectMismatchˢ = "reflect mismatch"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingStackmapˢ = "missing stackmap"u8;
-private static readonly @string badSymbolTableˢ = "bad symbol table"u8;
+internal static readonly @string missingStackmapˢ = "missing stackmap"u8;
+internal static readonly @string badSymbolTableˢ = "bad symbol table"u8;
 
 // getStackMap returns the locals and arguments live pointer maps, and
 // stack object list for frame.
@@ -246,7 +246,7 @@ private static readonly @string badSymbolTableˢ = "bad symbol table"u8;
         }
     }
     // stack objects.
-    if ((GOARCH == "amd64"u8 || GOARCH == "arm64"u8 || GOARCH == "loong64"u8 || GOARCH == "ppc64"u8 || GOARCH == "ppc64le"u8 || GOARCH == "riscv64"u8) && @unsafe.Sizeof(new abi.RegArgs(nil)) > 0 && isReflect){
+    if ((GOARCH == "amd64"u8 || GOARCH == "arm64"u8 || GOARCH == "loong64"u8 || GOARCH == "ppc64"u8 || GOARCH == "ppc64le"u8 || GOARCH == "riscv64"u8) && /* unsafe.Sizeof(abi.RegArgs{}) */ (uintptr)272 > 0 && isReflect){
         // For reflect.makeFuncStub and reflect.methodValueCall,
         // we need to fake the stack object record.
         // These frames contain an internal/abi.RegArgs at a hard-coded offset.
@@ -273,8 +273,8 @@ internal static ж<array<stackObjectRecord>> ᏑmethodValueCallFrameObjs = new(n
 internal static ref array<stackObjectRecord> methodValueCallFrameObjs => ref ᏑmethodValueCallFrameObjs.Value;    // initialized in stackobjectinit
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string abiRegArgsTypeNeedsGcˢ = "abiRegArgsType needs GC Prog, update methodValueCallFrameObjs"u8;
-private static readonly @string methodValueCallFrameObjsˢ = "methodValueCallFrameObjs is not in a module"u8;
+internal static readonly @string abiRegArgsTypeNeedsGcˢ = "abiRegArgsType needs GC Prog, update methodValueCallFrameObjs"u8;
+internal static readonly @string methodValueCallFrameObjsˢ = "methodValueCallFrameObjs is not in a module"u8;
 
 internal static void stkobjinit() {
     ref var abiRegArgsEface = ref heap<any>(out var ᏑabiRegArgsEface);

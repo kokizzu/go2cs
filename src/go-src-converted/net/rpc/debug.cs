@@ -90,7 +90,7 @@ internal static void Swap(this methodArray m, nint i, nint j) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object rpcErrorExecutingˢ = (@string)"rpc: error executing template:"u8;
+internal static readonly object rpcErrorExecutingˢ = (@string)"rpc: error executing template:"u8;
 
 // Runs at /debug/rpc
 internal static void ServeHTTP(this debugHTTP server, Δhttp.ResponseWriter w, ж<Δhttp.Request> Ꮡreq) {

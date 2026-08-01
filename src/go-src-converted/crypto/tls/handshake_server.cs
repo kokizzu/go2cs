@@ -212,7 +212,7 @@ internal static (ж<clientHelloMsg>, error) readClientHello(this ж<Conn> Ꮡc, 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsClientDoesNotSupportˢ = "tls: client does not support uncompressed connections"u8;
+internal static readonly @string tlsClientDoesNotSupportˢ = "tls: client does not support uncompressed connections"u8;
 
 [GoRecv] internal static error processClientHello(this ref serverHandshakeState hs) {
     var c = hs.c;
@@ -384,8 +384,8 @@ internal static bool supportsECDHE(ж<Config> Ꮡc, uint16 version, slice<CurveI
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsNoCipherSuiteˢ = "tls: no cipher suite supported by both client and server"u8;
-private static readonly @string tlsClientUsingˢ = "tls: client using inappropriate protocol fallback"u8;
+internal static readonly @string tlsNoCipherSuiteˢ = "tls: no cipher suite supported by both client and server"u8;
+internal static readonly @string tlsClientUsingˢ = "tls: client using inappropriate protocol fallback"u8;
 
 internal static error pickCipherSuite(this ж<serverHandshakeState> Ꮡhs) {
     ref var hs = ref Ꮡhs.Value;
@@ -460,7 +460,7 @@ internal static error pickCipherSuite(this ж<serverHandshakeState> Ꮡhs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsSessionSupportedˢ = "tls: session supported extended_master_secret but client does not"u8;
+internal static readonly @string tlsSessionSupportedˢ = "tls: session supported extended_master_secret but client does not"u8;
 
 // checkForResumption reports whether we should perform resumption on this connection.
 internal static error checkForResumption(this ж<serverHandshakeState> Ꮡhs) {
@@ -591,7 +591,7 @@ internal static error doResumeHandshake(this ж<serverHandshakeState> Ꮡhs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsClientCertificateUsedˢ = "tls: client certificate used with invalid signature algorithm"u8;
+internal static readonly @string tlsClientCertificateUsedˢ = "tls: client certificate used with invalid signature algorithm"u8;
 
 internal static error doFullHandshake(this ж<serverHandshakeState> Ꮡhs) {
     ref var hs = ref Ꮡhs.Value;
@@ -827,7 +827,7 @@ internal static error doFullHandshake(this ж<serverHandshakeState> Ꮡhs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsClientSFinishedˢ = "tls: client's Finished message is incorrect"u8;
+internal static readonly @string tlsClientSFinishedˢ = "tls: client's Finished message is incorrect"u8;
 
 internal static error readFinished(this ж<serverHandshakeState> Ꮡhs, slice<byte> @out) {
     ref var hs = ref Ꮡhs.Value;
@@ -924,7 +924,7 @@ internal static error sendFinished(this ж<serverHandshakeState> Ꮡhs, slice<by
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsClientDidnTProvideAˢ = "tls: client didn't provide a certificate"u8;
+internal static readonly @string tlsClientDidnTProvideAˢ = "tls: client didn't provide a certificate"u8;
 
 // processCertsFromClient takes a chain of client certificates either from a
 // Certificates message and verifies them.

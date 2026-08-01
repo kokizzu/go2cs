@@ -132,7 +132,7 @@ internal static bool embedded(this Δname n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string readVarintˢ = "read varint"u8;
+internal static readonly @string readVarintˢ = "read varint"u8;
 
 // readVarint parses a varint as encoded by encoding/binary.
 // It returns the number of encoded bytes and the encoded value.
@@ -148,7 +148,7 @@ internal static (nint, nint) readVarint(this Δname n, nint off) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nonEmptyStringˢ = "non-empty string"u8;
+internal static readonly @string nonEmptyStringˢ = "non-empty string"u8;
 
 internal static @string name(this Δname n) {
     if (n.bytes == nil) {
@@ -168,8 +168,8 @@ internal static @string tag(this Δname n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nameFlagFieldˢ = "name flag field"u8;
-private static readonly @string nameOffsetFieldˢ = "name offset field"u8;
+internal static readonly @string nameFlagFieldˢ = "name flag field"u8;
+internal static readonly @string nameOffsetFieldˢ = "name offset field"u8;
 
 internal static @string pkgPath(abiꓸName n) {
     if (n.Bytes == nil || (byte)(n.DataChecked(0, nameFlagFieldˢ).Value & ((byte)(1 << (int)(2)))) == 0) {

@@ -64,7 +64,7 @@ internal static nint /*nbreaks*/ linebreak(this ж<printer> Ꮡp, nint line, nin
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object setCommentFoundPendingˢ = (@string)"setComment found pending comments"u8;
+internal static readonly object setCommentFoundPendingˢ = (@string)"setComment found pending comments"u8;
 
 // setComment sets g as the next comment if g != nil and if node comments
 // are enabled - this mode is used when printing source code fragments such
@@ -513,7 +513,7 @@ internal static void setLineComment(this ж<printer> Ꮡp, @string text) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string containsFilteredOrˢ = "// contains filtered or unexported methods"u8;
+internal static readonly @string containsFilteredOrˢ = "// contains filtered or unexported methods"u8;
 
 internal static void fieldList(this ж<printer> Ꮡp, ж<ast.FieldList> Ꮡfields, bool isStruct, bool isIncomplete) {
     ref var p = ref Ꮡp.Value;
@@ -857,8 +857,8 @@ internal static bool isBinary(ast.Expr expr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object badExprˢ = (@string)"BadExpr"u8;
-private static readonly object depth1ˢ = (@string)"depth < 1:"u8;
+internal static readonly object badExprˢ = (@string)"BadExpr"u8;
+internal static readonly object depth1ˢ = (@string)"depth < 1:"u8;
 
 internal static void expr1(this ж<printer> Ꮡp, ast.Expr expr, nint prec1, nint depth) {
     ref var p = ref Ꮡp.Value;
@@ -1471,7 +1471,7 @@ internal static void controlClause(this ж<printer> Ꮡp, bool isForStmt, ast.St
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object badStmtˢ = (@string)"BadStmt"u8;
+internal static readonly object badStmtˢ = (@string)"BadStmt"u8;
 
 internal static void stmt(this ж<printer> Ꮡp, ast.Stmt stmt, bool nextIsRBrace) {
     ref var p = ref Ꮡp.Value;
@@ -1843,7 +1843,7 @@ internal static ж<ast.BasicLit> sanitizeImportPath(ж<ast.BasicLit> Ꮡlit) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object expectedN1Gotˢ = (@string)"expected n = 1; got"u8;
+internal static readonly object expectedN1Gotˢ = (@string)"expected n = 1; got"u8;
 
 // The parameter n is the number of specs in the group. If doIndent is set,
 // multi-line identifier lists in the spec are indented when the first
@@ -2133,7 +2133,7 @@ internal static void funcDecl(this ж<printer> Ꮡp, ж<ast.FuncDecl> Ꮡd) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object badDeclˢ = (@string)"BadDecl"u8;
+internal static readonly object badDeclˢ = (@string)"BadDecl"u8;
 
 internal static void decl(this ж<printer> Ꮡp, ast.Decl decl) {
     ref var p = ref Ꮡp.Value;

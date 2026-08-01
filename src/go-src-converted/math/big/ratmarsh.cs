@@ -16,7 +16,7 @@ partial class big_package {
 internal const byte ratGobVersion = 1;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ratGobEncodeNumeratorTooˢ = "Rat.GobEncode: numerator too large"u8;
+internal static readonly @string ratGobEncodeNumeratorTooˢ = "Rat.GobEncode: numerator too large"u8;
 
 // GobEncode implements the [encoding/gob.GobEncoder] interface.
 public static (slice<byte>, error) GobEncode(this ж<ΔRat> Ꮡx) {
@@ -46,8 +46,8 @@ public static (slice<byte>, error) GobEncode(this ж<ΔRat> Ꮡx) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ratGobDecodeBufferTooˢ = "Rat.GobDecode: buffer too small"u8;
-private static readonly @string ratGobDecodeInvalidˢ = "Rat.GobDecode: invalid length"u8;
+internal static readonly @string ratGobDecodeBufferTooˢ = "Rat.GobDecode: buffer too small"u8;
+internal static readonly @string ratGobDecodeInvalidˢ = "Rat.GobDecode: invalid length"u8;
 
 // GobDecode implements the [encoding/gob.GobDecoder] interface.
 [GoRecv] public static error GobDecode(this ref ΔRat z, slice<byte> buf) {

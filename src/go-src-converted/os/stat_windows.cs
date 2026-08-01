@@ -124,7 +124,7 @@ internal static (FileInfo, error) statHandle(@string name, syscallꓸHandle h) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string statˢ = "Stat"u8;
+internal static readonly @string statˢ = "Stat"u8;
 
 // statNolog implements Stat for Windows.
 internal static (FileInfo, error) statNolog(@string name) {
@@ -132,7 +132,7 @@ internal static (FileInfo, error) statNolog(@string name) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lstatˢ = "Lstat"u8;
+internal static readonly @string lstatˢ = "Lstat"u8;
 
 // lstatNolog implements Lstat for Windows.
 internal static (FileInfo, error) lstatNolog(@string name) {

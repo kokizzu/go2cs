@@ -167,7 +167,7 @@ internal static ж<echConfig> pickECHConfig(slice<echConfig> list) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsNoSupportedSymmetricˢ = "tls: no supported symmetric ciphersuites for ECH"u8;
+internal static readonly @string tlsNoSupportedSymmetricˢ = "tls: no supported symmetric ciphersuites for ECH"u8;
 
 internal static (echCipher, error) pickECHCipherSuite(slice<echCipher> suites) {
     foreach (var (_, s) in suites) {
@@ -304,7 +304,7 @@ internal static bool validDNSName(@string name) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsServerRejectedEchˢ = "tls: server rejected ECH"u8;
+internal static readonly @string tlsServerRejectedEchˢ = "tls: server rejected ECH"u8;
 
 [GoRecv] public static @string Error(this ref ECHRejectionError e) {
     return tlsServerRejectedEchˢ;

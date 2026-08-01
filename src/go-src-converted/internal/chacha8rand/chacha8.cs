@@ -149,7 +149,7 @@ public static slice<byte> Marshal(ж<State> Ꮡs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidChaCha8Encodingˢ = "invalid ChaCha8 encoding"u8;
+internal static readonly @string invalidChaCha8Encodingˢ = "invalid ChaCha8 encoding"u8;
 
 [GoRecv] internal static @string Error(this ref errUnmarshalChaCha8 _) {
     return invalidChaCha8Encodingˢ;

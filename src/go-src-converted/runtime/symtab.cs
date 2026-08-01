@@ -241,10 +241,6 @@ internal static slice<Frame> expandCgoFrames(uintptr pc) {
     return frames;
 }
 
-// unexported field to disallow conversions
-[GoType("dyn")] partial struct Func_opaque {
-}
-
 // NOTE: Func does not expose the actual unexported fields, because we return *Func
 // values to users, and we want to keep them from being able to overwrite the data
 // with (say) *f = Func{}.
@@ -253,7 +249,7 @@ internal static slice<Frame> expandCgoFrames(uintptr pc) {
 
 // A Func represents a Go function in the running binary.
 [GoType] partial struct Func {
-    internal Func_opaque opaque;
+    internal EmptyStruct opaque; // unexported field to disallow conversions
 }
 
 internal static ж<_func> raw(this ж<Func> Ꮡf) {
@@ -814,7 +810,7 @@ internal static ΔfuncInfo findfunc(uintptr pc) {
     // TODO: are datap.text and datap.minpc always equal?
     var b = x / (uintptr)abi.FuncTabBucketSize;
     var i = x % (uintptr)abi.FuncTabBucketSize / (uintptr)((uintptr)abi.FuncTabBucketSize / nsub);
-    var ffb = (ж<findfuncbucket>)(uintptr)(add((@unsafe.Pointer)(~datap).findfunctab, b * @unsafe.Sizeof(new findfuncbucket(nil))));
+    var ffb = (ж<findfuncbucket>)(uintptr)(add((@unsafe.Pointer)(~datap).findfunctab, b * /* unsafe.Sizeof(findfuncbucket{}) */ (uintptr)20));
     var idx = (~ffb).idx + (uint32)(~ffb).subbuckets[(nint)(i)];
     // Find the ftab entry.
     while ((~datap).ftab[(nint)(idx + 1)].entryoff <= pcOff) {
@@ -1114,7 +1110,7 @@ internal static int32 funcMaxSPDelta(ΔfuncInfo f) {
 }
 
 internal static uint32 pcdatastart(ΔfuncInfo f, uint32 table) {
-    return ~(ж<uint32>)(uintptr)(add(new @unsafe.Pointer(Ꮡ(f).of(runtime_package.ΔfuncInfo.Ꮡnfuncdata)), @unsafe.Sizeof(f.nfuncdata) + (uintptr)table * 4));
+    return ~(ж<uint32>)(uintptr)(add(new @unsafe.Pointer(Ꮡ(f).of(runtime_package.ΔfuncInfo.Ꮡnfuncdata)), /* unsafe.Sizeof(f.nfuncdata) */ (uintptr)1 + (uintptr)table * 4));
 }
 
 internal static int32 pcdatavalue(ΔfuncInfo f, uint32 table, uintptr targetpc) {
@@ -1159,7 +1155,7 @@ internal static @unsafe.Pointer funcdata(ΔfuncInfo f, uint8 i) {
     }
     var @base = f.datap.Value.gofunc;
     // load gofunc address early so that we calculate during cache misses
-    var Δp = (uintptr)new @unsafe.Pointer(Ꮡ(f).of(runtime_package.ΔfuncInfo.Ꮡnfuncdata)) + @unsafe.Sizeof(f.nfuncdata) + (uintptr)f.npcdata * 4 + (uintptr)i * 4;
+    var Δp = (uintptr)new @unsafe.Pointer(Ꮡ(f).of(runtime_package.ΔfuncInfo.Ꮡnfuncdata)) + /* unsafe.Sizeof(f.nfuncdata) */ (uintptr)1 + (uintptr)f.npcdata * 4 + (uintptr)i * 4;
     var off = ~(ж<uint32>)(uintptr)((@unsafe.Pointer)Δp);
     // Return off == ^uint32(0) ? 0 : f.datap.gofunc + uintptr(off), but without branches.
     // The compiler calculates mask on most architectures using conditional assignment.

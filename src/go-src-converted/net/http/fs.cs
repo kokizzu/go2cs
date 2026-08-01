@@ -54,7 +54,7 @@ internal static error mapOpenError(error originalErr, @string name, rune sep, Fu
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpInvalidOrUnsafeFileˢ = "http: invalid or unsafe file path"u8;
+internal static readonly @string httpInvalidOrUnsafeFileˢ = "http: invalid or unsafe file path"u8;
 
 // Open implements [FileSystem] using [os.Open], opening files for reading rooted
 // and relative to the directory d.
@@ -139,8 +139,8 @@ internal static @string name(this dirEntryDirs d, nint i) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string errorReadingDirectoryˢ = "Error reading directory"u8;
-private static readonly @string textHtmlCharsetUtf8ˢ = "text/html; charset=utf-8"u8;
+internal static readonly @string errorReadingDirectoryˢ = "Error reading directory"u8;
+internal static readonly @string textHtmlCharsetUtf8ˢ = "text/html; charset=utf-8"u8;
 
 internal static void dirList(ResponseWriter w, ж<Request> Ꮡr, File f) {
     // Prefer to use ReadDir instead of Readdir,
@@ -273,13 +273,13 @@ internal static error errSeeker = errors.New("seeker can't seek"u8);
 internal static error errNoOverlap = errors.New("invalid range: failed to overlap"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string seekerCanTSeekˢ = "seeker can't seek"u8;
-private static readonly @string negativeContentSizeˢ = "negative content size computed"u8;
-private static readonly @string contentRangeˢ = "Content-Range"u8;
-private static readonly @string acceptRangesˢ = "Accept-Ranges"u8;
-private static readonly @string bytesˢ = "bytes"u8;
-private static readonly @string contentEncodingˢ = "Content-Encoding"u8;
-private static readonly @string contentLengthˢ = "Content-Length"u8;
+internal static readonly @string seekerCanTSeekˢ = "seeker can't seek"u8;
+internal static readonly @string negativeContentSizeˢ = "negative content size computed"u8;
+internal static readonly @string contentRangeˢ = "Content-Range"u8;
+internal static readonly @string acceptRangesˢ = "Accept-Ranges"u8;
+internal static readonly @string bytesˢ = "bytes"u8;
+internal static readonly @string contentEncodingˢ = "Content-Encoding"u8;
+internal static readonly @string contentLengthˢ = "Content-Length"u8;
 
 // if name is empty, filename is unknown. (used for mime type, before sniffing)
 // if modtime.IsZero(), modtime is unknown.
@@ -517,8 +517,8 @@ internal static condResult condTrue => 1;
 internal static condResult condFalse => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ifMatchˢ = "If-Match"u8;
-private static readonly @string etagˢ = "Etag"u8;
+internal static readonly @string ifMatchˢ = "If-Match"u8;
+internal static readonly @string etagˢ = "Etag"u8;
 
 internal static condResult checkIfMatch(ResponseWriter w, ж<Request> Ꮡr) {
     ref var r = ref Ꮡr.Value;
@@ -552,7 +552,7 @@ internal static condResult checkIfMatch(ResponseWriter w, ж<Request> Ꮡr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ifUnmodifiedSinceˢ = "If-Unmodified-Since"u8;
+internal static readonly @string ifUnmodifiedSinceˢ = "If-Unmodified-Since"u8;
 
 internal static condResult checkIfUnmodifiedSince(ж<Request> Ꮡr, time.Time modtime) {
     ref var r = ref Ꮡr.Value;
@@ -577,7 +577,7 @@ internal static condResult checkIfUnmodifiedSince(ж<Request> Ꮡr, time.Time mo
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ifNoneMatchˢ = "If-None-Match"u8;
+internal static readonly @string ifNoneMatchˢ = "If-None-Match"u8;
 
 internal static condResult checkIfNoneMatch(ResponseWriter w, ж<Request> Ꮡr) {
     ref var r = ref Ꮡr.Value;
@@ -612,7 +612,7 @@ internal static condResult checkIfNoneMatch(ResponseWriter w, ж<Request> Ꮡr) 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ifModifiedSinceˢ = "If-Modified-Since"u8;
+internal static readonly @string ifModifiedSinceˢ = "If-Modified-Since"u8;
 
 internal static condResult checkIfModifiedSince(ж<Request> Ꮡr, time.Time modtime) {
     ref var r = ref Ꮡr.Value;
@@ -640,7 +640,7 @@ internal static condResult checkIfModifiedSince(ж<Request> Ꮡr, time.Time modt
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ifRangeˢ = "If-Range"u8;
+internal static readonly @string ifRangeˢ = "If-Range"u8;
 
 internal static condResult checkIfRange(ResponseWriter w, ж<Request> Ꮡr, time.Time modtime) {
     ref var r = ref Ꮡr.Value;
@@ -683,7 +683,7 @@ internal static bool isZeroTime(time.Time t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lastModifiedˢ = "Last-Modified"u8;
+internal static readonly @string lastModifiedˢ = "Last-Modified"u8;
 
 internal static void setLastModified(ResponseWriter w, time.Time modtime) {
     if (!isZeroTime(modtime)) {
@@ -708,7 +708,7 @@ internal static void writeNotModified(ResponseWriter w) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rangeˢ = "Range"u8;
+internal static readonly @string rangeˢ = "Range"u8;
 
 // checkPreconditions evaluates request preconditions and reports whether a precondition
 // resulted in sending StatusNotModified or StatusPreconditionFailed.
@@ -751,7 +751,7 @@ internal static (bool done, @string rangeHeader) checkPreconditions(ResponseWrit
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpAttemptingToTraverseˢ = "http: attempting to traverse a non-directory"u8;
+internal static readonly @string httpAttemptingToTraverseˢ = "http: attempting to traverse a non-directory"u8;
 
 // name is '/'-separated, not filepath.Separator.
 internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs, @string name, bool redirect) => func((defer, recover) => {
@@ -838,9 +838,9 @@ internal static void serveFile(ResponseWriter w, ж<Request> Ꮡr, FileSystem fs
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pageNotFoundˢ = "404 page not found"u8;
-private static readonly @string forbiddenˢ = "403 Forbidden"u8;
-private static readonly @string internalServerErrorˢ = "500 Internal Server Error"u8;
+internal static readonly @string pageNotFoundˢ = "404 page not found"u8;
+internal static readonly @string forbiddenˢ = "403 Forbidden"u8;
+internal static readonly @string internalServerErrorˢ = "500 Internal Server Error"u8;
 
 // toHTTPError returns a non-specific HTTP error message and status code
 // for a given non-nil error value. It's important that toHTTPError does not
@@ -876,7 +876,7 @@ internal static void localRedirect(ResponseWriter w, ж<Request> Ꮡr, @string n
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidUrlPathˢ = "invalid URL path"u8;
+internal static readonly @string invalidUrlPathˢ = "invalid URL path"u8;
 
 // ServeFile replies to the request with the contents of the named
 // file or directory.
@@ -1115,7 +1115,7 @@ internal static textproto.MIMEHeader mimeHeader(this httpRange r, @string conten
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidRangeˢ = "invalid range"u8;
+internal static readonly @string invalidRangeˢ = "invalid range"u8;
 
 // parseRange parses a Range header string as per RFC 7233.
 // errNoOverlap is returned if none of the ranges overlap.

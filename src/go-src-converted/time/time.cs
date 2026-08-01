@@ -472,7 +472,7 @@ internal static uint64 abs(this Time t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string utcˢ = "UTC"u8;
+internal static readonly @string utcˢ = "UTC"u8;
 
 // locabs is a combination of the Zone and abs methods,
 // extracting both return values from a single zone lookup.
@@ -1313,7 +1313,7 @@ internal const byte timeBinaryVersionV1 = /* iota + 1 */ 1;    // For general si
 internal const byte timeBinaryVersionV2 = 2;    // For LMT only
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string timeMarshalBinaryˢ = "Time.MarshalBinary: unexpected zone offset"u8;
+internal static readonly @string timeMarshalBinaryˢ = "Time.MarshalBinary: unexpected zone offset"u8;
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
 public static (slice<byte>, error) MarshalBinary(this Time t) {
@@ -1364,9 +1364,9 @@ public static (slice<byte>, error) MarshalBinary(this Time t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string timeUnmarshalBinaryNoˢ = "Time.UnmarshalBinary: no data"u8;
-private static readonly @string timeUnmarshalBinaryˢ = "Time.UnmarshalBinary: unsupported version"u8;
-private static readonly @string timeUnmarshalBinaryˢ2 = "Time.UnmarshalBinary: invalid length"u8;
+internal static readonly @string timeUnmarshalBinaryNoˢ = "Time.UnmarshalBinary: no data"u8;
+internal static readonly @string timeUnmarshalBinaryˢ = "Time.UnmarshalBinary: unsupported version"u8;
+internal static readonly @string timeUnmarshalBinaryˢ2 = "Time.UnmarshalBinary: invalid length"u8;
 
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
 [GoRecv] public static error UnmarshalBinary(this ref Time t, slice<byte> data) {
@@ -1444,7 +1444,7 @@ public static (slice<byte>, error) MarshalJSON(this Time t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string timeUnmarshalJSONInputIsˢ = "Time.UnmarshalJSON: input is not a JSON string"u8;
+internal static readonly @string timeUnmarshalJSONInputIsˢ = "Time.UnmarshalJSON: input is not a JSON string"u8;
 
 // UnmarshalJSON implements the [json.Unmarshaler] interface.
 // The time must be a quoted string in the RFC 3339 format.

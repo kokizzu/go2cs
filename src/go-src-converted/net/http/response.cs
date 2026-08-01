@@ -138,8 +138,8 @@ public static error ErrNoLocation = errors.New("http: no Location header in resp
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string malformedHttpResponseˢ = "malformed HTTP response"u8;
-private static readonly @string malformedHttpStatusCodeˢ = "malformed HTTP status code"u8;
+internal static readonly @string malformedHttpResponseˢ = "malformed HTTP response"u8;
+internal static readonly @string malformedHttpStatusCodeˢ = "malformed HTTP status code"u8;
 
 // ReadResponse reads and returns an HTTP response from r.
 // The req parameter optionally specifies the [Request] that corresponds
@@ -197,8 +197,8 @@ public static (ж<Response>, error) ReadResponse(ж<bufio.Reader> Ꮡr, ж<Reque
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pragmaˢ = "Pragma"u8;
-private static readonly @string cacheControlˢ = "Cache-Control"u8;
+internal static readonly @string pragmaˢ = "Pragma"u8;
+internal static readonly @string cacheControlˢ = "Cache-Control"u8;
 
 // RFC 7234, section 5.4: Should treat
 //
@@ -226,7 +226,7 @@ internal static void fixPragmaCacheControl(ΔHeader header) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string contentLength0ˢ = "Content-Length: 0\r\n"u8;
+internal static readonly @string contentLength0ˢ = "Content-Length: 0\r\n"u8;
 
 [GoType("dyn")] partial struct Write_r1 {
     public io_package.Reader Reader;

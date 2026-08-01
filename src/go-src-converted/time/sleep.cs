@@ -19,7 +19,9 @@ internal static ж<godebug.Setting> asynctimerchan = godebug.New("asynctimerchan
 // If the GODEBUG asynctimerchan has disabled the async timer chan
 // code, then syncTimer always returns nil, to disable the special
 // channel code paths in the runtime.
-internal static @unsafe.Pointer syncTimer(channel<Time> c) {
+internal static @unsafe.Pointer syncTimer(channel<Time> cʗp) {
+    ref var c = ref heap(cʗp, out var Ꮡc);
+
     // If asynctimerchan=1, we don't even tell the runtime
     // about channel timers, so that we get the pre-Go 1.23 code paths.
     if (asynctimerchan.Value() == "1"u8) {
@@ -41,7 +43,7 @@ internal static @unsafe.Pointer syncTimer(channel<Time> c) {
     // If we decide to keep the sync channels, we can delete all the
     // handling of asynctimerchan in the runtime and keep just this
     // function to handle asynctimerchan=1.
-    return ~Ꮡ(c).Reinterpret<channel<Time>, @unsafe.Pointer>();
+    return ~Ꮡc.Reinterpret<channel<Time>, @unsafe.Pointer>();
 }
 
 // when is a helper function for setting the 'when' field of a runtimeTimer.

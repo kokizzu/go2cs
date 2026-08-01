@@ -26,7 +26,7 @@ internal static traceProcStatus traceProcSyscall => 3;
 internal static traceProcStatus traceProcSyscallAbandoned => 4;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string attemptedToTraceABadˢ = "attempted to trace a bad status for a goroutine"u8;
+internal static readonly @string attemptedToTraceABadˢ = "attempted to trace a bad status for a goroutine"u8;
 
 // writeGoStatus emits a GoStatus event as well as any active ranges on the goroutine.
 internal static traceWriter writeGoStatus(this traceWriter w, uint64 goid, int64 mid, traceGoStatus status, bool markAssist, uint64 stackID) {
@@ -49,7 +49,7 @@ internal static traceWriter writeGoStatus(this traceWriter w, uint64 goid, int64
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string attemptToTraceInvalidOrˢ = "attempt to trace invalid or unsupported P status"u8;
+internal static readonly @string attemptToTraceInvalidOrˢ = "attempt to trace invalid or unsupported P status"u8;
 
 // writeProcStatusForP emits a ProcStatus event for the provided p based on its status.
 //
@@ -93,7 +93,7 @@ internal static traceWriter writeProcStatusForP(this traceWriter w, ж<Δp> Ꮡp
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string attemptedToTraceABadˢ2 = "attempted to trace a bad status for a proc"u8;
+internal static readonly @string attemptedToTraceABadˢ2 = "attempted to trace a bad status for a proc"u8;
 
 // writeProcStatus emits a ProcStatus event with all the provided information.
 //
@@ -115,8 +115,8 @@ internal static traceWriter writeProcStatus(this traceWriter w, uint64 pid, trac
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string triedToTraceDeadˢ = "tried to trace dead goroutine"u8;
-private static readonly @string triedToTraceGoroutineˢ = "tried to trace goroutine with invalid or unsupported status"u8;
+internal static readonly @string triedToTraceDeadˢ = "tried to trace dead goroutine"u8;
+internal static readonly @string triedToTraceGoroutineˢ = "tried to trace goroutine with invalid or unsupported status"u8;
 
 // goStatusToTraceGoStatus translates the internal status to tracGoStatus.
 //

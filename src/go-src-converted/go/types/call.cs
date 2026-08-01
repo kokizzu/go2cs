@@ -135,8 +135,8 @@ internal static (slice<ΔType>, slice<ast.Expr>) funcInst(this ж<Checker> Ꮡch
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string instantiatingSignatureSˢ = "-- instantiating signature %s with %s"u8;
-private static readonly @string sUnderSˢ = "=> %s (under = %s)"u8;
+internal static readonly @string instantiatingSignatureSˢ = "-- instantiating signature %s with %s"u8;
+internal static readonly @string sUnderSˢ = "=> %s (under = %s)"u8;
 
 internal static ж<ΔSignature> /*res*/ instantiateSignature(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ast.Expr expr, ж<ΔSignature> Ꮡtyp, slice<ΔType> targs, slice<ast.Expr> xlist) {
     ж<ΔSignature> res = default!;
@@ -734,12 +734,12 @@ internal static array<@string> cgoPrefixes = new @string[]{
 }.array();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cMallocˢ = "_CMalloc"u8;
-private static readonly @string cvarˢ = "_Cvar_"u8;
-private static readonly @string cmacroˢ = "_Cmacro_"u8;
-private static readonly @string vUnexpectedObjectVˢ = "%v: unexpected object %v"u8;
-private static readonly @string illegalCycleInMethodˢ = "illegal cycle in method declaration"u8;
-private static readonly @string vSVSˢ = "%v: (%s).%v -> %s"u8;
+internal static readonly @string cMallocˢ = "_CMalloc"u8;
+internal static readonly @string cvarˢ = "_Cvar_"u8;
+internal static readonly @string cmacroˢ = "_Cmacro_"u8;
+internal static readonly @string vUnexpectedObjectVˢ = "%v: unexpected object %v"u8;
+internal static readonly @string illegalCycleInMethodˢ = "illegal cycle in method declaration"u8;
+internal static readonly @string vSVSˢ = "%v: (%s).%v -> %s"u8;
 
 internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.SelectorExpr> Ꮡe, ж<TypeName> Ꮡdef, bool wantType) {
     ref var check = ref Ꮡcheck.Value;

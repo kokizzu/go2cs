@@ -43,8 +43,8 @@ internal const uint64 multiplier = 6364136223846793005;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string godebugˢ = "GODEBUG"u8;
-private static readonly @string fuzzseedˢ = "fuzzseed="u8;
+internal static readonly @string godebugˢ = "GODEBUG"u8;
+internal static readonly @string fuzzseedˢ = "fuzzseed="u8;
 
 internal static ж<nint> godebugSeed() {
     var debug = strings.Split(os.Getenv(godebugˢ), ","u8);

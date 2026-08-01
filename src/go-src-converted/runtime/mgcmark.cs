@@ -77,8 +77,8 @@ internal static void gcMarkRootPrepare() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string leftOverMarkrootJobsˢ = "left over markroot jobs"u8;
-private static readonly @string scanMissedAGˢ = "scan missed a g"u8;
+internal static readonly @string leftOverMarkrootJobsˢ = "left over markroot jobs"u8;
+internal static readonly @string scanMissedAGˢ = "scan missed a g"u8;
 
 // gcMarkRootCheck checks that all roots have been scanned. It is
 // purely for debugging.
@@ -112,8 +112,8 @@ internal static ж<array<uint8>> Ꮡoneptrmask = new(new uint8[]{1}.array());
 internal static ref array<uint8> oneptrmask => ref Ꮡoneptrmask.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string markrootBadIndexˢ = "markroot: bad index"u8;
-private static readonly @string gAlreadyScannedˢ = "g already scanned"u8;
+internal static readonly @string markrootBadIndexˢ = "markroot: bad index"u8;
+internal static readonly @string gAlreadyScannedˢ = "g already scanned"u8;
 
 // markroot scans the i'th root.
 //
@@ -148,7 +148,7 @@ internal static int64 markroot(ж<gcWork> Ꮡgcw, uint32 i, bool flushBgCredit) 
     case {} when i == fixedRootFinalizers: {
         for (var fb = allfin; fb != nil; fb = fb.Value.alllink) {
             var cnt = (uintptr)atomic.Load(fb.of(finblock.Ꮡcnt));
-            scanblock((uintptr)new @unsafe.Pointer(fb.at(finblock.Ꮡfin, 0)), cnt * @unsafe.Sizeof((~fb).fin[0]), Ꮡfinptrmask.at<byte>(0), Ꮡgcw, nil);
+            scanblock((uintptr)new @unsafe.Pointer(fb.at(finblock.Ꮡfin, 0)), cnt * /* unsafe.Sizeof(fb.fin[0]) */ (uintptr)40, Ꮡfinptrmask.at<byte>(0), Ꮡgcw, nil);
         }
         break;
     }
@@ -228,7 +228,7 @@ internal static int64 markroot(ж<gcWork> Ꮡgcw, uint32 i, bool flushBgCredit) 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rootBlockBytesMustBeAˢ = "rootBlockBytes must be a multiple of 8*ptrSize"u8;
+internal static readonly @string rootBlockBytesMustBeAˢ = "rootBlockBytes must be a multiple of 8*ptrSize"u8;
 
 // markrootBlock scans the shard'th shard of the block of memory [b0,
 // b0+n0), with the given pointer mask.
@@ -291,8 +291,8 @@ internal static void markrootFreeGStacks() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nonInUseSpanFoundWithˢ = "non in-use span found with specials bit set"u8;
-private static readonly @string gcUnsweptSpanˢ = "gc: unswept span"u8;
+internal static readonly @string nonInUseSpanFoundWithˢ = "non in-use span found with specials bit set"u8;
+internal static readonly @string gcUnsweptSpanˢ = "gc: unswept span"u8;
 
 // markrootSpans marks roots for one shard of markArenas.
 //
@@ -576,7 +576,7 @@ retry:
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nwaitWorkNprocsˢ = "nwait > work.nprocs"u8;
+internal static readonly @string nwaitWorkNprocsˢ = "nwait > work.nprocs"u8;
 
 // gcAssistAlloc1 is the part of gcAssistAlloc that runs on the system
 // stack. This is a separate function to make it easier to see that
@@ -764,11 +764,11 @@ internal static void gcFlushBgCredit(int64 scanWork) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string scanstackBadStatusˢ = "scanstack - bad status"u8;
-private static readonly @string markBadStatusˢ = "mark - bad status"u8;
-private static readonly @string scanstackGoroutineNotˢ = "scanstack: goroutine not stopped"u8;
-private static readonly @string canTScanOurOwnStackˢ = "can't scan our own stack"u8;
-private static readonly @string remainingPointerBuffersˢ = "remaining pointer buffers"u8;
+internal static readonly @string scanstackBadStatusˢ = "scanstack - bad status"u8;
+internal static readonly @string markBadStatusˢ = "mark - bad status"u8;
+internal static readonly @string scanstackGoroutineNotˢ = "scanstack: goroutine not stopped"u8;
+internal static readonly @string canTScanOurOwnStackˢ = "can't scan our own stack"u8;
+internal static readonly @string remainingPointerBuffersˢ = "remaining pointer buffers"u8;
 
 // scanstack scans gp's stack, greying all pointers found on the stack.
 //
@@ -1083,7 +1083,7 @@ internal static void gcDrainMarkWorkerFractional(ж<gcWork> Ꮡgcw) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gcDrainPhaseIncorrectˢ = "gcDrain phase incorrect"u8;
+internal static readonly @string gcDrainPhaseIncorrectˢ = "gcDrain phase incorrect"u8;
 
 // gcDrain scans roots and objects in work buffers, blackening grey
 // objects until it is unable to get more work. It may return before
@@ -1223,7 +1223,7 @@ done:
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gcDrainNPhaseIncorrectˢ = "gcDrainN phase incorrect"u8;
+internal static readonly @string gcDrainNPhaseIncorrectˢ = "gcDrainN phase incorrect"u8;
 
 // gcDrainN blackens grey objects until it has performed roughly
 // scanWork units of scan work or the G is preempted. This is
@@ -1337,8 +1337,8 @@ internal static void scanblock(uintptr b0, uintptr n0, ж<uint8> Ꮡptrmask, ж<
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string scanobjectN0ˢ = "scanobject n == 0"u8;
-private static readonly @string scanobjectOfANoscanˢ = "scanobject of a noscan object"u8;
+internal static readonly @string scanobjectN0ˢ = "scanobject n == 0"u8;
+internal static readonly @string scanobjectOfANoscanˢ = "scanobject of a noscan object"u8;
 
 // scanobject scans the object starting at b, adding pointers to gcw.
 // b must point to the beginning of a heap object or an oblet.
@@ -1438,7 +1438,7 @@ internal static void scanobject(uintptr b, ж<gcWork> Ꮡgcw) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string misalignedMaskˢ = "misaligned mask"u8;
+internal static readonly @string misalignedMaskˢ = "misaligned mask"u8;
 
 // scanConservative scans block [b, b+n) conservatively, treating any
 // pointer-like value in the block as a pointer.
@@ -1545,8 +1545,8 @@ internal static void shade(uintptr b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string greyobjectObjNotPointerˢ = "greyobject: obj not pointer-aligned"u8;
-private static readonly @string markingFreeObjectˢ = "marking free object"u8;
+internal static readonly @string greyobjectObjNotPointerˢ = "greyobject: obj not pointer-aligned"u8;
+internal static readonly @string markingFreeObjectˢ = "marking free object"u8;
 
 // obj is the start of an object with mark mbits.
 // If it isn't already marked, mark it and enqueue into gcw.
@@ -1654,7 +1654,7 @@ internal static void gcDumpObject(@string label, uintptr obj, uintptr off) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gcmarknewobjectCalledˢ = "gcmarknewobject called while doing checkmark"u8;
+internal static readonly @string gcmarknewobjectCalledˢ = "gcmarknewobject called while doing checkmark"u8;
 
 // gcmarknewobject marks a newly allocated object black. obj must
 // not contain any non-nil pointers.

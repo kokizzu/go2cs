@@ -105,7 +105,6 @@ public static partial class sql_package
     public partial struct DBStats {}
     public partial struct IsolationLevel {}
     public partial struct NamedArg {}
-    public partial struct NamedArg__NamedFieldsRequired {}
     public partial struct Null<T> {}
     public partial struct NullBool {}
     public partial struct NullByte {}
@@ -116,7 +115,6 @@ public static partial class sql_package
     public partial struct NullString {}
     public partial struct NullTime {}
     public partial struct Out {}
-    public partial struct Out__NamedFieldsRequired {}
     public partial struct RawBytes {}
     public partial struct Row {}
     public partial struct Rows {}

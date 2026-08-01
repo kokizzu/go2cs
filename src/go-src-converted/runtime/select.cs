@@ -108,9 +108,9 @@ internal static void block() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string selectBrokenSortˢ = "select: broken sort"u8;
-private static readonly @string gpWaitingNilˢ = "gp.waiting != nil"u8;
-private static readonly @string selectgoBadWakeupˢ = "selectgo: bad wakeup"u8;
+internal static readonly @string selectBrokenSortˢ = "select: broken sort"u8;
+internal static readonly @string gpWaitingNilˢ = "gp.waiting != nil"u8;
+internal static readonly @string selectgoBadWakeupˢ = "selectgo: bad wakeup"u8;
 
 // forever
 

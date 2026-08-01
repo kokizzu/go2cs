@@ -193,7 +193,7 @@ internal static void sortUnits(this ж<pstate> Ꮡp, slice<extcu> units) {
     slices.Sort<slice<@string>, @string>(pkgs);
     foreach (var (_, importpath) in pkgs) {
         var p = fm.pm[importpath];
-        var units = new slice<extcu>(0, len((~p).unitTable));
+        var units = new slice<extcu>(0, () => new(nil), len((~p).unitTable));
         foreach (var (u, _) in (~p).unitTable) {
             units = append(units, u);
         }
@@ -321,7 +321,7 @@ public static error EmitFuncs(this ж<Formatter> Ꮡfm, io.Writer w) => func<err
         if (len((~p).unitTable) == 0) {
             continue;
         }
-        var units = new slice<extcu>(0, len((~p).unitTable));
+        var units = new slice<extcu>(0, () => new(nil), len((~p).unitTable));
         foreach (var (u, _) in (~p).unitTable) {
             units = append(units, u);
         }

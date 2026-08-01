@@ -252,7 +252,7 @@ internal static slice<byte> hashForClientCertificate(this ΔfinishedHash h, uint
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoTlsˢ = "crypto/tls: ExportKeyingMaterial is unavailable when renegotiation is enabled"u8;
+internal static readonly @string cryptoTlsˢ = "crypto/tls: ExportKeyingMaterial is unavailable when renegotiation is enabled"u8;
 
 // noEKMBecauseRenegotiation is used as a value of
 // ConnectionState.ekm when renegotiation is enabled and thus
@@ -262,7 +262,7 @@ internal static (slice<byte>, error) noEKMBecauseRenegotiation(@string label, sl
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoTlsˢ2 = "crypto/tls: ExportKeyingMaterial is unavailable when neither TLS 1.3 nor Extended Master Secret are negotiated; override with GODEBUG=tlsunsafeekm=1"u8;
+internal static readonly @string cryptoTlsˢ2 = "crypto/tls: ExportKeyingMaterial is unavailable when neither TLS 1.3 nor Extended Master Secret are negotiated; override with GODEBUG=tlsunsafeekm=1"u8;
 
 // noEKMBecauseNoEMS is used as a value of ConnectionState.ekm when Extended
 // Master Secret is not negotiated and thus we wish to fail all key-material

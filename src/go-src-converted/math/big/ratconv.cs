@@ -22,9 +22,9 @@ internal static ref ΔRat ratZero => ref ᏑratZero.Value;
 internal static fmt.Scanner _ᴛ6ʗ = new ΔRatжScanner(ᏑratZero); // *Rat must implement fmt.Scanner
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string efgEFGvˢ = "efgEFGv"u8;
-private static readonly @string ratScanInvalidVerbˢ = "Rat.Scan: invalid verb"u8;
-private static readonly @string ratScanInvalidSyntaxˢ = "Rat.Scan: invalid syntax"u8;
+internal static readonly @string efgEFGvˢ = "efgEFGv"u8;
+internal static readonly @string ratScanInvalidVerbˢ = "Rat.Scan: invalid verb"u8;
+internal static readonly @string ratScanInvalidSyntaxˢ = "Rat.Scan: invalid syntax"u8;
 
 // Scan is a support routine for fmt.Scanner. It accepts the formats
 // 'e', 'E', 'f', 'F', 'g', 'G', and 'v'. All formats are equivalent.

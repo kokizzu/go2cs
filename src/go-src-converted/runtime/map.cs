@@ -393,7 +393,7 @@ internal static (@unsafe.Pointer buckets, ж<bmap> nextOverflow) makeBucketArray
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string concurrentMapReadAndMapˢ = "concurrent map read and map write"u8;
+internal static readonly @string concurrentMapReadAndMapˢ = "concurrent map read and map write"u8;
 
 // mapaccess1 returns a pointer to h[key].  Never returns nil, instead
 // it will return a reference to the zero object for the elem type if
@@ -619,8 +619,8 @@ internal static (@unsafe.Pointer, bool) mapaccess2_fat(ж<maptype> Ꮡt, ж<hmap
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string assignmentToEntryInNilˢ = "assignment to entry in nil map"u8;
-private static readonly @string concurrentMapWritesˢ = "concurrent map writes"u8;
+internal static readonly @string assignmentToEntryInNilˢ = "assignment to entry in nil map"u8;
+internal static readonly @string concurrentMapWritesˢ = "concurrent map writes"u8;
 
 // Like mapaccess, but allocates a slot for the key if it is not present in the map.
 //
@@ -885,7 +885,7 @@ break_search:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string hashIterSizeIncorrectˢ = "hash_iter size incorrect"u8;
+internal static readonly @string hashIterSizeIncorrectˢ = "hash_iter size incorrect"u8;
 
 // mapiterinit initializes the hiter struct used for ranging over maps.
 // The hiter struct pointed to by 'it' is allocated on the stack
@@ -920,7 +920,7 @@ internal static void mapiterinit(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<hiter> Ꮡi
     if (Ꮡh == nil || h.count == 0) {
         return;
     }
-    if (@unsafe.Sizeof(new hiter(nil)) / (uintptr)goarch.PtrSize != 12) {
+    if (/* unsafe.Sizeof(hiter{}) */ (uintptr)96 / (uintptr)goarch.PtrSize != 12) {
         @throw(hashIterSizeIncorrectˢ);
     }
     // see cmd/compile/internal/reflectdata/reflect.go
@@ -954,7 +954,7 @@ internal static void mapiterinit(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<hiter> Ꮡi
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string concurrentMapIterationˢ = "concurrent map iteration and map write"u8;
+internal static readonly @string concurrentMapIterationˢ = "concurrent map iteration and map write"u8;
 
 // mapiternext should be an internal detail,
 // but widely used packages access it using linkname.
@@ -1170,7 +1170,7 @@ internal static void mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string oldoverflowIsNotNilˢ = "oldoverflow is not nil"u8;
+internal static readonly @string oldoverflowIsNotNilˢ = "oldoverflow is not nil"u8;
 
 internal static void hashGrow(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
     ref var h = ref Ꮡh.Value;
@@ -1288,8 +1288,8 @@ internal static bool bucketEvacuated(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr bu
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badMapStateˢ = "bad map state"u8;
-private static readonly @string badEvacuatedNˢ = "bad evacuatedN"u8;
+internal static readonly @string badMapStateˢ = "bad map state"u8;
+internal static readonly @string badEvacuatedNˢ = "bad evacuatedN"u8;
 
 internal static void evacuate(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket) {
     ref var t = ref Ꮡt.Value;
@@ -1434,16 +1434,16 @@ internal static void advanceEvacuationMark(ж<hmap> Ꮡh, ж<maptype> Ꮡt, uint
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeReflectMakemapˢ = "runtime.reflect_makemap: unsupported map key type"u8;
-private static readonly @string keySizeWrongˢ = "key size wrong"u8;
-private static readonly @string elemSizeWrongˢ = "elem size wrong"u8;
-private static readonly @string keyAlignTooBigˢ = "key align too big"u8;
-private static readonly @string elemAlignTooBigˢ = "elem align too big"u8;
-private static readonly @string keySizeNotAMultipleOfKeyˢ = "key size not a multiple of key align"u8;
-private static readonly @string elemSizeNotAMultipleOfˢ = "elem size not a multiple of elem align"u8;
-private static readonly @string bucketsizeTooSmallForˢ = "bucketsize too small for proper alignment"u8;
-private static readonly @string needPaddingInBucketKeyˢ = "need padding in bucket (key)"u8;
-private static readonly @string needPaddingInBucketElemˢ = "need padding in bucket (elem)"u8;
+internal static readonly @string runtimeReflectMakemapˢ = "runtime.reflect_makemap: unsupported map key type"u8;
+internal static readonly @string keySizeWrongˢ = "key size wrong"u8;
+internal static readonly @string elemSizeWrongˢ = "elem size wrong"u8;
+internal static readonly @string keyAlignTooBigˢ = "key align too big"u8;
+internal static readonly @string elemAlignTooBigˢ = "elem align too big"u8;
+internal static readonly @string keySizeNotAMultipleOfKeyˢ = "key size not a multiple of key align"u8;
+internal static readonly @string elemSizeNotAMultipleOfˢ = "elem size not a multiple of elem align"u8;
+internal static readonly @string bucketsizeTooSmallForˢ = "bucketsize too small for proper alignment"u8;
+internal static readonly @string needPaddingInBucketKeyˢ = "need padding in bucket (key)"u8;
+internal static readonly @string needPaddingInBucketElemˢ = "need padding in bucket (elem)"u8;
 
 // Reflect stubs. Called from ../reflect/asm_*.s
 
@@ -1679,8 +1679,10 @@ internal static partial void mapinitnoop();
 // mapclone for implementing maps.Clone
 //
 //go:linkname mapclone maps.clone
-internal static any mapclone(any m) {
-    var e = efaceOf(Ꮡ(m));
+internal static any mapclone(any mʗp) {
+    ref var m = ref heap(mʗp, out var Ꮡm);
+
+    var e = efaceOf(Ꮡm);
     e.Value.data = new @unsafe.Pointer(mapclone2((~e)._type.Reinterpret<_type, maptype>(), (ж<hmap>)(uintptr)((~e).data)));
     return m;
 }
@@ -1740,7 +1742,7 @@ internal static (ж<bmap>, nint) moveToBmap(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string concurrentMapCloneAndMapˢ = "concurrent map clone and map write"u8;
+internal static readonly @string concurrentMapCloneAndMapˢ = "concurrent map clone and map write"u8;
 
 internal static ж<hmap> mapclone2(ж<maptype> Ꮡt, ж<hmap> Ꮡsrc) {
     ref var t = ref Ꮡt.Value;
@@ -1837,8 +1839,10 @@ internal static ж<hmap> mapclone2(ж<maptype> Ꮡt, ж<hmap> Ꮡsrc) {
 // keys for implementing maps.keys
 //
 //go:linkname keys maps.keys
-internal static void keys(any m, @unsafe.Pointer Δp) {
-    var e = efaceOf(Ꮡ(m));
+internal static void keys(any mʗp, @unsafe.Pointer Δp) {
+    ref var m = ref heap(mʗp, out var Ꮡm);
+
+    var e = efaceOf(Ꮡm);
     var t = (~e)._type.Reinterpret<_type, maptype>();
     var h = (ж<hmap>)(uintptr)((~e).data);
     if (h == nil || (~h).count == 0) {
@@ -1904,8 +1908,10 @@ internal static void copyKeys(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<bmap> Ꮡb, ж
 // values for implementing maps.values
 //
 //go:linkname values maps.values
-internal static void values(any m, @unsafe.Pointer Δp) {
-    var e = efaceOf(Ꮡ(m));
+internal static void values(any mʗp, @unsafe.Pointer Δp) {
+    ref var m = ref heap(mʗp, out var Ꮡm);
+
+    var e = efaceOf(Ꮡm);
     var t = (~e)._type.Reinterpret<_type, maptype>();
     var h = (ж<hmap>)(uintptr)((~e).data);
     if (h == nil || (~h).count == 0) {

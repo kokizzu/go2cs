@@ -74,7 +74,7 @@ public static map<uint16, SupportedKEMsᴛ1> SupportedKEMs = new map<uint16, Sup
 };
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unsupportedSuiteIdˢ = "unsupported suite ID"u8;
+internal static readonly @string unsupportedSuiteIdˢ = "unsupported suite ID"u8;
 
 internal static (ж<dhKEM>, error) newDHKem(uint16 kemID) {
     var (suite, ok) = SupportedKEMs[kemID, ꟷ];
@@ -90,8 +90,8 @@ internal static (ж<dhKEM>, error) newDHKem(uint16 kemID) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string eaePrkˢ = "eae_prk"u8;
-private static readonly @string sharedSecretˢ = "shared_secret"u8;
+internal static readonly @string eaePrkˢ = "eae_prk"u8;
+internal static readonly @string sharedSecretˢ = "shared_secret"u8;
 
 internal static slice<byte> ExtractAndExpand(this ж<dhKEM> Ꮡdh, slice<byte> dhKey, slice<byte> kemContext) {
     ref var dh = ref Ꮡdh.Value;
@@ -164,15 +164,15 @@ public static map<uint16, Func<ж<hkdfKDF>>> SupportedKDFs = new map<uint16, Fun
 };
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string incorrectPublicKeyTypeˢ = "incorrect public key type"u8;
-private static readonly @string unsupportedKdfIdˢ = "unsupported KDF id"u8;
-private static readonly @string unsupportedAeadIdˢ = "unsupported AEAD id"u8;
-private static readonly @string pskIdHashˢ = "psk_id_hash"u8;
-private static readonly @string infoHashˢ = "info_hash"u8;
-private static readonly @string secretˢ = "secret"u8;
-private static readonly @string keyˢ = "key"u8;
-private static readonly @string baseNonceˢ = "base_nonce"u8;
-private static readonly @string expˢ = "exp"u8;
+internal static readonly @string incorrectPublicKeyTypeˢ = "incorrect public key type"u8;
+internal static readonly @string unsupportedKdfIdˢ = "unsupported KDF id"u8;
+internal static readonly @string unsupportedAeadIdˢ = "unsupported AEAD id"u8;
+internal static readonly @string pskIdHashˢ = "psk_id_hash"u8;
+internal static readonly @string infoHashˢ = "info_hash"u8;
+internal static readonly @string secretˢ = "secret"u8;
+internal static readonly @string keyˢ = "key"u8;
+internal static readonly @string baseNonceˢ = "base_nonce"u8;
+internal static readonly @string expˢ = "exp"u8;
 
 public static (slice<byte>, ж<Sender>, error) SetupSender(uint16 kemID, uint16 kdfID, uint16 aeadID, cryptoꓸPublicKey pub, slice<byte> info) {
     var suiteID = SuiteID(kemID, kdfID, aeadID);
@@ -252,7 +252,7 @@ public static slice<byte> SuiteID(uint16 kemID, uint16 kdfID, uint16 aeadID) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unsupportedKemIdˢ = "unsupported KEM id"u8;
+internal static readonly @string unsupportedKemIdˢ = "unsupported KEM id"u8;
 
 public static (ж<ecdhꓸPublicKey>, error) ParseHPKEPublicKey(uint16 kemID, slice<byte> bytes) {
     var (kemInfo, ok) = SupportedKEMs[kemID, ꟷ];

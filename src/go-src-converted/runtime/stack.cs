@@ -104,7 +104,7 @@ internal static UntypedInt stackPoisonMin => /* uintptrMask & -4096 */ 184467440
 
 [GoType("dyn")] partial struct stackpoolᴛ1 {
     internal stackpoolItem item;
-    internal array<byte> _ = new((uintptr)((uintptr)cpu.CacheLinePadSize - @unsafe.Sizeof(new stackpoolItem(nil)) % (uintptr)cpu.CacheLinePadSize) % cpu.CacheLinePadSize);
+    internal array<byte> _ = new((uintptr)((uintptr)cpu.CacheLinePadSize - /* unsafe.Sizeof(stackpoolItem{}) */ (uintptr)24 % (uintptr)cpu.CacheLinePadSize) % cpu.CacheLinePadSize);
 }
 internal static ж<array<stackpoolᴛ1>> Ꮡstackpool = new(new array<stackpoolᴛ1>(2, () => new()));
 internal static ref array<stackpoolᴛ1> stackpool => ref Ꮡstackpool.Value;
@@ -125,7 +125,7 @@ internal static ж<stackLargeᴛ1> ᏑstackLarge = new(new stackLargeᴛ1());
 internal static ref stackLargeᴛ1 stackLarge => ref ᏑstackLarge.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cacheSizeMustBeAMultipleˢ = "cache size must be a multiple of page size"u8;
+internal static readonly @string cacheSizeMustBeAMultipleˢ = "cache size must be a multiple of page size"u8;
 
 internal static void stackinit() {
     if ((UntypedInt)(_StackCacheSize & _PageMask) != 0) {
@@ -152,9 +152,9 @@ internal static nint stacklog2(uintptr n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badAllocCountˢ = "bad allocCount"u8;
-private static readonly @string badManualFreeListˢ = "bad manualFreeList"u8;
-private static readonly @string spanHasNoFreeStacksˢ = "span has no free stacks"u8;
+internal static readonly @string badAllocCountˢ = "bad allocCount"u8;
+internal static readonly @string badManualFreeListˢ = "bad manualFreeList"u8;
+internal static readonly @string spanHasNoFreeStacksˢ = "span has no free stacks"u8;
 
 // Allocates a stack from the free pool. Must be called with
 // stackpool[order].item.mu held.
@@ -197,7 +197,7 @@ internal static gclinkptr stackpoolalloc(uint8 order) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string freeingStackNotInAStackˢ = "freeing stack not in a stack span"u8;
+internal static readonly @string freeingStackNotInAStackˢ = "freeing stack not in a stack span"u8;
 
 // Adds stack x to the free pool. Must be called with stackpool[order].item.mu held.
 internal static void stackpoolfree(gclinkptr x, uint8 order) {
@@ -304,9 +304,9 @@ internal static void stackcache_clear(ж<mcache> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stackallocNotOnSchedulerˢ = "stackalloc not on scheduler stack"u8;
-private static readonly @string stackSizeNotAPowerOf2ˢ = "stack size not a power of 2"u8;
-private static readonly @string outOfMemoryStackallocˢ = "out of memory (stackalloc)"u8;
+internal static readonly @string stackallocNotOnSchedulerˢ = "stackalloc not on scheduler stack"u8;
+internal static readonly @string stackSizeNotAPowerOf2ˢ = "stack size not a power of 2"u8;
+internal static readonly @string outOfMemoryStackallocˢ = "out of memory (stackalloc)"u8;
 
 // stackalloc allocates an n byte stack.
 //
@@ -413,9 +413,9 @@ internal static Δstack @stackalloc(uint32 n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stackNotAPowerOf2ˢ = "stack not a power of 2"u8;
-private static readonly @string badStackSizeˢ = "bad stack size"u8;
-private static readonly @string badSpanStateˢ = "bad span state"u8;
+internal static readonly @string stackNotAPowerOf2ˢ = "stack not a power of 2"u8;
+internal static readonly @string badStackSizeˢ = "bad stack size"u8;
+internal static readonly @string badSpanStateˢ = "bad span state"u8;
 
 // stackfree frees an n byte stack allocation at stk.
 //
@@ -588,7 +588,7 @@ internal static void adjustpointer(ж<adjustinfo> Ꮡadjinfo, @unsafe.Pointer vp
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidPointerFoundOnˢ = "invalid pointer found on stack"u8;
+internal static readonly @string invalidPointerFoundOnˢ = "invalid pointer found on stack"u8;
 
 // bv describes the memory starting at address scanp.
 // Adjust any pointers contained therein.
@@ -644,7 +644,7 @@ retry:
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badFramePointerˢ = "bad frame pointer"u8;
+internal static readonly @string badFramePointerˢ = "bad frame pointer"u8;
 
 // Note: the argument/return area is adjusted by the callee.
 internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinfo) {
@@ -735,7 +735,7 @@ internal static void adjustframe(ж<stkframe> Ꮡframe, ж<adjustinfo> Ꮡadjinf
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badTopFramePointerˢ = "bad top frame pointer"u8;
+internal static readonly @string badTopFramePointerˢ = "bad top frame pointer"u8;
 
 internal static void adjustctxt(ж<g> Ꮡgp, ж<adjustinfo> Ꮡadjinfo) {
     ref var gp = ref Ꮡgp.Value;
@@ -866,9 +866,9 @@ internal static uintptr syncadjustsudogs(ж<g> Ꮡgp, uintptr used, ж<adjustinf
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stackGrowthNotAllowedInˢ = "stack growth not allowed in system call"u8;
-private static readonly @string nilStackbaseˢ = "nil stackbase"u8;
-private static readonly @string racySudogAdjustmentDueToˢ = "racy sudog adjustment due to parking on channel"u8;
+internal static readonly @string stackGrowthNotAllowedInˢ = "stack growth not allowed in system call"u8;
+internal static readonly @string nilStackbaseˢ = "nil stackbase"u8;
+internal static readonly @string racySudogAdjustmentDueToˢ = "racy sudog adjustment due to parking on channel"u8;
 
 // Copies gp's stack to a new stack of a different size.
 // Caller must have changed gp status to Gcopystack.
@@ -963,15 +963,15 @@ internal static int32 round2(int32 x) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stackGrowthAfterForkˢ = "stack growth after fork"u8;
-private static readonly @string runtimeWrongGoroutineInˢ = "runtime: wrong goroutine in newstack"u8;
-private static readonly @string unknownˢ3 = "(unknown)"u8;
-private static readonly @string runtimeStackSplitAtBadˢ = "runtime: stack split at bad time"u8;
-private static readonly @string missingStackInNewstackˢ = "missing stack in newstack"u8;
-private static readonly @string runtimeSplitStackˢ = "runtime: split stack overflow"u8;
-private static readonly @string runtimePreemptG0ˢ = "runtime: preempt g0"u8;
-private static readonly @string runtimeGIsRunningButPIsˢ = "runtime: g is running but p is not"u8;
-private static readonly @string stackOverflowˢ = "stack overflow"u8;
+internal static readonly @string stackGrowthAfterForkˢ = "stack growth after fork"u8;
+internal static readonly @string runtimeWrongGoroutineInˢ = "runtime: wrong goroutine in newstack"u8;
+internal static readonly @string unknownˢ3 = "(unknown)"u8;
+internal static readonly @string runtimeStackSplitAtBadˢ = "runtime: stack split at bad time"u8;
+internal static readonly @string missingStackInNewstackˢ = "missing stack in newstack"u8;
+internal static readonly @string runtimeSplitStackˢ = "runtime: split stack overflow"u8;
+internal static readonly @string runtimePreemptG0ˢ = "runtime: preempt g0"u8;
+internal static readonly @string runtimeGIsRunningButPIsˢ = "runtime: g is running but p is not"u8;
+internal static readonly @string stackOverflowˢ = "stack overflow"u8;
 
 // Called from runtime·morestack when more stack is needed.
 // Allocate larger stack and relocate to new stack.
@@ -1193,10 +1193,10 @@ internal static bool isShrinkStackSafe(ж<g> Ꮡgp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingStackInˢ = "missing stack in shrinkstack"u8;
-private static readonly @string badStatusInShrinkstackˢ = "bad status in shrinkstack"u8;
-private static readonly @string shrinkstackAtBadTimeˢ = "shrinkstack at bad time"u8;
-private static readonly @string shrinkingStackInLibcallˢ = "shrinking stack in libcall"u8;
+internal static readonly @string missingStackInˢ = "missing stack in shrinkstack"u8;
+internal static readonly @string badStatusInShrinkstackˢ = "bad status in shrinkstack"u8;
+internal static readonly @string shrinkstackAtBadTimeˢ = "shrinkstack at bad time"u8;
+internal static readonly @string shrinkingStackInLibcallˢ = "shrinking stack in libcall"u8;
 
 // Maybe shrink the stack being used by gp.
 //
@@ -1337,7 +1337,7 @@ internal static ж<byte> gcdata(this ж<stackObjectRecord> Ꮡr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string attemptToExecuteSystemˢ = "attempt to execute system stack code on user stack"u8;
+internal static readonly @string attemptToExecuteSystemˢ = "attempt to execute system stack code on user stack"u8;
 
 // This is exported as ABI0 via linkname so obj can call it.
 //

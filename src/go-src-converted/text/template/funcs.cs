@@ -395,7 +395,7 @@ internal static (reflectꓸValue, error) call(@string name, reflectꓸValue fn, 
             return (new reflectꓸValue(nil), fmt.Errorf("wrong number of args for %s: got %d want %d"u8, name, len(args), numIn));
         }
     }
-    var argv = new slice<reflectꓸValue>(len(args));
+    var argv = new slice<reflectꓸValue>(len(args), () => new(nil));
     foreach (var (i, vᴛ1) in args) {
         var arg = vᴛ1;
 

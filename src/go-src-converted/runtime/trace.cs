@@ -133,7 +133,7 @@ internal static ж<uint32> ᏑtraceShutdownSema = new(1);
 internal static ref uint32 traceShutdownSema => ref ᏑtraceShutdownSema.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tracingIsAlreadyEnabledˢ = "tracing is already enabled"u8;
+internal static readonly @string tracingIsAlreadyEnabledˢ = "tracing is already enabled"u8;
 
 // StartTrace enables tracing for the current process.
 // While tracing, the data will be buffered and available via [ReadTrace].
@@ -290,9 +290,9 @@ public static void StopTrace() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string traceNonEmptyFullTraceˢ = "trace: non-empty full trace buffer for done generation"u8;
-private static readonly @string traceNonEmptyFullTraceˢ2 = "trace: non-empty full trace buffer for next generation"u8;
-private static readonly @string traceReadingAfterˢ = "trace: reading after shutdown"u8;
+internal static readonly @string traceNonEmptyFullTraceˢ = "trace: non-empty full trace buffer for done generation"u8;
+internal static readonly @string traceNonEmptyFullTraceˢ2 = "trace: non-empty full trace buffer for next generation"u8;
+internal static readonly @string traceReadingAfterˢ = "trace: reading after shutdown"u8;
 
 // Collect all the untraced Gs.
 [GoLocalName("untracedG")] [GoType("dyn")] partial struct traceAdvance_untracedG {
@@ -624,7 +624,7 @@ internal static void traceAdvance(bool stopTrace) {
             while (Δtrace.empty != nil) {
                 var buf = Δtrace.empty;
                 Δtrace.empty = buf.Value.link;
-                sysFree(new @unsafe.Pointer(buf), @unsafe.Sizeof(buf.Value), Ꮡmemstats.of(mstats.Ꮡother_sys));
+                sysFree(new @unsafe.Pointer(buf), /* unsafe.Sizeof(*buf) */ (uintptr)65536, Ꮡmemstats.of(mstats.Ꮡother_sys));
             }
             // Clear trace.shutdown and other flags.
             Δtrace.headerWritten = false;
@@ -694,7 +694,7 @@ internal static void traceRegisterLabelsAndReasons(uintptr gen) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedTraceReaderˢ = "unexpected trace reader"u8;
+internal static readonly @string unexpectedTraceReaderˢ = "unexpected trace reader"u8;
 
 // ReadTrace returns the next chunk of binary tracing data, blocking until data
 // is available. If tracing is turned off and all the data accumulated while it
@@ -736,7 +736,7 @@ top:
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string expectedRacectx0ˢ = "expected racectx == 0"u8;
+internal static readonly @string expectedRacectx0ˢ = "expected racectx == 0"u8;
 
 // readTrace0 is ReadTrace's continuation on g0. This must run on the
 // system stack because it acquires trace.lock.

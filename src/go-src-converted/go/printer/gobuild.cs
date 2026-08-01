@@ -96,7 +96,7 @@ partial class printer_package {
         if (len(p.plusBuild) > 0) {
             var (lines, err) = constraint.PlusBuildLines(x);
             if (err != default!) {
-                lines = new @string[]{"// +build error: " + err.Error()}.slice();
+                lines = new @string[]{"// +build error: "u8 + err.Error()}.slice();
             }
             foreach (var (_, line) in lines) {
                 block = append(block, (byte)(tabwriter.Escape));

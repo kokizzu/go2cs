@@ -21,7 +21,7 @@ partial class parse_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string eofˢ = "EOF"u8;
+internal static readonly @string eofˢ = "EOF"u8;
 
 internal static @string String(this item i) {
     switch (ᐧ) {

@@ -324,7 +324,7 @@ break_loop:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object commentMapˢ = (@string)"CommentMap {"u8;
+internal static readonly object commentMapˢ = (@string)"CommentMap {"u8;
 
 public static @string String(this CommentMap cmap) {
     // print map entries in sorted order

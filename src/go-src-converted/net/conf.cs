@@ -76,10 +76,10 @@ internal static ж<conf> systemConf() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string localdomainˢ = "LOCALDOMAIN"u8;
-private static readonly @string resOptionsˢ = "RES_OPTIONS"u8;
-private static readonly @string hostaliasesˢ = "HOSTALIASES"u8;
-private static readonly @string asrConfigˢ = "ASR_CONFIG"u8;
+internal static readonly @string localdomainˢ = "LOCALDOMAIN"u8;
+internal static readonly @string resOptionsˢ = "RES_OPTIONS"u8;
+internal static readonly @string hostaliasesˢ = "HOSTALIASES"u8;
+internal static readonly @string asrConfigˢ = "ASR_CONFIG"u8;
 
 // initConfVal initializes confVal based on the environment
 // that will not change during program execution.
@@ -246,11 +246,11 @@ internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) hostLookupOrder(t
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string hostsˢ = "hosts"u8;
-private static readonly @string mdnsˢ = "mdns"u8;
-private static readonly @string localˢ = ".local"u8;
-private static readonly @string etcMdnsAllowˢ = "/etc/mdns.allow"u8;
-private static readonly @string dnsˢ = "dns"u8;
+internal static readonly @string hostsˢ = "hosts"u8;
+internal static readonly @string mdnsˢ = "mdns"u8;
+internal static readonly @string localˢ = ".local"u8;
+internal static readonly @string etcMdnsAllowˢ = "/etc/mdns.allow"u8;
+internal static readonly @string dnsˢ = "dns"u8;
 
 [GoRecv] internal static (ΔhostLookupOrder ret, ж<dnsConfig> dnsConf) lookupOrder(this ref conf c, ж<Resolver> Ꮡr, @string hostname) {
     ΔhostLookupOrder ret = default!;
@@ -536,10 +536,10 @@ internal static (@string dnsMode, nint debugLevel) goDebugNetDNS() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string localhostˢ = "localhost"u8;
-private static readonly @string localhostLocaldomainˢ = "localhost.localdomain"u8;
-private static readonly @string localhostˢ2 = ".localhost"u8;
-private static readonly @string localhostLocaldomainˢ2 = ".localhost.localdomain"u8;
+internal static readonly @string localhostˢ = "localhost"u8;
+internal static readonly @string localhostLocaldomainˢ = "localhost.localdomain"u8;
+internal static readonly @string localhostˢ2 = ".localhost"u8;
+internal static readonly @string localhostLocaldomainˢ2 = ".localhost.localdomain"u8;
 
 // isLocalhost reports whether h should be considered a "localhost"
 // name for the myhostname NSS module.
@@ -548,7 +548,7 @@ internal static bool isLocalhost(@string h) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gatewayˢ = "_gateway"u8;
+internal static readonly @string gatewayˢ = "_gateway"u8;
 
 // isGateway reports whether h should be considered a "gateway"
 // name for the myhostname NSS module.
@@ -557,7 +557,7 @@ internal static bool isGateway(@string h) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string outboundˢ = "_outbound"u8;
+internal static readonly @string outboundˢ = "_outbound"u8;
 
 // isOutbound reports whether h should be considered an "outbound"
 // name for the myhostname NSS module.

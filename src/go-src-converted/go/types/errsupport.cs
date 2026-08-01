@@ -9,9 +9,9 @@ namespace go.go;
 partial class types_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string objectˢ = "object"u8;
-private static readonly @string fieldˢ = "field"u8;
-private static readonly @string methodˢ = "method"u8;
+internal static readonly @string objectˢ = "object"u8;
+internal static readonly @string fieldˢ = "field"u8;
+internal static readonly @string methodˢ = "method"u8;
 
 // lookupError returns a case-specific error when a lookup of selector sel in the
 // given type fails but an object with alternative spelling (case folding) is found.

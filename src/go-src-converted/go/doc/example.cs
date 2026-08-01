@@ -36,10 +36,10 @@ partial class doc_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testˢ = "Test"u8;
-private static readonly @string benchmarkˢ = "Benchmark"u8;
-private static readonly @string fuzzˢ = "Fuzz"u8;
-private static readonly @string exampleˢ = "Example"u8;
+internal static readonly @string testˢ = "Test"u8;
+internal static readonly @string benchmarkˢ = "Benchmark"u8;
+internal static readonly @string fuzzˢ = "Fuzz"u8;
+internal static readonly @string exampleˢ = "Example"u8;
 
 // Examples returns the examples found in testFiles, sorted by Name field.
 // The Order fields record the order in which the examples were encountered.
@@ -178,8 +178,8 @@ internal static bool isTest(@string name, @string prefix) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testˢ2 = "_test"u8;
-private static readonly @string mainˢ = "main"u8;
+internal static readonly @string testˢ2 = "_test"u8;
+internal static readonly @string mainˢ = "main"u8;
 
 // playExample synthesizes a new *ast.File based on the provided
 // file with the provided function body as the body of main.
@@ -594,7 +594,7 @@ internal static slice<ж<ast.ImportSpec>> findImportGroupStarts1(slice<ж<ast.Im
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string copyrightˢ = "Copyright"u8;
+internal static readonly @string copyrightˢ = "Copyright"u8;
 
 // playExampleFile takes a whole file example and synthesizes a new *ast.File
 // such that the example is function main in package main.

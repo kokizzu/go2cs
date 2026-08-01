@@ -38,7 +38,7 @@ internal static ж<godebug.Setting> multipartfiles = godebug.New("#multipartfile
 internal static ж<godebug.Setting> multipartmaxparts = godebug.New("multipartmaxparts"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string multipartˢ = "multipart-"u8;
+internal static readonly @string multipartˢ = "multipart-"u8;
 
 // os.File.ReadFrom will allocate its own copy buffer if we let io.Copy use it.
 [GoLocalName("writerOnly")] [GoType("dyn")] partial struct readForm_writerOnly {

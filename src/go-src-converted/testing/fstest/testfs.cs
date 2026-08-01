@@ -144,10 +144,10 @@ internal static error testFS(fs.FS fsys, params ꓸꓸꓸstring expectedʗp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string firstOpenReadDir1Vsˢ = "first Open+ReadDir(-1) vs second Open+ReadDir(-1)"u8;
-private static readonly @string firstOpenReadDir1VsThirdˢ = "first Open+ReadDir(-1) vs third Open+ReadDir(1,2) loop"u8;
-private static readonly @string firstOpenReadDir1VsFsysˢ = "first Open+ReadDir(-1) vs fsys.ReadDir"u8;
-private static readonly @string firstOpenReadDir1VsFsˢ = "first Open+ReadDir(-1) vs fs.ReadDir"u8;
+internal static readonly @string firstOpenReadDir1Vsˢ = "first Open+ReadDir(-1) vs second Open+ReadDir(-1)"u8;
+internal static readonly @string firstOpenReadDir1VsThirdˢ = "first Open+ReadDir(-1) vs third Open+ReadDir(1,2) loop"u8;
+internal static readonly @string firstOpenReadDir1VsFsysˢ = "first Open+ReadDir(-1) vs fsys.ReadDir"u8;
+internal static readonly @string firstOpenReadDir1VsFsˢ = "first Open+ReadDir(-1) vs fs.ReadDir"u8;
 
 // checkDir checks the directory dir, which is expected to exist
 // (it is either the root or was found in a directory listing with IsDir true).
@@ -540,10 +540,10 @@ internal static void checkDirList(this ж<fsTester> Ꮡt, @string dir, @string d
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string readAllVsFsysReadFileˢ = "ReadAll vs fsys.ReadFile"u8;
-private static readonly @string readallVsSecondFsysˢ = "Readall vs second fsys.ReadFile"u8;
-private static readonly @string readFileˢ = "ReadFile"u8;
-private static readonly @string readAllVsFsReadFileˢ = "ReadAll vs fs.ReadFile"u8;
+internal static readonly @string readAllVsFsysReadFileˢ = "ReadAll vs fsys.ReadFile"u8;
+internal static readonly @string readallVsSecondFsysˢ = "Readall vs second fsys.ReadFile"u8;
+internal static readonly @string readFileˢ = "ReadFile"u8;
+internal static readonly @string readAllVsFsReadFileˢ = "ReadAll vs fs.ReadFile"u8;
 
 // checkFile checks that basic file reading works correctly.
 internal static void checkFile(this ж<fsTester> Ꮡt, @string @file) => func((defer, recover) => {
@@ -628,7 +628,7 @@ internal static void checkFile(this ж<fsTester> Ꮡt, @string @file) => func((d
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string openˢ = "Open"u8;
+internal static readonly @string openˢ = "Open"u8;
 
 // checkBadPath checks that various invalid forms of file's name cannot be opened using t.fsys.Open.
 internal static void checkOpen(this ж<fsTester> Ꮡt, @string @file) {
@@ -646,8 +646,8 @@ internal static void checkOpen(this ж<fsTester> Ꮡt, @string @file) {
 // checkBadPath checks that various invalid forms of file's name cannot be opened using open.
 [GoRecv] internal static void checkBadPath(this ref fsTester t, @string @file, @string desc, Func<@string, error> open) {
     var bad = new @string[]{
-        "/" + @file,
-        @file + "/."
+        "/"u8 + @file,
+        @file + "/."u8
     }.slice();
     if (@file == "."u8) {
         bad = append(bad, "/"u8);

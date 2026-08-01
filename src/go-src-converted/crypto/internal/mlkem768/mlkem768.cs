@@ -126,14 +126,14 @@ public static (ж<DecapsulationKey>, error) NewKeyFromSeed(slice<byte> seed) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mlkem768InvalidSeedˢ = "mlkem768: invalid seed length"u8;
+internal static readonly @string mlkem768InvalidSeedˢ = "mlkem768: invalid seed length"u8;
 
 internal static (ж<DecapsulationKey>, error) newKeyFromSeed(ж<DecapsulationKey> Ꮡdk, slice<byte> seed) {
     if (len(seed) != SeedSize) {
         return (default!, errors.New(mlkem768InvalidSeedˢ));
     }
-    var d = Ꮡ(new array<byte>(seed[..32], 32));
-    var z = Ꮡ(new array<byte>(seed[32..], 32));
+    var d = Ꮡ(array<byte>.Alias(seed[..32], 32));
+    var z = Ꮡ(array<byte>.Alias(seed[32..], 32));
     return (kemKeyGen(Ꮡdk, d, z), default!);
 }
 
@@ -146,7 +146,7 @@ public static (ж<DecapsulationKey>, error) NewKeyFromExtendedEncoding(slice<byt
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mlkem768Invalidˢ = "mlkem768: invalid decapsulation key length"u8;
+internal static readonly @string mlkem768Invalidˢ = "mlkem768: invalid decapsulation key length"u8;
 
 internal static (ж<DecapsulationKey>, error) newKeyFromExtendedEncoding(ж<DecapsulationKey> Ꮡdk, slice<byte> dkBytes) {
     ref var dk = ref Ꮡdk.Value;
@@ -254,7 +254,7 @@ public static (slice<byte> ciphertext, slice<byte> sharedKey, error err) Encapsu
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mlkem768Invalidˢ2 = "mlkem768: invalid encapsulation key length"u8;
+internal static readonly @string mlkem768Invalidˢ2 = "mlkem768: invalid encapsulation key length"u8;
 
 internal static (slice<byte> ciphertext, slice<byte> sharedKey, error err) encapsulate(ж<array<byte>> Ꮡcc, slice<byte> encapsulationKey) {
     slice<byte> ciphertext = default!;
@@ -304,7 +304,7 @@ internal static (slice<byte> c, slice<byte> K, error err) kemEncaps(ж<array<byt
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mlkem768Invalidˢ3 = "mlkem768: invalid encryption key length"u8;
+internal static readonly @string mlkem768Invalidˢ3 = "mlkem768: invalid encryption key length"u8;
 
 // parseEK parses an encryption key from its encoded form.
 //
@@ -380,7 +380,7 @@ internal static slice<byte> pkeEncrypt(ж<array<byte>> Ꮡcc, ж<encryptionKey> 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mlkem768Invalidˢ4 = "mlkem768: invalid ciphertext length"u8;
+internal static readonly @string mlkem768Invalidˢ4 = "mlkem768: invalid ciphertext length"u8;
 
 // Decapsulate generates a shared key from a ciphertext and a decapsulation key.
 // If the ciphertext is not valid, Decapsulate returns an error.
@@ -393,7 +393,7 @@ public static (slice<byte> sharedKey, error err) Decapsulate(ж<DecapsulationKey
     if (len(ciphertext) != CiphertextSize) {
         return (default!, errors.New(mlkem768Invalidˢ4));
     }
-    var c = Ꮡ(new array<byte>(ciphertext, 1088));
+    var c = Ꮡ(array<byte>.Alias(ciphertext, 1088));
     return (kemDecaps(Ꮡdk, c), default!);
 }
 
@@ -419,13 +419,13 @@ internal static slice<byte> /*K*/ kemDecaps(ж<DecapsulationKey> Ꮡdk, ж<array
     var Kout = new slice<byte>(SharedKeySize);
     J.Read(Kout);
     ref var cc = ref heap(new array<byte>(1088), out var Ꮡcc);
-    var c1 = pkeEncrypt(Ꮡcc, Ꮡdk.of(DecapsulationKey.ᏑencryptionKey), Ꮡ(new array<byte>(m, 32)), r);
+    var c1 = pkeEncrypt(Ꮡcc, Ꮡdk.of(DecapsulationKey.ᏑencryptionKey), Ꮡ(array<byte>.Alias(m, 32)), r);
     subtle.ConstantTimeCopy(subtle.ConstantTimeCompare(c[..], c1), Kout, Kprime);
     return Kout;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mlkem768Invalidˢ5 = "mlkem768: invalid decryption key length"u8;
+internal static readonly @string mlkem768Invalidˢ5 = "mlkem768: invalid decryption key length"u8;
 
 // parseDK parses a decryption key from its encoded form.
 //
@@ -458,10 +458,10 @@ internal static slice<byte> pkeDecrypt(ж<decryptionKey> Ꮡdx, ж<array<byte>> 
 
     var u = new slice<ringElement>(k);
     foreach (var (i, _) in u) {
-        var bΔ1 = Ꮡ(new array<byte>(c[(int)((nint)encodingSize10 * i)..(int)((nint)encodingSize10 * (i + 1))], 320));
+        var bΔ1 = Ꮡ(array<byte>.Alias(c[(int)((nint)encodingSize10 * i)..(int)((nint)encodingSize10 * (i + 1))], 320));
         u[i] = ringDecodeAndDecompress10(bΔ1);
     }
-    var b = Ꮡ(new array<byte>(c[(int)(encodingSize10 * k)..], 128));
+    var b = Ꮡ(array<byte>.Alias(c[(int)(encodingSize10 * k)..], 128));
     var v = ringDecodeAndDecompress4(b);
     nttElement mask = default!;                  // s⊺ ◦ NTT(u)
     foreach (var (i, _) in dx.s) {
@@ -474,7 +474,7 @@ internal static slice<byte> pkeDecrypt(ж<decryptionKey> Ꮡdx, ж<array<byte>> 
 [GoType("num:uint16")] public partial struct fieldElement;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unreducedFieldElementˢ = "unreduced field element"u8;
+internal static readonly @string unreducedFieldElementˢ = "unreduced field element"u8;
 
 // fieldCheckReduced checks that a value a is < q.
 internal static (fieldElement, error) fieldCheckReduced(uint16 a) {
@@ -623,8 +623,8 @@ internal static slice<byte> polyByteEncode<T>(slice<byte> b, T f)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mlkem768InvalidEncodingˢ = "mlkem768: invalid encoding length"u8;
-private static readonly @string mlkem768Invalidˢ6 = "mlkem768: invalid polynomial encoding"u8;
+internal static readonly @string mlkem768InvalidEncodingˢ = "mlkem768: invalid encoding length"u8;
+internal static readonly @string mlkem768Invalidˢ6 = "mlkem768: invalid polynomial encoding"u8;
 
 // polyByteDecode decodes the 384-byte encoding of a polynomial, checking that
 // all the coefficients are properly reduced. This achieves the "Modulus check"

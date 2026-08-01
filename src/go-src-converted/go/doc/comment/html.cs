@@ -30,9 +30,9 @@ public static slice<byte> HTML(this ж<Printer> Ꮡp, ж<Doc> Ꮡd) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string preˢ = "<pre>"u8;
-private static readonly @string preˢ2 = "</pre>\n"u8;
-private static readonly @string valueˢ = @" value="""u8;
+internal static readonly @string preˢ = "<pre>"u8;
+internal static readonly @string preˢ2 = "</pre>\n"u8;
+internal static readonly @string valueˢ = @" value="""u8;
 
 // block prints the block x to out.
 [GoRecv] internal static void block(this ref htmlPrinter p, ж<bytes.Buffer> Ꮡout, Block x) {
@@ -125,7 +125,7 @@ internal static @string inc(@string s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string aHrefˢ = @"<a href="""u8;
+internal static readonly @string aHrefˢ = @"<a href="""u8;
 
 // text prints the text sequence x to out.
 [GoRecv] internal static void text(this ref htmlPrinter p, ж<bytes.Buffer> Ꮡout, slice<ΔText> x) {
@@ -168,9 +168,9 @@ private static readonly @string aHrefˢ = @"<a href="""u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ampˢ = "&amp;"u8;
-private static readonly @string quotˢ = "&quot;"u8;
-private static readonly @string aposˢ = "&apos;"u8;
+internal static readonly @string ampˢ = "&amp;"u8;
+internal static readonly @string quotˢ = "&quot;"u8;
+internal static readonly @string aposˢ = "&apos;"u8;
 
 // escape prints s to out as plain text,
 // escaping < & " ' and > to avoid being misinterpreted

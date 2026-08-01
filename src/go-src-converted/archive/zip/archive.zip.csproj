@@ -18,6 +18,11 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
+  <!-- Same-package Go tests run in a separate assembly but retain package-private access. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(AssemblyName).tests" />
+  </ItemGroup>
+
   <!-- Build outputs are copied to $(OutDir), so this default must also defer to an explicit
        $(BaseOutputPath); otherwise that redirection silently never takes effect. -->
   <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">

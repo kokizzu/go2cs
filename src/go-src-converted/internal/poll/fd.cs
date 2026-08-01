@@ -19,7 +19,7 @@ partial class poll_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string useOfClosedNetworkˢ = "use of closed network connection"u8;
+internal static readonly @string useOfClosedNetworkˢ = "use of closed network connection"u8;
 
 // Error returns the error message for ErrNetClosing.
 // Keep this string consistent because of issue #4373:
@@ -66,7 +66,7 @@ public static error ErrDeadlineExceeded = new DeadlineExceededErrorжerror(Ꮡ(n
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string iOTimeoutˢ = "i/o timeout"u8;
+internal static readonly @string iOTimeoutˢ = "i/o timeout"u8;
 
 // Implement the net.Error interface.
 // The string is "i/o timeout" because that is what was returned

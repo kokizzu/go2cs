@@ -18,7 +18,7 @@ using ꓸꓸꓸany = Span<any>;
 partial class types_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string assertionFailedˢ = "assertion failed"u8;
+internal static readonly @string assertionFailedˢ = "assertion failed"u8;
 
 internal static void assert(bool p) {
     if (!p) {
@@ -96,7 +96,7 @@ internal static ж<error_> newError(this ж<Checker> Ꮡcheck, errors.Code code)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noErrorˢ = "no error"u8;
+internal static readonly @string noErrorˢ = "no error"u8;
 
 // msg returns the formatted error message without the primary error position pos().
 [GoRecv] internal static @string msg(this ref error_ err) {
@@ -118,9 +118,9 @@ private static readonly @string noErrorˢ = "no error"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidOperandˢ = "invalid operand"u8;
-private static readonly @string invalidTypeˢ = "invalid type"u8;
-private static readonly @string errorSCodeDˢ = "ERROR: %s (code = %d)"u8;
+internal static readonly @string invalidOperandˢ = "invalid operand"u8;
+internal static readonly @string invalidTypeˢ = "invalid type"u8;
+internal static readonly @string errorSCodeDˢ = "ERROR: %s (code = %d)"u8;
 
 // report reports the error err, setting check.firstError if necessary.
 [GoRecv] internal static void report(this ref error_ err) {

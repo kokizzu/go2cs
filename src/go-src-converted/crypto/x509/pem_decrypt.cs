@@ -100,7 +100,7 @@ internal static slice<byte> deriveKey(this rfc1423Algo c, slice<byte> password, 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dekInfoˢ = "DEK-Info"u8;
+internal static readonly @string dekInfoˢ = "DEK-Info"u8;
 
 // IsEncryptedPEMBlock returns whether the PEM block is password encrypted
 // according to RFC 1423.
@@ -119,12 +119,12 @@ public static bool IsEncryptedPEMBlock(ж<pem.Block> Ꮡb) {
 public static error IncorrectPasswordError = errors.New("x509: decryption password incorrect"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509NoDekInfoHeaderInˢ = "x509: no DEK-Info header in block"u8;
-private static readonly @string x509MalformedDekInfoˢ = "x509: malformed DEK-Info header"u8;
-private static readonly @string x509UnknownEncryptionˢ = "x509: unknown encryption mode"u8;
-private static readonly @string x509IncorrectIvSizeˢ = "x509: incorrect IV size"u8;
-private static readonly @string x509EncryptedPemDataIsˢ = "x509: encrypted PEM data is not a multiple of the block size"u8;
-private static readonly @string x509InvalidPaddingˢ = "x509: invalid padding"u8;
+internal static readonly @string x509NoDekInfoHeaderInˢ = "x509: no DEK-Info header in block"u8;
+internal static readonly @string x509MalformedDekInfoˢ = "x509: malformed DEK-Info header"u8;
+internal static readonly @string x509UnknownEncryptionˢ = "x509: unknown encryption mode"u8;
+internal static readonly @string x509IncorrectIvSizeˢ = "x509: incorrect IV size"u8;
+internal static readonly @string x509EncryptedPemDataIsˢ = "x509: encrypted PEM data is not a multiple of the block size"u8;
+internal static readonly @string x509InvalidPaddingˢ = "x509: invalid padding"u8;
 
 // DecryptPEMBlock takes a PEM block encrypted according to RFC 1423 and the
 // password used to encrypt it and returns a slice of decrypted DER encoded

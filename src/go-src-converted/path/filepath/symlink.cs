@@ -15,7 +15,7 @@ using io;
 partial class filepath_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string evalSymlinksTooManyLinksˢ = "EvalSymlinks: too many links"u8;
+internal static readonly @string evalSymlinksTooManyLinksˢ = "EvalSymlinks: too many links"u8;
 
 internal static (@string, error) walkSymlinks(@string path) {
     nint volLen = filepathlite.VolumeNameLen(path);

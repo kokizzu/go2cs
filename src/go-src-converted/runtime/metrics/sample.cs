@@ -8,6 +8,12 @@ using @unsafe = unsafe_package;
 
 partial class metrics_package {
 
+// Go runs a blank-imported package's `init` before this package's own; .NET would never
+// load an assembly nothing references, so the side effects the import exists for are forced.
+[GoInit] internal static void initᴛᴛblankImportꓸruntime() {
+    builtin.initPackage(typeof(runtime_package));
+}
+
 // Sample captures a single metric sample.
 [GoType] partial struct Sample {
     // Name is the name of the metric sampled.

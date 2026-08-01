@@ -646,8 +646,8 @@ internal static (nint, ж<Func>) lookupMethod(this ж<Named> Ꮡn, ж<Package> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string namedExpandUnderlyingSˢ = "-- Named.expandUnderlying %s"u8;
-private static readonly @string sTparamsSUnderSˢ = "=> %s (tparams = %s, under = %s)"u8;
+internal static readonly @string namedExpandUnderlyingSˢ = "-- Named.expandUnderlying %s"u8;
+internal static readonly @string sTparamsSUnderSˢ = "=> %s (tparams = %s, under = %s)"u8;
 
 // expandUnderlying substitutes type arguments in the underlying type n.orig,
 // returning the result. Returns Typ[Invalid] if there was an error.

@@ -46,11 +46,11 @@ partial class x509_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509FailedToParsePrivateˢ = "x509: failed to parse private key (use ParseECPrivateKey instead for this key format)"u8;
-private static readonly @string x509FailedToParsePrivateˢ2 = "x509: failed to parse private key (use ParsePKCS8PrivateKey instead for this key format)"u8;
-private static readonly @string x509UnsupportedPrivateˢ = "x509: unsupported private key version"u8;
-private static readonly @string x509PrivateKeyContainsˢ = "x509: private key contains zero or negative value"u8;
-private static readonly @string x509PrivateKeyContainsˢ2 = "x509: private key contains zero or negative prime"u8;
+internal static readonly @string x509FailedToParsePrivateˢ = "x509: failed to parse private key (use ParseECPrivateKey instead for this key format)"u8;
+internal static readonly @string x509FailedToParsePrivateˢ2 = "x509: failed to parse private key (use ParsePKCS8PrivateKey instead for this key format)"u8;
+internal static readonly @string x509UnsupportedPrivateˢ = "x509: unsupported private key version"u8;
+internal static readonly @string x509PrivateKeyContainsˢ = "x509: private key contains zero or negative value"u8;
+internal static readonly @string x509PrivateKeyContainsˢ2 = "x509: private key contains zero or negative prime"u8;
 
 // ParsePKCS1PrivateKey parses an [RSA] private key in PKCS #1, ASN.1 DER form.
 //
@@ -140,9 +140,9 @@ public static slice<byte> MarshalPKCS1PrivateKey(ж<rsa.PrivateKey> Ꮡkey) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string x509FailedToParsePublicˢ = "x509: failed to parse public key (use ParsePKIXPublicKey instead for this key format)"u8;
-private static readonly @string x509PublicKeyContainsˢ = "x509: public key contains zero or negative value"u8;
-private static readonly @string x509PublicKeyContainsˢ2 = "x509: public key contains large public exponent"u8;
+internal static readonly @string x509FailedToParsePublicˢ = "x509: failed to parse public key (use ParsePKIXPublicKey instead for this key format)"u8;
+internal static readonly @string x509PublicKeyContainsˢ = "x509: public key contains zero or negative value"u8;
+internal static readonly @string x509PublicKeyContainsˢ2 = "x509: public key contains large public exponent"u8;
 
 // ParsePKCS1PublicKey parses an [RSA] public key in PKCS #1, ASN.1 DER form.
 //

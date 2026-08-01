@@ -27,14 +27,14 @@ partial class runtime_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string makesliceLenOutOfRangeˢ = "makeslice: len out of range"u8;
+internal static readonly @string makesliceLenOutOfRangeˢ = "makeslice: len out of range"u8;
 
 internal static void panicmakeslicelen() {
     throw panic(((errorString)(@string)makesliceLenOutOfRangeˢ));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string makesliceCapOutOfRangeˢ = "makeslice: cap out of range"u8;
+internal static readonly @string makesliceCapOutOfRangeˢ = "makeslice: cap out of range"u8;
 
 internal static void panicmakeslicecap() {
     throw panic(((errorString)(@string)makesliceCapOutOfRangeˢ));
@@ -136,7 +136,7 @@ internal static @unsafe.Pointer makeslice64(ж<_type> Ꮡet, int64 len64, int64 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string growsliceLenOutOfRangeˢ = "growslice: len out of range"u8;
+internal static readonly @string growsliceLenOutOfRangeˢ = "growslice: len out of range"u8;
 
 // growslice allocates new backing store for a slice.
 //

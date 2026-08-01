@@ -189,7 +189,7 @@ internal static uint32 le32(slice<byte> p) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badVarintˢ = "bad varint"u8;
+internal static readonly @string badVarintˢ = "bad varint"u8;
 
 internal static (uint64, slice<byte>, error) decodeVarint(slice<byte> data) {
     nint i = default!;
@@ -206,8 +206,8 @@ internal static (uint64, slice<byte>, error) decodeVarint(slice<byte> data) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string notEnoughDataˢ = "not enough data"u8;
-private static readonly @string tooMuchDataˢ = "too much data"u8;
+internal static readonly @string notEnoughDataˢ = "not enough data"u8;
+internal static readonly @string tooMuchDataˢ = "too much data"u8;
 
 internal static (slice<byte>, error) decodeField(ж<buffer> Ꮡb, slice<byte> data) {
     ref var b = ref Ꮡb.Value;
@@ -265,7 +265,7 @@ internal static (slice<byte>, error) decodeField(ж<buffer> Ꮡb, slice<byte> da
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeMismatchˢ = "type mismatch"u8;
+internal static readonly @string typeMismatchˢ = "type mismatch"u8;
 
 internal static error checkType(ж<buffer> Ꮡb, nint typ) {
     ref var b = ref Ꮡb.Value;

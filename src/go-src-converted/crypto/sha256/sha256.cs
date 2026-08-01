@@ -272,7 +272,7 @@ public static array<byte> Sum224(slice<byte> data) {
     d.Reset();
     Ꮡd.Write(data);
     var sum = Ꮡd.checkSum();
-    var ap = Ꮡ(new array<byte>(sum[..], 28));
+    var ap = Ꮡ(array<byte>.Alias(sum[..], 28));
     return ap.Value.Clone();
 }
 

@@ -348,8 +348,8 @@ internal static ж<abi.UncommonType> uncommon(this ж<interfaceType> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nameFlagFieldˢ = "name flag field"u8;
-private static readonly @string nameOffsetFieldˢ = "name offset field"u8;
+internal static readonly @string nameFlagFieldˢ = "name flag field"u8;
+internal static readonly @string nameOffsetFieldˢ = "name offset field"u8;
 
 internal static @string pkgPath(abiꓸName n) {
     if (n.Bytes == nil || (byte)(n.DataChecked(0, nameFlagFieldˢ).Value & ((byte)(1 << (int)(2)))) == 0) {
@@ -595,7 +595,7 @@ internal static ΔMethod /*m*/ Method(this ж<rtype> Ꮡt, nint i) {
     ref var tfn = ref heap<@unsafe.Pointer>(out var Ꮡtfn);
     tfn = (uintptr)Ꮡt.textOff(p.Tfn);
     @unsafe.Pointer fn = @unsafe.Pointer.FromRef(ref (Ꮡtfn).Value);
-    m.Func = new ΔValue(Ꮡ((~mt._<ж<rtype>>()).t), fn.Value, fl);
+    m.Func = new ΔValue(mt._<ж<rtype>>().of(rtype.Ꮡt), fn.Value, fl);
     m.Index = i;
     return m;
 }
@@ -864,9 +864,9 @@ internal static @unsafe.Pointer add(@unsafe.Pointer p, uintptr x, @string whySaf
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string chanˢ = "chan<-"u8;
-private static readonly @string chanˢ2 = "<-chan"u8;
-private static readonly @string chanˢ3 = "chan"u8;
+internal static readonly @string chanˢ = "chan<-"u8;
+internal static readonly @string chanˢ2 = "<-chan"u8;
+internal static readonly @string chanˢ3 = "chan"u8;
 
 public static @string String(this ΔChanDir d) {
     var exprᴛ1 = d;
@@ -1247,7 +1247,7 @@ internal static ж<abi.Type> ptrTo(this ж<rtype> Ꮡt) {
     // Check the cache.
     {
         var (piΔ1, ok) = ᏑptrMap.Load(Ꮡt); if (ok) {
-            return Ꮡ((~piΔ1._<ж<ptrType>>()).Type);
+            return piΔ1._<ж<ptrType>>().of(ptrType.ᏑType);
         }
     }
     // Look in known types.
@@ -1258,7 +1258,7 @@ internal static ж<abi.Type> ptrTo(this ж<rtype> Ꮡt) {
             continue;
         }
         var (piΔ2, _) = ᏑptrMap.LoadOrStore(Ꮡt, p);
-        return Ꮡ((~piΔ2._<ж<ptrType>>()).Type);
+        return piΔ2._<ж<ptrType>>().of(ptrType.ᏑType);
     }
     // Create a new ptrType starting with the description
     // of an *unsafe.Pointer.
@@ -1278,7 +1278,7 @@ internal static ж<abi.Type> ptrTo(this ж<rtype> Ꮡt) {
     pp.Hash = fnv1(t.t.Hash, (rune)'*');
     pp.Elem = at;
     var (pi, _) = ᏑptrMap.LoadOrStore(Ꮡt, Ꮡpp);
-    return Ꮡ((~pi._<ж<ptrType>>()).Type);
+    return pi._<ж<ptrType>>().of(ptrType.ᏑType);
 }
 
 internal static ж<abi.Type> ptrTo(ж<abi.Type> Ꮡt) {
@@ -1567,7 +1567,7 @@ internal static bool haveIdenticalUnderlyingType(ж<abi.Type> ᏑT, ж<abi.Type>
 internal static partial (slice<@unsafe.Pointer> sections, slice<slice<int32>> offset) typelinks();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sizeofRtype0ˢ = "sizeof(rtype) > 0"u8;
+internal static readonly @string sizeofRtype0ˢ = "sizeof(rtype) > 0"u8;
 
 // rtypeOff should be an internal detail,
 // but widely used packages access it using linkname.
@@ -2294,7 +2294,7 @@ internal static bool isPaddedField(ΔType t, nint i) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string xFieldSafeˢ = "&x.field safe"u8;
+internal static readonly @string xFieldSafeˢ = "&x.field safe"u8;
 
 // StructOf returns the struct type containing fields.
 // The Offset and Index fields are ignored and computed as they would be
@@ -2517,7 +2517,7 @@ public static ΔType StructOf(slice<StructField> fields) => func((defer, recover
     // need to compute xcount as the number of exported methods.
     ut.Value.Mcount = (uint16)len(methods);
     ut.Value.Xcount = ut.Value.Mcount;
-    ut.Value.Moff = (uint32)@unsafe.Sizeof(new uncommonType());
+    ut.Value.Moff = (uint32)/* unsafe.Sizeof(uncommonType{}) */ (uintptr)16;
     if (len(fs) > 0) {
         repr = builtin.append(repr, (byte)((rune)' '));
     }
@@ -2736,7 +2736,7 @@ internal static uintptr typeptrdata(ж<abi.Type> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string iLengthˢ = "i < length"u8;
+internal static readonly @string iLengthˢ = "i < length"u8;
 
 // ArrayOf returns the array type with the given length and element type.
 // For example, if t represents int, ArrayOf(5, t) represents [5]int.

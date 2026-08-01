@@ -18,8 +18,10 @@ internal static float32 archFloat32FromReg(uint64 reg) {
     return ~Ꮡi.Reinterpret<uint32, float32>();
 }
 
-internal static uint64 archFloat32ToReg(float32 val) {
-    return (uint64)(~Ꮡ(val).Reinterpret<float32, uint32>());
+internal static uint64 archFloat32ToReg(float32 valʗp) {
+    ref var val = ref heap(valʗp, out var Ꮡval);
+
+    return (uint64)(~Ꮡval.Reinterpret<float32, uint32>());
 }
 
 } // end reflect_package

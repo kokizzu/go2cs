@@ -99,7 +99,7 @@ partial class tls_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsInternalErrorEmptyˢ = "tls: internal error: empty verified chain"u8;
+internal static readonly @string tlsInternalErrorEmptyˢ = "tls: internal error: empty verified chain"u8;
 
 // Bytes encodes the session, including any private fields, so that it can be
 // parsed by [ParseSessionState]. The encoding contains secret values critical
@@ -188,8 +188,8 @@ internal static slice<slice<byte>> certificatesToBytesSlice(slice<ж<Δx509.Cert
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsInvalidSessionˢ = "tls: invalid session encoding"u8;
-private static readonly @string tlsNoServerCertificatesˢ = "tls: no server certificates in client session"u8;
+internal static readonly @string tlsInvalidSessionˢ = "tls: invalid session encoding"u8;
+internal static readonly @string tlsNoServerCertificatesˢ = "tls: no server certificates in client session"u8;
 
 // ParseSessionState parses a [SessionState] encoded by [SessionState.Bytes].
 public static (ж<SessionState>, error) ParseSessionState(slice<byte> data) {
@@ -338,7 +338,7 @@ public static (slice<byte>, error) EncryptTicket(this ж<Config> Ꮡc, ΔConnect
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsInternalErrorSessionˢ = "tls: internal error: session ticket keys unavailable"u8;
+internal static readonly @string tlsInternalErrorSessionˢ = "tls: internal error: session ticket keys unavailable"u8;
 
 [GoRecv] internal static (slice<byte>, error) encryptTicket(this ref Config c, slice<byte> state, slice<ticketKey> ticketKeys) {
     if (len(ticketKeys) == 0) {

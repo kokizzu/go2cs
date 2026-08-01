@@ -23,7 +23,7 @@ partial class doc_package {
 [GoType("map[@string, ж<Func>]")] partial struct methodSet;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badrecvˢ = "BADRECV"u8;
+internal static readonly @string badrecvˢ = "BADRECV"u8;
 
 // ----------------------------------------------------------------------------
 // function/method sets
@@ -64,7 +64,7 @@ internal static @string recvString(ast.Expr recv) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badparamˢ = "BADPARAM"u8;
+internal static readonly @string badparamˢ = "BADPARAM"u8;
 
 internal static @string recvParam(ast.Expr p) {
     {

@@ -302,8 +302,8 @@ public static (slice<byte>, error) SignPKCS1v15(io.Reader random, ж<PrivateKey>
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoRsaInputMustBeˢ = "crypto/rsa: input must be hashed message"u8;
-private static readonly @string cryptoRsaUnsupportedHashˢ = "crypto/rsa: unsupported hash function"u8;
+internal static readonly @string cryptoRsaInputMustBeˢ = "crypto/rsa: input must be hashed message"u8;
+internal static readonly @string cryptoRsaUnsupportedHashˢ = "crypto/rsa: unsupported hash function"u8;
 
 internal static (slice<byte>, error) pkcs1v15ConstructEM(ж<PublicKey> Ꮡpub, crypto.Hash hash, slice<byte> hashed) {
     ref var pub = ref Ꮡpub.Value;

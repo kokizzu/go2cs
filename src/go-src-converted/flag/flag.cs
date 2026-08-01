@@ -629,12 +629,12 @@ internal static (bool ok, error err) isZeroValue(ж<Flag> Ꮡflag, @string value
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string valueˢ = "value"u8;
-private static readonly @string durationˢ = "duration"u8;
-private static readonly @string floatˢ = "float"u8;
-private static readonly @string intˢ = "int"u8;
-private static readonly @string stringˢ = "string"u8;
-private static readonly @string uintˢ = "uint"u8;
+internal static readonly @string valueˢ = "value"u8;
+internal static readonly @string durationˢ = "duration"u8;
+internal static readonly @string floatˢ = "float"u8;
+internal static readonly @string intˢ = "int"u8;
+internal static readonly @string stringˢ = "string"u8;
+internal static readonly @string uintˢ = "uint"u8;
 
 // UnquoteUsage extracts a back-quoted name from the usage
 // string for a flag and returns it and the un-quoted usage.
@@ -1203,7 +1203,7 @@ internal static void usage(this ж<FlagSet> Ꮡf) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string trueˢ = "true"u8;
+internal static readonly @string trueˢ = "true"u8;
 
 // parseOne parses one flag. It reports whether a flag was seen.
 internal static (bool, error) parseOne(this ж<FlagSet> Ꮡf) {

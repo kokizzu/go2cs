@@ -185,10 +185,11 @@ public static error Encode(this ж<Encoder> Ꮡenc, any v) {
 // of Go values to XML.
 //
 // EncodeElement calls [Encoder.Flush] before returning.
-public static error EncodeElement(this ж<Encoder> Ꮡenc, any v, StartElement start) {
+public static error EncodeElement(this ж<Encoder> Ꮡenc, any v, StartElement startʗp) {
     ref var enc = ref Ꮡenc.Value;
 
-    var err = Ꮡenc.of(Encoder.Ꮡp).marshalValue(reflect.ValueOf(v), nil, Ꮡ(start));
+    ref var start = ref heap(startʗp, out var Ꮡstart);
+    var err = Ꮡenc.of(Encoder.Ꮡp).marshalValue(reflect.ValueOf(v), nil, Ꮡstart);
     if (err != default!) {
         return err;
     }
@@ -361,8 +362,8 @@ internal static bool isValidDirective(Directive dir) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string xmlˢ = "xml"u8;
-private static readonly @string xmlnsˢ = @"xmlns:"u8;
+internal static readonly @string xmlˢ = "xml"u8;
+internal static readonly @string xmlnsˢ = @"xmlns:"u8;
 
 // createAttrPrefix finds the name space prefix attribute to use for the given name space,
 // defining a new prefix if necessary. It returns the prefix.
@@ -734,11 +735,12 @@ internal static StartElement defaultStart(reflectꓸType typ, ж<fieldInfo> Ꮡf
 }
 
 // marshalTextInterface marshals a TextMarshaler interface value.
-internal static error marshalTextInterface(this ж<printer> Ꮡp, encoding.TextMarshaler val, StartElement start) {
+internal static error marshalTextInterface(this ж<printer> Ꮡp, encoding.TextMarshaler val, StartElement startʗp) {
     ref var p = ref Ꮡp.Value;
 
+    ref var start = ref heap(startʗp, out var Ꮡstart);
     {
-        var errΔ1 = Ꮡp.writeStart(Ꮡ(start)); if (errΔ1 != default!) {
+        var errΔ1 = Ꮡp.writeStart(Ꮡstart); if (errΔ1 != default!) {
             return errΔ1;
         }
     }
@@ -751,7 +753,7 @@ internal static error marshalTextInterface(this ж<printer> Ꮡp, encoding.TextM
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string xmlnsˢ2 = @" xmlns="""u8;
+internal static readonly @string xmlnsˢ2 = @" xmlns="""u8;
 
 // writeStart writes the given start element.
 internal static error writeStart(this ж<printer> Ꮡp, ж<StartElement> Ꮡstart) {
@@ -1076,7 +1078,7 @@ internal static error marshalStruct(this ж<printer> Ꮡp, ж<typeInfo> Ꮡtinfo
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string useOfClosedEncoderˢ = "use of closed Encoder"u8;
+internal static readonly @string useOfClosedEncoderˢ = "use of closed Encoder"u8;
 
 // Write implements io.Writer
 [GoRecv] internal static (nint n, error err) Write(this ref printer p, slice<byte> b) {

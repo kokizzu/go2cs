@@ -595,7 +595,7 @@ internal static (encoder e, error err) makeBody(reflectꓸValue value, fieldPara
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string asn1StringNotValidUtf8ˢ = "asn1: string not valid UTF-8"u8;
+internal static readonly @string asn1StringNotValidUtf8ˢ = "asn1: string not valid UTF-8"u8;
 
 internal static (encoder e, error err) makeField(reflectꓸValue v, fieldParameters @params) {
     encoder e = default!;

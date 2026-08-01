@@ -91,10 +91,10 @@ internal static unifyMode Δassign => /* 1 << iota */ 1;
 internal static unifyMode exact => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string inexactˢ = "inexact"u8;
-private static readonly @string assignˢ = "assign"u8;
-private static readonly @string exactˢ = "exact"u8;
-private static readonly @string assignExactˢ = "assign, exact"u8;
+internal static readonly @string inexactˢ = "inexact"u8;
+internal static readonly @string assignˢ = "assign"u8;
+internal static readonly @string exactˢ = "exact"u8;
+internal static readonly @string assignExactˢ = "assign, exact"u8;
 
 internal static @string String(this unifyMode m) {
     var exprᴛ1 = m;

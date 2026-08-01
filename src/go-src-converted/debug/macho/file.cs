@@ -652,13 +652,13 @@ internal static @string cstring(slice<byte> b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string debugˢ = "__debug_"u8;
-private static readonly @string zdebugˢ = "__zdebug_"u8;
-private static readonly @string abbrevˢ = "abbrev"u8;
-private static readonly @string infoˢ = "info"u8;
-private static readonly @string lineˢ = "line"u8;
-private static readonly @string rangesˢ = "ranges"u8;
-private static readonly @string strˢ = "str"u8;
+internal static readonly @string debugˢ = "__debug_"u8;
+internal static readonly @string zdebugˢ = "__zdebug_"u8;
+internal static readonly @string abbrevˢ = "abbrev"u8;
+internal static readonly @string infoˢ = "info"u8;
+internal static readonly @string lineˢ = "line"u8;
+internal static readonly @string rangesˢ = "ranges"u8;
+internal static readonly @string strˢ = "str"u8;
 
 // DWARF returns the DWARF debug information for the Mach-O file.
 [GoRecv] public static (ж<dwarf.Data>, error) DWARF(this ref File f) {

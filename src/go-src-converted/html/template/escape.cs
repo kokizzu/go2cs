@@ -148,8 +148,8 @@ internal static escaper makeEscaper(ж<nameSpace> Ꮡn) {
 internal static readonly @string filterFailsafe = "ZgotmplZ"u8;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rangeˢ = "range"u8;
-private static readonly @string withˢ = "with"u8;
+internal static readonly @string rangeˢ = "range"u8;
+internal static readonly @string withˢ = "with"u8;
 
 // escape escapes a template node.
 [GoRecv] internal static context escape(this ref escaper e, context c, parse.Node n) {
@@ -320,7 +320,7 @@ internal static ж<godebug.Setting> debugAllowActionJSTmpl = godebug.New("jstmpl
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string evalArgsˢ = "_eval_args_"u8;
+internal static readonly @string evalArgsˢ = "_eval_args_"u8;
 
 // ensurePipelineContains ensures that the pipeline ends with the commands with
 // the identifiers in s in order. If the pipeline ends with a predefined escaper

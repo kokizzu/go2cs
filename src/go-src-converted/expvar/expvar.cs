@@ -326,7 +326,7 @@ internal static ж<Map> Ꮡvars = new(default(Map));
 internal static ref Map vars => ref Ꮡvars.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object reuseOfExportedVarNameˢ = (@string)"Reuse of exported var name:"u8;
+internal static readonly object reuseOfExportedVarNameˢ = (@string)"Reuse of exported var name:"u8;
 
 // Publish declares a named exported variable. This should be called from a
 // package's init function when it creates its Vars. If the name is already
@@ -382,8 +382,8 @@ public static void Do(Action<KeyValue> f) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string contentTypeˢ = "Content-Type"u8;
-private static readonly @string applicationJsonCharsetˢ = "application/json; charset=utf-8"u8;
+internal static readonly @string contentTypeˢ = "Content-Type"u8;
+internal static readonly @string applicationJsonCharsetˢ = "application/json; charset=utf-8"u8;
 
 internal static void expvarHandler(http.ResponseWriter w, ж<http.Request> Ꮡr) {
     w.Header().Set(contentTypeˢ, applicationJsonCharsetˢ);

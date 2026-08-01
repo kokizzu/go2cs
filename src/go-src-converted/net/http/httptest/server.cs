@@ -53,8 +53,8 @@ partial class httptest_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tcpˢ = "tcp"u8;
-private static readonly @string tcp6ˢ = "tcp6"u8;
+internal static readonly @string tcpˢ = "tcp"u8;
+internal static readonly @string tcp6ˢ = "tcp6"u8;
 
 internal static net.Listener newLocalListener() {
     if (serveFlag != ""u8) {
@@ -124,7 +124,7 @@ public static ж<Server> NewUnstartedServer(httpꓸHandler handler) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object httptestServingOnˢ = (@string)"httptest: serving on"u8;
+internal static readonly object httptestServingOnˢ = (@string)"httptest: serving on"u8;
 
 // Start starts a server from NewUnstartedServer.
 public static void Start(this ж<Server> Ꮡs) {
@@ -265,7 +265,7 @@ public static void Close(this ж<Server> Ꮡs) => func((defer, recover) => {
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httptestServerBlockedInˢ = "httptest.Server blocked in Close after 5 seconds, waiting for connections:\n"u8;
+internal static readonly @string httptestServerBlockedInˢ = "httptest.Server blocked in Close after 5 seconds, waiting for connections:\n"u8;
 
 internal static void logCloseHangDebugInfo(this ж<Server> Ꮡs) => func((defer, recover) => {
     ref var s = ref Ꮡs.Value;

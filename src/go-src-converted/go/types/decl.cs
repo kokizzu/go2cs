@@ -52,8 +52,8 @@ internal static @string pathString(slice<Object> path) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string checkingSSObjPathSˢ = "-- checking %s (%s, objPath = %s)"u8;
-private static readonly @string vSShouldHaveBeenDeclaredˢ = "%v: %s should have been declared"u8;
+internal static readonly @string checkingSSObjPathSˢ = "-- checking %s (%s, objPath = %s)"u8;
+internal static readonly @string vSShouldHaveBeenDeclaredˢ = "%v: %s should have been declared"u8;
 
 // objDecl type-checks the declaration of obj in its respective (file) environment.
 // For the meaning of def, see Checker.definedType, in typexpr.go.
@@ -228,12 +228,12 @@ internal static void objDecl(this ж<Checker> Ꮡcheck, Object obj, ж<TypeName>
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string vInconsistentObjectMapˢ = "%v: inconsistent object map for %s (isPkgObj = %v, inObjMap = %v)"u8;
-private static readonly @string cycleDetectedObjPathSSˢ = "## cycle detected: objPath = %s->%s (len = %d)"u8;
-private static readonly @string cycleContainsGenericTypeˢ = "## cycle contains: generic type in a type parameter list"u8;
-private static readonly @string cycleContainsDValuesDˢ = "## cycle contains: %d values, %d type definitions"u8;
-private static readonly @string cycleIsValidˢ = "=> cycle is valid"u8;
-private static readonly @string errorCycleIsInvalidˢ = "=> error: cycle is invalid"u8;
+internal static readonly @string vInconsistentObjectMapˢ = "%v: inconsistent object map for %s (isPkgObj = %v, inObjMap = %v)"u8;
+internal static readonly @string cycleDetectedObjPathSSˢ = "## cycle detected: objPath = %s->%s (len = %d)"u8;
+internal static readonly @string cycleContainsGenericTypeˢ = "## cycle contains: generic type in a type parameter list"u8;
+internal static readonly @string cycleContainsDValuesDˢ = "## cycle contains: %d values, %d type definitions"u8;
+internal static readonly @string cycleIsValidˢ = "=> cycle is valid"u8;
+internal static readonly @string errorCycleIsInvalidˢ = "=> error: cycle is invalid"u8;
 
 // validCycle checks if the cycle starting with obj is valid and
 // reports an error if it is not.
@@ -586,7 +586,7 @@ internal static void constDecl(this ж<Checker> Ꮡcheck, ж<Const> Ꮡobj, ast.
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string variableDeclarationˢ = "variable declaration"u8;
+internal static readonly @string variableDeclarationˢ = "variable declaration"u8;
 
 internal static void varDecl(this ж<Checker> Ꮡcheck, ж<Var> Ꮡobj, slice<ж<Var>> lhs, ast.Expr typ, ast.Expr init) {
     ref var check = ref Ꮡcheck.Value;
@@ -656,10 +656,10 @@ internal static void varDecl(this ж<Checker> Ꮡcheck, ж<Var> Ꮡobj, slice<ж
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string genericTypeAliasRequiresˢ = "generic type alias requires GOEXPERIMENT=aliastypeparams"u8;
-private static readonly @string typeParametersˢ = "type parameters"u8;
-private static readonly @string genericTypeAliasRequiresˢ2 = "generic type alias requires GODEBUG=gotypesalias=1 or unset"u8;
-private static readonly @string cannotUseATypeParameterˢ = "cannot use a type parameter as RHS in type declaration"u8;
+internal static readonly @string genericTypeAliasRequiresˢ = "generic type alias requires GOEXPERIMENT=aliastypeparams"u8;
+internal static readonly @string typeParametersˢ = "type parameters"u8;
+internal static readonly @string genericTypeAliasRequiresˢ2 = "generic type alias requires GODEBUG=gotypesalias=1 or unset"u8;
+internal static readonly @string cannotUseATypeParameterˢ = "cannot use a type parameter as RHS in type declaration"u8;
 
 internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж<ast.TypeSpec> Ꮡtdecl, ж<TypeName> Ꮡdef) => func((defer, recover) => {
     ref var check = ref Ꮡcheck.Value;
@@ -768,7 +768,7 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cannotUseATypeParameterˢ2 = "cannot use a type parameter as constraint"u8;
+internal static readonly @string cannotUseATypeParameterˢ2 = "cannot use a type parameter as constraint"u8;
 
 internal static void collectTypeParams(this ж<Checker> Ꮡcheck, ж<ж<TypeParamList>> Ꮡdst, ж<ast.FieldList> Ꮡlist) => func((defer, recover) => {
     ref var check = ref Ꮡcheck.Value;
@@ -853,7 +853,7 @@ internal static ΔType bound(this ж<Checker> Ꮡcheck, ast.Expr x) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeParamsVˢ = "type params = %v"u8;
+internal static readonly @string typeParamsVˢ = "type params = %v"u8;
 
 internal static slice<ж<TypeParam>> declareTypeParams(this ж<Checker> Ꮡcheck, slice<ж<TypeParam>> tparams, slice<ж<ast.Ident>> names, tokenꓸPos scopePos) {
     ref var check = ref Ꮡcheck.Value;

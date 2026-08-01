@@ -111,11 +111,11 @@ internal static ref uint64 test_z64 => ref Ꮡtest_z64.Value;
 internal static uint64 test_x64;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cas64Failedˢ = "cas64 failed"u8;
-private static readonly @string load64Failedˢ = "load64 failed"u8;
-private static readonly @string store64Failedˢ = "store64 failed"u8;
-private static readonly @string xadd64Failedˢ = "xadd64 failed"u8;
-private static readonly @string xchg64Failedˢ = "xchg64 failed"u8;
+internal static readonly @string cas64Failedˢ = "cas64 failed"u8;
+internal static readonly @string load64Failedˢ = "load64 failed"u8;
+internal static readonly @string store64Failedˢ = "store64 failed"u8;
+internal static readonly @string xadd64Failedˢ = "xadd64 failed"u8;
+internal static readonly @string xchg64Failedˢ = "xchg64 failed"u8;
 
 internal static void testAtomic64() {
     test_z64 = 42;
@@ -155,40 +155,40 @@ internal static void testAtomic64() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badAˢ = "bad a"u8;
-private static readonly @string badBˢ = "bad b"u8;
-private static readonly @string badCˢ = "bad c"u8;
-private static readonly @string badDˢ = "bad d"u8;
-private static readonly @string badEˢ = "bad e"u8;
-private static readonly @string badFˢ = "bad f"u8;
-private static readonly @string badGˢ = "bad g"u8;
-private static readonly @string badHˢ = "bad h"u8;
-private static readonly @string badIˢ = "bad i"u8;
-private static readonly @string badJˢ = "bad j"u8;
-private static readonly @string badKˢ = "bad k"u8;
-private static readonly @string badLˢ = "bad l"u8;
-private static readonly @string badUnsafeSizeofX1ˢ = "bad unsafe.Sizeof x1"u8;
-private static readonly @string badOffsetofY1Yˢ = "bad offsetof y1.y"u8;
-private static readonly @string badUnsafeSizeofY1ˢ = "bad unsafe.Sizeof y1"u8;
-private static readonly @string badTimedivˢ = "bad timediv"u8;
-private static readonly @string cas1ˢ = "cas1"u8;
-private static readonly @string cas2ˢ = "cas2"u8;
-private static readonly @string cas3ˢ = "cas3"u8;
-private static readonly @string cas4ˢ = "cas4"u8;
-private static readonly @string cas5ˢ = "cas5"u8;
-private static readonly @string cas6ˢ = "cas6"u8;
-private static readonly @string atomicor8ˢ = "atomicor8"u8;
-private static readonly @string atomicand8ˢ = "atomicand8"u8;
-private static readonly @string float64nanˢ = "float64nan"u8;
-private static readonly @string float64nan1ˢ = "float64nan1"u8;
-private static readonly @string float64nan2ˢ = "float64nan2"u8;
-private static readonly @string float64nan3ˢ = "float64nan3"u8;
-private static readonly @string float32nanˢ = "float32nan"u8;
-private static readonly @string float32nan1ˢ = "float32nan1"u8;
-private static readonly @string float32nan2ˢ = "float32nan2"u8;
-private static readonly @string float32nan3ˢ = "float32nan3"u8;
-private static readonly @string fixedStackIsNotPowerOf2ˢ = "FixedStack is not power-of-2"u8;
-private static readonly @string assemblyChecksFailedˢ = "assembly checks failed"u8;
+internal static readonly @string badAˢ = "bad a"u8;
+internal static readonly @string badBˢ = "bad b"u8;
+internal static readonly @string badCˢ = "bad c"u8;
+internal static readonly @string badDˢ = "bad d"u8;
+internal static readonly @string badEˢ = "bad e"u8;
+internal static readonly @string badFˢ = "bad f"u8;
+internal static readonly @string badGˢ = "bad g"u8;
+internal static readonly @string badHˢ = "bad h"u8;
+internal static readonly @string badIˢ = "bad i"u8;
+internal static readonly @string badJˢ = "bad j"u8;
+internal static readonly @string badKˢ = "bad k"u8;
+internal static readonly @string badLˢ = "bad l"u8;
+internal static readonly @string badUnsafeSizeofX1ˢ = "bad unsafe.Sizeof x1"u8;
+internal static readonly @string badOffsetofY1Yˢ = "bad offsetof y1.y"u8;
+internal static readonly @string badUnsafeSizeofY1ˢ = "bad unsafe.Sizeof y1"u8;
+internal static readonly @string badTimedivˢ = "bad timediv"u8;
+internal static readonly @string cas1ˢ = "cas1"u8;
+internal static readonly @string cas2ˢ = "cas2"u8;
+internal static readonly @string cas3ˢ = "cas3"u8;
+internal static readonly @string cas4ˢ = "cas4"u8;
+internal static readonly @string cas5ˢ = "cas5"u8;
+internal static readonly @string cas6ˢ = "cas6"u8;
+internal static readonly @string atomicor8ˢ = "atomicor8"u8;
+internal static readonly @string atomicand8ˢ = "atomicand8"u8;
+internal static readonly @string float64nanˢ = "float64nan"u8;
+internal static readonly @string float64nan1ˢ = "float64nan1"u8;
+internal static readonly @string float64nan2ˢ = "float64nan2"u8;
+internal static readonly @string float64nan3ˢ = "float64nan3"u8;
+internal static readonly @string float32nanˢ = "float32nan"u8;
+internal static readonly @string float32nan1ˢ = "float32nan1"u8;
+internal static readonly @string float32nan2ˢ = "float32nan2"u8;
+internal static readonly @string float32nan3ˢ = "float32nan3"u8;
+internal static readonly @string fixedStackIsNotPowerOf2ˢ = "FixedStack is not power-of-2"u8;
+internal static readonly @string assemblyChecksFailedˢ = "assembly checks failed"u8;
 
 [GoLocalName("x1t")] [GoType("dyn")] partial struct check_x1t {
     internal uint8 x;
@@ -217,49 +217,49 @@ internal static void check() {
     ref var m = ref heap(new array<byte>(4), out var Ꮡm);
     check_x1t x1 = default!;
     check_y1t y1 = default!;
-    if (@unsafe.Sizeof(a) != 1) {
+    if (/* unsafe.Sizeof(a) */ (uintptr)1 != 1) {
         @throw(badAˢ);
     }
-    if (@unsafe.Sizeof(b) != 1) {
+    if (/* unsafe.Sizeof(b) */ (uintptr)1 != 1) {
         @throw(badBˢ);
     }
-    if (@unsafe.Sizeof(c) != 2) {
+    if (/* unsafe.Sizeof(c) */ (uintptr)2 != 2) {
         @throw(badCˢ);
     }
-    if (@unsafe.Sizeof(d) != 2) {
+    if (/* unsafe.Sizeof(d) */ (uintptr)2 != 2) {
         @throw(badDˢ);
     }
-    if (@unsafe.Sizeof(e) != 4) {
+    if (/* unsafe.Sizeof(e) */ (uintptr)4 != 4) {
         @throw(badEˢ);
     }
-    if (@unsafe.Sizeof(f) != 4) {
+    if (/* unsafe.Sizeof(f) */ (uintptr)4 != 4) {
         @throw(badFˢ);
     }
-    if (@unsafe.Sizeof(g) != 8) {
+    if (/* unsafe.Sizeof(g) */ (uintptr)8 != 8) {
         @throw(badGˢ);
     }
-    if (@unsafe.Sizeof(h) != 8) {
+    if (/* unsafe.Sizeof(h) */ (uintptr)8 != 8) {
         @throw(badHˢ);
     }
-    if (@unsafe.Sizeof(i) != 4) {
+    if (/* unsafe.Sizeof(i) */ (uintptr)4 != 4) {
         @throw(badIˢ);
     }
-    if (@unsafe.Sizeof(j) != 8) {
+    if (/* unsafe.Sizeof(j) */ (uintptr)8 != 8) {
         @throw(badJˢ);
     }
-    if (@unsafe.Sizeof(k) != goarch.PtrSize) {
+    if (/* unsafe.Sizeof(k) */ (uintptr)8 != goarch.PtrSize) {
         @throw(badKˢ);
     }
-    if (@unsafe.Sizeof(l) != goarch.PtrSize) {
+    if (/* unsafe.Sizeof(l) */ (uintptr)8 != goarch.PtrSize) {
         @throw(badLˢ);
     }
-    if (@unsafe.Sizeof(x1) != 1) {
+    if (/* unsafe.Sizeof(x1) */ (uintptr)1 != 1) {
         @throw(badUnsafeSizeofX1ˢ);
     }
-    if (@unsafe.Offsetof(y1.GetType(), "y") != 1) {
+    if (/* unsafe.Offsetof(y1.y) */ (uintptr)1 != 1) {
         @throw(badOffsetofY1Yˢ);
     }
-    if (@unsafe.Sizeof(y1) != 2) {
+    if (/* unsafe.Sizeof(y1) */ (uintptr)2 != 2) {
         @throw(badUnsafeSizeofY1ˢ);
     }
     if (timediv(12345000054321L, 1000000000, Ꮡe) != 12345 || e != 54321) {
@@ -433,8 +433,8 @@ internal static slice<ж<dbgVar>> dbgvars = new ж<dbgVar>[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string godebugˢ = "GODEBUG"u8;
-private static readonly @string gotracebackˢ = "GOTRACEBACK"u8;
+internal static readonly @string godebugˢ = "GODEBUG"u8;
+internal static readonly @string gotracebackˢ = "GOTRACEBACK"u8;
 
 internal static void parsedebugvars() {
     // defaults
@@ -497,7 +497,7 @@ internal static void reparsedebugvars(@string env) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cgocheck1ModeIsNoLongerˢ = "cgocheck > 1 mode is no longer supported at runtime. Use GOEXPERIMENT=cgocheck2 at build time instead."u8;
+internal static readonly @string cgocheck1ModeIsNoLongerˢ = "cgocheck > 1 mode is no longer supported at runtime. Use GOEXPERIMENT=cgocheck2 at build time instead."u8;
 
 // parsegodebug parses the godebug string, updating variables listed in dbgvars.
 // If seen == nil, this is startup time and we process the string left to right

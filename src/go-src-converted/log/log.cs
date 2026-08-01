@@ -369,8 +369,10 @@ public static @string Prefix(this ж<Logger> Ꮡl) {
 }
 
 // SetPrefix sets the output prefix for the logger.
-public static void SetPrefix(this ж<Logger> Ꮡl, @string prefix) {
-    Ꮡl.of(Logger.Ꮡprefix).Store(Ꮡ(prefix));
+public static void SetPrefix(this ж<Logger> Ꮡl, @string prefixʗp) {
+    ref var prefix = ref heap(prefixʗp, out var Ꮡprefix);
+
+    Ꮡl.of(Logger.Ꮡprefix).Store(Ꮡprefix);
 }
 
 // Writer returns the output destination for the logger.

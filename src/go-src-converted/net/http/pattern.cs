@@ -66,15 +66,15 @@ partial class http_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string emptyPatternˢ = "empty pattern"u8;
-private static readonly @string hostPathMissingˢ = "host/path missing /"u8;
-private static readonly @string hostContainsMissingˢ = "host contains '{' (missing initial '/'?)"u8;
-private static readonly @string nonConnectPatternWithˢ = "non-CONNECT pattern with unclean path can never match"u8;
-private static readonly @string badWildcardSegmentMustˢ = "bad wildcard segment (must start with '{')"u8;
-private static readonly @string badWildcardSegmentMustˢ2 = "bad wildcard segment (must end with '}')"u8;
-private static readonly @string notAtEndˢ = "{$} not at end"u8;
-private static readonly @string wildcardNotAtEndˢ = "{...} wildcard not at end"u8;
-private static readonly @string emptyWildcardˢ = "empty wildcard"u8;
+internal static readonly @string emptyPatternˢ = "empty pattern"u8;
+internal static readonly @string hostPathMissingˢ = "host/path missing /"u8;
+internal static readonly @string hostContainsMissingˢ = "host contains '{' (missing initial '/'?)"u8;
+internal static readonly @string nonConnectPatternWithˢ = "non-CONNECT pattern with unclean path can never match"u8;
+internal static readonly @string badWildcardSegmentMustˢ = "bad wildcard segment (must start with '{')"u8;
+internal static readonly @string badWildcardSegmentMustˢ2 = "bad wildcard segment (must end with '}')"u8;
+internal static readonly @string notAtEndˢ = "{$} not at end"u8;
+internal static readonly @string wildcardNotAtEndˢ = "{...} wildcard not at end"u8;
+internal static readonly @string emptyWildcardˢ = "empty wildcard"u8;
 
 // parsePattern parses a string into a Pattern.
 // The string's syntax is

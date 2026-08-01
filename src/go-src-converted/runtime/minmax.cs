@@ -71,29 +71,35 @@ internal static F fmax<F>(F x, F y)
     return fandbits(x, y);
 }
 
-internal static F forbits<F>(F x, F y)
+internal static F forbits<F>(F xʗp, F yʗp)
     where F : /* floaty */ IAdditionOperators<F, F, F>, ISubtractionOperators<F, F, F>, IMultiplyOperators<F, F, F>, IDivisionOperators<F, F, F>, IIncrementOperators<F>, IDecrementOperators<F>, IUnaryNegationOperators<F, F>, IEqualityOperators<F, F, bool>, IComparisonOperators<F, F, bool>, new()
 {
+    ref var x = ref heap(xʗp, out var Ꮡx);
+    ref var y = ref heap(yʗp, out var Ꮡy);
+
     var exprᴛ1 = @unsafe.Sizeof(x);
     if (exprᴛ1 == 4) {
-        (Ꮡ(x).Reinterpret<F, uint32>()).Value |= (Ꮡ(y).Reinterpret<F, uint32>()).Value;
+        (Ꮡx.Reinterpret<F, uint32>()).Value |= (Ꮡy.Reinterpret<F, uint32>()).Value;
     }
     else if (exprᴛ1 == 8) {
-        (Ꮡ(x).Reinterpret<F, uint64>()).Value |= (Ꮡ(y).Reinterpret<F, uint64>()).Value;
+        (Ꮡx.Reinterpret<F, uint64>()).Value |= (Ꮡy.Reinterpret<F, uint64>()).Value;
     }
 
     return x;
 }
 
-internal static F fandbits<F>(F x, F y)
+internal static F fandbits<F>(F xʗp, F yʗp)
     where F : /* floaty */ IAdditionOperators<F, F, F>, ISubtractionOperators<F, F, F>, IMultiplyOperators<F, F, F>, IDivisionOperators<F, F, F>, IIncrementOperators<F>, IDecrementOperators<F>, IUnaryNegationOperators<F, F>, IEqualityOperators<F, F, bool>, IComparisonOperators<F, F, bool>, new()
 {
+    ref var x = ref heap(xʗp, out var Ꮡx);
+    ref var y = ref heap(yʗp, out var Ꮡy);
+
     var exprᴛ1 = @unsafe.Sizeof(x);
     if (exprᴛ1 == 4) {
-        (Ꮡ(x).Reinterpret<F, uint32>()).Value &= (Ꮡ(y).Reinterpret<F, uint32>()).Value;
+        (Ꮡx.Reinterpret<F, uint32>()).Value &= (Ꮡy.Reinterpret<F, uint32>()).Value;
     }
     else if (exprᴛ1 == 8) {
-        (Ꮡ(x).Reinterpret<F, uint64>()).Value &= (Ꮡ(y).Reinterpret<F, uint64>()).Value;
+        (Ꮡx.Reinterpret<F, uint64>()).Value &= (Ꮡy.Reinterpret<F, uint64>()).Value;
     }
 
     return x;

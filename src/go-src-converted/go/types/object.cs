@@ -106,9 +106,9 @@ internal static Δcolor black => 1;
 internal static Δcolor grey => 2; // must be > white and black
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string whiteˢ = "white"u8;
-private static readonly @string blackˢ = "black"u8;
-private static readonly @string greyˢ = "grey"u8;
+internal static readonly @string whiteˢ = "white"u8;
+internal static readonly @string blackˢ = "black"u8;
+internal static readonly @string greyˢ = "grey"u8;
 
 internal static @string String(this Δcolor c) {
     var exprᴛ1 = c;
@@ -573,12 +573,12 @@ internal static ж<Builtin> newBuiltin(builtinId id) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string constˢ = "const"u8;
-private static readonly @string parameterˢ = " parameter"u8;
-private static readonly @string varˢ = "var"u8;
-private static readonly @string funcˢ2 = "func "u8;
-private static readonly @string builtinˢ = "builtin"u8;
-private static readonly @string nilˢ2 = "nil"u8;
+internal static readonly @string constˢ = "const"u8;
+internal static readonly @string parameterˢ = " parameter"u8;
+internal static readonly @string varˢ = "var"u8;
+internal static readonly @string funcˢ2 = "func "u8;
+internal static readonly @string builtinˢ = "builtin"u8;
+internal static readonly @string nilˢ2 = "nil"u8;
 
 internal static void writeObject(ж<bytes.Buffer> Ꮡbuf, Object obj, Func<ж<Package>, @string> qf) {
     ref var buf = ref Ꮡbuf.Value;

@@ -499,7 +499,7 @@ skip:
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedReadFromˢ = "unexpected read from section with uninitialized data"u8;
+internal static readonly @string unexpectedReadFromˢ = "unexpected read from section with uninitialized data"u8;
 
 [GoRecv] internal static (nint n, error err) ReadAt(this ref nobitsSectionReader _, slice<byte> p, int64 off) {
     nint n = default!;

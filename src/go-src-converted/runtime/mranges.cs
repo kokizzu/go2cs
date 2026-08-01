@@ -28,7 +28,7 @@ partial class runtime_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string addrRangeBaseAndLimitAreˢ = "addr range base and limit are not in the same memory segment"u8;
+internal static readonly @string addrRangeBaseAndLimitAreˢ = "addr range base and limit are not in the same memory segment"u8;
 
 // makeAddrRange creates a new address range from two virtual addresses.
 //
@@ -57,7 +57,7 @@ internal static bool contains(this addrRange a, uintptr addr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badPruneˢ = "bad prune"u8;
+internal static readonly @string badPruneˢ = "bad prune"u8;
 
 // subtract takes the addrRange toPrune and cuts out any overlap with
 // from, then returns the new range. subtract assumes that a and b
@@ -257,7 +257,7 @@ internal static void init(this ж<addrRanges> Ꮡa, ж<sysMemStat> ᏑsysStat) {
     var ranges = Ꮡa.of(addrRanges.Ꮡranges).Reinterpret<slice<addrRange>, notInHeapSlice>();
     ranges.Value.len = 0;
     ranges.Value.cap = 16;
-    ranges.Value.Δarray = (ж<notInHeap>)(uintptr)(persistentalloc(@unsafe.Sizeof(new addrRange(nil)) * (uintptr)(~ranges).cap, goarch.PtrSize, ᏑsysStat));
+    ranges.Value.Δarray = (ж<notInHeap>)(uintptr)(persistentalloc(/* unsafe.Sizeof(addrRange{}) */ (uintptr)16 * (uintptr)(~ranges).cap, goarch.PtrSize, ᏑsysStat));
     a.sysStat = ᏑsysStat;
     a.totalBytes = 0;
 }
@@ -333,7 +333,7 @@ internal static void init(this ж<addrRanges> Ꮡa, ж<sysMemStat> ᏑsysStat) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string attemptedToAddZeroSizedˢ = "attempted to add zero-sized address range"u8;
+internal static readonly @string attemptedToAddZeroSizedˢ = "attempted to add zero-sized address range"u8;
 
 // add inserts a new address range to a.
 //
@@ -389,7 +389,7 @@ internal static void add(this ж<addrRanges> Ꮡa, addrRange r) {
             var ranges = Ꮡa.of(addrRanges.Ꮡranges).Reinterpret<slice<addrRange>, notInHeapSlice>();
             ranges.Value.len = len(oldRanges) + 1;
             ranges.Value.cap = cap(oldRanges) * 2;
-            ranges.Value.Δarray = (ж<notInHeap>)(uintptr)(persistentalloc(@unsafe.Sizeof(new addrRange(nil)) * (uintptr)(~ranges).cap, goarch.PtrSize, a.sysStat));
+            ranges.Value.Δarray = (ж<notInHeap>)(uintptr)(persistentalloc(/* unsafe.Sizeof(addrRange{}) */ (uintptr)16 * (uintptr)(~ranges).cap, goarch.PtrSize, a.sysStat));
             // Copy in the old array, but make space for the new range.
             copy(a.ranges[..(int)(i)], oldRanges[..(int)(i)]);
             copy(a.ranges[(int)(i + 1)..], oldRanges[(int)(i)..]);
@@ -462,7 +462,7 @@ internal static void add(this ж<addrRanges> Ꮡa, addrRange r) {
         var ranges = Ꮡb.of(addrRanges.Ꮡranges).Reinterpret<slice<addrRange>, notInHeapSlice>();
         ranges.Value.len = 0;
         ranges.Value.cap = cap(a.ranges);
-        ranges.Value.Δarray = (ж<notInHeap>)(uintptr)(persistentalloc(@unsafe.Sizeof(new addrRange(nil)) * (uintptr)(~ranges).cap, goarch.PtrSize, b.sysStat));
+        ranges.Value.Δarray = (ж<notInHeap>)(uintptr)(persistentalloc(/* unsafe.Sizeof(addrRange{}) */ (uintptr)16 * (uintptr)(~ranges).cap, goarch.PtrSize, b.sysStat));
     }
     b.ranges = b.ranges[..(int)(len(a.ranges))];
     b.totalBytes = a.totalBytes;

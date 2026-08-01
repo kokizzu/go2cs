@@ -49,7 +49,7 @@ partial class types_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingTypeOrInitExprˢ = "missing type or init expr"u8;
+internal static readonly @string missingTypeOrInitExprˢ = "missing type or init expr"u8;
 
 // arityMatch checks that the lhs and rhs of a const or var decl
 // have the appropriate number of names and init exprs. For const
@@ -113,8 +113,8 @@ internal static (@string, error) validatedImportPath(@string path) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cannotDeclareInitMustBeˢ = "cannot declare init - must be func"u8;
-private static readonly @string cannotDeclareMainMustBeˢ = "cannot declare main - must be func"u8;
+internal static readonly @string cannotDeclareInitMustBeˢ = "cannot declare init - must be func"u8;
+internal static readonly @string cannotDeclareMainMustBeˢ = "cannot declare main - must be func"u8;
 
 // declarePkgObj declares obj in the package scope, records its ident -> obj mapping,
 // and updates check.objMap. The object must not be a function or method.
@@ -152,7 +152,7 @@ internal static void declarePkgObj(this ж<Checker> Ꮡcheck, ж<ast.Ident> Ꮡi
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cannotUseFakeImportCAndˢ = "cannot use FakeImportC and go115UsesCgo together"u8;
+internal static readonly @string cannotUseFakeImportCAndˢ = "cannot use FakeImportC and go115UsesCgo together"u8;
 
 internal static ж<Package> importPackage(this ж<Checker> Ꮡcheck, positioner at, @string path, @string dir) {
     ref var check = ref Ꮡcheck.Value;
@@ -243,9 +243,9 @@ internal static ж<Package> importPackage(this ж<Checker> Ꮡcheck, positioner 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cannotRenameImportCˢ = @"cannot rename import ""C"""u8;
-private static readonly @string cannotImportPackageAsˢ = "cannot import package as init - init must be a func"u8;
-private static readonly @string methodHasNoReceiverˢ = "method has no receiver"u8;
+internal static readonly @string cannotRenameImportCˢ = @"cannot rename import ""C"""u8;
+internal static readonly @string cannotImportPackageAsˢ = "cannot import package as init - init must be a func"u8;
+internal static readonly @string methodHasNoReceiverˢ = "method has no receiver"u8;
 
 [GoLocalName("methodInfo")] [GoType("dyn")] partial struct collectObjects_methodInfo {
     internal ж<Func> obj;   // method
@@ -544,7 +544,7 @@ internal static void collectObjects(this ж<Checker> Ꮡcheck) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string parameterizedReceiverˢ = "parameterized receiver contains nil parameters"u8;
+internal static readonly @string parameterizedReceiverˢ = "parameterized receiver contains nil parameters"u8;
 
 // unpackRecv unpacks a receiver type and returns its components: ptr indicates whether
 // rtyp is a pointer receiver, rname is the receiver type name, and tparams are its

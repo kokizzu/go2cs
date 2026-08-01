@@ -136,7 +136,7 @@ internal static @string Error(this importError e) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unexpectedEofˢ = (@string)"unexpected EOF"u8;
+internal static readonly object unexpectedEofˢ = (@string)"unexpected EOF"u8;
 
 // unquotedString     = { unquotedStringChar } .
 // unquotedStringChar = <neither a whitespace nor a ';' char> .
@@ -272,7 +272,7 @@ internal static typesꓸType deref(typesꓸType typ) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object embeddedFieldExpectedˢ = (@string)"embedded field expected"u8;
+internal static readonly object embeddedFieldExpectedˢ = (@string)"embedded field expected"u8;
 
 // Field = Name Type [string] .
 internal static (ж<types.Var> field, @string tag) parseField(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
@@ -316,8 +316,8 @@ internal static (ж<types.Var> field, @string tag) parseField(this ж<parser> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string retˢ = "$ret"u8;
-private static readonly @string escˢ = "esc"u8;
+internal static readonly @string retˢ = "$ret"u8;
+internal static readonly @string escˢ = "esc"u8;
 
 // Param = Name ["..."] Type .
 internal static (ж<types.Var> param, bool isVariadic) parseParam(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
@@ -368,7 +368,7 @@ internal static ж<types.Var> parseVar(this ж<parser> Ꮡp, ж<types.Package> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string convertˢ = "convert"u8;
+internal static readonly @string convertˢ = "convert"u8;
 
 // Conversion = "convert" "(" Type "," ConstValue ")" .
 internal static (constant.Value val, typesꓸType typ) parseConversion(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
@@ -386,10 +386,10 @@ internal static (constant.Value val, typesꓸType typ) parseConversion(this ж<p
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object couldNotParseIntegerˢ = (@string)"could not parse integer literal"u8;
-private static readonly object couldNotParseFloatˢ = (@string)"could not parse float literal"u8;
-private static readonly object couldNotParseRealˢ = (@string)"could not parse real component of complex literal"u8;
-private static readonly object couldNotParseImagˢ = (@string)"could not parse imag component of complex literal"u8;
+internal static readonly object couldNotParseIntegerˢ = (@string)"could not parse integer literal"u8;
+internal static readonly object couldNotParseFloatˢ = (@string)"could not parse float literal"u8;
+internal static readonly object couldNotParseRealˢ = (@string)"could not parse real component of complex literal"u8;
+internal static readonly object couldNotParseImagˢ = (@string)"could not parse imag component of complex literal"u8;
 
 // ConstValue     = string | "false" | "true" | ["-"] (int ["'"] | FloatOrComplex) | Conversion .
 // FloatOrComplex = float ["i" | ("+"|"-") float "i"] .
@@ -603,8 +603,8 @@ internal static ж<reservedᴛ1> reserved = @new<reservedᴛ1>();
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object unexpectedUnderlyingTypeˢ = (@string)"unexpected underlying type for non-named TypeName"u8;
-private static readonly @string funcˢ = "func"u8;
+internal static readonly object unexpectedUnderlyingTypeˢ = (@string)"unexpected underlying type for non-named TypeName"u8;
+internal static readonly @string funcˢ = "func"u8;
 
 // NamedType = TypeName [ "=" ] Type { Method } .
 // TypeName  = ExportedName .
@@ -741,7 +741,7 @@ internal static typesꓸType parseArrayOrSliceType(this ж<parser> Ꮡp, ж<type
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mapˢ = "map"u8;
+internal static readonly @string mapˢ = "map"u8;
 
 // MapType = "map" "[" Type "]" Type .
 internal static typesꓸType parseMapType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
@@ -759,7 +759,7 @@ internal static typesꓸType parseMapType(this ж<parser> Ꮡp, ж<types.Package
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string chanˢ = "chan"u8;
+internal static readonly @string chanˢ = "chan"u8;
 
 // ChanType = "chan" ["<-" | "-<"] Type .
 internal static typesꓸType parseChanType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
@@ -791,7 +791,7 @@ internal static typesꓸType parseChanType(this ж<parser> Ꮡp, ж<types.Packag
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string structˢ = "struct"u8;
+internal static readonly @string structˢ = "struct"u8;
 
 // StructType = "struct" "{" { Field } "}" .
 internal static typesꓸType parseStructType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
@@ -815,7 +815,7 @@ internal static typesꓸType parseStructType(this ж<parser> Ꮡp, ж<types.Pack
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object notOnFinalArgumentˢ = (@string)"... not on final argument"u8;
+internal static readonly object notOnFinalArgumentˢ = (@string)"... not on final argument"u8;
 
 // ParamList = "(" [ { Parameter "," } Parameter ] ")" .
 internal static (ж<types.Tuple>, bool) parseParamList(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg) {
@@ -904,7 +904,7 @@ internal static ж<types.Func> parseFunc(this ж<parser> Ꮡp, ж<types.Package>
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string interfaceˢ = "interface"u8;
+internal static readonly @string interfaceˢ = "interface"u8;
 
 // InterfaceType = "interface" "{" { ("?" Type | Func) ";" } "}" .
 internal static typesꓸType parseInterfaceType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
@@ -934,7 +934,7 @@ internal static typesꓸType parseInterfaceType(this ж<parser> Ꮡp, ж<types.P
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string anyˢ = "any"u8;
+internal static readonly @string anyˢ = "any"u8;
 
 // PointerType = "*" ("any" | Type) .
 internal static typesꓸType parsePointerType(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, slice<any> nlist) {
@@ -1014,9 +1014,9 @@ internal static UntypedInt gccgoBuiltinRUNE => 21;
 internal static UntypedInt gccgoBuiltinANY => 22;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string errorˢ = "error"u8;
-private static readonly @string byteˢ = "byte"u8;
-private static readonly @string runeˢ = "rune"u8;
+internal static readonly @string errorˢ = "error"u8;
+internal static readonly @string byteˢ = "byte"u8;
+internal static readonly @string runeˢ = "rune"u8;
 
 internal static typesꓸType lookupBuiltinType(nint typ) {
     return new golib.SparseArray<typesꓸType>{[gccgoBuiltinINT8] = new types.BasicжΔType(types.Typ[types.Int8]), [gccgoBuiltinINT16] = new types.BasicжΔType(types.Typ[types.Int16]), [gccgoBuiltinINT32] = new types.BasicжΔType(types.Typ[types.Int32]), [gccgoBuiltinINT64] = new types.BasicжΔType(types.Typ[types.Int64]), [gccgoBuiltinUINT8] = new types.BasicжΔType(types.Typ[types.Uint8]), [gccgoBuiltinUINT16] = new types.BasicжΔType(types.Typ[types.Uint16]), [gccgoBuiltinUINT32] = new types.BasicжΔType(types.Typ[types.Uint32]), [gccgoBuiltinUINT64] = new types.BasicжΔType(types.Typ[types.Uint64]), [gccgoBuiltinFLOAT32] = new types.BasicжΔType(types.Typ[types.Float32]), [gccgoBuiltinFLOAT64] = new types.BasicжΔType(types.Typ[types.Float64]), [gccgoBuiltinINT] = new types.BasicжΔType(types.Typ[types.Int]), [gccgoBuiltinUINT] = new types.BasicжΔType(types.Typ[types.Uint]), [gccgoBuiltinUINTPTR] = new types.BasicжΔType(types.Typ[types.Uintptr]), [gccgoBuiltinBOOL] = new types.BasicжΔType(types.Typ[types.Bool]), [gccgoBuiltinSTRING] = new types.BasicжΔType(types.Typ[types.ΔString]), [gccgoBuiltinCOMPLEX64] = new types.BasicжΔType(types.Typ[types.Complex64]), [gccgoBuiltinCOMPLEX128] = new types.BasicжΔType(types.Typ[types.Complex128]), [gccgoBuiltinERROR] = types.Universe.Lookup(errorˢ).Type(), [gccgoBuiltinBYTE] = types.Universe.Lookup(byteˢ).Type(), [gccgoBuiltinRUNE] = types.Universe.Lookup(runeˢ).Type(), [gccgoBuiltinANY] = types.Universe.Lookup(anyˢ).Type()
@@ -1036,7 +1036,7 @@ internal static typesꓸType parseType(this ж<parser> Ꮡp, ж<types.Package> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeˢ = "type"u8;
+internal static readonly @string typeˢ = "type"u8;
 
 // (*parser).Type after reading the "<".
 internal static (typesꓸType t, nint n1) parseTypeAfterAngle(this ж<parser> Ꮡp, ж<types.Package> Ꮡpkg, params ꓸꓸꓸany nʗp) {
@@ -1097,7 +1097,7 @@ internal static (typesꓸType t, nint n1) parseTypeExtended(this ж<parser> Ꮡp
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string inlˢ = "inl"u8;
+internal static readonly @string inlˢ = "inl"u8;
 
 // InlineBody = "<inl:NN>" .{NN}
 // Reports whether a body was skipped.

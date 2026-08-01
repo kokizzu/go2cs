@@ -85,7 +85,7 @@ internal static (nint, error) lookupProtocolMap(@string name) {
 internal const nint maxPortBufSize = /* len("mobility-header") + 10 */ 25;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tcpˢ = "tcp"u8;
+internal static readonly @string tcpˢ = "tcp"u8;
 
 internal static (nint port, error error) lookupPortMap(@string network, @string service) {
     nint port = default!;
@@ -983,8 +983,8 @@ internal static (slice<@string>, error) goLookupTXT(this ж<Resolver> Ꮡr, cont
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noCnameRecordReceivedˢ = "no CNAME record received"u8;
-private static readonly @string couldNotParseCnameRecordˢ = "could not parse CNAME record"u8;
+internal static readonly @string noCnameRecordReceivedˢ = "no CNAME record received"u8;
+internal static readonly @string couldNotParseCnameRecordˢ = "could not parse CNAME record"u8;
 
 internal static (@string, error) parseCNAMEFromResources(slice<dnsmessage.Resource> resources) {
     if (len(resources) == 0) {

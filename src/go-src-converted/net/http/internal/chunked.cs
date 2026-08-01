@@ -43,7 +43,7 @@ public static io.Reader NewChunkedReader(io.Reader r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string chunkedEncodingContainsˢ = "chunked encoding contains too much non-data"u8;
+internal static readonly @string chunkedEncodingContainsˢ = "chunked encoding contains too much non-data"u8;
 
 [GoRecv] internal static void beginChunk(this ref chunkedReader cr) {
     // chunk-size CRLF
@@ -98,7 +98,7 @@ private static readonly @string chunkedEncodingContainsˢ = "chunked encoding co
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string malformedChunkedEncodingˢ = "malformed chunked encoding"u8;
+internal static readonly @string malformedChunkedEncodingˢ = "malformed chunked encoding"u8;
 
 [GoRecv] internal static (nint n, error err) Read(this ref chunkedReader cr, slice<uint8> b) {
     nint n = default!;
@@ -287,9 +287,9 @@ public static io.WriteCloser NewChunkedWriter(io.Writer w) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string emptyHexNumberForChunkˢ = "empty hex number for chunk length"u8;
-private static readonly @string invalidByteInChunkLengthˢ = "invalid byte in chunk length"u8;
-private static readonly @string httpChunkLengthTooLargeˢ = "http chunk length too large"u8;
+internal static readonly @string emptyHexNumberForChunkˢ = "empty hex number for chunk length"u8;
+internal static readonly @string invalidByteInChunkLengthˢ = "invalid byte in chunk length"u8;
+internal static readonly @string httpChunkLengthTooLargeˢ = "http chunk length too large"u8;
 
 internal static (uint64 n, error err) parseHexUint(slice<byte> v) {
     uint64 n = default!;

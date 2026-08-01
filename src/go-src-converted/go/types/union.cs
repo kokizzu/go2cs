@@ -73,7 +73,7 @@ public static @string String(this ж<ΔTerm> Ꮡt) {
 internal static UntypedInt maxTermCount => 100;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cannotUseComparableInˢ = "cannot use comparable in union"u8;
+internal static readonly @string cannotUseComparableInˢ = "cannot use comparable in union"u8;
 
 // parseUnion parses uexpr as a union of expressions.
 // The result is a Union type, or Typ[Invalid] for some errors.
@@ -169,7 +169,7 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string termCannotBeATypeˢ = "term cannot be a type parameter"u8;
+internal static readonly @string termCannotBeATypeˢ = "term cannot be a type parameter"u8;
 
 internal static ж<ΔTerm> parseTilde(ж<Checker> Ꮡcheck, ast.Expr tx) {
     ref var check = ref Ꮡcheck.Value;

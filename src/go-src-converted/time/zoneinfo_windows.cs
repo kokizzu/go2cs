@@ -13,10 +13,10 @@ partial class time_package {
 internal static slice<@string> platformZoneSources; // none: Windows uses system calls instead
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string muiStdˢ = "MUI_Std"u8;
-private static readonly @string muiDltˢ = "MUI_Dlt"u8;
-private static readonly @string stdˢ = "Std"u8;
-private static readonly @string dltˢ = "Dlt"u8;
+internal static readonly @string muiStdˢ = "MUI_Std"u8;
+internal static readonly @string muiDltˢ = "MUI_Dlt"u8;
+internal static readonly @string stdˢ = "Std"u8;
+internal static readonly @string dltˢ = "Dlt"u8;
 
 // TODO(rsc): Fall back to copy of zoneinfo files.
 // BUG(brainman,rsc): On Windows, the operating system does not provide complete
@@ -68,7 +68,7 @@ internal static (bool matched, error err2) matchZoneKey(registry.Key zones, @str
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string softwareMicrosoftWindowsˢ = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Time Zones"u8;
+internal static readonly @string softwareMicrosoftWindowsˢ = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Time Zones"u8;
 
 // toEnglishName searches the registry for an English name of a time zone
 // whose zone names are stdname and dstname and returns the English name.
@@ -159,7 +159,7 @@ internal static int64 pseudoUnix(nint year, ж<syscall.Systemtime> Ꮡd) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string localˢ = "Local"u8;
+internal static readonly @string localˢ = "Local"u8;
 
 internal static void initLocalFromTZI(ж<syscall.Timezoneinformation> Ꮡi) {
     ref var i = ref Ꮡi.Value;
@@ -220,7 +220,7 @@ internal static void initLocalFromTZI(ж<syscall.Timezoneinformation> Ꮡi) {
     }
 }
 
-internal static syscall.Timezoneinformation usPacific = new syscall.Timezoneinformation(
+internal static ж<syscall.Timezoneinformation> ᏑusPacific = new(new syscall.Timezoneinformation(
     Bias: 8 * 60,
     StandardName: new uint16[]{
         (rune)'P', (rune)'a', (rune)'c', (rune)'i', (rune)'f', (rune)'i', (rune)'c', (rune)' ', (rune)'S', (rune)'t', (rune)'a', (rune)'n', (rune)'d', (rune)'a', (rune)'r', (rune)'d', (rune)' ', (rune)'T', (rune)'i', (rune)'m', (rune)'e'
@@ -231,9 +231,10 @@ internal static syscall.Timezoneinformation usPacific = new syscall.Timezoneinfo
     }.array(32),
     DaylightDate: new syscall.Systemtime(Month: 3, Day: 2, Hour: 2),
     DaylightBias: -60
-);
+));
+internal static ref syscall.Timezoneinformation usPacific => ref ᏑusPacific.Value;
 
-internal static syscall.Timezoneinformation aus = new syscall.Timezoneinformation(
+internal static ж<syscall.Timezoneinformation> Ꮡaus = new(new syscall.Timezoneinformation(
     Bias: -10 * 60,
     StandardName: new uint16[]{
         (rune)'A', (rune)'U', (rune)'S', (rune)' ', (rune)'E', (rune)'a', (rune)'s', (rune)'t', (rune)'e', (rune)'r', (rune)'n', (rune)' ', (rune)'S', (rune)'t', (rune)'a', (rune)'n', (rune)'d', (rune)'a', (rune)'r', (rune)'d', (rune)' ', (rune)'T', (rune)'i', (rune)'m', (rune)'e'
@@ -244,7 +245,8 @@ internal static syscall.Timezoneinformation aus = new syscall.Timezoneinformatio
     }.array(32),
     DaylightDate: new syscall.Systemtime(Month: 10, Day: 1, Hour: 2),
     DaylightBias: -60
-);
+));
+internal static ref syscall.Timezoneinformation aus => ref Ꮡaus.Value;
 
 internal static void initLocal() {
     ref var i = ref heap(new syscall.Timezoneinformation(), out var Ꮡi);

@@ -100,8 +100,8 @@ public static UntypedInt ClassPrivate => 3;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string defaultˢ = "default:"u8;
-private static readonly @string tagˢ = "tag:"u8;
+internal static readonly @string defaultˢ = "default:"u8;
+internal static readonly @string tagˢ = "tag:"u8;
 
 // Invariants:
 //   if explicit is set, tag is non-nil.
@@ -195,7 +195,7 @@ internal static fieldParameters /*ret*/ parseFieldParameters(@string str) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string setˢ = "SET"u8;
+internal static readonly @string setˢ = "SET"u8;
 
 // Given a reflected Go type, getUniversalType returns the default tag number
 // and expected compound flag.

@@ -18,13 +18,14 @@ partial class unique_package {
 // and will clone value if it itself is a string. It will not, however, clone
 // strings if value is of interface or slice type (that is, found via an
 // indirection).
-internal static T clone<T>(T value, ж<cloneSeq> Ꮡseq)
+internal static T clone<T>(T valueʗp, ж<cloneSeq> Ꮡseq)
     where T : /* comparable */ new()
 {
     ref var seq = ref Ꮡseq.Value;
 
+    ref var value = ref heap(valueʗp, out var Ꮡvalue);
     foreach (var (_, offset) in seq.stringOffsets) {
-        var ps = (ж<@string>)(uintptr)((@unsafe.Pointer)((uintptr)new @unsafe.Pointer(Ꮡ(value)) + offset));
+        var ps = (ж<@string>)(uintptr)((@unsafe.Pointer)((uintptr)new @unsafe.Pointer(Ꮡvalue) + offset));
         ps.Value = stringslite.Clone(ps.Value);
     }
     return value;

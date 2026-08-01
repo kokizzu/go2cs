@@ -18,7 +18,7 @@ internal static nint maxListenerBacklog() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string socketˢ = "socket"u8;
+internal static readonly @string socketˢ = "socket"u8;
 
 internal static (syscallꓸHandle, error) sysSocket(nint family, nint sotype, nint proto) {
     var (s, err) = wsaSocketFunc((int32)family, (int32)sotype, (int32)proto,

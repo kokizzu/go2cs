@@ -59,9 +59,9 @@ internal static bool isLocalhost(@string name) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unencryptedConnectionˢ = "unencrypted connection"u8;
-private static readonly @string wrongHostNameˢ = "wrong host name"u8;
-private static readonly @string plainˢ = "PLAIN"u8;
+internal static readonly @string unencryptedConnectionˢ = "unencrypted connection"u8;
+internal static readonly @string wrongHostNameˢ = "wrong host name"u8;
+internal static readonly @string plainˢ = "PLAIN"u8;
 
 [GoRecv] internal static (@string, slice<byte>, error) Start(this ref plainAuth a, ж<ServerInfo> Ꮡserver) {
     ref var server = ref Ꮡserver.Value;
@@ -82,7 +82,7 @@ private static readonly @string plainˢ = "PLAIN"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedServerˢ = "unexpected server challenge"u8;
+internal static readonly @string unexpectedServerˢ = "unexpected server challenge"u8;
 
 [GoRecv] internal static (slice<byte>, error) Next(this ref plainAuth a, slice<byte> fromServer, bool more) {
     if (more) {
@@ -105,7 +105,7 @@ public static ΔAuth CRAMMD5Auth(@string username, @string secret) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cramMd5ˢ = "CRAM-MD5"u8;
+internal static readonly @string cramMd5ˢ = "CRAM-MD5"u8;
 
 [GoRecv] internal static (@string, slice<byte>, error) Start(this ref cramMD5Auth a, ж<ServerInfo> Ꮡserver) {
     return (cramMd5ˢ, default!, default!);

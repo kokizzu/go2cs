@@ -17,9 +17,9 @@
 // [crypto/rand] package.
 namespace go.math.rand;
 
-using bits = global::go.math.bits_package;
+using bits = go.math.bits_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for go:linkname
-using global::go.math;
+using go.math;
 
 partial class rand_package {
 

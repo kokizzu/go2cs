@@ -59,10 +59,10 @@ partial class httputil_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string xForwardedForˢ = "X-Forwarded-For"u8;
-private static readonly @string xForwardedHostˢ = "X-Forwarded-Host"u8;
-private static readonly @string xForwardedProtoˢ = "X-Forwarded-Proto"u8;
-private static readonly @string httpsˢ2 = "https"u8;
+internal static readonly @string xForwardedForˢ = "X-Forwarded-For"u8;
+internal static readonly @string xForwardedHostˢ = "X-Forwarded-Host"u8;
+internal static readonly @string xForwardedProtoˢ = "X-Forwarded-Proto"u8;
+internal static readonly @string httpsˢ2 = "https"u8;
 
 // SetXForwarded sets the X-Forwarded-For, X-Forwarded-Host, and
 // X-Forwarded-Proto headers of the outbound request.
@@ -351,13 +351,13 @@ internal static bool modifyResponse(this ж<ReverseProxy> Ꮡp, http.ResponseWri
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string reverseProxyMustHaveˢ = "ReverseProxy must have exactly one of Director or Rewrite set"u8;
-private static readonly @string trailersˢ = "trailers"u8;
-private static readonly @string connectionˢ = "Connection"u8;
-private static readonly @string upgradeˢ = "Upgrade"u8;
-private static readonly @string forwardedˢ = "Forwarded"u8;
-private static readonly @string userAgentˢ = "User-Agent"u8;
-private static readonly @string trailerˢ = "Trailer"u8;
+internal static readonly @string reverseProxyMustHaveˢ = "ReverseProxy must have exactly one of Director or Rewrite set"u8;
+internal static readonly @string trailersˢ = "trailers"u8;
+internal static readonly @string connectionˢ = "Connection"u8;
+internal static readonly @string upgradeˢ = "Upgrade"u8;
+internal static readonly @string forwardedˢ = "Forwarded"u8;
+internal static readonly @string userAgentˢ = "User-Agent"u8;
+internal static readonly @string trailerˢ = "Trailer"u8;
 
 public static void ServeHTTP(this ж<ReverseProxy> Ꮡp, http.ResponseWriter rw, ж<http.Request> Ꮡreq) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -629,7 +629,7 @@ internal static void removeHopByHopHeaders(httpꓸHeader h) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string contentTypeˢ = "Content-Type"u8;
+internal static readonly @string contentTypeˢ = "Content-Type"u8;
 
 // flushInterval returns the p.FlushInterval value, conditionally
 // overriding its value for a specific request/response.

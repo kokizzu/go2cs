@@ -11,21 +11,21 @@ namespace go;
 partial class runtime_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sigNoteSetupˢ = "sigNoteSetup"u8;
+internal static readonly @string sigNoteSetupˢ = "sigNoteSetup"u8;
 
 internal static void sigNoteSetup(ж<note> _) {
     @throw(sigNoteSetupˢ);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sigNoteSleepˢ = "sigNoteSleep"u8;
+internal static readonly @string sigNoteSleepˢ = "sigNoteSleep"u8;
 
 internal static void sigNoteSleep(ж<note> _) {
     @throw(sigNoteSleepˢ);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sigNoteWakeupˢ = "sigNoteWakeup"u8;
+internal static readonly @string sigNoteWakeupˢ = "sigNoteWakeup"u8;
 
 internal static void sigNoteWakeup(ж<note> _) {
     @throw(sigNoteWakeupˢ);

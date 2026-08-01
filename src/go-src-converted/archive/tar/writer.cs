@@ -144,8 +144,8 @@ internal static error writeUSTARHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string globalHead00ˢ = "GlobalHead.0.0"u8;
-private static readonly @string paxHeaders0ˢ = "PaxHeaders.0"u8;
+internal static readonly @string globalHead00ˢ = "GlobalHead.0.0"u8;
+internal static readonly @string paxHeaders0ˢ = "PaxHeaders.0"u8;
 
 internal static error writePAXHeader(this ж<Writer> Ꮡtw, ж<Header> Ꮡhdr, map<@string, @string> paxHdrs) {
     ref var tw = ref Ꮡtw.Value;
@@ -447,7 +447,7 @@ internal static error writeRawFile(this ж<Writer> Ꮡtw, @string name, @string 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tarCannotAddNonRegularˢ = "tar: cannot add non-regular file"u8;
+internal static readonly @string tarCannotAddNonRegularˢ = "tar: cannot add non-regular file"u8;
 
 // AddFS adds the files from fs.FS to the archive.
 // It walks the directory tree starting at the root of the filesystem

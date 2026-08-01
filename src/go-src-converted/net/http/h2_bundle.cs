@@ -818,19 +818,19 @@ internal static slice<byte> http2getDataBufferChunk(int64 size) {
 internal static void http2putDataBufferChunk(slice<byte> p) {
     var exprᴛ1 = builtin.len(p);
     if (exprᴛ1 == (1 << (int)(10))) {
-        Ꮡhttp2dataChunkPools.at<sync.Pool>(0).Put(Ꮡ(new array<byte>(p, 1024)));
+        Ꮡhttp2dataChunkPools.at<sync.Pool>(0).Put(Ꮡ(array<byte>.Alias(p, 1024)));
     }
     else if (exprᴛ1 == (2 << (int)(10))) {
-        Ꮡhttp2dataChunkPools.at<sync.Pool>(1).Put(Ꮡ(new array<byte>(p, 2048)));
+        Ꮡhttp2dataChunkPools.at<sync.Pool>(1).Put(Ꮡ(array<byte>.Alias(p, 2048)));
     }
     else if (exprᴛ1 == (4 << (int)(10))) {
-        Ꮡhttp2dataChunkPools.at<sync.Pool>(2).Put(Ꮡ(new array<byte>(p, 4096)));
+        Ꮡhttp2dataChunkPools.at<sync.Pool>(2).Put(Ꮡ(array<byte>.Alias(p, 4096)));
     }
     else if (exprᴛ1 == (8 << (int)(10))) {
-        Ꮡhttp2dataChunkPools.at<sync.Pool>(3).Put(Ꮡ(new array<byte>(p, 8192)));
+        Ꮡhttp2dataChunkPools.at<sync.Pool>(3).Put(Ꮡ(array<byte>.Alias(p, 8192)));
     }
     else if (exprᴛ1 == (16 << (int)(10))) {
-        Ꮡhttp2dataChunkPools.at<sync.Pool>(4).Put(Ꮡ(new array<byte>(p, 16384)));
+        Ꮡhttp2dataChunkPools.at<sync.Pool>(4).Put(Ꮡ(array<byte>.Alias(p, 16384)));
     }
     else { /* default: */
         throw panic(fmt.Sprintf("unexpected buffer len=%v"u8, builtin.len(p)));
@@ -1017,7 +1017,7 @@ internal static @string Error(this http2StreamError e) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string connectionExceededFlowˢ = "connection exceeded flow control window size"u8;
+internal static readonly @string connectionExceededFlowˢ = "connection exceeded flow control window size"u8;
 
 internal static @string Error(this http2goAwayFlowError _) {
     return connectionExceededFlowˢ;
@@ -1326,7 +1326,7 @@ internal static http2FrameHeader Header(this http2FrameHeader h) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string frameHeaderˢ = "[FrameHeader "u8;
+internal static readonly @string frameHeaderˢ = "[FrameHeader "u8;
 
 internal static @string String(this http2FrameHeader h) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
@@ -1337,7 +1337,7 @@ internal static @string String(this http2FrameHeader h) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string flagsˢ = " flags="u8;
+internal static readonly @string flagsˢ = " flags="u8;
 
 internal static void writeDebug(this http2FrameHeader h, ж<bytes.Buffer> Ꮡbuf) {
     ref var buf = ref Ꮡbuf.Value;
@@ -1770,9 +1770,9 @@ internal static (http2Frame, error) ReadFrame(this ж<http2Framer> Ꮡfr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string frameDataStream0ˢ = "frame_data_stream_0"u8;
-private static readonly @string frameDataPadByteShortˢ = "frame_data_pad_byte_short"u8;
-private static readonly @string frameDataPadTooBigˢ = "frame_data_pad_too_big"u8;
+internal static readonly @string frameDataStream0ˢ = "frame_data_stream_0"u8;
+internal static readonly @string frameDataPadByteShortˢ = "frame_data_pad_byte_short"u8;
+internal static readonly @string frameDataPadTooBigˢ = "frame_data_pad_too_big"u8;
 
 internal static (http2Frame, error) http2parseDataFrame(ж<http2frameCache> Ꮡfc, http2FrameHeader fh, Action<@string> countError, slice<byte> payload) {
     if (fh.StreamID == 0) {
@@ -1895,10 +1895,10 @@ internal static error WriteDataPadded(this ж<http2Framer> Ꮡf, uint32 streamID
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string frameSettingsAckWithˢ = "frame_settings_ack_with_length"u8;
-private static readonly @string frameSettingsHasStreamˢ = "frame_settings_has_stream"u8;
-private static readonly @string frameSettingsMod6ˢ = "frame_settings_mod_6"u8;
-private static readonly @string frameSettingsWindowSizeˢ = "frame_settings_window_size_too_big"u8;
+internal static readonly @string frameSettingsAckWithˢ = "frame_settings_ack_with_length"u8;
+internal static readonly @string frameSettingsHasStreamˢ = "frame_settings_has_stream"u8;
+internal static readonly @string frameSettingsMod6ˢ = "frame_settings_mod_6"u8;
+internal static readonly @string frameSettingsWindowSizeˢ = "frame_settings_window_size_too_big"u8;
 
 internal static (http2Frame, error) http2parseSettingsFrame(ж<http2frameCache> _, http2FrameHeader fh, Action<@string> countError, slice<byte> p) {
     if (fh.Flags.Has(http2FlagSettingsAck) && fh.Length > 0) {
@@ -2060,8 +2060,8 @@ internal static error WriteSettingsAck(this ж<http2Framer> Ꮡf) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string framePingLengthˢ = "frame_ping_length"u8;
-private static readonly @string framePingHasStreamˢ = "frame_ping_has_stream"u8;
+internal static readonly @string framePingLengthˢ = "frame_ping_length"u8;
+internal static readonly @string framePingHasStreamˢ = "frame_ping_has_stream"u8;
 
 internal static (http2Frame, error) http2parsePingFrame(ж<http2frameCache> _, http2FrameHeader fh, Action<@string> countError, slice<byte> payload) {
     if (builtin.len(payload) != 8) {
@@ -2109,8 +2109,8 @@ internal static error WritePing(this ж<http2Framer> Ꮡf, bool ack, array<byte>
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string frameGoawayHasStreamˢ = "frame_goaway_has_stream"u8;
-private static readonly @string frameGoawayShortˢ = "frame_goaway_short"u8;
+internal static readonly @string frameGoawayHasStreamˢ = "frame_goaway_has_stream"u8;
+internal static readonly @string frameGoawayShortˢ = "frame_goaway_short"u8;
 
 internal static (http2Frame, error) http2parseGoAwayFrame(ж<http2frameCache> _, http2FrameHeader fh, Action<@string> countError, slice<byte> p) {
     if (fh.StreamID != 0) {
@@ -2168,9 +2168,9 @@ internal static (http2Frame, error) http2parseUnknownFrame(ж<http2frameCache> _
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string frameWindowupdateBadLenˢ = "frame_windowupdate_bad_len"u8;
-private static readonly @string frameWindowupdateZeroIncˢ = "frame_windowupdate_zero_inc_conn"u8;
-private static readonly @string frameWindowupdateZeroIncˢ2 = "frame_windowupdate_zero_inc_stream"u8;
+internal static readonly @string frameWindowupdateBadLenˢ = "frame_windowupdate_bad_len"u8;
+internal static readonly @string frameWindowupdateZeroIncˢ = "frame_windowupdate_zero_inc_conn"u8;
+internal static readonly @string frameWindowupdateZeroIncˢ2 = "frame_windowupdate_zero_inc_stream"u8;
 
 internal static (http2Frame, error) http2parseWindowUpdateFrame(ж<http2frameCache> _, http2FrameHeader fh, Action<@string> countError, slice<byte> p) {
     if (builtin.len(p) != 4) {
@@ -2201,7 +2201,7 @@ internal static (http2Frame, error) http2parseWindowUpdateFrame(ж<http2frameCac
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string illegalWindowIncrementˢ = "illegal window increment value"u8;
+internal static readonly @string illegalWindowIncrementˢ = "illegal window increment value"u8;
 
 // WriteWindowUpdate writes a WINDOW_UPDATE frame.
 // The increment value must be between 1 and 2,147,483,647, inclusive.
@@ -2246,11 +2246,11 @@ internal static error WriteWindowUpdate(this ж<http2Framer> Ꮡf, uint32 stream
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string frameHeadersZeroStreamˢ = "frame_headers_zero_stream"u8;
-private static readonly @string frameHeadersPadShortˢ = "frame_headers_pad_short"u8;
-private static readonly @string frameHeadersPrioShortˢ = "frame_headers_prio_short"u8;
-private static readonly @string frameHeadersPrioWeightˢ = "frame_headers_prio_weight_short"u8;
-private static readonly @string frameHeadersPadTooBigˢ = "frame_headers_pad_too_big"u8;
+internal static readonly @string frameHeadersZeroStreamˢ = "frame_headers_zero_stream"u8;
+internal static readonly @string frameHeadersPadShortˢ = "frame_headers_pad_short"u8;
+internal static readonly @string frameHeadersPrioShortˢ = "frame_headers_prio_short"u8;
+internal static readonly @string frameHeadersPrioWeightˢ = "frame_headers_prio_weight_short"u8;
+internal static readonly @string frameHeadersPadTooBigˢ = "frame_headers_pad_too_big"u8;
 
 internal static (http2Frame, error err) http2parseHeadersFrame(ж<http2frameCache> _, http2FrameHeader fh, Action<@string> countError, slice<byte> p) {
     error err = default!;
@@ -2396,8 +2396,8 @@ public static bool IsZero(this http2PriorityParam p) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string framePriorityZeroStreamˢ = "frame_priority_zero_stream"u8;
-private static readonly @string framePriorityBadLengthˢ = "frame_priority_bad_length"u8;
+internal static readonly @string framePriorityZeroStreamˢ = "frame_priority_zero_stream"u8;
+internal static readonly @string framePriorityBadLengthˢ = "frame_priority_bad_length"u8;
 
 internal static (http2Frame, error) http2parsePriorityFrame(ж<http2frameCache> _, http2FrameHeader fh, Action<@string> countError, slice<byte> payload) {
     if (fh.StreamID == 0) {
@@ -2454,8 +2454,8 @@ internal static error WritePriority(this ж<http2Framer> Ꮡf, uint32 streamID, 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string frameRststreamBadLenˢ = "frame_rststream_bad_len"u8;
-private static readonly @string frameRststreamZeroStreamˢ = "frame_rststream_zero_stream"u8;
+internal static readonly @string frameRststreamBadLenˢ = "frame_rststream_bad_len"u8;
+internal static readonly @string frameRststreamZeroStreamˢ = "frame_rststream_zero_stream"u8;
 
 internal static (http2Frame, error) http2parseRSTStreamFrame(ж<http2frameCache> _, http2FrameHeader fh, Action<@string> countError, slice<byte> p) {
     if (builtin.len(p) != 4) {
@@ -2492,7 +2492,7 @@ internal static error WriteRSTStream(this ж<http2Framer> Ꮡf, uint32 streamID,
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string frameContinuationZeroˢ = "frame_continuation_zero_stream"u8;
+internal static readonly @string frameContinuationZeroˢ = "frame_continuation_zero_stream"u8;
 
 internal static (http2Frame, error) http2parseContinuationFrame(ж<http2frameCache> _, http2FrameHeader fh, Action<@string> countError, slice<byte> p) {
     if (fh.StreamID == 0) {
@@ -2548,10 +2548,10 @@ internal static error WriteContinuation(this ж<http2Framer> Ꮡf, uint32 stream
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string framePushpromiseZeroˢ = "frame_pushpromise_zero_stream"u8;
-private static readonly @string framePushpromisePadShortˢ = "frame_pushpromise_pad_short"u8;
-private static readonly @string framePushpromiseˢ = "frame_pushpromise_promiseid_short"u8;
-private static readonly @string framePushpromisePadTooˢ = "frame_pushpromise_pad_too_big"u8;
+internal static readonly @string framePushpromiseZeroˢ = "frame_pushpromise_zero_stream"u8;
+internal static readonly @string framePushpromisePadShortˢ = "frame_pushpromise_pad_short"u8;
+internal static readonly @string framePushpromiseˢ = "frame_pushpromise_promiseid_short"u8;
+internal static readonly @string framePushpromisePadTooˢ = "frame_pushpromise_pad_too_big"u8;
 
 internal static (http2Frame, error err) http2parsePushPromise(ж<http2frameCache> _, http2FrameHeader fh, Action<@string> countError, slice<byte> p) {
     error err = default!;
@@ -2794,7 +2794,7 @@ internal static (slice<byte> remain, uint32 v, error err) http2readUint32(slice<
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string illegalUseOfˢ = "illegal use of AllowIllegalReads with ReadMetaHeaders"u8;
+internal static readonly @string illegalUseOfˢ = "illegal use of AllowIllegalReads with ReadMetaHeaders"u8;
 
 // readMetaFrame returns 0 or more CONTINUATION frames from fr and
 // merge them into the provided hf and returns a MetaHeadersFrame
@@ -2927,8 +2927,8 @@ internal static (http2Frame, error) readMetaFrame(this ж<http2Framer> Ꮡfr, ж
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string settingsˢ = ", settings:"u8;
-private static readonly @string connˢ = " (conn)"u8;
+internal static readonly @string settingsˢ = ", settings:"u8;
+internal static readonly @string connˢ = " (conn)"u8;
 
 internal static @string http2summarizeFrame(http2Frame f) {
     ref var buf = ref heap(new bytes.Buffer(), out var Ꮡbuf);
@@ -4058,7 +4058,7 @@ internal static void startGracefulShutdown(this ж<http2serverInternalState> Ꮡ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string http11ˢ = "http/1.1"u8;
+internal static readonly @string http11ˢ = "http/1.1"u8;
 
 [GoType("dyn")] partial interface http2ConfigureServer_baseContexter {
     context.Context BaseContext();
@@ -4229,8 +4229,8 @@ internal static void ServeConn(this ж<http2Server> Ꮡs, net.Conn c, ж<http2Se
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsVersionTooLowˢ = "TLS version too low"u8;
-private static readonly @string invalidSettingsˢ = "invalid settings"u8;
+internal static readonly @string tlsVersionTooLowˢ = "TLS version too low"u8;
+internal static readonly @string invalidSettingsˢ = "invalid settings"u8;
 
 internal static void serveConn(this ж<http2Server> Ꮡs, net.Conn c, ж<http2ServeConnOpts> Ꮡopts, Action<ж<http2serverConn>> newf) => func((defer, recover) => {
     ref var s = ref Ꮡs.Value;
@@ -5514,9 +5514,9 @@ internal static bool processFrameFromReader(this ж<http2serverConn> Ꮡsc, http
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string firstSettingsˢ = "first_settings"u8;
-private static readonly @string dataFlowˢ = "data_flow"u8;
-private static readonly @string pushPromiseˢ = "push_promise"u8;
+internal static readonly @string firstSettingsˢ = "first_settings"u8;
+internal static readonly @string dataFlowˢ = "data_flow"u8;
+internal static readonly @string pushPromiseˢ = "push_promise"u8;
 
 internal static error processFrame(this ж<http2serverConn> Ꮡsc, http2Frame f) {
     ref var sc = ref Ꮡsc.Value;
@@ -5585,7 +5585,7 @@ internal static error processFrame(this ж<http2serverConn> Ꮡsc, http2Frame f)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pingOnStreamˢ = "ping_on_stream"u8;
+internal static readonly @string pingOnStreamˢ = "ping_on_stream"u8;
 
 internal static error processPing(this ж<http2serverConn> Ꮡsc, ж<http2PingFrame> Ꮡf) {
     ref var sc = ref Ꮡsc.Value;
@@ -5610,8 +5610,8 @@ internal static error processPing(this ж<http2serverConn> Ꮡsc, ж<http2PingFr
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string streamIdleˢ = "stream_idle"u8;
-private static readonly @string badFlowˢ = "bad_flow"u8;
+internal static readonly @string streamIdleˢ = "stream_idle"u8;
+internal static readonly @string badFlowˢ = "bad_flow"u8;
 
 internal static error processWindowUpdate(this ж<http2serverConn> Ꮡsc, ж<http2WindowUpdateFrame> Ꮡf) {
     ref var sc = ref Ꮡsc.Value;
@@ -5655,7 +5655,7 @@ internal static error processWindowUpdate(this ж<http2serverConn> Ꮡsc, ж<htt
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string resetIdleStreamˢ = "reset_idle_stream"u8;
+internal static readonly @string resetIdleStreamˢ = "reset_idle_stream"u8;
 
 internal static error processResetStream(this ж<http2serverConn> Ꮡsc, ж<http2RSTStreamFrame> Ꮡf) {
     ref var sc = ref Ꮡsc.Value;
@@ -5733,8 +5733,8 @@ internal static void closeStream(this ж<http2serverConn> Ꮡsc, ж<http2stream>
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ackMysteryˢ = "ack_mystery"u8;
-private static readonly @string settingsBigOrDupsˢ = "settings_big_or_dups"u8;
+internal static readonly @string ackMysteryˢ = "ack_mystery"u8;
+internal static readonly @string settingsBigOrDupsˢ = "settings_big_or_dups"u8;
 
 internal static error processSettings(this ж<http2serverConn> Ꮡsc, ж<http2SettingsFrame> Ꮡf) {
     ref var sc = ref Ꮡsc.Value;
@@ -5814,7 +5814,7 @@ internal static error processSetting(this ж<http2serverConn> Ꮡsc, http2Settin
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string settingWinSizeˢ = "setting_win_size"u8;
+internal static readonly @string settingWinSizeˢ = "setting_win_size"u8;
 
 internal static error processSettingInitialWindowSize(this ж<http2serverConn> Ꮡsc, uint32 val) {
     ref var sc = ref Ꮡsc.Value;
@@ -5847,10 +5847,10 @@ internal static error processSettingInitialWindowSize(this ж<http2serverConn> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dataOnIdleˢ = "data_on_idle"u8;
-private static readonly @string closedˢ = "closed"u8;
-private static readonly @string sendTooMuchˢ = "send_too_much"u8;
-private static readonly @string flowOnDataLengthˢ = "flow_on_data_length"u8;
+internal static readonly @string dataOnIdleˢ = "data_on_idle"u8;
+internal static readonly @string closedˢ = "closed"u8;
+internal static readonly @string sendTooMuchˢ = "send_too_much"u8;
+internal static readonly @string flowOnDataLengthˢ = "flow_on_data_length"u8;
 
 internal static error processData(this ж<http2serverConn> Ꮡsc, ж<http2DataFrame> Ꮡf) {
     ref var sc = ref Ꮡsc.Value;
@@ -6020,11 +6020,11 @@ internal static void endStream(this ж<http2stream> Ꮡst) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string headersEvenˢ = "headers_even"u8;
-private static readonly @string headersHalfClosedˢ = "headers_half_closed"u8;
-private static readonly @string streamWentDownˢ = "stream_went_down"u8;
-private static readonly @string overMaxStreamsˢ = "over_max_streams"u8;
-private static readonly @string overMaxStreamsRaceˢ = "over_max_streams_race"u8;
+internal static readonly @string headersEvenˢ = "headers_even"u8;
+internal static readonly @string headersHalfClosedˢ = "headers_half_closed"u8;
+internal static readonly @string streamWentDownˢ = "stream_went_down"u8;
+internal static readonly @string overMaxStreamsˢ = "over_max_streams"u8;
+internal static readonly @string overMaxStreamsRaceˢ = "over_max_streams_race"u8;
 
 internal static error processHeaders(this ж<http2serverConn> Ꮡsc, ж<http2MetaHeadersFrame> Ꮡf) {
     ref var sc = ref Ꮡsc.Value;
@@ -6165,10 +6165,10 @@ internal static void upgradeRequest(this ж<http2serverConn> Ꮡsc, ж<Request> 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dupTrailersˢ = "dup_trailers"u8;
-private static readonly @string trailersNotEndedˢ = "trailers_not_ended"u8;
-private static readonly @string trailersPseudoˢ = "trailers_pseudo"u8;
-private static readonly @string trailersBogusˢ = "trailers_bogus"u8;
+internal static readonly @string dupTrailersˢ = "dup_trailers"u8;
+internal static readonly @string trailersNotEndedˢ = "trailers_not_ended"u8;
+internal static readonly @string trailersPseudoˢ = "trailers_pseudo"u8;
+internal static readonly @string trailersBogusˢ = "trailers_bogus"u8;
 
 internal static error processTrailerHeaders(this ж<http2stream> Ꮡst, ж<http2MetaHeadersFrame> Ꮡf) {
     ref var st = ref Ꮡst.Value;
@@ -6203,7 +6203,7 @@ internal static error processTrailerHeaders(this ж<http2stream> Ꮡst, ж<http2
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string priorityˢ = "priority"u8;
+internal static readonly @string priorityˢ = "priority"u8;
 
 internal static error checkPriority(this ж<http2serverConn> Ꮡsc, uint32 streamID, http2PriorityParam p) {
     if (streamID == p.StreamDep) {
@@ -6266,13 +6266,13 @@ internal static ж<http2stream> newStream(this ж<http2serverConn> Ꮡsc, uint32
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string methodˢ = "method"u8;
-private static readonly @string schemeˢ = "scheme"u8;
-private static readonly @string authorityˢ = "authority"u8;
-private static readonly @string pathˢ2 = "path"u8;
-private static readonly @string badConnectˢ = "bad_connect"u8;
-private static readonly @string badPathMethodˢ = "bad_path_method"u8;
-private static readonly @string hostˢ = "Host"u8;
+internal static readonly @string methodˢ = "method"u8;
+internal static readonly @string schemeˢ = "scheme"u8;
+internal static readonly @string authorityˢ = "authority"u8;
+internal static readonly @string pathˢ2 = "path"u8;
+internal static readonly @string badConnectˢ = "bad_connect"u8;
+internal static readonly @string badPathMethodˢ = "bad_path_method"u8;
+internal static readonly @string hostˢ = "Host"u8;
 
 internal static (ж<http2responseWriter>, ж<Request>, error) newWriterAndRequest(this ж<http2serverConn> Ꮡsc, ж<http2stream> Ꮡst, ж<http2MetaHeadersFrame> Ꮡf) {
     ref var sc = ref Ꮡsc.Value;
@@ -6344,10 +6344,10 @@ internal static (ж<http2responseWriter>, ж<Request>, error) newWriterAndReques
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string expectˢ = "Expect"u8;
-private static readonly @string continueˢ = "100-continue"u8;
-private static readonly @string trailerˢ = "Trailer"u8;
-private static readonly @string badPathˢ = "bad_path"u8;
+internal static readonly @string expectˢ = "Expect"u8;
+internal static readonly @string continueˢ = "100-continue"u8;
+internal static readonly @string trailerˢ = "Trailer"u8;
+internal static readonly @string badPathˢ = "bad_path"u8;
 
 internal static (ж<http2responseWriter>, ж<Request>, error) newWriterAndRequestNoBody(this ж<http2serverConn> Ꮡsc, ж<http2stream> Ꮡst, http2requestParam rp) {
     ref var sc = ref Ꮡsc.Value;
@@ -6452,7 +6452,7 @@ internal static ж<http2responseWriter> newResponseWriter(this ж<http2serverCon
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tooManyEarlyResetsˢ = "too_many_early_resets"u8;
+internal static readonly @string tooManyEarlyResetsˢ = "too_many_early_resets"u8;
 
 // scheduleHandler starts a handler goroutine,
 // or schedules one to start as soon as an existing handler finishes.
@@ -6542,7 +6542,7 @@ internal static void runHandler(this ж<http2serverConn> Ꮡsc, ж<http2response
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string h1HttpError431H1PRequestˢ = "<h1>HTTP Error 431</h1><p>Request Header Field(s) Too Large</p>"u8;
+internal static readonly @string h1HttpError431H1PRequestˢ = "<h1>HTTP Error 431</h1><p>Request Header Field(s) Too Large</p>"u8;
 
 internal static void http2handleHeaderListTooLong(ResponseWriter w, ж<Request> Ꮡr) {
     // 10.5.1 Limits on Header Block Size:
@@ -6806,8 +6806,8 @@ internal static (nint n, error err) Write(this http2chunkWriter cw, slice<byte> 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dateˢ = "Date"u8;
-private static readonly @string connectionˢ = "Connection"u8;
+internal static readonly @string dateˢ = "Date"u8;
+internal static readonly @string connectionˢ = "Connection"u8;
 
 // writeChunk writes chunks from the bufio.Writer. But because
 // bufio.Writer may bypass its chunking, sometimes p may be
@@ -7130,7 +7130,7 @@ internal static void http2checkWriteHeaderCode(nint code) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string transferEncodingˢ = "Transfer-Encoding"u8;
+internal static readonly @string transferEncodingˢ = "Transfer-Encoding"u8;
 
 [GoRecv] internal static void writeHeader(this ref http2responseWriterState rws, nint code) {
     if (rws.wroteHeader) {
@@ -7196,7 +7196,7 @@ internal static ΔHeader http2cloneHeader(ΔHeader h) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string http2HandlerWroteMoreˢ = "http2: handler wrote more than declared Content-Length"u8;
+internal static readonly @string http2HandlerWroteMoreˢ = "http2: handler wrote more than declared Content-Length"u8;
 
 // either dataB or dataS is non-zero.
 [GoRecv] internal static (nint n, error err) write(this ref http2responseWriter w, nint lenData, slice<byte> dataB, @string dataS) {
@@ -7242,14 +7242,14 @@ internal static error http2ErrPushLimitReached = errors.New("http2: push would e
 internal static Pusher _ᴛ6ʗ = new http2responseWriterжPusher(((ж<http2responseWriter>)nil));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpˢ = "http"u8;
-private static readonly @string httpsˢ = "https"u8;
-private static readonly @string urlMustHaveAHostˢ = "URL must have a host"u8;
-private static readonly @string contentLengthˢ2 = "content-length"u8;
-private static readonly @string contentEncodingˢ2 = "content-encoding"u8;
-private static readonly @string trailerˢ2 = "trailer"u8;
-private static readonly @string expectˢ2 = "expect"u8;
-private static readonly @string hostˢ2 = "host"u8;
+internal static readonly @string httpˢ = "http"u8;
+internal static readonly @string httpsˢ = "https"u8;
+internal static readonly @string urlMustHaveAHostˢ = "URL must have a host"u8;
+internal static readonly @string contentLengthˢ2 = "content-length"u8;
+internal static readonly @string contentEncodingˢ2 = "content-encoding"u8;
+internal static readonly @string trailerˢ2 = "trailer"u8;
+internal static readonly @string expectˢ2 = "expect"u8;
+internal static readonly @string hostˢ2 = "host"u8;
 
 [GoRecv] internal static error Push(this ref http2responseWriter w, @string target, ж<PushOptions> Ꮡopts) {
     ref var opts = ref Ꮡopts.DerefOrNil();
@@ -7472,7 +7472,7 @@ internal static slice<@string> http2connHeaders = new @string[]{
 }.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string requestHeaderTeMayOnlyBeˢ = @"request header ""TE"" may only be ""trailers"" in HTTP/2"u8;
+internal static readonly @string requestHeaderTeMayOnlyBeˢ = @"request header ""TE"" may only be ""trailers"" in HTTP/2"u8;
 
 // checkValidHTTP2RequestHeaders checks whether h is a valid HTTP/2 request,
 // per RFC 7540 Section 8.1.2.2.
@@ -7518,8 +7518,8 @@ internal static bool http2h1ServerKeepAlivesDisabled(ж<Server> Ꮡhs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string connˢ2 = "conn"u8;
-private static readonly @string streamˢ = "stream"u8;
+internal static readonly @string connˢ2 = "conn"u8;
+internal static readonly @string streamˢ = "stream"u8;
 
 internal static error countError(this ж<http2serverConn> Ꮡsc, @string name, error err) {
     ref var sc = ref Ꮡsc.DerefOrNil();
@@ -8055,7 +8055,7 @@ internal static void IsHTTP2NoCachedConnError(this http2noCachedConnError _) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string http2NoCachedConnectionˢ = "http2: no cached connection was available"u8;
+internal static readonly @string http2NoCachedConnectionˢ = "http2: no cached connection was available"u8;
 
 internal static @string Error(this http2noCachedConnError _) {
     return http2NoCachedConnectionˢ;
@@ -8119,7 +8119,7 @@ internal static @string /*addr*/ http2authorityAddr(@string scheme, @string auth
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string http2UnsupportedSchemeˢ = "http2: unsupported scheme"u8;
+internal static readonly @string http2UnsupportedSchemeˢ = "http2: unsupported scheme"u8;
 
 // RoundTripOpt is like RoundTrip, but takes options.
 internal static (ж<Response>, error) RoundTripOpt(this ж<http2Transport> Ꮡt, ж<Request> Ꮡreq, http2RoundTripOpt opt) {
@@ -8244,7 +8244,7 @@ internal static bool http2canRetryError(error err) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tcpˢ = "tcp"u8;
+internal static readonly @string tcpˢ = "tcp"u8;
 
 internal static (ж<http2ClientConn>, error) dialClientConn(this ж<http2Transport> Ꮡt, context.Context ctx, @string addr, bool singleUse) {
     ref var t = ref Ꮡt.Value;
@@ -8278,7 +8278,7 @@ internal static (ж<http2ClientConn>, error) dialClientConn(this ж<http2Transpo
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string http2CouldNotNegotiateˢ = "http2: could not negotiate protocol mutually"u8;
+internal static readonly @string http2CouldNotNegotiateˢ = "http2: could not negotiate protocol mutually"u8;
 
 [GoRecv] internal static (net.Conn, error) dialTLS(this ref http2Transport t, context.Context ctx, @string network, @string addr, ж<tls.Config> ᏑtlsCfg) {
     if (t.DialTLSContext != default!){
@@ -8790,7 +8790,7 @@ internal static void closeForError(this ж<http2ClientConn> Ꮡcc, error err) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string http2ClientConnectionˢ = "http2: client connection force closed via ClientConn.Close"u8;
+internal static readonly @string http2ClientConnectionˢ = "http2: client connection force closed via ClientConn.Close"u8;
 
 // Close closes the client connection immediately.
 //
@@ -8802,8 +8802,8 @@ public static error Close(this ж<http2ClientConn> Ꮡcc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string http2ClientConnectionˢ2 = "http2: client connection lost"u8;
-private static readonly @string connCloseLostPingˢ = "conn_close_lost_ping"u8;
+internal static readonly @string http2ClientConnectionˢ2 = "http2: client connection lost"u8;
+internal static readonly @string connCloseLostPingˢ = "conn_close_lost_ping"u8;
 
 // closes the client connection immediately. In-flight requests are interrupted.
 internal static void closeForLostPing(this ж<http2ClientConn> Ꮡcc) {
@@ -8856,9 +8856,9 @@ internal static (@string, error) http2commaSeparatedTrailers(ж<Request> Ꮡreq)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string upgradeˢ = "Upgrade"u8;
-private static readonly @string closeˢ = "close"u8;
-private static readonly @string keepAliveˢ = "keep-alive"u8;
+internal static readonly @string upgradeˢ = "Upgrade"u8;
+internal static readonly @string closeˢ = "close"u8;
+internal static readonly @string keepAliveˢ = "keep-alive"u8;
 
 // checkConnHeaders checks whether req has any invalid connection-level headers.
 // per RFC 7540 section 8.1.2.2: Connection-Specific Header Fields.
@@ -8918,7 +8918,7 @@ public static (ж<Response>, error) RoundTrip(this ж<http2ClientConn> Ꮡcc, ж
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string acceptEncodingˢ = "Accept-Encoding"u8;
+internal static readonly @string acceptEncodingˢ = "Accept-Encoding"u8;
 
 internal static (ж<Response>, error) roundTrip(this ж<http2ClientConn> Ꮡcc, ж<Request> Ꮡreq, Action<ж<http2clientStream>> streamf) {
     ref var cc = ref Ꮡcc.Value;
@@ -9709,19 +9709,19 @@ internal static @string http2validateHeaders(ΔHeader hdrs) {
 internal static error http2errNilRequestURL = errors.New("http2: Request.URI is nil"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string http2InvalidHostHeaderˢ = "http2: invalid Host header"u8;
-private static readonly @string authorityˢ2 = ":authority"u8;
-private static readonly @string methodˢ2 = ":method"u8;
-private static readonly @string pathˢ3 = ":path"u8;
-private static readonly @string schemeˢ2 = ":scheme"u8;
-private static readonly @string connectionˢ2 = "connection"u8;
-private static readonly @string proxyConnectionˢ = "proxy-connection"u8;
-private static readonly @string transferEncodingˢ2 = "transfer-encoding"u8;
-private static readonly @string upgradeˢ2 = "upgrade"u8;
-private static readonly @string userAgentˢ = "user-agent"u8;
-private static readonly @string cookieˢ2 = "cookie"u8;
-private static readonly @string acceptEncodingˢ2 = "accept-encoding"u8;
-private static readonly @string gzipˢ = "gzip"u8;
+internal static readonly @string http2InvalidHostHeaderˢ = "http2: invalid Host header"u8;
+internal static readonly @string authorityˢ2 = ":authority"u8;
+internal static readonly @string methodˢ2 = ":method"u8;
+internal static readonly @string pathˢ3 = ":path"u8;
+internal static readonly @string schemeˢ2 = ":scheme"u8;
+internal static readonly @string connectionˢ2 = "connection"u8;
+internal static readonly @string proxyConnectionˢ = "proxy-connection"u8;
+internal static readonly @string transferEncodingˢ2 = "transfer-encoding"u8;
+internal static readonly @string upgradeˢ2 = "upgrade"u8;
+internal static readonly @string userAgentˢ = "user-agent"u8;
+internal static readonly @string cookieˢ2 = "cookie"u8;
+internal static readonly @string acceptEncodingˢ2 = "accept-encoding"u8;
+internal static readonly @string gzipˢ = "gzip"u8;
 
 // requires cc.wmu be held.
 internal static (slice<byte>, error) encodeHeaders(this ж<http2ClientConn> Ꮡcc, ж<Request> Ꮡreq, bool addGzipHeader, @string trailers, int64 contentLength) {
@@ -10092,10 +10092,10 @@ internal static void cleanup(this ж<http2clientConnReadLoop> Ꮡrl) => func((de
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string readFrameEofˢ = "read_frame_eof"u8;
-private static readonly @string readFrameUnexpectedEofˢ = "read_frame_unexpected_eof"u8;
-private static readonly @string readFrameTooLargeˢ = "read_frame_too_large"u8;
-private static readonly @string readFrameOtherˢ = "read_frame_other"u8;
+internal static readonly @string readFrameEofˢ = "read_frame_eof"u8;
+internal static readonly @string readFrameUnexpectedEofˢ = "read_frame_unexpected_eof"u8;
+internal static readonly @string readFrameTooLargeˢ = "read_frame_too_large"u8;
+internal static readonly @string readFrameOtherˢ = "read_frame_other"u8;
 
 // countReadFrameError calls Transport.CountError with a string
 // representing err.
@@ -10221,7 +10221,7 @@ internal static error run(this ж<http2clientConnReadLoop> Ꮡrl) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string protocolErrorHeadersˢ = "protocol error: headers after END_STREAM"u8;
+internal static readonly @string protocolErrorHeadersˢ = "protocol error: headers after END_STREAM"u8;
 
 internal static error processHeaders(this ж<http2clientConnReadLoop> Ꮡrl, ж<http2MetaHeadersFrame> Ꮡf) {
     ref var rl = ref Ꮡrl.Value;
@@ -10287,11 +10287,11 @@ internal static error processHeaders(this ж<http2clientConnReadLoop> Ꮡrl, ж<
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string statusˢ = "status"u8;
-private static readonly @string malformedResponseFromˢ = "malformed response from server: missing status pseudo header"u8;
-private static readonly @string malformedResponseFromˢ2 = "malformed response from server: malformed non-numeric status pseudo header"u8;
-private static readonly @string informationalResponseˢ = "1xx informational response with END_STREAM flag"u8;
-private static readonly @string http2TooMany1xxˢ = "http2: too many 1xx informational responses"u8;
+internal static readonly @string statusˢ = "status"u8;
+internal static readonly @string malformedResponseFromˢ = "malformed response from server: missing status pseudo header"u8;
+internal static readonly @string malformedResponseFromˢ2 = "malformed response from server: malformed non-numeric status pseudo header"u8;
+internal static readonly @string informationalResponseˢ = "1xx informational response with END_STREAM flag"u8;
+internal static readonly @string http2TooMany1xxˢ = "http2: too many 1xx informational responses"u8;
 
 // may return error types nil, or ConnectionError. Any other error value
 // is a StreamError of type ErrCodeProtocol. The returned error in that case
@@ -10466,7 +10466,7 @@ internal static error processTrailers(this ж<http2clientConnReadLoop> Ꮡrl, ж
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string netHttpServerRepliedWithˢ = "net/http: server replied with more than declared Content-Length; truncated"u8;
+internal static readonly @string netHttpServerRepliedWithˢ = "net/http: server replied with more than declared Content-Length; truncated"u8;
 
 internal static (nint n, error err) Read(this http2transportResponseBody b, slice<byte> p) {
     nint n = default!;
@@ -11509,9 +11509,9 @@ internal static void http2encKV(ж<hpack.Encoder> Ꮡenc, @string k, @string v) 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string statusˢ2 = ":status"u8;
-private static readonly @string contentTypeˢ2 = "content-type"u8;
-private static readonly @string dateˢ2 = "date"u8;
+internal static readonly @string statusˢ2 = ":status"u8;
+internal static readonly @string contentTypeˢ2 = "content-type"u8;
+internal static readonly @string dateˢ2 = "date"u8;
 
 internal static error writeFrame(this ж<http2writeResHeaders> Ꮡw, http2writeContext ctx) {
     ref var w = ref Ꮡw.Value;

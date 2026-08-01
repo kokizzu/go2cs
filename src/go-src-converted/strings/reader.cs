@@ -4,7 +4,7 @@
 namespace go;
 
 using errors = errors_package;
-using Δio = io_package;
+using io = io_package;
 using utf8 = go.unicode.utf8_package;
 using go.unicode;
 
@@ -43,7 +43,7 @@ partial class strings_package {
     error err = default!;
 
     if (r.i >= (int64)len(r.s)) {
-        return (0, Δio.EOF);
+        return (0, io.EOF);
     }
     r.prevRune = -1;
     n = copy(b, r.s[(int)(r.i)..]);
@@ -64,11 +64,11 @@ internal static readonly @string stringsReaderReadAtˢ = "strings.Reader.ReadAt:
         return (0, errors.New(stringsReaderReadAtˢ));
     }
     if (off >= (int64)len(r.s)) {
-        return (0, Δio.EOF);
+        return (0, io.EOF);
     }
     n = copy(b, r.s[(int)(off)..]);
     if (n < len(b)) {
-        err = Δio.EOF;
+        err = io.EOF;
     }
     return (n, err);
 }
@@ -77,7 +77,7 @@ internal static readonly @string stringsReaderReadAtˢ = "strings.Reader.ReadAt:
 [GoRecv] public static (byte, error) ReadByte(this ref Reader r) {
     r.prevRune = -1;
     if (r.i >= (int64)len(r.s)) {
-        return (0, Δio.EOF);
+        return (0, io.EOF);
     }
     var b = r.s[(int)(r.i)];
     r.i++;
@@ -105,7 +105,7 @@ internal static readonly @string stringsReaderUnreadByteˢ = "strings.Reader.Unr
 
     if (r.i >= (int64)len(r.s)) {
         r.prevRune = -1;
-        return (0, 0, Δio.EOF);
+        return (0, 0, io.EOF);
     }
     r.prevRune = (nint)r.i;
     {
@@ -145,13 +145,13 @@ internal static readonly @string stringsReaderSeekˢ = "strings.Reader.Seek: neg
     r.prevRune = -1;
     int64 abs = default!;
     var exprᴛ1 = whence;
-    if (exprᴛ1 == Δio.SeekStart) {
+    if (exprᴛ1 == io.SeekStart) {
         abs = offset;
     }
-    else if (exprᴛ1 == Δio.SeekCurrent) {
+    else if (exprᴛ1 == io.SeekCurrent) {
         abs = r.i + offset;
     }
-    else if (exprᴛ1 == Δio.SeekEnd) {
+    else if (exprᴛ1 == io.SeekEnd) {
         abs = (int64)len(r.s) + offset;
     }
     else { /* default: */
@@ -166,7 +166,7 @@ internal static readonly @string stringsReaderSeekˢ = "strings.Reader.Seek: neg
 }
 
 // WriteTo implements the [io.WriterTo] interface.
-[GoRecv] public static (int64 n, error err) WriteTo(this ref Reader r, Δio.Writer w) {
+[GoRecv] public static (int64 n, error err) WriteTo(this ref Reader r, io.Writer w) {
     int64 n = default!;
     error err = default!;
 
@@ -175,14 +175,14 @@ internal static readonly @string stringsReaderSeekˢ = "strings.Reader.Seek: neg
         return (0, default!);
     }
     @string s = r.s[(int)(r.i)..];
-    (var m, err) = Δio.WriteString(w, s);
+    (var m, err) = io.WriteString(w, s);
     if (m > len(s)) {
         throw panic("strings.Reader.WriteTo: invalid WriteString count");
     }
     r.i += (int64)m;
     n = (int64)m;
     if (m != len(s) && err == default!) {
-        err = Δio.ErrShortWrite;
+        err = io.ErrShortWrite;
     }
     return (n, err);
 }

@@ -117,7 +117,7 @@ internal static void un(ж<parser> Ꮡp) {
 internal const nint maxNestLev = 100000;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string exceededMaxNestingDepthˢ = "exceeded max nesting depth"u8;
+internal static readonly @string exceededMaxNestingDepthˢ = "exceeded max nesting depth"u8;
 
 internal static ж<parser> incNestLev(ж<parser> Ꮡp) {
     ref var p = ref Ꮡp.Value;
@@ -139,7 +139,7 @@ internal static void decNestLev(ж<parser> Ꮡp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goBuildˢ = "//go:build"u8;
+internal static readonly @string goBuildˢ = "//go:build"u8;
 
 // Advance to the next token.
 [GoRecv] internal static void next0(this ref parser p) {
@@ -406,7 +406,7 @@ internal static ж<ast.CommentGroup> /*comment*/ expectSemi(this ж<parser> Ꮡp
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingˢ = "missing ','"u8;
+internal static readonly @string missingˢ = "missing ','"u8;
 
 internal static bool atComma(this ж<parser> Ꮡp, @string context, token.Token follow) {
     ref var p = ref Ꮡp.Value;
@@ -542,7 +542,7 @@ internal static ж<ast.Ident> parseIdent(this ж<parser> Ꮡp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string identListˢ = "IdentList"u8;
+internal static readonly @string identListˢ = "IdentList"u8;
 
 internal static slice<ж<ast.Ident>> /*list*/ parseIdentList(this ж<parser> Ꮡp) {
     slice<ж<ast.Ident>> list = default!;
@@ -562,7 +562,7 @@ internal static slice<ж<ast.Ident>> /*list*/ parseIdentList(this ж<parser> Ꮡ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string expressionListˢ = "ExpressionList"u8;
+internal static readonly @string expressionListˢ = "ExpressionList"u8;
 
 // ----------------------------------------------------------------------------
 // Common productions
@@ -596,8 +596,8 @@ internal static slice<ast.Expr> parseList(this ж<parser> Ꮡp, bool inRhs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeˢ = "Type"u8;
-private static readonly @string typeˢ2 = "type"u8;
+internal static readonly @string typeˢ = "Type"u8;
+internal static readonly @string typeˢ2 = "type"u8;
 
 // ----------------------------------------------------------------------------
 // Types
@@ -619,7 +619,7 @@ internal static ast.Expr parseType(this ж<parser> Ꮡp) => func((defer, recover
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string qualifiedIdentˢ = "QualifiedIdent"u8;
+internal static readonly @string qualifiedIdentˢ = "QualifiedIdent"u8;
 
 internal static ast.Expr parseQualifiedIdent(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡident) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -635,7 +635,7 @@ internal static ast.Expr parseQualifiedIdent(this ж<parser> Ꮡp, ж<ast.Ident>
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeNameˢ = "TypeName"u8;
+internal static readonly @string typeNameˢ = "TypeName"u8;
 
 // If the result is an identifier, it is not resolved.
 internal static ast.Expr parseTypeName(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡident) => func<ast.Expr>((defer, recover) => {
@@ -658,8 +658,8 @@ internal static ast.Expr parseTypeName(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡid
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string arrayTypeˢ = "ArrayType"u8;
-private static readonly @string unexpectedCommaExpectingˢ = "unexpected comma; expecting ]"u8;
+internal static readonly @string arrayTypeˢ = "ArrayType"u8;
+internal static readonly @string unexpectedCommaExpectingˢ = "unexpected comma; expecting ]"u8;
 
 // "[" has already been consumed, and lbrack is its position.
 // If len != nil it is the already consumed array length.
@@ -694,7 +694,7 @@ internal static ж<ast.ArrayType> parseArrayType(this ж<parser> Ꮡp, tokenꓸP
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string arrayFieldOrTypeInstanceˢ = "ArrayFieldOrTypeInstance"u8;
+internal static readonly @string arrayFieldOrTypeInstanceˢ = "ArrayFieldOrTypeInstance"u8;
 
 internal static (ж<ast.Ident>, ast.Expr) parseArrayFieldOrTypeInstance(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡx) => func<(ж<ast.Ident>, ast.Expr)>((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -745,9 +745,9 @@ internal static (ж<ast.Ident>, ast.Expr) parseArrayFieldOrTypeInstance(this ж<
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fieldDeclˢ = "FieldDecl"u8;
-private static readonly @string cannotParenthesizeˢ = "cannot parenthesize embedded type"u8;
-private static readonly @string fieldNameOrEmbeddedTypeˢ = "field name or embedded type"u8;
+internal static readonly @string fieldDeclˢ = "FieldDecl"u8;
+internal static readonly @string cannotParenthesizeˢ = "cannot parenthesize embedded type"u8;
+internal static readonly @string fieldNameOrEmbeddedTypeˢ = "field name or embedded type"u8;
 
 internal static ж<ast.Field> parseFieldDecl(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -843,7 +843,7 @@ internal static ж<ast.Field> parseFieldDecl(this ж<parser> Ꮡp) => func((defe
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string structTypeˢ = "StructType"u8;
+internal static readonly @string structTypeˢ = "StructType"u8;
 
 internal static ж<ast.StructType> parseStructType(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -875,7 +875,7 @@ internal static ж<ast.StructType> parseStructType(this ж<parser> Ꮡp) => func
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pointerTypeˢ = "PointerType"u8;
+internal static readonly @string pointerTypeˢ = "PointerType"u8;
 
 internal static ж<ast.StarExpr> parsePointerType(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -890,7 +890,7 @@ internal static ж<ast.StarExpr> parsePointerType(this ж<parser> Ꮡp) => func(
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dotsTypeˢ = "DotsType"u8;
+internal static readonly @string dotsTypeˢ = "DotsType"u8;
 
 internal static ж<ast.Ellipsis> parseDotsType(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -910,7 +910,7 @@ internal static ж<ast.Ellipsis> parseDotsType(this ж<parser> Ꮡp) => func((de
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string paramDeclOrNilˢ = "ParamDeclOrNil"u8;
+internal static readonly @string paramDeclOrNilˢ = "ParamDeclOrNil"u8;
 
 internal static field /*f*/ parseParamDecl(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡname, bool typeSetsOK) {
     field f = default!;
@@ -1004,13 +1004,13 @@ internal static field /*f*/ parseParamDecl(this ж<parser> Ꮡp, ж<ast.Ident> �
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string parameterListˢ = "ParameterList"u8;
-private static readonly @string parameterListˢ2 = "parameter list"u8;
-private static readonly @string missingTypeConstraintˢ = "missing type constraint"u8;
-private static readonly @string missingTypeParameterNameˢ = "missing type parameter name"u8;
-private static readonly @string mixedNamedAndUnnamedˢ = "mixed named and unnamed parameters"u8;
-private static readonly @string nilTypeInUnnamedˢ = "nil type in unnamed parameter list"u8;
-private static readonly @string nilTypeInNamedParameterˢ = "nil type in named parameter list"u8;
+internal static readonly @string parameterListˢ = "ParameterList"u8;
+internal static readonly @string parameterListˢ2 = "parameter list"u8;
+internal static readonly @string missingTypeConstraintˢ = "missing type constraint"u8;
+internal static readonly @string missingTypeParameterNameˢ = "missing type parameter name"u8;
+internal static readonly @string mixedNamedAndUnnamedˢ = "mixed named and unnamed parameters"u8;
+internal static readonly @string nilTypeInUnnamedˢ = "nil type in unnamed parameter list"u8;
+internal static readonly @string nilTypeInNamedParameterˢ = "nil type in named parameter list"u8;
 
 internal static slice<ж<ast.Field>> /*params*/ parseParameterList(this ж<parser> Ꮡp, ж<ast.Ident> Ꮡname0, ast.Expr typ0, token.Token closing) {
     slice<ж<ast.Field>> @params = default!;
@@ -1191,8 +1191,8 @@ internal static slice<ж<ast.Field>> /*params*/ parseParameterList(this ж<parse
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string parametersˢ = "Parameters"u8;
-private static readonly @string emptyTypeParameterListˢ = "empty type parameter list"u8;
+internal static readonly @string parametersˢ = "Parameters"u8;
+internal static readonly @string emptyTypeParameterListˢ = "empty type parameter list"u8;
 
 internal static (ж<ast.FieldList> tparams, ж<ast.FieldList> @params) parseParameters(this ж<parser> Ꮡp, bool acceptTParams) {
     ж<ast.FieldList> tparams = default!;
@@ -1233,7 +1233,7 @@ internal static (ж<ast.FieldList> tparams, ж<ast.FieldList> @params) parsePara
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string resultˢ = "Result"u8;
+internal static readonly @string resultˢ = "Result"u8;
 
 internal static ж<ast.FieldList> parseResult(this ж<parser> Ꮡp) => func<ж<ast.FieldList>>((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1255,8 +1255,8 @@ internal static ж<ast.FieldList> parseResult(this ж<parser> Ꮡp) => func<ж<a
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string funcTypeˢ = "FuncType"u8;
-private static readonly @string functionTypeMustHaveNoˢ = "function type must have no type parameters"u8;
+internal static readonly @string funcTypeˢ = "FuncType"u8;
+internal static readonly @string functionTypeMustHaveNoˢ = "function type must have no type parameters"u8;
 
 internal static ж<ast.FuncType> parseFuncType(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1275,9 +1275,9 @@ internal static ж<ast.FuncType> parseFuncType(this ж<parser> Ꮡp) => func((de
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string methodSpecˢ = "MethodSpec"u8;
-private static readonly @string interfaceMethodMustHaveˢ = "interface method must have no type parameters"u8;
-private static readonly @string typeArgumentListˢ = "type argument list"u8;
+internal static readonly @string methodSpecˢ = "MethodSpec"u8;
+internal static readonly @string interfaceMethodMustHaveˢ = "interface method must have no type parameters"u8;
+internal static readonly @string typeArgumentListˢ = "type argument list"u8;
 
 internal static ж<ast.Field> parseMethodSpec(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1371,7 +1371,7 @@ ident}.slice();
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string embeddedElemˢ = "EmbeddedElem"u8;
+internal static readonly @string embeddedElemˢ = "EmbeddedElem"u8;
 
 internal static ast.Expr embeddedElem(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1395,8 +1395,8 @@ internal static ast.Expr embeddedElem(this ж<parser> Ꮡp, ast.Expr x) => func(
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string embeddedTermˢ = "EmbeddedTerm"u8;
-private static readonly @string termOrTypeˢ = "~ term or type"u8;
+internal static readonly @string embeddedTermˢ = "EmbeddedTerm"u8;
+internal static readonly @string termOrTypeˢ = "~ term or type"u8;
 
 internal static ast.Expr embeddedTerm(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1424,7 +1424,7 @@ internal static ast.Expr embeddedTerm(this ж<parser> Ꮡp) => func((defer, reco
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string interfaceTypeˢ = "InterfaceType"u8;
+internal static readonly @string interfaceTypeˢ = "InterfaceType"u8;
 
 internal static ж<ast.InterfaceType> parseInterfaceType(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1486,7 +1486,7 @@ break_parseElements:;
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mapTypeˢ = "MapType"u8;
+internal static readonly @string mapTypeˢ = "MapType"u8;
 
 internal static ж<ast.MapType> parseMapType(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1504,7 +1504,7 @@ internal static ж<ast.MapType> parseMapType(this ж<parser> Ꮡp) => func((defe
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string chanTypeˢ = "ChanType"u8;
+internal static readonly @string chanTypeˢ = "ChanType"u8;
 
 internal static ж<ast.ChanType> parseChanType(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1534,7 +1534,7 @@ internal static ж<ast.ChanType> parseChanType(this ж<parser> Ꮡp) => func((de
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeInstanceˢ = "TypeInstance"u8;
+internal static readonly @string typeInstanceˢ = "TypeInstance"u8;
 
 internal static ast.Expr parseTypeInstance(this ж<parser> Ꮡp, ast.Expr typ) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1617,7 +1617,7 @@ internal static ast.Expr tryIdentOrType(this ж<parser> Ꮡp) => func<ast.Expr>(
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string statementListˢ = "StatementList"u8;
+internal static readonly @string statementListˢ = "StatementList"u8;
 
 // ----------------------------------------------------------------------------
 // Blocks
@@ -1637,7 +1637,7 @@ internal static slice<ast.Stmt> /*list*/ parseStmtList(this ж<parser> Ꮡp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bodyˢ = "Body"u8;
+internal static readonly @string bodyˢ = "Body"u8;
 
 internal static ж<ast.BlockStmt> parseBody(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1654,7 +1654,7 @@ internal static ж<ast.BlockStmt> parseBody(this ж<parser> Ꮡp) => func((defer
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string blockStmtˢ = "BlockStmt"u8;
+internal static readonly @string blockStmtˢ = "BlockStmt"u8;
 
 internal static ж<ast.BlockStmt> parseBlockStmt(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1671,7 +1671,7 @@ internal static ж<ast.BlockStmt> parseBlockStmt(this ж<parser> Ꮡp) => func((
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string funcTypeOrLitˢ = "FuncTypeOrLit"u8;
+internal static readonly @string funcTypeOrLitˢ = "FuncTypeOrLit"u8;
 
 // ----------------------------------------------------------------------------
 // Expressions
@@ -1693,9 +1693,9 @@ internal static ast.Expr parseFuncTypeOrLit(this ж<parser> Ꮡp) => func<ast.Ex
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string operandˢ = "Operand"u8;
-private static readonly @string typeCannotBeIdentifierˢ = "type cannot be identifier"u8;
-private static readonly @string operandˢ2 = "operand"u8;
+internal static readonly @string operandˢ = "Operand"u8;
+internal static readonly @string typeCannotBeIdentifierˢ = "type cannot be identifier"u8;
+internal static readonly @string operandˢ2 = "operand"u8;
 
 // parseOperand may return an expression or a raw type (incl. array
 // types of the form [...]T). Callers must verify the result.
@@ -1749,7 +1749,7 @@ Lparen: lparen, X: x, Rparen: rparen)));
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string selectorˢ = "Selector"u8;
+internal static readonly @string selectorˢ = "Selector"u8;
 
 internal static ast.Expr parseSelector(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1762,7 +1762,7 @@ internal static ast.Expr parseSelector(this ж<parser> Ꮡp, ast.Expr x) => func
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeAssertionˢ = "TypeAssertion"u8;
+internal static readonly @string typeAssertionˢ = "TypeAssertion"u8;
 
 internal static ast.Expr parseTypeAssertion(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1785,9 +1785,9 @@ internal static ast.Expr parseTypeAssertion(this ж<parser> Ꮡp, ast.Expr x) =>
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string parseIndexOrSliceOrInstanceˢ = "parseIndexOrSliceOrInstance"u8;
-private static readonly @string middleIndexRequiredIn3ˢ = "middle index required in 3-index slice"u8;
-private static readonly @string finalIndexRequiredIn3ˢ = "final index required in 3-index slice"u8;
+internal static readonly @string parseIndexOrSliceOrInstanceˢ = "parseIndexOrSliceOrInstance"u8;
+internal static readonly @string middleIndexRequiredIn3ˢ = "middle index required in 3-index slice"u8;
+internal static readonly @string finalIndexRequiredIn3ˢ = "final index required in 3-index slice"u8;
 
 internal static ast.Expr parseIndexOrSliceOrInstance(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1876,8 +1876,8 @@ internal static ast.Expr parseIndexOrSliceOrInstance(this ж<parser> Ꮡp, ast.E
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string callOrConversionˢ = "CallOrConversion"u8;
-private static readonly @string argumentListˢ = "argument list"u8;
+internal static readonly @string callOrConversionˢ = "CallOrConversion"u8;
+internal static readonly @string argumentListˢ = "argument list"u8;
 
 internal static ж<ast.CallExpr> parseCallOrConversion(this ж<parser> Ꮡp, ast.Expr fun) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1909,7 +1909,7 @@ internal static ж<ast.CallExpr> parseCallOrConversion(this ж<parser> Ꮡp, ast
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string elementˢ = "Element"u8;
+internal static readonly @string elementˢ = "Element"u8;
 
 internal static ast.Expr parseValue(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1941,8 +1941,8 @@ internal static ast.Expr parseElement(this ж<parser> Ꮡp) => func((defer, reco
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string elementListˢ = "ElementList"u8;
-private static readonly @string compositeLiteralˢ = "composite literal"u8;
+internal static readonly @string elementListˢ = "ElementList"u8;
+internal static readonly @string compositeLiteralˢ = "composite literal"u8;
 
 internal static slice<ast.Expr> /*list*/ parseElementList(this ж<parser> Ꮡp) {
     slice<ast.Expr> list = default!;
@@ -1964,7 +1964,7 @@ internal static slice<ast.Expr> /*list*/ parseElementList(this ж<parser> Ꮡp) 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string literalValueˢ = "LiteralValue"u8;
+internal static readonly @string literalValueˢ = "LiteralValue"u8;
 
 internal static ast.Expr parseLiteralValue(this ж<parser> Ꮡp, ast.Expr typ) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -1987,9 +1987,9 @@ internal static ast.Expr parseLiteralValue(this ж<parser> Ꮡp, ast.Expr typ) =
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string primaryExprˢ = "PrimaryExpr"u8;
-private static readonly @string selectorOrTypeAssertionˢ = "selector or type assertion"u8;
-private static readonly @string cannotParenthesizeTypeInˢ = "cannot parenthesize type in composite literal"u8;
+internal static readonly @string primaryExprˢ = "PrimaryExpr"u8;
+internal static readonly @string selectorOrTypeAssertionˢ = "selector or type assertion"u8;
+internal static readonly @string cannotParenthesizeTypeInˢ = "cannot parenthesize type in composite literal"u8;
 
 internal static ast.Expr parsePrimaryExpr(this ж<parser> Ꮡp, ast.Expr x) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -2089,9 +2089,9 @@ NamePos: pos, Name: "_"u8));
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unaryExprˢ = "UnaryExpr"u8;
-private static readonly @string chanˢ = "'chan'"u8;
-private static readonly @string channelTypeˢ = "channel type"u8;
+internal static readonly @string unaryExprˢ = "UnaryExpr"u8;
+internal static readonly @string chanˢ = "'chan'"u8;
+internal static readonly @string channelTypeˢ = "channel type"u8;
 
 // already progressed, no need to advance
 internal static ast.Expr parseUnaryExpr(this ж<parser> Ꮡp) => func((defer, recover) => {
@@ -2175,7 +2175,7 @@ Star: pos, X: x)));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string binaryExprˢ = "BinaryExpr"u8;
+internal static readonly @string binaryExprˢ = "BinaryExpr"u8;
 
 // parseBinaryExpr parses a (possibly) binary expression.
 // If x is non-nil, it is used as the left operand.
@@ -2212,7 +2212,7 @@ internal static ast.Expr parseBinaryExpr(this ж<parser> Ꮡp, ast.Expr x, nint 
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string expressionˢ = "Expression"u8;
+internal static readonly @string expressionˢ = "Expression"u8;
 
 // The result may be a type or even a raw type ([...]int).
 internal static ast.Expr parseExpr(this ж<parser> Ꮡp) => func((defer, recover) => {
@@ -2245,9 +2245,9 @@ internal static UntypedInt labelOk => 1;
 internal static UntypedInt rangeOk => 2;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string simpleStmtˢ = "SimpleStmt"u8;
-private static readonly @string expressionˢ2 = "1 expression"u8;
-private static readonly @string illegalLabelDeclarationˢ = "illegal label declaration"u8;
+internal static readonly @string simpleStmtˢ = "SimpleStmt"u8;
+internal static readonly @string expressionˢ2 = "1 expression"u8;
+internal static readonly @string illegalLabelDeclarationˢ = "illegal label declaration"u8;
 
 // parseSimpleStmt returns true as 2nd result if it parsed the assignment
 // of a range clause (with mode == rangeOk). The returned statement is an
@@ -2353,7 +2353,7 @@ internal static ж<ast.CallExpr> parseCallExpr(this ж<parser> Ꮡp, @string cal
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goStmtˢ = "GoStmt"u8;
+internal static readonly @string goStmtˢ = "GoStmt"u8;
 
 internal static ast.Stmt parseGoStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -2373,8 +2373,8 @@ internal static ast.Stmt parseGoStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((de
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string deferStmtˢ = "DeferStmt"u8;
-private static readonly @string deferˢ = "defer"u8;
+internal static readonly @string deferStmtˢ = "DeferStmt"u8;
+internal static readonly @string deferˢ = "defer"u8;
 
 internal static ast.Stmt parseDeferStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -2394,7 +2394,7 @@ internal static ast.Stmt parseDeferStmt(this ж<parser> Ꮡp) => func<ast.Stmt>(
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string returnStmtˢ = "ReturnStmt"u8;
+internal static readonly @string returnStmtˢ = "ReturnStmt"u8;
 
 internal static ж<ast.ReturnStmt> parseReturnStmt(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -2414,7 +2414,7 @@ internal static ж<ast.ReturnStmt> parseReturnStmt(this ж<parser> Ꮡp) => func
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string branchStmtˢ = "BranchStmt"u8;
+internal static readonly @string branchStmtˢ = "BranchStmt"u8;
 
 internal static ж<ast.BranchStmt> parseBranchStmt(this ж<parser> Ꮡp, token.Token tok) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -2433,8 +2433,8 @@ internal static ж<ast.BranchStmt> parseBranchStmt(this ж<parser> Ꮡp, token.T
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string simpleStatementˢ = "simple statement"u8;
-private static readonly @string assignmentˢ = "assignment"u8;
+internal static readonly @string simpleStatementˢ = "simple statement"u8;
+internal static readonly @string assignmentˢ = "assignment"u8;
 
 internal static ast.Expr makeExpr(this ж<parser> Ꮡp, ast.Stmt s, @string want) {
     if (s == default!) {
@@ -2456,10 +2456,10 @@ internal static ast.Expr makeExpr(this ж<parser> Ꮡp, ast.Stmt s, @string want
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingConditionInIfˢ = "missing condition in if statement"u8;
-private static readonly @string varDeclarationNotAllowedˢ = "var declaration not allowed in if initializer"u8;
-private static readonly @string booleanExpressionˢ = "boolean expression"u8;
-private static readonly @string unexpectedNewlineˢ = "unexpected newline, expecting { after if clause"u8;
+internal static readonly @string missingConditionInIfˢ = "missing condition in if statement"u8;
+internal static readonly @string varDeclarationNotAllowedˢ = "var declaration not allowed in if initializer"u8;
+internal static readonly @string booleanExpressionˢ = "boolean expression"u8;
+internal static readonly @string unexpectedNewlineˢ = "unexpected newline, expecting { after if clause"u8;
 
 [GoType("dyn")] partial struct parseIfHeader_semi {
     internal tokenꓸPos pos;
@@ -2526,8 +2526,8 @@ internal static (ast.Stmt init, ast.Expr cond) parseIfHeader(this ж<parser> Ꮡ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ifStmtˢ = "IfStmt"u8;
-private static readonly @string ifStatementOrBlockˢ = "if statement or block"u8;
+internal static readonly @string ifStmtˢ = "IfStmt"u8;
+internal static readonly @string ifStatementOrBlockˢ = "if statement or block"u8;
 
 internal static ж<ast.IfStmt> parseIfStmt(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -2563,7 +2563,7 @@ internal static ж<ast.IfStmt> parseIfStmt(this ж<parser> Ꮡp) => func((defer,
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string caseClauseˢ = "CaseClause"u8;
+internal static readonly @string caseClauseˢ = "CaseClause"u8;
 
 internal static ж<ast.CaseClause> parseCaseClause(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -2592,7 +2592,7 @@ internal static bool isTypeSwitchAssert(ast.Expr x) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string expectedFoundˢ = "expected ':=', found '='"u8;
+internal static readonly @string expectedFoundˢ = "expected ':=', found '='"u8;
 
 internal static bool isTypeSwitchGuard(this ж<parser> Ꮡp, ast.Stmt s) {
     switch (s.type()) {
@@ -2621,8 +2621,8 @@ internal static bool isTypeSwitchGuard(this ж<parser> Ꮡp, ast.Stmt s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string switchStmtˢ = "SwitchStmt"u8;
-private static readonly @string switchExpressionˢ = "switch expression"u8;
+internal static readonly @string switchStmtˢ = "SwitchStmt"u8;
+internal static readonly @string switchExpressionˢ = "switch expression"u8;
 
 internal static ast.Stmt parseSwitchStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -2680,8 +2680,8 @@ internal static ast.Stmt parseSwitchStmt(this ж<parser> Ꮡp) => func<ast.Stmt>
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string commClauseˢ = "CommClause"u8;
-private static readonly @string or2Expressionsˢ = "1 or 2 expressions"u8;
+internal static readonly @string commClauseˢ = "CommClause"u8;
+internal static readonly @string or2Expressionsˢ = "1 or 2 expressions"u8;
 
 internal static ж<ast.CommClause> parseCommClause(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -2742,7 +2742,7 @@ internal static ж<ast.CommClause> parseCommClause(this ж<parser> Ꮡp) => func
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string selectStmtˢ = "SelectStmt"u8;
+internal static readonly @string selectStmtˢ = "SelectStmt"u8;
 
 internal static ж<ast.SelectStmt> parseSelectStmt(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -2766,9 +2766,9 @@ internal static ж<ast.SelectStmt> parseSelectStmt(this ж<parser> Ꮡp) => func
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string forStmtˢ = "ForStmt"u8;
-private static readonly @string atMost2Expressionsˢ = "at most 2 expressions"u8;
-private static readonly @string booleanOrRangeExpressionˢ = "boolean or range expression"u8;
+internal static readonly @string forStmtˢ = "ForStmt"u8;
+internal static readonly @string atMost2Expressionsˢ = "at most 2 expressions"u8;
+internal static readonly @string booleanOrRangeExpressionˢ = "boolean or range expression"u8;
 
 internal static ast.Stmt parseForStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -2862,8 +2862,8 @@ internal static ast.Stmt parseForStmt(this ж<parser> Ꮡp) => func<ast.Stmt>((d
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string statementˢ = "Statement"u8;
-private static readonly @string statementˢ2 = "statement"u8;
+internal static readonly @string statementˢ = "Statement"u8;
+internal static readonly @string statementˢ2 = "statement"u8;
 
 internal static ast.Stmt /*s*/ parseStmt(this ж<parser> Ꮡp) {
     ast.Stmt s = default!;
@@ -2948,9 +2948,9 @@ Semicolon: p.pos, Implicit: true)));
 // type parseSpecFunction is a methodless func type — rendered inline as its base delegate
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string importSpecˢ = "ImportSpec"u8;
-private static readonly @string importPathMustBeAStringˢ = "import path must be a string"u8;
-private static readonly @string missingImportPathˢ = "missing import path"u8;
+internal static readonly @string importSpecˢ = "ImportSpec"u8;
+internal static readonly @string importPathMustBeAStringˢ = "import path must be a string"u8;
+internal static readonly @string missingImportPathˢ = "missing import path"u8;
 
 // ----------------------------------------------------------------------------
 // Declarations
@@ -3041,7 +3041,7 @@ internal static ast.Spec parseValueSpec(this ж<parser> Ꮡp, ж<ast.CommentGrou
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string parseGenericTypeˢ = "parseGenericType"u8;
+internal static readonly @string parseGenericTypeˢ = "parseGenericType"u8;
 
 internal static void parseGenericType(this ж<parser> Ꮡp, ж<ast.TypeSpec> Ꮡspec, tokenꓸPos openPos, ж<ast.Ident> Ꮡname0, ast.Expr typ0) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -3065,7 +3065,7 @@ internal static void parseGenericType(this ж<parser> Ꮡp, ж<ast.TypeSpec> Ꮡ
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeSpecˢ = "TypeSpec"u8;
+internal static readonly @string typeSpecˢ = "TypeSpec"u8;
 
 internal static ast.Spec parseTypeSpec(this ж<parser> Ꮡp, ж<ast.CommentGroup> Ꮡdoc, token.Token _Δp2, nint _Δp3) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -3263,9 +3263,9 @@ internal static ж<ast.GenDecl> parseGenDecl(this ж<parser> Ꮡp, token.Token k
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string functionDeclˢ = "FunctionDecl"u8;
-private static readonly @string methodMustHaveNoTypeˢ = "method must have no type parameters"u8;
-private static readonly @string unexpectedSemicolonOrˢ = "unexpected semicolon or newline before {"u8;
+internal static readonly @string functionDeclˢ = "FunctionDecl"u8;
+internal static readonly @string methodMustHaveNoTypeˢ = "method must have no type parameters"u8;
+internal static readonly @string unexpectedSemicolonOrˢ = "unexpected semicolon or newline before {"u8;
 
 internal static ж<ast.FuncDecl> parseFuncDecl(this ж<parser> Ꮡp) => func((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -3324,8 +3324,8 @@ internal static ж<ast.FuncDecl> parseFuncDecl(this ж<parser> Ꮡp) => func((de
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string declarationˢ = "Declaration"u8;
-private static readonly @string declarationˢ2 = "declaration"u8;
+internal static readonly @string declarationˢ = "Declaration"u8;
+internal static readonly @string declarationˢ2 = "declaration"u8;
 
 internal static ast.Decl parseDecl(this ж<parser> Ꮡp, map<token.Token, bool> sync) => func<ast.Decl>((defer, recover) => {
     ref var p = ref Ꮡp.Value;
@@ -3359,9 +3359,9 @@ internal static ast.Decl parseDecl(this ж<parser> Ꮡp, map<token.Token, bool> 
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fileˢ = "File"u8;
-private static readonly @string invalidPackageNameˢ = "invalid package name _"u8;
-private static readonly @string importsMustAppearBeforeˢ = "imports must appear before other declarations"u8;
+internal static readonly @string fileˢ = "File"u8;
+internal static readonly @string invalidPackageNameˢ = "invalid package name _"u8;
+internal static readonly @string importsMustAppearBeforeˢ = "imports must appear before other declarations"u8;
 
 // ----------------------------------------------------------------------------
 // Source files

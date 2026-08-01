@@ -60,7 +60,7 @@ public static ж<Decoder> NewDecoder(io.Reader r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gobDuplicateTypeReceivedˢ = "gob: duplicate type received"u8;
+internal static readonly @string gobDuplicateTypeReceivedˢ = "gob: duplicate type received"u8;
 
 // recvType loads the definition of a type.
 internal static void recvType(this ж<Decoder> Ꮡdec, typeId id) {
@@ -145,7 +145,7 @@ internal static uint64 nextUint(this ж<Decoder> Ꮡdec) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string extraDataInBufferˢ = "extra data in buffer"u8;
+internal static readonly @string extraDataInBufferˢ = "extra data in buffer"u8;
 
 // decodeTypeSequence parses:
 // TypeSequence
@@ -201,7 +201,7 @@ internal static typeId decodeTypeSequence(this ж<Decoder> Ꮡdec, bool isInterf
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gobAttemptToDecodeIntoAˢ = "gob: attempt to decode into a non-pointer"u8;
+internal static readonly @string gobAttemptToDecodeIntoAˢ = "gob: attempt to decode into a non-pointer"u8;
 
 // Decode reads the next value from the input stream and stores
 // it in the data represented by the empty interface value.
@@ -227,7 +227,7 @@ public static error Decode(this ж<Decoder> Ꮡdec, any e) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gobDecodeValueOfˢ = "gob: DecodeValue of unassignable value"u8;
+internal static readonly @string gobDecodeValueOfˢ = "gob: DecodeValue of unassignable value"u8;
 
 // DecodeValue reads the next value from the input stream.
 // If v is the zero reflect.Value (v.Kind() == Invalid), DecodeValue discards the value.

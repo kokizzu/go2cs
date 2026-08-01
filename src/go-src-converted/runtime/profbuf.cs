@@ -207,7 +207,7 @@ internal static void incrementOverflow(this ж<profBuf> Ꮡb, int64 now) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string newProfBufBufferTooLargeˢ = "newProfBuf: buffer too large"u8;
+internal static readonly @string newProfBufBufferTooLargeˢ = "newProfBuf: buffer too large"u8;
 
 // newProfBuf returns a new profiling buffer with room for
 // a header of hdrsize words and a buffer of at least bufwords words.
@@ -301,7 +301,7 @@ internal static bool canWriteTwoRecords(this ж<profBuf> Ꮡb, nint nstk1, nint 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string misuseOfProfBufWriteˢ = "misuse of profBuf.write"u8;
+internal static readonly @string misuseOfProfBufWriteˢ = "misuse of profBuf.write"u8;
 
 // write writes an entry to the profiling buffer b.
 // The entry begins with a fixed hdr, which must have
@@ -401,7 +401,7 @@ internal static void write(this ж<profBuf> Ꮡb, ж<@unsafe.Pointer> ᏑtagPtr,
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeProfBufAlreadyˢ = "runtime: profBuf already closed"u8;
+internal static readonly @string runtimeProfBufAlreadyˢ = "runtime: profBuf already closed"u8;
 
 // close signals that there will be no more writes on the buffer.
 // Once all the data has been read from the buffer, reads will return eof=true.
@@ -438,8 +438,8 @@ internal static profBufReadMode profBufNonBlocking => 1;
 internal static array<@unsafe.Pointer> overflowTag = new(1);           // always nil
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeMalformedProfBufˢ = "runtime: malformed profBuf buffer - tag and data out of sync"u8;
-private static readonly @string runtimeMalformedProfBufˢ2 = "runtime: malformed profBuf buffer - invalid size"u8;
+internal static readonly @string runtimeMalformedProfBufˢ = "runtime: malformed profBuf buffer - tag and data out of sync"u8;
+internal static readonly @string runtimeMalformedProfBufˢ2 = "runtime: malformed profBuf buffer - invalid size"u8;
 
 internal static (slice<uint64> data, slice<@unsafe.Pointer> tags, bool eof) read(this ж<profBuf> Ꮡb, profBufReadMode mode) {
     slice<uint64> data = default!;

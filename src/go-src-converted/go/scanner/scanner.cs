@@ -48,9 +48,9 @@ internal static UntypedInt bom => 0xFEFF; // byte order mark, only permitted as 
 internal static UntypedInt eof => -1; // end of file
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string illegalCharacterNulˢ = "illegal character NUL"u8;
-private static readonly @string illegalUtf8Encodingˢ = "illegal UTF-8 encoding"u8;
-private static readonly @string illegalByteOrderMarkˢ = "illegal byte order mark"u8;
+internal static readonly @string illegalCharacterNulˢ = "illegal character NUL"u8;
+internal static readonly @string illegalUtf8Encodingˢ = "illegal UTF-8 encoding"u8;
+internal static readonly @string illegalByteOrderMarkˢ = "illegal byte order mark"u8;
 
 // Read the next Unicode char into s.ch.
 // s.ch < 0 means end-of-file.
@@ -162,7 +162,7 @@ internal static Mode dontInsertSemis => 2;     // do not automatically insert se
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string commentNotTerminatedˢ = "comment not terminated"u8;
+internal static readonly @string commentNotTerminatedˢ = "comment not terminated"u8;
 
 // scanComment returns the text of the comment and (if nonzero)
 // the offset of the first newline within it, which implies a
@@ -435,9 +435,9 @@ internal static bool isHex(rune ch) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string exponentHasNoDigitsˢ = "exponent has no digits"u8;
-private static readonly @string hexadecimalMantissaˢ = "hexadecimal mantissa requires a 'p' exponent"u8;
-private static readonly @string mustSeparateSuccessiveˢ = "'_' must separate successive digits"u8;
+internal static readonly @string exponentHasNoDigitsˢ = "exponent has no digits"u8;
+internal static readonly @string hexadecimalMantissaˢ = "hexadecimal mantissa requires a 'p' exponent"u8;
+internal static readonly @string mustSeparateSuccessiveˢ = "'_' must separate successive digits"u8;
 
 [GoRecv] internal static (token.Token, @string) scanNumber(this ref Scanner s) {
     nint offs = s.offset;
@@ -542,10 +542,10 @@ private static readonly @string mustSeparateSuccessiveˢ = "'_' must separate su
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string hexadecimalLiteralˢ = "hexadecimal literal"u8;
-private static readonly @string octalLiteralˢ = "octal literal"u8;
-private static readonly @string binaryLiteralˢ = "binary literal"u8;
-private static readonly @string decimalLiteralˢ = "decimal literal"u8;
+internal static readonly @string hexadecimalLiteralˢ = "hexadecimal literal"u8;
+internal static readonly @string octalLiteralˢ = "octal literal"u8;
+internal static readonly @string binaryLiteralˢ = "binary literal"u8;
+internal static readonly @string decimalLiteralˢ = "decimal literal"u8;
 
 internal static @string litname(rune prefix) {
     switch (prefix) {
@@ -609,9 +609,9 @@ internal static nint invalidSep(@string x) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownEscapeSequenceˢ = "unknown escape sequence"u8;
-private static readonly @string escapeSequenceNotˢ = "escape sequence not terminated"u8;
-private static readonly @string escapeSequenceIsInvalidˢ = "escape sequence is invalid Unicode code point"u8;
+internal static readonly @string unknownEscapeSequenceˢ = "unknown escape sequence"u8;
+internal static readonly @string escapeSequenceNotˢ = "escape sequence not terminated"u8;
+internal static readonly @string escapeSequenceIsInvalidˢ = "escape sequence is invalid Unicode code point"u8;
 
 // scanEscape parses an escape sequence where rune is the accepted
 // escaped quote. In case of a syntax error, it stops at the offending
@@ -674,8 +674,8 @@ private static readonly @string escapeSequenceIsInvalidˢ = "escape sequence is 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runeLiteralNotTerminatedˢ = "rune literal not terminated"u8;
-private static readonly @string illegalRuneLiteralˢ = "illegal rune literal"u8;
+internal static readonly @string runeLiteralNotTerminatedˢ = "rune literal not terminated"u8;
+internal static readonly @string illegalRuneLiteralˢ = "illegal rune literal"u8;
 
 [GoRecv] internal static @string scanRune(this ref Scanner s) {
     // '\'' opening already consumed
@@ -711,7 +711,7 @@ private static readonly @string illegalRuneLiteralˢ = "illegal rune literal"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stringLiteralNotˢ = "string literal not terminated"u8;
+internal static readonly @string stringLiteralNotˢ = "string literal not terminated"u8;
 
 [GoRecv] internal static @string scanString(this ref Scanner s) {
     // '"' opening already consumed
@@ -751,7 +751,7 @@ internal static slice<byte> stripCR(slice<byte> b, bool comment) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rawStringLiteralNotˢ = "raw string literal not terminated"u8;
+internal static readonly @string rawStringLiteralNotˢ = "raw string literal not terminated"u8;
 
 [GoRecv] internal static @string scanRawString(this ref Scanner s) {
     // '`' opening already consumed

@@ -113,10 +113,10 @@ internal static void setWorkerComm(ж<exec.Cmd> Ꮡcmd, workerComm comm) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goTestFuzzWorkerHandlesˢ = "GO_TEST_FUZZ_WORKER_HANDLES"u8;
-private static readonly @string fuzzInˢ = "fuzz_in"u8;
-private static readonly @string fuzzOutˢ = "fuzz_out"u8;
-private static readonly @string fuzzMemˢ = "fuzz_mem"u8;
+internal static readonly @string goTestFuzzWorkerHandlesˢ = "GO_TEST_FUZZ_WORKER_HANDLES"u8;
+internal static readonly @string fuzzInˢ = "fuzz_in"u8;
+internal static readonly @string fuzzOutˢ = "fuzz_out"u8;
+internal static readonly @string fuzzMemˢ = "fuzz_mem"u8;
 
 // getWorkerComm returns communication channels in the worker process.
 internal static (workerComm comm, error err) getWorkerComm() {

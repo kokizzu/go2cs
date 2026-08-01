@@ -78,7 +78,7 @@ internal static traceWriter flush(this traceWriter w) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string traceOutOfMemoryˢ = "trace: out of memory"u8;
+internal static readonly @string traceOutOfMemoryˢ = "trace: out of memory"u8;
 
 // refill puts w.traceBuf on the queue of full buffers and refresh's w's buffer.
 //
@@ -95,7 +95,7 @@ internal static traceWriter refill(this traceWriter w, traceExperiment exp) {
             unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
         } else {
             unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
-            w.traceBuf = (ж<traceBuf>)(uintptr)(sysAlloc(@unsafe.Sizeof(new traceBuf(nil)), Ꮡmemstats.of(mstats.Ꮡother_sys)));
+            w.traceBuf = (ж<traceBuf>)(uintptr)(sysAlloc(/* unsafe.Sizeof(traceBuf{}) */ (uintptr)65536, Ꮡmemstats.of(mstats.Ꮡother_sys)));
             if (w.traceBuf == nil) {
                 @throw(traceOutOfMemoryˢ);
             }
@@ -178,7 +178,7 @@ internal static traceWriter refill(this traceWriter w, traceExperiment exp) {
 [GoType] [GoValueClone("arr")] partial struct traceBuf {
     internal sys.NotInHeap _;
     internal partial ref traceBufHeader traceBufHeader { get; }
-    internal array<byte> arr = new((uintptr)(64 << (int)(10)) - @unsafe.Sizeof(new traceBufHeader(nil))); // underlying buffer for traceBufHeader.buf
+    internal array<byte> arr = new((uintptr)(64 << (int)(10)) - /* unsafe.Sizeof(traceBufHeader{}) */ (uintptr)32); // underlying buffer for traceBufHeader.buf
 }
 
 // byte appends v to buf.
@@ -222,7 +222,7 @@ internal static traceWriter refill(this traceWriter w, traceExperiment exp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string vCouldNotFitInˢ = "v could not fit in traceBytesPerNumber"u8;
+internal static readonly @string vCouldNotFitInˢ = "v could not fit in traceBytesPerNumber"u8;
 
 // varintAt writes varint v at byte position pos in buf. This always
 // consumes traceBytesPerNumber bytes. This is intended for when the caller

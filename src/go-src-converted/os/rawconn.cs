@@ -15,7 +15,7 @@ partial class os_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string syscallConnControlˢ = "SyscallConn.Control"u8;
+internal static readonly @string syscallConnControlˢ = "SyscallConn.Control"u8;
 
 [GoRecv] internal static error Control(this ref rawConn c, Action<uintptr> f) {
     {
@@ -29,7 +29,7 @@ private static readonly @string syscallConnControlˢ = "SyscallConn.Control"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string syscallConnReadˢ = "SyscallConn.Read"u8;
+internal static readonly @string syscallConnReadˢ = "SyscallConn.Read"u8;
 
 [GoRecv] internal static error Read(this ref rawConn c, Func<uintptr, bool> f) {
     {
@@ -43,7 +43,7 @@ private static readonly @string syscallConnReadˢ = "SyscallConn.Read"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string syscallConnWriteˢ = "SyscallConn.Write"u8;
+internal static readonly @string syscallConnWriteˢ = "SyscallConn.Write"u8;
 
 [GoRecv] internal static error Write(this ref rawConn c, Func<uintptr, bool> f) {
     {

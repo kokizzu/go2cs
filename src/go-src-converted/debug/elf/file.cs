@@ -112,7 +112,7 @@ public static (slice<byte>, error) Data(this ж<ΔSection> Ꮡs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sectionHasInvalidStringˢ = "section has invalid string table link"u8;
+internal static readonly @string sectionHasInvalidStringˢ = "section has invalid string table link"u8;
 
 // stringTable reads and returns the string table given by the
 // specified link value.
@@ -124,7 +124,7 @@ private static readonly @string sectionHasInvalidStringˢ = "section has invalid
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string zdebugˢ = ".zdebug"u8;
+internal static readonly @string zdebugˢ = ".zdebug"u8;
 
 // Open returns a new ReadSeeker reading the ELF section.
 // Even if the section is stored compressed in the ELF file,
@@ -334,53 +334,53 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     var exprᴛ3 = (~f).Class;
     if (exprᴛ3 == ELFCLASS32) {
         Header32 hdr = new();
-        var data = new slice<byte>((nint)(@unsafe.Sizeof(hdr)));
+        var data = new slice<byte>((nint)(/* unsafe.Sizeof(hdr) */ (uintptr)52));
         {
             var (_, errΔ4) = sr.ReadAt(data, 0); if (errΔ4 != default!) {
                 return (default!, errΔ4);
             }
         }
-        f.Value.Type = ((Type)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Type"))..]));
-        f.Value.Machine = ((Machine)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Machine"))..]));
-        f.Value.Entry = (uint64)bo.Uint32(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Entry"))..]);
+        f.Value.Type = ((Type)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Type) */ (uintptr)16)..]));
+        f.Value.Machine = ((Machine)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Machine) */ (uintptr)18)..]));
+        f.Value.Entry = (uint64)bo.Uint32(data[(int)(/* unsafe.Offsetof(hdr.Entry) */ (uintptr)24)..]);
         {
             ref var v = ref heap<Version>(out var Ꮡv);
-            v = ((Version)(byte)bo.Uint32(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Version"))..])); if (v != (~f).Version) {
+            v = ((Version)(byte)bo.Uint32(data[(int)(/* unsafe.Offsetof(hdr.Version) */ (uintptr)20)..])); if (v != (~f).Version) {
                 return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "mismatched ELF version"u8, v))));
             }
         }
-        phoff = (int64)bo.Uint32(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Phoff"))..]);
-        phentsize = (nint)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Phentsize"))..]);
-        phnum = (nint)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Phnum"))..]);
-        shoff = (int64)bo.Uint32(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Shoff"))..]);
-        shentsize = (nint)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Shentsize"))..]);
-        shnum = (nint)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Shnum"))..]);
-        shstrndx = (nint)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Shstrndx"))..]);
+        phoff = (int64)bo.Uint32(data[(int)(/* unsafe.Offsetof(hdr.Phoff) */ (uintptr)28)..]);
+        phentsize = (nint)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Phentsize) */ (uintptr)42)..]);
+        phnum = (nint)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Phnum) */ (uintptr)44)..]);
+        shoff = (int64)bo.Uint32(data[(int)(/* unsafe.Offsetof(hdr.Shoff) */ (uintptr)32)..]);
+        shentsize = (nint)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Shentsize) */ (uintptr)46)..]);
+        shnum = (nint)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Shnum) */ (uintptr)48)..]);
+        shstrndx = (nint)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Shstrndx) */ (uintptr)50)..]);
     }
     else if (exprᴛ3 == ELFCLASS64) {
         Header64 hdr = new();
-        var data = new slice<byte>((nint)(@unsafe.Sizeof(hdr)));
+        var data = new slice<byte>((nint)(/* unsafe.Sizeof(hdr) */ (uintptr)64));
         {
             var (_, errΔ5) = sr.ReadAt(data, 0); if (errΔ5 != default!) {
                 return (default!, errΔ5);
             }
         }
-        f.Value.Type = ((Type)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Type"))..]));
-        f.Value.Machine = ((Machine)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Machine"))..]));
-        f.Value.Entry = bo.Uint64(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Entry"))..]);
+        f.Value.Type = ((Type)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Type) */ (uintptr)16)..]));
+        f.Value.Machine = ((Machine)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Machine) */ (uintptr)18)..]));
+        f.Value.Entry = bo.Uint64(data[(int)(/* unsafe.Offsetof(hdr.Entry) */ (uintptr)24)..]);
         {
             ref var v = ref heap<Version>(out var Ꮡv);
-            v = ((Version)(byte)bo.Uint32(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Version"))..])); if (v != (~f).Version) {
+            v = ((Version)(byte)bo.Uint32(data[(int)(/* unsafe.Offsetof(hdr.Version) */ (uintptr)20)..])); if (v != (~f).Version) {
                 return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "mismatched ELF version"u8, v))));
             }
         }
-        phoff = (int64)bo.Uint64(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Phoff"))..]);
-        phentsize = (nint)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Phentsize"))..]);
-        phnum = (nint)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Phnum"))..]);
-        shoff = (int64)bo.Uint64(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Shoff"))..]);
-        shentsize = (nint)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Shentsize"))..]);
-        shnum = (nint)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Shnum"))..]);
-        shstrndx = (nint)bo.Uint16(data[(int)(@unsafe.Offsetof(hdr.GetType(), "Shstrndx"))..]);
+        phoff = (int64)bo.Uint64(data[(int)(/* unsafe.Offsetof(hdr.Phoff) */ (uintptr)32)..]);
+        phentsize = (nint)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Phentsize) */ (uintptr)54)..]);
+        phnum = (nint)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Phnum) */ (uintptr)56)..]);
+        shoff = (int64)bo.Uint64(data[(int)(/* unsafe.Offsetof(hdr.Shoff) */ (uintptr)40)..]);
+        shentsize = (nint)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Shentsize) */ (uintptr)58)..]);
+        shnum = (nint)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Shnum) */ (uintptr)60)..]);
+        shstrndx = (nint)bo.Uint16(data[(int)(/* unsafe.Offsetof(hdr.Shstrndx) */ (uintptr)62)..]);
     }
 
     if (shoff < 0) {
@@ -423,27 +423,27 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         if (exprᴛ5 == ELFCLASS32) {
             Prog32 ph = default!;
             p.Value.ProgHeader = new ProgHeader(
-                Type: ((ProgType)(nint)bo.Uint32(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Type"))..])),
-                Flags: ((ProgFlag)bo.Uint32(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Flags"))..])),
-                Off: (uint64)bo.Uint32(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Off"))..]),
-                Vaddr: (uint64)bo.Uint32(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Vaddr"))..]),
-                Paddr: (uint64)bo.Uint32(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Paddr"))..]),
-                Filesz: (uint64)bo.Uint32(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Filesz"))..]),
-                Memsz: (uint64)bo.Uint32(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Memsz"))..]),
-                Align: (uint64)bo.Uint32(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Align"))..])
+                Type: ((ProgType)(nint)bo.Uint32(phdata[(int)(off + /* unsafe.Offsetof(ph.Type) */ (uintptr)0)..])),
+                Flags: ((ProgFlag)bo.Uint32(phdata[(int)(off + /* unsafe.Offsetof(ph.Flags) */ (uintptr)24)..])),
+                Off: (uint64)bo.Uint32(phdata[(int)(off + /* unsafe.Offsetof(ph.Off) */ (uintptr)4)..]),
+                Vaddr: (uint64)bo.Uint32(phdata[(int)(off + /* unsafe.Offsetof(ph.Vaddr) */ (uintptr)8)..]),
+                Paddr: (uint64)bo.Uint32(phdata[(int)(off + /* unsafe.Offsetof(ph.Paddr) */ (uintptr)12)..]),
+                Filesz: (uint64)bo.Uint32(phdata[(int)(off + /* unsafe.Offsetof(ph.Filesz) */ (uintptr)16)..]),
+                Memsz: (uint64)bo.Uint32(phdata[(int)(off + /* unsafe.Offsetof(ph.Memsz) */ (uintptr)20)..]),
+                Align: (uint64)bo.Uint32(phdata[(int)(off + /* unsafe.Offsetof(ph.Align) */ (uintptr)28)..])
             );
         }
         else if (exprᴛ5 == ELFCLASS64) {
             Prog64 ph = default!;
             p.Value.ProgHeader = new ProgHeader(
-                Type: ((ProgType)(nint)bo.Uint32(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Type"))..])),
-                Flags: ((ProgFlag)bo.Uint32(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Flags"))..])),
-                Off: bo.Uint64(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Off"))..]),
-                Vaddr: bo.Uint64(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Vaddr"))..]),
-                Paddr: bo.Uint64(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Paddr"))..]),
-                Filesz: bo.Uint64(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Filesz"))..]),
-                Memsz: bo.Uint64(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Memsz"))..]),
-                Align: bo.Uint64(phdata[(int)(off + @unsafe.Offsetof(ph.GetType(), "Align"))..])
+                Type: ((ProgType)(nint)bo.Uint32(phdata[(int)(off + /* unsafe.Offsetof(ph.Type) */ (uintptr)0)..])),
+                Flags: ((ProgFlag)bo.Uint32(phdata[(int)(off + /* unsafe.Offsetof(ph.Flags) */ (uintptr)4)..])),
+                Off: bo.Uint64(phdata[(int)(off + /* unsafe.Offsetof(ph.Off) */ (uintptr)8)..]),
+                Vaddr: bo.Uint64(phdata[(int)(off + /* unsafe.Offsetof(ph.Vaddr) */ (uintptr)16)..]),
+                Paddr: bo.Uint64(phdata[(int)(off + /* unsafe.Offsetof(ph.Paddr) */ (uintptr)24)..]),
+                Filesz: bo.Uint64(phdata[(int)(off + /* unsafe.Offsetof(ph.Filesz) */ (uintptr)32)..]),
+                Memsz: bo.Uint64(phdata[(int)(off + /* unsafe.Offsetof(ph.Memsz) */ (uintptr)40)..]),
+                Align: bo.Uint64(phdata[(int)(off + /* unsafe.Offsetof(ph.Align) */ (uintptr)48)..])
             );
         }
 
@@ -527,32 +527,32 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
         var exprᴛ7 = (~f).Class;
         if (exprᴛ7 == ELFCLASS32) {
             Section32 sh = default!;
-            names = append(names, bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Name"))..]));
+            names = append(names, bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Name) */ (uintptr)0)..]));
             s.Value.SectionHeader = new SectionHeader(
-                Type: ((SectionType)bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Type"))..])),
-                Flags: ((SectionFlag)bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Flags"))..])),
-                Addr: (uint64)bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Addr"))..]),
-                Offset: (uint64)bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Off"))..]),
-                FileSize: (uint64)bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Size"))..]),
-                Link: bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Link"))..]),
-                Info: bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Info"))..]),
-                Addralign: (uint64)bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Addralign"))..]),
-                Entsize: (uint64)bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Entsize"))..])
+                Type: ((SectionType)bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Type) */ (uintptr)4)..])),
+                Flags: ((SectionFlag)bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Flags) */ (uintptr)8)..])),
+                Addr: (uint64)bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Addr) */ (uintptr)12)..]),
+                Offset: (uint64)bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Off) */ (uintptr)16)..]),
+                FileSize: (uint64)bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Size) */ (uintptr)20)..]),
+                Link: bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Link) */ (uintptr)24)..]),
+                Info: bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Info) */ (uintptr)28)..]),
+                Addralign: (uint64)bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Addralign) */ (uintptr)32)..]),
+                Entsize: (uint64)bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Entsize) */ (uintptr)36)..])
             );
         }
         else if (exprᴛ7 == ELFCLASS64) {
             Section64 sh = default!;
-            names = append(names, bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Name"))..]));
+            names = append(names, bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Name) */ (uintptr)0)..]));
             s.Value.SectionHeader = new SectionHeader(
-                Type: ((SectionType)bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Type"))..])),
-                Flags: ((SectionFlag)(uint32)bo.Uint64(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Flags"))..])),
-                Offset: bo.Uint64(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Off"))..]),
-                FileSize: bo.Uint64(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Size"))..]),
-                Addr: bo.Uint64(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Addr"))..]),
-                Link: bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Link"))..]),
-                Info: bo.Uint32(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Info"))..]),
-                Addralign: bo.Uint64(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Addralign"))..]),
-                Entsize: bo.Uint64(shdata[(int)(off + @unsafe.Offsetof(sh.GetType(), "Entsize"))..])
+                Type: ((SectionType)bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Type) */ (uintptr)4)..])),
+                Flags: ((SectionFlag)(uint32)bo.Uint64(shdata[(int)(off + /* unsafe.Offsetof(sh.Flags) */ (uintptr)8)..])),
+                Offset: bo.Uint64(shdata[(int)(off + /* unsafe.Offsetof(sh.Off) */ (uintptr)24)..]),
+                FileSize: bo.Uint64(shdata[(int)(off + /* unsafe.Offsetof(sh.Size) */ (uintptr)32)..]),
+                Addr: bo.Uint64(shdata[(int)(off + /* unsafe.Offsetof(sh.Addr) */ (uintptr)16)..]),
+                Link: bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Link) */ (uintptr)40)..]),
+                Info: bo.Uint32(shdata[(int)(off + /* unsafe.Offsetof(sh.Info) */ (uintptr)44)..]),
+                Addralign: bo.Uint64(shdata[(int)(off + /* unsafe.Offsetof(sh.Addralign) */ (uintptr)48)..]),
+                Entsize: bo.Uint64(shdata[(int)(off + /* unsafe.Offsetof(sh.Entsize) */ (uintptr)56)..])
             );
         }
 
@@ -571,29 +571,29 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
             var exprᴛ8 = (~f).Class;
             if (exprᴛ8 == ELFCLASS32) {
                 Chdr32 ch = default!;
-                var chdata = new slice<byte>((nint)(@unsafe.Sizeof(ch)));
+                var chdata = new slice<byte>((nint)(/* unsafe.Sizeof(ch) */ (uintptr)12));
                 {
                     var (_, errΔ12) = (~s).sr.ReadAt(chdata, 0); if (errΔ12 != default!) {
                         return (default!, errΔ12);
                     }
                 }
-                s.Value.compressionType = ((CompressionType)(nint)bo.Uint32(chdata[(int)(@unsafe.Offsetof(ch.GetType(), "Type"))..]));
-                s.Value.Size = (uint64)bo.Uint32(chdata[(int)(@unsafe.Offsetof(ch.GetType(), "Size"))..]);
-                s.Value.Addralign = (uint64)bo.Uint32(chdata[(int)(@unsafe.Offsetof(ch.GetType(), "Addralign"))..]);
-                s.Value.compressionOffset = (int64)@unsafe.Sizeof(ch);
+                s.Value.compressionType = ((CompressionType)(nint)bo.Uint32(chdata[(int)(/* unsafe.Offsetof(ch.Type) */ (uintptr)0)..]));
+                s.Value.Size = (uint64)bo.Uint32(chdata[(int)(/* unsafe.Offsetof(ch.Size) */ (uintptr)4)..]);
+                s.Value.Addralign = (uint64)bo.Uint32(chdata[(int)(/* unsafe.Offsetof(ch.Addralign) */ (uintptr)8)..]);
+                s.Value.compressionOffset = (int64)/* unsafe.Sizeof(ch) */ (uintptr)12;
             }
             else if (exprᴛ8 == ELFCLASS64) {
                 Chdr64 ch = default!;
-                var chdata = new slice<byte>((nint)(@unsafe.Sizeof(ch)));
+                var chdata = new slice<byte>((nint)(/* unsafe.Sizeof(ch) */ (uintptr)24));
                 {
                     var (_, errΔ13) = (~s).sr.ReadAt(chdata, 0); if (errΔ13 != default!) {
                         return (default!, errΔ13);
                     }
                 }
-                s.Value.compressionType = ((CompressionType)(nint)bo.Uint32(chdata[(int)(@unsafe.Offsetof(ch.GetType(), "Type"))..]));
-                s.Value.Size = bo.Uint64(chdata[(int)(@unsafe.Offsetof(ch.GetType(), "Size"))..]);
-                s.Value.Addralign = bo.Uint64(chdata[(int)(@unsafe.Offsetof(ch.GetType(), "Addralign"))..]);
-                s.Value.compressionOffset = (int64)@unsafe.Sizeof(ch);
+                s.Value.compressionType = ((CompressionType)(nint)bo.Uint32(chdata[(int)(/* unsafe.Offsetof(ch.Type) */ (uintptr)0)..]));
+                s.Value.Size = bo.Uint64(chdata[(int)(/* unsafe.Offsetof(ch.Size) */ (uintptr)8)..]);
+                s.Value.Addralign = bo.Uint64(chdata[(int)(/* unsafe.Offsetof(ch.Addralign) */ (uintptr)16)..]);
+                s.Value.compressionOffset = (int64)/* unsafe.Sizeof(ch) */ (uintptr)24;
             }
 
         }
@@ -627,7 +627,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string notImplementedˢ = "not implemented"u8;
+internal static readonly @string notImplementedˢ = "not implemented"u8;
 
 // getSymbols returns a slice of Symbols from parsing the symbol table
 // with the given type, along with the associated string table.
@@ -648,8 +648,8 @@ private static readonly @string notImplementedˢ = "not implemented"u8;
 public static error ErrNoSymbols = errors.New("no symbol section"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string symbolSectionIsEmptyˢ = "symbol section is empty"u8;
-private static readonly @string lengthOfSymbolSectionIsˢ = "length of symbol section is not a multiple of SymSize"u8;
+internal static readonly @string symbolSectionIsEmptyˢ = "symbol section is empty"u8;
+internal static readonly @string lengthOfSymbolSectionIsˢ = "length of symbol section is not a multiple of SymSize"u8;
 
 [GoRecv] internal static (slice<Symbol>, slice<byte>, error) getSymbols32(this ref File f, SectionType typ) {
     var symtabSection = f.SectionByType(typ);
@@ -696,7 +696,7 @@ private static readonly @string lengthOfSymbolSectionIsˢ = "length of symbol se
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lengthOfSymbolSectionIsˢ2 = "length of symbol section is not a multiple of Sym64Size"u8;
+internal static readonly @string lengthOfSymbolSectionIsˢ2 = "length of symbol section is not a multiple of Sym64Size"u8;
 
 [GoRecv] internal static (slice<Symbol>, slice<byte>, error) getSymbols64(this ref File f, SectionType typ) {
     var symtabSection = f.SectionByType(typ);
@@ -764,7 +764,7 @@ internal static (@string, bool) getString(slice<byte> section, nint start) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string applyRelocationsNotˢ = "applyRelocations: not implemented"u8;
+internal static readonly @string applyRelocationsNotˢ = "applyRelocations: not implemented"u8;
 
 // applyRelocations applies relocations to dst. rels is a relocations section
 // in REL or RELA format.
@@ -825,7 +825,7 @@ internal static bool canApplyRelocation(ж<Symbol> Ꮡsym) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lengthOfRelocationˢ = "length of relocation section is not a multiple of 24"u8;
+internal static readonly @string lengthOfRelocationˢ = "length of relocation section is not a multiple of 24"u8;
 
 [GoRecv] internal static error applyRelocationsAMD64(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 24 is the size of Rela64.
@@ -873,7 +873,7 @@ private static readonly @string lengthOfRelocationˢ = "length of relocation sec
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lengthOfRelocationˢ2 = "length of relocation section is not a multiple of 8"u8;
+internal static readonly @string lengthOfRelocationˢ2 = "length of relocation section is not a multiple of 8"u8;
 
 [GoRecv] internal static error applyRelocations386(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 8 is the size of Rel32.
@@ -985,7 +985,7 @@ private static readonly @string lengthOfRelocationˢ2 = "length of relocation se
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lengthOfRelocationˢ3 = "length of relocation section is not a multiple of 12"u8;
+internal static readonly @string lengthOfRelocationˢ3 = "length of relocation section is not a multiple of 12"u8;
 
 [GoRecv] internal static error applyRelocationsPPC(this ref File f, slice<byte> dst, slice<byte> rels) {
     // 12 is the size of Rela32.
@@ -1317,13 +1317,13 @@ private static readonly @string lengthOfRelocationˢ3 = "length of relocation se
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string debugˢ = ".debug_"u8;
-private static readonly @string zdebugˢ2 = ".zdebug_"u8;
-private static readonly @string abbrevˢ = "abbrev"u8;
-private static readonly @string infoˢ = "info"u8;
-private static readonly @string lineˢ = "line"u8;
-private static readonly @string rangesˢ = "ranges"u8;
-private static readonly @string strˢ = "str"u8;
+internal static readonly @string debugˢ = ".debug_"u8;
+internal static readonly @string zdebugˢ2 = ".zdebug_"u8;
+internal static readonly @string abbrevˢ = "abbrev"u8;
+internal static readonly @string infoˢ = "info"u8;
+internal static readonly @string lineˢ = "line"u8;
+internal static readonly @string rangesˢ = "ranges"u8;
+internal static readonly @string strˢ = "str"u8;
 
 public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
     ref var f = ref Ꮡf.Value;
@@ -1592,7 +1592,7 @@ public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lengthOfDynamicSectionIsˢ = "length of dynamic section is not a multiple of dynamic entry size"u8;
+internal static readonly @string lengthOfDynamicSectionIsˢ = "length of dynamic section is not a multiple of dynamic entry size"u8;
 
 // DynString returns the strings listed for the given tag in the file's dynamic
 // section.
@@ -1699,7 +1699,7 @@ private static readonly @string lengthOfDynamicSectionIsˢ = "length of dynamic 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedReadFromShtˢ = "unexpected read from SHT_NOBITS section"u8;
+internal static readonly @string unexpectedReadFromShtˢ = "unexpected read from SHT_NOBITS section"u8;
 
 [GoRecv] internal static (nint n, error err) ReadAt(this ref nobitsSectionReader _, slice<byte> p, int64 off) {
     nint n = default!;

@@ -33,10 +33,11 @@ internal static slice<byte> startupRand;
 internal static ж<globalRandᴛ1> ᏑglobalRand = new(new globalRandᴛ1());
 internal static ref globalRandᴛ1 globalRand => ref ᏑglobalRand.Value;
 
-internal static bool readRandomFailed;
+internal static ж<bool> ᏑreadRandomFailed = new(default(bool));
+internal static ref bool readRandomFailed => ref ᏑreadRandomFailed.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string randinitTwiceˢ = "randinit twice"u8;
+internal static readonly @string randinitTwiceˢ = "randinit twice"u8;
 
 // randinit initializes the global random state.
 // It must be called before any use of grand.
@@ -94,7 +95,7 @@ internal static void readTimeRandom(slice<byte> r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string randinitMissedˢ = "randinit missed"u8;
+internal static readonly @string randinitMissedˢ = "randinit missed"u8;
 
 // bootstrapRand returns a random uint64 from the global random generator.
 internal static uint64 bootstrapRand() {

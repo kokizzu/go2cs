@@ -90,9 +90,6 @@ public static slice<@string> Drivers() => func((defer, recover) => {
     return list;
 });
 
-[GoType("dyn")] partial struct NamedArg__NamedFieldsRequired {
-}
-
 // A NamedArg is a named argument. NamedArg values may be used as
 // arguments to [DB.Query] or [DB.Exec] and bind to the corresponding named
 // parameter in the SQL statement.
@@ -100,7 +97,7 @@ public static slice<@string> Drivers() => func((defer, recover) => {
 // For a more concise way to create NamedArg values, see
 // the [Named] function.
 [GoType] partial struct NamedArg {
-    internal NamedArg__NamedFieldsRequired _NamedFieldsRequired;
+    internal EmptyStruct _NamedFieldsRequired;
     // Name is the name of the parameter placeholder.
     //
     // If empty, the ordinal position in the argument list will be
@@ -157,14 +154,14 @@ public static IsolationLevel LevelSerializable => 6;
 public static IsolationLevel LevelLinearizable => 7;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string defaultˢ = "Default"u8;
-private static readonly @string readUncommittedˢ = "Read Uncommitted"u8;
-private static readonly @string readCommittedˢ = "Read Committed"u8;
-private static readonly @string writeCommittedˢ = "Write Committed"u8;
-private static readonly @string repeatableReadˢ = "Repeatable Read"u8;
-private static readonly @string snapshotˢ = "Snapshot"u8;
-private static readonly @string serializableˢ = "Serializable"u8;
-private static readonly @string linearizableˢ = "Linearizable"u8;
+internal static readonly @string defaultˢ = "Default"u8;
+internal static readonly @string readUncommittedˢ = "Read Uncommitted"u8;
+internal static readonly @string readCommittedˢ = "Read Committed"u8;
+internal static readonly @string writeCommittedˢ = "Write Committed"u8;
+internal static readonly @string repeatableReadˢ = "Repeatable Read"u8;
+internal static readonly @string snapshotˢ = "Snapshot"u8;
+internal static readonly @string serializableˢ = "Serializable"u8;
+internal static readonly @string linearizableˢ = "Linearizable"u8;
 
 // String returns the name of the transaction isolation level.
 public static @string String(this IsolationLevel i) {
@@ -504,9 +501,6 @@ public static (driverꓸValue, error) Value<T>(this Null<T> n) {
     error Scan(any src);
 }
 
-[GoType("dyn")] partial struct Out__NamedFieldsRequired {
-}
-
 // Out may be used to retrieve OUTPUT value parameters from stored procedures.
 //
 // Not all drivers and databases support OUTPUT value parameters.
@@ -516,7 +510,7 @@ public static (driverꓸValue, error) Value<T>(this Null<T> n) {
 //	var outArg string
 //	_, err := db.ExecContext(ctx, "ProcName", sql.Named("Arg1", sql.Out{Dest: &outArg}))
 [GoType] partial struct Out {
-    internal Out__NamedFieldsRequired _NamedFieldsRequired;
+    internal EmptyStruct _NamedFieldsRequired;
     // Dest is a pointer to the value that will be set to the result of the
     // stored procedure's OUTPUT parameter.
     public any Dest;
@@ -684,7 +678,7 @@ internal static (ж<driverStmt>, error) prepareLocked(this ж<driverConn> Ꮡdc,
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sqlDuplicateDriverConnˢ = "sql: duplicate driverConn close"u8;
+internal static readonly @string sqlDuplicateDriverConnˢ = "sql: duplicate driverConn close"u8;
 
 // the dc.db's Mutex is held.
 internal static Func<error> closeDBLocked(this ж<driverConn> Ꮡdc) => func((defer, recover) => {
@@ -2560,7 +2554,7 @@ public static (ж<ΔStmt>, error) Prepare(this ж<Tx> Ꮡtx, @string query) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sqlTxStmtStatementFromˢ = "sql: Tx.Stmt: statement from different database used"u8;
+internal static readonly @string sqlTxStmtStatementFromˢ = "sql: Tx.Stmt: statement from different database used"u8;
 
 // StmtContext returns a transaction-specific prepared statement from
 // an existing statement.
@@ -2887,7 +2881,7 @@ internal static (Result, error) resultFromStatement(context.Context ctx, driver.
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sqlStatementIsClosedˢ = "sql: statement is closed"u8;
+internal static readonly @string sqlStatementIsClosedˢ = "sql: statement is closed"u8;
 
 // connStmt returns a free driver connection on which to execute the
 // statement, a function to call to release the connection, and a
@@ -3529,7 +3523,7 @@ internal static slice<ж<ColumnType>> rowsColumnInfoSetupConnLocked(driver.Rows 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sqlScanCalledWithoutˢ = "sql: Scan called without calling Next"u8;
+internal static readonly @string sqlScanCalledWithoutˢ = "sql: Scan called without calling Next"u8;
 
 // Scan copies the columns in the current row into the values pointed
 // at by dest. The number of values in dest must be the same as the
@@ -3672,9 +3666,10 @@ public static error Close(this ж<Rows> Ꮡrs) {
     return Ꮡrs.close(default!);
 }
 
-internal static error close(this ж<Rows> Ꮡrs, error err) => func<error>((defer, recover) => {
+internal static error close(this ж<Rows> Ꮡrs, error errʗp) => func<error>((defer, recover) => {
     ref var rs = ref Ꮡrs.Value;
 
+    ref var err = ref heap(errʗp, out var Ꮡerr);
     Ꮡrs.of(Rows.Ꮡclosemu).Lock();
     defer(Ꮡrs.of(Rows.Ꮡclosemu).Unlock);
     if (rs.closed) {
@@ -3685,11 +3680,11 @@ internal static error close(this ж<Rows> Ꮡrs, error err) => func<error>((defe
         rs.lasterr = err;
     }
     withLock(new driverConnжLocker(rs.dc), () => {
-        err = Ꮡrs.Value.rowsi.Close();
+        Ꮡerr.ValueSlot = Ꮡrs.Value.rowsi.Close();
     });
     {
         var fn = rowsCloseHook(); if (fn != default!) {
-            fn(Ꮡrs, Ꮡ(err));
+            fn(Ꮡrs, Ꮡerr);
         }
     }
     if (rs.cancel != default!) {
@@ -3711,7 +3706,7 @@ internal static error close(this ж<Rows> Ꮡrs, error err) => func<error>((defe
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sqlRawBytesIsnTAllowedOnˢ = "sql: RawBytes isn't allowed on Row.Scan"u8;
+internal static readonly @string sqlRawBytesIsnTAllowedOnˢ = "sql: RawBytes isn't allowed on Row.Scan"u8;
 
 // Scan copies the columns from the matched row into the values
 // pointed at by dest. See the documentation on [Rows.Scan] for details.

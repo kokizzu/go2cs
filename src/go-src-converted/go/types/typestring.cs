@@ -103,14 +103,14 @@ internal static ж<typeWriter> newTypeHasher(ж<bytes.Buffer> Ꮡbuf, ж<Context
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string packageˢ = " /* package "u8;
-private static readonly @string emptyUnionˢ = "empty union"u8;
-private static readonly @string anyˢ = "any"u8;
-private static readonly @string interfaceComparableˢ = "interface{comparable}"u8;
-private static readonly @string implicitˢ = "/* implicit */ "u8;
-private static readonly @string unknownChannelDirectionˢ = "unknown channel direction"u8;
-private static readonly @string unnamedTypeParameterˢ = "unnamed type parameter"u8;
-private static readonly @string typeParameterˢ2 = "/* type parameter */"u8;
+internal static readonly @string packageˢ = " /* package "u8;
+internal static readonly @string emptyUnionˢ = "empty union"u8;
+internal static readonly @string anyˢ = "any"u8;
+internal static readonly @string interfaceComparableˢ = "interface{comparable}"u8;
+internal static readonly @string implicitˢ = "/* implicit */ "u8;
+internal static readonly @string unknownChannelDirectionˢ = "unknown channel direction"u8;
+internal static readonly @string unnamedTypeParameterˢ = "unnamed type parameter"u8;
+internal static readonly @string typeParameterˢ2 = "/* type parameter */"u8;
 
 internal static void typ(this ж<typeWriter> Ꮡw, ΔType typ) => func((defer, recover) => {
     ref var w = ref Ꮡw.Value;
@@ -448,7 +448,7 @@ internal static void typeList(this ж<typeWriter> Ꮡw, slice<ΔType> list) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilTypeParameterˢ = "nil type parameter"u8;
+internal static readonly @string nilTypeParameterˢ = "nil type parameter"u8;
 
 internal static void tParamList(this ж<typeWriter> Ꮡw, slice<ж<TypeParam>> list) {
     ref var w = ref Ꮡw.Value;
@@ -489,7 +489,7 @@ internal static void tParamList(this ж<typeWriter> Ꮡw, slice<ж<TypeParam>> l
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string expectedStringTypeˢ = "expected string type"u8;
+internal static readonly @string expectedStringTypeˢ = "expected string type"u8;
 
 internal static void tuple(this ж<typeWriter> Ꮡw, ж<Tuple> Ꮡtup, bool variadic) {
     ref var w = ref Ꮡw.Value;

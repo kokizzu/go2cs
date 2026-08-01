@@ -429,8 +429,8 @@ internal static (slice<byte>, error) readComments(io.Reader f) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string packageˢ = "package"u8;
-private static readonly @string importˢ = "import"u8;
+internal static readonly @string packageˢ = "package"u8;
+internal static readonly @string importˢ = "import"u8;
 
 // readGoInfo expects a Go file as input and reads the file up to and including the import section.
 // It records what it learned in *info.

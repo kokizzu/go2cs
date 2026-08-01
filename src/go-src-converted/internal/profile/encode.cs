@@ -175,7 +175,7 @@ internal static void initᴛprofileDecoder() { profileDecoder = new Func<ж<buff
         return decodeMessage(b, new Functionжmessage(x));
     },
     error (ж<buffer> b, message m) => {
-        var err = decodeStrings(b, Ꮡ((~m._<ж<Profile>>()).stringTable));
+        var err = decodeStrings(b, m._<ж<Profile>>().of(Profile.ᏑstringTable));
         if (err != default!) {
             return err;
         }
@@ -184,19 +184,19 @@ internal static void initᴛprofileDecoder() { profileDecoder = new Func<ж<buff
         }
         return default!;
     },
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Profile>>()).dropFramesX)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Profile>>()).keepFramesX)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Profile>>()).TimeNanos)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Profile>>()).DurationNanos)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Profile>>().of(Profile.ᏑdropFramesX)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Profile>>().of(Profile.ᏑkeepFramesX)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Profile>>().of(Profile.ᏑTimeNanos)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Profile>>().of(Profile.ᏑDurationNanos)),
     (ж<buffer> b, message m) => {
         var x = @new<ValueType>();
         var pp = m._<ж<Profile>>();
         pp.Value.PeriodType = x;
         return decodeMessage(b, new ValueTypeжmessage(x));
     },
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Profile>>()).Period)),
-    (ж<buffer> b, message m) => decodeInt64s(b, Ꮡ((~m._<ж<Profile>>()).commentX)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Profile>>()).defaultSampleTypeX))
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Profile>>().of(Profile.ᏑPeriod)),
+    (ж<buffer> b, message m) => decodeInt64s(b, m._<ж<Profile>>().of(Profile.ᏑcommentX)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Profile>>().of(Profile.ᏑdefaultSampleTypeX))
 }.slice(); }
 
 // postDecode takes the unexported fields populated by decode (with
@@ -311,8 +311,8 @@ internal static error postDecode(this ж<Profile> Ꮡp) {
 internal static slice<Func<ж<buffer>, message, error>> valueTypeDecoder;
 internal static void initᴛvalueTypeDecoder() { valueTypeDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<ValueType>>()).typeX)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<ValueType>>()).unitX))
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<ValueType>>().of(ValueType.ᏑtypeX)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<ValueType>>().of(ValueType.ᏑunitX))
 }.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Sample p) {
@@ -336,8 +336,8 @@ internal static void initᴛvalueTypeDecoder() { valueTypeDecoder = new Func<ж<
 internal static slice<Func<ж<buffer>, message, error>> sampleDecoder;
 internal static void initᴛsampleDecoder() { sampleDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeUint64s(b, Ꮡ((~m._<ж<Sample>>()).locationIDX)),
-    (ж<buffer> b, message m) => decodeInt64s(b, Ꮡ((~m._<ж<Sample>>()).Value)),
+    (ж<buffer> b, message m) => decodeUint64s(b, m._<ж<Sample>>().of(Sample.ᏑlocationIDX)),
+    (ж<buffer> b, message m) => decodeInt64s(b, m._<ж<Sample>>().of(Sample.ᏑValue)),
     (ж<buffer> b, message m) => {
         var s = m._<ж<Sample>>();
         nint n = len((~s).labelX);
@@ -363,9 +363,9 @@ internal static void encode(this Label p, ж<buffer> Ꮡb) {
 internal static slice<Func<ж<buffer>, message, error>> labelDecoder;
 internal static void initᴛlabelDecoder() { labelDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Label>>()).keyX)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Label>>()).strX)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Label>>()).numX))
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Label>>().of(Label.ᏑkeyX)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Label>>().of(Label.ᏑstrX)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Label>>().of(Label.ᏑnumX))
 }.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Mapping p) {
@@ -399,16 +399,16 @@ internal static void initᴛlabelDecoder() { labelDecoder = new Func<ж<buffer>,
 internal static slice<Func<ж<buffer>, message, error>> mappingDecoder;
 internal static void initᴛmappingDecoder() { mappingDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Mapping>>()).ID)),
-    (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Mapping>>()).Start)),
-    (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Mapping>>()).Limit)),
-    (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Mapping>>()).Offset)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Mapping>>()).fileX)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Mapping>>()).buildIDX)),
-    (ж<buffer> b, message m) => decodeBool(b, Ꮡ((~m._<ж<Mapping>>()).HasFunctions)),
-    (ж<buffer> b, message m) => decodeBool(b, Ꮡ((~m._<ж<Mapping>>()).HasFilenames)),
-    (ж<buffer> b, message m) => decodeBool(b, Ꮡ((~m._<ж<Mapping>>()).HasLineNumbers)),
-    (ж<buffer> b, message m) => decodeBool(b, Ꮡ((~m._<ж<Mapping>>()).HasInlineFrames))
+    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Mapping>>().of(Mapping.ᏑID)),
+    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Mapping>>().of(Mapping.ᏑStart)),
+    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Mapping>>().of(Mapping.ᏑLimit)),
+    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Mapping>>().of(Mapping.ᏑOffset)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Mapping>>().of(Mapping.ᏑfileX)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Mapping>>().of(Mapping.ᏑbuildIDX)),
+    (ж<buffer> b, message m) => decodeBool(b, m._<ж<Mapping>>().of(Mapping.ᏑHasFunctions)),
+    (ж<buffer> b, message m) => decodeBool(b, m._<ж<Mapping>>().of(Mapping.ᏑHasFilenames)),
+    (ж<buffer> b, message m) => decodeBool(b, m._<ж<Mapping>>().of(Mapping.ᏑHasLineNumbers)),
+    (ж<buffer> b, message m) => decodeBool(b, m._<ж<Mapping>>().of(Mapping.ᏑHasInlineFrames))
 }.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Location p) {
@@ -432,9 +432,9 @@ internal static void initᴛmappingDecoder() { mappingDecoder = new Func<ж<buff
 internal static slice<Func<ж<buffer>, message, error>> locationDecoder;
 internal static void initᴛlocationDecoder() { locationDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Location>>()).ID)),
-    (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Location>>()).mappingIDX)),
-    (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Location>>()).Address)),
+    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Location>>().of(Location.ᏑID)),
+    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Location>>().of(Location.ᏑmappingIDX)),
+    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Location>>().of(Location.ᏑAddress)),
     (ж<buffer> b, message m) => {
         var pp = m._<ж<Location>>();
         nint n = len((~pp).Line);
@@ -458,8 +458,8 @@ internal static void initᴛlocationDecoder() { locationDecoder = new Func<ж<bu
 internal static slice<Func<ж<buffer>, message, error>> lineDecoder;
 internal static void initᴛlineDecoder() { lineDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Line>>()).functionIDX)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Line>>()).ΔLine))
+    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Line>>().of(Line.ᏑfunctionIDX)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Line>>().of(Line.ᏑΔLine))
 }.slice(); }
 
 [GoRecv] internal static slice<Func<ж<buffer>, message, error>> decoder(this ref Function p) {
@@ -483,11 +483,11 @@ internal static void initᴛlineDecoder() { lineDecoder = new Func<ж<buffer>, m
 internal static slice<Func<ж<buffer>, message, error>> functionDecoder;
 internal static void initᴛfunctionDecoder() { functionDecoder = new Func<ж<buffer>, message, error>[]{
     default!,
-    (ж<buffer> b, message m) => decodeUint64(b, Ꮡ((~m._<ж<Function>>()).ID)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Function>>()).nameX)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Function>>()).systemNameX)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Function>>()).filenameX)),
-    (ж<buffer> b, message m) => decodeInt64(b, Ꮡ((~m._<ж<Function>>()).StartLine))
+    (ж<buffer> b, message m) => decodeUint64(b, m._<ж<Function>>().of(Function.ᏑID)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Function>>().of(Function.ᏑnameX)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Function>>().of(Function.ᏑsystemNameX)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Function>>().of(Function.ᏑfilenameX)),
+    (ж<buffer> b, message m) => decodeInt64(b, m._<ж<Function>>().of(Function.ᏑStartLine))
 }.slice(); }
 
 internal static int64 addString(map<@string, nint> strings, @string s) {

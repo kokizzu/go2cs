@@ -51,10 +51,10 @@ internal static (@string, error) findExportFile(slice<@string> searchpaths, @str
         var (pkgdir, name) = filepath.Split(pkgfullpath);
         foreach (var (_, filepathΔ1) in new @string[]{
             pkgfullpath,
-            pkgfullpath + ".gox",
-            pkgdir + "lib" + name + ".so",
-            pkgdir + "lib" + name + ".a",
-            pkgfullpath + ".o"
+            pkgfullpath + ".gox"u8,
+            pkgdir + "lib"u8 + name + ".so"u8,
+            pkgdir + "lib"u8 + name + ".a"u8,
+            pkgfullpath + ".o"u8
         }.array()) {
             var (fi, err) = os.Stat(filepathΔ1);
             if (err == default! && !fi.IsDir()) {

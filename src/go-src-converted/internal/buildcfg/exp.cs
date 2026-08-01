@@ -53,7 +53,7 @@ public static bool FramePointerEnabled;
 internal static void initᴛFramePointerEnabled() { FramePointerEnabled = GOARCH == "amd64"u8 || GOARCH == "arm64"u8; }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string regabiˢ = "regabi"u8;
+internal static readonly @string regabiˢ = "regabi"u8;
 
 // ParseGOEXPERIMENT parses a (GOOS, GOARCH, GOEXPERIMENT)
 // configuration tuple and returns the enabled and baseline experiment

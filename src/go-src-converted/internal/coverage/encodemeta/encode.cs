@@ -66,8 +66,10 @@ internal static void h32(uint32 x, hash.Hash h, slice<byte> tmp) {
 }
 
 // AddFunc registers a new function with the meta data builder.
-[GoRecv] public static nuint AddFunc(this ref CoverageMetaDataBuilder b, coverage.FuncDesc f) {
-    hashFuncDesc(b.h, Ꮡ(f), b.tmp);
+[GoRecv] public static nuint AddFunc(this ref CoverageMetaDataBuilder b, coverage.FuncDesc fʗp) {
+    ref var f = ref heap(fʗp, out var Ꮡf);
+
+    hashFuncDesc(b.h, Ꮡf, b.tmp);
     var fd = new funcDesc(nil);
     b.tmp = b.tmp[..0];
     b.tmp = uleb128.AppendUleb128(b.tmp, (nuint)len(f.Units));

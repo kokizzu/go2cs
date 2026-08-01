@@ -62,7 +62,7 @@ public static ж<Encoder> NewEncoder(io.Writer w) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gobEncoderMessageTooBigˢ = "gob: encoder: message too big"u8;
+internal static readonly @string gobEncoderMessageTooBigˢ = "gob: encoder: message too big"u8;
 
 // writeMessage sends the data item preceded by an unsigned count of its length.
 [GoRecv] internal static void writeMessage(this ref Encoder enc, io.Writer w, ж<encBuffer> Ꮡb) {
@@ -256,7 +256,7 @@ internal static void sendTypeDescriptor(this ж<Encoder> Ꮡenc, io.Writer w, ж
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gobCannotEncodeNilValueˢ = "gob: cannot encode nil value"u8;
+internal static readonly @string gobCannotEncodeNilValueˢ = "gob: cannot encode nil value"u8;
 
 // EncodeValue transmits the data item represented by the reflection value,
 // guaranteeing that all necessary type information has been transmitted first.

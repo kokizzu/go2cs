@@ -12,11 +12,12 @@ partial class runtime_package {
 
 [GoType("num:uint64")] partial struct Δhex;
 
-internal static slice<byte> /*ret*/ bytes(@string s) {
+internal static slice<byte> /*ret*/ bytes(@string sʗp) {
     ref var ret = ref heap<slice<byte>>(out var Ꮡret);
 
+    ref var s = ref heap(sʗp, out var Ꮡs);
     var rp = Ꮡret.Reinterpret<slice<byte>, Δsliceᴛ>();
-    var sp = stringStructOf(Ꮡ(s));
+    var sp = stringStructOf(Ꮡs);
     rp.Value.Δarray = sp.Value.str;
     rp.Value.len = sp.Value.len;
     rp.Value.cap = sp.Value.len;
@@ -107,8 +108,8 @@ internal static void printnl() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string trueˢ = "true"u8;
-private static readonly @string falseˢ = "false"u8;
+internal static readonly @string trueˢ = "true"u8;
+internal static readonly @string falseˢ = "false"u8;
 
 internal static void printbool(bool v) {
     if (v){
@@ -119,9 +120,9 @@ internal static void printbool(bool v) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string naNˢ = "NaN"u8;
-private static readonly @string infˢ = "+Inf"u8;
-private static readonly @string infˢ2 = "-Inf"u8;
+internal static readonly @string naNˢ = "NaN"u8;
+internal static readonly @string infˢ = "+Inf"u8;
+internal static readonly @string infˢ2 = "-Inf"u8;
 
 internal static void printfloat(float64 v) {
     switch (ᐧ) {
@@ -250,8 +251,10 @@ internal static void printstring(@string s) {
     gwrite(bytes(s));
 }
 
-internal static void printslice(slice<byte> s) {
-    var sp = Ꮡ(s).Reinterpret<slice<byte>, Δsliceᴛ>();
+internal static void printslice(slice<byte> sʗp) {
+    ref var s = ref heap(sʗp, out var Ꮡs);
+
+    var sp = Ꮡs.Reinterpret<slice<byte>, Δsliceᴛ>();
     print((@string)"["u8, len(s), (@string)"/"u8, cap(s), (@string)"]"u8);
     printpointer((~sp).Δarray);
 }
@@ -273,7 +276,7 @@ internal static void hexdumpWords(uintptr Δp, uintptr end, Func<uintptr, byte> 
     printlock();
     array<byte> markbuf = new(1);
     markbuf[0] = (rune)' ';
-    minhexdigits = (nint)(@unsafe.Sizeof((uintptr)0) * 2);
+    minhexdigits = (nint)(/* unsafe.Sizeof(uintptr(0)) */ (uintptr)8 * 2);
     for (var i = (uintptr)0; Δp + i < end; i += goarch.PtrSize) {
         if (i % 16 == 0) {
             if (i != 0) {

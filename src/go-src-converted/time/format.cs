@@ -574,7 +574,7 @@ internal static slice<byte> appendNano(slice<byte> b, nint nanosec, nint std) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mstˢ = "2006-01-02 15:04:05.999999999 -0700 MST"u8;
+internal static readonly @string mstˢ = "2006-01-02 15:04:05.999999999 -0700 MST"u8;
 
 // String returns the time formatted using the format string
 //
@@ -1124,17 +1124,17 @@ public static (Time, error) ParseInLocation(@string layout, @string value, ж<Δ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string monthˢ = "month"u8;
-private static readonly @string hourˢ = "hour"u8;
-private static readonly @string minuteˢ = "minute"u8;
-private static readonly @string secondˢ = "second"u8;
-private static readonly @string timeZoneOffsetHourˢ = "time zone offset hour"u8;
-private static readonly @string timeZoneOffsetMinuteˢ = "time zone offset minute"u8;
-private static readonly @string timeZoneOffsetSecondˢ = "time zone offset second"u8;
-private static readonly @string dayOfYearOutOfRangeˢ = ": day-of-year out of range"u8;
-private static readonly @string dayOfYearDoesNotMatchˢ = ": day-of-year does not match month"u8;
-private static readonly @string dayOfYearDoesNotMatchDayˢ = ": day-of-year does not match day"u8;
-private static readonly @string dayOutOfRangeˢ = ": day out of range"u8;
+internal static readonly @string monthˢ = "month"u8;
+internal static readonly @string hourˢ = "hour"u8;
+internal static readonly @string minuteˢ = "minute"u8;
+internal static readonly @string secondˢ = "second"u8;
+internal static readonly @string timeZoneOffsetHourˢ = "time zone offset hour"u8;
+internal static readonly @string timeZoneOffsetMinuteˢ = "time zone offset minute"u8;
+internal static readonly @string timeZoneOffsetSecondˢ = "time zone offset second"u8;
+internal static readonly @string dayOfYearOutOfRangeˢ = ": day-of-year out of range"u8;
+internal static readonly @string dayOfYearDoesNotMatchˢ = ": day-of-year does not match month"u8;
+internal static readonly @string dayOfYearDoesNotMatchDayˢ = ": day-of-year does not match day"u8;
+internal static readonly @string dayOutOfRangeˢ = ": day out of range"u8;
 
 internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation> ᏑdefaultLocation, ж<ΔLocation> Ꮡlocal) {
     ref var local = ref Ꮡlocal.Value;
@@ -1693,7 +1693,7 @@ internal static bool commaOrPeriod(byte b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fractionalSecondˢ = "fractional second"u8;
+internal static readonly @string fractionalSecondˢ = "fractional second"u8;
 
 internal static (nint ns, @string rangeErrString, error err) parseNanoseconds<bytes>(bytes value, nint nbytes)
     where bytes : /* []byte | string */ IByteSeq<byte>, new()

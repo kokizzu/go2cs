@@ -13,7 +13,7 @@ partial class runtime_package {
 [GoType("num:uint64")] partial struct lfstack;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lfstackPushˢ = "lfstack.push"u8;
+internal static readonly @string lfstackPushˢ = "lfstack.push"u8;
 
 internal static void push(this ж<lfstack> Ꮡhead, ж<lfnode> Ꮡnode) {
     ref var head = ref Ꮡhead.Value;
@@ -59,8 +59,8 @@ internal static bool empty(this ж<lfstack> Ꮡhead) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string lfstackNodeAllocatedFromˢ = "lfstack node allocated from the heap"u8;
-private static readonly @string badLfnodeAddressˢ = "bad lfnode address"u8;
+internal static readonly @string lfstackNodeAllocatedFromˢ = "lfstack node allocated from the heap"u8;
+internal static readonly @string badLfnodeAddressˢ = "bad lfnode address"u8;
 
 // lfnodeValidate panics if node is not a valid address for use with
 // lfstack.push. This only needs to be called when node is allocated.

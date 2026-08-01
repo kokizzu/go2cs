@@ -97,7 +97,7 @@ public static Mode AllMethods => 2;
 public static Mode PreserveAST => 4;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string bugˢ = "BUG"u8;
+internal static readonly @string bugˢ = "BUG"u8;
 
 // New computes the package documentation for the given package AST.
 // New takes ownership of the AST pkg and may edit or overwrite it.
@@ -172,7 +172,7 @@ public static ж<Package> New(ж<ast.Package> Ꮡpkg, @string importPath, Mode m
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string testGoˢ = "_test.go"u8;
+internal static readonly @string testGoˢ = "_test.go"u8;
 
 // NewFromFiles computes documentation for a package.
 //

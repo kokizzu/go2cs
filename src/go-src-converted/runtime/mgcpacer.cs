@@ -637,7 +637,7 @@ internal static void enlistWorker(this ж<gcControllerState> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gcControllerStateˢ = "gcControllerState.findRunnable: blackening not enabled"u8;
+internal static readonly @string gcControllerStateˢ = "gcControllerState.findRunnable: blackening not enabled"u8;
 
 // findRunnableGCWorker returns a background mark worker for pp if it
 // should be run. This must only be called when gcBlackenEnabled != 0.
@@ -750,7 +750,7 @@ internal static void resetLive(this ж<gcControllerState> Ꮡc, uint64 bytesMark
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string markWorkerStopUnknownˢ = "markWorkerStop: unknown mark worker mode"u8;
+internal static readonly @string markWorkerStopUnknownˢ = "markWorkerStop: unknown mark worker mode"u8;
 
 // markWorkerStop must be called whenever a mark worker stops executing.
 //
@@ -995,7 +995,7 @@ internal static UntypedInt minTriggerRatioNum => 45; // ~0.7
 internal static UntypedInt maxTriggerRatioNum => 61; // ~0.95
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string producedATriggerGreaterˢ = "produced a trigger greater than the heap goal"u8;
+internal static readonly @string producedATriggerGreaterˢ = "produced a trigger greater than the heap goal"u8;
 
 // trigger returns the current point at which a GC should trigger along with
 // the heap goal.
@@ -1181,7 +1181,7 @@ internal static int32 /*out*/ setGCPercent(int32 @in) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gogcˢ = "GOGC"u8;
+internal static readonly @string gogcˢ = "GOGC"u8;
 
 internal static int32 readGOGC() {
     @string Δp = gogetenv(gogcˢ);
@@ -1234,8 +1234,8 @@ internal static int64 /*out*/ setMemoryLimit(int64 @in) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gomemlimitˢ = "GOMEMLIMIT"u8;
-private static readonly @string malformedGomemlimitSeeGoˢ = "malformed GOMEMLIMIT; see `go doc runtime/debug.SetMemoryLimit`"u8;
+internal static readonly @string gomemlimitˢ = "GOMEMLIMIT"u8;
+internal static readonly @string malformedGomemlimitSeeGoˢ = "malformed GOMEMLIMIT; see `go doc runtime/debug.SetMemoryLimit`"u8;
 
 internal static int64 readGOMEMLIMIT() {
     @string Δp = gogetenv(gomemlimitˢ);
@@ -1251,7 +1251,7 @@ internal static int64 readGOMEMLIMIT() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string negativeIdleMarkWorkersˢ = "negative idle mark workers"u8;
+internal static readonly @string negativeIdleMarkWorkersˢ = "negative idle mark workers"u8;
 
 // addIdleMarkWorker attempts to add a new idle mark worker.
 //

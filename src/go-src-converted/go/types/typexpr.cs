@@ -18,8 +18,8 @@ using token = global::go.go.token_package;
 partial class types_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cannotUseAsValueOrTypeˢ = "cannot use _ as value or type"u8;
-private static readonly @string cannotUseIotaOutsideˢ = "cannot use iota outside constant declaration"u8;
+internal static readonly @string cannotUseAsValueOrTypeˢ = "cannot use _ as value or type"u8;
+internal static readonly @string cannotUseIotaOutsideˢ = "cannot use iota outside constant declaration"u8;
 
 // ident type-checks identifier e and initializes x with the value or type of e.
 // If an error occurred, x.mode is set to invalid.
@@ -258,7 +258,7 @@ internal static ΔType genericType(this ж<Checker> Ꮡcheck, ast.Expr e, ж<@st
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typesˢ = "types."u8;
+internal static readonly @string typesˢ = "types."u8;
 
 // goTypeName returns the Go type name for typ and
 // removes any occurrences of "types." from that name.
@@ -267,10 +267,10 @@ internal static @string goTypeName(ΔType typ) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeSˢ = "-- type %s"u8;
-private static readonly @string sUnderSSˢ = "=> %s (under = %s) // %s"u8;
-private static readonly @string invalidUseOfArrayOutsideˢ = "invalid use of [...] array (outside a composite literal)"u8;
-private static readonly @string missingComparableˢ = " (missing comparable constraint)"u8;
+internal static readonly @string typeSˢ = "-- type %s"u8;
+internal static readonly @string sUnderSSˢ = "=> %s (under = %s) // %s"u8;
+internal static readonly @string invalidUseOfArrayOutsideˢ = "invalid use of [...] array (outside a composite literal)"u8;
+internal static readonly @string missingComparableˢ = " (missing comparable constraint)"u8;
 
 // typInternal drives type checking of types.
 // Must only be called by definedType or genericType.
@@ -505,7 +505,7 @@ internal static void setDefType(ж<TypeName> Ꮡdef, ΔType typ) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string instantiatingTypeSWithSˢ = "-- instantiating type %s with %s"u8;
+internal static readonly @string instantiatingTypeSWithSˢ = "-- instantiating type %s with %s"u8;
 
 internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<typeparams.IndexExpr> Ꮡix, ж<TypeName> Ꮡdef) {
     ΔType res = default!;
@@ -581,8 +581,8 @@ internal static ΔType /*res*/ instantiatedType(this ж<Checker> Ꮡcheck, ж<ty
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidArrayLengthSˢ = "invalid array length %s"u8;
-private static readonly @string arrayLengthSMustBeˢ = "array length %s must be integer"u8;
+internal static readonly @string invalidArrayLengthSˢ = "invalid array length %s"u8;
+internal static readonly @string arrayLengthSMustBeˢ = "array length %s must be integer"u8;
 
 // arrayLength type-checks the array length expression e
 // and returns the constant length >= 0, or a value < 0

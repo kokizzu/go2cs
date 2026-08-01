@@ -316,7 +316,7 @@ public static ж<Checker> NewChecker(ж<Config> Ꮡconf, ж<token.FileSet> Ꮡfs
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidPackageNameˢ = "invalid package name _"u8;
+internal static readonly @string invalidPackageNameˢ = "invalid package name _"u8;
 
 // initFiles initializes the files-specific portion of checker.
 // The provided files must all belong to the same package.
@@ -459,14 +459,14 @@ public static error /*err*/ Files(this ж<Checker> Ꮡcheck, slice<ж<ast.File>>
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string initFilesˢ = "== initFiles =="u8;
-private static readonly @string collectObjectsˢ = "== collectObjects =="u8;
-private static readonly @string packageObjectsˢ = "== packageObjects =="u8;
-private static readonly @string processDelayedˢ = "== processDelayed =="u8;
-private static readonly @string cleanupˢ = "== cleanup =="u8;
-private static readonly @string initOrderˢ = "== initOrder =="u8;
-private static readonly @string unusedImportsˢ = "== unusedImports =="u8;
-private static readonly @string recordUntypedˢ = "== recordUntyped =="u8;
+internal static readonly @string initFilesˢ = "== initFiles =="u8;
+internal static readonly @string collectObjectsˢ = "== collectObjects =="u8;
+internal static readonly @string packageObjectsˢ = "== packageObjects =="u8;
+internal static readonly @string processDelayedˢ = "== processDelayed =="u8;
+internal static readonly @string cleanupˢ = "== cleanup =="u8;
+internal static readonly @string initOrderˢ = "== initOrder =="u8;
+internal static readonly @string unusedImportsˢ = "== unusedImports =="u8;
+internal static readonly @string recordUntypedˢ = "== recordUntyped =="u8;
 
 // checkFiles type-checks the specified files. Errors are reported as
 // a side effect, not by returning early, to ensure that well-formed
@@ -531,7 +531,7 @@ internal static void checkFiles(this ж<Checker> Ꮡcheck, slice<ж<ast.File>> f
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string delayedPˢ = "-- delayed %p"u8;
+internal static readonly @string delayedPˢ = "-- delayed %p"u8;
 
 // TODO(rFindley) There's more memory we should release at this point.
 
@@ -607,7 +607,7 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string vSTypeSIsTypedˢ = "%v: %s (type %s) is typed"u8;
+internal static readonly @string vSTypeSIsTypedˢ = "%v: %s (type %s) is typed"u8;
 
 internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
     ref var check = ref Ꮡcheck.Value;
@@ -722,7 +722,7 @@ internal static void recordUntyped(this ж<Checker> Ꮡcheck) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string instantiatedIdentNotˢ = "instantiated ident not found; please report: "u8;
+internal static readonly @string instantiatedIdentNotˢ = "instantiated ident not found; please report: "u8;
 
 internal static ж<ast.Ident> instantiatedIdent(ast.Expr expr) {
     ast.Expr selOrIdent = default!;

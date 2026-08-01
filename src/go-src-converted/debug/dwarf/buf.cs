@@ -56,7 +56,7 @@ internal static buf makeBuf(ж<Data> Ꮡd, dataFormat format, @string name, Offs
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string underflowˢ = "underflow"u8;
+internal static readonly @string underflowˢ = "underflow"u8;
 
 [GoRecv] internal static uint8 uint8(this ref buf b) {
     if (len(b.data) < 1) {
@@ -168,7 +168,7 @@ private static readonly @string underflowˢ = "underflow"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownAddressSizeˢ = "unknown address size"u8;
+internal static readonly @string unknownAddressSizeˢ = "unknown address size"u8;
 
 // Address-sized uint.
 [GoRecv] internal static uint64 addr(this ref buf b) {
@@ -191,7 +191,7 @@ private static readonly @string unknownAddressSizeˢ = "unknown address size"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unitLengthHasReservedˢ = "unit length has reserved value"u8;
+internal static readonly @string unitLengthHasReservedˢ = "unit length has reserved value"u8;
 
 [GoRecv] internal static (Offset length, bool dwarf64) unitLength(this ref buf b) {
     Offset length = default!;

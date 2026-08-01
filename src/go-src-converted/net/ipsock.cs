@@ -162,9 +162,9 @@ internal static bool ipv6only(IPAddr addr) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingInAddressˢ = "missing ']' in address"u8;
-private static readonly @string unexpectedInAddressˢ = "unexpected '[' in address"u8;
-private static readonly @string unexpectedInAddressˢ2 = "unexpected ']' in address"u8;
+internal static readonly @string missingInAddressˢ = "missing ']' in address"u8;
+internal static readonly @string unexpectedInAddressˢ = "unexpected '[' in address"u8;
+internal static readonly @string unexpectedInAddressˢ2 = "unexpected ']' in address"u8;
 
 // SplitHostPort splits a network address of the form "host:port",
 // "host%zone:port", "[host]:port" or "[host%zone]:port" into host or

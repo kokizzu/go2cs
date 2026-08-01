@@ -12,9 +12,9 @@ using global::go.go;
 partial class types_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string labelˢ = "label"u8;
-private static readonly @string gotoSJumpsIntoBlockˢ = "goto %s jumps into block"u8;
-private static readonly @string labelSNotDeclaredˢ = "label %s not declared"u8;
+internal static readonly @string labelˢ = "label"u8;
+internal static readonly @string gotoSJumpsIntoBlockˢ = "goto %s jumps into block"u8;
+internal static readonly @string labelSNotDeclaredˢ = "label %s not declared"u8;
 
 // labels checks correct label use in body.
 internal static void labels(this ж<Checker> Ꮡcheck, ж<ast.BlockStmt> Ꮡbody) {

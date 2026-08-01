@@ -162,8 +162,8 @@ internal static sweepLocker begin(this ж<activeSweep> Ꮡa) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sweeperLeftOutstandingˢ = "sweeper left outstanding across sweep generations"u8;
-private static readonly @string mismatchedBeginEndOfˢ = "mismatched begin/end of activeSweep"u8;
+internal static readonly @string sweeperLeftOutstandingˢ = "sweeper left outstanding across sweep generations"u8;
+internal static readonly @string mismatchedBeginEndOfˢ = "mismatched begin/end of activeSweep"u8;
 
 // end deregisters a sweeper. Must be called once for each time
 // begin is called if the sweepLocker is valid.
@@ -228,7 +228,7 @@ internal static void reset(this ж<activeSweep> Ꮡa) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string activeSweepersFoundAtˢ = "active sweepers found at start of mark phase"u8;
+internal static readonly @string activeSweepersFoundAtˢ = "active sweepers found at start of mark phase"u8;
 
 // finishsweep_m ensures that all spans are swept.
 //
@@ -334,7 +334,7 @@ internal static void bgsweep(channel<nint> c) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string useOfInvalidSweepLockerˢ = "use of invalid sweepLocker"u8;
+internal static readonly @string useOfInvalidSweepLockerˢ = "use of invalid sweepLocker"u8;
 
 // tryAcquire attempts to acquire sweep ownership of span s. If it
 // successfully acquires ownership, it blocks sweep completion.
@@ -356,7 +356,7 @@ private static readonly @string useOfInvalidSweepLockerˢ = "use of invalid swee
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nonInUseSpanInUnsweptˢ = "non in-use span in unswept list"u8;
+internal static readonly @string nonInUseSpanInUnsweptˢ = "non in-use span in unswept list"u8;
 
 // sweepone sweeps some unswept heap span and returns the number of pages returned
 // to the heap, or ^uintptr(0) if there was nothing to sweep.
@@ -459,7 +459,7 @@ internal static bool isSweepDone() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mspanEnsureSweptMIsNotˢ = "mspan.ensureSwept: m is not locked"u8;
+internal static readonly @string mspanEnsureSweptMIsNotˢ = "mspan.ensureSwept: m is not locked"u8;
 
 // Returns only when span s has been swept.
 //
@@ -502,13 +502,13 @@ internal static void ensureSwept(this ж<mspan> Ꮡs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mspanSweepMIsNotLockedˢ = "mspan.sweep: m is not locked"u8;
-private static readonly @string mspanSweepBadSpanStateˢ = "mspan.sweep: bad span state"u8;
-private static readonly @string sweepIncreasedAllocationˢ = "sweep increased allocation count"u8;
-private static readonly @string mspanSweepBadSpanStateˢ2 = "mspan.sweep: bad span state after sweep"u8;
-private static readonly @string sweptCachedSpanˢ = "swept cached span"u8;
-private static readonly @string sweepTriedToPreserveAˢ = "sweep: tried to preserve a user arena span"u8;
-private static readonly @string userArenaSpanIsOnTheˢ = "user arena span is on the wrong list"u8;
+internal static readonly @string mspanSweepMIsNotLockedˢ = "mspan.sweep: m is not locked"u8;
+internal static readonly @string mspanSweepBadSpanStateˢ = "mspan.sweep: bad span state"u8;
+internal static readonly @string sweepIncreasedAllocationˢ = "sweep increased allocation count"u8;
+internal static readonly @string mspanSweepBadSpanStateˢ2 = "mspan.sweep: bad span state after sweep"u8;
+internal static readonly @string sweptCachedSpanˢ = "swept cached span"u8;
+internal static readonly @string sweepTriedToPreserveAˢ = "sweep: tried to preserve a user arena span"u8;
+internal static readonly @string userArenaSpanIsOnTheˢ = "user arena span is on the wrong list"u8;
 
 // sweep frees or collects finalizers for blocks not marked in the mark phase.
 // It clears the mark bits in preparation for the next GC round.
@@ -844,7 +844,7 @@ private static readonly @string userArenaSpanIsOnTheˢ = "user arena span is on 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string foundPointerToFreeObjectˢ = "found pointer to free object"u8;
+internal static readonly @string foundPointerToFreeObjectˢ = "found pointer to free object"u8;
 
 // reportZombies reports any marked but free objects in s and throws.
 //

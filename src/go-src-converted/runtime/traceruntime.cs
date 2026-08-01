@@ -182,7 +182,7 @@ internal static traceLocker traceTryAcquire() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badUseOfTraceSeqlockOrˢ = "bad use of trace.seqlock or tracer is reentrant"u8;
+internal static readonly @string badUseOfTraceSeqlockOrˢ = "bad use of trace.seqlock or tracer is reentrant"u8;
 
 // traceAcquireEnabled is the traceEnabled path for traceAcquire. It's explicitly
 // broken out to make traceAcquire inlineable to keep the overhead of the tracer
@@ -254,7 +254,7 @@ internal static bool ok(this traceLocker tl) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badUseOfTraceSeqlockˢ = "bad use of trace.seqlock"u8;
+internal static readonly @string badUseOfTraceSeqlockˢ = "bad use of trace.seqlock"u8;
 
 // traceRelease indicates that this M is done writing trace events.
 //
@@ -353,7 +353,7 @@ internal static void STWDone(this traceLocker tl) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string doubleTraceGCSweepStartˢ = "double traceGCSweepStart"u8;
+internal static readonly @string doubleTraceGCSweepStartˢ = "double traceGCSweepStart"u8;
 
 // GCSweepStart prepares to trace a sweep loop. This does not
 // emit any events until traceGCSweepSpan is called.
@@ -392,7 +392,7 @@ internal static void GCSweepSpan(this traceLocker tl, uintptr bytesSwept) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingTraceGCSweepStartˢ = "missing traceGCSweepStart"u8;
+internal static readonly @string missingTraceGCSweepStartˢ = "missing traceGCSweepStart"u8;
 
 // GCSweepDone finishes tracing a sweep loop. If any memory was
 // swept (i.e. traceGCSweepSpan emitted an event) then this will emit

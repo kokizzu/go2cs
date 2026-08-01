@@ -40,7 +40,7 @@ internal static uintptr itabHashFunc(ж<interfacetype> Ꮡinter, ж<_type> Ꮡty
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string internalErrorMisuseOfˢ = "internal error - misuse of itab"u8;
+internal static readonly @string internalErrorMisuseOfˢ = "internal error - misuse of itab"u8;
 
 // getitab should be an internal detail,
 // but widely used packages access it using linkname.
@@ -86,7 +86,7 @@ internal static ж<itab> getitab(ж<interfacetype> Ꮡinter, ж<_type> Ꮡtyp, b
         }
     }
     // Entry doesn't exist yet. Make a new entry & add it.
-    m = (ж<itab>)(uintptr)(persistentalloc(@unsafe.Sizeof(new itab()) + (uintptr)(len(inter.Methods) - 1) * (uintptr)goarch.PtrSize, 0, Ꮡmemstats.of(mstats.Ꮡother_sys)));
+    m = (ж<itab>)(uintptr)(persistentalloc(/* unsafe.Sizeof(itab{}) */ (uintptr)32 + (uintptr)(len(inter.Methods) - 1) * (uintptr)goarch.PtrSize, 0, Ꮡmemstats.of(mstats.Ꮡother_sys)));
     m.Value.Inter = Ꮡinter;
     m.Value.Type = Ꮡtyp;
     // The hash is used in type switches. However, compiler statically generates itab's
@@ -142,7 +142,7 @@ internal static ж<itab> find(this ж<itabTableType> Ꮡt, ж<interfacetype> Ꮡ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mismatchedCountDuringˢ = "mismatched count during itab table copy"u8;
+internal static readonly @string mismatchedCountDuringˢ = "mismatched count during itab table copy"u8;
 
 // itabAdd adds the given itab to the itab hash table.
 // itabLock must be held.
@@ -458,7 +458,7 @@ internal static @unsafe.Pointer /*x*/ convTstring(@string val) {
     if (val == ""u8){
         x = new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
     } else {
-        x = (uintptr)mallocgc(@unsafe.Sizeof(val), stringType, true);
+        x = (uintptr)mallocgc(/* unsafe.Sizeof(val) */ (uintptr)16, stringType, true);
         ((ж<@string>)(uintptr)(x)).Value = val;
     }
     return x;
@@ -473,14 +473,15 @@ internal static @unsafe.Pointer /*x*/ convTstring(@string val) {
 // See go.dev/issue/67401.
 //
 //go:linkname convTslice
-internal static @unsafe.Pointer /*x*/ convTslice(slice<byte> val) {
+internal static @unsafe.Pointer /*x*/ convTslice(slice<byte> valʗp) {
     @unsafe.Pointer x = default!;
 
+    ref var val = ref heap(valʗp, out var Ꮡval);
     // Note: this must work for any element type, not just byte.
-    if ((Ꮡ(val).Reinterpret<slice<byte>, Δsliceᴛ>()).Value.Δarray == nil){
+    if ((Ꮡval.Reinterpret<slice<byte>, Δsliceᴛ>()).Value.Δarray == nil){
         x = new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
     } else {
-        x = (uintptr)mallocgc(@unsafe.Sizeof(val), sliceType, true);
+        x = (uintptr)mallocgc(/* unsafe.Sizeof(val) */ (uintptr)24, sliceType, true);
         ((ж<slice<byte>>)(uintptr)(x)).ValueSlot = val;
     }
     return x;
@@ -560,7 +561,7 @@ internal static ж<abi.TypeAssertCache> buildTypeAssertCache(ж<abi.TypeAssertCa
     newN = ((nint)1).Lsh((uint64)(sys.Len64((uint64)(newN - 1))));
     // round up to a power of 2
     // Allocate the new table.
-    var newSize = @unsafe.Sizeof(new abi.TypeAssertCache(nil)) + (uintptr)(newN - 1) * @unsafe.Sizeof(new abi.TypeAssertCacheEntry(nil));
+    var newSize = /* unsafe.Sizeof(abi.TypeAssertCache{}) */ (uintptr)24 + (uintptr)(newN - 1) * /* unsafe.Sizeof(abi.TypeAssertCacheEntry{}) */ (uintptr)16;
     var newC = (ж<abi.TypeAssertCache>)(uintptr)(mallocgc(newSize, nil, true));
     newC.Value.Mask = (uintptr)(newN - 1);
     var newEntries = @unsafe.Slice(newC.at(abi.TypeAssertCache.ᏑEntries, 0), newN);
@@ -661,7 +662,7 @@ internal static ж<abi.InterfaceSwitchCache> buildInterfaceSwitchCache(ж<abi.In
     newN = ((nint)1).Lsh((uint64)(sys.Len64((uint64)(newN - 1))));
     // round up to a power of 2
     // Allocate the new table.
-    var newSize = @unsafe.Sizeof(new abi.InterfaceSwitchCache(nil)) + (uintptr)(newN - 1) * @unsafe.Sizeof(new abi.InterfaceSwitchCacheEntry(nil));
+    var newSize = /* unsafe.Sizeof(abi.InterfaceSwitchCache{}) */ (uintptr)32 + (uintptr)(newN - 1) * /* unsafe.Sizeof(abi.InterfaceSwitchCacheEntry{}) */ (uintptr)24;
     var newC = (ж<abi.InterfaceSwitchCache>)(uintptr)(mallocgc(newSize, nil, true));
     newC.Value.Mask = (uintptr)(newN - 1);
     var newEntries = @unsafe.Slice(newC.at(abi.InterfaceSwitchCache.ᏑEntries, 0), newN);
@@ -765,7 +766,7 @@ internal static ж<array<uint64>> Ꮡstaticuint64s = new(new uint64[]{
 internal static ref array<uint64> staticuint64s => ref Ꮡstaticuint64s.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unreachableMethodCalledˢ = "unreachable method called. linker bug?"u8;
+internal static readonly @string unreachableMethodCalledˢ = "unreachable method called. linker bug?"u8;
 
 // The linker redirects a reference of a method that it determined
 // unreachable to a reference to this function, so it will throw if

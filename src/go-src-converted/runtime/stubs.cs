@@ -67,7 +67,7 @@ internal static partial void mcall(Action<ж<g>> fn);
 internal static partial void systemstack(Action fn);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fatalSystemstackCalledˢ = "fatal: systemstack called from unexpected goroutine"u8;
+internal static readonly @string fatalSystemstackCalledˢ = "fatal: systemstack called from unexpected goroutine"u8;
 
 //go:nosplit
 //go:nowritebarrierrec
@@ -479,10 +479,12 @@ internal static partial bool checkASM();
 internal static partial bool memequal_varlen(@unsafe.Pointer a, @unsafe.Pointer b);
 
 // bool2int returns 0 if x is false or 1 if x is true.
-internal static nint bool2int(bool x) {
+internal static nint bool2int(bool xʗp) {
+    ref var x = ref heap(xʗp, out var Ꮡx);
+
     // Avoid branches. In the SSA compiler, this compiles to
     // exactly what you would want it to.
-    return (nint)(~Ꮡ(x).Reinterpret<bool, uint8>());
+    return (nint)(~Ꮡx.Reinterpret<bool, uint8>());
 }
 
 // abort crashes the runtime in situations where even throw might not

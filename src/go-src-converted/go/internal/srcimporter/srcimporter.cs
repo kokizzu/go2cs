@@ -215,11 +215,11 @@ internal static (slice<ж<ast.File>>, error) parseFiles(this ж<Importer> Ꮡp, 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string srcimporterˢ = "srcimporter"u8;
-private static readonly @string binˢ = "bin"u8;
-private static readonly @string cgoCppflagsˢ = "CGO_CPPFLAGS"u8;
-private static readonly @string cgoCflagsˢ = "CGO_CFLAGS"u8;
-private static readonly @string cgoGotypesGoˢ = "_cgo_gotypes.go"u8;
+internal static readonly @string srcimporterˢ = "srcimporter"u8;
+internal static readonly @string binˢ = "bin"u8;
+internal static readonly @string cgoCppflagsˢ = "CGO_CPPFLAGS"u8;
+internal static readonly @string cgoCflagsˢ = "CGO_CFLAGS"u8;
+internal static readonly @string cgoGotypesGoˢ = "_cgo_gotypes.go"u8;
 
 internal static (ж<ast.File>, error) cgo(this ж<Importer> Ꮡp, ж<build.Package> Ꮡbp) => func<(ж<ast.File>, error)>((defer, recover) => {
     ref var p = ref Ꮡp.Value;

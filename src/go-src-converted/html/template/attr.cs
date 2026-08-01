@@ -135,10 +135,10 @@ internal static map<@string, contentType> attrTypeMap = new map<@string, content
 };
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dataˢ = "data-"u8;
-private static readonly @string srcˢ = "src"u8;
-private static readonly @string uriˢ = "uri"u8;
-private static readonly @string urlˢ = "url"u8;
+internal static readonly @string dataˢ = "data-"u8;
+internal static readonly @string srcˢ = "src"u8;
+internal static readonly @string uriˢ = "uri"u8;
+internal static readonly @string urlˢ = "url"u8;
 
 // attrType returns a conservative (upper-bound on authority) guess at the
 // type of the lowercase named attribute.

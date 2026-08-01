@@ -19,10 +19,10 @@ public static QUICEncryptionLevel QUICEncryptionLevelHandshake => 2;
 public static QUICEncryptionLevel QUICEncryptionLevelApplication => 3;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string initialˢ = "Initial"u8;
-private static readonly @string earlyˢ = "Early"u8;
-private static readonly @string handshakeˢ = "Handshake"u8;
-private static readonly @string applicationˢ = "Application"u8;
+internal static readonly @string initialˢ = "Initial"u8;
+internal static readonly @string earlyˢ = "Early"u8;
+internal static readonly @string handshakeˢ = "Handshake"u8;
+internal static readonly @string applicationˢ = "Application"u8;
 
 public static @string String(this QUICEncryptionLevel l) {
     var exprᴛ1 = l;
@@ -152,8 +152,8 @@ internal static ж<QUICConn> newQUICConn(ж<Conn> Ꮡconn, ж<QUICConfig> Ꮡcon
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsStartCalledMoreThanˢ = "tls: Start called more than once"u8;
-private static readonly @string tlsConfigMinVersionMustˢ = "tls: Config MinVersion must be at least TLS 1.13"u8;
+internal static readonly @string tlsStartCalledMoreThanˢ = "tls: Start called more than once"u8;
+internal static readonly @string tlsConfigMinVersionMustˢ = "tls: Config MinVersion must be at least TLS 1.13"u8;
 
 // Start starts the client or server handshake protocol.
 // It may produce connection events, which may be read with [QUICConn.NextEvent].
@@ -220,7 +220,7 @@ public static error Start(this ж<QUICConn> Ꮡq, context.Context ctx) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsHandshakeDataReceivedˢ = "tls: handshake data received at wrong level"u8;
+internal static readonly @string tlsHandshakeDataReceivedˢ = "tls: handshake data received at wrong level"u8;
 
 // HandleData handles handshake bytes received from the peer.
 // It may produce connection events, which may be read with [QUICConn.NextEvent].
@@ -273,9 +273,9 @@ public static error HandleData(this ж<QUICConn> Ꮡq, QUICEncryptionLevel level
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsSendSessionTicketˢ = "tls: SendSessionTicket called before handshake completed"u8;
-private static readonly @string tlsSendSessionTicketˢ2 = "tls: SendSessionTicket called on the client"u8;
-private static readonly @string tlsSendSessionTicketˢ3 = "tls: SendSessionTicket called multiple times"u8;
+internal static readonly @string tlsSendSessionTicketˢ = "tls: SendSessionTicket called before handshake completed"u8;
+internal static readonly @string tlsSendSessionTicketˢ2 = "tls: SendSessionTicket called on the client"u8;
+internal static readonly @string tlsSendSessionTicketˢ3 = "tls: SendSessionTicket called multiple times"u8;
 
 // SendSessionTicket sends a session ticket to the client.
 // It produces connection events, which may be read with [QUICConn.NextEvent].
@@ -296,7 +296,7 @@ private static readonly @string tlsSendSessionTicketˢ3 = "tls: SendSessionTicke
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsStoreSessionTicketˢ = "tls: StoreSessionTicket called on the server"u8;
+internal static readonly @string tlsStoreSessionTicketˢ = "tls: StoreSessionTicket called on the server"u8;
 
 // StoreSession stores a session previously received in a QUICStoreSession event
 // in the ClientSessionCache.

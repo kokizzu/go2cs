@@ -150,7 +150,7 @@ internal static ж<ΔNat> setBig(this ж<ΔNat> Ꮡx, ж<bigꓸInt> Ꮡn) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string inputOverflowsTheModulusˢ = "input overflows the modulus"u8;
+internal static readonly @string inputOverflowsTheModulusˢ = "input overflows the modulus"u8;
 
 // SetBytes assigns x = b, where b is a slice of big-endian bytes.
 // SetBytes returns an error if b >= m.
@@ -172,7 +172,7 @@ public static (ж<ΔNat>, error) SetBytes(this ж<ΔNat> Ꮡx, slice<byte> b, ж
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string inputOverflowsTheModulusˢ2 = "input overflows the modulus size"u8;
+internal static readonly @string inputOverflowsTheModulusˢ2 = "input overflows the modulus size"u8;
 
 // SetOverflowingBytes assigns x = b, where b is a slice of big-endian bytes.
 // SetOverflowingBytes returns an error if b has a longer bit length than m, but
@@ -406,8 +406,8 @@ internal static nuint minusInverseModW(nuint x) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string modulusMustBe0ˢ = "modulus must be >= 0"u8;
-private static readonly @string modulusMustBeOddˢ = "modulus must be odd"u8;
+internal static readonly @string modulusMustBe0ˢ = "modulus must be >= 0"u8;
+internal static readonly @string modulusMustBeOddˢ = "modulus must be odd"u8;
 
 // NewModulusFromBig creates a new Modulus from a [big.Int].
 //

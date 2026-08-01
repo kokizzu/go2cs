@@ -18,9 +18,9 @@ using go.crypto;
 partial class tls_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ecdsaVerificationFailureˢ = "ECDSA verification failure"u8;
-private static readonly @string ed25519Verificationˢ = "Ed25519 verification failure"u8;
-private static readonly @string internalErrorUnknownˢ = "internal error: unknown signature type"u8;
+internal static readonly @string ecdsaVerificationFailureˢ = "ECDSA verification failure"u8;
+internal static readonly @string ed25519Verificationˢ = "Ed25519 verification failure"u8;
+internal static readonly @string internalErrorUnknownˢ = "internal error: unknown signature type"u8;
 
 // verifyHandshakeSignature verifies a signature against pre-hashed
 // (if required) handshake contents.
@@ -280,7 +280,7 @@ internal static slice<SignatureScheme> signatureSchemesForCertificate(uint16 ver
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsPeerDoesnTSupportAnyˢ = "tls: peer doesn't support any of the certificate's signature algorithms"u8;
+internal static readonly @string tlsPeerDoesnTSupportAnyˢ = "tls: peer doesn't support any of the certificate's signature algorithms"u8;
 
 // selectSignatureScheme picks a SignatureScheme from the peer's preference list
 // that works with the selected certificate. It's only called for protocol

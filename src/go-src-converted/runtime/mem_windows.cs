@@ -25,7 +25,7 @@ internal static @unsafe.Pointer sysAllocOS(uintptr n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeFailedToDecommitˢ = "runtime: failed to decommit pages"u8;
+internal static readonly @string runtimeFailedToDecommitˢ = "runtime: failed to decommit pages"u8;
 
 internal static void sysUnusedOS(@unsafe.Pointer v, uintptr n) {
     var r = stdcall3(_VirtualFree, (uintptr)v, n, _MEM_DECOMMIT);
@@ -57,7 +57,7 @@ internal static void sysUnusedOS(@unsafe.Pointer v, uintptr n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeFailedToCommitˢ = "runtime: failed to commit pages"u8;
+internal static readonly @string runtimeFailedToCommitˢ = "runtime: failed to commit pages"u8;
 
 internal static void sysUsedOS(@unsafe.Pointer v, uintptr n) {
     var Δp = stdcall4(_VirtualAlloc, (uintptr)v, n, _MEM_COMMIT, _PAGE_READWRITE);
@@ -102,7 +102,7 @@ internal static void sysHugePageCollapseOS(@unsafe.Pointer v, uintptr n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeFailedToReleaseˢ = "runtime: failed to release pages"u8;
+internal static readonly @string runtimeFailedToReleaseˢ = "runtime: failed to release pages"u8;
 
 // Don't split the stack as this function may be invoked without a valid G,
 // which prevents us from allocating more stack.

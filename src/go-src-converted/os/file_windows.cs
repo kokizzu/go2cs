@@ -51,8 +51,8 @@ public static uintptr Fd(this ж<File> Ꮡfile) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string consoleˢ = "console"u8;
-private static readonly @string pipeˢ = "pipe"u8;
+internal static readonly @string consoleˢ = "console"u8;
+internal static readonly @string pipeˢ = "pipe"u8;
 
 // newFile returns a new File with the given file handle and name.
 // Unlike NewFile, it does not check that h is syscall.InvalidHandle.
@@ -90,7 +90,7 @@ internal static ж<File> newConsoleFile(syscallꓸHandle h, @string name) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fileˢ = "file"u8;
+internal static readonly @string fileˢ = "file"u8;
 
 // NewFile returns a new File with the given file descriptor and
 // name. The returned value will be nil if fd is not a valid file

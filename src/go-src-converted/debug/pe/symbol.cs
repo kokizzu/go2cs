@@ -27,7 +27,7 @@ public static UntypedInt COFFSymbolSize => 18;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tooManySymbolsFileMayBeˢ = "too many symbols; file may be corrupt"u8;
+internal static readonly @string tooManySymbolsFileMayBeˢ = "too many symbols; file may be corrupt"u8;
 
 // readCOFFSymbols reads in the symbol table for a PE file, returning
 // a slice of COFFSymbol objects. The PE format includes both primary
@@ -69,7 +69,7 @@ internal static (slice<COFFSymbol>, error) readCOFFSymbols(ж<FileHeader> Ꮡfh,
     if (c < 0) {
         return (default!, errors.New(tooManySymbolsFileMayBeˢ));
     }
-    var syms = new slice<COFFSymbol>(0, c);
+    var syms = new slice<COFFSymbol>(0, () => new(), c);
     nint naux = 0;
     for (var k = (uint32)0; k < fh.NumberOfSymbols; k++) {
         ref var sym = ref heap(new COFFSymbol(), out var Ꮡsym);

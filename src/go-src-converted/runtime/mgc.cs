@@ -161,10 +161,10 @@ internal static bool heapObjectsCanMove() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sizeOfWorkbufIsˢ = "size of Workbuf is suboptimal"u8;
+internal static readonly @string sizeOfWorkbufIsˢ = "size of Workbuf is suboptimal"u8;
 
 internal static void gcinit() {
-    if (@unsafe.Sizeof(new workbuf(nil)) != _WorkbufSize) {
+    if (/* unsafe.Sizeof(workbuf{}) */ (uintptr)2048 != _WorkbufSize) {
         @throw(sizeOfWorkbufIsˢ);
     }
     // No sweep on the first cycle.
@@ -511,7 +511,7 @@ internal static bool test(this gcTrigger t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pMcacheNotFlushedˢ = "p mcache not flushed"u8;
+internal static readonly @string pMcacheNotFlushedˢ = "p mcache not flushed"u8;
 
 // gcStart starts the GC. It transitions from _GCoff to _GCmark (if
 // debug.gcstoptheworld == 0) or performs all of GC (if
@@ -693,7 +693,7 @@ internal static ж<uint32> ᏑgcMarkDoneFlushed = new(default(uint32));
 internal static ref uint32 gcMarkDoneFlushed => ref ᏑgcMarkDoneFlushed.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gcingˢ = "gcing"u8;
+internal static readonly @string gcingˢ = "gcing"u8;
 
 // gcMarkDone transitions the GC from mark to mark termination if all
 // reachable objects have been marked (that is, there are no grey
@@ -833,9 +833,9 @@ top:
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gcDoneButGcphaseGCoffˢ = "gc done but gcphase != _GCoff"u8;
-private static readonly @string failedToSetSweepBarrierˢ = "failed to set sweep barrier"u8;
-private static readonly @string nonConcurrentSweepFailedˢ = "non-concurrent sweep failed to drain all sweep queues"u8;
+internal static readonly @string gcDoneButGcphaseGCoffˢ = "gc done but gcphase != _GCoff"u8;
+internal static readonly @string failedToSetSweepBarrierˢ = "failed to set sweep barrier"u8;
+internal static readonly @string nonConcurrentSweepFailedˢ = "non-concurrent sweep failed to drain all sweep queues"u8;
 
 // World must be stopped and mark assists and background workers must be
 // disabled.
@@ -1175,12 +1175,12 @@ internal static void gcBgMarkPrepare() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gcWorkerInitˢ = "GC worker init"u8;
-private static readonly @string gcBgMarkWorkerBlackeningˢ = "gcBgMarkWorker: blackening not enabled"u8;
-private static readonly @string gcBgMarkWorkerModeNotSetˢ = "gcBgMarkWorker: mode not set"u8;
-private static readonly @string workNwaitWasWorkNprocˢ = "work.nwait was > work.nproc"u8;
-private static readonly @string gcBgMarkWorkerUnexpectedˢ = "gcBgMarkWorker: unexpected gcMarkWorkerMode"u8;
-private static readonly @string workNwaitWorkNprocˢ = "work.nwait > work.nproc"u8;
+internal static readonly @string gcWorkerInitˢ = "GC worker init"u8;
+internal static readonly @string gcBgMarkWorkerBlackeningˢ = "gcBgMarkWorker: blackening not enabled"u8;
+internal static readonly @string gcBgMarkWorkerModeNotSetˢ = "gcBgMarkWorker: mode not set"u8;
+internal static readonly @string workNwaitWasWorkNprocˢ = "work.nwait was > work.nproc"u8;
+internal static readonly @string gcBgMarkWorkerUnexpectedˢ = "gcBgMarkWorker: unexpected gcMarkWorkerMode"u8;
+internal static readonly @string workNwaitWorkNprocˢ = "work.nwait > work.nproc"u8;
 
 internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
     var gp = getg();
@@ -1372,8 +1372,8 @@ internal static bool gcMarkWorkAvailable(ж<Δp> Ꮡp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string inGcMarkExpectingToSeeˢ = "in gcMark expecting to see gcphase as _GCmarktermination"u8;
-private static readonly @string pHasCachedGcWorkAtEndOfˢ = "P has cached GC work at end of mark termination"u8;
+internal static readonly @string inGcMarkExpectingToSeeˢ = "in gcMark expecting to see gcphase as _GCmarktermination"u8;
+internal static readonly @string pHasCachedGcWorkAtEndOfˢ = "P has cached GC work at end of mark termination"u8;
 
 // gcMark runs the mark (or, for concurrent GC, mark termination)
 // All gcWork caches must be empty.
@@ -1457,7 +1457,7 @@ internal static void gcMark(int64 startTime) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gcSweepBeingDoneButPhaseˢ = "gcSweep being done but phase is not GCoff"u8;
+internal static readonly @string gcSweepBeingDoneButPhaseˢ = "gcSweep being done but phase is not GCoff"u8;
 
 // gcSweep must be called on the system stack because it acquires the heap
 // lock. See mheap for details.
@@ -1687,8 +1687,8 @@ internal static void gcTestMoveStackOnNextCall() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string alreadyHaveAReachableˢ = "already have a reachable special (duplicate pointer?)"u8;
-private static readonly @string isReachableFailedˢ = "IsReachable failed"u8;
+internal static readonly @string alreadyHaveAReachableˢ = "already have a reachable special (duplicate pointer?)"u8;
+internal static readonly @string isReachableFailedˢ = "IsReachable failed"u8;
 
 // gcTestIsReachable performs a GC and returns a bit set where bit i
 // is set if ptrs[i] is reachable.
@@ -1742,11 +1742,11 @@ internal static uint64 /*mask*/ gcTestIsReachable(params ꓸꓸꓸunsafeꓸPoint
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stackˢ = "stack"u8;
-private static readonly @string heapˢ = "heap"u8;
-private static readonly @string dataˢ = "data"u8;
-private static readonly @string bssˢ = "bss"u8;
-private static readonly @string otherˢ = "other"u8;
+internal static readonly @string stackˢ = "stack"u8;
+internal static readonly @string heapˢ = "heap"u8;
+internal static readonly @string dataˢ = "data"u8;
+internal static readonly @string bssˢ = "bss"u8;
+internal static readonly @string otherˢ = "other"u8;
 
 // gcTestPointerClass returns the category of what p points to, one of:
 // "heap", "stack", "data", "bss", "other". This is useful for checking

@@ -8,7 +8,7 @@ using @unsafe = unsafe_package;
 partial class runtime_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string getenvBeforeEnvInitˢ = "getenv before env init"u8;
+internal static readonly @string getenvBeforeEnvInitˢ = "getenv before env init"u8;
 
 internal static @string gogetenv(@string key) {
     var env = environ();

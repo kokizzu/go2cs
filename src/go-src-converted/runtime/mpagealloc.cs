@@ -270,7 +270,7 @@ internal static (nint, nint) blockAlignSummaryRange(nint level, nint lo, nint hi
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rootLevelMaxPagesDoesnTˢ = "root level max pages doesn't fit in summary"u8;
+internal static readonly @string rootLevelMaxPagesDoesnTˢ = "root level max pages doesn't fit in summary"u8;
 
 internal static void init(this ж<pageAlloc> Ꮡp, ж<mutex> ᏑmheapLock, ж<sysMemStat> ᏑsysStat, bool test) {
     ref var Δp = ref Ꮡp.Value;
@@ -319,7 +319,7 @@ internal static void init(this ж<pageAlloc> Ꮡp, ж<mutex> ᏑmheapLock, ж<sy
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pageAllocOutOfMemoryˢ = "pageAlloc: out of memory"u8;
+internal static readonly @string pageAllocOutOfMemoryˢ = "pageAlloc: out of memory"u8;
 
 // grow sets up the metadata for the address range [base, base+size).
 // It may allocate metadata, in which case *p.sysStat will be updated.
@@ -437,7 +437,7 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
         for (nuint i = chunkIndex(r.@base.addr()).l1(); i < chunkIndex(r.limit.addr() - 1).l1(); i++) {
             // N.B. We can assume that p.chunks[i] is non-nil and in a mapped part of p.chunks
             // because it's derived from inUse, which never shrinks.
-            sysHugePage(new @unsafe.Pointer(Δp.chunks[(nint)(i)]), @unsafe.Sizeof(Δp.chunks[0].Value));
+            sysHugePage(new @unsafe.Pointer(Δp.chunks[(nint)(i)]), /* unsafe.Sizeof(*p.chunks[0]) */ (uintptr)1048576);
         }
     }
 }
@@ -589,8 +589,8 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rangePartiallyOverlapsˢ = "range partially overlaps"u8;
-private static readonly @string badSummaryDataˢ = "bad summary data"u8;
+internal static readonly @string rangePartiallyOverlapsˢ = "range partially overlaps"u8;
+internal static readonly @string badSummaryDataˢ = "bad summary data"u8;
 
 [GoType("dyn")] partial struct find_firstFree {
     internal offAddr @base, bound;

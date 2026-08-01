@@ -174,7 +174,7 @@ public static (slice<byte>, error) Sign(this ж<PrivateKey> Ꮡpriv, io.Reader r
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoRsaInvalidOptionsˢ = "crypto/rsa: invalid options for Decrypt"u8;
+internal static readonly @string cryptoRsaInvalidOptionsˢ = "crypto/rsa: invalid options for Decrypt"u8;
 
 // Decrypt decrypts ciphertext with priv. If opts is nil or of type
 // *[PKCS1v15DecryptOptions] then PKCS #1 v1.5 decryption is performed. Otherwise
@@ -246,9 +246,9 @@ public static (slice<byte> plaintext, error err) Decrypt(this ж<PrivateKey> Ꮡ
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoRsaInvalidPrimeˢ = "crypto/rsa: invalid prime value"u8;
-private static readonly @string cryptoRsaInvalidModulusˢ = "crypto/rsa: invalid modulus"u8;
-private static readonly @string cryptoRsaInvalidˢ = "crypto/rsa: invalid exponents"u8;
+internal static readonly @string cryptoRsaInvalidPrimeˢ = "crypto/rsa: invalid prime value"u8;
+internal static readonly @string cryptoRsaInvalidModulusˢ = "crypto/rsa: invalid modulus"u8;
+internal static readonly @string cryptoRsaInvalidˢ = "crypto/rsa: invalid exponents"u8;
 
 // Validate performs basic sanity checks on the key.
 // It returns nil if the key is valid, or else an error describing a problem.
@@ -300,9 +300,9 @@ public static (ж<PrivateKey>, error) GenerateKey(io.Reader random, nint bits) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoRsaGeneratedKeyˢ = "crypto/rsa: generated key exponent too large"u8;
-private static readonly @string cryptoRsaˢ = "crypto/rsa: GenerateMultiPrimeKey: nprimes must be >= 2"u8;
-private static readonly @string cryptoRsaTooFewPrimesOfˢ = "crypto/rsa: too few primes of given length to generate an RSA key"u8;
+internal static readonly @string cryptoRsaGeneratedKeyˢ = "crypto/rsa: generated key exponent too large"u8;
+internal static readonly @string cryptoRsaˢ = "crypto/rsa: GenerateMultiPrimeKey: nprimes must be >= 2"u8;
+internal static readonly @string cryptoRsaTooFewPrimesOfˢ = "crypto/rsa: too few primes of given length to generate an RSA key"u8;
 
 // GenerateMultiPrimeKey generates a multi-prime RSA keypair of the given bit
 // size and the given random source.

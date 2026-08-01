@@ -295,7 +295,7 @@ internal static ref mstats memstats => ref Ꮡmemstats.Value;
 
 /* [GoInit] runtime bootstrap init - not run; .NET is the runtime */ internal static void initΔ4() {
     {
-        var offset = @unsafe.Offsetof(memstats.GetType(), "heapStats"); if (offset % 8 != 0) {
+        var offset = /* unsafe.Offsetof(memstats.heapStats) */ (uintptr)0; if (offset % 8 != 0) {
             println(offset);
             @throw("memstats.heapStats not aligned to 8 bytes"u8);
         }
@@ -303,7 +303,7 @@ internal static ref mstats memstats => ref Ꮡmemstats.Value;
     // Ensure the size of heapStatsDelta causes adjacent fields/slots (e.g.
     // [3]heapStatsDelta) to be 8-byte aligned.
     {
-        var size = @unsafe.Sizeof(new heapStatsDelta(nil)); if (size % 8 != 0) {
+        var size = /* unsafe.Sizeof(heapStatsDelta{}) */ (uintptr)1176; if (size % 8 != 0) {
             println(size);
             @throw("heapStatsDelta not a multiple of 8 bytes in size"u8);
         }
@@ -317,15 +317,16 @@ internal static ref mstats memstats => ref Ꮡmemstats.Value;
 // doubleCheckReadMemStats controls a double-check mode for ReadMemStats that
 // ensures consistency between the values that ReadMemStats is using and the
 // runtime-internal stats.
-internal static bool doubleCheckReadMemStats = false;
+internal static ж<bool> ᏑdoubleCheckReadMemStats = new(false);
+internal static ref bool doubleCheckReadMemStats => ref ᏑdoubleCheckReadMemStats.Value;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string heapInUseAndConsistentˢ = "heapInUse and consistent stats are not equal"u8;
-private static readonly @string heapReleasedAndˢ = "heapReleased and consistent stats are not equal"u8;
-private static readonly @string measuresOfTheRetainedˢ = "measures of the retained heap are not equal"u8;
-private static readonly @string totalAllocAndConsistentˢ = "totalAlloc and consistent stats are not equal"u8;
-private static readonly @string totalFreeAndConsistentˢ = "totalFree and consistent stats are not equal"u8;
-private static readonly @string mappedReadyAndOtherˢ = "mappedReady and other memstats are not equal"u8;
+internal static readonly @string heapInUseAndConsistentˢ = "heapInUse and consistent stats are not equal"u8;
+internal static readonly @string heapReleasedAndˢ = "heapReleased and consistent stats are not equal"u8;
+internal static readonly @string measuresOfTheRetainedˢ = "measures of the retained heap are not equal"u8;
+internal static readonly @string totalAllocAndConsistentˢ = "totalAlloc and consistent stats are not equal"u8;
+internal static readonly @string totalFreeAndConsistentˢ = "totalFree and consistent stats are not equal"u8;
+internal static readonly @string mappedReadyAndOtherˢ = "mappedReady and other memstats are not equal"u8;
 
 [GoType("dyn")] partial struct readmemstats_m_bySize {
     public uint32 Size;
@@ -515,7 +516,7 @@ internal static void readGCStats(ж<slice<uint64>> Ꮡpauses) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string shortSlicePassedToˢ = "short slice passed to readGCStats"u8;
+internal static readonly @string shortSlicePassedToˢ = "short slice passed to readGCStats"u8;
 
 // readGCStats_m must be called on the system stack because it acquires the heap
 // lock. See mheap for details.
@@ -594,7 +595,7 @@ internal static uint64 load(this ж<sysMemStat> Ꮡs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sysMemStatOverflowˢ = "sysMemStat overflow"u8;
+internal static readonly @string sysMemStatOverflowˢ = "sysMemStat overflow"u8;
 
 // add atomically adds the sysMemStat by n.
 //
@@ -704,7 +705,7 @@ internal static void add(this ж<sysMemStat> Ꮡs, int64 n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badSequenceNumberˢ = "bad sequence number"u8;
+internal static readonly @string badSequenceNumberˢ = "bad sequence number"u8;
 
 // acquire returns a heapStatsDelta to be updated. In effect,
 // it acquires the shard for writing. release must be called

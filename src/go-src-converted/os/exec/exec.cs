@@ -348,8 +348,8 @@ internal static ж<godebug.Setting> execwait = godebug.New("#execwait"u8);
 internal static ж<godebug.Setting> execerrdot = godebug.New("execerrdot"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string setGodebugExecwait2Toˢ = " (set GODEBUG=execwait=2 to capture stacks for debugging)"u8;
-private static readonly @string godebugExecwait2Detectedˢ = "GODEBUG=execwait=2 detected a leaked exec.Cmd created by:\n"u8;
+internal static readonly @string setGodebugExecwait2Toˢ = " (set GODEBUG=execwait=2 to capture stacks for debugging)"u8;
+internal static readonly @string godebugExecwait2Detectedˢ = "GODEBUG=execwait=2 detected a leaked exec.Cmd created by:\n"u8;
 
 // Command returns the [Cmd] struct to execute the named program with
 // the given arguments.
@@ -618,9 +618,9 @@ public static error Run(this ж<Cmd> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string execAlreadyStartedˢ = "exec: already started"u8;
-private static readonly @string execNoCommandˢ = "exec: no command"u8;
-private static readonly @string execCommandWithANonNilˢ = "exec: command with a non-nil Cancel was not created with CommandContext"u8;
+internal static readonly @string execAlreadyStartedˢ = "exec: already started"u8;
+internal static readonly @string execNoCommandˢ = "exec: no command"u8;
+internal static readonly @string execCommandWithANonNilˢ = "exec: command with a non-nil Cancel was not created with CommandContext"u8;
 
 [GoLocalName("goroutineStatus")] [GoType("dyn")] partial struct Start_goroutineStatus {
     internal nint running;
@@ -901,8 +901,8 @@ public static error Start(this ж<Cmd> Ꮡc) => func<error>((defer, recover) => 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string execNotStartedˢ = "exec: not started"u8;
-private static readonly @string execWaitWasAlreadyCalledˢ = "exec: Wait was already called"u8;
+internal static readonly @string execNotStartedˢ = "exec: not started"u8;
+internal static readonly @string execWaitWasAlreadyCalledˢ = "exec: Wait was already called"u8;
 
 // Wait waits for the command to exit and waits for any copying to
 // stdin or copying from stdout or stderr to complete.
@@ -1012,7 +1012,7 @@ internal static error awaitGoroutines(this ж<Cmd> Ꮡc, ж<time.Timer> Ꮡtimer
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string execStdoutAlreadySetˢ = "exec: Stdout already set"u8;
+internal static readonly @string execStdoutAlreadySetˢ = "exec: Stdout already set"u8;
 
 // Wait for the copying goroutines to finish, but ignore any error
 // (since it was probably caused by closing the pipes).
@@ -1044,7 +1044,7 @@ public static (slice<byte>, error) Output(this ж<Cmd> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string execStderrAlreadySetˢ = "exec: Stderr already set"u8;
+internal static readonly @string execStderrAlreadySetˢ = "exec: Stderr already set"u8;
 
 // CombinedOutput runs the command and returns its combined standard
 // output and standard error.
@@ -1065,8 +1065,8 @@ public static (slice<byte>, error) CombinedOutput(this ж<Cmd> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string execStdinAlreadySetˢ = "exec: Stdin already set"u8;
-private static readonly @string execStdinPipeAfterˢ = "exec: StdinPipe after process started"u8;
+internal static readonly @string execStdinAlreadySetˢ = "exec: Stdin already set"u8;
+internal static readonly @string execStdinPipeAfterˢ = "exec: StdinPipe after process started"u8;
 
 // StdinPipe returns a pipe that will be connected to the command's
 // standard input when the command starts.
@@ -1092,7 +1092,7 @@ private static readonly @string execStdinPipeAfterˢ = "exec: StdinPipe after pr
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string execStdoutPipeAfterˢ = "exec: StdoutPipe after process started"u8;
+internal static readonly @string execStdoutPipeAfterˢ = "exec: StdoutPipe after process started"u8;
 
 // StdoutPipe returns a pipe that will be connected to the command's
 // standard output when the command starts.
@@ -1120,7 +1120,7 @@ private static readonly @string execStdoutPipeAfterˢ = "exec: StdoutPipe after 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string execStderrPipeAfterˢ = "exec: StderrPipe after process started"u8;
+internal static readonly @string execStderrPipeAfterˢ = "exec: StderrPipe after process started"u8;
 
 // StderrPipe returns a pipe that will be connected to the command's
 // standard error when the command starts.
@@ -1209,8 +1209,8 @@ internal static (nint n, error err) Write(this ж<prefixSuffixSaver> Ꮡw, slice
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string omittingˢ = "\n... omitting "u8;
-private static readonly @string bytesˢ = " bytes ...\n"u8;
+internal static readonly @string omittingˢ = "\n... omitting "u8;
+internal static readonly @string bytesˢ = " bytes ...\n"u8;
 
 [GoRecv] internal static slice<byte> Bytes(this ref prefixSuffixSaver w) {
     if (w.suffix == default!) {
@@ -1294,7 +1294,7 @@ internal static (slice<@string>, error) dedupEnv(slice<@string> env) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string execEnvironmentVariableˢ = "exec: environment variable contains NUL"u8;
+internal static readonly @string execEnvironmentVariableˢ = "exec: environment variable contains NUL"u8;
 
 // dedupEnvCase is dedupEnv with a case option for testing.
 // If caseInsensitive is true, the case of keys is ignored.
@@ -1348,7 +1348,7 @@ internal static (slice<@string>, error) dedupEnvCase(bool caseInsensitive, bool 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string systemrootˢ = "SYSTEMROOT"u8;
+internal static readonly @string systemrootˢ = "SYSTEMROOT"u8;
 
 // addCriticalEnv adds any critical environment variables that are required
 // (or at least almost always required) on the operating system.

@@ -346,7 +346,7 @@ internal static map<@string, ж<methodType>> suitableMethods(reflectꓸType typ,
 internal static EmptyStruct invalidRequest = new EmptyStruct();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object rpcWritingResponseˢ = (@string)"rpc: writing response:"u8;
+internal static readonly object rpcWritingResponseˢ = (@string)"rpc: writing response:"u8;
 
 internal static void sendResponse(this ж<Server> Ꮡserver, ж<sync.Mutex> Ꮡsending, ж<Request> Ꮡreq, any reply, ServerCodec codec, @string errmsg) {
     ref var req = ref Ꮡreq.Value;
@@ -418,8 +418,8 @@ internal static void call(this ж<service> Ꮡs, ж<Server> Ꮡserver, ж<sync.M
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object rpcGobErrorEncodingˢ = (@string)"rpc: gob error encoding response:"u8;
-private static readonly object rpcGobErrorEncodingBodyˢ = (@string)"rpc: gob error encoding body:"u8;
+internal static readonly object rpcGobErrorEncodingˢ = (@string)"rpc: gob error encoding response:"u8;
+internal static readonly object rpcGobErrorEncodingBodyˢ = (@string)"rpc: gob error encoding body:"u8;
 
 [GoRecv] internal static error /*err*/ WriteResponse(this ref gobServerCodec c, ж<Response> Ꮡr, any body) {
     error err = default!;
@@ -476,7 +476,7 @@ public static void ServeConn(this ж<Server> Ꮡserver, io.ReadWriteCloser conn)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object rpcˢ = (@string)"rpc:"u8;
+internal static readonly object rpcˢ = (@string)"rpc:"u8;
 
 // ServeCodec is like [ServeConn] but uses the specified codec to
 // decode requests and encode responses.
@@ -673,7 +673,7 @@ internal static (ж<service> svc, ж<methodType> mtype, ж<Request> req, bool ke
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object rpcServeAcceptˢ = (@string)"rpc.Serve: accept:"u8;
+internal static readonly object rpcServeAcceptˢ = (@string)"rpc.Serve: accept:"u8;
 
 // Accept accepts connections on the listener and serves requests
 // for each incoming connection. Accept blocks until the listener
@@ -750,10 +750,10 @@ public static void Accept(net.Listener lis) {
 internal static @string connected = "200 Connected to Go RPC"u8;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string contentTypeˢ = "Content-Type"u8;
-private static readonly @string textPlainCharsetUtf8ˢ = "text/plain; charset=utf-8"u8;
-private static readonly @string mustConnectˢ = "405 must CONNECT\n"u8;
-private static readonly object rpcHijackingˢ = (@string)"rpc hijacking "u8;
+internal static readonly @string contentTypeˢ = "Content-Type"u8;
+internal static readonly @string textPlainCharsetUtf8ˢ = "text/plain; charset=utf-8"u8;
+internal static readonly @string mustConnectˢ = "405 must CONNECT\n"u8;
+internal static readonly object rpcHijackingˢ = (@string)"rpc hijacking "u8;
 
 // ServeHTTP implements an [http.Handler] that answers RPC requests.
 public static void ServeHTTP(this ж<Server> Ꮡserver, Δhttp.ResponseWriter w, ж<Δhttp.Request> Ꮡreq) {

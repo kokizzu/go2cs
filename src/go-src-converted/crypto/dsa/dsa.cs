@@ -58,7 +58,7 @@ public static ParameterSizes L3072N256 => 3;
 internal static UntypedInt numMRTests => 64;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoDsaInvalidˢ = "crypto/dsa: invalid ParameterSizes"u8;
+internal static readonly @string cryptoDsaInvalidˢ = "crypto/dsa: invalid ParameterSizes"u8;
 
 // GenerateParameters puts a random, valid set of DSA parameters into params.
 // This function can take many seconds, even on fast machines.
@@ -154,7 +154,7 @@ break_GeneratePrimes:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cryptoDsaParametersNotˢ = "crypto/dsa: parameters not set up before generating key"u8;
+internal static readonly @string cryptoDsaParametersNotˢ = "crypto/dsa: parameters not set up before generating key"u8;
 
 // GenerateKey generates a public&private key pair. The Parameters of the
 // [PrivateKey] must already be valid (see [GenerateParameters]).

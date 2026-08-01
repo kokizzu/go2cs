@@ -212,7 +212,7 @@ internal static slice<byte> mp4 = slice<byte>("mp4"u8);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string videoMp4ˢ = "video/mp4"u8;
+internal static readonly @string videoMp4ˢ = "video/mp4"u8;
 
 internal static @string match(this mp4Sig _, slice<byte> data, nint firstNonWS) {
     // https://mimesniff.spec.whatwg.org/#signature-for-mp4

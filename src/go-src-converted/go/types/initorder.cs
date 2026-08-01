@@ -15,10 +15,10 @@ using errors = global::go.@internal.types.errors_package;
 partial class types_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object objectDependencyGraphˢ = (@string)"Object dependency graph:"u8;
-private static readonly object transposedObjectˢ = (@string)"Transposed object dependency graph (functions eliminated):"u8;
-private static readonly object processingNodesˢ = (@string)"Processing nodes:"u8;
-private static readonly object initializationOrderˢ = (@string)"Initialization order:"u8;
+internal static readonly object objectDependencyGraphˢ = (@string)"Object dependency graph:"u8;
+internal static readonly object transposedObjectˢ = (@string)"Transposed object dependency graph (functions eliminated):"u8;
+internal static readonly object processingNodesˢ = (@string)"Processing nodes:"u8;
+internal static readonly object initializationOrderˢ = (@string)"Initialization order:"u8;
 
 // initOrder computes the Info.InitOrder for package variables.
 internal static void initOrder(this ж<Checker> Ꮡcheck) {

@@ -51,7 +51,8 @@ internal static ref Δsync.Pool dirBufPool => ref ᏑdirBufPool.Value;
 // allowReadDirFileID indicates whether File.readdir should try to use FILE_ID_BOTH_DIR_INFO
 // if the underlying file system supports it.
 // Useful for testing purposes.
-internal static bool allowReadDirFileID = true;
+internal static ж<bool> ᏑallowReadDirFileID = new(true);
+internal static ref bool allowReadDirFileID => ref ᏑallowReadDirFileID.Value;
 
 internal static void init(this ж<dirInfo> Ꮡd, syscallꓸHandle h) {
     ref var d = ref Ꮡd.Value;

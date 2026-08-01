@@ -120,8 +120,8 @@ internal static ж<uint64> Ꮡncgocall = new(default(uint64));
 internal static ref uint64 ncgocall => ref Ꮡncgocall.Value; // number of cgo calls in total for dead m
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cgocallUnavailableˢ = "cgocall unavailable"u8;
-private static readonly @string cgocallNilˢ = "cgocall nil"u8;
+internal static readonly @string cgocallUnavailableˢ = "cgocall unavailable"u8;
+internal static readonly @string cgocallNilˢ = "cgocall nil"u8;
 
 // Call from Go to C.
 //
@@ -296,7 +296,7 @@ internal static void callbackUpdateSystemStack(ж<m> Ꮡmp, uintptr sp, bool sig
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mChangedUnexpectedlyInˢ = "m changed unexpectedly in cgocallbackg"u8;
+internal static readonly @string mChangedUnexpectedlyInˢ = "m changed unexpectedly in cgocallbackg"u8;
 
 // Call from C back to Go. fn must point to an ABIInternal Go entry-point.
 //
@@ -449,7 +449,7 @@ internal static void unwindm(ж<bool> Ꮡrestore) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string misalignedStackInˢ = "misaligned stack in cgocallback"u8;
+internal static readonly @string misalignedStackInˢ = "misaligned stack in cgocallback"u8;
 
 // called from assembly.
 internal static void badcgocallback() {
@@ -457,7 +457,7 @@ internal static void badcgocallback() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cgoNotImplementedˢ = "cgo not implemented"u8;
+internal static readonly @string cgoNotImplementedˢ = "cgo not implemented"u8;
 
 // called from (incomplete) assembly.
 internal static void cgounimpl() {
@@ -468,7 +468,7 @@ internal static ж<uint64> Ꮡracecgosync = new(default(uint64));
 internal static ref uint64 racecgosync => ref Ꮡracecgosync.Value; // represents possible synchronization in C code
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string canTHappenˢ = "can't happen"u8;
+internal static readonly @string canTHappenˢ = "can't happen"u8;
 
 // Pointer checking for cgo code.
 // We want to detect all cases where a program that does not use
@@ -498,11 +498,14 @@ private static readonly @string canTHappenˢ = "can't happen"u8;
 
 // cgoCheckPointer checks if the argument contains a Go pointer that
 // points to an unpinned Go pointer, and panics if it does.
-internal static void cgoCheckPointer(any ptr, any arg) {
+internal static void cgoCheckPointer(any ptrʗp, any argʗp) {
+    ref var ptr = ref heap(ptrʗp, out var Ꮡptr);
+    ref var arg = ref heap(argʗp, out var Ꮡarg);
+
     if (!goexperiment.CgoCheck2 && debug.cgocheck == 0) {
         return;
     }
-    var ep = efaceOf(Ꮡ(ptr));
+    var ep = efaceOf(Ꮡptr);
     var t = ep.Value._type;
     var top = true;
     if (arg != default! && ((abiꓸKind)((~t).Kind_ & abi.KindMask) == abi.Pointer || (abiꓸKind)((~t).Kind_ & abi.KindMask) == abi.UnsafePointer)) {
@@ -513,7 +516,7 @@ internal static void cgoCheckPointer(any ptr, any arg) {
         if (Δp == nil || !cgoIsGoPointer(Δp)) {
             return;
         }
-        var aep = efaceOf(Ꮡ(arg));
+        var aep = efaceOf(Ꮡarg);
         var exprᴛ1 = (abiꓸKind)((~(~aep)._type).Kind_ & abi.KindMask);
         if (exprᴛ1 == abi.Bool) {
             do {
@@ -750,11 +753,13 @@ internal static bool cgoInRange(@unsafe.Pointer Δp, uintptr start, uintptr end)
 // cgoCheckResult is called to check the result parameter of an
 // exported Go function. It panics if the result is or contains any
 // other pointer into unpinned Go memory.
-internal static void cgoCheckResult(any val) {
+internal static void cgoCheckResult(any valʗp) {
+    ref var val = ref heap(valʗp, out var Ꮡval);
+
     if (!goexperiment.CgoCheck2 && debug.cgocheck == 0) {
         return;
     }
-    var ep = efaceOf(Ꮡ(val));
+    var ep = efaceOf(Ꮡval);
     var t = ep.Value._type;
     cgoCheckArg(t, (~ep).data, (abiꓸKind)((~t).Kind_ & abi.KindDirectIface) == 0, false, cgoResultFail);
 }

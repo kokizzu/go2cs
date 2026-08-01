@@ -83,7 +83,7 @@ internal static void mustBeNil(error err) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object coverageNoStatementsˢ = (@string)"coverage: [no statements]"u8;
+internal static readonly object coverageNoStatementsˢ = (@string)"coverage: [no statements]"u8;
 
 // coverReport reports the coverage percentage and writes a coverage profile if requested.
 internal static void coverReport() => func((defer, recover) => {

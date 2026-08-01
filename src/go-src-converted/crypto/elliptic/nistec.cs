@@ -16,9 +16,9 @@ internal static ж<nistCurve<P224PointжnistPoint>> p224 = Ꮡ(new nistCurve<P22
 ));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4ˢ = "b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4"u8;
-private static readonly @string b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21ˢ = "b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21"u8;
-private static readonly @string bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34ˢ = "bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34"u8;
+internal static readonly @string b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4ˢ = "b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4"u8;
+internal static readonly @string b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21ˢ = "b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21"u8;
+internal static readonly @string bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34ˢ = "bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34"u8;
 
 internal static void initP224() {
     p224.Value.@params = Ꮡ(new CurveParams(
@@ -138,8 +138,8 @@ internal static void initP521() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string negativeCoordinateˢ = "negative coordinate"u8;
-private static readonly @string overflowingCoordinateˢ = "overflowing coordinate"u8;
+internal static readonly @string negativeCoordinateˢ = "negative coordinate"u8;
+internal static readonly @string overflowingCoordinateˢ = "overflowing coordinate"u8;
 
 [GoRecv] internal static (Point p, error err) pointFromAffine<Point>(this ref nistCurve<Point> curve, ж<bigꓸInt> Ꮡx, ж<bigꓸInt> Ꮡy)
     where Point : nistPoint<Point>

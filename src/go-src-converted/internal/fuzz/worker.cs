@@ -652,7 +652,7 @@ public static error RunFuzzWorker(context.Context ctx, Func<CorpusEntry, error> 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noArgumentsProvidedForˢ = "no arguments provided for any call"u8;
+internal static readonly @string noArgumentsProvidedForˢ = "no arguments provided for any call"u8;
 
 // serve reads serialized RPC messages on fuzzIn. When serve receives a message,
 // it calls the corresponding method, then sends the serialized result back
@@ -718,7 +718,7 @@ internal static error serve(this ж<workerServer> Ꮡws, context.Context ctx) {
 internal static UntypedInt chainedMutations => 5;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fuzzFunctionFailedWithNoˢ = "fuzz function failed with no input"u8;
+internal static readonly @string fuzzFunctionFailedWithNoˢ = "fuzz function failed with no input"u8;
 
 // fuzz runs the test function on random variations of the input value in shared
 // memory for a limited duration or number of iterations.
@@ -1066,13 +1066,14 @@ internal static error errSharedMemClosed = errors.New("internal error: shared me
 
 // minimize tells the worker to call the minimize method. See
 // workerServer.minimize.
-internal static (CorpusEntry entryOut, minimizeResponse resp, error retErr) minimize(this ж<workerClient> Ꮡwc, context.Context ctx, CorpusEntry entryIn, minimizeArgs args) {
+internal static (CorpusEntry entryOut, minimizeResponse resp, error retErr) minimize(this ж<workerClient> Ꮡwc, context.Context ctx, CorpusEntry entryIn, minimizeArgs argsʗp) {
     CorpusEntry entryOut = default!;
     heap<minimizeResponse>(out var Ꮡresp);
     error retErr = default!;
     func((defer, recover) => {
     ref var wc = ref Ꮡwc.Value;
 
+    ref var args = ref heap(argsʗp, out var Ꮡargs);
     ref var resp = ref Ꮡresp.Value;
         Ꮡwc.of(workerClient.Ꮡmu).Lock();
         defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock);
@@ -1101,7 +1102,7 @@ internal static (CorpusEntry entryOut, minimizeResponse resp, error retErr) mini
             }
             wc.memMu.ᐸꟷ(mem);
             args.Index = i;
-            var c = new call(Minimize: Ꮡ(args));
+            var c = new call(Minimize: Ꮡargs);
             var callErr = wc.callLocked(ctx, c, Ꮡresp);
             (mem, ok) = ᐸꟷ(wc.memMu, ꟷ);
             if (!ok) {
@@ -1164,10 +1165,10 @@ internal static (CorpusEntry entryOut, minimizeResponse resp, error retErr) mini
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string workerServerFuzzModifiedˢ = "workerServer.fuzz modified input"u8;
+internal static readonly @string workerServerFuzzModifiedˢ = "workerServer.fuzz modified input"u8;
 
 // fuzz tells the worker to call the fuzz method. See workerServer.fuzz.
-internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, error err) fuzz(this ж<workerClient> Ꮡwc, context.Context ctx, CorpusEntry entryIn, fuzzArgs args) {
+internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, error err) fuzz(this ж<workerClient> Ꮡwc, context.Context ctx, CorpusEntry entryIn, fuzzArgs argsʗp) {
     CorpusEntry entryOut = default!;
     heap<fuzzResponse>(out var Ꮡresp);
     bool isInternalError = default!;
@@ -1175,6 +1176,7 @@ internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, 
     func((defer, recover) => {
     ref var wc = ref Ꮡwc.Value;
 
+    ref var args = ref heap(argsʗp, out var Ꮡargs);
     ref var resp = ref Ꮡresp.Value;
         Ꮡwc.of(workerClient.Ꮡmu).Lock();
         defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock);
@@ -1190,7 +1192,7 @@ internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, 
         }
         mem.setValue(inp);
         wc.memMu.ᐸꟷ(mem);
-        var c = new call(Fuzz: Ꮡ(args));
+        var c = new call(Fuzz: Ꮡargs);
         var callErr = wc.callLocked(ctx, c, Ꮡresp);
         if (resp.InternalErr != ""u8) {
             (entryOut, resp, isInternalError, err) = (new CorpusEntry(), new fuzzResponse(nil), true, errors.New(resp.InternalErr)); return;

@@ -299,10 +299,10 @@ internal static bool noResponseBodyExpected(@string requestMethod) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string connectionCloseˢ = "Connection: close\r\n"u8;
-private static readonly @string contentLengthˢ3 = "Content-Length: "u8;
-private static readonly @string transferEncodingChunkedˢ = "Transfer-Encoding: chunked\r\n"u8;
-private static readonly @string invalidTrailerKeyˢ = "invalid Trailer key"u8;
+internal static readonly @string connectionCloseˢ = "Connection: close\r\n"u8;
+internal static readonly @string contentLengthˢ3 = "Content-Length: "u8;
+internal static readonly @string transferEncodingChunkedˢ = "Transfer-Encoding: chunked\r\n"u8;
+internal static readonly @string invalidTrailerKeyˢ = "invalid Trailer key"u8;
 
 [GoRecv] internal static error writeHeader(this ref transferWriter t, io.Writer w, ж<httptrace.ClientTrace> Ꮡtrace) {
     ref var trace = ref Ꮡtrace.DerefOrNil();
@@ -838,7 +838,7 @@ internal static bool shouldClose(nint major, nint minor, ΔHeader header, bool r
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string badTrailerKeyˢ = "bad trailer key"u8;
+internal static readonly @string badTrailerKeyˢ = "bad trailer key"u8;
 
 // Parse the trailer header.
 internal static (ΔHeader, error) fixTrailer(ΔHeader header, bool chunked) {
@@ -998,7 +998,7 @@ internal static bool seeUpcomingDoubleCRLF(ж<bufio.Reader> Ꮡr) {
 internal static error errTrailerEOF = errors.New("http: unexpected EOF reading trailer"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpSuspiciouslyLongˢ = "http: suspiciously long trailer after chunked body"u8;
+internal static readonly @string httpSuspiciouslyLongˢ = "http: suspiciously long trailer after chunked body"u8;
 
 [GoRecv] internal static error readTrailer(this ref body b) {
     // The common case, since nobody uses trailers.
@@ -1165,8 +1165,8 @@ internal static (nint n, error err) Read(this bodyLocked bl, slice<byte> p) {
 internal static ж<godebug.Setting> httplaxcontentlength = godebug.New("httplaxcontentlength"u8);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidEmptyContentˢ = "invalid empty Content-Length"u8;
-private static readonly @string badContentLengthˢ = "bad Content-Length"u8;
+internal static readonly @string invalidEmptyContentˢ = "invalid empty Content-Length"u8;
+internal static readonly @string badContentLengthˢ = "bad Content-Length"u8;
 
 // parseContentLength checks that the header is valid and then trims
 // whitespace. It returns -1 if no value is set otherwise the value

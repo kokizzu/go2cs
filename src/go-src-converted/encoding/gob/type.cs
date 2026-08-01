@@ -222,7 +222,7 @@ internal static ΔgobType gobType(this typeId t) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "<nil>"u8;
+internal static readonly @string nilˢ = "<nil>"u8;
 
 // string returns the string representation of the type associated with the typeId.
 internal static @string @string(this typeId t) {
@@ -280,40 +280,40 @@ internal static typeId tString = bootstrapType("string"u8, ((ж<@string>)nil));
 internal static typeId tComplex = bootstrapType("complex"u8, ((ж<complex128>)nil));
 internal static typeId tInterface = bootstrapType("interface"u8, ((ж<any>)nil));
 
-    [GoType("dyn")] partial struct Δtype {
+    [GoType("dyn")] partial struct eᴛ1 {
         internal nint r7;
     }
-internal static typeId tReserved7 = bootstrapType("_reserved1"u8, ((ж<Δtype>)nil));
+internal static typeId tReserved7 = bootstrapType("_reserved1"u8, ((ж<eᴛ1>)nil));
 
-    [GoType("dyn")] partial struct Δtypeᴛ1 {
+    [GoType("dyn")] partial struct eᴛ2 {
         internal nint r6;
     }
-internal static typeId tReserved6 = bootstrapType("_reserved1"u8, ((ж<Δtypeᴛ1>)nil));
+internal static typeId tReserved6 = bootstrapType("_reserved1"u8, ((ж<eᴛ2>)nil));
 
-    [GoType("dyn")] partial struct Δtypeᴛ2 {
+    [GoType("dyn")] partial struct eᴛ3 {
         internal nint r5;
     }
-internal static typeId tReserved5 = bootstrapType("_reserved1"u8, ((ж<Δtypeᴛ2>)nil));
+internal static typeId tReserved5 = bootstrapType("_reserved1"u8, ((ж<eᴛ3>)nil));
 
-    [GoType("dyn")] partial struct Δtypeᴛ3 {
+    [GoType("dyn")] partial struct eᴛ4 {
         internal nint r4;
     }
-internal static typeId tReserved4 = bootstrapType("_reserved1"u8, ((ж<Δtypeᴛ3>)nil));
+internal static typeId tReserved4 = bootstrapType("_reserved1"u8, ((ж<eᴛ4>)nil));
 
-    [GoType("dyn")] partial struct Δtypeᴛ4 {
+    [GoType("dyn")] partial struct eᴛ5 {
         internal nint r3;
     }
-internal static typeId tReserved3 = bootstrapType("_reserved1"u8, ((ж<Δtypeᴛ4>)nil));
+internal static typeId tReserved3 = bootstrapType("_reserved1"u8, ((ж<eᴛ5>)nil));
 
-    [GoType("dyn")] partial struct Δtypeᴛ5 {
+    [GoType("dyn")] partial struct eᴛ6 {
         internal nint r2;
     }
-internal static typeId tReserved2 = bootstrapType("_reserved1"u8, ((ж<Δtypeᴛ5>)nil));
+internal static typeId tReserved2 = bootstrapType("_reserved1"u8, ((ж<eᴛ6>)nil));
 
-    [GoType("dyn")] partial struct Δtypeᴛ6 {
+    [GoType("dyn")] partial struct eᴛ7 {
         internal nint r1;
     }
-internal static typeId tReserved1 = bootstrapType("_reserved1"u8, ((ж<Δtypeᴛ6>)nil));
+internal static typeId tReserved1 = bootstrapType("_reserved1"u8, ((ж<eᴛ7>)nil));
 
 // Predefined because it's needed by the Decoder
 internal static typeId tWireType;

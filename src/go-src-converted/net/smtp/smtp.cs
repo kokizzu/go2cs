@@ -54,7 +54,7 @@ partial class smtp_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tcpˢ = "tcp"u8;
+internal static readonly @string tcpˢ = "tcp"u8;
 
 // Dial returns a new [Client] connected to an SMTP server at addr.
 // The addr must include a port, as in "mail.example.com:smtp".
@@ -101,7 +101,7 @@ internal static error hello(this ж<Client> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string smtpHelloCalledAfterˢ = "smtp: Hello called after other methods"u8;
+internal static readonly @string smtpHelloCalledAfterˢ = "smtp: Hello called after other methods"u8;
 
 // Hello sends a HELO or EHLO to the server as the given host name.
 // Calling this method is only necessary if the client needs control
@@ -139,7 +139,7 @@ internal static (nint, @string, error) cmd(this ж<Client> Ꮡc, nint expectCode
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string heloSˢ = "HELO %s"u8;
+internal static readonly @string heloSˢ = "HELO %s"u8;
 
 // helo sends the HELO greeting to the server. It should be used only when the
 // server does not support ehlo.
@@ -152,8 +152,8 @@ internal static error helo(this ж<Client> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ehloSˢ = "EHLO %s"u8;
-private static readonly @string authˢ = "AUTH"u8;
+internal static readonly @string ehloSˢ = "EHLO %s"u8;
+internal static readonly @string authˢ = "AUTH"u8;
 
 // ehlo sends the EHLO (extended hello) greeting to the server. It
 // should be the preferred greeting for servers that support it.
@@ -183,7 +183,7 @@ internal static error ehlo(this ж<Client> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string starttlsˢ = "STARTTLS"u8;
+internal static readonly @string starttlsˢ = "STARTTLS"u8;
 
 // StartTLS sends the STARTTLS command and encrypts all further communication.
 // Only servers that advertise the STARTTLS extension support this function.
@@ -220,7 +220,7 @@ public static error StartTLS(this ж<Client> Ꮡc, ж<tls.Config> Ꮡconfig) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string vrfySˢ = "VRFY %s"u8;
+internal static readonly @string vrfySˢ = "VRFY %s"u8;
 
 // Verify checks the validity of an email address on the server.
 // If Verify returns nil, the address is valid. A non-nil return
@@ -300,8 +300,8 @@ Code: code, Msg: msg64)));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mailFromSˢ = "MAIL FROM:<%s>"u8;
-private static readonly @string smtputf8ˢ = "SMTPUTF8"u8;
+internal static readonly @string mailFromSˢ = "MAIL FROM:<%s>"u8;
+internal static readonly @string smtputf8ˢ = "SMTPUTF8"u8;
 
 // Mail issues a MAIL command to the server using the provided email address.
 // If the server supports the 8BITMIME extension, Mail adds the BODY=8BITMIME
@@ -339,7 +339,7 @@ public static error Mail(this ж<Client> Ꮡc, @string from) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rcptToSˢ = "RCPT TO:<%s>"u8;
+internal static readonly @string rcptToSˢ = "RCPT TO:<%s>"u8;
 
 // Rcpt issues a RCPT command to the server using the provided email address.
 // A call to Rcpt must be preceded by a call to [Client.Mail] and may be followed by
@@ -366,7 +366,7 @@ public static error Rcpt(this ж<Client> Ꮡc, @string to) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dataˢ = "DATA"u8;
+internal static readonly @string dataˢ = "DATA"u8;
 
 // Data issues a DATA command to the server and returns a writer that
 // can be used to write the mail headers and body. The caller should
@@ -385,7 +385,7 @@ public static (io.WriteCloser, error) Data(this ж<Client> Ꮡc) {
 internal static Action<ж<tls.Config>> testHookStartTLS;      // nil, except for tests
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string smtpServerDoesnTSupportˢ = "smtp: server doesn't support AUTH"u8;
+internal static readonly @string smtpServerDoesnTSupportˢ = "smtp: server doesn't support AUTH"u8;
 
 // SendMail connects to the server at addr, switches to TLS if
 // possible, authenticates with the optional mechanism a if possible,
@@ -504,7 +504,7 @@ public static (bool, @string) Extension(this ж<Client> Ꮡc, @string ext) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rsetˢ = "RSET"u8;
+internal static readonly @string rsetˢ = "RSET"u8;
 
 // Reset sends the RSET command to the server, aborting the current mail
 // transaction.
@@ -519,7 +519,7 @@ public static error Reset(this ж<Client> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noopˢ = "NOOP"u8;
+internal static readonly @string noopˢ = "NOOP"u8;
 
 // Noop sends the NOOP command to the server. It does nothing but check
 // that the connection to the server is okay.
@@ -534,7 +534,7 @@ public static error Noop(this ж<Client> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string quitˢ = "QUIT"u8;
+internal static readonly @string quitˢ = "QUIT"u8;
 
 // Quit sends the QUIT command and closes the connection to the server.
 public static error Quit(this ж<Client> Ꮡc) {
@@ -553,7 +553,7 @@ public static error Quit(this ж<Client> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string smtpALineMustNotContainˢ = "smtp: A line must not contain CR or LF"u8;
+internal static readonly @string smtpALineMustNotContainˢ = "smtp: A line must not contain CR or LF"u8;
 
 // validateLine checks to see if a line has CR or LF as per RFC 5321.
 internal static error validateLine(@string line) {

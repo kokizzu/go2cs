@@ -35,7 +35,7 @@ partial class dwarf_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unitLengthOverflowˢ = "unit length overflow"u8;
+internal static readonly @string unitLengthOverflowˢ = "unit length overflow"u8;
 
 internal static (slice<unit>, error) parseUnits(this ж<Data> Ꮡd) {
     ref var d = ref Ꮡd.Value;

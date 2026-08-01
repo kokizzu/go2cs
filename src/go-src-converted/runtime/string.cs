@@ -19,7 +19,7 @@ internal static UntypedInt tmpStringBufSize => 32;
 partial struct tmpBuf;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string stringConcatenationTooˢ = "string concatenation too long"u8;
+internal static readonly @string stringConcatenationTooˢ = "string concatenation too long"u8;
 
 // concatstrings implements a Go string concatenation x+y+z+...
 // The operands are passed in the slice a.
@@ -225,15 +225,15 @@ internal static slice<rune> stringtoslicerune(ж<array<rune>> Ꮡbuf, @string s)
 internal static @string slicerunetostring(ж<tmpBuf> Ꮡbuf, slice<rune> a) {
     if (raceenabled && len(a) > 0) {
         racereadrangepc(new @unsafe.Pointer(Ꮡ(a, 0)),
-            (uintptr)len(a) * @unsafe.Sizeof(a[0]),
+            (uintptr)len(a) * /* unsafe.Sizeof(a[0]) */ (uintptr)4,
             getcallerpc(),
             abi.FuncPCABIInternal(slicerunetostring));
     }
     if (msanenabled && len(a) > 0) {
-        msanread(new @unsafe.Pointer(Ꮡ(a, 0)), (uintptr)len(a) * @unsafe.Sizeof(a[0]));
+        msanread(new @unsafe.Pointer(Ꮡ(a, 0)), (uintptr)len(a) * /* unsafe.Sizeof(a[0]) */ (uintptr)4);
     }
     if (asanenabled && len(a) > 0) {
-        asanread(new @unsafe.Pointer(Ꮡ(a, 0)), (uintptr)len(a) * @unsafe.Sizeof(a[0]));
+        asanread(new @unsafe.Pointer(Ꮡ(a, 0)), (uintptr)len(a) * /* unsafe.Sizeof(a[0]) */ (uintptr)4);
     }
     array<byte> dum = new(4);
     nint size1 = 0;
@@ -327,7 +327,7 @@ internal static slice<rune> /*b*/ rawruneslice(nint size) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string gobytesLengthOutOfRangeˢ = "gobytes: length out of range"u8;
+internal static readonly @string gobytesLengthOutOfRangeˢ = "gobytes: length out of range"u8;
 
 // used by cmd/cgo
 internal static slice<byte> /*b*/ gobytes(ж<byte> Ꮡp, nint n) {

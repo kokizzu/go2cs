@@ -283,7 +283,7 @@ public static IP Mask(this IP ip, IPMask mask) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "<nil>"u8;
+internal static readonly @string nilˢ = "<nil>"u8;
 
 // String returns the string form of the IP address ip.
 // It returns one of 4 forms:
@@ -481,7 +481,7 @@ public static bool Contains(this ж<IPNet> Ꮡn, IP ip) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string ipNetˢ = "ip+net"u8;
+internal static readonly @string ipNetˢ = "ip+net"u8;
 
 // Network returns the address's network name, "ip+net".
 [GoRecv] public static @string Network(this ref IPNet n) {

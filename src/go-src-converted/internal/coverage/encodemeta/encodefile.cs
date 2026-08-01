@@ -45,7 +45,7 @@ public static error Write(this ж<CoverageMetaFileWriter> Ꮡm, array<byte> fina
     finalHash = finalHash.Clone();
 
     ref var m = ref Ꮡm.Value;
-    var mhsz = (uint64)@unsafe.Sizeof(new coverage.MetaFileHeader(nil));
+    var mhsz = (uint64)/* unsafe.Sizeof(coverage.MetaFileHeader{}) */ (uintptr)56;
     var stSize = m.stab.Size();
     var stOffset = mhsz + (uint64)(16 * len(blobs));
     var preambleLength = stOffset + (uint64)stSize;

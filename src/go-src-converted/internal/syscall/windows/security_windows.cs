@@ -62,7 +62,7 @@ public static error AdjustTokenPrivileges(syscall.Token token, bool disableAllPr
 }
 
 [GoRecv] public static uint32 Size(this ref TOKEN_MANDATORY_LABEL tml) {
-    return (uint32)@unsafe.Sizeof(new TOKEN_MANDATORY_LABEL(nil)) + syscall.GetLengthSid(tml.Label.Sid);
+    return (uint32)/* unsafe.Sizeof(TOKEN_MANDATORY_LABEL{}) */ (uintptr)16 + syscall.GetLengthSid(tml.Label.Sid);
 }
 
 public static UntypedInt SE_GROUP_INTEGRITY => 0x00000020;

@@ -135,8 +135,8 @@ internal static bool underIs(ΔType typ, Func<ΔType, bool> f) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cannotUseOutsideOfˢ = "cannot use ~ outside of interface or type constraint"u8;
-private static readonly @string cannotUseOutsideOfˢ2 = "cannot use ~ outside of interface or type constraint (use ^ for bitwise complement)"u8;
+internal static readonly @string cannotUseOutsideOfˢ = "cannot use ~ outside of interface or type constraint"u8;
+internal static readonly @string cannotUseOutsideOfˢ2 = "cannot use ~ outside of interface or type constraint (use ^ for bitwise complement)"u8;
 
 // The unary expression e may be nil. It's passed in for better error messages only.
 internal static void unary(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<ast.UnaryExpr> Ꮡe) {
@@ -248,7 +248,7 @@ internal static void updateExprType(this ж<Checker> Ꮡcheck, ast.Expr x, ΔTyp
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string vFoundOldTypeSSNewSˢ = "%v: found old type(%s): %s (new: %s)"u8;
+internal static readonly @string vFoundOldTypeSSNewSˢ = "%v: found old type(%s): %s (new: %s)"u8;
 
 internal static void updateExprType0(this ж<Checker> Ꮡcheck, ast.Expr parent, ast.Expr x, ΔType typ, bool final) {
     ref var check = ref Ꮡcheck.Value;
@@ -652,14 +652,14 @@ internal static @string incomparableCause(this ж<Checker> Ꮡcheck, ΔType typ)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string arrayˢ = "array"u8;
-private static readonly @string sliceˢ = "slice"u8;
-private static readonly @string structˢ = "struct"u8;
-private static readonly @string pointerˢ = "pointer"u8;
-private static readonly @string funcˢ = "func"u8;
-private static readonly @string interfaceˢ = "interface"u8;
-private static readonly @string mapˢ = "map"u8;
-private static readonly @string chanˢ = "chan"u8;
+internal static readonly @string arrayˢ = "array"u8;
+internal static readonly @string sliceˢ = "slice"u8;
+internal static readonly @string structˢ = "struct"u8;
+internal static readonly @string pointerˢ = "pointer"u8;
+internal static readonly @string funcˢ = "func"u8;
+internal static readonly @string interfaceˢ = "interface"u8;
+internal static readonly @string mapˢ = "map"u8;
+internal static readonly @string chanˢ = "chan"u8;
 
 // kindString returns the type kind as a string.
 internal static @string kindString(this ж<Checker> Ꮡcheck, ΔType typ) {
@@ -1046,7 +1046,7 @@ internal static ж<target> newTarget(ΔType typ, @string desc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string exprSˢ = "-- expr %s"u8;
+internal static readonly @string exprSˢ = "-- expr %s"u8;
 
 // rawExpr typechecks expression e and initializes x with the expression
 // value or type. If an error occurred, x.mode is set to invalid.
@@ -1075,8 +1075,8 @@ internal static exprKind rawExpr(this ж<Checker> Ꮡcheck, ж<target> ᏑT, ж<
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string typeˢ = "type"u8;
-private static readonly @string functionˢ = "function"u8;
+internal static readonly @string typeˢ = "type"u8;
+internal static readonly @string functionˢ = "function"u8;
 
 // If x is a generic type, or a generic function whose type arguments cannot be inferred
 // from a non-nil target T, nonGeneric reports an error and invalidates x.mode and x.typ.
@@ -1146,16 +1146,16 @@ internal static void langCompat(this ж<Checker> Ꮡcheck, ж<ast.BasicLit> Ꮡl
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidUseOfˢ = "invalid use of '...'"u8;
-private static readonly @string functionLiteralˢ = "<function literal>"u8;
-private static readonly @string missingTypeInCompositeˢ = "missing type in composite literal"u8;
-private static readonly @string invalidRecursiveTypeˢ = "invalid recursive type"u8;
-private static readonly @string mixtureOfFieldValueAndˢ = "mixture of field:value and value elements in struct literal"u8;
-private static readonly @string structLiteralˢ = "struct literal"u8;
-private static readonly @string missingKeyInMapLiteralˢ = "missing key in map literal"u8;
-private static readonly @string mapLiteralˢ = "map literal"u8;
-private static readonly @string useOfTypeOutsideTypeˢ = "use of .(type) outside type switch"u8;
-private static readonly @string noKeyValueExpectedˢ = "no key:value expected"u8;
+internal static readonly @string invalidUseOfˢ = "invalid use of '...'"u8;
+internal static readonly @string functionLiteralˢ = "<function literal>"u8;
+internal static readonly @string missingTypeInCompositeˢ = "missing type in composite literal"u8;
+internal static readonly @string invalidRecursiveTypeˢ = "invalid recursive type"u8;
+internal static readonly @string mixtureOfFieldValueAndˢ = "mixture of field:value and value elements in struct literal"u8;
+internal static readonly @string structLiteralˢ = "struct literal"u8;
+internal static readonly @string missingKeyInMapLiteralˢ = "missing key in map literal"u8;
+internal static readonly @string mapLiteralˢ = "map literal"u8;
+internal static readonly @string useOfTypeOutsideTypeˢ = "use of .(type) outside type switch"u8;
+internal static readonly @string noKeyValueExpectedˢ = "no key:value expected"u8;
 
 // exprInternal contains the core of type checking of expressions.
 // Must only be called by rawExpr.
@@ -1814,10 +1814,10 @@ internal static void exprOrType(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ast
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string sUsedAsValueˢ = "%s used as value"u8;
-private static readonly @string sUsedAsValueOrTypeˢ = "%s used as value or type"u8;
-private static readonly @string sMustBeCalledˢ = "%s must be called"u8;
-private static readonly @string sIsNotAnExpressionˢ = "%s is not an expression"u8;
+internal static readonly @string sUsedAsValueˢ = "%s used as value"u8;
+internal static readonly @string sUsedAsValueOrTypeˢ = "%s used as value or type"u8;
+internal static readonly @string sMustBeCalledˢ = "%s must be called"u8;
+internal static readonly @string sIsNotAnExpressionˢ = "%s is not an expression"u8;
 
 // exclude reports an error if x.mode is in modeset and sets x.mode to invalid.
 // The modeset may contain any of 1<<novalue, 1<<builtin, 1<<typexpr.

@@ -252,7 +252,7 @@ internal static error /*err*/ execute(this ж<Template> Ꮡt, io.Writer wr, any 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string definedTemplatesAreˢ = "; defined templates are: "u8;
+internal static readonly @string definedTemplatesAreˢ = "; defined templates are: "u8;
 
 // DefinedTemplates returns a string listing the defined templates,
 // prefixed by the string "; defined templates are: ". If there are none,
@@ -648,7 +648,7 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string eEpPˢ = ".eEpP"u8;
+internal static readonly @string eEpPˢ = ".eEpP"u8;
 
 // idealConstant is called to return the value of a number in a context where
 // we don't know the type. In that case, the syntax of the number tells us
@@ -910,7 +910,7 @@ internal static reflectꓸType reflectValueType = reflect.TypeFor<reflectꓸValu
         return vΔ2;
     }
     // Build the arg list.
-    var argv = new slice<reflectꓸValue>(numIn);
+    var argv = new slice<reflectꓸValue>(numIn, () => new(nil));
     // Args must be evaluated. Fixed args first.
     nint i = 0;
     for (; i < numFixed && i < len(args); i++) {
@@ -1238,7 +1238,7 @@ internal static reflectꓸValue indirectInterface(reflectꓸValue v) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object noValueˢ = (@string)"<no value>"u8;
+internal static readonly object noValueˢ = (@string)"<no value>"u8;
 
 // printableValue returns the, possibly indirected, interface value inside v that
 // is best for a call to formatted printer.

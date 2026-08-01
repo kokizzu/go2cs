@@ -86,7 +86,7 @@ public static (slice<ж<ΔCookie>>, error) ParseCookie(@string line) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string mon02Jan2006150405Mstˢ = "Mon, 02-Jan-2006 15:04:05 MST"u8;
+internal static readonly @string mon02Jan2006150405Mstˢ = "Mon, 02-Jan-2006 15:04:05 MST"u8;
 
 // ParseSetCookie parses a Set-Cookie header value and returns a cookie.
 // It returns an error on syntax error.
@@ -210,7 +210,7 @@ public static (ж<ΔCookie>, error) ParseSetCookie(@string line) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string setCookieˢ = "Set-Cookie"u8;
+internal static readonly @string setCookieˢ = "Set-Cookie"u8;
 
 // readSetCookies parses all "Set-Cookie" values from
 // the header h and returns the successfully parsed Cookies.
@@ -242,17 +242,17 @@ public static void SetCookie(ResponseWriter w, ж<ΔCookie> Ꮡcookie) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string pathˢ = "; Path="u8;
-private static readonly @string domainˢ = "; Domain="u8;
-private static readonly @string expiresˢ = "; Expires="u8;
-private static readonly @string maxAgeˢ = "; Max-Age="u8;
-private static readonly @string maxAge0ˢ = "; Max-Age=0"u8;
-private static readonly @string httpOnlyˢ = "; HttpOnly"u8;
-private static readonly @string secureˢ = "; Secure"u8;
-private static readonly @string sameSiteNoneˢ = "; SameSite=None"u8;
-private static readonly @string sameSiteLaxˢ = "; SameSite=Lax"u8;
-private static readonly @string sameSiteStrictˢ = "; SameSite=Strict"u8;
-private static readonly @string partitionedˢ = "; Partitioned"u8;
+internal static readonly @string pathˢ = "; Path="u8;
+internal static readonly @string domainˢ = "; Domain="u8;
+internal static readonly @string expiresˢ = "; Expires="u8;
+internal static readonly @string maxAgeˢ = "; Max-Age="u8;
+internal static readonly @string maxAge0ˢ = "; Max-Age=0"u8;
+internal static readonly @string httpOnlyˢ = "; HttpOnly"u8;
+internal static readonly @string secureˢ = "; Secure"u8;
+internal static readonly @string sameSiteNoneˢ = "; SameSite=None"u8;
+internal static readonly @string sameSiteLaxˢ = "; SameSite=Lax"u8;
+internal static readonly @string sameSiteStrictˢ = "; SameSite=Strict"u8;
+internal static readonly @string partitionedˢ = "; Partitioned"u8;
 
 // String returns the serialization of the cookie for use in a [Cookie]
 // header (if only Name and Value are set) or a Set-Cookie response
@@ -331,11 +331,11 @@ public static @string String(this ж<ΔCookie> Ꮡc) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string httpNilCookieˢ = "http: nil Cookie"u8;
-private static readonly @string httpInvalidCookieNameˢ = "http: invalid Cookie.Name"u8;
-private static readonly @string httpInvalidCookieExpiresˢ = "http: invalid Cookie.Expires"u8;
-private static readonly @string httpInvalidCookieDomainˢ = "http: invalid Cookie.Domain"u8;
-private static readonly @string httpPartitionedCookiesˢ = "http: partitioned cookies must be set with Secure"u8;
+internal static readonly @string httpNilCookieˢ = "http: nil Cookie"u8;
+internal static readonly @string httpInvalidCookieNameˢ = "http: invalid Cookie.Name"u8;
+internal static readonly @string httpInvalidCookieExpiresˢ = "http: invalid Cookie.Expires"u8;
+internal static readonly @string httpInvalidCookieDomainˢ = "http: invalid Cookie.Domain"u8;
+internal static readonly @string httpPartitionedCookiesˢ = "http: partitioned cookies must be set with Secure"u8;
 
 // Valid reports whether the cookie is valid.
 public static error Valid(this ж<ΔCookie> Ꮡc) {
@@ -505,7 +505,7 @@ internal static @string sanitizeCookieName(@string n) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cookieValueˢ = "Cookie.Value"u8;
+internal static readonly @string cookieValueˢ = "Cookie.Value"u8;
 
 // sanitizeCookieValue produces a suitable cookie-value from v.
 // It receives a quoted bool indicating whether the value was originally
@@ -537,7 +537,7 @@ internal static bool validCookieValueByte(byte b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cookiePathˢ = "Cookie.Path"u8;
+internal static readonly @string cookiePathˢ = "Cookie.Path"u8;
 
 // path-av           = "Path=" path-value
 // path-value        = <any CHAR except CTLs or ";">

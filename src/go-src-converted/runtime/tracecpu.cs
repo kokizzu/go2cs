@@ -11,7 +11,7 @@ using atomic = @internal.runtime.atomic_package;
 partial class runtime_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string traceInitReadCPUCalledˢ = "traceInitReadCPU called with trace enabled"u8;
+internal static readonly @string traceInitReadCPUCalledˢ = "traceInitReadCPU called with trace enabled"u8;
 
 // traceInitReadCPU initializes CPU profile -> tracer state for tracing.
 //
@@ -36,7 +36,7 @@ internal static void traceInitReadCPU() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string traceStartReadCPUCalledˢ = "traceStartReadCPU called with trace disabled"u8;
+internal static readonly @string traceStartReadCPUCalledˢ = "traceStartReadCPU called with trace disabled"u8;
 
 // traceStartReadCPU creates a goroutine to start reading CPU profile
 // data into an active trace.
@@ -81,7 +81,7 @@ internal static void traceStartReadCPU() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string traceStopReadCPUCalledˢ = "traceStopReadCPU called with trace enabled"u8;
+internal static readonly @string traceStopReadCPUCalledˢ = "traceStopReadCPU called with trace enabled"u8;
 
 // traceStopReadCPU blocks until the trace CPU reading goroutine exits.
 //

@@ -195,8 +195,8 @@ internal static void cleanup(this ж<Interface> Ꮡt) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string methodsMustHaveAUniqueˢ = "methods must have a unique non-blank name"u8;
-private static readonly @string methodsCannotHaveTypeˢ = "methods cannot have type parameters"u8;
+internal static readonly @string methodsMustHaveAUniqueˢ = "methods must have a unique non-blank name"u8;
+internal static readonly @string methodsCannotHaveTypeˢ = "methods cannot have type parameters"u8;
 
 internal static void interfaceType(this ж<Checker> Ꮡcheck, ж<Interface> Ꮡityp, ж<ast.InterfaceType> Ꮡiface, ж<TypeName> Ꮡdef) {
     ref var check = ref Ꮡcheck.Value;

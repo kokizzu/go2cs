@@ -24,7 +24,7 @@ public static ΔSignal Interrupt = new syscall_ΔSignalᴠΔSignal(((syscallꓸS
 public static ΔSignal ΔKill = new syscall_ΔSignalᴠΔSignal(((syscallꓸSignal)syscall.SIGKILL));
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string chdirˢ = "chdir"u8;
+internal static readonly @string chdirˢ = "chdir"u8;
 
 internal static (ж<Process> p, error err) startProcess(@string name, slice<@string> argv, ж<ProcAttr> Ꮡattr) {
     ж<Process> p = default!;
@@ -108,8 +108,8 @@ internal static error kill(this ж<Process> Ꮡp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nilˢ = "<nil>"u8;
-private static readonly @string continuedˢ = "continued"u8;
+internal static readonly @string nilˢ = "<nil>"u8;
+internal static readonly @string continuedˢ = "continued"u8;
 
 public static @string String(this ж<ProcessState> Ꮡp) {
     ref var p = ref Ꮡp.DerefOrNil();

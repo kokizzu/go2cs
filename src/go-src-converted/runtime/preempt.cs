@@ -73,8 +73,8 @@ partial class runtime_package {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string suspendGFromNonˢ = "suspendG from non-preemptible goroutine"u8;
-private static readonly @string invalidGStatusˢ = "invalid g status"u8;
+internal static readonly @string suspendGFromNonˢ = "suspendG from non-preemptible goroutine"u8;
+internal static readonly @string invalidGStatusˢ = "invalid g status"u8;
 
 // suspendG suspends goroutine gp at a safe-point and returns the
 // state of the suspended goroutine. The caller gets read access to
@@ -261,7 +261,7 @@ g: Ꮡgp, stopped: stopped);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedGStatusˢ = "unexpected g status"u8;
+internal static readonly @string unexpectedGStatusˢ = "unexpected g status"u8;
 
 // resumeG undoes the effects of suspendG, allowing the suspended
 // goroutine to continue from its current safe-point.
@@ -359,9 +359,9 @@ internal static bool wantAsyncPreempt(ж<g> Ꮡgp) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string runtimeInternalˢ = "runtime/internal/"u8;
-private static readonly @string reflectˢ = "reflect."u8;
-private static readonly @string badRestartPcˢ = "bad restart PC"u8;
+internal static readonly @string runtimeInternalˢ = "runtime/internal/"u8;
+internal static readonly @string reflectˢ = "reflect."u8;
+internal static readonly @string badRestartPcˢ = "bad restart PC"u8;
 
 // isAsyncSafePoint reports whether gp at instruction PC is an
 // asynchronous safe point. This indicates that:

@@ -16,10 +16,10 @@ partial class parser_package {
 internal const bool debugResolve = false;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unbalancedScopesˢ = "unbalanced scopes"u8;
-private static readonly @string unbalancedLabelScopesˢ = "unbalanced label scopes"u8;
-private static readonly @string objectAlreadyResolvedˢ = "object already resolved"u8;
-private static readonly @string resolvedSVToPackageˢ = "resolved %s@%v to package object %v"u8;
+internal static readonly @string unbalancedScopesˢ = "unbalanced scopes"u8;
+internal static readonly @string unbalancedLabelScopesˢ = "unbalanced label scopes"u8;
+internal static readonly @string objectAlreadyResolvedˢ = "object already resolved"u8;
+internal static readonly @string resolvedSVToPackageˢ = "resolved %s@%v to package object %v"u8;
 
 [GoType("dyn")] partial interface resolveFile_type {
     tokenꓸPos Pos();
@@ -104,7 +104,7 @@ internal const nint maxScopeDepth = 1000;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string openingScopeVˢ = "opening scope @%v"u8;
+internal static readonly @string openingScopeVˢ = "opening scope @%v"u8;
 
 [GoRecv] internal static void openScope(this ref resolver r, tokenꓸPos pos) {
     r.depth++;
@@ -118,7 +118,7 @@ private static readonly @string openingScopeVˢ = "opening scope @%v"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string closingScopeˢ = "closing scope"u8;
+internal static readonly @string closingScopeˢ = "closing scope"u8;
 
 [GoRecv] internal static void closeScope(this ref resolver r) {
     r.depth--;
@@ -149,7 +149,7 @@ private static readonly @string closingScopeˢ = "closing scope"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string declaringSVˢ = "declaring %s@%v"u8;
+internal static readonly @string declaringSVˢ = "declaring %s@%v"u8;
 
 [GoRecv] internal static void declare(this ref resolver r, any decl, any data, ж<ast.Scope> Ꮡscope, ast.ObjKind kind, params ꓸꓸꓸжastꓸIdent identsʗp) {
     var idents = identsʗp.sslice();
@@ -191,8 +191,8 @@ private static readonly @string declaringSVˢ = "declaring %s@%v"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string identifierAlreadyˢ = "identifier already declared or resolved"u8;
-private static readonly @string noNewVariablesOnLeftSideˢ = "no new variables on left side of :="u8;
+internal static readonly @string identifierAlreadyˢ = "identifier already declared or resolved"u8;
+internal static readonly @string noNewVariablesOnLeftSideˢ = "no new variables on left side of :="u8;
 
 [GoRecv] internal static void shortVarDecl(this ref resolver r, ж<ast.AssignStmt> Ꮡdecl) {
     ref var decl = ref Ꮡdecl.Value;
@@ -238,8 +238,8 @@ private static readonly @string noNewVariablesOnLeftSideˢ = "no new variables o
 internal static ж<ast.Object> unresolved = @new<ast.Object>();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string resolvedVSToVˢ = "resolved %v:%s to %v"u8;
-private static readonly @string objWithNoNameˢ = "obj with no name"u8;
+internal static readonly @string resolvedVSToVˢ = "resolved %v:%s to %v"u8;
+internal static readonly @string objWithNoNameˢ = "obj with no name"u8;
 
 // If x is an identifier, resolve attempts to resolve x by looking up
 // the object it denotes. If no object is found and collectUnresolved is
@@ -308,7 +308,7 @@ internal static void walkStmts(this ж<resolver> Ꮡr, slice<ast.Stmt> list) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nodeTVˢ = "node %T@%v"u8;
+internal static readonly @string nodeTVˢ = "node %T@%v"u8;
 
 internal static ast.Visitor Visit(this ж<resolver> Ꮡr, ast.Node node) => func<ast.Visitor>((defer, recover) => {
     ref var r = ref Ꮡr.Value;

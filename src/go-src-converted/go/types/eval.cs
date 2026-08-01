@@ -12,7 +12,7 @@ using global::go.go;
 partial class types_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string evalˢ = "eval"u8;
+internal static readonly @string evalˢ = "eval"u8;
 
 // Eval returns the type and, if constant, the value for the
 // expression expr, evaluated at position pos of package pkg,

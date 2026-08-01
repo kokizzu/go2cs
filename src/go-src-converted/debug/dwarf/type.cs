@@ -147,7 +147,7 @@ public static ж<BasicType> Basic(this ж<BasicType> Ꮡb) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string voidˢ = "void"u8;
+internal static readonly @string voidˢ = "void"u8;
 
 [GoRecv] public static @string String(this ref VoidType t) {
     return voidˢ;
@@ -310,7 +310,7 @@ private static readonly @string voidˢ = "void"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string enumˢ = "enum"u8;
+internal static readonly @string enumˢ = "enum"u8;
 
 [GoRecv] public static @string String(this ref EnumType t) {
     @string s = enumˢ;
@@ -336,7 +336,7 @@ private static readonly @string enumˢ = "enum"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string funcˢ = "func("u8;
+internal static readonly @string funcˢ = "func("u8;
 
 [GoRecv] public static @string String(this ref FuncType t) {
     @string s = funcˢ;
@@ -436,15 +436,15 @@ public static (ΔType, error) Type(this ж<Data> Ꮡd, Offset off) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string complexFloatˢ = "complex float"u8;
-private static readonly @string complexDoubleˢ = "complex double"u8;
-private static readonly @string classˢ = "class"u8;
-private static readonly @string structˢ = "struct"u8;
-private static readonly @string unionˢ = "union"u8;
-private static readonly @string locationˢ = "location"u8;
-private static readonly @string constˢ = "const"u8;
-private static readonly @string restrictˢ = "restrict"u8;
-private static readonly @string volatileˢ = "volatile"u8;
+internal static readonly @string complexFloatˢ = "complex float"u8;
+internal static readonly @string complexDoubleˢ = "complex double"u8;
+internal static readonly @string classˢ = "class"u8;
+internal static readonly @string structˢ = "struct"u8;
+internal static readonly @string unionˢ = "union"u8;
+internal static readonly @string locationˢ = "location"u8;
+internal static readonly @string constˢ = "const"u8;
+internal static readonly @string restrictˢ = "restrict"u8;
+internal static readonly @string volatileˢ = "volatile"u8;
 
 [GoType("dyn")] partial interface readType_type {
     ж<BasicType> Basic();
@@ -628,7 +628,7 @@ internal static (ΔType, error) readType(this ж<Data> Ꮡd, @string name, typeR
             //
             // For most languages BitOffset/DataBitOffset/BitSize will not be present
             // for base types.
-            err = new DecodeError(nameΔ2, (~e).Offset, "missing encoding attribute for " + nameΔ2);
+            err = new DecodeError(nameΔ2, (~e).Offset, "missing encoding attribute for "u8 + nameΔ2);
             goto Error;
         }
         var exprᴛ3 = enc;

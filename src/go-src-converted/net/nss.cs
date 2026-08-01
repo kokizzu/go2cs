@@ -38,7 +38,7 @@ internal static ж<nssConf> getSystemNSS() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string etcNsswitchConfˢ = "/etc/nsswitch.conf"u8;
+internal static readonly @string etcNsswitchConfˢ = "/etc/nsswitch.conf"u8;
 
 // init initializes conf and is only called via conf.initOnce.
 [GoRecv] internal static void init(this ref nsswitchConfig conf) {
@@ -128,8 +128,8 @@ internal static bool standardCriteria(this nssSource s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string returnˢ = "return"u8;
-private static readonly @string continueˢ = "continue"u8;
+internal static readonly @string returnˢ = "return"u8;
+internal static readonly @string continueˢ = "continue"u8;
 
 // standardStatusAction reports whether c is equivalent to not
 // specifying the criterion at all. last is whether this criteria is the
@@ -174,8 +174,8 @@ internal static ж<nssConf> parseNSSConfFile(@string Δfile) => func((defer, rec
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noColonOnLineˢ = "no colon on line"u8;
-private static readonly @string unclosedCriterionBracketˢ = "unclosed criterion bracket"u8;
+internal static readonly @string noColonOnLineˢ = "no colon on line"u8;
+internal static readonly @string unclosedCriterionBracketˢ = "unclosed criterion bracket"u8;
 
 internal static ж<nssConf> parseNSSConf(ж<Δfile> Ꮡf) {
     ref var f = ref Ꮡf.Value;
@@ -237,8 +237,8 @@ internal static ж<nssConf> parseNSSConf(ж<Δfile> Ꮡf) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string criterionTooShortˢ = "criterion too short"u8;
-private static readonly @string criterionLacksEqualSignˢ = "criterion lacks equal sign"u8;
+internal static readonly @string criterionTooShortˢ = "criterion too short"u8;
+internal static readonly @string criterionLacksEqualSignˢ = "criterion lacks equal sign"u8;
 
 // parses "foo=bar !foo=bar"
 internal static (slice<nssCriterion> c, error err) parseCriteria(@string x) {

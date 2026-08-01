@@ -180,7 +180,7 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedReadFromˢ = "unexpected read from section with uninitialized data"u8;
+internal static readonly @string unexpectedReadFromˢ = "unexpected read from section with uninitialized data"u8;
 
 [GoRecv] internal static (nint n, error err) ReadAt(this ref nobitsSectionReader _, slice<byte> p, int64 off) {
     nint n = default!;
@@ -214,13 +214,13 @@ internal static (@string, bool) getString(slice<byte> section, nint start) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string debugˢ = ".debug_"u8;
-private static readonly @string zdebugˢ = ".zdebug_"u8;
-private static readonly @string abbrevˢ = "abbrev"u8;
-private static readonly @string infoˢ = "info"u8;
-private static readonly @string lineˢ = "line"u8;
-private static readonly @string rangesˢ = "ranges"u8;
-private static readonly @string strˢ = "str"u8;
+internal static readonly @string debugˢ = ".debug_"u8;
+internal static readonly @string zdebugˢ = ".zdebug_"u8;
+internal static readonly @string abbrevˢ = "abbrev"u8;
+internal static readonly @string infoˢ = "info"u8;
+internal static readonly @string lineˢ = "line"u8;
+internal static readonly @string rangesˢ = "ranges"u8;
+internal static readonly @string strˢ = "str"u8;
 
 [GoRecv] public static (ж<dwarf.Data>, error) DWARF(this ref File f) {
     var dwarfSuffix = @string (ж<ΔSection> s) => {
@@ -462,7 +462,7 @@ private static readonly @string strˢ = "str"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownErrorˢ = "unknown error"u8;
+internal static readonly @string unknownErrorˢ = "unknown error"u8;
 
 [GoRecv] public static @string Error(this ref FormatError e) {
     return unknownErrorˢ;

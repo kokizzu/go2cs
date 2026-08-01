@@ -49,7 +49,7 @@ internal static (ж<serverKeyExchangeMsg>, error) generateServerKeyExchange(this
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsCertificatePrivateKeyˢ = "tls: certificate private key does not implement crypto.Decrypter"u8;
+internal static readonly @string tlsCertificatePrivateKeyˢ = "tls: certificate private key does not implement crypto.Decrypter"u8;
 
 internal static (slice<byte>, error) processClientKeyExchange(this rsaKeyAgreement ka, ж<Config> Ꮡconfig, ж<Certificate> Ꮡcert, ж<clientKeyExchangeMsg> Ꮡckx, uint16 version) {
     ref var config = ref Ꮡconfig.Value;
@@ -83,14 +83,14 @@ internal static (slice<byte>, error) processClientKeyExchange(this rsaKeyAgreeme
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsUnexpectedˢ = "tls: unexpected ServerKeyExchange"u8;
+internal static readonly @string tlsUnexpectedˢ = "tls: unexpected ServerKeyExchange"u8;
 
 internal static error processServerKeyExchange(this rsaKeyAgreement ka, ж<Config> Ꮡconfig, ж<clientHelloMsg> ᏑclientHello, ж<serverHelloMsg> ᏑserverHello, ж<Δx509.Certificate> Ꮡcert, ж<serverKeyExchangeMsg> Ꮡskx) {
     return errors.New(tlsUnexpectedˢ);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsServerCertificateˢ = "tls: server certificate contains incorrect key type for selected ciphersuite"u8;
+internal static readonly @string tlsServerCertificateˢ = "tls: server certificate contains incorrect key type for selected ciphersuite"u8;
 
 internal static (slice<byte>, ж<clientKeyExchangeMsg>, error) generateClientKeyExchange(this rsaKeyAgreement ka, ж<Config> Ꮡconfig, ж<clientHelloMsg> ᏑclientHello, ж<Δx509.Certificate> Ꮡcert) {
     ref var config = ref Ꮡconfig.Value;
@@ -185,8 +185,8 @@ internal static slice<byte> hashForServerKeyExchange(uint8 sigType, crypto.Hash 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsNoSupportedEllipticˢ = "tls: no supported elliptic curves offered"u8;
-private static readonly @string tlsCertificateCannotBeˢ = "tls: certificate cannot be used with the selected cipher suite"u8;
+internal static readonly @string tlsNoSupportedEllipticˢ = "tls: no supported elliptic curves offered"u8;
+internal static readonly @string tlsCertificateCannotBeˢ = "tls: certificate cannot be used with the selected cipher suite"u8;
 
 [GoRecv] internal static (ж<serverKeyExchangeMsg>, error) generateServerKeyExchange(this ref ecdheKeyAgreement ka, ж<Config> Ꮡconfig, ж<Certificate> Ꮡcert, ж<clientHelloMsg> ᏑclientHello, ж<serverHelloMsg> Ꮡhello) {
     ref var config = ref Ꮡconfig.Value;
@@ -294,7 +294,7 @@ private static readonly @string tlsCertificateCannotBeˢ = "tls: certificate can
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsServerSelectedˢ4 = "tls: server selected unsupported curve"u8;
+internal static readonly @string tlsServerSelectedˢ4 = "tls: server selected unsupported curve"u8;
 
 [GoRecv] internal static error processServerKeyExchange(this ref ecdheKeyAgreement ka, ж<Config> Ꮡconfig, ж<clientHelloMsg> ᏑclientHello, ж<serverHelloMsg> ᏑserverHello, ж<Δx509.Certificate> Ꮡcert, ж<serverKeyExchangeMsg> Ꮡskx) {
     ref var config = ref Ꮡconfig.Value;
@@ -383,7 +383,7 @@ private static readonly @string tlsServerSelectedˢ4 = "tls: server selected uns
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string tlsMissingˢ = "tls: missing ServerKeyExchange message"u8;
+internal static readonly @string tlsMissingˢ = "tls: missing ServerKeyExchange message"u8;
 
 [GoRecv] internal static (slice<byte>, ж<clientKeyExchangeMsg>, error) generateClientKeyExchange(this ref ecdheKeyAgreement ka, ж<Config> Ꮡconfig, ж<clientHelloMsg> ᏑclientHello, ж<Δx509.Certificate> Ꮡcert) {
     if (ka.ckx == nil) {

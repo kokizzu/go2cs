@@ -125,9 +125,9 @@ public static @string String(this ж<Selection> Ꮡs) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string fieldˢ2 = "field "u8;
-private static readonly @string methodˢ2 = "method "u8;
-private static readonly @string methodExprˢ = "method expr "u8;
+internal static readonly @string fieldˢ2 = "field "u8;
+internal static readonly @string methodˢ2 = "method "u8;
+internal static readonly @string methodExprˢ = "method expr "u8;
 
 // SelectionString returns the string form of s.
 // The Qualifier controls the printing of

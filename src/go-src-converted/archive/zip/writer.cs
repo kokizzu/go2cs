@@ -65,7 +65,7 @@ public static ж<Writer> NewWriter(io.Writer w) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string zipWriterCommentTooLongˢ = "zip: Writer.Comment too long"u8;
+internal static readonly @string zipWriterCommentTooLongˢ = "zip: Writer.Comment too long"u8;
 
 // SetComment sets the end-of-central-directory comment field.
 // It can only be called before [Writer.Close].
@@ -78,7 +78,7 @@ private static readonly @string zipWriterCommentTooLongˢ = "zip: Writer.Comment
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string zipWriterClosedTwiceˢ = "zip: writer closed twice"u8;
+internal static readonly @string zipWriterClosedTwiceˢ = "zip: writer closed twice"u8;
 
 // Close finishes writing the zip file by writing the central directory.
 // It does not close the underlying writer.
@@ -287,7 +287,7 @@ internal static (bool valid, bool require) detectUTF8(@string s) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string archiveZipInvalidˢ = "archive/zip: invalid duplicate FileHeader"u8;
+internal static readonly @string archiveZipInvalidˢ = "archive/zip: invalid duplicate FileHeader"u8;
 
 // prepare performs the bookkeeping operations required at the start of
 // CreateHeader and CreateRaw.
@@ -559,7 +559,7 @@ internal static error writeHeader(io.Writer w, ж<header> Ꮡh) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string zipCannotAddNonRegularˢ = "zip: cannot add non-regular file"u8;
+internal static readonly @string zipCannotAddNonRegularˢ = "zip: cannot add non-regular file"u8;
 
 // AddFS adds the files from fs.FS to the archive.
 // It walks the directory tree starting at the root of the filesystem
@@ -612,7 +612,7 @@ public static error AddFS(this ж<Writer> Ꮡw, fs.FS fsys) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string zipWriteToDirectoryˢ = "zip: write to directory"u8;
+internal static readonly @string zipWriteToDirectoryˢ = "zip: write to directory"u8;
 
 internal static (nint, error) Write(this dirWriter _, slice<byte> b) {
     if (len(b) == 0) {
@@ -632,7 +632,7 @@ internal static (nint, error) Write(this dirWriter _, slice<byte> b) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string zipWriteToClosedFileˢ = "zip: write to closed file"u8;
+internal static readonly @string zipWriteToClosedFileˢ = "zip: write to closed file"u8;
 
 [GoRecv] internal static (nint, error) Write(this ref fileWriter w, slice<byte> p) {
     if (w.closed) {
@@ -646,7 +646,7 @@ private static readonly @string zipWriteToClosedFileˢ = "zip: write to closed f
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string zipFileClosedTwiceˢ = "zip: file closed twice"u8;
+internal static readonly @string zipFileClosedTwiceˢ = "zip: file closed twice"u8;
 
 [GoRecv] internal static error close(this ref fileWriter w) {
     if (w.closed) {

@@ -87,6 +87,13 @@ public static partial class gob_package
     internal partial struct encEngine {}
     internal partial struct encInstr {}
     internal partial struct encoderState {}
+    internal partial struct eᴛ1 {}
+    internal partial struct eᴛ2 {}
+    internal partial struct eᴛ3 {}
+    internal partial struct eᴛ4 {}
+    internal partial struct eᴛ5 {}
+    internal partial struct eᴛ6 {}
+    internal partial struct eᴛ7 {}
     internal partial struct gobError {}
     internal partial struct typeInfo {}
     internal partial struct userTypeInfo {}
@@ -104,12 +111,5 @@ public static partial class gob_package
     public partial struct sliceType {}
     public partial struct structType {}
     public partial struct typeId {}
-    public partial struct Δtype {}
-    public partial struct Δtypeᴛ1 {}
-    public partial struct Δtypeᴛ2 {}
-    public partial struct Δtypeᴛ3 {}
-    public partial struct Δtypeᴛ4 {}
-    public partial struct Δtypeᴛ5 {}
-    public partial struct Δtypeᴛ6 {}
     // </TypeAccessibility>
 }

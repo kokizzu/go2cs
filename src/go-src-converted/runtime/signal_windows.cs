@@ -146,7 +146,7 @@ internal static ж<g> sigFetchG() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unknownSigtrampCallbackˢ = "unknown sigtramp callback"u8;
+internal static readonly @string unknownSigtrampCallbackˢ = "unknown sigtramp callback"u8;
 
 // sigtrampgo is called from the exception handler function, sigtramp,
 // written in assembly code.
@@ -417,8 +417,8 @@ internal static void winthrow(ж<exceptionrecord> Ꮡinfo, ж<context> Ꮡr, ж<
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string unexpectedSignalDuringˢ = "unexpected signal during runtime execution"u8;
-private static readonly @string faultˢ = "fault"u8;
+internal static readonly @string unexpectedSignalDuringˢ = "unexpected signal during runtime execution"u8;
+internal static readonly @string faultˢ = "fault"u8;
 
 internal static void sigpanic() {
     var gp = getg();

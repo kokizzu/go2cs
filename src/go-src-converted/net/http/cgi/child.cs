@@ -49,18 +49,18 @@ internal static map<@string, @string> envMap(slice<@string> env) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cgiNoRequestMethodInˢ = "cgi: no REQUEST_METHOD in environment"u8;
-private static readonly @string serverProtocolˢ = "SERVER_PROTOCOL"u8;
-private static readonly @string cgiInvalidServerProtocolˢ = "cgi: invalid SERVER_PROTOCOL version"u8;
-private static readonly @string httpHostˢ = "HTTP_HOST"u8;
-private static readonly @string contentLengthˢ = "CONTENT_LENGTH"u8;
-private static readonly @string contentTypeˢ = "CONTENT_TYPE"u8;
-private static readonly @string contentTypeˢ2 = "Content-Type"u8;
-private static readonly @string httpˢ = "HTTP_"u8;
-private static readonly @string queryStringˢ = "QUERY_STRING"u8;
-private static readonly @string httpsˢ = "HTTPS"u8;
-private static readonly @string remotePortˢ = "REMOTE_PORT"u8;
-private static readonly @string remoteAddrˢ = "REMOTE_ADDR"u8;
+internal static readonly @string cgiNoRequestMethodInˢ = "cgi: no REQUEST_METHOD in environment"u8;
+internal static readonly @string serverProtocolˢ = "SERVER_PROTOCOL"u8;
+internal static readonly @string cgiInvalidServerProtocolˢ = "cgi: invalid SERVER_PROTOCOL version"u8;
+internal static readonly @string httpHostˢ = "HTTP_HOST"u8;
+internal static readonly @string contentLengthˢ = "CONTENT_LENGTH"u8;
+internal static readonly @string contentTypeˢ = "CONTENT_TYPE"u8;
+internal static readonly @string contentTypeˢ2 = "Content-Type"u8;
+internal static readonly @string httpˢ = "HTTP_"u8;
+internal static readonly @string queryStringˢ = "QUERY_STRING"u8;
+internal static readonly @string httpsˢ = "HTTPS"u8;
+internal static readonly @string remotePortˢ = "REMOTE_PORT"u8;
+internal static readonly @string remoteAddrˢ = "REMOTE_ADDR"u8;
 
 // RequestFromMap creates an [http.Request] from CGI variables.
 // The returned Request's Body field is not populated.

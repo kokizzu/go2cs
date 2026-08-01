@@ -454,7 +454,7 @@ public static (Conn, error) Dial(this ж<Dialer> Ꮡd, @string network, @string 
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dialˢ = "dial"u8;
+internal static readonly @string dialˢ = "dial"u8;
 
 // DialContext connects to the address on the named network using
 // the provided context.
@@ -800,7 +800,7 @@ internal static (Conn c, error err) dialSingle(this ж<sysDialer> Ꮡsd, context
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string listenˢ = "listen"u8;
+internal static readonly @string listenˢ = "listen"u8;
 
 // Listen announces on the local network address.
 //

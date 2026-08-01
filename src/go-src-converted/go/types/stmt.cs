@@ -20,7 +20,7 @@ using global::go.go;
 partial class types_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string missingReturnˢ = "missing return"u8;
+internal static readonly @string missingReturnˢ = "missing return"u8;
 
 internal static void funcBody(this ж<Checker> Ꮡcheck, ж<declInfo> Ꮡdecl, @string name, ж<ΔSignature> Ꮡsig, ж<ast.BlockStmt> Ꮡbody, constant.Value iota) => func((defer, recover) => {
     ref var check = ref Ꮡcheck.Value;
@@ -127,7 +127,7 @@ internal static void stmtList(this ж<Checker> Ꮡcheck, stmtContext ctxt, slice
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string caseCommunicationClauseˢ = "case/communication clause expected"u8;
+internal static readonly @string caseCommunicationClauseˢ = "case/communication clause expected"u8;
 
 internal static void multipleDefaults(this ж<Checker> Ꮡcheck, slice<ast.Stmt> list) {
     ref var check = ref Ꮡcheck.Value;
@@ -182,8 +182,8 @@ internal static token.Token assignOp(token.Token op) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string requiresFunctionCallNotˢ = "requires function call, not conversion"u8;
-private static readonly @string discardsResultOfˢ = "discards result of"u8;
+internal static readonly @string requiresFunctionCallNotˢ = "requires function call, not conversion"u8;
+internal static readonly @string discardsResultOfˢ = "discards result of"u8;
 
 internal static void suspendedCall(this ж<Checker> Ꮡcheck, @string keyword, ж<ast.CallExpr> Ꮡcall) {
     ref var x = ref heap(new operand(), out var Ꮡx);
@@ -371,31 +371,31 @@ break_L:;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string isNotUsedˢ = "is not used"u8;
-private static readonly @string mustBeCalledˢ = "must be called"u8;
-private static readonly @string isNotAnExpressionˢ = "is not an expression"u8;
-private static readonly @string sendˢ = "send"u8;
-private static readonly @string missingLhsInAssignmentˢ = "missing lhs in assignment"u8;
-private static readonly @string deferˢ = "defer"u8;
-private static readonly @string breakNotInForSwitchOrˢ = "break not in for, switch, or select statement"u8;
-private static readonly @string continueNotInForˢ = "continue not in for statement"u8;
-private static readonly @string cannotFallthroughFinalˢ = "cannot fallthrough final case in switch"u8;
-private static readonly @string cannotFallthroughInTypeˢ = "cannot fallthrough in type switch"u8;
-private static readonly @string fallthroughStatementOutˢ = "fallthrough statement out of place"u8;
-private static readonly @string blockˢ = "block"u8;
-private static readonly @string nonBooleanConditionInIfˢ = "non-boolean condition in if statement"u8;
-private static readonly @string invalidElseBranchInIfˢ = "invalid else branch in if statement"u8;
-private static readonly @string switchˢ = "switch"u8;
-private static readonly @string switchExpressionˢ = "switch expression"u8;
-private static readonly @string incorrectExpressionˢ = "incorrect expression switch case"u8;
-private static readonly @string caseˢ = "case"u8;
-private static readonly @string typeSwitchˢ = "type switch"u8;
-private static readonly @string incorrectFormOfTypeˢ = "incorrect form of type switch guard"u8;
-private static readonly @string incorrectTypeSwitchCaseˢ = "incorrect type switch case"u8;
-private static readonly @string selectCaseMustBeSendOrˢ = "select case must be send or receive (possibly with assignment)"u8;
-private static readonly @string forˢ = "for"u8;
-private static readonly @string nonBooleanConditionInForˢ = "non-boolean condition in for statement"u8;
-private static readonly @string invalidStatementˢ = "invalid statement"u8;
+internal static readonly @string isNotUsedˢ = "is not used"u8;
+internal static readonly @string mustBeCalledˢ = "must be called"u8;
+internal static readonly @string isNotAnExpressionˢ = "is not an expression"u8;
+internal static readonly @string sendˢ = "send"u8;
+internal static readonly @string missingLhsInAssignmentˢ = "missing lhs in assignment"u8;
+internal static readonly @string deferˢ = "defer"u8;
+internal static readonly @string breakNotInForSwitchOrˢ = "break not in for, switch, or select statement"u8;
+internal static readonly @string continueNotInForˢ = "continue not in for statement"u8;
+internal static readonly @string cannotFallthroughFinalˢ = "cannot fallthrough final case in switch"u8;
+internal static readonly @string cannotFallthroughInTypeˢ = "cannot fallthrough in type switch"u8;
+internal static readonly @string fallthroughStatementOutˢ = "fallthrough statement out of place"u8;
+internal static readonly @string blockˢ = "block"u8;
+internal static readonly @string nonBooleanConditionInIfˢ = "non-boolean condition in if statement"u8;
+internal static readonly @string invalidElseBranchInIfˢ = "invalid else branch in if statement"u8;
+internal static readonly @string switchˢ = "switch"u8;
+internal static readonly @string switchExpressionˢ = "switch expression"u8;
+internal static readonly @string incorrectExpressionˢ = "incorrect expression switch case"u8;
+internal static readonly @string caseˢ = "case"u8;
+internal static readonly @string typeSwitchˢ = "type switch"u8;
+internal static readonly @string incorrectFormOfTypeˢ = "incorrect form of type switch guard"u8;
+internal static readonly @string incorrectTypeSwitchCaseˢ = "incorrect type switch case"u8;
+internal static readonly @string selectCaseMustBeSendOrˢ = "select case must be send or receive (possibly with assignment)"u8;
+internal static readonly @string forˢ = "for"u8;
+internal static readonly @string nonBooleanConditionInForˢ = "non-boolean condition in for statement"u8;
+internal static readonly @string invalidStatementˢ = "invalid statement"u8;
 
 // TODO(gri) Once we are certain that typeHash is correct in all situations, use this version of caseTypes instead.
 // (Currently it may be possible that different types have identical names and import paths due to ImporterFrom.)
@@ -972,9 +972,9 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string rangeˢ = "range"u8;
-private static readonly @string rangeClauseˢ = "range clause"u8;
-private static readonly @string noNewVariablesOnLeftSideˢ = "no new variables on left side of :="u8;
+internal static readonly @string rangeˢ = "range"u8;
+internal static readonly @string rangeClauseˢ = "range clause"u8;
+internal static readonly @string noNewVariablesOnLeftSideˢ = "no new variables on left side of :="u8;
 
 internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<ast.RangeStmt> Ꮡs) => func((defer, recover) => {
     ref var check = ref Ꮡcheck.Value;
@@ -1139,15 +1139,15 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string noCoreTypeˢ = "no core type"u8;
-private static readonly @string requiresGo122OrLaterˢ = "requires go1.22 or later"u8;
-private static readonly @string receiveFromSendOnlyˢ = "receive from send-only channel"u8;
-private static readonly @string requiresGo123OrLaterˢ = "requires go1.23 or later"u8;
-private static readonly @string funcMustBeFuncYieldFuncˢ = "func must be func(yield func(...) bool): wrong argument count"u8;
-private static readonly @string funcMustBeFuncYieldFuncˢ2 = "func must be func(yield func(...) bool): argument is not func"u8;
-private static readonly @string funcMustBeFuncYieldFuncˢ3 = "func must be func(yield func(...) bool): unexpected results"u8;
-private static readonly @string funcMustBeFuncYieldFuncˢ4 = "func must be func(yield func(...) bool): yield func has too many parameters"u8;
-private static readonly @string funcMustBeFuncYieldFuncˢ5 = "func must be func(yield func(...) bool): yield func does not return bool"u8;
+internal static readonly @string noCoreTypeˢ = "no core type"u8;
+internal static readonly @string requiresGo122OrLaterˢ = "requires go1.22 or later"u8;
+internal static readonly @string receiveFromSendOnlyˢ = "receive from send-only channel"u8;
+internal static readonly @string requiresGo123OrLaterˢ = "requires go1.23 or later"u8;
+internal static readonly @string funcMustBeFuncYieldFuncˢ = "func must be func(yield func(...) bool): wrong argument count"u8;
+internal static readonly @string funcMustBeFuncYieldFuncˢ2 = "func must be func(yield func(...) bool): argument is not func"u8;
+internal static readonly @string funcMustBeFuncYieldFuncˢ3 = "func must be func(yield func(...) bool): unexpected results"u8;
+internal static readonly @string funcMustBeFuncYieldFuncˢ4 = "func must be func(yield func(...) bool): yield func has too many parameters"u8;
+internal static readonly @string funcMustBeFuncYieldFuncˢ5 = "func must be func(yield func(...) bool): yield func does not return bool"u8;
 
 // rangeKeyVal returns the key and value type produced by a range clause
 // over an expression of type typ.

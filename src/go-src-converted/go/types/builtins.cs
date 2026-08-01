@@ -17,16 +17,16 @@ using ꓸꓸꓸType = Span<types_package.ΔType>;
 partial class types_package {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string haveUntypedNilˢ = "have untyped nil"u8;
-private static readonly @string argumentToDeleteˢ = "argument to delete"u8;
-private static readonly @string argumentToPanicˢ = "argument to panic"u8;
-private static readonly @string argumentToUnsafeAddˢ = "argument to unsafe.Add"u8;
-private static readonly @string lengthˢ = "length"u8;
-private static readonly @string argumentToUnsafeAlignofˢ = "argument to unsafe.Alignof"u8;
-private static readonly @string argumentToUnsafeSizeofˢ = "argument to unsafe.Sizeof"u8;
-private static readonly @string argumentToUnsafeStringˢ = "argument to unsafe.String"u8;
-private static readonly @string argumentToUnsafeˢ = "argument to unsafe.StringData"u8;
-private static readonly @string vTraceWithoutArgumentsˢ = "%v: trace() without arguments"u8;
+internal static readonly @string haveUntypedNilˢ = "have untyped nil"u8;
+internal static readonly @string argumentToDeleteˢ = "argument to delete"u8;
+internal static readonly @string argumentToPanicˢ = "argument to panic"u8;
+internal static readonly @string argumentToUnsafeAddˢ = "argument to unsafe.Add"u8;
+internal static readonly @string lengthˢ = "length"u8;
+internal static readonly @string argumentToUnsafeAlignofˢ = "argument to unsafe.Alignof"u8;
+internal static readonly @string argumentToUnsafeSizeofˢ = "argument to unsafe.Sizeof"u8;
+internal static readonly @string argumentToUnsafeStringˢ = "argument to unsafe.String"u8;
+internal static readonly @string argumentToUnsafeˢ = "argument to unsafe.StringData"u8;
+internal static readonly @string vTraceWithoutArgumentsˢ = "%v: trace() without arguments"u8;
 
 // builtin type-checks a call to the built-in specified by id and
 // reports whether the call is valid, with *x holding the result;

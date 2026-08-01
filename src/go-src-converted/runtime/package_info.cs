@@ -410,7 +410,6 @@ public static partial class runtime_package
     public partial struct Frame {}
     public partial struct Frames {}
     public partial struct Func {}
-    public partial struct Func_opaque {}
     public partial struct MemProfileRecord {}
     public partial struct MemStats {}
     public partial struct MemStats_BySize {}

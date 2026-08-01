@@ -241,8 +241,8 @@ internal static error convertAssign(any dest, any src) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string invalidContextToConvertˢ = "invalid context to convert cursor rows, missing parent *Rows"u8;
-private static readonly @string destinationNotAPointerˢ = "destination not a pointer"u8;
+internal static readonly @string invalidContextToConvertˢ = "invalid context to convert cursor rows, missing parent *Rows"u8;
+internal static readonly @string destinationNotAPointerˢ = "destination not a pointer"u8;
 
 // convertAssignRows copies to dest the value in src, converting it if possible.
 // An error is returned if the copy would result in loss of information.

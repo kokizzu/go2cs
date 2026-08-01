@@ -72,7 +72,7 @@ internal static UntypedInt peekBufferSize => 4096;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string nameˢ = "name"u8;
+internal static readonly @string nameˢ = "name"u8;
 
 // FormName returns the name parameter if p has a Content-Disposition
 // of type "form-data".  Otherwise it returns the empty string.
@@ -89,7 +89,7 @@ private static readonly @string nameˢ = "name"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string filenameˢ = "filename"u8;
+internal static readonly @string filenameˢ = "filename"u8;
 
 // FileName returns the filename parameter of the [Part]'s Content-Disposition
 // header. If not empty, the filename is passed through filepath.Base (which is
@@ -108,7 +108,7 @@ private static readonly @string filenameˢ = "filename"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string contentDispositionˢ = "Content-Disposition"u8;
+internal static readonly @string contentDispositionˢ = "Content-Disposition"u8;
 
 [GoRecv] internal static void parseContentDisposition(this ref Part p) {
     @string v = p.Header.Get(contentDispositionˢ);
@@ -157,7 +157,7 @@ public static ж<Reader> NewReader(io.Reader r, @string boundary) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string quotedPrintableˢ = "quoted-printable"u8;
+internal static readonly @string quotedPrintableˢ = "quoted-printable"u8;
 
 internal static (ж<Part>, error) newPart(ж<Reader> Ꮡmr, bool rawPart, int64 maxMIMEHeaderSize, int64 maxMIMEHeaders) {
     ref var mr = ref Ꮡmr.Value;

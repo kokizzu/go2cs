@@ -100,7 +100,7 @@ internal static void send(this ж<Client> Ꮡclient, ж<ΔCall> Ꮡcall) => func
 });
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object rpcClientProtocolErrorˢ = (@string)"rpc: client protocol error:"u8;
+internal static readonly object rpcClientProtocolErrorˢ = (@string)"rpc: client protocol error:"u8;
 
 internal static void input(this ж<Client> Ꮡclient) {
     ref var client = ref Ꮡclient.Value;
@@ -177,7 +177,7 @@ internal static void input(this ж<Client> Ꮡclient) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object rpcDiscardingCallReplyˢ = (@string)"rpc: discarding Call reply due to insufficient Done chan capacity"u8;
+internal static readonly object rpcDiscardingCallReplyˢ = (@string)"rpc: discarding Call reply due to insufficient Done chan capacity"u8;
 
 internal static void done(this ж<ΔCall> Ꮡcall) {
     ref var call = ref Ꮡcall.Value;
@@ -317,7 +317,7 @@ public static error Close(this ж<Client> Ꮡclient) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly object rpcDoneChannelIsˢ = (@string)"rpc: done channel is unbuffered"u8;
+internal static readonly object rpcDoneChannelIsˢ = (@string)"rpc: done channel is unbuffered"u8;
 
 // Go invokes the function asynchronously. It returns the [Call] structure representing
 // the invocation. The done channel will signal when the call is complete by returning
