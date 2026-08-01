@@ -1,0 +1,516 @@
+﻿// GoReflect.ValueMarshalling.cs - Gbtc
+// Copyright © 2026 The go2cs Authors. All rights reserved.
+//
+// Use of this source code is governed by an MIT-style license
+// that can be found in the LICENSE file.
+
+// ReSharper disable InconsistentNaming
+
+using System;
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Reflection;
+using go.golib;
+
+namespace go;
+
+// ---------------------------------------------------------------------------------------------
+// VALUE MARSHALLING — producing a value of a target Go type.
+//
+// WHAT LIVES HERE
+//   The two ways the bridge produces one, kept together because they share the same rules and the
+//   same wrapper machinery:
+//     * CONVERT an existing value — `GoImplements`, `TryMarshalAssignable` (the write half of
+//       `reflect.Value.Set`), `TryConvertTo` (the `Set{Int,Uint,Float,Complex,String,Bool}` and
+//       `Convert` family), and the scalar coercion under them.
+//     * FABRICATE one from nothing — `CanonicalNilPointer`, `ZeroValueOf`/`DefaultValueOf`
+//       (`reflect.Zero`, `SetZero`), `MakeSizedArray`, `MakeContainer` (`reflect.MakeSlice`/
+//       `MakeMap`), `NewPointerBox` (`reflect.New`).
+//   Fabrication is the degenerate case of conversion — "make me the value of this type that
+//   carries no information" — and it reaches the same wrapper constructors, which is why splitting
+//   the two apart would put one rule in two files.
+//
+// THE ZERO VALUE IS PER KIND, AND `default` IS OFTEN WRONG
+//   Go's zero value has one encoding per kind and the managed representations do not line up:
+//     * a pointer zero is the CANONICAL typed-nil instance, not a fresh nil box and not `null` —
+//       one nil encoding system-wide is what makes `any((*T)(nil)) != nil` and `%T` on a typed nil
+//       work at all;
+//     * an interface or func zero IS `null` (a nil interface has no type; a nil func is a null
+//       delegate);
+//     * a slice/map/chan zero is the container STRUCT's default, never `Activator.CreateInstance`
+//       — the golib containers have explicit parameterless constructors that allocate a NON-nil
+//       backing, so `Activator` would hand back an empty-but-non-nil container where Go wants nil;
+//     * a struct zero is a default instance and its FIELD INITIALIZERS are part of the Go zero —
+//       a blank `_ [4]byte` field materializes its own length there.
+//
+// TWO TRAPS THAT `System.Object` SETS, BOTH ALREADY PAID FOR
+//   Go's empty interface is emitted as `object`, and `typeof(object).IsInterface` is FALSE. Both
+//   `GoImplements` and `TryMarshalAssignable` therefore carry an explicit `object` arm ahead of
+//   their interface arm; without it `reflect.Type.AssignableTo`/`Implements` answered false for
+//   every type against `interface{}`, and `Set` into an `any` slot rejected every value gob had
+//   just decoded ("gob: int is not assignable to type interface {}"). `KindOf` in the primary file
+//   carries the same arm for the same reason. A new interface-shaped test needs it too.
+//
+// NAMED WRAPPERS CONVERT IN BOTH DIRECTIONS, AND ONLY THROUGH THEIR CONSTRUCTOR
+//   `type TestPtrAlias *int` is a generated wrapper over a raw `ж<int>`. Go's named/unnamed
+//   assignability rule — identical underlying types with at least one side unnamed — is
+//   implemented by constructing through the wrapper's generated single-argument constructor one
+//   way and unwrapping `m_value` the other. Constructing WRAPS THE SAME BOX rather than copying,
+//   so pointer identity and write-through survive the round trip. Two DIFFERENT named types match
+//   neither arm, which is Go-correct.
+//
+// SCALAR STORES TRUNCATE — THEY DO NOT PANIC
+//   `coerceScalar` widens to `long`/`double` and narrows unchecked, because that is the Go 1.23
+//   `reflect` contract for the `Set*` family: no overflow panic on a store. Adding a checked
+//   conversion here would introduce a panic Go does not have.
+//
+// THE HISTORY POINTER
+//   The construction/conversion/size/func-shape/field-projection work landed together as the
+//   reflection bridge's Phase-3 increment 2; its design and adversarial-review ledger is
+//   docs/Phase4/DESIGN-reflection-bridge-phase3-plan.md (I2.R). The other halves of that increment
+//   now live in GoReflect.TypeLayout.cs and GoReflect.FieldAccess.cs.
+// ---------------------------------------------------------------------------------------------
+public static partial class GoReflect
+{
+    /// <summary>
+    /// The canonical typed nil instance for a closed <c>ж&lt;T&gt;</c> pointer type (<see cref="ж{T}.NilBox"/>),
+    /// resolved from the runtime <see cref="Type"/> — what <c>reflect.Zero</c> of a pointer kind yields.
+    /// </summary>
+    public static object? CanonicalNilPointer(Type pointerType)
+    {
+        return s_canonicalNils.GetOrAdd(pointerType, static t =>
+        {
+            if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ж<>))
+                return t.GetProperty(nameof(ж<int>.NilBox), BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+
+            // A generated NAMED pointer wrapper exposes its canonical typed nil as NilInstance
+            // (declared internal by the template — probe both visibilities).
+            return t.GetProperty("NilInstance", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
+        });
+    }
+
+    private static readonly ConcurrentDictionary<Type, object?> s_canonicalNils = new();
+
+    /// <summary>
+    /// Go's <c>implements</c> relation over managed types: <paramref name="ifaceType"/> is an
+    /// interface that <paramref name="valueType"/> satisfies nominally OR structurally by Go
+    /// method-set rules — the SAME probe the emitted <c>_&lt;T&gt;</c> asserts use, so reflection
+    /// and direct asserts can never disagree about a method set.
+    /// </summary>
+    /// <remarks>
+    /// Go's EMPTY interface (<c>interface{}</c> / <c>any</c>) is emitted as <c>object</c>, which is
+    /// not a CLR interface — but it IS the interface with no methods, and every Go type satisfies
+    /// it. <see cref="Type.IsAssignableFrom"/> already answers that (boxing included); only the
+    /// <see cref="Type.IsInterface"/> gate stood in the way, so <c>reflect.Type.AssignableTo</c> /
+    /// <c>Implements</c> answered FALSE for every type against <c>interface{}</c> — gob's
+    /// <c>decodeInterface</c> rejected every concrete value it had just decoded ("gob: int is not
+    /// assignable to type interface {}", TestInterfaceBasic / TestInterfacePointer /
+    /// TestNestedInterfaces).
+    /// </remarks>
+    public static bool GoImplements(Type? ifaceType, Type? valueType)
+    {
+        if (ifaceType is null || valueType is null)
+            return false;
+
+        if (!ifaceType.IsInterface && ifaceType != typeof(object))
+            return false;
+
+        return ifaceType.IsAssignableFrom(valueType) || valueType.StructurallyImplements(ifaceType);
+    }
+
+    /// <summary>
+    /// Marshals a bridge Value's live source object for assignment into a destination slot of
+    /// <paramref name="dstType"/> under Go assignability (identity, or interface-implements) —
+    /// the write half of <c>reflect.Value.Set</c>. Returns false when Go would panic
+    /// ("value of type X is not assignable to type Y").
+    /// </summary>
+    public static bool TryMarshalAssignable(object? src, Type dstType, out object? marshalled)
+    {
+        marshalled = null;
+
+        // `any` destination — Go's EMPTY interface holds the value DIRECTLY, and every type is
+        // assignable to it. System.Object reports IsInterface false (the same trap KindOf and
+        // TryConvertTo already carry an explicit arm for), so without this the interface arm below
+        // never fired and reflect.Value.Set into an `any` slot rejected every concrete value gob
+        // had just decoded ("reflect.Set: value of type int is not assignable to type
+        // interface {}" — TestInterfaceBasic / TestInterfacePointer / TestNestedInterfaces).
+        if (dstType == typeof(object))
+        {
+            marshalled = src;
+            return true;
+        }
+
+        // A valid-but-nil SOURCE: assignable to an interface destination (stays the nil
+        // interface) and to any REFERENCE-typed slot (a null slot value IS the nil pointer/
+        // func — X2.3 equality treats null-reference and the canonical nil box as one nil);
+        // never to a value-typed slot (a nil-able container STRUCT's nil is its default value,
+        // which is a non-null source).
+        if (src is null)
+        {
+            if (dstType.IsInterface)
+                return true;
+
+            marshalled = null;
+            return !dstType.IsValueType;
+        }
+
+        // Identity — including a pointer-sourced interface value unwrapping to its receiver box
+        // (Go: the interface holds the *T) and the canonical typed-nil box of the same type.
+        object dynamicSrc = src;
+
+        while (dynamicSrc is IInterfaceAdapter { Value: not null } interfaceAdapter)
+            dynamicSrc = interfaceAdapter.Value;
+
+        if (dynamicSrc is IжAdapter { Box: not null } pointerAdapter)
+            dynamicSrc = pointerAdapter.Box;
+        else if (dynamicSrc is IValueAdapter { Value: not null } valueAdapter)
+            dynamicSrc = valueAdapter.Value;
+
+        if (dynamicSrc.GetType() == dstType)
+        {
+            marshalled = dynamicSrc;
+            return true;
+        }
+
+        // Go assignability's named↔unnamed rule: identical UNDERLYING types with at least one
+        // side unnamed. A raw value assigning into a NAMED wrapper slot constructs the wrapper
+        // through its generated single-argument constructor (`reflect.New(TestPtrAlias.Elem())`
+        // yields a raw *int; `Set` into a `type TestPtrAlias *int` slot wraps the SAME box, so
+        // pointer identity and write-through survive); a named wrapper assigning into its raw
+        // underlying slot unwraps. Two DIFFERENT named types never match either arm (Go-correct).
+        ConstructorInfo? dstWrapperCtor = wrapperConstructorOf(dstType);
+
+        if (dstWrapperCtor is not null && dstWrapperCtor.GetParameters()[0].ParameterType == dynamicSrc.GetType())
+        {
+            marshalled = dstWrapperCtor.Invoke([dynamicSrc]);
+            return true;
+        }
+
+        if (TryUnwrapWrapperValue(dynamicSrc, out object? unwrappedSrc) && unwrappedSrc.GetType() == dstType)
+        {
+            marshalled = unwrappedSrc;
+            return true;
+        }
+
+        // Interface destination: nominal instance passes through unchanged (preserving the
+        // original interface value's identity); otherwise the golib assert machinery builds the
+        // duck-typed wrapper — the same route emitted `_<T>` asserts take.
+        if (dstType.IsInterface)
+        {
+            if (dstType.IsInstanceOfType(src))
+            {
+                marshalled = src;
+                return true;
+            }
+
+            if (builtin.TryTypeAssert(src, dstType, out object? wrapped))
+            {
+                marshalled = wrapped;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // ==== FABRICATION — producing a value of a type from nothing ====
+    // The other half of this file. Everything above CONVERTS a value that already exists; everything
+    // from here down MAKES one, and reaches the same named-wrapper constructors to do it. Both halves
+    // came from the reflection bridge's Phase-3 increment 2, whose design and adversarial-review
+    // ledger is docs/Phase4/DESIGN-reflection-bridge-phase3-plan.md (I2.R); the size/dims and
+    // field-projection halves of that increment live in the TypeLayout and FieldAccess siblings.
+
+    // -------- zero construction (reflect.Zero / reflect.New / SetZero share ONE rule) --------
+
+    /// <summary>
+    /// The boxed Go ZERO value for a managed type: pointer kinds yield the canonical typed-nil
+    /// instance (one nil encoding system-wide); interface/func kinds a null reference (Go's nil
+    /// interface has no type; a nil func is a null delegate); slice/map/chan kinds their nil
+    /// container STRUCT default (never <see cref="Activator"/> — the golib containers' explicit
+    /// parameterless constructors allocate NON-nil backings); array kinds a backing sized from
+    /// <paramref name="arrayDims"/> when known; everything else a default instance (whose field
+    /// initializers ARE the Go zero — a blank `_ [4]byte` field materializes its length).
+    /// </summary>
+    public static object? ZeroValueOf(Type t, nint[]? arrayDims = null)
+    {
+        switch (KindOf(t))
+        {
+            case Pointer:
+            case UnsafePointer:
+                return CanonicalNilPointer(t);
+            case Interface:
+            case Func:
+                return null;
+            case String:
+                // A NAMED string type's zero is the zero WRAPPER, not a raw @string (the slot
+                // is wrapper-typed); raw @string keeps the explicit empty-string form.
+                return t == typeof(@string) || t == typeof(string) ? (@string)"" : Activator.CreateInstance(t);
+            case Slice:
+            case Map:
+            case Chan:
+                return DefaultValueOf(t);
+            case Array:
+                return arrayDims is { Length: > 0 } && t.IsGenericType ? MakeSizedArray(t, arrayDims, 0) : DefaultValueOf(t);
+            default:
+                return Activator.CreateInstance(t);
+        }
+    }
+
+    // Cached boxed default(T) — the nil form of the golib container STRUCTS (a null reference is
+    // NOT the nil map/chan/slice; the zero struct is).
+    private static readonly ConcurrentDictionary<Type, Func<object?>> s_defaultFactories = new();
+
+    /// <summary>The boxed <c>default(T)</c> for a managed type (cached factory).</summary>
+    public static object? DefaultValueOf(Type t)
+    {
+        return s_defaultFactories.GetOrAdd(t, static ct =>
+            typeof(GoReflect).GetMethod(nameof(defaultOf), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(ct).CreateDelegate<Func<object?>>())();
+    }
+
+    private static object? defaultOf<T>()
+    {
+        return default(T);
+    }
+
+    /// <summary>
+    /// Constructs a raw <c>array&lt;E&gt;</c> with real backing storage sized from a dims vector
+    /// (nested dims build nested element factories, mirroring the converter's own
+    /// <c>new(128, () =&gt; new(4))</c> field-initializer form).
+    /// </summary>
+    public static object MakeSizedArray(Type arrayType, nint[] dims, int level)
+    {
+        Type? elem = ElementType(arrayType);
+
+        if (elem is null)
+            throw new InvalidOperationException($"MakeSizedArray: {arrayType} has no element type.");
+
+        if (level >= dims.Length - 1 || KindOf(elem) != Array)
+            return Activator.CreateInstance(arrayType, dims[level])!;
+
+        MethodInfo factoryMaker = typeof(GoReflect).GetMethod(nameof(sizedArrayElementFactory), BindingFlags.NonPublic | BindingFlags.Static)!
+            .MakeGenericMethod(elem);
+
+        object elementFactory = factoryMaker.Invoke(null, [elem, dims, level + 1])!;
+
+        return Activator.CreateInstance(arrayType, dims[level], elementFactory)!;
+    }
+
+    private static Func<E> sizedArrayElementFactory<E>(Type elemType, nint[] dims, int level)
+    {
+        return () => (E)MakeSizedArray(elemType, dims, level)!;
+    }
+
+    // -------- container construction (reflect.MakeSlice / MakeMap; named wrappers included) --------
+
+    private static readonly ConcurrentDictionary<Type, Func<nint, nint, object>> s_containerMakers = new();
+
+    /// <summary>
+    /// Constructs a golib container (or a generated NAMED container wrapper) through its
+    /// <c>ISupportMake</c> surface — the same construction <c>make()</c> emissions use, so
+    /// <c>reflect.MakeSlice(namedSliceType, …)</c> yields the WRAPPER, exactly Go's named result.
+    /// </summary>
+    public static object MakeContainer(Type containerType, nint p1 = 0, nint p2 = -1)
+    {
+        return s_containerMakers.GetOrAdd(containerType, static ct =>
+            typeof(GoReflect).GetMethod(nameof(makeSupported), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(ct).CreateDelegate<Func<nint, nint, object>>())(p1, p2);
+    }
+
+    private static object makeSupported<T>(nint p1, nint p2) where T : ISupportMake<T>
+    {
+        return T.Make(p1, p2)!;
+    }
+
+    // -------- pointer-box construction (reflect.New) --------
+
+    private static readonly ConcurrentDictionary<Type, Func<object?, object>> s_boxMakers = new();
+
+    /// <summary>A fresh heap box <c>ж&lt;T&gt;</c> holding <paramref name="value"/> — <c>reflect.New</c>'s allocation.</summary>
+    public static object NewPointerBox(Type pointeeType, object? value)
+    {
+        return s_boxMakers.GetOrAdd(pointeeType, static pt =>
+            typeof(GoReflect).GetMethod(nameof(newBox), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(pt).CreateDelegate<Func<object?, object>>())(value);
+    }
+
+    private static object newBox<T>(object? value)
+    {
+        return value is null ? new ж<T>(default(T)!) : new ж<T>((T)value);
+    }
+
+    // -------- Go convertibility (Set{Int,Uint,Float,Complex,String,Bool} + future Convert) --------
+
+    /// <summary>
+    /// Go's CONVERTIBILITY relation over boxed managed values — the single conversion rule the
+    /// reflection Set* family routes through (assignability, then named-wrapper construction via
+    /// the wrapper's generated single-argument constructor, then the kinded scalar conversions
+    /// with Go semantics: integer stores TRUNCATE to the destination width, floats/complex narrow).
+    /// </summary>
+    public static bool TryConvertTo(object? src, Type dstType, out object? result)
+    {
+        result = null;
+
+        // `any` destination: everything (including nil) passes through unchanged.
+        if (dstType == typeof(object))
+        {
+            result = src;
+            return true;
+        }
+
+        if (src is null)
+            return dstType.IsInterface;
+
+        if (TryMarshalAssignable(src, dstType, out result))
+            return true;
+
+        // A named-wrapper source converts through its underlying value first.
+        if (TryUnwrapWrapperValue(src, out object? unwrapped) && TryConvertTo(unwrapped, dstType, out result))
+            return true;
+
+        // A named-wrapper destination constructs through its generated single-argument
+        // constructor (parameter type discovered, never assumed primitive — golib struct
+        // underlyings like @string/uintptr/complex64 included).
+        ConstructorInfo? wrapperCtor = wrapperConstructorOf(dstType);
+
+        if (wrapperCtor is not null)
+        {
+            Type underlying = wrapperCtor.GetParameters()[0].ParameterType;
+
+            if (underlying != dstType && TryConvertTo(src, underlying, out object? underlyingValue))
+            {
+                result = wrapperCtor.Invoke([underlyingValue]);
+                return true;
+            }
+
+            return false;
+        }
+
+        result = coerceScalar(KindOf(dstType), dstType, src);
+        return result is not null;
+    }
+
+    private static readonly ConcurrentDictionary<Type, ConstructorInfo?> s_wrapperConstructors = new();
+
+    // The generated wrapper constructor taking the underlying value (never the NilType form).
+    // Memoized WHOLE, not just its [GoType] gate: the answer is one per-type-immutable
+    // ConstructorInfo, and TryConvertTo reaches this per VALUE from reflect.Value.Set /
+    // SetMapIndex / Call / Convert — so the constructor scan was repeated per call too.
+    private static ConstructorInfo? wrapperConstructorOf(Type t)
+    {
+        return s_wrapperConstructors.GetOrAdd(t, static type =>
+        {
+            if (goTypeMarkerOf(type) is null)
+                return null;
+
+            foreach (ConstructorInfo ctor in type.GetConstructors())
+            {
+                ParameterInfo[] parameters = ctor.GetParameters();
+
+                if (parameters.Length == 1 && parameters[0].ParameterType != typeof(NilType))
+                    return ctor;
+            }
+
+            return null;
+        });
+    }
+
+    /// <summary>Unwraps a generated named-type wrapper value to its single underlying field value.</summary>
+    public static bool TryUnwrapWrapperValue(object src, [NotNullWhen(true)] out object? underlying)
+    {
+        underlying = null;
+        Type t = src.GetType();
+
+        if (goTypeMarkerOf(t) is not { Definition.Length: > 0 } def || def.Definition == "dyn")
+            return false;
+
+        FieldInfo? valueField = t.GetField("m_value", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        if (valueField is null)
+            return false;
+
+        underlying = valueField.GetValue(src);
+        return underlying is not null;
+    }
+
+    // Go scalar conversion into a destination kind: integers truncate (unchecked), floats and
+    // complex narrow — exactly the reflect Set{Int,Uint,Float,Complex} contract (verified against
+    // Go 1.23 reflect: no overflow panic on Set*).
+    private static object? coerceScalar(int dstKind, Type dstType, object src)
+    {
+        switch (dstKind)
+        {
+            case Bool:
+                return src is bool b ? b : null;
+            case String:
+                return src switch { @string gs => (object)gs, string s => (@string)s, _ => null };
+            case Complex128:
+                return src switch { Complex c => c, complex64 c64 => (Complex)c64, _ => null };
+            case Complex64:
+                return src switch
+                {
+                    Complex c => new complex64((float)c.Real, (float)c.Imaginary),
+                    complex64 c64 => c64,
+                    _ => null
+                };
+            case Float32:
+                return tryWideFloat(src, out double f32) ? (float)f32 : null;
+            case Float64:
+                return tryWideFloat(src, out double f64) ? f64 : null;
+        }
+
+        if (!tryWideInteger(src, out long wide))
+            return null;
+
+        return dstKind switch
+        {
+            Int => (nint)wide,
+            Int8 => (sbyte)wide,
+            Int16 => (short)wide,
+            Int32 => (int)wide,
+            Int64 => wide,
+            Uint => unchecked((nuint)wide),
+            Uint8 => unchecked((byte)wide),
+            Uint16 => unchecked((ushort)wide),
+            Uint32 => unchecked((uint)wide),
+            Uint64 => unchecked((ulong)wide),
+            Uintptr => new uintptr(unchecked((nuint)wide)),
+            _ => null
+        };
+    }
+
+    private static bool tryWideInteger(object src, out long wide)
+    {
+        switch (src)
+        {
+            case long l: wide = l; return true;
+            case ulong ul: wide = unchecked((long)ul); return true;
+            case nint n: wide = n; return true;
+            case nuint nu: wide = unchecked((long)nu); return true;
+            case int i: wide = i; return true;
+            case uint u: wide = u; return true;
+            case short s: wide = s; return true;
+            case ushort us: wide = us; return true;
+            case sbyte sb: wide = sb; return true;
+            case byte bt: wide = bt; return true;
+            case uintptr up: wide = unchecked((long)up.Value); return true;
+            case double d: wide = unchecked((long)d); return true;
+            case float f: wide = unchecked((long)f); return true;
+            default: wide = 0; return false;
+        }
+    }
+
+    private static bool tryWideFloat(object src, out double wide)
+    {
+        switch (src)
+        {
+            case double d: wide = d; return true;
+            case float f: wide = f; return true;
+            default:
+                bool ok = tryWideInteger(src, out long l);
+                wide = l;
+                return ok;
+        }
+    }
+}
