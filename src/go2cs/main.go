@@ -3677,8 +3677,15 @@ func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType ty
 		// composes UNPREFIXED: the generator's foreign check is by containing assembly, so it
 		// generates the bare composed name — and the record is adapter-class-marked, so the
 		// -tests metadata split anchors it in the test package unit where the bare name resolves.
+		//
+		// The WHITE-BOX bridge's PRODUCTION-declared source interface is the exception, and it is
+		// the same one the value arm below already makes: go/packages merges the production files
+		// into the internal variant's own Go package, so `pkg == v.pkg` reads it as local, while
+		// its C# lives in the REFERENCED production assembly — foreign to the generator's
+		// containing-assembly check, which therefore prefixes (`net_ConnᴠReader`). Both sides must
+		// compose the same name (net: 26 CS0426 across seven internal test files).
 		if named, ok := types.Unalias(targetType).(*types.Named); ok {
-			if pkg := named.Obj().Pkg(); pkg != nil && pkg != v.pkg && !v.isSameAssemblyPkg(pkg) {
+			if pkg := named.Obj().Pkg(); pkg != nil && ((pkg != v.pkg && !v.isSameAssemblyPkg(pkg)) || whiteboxProductionTarget) {
 				simpleTarget := targetTypeName
 
 				if idx := strings.LastIndex(simpleTarget, "."); idx >= 0 {
