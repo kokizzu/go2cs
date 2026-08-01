@@ -15,6 +15,12 @@
 > sections with what stood behind them. Neither package banks, and the roster is unchanged at 66; a
 > build blocker closing is worth recording precisely because the *next* wall is now measurable.
 >
+> **Revised again 2026-07-31 (r28-net)**: six of the seven semantic roots the previous revision
+> bucketed for `net` are fixed — `net` is down to **2 errors from one root**, and that root is a
+> ruling (`testing.T.Deadline` needs a type the one-testing-package cannot name), not a defect. See
+> the `net` section. The roster is **unchanged at 69** — the "66" in the paragraph above was already
+> stale when it was written, and no package banks from this arc.
+>
 > A note the arc earned: a **first diagnostic is a starting point, not a diagnosis**. `io`'s first
 > error is CS0012 and reads as a missing reference; it is not one. Two of the three claims below
 > that were stated as "measured" did not survive re-measurement on a freshly built converter.
