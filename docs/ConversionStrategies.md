@@ -24,44 +24,27 @@ directly (interface satisfaction, receiver overloads, struct-embedding promotion
 
 ## Contents
 
-- **Packages & project structure**
-  - [Package Conversion](#package-conversion)
-  - [Package-Level Variable Initialization Order](#package-level-variable-initialization-order)
-  - [Compiled Library versus Source Code](#compiled-library-versus-source-code)
-- **Numbers, constants & nil**
-  - [Constant Values](#constant-values)
-  - [Native and Narrow Integer Types](#native-and-narrow-integer-types)
-  - [Named Numeric Types and Constant Contexts](#named-numeric-types-and-constant-contexts)
-  - [Nil and Zero Values](#nil-and-zero-values)
-  - [Empty Interface (`any`)](#empty-interface-any)
-- **Assignment & scope**
-  - [Multi-Assignment and Evaluation Order](#multi-assignment-and-evaluation-order)
-  - [Short Variable Redeclaration (Shadowing)](#short-variable-redeclaration-shadowing)
-  - [Multi-Result Values and Comma-Ok Forms](#multi-result-values-and-comma-ok-forms)
-- **Composite & named types**
-  - [Slices and Arrays](#slices-and-arrays)
-  - [Strings (`@string` and `sstring`)](#strings-string-and-sstring)
-  - [Maps and Channels](#maps-and-channels)
-  - [Generic Constraints](#generic-constraints)
-  - [Type Aliasing](#type-aliasing)
-- **Functions & control flow**
-  - [Delegates to Value Receiver Instances](#delegates-to-value-receiver-instances)
-  - [Defer / Panic / Recover](#defer--panic--recover)
-  - [Expression Switch Statements](#expression-switch-statements)
-  - [Type Switch Statements](#type-switch-statements)
-  - [Labeled Control Flow and Loop Variables](#labeled-control-flow-and-loop-variables)
-- **Types & polymorphism**
-  - [Struct Types](#struct-types)
-  - [Struct Type Embedding](#struct-type-embedding)
-  - [Interfaces](#interfaces)
-- **Pointers & memory**
-  - [Pointers](#pointers)
-  - [Implicit Pointer Dereferencing](#implicit-pointer-dereferencing)
-- **The machinery**
-  - [The `go.golib` support namespace](#the-gogolib-support-namespace)
-  - [Source Generators](#source-generators)
-  - [Manually-Converted Declarations](#manually-converted-declarations)
-  - [Deterministic Output](#deterministic-output)
+- **Packages & project structure:** [Package Conversion](#package-conversion) ·
+  [Variable Init Order](#package-level-variable-initialization-order) ·
+  [Library versus Source](#compiled-library-versus-source-code)
+- **Numbers, constants & nil:** [Constants](#constant-values) ·
+  [Native/Narrow Integers](#native-and-narrow-integer-types) ·
+  [Named Numeric Types](#named-numeric-types-and-constant-contexts) ·
+  [Nil and Zero Values](#nil-and-zero-values) · [`any`](#empty-interface-any)
+- **Assignment & scope:** [Multi-Assignment](#multi-assignment-and-evaluation-order) ·
+  [Shadowing](#short-variable-redeclaration-shadowing) ·
+  [Comma-Ok Forms](#multi-result-values-and-comma-ok-forms)
+- **Composite & named types:** [Slices and Arrays](#slices-and-arrays) ·
+  [Strings](#strings-string-and-sstring) · [Maps and Channels](#maps-and-channels) ·
+  [Generic Constraints](#generic-constraints) · [Type Aliasing](#type-aliasing)
+- **Functions & control flow:** [Value-Receiver Delegates](#delegates-to-value-receiver-instances) ·
+  [Defer/Panic/Recover](#defer--panic--recover) · [Expression Switch](#expression-switch-statements) ·
+  [Type Switch](#type-switch-statements) · [Labels & Loop Variables](#labeled-control-flow-and-loop-variables)
+- **Types & polymorphism:** [Struct Types](#struct-types) · [Struct Embedding](#struct-type-embedding) ·
+  [Interfaces](#interfaces)
+- **Pointers & memory:** [Pointers](#pointers) · [Implicit Dereferencing](#implicit-pointer-dereferencing)
+- **The machinery:** [`go.golib`](#the-gogolib-support-namespace) · [Source Generators](#source-generators) ·
+  [Manually-Converted Declarations](#manually-converted-declarations) · [Deterministic Output](#deterministic-output)
 
 ---
 
@@ -164,7 +147,7 @@ and the `PackageVarInitOrder` behavioral guard.
 ## Compiled Library versus Source Code
 
 Go compiles all source together (including the stdlib), which lets its compiler do whole-program escape
-analysis. For now, the go2cs converter **assumes values can escape to the heap** except in the
+analysis. The go2cs converter **assumes values can escape to the heap** except in the
 simplest-to-detect cases (see [Pointers](#pointers)) — a safe default that can cost an unnecessary heap
 box, and the one that holds when converted packages are consumed as compiled libraries: the standard
 library is published on NuGet as `go.<pkg>` / `go.lib` / `go.gen`, which fits how C# developers usually
@@ -689,8 +672,8 @@ Named string types are real wrapper structs (`type relationship string`), so the
 string surface: indexing, sub-slicing, `len`, comparisons, concatenation, constants, and method calls stay
 on the named type instead of collapsing back to plain `@string`. Concatenation matters twice over: Go keeps
 the named type across a `+`, so the wrapper carries its own `+` overloads (including against a `u8` span) —
-without them C# falls back to `string.Concat` and hands back a `System.String` that no longer has the
-type's methods.
+without them C# falls back to `string.Concat`, handing back a `System.String` stripped of the type's
+methods.
 
 ```go
 type Token string
@@ -1207,12 +1190,9 @@ through a `[GoInterfaceShell]` stamp: a delegate-bound generic shell for a point
 a reflective `object`-held shell for a value-sourced one (`os.dirFS`, a `[GoType("@string")]` struct). golib's
 `AdapterBinder` picks the tier, owns all binding, and is **fail-soft** — a pair it cannot build MISSES, exactly
 as Go answers. A declared record still wins first, as the ~1.1 ns nominal fast path; the shells answer
-everything else. This is the ONLY duck-typing surface a converted interface has, and the only one it needs —
-both the older per-interface `ᴛAs` conversion methods anonymous interfaces used to carry (reached
-reflectively and closed with `MakeGenericMethod`, with no Native-AOT fallback) and the converter-side
-*structural* recorders that used to guess named-interface pairs by enumerating a package's concrete types were
-retired in favor of it (the latter dropped 335 speculative records corpus-wide, 261 of which no emitted C# ever
-named):
+everything else. This is the ONLY duck-typing surface a converted interface has, and the only one it needs:
+there are no per-interface conversion methods to reach reflectively (which Native AOT could not close) and no
+converter-side structural guessing at named-interface pairs:
 
 ```csharp
 [global::go.GoInterfaceShell(typeof(ΔSpeaker<>), typeof(ΔSpeakerᴛObj), "Speak")]
@@ -1381,102 +1361,51 @@ public static partial class io_package {     // io/package_info.cs
 
 ## Manually-Converted Declarations
 
-A few Go declarations can't be faithfully auto-converted because their semantics depend on hiding a
-*managed pointer inside an integer* — runtime's `guintptr`/`puintptr`/`muintptr` (a `uintptr` holding a
-`*g` the Go GC must not see). The CLR has the opposite constraint (a reference stored as a number is
-invisible to the .NET GC), so the managed conversion stores the `ж<T>` box **directly** and the numeric
-form never exists (the model precedent is `core/sync/atomic`'s hand-rewritten `Pointer<T>`). Two mechanisms
-deliver this: whole-file `[module: GoManualConversion]` (skipped by the converter, restored by [overlay](Glossary.md#overlay)), and
-a type-level registry that skips listed types/methods and points at a hand-written `*_impl.cs`. The same
-"managed reality beats raw reinterpretation" rule also hand-owns `sync/atomic.Value`, whose Go
-implementation depends on the runtime's two-word interface layout; in C# it stores the boxed `any`
-directly and uses `Volatile`/`Interlocked` for the atomic operations — and the Phase-4 **reflection
-bridge**: `reflect`/`internal/reflectlite` read an interface's `{type,data}` words through
-`unsafe.Pointer`, so the bridged entry points instead carry the boxed managed value and a synthetic
-descriptor stamped with the real `System.Type` (`ValueOf`, the value readers, canonical `Type`
-interning, `Swapper`, and `DeepEqual`'s recursion keyed on managed reference identity). A small
-whitelist of `//go:linkname` pulls emits forwarders to real implementations — the Windows DLL-loading
-helpers (hand-written `syscall` P/Invokes) and golib builtins such as `maps.Clone`'s `runtime.mapclone`
-(→ `builtin.mapclone`, a shallow independent map clone); non-whitelisted linkname pulls remain throwing stubs.
-Hand-owning is also how an **asm-backed architecture layer gets realized rather than stubbed**: where .NET
-exposes the same instructions the `.s` file issues, the port is real hardware acceleration — `hash/crc32`'s
-SSE4.2 `CRC32` and PCLMULQDQ folding paths, whose capabilities are probed **locally** (`.IsSupported`)
-instead of through `internal/cpu`'s global flags, which still gate other packages' stubs. The same
-mechanism realizes `time`'s **runtime timers** — `Sleep`/`newTimer`/`stopTimer`/`resetTimer` are
-`//go:linkname`'d into `runtime/time.go`, so they arrive bodyless: `time_impl.cs` services one
-deadline-ordered heap from one dedicated thread (Go's own pre-per-P `timerproc` shape) and waits on the
-very Windows high-resolution timer object the Go runtime uses, since `System.Threading.Timer`'s ~15 ms
-tick would fire a 1 ms Go timer late and out of order. `tick.cs` is hand-owned for a different reason:
-its `(*Ticker)(unsafe.Pointer(newTimer(…)))` reinterpret compiles but yields a *dangling* pointer in a
-managed runtime, so the Ticker is built directly and its timer addressed by box identity.
+A few Go declarations can't be faithfully auto-converted: their semantics depend on constructs the CLR
+doesn't have — a managed pointer hidden inside an integer (runtime's `guintptr`/`puintptr`/`muintptr`, a
+`uintptr` holding a `*g` the Go GC must not see), a two-word interface layout walked through
+`unsafe.Pointer` (`reflect`), or a Go-runtime primitive with no managed equivalent (a scheduler
+continuation, a sleeping semaphore). The rule: **managed reality beats raw reinterpretation** — hold the
+`ж<T>` box or `any` directly instead of round-tripping through a `uintptr`/`unsafe.Pointer` the .NET GC
+can't see, and reimplement the observable *contract* rather than the unportable *mechanism*.
 
-`sync.Pool` is the sharpest form of the same wall, because there the raw-metal type is **the `any`
-itself**: `poolDequeue`'s ring holds `eface` slots (the two-word `{type, value}` interface form) and
-decides a slot is free by testing the TYPE word for nil. An `any` in C# is one reference, so the
-reinterpreted slot makes the type word double as the value — a stored `int` reads back as
-`unsafe.Pointer`, and the empty-slot sentinel is indistinguishable from a value of that type. The
-hand-owned slot is simply `internal any? val`, with `null` as the empty sentinel, which also collapses
-Go's two-step release (store the value, then publish by nilling `typ`) into the one write a single-word
-slot makes atomic. `Pool` around it keeps Go's whole algorithm — private slot, shared chain, stealing,
-victim cache — with the P pin replaced by a thread-affine shard index plus a per-shard producer gate,
-since a managed thread cannot be pinned to a P.
+Two mechanisms deliver it. Whole-file **`[module: GoManualConversion]`** makes the converter skip
+emission for that file and redirect it to a non-compiled `<name>.cs.auto` review sibling, so a reconvert
+can never touch the hand-owned `.cs`. A **type-level registry** instead skips only the listed
+types/methods and points at a hand-written `*_impl.cs` companion beside the rest of the auto-converted
+file.
 
-`sync.Cond`'s one-method hand-own shows the wall's *other* edge, where the auto conversion neither
-crashes nor compiles wrong — it silently does **nothing**. `copyChecker.check` detects a copied `Cond`
-by storing the checker's own address in itself; converted, the compare-and-swap destination becomes
-`Ꮡ((uintptr)(c))`, which boxes a **copy**, so the checker is never initialized and no copy is ever
-reported. Storing an address would be unsound anyway (the GC moves the box, and a compaction would
-make an untouched `Cond` look copied — a *spurious* panic). `cond_impl.cs` compares the pointer's
-root-allocation identity instead, which is stable across GC moves and is the managed spelling of the
-same question.
-
-The same ruling scales up to the runtime's whole **process-control surface**. `runtime.GC`,
-`GOMAXPROCS`, `Gosched`, `Stack`, `ReadMemStats` and `LockOSThread`/`UnlockOSThread` convert
-faithfully and compile, then die on the first call, because each body drives Go's scheduler or GC
-pacer down to a `getg()`/`mcall()` compiler intrinsic — and a throw on a goroutine thread takes the
-whole process with it. They are hand-owned in `runtime/managed_impl.cs` as their **contracts**:
-`Gosched` is `Thread.Yield()`, `GC` is a blocking collect plus finalizers, `GOMAXPROCS` is a real
-get/set that does not cap parallelism, `LockOSThread` is a no-op *by construction* (a goroutine
-already is a managed thread). `runtime.Goexit` joins them as an **unwind**: it throws golib's
-`GoexitException`, which is deliberately not a `PanicException` — so `recover()` is blind to it by
-construction, exactly as Go specifies — while `GoFunc`'s `finally`-based defer machinery still runs the
-goroutine's defers on the way out and the single goroutine root swallows it, ending that goroutine and
-no other. Goexit from the *main* goroutine, whose contract leaves the other goroutines running, has no
-managed shape yet and is gated with a loud `NotSupportedException`.
-`runtime/debug`'s tuning knobs (`SetGCPercent`, `SetMemoryLimit`, …)
-get the same treatment one package over. Two intrinsics do have exact managed forms and are
-implemented rather than stubbed — `systemstack(fn)` is simply `fn()` (there is one stack per
-goroutine and no g0 to switch to) and `procyield` is `Thread.SpinWait` — and the whole
-`internal/runtime/atomic` assembly package, being plain atomics over native scalars, converts
-straight onto `Interlocked`/`Volatile`.
+`runtime.Gosched` is the smallest worked example. Go's body is a scheduler continuation that needs
+`mcall`, a compiler intrinsic with no CLR equivalent, so `runtime/managed_impl.cs` implements the
+*contract* — "yield the current thread" — instead of the mechanism:
 
 ```go
 // Go — runtime/proc.go: the body is a scheduler continuation run on the system stack
 func Gosched() { checkTimeouts(); mcall(gosched_m) }
 ```
-
 ```csharp
 // C# — runtime/managed_impl.cs: the CONTRACT, on the managed scheduler
-public static void Gosched()
-{
-    Thread.Yield();
-}
+public static void Gosched() { Thread.Yield(); }
 ```
 
+The same rule hand-owns `sync/atomic.Value` (stores the boxed `any` directly, `Volatile`/`Interlocked`
+for the atomics), the reflection bridge (`reflect`/`internal/reflectlite` carry a boxed managed value
+plus a synthetic descriptor stamped with the real `System.Type`), `sync.Pool`'s eface ring (a single
+`any?` slot with `null` as the empty sentinel), `sync.Cond`'s copy detector (compares root-allocation
+identity instead of a GC-unsound stored address), `time`'s runtime timers (one dedicated thread servicing
+a deadline-ordered heap on the Windows high-resolution timer), and the runtime's whole process-control
+surface (`GC`, `GOMAXPROCS`, `Gosched`, `LockOSThread`, `Goexit`) as its contracts rather than its
+scheduler-level mechanics. The same "realize, don't stub" instinct also ports an asm-backed architecture
+layer for real wherever .NET exposes the same instructions the `.s` file issues — `hash/crc32`'s SSE4.2
+`CRC32` and PCLMULQDQ folding.
+
 **Full detail:** [Reference → Manually-Converted Declarations](ConversionStrategies-Reference.md#manually-converted-declarations) —
-the guintptr family surface, the `unsafe.Pointer`→manual-type ctor cooperation, the runtime lock/note
-model, `sync/atomic.Value`, the reflection bridge (`abi.TypeOf`/`reflect` value+type side,
-`reflectlite`, `DeepEqual`), whitelisted `//go:linkname` forwarders,
-[realizing an asm-backed arch layer with managed hardware intrinsics](ConversionStrategies-Reference.md#realizing-an-asm-backed-arch-layer-with-managed-hardware-intrinsics), and
-[realizing the runtime timer contract](ConversionStrategies-Reference.md#realizing-the-runtime-timer-contract-sleep--newtimer--stoptimer--resettimer)
-(the Stop/Reset race semantics, the ticker phase/drop rule, and the asynchronous-timer-channel divergence), and
-[the runtime's process-control surface](ConversionStrategies-Reference.md#the-runtimes-process-control-surface-implement-the-contract-never-the-mechanism)
-(the per-API divergence table, `runtime/debug`'s knobs, the `internal/runtime/atomic` native fork, the
-`unsafe.Pointer(uintptr(0)) == nil` round-trip, and how an unavailable runtime capability gates a test
-instead of crashing the host), and
-[`sync.Pool`'s managed ring slot and thread-affine shard index](ConversionStrategies-Reference.md#syncpool--a-managed-reference-ring-slot-and-a-thread-affine-stand-in-for-the-p-pin)
-(the three replaced mechanisms with their divergences, the cross-assembly `internal`-linkname-target
-shim, and why `TestPoolGC`'s one-straggler budget is unsatisfiable under an unoptimized build).
+every hand-owned surface in full: the guintptr family, `sync/atomic.Value`, the reflection bridge,
+whitelisted `//go:linkname` forwarders,
+[realizing an asm-backed arch layer with managed hardware intrinsics](ConversionStrategies-Reference.md#realizing-an-asm-backed-arch-layer-with-managed-hardware-intrinsics),
+[realizing the runtime timer contract](ConversionStrategies-Reference.md#realizing-the-runtime-timer-contract-sleep--newtimer--stoptimer--resettimer),
+[the runtime's process-control surface](ConversionStrategies-Reference.md#the-runtimes-process-control-surface-implement-the-contract-never-the-mechanism), and
+[`sync.Pool`'s managed ring slot and thread-affine shard index](ConversionStrategies-Reference.md#syncpool--a-managed-reference-ring-slot-and-a-thread-affine-stand-in-for-the-p-pin).
 
 ---
 
@@ -1486,11 +1415,12 @@ The converted standard library corpus reproduces **Go built with `-tags purego`*
 `amd64`/`arm64` build. Go implements hot crypto/hash functions in `.s` assembly the transpiler cannot
 convert (the Go file has only a bodyless declaration gated `… && !purego`), so a default build turns
 them into throwing stubs that *compile* but can't *run*; `purego` selects the portable pure-Go
-variants with real bodies. `-stdlib` applies `-tags purego` **by default** (an explicit `-tags`
-overrides it, `-tags=` clears it) and prints the effective tags at the start of each run; the default
-is scoped to `-stdlib` only, so `-recurse` end-user conversions and single-file conversions stay
-tag-neutral. Asm-backed declarations split three ways: **purego-gated** (the tag gives a real body —
-the common case, `crypto/sha256` et al.), **GOARCH-gated with no purego escape** (hand-owned, e.g.
+variants with real bodies. `-stdlib` and `-tests` apply `-tags purego` **by default** (an explicit
+`-tags` replaces it, `-tags=` clears it) and print the effective tags at the start of each run —
+a `-tests` run reconverts the package's production sources, so it must reproduce the same emission.
+Every other conversion is tag-neutral. Asm-backed declarations split three ways: **purego-gated**
+(the tag gives a real body — the common case, `crypto/sha256` et al.),
+**GOARCH-gated with no purego escape** (hand-owned, e.g.
 `internal/chacha8rand` and `hash/crc32` — whose `crc32_amd64.go` carries no build line at all, so
 purego selects it too), and **genuinely raw-metal** (`[module: GoManualConversion]` compiling stub).
 Hand-owning the second bucket need not mean stubbing: where .NET exposes the same instructions the
@@ -1508,7 +1438,7 @@ the exposure decision and rejected alternatives, the three-bucket taxonomy, and 
 ## Deterministic Output
 
 Converter output is **byte-reproducible**: the same Go source with the same converter build produces
-byte-identical C# every run — a guarantee the [goldens](Glossary.md#golden), the full-conversion error measurements, and any
+byte-identical C# every run — a guarantee the [goldens](Glossary.md#golden), the corpus build gate, and any
 release tag all rest on. It's enforced by converting files sequentially in sorted-filename order, a
 deterministic dependency-complete stdlib queue, and sorted emission of any set-backed output.
 

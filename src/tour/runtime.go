@@ -115,7 +115,7 @@ func (p *pipelineRunner) resolveRuntime(value string) (runtimeConfiguration, err
 	case runtimeDeployed:
 		if !validRuntimeRoot(p.deployedRoot) {
 			return runtimeConfiguration{}, validationError(
-				"deployed runtime is unavailable; run src/deploy-core.ps1 stdlib or pass -deployed-root",
+				"deployed runtime is unavailable; run src/deploy-core.ps1 or pass -deployed-root",
 			)
 		}
 		return runtimeConfiguration{

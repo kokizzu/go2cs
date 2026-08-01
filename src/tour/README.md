@@ -74,9 +74,9 @@ Useful options:
 - `-addr=127.0.0.1:4000`: address for Tour of go2cs
 - `-tour-addr=127.0.0.1:3999`: private address for the upstream Tour
 - `-repo=/path/to/go2cs`: explicit repository root
-- `-runtime=core|deployed|nuget`: initial .NET runtime source; when omitted,
-  NuGet packages are selected, then a detected deployed stdlib, then core source
-- `-deployed-root=/path/to/go2cs`: root created by `deploy-core.ps1 stdlib`
+- `-runtime=core|deployed|nuget`: initial .NET runtime source (see *.NET
+  runtime sources* below for the default order)
+- `-deployed-root=/path/to/go2cs`: root created by `deploy-core.ps1`
 - `-nuget-source=/path/or/feed`: folder or feed containing go2cs packages
 - `-nuget-version=1.23.1.2`: package version to restore
 - `-no-tour`: do not launch the upstream Tour process
@@ -89,34 +89,34 @@ prevents a converter cached by an older checkout from being used with a newer To
 
 ## .NET runtime sources
 
+When `-runtime` is omitted, the server picks NuGet packages, then a detected
+deployed stdlib, then core source — in a plain checkout a package source and
+version always resolve, so NuGet is effectively always the default.
+
 **NuGet packages** (`-runtime=nuget`) rewrites the generated project references
 to `go.gen`, `go.lib`, and the required `go.*` packages, so lessons build
 against the published converted standard library with nothing staged locally.
 The server prefers the local `src/artifacts/nupkg` feed when packages exist,
 then falls back to nuget.org. The version comes from `src/version.props`.
 Override either value with `-nuget-source` / `GO2CS_NUGET_SOURCE` and
-`-nuget-version` / `GO2CS_NUGET_VERSION`. This is the default runtime whenever
-a package source and version resolve, which is the case in a plain checkout.
+`-nuget-version` / `GO2CS_NUGET_VERSION`.
 
-**Deployed stdlib** (`-runtime=deployed`) uses the compiled/full
-standard-library tree produced by:
+**Deployed stdlib** (`-runtime=deployed`) builds against a staged copy of the
+standard library at `$GOPATH/src/go2cs`, produced by:
 
 ```powershell
-.\src\deploy-core.ps1 stdlib
+.\src\deploy-core.ps1
 ```
 
-The server discovers this at `$GOPATH/src/go2cs`. Override it with
-`-deployed-root` or `GO2CS_DEPLOYED_ROOT`. Choose it when lessons should build
-against your own checkout's converted standard library as source, so you can
-step into it or pick up a local change immediately. It becomes the default
-runtime when no package version resolves and a valid deployed tree is detected.
+Override the root with `-deployed-root` or `GO2CS_DEPLOYED_ROOT`. A root only
+counts if it has `core/VERSION`, `core/golib/golib.csproj`, and
+`gen/go2cs-gen/go2cs-gen.csproj`. Choose this mode to share one staged tree
+across multiple apps or machines.
 
-**Core source** (`-runtime=core`) converts and builds against the current
-checkout's `src/core`, `src/gen`, and converted package projects, which is the
-best mode while developing go2cs itself. `src/core` is the smaller baseline
-subset of the standard library, so a lesson importing beyond it is better served
-by either source above. It is the last fallback, chosen when neither a package
-version nor a valid deployed stdlib is available.
+**Core source** (`-runtime=core`) builds directly against the current
+checkout's `src/core` — the complete converted standard library as live
+source, no staging. Any converter or golib edit is picked up immediately, so
+this is the mode for developing go2cs itself.
 
 ## Keyboard controls
 

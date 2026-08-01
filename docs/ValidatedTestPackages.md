@@ -1,28 +1,37 @@
 # Validated Test Packages
 
-The packages below have had their **own Go test suites** (Go 1.23.1) converted to C#, built against
-the converted standard library, run under the Go-semantics test host, and **differentially compared
-against a clean `go test -json` baseline — verdict for verdict**. A package is listed only when every
-`Test` function's result matches `go test` (`Example`/`Benchmark` execution is uniformly deferred).
-See [Try it yourself](README.md#try-it-yourself--validate-a-converted-test-suite) to reproduce any
-row from a clone with one command.
+Each package below has its own Go 1.23.1 `_test.go` suite converted to C#, built against the
+converted standard library, run under the Go-semantics test host, and differentially compared —
+verdict for verdict — against a clean `go test -json` baseline. A row appears only when *every*
+`Test` function's result matches `go test`; a package that almost passes never appears, which is
+what keeps the denominator below honest. `Example`/`Benchmark` execution is deferred and never
+factors into a row. [`src/run-validated-sweep.ps1`](../src/run-validated-sweep.ps1) re-validates
+every listed package on demand, reading its own roster straight from the table below — see
+[Try it yourself](README.md#try-it-yourself--validate-a-converted-test-suite) to reproduce any row
+from a clone with one command.
 
-A few packages carry **disclosed divergences**: Go asserts the managed CLR provably cannot satisfy.
-Two classes exist. `alloc-profile` — a test asserting an *exact allocation count*, where Go's compiler
-stack-allocates and .NET must heap-allocate. `codegen-liveness` — a test asserting, from inside its own
-frame, that an object it just stopped using is collectible: Go's GC consults per-safepoint liveness
-maps and drops a local at its last use, while the CLR reports a frame's slots live for the frame's
-lifetime (a by-value struct argument wider than a machine word is passed by hidden reference, so the
-caller's temp is address-exposed and therefore untracked). Each is pinned by exact failure signature in
-a hand-owned, committed
-[`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json) —
-any other failure is still a hard mismatch.
+A disclosure is a specific Go assertion the managed CLR provably cannot satisfy — not a skipped
+test, not a tolerance. Two classes exist:
+
+- **`alloc-profile`** — a test asserts an exact allocation count; Go's compiler stack-allocates the
+  value where .NET must heap-allocate it.
+- **`codegen-liveness`** — a test asserts, from inside its own frame, that an object it just stopped
+  using is now collectible. Go's GC drops a local at its last use via per-safepoint liveness maps;
+  the CLR reports a frame's slots live for the frame's whole lifetime.[^codegen-liveness]
+
+Each disclosure is pinned by exact failure signature in a hand-owned, committed
+[`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
+Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
 > ### Phase 4 progress: **69 / 215 testable packages validated — 32.1%**
 >
 > **2,376 matching test verdicts · 48 disclosed** *(updated 2026-07-31 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.1 sources define `Test` functions.)*
+
+<!-- Row format is machine-parsed by src/run-validated-sweep.ps1 (regex:
+     ^\|\s*\[`pkg`\]\(...\)\s*\|\s*tests\s*\|\s*disclosed\s*\|). Keep one row per line in this exact
+     column order — reflowing, reordering, or adding columns breaks the sweep's roster parser. -->
 
 | Package | Tests | Disclosed | What it exercises |
 |:--|:--:|:--:|:--|
@@ -95,3 +104,6 @@ any other failure is still a hard mismatch.
 | [`unicode`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode) | 28 | | Category tables, case mapping (`SpecialCase`), script ranges. |
 | [`unicode/utf16`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf16) | 8 | 1 | Encode/decode round-trips via `reflect.DeepEqual`. |
 | [`unicode/utf8`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/unicode/utf8) | 14 | | UTF-8 encode/decode — the first suite to pass (2026-07-17). |
+
+[^codegen-liveness]: A by-value struct argument wider than a machine word is passed by hidden
+    reference, so the caller's temp is address-exposed and therefore untracked by liveness analysis.
