@@ -31,11 +31,13 @@ namespace go.testing_runtime;
 /// Go's naming, failure propagation and parallel release are all defined over that tree.
 /// </para>
 /// <para>
-/// Each test gets its OWN thread rather than a pool work item, and that thread is created with a
-/// deliberately huge stack reservation (see <c>TestThreadStackSize</c>). Go goroutine stacks GROW,
-/// so deeply recursive test code is legal Go, while a .NET thread's stack is a fixed reservation
-/// whose overflow is uncatchable and kills the entire host. Reserving address space is what buys
-/// Go-scale headroom without real memory cost.
+/// Each test gets its OWN thread rather than a pool work item, for two independent reasons. A
+/// parallel test PARKS its thread until the serial phase completes, and dozens-to-hundreds of
+/// parked thread-pool threads would starve the pool — stalling the suite and every converted
+/// goroutine the tests spawn, since golib queues those on that same pool. And a dedicated thread
+/// can be created with a deliberately huge stack reservation (see <c>TestThreadStackSize</c>):
+/// Go goroutine stacks GROW, so deeply recursive test code is legal Go, while a .NET thread's
+/// stack is a fixed reservation whose overflow is uncatchable and kills the entire host.
 /// </para>
 /// <para>
 /// <c>FailNow</c> and <c>SkipNow</c> must abandon the test body immediately, which in Go is a

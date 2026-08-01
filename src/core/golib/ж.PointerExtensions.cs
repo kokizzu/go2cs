@@ -21,8 +21,14 @@ namespace go;
 // WHAT LIVES HERE
 //   Extension methods over ж<T>: reinterpreting a pointer as another pointee type (Go's
 //   `(*U)(unsafe.Pointer(p))`), the nil-safe re-alias a pointer walk needs on its last step, and
-//   the address-token printer that `%p`, `ToString()` and every pointer-shaped diagnostic go
-//   through. ж.cs itself holds the box — its storage, its identity, its dereference operators.
+//   the address-token printer behind `ж<T>.ToString()`. ж.cs itself holds the box — its storage,
+//   its identity, its dereference operators.
+//
+//   PrintPointer is NOT the `%p` implementation, despite producing the same shape of token. Go's
+//   own verbs are served by the converted `fmt`, which asks the reflection bridge for a pointer's
+//   address (`reflect.Value.UnsafePointer` → INilPointer.PointerOrderToken). This one backs
+//   ToString, so it is what a debugger watch window, an interpolated `$"{p}"` and any diagnostic
+//   that formats a box without going through Go's fmt will show.
 //
 // WHY EXTENSION METHODS AND NOT INSTANCE MEMBERS
 //   Because a Go nil pointer has TWO managed representations and only one of them can receive an
@@ -265,8 +271,10 @@ public static class PointerExtensions
     }
 
     /// <summary>
-    /// Renders a pointer as the hexadecimal address token Go prints for <c>%p</c> and for a
-    /// pointer's default <c>%v</c>, or <c>"&lt;nil&gt;"</c> for the nil pointer.
+    /// Renders a pointer as a hexadecimal address token — the shape Go prints for <c>%p</c> — or
+    /// <c>"&lt;nil&gt;"</c> for the nil pointer. This is what <see cref="ж{T}.ToString"/> returns;
+    /// Go's own <c>%p</c>/<c>%v</c> are served by the converted <c>fmt</c> through the reflection
+    /// bridge, not by this.
     /// </summary>
     /// <typeparam name="T">Pointee type.</typeparam>
     /// <param name="ptr">Pointer to render; a <c>null</c> reference reads as nil.</param>
@@ -302,9 +310,9 @@ public static class PointerExtensions
     /// <remarks>
     /// <para>
     /// This is the bottom of the pointer-printing path: the <c>ж&lt;T&gt;</c> overload above reduces a
-    /// pointer to whichever object IS its storage and asks this for the token. Go prints a real
-    /// address there, so printing SOMETHING address-shaped and stable-looking is the whole
-    /// requirement; nothing may treat the result as an address.
+    /// pointer to whichever object IS its storage and asks this for the token. Because the caller is
+    /// a diagnostic, printing SOMETHING address-shaped is the whole requirement; nothing may treat
+    /// the result as an address.
     /// </para>
     /// <para>
     /// It genuinely is not one for longer than this call: <c>__makeref</c> hands out the object
