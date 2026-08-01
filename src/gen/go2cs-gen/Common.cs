@@ -78,6 +78,29 @@ public static class Common
         return typeName.Contains('<') && typeName.Contains('>');
     }
 
+    /// <summary>
+    /// Reduces a type reference to its bare name by truncating at the first type-argument list:
+    /// <c>node&lt;K, V&gt;</c> becomes <c>node</c>, <c>go.sync.Map</c> stays <c>go.sync.Map</c>.
+    /// </summary>
+    /// <remarks>
+    /// Two generators need this and for opposite reasons, which is why it lives here rather than
+    /// beside either of them:
+    /// <list type="bullet">
+    /// <item><c>ImplementGenerator</c> re-opens the list to substitute a proxy type, so it wants
+    /// everything BEFORE the <c>&lt;</c> and then writes its own arguments.</item>
+    /// <item><c>StructTypeTemplate</c> wants the member-access spelling of an embed, and a declared
+    /// member never carries type arguments.</item>
+    /// </list>
+    /// Truncation at the FIRST <c>&lt;</c> is deliberate: a nested argument list
+    /// (<c>Map&lt;K, List&lt;V&gt;&gt;</c>) has nothing to contribute to a bare name, so there is no
+    /// bracket matching to do. A name with no <c>&lt;</c> is returned unchanged (not copied).
+    /// </remarks>
+    internal static string StripGenericTypeArguments(string typeName)
+    {
+        int index = typeName.IndexOf('<');
+        return index < 0 ? typeName : typeName[..index];
+    }
+
     public static string GetSimpleName(string typeName, bool dropGeneric = false, bool dropCollisionPrefix = false)
     {
         // Check if type name is a pointer, i.e., ж<T>. Match the prefix as `ж<` specifically — a bare

@@ -1016,7 +1016,7 @@ public class ImplementGenerator : ISourceGenerator
         string elementName = GlobalQualify(elementType.GetFullTypeName(true));
 
         // The interface closed over the proxy ITSELF: `nistPoint<P224PointжnistPoint>`.
-        string interfaceRef = $"{StripTypeArguments(GlobalQualify(interfaceDef.ToDisplayString()))}<{proxyName}>";
+        string interfaceRef = $"{StripGenericTypeArguments(GlobalQualify(interfaceDef.ToDisplayString()))}<{proxyName}>";
 
         ITypeParameterSymbol selfParameter = interfaceDef.TypeParameters[0];
         StringBuilder methods = new();
@@ -1062,12 +1062,6 @@ public class ImplementGenerator : ISourceGenerator
 
     private static string SafeParameterName(string name, int index) => string.IsNullOrEmpty(name) ? $"arg{index}" : EscapeCsKeyword(name);
 
-    private static string StripTypeArguments(string typeName)
-    {
-        int index = typeName.IndexOf('<');
-        return index >= 0 ? typeName.Substring(0, index) : typeName;
-    }
-
     // Reports whether a type mentions the interface's self-type parameter anywhere in its shape.
     private static bool ContainsTypeParameter(ITypeSymbol type, ITypeParameterSymbol typeParameter) => type switch
     {
@@ -1095,7 +1089,7 @@ public class ImplementGenerator : ISourceGenerator
             case INamedTypeSymbol { IsTupleType: true } tuple:
                 return $"({string.Join(", ", tuple.TupleElements.Select(element => RenderWithProxy(element.Type, selfParameter, proxyName)))})";
             case INamedTypeSymbol named:
-                return $"{StripTypeArguments(GlobalQualify(named.ConstructedFrom.ToDisplayString()))}<{string.Join(", ", named.TypeArguments.Select(argument => RenderWithProxy(argument, selfParameter, proxyName)))}>";
+                return $"{StripGenericTypeArguments(GlobalQualify(named.ConstructedFrom.ToDisplayString()))}<{string.Join(", ", named.TypeArguments.Select(argument => RenderWithProxy(argument, selfParameter, proxyName)))}>";
             default:
                 return GlobalQualify(type.ToDisplayString());
         }

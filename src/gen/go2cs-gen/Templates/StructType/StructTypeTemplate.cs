@@ -668,7 +668,7 @@ internal class StructTypeTemplate : TemplateBase
 
                 // A value-receiver method binds on the embed's deref'd value (`target.<embed>.Value` —
                 // GetSimpleName appends `.Value` for a pointer embed); a BOX-receiver primary (`this ж<T>`)
-                // binds on the box hop itself (`target.<embed>`), so drop the `.Value` for it. StripTypeArgs
+                // binds on the box hop itself (`target.<embed>`), so drop the `.Value` for it. EmbedHop
                 // reduces a GENERIC embed's hop to the bare property name (`nistCurve<…>` → `nistCurve`) —
                 // the emitted accessor is not itself generic (a no-op for a non-generic embed's hop).
                 string embedAccess = EmbedHop(promotedStructType, promotedMemberName);
@@ -718,18 +718,11 @@ internal class StructTypeTemplate : TemplateBase
     // instead of the member — CS0120 on every promoted field accessor, CS1061 on every `Ꮡ`
     // reference and forwarder. A POINTER embed keeps the `.Value` deref GetSimpleName appends to
     // its `ж<T>` box form; a GENERIC embed's declared member never carries type arguments (the
-    // converter strips them), which is what StripTypeArgs used to recover here.
+    // converter strips them), so StripGenericTypeArguments keeps a generic embed's simple name
+    // comparable against the `.Value` suffix this test is really asking about.
     private static string EmbedHop(string promotedStructType, string memberName) =>
-        StripTypeArgs(GetSimpleName(promotedStructType, dropCollisionPrefix: true))
+        StripGenericTypeArguments(GetSimpleName(promotedStructType, dropCollisionPrefix: true))
             .EndsWith(".Value", StringComparison.Ordinal) ? $"{memberName}.Value" : memberName;
-
-    // StripTypeArgs reduces a generic type reference to its bare name (`node<K, V>` → `node`)
-    // for MEMBER access through an embed's promoted property.
-    private static string StripTypeArgs(string name)
-    {
-        int index = name.IndexOf('<');
-        return index == -1 ? name : name[..index];
-    }
 
     private static readonly Dictionary<string, string> s_noTypeArgs = new(StringComparer.Ordinal);
 
